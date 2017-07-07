@@ -655,7 +655,7 @@ void GridTrackerClass::updateGroundDistanceGrid()
 {
 	// TODO: Goal with this grid is to create a ground distance grid from home for unit micro
 	// Need to check for islands
-	if (mobilityAnalysis && !distanceAnalysis)
+	if (!distanceAnalysis)
 	{
 		WalkPosition start = WalkPosition(Terrain().getPlayerStartingPosition());
 		distanceGridHome[start.x][start.y] = 1;

@@ -19,16 +19,13 @@ void BaseTrackerClass::updateAlliedBases()
 
 void BaseTrackerClass::storeBase(Unit base)
 {
-	if (myBases.find(base) == myBases.end())
-	{
-		myBases[base].setUnit(base);
-		myBases[base].setUnitType(base->getType());
-		myBases[base].setResourcesPosition(centerOfResources(base));
-		myBases[base].setPosition(base->getPosition());
-		myBases[base].setWalkPosition(Util().getWalkPosition(base));
-		myBases[base].setTilePosition(base->getTilePosition());
-		myBases[base].setPosition(base->getPosition());
-	}
+	myBases[base].setUnit(base);
+	myBases[base].setUnitType(base->getType());
+	myBases[base].setResourcesPosition(centerOfResources(base));
+	myBases[base].setPosition(base->getPosition());
+	myBases[base].setWalkPosition(Util().getWalkPosition(base));
+	myBases[base].setTilePosition(base->getTilePosition());
+	myBases[base].setPosition(base->getPosition());
 
 	if (Grids().isAnalyzed())
 	{

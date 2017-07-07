@@ -210,7 +210,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		}
 	}
 
-	// For each base, check if you can build near it
+	// For each base, check if you can build near it, starting at the main
 	for (auto &base : Bases().getMyOrderedBases())
 	{
 		TilePosition here = getBuildLocationNear(building, base.second);

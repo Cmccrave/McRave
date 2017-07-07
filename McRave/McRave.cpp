@@ -8,6 +8,7 @@
 
 // --- AUTHOR NOTES ---
 // Critical TODOS:
+// Fix HT storming ally units and merging
 // Secondary scout, see what sort of tech we are against
 
 // TODOS:
@@ -22,7 +23,7 @@
 // Update commands to remove any latency components
 
 // Testing:
-// Spider mine removal from expansions - Testing 2.0
+// Spider mine removal from expansions
 
 // Possibility:
 // Take angles into account for micro? (Distance to target)
