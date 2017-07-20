@@ -211,7 +211,7 @@ void CommandTrackerClass::attackTarget(UnitInfo& unit)
 		{
 			for (auto& b : Buildings().getMyBuildings())
 			{
-				BuildingInfo building = b.second;
+				BuildingInfo &building = b.second;
 				if (building.getType() == UnitTypes::Protoss_Shield_Battery && building.getEnergy() >= 10 && unit.unit()->getDistance(building.getPosition()) < 320)
 				{
 					unit.unit()->rightClick(building.unit());
