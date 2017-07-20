@@ -12,43 +12,47 @@ struct myHash {
 	}
 };
 
+#pragma warning(disable : 4351)
+
 class GridTrackerClass
 {
+	bool resetGrid[1024][1024] = {};
+
 	// Ally grids
-	int aClusterGrid[1024][1024];
-	int reserveGrid[256][256];
-	int baseGrid[256][256];
-	int pylonGrid[256][256];
-	int batteryGrid[256][256];
-	int bunkerGrid[256][256];
-	int defenseGrid[256][256];
+	int aClusterGrid[1024][1024] = {};
+	int reserveGrid[256][256] = {};
+	int baseGrid[256][256] = {};
+	int pylonGrid[256][256] = {};
+	int batteryGrid[256][256] = {};
+	int bunkerGrid[256][256] = {};
+	int defenseGrid[256][256] = {};
 
 	// Enemy grids
-	double eGroundGrid[1024][1024];
-	double eAirGrid[1024][1024];
-	double eGroundDistanceGrid[1024][1024];
-	double eAirDistanceGrid[1024][1024];
-	int eDetectorGrid[1024][1024];
-	int eGroundClusterGrid[1024][1024];
-	int eAirClusterGrid[1024][1024];
-	int stasisClusterGrid[1024][1024];
+	double eGroundGrid[1024][1024] = {};
+	double eAirGrid[1024][1024] = {};
+	double eGroundDistanceGrid[1024][1024] = {};
+	double eAirDistanceGrid[1024][1024] = {};
+	int eDetectorGrid[1024][1024] = {};
+	int eGroundClusterGrid[1024][1024] = {};
+	int eAirClusterGrid[1024][1024] = {};
+	int stasisClusterGrid[1024][1024] = {};
 
 	// Neutral grids	
-	int resourceGrid[256][256];
+	int resourceGrid[256][256] = {};
 
 	// Mobility grids
-	int mobilityGrid[1024][1024];
-	int antiMobilityGrid[1024][1024];
-	int distanceGridHome[1024][1024];
-	int reservePathHome[256][256];
+	int mobilityGrid[1024][1024] = {};
+	int antiMobilityGrid[1024][1024] = {};
+	int distanceGridHome[1024][1024] = {};
+	int reservePathHome[256][256] = {};
 
 	// Special Unit grids
-	int aDetectorGrid[1024][1024];
-	int arbiterGrid[1024][1024];
-	int psiStormGrid[1024][1024];
-	int EMPGrid[1024][1024];
+	int aDetectorGrid[1024][1024] = {};
+	int arbiterGrid[1024][1024] = {};
+	int psiStormGrid[1024][1024] = {};
+	int EMPGrid[1024][1024] = {};
 	
-	unordered_set<WalkPosition, myHash> resetWalks;
+//	unordered_set<WalkPosition, myHash> resetWalks;
 
 	// Other
 	bool distanceAnalysis = false;
