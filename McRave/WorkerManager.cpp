@@ -145,6 +145,8 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 		{
 			worker.setBuildingType(UnitTypes::None);
 			worker.setBuildPosition(TilePositions::None);
+			worker.unit()->stop();
+			return;
 		}
 
 		// If our building position is no longer buildable, remove
@@ -155,7 +157,7 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 		}
 		else
 		{
-			if (!Broodwar->isVisible(worker.getBuildPosition()) || Broodwar->self()->minerals() >= worker.getBuildingType().mineralPrice() / worker.getPosition().getDistance(Position(worker.getBuildPosition())) && Broodwar->self()->minerals() <= worker.getBuildingType().mineralPrice() && Broodwar->self()->gas() >= worker.getBuildingType().gasPrice() / worker.getPosition().getDistance(Position(worker.getBuildPosition())) && Broodwar->self()->gas() <= worker.getBuildingType().gasPrice())
+			if (!Broodwar->isVisible(worker.getBuildPosition()) || (Broodwar->self()->minerals() >= worker.getBuildingType().mineralPrice() / worker.getPosition().getDistance(Position(worker.getBuildPosition())) && Broodwar->self()->minerals() <= worker.getBuildingType().mineralPrice() && Broodwar->self()->gas() >= worker.getBuildingType().gasPrice() / worker.getPosition().getDistance(Position(worker.getBuildPosition())) && Broodwar->self()->gas() <= worker.getBuildingType().gasPrice()))
 			{
 				if (worker.unit()->getOrderTargetPosition() != Position(worker.getBuildPosition()) || worker.unit()->isStuck())
 				{
@@ -216,7 +218,7 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 	}
 
 	// Defending logic
-	if (/*Broodwar->getFrameCount() - worker.getLastGatherFrame() <= 25 &&*/ Grids().getEGroundDistanceGrid(worker.getWalkPosition()) > 0.0)
+	if (Grids().getEGroundDistanceGrid(worker.getWalkPosition()) > 0.0)
 	{
 		if (!worker.getTarget() || (worker.getTarget() && !worker.getTarget()->exists()))
 		{
@@ -259,18 +261,6 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 	// If idle and carrying gas or minerals, return cargo			
 	if (worker.unit()->isCarryingGas() || worker.unit()->isCarryingMinerals())
 	{
-		//// TEMP TEST - Leta Worker idea
-		//if (worker.getResource()->exists())
-		//{
-		//	if (worker.getResource()->getType().isMineralField())
-		//	{
-		//		if (worker.getPosition().getDistance(Resources().getMyMinerals()[worker.getResource()].getClosestBasePosition()) > 160)
-		//		{
-		//			worker.unit()->move(Resources().getMyMinerals()[worker.getResource()].getClosestBasePosition());
-		//			return;
-		//		}
-		//	}
-		//}
 		if (worker.unit()->getLastCommand().getType() != UnitCommandTypes::Return_Cargo)
 		{
 			worker.unit()->returnCargo();

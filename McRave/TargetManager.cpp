@@ -75,7 +75,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 			// Arbiters only target tanks - Testing no regard for distance
 			else if (unit.getType() == UnitTypes::Protoss_Arbiter)
 			{
-				if (enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || enemy.getType() != UnitTypes::Terran_Siege_Tank_Tank_Mode)
+				if (enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || enemy.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode)
 				{
 					thisUnit = (enemy.getPriority() * Grids().getStasisCluster(enemy.getWalkPosition()));
 				}
@@ -84,7 +84,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 			// High Templars target the highest priority with the largest cluster
 			else if (unit.getType() == UnitTypes::Protoss_High_Templar)
 			{
-				if (/*Grids().getPsiStormGrid(enemy.getWalkPosition()) == 0 &&*/ Grids().getACluster(enemy.getWalkPosition()) < Grids().getEAirCluster(enemy.getWalkPosition()) + Grids().getEGroundCluster(enemy.getWalkPosition()) && !enemy.getType().isBuilding())
+				if (/*Grids().getPsiStormGrid(enemy.getWalkPosition()) == 0 &&*/ Grids().getACluster(enemy.getWalkPosition()) < (Grids().getEAirCluster(enemy.getWalkPosition()) + Grids().getEGroundCluster(enemy.getWalkPosition())) && !enemy.getType().isBuilding())
 				{
 					thisUnit = (enemy.getPriority() * max(Grids().getEGroundCluster(enemy.getWalkPosition()), Grids().getEAirCluster(enemy.getWalkPosition()))) / distance;
 				}
@@ -101,6 +101,11 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 			{
 				thisUnit = thisUnit * 0.1;
 			}
+		}
+
+		if (thisUnit == 0.0)
+		{
+			continue;
 		}
 
 		// If this is the strongest enemy around, target it

@@ -8,6 +8,7 @@
 
 // --- AUTHOR NOTES ---
 // TODO in testing before AIIDE 2017:
+// Check threat grids
 // Better engaging
 // Scout improvements
 // Island check for DistanceGridHome
@@ -16,7 +17,6 @@
 // Anti-stone check
 // Cannons / Worker pull
 // Test psi storm grid and EMP grid
-// Against units with higher range, move forward after shooting
 
 // One shot stuff:
 // Store resources when Nexus created - remove when destroyed

@@ -143,6 +143,7 @@ void ResourceTrackerClass::removeResource(Unit resource)
 	return;
 }
 
+// TEMP - Needs a permanent fix once proper resource storage setup
 Position ResourceTrackerClass::resourceClusterCenter(Unit resource)
 {
 	// Get average of minerals	
