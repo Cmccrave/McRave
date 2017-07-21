@@ -120,6 +120,7 @@ void UnitTrackerClass::onUnitMorph(Unit unit)
 		if (unit->getType() == UnitTypes::Protoss_Archon)
 		{
 			// Remove the two HTs and their respective supply
+			// whatBuilds returns previous units size
 		}
 	}
 	else if (unit->getPlayer()->isEnemy(Broodwar->self()))
@@ -142,6 +143,50 @@ void UnitTrackerClass::updateAliveUnits()
 	globalAllyStrength = 0.0;
 	allyDefense = 0.0;
 	enemyDefense = 0.0;
+
+	// Update Enemy Units
+	for (auto &e : enemyUnits)
+	{
+		UnitInfo &enemy = e.second;
+
+		if (!enemy.unit())
+		{
+			continue;
+		}
+
+		// If deadframe is 0, unit is alive still
+		if (enemy.getDeadFrame() == 0)
+		{			
+			if (enemy.unit()->exists())
+			{
+				updateEnemy(enemy);
+			}
+			enemyComposition[enemy.getType()] += 1;
+
+			// If tile is visible but unit is not, remove position
+			if (!enemy.unit()->exists() && enemy.getPosition() != Positions::None && Broodwar->isVisible(TilePosition(enemy.getPosition())))
+			{
+				enemy.setPosition(Positions::None);
+			}
+
+			// Strength based calculations ignore workers and buildings
+			if (!enemy.getType().isWorker() && !enemy.getType().isBuilding())
+			{
+				globalEnemyStrength += max(enemy.getVisibleGroundStrength(), enemy.getVisibleAirStrength());
+			}
+			if (enemy.getType().isBuilding() && enemy.getGroundDamage() > 0 && enemy.unit()->isCompleted())
+			{
+				enemyDefense += enemy.getVisibleGroundStrength();
+			}
+		}
+
+		// If unit is dead
+		else if (enemy.getDeadFrame() != 0)
+		{
+			// Add a portion of the strength to ally strength
+			globalAllyStrength += max(enemy.getMaxGroundStrength(), enemy.getMaxAirStrength()) * 1 / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(enemy.getDeadFrame())));
+		}
+	}
 
 	// Update Ally Units
 	for (auto &a : allyUnits)
@@ -186,51 +231,7 @@ void UnitTrackerClass::updateAliveUnits()
 				allyDefense += ally.getVisibleGroundStrength();
 			}
 		}
-	}
-
-	// Update Enemy Units
-	for (auto &e : enemyUnits)
-	{
-		UnitInfo &enemy = e.second;
-
-		if (!enemy.unit())
-		{
-			continue;
-		}
-
-		// If deadframe is 0, unit is alive still
-		if (enemy.getDeadFrame() == 0)
-		{
-			if (enemy.unit()->exists())
-			{
-				updateEnemy(enemy);
-			}
-			enemyComposition[enemy.getType()] += 1;
-
-			// If tile is visible but unit is not, remove position
-			if (!enemy.unit()->exists() && enemy.getPosition() != Positions::None && Broodwar->isVisible(TilePosition(enemy.getPosition())))
-			{
-				enemy.setPosition(Positions::None);
-			}
-
-			// Strength based calculations ignore workers and buildings
-			if (!enemy.getType().isWorker())
-			{
-				globalEnemyStrength += max(enemy.getVisibleGroundStrength(), enemy.getVisibleAirStrength());
-			}
-			if (enemy.getType().isBuilding() && enemy.getGroundDamage() > 0 && enemy.unit()->isCompleted())
-			{
-				enemyDefense += enemy.getVisibleGroundStrength();
-			}
-		}
-
-		// If unit is dead
-		else if (enemy.getDeadFrame() != 0)
-		{
-			// Add a portion of the strength to ally strength
-			globalAllyStrength += max(enemy.getMaxGroundStrength(), enemy.getMaxAirStrength()) * 1 / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(enemy.getDeadFrame())));
-		}
-	}
+	}	
 }
 
 void UnitTrackerClass::updateDeadUnits()
@@ -344,6 +345,7 @@ void UnitTrackerClass::updateAlly(UnitInfo& unit)
 	unit.setVisibleAirStrength(Util().getVisibleAirStrength(unit, p));
 	unit.setMaxAirStrength(Util().getMaxAirStrength(unit, p));
 	unit.setPriority(Util().getPriority(unit, p));
+	unit.setEngagePosition(unit.getPosition() + Position((unit.getTargetPosition() - unit.getPosition()) * (unit.getPosition().getDistance(unit.getTargetPosition()) - max(unit.getGroundRange(), unit.getAirRange())) / unit.getPosition().getDistance(unit.getTargetPosition())));
 
 	if (unit.unit()->getLastCommand().getTargetPosition().isValid())
 	{
@@ -365,7 +367,8 @@ void UnitTrackerClass::removeUnit(Unit unit)
 	}
 	else if (allyDefenses.find(unit) != allyDefenses.end())
 	{
-		allyDefenses.erase(unit);
+		Grids().updateDefenseGrid(allyDefenses[unit]);
+		allyDefenses.erase(unit);	
 	}
 	else if (enemyUnits.find(unit) != enemyUnits.end())
 	{
@@ -412,39 +415,14 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be
 	// Variables for calculating local strengths
 	double enemyLocalGroundStrength = 0.0, allyLocalGroundStrength = 0.0, timeToTarget = 0.0, timeToUnit = 0.0, timeRatio;
 	double enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;
-	Position engagementPosition;
-
-
+	
 	// Reset local
 	unit.setGroundLocal(0);
 	// Time to reach target
-	if (unit.getPosition().getDistance(unit.getTargetPosition()) > unit.getGroundRange() && unit.getSpeed() > 0.0)
+	if (unit.getPosition().getDistance(unit.getEngagePosition()) > max(unit.getGroundRange(), unit.getAirRange()) && unit.getSpeed() > 0.0)
 	{
-		timeToTarget = max(1.0, (unit.getPosition().getDistance(unit.getTargetPosition()) - unit.getGroundRange()) / unit.getSpeed());
+		timeToTarget = max(1.0, (unit.getPosition().getDistance(unit.getEngagePosition()) - max(unit.getGroundRange(), unit.getAirRange())) / unit.getSpeed());
 	}
-
-
-	//if (enemyUnits.find(unit.getTarget()) != enemyUnits.end())
-	//{
-	//	UnitInfo target = enemyUnits[unit.getTarget()];
-
-	//	// Time for target to reach unit
-	//	if (target.getPosition().getDistance(unit.getPosition()) > target.getGroundRange() && (target.getSpeed() + unit.getSpeed()) > 0.0)
-	//	{
-	//		timeToUnit = (target.getPosition().getDistance(unit.getPosition()) - target.getGroundRange()) / (target.getSpeed() + unit.getSpeed());
-	//	}
-	//	// Time to reach target
-	//	if (unit.getPosition().getDistance(target.getPosition()) > unit.getGroundRange() && unit.getSpeed() > 0.0)
-	//	{
-	//		timeToTarget = (unit.getPosition().getDistance(target.getPosition()) - unit.getGroundRange()) / (unit.getSpeed() + target.getSpeed());
-	//	}
-
-	//	// Calculate engagement position
-	//	// Distance between unit and target, assume for local calculations no retreat/push, just pure distance
-	//}
-
-
-
 
 	// If a unit is clearly out of range based on current health (keeps healthy units in the front), set as "no local" and skip calculating
 	if (unit.getPosition().getDistance(unit.getTargetPosition()) > 640.0 + (64.0 * (1.0 - unit.getPercentHealth())))
@@ -452,6 +430,8 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be
 		unit.setStrategy(3);
 		return;
 	}
+
+	//Broodwar->drawLineMap(unit.getPosition(), unit.getEngagePosition(), Colors::White);
 
 	// Check every enemy unit being in range of the target
 	for (auto &e : enemyUnits)
@@ -464,7 +444,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be
 		}
 
 		// If a unit is within threat range of the target, add to local strength
-		if (enemy.getGroundDamage() > 0 && enemy.getPosition().getDistance(unit.getTargetPosition()) <= enemy.getGroundRange() + (enemy.getSpeed() * timeToTarget))
+		if (enemy.getGroundDamage() > 0.0 && enemy.getPosition().getDistance(unit.getEngagePosition()) <= enemy.getGroundRange() + (enemy.getSpeed() * timeToTarget))
 		{
 			// If enemy hasn't died, add to enemy. Otherwise, partially add to ally local
 			if (enemy.getDeadFrame() == 0)
@@ -476,7 +456,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be
 				allyLocalGroundStrength += enemy.getMaxGroundStrength() * 1.0 / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(enemy.getDeadFrame())));
 			}
 		}
-		if (enemy.getAirDamage() > 0 && enemy.getPosition().getDistance(unit.getTargetPosition()) <= enemy.getAirRange() + (enemy.getSpeed() * timeToTarget))
+		if (enemy.getAirDamage() > 0.0 && enemy.getPosition().getDistance(unit.getEngagePosition()) <= enemy.getAirRange() + (enemy.getSpeed() * timeToTarget))
 		{
 			// If enemy hasn't died, add to enemy. Otherwise, partially add to ally local
 			if (enemy.getDeadFrame() == 0)
@@ -501,7 +481,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be
 		}
 
 		// If a unit is within threat range of the ally unit, add to local strength
-		if (ally.getGroundDamage() > 0 && ally.getPosition().getDistance(unit.getPosition()) <= ally.getGroundRange() + (ally.getSpeed() * timeToTarget))
+		if (ally.getGroundDamage() > 0.0 && ally.getPosition().getDistance(ally.getEngagePosition()) <= ally.getGroundRange() + (ally.getSpeed() * timeToTarget) && ally.getEngagePosition().getDistance(unit.getEngagePosition()) <= ally.getGroundRange() + (ally.getSpeed() * timeToTarget))
 		{
 			// If ally hasn't died, add to ally. Otherwise, partially add to enemy local
 			if (ally.getDeadFrame() == 0)
@@ -513,7 +493,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be
 				enemyLocalGroundStrength += ally.getMaxGroundStrength() * 1.0 / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(ally.getDeadFrame())));
 			}
 		}
-		if (ally.getAirDamage() > 0 && ally.getPosition().getDistance(unit.getPosition()) <= ally.getAirRange() + (ally.getSpeed() * timeToTarget))
+		if (ally.getAirDamage() > 0.0 && ally.getPosition().getDistance(ally.getEngagePosition()) <= ally.getAirRange() + (ally.getSpeed() * timeToTarget) && ally.getEngagePosition().getDistance(unit.getEngagePosition()) <= ally.getAirRange() + (ally.getSpeed() * timeToTarget))
 		{
 			// If enemy hasn't died, add to enemy. Otherwise, partially add to ally local
 			if (ally.getDeadFrame() == 0)
@@ -565,7 +545,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be
 	if (!unit.getType().isFlyer())
 	{
 		// Specific melee strategy
-		if (unit.getGroundRange() <= 32)
+		if (max(unit.getGroundRange(), unit.getAirRange()) <= 32)
 		{
 			// Force to stay on tanks
 			if (unit.getTarget() && unit.getTarget()->exists())
@@ -620,9 +600,9 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be
 		}
 
 		// Specific ranged strategy
-		else if (globalStrategy == 2 && unit.getGroundRange() > 32)
+		else if (globalStrategy == 2 && max(unit.getGroundRange(), unit.getAirRange()) > 32)
 		{
-			if (unit.getTarget() && unit.getTarget()->exists() && ((Terrain().isInAllyTerritory(unit.unit()) && unit.getPosition().getDistance(unit.getTargetPosition()) <= unit.getGroundRange()) || (Terrain().isInAllyTerritory(unit.getTarget()) && !unit.getTarget()->getType().isWorker())))
+			if (unit.getTarget() && unit.getTarget()->exists() && ((Terrain().isInAllyTerritory(unit.unit()) && unit.getPosition().getDistance(unit.getTargetPosition()) <= max(unit.getGroundRange(), unit.getAirRange())) || (Terrain().isInAllyTerritory(unit.getTarget()) && !unit.getTarget()->getType().isWorker())))
 			{
 				unit.setStrategy(1);
 				return;

@@ -27,6 +27,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 
 	for (auto &e : Units().getEnemyUnits())
 	{
+		thisUnit = 0.0;
 		UnitInfo enemy = e.second;
 		if (!enemy.unit())
 		{
@@ -34,82 +35,73 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		}
 
 		// If unit is dead or unattackable
-		if (enemy.getDeadFrame() > 0 || (enemy.getType().isFlyer() && unit.getAirRange() == 0) || (!enemy.getType().isFlyer() && unit.getGroundRange() == 0))
+		if (enemy.getDeadFrame() > 0 || (enemy.getType().isFlyer() && unit.getAirRange() == 0.0) || (!enemy.getType().isFlyer() && unit.getGroundRange() == 0.0))
 		{
 			continue;
 		}
 
-		if (unit.getType().isFlyer())
-		{
-			thisUnit = enemy.getPriority() / (1.0 + (unit.getPosition().getDistance(enemy.getPosition())));
-		}
-		else
-		{
-			// If the unit has higher range and is faster
-			if (enemy.getType() == UnitTypes::Terran_Vulture && unit.getGroundRange() < enemy.getGroundRange())
-			{
-				continue;
-			}
-
-			// If the enemy is stasised, ignore it
-			if (enemy.unit()->exists() && enemy.unit()->isStasised())
-			{
-				continue;
-			}
-
-			// If the unit is invis and undetected, ignore it
-			if (enemy.unit()->exists() && (enemy.unit()->isCloaked() || enemy.unit()->isBurrowed()) && !enemy.unit()->isDetected())
-			{
-				continue;
-			}
-
-			double distance = pow(1.0 + unit.getPosition().getDistance(enemy.getPosition()), 2.0);
-			double threat = Grids().getEGroundDistanceGrid(enemy.getWalkPosition());
-
-			// Reavers and Tanks target highest priority units with clusters around them
-			if (unit.getType() == UnitTypes::Protoss_Reaver || unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
-			{
-				thisUnit = (enemy.getPriority() * Grids().getEGroundCluster(enemy.getWalkPosition())) / distance;
-			}
-
-			// Arbiters only target tanks - Testing no regard for distance
-			else if (unit.getType() == UnitTypes::Protoss_Arbiter)
-			{
-				if (enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || enemy.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode)
-				{
-					thisUnit = (enemy.getPriority() * Grids().getStasisCluster(enemy.getWalkPosition()));
-				}
-			}
-
-			// High Templars target the highest priority with the largest cluster
-			else if (unit.getType() == UnitTypes::Protoss_High_Templar)
-			{
-				if (/*Grids().getPsiStormGrid(enemy.getWalkPosition()) == 0 &&*/ Grids().getACluster(enemy.getWalkPosition()) < (Grids().getEAirCluster(enemy.getWalkPosition()) + Grids().getEGroundCluster(enemy.getWalkPosition())) && !enemy.getType().isBuilding())
-				{
-					thisUnit = (enemy.getPriority() * max(Grids().getEGroundCluster(enemy.getWalkPosition()), Grids().getEAirCluster(enemy.getWalkPosition()))) / distance;
-				}
-			}
-
-			// All other units target highest priority units with slight emphasis on lower health units
-			else
-			{
-				thisUnit = (enemy.getPriority() * (1 + 0.1 *(1 - enemy.getPercentHealth()))) / distance;
-			}
-
-			// If the unit doesn't exist, it's not a suitable target usually (could be removed?)
-			if (!enemy.unit()->exists())
-			{
-				thisUnit = thisUnit * 0.1;
-			}
-		}
-
-		if (thisUnit == 0.0)
+		// If the unit has higher range and is faster
+		if (enemy.getType() == UnitTypes::Terran_Vulture && unit.getGroundRange() < enemy.getGroundRange())
 		{
 			continue;
+		}
+
+		// If the enemy is stasised, ignore it
+		if (enemy.unit()->exists() && enemy.unit()->isStasised())
+		{
+			continue;
+		}
+
+		// If the unit is invis and undetected, ignore it
+		if (enemy.unit()->exists() && (enemy.unit()->isCloaked() || enemy.unit()->isBurrowed()) && !enemy.unit()->isDetected())
+		{
+			continue;
+		}
+
+		double distance = pow(1.0 + unit.getPosition().getDistance(enemy.getPosition()), 2.0);
+		double threat = Grids().getEGroundDistanceGrid(enemy.getWalkPosition());
+
+		// Reavers and Tanks target highest priority units with clusters around them
+		if (unit.getType() == UnitTypes::Protoss_Reaver || unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
+		{
+			thisUnit = (enemy.getPriority() * Grids().getEGroundCluster(enemy.getWalkPosition())) / distance;
+		}
+
+		// Arbiters only target tanks - Testing no regard for distance
+		else if (unit.getType() == UnitTypes::Protoss_Arbiter)
+		{
+			if (enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || enemy.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode || enemy.getType() == UnitTypes::Terran_Science_Vessel)
+			{
+				thisUnit = (enemy.getPriority() * Grids().getStasisCluster(enemy.getWalkPosition()));
+			}
+		}
+
+		// High Templars target the highest priority with the largest cluster
+		else if (unit.getType() == UnitTypes::Protoss_High_Templar)
+		{
+			if (Grids().getPsiStormGrid(enemy.getWalkPosition()) == 0 && Grids().getACluster(enemy.getWalkPosition()) < (Grids().getEAirCluster(enemy.getWalkPosition()) + Grids().getEGroundCluster(enemy.getWalkPosition())) && !enemy.getType().isBuilding())
+			{
+				thisUnit = (enemy.getPriority() * max(Grids().getEGroundCluster(enemy.getWalkPosition()), Grids().getEAirCluster(enemy.getWalkPosition()))) / distance;
+			}
+		}
+
+		else if (enemy.getType().isFlyer() && unit.getAirDamage() > 0.0)
+		{
+			thisUnit = (enemy.getPriority() * (1 + 0.1 *(1 - enemy.getPercentHealth()))) / distance;
+		}
+		else if (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0)
+		{
+			thisUnit = (enemy.getPriority() * (1 + 0.1 *(1 - enemy.getPercentHealth()))) / distance;
+		}		
+
+		// If the unit doesn't exist, it's not a suitable target usually (could be removed?)
+		if (!enemy.unit()->exists())
+		{
+			thisUnit = thisUnit * 0.1;
 		}
 
 		// If this is the strongest enemy around, target it
-		if (thisUnit > highest || highest == 0.0)
+		if (thisUnit > 0.0 && (thisUnit > highest || highest == 0.0))
 		{
 			target = enemy.unit();
 			highest = thisUnit;

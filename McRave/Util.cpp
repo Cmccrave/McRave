@@ -30,7 +30,7 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit, Player who)
 		return 2.5;
 	}
 
-	double range, damage, speed;
+	double range, damage;
 	range = cbrt(unit.getGroundRange());
 	if (unit.getType().groundWeapon().damageCooldown() > 0)
 	{
@@ -40,7 +40,6 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit, Player who)
 	{
 		damage = unit.getGroundDamage() / 24.0;
 	}
-	//speed = unit.getSpeed()/128.0;
 
 	if (!unit.getType().isWorker() && unit.getGroundDamage() > 0)
 	{
@@ -50,14 +49,6 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit, Player who)
 			damage = damage * 1.33;
 		}
 		return range * damage;
-		//if (speed > 0)
-		//{
-		//	return range * damage * speed ;
-		//}
-		//else
-		//{
-		//	return range * damage;
-		//}
 	}
 	return 0.0;
 }
@@ -71,7 +62,7 @@ double UtilTrackerClass::getVisibleGroundStrength(UnitInfo& unit, Player who)
 
 	double effectiveness = 1.0;	
 
-	/*double aLarge = double(Units().getAllySizes()[UnitSizeTypes::Large]);
+	double aLarge = double(Units().getAllySizes()[UnitSizeTypes::Large]);
 	double aMedium = double(Units().getAllySizes()[UnitSizeTypes::Medium]);
 	double aSmall = double(Units().getAllySizes()[UnitSizeTypes::Small]);
 
@@ -100,17 +91,17 @@ double UtilTrackerClass::getVisibleGroundStrength(UnitInfo& unit, Player who)
 		{
 			effectiveness = double((eLarge*0.25) + (eMedium*0.5) + (eSmall*1.0)) / max(1.0, double(eLarge + eMedium + eSmall));
 		}
-	}*/
+	}
 
 	if (unit.unit()->isCloaked() || unit.unit()->isBurrowed())
 	{
 		if (who == Broodwar->self() && Grids().getEDetectorGrid(unit.getWalkPosition()) == 0)
 		{
-			return 25.0 * unit.getMaxAirStrength() * effectiveness;
+			return 25.0 * unit.getMaxGroundStrength() * effectiveness;
 		}
 		else if (!unit.unit()->isDetected() && who == Broodwar->enemy())
 		{
-			return 25.0 * unit.getMaxAirStrength() * effectiveness;
+			return 25.0 * unit.getMaxGroundStrength() * effectiveness;
 		}
 	}
 	return unit.getPercentHealth() * unit.getMaxGroundStrength() * effectiveness;
@@ -122,7 +113,7 @@ double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit, Player who)
 	{
 		return 2.5;
 	}
-	double range, damage, speed;
+	double range, damage;
 	range = cbrt(unit.getAirRange());
 	damage = unit.getAirDamage() / double(unit.getType().airWeapon().damageCooldown());
 
@@ -135,19 +126,9 @@ double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit, Player who)
 		damage = unit.getAirDamage() / 24.0;
 	}
 
-	/*speed = unit.getSpeed()/128.0;*/
-
 	if (!unit.getType().isWorker() && damage > 0)
 	{
 		return range * damage;
-		//if (speed > 0)
-		//{
-		//	return range * damage * speed;
-		//}
-		//else
-		//{
-		//	return range * damage;
-		//}
 	}
 	return 0.0;
 }
@@ -162,7 +143,7 @@ double UtilTrackerClass::getVisibleAirStrength(UnitInfo& unit, Player who)
 	double effectiveness = 1.0;
 	double hp = double(unit.unit()->getHitPoints() + (unit.unit()->getShields())) / double(unit.getType().maxHitPoints() + (unit.getType().maxShields()));
 	
-	/*double aLarge = double(Units().getAllySizes()[UnitSizeTypes::Large]);
+	double aLarge = double(Units().getAllySizes()[UnitSizeTypes::Large]);
 	double aMedium = double(Units().getAllySizes()[UnitSizeTypes::Medium]);
 	double aSmall = double(Units().getAllySizes()[UnitSizeTypes::Small]);
 
@@ -191,8 +172,7 @@ double UtilTrackerClass::getVisibleAirStrength(UnitInfo& unit, Player who)
 		{
 			effectiveness = double((eLarge*0.25) + (eMedium*0.5) + (eSmall*1.0)) / max(1.0, double(eLarge + eMedium + eSmall));
 		}
-	}*/
-
+	}
 
 	if (unit.unit()->isCloaked() || unit.unit()->isBurrowed())
 	{

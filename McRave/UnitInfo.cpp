@@ -19,6 +19,7 @@ UnitInfo::UnitInfo()
 	lastAttackFrame = 0;
 	position = Positions::None;
 	targetPosition = Positions::None;
+	engagePosition = Positions::None;
 	walkPosition = WalkPositions::None;
 	thisUnit = nullptr;
 	target = nullptr;

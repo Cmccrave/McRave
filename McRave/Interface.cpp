@@ -19,18 +19,6 @@ void InterfaceTrackerClass::performanceTest(string function)
 		screenOffset += 10;
 	}
 	return;
-
-
-
-	/*clock_t duration = clock() - globalClock;
-	myTest[function] = myTest[function] * 0.99 + duration*0.01;
-	if (myTest[function] > 0.0)
-	{
-		Broodwar->drawTextScreen(200, screenOffset, "%s", function);
-		Broodwar->drawTextScreen(350, screenOffset, "%d ms", myTest[function]);
-		screenOffset += 10;
-	}
-	return;*/
 }
 
 void InterfaceTrackerClass::startClock()
@@ -54,11 +42,8 @@ void InterfaceTrackerClass::drawInformation()
 		}
 	}
 
-
-
 	// Display global strength calculations	
 	Broodwar->drawTextScreen(500, 20, "A: %.2f    E: %.2f", Units().getGlobalAllyStrength(), Units().getGlobalEnemyStrength());
-	Broodwar->drawTextScreen(500, 30, "%.2f", Units().getAllyDefense());
 
 	// Display unit scoring
 	offset += 50;
@@ -95,8 +80,8 @@ void InterfaceTrackerClass::drawAllyInfo()
 				Broodwar->drawLineMap(unit.getTargetPosition(), unit.getPosition(), Broodwar->self()->getColor());
 				if (unit.getVisibleGroundStrength() > 0.0 || unit.getVisibleAirStrength() > 0.0)
 				{
-					Broodwar->drawTextMap(unit.getPosition() + Position(5, -10), "Grd: %c %.2f", Text::Brown, unit.getVisibleGroundStrength());
-					Broodwar->drawTextMap(unit.getPosition() + Position(5, 2), "Air: %c %.2f", Text::Blue, unit.getVisibleAirStrength());
+					Broodwar->drawTextMap(unit.getPosition() + Position(5, -10), "Grd: %c %.2f, %.2f", Text::Brown, unit.getVisibleGroundStrength(), unit.getGroundLocal());
+					Broodwar->drawTextMap(unit.getPosition() + Position(5, 2), "Air: %c %.2f, %.2f", Text::Blue, unit.getVisibleAirStrength(), unit.getAirLocal());
 				}
 			}
 		}
@@ -116,7 +101,7 @@ void InterfaceTrackerClass::drawEnemyInfo()
 				if (unit.getVisibleGroundStrength() > 0.0 || unit.getVisibleAirStrength() > 0.0)
 				{
 					Broodwar->drawTextMap(unit.getPosition() + Position(5, -10), "Grd: %c %.2f", Text::Brown, unit.getVisibleGroundStrength());
-					Broodwar->drawTextMap(unit.getPosition() + Position(5, -5), "Air: %c %.2f", Text::Blue, unit.getVisibleAirStrength());
+					Broodwar->drawTextMap(unit.getPosition() + Position(5, 2), "Air: %c %.2f", Text::Blue, unit.getVisibleAirStrength());
 				}
 			}
 		}
