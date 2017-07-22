@@ -40,8 +40,8 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 			continue;
 		}
 
-		// If the unit has higher range and is faster
-		if (enemy.getType() == UnitTypes::Terran_Vulture && unit.getGroundRange() < enemy.getGroundRange())
+		// Dont chase vultures as melee units
+		if (enemy.getType() == UnitTypes::Terran_Vulture && unit.getGroundRange() < 32)
 		{
 			continue;
 		}
