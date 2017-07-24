@@ -40,8 +40,8 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 			continue;
 		}
 
-		// Dont chase vultures as melee units
-		if (enemy.getType() == UnitTypes::Terran_Vulture && unit.getGroundRange() < 32)
+		// Dont chase vultures or mines as melee units
+		if ((enemy.getType() == UnitTypes::Terran_Vulture || enemy.getType() == UnitTypes::Terran_Vulture_Spider_Mine) && unit.getGroundRange() < 32)
 		{
 			continue;
 		}
@@ -58,7 +58,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 			continue;
 		}
 
-		double distance = pow(1.0 + unit.getPosition().getDistance(enemy.getPosition()), 2.0);
+		double distance = (1.0 + unit.getPosition().getDistance(enemy.getPosition()));
 		double threat = Grids().getEGroundDistanceGrid(enemy.getWalkPosition());
 
 		// Reavers and Tanks target highest priority units with clusters around them
