@@ -31,7 +31,7 @@ void CommandTrackerClass::updateAlliedUnits()
 		}
 
 		// If the unit is ready to perform an action after an attack (certain units have minimum frames after an attack before they can receive a new command)
-		if (Broodwar->getFrameCount() - unit.getLastAttackFrame() > unit.getMinStopFrame() - Broodwar->getLatencyFrames())
+		if (Broodwar->getFrameCount() - unit.getLastAttackFrame() > unit.getMinStopFrame() - Broodwar->getRemainingLatencyFrames())
 		{
 			// If globally behind
 			if (Units().getGlobalStrategy() == 0 || Units().getGlobalStrategy() == 2)
