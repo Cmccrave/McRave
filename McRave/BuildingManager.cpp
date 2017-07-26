@@ -242,7 +242,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		}
 		if (building == UnitTypes::Protoss_Photon_Cannon)
 		{
-			if (Grids().getDefenseGrid(base.second.getTilePosition()) < 2)
+			if (base.second.unit()->isCompleted() && Grids().getDefenseGrid(base.second.getTilePosition()) < 2 && Broodwar->hasPower(TilePosition(base.second.getPosition())))
 			{
 				return getBuildLocationNear(building, base.second.getResourcesPosition());
 			}

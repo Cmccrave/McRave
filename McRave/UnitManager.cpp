@@ -421,7 +421,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be
 	{
 		unitToEngage = (unit.getPosition().getDistance(unit.getEngagePosition())) / unit.getSpeed();
 	}
-	
+
 	// If a unit is clearly out of range based on current health (keeps healthy units in the front), set as "no local" and skip calculating
 	if (unitToEngage >= simulationTime || unit.getPosition().getDistance(unit.getTargetPosition()) > 640.0 + (64.0 * (1.0 - unit.getPercentHealth())))
 	{
@@ -438,81 +438,34 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be
 		{
 			continue;
 		}
-
-		if (enemy.getSpeed() == 0)
-		{
-			if (!unit.getType().isFlyer())
-			{
-				if (enemy.getPosition().getDistance(unit.getEngagePosition()) > enemy.getGroundRange())
-				{
-					continue;
-				}
-				else
-				{
-					enemyToEngage = unitToEngage;
-				}
-			}
-			else if (unit.getType().isFlyer())
-			{
-				if (enemy.getPosition().getDistance(unit.getEngagePosition()) > enemy.getAirRange())
-				{
-					continue;
-				}
-				else
-				{
-					enemyToEngage = unitToEngage;
-				}
-			}
-		}
-		else
-		{
-			// Enemy time to unit
-			if (!unit.getType().isFlyer())
-			{
-				enemyToEngage = (enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getGroundRange()) / (enemy.getSpeed());
-			}
-			else
-			{
-				enemyToEngage = (enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getAirRange()) / (enemy.getSpeed());
-			}
-		}
-
-		// If the enemy is more than 5.0 seconds away from the simulation, ignore it
-		if (enemyToEngage - unitToEngage >= simulationTime)
-		{
-			continue;
-		}
 		
-		double simRatio = (simulationTime - (enemyToEngage - unitToEngage)) / simulationTime;
-		Broodwar << simRatio << endl;
+		double avgSpeed = (enemy.getSpeed() + unit.getSpeed()) / 2;
+		enemyToEngage = (enemy.getPosition().getDistance(unit.getEngagePosition())) / avgSpeed;
+		double simRatio = max(0.0, (simulationTime - (enemyToEngage - unitToEngage)) / simulationTime);
 
 		// If enemyToEngage is less than unitToEngage, it's included in the simulation
 		if (enemy.getGroundDamage() > 0.0)
 		{
 			if (enemy.getDeadFrame() == 0)
-			{
-				/*enemyLocalGroundStrength += enemy.getVisibleGroundStrength() * (max(0.0, enemyToEngage - unitToEngage) / 5.0);*/
+			{				
 				enemyLocalGroundStrength += enemy.getVisibleGroundStrength() * simRatio / simulationTime;
 			}
 			else
-			{
-				/*allyLocalGroundStrength += enemy.getVisibleGroundStrength() * (max(0.0, enemyToEngage - unitToEngage) / 5.0) / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(enemy.getDeadFrame())));*/
+			{				
 				allyLocalGroundStrength += (enemy.getVisibleGroundStrength() * simRatio) / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(enemy.getDeadFrame())));
 			}
 		}
 		if (enemy.getAirDamage() > 0.0)
 		{
 			if (enemy.getDeadFrame() == 0)
-			{
-				/*enemyLocalAirStrength += enemy.getVisibleAirStrength() * (max(0.0, enemyToEngage - unitToEngage) / 5.0);*/
+			{				
 				enemyLocalAirStrength += enemy.getVisibleAirStrength() * simRatio;
 			}
 			else
 			{
-				/*allyLocalAirStrength += enemy.getVisibleAirStrength() * (max(0.0, enemyToEngage - unitToEngage) / 5.0) / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(enemy.getDeadFrame())));*/
 				allyLocalAirStrength += (enemy.getVisibleAirStrength() * simRatio) / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(enemy.getDeadFrame())));
 			}
-		}		
+		}
 	}
 
 	// Check every ally being in range of the target
@@ -530,38 +483,19 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be
 		{
 			continue;
 		}
-
-		// Ally time to target
-		if (!unit.getType().isFlyer())
-		{
-			allyToEngage = (ally.getPosition().getDistance(ally.getEngagePosition()) - ally.getGroundRange()) / ally.getSpeed();
-		}
-		else
-		{
-			allyToEngage = (ally.getPosition().getDistance(ally.getEngagePosition()) - ally.getAirRange()) / ally.getSpeed();
-		}
-
-		//  If the ally is more than 5.0 seconds away from the simulation, ignore it
-		if (allyToEngage - unitToEngage >= simulationTime)
-		{
-			continue;
-		}
-
-		double simRatio = max(0.0, abs(simulationTime - (allyToEngage - unitToEngage)) / simulationTime);
-
-	
+		
+		allyToEngage = (ally.getPosition().getDistance(ally.getEngagePosition())) / ally.getSpeed();
+		double simRatio = max(0.0,(simulationTime - (allyToEngage - unitToEngage)) / simulationTime);		
 
 		// If enemyToEngage is less than unitToEngage, it's included in the simulation
 		if (ally.getGroundDamage() > 0.0)
 		{
 			if (ally.getDeadFrame() == 0)
 			{
-				/*allyLocalGroundStrength += ally.getVisibleGroundStrength() * (max(0.0, allyToEngage - unitToEngage) / 5.0);*/
 				allyLocalGroundStrength += ally.getVisibleGroundStrength() * simRatio;
 			}
 			else
 			{
-				/*enemyLocalGroundStrength += ally.getVisibleGroundStrength() * (max(0.0, allyToEngage - unitToEngage) / 5.0) / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(ally.getDeadFrame())));*/
 				enemyLocalGroundStrength += (ally.getVisibleGroundStrength() * simRatio) / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(ally.getDeadFrame())));
 			}
 		}
@@ -569,12 +503,10 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be
 		{
 			if (ally.getDeadFrame() == 0)
 			{
-				/*allyLocalAirStrength += ally.getVisibleAirStrength() * (max(0.0, allyToEngage - unitToEngage) / 5.0);*/
 				allyLocalAirStrength += ally.getVisibleAirStrength() * simRatio;
 			}
 			else
 			{
-				/*enemyLocalAirStrength += ally.getVisibleAirStrength() * (max(0.0, allyToEngage - unitToEngage) / 5.0) / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(ally.getDeadFrame())));*/
 				enemyLocalAirStrength += (ally.getVisibleAirStrength() * simRatio) / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(ally.getDeadFrame())));
 			}
 		}
@@ -585,12 +517,9 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be
 	{
 		allyLocalAirStrength = allyLocalAirStrength * 20.0;
 		allyLocalGroundStrength = allyLocalGroundStrength * 20.0;
-	}		
+	}
 
-	// Store the difference of strengths 
-	//unit.setGroundLocal((unit.getGroundLocal() * 149 / 150) + ((allyLocalGroundStrength - enemyLocalGroundStrength) * 1 / 150));
-	//unit.setAirLocal((unit.getAirLocal() * 149 / 150) + ((allyLocalAirStrength - enemyLocalAirStrength) * 1 / 150));
-
+	// Store the difference of strengths
 	unit.setGroundLocal(allyLocalGroundStrength - enemyLocalGroundStrength);
 	unit.setAirLocal(allyLocalAirStrength - enemyLocalAirStrength);
 
@@ -721,7 +650,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be
 	else
 	{
 		// Latch based system for at least 120% advantage to engage
-		if ((!unit.getType().isFlyer() && allyLocalGroundStrength > enemyLocalGroundStrength*1.2 ) || (unit.getType().isFlyer() && allyLocalAirStrength > enemyLocalAirStrength*1.2))
+		if ((!unit.getType().isFlyer() && allyLocalGroundStrength > enemyLocalGroundStrength*1.2) || (unit.getType().isFlyer() && allyLocalAirStrength > enemyLocalAirStrength*1.2))
 		{
 			unit.setStrategy(1);
 			return;
@@ -742,12 +671,6 @@ void UnitTrackerClass::updateGlobalCalculations()
 {
 	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
-		if (Strategy().isAllyFastExpand())
-		{
-			globalStrategy = 0;
-			return;
-		}
-
 		// If Zerg, wait for a larger army before moving out
 		if (Broodwar->enemy()->getRace() == Races::Zerg && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0)
 		{

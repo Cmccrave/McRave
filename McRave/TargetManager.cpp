@@ -87,11 +87,11 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 
 		else if (enemy.getType().isFlyer() && unit.getAirDamage() > 0.0)
 		{
-			thisUnit = (enemy.getPriority() * (1 + 0.1 *(1 - enemy.getPercentHealth()))) / distance;
+			thisUnit = (enemy.getPriority() * (1.0 + 0.1 *(1.0 - enemy.getPercentHealth()))) / distance;
 		}
 		else if (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0)
 		{
-			thisUnit = (enemy.getPriority() * (1 + 0.1 *(1 - enemy.getPercentHealth()))) / distance;
+			thisUnit = (enemy.getPriority() * (1.0 + 0.1 *(1.0 - enemy.getPercentHealth()))) / distance;
 		}		
 
 		// If the unit doesn't exist, it's not a suitable target usually (could be removed?)

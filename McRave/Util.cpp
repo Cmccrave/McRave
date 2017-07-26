@@ -9,7 +9,7 @@ double UtilTrackerClass::getPercentHealth(UnitInfo& unit)
 double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit, Player who)
 {
 	// Some hardcoded values that don't have attacks but should still be considered for strength
-	if (unit.getType() == UnitTypes::Terran_Medic || unit.getType() == UnitTypes::Zerg_Scourge)
+	if (unit.getType() == UnitTypes::Terran_Medic)
 	{
 		return 10.0;
 	}
@@ -109,7 +109,7 @@ double UtilTrackerClass::getVisibleGroundStrength(UnitInfo& unit, Player who)
 
 double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit, Player who)
 {
-	if (unit.getType() == UnitTypes::Protoss_Interceptor)
+	if (unit.getType() == UnitTypes::Protoss_Interceptor || unit.getType() == UnitTypes::Zerg_Scourge)
 	{
 		return 2.5;
 	}

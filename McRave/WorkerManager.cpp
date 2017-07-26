@@ -97,6 +97,16 @@ void WorkerTrackerClass::updateSituational(WorkerInfo& worker)
 
 void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 {
+	// If idle and carrying gas or minerals, return cargo			
+	if (worker.unit()->isCarryingGas() || worker.unit()->isCarryingMinerals())
+	{
+		if (worker.unit()->getLastCommand().getType() != UnitCommandTypes::Return_Cargo)
+		{
+			worker.unit()->returnCargo();
+		}
+		return;
+	}
+
 	// Scout logic
 	if (!Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) && scout && worker.unit() == scout && !worker.unit()->isCarryingMinerals() && worker.getBuildingType() == UnitTypes::None)
 	{
@@ -258,16 +268,6 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 		}
 	}
 
-	// If idle and carrying gas or minerals, return cargo			
-	if (worker.unit()->isCarryingGas() || worker.unit()->isCarryingMinerals())
-	{
-		if (worker.unit()->getLastCommand().getType() != UnitCommandTypes::Return_Cargo)
-		{
-			worker.unit()->returnCargo();
-		}
-		return;
-	}
-
 	// If not targeting the mineral field the worker is mapped to
 	if (!worker.unit()->isCarryingGas() && !worker.unit()->isCarryingMinerals())
 	{
@@ -296,6 +296,12 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 				return;
 			}
 		}
+		else if (worker.unit()->getClosestUnit(Filter::IsMineralField))
+		{
+			worker.unit()->gather(worker.unit()->getClosestUnit(Filter::IsMineralField));
+			worker.setTarget(nullptr);
+			return;
+		}		
 	}
 }
 

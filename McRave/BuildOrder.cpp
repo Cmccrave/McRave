@@ -273,9 +273,9 @@ void BuildOrderTrackerClass::protossSituational()
 	}
 
 	// Expansion logic
-	if (!getOpening && !Strategy().isRush() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) == Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) && ((Broodwar->self()->minerals() > 300 && Resources().isMinSaturated() && Production().isGateSat() && Production().getIdleLowProduction().size() == 0) || (Strategy().isAllyFastExpand() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1)))
+	if (!getOpening && !Strategy().isRush() && (Broodwar->self()->minerals() > 300 && Resources().isMinSaturated() && Production().isGateSat() && Production().getIdleLowProduction().size() == 0) || (Strategy().isAllyFastExpand() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1) || (Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() && Resources().isMinSaturated()))
 	{
-		buildingDesired[UnitTypes::Protoss_Nexus] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) + 1;
+		buildingDesired[UnitTypes::Protoss_Nexus] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) + 1;
 	}
 
 	// Shield battery logic
@@ -297,7 +297,7 @@ void BuildOrderTrackerClass::protossSituational()
 	}
 
 	// Forge logic
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) >= 3 && Units().getSupply() > 120)
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) >= 3 && Units().getSupply() > 200)
 	{
 		buildingDesired[UnitTypes::Protoss_Forge] = 1;
 	}
