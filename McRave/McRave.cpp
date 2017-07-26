@@ -8,15 +8,11 @@
 
 // --- AUTHOR NOTES ---
 // TODO in testing before AIIDE 2017:
-// Check threat grids
 // Better engaging
 // Scout improvements
 // Island check for DistanceGridHome
-// Test Recall!
-// Test size/damage type
 // Anti-stone check
 // Cannons / Worker pull
-// Test psi storm grid and EMP grid
 
 // One shot stuff:
 // Store resources when Nexus created - remove when destroyed
@@ -27,13 +23,9 @@
 // TODO:
 // Only remove boulders close to me
 // Invis grid for observers to detect stuff
-// Archon merging when low energy or fleeing
 // Spider mine removal from expansions
 // Improve shuttles
-// Remove exists check from target aquisition?
 // IsSelected to display information
-// Move special units into their own area, separate command manager?
-// Make target position stuff based on units current command target position?
 // Move production buildings to the front of the base, tech to the back
 // Dijkstras theory for distance grid
 // Move stim research to strategy

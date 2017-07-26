@@ -438,9 +438,24 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be
 		{
 			continue;
 		}
+
+		// If the enemy can't move, it must be within range of the engagement position to be counted
+		if (enemy.getSpeed() == 0)
+		{
+			if (enemy.getPosition().getDistance(unit.getEngagePosition()) <= enemy.getGroundRange())
+			{
+				enemyToEngage = unitToEngage - (enemy.getGroundRange() - enemy.getPosition().getDistance(unit.getEngagePosition())) / unit.getSpeed();
+			}
+			else
+			{
+				continue;
+			}
+		}
+		else
+		{
+			enemyToEngage = ((enemy.getPosition().getDistance(unit.getEngagePosition())) - enemy.getGroundRange()) / enemy.getSpeed();
+		}			
 		
-		double avgSpeed = (enemy.getSpeed() + unit.getSpeed()) / 2;
-		enemyToEngage = (enemy.getPosition().getDistance(unit.getEngagePosition())) / avgSpeed;
 		double simRatio = max(0.0, (simulationTime - (enemyToEngage - unitToEngage)) / simulationTime);
 
 		// If enemyToEngage is less than unitToEngage, it's included in the simulation
