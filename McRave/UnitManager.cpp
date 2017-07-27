@@ -416,11 +416,9 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be
 	double enemyLocalGroundStrength = 0.0, allyLocalGroundStrength = 0.0;
 	double enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;
 	double simulationTime = 5.0, unitToEngage = 0.0, allyToEngage = 0.0, enemyToEngage = 0.0;
+	double simRatio = 0.0;
 
-	if (unit.getPosition().getDistance(unit.getEngagePosition()) > max(unit.getGroundRange(), unit.getAirRange()) && unit.getSpeed() > 0.0)
-	{
-		unitToEngage = (unit.getPosition().getDistance(unit.getEngagePosition())) / unit.getSpeed();
-	}
+	unitToEngage = (unit.getPosition().getDistance(unit.getEngagePosition())) / unit.getSpeed();
 
 	// If a unit is clearly out of range based on current health (keeps healthy units in the front), set as "no local" and skip calculating
 	if (unitToEngage >= simulationTime || unit.getPosition().getDistance(unit.getTargetPosition()) > 640.0 + (64.0 * (1.0 - unit.getPercentHealth())))
@@ -439,10 +437,33 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be
 			continue;
 		}
 
-		enemyToEngage = (enemy.getPosition().getDistance(unit.getEngagePosition()) - (unit.getGroundRange() - enemy.getGroundRange())) / (unit.getSpeed() + enemy.getSpeed());
-		double simRatio = max(0.0, (simulationTime - (enemyToEngage - unitToEngage)) / simulationTime);
-
-		// If enemyToEngage is less than unitToEngage, it's included in the simulation
+		if (enemy.getType().isFlyer())
+		{
+			if (unit.getType().isFlyer())
+			{
+				enemyToEngage = max(0.0, ((enemy.getPosition().getDistance(unit.getEngagePosition()) - unit.getAirRange()) / enemy.getSpeed()) - unitToEngage);
+				simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getAirRange() - unit.getAirRange()) / (unit.getSpeed() + enemy.getSpeed())));
+			}
+			else
+			{
+				enemyToEngage = max(0.0, ((enemy.getPosition().getDistance(unit.getEngagePosition()) - unit.getAirRange()) / enemy.getSpeed()) - unitToEngage);
+				simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getGroundRange() - unit.getAirRange()) / (unit.getSpeed() + enemy.getSpeed())));
+			}
+		}
+		else
+		{
+			if (unit.getType().isFlyer())
+			{
+				enemyToEngage = max(0.0, ((enemy.getPosition().getDistance(unit.getEngagePosition()) - unit.getGroundRange()) / enemy.getSpeed()) - unitToEngage);
+				simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getAirRange() - unit.getGroundRange()) / (unit.getSpeed() + enemy.getSpeed())));
+			}
+			else
+			{
+				enemyToEngage = max(0.0, ((enemy.getPosition().getDistance(unit.getEngagePosition()) - unit.getGroundRange()) / enemy.getSpeed()) - unitToEngage);
+				simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getGroundRange() - unit.getGroundRange()) / (unit.getSpeed() + enemy.getSpeed())));
+			}
+		}
+		
 		if (enemy.getDeadFrame() == 0)
 		{
 			enemyLocalGroundStrength += enemy.getVisibleGroundStrength() * simRatio / simulationTime;
@@ -471,8 +492,8 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be
 			continue;
 		}
 
-		allyToEngage = (ally.getPosition().getDistance(ally.getEngagePosition())) / ally.getSpeed();
-		double simRatio = max(0.0, (simulationTime - (allyToEngage - unitToEngage)) / simulationTime);
+		allyToEngage = max(0.0,((ally.getPosition().getDistance(ally.getEngagePosition())) / ally.getSpeed()) - unitToEngage);
+		double simRatio = max(0.0, (simulationTime - allyToEngage));
 
 		// If enemyToEngage is less than unitToEngage, it's included in the simulation
 		if (ally.getDeadFrame() == 0)

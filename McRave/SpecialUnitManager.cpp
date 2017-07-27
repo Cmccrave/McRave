@@ -111,7 +111,7 @@ void SpecialUnitTrackerClass::updateDetectors()
 			for (auto &base : Terrain().getAllBaseLocations())
 			{
 				// If an expansion is unbuildable and we've scouted it already, move there to detect burrowed units
-				if (!Broodwar->canBuildHere(base, UnitTypes::Protoss_Nexus, nullptr, true) && Grids().getBaseGrid(base) == 0)
+				if (base.isValid() && Broodwar->isVisible(base) && !Broodwar->canBuildHere(base, UnitTypes::Protoss_Nexus, nullptr, true) && Grids().getBaseGrid(base) == 0)
 				{
 					detector.setDestination(Position(base));
 					detector.unit()->move(Position(base));

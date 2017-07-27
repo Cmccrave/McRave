@@ -213,7 +213,7 @@ double UtilTrackerClass::getPriority(UnitInfo& unit, Player who)
 	// Buildings with no attack have the lowest priority
 	else if (unit.getType().isBuilding() && unit.getMaxGroundStrength() == 0.0 && unit.getMaxAirStrength() == 0.0)
 	{
-		return 0.0;
+		return 0.1;
 	}
 
 	// Overlords have low priority but are worthwhile to pick off

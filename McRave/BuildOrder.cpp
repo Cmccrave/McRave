@@ -65,7 +65,7 @@ void BuildOrderTrackerClass::updateDecision()
 
 			// PvP - 1 Gate Core
 			else if (Players().getNumberProtoss() > 0)
-			{				
+			{
 				if (Strategy().isRush())
 				{
 					opening = 4;
@@ -78,14 +78,14 @@ void BuildOrderTrackerClass::updateDecision()
 			// PvT - 1 Gate Nexus
 			else if (Players().getNumberTerran() > 0)
 			{
-			/*	if (Strategy().isEnemyFastExpand())
-				{
+				/*	if (Strategy().isEnemyFastExpand())
+					{
 					opening = 2;
-				}
-				else
-				{
+					}
+					else
+					{
 					opening = 3;
-				}*/
+					}*/
 				opening = 3;
 			}
 			// PvR - 2 Gate Core
@@ -94,8 +94,8 @@ void BuildOrderTrackerClass::updateDecision()
 				opening = 4;
 			}
 
-			
-		}		
+
+		}
 	}
 	else if (Broodwar->self()->getRace() == Races::Terran)
 	{
@@ -175,7 +175,7 @@ void BuildOrderTrackerClass::protossOpener()
 		}
 		// 2 Gate Core
 		else if (opening == 4)
-		{			
+		{
 			buildingDesired[UnitTypes::Protoss_Nexus] = 1;
 			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 24);
 			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 48;
@@ -197,24 +197,17 @@ void BuildOrderTrackerClass::protossTech()
 {
 	if (getTech && techUnit == UnitTypes::None)
 	{
-		if (Strategy().needDetection())
+		double highest = 0.0;
+		for (auto &tech : Strategy().getUnitScore())
 		{
-			techUnit = UnitTypes::Protoss_Observer;
-		}
-		else
-		{
-			double highest = 0.0;
-			for (auto &tech : Strategy().getUnitScore())
+			if (tech.first == UnitTypes::Protoss_Dragoon || tech.first == UnitTypes::Protoss_Zealot || techList.find(tech.first) != techList.end())
 			{
-				if (tech.first == UnitTypes::Protoss_Dragoon || tech.first == UnitTypes::Protoss_Zealot || techList.find(tech.first) != techList.end())
-				{
-					continue;
-				}
-				if (tech.second > highest)
-				{
-					highest = tech.second;
-					techUnit = tech.first;
-				}
+				continue;
+			}
+			if (tech.second > highest)
+			{
+				highest = tech.second;
+				techUnit = tech.first;
 			}
 		}
 
@@ -224,16 +217,19 @@ void BuildOrderTrackerClass::protossTech()
 	}
 	if (techUnit == UnitTypes::Protoss_Reaver)
 	{
-		buildingDesired[UnitTypes::Protoss_Robotics_Facility] = 1;
-		buildingDesired[UnitTypes::Protoss_Robotics_Support_Bay] = min(1, Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Robotics_Facility));
-		buildingDesired[UnitTypes::Protoss_Observatory] = min(1, buildingDesired[UnitTypes::Protoss_Observatory] + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver));
-	}
-	else if (techUnit == UnitTypes::Protoss_Observer)
-	{
-		buildingDesired[UnitTypes::Protoss_Robotics_Facility] = 1;
-		buildingDesired[UnitTypes::Protoss_Observatory] = min(1, Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Robotics_Facility));
-		buildingDesired[UnitTypes::Protoss_Robotics_Support_Bay] = min(1, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Observer));
-	}
+		if (Strategy().needDetection())
+		{
+			buildingDesired[UnitTypes::Protoss_Robotics_Facility] = 1;
+			buildingDesired[UnitTypes::Protoss_Observatory] = min(1, Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Robotics_Facility));
+			buildingDesired[UnitTypes::Protoss_Robotics_Support_Bay] = min(1, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Observer));
+		}
+		else
+		{
+			buildingDesired[UnitTypes::Protoss_Robotics_Facility] = 1;
+			buildingDesired[UnitTypes::Protoss_Robotics_Support_Bay] = min(1, Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Robotics_Facility));
+			buildingDesired[UnitTypes::Protoss_Observatory] = min(1, buildingDesired[UnitTypes::Protoss_Observatory] + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver));
+		}
+	}	
 	else if (techUnit == UnitTypes::Protoss_Corsair)
 	{
 		buildingDesired[UnitTypes::Protoss_Stargate] = 1;
@@ -286,7 +282,7 @@ void BuildOrderTrackerClass::protossSituational()
 
 	// Gateway logic
 	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 2 && (Production().getIdleLowProduction().size() == 0 && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 150) || (!Production().isGateSat() && Resources().isMinSaturated()))))
-	{		
+	{
 		buildingDesired[UnitTypes::Protoss_Gateway] = min(Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) + 1);
 	}
 
