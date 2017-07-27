@@ -11,16 +11,12 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit, Player who)
 	// Some hardcoded values that don't have attacks but should still be considered for strength
 	if (unit.getType() == UnitTypes::Terran_Medic)
 	{
-		return 10.0;
+		return 2.5;
 	}
 	if (unit.getType() == UnitTypes::Protoss_High_Templar)
 	{
-		return 20.0;
-	}
-	if (unit.getType() == UnitTypes::Protoss_Arbiter)
-	{
-		return 50.0;
-	}
+		return 10.0;
+	}	
 	if (unit.getType() == UnitTypes::Protoss_Scarab || unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Zerg_Egg || unit.getType() == UnitTypes::Zerg_Larva || unit.getType() == UnitTypes::Protoss_Interceptor)
 	{
 		return 0.0;
@@ -57,7 +53,7 @@ double UtilTrackerClass::getVisibleGroundStrength(UnitInfo& unit, Player who)
 {
 	if (unit.unit()->isMaelstrommed() || unit.unit()->isStasised())
 	{
-		return 0;
+		return 0.0;
 	}
 
 	double effectiveness = 1.0;	
@@ -137,7 +133,7 @@ double UtilTrackerClass::getVisibleAirStrength(UnitInfo& unit, Player who)
 {
 	if (unit.unit()->isMaelstrommed() || unit.unit()->isStasised())
 	{
-		return 0;
+		return 0.0;
 	}
 	
 	double effectiveness = 1.0;
@@ -199,7 +195,7 @@ double UtilTrackerClass::getPriority(UnitInfo& unit, Player who)
 	// Support units gain higher priority due to their capabilities
 	if (unit.getType() == UnitTypes::Protoss_Arbiter || unit.getType() == UnitTypes::Protoss_Observer || unit.getType() == UnitTypes::Protoss_Shuttle || unit.getType() == UnitTypes::Terran_Science_Vessel || unit.getType() == UnitTypes::Terran_Dropship || unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine)
 	{
-		return 50.0;
+		return 10.0;
 	}
 
 	// Carriers don't have any strength, manually modify priority
@@ -215,9 +211,9 @@ double UtilTrackerClass::getPriority(UnitInfo& unit, Player who)
 	}
 
 	// Buildings with no attack have the lowest priority
-	else if (unit.getType().isBuilding() && unit.getMaxGroundStrength() == 0 && unit.getMaxAirStrength() == 0)
+	else if (unit.getType().isBuilding() && unit.getMaxGroundStrength() == 0.0 && unit.getMaxAirStrength() == 0.0)
 	{
-		return 0.5;
+		return 0.0;
 	}
 
 	// Overlords have low priority but are worthwhile to pick off
