@@ -249,7 +249,7 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 	}
 
 	// Reassignment logic
-	if (Resources().getGasNeeded() > 0 && (!Strategy().isRush() || !BuildOrder().isOpener() || Broodwar->self()->getRace() == Races::Terran))
+	if (Resources().getGasNeeded() > 0 && worker.getResource() && worker.getResource()->exists() && worker.getResource()->getType().isMineralField() && (!Strategy().isRush() || !BuildOrder().isOpener() || Broodwar->self()->getRace() == Races::Terran))
 	{
 		reAssignWorker(worker);
 		Resources().setGasNeeded(Resources().getGasNeeded() - 1);

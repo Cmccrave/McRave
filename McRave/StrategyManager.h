@@ -34,6 +34,8 @@ public:
 	bool isBust() { return bust; }
 	bool isZealotsLocked() { return zealotsLocked; }
 
+	bool isUnitLocked(UnitType unit) { return (lockedType.find(unit) != lockedType.end()); }
+
 	// Updating
 	void update();
 	void updateBullets();

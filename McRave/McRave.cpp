@@ -8,17 +8,13 @@
 
 // --- AUTHOR NOTES ---
 // TODO in testing before AIIDE 2017:
-// Better engaging
 // Scout improvements
 // Island check for DistanceGridHome
 // Anti-stone check
 // Cannons / Worker pull
-
-// One shot stuff:
 // Store resources when Nexus created - remove when destroyed
 // onUnitMorph - Archons, Eggs, Refineries
 // One shot composition storing - requires onMorph usage
-// One shot unit scoring? maybe not
 
 // TODO:
 // Only remove boulders close to me
@@ -91,10 +87,7 @@ void McRaveModule::onNukeDetect(Position target)
 
 void McRaveModule::onUnitDiscover(Unit unit)
 {
-	if (unit->getPlayer()->isEnemy(Broodwar->self()))
-	{
-		Units().storeEnemy(unit);
-	}
+	Units().onUnitDiscover(unit);
 }
 
 void McRaveModule::onUnitEvade(Unit unit)
@@ -116,7 +109,7 @@ void McRaveModule::onUnitCreate(Unit unit)
 
 void McRaveModule::onUnitDestroy(Unit unit)
 {
-	Units().removeUnit(unit);
+	Units().onUnitDestroy(unit);
 }
 
 void McRaveModule::onUnitMorph(Unit unit)

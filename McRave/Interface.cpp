@@ -14,8 +14,8 @@ void InterfaceTrackerClass::performanceTest(string function)
 	myTest[function] = myTest[function] * 0.99 + dur*0.01;
 	if (myTest[function] > 1.00)
 	{
-		Broodwar->drawTextScreen(200, screenOffset, "%s", function);
-		Broodwar->drawTextScreen(350, screenOffset, "%.2f ms", myTest[function]);
+		Broodwar->drawTextScreen(200, screenOffset, "%c%s", Text::White, function);
+		Broodwar->drawTextScreen(350, screenOffset, "%c%.2f ms", Text::White, myTest[function]);
 		screenOffset += 10;
 	}
 	return;
@@ -31,26 +31,20 @@ void InterfaceTrackerClass::drawInformation()
 {
 	int offset = 0;
 	screenOffset = 0;
-
-	// Show what buildings we want
-	for (auto &b : BuildOrder().getBuildingDesired())
-	{
-		if (b.second > 0)
-		{
-			Broodwar->drawTextScreen(0, offset, "%s : %d", b.first.toString().c_str(), b.second);
-			offset += 10;
-		}
-	}
-
+	
 	// Display global strength calculations	
-	Broodwar->drawTextScreen(500, 20, "A: %.2f    E: %.2f", Units().getGlobalAllyStrength(), Units().getGlobalEnemyStrength());
+	Broodwar->drawTextScreen(575, 16, "%c%.2f/%.2f", Text::White, Units().getGlobalAllyStrength(), Units().getGlobalEnemyStrength());
+	Broodwar->drawTextScreen(452, 16, "%c%d", Text::White, Production().getReservedMineral() + Buildings().getQueuedMineral());
+	Broodwar->drawTextScreen(520, 16, "%c%d", Text::White, Production().getReservedGas() + Buildings().getQueuedGas());
 
-	// Display unit scoring
-	offset += 50;
+	// Display unit scoring	
 	for (auto &unit : Strategy().getUnitScore())
 	{
-		Broodwar->drawTextScreen(0, offset, "%s: %.2f", unit.first.c_str(), unit.second);
-		offset += 10;
+		if (unit.second > 0.0)
+		{
+			Broodwar->drawTextScreen(0, offset, "%c%s: %c%.2f", Text::Blue, unit.first.c_str(), Text::White, unit.second);
+			offset += 10;
+		}
 	}
 
 	// Display remaining minerals on each mineral patch that is near our Nexus

@@ -99,7 +99,6 @@ void GridTrackerClass::updateAllyGrids()
 					// Ally Cluster Grid in a 5 tile radius around each unit
 					if (WalkPosition(x, y).isValid() && unit.getPosition().getDistance(Position((x * 8), (y * 8))) <= 160)
 					{
-						//						resetWalks.insert(WalkPosition(x, y));
 						resetGrid[x][y] = true;
 						aClusterGrid[x][y] += 1;
 					}
@@ -107,7 +106,6 @@ void GridTrackerClass::updateAllyGrids()
 					// Anti Mobility Grid directly under unit
 					if (WalkPosition(x, y).isValid() && x >= start.x && x <= start.x + unit.getType().tileWidth() * 4 && y >= start.y && y <= start.y + unit.getType().tileHeight() * 4)
 					{
-						//						resetWalks.insert(WalkPosition(x, y));
 						resetGrid[x][y] = true;
 						antiMobilityGrid[x][y] = 1;
 					}
@@ -128,7 +126,6 @@ void GridTrackerClass::updateAllyGrids()
 				// Anti Mobility Grid directly under building
 				if (WalkPosition(x, y).isValid())
 				{
-					//					resetWalks.insert(WalkPosition(x, y));
 					resetGrid[x][y] = true;
 					antiMobilityGrid[x][y] = 1;
 				}
@@ -148,7 +145,6 @@ void GridTrackerClass::updateAllyGrids()
 				// Anti Mobility Grid directly under worker
 				if (WalkPosition(x, y).isValid())
 				{
-					//					resetWalks.insert(WalkPosition(x, y));
 					resetGrid[x][y] = true;
 					antiMobilityGrid[x][y] = 1;
 				}
@@ -184,7 +180,6 @@ void GridTrackerClass::updateEnemyGrids()
 							// Enemy Ground Cluster Grid
 							if (!enemy.getType().isFlyer())
 							{
-								//								resetWalks.insert(WalkPosition(x, y));
 								resetGrid[x][y] = true;
 								eGroundClusterGrid[x][y] += 1;
 							}
@@ -192,7 +187,6 @@ void GridTrackerClass::updateEnemyGrids()
 							// Enemy Air Cluster Grid
 							else
 							{
-								//								resetWalks.insert(WalkPosition(x, y));
 								resetGrid[x][y] = true;
 								eAirClusterGrid[x][y] += 1;
 							}
@@ -200,7 +194,6 @@ void GridTrackerClass::updateEnemyGrids()
 							// Enemy Stasis Grid
 							if (enemy.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode || enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
 							{
-								//								resetWalks.insert(WalkPosition(x, y));
 								resetGrid[x][y] = true;
 								stasisClusterGrid[x][y] += 1;
 							}
@@ -218,7 +211,6 @@ void GridTrackerClass::updateEnemyGrids()
 					{
 						if (WalkPosition(x, y).isValid() && Position(WalkPosition(x, y)).getDistance(enemy.getPosition()) < enemy.getType().sightRange())
 						{
-							//							resetWalks.insert(WalkPosition(x, y));
 							resetGrid[x][y] = true;
 							eDetectorGrid[x][y] = 1;
 						}
@@ -237,13 +229,11 @@ void GridTrackerClass::updateEnemyGrids()
 
 						if (enemy.getGroundDamage() > 0.0 && distance < enemy.getGroundRange())
 						{
-							//							resetWalks.insert(WalkPosition(x, y));
 							resetGrid[x][y] = true;
 							eGroundGrid[x][y] += enemy.getMaxGroundStrength();
 						}
 						if (enemy.getGroundDamage() > 0.0 && distance < enemy.getGroundRange() + enemy.getSpeed())
 						{
-							//							resetWalks.insert(WalkPosition(x, y));
 							resetGrid[x][y] = true;
 							eGroundDistanceGrid[x][y] += max(0.1, enemy.getMaxGroundStrength() / distance);
 						}
@@ -262,13 +252,11 @@ void GridTrackerClass::updateEnemyGrids()
 
 						if (enemy.getAirDamage() > 0.0 && distance < enemy.getAirRange())
 						{
-							//							resetWalks.insert(WalkPosition(x, y));
 							resetGrid[x][y] = true;
 							eAirGrid[x][y] += enemy.getMaxAirStrength();
 						}
 						if (enemy.getAirDamage() > 0.0 && distance < enemy.getAirRange() + enemy.getSpeed())
 						{
-							//							resetWalks.insert(WalkPosition(x, y));
 							resetGrid[x][y] = true;
 							eAirDistanceGrid[x][y] += max(0.1, enemy.getMaxAirStrength() / distance);
 						}
@@ -285,7 +273,6 @@ void GridTrackerClass::updateEnemyGrids()
 					{
 						if (WalkPosition(x, y).isValid())
 						{
-							//							resetWalks.insert(WalkPosition(x, y));
 							resetGrid[x][y] = true;
 							antiMobilityGrid[x][y] = 1;
 						}
@@ -300,7 +287,6 @@ void GridTrackerClass::updateEnemyGrids()
 					{
 						if (WalkPosition(x, y).isValid())
 						{
-							//							resetWalks.insert(WalkPosition(x, y));
 							resetGrid[x][y] = true;
 							antiMobilityGrid[x][y] = 1;
 						}
@@ -549,7 +535,6 @@ void GridTrackerClass::updateNeutralGrids()
 			{
 				if (WalkPosition(x, y).isValid())
 				{
-					//					resetWalks.insert(WalkPosition(x, y));
 					resetGrid[x][y] = true;
 					antiMobilityGrid[x][y] = 1;
 				}
@@ -653,6 +638,7 @@ void GridTrackerClass::updateMobilityGrids()
 		}
 		TilePosition end = Terrain().getPlayerStartingTilePosition();
 		TilePosition start = Terrain().getSecondChoke();
+
 		for (int i = 0; i <= 50; i++)
 		{
 			double closestD = 0.0;
@@ -700,6 +686,11 @@ void GridTrackerClass::updateMobilityGrids()
 				start = closestT;
 				reserveGrid[closestT.x][closestT.y] = 1;
 			}
+
+			if (start.getDistance(end) < 3)
+			{
+				break;
+			}
 		}
 
 		start = Terrain().getSecondChoke();
@@ -716,6 +707,7 @@ void GridTrackerClass::updateMobilityGrids()
 				}
 			}
 		}
+		
 	}
 	return;
 }
@@ -731,7 +723,6 @@ void GridTrackerClass::updateDetectorMovement(SupportUnitInfo& observer)
 			// Create a circle of detection rather than a square
 			if (WalkPosition(x, y).isValid() && observer.getDestination().getDistance(Position(WalkPosition(x, y))) < 160)
 			{
-				//				resetWalks.insert(WalkPosition(x, y));
 				resetGrid[x][y] = true;
 				aDetectorGrid[x][y] = 1;
 			}
@@ -751,7 +742,6 @@ void GridTrackerClass::updateArbiterMovement(SupportUnitInfo& arbiter)
 			// Create a circle of detection rather than a square
 			if (WalkPosition(x, y).isValid() && arbiter.getDestination().getDistance(Position(WalkPosition(x, y))) < 160)
 			{
-				//				resetWalks.insert(WalkPosition(x, y));
 				resetGrid[x][y] = true;
 				arbiterGrid[x][y] = 1;
 			}
@@ -768,7 +758,6 @@ void GridTrackerClass::updateAllyMovement(Unit unit, WalkPosition here)
 		{
 			if (WalkPosition(x, y).isValid())
 			{
-				//				resetWalks.insert(WalkPosition(x, y));
 				resetGrid[x][y] = true;
 				antiMobilityGrid[x][y] = 1;
 			}
@@ -817,7 +806,6 @@ void GridTrackerClass::updatePsiStorm(WalkPosition here)
 		{
 			if (WalkPosition(x, y).isValid())
 			{
-				//				resetWalks.insert(WalkPosition(x, y));
 				resetGrid[x][y] = true;
 				psiStormGrid[x][y] = 1;
 			}
@@ -842,7 +830,6 @@ void GridTrackerClass::updateEMP(Bullet EMP)
 		{
 			if (WalkPosition(x, y).isValid())
 			{
-				//				resetWalks.insert(WalkPosition(x, y));
 				resetGrid[x][y] = true;
 				EMPGrid[x][y] = 1;
 			}

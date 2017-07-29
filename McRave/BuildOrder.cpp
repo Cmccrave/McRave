@@ -165,10 +165,10 @@ void BuildOrderTrackerClass::protossOpener()
 			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
 			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 28;
 		}
-		// 14 Nexus
+		// 12 Nexus
 		else if (opening == 3)
 		{
-			buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 28) + Strategy().isEnemyFastExpand();
+			buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24) + Strategy().isEnemyFastExpand();
 			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 32);
 			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 30;
 			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 30;
@@ -287,7 +287,7 @@ void BuildOrderTrackerClass::protossSituational()
 	}
 
 	// Assimilator logic
-	if (Resources().isMinSaturated() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) == buildingDesired[UnitTypes::Protoss_Nexus])
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) == buildingDesired[UnitTypes::Protoss_Nexus])
 	{
 		buildingDesired[UnitTypes::Protoss_Assimilator] = Resources().getTempGasCount();
 	}

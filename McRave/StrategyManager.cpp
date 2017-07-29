@@ -63,10 +63,12 @@ void StrategyTrackerClass::protossStrategy()
 			if ((Units().getEnemyComposition()[UnitTypes::Terran_Barracks] == 0 || Units().getEnemyComposition()[UnitTypes::Terran_Barracks] == 2) && Units().getEnemyComposition()[UnitTypes::Terran_Command_Center] == 1 && Units().getEnemyComposition()[UnitTypes::Terran_Refinery] == 0)
 			{
 				zealotsLocked = false;
+				lockedType.insert(UnitTypes::Protoss_Zealot);
 			}
 			else
 			{
 				zealotsLocked = true;
+				lockedType.erase(UnitTypes::Protoss_Zealot);
 			}
 		}
 
@@ -116,6 +118,9 @@ void StrategyTrackerClass::protossStrategy()
 		invis = true;
 	}
 
+	// Test locked units
+	lockedType.insert(UnitTypes::Protoss_Shuttle);
+	return;
 }
 
 void StrategyTrackerClass::terranStrategy()
@@ -164,7 +169,6 @@ void StrategyTrackerClass::zergStrategy()
 {
 
 }
-
 
 void StrategyTrackerClass::updateBullets()
 {
@@ -237,11 +241,6 @@ void StrategyTrackerClass::updateScoring()
 		else if (Broodwar->self()->getRace() == Races::Terran)
 		{
 			updateTerranUnitScore(t.first, t.second);
-		}
-		if (t.first != UnitTypes::None && t.second > 0.0)
-		{
-			Broodwar->drawTextScreen(500, 50 + offset, "%s : %d", t.first.toString().c_str(), t.second);
-			offset = offset + 10;
 		}
 		t.second = 0;
 	}

@@ -21,7 +21,7 @@ class UnitTrackerClass
 	double groundLatch, airLatch;
 	int supply, globalStrategy;
 public:
-	// Accessors
+
 	map<Unit, UnitInfo>& getAllyUnits() { return allyUnits; }
 	map<Unit, UnitInfo>& getEnemyUnits() { return enemyUnits; }
 	map<UnitSizeType, int>& getAllySizes() { return allySizes; }
@@ -32,6 +32,8 @@ public:
 	double getGlobalEnemyStrength() { return globalEnemyStrength; }
 	double getAllyDefense() { return allyDefense; }
 	double getEnemyDefense() { return enemyDefense; }
+	int getGlobalStrategy() { return globalStrategy; }
+	int getSupply() { return supply; }
 
 	// Updating
 	void update();
@@ -42,20 +44,14 @@ public:
 	void getLocalCalculation(UnitInfo&);
 	void updateGlobalCalculations();
 
-	// One shot storage
+	// Storage
+	void onUnitDiscover(Unit);
 	void onUnitCreate(Unit);
-	void onUnitComplete(Unit);
+	void onUnitDestroy(Unit);
 	void onUnitMorph(Unit);
-
+	void onUnitComplete(Unit);
 	void storeAlly(Unit);
 	void storeEnemy(Unit);
-	void removeUnit(Unit);
-
-	// Returns the global strategy
-	int getGlobalStrategy() { return globalStrategy; }
-
-	// Returns the non BWAPI based supply count
-	int getSupply() { return supply; }
 
 	// Manual increase of global strength (worker pulling)
 	void increaseGlobalAlly(int increase) { globalAllyStrength += increase; }

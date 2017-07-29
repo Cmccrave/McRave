@@ -109,7 +109,7 @@ TilePosition BuildingTrackerClass::getBuildLocationNear(UnitType building, TileP
 	while (length < 50)
 	{
 		// If we can build here, return this tile position		
-		if (TilePosition(x, y).isValid() /*&& theMap.GetArea(TilePosition(x, y)) == theMap.GetArea(buildTilePosition)*/ && canBuildHere(building, TilePosition(x, y), ignoreCond))
+		if (TilePosition(x, y).isValid() && canBuildHere(building, TilePosition(x, y), ignoreCond))
 		{
 			return TilePosition(x, y);
 		}

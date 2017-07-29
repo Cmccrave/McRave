@@ -1,8 +1,5 @@
 #include "McRave.h"
 
-// Collective health/dps and measure outcome based on highest value targets being killed first
-// Time to target for both units
-
 void UnitTrackerClass::update()
 {
 	Display().startClock();
@@ -10,6 +7,15 @@ void UnitTrackerClass::update()
 	updateDeadUnits();
 	updateGlobalCalculations();
 	Display().performanceTest(__FUNCTION__);
+	return;
+}
+
+void UnitTrackerClass::onUnitDiscover(Unit unit)
+{
+	if (unit->getPlayer()->isEnemy(Broodwar->self()))
+	{
+		Units().storeEnemy(unit);
+	}
 	return;
 }
 
@@ -45,43 +51,55 @@ void UnitTrackerClass::onUnitCreate(Unit unit)
 	}
 }
 
-void UnitTrackerClass::onUnitComplete(Unit unit)
+void UnitTrackerClass::onUnitDestroy(Unit unit)
 {
-	// Don't need to store Scarabs
-	if (unit->getType() == UnitTypes::Protoss_Scarab || unit->getType() == UnitTypes::Zerg_Larva)
+	if (allyUnits.find(unit) != allyUnits.end())
 	{
-		return;
+		allyUnits[unit].setDeadFrame(Broodwar->getFrameCount());
+		allySizes[unit->getType().size()] -= 1;
+	}
+	else if (allyDefenses.find(unit) != allyDefenses.end())
+	{
+		Grids().updateDefenseGrid(allyDefenses[unit]);
+		allyDefenses.erase(unit);
+	}
+	else if (enemyUnits.find(unit) != enemyUnits.end())
+	{
+		enemyUnits[unit].setDeadFrame(Broodwar->getFrameCount());
+		enemySizes[unit->getType().size()] -= 1;
 	}
 
 	if (unit->getPlayer() == Broodwar->self())
 	{
-		// Store Workers, Units, Bases(update base grid?)
-		if (unit->getType().isWorker())
+		// Store supply if it costs supply
+		if (unit->getType().supplyRequired() > 0)
 		{
-			Workers().storeWorker(unit);
+			supply -= unit->getType().supplyRequired();
 		}
-
-		if (unit->getType() == UnitTypes::Protoss_Observer)
+		if (unit->getType().isResourceDepot())
 		{
-			SpecialUnits().storeUnit(unit);
+			Bases().removeBase(unit);
 		}
-		else if (unit->getType() == UnitTypes::Protoss_Reaver || unit->getType() == UnitTypes::Protoss_High_Templar || unit->getType() == UnitTypes::Protoss_Arbiter)
+		else if (unit->getType().isBuilding())
 		{
-			storeAlly(unit);
-			SpecialUnits().storeUnit(unit);
+			Buildings().removeBuilding(unit);
+		}
+		else if (unit->getType().isWorker())
+		{
+			Workers().removeWorker(unit);
+		}
+		else if (unit->getType() == UnitTypes::Protoss_Observer || unit->getType() == UnitTypes::Protoss_Reaver || unit->getType() == UnitTypes::Protoss_High_Templar || unit->getType() == UnitTypes::Protoss_Arbiter)
+		{
+			SpecialUnits().removeUnit(unit);
 		}
 		else if (unit->getType() == UnitTypes::Protoss_Shuttle)
 		{
-			Transport().storeUnit(unit);
-		}
-		else if (!unit->getType().isWorker() && !unit->getType().isBuilding())
-		{
-			storeAlly(unit);
+			Transport().removeUnit(unit);
 		}
 	}
-	else if (unit->getType().isResourceContainer())
+	if (unit->getType().isResourceContainer() && unit->getType().isMineralField())
 	{
-		Resources().storeResource(unit);
+		Resources().removeResource(unit);
 	}
 }
 
@@ -136,6 +154,46 @@ void UnitTrackerClass::onUnitMorph(Unit unit)
 	}
 }
 
+void UnitTrackerClass::onUnitComplete(Unit unit)
+{
+	// Don't need to store Scarabs
+	if (unit->getType() == UnitTypes::Protoss_Scarab || unit->getType() == UnitTypes::Zerg_Larva)
+	{
+		return;
+	}
+
+	if (unit->getPlayer() == Broodwar->self())
+	{
+		// Store Workers, Units, Bases(update base grid?)
+		if (unit->getType().isWorker())
+		{
+			Workers().storeWorker(unit);
+		}
+
+		if (unit->getType() == UnitTypes::Protoss_Observer)
+		{
+			SpecialUnits().storeUnit(unit);
+		}
+		else if (unit->getType() == UnitTypes::Protoss_Reaver || unit->getType() == UnitTypes::Protoss_High_Templar || unit->getType() == UnitTypes::Protoss_Arbiter)
+		{
+			storeAlly(unit);
+			SpecialUnits().storeUnit(unit);
+		}
+		else if (unit->getType() == UnitTypes::Protoss_Shuttle)
+		{
+			Transport().storeUnit(unit);
+		}
+		else if (!unit->getType().isWorker() && !unit->getType().isBuilding())
+		{
+			storeAlly(unit);
+		}
+	}
+	else if (unit->getType().isResourceContainer())
+	{
+		Resources().storeResource(unit);
+	}
+}
+
 void UnitTrackerClass::updateAliveUnits()
 {
 	// Reset global strengths
@@ -150,7 +208,7 @@ void UnitTrackerClass::updateAliveUnits()
 		UnitInfo &enemy = e.second;
 
 		if (!enemy.unit())
-		{
+		{			
 			continue;
 		}
 
@@ -192,6 +250,11 @@ void UnitTrackerClass::updateAliveUnits()
 	for (auto &a : allyUnits)
 	{
 		UnitInfo &ally = a.second;
+
+		if (!ally.unit())
+		{			
+			continue;
+		}
 
 		// If deadframe is 0, unit is alive still
 		if (ally.getDeadFrame() == 0)
@@ -358,58 +421,6 @@ void UnitTrackerClass::updateAlly(UnitInfo& unit)
 	return;
 }
 
-void UnitTrackerClass::removeUnit(Unit unit)
-{
-	if (allyUnits.find(unit) != allyUnits.end())
-	{
-		allyUnits[unit].setDeadFrame(Broodwar->getFrameCount());
-		allySizes[unit->getType().size()] -= 1;
-	}
-	else if (allyDefenses.find(unit) != allyDefenses.end())
-	{
-		Grids().updateDefenseGrid(allyDefenses[unit]);
-		allyDefenses.erase(unit);
-	}
-	else if (enemyUnits.find(unit) != enemyUnits.end())
-	{
-		enemyUnits[unit].setDeadFrame(Broodwar->getFrameCount());
-		enemySizes[unit->getType().size()] -= 1;
-	}
-
-	if (unit->getPlayer() == Broodwar->self())
-	{
-		// Store supply if it costs supply
-		if (unit->getType().supplyRequired() > 0)
-		{
-			supply -= unit->getType().supplyRequired();
-		}
-		if (unit->getType().isResourceDepot())
-		{
-			Bases().removeBase(unit);
-		}
-		else if (unit->getType().isBuilding())
-		{
-			Buildings().removeBuilding(unit);
-		}
-		else if (unit->getType().isWorker())
-		{
-			Workers().removeWorker(unit);
-		}
-		else if (unit->getType() == UnitTypes::Protoss_Observer || unit->getType() == UnitTypes::Protoss_Reaver || unit->getType() == UnitTypes::Protoss_High_Templar || unit->getType() == UnitTypes::Protoss_Arbiter)
-		{
-			SpecialUnits().removeUnit(unit);
-		}
-		else if (unit->getType() == UnitTypes::Protoss_Shuttle)
-		{
-			Transport().removeUnit(unit);
-		}
-	}
-	if (unit->getType().isResourceContainer())
-	{
-		Resources().removeResource(unit);
-	}
-}
-
 void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be moved to UTIL as a double function, to be accesible to SpecialUnitManager too
 {
 	// Variables for calculating local strengths
@@ -441,12 +452,12 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be
 		{
 			if (unit.getType().isFlyer())
 			{
-				enemyToEngage = max(0.0, ((enemy.getPosition().getDistance(unit.getEngagePosition()) - unit.getAirRange()) / enemy.getSpeed()) - unitToEngage);
+				enemyToEngage = max(0.0, ((enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getAirRange()) / (unit.getSpeed() + enemy.getSpeed())) - unitToEngage);
 				simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getAirRange() - unit.getAirRange()) / (unit.getSpeed() + enemy.getSpeed())));
 			}
 			else
 			{
-				enemyToEngage = max(0.0, ((enemy.getPosition().getDistance(unit.getEngagePosition()) - unit.getAirRange()) / enemy.getSpeed()) - unitToEngage);
+				enemyToEngage = max(0.0, ((enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getGroundRange()) / (unit.getSpeed() + enemy.getSpeed())) - unitToEngage);
 				simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getGroundRange() - unit.getAirRange()) / (unit.getSpeed() + enemy.getSpeed())));
 			}
 		}
@@ -454,14 +465,19 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be
 		{
 			if (unit.getType().isFlyer())
 			{
-				enemyToEngage = max(0.0, ((enemy.getPosition().getDistance(unit.getEngagePosition()) - unit.getGroundRange()) / enemy.getSpeed()) - unitToEngage);
+				enemyToEngage = max(0.0, ((enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getAirRange()) / (unit.getSpeed() + enemy.getSpeed())) - unitToEngage);
 				simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getAirRange() - unit.getGroundRange()) / (unit.getSpeed() + enemy.getSpeed())));
 			}
 			else
 			{
-				enemyToEngage = max(0.0, ((enemy.getPosition().getDistance(unit.getEngagePosition()) - unit.getGroundRange()) / enemy.getSpeed()) - unitToEngage);
+				enemyToEngage = max(0.0, ((enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getGroundRange()) / (unit.getSpeed() + enemy.getSpeed())) - unitToEngage);
 				simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getGroundRange() - unit.getGroundRange()) / (unit.getSpeed() + enemy.getSpeed())));
 			}
+		}
+
+		if (enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
+		{
+			//Broodwar << simRatio << endl;
 		}
 		
 		if (enemy.getDeadFrame() == 0)
@@ -487,13 +503,20 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be
 		}
 
 		// If the Ally engagement position is not within a 5.0 second engaging distance of the unit, ignore it
-		if (ally.getEngagePosition().getDistance(unit.getEngagePosition()) > ally.getGroundRange() + (ally.getSpeed() * 5.0))
+		if (ally.getEngagePosition().getDistance(unit.getEngagePosition()) > ally.getGroundRange() + (ally.getSpeed() * simulationTime))
 		{
 			continue;
 		}
 
-		allyToEngage = max(0.0,((ally.getPosition().getDistance(ally.getEngagePosition())) / ally.getSpeed()) - unitToEngage);
-		double simRatio = max(0.0, (simulationTime - allyToEngage));
+		if (ally.unit() == unit.unit())
+		{			
+			continue;
+		}
+		else
+		{
+			allyToEngage = max(0.0, ((ally.getPosition().getDistance(ally.getEngagePosition())) / ally.getSpeed()) - unitToEngage);
+			simRatio = max(0.0, (simulationTime - allyToEngage));
+		}		
 
 		// If enemyToEngage is less than unitToEngage, it's included in the simulation
 		if (ally.getDeadFrame() == 0)
