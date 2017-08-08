@@ -50,13 +50,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		if (enemy.unit()->exists() && enemy.unit()->isStasised())
 		{
 			continue;
-		}
-
-		// If the unit is invis and undetected, ignore it
-		if (enemy.unit()->exists() && (enemy.unit()->isCloaked() || enemy.unit()->isBurrowed()) && !enemy.unit()->isDetected())
-		{
-			continue;
-		}
+		}		
 
 		double distance = (1.0 + unit.getPosition().getDistance(enemy.getPosition()));
 		double threat = Grids().getEGroundDistanceGrid(enemy.getWalkPosition());

@@ -41,7 +41,7 @@ void GridTrackerClass::reset()
 	//{
 	//	for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
 	//	{
-	//		if (reserveGrid[x / 4][y / 4] > 0)
+	//		if (baseGrid[x/4][y/4] > 0)
 	//		{
 	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(8, 8), 4, Colors::Red);
 	//		}
@@ -219,20 +219,20 @@ void GridTrackerClass::updateEnemyGrids()
 			}
 
 			// Enemy Ground Threat Grid
-			for (int x = enemy.getWalkPosition().x - int(enemy.getGroundRange() / 8) - enemy.getType().tileWidth() * 4; x <= enemy.getWalkPosition().x + int(enemy.getGroundRange() / 8) + enemy.getType().tileWidth() * 4; x++)
+			for (int x = (enemy.getWalkPosition().x - int(enemy.getGroundRange() / 8) - enemy.getType().tileWidth() * 4) - (enemy.getSpeed() / 8); x <= (enemy.getWalkPosition().x + int(enemy.getGroundRange() / 8) + enemy.getType().tileWidth() * 4) + (enemy.getSpeed() / 8); x++)
 			{
-				for (int y = enemy.getWalkPosition().y - int(enemy.getGroundRange() / 8) - enemy.getType().tileHeight() * 4; y <= enemy.getWalkPosition().y + int(enemy.getGroundRange() / 8) + enemy.getType().tileHeight() * 4; y++)
+				for (int y = (enemy.getWalkPosition().y - int(enemy.getGroundRange() / 8) - enemy.getType().tileHeight() * 4) - (enemy.getSpeed() / 8); y <= (enemy.getWalkPosition().y + int(enemy.getGroundRange() / 8) + enemy.getType().tileHeight() * 4) + (enemy.getSpeed() / 8); y++)
 				{
 					if (WalkPosition(x, y).isValid())
 					{
-						double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(enemy.getPosition()) - double(enemy.getType().width()));
+						double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(enemy.getPosition()) - double(enemy.getType().tileWidth() * 4));
 
 						if (enemy.getGroundDamage() > 0.0 && distance < enemy.getGroundRange())
 						{
 							resetGrid[x][y] = true;
 							eGroundGrid[x][y] += enemy.getMaxGroundStrength();
 						}
-						if (enemy.getGroundDamage() > 0.0 && distance < enemy.getGroundRange() + enemy.getSpeed())
+						if (enemy.getGroundDamage() > 0.0 && distance < (enemy.getGroundRange() + (enemy.getSpeed())))
 						{
 							resetGrid[x][y] = true;
 							eGroundDistanceGrid[x][y] += max(0.1, enemy.getMaxGroundStrength() / distance);
@@ -242,20 +242,20 @@ void GridTrackerClass::updateEnemyGrids()
 			}
 
 			// Enemy Air Threat Grid
-			for (int x = enemy.getWalkPosition().x - int(enemy.getAirRange() / 8) - enemy.getType().tileWidth() * 4; x <= enemy.getWalkPosition().x + int(enemy.getAirRange() / 8) + enemy.getType().tileWidth() * 4; x++)
+			for (int x = (enemy.getWalkPosition().x - int(enemy.getAirRange() / 8) - enemy.getType().tileWidth() * 4) - (enemy.getSpeed() / 8); x <= (enemy.getWalkPosition().x + int(enemy.getAirRange() / 8) + enemy.getType().tileWidth() * 4) + (enemy.getSpeed() / 8); x++)
 			{
-				for (int y = enemy.getWalkPosition().y - int(enemy.getAirRange() / 8) - enemy.getType().tileHeight() * 4; y <= enemy.getWalkPosition().y + int(enemy.getAirRange() / 8) + enemy.getType().tileHeight() * 4; y++)
+				for (int y = (enemy.getWalkPosition().y - int(enemy.getAirRange() / 8) - enemy.getType().tileHeight() * 4) - (enemy.getSpeed() / 8); y <= (enemy.getWalkPosition().y + int(enemy.getAirRange() / 8) + enemy.getType().tileHeight() * 4) + (enemy.getSpeed() / 8); y++)
 				{
 					if (WalkPosition(x, y).isValid())
 					{
-						double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(enemy.getPosition()) - double(enemy.getType().width()));
+						double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(enemy.getPosition()) - double(enemy.getType().tileWidth() * 4));
 
 						if (enemy.getAirDamage() > 0.0 && distance < enemy.getAirRange())
 						{
 							resetGrid[x][y] = true;
 							eAirGrid[x][y] += enemy.getMaxAirStrength();
 						}
-						if (enemy.getAirDamage() > 0.0 && distance < enemy.getAirRange() + enemy.getSpeed())
+						if (enemy.getAirDamage() > 0.0 && distance < (enemy.getAirRange() + (enemy.getSpeed())))
 						{
 							resetGrid[x][y] = true;
 							eAirDistanceGrid[x][y] += max(0.1, enemy.getMaxAirStrength() / distance);
@@ -333,6 +333,28 @@ void GridTrackerClass::updateBuildingGrid(BuildingInfo& building)
 			}
 		}
 
+		// If the building can build addons
+		if (building.getType().canBuildAddon())
+		{
+			for (int x = building.getTilePosition().x + building.getType().tileWidth(); x <= building.getTilePosition().x + building.getType().tileWidth() + 2; x++)
+			{
+				for (int y = building.getTilePosition().y + 1; y <= building.getTilePosition().y + 3; y++)
+				{
+					if (TilePosition(x, y).isValid())
+					{
+						if (building.unit()->exists())
+						{
+							reserveGrid[x][y] += 1;
+						}
+						else
+						{
+							reserveGrid[x][y] -= 1;
+						}
+					}
+				}
+			}
+		}
+
 		// Pylon Grid
 		if (building.getType() == UnitTypes::Protoss_Pylon)
 		{
@@ -357,9 +379,9 @@ void GridTrackerClass::updateBuildingGrid(BuildingInfo& building)
 		// Shield Battery Grid
 		if (building.getType() == UnitTypes::Protoss_Shield_Battery)
 		{
-			for (int x = building.getTilePosition().x - 10; x < building.getTilePosition().x + building.getType().tileWidth() + 10; x++)
+			for (int x = building.getTilePosition().x - 5; x < building.getTilePosition().x + building.getType().tileWidth() + 5; x++)
 			{
-				for (int y = building.getTilePosition().y - 10; y < building.getTilePosition().y + building.getType().tileHeight() + 10; y++)
+				for (int y = building.getTilePosition().y - 5; y < building.getTilePosition().y + building.getType().tileHeight() + 5; y++)
 				{
 					if (TilePosition(x, y).isValid() && building.getPosition().getDistance(Position(TilePosition(x, y))) < 320)
 					{
@@ -465,7 +487,7 @@ void GridTrackerClass::updateBaseGrid(BaseInfo& base)
 		{
 			if (TilePosition(x, y).isValid())
 			{
-				if (base.unit()->isCompleted())
+				if (base.unit()->isCompleted() && base.unit()->exists())
 				{
 					baseGrid[x][y] = 2;
 				}
@@ -599,9 +621,10 @@ void GridTrackerClass::updateMobilityGrids()
 					mobilityGrid[x][y] = min(mobilityGrid[x][y], 10);
 				}
 
-				if (theMap.GetArea(WalkPosition(x, y))->AccessibleNeighbours().size() == 0)
+				if (theMap.GetArea(WalkPosition(x, y)) == nullptr || theMap.GetArea(WalkPosition(x, y))->AccessibleNeighbours().size() == 0)
 				{
 					// Island
+					mobilityGrid[x][y] = -1;
 				}
 
 				// Setup what is possible to check ground distances on
@@ -707,7 +730,7 @@ void GridTrackerClass::updateMobilityGrids()
 				}
 			}
 		}
-		
+
 	}
 	return;
 }
@@ -775,8 +798,8 @@ void GridTrackerClass::updateReservedLocation(UnitType building, TilePosition he
 	//	{
 	//		if (TilePosition(x, y).isValid())
 	//		{
-	//			resetTiles.insert(TilePosition(x, y));
-	//			reserveGrid[x][y] = 1;
+	//			resetGrid[x][y] = true;
+	//			reserveGrid[x][y] = 2;
 	//		}
 	//	}
 	//}
@@ -789,8 +812,8 @@ void GridTrackerClass::updateReservedLocation(UnitType building, TilePosition he
 	//		{
 	//			if (TilePosition(x, y).isValid())
 	//			{
-	//				resetTiles.insert(TilePosition(x, y));
-	//				reserveGrid[x][y] = 1;
+	//				resetGrid[x][y] = true;
+	//				reserveGrid[x][y] = 2;
 	//			}
 	//		}
 	//	}
@@ -895,3 +918,32 @@ void GridTrackerClass::updateGroundDistanceGrid()
 		}
 	}
 }
+
+
+// Circle thing
+//inline void UnitManager::addToDeathMatrix(BWAPI::Position pos, BWAPI::UnitType ut, BWAPI::Player p) {
+//	const int mapH = BWAPI::Broodwar->mapHeight() * 4, mapW = BWAPI::Broodwar->mapWidth() * 4;
+//	if (ut.groundWeapon()) {
+//		const int range = p->weaponMaxRange(ut.groundWeapon()) / 8;
+//		const int death = unitDeathGround(ut);
+//		const int mx = pos.x + range > mapW ? mapW : pos.x + range;
+//		for (int dx = pos.x - range < 0 ? -pos.x : -range; dx <= mx; ++dx) {
+//			const int yw = (int)ceil(sqrt(range * range - dx * dx));
+//			const int minY = MAX(pos.y - yw, 0), maxY = MIN(pos.y + yw, mapH);
+//			for (int y = minY; y <= maxY; ++y)
+//				deathMatrixGround[y*deathMatrixSideLen + pos.x + dx] += death;
+//		}
+//	}
+//
+//	if (ut.airWeapon()) {
+//		const int range = p->weaponMaxRange(ut.groundWeapon()) / 8;
+//		const int death = unitDeathAir(ut);
+//		const int mx = pos.x + range > mapW ? mapW : pos.x + range;
+//		for (int dx = pos.x - range < 0 ? -pos.x : -range; dx <= mx; ++dx) {
+//			const int yw = (int)ceil(sqrt(range * range - dx * dx));
+//			const int minY = MAX(pos.y - yw, 0), maxY = MIN(pos.y + yw, mapH);
+//			for (int y = minY; y <= maxY; ++y)
+//				deathMatrixAir[y*deathMatrixSideLen + pos.x + dx] += death;
+//		}
+//	}
+//}

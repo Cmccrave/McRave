@@ -39,7 +39,7 @@ void StrategyTrackerClass::protossStrategy()
 	if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0)
 	{
 		// Ramp holding logic
-		if ((allyFastExpand && Players().getNumberZerg() > 0) || (Players().getNumberProtoss() > 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) >= 1))
+		if ((allyFastExpand && Players().getNumberZerg() > 0) || (Players().getNumberProtoss() > 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) >= 4))
 		{
 			holdRamp = true;
 		}
@@ -126,10 +126,10 @@ void StrategyTrackerClass::protossStrategy()
 void StrategyTrackerClass::terranStrategy()
 {
 	// If it's early on and we're being rushed
-	if (!Broodwar->self()->hasResearched(TechTypes::Stim_Packs) && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) == 0)
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) < 2)
 	{
 		// Ramp holding logic
-		if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Academy) < 1)
+		if ((Broodwar->self()->completedUnitCount(UnitTypes::Terran_Siege_Tank_Siege_Mode) + Broodwar->self()->completedUnitCount(UnitTypes::Terran_Siege_Tank_Tank_Mode)) < 2)
 		{
 			holdRamp = false;
 		}
@@ -152,7 +152,7 @@ void StrategyTrackerClass::terranStrategy()
 		}
 
 		// If we are being 4/5 pooled
-		if (Players().getNumberZerg() > 0 && Units().getEnemyComposition()[UnitTypes::Zerg_Zergling] >= 4 && Units().getEnemyComposition()[UnitTypes::Zerg_Drone] <= 6)
+		if (Players().getNumberZerg() > 0 && Units().getEnemyComposition()[UnitTypes::Zerg_Zergling] >= 6)
 		{
 			rush = true;
 		}

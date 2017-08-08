@@ -16,6 +16,7 @@ class ProductionTrackerClass
 	bool partiallySat = false;
 	bool barracksSat = false;
 	bool hatchSat = false;
+	bool productionSat = false;
 public:
 	map <Unit, UnitType>& getIdleLowProduction() { return idleLowProduction; }
 	map <Unit, UnitType>& getIdleHighProduction() { return idleHighProduction; }
@@ -26,6 +27,7 @@ public:
 	int getReservedGas() { return reservedGas; }
 	bool isGateSat() { return gateSat; }
 	bool isBarracksSat() { return barracksSat; }
+	bool isProductionSat() { return productionSat; }
 
 	void update();
 	bool canAfford(UnitType);

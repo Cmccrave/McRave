@@ -69,9 +69,14 @@ void ProductionTrackerClass::updateReservedResources()
 void ProductionTrackerClass::updateProtoss()
 {
 	// Gateway saturation - max of 12 so the bot can exceed 4 bases
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= min(12, (2 * Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus))))
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= min(12, 1 + (2 * Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus))))
 	{
 		gateSat = true;
+	}
+
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= min(4, (2 * Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus))))
+	{
+		productionSat = true;
 	}
 
 	// TEMP Production testing
@@ -97,7 +102,7 @@ void ProductionTrackerClass::updateProtoss()
 				}
 
 				if (highestType != UnitTypes::None && canAfford(highestType))
-				{					
+				{
 					building.unit()->train(highestType);
 				}
 
@@ -115,7 +120,7 @@ void ProductionTrackerClass::updateProtoss()
 				for (auto &upgrade : building.getType().upgradesWhat())
 				{
 					for (auto &unit : upgrade.whatUses())
-					{						
+					{
 						if (Broodwar->self()->completedUnitCount(unit) > 0)
 						{
 							building.unit()->upgrade(upgrade);
@@ -230,6 +235,7 @@ void ProductionTrackerClass::updateProtoss()
 						{
 							building.unit()->train(UnitTypes::Protoss_High_Templar);
 							idleHighProduction.erase(building.unit());
+							continue;
 						}
 						else
 						{
@@ -242,6 +248,7 @@ void ProductionTrackerClass::updateProtoss()
 						{
 							building.unit()->train(UnitTypes::Protoss_Dragoon);
 							idleLowProduction.erase(building.unit());
+							continue;
 						}
 						else
 						{
@@ -254,6 +261,7 @@ void ProductionTrackerClass::updateProtoss()
 						{
 							building.unit()->train(UnitTypes::Protoss_Zealot);
 							idleLowProduction.erase(building.unit());
+							continue;
 						}
 						else
 						{
@@ -307,35 +315,7 @@ void ProductionTrackerClass::updateProtoss()
 
 				// Robotics Facility
 				else if (building.getType() == UnitTypes::Protoss_Robotics_Facility)
-				{
-					//// If detection is absolutely needed, cancel anything in queue and get the Observer immediately
-					//if (Strategy().needDetection() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) == 0)
-					//{
-					//	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observatory) > 0)
-					//	{
-					//		if (building.unit()->isTraining())
-					//		{
-					//			for (auto &unit : building.unit()->getTrainingQueue())
-					//			{
-					//				if (unit == UnitTypes::Protoss_Reaver || unit == UnitTypes::Protoss_Shuttle)
-					//				{
-					//					building.unit()->cancelTrain();
-					//				}
-					//			}
-					//		}
-
-					//		if (Broodwar->self()->minerals() >= UnitTypes::Protoss_Observer.mineralPrice() && Broodwar->self()->gas() >= UnitTypes::Protoss_Observer.gasPrice())
-					//		{
-					//			building.unit()->train(UnitTypes::Protoss_Observer);
-					//			idleHighProduction.erase(building.unit());
-					//			return;
-					//		}
-					//		else
-					//		{
-					//			idleHighProduction.emplace(building.unit(), UnitTypes::Protoss_Observer);
-					//		}
-					//	}
-					//}
+				{	
 
 					// If we need an Observer
 					if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observatory) > 0 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Observer) < (floor(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) / 3) + 1))
@@ -542,13 +522,17 @@ void ProductionTrackerClass::updateTerran()
 			// Factory
 			if (building.second.getType() == UnitTypes::Terran_Factory)
 			{
-				if (!building.second.unit()->getAddon())
+				if (!building.second.unit()->getAddon() && canAfford(UnitTypes::Terran_Machine_Shop))
 				{
 					building.second.unit()->buildAddon(UnitTypes::Terran_Machine_Shop);
 				}
 				else if (Broodwar->self()->minerals() >= UnitTypes::Terran_Siege_Tank_Tank_Mode.mineralPrice() + Buildings().getQueuedMineral() && Broodwar->self()->gas() >= UnitTypes::Terran_Siege_Tank_Tank_Mode.gasPrice() + Buildings().getQueuedGas())
 				{
 					building.second.unit()->train(UnitTypes::Terran_Siege_Tank_Tank_Mode);
+				}
+				else if (Broodwar->self()->minerals() >= UnitTypes::Terran_Vulture.mineralPrice() + Buildings().getQueuedMineral() + reservedMineral)
+				{
+					building.second.unit()->train(UnitTypes::Terran_Vulture);
 				}
 				else
 				{
@@ -559,13 +543,17 @@ void ProductionTrackerClass::updateTerran()
 			// Machine Shop
 			if (building.second.getType() == UnitTypes::Terran_Machine_Shop)
 			{
-				if (!Broodwar->self()->hasResearched(TechTypes::Tank_Siege_Mode))
+				if (!Broodwar->self()->getUpgradeLevel(UpgradeTypes::Ion_Thrusters))
+				{
+					building.second.unit()->upgrade(UpgradeTypes::Ion_Thrusters);
+				}
+				else if (!Broodwar->self()->hasResearched(TechTypes::Spider_Mines))
+				{
+					building.second.unit()->research(TechTypes::Spider_Mines);
+				}
+				else if (!Broodwar->self()->hasResearched(TechTypes::Tank_Siege_Mode))
 				{
 					building.second.unit()->research(TechTypes::Tank_Siege_Mode);
-				}
-				else
-				{
-					idleTech.emplace(building.second.unit(), TechTypes::Tank_Siege_Mode);
 				}
 			}
 		}

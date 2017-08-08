@@ -17,21 +17,25 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit, Player who)
 	{
 		return 10.0;
 	}	
-	if (unit.getType() == UnitTypes::Protoss_Scarab || unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Zerg_Egg || unit.getType() == UnitTypes::Zerg_Larva || unit.getType() == UnitTypes::Protoss_Interceptor)
+	if (unit.getType() == UnitTypes::Protoss_Scarab || unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Zerg_Egg || unit.getType() == UnitTypes::Zerg_Larva)
 	{
 		return 0.0;
 	}
 	if (unit.getType() == UnitTypes::Protoss_Interceptor)
 	{
-		return 2.5;
+		return 1.0;
 	}
 
 	double range, damage;
 	range = cbrt(unit.getGroundRange());
 	if (unit.getType().groundWeapon().damageCooldown() > 0)
 	{
-		damage = unit.getGroundDamage() / double(unit.getType().groundWeapon().damageCooldown());
+		damage = unit.getGroundDamage() / double(unit.getType().groundWeapon().damageCooldown());		
 	}
+	else if (unit.getType() == UnitTypes::Protoss_Reaver)
+	{
+		damage = unit.getGroundDamage() / 60.0;
+	}	
 	else
 	{
 		damage = unit.getGroundDamage() / 24.0;
@@ -89,17 +93,17 @@ double UtilTrackerClass::getVisibleGroundStrength(UnitInfo& unit, Player who)
 		}
 	}
 
-	if (unit.unit()->isCloaked() || unit.unit()->isBurrowed())
+	/*if (unit.unit()->isCloaked() || unit.unit()->isBurrowed())
 	{
 		if (who == Broodwar->self() && Grids().getEDetectorGrid(unit.getWalkPosition()) == 0)
 		{
 			return 25.0 * unit.getMaxGroundStrength() * effectiveness;
 		}
-		else if (!unit.unit()->isDetected() && who == Broodwar->enemy())
+		else if (!unit.unit()->isDetected() && who == Broodwar->enemy() && unit.unit()->exists())
 		{
 			return 25.0 * unit.getMaxGroundStrength() * effectiveness;
 		}
-	}
+	}*/
 	return unit.getPercentHealth() * unit.getMaxGroundStrength() * effectiveness;
 }
 
@@ -170,17 +174,17 @@ double UtilTrackerClass::getVisibleAirStrength(UnitInfo& unit, Player who)
 		}
 	}
 
-	if (unit.unit()->isCloaked() || unit.unit()->isBurrowed())
-	{
-		if (who == Broodwar->self() && Grids().getEDetectorGrid(unit.getWalkPosition()) == 0)
-		{
-			return 25.0 * unit.getMaxAirStrength() * effectiveness;
-		}
-		else if (!unit.unit()->isDetected() && who == Broodwar->enemy())
-		{
-			return 25.0 * unit.getMaxAirStrength() * effectiveness;
-		}
-	}
+	//if (unit.unit()->isCloaked() || unit.unit()->isBurrowed())
+	//{
+	//	if (who == Broodwar->self() && Grids().getEDetectorGrid(unit.getWalkPosition()) == 0)
+	//	{
+	//		return 25.0 * unit.getMaxAirStrength() * effectiveness;
+	//	}
+	//	else if (!unit.unit()->isDetected() && who == Broodwar->enemy())
+	//	{
+	//		return 25.0 * unit.getMaxAirStrength() * effectiveness;
+	//	}
+	//}
 	return unit.getPercentHealth() * unit.getMaxAirStrength() * effectiveness;
 }
 

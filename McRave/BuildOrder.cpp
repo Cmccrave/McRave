@@ -34,9 +34,8 @@ void BuildOrderTrackerClass::updateDecision()
 	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
 		// If we have a Core and 2 Gates, opener is done
-		if (buildingDesired[UnitTypes::Protoss_Cybernetics_Core] >= 1 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 2 && getOpening)
-		{
-			// Put opener function here instead
+		if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Cybernetics_Core) >= 1 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 2 && getOpening)
+		{			
 			getOpening = false;
 		}
 
@@ -47,9 +46,8 @@ void BuildOrderTrackerClass::updateDecision()
 		}
 
 		// If production is saturated and none are idle or we need detection for some invis units, choose a tech
-		if (Strategy().needDetection() || (!getOpening && !getTech && techUnit == UnitTypes::None && Production().isGateSat() && Production().getIdleHighProduction().size() == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 2))
+		if (Strategy().needDetection() || (Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() && !getOpening && !getTech && techUnit == UnitTypes::None && Production().getIdleLowProduction().size() == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 2))
 		{
-			// Put tech function here instead
 			getTech = true;
 		}
 
@@ -63,29 +61,14 @@ void BuildOrderTrackerClass::updateDecision()
 				return;
 			}
 
-			// PvP - 1 Gate Core
+			// PvP - ZZ Core
 			else if (Players().getNumberProtoss() > 0)
 			{
-				if (Strategy().isRush())
-				{
-					opening = 4;
-				}
-				else
-				{
-					opening = 2;
-				}
+				opening = 2;
 			}
 			// PvT - 1 Gate Nexus
 			else if (Players().getNumberTerran() > 0)
-			{
-				/*	if (Strategy().isEnemyFastExpand())
-					{
-					opening = 2;
-					}
-					else
-					{
-					opening = 3;
-					}*/
+			{			
 				opening = 3;
 			}
 			// PvR - 2 Gate Core
@@ -111,7 +94,7 @@ void BuildOrderTrackerClass::updateDecision()
 		}
 
 		// Only one opener for now
-		opening = 0;
+		opening = 2;
 	}
 	return;
 }
@@ -154,24 +137,24 @@ void BuildOrderTrackerClass::protossOpener()
 			buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 28);
 			buildingDesired[UnitTypes::Protoss_Photon_Cannon] = (Units().getSupply() >= 22) + (Units().getSupply() >= 24) + (Units().getSupply() >= 30);
 			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 32) + (Units().getSupply() >= 46);
-			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 36;
+			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 40;
 			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 42;
 		}
-		// 1 Gate Core
+		// ZZCore
 		else if (opening == 2)
 		{
 			buildingDesired[UnitTypes::Protoss_Nexus] = 1;
-			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 36);
-			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
-			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 28;
+			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 44);
+			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 32;
+			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 40;
 		}
-		// 12 Nexus
+		// NZCore
 		else if (opening == 3)
-		{
-			buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24) + Strategy().isEnemyFastExpand();
-			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 32);
-			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 30;
-			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 30;
+		{			
+			buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 40);
+			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 48);
+			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
+			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;			
 		}
 		// 2 Gate Core
 		else if (opening == 4)
@@ -269,7 +252,7 @@ void BuildOrderTrackerClass::protossSituational()
 	}
 
 	// Expansion logic
-	if (!getOpening && !Strategy().isRush() && (Broodwar->self()->minerals() > 300 && Resources().isMinSaturated() && Production().isGateSat() && Production().getIdleLowProduction().size() == 0) || (Strategy().isAllyFastExpand() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1) || (Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() && Resources().isMinSaturated()))
+	if (Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() && !getOpening && !Strategy().isRush() && (Broodwar->self()->minerals() > 300 && Resources().isMinSaturated() && Production().isGateSat() && Production().getIdleLowProduction().size() == 0) || (Strategy().isAllyFastExpand() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1))
 	{
 		buildingDesired[UnitTypes::Protoss_Nexus] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) + 1;
 	}
@@ -304,9 +287,9 @@ void BuildOrderTrackerClass::protossSituational()
 		buildingDesired[UnitTypes::Protoss_Photon_Cannon] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon);
 		for (auto &base : Bases().getMyBases())
 		{
-			if (base.second.unit()->isCompleted() && Grids().getDefenseGrid(base.second.getTilePosition()) < 2 && Broodwar->hasPower(TilePosition(base.second.getPosition())))
+			if (base.second.unit()->isCompleted() && Grids().getDefenseGrid(base.second.getTilePosition()) < 1 && Broodwar->hasPower(TilePosition(base.second.getPosition())))
 			{
-				buildingDesired[UnitTypes::Protoss_Photon_Cannon] += 2 - Grids().getDefenseGrid(base.second.getTilePosition());
+				buildingDesired[UnitTypes::Protoss_Photon_Cannon] += 1 - Grids().getDefenseGrid(base.second.getTilePosition());
 			}
 		}
 	}
@@ -322,17 +305,23 @@ void BuildOrderTrackerClass::terranOpener()
 {
 	if (getOpening)
 	{
-		// Two Rax Academy
+		// Joyo
 		if (opening == 1)
 		{
-			buildingDesired[UnitTypes::Terran_Barracks] = (Units().getSupply() >= 18) + (Units().getSupply() >= 20) + (Units().getSupply() >= 42);
+			buildingDesired[UnitTypes::Terran_Barracks] = (Units().getSupply() >= 22) + (Units().getSupply() >= 26) + (Units().getSupply() >= 42);
 			buildingDesired[UnitTypes::Terran_Engineering_Bay] = (Units().getSupply() >= 36);
-			buildingDesired[UnitTypes::Terran_Refinery] = (Units().getSupply() >= 36);
+			buildingDesired[UnitTypes::Terran_Refinery] = (Units().getSupply() >= 40);
 			buildingDesired[UnitTypes::Terran_Academy] = (Units().getSupply() >= 48);
 		}
-
-		// 1 Rax Fact
+		// 2 Fact Vulture
 		if (opening == 2)
+		{
+			buildingDesired[UnitTypes::Terran_Barracks] = (Units().getSupply() >= 22);
+			buildingDesired[UnitTypes::Terran_Refinery] = (Units().getSupply() >= 24);
+			buildingDesired[UnitTypes::Terran_Factory] = (Units().getSupply() >= 30) + (Units().getSupply() >= 36);
+		}
+		// 2 Port Wraith
+		if (opening == 3)
 		{
 
 		}
@@ -342,13 +331,24 @@ void BuildOrderTrackerClass::terranOpener()
 
 void BuildOrderTrackerClass::terranTech()
 {
-
+	// If we have a Core and 2 Gates, opener is done
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= 2 && getOpening)
+	{
+		// Put opener function here instead
+		getOpening = false;
+	}
 }
 
 void BuildOrderTrackerClass::terranSituational()
 {
 	// Supply Depot logic
 	buildingDesired[UnitTypes::Terran_Supply_Depot] = min(22, (int)floor((Units().getSupply() / max(14, (16 - Broodwar->self()->allUnitCount(UnitTypes::Terran_Supply_Depot))))));
+
+	// Expansion logic
+	if (Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() && !getOpening && !Strategy().isRush() && (Broodwar->self()->minerals() > 300 && Resources().isMinSaturated() && Production().getIdleLowProduction().size() == 0))
+	{
+		buildingDesired[UnitTypes::Terran_Command_Center] = Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) + 1;
+	}
 
 	// Bunker logic
 	if (Strategy().isRush())
@@ -366,6 +366,12 @@ void BuildOrderTrackerClass::terranSituational()
 	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Barracks) >= 3 && (Production().getIdleLowProduction().size() == 0 && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 200) || (!Production().isBarracksSat() && Resources().isMinSaturated()))))
 	{
 		buildingDesired[UnitTypes::Terran_Barracks] = min(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Barracks) + 1);
+	}
+
+	// Gateway logic
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= 2 && (Production().getIdleLowProduction().size() == 0 && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 200 && Broodwar->self()->gas() - Production().getReservedGas() - Buildings().getQueuedGas() > 100) || (!Production().isProductionSat() && Resources().isMinSaturated()))))
+	{
+		buildingDesired[UnitTypes::Terran_Factory] = min(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) * 2, Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Factory) + 1);
 	}
 
 	// CC logic

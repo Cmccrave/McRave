@@ -31,7 +31,7 @@ void CommandTrackerClass::updateAlliedUnits()
 		}
 
 		// If the unit is ready to perform an action after an attack (certain units have minimum frames after an attack before they can receive a new command)
-		if (Broodwar->getFrameCount() - unit.getLastAttackFrame() > unit.getMinStopFrame() - Broodwar->getRemainingLatencyFrames())
+		if (Broodwar->getFrameCount() - unit.getLastAttackFrame() > unit.getMinStopFrame() - Broodwar->getLatencyFrames())
 		{
 			// If globally behind
 			if (Units().getGlobalStrategy() == 0 || Units().getGlobalStrategy() == 2)
@@ -93,6 +93,15 @@ void CommandTrackerClass::updateAlliedUnits()
 
 void CommandTrackerClass::attackMove(UnitInfo& unit)
 {
+	// If it's a tank, make sure we're unsieged before moving
+	if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
+	{
+		if (unit.unit()->getDistance(unit.getTargetPosition()) > 400 || unit.unit()->getDistance(unit.getTargetPosition()) < 128)
+		{
+			unit.unit()->unsiege();
+		}
+	}
+
 	// If target doesn't exist, move towards it
 	if (unit.getTarget() && unit.getTargetPosition().isValid())
 	{
@@ -193,14 +202,14 @@ void CommandTrackerClass::attackTarget(UnitInfo& unit)
 	{
 		if (unit.unit()->getDistance(unit.getTargetPosition()) <= 400 && unit.unit()->getDistance(unit.getTargetPosition()) > 128)
 		{
-			unit.unit()->useTech(TechTypes::Tank_Siege_Mode);
+			unit.unit()->siege();
 		}
 	}
 	if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
 	{
 		if (unit.unit()->getDistance(unit.getTargetPosition()) > 400 || unit.unit()->getDistance(unit.getTargetPosition()) < 128)
 		{
-			unit.unit()->useTech(TechTypes::Tank_Siege_Mode);
+			unit.unit()->unsiege();
 		}
 	}
 
@@ -304,6 +313,15 @@ void CommandTrackerClass::fleeTarget(UnitInfo& unit)
 	double highestMobility = 0.0;
 	int offset = int(unit.getSpeed()) / 8;
 
+	// If it's a tank, make sure we're unsieged before moving
+	if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
+	{
+		if (unit.unit()->getDistance(unit.getTargetPosition()) > 400 || unit.unit()->getDistance(unit.getTargetPosition()) < 128)
+		{
+			unit.unit()->unsiege();
+		}
+	}
+
 	// Specific High Templar flee
 	if (unit.getType() == UnitTypes::Protoss_High_Templar && (unit.unit()->getEnergy() < 75 || Grids().getEGroundDistanceGrid(unit.getWalkPosition()) > 0.0))
 	{
@@ -316,30 +334,29 @@ void CommandTrackerClass::fleeTarget(UnitInfo& unit)
 			}
 		}
 	}
-
+	
 	// Search a circle around the target based on the speed of the unit in one second of game time
-	for (int x = start.x - 20; x <= start.x + 20 + (unit.getType().tileWidth() * 4); x++)
+	for (int x = start.x - 16; x <= start.x + 16 + (unit.getType().tileWidth() * 4); x++)
 	{
-		for (int y = start.y - 20; y <= start.y + 20 + (unit.getType().tileHeight() * 4); y++)
+		for (int y = start.y - 16; y <= start.y + 16 + (unit.getType().tileHeight() * 4); y++)
 		{
 			if (!WalkPosition(x, y).isValid())
 			{
 				continue;
 			}
-
-			if (unit.getType() == UnitTypes::Protoss_Dragoon && Grids().getResourceGrid(x / 4, y / 4) > 0)
+			
+			if (WalkPosition(x, y).getDistance(start) > 16)
 			{
 				continue;
 			}
-
+			
 			double mobility = double(Grids().getMobilityGrid(x, y));
-			double threat = Grids().getEGroundGrid(x, y);
-			double distance = Grids().getEGroundDistanceGrid(x, y);
-			double distanceHome = double(pow(Grids().getDistanceHome(x, y), 0.1));
+			double threat = max(1.0, Grids().getEGroundDistanceGrid(x, y));
+			double distance = max(1.0, double(Grids().getDistanceHome(x, y)));			
 
-			if ((mobility / (1.0 + (distance * threat))) / distanceHome > highestMobility && Util().isSafe(start, WalkPosition(x, y), unit.getType(), false, false, true))
+			if (mobility / (threat * distance) >= highestMobility && Util().isSafe(start, WalkPosition(x, y), unit.getType(), false, false, true))
 			{
-				highestMobility = (mobility / (1.0 + (distance * threat))) / distanceHome;
+				highestMobility = mobility / (threat * distance);
 				finalPosition = WalkPosition(x, y);
 			}
 
@@ -372,9 +389,9 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 	{
 		for (auto &base : Bases().getMyBases())
 		{
-			if (unit.unit()->getLastCommand().getTargetPosition() != (Position(base.second.getResourcesPosition()) + Position(base.second.getPosition())) / 2 || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move || unit.unit()->isStuck())
+			if (unit.unit()->getLastCommand().getTargetPosition() != Position(base.second.getResourcesPosition()) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move || unit.unit()->isStuck())
 			{
-				unit.unit()->move((Position(base.second.getResourcesPosition()) + Position(base.second.getPosition())) / 2);
+				unit.unit()->move(Position(base.second.getResourcesPosition()));
 			}
 			return;
 		}

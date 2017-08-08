@@ -81,6 +81,7 @@ void BuildingTrackerClass::storeBuilding(Unit building)
 	BuildingInfo &b = myBuildings[building];
 	b.setUnit(building);
 	b.setType(building->getType());
+	b.setEnergy(building->getEnergy());
 	b.setPosition(building->getPosition());
 	b.setWalkPosition(Util().getWalkPosition(building));
 	b.setTilePosition(building->getTilePosition());
@@ -111,7 +112,19 @@ TilePosition BuildingTrackerClass::getBuildLocationNear(UnitType building, TileP
 		// If we can build here, return this tile position		
 		if (TilePosition(x, y).isValid() && canBuildHere(building, TilePosition(x, y), ignoreCond))
 		{
-			return TilePosition(x, y);
+			bool fine = true;
+			for (auto &w : Workers().getMyWorkers())
+			{
+				WorkerInfo worker = w.second;
+				if (worker.getBuildPosition().isValid() && worker.getBuildPosition().getDistance(buildTilePosition) < worker.getBuildingType().tileWidth())
+				{
+					fine = false;
+				}
+			}
+			if (fine)
+			{
+				return TilePosition(x, y);
+			}
 		}
 
 		// Otherwise spiral out and find a new tile
@@ -152,7 +165,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	if (building.isResourceDepot())
 	{
 		// Fast expands must be as close to home and have a gas geyser
-		if (Strategy().isAllyFastExpand() || Terrain().getEnemyBasePositions().size() == 0)
+		if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1)
 		{
 			for (auto &area : theMap.Areas())
 			{
@@ -203,12 +216,12 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	}
 	}
 	}*/
-	
+
 	// If we are fast expanding
 	if (Strategy().isAllyFastExpand())
 	{
 		if (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(Terrain().getFFEPosition()) <= 0 + Strategy().isBust())
-		{	
+		{
 			return getBuildLocationNear(building, Terrain().getFFEPosition());
 		}
 		if (building == UnitTypes::Protoss_Photon_Cannon)
@@ -236,7 +249,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		if (building == UnitTypes::Protoss_Pylon && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) >= 2)
 		{
 			if (Grids().getPylonGrid(base.second.getTilePosition()) == 0)
-			{				
+			{
 				return getBuildLocationNear(building, base.second.getTilePosition());
 			}
 		}
@@ -251,7 +264,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 
 	// For each base, check if you can build near it, starting at the main
 	for (auto &base : Bases().getMyOrderedBases())
-	{		
+	{
 		TilePosition here = getBuildLocationNear(building, base.second);
 		if (here.isValid())
 		{
@@ -278,7 +291,7 @@ bool BuildingTrackerClass::canBuildHere(UnitType building, TilePosition buildTil
 	{
 		for (auto &gas : Resources().getMyGas())
 		{
-			if (buildTilePosition == gas.second.getTilePosition() && gas.second.getType() == UnitTypes::Resource_Vespene_Geyser)
+			if (Grids().getBaseGrid(gas.second.getTilePosition()) > 0 && buildTilePosition == gas.second.getTilePosition() && gas.second.getType() == UnitTypes::Resource_Vespene_Geyser)
 			{
 				return true;
 			}
@@ -294,6 +307,11 @@ bool BuildingTrackerClass::canBuildHere(UnitType building, TilePosition buildTil
 		{
 			return false;
 		}
+	}
+
+	if (building == UnitTypes::Protoss_Shield_Battery && Broodwar->getUnitsInRadius(Position(buildTilePosition), 128, Filter::IsResourceDepot).size() == 0)
+	{
+		return false;
 	}
 
 	// For every tile of a buildings size
