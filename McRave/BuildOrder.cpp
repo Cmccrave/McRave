@@ -148,12 +148,12 @@ void BuildOrderTrackerClass::protossOpener()
 			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 32;
 			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 40;
 		}
-		// NZCore
+		// 10/15 Gate Goon
 		else if (opening == 3)
 		{			
-			buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 40);
-			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 48);
-			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
+			buildingDesired[UnitTypes::Protoss_Nexus] = 1;
+			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 30);
+			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 22;
 			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;			
 		}
 		// 2 Gate Core

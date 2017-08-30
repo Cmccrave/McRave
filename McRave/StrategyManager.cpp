@@ -104,7 +104,7 @@ void StrategyTrackerClass::protossStrategy()
 		allyFastExpand = false;
 		enemyFastExpand = false;
 		bust = false;
-		holdRamp = false;
+		holdRamp = true;
 		zealotsLocked = false;
 	}
 

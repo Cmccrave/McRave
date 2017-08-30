@@ -423,7 +423,7 @@ void UnitTrackerClass::updateAlly(UnitInfo& unit)
 	return;
 }
 
-void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be moved to UTIL as a double function, to be accesible to SpecialUnitManager too
+void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 {
 	// Variables for calculating local strengths
 	double enemyLocalGroundStrength = 0.0, allyLocalGroundStrength = 0.0;
@@ -546,7 +546,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit) // Will eventually be
 	unit.setAirLocal(allyLocalAirStrength - enemyLocalAirStrength);
 
 	// Specific Invis unit strategy
-	if (unit.getTarget() && unit.getTarget()->exists() && (unit.getTarget()->isCloaked() || unit.getTarget()->isBurrowed()) && Grids().getADetectorGrid(unit.getWalkPosition()) == 0)
+	if (unit.getTarget() && unit.getTarget()->exists() && (unit.getTarget()->isCloaked() || unit.getTarget()->isBurrowed()) && !unit.unit()->isDetected())
 	{
 		unit.setStrategy(0);
 		return;
