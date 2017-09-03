@@ -40,8 +40,8 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 			continue;
 		}
 
-		// Dont chase vultures or mines as melee units
-		if ((enemy.getType() == UnitTypes::Terran_Vulture || enemy.getType() == UnitTypes::Terran_Vulture_Spider_Mine) && unit.getGroundRange() < 32)
+		// Dont chase vultures or mines as melee units - TEMP let zealots target vultures to prevent separation
+		if ((/*enemy.getType() == UnitTypes::Terran_Vulture ||*/ enemy.getType() == UnitTypes::Terran_Vulture_Spider_Mine) && unit.getGroundRange() < 32)
 		{
 			continue;
 		}

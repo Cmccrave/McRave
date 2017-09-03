@@ -261,7 +261,7 @@ void CommandTrackerClass::attackTarget(UnitInfo& unit)
 	}
 
 	// If approaching is necessary
-	if (unit.getGroundRange() > 32 && unit.getGroundRange() < Units().getEnemyUnits()[unit.getTarget()].getGroundRange() && !Units().getEnemyUnits()[unit.getTarget()].getType().isBuilding())
+	if (unit.getGroundRange() > 32 && unit.getGroundRange() < Units().getEnemyUnits()[unit.getTarget()].getGroundRange() && !Units().getEnemyUnits()[unit.getTarget()].getType().isBuilding() && unit.getSpeed() > Units().getEnemyUnits()[unit.getTarget()].getSpeed())
 	{
 		approach = true;
 	}

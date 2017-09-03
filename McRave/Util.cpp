@@ -227,9 +227,14 @@ double UtilTrackerClass::getPriority(UnitInfo& unit, Player who)
 	}
 
 	// Else return the units max strength
-	else
+	else if (unit.getMaxGroundStrength() > 0 || unit.getMaxAirStrength() > 0)
 	{
 		return max(unit.getMaxGroundStrength(), unit.getMaxAirStrength());
+	}
+
+	else
+	{
+		return 0.1;
 	}
 }
 

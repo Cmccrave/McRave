@@ -57,9 +57,10 @@ void StrategyTrackerClass::protossStrategy()
 			rush = false;
 		}
 
-		// If we are being BBS'd, unlock Zealots
+		
 		if (Players().getNumberTerran() > 0)
-		{
+		{			
+			// If we are being BBS'd, unlock Zealots
 			if ((Units().getEnemyComposition()[UnitTypes::Terran_Barracks] == 0 || Units().getEnemyComposition()[UnitTypes::Terran_Barracks] == 2) && Units().getEnemyComposition()[UnitTypes::Terran_Command_Center] == 1 && Units().getEnemyComposition()[UnitTypes::Terran_Refinery] == 0)
 			{
 				zealotsLocked = false;
@@ -69,7 +70,11 @@ void StrategyTrackerClass::protossStrategy()
 			{
 				zealotsLocked = true;
 				lockedType.erase(UnitTypes::Protoss_Zealot);
-			}
+			}	
+
+			// Always play passive with Terran due to 12 Nexus until Goon range
+			playPassive = true;
+			holdRamp = true;
 		}
 
 		// Check if enemy is playing defensive so we can expand off it
@@ -106,6 +111,7 @@ void StrategyTrackerClass::protossStrategy()
 		bust = false;
 		holdRamp = true;
 		zealotsLocked = false;
+		playPassive = false;
 	}
 
 	// Check if we need detection

@@ -17,6 +17,7 @@ class StrategyTrackerClass
 	bool bust = false;
 	bool zealotsLocked = false;
 	bool marinesLocked = false;
+	bool playPassive = false;
 	double recallFrame = 0.0;
 
 	// Testing stuff
@@ -33,6 +34,7 @@ public:
 	bool isHoldRamp() { return holdRamp; }
 	bool isBust() { return bust; }
 	bool isZealotsLocked() { return zealotsLocked; }
+	bool isPlayPassive() { return playPassive; }
 
 	bool isUnitLocked(UnitType unit) { return (lockedType.find(unit) != lockedType.end()); }
 

@@ -46,7 +46,7 @@ void BuildOrderTrackerClass::updateDecision()
 		}
 
 		// If production is saturated and none are idle or we need detection for some invis units, choose a tech
-		if (Strategy().needDetection() || (Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() && !getOpening && !getTech && techUnit == UnitTypes::None && Production().getIdleLowProduction().size() == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 2))
+		if (Strategy().needDetection() || (!Strategy().isPlayPassive() && Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() && !getOpening && !getTech && techUnit == UnitTypes::None && Production().getIdleLowProduction().size() == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 2))
 		{
 			getTech = true;
 		}
@@ -148,13 +148,13 @@ void BuildOrderTrackerClass::protossOpener()
 			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 32;
 			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 40;
 		}
-		// 10/15 Gate Goon
+		// 12 Nexus
 		else if (opening == 3)
 		{			
-			buildingDesired[UnitTypes::Protoss_Nexus] = 1;
-			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 30);
-			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 22;
-			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;			
+			buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24);
+			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 26) + (Units().getSupply() >= 32);
+			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 28;
+			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 30;
 		}
 		// 2 Gate Core
 		else if (opening == 4)
@@ -258,7 +258,7 @@ void BuildOrderTrackerClass::protossSituational()
 	}
 
 	// Shield battery logic
-	if (Strategy().isRush())
+	if (Strategy().isRush() && Players().getNumberTerran() == 0)
 	{
 		buildingDesired[UnitTypes::Protoss_Shield_Battery] = min(1, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core));
 	}
@@ -270,7 +270,7 @@ void BuildOrderTrackerClass::protossSituational()
 	}
 
 	// Assimilator logic
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) == buildingDesired[UnitTypes::Protoss_Nexus])
+	if (!Strategy().isPlayPassive() && Resources().isGasSaturated() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) == buildingDesired[UnitTypes::Protoss_Nexus] && Broodwar->self()->gas() < Broodwar->self()->minerals() * 5 && Broodwar->self()->minerals() > 100)
 	{
 		buildingDesired[UnitTypes::Protoss_Assimilator] = Resources().getTempGasCount();
 	}

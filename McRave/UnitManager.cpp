@@ -433,7 +433,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 	double unitToEngage = (unit.getPosition().getDistance(unit.getEngagePosition())) / unit.getSpeed();
 
 	// If a unit is clearly out of range based on current health (keeps healthy units in the front), set as "no local" and skip calculating
-	if (unitToEngage >= simulationTime || unit.getPosition().getDistance(unit.getTargetPosition()) > 640.0 + (64.0 * (1.0 - unit.getPercentHealth())))
+	if (unit.getPosition().getDistance(unit.getTargetPosition()) > 640.0 + (64.0 * (1.0 - unit.getPercentHealth())))
 	{
 		unit.setStrategy(3);
 		return;
@@ -479,6 +479,11 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 				enemyToEngage = (max(0.0, (double(enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getGroundRange()))) / (enemy.getSpeed())) - unitToEngage;
 				simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getGroundRange() - unit.getGroundRange()) / (enemy.getSpeed())));
 			}
+		}
+
+		if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && !enemy.unit()->isDetected())
+		{
+			simRatio = simRatio * 5.0;
 		}
 
 		if (enemy.getDeadFrame() == 0)
@@ -544,14 +549,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 	// Store the difference of strengths
 	unit.setGroundLocal(allyLocalGroundStrength - enemyLocalGroundStrength);
 	unit.setAirLocal(allyLocalAirStrength - enemyLocalAirStrength);
-
-	// Specific Invis unit strategy
-	if (unit.getTarget() && unit.getTarget()->exists() && (unit.getTarget()->isCloaked() || unit.getTarget()->isBurrowed()) && !unit.unit()->isDetected())
-	{
-		unit.setStrategy(0);
-		return;
-	}
-
+	
 	// Specific High Templar strategy
 	if (unit.getType() == UnitTypes::Protoss_High_Templar)
 	{
@@ -719,6 +717,12 @@ void UnitTrackerClass::updateGlobalCalculations()
 	{
 		// If Zerg, wait for a larger army before moving out
 		if (Broodwar->enemy()->getRace() == Races::Zerg && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0)
+		{
+			globalStrategy = 2;
+			return;
+		}
+
+		if (Strategy().isPlayPassive())
 		{
 			globalStrategy = 2;
 			return;

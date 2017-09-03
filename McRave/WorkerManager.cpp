@@ -365,7 +365,7 @@ void WorkerTrackerClass::assignWorker(WorkerInfo& worker)
 	// Assign a task if none
 	int cnt = 1;
 
-	if ((!Strategy().isRush() && BuildOrder().isOpener()) || Resources().isMinSaturated())
+	if (!Strategy().isRush() || Resources().isMinSaturated())
 	{
 		for (auto &gas : Resources().getMyGas())
 		{
