@@ -115,7 +115,7 @@ void StrategyTrackerClass::protossStrategy()
 	}
 
 	// Check if we need detection
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observatory) > 0)
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) > 0)
 	{
 		invis = false;
 	}
