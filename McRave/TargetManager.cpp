@@ -2,7 +2,7 @@
 
 Unit TargetTrackerClass::getTarget(UnitInfo& unit)
 {
-	if (unit.getType() == UnitTypes::Protoss_Observer || unit.getType() == UnitTypes::Protoss_Shuttle)
+	if (unit.getType() == UnitTypes::Protoss_Shuttle)
 	{
 		return nullptr;
 	}
@@ -29,13 +29,28 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 	{
 		thisUnit = 0.0;
 		UnitInfo enemy = e.second;
+		double distance = (1.0 + unit.getPosition().getDistance(enemy.getPosition()));
+
 		if (!enemy.unit())
 		{
 			continue;
 		}
 
+		// If unit needs revealing
+		if (unit.getType() == UnitTypes::Protoss_Observer)
+		{
+			if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()))
+			{				
+				thisUnit = (enemy.getPriority() * (1.0 + 0.1 *(1.0 - enemy.getPercentHealth()))) / distance;
+			}
+			else
+			{
+				continue;
+			}
+		}
+
 		// If unit is dead or unattackable
-		if (enemy.getDeadFrame() > 0 || (enemy.getType().isFlyer() && unit.getAirRange() == 0.0) || (!enemy.getType().isFlyer() && unit.getGroundRange() == 0.0))
+		if (!unit.getType().isDetector() && (enemy.getDeadFrame() > 0 || (enemy.getType().isFlyer() && unit.getAirRange() == 0.0) || (!enemy.getType().isFlyer() && unit.getGroundRange() == 0.0)))
 		{
 			continue;
 		}
@@ -50,10 +65,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		if (enemy.unit()->exists() && enemy.unit()->isStasised())
 		{
 			continue;
-		}		
-
-		double distance = (1.0 + unit.getPosition().getDistance(enemy.getPosition()));
-		double threat = Grids().getEGroundDistanceGrid(enemy.getWalkPosition());
+		}	
 
 		// Reavers and Tanks target highest priority units with clusters around them
 		if (unit.getType() == UnitTypes::Protoss_Reaver || unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)

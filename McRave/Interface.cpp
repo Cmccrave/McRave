@@ -36,14 +36,13 @@ void InterfaceTrackerClass::drawInformation()
 	Broodwar->drawTextScreen(575, 16, "%c%.2f/%.2f", Text::White, Units().getGlobalAllyStrength(), Units().getGlobalEnemyStrength());
 	Broodwar->drawTextScreen(452, 16, "%c%d", Text::White, Production().getReservedMineral() + Buildings().getQueuedMineral());
 	Broodwar->drawTextScreen(520, 16, "%c%d", Text::White, Production().getReservedGas() + Buildings().getQueuedGas());
-	Broodwar->drawTextScreen(520, 32, "Detection: %d", Strategy().needDetection());
 
 	// Display unit scoring	
 	for (auto &unit : Strategy().getUnitScore())
 	{
 		if (unit.second > 0.0)
 		{
-			Broodwar->drawTextScreen(0, offset, "%c%s: %c%.2f", Text::Blue, unit.first.c_str(), Text::White, unit.second);
+			Broodwar->drawTextScreen(0, offset, "%c%s: %c%.2f", Broodwar->self()->getTextColor(), unit.first.c_str(), Text::White, unit.second);
 			offset += 10;
 		}
 	}
@@ -58,7 +57,6 @@ void InterfaceTrackerClass::drawInformation()
 	for (auto &r : Resources().getMyGas())
 	{
 		Broodwar->drawTextMap(r.second.getPosition() + Position(-8, 32), "%c%d", Text::Green, r.second.getRemainingResources());
-		Broodwar->drawTextMap(r.second.getPosition(), "%d", r.second.getGathererCount());
 	}
 	return;
 }
@@ -75,8 +73,8 @@ void InterfaceTrackerClass::drawAllyInfo()
 				Broodwar->drawLineMap(unit.getTargetPosition(), unit.getPosition(), Broodwar->self()->getColor());
 				if (unit.getVisibleGroundStrength() > 0.0 || unit.getVisibleAirStrength() > 0.0)
 				{
-					Broodwar->drawTextMap(unit.getPosition() + Position(5, -10), "Grd: %c %.2f, %.2f", Text::Brown, unit.getVisibleGroundStrength(), unit.getGroundLocal());
-					Broodwar->drawTextMap(unit.getPosition() + Position(5, 2), "Air: %c %.2f, %.2f", Text::Blue, unit.getVisibleAirStrength(), unit.getAirLocal());
+					Broodwar->drawTextMap(unit.getPosition() + Position(5, -10), "%c Grd: %c %.2f, %.2f", Text::White, Text::Brown, unit.getVisibleGroundStrength(), unit.getGroundLocal());
+					Broodwar->drawTextMap(unit.getPosition() + Position(5, 2), "%c Air: %c %.2f, %.2f", Text::White, Text::Blue, unit.getVisibleAirStrength(), unit.getAirLocal());
 				}
 			}
 		}

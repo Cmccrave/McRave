@@ -267,7 +267,7 @@ void CommandTrackerClass::attackTarget(UnitInfo& unit)
 	}
 
 	// If kite is true and weapon on cooldown, move
-	if (!unit.getTarget()->getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() > 0 || unit.getTarget()->getType().isFlyer() && unit.unit()->getAirWeaponCooldown() > 0)
+	if (!unit.getTarget()->getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() > 0 || unit.getTarget()->getType().isFlyer() && unit.unit()->getAirWeaponCooldown() > 0 || (unit.getTarget()->exists() && (unit.getTarget()->isCloaked() || unit.getTarget()->isBurrowed()) && !unit.getTarget()->isDetected()))
 	{
 		if (approach)
 		{
@@ -359,7 +359,6 @@ void CommandTrackerClass::fleeTarget(UnitInfo& unit)
 				highestMobility = mobility / (threat * distance);
 				finalPosition = WalkPosition(x, y);
 			}
-
 		}
 	}
 

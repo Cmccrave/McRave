@@ -7,29 +7,10 @@
 #include "McRave.h"
 
 // --- AUTHOR NOTES ---
-// TODO in testing before AIIDE 2017:
-// Scout improvements
-// Island check for DistanceGridHome
-// Anti-stone check
-// Cannons / Worker pull
-// Store resources when Nexus created - remove when destroyed
-// onUnitMorph - Archons, Eggs, Refineries
-// One shot composition storing - requires onMorph usage
-
 // TODO:
-// Only remove boulders close to me
-// Invis grid for observers to detect stuff
-// Spider mine removal from expansions
-// Improve shuttles
-// IsSelected to display information
-// Move production buildings to the front of the base, tech to the back
-// Dijkstras theory for distance grid
-// Move stim research to strategy
-
-// TODO to move to no latency compensation:
-// Building idle status stored
-// Unit idle status stored?
-// Update commands to remove any latency components
+// Improve scouting further - currently stays alive until tech is almost discovered
+// Prevent overlapping buildings
+// Vs Random issues
 
 void McRaveModule::onStart()
 {
@@ -42,10 +23,15 @@ void McRaveModule::onStart()
 	bool startingLocationsOK = theMap.FindBasesForStartingLocations();
 	assert(startingLocationsOK);
 	Terrain().onStart();
+	BuildOrder().loadConfig();
 }
 
 void McRaveModule::onEnd(bool isWinner)
 {
+	if (isWinner)
+	{
+		BuildOrder().recordWinningBuild(isWinner);
+	}
 }
 
 void McRaveModule::onFrame()

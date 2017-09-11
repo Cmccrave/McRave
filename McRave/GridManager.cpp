@@ -41,7 +41,7 @@ void GridTrackerClass::reset()
 	//{
 	//	for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
 	//	{
-	//		if (baseGrid[x/4][y/4] > 0)
+	//		if (eGroundDistanceGrid[x][y] > 0)
 	//		{
 	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(8, 8), 4, Colors::Red);
 	//		}
@@ -232,7 +232,15 @@ void GridTrackerClass::updateEnemyGrids()
 							resetGrid[x][y] = true;
 							eGroundGrid[x][y] += enemy.getMaxGroundStrength();
 						}
-						if (enemy.getGroundDamage() > 0.0 && distance < (enemy.getGroundRange() + (enemy.getSpeed())))
+						if (enemy.getType().isWorker())
+						{
+							if (enemy.getGroundDamage() > 0.0 && distance < ((enemy.getGroundRange()*2.0) + (enemy.getSpeed())))
+							{
+								resetGrid[x][y] = true;
+								eGroundDistanceGrid[x][y] += max(0.1, enemy.getMaxGroundStrength() / distance);
+							}
+						}
+						else if (enemy.getGroundDamage() > 0.0 && distance < (enemy.getGroundRange() + (enemy.getSpeed())))
 						{
 							resetGrid[x][y] = true;
 							eGroundDistanceGrid[x][y] += max(0.1, enemy.getMaxGroundStrength() / distance);

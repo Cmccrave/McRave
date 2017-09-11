@@ -38,29 +38,65 @@ void StrategyTrackerClass::protossStrategy()
 	// If it's early on and we're being rushed
 	if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0)
 	{
-		// Ramp holding logic
-		if ((allyFastExpand && Players().getNumberZerg() > 0) || (Players().getNumberProtoss() > 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) >= 4))
+		// Specific early PvZ strategy
+		if (Players().getNumberZerg() > 0)
 		{
-			holdRamp = true;
-		}
-		else
-		{
-			holdRamp = false;
+			// Specific FFE strategy
+			if (BuildOrder().getOpener() == 1)
+			{
+				playPassive = true;
+				holdRamp = true;
+			}
+			else
+			{
+				playPassive = false;
+				holdRamp = false;
+			}
+
+			// Specific Non-FFE strategy
+			if (Units().getEnemyComposition()[UnitTypes::Zerg_Zergling] >= 6 && BuildOrder().getOpener() != 1)
+			{
+				playPassive = true;
+				rush = true;
+			}
+			else
+			{
+				playPassive = false;
+				rush = false;
+			}
 		}
 
-		if (Players().getNumberProtoss() > 0 && Units().getEnemyComposition()[UnitTypes::Protoss_Forge] == 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] >= 2 || Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] == 0) && Units().getEnemyComposition()[UnitTypes::Protoss_Assimilator] == 0 && Units().getEnemyComposition()[UnitTypes::Protoss_Nexus] == 1)
+
+		// Specific early PvP strategy
+		if (Players().getNumberProtoss() > 0)
 		{
-			rush = true;
-		}
-		else
-		{
-			rush = false;
+			// Specific stabilizing strategy
+			if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) >= 4)
+			{
+				holdRamp = true;
+			}
+			else
+			{
+				holdRamp = false;
+			}
+
+			// Specific anti-rush strategy
+			if (Units().getEnemyComposition()[UnitTypes::Protoss_Forge] == 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] >= 2 || Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] == 0) && Units().getEnemyComposition()[UnitTypes::Protoss_Assimilator] == 0 && Units().getEnemyComposition()[UnitTypes::Protoss_Nexus] == 1)
+			{
+				playPassive = true;
+				rush = true;
+			}
+			else
+			{
+				playPassive = false;
+				rush = false;
+			}
 		}
 
-		
+		// Specific early PvT strategy
 		if (Players().getNumberTerran() > 0)
-		{			
-			// If we are being BBS'd, unlock Zealots
+		{
+			// Specific anti-rush strategy
 			if ((Units().getEnemyComposition()[UnitTypes::Terran_Barracks] == 0 || Units().getEnemyComposition()[UnitTypes::Terran_Barracks] == 2) && Units().getEnemyComposition()[UnitTypes::Terran_Command_Center] == 1 && Units().getEnemyComposition()[UnitTypes::Terran_Refinery] == 0)
 			{
 				zealotsLocked = false;
@@ -70,24 +106,29 @@ void StrategyTrackerClass::protossStrategy()
 			{
 				zealotsLocked = true;
 				lockedType.erase(UnitTypes::Protoss_Zealot);
-			}	
+			}
 
-			// Always play passive with Terran due to 12 Nexus until Goon range
-			playPassive = true;
-			holdRamp = true;
+			// Specific 12-Nexus strategy
+			if (BuildOrder().getOpener() == 3)
+			{
+				playPassive = true;
+				holdRamp = true;
+			}
 		}
 
-		// Check if enemy is playing defensive so we can expand off it
+		// Specific ally expansion strategy
 		if ((Players().getNumberZerg() > 0 && BuildOrder().getOpener() == 1) || Units().getEnemyComposition()[UnitTypes::Terran_Bunker] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Photon_Cannon] >= 2)
 		{
-			allyFastExpand = true;
+			playPassive = true;
+			allyFastExpand = true;			
 		}
 		else
 		{
+			playPassive = false;
 			allyFastExpand = false;
 		}
 
-		// Check if enemy is fast expanding so we can try to punish it and end the game early
+		// Specific enemy expansion strategy
 		if (Units().getEnemyComposition()[UnitTypes::Terran_Command_Center] > 1 || Units().getEnemyComposition()[UnitTypes::Zerg_Hatchery] > 2 || Units().getEnemyComposition()[UnitTypes::Protoss_Nexus] > 1)
 		{
 			enemyFastExpand = true;
@@ -96,25 +137,18 @@ void StrategyTrackerClass::protossStrategy()
 		{
 			enemyFastExpand = false;
 		}
-
-		// Check to see if a bust is coming
-		if (allyFastExpand && Units().getEnemyComposition()[UnitTypes::Zerg_Hydralisk_Den] > 0 || Units().getEnemyComposition()[UnitTypes::Zerg_Hydralisk] >= 4)
-		{
-			bust = true;
-		}
 	}
 	else
 	{
 		rush = false;
-		allyFastExpand = false;
-		enemyFastExpand = false;
-		bust = false;
 		holdRamp = true;
 		zealotsLocked = false;
 		playPassive = false;
+		allyFastExpand = false;
+		enemyFastExpand = false;
 	}
 
-	// Check if we need detection
+	// Specific anti-invis unit strategy
 	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) > 0)
 	{
 		invis = false;
@@ -191,7 +225,7 @@ void StrategyTrackerClass::updateBullets()
 			if (bullet->getType() == BulletTypes::EMP_Missile)
 			{
 				Broodwar << "EMP Sent to: " << bullet->getTargetPosition() << endl;
-			}		
+			}
 			if (bullet->getSource()->getPlayer() == Broodwar->self() && myBullets.find(bullet) == myBullets.end())
 			{
 				myBullets.emplace(bullet);
@@ -228,7 +262,7 @@ void StrategyTrackerClass::updateBullets()
 				{
 					//unitPerformance[bullet->getSource()->getType()] += double(bullet->getSource()->getType().airWeapon().damageAmount());
 				}
-			}			
+			}
 		}
 	}
 }
@@ -383,11 +417,11 @@ void StrategyTrackerClass::updateTerranUnitScore(UnitType unit, int count)
 {
 	switch (unit)
 	{
-	case UnitTypes::Enum::Terran_Marine:		
+	case UnitTypes::Enum::Terran_Marine:
 		break;
 	case UnitTypes::Enum::Terran_Medic:
 		break;
-	case UnitTypes::Enum::Terran_Firebat:		
+	case UnitTypes::Enum::Terran_Firebat:
 		break;
 	case UnitTypes::Enum::Terran_Vulture:
 		break;

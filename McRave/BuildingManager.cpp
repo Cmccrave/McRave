@@ -220,7 +220,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	// If we are fast expanding
 	if (Strategy().isAllyFastExpand())
 	{
-		if (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(Terrain().getFFEPosition()) <= 0 + Strategy().isBust())
+		if (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(Terrain().getFFEPosition()) <= 0)
 		{
 			return getBuildLocationNear(building, Terrain().getFFEPosition());
 		}

@@ -175,11 +175,7 @@ void UnitTrackerClass::onUnitComplete(Unit unit)
 			Workers().storeWorker(unit);
 		}
 
-		if (unit->getType() == UnitTypes::Protoss_Observer)
-		{
-			SpecialUnits().storeUnit(unit);
-		}
-		else if (unit->getType() == UnitTypes::Protoss_Reaver || unit->getType() == UnitTypes::Protoss_High_Templar || unit->getType() == UnitTypes::Protoss_Arbiter)
+		if (unit->getType() == UnitTypes::Protoss_Reaver || unit->getType() == UnitTypes::Protoss_High_Templar || unit->getType() == UnitTypes::Protoss_Arbiter || unit->getType() == UnitTypes::Protoss_Observer)
 		{
 			storeAlly(unit);
 			SpecialUnits().storeUnit(unit);
@@ -432,13 +428,6 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 	double simRatio = 0.0;
 	double unitToEngage = (unit.getPosition().getDistance(unit.getEngagePosition())) / unit.getSpeed();
 
-	// If a unit is clearly out of range based on current health (keeps healthy units in the front), set as "no local" and skip calculating
-	if (unit.getPosition().getDistance(unit.getTargetPosition()) > 640.0 + (64.0 * (1.0 - unit.getPercentHealth())))
-	{
-		unit.setStrategy(3);
-		return;
-	}
-
 	// Check every enemy unit being in range of the target
 	for (auto &e : enemyUnits)
 	{
@@ -539,97 +528,48 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 		}
 	}
 
-	// If a recall happened recently, cause units to enrage
-	if (Broodwar->getFrameCount() - Strategy().getRecallFrame() < 1000 && Strategy().getRecallFrame() > 0)
-	{
-		allyLocalAirStrength = allyLocalAirStrength * 20.0;
-		allyLocalGroundStrength = allyLocalGroundStrength * 20.0;
-	}
-
 	// Store the difference of strengths
 	unit.setGroundLocal(allyLocalGroundStrength - enemyLocalGroundStrength);
 	unit.setAirLocal(allyLocalAirStrength - enemyLocalAirStrength);
-	
-	// Specific High Templar strategy
-	if (unit.getType() == UnitTypes::Protoss_High_Templar)
-	{
-		if (unit.unit()->getEnergy() < 75)
-		{
-			unit.setStrategy(0);
-			return;
-		}
-	}
 
-	// Specific Medic strategy
-	if (unit.getType() == UnitTypes::Terran_Medic)
+	// Specific passive strategy
+	if (Strategy().isPlayPassive())
 	{
-		if (unit.unit()->getEnergy() <= 0)
-		{
-			unit.setStrategy(0);
-			return;
-		}
-	}
-
-	// Specific ground unit strategy
-	if (!unit.getType().isFlyer())
-	{
-		// Specific melee strategy
+		// Specific passive melee strategy
 		if (max(unit.getGroundRange(), unit.getAirRange()) <= 32)
 		{
-			// Force to stay on tanks
-			if (unit.getTarget() && unit.getTarget()->exists())
+			// If against rush and not ready to wall up, fight in mineral line
+			if (Strategy().isRush() && !Strategy().isHoldRamp())
 			{
-				if ((unit.getTarget()->getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getTarget()->getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && unit.getPosition().getDistance(unit.getTargetPosition()) < 128)
+				if (unit.getTarget() && unit.getTarget()->exists() && ((Grids().getResourceGrid(unit.getTarget()->getTilePosition()) > 0 && Grids().getResourceGrid(unit.getTilePosition()) > 0)))
 				{
 					unit.setStrategy(1);
 					return;
 				}
-
-				// Avoid attacking mines
-				if (unit.getTarget()->getType() == UnitTypes::Terran_Vulture_Spider_Mine)
+				else
 				{
-					unit.setStrategy(0);
+					unit.setStrategy(2);
 					return;
 				}
 			}
 
-			// Check if we are still in defensive mode
-			if (globalStrategy == 2)
+			// Else hold ramp and attack anything within range
+			else if (Strategy().isHoldRamp())
 			{
-				// If against rush and not ready to wall up, fight in mineral line
-				if (Strategy().isRush() && !Strategy().isHoldRamp())
+				if (unit.getTarget() && unit.getTarget()->exists() && unit.getPosition().getDistance(unit.getTargetPosition()) < 16 && Terrain().isInAllyTerritory(unit.getTarget()) && Terrain().isInAllyTerritory(unit.unit()) && !unit.getTarget()->getType().isWorker())
 				{
-					if (unit.getTarget() && unit.getTarget()->exists() && ((Grids().getResourceGrid(unit.getTarget()->getTilePosition()) > 0 && Grids().getResourceGrid(unit.getTilePosition()) > 0)))
-					{
-						unit.setStrategy(1);
-						return;
-					}
-					else
-					{
-						unit.setStrategy(2);
-						return;
-					}
+					unit.setStrategy(1);
+					return;
 				}
-
-				// Else hold ramp and attack anything within range
-				else if (Strategy().isHoldRamp())
+				else
 				{
-					if (unit.getTarget() && unit.getTarget()->exists() && unit.getPosition().getDistance(unit.getTargetPosition()) < 16 && Terrain().isInAllyTerritory(unit.getTarget()) && Terrain().isInAllyTerritory(unit.unit()) && !unit.getTarget()->getType().isWorker())
-					{
-						unit.setStrategy(1);
-						return;
-					}
-					else
-					{
-						unit.setStrategy(2);
-						return;
-					}
+					unit.setStrategy(2);
+					return;
 				}
 			}
 		}
-
-		// Specific ranged strategy
-		else if (globalStrategy == 2 && max(unit.getGroundRange(), unit.getAirRange()) > 32)
+		// Specific passive ranged strategy
+		else if (max(unit.getGroundRange(), unit.getAirRange()) > 32)
 		{
 			// If against rush and not ready to wall up, fight in mineral line
 			if (Strategy().isRush() && !Strategy().isHoldRamp())
@@ -659,6 +599,58 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 				}
 			}
 		}
+	}
+
+	// If a unit is clearly out of range based on current health (keeps healthy units in the front), set as "no local" and skip calculating
+	if (unit.getPosition().getDistance(unit.getTargetPosition()) > 640.0 + (64.0 * (1.0 - unit.getPercentHealth())))
+	{
+		unit.setStrategy(3);
+		return;
+	}
+
+	// Specific High Templar strategy
+	if (unit.getType() == UnitTypes::Protoss_High_Templar)
+	{
+		if (unit.unit()->getEnergy() < 75)
+		{
+			unit.setStrategy(0);
+			return;
+		}
+	}
+
+	// Specific Medic strategy
+	if (unit.getType() == UnitTypes::Terran_Medic)
+	{
+		if (unit.unit()->getEnergy() <= 0)
+		{
+			unit.setStrategy(0);
+			return;
+		}
+	}
+
+	// Specific ground unit strategy
+	if (!unit.getType().isFlyer())
+	{
+		// Specific melee strategy
+		if (max(unit.getGroundRange(), unit.getAirRange()) <= 32)
+		{			
+			if (unit.getTarget() && unit.getTarget()->exists())
+			{
+				// Force to stay on tanks
+				if ((unit.getTarget()->getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getTarget()->getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && unit.getPosition().getDistance(unit.getTargetPosition()) < 128)
+				{
+					unit.setStrategy(1);
+					return;
+				}
+
+				// Avoid attacking mines
+				if (unit.getTarget()->getType() == UnitTypes::Terran_Vulture_Spider_Mine)
+				{
+					unit.setStrategy(0);
+					return;
+				}
+			}						
+		}		
 
 		// If an enemy is within ally territory, engage
 		if (unit.getTarget() && unit.getTarget()->exists() && theMap.GetArea(unit.getTarget()->getTilePosition()) && Terrain().isInAllyTerritory(unit.getTarget()))
@@ -715,31 +707,20 @@ void UnitTrackerClass::updateGlobalCalculations()
 {
 	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
-		// If Zerg, wait for a larger army before moving out
-		if (Broodwar->enemy()->getRace() == Races::Zerg && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0)
-		{
-			globalStrategy = 2;
-			return;
-		}
-
+		// If we're playing passive, don't attempt to move out
 		if (Strategy().isPlayPassive())
 		{
 			globalStrategy = 2;
 			return;
 		}
 
-		// If Toss, wait for Dragoon range upgrade against rushes
-		if (Broodwar->enemy()->getRace() == Races::Protoss && Strategy().isRush() && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0)
-		{
-			globalStrategy = 2;
-			return;
-		}
-
+		// If we're ahead, move out
 		if (globalAllyStrength > globalEnemyStrength)
 		{
 			globalStrategy = 1;
 			return;
 		}
+		// If we're behind
 		else
 		{
 			// If Terran, contain
@@ -748,6 +729,7 @@ void UnitTrackerClass::updateGlobalCalculations()
 				globalStrategy = 1;
 				return;
 			}
+			// Else, retreat
 			globalStrategy = 0;
 			return;
 		}

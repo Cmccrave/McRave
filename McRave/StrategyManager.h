@@ -14,7 +14,6 @@ class StrategyTrackerClass
 	bool invis = false;
 	bool rush = false;
 	bool holdRamp = false;
-	bool bust = false;
 	bool zealotsLocked = false;
 	bool marinesLocked = false;
 	bool playPassive = false;
@@ -32,7 +31,6 @@ public:
 	bool needDetection() { return invis; }
 	bool isRush() { return rush; }
 	bool isHoldRamp() { return holdRamp; }
-	bool isBust() { return bust; }
 	bool isZealotsLocked() { return zealotsLocked; }
 	bool isPlayPassive() { return playPassive; }
 

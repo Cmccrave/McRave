@@ -53,32 +53,43 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 	}
 
 	// All walkpositions in a 4x4 walkposition grid are set as scouted already to prevent overlapping
-	for (int x = start.x - 4; x < start.x + 4 + worker.getType().tileWidth() * 4; x++)
+	for (int x = start.x - 1; x < start.x + 1 + worker.getType().tileWidth() * 4; x++)
 	{
-		for (int y = start.y - 4; y < start.y + 4 + worker.getType().tileHeight() * 4; y++)
+		for (int y = start.y - 1; y < start.y + 1 + worker.getType().tileHeight() * 4; y++)
 		{
-			if (WalkPosition(x, y).isValid())
+			if (WalkPosition(x, y).isValid() && Grids().getEGroundDistanceGrid(x,y) != 0.0)
 			{
 				recentExplorations[WalkPosition(x, y)] = Broodwar->getFrameCount();
 			}
 		}
 	}
 
-	// Check a 20x20 walkposition grid for a potential new place to scout
-	for (int x = start.x - 16; x < start.x + 16 + worker.getType().tileWidth() * 4; x++)
+	// Check a 8x8 walkposition grid for a potential new place to scout
+	double highestMobility = 0.0;
+	for (int x = start.x - 8; x < start.x + 8 + worker.getType().tileWidth() * 4; x++)
 	{
-		for (int y = start.y - 16; y < start.y + 16 + worker.getType().tileHeight() * 4; y++)
+		for (int y = start.y - 8; y < start.y + 8 + worker.getType().tileHeight() * 4; y++)
 		{
-			if (Grids().getDistanceHome(start) - Grids().getDistanceHome(WalkPosition(x, y)) > 20)
+			if (Grids().getDistanceHome(start) - Grids().getDistanceHome(WalkPosition(x, y)) > 16)
 			{
 				continue;
 			}
-			if (WalkPosition(x, y).isValid() && Broodwar->getFrameCount() - recentExplorations[WalkPosition(x, y)] > 500 && (Position(WalkPosition(x, y)).getDistance(Terrain().getEnemyStartingPosition()) < closestD || closestD == 0.0))
+			
+			double mobility = double(Grids().getMobilityGrid(x, y));
+			double threat = max(0.01, Grids().getEGroundDistanceGrid(x, y));
+			double distance = max(0.01, Position(WalkPosition(x, y)).getDistance(Terrain().getEnemyStartingPosition()));
+
+			if (mobility < 7)
 			{
-				if (Util().isSafe(start, WalkPosition(x, y), worker.getType(), true, false, true))
+				continue;
+			}
+
+			if (WalkPosition(x, y).isValid() && Broodwar->getFrameCount() - recentExplorations[WalkPosition(x, y)] > 500)
+			{				
+				if (mobility / (threat * distance) >= highestMobility && Util().isSafe(start, WalkPosition(x, y), worker.getType(), false, false, true))
 				{
+					highestMobility = mobility / (threat * distance);
 					bestPosition = Position(WalkPosition(x, y));
-					closestD = Position(WalkPosition(x, y)).getDistance(Terrain().getEnemyStartingPosition());
 				}
 			}
 		}
@@ -86,6 +97,7 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 	if (bestPosition.isValid() && bestPosition != Position(start))
 	{
 		worker.unit()->move(bestPosition);
+		Broodwar->drawLineMap(worker.getPosition(), bestPosition, Colors::Blue);
 	}
 	return;
 }

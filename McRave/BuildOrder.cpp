@@ -20,6 +20,23 @@
 // 1H spire
 // 9 pool, 9 gas, 6 lings, lair, spire
 
+void BuildOrderTrackerClass::recordWinningBuild(bool isWinner)
+{	
+	//Document document;
+	//document.Parse(json);
+}
+
+void BuildOrderTrackerClass::loadConfig()
+{
+	//string path = "bwapi-data/write/McRaveLearning.txt";
+	//stringstream fullConfig;
+	//FILE *file = fopen("McRaveLearning.txt", "r");
+	//if (file)
+	//{
+	//	Broodwar << "Yes" << endl;
+	//}
+}
+
 void BuildOrderTrackerClass::update()
 {
 	Display().startClock();
@@ -33,9 +50,15 @@ void BuildOrderTrackerClass::updateDecision()
 {
 	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
+		// Learning choice
+		if (!learnedOpener)
+		{
+			learnedOpener = true;
+		}
+
 		// If we have a Core and 2 Gates, opener is done
 		if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Cybernetics_Core) >= 1 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 2 && getOpening)
-		{			
+		{
 			getOpening = false;
 		}
 
@@ -68,7 +91,7 @@ void BuildOrderTrackerClass::updateDecision()
 			}
 			// PvT - 1 Gate Nexus
 			else if (Players().getNumberTerran() > 0)
-			{			
+			{
 				opening = 3;
 			}
 			// PvR - 2 Gate Core
@@ -133,6 +156,12 @@ void BuildOrderTrackerClass::protossOpener()
 		// FFE
 		if (opening == 1)
 		{
+			//buildingDesired[UnitTypes::Protoss_Forge] = Units().getSupply() >= 18;
+			//buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 28);
+			//buildingDesired[UnitTypes::Protoss_Photon_Cannon] = (Units().getSupply() >= 22) + (1 - Terrain().getEnemyStartingPosition().isValid());
+			//buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 36) + (Units().getSupply() >= 46);
+			//buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 40;
+			//buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 42;
 			buildingDesired[UnitTypes::Protoss_Forge] = Units().getSupply() >= 18;
 			buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 28);
 			buildingDesired[UnitTypes::Protoss_Photon_Cannon] = (Units().getSupply() >= 22) + (Units().getSupply() >= 24) + (Units().getSupply() >= 30);
@@ -150,7 +179,7 @@ void BuildOrderTrackerClass::protossOpener()
 		}
 		// 12 Nexus
 		else if (opening == 3)
-		{			
+		{
 			buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24);
 			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 26) + (Units().getSupply() >= 32);
 			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 28;
@@ -212,7 +241,7 @@ void BuildOrderTrackerClass::protossTech()
 			buildingDesired[UnitTypes::Protoss_Robotics_Support_Bay] = min(1, Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Robotics_Facility));
 			buildingDesired[UnitTypes::Protoss_Observatory] = min(1, buildingDesired[UnitTypes::Protoss_Observatory] + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver));
 		}
-	}	
+	}
 	else if (techUnit == UnitTypes::Protoss_Corsair)
 	{
 		buildingDesired[UnitTypes::Protoss_Stargate] = 1;

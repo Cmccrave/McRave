@@ -3,11 +3,13 @@
 #include <BWAPI.h>
 #include "Singleton.h"
 #include "..\BWEM\bwem.h"
+#include "..\rapidjson\document.h"
 
 // Namespaces
 using namespace BWAPI;
 using namespace std;
 using namespace BWEM;
+using namespace rapidjson;
 
 namespace
 {

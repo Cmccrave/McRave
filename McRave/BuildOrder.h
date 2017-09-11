@@ -9,14 +9,17 @@ class BuildOrderTrackerClass
 {
 	map <UnitType, int> buildingDesired;
 	int opening;
-	bool getOpening = true, getTech = false;
+	bool getOpening = true, getTech = false, learnedOpener = false;	
 	UnitType techUnit;
 	set <UnitType> techList;
-
+	//const char json[];
 public:
 	map <UnitType, int>& getBuildingDesired() { return buildingDesired; }
 	bool isOpener() { return getOpening; }
 	int getOpener() { return opening; }
+
+	void recordWinningBuild(bool);
+	void loadConfig();
 
 	void update();
 	void updateDecision();
