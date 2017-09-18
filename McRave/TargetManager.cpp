@@ -39,7 +39,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		// If unit needs revealing
 		if (unit.getType() == UnitTypes::Protoss_Observer)
 		{
-			if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()))
+			if (enemy.unit()->exists() && Grids().getACluster(enemy.getWalkPosition()) > 0 && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()))
 			{				
 				thisUnit = (enemy.getPriority() * (1.0 + 0.1 *(1.0 - enemy.getPercentHealth()))) / distance;
 			}

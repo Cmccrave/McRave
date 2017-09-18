@@ -36,6 +36,8 @@ void InterfaceTrackerClass::drawInformation()
 	Broodwar->drawTextScreen(575, 16, "%c%.2f/%.2f", Text::White, Units().getGlobalAllyStrength(), Units().getGlobalEnemyStrength());
 	Broodwar->drawTextScreen(452, 16, "%c%d", Text::White, Production().getReservedMineral() + Buildings().getQueuedMineral());
 	Broodwar->drawTextScreen(520, 16, "%c%d", Text::White, Production().getReservedGas() + Buildings().getQueuedGas());
+	Broodwar->drawTextScreen(400, 16, "BO: %d", BuildOrder().getOpener());
+	
 
 	// Display unit scoring	
 	for (auto &unit : Strategy().getUnitScore())

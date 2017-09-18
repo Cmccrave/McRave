@@ -114,26 +114,27 @@ void SpecialUnitTrackerClass::updateDetectors()
 			continue;
 		}
 
-		//// Check if any expansions need detection on them - TEMP Removed due to how stupidly the observers can behave
-		//if (BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] > Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus))
-		//{
-		//	bool baseScout = false;
-		//	for (auto &base : Terrain().getAllBaseLocations())
-		//	{
-		//		// If an expansion is unbuildable and we've scouted it already, move there to detect burrowed units
-		//		if (base.isValid() && Broodwar->isVisible(base) && !Broodwar->canBuildHere(base, UnitTypes::Protoss_Nexus, nullptr, true) && Grids().getBaseGrid(base) == 0)
-		//		{
-		//			detector.setDestination(Position(base));
-		//			detector.unit()->move(Position(base));
-		//			Grids().updateDetectorMovement(detector);
-		//			baseScout = true;
-		//		}
-		//	}
-		//	if (baseScout)
-		//	{
-		//		continue;
-		//	}
-		//}
+		// Check if any expansions need detection on them - TEMP Removed due to how stupidly the observers can behave
+		if (BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] > Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus))
+		{
+			bool baseScout = false;
+			for (auto &base : Terrain().getAllBaseLocations())
+			{
+				// If an expansion is unbuildable and we've scouted it already, move there to detect burrowed units
+				if (base.isValid() && Broodwar->isVisible(base) && !Broodwar->canBuildHere(base, UnitTypes::Protoss_Nexus, nullptr, true) && Grids().getBaseGrid(base) == 0)
+				{
+					detector.setDestination(Position(base));
+					detector.unit()->move(Position(base));
+					Grids().updateDetectorMovement(detector);
+					baseScout = true;
+				}
+			}
+
+			if (baseScout)
+			{
+				continue;
+			}
+		}
 
 		// Move towards lowest enemy air threat, no enemy detection and closest to enemy starting position	
 		double closestD = 0.0;

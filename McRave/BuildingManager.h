@@ -14,7 +14,7 @@ class BuildingTrackerClass
 	int errorTime = 0, buildingOffset = 0;
 public:
 	map <Unit, BuildingInfo>& getMyBuildings() { return myBuildings; }
-	map <UnitType, int>& getbuildingsQueued() { return buildingsQueued; }
+	map <UnitType, int>& getBuildingsQueued() { return buildingsQueued; }
 	TilePosition getBuildLocation(UnitType);
 	TilePosition getBuildLocationNear(UnitType, TilePosition, bool);
 	bool canBuildHere(UnitType, TilePosition, bool ignoreCond = false);

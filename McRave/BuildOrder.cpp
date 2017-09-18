@@ -1,4 +1,5 @@
 #include "McRave.h"
+#include <fstream>
 
 // McRaveT Stuff: need to wall in all 3 
 // TvP
@@ -21,20 +22,116 @@
 // 9 pool, 9 gas, 6 lings, lair, spire
 
 void BuildOrderTrackerClass::recordWinningBuild(bool isWinner)
-{	
-	//Document document;
-	//document.Parse(json);
+{
+	ofstream config("bwapi-data/write/" + Broodwar->enemy()->getName() + ".txt", ios::trunc);
+	int x = (opening*2) + !isWinner;
+	if (config)
+	{
+		for (int i = 0; i < 6; i++)
+		{
+			if (i == x)
+			{
+				config << configStuff[i] + 1 << " ";
+			}
+			else
+			{
+				config << configStuff[i] << " ";
+			}		
+			/*if (i == opening)
+			{
+				if (isWinner)
+				{
+					config << x + 1 << " ";
+					config << x << " ";
+
+				}
+				else
+				{
+					config << x << " ";
+					config << x + 1 << " ";
+				}
+			}
+			else
+			{
+				config << x << " ";
+				config << x << " ";
+			}
+			i++;
+			*/
+		}
+	}
 }
 
 void BuildOrderTrackerClass::loadConfig()
 {
-	//string path = "bwapi-data/write/McRaveLearning.txt";
-	//stringstream fullConfig;
-	//FILE *file = fopen("McRaveLearning.txt", "r");
-	//if (file)
-	//{
-	//	Broodwar << "Yes" << endl;
-	//}
+	string line;
+	char comma;
+	int x;
+	ifstream config("bwapi-data/read/" + Broodwar->enemy()->getName() + ".txt");
+
+	if (config)
+	{
+		while (config >> x)
+		{
+			configStuff.push_back(x);
+		}
+	}
+	else
+	{
+		config.open("bwapi-data/write/" + Broodwar->enemy()->getName() + ".txt");
+		if (config)
+		{
+			while (config >> x)
+			{
+				configStuff.push_back(x);
+			}
+		}
+	}
+
+	if (configStuff.size() == 0)
+	{
+		for (int i = 0; i < 6; i++)
+		{
+			configStuff.push_back(0);
+		}
+	}
+
+	Broodwar << configStuff.size() << endl;
+
+	// Learning choice
+	if (!learnedOpener)
+	{
+		learnedOpener = true;
+		double w1, w2;
+		int i = 0;
+
+		for (int i = 0; i < 3; i++)
+		{
+			// If we never played this strategy, try it first
+			if (configStuff.at(0 + (i * 2)) + configStuff.at(1 + (i * 2)) == 0)
+			{
+				opening = i;
+				return;
+			}
+			if (configStuff.at(1+(i*2)) == 0)
+			{
+				w1 = 1.0;
+			}
+			else
+			{
+				w1 = configStuff.at(0 + (i * 2)) / configStuff.at(1 + (i * 2));
+			}
+
+			if (w1 > w2)
+			{
+				w2 = w1;
+				opening = i;
+			}
+		}
+	}
+
+	config.close();
+	return;
 }
 
 void BuildOrderTrackerClass::update()
@@ -50,12 +147,6 @@ void BuildOrderTrackerClass::updateDecision()
 {
 	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
-		// Learning choice
-		if (!learnedOpener)
-		{
-			learnedOpener = true;
-		}
-
 		// If we have a Core and 2 Gates, opener is done
 		if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Cybernetics_Core) >= 1 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 2 && getOpening)
 		{
@@ -74,34 +165,32 @@ void BuildOrderTrackerClass::updateDecision()
 			getTech = true;
 		}
 
-		// If we are choosing an opening
-		if (getOpening && opening != 1)
-		{
-			// PvZ - FFE always
-			if (Players().getNumberZerg() > 0 && opening == 0)
-			{
-				opening = 1;
-				return;
-			}
+		//// If we are choosing an opening
+		//if (getOpening && opening != 1)
+		//{
+		//	// PvZ - FFE always
+		//	if (Players().getNumberZerg() > 0 && opening == 0)
+		//	{
+		//		opening = 1;
+		//		return;
+		//	}
 
-			// PvP - ZZ Core
-			else if (Players().getNumberProtoss() > 0)
-			{
-				opening = 2;
-			}
-			// PvT - 1 Gate Nexus
-			else if (Players().getNumberTerran() > 0)
-			{
-				opening = 3;
-			}
-			// PvR - 2 Gate Core
-			else
-			{
-				opening = 4;
-			}
-
-
-		}
+		//	// PvP - ZZ Core
+		//	else if (Players().getNumberProtoss() > 0)
+		//	{
+		//		opening = 2;
+		//	}
+		//	// PvT - 1 Gate Nexus
+		//	else if (Players().getNumberTerran() > 0)
+		//	{
+		//		opening = 3;
+		//	}
+		//	// PvR - 2 Gate Core
+		//	else
+		//	{
+		//		opening = 4;
+		//	}
+		//}
 	}
 	else if (Broodwar->self()->getRace() == Races::Terran)
 	{
@@ -151,17 +240,11 @@ void BuildOrderTrackerClass::updateBuild()
 
 void BuildOrderTrackerClass::protossOpener()
 {
-	if (getOpening)
+	if (getOpening && Players().getNumberZerg() > 0)
 	{
-		// FFE
-		if (opening == 1)
+		// Safe - Cannons First
+		if (opening == 0)
 		{
-			//buildingDesired[UnitTypes::Protoss_Forge] = Units().getSupply() >= 18;
-			//buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 28);
-			//buildingDesired[UnitTypes::Protoss_Photon_Cannon] = (Units().getSupply() >= 22) + (1 - Terrain().getEnemyStartingPosition().isValid());
-			//buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 36) + (Units().getSupply() >= 46);
-			//buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 40;
-			//buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 42;
 			buildingDesired[UnitTypes::Protoss_Forge] = Units().getSupply() >= 18;
 			buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 28);
 			buildingDesired[UnitTypes::Protoss_Photon_Cannon] = (Units().getSupply() >= 22) + (Units().getSupply() >= 24) + (Units().getSupply() >= 30);
@@ -169,39 +252,115 @@ void BuildOrderTrackerClass::protossOpener()
 			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 40;
 			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 42;
 		}
-		// ZZCore
-		else if (opening == 2)
+
+		// Normal - Gate First
+		if (opening == 1)
+		{
+			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 46);
+			buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 42);
+			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 50;
+			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 56;
+			buildingDesired[UnitTypes::Protoss_Forge] = Units().getSupply() >= 60;
+		}
+
+		// Greedy - Nexus First
+		if (opening == 2)
+		{
+			buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24);
+			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 28);
+			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 50;
+			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 56;
+			buildingDesired[UnitTypes::Protoss_Forge] = Units().getSupply() >= 60;
+		}
+	}
+	else if (getOpening && Players().getNumberTerran() > 0)
+	{
+		// Safe - DT FE - TEMP just do NZCore
+		if (opening == 0)
 		{
 			buildingDesired[UnitTypes::Protoss_Nexus] = 1;
 			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 44);
-			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 32;
-			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 40;
+			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
+			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
+			/*buildingDesired[UnitTypes::Protoss_Nexus] = 1;
+			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20);
+			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
+			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 28;
+			buildingDesired[UnitTypes::Protoss_Citadel_of_Adun] = Units().getSupply() >= 36;
+			buildingDesired[UnitTypes::Protoss_Templar_Archives] = Units().getSupply() >= 48;
+			buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 48);*/
 		}
-		// 12 Nexus
-		else if (opening == 3)
+
+		// Normal - NZCore
+		if (opening == 1)
+		{
+			buildingDesired[UnitTypes::Protoss_Nexus] = 1;
+			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 44);
+			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
+			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
+		}
+
+		// Greedy - 12 Nexus
+		if (opening == 2)
 		{
 			buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24);
 			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 26) + (Units().getSupply() >= 32);
 			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 28;
 			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 30;
 		}
-		// 2 Gate Core
-		else if (opening == 4)
-		{
-			buildingDesired[UnitTypes::Protoss_Nexus] = 1;
-			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 24);
-			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 48;
-			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) >= 4;
-		}
-		// 9/9 Gates
-		else if (opening == 5)
-		{
-			buildingDesired[UnitTypes::Protoss_Nexus] = 1;
-			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 18) * 2;
-			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 48;
-			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) >= 6;
-		}
 	}
+
+
+	else if (getOpening && Players().getNumberProtoss() > 0)
+	{
+		// Safe - ZZCore
+		if (opening == 0)
+		{
+			buildingDesired[UnitTypes::Protoss_Nexus] = 1;
+			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 44);
+			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 32;
+			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 40;
+		}
+
+		// Normal - NZCore
+		if (opening == 1)
+		{
+			buildingDesired[UnitTypes::Protoss_Nexus] = 1;
+			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 44);
+			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
+			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
+		}
+
+		// Greedy - 12 Nexus
+		if (opening == 2)
+		{
+			buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24);
+			buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 26) + (Units().getSupply() >= 32);
+			buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 28;
+			buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 30;
+		}
+
+		//// Cheese
+		//if (opening == 3)
+		//{
+		//	buildingDesired[UnitTypes::Protoss_Nexus] = 1;
+		//	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 18) * 2;
+		//	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 48;
+		//	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) >= 6;
+		//}
+	}
+
+	//else if (getOpening)
+	//{
+	//	// Safe - ZZCore
+	//	if (opening == 0)
+	//	{
+	//		buildingDesired[UnitTypes::Protoss_Nexus] = 1;
+	//		buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 44);
+	//		buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 32;
+	//		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 40;
+	//	}
+	//}
 	return;
 }
 

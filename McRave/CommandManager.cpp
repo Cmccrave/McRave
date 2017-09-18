@@ -384,7 +384,7 @@ void CommandTrackerClass::approachTarget(UnitInfo& unit)
 void CommandTrackerClass::defend(UnitInfo& unit)
 {
 	// Early on, defend mineral line
-	if (Terrain().getEnemyBasePositions().size() == 0 || !Strategy().isHoldRamp())
+	if (!Strategy().isHoldRamp())
 	{
 		for (auto &base : Bases().getMyBases())
 		{
@@ -410,10 +410,10 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 
 	// Find closest chokepoint
 	WalkPosition choke = WalkPosition(Terrain().getFirstChoke());
-	if (BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] >= 2)
+	if (BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] >= 2 || Strategy().isAllyFastExpand())
 	{
 		choke = WalkPosition(Terrain().getSecondChoke());
-	}
+	}	
 
 	// Find suitable position to hold at chokepoint
 	closestD = unit.getPosition().getDistance(Position(choke));
@@ -432,7 +432,7 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 		}
 	}
 	if (bestPosition.isValid() && bestPosition != start)
-	{
+	{		
 		if ((unit.unit()->getOrderTargetPosition() != Position(bestPosition) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move || unit.unit()->isStuck()))
 		{
 			unit.unit()->move(Position(bestPosition));

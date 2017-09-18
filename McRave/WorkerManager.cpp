@@ -15,7 +15,6 @@ void WorkerTrackerClass::updateWorkers()
 	{
 		updateInformation(worker.second);
 		updateGathering(worker.second);
-		updateSituational(worker.second);
 	}
 	return;
 }
@@ -37,7 +36,6 @@ void WorkerTrackerClass::updateInformation(WorkerInfo& worker)
 	worker.setTilePosition(worker.unit()->getTilePosition());
 	return;
 }
-
 
 void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 {
@@ -100,11 +98,6 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 		Broodwar->drawLineMap(worker.getPosition(), bestPosition, Colors::Blue);
 	}
 	return;
-}
-
-void WorkerTrackerClass::updateSituational(WorkerInfo& worker)
-{
-
 }
 
 void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
@@ -220,43 +213,11 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 	}
 
 	// If we are fast expanding and enemy is rushing, we need to defend with workers
-	if (Strategy().isAllyFastExpand() && BuildOrder().isOpener() && ((Units().getGlobalAllyStrength() + Units().getAllyDefense()) < Units().getGlobalEnemyStrength() || (Grids().getDefenseGrid(worker.getTilePosition()) > 0 && Grids().getEGroundDistanceGrid(worker.getWalkPosition()) > 0.0)))
+	if (Strategy().isAllyFastExpand() && BuildOrder().isOpener() && Units().getGlobalEnemyStrength() > Units().getAllyDefense()/*(Units().getGlobalAllyStrength() + Units().getAllyDefense() < Units().getGlobalEnemyStrength()) || (Grids().getEGroundDistanceGrid(worker.getWalkPosition()) > 0.0))*/)
 	{
-		Units().increaseGlobalAlly(1.5);
-		if (Grids().getEGroundDistanceGrid(worker.getWalkPosition()) > 0.0)
-		{
-			Unit target = worker.unit()->getClosestUnit(Filter::IsEnemy && !Filter::IsFlyer, 320);
-			if (target && target->exists() && target->getDistance(Position(Terrain().getSecondChoke())) < 128)
-			{
-				worker.unit()->attack(target);
-			}
-		}
-		else
-		{
-			worker.unit()->move(Position(Terrain().getSecondChoke()));
-		}
+		Units().storeAlly(worker.unit());
+		Workers().removeWorker(worker.unit());
 		return;
-	}
-
-	// Defending logic
-	if (Grids().getEGroundDistanceGrid(worker.getWalkPosition()) > 0.0)
-	{
-		if (!worker.getTarget() || (worker.getTarget() && !worker.getTarget()->exists()))
-		{
-			worker.setTarget(worker.unit()->getClosestUnit(Filter::IsEnemy && !Filter::IsFlying, 320));
-		}
-		else if (worker.getTarget()->exists() && (Grids().getResourceGrid(worker.getTarget()->getTilePosition()) > 0))
-		{
-			if ((worker.unit()->getLastCommand().getType() == UnitCommandTypes::Attack_Unit && worker.unit()->getLastCommand().getTarget() && !worker.unit()->getLastCommand().getTarget()->exists()) || (worker.unit()->getLastCommand().getType() != UnitCommandTypes::Attack_Unit))
-			{
-				worker.unit()->attack(worker.getTarget());
-			}
-			return;
-		}
-	}
-	else
-	{
-		worker.setTarget(nullptr);
 	}
 
 	// Reassignment logic
@@ -350,7 +311,7 @@ Unit WorkerTrackerClass::getClosestWorker(Position here)
 
 void WorkerTrackerClass::storeWorker(Unit unit)
 {
-	myWorkers[unit].setUnit(unit);
+	myWorkers[unit].setUnit(unit);	
 	return;
 }
 

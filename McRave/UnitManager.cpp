@@ -247,6 +247,17 @@ void UnitTrackerClass::updateAliveUnits()
 		}
 	}
 
+	// Update Ally Defenses
+	for (auto &a : allyDefenses)
+	{
+		UnitInfo &ally = a.second;
+		if (ally.getDeadFrame() == 0)
+		{
+			updateAlly(ally);
+			allyDefense += ally.getVisibleGroundStrength();
+		}
+	}
+
 	// Update Ally Units
 	for (auto &a : allyUnits)
 	{
@@ -261,15 +272,15 @@ void UnitTrackerClass::updateAliveUnits()
 		if (ally.getDeadFrame() == 0)
 		{
 			updateAlly(ally);
-			// If a recall happened recently, cause units to enrage
-			if (Broodwar->getFrameCount() - Strategy().getRecallFrame() < 1000 && Strategy().getRecallFrame() > 0)
+
+			if (ally.getType().isWorker() && globalEnemyStrength <= allyDefense)
 			{
-				globalAllyStrength += 20.0 * max(ally.getVisibleGroundStrength(), ally.getVisibleAirStrength());
+				Workers().storeWorker(ally.unit());
+				ally.setDeadFrame(Broodwar->getFrameCount());
+				continue;
 			}
-			else
-			{
-				globalAllyStrength += max(ally.getVisibleGroundStrength(), ally.getVisibleAirStrength());
-			}
+
+			globalAllyStrength += max(ally.getVisibleGroundStrength(), ally.getVisibleAirStrength());
 
 			// Set last command frame
 			if (ally.unit()->isStartingAttack())
@@ -282,17 +293,6 @@ void UnitTrackerClass::updateAliveUnits()
 			globalEnemyStrength += max(ally.getMaxGroundStrength(), ally.getMaxAirStrength()) * 0.5 / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(ally.getDeadFrame())));
 		}
 	}
-
-	// Update Ally Defenses
-	for (auto &a : allyDefenses)
-	{
-		UnitInfo &ally = a.second;
-		if (ally.getDeadFrame() == 0)
-		{
-			updateAlly(ally);
-			allyDefense += ally.getVisibleGroundStrength();
-		}
-	}
 }
 
 void UnitTrackerClass::updateDeadUnits()
@@ -300,7 +300,7 @@ void UnitTrackerClass::updateDeadUnits()
 	// Check for decayed ally units
 	for (map<Unit, UnitInfo>::iterator itr = allyUnits.begin(); itr != allyUnits.end();)
 	{
-		if (itr->second.getDeadFrame() != 0 && itr->second.getDeadFrame() + 500 < Broodwar->getFrameCount())
+		if (itr->second.getDeadFrame() != 0 && itr->second.getDeadFrame() + 500 < Broodwar->getFrameCount() || itr->second.getType().isWorker())
 		{
 			itr = allyUnits.erase(itr);
 		}
@@ -539,7 +539,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 		if (max(unit.getGroundRange(), unit.getAirRange()) <= 32)
 		{
 			// If against rush and not ready to wall up, fight in mineral line
-			if (Strategy().isRush() && !Strategy().isHoldRamp())
+			if (Strategy().isRush() || !Strategy().isHoldRamp())
 			{
 				if (unit.getTarget() && unit.getTarget()->exists() && ((Grids().getResourceGrid(unit.getTarget()->getTilePosition()) > 0 && Grids().getResourceGrid(unit.getTilePosition()) > 0)))
 				{
@@ -554,9 +554,9 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 			}
 
 			// Else hold ramp and attack anything within range
-			else if (Strategy().isHoldRamp())
+			else
 			{
-				if (unit.getTarget() && unit.getTarget()->exists() && unit.getPosition().getDistance(unit.getTargetPosition()) < 16 && Terrain().isInAllyTerritory(unit.getTarget()) && Terrain().isInAllyTerritory(unit.unit()) && !unit.getTarget()->getType().isWorker())
+				if (unit.getTarget() && unit.getTarget()->exists() && (unit.getPosition().getDistance(unit.getTargetPosition()) < 16 || unit.getType().isWorker()) && Terrain().isInAllyTerritory(unit.getTarget()) && Terrain().isInAllyTerritory(unit.unit()))
 				{
 					unit.setStrategy(1);
 					return;
@@ -644,7 +644,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 				}
 
 				// Avoid attacking mines
-				if (unit.getTarget()->getType() == UnitTypes::Terran_Vulture_Spider_Mine)
+				if (unit.getTarget()->getType() == UnitTypes::Terran_Vulture_Spider_Mine && !unit.getType().isWorker() && unit.getType() != UnitTypes::Terran_Vulture && unit.getType() != UnitTypes::Protoss_Archon && unit.getType() != UnitTypes::Protoss_Dark_Archon)
 				{
 					unit.setStrategy(0);
 					return;

@@ -44,13 +44,9 @@ void StrategyTrackerClass::protossStrategy()
 			// Specific FFE strategy
 			if (BuildOrder().getOpener() == 1)
 			{
+				allyFastExpand = true;
 				playPassive = true;
 				holdRamp = true;
-			}
-			else
-			{
-				playPassive = false;
-				holdRamp = false;
 			}
 
 			// Specific Non-FFE strategy
@@ -58,11 +54,6 @@ void StrategyTrackerClass::protossStrategy()
 			{
 				playPassive = true;
 				rush = true;
-			}
-			else
-			{
-				playPassive = false;
-				rush = false;
 			}
 		}
 
@@ -114,18 +105,19 @@ void StrategyTrackerClass::protossStrategy()
 				playPassive = true;
 				holdRamp = true;
 			}
+			else
+			{
+				playPassive = false;
+				holdRamp = false;
+			}
 		}
 
-		// Specific ally expansion strategy
-		if ((Players().getNumberZerg() > 0 && BuildOrder().getOpener() == 1) || Units().getEnemyComposition()[UnitTypes::Terran_Bunker] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Photon_Cannon] >= 2)
+		// Specific ally expansion strategy - TODO Need to implement check for cannon/bunker rushes
+		if (Units().getEnemyComposition()[UnitTypes::Terran_Bunker] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Photon_Cannon] >= 2)
 		{
 			playPassive = true;
-			allyFastExpand = true;			
-		}
-		else
-		{
-			playPassive = false;
-			allyFastExpand = false;
+			allyFastExpand = true;
+			holdRamp = true;
 		}
 
 		// Specific enemy expansion strategy

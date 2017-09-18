@@ -8,9 +8,8 @@
 
 // --- AUTHOR NOTES ---
 // TODO:
-// Improve scouting further - currently stays alive until tech is almost discovered
 // Prevent overlapping buildings
-// Vs Random issues
+// Mine removal from expansions - important for Ice/Iron
 
 void McRaveModule::onStart()
 {

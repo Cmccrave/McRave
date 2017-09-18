@@ -23,7 +23,6 @@ public:
 	void updateScout();
 	void updateWorkers();
 	void updateInformation(WorkerInfo&);
-	void updateSituational(WorkerInfo&);
 	void updateGathering(WorkerInfo&);
 	void assignWorker(WorkerInfo&);
 	void reAssignWorker(WorkerInfo&);

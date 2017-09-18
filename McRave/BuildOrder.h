@@ -13,6 +13,7 @@ class BuildOrderTrackerClass
 	UnitType techUnit;
 	set <UnitType> techList;
 	//const char json[];
+	vector <int> configStuff;
 public:
 	map <UnitType, int>& getBuildingDesired() { return buildingDesired; }
 	bool isOpener() { return getOpening; }

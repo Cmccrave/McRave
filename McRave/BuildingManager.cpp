@@ -86,6 +86,10 @@ void BuildingTrackerClass::storeBuilding(Unit building)
 	b.setWalkPosition(Util().getWalkPosition(building));
 	b.setTilePosition(building->getTilePosition());
 	Grids().updateBuildingGrid(b);
+	if (theMap.GetArea(b.getTilePosition()))
+	{
+		Terrain().getAllyTerritory().insert(theMap.GetArea(b.getTilePosition())->Id());
+	}
 	return;
 }
 
@@ -205,17 +209,6 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		}
 		return closestP;
 	}
-
-	/*if (Broodwar->self()->getRace() == Races::Terran && (building == UnitTypes::Terran_Supply_Depot || building == UnitTypes::Terran_Barracks))
-	{
-	for (auto wall : BWEM::utils::findWalls(theMap.Instance()))
-	{
-	if (wall.Center().getDistance(Terrain().getPlayerStartingPosition()) < 640 && wall.Possible())
-	{
-
-	}
-	}
-	}*/
 
 	// If we are fast expanding
 	if (Strategy().isAllyFastExpand())
