@@ -11,13 +11,14 @@ class BuildOrderTrackerClass
 	int opening;
 	bool getOpening = true, getTech = false, learnedOpener = false;	
 	UnitType techUnit;
-	set <UnitType> techList;
-	//const char json[];
+	set <UnitType> techList;	
 	vector <int> configStuff;
+	string currentBuild = "Test";
 public:
 	map <UnitType, int>& getBuildingDesired() { return buildingDesired; }
 	bool isOpener() { return getOpening; }
 	int getOpener() { return opening; }
+	string getCurrentBuild() { return currentBuild; }
 
 	void recordWinningBuild(bool);
 	void loadConfig();
@@ -37,6 +38,17 @@ public:
 	void zergOpener();
 	void zergTech();
 	void zergSituational();
+
+	void ZZCore();
+	void ZCore();
+	void NZCore();
+
+	void FFECannon();
+	void FFEGateway();
+	void FFENexus();
+
+	void TwelveNexus();
+	void DTExpand();
 };
 
 typedef Singleton<BuildOrderTrackerClass> BuildOrderTracker;

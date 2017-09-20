@@ -28,8 +28,6 @@ class GridTrackerClass
 	int defenseGrid[256][256] = {};
 
 	// Enemy grids
-	double eGroundGrid[1024][1024] = {};
-	double eAirGrid[1024][1024] = {};
 	double eGroundDistanceGrid[1024][1024] = {};
 	double eAirDistanceGrid[1024][1024] = {};
 	int eDetectorGrid[1024][1024] = {};
@@ -52,8 +50,6 @@ class GridTrackerClass
 	int psiStormGrid[1024][1024] = {};
 	int EMPGrid[1024][1024] = {};
 	
-//	unordered_set<WalkPosition, myHash> resetWalks;
-
 	// Other
 	bool distanceAnalysis = false;
 	bool mobilityAnalysis = false;
@@ -126,14 +122,6 @@ public:
 	// Returns the number of static defenses within range of the given TilePosition
 	int getDefenseGrid(int x, int y) { return defenseGrid[x][y]; }
 	int getDefenseGrid(TilePosition here) { return defenseGrid[here.x][here.y]; }
-
-	// Returns the combined ground strength of enemy units within range of the given WalkPosition
-	double getEGroundGrid(int x, int y) { return eGroundGrid[x][y]; }
-	double getEGroundGrid(WalkPosition here) { return eGroundGrid[here.x][here.y]; }
-
-	// Returns the combined air strength of enemy units within range of the given WalkPosition
-	double getEAirGrid(int x, int y) { return eAirGrid[x][y]; }
-	double getEAirGrid(WalkPosition here) { return eAirGrid[here.x][here.y]; }
 
 	// Returns the combined ground strength of enemy units within range and moving distance (based on how fast the unit is) of the given WalkPosition
 	double getEGroundDistanceGrid(int x, int y) { return eGroundDistanceGrid[x][y]; }

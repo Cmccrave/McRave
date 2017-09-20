@@ -18,6 +18,7 @@ public:
 	bool isScouting() { return scouting; }
 	map <Unit, WorkerInfo>& getMyWorkers() { return myWorkers; }
 	Unit getScout() { return scout; }
+	Unit getClosestWorker(Position);
 	
 	void update();
 	void updateScout();
@@ -30,9 +31,6 @@ public:
 
 	void storeWorker(Unit);
 	void removeWorker(Unit);
-
-
-	Unit getClosestWorker(Position);
 };
 
 typedef Singleton<WorkerTrackerClass> WorkerTracker;

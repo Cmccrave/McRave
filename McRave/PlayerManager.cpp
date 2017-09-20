@@ -2,11 +2,6 @@
 
 void PlayerTrackerClass::update()
 {
-	// Reset	
-	eZerg = 0;
-	eProtoss = 0;
-	eTerran = 0;
-
 	// Store enemy races
 	for (auto &player : Broodwar->enemies())
 	{
@@ -21,6 +16,10 @@ void PlayerTrackerClass::update()
 		else if (player->getRace() == Races::Terran)
 		{
 			eTerran++;
+		}
+		else
+		{
+			eRandom++;
 		}
 	}
 }

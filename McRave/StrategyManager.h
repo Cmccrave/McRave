@@ -33,7 +33,6 @@ public:
 	bool isHoldRamp() { return holdRamp; }
 	bool isZealotsLocked() { return zealotsLocked; }
 	bool isPlayPassive() { return playPassive; }
-
 	bool isUnitLocked(UnitType unit) { return (lockedType.find(unit) != lockedType.end()); }
 
 	// Updating

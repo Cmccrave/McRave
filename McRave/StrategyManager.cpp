@@ -41,20 +41,9 @@ void StrategyTrackerClass::protossStrategy()
 		// Specific early PvZ strategy
 		if (Players().getNumberZerg() > 0)
 		{
-			// Specific FFE strategy
-			if (BuildOrder().getOpener() == 1)
-			{
-				allyFastExpand = true;
-				playPassive = true;
-				holdRamp = true;
-			}
-
-			// Specific Non-FFE strategy
-			if (Units().getEnemyComposition()[UnitTypes::Zerg_Zergling] >= 6 && BuildOrder().getOpener() != 1)
-			{
-				playPassive = true;
-				rush = true;
-			}
+			allyFastExpand = true;
+			playPassive = true;
+			holdRamp = true;			
 		}
 
 
@@ -99,8 +88,8 @@ void StrategyTrackerClass::protossStrategy()
 				lockedType.erase(UnitTypes::Protoss_Zealot);
 			}
 
-			// Specific 12-Nexus strategy
-			if (BuildOrder().getOpener() == 3)
+			// Specific 12-Nexus strategy - TODO: Change how it gets this decision from the BO
+			if (allyFastExpand && BuildOrder().getOpener() == 3)
 			{
 				playPassive = true;
 				holdRamp = true;
@@ -109,6 +98,16 @@ void StrategyTrackerClass::protossStrategy()
 			{
 				playPassive = false;
 				holdRamp = false;
+			}
+		}
+
+		// Specific early PvR strategy
+		if (Players().getNumberRandom() > 0)
+		{
+			if (Units().getEnemyComposition()[UnitTypes::Zerg_Zergling] >= 6)
+			{
+				playPassive = true;
+				rush = true;
 			}
 		}
 

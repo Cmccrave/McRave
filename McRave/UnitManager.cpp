@@ -267,7 +267,7 @@ void UnitTrackerClass::updateAliveUnits()
 		{
 			continue;
 		}
-
+		
 		// If deadframe is 0, unit is alive still
 		if (ally.getDeadFrame() == 0)
 		{
@@ -277,6 +277,7 @@ void UnitTrackerClass::updateAliveUnits()
 			{
 				Workers().storeWorker(ally.unit());
 				ally.setDeadFrame(Broodwar->getFrameCount());
+				Broodwar << "Test" << endl;
 				continue;
 			}
 

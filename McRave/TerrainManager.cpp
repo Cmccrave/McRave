@@ -111,9 +111,6 @@ void TerrainTrackerClass::updateChokes()
 			FFEPosition = TilePosition(int(secondChoke.x*0.35 + natural.x*0.65), int(secondChoke.y*0.35 + natural.y*0.65));
 		}
 	}
-
-	Broodwar->drawCircleMap(Position(secondChoke), 32, Colors::Red);
-	Broodwar->drawCircleMap(Position(firstChoke), 32, Colors::Blue);
 }
 
 void TerrainTrackerClass::onStart()

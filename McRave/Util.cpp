@@ -362,6 +362,10 @@ double UtilTrackerClass::getTrueSpeed(UnitType unitType, Player who)
 	{
 		speed = speed * 1.33;
 	}
+	else if (unitType.isBuilding())
+	{
+		return 0.0;
+	}
 	return speed;
 }
 

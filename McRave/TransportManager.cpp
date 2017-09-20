@@ -135,7 +135,7 @@ void TransportTrackerClass::updateMovement(TransportInfo& shuttle)
 
 	for (auto &tile : Util().getWalkPositionsUnderUnit(shuttle.unit()))
 	{
-		if (Grids().getEGroundGrid(tile) > 0 || Grids().getEAirGrid(tile) > 0 || Grids().getEGroundDistanceGrid(tile) > 0 || Grids().getEAirDistanceGrid(tile) > 0)
+		if (Grids().getEGroundDistanceGrid(tile) > 0 || Grids().getEAirDistanceGrid(tile) > 0)
 		{
 			radius = 25;
 			closestD = 0.0;

@@ -22,7 +22,7 @@ void WorkerTrackerClass::updateWorkers()
 void WorkerTrackerClass::updateScout()
 {
 	// Update scout probes decision if we are above 9 supply and just placed a pylon
-	if (Units().getSupply() >= 18 && Broodwar->getFrameCount() - deadScoutFrame > 1000 && (!scout || (scout && !scout->exists())) && (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) > 0 || Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Forge) > 0 || Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Barracks) > 0))
+	if (!scout || (scout && !scout->exists()))
 	{
 		scout = getClosestWorker(Position(Terrain().getSecondChoke()));
 	}
@@ -40,7 +40,7 @@ void WorkerTrackerClass::updateInformation(WorkerInfo& worker)
 void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 {
 	WalkPosition start = worker.getWalkPosition();
-	Position bestPosition = Position(start);
+	Position bestPosition = Terrain().getPlayerStartingPosition();
 	double closestD = 0.0;
 
 	Unit closest = worker.unit()->getClosestUnit(Filter::IsEnemy && Filter::CanAttack);
@@ -84,7 +84,7 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 
 			if (WalkPosition(x, y).isValid() && Broodwar->getFrameCount() - recentExplorations[WalkPosition(x, y)] > 500)
 			{				
-				if (mobility / (threat * distance) >= highestMobility && Util().isSafe(start, WalkPosition(x, y), worker.getType(), false, false, true))
+				if (mobility / (threat * distance) >= highestMobility && Util().isSafe(start, WalkPosition(x, y), worker.getType(), true, false, true))
 				{
 					highestMobility = mobility / (threat * distance);
 					bestPosition = Position(WalkPosition(x, y));
@@ -95,7 +95,6 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 	if (bestPosition.isValid() && bestPosition != Position(start))
 	{
 		worker.unit()->move(bestPosition);
-		Broodwar->drawLineMap(worker.getPosition(), bestPosition, Colors::Blue);
 	}
 	return;
 }
@@ -115,7 +114,7 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 	// Scout logic
 	if (scout && worker.unit() == scout && !worker.unit()->isCarryingMinerals() && worker.getBuildingType() == UnitTypes::None)
 	{
-		if (Terrain().getEnemyBasePositions().size() == 0 && Units().getSupply() >= 18 && scouting)
+		if (Terrain().getEnemyBasePositions().size() == 0 && Broodwar->getFrameCount() - deadScoutFrame > 1000 && (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 0 || Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Barracks) > 0))
 		{
 			for (auto &start : theMap.StartingLocations())
 			{
@@ -214,7 +213,7 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 
 	// If we are fast expanding and enemy is rushing, we need to defend with workers
 	if (Strategy().isAllyFastExpand() && BuildOrder().isOpener() && Units().getGlobalEnemyStrength() > Units().getAllyDefense()/*(Units().getGlobalAllyStrength() + Units().getAllyDefense() < Units().getGlobalEnemyStrength()) || (Grids().getEGroundDistanceGrid(worker.getWalkPosition()) > 0.0))*/)
-	{
+	{		
 		Units().storeAlly(worker.unit());
 		Workers().removeWorker(worker.unit());
 		return;

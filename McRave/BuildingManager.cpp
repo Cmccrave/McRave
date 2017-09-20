@@ -14,11 +14,23 @@ void BuildingTrackerClass::updateBuildings()
 {
 	for (auto& b : myBuildings)
 	{
-		if (b.second.unit() && b.second.unit()->exists())
+		BuildingInfo building = b.second;
+		if (!building.unit() || !building.unit()->exists())
 		{
-			BuildingInfo building = b.second;
-			building.setIdleStatus(building.unit()->getRemainingTrainTime() == 0);
-			building.setEnergy(building.unit()->getEnergy());
+			continue;
+		}
+		
+		building.setIdleStatus(building.unit()->getRemainingTrainTime() == 0);
+		building.setEnergy(building.unit()->getEnergy());
+
+		if (b.second.getType().getRace() == Races::Terran && !building.unit()->isCompleted() && !building.unit()->getBuildUnit())
+		{
+			Unit builder = Workers().getClosestWorker(building.getPosition());
+			if (builder)
+			{
+				builder->rightClick(building.unit());
+			}
+			continue;
 		}
 	}
 }
@@ -60,18 +72,6 @@ void BuildingTrackerClass::constructBuildings()
 			buildingsQueued[worker.second.getBuildingType()] += 1;
 			queuedMineral += worker.second.getBuildingType().mineralPrice();
 			queuedGas += worker.second.getBuildingType().gasPrice();
-		}
-	}
-	for (auto &building : myBuildings)
-	{
-		if (building.second.getType().getRace() == Races::Terran && !building.first->isCompleted() && !building.first->getBuildUnit())
-		{
-			Unit builder = Workers().getClosestWorker(building.second.getPosition());
-			if (builder)
-			{
-				builder->rightClick(building.first);
-			}
-			continue;
 		}
 	}
 }
@@ -221,7 +221,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		{
 			return getBuildLocationNear(building, Terrain().getSecondChoke());
 		}
-		if (building == UnitTypes::Protoss_Forge && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Forge) == 0)
+		if (building == UnitTypes::Protoss_Gateway || building == UnitTypes::Protoss_Forge)
 		{
 			return getBuildLocationNear(building, Terrain().getSecondChoke());
 		}
