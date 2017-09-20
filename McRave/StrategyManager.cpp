@@ -43,7 +43,7 @@ void StrategyTrackerClass::protossStrategy()
 		{
 			allyFastExpand = true;
 			playPassive = true;
-			holdRamp = true;			
+			holdRamp = true;
 		}
 
 

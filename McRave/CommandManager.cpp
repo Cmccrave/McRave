@@ -243,7 +243,7 @@ void CommandTrackerClass::attackTarget(UnitInfo& unit)
 	}
 
 	// If kiting unnecessary, disable
-	if (unit.getTarget()->getType().isBuilding() || unit.getType() == UnitTypes::Protoss_Corsair)
+	if (unit.getTarget()->getType().isBuilding() || unit.getType() == UnitTypes::Protoss_Corsair || unit.getType().isWorker())
 	{
 		kite = false;
 	}

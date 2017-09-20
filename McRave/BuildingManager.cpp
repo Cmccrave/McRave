@@ -270,7 +270,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 bool BuildingTrackerClass::canBuildHere(UnitType building, TilePosition buildTilePosition, bool ignoreCond)
 {
 	// Production buildings that create ground units require spacing so they don't trap units -- TEMP: Supply depot to not block SCVs (need to find solution)
-	if (building == UnitTypes::Terran_Supply_Depot || building == UnitTypes::Protoss_Gateway || building == UnitTypes::Protoss_Robotics_Facility || building == UnitTypes::Terran_Barracks || building == UnitTypes::Terran_Factory)
+	if (building == UnitTypes::Terran_Supply_Depot || (!building.isResourceDepot() && building.buildsWhat().size() > 0))
 	{
 		buildingOffset = 1;
 	}
@@ -353,6 +353,10 @@ bool BuildingTrackerClass::canBuildHere(UnitType building, TilePosition buildTil
 		{
 			for (int y = buildTilePosition.y - buildingOffset; y < buildTilePosition.y + building.tileHeight() + buildingOffset; y++)
 			{
+				if (!TilePosition(x, y).isValid())
+				{
+					return false;
+				}
 				if (Grids().getReserveGrid(x, y) > 0 && !Broodwar->isBuildable(TilePosition(x, y), true))
 				{
 					return false;

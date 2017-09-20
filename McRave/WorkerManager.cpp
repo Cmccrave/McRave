@@ -55,7 +55,7 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 	{
 		for (int y = start.y - 1; y < start.y + 1 + worker.getType().tileHeight() * 4; y++)
 		{
-			if (WalkPosition(x, y).isValid() && Grids().getEGroundDistanceGrid(x,y) != 0.0)
+			if (WalkPosition(x, y).isValid() && Grids().getEGroundDistanceGrid(x, y) != 0.0)
 			{
 				recentExplorations[WalkPosition(x, y)] = Broodwar->getFrameCount();
 			}
@@ -72,7 +72,7 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 			{
 				continue;
 			}
-			
+
 			double mobility = double(Grids().getMobilityGrid(x, y));
 			double threat = max(0.01, Grids().getEGroundDistanceGrid(x, y));
 			double distance = max(0.01, Position(WalkPosition(x, y)).getDistance(Terrain().getEnemyStartingPosition()));
@@ -83,7 +83,7 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 			}
 
 			if (WalkPosition(x, y).isValid() && Broodwar->getFrameCount() - recentExplorations[WalkPosition(x, y)] > 500)
-			{				
+			{
 				if (mobility / (threat * distance) >= highestMobility && Util().isSafe(start, WalkPosition(x, y), worker.getType(), true, false, true))
 				{
 					highestMobility = mobility / (threat * distance);
@@ -116,17 +116,21 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 	{
 		if (Terrain().getEnemyBasePositions().size() == 0 && Broodwar->getFrameCount() - deadScoutFrame > 1000 && (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 0 || Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Barracks) > 0))
 		{
+			double closestD = 0.0;
+			Position closestP;
 			for (auto &start : theMap.StartingLocations())
 			{
-				if (!Broodwar->isExplored(start))
+				if (!Broodwar->isExplored(start) && (Position(start).getDistance(Terrain().getPlayerStartingPosition()) < closestD || closestD == 0.0))
 				{
-					if (worker.unit()->getOrderTargetPosition() != Position(start))
-					{
-						worker.unit()->move(Position(start));
-					}
-					return;
+					closestD = Position(start).getDistance(Terrain().getPlayerStartingPosition());
+					closestP = Position(start);
 				}
 			}
+			if (closestP.isValid() && worker.unit()->getOrderTargetPosition() != closestP)
+			{
+				worker.unit()->move(closestP);				
+			}
+			return;
 		}
 		if (Terrain().getEnemyBasePositions().size() > 0)
 		{
@@ -213,7 +217,7 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 
 	// If we are fast expanding and enemy is rushing, we need to defend with workers
 	if (Units().getAllyUnits().size() < 5 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Photon_Cannon) < 2 && Strategy().isAllyFastExpand() && BuildOrder().isOpener() && ((Units().getGlobalAllyStrength() + Units().getAllyDefense() < Units().getGlobalEnemyStrength()) || (Grids().getEGroundDistanceGrid(worker.getWalkPosition()) > 0.0)))
-	{		
+	{
 		Units().storeAlly(worker.unit());
 		Workers().removeWorker(worker.unit());
 		return;
@@ -310,7 +314,7 @@ Unit WorkerTrackerClass::getClosestWorker(Position here)
 
 void WorkerTrackerClass::storeWorker(Unit unit)
 {
-	myWorkers[unit].setUnit(unit);	
+	myWorkers[unit].setUnit(unit);
 	return;
 }
 

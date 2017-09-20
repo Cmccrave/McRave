@@ -229,7 +229,7 @@ void ProductionTrackerClass::updateProtoss()
 				// Gateway
 				else if (building.getType() == UnitTypes::Protoss_Gateway)
 				{
-					if (Broodwar->self()->hasResearched(TechTypes::Psionic_Storm) && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Templar_Archives) >= 1 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_High_Templar) < 5)
+					if (Broodwar->self()->hasResearched(TechTypes::Psionic_Storm) && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Templar_Archives) >= 1 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_High_Templar) < 4)
 					{
 						if (Broodwar->self()->minerals() >= UnitTypes::Protoss_High_Templar.mineralPrice() + Buildings().getQueuedMineral() && Broodwar->self()->gas() >= UnitTypes::Protoss_High_Templar.gasPrice() + Buildings().getQueuedGas() && Units().getSupply() + UnitTypes::Protoss_High_Templar.supplyRequired() <= Broodwar->self()->supplyTotal())
 						{
@@ -240,6 +240,19 @@ void ProductionTrackerClass::updateProtoss()
 						else
 						{
 							idleHighProduction.emplace(building.unit(), UnitTypes::Protoss_High_Templar);
+						}
+					}
+					if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Templar_Archives) >= 1 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dark_Templar) < 4)
+					{
+						if (Broodwar->self()->minerals() >= UnitTypes::Protoss_Dark_Templar.mineralPrice() + Buildings().getQueuedMineral() && Broodwar->self()->gas() >= UnitTypes::Protoss_Dark_Templar.gasPrice() + Buildings().getQueuedGas() && Units().getSupply() + UnitTypes::Protoss_Dark_Templar.supplyRequired() <= Broodwar->self()->supplyTotal())
+						{
+							building.unit()->train(UnitTypes::Protoss_Dark_Templar);
+							idleHighProduction.erase(building.unit());
+							continue;
+						}
+						else
+						{
+							idleHighProduction.emplace(building.unit(), UnitTypes::Protoss_Dark_Templar);
 						}
 					}
 					if ((Strategy().isZealotsLocked() || Strategy().getUnitScore()[UnitTypes::Protoss_Dragoon] >= Strategy().getUnitScore()[UnitTypes::Protoss_Zealot]) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Cybernetics_Core) > 0)

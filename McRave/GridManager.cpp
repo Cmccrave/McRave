@@ -289,7 +289,7 @@ void GridTrackerClass::updateEnemyGrids()
 void GridTrackerClass::updateBuildingGrid(BuildingInfo& building)
 {
 	int buildingOffset;
-	if (building.getType() == UnitTypes::Terran_Supply_Depot || building.getType() == UnitTypes::Protoss_Gateway || building.getType() == UnitTypes::Protoss_Robotics_Facility || building.getType() == UnitTypes::Terran_Barracks || building.getType() == UnitTypes::Terran_Factory)
+	if (building.getType() == UnitTypes::Terran_Supply_Depot || (!building.getType().isResourceDepot() && building.getType().buildsWhat().size() > 0))
 	{
 		buildingOffset = 1;
 	}
@@ -867,7 +867,7 @@ void GridTrackerClass::updateGroundDistanceGrid()
 		while (!done)
 		{
 			duration = (clock() - myClock) / (double)CLOCKS_PER_SEC;
-			if (duration > 1)
+			if (duration > 2)
 			{
 				break;
 			}

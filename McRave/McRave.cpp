@@ -27,10 +27,7 @@ void McRaveModule::onStart()
 
 void McRaveModule::onEnd(bool isWinner)
 {
-	if (isWinner)
-	{
-		BuildOrder().recordWinningBuild(isWinner);
-	}
+	BuildOrder().recordWinningBuild(isWinner);
 }
 
 void McRaveModule::onFrame()

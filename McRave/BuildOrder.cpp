@@ -212,10 +212,10 @@ void BuildOrderTrackerClass::protossOpener()
 	}
 	else if (getOpening && Players().getNumberTerran() > 0)
 	{
-		// Safe - DT FE - TEMP just do NZCore
+		// Safe - DT FE
 		if (opening == 0)
 		{
-			NZCore();			
+			DTExpand();			
 		}
 
 		// Normal - NZCore
@@ -573,7 +573,7 @@ void BuildOrderTrackerClass::DTExpand()
 {
 	currentBuild = "DTExpand";
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1;
-	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20);
+	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 54);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 28;
 	buildingDesired[UnitTypes::Protoss_Citadel_of_Adun] = Units().getSupply() >= 36;
