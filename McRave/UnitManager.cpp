@@ -273,11 +273,10 @@ void UnitTrackerClass::updateAliveUnits()
 		{
 			updateAlly(ally);
 
-			if (ally.getType().isWorker() && globalEnemyStrength <= allyDefense)
+			if (ally.getType().isWorker() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Photon_Cannon) >= 2)
 			{
 				Workers().storeWorker(ally.unit());
 				ally.setDeadFrame(Broodwar->getFrameCount());
-				Broodwar << "Test" << endl;
 				continue;
 			}
 
@@ -301,7 +300,7 @@ void UnitTrackerClass::updateDeadUnits()
 	// Check for decayed ally units
 	for (map<Unit, UnitInfo>::iterator itr = allyUnits.begin(); itr != allyUnits.end();)
 	{
-		if (itr->second.getDeadFrame() != 0 && itr->second.getDeadFrame() + 500 < Broodwar->getFrameCount() || itr->second.getType().isWorker())
+		if (itr->second.getDeadFrame() != 0 && (itr->second.getDeadFrame() + 500 < Broodwar->getFrameCount() || itr->second.getType().isWorker()))
 		{
 			itr = allyUnits.erase(itr);
 		}

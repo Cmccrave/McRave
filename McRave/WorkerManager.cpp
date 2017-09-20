@@ -212,7 +212,7 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 	}
 
 	// If we are fast expanding and enemy is rushing, we need to defend with workers
-	if (Strategy().isAllyFastExpand() && BuildOrder().isOpener() && Units().getGlobalEnemyStrength() > Units().getAllyDefense()/*(Units().getGlobalAllyStrength() + Units().getAllyDefense() < Units().getGlobalEnemyStrength()) || (Grids().getEGroundDistanceGrid(worker.getWalkPosition()) > 0.0))*/)
+	if (Units().getAllyUnits().size() < 5 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Photon_Cannon) < 2 && Strategy().isAllyFastExpand() && BuildOrder().isOpener() && ((Units().getGlobalAllyStrength() + Units().getAllyDefense() < Units().getGlobalEnemyStrength()) || (Grids().getEGroundDistanceGrid(worker.getWalkPosition()) > 0.0)))
 	{		
 		Units().storeAlly(worker.unit());
 		Workers().removeWorker(worker.unit());

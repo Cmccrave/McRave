@@ -221,7 +221,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		{
 			return getBuildLocationNear(building, Terrain().getSecondChoke());
 		}
-		if (building == UnitTypes::Protoss_Gateway || building == UnitTypes::Protoss_Forge)
+		if ((building == UnitTypes::Protoss_Gateway || building == UnitTypes::Protoss_Forge) && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Forge) <= 0)
 		{
 			return getBuildLocationNear(building, Terrain().getSecondChoke());
 		}
@@ -302,7 +302,7 @@ bool BuildingTrackerClass::canBuildHere(UnitType building, TilePosition buildTil
 		}
 	}
 
-	if (building == UnitTypes::Protoss_Shield_Battery && Broodwar->getUnitsInRadius(Position(buildTilePosition), 128, Filter::IsResourceDepot).size() == 0)
+	if (building == UnitTypes::Protoss_Shield_Battery && Broodwar->getUnitsInRadius(Position(buildTilePosition), 256, Filter::IsResourceDepot).size() == 0)
 	{
 		return false;
 	}
