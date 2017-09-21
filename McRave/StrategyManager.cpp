@@ -113,8 +113,7 @@ void StrategyTrackerClass::protossStrategy()
 
 		// Specific ally expansion strategy - TODO Need to implement check for cannon/bunker rushes
 		if (Units().getEnemyComposition()[UnitTypes::Terran_Bunker] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Photon_Cannon] >= 2)
-		{
-			playPassive = true;
+		{			
 			allyFastExpand = true;
 			holdRamp = true;
 		}

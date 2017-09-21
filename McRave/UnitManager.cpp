@@ -254,7 +254,7 @@ void UnitTrackerClass::updateAliveUnits()
 		if (ally.getDeadFrame() == 0)
 		{
 			updateAlly(ally);
-			allyDefense += ally.getVisibleGroundStrength();
+			allyDefense += ally.getMaxGroundStrength();
 		}
 	}
 
@@ -273,7 +273,7 @@ void UnitTrackerClass::updateAliveUnits()
 		{
 			updateAlly(ally);
 
-			if (ally.getType().isWorker() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Photon_Cannon) >= 2)
+			if (ally.getType().isWorker() && ((Units().getGlobalAllyStrength() + Units().getAllyDefense()*0.8 >= Units().getGlobalEnemyStrength()) || (!Strategy().isAllyFastExpand() && Grids().getResourceGrid(ally.getTilePosition()) == 0)))
 			{
 				Workers().storeWorker(ally.unit());
 				ally.setDeadFrame(Broodwar->getFrameCount());

@@ -867,7 +867,7 @@ void GridTrackerClass::updateGroundDistanceGrid()
 		while (!done)
 		{
 			duration = (clock() - myClock) / (double)CLOCKS_PER_SEC;
-			if (duration > 2)
+			if (duration > 9.9)
 			{
 				break;
 			}
@@ -900,7 +900,7 @@ void GridTrackerClass::updateGroundDistanceGrid()
 			}
 		}
 		Broodwar << "Distance Grid Analysis time: " << duration << endl;
-		if (duration > 2)
+		if (duration > 9.9)
 		{
 			Broodwar << "Hit maximum, check for islands." << endl;
 		}
