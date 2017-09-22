@@ -37,7 +37,7 @@ void SpecialUnitTrackerClass::updateArbiters()
 					for (int y = start.y - 20; y <= start.y + 20; y++)
 					{
 						// If the Arbiter finds a tank cluster that is fairly high with little to no air threat, lock in moving there
-						if (WalkPosition(x, y).isValid() && Grids().getStasisCluster(WalkPosition(x, y)) >= 4 && Grids().getEAirDistanceGrid(WalkPosition(x, y)) < 10)
+						if (WalkPosition(x, y).isValid() && Grids().getStasisCluster(WalkPosition(x, y)) >= 4 && Grids().getEAirThreat(WalkPosition(x, y)) < 10)
 						{
 							closestD = -1;
 							bestPosition = Position(WalkPosition(x, y));
@@ -144,7 +144,7 @@ void SpecialUnitTrackerClass::updateDetectors()
 		{
 			for (int y = start.y - 20; y <= start.y + 20; y++)
 			{
-				if (WalkPosition(x, y).isValid() && Grids().getEDetectorGrid(x, y) == 0 && Position(WalkPosition(x, y)).getDistance(Position(start)) > 64 && Grids().getACluster(x, y) > 0 && Grids().getADetectorGrid(x, y) == 0 && Grids().getEAirDistanceGrid(x, y) == 0.0 && (Position(WalkPosition(x, y)).getDistance(Terrain().getEnemyStartingPosition()) < closestD || closestD == 0))
+				if (WalkPosition(x, y).isValid() && Grids().getEDetectorGrid(x, y) == 0 && Position(WalkPosition(x, y)).getDistance(Position(start)) > 64 && Grids().getACluster(x, y) > 0 && Grids().getADetectorGrid(x, y) == 0 && Grids().getEAirThreat(x, y) == 0.0 && (Position(WalkPosition(x, y)).getDistance(Terrain().getEnemyStartingPosition()) < closestD || closestD == 0))
 				{
 					newDestination = Position(WalkPosition(x, y));
 					closestD = Position(WalkPosition(x, y)).getDistance(Terrain().getEnemyStartingPosition());

@@ -302,7 +302,7 @@ bool BuildingTrackerClass::canBuildHere(UnitType building, TilePosition buildTil
 		}
 	}
 
-	if (building == UnitTypes::Protoss_Shield_Battery && Broodwar->getUnitsInRadius(Position(buildTilePosition), 256, Filter::IsResourceDepot).size() == 0)
+	if (building == UnitTypes::Protoss_Shield_Battery && Broodwar->getUnitsInRadius(Position(buildTilePosition), 128, Filter::IsResourceDepot).size() == 0)
 	{
 		return false;
 	}

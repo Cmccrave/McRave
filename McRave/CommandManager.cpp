@@ -323,11 +323,11 @@ void CommandTrackerClass::fleeTarget(UnitInfo& unit)
 	}
 
 	// Specific High Templar flee
-	if (unit.getType() == UnitTypes::Protoss_High_Templar && (unit.unit()->getEnergy() < 75 || Grids().getEGroundDistanceGrid(unit.getWalkPosition()) > 0.0))
+	if (unit.getType() == UnitTypes::Protoss_High_Templar && (unit.unit()->getEnergy() < 75 || Grids().getEGroundThreat(unit.getWalkPosition()) > 0.0))
 	{
 		for (auto templar : SpecialUnits().getMyTemplars())
 		{
-			if (templar.second.unit() && templar.second.unit()->exists() && (templar.second.unit()->getEnergy() < 75 || Grids().getEGroundDistanceGrid(templar.second.getWalkPosition()) > 0.0))
+			if (templar.second.unit() && templar.second.unit()->exists() && (templar.second.unit()->getEnergy() < 75 || Grids().getEGroundThreat(templar.second.getWalkPosition()) > 0.0))
 			{
 				unit.unit()->useTech(TechTypes::Archon_Warp, templar.second.unit());
 				return;
@@ -351,7 +351,7 @@ void CommandTrackerClass::fleeTarget(UnitInfo& unit)
 			}
 			
 			double mobility = double(Grids().getMobilityGrid(x, y));
-			double threat = max(1.0, Grids().getEGroundDistanceGrid(x, y));
+			double threat = max(1.0, Grids().getEGroundThreat(x, y));
 			double distance = max(1.0, double(Grids().getDistanceHome(x, y)));			
 
 			if (mobility / (threat * distance) >= highestMobility && Util().isSafe(start, WalkPosition(x, y), unit.getType(), false, false, true))

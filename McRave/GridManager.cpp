@@ -29,7 +29,7 @@ void GridTrackerClass::update()
 	updateAllyGrids();
 	updateEnemyGrids();
 	updateNeutralGrids();
-	updateGroundDistanceGrid();
+	updateDistanceGrid();
 	Display().performanceTest(__FUNCTION__);
 	return;
 }
@@ -41,7 +41,7 @@ void GridTrackerClass::reset()
 	//{
 	//	for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
 	//	{
-	//		if (eGroundDistanceGrid[x][y] > 0)
+	//		if (eGroundThreat[x][y] > 0)
 	//		{
 	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(8, 8), 4, Colors::Red);
 	//		}
@@ -65,8 +65,8 @@ void GridTrackerClass::reset()
 		aDetectorGrid[x][y] = 0;
 		arbiterGrid[x][y] = 0;
 
-		eGroundDistanceGrid[x][y] = 0.0;
-		eAirDistanceGrid[x][y] = 0.0;
+		eGroundThreat[x][y] = 0.0;
+		eAirThreat[x][y] = 0.0;
 		eGroundClusterGrid[x][y] = 0;
 		eAirClusterGrid[x][y] = 0;
 		eDetectorGrid[x][y] = 0;
@@ -165,9 +165,9 @@ void GridTrackerClass::updateEnemyGrids()
 			continue;
 		}
 
-		if (enemy.unit() && enemy.getDeadFrame() == 0)
+		if (enemy.unit() && enemy.getDeadFrame() == 0 && !enemy.unit()->isStasised() && !enemy.unit()->isMaelstrommed())
 		{
-			if (enemy.unit()->exists() && !enemy.getType().isBuilding() && !enemy.unit()->isStasised() && !enemy.unit()->isMaelstrommed())
+			if (enemy.unit()->exists() && !enemy.getType().isBuilding())
 			{
 				for (int x = start.x - 4; x <= 4 + start.x + enemy.getType().tileWidth() * 4; x++)
 				{
@@ -216,37 +216,40 @@ void GridTrackerClass::updateEnemyGrids()
 				}
 			}
 
-			// Enemy Ground Threat Grid
-			for (int x = (enemy.getWalkPosition().x - int(enemy.getGroundRange() / 8) - (enemy.getType().tileWidth() * 4)) - int(enemy.getSpeed() / 8) - 2; x <= (enemy.getWalkPosition().x + int(enemy.getGroundRange() / 8) + (enemy.getType().tileWidth() * 4)) + int(enemy.getSpeed() / 8) + 2; x++)
+			if (!enemy.getType().isWorker() || (enemy.getType().isWorker() && Broodwar->getFrameCount() - enemy.getLastAttackFrame() < 500))
 			{
-				for (int y = (enemy.getWalkPosition().y - int(enemy.getGroundRange() / 8) - (enemy.getType().tileHeight() * 4)) - int(enemy.getSpeed() / 8) - 2; y <= (enemy.getWalkPosition().y + int(enemy.getGroundRange() / 8) + (enemy.getType().tileHeight() * 4)) + int(enemy.getSpeed() / 8) + 2; y++)
+				// Enemy Ground Threat Grid
+				for (int x = (enemy.getWalkPosition().x - int(enemy.getGroundRange() / 8) - (enemy.getType().tileWidth() * 4)) - int(enemy.getSpeed() / 8) - 2; x <= (enemy.getWalkPosition().x + int(enemy.getGroundRange() / 8) + (enemy.getType().tileWidth() * 4)) + int(enemy.getSpeed() / 8) + 2; x++)
 				{
-					if (WalkPosition(x, y).isValid())
+					for (int y = (enemy.getWalkPosition().y - int(enemy.getGroundRange() / 8) - (enemy.getType().tileHeight() * 4)) - int(enemy.getSpeed() / 8) - 2; y <= (enemy.getWalkPosition().y + int(enemy.getGroundRange() / 8) + (enemy.getType().tileHeight() * 4)) + int(enemy.getSpeed() / 8) + 2; y++)
 					{
-						double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(enemy.getPosition()) - double(enemy.getType().tileWidth() * 32));
-
-						if (enemy.getGroundDamage() > 0.0 && distance < (enemy.getGroundRange() + (enemy.getSpeed())))
+						if (WalkPosition(x, y).isValid())
 						{
-							resetGrid[x][y] = true;
-							eGroundDistanceGrid[x][y] += max(0.1, enemy.getMaxGroundStrength() / distance);
+							double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(enemy.getPosition()) - double(enemy.getType().tileWidth() * 32));
+
+							if (enemy.getGroundDamage() > 0.0 && distance < (enemy.getGroundRange() + (enemy.getSpeed())))
+							{
+								resetGrid[x][y] = true;
+								eGroundThreat[x][y] += max(0.1, enemy.getMaxGroundStrength() / distance);
+							}
 						}
 					}
 				}
-			}
 
-			// Enemy Air Threat Grid
-			for (int x = (enemy.getWalkPosition().x - int(enemy.getAirRange() / 8) - enemy.getType().tileWidth() * 4) - int(enemy.getSpeed() / 8) - 2; x <= (enemy.getWalkPosition().x + int(enemy.getAirRange() / 8) + enemy.getType().tileWidth() * 4) + int(enemy.getSpeed() / 8) + 2; x++)
-			{
-				for (int y = (enemy.getWalkPosition().y - int(enemy.getAirRange() / 8) - enemy.getType().tileHeight() * 4) - int(enemy.getSpeed() / 8) - 2; y <= (enemy.getWalkPosition().y + int(enemy.getAirRange() / 8) + enemy.getType().tileHeight() * 4) + int(enemy.getSpeed() / 8) + 2; y++)
+				// Enemy Air Threat Grid
+				for (int x = (enemy.getWalkPosition().x - int(enemy.getAirRange() / 8) - enemy.getType().tileWidth() * 4) - int(enemy.getSpeed() / 8) - 2; x <= (enemy.getWalkPosition().x + int(enemy.getAirRange() / 8) + enemy.getType().tileWidth() * 4) + int(enemy.getSpeed() / 8) + 2; x++)
 				{
-					if (WalkPosition(x, y).isValid())
+					for (int y = (enemy.getWalkPosition().y - int(enemy.getAirRange() / 8) - enemy.getType().tileHeight() * 4) - int(enemy.getSpeed() / 8) - 2; y <= (enemy.getWalkPosition().y + int(enemy.getAirRange() / 8) + enemy.getType().tileHeight() * 4) + int(enemy.getSpeed() / 8) + 2; y++)
 					{
-						double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(enemy.getPosition()) - double(enemy.getType().tileWidth() * 32));
-
-						if (enemy.getAirDamage() > 0.0 && distance < (enemy.getAirRange() + (enemy.getSpeed())))
+						if (WalkPosition(x, y).isValid())
 						{
-							resetGrid[x][y] = true;
-							eAirDistanceGrid[x][y] += max(0.1, enemy.getMaxAirStrength() / distance);
+							double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(enemy.getPosition()) - double(enemy.getType().tileWidth() * 32));
+
+							if (enemy.getAirDamage() > 0.0 && distance < (enemy.getAirRange() + (enemy.getSpeed())))
+							{
+								resetGrid[x][y] = true;
+								eAirThreat[x][y] += max(0.1, enemy.getMaxAirStrength() / distance);
+							}
 						}
 					}
 				}
@@ -848,7 +851,7 @@ void GridTrackerClass::updateEMP(Bullet EMP)
 	}
 }
 
-void GridTrackerClass::updateGroundDistanceGrid()
+void GridTrackerClass::updateDistanceGrid()
 {
 	// TODO: Goal with this grid is to create a ground distance grid from home for unit micro
 	// Need to check for islands

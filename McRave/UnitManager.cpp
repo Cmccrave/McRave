@@ -237,6 +237,12 @@ void UnitTrackerClass::updateAliveUnits()
 			{
 				enemyDefense += enemy.getVisibleGroundStrength();
 			}
+
+			// Set last command frame
+			if (enemy.unit()->isStartingAttack())
+			{
+				enemy.setLastAttackFrame(Broodwar->getFrameCount());
+			}
 		}
 
 		// If unit is dead
@@ -273,7 +279,7 @@ void UnitTrackerClass::updateAliveUnits()
 		{
 			updateAlly(ally);
 
-			if (ally.getType().isWorker() && ((Units().getGlobalAllyStrength() + Units().getAllyDefense()*0.8 >= Units().getGlobalEnemyStrength()) || (!Strategy().isAllyFastExpand() && Grids().getResourceGrid(ally.getTilePosition()) == 0)))
+			if (ally.getType().isWorker() && ((Units().getGlobalAllyStrength() + Units().getAllyDefense()*0.8 > Units().getGlobalEnemyStrength()) || (!Strategy().isAllyFastExpand() && (Grids().getResourceGrid(ally.getTilePosition()) == 0 || Grids().getEGroundThreat(ally.getWalkPosition()) == 0))))
 			{
 				Workers().storeWorker(ally.unit());
 				ally.setDeadFrame(Broodwar->getFrameCount());

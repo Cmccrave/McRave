@@ -428,7 +428,7 @@ bool UtilTrackerClass::isSafe(WalkPosition start, WalkPosition end, UnitType uni
 				{					
 					continue;
 				}
-				if ((groundCheck && Grids().getEGroundDistanceGrid(i, j) != 0.0) || (airCheck && Grids().getEAirDistanceGrid(i, j) != 0.0) || (mobilityCheck && (Grids().getMobilityGrid(i, j) == 0 || Grids().getAntiMobilityGrid(i, j) > 0)))
+				if ((groundCheck && Grids().getEGroundThreat(i, j) != 0.0) || (airCheck && Grids().getEAirThreat(i, j) != 0.0) || (mobilityCheck && (Grids().getMobilityGrid(i, j) == 0 || Grids().getAntiMobilityGrid(i, j) > 0)))
 				{
 					return false;
 				}

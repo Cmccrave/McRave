@@ -135,7 +135,7 @@ void TransportTrackerClass::updateMovement(TransportInfo& shuttle)
 
 	for (auto &tile : Util().getWalkPositionsUnderUnit(shuttle.unit()))
 	{
-		if (Grids().getEGroundDistanceGrid(tile) > 0 || Grids().getEAirDistanceGrid(tile) > 0)
+		if (Grids().getEGroundThreat(tile) > 0 || Grids().getEAirThreat(tile) > 0)
 		{
 			radius = 25;
 			closestD = 0.0;
@@ -154,7 +154,7 @@ void TransportTrackerClass::updateMovement(TransportInfo& shuttle)
 				continue;
 			}
 
-			if (Grids().getEAirDistanceGrid(WalkPosition(x, y)) > 0)
+			if (Grids().getEAirThreat(WalkPosition(x, y)) > 0)
 			{
 				continue;
 			}
@@ -184,7 +184,7 @@ void TransportTrackerClass::updateMovement(TransportInfo& shuttle)
 			//			if (WalkPosition(i, j).isValid())
 			//			{								
 			//				// If position has a threat, don't move there
-			//				if (Grids().getEGroundDistanceGrid(i, j) > 0.0 || Grids().getEAirDistanceGrid(i, j) > 0.0)
+			//				if (Grids().getEGroundThreat(i, j) > 0.0 || Grids().getEAirThreat(i, j) > 0.0)
 			//				{
 			//					bestTile = false;
 			//					//Broodwar->drawCircleMap(Position(WalkPosition(i, j)), 2, Colors::Blue, true);

@@ -55,7 +55,7 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 	{
 		for (int y = start.y - 1; y < start.y + 1 + worker.getType().tileHeight() * 4; y++)
 		{
-			if (WalkPosition(x, y).isValid() && Grids().getEGroundDistanceGrid(x, y) != 0.0)
+			if (WalkPosition(x, y).isValid() && Grids().getEGroundThreat(x, y) != 0.0)
 			{
 				recentExplorations[WalkPosition(x, y)] = Broodwar->getFrameCount();
 			}
@@ -74,7 +74,7 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 			}
 
 			double mobility = double(Grids().getMobilityGrid(x, y));
-			double threat = max(0.01, Grids().getEGroundDistanceGrid(x, y));
+			double threat = max(0.01, Grids().getEGroundThreat(x, y));
 			double distance = max(0.01, Position(WalkPosition(x, y)).getDistance(Terrain().getEnemyStartingPosition()));
 
 			if (mobility < 7)
@@ -216,8 +216,8 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 	}
 
 	// If we are fast expanding and enemy is rushing, we need to defend with workers
-	if ((Strategy().isAllyFastExpand() && BuildOrder().isOpener() && Units().getGlobalAllyStrength() + Units().getAllyDefense()*0.8 < Units().getGlobalEnemyStrength()) || (Grids().getEGroundDistanceGrid(worker.getWalkPosition()) > 0.0 && Grids().getResourceGrid(worker.getTilePosition()) > 0))
-	{
+	if ((Strategy().isAllyFastExpand() && BuildOrder().isOpener() && Units().getGlobalAllyStrength() + Units().getAllyDefense()*0.8 < Units().getGlobalEnemyStrength()) || (Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0 && Grids().getResourceGrid(worker.getTilePosition()) > 0))
+	{		
 		Units().storeAlly(worker.unit());
 		Workers().removeWorker(worker.unit());
 		return;

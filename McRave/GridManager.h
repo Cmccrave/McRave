@@ -28,8 +28,8 @@ class GridTrackerClass
 	int defenseGrid[256][256] = {};
 
 	// Enemy grids
-	double eGroundDistanceGrid[1024][1024] = {};
-	double eAirDistanceGrid[1024][1024] = {};
+	double eGroundThreat[1024][1024] = {};
+	double eAirThreat[1024][1024] = {};
 	int eDetectorGrid[1024][1024] = {};
 	int eGroundClusterGrid[1024][1024] = {};
 	int eAirClusterGrid[1024][1024] = {};
@@ -81,7 +81,7 @@ public:
 	void updateEMP(Bullet);
 
 	// On start functions
-	void updateGroundDistanceGrid();	
+	void updateDistanceGrid();	
 
 	// Updates a resource if it is destroyed or created
 	void updateResourceGrid(ResourceInfo&);
@@ -124,12 +124,12 @@ public:
 	int getDefenseGrid(TilePosition here) { return defenseGrid[here.x][here.y]; }
 
 	// Returns the combined ground strength of enemy units within range and moving distance (based on how fast the unit is) of the given WalkPosition
-	double getEGroundDistanceGrid(int x, int y) { return eGroundDistanceGrid[x][y]; }
-	double getEGroundDistanceGrid(WalkPosition here) { return eGroundDistanceGrid[here.x][here.y]; }
+	double getEGroundThreat(int x, int y) { return eGroundThreat[x][y]; }
+	double getEGroundThreat(WalkPosition here) { return eGroundThreat[here.x][here.y]; }
 
 	// Returns the combined air strength of enemy units within range and moving distance (based on how fast the unit is) of the given WalkPosition
-	double getEAirDistanceGrid(int x, int y) { return eAirDistanceGrid[x][y]; }
-	double getEAirDistanceGrid(WalkPosition here) { return eAirDistanceGrid[here.x][here.y]; }	
+	double getEAirThreat(int x, int y) { return eAirThreat[x][y]; }
+	double getEAirThreat(WalkPosition here) { return eAirThreat[here.x][here.y]; }	
 
 	// Returns 1 if there is enemy detection on the given walk position, 0 otherwise
 	int getEDetectorGrid(int x, int y) { return eDetectorGrid[x][y]; }
