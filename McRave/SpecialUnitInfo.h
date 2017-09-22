@@ -8,15 +8,18 @@ class SupportUnitInfo
 {
 	Position position, destination;
 	WalkPosition walkPosition;
-	Unit thisUnit, target;
+	Unit thisUnit, target, transport;
+	bool hasTransport;
 public:
 	SupportUnitInfo();
 
 	Unit unit() { return thisUnit; }
+	Unit getTransport() { return transport; }
 	Position getPosition() { return position; }
 	Position getDestination() { return destination; }
 	WalkPosition getWalkPosition() { return walkPosition; }
 	void setUnit(Unit newUnit) { thisUnit = newUnit; }
+	void setTransport(Unit newTransport) { transport = newTransport; }
 	void setTarget(Unit newUnit) { target = newUnit; }
 	void setPosition(Position newPosition) { position = newPosition; }
 	void setDestination(Position newPosition) { destination = newPosition; }
@@ -27,9 +30,9 @@ class TransportInfo
 {
 	int loadState, cargoSize;
 	bool harassing;
-	Unit thisUnit, target;
+	Unit thisUnit;
 	UnitType transportType;
-	set <Unit> assignedCargo;
+	map <Unit, UnitInfo> assignedCargo;
 	Position position, destination, drop;
 	WalkPosition walkPosition;
 public:
@@ -40,9 +43,8 @@ public:
 	int getLoadState() { return loadState; }
 	bool isHarassing() { return harassing; }
 	Unit unit() { return thisUnit; }
-	Unit getTarget() { return target; }
 	UnitType getType() { return transportType; }
-	set <Unit>& getAssignedCargo() { return assignedCargo; }
+	map <Unit, UnitInfo>& getAssignedCargo() { return assignedCargo; }
 	Position getDrop() { return drop; }
 	Position getPosition() { return position; }
 	Position getDestination() { return destination; }
@@ -52,7 +54,6 @@ public:
 	void setLoadState(int newState) { loadState = newState; }
 	void setHarassing(bool newState) { harassing = newState; }
 	void setUnit(Unit newTransport) { thisUnit = newTransport; }
-	void setTarget(Unit newTarget) { target = newTarget; }
 	void setType(UnitType newType) { transportType = newType; }
 	void setDrop(Position newDrop) { drop = newDrop; }
 	void setPosition(Position newPosition) { position = newPosition; }
@@ -60,8 +61,20 @@ public:
 	void setWalkPosition(WalkPosition newWalkPosition) { walkPosition = newWalkPosition; }
 
 	// Add cargo to the assigned cargo set
-	void assignCargo(Unit);
+	void assignCargo(UnitInfo&);
 
 	// Remove cargo from the assigned cargo set
-	void removeCargo(Unit);
+	void removeCargo(UnitInfo&);
 };
+
+void TransportInfo::assignCargo(UnitInfo& unit)
+{
+	assignedCargo[unit.unit()] = unit;
+	cargoSize = cargoSize + unit.getType().spaceRequired();
+}
+
+void TransportInfo::removeCargo(UnitInfo& unit)
+{
+	assignedCargo.erase[unit];
+	cargoSize = cargoSize - unit.getType().spaceRequired();
+}

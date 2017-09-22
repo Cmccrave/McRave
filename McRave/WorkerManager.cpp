@@ -224,7 +224,7 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 	}
 
 	// Reassignment logic
-	if (Resources().getGasNeeded() > 0 && worker.getResource() && worker.getResource()->exists() && worker.getResource()->getType().isMineralField()) // && (!Strategy().isRush() || !BuildOrder().isOpener() || Broodwar->self()->getRace() == Races::Terran))
+	if (Resources().getGasNeeded() > 0 && worker.getResource() && worker.getResource()->exists() && worker.getResource()->getType().isMineralField())
 	{
 		reAssignWorker(worker);
 		Resources().setGasNeeded(Resources().getGasNeeded() - 1);
@@ -251,20 +251,22 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 			worker.setLastGatherFrame(Broodwar->getFrameCount());
 			return;
 		}
-		// If the workers current target has a resource count of 0 (mineral blocking a ramp), let worker continue mining it
+		// If the workers current target is a boulder, continue mining it
 		if (worker.unit()->getTarget() && worker.unit()->getTarget()->getType().isMineralField() && worker.unit()->getTarget()->getResources() == 0)
 		{
 			return;
 		}
-		// If the mineral field is in vision and no target, force to gather from the assigned mineral field
+		// If the mineral field is a valid mining target
 		if (worker.getResource() && Grids().getBaseGrid(TilePosition(worker.getResourcePosition())) == 2)
 		{
+			// If it exists, mine it
 			if (worker.getResource()->exists())
 			{
 				worker.unit()->gather(worker.getResource());
 				worker.setLastGatherFrame(Broodwar->getFrameCount());
 				return;
 			}
+			// Else, move to it
 			else
 			{
 				worker.unit()->move(worker.getResourcePosition());
@@ -338,37 +340,36 @@ void WorkerTrackerClass::removeWorker(Unit worker)
 
 void WorkerTrackerClass::assignWorker(WorkerInfo& worker)
 {
-	// Assign a task if none
-	int cnt = 1;
-
+	// Check if we should assign to gas
 	if (!Strategy().isRush() || Resources().isMinSaturated())
 	{
-		for (auto &gas : Resources().getMyGas())
+		for (auto &g : Resources().getMyGas())
 		{
-			if (gas.second.getType() != UnitTypes::Resource_Vespene_Geyser && gas.first->isCompleted() && gas.second.getGathererCount() < 3 && Grids().getBaseGrid(gas.second.getTilePosition()) > 0)
+			ResourceInfo gas = g.second;
+			if (gas.getType() != UnitTypes::Resource_Vespene_Geyser && gas.unit()->isCompleted() && gas.getGathererCount() < 3 && Grids().getBaseGrid(gas.getTilePosition()) > 0)
 			{
-				gas.second.setGathererCount(gas.second.getGathererCount() + 1);
-				worker.setResource(gas.first);
-				worker.setResourcePosition(gas.second.getPosition());
+				gas.setGathererCount(gas.getGathererCount() + 1);
+				worker.setResource(gas.unit());
+				worker.setResourcePosition(gas.getPosition());
 				return;
 			}
 		}
-	}
+	}	
 
-	// First checks if a mineral field has 0 workers mining, if none, checks if a mineral field has 1 worker mining. Assigns to 0 first, then 1. Spreads saturation.
-	while (cnt <= 2)
+	// Check if we should assign to mineral
+	for (int i = 1; i < 2; i++)
 	{
-		for (auto &mineral : Resources().getMyMinerals())
+		for (auto &m : Resources().getMyMinerals())
 		{
-			if (mineral.second.getGathererCount() < cnt && Grids().getBaseGrid(mineral.second.getTilePosition()) > 0)
+			ResourceInfo mineral = m.second;
+			if (mineral.getGathererCount() < i && Grids().getBaseGrid(mineral.getTilePosition()) > 0)
 			{
-				mineral.second.setGathererCount(mineral.second.getGathererCount() + 1);
-				worker.setResource(mineral.first);
-				worker.setResourcePosition(mineral.second.getPosition());
+				mineral.setGathererCount(mineral.getGathererCount() + 1);
+				worker.setResource(mineral.unit());
+				worker.setResourcePosition(mineral.getPosition());
 				return;
 			}
-		}
-		cnt++;
+		}		
 	}
 	return;
 }

@@ -11,6 +11,23 @@
 // Prevent overlapping buildings
 // Mine removal from expansions - important for Ice/Iron
 
+//Building:
+// permit building grid
+// unQueueBuilding->ONS qM + qG and #buildings queued
+// Battery placement
+
+//BO :
+// Allow battery against Terran(Irons rush would be a lot worse potentially)
+// Expansion logic
+//
+// Micro :
+// Check issues with units in base
+// Shuttle rework
+// if overkill, reduce targeting % chance by % overkill
+
+//Worker :
+//Reassign off gas
+
 void McRaveModule::onStart()
 {
 	Broodwar->enableFlag(Flag::UserInput);	

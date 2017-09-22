@@ -357,9 +357,9 @@ void BuildOrderTrackerClass::protossSituational()
 	}
 
 	// Shield battery logic
-	if (Strategy().isRush() && Players().getNumberTerran() == 0)
+	if (Players().getNumberTerran() == 0)
 	{
-		buildingDesired[UnitTypes::Protoss_Shield_Battery] = min(1, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core));
+		buildingDesired[UnitTypes::Protoss_Shield_Battery] = Strategy().isRush() * Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core);
 	}
 
 	// Gateway logic

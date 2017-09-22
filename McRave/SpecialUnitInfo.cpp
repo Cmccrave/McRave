@@ -16,25 +16,7 @@ TransportInfo::TransportInfo()
 	drop = Positions::None;
 	walkPosition = WalkPositions::None;
 	thisUnit = nullptr;
-	target = nullptr;
 	loadState = 0;
 	cargoSize = 0;
 	harassing = false;
-}
-
-TransportInfo::~TransportInfo()
-{
-
-}
-
-void TransportInfo::assignCargo(Unit unit)
-{
-	assignedCargo.emplace(unit);
-	cargoSize = cargoSize + unit->getType().spaceRequired();
-}
-
-void TransportInfo::removeCargo(Unit unit)
-{
-	assignedCargo.erase(unit);
-	cargoSize = cargoSize - unit->getType().spaceRequired();
 }

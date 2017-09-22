@@ -10,8 +10,8 @@ class SpecialUnitTrackerClass
 	map <Unit, SupportUnitInfo> myArbiters;
 	map <Unit, SupportUnitInfo> myDarchons;
 	map <Unit, SupportUnitInfo> myDetectors;
-	map <Unit, SupportUnitInfo> myTemplars;
-	map <Unit, SupportUnitInfo> myReavers;
+	map <Unit, UnitInfo> myTemplars;
+	map <Unit, UnitInfo> myReavers;
 	map <WalkPosition, double> myStorms;
 	Unit recaller = nullptr;
 public:
@@ -27,8 +27,8 @@ public:
 
 	map <Unit, SupportUnitInfo>& getMyArbiters() { return myArbiters; }
 	map <Unit, SupportUnitInfo>& getMyDetectors() { return myDetectors; }
-	map <Unit, SupportUnitInfo>& getMyTemplars() { return myTemplars; }
-	map <Unit, SupportUnitInfo>& getMyReavers() { return myReavers; }
+	map <Unit, UnitInfo>& getMyTemplars() { return myTemplars; }
+	map <Unit, UnitInfo>& getMyReavers() { return myReavers; }
 	map <Unit, SupportUnitInfo>& getMyDarchons() { return myDarchons; }
 };
 

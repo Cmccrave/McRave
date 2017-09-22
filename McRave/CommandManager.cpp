@@ -107,7 +107,7 @@ void CommandTrackerClass::attackMove(UnitInfo& unit)
 	{
 		if (unit.unit()->getOrderTargetPosition() != unit.getTargetPosition() || unit.unit()->isStuck())
 		{
-			if (unit.getGroundDamage() > 0 || unit.getAirDamage() > 0)
+			if (unit.getType().canAttack())
 			{
 				unit.unit()->attack(unit.getTargetPosition());
 			}
@@ -127,7 +127,7 @@ void CommandTrackerClass::attackMove(UnitInfo& unit)
 		{
 			if (unit.unit()->getOrderTargetPosition() != here || unit.unit()->isStuck())
 			{
-				if (unit.getGroundDamage() > 0 || unit.getAirDamage() > 0)
+				if (unit.getType().canAttack())
 				{
 					unit.unit()->attack(here);
 				}
@@ -311,7 +311,6 @@ void CommandTrackerClass::fleeTarget(UnitInfo& unit)
 	WalkPosition start = unit.getWalkPosition();
 	WalkPosition finalPosition = start;
 	double highestMobility = 0.0;
-	int offset = int(unit.getSpeed()) / 8;
 
 	// If it's a tank, make sure we're unsieged before moving
 	if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
@@ -367,7 +366,7 @@ void CommandTrackerClass::fleeTarget(UnitInfo& unit)
 	{
 		Grids().updateAllyMovement(unit.unit(), finalPosition);
 		unit.setTargetPosition(Position(finalPosition));
-		if (unit.unit()->getLastCommand().getTargetPosition() != Position(finalPosition) || unit.unit()->isStuck())
+		if (unit.unit()->getLastCommand().getTargetPosition() != Position(finalPosition))
 		{
 			unit.unit()->move(Position(finalPosition));
 		}
@@ -377,7 +376,10 @@ void CommandTrackerClass::fleeTarget(UnitInfo& unit)
 
 void CommandTrackerClass::approachTarget(UnitInfo& unit)
 {
-	unit.unit()->move(unit.getTargetPosition());
+	if (unit.getTargetPosition().isValid())
+	{
+		unit.unit()->move(unit.getTargetPosition());
+	}
 	return;
 }
 
@@ -433,12 +435,12 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 	}
 	if (bestPosition.isValid() && bestPosition != start)
 	{		
+		unit.setTargetPosition(Position(bestPosition));
+		Grids().updateAllyMovement(unit.unit(), bestPosition);
 		if ((unit.unit()->getOrderTargetPosition() != Position(bestPosition) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move || unit.unit()->isStuck()))
 		{
 			unit.unit()->move(Position(bestPosition));
-		}
-		unit.setTargetPosition(Position(bestPosition));
-		Grids().updateAllyMovement(unit.unit(), bestPosition);
+		}		
 	}
 	return;
 }
