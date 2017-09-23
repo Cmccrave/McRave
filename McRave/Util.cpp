@@ -40,9 +40,9 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit, Player who)
 	{
 		damage = unit.getGroundDamage() / 60.0;
 	}	
-	else
+	else if (unit.getType() == UnitTypes::Terran_Bunker)
 	{
-		damage = unit.getGroundDamage() / 24.0;
+		damage = unit.getGroundDamage() / 15.0;
 	}
 
 	if (!unit.getType().isWorker() && unit.getGroundDamage() > 0)
@@ -191,13 +191,20 @@ double UtilTrackerClass::getPriority(UnitInfo& unit, Player who)
 	// Workers get a fairly low priority
 	else if (unit.getType().isWorker())
 	{
-		return 1.0;
+		if (unit.unit()->exists() && unit.unit()->isRepairing())
+		{
+			return 10.0;
+		}
+		else
+		{
+			return 1.0;
+		}
 	}
 
 	// Buildings with no attack have the lowest priority
 	else if (unit.getType().isBuilding() && unit.getMaxGroundStrength() == 0.0 && unit.getMaxAirStrength() == 0.0)
 	{
-		return 0.1;
+		return double(unit.getType().mineralPrice() + (unit.getType().gasPrice() * 2.0))/400.0;
 	}
 
 	// Overlords have low priority but are worthwhile to pick off
@@ -316,7 +323,7 @@ double UtilTrackerClass::getTrueGroundDamage(UnitType unitType, Player who)
 	// Damage assumption for Bunkers ground attack
 	else if (unitType == UnitTypes::Terran_Bunker)
 	{
-		return 25.0;
+		return 24.0;
 	}
 
 	// Damage correction for Zealots and Firebats which attack twice for 8 damage
@@ -339,7 +346,7 @@ double UtilTrackerClass::getTrueAirDamage(UnitType unitType, Player who)
 	// Damage assumption for Bunkers air attack
 	if (unitType == UnitTypes::Terran_Bunker)
 	{
-		return 25.0;
+		return 24.0;
 	}
 	
 	// Else return the Units base air weapon damage

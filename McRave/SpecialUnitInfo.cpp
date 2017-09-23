@@ -20,3 +20,15 @@ TransportInfo::TransportInfo()
 	cargoSize = 0;
 	harassing = false;
 }
+
+void TransportInfo::assignCargo(Unit unit)
+{
+	assignedCargo.insert(unit);
+	cargoSize = cargoSize + unit->getType().spaceRequired();
+}
+
+void TransportInfo::removeCargo(Unit unit)
+{
+	assignedCargo.erase(unit);
+	cargoSize = cargoSize - unit->getType().spaceRequired();
+}

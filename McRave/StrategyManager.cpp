@@ -89,7 +89,7 @@ void StrategyTrackerClass::protossStrategy()
 			}
 
 			// Specific 12-Nexus strategy - TODO: Change how it gets this decision from the BO
-			if (allyFastExpand && BuildOrder().getOpener() == 3)
+			if (allyFastExpand && BuildOrder().getOpener() == 2)
 			{
 				playPassive = true;
 				holdRamp = true;
@@ -112,7 +112,7 @@ void StrategyTrackerClass::protossStrategy()
 		}
 
 		// Specific ally expansion strategy - TODO Need to implement check for cannon/bunker rushes
-		if (Units().getEnemyComposition()[UnitTypes::Terran_Bunker] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Photon_Cannon] >= 2)
+		if (Units().getEnemyComposition()[UnitTypes::Protoss_Photon_Cannon] >= 2)
 		{			
 			allyFastExpand = true;
 			holdRamp = true;

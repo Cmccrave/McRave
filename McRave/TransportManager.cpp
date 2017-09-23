@@ -32,21 +32,21 @@ void TransportTrackerClass::updateInformation(TransportInfo& shuttle)
 		// See if any Reavers need a shuttle
 		for (auto &r : SpecialUnits().getMyReavers())
 		{
-			UnitInfo reaver = r.second;
+			UnitInfo &reaver = r.second;
 			if (reaver.unit() && reaver.unit()->exists() && (!reaver.getTransport() || !reaver.getTransport()->exists()) && shuttle.getCargoSize() + 2 < 4)
 			{
 				reaver.setTransport(shuttle.unit());
-				shuttle.assignCargo(reaver);
+				shuttle.assignCargo(reaver.unit());
 			}
 		}
 		// See if any High Templars need a shuttle
 		for (auto &t : SpecialUnits().getMyTemplars())
 		{
-			UnitInfo templar = t.second;
+			UnitInfo &templar = t.second;
 			if (templar.unit() && templar.unit()->exists() && (!templar.getTransport() || !templar.getTransport()->exists()) && shuttle.getCargoSize() + 1 < 4)
 			{
 				templar.setTransport(shuttle.unit());
-				shuttle.assignCargo(templar);
+				shuttle.assignCargo(templar.unit());
 			}
 		}
 		// TODO: Else grab something random (DT?)
@@ -68,8 +68,7 @@ void TransportTrackerClass::updateDecision(TransportInfo& shuttle)
 		{
 
 		}
-	}
-
+	}	
 
 	// Reset load state
 	shuttle.setLoadState(0);
@@ -89,13 +88,14 @@ void TransportTrackerClass::updateDecision(TransportInfo& shuttle)
 	// Check if we should be loading/unloading any cargo
 	for (auto &c : shuttle.getAssignedCargo())
 	{
-		UnitInfo cargo = c.second;
+		UnitInfo &cargo = Units().getAllyUnit(c);
+		
 		// If the cargo is not loaded
 		if (cargo.unit())
 		{
 			// If it's requesting a pickup
 			if ((cargo.getTargetPosition().getDistance(cargo.getPosition()) > 320) || (cargo.getType() == UnitTypes::Protoss_Reaver && cargo.unit()->getGroundWeaponCooldown() > Broodwar->getLatencyFrames()) || (cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.unit()->getEnergy() < 75))
-			{
+			{				
 				shuttle.unit()->load(cargo.unit());
 				shuttle.setLoadState(1);
 				continue;
@@ -216,29 +216,30 @@ void TransportTrackerClass::updateMovement(TransportInfo& shuttle)
 
 void TransportTrackerClass::removeUnit(Unit unit)
 {
-	// Delete if it's a shuttled unit
-	for (auto &shuttle : myShuttles)
-	{
-		for (auto &cargo : shuttle.second.getAssignedCargo())
-		{
-			if (cargo.second.unit() == unit)
-			{
-				shuttle.second.removeCargo(cargo.second);
-				return;
-			}
-		}
-	}
+	//// Delete if it's a shuttled unit
+	//for (auto &shuttle : myShuttles)
+	//{
+	//	for (auto &cargo : shuttle.second.getAssignedCargo())
+	//	{
+	//		if (cargo == unit)
+	//		{
+	//			shuttle.second.removeCargo(cargo);
+	//			return;
+	//		}
+	//	}
+	//}
 
-	// Delete if it's the shuttle
-	if (myShuttles.find(unit) != myShuttles.end())
-	{
-		myShuttles.erase(unit);
-		for (auto &cargo : myShuttles[unit].getAssignedCargo())
-		{
-			cargo.second.setTransport(nullptr);
-		}
-	}
-	return;
+	//// Delete if it's the shuttle
+	//if (myShuttles.find(unit) != myShuttles.end())
+	//{		
+	//	for (auto &c : myShuttles[unit].getAssignedCargo())
+	//	{
+	//		UnitInfo &cargo = Units().getAllyUnit(c);
+	//		cargo.setTransport(nullptr);
+	//	}
+	//	myShuttles.erase(unit);
+	//}
+	//return;
 }
 
 void TransportTrackerClass::storeUnit(Unit unit)

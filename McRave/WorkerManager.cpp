@@ -345,7 +345,7 @@ void WorkerTrackerClass::assignWorker(WorkerInfo& worker)
 	{
 		for (auto &g : Resources().getMyGas())
 		{
-			ResourceInfo gas = g.second;
+			ResourceInfo &gas = g.second;
 			if (gas.getType() != UnitTypes::Resource_Vespene_Geyser && gas.unit()->isCompleted() && gas.getGathererCount() < 3 && Grids().getBaseGrid(gas.getTilePosition()) > 0)
 			{
 				gas.setGathererCount(gas.getGathererCount() + 1);
@@ -357,11 +357,11 @@ void WorkerTrackerClass::assignWorker(WorkerInfo& worker)
 	}	
 
 	// Check if we should assign to mineral
-	for (int i = 1; i < 2; i++)
+	for (int i = 1; i <= 2; i++)
 	{
 		for (auto &m : Resources().getMyMinerals())
 		{
-			ResourceInfo mineral = m.second;
+			ResourceInfo &mineral = m.second;
 			if (mineral.getGathererCount() < i && Grids().getBaseGrid(mineral.getTilePosition()) > 0)
 			{
 				mineral.setGathererCount(mineral.getGathererCount() + 1);

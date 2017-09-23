@@ -328,8 +328,7 @@ void ProductionTrackerClass::updateProtoss()
 
 				// Robotics Facility
 				else if (building.getType() == UnitTypes::Protoss_Robotics_Facility)
-				{	
-
+				{
 					// If we need an Observer
 					if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observatory) > 0 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Observer) < (floor(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) / 3) + 1))
 					{
@@ -346,20 +345,20 @@ void ProductionTrackerClass::updateProtoss()
 						}
 					}
 
-					//// If we need a Shuttle
-					//else if ((Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) / 2 > Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle)) || (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) > 0 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle) <= 0))
-					//{
-					//	// If we can afford a Shuttle, train, otherwise, add to priority
-					//	if (Broodwar->self()->minerals() >= UnitTypes::Protoss_Shuttle.mineralPrice() + Buildings().getQueuedMineral())
-					//	{
-					//		building.unit()->train(UnitTypes::Protoss_Shuttle);
-					//		idleHighProduction.erase(building.unit());
-					//	}
-					//	else
-					//	{
-					//		idleHighProduction.emplace(building.unit(), UnitTypes::Protoss_Shuttle);
-					//	}
-					//}
+					// If we need a Shuttle
+					else if ((Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) / 2 > Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle)) || (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) > 0 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle) <= 0))
+					{
+						// If we can afford a Shuttle, train, otherwise, add to priority
+						if (Broodwar->self()->minerals() >= UnitTypes::Protoss_Shuttle.mineralPrice() + Buildings().getQueuedMineral())
+						{
+							building.unit()->train(UnitTypes::Protoss_Shuttle);
+							idleHighProduction.erase(building.unit());
+						}
+						else
+						{
+							idleHighProduction.emplace(building.unit(), UnitTypes::Protoss_Shuttle);
+						}
+					}
 
 					// If we need a Reaver			
 					else if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Robotics_Support_Bay) > 0 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) < 10)

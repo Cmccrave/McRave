@@ -28,6 +28,9 @@ public:
 	map<UnitSizeType, int>& getEnemySizes() { return enemySizes; }
 	map<UnitType, int>& getEnemyComposition() { return enemyComposition; }
 
+	UnitInfo& getAllyUnit(Unit);
+	UnitInfo& getEnemyUnit(Unit);
+
 	double getGlobalAllyStrength() { return globalAllyStrength; }
 	double getGlobalEnemyStrength() { return globalEnemyStrength; }
 	double getAllyDefense() { return allyDefense; }

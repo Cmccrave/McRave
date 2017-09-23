@@ -1,5 +1,6 @@
 #pragma once
 #include <BWAPI.h>
+#include "UnitInfo.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -32,19 +33,18 @@ class TransportInfo
 	bool harassing;
 	Unit thisUnit;
 	UnitType transportType;
-	map <Unit, UnitInfo> assignedCargo;
+	set<Unit> assignedCargo;
 	Position position, destination, drop;
 	WalkPosition walkPosition;
 public:
 	TransportInfo();
-	~TransportInfo();
 
 	int getCargoSize() { return cargoSize; }
 	int getLoadState() { return loadState; }
 	bool isHarassing() { return harassing; }
 	Unit unit() { return thisUnit; }
 	UnitType getType() { return transportType; }
-	map <Unit, UnitInfo>& getAssignedCargo() { return assignedCargo; }
+	set<Unit>& getAssignedCargo() { return assignedCargo; }
 	Position getDrop() { return drop; }
 	Position getPosition() { return position; }
 	Position getDestination() { return destination; }
@@ -61,20 +61,8 @@ public:
 	void setWalkPosition(WalkPosition newWalkPosition) { walkPosition = newWalkPosition; }
 
 	// Add cargo to the assigned cargo set
-	void assignCargo(UnitInfo&);
+	void assignCargo(Unit);
 
 	// Remove cargo from the assigned cargo set
-	void removeCargo(UnitInfo&);
+	void removeCargo(Unit);
 };
-
-void TransportInfo::assignCargo(UnitInfo& unit)
-{
-	assignedCargo[unit.unit()] = unit;
-	cargoSize = cargoSize + unit.getType().spaceRequired();
-}
-
-void TransportInfo::removeCargo(UnitInfo& unit)
-{
-	assignedCargo.erase[unit];
-	cargoSize = cargoSize - unit.getType().spaceRequired();
-}

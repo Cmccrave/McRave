@@ -85,11 +85,7 @@ void BuildingTrackerClass::storeBuilding(Unit building)
 	b.setPosition(building->getPosition());
 	b.setWalkPosition(Util().getWalkPosition(building));
 	b.setTilePosition(building->getTilePosition());
-	Grids().updateBuildingGrid(b);
-	if (theMap.GetArea(b.getTilePosition()))
-	{
-		Terrain().getAllyTerritory().insert(theMap.GetArea(b.getTilePosition())->Id());
-	}
+	Grids().updateBuildingGrid(b);	
 	return;
 }
 

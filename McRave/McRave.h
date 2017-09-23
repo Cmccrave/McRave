@@ -25,6 +25,7 @@ class BaseInfo;
 class UnitInfo;
 class SupportUnitInfo;
 class ResourceInfo;
+class SpecialUnitInfo;
 
 // Include other source files
 #include "BuildingManager.h"

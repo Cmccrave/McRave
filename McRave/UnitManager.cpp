@@ -213,6 +213,8 @@ void UnitTrackerClass::updateAliveUnits()
 			continue;
 		}
 
+		Broodwar->drawTextMap(enemy.getPosition(), "%.2f", enemy.getPriority());
+
 		// If deadframe is 0, unit is alive still
 		if (enemy.getDeadFrame() == 0)
 		{
@@ -763,4 +765,14 @@ void UnitTrackerClass::updateGlobalCalculations()
 	}
 	globalStrategy = 1;
 	return;
+}
+
+UnitInfo& UnitTrackerClass::getAllyUnit(Unit unit)
+{
+	if (allyUnits.find(unit) != allyUnits.end())
+	{
+		return allyUnits[unit];
+	}
+	assert();
+	return UnitInfo();
 }
