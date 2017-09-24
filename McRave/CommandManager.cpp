@@ -12,7 +12,7 @@ void CommandTrackerClass::updateAlliedUnits()
 {
 	for (auto &u : Units().getAllyUnits())
 	{
-		UnitInfo unit = u.second;
+		UnitInfo &unit = u.second;
 
 		// Special units have their own commands
 		if (unit.getType() == UnitTypes::Protoss_Observer || unit.getType() == UnitTypes::Protoss_Arbiter || unit.getType() == UnitTypes::Protoss_Shuttle)
@@ -105,7 +105,7 @@ void CommandTrackerClass::attackMove(UnitInfo& unit)
 	// If target doesn't exist, move towards it
 	if (unit.getTarget() && unit.getTargetPosition().isValid())
 	{
-		if (unit.unit()->getOrderTargetPosition() != unit.getTargetPosition() || unit.unit()->isStuck())
+		if (unit.unit()->getOrderTargetPosition() != unit.getTargetPosition())
 		{
 			if (unit.getType().canAttack())
 			{
@@ -125,7 +125,7 @@ void CommandTrackerClass::attackMove(UnitInfo& unit)
 		Position here = Terrain().getClosestEnemyBase(unit.getPosition());
 		if (here.isValid())
 		{
-			if (unit.unit()->getOrderTargetPosition() != here || unit.unit()->isStuck())
+			if (unit.unit()->getOrderTargetPosition() != here)
 			{
 				if (unit.getType().canAttack())
 				{
@@ -287,7 +287,7 @@ void CommandTrackerClass::attackTarget(UnitInfo& unit)
 		{
 			return;
 		}
-		if (unit.unit()->getOrderTarget() != unit.getTarget() || unit.unit()->isStuck())
+		if (unit.unit()->getOrderTarget() != unit.getTarget())
 		{
 			unit.unit()->attack(unit.getTarget());
 		}
@@ -321,18 +321,18 @@ void CommandTrackerClass::fleeTarget(UnitInfo& unit)
 		}
 	}
 
-	// Specific High Templar flee
-	if (unit.getType() == UnitTypes::Protoss_High_Templar && (unit.unit()->getEnergy() < 75 || Grids().getEGroundThreat(unit.getWalkPosition()) > 0.0))
-	{
-		for (auto templar : SpecialUnits().getMyTemplars())
-		{
-			if (templar.second.unit() && templar.second.unit()->exists() && (templar.second.unit()->getEnergy() < 75 || Grids().getEGroundThreat(templar.second.getWalkPosition()) > 0.0))
-			{
-				unit.unit()->useTech(TechTypes::Archon_Warp, templar.second.unit());
-				return;
-			}
-		}
-	}
+	//// Specific High Templar flee
+	//if (unit.getType() == UnitTypes::Protoss_High_Templar && (unit.unit()->getEnergy() < 75 || Grids().getEGroundThreat(unit.getWalkPosition()) > 0.0))
+	//{
+	//	for (auto templar : SpecialUnits().getMyTemplars())
+	//	{
+	//		if (templar.second.unit() && templar.second.unit()->exists() && (templar.second.unit()->getEnergy() < 75 || Grids().getEGroundThreat(templar.second.getWalkPosition()) > 0.0))
+	//		{
+	//			unit.unit()->useTech(TechTypes::Archon_Warp, templar.second.unit());
+	//			return;
+	//		}
+	//	}
+	//}
 	
 	// Search a circle around the target based on the speed of the unit in one second of game time
 	for (int x = start.x - 16; x <= start.x + 16 + (unit.getType().tileWidth() * 4); x++)
@@ -390,7 +390,7 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 	{
 		for (auto &base : Bases().getMyBases())
 		{
-			if (unit.unit()->getLastCommand().getTargetPosition() != Position(base.second.getResourcesPosition()) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move || unit.unit()->isStuck())
+			if (unit.unit()->getLastCommand().getTargetPosition() != Position(base.second.getResourcesPosition()) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
 			{
 				unit.unit()->move(Position(base.second.getResourcesPosition()));
 			}
@@ -437,7 +437,7 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 	{		
 		unit.setTargetPosition(Position(bestPosition));
 		Grids().updateAllyMovement(unit.unit(), bestPosition);
-		if ((unit.unit()->getOrderTargetPosition() != Position(bestPosition) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move || unit.unit()->isStuck()))
+		if ((unit.unit()->getOrderTargetPosition() != Position(bestPosition) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move))
 		{
 			unit.unit()->move(Position(bestPosition));
 		}		

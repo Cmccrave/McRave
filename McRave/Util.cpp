@@ -409,7 +409,7 @@ WalkPosition UtilTrackerClass::getWalkPosition(Unit unit)
 
 set<WalkPosition> UtilTrackerClass::getWalkPositionsUnderUnit(Unit unit)
 {
-	WalkPosition start = Units().getAllyUnits()[unit].getWalkPosition();
+	WalkPosition start = getWalkPosition(unit);
 	set<WalkPosition> returnValues;
 
 	for (int i = start.x; i <= start.x + unit->getType().tileWidth(); i++)

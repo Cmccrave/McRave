@@ -164,15 +164,15 @@ void SpecialUnitTrackerClass::updateDetectors()
 
 void SpecialUnitTrackerClass::updateReavers()
 {
-	for (auto &r: myReavers)
+	for (auto &r : Units().getAllyUnitsFilter(UnitTypes::Protoss_Reaver))
 	{
-		UnitInfo reaver = r.second;
+		UnitInfo &reaver = r.second;
 
 		// If we need Scarabs
 		if (reaver.unit()->getScarabCount() < 5)
 		{
 			reaver.unit()->train(UnitTypes::Protoss_Scarab);
-		}		
+		}
 	}
 	return;
 }
@@ -186,15 +186,7 @@ void SpecialUnitTrackerClass::storeUnit(Unit unit)
 	else if (unit->getType() == UnitTypes::Protoss_Observer)
 	{
 		myDetectors[unit].setUnit(unit);
-	}
-	else if (unit->getType() == UnitTypes::Protoss_High_Templar)
-	{
-		myTemplars[unit].setUnit(unit);
-	}
-	else if (unit->getType() == UnitTypes::Protoss_Reaver)
-	{
-		myReavers[unit].setUnit(unit);
-	}
+	}	
 	return;
 }
 
@@ -207,14 +199,6 @@ void SpecialUnitTrackerClass::removeUnit(Unit unit)
 	else if (myDetectors.find(unit) != myDetectors.end())
 	{
 		myDetectors.erase(unit);
-	}
-	else if (myTemplars.find(unit) != myTemplars.end())
-	{
-		myTemplars.erase(unit);
-	}
-	else if (myReavers.find(unit) != myReavers.end())
-	{
-		myReavers.erase(unit);
-	}
+	}	
 	return;
 }

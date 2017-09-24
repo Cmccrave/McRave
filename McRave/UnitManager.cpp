@@ -175,7 +175,7 @@ void UnitTrackerClass::onUnitComplete(Unit unit)
 			Workers().storeWorker(unit);
 		}
 
-		if (unit->getType() == UnitTypes::Protoss_Reaver || unit->getType() == UnitTypes::Protoss_High_Templar || unit->getType() == UnitTypes::Protoss_Arbiter || unit->getType() == UnitTypes::Protoss_Observer)
+		if (unit->getType() == UnitTypes::Protoss_Arbiter || unit->getType() == UnitTypes::Protoss_Observer)
 		{
 			storeAlly(unit);
 			SpecialUnits().storeUnit(unit);
@@ -213,7 +213,7 @@ void UnitTrackerClass::updateAliveUnits()
 			continue;
 		}
 
-		Broodwar->drawTextMap(enemy.getPosition(), "%.2f", enemy.getPriority());
+		//Broodwar->drawTextMap(enemy.getPosition(), "%.2f", enemy.getMaxGroundStrength());
 
 		// If deadframe is 0, unit is alive still
 		if (enemy.getDeadFrame() == 0)
@@ -275,7 +275,7 @@ void UnitTrackerClass::updateAliveUnits()
 		{
 			continue;
 		}
-		
+
 		// If deadframe is 0, unit is alive still
 		if (ally.getDeadFrame() == 0)
 		{
@@ -518,7 +518,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 		// If enemyToEngage is less than unitToEngage, it's included in the simulation
 		if (ally.getDeadFrame() == 0)
 		{
-			if ((ally.unit()->isCloaked() || ally.unit()->isBurrowed()) && Grids().getEDetectorGrid(ally.getWalkPosition()) == 0)
+			if ((ally.unit()->isCloaked() || ally.unit()->isBurrowed()) && Grids().getEDetectorGrid(WalkPosition(ally.getTargetPosition())) == 0)
 			{
 				allyLocalGroundStrength += 10.0 * ally.getMaxGroundStrength() * simRatio / simulationTime;
 				allyLocalAirStrength += 10.0 * ally.getMaxAirStrength() * simRatio / simulationTime;
@@ -641,7 +641,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 	{
 		// Specific melee strategy
 		if (max(unit.getGroundRange(), unit.getAirRange()) <= 32)
-		{			
+		{
 			if (unit.getTarget() && unit.getTarget()->exists())
 			{
 				// Force to stay on tanks
@@ -657,8 +657,8 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 					unit.setStrategy(0);
 					return;
 				}
-			}						
-		}		
+			}
+		}
 
 		// If an enemy is within ally territory, engage
 		if (unit.getTarget() && unit.getTarget()->exists() && theMap.GetArea(unit.getTarget()->getTilePosition()) && Terrain().isInAllyTerritory(unit.getTarget()))
@@ -667,12 +667,12 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 			return;
 		}
 
-		// If a Reaver is in range of something, engage it
-		if (unit.getType() == UnitTypes::Protoss_Reaver && unit.getGroundRange() > unit.getPosition().getDistance(unit.getTargetPosition()))
-		{
-			unit.setStrategy(1);
-			return;
-		}
+		//// If a Reaver is in range of something, engage it
+		//if (unit.getType() == UnitTypes::Protoss_Reaver && unit.getGroundRange() > unit.getPosition().getDistance(unit.getTargetPosition()))
+		//{
+		//	unit.setStrategy(1);
+		//	return;
+		//}
 	}
 
 	// If last command was engage
@@ -771,8 +771,24 @@ UnitInfo& UnitTrackerClass::getAllyUnit(Unit unit)
 {
 	if (allyUnits.find(unit) != allyUnits.end())
 	{
-		return allyUnits[unit];
+
 	}
-	assert();
-	return UnitInfo();
+	return allyUnits[unit];
+	//assert();	
+	//return UnitInfo();
+}
+
+map <Unit, UnitInfo> UnitTrackerClass::getAllyUnitsFilter(UnitType type)
+{
+	map<Unit, UnitInfo> returnValues;
+	for (auto &u : allyUnits)
+	{
+		UnitInfo &unit = u.second;
+		if (unit.getType() == type)
+		{
+
+			returnValues[unit.unit()] = unit;
+		}
+	}
+	return returnValues;
 }

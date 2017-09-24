@@ -28,6 +28,8 @@ public:
 	map<UnitSizeType, int>& getEnemySizes() { return enemySizes; }
 	map<UnitType, int>& getEnemyComposition() { return enemyComposition; }
 
+	map<Unit, UnitInfo> getAllyUnitsFilter(UnitType);
+
 	UnitInfo& getAllyUnit(Unit);
 	UnitInfo& getEnemyUnit(Unit);
 
