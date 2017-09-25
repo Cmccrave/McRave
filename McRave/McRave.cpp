@@ -8,17 +8,14 @@
 
 // --- AUTHOR NOTES ---
 // TODO:
-// Prevent overlapping buildings
 // Mine removal from expansions - important for Ice/Iron
 
 //Building:
-// permit building grid
 // unQueueBuilding->ONS qM + qG and #buildings queued
 
 //BO :
 // Allow battery against Terran(Irons rush would be a lot worse potentially)
-// Expansion logic
-//
+
 // Micro :
 // if overkill, reduce targeting % chance by % overkill
 

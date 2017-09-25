@@ -28,7 +28,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 	for (auto &e : Units().getEnemyUnits())
 	{
 		thisUnit = 0.0;
-		UnitInfo enemy = e.second;
+		UnitInfo &enemy = e.second;
 		double distance = (1.0 + unit.getPosition().getDistance(enemy.getPosition()));
 
 		if (!enemy.unit())
@@ -50,7 +50,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		}
 
 		// If unit is dead or unattackable
-		if (!unit.getType().isDetector() && (enemy.getDeadFrame() > 0 || (enemy.getType().isFlyer() && unit.getAirRange() == 0.0) || (!enemy.getType().isFlyer() && unit.getGroundRange() == 0.0)))
+		if (enemy.getDeadFrame() > 0 || (enemy.getType().isFlyer() && unit.getAirRange() == 0.0) || (!enemy.getType().isFlyer() && unit.getGroundRange() == 0.0))
 		{
 			continue;
 		}

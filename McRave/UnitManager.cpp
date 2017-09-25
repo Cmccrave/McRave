@@ -496,12 +496,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 	// Check every ally being in range of the target
 	for (auto &a : allyUnits)
 	{
-		UnitInfo ally = a.second;
-		// Ignore workers and buildings
-		if (ally.getType().isWorker() || ally.getType().isBuilding())
-		{
-			continue;
-		}
+		UnitInfo ally = a.second;		
 
 		// If the Ally engagement position is not within a 5.0 second engaging distance of the unit, ignore it
 		if (ally.getEngagePosition().getDistance(unit.getEngagePosition()) > ally.getGroundRange() + (ally.getSpeed() * simulationTime))
@@ -513,10 +508,10 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 		simRatio = max(0.0, (simulationTime - allyToEngage));
 
 
-		// If enemyToEngage is less than unitToEngage, it's included in the simulation
+		// If allyToEngage is less than unitToEngage, it's included in the simulation
 		if (ally.getDeadFrame() == 0)
 		{
-			if ((ally.unit()->isCloaked() || ally.unit()->isBurrowed()) && Grids().getEDetectorGrid(WalkPosition(ally.getTargetPosition())) == 0)
+			if ((ally.unit()->isCloaked() || ally.unit()->isBurrowed()) && Grids().getEDetectorGrid(WalkPosition(ally.getEngagePosition())) == 0)
 			{
 				allyLocalGroundStrength += 10.0 * ally.getMaxGroundStrength() * simRatio / simulationTime;
 				allyLocalAirStrength += 10.0 * ally.getMaxAirStrength() * simRatio / simulationTime;
@@ -665,12 +660,12 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 			return;
 		}
 
-		//// If a Reaver is in range of something, engage it
-		//if (unit.getType() == UnitTypes::Protoss_Reaver && unit.getGroundRange() > unit.getPosition().getDistance(unit.getTargetPosition()))
-		//{
-		//	unit.setStrategy(1);
-		//	return;
-		//}
+		// If a Reaver is in range of something, engage it
+		if (unit.getType() == UnitTypes::Protoss_Reaver && unit.getGroundRange() > unit.getPosition().getDistance(unit.getTargetPosition()))
+		{
+			unit.setStrategy(1);
+			return;
+		}
 	}
 
 	// If last command was engage
@@ -769,11 +764,10 @@ UnitInfo& UnitTrackerClass::getAllyUnit(Unit unit)
 {
 	if (allyUnits.find(unit) != allyUnits.end())
 	{
-
-	}
-	return allyUnits[unit];
-	//assert();	
-	//return UnitInfo();
+		return allyUnits[unit];
+	}	
+	assert();	
+	return UnitInfo();
 }
 
 map <Unit, UnitInfo> UnitTrackerClass::getAllyUnitsFilter(UnitType type)
