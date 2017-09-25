@@ -631,7 +631,7 @@ void GridTrackerClass::updateMobilityGrids()
 		}
 	}
 
-	bool reservePath = true;
+	bool reservePath = false;
 	if (reservePath && Broodwar->getFrameCount() > 500)
 	{
 		reservePath = false;

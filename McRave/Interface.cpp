@@ -34,8 +34,8 @@ void InterfaceTrackerClass::drawInformation()
 	
 	// Display global strength calculations	
 	Broodwar->drawTextScreen(575, 16, "%c%.2f/%.2f", Text::White, Units().getGlobalAllyStrength(), Units().getGlobalEnemyStrength());
-	Broodwar->drawTextScreen(452, 16, "%c%d", Text::White, Production().getReservedMineral() + Buildings().getQueuedMineral());
-	Broodwar->drawTextScreen(520, 16, "%c%d", Text::White, Production().getReservedGas() + Buildings().getQueuedGas());
+	Broodwar->drawTextScreen(452, 16, "%c%.2f", Text::White, Resources().getMPM());
+	Broodwar->drawTextScreen(520, 16, "%c%.2f", Text::White, Resources().getGPM());
 	Broodwar->drawTextScreen(575, 32, "%c%s", Text::White, BuildOrder().getCurrentBuild().c_str());
 	
 

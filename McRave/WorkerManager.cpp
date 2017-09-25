@@ -55,7 +55,7 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 	{
 		for (int y = start.y - 1; y < start.y + 1 + worker.getType().tileHeight() * 4; y++)
 		{
-			if (WalkPosition(x, y).isValid() && Grids().getEGroundThreat(x, y) != 0.0)
+			if (WalkPosition(x, y).isValid() && Grids().getEGroundThreat(x, y) == 0.0)
 			{
 				recentExplorations[WalkPosition(x, y)] = Broodwar->getFrameCount();
 			}
@@ -128,7 +128,7 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 			}
 			if (closestP.isValid() && worker.unit()->getOrderTargetPosition() != closestP)
 			{
-				worker.unit()->move(closestP);				
+				worker.unit()->move(closestP);
 			}
 			return;
 		}
@@ -216,18 +216,17 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 	}
 
 	// If we are fast expanding and enemy is rushing, we need to defend with workers
-	if ((Strategy().isAllyFastExpand() && BuildOrder().isOpener() && Units().getGlobalAllyStrength() + Units().getAllyDefense() < Units().getGlobalEnemyStrength()) || (Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0 && Grids().getResourceGrid(worker.getTilePosition()) > 0))
-	{		
+	if ((Strategy().isAllyFastExpand() && BuildOrder().isOpener() && Units().getGlobalAllyStrength() + Units().getAllyDefense()*0.8 < Units().getGlobalEnemyStrength()) || (Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0 && Grids().getResourceGrid(worker.getTilePosition()) > 0))
+	{
 		Units().storeAlly(worker.unit());
 		Workers().removeWorker(worker.unit());
 		return;
 	}
 
 	// Reassignment logic
-	if (Resources().getGasNeeded() > 0 && worker.getResource() && worker.getResource()->exists() && worker.getResource()->getType().isMineralField())
+	if (worker.getResource() && worker.getResource()->exists() && ((!Resources().isGasSaturated() && minWorkers > gasWorkers * 10) || (!Resources().isMinSaturated() && minWorkers < gasWorkers * 4)))
 	{
 		reAssignWorker(worker);
-		Resources().setGasNeeded(Resources().getGasNeeded() - 1);
 	}
 
 	// If worker doesn't have an assigned resource, assign one
@@ -325,10 +324,12 @@ void WorkerTrackerClass::removeWorker(Unit worker)
 	if (Resources().getMyGas().find(myWorkers[worker].getResource()) != Resources().getMyGas().end())
 	{
 		Resources().getMyGas()[myWorkers[worker].getResource()].setGathererCount(Resources().getMyGas()[myWorkers[worker].getResource()].getGathererCount() - 1);
+		gasWorkers--;
 	}
 	if (Resources().getMyMinerals().find(myWorkers[worker].getResource()) != Resources().getMyMinerals().end())
 	{
 		Resources().getMyMinerals()[myWorkers[worker].getResource()].setGathererCount(Resources().getMyMinerals()[myWorkers[worker].getResource()].getGathererCount() - 1);
+		minWorkers--;
 	}
 	if (worker == scout)
 	{
@@ -340,8 +341,8 @@ void WorkerTrackerClass::removeWorker(Unit worker)
 
 void WorkerTrackerClass::assignWorker(WorkerInfo& worker)
 {
-	// Check if we should assign to gas
-	if (!Strategy().isRush() || Resources().isMinSaturated())
+	// Check if we need gas workers
+	if (!Resources().isGasSaturated() && ((!Strategy().isRush() && Resources().isMinSaturated()) || minWorkers > gasWorkers * 10))
 	{
 		for (auto &g : Resources().getMyGas())
 		{
@@ -351,25 +352,30 @@ void WorkerTrackerClass::assignWorker(WorkerInfo& worker)
 				gas.setGathererCount(gas.getGathererCount() + 1);
 				worker.setResource(gas.unit());
 				worker.setResourcePosition(gas.getPosition());
+				gasWorkers++;
 				return;
 			}
 		}
-	}	
+	}
 
-	// Check if we should assign to mineral
-	for (int i = 1; i <= 2; i++)
+	// Check if we need mineral workers
+	else
 	{
-		for (auto &m : Resources().getMyMinerals())
+		for (int i = 1; i <= 2; i++)
 		{
-			ResourceInfo &mineral = m.second;
-			if (mineral.getGathererCount() < i && Grids().getBaseGrid(mineral.getTilePosition()) > 0)
+			for (auto &m : Resources().getMyMinerals())
 			{
-				mineral.setGathererCount(mineral.getGathererCount() + 1);
-				worker.setResource(mineral.unit());
-				worker.setResourcePosition(mineral.getPosition());
-				return;
+				ResourceInfo &mineral = m.second;
+				if (mineral.getGathererCount() < i && Grids().getBaseGrid(mineral.getTilePosition()) > 0)
+				{
+					mineral.setGathererCount(mineral.getGathererCount() + 1);
+					worker.setResource(mineral.unit());
+					worker.setResourcePosition(mineral.getPosition());
+					minWorkers++;
+					return;
+				}
 			}
-		}		
+		}
 	}
 	return;
 }

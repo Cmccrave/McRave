@@ -13,7 +13,7 @@ void ResourceTrackerClass::updateResources()
 	// Assume mineral saturation, will be changed to false if any mineral field has less than 2 gatherers
 	minSat = true;
 	for (auto &m : myMinerals)
-	{		
+	{
 		ResourceInfo& resource = m.second;
 		if (resource.unit()->exists())
 		{
@@ -37,8 +37,7 @@ void ResourceTrackerClass::updateResources()
 			resource.setRemainingResources(resource.unit()->getResources());
 		}
 		if (resource.getGathererCount() < 3 && resource.getType() != UnitTypes::Resource_Vespene_Geyser && resource.unit()->isCompleted() && Grids().getBaseGrid(resource.getTilePosition()) > 0)
-		{
-			gasNeeded = 3 - resource.getGathererCount();
+		{			
 			gasSat = false;
 		}
 		if (Grids().getBaseGrid(resource.getTilePosition()) == 2)
@@ -46,6 +45,14 @@ void ResourceTrackerClass::updateResources()
 			tempGasCount++;
 		}
 	}
+	
+	// Calculate minerals and gas per minute
+	int gas = Broodwar->self()->gas() + Broodwar->self()->spentGas() + Broodwar->self()->refundedGas() + Broodwar->self()->repairedGas();
+	int mineral = Broodwar->self()->minerals() + Broodwar->self()->spentMinerals() + Broodwar->self()->refundedMinerals() + Broodwar->self()->repairedMinerals();
+	GPM = (GPM * 1439 / 1440) + (gas - lastGas);
+	MPM = (MPM * 1439 / 1440) + (mineral - lastMineral);
+	lastGas = gas;
+	lastMineral = mineral;
 	return;
 }
 

@@ -13,13 +13,17 @@ class ResourceTrackerClass
 	map <Unit, ResourceInfo> myBoulders;
 	set <Position> myMineralLines;
 	bool minSat, gasSat;
-	int gasNeeded, tempGasCount;
+	int gasNeeded, tempGasCount, lastGas, lastMineral;
+	double MPM, GPM;
 public:
 	int getTempGasCount() { return tempGasCount; }
 
 	map <Unit, ResourceInfo>& getMyMinerals() { return myMinerals; }
 	map <Unit, ResourceInfo>& getMyGas() { return myGas; }
 	map <Unit, ResourceInfo>& getMyBoulders() { return myBoulders; }
+
+	double getMPM() { return MPM; }
+	double getGPM() { return GPM; }
 	
 	void update();
 	void updateResources();

@@ -213,8 +213,6 @@ void UnitTrackerClass::updateAliveUnits()
 			continue;
 		}
 
-		//Broodwar->drawTextMap(enemy.getPosition(), "%.2f", enemy.getMaxGroundStrength());
-
 		// If deadframe is 0, unit is alive still
 		if (enemy.getDeadFrame() == 0)
 		{

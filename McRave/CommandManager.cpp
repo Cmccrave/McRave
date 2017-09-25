@@ -435,12 +435,12 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 	}
 	if (bestPosition.isValid() && bestPosition != start)
 	{		
-		unit.setTargetPosition(Position(bestPosition));
-		Grids().updateAllyMovement(unit.unit(), bestPosition);
 		if ((unit.unit()->getOrderTargetPosition() != Position(bestPosition) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move))
 		{
 			unit.unit()->move(Position(bestPosition));
-		}		
+		}
+		unit.setTargetPosition(Position(bestPosition));
+		Grids().updateAllyMovement(unit.unit(), bestPosition);
 	}
 	return;
 }

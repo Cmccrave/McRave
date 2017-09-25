@@ -13,6 +13,7 @@ class WorkerTrackerClass
 	Unit scout;
 	bool scouting = true;
 	int deadScoutFrame = 0;
+	int minWorkers, gasWorkers;
 public:
 
 	bool isScouting() { return scouting; }

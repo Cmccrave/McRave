@@ -33,6 +33,7 @@ void BuildingTrackerClass::updateBuildings()
 			continue;
 		}
 	}
+	return;
 }
 
 void BuildingTrackerClass::queueBuildings()
@@ -85,7 +86,11 @@ void BuildingTrackerClass::storeBuilding(Unit building)
 	b.setPosition(building->getPosition());
 	b.setWalkPosition(Util().getWalkPosition(building));
 	b.setTilePosition(building->getTilePosition());
-	Grids().updateBuildingGrid(b);	
+	Grids().updateBuildingGrid(b);
+	if (theMap.GetArea(b.getTilePosition()) && theMap.GetArea(b.getTilePosition())->Id() != 0 && theMap.GetArea(b.getTilePosition())->Bases().size() > 0)
+	{
+		Terrain().getAllyTerritory().insert(theMap.GetArea(b.getTilePosition())->Id());
+	}
 	return;
 }
 

@@ -74,7 +74,7 @@ void ProductionTrackerClass::updateProtoss()
 		gateSat = true;
 	}
 
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= min(4, (2 * Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus))))
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= min(6, (3 * Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Command_Center))))
 	{
 		productionSat = true;
 	}
@@ -242,7 +242,7 @@ void ProductionTrackerClass::updateProtoss()
 							idleHighProduction.emplace(building.unit(), UnitTypes::Protoss_High_Templar);
 						}
 					}
-					if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Templar_Archives) >= 1 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dark_Templar) < 4)
+					if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Templar_Archives) >= 1 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dark_Templar) < 2)
 					{
 						if (Broodwar->self()->minerals() >= UnitTypes::Protoss_Dark_Templar.mineralPrice() + Buildings().getQueuedMineral() && Broodwar->self()->gas() >= UnitTypes::Protoss_Dark_Templar.gasPrice() + Buildings().getQueuedGas() && Units().getSupply() + UnitTypes::Protoss_Dark_Templar.supplyRequired() <= Broodwar->self()->supplyTotal())
 						{
@@ -468,7 +468,7 @@ void ProductionTrackerClass::updateTerran()
 		{
 
 			// Barracks
-			if (building.second.getType() == UnitTypes::Terran_Barracks)
+			if (building.second.getType() == UnitTypes::Terran_Barracks && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) == 0)
 			{
 				if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Medic) < 6 && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Academy) >= 1)
 				{
@@ -548,7 +548,7 @@ void ProductionTrackerClass::updateTerran()
 				}
 				else
 				{
-					idleHighProduction.emplace(building.first, UnitTypes::Terran_Siege_Tank_Tank_Mode);
+					idleLowProduction.emplace(building.first, UnitTypes::Terran_Siege_Tank_Tank_Mode);
 				}
 			}
 

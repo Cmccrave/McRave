@@ -24,7 +24,6 @@ void BuildOrderTrackerClass::recordWinningBuild(bool isWinner)
 void BuildOrderTrackerClass::loadConfig()
 {
 	string line;
-	char comma;
 	int x;
 	ifstream config("bwapi-data/read/" + Broodwar->enemy()->getName() + ".txt");
 
@@ -82,22 +81,6 @@ void BuildOrderTrackerClass::loadConfig()
 			double winRate = gamesPlayed > 0 ? configStuff.at(0 + (i * 2)) / static_cast<double>(gamesPlayed) : 0;
 			double ucbVal = 0.5 * sqrt(log((double)totalGamesPlayed / gamesPlayed));
 			double val = winRate + ucbVal;
-
-
-			/*if (configStuff.at(1+(i*2)) == 0)
-			{
-				w1 = 1.0;
-			}
-			else
-			{
-				w1 = configStuff.at(0 + (i * 2)) / configStuff.at(1 + (i * 2));
-			}
-
-			if (w1 > w2)
-			{
-				w2 = w1;
-				opening = i;
-			}*/
 
 			if (val > best)
 			{
@@ -351,7 +334,7 @@ void BuildOrderTrackerClass::protossSituational()
 	}
 
 	// Expansion logic
-	if (Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() /*&& !getOpening && !Strategy().isRush()*/ && (/*Broodwar->self()->minerals() > 300 && */Resources().isMinSaturated() && Production().isGateSat() && Production().getIdleLowProduction().size() == 0) || (Strategy().isAllyFastExpand() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1))
+	if (Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() && (Resources().isMinSaturated() && Production().isGateSat() && Production().getIdleLowProduction().size() == 0) || (Strategy().isAllyFastExpand() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1))
 	{
 		buildingDesired[UnitTypes::Protoss_Nexus] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) + 1;
 	}
@@ -444,7 +427,7 @@ void BuildOrderTrackerClass::terranSituational()
 	buildingDesired[UnitTypes::Terran_Supply_Depot] = min(22, (int)floor((Units().getSupply() / max(14, (16 - Broodwar->self()->allUnitCount(UnitTypes::Terran_Supply_Depot))))));
 
 	// Expansion logic
-	if (Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() && !getOpening && !Strategy().isRush() && (Broodwar->self()->minerals() > 300 && Resources().isMinSaturated() && Production().getIdleLowProduction().size() == 0))
+	if (Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() && (Resources().isMinSaturated() && Production().getIdleLowProduction().size() == 0) || (Strategy().isAllyFastExpand() && Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Command_Center) == 1))
 	{
 		buildingDesired[UnitTypes::Terran_Command_Center] = Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) + 1;
 	}
@@ -458,7 +441,7 @@ void BuildOrderTrackerClass::terranSituational()
 	// Refinery logic
 	if (Resources().isMinSaturated())
 	{
-		buildingDesired[UnitTypes::Terran_Refinery] = Resources().getMyGas().size();
+		buildingDesired[UnitTypes::Terran_Refinery] = Resources().getTempGasCount();
 	}
 
 	// Barracks logic
@@ -467,10 +450,10 @@ void BuildOrderTrackerClass::terranSituational()
 		buildingDesired[UnitTypes::Terran_Barracks] = min(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Barracks) + 1);
 	}
 
-	// Gateway logic
+	// Factory logic
 	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= 2 && (Production().getIdleLowProduction().size() == 0 && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 200 && Broodwar->self()->gas() - Production().getReservedGas() - Buildings().getQueuedGas() > 100) || (!Production().isProductionSat() && Resources().isMinSaturated()))))
 	{
-		buildingDesired[UnitTypes::Terran_Factory] = min(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) * 2, Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Factory) + 1);
+		buildingDesired[UnitTypes::Terran_Factory] = min(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Factory) + 1);
 	}
 
 	// CC logic

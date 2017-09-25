@@ -38,6 +38,14 @@ void StrategyTrackerClass::protossStrategy()
 	// If it's early on and we're being rushed
 	if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0)
 	{
+		// Specific 12Nexus strategy
+		if (BuildOrder().getCurrentBuild() == "12Nexus")
+		{
+			allyFastExpand = true;
+			playPassive = true;
+			holdRamp = true;
+		}
+
 		// Specific early PvZ strategy
 		if (Players().getNumberZerg() > 0)
 		{
@@ -45,7 +53,6 @@ void StrategyTrackerClass::protossStrategy()
 			playPassive = true;
 			holdRamp = true;
 		}
-
 
 		// Specific early PvP strategy
 		if (Players().getNumberProtoss() > 0)
