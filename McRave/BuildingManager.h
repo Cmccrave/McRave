@@ -9,15 +9,16 @@ using namespace std;
 class BuildingTrackerClass
 {
 	int queuedMineral, queuedGas;
-	map <UnitType, int> buildingsQueued;
+	map <TilePosition, UnitType> buildingsQueued;
 	map <Unit, BuildingInfo> myBuildings;
 	int errorTime = 0, buildingOffset = 0;
 public:
 	map <Unit, BuildingInfo>& getMyBuildings() { return myBuildings; }
-	map <UnitType, int>& getBuildingsQueued() { return buildingsQueued; }
+	map <TilePosition, UnitType>& getBuildingsQueued() { return buildingsQueued; }
 	TilePosition getBuildLocation(UnitType);
 	TilePosition getBuildLocationNear(UnitType, TilePosition, bool);
 	bool canBuildHere(UnitType, TilePosition, bool ignoreCond = false);
+	bool canQueueHere(UnitType, TilePosition, bool ignoreCond = false);
 
 	// Returns the minerals that are reserved for queued buildings
 	int getQueuedMineral() { return queuedMineral; }

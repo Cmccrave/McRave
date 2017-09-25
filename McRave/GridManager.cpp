@@ -36,17 +36,17 @@ void GridTrackerClass::update()
 
 void GridTrackerClass::reset()
 {
-	//// Temp debugging for tile positions
-	//for (int x = 0; x <= Broodwar->mapWidth() * 4; x++)
-	//{
-	//	for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
-	//	{
-	//		if (eGroundThreat[x][y] > 0)
-	//		{
-	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(8, 8), 4, Colors::Red);
-	//		}
-	//	}
-	//}
+	// Temp debugging for tile positions
+	for (int x = 0; x <= Broodwar->mapWidth(); x++)
+	{
+		for (int y = 0; y <= Broodwar->mapHeight(); y++)
+		{
+			if (reservedGrid[x][y] > 0)
+			{
+				Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(8, 8), 4, Colors::Red);
+			}
+		}
+	}
 
 	int center = 0;
 	for (int x = 0; x < 1024; x++) for (int y = 0; y < 1024; y++)
@@ -305,7 +305,7 @@ void GridTrackerClass::updateBuildingGrid(BuildingInfo& building)
 	TilePosition tile = building.getTilePosition();
 	if (building.unit() && tile.isValid())
 	{
-		// Reserve Grid
+		// Building Grid
 		for (int x = tile.x - buildingOffset; x < tile.x + building.getType().tileWidth() + buildingOffset; x++)
 		{
 			for (int y = tile.y - buildingOffset; y < tile.y + building.getType().tileHeight() + buildingOffset; y++)
@@ -314,11 +314,12 @@ void GridTrackerClass::updateBuildingGrid(BuildingInfo& building)
 				{
 					if (building.unit()->exists())
 					{
-						reserveGrid[x][y] += 1;
+						reservedGrid[x][y] = 0;
+						buildingGrid[x][y] += 1;
 					}
 					else
 					{
-						reserveGrid[x][y] -= 1;
+						buildingGrid[x][y] -= 1;
 					}
 				}
 			}
@@ -335,11 +336,12 @@ void GridTrackerClass::updateBuildingGrid(BuildingInfo& building)
 					{
 						if (building.unit()->exists())
 						{
-							reserveGrid[x][y] += 1;
+							reservedGrid[x][y] = 0;
+							buildingGrid[x][y] += 1;
 						}
 						else
 						{
-							reserveGrid[x][y] -= 1;
+							buildingGrid[x][y] -= 1;
 						}
 					}
 				}
@@ -518,11 +520,11 @@ void GridTrackerClass::updateDefenseGrid(UnitInfo& unit)
 					{
 						if (unit.unit()->exists())
 						{
-							reserveGrid[x][y] += 1;
+							buildingGrid[x][y] += 1;
 						}
 						else
 						{
-							reserveGrid[x][y] -= 1;
+							buildingGrid[x][y] -= 1;
 						}
 					}
 				}
@@ -636,7 +638,7 @@ void GridTrackerClass::updateMobilityGrids()
 	{
 		reservePath = false;
 		// Create reserve path home
-		int baseReserveGrid[256][256] = {};
+		int basebuildingGrid[256][256] = {};
 		for (auto &area : theMap.Areas())
 		{
 			for (auto &base : area.Bases())
@@ -645,7 +647,7 @@ void GridTrackerClass::updateMobilityGrids()
 				{
 					for (int y = base.Location().y; y < base.Location().y + 4; y++)
 					{
-						baseReserveGrid[x][y] = 1;
+						basebuildingGrid[x][y] = 1;
 					}
 				}
 			}
@@ -665,7 +667,7 @@ void GridTrackerClass::updateMobilityGrids()
 					{
 						continue;
 					}
-					if (reserveGrid[x][y] == 1 || baseReserveGrid[x][y] == 1)
+					if (buildingGrid[x][y] == 1 || basebuildingGrid[x][y] == 1)
 					{
 						continue;
 					}
@@ -698,7 +700,7 @@ void GridTrackerClass::updateMobilityGrids()
 			if (closestT.isValid())
 			{
 				start = closestT;
-				reserveGrid[closestT.x][closestT.y] = 1;
+				buildingGrid[closestT.x][closestT.y] = 1;
 			}
 
 			if (start.getDistance(end) < 3)
@@ -716,7 +718,7 @@ void GridTrackerClass::updateMobilityGrids()
 				{
 					if (Grids().getDistanceHome(WalkPosition(TilePosition(i, j))) >= Grids().getDistanceHome(WalkPosition(start)))
 					{
-						reserveGrid[i][j] = 1;
+						buildingGrid[i][j] = 1;
 					}
 				}
 			}
@@ -782,33 +784,31 @@ void GridTrackerClass::updateAllyMovement(Unit unit, WalkPosition here)
 
 void GridTrackerClass::updateReservedLocation(UnitType building, TilePosition here)
 {
-	//// When placing a building, reserve the tiles so no further locations are placed there
-	//for (int x = here.x; x < here.x + building.tileWidth(); x++)
-	//{
-	//	for (int y = here.y; y < here.y + building.tileHeight(); y++)
-	//	{
-	//		if (TilePosition(x, y).isValid())
-	//		{
-	//			resetGrid[x][y] = true;
-	//			reserveGrid[x][y] = 2;
-	//		}
-	//	}
-	//}
+	// When placing a building, reserve the tiles so no further locations are placed there
+	for (int x = here.x; x < here.x + building.tileWidth(); x++)
+	{
+		for (int y = here.y; y < here.y + building.tileHeight(); y++)
+		{
+			if (TilePosition(x, y).isValid())
+			{
+				reservedGrid[x][y] = 1;
+			}
+		}
+	}
 
-	//if (building.canBuildAddon())
-	//{
-	//	for (int x = here.x + building.tileWidth(); x < here.x + building.tileWidth() + 2; x++)
-	//	{
-	//		for (int y = here.y + 1; y < here.y + 3; y++)
-	//		{
-	//			if (TilePosition(x, y).isValid())
-	//			{
-	//				resetGrid[x][y] = true;
-	//				reserveGrid[x][y] = 2;
-	//			}
-	//		}
-	//	}
-	//}
+	if (building.canBuildAddon())
+	{
+		for (int x = here.x + building.tileWidth(); x < here.x + building.tileWidth() + 2; x++)
+		{
+			for (int y = here.y + 1; y < here.y + 3; y++)
+			{
+				if (TilePosition(x, y).isValid())
+				{
+					reservedGrid[x][y] = 1;
+				}
+			}
+		}
+	}
 	return;
 }
 

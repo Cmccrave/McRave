@@ -208,7 +208,7 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 	if (Grids().getBunkerGrid(worker.getTilePosition()) > 0)
 	{
 		Unit bunker = worker.unit()->getClosestUnit(Filter::GetType == UnitTypes::Terran_Bunker && Filter::HP_Percent < 100);
-		if (bunker)
+		if (bunker && bunker->getHitPoints() < bunker->getType().maxHitPoints())
 		{
 			worker.unit()->repair(bunker);
 			return;

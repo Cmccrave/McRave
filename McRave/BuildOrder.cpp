@@ -399,7 +399,7 @@ void BuildOrderTrackerClass::terranOpener()
 		if (opening == 2)
 		{
 			buildingDesired[UnitTypes::Terran_Barracks] = (Units().getSupply() >= 22);
-			buildingDesired[UnitTypes::Terran_Refinery] = (Units().getSupply() >= 24);
+			buildingDesired[UnitTypes::Terran_Refinery] = (Units().getSupply() >= 22);
 			buildingDesired[UnitTypes::Terran_Factory] = (Units().getSupply() >= 30) + (Units().getSupply() >= 36);
 		}
 		// 2 Port Wraith

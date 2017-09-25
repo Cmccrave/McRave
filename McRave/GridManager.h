@@ -20,7 +20,8 @@ class GridTrackerClass
 
 	// Ally grids
 	int aClusterGrid[1024][1024] = {};
-	int reserveGrid[256][256] = {};
+	int reservedGrid[256][256] = {};
+	int buildingGrid[256][256] = {};
 	int baseGrid[256][256] = {};
 	int pylonGrid[256][256] = {};
 	int batteryGrid[256][256] = {};
@@ -99,9 +100,13 @@ public:
 	int getACluster(int x, int y) { return aClusterGrid[x][y]; }
 	int getACluster(WalkPosition here) { return aClusterGrid[here.x][here.y]; }
 
-	// Returns 1 if the given TilePosition is reserved for building purposes, 0 otherwise
-	int getReserveGrid(int x, int y) { return reserveGrid[x][y]; }
-	int getReserveGrid(TilePosition here) { return reserveGrid[here.x][here.y]; }
+	// Return 1 if the given TilePosition has a building that will be put on it, 0 otherwise
+	int getReservedGrid(int x, int y) { return reservedGrid[x][y]; }
+	int getReservedGrid(TilePosition here) { return reservedGrid[here.x][here.y]; }
+
+	// Returns 1 if the given TilePosition has a building on it, 0 otherwise
+	int getBuildingGrid(int x, int y) { return buildingGrid[x][y]; }
+	int getBuildingGrid(TilePosition here) { return buildingGrid[here.x][here.y]; }
 
 	// Returns 2 if the given TilePosition is within range of a base that is completed, 1 if constructing and 0 otherwise
 	int getBaseGrid(int x, int y) { return baseGrid[x][y]; }

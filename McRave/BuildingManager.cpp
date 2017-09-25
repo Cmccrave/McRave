@@ -19,7 +19,7 @@ void BuildingTrackerClass::updateBuildings()
 		{
 			continue;
 		}
-		
+
 		building.setIdleStatus(building.unit()->getRemainingTrainTime() == 0);
 		building.setEnergy(building.unit()->getEnergy());
 
@@ -41,8 +41,17 @@ void BuildingTrackerClass::queueBuildings()
 	// For each building desired
 	for (auto &b : BuildOrder().getBuildingDesired())
 	{
+		int cnt = 0;
+
+		for (auto &queued : buildingsQueued)
+		{
+			if (queued.second == b.first)
+			{
+				cnt++;
+			}
+		}
 		// If our visible count is lower than our desired count
-		if (b.second > Broodwar->self()->visibleUnitCount(b.first) && b.second - Broodwar->self()->visibleUnitCount(b.first) > buildingsQueued[b.first])
+		if (b.second > Broodwar->self()->visibleUnitCount(b.first) && b.second - Broodwar->self()->visibleUnitCount(b.first) > cnt)
 		{
 			TilePosition here = Buildings().getBuildLocation(b.first);
 			Unit builder = Workers().getClosestWorker(Position(here));
@@ -62,15 +71,12 @@ void BuildingTrackerClass::constructBuildings()
 {
 	queuedMineral = 0;
 	queuedGas = 0;
-	for (auto &building : buildingsQueued)
-	{
-		building.second = 0;
-	}
+	buildingsQueued.clear();
 	for (auto &worker : Workers().getMyWorkers())
 	{
 		if (worker.second.getBuildingType().isValid() && worker.second.getBuildPosition().isValid())
-		{
-			buildingsQueued[worker.second.getBuildingType()] += 1;
+		{			
+			buildingsQueued[worker.second.getBuildPosition()] = worker.second.getBuildingType();
 			queuedMineral += worker.second.getBuildingType().mineralPrice();
 			queuedGas += worker.second.getBuildingType().gasPrice();
 		}
@@ -115,21 +121,9 @@ TilePosition BuildingTrackerClass::getBuildLocationNear(UnitType building, TileP
 	while (length < 50)
 	{
 		// If we can build here, return this tile position		
-		if (TilePosition(x, y).isValid() && canBuildHere(building, TilePosition(x, y), ignoreCond))
+		if (TilePosition(x, y).isValid() && canBuildHere(building, TilePosition(x, y), ignoreCond) && canQueueHere(building, TilePosition(x,y), ignoreCond))
 		{
-			bool fine = true;
-			for (auto &w : Workers().getMyWorkers())
-			{
-				WorkerInfo worker = w.second;
-				if (worker.getBuildPosition().isValid() && worker.getBuildPosition().getDistance(buildTilePosition) < worker.getBuildingType().tileWidth())
-				{
-					fine = false;
-				}
-			}
-			if (fine)
-			{
-				return TilePosition(x, y);
-			}
+			return TilePosition(x, y);
 		}
 
 		// Otherwise spiral out and find a new tile
@@ -200,7 +194,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 					{
 						continue;
 					}
-					if (Grids().getReserveGrid(base.Location()) == 0 && (Grids().getDistanceHome(WalkPosition(base.Location())) / base.Center().getDistance(Terrain().getEnemyStartingPosition()) < closestD || closestD == 0))
+					if (Grids().getBuildingGrid(base.Location()) == 0 && (Grids().getDistanceHome(WalkPosition(base.Location())) / base.Center().getDistance(Terrain().getEnemyStartingPosition()) < closestD || closestD == 0))
 					{
 						closestD = Grids().getDistanceHome(WalkPosition(base.Location())) / base.Center().getDistance(Terrain().getEnemyStartingPosition());
 						closestP = base.Location();
@@ -317,7 +311,7 @@ bool BuildingTrackerClass::canBuildHere(UnitType building, TilePosition buildTil
 			if (TilePosition(x, y).isValid())
 			{
 				// If it's reserved
-				if (Grids().getReserveGrid(x, y) > 0 && !building.isResourceDepot())
+				if ((Grids().getBuildingGrid(x, y) > 0 && !building.isResourceDepot()) || Grids().getReservedGrid(x, y) > 0)
 				{
 					return false;
 				}
@@ -338,7 +332,7 @@ bool BuildingTrackerClass::canBuildHere(UnitType building, TilePosition buildTil
 				if (!Broodwar->isBuildable(TilePosition(x, y), true))
 				{
 					return false;
-				}
+				}				
 			}
 			else
 			{
@@ -358,7 +352,7 @@ bool BuildingTrackerClass::canBuildHere(UnitType building, TilePosition buildTil
 				{
 					return false;
 				}
-				if (Grids().getReserveGrid(x, y) > 0 && !Broodwar->isBuildable(TilePosition(x, y), true))
+				if (Grids().getBuildingGrid(x, y) > 0 && !Broodwar->isBuildable(TilePosition(x, y), true))
 				{
 					return false;
 				}
@@ -396,7 +390,7 @@ bool BuildingTrackerClass::canBuildHere(UnitType building, TilePosition buildTil
 		{
 			for (int y = buildTilePosition.y + 1; y <= buildTilePosition.y + 3; y++)
 			{
-				if (Grids().getReserveGrid(x, y) > 0 || !Broodwar->isBuildable(TilePosition(x, y), true))
+				if (Grids().getBuildingGrid(x, y) > 0 || !Broodwar->isBuildable(TilePosition(x, y), true))
 				{
 					return false;
 				}
@@ -405,5 +399,18 @@ bool BuildingTrackerClass::canBuildHere(UnitType building, TilePosition buildTil
 	}
 
 	// If no issues, return true
+	return true;
+}
+
+bool BuildingTrackerClass::canQueueHere(UnitType building, TilePosition buildTilePosition, bool ignoreCond)
+{
+	// Check if there's a building queued there already
+	for (auto &queued : buildingsQueued)
+	{
+		if (buildTilePosition.x < queued.first.x + queued.second.tileWidth() && queued.first.x < buildTilePosition.x + building.tileWidth() && buildTilePosition.y < queued.first.y + queued.second.tileHeight() && queued.first.y < buildTilePosition.y + building.tileHeight())
+		{
+			return false;
+		}
+	}
 	return true;
 }
