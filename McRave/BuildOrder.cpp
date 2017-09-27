@@ -20,21 +20,14 @@ void BuildOrderTrackerClass::onEnd(bool isWinner)
 
 void BuildOrderTrackerClass::onStart()
 {
-
-	if (Players().getNumberTerran() > 0)
-	{
-		Broodwar << "Test" << endl;
-	}
-
-
 	string build, buffer;
 	ifstream config("bwapi-data/read/" + Broodwar->enemy()->getName() + ".txt");
 	int wins, losses, gamesPlayed, totalGamesPlayed = 0;
 	double best = 0.0;
 
 	// Write what builds you're using
-	if (Broodwar->self()->getRace() == Races::Protoss) buildNames = { "ZZCore", "ZCore", "NZCore", "FFECannon", "FFEGateway", "FFENexus", "12Nexus", "DTExpand" };
-	if (Broodwar->self()->getRace() == Races::Terran) buildNames = { "2FactVult" };
+	if (Broodwar->self()->getRace() == Races::Protoss) buildNames = { "ZZCore", "ZCore", "NZCore", "FFECannon", "FFEGateway", "FFENexus", "TwelveNexus", "DTExpand" };
+	if (Broodwar->self()->getRace() == Races::Terran) buildNames = { "TwoFactVult" };
 	
 	// If we don't have a file in the /read/ folder, then check the /write/ folder
 	if (!config)
@@ -45,7 +38,7 @@ void BuildOrderTrackerClass::onStart()
 		if (!localConfig.good())
 		{
 			for (auto &build : buildNames)
-			{
+			{				
 				ss << build << " 0 0 ";
 			}			
 		}
@@ -184,87 +177,16 @@ void BuildOrderTrackerClass::updateBuild()
 
 void BuildOrderTrackerClass::protossOpener()
 {
-	if (getOpening && Players().getNumberZerg() > 0)
+	if (getOpening)
 	{
-		// Safe - Cannons First
-		if (opening == 0)
-		{
-			FFECannon();
-		}
-
-		// Normal - Gate First
-		if (opening == 1)
-		{
-			FFEGateway();
-		}
-
-		// Greedy - Nexus First
-		if (opening == 2)
-		{
-			FFENexus();
-		}
-	}
-	else if (getOpening && Players().getNumberTerran() > 0)
-	{
-		// Safe - DT FE
-		if (opening == 0)
-		{
-			DTExpand();
-		}
-
-		// Normal - NZCore
-		if (opening == 1)
-		{
-			NZCore();
-		}
-
-		// Greedy - 12 Nexus
-		if (opening == 2)
-		{
-			TwelveNexus();
-		}
-	}
-
-	else if (getOpening && Players().getNumberProtoss() > 0)
-	{
-		// Safe
-		if (opening == 0)
-		{
-			ZZCore();
-		}
-
-		// Normal
-		if (opening == 1)
-		{
-			NZCore();
-		}
-
-		// Greedy
-		if (opening == 2)
-		{
-			TwelveNexus();
-		}
-	}
-
-	else if (getOpening && Players().getNumberRandom() > 0)
-	{
-		// Safe
-		if (opening == 0)
-		{
-			ZZCore();
-		}
-
-		// Normal
-		if (opening == 1)
-		{
-			ZCore();
-		}
-
-		// Greedy
-		if (opening == 2)
-		{
-			NZCore();
-		}
+		if (currentBuild == "ZZCore") ZZCore();
+		if (currentBuild == "ZCore") ZCore();
+		if (currentBuild == "NZCore") NZCore();
+		if (currentBuild == "FFECannon") FFECannon();
+		if (currentBuild == "FFEGateway") FFEGateway();
+		if (currentBuild == "FFENexus") FFENexus();
+		if (currentBuild == "TwelveNexus") TwelveNexus();
+		if (currentBuild == "DTExpand") DTExpand();
 	}
 	return;
 }

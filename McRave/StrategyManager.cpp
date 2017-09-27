@@ -39,7 +39,7 @@ void StrategyTrackerClass::protossStrategy()
 	if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0)
 	{
 		// Specific 12Nexus strategy
-		if (BuildOrder().getCurrentBuild() == "12Nexus")
+		if (BuildOrder().getCurrentBuild() == "TwelveNexus" || BuildOrder().getCurrentBuild() == "FFECannon" || BuildOrder().getCurrentBuild() == "FFEGateway" || BuildOrder().getCurrentBuild() == "FFENexus")
 		{
 			allyFastExpand = true;
 			playPassive = true;
@@ -93,18 +93,6 @@ void StrategyTrackerClass::protossStrategy()
 			{
 				zealotsLocked = true;
 				lockedType.erase(UnitTypes::Protoss_Zealot);
-			}
-
-			// Specific 12-Nexus strategy - TODO: Change how it gets this decision from the BO
-			if (allyFastExpand && BuildOrder().getOpener() == 2)
-			{
-				playPassive = true;
-				holdRamp = true;
-			}
-			else
-			{
-				playPassive = false;
-				holdRamp = false;
 			}
 		}
 
