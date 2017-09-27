@@ -13,7 +13,7 @@ class StrategyTrackerClass
 	bool enemyFastExpand = false;
 	bool invis = false;
 	bool rush = false;
-	bool holdRamp = false;
+	bool holdChoke = false;
 	bool zealotsLocked = false;
 	bool marinesLocked = false;
 	bool playPassive = false;
@@ -30,7 +30,7 @@ public:
 	bool isEnemyFastExpand() { return enemyFastExpand; }
 	bool needDetection() { return invis; }
 	bool isRush() { return rush; }
-	bool isHoldRamp() { return holdRamp; }
+	bool isHoldChoke() { return holdChoke; }
 	bool isZealotsLocked() { return zealotsLocked; }
 	bool isPlayPassive() { return playPassive; }
 	bool isUnitLocked(UnitType unit) { return (lockedType.find(unit) != lockedType.end()); }

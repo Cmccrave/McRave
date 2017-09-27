@@ -30,17 +30,17 @@ void McRaveModule::onStart()
 	bool startingLocationsOK = theMap.FindBasesForStartingLocations();
 	assert(startingLocationsOK);
 	Terrain().onStart();
-	BuildOrder().loadConfig();
+	Players().onStart();
+	BuildOrder().onStart();
 }
 
 void McRaveModule::onEnd(bool isWinner)
 {
-	BuildOrder().recordWinningBuild(isWinner);
+	BuildOrder().onEnd(isWinner);
 }
 
 void McRaveModule::onFrame()
-{
-	Players().update();
+{	
 	Terrain().update();
 	Grids().update();
 	Resources().update();

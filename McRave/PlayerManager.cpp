@@ -1,6 +1,6 @@
 #include "McRave.h"
 
-void PlayerTrackerClass::update()
+void PlayerTrackerClass::onStart()
 {
 	// Store enemy races
 	for (auto &player : Broodwar->enemies())
@@ -22,4 +22,5 @@ void PlayerTrackerClass::update()
 			eRandom++;
 		}
 	}
+	return;
 }

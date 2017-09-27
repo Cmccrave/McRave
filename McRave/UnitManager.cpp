@@ -57,6 +57,11 @@ void UnitTrackerClass::onUnitDestroy(Unit unit)
 	{
 		allyUnits[unit].setDeadFrame(Broodwar->getFrameCount());
 		allySizes[unit->getType().size()] -= 1;
+
+		if (allyUnits[unit].getTransport())
+		{
+			Transport().removeUnit(unit);
+		}
 	}
 	else if (allyDefenses.find(unit) != allyDefenses.end())
 	{
@@ -540,7 +545,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 		if (max(unit.getGroundRange(), unit.getAirRange()) <= 32)
 		{
 			// If against rush and not ready to wall up, fight in mineral line
-			if (Strategy().isRush() || !Strategy().isHoldRamp())
+			if (Strategy().isRush() || !Strategy().isHoldChoke())
 			{
 				if (unit.getTarget() && unit.getTarget()->exists() && ((Grids().getResourceGrid(unit.getTarget()->getTilePosition()) > 0 && Grids().getResourceGrid(unit.getTilePosition()) > 0)))
 				{
@@ -573,7 +578,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 		else if (max(unit.getGroundRange(), unit.getAirRange()) > 32)
 		{
 			// If against rush and not ready to wall up, fight in mineral line
-			if (Strategy().isRush() && !Strategy().isHoldRamp())
+			if (Strategy().isRush() && !Strategy().isHoldChoke())
 			{
 				if (unit.getTarget() && unit.getTarget()->exists() && ((Grids().getResourceGrid(unit.getTarget()->getTilePosition()) > 0 || Grids().getResourceGrid(unit.getTilePosition()) > 0)))
 				{
@@ -586,7 +591,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 					return;
 				}
 			}
-			else if (Strategy().isHoldRamp())
+			else if (Strategy().isHoldChoke())
 			{
 				if (unit.getTarget() && unit.getTarget()->exists() && ((Terrain().isInAllyTerritory(unit.unit()) && unit.getPosition().getDistance(unit.getTargetPosition()) <= max(unit.getGroundRange(), unit.getAirRange())) || (Terrain().isInAllyTerritory(unit.getTarget()) && !unit.getTarget()->getType().isWorker())))
 				{

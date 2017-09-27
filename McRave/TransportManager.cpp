@@ -77,9 +77,14 @@ void TransportTrackerClass::updateDecision(TransportInfo& shuttle)
 	for (auto &c : shuttle.getAssignedCargo())
 	{		
 		UnitInfo& cargo = Units().getAllyUnit(c);
+
+		if (!cargo.unit())
+		{
+			continue;
+		}
 		
 		// If the cargo is not loaded
-		if (cargo.unit() && !cargo.unit()->isLoaded())
+		if (!cargo.unit()->isLoaded())
 		{
 			// If it's requesting a pickup
 			if ((cargo.getTargetPosition().getDistance(cargo.getPosition()) > 320) || (cargo.getType() == UnitTypes::Protoss_Reaver && cargo.unit()->getGroundWeaponCooldown() > 0) || (cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.unit()->getEnergy() < 75))
@@ -202,30 +207,30 @@ void TransportTrackerClass::updateMovement(TransportInfo& shuttle)
 
 void TransportTrackerClass::removeUnit(Unit unit)
 {
-	//// Delete if it's a shuttled unit
-	//for (auto &shuttle : myShuttles)
-	//{
-	//	for (auto &cargo : shuttle.second.getAssignedCargo())
-	//	{
-	//		if (cargo == unit)
-	//		{
-	//			shuttle.second.removeCargo(cargo);
-	//			return;
-	//		}
-	//	}
-	//}
+	// Delete if it's a shuttled unit
+	for (auto &shuttle : myShuttles)
+	{
+		for (auto &cargo : shuttle.second.getAssignedCargo())
+		{
+			if (cargo == unit)
+			{
+				shuttle.second.removeCargo(cargo);
+				return;
+			}
+		}
+	}
 
-	//// Delete if it's the shuttle
-	//if (myShuttles.find(unit) != myShuttles.end())
-	//{		
-	//	for (auto &c : myShuttles[unit].getAssignedCargo())
-	//	{
-	//		UnitInfo &cargo = Units().getAllyUnit(c);
-	//		cargo.setTransport(nullptr);
-	//	}
-	//	myShuttles.erase(unit);
-	//}
-	//return;
+	// Delete if it's the shuttle
+	if (myShuttles.find(unit) != myShuttles.end())
+	{		
+		for (auto &c : myShuttles[unit].getAssignedCargo())
+		{
+			UnitInfo &cargo = Units().getAllyUnit(c);
+			cargo.setTransport(nullptr);
+		}
+		myShuttles.erase(unit);
+	}
+	return;
 }
 
 void TransportTrackerClass::storeUnit(Unit unit)

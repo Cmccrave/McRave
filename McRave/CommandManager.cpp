@@ -386,7 +386,7 @@ void CommandTrackerClass::approachTarget(UnitInfo& unit)
 void CommandTrackerClass::defend(UnitInfo& unit)
 {
 	// Early on, defend mineral line
-	if (!Strategy().isHoldRamp())
+	if (!Strategy().isHoldChoke())
 	{
 		for (auto &base : Bases().getMyBases())
 		{

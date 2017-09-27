@@ -215,14 +215,17 @@ void ProductionTrackerClass::updateProtoss()
 				// Citadel Of Adun
 				else if (building.getType() == UnitTypes::Protoss_Citadel_of_Adun)
 				{
-					if (Broodwar->self()->minerals() >= UpgradeTypes::Leg_Enhancements.mineralPrice() && Broodwar->self()->gas() >= UpgradeTypes::Leg_Enhancements.gasPrice())
+					if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) > 0)
 					{
-						building.unit()->upgrade(UpgradeTypes::Leg_Enhancements);
-						idleUpgrade.erase(building.unit());
-					}
-					else
-					{
-						idleUpgrade.emplace(building.unit(), UpgradeTypes::Leg_Enhancements);
+						if (Broodwar->self()->minerals() >= UpgradeTypes::Leg_Enhancements.mineralPrice() && Broodwar->self()->gas() >= UpgradeTypes::Leg_Enhancements.gasPrice())
+						{
+							building.unit()->upgrade(UpgradeTypes::Leg_Enhancements);
+							idleUpgrade.erase(building.unit());
+						}
+						else
+						{
+							idleUpgrade.emplace(building.unit(), UpgradeTypes::Leg_Enhancements);
+						}
 					}
 				}
 
