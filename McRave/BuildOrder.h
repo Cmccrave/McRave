@@ -1,6 +1,7 @@
 #pragma once
 #include <BWAPI.h>
 #include "Singleton.h"
+#include <sstream>
 
 using namespace BWAPI;
 using namespace std;
@@ -12,16 +13,17 @@ class BuildOrderTrackerClass
 	bool getOpening = true, getTech = false, learnedOpener = false;	
 	UnitType techUnit;
 	set <UnitType> techList;	
-	vector <int> configStuff;
+	vector <string> buildNames;
 	string currentBuild = "Test";
+	stringstream ss;
 public:
 	map <UnitType, int>& getBuildingDesired() { return buildingDesired; }
 	bool isOpener() { return getOpening; }
 	int getOpener() { return opening; }
 	string getCurrentBuild() { return currentBuild; }
 
-	void recordWinningBuild(bool);
-	void loadConfig();
+	void onEnd(bool);
+	void onStart();
 
 	void update();
 	void updateDecision();

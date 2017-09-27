@@ -1,96 +1,107 @@
 #include "McRave.h"
 #include <fstream>
 
-void BuildOrderTrackerClass::recordWinningBuild(bool isWinner)
+void BuildOrderTrackerClass::onEnd(bool isWinner)
 {
-	ofstream config("bwapi-data/write/" + Broodwar->enemy()->getName() + ".txt", ios::trunc);
-	int x = (opening*2) + !isWinner;
-	if (config)
+	ofstream config("bwapi-data/write/" + Broodwar->enemy()->getName() + ".txt");
+	string t1;
+	int t2, t3;
+
+	bool update;
+	int lineBreak = 0;
+
+	while (ss >> t1 >> t2 >> t3)
 	{
-		for (int i = 0; i < 6; i++)
-		{
-			if (i == x)
-			{
-				config << configStuff[i] + 1 << " ";
-			}
-			else
-			{
-				config << configStuff[i] << " ";
-			}			
-		}
+		t1 == currentBuild ? (isWinner ? t2++ : t3++) : 0;
+		config << t1 << " " << t2 << " " << t3 << endl;
 	}
+	return;
 }
 
-void BuildOrderTrackerClass::loadConfig()
+void BuildOrderTrackerClass::onStart()
 {
-	string line;
-	int x;
-	ifstream config("bwapi-data/read/" + Broodwar->enemy()->getName() + ".txt");
 
-	if (config)
+	if (Players().getNumberTerran() > 0)
 	{
-		while (config >> x)
+		Broodwar << "Test" << endl;
+	}
+
+
+	string build, buffer;
+	ifstream config("bwapi-data/read/" + Broodwar->enemy()->getName() + ".txt");
+	int wins, losses, gamesPlayed, totalGamesPlayed = 0;
+	double best = 0.0;
+
+	// Write what builds you're using
+	if (Broodwar->self()->getRace() == Races::Protoss) buildNames = { "ZZCore", "ZCore", "NZCore", "FFECannon", "FFEGateway", "FFENexus", "12Nexus", "DTExpand" };
+	if (Broodwar->self()->getRace() == Races::Terran) buildNames = { "2FactVult" };
+	
+	// If we don't have a file in the /read/ folder, then check the /write/ folder
+	if (!config)
+	{
+		ifstream localConfig("bwapi-data/write/" + Broodwar->enemy()->getName() + ".txt");
+
+		// If still no file, then we need to create one and add all builds to it that we're using
+		if (!localConfig.good())
 		{
-			configStuff.push_back(x);
+			for (auto &build : buildNames)
+			{
+				ss << build << " 0 0 ";
+			}			
+		}
+
+		// If there is a file, load it into the stringstream
+		else
+		{
+			while (localConfig >> buffer)
+			{
+				ss << buffer << " ";
+			}
 		}
 	}
+
+	// If we do have a file, load it into the stringstream
 	else
 	{
-		config.open("bwapi-data/write/" + Broodwar->enemy()->getName() + ".txt");
-		if (config)
+		while (config >> buffer)
 		{
-			while (config >> x)
-			{
-				configStuff.push_back(x);
-			}
+			ss << buffer << " ";
 		}
 	}
 
-	if (configStuff.size() == 0)
+	// Calculate how many games we've played against this opponent
+	stringstream ss2;
+	ss2 << ss.str();
+	while (!ss2.eof())
 	{
-		for (int i = 0; i < 6; i++)
-		{
-			configStuff.push_back(0);
-		}
+		ss2 >> build >> wins >> losses;
+		totalGamesPlayed += wins + losses;
 	}
 
-	// Learning choice
-	if (!learnedOpener)
+	// Calculate which build is best
+	stringstream ss3;
+	ss3 << ss.str();
+	while (!ss3.eof())
 	{
-		learnedOpener = true;
-		double w1 = 0.0, w2 = 0.0;
-		int i = 0;
-		int totalGamesPlayed = 0;
-		double best = 0.0;
-
-		for (int i = 0; i < 6; i++)
+		ss3 >> build >> wins >> losses;
+		gamesPlayed = wins + losses;
+		if (gamesPlayed <= 0)
 		{
-			totalGamesPlayed += configStuff.at(i);
+			currentBuild = build;
+			return;
 		}
-
-		for (int i = 0; i < 3; i++)
+		else
 		{
-			// If we never played this strategy, try it first
-			if (configStuff.at(0 + (i * 2)) + configStuff.at(1 + (i * 2)) == 0)
-			{
-				opening = i;
-				return;
-			}
-
-			int gamesPlayed = configStuff.at(0 + (i * 2)) + configStuff.at(1 + (i * 2));
-			double winRate = gamesPlayed > 0 ? configStuff.at(0 + (i * 2)) / static_cast<double>(gamesPlayed) : 0;
-			double ucbVal = 0.5 * sqrt(log((double)totalGamesPlayed / gamesPlayed));
+			double winRate = gamesPlayed > 0 ? wins / static_cast<double>(gamesPlayed) : 0;
+			double ucbVal = 0.5 * sqrt(log((double)gamesPlayed) / totalGamesPlayed);
 			double val = winRate + ucbVal;
-
 			if (val > best)
 			{
 				best = val;
-				opening = i;
+				currentBuild = build;
 			}
 		}
 	}
-
-	config.close();
 	return;
 }
 
@@ -123,7 +134,7 @@ void BuildOrderTrackerClass::updateDecision()
 		if (Strategy().needDetection() || (!Strategy().isPlayPassive() && Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() && !getOpening && !getTech && techUnit == UnitTypes::None && Production().getIdleLowProduction().size() == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 2))
 		{
 			getTech = true;
-		}		
+		}
 	}
 	else if (Broodwar->self()->getRace() == Races::Terran)
 	{
@@ -198,7 +209,7 @@ void BuildOrderTrackerClass::protossOpener()
 		// Safe - DT FE
 		if (opening == 0)
 		{
-			DTExpand();			
+			DTExpand();
 		}
 
 		// Normal - NZCore
@@ -480,7 +491,6 @@ void BuildOrderTrackerClass::zergSituational()
 
 void BuildOrderTrackerClass::ZZCore()
 {
-	currentBuild = "ZZCore";
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1;
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 44);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 32;
@@ -490,7 +500,6 @@ void BuildOrderTrackerClass::ZZCore()
 
 void BuildOrderTrackerClass::ZCore()
 {
-	currentBuild = "ZCore";
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1;
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 44);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
@@ -500,7 +509,6 @@ void BuildOrderTrackerClass::ZCore()
 
 void BuildOrderTrackerClass::NZCore()
 {
-	currentBuild = "NZCore";
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1;
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 44);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
@@ -510,7 +518,6 @@ void BuildOrderTrackerClass::NZCore()
 
 void BuildOrderTrackerClass::FFECannon()
 {
-	currentBuild = "FFEC";
 	buildingDesired[UnitTypes::Protoss_Forge] = Units().getSupply() >= 18;
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 28);
 	buildingDesired[UnitTypes::Protoss_Photon_Cannon] = (Units().getSupply() >= 22) + (Units().getSupply() >= 24) + (Units().getSupply() >= 30);
@@ -522,7 +529,6 @@ void BuildOrderTrackerClass::FFECannon()
 
 void BuildOrderTrackerClass::FFEGateway()
 {
-	currentBuild = "FFEG";
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 46);
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 42);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 50;
@@ -533,7 +539,6 @@ void BuildOrderTrackerClass::FFEGateway()
 
 void BuildOrderTrackerClass::FFENexus()
 {
-	currentBuild = "FFEN";
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24);
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 28) + (Units().getSupply() >= 42);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 50;
@@ -544,7 +549,6 @@ void BuildOrderTrackerClass::FFENexus()
 
 void BuildOrderTrackerClass::TwelveNexus()
 {
-	currentBuild = "12Nexus";
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24);
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 26) + (Units().getSupply() >= 32);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 28;
@@ -554,7 +558,6 @@ void BuildOrderTrackerClass::TwelveNexus()
 
 void BuildOrderTrackerClass::DTExpand()
 {
-	currentBuild = "DTExpand";
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1;
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 54);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;

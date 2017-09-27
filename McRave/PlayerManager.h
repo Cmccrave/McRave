@@ -10,7 +10,7 @@ class PlayerTrackerClass
 public:
 	map <Player, PlayerInfo>& getPlayers() { return thePlayers; }
 
-	void update();
+	void onStart();
 	int getNumberZerg() { return eZerg; }
 	int getNumberProtoss() { return eProtoss; }
 	int getNumberTerran() { return eTerran; }
