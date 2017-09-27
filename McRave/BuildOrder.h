@@ -25,6 +25,9 @@ public:
 	void onEnd(bool);
 	void onStart();
 
+	void getDefaultBuild();
+	bool isBuildAllowed(Race, string);
+
 	void update();
 	void updateDecision();
 	void updateBuild();
@@ -44,13 +47,14 @@ public:
 	void ZZCore();
 	void ZCore();
 	void NZCore();
-
 	void FFECannon();
 	void FFEGateway();
 	void FFENexus();
-
 	void TwelveNexus();
 	void DTExpand();
+	void RoboExpand();
+	void FourGate();
+	void ZealotRush();
 };
 
 typedef Singleton<BuildOrderTrackerClass> BuildOrderTracker;
