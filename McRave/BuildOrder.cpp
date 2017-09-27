@@ -26,13 +26,9 @@ void BuildOrderTrackerClass::onStart()
 	double best = 0.0;
 
 	// Write what builds you're using
-<<<<<<< HEAD
-	if (Broodwar->self()->getRace() == Races::Protoss) buildNames = { "ZZCore", "ZCore", "NZCore", "FFECannon", "FFEGateway", "FFENexus", "TwelveNexus", "DTExpand" };
-=======
-	if (Broodwar->self()->getRace() == Races::Protoss) buildNames = { "ZZCore", "ZCore", "NZCore", "FFECannon", "FFEGateway", "FFENexus", "12Nexus", "DTExpand", "RoboExpand", "FourGate", "ZealotRush" };
->>>>>>> origin/BO-Learning
+	if (Broodwar->self()->getRace() == Races::Protoss) buildNames = { "ZZCore", "ZCore", "NZCore", "FFECannon", "FFEGateway", "FFENexus", "TwelveNexus", "DTExpand", "RoboExpand", "FourGate", "ZealotRush" };
 	if (Broodwar->self()->getRace() == Races::Terran) buildNames = { "TwoFactVult" };
-	
+
 	// If we don't have a file in the /read/ folder, then check the /write/ folder
 	if (!config)
 	{
@@ -42,9 +38,9 @@ void BuildOrderTrackerClass::onStart()
 		if (!localConfig.good())
 		{
 			for (auto &build : buildNames)
-			{				
+			{
 				ss << build << " 0 0 ";
-			}			
+			}
 		}
 
 		// If there is a file, load it into the stringstream
@@ -69,7 +65,7 @@ void BuildOrderTrackerClass::onStart()
 	// Check SS if the build exists, if it doesn't, add it
 	string s = ss.str();
 	for (auto &build : buildNames)
-	{		
+	{
 		if (s.find(build) == s.npos)
 		{
 			ss << build << " 0 0 ";
@@ -99,25 +95,23 @@ void BuildOrderTrackerClass::onStart()
 		ss3 >> build >> wins >> losses;
 		gamesPlayed = wins + losses;
 
-		if (Players().getNumberProtoss() > 0 && !isBuildAllowed(Races::Protoss, build) || (Players().getNumberTerran() > 0 && !isBuildAllowed(Races::Terran, build)) || (Players().getNumberZerg() > 0 && !isBuildAllowed(Races::Zerg, build)) || (Players().getNumberRandom() > 0 && !isBuildAllowed(Races::Random, build)))
+		if ((Players().getNumberProtoss() > 0 && isBuildAllowed(Races::Protoss, build)) || (Players().getNumberTerran() > 0 && isBuildAllowed(Races::Terran, build)) || (Players().getNumberZerg() > 0 && isBuildAllowed(Races::Zerg, build)) || (Players().getNumberRandom() > 0 && isBuildAllowed(Races::Random, build)))
 		{
-			continue;
-		}
-
-		if (gamesPlayed <= 0)
-		{
-			currentBuild = build;
-			return;
-		}
-		else
-		{
-			double winRate = gamesPlayed > 0 ? wins / static_cast<double>(gamesPlayed) : 0;
-			double ucbVal = 0.5 * sqrt(log((double)gamesPlayed) / totalGamesPlayed);
-			double val = winRate + ucbVal;
-			if (val > best)
+			if (gamesPlayed <= 0)
 			{
-				best = val;
 				currentBuild = build;
+				return;
+			}
+			else
+			{
+				double winRate = gamesPlayed > 0 ? wins / static_cast<double>(gamesPlayed) : 0;
+				double ucbVal = 0.5 * sqrt(log((double)gamesPlayed) / totalGamesPlayed);
+				double val = winRate + ucbVal;
+				if (val > best)
+				{
+					best = val;
+					currentBuild = build;
+				}
 			}
 		}
 	}
@@ -139,7 +133,7 @@ bool BuildOrderTrackerClass::isBuildAllowed(Race enemy, string build)
 		{
 			return false;
 		}
-	}	
+	}
 	return true;
 }
 
@@ -151,11 +145,11 @@ void BuildOrderTrackerClass::getDefaultBuild()
 	}
 	else if (Players().getNumberZerg() > 0)
 	{
-		currentBuild == "FFECannon";
+		currentBuild = "FFECannon";
 	}
 	else if (Players().getNumberTerran() > 0)
 	{
-		currentBuild == "NZCore";
+		currentBuild = "NZCore";
 	}
 	return;
 }
@@ -173,12 +167,6 @@ void BuildOrderTrackerClass::updateDecision()
 {
 	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
-		// If we have a Core and 2 Gates, opener is done
-		if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Cybernetics_Core) >= 1 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 2 && getOpening)
-		{
-			getOpening = false;
-		}
-
 		// If we have our tech unit, set to none
 		if (Broodwar->self()->completedUnitCount(techUnit) > 0)
 		{
@@ -249,6 +237,9 @@ void BuildOrderTrackerClass::protossOpener()
 		if (currentBuild == "FFENexus") FFENexus();
 		if (currentBuild == "TwelveNexus") TwelveNexus();
 		if (currentBuild == "DTExpand") DTExpand();
+		if (currentBuild == "RoboExpand") RoboExpand();
+		if (currentBuild == "FourGate") FourGate();
+		if (currentBuild == "ZealotRush") ZealotRush();
 	}
 	return;
 }
@@ -260,6 +251,11 @@ void BuildOrderTrackerClass::protossTech()
 		double highest = 0.0;
 		for (auto &tech : Strategy().getUnitScore())
 		{
+			if (Strategy().needDetection())
+			{
+				techUnit = UnitTypes::Protoss_Observer;
+				break;
+			}
 			if (tech.first == UnitTypes::Protoss_Dragoon || tech.first == UnitTypes::Protoss_Zealot || techList.find(tech.first) != techList.end())
 			{
 				continue;
@@ -275,20 +271,16 @@ void BuildOrderTrackerClass::protossTech()
 		getTech = false;
 		techList.insert(techUnit);
 	}
-	if (techUnit == UnitTypes::Protoss_Reaver)
+	if (techUnit == UnitTypes::Protoss_Observer)
 	{
-		if (Strategy().needDetection())
-		{
-			buildingDesired[UnitTypes::Protoss_Robotics_Facility] = 1;
-			buildingDesired[UnitTypes::Protoss_Observatory] = min(1, Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Robotics_Facility));
-			buildingDesired[UnitTypes::Protoss_Robotics_Support_Bay] = min(1, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Observer));
-		}
-		else
-		{
-			buildingDesired[UnitTypes::Protoss_Robotics_Facility] = 1;
-			buildingDesired[UnitTypes::Protoss_Robotics_Support_Bay] = min(1, Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Robotics_Facility));
-			buildingDesired[UnitTypes::Protoss_Observatory] = min(1, buildingDesired[UnitTypes::Protoss_Observatory] + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver));
-		}
+		buildingDesired[UnitTypes::Protoss_Robotics_Facility] = 1;
+		buildingDesired[UnitTypes::Protoss_Observatory] = min(1, Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Robotics_Facility));
+	}
+	else if (techUnit == UnitTypes::Protoss_Reaver)
+	{
+		buildingDesired[UnitTypes::Protoss_Robotics_Facility] = 1;
+		buildingDesired[UnitTypes::Protoss_Robotics_Support_Bay] = min(1, Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Robotics_Facility));
+		buildingDesired[UnitTypes::Protoss_Observatory] = min(1, buildingDesired[UnitTypes::Protoss_Observatory] + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver));
 	}
 	else if (techUnit == UnitTypes::Protoss_Corsair)
 	{
@@ -479,6 +471,7 @@ void BuildOrderTrackerClass::ZZCore()
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 44);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 32;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 40;
+	getOpening = Units().getSupply() < 44;
 	return;
 }
 
@@ -488,6 +481,7 @@ void BuildOrderTrackerClass::ZCore()
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 44);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 34;
+	getOpening = Units().getSupply() < 44;
 	return;
 }
 
@@ -497,6 +491,7 @@ void BuildOrderTrackerClass::NZCore()
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 44);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
+	getOpening = Units().getSupply() < 44;
 	return;
 }
 
@@ -508,6 +503,7 @@ void BuildOrderTrackerClass::FFECannon()
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 32) + (Units().getSupply() >= 46);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 40;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 42;
+	getOpening = Units().getSupply() < 46;
 	return;
 }
 
@@ -518,6 +514,7 @@ void BuildOrderTrackerClass::FFEGateway()
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 50;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 56;
 	buildingDesired[UnitTypes::Protoss_Forge] = Units().getSupply() >= 60;
+	getOpening = Units().getSupply() < 60;
 	return;
 }
 
@@ -528,6 +525,7 @@ void BuildOrderTrackerClass::FFENexus()
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 50;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 56;
 	buildingDesired[UnitTypes::Protoss_Forge] = Units().getSupply() >= 60;
+	getOpening = Units().getSupply() < 60;
 	return;
 }
 
@@ -537,31 +535,48 @@ void BuildOrderTrackerClass::TwelveNexus()
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 26) + (Units().getSupply() >= 32);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 28;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 30;
+	getOpening = Units().getSupply() < 32;
 	return;
 }
 
 void BuildOrderTrackerClass::DTExpand()
 {
-	buildingDesired[UnitTypes::Protoss_Nexus] = 1;
+	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 48);
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 54);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 28;
 	buildingDesired[UnitTypes::Protoss_Citadel_of_Adun] = Units().getSupply() >= 36;
 	buildingDesired[UnitTypes::Protoss_Templar_Archives] = Units().getSupply() >= 48;
-	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 48);
+	getOpening = Units().getSupply() < 54;
 	return;
 }
 
 void BuildOrderTrackerClass::RoboExpand()
 {
-
+	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() > 42);
+	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 42);
+	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
+	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
+	buildingDesired[UnitTypes::Protoss_Robotics_Facility] = Units().getSupply() >= 56;
+	getOpening = Units().getSupply() < 56;
+	return;
 }
 
 void BuildOrderTrackerClass::FourGate()
 {
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1;
-	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + 3*(Units().getSupply() >= 62);
+	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + 3 * (Units().getSupply() >= 62);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 32;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 34;
+	getOpening = Units().getSupply() < 62;
+	return;
+}
+
+void BuildOrderTrackerClass::ZealotRush()
+{
+	buildingDesired[UnitTypes::Protoss_Gateway] = 2 * (Units().getSupply() >= 18);
+	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 40;
+	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 44;
+	getOpening = Units().getSupply() < 44;
 	return;
 }

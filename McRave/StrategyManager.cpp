@@ -38,19 +38,14 @@ void StrategyTrackerClass::protossStrategy()
 	// Check if it's early enough to run specific strategies
 	if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0)
 	{
-<<<<<<< HEAD
-		// Specific 12Nexus strategy
-		if (BuildOrder().getCurrentBuild() == "TwelveNexus" || BuildOrder().getCurrentBuild() == "FFECannon" || BuildOrder().getCurrentBuild() == "FFEGateway" || BuildOrder().getCurrentBuild() == "FFENexus")
-=======
 		// Check if we're fast expanding
-		if (BuildOrder().getCurrentBuild() == "12Nexus" || BuildOrder().getCurrentBuild() == "FFECannon"|| BuildOrder().getCurrentBuild() == "FFEGateway" || BuildOrder().getCurrentBuild() == "FFENexus")
->>>>>>> origin/BO-Learning
+		if (BuildOrder().getCurrentBuild() == "TwelveNexus" || BuildOrder().getCurrentBuild() == "FFECannon" || BuildOrder().getCurrentBuild() == "FFEGateway" || BuildOrder().getCurrentBuild() == "FFENexus")
 		{
-			allyFastExpand = true;			
+			allyFastExpand = true;
 		}
 
 		// Check if we hit our Zealot cap
-		if (!isRush && ((BuildOrder().getCurrentBuild() == "ZZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 2) || (BuildOrder().getCurrentBuild() == "ZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 1) || (BuildOrder().getCurrentBuild() == "NZCore")))
+		if (!rush && ((BuildOrder().getCurrentBuild() == "ZZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 2) || (BuildOrder().getCurrentBuild() == "ZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 1) || (BuildOrder().getCurrentBuild() == "NZCore")))
 		{
 			lockedType.insert(UnitTypes::Protoss_Zealot);
 		}
@@ -62,7 +57,7 @@ void StrategyTrackerClass::protossStrategy()
 		// Check if enemy is rushing
 		if ((Players().getNumberProtoss() > 0 && Units().getEnemyComposition()[UnitTypes::Protoss_Forge] == 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] >= 2 || Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] == 0) && Units().getEnemyComposition()[UnitTypes::Protoss_Assimilator] == 0 && Units().getEnemyComposition()[UnitTypes::Protoss_Nexus] == 1)
 			|| (Players().getNumberRandom() > 0 && Units().getEnemyComposition()[UnitTypes::Zerg_Zergling] >= 6))
-		{			
+		{
 			rush = true;
 		}
 		else
@@ -89,10 +84,10 @@ void StrategyTrackerClass::protossStrategy()
 			{
 				playPassive = false;
 			}
-			else 
+			else
 			{
 				playPassive = true;
-			}			
+			}
 		}
 		else
 		{
@@ -101,36 +96,6 @@ void StrategyTrackerClass::protossStrategy()
 				playPassive = true;
 				holdChoke = false;
 			}
-<<<<<<< HEAD
-		}
-
-		// Specific early PvR strategy
-		if (Players().getNumberRandom() > 0)
-		{
-			if (Units().getEnemyComposition()[UnitTypes::Zerg_Zergling] >= 6)
-			{
-				playPassive = true;
-				rush = true;
-			}
-		}
-
-		// Specific ally expansion strategy - TODO Need to implement check for cannon/bunker rushes
-		if (Units().getEnemyComposition()[UnitTypes::Protoss_Photon_Cannon] >= 2)
-		{			
-			allyFastExpand = true;
-			holdRamp = true;
-		}
-
-		// Specific enemy expansion strategy
-		if (Units().getEnemyComposition()[UnitTypes::Terran_Command_Center] > 1 || Units().getEnemyComposition()[UnitTypes::Zerg_Hatchery] > 2 || Units().getEnemyComposition()[UnitTypes::Protoss_Nexus] > 1)
-		{
-			enemyFastExpand = true;
-		}
-		else
-		{
-			enemyFastExpand = false;
-		}
-=======
 			else if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) >= 4)
 			{
 				playPassive = true;
@@ -141,8 +106,7 @@ void StrategyTrackerClass::protossStrategy()
 				playPassive = false;
 				holdChoke = true;
 			}
-		}		
->>>>>>> origin/BO-Learning
+		}
 	}
 	else
 	{

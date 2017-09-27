@@ -57,6 +57,11 @@ void UnitTrackerClass::onUnitDestroy(Unit unit)
 	{
 		allyUnits[unit].setDeadFrame(Broodwar->getFrameCount());
 		allySizes[unit->getType().size()] -= 1;
+
+		if (allyUnits[unit].getTransport())
+		{
+			Transport().removeUnit(unit);
+		}
 	}
 	else if (allyDefenses.find(unit) != allyDefenses.end())
 	{
