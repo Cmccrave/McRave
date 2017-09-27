@@ -619,7 +619,16 @@ void BuildOrderTrackerClass::DTExpand()
 	return;
 }
 
+void BuildOrderTrackerClass::RoboExpand()
+{
+
+}
+
 void BuildOrderTrackerClass::FourGate()
 {
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1;
+	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + 3*(Units().getSupply() >= 62);
+	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 32;
+	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 34;
+	return;
 }

@@ -35,98 +35,38 @@ void StrategyTrackerClass::updateSituationalBehaviour()
 
 void StrategyTrackerClass::protossStrategy()
 {
-	// If it's early on and we're being rushed
+	// Check if it's early enough to run specific strategies
 	if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0)
 	{
-		// Specific 12Nexus strategy
-		if (BuildOrder().getCurrentBuild() == "12Nexus")
+		// Check if we're fast expanding
+		if (BuildOrder().getCurrentBuild() == "12Nexus" || BuildOrder().getCurrentBuild() == "FFECannon"|| BuildOrder().getCurrentBuild() == "FFEGateway" || BuildOrder().getCurrentBuild() == "FFENexus")
 		{
-			allyFastExpand = true;
-			playPassive = true;
-			holdRamp = true;
+			allyFastExpand = true;			
 		}
 
-		// Specific early PvZ strategy
-		if (Players().getNumberZerg() > 0)
+		// Check if we hit our Zealot cap
+		if (!isRush && ((BuildOrder().getCurrentBuild() == "ZZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 2) || (BuildOrder().getCurrentBuild() == "ZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 1) || (BuildOrder().getCurrentBuild() == "NZCore")))
 		{
-			allyFastExpand = true;
-			playPassive = true;
-			holdRamp = true;
+			lockedType.insert(UnitTypes::Protoss_Zealot);
+		}
+		else
+		{
+			lockedType.erase(UnitTypes::Protoss_Zealot);
 		}
 
-		// Specific early PvP strategy
-		if (Players().getNumberProtoss() > 0)
-		{
-			// Specific stabilizing strategy
-			if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) >= 4)
-			{
-				holdRamp = true;
-			}
-			else
-			{
-				holdRamp = false;
-			}
-
-			// Specific anti-rush strategy
-			if (Units().getEnemyComposition()[UnitTypes::Protoss_Forge] == 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] >= 2 || Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] == 0) && Units().getEnemyComposition()[UnitTypes::Protoss_Assimilator] == 0 && Units().getEnemyComposition()[UnitTypes::Protoss_Nexus] == 1)
-			{
-				playPassive = true;
-				rush = true;
-			}
-			else
-			{
-				playPassive = false;
-				rush = false;
-			}
-		}
-
-		// Specific early PvT strategy
-		if (Players().getNumberTerran() > 0)
-		{
-			// Specific anti-rush strategy
-			if ((Units().getEnemyComposition()[UnitTypes::Terran_Barracks] == 0 || Units().getEnemyComposition()[UnitTypes::Terran_Barracks] == 2) && Units().getEnemyComposition()[UnitTypes::Terran_Command_Center] == 1 && Units().getEnemyComposition()[UnitTypes::Terran_Refinery] == 0)
-			{
-				zealotsLocked = false;
-				lockedType.insert(UnitTypes::Protoss_Zealot);
-			}
-			else
-			{
-				zealotsLocked = true;
-				lockedType.erase(UnitTypes::Protoss_Zealot);
-			}
-
-			// Specific 12-Nexus strategy - TODO: Change how it gets this decision from the BO
-			if (allyFastExpand && BuildOrder().getOpener() == 2)
-			{
-				playPassive = true;
-				holdRamp = true;
-			}
-			else
-			{
-				playPassive = false;
-				holdRamp = false;
-			}
-		}
-
-		// Specific early PvR strategy
-		if (Players().getNumberRandom() > 0)
-		{
-			if (Units().getEnemyComposition()[UnitTypes::Zerg_Zergling] >= 6)
-			{
-				playPassive = true;
-				rush = true;
-			}
-		}
-
-		// Specific ally expansion strategy - TODO Need to implement check for cannon/bunker rushes
-		if (Units().getEnemyComposition()[UnitTypes::Protoss_Photon_Cannon] >= 2)
+		// Check if enemy is rushing
+		if ((Players().getNumberProtoss() > 0 && Units().getEnemyComposition()[UnitTypes::Protoss_Forge] == 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] >= 2 || Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] == 0) && Units().getEnemyComposition()[UnitTypes::Protoss_Assimilator] == 0 && Units().getEnemyComposition()[UnitTypes::Protoss_Nexus] == 1)
+			|| (Players().getNumberRandom() > 0 && Units().getEnemyComposition()[UnitTypes::Zerg_Zergling] >= 6))
 		{			
-			allyFastExpand = true;
-			holdRamp = true;
+			rush = true;
+		}
+		else
+		{
+			rush = false;
 		}
 
-		// Specific enemy expansion strategy
-		if (Units().getEnemyComposition()[UnitTypes::Terran_Command_Center] > 1 || Units().getEnemyComposition()[UnitTypes::Zerg_Hatchery] > 2 || Units().getEnemyComposition()[UnitTypes::Protoss_Nexus] > 1)
+		// Check if enemy is fast expanding
+		if (Units().getEnemyComposition()[UnitTypes::Terran_Command_Center] > 1 || Units().getEnemyComposition()[UnitTypes::Zerg_Hatchery] > 1 || Units().getEnemyComposition()[UnitTypes::Protoss_Nexus] > 1)
 		{
 			enemyFastExpand = true;
 		}
@@ -134,25 +74,58 @@ void StrategyTrackerClass::protossStrategy()
 		{
 			enemyFastExpand = false;
 		}
+
+		// Check if we should play passive and/or hold the choke
+		if (allyFastExpand)
+		{
+			holdChoke = true;
+
+			if (enemyFastExpand)
+			{
+				playPassive = false;
+			}
+			else 
+			{
+				playPassive = true;
+			}			
+		}
+		else
+		{
+			if (rush && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) < 4)
+			{
+				playPassive = true;
+				holdChoke = false;
+			}
+			else if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) >= 4)
+			{
+				playPassive = true;
+				holdChoke = true;
+			}
+			else
+			{
+				playPassive = false;
+				holdChoke = true;
+			}
+		}		
 	}
 	else
 	{
 		rush = false;
-		holdRamp = true;
+		holdChoke = true;
 		zealotsLocked = false;
 		playPassive = false;
 		allyFastExpand = false;
 		enemyFastExpand = false;
 	}
 
-	// Specific anti-invis unit strategy
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) > 0)
-	{
-		invis = false;
-	}
-	else if (Units().getEnemyComposition()[UnitTypes::Protoss_Dark_Templar] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Citadel_of_Adun] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Templar_Archives] > 0 ||/* Units().getEnemyComposition()[UnitTypes::Terran_Wraith] > 0 ||*/ Units().getEnemyComposition()[UnitTypes::Terran_Ghost] > 0 || Units().getEnemyComposition()[UnitTypes::Zerg_Lurker] > 0)
+	// Check if we need an observer
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) <= 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Dark_Templar] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Citadel_of_Adun] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Templar_Archives] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Vulture] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Ghost] > 0 || Units().getEnemyComposition()[UnitTypes::Zerg_Lurker] > 0))
 	{
 		invis = true;
+	}
+	else
+	{
+		invis = false;
 	}
 
 	// Test locked units
@@ -168,11 +141,11 @@ void StrategyTrackerClass::terranStrategy()
 		// Ramp holding logic
 		if ((Broodwar->self()->completedUnitCount(UnitTypes::Terran_Siege_Tank_Siege_Mode) + Broodwar->self()->completedUnitCount(UnitTypes::Terran_Siege_Tank_Tank_Mode)) < 2)
 		{
-			holdRamp = false;
+			holdChoke = false;
 		}
 		else
 		{
-			holdRamp = true;
+			holdChoke = true;
 		}
 
 		// If we are being BBS'd, unlock Marines
@@ -197,7 +170,7 @@ void StrategyTrackerClass::terranStrategy()
 	else
 	{
 		marinesLocked = false;
-		holdRamp = false;
+		holdChoke = false;
 		rush = false;
 	}
 }
