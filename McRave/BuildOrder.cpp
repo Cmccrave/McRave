@@ -26,7 +26,11 @@ void BuildOrderTrackerClass::onStart()
 	double best = 0.0;
 
 	// Write what builds you're using
+<<<<<<< HEAD
 	if (Broodwar->self()->getRace() == Races::Protoss) buildNames = { "ZZCore", "ZCore", "NZCore", "FFECannon", "FFEGateway", "FFENexus", "TwelveNexus", "DTExpand" };
+=======
+	if (Broodwar->self()->getRace() == Races::Protoss) buildNames = { "ZZCore", "ZCore", "NZCore", "FFECannon", "FFEGateway", "FFENexus", "12Nexus", "DTExpand", "RoboExpand", "FourGate", "ZealotRush" };
+>>>>>>> origin/BO-Learning
 	if (Broodwar->self()->getRace() == Races::Terran) buildNames = { "TwoFactVult" };
 	
 	// If we don't have a file in the /read/ folder, then check the /write/ folder
@@ -62,6 +66,16 @@ void BuildOrderTrackerClass::onStart()
 		}
 	}
 
+	// Check SS if the build exists, if it doesn't, add it
+	string s = ss.str();
+	for (auto &build : buildNames)
+	{		
+		if (s.find(build) == s.npos)
+		{
+			ss << build << " 0 0 ";
+		}
+	}
+
 	// Calculate how many games we've played against this opponent
 	stringstream ss2;
 	ss2 << ss.str();
@@ -71,6 +85,12 @@ void BuildOrderTrackerClass::onStart()
 		totalGamesPlayed += wins + losses;
 	}
 
+	if (totalGamesPlayed == 0)
+	{
+		getDefaultBuild();
+		return;
+	}
+
 	// Calculate which build is best
 	stringstream ss3;
 	ss3 << ss.str();
@@ -78,6 +98,12 @@ void BuildOrderTrackerClass::onStart()
 	{
 		ss3 >> build >> wins >> losses;
 		gamesPlayed = wins + losses;
+
+		if (Players().getNumberProtoss() > 0 && !isBuildAllowed(Races::Protoss, build) || (Players().getNumberTerran() > 0 && !isBuildAllowed(Races::Terran, build)) || (Players().getNumberZerg() > 0 && !isBuildAllowed(Races::Zerg, build)) || (Players().getNumberRandom() > 0 && !isBuildAllowed(Races::Random, build)))
+		{
+			continue;
+		}
+
 		if (gamesPlayed <= 0)
 		{
 			currentBuild = build;
@@ -94,6 +120,42 @@ void BuildOrderTrackerClass::onStart()
 				currentBuild = build;
 			}
 		}
+	}
+	return;
+}
+
+bool BuildOrderTrackerClass::isBuildAllowed(Race enemy, string build)
+{
+	if (enemy == Races::Zerg || enemy == Races::Random)
+	{
+		if (build == "12Nexus" || build == "NZCore")
+		{
+			return false;
+		}
+	}
+	if (enemy == Races::Terran || enemy == Races::Protoss || enemy == Races::Random)
+	{
+		if (build == "FFECannon" || build == "FFEGateway" || build == "FFENexus")
+		{
+			return false;
+		}
+	}	
+	return true;
+}
+
+void BuildOrderTrackerClass::getDefaultBuild()
+{
+	if (Players().getNumberProtoss() > 0)
+	{
+		currentBuild = "ZZCore";
+	}
+	else if (Players().getNumberZerg() > 0)
+	{
+		currentBuild == "FFECannon";
+	}
+	else if (Players().getNumberTerran() > 0)
+	{
+		currentBuild == "NZCore";
 	}
 	return;
 }
@@ -487,5 +549,19 @@ void BuildOrderTrackerClass::DTExpand()
 	buildingDesired[UnitTypes::Protoss_Citadel_of_Adun] = Units().getSupply() >= 36;
 	buildingDesired[UnitTypes::Protoss_Templar_Archives] = Units().getSupply() >= 48;
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 48);
+	return;
+}
+
+void BuildOrderTrackerClass::RoboExpand()
+{
+
+}
+
+void BuildOrderTrackerClass::FourGate()
+{
+	buildingDesired[UnitTypes::Protoss_Nexus] = 1;
+	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + 3*(Units().getSupply() >= 62);
+	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 32;
+	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 34;
 	return;
 }
