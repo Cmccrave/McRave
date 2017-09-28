@@ -79,33 +79,12 @@ void StrategyTrackerClass::protossStrategy()
 		if (allyFastExpand)
 		{
 			holdChoke = true;
-
-			if (enemyFastExpand)
-			{
-				playPassive = false;
-			}
-			else
-			{
-				playPassive = true;
-			}
+			playPassive = !enemyFastExpand;
 		}
 		else
 		{
-			if (rush && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) < 4)
-			{
-				playPassive = true;
-				holdChoke = false;
-			}
-			else if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) >= 4)
-			{
-				playPassive = true;
-				holdChoke = true;
-			}
-			else
-			{
-				playPassive = false;
-				holdChoke = true;
-			}
+			playPassive = rush;
+			holdChoke = (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) >= 4);
 		}
 	}
 	else
@@ -387,7 +366,7 @@ void StrategyTrackerClass::updateTerranUnitScore(UnitType unit, int count)
 {
 	switch (unit)
 	{
-	case UnitTypes::Enum::Terran_Marine:
+	case UnitTypes::Enum::Terran_Marine:		
 		break;
 	case UnitTypes::Enum::Terran_Medic:
 		break;
@@ -411,43 +390,80 @@ void StrategyTrackerClass::updateTerranUnitScore(UnitType unit, int count)
 		break;
 
 	case UnitTypes::Enum::Zerg_Zergling:
+		unitScore[UnitTypes::Terran_Vulture] += (count * unit.supplyRequired() * 0.70) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Vulture)));
+		unitScore[UnitTypes::Terran_Siege_Tank_Tank_Mode] += (count * unit.supplyRequired() * 0.15) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Siege_Tank_Tank_Mode) + Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Siege_Tank_Siege_Mode)));
+		unitScore[UnitTypes::Terran_Goliath] += (count * unit.supplyRequired() * 0.15) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Goliath)));
 		break;
 	case UnitTypes::Enum::Zerg_Hydralisk:
+		unitScore[UnitTypes::Terran_Vulture] += (count * unit.supplyRequired() * 0.15) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Vulture)));
+		unitScore[UnitTypes::Terran_Siege_Tank_Tank_Mode] += (count * unit.supplyRequired() * 0.80) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Siege_Tank_Tank_Mode) + Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Siege_Tank_Siege_Mode)));
+		unitScore[UnitTypes::Terran_Goliath] += (count * unit.supplyRequired() * 0.05) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Goliath)));
 		break;
 	case UnitTypes::Enum::Zerg_Lurker:
+		unitScore[UnitTypes::Terran_Vulture] += (count * unit.supplyRequired() * 0.15) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Vulture)));
+		unitScore[UnitTypes::Terran_Siege_Tank_Tank_Mode] += (count * unit.supplyRequired() * 0.80) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Siege_Tank_Tank_Mode) + Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Siege_Tank_Siege_Mode)));
+		unitScore[UnitTypes::Terran_Goliath] += (count * unit.supplyRequired() * 0.05) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Goliath)));
 		break;
 	case UnitTypes::Enum::Zerg_Ultralisk:
+		unitScore[UnitTypes::Terran_Vulture] += (count * unit.supplyRequired() * 0.15) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Vulture)));
+		unitScore[UnitTypes::Terran_Siege_Tank_Tank_Mode] += (count * unit.supplyRequired() * 0.80) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Siege_Tank_Tank_Mode) + Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Siege_Tank_Siege_Mode)));
+		unitScore[UnitTypes::Terran_Goliath] += (count * unit.supplyRequired() * 0.05) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Goliath)));
 		break;
-	case UnitTypes::Enum::Zerg_Mutalisk:
+	case UnitTypes::Enum::Zerg_Mutalisk:		
+		unitScore[UnitTypes::Terran_Goliath] += (count * unit.supplyRequired() * 1.00) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Goliath)));
 		break;
 	case UnitTypes::Enum::Zerg_Guardian:
+		unitScore[UnitTypes::Terran_Goliath] += (count * unit.supplyRequired() * 1.00) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Goliath)));
 		break;
 	case UnitTypes::Enum::Zerg_Devourer:
+		unitScore[UnitTypes::Terran_Goliath] += (count * unit.supplyRequired() * 1.00) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Goliath)));
 		break;
 	case UnitTypes::Enum::Zerg_Defiler:
 		break;
 
 	case UnitTypes::Enum::Protoss_Zealot:
+		unitScore[UnitTypes::Terran_Vulture] += (count * unit.supplyRequired() * 0.70) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Vulture)));
+		unitScore[UnitTypes::Terran_Siege_Tank_Tank_Mode] += (count * unit.supplyRequired() * 0.15) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Siege_Tank_Tank_Mode) + Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Siege_Tank_Siege_Mode)));
+		unitScore[UnitTypes::Terran_Goliath] += (count * unit.supplyRequired() * 0.15) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Goliath)));
 		break;
 	case UnitTypes::Enum::Protoss_Dragoon:
+		unitScore[UnitTypes::Terran_Vulture] += (count * unit.supplyRequired() * 0.05) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Vulture)));
+		unitScore[UnitTypes::Terran_Siege_Tank_Tank_Mode] += (count * unit.supplyRequired() * 0.85) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Siege_Tank_Tank_Mode) + Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Siege_Tank_Siege_Mode)));
+		unitScore[UnitTypes::Terran_Goliath] += (count * unit.supplyRequired() * 0.10) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Goliath)));
 		break;
 	case UnitTypes::Enum::Protoss_High_Templar:
+		unitScore[UnitTypes::Terran_Vulture] += (count * unit.supplyRequired() * 0.70) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Vulture)));
+		unitScore[UnitTypes::Terran_Siege_Tank_Tank_Mode] += (count * unit.supplyRequired() * 0.15) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Siege_Tank_Tank_Mode) + Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Siege_Tank_Siege_Mode)));
+		unitScore[UnitTypes::Terran_Goliath] += (count * unit.supplyRequired() * 0.15) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Goliath)));
 		break;
 	case UnitTypes::Enum::Protoss_Dark_Templar:
+		unitScore[UnitTypes::Terran_Vulture] += (count * unit.supplyRequired() * 0.70) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Vulture)));
+		unitScore[UnitTypes::Terran_Siege_Tank_Tank_Mode] += (count * unit.supplyRequired() * 0.15) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Siege_Tank_Tank_Mode) + Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Siege_Tank_Siege_Mode)));
+		unitScore[UnitTypes::Terran_Goliath] += (count * unit.supplyRequired() * 0.15) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Goliath)));
 		break;
 	case UnitTypes::Enum::Protoss_Reaver:
+		unitScore[UnitTypes::Terran_Vulture] += (count * unit.supplyRequired() * 0.10) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Vulture)));
+		unitScore[UnitTypes::Terran_Siege_Tank_Tank_Mode] += (count * unit.supplyRequired() * 0.70) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Siege_Tank_Tank_Mode) + Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Siege_Tank_Siege_Mode)));
+		unitScore[UnitTypes::Terran_Goliath] += (count * unit.supplyRequired() * 0.20) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Goliath)));
 		break;
 	case UnitTypes::Enum::Protoss_Archon:
+		unitScore[UnitTypes::Terran_Vulture] += (count * unit.supplyRequired() * 0.10) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Vulture)));
+		unitScore[UnitTypes::Terran_Siege_Tank_Tank_Mode] += (count * unit.supplyRequired() * 0.70) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Siege_Tank_Tank_Mode) + Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Siege_Tank_Siege_Mode)));
+		unitScore[UnitTypes::Terran_Goliath] += (count * unit.supplyRequired() * 0.20) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Goliath)));
 		break;
 	case UnitTypes::Enum::Protoss_Dark_Archon:
 		break;
 	case UnitTypes::Enum::Protoss_Scout:
+		unitScore[UnitTypes::Terran_Goliath] += (count * unit.supplyRequired() * 1.00) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Goliath)));
 		break;
 	case UnitTypes::Enum::Protoss_Carrier:
+		unitScore[UnitTypes::Terran_Goliath] += (count * unit.supplyRequired() * 1.00) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Goliath)));
 		break;
 	case UnitTypes::Enum::Protoss_Arbiter:
+		unitScore[UnitTypes::Terran_Goliath] += (count * unit.supplyRequired() * 1.00) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Goliath)));
 		break;
 	case UnitTypes::Enum::Protoss_Corsair:
+		unitScore[UnitTypes::Terran_Goliath] += (count * unit.supplyRequired() * 1.00) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Goliath)));
 		break;
 	}
 }
