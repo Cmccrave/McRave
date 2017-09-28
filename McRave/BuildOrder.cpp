@@ -105,7 +105,7 @@ void BuildOrderTrackerClass::onStart()
 			else
 			{
 				double winRate = gamesPlayed > 0 ? wins / static_cast<double>(gamesPlayed) : 0;
-				double ucbVal = 0.5 * sqrt(log((double)gamesPlayed) / totalGamesPlayed);
+				double ucbVal = 0.5 * sqrt(log((double)totalGamesPlayed) / gamesPlayed);
 				double val = winRate + ucbVal;
 				if (val > best)
 				{
