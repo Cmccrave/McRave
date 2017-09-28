@@ -122,7 +122,7 @@ bool BuildOrderTrackerClass::isBuildAllowed(Race enemy, string build)
 {
 	if (enemy == Races::Zerg || enemy == Races::Random)
 	{
-		if (build == "12Nexus" || build == "NZCore")
+		if (build == "TwelveNexus" || build == "NZCore")
 		{
 			return false;
 		}
