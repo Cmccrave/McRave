@@ -56,22 +56,9 @@ void TransportTrackerClass::updateInformation(TransportInfo& shuttle)
 
 void TransportTrackerClass::updateDecision(TransportInfo& shuttle)
 {
-	// Update what tiles have been used recently
-	for (auto &tile : Util().getWalkPositionsUnderUnit(shuttle.unit()))
-	{
-		recentExplorations[tile] = Broodwar->getFrameCount();
-	}
-
-	for (auto &tile : recentExplorations)
-	{
-		if (tile.second > 100)
-		{
-
-		}
-	}
-
 	// Reset load state
 	shuttle.setLoadState(0);
+	shuttle.setDrop(shuttle.getPosition());
 
 	// Check if we should be loading/unloading any cargo
 	for (auto &c : shuttle.getAssignedCargo())
@@ -96,7 +83,7 @@ void TransportTrackerClass::updateDecision(TransportInfo& shuttle)
 		}
 		// Else if the cargo is loaded
 		else if (cargo.unit()->isLoaded())
-		{
+		{			
 			shuttle.setDrop(cargo.getTargetPosition());
 
 			// If we are harassing, check if we are close to drop point
@@ -149,45 +136,28 @@ void TransportTrackerClass::updateMovement(TransportInfo& shuttle)
 				continue;
 			}
 
-			double distance = shuttle.getDrop().getDistance(Position(WalkPosition(x, y)));
-			double threat = max(1.0 , Grids().getEGroundThreat(x, y) + Grids().getEAirThreat(x, y));
+			double distance = max(1.0, shuttle.getDrop().getDistance(Position(WalkPosition(x, y))));
+			double threat =  max(0.1, Grids().getEGroundThreat(x, y) + Grids().getEAirThreat(x, y));
+			double mobility = max(1.0, double(Grids().getMobilityGrid(x, y)));
 			double best = 0.0;
 
-			// Move to closest safe tile - TODO Check cargo ideal engagement distance
-			if (distance/threat > best)
+			// If shuttle is harassing, then include mobility
+			if (shuttle.isHarassing())
 			{
-				best = distance/threat;
-				bestPosition = Position(WalkPosition(x, y));
+				if (1.0 / (distance * threat * mobility) > best)
+				{
+					best = distance / threat;
+					bestPosition = Position(WalkPosition(x, y));
+				}
 			}
-
-			//// If low mobility, no threat and closest to the drop point -- This is just used for harassing
-			//if ((32 * Grids().getMobilityGrid(x, y)) + Position(WalkPosition(x, y)).getDistance(shuttle.getDrop()) < closestD || closestD == 0.0)
-			//{
-			//	bool bestTile = true;
-			//	for (int i = x - shuttle.getType().width() / 16; i < x + shuttle.getType().width() / 16; i++)
-			//	{
-			//		for (int j = y - shuttle.getType().height() / 16; j < y + shuttle.getType().height() / 16; j++)
-			//		{
-			//			if (WalkPosition(i, j).isValid())
-			//			{								
-			//				// If position has a threat, don't move there
-			//				if (Grids().getEGroundThreat(i, j) > 0.0 || Grids().getEAirThreat(i, j) > 0.0)
-			//				{
-			//					bestTile = false;
-			//				}
-			//			}
-			//			else
-			//			{
-			//				bestTile = false;
-			//			}
-			//		}
-			//	}
-			//	if (bestTile)
-			//	{
-			//		closestD = (32 * Grids().getMobilityGrid(x, y)) + Position(WalkPosition(x, y)).getDistance(Position(shuttle.getDrop()));
-			//		bestPosition = Position(WalkPosition(x, y));
-			//	}				
-			//}
+			else
+			{
+				if (1.0 / (distance * threat) > best)
+				{
+					best = distance / threat;
+					bestPosition = Position(WalkPosition(x, y));
+				}
+			}
 		}
 	}
 	shuttle.setDestination(bestPosition);
