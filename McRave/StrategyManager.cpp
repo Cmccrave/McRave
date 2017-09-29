@@ -13,24 +13,12 @@ void StrategyTrackerClass::update()
 void StrategyTrackerClass::updateSituationalBehaviour()
 {
 	// Reset unit score
-	for (auto &unit : unitScore)
-	{
-		unit.second = 0;
-	}
+	for (auto &unit : unitScore) unit.second = 0;
 
-	// Specific behaviours
-	if (Broodwar->self()->getRace() == Races::Protoss)
-	{
-		protossStrategy();
-	}
-	else if (Broodwar->self()->getRace() == Races::Terran)
-	{
-		terranStrategy();
-	}
-	else if (Broodwar->self()->getRace() == Races::Zerg)
-	{
-		zergStrategy();
-	}
+	// Get strategy based on race
+	if (Broodwar->self()->getRace() == Races::Protoss) protossStrategy();
+	else if (Broodwar->self()->getRace() == Races::Terran) terranStrategy();
+	else if (Broodwar->self()->getRace() == Races::Zerg) zergStrategy();
 }
 
 void StrategyTrackerClass::protossStrategy()
@@ -84,7 +72,7 @@ void StrategyTrackerClass::protossStrategy()
 		else
 		{
 			playPassive = rush;
-			holdChoke = (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) >= 4);
+			holdChoke = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) >= 4;
 		}
 	}
 	else

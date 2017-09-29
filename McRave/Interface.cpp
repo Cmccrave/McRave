@@ -34,8 +34,12 @@ void InterfaceTrackerClass::drawInformation()
 	
 	// Display global strength calculations	
 	Broodwar->drawTextScreen(575, 16, "%c%.2f/%.2f", Text::White, Units().getGlobalAllyStrength(), Units().getGlobalEnemyStrength());
+
+	// Display resources per minute
 	Broodwar->drawTextScreen(452, 16, "%c%.2f", Text::White, Resources().getMPM());
 	Broodwar->drawTextScreen(520, 16, "%c%.2f", Text::White, Resources().getGPM());
+
+	// Display what build is being used
 	Broodwar->drawTextScreen(575, 32, "%c%s", Text::White, BuildOrder().getCurrentBuild().c_str());
 	
 
@@ -49,13 +53,13 @@ void InterfaceTrackerClass::drawInformation()
 		}
 	}
 
-	// Display remaining minerals on each mineral patch that is near our Nexus
+	// Display remaining minerals on each mineral
 	for (auto &r : Resources().getMyMinerals())
 	{
 		Broodwar->drawTextMap(r.second.getPosition() + Position(-8, 8), "%c%d", Text::White, r.second.getRemainingResources());
 	}
 
-	// Display remaining gas on each geyser that is near our Nexus
+	// Display remaining gas on each geyser
 	for (auto &r : Resources().getMyGas())
 	{
 		Broodwar->drawTextMap(r.second.getPosition() + Position(-8, 32), "%c%d", Text::Green, r.second.getRemainingResources());

@@ -49,6 +49,7 @@ void UnitTrackerClass::onUnitCreate(Unit unit)
 			Buildings().storeBuilding(unit);
 		}
 	}
+	return;
 }
 
 void UnitTrackerClass::onUnitDestroy(Unit unit)

@@ -16,7 +16,7 @@ public:
 
 	void update();
 	void updateAlliedBases();
-	void updateEnemyBases();
+	//void updateEnemyBases();
 	void storeBase(Unit);
 	void removeBase(Unit);
 	void updateProduction(BaseInfo&);

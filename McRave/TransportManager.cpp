@@ -163,7 +163,7 @@ void TransportTrackerClass::updateMovement(TransportInfo& shuttle)
 			}
 
 			// Else, move to high ally cluster areas
-			if (Position(WalkPosition(x, y)).getDistance(Position(start)) > 64 && (Grids().getACluster(x, y) > bestCluster || (Grids().getACluster(x, y) == bestCluster && bestCluster != 0 && shuttle.getDrop().getDistance(Position(WalkPosition(x, y))) < closestD)))
+			if (Position(WalkPosition(x, y)).getDistance(Position(start)) > 64 /*&& (Grids().getACluster(x, y) > bestCluster || (Grids().getACluster(x, y) == bestCluster && bestCluster != 0*/ && shuttle.getDrop().getDistance(Position(WalkPosition(x, y))) < closestD)//))
 			{
 				closestD = shuttle.getDrop().getDistance(Position(WalkPosition(x, y)));
 				bestCluster = Grids().getACluster(x, y);

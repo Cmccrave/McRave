@@ -15,11 +15,6 @@ void BuildingTrackerClass::updateBuildings()
 	for (auto& b : myBuildings)
 	{
 		BuildingInfo building = b.second;
-		if (!building.unit() || !building.unit()->exists())
-		{
-			continue;
-		}
-
 		building.setIdleStatus(building.unit()->getRemainingTrainTime() == 0);
 		building.setEnergy(building.unit()->getEnergy());
 
@@ -227,7 +222,14 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	{
 		if (building == UnitTypes::Protoss_Shield_Battery)
 		{
-			return getBuildLocationNear(building, Terrain().getFirstChoke());
+			if (Strategy().isAllyFastExpand())
+			{
+				return getBuildLocationNear(building, Terrain().getSecondChoke());
+			}
+			else
+			{
+				return getBuildLocationNear(building, Terrain().getFirstChoke());
+			}
 		}
 	}
 

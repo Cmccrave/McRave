@@ -29,18 +29,18 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 	{
 		thisUnit = 0.0;
 		UnitInfo &enemy = e.second;
-		double distance = (1.0 + unit.getPosition().getDistance(enemy.getPosition()));
+		double distance = 0.0;
 
 		if (!enemy.unit())
 		{
 			continue;
 		}
 
-		// If unit needs revealing
+		// If unit needs revealing - TODO check if capable of attacking it too (within range of ally unit)
 		if (unit.getType() == UnitTypes::Protoss_Observer)
 		{
 			if (enemy.unit()->exists() && Grids().getACluster(enemy.getWalkPosition()) > 0 && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()))
-			{				
+			{
 				thisUnit = (enemy.getPriority() * (1.0 + 0.1 *(1.0 - enemy.getPercentHealth()))) / distance;
 			}
 			else
@@ -56,7 +56,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		}
 
 		// Dont chase vultures or mines as melee units - TEMP let zealots target vultures to prevent separation
-		if ((/*enemy.getType() == UnitTypes::Terran_Vulture ||*/ enemy.getType() == UnitTypes::Terran_Vulture_Spider_Mine) && unit.getGroundRange() < 32)
+		if ((/*enemy.getType() == UnitTypes::Terran_Vulture ||*/ enemy.getType() == UnitTypes::Terran_Vulture_Spider_Mine) && unit.getGroundRange() < 32 && unit.getType() != UnitTypes::Protoss_Dark_Templar)
 		{
 			continue;
 		}
@@ -65,7 +65,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		if (enemy.unit()->exists() && enemy.unit()->isStasised())
 		{
 			continue;
-		}	
+		}
 
 		// Reavers and Tanks target highest priority units with clusters around them
 		if (unit.getType() == UnitTypes::Protoss_Reaver || unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
@@ -93,12 +93,14 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 
 		else if (enemy.getType().isFlyer() && unit.getAirDamage() > 0.0)
 		{
+			distance = max(1.0, unit.getPosition().getDistance(enemy.getPosition()) - unit.getAirRange());
 			thisUnit = (enemy.getPriority() * (1.0 + 0.1 *(1.0 - enemy.getPercentHealth()))) / distance;
 		}
 		else if (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0)
 		{
+			distance = max(1.0, unit.getPosition().getDistance(enemy.getPosition()) - unit.getGroundRange());
 			thisUnit = (enemy.getPriority() * (1.0 + 0.1 *(1.0 - enemy.getPercentHealth()))) / distance;
-		}		
+		}
 
 		// If the unit doesn't exist, it's not a suitable target usually (could be removed?)
 		if (!enemy.unit()->exists())

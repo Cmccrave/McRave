@@ -26,6 +26,28 @@ void BaseTrackerClass::updateAlliedBases()
 	return;
 }
 
+void BaseTrackerClass::updateProduction(BaseInfo& base)
+{
+	if (base.unit() && (!Resources().isMinSaturated() || !Resources().isGasSaturated()) && base.unit()->isIdle())
+	{
+		for (auto &unit : base.getType().buildsWhat())
+		{
+			if (unit.isWorker())
+			{
+				if (Broodwar->self()->completedUnitCount(unit) < 60 && (Broodwar->self()->minerals() >= unit.mineralPrice() + Production().getReservedMineral() + Buildings().getQueuedMineral()))
+				{
+					base.unit()->train(unit);
+				}
+			}
+			else
+			{
+				// Zerg production
+			}
+		}
+	}
+	return;
+}
+
 void BaseTrackerClass::storeBase(Unit base)
 {
 	BaseInfo& b = myBases[base];
@@ -48,27 +70,5 @@ void BaseTrackerClass::removeBase(Unit base)
 	Grids().updateBaseGrid(myBases[base]);
 	myOrderedBases.erase(base->getPosition().getDistance(Terrain().getPlayerStartingPosition()));
 	myBases.erase(base);
-	return;
-}
-
-void BaseTrackerClass::updateProduction(BaseInfo& base)
-{
-	if (base.unit() && (!Resources().isMinSaturated() || !Resources().isGasSaturated()) && base.unit()->isIdle())
-	{
-		for (auto &unit : base.getType().buildsWhat())
-		{
-			if (unit.isWorker())
-			{
-				if (Broodwar->self()->completedUnitCount(unit) < 60 && (Broodwar->self()->minerals() >= unit.mineralPrice() + Production().getReservedMineral() + Buildings().getQueuedMineral()))
-				{
-					base.unit()->train(unit);
-				}
-			}
-			else
-			{
-				// Zerg production
-			}
-		}
-	}
 	return;
 }

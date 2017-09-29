@@ -9,14 +9,9 @@
 // --- AUTHOR NOTES ---
 // TODO:
 // Mine removal from expansions - important for Ice/Iron
-
-//Building:
+// Sometimes build too many cannons for anti harass
 // unQueueBuilding->ONS qM + qG and #buildings queued
-
-//BO :
-// Allow battery against Terran(Irons rush would be a lot worse potentially)
-
-// Micro :
+// Battery when doing 12 Nexus if enemy has >= 3 fact
 // if overkill, reduce targeting % chance by % overkill
 
 void McRaveModule::onStart()
