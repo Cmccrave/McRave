@@ -21,6 +21,7 @@ public:
 	bool isOpener() { return getOpening; }
 	int getOpener() { return opening; }
 	string getCurrentBuild() { return currentBuild; }
+	set <UnitType>& getTechList() { return techList; }
 
 	void onEnd(bool);
 	void onStart();

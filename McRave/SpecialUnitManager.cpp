@@ -6,6 +6,7 @@ void SpecialUnitTrackerClass::update()
 	updateArbiters();
 	updateDetectors();
 	updateReavers();
+	updateVultures();
 	Display().performanceTest(__FUNCTION__);
 	return;
 }
@@ -172,6 +173,41 @@ void SpecialUnitTrackerClass::updateReavers()
 		if (reaver.unit()->getScarabCount() < 5)
 		{
 			reaver.unit()->train(UnitTypes::Protoss_Scarab);
+		}
+	}
+	return;
+}
+
+void SpecialUnitTrackerClass::updateVultures()
+{
+	for (auto &v : Units().getAllyUnitsFilter(UnitTypes::Terran_Vulture))
+	{
+		UnitInfo &vulture = v.second;
+		double closestD = 0.0;
+		Position closestP;
+		// If we have mines, plant them at a either the target or a chokepoint
+		if (vulture.unit()->getSpiderMineCount() > 0)
+		{
+			/*if (vulture.getTarget() && vulture.getTarget()->exists())
+			{
+				vulture.unit()->useTech(TechTypes::Spider_Mines, vulture.getTargetPosition());
+			}
+			else
+			{*/
+				for (auto choke : Terrain().getPath())
+				{
+					if ((closestD == 0.0 || Position(choke->Center()).getDistance(Terrain().getPlayerStartingPosition()) < closestD) && Broodwar->getUnitsInRadius(Position(choke->Center()), 128, Filter::GetType == UnitTypes::Terran_Vulture_Spider_Mine && Filter::IsAlly).size() < 2)
+					{
+						closestD = Position(choke->Center()).getDistance(Terrain().getPlayerStartingPosition());
+						closestP = Position(choke->Center());
+					}
+				}
+
+				if (closestP.isValid() && vulture.unit()->getLastCommand().getType() != UnitCommandTypes::Use_Tech)
+				{
+					vulture.unit()->useTech(TechTypes::Spider_Mines, closestP);
+				}
+			//}
 		}
 	}
 	return;

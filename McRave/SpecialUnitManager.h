@@ -20,6 +20,7 @@ public:
 	void updateDetectors();
 	void updateQueens();
 	void updateReavers();
+	void updateVultures();
 	void storeUnit(Unit);
 	void removeUnit(Unit);
 

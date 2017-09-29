@@ -6,8 +6,6 @@ void BuildOrderTrackerClass::onEnd(bool isWinner)
 	ofstream config("bwapi-data/write/" + Broodwar->enemy()->getName() + ".txt");
 	string t1;
 	int t2, t3;
-
-	bool update;
 	int lineBreak = 0;
 
 	while (ss >> t1 >> t2 >> t3)
@@ -139,17 +137,24 @@ bool BuildOrderTrackerClass::isBuildAllowed(Race enemy, string build)
 
 void BuildOrderTrackerClass::getDefaultBuild()
 {
-	if (Players().getNumberProtoss() > 0)
+	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
-		currentBuild = "ZZCore";
+		if (Players().getNumberProtoss() > 0)
+		{
+			currentBuild = "ZZCore";
+		}
+		else if (Players().getNumberZerg() > 0)
+		{
+			currentBuild = "FFECannon";
+		}
+		else if (Players().getNumberTerran() > 0)
+		{
+			currentBuild = "NZCore";
+		}
 	}
-	else if (Players().getNumberZerg() > 0)
+	else if (Broodwar->self()->getRace() == Races::Terran)
 	{
-		currentBuild = "FFECannon";
-	}
-	else if (Players().getNumberTerran() > 0)
-	{
-		currentBuild = "NZCore";
+		currentBuild = "TwoFactVult";
 	}
 	return;
 }
@@ -174,7 +179,7 @@ void BuildOrderTrackerClass::updateDecision()
 		}
 
 		// If production is saturated and none are idle or we need detection for some invis units, choose a tech
-		if (Strategy().needDetection() || (!Strategy().isPlayPassive() && Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() && !getOpening && !getTech && techUnit == UnitTypes::None && Production().getIdleLowProduction().size() == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 2))
+		if (Strategy().needDetection() || (!Strategy().isPlayPassive() && Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() && !getOpening && !getTech && techUnit == UnitTypes::None && Production().getIdleLowProduction().size() == 0 && Production().isProductionSat() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 2))
 		{
 			getTech = true;
 		}
@@ -414,7 +419,7 @@ void BuildOrderTrackerClass::terranSituational()
 	buildingDesired[UnitTypes::Terran_Supply_Depot] = min(22, (int)floor((Units().getSupply() / max(14, (16 - Broodwar->self()->allUnitCount(UnitTypes::Terran_Supply_Depot))))));
 
 	// Expansion logic
-	if (Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() && (Resources().isMinSaturated() && Production().getIdleLowProduction().size() == 0) || (Strategy().isAllyFastExpand() && Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Command_Center) == 1))
+	if (Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() && Production().getIdleLowProduction().size() == 0)
 	{
 		buildingDesired[UnitTypes::Terran_Command_Center] = Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) + 1;
 	}
@@ -431,6 +436,12 @@ void BuildOrderTrackerClass::terranSituational()
 		buildingDesired[UnitTypes::Terran_Refinery] = Resources().getTempGasCount();
 	}
 
+	// Armoy logic
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) >= 2 && Units().getSupply() > 160)
+	{
+		buildingDesired[UnitTypes::Terran_Armory] = 1;
+	}
+
 	// Barracks logic
 	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Barracks) >= 3 && (Production().getIdleLowProduction().size() == 0 && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 200) || (!Production().isBarracksSat() && Resources().isMinSaturated()))))
 	{
@@ -441,6 +452,12 @@ void BuildOrderTrackerClass::terranSituational()
 	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= 2 && (Production().getIdleLowProduction().size() == 0 && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 200 && Broodwar->self()->gas() - Production().getReservedGas() - Buildings().getQueuedGas() > 100) || (!Production().isProductionSat() && Resources().isMinSaturated()))))
 	{
 		buildingDesired[UnitTypes::Terran_Factory] = min(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Factory) + 1);
+	}
+
+	// Machine Shop logic
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= 1)
+	{
+		buildingDesired[UnitTypes::Terran_Machine_Shop] = Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) - (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center));
 	}
 
 	// CC logic

@@ -31,6 +31,7 @@ public:
 
 	void update();
 	bool canAfford(UnitType);
+	bool canMake(Unit, UnitType);
 	void updateProduction();
 	void updateProtoss();
 	void updateTerran();

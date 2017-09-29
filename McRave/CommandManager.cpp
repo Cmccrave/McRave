@@ -14,8 +14,14 @@ void CommandTrackerClass::updateAlliedUnits()
 	{
 		UnitInfo &unit = u.second;
 
-		// Special units have their own commands
+		// Support units have their own commands
 		if (unit.getType() == UnitTypes::Protoss_Observer || unit.getType() == UnitTypes::Protoss_Arbiter || unit.getType() == UnitTypes::Protoss_Shuttle)
+		{
+			continue;
+		}
+
+		// If the unit received a command already
+		if (unit.unit()->getLastCommandFrame() >= Broodwar->getFrameCount())
 		{
 			continue;
 		}
