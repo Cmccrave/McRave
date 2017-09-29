@@ -75,19 +75,19 @@ void TransportTrackerClass::updateDecision(TransportInfo& shuttle)
 
 	// Check if we should be loading/unloading any cargo
 	for (auto &c : shuttle.getAssignedCargo())
-	{		
+	{
 		UnitInfo& cargo = Units().getAllyUnit(c);
 
 		if (!cargo.unit())
 		{
 			continue;
 		}
-		
+
 		// If the cargo is not loaded
 		if (!cargo.unit()->isLoaded())
 		{
 			// If it's requesting a pickup
-			if ((cargo.getTargetPosition().getDistance(cargo.getPosition()) > 320) || (cargo.getType() == UnitTypes::Protoss_Reaver && cargo.unit()->getGroundWeaponCooldown() > 0) || (cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.unit()->getEnergy() < 75))
+			if (cargo.getTargetPosition().getDistance(cargo.getPosition()) > cargo.getGroundRange() || cargo.getStrategy() != 1 || (cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.unit()->getEnergy() < 75))
 			{
 				shuttle.unit()->load(cargo.unit());
 				shuttle.setLoadState(1);
@@ -100,13 +100,13 @@ void TransportTrackerClass::updateDecision(TransportInfo& shuttle)
 			shuttle.setDrop(cargo.getTargetPosition());
 
 			// If we are harassing, check if we are close to drop point
-			if (shuttle.isHarassing() && shuttle.getPosition().getDistance(shuttle.getDrop()) < 160)
+			if (shuttle.isHarassing() && shuttle.getPosition().getDistance(shuttle.getDrop()) < cargo.getGroundRange())
 			{
 				shuttle.unit()->unload(cargo.unit());
 				shuttle.setLoadState(2);
 			}
 			// Else check if we are in a position to help the main army
-			else if (!shuttle.isHarassing() && cargo.getStrategy() == 1 && cargo.getPosition().getDistance(cargo.getTargetPosition()) < 320 && (cargo.unit()->getGroundWeaponCooldown() <= Broodwar->getLatencyFrames() || cargo.unit()->getEnergy() >= 75))
+			else if (!shuttle.isHarassing() && cargo.getStrategy() == 1 && cargo.getPosition().getDistance(cargo.getTargetPosition()) < cargo.getGroundRange() && (cargo.getType() != UnitTypes::Protoss_High_Templar || cargo.unit()->getEnergy() >= 75))
 			{
 				shuttle.unit()->unload(cargo.unit());
 				shuttle.setLoadState(2);
@@ -125,33 +125,14 @@ void TransportTrackerClass::updateMovement(TransportInfo& shuttle)
 	}
 
 	Position bestPosition = shuttle.getDrop();
-	WalkPosition start = shuttle.getWalkPosition();
-	double bestCluster = 0;
-	int radius = 10;
-	double closestD = ((32 * Grids().getMobilityGrid(start)) + Position(start).getDistance(shuttle.getDrop()));
-
-	for (auto &tile : Util().getWalkPositionsUnderUnit(shuttle.unit()))
-	{
-		if (Grids().getEGroundThreat(tile) > 0.0 || Grids().getEAirThreat(tile) > 0.0)
-		{
-			radius = 25;
-			closestD = 0.0;
-			continue;
-		}
-	}
-
+	WalkPosition start = shuttle.getWalkPosition();	
 
 	// First look for mini tiles with no threat that are closest to the enemy and on low mobility
-	for (int x = start.x - radius; x <= start.x + radius; x++)
+	for (int x = start.x - 15; x <= start.x + 15 + shuttle.getType().tileWidth() * 4; x++)
 	{
-		for (int y = start.y - radius; y <= start.y + radius; y++)
+		for (int y = start.y - 15; y <= start.y + 15 + shuttle.getType().tileWidth() * 4; y++)
 		{
 			if (!WalkPosition(x, y).isValid())
-			{
-				continue;
-			}
-
-			if (Grids().getEAirThreat(WalkPosition(x, y)) > 0.0)
 			{
 				continue;
 			}
@@ -162,42 +143,51 @@ void TransportTrackerClass::updateMovement(TransportInfo& shuttle)
 				continue;
 			}
 
-			// Else, move to high ally cluster areas
-			if (Position(WalkPosition(x, y)).getDistance(Position(start)) > 64 /*&& (Grids().getACluster(x, y) > bestCluster || (Grids().getACluster(x, y) == bestCluster && bestCluster != 0*/ && shuttle.getDrop().getDistance(Position(WalkPosition(x, y))) < closestD)//))
+			// Must keep the shuttle moving to retain maximum speed
+			if (Position(WalkPosition(x, y)).getDistance(Position(start)) <= 64)
 			{
-				closestD = shuttle.getDrop().getDistance(Position(WalkPosition(x, y)));
-				bestCluster = Grids().getACluster(x, y);
+				continue;
+			}
+
+			double distance = shuttle.getDrop().getDistance(Position(WalkPosition(x, y)));
+			double threat = max(1.0 , Grids().getEGroundThreat(x, y) + Grids().getEAirThreat(x, y));
+			double best = 0.0;
+
+			// Move to closest safe tile - TODO Check cargo ideal engagement distance
+			if (distance/threat > best)
+			{
+				best = distance/threat;
 				bestPosition = Position(WalkPosition(x, y));
 			}
 
-			// If low mobility, no threat and closest to the drop point
-			if ((32 * Grids().getMobilityGrid(x, y)) + Position(WalkPosition(x, y)).getDistance(shuttle.getDrop()) < closestD || closestD == 0.0)
-			{
-				bool bestTile = true;
-				for (int i = x - shuttle.getType().width() / 16; i < x + shuttle.getType().width() / 16; i++)
-				{
-					for (int j = y - shuttle.getType().height() / 16; j < y + shuttle.getType().height() / 16; j++)
-					{
-						if (WalkPosition(i, j).isValid())
-						{								
-							// If position has a threat, don't move there
-							if (Grids().getEGroundThreat(i, j) > 0.0 || Grids().getEAirThreat(i, j) > 0.0)
-							{
-								bestTile = false;
-							}
-						}
-						else
-						{
-							bestTile = false;
-						}
-					}
-				}
-				if (bestTile)
-				{
-					closestD = (32 * Grids().getMobilityGrid(x, y)) + Position(WalkPosition(x, y)).getDistance(Position(shuttle.getDrop()));
-					bestPosition = Position(WalkPosition(x, y));
-				}				
-			}
+			//// If low mobility, no threat and closest to the drop point -- This is just used for harassing
+			//if ((32 * Grids().getMobilityGrid(x, y)) + Position(WalkPosition(x, y)).getDistance(shuttle.getDrop()) < closestD || closestD == 0.0)
+			//{
+			//	bool bestTile = true;
+			//	for (int i = x - shuttle.getType().width() / 16; i < x + shuttle.getType().width() / 16; i++)
+			//	{
+			//		for (int j = y - shuttle.getType().height() / 16; j < y + shuttle.getType().height() / 16; j++)
+			//		{
+			//			if (WalkPosition(i, j).isValid())
+			//			{								
+			//				// If position has a threat, don't move there
+			//				if (Grids().getEGroundThreat(i, j) > 0.0 || Grids().getEAirThreat(i, j) > 0.0)
+			//				{
+			//					bestTile = false;
+			//				}
+			//			}
+			//			else
+			//			{
+			//				bestTile = false;
+			//			}
+			//		}
+			//	}
+			//	if (bestTile)
+			//	{
+			//		closestD = (32 * Grids().getMobilityGrid(x, y)) + Position(WalkPosition(x, y)).getDistance(Position(shuttle.getDrop()));
+			//		bestPosition = Position(WalkPosition(x, y));
+			//	}				
+			//}
 		}
 	}
 	shuttle.setDestination(bestPosition);
@@ -222,7 +212,7 @@ void TransportTrackerClass::removeUnit(Unit unit)
 
 	// Delete if it's the shuttle
 	if (myShuttles.find(unit) != myShuttles.end())
-	{		
+	{
 		for (auto &c : myShuttles[unit].getAssignedCargo())
 		{
 			UnitInfo &cargo = Units().getAllyUnit(c);
