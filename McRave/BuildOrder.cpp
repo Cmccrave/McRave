@@ -255,12 +255,7 @@ void BuildOrderTrackerClass::protossTech()
 	{
 		double highest = 0.0;
 		for (auto &tech : Strategy().getUnitScore())
-		{
-			if (Strategy().needDetection())
-			{
-				techUnit = UnitTypes::Protoss_Observer;
-				break;
-			}
+		{			
 			if (tech.first == UnitTypes::Protoss_Dragoon || tech.first == UnitTypes::Protoss_Zealot || techList.find(tech.first) != techList.end())
 			{
 				continue;

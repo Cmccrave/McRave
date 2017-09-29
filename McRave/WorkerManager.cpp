@@ -51,9 +51,9 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 	}
 
 	// All walkpositions in a 4x4 walkposition grid are set as scouted already to prevent overlapping
-	for (int x = start.x - 1; x < start.x + 1 + worker.getType().tileWidth() * 4; x++)
+	for (int x = start.x - 4; x < start.x + 4 + worker.getType().tileWidth() * 4; x++)
 	{
-		for (int y = start.y - 1; y < start.y + 1 + worker.getType().tileHeight() * 4; y++)
+		for (int y = start.y - 4; y < start.y + 4 + worker.getType().tileHeight() * 4; y++)
 		{
 			if (WalkPosition(x, y).isValid() && Grids().getEGroundThreat(x, y) == 0.0)
 			{
@@ -82,7 +82,7 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 				continue;
 			}
 
-			if (WalkPosition(x, y).isValid() && Broodwar->getFrameCount() - recentExplorations[WalkPosition(x, y)] > 500)
+			if (WalkPosition(x, y).isValid() && Broodwar->getFrameCount() - recentExplorations[WalkPosition(x, y)] > 1500)
 			{
 				if (mobility / (threat * distance) >= highestMobility && Util().isSafe(start, WalkPosition(x, y), worker.getType(), true, false, true))
 				{

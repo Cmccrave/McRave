@@ -424,14 +424,14 @@ set<WalkPosition> UtilTrackerClass::getWalkPositionsUnderUnit(Unit unit)
 
 bool UtilTrackerClass::isSafe(WalkPosition start, WalkPosition end, UnitType unitType, bool groundCheck, bool airCheck, bool mobilityCheck)
 {
-	for (int i = end.x - (unitType.width() / 16); i <= end.x + (unitType.width() / 16); i++)
+	for (int i = end.x - (unitType.width() / 16) - 1; i <= end.x + (unitType.width() / 16); i++)
 	{
-		for (int j = end.y - (unitType.height() / 16); j <= end.y + (unitType.height() / 16); j++)
+		for (int j = end.y - (unitType.height() / 16) - 1; j <= end.y + (unitType.height() / 16); j++)
 		{
 			if (WalkPosition(i, j).isValid())
 			{				
-				// If WalkPosition shared with WalkPositions under unit, ignore
-				if (i >= start.x && i <= (start.x + (unitType.width() / 16)) && j >= start.y && j <= (start.y + (unitType.height() / 16)))
+				// If WalkPosition shared with WalkPositions under unit, ignore it if it meets satisfactory conditions
+				if (i >= start.x - 1 && i <= (start.x + (unitType.width() / 8)) && j >= start.y - 1 && j <= (start.y + (unitType.height() / 8)) && ((groundCheck && Grids().getEGroundThreat(i, j) == 0.0) || !groundCheck) && ((airCheck && Grids().getEAirThreat(i, j) == 0.0) && !airCheck) && ((mobilityCheck && (Grids().getMobilityGrid(i, j) > 0 && Grids().getAntiMobilityGrid(i, j) == 0)) || !mobilityCheck))
 				{					
 					continue;
 				}

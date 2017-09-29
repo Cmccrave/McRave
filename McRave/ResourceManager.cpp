@@ -60,19 +60,13 @@ void ResourceTrackerClass::storeResource(Unit resource)
 {
 	if (resource->getInitialResources() > 0)
 	{
-		if (resource->getType().isMineralField())
-		{
-			storeMineral(resource);
-		}
-		else
-		{
-			storeGas(resource);
-		}
+		resource->getType().isMineralField() ? storeMineral(resource) : storeGas(resource);		
 	}
 	else
 	{
 		storeBoulder(resource);
 	}
+	return;
 }
 
 void ResourceTrackerClass::storeMineral(Unit resource)
