@@ -5,12 +5,12 @@
 using namespace BWAPI;
 using namespace std;
 
-struct myHash {
-	template <int scale>
-	size_t operator()(const BWAPI::Point<int, scale> &p) const {
-		return std::hash <int>()(p.x << 16 | p.y);
-	}
-};
+//struct myHash {
+//	template <int scale>
+//	size_t operator()(const BWAPI::Point<int, scale> &p) const {
+//		return std::hash <int>()(p.x << 16 | p.y);
+//	}
+//};
 
 #pragma warning(disable : 4351)
 
@@ -69,10 +69,9 @@ public:
 	void updateMobilityGrids();
 
 	// Unit and building based functions
-	void updateArbiterMovement(SupportUnitInfo&);
-	void updateDetectorMovement(SupportUnitInfo&);
+	void updateArbiterMovement(UnitInfo&);
+	void updateDetectorMovement(UnitInfo&);
 	void updateAllyMovement(Unit, WalkPosition);
-	void updateReservedLocation(UnitType, TilePosition);
 
 	// Update if there is a storm active on the map or we are attempting to cast one
 	void updatePsiStorm(WalkPosition);
@@ -187,6 +186,5 @@ public:
 	// Other functions
 	Position getArmyCenter(){ return armyCenter; }
 };
+
 typedef Singleton<GridTrackerClass> GridTracker;
-
-

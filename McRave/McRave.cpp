@@ -16,14 +16,10 @@
 
 void McRaveModule::onStart()
 {
-	Broodwar->enableFlag(Flag::UserInput);	
+	Broodwar->enableFlag(Flag::UserInput);
 	Broodwar->setCommandOptimizationLevel(0);
 	Broodwar->setLatCom(true);
 	Broodwar->setLocalSpeed(0);
-	theMap.Initialize();
-	theMap.EnableAutomaticPathAnalysis();
-	bool startingLocationsOK = theMap.FindBasesForStartingLocations();
-	assert(startingLocationsOK);
 	Terrain().onStart();
 	Players().onStart();
 	BuildOrder().onStart();

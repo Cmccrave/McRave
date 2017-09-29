@@ -115,9 +115,13 @@ void TerrainTrackerClass::updateChokes()
 
 void TerrainTrackerClass::onStart()
 {
-	// Start location
+	theMap.Initialize();
+	theMap.EnableAutomaticPathAnalysis();
+	bool startingLocationsOK = theMap.FindBasesForStartingLocations();
+	assert(startingLocationsOK);
 	playerStartingTilePosition = Broodwar->self()->getStartLocation();
 	playerStartingPosition = Position(playerStartingTilePosition);
+	return;
 }
 
 void TerrainTrackerClass::removeTerritory(Unit base)
@@ -137,6 +141,7 @@ void TerrainTrackerClass::removeTerritory(Unit base)
 			}
 		}
 	}
+	return;
 }
 
 bool TerrainTrackerClass::isInAllyTerritory(Unit unit)

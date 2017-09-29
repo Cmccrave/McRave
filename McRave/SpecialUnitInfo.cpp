@@ -1,13 +1,13 @@
 #include "SpecialUnitInfo.h"
 
-SupportUnitInfo::SupportUnitInfo()
-{
-	position = Positions::None;
-	destination = Positions::None;
-	walkPosition = WalkPositions::None;
-	thisUnit = nullptr;
-	target = nullptr;
-}
+//SupportUnitInfo::SupportUnitInfo()
+//{
+//	position = Positions::None;
+//	destination = Positions::None;
+//	walkPosition = WalkPositions::None;
+//	thisUnit = nullptr;
+//	target = nullptr;
+//}
 
 TransportInfo::TransportInfo()
 {

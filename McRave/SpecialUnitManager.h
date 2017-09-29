@@ -7,9 +7,9 @@ using namespace std;
 
 class SpecialUnitTrackerClass
 {
-	map <Unit, SupportUnitInfo> myArbiters;
-	map <Unit, SupportUnitInfo> myDarchons;
-	map <Unit, SupportUnitInfo> myDetectors;
+	//map <Unit, SupportUnitInfo> myArbiters;
+	//map <Unit, SupportUnitInfo> myDarchons;
+	//map <Unit, SupportUnitInfo> myDetectors;
 	map <WalkPosition, double> myStorms;
 	Unit recaller = nullptr;
 public:
@@ -24,9 +24,9 @@ public:
 	void storeUnit(Unit);
 	void removeUnit(Unit);
 
-	map <Unit, SupportUnitInfo>& getMyArbiters() { return myArbiters; }
-	map <Unit, SupportUnitInfo>& getMyDetectors() { return myDetectors; }
-	map <Unit, SupportUnitInfo>& getMyDarchons() { return myDarchons; }
+	//map <Unit, SupportUnitInfo>& getMyArbiters() { return myArbiters; }
+	//map <Unit, SupportUnitInfo>& getMyDetectors() { return myDetectors; }
+	//map <Unit, SupportUnitInfo>& getMyDarchons() { return myDarchons; }
 };
 
 typedef Singleton<SpecialUnitTrackerClass> SpecialUnitTracker;

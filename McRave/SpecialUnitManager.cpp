@@ -13,11 +13,9 @@ void SpecialUnitTrackerClass::update()
 
 void SpecialUnitTrackerClass::updateArbiters()
 {
-	for (auto &a : myArbiters)
+	for (auto &a : Units().getAllyUnitsFilter(UnitTypes::Protoss_Arbiter))
 	{
-		SupportUnitInfo arbiter = a.second;
-		arbiter.setPosition(arbiter.unit()->getPosition());
-		arbiter.setWalkPosition(Util().getWalkPosition(arbiter.unit()));
+		UnitInfo arbiter = a.second;
 		/*if (Broodwar->self()->hasResearched(TechTypes::Recall) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Arbiter) > 1 && arbiter.unit()->getEnergy() > 100 && (!recaller || (recaller && !recaller->exists())))
 		{
 			recaller = arbiter.unit();
@@ -83,7 +81,7 @@ void SpecialUnitTrackerClass::updateArbiters()
 			}
 		//}
 		// Move and update grids	
-		arbiter.setDestination(bestPosition);
+		arbiter.setEngagePosition(bestPosition);
 		arbiter.unit()->move(bestPosition);
 		Grids().updateArbiterMovement(arbiter);
 
@@ -99,24 +97,22 @@ void SpecialUnitTrackerClass::updateArbiters()
 
 void SpecialUnitTrackerClass::updateDetectors()
 {
-	for (auto &d : myDetectors)
+	for (auto &d : Units().getAllyUnitsFilter(UnitTypes::Protoss_Observer))
 	{
-		SupportUnitInfo detector = d.second;
-		detector.setPosition(detector.unit()->getPosition());
-		detector.setWalkPosition(Util().getWalkPosition(detector.unit()));
+		UnitInfo detector = d.second;
 		Unit target = Units().getAllyUnits()[detector.unit()].getTarget();
 
 		// Check if there is a unit that needs revealing
 		if (target && target->exists() && Grids().getEDetectorGrid(Util().getWalkPosition(target)) == 0)
 		{
-			detector.setDestination(target->getPosition());
+			detector.setEngagePosition(target->getPosition());
 			detector.unit()->move(target->getPosition());
 			Grids().updateDetectorMovement(detector);
 			continue;
 		}
 
 		// Check if any expansions need detection on them - TEMP Removed due to how stupidly the observers can behave
-		if (BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] > Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus))
+		if (BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] > Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus))
 		{
 			bool baseScout = false;
 			for (auto &base : Terrain().getAllBaseLocations())
@@ -124,7 +120,7 @@ void SpecialUnitTrackerClass::updateDetectors()
 				// If an expansion is unbuildable and we've scouted it already, move there to detect burrowed units
 				if (base.isValid() && Broodwar->isVisible(base) && !Broodwar->canBuildHere(base, UnitTypes::Protoss_Nexus, nullptr, true) && Grids().getBaseGrid(base) == 0)
 				{
-					detector.setDestination(Position(base));
+					detector.setEngagePosition(Position(base));
 					detector.unit()->move(Position(base));
 					Grids().updateDetectorMovement(detector);
 					baseScout = true;
@@ -154,7 +150,7 @@ void SpecialUnitTrackerClass::updateDetectors()
 		}
 		if (newDestination.isValid())
 		{
-			detector.setDestination(newDestination);
+			detector.setEngagePosition(newDestination);
 			detector.unit()->move(newDestination);
 			Grids().updateDetectorMovement(detector);
 		}

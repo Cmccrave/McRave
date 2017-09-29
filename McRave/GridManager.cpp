@@ -742,16 +742,16 @@ void GridTrackerClass::updateMobilityGrids()
 	return;
 }
 
-void GridTrackerClass::updateDetectorMovement(SupportUnitInfo& observer)
+void GridTrackerClass::updateDetectorMovement(UnitInfo& observer)
 {
-	WalkPosition destination = WalkPosition(observer.getDestination());
+	WalkPosition destination = WalkPosition(observer.getEngagePosition());
 
 	for (int x = destination.x - 40; x <= destination.x + 40; x++)
 	{
 		for (int y = destination.y - 40; y <= destination.y + 40; y++)
 		{
 			// Create a circle of detection rather than a square
-			if (WalkPosition(x, y).isValid() && observer.getDestination().getDistance(Position(WalkPosition(x, y))) < 160)
+			if (WalkPosition(x, y).isValid() && observer.getEngagePosition().getDistance(Position(WalkPosition(x, y))) < 160)
 			{
 				resetGrid[x][y] = true;
 				aDetectorGrid[x][y] = 1;
@@ -761,16 +761,16 @@ void GridTrackerClass::updateDetectorMovement(SupportUnitInfo& observer)
 	return;
 }
 
-void GridTrackerClass::updateArbiterMovement(SupportUnitInfo& arbiter)
+void GridTrackerClass::updateArbiterMovement(UnitInfo& arbiter)
 {
-	WalkPosition destination = WalkPosition(arbiter.getDestination());
+	WalkPosition destination = WalkPosition(arbiter.getEngagePosition());
 
 	for (int x = destination.x - 20; x <= destination.x + 20; x++)
 	{
 		for (int y = destination.y - 20; y <= destination.y + 20; y++)
 		{
 			// Create a circle of detection rather than a square
-			if (WalkPosition(x, y).isValid() && arbiter.getDestination().getDistance(Position(WalkPosition(x, y))) < 160)
+			if (WalkPosition(x, y).isValid() && arbiter.getEngagePosition().getDistance(Position(WalkPosition(x, y))) < 160)
 			{
 				resetGrid[x][y] = true;
 				arbiterGrid[x][y] = 1;
@@ -790,36 +790,6 @@ void GridTrackerClass::updateAllyMovement(Unit unit, WalkPosition here)
 			{
 				resetGrid[x][y] = true;
 				antiMobilityGrid[x][y] = 1;
-			}
-		}
-	}
-	return;
-}
-
-void GridTrackerClass::updateReservedLocation(UnitType building, TilePosition here)
-{
-	// When placing a building, reserve the tiles so no further locations are placed there
-	for (int x = here.x; x < here.x + building.tileWidth(); x++)
-	{
-		for (int y = here.y; y < here.y + building.tileHeight(); y++)
-		{
-			if (TilePosition(x, y).isValid())
-			{
-				reservedGrid[x][y] = 1;
-			}
-		}
-	}
-
-	if (building.canBuildAddon())
-	{
-		for (int x = here.x + building.tileWidth(); x < here.x + building.tileWidth() + 2; x++)
-		{
-			for (int y = here.y + 1; y < here.y + 3; y++)
-			{
-				if (TilePosition(x, y).isValid())
-				{
-					reservedGrid[x][y] = 1;
-				}
 			}
 		}
 	}
@@ -867,8 +837,7 @@ void GridTrackerClass::updateEMP(Bullet EMP)
 
 void GridTrackerClass::updateDistanceGrid()
 {
-	// TODO: Goal with this grid is to create a ground distance grid from home for unit micro
-	// Need to check for islands
+	// TODO: Improve this somehow
 	if (!distanceAnalysis)
 	{
 		WalkPosition start = WalkPosition(Terrain().getPlayerStartingPosition());

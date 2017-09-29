@@ -5,27 +5,27 @@
 using namespace BWAPI;
 using namespace std;
 
-class SupportUnitInfo
-{
-	Position position, destination;
-	WalkPosition walkPosition;
-	Unit thisUnit, target, transport;
-	bool hasTransport;
-public:
-	SupportUnitInfo();
-
-	Unit unit() { return thisUnit; }
-	Unit getTransport() { return transport; }
-	Position getPosition() { return position; }
-	Position getDestination() { return destination; }
-	WalkPosition getWalkPosition() { return walkPosition; }
-	void setUnit(Unit newUnit) { thisUnit = newUnit; }
-	void setTransport(Unit newTransport) { transport = newTransport; }
-	void setTarget(Unit newUnit) { target = newUnit; }
-	void setPosition(Position newPosition) { position = newPosition; }
-	void setDestination(Position newPosition) { destination = newPosition; }
-	void setWalkPosition(WalkPosition newWalkPosition) { walkPosition = newWalkPosition; }
-};
+//class SupportUnitInfo
+//{
+//	Position position, destination;
+//	WalkPosition walkPosition;
+//	Unit thisUnit, target, transport;
+//	bool hasTransport;
+//public:
+//	SupportUnitInfo();
+//
+//	Unit unit() { return thisUnit; }
+//	Unit getTransport() { return transport; }
+//	Position getPosition() { return position; }
+//	Position getDestination() { return destination; }
+//	WalkPosition getWalkPosition() { return walkPosition; }
+//	void setUnit(Unit newUnit) { thisUnit = newUnit; }
+//	void setTransport(Unit newTransport) { transport = newTransport; }
+//	void setTarget(Unit newUnit) { target = newUnit; }
+//	void setPosition(Position newPosition) { position = newPosition; }
+//	void setDestination(Position newPosition) { destination = newPosition; }
+//	void setWalkPosition(WalkPosition newWalkPosition) { walkPosition = newWalkPosition; }
+//};
 
 class TransportInfo
 {
