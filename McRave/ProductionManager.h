@@ -31,6 +31,8 @@ public:
 
 	void update();
 	bool canAfford(UnitType);
+	bool canAfford(UpgradeType);
+	bool canAfford(TechType);
 	bool canMake(Unit, UnitType);
 	void updateProduction();
 	void updateProtoss();

@@ -41,7 +41,6 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 {
 	WalkPosition start = worker.getWalkPosition();
 	Position bestPosition = Terrain().getPlayerStartingPosition();
-	double closestD = 0.0;
 
 	Unit closest = worker.unit()->getClosestUnit(Filter::IsEnemy && Filter::CanAttack);
 	if (!closest || (closest && closest->exists() && worker.unit()->getDistance(closest) > 640))
@@ -63,12 +62,12 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 	}
 
 	// Check a 8x8 walkposition grid for a potential new place to scout
-	double highestMobility = 0.0;
+	double best = 0.0;
 	for (int x = start.x - 8; x < start.x + 8 + worker.getType().tileWidth() * 4; x++)
 	{
 		for (int y = start.y - 8; y < start.y + 8 + worker.getType().tileHeight() * 4; y++)
 		{
-			if (Grids().getDistanceHome(start) - Grids().getDistanceHome(WalkPosition(x, y)) > 16)
+			if (!WalkPosition(x, y).isValid() || Grids().getDistanceHome(start) - Grids().getDistanceHome(WalkPosition(x, y)) > 16)
 			{
 				continue;
 			}
@@ -76,17 +75,12 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 			double mobility = double(Grids().getMobilityGrid(x, y));
 			double threat = max(0.01, Grids().getEGroundThreat(x, y));
 			double distance = max(0.01, Position(WalkPosition(x, y)).getDistance(Terrain().getEnemyStartingPosition()));
-
-			if (mobility < 7)
+			
+			if (Broodwar->getFrameCount() - recentExplorations[WalkPosition(x, y)] > 1500)
 			{
-				continue;
-			}
-
-			if (WalkPosition(x, y).isValid() && Broodwar->getFrameCount() - recentExplorations[WalkPosition(x, y)] > 1500)
-			{
-				if (mobility / (threat * distance) >= highestMobility && Util().isSafe(start, WalkPosition(x, y), worker.getType(), true, false, true))
+				if (mobility / (threat * distance) >= best && Util().isSafe(start, WalkPosition(x, y), worker.getType(), true, false, true))
 				{
-					highestMobility = mobility / (threat * distance);
+					best = mobility / (threat * distance);
 					bestPosition = Position(WalkPosition(x, y));
 				}
 			}
@@ -158,6 +152,18 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 	// Building logic
 	if (worker.getBuildingType().isValid() && worker.getBuildPosition().isValid())
 	{
+		// My crappy temporary attempt at removing spider mines
+		if (worker.getBuildingType().isResourceDepot())
+		{
+			if (Unit mine = Broodwar->getClosestUnit(worker.getPosition(), Filter::GetType == UnitTypes::Terran_Vulture_Spider_Mine, 128))
+			{
+				if (worker.unit()->getLastCommand().getType() != UnitCommandTypes::Attack_Unit)
+				{
+					worker.unit()->attack(mine);
+				}
+				return;
+			}
+		}
 		// If our building desired has changed recently, remove
 		if (!worker.unit()->isConstructing() && BuildOrder().getBuildingDesired()[worker.getBuildingType()] <= Broodwar->self()->visibleUnitCount(worker.getBuildingType()))
 		{

@@ -74,7 +74,7 @@ double UtilTrackerClass::getVisibleGroundStrength(UnitInfo& unit, Player who)
 	double eMedium = double(Units().getEnemySizes()[UnitSizeTypes::Medium]);
 	double eSmall = double(Units().getEnemySizes()[UnitSizeTypes::Small]);
 
-	if (unit.unit()->getPlayer() == Broodwar->enemy())
+	if (unit.getPlayer()->isEnemy(Broodwar->self()))
 	{
 		if (unit.getType().groundWeapon().damageType() == DamageTypes::Explosive)
 		{
@@ -143,7 +143,7 @@ double UtilTrackerClass::getVisibleAirStrength(UnitInfo& unit, Player who)
 	double eMedium = double(Units().getEnemySizes()[UnitSizeTypes::Medium]);
 	double eSmall = double(Units().getEnemySizes()[UnitSizeTypes::Small]);
 
-	if (unit.unit()->getPlayer() == Broodwar->enemy())
+	if (unit.getPlayer()->isEnemy(Broodwar->self()))
 	{
 		if (unit.getType().airWeapon().damageType() == DamageTypes::Explosive)
 		{
@@ -225,7 +225,7 @@ double UtilTrackerClass::getPriority(UnitInfo& unit, Player who)
 	}
 }
 
-double UtilTrackerClass::getTrueRange(UnitType unitType, Player who)
+double UtilTrackerClass::getTrueGroundRange(UnitType unitType, Player who)
 {
 	// Range upgrade check for Dragoons, Marines and Hydralisks ground attack
 	if (unitType == UnitTypes::Protoss_Dragoon && who->getUpgradeLevel(UpgradeTypes::Singularity_Charge))

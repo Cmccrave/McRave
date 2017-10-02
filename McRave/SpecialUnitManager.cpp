@@ -18,7 +18,7 @@ void SpecialUnitTrackerClass::updateArbiters()
 		UnitInfo arbiter = a.second;
 		/*if (Broodwar->self()->hasResearched(TechTypes::Recall) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Arbiter) > 1 && arbiter.unit()->getEnergy() > 100 && (!recaller || (recaller && !recaller->exists())))
 		{
-			recaller = arbiter.unit();
+		recaller = arbiter.unit();
 		}*/
 
 		int bestCluster = 0;
@@ -63,23 +63,24 @@ void SpecialUnitTrackerClass::updateArbiters()
 		//}
 		//else
 		//{
-			// Move towards high cluster counts and closest to ally starting position
-			for (int x = start.x - 20; x <= start.x + 20; x++)
+		// Move towards high cluster counts and closest to ally starting position
+		for (int x = start.x - 20; x <= start.x + 20; x++)
+		{
+			for (int y = start.y - 20; y <= start.y + 20; y++)
 			{
-				for (int y = start.y - 20; y <= start.y + 20; y++)
+				if (WalkPosition(x, y).isValid() && Grids().getEMPGrid(x, y) == 0 && Grids().getArbiterGrid(x, y) == 0 && (closestD == 0.0 || Grids().getACluster(x, y) > bestCluster || (Grids().getACluster(x, y) == bestCluster && Terrain().getPlayerStartingPosition().getDistance(Position(WalkPosition(x, y))) < closestD)))
 				{
-					if (WalkPosition(x, y).isValid() && Grids().getEMPGrid(x, y) == 0 && Grids().getArbiterGrid(x, y) == 0 && (closestD == 0.0 || Grids().getACluster(x, y) > bestCluster || (Grids().getACluster(x, y) == bestCluster && Terrain().getPlayerStartingPosition().getDistance(Position(WalkPosition(x, y))) < closestD)))
+					if (Util().isSafe(start, WalkPosition(x, y), UnitTypes::Protoss_Arbiter, false, true, false))
 					{
-						if (Util().isSafe(start, WalkPosition(x, y), UnitTypes::Protoss_Arbiter, false, true, false))
-						{
-							closestD = Terrain().getPlayerStartingPosition().getDistance(Position(WalkPosition(x, y)));
-							bestCluster = Grids().getACluster(x, y);
-							bestPosition = Position(WalkPosition(x, y));
-						}
+						closestD = Terrain().getPlayerStartingPosition().getDistance(Position(WalkPosition(x, y)));
+						bestCluster = Grids().getACluster(x, y);
+						bestPosition = Position(WalkPosition(x, y));
 					}
 				}
 			}
+		}
 		//}
+
 		// Move and update grids	
 		arbiter.setEngagePosition(bestPosition);
 		arbiter.unit()->move(bestPosition);
@@ -111,24 +112,14 @@ void SpecialUnitTrackerClass::updateDetectors()
 			continue;
 		}
 
-		// Check if any expansions need detection on them - TEMP Removed due to how stupidly the observers can behave
+		// Check if any expansions need detection on them
 		if (BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] > Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus))
 		{
-			bool baseScout = false;
-			for (auto &base : Terrain().getAllBaseLocations())
+			if (Grids().getEDetectorGrid(WalkPosition(Buildings().getCurrentExpansion())) == 0)
 			{
-				// If an expansion is unbuildable and we've scouted it already, move there to detect burrowed units
-				if (base.isValid() && Broodwar->isVisible(base) && !Broodwar->canBuildHere(base, UnitTypes::Protoss_Nexus, nullptr, true) && Grids().getBaseGrid(base) == 0)
-				{
-					detector.setEngagePosition(Position(base));
-					detector.unit()->move(Position(base));
-					Grids().updateDetectorMovement(detector);
-					baseScout = true;
-				}
-			}
-
-			if (baseScout)
-			{
+				detector.setEngagePosition(Position((Buildings().getCurrentExpansion())));
+				detector.unit()->move(Position((Buildings().getCurrentExpansion())));
+				Grids().updateDetectorMovement(detector);
 				continue;
 			}
 		}
@@ -186,51 +177,25 @@ void SpecialUnitTrackerClass::updateVultures()
 		{
 			/*if (vulture.getTarget() && vulture.getTarget()->exists())
 			{
-				vulture.unit()->useTech(TechTypes::Spider_Mines, vulture.getTargetPosition());
+			vulture.unit()->useTech(TechTypes::Spider_Mines, vulture.getTargetPosition());
 			}
 			else
 			{*/
-				for (auto choke : Terrain().getPath())
+			for (auto choke : Terrain().getPath())
+			{
+				if ((closestD == 0.0 || Position(choke->Center()).getDistance(Terrain().getPlayerStartingPosition()) < closestD) && Broodwar->getUnitsInRadius(Position(choke->Center()), 128, Filter::GetType == UnitTypes::Terran_Vulture_Spider_Mine && Filter::IsAlly).size() < 2)
 				{
-					if ((closestD == 0.0 || Position(choke->Center()).getDistance(Terrain().getPlayerStartingPosition()) < closestD) && Broodwar->getUnitsInRadius(Position(choke->Center()), 128, Filter::GetType == UnitTypes::Terran_Vulture_Spider_Mine && Filter::IsAlly).size() < 2)
-					{
-						closestD = Position(choke->Center()).getDistance(Terrain().getPlayerStartingPosition());
-						closestP = Position(choke->Center());
-					}
+					closestD = Position(choke->Center()).getDistance(Terrain().getPlayerStartingPosition());
+					closestP = Position(choke->Center());
 				}
+			}
 
-				if (closestP.isValid() && vulture.unit()->getLastCommand().getType() != UnitCommandTypes::Use_Tech)
-				{
-					vulture.unit()->useTech(TechTypes::Spider_Mines, closestP);
-				}
+			if (closestP.isValid() && vulture.unit()->getLastCommand().getType() != UnitCommandTypes::Use_Tech)
+			{
+				vulture.unit()->useTech(TechTypes::Spider_Mines, closestP);
+			}
 			//}
 		}
 	}
-	return;
-}
-
-void SpecialUnitTrackerClass::storeUnit(Unit unit)
-{
-	//if (unit->getType() == UnitTypes::Protoss_Arbiter)
-	//{
-	//	myArbiters[unit].setUnit(unit);
-	//}
-	//else if (unit->getType() == UnitTypes::Protoss_Observer)
-	//{
-	//	myDetectors[unit].setUnit(unit);
-	//}	
-	return;
-}
-
-void SpecialUnitTrackerClass::removeUnit(Unit unit)
-{
-/*	if (myArbiters.find(unit) != myArbiters.end())
-	{
-		myArbiters.erase(unit);
-	}
-	else if (myDetectors.find(unit) != myDetectors.end())
-	{
-		myDetectors.erase(unit);
-	}*/	
 	return;
 }

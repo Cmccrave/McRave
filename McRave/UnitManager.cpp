@@ -95,10 +95,6 @@ void UnitTrackerClass::onUnitDestroy(Unit unit)
 		{
 			Workers().removeWorker(unit);
 		}
-		else if (unit->getType() == UnitTypes::Protoss_Observer || unit->getType() == UnitTypes::Protoss_Reaver || unit->getType() == UnitTypes::Protoss_High_Templar || unit->getType() == UnitTypes::Protoss_Arbiter)
-		{
-			SpecialUnits().removeUnit(unit);
-		}
 		else if (unit->getType() == UnitTypes::Protoss_Shuttle)
 		{
 			Transport().removeUnit(unit);
@@ -108,6 +104,7 @@ void UnitTrackerClass::onUnitDestroy(Unit unit)
 	{
 		Resources().removeResource(unit);
 	}
+	return;
 }
 
 void UnitTrackerClass::onUnitMorph(Unit unit)
@@ -130,10 +127,6 @@ void UnitTrackerClass::onUnitMorph(Unit unit)
 			else if (unit->getType().isWorker())
 			{
 				Workers().storeWorker(unit);
-			}
-			else if (unit->getType() == UnitTypes::Zerg_Overlord || unit->getType() == UnitTypes::Zerg_Queen || unit->getType() == UnitTypes::Zerg_Defiler)
-			{
-				SpecialUnits().storeUnit(unit);
 			}
 			else if (!unit->getType().isWorker() && !unit->getType().isBuilding())
 			{
@@ -167,7 +160,7 @@ void UnitTrackerClass::onUnitMorph(Unit unit)
 
 void UnitTrackerClass::onUnitComplete(Unit unit)
 {
-	// Don't need to store Scarabs
+	// Don't store useless things
 	if (unit->getType() == UnitTypes::Protoss_Scarab || unit->getType() == UnitTypes::Zerg_Larva)
 	{
 		return;
@@ -181,12 +174,7 @@ void UnitTrackerClass::onUnitComplete(Unit unit)
 			Workers().storeWorker(unit);
 		}
 
-		if (unit->getType() == UnitTypes::Protoss_Arbiter || unit->getType() == UnitTypes::Protoss_Observer)
-		{
-			storeAlly(unit);
-			SpecialUnits().storeUnit(unit);
-		}
-		else if (unit->getType() == UnitTypes::Protoss_Shuttle)
+		if (unit->getType() == UnitTypes::Protoss_Shuttle || unit->getType() == UnitTypes::Terran_Dropship) //|| unit->getType() == UnitTypes::Zerg_Overlord
 		{
 			Transport().storeUnit(unit);
 		}
@@ -285,7 +273,7 @@ void UnitTrackerClass::updateAliveUnits()
 		{
 			updateAlly(ally);
 
-			if (ally.getType().isWorker() && ((Units().getGlobalAllyStrength() + Units().getAllyDefense()*0.8 > Units().getGlobalEnemyStrength()) || (!Strategy().isAllyFastExpand() && (Grids().getResourceGrid(ally.getTilePosition()) == 0 || Grids().getEGroundThreat(ally.getWalkPosition()) == 0))))
+			if (ally.getType().isWorker() && ((Units().getGlobalAllyStrength() + Units().getAllyDefense()*0.8 > Units().getGlobalEnemyStrength()) || (!Strategy().isAllyFastExpand() && (Grids().getResourceGrid(ally.getTilePosition()) == 0 || Grids().getEGroundThreat(ally.getWalkPosition()) == 0.0))))
 			{
 				Workers().storeWorker(ally.unit());
 				ally.setDeadFrame(Broodwar->getFrameCount());
@@ -324,7 +312,7 @@ void UnitTrackerClass::updateDeadUnits()
 	// Check for decayed enemy units
 	for (map<Unit, UnitInfo>::iterator itr = enemyUnits.begin(); itr != enemyUnits.end();)
 	{
-		if ((*itr).second.getDeadFrame() != 0 && (*itr).second.getDeadFrame() + 500 < Broodwar->getFrameCount() || itr->first && itr->first->exists() && itr->first->getPlayer() != Broodwar->enemy())
+		if ((*itr).second.getDeadFrame() != 0 && (*itr).second.getDeadFrame() + 500 < Broodwar->getFrameCount() || itr->first && itr->first->exists() && !itr->first->getPlayer()->isEnemy(Broodwar->self()))
 		{
 			itr = enemyUnits.erase(itr);
 		}
@@ -357,7 +345,7 @@ void UnitTrackerClass::updateEnemy(UnitInfo& unit)
 
 	// Update statistics
 	unit.setPercentHealth(Util().getPercentHealth(unit));
-	unit.setGroundRange(Util().getTrueRange(t, p));
+	unit.setGroundRange(Util().getTrueGroundRange(t, p));
 	unit.setAirRange(Util().getTrueAirRange(t, p));
 	unit.setGroundDamage(Util().getTrueGroundDamage(t, p));
 	unit.setAirDamage(Util().getTrueAirDamage(t, p));
@@ -405,7 +393,7 @@ void UnitTrackerClass::updateAlly(UnitInfo& unit)
 
 	// Update statistics
 	unit.setPercentHealth(Util().getPercentHealth(unit));
-	unit.setGroundRange(Util().getTrueRange(t, p));
+	unit.setGroundRange(Util().getTrueGroundRange(t, p));
 	unit.setAirRange(Util().getTrueAirRange(t, p));
 	unit.setGroundDamage(Util().getTrueGroundDamage(t, p));
 	unit.setAirDamage(Util().getTrueAirDamage(t, p));

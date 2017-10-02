@@ -14,7 +14,7 @@ public:
 	double getMaxAirStrength(UnitInfo&, Player);
 	double getVisibleAirStrength(UnitInfo&, Player);
 	double getPriority(UnitInfo&, Player);
-	double getTrueRange(UnitType, Player);
+	double getTrueGroundRange(UnitType, Player);
 	double getTrueAirRange(UnitType, Player);
 	double getTrueGroundDamage(UnitType, Player);
 	double getTrueAirDamage(UnitType, Player);

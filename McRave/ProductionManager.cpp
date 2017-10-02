@@ -27,17 +27,50 @@ void ProductionTrackerClass::updateProduction()
 
 bool ProductionTrackerClass::canAfford(UnitType unit)
 {
-	// Check if not a tech unit
+	// If not a tech unit
 	if (BuildOrder().getTechList().find(unit) == BuildOrder().getTechList().end())
 	{
-		// Check if we can afford it including buildings queued and tech units queued
+		// If we can afford it including buildings queued and tech units queued
 		if (Broodwar->self()->minerals() >= (unit.mineralPrice() + reservedMineral + Buildings().getQueuedMineral()) && Broodwar->self()->gas() >= (unit.gasPrice() + reservedGas + Buildings().getQueuedGas()))
 		{
 			return true;
 		}
 	}
-	// Check if a tech unit if we can afford it including buildings queued
+	// If a tech unit and we can afford it including buildings queued
 	else if (Broodwar->self()->minerals() >= unit.mineralPrice() + Buildings().getQueuedMineral() && Broodwar->self()->gas() >= unit.gasPrice() + Buildings().getQueuedGas())
+	{
+		return true;
+	}
+	return false;
+}
+
+bool ProductionTrackerClass::canAfford(TechType tech)
+{
+	// If we planned on making this tech unit
+	if (BuildOrder().getTechList().find(tech.whatUses) != BuildOrder().getTechList().end())
+	{
+		// If we can afford it including buildings queued
+		if (Broodwar->self()->minerals() >= tech.mineralPrice() + Buildings().getQueuedMineral() && Broodwar->self()->gas() >= tech.gasPrice() + Buildings().getQueuedGas())
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+bool ProductionTrackerClass::canAfford(UpgradeType upgrade)
+{
+	// If it's an important tech
+	if (BuildOrder().getTechList().find(upgrade.whatUses) != BuildOrder().getTechList().end())
+	{
+		// If we can afford it including buildings queued
+		if (Broodwar->self()->minerals() >= upgrade.mineralPrice() + Buildings().getQueuedMineral() && Broodwar->self()->gas() >= upgrade.gasPrice() + Buildings().getQueuedGas())
+		{
+			return true;
+		}
+	}
+	// If we can afford it including buildings queued and tech units queued
+	else if (Broodwar->self()->minerals() >= (upgrade.mineralPrice() + reservedMineral + Buildings().getQueuedMineral()) && Broodwar->self()->gas() >= (upgrade.gasPrice() + reservedGas + Buildings().getQueuedGas()))
 	{
 		return true;
 	}
@@ -52,6 +85,46 @@ bool ProductionTrackerClass::canMake(Unit building, UnitType unit)
 	}
 	switch (unit)
 	{
+		// Gateway Units
+	case UnitTypes::Enum::Protoss_Zealot:
+		return true;
+		break;
+	case UnitTypes::Enum::Protoss_Dragoon:
+		return Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Cybernetics_Core) > 0;
+		break;
+	case UnitTypes::Enum::Protoss_Dark_Templar:
+		return Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Templar_Archives) > 0;
+		break;
+	case UnitTypes::Enum::Protoss_High_Templar:
+		return (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Templar_Archives) > 0 && (Broodwar->self()->isResearching(TechTypes::Psionic_Storm) || Broodwar->self()->hasResearched(TechTypes::Psionic_Storm)));
+		break;
+
+		// Robo Units
+	case UnitTypes::Enum::Protoss_Shuttle:
+		return true;
+		break;
+	case UnitTypes::Enum::Protoss_Reaver:
+		return Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Robotics_Support_Bay) > 0;
+		break;
+	case UnitTypes::Enum::Protoss_Observer:
+		return Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observatory) > 0;
+		break;
+
+		// Stargate Units
+	case UnitTypes::Enum::Protoss_Corsair:
+		return true;
+		break;
+	case UnitTypes::Enum::Protoss_Scout:
+		return true;
+		break;
+	case UnitTypes::Enum::Protoss_Carrier:
+		return Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Fleet_Beacon) > 0;
+		break;
+	case UnitTypes::Enum::Protoss_Arbiter:
+		return Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Arbiter_Tribunal) > 0;
+		break;
+
+		// Barracks Units
 	case UnitTypes::Enum::Terran_Marine:
 		return true;
 		break;
@@ -61,6 +134,8 @@ bool ProductionTrackerClass::canMake(Unit building, UnitType unit)
 	case UnitTypes::Enum::Terran_Medic:
 		return Broodwar->self()->completedUnitCount(UnitTypes::Terran_Academy) > 0;
 		break;
+
+		// Factory Units
 	case UnitTypes::Enum::Terran_Vulture:
 		return true;
 		break;
@@ -434,7 +509,6 @@ void ProductionTrackerClass::updateTerran()
 		productionSat = true;
 	}
 
-
 	// TEMP Production testing
 	// Goal here is to check of all the units that are possible for a building, which is the best to build that we can afford based on resources, score and priority
 	// Could become a much simpler approach to production than what is currently implemented
@@ -471,6 +545,7 @@ void ProductionTrackerClass::updateTerran()
 				}
 			}
 
+			// If this building researches things
 			for (auto &research : building.getType().researchesWhat())
 			{
 				for (auto &unit : research.whatUses())
@@ -482,6 +557,7 @@ void ProductionTrackerClass::updateTerran()
 				}
 			}
 
+			// If this building upgrades things
 			for (auto &upgrade : building.getType().upgradesWhat())
 			{
 				for (auto &unit : upgrade.whatUses())
@@ -495,122 +571,6 @@ void ProductionTrackerClass::updateTerran()
 
 		}
 	}
-
-	//for (auto &building : Buildings().getMyBuildings())
-	//{
-	//	if (building.second.unit() && building.second.unit()->isIdle() && building.second.unit()->isCompleted())
-	//	{
-
-	//		//// Barracks
-	//		//if (building.second.getType() == UnitTypes::Terran_Barracks && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) == 0)
-	//		//{
-	//		//	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Medic) < 6 && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Academy) >= 1)
-	//		//	{
-	//		//		if (Broodwar->self()->minerals() >= UnitTypes::Terran_Medic.mineralPrice() + Buildings().getQueuedMineral() + reservedMineral && Broodwar->self()->gas() >= UnitTypes::Terran_Medic.gasPrice() + Buildings().getQueuedGas() + reservedGas)
-	//		//		{
-	//		//			building.first->train(UnitTypes::Terran_Medic);
-	//		//		}
-	//		//		else
-	//		//		{
-	//		//			idleLowProduction.emplace(building.first, UnitTypes::Terran_Medic);
-	//		//		}
-	//		//	}
-	//		//	else
-	//		//	{
-	//		//		if (Broodwar->self()->minerals() >= UnitTypes::Terran_Marine.mineralPrice() + Buildings().getQueuedMineral() + reservedMineral)
-	//		//		{
-	//		//			building.first->train(UnitTypes::Terran_Marine);
-	//		//		}
-	//		//		else
-	//		//		{
-	//		//			idleLowProduction.emplace(building.first, UnitTypes::Terran_Marine);
-	//		//		}
-	//		//	}
-	//		//}
-
-	//		//// Academy
-	//		//if (building.second.getType() == UnitTypes::Terran_Academy)
-	//		//{
-	//		//	if (!Broodwar->self()->hasResearched(TechTypes::Stim_Packs) && Broodwar->self()->minerals() >= TechTypes::Stim_Packs.mineralPrice() + Buildings().getQueuedMineral() && Broodwar->self()->gas() >= TechTypes::Stim_Packs.gasPrice() + Buildings().getQueuedGas())
-	//		//	{
-	//		//		building.first->research(TechTypes::Stim_Packs);
-	//		//	}
-	//		//	else
-	//		//	{
-	//		//		idleTech.emplace(building.first, TechTypes::Stim_Packs);
-	//		//	}
-	//		//	if (Broodwar->self()->hasResearched(TechTypes::Stim_Packs) && !Broodwar->self()->getUpgradeLevel(UpgradeTypes::U_238_Shells) && Broodwar->self()->minerals() >= UpgradeTypes::U_238_Shells.mineralPrice() + Buildings().getQueuedMineral() + reservedMineral && Broodwar->self()->gas() >= UpgradeTypes::U_238_Shells.gasPrice() + Buildings().getQueuedGas() + reservedGas)
-	//		//	{
-	//		//		building.first->upgrade(UpgradeTypes::U_238_Shells);
-	//		//	}
-	//		//}
-
-	//		//// Engineering Bay
-	//		//if (building.second.getType() == UnitTypes::Terran_Engineering_Bay)
-	//		//{
-	//		//	if (Broodwar->self()->minerals() >= UpgradeTypes::Terran_Infantry_Armor.mineralPrice() + Buildings().getQueuedMineral() && Broodwar->self()->gas() >= UpgradeTypes::Terran_Infantry_Armor.gasPrice() + Buildings().getQueuedGas())
-	//		//	{
-	//		//		if (Broodwar->enemy()->getRace() == Races::Zerg)
-	//		//		{
-	//		//			building.first->upgrade(UpgradeTypes::Terran_Infantry_Armor);
-	//		//		}
-	//		//		else
-	//		//		{
-	//		//			building.first->upgrade(UpgradeTypes::Terran_Infantry_Weapons);
-	//		//		}
-	//		//	}
-	//		//	else
-	//		//	{
-	//		//		idleUpgrade.emplace(building.first, UpgradeTypes::Terran_Infantry_Armor);
-	//		//	}
-	//		//}
-
-	//		//// Factory
-	//		//if (building.second.getType() == UnitTypes::Terran_Factory)
-	//		//{
-	//		//	if (!building.second.unit()->getAddon() && canAfford(UnitTypes::Terran_Machine_Shop))
-	//		//	{
-	//		//		building.second.unit()->buildAddon(UnitTypes::Terran_Machine_Shop);
-	//		//	}
-	//		//	else if (Broodwar->self()->minerals() >= UnitTypes::Terran_Siege_Tank_Tank_Mode.mineralPrice() + Buildings().getQueuedMineral() && Broodwar->self()->gas() >= UnitTypes::Terran_Siege_Tank_Tank_Mode.gasPrice() + Buildings().getQueuedGas())
-	//		//	{
-	//		//		building.second.unit()->train(UnitTypes::Terran_Siege_Tank_Tank_Mode);
-	//		//	}
-	//		//	else if (Broodwar->self()->minerals() >= UnitTypes::Terran_Vulture.mineralPrice() + Buildings().getQueuedMineral() + reservedMineral)
-	//		//	{
-	//		//		building.second.unit()->train(UnitTypes::Terran_Vulture);
-	//		//	}
-	//		//	else
-	//		//	{
-	//		//		idleLowProduction.emplace(building.first, UnitTypes::Terran_Siege_Tank_Tank_Mode);
-	//		//	}
-	//		//}
-
-	//		// Machine Shop
-	//		if (building.second.getType() == UnitTypes::Terran_Machine_Shop)
-	//		{
-	//			if (!Broodwar->self()->getUpgradeLevel(UpgradeTypes::Ion_Thrusters))
-	//			{
-	//				building.second.unit()->upgrade(UpgradeTypes::Ion_Thrusters);
-	//			}
-	//			else if (!Broodwar->self()->hasResearched(TechTypes::Spider_Mines))
-	//			{
-	//				building.second.unit()->research(TechTypes::Spider_Mines);
-	//			}
-	//			else if (!Broodwar->self()->hasResearched(TechTypes::Tank_Siege_Mode))
-	//			{
-	//				building.second.unit()->research(TechTypes::Tank_Siege_Mode);
-	//			}
-	//		}
-	//	}
-	//	else
-	//	{
-	//		idleLowProduction.erase(building.second.unit());
-	//		idleHighProduction.erase(building.second.unit());
-	//		idleTech.erase(building.second.unit());
-	//		idleUpgrade.erase(building.second.unit());
-	//	}
-	//}
 }
 
 void ProductionTrackerClass::updateZerg()

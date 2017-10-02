@@ -197,6 +197,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 				}
 			}
 		}
+		currentExpansion = closestP;
 		return closestP;
 	}
 

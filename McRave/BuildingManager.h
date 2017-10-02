@@ -11,6 +11,7 @@ class BuildingTrackerClass
 	int queuedMineral, queuedGas;
 	map <TilePosition, UnitType> buildingsQueued;
 	map <Unit, BuildingInfo> myBuildings;
+	TilePosition currentExpansion;
 	int errorTime = 0, buildingOffset = 0;
 public:
 	map <Unit, BuildingInfo>& getMyBuildings() { return myBuildings; }
@@ -25,6 +26,8 @@ public:
 
 	// Returns the gas that is reserved for queued buildings
 	int getQueuedGas() { return queuedGas; }
+
+	TilePosition getCurrentExpansion() { return currentExpansion; }
 
 	void update();
 	void updateBuildings();
