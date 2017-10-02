@@ -23,9 +23,7 @@ namespace
 // Forward declare classes needed in other header files than their defined header
 class BaseInfo;
 class UnitInfo;
-class SupportUnitInfo;
 class ResourceInfo;
-class SpecialUnitInfo;
 
 // Include other source files
 #include "BuildingManager.h"
@@ -39,7 +37,6 @@ class SpecialUnitInfo;
 #include "ProductionManager.h"
 #include "PylonManager.h"
 #include "ResourceManager.h"
-#include "SpecialUnitManager.h"
 #include "StrategyManager.h"
 #include "TargetManager.h"
 #include "TerrainManager.h"
@@ -60,7 +57,6 @@ namespace McRave
 	inline ProductionTrackerClass& Production() { return ProductionTracker::Instance(); }
 	inline PylonTrackerClass& Pylons() { return PylonTracker::Instance(); }
 	inline ResourceTrackerClass& Resources() { return ResourceTracker::Instance(); }
-	inline SpecialUnitTrackerClass& SpecialUnits() { return SpecialUnitTracker::Instance(); }
 	inline StrategyTrackerClass& Strategy() { return StrategyTracker::Instance(); }
 	inline TargetTrackerClass& Targets() { return TargetTracker::Instance(); }
 	inline TerrainTrackerClass& Terrain() { return TerrainTracker::Instance(); }

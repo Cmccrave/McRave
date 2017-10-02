@@ -1,7 +1,7 @@
 #pragma once
 #include <BWAPI.h>
 #include "Singleton.h"
-#include "SpecialUnitInfo.h"
+#include "TransportInfo.h"
 
 using namespace BWAPI;
 using namespace std;

@@ -58,7 +58,7 @@ void TransportTrackerClass::updateDecision(TransportInfo& shuttle)
 {
 	// Reset load state
 	shuttle.setLoadState(0);
-	shuttle.setDrop(shuttle.getPosition());
+	shuttle.setDestination(Terrain().getPlayerStartingPosition());
 
 	// Check if we should be loading/unloading any cargo
 	for (auto &c : shuttle.getAssignedCargo())
@@ -84,11 +84,11 @@ void TransportTrackerClass::updateDecision(TransportInfo& shuttle)
 		// Else if the cargo is loaded
 		else if (cargo.unit()->isLoaded())
 		{			
-			shuttle.setDrop(cargo.getTargetPosition());
+			shuttle.setDestination(cargo.getTargetPosition());
 			Broodwar->drawLineMap(shuttle.getPosition(), cargo.getTargetPosition(), Colors::Black);
 
 			// If we are harassing, check if we are close to drop point
-			if (shuttle.isHarassing() && shuttle.getPosition().getDistance(shuttle.getDrop()) < cargo.getGroundRange())
+			if (shuttle.isHarassing() && shuttle.getPosition().getDistance(shuttle.getDestination()) < cargo.getGroundRange())
 			{
 				shuttle.unit()->unload(cargo.unit());
 				shuttle.setLoadState(2);
@@ -112,7 +112,7 @@ void TransportTrackerClass::updateMovement(TransportInfo& shuttle)
 		return;
 	}
 
-	Position bestPosition = shuttle.getDrop();
+	Position bestPosition = shuttle.getDestination();
 	WalkPosition start = shuttle.getWalkPosition();	
 	double best = 0.0;
 
@@ -138,7 +138,7 @@ void TransportTrackerClass::updateMovement(TransportInfo& shuttle)
 				continue;
 			}
 
-			double distance = max(1.0, shuttle.getDrop().getDistance(Position(WalkPosition(x, y))));
+			double distance = max(1.0, shuttle.getDestination().getDistance(Position(WalkPosition(x, y))));
 			double threat =  max(0.1, Grids().getEGroundThreat(x, y) + Grids().getEAirThreat(x, y));
 			double mobility = max(1.0, double(Grids().getMobilityGrid(x, y)));			
 
@@ -161,8 +161,7 @@ void TransportTrackerClass::updateMovement(TransportInfo& shuttle)
 			}
 		}
 	}
-	shuttle.setDestination(bestPosition);
-	shuttle.unit()->move(shuttle.getDestination());
+	shuttle.unit()->move(bestPosition);
 	return;
 }
 
