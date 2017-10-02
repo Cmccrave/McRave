@@ -382,6 +382,8 @@ int UtilTrackerClass::getMinStopFrame(UnitType unitType)
 	{
 		return 9;
 	}
+
+	// TODO: Add other units
 	return 0;
 }
 
@@ -412,11 +414,11 @@ set<WalkPosition> UtilTrackerClass::getWalkPositionsUnderUnit(Unit unit)
 	WalkPosition start = getWalkPosition(unit);
 	set<WalkPosition> returnValues;
 
-	for (int i = start.x; i <= start.x + unit->getType().tileWidth(); i++)
+	for (int x = start.x; x < start.x + unit->getType().tileWidth(); x++)
 	{
-		for (int j = start.y; j <= start.y + unit->getType().tileHeight(); j++)
+		for (int y = start.y; y < start.y + unit->getType().tileHeight(); y++)
 		{
-			returnValues.emplace(WalkPosition(i, j));
+			returnValues.emplace(WalkPosition(x, y));
 		}
 	}
 	return returnValues;
@@ -425,21 +427,23 @@ set<WalkPosition> UtilTrackerClass::getWalkPositionsUnderUnit(Unit unit)
 bool UtilTrackerClass::isSafe(WalkPosition start, WalkPosition end, UnitType unitType, bool groundCheck, bool airCheck, bool mobilityCheck)
 {
 	// TODO : Put unit ID in anti mobility grid so it's possible to compare if a unit is standing on it?
-	for (int i = end.x - (unitType.width() / 16); i <= end.x + (unitType.width() / 16); i++)
+	for (int x = end.x - (unitType.width() / 16); x <= end.x + (unitType.width() / 16); x++)
 	{
-		for (int j = end.y - (unitType.height() / 16); j <= end.y + (unitType.height() / 16); j++)
+		for (int y = end.y - (unitType.height() / 16); y <= end.y + (unitType.height() / 16); y++)
 		{
-			if (WalkPosition(i, j).isValid())
+			if (!WalkPosition(x, y).isValid())
 			{
-				// If WalkPosition shared with WalkPositions under unit, ignore
-				if (i >= start.x && i <= (start.x + (unitType.width() / 16)) && j >= start.y && j <= (start.y + (unitType.height() / 16)))
-				{
-					continue;
-				}
-				if ((groundCheck && Grids().getEGroundThreat(i, j) != 0.0) || (airCheck && Grids().getEAirThreat(i, j) != 0.0) || (mobilityCheck && (Grids().getMobilityGrid(i, j) == 0 || Grids().getAntiMobilityGrid(i, j) > 0)))
-				{
-					return false;
-				}
+				continue;
+			}
+
+			// If WalkPosition shared with WalkPositions under unit, ignore
+			if (x >= start.x && x <= (start.x + (unitType.width() / 16)) && y >= start.y && y <= (start.y + (unitType.height() / 16)))
+			{
+				continue;
+			}
+			if ((groundCheck && Grids().getEGroundThreat(x, y) != 0.0) || (airCheck && Grids().getEAirThreat(x, y) != 0.0) || (mobilityCheck && (Grids().getMobilityGrid(x, y) == 0 || Grids().getAntiMobilityGrid(x, y) > 0)))
+			{
+				return false;
 			}
 		}
 	}

@@ -443,30 +443,40 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 			continue;
 		}
 
-		if (enemy.getType().isFlyer())
+		if (enemy.getSpeed() > 0)
 		{
-			if (unit.getType().isFlyer())
+			if (enemy.getType().isFlyer())
 			{
-				enemyToEngage = (max(0.0, (double(enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getAirRange()))) / (enemy.getSpeed())) - unitToEngage;
-				simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getAirRange() - unit.getAirRange()) / (enemy.getSpeed())));
+				if (unit.getType().isFlyer())
+				{
+					enemyToEngage = (max(0.0, (double(enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getAirRange()))) / (enemy.getSpeed())) - unitToEngage;
+					simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getAirRange() - unit.getAirRange()) / (enemy.getSpeed())));
+				}
+				else
+				{
+					enemyToEngage = (max(0.0, (double(enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getGroundRange()))) / (enemy.getSpeed())) - unitToEngage;
+					simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getGroundRange() - unit.getAirRange()) / (enemy.getSpeed())));
+				}
 			}
 			else
 			{
-				enemyToEngage = (max(0.0, (double(enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getGroundRange()))) / (enemy.getSpeed())) - unitToEngage;
-				simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getGroundRange() - unit.getAirRange()) / (enemy.getSpeed())));
+				if (unit.getType().isFlyer())
+				{
+					enemyToEngage = (max(0.0, (double(enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getAirRange()))) / (enemy.getSpeed())) - unitToEngage;
+					simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getAirRange() - unit.getGroundRange()) / (enemy.getSpeed())));
+				}
+				else
+				{
+					enemyToEngage = (max(0.0, (double(enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getGroundRange()))) / (enemy.getSpeed())) - unitToEngage;
+					simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getGroundRange() - unit.getGroundRange()) / (enemy.getSpeed())));
+				}
 			}
 		}
 		else
 		{
-			if (unit.getType().isFlyer())
+			if (enemy.getPosition().getDistance(unit.getEngagePosition()) > enemy.getGroundRange())
 			{
-				enemyToEngage = (max(0.0, (double(enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getAirRange()))) / (enemy.getSpeed())) - unitToEngage;
-				simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getAirRange() - unit.getGroundRange()) / (enemy.getSpeed())));
-			}
-			else
-			{
-				enemyToEngage = (max(0.0, (double(enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getGroundRange()))) / (enemy.getSpeed())) - unitToEngage;
-				simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getGroundRange() - unit.getGroundRange()) / (enemy.getSpeed())));
+
 			}
 		}
 
