@@ -1,6 +1,6 @@
 #pragma once
 #include <BWAPI.h>
-#include "SpecialUnitInfo.h"
+#include "Singleton.h"
 
 using namespace BWAPI;
 using namespace std;

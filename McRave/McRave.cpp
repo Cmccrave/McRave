@@ -8,7 +8,7 @@
 
 // --- AUTHOR NOTES ---
 // TODO:
-// Mine removal from expansions - important for Ice/Iron
+// Mine removal from expansions - testing
 // Sometimes build too many cannons for anti harass
 // unQueueBuilding->ONS qM + qG and #buildings queued
 // Battery when doing 12 Nexus if enemy has >= 3 fact
