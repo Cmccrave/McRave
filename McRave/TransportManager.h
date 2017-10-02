@@ -8,12 +8,13 @@ using namespace std;
 
 class TransportTrackerClass
 {
-	map <Unit, TransportInfo> myShuttles;
+	map <Unit, TransportInfo> myTransports;
 	map <WalkPosition, int> recentExplorations;
 public:
 	void update();
 	void updateTransports();
 	void updateInformation(TransportInfo&);
+	void updateCargo(TransportInfo&);
 	void updateDecision(TransportInfo&);
 	void updateMovement(TransportInfo&);
 	void removeUnit(Unit);

@@ -8,6 +8,7 @@
 
 // --- AUTHOR NOTES ---
 // TODO:
+// Test scout/shuttles
 // Mine removal from expansions - testing
 // Sometimes build too many cannons for anti harass
 // unQueueBuilding->ONS qM + qG and #buildings queued
