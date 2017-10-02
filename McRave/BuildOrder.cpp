@@ -151,6 +151,10 @@ void BuildOrderTrackerClass::getDefaultBuild()
 		{
 			currentBuild = "NZCore";
 		}
+		else if (Players().getNumberRandom() > 0)
+		{
+			currentBuild = "ZZCore";
+		}
 	}
 	else if (Broodwar->self()->getRace() == Races::Terran)
 	{

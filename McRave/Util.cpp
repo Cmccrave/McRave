@@ -16,7 +16,7 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit, Player who)
 	if (unit.getType() == UnitTypes::Protoss_High_Templar)
 	{
 		return 10.0;
-	}	
+	}
 	if (unit.getType() == UnitTypes::Protoss_Scarab || unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Zerg_Egg || unit.getType() == UnitTypes::Zerg_Larva)
 	{
 		return 0.0;
@@ -34,12 +34,12 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit, Player who)
 	range = cbrt(unit.getGroundRange());
 	if (unit.getType().groundWeapon().damageCooldown() > 0)
 	{
-		damage = unit.getGroundDamage() / double(unit.getType().groundWeapon().damageCooldown());		
+		damage = unit.getGroundDamage() / double(unit.getType().groundWeapon().damageCooldown());
 	}
 	else if (unit.getType() == UnitTypes::Protoss_Reaver)
 	{
 		damage = unit.getGroundDamage() / 60.0;
-	}	
+	}
 	else if (unit.getType() == UnitTypes::Terran_Bunker)
 	{
 		damage = unit.getGroundDamage() / 15.0;
@@ -64,7 +64,7 @@ double UtilTrackerClass::getVisibleGroundStrength(UnitInfo& unit, Player who)
 		return 0.0;
 	}
 
-	double effectiveness = 1.0;	
+	double effectiveness = 1.0;
 
 	double aLarge = double(Units().getAllySizes()[UnitSizeTypes::Large]);
 	double aMedium = double(Units().getAllySizes()[UnitSizeTypes::Medium]);
@@ -131,10 +131,10 @@ double UtilTrackerClass::getVisibleAirStrength(UnitInfo& unit, Player who)
 	{
 		return 0.0;
 	}
-	
+
 	double effectiveness = 1.0;
 	double hp = double(unit.unit()->getHitPoints() + (unit.unit()->getShields())) / double(unit.getType().maxHitPoints() + (unit.getType().maxShields()));
-	
+
 	double aLarge = double(Units().getAllySizes()[UnitSizeTypes::Large]);
 	double aMedium = double(Units().getAllySizes()[UnitSizeTypes::Medium]);
 	double aSmall = double(Units().getAllySizes()[UnitSizeTypes::Small]);
@@ -152,7 +152,7 @@ double UtilTrackerClass::getVisibleAirStrength(UnitInfo& unit, Player who)
 		else if (unit.getType().airWeapon().damageType() == DamageTypes::Concussive)
 		{
 			effectiveness = double((aLarge*0.25) + (aMedium*0.5) + (aSmall*1.0)) / max(1.0, double(aLarge + aMedium + aSmall));
-		}		
+		}
 	}
 	else
 	{
@@ -204,7 +204,7 @@ double UtilTrackerClass::getPriority(UnitInfo& unit, Player who)
 	// Buildings with no attack have the lowest priority
 	else if (unit.getType().isBuilding() && unit.getMaxGroundStrength() == 0.0 && unit.getMaxAirStrength() == 0.0)
 	{
-		return double(unit.getType().mineralPrice() + (unit.getType().gasPrice() * 2.0))/400.0;
+		return double(unit.getType().mineralPrice() + (unit.getType().gasPrice() * 2.0)) / 400.0;
 	}
 
 	// Overlords have low priority but are worthwhile to pick off
@@ -348,7 +348,7 @@ double UtilTrackerClass::getTrueAirDamage(UnitType unitType, Player who)
 	{
 		return 24.0;
 	}
-	
+
 	// Else return the Units base air weapon damage
 	return unitType.airWeapon().damageAmount();
 }
@@ -424,15 +424,16 @@ set<WalkPosition> UtilTrackerClass::getWalkPositionsUnderUnit(Unit unit)
 
 bool UtilTrackerClass::isSafe(WalkPosition start, WalkPosition end, UnitType unitType, bool groundCheck, bool airCheck, bool mobilityCheck)
 {
-	for (int i = end.x - (unitType.width() / 16) - 1; i <= end.x + (unitType.width() / 16); i++)
+	// TODO : Put unit ID in anti mobility grid so it's possible to compare if a unit is standing on it?
+	for (int i = end.x - (unitType.width() / 16); i <= end.x + (unitType.width() / 16); i++)
 	{
-		for (int j = end.y - (unitType.height() / 16) - 1; j <= end.y + (unitType.height() / 16); j++)
+		for (int j = end.y - (unitType.height() / 16); j <= end.y + (unitType.height() / 16); j++)
 		{
 			if (WalkPosition(i, j).isValid())
-			{				
-				// If WalkPosition shared with WalkPositions under unit, ignore it if it meets satisfactory conditions
-				if (i >= start.x - 1 && i <= (start.x + (unitType.width() / 8)) && j >= start.y - 1 && j <= (start.y + (unitType.height() / 8)) && ((groundCheck && Grids().getEGroundThreat(i, j) == 0.0) || !groundCheck) && ((airCheck && Grids().getEAirThreat(i, j) == 0.0) && !airCheck) && ((mobilityCheck && (Grids().getMobilityGrid(i, j) > 0 && Grids().getAntiMobilityGrid(i, j) == 0)) || !mobilityCheck))
-				{					
+			{
+				// If WalkPosition shared with WalkPositions under unit, ignore
+				if (i >= start.x && i <= (start.x + (unitType.width() / 16)) && j >= start.y && j <= (start.y + (unitType.height() / 16)))
+				{
 					continue;
 				}
 				if ((groundCheck && Grids().getEGroundThreat(i, j) != 0.0) || (airCheck && Grids().getEAirThreat(i, j) != 0.0) || (mobilityCheck && (Grids().getMobilityGrid(i, j) == 0 || Grids().getAntiMobilityGrid(i, j) > 0)))

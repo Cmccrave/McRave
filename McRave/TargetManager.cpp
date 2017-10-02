@@ -36,6 +36,15 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 			continue;
 		}
 
+		if (enemy.getType().isFlyer())
+		{
+			distance = max(1.0, unit.getPosition().getDistance(enemy.getPosition()) - unit.getAirRange());
+		}
+		else
+		{
+			distance = max(1.0, unit.getPosition().getDistance(enemy.getPosition()) - unit.getGroundRange());
+		}
+
 		// If unit needs revealing - TODO check if capable of attacking it too (within range of ally unit)
 		if (unit.getType() == UnitTypes::Protoss_Observer)
 		{
@@ -86,19 +95,17 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		else if (unit.getType() == UnitTypes::Protoss_High_Templar)
 		{
 			if (Grids().getPsiStormGrid(enemy.getWalkPosition()) == 0 && Grids().getACluster(enemy.getWalkPosition()) < (Grids().getEAirCluster(enemy.getWalkPosition()) + Grids().getEGroundCluster(enemy.getWalkPosition())) && !enemy.getType().isBuilding())
-			{
+			{				
 				thisUnit = (enemy.getPriority() * max(Grids().getEGroundCluster(enemy.getWalkPosition()), Grids().getEAirCluster(enemy.getWalkPosition()))) / distance;
 			}
 		}
 
-		else if (enemy.getType().isFlyer() && unit.getAirDamage() > 0.0)
-		{
-			distance = max(1.0, unit.getPosition().getDistance(enemy.getPosition()) - unit.getAirRange());
+		else if (unit.getAirDamage() > 0.0)
+		{			
 			thisUnit = (enemy.getPriority() * (1.0 + 0.1 *(1.0 - enemy.getPercentHealth()))) / distance;
 		}
 		else if (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0)
-		{
-			distance = max(1.0, unit.getPosition().getDistance(enemy.getPosition()) - unit.getGroundRange());
+		{			
 			thisUnit = (enemy.getPriority() * (1.0 + 0.1 *(1.0 - enemy.getPercentHealth()))) / distance;
 		}
 

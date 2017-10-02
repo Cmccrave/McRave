@@ -85,6 +85,7 @@ void TransportTrackerClass::updateDecision(TransportInfo& shuttle)
 		else if (cargo.unit()->isLoaded())
 		{			
 			shuttle.setDrop(cargo.getTargetPosition());
+			Broodwar->drawLineMap(shuttle.getPosition(), cargo.getTargetPosition(), Colors::Black);
 
 			// If we are harassing, check if we are close to drop point
 			if (shuttle.isHarassing() && shuttle.getPosition().getDistance(shuttle.getDrop()) < cargo.getGroundRange())
@@ -113,6 +114,7 @@ void TransportTrackerClass::updateMovement(TransportInfo& shuttle)
 
 	Position bestPosition = shuttle.getDrop();
 	WalkPosition start = shuttle.getWalkPosition();	
+	double best = 0.0;
 
 	// First look for mini tiles with no threat that are closest to the enemy and on low mobility
 	for (int x = start.x - 15; x <= start.x + 15 + shuttle.getType().tileWidth() * 4; x++)
@@ -138,15 +140,14 @@ void TransportTrackerClass::updateMovement(TransportInfo& shuttle)
 
 			double distance = max(1.0, shuttle.getDrop().getDistance(Position(WalkPosition(x, y))));
 			double threat =  max(0.1, Grids().getEGroundThreat(x, y) + Grids().getEAirThreat(x, y));
-			double mobility = max(1.0, double(Grids().getMobilityGrid(x, y)));
-			double best = 0.0;
+			double mobility = max(1.0, double(Grids().getMobilityGrid(x, y)));			
 
 			// If shuttle is harassing, then include mobility
 			if (shuttle.isHarassing())
 			{
 				if (1.0 / (distance * threat * mobility) > best)
 				{
-					best = distance / threat;
+					best = 1.0 / (distance * threat * mobility);
 					bestPosition = Position(WalkPosition(x, y));
 				}
 			}
@@ -154,7 +155,7 @@ void TransportTrackerClass::updateMovement(TransportInfo& shuttle)
 			{
 				if (1.0 / (distance * threat) > best)
 				{
-					best = distance / threat;
+					best = 1.0 / (distance * threat);
 					bestPosition = Position(WalkPosition(x, y));
 				}
 			}

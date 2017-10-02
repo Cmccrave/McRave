@@ -211,26 +211,26 @@ void SpecialUnitTrackerClass::updateVultures()
 
 void SpecialUnitTrackerClass::storeUnit(Unit unit)
 {
-	if (unit->getType() == UnitTypes::Protoss_Arbiter)
-	{
-		myArbiters[unit].setUnit(unit);
-	}
-	else if (unit->getType() == UnitTypes::Protoss_Observer)
-	{
-		myDetectors[unit].setUnit(unit);
-	}	
+	//if (unit->getType() == UnitTypes::Protoss_Arbiter)
+	//{
+	//	myArbiters[unit].setUnit(unit);
+	//}
+	//else if (unit->getType() == UnitTypes::Protoss_Observer)
+	//{
+	//	myDetectors[unit].setUnit(unit);
+	//}	
 	return;
 }
 
 void SpecialUnitTrackerClass::removeUnit(Unit unit)
 {
-	if (myArbiters.find(unit) != myArbiters.end())
+/*	if (myArbiters.find(unit) != myArbiters.end())
 	{
 		myArbiters.erase(unit);
 	}
 	else if (myDetectors.find(unit) != myDetectors.end())
 	{
 		myDetectors.erase(unit);
-	}	
+	}*/	
 	return;
 }

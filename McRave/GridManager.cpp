@@ -216,7 +216,7 @@ void GridTrackerClass::updateEnemyGrids()
 				}
 			}
 
-			if (!enemy.getType().isWorker() || (enemy.getType().isWorker() && Broodwar->getFrameCount() - enemy.getLastAttackFrame() < 500))
+			if (true || !enemy.getType().isWorker() || (enemy.getType().isWorker() && Broodwar->getFrameCount() - enemy.getLastAttackFrame() < 500))
 			{
 				// Enemy Ground Threat Grid
 				for (int x = (enemy.getWalkPosition().x - int(enemy.getGroundRange() / 8) - (enemy.getType().tileWidth() * 4)) - int(enemy.getSpeed() / 8) - 2; x <= (enemy.getWalkPosition().x + int(enemy.getGroundRange() / 8) + (enemy.getType().tileWidth() * 4)) + int(enemy.getSpeed() / 8) + 2; x++)
@@ -258,9 +258,9 @@ void GridTrackerClass::updateEnemyGrids()
 			// Anti Mobility Grid
 			if (enemy.getType().isBuilding())
 			{
-				for (int x = start.x; x < start.x + enemy.getType().tileWidth() * 4; x++)
+				for (int x = start.x - 3; x <= 2 + start.x + enemy.getType().tileWidth() * 4; x++)
 				{
-					for (int y = start.y; y < start.y + enemy.getType().tileHeight() * 4; y++)
+					for (int y = start.y - 3; y <= 2 + start.y + enemy.getType().tileHeight() * 4; y++)
 					{
 						if (WalkPosition(x, y).isValid())
 						{

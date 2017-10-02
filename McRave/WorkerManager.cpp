@@ -92,7 +92,7 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 			}
 		}
 	}
-	if (bestPosition.isValid() && bestPosition != Position(start))
+	if (bestPosition.isValid() && bestPosition != Position(start) && worker.unit()->getLastCommand().getTargetPosition() != bestPosition)
 	{
 		worker.unit()->move(bestPosition);
 	}
