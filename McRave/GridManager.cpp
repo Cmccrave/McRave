@@ -216,7 +216,7 @@ void GridTrackerClass::updateEnemyGrids()
 				}
 			}
 
-			if (true || !enemy.getType().isWorker() || (enemy.getType().isWorker() && Broodwar->getFrameCount() - enemy.getLastAttackFrame() < 500))
+			if (!enemy.getType().isWorker() || (enemy.getType().isWorker() && Broodwar->getFrameCount() - enemy.getLastAttackFrame() < 200))
 			{
 				// Enemy Ground Threat Grid
 				for (int x = (enemy.getWalkPosition().x - int(enemy.getGroundRange() / 8) - (enemy.getType().tileWidth() * 4)) - int(enemy.getSpeed() / 8) - 2; x <= (enemy.getWalkPosition().x + int(enemy.getGroundRange() / 8) + (enemy.getType().tileWidth() * 4)) + int(enemy.getSpeed() / 8) + 2; x++)
