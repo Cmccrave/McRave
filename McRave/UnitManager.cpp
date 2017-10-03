@@ -345,19 +345,19 @@ void UnitTrackerClass::updateEnemy(UnitInfo& unit)
 
 	// Update statistics
 	unit.setPercentHealth(Util().getPercentHealth(unit));
-	unit.setGroundRange(Util().getTrueGroundRange(t, p));
-	unit.setAirRange(Util().getTrueAirRange(t, p));
-	unit.setGroundDamage(Util().getTrueGroundDamage(t, p));
-	unit.setAirDamage(Util().getTrueAirDamage(t, p));
-	unit.setSpeed(Util().getTrueSpeed(t, p));
+	unit.setGroundRange(Util().getTrueGroundRange(unit));
+	unit.setAirRange(Util().getTrueAirRange(unit));
+	unit.setGroundDamage(Util().getTrueGroundDamage(unit));
+	unit.setAirDamage(Util().getTrueAirDamage(unit));
+	unit.setSpeed(Util().getTrueSpeed(unit));
 	unit.setMinStopFrame(Util().getMinStopFrame(t));
 
 	// Update sizes and strength
-	unit.setVisibleGroundStrength(Util().getVisibleGroundStrength(unit, p));
-	unit.setMaxGroundStrength(Util().getMaxGroundStrength(unit, p));
-	unit.setVisibleAirStrength(Util().getVisibleAirStrength(unit, p));
-	unit.setMaxAirStrength(Util().getMaxAirStrength(unit, p));
-	unit.setPriority(Util().getPriority(unit, p));
+	unit.setVisibleGroundStrength(Util().getVisibleGroundStrength(unit));
+	unit.setMaxGroundStrength(Util().getMaxGroundStrength(unit));
+	unit.setVisibleAirStrength(Util().getVisibleAirStrength(unit));
+	unit.setMaxAirStrength(Util().getMaxAirStrength(unit));
+	unit.setPriority(Util().getPriority(unit));
 	return;
 }
 
@@ -393,19 +393,19 @@ void UnitTrackerClass::updateAlly(UnitInfo& unit)
 
 	// Update statistics
 	unit.setPercentHealth(Util().getPercentHealth(unit));
-	unit.setGroundRange(Util().getTrueGroundRange(t, p));
-	unit.setAirRange(Util().getTrueAirRange(t, p));
-	unit.setGroundDamage(Util().getTrueGroundDamage(t, p));
-	unit.setAirDamage(Util().getTrueAirDamage(t, p));
-	unit.setSpeed(Util().getTrueSpeed(t, p));
+	unit.setGroundRange(Util().getTrueGroundRange(unit));
+	unit.setAirRange(Util().getTrueAirRange(unit));
+	unit.setGroundDamage(Util().getTrueGroundDamage(unit));
+	unit.setAirDamage(Util().getTrueAirDamage(unit));
+	unit.setSpeed(Util().getTrueSpeed(unit));
 	unit.setMinStopFrame(Util().getMinStopFrame(t));
 
 	// Update sizes and strength
-	unit.setVisibleGroundStrength(Util().getVisibleGroundStrength(unit, p));
-	unit.setMaxGroundStrength(Util().getMaxGroundStrength(unit, p));
-	unit.setVisibleAirStrength(Util().getVisibleAirStrength(unit, p));
-	unit.setMaxAirStrength(Util().getMaxAirStrength(unit, p));
-	unit.setPriority(Util().getPriority(unit, p));
+	unit.setVisibleGroundStrength(Util().getVisibleGroundStrength(unit));
+	unit.setMaxGroundStrength(Util().getMaxGroundStrength(unit));
+	unit.setVisibleAirStrength(Util().getVisibleAirStrength(unit));
+	unit.setMaxAirStrength(Util().getMaxAirStrength(unit));
+	unit.setPriority(Util().getPriority(unit));
 	unit.setEngagePosition(unit.getPosition() + Position((unit.getTargetPosition() - unit.getPosition()) * (unit.getPosition().getDistance(unit.getTargetPosition()) - max(unit.getGroundRange(), unit.getAirRange())) / unit.getPosition().getDistance(unit.getTargetPosition())));
 
 	if (unit.unit()->getLastCommand().getTargetPosition().isValid())

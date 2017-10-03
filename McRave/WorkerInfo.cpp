@@ -3,7 +3,6 @@
 WorkerInfo::WorkerInfo()
 {
 	thisUnit = nullptr;
-	target = nullptr;
 	resource = nullptr;
 
 	unitType = UnitTypes::None;
@@ -13,5 +12,4 @@ WorkerInfo::WorkerInfo()
 	walkPosition = WalkPositions::None;
 	tilePosition = TilePositions::None;
 	buildPosition = TilePositions::None;
-	lastGatherFrame = 0;
 }

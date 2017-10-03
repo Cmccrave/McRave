@@ -6,7 +6,7 @@ double UtilTrackerClass::getPercentHealth(UnitInfo& unit)
 	return double(unit.unit()->getHitPoints() + (unit.unit()->getShields() / 2)) / double(unit.getType().maxHitPoints() + (unit.getType().maxShields() / 2));
 }
 
-double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit, Player who)
+double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit)
 {
 	// Some hardcoded values that don't have attacks but should still be considered for strength
 	if (unit.getType() == UnitTypes::Terran_Medic)
@@ -45,10 +45,10 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit, Player who)
 		damage = unit.getGroundDamage() / 15.0;
 	}
 
-	if (!unit.getType().isWorker() && unit.getGroundDamage() > 0)
+	if (!unit.getType().isWorker() && unit.getGroundDamage() > 0.0)
 	{
 		// Check for Zergling attack speed upgrade
-		if (unit.getType() == UnitTypes::Zerg_Zergling && who->getUpgradeLevel(UpgradeTypes::Adrenal_Glands))
+		if (unit.getType() == UnitTypes::Zerg_Zergling && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Adrenal_Glands))
 		{
 			damage = damage * 1.33;
 		}
@@ -57,7 +57,7 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit, Player who)
 	return 0.0;
 }
 
-double UtilTrackerClass::getVisibleGroundStrength(UnitInfo& unit, Player who)
+double UtilTrackerClass::getVisibleGroundStrength(UnitInfo& unit)
 {
 	if (unit.unit()->isMaelstrommed() || unit.unit()->isStasised())
 	{
@@ -99,7 +99,7 @@ double UtilTrackerClass::getVisibleGroundStrength(UnitInfo& unit, Player who)
 	return unit.getPercentHealth() * unit.getMaxGroundStrength() * effectiveness;
 }
 
-double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit, Player who)
+double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit)
 {
 	if (unit.getType() == UnitTypes::Protoss_Interceptor || unit.getType() == UnitTypes::Zerg_Scourge)
 	{
@@ -117,14 +117,14 @@ double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit, Player who)
 		damage = unit.getAirDamage() / 24.0;
 	}
 
-	if (!unit.getType().isWorker() && damage > 0)
+	if (!unit.getType().isWorker() && damage > 0.0)
 	{
 		return unit.getAirRange() * damage;
 	}
 	return 0.0;
 }
 
-double UtilTrackerClass::getVisibleAirStrength(UnitInfo& unit, Player who)
+double UtilTrackerClass::getVisibleAirStrength(UnitInfo& unit)
 {
 	if (unit.unit()->isMaelstrommed() || unit.unit()->isStasised())
 	{
@@ -167,7 +167,7 @@ double UtilTrackerClass::getVisibleAirStrength(UnitInfo& unit, Player who)
 	return unit.getPercentHealth() * unit.getMaxAirStrength() * effectiveness;
 }
 
-double UtilTrackerClass::getPriority(UnitInfo& unit, Player who)
+double UtilTrackerClass::getPriority(UnitInfo& unit)
 {
 	// If an enemy detector is within range of an Arbiter, give it higher priority
 	if (Grids().getArbiterGrid(unit.getWalkPosition()) > 0 && unit.getType().isDetector() && unit.getPlayer()->isEnemy(Broodwar->self()))
@@ -224,22 +224,22 @@ double UtilTrackerClass::getPriority(UnitInfo& unit, Player who)
 	}
 }
 
-double UtilTrackerClass::getTrueGroundRange(UnitType unitType, Player who)
+double UtilTrackerClass::getTrueGroundRange(UnitInfo& unit)
 {
 	// Range upgrade check for Dragoons, Marines and Hydralisks ground attack
-	if (unitType == UnitTypes::Protoss_Dragoon && who->getUpgradeLevel(UpgradeTypes::Singularity_Charge))
+	if (unit.getType() == UnitTypes::Protoss_Dragoon && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Singularity_Charge))
 	{
 		return 192.0;
 	}
-	else if ((unitType == UnitTypes::Terran_Marine && who->getUpgradeLevel(UpgradeTypes::U_238_Shells)) || (unitType == UnitTypes::Zerg_Hydralisk && who->getUpgradeLevel(UpgradeTypes::Grooved_Spines)))
+	else if ((unit.getType() == UnitTypes::Terran_Marine && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::U_238_Shells)) || (unit.getType() == UnitTypes::Zerg_Hydralisk && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Grooved_Spines)))
 	{
 		return 160.0;
 	}
 
 	// Range upgrade check and correction of initial range for Bunkers ground attack
-	else if (unitType == UnitTypes::Terran_Bunker)
+	else if (unit.getType() == UnitTypes::Terran_Bunker)
 	{
-		if (who->getUpgradeLevel(UpgradeTypes::U_238_Shells))
+		if (unit.getPlayer()->getUpgradeLevel(UpgradeTypes::U_238_Shells))
 		{
 			return 192.0;
 		}
@@ -250,35 +250,35 @@ double UtilTrackerClass::getTrueGroundRange(UnitType unitType, Player who)
 	}
 
 	// Range assumption for High Templars
-	else if (unitType == UnitTypes::Protoss_High_Templar)
+	else if (unit.getType() == UnitTypes::Protoss_High_Templar)
 	{
 		return 288.0;
 	}
 
 	// Correction of initial range for Reavers 
-	else if (unitType == UnitTypes::Protoss_Reaver)
+	else if (unit.getType() == UnitTypes::Protoss_Reaver)
 	{
 		return 256.0;
 	}
-	return double(unitType.groundWeapon().maxRange());
+	return double(unit.getType().groundWeapon().maxRange());
 }
 
-double UtilTrackerClass::getTrueAirRange(UnitType unitType, Player who)
+double UtilTrackerClass::getTrueAirRange(UnitInfo& unit)
 {
 	// Range upgrade check for Dragoons, Marines and Hydralisks air attack
-	if (unitType == UnitTypes::Protoss_Dragoon && who->getUpgradeLevel(UpgradeTypes::Singularity_Charge))
+	if (unit.getType() == UnitTypes::Protoss_Dragoon && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Singularity_Charge))
 	{
 		return 192.0;
 	}
-	else if ((unitType == UnitTypes::Terran_Marine && who->getUpgradeLevel(UpgradeTypes::U_238_Shells)) || (unitType == UnitTypes::Zerg_Hydralisk && who->getUpgradeLevel(UpgradeTypes::Grooved_Spines)))
+	else if ((unit.getType() == UnitTypes::Terran_Marine && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::U_238_Shells)) || (unit.getType() == UnitTypes::Zerg_Hydralisk && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Grooved_Spines)))
 	{
 		return 160.0;
 	}
 
 	// Range upgrade check and correction of initial range for Bunkers air attack
-	else if (unitType == UnitTypes::Terran_Bunker)
+	else if (unit.getType() == UnitTypes::Terran_Bunker)
 	{
-		if (who->getUpgradeLevel(UpgradeTypes::U_238_Shells))
+		if (unit.getPlayer()->getUpgradeLevel(UpgradeTypes::U_238_Shells))
 		{
 			return 192.0;
 		}
@@ -289,27 +289,27 @@ double UtilTrackerClass::getTrueAirRange(UnitType unitType, Player who)
 	}
 
 	// Range upgrade check for Goliaths air attack
-	else if (unitType == UnitTypes::Terran_Goliath && who->getUpgradeLevel(UpgradeTypes::Charon_Boosters))
+	else if (unit.getType() == UnitTypes::Terran_Goliath && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Charon_Boosters))
 	{
 		return 256.0;
 	}
 
 	// Range assumption for High Templars
-	else if (unitType == UnitTypes::Protoss_High_Templar)
+	else if (unit.getType() == UnitTypes::Protoss_High_Templar)
 	{
 		return 288.0;
 	}
 
 	// Else return the Units base range for air weapons
-	return double(unitType.airWeapon().maxRange());
+	return double(unit.getType().airWeapon().maxRange());
 }
 
-double UtilTrackerClass::getTrueGroundDamage(UnitType unitType, Player who)
+double UtilTrackerClass::getTrueGroundDamage(UnitInfo& unit)
 {
 	// Damage upgrade check for Reavers and correction of initial damage
-	if (unitType == UnitTypes::Protoss_Reaver)
+	if (unit.getType() == UnitTypes::Protoss_Reaver)
 	{
-		if (who->getUpgradeLevel(UpgradeTypes::Scarab_Damage))
+		if (unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Scarab_Damage))
 		{
 			return 125.00;
 		}
@@ -320,13 +320,13 @@ double UtilTrackerClass::getTrueGroundDamage(UnitType unitType, Player who)
 	}
 
 	// Damage assumption for Bunkers ground attack
-	else if (unitType == UnitTypes::Terran_Bunker)
+	else if (unit.getType() == UnitTypes::Terran_Bunker)
 	{
 		return 24.0;
 	}
 
 	// Damage correction for Zealots and Firebats which attack twice for 8 damage
-	else if (unitType == UnitTypes::Terran_Firebat || unitType == UnitTypes::Protoss_Zealot)
+	else if (unit.getType() == UnitTypes::Terran_Firebat || unit.getType() == UnitTypes::Protoss_Zealot)
 	{
 		return 16.0;
 	}
@@ -334,41 +334,41 @@ double UtilTrackerClass::getTrueGroundDamage(UnitType unitType, Player who)
 	// Else return the Units base ground weapon damage
 	else
 	{
-		return unitType.groundWeapon().damageAmount();
+		return unit.getType().groundWeapon().damageAmount();
 	}
 
 	return 0.0;
 }
 
-double UtilTrackerClass::getTrueAirDamage(UnitType unitType, Player who)
+double UtilTrackerClass::getTrueAirDamage(UnitInfo& unit)
 {
 	// Damage assumption for Bunkers air attack
-	if (unitType == UnitTypes::Terran_Bunker)
+	if (unit.getType() == UnitTypes::Terran_Bunker)
 	{
 		return 24.0;
 	}
 
 	// Else return the Units base air weapon damage
-	return unitType.airWeapon().damageAmount();
+	return unit.getType().airWeapon().damageAmount();
 }
 
-double UtilTrackerClass::getTrueSpeed(UnitType unitType, Player who)
+double UtilTrackerClass::getTrueSpeed(UnitInfo& unit)
 {
-	double speed = unitType.topSpeed() * 24.0;
+	double speed = unit.getType().topSpeed() * 24.0;
 
-	if ((unitType == UnitTypes::Zerg_Zergling && who->getUpgradeLevel(UpgradeTypes::Metabolic_Boost)) || (unitType == UnitTypes::Zerg_Hydralisk && who->getUpgradeLevel(UpgradeTypes::Muscular_Augments)) || (unitType == UnitTypes::Zerg_Ultralisk && who->getUpgradeLevel(UpgradeTypes::Anabolic_Synthesis)) || (unitType == UnitTypes::Protoss_Shuttle && who->getUpgradeLevel(UpgradeTypes::Gravitic_Drive)) || (unitType == UnitTypes::Protoss_Observer && who->getUpgradeLevel(UpgradeTypes::Gravitic_Boosters)) || (unitType == UnitTypes::Protoss_Zealot && who->getUpgradeLevel(UpgradeTypes::Leg_Enhancements)) || (unitType == UnitTypes::Terran_Vulture && who->getUpgradeLevel(UpgradeTypes::Ion_Thrusters)))
+	if ((unit.getType() == UnitTypes::Zerg_Zergling && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Metabolic_Boost)) || (unit.getType() == UnitTypes::Zerg_Hydralisk && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Muscular_Augments)) || (unit.getType() == UnitTypes::Zerg_Ultralisk && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Anabolic_Synthesis)) || (unit.getType() == UnitTypes::Protoss_Shuttle && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Gravitic_Drive)) || (unit.getType() == UnitTypes::Protoss_Observer && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Gravitic_Boosters)) || (unit.getType() == UnitTypes::Protoss_Zealot && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements)) || (unit.getType() == UnitTypes::Terran_Vulture && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Ion_Thrusters)))
 	{
 		speed = speed * 1.5;
 	}
-	else if (unitType == UnitTypes::Zerg_Overlord && who->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace))
+	else if (unit.getType() == UnitTypes::Zerg_Overlord && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace))
 	{
 		speed = speed * 4.01;
 	}
-	else if (unitType == UnitTypes::Protoss_Scout && who->getUpgradeLevel(UpgradeTypes::Muscular_Augments))
+	else if (unit.getType() == UnitTypes::Protoss_Scout && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Muscular_Augments))
 	{
 		speed = speed * 1.33;
 	}
-	else if (unitType.isBuilding())
+	else if (unit.getType().isBuilding())
 	{
 		return 0.0;
 	}

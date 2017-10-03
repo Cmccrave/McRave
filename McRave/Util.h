@@ -9,16 +9,16 @@ class UtilTrackerClass
 {
 public:
 	double getPercentHealth(UnitInfo&);
-	double getMaxGroundStrength(UnitInfo&, Player);
-	double getVisibleGroundStrength(UnitInfo&, Player);
-	double getMaxAirStrength(UnitInfo&, Player);
-	double getVisibleAirStrength(UnitInfo&, Player);
-	double getPriority(UnitInfo&, Player);
-	double getTrueGroundRange(UnitType, Player);
-	double getTrueAirRange(UnitType, Player);
-	double getTrueGroundDamage(UnitType, Player);
-	double getTrueAirDamage(UnitType, Player);
-	double getTrueSpeed(UnitType, Player);
+	double getMaxGroundStrength(UnitInfo&);
+	double getVisibleGroundStrength(UnitInfo&);
+	double getMaxAirStrength(UnitInfo&);
+	double getVisibleAirStrength(UnitInfo&);
+	double getPriority(UnitInfo&);
+	double getTrueGroundRange(UnitInfo&);
+	double getTrueAirRange(UnitInfo&);
+	double getTrueGroundDamage(UnitInfo&);
+	double getTrueAirDamage(UnitInfo&);
+	double getTrueSpeed(UnitInfo&);
 
 	// Returns the minimum number of frames for the given unit type to wait before having another command issued to it
 	int getMinStopFrame(UnitType);

@@ -5,20 +5,14 @@ using namespace BWAPI;
 using namespace std;
 
 class WorkerInfo{
-	int lastGatherFrame;
-	Unit thisUnit, target, resource;
+	Unit thisUnit, resource;
 	UnitType unitType, buildingType;
 	WalkPosition walkPosition;
 	Position position, resourcePosition;
 	TilePosition tilePosition, buildPosition;
 public:
 	WorkerInfo();
-
-	// Returns the last frame on which isGathering is true
-	int getLastGatherFrame() { return lastGatherFrame; }
-
 	Unit unit() { return thisUnit; }
-	Unit getTarget() { return target; }
 	Unit getResource() { return resource; }
 	UnitType getType() { return unitType; }
 	UnitType getBuildingType() { return buildingType; }
@@ -28,12 +22,8 @@ public:
 	WalkPosition getWalkPosition() { return walkPosition; }
 	TilePosition getTilePosition() { return tilePosition; }
 	TilePosition getBuildPosition() { return buildPosition; }
-
 	
-	void setLastGatherFrame(int newFrame) { lastGatherFrame = newFrame; }
-
 	void setUnit(Unit newUnit) { thisUnit = newUnit; }
-	void setTarget(Unit newTarget) { target = newTarget; }
 	void setResource(Unit newResource) { resource = newResource; }
 	void setType(UnitType newType) { unitType = newType; }
 	void setBuildingType(UnitType newBuildingType) { buildingType = newBuildingType; }
