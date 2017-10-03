@@ -212,7 +212,7 @@ void ProductionTrackerClass::updateProtoss()
 			// Cybernetics Core
 			else if (building.getType() == UnitTypes::Protoss_Cybernetics_Core)
 			{
-				if (!Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) && idleLowProduction.size() == 0 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon) >= 3)
+				if (!Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) && idleLowProduction.size() == 0 /*&& Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon) >= 3*/)
 				{
 					if (Broodwar->self()->minerals() >= UpgradeTypes::Singularity_Charge.mineralPrice() && Broodwar->self()->gas() >= UpgradeTypes::Singularity_Charge.gasPrice())
 					{

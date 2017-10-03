@@ -483,9 +483,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 			{
 				simRatio = 0.0;
 			}
-		}
-
-		Broodwar->drawTextMap(enemy.getPosition(), "%.2f", simRatio);
+		}		
 
 		if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && !enemy.unit()->isDetected())
 		{
