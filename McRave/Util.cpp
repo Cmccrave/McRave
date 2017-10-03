@@ -30,8 +30,8 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit, Player who)
 		return 1.5;
 	}
 
-	double range, damage;
-	range = cbrt(unit.getGroundRange());
+	double damage;
+
 	if (unit.getType().groundWeapon().damageCooldown() > 0)
 	{
 		damage = unit.getGroundDamage() / double(unit.getType().groundWeapon().damageCooldown());
@@ -52,7 +52,7 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit, Player who)
 		{
 			damage = damage * 1.33;
 		}
-		return range * damage;
+		return unit.getGroundRange() * damage;
 	}
 	return 0.0;
 }
@@ -106,7 +106,6 @@ double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit, Player who)
 		return 2.5;
 	}
 	double range, damage;
-	range = cbrt(unit.getAirRange());
 	damage = unit.getAirDamage() / double(unit.getType().airWeapon().damageCooldown());
 
 	if (unit.getType().airWeapon().damageCooldown() > 0)
@@ -120,7 +119,7 @@ double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit, Player who)
 
 	if (!unit.getType().isWorker() && damage > 0)
 	{
-		return range * damage;
+		return unit.getAirRange() * damage;
 	}
 	return 0.0;
 }
@@ -427,9 +426,9 @@ set<WalkPosition> UtilTrackerClass::getWalkPositionsUnderUnit(Unit unit)
 bool UtilTrackerClass::isSafe(WalkPosition start, WalkPosition end, UnitType unitType, bool groundCheck, bool airCheck, bool mobilityCheck)
 {
 	// TODO : Put unit ID in anti mobility grid so it's possible to compare if a unit is standing on it?
-	for (int x = end.x - (unitType.width() / 16); x <= end.x + (unitType.width() / 16); x++)
+	for (int x = end.x - (unitType.width() / 8); x <= end.x + (unitType.width() / 8); x++)
 	{
-		for (int y = end.y - (unitType.height() / 16); y <= end.y + (unitType.height() / 16); y++)
+		for (int y = end.y - (unitType.height() / 8); y <= end.y + (unitType.height() / 8); y++)
 		{
 			if (!WalkPosition(x, y).isValid())
 			{

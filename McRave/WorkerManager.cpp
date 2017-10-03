@@ -63,9 +63,9 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 
 	// Check a 8x8 walkposition grid for a potential new place to scout
 	double best = 0.0;
-	for (int x = start.x - 8; x < start.x + 8 + worker.getType().tileWidth() * 4; x++)
+	for (int x = start.x - 16; x < start.x + 16 + worker.getType().tileWidth() * 4; x++)
 	{
-		for (int y = start.y - 8; y < start.y + 8 + worker.getType().tileHeight() * 4; y++)
+		for (int y = start.y - 16; y < start.y + 16 + worker.getType().tileHeight() * 4; y++)
 		{
 			if (!WalkPosition(x, y).isValid() || Grids().getDistanceHome(start) - Grids().getDistanceHome(WalkPosition(x, y)) > 16)
 			{
@@ -75,14 +75,12 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 			double mobility = double(Grids().getMobilityGrid(x, y));
 			double threat = max(0.01, Grids().getEGroundThreat(x, y));
 			double distance = max(0.01, Position(WalkPosition(x, y)).getDistance(Terrain().getEnemyStartingPosition()));
-			
-			if (Broodwar->getFrameCount() - recentExplorations[WalkPosition(x, y)] > 1500)
+			double time = max(1.0, double(Broodwar->getFrameCount() - recentExplorations[WalkPosition(x, y)]));
+
+			if ((time * mobility) / (threat * distance) >= best && Util().isSafe(start, WalkPosition(x, y), worker.getType(), true, false, true))
 			{
-				if (mobility / (threat * distance) >= best && Util().isSafe(start, WalkPosition(x, y), worker.getType(), true, false, true))
-				{
-					best = mobility / (threat * distance);
-					bestPosition = Position(WalkPosition(x, y));
-				}
+				best = (time * mobility) / (threat * distance);
+				bestPosition = Position(WalkPosition(x, y));
 			}
 		}
 	}
@@ -222,7 +220,7 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 	}
 
 	// If we are fast expanding and enemy is rushing, we need to defend with workers
-	if ((Strategy().isAllyFastExpand() && BuildOrder().isOpener() && Units().getGlobalAllyStrength() + Units().getAllyDefense()*0.8 < Units().getGlobalEnemyStrength()) || (Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0 && Grids().getResourceGrid(worker.getTilePosition()) > 0))
+	if ((Strategy().isRush() && Strategy().isAllyFastExpand() && BuildOrder().isOpener() && Units().getGlobalAllyStrength() + Units().getAllyDefense()*0.8 < Units().getGlobalEnemyStrength()) || (Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0 && Grids().getResourceGrid(worker.getTilePosition()) > 0))
 	{
 		Units().storeAlly(worker.unit());
 		Workers().removeWorker(worker.unit());

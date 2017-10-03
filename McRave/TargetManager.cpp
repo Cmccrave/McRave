@@ -76,14 +76,14 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 			continue;
 		}
 
-		// Reavers and Tanks target highest priority units with clusters around them
-		if (unit.getType() == UnitTypes::Protoss_Reaver || unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
-		{
-			thisUnit = (enemy.getPriority() * Grids().getEGroundCluster(enemy.getWalkPosition())) / distance;
-		}
+		//// Reavers and Tanks target highest priority units with clusters around them
+		//if (unit.getType() == UnitTypes::Protoss_Reaver || unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
+		//{
+		//	thisUnit = (enemy.getPriority() * Grids().getEGroundCluster(enemy.getWalkPosition())) / distance;
+		//}
 
 		// Arbiters only target tanks - Testing no regard for distance
-		else if (unit.getType() == UnitTypes::Protoss_Arbiter)
+		if (unit.getType() == UnitTypes::Protoss_Arbiter)
 		{
 			if (enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || enemy.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode || enemy.getType() == UnitTypes::Terran_Science_Vessel)
 			{

@@ -75,6 +75,8 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 		// If the cargo is not loaded
 		if (!cargo.unit()->isLoaded())
 		{
+			transport.setDestination(cargo.getPosition());
+
 			// If it's requesting a pickup
 			if (cargo.getTargetPosition().getDistance(cargo.getPosition()) > cargo.getGroundRange() || cargo.getStrategy() != 1 || (cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.unit()->getEnergy() < 75))
 			{
@@ -87,7 +89,6 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 		else if (cargo.unit()->isLoaded())
 		{			
 			transport.setDestination(cargo.getTargetPosition());
-			Broodwar->drawLineMap(transport.getPosition(), cargo.getTargetPosition(), Colors::Black);
 
 			// If we are harassing, check if we are close to drop point
 			if (transport.isHarassing() && transport.getPosition().getDistance(transport.getDestination()) < cargo.getGroundRange())
@@ -144,22 +145,9 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 			double threat =  max(0.1, Grids().getEGroundThreat(x, y) + Grids().getEAirThreat(x, y));
 			double mobility = max(1.0, double(Grids().getMobilityGrid(x, y)));			
 
-			// If shuttle is harassing, then include mobility
-			if (transport.isHarassing())
+			if (1.0 / distance > best && Util().isSafe(start, WalkPosition(x, y), transport.getType(), true, true, false))
 			{
-				if (1.0 / (distance * threat * mobility) > best)
-				{
-					best = 1.0 / (distance * threat * mobility);
-					bestPosition = Position(WalkPosition(x, y));
-				}
-			}
-			else
-			{
-				if (1.0 / (distance * threat) > best)
-				{
-					best = 1.0 / (distance * threat);
-					bestPosition = Position(WalkPosition(x, y));
-				}
+				best = 1.0 / (distance);
 			}
 		}
 	}

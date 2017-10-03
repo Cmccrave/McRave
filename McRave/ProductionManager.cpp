@@ -47,12 +47,15 @@ bool ProductionTrackerClass::canAfford(UnitType unit)
 bool ProductionTrackerClass::canAfford(TechType tech)
 {
 	// If we planned on making this tech unit
-	if (BuildOrder().getTechList().find(tech.whatUses) != BuildOrder().getTechList().end())
+	for (auto &type : tech.whatUses())
 	{
-		// If we can afford it including buildings queued
-		if (Broodwar->self()->minerals() >= tech.mineralPrice() + Buildings().getQueuedMineral() && Broodwar->self()->gas() >= tech.gasPrice() + Buildings().getQueuedGas())
+		if (BuildOrder().getTechList().find(type) != BuildOrder().getTechList().end())
 		{
-			return true;
+			// If we can afford it including buildings queued
+			if (Broodwar->self()->minerals() >= tech.mineralPrice() + Buildings().getQueuedMineral() && Broodwar->self()->gas() >= tech.gasPrice() + Buildings().getQueuedGas())
+			{
+				return true;
+			}
 		}
 	}
 	return false;
@@ -61,19 +64,23 @@ bool ProductionTrackerClass::canAfford(TechType tech)
 bool ProductionTrackerClass::canAfford(UpgradeType upgrade)
 {
 	// If it's an important tech
-	if (BuildOrder().getTechList().find(upgrade.whatUses) != BuildOrder().getTechList().end())
+	for (auto &type : upgrade.whatUses())
 	{
-		// If we can afford it including buildings queued
-		if (Broodwar->self()->minerals() >= upgrade.mineralPrice() + Buildings().getQueuedMineral() && Broodwar->self()->gas() >= upgrade.gasPrice() + Buildings().getQueuedGas())
+		if (BuildOrder().getTechList().find(type) != BuildOrder().getTechList().end())
 		{
-			return true;
+			// If we can afford it including buildings queued
+			if (Broodwar->self()->minerals() >= upgrade.mineralPrice() + Buildings().getQueuedMineral() && Broodwar->self()->gas() >= upgrade.gasPrice() + Buildings().getQueuedGas())
+			{
+				return true;
+			}
 		}
 	}
 	// If we can afford it including buildings queued and tech units queued
-	else if (Broodwar->self()->minerals() >= (upgrade.mineralPrice() + reservedMineral + Buildings().getQueuedMineral()) && Broodwar->self()->gas() >= (upgrade.gasPrice() + reservedGas + Buildings().getQueuedGas()))
+	if (Broodwar->self()->minerals() >= (upgrade.mineralPrice() + reservedMineral + Buildings().getQueuedMineral()) && Broodwar->self()->gas() >= (upgrade.gasPrice() + reservedGas + Buildings().getQueuedGas()))
 	{
 		return true;
 	}
+
 	return false;
 }
 
