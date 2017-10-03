@@ -443,7 +443,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 			continue;
 		}
 
-		if (enemy.getSpeed() > 0)
+		if (enemy.getSpeed() > 0.0)
 		{
 			if (enemy.getType().isFlyer())
 			{
@@ -474,11 +474,18 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 		}
 		else
 		{
-			if (enemy.getPosition().getDistance(unit.getEngagePosition()) > enemy.getGroundRange())
+			if (enemy.getPosition().getDistance(unit.getEngagePosition()) < enemy.getGroundRange())
+			{				
+				enemyToEngage = 0.0;
+				simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getGroundRange() - unit.getGroundRange()) / (unit.getSpeed())));
+			}
+			else
 			{
-
+				simRatio = 0.0;
 			}
 		}
+
+		Broodwar->drawTextMap(enemy.getPosition(), "%.2f", simRatio);
 
 		if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && !enemy.unit()->isDetected())
 		{

@@ -527,8 +527,8 @@ void BuildOrderTrackerClass::FFEGateway()
 {
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 46);
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 42);
-	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 50;
-	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 56;
+	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 36;
+	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 40;
 	buildingDesired[UnitTypes::Protoss_Forge] = Units().getSupply() >= 60;
 	getOpening = Units().getSupply() < 60;
 	return;
@@ -538,8 +538,8 @@ void BuildOrderTrackerClass::FFENexus()
 {
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24);
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 28) + (Units().getSupply() >= 42);
-	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 50;
-	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 56;
+	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 36;
+	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 40;
 	buildingDesired[UnitTypes::Protoss_Forge] = Units().getSupply() >= 60;
 	getOpening = Units().getSupply() < 60;
 	return;
