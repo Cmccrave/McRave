@@ -240,8 +240,7 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 		// Any idle workers can gather closest mineral field until they are assigned again
 		if (worker.unit()->isIdle() && worker.unit()->getClosestUnit(Filter::IsMineralField))
 		{
-			worker.unit()->gather(worker.unit()->getClosestUnit(Filter::IsMineralField));
-			worker.setTarget(nullptr);
+			worker.unit()->gather(worker.unit()->getClosestUnit(Filter::IsMineralField));			
 			return;
 		}
 	}
@@ -250,8 +249,7 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 	if (!worker.unit()->isCarryingGas() && !worker.unit()->isCarryingMinerals())
 	{
 		if ((worker.unit()->isGatheringMinerals() || worker.unit()->isGatheringGas()) && worker.unit()->getTarget() == worker.getResource())
-		{
-			worker.setLastGatherFrame(Broodwar->getFrameCount());
+		{			
 			return;
 		}
 		// If the workers current target is a boulder, continue mining it
@@ -266,7 +264,6 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 			if (worker.getResource()->exists())
 			{
 				worker.unit()->gather(worker.getResource());
-				worker.setLastGatherFrame(Broodwar->getFrameCount());
 				return;
 			}
 			// Else, move to it
@@ -279,7 +276,6 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 		else if (worker.unit()->getClosestUnit(Filter::IsMineralField))
 		{
 			worker.unit()->gather(worker.unit()->getClosestUnit(Filter::IsMineralField));
-			worker.setTarget(nullptr);
 			return;
 		}
 	}

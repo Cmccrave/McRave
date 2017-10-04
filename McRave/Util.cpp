@@ -30,7 +30,9 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit)
 		return 1.5;
 	}
 
-	double damage;
+	double range, damage;
+
+	range = unit.getGroundRange() / 32.0;
 
 	if (unit.getType().groundWeapon().damageCooldown() > 0)
 	{
@@ -52,7 +54,7 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit)
 		{
 			damage = damage * 1.33;
 		}
-		return unit.getGroundRange() * damage;
+		return range * damage;
 	}
 	return 0.0;
 }
@@ -107,6 +109,7 @@ double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit)
 	}
 	double range, damage;
 	damage = unit.getAirDamage() / double(unit.getType().airWeapon().damageCooldown());
+	range = unit.getAirRange() / 32.0;
 
 	if (unit.getType().airWeapon().damageCooldown() > 0)
 	{
@@ -119,7 +122,7 @@ double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit)
 
 	if (!unit.getType().isWorker() && damage > 0.0)
 	{
-		return unit.getAirRange() * damage;
+		return range * damage;
 	}
 	return 0.0;
 }

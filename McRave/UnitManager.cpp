@@ -432,16 +432,17 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 	for (auto &e : enemyUnits)
 	{
 		UnitInfo enemy = e.second;
-		// Ignore workers and stasised units
-		if (enemy.getType().isWorker() || (enemy.unit() && enemy.unit()->exists() && enemy.unit()->isStasised()))
-		{
-			continue;
-		}
 
 		if (!enemy.unit())
 		{
 			continue;
 		}
+		
+		// Ignore workers and stasised units
+		if (enemy.getType().isWorker() || (enemy.unit() && enemy.unit()->exists() && enemy.unit()->isStasised()))
+		{
+			continue;
+		}		
 
 		if (enemy.getSpeed() > 0.0)
 		{
