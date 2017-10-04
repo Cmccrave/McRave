@@ -32,7 +32,7 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit)
 
 	double range, damage;
 
-	range = unit.getGroundRange() / 32.0;
+	range = cbrt(unit.getGroundRange());
 
 	if (unit.getType().groundWeapon().damageCooldown() > 0)
 	{
@@ -109,7 +109,7 @@ double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit)
 	}
 	double range, damage;
 	damage = unit.getAirDamage() / double(unit.getType().airWeapon().damageCooldown());
-	range = unit.getAirRange() / 32.0;
+	range = cbrt(unit.getAirRange());
 
 	if (unit.getType().airWeapon().damageCooldown() > 0)
 	{

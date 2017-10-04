@@ -111,7 +111,7 @@ void CommandTrackerClass::attackMove(UnitInfo& unit)
 	// If target doesn't exist, move towards it
 	if (unit.getTarget() && unit.getTargetPosition().isValid())
 	{
-		if (unit.unit()->getOrderTargetPosition() != unit.getTargetPosition())
+		if (unit.unit()->getLastCommand().getTargetPosition() != unit.getTargetPosition())
 		{
 			if (unit.getType().canAttack())
 			{
@@ -131,7 +131,7 @@ void CommandTrackerClass::attackMove(UnitInfo& unit)
 		Position here = Terrain().getClosestEnemyBase(unit.getPosition());
 		if (here.isValid())
 		{
-			if (unit.unit()->getOrderTargetPosition() != here)
+			if (unit.unit()->getLastCommand().getTargetPosition() != here)
 			{
 				if (unit.getType().canAttack())
 				{

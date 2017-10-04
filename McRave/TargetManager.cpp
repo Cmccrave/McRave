@@ -36,6 +36,11 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 			continue;
 		}
 
+		if (enemy.getType() == UnitTypes::Zerg_Egg || enemy.getType() == UnitTypes::Zerg_Larva)
+		{
+			continue;
+		}
+
 		if (enemy.getType().isFlyer())
 		{
 			distance = max(1.0, unit.getPosition().getDistance(enemy.getPosition()) - unit.getAirRange());

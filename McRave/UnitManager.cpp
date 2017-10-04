@@ -437,12 +437,12 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 		{
 			continue;
 		}
-		
+
 		// Ignore workers and stasised units
 		if (enemy.getType().isWorker() || (enemy.unit() && enemy.unit()->exists() && enemy.unit()->isStasised()))
 		{
 			continue;
-		}		
+		}
 
 		if (enemy.getSpeed() > 0.0)
 		{
@@ -450,12 +450,12 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 			{
 				if (unit.getType().isFlyer())
 				{
-					enemyToEngage = (max(0.0, (double(enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getAirRange()))) / (enemy.getSpeed())) - unitToEngage;
+					enemyToEngage = max(0.0, ((enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getAirRange()) / enemy.getSpeed()) - unitToEngage);					
 					simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getAirRange() - unit.getAirRange()) / (enemy.getSpeed())));
 				}
 				else
 				{
-					enemyToEngage = (max(0.0, (double(enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getGroundRange()))) / (enemy.getSpeed())) - unitToEngage;
+					enemyToEngage = max(0.0, ((enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getAirRange()) / enemy.getSpeed()) - unitToEngage);
 					simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getGroundRange() - unit.getAirRange()) / (enemy.getSpeed())));
 				}
 			}
@@ -463,12 +463,12 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 			{
 				if (unit.getType().isFlyer())
 				{
-					enemyToEngage = (max(0.0, (double(enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getAirRange()))) / (enemy.getSpeed())) - unitToEngage;
+					enemyToEngage = max(0.0, ((enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getAirRange()) / enemy.getSpeed()) - unitToEngage);
 					simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getAirRange() - unit.getGroundRange()) / (enemy.getSpeed())));
 				}
 				else
 				{
-					enemyToEngage = (max(0.0, (double(enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getGroundRange()))) / (enemy.getSpeed())) - unitToEngage;
+					enemyToEngage = max(0.0, ((enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getAirRange()) / enemy.getSpeed()) - unitToEngage);
 					simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getGroundRange() - unit.getGroundRange()) / (enemy.getSpeed())));
 				}
 			}
@@ -476,7 +476,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 		else
 		{
 			if (enemy.getPosition().getDistance(unit.getEngagePosition()) < enemy.getGroundRange())
-			{				
+			{
 				enemyToEngage = 0.0;
 				simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getGroundRange() - unit.getGroundRange()) / (unit.getSpeed())));
 			}
@@ -484,7 +484,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 			{
 				simRatio = 0.0;
 			}
-		}		
+		}
 
 		if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && !enemy.unit()->isDetected())
 		{
@@ -506,7 +506,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 	// Check every ally being in range of the target
 	for (auto &a : allyUnits)
 	{
-		UnitInfo ally = a.second;		
+		UnitInfo ally = a.second;
 
 		// If the Ally engagement position is not within a 5.0 second engaging distance of the unit, ignore it
 		if (ally.getEngagePosition().getDistance(unit.getEngagePosition()) > ally.getGroundRange() + (ally.getSpeed() * simulationTime))
@@ -612,8 +612,8 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 		}
 	}
 
-	// If a unit is clearly out of range based on current health (keeps healthy units in the front), set as "no local" and skip calculating
-	if (unit.getPosition().getDistance(unit.getTargetPosition()) > 640.0 + (64.0 * (1.0 - unit.getPercentHealth())))
+	// If a unit is clearly out of range, set as "no local" and skip calculating
+	if (unit.getPosition().getDistance(unit.getTargetPosition()) > 640.0)
 	{
 		unit.setStrategy(3);
 		return;
@@ -775,8 +775,8 @@ UnitInfo& UnitTrackerClass::getAllyUnit(Unit unit)
 	if (allyUnits.find(unit) != allyUnits.end())
 	{
 		return allyUnits[unit];
-	}	
-	assert();	
+	}
+	assert();
 	return UnitInfo();
 }
 
