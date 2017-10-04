@@ -48,17 +48,23 @@ void GridTrackerClass::reset()
 	//	}
 	//}
 
-	int center = 0;
+	int aCenter, eCenter = 0;
 	for (int x = 0; x < 1024; x++) for (int y = 0; y < 1024; y++)
 	{
 		if (!resetGrid[x][y]) continue;
 
-		// Find army center
-		if (aClusterGrid[x][y] > center)
+		// Find army centers
+		if (aClusterGrid[x][y] > aCenter)
 		{
-			center = aClusterGrid[x][y];
-			armyCenter = Position(WalkPosition(x, y));
+			aCenter = aClusterGrid[x][y];
+			allyArmyCenter = Position(WalkPosition(x, y));
 		}
+		if (eGroundClusterGrid[x][y] * eGroundThreat[x][y] > eCenter)
+		{
+			eCenter = eGroundClusterGrid[x][y] * eGroundThreat[x][y];
+			enemyArmyCenter = Position(WalkPosition(x, y));
+		}
+
 
 		// Reset WalkPosition grids		
 		aClusterGrid[x][y] = 0;

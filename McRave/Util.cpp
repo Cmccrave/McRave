@@ -447,6 +447,10 @@ bool UtilTrackerClass::isSafe(WalkPosition start, WalkPosition end, UnitType uni
 			{
 				return false;
 			}
+			if (Grids().getPsiStormGrid(x, y) > 0 || (Grids().getEMPGrid(x,y) > 0 && unitType.isSpellcaster()))
+			{
+				return false;
+			}
 		}
 	}
 	return true;

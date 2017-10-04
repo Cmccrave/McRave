@@ -154,6 +154,7 @@ void StrategyTrackerClass::updateBullets()
 			if (bullet->getType() == BulletTypes::EMP_Missile)
 			{
 				Broodwar << "EMP Sent to: " << bullet->getTargetPosition() << endl;
+				Grids().updateEMP(bullet);
 			}
 			if (bullet->getSource()->getPlayer() == Broodwar->self() && myBullets.find(bullet) == myBullets.end())
 			{
@@ -199,7 +200,6 @@ void StrategyTrackerClass::updateBullets()
 void StrategyTrackerClass::updateScoring()
 {
 	// Unit score based off enemy composition
-	int offset = 0;
 	for (auto &t : Units().getEnemyComposition())
 	{
 		// For each type, add a score to production based on the unit count divided by our current unit count

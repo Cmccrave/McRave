@@ -23,7 +23,7 @@ void SpecialUnitTrackerClass::updateArbiters()
 
 		int bestCluster = 0;
 		double closestD = 0.0;
-		Position bestPosition = Grids().getArmyCenter();
+		Position bestPosition = Grids().getAllyArmyCenter();
 		WalkPosition start = arbiter.getWalkPosition();
 
 		//if (recaller && arbiter.unit()->getEnergy() > 100)
@@ -56,7 +56,7 @@ void SpecialUnitTrackerClass::updateArbiters()
 		//	}
 		//	else
 		//	{
-		//		recaller->useTech(TechTypes::Recall, Grids().getArmyCenter());
+		//		recaller->useTech(TechTypes::Recall, Grids().getAllyArmyCenter());
 		//		Strategy().recallEvent();
 		//		continue;
 		//	}
@@ -126,7 +126,7 @@ void SpecialUnitTrackerClass::updateDetectors()
 
 		// Move towards lowest enemy air threat, no enemy detection and closest to enemy starting position	
 		double closestD = 0.0;
-		Position newDestination = Grids().getArmyCenter();
+		Position newDestination = Grids().getAllyArmyCenter();
 		WalkPosition start = detector.getWalkPosition();
 		for (int x = start.x - 20; x <= start.x + 20; x++)
 		{

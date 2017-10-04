@@ -5,13 +5,6 @@
 using namespace BWAPI;
 using namespace std;
 
-//struct myHash {
-//	template <int scale>
-//	size_t operator()(const BWAPI::Point<int, scale> &p) const {
-//		return std::hash <int>()(p.x << 16 | p.y);
-//	}
-//};
-
 #pragma warning(disable : 4351)
 
 class GridTrackerClass
@@ -54,7 +47,7 @@ class GridTrackerClass
 	// Other
 	bool distanceAnalysis = false;
 	bool mobilityAnalysis = false;
-	Position armyCenter;
+	Position allyArmyCenter, enemyArmyCenter;
 public:
 
 	// Check if we are done analyzing stuff
@@ -184,7 +177,8 @@ public:
 	int getEMPGrid(WalkPosition here) { return EMPGrid[here.x][here.y]; }
 
 	// Other functions
-	Position getArmyCenter(){ return armyCenter; }
+	Position getAllyArmyCenter(){ return allyArmyCenter; }
+	Position getEnemyArmyCenter() { return enemyArmyCenter; }
 };
 
 typedef Singleton<GridTrackerClass> GridTracker;

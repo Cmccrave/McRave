@@ -435,8 +435,8 @@ void BuildOrderTrackerClass::terranSituational()
 		buildingDesired[UnitTypes::Terran_Refinery] = Resources().getTempGasCount();
 	}
 
-	// Armoy logic
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) >= 2 && Units().getSupply() > 160)
+	// Armory logic - TODO find a better solution to this garbage
+	if (Strategy().getUnitScore()[UnitTypes::Terran_Goliath] > 1.0)
 	{
 		buildingDesired[UnitTypes::Terran_Armory] = 1;
 	}

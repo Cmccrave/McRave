@@ -7,16 +7,16 @@ using namespace std;
 
 class CommandTrackerClass
 {
-	bool kite, approach;
 public:
 	void update();
 	void updateAlliedUnits();
+	
+	void attack(UnitInfo&);
+	void move(UnitInfo&);
+	void approach(UnitInfo&);
 	void defend(UnitInfo&);
-	void attackMove(UnitInfo&);	
-	void attackTarget(UnitInfo&);
 	void exploreArea(UnitInfo&);
-	void fleeTarget(UnitInfo&);
-	void approachTarget(UnitInfo&);
+	void flee(UnitInfo&);
 };
 
 typedef Singleton<CommandTrackerClass> CommandTracker;
