@@ -29,7 +29,7 @@ void TransportTrackerClass::updateCargo(TransportInfo& transport)
 		for (auto &r : Units().getAllyUnitsFilter(UnitTypes::Protoss_Reaver))
 		{
 			UnitInfo &reaver = r.second;
-			if (reaver.unit() && reaver.unit()->exists() && (!reaver.getTransport() || !reaver.getTransport()->exists()) && transport.getCargoSize() + 2 < 4)
+			if (reaver.unit() && reaver.unit()->exists() && reaver.getDeadFrame() == 0 && (!reaver.getTransport() || !reaver.getTransport()->exists()) && transport.getCargoSize() + 2 < 4)
 			{
 				reaver.setTransport(transport.unit());
 				transport.assignCargo(reaver.unit());
@@ -39,7 +39,7 @@ void TransportTrackerClass::updateCargo(TransportInfo& transport)
 		for (auto &t : Units().getAllyUnitsFilter(UnitTypes::Protoss_High_Templar))
 		{
 			UnitInfo &templar = t.second;
-			if (templar.unit() && templar.unit()->exists() && (!templar.getTransport() || !templar.getTransport()->exists()) && transport.getCargoSize() + 1 < 4)
+			if (templar.unit() && templar.unit()->exists() && templar.getDeadFrame() == 0 && (!templar.getTransport() || !templar.getTransport()->exists()) && transport.getCargoSize() + 1 < 4)
 			{
 				templar.setTransport(transport.unit());
 				transport.assignCargo(templar.unit());
@@ -77,8 +77,8 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 		{
 			transport.setDestination(cargo.getPosition());
 
-			// If it's requesting a pickup
-			if (cargo.getTargetPosition().getDistance(cargo.getPosition()) > cargo.getGroundRange() || cargo.getStrategy() != 1 || (cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.unit()->getEnergy() < 75))
+			// If it's requesting a pickup, set load state to 1
+			if (cargo.getTargetPosition().getDistance(cargo.getPosition()) > cargo.getGroundRange() || cargo.getStrategy() != 1 || (cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.unit()->getEnergy() < 75) || (cargo.getType() != UnitTypes::Protoss_High_Templar && Broodwar->getFrameCount() - cargo.getLastAttackFrame() > cargo.getType().groundWeapon().damageCooldown()))
 			{
 				transport.unit()->load(cargo.unit());
 				transport.setLoadState(1);
@@ -87,20 +87,19 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 		}
 		// Else if the cargo is loaded
 		else if (cargo.unit()->isLoaded())
-		{			
+		{
 			transport.setDestination(cargo.getTargetPosition());
 
-			// If we are harassing, check if we are close to drop point
-			if (transport.isHarassing() && transport.getPosition().getDistance(transport.getDestination()) < cargo.getGroundRange())
+			// If cargo wants to fight, find a spot to unload
+			if (cargo.getStrategy() == 1)
 			{
-				transport.unit()->unload(cargo.unit());
 				transport.setLoadState(2);
-			}
-			// Else check if we are in a position to help the main army
-			else if (!transport.isHarassing() && cargo.getStrategy() == 1 && cargo.getPosition().getDistance(cargo.getTargetPosition()) < cargo.getGroundRange() && (cargo.getType() != UnitTypes::Protoss_High_Templar || cargo.unit()->getEnergy() >= 75))
-			{
-				transport.unit()->unload(cargo.unit());
-				transport.setLoadState(2);
+
+				if (transport.getPosition().getDistance(transport.getDestination()) < cargo.getGroundRange() && Util().isSafe(transport.getWalkPosition(), WalkPosition(transport.getDestination()), transport.getType(), true, true, true))
+				{
+					transport.unit()->unload(cargo.unit());
+					continue;
+				}
 			}
 		}
 	}
@@ -109,7 +108,7 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 
 void TransportTrackerClass::updateMovement(TransportInfo& transport)
 {
-	// If performing a loading action, don't update movement
+	// If not loading
 	if (transport.getLoadState() == 1)
 	{
 		return;
@@ -129,12 +128,6 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 				continue;
 			}
 
-			// If trying to unload, must find a walkable tile
-			if (transport.getLoadState() == 2 && Grids().getMobilityGrid(x, y) == 0)
-			{
-				continue;
-			}
-
 			// Must keep the shuttle moving to retain maximum speed
 			if (Position(WalkPosition(x, y)).getDistance(Position(start)) <= 64)
 			{
@@ -142,12 +135,23 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 			}
 
 			double distance = max(1.0, transport.getDestination().getDistance(Position(WalkPosition(x, y))));
-			double threat =  max(0.1, Grids().getEGroundThreat(x, y) + Grids().getEAirThreat(x, y));
-			double mobility = max(1.0, double(Grids().getMobilityGrid(x, y)));			
+			double threat = max(0.1, Grids().getEGroundThreat(x, y) + Grids().getEAirThreat(x, y));
+			double mobility = max(1.0, double(Grids().getMobilityGrid(x, y)));
 
-			if (1.0 / distance > best && Util().isSafe(start, WalkPosition(x, y), transport.getType(), true, true, false))
+			// Include mobility when looking to unload
+			if (transport.getLoadState() == 2)
 			{
-				best = 1.0 / (distance);
+				if (1.0 / distance > best && Util().isSafe(start, WalkPosition(x, y), transport.getType(), true, true, true))
+				{
+					best = 1.0 / distance;
+				}
+			}
+			else
+			{
+				if (1.0 / distance > best && Util().isSafe(start, WalkPosition(x, y), transport.getType(), true, true, false))
+				{
+					best = 1.0 / distance;
+				}
 			}
 		}
 	}
