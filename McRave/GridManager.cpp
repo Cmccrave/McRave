@@ -798,7 +798,7 @@ void GridTrackerClass::updateDetectorMovement(UnitInfo& observer)
 		for (int y = destination.y - 40; y <= destination.y + 40; y++)
 		{
 			// Create a circle of detection rather than a square
-			if (WalkPosition(x, y).isValid() && observer.getEngagePosition().getDistance(Position(WalkPosition(x, y))) < 160)
+			if (WalkPosition(x, y).isValid() && observer.getEngagePosition().getDistance(Position(WalkPosition(x, y))) < 320)
 			{
 				resetGrid[x][y] = true;
 				aDetectorGrid[x][y] = 1;
@@ -829,9 +829,9 @@ void GridTrackerClass::updateArbiterMovement(UnitInfo& arbiter)
 
 void GridTrackerClass::updateAllyMovement(Unit unit, WalkPosition here)
 {
-	for (int x = here.x - unit->getType().width() / 16; x <= here.x + unit->getType().width() / 16; x++)
+	for (int x = here.x - unit->getType().tileWidth() * 2; x <= here.x + unit->getType().tileWidth() * 2; x++)
 	{
-		for (int y = here.y - unit->getType().height() / 16; y <= here.y + unit->getType().height() / 16; y++)
+		for (int y = here.y - unit->getType().tileHeight() * 2; y <= here.y + unit->getType().tileHeight() * 2; y++)
 		{
 			if (WalkPosition(x, y).isValid())
 			{
