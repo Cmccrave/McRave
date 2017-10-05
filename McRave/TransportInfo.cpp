@@ -6,9 +6,10 @@ TransportInfo::TransportInfo()
 	destination = Positions::None;
 	walkPosition = WalkPositions::None;
 	thisUnit = nullptr;
-	loadState = 0;
 	cargoSize = 0;
 	harassing = false;
+	loading = false;
+	unloading = false;
 }
 
 void TransportInfo::assignCargo(Unit unit)

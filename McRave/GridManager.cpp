@@ -90,28 +90,61 @@ void GridTrackerClass::reset()
 void GridTrackerClass::updateAllyGrids()
 {
 	// Ally Unit Grid Update
-	for (auto &u : Units().getAllyUnits())
+	for (auto &a : Units().getAllyUnits())
 	{
-		UnitInfo &unit = u.second;
-		WalkPosition start = unit.getWalkPosition();
-		if (unit.getDeadFrame() == 0 && !unit.getType().isFlyer())
+		UnitInfo &ally = a.second;
+		WalkPosition start = ally.getWalkPosition();
+		if (ally.getDeadFrame() == 0 && !ally.getType().isFlyer())
 		{
-			for (int x = start.x - 20; x <= start.x + 20 + unit.getType().tileWidth() * 4; x++)
+			for (int x = start.x - 20; x <= start.x + 20 + ally.getType().tileWidth() * 4; x++)
 			{
-				for (int y = start.y - 20; y <= start.y + 20 + unit.getType().tileHeight() * 4; y++)
+				for (int y = start.y - 20; y <= start.y + 20 + ally.getType().tileHeight() * 4; y++)
 				{
 					// Ally Cluster Grid in a 5 tile radius around each unit
-					if (WalkPosition(x, y).isValid() && unit.getPosition().getDistance(Position((x * 8), (y * 8))) <= 160)
+					if (WalkPosition(x, y).isValid() && ally.getPosition().getDistance(Position((x * 8), (y * 8))) <= 160)
 					{
 						resetGrid[x][y] = true;
 						aClusterGrid[x][y] += 1;
 					}
 
 					// Anti Mobility Grid directly under unit
-					if (WalkPosition(x, y).isValid() && x >= start.x - 1 && x <= start.x + unit.getType().tileWidth() * 4 && y >= start.y - 1 && y <= start.y + unit.getType().tileHeight() * 4)
+					if (WalkPosition(x, y).isValid() && x >= start.x - 1 && x <= start.x + ally.getType().tileWidth() * 4 && y >= start.y - 1 && y <= start.y + ally.getType().tileHeight() * 4)
 					{
 						resetGrid[x][y] = true;
 						antiMobilityGrid[x][y] = 1;
+					}
+				}
+			}
+		}
+		// Ally Ground Threat Grid
+		for (int x = (ally.getWalkPosition().x - int(ally.getGroundRange() / 8) - (ally.getType().tileWidth() * 4)) - int(ally.getSpeed() / 8) - 2; x <= (ally.getWalkPosition().x + int(ally.getGroundRange() / 8) + (ally.getType().tileWidth() * 4)) + int(ally.getSpeed() / 8) + 2; x++)
+		{
+			for (int y = (ally.getWalkPosition().y - int(ally.getGroundRange() / 8) - (ally.getType().tileHeight() * 4)) - int(ally.getSpeed() / 8) - 2; y <= (ally.getWalkPosition().y + int(ally.getGroundRange() / 8) + (ally.getType().tileHeight() * 4)) + int(ally.getSpeed() / 8) + 2; y++)
+			{
+				if (WalkPosition(x, y).isValid())
+				{
+					double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(ally.getPosition()) - double(ally.getType().tileWidth() * 32));
+					if (ally.getGroundDamage() > 0.0 && distance < (ally.getGroundRange() + (ally.getSpeed())))
+					{
+						resetGrid[x][y] = true;
+						aGroundThreat[x][y] += max(0.1, ally.getMaxGroundStrength() / distance);
+					}
+				}
+			}
+		}
+
+		// Ally Air Threat Grid
+		for (int x = (ally.getWalkPosition().x - int(ally.getAirRange() / 8) - ally.getType().tileWidth() * 4) - int(ally.getSpeed() / 8) - 2; x <= (ally.getWalkPosition().x + int(ally.getAirRange() / 8) + ally.getType().tileWidth() * 4) + int(ally.getSpeed() / 8) + 2; x++)
+		{
+			for (int y = (ally.getWalkPosition().y - int(ally.getAirRange() / 8) - ally.getType().tileHeight() * 4) - int(ally.getSpeed() / 8) - 2; y <= (ally.getWalkPosition().y + int(ally.getAirRange() / 8) + ally.getType().tileHeight() * 4) + int(ally.getSpeed() / 8) + 2; y++)
+			{
+				if (WalkPosition(x, y).isValid())
+				{
+					double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(ally.getPosition()) - double(ally.getType().tileWidth() * 32));
+					if (ally.getAirDamage() > 0.0 && distance < (ally.getAirRange() + (ally.getSpeed())))
+					{
+						resetGrid[x][y] = true;
+						aAirThreat[x][y] += max(0.1, ally.getMaxAirStrength() / distance);
 					}
 				}
 			}
@@ -221,7 +254,7 @@ void GridTrackerClass::updateEnemyGrids()
 					}
 				}
 			}
-			
+
 			// Enemy Ground Threat Grid
 			for (int x = (enemy.getWalkPosition().x - int(enemy.getGroundRange() / 8) - (enemy.getType().tileWidth() * 4)) - int(enemy.getSpeed() / 8) - 2; x <= (enemy.getWalkPosition().x + int(enemy.getGroundRange() / 8) + (enemy.getType().tileWidth() * 4)) + int(enemy.getSpeed() / 8) + 2; x++)
 			{
@@ -230,7 +263,7 @@ void GridTrackerClass::updateEnemyGrids()
 					if (WalkPosition(x, y).isValid())
 					{
 						double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(enemy.getPosition()) - double(enemy.getType().tileWidth() * 32));
-						
+
 						if (enemy.getType().isWorker())
 						{
 							if (enemy.getGroundDamage() > 0.0 && distance < (enemy.getGroundRange() + (enemy.getSpeed())) / 2)

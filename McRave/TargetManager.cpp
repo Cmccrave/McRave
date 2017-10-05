@@ -57,10 +57,10 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 			distance = max(1.0, unit.getPosition().getDistance(enemy.getPosition()));
 		}
 
-		// If unit needs revealing - TODO check if capable of attacking it too (within range of ally unit)
+		// If unit needs revealing
 		if (unit.getType() == UnitTypes::Protoss_Observer)
 		{
-			if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()))
+			if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && ((!enemy.getType().isFlyer() && Grids().getAGroundThreat(enemy.getWalkPosition()) > 0) || (enemy.getType().isFlyer() && Grids().getAAirThreat(enemy.getWalkPosition()) > 0) || Terrain().isInAllyTerritory(enemy.unit())))
 			{
 				thisUnit = (enemy.getPriority() * (1.0 + 0.1 *(1.0 - enemy.getPercentHealth()))) / distance;
 			}

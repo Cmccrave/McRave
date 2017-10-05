@@ -12,6 +12,8 @@ class GridTrackerClass
 	bool resetGrid[1024][1024] = {};
 
 	// Ally grids
+	double aGroundThreat[1024][1024] = {};
+	double aAirThreat[1024][1024] = {};
 	int aClusterGrid[1024][1024] = {};
 	int reservedGrid[256][256] = {};
 	int buildingGrid[256][256] = {};
@@ -87,6 +89,14 @@ public:
 
 	// Updates a defense if it is destroyed or created
 	void updateDefenseGrid(UnitInfo&);
+
+	// Returns the combined ground strength of ally units within range and moving distance (based on how fast the unit is) of the given WalkPosition
+	double getAGroundThreat(int x, int y) { return aGroundThreat[x][y]; }
+	double getAGroundThreat(WalkPosition here) { return aGroundThreat[here.x][here.y]; }	
+
+	// Returns the combined air strength of ally units within range and moving distance (based on how fast the unit is) of the given WalkPosition
+	double getAAirThreat(int x, int y) { return aAirThreat[x][y]; }
+	double getAAirThreat(WalkPosition here) { return aAirThreat[here.x][here.y]; }
 
 	// Returns the number of allied ground and air units within range of most area of effect abilities
 	int getACluster(int x, int y) { return aClusterGrid[x][y]; }

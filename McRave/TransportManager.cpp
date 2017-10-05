@@ -55,7 +55,8 @@ void TransportTrackerClass::updateInformation(TransportInfo& transport)
 	transport.setType(transport.unit()->getType());
 	transport.setPosition(transport.unit()->getPosition());
 	transport.setWalkPosition(Util().getWalkPosition(transport.unit()));
-	transport.setLoadState(0);
+	transport.setLoading(false);
+	transport.setUnloading(false);
 	transport.setDestination(Terrain().getPlayerStartingPosition());
 	return;
 }
@@ -81,7 +82,7 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 			if (cargo.getTargetPosition().getDistance(cargo.getPosition()) > cargo.getGroundRange() || cargo.getStrategy() != 1 || (cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.unit()->getEnergy() < 75) || (cargo.getType() != UnitTypes::Protoss_High_Templar && Broodwar->getFrameCount() - cargo.getLastAttackFrame() > cargo.getType().groundWeapon().damageCooldown()))
 			{
 				transport.unit()->load(cargo.unit());
-				transport.setLoadState(1);
+				transport.setLoading(true);
 				continue;
 			}
 		}
@@ -93,7 +94,7 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 			// If cargo wants to fight, find a spot to unload
 			if (cargo.getStrategy() == 1)
 			{
-				transport.setLoadState(2);
+				transport.setUnloading(true);
 
 				if (transport.getPosition().getDistance(transport.getDestination()) < cargo.getGroundRange() && Util().isSafe(transport.getWalkPosition(), WalkPosition(transport.getDestination()), transport.getType(), true, true, true))
 				{
@@ -108,8 +109,8 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 
 void TransportTrackerClass::updateMovement(TransportInfo& transport)
 {
-	// If not loading
-	if (transport.getLoadState() == 1)
+	// If loading, ignore movement commands
+	if (transport.isLoading())
 	{
 		return;
 	}
@@ -139,7 +140,7 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 			double mobility = max(1.0, double(Grids().getMobilityGrid(x, y)));
 
 			// Include mobility when looking to unload
-			if (transport.getLoadState() == 2)
+			if (transport.isUnloading())
 			{
 				if (1.0 / distance > best && Util().isSafe(start, WalkPosition(x, y), transport.getType(), true, true, true))
 				{
