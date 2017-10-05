@@ -48,7 +48,7 @@ void GridTrackerClass::reset()
 	//	}
 	//}
 
-	int aCenter, eCenter = 0;
+	int aCenter = 0, eCenter = 0;
 	for (int x = 0; x < 1024; x++) for (int y = 0; y < 1024; y++)
 	{
 		if (!resetGrid[x][y]) continue;

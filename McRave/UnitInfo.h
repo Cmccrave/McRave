@@ -7,7 +7,7 @@ using namespace std;
 // Class for storing information about all units
 class UnitInfo {
 	double percentHealth, visibleGroundStrength, visibleAirStrength, maxGroundStrength, maxAirStrength, groundLocal, airLocal, groundRange, airRange, priority, groundDamage, airDamage, speed;
-	int deadFrame, strategy, lastAttackFrame, minStopFrame;
+	int deadFrame, strategy, lastAttackFrame, lastCommandFrame, minStopFrame;
 
 	Unit target, thisUnit, transport;
 	UnitType unitType;
@@ -70,6 +70,9 @@ public:
 	// This is important for units with a minStopFrame > 0 such as Dragoons, where moving before the shot is fully off will result in a dud
 	int getLastAttackFrame() { return lastAttackFrame; }
 
+	// Returns the frame on which you sent a command to the unit (different from BWAPI as it stores it during the frame, rather than after)
+	int getLastCommandFrame() { return lastCommandFrame; }
+
 	// Returns the minimum number of frames that the unit needs after a shot before another command can be issued
 	int getMinStopFrame() { return minStopFrame; }
 
@@ -104,6 +107,7 @@ public:
 	void setDeadFrame(int newDeadFrame) { deadFrame = newDeadFrame; }
 	void setStrategy(int newStrategy){ strategy = newStrategy; }
 	void setLastAttackFrame(int newAttackFrame) { lastAttackFrame = newAttackFrame; }
+	void setLastCommandFrame(int newCommandFrame) { lastCommandFrame = newCommandFrame; }
 	void setMinStopFrame(int newFrame) { minStopFrame = newFrame; }
 
 	void setUnit(Unit newUnit) { thisUnit = newUnit; }

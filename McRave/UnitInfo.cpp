@@ -17,6 +17,7 @@ UnitInfo::UnitInfo()
 	deadFrame = 0;
 	strategy = 0;
 	lastAttackFrame = 0;
+	lastCommandFrame = 0;
 	position = Positions::None;
 	targetPosition = Positions::None;
 	engagePosition = Positions::None;
@@ -25,7 +26,7 @@ UnitInfo::UnitInfo()
 	target = nullptr;
 	unitType = UnitTypes::Enum::None;
 	command = UnitCommandTypes::None;	
-	transport = false;
+	transport = nullptr;
 }
 UnitInfo::~UnitInfo()
 {

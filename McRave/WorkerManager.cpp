@@ -153,12 +153,12 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 		// My crappy temporary attempt at removing spider mines
 		if (worker.getBuildingType().isResourceDepot())
 		{
-			if (Unit mine = Broodwar->getClosestUnit(worker.getPosition(), Filter::GetType == UnitTypes::Terran_Vulture_Spider_Mine, 128))
+			if (Unit mine = Broodwar->getClosestUnit(Position(worker.getBuildPosition()), Filter::GetType == UnitTypes::Terran_Vulture_Spider_Mine, 128))
 			{
-				if (worker.unit()->getLastCommand().getType() != UnitCommandTypes::Attack_Unit)
+				if (worker.unit()->getLastCommand().getType() != UnitCommandTypes::Attack_Unit || !worker.unit()->getLastCommand().getTarget() || !worker.unit()->getLastCommand().getTarget()->exists())
 				{
 					worker.unit()->attack(mine);
-				}
+				}				
 				return;
 			}
 		}

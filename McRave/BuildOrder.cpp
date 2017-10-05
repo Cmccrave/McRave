@@ -120,7 +120,7 @@ bool BuildOrderTrackerClass::isBuildAllowed(Race enemy, string build)
 {
 	if (enemy == Races::Zerg || enemy == Races::Random)
 	{
-		if (build == "TwelveNexus" || build == "NZCore")
+		if (build == "TwelveNexus" || build == "NZCore" || build == "DTExpand")
 		{
 			return false;
 		}
@@ -255,7 +255,13 @@ void BuildOrderTrackerClass::protossOpener()
 
 void BuildOrderTrackerClass::protossTech()
 {
-	if (getTech && techUnit == UnitTypes::None)
+	if (Strategy().needDetection())
+	{
+		techUnit = UnitTypes::Protoss_Observer;
+		getTech = false;
+		techList.insert(techUnit);
+	}
+	else if (getTech && techUnit == UnitTypes::None)
 	{
 		double highest = 0.0;
 		for (auto &tech : Strategy().getUnitScore())
@@ -275,6 +281,7 @@ void BuildOrderTrackerClass::protossTech()
 		getTech = false;
 		techList.insert(techUnit);
 	}
+
 	if (techUnit == UnitTypes::Protoss_Observer)
 	{
 		buildingDesired[UnitTypes::Protoss_Robotics_Facility] = 1;
@@ -325,15 +332,15 @@ void BuildOrderTrackerClass::protossSituational()
 	}
 
 	// Expansion logic
-	if (Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() && (Resources().isMinSaturated() && Production().isProductionSat() && Production().getIdleLowProduction().size() == 0) || (Strategy().isAllyFastExpand() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1))
+	if (Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() && Resources().isMinSaturated() && Production().isProductionSat() && Production().getIdleLowProduction().size() == 0)
 	{
 		buildingDesired[UnitTypes::Protoss_Nexus] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) + 1;
 	}
 
 	// Shield battery logic
-	if (Players().getNumberTerran() == 0)
+	if (Players().getNumberTerran() == 0 && Strategy().isRush() && !Strategy().isAllyFastExpand())
 	{
-		buildingDesired[UnitTypes::Protoss_Shield_Battery] = Strategy().isRush() * Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core);
+		buildingDesired[UnitTypes::Protoss_Shield_Battery] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core);
 	}
 
 	// Gateway logic
@@ -390,7 +397,7 @@ void BuildOrderTrackerClass::terranOpener()
 		if (opening == 2)
 		{
 			buildingDesired[UnitTypes::Terran_Barracks] = (Units().getSupply() >= 22);
-			buildingDesired[UnitTypes::Terran_Refinery] = (Units().getSupply() >= 22);
+			buildingDesired[UnitTypes::Terran_Refinery] = (Units().getSupply() >= 24);
 			buildingDesired[UnitTypes::Terran_Factory] = (Units().getSupply() >= 30) + (Units().getSupply() >= 36);
 		}
 		// 2 Port Wraith
@@ -418,7 +425,7 @@ void BuildOrderTrackerClass::terranSituational()
 	buildingDesired[UnitTypes::Terran_Supply_Depot] = min(22, (int)floor((Units().getSupply() / max(14, (16 - Broodwar->self()->allUnitCount(UnitTypes::Terran_Supply_Depot))))));
 
 	// Expansion logic
-	if (Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() && Production().getIdleLowProduction().size() == 0)
+	if (Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() && Resources().isMinSaturated() && Production().isProductionSat() && Production().getIdleLowProduction().size() == 0)
 	{
 		buildingDesired[UnitTypes::Terran_Command_Center] = Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) + 1;
 	}
@@ -430,7 +437,7 @@ void BuildOrderTrackerClass::terranSituational()
 	}
 
 	// Refinery logic
-	if (Resources().isMinSaturated())
+	if (!Strategy().isPlayPassive() && Resources().isGasSaturated() && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) == buildingDesired[UnitTypes::Terran_Command_Center] && Broodwar->self()->gas() < Broodwar->self()->minerals() * 5 && Broodwar->self()->minerals() > 100)
 	{
 		buildingDesired[UnitTypes::Terran_Refinery] = Resources().getTempGasCount();
 	}
@@ -457,12 +464,6 @@ void BuildOrderTrackerClass::terranSituational()
 	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= 1)
 	{
 		buildingDesired[UnitTypes::Terran_Machine_Shop] = Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) - (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center));
-	}
-
-	// CC logic
-	if (Broodwar->self()->hasResearched(TechTypes::Stim_Packs))
-	{
-		buildingDesired[UnitTypes::Terran_Command_Center] = 2;
 	}
 }
 

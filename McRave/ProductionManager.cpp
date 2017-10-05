@@ -545,8 +545,9 @@ void ProductionTrackerClass::updateTerran()
 				if (canAfford(highestType))
 				{
 					building.unit()->train(highestType);
+					idleLowProduction.erase(building.unit());
 				}
-				else
+				else if (!Strategy().isUnitLocked(highestType))
 				{
 					idleLowProduction[building.unit()] = highestType;
 				}

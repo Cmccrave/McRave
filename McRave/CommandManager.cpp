@@ -26,8 +26,8 @@ void CommandTrackerClass::updateAlliedUnits()
 			continue;
 		}
 
-		// If the unit received a command already
-		if (unit.unit()->getLastCommandFrame() >= Broodwar->getFrameCount())
+		// If the unit received a command already during this frame
+		if (unit.getLastCommandFrame() >= Broodwar->getFrameCount())
 		{
 			continue;
 		}
@@ -225,7 +225,7 @@ void CommandTrackerClass::attack(UnitInfo& unit)
 	else if ((!unit.getTarget()->getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() <= 0) || (unit.getTarget()->getType().isFlyer() && unit.unit()->getAirWeaponCooldown() <= 0))
 	{
 		// If unit receieved an attack command on the target already, don't give another order
-		if (unit.unit()->getLastCommand().getType() == UnitCommandTypes::Attack_Unit && unit.unit()->getLastCommand().getTarget() == unit.getTarget() && unit.unit()->getOrderTarget() == unit.getTarget())
+		if (unit.unit()->getLastCommand().getType() == UnitCommandTypes::Attack_Unit && unit.unit()->getLastCommand().getTarget() == unit.getTarget())
 		{
 			return;
 		}
@@ -314,16 +314,16 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 	}
 
 	// Defend chokepoint with concave
-	int min = unit.getGroundRange() - 128;
+	int min = unit.getGroundRange();
 	int max = unit.getGroundRange() + 128;
 	double closestD = 0.0;
 	WalkPosition start = unit.getWalkPosition();
 	WalkPosition bestPosition = start;
-	if (unit.getGroundRange() <= 32)
+	/*if (unit.getGroundRange() <= 32)
 	{
 		min = 64;
 		max = 128;
-	}
+	}*/
 
 	// Find closest chokepoint
 	WalkPosition choke = WalkPosition(Terrain().getFirstChoke());
