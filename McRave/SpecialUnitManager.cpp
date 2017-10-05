@@ -101,7 +101,7 @@ void SpecialUnitTrackerClass::updateDetectors()
 	for (auto &d : Units().getAllyUnitsFilter(UnitTypes::Protoss_Observer))
 	{
 		UnitInfo detector = d.second;
-		Unit target = Units().getAllyUnits()[detector.unit()].getTarget();
+		Unit target = detector.getTarget();
 
 		// Check if there is a unit that needs revealing
 		if (target && target->exists() && Grids().getEDetectorGrid(Util().getWalkPosition(target)) == 0)

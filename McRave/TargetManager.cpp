@@ -41,19 +41,26 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 			continue;
 		}
 
-		if (enemy.getType().isFlyer())
+		if (unit.getGroundRange() > 0 || unit.getAirRange() > 0)
 		{
-			distance = max(1.0, unit.getPosition().getDistance(enemy.getPosition()) - unit.getAirRange());
+			if (enemy.getType().isFlyer())
+			{
+				distance = max(1.0, unit.getPosition().getDistance(enemy.getPosition()) - unit.getAirRange());
+			}
+			else
+			{
+				distance = max(1.0, unit.getPosition().getDistance(enemy.getPosition()) - unit.getGroundRange());
+			}
 		}
 		else
 		{
-			distance = max(1.0, unit.getPosition().getDistance(enemy.getPosition()) - unit.getGroundRange());
+			distance = max(1.0, unit.getPosition().getDistance(enemy.getPosition()));
 		}
 
 		// If unit needs revealing - TODO check if capable of attacking it too (within range of ally unit)
 		if (unit.getType() == UnitTypes::Protoss_Observer)
 		{
-			if (enemy.unit()->exists() && Grids().getACluster(enemy.getWalkPosition()) > 0 && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()))
+			if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()))
 			{
 				thisUnit = (enemy.getPriority() * (1.0 + 0.1 *(1.0 - enemy.getPercentHealth()))) / distance;
 			}
