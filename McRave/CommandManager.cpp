@@ -250,6 +250,13 @@ void CommandTrackerClass::move(UnitInfo& unit)
 		}
 	}
 
+	// If unit has a transport, move to it or load into it
+	if (unit.getTransport() && unit.getTransport()->exists())
+	{
+		unit.unit()->rightClick(unit.getTransport());
+		return;
+	}
+
 	// If target doesn't exist, move towards it
 	if (unit.getTarget() && unit.getTargetPosition().isValid())
 	{
@@ -391,6 +398,13 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 				return;
 			}
 		}
+	}
+
+	// If unit has a transport and has attacked recently or is a spellcaster, move/load into the transport
+	if (unit.getTransport() && unit.getTransport()->exists() && (Broodwar->getFrameCount() - unit.getLastAttackFrame() > unit.getType().groundWeapon().damageCooldown() || unit.getType().isSpellcaster()))
+	{
+		unit.unit()->rightClick(unit.getTransport());
+		return;
 	}
 
 	// Search a 16x16 grid around the unit
