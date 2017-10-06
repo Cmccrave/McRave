@@ -266,7 +266,7 @@ void BuildOrderTrackerClass::protossTech()
 		double highest = 0.0;
 		for (auto &tech : Strategy().getUnitScore())
 		{			
-			if (tech.first == UnitTypes::Protoss_Dragoon || tech.first == UnitTypes::Protoss_Zealot || techList.find(tech.first) != techList.end())
+			if (tech.first == UnitTypes::Protoss_Dragoon || tech.first == UnitTypes::Protoss_Zealot)
 			{
 				continue;
 			}
@@ -278,8 +278,7 @@ void BuildOrderTrackerClass::protossTech()
 		}
 
 		// No longer need to choose a tech
-		getTech = false;
-		techList.insert(techUnit);
+		getTech = false;		
 	}
 
 	if (techUnit == UnitTypes::Protoss_Observer)
@@ -295,9 +294,16 @@ void BuildOrderTrackerClass::protossTech()
 	}
 	else if (techUnit == UnitTypes::Protoss_Corsair)
 	{
-		buildingDesired[UnitTypes::Protoss_Stargate] = 1;
-		buildingDesired[UnitTypes::Protoss_Citadel_of_Adun] = min(1, Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Stargate));
-		buildingDesired[UnitTypes::Protoss_Templar_Archives] = min(1, Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun));
+		if (techList.find(techUnit) != techList.end())
+		{
+			buildingDesired[UnitTypes::Protoss_Stargate] = 2;
+		}
+		else
+		{
+			buildingDesired[UnitTypes::Protoss_Stargate] = 1;
+			buildingDesired[UnitTypes::Protoss_Citadel_of_Adun] = min(1, Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Stargate));
+			buildingDesired[UnitTypes::Protoss_Templar_Archives] = min(1, Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun));
+		}
 	}
 	else if (techUnit == UnitTypes::Protoss_Scout)
 	{
@@ -316,6 +322,8 @@ void BuildOrderTrackerClass::protossTech()
 		buildingDesired[UnitTypes::Protoss_Citadel_of_Adun] = 1;
 		buildingDesired[UnitTypes::Protoss_Templar_Archives] = min(1, Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun));
 	}
+
+	techList.insert(techUnit);
 	return;
 }
 
