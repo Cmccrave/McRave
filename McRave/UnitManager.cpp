@@ -773,12 +773,12 @@ void UnitTrackerClass::updateGlobalCalculations()
 
 UnitInfo& UnitTrackerClass::getAllyUnit(Unit unit)
 {
+	returnInfo = UnitInfo();
 	if (allyUnits.find(unit) != allyUnits.end())
 	{
-		return allyUnits[unit];
+		returnInfo = allyUnits[unit];
 	}
-	assert();
-	return UnitInfo();
+	return returnInfo;
 }
 
 map <Unit, UnitInfo>& UnitTrackerClass::getAllyUnitsFilter(UnitType type)

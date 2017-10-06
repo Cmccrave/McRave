@@ -15,11 +15,12 @@ class UnitTrackerClass
 	map <UnitSizeType, int> allySizes;
 	map <UnitSizeType, int> enemySizes;
 	map <UnitType, int> enemyComposition;
-	map<Unit, UnitInfo> returnValues;
+
+	UnitInfo returnInfo;
+	map <Unit, UnitInfo> returnValues;
 
 	double globalAllyStrength, globalEnemyStrength;
 	double allyDefense, enemyDefense;
-	double groundLatch, airLatch;
 	int supply, globalStrategy;
 public:
 
