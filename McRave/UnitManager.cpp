@@ -268,6 +268,8 @@ void UnitTrackerClass::updateAliveUnits()
 			continue;
 		}
 
+		Broodwar->drawTextMap(ally.getPosition(), "%d", ally.getLastAttackFrame());
+
 		// If deadframe is 0, unit is alive still
 		if (ally.getDeadFrame() == 0)
 		{
@@ -780,15 +782,14 @@ UnitInfo& UnitTrackerClass::getAllyUnit(Unit unit)
 	return UnitInfo();
 }
 
-map <Unit, UnitInfo> UnitTrackerClass::getAllyUnitsFilter(UnitType type)
+map <Unit, UnitInfo>& UnitTrackerClass::getAllyUnitsFilter(UnitType type)
 {
-	map<Unit, UnitInfo> returnValues;
+	map<Unit, UnitInfo> returnValues = {};
 	for (auto &u : allyUnits)
 	{
 		UnitInfo &unit = u.second;
 		if (unit.getType() == type)
 		{
-
 			returnValues[unit.unit()] = unit;
 		}
 	}

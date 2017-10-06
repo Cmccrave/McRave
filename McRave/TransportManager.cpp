@@ -63,9 +63,6 @@ void TransportTrackerClass::updateInformation(TransportInfo& transport)
 
 void TransportTrackerClass::updateDecision(TransportInfo& transport)
 {
-
-	Broodwar->drawTextMap(transport.getPosition(), "%d  %d", transport.isLoading(), transport.isUnloading());
-
 	// Check if we should be loading/unloading any cargo
 	for (auto &c : transport.getAssignedCargo())
 	{
@@ -82,7 +79,7 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 			transport.setDestination(cargo.getPosition());
 
 			// If it's requesting a pickup, set load state to 1
-			if (cargo.getTargetPosition().getDistance(cargo.getPosition()) > cargo.getGroundRange() || cargo.getStrategy() != 1 || (cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.unit()->getEnergy() < 75) || (cargo.getType() != UnitTypes::Protoss_High_Templar && Broodwar->getFrameCount() - cargo.getLastAttackFrame() > cargo.getType().groundWeapon().damageCooldown()))
+			if (cargo.getTargetPosition().getDistance(cargo.getPosition()) > cargo.getGroundRange() + 64 || cargo.getStrategy() != 1 || (cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.unit()->getEnergy() < 75) || (cargo.getType() != UnitTypes::Protoss_High_Templar && Broodwar->getFrameCount() - transport.getLastDropFrame() > 50))
 			{
 				transport.unit()->load(cargo.unit());
 				transport.setLoading(true);
@@ -97,10 +94,11 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 			// If cargo wants to fight, find a spot to unload
 			if (cargo.getStrategy() == 1)
 			{
-				if (transport.getPosition().getDistance(transport.getDestination()) < cargo.getGroundRange() && Util().isSafe(transport.getWalkPosition(), WalkPosition(transport.getDestination()), transport.getType(), true, true, true))
+				if (transport.getPosition().getDistance(transport.getDestination()) < cargo.getGroundRange())
 				{
 					transport.setUnloading(true);
 					transport.unit()->unload(cargo.unit());
+					transport.setLastDropFrame(Broodwar->getFrameCount());
 					continue;
 				}
 			}
@@ -122,9 +120,9 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 	double best = 0.0;	
 
 	// First look for mini tiles with no threat that are closest to the enemy and on low mobility
-	for (int x = start.x - 16; x <= start.x + 16 + transport.getType().tileWidth() * 4; x++)
+	for (int x = start.x - 32; x <= start.x + 32 + transport.getType().tileWidth() * 4; x++)
 	{
-		for (int y = start.y - 16; y <= start.y + 16 + transport.getType().tileWidth() * 4; y++)
+		for (int y = start.y - 32; y <= start.y + 32 + transport.getType().tileWidth() * 4; y++)
 		{
 			if (!WalkPosition(x, y).isValid())
 			{
@@ -138,23 +136,23 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 			}
 
 			double distance = max(1.0, transport.getDestination().getDistance(Position(WalkPosition(x, y))));
-			double threat = max(0.1, Grids().getEGroundThreat(x, y) + Grids().getEAirThreat(x, y));
+			double threat = max(0.01, Grids().getEGroundThreat(x, y) + Grids().getEAirThreat(x, y));
 			double mobility = max(1.0, double(Grids().getMobilityGrid(x, y)));
 
 			// Include mobility when looking to unload
 			if (transport.isUnloading())
 			{
-				if (1.0 / (distance * threat) > best /*&& Util().isSafe(start, WalkPosition(x, y), transport.getType(), true, true, true)*/)
+				if (1.0 / distance > best && Grids().getEGroundThreat(WalkPosition(x, y)) == 0.0 && Grids().getEAirThreat(WalkPosition(x, y)) == 0.0 && Grids().getMobilityGrid(WalkPosition(x, y)) > 0)
 				{
-					best = 1.0 / (distance * threat);
+					best = 1.0 / distance;
 					bestPosition = Position(WalkPosition(x, y));
 				}
 			}
 			else
 			{
-				if (1.0 / (distance * threat) > best /*&& Util().isSafe(start, WalkPosition(x, y), transport.getType(), true, true, false)*/)
+				if (1.0 / distance > best && Grids().getEGroundThreat(WalkPosition(x, y)) == 0.0 && Grids().getEAirThreat(WalkPosition(x, y)) == 0.0)
 				{
-					best = 1.0 / (distance * threat);
+					best = 1.0 / distance;
 					bestPosition = Position(WalkPosition(x, y));
 
 				}

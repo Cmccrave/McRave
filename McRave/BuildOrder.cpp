@@ -179,6 +179,7 @@ void BuildOrderTrackerClass::updateDecision()
 		// If we have our tech unit, set to none
 		if (Broodwar->self()->completedUnitCount(techUnit) > 0)
 		{
+			techList.insert(techUnit);
 			techUnit = UnitTypes::None;
 		}
 
@@ -322,8 +323,6 @@ void BuildOrderTrackerClass::protossTech()
 		buildingDesired[UnitTypes::Protoss_Citadel_of_Adun] = 1;
 		buildingDesired[UnitTypes::Protoss_Templar_Archives] = min(1, Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun));
 	}
-
-	techList.insert(techUnit);
 	return;
 }
 

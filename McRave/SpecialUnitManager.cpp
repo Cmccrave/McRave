@@ -13,9 +13,15 @@ void SpecialUnitTrackerClass::update()
 
 void SpecialUnitTrackerClass::updateArbiters()
 {
+	map <Unit, UnitInfo>& myArbiters = Units().getAllyUnitsFilter(UnitTypes::Protoss_Arbiter);
+	if (myArbiters.size() == 0)
+	{
+		return;
+	}
+
 	for (auto &a : Units().getAllyUnitsFilter(UnitTypes::Protoss_Arbiter))
 	{
-		UnitInfo arbiter = a.second;
+		UnitInfo& arbiter = a.second;
 		/*if (Broodwar->self()->hasResearched(TechTypes::Recall) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Arbiter) > 1 && arbiter.unit()->getEnergy() > 100 && (!recaller || (recaller && !recaller->exists())))
 		{
 		recaller = arbiter.unit();
@@ -98,9 +104,14 @@ void SpecialUnitTrackerClass::updateArbiters()
 
 void SpecialUnitTrackerClass::updateDetectors()
 {
+	map <Unit, UnitInfo>& myDetectors = Units().getAllyUnitsFilter(UnitTypes::Protoss_Observer);
+	if (myDetectors.size() == 0)
+	{
+		return;
+	}
 	for (auto &d : Units().getAllyUnitsFilter(UnitTypes::Protoss_Observer))
 	{
-		UnitInfo detector = d.second;
+		UnitInfo& detector = d.second;
 		Unit target = detector.getTarget();
 
 		// Check if there is a unit that needs revealing
@@ -152,6 +163,11 @@ void SpecialUnitTrackerClass::updateDetectors()
 
 void SpecialUnitTrackerClass::updateReavers()
 {
+	map <Unit, UnitInfo>& myReavers = Units().getAllyUnitsFilter(UnitTypes::Protoss_Reaver);
+	if (myReavers.size() == 0)
+	{
+		return;
+	}
 	for (auto &r : Units().getAllyUnitsFilter(UnitTypes::Protoss_Reaver))
 	{
 		UnitInfo &reaver = r.second;
@@ -167,6 +183,11 @@ void SpecialUnitTrackerClass::updateReavers()
 
 void SpecialUnitTrackerClass::updateVultures()
 {
+	map <Unit, UnitInfo>& myVultures = Units().getAllyUnitsFilter(UnitTypes::Terran_Vulture);
+	if (myVultures.size() == 0)
+	{
+		return;
+	}
 	for (auto &v : Units().getAllyUnitsFilter(UnitTypes::Terran_Vulture))
 	{
 		UnitInfo &vulture = v.second;
