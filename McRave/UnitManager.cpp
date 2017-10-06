@@ -452,7 +452,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 			{
 				if (unit.getType().isFlyer())
 				{
-					enemyToEngage = max(0.0, ((enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getAirRange()) / enemy.getSpeed()) - unitToEngage);					
+					enemyToEngage = max(0.0, ((enemy.getPosition().getDistance(unit.getEngagePosition()) - enemy.getAirRange()) / enemy.getSpeed()) - unitToEngage);
 					simRatio = max(0.0, (simulationTime - enemyToEngage) + ((enemy.getAirRange() - unit.getAirRange()) / (enemy.getSpeed())));
 				}
 				else
@@ -733,16 +733,15 @@ void UnitTrackerClass::updateGlobalCalculations()
 			globalStrategy = 1;
 			return;
 		}
-		// If we're behind
-		else
+		// If there's only one enemy left and it's a Terran, contain him
+		else if (Players().getPlayers().size() <= 1 && Players().getNumberTerran() > 0)
 		{
-			// If Terran, contain
-			if (Broodwar->enemy()->getRace() == Races::Terran)
-			{
-				globalStrategy = 1;
-				return;
-			}
-			// Else, retreat
+			globalStrategy = 1;
+			return;
+		}
+		// Else, retreat, useful to check number of enemy players left for multiplayer games
+		else
+		{			
 			globalStrategy = 0;
 			return;
 		}
@@ -783,8 +782,8 @@ UnitInfo& UnitTrackerClass::getAllyUnit(Unit unit)
 }
 
 map <Unit, UnitInfo>& UnitTrackerClass::getAllyUnitsFilter(UnitType type)
-{
-	map<Unit, UnitInfo> returnValues = {};
+{	
+	returnValues.clear();
 	for (auto &u : allyUnits)
 	{
 		UnitInfo &unit = u.second;
