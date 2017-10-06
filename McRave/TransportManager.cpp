@@ -118,6 +118,7 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 	Position bestPosition = transport.getDestination();
 	WalkPosition start = transport.getWalkPosition();
 	double best = 0.0;	
+	double closest = 0.0;
 
 	// First look for mini tiles with no threat that are closest to the enemy and on low mobility
 	for (int x = start.x - 32; x <= start.x + 32 + transport.getType().tileWidth() * 4; x++)
@@ -135,24 +136,26 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 				continue;
 			}
 
-			double distance = max(1.0, transport.getDestination().getDistance(Position(WalkPosition(x, y))));
-			double threat = max(0.01, Grids().getEGroundThreat(x, y) + Grids().getEAirThreat(x, y));
+			double distance = transport.getDestination().getDistance(Position(WalkPosition(x, y)));
+			double threat = Grids().getEGroundThreat(x, y) + Grids().getEAirThreat(x, y);
 			double mobility = max(1.0, double(Grids().getMobilityGrid(x, y)));
 
 			// Include mobility when looking to unload
 			if (transport.isUnloading())
 			{
-				if (1.0 / distance > best && Grids().getEGroundThreat(WalkPosition(x, y)) == 0.0 && Grids().getEAirThreat(WalkPosition(x, y)) == 0.0 && Grids().getMobilityGrid(WalkPosition(x, y)) > 0)
+				if (threat <= best && distance < closest && Grids().getMobilityGrid(WalkPosition(x, y)) > 0)
 				{
-					best = 1.0 / distance;
+					best = threat;
+					closest = distance;
 					bestPosition = Position(WalkPosition(x, y));
 				}
 			}
 			else
 			{
-				if (1.0 / distance > best && Grids().getEGroundThreat(WalkPosition(x, y)) == 0.0 && Grids().getEAirThreat(WalkPosition(x, y)) == 0.0)
+				if (threat <= best && distance < closest)
 				{
-					best = 1.0 / distance;
+					best = threat;
+					closest = distance;
 					bestPosition = Position(WalkPosition(x, y));
 
 				}
