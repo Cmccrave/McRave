@@ -63,6 +63,9 @@ void TransportTrackerClass::updateInformation(TransportInfo& transport)
 
 void TransportTrackerClass::updateDecision(TransportInfo& transport)
 {
+
+	Broodwar->drawTextMap(transport.getPosition(), "%d  %d", transport.isLoading(), transport.isUnloading());
+
 	// Check if we should be loading/unloading any cargo
 	for (auto &c : transport.getAssignedCargo())
 	{
@@ -94,10 +97,9 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 			// If cargo wants to fight, find a spot to unload
 			if (cargo.getStrategy() == 1)
 			{
-				transport.setUnloading(true);
-
 				if (transport.getPosition().getDistance(transport.getDestination()) < cargo.getGroundRange() && Util().isSafe(transport.getWalkPosition(), WalkPosition(transport.getDestination()), transport.getType(), true, true, true))
 				{
+					transport.setUnloading(true);
 					transport.unit()->unload(cargo.unit());
 					continue;
 				}
@@ -110,19 +112,19 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 void TransportTrackerClass::updateMovement(TransportInfo& transport)
 {
 	// If loading, ignore movement commands
-	if (transport.isLoading())
+	if (transport.isLoading() || transport.isUnloading())
 	{
 		return;
 	}
 
 	Position bestPosition = transport.getDestination();
 	WalkPosition start = transport.getWalkPosition();
-	double best = 0.0;
+	double best = 0.0;	
 
 	// First look for mini tiles with no threat that are closest to the enemy and on low mobility
-	for (int x = start.x - 15; x <= start.x + 15 + transport.getType().tileWidth() * 4; x++)
+	for (int x = start.x - 16; x <= start.x + 16 + transport.getType().tileWidth() * 4; x++)
 	{
-		for (int y = start.y - 15; y <= start.y + 15 + transport.getType().tileWidth() * 4; y++)
+		for (int y = start.y - 16; y <= start.y + 16 + transport.getType().tileWidth() * 4; y++)
 		{
 			if (!WalkPosition(x, y).isValid())
 			{
@@ -130,7 +132,7 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 			}
 
 			// Must keep the shuttle moving to retain maximum speed
-			if (Position(WalkPosition(x, y)).getDistance(Position(start)) <= 64)
+			if (Position(WalkPosition(x, y)).getDistance(Position(start)) <= 16)
 			{
 				continue;
 			}
@@ -142,16 +144,19 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 			// Include mobility when looking to unload
 			if (transport.isUnloading())
 			{
-				if (1.0 / distance > best && Util().isSafe(start, WalkPosition(x, y), transport.getType(), true, true, true))
+				if (1.0 / (distance * threat) > best /*&& Util().isSafe(start, WalkPosition(x, y), transport.getType(), true, true, true)*/)
 				{
-					best = 1.0 / distance;
+					best = 1.0 / (distance * threat);
+					bestPosition = Position(WalkPosition(x, y));
 				}
 			}
 			else
 			{
-				if (1.0 / distance > best && Util().isSafe(start, WalkPosition(x, y), transport.getType(), true, true, false))
+				if (1.0 / (distance * threat) > best /*&& Util().isSafe(start, WalkPosition(x, y), transport.getType(), true, true, false)*/)
 				{
-					best = 1.0 / distance;
+					best = 1.0 / (distance * threat);
+					bestPosition = Position(WalkPosition(x, y));
+
 				}
 			}
 		}

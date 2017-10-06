@@ -104,7 +104,7 @@ void SpecialUnitTrackerClass::updateDetectors()
 		Unit target = detector.getTarget();
 
 		// Check if there is a unit that needs revealing
-		if (target && target->exists() && Grids().getEDetectorGrid(Util().getWalkPosition(target)) == 0)
+		if (target && target->exists())
 		{
 			detector.setEngagePosition(target->getPosition());
 			detector.unit()->move(target->getPosition());

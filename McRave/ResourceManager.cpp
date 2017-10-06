@@ -149,7 +149,7 @@ Position ResourceTrackerClass::resourceClusterCenter(Unit resource)
 {
 	// Get average of minerals	
 	int avgX = 0, avgY = 0, size = 0;
-	for (auto &m : Broodwar->getUnitsInRadius(resource->getPosition(), 320, Filter::IsMineralField))
+	for (auto &m : Broodwar->getUnitsInRadius(resource->getPosition(), 320, Filter::IsMineralField || Filter::GetType == UnitTypes::Resource_Vespene_Geyser))
 	{
 		avgX = avgX + m->getPosition().x;
 		avgY = avgY + m->getPosition().y;

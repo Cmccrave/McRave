@@ -37,13 +37,13 @@ void GridTrackerClass::update()
 void GridTrackerClass::reset()
 {
 	//// Temp debugging for tile positions
-	//for (int x = 0; x <= Broodwar->mapWidth()*4; x++)
+	//for (int x = 0; x <= Broodwar->mapWidth(); x++)
 	//{
-	//	for (int y = 0; y <= Broodwar->mapHeight()*4; y++)
+	//	for (int y = 0; y <= Broodwar->mapHeight(); y++)
 	//	{
-	//		if (antiMobilityGrid[x][y] > 0)
+	//		if (resourceGrid[x][y] > 0)
 	//		{
-	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Black);
+	//			Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 6, Colors::Black);
 	//		}
 	//	}
 	//}
@@ -500,7 +500,7 @@ void GridTrackerClass::updateResourceGrid(ResourceInfo& resource)
 			{
 				if (TilePosition(x, y).isValid())
 				{
-					if (resource.getResourceClusterPosition().getDistance(Position(TilePosition(x, y))) <= 320 && resource.getClosestBasePosition().isValid() && resource.getPosition().getDistance(resource.getClosestBasePosition()) > Position(x * 32, y * 32).getDistance(resource.getClosestBasePosition()))
+					if (resource.getResourceClusterPosition().getDistance(Position(TilePosition(x, y))) <= 256 && resource.getClosestBasePosition().isValid() && resource.getPosition().getDistance(resource.getClosestBasePosition()) > Position(x * 32, y * 32).getDistance(resource.getClosestBasePosition()))
 					{
 						if (resource.unit()->exists())
 						{
