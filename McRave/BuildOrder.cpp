@@ -582,7 +582,8 @@ void BuildOrderTrackerClass::RoboExpand()
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
 	buildingDesired[UnitTypes::Protoss_Robotics_Facility] = Units().getSupply() >= 56;
-	getOpening = Units().getSupply() < 56;
+	buildingDesired[UnitTypes::Protoss_Robotics_Support_Bay] = Units().getSupply() >= 64;
+	getOpening = Units().getSupply() < 64;
 	return;
 }
 
@@ -604,3 +605,8 @@ void BuildOrderTrackerClass::ZealotRush()
 	getOpening = Units().getSupply() < 44;
 	return;
 }
+
+//void BuildOrderTrackerClass::ReaverRush()
+//{
+//
+//}

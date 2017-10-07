@@ -13,15 +13,9 @@ void SpecialUnitTrackerClass::update()
 
 void SpecialUnitTrackerClass::updateArbiters()
 {
-	map <Unit, UnitInfo>& myArbiters = Units().getAllyUnitsFilter(UnitTypes::Protoss_Arbiter);
-	if (myArbiters.size() == 0)
-	{
-		return;
-	}
-
 	for (auto &a : Units().getAllyUnitsFilter(UnitTypes::Protoss_Arbiter))
 	{
-		UnitInfo& arbiter = a.second;
+		UnitInfo &arbiter = Units().getAllyUnit(a);
 		/*if (Broodwar->self()->hasResearched(TechTypes::Recall) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Arbiter) > 1 && arbiter.unit()->getEnergy() > 100 && (!recaller || (recaller && !recaller->exists())))
 		{
 		recaller = arbiter.unit();
@@ -76,7 +70,7 @@ void SpecialUnitTrackerClass::updateArbiters()
 			{
 				if (WalkPosition(x, y).isValid() && Grids().getEMPGrid(x, y) == 0 && Grids().getArbiterGrid(x, y) == 0 && (closestD == 0.0 || Grids().getACluster(x, y) > bestCluster || (Grids().getACluster(x, y) == bestCluster && Terrain().getPlayerStartingPosition().getDistance(Position(WalkPosition(x, y))) < closestD)))
 				{
-					if (Util().isSafe(start, WalkPosition(x, y), UnitTypes::Protoss_Arbiter, false, true, false))
+					if (Util().isSafe(WalkPosition(x, y), UnitTypes::Protoss_Arbiter, false, true))
 					{
 						closestD = Terrain().getPlayerStartingPosition().getDistance(Position(WalkPosition(x, y)));
 						bestCluster = Grids().getACluster(x, y);
@@ -103,15 +97,10 @@ void SpecialUnitTrackerClass::updateArbiters()
 }
 
 void SpecialUnitTrackerClass::updateDetectors()
-{
-	map <Unit, UnitInfo>& myDetectors = Units().getAllyUnitsFilter(UnitTypes::Protoss_Observer);
-	if (myDetectors.size() == 0)
-	{
-		return;
-	}
+{	
 	for (auto &d : Units().getAllyUnitsFilter(UnitTypes::Protoss_Observer))
 	{
-		UnitInfo& detector = d.second;
+		UnitInfo &detector = Units().getAllyUnit(d);
 		Unit target = detector.getTarget();
 
 		// Check if there is a unit that needs revealing
@@ -162,16 +151,10 @@ void SpecialUnitTrackerClass::updateDetectors()
 }
 
 void SpecialUnitTrackerClass::updateReavers()
-{
-	map <Unit, UnitInfo>& myReavers = Units().getAllyUnitsFilter(UnitTypes::Protoss_Reaver);
-	if (myReavers.size() == 0)
-	{
-		return;
-	}
+{	
 	for (auto &r : Units().getAllyUnitsFilter(UnitTypes::Protoss_Reaver))
 	{
-		UnitInfo &reaver = r.second;
-
+		UnitInfo &reaver = Units().getAllyUnit(r);
 		// If we need Scarabs
 		if (reaver.unit()->getScarabCount() < 5)
 		{
@@ -182,15 +165,10 @@ void SpecialUnitTrackerClass::updateReavers()
 }
 
 void SpecialUnitTrackerClass::updateVultures()
-{
-	map <Unit, UnitInfo>& myVultures = Units().getAllyUnitsFilter(UnitTypes::Terran_Vulture);
-	if (myVultures.size() == 0)
-	{
-		return;
-	}
+{	
 	for (auto &v : Units().getAllyUnitsFilter(UnitTypes::Terran_Vulture))
 	{
-		UnitInfo &vulture = v.second;
+		UnitInfo &vulture = Units().getAllyUnit(v);
 		double closestD = 0.0;
 		int x = rand() % 64 - 64;
 		int y = rand() % 64 - 64;

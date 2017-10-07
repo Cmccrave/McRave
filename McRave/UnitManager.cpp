@@ -268,8 +268,6 @@ void UnitTrackerClass::updateAliveUnits()
 			continue;
 		}
 
-		Broodwar->drawTextMap(ally.getPosition(), "%d", ally.getLastAttackFrame());
-
 		// If deadframe is 0, unit is alive still
 		if (ally.getDeadFrame() == 0)
 		{
@@ -407,8 +405,7 @@ void UnitTrackerClass::updateAlly(UnitInfo& unit)
 	unit.setMaxGroundStrength(Util().getMaxGroundStrength(unit));
 	unit.setVisibleAirStrength(Util().getVisibleAirStrength(unit));
 	unit.setMaxAirStrength(Util().getMaxAirStrength(unit));
-	unit.setPriority(Util().getPriority(unit));
-	unit.setEngagePosition(unit.getPosition() + Position((unit.getTargetPosition() - unit.getPosition()) * (unit.getPosition().getDistance(unit.getTargetPosition()) - max(unit.getGroundRange(), unit.getAirRange())) / unit.getPosition().getDistance(unit.getTargetPosition())));
+	unit.setPriority(Util().getPriority(unit));	
 
 	if (unit.unit()->getLastCommand().getTargetPosition().isValid())
 	{
@@ -773,15 +770,15 @@ void UnitTrackerClass::updateGlobalCalculations()
 
 UnitInfo& UnitTrackerClass::getAllyUnit(Unit unit)
 {
-	returnInfo = UnitInfo();
 	if (allyUnits.find(unit) != allyUnits.end())
 	{
-		returnInfo = allyUnits[unit];
+		return allyUnits[unit];
 	}
-	return returnInfo;
+	assert();
+	return UnitInfo();
 }
 
-map <Unit, UnitInfo>& UnitTrackerClass::getAllyUnitsFilter(UnitType type)
+set<Unit> UnitTrackerClass::getAllyUnitsFilter(UnitType type)
 {	
 	returnValues.clear();
 	for (auto &u : allyUnits)
@@ -789,7 +786,7 @@ map <Unit, UnitInfo>& UnitTrackerClass::getAllyUnitsFilter(UnitType type)
 		UnitInfo &unit = u.second;
 		if (unit.getType() == type)
 		{
-			returnValues[unit.unit()] = unit;
+			returnValues.insert(unit.unit());
 		}
 	}
 	return returnValues;

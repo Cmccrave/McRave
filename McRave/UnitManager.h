@@ -16,8 +16,7 @@ class UnitTrackerClass
 	map <UnitSizeType, int> enemySizes;
 	map <UnitType, int> enemyComposition;
 
-	UnitInfo returnInfo;
-	map <Unit, UnitInfo> returnValues;
+	set<Unit> returnValues;
 
 	double globalAllyStrength, globalEnemyStrength;
 	double allyDefense, enemyDefense;
@@ -30,7 +29,7 @@ public:
 	map<UnitSizeType, int>& getEnemySizes() { return enemySizes; }
 	map<UnitType, int>& getEnemyComposition() { return enemyComposition; }
 
-	map<Unit, UnitInfo>& getAllyUnitsFilter(UnitType);
+	set<Unit> getAllyUnitsFilter(UnitType);
 
 	UnitInfo& getAllyUnit(Unit);
 	UnitInfo& getEnemyUnit(Unit);

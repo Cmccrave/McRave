@@ -29,10 +29,13 @@ public:
 	// Returns the set of WalkPositions under the unit
 	set<WalkPosition> getWalkPositionsUnderUnit(Unit);
 
-	// Returns 1 if the tiles at the finish that would be under the unit meet the criteria of the options chosen (can be any combination or all three)
+	// Returns 1 if the tiles at the finish that would be under the unit meet the criteria of the options chosen
 	// If groundcheck/aircheck, then this function checks if every WalkPosition around finish has no ground/air threat
-	// If mobilitycheck, then this function checks if every WalkPosition around finish has suitable mobility
-	bool isSafe(WalkPosition start, WalkPosition finish, UnitType, bool groundCheck, bool airCheck, bool mobilityCheck);
+	bool isSafe(WalkPosition finish, UnitType, bool groundCheck, bool airCheck);
+
+
+	//
+	bool isMobile(WalkPosition start, WalkPosition finish, UnitType);
 	
 };
 

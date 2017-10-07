@@ -29,55 +29,21 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 	{
 		thisUnit = 0.0;
 		UnitInfo &enemy = e.second;
-		double distance = 0.0;
+		double distance = distance = max(0.0, unit.getPosition().getDistance(enemy.getPosition()));
 
 		if (!enemy.unit())
 		{
 			continue;
 		}
 
+		// If it's an egg or larva, ignore it
 		if (enemy.getType() == UnitTypes::Zerg_Egg || enemy.getType() == UnitTypes::Zerg_Larva)
 		{
 			continue;
 		}
 
-		if (unit.getGroundRange() > 0 || unit.getAirRange() > 0)
-		{
-			if (enemy.getType().isFlyer())
-			{
-				distance = max(1.0, unit.getPosition().getDistance(enemy.getPosition()) - unit.getAirRange());
-			}
-			else
-			{
-				distance = max(1.0, unit.getPosition().getDistance(enemy.getPosition()) - unit.getGroundRange());
-			}
-		}
-		else
-		{
-			distance = max(1.0, unit.getPosition().getDistance(enemy.getPosition()));
-		}
-
-		// If unit needs revealing
-		if (unit.getType() == UnitTypes::Protoss_Observer)
-		{
-			if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && ((!enemy.getType().isFlyer() && Grids().getAGroundThreat(enemy.getWalkPosition()) > 0) || (enemy.getType().isFlyer() && Grids().getAAirThreat(enemy.getWalkPosition()) > 0) || Terrain().isInAllyTerritory(enemy.unit())) && Grids().getEDetectorGrid(enemy.getWalkPosition()) == 0)
-			{
-				thisUnit = (enemy.getPriority() * (1.0 + 0.1 *(1.0 - enemy.getPercentHealth()))) / distance;
-			}
-			else
-			{
-				continue;
-			}
-		}
-
-		// If unit is dead or unattackable
-		if (enemy.getDeadFrame() > 0 || (enemy.getType().isFlyer() && unit.getAirRange() == 0.0) || (!enemy.getType().isFlyer() && unit.getGroundRange() == 0.0))
-		{
-			continue;
-		}
-
-		// Dont chase vultures or mines as melee units - TEMP let zealots target vultures to prevent separation
-		if ((/*enemy.getType() == UnitTypes::Terran_Vulture ||*/ enemy.getType() == UnitTypes::Terran_Vulture_Spider_Mine) && unit.getGroundRange() < 32 && unit.getType() != UnitTypes::Protoss_Dark_Templar)
+		// If unit is dead or unattackable, ignore it
+		if (!unit.getType().isDetector() && (enemy.getDeadFrame() > 0 || (enemy.getType().isFlyer() && unit.getAirRange() == 0.0) || (!enemy.getType().isFlyer() && unit.getGroundRange() == 0.0)))
 		{
 			continue;
 		}
@@ -88,11 +54,25 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 			continue;
 		}
 
-		//// Reavers and Tanks target highest priority units with clusters around them
-		//if (unit.getType() == UnitTypes::Protoss_Reaver || unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
-		//{
-		//	thisUnit = (enemy.getPriority() * Grids().getEGroundCluster(enemy.getWalkPosition())) / distance;
-		//}
+		// If the enemy is a mine and this is a melee unit (except DT), ignore it
+		if (enemy.getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.getGroundRange() < 32 && unit.getType() != UnitTypes::Protoss_Dark_Templar)
+		{
+			continue;
+		}
+
+
+		// If this is a detector unit, target invisible units only
+		if (unit.getType().isDetector() && !unit.getType().isBuilding())
+		{
+			if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && ((!enemy.getType().isFlyer() && Grids().getAGroundThreat(enemy.getWalkPosition()) > 0) || (enemy.getType().isFlyer() && Grids().getAAirThreat(enemy.getWalkPosition()) > 0) || Terrain().isInAllyTerritory(enemy.unit())) && Grids().getEDetectorGrid(enemy.getWalkPosition()) == 0)
+			{
+				thisUnit = (enemy.getPriority() * (1.0 + 0.1 *(1.0 - enemy.getPercentHealth()))) / distance;
+			}
+			else
+			{
+				continue;
+			}
+		}
 
 		// Arbiters only target tanks - Testing no regard for distance
 		if (unit.getType() == UnitTypes::Protoss_Arbiter)
@@ -107,17 +87,17 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		else if (unit.getType() == UnitTypes::Protoss_High_Templar)
 		{
 			if (Grids().getPsiStormGrid(enemy.getWalkPosition()) == 0 && Grids().getACluster(enemy.getWalkPosition()) < (Grids().getEAirCluster(enemy.getWalkPosition()) + Grids().getEGroundCluster(enemy.getWalkPosition())) && !enemy.getType().isBuilding())
-			{				
+			{
 				thisUnit = (enemy.getPriority() * max(Grids().getEGroundCluster(enemy.getWalkPosition()), Grids().getEAirCluster(enemy.getWalkPosition()))) / distance;
 			}
 		}
 
-		else if (unit.getAirDamage() > 0.0)
-		{			
+		else if (enemy.getType().isFlyer() && unit.getAirDamage() > 0.0)
+		{
 			thisUnit = (enemy.getPriority() * (1.0 + 0.1 *(1.0 - enemy.getPercentHealth()))) / distance;
 		}
 		else if (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0)
-		{			
+		{
 			thisUnit = (enemy.getPriority() * (1.0 + 0.1 *(1.0 - enemy.getPercentHealth()))) / distance;
 		}
 
@@ -142,6 +122,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		unit.setTargetPosition(targetPosition);
 		unit.setTargetWalkPosition(targetWalkPosition);
 		unit.setTargetTilePosition(targetTilePosition);
+		unit.setEngagePosition(unit.getPosition() + Position((unit.getTargetPosition() - unit.getPosition()) * (unit.getPosition().getDistance(unit.getTargetPosition()) - max(unit.getGroundRange(), unit.getAirRange())) / unit.getPosition().getDistance(unit.getTargetPosition())));
 	}
 	return target;
 }

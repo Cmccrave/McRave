@@ -181,7 +181,7 @@ double UtilTrackerClass::getPriority(UnitInfo& unit)
 	// Support units gain higher priority due to their capabilities
 	if (unit.getType() == UnitTypes::Protoss_Arbiter || unit.getType() == UnitTypes::Protoss_Observer || unit.getType() == UnitTypes::Protoss_Shuttle || unit.getType() == UnitTypes::Terran_Science_Vessel || unit.getType() == UnitTypes::Terran_Dropship || unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine)
 	{
-		return 10.0;
+		return 5.0;
 	}
 
 	// Carriers don't have any strength, manually modify priority
@@ -199,7 +199,7 @@ double UtilTrackerClass::getPriority(UnitInfo& unit)
 		}
 		else
 		{
-			return 1.0;
+			return 2.0;
 		}
 	}
 
@@ -426,28 +426,45 @@ set<WalkPosition> UtilTrackerClass::getWalkPositionsUnderUnit(Unit unit)
 	return returnValues;
 }
 
-bool UtilTrackerClass::isSafe(WalkPosition start, WalkPosition end, UnitType unitType, bool groundCheck, bool airCheck, bool mobilityCheck)
+bool UtilTrackerClass::isSafe(WalkPosition end, UnitType unitType, bool groundCheck, bool airCheck)
 {
-	// TODO : Put unit ID in anti mobility grid so it's possible to compare if a unit is standing on it?
-	for (int x = end.x - (unitType.width() / 8); x <= end.x + (unitType.width() / 8); x++)
+	for (int x = end.x - (unitType.tileWidth() * 2); x <= end.x + (unitType.tileWidth() * 2); x++)
 	{
-		for (int y = end.y - (unitType.height() / 8); y <= end.y + (unitType.height() / 8); y++)
+		for (int y = end.y - (unitType.tileHeight() * 2); y <= end.y + (unitType.tileHeight() * 2); y++)
 		{
 			if (!WalkPosition(x, y).isValid())
 			{
 				continue;
 			}
+			if ((groundCheck && Grids().getEGroundThreat(x, y) != 0.0) || (airCheck && Grids().getEAirThreat(x, y) != 0.0))
+			{
+				return false;
+			}
+			if (Grids().getPsiStormGrid(x, y) > 0 || (Grids().getEMPGrid(x, y) > 0 && unitType.isSpellcaster()))
+			{
+				return false;
+			}
+		}
+	}
+	return true;
+}
 
+bool UtilTrackerClass::isMobile(WalkPosition start, WalkPosition end, UnitType unitType)
+{
+	for (int x = end.x - (unitType.tileWidth() * 2); x <= end.x + (unitType.tileWidth() * 2); x++)
+	{
+		for (int y = end.y - (unitType.tileHeight() * 2); y <= end.y + (unitType.tileHeight() * 2); y++)
+		{
+			if (!WalkPosition(x, y).isValid())
+			{
+				continue;
+			}
 			// If WalkPosition shared with WalkPositions under unit, ignore
 			if (x >= start.x && x <= (start.x + (unitType.width() / 16)) && y >= start.y && y <= (start.y + (unitType.height() / 16)))
 			{
 				continue;
 			}
-			if ((groundCheck && Grids().getEGroundThreat(x, y) != 0.0) || (airCheck && Grids().getEAirThreat(x, y) != 0.0) || (mobilityCheck && (Grids().getMobilityGrid(x, y) == 0 || Grids().getAntiMobilityGrid(x, y) > 0)))
-			{
-				return false;
-			}
-			if (Grids().getPsiStormGrid(x, y) > 0 || (Grids().getEMPGrid(x,y) > 0 && unitType.isSpellcaster()))
+			if (Grids().getMobilityGrid(x, y) <= 0 || Grids().getAntiMobilityGrid(x, y) > 0)
 			{
 				return false;
 			}

@@ -253,7 +253,6 @@ void CommandTrackerClass::move(UnitInfo& unit)
 	// If unit has a transport, move to it or load into it
 	if (unit.getTransport() && unit.getTransport()->exists())
 	{
-		Broodwar << "test" << endl;
 		unit.unit()->rightClick(unit.getTransport());
 		return;
 	}
@@ -348,7 +347,7 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 		{
 			if (WalkPosition(x, y).isValid() && Grids().getMobilityGrid(x, y) > 0 && theMap.GetArea(WalkPosition(x, y)) && Terrain().getAllyTerritory().find(theMap.GetArea(WalkPosition(x, y))->Id()) != Terrain().getAllyTerritory().end() && Position(WalkPosition(x, y)).getDistance(Position(choke)) > min && Position(WalkPosition(x, y)).getDistance(Position(choke)) < max && Position(WalkPosition(x, y)).getDistance(Position(choke)) < closestD)
 			{
-				if (Util().isSafe(start, WalkPosition(x, y), unit.getType(), false, false, true))
+				if (Util().isMobile(start, WalkPosition(x, y), unit.getType()))
 				{
 					bestPosition = WalkPosition(x, y);
 					closestD = Position(WalkPosition(x, y)).getDistance(Position(choke));
@@ -372,7 +371,7 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 {
 	WalkPosition start = unit.getWalkPosition();
 	WalkPosition bestPosition = start;
-	double best = 0.0;
+	double best = 0.0, closest = 0.0;
 
 	// If it's a tank, make sure we're unsieged before moving -  TODO: Check that target has velocity and > 512 or no velocity and < tank range
 	if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
@@ -389,7 +388,7 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 	{
 		for (auto &t : Units().getAllyUnitsFilter(UnitTypes::Protoss_High_Templar))
 		{
-			UnitInfo templar = t.second;
+			UnitInfo &templar = Units().getAllyUnit(t);
 			if (templar.unit() && templar.unit()->exists() && templar.unit()->getEnergy() < 75 && Grids().getEGroundThreat(templar.getWalkPosition()) > 0.0)
 			{
 				if (templar.unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp && unit.unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp)
@@ -406,19 +405,23 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 	{
 		for (int y = start.y - 16; y <= start.y + 16 + (unit.getType().tileHeight() * 4); y++)
 		{
-			if (!WalkPosition(x, y).isValid() || WalkPosition(x, y).getDistance(start) > 16)
+			if (!WalkPosition(x, y).isValid())
 			{
 				continue;
 			}
 
-			double mobility = double(Grids().getMobilityGrid(x, y));
-			double threat = max(1.0, Grids().getEGroundThreat(x, y));
-			double distance = max(1.0, double(Grids().getDistanceHome(x, y)));
+			double mobility = double(Grids().getMobilityGrid(x, y));			
+			double distance = double(Grids().getDistanceHome(x, y));
+			double threat = Grids().getEGroundThreat(x, y);
 
-			if (mobility / (threat * distance) >= best && Util().isSafe(start, WalkPosition(x, y), unit.getType(), false, false, true))
+			if (threat <= best || best == 0.0)
 			{
-				best = mobility / (threat * distance);
-				bestPosition = WalkPosition(x, y);
+				if ((distance / mobility <= closest || closest == 0.0) && Util().isMobile(start, WalkPosition(x, y), unit.getType()))
+				{
+					best = threat;
+					closest = distance / mobility;
+					bestPosition = WalkPosition(x, y);
+				}
 			}
 		}
 	}

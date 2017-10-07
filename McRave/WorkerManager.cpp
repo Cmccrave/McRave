@@ -63,9 +63,9 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 
 	// Check a 8x8 walkposition grid for a potential new place to scout
 	double best = 0.0;
-	for (int x = start.x - 16; x < start.x + 16 + worker.getType().tileWidth() * 4; x++)
+	for (int x = start.x - 8; x < start.x + 8 + worker.getType().tileWidth() * 4; x++)
 	{
-		for (int y = start.y - 16; y < start.y + 16 + worker.getType().tileHeight() * 4; y++)
+		for (int y = start.y - 8; y < start.y + 8 + worker.getType().tileHeight() * 4; y++)
 		{
 			if (!WalkPosition(x, y).isValid() || Grids().getDistanceHome(start) - Grids().getDistanceHome(WalkPosition(x, y)) > 16)
 			{
@@ -77,7 +77,7 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 			double distance = max(0.01, Position(WalkPosition(x, y)).getDistance(Terrain().getEnemyStartingPosition()));
 			double time = max(1.0, double(Broodwar->getFrameCount() - recentExplorations[WalkPosition(x, y)]));
 
-			if ((time * mobility) / (threat * distance) >= best && Util().isSafe(start, WalkPosition(x, y), worker.getType(), true, false, true))
+			if ((time * mobility) / (threat * distance) >= best && Util().isSafe(WalkPosition(x, y), worker.getType(), true, false) && Util().isMobile(start, WalkPosition(x,y), worker.getType()))
 			{
 				best = (time * mobility) / (threat * distance);
 				bestPosition = Position(WalkPosition(x, y));

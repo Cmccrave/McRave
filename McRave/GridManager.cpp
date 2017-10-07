@@ -37,13 +37,13 @@ void GridTrackerClass::update()
 void GridTrackerClass::reset()
 {
 	//// Temp debugging for tile positions
-	//for (int x = 0; x <= Broodwar->mapWidth(); x++)
+	//for (int x = 0; x <= Broodwar->mapWidth()*4; x++)
 	//{
-	//	for (int y = 0; y <= Broodwar->mapHeight(); y++)
+	//	for (int y = 0; y <= Broodwar->mapHeight()*4; y++)
 	//	{
-	//		if (resourceGrid[x][y] > 0)
+	//		if (antiMobilityGrid[x][y] > 0)
 	//		{
-	//			Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 6, Colors::Black);
+	//			Broodwar->drawCircleMap(Position(WalkPosition (x, y)) + Position(4, 4), 4, Colors::Black);
 	//		}
 	//	}
 	//}
@@ -108,7 +108,7 @@ void GridTrackerClass::updateAllyGrids()
 					}
 
 					// Anti Mobility Grid directly under unit
-					if (WalkPosition(x, y).isValid() && x >= start.x - 1 && x <= start.x + ally.getType().tileWidth() * 4 && y >= start.y - 1 && y <= start.y + ally.getType().tileHeight() * 4)
+					if (WalkPosition(x, y).isValid() && x >= start.x && x < start.x + ally.getType().tileWidth() * 4 && y >= start.y && y < start.y + ally.getType().tileHeight() * 4)
 					{
 						resetGrid[x][y] = true;
 						antiMobilityGrid[x][y] = 1;
@@ -156,9 +156,9 @@ void GridTrackerClass::updateAllyGrids()
 	{
 		BuildingInfo &building = b.second;
 		WalkPosition start = building.getWalkPosition();
-		for (int x = start.x - 3; x < 2 + start.x + building.getType().tileWidth() * 4; x++)
+		for (int x = start.x; x < start.x + building.getType().tileWidth() * 4; x++)
 		{
-			for (int y = start.y - 3; y < 2 + start.y + building.getType().tileHeight() * 4; y++)
+			for (int y = start.y; y < start.y + building.getType().tileHeight() * 4; y++)
 			{
 				// Anti Mobility Grid directly under building
 				if (WalkPosition(x, y).isValid())
@@ -175,9 +175,9 @@ void GridTrackerClass::updateAllyGrids()
 	{
 		WorkerInfo &worker = w.second;
 		WalkPosition start = worker.getWalkPosition();
-		for (int x = start.x - 1; x <= start.x + worker.unit()->getType().tileWidth() * 4; x++)
+		for (int x = start.x; x < start.x + worker.unit()->getType().tileWidth() * 4; x++)
 		{
-			for (int y = start.y - 1; y <= start.y + worker.unit()->getType().tileHeight() * 4; y++)
+			for (int y = start.y; y < start.y + worker.unit()->getType().tileHeight() * 4; y++)
 			{
 				// Anti Mobility Grid directly under worker
 				if (WalkPosition(x, y).isValid())
@@ -305,9 +305,9 @@ void GridTrackerClass::updateEnemyGrids()
 			// Anti Mobility Grid
 			if (enemy.getType().isBuilding())
 			{
-				for (int x = start.x - 3; x <= 2 + start.x + enemy.getType().tileWidth() * 4; x++)
+				for (int x = start.x; x < start.x + enemy.getType().tileWidth() * 4; x++)
 				{
-					for (int y = start.y - 3; y <= 2 + start.y + enemy.getType().tileHeight() * 4; y++)
+					for (int y = start.y; y < start.y + enemy.getType().tileHeight() * 4; y++)
 					{
 						if (WalkPosition(x, y).isValid())
 						{
@@ -319,9 +319,9 @@ void GridTrackerClass::updateEnemyGrids()
 			}
 			else
 			{
-				for (int x = start.x; x <= start.x + enemy.getType().tileWidth() * 4; x++)
+				for (int x = start.x; x < start.x + enemy.getType().tileWidth() * 4; x++)
 				{
-					for (int y = start.y; y <= start.y + enemy.getType().tileHeight() * 4; y++)
+					for (int y = start.y; y < start.y + enemy.getType().tileHeight() * 4; y++)
 					{
 						if (WalkPosition(x, y).isValid())
 						{
@@ -592,9 +592,9 @@ void GridTrackerClass::updateNeutralGrids()
 		}
 		int startX = (u->getTilePosition().x * 4);
 		int startY = (u->getTilePosition().y * 4);
-		for (int x = startX - 2; x < 2 + startX + u->getType().tileWidth() * 4; x++)
+		for (int x = startX; x < startX + u->getType().tileWidth() * 4; x++)
 		{
-			for (int y = startY - 2; y < 2 + startY + u->getType().tileHeight() * 4; y++)
+			for (int y = startY; y < startY + u->getType().tileHeight() * 4; y++)
 			{
 				if (WalkPosition(x, y).isValid())
 				{
@@ -604,9 +604,9 @@ void GridTrackerClass::updateNeutralGrids()
 			}
 		}
 
-		for (int x = start.x - 2; x < 2 + start.x + u->getType().tileWidth() * 4; x++)
+		for (int x = start.x; x < start.x + u->getType().tileWidth() * 4; x++)
 		{
-			for (int y = start.y - 2; y < 2 + start.y + u->getType().tileHeight() * 4; y++)
+			for (int y = start.y; y < start.y + u->getType().tileHeight() * 4; y++)
 			{
 				// Anti Mobility Grid directly under building
 				if (WalkPosition(x, y).isValid())
@@ -829,9 +829,9 @@ void GridTrackerClass::updateArbiterMovement(UnitInfo& arbiter)
 
 void GridTrackerClass::updateAllyMovement(Unit unit, WalkPosition here)
 {
-	for (int x = here.x - unit->getType().tileWidth() * 2; x <= here.x + unit->getType().tileWidth() * 2; x++)
+	for (int x = here.x - unit->getType().tileWidth() * 2; x < here.x + unit->getType().tileWidth() * 2; x++)
 	{
-		for (int y = here.y - unit->getType().tileHeight() * 2; y <= here.y + unit->getType().tileHeight() * 2; y++)
+		for (int y = here.y - unit->getType().tileHeight() * 2; y < here.y + unit->getType().tileHeight() * 2; y++)
 		{
 			if (WalkPosition(x, y).isValid())
 			{

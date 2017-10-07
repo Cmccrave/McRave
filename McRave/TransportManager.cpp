@@ -27,9 +27,10 @@ void TransportTrackerClass::updateCargo(TransportInfo& transport)
 	{
 		// See if any Reavers need a shuttle
 		for (auto &r : Units().getAllyUnitsFilter(UnitTypes::Protoss_Reaver))
-		{
-			UnitInfo &reaver = r.second;
-			if (reaver.unit() && reaver.unit()->exists() && reaver.getDeadFrame() == 0 && (!reaver.getTransport() || !reaver.getTransport()->exists()) && transport.getCargoSize() + 2 < 4)
+		{			
+			UnitInfo &reaver = Units().getAllyUnit(r);
+
+			if (reaver.unit() && reaver.unit()->exists() && reaver.getDeadFrame() == 0 && !reaver.getTransport() && transport.getCargoSize() + 2 < 4)
 			{
 				reaver.setTransport(transport.unit());
 				transport.assignCargo(reaver.unit());
@@ -38,8 +39,8 @@ void TransportTrackerClass::updateCargo(TransportInfo& transport)
 		// See if any High Templars need a shuttle
 		for (auto &t : Units().getAllyUnitsFilter(UnitTypes::Protoss_High_Templar))
 		{
-			UnitInfo &templar = t.second;
-			if (templar.unit() && templar.unit()->exists() && templar.getDeadFrame() == 0 && (!templar.getTransport() || !templar.getTransport()->exists()) && transport.getCargoSize() + 1 < 4)
+			UnitInfo &templar = Units().getAllyUnit(t);
+			if (templar.unit() && templar.unit()->exists() && templar.getDeadFrame() == 0 && !templar.getTransport() && transport.getCargoSize() + 1 < 4)
 			{
 				templar.setTransport(transport.unit());
 				transport.assignCargo(templar.unit());
@@ -117,7 +118,12 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 
 	Position bestPosition = transport.getDestination();
 	WalkPosition start = transport.getWalkPosition();
-	double best = 0.0;	
+
+	if (transport.isUnloading())
+	{
+		start = WalkPosition(transport.getDestination());
+	}
+	double best = 1000.0;	
 	double closest = 0.0;
 
 	// First look for mini tiles with no threat that are closest to the enemy and on low mobility
@@ -131,7 +137,7 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 			}
 
 			// Must keep the shuttle moving to retain maximum speed
-			if (Position(WalkPosition(x, y)).getDistance(Position(start)) <= 16)
+			if (Position(WalkPosition(x, y)).getDistance(Position(start)) <= 128)
 			{
 				continue;
 			}
@@ -143,7 +149,7 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 			// Include mobility when looking to unload
 			if (transport.isUnloading())
 			{
-				if (threat <= best && distance < closest && Grids().getMobilityGrid(WalkPosition(x, y)) > 0)
+				if ((threat < best) || (threat == best && (distance < closest || closest == 0.0)) && Grids().getMobilityGrid(WalkPosition(x, y)) > 0 && Broodwar->getGroundHeight(TilePosition(WalkPosition(x, y))) == Broodwar->getGroundHeight(TilePosition(transport.getDestination())))
 				{
 					best = threat;
 					closest = distance;
@@ -152,7 +158,7 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 			}
 			else
 			{
-				if (threat <= best && distance < closest)
+				if ((threat < best) || (threat == best && (distance < closest || closest == 0.0)))
 				{
 					best = threat;
 					closest = distance;
