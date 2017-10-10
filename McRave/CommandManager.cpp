@@ -258,7 +258,7 @@ void CommandTrackerClass::move(UnitInfo& unit)
 	}
 
 	// If target doesn't exist, move towards it
-	if (unit.getTarget() && unit.getTargetPosition().isValid())
+	if (unit.getTarget() && unit.getTargetPosition().isValid() && unit.getStrategy() != 3)
 	{
 		if (unit.unit()->getLastCommand().getTargetPosition() != unit.getTargetPosition())
 		{
