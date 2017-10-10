@@ -14,7 +14,7 @@ class UnitInfo {
 	UnitCommandType command;
 	Player who;
 
-	Position position, targetPosition, engagePosition, destination;
+	Position position, targetPosition, engagePosition;
 	WalkPosition walkPosition, targetWalkPosition;
 	TilePosition tilePosition, targetTilePosition;
 public:
@@ -86,7 +86,6 @@ public:
 	Position getPosition(){ return position; }
 	Position getTargetPosition() { return targetPosition; }
 	Position getEngagePosition() { return engagePosition; }
-	Position getDestination() { return destination; }
 	WalkPosition getWalkPosition() { return walkPosition; }
 	WalkPosition getTargetWalkPosition() { return targetWalkPosition; }
 	TilePosition getTilePosition() { return tilePosition; }
@@ -121,7 +120,6 @@ public:
 	void setPosition(Position newPosition){ position = newPosition; }
 	void setTargetPosition(Position newPosition) { targetPosition = newPosition; }
 	void setEngagePosition(Position newPosition) { engagePosition = newPosition; }
-	void setDestination(Position newPosition) { destination = newPosition; }
 	void setWalkPosition(WalkPosition newWalkPosition) { walkPosition = newWalkPosition; }
 	void setTargetWalkPosition(WalkPosition newWalkPosition) { targetWalkPosition = newWalkPosition; }
 	void setTilePosition(TilePosition newTilePosition) { tilePosition = newTilePosition; }

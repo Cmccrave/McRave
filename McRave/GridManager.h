@@ -64,14 +64,6 @@ public:
 	void updateMobilityGrids();
 
 	// Unit and building based functions
-	void addToGrid(UnitInfo&);
-	void addToGrid(WorkerInfo&);
-	void addToGrid(BuildingInfo&);
-	void removeFromGrid(UnitInfo&);
-	void removeFromGrid(WorkerInfo&);
-	void removeFromGrid(BuildingInfo&);
-
-
 	void updateArbiterMovement(UnitInfo&);
 	void updateDetectorMovement(UnitInfo&);
 	void updateAllyMovement(Unit, WalkPosition);

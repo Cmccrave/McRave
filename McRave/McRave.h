@@ -24,7 +24,6 @@ namespace
 class BaseInfo;
 class UnitInfo;
 class ResourceInfo;
-class WorkerInfo;
 
 // Include other source files
 #include "BuildingManager.h"
