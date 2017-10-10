@@ -212,26 +212,26 @@ void BuildOrderTrackerClass::updateBuild()
 {
 	// Protoss
 	if (Broodwar->self()->getRace() == Races::Protoss)
-	{
-		protossSituational();
-		protossTech();
+	{		
 		protossOpener();
+		protossTech();
+		protossSituational();
 	}
 
 	// Terran
 	else if (Broodwar->self()->getRace() == Races::Terran)
-	{
-		terranSituational();
-		terranTech();
+	{	
 		terranOpener();
+		terranTech();
+		terranSituational();
 	}
 
 	// Zerg
 	else if (Broodwar->self()->getRace() == Races::Zerg)
-	{
-		zergSituational();
-		zergTech();
+	{		
 		zergOpener();
+		zergTech();
+		zergSituational();
 	}
 }
 
@@ -374,7 +374,7 @@ void BuildOrderTrackerClass::protossSituational()
 		buildingDesired[UnitTypes::Protoss_Photon_Cannon] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon);
 		for (auto &base : Bases().getMyBases())
 		{
-			if (base.second.unit()->isCompleted() && Grids().getDefenseGrid(base.second.getTilePosition()) < 1 && Broodwar->hasPower(TilePosition(base.second.getPosition())))
+			if (Grids().getDefenseGrid(base.second.getTilePosition()) < 1 && Broodwar->hasPower(TilePosition(base.second.getPosition())))
 			{
 				buildingDesired[UnitTypes::Protoss_Photon_Cannon] += 1 - Grids().getDefenseGrid(base.second.getTilePosition());
 			}

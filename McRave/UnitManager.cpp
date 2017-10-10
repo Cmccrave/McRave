@@ -670,7 +670,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 		}
 
 		// If a Reaver is in range of something, engage it
-		if (unit.getType() == UnitTypes::Protoss_Reaver && unit.getGroundRange() > unit.getPosition().getDistance(unit.getTargetPosition()))
+		if (unit.getType() == UnitTypes::Protoss_Reaver && unit.getGroundRange() >= unit.getPosition().getDistance(unit.getTargetPosition()))
 		{
 			unit.setStrategy(1);
 			return;

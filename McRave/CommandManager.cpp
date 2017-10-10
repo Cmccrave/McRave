@@ -270,15 +270,17 @@ void CommandTrackerClass::move(UnitInfo& unit)
 	// If no target, move to closest enemy base if there is any
 	else if (Terrain().getEnemyBasePositions().size() > 0 && !unit.getType().isFlyer())
 	{
-		Position here = Terrain().getClosestEnemyBase(unit.getPosition());
-		if (here.isValid())
+		double closestD = 0.0;
+		Position closestP;
+		for (auto &base : Terrain().getEnemyBasePositions())
 		{
-			if (unit.unit()->getLastCommand().getTargetPosition() != here)
+			if (Grids().getEnemyArmyCenter().getDistance(base) > closestD)
 			{
-				unit.unit()->move(here);
+				closestD = Grids().getEnemyArmyCenter().getDistance(base);
+				closestP = base;
 			}
-			return;
 		}
+		unit.unit()->move(closestP);
 	}
 
 	// If no target and no enemy bases, move to a random base
@@ -328,8 +330,8 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 	WalkPosition bestPosition = start;
 	/*if (unit.getGroundRange() <= 32)
 	{
-		min = 64;
-		max = 128;
+	min = 64;
+	max = 128;
 	}*/
 
 	// Find closest chokepoint
@@ -410,18 +412,15 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 				continue;
 			}
 
-			double mobility = double(Grids().getMobilityGrid(x, y));			
+			double mobility = double(Grids().getMobilityGrid(x, y));
 			double distance = double(Grids().getDistanceHome(x, y));
 			double threat = Grids().getEGroundThreat(x, y);
 
-			if (threat <= best || best == 0.0)
+			if ((threat <= best || best == 0.0) && (distance / mobility < closest || closest == 0.0) && Util().isMobile(start, WalkPosition(x, y), unit.getType()))
 			{
-				if ((distance / mobility <= closest || closest == 0.0) && Util().isMobile(start, WalkPosition(x, y), unit.getType()))
-				{
-					best = threat;
-					closest = distance / mobility;
-					bestPosition = WalkPosition(x, y);
-				}
+				best = threat;
+				closest = distance / mobility;
+				bestPosition = WalkPosition(x, y);
 			}
 		}
 	}

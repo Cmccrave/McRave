@@ -94,9 +94,6 @@ void StrategyTrackerClass::protossStrategy()
 	{
 		invis = false;
 	}
-
-	// Test locked units
-	lockedType.insert(UnitTypes::Protoss_Shuttle);
 	return;
 }
 

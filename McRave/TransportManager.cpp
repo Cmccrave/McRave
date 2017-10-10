@@ -23,14 +23,14 @@ void TransportTrackerClass::updateTransports()
 void TransportTrackerClass::updateCargo(TransportInfo& transport)
 {
 	// Update cargo information
-	if (transport.getCargoSize() < 4)
+	if (transport.getCargoSize() < 8)
 	{
 		// See if any Reavers need a shuttle
 		for (auto &r : Units().getAllyUnitsFilter(UnitTypes::Protoss_Reaver))
 		{			
 			UnitInfo &reaver = Units().getAllyUnit(r);
 
-			if (reaver.unit() && reaver.unit()->exists() && reaver.getDeadFrame() == 0 && !reaver.getTransport() && transport.getCargoSize() + 2 < 4)
+			if (reaver.unit() && reaver.unit()->exists() && reaver.getDeadFrame() == 0 && !reaver.getTransport() && transport.getCargoSize() + reaver.getType().spaceRequired() <= 8)
 			{
 				reaver.setTransport(transport.unit());
 				transport.assignCargo(reaver.unit());
@@ -40,7 +40,7 @@ void TransportTrackerClass::updateCargo(TransportInfo& transport)
 		for (auto &t : Units().getAllyUnitsFilter(UnitTypes::Protoss_High_Templar))
 		{
 			UnitInfo &templar = Units().getAllyUnit(t);
-			if (templar.unit() && templar.unit()->exists() && templar.getDeadFrame() == 0 && !templar.getTransport() && transport.getCargoSize() + 1 < 4)
+			if (templar.unit() && templar.unit()->exists() && templar.getDeadFrame() == 0 && !templar.getTransport() && transport.getCargoSize() + templar.getType().spaceRequired() <= 8)
 			{
 				templar.setTransport(transport.unit());
 				transport.assignCargo(templar.unit());

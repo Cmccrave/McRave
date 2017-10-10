@@ -3,7 +3,6 @@
 void WorkerTrackerClass::update()
 {
 	Display().startClock();
-	updateScout();
 	updateWorkers();
 	Display().performanceTest(__FUNCTION__);
 	return;
@@ -19,12 +18,69 @@ void WorkerTrackerClass::updateWorkers()
 	return;
 }
 
-void WorkerTrackerClass::updateScout()
+void WorkerTrackerClass::updateScout(WorkerInfo& worker)
 {
-	// Update scout probes decision if we are above 9 supply and just placed a pylon
-	if (!scout || (scout && !scout->exists()))
+	double closestD = 0.0;
+	int best = 0;
+	Position closestP;
+	WalkPosition start = worker.getWalkPosition();
+
+	// All walkpositions in a 4x4 walkposition grid are set as scouted already to prevent overlapping
+	for (int x = start.x - 4; x < start.x + 4 + worker.getType().tileWidth() * 4; x++)
 	{
-		scout = getClosestWorker(Position(Terrain().getSecondChoke()));
+		for (int y = start.y - 4; y < start.y + 4 + worker.getType().tileHeight() * 4; y++)
+		{
+			if (WalkPosition(x, y).isValid() && Grids().getEGroundThreat(x, y) == 0.0)
+			{
+				recentExplorations[WalkPosition(x, y)] = Broodwar->getFrameCount();
+			}
+		}
+	}
+
+	// Update scout probes decision if we are above 9 supply and just placed a pylon
+	if (!Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge))
+	{
+		if (Terrain().getEnemyBasePositions().size() == 0)
+		{
+			
+			for (auto &start : theMap.StartingLocations())
+			{
+				if (!Broodwar->isExplored(start) && (Position(start).getDistance(Terrain().getPlayerStartingPosition()) < closestD || closestD == 0.0))
+				{
+					closestD = Position(start).getDistance(Terrain().getPlayerStartingPosition());
+					closestP = Position(start);
+				}
+			}
+			if (closestP.isValid() && worker.unit()->getOrderTargetPosition() != closestP)
+			{
+				worker.unit()->move(closestP);
+			}
+			return;
+		}
+		if (Terrain().getEnemyBasePositions().size() > 0)
+		{
+			exploreArea(worker);
+			return;
+		}
+	}
+	else
+	{		
+		for (auto &area : theMap.Areas())
+		{
+			for (auto &base : area.Bases())
+			{
+				if (area.AccessibleNeighbours().size() == 0 || Grids().getBaseGrid(base.Location()) > 0 || Terrain().getEnemyBasePositions().find(base.Center()) != Terrain().getEnemyBasePositions().end())
+				{
+					continue;
+				}
+				if (Broodwar->getFrameCount() - recentExplorations[WalkPosition(base.Location())] > best)
+				{					
+					best = Broodwar->getFrameCount() - recentExplorations[WalkPosition(base.Location())];
+					closestP = Position(base.Location());
+				}
+			}
+		}
+		worker.unit()->move(closestP);
 	}
 	return;
 }
@@ -47,19 +103,7 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 	{
 		worker.unit()->move(Terrain().getEnemyStartingPosition());
 		return;
-	}
-
-	// All walkpositions in a 4x4 walkposition grid are set as scouted already to prevent overlapping
-	for (int x = start.x - 4; x < start.x + 4 + worker.getType().tileWidth() * 4; x++)
-	{
-		for (int y = start.y - 4; y < start.y + 4 + worker.getType().tileHeight() * 4; y++)
-		{
-			if (WalkPosition(x, y).isValid() && Grids().getEGroundThreat(x, y) == 0.0)
-			{
-				recentExplorations[WalkPosition(x, y)] = Broodwar->getFrameCount();
-			}
-		}
-	}
+	}	
 
 	// Check a 8x8 walkposition grid for a potential new place to scout
 	double best = 0.0;
@@ -104,31 +148,14 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 	}
 
 	// Scout logic
-	if (scout && worker.unit() == scout && !worker.unit()->isCarryingMinerals() && worker.getBuildingType() == UnitTypes::None)
+	if (!scout || (scout && !scout->exists()))
 	{
-		if (Terrain().getEnemyBasePositions().size() == 0 && Broodwar->getFrameCount() - deadScoutFrame > 1000 && (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 0 || Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Barracks) > 0))
-		{
-			double closestD = 0.0;
-			Position closestP;
-			for (auto &start : theMap.StartingLocations())
-			{
-				if (!Broodwar->isExplored(start) && (Position(start).getDistance(Terrain().getPlayerStartingPosition()) < closestD || closestD == 0.0))
-				{
-					closestD = Position(start).getDistance(Terrain().getPlayerStartingPosition());
-					closestP = Position(start);
-				}
-			}
-			if (closestP.isValid() && worker.unit()->getOrderTargetPosition() != closestP)
-			{
-				worker.unit()->move(closestP);
-			}
-			return;
-		}
-		if (Terrain().getEnemyBasePositions().size() > 0)
-		{
-			exploreArea(worker);
-			return;
-		}
+		scout = getClosestWorker(Position(Terrain().getSecondChoke()));
+	}
+	if (scout && worker.unit() == scout && !worker.unit()->isCarryingMinerals() && worker.getBuildingType() == UnitTypes::None && Broodwar->getFrameCount() - deadScoutFrame > 1000 && (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 0 || Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Barracks) > 0))
+	{
+		updateScout(worker);
+		return;
 	}
 
 	// Boulder removal logic

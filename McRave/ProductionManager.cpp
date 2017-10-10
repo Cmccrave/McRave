@@ -31,7 +31,7 @@ bool ProductionTrackerClass::canAfford(UnitType unit)
 	if (BuildOrder().getTechList().find(unit) == BuildOrder().getTechList().end())
 	{
 		// If we can afford it including buildings queued and tech units queued
-		if (Broodwar->self()->minerals() >= (unit.mineralPrice() + reservedMineral + Buildings().getQueuedMineral()) && Broodwar->self()->gas() >= (unit.gasPrice() + reservedGas + Buildings().getQueuedGas()))
+		if (Broodwar->self()->minerals() >= (unit.mineralPrice() + reservedMineral + Buildings().getQueuedMineral()) && Broodwar->self()->gas() >= unit.gasPrice() + reservedGas + Buildings().getQueuedGas())
 		{
 			return true;
 		}
@@ -385,7 +385,7 @@ void ProductionTrackerClass::updateProtoss()
 			else if (building.getType() == UnitTypes::Protoss_Robotics_Facility)
 			{
 				// If we need an Observer
-				if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observatory) > 0 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Observer) < (floor(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) / 3) + 1))
+				if (Strategy().needDetection() || Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observatory) > 0 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Observer) < (floor(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) / 3) + 1))
 				{
 					// If we can afford an Observer, train, otherwise, add to priority
 					if (Broodwar->self()->minerals() >= UnitTypes::Protoss_Observer.mineralPrice() + Buildings().getQueuedMineral() && Broodwar->self()->gas() >= UnitTypes::Protoss_Observer.gasPrice() + Buildings().getQueuedGas())

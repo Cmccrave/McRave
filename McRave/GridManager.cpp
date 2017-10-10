@@ -59,9 +59,9 @@ void GridTrackerClass::reset()
 			aCenter = aClusterGrid[x][y];
 			allyArmyCenter = Position(WalkPosition(x, y));
 		}
-		if (eGroundClusterGrid[x][y] * eGroundThreat[x][y] > eCenter)
+		if (eGroundClusterGrid[x][y] * eGroundThreat[x][y] + eAirClusterGrid[x][y] * eAirThreat[x][y] > eCenter)
 		{
-			eCenter = eGroundClusterGrid[x][y] * eGroundThreat[x][y];
+			eCenter = eGroundClusterGrid[x][y] * eGroundThreat[x][y] + eAirClusterGrid[x][y] * eAirThreat[x][y];
 			enemyArmyCenter = Position(WalkPosition(x, y));
 		}
 

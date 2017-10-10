@@ -16,7 +16,7 @@ void TerrainTrackerClass::updateAreas()
 	{
 		for (auto &unit : Units().getEnemyUnits())
 		{
-			if (unit.second.getType().isBuilding() && Terrain().getEnemyBasePositions().size() == 0 && unit.second.getPosition().getDistance(Terrain().getPlayerStartingPosition()) > 1600)
+			if (unit.second.getType().isBuilding() && Terrain().getEnemyBasePositions().size() == 0 && unit.second.getPosition().getDistance(Terrain().getPlayerStartingPosition()) > 640)
 			{
 				double distance = 0.0;
 				TilePosition closest;

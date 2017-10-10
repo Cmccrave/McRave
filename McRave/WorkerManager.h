@@ -22,8 +22,8 @@ public:
 	Unit getClosestWorker(Position);
 	
 	void update();
-	void updateScout();
 	void updateWorkers();
+	void updateScout(WorkerInfo&);
 	void updateInformation(WorkerInfo&);
 	void updateGathering(WorkerInfo&);
 	void assignWorker(WorkerInfo&);
