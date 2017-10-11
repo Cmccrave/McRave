@@ -87,6 +87,10 @@ void WorkerTrackerClass::updateScout(WorkerInfo& worker)
 
 void WorkerTrackerClass::updateInformation(WorkerInfo& worker)
 {
+	// Grid updating MUST come before updating position
+	worker.setType(worker.unit()->getType());
+	Grids().removeFromGrid(worker);
+	Grids().addToGrid(worker);
 	worker.setPosition(worker.unit()->getPosition());
 	worker.setWalkPosition(Util().getWalkPosition(worker.unit()));
 	worker.setTilePosition(worker.unit()->getTilePosition());
@@ -362,6 +366,7 @@ void WorkerTrackerClass::removeWorker(Unit worker)
 	{
 		deadScoutFrame = Broodwar->getFrameCount();
 	}
+	Grids().removeFromGrid(myWorkers[worker]);
 	myWorkers.erase(worker);
 	return;
 }

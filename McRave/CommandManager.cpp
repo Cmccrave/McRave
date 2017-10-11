@@ -413,8 +413,17 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 			}
 
 			double mobility = double(Grids().getMobilityGrid(x, y));
-			double distance = double(Grids().getDistanceHome(x, y));
+			double distance = 0.0;
 			double threat = Grids().getEGroundThreat(x, y);
+
+			if (Terrain().isInAllyTerritory(unit.unit()))
+			{
+				distance = 1.0 / max(1.0, unit.getPosition().getDistance(unit.getTargetPosition()));
+			}
+			else
+			{
+				distance = double(Grids().getDistanceHome(x, y));
+			}
 
 			if ((threat <= best || best == 0.0) && (distance / mobility < closest || closest == 0.0) && Util().isMobile(start, WalkPosition(x, y), unit.getType()))
 			{

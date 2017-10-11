@@ -56,6 +56,7 @@ void UnitTrackerClass::onUnitDestroy(Unit unit)
 {
 	if (allyUnits.find(unit) != allyUnits.end())
 	{
+		Grids().removeFromGrid(allyUnits[unit]);
 		allyUnits[unit].setDeadFrame(Broodwar->getFrameCount());
 		allySizes[unit->getType().size()] -= 1;
 
@@ -66,11 +67,13 @@ void UnitTrackerClass::onUnitDestroy(Unit unit)
 	}
 	else if (allyDefenses.find(unit) != allyDefenses.end())
 	{
+		Grids().removeFromGrid(allyDefenses[unit]);
 		Grids().updateDefenseGrid(allyDefenses[unit]);
 		allyDefenses.erase(unit);
 	}
 	else if (enemyUnits.find(unit) != enemyUnits.end())
 	{
+		Grids().removeFromGrid(enemyUnits[unit]);
 		enemyUnits[unit].setDeadFrame(Broodwar->getFrameCount());
 		enemySizes[unit->getType().size()] -= 1;
 	}
@@ -212,7 +215,16 @@ void UnitTrackerClass::updateAliveUnits()
 		{
 			if (enemy.unit()->exists())
 			{
-				updateEnemy(enemy);
+				if (Util().getWalkPosition(enemy.unit()) == enemy.getWalkPosition())
+				{
+					Grids().removeFromGrid(enemy);
+					updateEnemy(enemy);
+					Grids().addToGrid(enemy);
+				}
+				else
+				{
+					updateEnemy(enemy);
+				}
 			}
 			enemyComposition[enemy.getType()] += 1;
 
@@ -271,7 +283,16 @@ void UnitTrackerClass::updateAliveUnits()
 		// If deadframe is 0, unit is alive still
 		if (ally.getDeadFrame() == 0)
 		{
-			updateAlly(ally);
+			if (Util().getWalkPosition(ally.unit()) == ally.getWalkPosition())
+			{
+				Grids().removeFromGrid(ally);
+				updateAlly(ally);
+				Grids().addToGrid(ally);
+			}
+			else
+			{
+				updateAlly(ally);
+			}
 
 			if (ally.getType().isWorker() && ((Units().getGlobalAllyStrength() + Units().getAllyDefense()*0.8 > Units().getGlobalEnemyStrength()) || (!Strategy().isAllyFastExpand() && (Grids().getResourceGrid(ally.getTilePosition()) == 0 || Grids().getEGroundThreat(ally.getWalkPosition()) == 0.0))))
 			{
@@ -327,6 +348,8 @@ void UnitTrackerClass::storeEnemy(Unit unit)
 {
 	enemyUnits[unit].setUnit(unit);
 	enemySizes[unit->getType().size()] += 1;
+	updateEnemy(enemyUnits[unit]);
+	Grids().addToGrid(enemyUnits[unit]);
 	return;
 }
 
@@ -375,6 +398,8 @@ void UnitTrackerClass::storeAlly(Unit unit)
 	{
 		allyUnits[unit].setUnit(unit);
 		allySizes[unit->getType().size()] += 1;
+		updateAlly(allyUnits[unit]);
+		Grids().addToGrid(allyUnits[unit]);
 	}
 	return;
 }
@@ -405,7 +430,7 @@ void UnitTrackerClass::updateAlly(UnitInfo& unit)
 	unit.setMaxGroundStrength(Util().getMaxGroundStrength(unit));
 	unit.setVisibleAirStrength(Util().getVisibleAirStrength(unit));
 	unit.setMaxAirStrength(Util().getMaxAirStrength(unit));
-	unit.setPriority(Util().getPriority(unit));	
+	unit.setPriority(Util().getPriority(unit));
 
 	if (unit.unit()->getLastCommand().getTargetPosition().isValid())
 	{
@@ -738,7 +763,7 @@ void UnitTrackerClass::updateGlobalCalculations()
 		}
 		// Else, retreat, useful to check number of enemy players left for multiplayer games
 		else
-		{			
+		{
 			globalStrategy = 0;
 			return;
 		}
@@ -779,7 +804,7 @@ UnitInfo& UnitTrackerClass::getAllyUnit(Unit unit)
 }
 
 set<Unit> UnitTrackerClass::getAllyUnitsFilter(UnitType type)
-{	
+{
 	returnValues.clear();
 	for (auto &u : allyUnits)
 	{
