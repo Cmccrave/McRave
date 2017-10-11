@@ -12,10 +12,6 @@ void UnitTrackerClass::update()
 
 void UnitTrackerClass::onUnitDiscover(Unit unit)
 {
-	if (unit->getPlayer()->isEnemy(Broodwar->self()))
-	{
-		Units().storeEnemy(unit);
-	}
 	return;
 }
 
@@ -48,6 +44,10 @@ void UnitTrackerClass::onUnitCreate(Unit unit)
 		{
 			Buildings().storeBuilding(unit);
 		}
+	}
+	else if (unit->getPlayer()->isEnemy(Broodwar->self()))
+	{
+		Units().storeEnemy(unit);
 	}
 	return;
 }
@@ -148,11 +148,10 @@ void UnitTrackerClass::onUnitMorph(Unit unit)
 	{
 		if (enemyUnits.find(unit) != enemyUnits.end())
 		{
-			enemyUnits[unit].setType(unit->getType());
-		}
-		else
-		{
-			storeEnemy(unit);
+			UnitInfo& enemy = enemyUnits[unit];
+			Grids().removeFromGrid(enemy);
+			updateEnemy(enemy);
+			Grids().addToGrid(enemy);
 		}
 	}
 	else if (unit->getType().isResourceContainer())

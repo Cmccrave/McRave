@@ -14,8 +14,6 @@ void GridTrackerClass::update()
 	Display().startClock();
 	reset();
 	updateMobilityGrids();
-	//updateAllyGrids();
-	//updateEnemyGrids();
 	updateNeutralGrids();
 	updateDistanceGrid();
 	Display().performanceTest(__FUNCTION__);
@@ -296,41 +294,41 @@ void GridTrackerClass::updateDefenseGrid(UnitInfo& unit)
 
 void GridTrackerClass::updateNeutralGrids()
 {
-	// Anti Mobility Grid -- TODO: Improve by storing the units
-	for (auto &u : Broodwar->neutral()->getUnits())
-	{
-		WalkPosition start = Util().getWalkPosition(u);
-		if (u->getType().isFlyer())
-		{
-			continue;
-		}
-		int startX = (u->getTilePosition().x * 4);
-		int startY = (u->getTilePosition().y * 4);
-		for (int x = startX; x < startX + u->getType().tileWidth() * 4; x++)
-		{
-			for (int y = startY; y < startY + u->getType().tileHeight() * 4; y++)
-			{
-				if (WalkPosition(x, y).isValid())
-				{
-					resetGrid[x][y] = true;
-					antiMobilityGrid[x][y] = 1;
-				}
-			}
-		}
+	//// Anti Mobility Grid -- TODO: Improve by storing the units
+	//for (auto &u : Broodwar->neutral()->getUnits())
+	//{
+	//	WalkPosition start = Util().getWalkPosition(u);
+	//	if (u->getType().isFlyer())
+	//	{
+	//		continue;
+	//	}
+	//	int startX = (u->getTilePosition().x * 4);
+	//	int startY = (u->getTilePosition().y * 4);
+	//	for (int x = startX; x < startX + u->getType().tileWidth() * 4; x++)
+	//	{
+	//		for (int y = startY; y < startY + u->getType().tileHeight() * 4; y++)
+	//		{
+	//			if (WalkPosition(x, y).isValid())
+	//			{
+	//				resetGrid[x][y] = true;
+	//				antiMobilityGrid[x][y] = 1;
+	//			}
+	//		}
+	//	}
 
-		for (int x = start.x; x < start.x + u->getType().tileWidth() * 4; x++)
-		{
-			for (int y = start.y; y < start.y + u->getType().tileHeight() * 4; y++)
-			{
-				// Anti Mobility Grid directly under building
-				if (WalkPosition(x, y).isValid())
-				{
-					resetGrid[x][y] = true;
-					antiMobilityGrid[x][y] = 1;
-				}
-			}
-		}
-	}
+	//	for (int x = start.x; x < start.x + u->getType().tileWidth() * 4; x++)
+	//	{
+	//		for (int y = start.y; y < start.y + u->getType().tileHeight() * 4; y++)
+	//		{
+	//			// Anti Mobility Grid directly under building
+	//			if (WalkPosition(x, y).isValid())
+	//			{
+	//				resetGrid[x][y] = true;
+	//				antiMobilityGrid[x][y] = 1;
+	//			}
+	//		}
+	//	}
+	//}
 	return;
 }
 
