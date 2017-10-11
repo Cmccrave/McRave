@@ -1,12 +1,12 @@
 # McRave - A Broodwar Bot
 ## For any questions, email christianmccrave@gmail.com
-## Bot started 01/03/2017, latest readme update 09/19/2017
+## Bot started 01/03/2017, latest readme update 10/11/2017
 
 A Broodwar AI Developed in C++ using Visual Studio Express 2013, BWAPI and BWEM.
 
 **New Features:**
-- Improved scouting by having the scouting Probe stay alive longer to gather more information.
-- Opponent modeling for build orders.
+- Shuttle usage with Reavers and Templars.
+- Opponent modeling for build orders was improved to include multiple builds and default builds for each matchup.
 
 **BWEM Differences:**
 - Removed all map drawings
