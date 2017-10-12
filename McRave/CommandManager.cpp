@@ -233,7 +233,6 @@ void CommandTrackerClass::attack(UnitInfo& unit)
 		{
 			unit.unit()->attack(unit.getTarget());
 		}
-		unit.setTargetPosition(Units().getEnemyUnits()[unit.getTarget()].getPosition());
 	}
 	return;
 }
@@ -281,6 +280,7 @@ void CommandTrackerClass::move(UnitInfo& unit)
 			}
 		}
 		unit.unit()->move(closestP);
+		return;
 	}
 
 	// If no target and no enemy bases, move to a random base
@@ -363,7 +363,7 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 		{
 			unit.unit()->move(Position(bestPosition));
 		}
-		unit.setTargetPosition(Position(bestPosition));
+		unit.setDestination(Position(bestPosition));
 		Grids().updateAllyMovement(unit.unit(), bestPosition);
 	}
 	return;
@@ -413,8 +413,17 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 			}
 
 			double mobility = double(Grids().getMobilityGrid(x, y));
-			double distance = double(Grids().getDistanceHome(x, y));
+			double distance = 0.0;
 			double threat = Grids().getEGroundThreat(x, y);
+
+			if (Terrain().isInAllyTerritory(unit.unit()))
+			{
+				distance = unit.getPosition().getDistance(unit.getTargetPosition());
+			}
+			else
+			{
+				distance = double(Grids().getDistanceHome(x, y));
+			}
 
 			if ((threat <= best || best == 0.0) && (distance / mobility < closest || closest == 0.0) && Util().isMobile(start, WalkPosition(x, y), unit.getType()))
 			{
@@ -429,7 +438,7 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 	if (bestPosition.isValid() && bestPosition != start)
 	{
 		Grids().updateAllyMovement(unit.unit(), bestPosition);
-		unit.setTargetPosition(Position(bestPosition));
+		unit.setDestination(Position(bestPosition));
 		if (unit.unit()->getLastCommand().getTargetPosition() != Position(bestPosition))
 		{
 			unit.unit()->move(Position(bestPosition));

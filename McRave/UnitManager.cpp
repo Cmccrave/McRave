@@ -387,6 +387,7 @@ void UnitTrackerClass::updateAlly(UnitInfo& unit)
 	// Update information
 	unit.setType(t);
 	unit.setPosition(unit.unit()->getPosition());
+	unit.setDestination(Positions::None);
 	unit.setTilePosition(unit.unit()->getTilePosition());
 	unit.setWalkPosition(Util().getWalkPosition(unit.unit()));
 	unit.setPlayer(unit.unit()->getPlayer());
@@ -405,12 +406,7 @@ void UnitTrackerClass::updateAlly(UnitInfo& unit)
 	unit.setMaxGroundStrength(Util().getMaxGroundStrength(unit));
 	unit.setVisibleAirStrength(Util().getVisibleAirStrength(unit));
 	unit.setMaxAirStrength(Util().getMaxAirStrength(unit));
-	unit.setPriority(Util().getPriority(unit));	
-
-	if (unit.unit()->getLastCommand().getTargetPosition().isValid())
-	{
-		unit.setTargetPosition(unit.unit()->getLastCommand().getTargetPosition());
-	}
+	unit.setPriority(Util().getPriority(unit));		
 
 	// Update calculations
 	unit.setTarget(Targets().getTarget(unit));

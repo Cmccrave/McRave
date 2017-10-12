@@ -36,17 +36,17 @@ void GridTrackerClass::update()
 
 void GridTrackerClass::reset()
 {
-	// Temp debugging for tile positions
-	for (int x = 0; x <= Broodwar->mapWidth()*4; x++)
-	{
-		for (int y = 0; y <= Broodwar->mapHeight()*4; y++)
-		{
-			if (antiMobilityGrid[x][y] > 0)
-			{
-				Broodwar->drawCircleMap(Position(WalkPosition (x, y)) + Position(4, 4), 4, Colors::Black);
-			}
-		}
-	}
+	//// Temp debugging for tile positions
+	//for (int x = 0; x <= Broodwar->mapWidth() * 4; x++)
+	//{
+	//	for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
+	//	{
+	//		if (eGroundThreat[x][y] > 0)
+	//		{
+	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
+	//		}
+	//	}
+	//}
 
 	int aCenter = 0, eCenter = 0;
 	for (int x = 0; x < 1024; x++) for (int y = 0; y < 1024; y++)
@@ -93,8 +93,9 @@ void GridTrackerClass::updateAllyGrids()
 	for (auto &u : Units().getAllyUnits())
 	{
 		UnitInfo &unit = u.second;
+		if (unit.getDeadFrame() != 0) continue;
 
-		int radius = 4.0 + (unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0;
+		int radius = (unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0;
 		WalkPosition start = unit.getWalkPosition();
 
 		for (int x = start.x - radius; x <= start.x + radius + unit.getType().tileWidth() * 4; x++)
@@ -111,27 +112,6 @@ void GridTrackerClass::updateAllyGrids()
 					resetGrid[x][y] = true;
 					aClusterGrid[x][y] += 1;
 				}
-				else if (unit.getPlayer() != Broodwar->self())
-				{
-					if (x >= start.x - 4 && x < start.x + 4 + unit.getType().tileWidth() * 4 && y >= start.y - 4 && y < start.y + 4 + unit.getType().tileHeight() * 4)
-					{
-						if (unit.getType().isFlyer())
-						{
-							resetGrid[x][y] = true;
-							eAirClusterGrid[x][y] += 1;
-						}
-						if (!unit.getType().isFlyer())
-						{
-							resetGrid[x][y] = true;
-							eGroundClusterGrid[x][y] += 1;
-						}
-						if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode)
-						{
-							resetGrid[x][y] = true;
-							stasisClusterGrid[x][y] += 1;
-						}
-					}
-				}
 
 				// Anti mobility grids
 				if (x >= start.x && x < start.x + unit.getType().tileWidth() * 4 && y >= start.y && y < start.y + unit.getType().tileHeight() * 4)
@@ -141,31 +121,15 @@ void GridTrackerClass::updateAllyGrids()
 				}
 
 				// Threat grids
-				if (unit.getGroundDamage() > 0.0 && distance <= (unit.getGroundRange() + (unit.getSpeed())))
+				if (distance <= (unit.getGroundRange() + unit.getSpeed()))
 				{
-					if (unit.getPlayer() == Broodwar->self())
-					{
-						resetGrid[x][y] = true;
-						aGroundThreat[x][y] += unit.getMaxGroundStrength() / distance;
-					}
-					else
-					{
-						resetGrid[x][y] = true;
-						eGroundThreat[x][y] += unit.getMaxGroundStrength() / distance;
-					}
+					resetGrid[x][y] = true;
+					aGroundThreat[x][y] += unit.getMaxGroundStrength() / distance;
 				}
-				if (unit.getAirDamage() > 0.0 && distance <= (unit.getAirRange() + (unit.getSpeed())))
+				if (distance <= (unit.getAirRange() + unit.getSpeed()))
 				{
-					if (unit.getPlayer() == Broodwar->self())
-					{
-						resetGrid[x][y] = true;
-						aAirThreat[x][y] += max(0.1, unit.getMaxAirStrength() / distance);
-					}
-					else
-					{
-						resetGrid[x][y] = true;
-						eAirThreat[x][y] += max(0.1, unit.getMaxAirStrength() / distance);
-					}
+					resetGrid[x][y] = true;
+					aAirThreat[x][y] += max(0.1, unit.getMaxAirStrength() / distance);
 				}
 			}
 		}
@@ -214,141 +178,56 @@ void GridTrackerClass::updateAllyGrids()
 void GridTrackerClass::updateEnemyGrids()
 {
 	// Enemy Unit Grid Update
-	for (auto &e : Units().getEnemyUnits())
+	for (auto &u : Units().getEnemyUnits())
 	{
-		UnitInfo enemy = e.second;
-		WalkPosition start = enemy.getWalkPosition();
+		UnitInfo &unit = u.second;
+		if (unit.getDeadFrame() != 0) continue;
 
-		if (enemy.getType() == UnitTypes::Protoss_Interceptor)
+		int radius = (unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0;
+		WalkPosition start = unit.getWalkPosition();
+
+		for (int x = start.x - radius; x <= start.x + radius + unit.getType().tileWidth() * 4; x++)
 		{
-			continue;
-		}
-
-		if (enemy.unit() && enemy.getDeadFrame() == 0 && !enemy.unit()->isStasised() && !enemy.unit()->isMaelstrommed())
-		{
-			if (enemy.unit()->exists() && !enemy.getType().isBuilding())
+			for (int y = start.y - radius; y <= start.y + radius + unit.getType().tileHeight() * 4; y++)
 			{
-				for (int x = start.x - 4; x <= 4 + start.x + enemy.getType().tileWidth() * 4; x++)
+				if (!WalkPosition(x, y).isValid()) continue;
+
+				double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(unit.getPosition()));
+
+				// Cluster grids
+				if (x >= start.x - 4 && x < start.x + 4 + unit.getType().tileWidth() * 4 && y >= start.y - 4 && y < start.y + 4 + unit.getType().tileHeight() * 4)
 				{
-					for (int y = start.y - 4; y <= 4 + start.y + enemy.getType().tileHeight() * 4; y++)
+					if (unit.getType().isFlyer())
 					{
-						if (WalkPosition(x, y).isValid())
-						{
-							// Enemy Ground Cluster Grid
-							if (!enemy.getType().isFlyer())
-							{
-								resetGrid[x][y] = true;
-								eGroundClusterGrid[x][y] += 1;
-							}
-
-							// Enemy Air Cluster Grid
-							else
-							{
-								resetGrid[x][y] = true;
-								eAirClusterGrid[x][y] += 1;
-							}
-
-							// Enemy Stasis Grid
-							if (enemy.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode || enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
-							{
-								resetGrid[x][y] = true;
-								stasisClusterGrid[x][y] += 1;
-							}
-						}
+						eAirClusterGrid[x][y] += 1;
+					}
+					if (!unit.getType().isFlyer())
+					{
+						eGroundClusterGrid[x][y] += 1;
+					}
+					if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode)
+					{
+						stasisClusterGrid[x][y] += 1;
 					}
 				}
-			}
 
-			// Enemy Detector Grid
-			if (enemy.getType() == UnitTypes::Protoss_Observer || enemy.getType() == UnitTypes::Protoss_Photon_Cannon || enemy.getType() == UnitTypes::Zerg_Overlord || enemy.getType() == UnitTypes::Zerg_Spore_Colony || enemy.getType() == UnitTypes::Terran_Science_Vessel || enemy.getType() == UnitTypes::Terran_Missile_Turret)
-			{
-				for (int x = enemy.getWalkPosition().x - 40; x <= enemy.getWalkPosition().x + 40 + enemy.getType().tileWidth() * 4; x++)
+
+				// Anti mobility grids
+				if (x >= start.x && x < start.x + unit.getType().tileWidth() * 4 && y >= start.y && y < start.y + unit.getType().tileHeight() * 4)
 				{
-					for (int y = enemy.getWalkPosition().y - 40; y <= enemy.getWalkPosition().y + 40 + enemy.getType().tileHeight() * 4; y++)
-					{
-						if (WalkPosition(x, y).isValid() && Position(WalkPosition(x, y)).getDistance(enemy.getPosition()) < enemy.getType().sightRange())
-						{
-							resetGrid[x][y] = true;
-							eDetectorGrid[x][y] = 1;
-						}
-					}
+					antiMobilityGrid[x][y] += 1;
 				}
-			}
 
-			// Enemy Ground Threat Grid
-			for (int x = (enemy.getWalkPosition().x - int(enemy.getGroundRange() / 8) - (enemy.getType().tileWidth() * 4)) - int(enemy.getSpeed() / 8) - 2; x <= (enemy.getWalkPosition().x + int(enemy.getGroundRange() / 8) + (enemy.getType().tileWidth() * 4)) + int(enemy.getSpeed() / 8) + 2; x++)
-			{
-				for (int y = (enemy.getWalkPosition().y - int(enemy.getGroundRange() / 8) - (enemy.getType().tileHeight() * 4)) - int(enemy.getSpeed() / 8) - 2; y <= (enemy.getWalkPosition().y + int(enemy.getGroundRange() / 8) + (enemy.getType().tileHeight() * 4)) + int(enemy.getSpeed() / 8) + 2; y++)
+				// Threat grids
+				if (distance <= (unit.getGroundRange() + unit.getSpeed()))
 				{
-					if (WalkPosition(x, y).isValid())
-					{
-						double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(enemy.getPosition()) - double(enemy.getType().tileWidth() * 32));
-
-						if (enemy.getType().isWorker())
-						{
-							if (enemy.getGroundDamage() > 0.0 && distance < (enemy.getGroundRange() + (enemy.getSpeed())) / 2)
-							{
-								resetGrid[x][y] = true;
-								eGroundThreat[x][y] += max(0.1, enemy.getMaxGroundStrength() / distance);
-							}
-						}
-						else
-						{
-							if (enemy.getGroundDamage() > 0.0 && distance < (enemy.getGroundRange() + (enemy.getSpeed())))
-							{
-								resetGrid[x][y] = true;
-								eGroundThreat[x][y] += max(0.1, enemy.getMaxGroundStrength() / distance);
-							}
-						}
-					}
+					resetGrid[x][y] = true;
+					eGroundThreat[x][y] += unit.getMaxGroundStrength() / distance;
 				}
-			}
-
-			// Enemy Air Threat Grid
-			for (int x = (enemy.getWalkPosition().x - int(enemy.getAirRange() / 8) - enemy.getType().tileWidth() * 4) - int(enemy.getSpeed() / 8) - 2; x <= (enemy.getWalkPosition().x + int(enemy.getAirRange() / 8) + enemy.getType().tileWidth() * 4) + int(enemy.getSpeed() / 8) + 2; x++)
-			{
-				for (int y = (enemy.getWalkPosition().y - int(enemy.getAirRange() / 8) - enemy.getType().tileHeight() * 4) - int(enemy.getSpeed() / 8) - 2; y <= (enemy.getWalkPosition().y + int(enemy.getAirRange() / 8) + enemy.getType().tileHeight() * 4) + int(enemy.getSpeed() / 8) + 2; y++)
+				if (distance <= (unit.getAirRange() + unit.getSpeed()))
 				{
-					if (WalkPosition(x, y).isValid())
-					{
-						double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(enemy.getPosition()) - double(enemy.getType().tileWidth() * 32));
-
-						if (enemy.getAirDamage() > 0.0 && distance < (enemy.getAirRange() + (enemy.getSpeed())))
-						{
-							resetGrid[x][y] = true;
-							eAirThreat[x][y] += max(0.1, enemy.getMaxAirStrength() / distance);
-						}
-					}
-				}
-			}
-
-			// Anti Mobility Grid
-			if (enemy.getType().isBuilding())
-			{
-				for (int x = start.x; x < start.x + enemy.getType().tileWidth() * 4; x++)
-				{
-					for (int y = start.y; y < start.y + enemy.getType().tileHeight() * 4; y++)
-					{
-						if (WalkPosition(x, y).isValid())
-						{
-							resetGrid[x][y] = true;
-							antiMobilityGrid[x][y] = 1;
-						}
-					}
-				}
-			}
-			else
-			{
-				for (int x = start.x; x < start.x + enemy.getType().tileWidth() * 4; x++)
-				{
-					for (int y = start.y; y < start.y + enemy.getType().tileHeight() * 4; y++)
-					{
-						if (WalkPosition(x, y).isValid())
-						{
-							resetGrid[x][y] = true;
-							antiMobilityGrid[x][y] = 1;
-						}
-					}
+					resetGrid[x][y] = true;
+					eAirThreat[x][y] += max(0.1, unit.getMaxAirStrength() / distance);
 				}
 			}
 		}
