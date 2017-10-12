@@ -12,6 +12,10 @@ void UnitTrackerClass::update()
 
 void UnitTrackerClass::onUnitDiscover(Unit unit)
 {
+	if (unit->getPlayer()->isEnemy(Broodwar->self()))
+	{
+		Units().storeEnemy(unit);
+	}
 	return;
 }
 
@@ -44,10 +48,6 @@ void UnitTrackerClass::onUnitCreate(Unit unit)
 		{
 			Buildings().storeBuilding(unit);
 		}
-	}
-	else if (unit->getPlayer()->isEnemy(Broodwar->self()))
-	{
-		Units().storeEnemy(unit);
 	}
 	return;
 }
@@ -214,7 +214,7 @@ void UnitTrackerClass::updateAliveUnits()
 		{
 			if (enemy.unit()->exists())
 			{
-				if (Util().getWalkPosition(enemy.unit()) == enemy.getWalkPosition())
+				if (Util().getWalkPosition(enemy.unit()) != enemy.getWalkPosition())
 				{
 					Grids().removeFromGrid(enemy);
 					updateEnemy(enemy);
@@ -282,11 +282,11 @@ void UnitTrackerClass::updateAliveUnits()
 		// If deadframe is 0, unit is alive still
 		if (ally.getDeadFrame() == 0)
 		{
-			if (Util().getWalkPosition(ally.unit()) == ally.getWalkPosition())
+			if (Util().getWalkPosition(ally.unit()) != ally.getWalkPosition())
 			{
-				Grids().removeFromGrid(ally);
+				//Grids().removeFromGrid(ally);
 				updateAlly(ally);
-				Grids().addToGrid(ally);
+				//Grids().addToGrid(ally);
 			}
 			else
 			{
@@ -411,6 +411,7 @@ void UnitTrackerClass::updateAlly(UnitInfo& unit)
 	// Update information
 	unit.setType(t);
 	unit.setPosition(unit.unit()->getPosition());
+	unit.setDestination(Positions::None);
 	unit.setTilePosition(unit.unit()->getTilePosition());
 	unit.setWalkPosition(Util().getWalkPosition(unit.unit()));
 	unit.setPlayer(unit.unit()->getPlayer());
@@ -429,12 +430,7 @@ void UnitTrackerClass::updateAlly(UnitInfo& unit)
 	unit.setMaxGroundStrength(Util().getMaxGroundStrength(unit));
 	unit.setVisibleAirStrength(Util().getVisibleAirStrength(unit));
 	unit.setMaxAirStrength(Util().getMaxAirStrength(unit));
-	unit.setPriority(Util().getPriority(unit));
-
-	if (unit.unit()->getLastCommand().getTargetPosition().isValid())
-	{
-		unit.setTargetPosition(unit.unit()->getLastCommand().getTargetPosition());
-	}
+	unit.setPriority(Util().getPriority(unit));	
 
 	// Update calculations
 	unit.setTarget(Targets().getTarget(unit));

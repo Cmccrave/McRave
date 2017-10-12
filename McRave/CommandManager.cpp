@@ -233,7 +233,6 @@ void CommandTrackerClass::attack(UnitInfo& unit)
 		{
 			unit.unit()->attack(unit.getTarget());
 		}
-		unit.setTargetPosition(Units().getEnemyUnits()[unit.getTarget()].getPosition());
 	}
 	return;
 }
@@ -363,7 +362,7 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 		{
 			unit.unit()->move(Position(bestPosition));
 		}
-		unit.setTargetPosition(Position(bestPosition));
+		unit.setDestination(Position(bestPosition));
 		Grids().updateAllyMovement(unit.unit(), bestPosition);
 	}
 	return;
@@ -416,15 +415,19 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 			double distance = 0.0;
 			double threat = Grids().getEGroundThreat(x, y);
 
+			// If within ally territory, we want to stay as close to the enemy as possible
 			if (Terrain().isInAllyTerritory(unit.unit()))
 			{
-				distance = 1.0 / max(1.0, unit.getPosition().getDistance(unit.getTargetPosition()));
+				distance = unit.getPosition().getDistance(unit.getTargetPosition());
 			}
+
+			// Else, we want to be as close to home as possible
 			else
 			{
 				distance = double(Grids().getDistanceHome(x, y));
 			}
 
+			// If there is equal to or lower threat on the this tile and it's closer than current tile
 			if ((threat <= best || best == 0.0) && (distance / mobility < closest || closest == 0.0) && Util().isMobile(start, WalkPosition(x, y), unit.getType()))
 			{
 				best = threat;
@@ -438,7 +441,7 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 	if (bestPosition.isValid() && bestPosition != start)
 	{
 		Grids().updateAllyMovement(unit.unit(), bestPosition);
-		unit.setTargetPosition(Position(bestPosition));
+		unit.setDestination(Position(bestPosition));
 		if (unit.unit()->getLastCommand().getTargetPosition() != Position(bestPosition))
 		{
 			unit.unit()->move(Position(bestPosition));

@@ -27,7 +27,7 @@ void GridTrackerClass::reset()
 	{
 		for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
 		{
-			/*if (eGroundThreat[x][y] > 0.0 && eGroundThreat[x][y] < 1.0)
+			if (eGroundThreat[x][y] > 0.0 && eGroundThreat[x][y] < 1.0)
 			{
 				Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
 			}
@@ -38,8 +38,8 @@ void GridTrackerClass::reset()
 			if (eGroundThreat[x][y] >= 2.0 && eGroundThreat[x][y] < 3.0)
 			{
 				Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Green);
-			}*/
-			if (eGroundThreat[x][y] >= 1.0)
+			}
+			if (eGroundThreat[x][y] >= 3.0)
 			{
 				Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Red);
 			}
@@ -653,15 +653,21 @@ void GridTrackerClass::updateDistanceGrid()
 
 void GridTrackerClass::addToGrid(UnitInfo& unit)
 {
-	int radius = 4.0 + (unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8;
+	if (unit.getType().isBuilding())
+	{
+		return;
+	}
+	int radius = 4.0 + (unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0;
 	WalkPosition start = unit.getWalkPosition();
+	Position actual = Position((start.x * 8) + unit.getType().tileWidth() * 16.0, (start.y * 8) + unit.getType().tileHeight() * 16.0);
 
 	for (int x = start.x - radius; x <= start.x + radius + unit.getType().tileWidth() * 4; x++)
 	{
 		for (int y = start.y - radius; y <= start.y + radius + unit.getType().tileHeight() * 4; y++)
 		{
-			if (!WalkPosition(x, y).isValid()) return;
-			double distance = max(1.0, WalkPosition(x, y).getDistance(start) - double(unit.getType().tileWidth() * 4.0));
+			if (!WalkPosition(x, y).isValid()) continue;
+
+			double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(actual));
 
 			// Cluster grids
 			if (unit.getPlayer() == Broodwar->self() && start.getDistance(WalkPosition(x, y)) <= 20)
@@ -685,18 +691,18 @@ void GridTrackerClass::addToGrid(UnitInfo& unit)
 			}
 
 			// Threat grids
-			if (unit.getGroundDamage() > 0.0 && distance < (unit.getGroundRange() + (unit.getSpeed())) / 8.0)
+			if (unit.getGroundDamage() > 0.0 && distance <= (unit.getGroundRange() + (unit.getSpeed())))
 			{
 				if (unit.getPlayer() == Broodwar->self())
 				{
-					aGroundThreat[x][y] += max(0.1, unit.getMaxGroundStrength() / distance);
+					aGroundThreat[x][y] += unit.getMaxGroundStrength() / distance;
 				}
 				else
 				{
-					eGroundThreat[x][y] += max(0.1, unit.getMaxGroundStrength() / distance);
+					eGroundThreat[x][y] += unit.getMaxGroundStrength() / distance;
 				}
 			}
-			if (unit.getAirDamage() > 0.0 && distance < (unit.getAirRange() + (unit.getSpeed())) / 8.0)
+			if (unit.getAirDamage() > 0.0 && distance <= (unit.getAirRange() + (unit.getSpeed())))
 			{
 				if (unit.getPlayer() == Broodwar->self())
 				{
@@ -714,15 +720,21 @@ void GridTrackerClass::addToGrid(UnitInfo& unit)
 
 void GridTrackerClass::removeFromGrid(UnitInfo& unit)
 {
-	int radius = max(4.0, (unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8);
+	if (unit.getType().isBuilding())
+	{
+		return;
+	}
+	int radius = 4.0 + (unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0;
 	WalkPosition start = unit.getWalkPosition();
+	Position actual = Position((start.x * 8) + unit.getType().tileWidth() * 16.0, (start.y * 8) + unit.getType().tileHeight() * 16.0);
 
 	for (int x = start.x - radius; x <= start.x + radius + unit.getType().tileWidth() * 4; x++)
 	{
 		for (int y = start.y - radius; y <= start.y + radius + unit.getType().tileHeight() * 4; y++)
 		{
-			if (!WalkPosition(x, y).isValid()) return;
-			double distance = max(1.0, WalkPosition(x, y).getDistance(start) - double(unit.getType().tileWidth() * 4.0));
+			if (!WalkPosition(x, y).isValid()) continue;
+
+			double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(actual));
 
 			// Cluster grids
 			if (unit.getPlayer() == Broodwar->self() && start.getDistance(WalkPosition(x, y)) <= 20)
@@ -746,18 +758,18 @@ void GridTrackerClass::removeFromGrid(UnitInfo& unit)
 			}
 
 			// Threat grids
-			if (unit.getGroundDamage() > 0.0 && distance < (unit.getGroundRange() + (unit.getSpeed())) / 8.0)
+			if (unit.getGroundDamage() > 0.0 && distance <= (unit.getGroundRange() + (unit.getSpeed())))
 			{
 				if (unit.getPlayer() == Broodwar->self())
 				{
-					aGroundThreat[x][y] -= max(0.1, unit.getMaxGroundStrength() / distance);
+					aGroundThreat[x][y] -= unit.getMaxGroundStrength() / distance;
 				}
 				else
 				{
-					eGroundThreat[x][y] -= max(0.1, unit.getMaxGroundStrength() / distance);
+					eGroundThreat[x][y] -= unit.getMaxGroundStrength() / distance;
 				}
 			}
-			if (unit.getAirDamage() > 0.0 && distance < (unit.getAirRange() + (unit.getSpeed())) / 8.0)
+			if (unit.getAirDamage() > 0.0 && distance <= (unit.getAirRange() + (unit.getSpeed())))
 			{
 				if (unit.getPlayer() == Broodwar->self())
 				{

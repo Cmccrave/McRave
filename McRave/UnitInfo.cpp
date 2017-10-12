@@ -21,6 +21,7 @@ UnitInfo::UnitInfo()
 	position = Positions::None;
 	targetPosition = Positions::None;
 	engagePosition = Positions::None;
+	destination = Positions::None;
 	walkPosition = WalkPositions::None;
 	thisUnit = nullptr;
 	target = nullptr;
