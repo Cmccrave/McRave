@@ -128,6 +128,8 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 			}
 		}
 	}
+
+	Broodwar->drawLineMap(worker.getPosition(), bestPosition, Broodwar->self()->getColor());
 	if (bestPosition.isValid() && bestPosition != Position(start) && worker.unit()->getLastCommand().getTargetPosition() != bestPosition)
 	{
 		worker.unit()->move(bestPosition);
@@ -246,8 +248,8 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 		}
 	}
 
-	// If we are fast expanding and enemy is rushing, we need to defend with workers
-	if ((Strategy().isRush() && Strategy().isAllyFastExpand() && BuildOrder().isOpener() && Units().getGlobalAllyStrength() + Units().getAllyDefense()*0.8 < Units().getGlobalEnemyStrength()) || (Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0 && Grids().getResourceGrid(worker.getTilePosition()) > 0))
+	// If we need to use workers for defense - TEMP Removed probe pull stuff
+	if (/*(Strategy().isRush() && Strategy().isAllyFastExpand() && BuildOrder().isOpener() && Units().getGlobalAllyStrength() + Units().getAllyDefense()*0.8 < Units().getGlobalEnemyStrength()) || */(Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0 && Grids().getResourceGrid(worker.getTilePosition()) > 0))
 	{
 		Units().storeAlly(worker.unit());
 		Workers().removeWorker(worker.unit());
@@ -255,7 +257,7 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 	}
 
 	// Reassignment logic
-	if (worker.getResource() && worker.getResource()->exists() && ((!Resources().isGasSaturated() && minWorkers > gasWorkers * 10) || (!Resources().isMinSaturated() && minWorkers < gasWorkers * 4)))
+	if (worker.getResource() && worker.getResource()->exists() && ((!Resources().isGasSaturated() && minWorkers > gasWorkers * 8) || (!Resources().isMinSaturated() && minWorkers < gasWorkers * 4)))
 	{
 		reAssignWorker(worker);
 	}

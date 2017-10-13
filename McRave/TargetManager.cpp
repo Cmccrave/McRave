@@ -29,7 +29,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 	{
 		thisUnit = 0.0;
 		UnitInfo &enemy = e.second;
-		double distance = distance = max(0.0, unit.getPosition().getDistance(enemy.getPosition()));
+		double distance = max(0.0, unit.getPosition().getDistance(enemy.getPosition()));
 
 		if (!enemy.unit())
 		{

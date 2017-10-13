@@ -168,6 +168,8 @@ void UnitTrackerClass::onUnitComplete(Unit unit)
 
 	if (unit->getPlayer() == Broodwar->self())
 	{
+		allySizes[unit->getType().size()] += 1;
+
 		// Store Workers, Units, Bases(update base grid?)
 		if (unit->getType().isWorker())
 		{
@@ -243,7 +245,7 @@ void UnitTrackerClass::updateAliveUnits()
 		else if (enemy.getDeadFrame() != 0)
 		{
 			// Add a portion of the strength to ally strength
-			globalAllyStrength += max(enemy.getMaxGroundStrength(), enemy.getMaxAirStrength()) * 1 / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(enemy.getDeadFrame())));
+			//globalAllyStrength += max(enemy.getMaxGroundStrength(), enemy.getMaxAirStrength()) * 1 / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(enemy.getDeadFrame())));
 		}
 	}
 
@@ -273,7 +275,7 @@ void UnitTrackerClass::updateAliveUnits()
 		{
 			updateAlly(ally);
 
-			if (ally.getType().isWorker() && ((Units().getGlobalAllyStrength() + Units().getAllyDefense()*0.8 > Units().getGlobalEnemyStrength()) || (!Strategy().isAllyFastExpand() && (Grids().getResourceGrid(ally.getTilePosition()) == 0 || Grids().getEGroundThreat(ally.getWalkPosition()) == 0.0))))
+			if (ally.getType().isWorker() && /*((Units().getGlobalAllyStrength() + Units().getAllyDefense()*0.8 > Units().getGlobalEnemyStrength()) || (!Strategy().isAllyFastExpand() &&*/ (Grids().getResourceGrid(ally.getTilePosition()) == 0 || Grids().getEGroundThreat(ally.getWalkPosition()) == 0.0))//))
 			{
 				Workers().storeWorker(ally.unit());
 				ally.setDeadFrame(Broodwar->getFrameCount());
@@ -290,7 +292,7 @@ void UnitTrackerClass::updateAliveUnits()
 		}
 		else
 		{
-			globalEnemyStrength += max(ally.getMaxGroundStrength(), ally.getMaxAirStrength()) * 0.5 / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(ally.getDeadFrame())));
+			//globalEnemyStrength += max(ally.getMaxGroundStrength(), ally.getMaxAirStrength()) * 0.5 / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(ally.getDeadFrame())));
 		}
 	}
 }
@@ -312,7 +314,7 @@ void UnitTrackerClass::updateDeadUnits()
 	// Check for decayed enemy units
 	for (map<Unit, UnitInfo>::iterator itr = enemyUnits.begin(); itr != enemyUnits.end();)
 	{
-		if ((*itr).second.getDeadFrame() != 0 && (*itr).second.getDeadFrame() + 500 < Broodwar->getFrameCount() || itr->first && itr->first->exists() && !itr->first->getPlayer()->isEnemy(Broodwar->self()))
+		if ((*itr).second.getDeadFrame() != 0 && (*itr).second.getDeadFrame() + 500 < Broodwar->getFrameCount())
 		{
 			itr = enemyUnits.erase(itr);
 		}
@@ -374,7 +376,6 @@ void UnitTrackerClass::storeAlly(Unit unit)
 	else
 	{
 		allyUnits[unit].setUnit(unit);
-		allySizes[unit->getType().size()] += 1;
 	}
 	return;
 }
@@ -493,8 +494,8 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 		}
 		else
 		{
-			allyLocalGroundStrength += (enemy.getMaxGroundStrength() * simRatio) / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(enemy.getDeadFrame())));
-			allyLocalAirStrength += (enemy.getMaxAirStrength() * simRatio) / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(enemy.getDeadFrame())));
+			//allyLocalGroundStrength += (enemy.getMaxGroundStrength() * simRatio) / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(enemy.getDeadFrame())));
+			//allyLocalAirStrength += (enemy.getMaxAirStrength() * simRatio) / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(enemy.getDeadFrame())));
 		}
 	}
 
@@ -529,8 +530,8 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 		}
 		else
 		{
-			enemyLocalGroundStrength += (ally.getMaxGroundStrength() * simRatio) / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(ally.getDeadFrame())));
-			enemyLocalAirStrength += (ally.getMaxAirStrength() * simRatio) / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(ally.getDeadFrame())));
+			//enemyLocalGroundStrength += (ally.getMaxGroundStrength() * simRatio) / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(ally.getDeadFrame())));
+			//enemyLocalAirStrength += (ally.getMaxAirStrength() * simRatio) / (1.0 + 0.001*(double(Broodwar->getFrameCount()) - double(ally.getDeadFrame())));
 		}
 	}
 

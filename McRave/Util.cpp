@@ -31,7 +31,6 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit)
 	}
 
 	double range, damage;
-
 	range = cbrt(unit.getGroundRange());
 
 	if (unit.getType().groundWeapon().damageCooldown() > 0)
@@ -45,25 +44,6 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit)
 	else if (unit.getType() == UnitTypes::Terran_Bunker)
 	{
 		damage = unit.getGroundDamage() / 15.0;
-	}
-
-	if (!unit.getType().isWorker() && unit.getGroundDamage() > 0.0)
-	{
-		// Check for Zergling attack speed upgrade
-		if (unit.getType() == UnitTypes::Zerg_Zergling && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Adrenal_Glands))
-		{
-			damage = damage * 1.33;
-		}
-		return range * damage;
-	}
-	return 0.0;
-}
-
-double UtilTrackerClass::getVisibleGroundStrength(UnitInfo& unit)
-{
-	if (unit.unit()->isMaelstrommed() || unit.unit()->isStasised())
-	{
-		return 0.0;
 	}
 
 	double effectiveness = 1.0;
@@ -98,7 +78,23 @@ double UtilTrackerClass::getVisibleGroundStrength(UnitInfo& unit)
 			effectiveness = double((eLarge*0.25) + (eMedium*0.5) + (eSmall*1.0)) / max(1.0, double(eLarge + eMedium + eSmall));
 		}
 	}
-	return unit.getPercentHealth() * unit.getMaxGroundStrength() * effectiveness;
+
+	// Check for Zergling attack speed upgrade
+	if (unit.getType() == UnitTypes::Zerg_Zergling && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Adrenal_Glands))
+	{
+		damage = damage * 1.33;
+	}
+	return range * damage * effectiveness;
+}
+
+double UtilTrackerClass::getVisibleGroundStrength(UnitInfo& unit)
+{
+	if (unit.unit()->isMaelstrommed() || unit.unit()->isStasised())
+	{
+		return 0.0;
+	}
+
+	return unit.getPercentHealth() * unit.getMaxGroundStrength();
 }
 
 double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit)
@@ -120,22 +116,7 @@ double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit)
 		damage = unit.getAirDamage() / 24.0;
 	}
 
-	if (!unit.getType().isWorker() && damage > 0.0)
-	{
-		return range * damage;
-	}
-	return 0.0;
-}
-
-double UtilTrackerClass::getVisibleAirStrength(UnitInfo& unit)
-{
-	if (unit.unit()->isMaelstrommed() || unit.unit()->isStasised())
-	{
-		return 0.0;
-	}
-
 	double effectiveness = 1.0;
-	double hp = double(unit.unit()->getHitPoints() + (unit.unit()->getShields())) / double(unit.getType().maxHitPoints() + (unit.getType().maxShields()));
 
 	double aLarge = double(Units().getAllySizes()[UnitSizeTypes::Large]);
 	double aMedium = double(Units().getAllySizes()[UnitSizeTypes::Medium]);
@@ -167,7 +148,16 @@ double UtilTrackerClass::getVisibleAirStrength(UnitInfo& unit)
 			effectiveness = double((eLarge*0.25) + (eMedium*0.5) + (eSmall*1.0)) / max(1.0, double(eLarge + eMedium + eSmall));
 		}
 	}
-	return unit.getPercentHealth() * unit.getMaxAirStrength() * effectiveness;
+	return range * damage * effectiveness;
+}
+
+double UtilTrackerClass::getVisibleAirStrength(UnitInfo& unit)
+{
+	if (unit.unit()->isMaelstrommed() || unit.unit()->isStasised())
+	{
+		return 0.0;
+	}
+	return unit.getPercentHealth() * unit.getMaxAirStrength();
 }
 
 double UtilTrackerClass::getPriority(UnitInfo& unit)

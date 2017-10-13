@@ -181,7 +181,7 @@ void ProductionTrackerClass::updateReservedResources()
 void ProductionTrackerClass::updateProtoss()
 {
 	// Gateway saturation - max of 12 so the bot can exceed 4 bases
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= min(12, 1 + (2 * Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus))))
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= min(12, (2 * Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus))))
 	{
 		productionSat = true;
 	}
@@ -310,7 +310,7 @@ void ProductionTrackerClass::updateProtoss()
 						idleHighProduction.emplace(building.unit(), UnitTypes::Protoss_Dark_Templar);
 					}
 				}
-				if ((Strategy().isZealotsLocked() || Strategy().getUnitScore()[UnitTypes::Protoss_Dragoon] >= Strategy().getUnitScore()[UnitTypes::Protoss_Zealot]) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Cybernetics_Core) > 0)
+				if ((Strategy().isUnitLocked(UnitTypes::Protoss_Zealot) || Strategy().getUnitScore()[UnitTypes::Protoss_Dragoon] >= Strategy().getUnitScore()[UnitTypes::Protoss_Zealot]) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Cybernetics_Core) > 0)
 				{
 					if (Broodwar->self()->minerals() >= UnitTypes::Protoss_Dragoon.mineralPrice() + Buildings().getQueuedMineral() + reservedMineral && Broodwar->self()->gas() >= UnitTypes::Protoss_Dragoon.gasPrice() + Buildings().getQueuedGas() + reservedGas && Units().getSupply() + UnitTypes::Protoss_Dragoon.supplyRequired() <= Broodwar->self()->supplyTotal())
 					{
@@ -323,7 +323,7 @@ void ProductionTrackerClass::updateProtoss()
 						idleLowProduction.emplace(building.unit(), UnitTypes::Protoss_Dragoon);
 					}
 				}
-				if (!Strategy().isZealotsLocked() && (Strategy().getUnitScore()[UnitTypes::Protoss_Dragoon] < Strategy().getUnitScore()[UnitTypes::Protoss_Zealot] || ((Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Cybernetics_Core) < 1) || Broodwar->self()->gas() < UnitTypes::Protoss_Dragoon.gasPrice() + Buildings().getQueuedGas() + reservedGas)))
+				if (!Strategy().isUnitLocked(UnitTypes::Protoss_Zealot) && (Strategy().getUnitScore()[UnitTypes::Protoss_Dragoon] < Strategy().getUnitScore()[UnitTypes::Protoss_Zealot] || ((Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Cybernetics_Core) < 1) || Broodwar->self()->gas() < UnitTypes::Protoss_Dragoon.gasPrice() + Buildings().getQueuedGas() + reservedGas)))
 				{
 					if (Broodwar->self()->minerals() >= UnitTypes::Protoss_Zealot.mineralPrice() + Buildings().getQueuedMineral() + reservedMineral && Units().getSupply() + UnitTypes::Protoss_Zealot.supplyRequired() <= Broodwar->self()->supplyTotal())
 					{

@@ -1,26 +1,5 @@
 #include "McRave.h"
 
-// NOTES: Transitioning to One Shot Update for Grids if ? it is assumed to be working for now
-
-// Disable: updateReservedLocation for building placement
-// Completed and verified:
-// Reserve Grid
-// Pylon Grid
-// Battery Grid (?)
-// Defense Grid (?)
-// Bunker Grid (?)
-
-// Testing:
-// Resource Grid
-// Base Grid
-
-// Non one shot grids:	 (it won't be any faster than it is right now, still iterating every unit/building/worker)
-// Anti Mobility
-// Cluster
-// Threat
-// Special Unit
-
-
 void GridTrackerClass::update()
 {
 	Display().startClock();
@@ -36,17 +15,18 @@ void GridTrackerClass::update()
 
 void GridTrackerClass::reset()
 {
-	//// Temp debugging for tile positions
-	//for (int x = 0; x <= Broodwar->mapWidth() * 4; x++)
-	//{
-	//	for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
-	//	{
-	//		if (eGroundThreat[x][y] > 0)
-	//		{
-	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
-	//		}
-	//	}
-	//}
+	// Temp debugging for tile positions
+	for (int x = 0; x <= Broodwar->mapWidth()*4; x++)
+	{
+		for (int y = 0; y <= Broodwar->mapHeight()*4; y++)
+		{
+			if (antiMobilityGrid[x][y] > 0)
+			{
+				Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
+				//Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
+			}
+		}
+	}
 
 	int aCenter = 0, eCenter = 0;
 	for (int x = 0; x < 1024; x++) for (int y = 0; y < 1024; y++)
@@ -65,10 +45,11 @@ void GridTrackerClass::reset()
 			enemyArmyCenter = Position(WalkPosition(x, y));
 		}
 
-
 		// Reset WalkPosition grids		
 		aClusterGrid[x][y] = 0;
 		aDetectorGrid[x][y] = 0;
+		aGroundThreat[x][y] = 0;
+		aAirThreat[x][y] = 0;
 		arbiterGrid[x][y] = 0;
 
 		eGroundThreat[x][y] = 0.0;
@@ -95,12 +76,12 @@ void GridTrackerClass::updateAllyGrids()
 		UnitInfo &unit = u.second;
 		if (unit.getDeadFrame() != 0) continue;
 
-		int radius = (unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0;
+		int radius = (unit.getType().tileWidth() * 4) + (unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0;
 		WalkPosition start = unit.getWalkPosition();
 
-		for (int x = start.x - radius; x <= start.x + radius + unit.getType().tileWidth() * 4; x++)
+		for (int x = start.x - radius; x <= start.x + radius; x++)
 		{
-			for (int y = start.y - radius; y <= start.y + radius + unit.getType().tileHeight() * 4; y++)
+			for (int y = start.y - radius; y <= start.y + radius; y++)
 			{
 				if (!WalkPosition(x, y).isValid()) continue;
 
@@ -183,12 +164,12 @@ void GridTrackerClass::updateEnemyGrids()
 		UnitInfo &unit = u.second;
 		if (unit.getDeadFrame() != 0) continue;
 
-		int radius = (unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0;
+		int radius = (unit.getType().tileWidth() * 4) + (unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0;
 		WalkPosition start = unit.getWalkPosition();
 
-		for (int x = start.x - radius; x <= start.x + radius + unit.getType().tileWidth() * 4; x++)
+		for (int x = start.x - radius; x <= start.x + radius; x++)
 		{
-			for (int y = start.y - radius; y <= start.y + radius + unit.getType().tileHeight() * 4; y++)
+			for (int y = start.y - radius; y <= start.y + radius; y++)
 			{
 				if (!WalkPosition(x, y).isValid()) continue;
 
@@ -199,22 +180,25 @@ void GridTrackerClass::updateEnemyGrids()
 				{
 					if (unit.getType().isFlyer())
 					{
+						resetGrid[x][y] = true;
 						eAirClusterGrid[x][y] += 1;
 					}
 					if (!unit.getType().isFlyer())
 					{
+						resetGrid[x][y] = true;
 						eGroundClusterGrid[x][y] += 1;
 					}
 					if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode)
 					{
+						resetGrid[x][y] = true;
 						stasisClusterGrid[x][y] += 1;
 					}
 				}
 
-
 				// Anti mobility grids
 				if (x >= start.x && x < start.x + unit.getType().tileWidth() * 4 && y >= start.y && y < start.y + unit.getType().tileHeight() * 4)
 				{
+					resetGrid[x][y] = true;
 					antiMobilityGrid[x][y] += 1;
 				}
 
@@ -227,7 +211,7 @@ void GridTrackerClass::updateEnemyGrids()
 				if (distance <= (unit.getAirRange() + unit.getSpeed()))
 				{
 					resetGrid[x][y] = true;
-					eAirThreat[x][y] += max(0.1, unit.getMaxAirStrength() / distance);
+					eAirThreat[x][y] += unit.getMaxAirStrength() / distance;
 				}
 			}
 		}
@@ -838,32 +822,3 @@ void GridTrackerClass::updateDistanceGrid()
 		}
 	}
 }
-
-
-// Circle thing
-//inline void UnitManager::addToDeathMatrix(BWAPI::Position pos, BWAPI::UnitType ut, BWAPI::Player p) {
-//	const int mapH = BWAPI::Broodwar->mapHeight() * 4, mapW = BWAPI::Broodwar->mapWidth() * 4;
-//	if (ut.groundWeapon()) {
-//		const int range = p->weaponMaxRange(ut.groundWeapon()) / 8;
-//		const int death = unitDeathGround(ut);
-//		const int mx = pos.x + range > mapW ? mapW : pos.x + range;
-//		for (int dx = pos.x - range < 0 ? -pos.x : -range; dx <= mx; ++dx) {
-//			const int yw = (int)ceil(sqrt(range * range - dx * dx));
-//			const int minY = MAX(pos.y - yw, 0), maxY = MIN(pos.y + yw, mapH);
-//			for (int y = minY; y <= maxY; ++y)
-//				deathMatrixGround[y*deathMatrixSideLen + pos.x + dx] += death;
-//		}
-//	}
-//
-//	if (ut.airWeapon()) {
-//		const int range = p->weaponMaxRange(ut.groundWeapon()) / 8;
-//		const int death = unitDeathAir(ut);
-//		const int mx = pos.x + range > mapW ? mapW : pos.x + range;
-//		for (int dx = pos.x - range < 0 ? -pos.x : -range; dx <= mx; ++dx) {
-//			const int yw = (int)ceil(sqrt(range * range - dx * dx));
-//			const int minY = MAX(pos.y - yw, 0), maxY = MIN(pos.y + yw, mapH);
-//			for (int y = minY; y <= maxY; ++y)
-//				deathMatrixAir[y*deathMatrixSideLen + pos.x + dx] += death;
-//		}
-//	}
-//}

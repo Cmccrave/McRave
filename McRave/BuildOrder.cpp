@@ -184,7 +184,7 @@ void BuildOrderTrackerClass::updateDecision()
 		}
 
 		// If production is saturated and none are idle or we need detection for some invis units, choose a tech
-		if (Strategy().needDetection() || (!Strategy().isPlayPassive() && Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() && !getOpening && !getTech && techUnit == UnitTypes::None && Production().getIdleLowProduction().size() == 0 && Production().isProductionSat() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 2))
+		if (Strategy().needDetection() || (!Strategy().isPlayPassive() && !getOpening && !getTech && techUnit == UnitTypes::None && Production().getIdleLowProduction().size() == 0 && Production().isProductionSat()))
 		{
 			getTech = true;
 		}
@@ -383,6 +383,10 @@ void BuildOrderTrackerClass::protossSituational()
 			buildingDesired[UnitTypes::Protoss_Photon_Cannon] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon);
 			for (auto &base : Bases().getMyBases())
 			{
+				if (Grids().getPylonGrid(base.second.getTilePosition()) == 0)
+				{
+					buildingDesired[UnitTypes::Protoss_Pylon] += 1;
+				}
 				if (Grids().getDefenseGrid(base.second.getTilePosition()) < 1 && Broodwar->hasPower(TilePosition(base.second.getPosition())))
 				{
 					buildingDesired[UnitTypes::Protoss_Photon_Cannon] += 1 - Grids().getDefenseGrid(base.second.getTilePosition());
@@ -497,7 +501,7 @@ void BuildOrderTrackerClass::zergSituational()
 void BuildOrderTrackerClass::ZZCore()
 {
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1;
-	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 44);
+	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 40);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 32;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 40;
 	getOpening = Units().getSupply() < 44;
@@ -550,7 +554,7 @@ void BuildOrderTrackerClass::FFEGateway()
 void BuildOrderTrackerClass::FFENexus()
 {
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24);
-	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 28) + (Units().getSupply() >= 42);
+	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 26) + (Units().getSupply() >= 42);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 36;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 40;
 	buildingDesired[UnitTypes::Protoss_Forge] = Units().getSupply() >= 60;
@@ -598,7 +602,7 @@ void BuildOrderTrackerClass::FourGate()
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + 3 * (Units().getSupply() >= 62);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 32;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 34;
-	getOpening = Units().getSupply() < 62;
+	getOpening = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) < 3;
 	return;
 }
 
