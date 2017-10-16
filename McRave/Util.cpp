@@ -418,9 +418,10 @@ set<WalkPosition> UtilTrackerClass::getWalkPositionsUnderUnit(Unit unit)
 
 bool UtilTrackerClass::isSafe(WalkPosition end, UnitType unitType, bool groundCheck, bool airCheck)
 {
-	for (int x = end.x - (unitType.tileWidth() * 2); x <= end.x + (unitType.tileWidth() * 2); x++)
+	int width = unitType.width() / 8;
+	for (int x = end.x - (width * 2); x <= end.x + (width * 2); x++)
 	{
-		for (int y = end.y - (unitType.tileHeight() * 2); y <= end.y + (unitType.tileHeight() * 2); y++)
+		for (int y = end.y - (width * 2); y <= end.y + (width * 2); y++)
 		{
 			if (!WalkPosition(x, y).isValid())
 			{
@@ -441,16 +442,17 @@ bool UtilTrackerClass::isSafe(WalkPosition end, UnitType unitType, bool groundCh
 
 bool UtilTrackerClass::isMobile(WalkPosition start, WalkPosition end, UnitType unitType)
 {
-	for (int x = end.x - (unitType.tileWidth() * 2); x <= end.x + (unitType.tileWidth() * 2); x++)
+	int width = unitType.width() / 8;
+	for (int x = end.x - (width * 2); x <= end.x + (width * 2); x++)
 	{
-		for (int y = end.y - (unitType.tileHeight() * 2); y <= end.y + (unitType.tileHeight() * 2); y++)
+		for (int y = end.y - (width * 2); y <= end.y + (width * 2); y++)
 		{
 			if (!WalkPosition(x, y).isValid())
 			{
 				continue;
 			}
 			// If WalkPosition shared with WalkPositions under unit, ignore
-			if (x >= start.x && x <= (start.x + (unitType.width() / 16)) && y >= start.y && y <= (start.y + (unitType.height() / 16)))
+			if (x >= start.x && x <= start.x + width * 4 && y >= start.y && y <= start.y + width * 4)
 			{
 				continue;
 			}

@@ -93,6 +93,13 @@ void BuildOrderTrackerClass::onStart()
 		ss3 >> build >> wins >> losses;
 		gamesPlayed = wins + losses;
 
+		// Against static easy bots to beat, just stick with whatever is working (prevents uncessary losses)
+		if (gamesPlayed > 0 && losses == 0)
+		{
+			currentBuild = build;
+			return;
+		}
+
 		if ((Players().getNumberProtoss() > 0 && isBuildAllowed(Races::Protoss, build)) || (Players().getNumberTerran() > 0 && isBuildAllowed(Races::Terran, build)) || (Players().getNumberZerg() > 0 && isBuildAllowed(Races::Zerg, build)) || (Players().getNumberRandom() > 0 && isBuildAllowed(Races::Random, build)))
 		{
 			if (gamesPlayed <= 0)
@@ -184,7 +191,7 @@ void BuildOrderTrackerClass::updateDecision()
 		}
 
 		// If production is saturated and none are idle or we need detection for some invis units, choose a tech
-		if (Strategy().needDetection() || (!Strategy().isPlayPassive() && !getOpening && !getTech && techUnit == UnitTypes::None && Production().getIdleLowProduction().size() == 0 && Production().isProductionSat()))
+		if (Strategy().needDetection() || (!Strategy().isPlayPassive() && !getOpening && !getTech && techUnit == UnitTypes::None && Production().getIdleLowProduction().size() == 0 && (Production().isProductionSat() || Strategy().isAllyFastExpand())))
 		{
 			getTech = true;
 		}
@@ -212,7 +219,7 @@ void BuildOrderTrackerClass::updateBuild()
 {
 	// Protoss
 	if (Broodwar->self()->getRace() == Races::Protoss)
-	{		
+	{
 		protossOpener();
 		protossTech();
 		protossSituational();
@@ -220,7 +227,7 @@ void BuildOrderTrackerClass::updateBuild()
 
 	// Terran
 	else if (Broodwar->self()->getRace() == Races::Terran)
-	{	
+	{
 		terranOpener();
 		terranTech();
 		terranSituational();
@@ -228,7 +235,7 @@ void BuildOrderTrackerClass::updateBuild()
 
 	// Zerg
 	else if (Broodwar->self()->getRace() == Races::Zerg)
-	{		
+	{
 		zergOpener();
 		zergTech();
 		zergSituational();
@@ -256,30 +263,48 @@ void BuildOrderTrackerClass::protossOpener()
 
 void BuildOrderTrackerClass::protossTech()
 {
-	if (Strategy().needDetection())
+	// Some hardcoded techs based on needing detection or specific build orders
+	if (getTech)
 	{
-		techUnit = UnitTypes::Protoss_Observer;
-		getTech = false;
-		techList.insert(techUnit);
-	}
-	else if (getTech && techUnit == UnitTypes::None)
-	{
-		double highest = 0.0;
-		for (auto &tech : Strategy().getUnitScore())
-		{			
-			if (tech.first == UnitTypes::Protoss_Dragoon || tech.first == UnitTypes::Protoss_Zealot)
-			{
-				continue;
-			}
-			if (tech.second > highest)
-			{
-				highest = tech.second;
-				techUnit = tech.first;
-			}
+		if (Strategy().needDetection())
+		{
+			techUnit = UnitTypes::Protoss_Observer;
+			getTech = false;
+			techList.insert(techUnit);
+		}
+		else if (currentBuild == "DTExpand")
+		{
+			techUnit = UnitTypes::Protoss_Dark_Templar;
+			getTech = false;
+			techList.insert(techUnit);
+		}
+		else if (currentBuild == "RoboExpand")
+		{
+			techUnit = UnitTypes::Protoss_Reaver;
+			getTech = false;
+			techList.insert(techUnit);
 		}
 
-		// No longer need to choose a tech
-		getTech = false;		
+		// Otherwise, choose a tech based on highest unit score
+		else if (techUnit == UnitTypes::None)
+		{
+			double highest = 0.0;
+			for (auto &tech : Strategy().getUnitScore())
+			{
+				if (tech.first == UnitTypes::Protoss_Dragoon || tech.first == UnitTypes::Protoss_Zealot)
+				{
+					continue;
+				}
+				if (tech.second > highest)
+				{
+					highest = tech.second;
+					techUnit = tech.first;
+				}
+			}
+
+			// No longer need to choose a tech
+			getTech = false;
+		}
 	}
 
 	if (techUnit == UnitTypes::Protoss_Observer)
@@ -351,7 +376,7 @@ void BuildOrderTrackerClass::protossSituational()
 	}
 
 	// Expansion logic
-	if (Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() && Resources().isMinSaturated() && Production().isProductionSat() && Production().getIdleLowProduction().size() == 0)
+	if (Resources().isMinSaturated() && Production().isProductionSat() && Production().getIdleLowProduction().size() == 0)
 	{
 		buildingDesired[UnitTypes::Protoss_Nexus] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) + 1;
 	}
@@ -387,9 +412,9 @@ void BuildOrderTrackerClass::protossSituational()
 				{
 					buildingDesired[UnitTypes::Protoss_Pylon] += 1;
 				}
-				if (Grids().getDefenseGrid(base.second.getTilePosition()) < 1 && Broodwar->hasPower(TilePosition(base.second.getPosition())))
+				else if (Grids().getDefenseGrid(base.second.getTilePosition()) < 1 && Broodwar->hasPower(TilePosition(base.second.getPosition())))
 				{
-					buildingDesired[UnitTypes::Protoss_Photon_Cannon] += 1 - Grids().getDefenseGrid(base.second.getTilePosition());
+					buildingDesired[UnitTypes::Protoss_Photon_Cannon] += 1;
 				}
 			}
 		}
@@ -608,7 +633,7 @@ void BuildOrderTrackerClass::FourGate()
 
 void BuildOrderTrackerClass::ZealotRush()
 {
-	buildingDesired[UnitTypes::Protoss_Gateway] = 2 * (Units().getSupply() >= 18);
+	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 18) + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 40;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 44;
 	getOpening = Units().getSupply() < 44;

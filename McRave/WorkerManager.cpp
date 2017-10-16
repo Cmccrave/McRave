@@ -90,6 +90,7 @@ void WorkerTrackerClass::updateInformation(WorkerInfo& worker)
 	worker.setPosition(worker.unit()->getPosition());
 	worker.setWalkPosition(Util().getWalkPosition(worker.unit()));
 	worker.setTilePosition(worker.unit()->getTilePosition());
+	worker.setType(worker.unit()->getType());
 	return;
 }
 
@@ -414,10 +415,12 @@ void WorkerTrackerClass::reAssignWorker(WorkerInfo& worker)
 	if (Resources().getMyGas().find(worker.getResource()) != Resources().getMyGas().end())
 	{
 		Resources().getMyGas()[worker.getResource()].setGathererCount(Resources().getMyGas()[worker.getResource()].getGathererCount() - 1);
+		gasWorkers--;
 	}
 	if (Resources().getMyMinerals().find(worker.getResource()) != Resources().getMyMinerals().end())
 	{
 		Resources().getMyMinerals()[worker.getResource()].setGathererCount(Resources().getMyMinerals()[worker.getResource()].getGathererCount() - 1);
+		minWorkers--;
 	}
 	assignWorker(worker);
 	return;

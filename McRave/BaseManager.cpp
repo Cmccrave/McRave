@@ -21,7 +21,7 @@ void BaseTrackerClass::updateAlliedBases()
 			}
 
 			updateProduction(base);
-		}
+		}		
 	}
 	return;
 }

@@ -64,7 +64,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		// If this is a detector unit, target invisible units only
 		if (unit.getType().isDetector() && !unit.getType().isBuilding())
 		{
-			if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && ((!enemy.getType().isFlyer() && Grids().getAGroundThreat(enemy.getWalkPosition()) > 0) || (enemy.getType().isFlyer() && Grids().getAAirThreat(enemy.getWalkPosition()) > 0) || Terrain().isInAllyTerritory(enemy.unit())) && Grids().getEDetectorGrid(enemy.getWalkPosition()) == 0)
+			if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && ((!enemy.getType().isFlyer() && Grids().getAGroundThreat(enemy.getWalkPosition()) > 0.0) || (enemy.getType().isFlyer() && Grids().getAAirThreat(enemy.getWalkPosition()) > 0.0) || Terrain().isInAllyTerritory(enemy.unit())) && Grids().getEDetectorGrid(enemy.getWalkPosition()) == 0)
 			{
 				thisUnit = (enemy.getPriority() * (1.0 + 0.1 *(1.0 - enemy.getPercentHealth()))) / distance;
 			}
@@ -121,8 +121,16 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 	{
 		unit.setTargetPosition(targetPosition);
 		unit.setTargetWalkPosition(targetWalkPosition);
-		unit.setTargetTilePosition(targetTilePosition);
-		unit.setEngagePosition(unit.getPosition() + Position((unit.getTargetPosition() - unit.getPosition()) * (unit.getPosition().getDistance(unit.getTargetPosition()) - max(unit.getGroundRange(), unit.getAirRange())) / unit.getPosition().getDistance(unit.getTargetPosition())));
+		unit.setTargetTilePosition(targetTilePosition);		
+
+		if (unit.getPosition().getDistance(unit.getTargetPosition()) > max(unit.getGroundRange(), unit.getAirRange()))
+		{
+			unit.setEngagePosition(unit.getPosition() + Position((unit.getTargetPosition() - unit.getPosition()) * (unit.getPosition().getDistance(unit.getTargetPosition()) - max(unit.getGroundRange(), unit.getAirRange())) / unit.getPosition().getDistance(unit.getTargetPosition())));
+		}
+		else
+		{
+			unit.setEngagePosition(unit.getPosition());
+		}
 	}
 	return target;
 }

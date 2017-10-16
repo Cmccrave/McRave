@@ -16,88 +16,44 @@ void SpecialUnitTrackerClass::updateArbiters()
 	for (auto &a : Units().getAllyUnitsFilter(UnitTypes::Protoss_Arbiter))
 	{
 		UnitInfo &arbiter = Units().getAllyUnit(a);
-		/*if (Broodwar->self()->hasResearched(TechTypes::Recall) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Arbiter) > 1 && arbiter.unit()->getEnergy() > 100 && (!recaller || (recaller && !recaller->exists())))
-		{
-		recaller = arbiter.unit();
-		}*/
-
 		int bestCluster = 0;
 		double closestD = 0.0;
 		Position bestPosition = Grids().getAllyArmyCenter();
 		WalkPosition start = arbiter.getWalkPosition();
 
-		//if (recaller && arbiter.unit()->getEnergy() > 100)
-		//{
-		//	if (arbiter.unit()->getDistance(Terrain().getPlayerStartingPosition()) > 320 && Grids().getStasisCluster(arbiter.getWalkPosition()) < 4)
-		//	{
-		//		// Move towards areas with no threat close to enemy starting position
-		//		for (int x = start.x - 20; x <= start.x + 20; x++)
-		//		{
-		//			for (int y = start.y - 20; y <= start.y + 20; y++)
-		//			{
-		//				// If the Arbiter finds a tank cluster that is fairly high with little to no air threat, lock in moving there
-		//				if (WalkPosition(x, y).isValid() && Grids().getStasisCluster(WalkPosition(x, y)) >= 4 && Grids().getEAirThreat(WalkPosition(x, y)) < 10)
-		//				{
-		//					closestD = -1;
-		//					bestPosition = Position(WalkPosition(x, y));
-		//				}
-
-		//				// Else if the Arbiter finds a tile that is no threat and closer to the enemy starting position
-		//				else if (WalkPosition(x, y).isValid() && (closestD == 0.0 || Terrain().getEnemyStartingPosition().getDistance(Position(WalkPosition(x, y))) < closestD))
-		//				{
-		//					if (Util().isSafe(start, WalkPosition(x, y), UnitTypes::Protoss_Arbiter, false, true, false))
-		//					{
-		//						closestD = Terrain().getEnemyStartingPosition().getDistance(Position(WalkPosition(x, y)));
-		//						bestPosition = Position(WalkPosition(x, y));
-		//					}
-		//				}
-		//			}
-		//		}
-		//	}
-		//	else
-		//	{
-		//		recaller->useTech(TechTypes::Recall, Grids().getAllyArmyCenter());
-		//		Strategy().recallEvent();
-		//		continue;
-		//	}
-		//}
-		//else
-		//{
-		// Move towards high cluster counts and closest to ally starting position
 		for (int x = start.x - 20; x <= start.x + 20; x++)
 		{
 			for (int y = start.y - 20; y <= start.y + 20; y++)
 			{
-				if (WalkPosition(x, y).isValid() && Grids().getEMPGrid(x, y) == 0 && Grids().getArbiterGrid(x, y) == 0 && (closestD == 0.0 || Grids().getACluster(x, y) > bestCluster || (Grids().getACluster(x, y) == bestCluster && Terrain().getPlayerStartingPosition().getDistance(Position(WalkPosition(x, y))) < closestD)))
+				// If not valid, has an EMP on it, an Arbiter moving to it or isn't safe, continue
+				if (!WalkPosition(x, y).isValid() || Grids().getEMPGrid(x, y) > 0 || Grids().getArbiterGrid(x, y) > 0 || !Util().isSafe(WalkPosition(x, y), UnitTypes::Protoss_Arbiter, false, true)) continue;
+				
+				// If this position is closer or has a higher cluster of ally units
+				if (closestD == 0.0 || Grids().getACluster(x, y) > bestCluster || (Grids().getACluster(x, y) == bestCluster && Terrain().getPlayerStartingPosition().getDistance(Position(WalkPosition(x, y))) < closestD))
 				{
-					if (Util().isSafe(WalkPosition(x, y), UnitTypes::Protoss_Arbiter, false, true))
-					{
-						closestD = Terrain().getPlayerStartingPosition().getDistance(Position(WalkPosition(x, y)));
-						bestCluster = Grids().getACluster(x, y);
-						bestPosition = Position(WalkPosition(x, y));
-					}
+					closestD = Terrain().getPlayerStartingPosition().getDistance(Position(WalkPosition(x, y)));
+					bestCluster = Grids().getACluster(x, y);
+					bestPosition = Position(WalkPosition(x, y));
 				}
 			}
 		}
-		//}
 
 		// Move and update grids	
 		arbiter.setEngagePosition(bestPosition);
 		arbiter.unit()->move(bestPosition);
 		Grids().updateArbiterMovement(arbiter);
 
-		// If there's a stasis target, cast stasis on it
-		Unit target = Units().getAllyUnits()[arbiter.unit()].getTarget();
-		if (target && target->exists() && arbiter.unit()->getEnergy() >= 100)
+		// If there's a stasis target, cast stasis on it		
+		if (arbiter.getTarget() && arbiter.getTarget()->exists() && arbiter.unit()->getEnergy() >= 100)
 		{
-			arbiter.unit()->useTech(TechTypes::Stasis_Field, target);
+			arbiter.unit()->useTech(TechTypes::Stasis_Field, arbiter.getTarget());
 		}
 	}
 	return;
 }
 
 void SpecialUnitTrackerClass::updateDetectors()
-{	
+{
 	for (auto &d : Units().getAllyUnitsFilter(UnitTypes::Protoss_Observer))
 	{
 		UnitInfo &detector = Units().getAllyUnit(d);
@@ -132,7 +88,9 @@ void SpecialUnitTrackerClass::updateDetectors()
 		{
 			for (int y = start.y - 20; y <= start.y + 20; y++)
 			{
-				if (WalkPosition(x, y).isValid() && Grids().getEDetectorGrid(x, y) == 0 && Position(WalkPosition(x, y)).getDistance(Position(start)) > 64 && Grids().getACluster(x, y) > 0 && Grids().getADetectorGrid(x, y) == 0 && Grids().getEAirThreat(x, y) == 0.0 && (Position(WalkPosition(x, y)).getDistance(Terrain().getEnemyStartingPosition()) < closestD || closestD == 0))
+				if (!WalkPosition(x, y).isValid()) continue;
+
+				if (Grids().getEDetectorGrid(x, y) == 0 && Position(WalkPosition(x, y)).getDistance(Position(start)) > 64 && (Grids().getAAirThreat(x, y) > 0 || Grids().getAGroundThreat(x, y) > 0) && Grids().getADetectorGrid(x, y) == 0 && (Position(WalkPosition(x, y)).getDistance(Terrain().getEnemyStartingPosition()) < closestD || closestD == 0))
 				{
 					newDestination = Position(WalkPosition(x, y));
 					closestD = Position(WalkPosition(x, y)).getDistance(Terrain().getEnemyStartingPosition());
@@ -151,7 +109,7 @@ void SpecialUnitTrackerClass::updateDetectors()
 }
 
 void SpecialUnitTrackerClass::updateReavers()
-{	
+{
 	for (auto &r : Units().getAllyUnitsFilter(UnitTypes::Protoss_Reaver))
 	{
 		UnitInfo &reaver = Units().getAllyUnit(r);
@@ -167,7 +125,7 @@ void SpecialUnitTrackerClass::updateReavers()
 }
 
 void SpecialUnitTrackerClass::updateVultures()
-{	
+{
 	for (auto &v : Units().getAllyUnitsFilter(UnitTypes::Terran_Vulture))
 	{
 		UnitInfo &vulture = Units().getAllyUnit(v);

@@ -482,7 +482,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 			}
 		}
 
-		if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && !enemy.unit()->isDetected())
+		if ((enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && !enemy.unit()->isDetected()) || (Broodwar->getGroundHeight(enemy.getTilePosition()) > Broodwar->getGroundHeight(unit.getTilePosition())))
 		{
 			simRatio = simRatio * 5.0;
 		}
@@ -674,36 +674,41 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 		}
 	}
 
-	// If last command was engage
-	if (unit.getStrategy() == 1)
-	{
-		// Latch based system for at least 80% disadvantage to disengage
-		if ((!unit.getType().isFlyer() && allyLocalGroundStrength < enemyLocalGroundStrength*0.8) || (unit.getType().isFlyer() && allyLocalAirStrength < enemyLocalAirStrength*0.8))
+	int offset = 1.0;
+	if (Broodwar->self()->getRace() == Races::Protoss) offset = 0.2;
+	else if (Broodwar->self()->getRace() == Races::Terran) offset = 0.5;
+	
+		// If last command was engage
+		if (unit.getStrategy() == 1)
 		{
-			unit.setStrategy(0);
-			return;
+			// Latch based system for at least 80% disadvantage to disengage
+			if ((!unit.getType().isFlyer() && allyLocalGroundStrength < enemyLocalGroundStrength*(1.0 - offset)) || (unit.getType().isFlyer() && allyLocalAirStrength < enemyLocalAirStrength*(1.0 - offset)))
+			{
+				unit.setStrategy(0);
+				return;
+			}
+			else
+			{
+				return;
+			}
 		}
-		else
-		{
-			return;
-		}
-	}
 
-	// If last command was disengage/no command
-	else
-	{
-		// Latch based system for at least 120% advantage to engage
-		if ((!unit.getType().isFlyer() && allyLocalGroundStrength > enemyLocalGroundStrength*1.2) || (unit.getType().isFlyer() && allyLocalAirStrength > enemyLocalAirStrength*1.2))
-		{
-			unit.setStrategy(1);
-			return;
-		}
+		// If last command was disengage/no command
 		else
 		{
-			unit.setStrategy(0);
-			return;
+			// Latch based system for at least 120% advantage to engage
+			if ((!unit.getType().isFlyer() && allyLocalGroundStrength > enemyLocalGroundStrength*(1.0 + offset)) || (unit.getType().isFlyer() && allyLocalAirStrength > enemyLocalAirStrength*(1.0 + offset)))
+			{
+				unit.setStrategy(1);
+				return;
+			}
+			else
+			{
+				unit.setStrategy(0);
+				return;
+			}
 		}
-	}
+
 
 	// Disregard local if no target, no recent local calculation and not within ally region
 	unit.setStrategy(3);
