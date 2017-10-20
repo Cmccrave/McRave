@@ -20,7 +20,7 @@ void GridTrackerClass::reset()
 	//{
 	//	for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
 	//	{
-	//		if (aClusterGrid[x][y] > 0)
+	//		if (eGroundThreat[x][y] > 0)
 	//		{
 	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
 	//			//Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
@@ -34,9 +34,9 @@ void GridTrackerClass::reset()
 		if (!resetGrid[x][y]) continue;
 
 		// Find army centers
-		if (aClusterGrid[x][y] > aCenter)
+		if (aGroundClusterGrid[x][y] > aCenter)
 		{
-			aCenter = aClusterGrid[x][y];
+			aCenter = aGroundClusterGrid[x][y];
 			allyArmyCenter = Position(WalkPosition(x, y));
 		}
 		if (eGroundClusterGrid[x][y] * eGroundThreat[x][y] + eAirClusterGrid[x][y] * eAirThreat[x][y] > eCenter)
@@ -46,7 +46,8 @@ void GridTrackerClass::reset()
 		}
 
 		// Reset WalkPosition grids		
-		aClusterGrid[x][y] = 0;
+		aGroundClusterGrid[x][y] = 0;
+		aAirClusterGrid[x][y] = 0;
 		aDetectorGrid[x][y] = 0;
 		aGroundThreat[x][y] = 0.0;
 		aAirThreat[x][y] = 0.0;
@@ -89,10 +90,18 @@ void GridTrackerClass::updateAllyGrids()
 				double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(unit.getPosition()));
 
 				// Cluster grids
-				if (unit.getPlayer() == Broodwar->self() && start.getDistance(WalkPosition(x, y)) <= 20)
-				{
-					resetGrid[x][y] = true;
-					aClusterGrid[x][y] += 1;
+				if (start.getDistance(WalkPosition(x, y)) <= 20)
+				{					
+					if (unit.getType().isFlyer())
+					{
+						resetGrid[x][y] = true;
+						aAirClusterGrid[x][y] += 1;
+					}
+					else
+					{
+						resetGrid[x][y] = true;
+						aGroundClusterGrid[x][y] += 1;
+					}
 				}
 
 				// Anti mobility grids
@@ -170,16 +179,22 @@ void GridTrackerClass::updateEnemyGrids()
 		int radius = 0;
 		WalkPosition start = unit.getWalkPosition();
 
-		if (unit.getType().isWorker())
+		if (unit.getType().isWorker() && unit.unit()->exists() && (!Terrain().isInAllyTerritory(unit.unit()) || (Broodwar->getFrameCount() - unit.getLastAttackFrame() > 500)))
 		{
-			radius = (unit.getType().tileWidth() * 4) + (unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 16.0;
-			gReach = (unit.getGroundRange() + unit.getSpeed()) / 2.0;
+			radius = (unit.getType().tileWidth() * 4) + (unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0;
+			gReach = unit.getGroundRange() + unit.getSpeed();
 		}
 		else
 		{
 			radius = (unit.getType().tileWidth() * 4) + (unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0;
 			gReach = unit.getGroundRange() + unit.getSpeed();
 			aReach = unit.getAirRange() + unit.getSpeed();
+		}
+
+		// Min radius for detectors with no attack
+		if (unit.getType().isDetector())
+		{
+			radius = 40;
 		}
 
 		for (int x = start.x - radius; x <= start.x + radius; x++)
@@ -227,6 +242,13 @@ void GridTrackerClass::updateEnemyGrids()
 				{
 					resetGrid[x][y] = true;
 					eAirThreat[x][y] += unit.getMaxAirStrength() / distance;
+				}
+
+				// Detection grid
+				if (unit.getType().isDetector() && Position(WalkPosition(x, y)).getDistance(unit.getPosition()) < 320)
+				{
+					resetGrid[x][y] = true;
+					eDetectorGrid[x][y] += 1;
 				}
 			}
 		}

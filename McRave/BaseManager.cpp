@@ -30,8 +30,12 @@ void BaseTrackerClass::updateProduction(BaseInfo& base)
 {
 	if (base.unit() && (!Resources().isMinSaturated() || !Resources().isGasSaturated()) && base.unit()->isIdle())
 	{
-		for (auto &unit : base.getType().buildsWhat())
+		if (base.getType() == UnitTypes::Terran_Command_Center && !base.unit()->getAddon())
 		{
+			base.unit()->buildAddon(UnitTypes::Terran_Comsat_Station);
+		}
+		for (auto &unit : base.getType().buildsWhat())
+		{			
 			if (unit.isWorker())
 			{
 				if (Broodwar->self()->completedUnitCount(unit) < 60 && (Broodwar->self()->minerals() >= unit.mineralPrice() + Production().getReservedMineral() + Buildings().getQueuedMineral()))

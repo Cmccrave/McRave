@@ -181,7 +181,8 @@ void ProductionTrackerClass::updateReservedResources()
 void ProductionTrackerClass::updateProtoss()
 {
 	// Gateway saturation - max of 12 so the bot can exceed 4 bases
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= min(12, 3 + int(2 * BuildOrder().getTechList().size())))
+	int techSize = max(0, int(BuildOrder().getTechList().size() - 1));
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= min(12, 3 + (2 * techSize)))
 	{
 		productionSat = true;
 	}
@@ -236,7 +237,7 @@ void ProductionTrackerClass::updateProtoss()
 						building.unit()->upgrade(UpgradeTypes::Scarab_Damage);
 					}
 				}
-				if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Shuttle) >= 2)
+				if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle) >= 1)
 				{
 					if (Broodwar->self()->minerals() >= UpgradeTypes::Gravitic_Drive.mineralPrice() + Buildings().getQueuedMineral() + reservedMineral && Broodwar->self()->gas() >= UpgradeTypes::Gravitic_Drive.gasPrice() + Buildings().getQueuedGas() + reservedGas)
 					{

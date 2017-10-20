@@ -8,12 +8,7 @@
 
 // --- AUTHOR NOTES ---
 // TODO:
-// Add high ground % increase to combat sim for ranged units
-// No anti mobility grid on owned assimilators
-// One iteration per unit in grids
 // Enemy territory to prevent building there (if cannon rushed, don't try to rebuild main)
-// Units running from chokes instead of holding them
-// Sometimes build too many cannons for anti harass
 // unQueueBuilding->ONS qM + qG and #buildings queued
 // Battery when doing 12 Nexus if enemy has >= 3 fact
 // if overkill, reduce targeting % chance by % overkill

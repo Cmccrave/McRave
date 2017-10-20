@@ -7,7 +7,7 @@ using namespace std;
 // Class for storing information about all units
 class UnitInfo {
 	double percentHealth, visibleGroundStrength, visibleAirStrength, maxGroundStrength, maxAirStrength, groundLocal, airLocal, groundRange, airRange, priority, groundDamage, airDamage, speed;
-	int deadFrame, strategy, lastAttackFrame, lastCommandFrame, minStopFrame;
+	int deadFrame, strategy, lastAttackFrame, lastCommandFrame, minStopFrame, lastVisibleFrame;
 
 	Unit target, thisUnit, transport;
 	UnitType unitType;
@@ -76,6 +76,9 @@ public:
 	// Returns the minimum number of frames that the unit needs after a shot before another command can be issued
 	int getMinStopFrame() { return minStopFrame; }
 
+	// Returns the last frame since this unit was visible
+	int getLastVisibleFrame() { return lastVisibleFrame; }
+
 	Unit unit() { return thisUnit; }
 	Unit getTarget() { return target; }
 	Unit getTransport() { return transport; }
@@ -110,6 +113,7 @@ public:
 	void setLastAttackFrame(int newAttackFrame) { lastAttackFrame = newAttackFrame; }
 	void setLastCommandFrame(int newCommandFrame) { lastCommandFrame = newCommandFrame; }
 	void setMinStopFrame(int newFrame) { minStopFrame = newFrame; }
+	void setLastVisibleFrame(int newFrame) { lastVisibleFrame = newFrame; }
 
 	void setUnit(Unit newUnit) { thisUnit = newUnit; }
 	void setTarget(Unit newTarget){ target = newTarget; }

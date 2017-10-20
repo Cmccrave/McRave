@@ -87,11 +87,7 @@ void BuildingTrackerClass::storeBuilding(Unit building)
 	b.setPosition(building->getPosition());
 	b.setWalkPosition(Util().getWalkPosition(building));
 	b.setTilePosition(building->getTilePosition());
-	Grids().updateBuildingGrid(b);
-	if (theMap.GetArea(b.getTilePosition()) && theMap.GetArea(b.getTilePosition())->Id() != 0 && theMap.GetArea(b.getTilePosition())->Bases().size() > 0)
-	{
-		Terrain().getAllyTerritory().insert(theMap.GetArea(b.getTilePosition())->Id());
-	}
+	Grids().updateBuildingGrid(b);	
 	return;
 }
 
@@ -416,4 +412,18 @@ bool BuildingTrackerClass::canQueueHere(UnitType building, TilePosition buildTil
 		}
 	}
 	return true;
+}
+
+set<Unit> BuildingTrackerClass::getAllyUnitsFilter(UnitType type)
+{
+	returnValues.clear();
+	for (auto &u : myBuildings)
+	{
+		BuildingInfo &unit = u.second;
+		if (unit.getType() == type)
+		{
+			returnValues.insert(unit.unit());
+		}
+	}
+	return returnValues;
 }

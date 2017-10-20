@@ -191,7 +191,7 @@ void BuildOrderTrackerClass::updateDecision()
 		}
 
 		// If production is saturated and none are idle or we need detection for some invis units, choose a tech
-		if (Strategy().needDetection() || (!Strategy().isPlayPassive() && !getOpening && !getTech && techUnit == UnitTypes::None && Production().getIdleLowProduction().size() == 0 && (Production().isProductionSat() || Strategy().isAllyFastExpand())))
+		if (Strategy().needDetection() || (!getOpening && !getTech && techUnit == UnitTypes::None && Production().getIdleLowProduction().size() == 0 && Production().isProductionSat()))
 		{
 			getTech = true;
 		}
@@ -376,7 +376,7 @@ void BuildOrderTrackerClass::protossSituational()
 	}
 
 	// Expansion logic
-	if (Resources().isMinSaturated() && Production().isProductionSat() && Production().getIdleLowProduction().size() == 0)
+	if (Resources().isMinSaturated() && Production().isProductionSat() && Production().getIdleLowProduction().size() == 0 && Units().getGlobalStrategy() == 1)
 	{
 		buildingDesired[UnitTypes::Protoss_Nexus] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) + 1;
 	}
@@ -487,6 +487,12 @@ void BuildOrderTrackerClass::terranSituational()
 	if (Strategy().getUnitScore()[UnitTypes::Terran_Goliath] > 1.0)
 	{
 		buildingDesired[UnitTypes::Terran_Armory] = 1;
+	}
+
+	// Academy logic
+	if (Strategy().needDetection())
+	{
+		buildingDesired[UnitTypes::Terran_Academy] = 1;
 	}
 
 	// Barracks logic
@@ -633,7 +639,7 @@ void BuildOrderTrackerClass::FourGate()
 
 void BuildOrderTrackerClass::ZealotRush()
 {
-	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 18) + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway);
+	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 18) + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) > 0;
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 40;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 44;
 	getOpening = Units().getSupply() < 44;

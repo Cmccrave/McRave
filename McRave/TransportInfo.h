@@ -13,6 +13,7 @@ class TransportInfo
 	set<Unit> assignedCargo;
 	Position position, destination;
 	WalkPosition walkPosition;
+	TilePosition tilePosition;
 public:
 	TransportInfo();
 
@@ -27,6 +28,7 @@ public:
 	Position getPosition() { return position; }
 	Position getDestination() { return destination; }
 	WalkPosition getWalkPosition() { return walkPosition; }
+	TilePosition getTilePosition() { return tilePosition; }
 
 	void setCargoSize(int newSize) { cargoSize = newSize; }
 	void setLastDropFrame(int newDropFrame) { lastDropFrame = newDropFrame; }
@@ -38,6 +40,7 @@ public:
 	void setPosition(Position newPosition) { position = newPosition; }
 	void setDestination(Position newPosition) { destination = newPosition; }
 	void setWalkPosition(WalkPosition newWalkPosition) { walkPosition = newWalkPosition; }
+	void setTilePosition(TilePosition newTilePosition) { tilePosition = newTilePosition; }
 
 	// Add cargo to the assigned cargo set
 	void assignCargo(Unit);

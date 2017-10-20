@@ -107,7 +107,7 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 	}	
 
 	// Check a 8x8 walkposition grid for a potential new place to scout
-	double best = 0.0;
+	double best = 0.0, safest = 1000.0;
 	for (int x = start.x - 8; x < start.x + 8 + worker.getType().tileWidth() * 4; x++)
 	{
 		for (int y = start.y - 8; y < start.y + 8 + worker.getType().tileHeight() * 4; y++)
@@ -118,13 +118,14 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 			}
 
 			double mobility = double(Grids().getMobilityGrid(x, y));
-			double threat = max(0.01, Grids().getEGroundThreat(x, y));
-			double distance = max(0.01, Position(WalkPosition(x, y)).getDistance(Terrain().getEnemyStartingPosition()));
+			double threat = Grids().getEGroundThreat(x, y);
+			double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(Terrain().getEnemyStartingPosition()));
 			double time = max(1.0, double(Broodwar->getFrameCount() - recentExplorations[WalkPosition(x, y)]));
 
-			if ((time * mobility) / (threat * distance) >= best && Util().isSafe(WalkPosition(x, y), worker.getType(), true, false) && Util().isMobile(start, WalkPosition(x,y), worker.getType()))
+			if ((threat < safest || (threat == safest && (time * mobility) / distance >= best)) && Util().isMobile(start, WalkPosition(x,y), worker.getType()))
 			{
-				best = (time * mobility) / (threat * distance);
+				safest = threat;
+				best = (time * mobility) / distance;
 				bestPosition = Position(WalkPosition(x, y));
 			}
 		}
@@ -250,7 +251,7 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 	}
 
 	// If we need to use workers for defense - TEMP Removed probe pull stuff
-	if (/*(Strategy().isRush() && Strategy().isAllyFastExpand() && BuildOrder().isOpener() && Units().getGlobalAllyStrength() + Units().getAllyDefense()*0.8 < Units().getGlobalEnemyStrength()) || */(Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0 && Grids().getResourceGrid(worker.getTilePosition()) > 0))
+	if (Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0 && Grids().getResourceGrid(worker.getTilePosition()) > 0)
 	{
 		Units().storeAlly(worker.unit());
 		Workers().removeWorker(worker.unit());
@@ -331,6 +332,10 @@ Unit WorkerTrackerClass::getClosestWorker(Position here)
 			continue;
 		}
 		if (worker.first->getLastCommand().getType() == UnitCommandTypes::Gather && worker.first->getLastCommand().getTarget()->exists() && worker.first->getLastCommand().getTarget()->getInitialResources() == 0)
+		{
+			continue;
+		}
+		if (worker.second.getType() != UnitTypes::Protoss_Probe && worker.second.unit()->isConstructing())
 		{
 			continue;
 		}

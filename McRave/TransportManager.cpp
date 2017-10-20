@@ -27,7 +27,7 @@ void TransportTrackerClass::updateCargo(TransportInfo& transport)
 	{
 		// See if any Reavers need a shuttle
 		for (auto &r : Units().getAllyUnitsFilter(UnitTypes::Protoss_Reaver))
-		{			
+		{
 			UnitInfo &reaver = Units().getAllyUnit(r);
 
 			if (reaver.unit() && reaver.unit()->exists() && reaver.getDeadFrame() == 0 && !reaver.getTransport() && transport.getCargoSize() + reaver.getType().spaceRequired() <= 8)
@@ -56,6 +56,7 @@ void TransportTrackerClass::updateInformation(TransportInfo& transport)
 	transport.setType(transport.unit()->getType());
 	transport.setPosition(transport.unit()->getPosition());
 	transport.setWalkPosition(Util().getWalkPosition(transport.unit()));
+	transport.setTilePosition(transport.unit()->getTilePosition());
 	transport.setLoading(false);
 	transport.setUnloading(false);
 	transport.setDestination(Terrain().getPlayerStartingPosition());
@@ -65,14 +66,10 @@ void TransportTrackerClass::updateInformation(TransportInfo& transport)
 void TransportTrackerClass::updateDecision(TransportInfo& transport)
 {
 	// Check if we should be loading/unloading any cargo
-	for (auto &c : transport.getAssignedCargo())
+	for (auto &c : transport.getAssignedCargo()) 
 	{
 		UnitInfo& cargo = Units().getAllyUnit(c);
-
-		if (!cargo.unit())
-		{
-			continue;
-		}
+		if (!cargo.unit())	continue;
 
 		// If the cargo is not loaded
 		if (!cargo.unit()->isLoaded())
@@ -93,15 +90,12 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 			transport.setDestination(cargo.getTargetPosition());
 
 			// If cargo wants to fight, find a spot to unload
-			if (cargo.getStrategy() == 1)
+			if (cargo.getStrategy() == 1 && transport.getPosition().getDistance(transport.getDestination()) <= cargo.getGroundRange() && Broodwar->getGroundHeight(transport.getTilePosition()) == Broodwar->getGroundHeight(cargo.getTargetTilePosition()))
 			{
-				if (transport.getPosition().getDistance(transport.getDestination()) < cargo.getGroundRange())
-				{
-					transport.setUnloading(true);
-					transport.unit()->unload(cargo.unit());
-					transport.setLastDropFrame(Broodwar->getFrameCount());
-					continue;
-				}
+				transport.setUnloading(true);
+				transport.unit()->unload(cargo.unit());
+				transport.setLastDropFrame(Broodwar->getFrameCount());
+				continue;
 			}
 		}
 	}
@@ -111,10 +105,7 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 void TransportTrackerClass::updateMovement(TransportInfo& transport)
 {
 	// If loading, ignore movement commands
-	if (transport.isLoading() || transport.isUnloading())
-	{
-		return;
-	}
+	if (transport.isLoading() || transport.isUnloading()) return;
 
 	Position bestPosition = transport.getDestination();
 	WalkPosition start = transport.getWalkPosition();
@@ -123,13 +114,13 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 	{
 		start = WalkPosition(transport.getDestination());
 	}
-	double best = 1000.0;	
+	double best = 1000.0;
 	double closest = 0.0;
 
 	// First look for mini tiles with no threat that are closest to the enemy and on low mobility
-	for (int x = start.x - 32; x <= start.x + 32 + transport.getType().tileWidth() * 4; x++)
+	for (int x = start.x - 16; x <= start.x + 16 + transport.getType().tileWidth() * 4; x++)
 	{
-		for (int y = start.y - 32; y <= start.y + 32 + transport.getType().tileWidth() * 4; y++)
+		for (int y = start.y - 16; y <= start.y + 16 + transport.getType().tileWidth() * 4; y++)
 		{
 			if (!WalkPosition(x, y).isValid())
 			{
@@ -137,19 +128,18 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 			}
 
 			// Must keep the shuttle moving to retain maximum speed
-			if (Position(WalkPosition(x, y)).getDistance(Position(start)) <= 128)
+			if (Position(WalkPosition(x, y)).getDistance(Position(start)) <= 64)
 			{
 				continue;
 			}
 
 			double distance = transport.getDestination().getDistance(Position(WalkPosition(x, y)));
 			double threat = Grids().getEGroundThreat(x, y) + Grids().getEAirThreat(x, y);
-			double mobility = max(1.0, double(Grids().getMobilityGrid(x, y)));
 
 			// Include mobility when looking to unload
 			if (transport.isUnloading())
-			{
-				if ((threat < best) || (threat == best && (distance < closest || closest == 0.0)) && Grids().getMobilityGrid(WalkPosition(x, y)) > 0 && Broodwar->getGroundHeight(TilePosition(WalkPosition(x, y))) == Broodwar->getGroundHeight(TilePosition(transport.getDestination())))
+			{				
+				if (((threat < best) || (threat == best && (distance < closest || closest == 0.0))) && Util().isMobile(start, WalkPosition(x,y), transport.getType()))
 				{
 					best = threat;
 					closest = distance;
@@ -163,7 +153,6 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 					best = threat;
 					closest = distance;
 					bestPosition = Position(WalkPosition(x, y));
-
 				}
 			}
 		}

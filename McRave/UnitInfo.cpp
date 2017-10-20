@@ -18,6 +18,7 @@ UnitInfo::UnitInfo()
 	strategy = 0;
 	lastAttackFrame = 0;
 	lastCommandFrame = 0;
+	lastVisibleFrame = 0;
 	position = Positions::None;
 	targetPosition = Positions::None;
 	engagePosition = Positions::None;

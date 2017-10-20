@@ -60,6 +60,12 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 			continue;
 		}
 
+		// If unit is loaded, don't target buildings
+		if (unit.unit()->isLoaded() && enemy.getType().isBuilding())
+		{
+			continue;
+		}
+
 
 		// If this is a detector unit, target invisible units only
 		if (unit.getType().isDetector() && !unit.getType().isBuilding())
@@ -86,7 +92,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		// High Templars target the highest priority with the largest cluster
 		else if (unit.getType() == UnitTypes::Protoss_High_Templar)
 		{
-			if (Grids().getPsiStormGrid(enemy.getWalkPosition()) == 0 && Grids().getACluster(enemy.getWalkPosition()) < (Grids().getEAirCluster(enemy.getWalkPosition()) + Grids().getEGroundCluster(enemy.getWalkPosition())) && !enemy.getType().isBuilding())
+			if (Grids().getPsiStormGrid(enemy.getWalkPosition()) == 0 && Grids().getAGroundCluster(enemy.getWalkPosition()) < (Grids().getEAirCluster(enemy.getWalkPosition()) + Grids().getEGroundCluster(enemy.getWalkPosition())) && !enemy.getType().isBuilding())
 			{
 				thisUnit = (enemy.getPriority() * max(Grids().getEGroundCluster(enemy.getWalkPosition()), Grids().getEAirCluster(enemy.getWalkPosition()))) / distance;
 			}

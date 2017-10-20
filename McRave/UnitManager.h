@@ -20,7 +20,8 @@ class UnitTrackerClass
 
 	double globalAllyStrength, globalEnemyStrength;
 	double allyDefense, enemyDefense;
-	int supply, globalStrategy;
+	int supply, globalStrategy, fudgeWin, fudgeLoss;
+	double uncertainty;
 public:
 
 	map<Unit, UnitInfo>& getAllyUnits() { return allyUnits; }
@@ -58,10 +59,6 @@ public:
 	void onUnitComplete(Unit);
 	void storeAlly(Unit);
 	void storeEnemy(Unit);
-
-	// Manual increase of global strength (worker pulling)
-	void increaseGlobalAlly(int increase) { globalAllyStrength += increase; }
-	void increaseGlobalEnemy(int increase) { globalEnemyStrength += increase; }
 };
 
 typedef Singleton<UnitTrackerClass> UnitTracker;

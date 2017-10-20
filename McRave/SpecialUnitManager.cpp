@@ -29,10 +29,10 @@ void SpecialUnitTrackerClass::updateArbiters()
 				if (!WalkPosition(x, y).isValid() || Grids().getEMPGrid(x, y) > 0 || Grids().getArbiterGrid(x, y) > 0 || !Util().isSafe(WalkPosition(x, y), UnitTypes::Protoss_Arbiter, false, true)) continue;
 				
 				// If this position is closer or has a higher cluster of ally units
-				if (closestD == 0.0 || Grids().getACluster(x, y) > bestCluster || (Grids().getACluster(x, y) == bestCluster && Terrain().getPlayerStartingPosition().getDistance(Position(WalkPosition(x, y))) < closestD))
+				if (closestD == 0.0 || Grids().getAGroundCluster(x, y) > bestCluster || (Grids().getAGroundCluster(x, y) == bestCluster && Terrain().getPlayerStartingPosition().getDistance(Position(WalkPosition(x, y))) < closestD))
 				{
 					closestD = Terrain().getPlayerStartingPosition().getDistance(Position(WalkPosition(x, y)));
-					bestCluster = Grids().getACluster(x, y);
+					bestCluster = Grids().getAGroundCluster(x, y);
 					bestPosition = Position(WalkPosition(x, y));
 				}
 			}
@@ -57,13 +57,13 @@ void SpecialUnitTrackerClass::updateDetectors()
 	for (auto &d : Units().getAllyUnitsFilter(UnitTypes::Protoss_Observer))
 	{
 		UnitInfo &detector = Units().getAllyUnit(d);
-		Unit target = detector.getTarget();
+		UnitInfo &target = Units().getEnemyUnit(detector.getTarget());
 
 		// Check if there is a unit that needs revealing
-		if (target && target->exists())
+		if (target.unit() && target.unit()->exists() && Grids().getAAirThreat(target.getWalkPosition()) > Grids().getEAirThreat(target.getWalkPosition()))
 		{
-			detector.setEngagePosition(target->getPosition());
-			detector.unit()->move(target->getPosition());
+			detector.setEngagePosition(target.getPosition());
+			detector.unit()->move(target.getPosition());
 			Grids().updateDetectorMovement(detector);
 			continue;
 		}
@@ -134,26 +134,9 @@ void SpecialUnitTrackerClass::updateVultures()
 		int y = rand() % 64 - 64;
 		Position closestP;
 		// If we have mines, plant them at a either the target or a chokepoint
-		if (vulture.unit()->getSpiderMineCount() > 0 && (vulture.getStrategy() == 1 || vulture.getStrategy() == 0))
-		{
-			/*if (vulture.getTarget() && vulture.getTarget()->exists())
-			{
-			vulture.unit()->useTech(TechTypes::Spider_Mines, vulture.getTargetPosition());
-			}
-			else
-			{
-			for (auto choke : Terrain().getPath())
-			{
-			if ((closestD == 0.0 || Position(choke->Center()).getDistance(Terrain().getPlayerStartingPosition()) < closestD) && Broodwar->getUnitsInRadius(Position(choke->Center()), 128, Filter::GetType == UnitTypes::Terran_Vulture_Spider_Mine && Filter::IsAlly).size() < 2)
-			{
-			closestD = Position(choke->Center()).getDistance(Terrain().getPlayerStartingPosition());
-			closestP = Position(choke->Center());
-			}
-			}
-
-			if (closestP.isValid())
-			{*/
-			if (vulture.unit()->getLastCommand().getTechType() != TechTypes::Spider_Mines)
+		if (vulture.unit()->getSpiderMineCount() > 0 && (vulture.getStrategy() == 1 || vulture.getStrategy() == 0) && Broodwar->getUnitsInRadius(vulture.getPosition(), 64, Filter::GetType == UnitTypes::Terran_Vulture_Spider_Mine).size() <= 0)
+		{			
+			if (vulture.unit()->getLastCommand().getTechType() != TechTypes::Spider_Mines || vulture.unit()->getLastCommand().getTargetPosition().getDistance(vulture.getPosition()) > 10)
 			{
 				vulture.unit()->useTech(TechTypes::Spider_Mines, vulture.getPosition());
 			}

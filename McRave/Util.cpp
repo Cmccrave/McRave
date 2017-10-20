@@ -365,6 +365,12 @@ double UtilTrackerClass::getTrueSpeed(UnitInfo& unit)
 	{
 		return 0.0;
 	}
+
+	if (unit.getTransport())
+	{
+		return UnitTypes::Protoss_Shuttle.topSpeed();
+	}
+
 	return speed;
 }
 
@@ -419,14 +425,16 @@ set<WalkPosition> UtilTrackerClass::getWalkPositionsUnderUnit(Unit unit)
 bool UtilTrackerClass::isSafe(WalkPosition end, UnitType unitType, bool groundCheck, bool airCheck)
 {
 	int width = unitType.width() / 8;
-	for (int x = end.x - (width * 2); x <= end.x + (width * 2); x++)
+	int halfWidth = 1 + width / 2;
+	for (int x = end.x - halfWidth; x <= end.x + halfWidth; x++)
 	{
-		for (int y = end.y - (width * 2); y <= end.y + (width * 2); y++)
+		for (int y = end.y - halfWidth; y <= end.y + halfWidth; y++)
 		{
 			if (!WalkPosition(x, y).isValid())
 			{
 				continue;
 			}
+
 			if ((groundCheck && Grids().getEGroundThreat(x, y) != 0.0) || (airCheck && Grids().getEAirThreat(x, y) != 0.0))
 			{
 				return false;
@@ -442,17 +450,19 @@ bool UtilTrackerClass::isSafe(WalkPosition end, UnitType unitType, bool groundCh
 
 bool UtilTrackerClass::isMobile(WalkPosition start, WalkPosition end, UnitType unitType)
 {
-	int width = unitType.width() / 8;
-	for (int x = end.x - (width * 2); x <= end.x + (width * 2); x++)
+	if (unitType.isFlyer()) return true;
+	int walkWidth = unitType.width() / 8;
+	int halfWidth = 1 + walkWidth / 2;
+	for (int x = end.x - halfWidth; x <= end.x + halfWidth; x++)
 	{
-		for (int y = end.y - (width * 2); y <= end.y + (width * 2); y++)
+		for (int y = end.y - halfWidth; y <= end.y + halfWidth; y++)
 		{
 			if (!WalkPosition(x, y).isValid())
 			{
-				continue;
+				return false;
 			}
 			// If WalkPosition shared with WalkPositions under unit, ignore
-			if (x >= start.x && x <= start.x + width * 4 && y >= start.y && y <= start.y + width * 4)
+			if (x >= start.x && x < start.x + walkWidth && y >= start.y && y < start.y + walkWidth && Grids().getMobilityGrid(x, y) > 0)
 			{
 				continue;
 			}
