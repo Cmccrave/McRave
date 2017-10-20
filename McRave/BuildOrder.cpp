@@ -25,7 +25,7 @@ void BuildOrderTrackerClass::onStart()
 
 	// Write what builds you're using
 	if (Broodwar->self()->getRace() == Races::Protoss) buildNames = { "ZZCore", "ZCore", "NZCore", "FFECannon", "FFEGateway", "FFENexus", "TwelveNexus", "DTExpand", "RoboExpand", "FourGate", "ZealotRush" };
-	if (Broodwar->self()->getRace() == Races::Terran) buildNames = { "TwoFactVult" };
+	if (Broodwar->self()->getRace() == Races::Terran) buildNames = { "TwoFactVult", "Sparks" };
 
 	// If we don't have a file in the /read/ folder, then check the /write/ folder
 	if (!config)
@@ -181,36 +181,17 @@ void BuildOrderTrackerClass::update()
 
 void BuildOrderTrackerClass::updateDecision()
 {
-	if (Broodwar->self()->getRace() == Races::Protoss)
+	// If we have our tech unit, set to none
+	if (Broodwar->self()->completedUnitCount(techUnit) > 0)
 	{
-		// If we have our tech unit, set to none
-		if (Broodwar->self()->completedUnitCount(techUnit) > 0)
-		{
-			techList.insert(techUnit);
-			techUnit = UnitTypes::None;
-		}
-
-		// If production is saturated and none are idle or we need detection for some invis units, choose a tech
-		if (Strategy().needDetection() || (!getOpening && !getTech && techUnit == UnitTypes::None && Production().getIdleLowProduction().size() == 0 && Production().isProductionSat()))
-		{
-			getTech = true;
-		}
+		techList.insert(techUnit);
+		techUnit = UnitTypes::None;
 	}
-	else if (Broodwar->self()->getRace() == Races::Terran)
+
+	// If production is saturated and none are idle or we need detection for some invis units, choose a tech
+	if (Strategy().needDetection() || (!getOpening && !getTech && techUnit == UnitTypes::None && Production().getIdleLowProduction().size() == 0 && Production().isProductionSat()))
 	{
-		// If we have an Academy, opener is done
-		if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Academy) >= 1)
-		{
-			getOpening = false;
-		}
-
-		if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) >= 2)
-		{
-			getTech = true;
-		}
-
-		// Only one opener for now
-		opening = 2;
+		getTech = true;
 	}
 	return;
 }
@@ -426,26 +407,7 @@ void BuildOrderTrackerClass::terranOpener()
 {
 	if (getOpening)
 	{
-		// Joyo
-		if (opening == 1)
-		{
-			buildingDesired[UnitTypes::Terran_Barracks] = (Units().getSupply() >= 22) + (Units().getSupply() >= 26) + (Units().getSupply() >= 42);
-			buildingDesired[UnitTypes::Terran_Engineering_Bay] = (Units().getSupply() >= 36);
-			buildingDesired[UnitTypes::Terran_Refinery] = (Units().getSupply() >= 40);
-			buildingDesired[UnitTypes::Terran_Academy] = (Units().getSupply() >= 48);
-		}
-		// 2 Fact Vulture
-		if (opening == 2)
-		{
-			buildingDesired[UnitTypes::Terran_Barracks] = (Units().getSupply() >= 22);
-			buildingDesired[UnitTypes::Terran_Refinery] = (Units().getSupply() >= 24);
-			buildingDesired[UnitTypes::Terran_Factory] = (Units().getSupply() >= 30) + (Units().getSupply() >= 36);
-		}
-		// 2 Port Wraith
-		if (opening == 3)
-		{
-
-		}
+		if (currentBuild == "TwoFactVult");
 	}
 	return;
 }
@@ -527,123 +489,6 @@ void BuildOrderTrackerClass::zergTech()
 void BuildOrderTrackerClass::zergSituational()
 {
 
-}
-
-void BuildOrderTrackerClass::ZZCore()
-{
-	buildingDesired[UnitTypes::Protoss_Nexus] = 1;
-	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 40);
-	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 32;
-	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 40;
-	getOpening = Units().getSupply() < 44;
-	return;
-}
-
-void BuildOrderTrackerClass::ZCore()
-{
-	buildingDesired[UnitTypes::Protoss_Nexus] = 1;
-	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 44);
-	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
-	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 34;
-	getOpening = Units().getSupply() < 44;
-	return;
-}
-
-void BuildOrderTrackerClass::NZCore()
-{
-	buildingDesired[UnitTypes::Protoss_Nexus] = 1;
-	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 44);
-	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
-	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
-	getOpening = Units().getSupply() < 44;
-	return;
-}
-
-void BuildOrderTrackerClass::FFECannon()
-{
-	buildingDesired[UnitTypes::Protoss_Forge] = Units().getSupply() >= 18;
-	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 28);
-	buildingDesired[UnitTypes::Protoss_Photon_Cannon] = (Units().getSupply() >= 22) + (Units().getSupply() >= 24) + (Units().getSupply() >= 30);
-	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 32) + (Units().getSupply() >= 46);
-	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 40;
-	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 42;
-	getOpening = Units().getSupply() < 46;
-	return;
-}
-
-void BuildOrderTrackerClass::FFEGateway()
-{
-	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 46);
-	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 42);
-	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 36;
-	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 40;
-	buildingDesired[UnitTypes::Protoss_Forge] = Units().getSupply() >= 60;
-	getOpening = Units().getSupply() < 60;
-	return;
-}
-
-void BuildOrderTrackerClass::FFENexus()
-{
-	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24);
-	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 26) + (Units().getSupply() >= 42);
-	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 36;
-	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 40;
-	buildingDesired[UnitTypes::Protoss_Forge] = Units().getSupply() >= 60;
-	getOpening = Units().getSupply() < 60;
-	return;
-}
-
-void BuildOrderTrackerClass::TwelveNexus()
-{
-	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24);
-	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 26) + (Units().getSupply() >= 32);
-	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 28;
-	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 30;
-	getOpening = Units().getSupply() < 32;
-	return;
-}
-
-void BuildOrderTrackerClass::DTExpand()
-{
-	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 48);
-	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 54);
-	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
-	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 28;
-	buildingDesired[UnitTypes::Protoss_Citadel_of_Adun] = Units().getSupply() >= 36;
-	buildingDesired[UnitTypes::Protoss_Templar_Archives] = Units().getSupply() >= 48;
-	getOpening = Units().getSupply() < 54;
-	return;
-}
-
-void BuildOrderTrackerClass::RoboExpand()
-{
-	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() > 42);
-	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 42);
-	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
-	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
-	buildingDesired[UnitTypes::Protoss_Robotics_Facility] = Units().getSupply() >= 56;
-	buildingDesired[UnitTypes::Protoss_Robotics_Support_Bay] = Units().getSupply() >= 64;
-	getOpening = Units().getSupply() < 64;
-	return;
-}
-
-void BuildOrderTrackerClass::FourGate()
-{
-	buildingDesired[UnitTypes::Protoss_Nexus] = 1;
-	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + 3 * (Units().getSupply() >= 62);
-	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 32;
-	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 34;
-	getOpening = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) < 3;
-	return;
-}
-
-void BuildOrderTrackerClass::ZealotRush()
-{
-	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 18) + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) > 0;
-	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 40;
-	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 44;
-	getOpening = Units().getSupply() < 44;
-	return;
 }
 
 //void BuildOrderTrackerClass::ReaverRush()

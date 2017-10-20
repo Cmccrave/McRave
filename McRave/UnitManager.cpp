@@ -451,7 +451,7 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 
 		if (enemy.getSpeed() > 0.0)
 		{			
-			enemyToEngage = max(0.0, (enemy.getPosition().getDistance(unit.getPosition()) - enemyRange) / enemy.getSpeed());
+			enemyToEngage = max(0.0, (enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange) / enemy.getSpeed());
 			simRatio = max(0.0, simulationTime - (enemyToEngage - unitToEngage));
 		}
 		else if (enemyRange > unitRange)
@@ -474,8 +474,10 @@ void UnitTrackerClass::getLocalCalculation(UnitInfo& unit)
 		UnitInfo &ally = a.second;
 		double allyToEngage = 0.0;
 
+		if (8.0 * abs(Grids().getDistanceHome(ally.getWalkPosition()) - Grids().getDistanceHome(unit.getWalkPosition())) / unit.getSpeed() > 5.0) continue;
+		
 		target.getType().isFlyer() ? allyRange = ally.getAirRange() : allyRange = ally.getGroundRange();
-		allyToEngage = max(0.0, (ally.getPosition().getDistance(target.getPosition()) - allyRange) / ally.getSpeed());
+		allyToEngage = max(0.0, (ally.getPosition().getDistance(unit.getTargetPosition()) - allyRange) / ally.getSpeed());
 		simRatio = max(0.0, simulationTime - (allyToEngage - unitToEngage));
 
 		if ((ally.unit()->isCloaked() || ally.unit()->isBurrowed()) && Grids().getEDetectorGrid(WalkPosition(ally.getEngagePosition())) == 0) simRatio = simRatio * 5.0;

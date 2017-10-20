@@ -134,7 +134,7 @@ void StrategyTrackerClass::terranStrategy()
 		invis = false;
 	}
 
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Marine) >= 4)
+	if (BuildOrder().getCurrentBuild() == "TwoFactVult" && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Marine) >= 4)
 	{
 		lockedType.insert(UnitTypes::Terran_Marine);
 	}

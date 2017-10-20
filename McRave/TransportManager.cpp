@@ -66,7 +66,7 @@ void TransportTrackerClass::updateInformation(TransportInfo& transport)
 void TransportTrackerClass::updateDecision(TransportInfo& transport)
 {
 	// Check if we should be loading/unloading any cargo
-	for (auto &c : transport.getAssignedCargo()) 
+	for (auto &c : transport.getAssignedCargo())
 	{
 		UnitInfo& cargo = Units().getAllyUnit(c);
 		if (!cargo.unit())	continue;
@@ -90,9 +90,14 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 			transport.setDestination(cargo.getTargetPosition());
 
 			// If cargo wants to fight, find a spot to unload
-			if (cargo.getStrategy() == 1 && transport.getPosition().getDistance(transport.getDestination()) <= cargo.getGroundRange() && Broodwar->getGroundHeight(transport.getTilePosition()) == Broodwar->getGroundHeight(cargo.getTargetTilePosition()))
+			if (cargo.getStrategy() == 1)
 			{
 				transport.setUnloading(true);
+			}
+
+			// If in a suitable position to drop, unload the cargo
+			if (transport.getPosition().getDistance(transport.getDestination()) <= cargo.getGroundRange() && Broodwar->getGroundHeight(transport.getTilePosition()) == Broodwar->getGroundHeight(cargo.getTargetTilePosition()))
+			{
 				transport.unit()->unload(cargo.unit());
 				transport.setLastDropFrame(Broodwar->getFrameCount());
 				continue;
@@ -118,9 +123,9 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 	double closest = 0.0;
 
 	// First look for mini tiles with no threat that are closest to the enemy and on low mobility
-	for (int x = start.x - 16; x <= start.x + 16 + transport.getType().tileWidth() * 4; x++)
+	for (int x = start.x - 32; x <= start.x + 32 + transport.getType().tileWidth() * 4; x++)
 	{
-		for (int y = start.y - 16; y <= start.y + 16 + transport.getType().tileWidth() * 4; y++)
+		for (int y = start.y - 32; y <= start.y + 32 + transport.getType().tileWidth() * 4; y++)
 		{
 			if (!WalkPosition(x, y).isValid())
 			{
@@ -138,15 +143,15 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 
 			// Include mobility when looking to unload
 			if (transport.isUnloading())
-			{				
-				if (((threat < best) || (threat == best && (distance < closest || closest == 0.0))) && Util().isMobile(start, WalkPosition(x,y), transport.getType()))
+			{
+				if (((threat < best) || (threat == best && (distance < closest || closest == 0.0))) && Util().isMobile(start, WalkPosition(x, y), transport.getType()))
 				{
 					best = threat;
 					closest = distance;
 					bestPosition = Position(WalkPosition(x, y));
 				}
 			}
-			else
+			else if (Grids().getAAirThreat(x, y) > 0 || Grids().getAGroundThreat(x, y) > 0)
 			{
 				if ((threat < best) || (threat == best && (distance < closest || closest == 0.0)))
 				{

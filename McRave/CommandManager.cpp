@@ -371,7 +371,7 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 {
 	WalkPosition start = unit.getWalkPosition();
 	WalkPosition bestPosition = start;
-	double best = 0.0, closest = 0.0;
+	double best = 1000.0, closest = 0.0;
 
 	// If it's a tank, make sure we're unsieged before moving -  TODO: Check that target has velocity and > 512 or no velocity and < tank range
 	if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
@@ -401,9 +401,9 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 	}
 
 	// Search a 16x16 grid around the unit
-	for (int x = start.x - 16; x <= start.x + 16 + (unit.getType().tileWidth() * 4); x++)
+	for (int x = start.x - 8; x <= start.x + 8 + (unit.getType().tileWidth() * 4); x++)
 	{
-		for (int y = start.y - 16; y <= start.y + 16 + (unit.getType().tileHeight() * 4); y++)
+		for (int y = start.y - 8; y <= start.y + 8 + (unit.getType().tileHeight() * 4); y++)
 		{
 			if (!WalkPosition(x, y).isValid())
 			{
@@ -417,7 +417,7 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 			// If inside territory
 			if (Terrain().isInAllyTerritory(unit.unit()))
 			{
-				distance = 1.0 / max(1.0, unit.getPosition().getDistance(unit.getTargetPosition()));
+				distance = unit.getPosition().getDistance(unit.getTargetPosition());
 			}
 			else
 			{
@@ -434,7 +434,7 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 				mobility = double(Grids().getMobilityGrid(x, y));
 			}
 
-			if ((threat <= best || best == 0.0) && (distance / mobility < closest || closest == 0.0) && Util().isMobile(start, WalkPosition(x, y), unit.getType()))
+			if ((threat < best || (threat == best && (distance / mobility < closest || closest == 0.0))) && Util().isMobile(start, WalkPosition(x, y), unit.getType()))
 			{
 				best = threat;
 				closest = distance / mobility;

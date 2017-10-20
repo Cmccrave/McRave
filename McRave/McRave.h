@@ -45,6 +45,10 @@ class ResourceInfo;
 #include "UnitManager.h"
 #include "Util.h"
 
+// Include builds
+#include "ProtossBuilds.h"
+#include "TerranBuilds.h"
+
 // Namespace to access all trackers globally
 namespace McRave
 {	

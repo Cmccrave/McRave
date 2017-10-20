@@ -1,6 +1,8 @@
 #pragma once
 #include <BWAPI.h>
 #include "Singleton.h"
+#include "ProtossBuilds.h"
+#include "TerranBuilds.h"
 #include <sstream>
 
 using namespace BWAPI;
@@ -57,6 +59,10 @@ public:
 	void FourGate();
 	void ZealotRush();
 	//void ReaverRush();
+
+	void TwoFactVult();
+	//void ShallowTwo();
+	void Sparks();
 };
 
 typedef Singleton<BuildOrderTrackerClass> BuildOrderTracker;
