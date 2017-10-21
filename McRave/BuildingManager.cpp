@@ -286,16 +286,11 @@ bool BuildingTrackerClass::canBuildHere(UnitType building, TilePosition buildTil
 		return false;
 	}
 
-	// If Protoss, check for power
-	if (Broodwar->self()->getRace() == Races::Protoss)
+	// If Protoss, check if it's not a pylon and in a preset buildable position based on power grid
+	if (Broodwar->self()->getRace() == Races::Protoss && building.requiresPsi() && !Pylons().hasPower(buildTilePosition, building))
 	{
-		// Check if it's not a pylon and in a preset buildable position based on power grid
-		if (building.requiresPsi() && !Pylons().hasPower(buildTilePosition, building))
-		{
-			return false;
-		}
+		return false;
 	}
-
 	if (building == UnitTypes::Protoss_Shield_Battery && Broodwar->getUnitsInRadius(Position(buildTilePosition), 128, Filter::IsResourceDepot).size() == 0)
 	{
 		return false;
@@ -310,7 +305,7 @@ bool BuildingTrackerClass::canBuildHere(UnitType building, TilePosition buildTil
 			if (TilePosition(x, y).isValid())
 			{
 				// If it's reserved
-				if ((Grids().getBuildingGrid(x, y) > 0 && !building.isResourceDepot()) || Grids().getReservedGrid(x, y) > 0)
+				if (Grids().getBuildingGrid(x, y) > 0 && !building.isResourceDepot())
 				{
 					return false;
 				}
@@ -414,7 +409,7 @@ bool BuildingTrackerClass::canQueueHere(UnitType building, TilePosition buildTil
 	return true;
 }
 
-set<Unit> BuildingTrackerClass::getAllyUnitsFilter(UnitType type)
+set<Unit> BuildingTrackerClass::getAllyBuildingsFilter(UnitType type)
 {
 	returnValues.clear();
 	for (auto &u : myBuildings)
@@ -426,4 +421,14 @@ set<Unit> BuildingTrackerClass::getAllyUnitsFilter(UnitType type)
 		}
 	}
 	return returnValues;
+}
+
+BuildingInfo& BuildingTrackerClass::getAllyBuilding(Unit building)
+{
+	if (myBuildings.find(building) != myBuildings.end())
+	{
+		return myBuildings[building];
+	}
+	assert();
+	return BuildingInfo();
 }

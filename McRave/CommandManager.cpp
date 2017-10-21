@@ -108,132 +108,145 @@ void CommandTrackerClass::updateAlliedUnits()
 
 void CommandTrackerClass::attack(UnitInfo& unit)
 {
-	// TEMP -- Set to false initially
-	bool moveAway = false;
-	bool moveTo = false;
-	UnitInfo &target = Units().getEnemyUnit(unit.getTarget());
-
-	// Specific High Templar behavior
-	if (unit.getType() == UnitTypes::Protoss_High_Templar)
-	{
-		if (unit.getTarget() && unit.getTarget()->exists() && unit.unit()->getEnergy() >= 75)
-		{
-			unit.unit()->useTech(TechTypes::Psionic_Storm, unit.getTarget());
-			Grids().updatePsiStorm(unit.getTargetWalkPosition());
-			return;
-		}
-	}
-
-	// Specific Marine and Firebat behavior	
-	if ((unit.getType() == UnitTypes::Terran_Marine || unit.getType() == UnitTypes::Terran_Firebat) && !unit.unit()->isStimmed() && unit.getTargetPosition().isValid() && unit.unit()->getDistance(unit.getTargetPosition()) <= unit.getGroundRange())
-	{
-		unit.unit()->useTech(TechTypes::Stim_Packs);
-	}
-
-	// Specific Medic behavior -- if removed, nulls get stored further down
+	// Specific Medic behavior
 	if (unit.getType() == UnitTypes::Terran_Medic)
 	{
-		if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Use_Tech_Unit || unit.unit()->getLastCommand().getTarget() != unit.getTarget())
+		UnitInfo &target = Units().getAllyUnit(unit.getTarget());
+		if (target.getPercentHealth() < 1.0)
 		{
-			unit.unit()->useTech(TechTypes::Healing, unit.getTarget());
-		}
-		return;
-	}
-
-	// Specific Tank behavior
-	if (unit.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode)
-	{
-		if (unit.unit()->getDistance(unit.getTargetPosition()) <= 400 && unit.unit()->getDistance(unit.getTargetPosition()) > 128)
-		{
-			unit.unit()->siege();
-		}
-	}
-	if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
-	{
-		if (unit.unit()->getDistance(unit.getTargetPosition()) > 400 || unit.unit()->getDistance(unit.getTargetPosition()) < 128)
-		{
-			unit.unit()->unsiege();
-		}
-	}
-
-	// If we can use a Shield Battery
-	if (Grids().getBatteryGrid(unit.getTilePosition()) > 0 && ((unit.unit()->getLastCommand().getType() == UnitCommandTypes::Right_Click_Unit && unit.unit()->getShields() < 40) || unit.unit()->getShields() < 10))
-	{
-		if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Right_Click_Unit)
-		{
-			for (auto& b : Buildings().getMyBuildings())
+			if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Use_Tech_Unit || unit.unit()->getLastCommand().getTarget() != unit.getTarget())
 			{
-				BuildingInfo &building = b.second;
-				if (building.getType() == UnitTypes::Protoss_Shield_Battery && building.getEnergy() >= 10 && unit.unit()->getDistance(building.getPosition()) < 320)
-				{
-					unit.unit()->rightClick(building.unit());
-					continue;
-				}
+				unit.unit()->useTech(TechTypes::Healing, unit.getTarget());
+			}
+		}
+		else
+		{
+			if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move || unit.unit()->getLastCommand().getTargetPosition() != unit.getTargetPosition())
+			{
+				unit.unit()->move(unit.getTargetPosition());
 			}
 		}
 		return;
 	}
-
-	// If we can use a bunker
-	if (Grids().getBunkerGrid(unit.getTilePosition()) > 0 && unit.getType() == UnitTypes::Terran_Marine)
+	else
 	{
-		Unit bunker = unit.unit()->getClosestUnit(Filter::GetType == UnitTypes::Terran_Bunker && Filter::SpaceRemaining > 0);
-		if (bunker)
+		// TEMP -- Set to false initially
+		bool moveAway = false;
+		bool moveTo = false;
+		UnitInfo &target = Units().getEnemyUnit(unit.getTarget());
+
+		// Specific High Templar behavior
+		if (unit.getType() == UnitTypes::Protoss_High_Templar)
 		{
-			unit.unit()->rightClick(bunker);
+			if (unit.getTarget() && unit.getTarget()->exists() && unit.unit()->getEnergy() >= 75)
+			{
+				unit.unit()->useTech(TechTypes::Psionic_Storm, unit.getTarget());
+				Grids().updatePsiStorm(unit.getTargetWalkPosition());
+				return;
+			}
+		}
+
+		// Specific Marine and Firebat behavior	
+		if ((unit.getType() == UnitTypes::Terran_Marine || unit.getType() == UnitTypes::Terran_Firebat) && !unit.unit()->isStimmed() && unit.getTargetPosition().isValid() && unit.unit()->getDistance(unit.getTargetPosition()) <= unit.getGroundRange())
+		{
+			unit.unit()->useTech(TechTypes::Stim_Packs);
+		}
+
+		// Specific Tank behavior
+		if (unit.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode)
+		{
+			if (unit.unit()->getDistance(unit.getTargetPosition()) <= 400 && unit.unit()->getDistance(unit.getTargetPosition()) > 128)
+			{
+				unit.unit()->siege();
+			}
+		}
+		if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
+		{
+			if (unit.unit()->getDistance(unit.getTargetPosition()) > 400 || unit.unit()->getDistance(unit.getTargetPosition()) < 128)
+			{
+				unit.unit()->unsiege();
+			}
+		}
+
+		// If we can use a Shield Battery
+		if (Grids().getBatteryGrid(unit.getTilePosition()) > 0 && ((unit.unit()->getLastCommand().getType() == UnitCommandTypes::Right_Click_Unit && unit.unit()->getShields() < 40) || unit.unit()->getShields() < 10))
+		{
+			if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Right_Click_Unit)
+			{
+				for (auto& b : Buildings().getMyBuildings())
+				{
+					BuildingInfo &building = b.second;
+					if (building.getType() == UnitTypes::Protoss_Shield_Battery && building.getEnergy() >= 10 && unit.unit()->getDistance(building.getPosition()) < 320)
+					{
+						unit.unit()->rightClick(building.unit());
+						continue;
+					}
+				}
+			}
 			return;
 		}
-	}
 
-	// If kiting unnecessary, disable
-	if (unit.getTarget()->getType().isBuilding() || unit.getType().isWorker())
-	{
-		moveAway = false;
-	}
-
-	// Reavers should always kite away from their target if it has lower range
-	else if (unit.getType() == UnitTypes::Protoss_Reaver && target.getGroundRange() < unit.getGroundRange())
-	{
-		moveAway = true;
-	}
-
-	// If kiting is a good idea, enable
-	else if ((unit.getGroundRange() > 32 && unit.unit()->isUnderAttack()) || (target.getGroundRange() <= unit.getGroundRange() && (unit.unit()->getDistance(unit.getTargetPosition()) <= unit.getGroundRange() - target.getGroundRange() && target.getGroundRange() > 0 && unit.getGroundRange() > 32 || unit.unit()->getHitPoints() < 40)))
-	{
-		moveAway = true;
-	}
-
-	// If approaching is necessary
-	if (unit.getGroundRange() > 32 && unit.getGroundRange() < target.getGroundRange() && !target.getType().isBuilding() && unit.getSpeed() > target.getSpeed())
-	{
-		moveTo = true;
-	}
-
-	// If kite is true and weapon on cooldown, move
-	if ((!unit.getTarget()->getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() > 0 || unit.getTarget()->getType().isFlyer() && unit.unit()->getAirWeaponCooldown() > 0 || (unit.getTarget()->exists() && (unit.getTarget()->isCloaked() || unit.getTarget()->isBurrowed()) && !unit.getTarget()->isDetected())))
-	{
-		if (moveTo)
+		// If we can use a bunker
+		if (Grids().getBunkerGrid(unit.getTilePosition()) > 0 && unit.getType() == UnitTypes::Terran_Marine)
 		{
-			approach(unit);
-			return;
+			Unit bunker = unit.unit()->getClosestUnit(Filter::GetType == UnitTypes::Terran_Bunker && Filter::SpaceRemaining > 0);
+			if (bunker)
+			{
+				unit.unit()->rightClick(bunker);
+				return;
+			}
 		}
-		if (moveAway)
-		{
-			flee(unit);
-			return;
-		}
-	}
-	else if ((!unit.getTarget()->getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() <= 0) || (unit.getTarget()->getType().isFlyer() && unit.unit()->getAirWeaponCooldown() <= 0))
-	{
-		if (unit.unit()->getLastCommand().getType() == UnitCommandTypes::Attack_Unit && unit.unit()->getLastCommand().getTarget() == unit.getTarget()) return;
 
-		if ((unit.getTarget()->isBurrowed() || unit.getTarget()->isCloaked()) && !unit.getTarget()->isDetected())
+		// If kiting unnecessary, disable
+		if (unit.getTarget()->getType().isBuilding() || unit.getType().isWorker())
 		{
-			flee(unit);
+			moveAway = false;
 		}
-		else
+
+		// Reavers should always kite away from their target if it has lower range
+		else if (unit.getType() == UnitTypes::Protoss_Reaver && target.getGroundRange() < unit.getGroundRange())
 		{
-			unit.unit()->attack(unit.getTarget());			
+			moveAway = true;
+		}
+
+		// If kiting is a good idea, enable
+		else if ((unit.getGroundRange() > 32 && unit.unit()->isUnderAttack()) || (target.getGroundRange() <= unit.getGroundRange() && (unit.unit()->getDistance(unit.getTargetPosition()) <= unit.getGroundRange() - target.getGroundRange() && target.getGroundRange() > 0 && unit.getGroundRange() > 32 || unit.unit()->getHitPoints() < 40)))
+		{
+			moveAway = true;
+		}
+
+		// If approaching is necessary
+		if (unit.getGroundRange() > 32 && unit.getGroundRange() < target.getGroundRange() && !target.getType().isBuilding() && unit.getSpeed() > target.getSpeed())
+		{
+			moveTo = true;
+		}
+
+		// If kite is true and weapon on cooldown, move
+		if ((!unit.getTarget()->getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() > 0 || unit.getTarget()->getType().isFlyer() && unit.unit()->getAirWeaponCooldown() > 0 || (unit.getTarget()->exists() && (unit.getTarget()->isCloaked() || unit.getTarget()->isBurrowed()) && !unit.getTarget()->isDetected())))
+		{
+			if (moveTo)
+			{
+				approach(unit);
+				return;
+			}
+			if (moveAway)
+			{
+				flee(unit);
+				return;
+			}
+		}
+		else if ((!unit.getTarget()->getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() <= 0) || (unit.getTarget()->getType().isFlyer() && unit.unit()->getAirWeaponCooldown() <= 0))
+		{
+			if (unit.unit()->getLastCommand().getType() == UnitCommandTypes::Attack_Unit && unit.unit()->getLastCommand().getTarget() == unit.getTarget()) return;
+
+			if ((unit.getTarget()->isBurrowed() || unit.getTarget()->isCloaked()) && !unit.getTarget()->isDetected())
+			{
+				flee(unit);
+			}
+			else
+			{
+				unit.unit()->attack(unit.getTarget());
+			}
 		}
 	}
 	return;
@@ -259,7 +272,7 @@ void CommandTrackerClass::move(UnitInfo& unit)
 	}
 
 	// If target doesn't exist, move towards it
-	if (unit.getTarget() && unit.getTargetPosition().isValid() && (unit.getStrategy() != 3 || unit.getType().isFlyer()))
+	if (unit.getTargetPosition().isValid())
 	{
 		if (unit.unit()->getLastCommand().getTargetPosition() != unit.getTargetPosition())
 		{
@@ -269,7 +282,7 @@ void CommandTrackerClass::move(UnitInfo& unit)
 	}
 
 	// If no target, move to closest enemy base if there is any
-	else if (Terrain().getEnemyBasePositions().size() > 0 && Grids().getEnemyArmyCenter().isValid())
+	else if (Terrain().getEnemyBasePositions().size() > 0 && Grids().getEnemyArmyCenter().isValid() && !unit.getType().isFlyer())
 	{
 		double closestD = 0.0;
 		Position closestP;
@@ -325,7 +338,7 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 	}
 
 	// Defend chokepoint with concave
-	int min = unit.getGroundRange() / 2;
+	int min = unit.getGroundRange();
 	int max = unit.getGroundRange() + 256;
 	double closestD = 0.0;
 	WalkPosition start = unit.getWalkPosition();
@@ -333,7 +346,7 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 
 	// Find closest chokepoint
 	WalkPosition choke = WalkPosition(Terrain().getFirstChoke());
-	if (BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] >= 2 || Strategy().isAllyFastExpand())
+	if (BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] >= 2 || BuildOrder().getBuildingDesired()[UnitTypes::Terran_Command_Center] >= 2 || Strategy().isAllyFastExpand())
 	{
 		choke = WalkPosition(Terrain().getSecondChoke());
 	}
@@ -371,7 +384,7 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 {
 	WalkPosition start = unit.getWalkPosition();
 	WalkPosition bestPosition = start;
-	double best = 1000.0, closest = 0.0;
+	double best = 1000.0, closest = 1000.0;
 
 	// If it's a tank, make sure we're unsieged before moving -  TODO: Check that target has velocity and > 512 or no velocity and < tank range
 	if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
@@ -433,6 +446,13 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 			{
 				mobility = double(Grids().getMobilityGrid(x, y));
 			}
+
+			/*if ((distance / mobility < closest || (distance / mobility == closest && (threat < best || best == 0.0))) && Util().isMobile(start, WalkPosition(x, y), unit.getType()))
+			{
+				best = threat;
+				closest = distance / mobility;
+				bestPosition = WalkPosition(x, y);
+			}*/
 
 			if ((threat < best || (threat == best && (distance / mobility < closest || closest == 0.0))) && Util().isMobile(start, WalkPosition(x, y), unit.getType()))
 			{

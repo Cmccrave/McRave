@@ -12,6 +12,7 @@
 // unQueueBuilding->ONS qM + qG and #buildings queued
 // Battery when doing 12 Nexus if enemy has >= 3 fact
 // if overkill, reduce targeting % chance by % overkill
+// Separate global enemy/ally air/ground strength
 
 void McRaveModule::onStart()
 {

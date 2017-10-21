@@ -44,12 +44,11 @@ public:
 
 	// Updating
 	void update();
-	void updateAliveUnits();
-	void updateDeadUnits();
+	void updateAllUnits();
 	void updateEnemy(UnitInfo&);
 	void updateAlly(UnitInfo&);	
-	void getLocalCalculation(UnitInfo&);
-	void updateGlobalCalculations();
+	void updateLocalSimulation(UnitInfo&);
+	void updateGlobalSimulation();
 
 	// Storage
 	void onUnitDiscover(Unit);
@@ -59,6 +58,7 @@ public:
 	void onUnitComplete(Unit);
 	void storeAlly(Unit);
 	void storeEnemy(Unit);
+	void removeUnit(Unit);
 };
 
 typedef Singleton<UnitTrackerClass> UnitTracker;

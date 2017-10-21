@@ -14,7 +14,6 @@ UnitInfo::UnitInfo()
 	groundDamage = 0.0;
 	airDamage = 0.0;
 	speed = 0.0;
-	deadFrame = 0;
 	strategy = 0;
 	lastAttackFrame = 0;
 	lastCommandFrame = 0;

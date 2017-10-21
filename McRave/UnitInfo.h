@@ -7,7 +7,7 @@ using namespace std;
 // Class for storing information about all units
 class UnitInfo {
 	double percentHealth, visibleGroundStrength, visibleAirStrength, maxGroundStrength, maxAirStrength, groundLocal, airLocal, groundRange, airRange, priority, groundDamage, airDamage, speed;
-	int deadFrame, strategy, lastAttackFrame, lastCommandFrame, minStopFrame, lastVisibleFrame;
+	int strategy, lastAttackFrame, lastCommandFrame, minStopFrame, lastVisibleFrame;
 
 	Unit target, thisUnit, transport;
 	UnitType unitType;
@@ -60,9 +60,6 @@ public:
 	// Returns the units movement speed in pixels per 24 frames (1 second)
 	double getSpeed() { return speed; }
 
-	// Returns the frame that the unit died on, if 0 then the unit is still alive
-	int getDeadFrame() { return deadFrame; }
-
 	// Returns the units strategy, see StrategyManager for details on what each correspond to
 	int getStrategy() { return strategy; }
 
@@ -108,7 +105,6 @@ public:
 	void setGroundDamage(double newGroundDamage) { groundDamage = newGroundDamage; }
 	void setAirDamage(double newAirDamage) { airDamage = newAirDamage; }
 	void setSpeed(double newSpeed) { speed = newSpeed; }
-	void setDeadFrame(int newDeadFrame) { deadFrame = newDeadFrame; }
 	void setStrategy(int newStrategy){ strategy = newStrategy; }
 	void setLastAttackFrame(int newAttackFrame) { lastAttackFrame = newAttackFrame; }
 	void setLastCommandFrame(int newCommandFrame) { lastCommandFrame = newCommandFrame; }

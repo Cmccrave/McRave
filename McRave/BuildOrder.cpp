@@ -189,7 +189,7 @@ void BuildOrderTrackerClass::updateDecision()
 	}
 
 	// If production is saturated and none are idle or we need detection for some invis units, choose a tech
-	if (Strategy().needDetection() || (!getOpening && !getTech && techUnit == UnitTypes::None && Production().getIdleLowProduction().size() == 0 && Production().isProductionSat()))
+	if (Broodwar->self()->getRace() == Races::Protoss && (Strategy().needDetection() || (!getOpening && !getTech && techUnit == UnitTypes::None && Production().getIdleLowProduction().size() == 0 && Production().isProductionSat())))
 	{
 		getTech = true;
 	}
@@ -407,7 +407,8 @@ void BuildOrderTrackerClass::terranOpener()
 {
 	if (getOpening)
 	{
-		if (currentBuild == "TwoFactVult");
+		if (currentBuild == "TwoFactVult") TwoFactVult();
+		if (currentBuild == "Sparks") Sparks();
 	}
 	return;
 }
@@ -458,7 +459,7 @@ void BuildOrderTrackerClass::terranSituational()
 	}
 
 	// Barracks logic
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Barracks) >= 3 && (Production().getIdleLowProduction().size() == 0 && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 200) || (!Production().isBarracksSat() && Resources().isMinSaturated()))))
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Barracks) >= 3 && (Production().getIdleLowProduction().size() == 0 && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 200) || (!Production().isProductionSat() && Resources().isMinSaturated()))))
 	{
 		buildingDesired[UnitTypes::Terran_Barracks] = min(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Barracks) + 1);
 	}

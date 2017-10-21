@@ -28,12 +28,13 @@ void BaseTrackerClass::updateAlliedBases()
 
 void BaseTrackerClass::updateProduction(BaseInfo& base)
 {
-	if (base.unit() && (!Resources().isMinSaturated() || !Resources().isGasSaturated()) && base.unit()->isIdle())
+	if (base.getType() == UnitTypes::Terran_Command_Center && !base.unit()->getAddon())
 	{
-		if (base.getType() == UnitTypes::Terran_Command_Center && !base.unit()->getAddon())
-		{
-			base.unit()->buildAddon(UnitTypes::Terran_Comsat_Station);
-		}
+		base.unit()->buildAddon(UnitTypes::Terran_Comsat_Station);
+	}
+
+	if (base.unit() && base.unit()->isIdle() && ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) || BuildOrder().getCurrentBuild() == "Sparks"))
+	{		
 		for (auto &unit : base.getType().buildsWhat())
 		{			
 			if (unit.isWorker())

@@ -43,7 +43,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		}
 
 		// If unit is dead or unattackable, ignore it
-		if (!unit.getType().isDetector() && (enemy.getDeadFrame() > 0 || (enemy.getType().isFlyer() && unit.getAirRange() == 0.0) || (!enemy.getType().isFlyer() && unit.getGroundRange() == 0.0)))
+		if (!unit.getType().isDetector() && ((enemy.getType().isFlyer() && unit.getAirRange() == 0.0) || (!enemy.getType().isFlyer() && unit.getGroundRange() == 0.0)))
 		{
 			continue;
 		}
@@ -143,7 +143,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 
 Unit TargetTrackerClass::allyTarget(UnitInfo& unit)
 {
-	double highest = 0.0;
+	double best = 1.1, closest = 1000.0;
 	Unit target = nullptr;
 	Position targetPosition;
 	WalkPosition targetWalkPosition;
@@ -153,21 +153,22 @@ Unit TargetTrackerClass::allyTarget(UnitInfo& unit)
 	for (auto &a : Units().getAllyUnits())
 	{
 		UnitInfo ally = a.second;
-		if (!ally.unit() || ally.getDeadFrame() != 0 || !ally.getType().isOrganic())
+		if (!ally.unit() || !ally.getType().isOrganic())
 		{
 			continue;
 		}
 
-		if (ally.unit()->isBeingHealed() && unit.getTarget() != ally.unit())
+		if (ally.unit()->isBeingHealed() || unit.unit() != ally.unit())
 		{
 			continue;
 		}
 
 		double distance = unit.getPosition().getDistance(ally.getPosition());
 
-		if (ally.unit()->exists() && ally.unit()->getHitPoints() < ally.getType().maxHitPoints() && (distance < highest || highest == 0.0))
+		if (ally.getPercentHealth() < best || (ally.getPercentHealth() == best && distance <= closest))
 		{
-			highest = distance;
+			closest = distance;
+			best = ally.getPercentHealth();
 			target = ally.unit();
 			targetPosition = ally.getPosition();
 			targetWalkPosition = ally.getWalkPosition();

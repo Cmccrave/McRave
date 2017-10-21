@@ -1,8 +1,6 @@
 #pragma once
 #include <BWAPI.h>
 #include "Singleton.h"
-#include "ProtossBuilds.h"
-#include "TerranBuilds.h"
 #include <sstream>
 
 using namespace BWAPI;
@@ -12,7 +10,8 @@ class BuildOrderTrackerClass
 {
 	map <UnitType, int> buildingDesired;
 	int opening;
-	bool getOpening = true, getTech = false, learnedOpener = false;	
+	bool getOpening = true, getTech = false, learnedOpener = false;
+	bool oneGateCore = false, forgeExpand = false;
 	UnitType techUnit;
 	set <UnitType> techList;	
 	vector <string> buildNames;
@@ -24,6 +23,8 @@ public:
 	int getOpener() { return opening; }
 	string getCurrentBuild() { return currentBuild; }
 	set <UnitType>& getTechList() { return techList; }
+	bool isOneGateCore() { return oneGateCore; }
+	bool isForgeExpand() { return forgeExpand; }
 
 	void onEnd(bool);
 	void onStart();

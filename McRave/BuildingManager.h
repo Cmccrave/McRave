@@ -29,7 +29,8 @@ public:
 	int getQueuedGas() { return queuedGas; }
 
 	// Returns a set of ally buildings of a certain type
-	set<Unit> getAllyUnitsFilter(UnitType);
+	set<Unit> getAllyBuildingsFilter(UnitType);
+	BuildingInfo& getAllyBuilding(Unit);
 
 	// Get current expansion tile
 	TilePosition getCurrentExpansion() { return currentExpansion; }

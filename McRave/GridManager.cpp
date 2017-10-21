@@ -15,18 +15,18 @@ void GridTrackerClass::update()
 
 void GridTrackerClass::reset()
 {
-	// Temp debugging for tile positions
-	for (int x = 0; x <= Broodwar->mapWidth() * 4; x++)
-	{
-		for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
-		{
-			if (eGroundThreat[x][y] > 0)
-			{
-				Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
-				//Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
-			}
-		}
-	}
+	//// Temp debugging for tile positions
+	//for (int x = 0; x <= Broodwar->mapWidth() * 4; x++)
+	//{
+	//	for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
+	//	{
+	//		if (eGroundThreat[x][y] > 0)
+	//		{
+	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
+	//			//Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
+	//		}
+	//	}
+	//}
 
 	int aCenter = 0, eCenter = 0;
 	for (int x = 0; x < 1024; x++) for (int y = 0; y < 1024; y++)
@@ -75,9 +75,7 @@ void GridTrackerClass::updateAllyGrids()
 	for (auto &u : Units().getAllyUnits())
 	{
 		UnitInfo &unit = u.second;
-		if (unit.getDeadFrame() != 0) continue;
 		if (unit.getType() == UnitTypes::Protoss_Arbiter || unit.getType() == UnitTypes::Protoss_Observer) continue;
-
 		int radius = (unit.getType().tileWidth() * 4) + (unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0;
 		WalkPosition start = unit.getWalkPosition();
 
@@ -172,21 +170,19 @@ void GridTrackerClass::updateEnemyGrids()
 	for (auto &u : Units().getEnemyUnits())
 	{
 		UnitInfo &unit = u.second;
-		if (unit.getDeadFrame() != 0) continue;
-
-		double width = double(unit.getType().tileWidth()) * 32.0;
+		double width = double(unit.getType().width());
 		double gReach = 0.0, aReach = 0.0;
 		int radius = 0;
 		WalkPosition start = unit.getWalkPosition();
 
 		if (unit.getType().isWorker() && unit.unit()->exists() && (!Terrain().isInAllyTerritory(unit.unit()) || (Broodwar->getFrameCount() - unit.getLastAttackFrame() > 500)))
 		{
-			radius = (unit.getType().tileWidth() * 4) + (unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0;
+			radius = (unit.getType().width() + unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0;
 			gReach = unit.getGroundRange() + unit.getSpeed();
 		}
 		else
 		{
-			radius = (unit.getType().tileWidth() * 4) + (unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0;
+			radius = (unit.getType().width() + unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0;
 			gReach = unit.getGroundRange() + unit.getSpeed();
 			aReach = unit.getAirRange() + unit.getSpeed();
 		}
@@ -203,10 +199,10 @@ void GridTrackerClass::updateEnemyGrids()
 			{
 				if (!WalkPosition(x, y).isValid()) continue;
 
-				double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(unit.getPosition()) - width / 2.0);
+				double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(unit.getPosition()) - (width / 2.0));
 
 				// Cluster grids
-				if (x >= start.x - 4 && x < start.x + 4 + width / 16.0 && y >= start.y - 4 && y < start.y + 4 + width / 16.0)
+				if (x >= start.x - 4 && x < start.x + 4 + (width / 8.0) && y >= start.y - 4 && y < start.y + 4 + (width / 8.0))
 				{
 					if (unit.getType().isFlyer())
 					{
@@ -279,15 +275,7 @@ void GridTrackerClass::updateBuildingGrid(BuildingInfo& building)
 			{
 				if (TilePosition(x, y).isValid())
 				{
-					if (building.unit()->exists())
-					{
-						reservedGrid[x][y] = 0;
-						buildingGrid[x][y] += 1;
-					}
-					else
-					{
-						buildingGrid[x][y] -= 1;
-					}
+					building.unit()->exists() ? buildingGrid[x][y] += 1 : buildingGrid[x][y] -= 1;
 				}
 			}
 		}
@@ -301,15 +289,7 @@ void GridTrackerClass::updateBuildingGrid(BuildingInfo& building)
 				{
 					if (TilePosition(x, y).isValid())
 					{
-						if (building.unit()->exists())
-						{
-							reservedGrid[x][y] = 0;
-							buildingGrid[x][y] += 1;
-						}
-						else
-						{
-							buildingGrid[x][y] -= 1;
-						}
+						building.unit()->exists() ? buildingGrid[x][y] += 1 : buildingGrid[x][y] -= 1;
 					}
 				}
 			}
@@ -324,18 +304,12 @@ void GridTrackerClass::updateBuildingGrid(BuildingInfo& building)
 				{
 					if (TilePosition(x, y).isValid())
 					{
-						if (building.unit()->exists())
-						{
-							pylonGrid[x][y] += 1;
-						}
-						else
-						{
-							pylonGrid[x][y] -= 1;
-						}
+						building.unit()->exists() ? pylonGrid[x][y] += 1 : pylonGrid[x][y] -= 1;
 					}
 				}
 			}
 		}
+
 		// Shield Battery Grid
 		if (building.getType() == UnitTypes::Protoss_Shield_Battery)
 		{
@@ -345,18 +319,12 @@ void GridTrackerClass::updateBuildingGrid(BuildingInfo& building)
 				{
 					if (TilePosition(x, y).isValid() && building.getPosition().getDistance(Position(TilePosition(x, y))) < 320)
 					{
-						if (building.unit()->exists())
-						{
-							batteryGrid[x][y] += 1;
-						}
-						else
-						{
-							batteryGrid[x][y] -= 1;
-						}
+						building.unit()->exists() ? batteryGrid[x][y] += 1 : batteryGrid[x][y] -= 1;
 					}
 				}
 			}
 		}
+
 		// Bunker Grid
 		if (building.getType() == UnitTypes::Terran_Bunker)
 		{
@@ -366,14 +334,7 @@ void GridTrackerClass::updateBuildingGrid(BuildingInfo& building)
 				{
 					if (TilePosition(x, y).isValid() && building.getPosition().getDistance(Position(TilePosition(x, y))) < 320)
 					{
-						if (building.unit()->exists())
-						{
-							bunkerGrid[x][y] += 1;
-						}
-						else
-						{
-							bunkerGrid[x][y] -= 1;
-						}
+						building.unit()->exists() ? bunkerGrid[x][y] += 1 : bunkerGrid[x][y] -= 1;						
 					}
 				}
 			}
@@ -383,11 +344,6 @@ void GridTrackerClass::updateBuildingGrid(BuildingInfo& building)
 
 void GridTrackerClass::updateResourceGrid(ResourceInfo& resource)
 {
-	// When a base is created, update this
-	// When a base finishes, update this
-	// When a base is destroyed, update this
-	// Resource Grid for Minerals
-
 	TilePosition tile = resource.getTilePosition();
 	if (resource.getType().isMineralField())
 	{
@@ -765,9 +721,9 @@ void GridTrackerClass::updateAllyMovement(Unit unit, WalkPosition here)
 
 void GridTrackerClass::updatePsiStorm(WalkPosition here)
 {
-	for (int x = here.x - 4; x < here.x + 8; x++)
+	for (int x = here.x - 12; x < here.x + 12; x++)
 	{
-		for (int y = here.y - 4; y < here.y + 8; y++)
+		for (int y = here.y - 12; y < here.y + 12; y++)
 		{
 			if (WalkPosition(x, y).isValid())
 			{

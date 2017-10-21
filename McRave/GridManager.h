@@ -15,8 +15,7 @@ class GridTrackerClass
 	double aGroundThreat[1024][1024] = {};
 	double aAirThreat[1024][1024] = {};
 	int aGroundClusterGrid[1024][1024] = {};
-	int aAirClusterGrid[1024][1024] = {};
-	int reservedGrid[256][256] = {};
+	int aAirClusterGrid[1024][1024] = {};	
 	int buildingGrid[256][256] = {};
 	int baseGrid[256][256] = {};
 	int pylonGrid[256][256] = {};
@@ -106,10 +105,6 @@ public:
 	// Returns the number of allied air units within range of most area of effect abilities
 	int getAAirCluster(int x, int y) { return aAirClusterGrid[x][y]; }
 	int getAAirCluster(WalkPosition here) { return aAirClusterGrid[here.x][here.y]; }
-
-	// Return 1 if the given TilePosition has a building that will be put on it, 0 otherwise
-	int getReservedGrid(int x, int y) { return reservedGrid[x][y]; }
-	int getReservedGrid(TilePosition here) { return reservedGrid[here.x][here.y]; }
 
 	// Returns 1 if the given TilePosition has a building on it, 0 otherwise
 	int getBuildingGrid(int x, int y) { return buildingGrid[x][y]; }

@@ -27,7 +27,7 @@ void SpecialUnitTrackerClass::updateArbiters()
 			{
 				// If not valid, has an EMP on it, an Arbiter moving to it or isn't safe, continue
 				if (!WalkPosition(x, y).isValid() || Grids().getEMPGrid(x, y) > 0 || Grids().getArbiterGrid(x, y) > 0 || !Util().isSafe(WalkPosition(x, y), UnitTypes::Protoss_Arbiter, false, true)) continue;
-				
+
 				// If this position is closer or has a higher cluster of ally units
 				if (closestD == 0.0 || Grids().getAGroundCluster(x, y) > bestCluster || (Grids().getAGroundCluster(x, y) == bestCluster && Terrain().getPlayerStartingPosition().getDistance(Position(WalkPosition(x, y))) < closestD))
 				{
@@ -69,20 +69,17 @@ void SpecialUnitTrackerClass::updateDetectors()
 		}
 
 		// Check if any expansions need detection on them
-		if (BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] > Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus))
+		if (BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] > Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) && Grids().getADetectorGrid(WalkPosition(Buildings().getCurrentExpansion())) == 0)
 		{
-			if (Grids().getEDetectorGrid(WalkPosition(Buildings().getCurrentExpansion())) == 0)
-			{
-				detector.setEngagePosition(Position((Buildings().getCurrentExpansion())));
-				detector.unit()->move(Position((Buildings().getCurrentExpansion())));
-				Grids().updateDetectorMovement(detector);
-				continue;
-			}
+			detector.setEngagePosition(Position((Buildings().getCurrentExpansion())));
+			detector.unit()->move(Position((Buildings().getCurrentExpansion())));
+			Grids().updateDetectorMovement(detector);
+			continue;
 		}
 
 		// Move towards lowest enemy air threat, no enemy detection and closest to enemy starting position	
 		double closestD = 0.0;
-		Position newDestination = Grids().getAllyArmyCenter();
+		Position bestPosition = Grids().getAllyArmyCenter();
 		WalkPosition start = detector.getWalkPosition();
 		for (int x = start.x - 20; x <= start.x + 20; x++)
 		{
@@ -90,20 +87,24 @@ void SpecialUnitTrackerClass::updateDetectors()
 			{
 				if (!WalkPosition(x, y).isValid()) continue;
 
-				if (Grids().getEDetectorGrid(x, y) == 0 && Position(WalkPosition(x, y)).getDistance(Position(start)) > 64 && (Grids().getAAirThreat(x, y) > 0 || Grids().getAGroundThreat(x, y) > 0) && Grids().getADetectorGrid(x, y) == 0 && (Position(WalkPosition(x, y)).getDistance(Terrain().getEnemyStartingPosition()) < closestD || closestD == 0))
+				if (Grids().getEDetectorGrid(x, y) == 0 && Position(WalkPosition(x, y)).getDistance(Position(start)) > 64 && (Grids().getAAirThreat(x, y) > 0 || Grids().getAGroundThreat(x, y) > 0) && Grids().getADetectorGrid(x, y) == 0 && (Position(WalkPosition(x, y)).getDistance(Terrain().getEnemyStartingPosition()) < closestD || closestD == 0.0))
 				{
-					newDestination = Position(WalkPosition(x, y));
+					bestPosition = Position(WalkPosition(x, y));
 					closestD = Position(WalkPosition(x, y)).getDistance(Terrain().getEnemyStartingPosition());
 				}
 			}
 		}
-		if (newDestination.isValid())
+		if (bestPosition.isValid())
 		{
-			detector.setEngagePosition(newDestination);
-			detector.unit()->move(newDestination);
+			detector.setEngagePosition(bestPosition);
+			detector.unit()->move(bestPosition);
 			Grids().updateDetectorMovement(detector);
 		}
-		continue;
+	}
+
+	for (auto &d : Buildings().getAllyBuildingsFilter(UnitTypes::Terran_Comsat_Station))
+	{
+		// ??? Should I store as a unit?
 	}
 	return;
 }
@@ -135,7 +136,7 @@ void SpecialUnitTrackerClass::updateVultures()
 		Position closestP;
 		// If we have mines, plant them at a either the target or a chokepoint
 		if (vulture.unit()->getSpiderMineCount() > 0 && (vulture.getStrategy() == 1 || vulture.getStrategy() == 0) && Broodwar->getUnitsInRadius(vulture.getPosition(), 64, Filter::GetType == UnitTypes::Terran_Vulture_Spider_Mine).size() <= 0)
-		{			
+		{
 			if (vulture.unit()->getLastCommand().getTechType() != TechTypes::Spider_Mines || vulture.unit()->getLastCommand().getTargetPosition().getDistance(vulture.getPosition()) > 10)
 			{
 				vulture.unit()->useTech(TechTypes::Spider_Mines, vulture.getPosition());

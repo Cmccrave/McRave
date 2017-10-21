@@ -27,7 +27,7 @@ void StrategyTrackerClass::protossStrategy()
 	if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0)
 	{
 		// Check if we're fast expanding
-		if (BuildOrder().getCurrentBuild() == "TwelveNexus" || BuildOrder().getCurrentBuild() == "FFECannon" || BuildOrder().getCurrentBuild() == "FFEGateway" || BuildOrder().getCurrentBuild() == "FFENexus")
+		if (BuildOrder().getCurrentBuild() == "TwelveNexus" || BuildOrder().isForgeExpand())
 		{
 			allyFastExpand = true;
 		}
@@ -43,7 +43,7 @@ void StrategyTrackerClass::protossStrategy()
 		}
 
 		// Check if enemy is rushing
-		if (((Players().getNumberProtoss() > 0 || Players().getNumberRandom() > 0) && Units().getEnemyComposition()[UnitTypes::Protoss_Forge] == 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] >= 2 || Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] == 0) && Units().getEnemyComposition()[UnitTypes::Protoss_Assimilator] == 0 && Units().getEnemyComposition()[UnitTypes::Protoss_Nexus] == 1)
+		if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 4 && ((Players().getNumberProtoss() > 0 || Players().getNumberRandom() > 0) && Units().getEnemyComposition()[UnitTypes::Protoss_Forge] == 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] >= 2 || Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] == 0) && Units().getEnemyComposition()[UnitTypes::Protoss_Assimilator] == 0 && Units().getEnemyComposition()[UnitTypes::Protoss_Nexus] == 1)
 			|| ((Players().getNumberRandom() > 0 || Players().getNumberZerg() > 0) && Units().getEnemyComposition()[UnitTypes::Zerg_Zergling] >= 6 && Units().getEnemyComposition()[UnitTypes::Zerg_Drone] < 6))
 		{
 			rush = true;
@@ -64,9 +64,9 @@ void StrategyTrackerClass::protossStrategy()
 		}
 
 		// Check if we should play passive and/or hold the choke
-		if (allyFastExpand)
+		if (allyFastExpand || BuildOrder().isOneGateCore())
 		{
-			holdChoke = true;
+			holdChoke = !rush;
 			playPassive = !enemyFastExpand;
 		}
 		else
@@ -154,13 +154,11 @@ void StrategyTrackerClass::updateBullets()
 		if (bullet->exists() && bullet->getSource() && bullet->getSource()->exists() && bullet->getTarget() && bullet->getTarget()->exists())
 		{
 			if (bullet->getType() == BulletTypes::Psionic_Storm)
-			{
-				Broodwar << "Psi Storm Active at: " << bullet->getPosition() << endl;
+			{				
 				Grids().updatePsiStorm(bullet);
 			}
 			if (bullet->getType() == BulletTypes::EMP_Missile)
-			{
-				Broodwar << "EMP Sent to: " << bullet->getTargetPosition() << endl;
+			{				
 				Grids().updateEMP(bullet);
 			}
 			if (bullet->getSource()->getPlayer() == Broodwar->self() && myBullets.find(bullet) == myBullets.end())
@@ -284,17 +282,17 @@ void StrategyTrackerClass::updateProtossUnitScore(UnitType unit, int cnt)
 		unitScore[UnitTypes::Protoss_Zealot] += (size * 0.75) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot)));
 		unitScore[UnitTypes::Protoss_Dragoon] += (size * 0.25) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon)));
 		unitScore[UnitTypes::Protoss_Corsair] += (size * 0.65) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Corsair)));
-		unitScore[UnitTypes::Protoss_Reaver] += (size * 0.35) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver)));
+		unitScore[UnitTypes::Protoss_High_Templar] += (size * 0.35) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_High_Templar)));
 		break;
 	case UnitTypes::Enum::Zerg_Hydralisk:
 		unitScore[UnitTypes::Protoss_Zealot] += (size * 0.50) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot)));
 		unitScore[UnitTypes::Protoss_Dragoon] += (size * 0.50) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon)));
-		unitScore[UnitTypes::Protoss_Reaver] += (size * 1.00) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver)));
+		unitScore[UnitTypes::Protoss_High_Templar] += (size * 1.00) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_High_Templar)));
 		break;
 	case UnitTypes::Enum::Zerg_Lurker:
 		unitScore[UnitTypes::Protoss_Zealot] += (size * 0.25) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot)));
 		unitScore[UnitTypes::Protoss_Dragoon] += (size * 0.75) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon)));
-		unitScore[UnitTypes::Protoss_Reaver] += (size * 1.00) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver)));
+		unitScore[UnitTypes::Protoss_High_Templar] += (size * 1.00) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_High_Templar)));
 		break;
 	case UnitTypes::Enum::Zerg_Ultralisk:
 		unitScore[UnitTypes::Protoss_Zealot] += (size * 0.25) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot)));
@@ -303,7 +301,7 @@ void StrategyTrackerClass::updateProtossUnitScore(UnitType unit, int cnt)
 		break;
 	case UnitTypes::Enum::Zerg_Mutalisk:
 		unitScore[UnitTypes::Protoss_Dragoon] += (size * 1.00) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon)));
-		unitScore[UnitTypes::Protoss_Corsair] += (size * 1.00) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Corsair)));
+		unitScore[UnitTypes::Protoss_Corsair] += (size * 1.00) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Corsair)));		
 		break;
 	case UnitTypes::Enum::Zerg_Guardian:
 		unitScore[UnitTypes::Protoss_Dragoon] += (size * 1.00) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon)));
