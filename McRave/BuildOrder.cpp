@@ -24,7 +24,7 @@ void BuildOrderTrackerClass::onStart()
 	double best = 0.0;
 
 	// Write what builds you're using
-	if (Broodwar->self()->getRace() == Races::Protoss) buildNames = { "ZZCore", "ZCore", "NZCore", "FFECannon", "FFEGateway", "FFENexus", "TwelveNexus", "DTExpand", "RoboExpand", "FourGate", "ZealotRush" };
+	if (Broodwar->self()->getRace() == Races::Protoss) buildNames = { "ZZCore", "ZCore", "NZCore", "FFECannon", "FFEGateway", "FFENexus", "TwelveNexus", "DTExpand", "RoboExpand", "FourGate", "ZealotRush", "TenTwelveGate" };
 	if (Broodwar->self()->getRace() == Races::Terran) buildNames = { "TwoFactVult", "Sparks" };
 
 	// If we don't have a file in the /read/ folder, then check the /write/ folder
@@ -160,7 +160,7 @@ void BuildOrderTrackerClass::getDefaultBuild()
 		}
 		else if (Players().getNumberRandom() > 0)
 		{
-			currentBuild = "ZZCore";
+			currentBuild = "TenTwelveGate";
 		}
 	}
 	else if (Broodwar->self()->getRace() == Races::Terran)
@@ -173,26 +173,8 @@ void BuildOrderTrackerClass::getDefaultBuild()
 void BuildOrderTrackerClass::update()
 {
 	Display().startClock();
-	updateDecision();
 	updateBuild();
 	Display().performanceTest(__FUNCTION__);
-	return;
-}
-
-void BuildOrderTrackerClass::updateDecision()
-{
-	// If we have our tech unit, set to none
-	if (Broodwar->self()->completedUnitCount(techUnit) > 0)
-	{
-		techList.insert(techUnit);
-		techUnit = UnitTypes::None;
-	}
-
-	// If production is saturated and none are idle or we need detection for some invis units, choose a tech
-	if (Broodwar->self()->getRace() == Races::Protoss && (Strategy().needDetection() || (!getOpening && !getTech && techUnit == UnitTypes::None && Production().getIdleLowProduction().size() == 0 && Production().isProductionSat())))
-	{
-		getTech = true;
-	}
 	return;
 }
 
@@ -201,17 +183,17 @@ void BuildOrderTrackerClass::updateBuild()
 	// Protoss
 	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
-		protossOpener();
-		protossTech();
+		protossOpener();		
 		protossSituational();
+		protossTech();
 	}
 
 	// Terran
 	else if (Broodwar->self()->getRace() == Races::Terran)
 	{
 		terranOpener();
-		terranTech();
 		terranSituational();
+		terranTech();		
 	}
 
 	// Zerg
@@ -221,6 +203,7 @@ void BuildOrderTrackerClass::updateBuild()
 		zergTech();
 		zergSituational();
 	}
+	return;
 }
 
 void BuildOrderTrackerClass::protossOpener()
@@ -238,6 +221,7 @@ void BuildOrderTrackerClass::protossOpener()
 		if (currentBuild == "RoboExpand") RoboExpand();
 		if (currentBuild == "FourGate") FourGate();
 		if (currentBuild == "ZealotRush") ZealotRush();
+		if (currentBuild == "TenTwelveGate") TenTwelveGate();
 	}
 	return;
 }
@@ -297,7 +281,6 @@ void BuildOrderTrackerClass::protossTech()
 	{
 		buildingDesired[UnitTypes::Protoss_Robotics_Facility] = 1;
 		buildingDesired[UnitTypes::Protoss_Robotics_Support_Bay] = min(1, Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Robotics_Facility));
-		buildingDesired[UnitTypes::Protoss_Observatory] = min(1, buildingDesired[UnitTypes::Protoss_Observatory] + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver));
 	}
 	else if (techUnit == UnitTypes::Protoss_Corsair)
 	{
@@ -334,6 +317,19 @@ void BuildOrderTrackerClass::protossTech()
 
 void BuildOrderTrackerClass::protossSituational()
 {
+	// If we have our tech unit, set to none
+	if (Broodwar->self()->completedUnitCount(techUnit) > 0)
+	{
+		techList.insert(techUnit);
+		techUnit = UnitTypes::None;
+	}
+
+	// If production is saturated and none are idle or we need detection for some invis units, choose a tech
+	if ((Strategy().needDetection() || (!getOpening && !getTech && techUnit == UnitTypes::None && Production().getIdleLowProduction().size() == 0 && Production().isProductionSat())))
+	{
+		getTech = true;
+	}
+
 	// Pylon logic
 	if (Strategy().isAllyFastExpand() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Pylon) <= 0)
 	{
@@ -354,17 +350,17 @@ void BuildOrderTrackerClass::protossSituational()
 	if (Players().getNumberTerran() == 0 && Strategy().isRush() && !Strategy().isAllyFastExpand())
 	{
 		buildingDesired[UnitTypes::Protoss_Shield_Battery] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core);
-	}
-
-	// Expansion logic
-	if (Resources().isMinSaturated() && Production().isProductionSat() && Production().getIdleLowProduction().size() == 0 && Units().getGlobalStrategy() == 1)
-	{
-		buildingDesired[UnitTypes::Protoss_Nexus] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) + 1;
-	}
+	}	
 
 	// If we're not in our opener
 	if (!getOpening)
 	{
+		// Expansion logic
+		if (!getTech && Resources().isMinSaturated() && Production().isProductionSat() && Production().getIdleLowProduction().size() == 0 && Units().getGlobalStrategy() == 1)
+		{
+			buildingDesired[UnitTypes::Protoss_Nexus] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) + 1;
+		}
+
 		// Gateway logic
 		if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 2 && (Production().getIdleLowProduction().size() == 0 && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 150) || (!Production().isGateSat() && Resources().isMinSaturated()))))
 		{

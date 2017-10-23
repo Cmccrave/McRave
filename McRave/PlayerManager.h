@@ -11,6 +11,9 @@ public:
 	map <Player, PlayerInfo>& getPlayers() { return thePlayers; }
 
 	void onStart();
+	void update();
+	void updateUpgrades(PlayerInfo&);
+
 	int getNumberZerg() { return eZerg; }
 	int getNumberProtoss() { return eProtoss; }
 	int getNumberTerran() { return eTerran; }

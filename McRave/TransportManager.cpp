@@ -77,7 +77,7 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 			transport.setDestination(cargo.getPosition());
 
 			// If it's requesting a pickup, set load state to 1
-			if (cargo.getTargetPosition().getDistance(cargo.getPosition()) > cargo.getGroundRange() + 64 || cargo.getStrategy() != 1 || (cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.unit()->getEnergy() < 75) || (cargo.getType() != UnitTypes::Protoss_High_Templar && Broodwar->getFrameCount() - cargo.getLastAttackFrame() > cargo.getType().groundWeapon().damageCooldown()))
+			if (cargo.getTargetPosition().getDistance(cargo.getPosition()) > cargo.getGroundRange() + 64 || cargo.getStrategy() != 1 || (cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.unit()->getEnergy() < 75) || (cargo.getType() != UnitTypes::Protoss_High_Templar && Broodwar->getFrameCount() - cargo.getLastAttackFrame() < cargo.getType().groundWeapon().damageCooldown()))
 			{
 				transport.unit()->load(cargo.unit());
 				transport.setLoading(true);

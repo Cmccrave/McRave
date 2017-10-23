@@ -44,10 +44,11 @@ public:
 
 	// Updating
 	void update();
-	void updateAllUnits();
+	void updateUnits();
 	void updateEnemy(UnitInfo&);
 	void updateAlly(UnitInfo&);	
 	void updateLocalSimulation(UnitInfo&);
+	void updateStrategy(UnitInfo&);
 	void updateGlobalSimulation();
 
 	// Storage

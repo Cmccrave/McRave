@@ -16,14 +16,14 @@ void GridTrackerClass::update()
 void GridTrackerClass::reset()
 {
 	//// Temp debugging for tile positions
-	//for (int x = 0; x <= Broodwar->mapWidth() * 4; x++)
+	//for (int x = 0; x <= Broodwar->mapWidth(); x++)
 	//{
-	//	for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
+	//	for (int y = 0; y <= Broodwar->mapHeight(); y++)
 	//	{
-	//		if (eGroundThreat[x][y] > 0)
+	//		if (resourceGrid[x][y] > 0)
 	//		{
-	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
-	//			//Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
+	//			//Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
+	//			Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
 	//		}
 	//	}
 	//}
@@ -370,23 +370,16 @@ void GridTrackerClass::updateResourceGrid(ResourceInfo& resource)
 	}
 	else
 	{
-		for (int x = tile.x - 5; x < tile.x + resource.getType().tileWidth() + 5; x++)
+		for (int x = tile.x - 2; x < tile.x + resource.getType().tileWidth() + 2; x++)
 		{
-			for (int y = tile.y - 5; y < tile.y + resource.getType().tileHeight() + 5; y++)
+			for (int y = tile.y - 2; y < tile.y + resource.getType().tileHeight() + 2; y++)
 			{
 				if (TilePosition(x, y).isValid())
 				{
-					if (resource.getResourceClusterPosition().getDistance(Position(TilePosition(x, y))) <= 256 && resource.getClosestBasePosition().isValid() && resource.getPosition().getDistance(resource.getClosestBasePosition()) > Position(x * 32, y * 32).getDistance(resource.getClosestBasePosition()))
+					if (baseGrid[x][y] > 0 && TilePosition(x, y).getDistance(TilePosition(resource.getClosestBasePosition())) < resource.getTilePosition().getDistance(TilePosition(resource.getClosestBasePosition())))
 					{
-						if (resource.unit()->exists())
-						{
-							resourceGrid[x][y] += 1;
-						}
-						else
-						{
-							resourceGrid[x][y] -= 1;
-						}
-					}
+						resourceGrid[x][y] += 1;
+					}					
 				}
 			}
 		}

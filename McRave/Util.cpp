@@ -30,8 +30,9 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit)
 		return 1.5;
 	}
 
-	double range, damage;
+	double range, damage, hp;
 	range = cbrt(unit.getGroundRange());
+	hp = cbrt((unit.getType().maxHitPoints() + (unit.getType().maxShields() / 2.0)) / 10.0);
 
 	if (unit.getType().groundWeapon().damageCooldown() > 0)
 	{
@@ -84,7 +85,7 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit)
 	{
 		damage = damage * 1.33;
 	}
-	return range * damage * effectiveness;
+	return range * damage * effectiveness * hp;
 }
 
 double UtilTrackerClass::getVisibleGroundStrength(UnitInfo& unit)
@@ -103,7 +104,8 @@ double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit)
 	{
 		return 2.5;
 	}
-	double range, damage;
+	double range, damage, hp;
+	hp = cbrt((unit.getType().maxHitPoints() + (unit.getType().maxShields() / 2.0)) / 10.0);
 	damage = unit.getAirDamage() / double(unit.getType().airWeapon().damageCooldown());
 	range = cbrt(unit.getAirRange());
 
@@ -148,7 +150,7 @@ double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit)
 			effectiveness = double((eLarge*0.25) + (eMedium*0.5) + (eSmall*1.0)) / max(1.0, double(eLarge + eMedium + eSmall));
 		}
 	}
-	return range * damage * effectiveness;
+	return range * damage * effectiveness * hp;
 }
 
 double UtilTrackerClass::getVisibleAirStrength(UnitInfo& unit)

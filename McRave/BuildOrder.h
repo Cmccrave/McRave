@@ -9,7 +9,6 @@ using namespace std;
 class BuildOrderTrackerClass
 {
 	map <UnitType, int> buildingDesired;
-	int opening;
 	bool getOpening = true, getTech = false, learnedOpener = false;
 	bool oneGateCore = false, forgeExpand = false;
 	UnitType techUnit;
@@ -18,24 +17,23 @@ class BuildOrderTrackerClass
 	string currentBuild = "Test";
 	stringstream ss;
 public:
-	map <UnitType, int>& getBuildingDesired() { return buildingDesired; }
-	bool isOpener() { return getOpening; }
-	int getOpener() { return opening; }
+	// Build learning functions
 	string getCurrentBuild() { return currentBuild; }
+	void getDefaultBuild();
+	bool isBuildAllowed(Race, string);
+
+	map <UnitType, int>& getBuildingDesired() { return buildingDesired; }
+	bool isOpener() { return getOpening; }	
+
 	set <UnitType>& getTechList() { return techList; }
 	bool isOneGateCore() { return oneGateCore; }
 	bool isForgeExpand() { return forgeExpand; }
 
 	void onEnd(bool);
 	void onStart();
-
-	void getDefaultBuild();
-	bool isBuildAllowed(Race, string);
-
 	void update();
-	void updateDecision();
 	void updateBuild();
-
+	
 	void protossOpener();
 	void protossTech();
 	void protossSituational();
@@ -48,18 +46,11 @@ public:
 	void zergTech();
 	void zergSituational();
 
-	void ZZCore();
-	void ZCore();
-	void NZCore();
-	void FFECannon();
-	void FFEGateway();
-	void FFENexus();
+	void ZZCore(), ZCore(), NZCore();
+	void FFECannon(), FFEGateway(), FFENexus();
 	void TwelveNexus();
-	void DTExpand();
-	void RoboExpand();
-	void FourGate();
-	void ZealotRush();
-	//void ReaverRush();
+	void RoboExpand(), DTExpand();
+	void FourGate(), ZealotRush(), TenTwelveGate(); //ReaverRush();
 
 	void TwoFactVult();
 	//void ShallowTwo();

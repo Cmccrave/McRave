@@ -19,7 +19,6 @@ void BaseTrackerClass::updateAlliedBases()
 			{
 				Grids().updateBaseGrid(base);
 			}
-
 			updateProduction(base);
 		}		
 	}

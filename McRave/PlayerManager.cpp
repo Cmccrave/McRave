@@ -27,3 +27,16 @@ void PlayerTrackerClass::onStart()
 	}
 	return;
 }
+
+void PlayerTrackerClass::update()
+{
+	for (auto &player : thePlayers)
+	{
+		updateUpgrades(player.second);
+	}
+}
+
+void PlayerTrackerClass::updateUpgrades(PlayerInfo& player)
+{
+	
+}

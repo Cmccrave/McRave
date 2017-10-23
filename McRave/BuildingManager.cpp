@@ -311,7 +311,7 @@ bool BuildingTrackerClass::canBuildHere(UnitType building, TilePosition buildTil
 				}
 
 				// If it's a pylon and overlapping too many pylons
-				if (!Strategy().isAllyFastExpand() && building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(x, y) >= 1)
+				if (!Strategy().isAllyFastExpand() && building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(x, y) >= 3)
 				{
 					return false;
 				}

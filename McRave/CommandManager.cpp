@@ -49,7 +49,7 @@ void CommandTrackerClass::updateAlliedUnits()
 			}
 
 			// If globally behind
-			if (Units().getGlobalStrategy() == 0 || Units().getGlobalStrategy() == 2)
+			if (Units().getGlobalStrategy() == 0)
 			{
 				// Check if we have a target
 				if (unit.getTarget())
@@ -67,7 +67,7 @@ void CommandTrackerClass::updateAlliedUnits()
 						continue;
 					}
 				}
-				// Else defend
+				// Defend otherwise
 				defend(unit);
 				continue;
 			}
@@ -79,9 +79,15 @@ void CommandTrackerClass::updateAlliedUnits()
 				if (unit.getTarget())
 				{
 					// If locally behind, flee
-					if (unit.getStrategy() == 0 || unit.getStrategy() == 2)
+					if (unit.getStrategy() == 0)
 					{
 						flee(unit);
+						continue;
+					}
+					// Defend
+					else if (unit.getStrategy() == 2)
+					{
+						defend(unit);
 						continue;
 					}
 					// If target exists, attack
@@ -203,6 +209,12 @@ void CommandTrackerClass::attack(UnitInfo& unit)
 			moveAway = false;
 		}
 
+		// If enemy is invis, run from it
+		else if ((unit.getTarget()->isBurrowed() || unit.getTarget()->isCloaked()) && !unit.getTarget()->isDetected())
+		{
+			flee(unit);
+		}
+
 		// Reavers should always kite away from their target if it has lower range
 		else if (unit.getType() == UnitTypes::Protoss_Reaver && target.getGroundRange() < unit.getGroundRange())
 		{
@@ -222,28 +234,14 @@ void CommandTrackerClass::attack(UnitInfo& unit)
 		}
 
 		// If kite is true and weapon on cooldown, move
-		if ((!unit.getTarget()->getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() > 0 || unit.getTarget()->getType().isFlyer() && unit.unit()->getAirWeaponCooldown() > 0 || (unit.getTarget()->exists() && (unit.getTarget()->isCloaked() || unit.getTarget()->isBurrowed()) && !unit.getTarget()->isDetected())))
+		if ((!target.getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() > 0 || target.getType().isFlyer() && unit.unit()->getAirWeaponCooldown() > 0 || (unit.getTarget()->exists() && (unit.getTarget()->isCloaked() || unit.getTarget()->isBurrowed()) && !unit.getTarget()->isDetected())))
 		{
-			if (moveTo)
-			{
-				approach(unit);
-				return;
-			}
-			if (moveAway)
-			{
-				flee(unit);
-				return;
-			}
+			if (moveTo) approach(unit);
+			else if (moveAway) flee(unit);			
 		}
-		else if ((!unit.getTarget()->getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() <= 0) || (unit.getTarget()->getType().isFlyer() && unit.unit()->getAirWeaponCooldown() <= 0))
+		else if ((!target.getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() <= 0) || (target.getType().isFlyer() && unit.unit()->getAirWeaponCooldown() <= 0))
 		{
-			if (unit.unit()->getLastCommand().getType() == UnitCommandTypes::Attack_Unit && unit.unit()->getLastCommand().getTarget() == unit.getTarget()) return;
-
-			if ((unit.getTarget()->isBurrowed() || unit.getTarget()->isCloaked()) && !unit.getTarget()->isDetected())
-			{
-				flee(unit);
-			}
-			else
+			if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Attack_Unit || unit.unit()->getLastCommand().getTarget() != unit.getTarget())
 			{
 				unit.unit()->attack(unit.getTarget());
 			}
@@ -382,10 +380,6 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 
 void CommandTrackerClass::flee(UnitInfo& unit)
 {
-	WalkPosition start = unit.getWalkPosition();
-	WalkPosition bestPosition = start;
-	double best = 1000.0, closest = 1000.0;
-
 	// If it's a tank, make sure we're unsieged before moving -  TODO: Check that target has velocity and > 512 or no velocity and < tank range
 	if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
 	{
@@ -413,52 +407,26 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 		}
 	}
 
+	WalkPosition start = unit.getWalkPosition();
+	WalkPosition bestPosition = start;
+	double best = 0.0;
+	double mobility, distance, threat;
 	// Search a 16x16 grid around the unit
 	for (int x = start.x - 8; x <= start.x + 8 + (unit.getType().tileWidth() * 4); x++)
 	{
 		for (int y = start.y - 8; y <= start.y + 8 + (unit.getType().tileHeight() * 4); y++)
 		{
-			if (!WalkPosition(x, y).isValid())
-			{
-				continue;
-			}
+			if (!WalkPosition(x, y).isValid()) continue;
+			if (WalkPosition(x, y).getDistance(start) > 8) continue;
 
-			double mobility = 0.0;
-			double distance = 0.0;
-			double threat = Grids().getEGroundThreat(x, y);
+			Terrain().isInAllyTerritory(unit.unit()) ? distance = unit.getPosition().getDistance(unit.getTargetPosition()) : distance = double(Grids().getDistanceHome(x, y));	// If inside territory			
+			unit.getType().isFlyer() ? mobility = 1.0 : mobility = double(Grids().getMobilityGrid(x, y)); // If unit is a flyer, ignore mobility
+			unit.getType().isFlyer() ? threat = max(0.1, Grids().getEAirThreat(x, y)) : threat = max(0.1, Grids().getEGroundThreat(x, y)); // If unit is a flyer, use air threat
 
-			// If inside territory
-			if (Terrain().isInAllyTerritory(unit.unit()))
+			if (mobility / (threat * distance) > best && Util().isMobile(start, WalkPosition(x, y), unit.getType()))
 			{
-				distance = unit.getPosition().getDistance(unit.getTargetPosition());
-			}
-			else
-			{
-				distance = double(Grids().getDistanceHome(x, y));
-			}
-
-			// If unit is a flyer, ignore mobility
-			if (unit.getType().isFlyer())
-			{
-				mobility = 1.0;
-			}
-			else
-			{
-				mobility = double(Grids().getMobilityGrid(x, y));
-			}
-
-			/*if ((distance / mobility < closest || (distance / mobility == closest && (threat < best || best == 0.0))) && Util().isMobile(start, WalkPosition(x, y), unit.getType()))
-			{
-				best = threat;
-				closest = distance / mobility;
 				bestPosition = WalkPosition(x, y);
-			}*/
-
-			if ((threat < best || (threat == best && (distance / mobility < closest || closest == 0.0))) && Util().isMobile(start, WalkPosition(x, y), unit.getType()))
-			{
-				best = threat;
-				closest = distance / mobility;
-				bestPosition = WalkPosition(x, y);
+				best = mobility / (threat * distance);
 			}
 		}
 	}
@@ -472,6 +440,10 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 		{
 			unit.unit()->move(Position(bestPosition));
 		}
+	}
+	else
+	{
+		defend(unit);
 	}
 	return;
 }
