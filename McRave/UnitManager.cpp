@@ -145,7 +145,7 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 	}
 
 	// Latch based engagement decision making based on what race we are playing
-	int offset = 0.0;
+	double offset = 0.0;
 	if (Broodwar->self()->getRace() == Races::Protoss) offset = 0.2;
 	else if (Broodwar->self()->getRace() == Races::Terran) offset = 0.5;
 

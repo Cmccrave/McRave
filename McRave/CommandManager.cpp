@@ -336,8 +336,8 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 	}
 
 	// Defend chokepoint with concave
-	int min = unit.getGroundRange();
-	int max = unit.getGroundRange() + 256;
+	int min = int(unit.getGroundRange());
+	int max = int(unit.getGroundRange()) + 256;
 	double closestD = 0.0;
 	WalkPosition start = unit.getWalkPosition();
 	WalkPosition bestPosition = start;
