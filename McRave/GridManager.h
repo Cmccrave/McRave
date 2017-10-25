@@ -10,13 +10,12 @@ using namespace std;
 class GridTrackerClass
 {
 	bool resetGrid[1024][1024] = {};
-	int updateFrame[1024][1024] = {};
 
 	// Ally grids
 	double aGroundThreat[1024][1024] = {};
 	double aAirThreat[1024][1024] = {};
 	int aGroundClusterGrid[1024][1024] = {};
-	int aAirClusterGrid[1024][1024] = {};	
+	int aAirClusterGrid[1024][1024] = {};
 	int buildingGrid[256][256] = {};
 	int baseGrid[256][256] = {};
 	int pylonGrid[256][256] = {};
@@ -46,7 +45,7 @@ class GridTrackerClass
 	int arbiterGrid[1024][1024] = {};
 	int psiStormGrid[1024][1024] = {};
 	int EMPGrid[1024][1024] = {};
-	
+
 	// Other
 	bool distanceAnalysis = false;
 	bool mobilityAnalysis = false;
@@ -55,7 +54,6 @@ public:
 
 	// Check if we are done analyzing stuff
 	bool isAnalyzed() { return distanceAnalysis; }
-	bool isRelevant(int x, int y) { return updateFrame[x][y] >= Broodwar->getFrameCount(); }
 
 	// Update functions
 	void reset();
@@ -78,7 +76,7 @@ public:
 	void updateEMP(Bullet);
 
 	// On start functions
-	void updateDistanceGrid();	
+	void updateDistanceGrid();
 
 	// Updates a resource if it is destroyed or created
 	void updateResourceGrid(ResourceInfo&);
@@ -93,20 +91,20 @@ public:
 	void updateDefenseGrid(UnitInfo&);
 
 	// Returns the combined ground strength of ally units within range and moving distance (based on how fast the unit is) of the given WalkPosition
-	double getAGroundThreat(int x, int y) { return isRelevant(x,y) ? aGroundThreat[x][y] : 0; }
-	double getAGroundThreat(WalkPosition here) { return isRelevant(here.x, here.y) ? aGroundThreat[here.x][here.y] : 0; }
+	double getAGroundThreat(int x, int y) { return aGroundThreat[x][y]; }
+	double getAGroundThreat(WalkPosition here) { return aGroundThreat[here.x][here.y]; }
 
 	// Returns the combined air strength of ally units within range and moving distance (based on how fast the unit is) of the given WalkPosition
-	double getAAirThreat(int x, int y) { return isRelevant(x, y) ? aAirThreat[x][y] : 0; }
-	double getAAirThreat(WalkPosition here) { return isRelevant(here.x, here.y) ? aAirThreat[here.x][here.y] : 0; }
+	double getAAirThreat(int x, int y) { return aAirThreat[x][y]; }
+	double getAAirThreat(WalkPosition here) { return aAirThreat[here.x][here.y]; }
 
 	// Returns the number of allied ground units within range of most area of effect abilities
-	int getAGroundCluster(int x, int y) { return isRelevant(x, y) ? aGroundClusterGrid[x][y] : 0; }
-	int getAGroundCluster(WalkPosition here) { return isRelevant(here.x, here.y) ? aGroundClusterGrid[here.x][here.y] : 0; }
+	int getAGroundCluster(int x, int y) { return aGroundClusterGrid[x][y]; }
+	int getAGroundCluster(WalkPosition here) { return aGroundClusterGrid[here.x][here.y]; }
 
 	// Returns the number of allied air units within range of most area of effect abilities
-	int getAAirCluster(int x, int y) { return isRelevant(x, y) ? aAirClusterGrid[x][y] : 0; }
-	int getAAirCluster(WalkPosition here) { return isRelevant(here.x, here.y) ? aAirClusterGrid[here.x][here.y] : 0; }
+	int getAAirCluster(int x, int y) { return aAirClusterGrid[x][y]; }
+	int getAAirCluster(WalkPosition here) { return aAirClusterGrid[here.x][here.y]; }
 
 	// Returns 1 if the given TilePosition has a building on it, 0 otherwise
 	int getBuildingGrid(int x, int y) { return buildingGrid[x][y]; }
@@ -133,28 +131,28 @@ public:
 	int getDefenseGrid(TilePosition here) { return defenseGrid[here.x][here.y]; }
 
 	// Returns the combined ground strength of enemy units within range and moving distance (based on how fast the unit is) of the given WalkPosition
-	double getEGroundThreat(int x, int y) { return isRelevant(x, y) ? eGroundThreat[x][y] : 0; }
-	double getEGroundThreat(WalkPosition here) { return isRelevant(here.x, here.y) ? eGroundThreat[here.x][here.y] : 0; }
+	double getEGroundThreat(int x, int y) { return eGroundThreat[x][y]; }
+	double getEGroundThreat(WalkPosition here) { return eGroundThreat[here.x][here.y]; }
 
 	// Returns the combined air strength of enemy units within range and moving distance (based on how fast the unit is) of the given WalkPosition
-	double getEAirThreat(int x, int y) { return isRelevant(x, y) ? eAirThreat[x][y] : 0; }
-	double getEAirThreat(WalkPosition here) { return isRelevant(here.x, here.y) ? eAirThreat[here.x][here.y] : 0; }
+	double getEAirThreat(int x, int y) { return eAirThreat[x][y]; }
+	double getEAirThreat(WalkPosition here) { return eAirThreat[here.x][here.y]; }
 
 	// Returns 1 if there is enemy detection on the given walk position, 0 otherwise
-	int getEDetectorGrid(int x, int y) { return isRelevant(x, y) ? eDetectorGrid[x][y] : 0; }
-	int getEDetectorGrid(WalkPosition here) { return isRelevant(here.x, here.y) ? eDetectorGrid[here.x][here.y] : 0; }
+	int getEDetectorGrid(int x, int y) { return eDetectorGrid[x][y]; }
+	int getEDetectorGrid(WalkPosition here) { return eDetectorGrid[here.x][here.y]; }
 
 	// Returns the number of enemy ground units within range of most area of effect abilities
-	int getEGroundCluster(int x, int y) { return isRelevant(x, y) ? eGroundClusterGrid[x][y] : 0; }
-	int getEGroundCluster(WalkPosition here) { return isRelevant(here.x, here.y) ? eGroundClusterGrid[here.x][here.y] : 0; }
+	int getEGroundCluster(int x, int y) { return eGroundClusterGrid[x][y]; }
+	int getEGroundCluster(WalkPosition here) { return eGroundClusterGrid[here.x][here.y]; }
 
 	// Returns the number of enemy air units within range of most area of effect abilities
-	int getEAirCluster(int x, int y) { return isRelevant(x, y) ? eAirClusterGrid[x][y] : 0; }
-	int getEAirCluster(WalkPosition here) { return isRelevant(here.x, here.y) ? eAirClusterGrid[here.x][here.y] : 0; }
+	int getEAirCluster(int x, int y) { return eAirClusterGrid[x][y]; }
+	int getEAirCluster(WalkPosition here) { return eAirClusterGrid[here.x][here.y]; }
 
 	// Returns the number of valuable stasis targets within range of stasis
-	int getStasisCluster(int x, int y) { return isRelevant(x, y) ? stasisClusterGrid[x][y] : 0; }
-	int getStasisCluster(WalkPosition here) { return isRelevant(here.x, here.y) ? stasisClusterGrid[here.x][here.y] : 0; }
+	int getStasisCluster(int x, int y) { return stasisClusterGrid[x][y]; }
+	int getStasisCluster(WalkPosition here) { return stasisClusterGrid[here.x][here.y]; }
 
 	// Returns 1 if the tile is between a resource and a base, 0 otherwise
 	int getResourceGrid(int x, int y) { return resourceGrid[x][y]; }
@@ -165,28 +163,28 @@ public:
 	int getMobilityGrid(WalkPosition here) { return mobilityGrid[here.x][here.y]; }
 
 	// Returns 1 if a unit would reduce the mobility of a tile, 0 otherwise
-	int getAntiMobilityGrid(int x, int y) { return isRelevant(x, y) ? antiMobilityGrid[x][y] : 0; }
-	int getAntiMobilityGrid(WalkPosition here) { return isRelevant(here.x, here.y) ? antiMobilityGrid[here.x][here.y] : 0; }
+	int getAntiMobilityGrid(int x, int y) { return antiMobilityGrid[x][y]; }
+	int getAntiMobilityGrid(WalkPosition here) { return antiMobilityGrid[here.x][here.y]; }
 
 	// Returns the ground distance from the given WalkPosition to the players starting position, -1 if not reachable on ground
 	int getDistanceHome(int x, int y) { return distanceGridHome[x][y]; }
 	int getDistanceHome(WalkPosition here) { return distanceGridHome[here.x][here.y]; }
 
 	// Returns 1 if an allied Observer is within range of the given WalkPosition, 0 otherwise
-	int getADetectorGrid(int x, int y) { return isRelevant(x, y) ? aDetectorGrid[x][y] : 0; }
-	int getADetectorGrid(WalkPosition here) { return isRelevant(here.x, here.y) ? aDetectorGrid[here.x][here.y] : 0; }
+	int getADetectorGrid(int x, int y) { return aDetectorGrid[x][y]; }
+	int getADetectorGrid(WalkPosition here) { return aDetectorGrid[here.x][here.y]; }
 
 	// Returns 1 if an allied Arbiter is within range of the given WalkPosition, 0 otherwise
-	int getArbiterGrid(int x, int y) { return isRelevant(x, y) ? arbiterGrid[x][y] : 0; }
-	int getArbiterGrid(WalkPosition here) { return isRelevant(here.x, here.y) ? arbiterGrid[here.x][here.y] : 0; }
+	int getArbiterGrid(int x, int y) { return arbiterGrid[x][y]; }
+	int getArbiterGrid(WalkPosition here) { return arbiterGrid[here.x][here.y]; }
 
 	// Returns 1 if an active psi storm exists or will exist at this location
-	int getPsiStormGrid(int x, int y) { return isRelevant(x, y) ? psiStormGrid[x][y] : 0; }
-	int getPsiStormGrid(WalkPosition here) { return isRelevant(here.x, here.y) ? psiStormGrid[here.x][here.y] : 0; }
+	int getPsiStormGrid(int x, int y) { return psiStormGrid[x][y]; }
+	int getPsiStormGrid(WalkPosition here) { return psiStormGrid[here.x][here.y]; }
 
 	// Returns 1 if an active EMP is targeted at this location
-	int getEMPGrid(int x, int y) { return isRelevant(x, y) ? EMPGrid[x][y] : 0; }
-	int getEMPGrid(WalkPosition here) { return isRelevant(here.x, here.y) ? EMPGrid[here.x][here.y] : 0; }
+	int getEMPGrid(int x, int y) { return EMPGrid[x][y]; }
+	int getEMPGrid(WalkPosition here) { return EMPGrid[here.x][here.y]; }
 
 	// Other functions
 	Position getAllyArmyCenter(){ return allyArmyCenter; }

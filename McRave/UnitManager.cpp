@@ -25,7 +25,7 @@ void UnitTrackerClass::updateUnits()
 		if (unit.unit()->exists())	updateEnemy(unit); // If unit is visible, update it
 		if (!unit.unit()->exists() && unit.getPosition().isValid() && Broodwar->isVisible(TilePosition(unit.getPosition()))) unit.setPosition(Positions::None); // If unit is not visible but his position is, move it
 		if (unit.getType().isValid()) enemyComposition[unit.getType()] += 1; // If unit has a valid type, update enemy composition tracking
-		if (!unit.getType().isWorker() && !unit.getType().isBuilding()) globalEnemyGroundStrength += max(unit.getVisibleGroundStrength(), unit.getVisibleAirStrength()); // If unit is not a worker or building, add it to global strength	
+		if (!unit.getType().isWorker() && !unit.getType().isBuilding()) unit.getType().isFlyer() ? globalEnemyAirStrength += unit.getVisibleAirStrength() : globalEnemyGroundStrength += unit.getVisibleGroundStrength(); // If unit is not a worker or building, add it to global strength	
 		if (unit.getType().isBuilding() && unit.getGroundDamage() > 0 && unit.unit()->isCompleted()) enemyDefense += unit.getVisibleGroundStrength(); // If unit is a building and deals damage, add it to global defense
 	}
 
@@ -46,7 +46,7 @@ void UnitTrackerClass::updateUnits()
 		updateLocalSimulation(unit);
 		updateStrategy(unit);
 
-		if (!unit.getType().isBuilding()) globalAllyGroundStrength += max(unit.getVisibleGroundStrength(), unit.getVisibleAirStrength());	
+		if (!unit.getType().isBuilding()) unit.getType().isFlyer() ? globalAllyAirStrength += unit.getVisibleAirStrength() : globalAllyGroundStrength += unit.getVisibleGroundStrength();
 		if (unit.getType().isWorker() && Workers().getMyWorkers().find(unit.unit()) != Workers().getMyWorkers().end()) Workers().removeWorker(unit.unit()); // Remove the worker role if needed			
 		if ((unit.getType().isWorker() && (Grids().getResourceGrid(unit.getTilePosition()) == 0 || Grids().getEGroundThreat(unit.getWalkPosition()) == 0.0)) || (BuildOrder().getCurrentBuild() == "Sparks" && Units().getGlobalGroundStrategy() != 1)) Workers().storeWorker(unit.unit()); // If this is a worker and is ready to go back to being a worker
 	}
@@ -62,14 +62,7 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 	double simRatio = 0.0;
 	double unitToEngage = (unit.getPosition().getDistance(unit.getEngagePosition())) / unit.getSpeed();
 	double enemyRange, allyRange, unitRange;
-	UnitInfo &target = Units().getEnemyUnit(unit.getTarget());
-
-	// Stupid way to hardcode only aggresion from sparks build
-	if (BuildOrder().getCurrentBuild() == "Sparks" && !BuildOrder().isOpener())
-	{
-		unit.setStrategy(1);
-		return;
-	}
+	UnitInfo &target = Units().getEnemyUnit(unit.getTarget());	
 
 	// Check every enemy unit being in range of the target
 	for (auto &e : enemyUnits)
@@ -137,10 +130,10 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 
 void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 {
-	// If a unit is clearly out of range, set as "no local" and skip calculating
-	if (!unit.getTarget())
+	// Stupid way to hardcode only aggresion from sparks build
+	if (BuildOrder().getCurrentBuild() == "Sparks" && !BuildOrder().isOpener())
 	{
-		unit.setStrategy(3);
+		unit.setStrategy(1);
 		return;
 	}
 
@@ -151,14 +144,19 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 
 	UnitInfo &target = Units().getEnemyUnit(unit.getTarget());
 	if (unit.getType().isWorker()) unit.setStrategy(1);
-	double decision;
-	unit.getType().isFlyer() ? decision = unit.getAirLocal() : decision = unit.getGroundLocal();
+	double decisionLocal = unit.getType().isFlyer() ? unit.getAirLocal() : unit.getGroundLocal();
+	double decisionGlobal = unit.getType().isFlyer() ? globalAirStrategy : globalGroundStrategy;
+
+	// If a unit is clearly out of range, set as "no local" and skip calculating
+	if (!unit.getTarget() && decisionGlobal == 1)
+	{
+		unit.setStrategy(3);
+		return;
+	}
 
 	// If unit is in ally territory
-	if (Terrain().isInAllyTerritory(unit.unit()) && decision < 1.0 + offset)
+	if (Terrain().isInAllyTerritory(unit.unit()) && decisionGlobal == 0)
 	{
-		!unit.getTarget()->exists() ? unit.setStrategy(2) : 0;
-
 		// If unit is melee
 		if (max(unit.getGroundRange(), unit.getAirRange()) <= 32)
 		{
@@ -199,7 +197,7 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 			// If against rush and not ready to wall up, fight in mineral line
 			if (Strategy().isRush() || !Strategy().isHoldChoke())
 			{
-				if (Grids().getResourceGrid(target.getTilePosition()) > 0 || Grids().getResourceGrid(unit.getTilePosition()) > 0)
+				if (Terrain().isInAllyTerritory(unit.getTarget()))
 				{
 					unit.setStrategy(1);
 					return;
@@ -316,13 +314,12 @@ void UnitTrackerClass::updateGlobalSimulation()
 		if (Players().getNumberTerran() > 0) offset = 0.8;
 
 		if (Strategy().isPlayPassive())	globalGroundStrategy = 0;
-		else if (globalAllyGroundStrength > globalEnemyGroundStrength * offset) globalGroundStrategy = 1;
+		else if (globalAllyGroundStrength >= globalEnemyGroundStrength * offset) globalGroundStrategy = 1;
 		else if (Players().getPlayers().size() <= 1 && Players().getNumberTerran() > 0)	globalGroundStrategy = 1;
 		else globalGroundStrategy = 0;
-		return;
 
 		if (Strategy().isPlayPassive())	globalAirStrategy = 0;
-		else if (globalAllyGroundStrength > globalEnemyGroundStrength * offset) globalAirStrategy = 1;
+		else if (globalAllyAirStrength >= globalEnemyAirStrength * offset) globalAirStrategy = 1;
 		else if (Players().getPlayers().size() <= 1 && Players().getNumberTerran() > 0)	globalAirStrategy = 1;
 		else globalAirStrategy = 0;
 		return;
@@ -330,7 +327,7 @@ void UnitTrackerClass::updateGlobalSimulation()
 	}
 	else if (Broodwar->self()->getRace() == Races::Terran)
 	{
-		if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Ion_Thrusters))
+		if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Ion_Thrusters) > 0)
 		{
 			if (globalAllyGroundStrength > globalEnemyGroundStrength)
 			{

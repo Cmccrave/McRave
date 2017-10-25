@@ -325,9 +325,19 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 	// Early on, defend mineral line - TODO: Use ordered bases to check which one to hold
 	if (!Strategy().isHoldChoke())
 	{
-		if (unit.unit()->getLastCommand().getTargetPosition() != Terrain().getMineralHoldPosition() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
+		if (unit.getType() == UnitTypes::Protoss_Dragoon && Terrain().getBackMineralHoldPosition().isValid())
 		{
-			unit.unit()->move(Terrain().getMineralHoldPosition());
+			if (unit.unit()->getLastCommand().getTargetPosition() != Terrain().getBackMineralHoldPosition() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
+			{
+				unit.unit()->move(Terrain().getBackMineralHoldPosition());
+			}
+		}
+		else
+		{
+			if (unit.unit()->getLastCommand().getTargetPosition() != Terrain().getMineralHoldPosition() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
+			{
+				unit.unit()->move(Terrain().getMineralHoldPosition());
+			}
 		}
 		return;
 	}
@@ -365,7 +375,7 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 
 	if (bestPosition.isValid())
 	{
-		if (unit.unit()->getLastCommand().getTargetPosition() != Position(bestPosition) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move || unit.getPosition().getDistance(Position(bestPosition)) > 16)
+		if (unit.unit()->getLastCommand().getTargetPosition() != Position(bestPosition) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
 		{
 			unit.unit()->move(Position(bestPosition));
 		}
@@ -413,9 +423,9 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 	double best = 0.0;
 	double mobility, distance, threat;
 	// Search a 16x16 grid around the unit
-	for (int x = start.x - 8; x <= start.x + 8 + (unit.getType().tileWidth() * 4); x++)
+	for (int x = start.x - 8; x <= start.x + 8 + (unit.getType().width() / 8.0); x++)
 	{
-		for (int y = start.y - 8; y <= start.y + 8 + (unit.getType().tileHeight() * 4); y++)
+		for (int y = start.y - 8; y <= start.y + 8 + (unit.getType().height() / 8.0); y++)
 		{
 			if (!WalkPosition(x, y).isValid()) continue;
 			if (WalkPosition(x, y).getDistance(start) > 8) continue;

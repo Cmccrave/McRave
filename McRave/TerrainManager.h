@@ -15,7 +15,7 @@ class TerrainTrackerClass
 	Position enemyStartingPosition, playerStartingPosition;
 	TilePosition enemyStartingTilePosition, playerStartingTilePosition, FFEPosition;
 	TilePosition secondChoke, firstChoke;
-	Position mineralHold;
+	Position mineralHold, backMineralHold;
 
 public:
 	void onStart();
@@ -29,6 +29,7 @@ public:
 	Position getClosestEnemyBase(Position);
 	Position getClosestAllyBase(Position);
 	Position getMineralHoldPosition() { return mineralHold; }
+	Position getBackMineralHoldPosition() { return backMineralHold; }
 	
 	CPPath getPath() { return path; }
 	set <int>& getAllyTerritory() { return allyTerritory; }	

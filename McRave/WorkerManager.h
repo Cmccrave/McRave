@@ -30,6 +30,8 @@ public:
 	void reAssignWorker(WorkerInfo&);
 	void exploreArea(WorkerInfo&);
 
+	void shouldMoveToBuild(WorkerInfo&);
+
 	void storeWorker(Unit);
 	void removeWorker(Unit);
 };

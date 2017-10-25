@@ -92,19 +92,19 @@ void TerrainTrackerClass::updateChokes()
 		{
 			double largest = 0.0;
 			for (auto &choke : closestA->ChokePoints())
-			{				
+			{
 				if (choke && (Grids().getDistanceHome(choke->Center()) < closestChokeDistance || closestChokeDistance == 0.0))
 				{
 					firstChoke = TilePosition(choke->Center());
 					closestChokeDistance = Grids().getDistanceHome(choke->Center());
-				}				
+				}
 			}
 
 			for (auto &choke : closestA->ChokePoints())
 			{
 				if (choke && TilePosition(choke->Center()) != firstChoke && (Position(choke->Center()).getDistance(playerStartingPosition) / choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2)) < furthestChokeDistance || furthestChokeDistance == 0))
 				{
-					secondChoke = TilePosition(choke->Center());					
+					secondChoke = TilePosition(choke->Center());
 					furthestChokeDistance = Position(choke->Center()).getDistance(playerStartingPosition) / choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2));
 				}
 			}
@@ -118,7 +118,8 @@ void TerrainTrackerClass::updateChokes()
 	}
 	for (auto &base : Bases().getMyBases())
 	{
-		mineralHold = Position(base.second.getResourcesPosition());		
+		mineralHold = Position(base.second.getResourcesPosition());
+		backMineralHold = (Position(base.second.getResourcesPosition()) - Position(base.second.getPosition())) + Position(base.second.getResourcesPosition());
 	}
 }
 
@@ -187,7 +188,7 @@ Position TerrainTrackerClass::getClosestBaseCenter(Unit unit)
 	for (auto &base : theMap.GetArea(unit->getTilePosition())->Bases())
 	{
 		if (unit->getDistance(base.Center()) < closestD || closestD == 0.0)
-		{			
+		{
 			closestD = unit->getDistance(base.Center());
 			closestB = base.Center();
 		}
