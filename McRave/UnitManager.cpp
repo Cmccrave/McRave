@@ -12,8 +12,8 @@ void UnitTrackerClass::update()
 void UnitTrackerClass::updateUnits()
 {
 	// Reset global strengths
-	globalEnemyStrength = 0.0;
-	globalAllyStrength = 0.0;
+	globalEnemyGroundStrength = 0.0;
+	globalAllyGroundStrength = 0.0;
 	allyDefense = 0.0;
 	enemyDefense = 0.0;
 
@@ -25,7 +25,7 @@ void UnitTrackerClass::updateUnits()
 		if (unit.unit()->exists())	updateEnemy(unit); // If unit is visible, update it
 		if (!unit.unit()->exists() && unit.getPosition().isValid() && Broodwar->isVisible(TilePosition(unit.getPosition()))) unit.setPosition(Positions::None); // If unit is not visible but his position is, move it
 		if (unit.getType().isValid()) enemyComposition[unit.getType()] += 1; // If unit has a valid type, update enemy composition tracking
-		if (!unit.getType().isWorker() && !unit.getType().isBuilding()) globalEnemyStrength += max(unit.getVisibleGroundStrength(), unit.getVisibleAirStrength()); // If unit is not a worker or building, add it to global strength	
+		if (!unit.getType().isWorker() && !unit.getType().isBuilding()) globalEnemyGroundStrength += max(unit.getVisibleGroundStrength(), unit.getVisibleAirStrength()); // If unit is not a worker or building, add it to global strength	
 		if (unit.getType().isBuilding() && unit.getGroundDamage() > 0 && unit.unit()->isCompleted()) enemyDefense += unit.getVisibleGroundStrength(); // If unit is a building and deals damage, add it to global defense
 	}
 
@@ -46,9 +46,9 @@ void UnitTrackerClass::updateUnits()
 		updateLocalSimulation(unit);
 		updateStrategy(unit);
 
-		if (!unit.getType().isBuilding()) globalAllyStrength += max(unit.getVisibleGroundStrength(), unit.getVisibleAirStrength());	
+		if (!unit.getType().isBuilding()) globalAllyGroundStrength += max(unit.getVisibleGroundStrength(), unit.getVisibleAirStrength());	
 		if (unit.getType().isWorker() && Workers().getMyWorkers().find(unit.unit()) != Workers().getMyWorkers().end()) Workers().removeWorker(unit.unit()); // Remove the worker role if needed			
-		if ((unit.getType().isWorker() && (Grids().getResourceGrid(unit.getTilePosition()) == 0 || Grids().getEGroundThreat(unit.getWalkPosition()) == 0.0)) || (BuildOrder().getCurrentBuild() == "Sparks" && Units().getGlobalStrategy() != 1)) Workers().storeWorker(unit.unit()); // If this is a worker and is ready to go back to being a worker
+		if ((unit.getType().isWorker() && (Grids().getResourceGrid(unit.getTilePosition()) == 0 || Grids().getEGroundThreat(unit.getWalkPosition()) == 0.0)) || (BuildOrder().getCurrentBuild() == "Sparks" && Units().getGlobalGroundStrategy() != 1)) Workers().storeWorker(unit.unit()); // If this is a worker and is ready to go back to being a worker
 	}
 	return;
 }
@@ -180,7 +180,7 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 			// Else hold ramp and attack anything within range
 			else
 			{
-				if (Terrain().isInAllyTerritory(target.unit()))
+				if (Terrain().isInAllyTerritory(target.unit()) || unit.getPosition().getDistance(unit.getTargetPosition()) < 32)
 				{
 					unit.setStrategy(1);
 					return;
@@ -311,39 +311,50 @@ void UnitTrackerClass::updateGlobalSimulation()
 {
 	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
-		if (Strategy().isPlayPassive())	globalStrategy = 0;
-		else if (globalAllyStrength > globalEnemyStrength) globalStrategy = 1;
-		else if (Players().getPlayers().size() <= 1 && Players().getNumberTerran() > 0)	globalStrategy = 1;
-		else globalStrategy = 0;
+		double offset = 1.0;
+		if (Players().getNumberZerg() > 0) offset = 1.5;
+		if (Players().getNumberTerran() > 0) offset = 0.8;
+
+		if (Strategy().isPlayPassive())	globalGroundStrategy = 0;
+		else if (globalAllyGroundStrength > globalEnemyGroundStrength * offset) globalGroundStrategy = 1;
+		else if (Players().getPlayers().size() <= 1 && Players().getNumberTerran() > 0)	globalGroundStrategy = 1;
+		else globalGroundStrategy = 0;
 		return;
+
+		if (Strategy().isPlayPassive())	globalAirStrategy = 0;
+		else if (globalAllyGroundStrength > globalEnemyGroundStrength * offset) globalAirStrategy = 1;
+		else if (Players().getPlayers().size() <= 1 && Players().getNumberTerran() > 0)	globalAirStrategy = 1;
+		else globalAirStrategy = 0;
+		return;
+
 	}
 	else if (Broodwar->self()->getRace() == Races::Terran)
 	{
 		if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Ion_Thrusters))
 		{
-			if (globalAllyStrength > globalEnemyStrength)
+			if (globalAllyGroundStrength > globalEnemyGroundStrength)
 			{
-				globalStrategy = 1;
+				globalGroundStrategy = 1;
 				return;
 			}
 			else
 			{
-				globalStrategy = 0;
+				globalGroundStrategy = 0;
 				return;
 			}
 		}
 		else if (Broodwar->self()->hasResearched(TechTypes::Stim_Packs) && BuildOrder().getCurrentBuild() == "Sparks")
 		{
-			globalStrategy = 1;
+			globalGroundStrategy = 1;
 			return;
 		}
 		else
 		{
-			globalStrategy = 2;
+			globalGroundStrategy = 0;
 			return;
 		}
 	}
-	globalStrategy = 1;
+	globalGroundStrategy = 1;
 	return;
 }
 

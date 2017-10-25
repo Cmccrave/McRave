@@ -11,6 +11,7 @@ class BuildOrderTrackerClass
 	map <UnitType, int> buildingDesired;
 	bool getOpening = true, getTech = false, learnedOpener = false;
 	bool oneGateCore = false, forgeExpand = false;
+	bool bioBuild = false;
 	UnitType techUnit;
 	set <UnitType> techList;	
 	vector <string> buildNames;
@@ -28,6 +29,7 @@ public:
 	set <UnitType>& getTechList() { return techList; }
 	bool isOneGateCore() { return oneGateCore; }
 	bool isForgeExpand() { return forgeExpand; }
+	bool isBioBuild() { return bioBuild; }
 
 	void onEnd(bool);
 	void onStart();

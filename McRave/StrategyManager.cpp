@@ -138,6 +138,11 @@ void StrategyTrackerClass::terranStrategy()
 	{
 		lockedType.insert(UnitTypes::Terran_Marine);
 	}
+	if (!BuildOrder().isBioBuild())
+	{
+		lockedType.insert(UnitTypes::Terran_Medic);
+		lockedType.insert(UnitTypes::Terran_Firebat);
+	}
 	return;
 }
 

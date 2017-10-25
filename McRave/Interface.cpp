@@ -33,7 +33,7 @@ void InterfaceTrackerClass::drawInformation()
 	screenOffset = 0;
 
 	// Display global strength calculations	
-	Broodwar->drawTextScreen(575, 16, "%c%.2f/%.2f", Text::White, Units().getGlobalAllyStrength(), Units().getGlobalEnemyStrength());
+	Broodwar->drawTextScreen(575, 16, "%c%.2f/%.2f", Text::White, Units().getGlobalAllyGroundStrength(), Units().getGlobalEnemyGroundStrength());
 
 	// Display resources per minute
 	Broodwar->drawTextScreen(452, 16, "%c%.2f", Text::White, Resources().getMPM());

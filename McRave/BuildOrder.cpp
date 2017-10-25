@@ -341,7 +341,7 @@ void BuildOrderTrackerClass::protossSituational()
 	}
 
 	// Additional cannon for FFE logic (add on at most 2 at a time)
-	if (Strategy().isAllyFastExpand() && Units().getGlobalEnemyStrength() > Units().getGlobalAllyStrength() + Units().getAllyDefense())
+	if (Strategy().isAllyFastExpand() && Units().getGlobalEnemyGroundStrength() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense())
 	{
 		buildingDesired[UnitTypes::Protoss_Photon_Cannon] = min(2 + Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Photon_Cannon), 1 + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon));
 	}
@@ -356,7 +356,7 @@ void BuildOrderTrackerClass::protossSituational()
 	if (!getOpening)
 	{
 		// Expansion logic
-		if (!getTech && Resources().isMinSaturated() && Production().isProductionSat() && Production().getIdleLowProduction().size() == 0 && Units().getGlobalStrategy() == 1)
+		if (!getTech && Resources().isMinSaturated() && Production().isProductionSat() && Production().getIdleLowProduction().size() == 0 && Units().getGlobalGroundStrategy() == 1)
 		{
 			buildingDesired[UnitTypes::Protoss_Nexus] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) + 1;
 		}
@@ -425,7 +425,7 @@ void BuildOrderTrackerClass::terranSituational()
 	buildingDesired[UnitTypes::Terran_Supply_Depot] = min(22, (int)floor((Units().getSupply() / max(14, (16 - Broodwar->self()->allUnitCount(UnitTypes::Terran_Supply_Depot))))));
 
 	// Expansion logic
-	if (Units().getGlobalAllyStrength() > Units().getGlobalEnemyStrength() && Resources().isMinSaturated() && Production().isProductionSat() && Production().getIdleLowProduction().size() == 0)
+	if (Units().getGlobalAllyGroundStrength() > Units().getGlobalEnemyGroundStrength() && Resources().isMinSaturated() && Production().isProductionSat() && Production().getIdleLowProduction().size() == 0)
 	{
 		buildingDesired[UnitTypes::Terran_Command_Center] = Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) + 1;
 	}

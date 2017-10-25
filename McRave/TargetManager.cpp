@@ -61,7 +61,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		}
 
 		// If unit is loaded, don't target buildings
-		if (unit.unit()->isLoaded() && enemy.getType().isBuilding())
+		if (unit.getTransport() && enemy.getType().isBuilding())
 		{
 			continue;
 		}

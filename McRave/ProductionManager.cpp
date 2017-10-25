@@ -156,6 +156,24 @@ bool ProductionTrackerClass::canMake(Unit building, UnitType unit)
 	return false;
 }
 
+bool ProductionTrackerClass::canMake(UpgradeType upgrade)
+{
+	for (auto &unit : upgrade.whatUses())
+	{
+		if (!Strategy().isUnitLocked(unit) && Broodwar->self()->visibleUnitCount(unit) > 0 && Broodwar->self()->getUpgradeLevel(upgrade) <= 0 && !Broodwar->self()->isUpgrading(upgrade)) return true;
+	}
+	return false;
+}
+
+bool ProductionTrackerClass::canMake(TechType tech)
+{
+	for (auto &unit : tech.whatUses())
+	{
+		if (!Strategy().isUnitLocked(unit) && Broodwar->self()->visibleUnitCount(unit) > 0 && Broodwar->self()->hasResearched(tech) <= 0 && !Broodwar->self()->isResearching(tech)) return true;
+	}
+	return false;
+}
+
 void ProductionTrackerClass::updateReservedResources()
 {
 	// Reserved minerals for idle buildings, tech and upgrades
@@ -557,25 +575,13 @@ void ProductionTrackerClass::updateTerran()
 			// If this building researches things
 			for (auto &research : building.getType().researchesWhat())
 			{
-				for (auto &unit : research.whatUses())
-				{
-					if (Broodwar->self()->completedUnitCount(unit) > 0)
-					{
-						building.unit()->research(research);
-					}
-				}
+				if (canMake(research)) building.unit()->research(research);
 			}
 
 			// If this building upgrades things
 			for (auto &upgrade : building.getType().upgradesWhat())
 			{
-				for (auto &unit : upgrade.whatUses())
-				{
-					if (Broodwar->self()->completedUnitCount(unit) > 0)
-					{
-						building.unit()->upgrade(upgrade);
-					}
-				}
+				if (canMake(upgrade)) building.unit()->upgrade(upgrade);
 			}
 
 		}

@@ -18,10 +18,10 @@ class UnitTrackerClass
 
 	set<Unit> returnValues;
 
-	double globalAllyStrength, globalEnemyStrength;
+	double globalAllyGroundStrength, globalEnemyGroundStrength;
+	double globalAllyAirStrength, globalEnemyAirStrength;
 	double allyDefense, enemyDefense;
-	int supply, globalStrategy, fudgeWin, fudgeLoss;
-	double uncertainty;
+	int supply, globalGroundStrategy, globalAirStrategy;
 public:
 
 	map<Unit, UnitInfo>& getAllyUnits() { return allyUnits; }
@@ -35,18 +35,21 @@ public:
 	UnitInfo& getAllyUnit(Unit);
 	UnitInfo& getEnemyUnit(Unit);
 
-	double getGlobalAllyStrength() { return globalAllyStrength; }
-	double getGlobalEnemyStrength() { return globalEnemyStrength; }
+	double getGlobalAllyGroundStrength() { return globalAllyGroundStrength; }
+	double getGlobalEnemyGroundStrength() { return globalEnemyGroundStrength; }
+	double getGlobalAllyAirStrength() { return globalAllyAirStrength; }
+	double getGlobalEnemyAirStrength() { return globalEnemyAirStrength; }
 	double getAllyDefense() { return allyDefense; }
 	double getEnemyDefense() { return enemyDefense; }
-	int getGlobalStrategy() { return globalStrategy; }
+	int getGlobalGroundStrategy() { return globalGroundStrategy; }
+	int getGlobalAirStrategy() { return globalAirStrategy; }
 	int getSupply() { return supply; }
 
 	// Updating
 	void update();
 	void updateUnits();
 	void updateEnemy(UnitInfo&);
-	void updateAlly(UnitInfo&);	
+	void updateAlly(UnitInfo&);
 	void updateLocalSimulation(UnitInfo&);
 	void updateStrategy(UnitInfo&);
 	void updateGlobalSimulation();

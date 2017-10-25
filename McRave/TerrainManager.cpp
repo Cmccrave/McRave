@@ -108,8 +108,17 @@ void TerrainTrackerClass::updateChokes()
 					furthestChokeDistance = Position(choke->Center()).getDistance(playerStartingPosition) / choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2));
 				}
 			}
+
+			for (auto &area : closestA->AccessibleNeighbours())
+			{
+				if (area->AccessibleFrom(theMap.GetArea(playerStartingTilePosition))) allyTerritory.insert(area->Id());
+			}
 			FFEPosition = TilePosition(int(secondChoke.x*0.35 + natural.x*0.65), int(secondChoke.y*0.35 + natural.y*0.65));
 		}
+	}
+	for (auto &base : Bases().getMyBases())
+	{
+		mineralHold = Position(base.second.getResourcesPosition());		
 	}
 }
 

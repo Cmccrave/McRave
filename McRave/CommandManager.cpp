@@ -49,7 +49,7 @@ void CommandTrackerClass::updateAlliedUnits()
 			}
 
 			// If globally behind
-			if (Units().getGlobalStrategy() == 0)
+			if ((Units().getGlobalGroundStrategy() == 0 && !unit.getType().isFlyer()) || (Units().getGlobalAirStrategy() == 0 && unit.getType().isFlyer()))
 			{
 				// Check if we have a target
 				if (unit.getTarget())
@@ -73,7 +73,7 @@ void CommandTrackerClass::updateAlliedUnits()
 			}
 
 			// If globally ahead
-			else if (Units().getGlobalStrategy() == 1)
+			else if ((Units().getGlobalGroundStrategy() == 1 && !unit.getType().isFlyer()) || (Units().getGlobalAirStrategy() == 1 && unit.getType().isFlyer()))
 			{
 				// Check if we have a target
 				if (unit.getTarget())
@@ -237,7 +237,7 @@ void CommandTrackerClass::attack(UnitInfo& unit)
 		if ((!target.getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() > 0 || target.getType().isFlyer() && unit.unit()->getAirWeaponCooldown() > 0 || (unit.getTarget()->exists() && (unit.getTarget()->isCloaked() || unit.getTarget()->isBurrowed()) && !unit.getTarget()->isDetected())))
 		{
 			if (moveTo) approach(unit);
-			else if (moveAway) flee(unit);			
+			else if (moveAway) flee(unit);
 		}
 		else if ((!target.getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() <= 0) || (target.getType().isFlyer() && unit.unit()->getAirWeaponCooldown() <= 0))
 		{
@@ -325,14 +325,11 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 	// Early on, defend mineral line - TODO: Use ordered bases to check which one to hold
 	if (!Strategy().isHoldChoke())
 	{
-		for (auto &base : Bases().getMyBases())
+		if (unit.unit()->getLastCommand().getTargetPosition() != Terrain().getMineralHoldPosition() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
 		{
-			if (unit.unit()->getLastCommand().getTargetPosition() != Position(base.second.getResourcesPosition()) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
-			{
-				unit.unit()->move(Position(base.second.getResourcesPosition()));
-			}
-			return;
+			unit.unit()->move(Terrain().getMineralHoldPosition());
 		}
+		return;
 	}
 
 	// Defend chokepoint with concave
@@ -366,14 +363,18 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 		}
 	}
 
-	if (bestPosition.isValid() && bestPosition != start)
+	if (bestPosition.isValid())
 	{
-		if ((unit.unit()->getLastCommand().getTargetPosition() != Position(bestPosition) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move))
+		if (unit.unit()->getLastCommand().getTargetPosition() != Position(bestPosition) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move || unit.getPosition().getDistance(Position(bestPosition)) > 16)
 		{
 			unit.unit()->move(Position(bestPosition));
 		}
 		unit.setDestination(Position(bestPosition));
 		Grids().updateAllyMovement(unit.unit(), bestPosition);
+	}
+	else
+	{
+		flee(unit);
 	}
 	return;
 }
@@ -440,10 +441,6 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 		{
 			unit.unit()->move(Position(bestPosition));
 		}
-	}
-	else
-	{
-		defend(unit);
 	}
 	return;
 }

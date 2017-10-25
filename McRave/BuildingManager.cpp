@@ -425,10 +425,7 @@ set<Unit> BuildingTrackerClass::getAllyBuildingsFilter(UnitType type)
 
 BuildingInfo& BuildingTrackerClass::getAllyBuilding(Unit building)
 {
-	if (myBuildings.find(building) != myBuildings.end())
-	{
-		return myBuildings[building];
-	}
+	if (myBuildings.find(building) != myBuildings.end()) return myBuildings[building];
 	assert();
 	return BuildingInfo();
 }

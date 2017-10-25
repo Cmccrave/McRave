@@ -24,5 +24,6 @@ void BuildOrderTrackerClass::Sparks()
 	buildingDesired[UnitTypes::Terran_Refinery] = (Units().getSupply() >= 40);
 	buildingDesired[UnitTypes::Terran_Academy] = (Units().getSupply() >= 42);
 	getOpening = Units().getSupply() < 60;
+	bioBuild = true;
 	return;
 }
