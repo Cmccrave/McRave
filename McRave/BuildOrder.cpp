@@ -347,7 +347,7 @@ void BuildOrderTrackerClass::protossSituational()
 	}
 
 	// Shield battery logic
-	if (Players().getNumberTerran() == 0 && Strategy().isRush() && !Strategy().isAllyFastExpand())
+	if ((Players().getNumberTerran() == 0 && Strategy().isRush() && !Strategy().isAllyFastExpand()) || (oneGateCore && Players().getNumberZerg() > 0 && Units().getGlobalGroundStrategy() == 0))
 	{
 		buildingDesired[UnitTypes::Protoss_Shield_Battery] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core);
 	}	
@@ -356,7 +356,7 @@ void BuildOrderTrackerClass::protossSituational()
 	if (!getOpening)
 	{
 		// Expansion logic
-		if (!getTech && Resources().isMinSaturated() && Production().isProductionSat() && Production().getIdleLowProduction().size() == 0 && Units().getGlobalGroundStrategy() == 1)
+		if (techUnit == UnitTypes::None && Resources().isMinSaturated() && Production().isProductionSat() && Production().getIdleLowProduction().size() == 0 && Units().getGlobalGroundStrategy() == 1)
 		{
 			buildingDesired[UnitTypes::Protoss_Nexus] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) + 1;
 		}

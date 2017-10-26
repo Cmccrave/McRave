@@ -76,9 +76,8 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 		unit.getType().isFlyer() ? enemyRange = enemy.getAirRange() + (enemy.getType().width() / 2.0) : enemyRange = enemy.getGroundRange() + (enemy.getType().width() / 2.0);
 		enemy.getType().isFlyer() ? unitRange = unit.getAirRange() + (unit.getType().width() / 2.0) : unitRange = unit.getGroundRange() + (unit.getType().width() / 2.0);
 
-		distance = (8.0 * abs(Grids().getDistanceHome(enemy.getWalkPosition()) - Grids().getDistanceHome(WalkPosition(unit.getEngagePosition())))) - enemyRange;
-		if (distance / enemy.getSpeed() > simulationTime) continue;
-
+		distance = 8.0 * abs(Grids().getDistanceHome(enemy.getWalkPosition()) - Grids().getDistanceHome(WalkPosition(unit.getEngagePosition()))) - enemyRange;
+		
 		if (enemy.getSpeed() > 0.0)
 		{
 			enemyToEngage = max(0.0, (enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange) / enemy.getSpeed());
@@ -89,6 +88,8 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 			enemyToEngage = max(0.0, (enemy.getPosition().getDistance(unit.getPosition()) - enemyRange) / unit.getSpeed());
 			enemy.getPosition().getDistance(unit.getEngagePosition()) <= enemyRange ? simRatio = simulationTime - enemyToEngage : simRatio = 0.0;
 		}
+
+		if (distance / enemy.getSpeed() > simulationTime) continue;
 
 		// Situations where an enemy should be treated as stronger than it actually is
 		if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && !enemy.unit()->isDetected()) simRatio = simRatio * 5.0;
@@ -123,8 +124,8 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 	}
 
 	// Store the difference of strengths
-	enemyLocalGroundStrength > 0 ? unit.setGroundLocal(allyLocalGroundStrength / enemyLocalGroundStrength) : unit.setGroundLocal(2.0);
-	enemyLocalAirStrength > 0 ? unit.setAirLocal(allyLocalAirStrength / enemyLocalAirStrength) : unit.setAirLocal(2.0);
+	enemyLocalGroundStrength > 0.0 ? unit.setGroundLocal(allyLocalGroundStrength / enemyLocalGroundStrength) : unit.setGroundLocal(2.0);
+	enemyLocalAirStrength > 0.0 ? unit.setAirLocal(allyLocalAirStrength / enemyLocalAirStrength) : unit.setAirLocal(2.0);
 	return;
 }
 
@@ -157,9 +158,15 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 	// If unit is in ally territory
 	if (Terrain().isInAllyTerritory(unit.unit()) && decisionGlobal == 0)
 	{
-		// If unit is melee
-		if (max(unit.getGroundRange(), unit.getAirRange()) <= 32)
+		if (!unit.getTarget()->exists())
 		{
+			unit.setStrategy(2);
+			return;
+		}
+
+		//// If unit is melee
+		//if (max(unit.getGroundRange(), unit.getAirRange()) <= 32)
+		//{
 			// If against rush and not ready to wall up, fight in mineral line
 			if (Strategy().isRush() || !Strategy().isHoldChoke())
 			{
@@ -178,7 +185,7 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 			// Else hold ramp and attack anything within range
 			else
 			{
-				if (Terrain().isInAllyTerritory(target.unit()) || unit.getPosition().getDistance(unit.getTargetPosition()) < 32)
+				if (Terrain().isInAllyTerritory(target.unit()) || unit.getPosition().getDistance(unit.getTargetPosition()) < unit.getGroundRange())
 				{
 					unit.setStrategy(1);
 					return;
@@ -189,39 +196,39 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 					return;
 				}
 			}
-		}
+		/*}*/
 
-		// If unit is ranged
-		else if (max(unit.getGroundRange(), unit.getAirRange()) > 32)
-		{
-			// If against rush and not ready to wall up, fight in mineral line
-			if (Strategy().isRush() || !Strategy().isHoldChoke())
-			{
-				if (Terrain().isInAllyTerritory(unit.getTarget()))
-				{
-					unit.setStrategy(1);
-					return;
-				}
-				else
-				{
-					unit.setStrategy(2);
-					return;
-				}
-			}
-			else if (Strategy().isHoldChoke())
-			{
-				if ((unit.getPosition().getDistance(unit.getTargetPosition()) <= max(unit.getGroundRange(), unit.getAirRange())) || Terrain().isInAllyTerritory(target.unit()))
-				{
-					unit.setStrategy(1);
-					return;
-				}
-				else
-				{
-					unit.setStrategy(2);
-					return;
-				}
-			}
-		}
+		//// If unit is ranged
+		//else if (max(unit.getGroundRange(), unit.getAirRange()) > 32)
+		//{
+		//	// If against rush and not ready to wall up, fight in mineral line
+		//	if (Strategy().isRush() || !Strategy().isHoldChoke())
+		//	{
+		//		if (Grids().getBaseGrid(unit.getTarget()->getTilePosition()) > 0)
+		//		{
+		//			unit.setStrategy(1);
+		//			return;
+		//		}
+		//		else
+		//		{
+		//			unit.setStrategy(2);
+		//			return;
+		//		}
+		//	}
+		//	else if (Strategy().isHoldChoke())
+		//	{
+		//		if ((unit.getPosition().getDistance(unit.getTargetPosition()) <= max(unit.getGroundRange(), unit.getAirRange())) || Terrain().isInAllyTerritory(target.unit()))
+		//		{
+		//			unit.setStrategy(1);
+		//			return;
+		//		}
+		//		else
+		//		{
+		//			unit.setStrategy(2);
+		//			return;
+		//		}
+		//	}
+		//}
 	}
 
 	if (unit.getPosition().getDistance(unit.getTargetPosition()) > 640.0)

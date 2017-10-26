@@ -90,17 +90,12 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 			transport.setDestination(cargo.getTargetPosition());
 
 			// If cargo wants to fight, find a spot to unload
-			if (cargo.getStrategy() == 1)
+			if (cargo.getStrategy() == 1 && transport.getPosition().getDistance(transport.getDestination()) <= cargo.getGroundRange() && Broodwar->getGroundHeight(transport.getTilePosition()) == Broodwar->getGroundHeight(cargo.getTargetTilePosition()))
 			{
 				transport.setUnloading(true);
-
-				// If in a suitable position to drop, unload the cargo
-				if (transport.getPosition().getDistance(transport.getDestination()) <= cargo.getGroundRange() && Broodwar->getGroundHeight(transport.getTilePosition()) == Broodwar->getGroundHeight(cargo.getTargetTilePosition()))
-				{
-					transport.unit()->unload(cargo.unit());
-					transport.setLastDropFrame(Broodwar->getFrameCount());
-					continue;
-				}
+				transport.unit()->unload(cargo.unit());
+				transport.setLastDropFrame(Broodwar->getFrameCount());
+				continue;
 			}
 		}
 	}
@@ -110,7 +105,7 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 void TransportTrackerClass::updateMovement(TransportInfo& transport)
 {
 	// If loading, ignore movement commands
-	if (transport.isLoading() || transport.isUnloading()) return;
+	if (transport.isLoading()) return;
 
 	Position bestPosition = transport.getDestination();
 	WalkPosition start = transport.getWalkPosition();
@@ -124,7 +119,7 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 		{
 			if (!WalkPosition(x, y).isValid()) continue;
 			if (Position(WalkPosition(x, y)).getDistance(Position(start)) <= 64) continue;
-			if (transport.isUnloading() && !Util().isMobile(start, WalkPosition(x, y), transport.getType()) && !Util().isSafe(WalkPosition(x,y), UnitTypes::Protoss_Reaver, true, true)) continue;
+			if (transport.isUnloading() && !Util().isMobile(start, WalkPosition(x, y), transport.getType()) && !Util().isSafe(WalkPosition(x, y), UnitTypes::Protoss_Reaver, true, true)) continue;
 
 			double distance = transport.getDestination().getDistance(Position(WalkPosition(x, y)));
 			double threat = Grids().getEGroundThreat(x, y) + Grids().getEAirThreat(x, y);

@@ -111,7 +111,13 @@ void TerrainTrackerClass::updateChokes()
 
 			for (auto &area : closestA->AccessibleNeighbours())
 			{
-				if (area->AccessibleFrom(theMap.GetArea(playerStartingTilePosition))) allyTerritory.insert(area->Id());
+				for (auto & choke : area->ChokePoints())
+				{
+					if (TilePosition(choke->Center()) == firstChoke && allyTerritory.find(area->Id()) == allyTerritory.end())
+					{
+						allyTerritory.insert(area->Id());
+					}
+				}
 			}
 			FFEPosition = TilePosition(int(secondChoke.x*0.35 + natural.x*0.65), int(secondChoke.y*0.35 + natural.y*0.65));
 		}

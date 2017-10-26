@@ -204,7 +204,7 @@ void CommandTrackerClass::attack(UnitInfo& unit)
 		}
 
 		// If kiting unnecessary, disable
-		if (unit.getTarget()->getType().isBuilding() || unit.getType().isWorker())
+		if (unit.getTarget()->getType().isBuilding())
 		{
 			moveAway = false;
 		}
@@ -373,7 +373,7 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 		}
 	}
 
-	if (bestPosition.isValid())
+	if (bestPosition.isValid() && bestPosition != start)
 	{
 		if (unit.unit()->getLastCommand().getTargetPosition() != Position(bestPosition) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
 		{
@@ -382,15 +382,17 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 		unit.setDestination(Position(bestPosition));
 		Grids().updateAllyMovement(unit.unit(), bestPosition);
 	}
-	else
-	{
-		flee(unit);
-	}
 	return;
 }
 
 void CommandTrackerClass::flee(UnitInfo& unit)
 {
+	if (unit.getType().isWorker() && Grids().getResourceGrid(unit.getTilePosition()) > 0)
+	{
+		unit.unit()->gather(unit.unit()->getClosestUnit(Filter::IsMineralField, 128));
+		return;
+	}
+
 	// If it's a tank, make sure we're unsieged before moving -  TODO: Check that target has velocity and > 512 or no velocity and < tank range
 	if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
 	{
@@ -428,9 +430,9 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 		for (int y = start.y - 8; y <= start.y + 8 + (unit.getType().height() / 8.0); y++)
 		{
 			if (!WalkPosition(x, y).isValid()) continue;
-			if (WalkPosition(x, y).getDistance(start) > 8) continue;
+			if (WalkPosition(x, y).getDistance(start) > 16) continue;
 
-			Terrain().isInAllyTerritory(unit.unit()) ? distance = unit.getPosition().getDistance(unit.getTargetPosition()) : distance = double(Grids().getDistanceHome(x, y));	// If inside territory			
+			Terrain().isInAllyTerritory(unit.unit()) ? distance = unit.getPosition().getDistance(unit.getTargetPosition()) : distance = double(Grids().getDistanceHome(x, y)); // If inside territory			
 			unit.getType().isFlyer() ? mobility = 1.0 : mobility = double(Grids().getMobilityGrid(x, y)); // If unit is a flyer, ignore mobility
 			unit.getType().isFlyer() ? threat = max(0.1, Grids().getEAirThreat(x, y)) : threat = max(0.1, Grids().getEGroundThreat(x, y)); // If unit is a flyer, use air threat
 

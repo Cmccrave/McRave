@@ -123,7 +123,7 @@ void BuildOrderTrackerClass::ZealotRush()
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 18) + (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) > 0);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 40;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 44;
-	getOpening = Units().getSupply() < 48;
+	getOpening = Units().getSupply() < 52;
 	return;
 }
 

@@ -231,7 +231,7 @@ void ProductionTrackerClass::updateProtoss()
 			// Cybernetics Core
 			else if (building.getType() == UnitTypes::Protoss_Cybernetics_Core)
 			{
-				if (!Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) && idleLowProduction.size() == 0 /*&& Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon) >= 3*/)
+				if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0 && idleLowProduction.size() == 0 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon) >= 3)
 				{
 					if (Broodwar->self()->minerals() >= UpgradeTypes::Singularity_Charge.mineralPrice() && Broodwar->self()->gas() >= UpgradeTypes::Singularity_Charge.gasPrice())
 					{
@@ -381,6 +381,12 @@ void ProductionTrackerClass::updateProtoss()
 					if (Broodwar->self()->minerals() >= UnitTypes::Protoss_Corsair.mineralPrice() + Buildings().getQueuedMineral() && Broodwar->self()->gas() >= UnitTypes::Protoss_Corsair.gasPrice() + Buildings().getQueuedGas())
 					{
 						building.unit()->train(UnitTypes::Protoss_Corsair);
+						idleHighProduction.erase(building.unit());
+						return;
+					}
+					else
+					{
+						idleHighProduction.emplace(building.unit(), UnitTypes::Protoss_Arbiter);
 					}
 				}
 
@@ -531,6 +537,12 @@ void ProductionTrackerClass::updateProtoss()
 void ProductionTrackerClass::updateTerran()
 {
 	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= min(6, (3 * Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Command_Center))))
+	{
+		productionSat = true;
+	}
+	// Gateway saturation - max of 12 so the bot can exceed 4 bases
+	int techSize = max(0, int(BuildOrder().getTechList().size() - 1));
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= min(12, 3 + (2 * techSize)))
 	{
 		productionSat = true;
 	}

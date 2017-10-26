@@ -70,7 +70,7 @@ void BuildingTrackerClass::constructBuildings()
 	for (auto &worker : Workers().getMyWorkers())
 	{
 		if (worker.second.getBuildingType().isValid() && worker.second.getBuildPosition().isValid())
-		{			
+		{
 			buildingsQueued[worker.second.getBuildPosition()] = worker.second.getBuildingType();
 			queuedMineral += worker.second.getBuildingType().mineralPrice();
 			queuedGas += worker.second.getBuildingType().gasPrice();
@@ -87,7 +87,7 @@ void BuildingTrackerClass::storeBuilding(Unit building)
 	b.setPosition(building->getPosition());
 	b.setWalkPosition(Util().getWalkPosition(building));
 	b.setTilePosition(building->getTilePosition());
-	Grids().updateBuildingGrid(b);	
+	Grids().updateBuildingGrid(b);
 	return;
 }
 
@@ -112,7 +112,7 @@ TilePosition BuildingTrackerClass::getBuildLocationNear(UnitType building, TileP
 	while (length < 50)
 	{
 		// If we can build here, return this tile position		
-		if (TilePosition(x, y).isValid() && canBuildHere(building, TilePosition(x, y), ignoreCond) && canQueueHere(building, TilePosition(x,y), ignoreCond))
+		if (TilePosition(x, y).isValid() && canBuildHere(building, TilePosition(x, y), ignoreCond) && canQueueHere(building, TilePosition(x, y), ignoreCond))
 		{
 			return TilePosition(x, y);
 		}
@@ -215,20 +215,18 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	}
 
 	// If we are being rushed and need a battery
-	if (Strategy().isRush())
+	if (building == UnitTypes::Protoss_Shield_Battery)
 	{
-		if (building == UnitTypes::Protoss_Shield_Battery)
+		if (Strategy().isAllyFastExpand())
 		{
-			if (Strategy().isAllyFastExpand())
-			{
-				return getBuildLocationNear(building, Terrain().getSecondChoke());
-			}
-			else
-			{
-				return getBuildLocationNear(building, Terrain().getFirstChoke());
-			}
+			return getBuildLocationNear(building, Terrain().getSecondChoke());
+		}
+		else
+		{
+			return getBuildLocationNear(building, Terrain().getFirstChoke());
 		}
 	}
+
 
 	// For each base, check if there's a Pylon or Cannon needed
 	for (auto &base : Bases().getMyBases())
@@ -291,7 +289,7 @@ bool BuildingTrackerClass::canBuildHere(UnitType building, TilePosition buildTil
 	{
 		return false;
 	}
-	if (building == UnitTypes::Protoss_Shield_Battery && Broodwar->getUnitsInRadius(Position(buildTilePosition), 128, Filter::IsResourceDepot).size() == 0)
+	if (building == UnitTypes::Protoss_Shield_Battery && Terrain().getMineralHoldPosition().getDistance(Position(buildTilePosition)) > 160)
 	{
 		return false;
 	}
@@ -326,7 +324,7 @@ bool BuildingTrackerClass::canBuildHere(UnitType building, TilePosition buildTil
 				if (!Broodwar->isBuildable(TilePosition(x, y), true))
 				{
 					return false;
-				}				
+				}
 			}
 			else
 			{

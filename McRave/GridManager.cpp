@@ -16,14 +16,14 @@ void GridTrackerClass::update()
 void GridTrackerClass::reset()
 {
 	//// Temp debugging for tile positions
-	//for (int x = 0; x <= Broodwar->mapWidth(); x++)
+	//for (int x = 0; x <= Broodwar->mapWidth() * 4; x++)
 	//{
-	//	for (int y = 0; y <= Broodwar->mapHeight(); y++)
+	//	for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
 	//	{
-	//		if (resourceGrid[x][y] > 0)
+	//		if (eGroundThreat[x][y] > 0)
 	//		{
-	//			//Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
-	//			Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
+	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
+	//			//Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
 	//		}
 	//	}
 	//}
@@ -76,16 +76,18 @@ void GridTrackerClass::updateAllyGrids()
 	{
 		UnitInfo &unit = u.second;
 		if (unit.getType() == UnitTypes::Protoss_Arbiter || unit.getType() == UnitTypes::Protoss_Observer) continue;
-		int radius = unit.getType().tileWidth() * 4 + int((unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0);
+		double width = double(unit.getType().width());
+		int walkWidth = int(double(unit.getType().width()) / 8.0);
+		int radius = int((unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0);
 		WalkPosition start = unit.getWalkPosition();
 
-		for (int x = start.x - radius; x <= start.x + radius; x++)
+		for (int x = start.x - radius; x <= start.x + radius + walkWidth; x++)
 		{
-			for (int y = start.y - radius; y <= start.y + radius; y++)
+			for (int y = start.y - radius; y <= start.y + radius + walkWidth; y++)
 			{
 				if (!WalkPosition(x, y).isValid()) continue;
 
-				double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(unit.getPosition()));
+				double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(unit.getPosition()) - (width / 2.0));
 
 				// Cluster grids
 				if (start.getDistance(WalkPosition(x, y)) <= 20)
@@ -171,18 +173,20 @@ void GridTrackerClass::updateEnemyGrids()
 	{
 		UnitInfo &unit = u.second;
 		double width = double(unit.getType().width());
+		int walkWidth = int(double(unit.getType().width()) / 8.0);
 		double gReach = 0.0, aReach = 0.0;
+		double gRange = unit.getGroundRange(), aRange = unit.getAirRange();
 		int radius = 0;
 		WalkPosition start = unit.getWalkPosition();
 
 		if (unit.getType().isWorker() && unit.unit()->exists() && (!Terrain().isInAllyTerritory(unit.unit()) || (Broodwar->getFrameCount() - unit.getLastAttackFrame() < 500)))
 		{
-			radius = (unit.getType().width() + int(unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange()))) / 8.0;
+			radius = (int(unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange()))) / 8.0;
 			gReach = unit.getGroundRange() + unit.getSpeed();
 		}
 		else
 		{
-			radius = (unit.getType().width() + int(unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange()))) / 8.0;
+			radius = (int(unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange()))) / 8.0;
 			gReach = unit.getGroundRange() + unit.getSpeed();
 			aReach = unit.getAirRange() + unit.getSpeed();
 		}
@@ -193,9 +197,9 @@ void GridTrackerClass::updateEnemyGrids()
 			radius = 40;
 		}
 
-		for (int x = start.x - radius; x <= start.x + radius; x++)
+		for (int x = start.x - radius; x <= start.x + radius + walkWidth; x++)
 		{
-			for (int y = start.y - radius; y <= start.y + radius; y++)
+			for (int y = start.y - radius; y <= start.y + radius + walkWidth; y++)
 			{
 				if (!WalkPosition(x, y).isValid()) continue;
 
@@ -229,15 +233,26 @@ void GridTrackerClass::updateEnemyGrids()
 				}
 
 				// Threat grids
-				if (distance <= gReach)
+				if (distance <= gRange)
 				{
 					resetGrid[x][y] = true;
-					eGroundThreat[x][y] += max(0.1, unit.getMaxGroundStrength() / distance);
+					eGroundThreat[x][y] += unit.getMaxGroundStrength();
 				}
-				if (distance <= aReach)
+				else if (distance <= gReach)
 				{
 					resetGrid[x][y] = true;
-					eAirThreat[x][y] += max(0.1, unit.getMaxAirStrength() / distance);
+					eGroundThreat[x][y] += max(0.1, unit.getMaxGroundStrength() / (distance - gRange));
+				}
+
+				if (distance <= aRange)
+				{
+					resetGrid[x][y] = true;
+					eAirThreat[x][y] += unit.getMaxAirStrength();
+				}
+				else if (distance <= aReach)
+				{
+					resetGrid[x][y] = true;
+					eAirThreat[x][y] += max(0.1, unit.getMaxAirStrength() / (distance - aRange));
 				}
 
 				// Detection grid

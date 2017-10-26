@@ -127,8 +127,6 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 			}
 		}
 	}
-
-	Broodwar->drawLineMap(worker.getPosition(), bestPosition, Broodwar->self()->getColor());
 	if (bestPosition.isValid() && bestPosition != Position(start) && worker.unit()->getLastCommand().getTargetPosition() != bestPosition)
 	{
 		worker.unit()->move(bestPosition);
@@ -264,7 +262,7 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 	}
 
 	// If we need to use workers for defense - TEMP Removed probe pull stuff
-	if ((Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0 && Grids().getResourceGrid(worker.getTilePosition()) > 0) || (BuildOrder().getCurrentBuild() == "Sparks" && Units().getGlobalGroundStrategy() == 1))
+	if ((Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0 && Grids().getResourceGrid(worker.getTilePosition()) > 0 && Units().getSupply() < 80) || (BuildOrder().getCurrentBuild() == "Sparks" && Units().getGlobalGroundStrategy() == 1))
 	{
 		Units().storeAlly(worker.unit());
 		return;
