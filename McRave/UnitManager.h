@@ -45,6 +45,10 @@ public:
 	int getGlobalAirStrategy() { return globalAirStrategy; }
 	int getSupply() { return supply; }
 
+	bool shouldAttack(UnitInfo&);
+	bool shouldDefend(UnitInfo&);
+	bool shouldRetreat(UnitInfo&);
+
 	// Updating
 	void update();
 	void updateUnits();

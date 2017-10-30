@@ -32,7 +32,7 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit)
 
 	double range, damage, hp;
 	range = cbrt(unit.getGroundRange());
-	hp = cbrt((unit.getType().maxHitPoints() + (unit.getType().maxShields() / 2.0)) / 10.0);
+	hp = cbrt((unit.getType().maxHitPoints() + unit.getType().maxShields()) / 10.0);
 
 	if (unit.getType().groundWeapon().damageCooldown() > 0)
 	{
@@ -105,13 +105,17 @@ double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit)
 		return 2.5;
 	}
 	double range, damage, hp;
-	hp = cbrt((unit.getType().maxHitPoints() + (unit.getType().maxShields() / 2.0)) / 10.0);
+	hp = cbrt((unit.getType().maxHitPoints() + unit.getType().maxShields()) / 10.0);
 	damage = unit.getAirDamage() / double(unit.getType().airWeapon().damageCooldown());
 	range = cbrt(unit.getAirRange());
 
 	if (unit.getType().airWeapon().damageCooldown() > 0)
 	{
 		damage = unit.getAirDamage() / double(unit.getType().airWeapon().damageCooldown());
+	}
+	else if (unit.getType() == UnitTypes::Terran_Bunker)
+	{
+		damage = unit.getAirDamage() / 15.0;
 	}
 	else
 	{
@@ -427,7 +431,7 @@ set<WalkPosition> UtilTrackerClass::getWalkPositionsUnderUnit(Unit unit)
 bool UtilTrackerClass::isSafe(WalkPosition end, UnitType unitType, bool groundCheck, bool airCheck)
 {
 	int width = unitType.width() / 8;
-	int halfWidth = 1 + width / 2;
+	int halfWidth = width / 2;
 	for (int x = end.x - halfWidth; x <= end.x + halfWidth; x++)
 	{
 		for (int y = end.y - halfWidth; y <= end.y + halfWidth; y++)
@@ -454,7 +458,7 @@ bool UtilTrackerClass::isMobile(WalkPosition start, WalkPosition end, UnitType u
 {
 	if (unitType.isFlyer()) return true;
 	int walkWidth = unitType.width() / 8;
-	int halfWidth = 1 + walkWidth / 2;
+	int halfWidth = walkWidth / 2;
 	for (int x = end.x - halfWidth; x <= end.x + halfWidth; x++)
 	{
 		for (int y = end.y - halfWidth; y <= end.y + halfWidth; y++)

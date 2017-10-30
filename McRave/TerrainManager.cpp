@@ -61,7 +61,7 @@ void TerrainTrackerClass::updateChokes()
 				allBaseLocations.emplace(base.Location());
 			}
 		}
-	}
+	}	
 
 	// Establish FFE position	
 	if (Broodwar->getFrameCount() > 100)
@@ -120,6 +120,10 @@ void TerrainTrackerClass::updateChokes()
 				}
 			}
 			FFEPosition = TilePosition(int(secondChoke.x*0.35 + natural.x*0.65), int(secondChoke.y*0.35 + natural.y*0.65));
+			if (BuildOrder().isForgeExpand() && FFEPosition.isValid() && theMap.GetArea(FFEPosition))
+			{
+				allyTerritory.insert(theMap.GetArea(FFEPosition)->Id());
+			}
 		}
 	}
 	for (auto &base : Bases().getMyBases())

@@ -20,10 +20,22 @@ void GridTrackerClass::reset()
 	//{
 	//	for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
 	//	{
-	//		if (eGroundThreat[x][y] > 0)
+	//		if (eGroundThreat[x][y] > 0 && eGroundThreat[x][y] < 2)
 	//		{
 	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
 	//			//Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
+	//		}
+	//		if (eGroundThreat[x][y] >= 2 && eGroundThreat[x][y] < 4)
+	//		{
+	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Blue);				
+	//		}
+	//		if (eGroundThreat[x][y] >= 4 && eGroundThreat[x][y] < 6)
+	//		{
+	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Green);
+	//		}
+	//		if (eGroundThreat[x][y] >= 6)
+	//		{
+	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Red);
 	//		}
 	//	}
 	//}
@@ -181,12 +193,12 @@ void GridTrackerClass::updateEnemyGrids()
 
 		if (unit.getType().isWorker() && unit.unit()->exists() && (!Terrain().isInAllyTerritory(unit.unit()) || (Broodwar->getFrameCount() - unit.getLastAttackFrame() < 500)))
 		{
-			radius = (int(unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange()))) / 8.0;
+			radius = int((unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0);
 			gReach = unit.getGroundRange() + unit.getSpeed();
 		}
 		else
 		{
-			radius = (int(unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange()))) / 8.0;
+			radius = int((unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0);
 			gReach = unit.getGroundRange() + unit.getSpeed();
 			aReach = unit.getAirRange() + unit.getSpeed();
 		}
@@ -232,27 +244,27 @@ void GridTrackerClass::updateEnemyGrids()
 					antiMobilityGrid[x][y] += 1;
 				}
 
-				// Threat grids
-				if (distance <= gRange)
+				//// Threat grids
+				//if (distance <= gRange)
+				//{
+				//	resetGrid[x][y] = true;
+				//	eGroundThreat[x][y] += unit.getMaxGroundStrength();
+				//}
+				if (distance <= gReach)
 				{
 					resetGrid[x][y] = true;
-					eGroundThreat[x][y] += unit.getMaxGroundStrength();
-				}
-				else if (distance <= gReach)
-				{
-					resetGrid[x][y] = true;
-					eGroundThreat[x][y] += max(0.1, unit.getMaxGroundStrength() / (distance - gRange));
+					eGroundThreat[x][y] += unit.getMaxGroundStrength() / max(0.1, (distance - gRange));
 				}
 
-				if (distance <= aRange)
+				/*if (distance <= aRange)
 				{
 					resetGrid[x][y] = true;
 					eAirThreat[x][y] += unit.getMaxAirStrength();
 				}
-				else if (distance <= aReach)
+				else */if (distance <= aReach)
 				{
 					resetGrid[x][y] = true;
-					eAirThreat[x][y] += max(0.1, unit.getMaxAirStrength() / (distance - aRange));
+					eAirThreat[x][y] += unit.getMaxAirStrength() / max(0.1, (distance - aRange));
 				}
 
 				// Detection grid

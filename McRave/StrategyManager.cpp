@@ -33,7 +33,7 @@ void StrategyTrackerClass::protossStrategy()
 		}
 
 		// Check if we hit our Zealot cap
-		if (!rush && ((BuildOrder().getCurrentBuild() == "ZZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 2) || (BuildOrder().getCurrentBuild() == "ZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 1) || (BuildOrder().getCurrentBuild() == "NZCore") || (Players().getNumberTerran() > 0 && !BuildOrder().isOneGateCore())))
+		if (!rush && ((BuildOrder().getCurrentBuild() == "ZZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 2) || (BuildOrder().getCurrentBuild() == "ZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 1) || (BuildOrder().getCurrentBuild() == "NZCore") || (Players().getNumberTerran() > 0 && !BuildOrder().isOneGateCore() && BuildOrder().getCurrentBuild() != "ZealotRush")))
 		{
 			lockedType.insert(UnitTypes::Protoss_Zealot);
 		}

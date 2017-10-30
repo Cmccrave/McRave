@@ -270,7 +270,7 @@ void CommandTrackerClass::move(UnitInfo& unit)
 	}
 
 	// If target doesn't exist, move towards it
-	if (unit.getTargetPosition().isValid())
+	if (unit.getTargetPosition().isValid() && unit.getPosition().getDistance(unit.getTargetPosition()) < 640)
 	{
 		if (unit.unit()->getLastCommand().getTargetPosition() != unit.getTargetPosition())
 		{
@@ -280,7 +280,7 @@ void CommandTrackerClass::move(UnitInfo& unit)
 	}
 
 	// If no target, move to closest enemy base if there is any
-	else if (Terrain().getEnemyBasePositions().size() > 0 && Grids().getEnemyArmyCenter().isValid() && !unit.getType().isFlyer())
+	if (Terrain().getEnemyBasePositions().size() > 0 && Grids().getEnemyArmyCenter().isValid() && !unit.getType().isFlyer())
 	{
 		double closestD = 0.0;
 		Position closestP;
@@ -425,16 +425,16 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 	double best = 0.0;
 	double mobility, distance, threat;
 	// Search a 16x16 grid around the unit
-	for (int x = start.x - 8; x <= start.x + 8 + (unit.getType().width() / 8.0); x++)
+	for (int x = start.x - 16; x <= start.x + 16 + (unit.getType().width() / 8.0); x++)
 	{
-		for (int y = start.y - 8; y <= start.y + 8 + (unit.getType().height() / 8.0); y++)
+		for (int y = start.y - 16; y <= start.y + 16 + (unit.getType().height() / 8.0); y++)
 		{
 			if (!WalkPosition(x, y).isValid()) continue;
 			if (WalkPosition(x, y).getDistance(start) > 16) continue;
 
 			Terrain().isInAllyTerritory(unit.unit()) ? distance = unit.getPosition().getDistance(unit.getTargetPosition()) : distance = double(Grids().getDistanceHome(x, y)); // If inside territory			
 			unit.getType().isFlyer() ? mobility = 1.0 : mobility = double(Grids().getMobilityGrid(x, y)); // If unit is a flyer, ignore mobility
-			unit.getType().isFlyer() ? threat = max(0.1, Grids().getEAirThreat(x, y)) : threat = max(0.1, Grids().getEGroundThreat(x, y)); // If unit is a flyer, use air threat
+			unit.getType().isFlyer() ? threat = max(0.01, Grids().getEAirThreat(x, y)) : threat = max(0.01, Grids().getEGroundThreat(x, y)); // If unit is a flyer, use air threat
 
 			if (mobility / (threat * distance) > best && Util().isMobile(start, WalkPosition(x, y), unit.getType()))
 			{

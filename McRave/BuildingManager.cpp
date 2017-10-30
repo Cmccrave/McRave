@@ -51,6 +51,11 @@ void BuildingTrackerClass::queueBuildings()
 			TilePosition here = Buildings().getBuildLocation(b.first);
 			Unit builder = Workers().getClosestWorker(Position(here));
 
+			if (!here.isValid())
+			{
+				here = Buildings().getBuildLocationNear(b.first, Terrain().getPlayerStartingTilePosition(), false);
+			}
+
 			// If the Tile Position and Builder are valid
 			if (here.isValid() && builder)
 			{
@@ -58,6 +63,7 @@ void BuildingTrackerClass::queueBuildings()
 				Workers().getMyWorkers()[builder].setBuildingType(b.first);
 				Workers().getMyWorkers()[builder].setBuildPosition(here);
 			}
+			
 		}
 	}
 }
@@ -206,9 +212,9 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		}
 		if (building == UnitTypes::Protoss_Photon_Cannon)
 		{
-			return getBuildLocationNear(building, Terrain().getSecondChoke());
+			return getBuildLocationNear(building, Terrain().getFFEPosition());
 		}
-		if ((building == UnitTypes::Protoss_Gateway || building == UnitTypes::Protoss_Forge) && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Forge) <= 0)
+		if ((building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 0) || (building == UnitTypes::Protoss_Forge && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Forge) <= 0))
 		{
 			return getBuildLocationNear(building, Terrain().getSecondChoke());
 		}
@@ -262,7 +268,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 bool BuildingTrackerClass::canBuildHere(UnitType building, TilePosition buildTilePosition, bool ignoreCond)
 {
 	// Production buildings that create ground units require spacing so they don't trap units -- TEMP: Supply depot to not block SCVs (need to find solution)
-	if (building == UnitTypes::Terran_Supply_Depot || (!building.isResourceDepot() && building.buildsWhat().size() > 0))
+	if (building == UnitTypes::Terran_Supply_Depot || building == UnitTypes::Protoss_Forge || (!building.isResourceDepot() && building.buildsWhat().size() > 0))
 	{
 		buildingOffset = 1;
 	}
@@ -333,9 +339,12 @@ bool BuildingTrackerClass::canBuildHere(UnitType building, TilePosition buildTil
 		}
 	}
 
+	
+
 	// If the building requires an offset (production buildings and first pylon)
 	if (buildingOffset > 0)
 	{
+		bool validFFE = false;
 		for (int x = buildTilePosition.x - buildingOffset; x < buildTilePosition.x + building.tileWidth() + buildingOffset; x++)
 		{
 			for (int y = buildTilePosition.y - buildingOffset; y < buildTilePosition.y + building.tileHeight() + buildingOffset; y++)
@@ -344,17 +353,36 @@ bool BuildingTrackerClass::canBuildHere(UnitType building, TilePosition buildTil
 				{
 					return false;
 				}
-				if (Grids().getBuildingGrid(x, y) > 0 && !Broodwar->isBuildable(TilePosition(x, y), true))
+				if (BuildOrder().isForgeExpand() && Grids().getBuildingGrid(x, y) <= 0 && ((building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 0) || (building == UnitTypes::Protoss_Forge && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Forge) <= 0)))
 				{
-					return false;
+					if (building == UnitTypes::Protoss_Gateway && (x >= buildTilePosition.x + building.tileWidth() ^ y >= buildTilePosition.y + building.tileHeight()) && !Broodwar->isBuildable(TilePosition(x, y), false))
+					{
+						validFFE = true;
+					}
+					if (building == UnitTypes::Protoss_Forge && (x < buildTilePosition.x ^ y < buildTilePosition.y) && !Broodwar->isBuildable(TilePosition(x, y), false))
+					{
+						validFFE = true;
+					}
 				}
-				if (building == UnitTypes::Protoss_Pylon && !Broodwar->isBuildable(TilePosition(x, y), true))
+				else
 				{
-					return false;
+					if (Grids().getBuildingGrid(x, y) > 0 && !Broodwar->isBuildable(TilePosition(x, y), true))
+					{
+						return false;
+					}
+					if (building == UnitTypes::Protoss_Pylon && !Broodwar->isBuildable(TilePosition(x, y), true))
+					{
+						return false;
+					}
 				}
 			}
 		}
+		if (BuildOrder().isForgeExpand() && !validFFE && ((building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 0) || (building == UnitTypes::Protoss_Forge && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Forge) <= 0)))
+		{
+			return false;
+		}
 	}
+	
 
 	// If the building is not a resource depot and being placed on an expansion
 	if (!building.isResourceDepot())
