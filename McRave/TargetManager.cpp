@@ -29,50 +29,22 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 	{
 		thisUnit = 0.0;
 		UnitInfo &enemy = e.second;
-		double distance = max(32.0, unit.getPosition().getDistance(enemy.getPosition()));
-
-		if (!enemy.unit())
-		{
-			continue;
-		}
-
-		// If it's an egg or larva, ignore it
-		if (enemy.getType() == UnitTypes::Zerg_Egg || enemy.getType() == UnitTypes::Zerg_Larva)
-		{
-			continue;
-		}
-
-		// If unit is dead or unattackable, ignore it
-		if (!unit.getType().isDetector() && ((enemy.getType().isFlyer() && unit.getAirRange() == 0.0) || (!enemy.getType().isFlyer() && unit.getGroundRange() == 0.0)))
-		{
-			continue;
-		}
-
-		// If the enemy is stasised, ignore it
-		if (enemy.unit()->exists() && enemy.unit()->isStasised())
-		{
-			continue;
-		}
-
-		// If the enemy is a mine and this is a melee unit (except DT), ignore it
-		if (enemy.getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.getGroundRange() < 32 && unit.getType() != UnitTypes::Protoss_Dark_Templar)
-		{
-			continue;
-		}
-
-		// If unit is loaded, don't target buildings
-		if (unit.getTransport() && enemy.getType().isBuilding())
-		{
-			continue;
-		}
-
+		if (!enemy.unit()) continue;
+		double allyRange = (unit.getType().width() / 2.0) + enemy.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
+		double distance = max(32.0, unit.getPosition().getDistance(enemy.getPosition()) - allyRange);			
+		
+		if (enemy.getType() == UnitTypes::Zerg_Egg || enemy.getType() == UnitTypes::Zerg_Larva) continue; // If it's an egg or larva, ignore it		
+		if (!unit.getType().isDetector() && ((enemy.getType().isFlyer() && unit.getAirRange() == 0.0) || (!enemy.getType().isFlyer() && unit.getGroundRange() == 0.0))) continue; // If unit is dead or unattackable, ignore it		
+		if (enemy.unit()->exists() && enemy.unit()->isStasised()) continue; // If the enemy is stasised, ignore it		
+		if (enemy.getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.getGroundRange() < 32 && unit.getType() != UnitTypes::Protoss_Dark_Templar) continue; // If the enemy is a mine and this is a melee unit (except DT), ignore it
+		if (unit.getTransport() && enemy.getType().isBuilding()) continue; // If unit is loaded, don't target buildings
 
 		// If this is a detector unit, target invisible units only
 		if (unit.getType().isDetector() && !unit.getType().isBuilding())
 		{
 			if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && ((!enemy.getType().isFlyer() && Grids().getAGroundThreat(enemy.getWalkPosition()) > 0.0) || (enemy.getType().isFlyer() && Grids().getAAirThreat(enemy.getWalkPosition()) > 0.0) || Terrain().isInAllyTerritory(enemy.unit())) && Grids().getEDetectorGrid(enemy.getWalkPosition()) == 0)
 			{
-				thisUnit = (enemy.getPriority() * (1.0 + 0.1 *(1.0 - enemy.getPercentHealth()))) / distance;
+				thisUnit = enemy.getPriority() / distance;
 			}
 			else
 			{
@@ -92,27 +64,14 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		// High Templars target the highest priority with the largest cluster
 		else if (unit.getType() == UnitTypes::Protoss_High_Templar)
 		{
-			if (Grids().getPsiStormGrid(enemy.getWalkPosition()) == 0 && Grids().getAGroundCluster(enemy.getWalkPosition()) < (Grids().getEAirCluster(enemy.getWalkPosition()) + Grids().getEGroundCluster(enemy.getWalkPosition())) && !enemy.getType().isBuilding())
+			if (Grids().getPsiStormGrid(enemy.getWalkPosition()) == 0 && Grids().getAGroundCluster(enemy.getWalkPosition()) < (Grids().getEAirCluster(enemy.getWalkPosition()) + Grids().getEGroundCluster(enemy.getWalkPosition())) && (Grids().getEAirCluster(enemy.getWalkPosition()) + Grids().getEGroundCluster(enemy.getWalkPosition())) > 4 && !enemy.getType().isBuilding())
 			{
 				thisUnit = (enemy.getPriority() * max(Grids().getEGroundCluster(enemy.getWalkPosition()), Grids().getEAirCluster(enemy.getWalkPosition()))) / distance;
 			}
 		}
 
-		else if (enemy.getType().isFlyer() && unit.getAirDamage() > 0.0)
-		{
-			thisUnit = (enemy.getPriority() * (1.0 + 0.1 *(1.0 - enemy.getPercentHealth()))) / distance;
-		}
-		else if (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0)
-		{
-			thisUnit = (enemy.getPriority() * (1.0 + 0.1 *(1.0 - enemy.getPercentHealth()))) / distance;
-		}
-
-		// If the unit doesn't exist, it's not a suitable target usually (could be removed?)
-		if (!enemy.unit()->exists())
-		{
-			thisUnit = thisUnit * 0.1;
-		}
-
+		else if ((enemy.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0)) thisUnit = enemy.getPriority() / distance;
+				
 		// If this is the strongest enemy around, target it
 		if (thisUnit > 0.0 && (thisUnit > highest || highest == 0.0))
 		{
@@ -137,6 +96,10 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		{
 			unit.setEngagePosition(unit.getPosition());
 		}
+	}
+	else
+	{
+		unit.setTargetPosition(Positions::None);
 	}
 	return target;
 }

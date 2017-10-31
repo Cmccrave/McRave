@@ -27,7 +27,7 @@ void GridTrackerClass::reset()
 	//		}
 	//		if (eGroundThreat[x][y] >= 2 && eGroundThreat[x][y] < 4)
 	//		{
-	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Blue);				
+	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Blue);
 	//		}
 	//		if (eGroundThreat[x][y] >= 4 && eGroundThreat[x][y] < 6)
 	//		{
@@ -258,8 +258,8 @@ void GridTrackerClass::updateEnemyGrids()
 
 				/*if (distance <= aRange)
 				{
-					resetGrid[x][y] = true;
-					eAirThreat[x][y] += unit.getMaxAirStrength();
+				resetGrid[x][y] = true;
+				eAirThreat[x][y] += unit.getMaxAirStrength();
 				}
 				else */if (distance <= aReach)
 				{

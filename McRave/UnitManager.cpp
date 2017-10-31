@@ -63,7 +63,7 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 	double unitToEngage = (8.0 * abs(Grids().getDistanceHome(unit.getWalkPosition()) - Grids().getDistanceHome(WalkPosition(unit.getEngagePosition())))) / unit.getSpeed();
 	double enemyRange, unitRange;
 	UnitInfo &target = Units().getEnemyUnit(unit.getTarget());
-
+	
 	// Check every enemy unit being in range of the target
 	for (auto &e : enemyUnits)
 	{
@@ -76,7 +76,12 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 		enemy.getType().isFlyer() ? unitRange = unit.getAirRange() + (unit.getType().width() / 2.0) : unitRange = unit.getGroundRange() + (unit.getType().width() / 2.0);
 
 		double enemyToEngage = 0.0;
-		double distance = (8.0 * abs(Grids().getDistanceHome(enemy.getWalkPosition()) - Grids().getDistanceHome(WalkPosition(unit.getEngagePosition())))) - enemyRange;				
+		double distance = enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange;
+
+		if (Grids().getDistanceHome(enemy.getWalkPosition()) > 0 && Grids().getDistanceHome(WalkPosition(unit.getEngagePosition())) > 0)
+		{
+			distance = (8.0 * abs(Grids().getDistanceHome(enemy.getWalkPosition()) - Grids().getDistanceHome(WalkPosition(unit.getEngagePosition())))) - enemyRange;
+		}
 
 		if (enemy.getSpeed() > 0.0)
 		{
@@ -104,13 +109,22 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 		UnitInfo &ally = a.second;
 		double allyToEngage = 0.0;
 		double allyRange = (ally.getType().width() / 2.0) + target.getType().isFlyer() ? ally.getAirRange() : ally.getGroundRange();
-		double distanceA = (8.0 * abs(Grids().getDistanceHome(ally.getWalkPosition()) - Grids().getDistanceHome(WalkPosition(ally.getEngagePosition()))));
-		double distanceB = (8.0 * abs(Grids().getDistanceHome(ally.getWalkPosition()) - Grids().getDistanceHome(WalkPosition(unit.getEngagePosition())))) - allyRange;
+		double distanceA = ally.getPosition().getDistance(ally.getEngagePosition());
+		double distanceB = ally.getPosition().getDistance(unit.getEngagePosition());
+
+		if (Grids().getDistanceHome(ally.getWalkPosition()) > 0 && Grids().getDistanceHome(WalkPosition(ally.getEngagePosition())) > 0)
+		{
+			distanceA = (8.0 * abs(Grids().getDistanceHome(ally.getWalkPosition()) - Grids().getDistanceHome(WalkPosition(ally.getEngagePosition()))));
+		}
+		if (Grids().getDistanceHome(ally.getWalkPosition()) > 0 && Grids().getDistanceHome(WalkPosition(unit.getEngagePosition())) > 0)
+		{
+			distanceB = (8.0 * abs(Grids().getDistanceHome(ally.getWalkPosition()) - Grids().getDistanceHome(WalkPosition(unit.getEngagePosition())))) - allyRange;
+		}
 
 		if (distanceB / ally.getSpeed() > simulationTime) continue;
 
 		//if (distance / ally.getSpeed() > simulationTime) continue;
-		allyToEngage = max(0.0, distanceA / ally.getSpeed());
+		allyToEngage = max(0.0, distanceB / ally.getSpeed());
 		simRatio = max(0.0, simulationTime - (allyToEngage - unitToEngage));
 
 		if ((ally.unit()->isCloaked() || ally.unit()->isBurrowed()) && Grids().getEDetectorGrid(WalkPosition(ally.getEngagePosition())) == 0) simRatio = simRatio * 5.0;
@@ -132,8 +146,8 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 	double minThreshold = 1.0, maxThreshold = 1.0;
 	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
-		if (Players().getNumberZerg() > 0) minThreshold = 0.9, maxThreshold = 1.1;
-		if (Players().getNumberTerran() > 0) minThreshold = 0.8, maxThreshold = 1.0;
+		if (Players().getNumberZerg() > 0) minThreshold = 0.8, maxThreshold = 1.2;
+		if (Players().getNumberTerran() > 0) minThreshold = 0.6, maxThreshold = 1.0;
 	}
 	else
 	{
@@ -145,7 +159,15 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 	double decisionLocal = unit.getType().isFlyer() ? unit.getAirLocal() : unit.getGroundLocal();
 	double decisionGlobal = unit.getType().isFlyer() ? globalAirStrategy : globalGroundStrategy;
 
-	if (unit.getType().isWorker())
+	// If a unit is clearly out of range, set as "no local" and skip calculating
+	if (!unit.getTarget())
+	{
+		unit.setStrategy(3);
+		return;
+	}
+
+	// If unit is a worker, always fight
+	if (unit.getType().isWorker() && unit.getTarget()->exists())
 	{
 		unit.setStrategy(1);
 		return;
@@ -154,21 +176,26 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 	// Stupid way to hardcode only aggresion from sparks build
 	if (BuildOrder().getCurrentBuild() == "Sparks" && !BuildOrder().isOpener())
 	{
-		unit.setStrategy(1);
-		return;
-	}
-
-	// If a unit is clearly out of range, set as "no local" and skip calculating
-	if (!unit.getTarget() && decisionGlobal == 1)
-	{
-		unit.setStrategy(3);
-		return;
-	}
+		if (unit.getTarget()->exists())
+		{
+			unit.setStrategy(1);
+			return;
+		}
+		else
+		{
+			unit.setStrategy(3);
+			return;
+		}
+	}	
 
 	// If unit is in ally territory
 	if (Terrain().isInAllyTerritory(unit.unit()) && decisionGlobal == 0)
 	{
-		if (!unit.getTarget()->exists()) unit.setStrategy(2);
+		if (!unit.getTarget()->exists())
+		{
+			unit.setStrategy(2);
+			return;
+		}
 		if (Strategy().isRush() || !Strategy().isHoldChoke())
 		{
 			if (Grids().getResourceGrid(target.getTilePosition()) > 0 && Grids().getResourceGrid(unit.getTilePosition()) > 0)
@@ -191,9 +218,14 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 				unit.setStrategy(1);
 				return;
 			}
-			else
+			else if (unit.getPosition().getDistance(unit.getTargetPosition()) > 640)
 			{
 				unit.setStrategy(2);
+				return;
+			}
+			else
+			{
+				unit.setStrategy(0);
 				return;
 			}
 		}

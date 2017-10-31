@@ -51,57 +51,53 @@ void CommandTrackerClass::updateAlliedUnits()
 			// If globally behind
 			if ((Units().getGlobalGroundStrategy() == 0 && !unit.getType().isFlyer()) || (Units().getGlobalAirStrategy() == 0 && unit.getType().isFlyer()))
 			{
-				// Check if we have a target
-				if (unit.getTarget())
+				// If locally behind, flee
+				if (unit.getStrategy() == 0)
 				{
-					// If locally ahead, attack
-					if (unit.getStrategy() == 1 && unit.getTarget()->exists())
-					{
-						attack(unit);
-						continue;
-					}
-					// Else flee
-					else if (unit.getStrategy() == 0)
-					{
-						flee(unit);
-						continue;
-					}
+					flee(unit);
+					continue;
 				}
-				// Defend otherwise
-				defend(unit);
-				continue;
+
+				// If locally ahead, attack
+				else if (unit.getStrategy() == 1 && unit.unit()->exists())
+				{
+					attack(unit);
+					continue;
+				}
+				else
+				{
+					// Defend otherwise
+					defend(unit);
+					continue;
+				}
 			}
 
 			// If globally ahead
 			else if ((Units().getGlobalGroundStrategy() == 1 && !unit.getType().isFlyer()) || (Units().getGlobalAirStrategy() == 1 && unit.getType().isFlyer()))
 			{
-				// Check if we have a target
-				if (unit.getTarget())
+				// If locally behind, flee
+				if (unit.getStrategy() == 0)
 				{
-					// If locally behind, flee
-					if (unit.getStrategy() == 0)
-					{
-						flee(unit);
-						continue;
-					}
-					// Defend
-					else if (unit.getStrategy() == 2)
-					{
-						defend(unit);
-						continue;
-					}
-					// If target exists, attack
-					else if (unit.getStrategy() == 1 && unit.getTarget()->exists())
-					{
-						attack(unit);
-						continue;
-					}
-					// Else move unit
-					else
-					{
-						move(unit);
-						continue;
-					}
+					flee(unit);
+					continue;
+				}				
+				// If locally ahead, attack
+				else if (unit.getStrategy() == 1 && unit.unit()->exists())
+				{
+					attack(unit);
+					continue;
+				}
+				// If within ally territory, defend
+				else if (unit.getStrategy() == 2)
+				{
+					defend(unit);
+					continue;
+				}
+				// Else move unit
+				else
+				{
+					move(unit);
+					continue;
 				}
 			}
 			// Else move unit
@@ -269,16 +265,6 @@ void CommandTrackerClass::move(UnitInfo& unit)
 		return;
 	}
 
-	// If target doesn't exist, move towards it
-	if (unit.getTargetPosition().isValid() && unit.getPosition().getDistance(unit.getTargetPosition()) < 640)
-	{
-		if (unit.unit()->getLastCommand().getTargetPosition() != unit.getTargetPosition())
-		{
-			unit.unit()->move(unit.getTargetPosition());
-		}
-		return;
-	}
-
 	// If no target, move to closest enemy base if there is any
 	if (Terrain().getEnemyBasePositions().size() > 0 && Grids().getEnemyArmyCenter().isValid() && !unit.getType().isFlyer())
 	{
@@ -293,6 +279,16 @@ void CommandTrackerClass::move(UnitInfo& unit)
 			}
 		}
 		unit.unit()->move(closestP);
+		return;
+	}
+
+	// If target doesn't exist, move towards it
+	if (unit.getTargetPosition().isValid())
+	{
+		if (unit.unit()->getLastCommand().getTargetPosition() != unit.getTargetPosition())
+		{
+			unit.unit()->move(unit.getTargetPosition());
+		}
 		return;
 	}
 
@@ -322,6 +318,12 @@ void CommandTrackerClass::move(UnitInfo& unit)
 
 void CommandTrackerClass::defend(UnitInfo& unit)
 {
+	if (unit.getType().isFlyer() && Units().getGlobalGroundStrategy() == 1)
+	{
+		unit.unit()->move(Grids().getAllyArmyCenter());
+		return;
+	}
+
 	// Early on, defend mineral line - TODO: Use ordered bases to check which one to hold
 	if (!Strategy().isHoldChoke())
 	{
@@ -343,7 +345,7 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 	}
 
 	// Defend chokepoint with concave
-	int min = int(unit.getGroundRange());
+	int min = max(64, int(unit.getGroundRange()));
 	int max = int(unit.getGroundRange()) + 256;
 	double closestD = 0.0;
 	WalkPosition start = unit.getWalkPosition();
@@ -409,7 +411,7 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 		for (auto &t : Units().getAllyUnitsFilter(UnitTypes::Protoss_High_Templar))
 		{
 			UnitInfo &templar = Units().getAllyUnit(t);
-			if (templar.unit() && templar.unit()->exists() && templar.unit()->getEnergy() < 75 && Grids().getEGroundThreat(templar.getWalkPosition()) > 0.0)
+			if (templar.unit() && templar.unit()->exists() && templar.unit() != unit.unit() && templar.unit()->getEnergy() < 75 && Grids().getEGroundThreat(templar.getWalkPosition()) > 0.0)
 			{
 				if (templar.unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp && unit.unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp)
 				{
@@ -430,9 +432,9 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 		for (int y = start.y - 16; y <= start.y + 16 + (unit.getType().height() / 8.0); y++)
 		{
 			if (!WalkPosition(x, y).isValid()) continue;
-			if (WalkPosition(x, y).getDistance(start) > 16) continue;
+			if (WalkPosition(x, y).getDistance(start) > 32) continue;
 
-			Terrain().isInAllyTerritory(unit.unit()) ? distance = unit.getPosition().getDistance(unit.getTargetPosition()) : distance = double(Grids().getDistanceHome(x, y)); // If inside territory			
+			distance = double(Grids().getDistanceHome(x, y)); // Distance value		
 			unit.getType().isFlyer() ? mobility = 1.0 : mobility = double(Grids().getMobilityGrid(x, y)); // If unit is a flyer, ignore mobility
 			unit.getType().isFlyer() ? threat = max(0.01, Grids().getEAirThreat(x, y)) : threat = max(0.01, Grids().getEGroundThreat(x, y)); // If unit is a flyer, use air threat
 

@@ -42,7 +42,6 @@ void WorkerTrackerClass::updateScout(WorkerInfo& worker)
 	{
 		if (Terrain().getEnemyBasePositions().size() == 0)
 		{
-
 			for (auto &start : theMap.StartingLocations())
 			{
 				if (!Broodwar->isExplored(start) && (Position(start).getDistance(Terrain().getPlayerStartingPosition()) < closestD || closestD == 0.0))
@@ -314,7 +313,7 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 				return;
 			}
 		}
-		else if (worker.unit()->getClosestUnit(Filter::IsMineralField))
+		else if (worker.unit()->getClosestUnit(Filter::IsMineralField) && worker.unit()->getLastCommand().getType() != UnitCommandTypes::Gather)
 		{
 			worker.unit()->gather(worker.unit()->getClosestUnit(Filter::IsMineralField));
 			return;

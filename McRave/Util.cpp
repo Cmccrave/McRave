@@ -32,7 +32,8 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit)
 
 	double range, damage, hp;
 	range = cbrt(unit.getGroundRange());
-	hp = cbrt((unit.getType().maxHitPoints() + unit.getType().maxShields()) / 10.0);
+	//hp = sqrt((unit.getType().maxHitPoints() + unit.getType().maxShields()) / 10.0);
+	hp = unit.getType().isBuilding() ? 4.0 : double(max(1, unit.getType().supplyRequired()));
 
 	if (unit.getType().groundWeapon().damageCooldown() > 0)
 	{
@@ -105,7 +106,8 @@ double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit)
 		return 2.5;
 	}
 	double range, damage, hp;
-	hp = cbrt((unit.getType().maxHitPoints() + unit.getType().maxShields()) / 10.0);
+	//hp = sqrt((unit.getType().maxHitPoints() + unit.getType().maxShields()) / 10.0);
+	hp = unit.getType().isBuilding() ? 4.0 : double(max(1, unit.getType().supplyRequired()));
 	damage = unit.getAirDamage() / double(unit.getType().airWeapon().damageCooldown());
 	range = cbrt(unit.getAirRange());
 
@@ -197,6 +199,11 @@ double UtilTrackerClass::getPriority(UnitInfo& unit)
 		{
 			return 2.0;
 		}
+	}
+
+	else if (unit.getType().isBuilding() && (unit.getGroundDamage() > 0.0 || unit.getAirDamage() > 0.0))
+	{
+		return max(unit.getMaxGroundStrength() / 2.0, unit.getMaxAirStrength() / 2.0);
 	}
 
 	// Buildings with no attack have the lowest priority

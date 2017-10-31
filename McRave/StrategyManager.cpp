@@ -7,7 +7,6 @@ void StrategyTrackerClass::update()
 	updateBullets();
 	updateScoring();
 	Display().performanceTest(__FUNCTION__);
-	return;
 }
 
 void StrategyTrackerClass::updateSituationalBehaviour()
@@ -26,54 +25,23 @@ void StrategyTrackerClass::protossStrategy()
 	// Check if it's early enough to run specific strategies
 	if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0)
 	{
-		// Check if we're fast expanding
-		if (BuildOrder().getCurrentBuild() == "TwelveNexus" || BuildOrder().isForgeExpand())
-		{
-			allyFastExpand = true;
-		}
+		// Check if there's a fast expansion for ally or enemy
+		if (BuildOrder().getCurrentBuild() == "TwelveNexus" || BuildOrder().isForgeExpand()) allyFastExpand = true;
+		if (Units().getEnemyComposition()[UnitTypes::Terran_Command_Center] > 1 || Units().getEnemyComposition()[UnitTypes::Zerg_Hatchery] > 1 || Units().getEnemyComposition()[UnitTypes::Protoss_Nexus] > 1) enemyFastExpand = true;
 
-		// Check if we hit our Zealot cap
+		// Check if we hit our Zealot cap based on our build
 		if (!rush && ((BuildOrder().getCurrentBuild() == "ZZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 2) || (BuildOrder().getCurrentBuild() == "ZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 1) || (BuildOrder().getCurrentBuild() == "NZCore") || (Players().getNumberTerran() > 0 && !BuildOrder().isOneGateCore() && BuildOrder().getCurrentBuild() != "ZealotRush")))
-		{
 			lockedType.insert(UnitTypes::Protoss_Zealot);
-		}
-		else
-		{
-			lockedType.erase(UnitTypes::Protoss_Zealot);
-		}
+		else lockedType.erase(UnitTypes::Protoss_Zealot);
 
-		// Check if enemy is rushing
-		if (Units().getSupply() < 60 && ((Players().getNumberProtoss() > 0 || Players().getNumberRandom() > 0) && Units().getEnemyComposition()[UnitTypes::Protoss_Forge] == 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] >= 2 || Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] == 0) && Units().getEnemyComposition()[UnitTypes::Protoss_Assimilator] == 0 && Units().getEnemyComposition()[UnitTypes::Protoss_Nexus] == 1)
-			|| ((Players().getNumberRandom() > 0 || Players().getNumberZerg() > 0) && Units().getEnemyComposition()[UnitTypes::Zerg_Zergling] >= 6 && Units().getEnemyComposition()[UnitTypes::Zerg_Drone] < 6))
-		{
+		// Check if enemy is rushing (detects early 2 gates and early pool)
+		if (Units().getSupply() < 60 && ((Players().getNumberProtoss() > 0 || Players().getNumberRandom() > 0) && Units().getEnemyComposition()[UnitTypes::Protoss_Forge] == 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] >= 2 || Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] == 0) && Units().getEnemyComposition()[UnitTypes::Protoss_Assimilator] == 0 && Units().getEnemyComposition()[UnitTypes::Protoss_Nexus] == 1) || ((Players().getNumberRandom() > 0 || Players().getNumberZerg() > 0) && Units().getEnemyComposition()[UnitTypes::Zerg_Zergling] >= 6 && Units().getEnemyComposition()[UnitTypes::Zerg_Drone] < 6))
 			rush = true;
-		}
-		else
-		{
-			rush = false;
-		}
-
-		// Check if enemy is fast expanding
-		if (Units().getEnemyComposition()[UnitTypes::Terran_Command_Center] > 1 || Units().getEnemyComposition()[UnitTypes::Zerg_Hatchery] > 1 || Units().getEnemyComposition()[UnitTypes::Protoss_Nexus] > 1)
-		{
-			enemyFastExpand = true;
-		}
-		else
-		{
-			enemyFastExpand = false;
-		}
+		else rush = false;
 
 		// Check if we should play passive and/or hold the choke
-		if (allyFastExpand)
-		{
-			playPassive = !enemyFastExpand;
-			holdChoke = true;
-		}
-		else
-		{
-			playPassive = rush;
-			holdChoke = (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) + Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot)) >= 6;
-		}
+		if (allyFastExpand) playPassive = !enemyFastExpand, holdChoke = true;
+		else playPassive = rush, holdChoke = Units().getSupply() > 80;
 	}
 	else
 	{
@@ -86,15 +54,9 @@ void StrategyTrackerClass::protossStrategy()
 	}
 
 	// Check if we need an observer
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) <= 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Dark_Templar] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Citadel_of_Adun] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Templar_Archives] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Vulture] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Ghost] > 0 || Units().getEnemyComposition()[UnitTypes::Zerg_Lurker] > 0))
-	{
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) <= 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Dark_Templar] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Citadel_of_Adun] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Templar_Archives] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Vulture] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Ghost] > 0 || Units().getEnemyComposition()[UnitTypes::Zerg_Lurker] > 0 || (Units().getEnemyComposition()[UnitTypes::Zerg_Lair] == 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hydralisk] >= 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hatchery] == 0)))
 		invis = true;
-	}
-	else
-	{
-		invis = false;
-	}
-	return;
+	else invis = false;
 }
 
 void StrategyTrackerClass::terranStrategy()
@@ -104,19 +66,13 @@ void StrategyTrackerClass::terranStrategy()
 	{
 		// Ramp holding logic
 		if ((Broodwar->self()->completedUnitCount(UnitTypes::Terran_Siege_Tank_Siege_Mode) + Broodwar->self()->completedUnitCount(UnitTypes::Terran_Siege_Tank_Tank_Mode)) < 2)
-		{
 			holdChoke = false;
-		}
-		else
-		{
-			holdChoke = true;
-		}
+		else holdChoke = true;
 
-		// If we are being 4/5 pooled
-		if (Players().getNumberZerg() > 0 && Units().getEnemyComposition()[UnitTypes::Zerg_Zergling] >= 6)
-		{
+		// Check if enemy is rushing (detects early 2 gates and early pool)
+		if (Units().getSupply() < 60 && ((Players().getNumberProtoss() > 0 || Players().getNumberRandom() > 0) && Units().getEnemyComposition()[UnitTypes::Protoss_Forge] == 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] >= 2 || Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] == 0) && Units().getEnemyComposition()[UnitTypes::Protoss_Assimilator] == 0 && Units().getEnemyComposition()[UnitTypes::Protoss_Nexus] == 1) || ((Players().getNumberRandom() > 0 || Players().getNumberZerg() > 0) && Units().getEnemyComposition()[UnitTypes::Zerg_Zergling] >= 6 && Units().getEnemyComposition()[UnitTypes::Zerg_Drone] < 6))
 			rush = true;
-		}
+		else rush = false;
 	}
 	else
 	{
@@ -125,25 +81,18 @@ void StrategyTrackerClass::terranStrategy()
 	}
 
 	// Check if we need detection
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Comsat_Station) <= 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Dark_Templar] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Citadel_of_Adun] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Templar_Archives] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Vulture] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Ghost] > 0 || Units().getEnemyComposition()[UnitTypes::Zerg_Lurker] > 0))
-	{
-		invis = true;
-	}
-	else
-	{
-		invis = false;
-	}
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Comsat_Station) <= 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Dark_Templar] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Citadel_of_Adun] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Templar_Archives] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Vulture] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Ghost] > 0 || Units().getEnemyComposition()[UnitTypes::Zerg_Lurker] > 0 || (Units().getEnemyComposition()[UnitTypes::Zerg_Lair] == 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hydralisk] >= 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hatchery] == 0)))
+		invis = true;	
+	else invis = false;
 
-	if (BuildOrder().getCurrentBuild() == "TwoFactVult" && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Marine) >= 4)
-	{
+	if (BuildOrder().getCurrentBuild() == "TwoFactVult" && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Marine) >= 4)	
 		lockedType.insert(UnitTypes::Terran_Marine);
-	}
+	
 	if (!BuildOrder().isBioBuild())
 	{
 		lockedType.insert(UnitTypes::Terran_Medic);
 		lockedType.insert(UnitTypes::Terran_Firebat);
 	}
-	return;
 }
 
 void StrategyTrackerClass::zergStrategy()
@@ -156,7 +105,7 @@ void StrategyTrackerClass::updateBullets()
 	// TESTING -- Calculate how a unit is performing
 	for (auto& bullet : Broodwar->getBullets())
 	{
-		if (bullet->exists() && bullet->getSource() && bullet->getSource()->exists() && bullet->getTarget() && bullet->getTarget()->exists())
+		if (bullet && bullet->exists() && bullet->getSource() && bullet->getSource()->exists() && bullet->getTarget() && bullet->getTarget()->exists())
 		{
 			if (bullet->getType() == BulletTypes::Psionic_Storm)
 			{
@@ -166,43 +115,43 @@ void StrategyTrackerClass::updateBullets()
 			{
 				Grids().updateEMP(bullet);
 			}
-			if (bullet->getSource()->getPlayer() == Broodwar->self() && myBullets.find(bullet) == myBullets.end())
-			{
-				myBullets.emplace(bullet);
-				double typeMod = 1.0;
+			//if (bullet->getSource()->getPlayer() == Broodwar->self() && myBullets.find(bullet) == myBullets.end())
+			//{
+			//	myBullets.insert(bullet);
+			//	double typeMod = 1.0;
 
-				if (!bullet->getTarget()->getType().isFlyer())
-				{
-					if (bullet->getSource()->getType().groundWeapon().damageType() == DamageTypes::Explosive)
-					{
-						if (bullet->getTarget()->getType().size() == UnitSizeTypes::Small)
-						{
-							typeMod = 0.5;
-						}
-						if (bullet->getTarget()->getType().size() == UnitSizeTypes::Medium)
-						{
-							typeMod = 0.75;
-						}
-					}
-					if (bullet->getSource()->getType().groundWeapon().damageType() == DamageTypes::Concussive)
-					{
-						if (bullet->getTarget()->getType().size() == UnitSizeTypes::Large)
-						{
-							typeMod = 0.25;
-						}
-						if (bullet->getTarget()->getType().size() == UnitSizeTypes::Medium)
-						{
-							typeMod = 0.5;
-						}
-					}
+			//	if (!bullet->getTarget()->getType().isFlyer())
+			//	{
+			//		if (bullet->getSource()->getType().groundWeapon().damageType() == DamageTypes::Explosive)
+			//		{
+			//			if (bullet->getTarget()->getType().size() == UnitSizeTypes::Small)
+			//			{
+			//				typeMod = 0.5;
+			//			}
+			//			if (bullet->getTarget()->getType().size() == UnitSizeTypes::Medium)
+			//			{
+			//				typeMod = 0.75;
+			//			}
+			//		}
+			//		if (bullet->getSource()->getType().groundWeapon().damageType() == DamageTypes::Concussive)
+			//		{
+			//			if (bullet->getTarget()->getType().size() == UnitSizeTypes::Large)
+			//			{
+			//				typeMod = 0.25;
+			//			}
+			//			if (bullet->getTarget()->getType().size() == UnitSizeTypes::Medium)
+			//			{
+			//				typeMod = 0.5;
+			//			}
+			//		}
 
-					//unitPerformance[bullet->getSource()->getType()] += double(bullet->getSource()->getType().groundWeapon().damageAmount()) * typeMod;
-				}
-				else
-				{
-					//unitPerformance[bullet->getSource()->getType()] += double(bullet->getSource()->getType().airWeapon().damageAmount());
-				}
-			}
+			//		unitPerformance[bullet->getSource()->getType()] += double(bullet->getSource()->getType().groundWeapon().damageAmount()) * typeMod;
+			//	}
+			//	else
+			//	{
+			//		unitPerformance[bullet->getSource()->getType()] += double(bullet->getSource()->getType().airWeapon().damageAmount());
+			//	}
+			//}
 		}
 	}
 }

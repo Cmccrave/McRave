@@ -41,7 +41,7 @@ void TerrainTrackerClass::updateAreas()
 
 	for (auto &base : enemyBasePositions)
 	{
-		if (base.isValid() && Broodwar->isVisible(TilePosition(base)) && Broodwar->getUnitsInRadius(base, 128, Filter::IsEnemy).size() == 0)
+		if (base.isValid() && Broodwar->isVisible(TilePosition(base)) && Broodwar->getUnitsInRadius(base, 128, Filter::IsEnemy && Filter::IsResourceDepot).size() == 0)
 		{
 			enemyBasePositions.erase(base);
 			break;
