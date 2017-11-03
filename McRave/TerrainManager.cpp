@@ -14,38 +14,51 @@ void TerrainTrackerClass::updateAreas()
 	// If we see a building, check for closest starting location
 	if (enemyBasePositions.size() <= 0)
 	{
-		for (auto &unit : Units().getEnemyUnits())
+		for (auto &u : Units().getEnemyUnits())
 		{
-			if (unit.second.getType().isBuilding() && Terrain().getEnemyBasePositions().size() == 0 && unit.second.getPosition().getDistance(Terrain().getPlayerStartingPosition()) > 640)
-			{
-				double distance = 0.0;
-				TilePosition closest;
-				for (auto &base : theMap.StartingLocations())
-				{
-					if (unit.second.getPosition().getDistance(Position(base)) < distance || distance == 0.0)
-					{
-						distance = unit.second.getPosition().getDistance(Position(base));
-						closest = base;
-					}
-				}
-				if (closest.isValid())
-				{
-					enemyBasePositions.emplace(Position(closest));
-					enemyStartingTilePosition = closest;
-					enemyStartingPosition = Position(closest);
-					path = theMap.GetPath(playerStartingPosition, enemyStartingPosition);
-				}
-			}
+			UnitInfo &unit = u.second;
+			double distance = 0.0;
+			TilePosition closest;
+			if (!unit.getType().isBuilding()) continue;
+			enemyBasePositions.insert(getClosestBaseCenter(unit.unit()));
+			enemyStartingPosition = getClosestBaseCenter(unit.unit());
+			enemyStartingTilePosition = TilePosition(getClosestBaseCenter(unit.unit()));
 		}
 	}
 
+	// If an enemy base position no longer has a resource depot on it, remove it (also prevents stupidly placing enemy base positions)
 	for (auto &base : enemyBasePositions)
 	{
-		if (base.isValid() && Broodwar->isVisible(TilePosition(base)) && Broodwar->getUnitsInRadius(base, 128, Filter::IsEnemy && Filter::IsResourceDepot).size() == 0)
+		if (base.isValid() && Broodwar->isVisible(TilePosition(base)) && Broodwar->getUnitsInRadius(base, 128, Filter::IsResourceDepot).size() == 0)
 		{
 			enemyBasePositions.erase(base);
 			break;
 		}
+	}
+
+	// If there is at least one base position, set up attack position
+	if (enemyBasePositions.size() > 0 && Grids().getEnemyArmyCenter().isValid())
+	{
+		double closestD = 0.0;
+		Position closestP;
+		for (auto &base : Terrain().getEnemyBasePositions())
+		{
+			Broodwar->drawCircleMap(base, 16, Colors::Red);
+			if (Grids().getEnemyArmyCenter().getDistance(base) > closestD)
+			{
+				closestD = Grids().getEnemyArmyCenter().getDistance(base);
+				closestP = base;
+			}
+		}
+		attackPosition = closestP;
+	}
+	else attackPosition = Positions::Invalid;
+
+	// Set mineral holding positions
+	for (auto &base : Bases().getMyBases())
+	{
+		mineralHold = Position(base.second.getResourcesPosition());
+		backMineralHold = (Position(base.second.getResourcesPosition()) - Position(base.second.getPosition())) + Position(base.second.getResourcesPosition());
 	}
 }
 
@@ -58,10 +71,10 @@ void TerrainTrackerClass::updateChokes()
 		{
 			for (auto &base : area.Bases())
 			{
-				allBaseLocations.emplace(base.Location());
+				allBaseLocations.insert(base.Location());
 			}
 		}
-	}	
+	}
 
 	// Establish FFE position	
 	if (Broodwar->getFrameCount() > 100)
@@ -125,11 +138,6 @@ void TerrainTrackerClass::updateChokes()
 				allyTerritory.insert(theMap.GetArea(FFEPosition)->Id());
 			}
 		}
-	}
-	for (auto &base : Bases().getMyBases())
-	{
-		mineralHold = Position(base.second.getResourcesPosition());
-		backMineralHold = (Position(base.second.getResourcesPosition()) - Position(base.second.getPosition())) + Position(base.second.getResourcesPosition());
 	}
 }
 
@@ -195,6 +203,7 @@ Position TerrainTrackerClass::getClosestBaseCenter(Unit unit)
 {
 	double closestD = 0.0;
 	Position closestB;
+	if (!unit->getTilePosition().isValid() || !theMap.GetArea(unit->getTilePosition())) return Positions::Invalid;
 	for (auto &base : theMap.GetArea(unit->getTilePosition())->Bases())
 	{
 		if (unit->getDistance(base.Center()) < closestD || closestD == 0.0)

@@ -75,27 +75,25 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 		if (!cargo.unit()->isLoaded())
 		{
 			transport.setDestination(cargo.getPosition());
+			transport.getPosition().getDistance(transport.getDestination()) <= cargo.getGroundRange() + 32 ? transport.setMonitoring(true) : transport.setMonitoring(false);
 
 			// If it's requesting a pickup, set load state to 1
-			if (cargo.getTargetPosition().getDistance(cargo.getPosition()) > cargo.getGroundRange() + 64 || cargo.getStrategy() != 1 || (cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.unit()->getEnergy() < 75) || (cargo.getType() != UnitTypes::Protoss_High_Templar && Broodwar->getFrameCount() - cargo.getLastAttackFrame() < cargo.getType().groundWeapon().damageCooldown()))
+			if (cargo.getTargetPosition().getDistance(cargo.getPosition()) > cargo.getGroundRange() + 64 || cargo.getStrategy() != 1 || (cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.unit()->getEnergy() < 75) || (cargo.getType() == UnitTypes::Protoss_Reaver && cargo.unit()->getScarabCount() < 5))
 			{
-				transport.unit()->load(cargo.unit());
 				transport.setLoading(true);
+				transport.unit()->load(cargo.unit());
 				return;
-			}
+			}			
 		}
 		// Else if the cargo is loaded
 		else if (cargo.unit()->isLoaded() && cargo.getTargetPosition().isValid())
 		{
 			transport.setDestination(cargo.getTargetPosition());
-
 			// If cargo wants to fight, find a spot to unload
-			if (cargo.getStrategy() == 1 && transport.getPosition().getDistance(transport.getDestination()) <= cargo.getGroundRange() && Broodwar->getGroundHeight(transport.getTilePosition()) == Broodwar->getGroundHeight(cargo.getTargetTilePosition()))
+			if (cargo.getStrategy() == 1) transport.setUnloading(true);			
+			if (transport.getPosition().getDistance(transport.getDestination()) <= cargo.getGroundRange() + 32)
 			{
-				transport.setUnloading(true);
-				transport.unit()->unload(cargo.unit());
-				transport.setLastDropFrame(Broodwar->getFrameCount());
-				continue;
+				transport.unit()->unload(cargo.unit());				
 			}
 		}
 	}
@@ -106,28 +104,38 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 {
 	// If loading, ignore movement commands
 	if (transport.isLoading()) return;
+	if (Terrain().getClosestEnemyBase(transport.getPosition()).isValid() && (transport.getPosition().getDistance(transport.getDestination()) > 640 || Units().getGlobalGroundStrategy() == 1))
+		 transport.setDestination(Terrain().getClosestEnemyBase(transport.getPosition()));
 
 	Position bestPosition = transport.getDestination();
 	WalkPosition start = transport.getWalkPosition();
-	double best = 1000.0;
-	double closest = 0.0;
+	double best = 0.0;
 
 	// First look for mini tiles with no threat that are closest to the enemy and on low mobility
-	for (int x = start.x - 32; x <= start.x + 32 + transport.getType().tileWidth() * 4; x++)
+	for (int x = start.x - 8; x <= start.x + 8 + transport.getType().tileWidth() * 4; x++)
 	{
-		for (int y = start.y - 32; y <= start.y + 32 + transport.getType().tileWidth() * 4; y++)
+		for (int y = start.y - 8; y <= start.y + 8 + transport.getType().tileWidth() * 4; y++)
 		{
 			if (!WalkPosition(x, y).isValid()) continue;
-			if (Position(WalkPosition(x, y)).getDistance(Position(start)) <= 64) continue;
-			if (transport.isUnloading() && !Util().isMobile(start, WalkPosition(x, y), transport.getType()) && !Util().isSafe(WalkPosition(x, y), UnitTypes::Protoss_Reaver, true, true)) continue;
+			if (Position(WalkPosition(x, y)).getDistance(Position(start)) <= 32) continue;			
+			if (transport.isUnloading() && (!Util().isMobile(start, WalkPosition(x, y), transport.getType()) || Broodwar->getGroundHeight(transport.getTilePosition()) >= Broodwar->getGroundHeight(TilePosition(transport.getDestination())))) continue;
 
-			double distance = transport.getDestination().getDistance(Position(WalkPosition(x, y)));
-			double threat = Grids().getEGroundThreat(x, y) + Grids().getEAirThreat(x, y);
-
-			if (((threat < best) || (threat == best && (distance < closest || closest == 0.0))))
+			// If we just dropped units, we need to make sure not to leave them
+			if (transport.isMonitoring())
 			{
-				best = threat;
-				closest = distance;
+				for (auto &u : transport.getAssignedCargo())
+				{
+					UnitInfo& unit = Units().getAllyUnit(u);
+					if (unit.getPosition().getDistance(Position(WalkPosition(x, y))) > 128) continue;
+				}
+			}
+
+			double distance = max(1.0, transport.getDestination().getDistance(Position(WalkPosition(x, y))) - 256);
+			double threat = max(0.01, Grids().getEGroundThreat(x, y) + Grids().getEAirThreat(x, y));
+
+			if (threat * distance < best || best == 0.0)
+			{
+				best = threat * distance;
 				bestPosition = Position(WalkPosition(x, y));
 			}
 		}

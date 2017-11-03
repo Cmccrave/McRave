@@ -40,7 +40,7 @@ void InterfaceTrackerClass::drawInformation()
 	Broodwar->drawTextScreen(520, 16, "%c%.2f", Text::White, Resources().getGPM());
 
 	// Display what build is being used
-	Broodwar->drawTextScreen(575, 32, "%c%s", Text::White, BuildOrder().getCurrentBuild().c_str());
+	Broodwar->drawTextScreen(575, 32, "%c%s", Text::White, BuildOrder().getCurrentBuild().c_str());	
 
 	// Display unit scoring	
 	for (auto &unit : Strategy().getUnitScore())

@@ -7,8 +7,7 @@ using namespace std;
 
 class ProductionTrackerClass
 {
-	map <Unit, UnitType> idleLowProduction;
-	map <Unit, UnitType> idleHighProduction;
+	map <Unit, UnitType> idleProduction;
 	map <Unit, TechType> idleTech;
 	map <Unit, UpgradeType> idleUpgrade;
 	int reservedMineral, reservedGas;	
@@ -18,8 +17,7 @@ class ProductionTrackerClass
 	bool hatchSat = false;
 	bool productionSat = false;
 public:
-	map <Unit, UnitType>& getIdleLowProduction() { return idleLowProduction; }
-	map <Unit, UnitType>& getIdleHighProduction() { return idleHighProduction; }
+	map <Unit, UnitType>& getIdleProduction() { return idleProduction; }
 	map <Unit, TechType>& getIdleTech() { return idleTech; }
 	map <Unit, UpgradeType>& getIdleUpgrade() { return idleUpgrade; }
 
@@ -30,17 +28,18 @@ public:
 	bool isProductionSat() { return productionSat; }
 
 	void update();
-	bool canAfford(UnitType);
-	bool canAfford(UpgradeType);
-	bool canAfford(TechType);
-	bool canMake(Unit, UnitType);
-	bool canMake(UpgradeType);
-	bool canMake(TechType);
 	void updateProduction();
-	void updateProtoss();
-	void updateTerran();
-	void updateZerg();
 	void updateReservedResources();
+
+	bool isAffordable(UnitType);
+	bool isAffordable(UpgradeType);
+	bool isAffordable(TechType);
+	bool isCreateable(Unit, UnitType);
+	bool isCreateable(UpgradeType);
+	bool isCreateable(TechType);
+	bool isSuitable(UnitType);
+	bool isSuitable(UpgradeType);
+	bool isSuitable(TechType);
 };
 
 typedef Singleton<ProductionTrackerClass> ProductionTracker;

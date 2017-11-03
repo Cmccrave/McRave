@@ -26,7 +26,7 @@ UnitInfo::UnitInfo()
 	thisUnit = nullptr;
 	target = nullptr;
 	unitType = UnitTypes::Enum::None;
-	command = UnitCommandTypes::None;	
+	command = UnitCommand();
 	transport = nullptr;
 }
 UnitInfo::~UnitInfo()

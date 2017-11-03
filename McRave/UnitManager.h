@@ -63,6 +63,7 @@ public:
 	void onUnitCreate(Unit);
 	void onUnitDestroy(Unit);
 	void onUnitMorph(Unit);
+	void onUnitRenegade(Unit);
 	void onUnitComplete(Unit);
 	void storeAlly(Unit);
 	void storeEnemy(Unit);

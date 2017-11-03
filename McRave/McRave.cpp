@@ -12,7 +12,9 @@
 // unQueueBuilding->ONS qM + qG and #buildings queued
 // Battery when doing 12 Nexus if enemy has >= 3 fact
 // if overkill, reduce targeting % chance by % overkill
-// Separate global enemy/ally air/ground strength
+// Use ground distance instead of air distance for targeting and simulation
+// Reduce the priority of buildings for targeting
+// Gas steal fucks up 1 gate core stuff
 
 void McRaveModule::onStart()
 {
@@ -100,6 +102,7 @@ void McRaveModule::onUnitMorph(Unit unit)
 
 void McRaveModule::onUnitRenegade(Unit unit)
 {
+	Units().onUnitRenegade(unit);
 }
 
 void McRaveModule::onSaveGame(string gameName)

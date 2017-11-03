@@ -7,15 +7,14 @@ using namespace std;
 
 class TerrainTrackerClass
 {
-	CPPath path;
 	set <int> allyTerritory;
-	vector<Position> defendHere;
 	set<Position> enemyBasePositions;
 	set<TilePosition> allBaseLocations;
 	Position enemyStartingPosition, playerStartingPosition;
 	TilePosition enemyStartingTilePosition, playerStartingTilePosition, FFEPosition;
 	TilePosition secondChoke, firstChoke;
 	Position mineralHold, backMineralHold;
+	Position attackPosition;
 
 public:
 	void onStart();
@@ -30,10 +29,8 @@ public:
 	Position getClosestAllyBase(Position);
 	Position getMineralHoldPosition() { return mineralHold; }
 	Position getBackMineralHoldPosition() { return backMineralHold; }
-	
-	CPPath getPath() { return path; }
-	set <int>& getAllyTerritory() { return allyTerritory; }	
-	vector<Position>& getDefendHere() { return defendHere; }
+		
+	set <int>& getAllyTerritory() { return allyTerritory; }
 	set<Position>& getEnemyBasePositions() { return enemyBasePositions; }
 	set<TilePosition>& getAllBaseLocations() { return allBaseLocations; }
 
@@ -44,6 +41,8 @@ public:
 	TilePosition getFFEPosition() { return FFEPosition; }
 	TilePosition getFirstChoke() { return firstChoke; }
 	TilePosition getSecondChoke() { return secondChoke; }
+
+	Position getAttackPosition() { return attackPosition; }
 };
 
 typedef Singleton<TerrainTrackerClass> TerrainTracker;

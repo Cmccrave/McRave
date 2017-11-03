@@ -59,7 +59,7 @@ void CommandTrackerClass::updateAlliedUnits()
 				}
 
 				// If locally ahead, attack
-				else if (unit.getStrategy() == 1 && unit.unit()->exists())
+				else if (unit.getStrategy() == 1 && unit.getTarget()->exists())
 				{
 					attack(unit);
 					continue;
@@ -80,9 +80,9 @@ void CommandTrackerClass::updateAlliedUnits()
 				{
 					flee(unit);
 					continue;
-				}				
+				}
 				// If locally ahead, attack
-				else if (unit.getStrategy() == 1 && unit.unit()->exists())
+				else if (unit.getStrategy() == 1 && unit.getTarget()->exists())
 				{
 					attack(unit);
 					continue;
@@ -116,17 +116,11 @@ void CommandTrackerClass::attack(UnitInfo& unit)
 		UnitInfo &target = Units().getAllyUnit(unit.getTarget());
 		if (target.getPercentHealth() < 1.0)
 		{
-			if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Use_Tech_Unit || unit.unit()->getLastCommand().getTarget() != unit.getTarget())
-			{
-				unit.unit()->useTech(TechTypes::Healing, unit.getTarget());
-			}
+			if (!isLastCommand(unit, UnitCommandTypes::Move, unit.getTargetPosition())) unit.unit()->useTech(TechTypes::Healing, unit.getTarget());
 		}
 		else
 		{
-			if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move || unit.unit()->getLastCommand().getTargetPosition() != unit.getTargetPosition())
-			{
-				unit.unit()->move(unit.getTargetPosition());
-			}
+			if (!isLastCommand(unit, UnitCommandTypes::Move, unit.getTargetPosition())) unit.unit()->move(unit.getTargetPosition());			
 		}
 		return;
 	}
@@ -235,7 +229,7 @@ void CommandTrackerClass::attack(UnitInfo& unit)
 			if (moveTo) approach(unit);
 			else if (moveAway) flee(unit);
 		}
-		else if ((!target.getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() <= 0) || (target.getType().isFlyer() && unit.unit()->getAirWeaponCooldown() <= 0))
+		else
 		{
 			if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Attack_Unit || unit.unit()->getLastCommand().getTarget() != unit.getTarget())
 			{
@@ -254,42 +248,24 @@ void CommandTrackerClass::move(UnitInfo& unit)
 		if (unit.unit()->getDistance(unit.getTargetPosition()) > 512 || unit.unit()->getDistance(unit.getTargetPosition()) < 128)
 		{
 			unit.unit()->unsiege();
-			return;
 		}
 	}
 
 	// If unit has a transport, move to it or load into it
-	if (unit.getTransport() && unit.getTransport()->exists())
+	else if (unit.getTransport() && unit.getTransport()->exists())
 	{
 		unit.unit()->rightClick(unit.getTransport());
-		return;
-	}
-
-	// If no target, move to closest enemy base if there is any
-	if (Terrain().getEnemyBasePositions().size() > 0 && Grids().getEnemyArmyCenter().isValid() && !unit.getType().isFlyer())
-	{
-		double closestD = 0.0;
-		Position closestP;
-		for (auto &base : Terrain().getEnemyBasePositions())
-		{
-			if (Grids().getEnemyArmyCenter().getDistance(base) > closestD)
-			{
-				closestD = Grids().getEnemyArmyCenter().getDistance(base);
-				closestP = base;
-			}
-		}
-		unit.unit()->move(closestP);
-		return;
 	}
 
 	// If target doesn't exist, move towards it
-	if (unit.getTargetPosition().isValid())
+	else if (unit.getTarget() && unit.getTargetPosition().isValid() && unit.getPosition().getDistance(unit.getTargetPosition()) < 640)
 	{
-		if (unit.unit()->getLastCommand().getTargetPosition() != unit.getTargetPosition())
-		{
-			unit.unit()->move(unit.getTargetPosition());
-		}
-		return;
+		unit.unit()->move(unit.getTargetPosition());
+	}
+
+	else if (Terrain().getAttackPosition().isValid())
+	{
+		unit.unit()->move(Terrain().getAttackPosition());
 	}
 
 	// If no target and no enemy bases, move to a random base
@@ -333,6 +309,7 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 			{
 				unit.unit()->move(Terrain().getBackMineralHoldPosition());
 			}
+			return;
 		}
 		else
 		{
@@ -340,8 +317,8 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 			{
 				unit.unit()->move(Terrain().getMineralHoldPosition());
 			}
+			return;
 		}
-		return;
 	}
 
 	// Defend chokepoint with concave
@@ -394,6 +371,8 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 		unit.unit()->gather(unit.unit()->getClosestUnit(Filter::IsMineralField, 128));
 		return;
 	}
+
+	if (unit.getTransport() && unit.getTransport()->exists()) return;
 
 	// If it's a tank, make sure we're unsieged before moving -  TODO: Check that target has velocity and > 512 or no velocity and < tank range
 	if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
@@ -477,4 +456,10 @@ void CommandTrackerClass::exploreArea(UnitInfo& unit)
 	// Last explored
 	// Unit deaths
 	// Untouched resources
+}
+
+bool CommandTrackerClass::isLastCommand(UnitInfo& unit, UnitCommandType thisCommand, Position thisPosition)
+{
+	if (unit.getLastCommand().getType() == thisCommand && unit.getLastCommand().getTargetPosition() == thisPosition) return true;
+	return false;
 }

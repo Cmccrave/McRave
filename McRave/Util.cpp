@@ -17,6 +17,10 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit)
 	{
 		return 10.0;
 	}
+	if (unit.getType() == UnitTypes::Protoss_Reaver)
+	{
+		return 25.0;
+	}
 	if (unit.getType() == UnitTypes::Protoss_Scarab || unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Zerg_Egg || unit.getType() == UnitTypes::Zerg_Larva)
 	{
 		return 0.0;
@@ -30,25 +34,26 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit)
 		return 1.5;
 	}
 
-	double range, damage, hp;
+	double range, damage, hp, speed;
 	range = cbrt(unit.getGroundRange());
-	//hp = sqrt((unit.getType().maxHitPoints() + unit.getType().maxShields()) / 10.0);
-	hp = unit.getType().isBuilding() ? 4.0 : double(max(1, unit.getType().supplyRequired()));
+	hp = sqrt((unit.getType().maxHitPoints() + unit.getType().maxShields()) / 10.0);
+	//hp = unit.getType().isBuilding() ? 4.0 : double(max(1, unit.getType().supplyRequired()));
 
 	if (unit.getType().groundWeapon().damageCooldown() > 0)
 	{
 		damage = unit.getGroundDamage() / double(unit.getType().groundWeapon().damageCooldown());
 	}
-	else if (unit.getType() == UnitTypes::Protoss_Reaver)
+	/*else if (unit.getType() == UnitTypes::Protoss_Reaver)
 	{
-		damage = unit.getGroundDamage() / 60.0;
-	}
+	damage = unit.getGroundDamage() / 60.0;
+	}*/
 	else if (unit.getType() == UnitTypes::Terran_Bunker)
 	{
 		damage = unit.getGroundDamage() / 15.0;
 	}
 
 	double effectiveness = 1.0;
+	speed = max(24.0, unit.getSpeed());
 
 	double aLarge = double(Units().getAllySizes()[UnitSizeTypes::Large]);
 	double aMedium = double(Units().getAllySizes()[UnitSizeTypes::Medium]);
@@ -105,9 +110,9 @@ double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit)
 	{
 		return 2.5;
 	}
-	double range, damage, hp;
-	//hp = sqrt((unit.getType().maxHitPoints() + unit.getType().maxShields()) / 10.0);
-	hp = unit.getType().isBuilding() ? 4.0 : double(max(1, unit.getType().supplyRequired()));
+	double range, damage, hp, speed;
+	hp = sqrt((unit.getType().maxHitPoints() + unit.getType().maxShields()) / 10.0);
+	//hp = unit.getType().isBuilding() ? 4.0 : double(max(1, unit.getType().supplyRequired()));
 	damage = unit.getAirDamage() / double(unit.getType().airWeapon().damageCooldown());
 	range = cbrt(unit.getAirRange());
 
@@ -125,6 +130,7 @@ double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit)
 	}
 
 	double effectiveness = 1.0;
+	speed = max(24.0, unit.getSpeed());
 
 	double aLarge = double(Units().getAllySizes()[UnitSizeTypes::Large]);
 	double aMedium = double(Units().getAllySizes()[UnitSizeTypes::Medium]);
@@ -175,59 +181,17 @@ double UtilTrackerClass::getPriority(UnitInfo& unit)
 	{
 		return 10.0;
 	}
+	double mineral, gas;
 
-	// Support units gain higher priority due to their capabilities
-	if (unit.getType() == UnitTypes::Protoss_Arbiter || unit.getType() == UnitTypes::Protoss_Observer || unit.getType() == UnitTypes::Protoss_Shuttle || unit.getType() == UnitTypes::Terran_Science_Vessel || unit.getType() == UnitTypes::Terran_Dropship || unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine)
-	{
-		return 5.0;
-	}
+	if (unit.getType() == UnitTypes::Protoss_Archon) mineral = 100.0, gas = 300.0;
+	else if (unit.getType() == UnitTypes::Protoss_Dark_Archon) mineral = 250.0, gas = 200.0;
+	else if (unit.getType() == UnitTypes::Zerg_Sunken_Colony || unit.getType() == UnitTypes::Zerg_Spore_Colony) mineral = 175.0, gas = 0.0;
+	else mineral = unit.getType().mineralPrice(), gas = unit.getType().gasPrice();	
 
-	// Carriers don't have any strength, manually modify priority
-	else if (unit.getType() == UnitTypes::Protoss_Carrier)
-	{
-		return 10.0;
-	}
-
-	// Workers get a fairly low priority
-	else if (unit.getType().isWorker())
-	{
-		if (unit.unit()->exists() && unit.unit()->isRepairing())
-		{
-			return 10.0;
-		}
-		else
-		{
-			return 2.0;
-		}
-	}
-
-	else if (unit.getType().isBuilding() && (unit.getGroundDamage() > 0.0 || unit.getAirDamage() > 0.0))
-	{
-		return max(unit.getMaxGroundStrength() / 2.0, unit.getMaxAirStrength() / 2.0);
-	}
-
-	// Buildings with no attack have the lowest priority
-	else if (unit.getType().isBuilding() && unit.getMaxGroundStrength() == 0.0 && unit.getMaxAirStrength() == 0.0)
-	{
-		return double(unit.getType().mineralPrice() + (unit.getType().gasPrice() * 2.0)) / 400.0;
-	}
-
-	// Overlords have low priority but are worthwhile to pick off
-	else if (unit.getType() == UnitTypes::Zerg_Overlord)
-	{
-		return 2.0;
-	}
-
-	// Else return the units max strength
-	else if (unit.getMaxGroundStrength() > 0 || unit.getMaxAirStrength() > 0)
-	{
-		return max(unit.getMaxGroundStrength(), unit.getMaxAirStrength());
-	}
-
-	else
-	{
-		return 0.1;
-	}
+	double strength = max({ unit.getMaxGroundStrength(), unit.getMaxAirStrength(), 1.0 });
+	double cost = ((mineral * 0.33) + (gas * 0.66)) * max(double(unit.getType().supplyRequired()), 0.1);
+	double survivability = max(24.0, unit.getSpeed()) * (unit.getType().maxHitPoints() + unit.getType().maxShields()) / 100.0;
+	return strength * cost / survivability;
 }
 
 double UtilTrackerClass::getTrueGroundRange(UnitInfo& unit)
@@ -354,6 +318,16 @@ double UtilTrackerClass::getTrueAirDamage(UnitInfo& unit)
 		return 24.0;
 	}
 
+	if (unit.getType() == UnitTypes::Protoss_Scout)
+	{
+		return 28.0;
+	}
+
+	if (unit.getType() == UnitTypes::Terran_Valkyrie)
+	{
+		return 48.0;
+	}
+
 	// Else return the Units base air weapon damage
 	return unit.getType().airWeapon().damageAmount();
 }
@@ -378,12 +352,6 @@ double UtilTrackerClass::getTrueSpeed(UnitInfo& unit)
 	{
 		return 0.0;
 	}
-
-	if (unit.getTransport())
-	{
-		return UnitTypes::Protoss_Shuttle.topSpeed();
-	}
-
 	return speed;
 }
 

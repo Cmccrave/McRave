@@ -7,7 +7,7 @@ using namespace std;
 class TransportInfo
 {
 	int cargoSize, lastDropFrame;
-	bool harassing, loading, unloading;
+	bool harassing, loading, unloading, monitoring;
 	Unit thisUnit;
 	UnitType transportType;
 	set<Unit> assignedCargo;
@@ -22,6 +22,7 @@ public:
 	bool isLoading() { return loading; }
 	bool isUnloading() { return unloading; }
 	bool isHarassing() { return harassing; }
+	bool isMonitoring() { return monitoring; }
 	Unit unit() { return thisUnit; }
 	UnitType getType() { return transportType; }
 	set<Unit>& getAssignedCargo() { return assignedCargo; }
@@ -35,6 +36,7 @@ public:
 	void setLoading(bool newState) { loading = newState; }
 	void setUnloading(bool newState) { unloading = newState; }
 	void setHarassing(bool newState) { harassing = newState; }
+	void setMonitoring(bool newState) { monitoring = newState; }
 	void setUnit(Unit newTransport) { thisUnit = newTransport; }
 	void setType(UnitType newType) { transportType = newType; }
 	void setPosition(Position newPosition) { position = newPosition; }

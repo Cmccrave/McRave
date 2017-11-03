@@ -17,6 +17,8 @@ public:
 	void defend(UnitInfo&);
 	void exploreArea(UnitInfo&);
 	void flee(UnitInfo&);
+
+	bool isLastCommand(UnitInfo&, UnitCommandType, Position);
 };
 
 typedef Singleton<CommandTrackerClass> CommandTracker;

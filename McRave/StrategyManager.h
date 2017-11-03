@@ -7,8 +7,7 @@ using namespace std;
 
 class StrategyTrackerClass
 {
-	map <UnitType, double> unitScore;
-	set <UnitType> lockedType;
+	map <UnitType, double> unitScore;	
 	bool allyFastExpand = false;
 	bool enemyFastExpand = false;
 	bool invis = false;
@@ -33,7 +32,7 @@ public:
 	bool isHoldChoke() { return holdChoke; }
 	bool isZealotsLocked() { return zealotsLocked; }
 	bool isPlayPassive() { return playPassive; }
-	bool isUnitLocked(UnitType unit) { return (lockedType.find(unit) != lockedType.end()); }
+	
 
 	// Updating
 	void update();

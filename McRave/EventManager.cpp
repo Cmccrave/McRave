@@ -2,15 +2,11 @@
 
 void UnitTrackerClass::onUnitDiscover(Unit unit)
 {
-	if (unit->getPlayer()->isEnemy(Broodwar->self()))
-	{
-		Units().storeEnemy(unit);
-	}
-	return;
+	if (unit->getPlayer()->isEnemy(Broodwar->self())) Units().storeEnemy(unit);
 }
 
 void UnitTrackerClass::onUnitCreate(Unit unit)
-{
+{	
 	if (unit->getPlayer() == Broodwar->self())
 	{
 		// Store supply if it costs supply
@@ -100,31 +96,22 @@ void UnitTrackerClass::onUnitMorph(Unit unit)
 		// Zerg morphing
 		if (unit->getType().getRace() == Races::Zerg)
 		{
-			if (unit->getType() == UnitTypes::Zerg_Egg || unit->getType() == UnitTypes::Zerg_Lurker_Egg)
-			{
-				// Figure out how morphing works
-			}
-			else if (unit->getType().isBuilding() && Workers().getMyWorkers().find(unit) != Workers().getMyWorkers().end())
+			if (unit->getType().isBuilding() && Workers().getMyWorkers().find(unit) != Workers().getMyWorkers().end())
 			{
 				Workers().removeWorker(unit);
 				Buildings().storeBuilding(unit);
 				supply -= 2;
 			}
-			else if (unit->getType().isWorker())
-			{
-				Workers().storeWorker(unit);
-			}
-			else if (!unit->getType().isWorker() && !unit->getType().isBuilding())
-			{
-				storeAlly(unit);
-			}
+			else if (unit->getType().isWorker()) Workers().storeWorker(unit);			
+			else if (!unit->getType().isWorker() && !unit->getType().isBuilding())storeAlly(unit);			
 		}
 
 		// Protoss morphing
-		if (unit->getType() == UnitTypes::Protoss_Archon)
+		if (allyUnits.find(unit) != allyUnits.end() && (unit->getType() == UnitTypes::Protoss_Archon || unit->getType() == UnitTypes::Protoss_Dark_Archon))
 		{
-			// Remove the two HTs and their respective supply
-			// whatBuilds returns previous units size
+			allySizes[unit->getType().whatBuilds().first.size()] --;
+			allyUnits[unit].setType(unit->getType());
+			allySizes[unit->getType().size()] ++;
 		}
 	}
 	else if (unit->getPlayer()->isEnemy(Broodwar->self()))
@@ -140,41 +127,42 @@ void UnitTrackerClass::onUnitMorph(Unit unit)
 			storeEnemy(unit);
 		}
 	}
-	else if (unit->getType().isResourceContainer())
+	else if (unit->getType() == UnitTypes::Resource_Vespene_Geyser || unit->getType().isMineralField())
 	{
+		if (enemyUnits.find(unit) != enemyUnits.end())
+		{
+			enemySizes[unit->getType().whatBuilds().first.size()] --;
+			enemyUnits[unit].setType(unit->getType());
+			enemySizes[unit->getType().size()] ++;
+		}
+		if (allyUnits.find(unit) != allyUnits.end())
+		{
+			allySizes[unit->getType().whatBuilds().first.size()] --;
+			allyUnits[unit].setType(unit->getType());
+			allySizes[unit->getType().size()] ++;
+		}
 		Resources().storeResource(unit);
 	}
 }
 
+void UnitTrackerClass::onUnitRenegade(Unit unit)
+{
+	// Treat the unit as being destroyed
+	onUnitDestroy(unit);
+	if (unit->getPlayer() == Broodwar->self()) onUnitComplete(unit);
+}
+
 void UnitTrackerClass::onUnitComplete(Unit unit)
 {
-	// Don't store useless things
-	if (unit->getType() == UnitTypes::Protoss_Scarab || unit->getType() == UnitTypes::Zerg_Larva)
-	{
-		return;
-	}
+	if (unit->getType() == UnitTypes::Protoss_Scarab || unit->getType() == UnitTypes::Zerg_Larva || unit->getType() == UnitTypes::Terran_Vulture_Spider_Mine) return;	
 
 	if (unit->getPlayer() == Broodwar->self())
 	{
 		allySizes[unit->getType().size()] += 1;
-
-		// Store Workers, Units, Bases(update base grid?)
-		if (unit->getType().isWorker())
-		{
-			Workers().storeWorker(unit);
-		}
-
-		if (unit->getType() == UnitTypes::Protoss_Shuttle || unit->getType() == UnitTypes::Terran_Dropship) //|| unit->getType() == UnitTypes::Zerg_Overlord
-		{
-			Transport().storeUnit(unit);
-		}
-		else if (!unit->getType().isWorker() && !unit->getType().isBuilding())
-		{
-			storeAlly(unit);
-		}
+		if (unit->getType().isWorker()) Workers().storeWorker(unit);
+		else if (unit->getType() == UnitTypes::Protoss_Shuttle || unit->getType() == UnitTypes::Terran_Dropship || unit->getType() == UnitTypes::Zerg_Overlord) Transport().storeUnit(unit);
+		else if (!unit->getType().isWorker()) storeAlly(unit);
 	}
-	else if (unit->getType().isResourceContainer())
-	{
-		Resources().storeResource(unit);
-	}
+
+	if (unit->getType().isResourceContainer()) Resources().storeResource(unit);
 }

@@ -13,7 +13,8 @@ class BuildOrderTrackerClass
 	bool oneGateCore = false, forgeExpand = false;
 	bool bioBuild = false;
 	UnitType techUnit;
-	set <UnitType> techList;	
+	set <UnitType> techList;
+	set <UnitType> unlockedType;
 	vector <string> buildNames;
 	string currentBuild = "Test";
 	stringstream ss;
@@ -22,6 +23,7 @@ public:
 	string getCurrentBuild() { return currentBuild; }
 	void getDefaultBuild();
 	bool isBuildAllowed(Race, string);
+	bool isUnitUnlocked(UnitType unit) { return (unlockedType.find(unit) != unlockedType.end()); }
 
 	map <UnitType, int>& getBuildingDesired() { return buildingDesired; }
 	bool isOpener() { return getOpening; }	
@@ -36,6 +38,7 @@ public:
 	void update();
 	void updateBuild();
 	
+	// Toss Builds
 	void protossOpener();
 	void protossTech();
 	void protossSituational();
@@ -54,9 +57,13 @@ public:
 	void RoboExpand(), DTExpand();
 	void FourGate(), ZealotRush(), TenTwelveGate(); //ReaverRush();
 
+	// Terran Builds
 	void TwoFactVult();
 	//void ShallowTwo();
 	void Sparks();
+
+	// Zerg Builds
+	void Overpool();
 };
 
 typedef Singleton<BuildOrderTrackerClass> BuildOrderTracker;

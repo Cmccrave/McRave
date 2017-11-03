@@ -2,18 +2,8 @@
 
 Unit TargetTrackerClass::getTarget(UnitInfo& unit)
 {
-	if (unit.getType() == UnitTypes::Protoss_Shuttle)
-	{
-		return nullptr;
-	}
-	else if (unit.getType() == UnitTypes::Terran_Medic)
-	{
-		return allyTarget(unit);
-	}
-	else
-	{
-		return enemyTarget(unit);
-	}
+	if (unit.getType() == UnitTypes::Terran_Medic) return allyTarget(unit);	
+	else return enemyTarget(unit);	
 	return nullptr;
 }
 
@@ -31,8 +21,13 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		UnitInfo &enemy = e.second;
 		if (!enemy.unit()) continue;
 		double allyRange = (unit.getType().width() / 2.0) + enemy.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
-		double distance = max(32.0, unit.getPosition().getDistance(enemy.getPosition()) - allyRange);			
-		
+		double distance = pow(max(1.0, unit.getPosition().getDistance(enemy.getPosition())), 5.0);
+/*
+		if (Grids().getDistanceHome(unit.getWalkPosition()) > 0 && Grids().getDistanceHome(enemy.getWalkPosition()) > 0)
+		{
+			distance = max(1.0, (8.0 * abs(Grids().getDistanceHome(unit.getWalkPosition()) - Grids().getDistanceHome(enemy.getWalkPosition()))));
+		}*/
+
 		if (enemy.getType() == UnitTypes::Zerg_Egg || enemy.getType() == UnitTypes::Zerg_Larva) continue; // If it's an egg or larva, ignore it		
 		if (!unit.getType().isDetector() && ((enemy.getType().isFlyer() && unit.getAirRange() == 0.0) || (!enemy.getType().isFlyer() && unit.getGroundRange() == 0.0))) continue; // If unit is dead or unattackable, ignore it		
 		if (enemy.unit()->exists() && enemy.unit()->isStasised()) continue; // If the enemy is stasised, ignore it		
@@ -64,14 +59,15 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		// High Templars target the highest priority with the largest cluster
 		else if (unit.getType() == UnitTypes::Protoss_High_Templar)
 		{
-			if (Grids().getPsiStormGrid(enemy.getWalkPosition()) == 0 && Grids().getAGroundCluster(enemy.getWalkPosition()) < (Grids().getEAirCluster(enemy.getWalkPosition()) + Grids().getEGroundCluster(enemy.getWalkPosition())) && (Grids().getEAirCluster(enemy.getWalkPosition()) + Grids().getEGroundCluster(enemy.getWalkPosition())) > 4 && !enemy.getType().isBuilding())
+			if (Grids().getPsiStormGrid(enemy.getWalkPosition()) == 0 && Grids().getAGroundCluster(enemy.getWalkPosition()) < (Grids().getEAirCluster(enemy.getWalkPosition()) + Grids().getEGroundCluster(enemy.getWalkPosition())) && !enemy.getType().isBuilding())
 			{
 				thisUnit = (enemy.getPriority() * max(Grids().getEGroundCluster(enemy.getWalkPosition()), Grids().getEAirCluster(enemy.getWalkPosition()))) / distance;
 			}
 		}
 
 		else if ((enemy.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0)) thisUnit = enemy.getPriority() / distance;
-				
+		//if (!enemy.unit()->exists()) thisUnit = thisUnit * (1.0 - max(0.75, double(Broodwar->getFrameCount() - enemy.getLastVisibleFrame()) / 5000));
+
 		// If this is the strongest enemy around, target it
 		if (thisUnit > 0.0 && (thisUnit > highest || highest == 0.0))
 		{
@@ -86,7 +82,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 	{
 		unit.setTargetPosition(targetPosition);
 		unit.setTargetWalkPosition(targetWalkPosition);
-		unit.setTargetTilePosition(targetTilePosition);		
+		unit.setTargetTilePosition(targetTilePosition);
 
 		if (unit.getPosition().getDistance(unit.getTargetPosition()) > max(unit.getGroundRange(), unit.getAirRange()))
 		{
@@ -96,11 +92,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		{
 			unit.setEngagePosition(unit.getPosition());
 		}
-	}
-	else
-	{
-		unit.setTargetPosition(Positions::None);
-	}
+	}	
 	return target;
 }
 

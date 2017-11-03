@@ -116,7 +116,7 @@ void SpecialUnitTrackerClass::updateReavers()
 		UnitInfo &reaver = Units().getAllyUnit(r);
 
 		// If we need Scarabs
-		if (reaver.unit()->getScarabCount() < 5)
+		if (!reaver.unit()->isLoaded() && reaver.unit()->getScarabCount() < 5)
 		{
 			reaver.unit()->train(UnitTypes::Protoss_Scarab);
 			reaver.setLastAttackFrame(Broodwar->getFrameCount());

@@ -13,14 +13,17 @@ class BuildingTrackerClass
 	map <Unit, BuildingInfo> myBuildings;
 	set<Unit> returnValues;
 	TilePosition currentExpansion;
+	UnitType lastBadBuilding;
 	int errorTime = 0, buildingOffset = 0;
 public:
 	map <Unit, BuildingInfo>& getMyBuildings() { return myBuildings; }
 	map <TilePosition, UnitType>& getBuildingsQueued() { return buildingsQueued; }
 	TilePosition getBuildLocation(UnitType);
-	TilePosition getBuildLocationNear(UnitType, TilePosition, bool);
-	bool canBuildHere(UnitType, TilePosition, bool ignoreCond = false);
-	bool canQueueHere(UnitType, TilePosition, bool ignoreCond = false);
+	TilePosition getBuildLocationNear(UnitType, TilePosition);
+
+	bool isBuildable(UnitType, TilePosition);
+	bool isSuitable(UnitType, TilePosition);
+	bool isQueueable(UnitType, TilePosition);
 
 	// Returns the minerals that are reserved for queued buildings
 	int getQueuedMineral() { return queuedMineral; }

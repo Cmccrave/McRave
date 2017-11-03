@@ -11,7 +11,7 @@ class UnitInfo {
 
 	Unit target, thisUnit, transport;
 	UnitType unitType;
-	UnitCommandType command;
+	UnitCommand command;
 	Player who;
 
 	Position position, targetPosition, engagePosition, destination;
@@ -80,7 +80,7 @@ public:
 	Unit getTarget() { return target; }
 	Unit getTransport() { return transport; }
 	UnitType getType(){ return unitType; }
-	UnitCommandType getCommand() { return command; }
+	UnitCommand getLastCommand() { return command; }
 	Player getPlayer() { return who; }
 
 	Position getPosition(){ return position; }
@@ -115,7 +115,7 @@ public:
 	void setTarget(Unit newTarget){ target = newTarget; }
 	void setTransport(Unit newTransport) { transport = newTransport; }
 	void setType(UnitType newType) { unitType = newType; }
-	void setCommand(UnitCommandType newCommand) { command = newCommand; }
+	void setLastCommand(UnitCommand newCommand) { command = newCommand; }
 	void setPlayer(Player newOwner) { who = newOwner; }
 
 	void setPosition(Position newPosition){ position = newPosition; }

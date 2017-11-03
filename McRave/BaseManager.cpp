@@ -20,7 +20,7 @@ void BaseTrackerClass::updateAlliedBases()
 				Grids().updateBaseGrid(base);
 			}
 			updateProduction(base);
-		}		
+		}
 	}
 	return;
 }
@@ -33,9 +33,9 @@ void BaseTrackerClass::updateProduction(BaseInfo& base)
 	}
 
 	if (base.unit() && base.unit()->isIdle() && ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) || BuildOrder().getCurrentBuild() == "Sparks"))
-	{		
+	{
 		for (auto &unit : base.getType().buildsWhat())
-		{			
+		{
 			if (unit.isWorker())
 			{
 				if (Broodwar->self()->completedUnitCount(unit) < 60 && (Broodwar->self()->minerals() >= unit.mineralPrice() + Production().getReservedMineral() + Buildings().getQueuedMineral()))
@@ -43,9 +43,12 @@ void BaseTrackerClass::updateProduction(BaseInfo& base)
 					base.unit()->train(unit);
 				}
 			}
-			else
+		}
+		for (auto &unit : base.unit()->getLarva())
+		{			
+			if (Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Drone) < 60 && (Broodwar->self()->minerals() >= UnitTypes::Zerg_Drone.mineralPrice() + Production().getReservedMineral() + Buildings().getQueuedMineral()))
 			{
-				// Zerg production
+				base.unit()->morph(UnitTypes::Zerg_Drone);
 			}
 		}
 	}

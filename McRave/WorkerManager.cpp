@@ -203,7 +203,7 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 		}
 
 		// If our building position is no longer buildable, remove
-		if (!Buildings().canBuildHere(worker.getBuildingType(), worker.getBuildPosition()))
+		if (!Buildings().isBuildable(worker.getBuildingType(), worker.getBuildPosition()))
 		{
 			worker.setBuildingType(UnitTypes::None);
 			worker.setBuildPosition(TilePositions::None);

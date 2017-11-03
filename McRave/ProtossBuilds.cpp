@@ -63,9 +63,10 @@ void BuildOrderTrackerClass::FFENexus()
 {
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24);
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 26) + (Units().getSupply() >= 42);
-	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 36;
-	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 40;
-	buildingDesired[UnitTypes::Protoss_Forge] = Units().getSupply() >= 60;
+	buildingDesired[UnitTypes::Protoss_Forge] = Units().getSupply() >= 28;
+	buildingDesired[UnitTypes::Protoss_Photon_Cannon] = (Units().getSupply() >= 30);
+	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 38;
+	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 42;
 	getOpening = Units().getSupply() < 66;
 	forgeExpand = true;
 	return;

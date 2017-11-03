@@ -20,16 +20,16 @@ void GridTrackerClass::reset()
 	//{
 	//	for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
 	//	{
-	//		if (eGroundThreat[x][y] > 0 && eGroundThreat[x][y] < 2)
+	//		if (eGroundThreat[x][y] > 0 && eGroundThreat[x][y] < 4)
 	//		{
 	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
 	//			//Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
 	//		}
-	//		if (eGroundThreat[x][y] >= 2 && eGroundThreat[x][y] < 4)
+	//		if (eGroundThreat[x][y] >= 4 && eGroundThreat[x][y] < 5)
 	//		{
 	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Blue);
 	//		}
-	//		if (eGroundThreat[x][y] >= 4 && eGroundThreat[x][y] < 6)
+	//		if (eGroundThreat[x][y] >= 5 && eGroundThreat[x][y] < 6)
 	//		{
 	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Green);
 	//		}
@@ -127,12 +127,12 @@ void GridTrackerClass::updateAllyGrids()
 				if (distance <= (unit.getGroundRange() + unit.getSpeed()))
 				{
 					resetGrid[x][y] = true;
-					aGroundThreat[x][y] += max(0.1, unit.getMaxGroundStrength() / distance);
+					aGroundThreat[x][y] += 32.0 * unit.getMaxGroundStrength() / distance;
 				}
 				if (distance <= (unit.getAirRange() + unit.getSpeed()))
 				{
 					resetGrid[x][y] = true;
-					aAirThreat[x][y] += max(0.1, unit.getMaxAirStrength() / distance);
+					aAirThreat[x][y] += 32.0 * unit.getMaxAirStrength() / distance;
 				}
 			}
 		}
@@ -191,10 +191,14 @@ void GridTrackerClass::updateEnemyGrids()
 		int radius = 0;
 		WalkPosition start = unit.getWalkPosition();
 
-		if (unit.getType().isWorker() && unit.unit()->exists() && (!Terrain().isInAllyTerritory(unit.unit()) || (Broodwar->getFrameCount() - unit.getLastAttackFrame() < 500)))
+		if (unit.getType().isWorker())
 		{
-			radius = int((unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0);
-			gReach = unit.getGroundRange() + unit.getSpeed();
+			if (unit.unit()->exists() && (!Terrain().isInAllyTerritory(unit.unit()) || (Broodwar->getFrameCount() - unit.getLastAttackFrame() < 500)))
+			{
+				radius = int((unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0);
+				gReach = unit.getGroundRange() + unit.getSpeed();
+			}
+			else continue;
 		}
 		else
 		{
@@ -244,27 +248,16 @@ void GridTrackerClass::updateEnemyGrids()
 					antiMobilityGrid[x][y] += 1;
 				}
 
-				//// Threat grids
-				//if (distance <= gRange)
-				//{
-				//	resetGrid[x][y] = true;
-				//	eGroundThreat[x][y] += unit.getMaxGroundStrength();
-				//}
+				// Threat grids				
 				if (distance <= gReach)
 				{
 					resetGrid[x][y] = true;
-					eGroundThreat[x][y] += unit.getMaxGroundStrength() / max(0.1, (distance - gRange));
+					eGroundThreat[x][y] += unit.getMaxGroundStrength() * min(1.0, (unit.getGroundRange() / distance));
 				}
-
-				/*if (distance <= aRange)
-				{
-				resetGrid[x][y] = true;
-				eAirThreat[x][y] += unit.getMaxAirStrength();
-				}
-				else */if (distance <= aReach)
+				if (distance <= aReach)
 				{
 					resetGrid[x][y] = true;
-					eAirThreat[x][y] += unit.getMaxAirStrength() / max(0.1, (distance - aRange));
+					eAirThreat[x][y] += unit.getMaxAirStrength() * min(1.0, (unit.getAirRange() / distance));
 				}
 
 				// Detection grid
@@ -571,7 +564,7 @@ void GridTrackerClass::updateMobilityGrids()
 					mobilityGrid[x][y] = min(mobilityGrid[x][y], 10);
 				}
 
-				if (theMap.GetArea(WalkPosition(x, y)) == nullptr || theMap.GetArea(WalkPosition(x, y))->AccessibleNeighbours().size() == 0)
+				if (!theMap.GetArea(WalkPosition(x, y)) || theMap.GetArea(WalkPosition(x, y))->AccessibleNeighbours().size() == 0)
 				{
 					// Island
 					mobilityGrid[x][y] = -1;
