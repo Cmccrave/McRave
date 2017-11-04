@@ -3,12 +3,12 @@
 void BaseTrackerClass::update()
 {
 	Display().startClock();
-	updateAlliedBases();
+	updateBases();
 	Display().performanceTest(__FUNCTION__);
 	return;
 }
 
-void BaseTrackerClass::updateAlliedBases()
+void BaseTrackerClass::updateBases()
 {
 	for (auto &b : myBases)
 	{
@@ -20,6 +20,15 @@ void BaseTrackerClass::updateAlliedBases()
 				Grids().updateBaseGrid(base);
 			}
 			updateProduction(base);
+		}
+	}
+	for (auto &b : enemyBases)
+	{
+		BaseInfo& base = b.second;
+		if (base.unit() && !base.unit()->exists() && Broodwar->isVisible(base.getTilePosition()))
+		{
+			enemyBases.erase(base.unit());
+			break;
 		}
 	}
 	return;
@@ -55,9 +64,25 @@ void BaseTrackerClass::updateProduction(BaseInfo& base)
 	return;
 }
 
+Position BaseTrackerClass::getClosestEnemyBase(Position here)
+{
+	double closestD = 0.0;
+	Position closestP;
+	for (auto &b : enemyBases)
+	{
+		BaseInfo& base = b.second;
+		if (here.getDistance(base.getPosition()) < closestD || closestD == 0.0)
+		{
+			closestP = base.getPosition();
+			closestD = here.getDistance(base.getPosition());
+		}
+	}
+	return closestP;
+}
+
 void BaseTrackerClass::storeBase(Unit base)
 {
-	BaseInfo& b = myBases[base];
+	BaseInfo& b = base->getPlayer() == Broodwar->self() ? myBases[base] : enemyBases[base];
 	b.setUnit(base);
 	b.setType(base->getType());
 	b.setResourcesPosition(TilePosition(Resources().resourceClusterCenter(base)));
@@ -65,17 +90,33 @@ void BaseTrackerClass::storeBase(Unit base)
 	b.setWalkPosition(Util().getWalkPosition(base));
 	b.setTilePosition(base->getTilePosition());
 	b.setPosition(base->getPosition());
-	myOrderedBases[base->getPosition().getDistance(Terrain().getPlayerStartingPosition())] = base->getTilePosition();
-	Terrain().getAllyTerritory().insert(theMap.GetArea(b.getTilePosition())->Id());
-	Grids().updateBaseGrid(b);
+
+	if (base->getPlayer() == Broodwar->self())
+	{
+		myOrderedBases[base->getPosition().getDistance(Terrain().getPlayerStartingPosition())] = base->getTilePosition();
+		Terrain().getAllyTerritory().insert(theMap.GetArea(b.getTilePosition())->Id());
+		Grids().updateBaseGrid(b);
+	}
+	else
+	{
+		Terrain().getEnemyTerritory().insert(theMap.GetArea(b.getTilePosition())->Id());
+	}
 	return;
 }
 
 void BaseTrackerClass::removeBase(Unit base)
 {
-	Terrain().getAllyTerritory().erase(theMap.GetArea(base->getTilePosition())->Id());
-	Grids().updateBaseGrid(myBases[base]);
-	myOrderedBases.erase(base->getPosition().getDistance(Terrain().getPlayerStartingPosition()));
-	myBases.erase(base);
+	if (base->getPlayer() == Broodwar->self())
+	{
+		Terrain().getAllyTerritory().erase(theMap.GetArea(base->getTilePosition())->Id());
+		Grids().updateBaseGrid(myBases[base]);
+		myOrderedBases.erase(base->getPosition().getDistance(Terrain().getPlayerStartingPosition()));
+		myBases.erase(base);
+	}
+	else
+	{
+		Terrain().getEnemyTerritory().erase(theMap.GetArea(base->getTilePosition())->Id());
+		enemyBases.erase(base);
+	}
 	return;
 }

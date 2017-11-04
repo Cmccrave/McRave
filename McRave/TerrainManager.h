@@ -8,7 +8,7 @@ using namespace std;
 class TerrainTrackerClass
 {
 	set <int> allyTerritory;
-	set<Position> enemyBasePositions;
+	set <int> enemyTerritory;
 	set<TilePosition> allBaseLocations;
 	Position enemyStartingPosition, playerStartingPosition;
 	TilePosition enemyStartingTilePosition, playerStartingTilePosition, FFEPosition;
@@ -20,24 +20,22 @@ public:
 	void onStart();
 	void update();
 	void updateAreas();
-	void updateChokes();
-	void removeTerritory(Unit);
-	bool isInAllyTerritory(Unit);
-	
+	void updateChokes();	
+
 	Position getClosestBaseCenter(Unit);
-	Position getClosestEnemyBase(Position);
-	Position getClosestAllyBase(Position);
 	Position getMineralHoldPosition() { return mineralHold; }
 	Position getBackMineralHoldPosition() { return backMineralHold; }
-		
+	bool isInAllyTerritory(TilePosition);
+	bool isInEnemyTerritory(TilePosition);
+
 	set <int>& getAllyTerritory() { return allyTerritory; }
-	set<Position>& getEnemyBasePositions() { return enemyBasePositions; }
+	set <int>& getEnemyTerritory() { return enemyTerritory; }
 	set<TilePosition>& getAllBaseLocations() { return allBaseLocations; }
 
 	Position getEnemyStartingPosition() { return enemyStartingPosition; }
 	Position getPlayerStartingPosition() { return playerStartingPosition; }
 	TilePosition getEnemyStartingTilePosition() { return enemyStartingTilePosition; }
-	TilePosition getPlayerStartingTilePosition() { return playerStartingTilePosition; }	
+	TilePosition getPlayerStartingTilePosition() { return playerStartingTilePosition; }
 	TilePosition getFFEPosition() { return FFEPosition; }
 	TilePosition getFirstChoke() { return firstChoke; }
 	TilePosition getSecondChoke() { return secondChoke; }

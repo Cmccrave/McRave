@@ -40,7 +40,7 @@ void WorkerTrackerClass::updateScout(WorkerInfo& worker)
 	// Update scout probes decision if we are above 9 supply and just placed a pylon
 	if (!Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge))
 	{
-		if (Terrain().getEnemyBasePositions().size() == 0)
+		if (Bases().getEnemyBases().size() == 0)
 		{
 			for (auto &start : theMap.StartingLocations())
 			{
@@ -56,7 +56,7 @@ void WorkerTrackerClass::updateScout(WorkerInfo& worker)
 			}
 			return;
 		}
-		if (Terrain().getEnemyBasePositions().size() > 0)
+		if (Bases().getEnemyBases().size() > 0)
 		{
 			exploreArea(worker);
 			return;
@@ -68,7 +68,7 @@ void WorkerTrackerClass::updateScout(WorkerInfo& worker)
 		{
 			for (auto &base : area.Bases())
 			{
-				if (area.AccessibleNeighbours().size() == 0 || Grids().getBaseGrid(base.Location()) > 0 || Terrain().getEnemyBasePositions().find(base.Center()) != Terrain().getEnemyBasePositions().end())
+				if (area.AccessibleNeighbours().size() == 0 || Grids().getBaseGrid(base.Location()) > 0 || Terrain().isInEnemyTerritory(base.Location()))
 				{
 					continue;
 				}

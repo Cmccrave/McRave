@@ -12,7 +12,7 @@ void TerrainTrackerClass::update()
 void TerrainTrackerClass::updateAreas()
 {
 	// If we see a building, check for closest starting location
-	if (enemyBasePositions.size() <= 0)
+	if (Bases().getEnemyBases().size() <= 0)
 	{
 		for (auto &u : Units().getEnemyUnits())
 		{
@@ -20,34 +20,24 @@ void TerrainTrackerClass::updateAreas()
 			double distance = 0.0;
 			TilePosition closest;
 			if (!unit.getType().isBuilding()) continue;
-			enemyBasePositions.insert(getClosestBaseCenter(unit.unit()));
 			enemyStartingPosition = getClosestBaseCenter(unit.unit());
 			enemyStartingTilePosition = TilePosition(getClosestBaseCenter(unit.unit()));
 		}
-	}
-
-	// If an enemy base position no longer has a resource depot on it, remove it (also prevents stupidly placing enemy base positions)
-	for (auto &base : enemyBasePositions)
-	{
-		if (base.isValid() && Broodwar->isVisible(TilePosition(base)) && Broodwar->getUnitsInRadius(base, 128, Filter::IsResourceDepot).size() == 0)
-		{
-			enemyBasePositions.erase(base);
-			break;
-		}
-	}
+	}	
 
 	// If there is at least one base position, set up attack position
-	if (enemyBasePositions.size() > 0 && Grids().getEnemyArmyCenter().isValid())
+	if (Bases().getEnemyBases().size() > 0 && Grids().getEnemyArmyCenter().isValid())
 	{
 		double closestD = 0.0;
 		Position closestP;
-		for (auto &base : Terrain().getEnemyBasePositions())
+		for (auto &b : Bases().getEnemyBases())
 		{
-			Broodwar->drawCircleMap(base, 16, Colors::Red);
-			if (Grids().getEnemyArmyCenter().getDistance(base) > closestD)
+			BaseInfo &base = b.second;
+			Broodwar->drawCircleMap(base.getPosition(), 16, Colors::Red);
+			if (Grids().getEnemyArmyCenter().getDistance(base.getPosition()) > closestD)
 			{
-				closestD = Grids().getEnemyArmyCenter().getDistance(base);
-				closestP = base;
+				closestD = Grids().getEnemyArmyCenter().getDistance(base.getPosition());
+				closestP = base.getPosition();
 			}
 		}
 		attackPosition = closestP;
@@ -152,31 +142,11 @@ void TerrainTrackerClass::onStart()
 	return;
 }
 
-void TerrainTrackerClass::removeTerritory(Unit base)
+bool TerrainTrackerClass::isInAllyTerritory(TilePosition here)
 {
-	if (base && base->exists() && base->getType().isResourceDepot())
+	if (here.isValid() && theMap.GetArea(here))
 	{
-		if (enemyBasePositions.find(base->getPosition()) != enemyBasePositions.end())
-		{
-			enemyBasePositions.erase(base->getPosition());
-		}
-
-		if (theMap.GetArea(base->getTilePosition()))
-		{
-			if (allyTerritory.find(theMap.GetArea(base->getTilePosition())->Id()) != allyTerritory.end())
-			{
-				allyTerritory.erase(theMap.GetArea(base->getTilePosition())->Id());
-			}
-		}
-	}
-	return;
-}
-
-bool TerrainTrackerClass::isInAllyTerritory(Unit unit)
-{
-	if (unit && unit->exists() && unit->getTilePosition().isValid() && theMap.GetArea(unit->getTilePosition()))
-	{
-		if (allyTerritory.find(theMap.GetArea(unit->getTilePosition())->Id()) != allyTerritory.end())
+		if (allyTerritory.find(theMap.GetArea(here)->Id()) != allyTerritory.end())
 		{
 			return true;
 		}
@@ -184,19 +154,16 @@ bool TerrainTrackerClass::isInAllyTerritory(Unit unit)
 	return false;
 }
 
-Position TerrainTrackerClass::getClosestEnemyBase(Position here)
+bool TerrainTrackerClass::isInEnemyTerritory(TilePosition here)
 {
-	double closestD = 0.0;
-	Position closestP;
-	for (auto &base : Terrain().getEnemyBasePositions())
+	if (here.isValid() && theMap.GetArea(here))
 	{
-		if (here.getDistance(base) < closestD || closestD == 0.0)
+		if (enemyTerritory.find(theMap.GetArea(here)->Id()) != enemyTerritory.end())
 		{
-			closestP = base;
-			closestD = here.getDistance(base);
+			return true;
 		}
 	}
-	return closestP;
+	return false;
 }
 
 Position TerrainTrackerClass::getClosestBaseCenter(Unit unit)

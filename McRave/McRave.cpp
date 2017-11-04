@@ -8,13 +8,12 @@
 
 // --- AUTHOR NOTES ---
 // TODO:
-// Enemy territory to prevent building there (if cannon rushed, don't try to rebuild main)
 // unQueueBuilding->ONS qM + qG and #buildings queued
-// Battery when doing 12 Nexus if enemy has >= 3 fact
 // if overkill, reduce targeting % chance by % overkill
-// Use ground distance instead of air distance for targeting and simulation
-// Reduce the priority of buildings for targeting
+// Use ground distance instead of air distance for targeting and simulation?
 // Gas steal fucks up 1 gate core stuff
+// Cannonspam needs fixing
+// Scarab and mine dodging
 
 void McRaveModule::onStart()
 {

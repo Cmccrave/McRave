@@ -45,7 +45,6 @@ void ProductionTrackerClass::updateProduction()
 					highestType = unit;
 				}
 			}
-			Broodwar->drawTextMap(building.getPosition(), "%s", highestType.c_str());
 			if (highestType != UnitTypes::None)
 			{
 				
@@ -322,7 +321,7 @@ bool ProductionTrackerClass::isSuitable(UpgradeType upgrade)
 
 		// Ground unit upgrades
 	case UpgradeTypes::Enum::Protoss_Ground_Weapons:
-		return (Units().getSupply() > 120 || Players().getNumberZerg() > 0);
+		return (Units().getSupply() > 120 || (Players().getNumberZerg() > 0 && !BuildOrder().isOpener()));
 	case UpgradeTypes::Enum::Protoss_Ground_Armor:
 		return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Armor);
 	case UpgradeTypes::Enum::Protoss_Plasma_Shields:

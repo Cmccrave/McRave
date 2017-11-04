@@ -67,7 +67,7 @@ void CommandTrackerClass::updateAlliedUnits()
 				else
 				{
 					// Defend otherwise
-					defend(unit);
+					defend(unit); 
 					continue;
 				}
 			}

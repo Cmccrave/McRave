@@ -82,6 +82,15 @@ void UnitTrackerClass::onUnitDestroy(Unit unit)
 			Transport().removeUnit(unit);
 		}
 	}
+
+	if (unit->getPlayer()->isEnemy(Broodwar->self()))
+	{
+		if (unit->getType().isResourceDepot())
+		{
+			Bases().removeBase(unit);
+		}
+	}
+
 	if (unit->getType().isResourceContainer() && unit->getType().isMineralField())
 	{
 		Resources().removeResource(unit);

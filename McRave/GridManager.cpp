@@ -193,7 +193,7 @@ void GridTrackerClass::updateEnemyGrids()
 
 		if (unit.getType().isWorker())
 		{
-			if (unit.unit()->exists() && (!Terrain().isInAllyTerritory(unit.unit()) || (Broodwar->getFrameCount() - unit.getLastAttackFrame() < 500)))
+			if (unit.unit()->exists() && (!Terrain().isInAllyTerritory(unit.getTilePosition()) || (Broodwar->getFrameCount() - unit.getLastAttackFrame() < 500)))
 			{
 				radius = int((unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0);
 				gReach = unit.getGroundRange() + unit.getSpeed();

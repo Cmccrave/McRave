@@ -104,8 +104,8 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 {
 	// If loading, ignore movement commands
 	if (transport.isLoading()) return;
-	if (Terrain().getClosestEnemyBase(transport.getPosition()).isValid() && (transport.getPosition().getDistance(transport.getDestination()) > 640 || Units().getGlobalGroundStrategy() == 1))
-		 transport.setDestination(Terrain().getClosestEnemyBase(transport.getPosition()));
+	if (Bases().getClosestEnemyBase(transport.getPosition()).isValid() && (transport.getPosition().getDistance(transport.getDestination()) > 640 || Units().getGlobalGroundStrategy() == 1))
+		transport.setDestination(Bases().getClosestEnemyBase(transport.getPosition()));
 
 	Position bestPosition = transport.getDestination();
 	WalkPosition start = transport.getWalkPosition();

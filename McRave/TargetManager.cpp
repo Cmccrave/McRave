@@ -37,7 +37,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		// If this is a detector unit, target invisible units only
 		if (unit.getType().isDetector() && !unit.getType().isBuilding())
 		{
-			if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && ((!enemy.getType().isFlyer() && Grids().getAGroundThreat(enemy.getWalkPosition()) > 0.0) || (enemy.getType().isFlyer() && Grids().getAAirThreat(enemy.getWalkPosition()) > 0.0) || Terrain().isInAllyTerritory(enemy.unit())) && Grids().getEDetectorGrid(enemy.getWalkPosition()) == 0)
+			if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && ((!enemy.getType().isFlyer() && Grids().getAGroundThreat(enemy.getWalkPosition()) > 0.0) || (enemy.getType().isFlyer() && Grids().getAAirThreat(enemy.getWalkPosition()) > 0.0) || Terrain().isInAllyTerritory(enemy.getTilePosition())) && Grids().getEDetectorGrid(enemy.getWalkPosition()) == 0)
 			{
 				thisUnit = enemy.getPriority() / distance;
 			}

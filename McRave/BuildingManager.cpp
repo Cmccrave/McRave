@@ -55,7 +55,6 @@ void BuildingTrackerClass::queueBuildings()
 				Workers().getMyWorkers()[builder].setBuildingType(b.first);
 				Workers().getMyWorkers()[builder].setBuildPosition(here);
 			}
-
 		}
 	}
 }
@@ -134,7 +133,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 {
 	// If we are expanding, it must be on an expansion area
 	double closestD = 0.0;
-	TilePosition closestP, here;
+	TilePosition closestP, here = TilePositions::Invalid;
 	if (building.isResourceDepot())
 	{
 		// Fast expands must be as close to home and have a gas geyser
@@ -181,12 +180,9 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	}
 
 	// If we are fast expanding
-	if (Strategy().isAllyFastExpand())
+	if (Strategy().isAllyFastExpand() && (building == UnitTypes::Protoss_Photon_Cannon || (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(Terrain().getFFEPosition()) <= 0) || (building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 0) || (building == UnitTypes::Protoss_Forge && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Forge) <= 0)))
 	{
-		if (building == UnitTypes::Protoss_Photon_Cannon || (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(Terrain().getFFEPosition()) <= 0) || (building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 0) || (building == UnitTypes::Protoss_Forge && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Forge) <= 0))
-		{
-			here = getBuildLocationNear(building, Terrain().getFFEPosition());
-		}
+		here = getBuildLocationNear(building, Terrain().getFFEPosition());
 		if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getPlayerStartingTilePosition());
 		return here;
 	}
@@ -201,24 +197,30 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	}
 
 
-	// For each base, check if there's a Pylon or Cannon needed
-	for (auto &base : Bases().getMyBases())
+	// If it's a pylon, check if any bases need a pylon
+	if (building == UnitTypes::Protoss_Pylon && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) >= 2)
 	{
-		if (building == UnitTypes::Protoss_Pylon && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) >= 2)
+		for (auto &base : Bases().getMyBases())
 		{
 			if (Grids().getPylonGrid(base.second.getTilePosition()) == 0)
 			{
 				return getBuildLocationNear(building, base.second.getTilePosition());
 			}
 		}
-		if (building == UnitTypes::Protoss_Photon_Cannon)
+	}
+
+	if (building == UnitTypes::Protoss_Photon_Cannon)
+	{
+		for (auto &base : Bases().getMyBases())
 		{
-			if (Grids().getDefenseGrid(base.second.getTilePosition()) < 1 && Broodwar->hasPower(TilePosition(base.second.getResourcesPosition())))
+			if (Grids().getDefenseGrid(base.second.getTilePosition()) <= 0 && Grids().getPylonGrid(base.second.getTilePosition()) > 0)
 			{
-				return getBuildLocationNear(building, base.second.getResourcesPosition());
+				return getBuildLocationNear(building, base.second.getTilePosition());
 			}
 		}
+		return TilePositions::Invalid;
 	}
+
 
 	// For each base, check if you can build near it, starting at the main
 	for (auto &base : Bases().getMyOrderedBases())
@@ -229,7 +231,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 			return here;
 		}
 	}
-	return TilePositions::None;
+	return TilePositions::Invalid;
 }
 
 bool BuildingTrackerClass::isQueueable(UnitType building, TilePosition buildTilePosition)
@@ -270,7 +272,7 @@ bool BuildingTrackerClass::isBuildable(UnitType building, TilePosition buildTile
 			if (!TilePosition(x, y).isValid()) return false;
 			if (!Broodwar->isBuildable(TilePosition(x, y), true)) return false; // If it's on an unbuildable tile
 			if (Grids().getBuildingGrid(x, y) > 0 && !building.isResourceDepot()) return false; // If it's reserved for expansions				
-			if (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(x, y) >= 1) return false; // If it's a pylon and overlapping too many pylons				
+			if (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(x, y) >= 2) return false; // If it's a pylon and overlapping too many pylons				
 			if (!building.isResourceDepot() && building != UnitTypes::Protoss_Photon_Cannon && building != UnitTypes::Protoss_Shield_Battery && building != UnitTypes::Terran_Bunker && Grids().getResourceGrid(x, y) > 0) return false; // If it's not a defensive structure and on top of the resource grid
 		}
 	}

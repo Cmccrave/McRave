@@ -181,7 +181,7 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 		if (unit.getTarget()->exists()) unit.setStrategy(1);		
 		else unit.setStrategy(3);		
 	}
-	else if ((Terrain().isInAllyTerritory(unit.unit()) && decisionGlobal == 0) || Terrain().isInAllyTerritory(target.unit())) // If unit is in ally territory
+	else if ((Terrain().isInAllyTerritory(unit.getTilePosition()) && decisionGlobal == 0) || Terrain().isInAllyTerritory(target.getTilePosition())) // If unit is in ally territory
 	{
 		if (!unit.getTarget()->exists()) unit.setStrategy(2);		
 		else if (!Strategy().isHoldChoke())
@@ -191,7 +191,7 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 		}		
 		else
 		{
-			if (Terrain().isInAllyTerritory(target.unit()) || unit.getPosition().getDistance(unit.getTargetPosition()) < unit.getGroundRange()) unit.setStrategy(1);			
+			if (Terrain().isInAllyTerritory(target.getTilePosition()) || unit.getPosition().getDistance(unit.getTargetPosition()) < unit.getGroundRange()) unit.setStrategy(1);
 			else if (unit.getPosition().getDistance(unit.getTargetPosition()) > enemyRange + target.getSpeed()) unit.setStrategy(2); 			
 			else unit.setStrategy(0);			
 		}
@@ -288,6 +288,7 @@ void UnitTrackerClass::storeEnemy(Unit unit)
 {
 	enemyUnits[unit].setUnit(unit);
 	enemySizes[unit->getType().size()] += 1;
+	if (unit->getType().isResourceDepot()) Bases().storeBase(unit);
 	return;
 }
 

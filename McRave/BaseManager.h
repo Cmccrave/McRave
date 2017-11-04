@@ -9,14 +9,16 @@ using namespace std;
 class BaseTrackerClass
 {	
 	map <Unit, BaseInfo> myBases;
+	map <Unit, BaseInfo> enemyBases;
 	map <double, TilePosition> myOrderedBases;
 public:
 	map <Unit, BaseInfo>& getMyBases() { return myBases; }
+	map <Unit, BaseInfo>& getEnemyBases() { return enemyBases; }
 	map <double, TilePosition>& getMyOrderedBases() { return myOrderedBases; }
+	Position getClosestEnemyBase(Position);
 
 	void update();
-	void updateAlliedBases();
-	//void updateEnemyBases();
+	void updateBases();	
 	void storeBase(Unit);
 	void removeBase(Unit);
 	void updateProduction(BaseInfo&);
