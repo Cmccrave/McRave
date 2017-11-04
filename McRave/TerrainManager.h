@@ -10,7 +10,7 @@ class TerrainTrackerClass
 	set <int> allyTerritory;
 	set <int> enemyTerritory;
 	set<TilePosition> allBaseLocations;
-	Position enemyStartingPosition, playerStartingPosition;
+	Position enemyStartingPosition = Positions::Invalid, playerStartingPosition;
 	TilePosition enemyStartingTilePosition, playerStartingTilePosition, FFEPosition;
 	TilePosition secondChoke, firstChoke;
 	Position mineralHold, backMineralHold;

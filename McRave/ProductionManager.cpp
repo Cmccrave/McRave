@@ -17,7 +17,7 @@ void ProductionTrackerClass::updateProduction()
 	}
 	// Gateway saturation - max of 12 so the bot can exceed 4 bases
 	int techSize = max(0, int(BuildOrder().getTechList().size() - 1));
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= min(12, (3 * Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus)) - 1))
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 3 + (2 * BuildOrder().getTechList().size()))
 	{
 		productionSat = true;
 	}

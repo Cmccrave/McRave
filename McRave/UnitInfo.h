@@ -19,7 +19,6 @@ class UnitInfo {
 	TilePosition tilePosition, targetTilePosition;
 public:
 	UnitInfo();
-	~UnitInfo();
 
 	// Returns the units health and shield percentage
 	double getPercentHealth() { return percentHealth; }

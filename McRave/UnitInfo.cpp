@@ -29,6 +29,3 @@ UnitInfo::UnitInfo()
 	command = UnitCommand();
 	transport = nullptr;
 }
-UnitInfo::~UnitInfo()
-{
-}

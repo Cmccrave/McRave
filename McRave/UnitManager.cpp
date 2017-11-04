@@ -87,7 +87,7 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 		if (enemy.getSpeed() > 0.0)
 		{
 			enemyToEngage = max(0.0, distance / enemy.getSpeed());
-			simRatio = max(0.0, simulationTime - enemyToEngage);
+			simRatio = max(0.0, simulationTime - (enemyToEngage - unitToEngage));
 		}
 		else
 		{
@@ -119,11 +119,11 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 			speed = unit.getTransport()->getType().topSpeed() * 24.0;
 		}
 
-		if (Grids().getDistanceHome(ally.getWalkPosition()) > 0 && Grids().getDistanceHome(WalkPosition(ally.getEngagePosition())) > 0 && distanceA < 640)
+		if (Grids().getDistanceHome(ally.getWalkPosition()) > 0 && Grids().getDistanceHome(WalkPosition(ally.getEngagePosition())) > 0 && distanceA <= 640)
 		{
 			distanceA = (8.0 * abs(Grids().getDistanceHome(ally.getWalkPosition()) - Grids().getDistanceHome(WalkPosition(ally.getEngagePosition()))));
 		}
-		if (Grids().getDistanceHome(ally.getWalkPosition()) > 0 && Grids().getDistanceHome(WalkPosition(unit.getEngagePosition())) > 0 && distanceB < 640)
+		if (Grids().getDistanceHome(ally.getWalkPosition()) > 0 && Grids().getDistanceHome(WalkPosition(unit.getEngagePosition())) > 0 && distanceB <= 640)
 		{
 			distanceB = (8.0 * abs(Grids().getDistanceHome(ally.getWalkPosition()) - Grids().getDistanceHome(WalkPosition(unit.getEngagePosition())))) - allyRange;
 		}

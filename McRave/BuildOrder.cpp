@@ -359,7 +359,7 @@ void BuildOrderTrackerClass::protossSituational()
 	}
 
 	// If production is saturated and none are idle or we need detection for some invis units, choose a tech
-	if ((Strategy().needDetection() || (!getOpening && !getTech && techUnit == UnitTypes::None && Production().getIdleProduction().size() == 0 && Production().isProductionSat())))
+	if ((Strategy().needDetection() || (!getOpening && !getTech && techUnit == UnitTypes::None && Production().getIdleProduction().size() == 0 && Production().isProductionSat() && buildingDesired[UnitTypes::Protoss_Nexus] == Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus))))
 	{
 		getTech = true;
 	}
@@ -425,7 +425,7 @@ void BuildOrderTrackerClass::protossSituational()
 				}
 				else if (Grids().getDefenseGrid(base.second.getTilePosition()) < 1 && Broodwar->hasPower(TilePosition(base.second.getPosition())))
 				{
-					buildingDesired[UnitTypes::Protoss_Photon_Cannon] += 1;
+					buildingDesired[UnitTypes::Protoss_Photon_Cannon] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) + 1;
 				}
 			}
 		}

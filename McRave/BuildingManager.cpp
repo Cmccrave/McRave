@@ -238,7 +238,7 @@ bool BuildingTrackerClass::isQueueable(UnitType building, TilePosition buildTile
 {
 	// Check if there's a building queued there already
 	for (auto &queued : buildingsQueued)
-	{
+	{		
 		if (buildTilePosition.x < queued.first.x + queued.second.tileWidth() && queued.first.x < buildTilePosition.x + building.tileWidth() && buildTilePosition.y < queued.first.y + queued.second.tileHeight() && queued.first.y < buildTilePosition.y + building.tileHeight())
 		{
 			return false;

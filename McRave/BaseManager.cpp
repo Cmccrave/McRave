@@ -25,7 +25,12 @@ void BaseTrackerClass::updateBases()
 	for (auto &b : enemyBases)
 	{
 		BaseInfo& base = b.second;
-		if (base.unit() && !base.unit()->exists() && Broodwar->isVisible(base.getTilePosition()))
+		if (!base.unit()) continue;
+		if (base.unit()->exists())
+		{
+			base.setLastVisibleFrame(Broodwar->getFrameCount());
+		}
+		if (!base.unit()->exists() && Broodwar->isVisible(base.getTilePosition()))
 		{
 			enemyBases.erase(base.unit());
 			break;

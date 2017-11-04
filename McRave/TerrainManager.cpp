@@ -12,7 +12,7 @@ void TerrainTrackerClass::update()
 void TerrainTrackerClass::updateAreas()
 {
 	// If we see a building, check for closest starting location
-	if (Bases().getEnemyBases().size() <= 0)
+	if (!enemyStartingPosition.isValid())
 	{
 		for (auto &u : Units().getEnemyUnits())
 		{
@@ -23,7 +23,7 @@ void TerrainTrackerClass::updateAreas()
 			enemyStartingPosition = getClosestBaseCenter(unit.unit());
 			enemyStartingTilePosition = TilePosition(getClosestBaseCenter(unit.unit()));
 		}
-	}	
+	}
 
 	// If there is at least one base position, set up attack position
 	if (Bases().getEnemyBases().size() > 0 && Grids().getEnemyArmyCenter().isValid())
@@ -138,7 +138,7 @@ void TerrainTrackerClass::onStart()
 	bool startingLocationsOK = theMap.FindBasesForStartingLocations();
 	assert(startingLocationsOK);
 	playerStartingTilePosition = Broodwar->self()->getStartLocation();
-	playerStartingPosition = Position(playerStartingTilePosition);
+	playerStartingPosition = Position(32 * playerStartingTilePosition.x + 64, 32 * playerStartingTilePosition.y + 48);
 	return;
 }
 

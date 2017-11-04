@@ -2,6 +2,7 @@
 
 BaseInfo::BaseInfo()
 {
+	lastVisibleFrame = 0;
 	thisUnit = nullptr;
 	unitType = UnitTypes::None;
 	position = Positions::None;
