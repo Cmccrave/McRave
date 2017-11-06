@@ -97,12 +97,23 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 {
 	WalkPosition start = worker.getWalkPosition();
 	Position bestPosition = Terrain().getPlayerStartingPosition();
+	Position destination;
+	int longest = 0;
 
 	Unit closest = worker.unit()->getClosestUnit(Filter::IsEnemy && Filter::CanAttack);
 	if (!closest || (closest && closest->exists() && worker.unit()->getDistance(closest) > 640))
 	{
 		worker.unit()->move(Terrain().getEnemyStartingPosition());
 		return;
+	}
+
+	for (auto &base : Bases().getEnemyBases())
+	{
+		if (Broodwar->getFrameCount() - base.second.getLastVisibleFrame() >= longest)
+		{
+			longest = Broodwar->getFrameCount() - base.second.getLastVisibleFrame();
+			destination = base.second.getPosition();
+		}
 	}
 
 	// Check a 8x8 walkposition grid for a potential new place to scout
@@ -115,7 +126,7 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 
 			double mobility = double(Grids().getMobilityGrid(x, y));
 			double threat = Grids().getEGroundThreat(x, y);
-			double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(Terrain().getEnemyStartingPosition()));
+			double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(destination));
 			double time = max(1.0, double(Broodwar->getFrameCount() - recentExplorations[WalkPosition(x, y)]));
 
 			if ((threat < safest || (threat == safest && (time * mobility) / distance >= best)) && Util().isMobile(start, WalkPosition(x, y), worker.getType()))
@@ -261,14 +272,14 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 	}
 
 	// If we need to use workers for defense - TEMP Removed probe pull stuff
-	if ((Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0 && Grids().getResourceGrid(worker.getTilePosition()) > 0 && Units().getSupply() < 80) || (BuildOrder().getCurrentBuild() == "Sparks" && Units().getGlobalGroundStrategy() == 1))
+	if (!Strategy().isHoldChoke() && ((Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0 && Grids().getResourceGrid(worker.getTilePosition()) > 0 && Units().getSupply() < 80) || (BuildOrder().getCurrentBuild() == "Sparks" && Units().getGlobalGroundStrategy() == 1)))
 	{
 		Units().storeAlly(worker.unit());
 		return;
 	}
 
 	// Reassignment logic
-	if (worker.getResource() && worker.getResource()->exists() && ((!Resources().isGasSaturated() && minWorkers > gasWorkers * 8) || (!Resources().isMinSaturated() && minWorkers < gasWorkers * 4)))
+	if (worker.getResource() && worker.getResource()->exists() && ((!Resources().isGasSaturated() && minWorkers > gasWorkers * 10) || (!Resources().isMinSaturated() && minWorkers < gasWorkers * 4)))
 	{
 		reAssignWorker(worker);
 	}

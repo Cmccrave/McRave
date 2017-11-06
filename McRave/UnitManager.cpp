@@ -26,7 +26,7 @@ void UnitTrackerClass::updateUnits()
 		if (!unit.unit()->exists() && unit.getPosition().isValid() && Broodwar->isVisible(TilePosition(unit.getPosition()))) unit.setPosition(Positions::None); // If unit is not visible but his position is, move it
 		if (unit.getType().isValid()) enemyComposition[unit.getType()] += 1; // If unit has a valid type, update enemy composition tracking
 		if (!unit.getType().isWorker() && !unit.getType().isBuilding()) unit.getType().isFlyer() ? globalEnemyAirStrength += unit.getVisibleAirStrength() : globalEnemyGroundStrength += unit.getVisibleGroundStrength(); // If unit is not a worker or building, add it to global strength	
-		if (unit.getType().isBuilding() && unit.getGroundDamage() > 0 && unit.unit()->isCompleted()) enemyDefense += unit.getVisibleGroundStrength(); // If unit is a building and deals damage, add it to global defense
+		if (unit.getType().isBuilding() && unit.getGroundDamage() > 0 && unit.unit()->isCompleted()) enemyDefense += unit.getVisibleGroundStrength(); // If unit is a building and deals damage, add it to global defense		
 	}
 
 	// Update Ally Defenses
@@ -70,6 +70,7 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 	{
 		UnitInfo &enemy = e.second;
 
+		//Broodwar->drawTextMap(enemy.getPosition(), "%.2f", enemy.getPriority());
 		// Ignore workers and stasised units
 		if (!enemy.unit() || enemy.getType().isWorker() || (enemy.unit() && enemy.unit()->exists() && enemy.unit()->isStasised())) continue;
 
@@ -87,7 +88,7 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 		if (enemy.getSpeed() > 0.0)
 		{
 			enemyToEngage = max(0.0, distance / enemy.getSpeed());
-			simRatio = max(0.0, simulationTime - (enemyToEngage - unitToEngage));
+			simRatio = max(0.0, simulationTime - min(10.0, (enemyToEngage - unitToEngage)));
 		}
 		else
 		{
@@ -130,7 +131,7 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 
 		if (distanceB / speed > simulationTime) continue;
 		allyToEngage = max(0.0, distanceA / speed);
-		simRatio = max(0.0, simulationTime - (allyToEngage - unitToEngage));
+		simRatio = max(0.0, simulationTime - min(10.0, (allyToEngage - unitToEngage)));
 
 		if ((ally.unit()->isCloaked() || ally.unit()->isBurrowed()) && Grids().getEDetectorGrid(WalkPosition(ally.getEngagePosition())) == 0) simRatio = simRatio * 5.0;
 		if (!ally.getType().isFlyer() && Broodwar->getGroundHeight(TilePosition(ally.getEngagePosition())) > Broodwar->getGroundHeight(TilePosition(ally.getTargetPosition())))	simRatio = simRatio * 2.0;
@@ -285,7 +286,7 @@ set<Unit> UnitTrackerClass::getAllyUnitsFilter(UnitType type)
 }
 
 void UnitTrackerClass::storeEnemy(Unit unit)
-{
+{	
 	enemyUnits[unit].setUnit(unit);
 	enemySizes[unit->getType().size()] += 1;
 	if (unit->getType().isResourceDepot()) Bases().storeBase(unit);
@@ -324,6 +325,8 @@ void UnitTrackerClass::updateEnemy(UnitInfo& unit)
 
 	// Set last command frame
 	if (unit.unit()->isStartingAttack()) unit.setLastAttackFrame(Broodwar->getFrameCount());
+	if (unit.unit()->getTarget() && unit.unit()->getTarget()->exists()) unit.setTarget(unit.unit()->getTarget());
+	else if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine) unit.setTarget(unit.unit()->getClosestUnit(Filter::GetPlayer == Broodwar->self(), 128));
 	return;
 }
 

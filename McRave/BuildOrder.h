@@ -10,7 +10,7 @@ class BuildOrderTrackerClass
 {
 	map <UnitType, int> buildingDesired;
 	bool getOpening = true, getTech = false, learnedOpener = false;
-	bool oneGateCore = false, forgeExpand = false;
+	bool oneGateCore = false, forgeExpand = false, nexusFirst = false;
 	bool bioBuild = false;
 	UnitType techUnit;
 	set <UnitType> techList;
@@ -32,6 +32,7 @@ public:
 	bool isOneGateCore() { return oneGateCore; }
 	bool isForgeExpand() { return forgeExpand; }
 	bool isBioBuild() { return bioBuild; }
+	bool isNexusFirst() { return nexusFirst; }
 
 	void onEnd(bool);
 	void onStart();

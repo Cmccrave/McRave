@@ -181,6 +181,10 @@ double UtilTrackerClass::getPriority(UnitInfo& unit)
 	{
 		return 10.0;
 	}
+	if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine)
+	{
+		return 100.0;
+	}
 	double mineral, gas;
 
 	if (unit.getType() == UnitTypes::Protoss_Archon) mineral = 100.0, gas = 300.0;

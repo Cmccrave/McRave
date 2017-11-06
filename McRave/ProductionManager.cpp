@@ -29,6 +29,7 @@ void ProductionTrackerClass::updateProduction()
 		UnitType highestType = UnitTypes::None;
 		if (building.unit()->isIdle() && !building.getType().isResourceDepot())
 		{
+			if (building.unit()->isIdle() && Units().getSupply() < 380) idle = true;
 			idleProduction.erase(building.unit());
 			idleUpgrade.erase(building.unit());
 			idleTech.erase(building.unit());
@@ -40,14 +41,14 @@ void ProductionTrackerClass::updateProduction()
 					continue;
 				}
 				if (Strategy().getUnitScore()[unit] >= highestPriority && isCreateable(building.unit(), unit) && isSuitable(unit) && (BuildOrder().getTechList().find(unit) != BuildOrder().getTechList().end() || isAffordable(unit)))
-				{					
+				{
 					highestPriority = Strategy().getUnitScore()[unit];
 					highestType = unit;
 				}
 			}
 			if (highestType != UnitTypes::None)
 			{
-				
+
 				if (isAffordable(highestType))
 				{
 					building.unit()->train(highestType);
@@ -95,7 +96,7 @@ bool ProductionTrackerClass::isAffordable(UnitType unit)
 		}
 	}
 	// If a tech unit and we can afford it including buildings queued
-	else if (Broodwar->self()->minerals() >= unit.mineralPrice() + Buildings().getQueuedMineral() && (Broodwar->self()->gas() >= unit.gasPrice() + Buildings().getQueuedGas() || unit.gasPrice() == 0 ))
+	else if (Broodwar->self()->minerals() >= unit.mineralPrice() + Buildings().getQueuedMineral() && (Broodwar->self()->gas() >= unit.gasPrice() + Buildings().getQueuedGas() || unit.gasPrice() == 0))
 	{
 		return true;
 	}
@@ -274,6 +275,7 @@ bool ProductionTrackerClass::isSuitable(UnitType unit)
 
 bool ProductionTrackerClass::isSuitable(UpgradeType upgrade)
 {
+	if (upgrade != UpgradeTypes::Singularity_Charge && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0) return false;
 	// If this is a specific unit upgrade, check if it's unlocked
 	if (upgrade.whatUses().size() == 1)
 	{
@@ -326,7 +328,7 @@ bool ProductionTrackerClass::isSuitable(UpgradeType upgrade)
 		return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Armor);
 	case UpgradeTypes::Enum::Protoss_Plasma_Shields:
 		return (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) >= 2 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Armor) >= 2);
-	
+
 		// Air unit upgrades
 	case UpgradeTypes::Enum::Protoss_Air_Weapons:
 		return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Corsair) > 0;
@@ -338,6 +340,7 @@ bool ProductionTrackerClass::isSuitable(UpgradeType upgrade)
 
 bool ProductionTrackerClass::isSuitable(TechType tech)
 {
+	if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0) return false;
 	// If this is a specific unit tech, check if it's unlocked
 	if (tech.whatUses().size() == 1)
 	{
@@ -363,25 +366,18 @@ void ProductionTrackerClass::updateReservedResources()
 {
 	// Reserved minerals for idle buildings, tech and upgrades
 	reservedMineral = 0, reservedGas = 0;
-	int offset = 100;
 	for (auto &b : idleProduction)
 	{
-		Broodwar->drawTextScreen(400, offset, "%s", b.second.c_str());
-		offset += 10;
 		reservedMineral += b.second.mineralPrice();
 		reservedGas += b.second.gasPrice();
 	}
 	for (auto &t : idleTech)
 	{
-		Broodwar->drawTextScreen(400, offset, "%s", t.second.c_str());
-		offset += 10;
 		reservedMineral += t.second.mineralPrice();
 		reservedGas += t.second.gasPrice();
 	}
 	for (auto &u : idleUpgrade)
 	{
-		Broodwar->drawTextScreen(400, offset, "%s", u.second.c_str());
-		offset += 10;
 		reservedMineral += u.second.mineralPrice();
 		reservedGas += u.second.gasPrice();
 	}

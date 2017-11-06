@@ -247,7 +247,6 @@ void BuildOrderTrackerClass::protossTech()
 		offset += 10;
 	}
 
-
 	// Some hardcoded techs based on needing detection or specific build orders
 	if (getTech)
 	{
@@ -330,6 +329,7 @@ void BuildOrderTrackerClass::protossTech()
 	{
 		unlockedType.insert(UnitTypes::Protoss_Arbiter);
 		unlockedType.insert(UnitTypes::Protoss_Dark_Templar);
+		unlockedType.insert(UnitTypes::Protoss_High_Templar);
 		buildingDesired[UnitTypes::Protoss_Citadel_of_Adun] = 1;
 		buildingDesired[UnitTypes::Protoss_Stargate] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) > 0;
 		buildingDesired[UnitTypes::Protoss_Templar_Archives] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) > 0;
@@ -363,7 +363,7 @@ void BuildOrderTrackerClass::protossSituational()
 	{
 		getTech = true;
 	}
-
+	
 	// Pylon logic
 	if (Strategy().isAllyFastExpand() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Pylon) <= 0)
 	{
@@ -375,7 +375,7 @@ void BuildOrderTrackerClass::protossSituational()
 	}
 
 	// Additional cannon for FFE logic (add on at most 2 at a time)
-	if (Strategy().isAllyFastExpand() && Units().getGlobalEnemyGroundStrength() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense())
+	if (forgeExpand && Units().getGlobalEnemyGroundStrength() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense())
 	{
 		buildingDesired[UnitTypes::Protoss_Photon_Cannon] = min(2 + Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Photon_Cannon), 1 + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon));
 	}

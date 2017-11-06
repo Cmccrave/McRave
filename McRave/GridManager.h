@@ -26,6 +26,7 @@ class GridTrackerClass
 	// Enemy grids
 	double eGroundThreat[1024][1024] = {};
 	double eAirThreat[1024][1024] = {};
+	int eSplashGrid[1024][1024] = {};
 	int eDetectorGrid[1024][1024] = {};
 	int eGroundClusterGrid[1024][1024] = {};
 	int eAirClusterGrid[1024][1024] = {};
@@ -185,6 +186,10 @@ public:
 	// Returns 1 if an active EMP is targeted at this location
 	int getEMPGrid(int x, int y) { return EMPGrid[x][y]; }
 	int getEMPGrid(WalkPosition here) { return EMPGrid[here.x][here.y]; }
+
+	// Returns 1 if a Scarab or Spider Mine is targeting this location 
+	int getESplashGrid(int x, int y) { return eSplashGrid[x][y]; }
+	int getESplashGrid(WalkPosition here) { return eSplashGrid[here.x][here.y]; }
 
 	// Other functions
 	Position getAllyArmyCenter(){ return allyArmyCenter; }

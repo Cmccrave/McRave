@@ -42,6 +42,7 @@ void TerrainTrackerClass::updateAreas()
 		}
 		attackPosition = closestP;
 	}
+	else if (enemyStartingPosition.isValid() && !Broodwar->isExplored(enemyStartingTilePosition)) attackPosition = enemyStartingPosition;
 	else attackPosition = Positions::Invalid;
 
 	// Set mineral holding positions

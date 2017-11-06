@@ -10,6 +10,13 @@ void CommandTrackerClass::update()
 
 void CommandTrackerClass::updateAlliedUnits()
 {
+	set <Unit> fuckingMoveIdiots;
+	for (auto &u : Units().getEnemyUnits())
+	{
+		UnitInfo &unit = u.second;
+		if ((unit.getType() == UnitTypes::Protoss_Scarab || unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine) && unit.getTarget() && unit.getTarget()->exists()) fuckingMoveIdiots.insert(unit.getTarget());		
+	}
+
 	for (auto &u : Units().getAllyUnits())
 	{
 		UnitInfo &unit = u.second;
@@ -41,13 +48,28 @@ void CommandTrackerClass::updateAlliedUnits()
 		// If the unit is ready to perform an action after an attack (certain units have minimum frames after an attack before they can receive a new command)
 		if (Broodwar->getFrameCount() - unit.getLastAttackFrame() > unit.getMinStopFrame() - Broodwar->getLatencyFrames())
 		{
+			// If we are the target of a mine or scarab, move forward
+			if (fuckingMoveIdiots.find(unit.unit()) != fuckingMoveIdiots.end())
+			{
+				if (unit.unit()->getGroundWeaponCooldown() > 0)
+				{
+					approach(unit);
+					continue;
+				}
+				else
+				{
+					attack(unit);
+					continue;
+				}
+			}
+
 			// If under a storm, dark swarm or EMP
-			if (Grids().getPsiStormGrid(unit.getWalkPosition()) > 0 || Grids().getEMPGrid(unit.getWalkPosition()) > 0)
+			if (Grids().getPsiStormGrid(unit.getWalkPosition()) > 0 || Grids().getEMPGrid(unit.getWalkPosition()) > 0 || Grids().getESplashGrid(unit.getWalkPosition()) > 0)
 			{
 				flee(unit);
 				continue;
 			}
-
+			
 			// If globally behind
 			if ((Units().getGlobalGroundStrategy() == 0 && !unit.getType().isFlyer()) || (Units().getGlobalAirStrategy() == 0 && unit.getType().isFlyer()))
 			{
@@ -411,7 +433,7 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 		for (int y = start.y - 16; y <= start.y + 16 + (unit.getType().height() / 8.0); y++)
 		{
 			if (!WalkPosition(x, y).isValid()) continue;
-			if (WalkPosition(x, y).getDistance(start) > 32) continue;
+			if (Grids().getPsiStormGrid(WalkPosition(x, y)) > 0 || Grids().getEMPGrid(WalkPosition(x, y)) > 0 || Grids().getESplashGrid(WalkPosition(x, y)) > 0) continue;
 
 			distance = double(Grids().getDistanceHome(x, y)); // Distance value		
 			unit.getType().isFlyer() ? mobility = 1.0 : mobility = double(Grids().getMobilityGrid(x, y)); // If unit is a flyer, ignore mobility

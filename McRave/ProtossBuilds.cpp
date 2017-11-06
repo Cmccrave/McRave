@@ -75,10 +75,11 @@ void BuildOrderTrackerClass::FFENexus()
 void BuildOrderTrackerClass::TwelveNexus()
 {
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24);
-	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 26) + (Units().getSupply() >= 32);
-	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 28;
-	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 30;
-	getOpening = Units().getSupply() < 32;
+	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 26) + (Units().getSupply() >= 32) + (Units().getSupply() >= 42) + (Units().getSupply() >= 56) + (Units().getSupply() >= 70);
+	buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 28) + (Units().getSupply() >= 80);
+	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = (Units().getSupply() >= 30);
+	getOpening = Units().getSupply() < 200;
+	nexusFirst = true;
 	return;
 }
 

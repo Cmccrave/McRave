@@ -10,11 +10,9 @@
 // TODO:
 // unQueueBuilding->ONS qM + qG and #buildings queued
 // if overkill, reduce targeting % chance by % overkill
-// Use ground distance instead of air distance for targeting and simulation?
 // Gas steal fucks up 1 gate core stuff
-// Cannonspam needs fixing
-// Scarab and mine dodging
 // Units getting stuck
+// Add buffer to targeting distance to allow targeting from further than distance of 1.0
 
 void McRaveModule::onStart()
 {

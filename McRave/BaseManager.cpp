@@ -96,15 +96,18 @@ void BaseTrackerClass::storeBase(Unit base)
 	b.setTilePosition(base->getTilePosition());
 	b.setPosition(base->getPosition());
 
-	if (base->getPlayer() == Broodwar->self())
+	if (b.getTilePosition().isValid() && theMap.GetArea(b.getTilePosition()))
 	{
-		myOrderedBases[base->getPosition().getDistance(Terrain().getPlayerStartingPosition())] = base->getTilePosition();
-		Terrain().getAllyTerritory().insert(theMap.GetArea(b.getTilePosition())->Id());
-		Grids().updateBaseGrid(b);
-	}
-	else
-	{
-		Terrain().getEnemyTerritory().insert(theMap.GetArea(b.getTilePosition())->Id());
+		if (base->getPlayer() == Broodwar->self())
+		{
+			myOrderedBases[base->getPosition().getDistance(Terrain().getPlayerStartingPosition())] = base->getTilePosition();
+			Terrain().getAllyTerritory().insert(theMap.GetArea(b.getTilePosition())->Id());
+			Grids().updateBaseGrid(b);
+		}
+		else
+		{
+			Terrain().getEnemyTerritory().insert(theMap.GetArea(b.getTilePosition())->Id());
+		}
 	}
 	return;
 }

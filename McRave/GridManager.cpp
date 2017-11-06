@@ -16,27 +16,35 @@ void GridTrackerClass::update()
 void GridTrackerClass::reset()
 {
 	//// Temp debugging for tile positions
-	//for (int x = 0; x <= Broodwar->mapWidth() * 4; x++)
+	//for (int x = 0; x <= Broodwar->mapWidth(); x++)
 	//{
-	//	for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
-	//	{
-	//		if (eGroundThreat[x][y] > 0 && eGroundThreat[x][y] < 4)
+	//	for (int y = 0; y <= Broodwar->mapHeight(); y++)
+	//	{			
+	//		/*if (eSplashGrid[x][y] > 0)
 	//		{
 	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
-	//			//Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
-	//		}
-	//		if (eGroundThreat[x][y] >= 4 && eGroundThreat[x][y] < 5)
-	//		{
-	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Blue);
-	//		}
-	//		if (eGroundThreat[x][y] >= 5 && eGroundThreat[x][y] < 6)
-	//		{
-	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Green);
-	//		}
-	//		if (eGroundThreat[x][y] >= 6)
-	//		{
-	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Red);
-	//		}
+	//		}*/
+	//		//if (mobilityGrid[x][y] > 0 && mobilityGrid[x][y] < 4)
+	//		//{
+	//		//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
+	//		//	//Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
+	//		//}
+	//		//if (mobilityGrid[x][y] >= 4 && mobilityGrid[x][y] < 6)
+	//		//{
+	//		//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Purple);
+	//		//}
+	//		//if (mobilityGrid[x][y] >= 6 && mobilityGrid[x][y] < 8)
+	//		//{
+	//		//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Blue);
+	//		//}
+	//		//if (mobilityGrid[x][y] >= 8 && mobilityGrid[x][y] < 10)
+	//		//{
+	//		//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Green);
+	//		//}
+	//		//if (mobilityGrid[x][y] >= 10)
+	//		//{
+	//		//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Red);
+	//		//}
 	//	}
 	//}
 
@@ -70,6 +78,7 @@ void GridTrackerClass::reset()
 		eGroundClusterGrid[x][y] = 0;
 		eAirClusterGrid[x][y] = 0;
 		eDetectorGrid[x][y] = 0;
+		eSplashGrid[x][y] = 0;
 
 		psiStormGrid[x][y] = 0;
 		EMPGrid[x][y] = 0;
@@ -190,6 +199,22 @@ void GridTrackerClass::updateEnemyGrids()
 		double gRange = unit.getGroundRange(), aRange = unit.getAirRange();
 		int radius = 0;
 		WalkPosition start = unit.getWalkPosition();
+		
+		if (((unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine && !unit.unit()->isBurrowed()) || unit.getType() == UnitTypes::Protoss_Scarab) && unit.getTarget() && unit.getTarget()->exists() && unit.getTarget()->getPlayer() == Broodwar->self() && !unit.getTarget()->getType().isWorker())
+		{
+			UnitInfo &target = Units().getAllyUnit(unit.getTarget());
+			WalkPosition targetWalk = target.getWalkPosition();
+			for (int x = targetWalk.x - 12; x <= targetWalk.x + 12 + walkWidth; x++)
+			{
+				for (int y = targetWalk.y - 12; y <= targetWalk.y + 12 + walkWidth; y++)
+				{
+					if (!WalkPosition(x, y).isValid()) continue;
+					if (x > targetWalk.x && x <= targetWalk.x + walkWidth && y > targetWalk.y && y <= targetWalk.y + walkWidth) continue;
+					if (unit.getTarget()->getPosition().getDistance(Position(WalkPosition(x, y))) > 96) continue;
+					eSplashGrid[x][y] += 1;
+				}
+			}
+		}
 
 		if (unit.getType().isWorker())
 		{

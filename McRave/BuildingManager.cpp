@@ -35,7 +35,7 @@ void BuildingTrackerClass::queueBuildings()
 {
 	// For each building desired
 	for (auto &b : BuildOrder().getBuildingDesired())
-	{
+	{		
 		int cnt = 0;
 		for (auto &queued : buildingsQueued)
 		{
@@ -126,11 +126,24 @@ TilePosition BuildingTrackerClass::getBuildLocationNear(UnitType building, TileP
 		Broodwar << "Issues placing a " << building.c_str() << endl;
 		errorTime = Broodwar->getFrameCount();
 	}
-	return TilePositions::None;
+	return TilePositions::Invalid;
 }
 
 TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 {
+	// Refineries are only built on my own gas resources
+	if (building.isRefinery())
+	{
+		for (auto &gas : Resources().getMyGas())
+		{
+			if (Grids().getBaseGrid(gas.second.getTilePosition()) > 0 && gas.second.getType() == UnitTypes::Resource_Vespene_Geyser)
+			{
+				return gas.second.getTilePosition();
+			}
+		}
+		return TilePositions::Invalid;
+	}
+
 	// If we are expanding, it must be on an expansion area
 	double closestD = 0.0;
 	TilePosition closestP, here = TilePositions::Invalid;
@@ -179,8 +192,16 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		return closestP;
 	}
 
-	// If we are fast expanding
-	if (Strategy().isAllyFastExpand() && (building == UnitTypes::Protoss_Photon_Cannon || (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(Terrain().getFFEPosition()) <= 0) || (building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 0) || (building == UnitTypes::Protoss_Forge && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Forge) <= 0)))
+	// If we are doing nexus first
+	if (BuildOrder().isNexusFirst() && ((building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 2) || building == UnitTypes::Protoss_Cybernetics_Core || (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(Terrain().getSecondChoke()) <= 0)))
+	{
+		here = getBuildLocationNear(building, Terrain().getSecondChoke());
+		if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getPlayerStartingTilePosition());
+		return here;
+	}
+
+	// If we are forge expanding
+	if (BuildOrder().isForgeExpand() && (building == UnitTypes::Protoss_Photon_Cannon || (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(Terrain().getFFEPosition()) <= 0) || (building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 0) || (building == UnitTypes::Protoss_Forge && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Forge) <= 0)))
 	{
 		here = getBuildLocationNear(building, Terrain().getFFEPosition());
 		if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getPlayerStartingTilePosition());
@@ -221,7 +242,6 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		return TilePositions::Invalid;
 	}
 
-
 	// For each base, check if you can build near it, starting at the main
 	for (auto &base : Bases().getMyOrderedBases())
 	{
@@ -238,7 +258,7 @@ bool BuildingTrackerClass::isQueueable(UnitType building, TilePosition buildTile
 {
 	// Check if there's a building queued there already
 	for (auto &queued : buildingsQueued)
-	{		
+	{
 		if (buildTilePosition.x < queued.first.x + queued.second.tileWidth() && queued.first.x < buildTilePosition.x + building.tileWidth() && buildTilePosition.y < queued.first.y + queued.second.tileHeight() && queued.first.y < buildTilePosition.y + building.tileHeight())
 		{
 			return false;
@@ -249,19 +269,7 @@ bool BuildingTrackerClass::isQueueable(UnitType building, TilePosition buildTile
 
 bool BuildingTrackerClass::isBuildable(UnitType building, TilePosition buildTilePosition)
 {
-	// Refineries are only built on my own gas resources
-	if (building.isRefinery())
-	{
-		for (auto &gas : Resources().getMyGas())
-		{
-			if (Grids().getBaseGrid(gas.second.getTilePosition()) > 0 && gas.second.getTilePosition() == buildTilePosition && gas.second.getType() == UnitTypes::Resource_Vespene_Geyser)
-			{
-				return true;
-			}
-		}
-		return false;
-	}
-
+	if (building.isRefinery()) return true;
 	if (Broodwar->self()->getRace() == Races::Protoss && building.requiresPsi() && !Pylons().hasPower(buildTilePosition, building)) return false; // If Protoss, check if it's not a pylon and in a preset buildable position based on power grid
 	if (building == UnitTypes::Protoss_Shield_Battery && Terrain().getMineralHoldPosition().getDistance(Position(buildTilePosition)) > 160) return false;
 
@@ -321,7 +329,7 @@ bool BuildingTrackerClass::isSuitable(UnitType building, TilePosition buildTileP
 	if (building == UnitTypes::Terran_Supply_Depot || (!building.isResourceDepot() && building.buildsWhat().size() > 0)) buildingOffset = 1;
 	else buildingOffset = 0;
 
-	if (BuildOrder().isForgeExpand() && ((building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 0) || (building == UnitTypes::Protoss_Forge && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Forge) <= 0)))
+	if (Strategy().isAllyFastExpand() && ((building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 0) || (building == UnitTypes::Protoss_Forge && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Forge) <= 0)))
 	{
 		bool validFFE = false;
 		if (building == UnitTypes::Protoss_Gateway)

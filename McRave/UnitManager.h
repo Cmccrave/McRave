@@ -9,7 +9,7 @@ using namespace std;
 class UnitTrackerClass
 {
 	map <Unit, UnitInfo> enemyUnits;
-	map <Unit, UnitInfo> enemyDefenses;
+	map <Unit, UnitInfo> enemyDefenses;	
 	map <Unit, UnitInfo> allyUnits;
 	map <Unit, UnitInfo> allyDefenses;
 	map <UnitSizeType, int> allySizes;
@@ -17,6 +17,7 @@ class UnitTrackerClass
 	map <UnitType, int> enemyComposition;
 
 	set<Unit> returnValues;
+	set<Unit> enemyThreats;
 
 	double globalAllyGroundStrength, globalEnemyGroundStrength;
 	double globalAllyAirStrength, globalEnemyAirStrength;
