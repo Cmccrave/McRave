@@ -111,8 +111,8 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 		UnitInfo &ally = a.second;
 		double allyToEngage = 0.0;
 		double allyRange = (ally.getType().width() / 2.0) + target.getType().isFlyer() ? ally.getAirRange() : ally.getGroundRange();
-		double distanceA = ally.getPosition().getDistance(ally.getEngagePosition());
-		double distanceB = ally.getPosition().getDistance(unit.getEngagePosition());
+		//double distanceA = ally.getPosition().getDistance(ally.getEngagePosition());
+		//double distanceB = ally.getPosition().getDistance(unit.getEngagePosition());
 		double speed = ally.getSpeed();
 
 		if (unit.getTransport() && unit.getTransport()->exists())
@@ -120,17 +120,19 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 			speed = unit.getTransport()->getType().topSpeed() * 24.0;
 		}
 
-		if (Grids().getDistanceHome(ally.getWalkPosition()) > 0 && Grids().getDistanceHome(WalkPosition(ally.getEngagePosition())) > 0 && distanceA <= 640)
+		double distanceC = ally.getPosition().getDistance(unit.getPosition()) - allyRange;
+
+		/*if (Grids().getDistanceHome(ally.getWalkPosition()) > 0 && Grids().getDistanceHome(WalkPosition(ally.getEngagePosition())) > 0 && distanceA <= 640)
 		{
 			distanceA = (8.0 * abs(Grids().getDistanceHome(ally.getWalkPosition()) - Grids().getDistanceHome(WalkPosition(ally.getEngagePosition()))));
 		}
 		if (Grids().getDistanceHome(ally.getWalkPosition()) > 0 && Grids().getDistanceHome(WalkPosition(unit.getEngagePosition())) > 0 && distanceB <= 640)
 		{
 			distanceB = (8.0 * abs(Grids().getDistanceHome(ally.getWalkPosition()) - Grids().getDistanceHome(WalkPosition(unit.getEngagePosition())))) - allyRange;
-		}
+		}*/
 
-		if (distanceB / speed > simulationTime) continue;
-		allyToEngage = max(0.0, distanceA / speed);
+		//if (distanceB / speed > simulationTime) continue;
+		allyToEngage = max(0.0, distanceC / speed);
 		simRatio = max(0.0, simulationTime - min(10.0, (allyToEngage - unitToEngage)));
 
 		if ((ally.unit()->isCloaked() || ally.unit()->isBurrowed()) && Grids().getEDetectorGrid(WalkPosition(ally.getEngagePosition())) == 0) simRatio = simRatio * 5.0;
@@ -161,7 +163,7 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 		if (Players().getNumberProtoss() > 0) minThreshold = 1.1, maxThreshold = 1.3;
 	}
 
-	UnitInfo &target = Units().getEnemyUnit(unit.getTarget());
+	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());
 	double decisionLocal = unit.getType().isFlyer() ? unit.getAirLocal() : unit.getGroundLocal();
 	double decisionGlobal = unit.getType().isFlyer() ? globalAirStrategy : globalGroundStrategy;
 	double allyRange = target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
@@ -171,6 +173,7 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 	if (!unit.getTarget()) unit.setStrategy(3);	 // If unit does not have a target, set as "no local"
 	else if (unit.getType().isWorker() && unit.getTarget()->exists()) unit.setStrategy(1); // If unit is a worker, always fight
 	else if ((unit.unit()->isCloaked() || unit.unit()->isBurrowed()) && Grids().getEDetectorGrid(WalkPosition(unit.getEngagePosition())) <= 0) unit.setStrategy(1); // If unit is invisible and won't be detected, attack
+	else if (unit.getType() == UnitTypes::Protoss_Zealot && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) == 0 && target.getType() == UnitTypes::Terran_Vulture) unit.setStrategy(0);
 	else if (unit.getType() == UnitTypes::Protoss_High_Templar && unit.unit()->getEnergy() < 75) unit.setStrategy(0); // If unit is a High Templar and low energy, retreat	
 	else if (unit.getType() == UnitTypes::Terran_Medic && unit.unit()->getEnergy() <= 0) unit.setStrategy(0); // If unit is a Medic and no energy, retreat	
 	else if (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && unit.getGroundRange() >= unit.getPosition().getDistance(unit.getTargetPosition())) unit.setStrategy(1); // If a unit is a Reaver and within range of an enemy	
@@ -197,7 +200,7 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 			else unit.setStrategy(0);			
 		}
 	}
-
+	else if (Strategy().isPlayPassive() && !Terrain().isInAllyTerritory(unit.getTilePosition())) unit.setStrategy(2);
 	else if(unit.getPosition().getDistance(unit.getTargetPosition()) > 640.0) unit.setStrategy(3); // If a unit is clearly out of range, set as "no local"		
 	else if (unit.getStrategy() == 1) // If last command was engage
 	{
