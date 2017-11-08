@@ -59,7 +59,7 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 	double enemyLocalGroundStrength = 0.0, allyLocalGroundStrength = 0.0;
 	double enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;
 	double simulationTime = 5.0;
-	double simRatio = 0.0;
+	
 	//double unitToEngage = max(0.0, (8.0 * abs(Grids().getDistanceHome(unit.getWalkPosition()) - Grids().getDistanceHome(WalkPosition(unit.getEngagePosition())))) / unit.getSpeed());
 	double unitToEngage = max(0.0, unit.getPosition().getDistance(unit.getEngagePosition()) / unit.getSpeed());
 	double enemyRange, unitRange;
@@ -69,6 +69,7 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 	for (auto &e : enemyUnits)
 	{
 		UnitInfo &enemy = e.second;
+		double simRatio = 0.0;
 
 		//Broodwar->drawTextMap(enemy.getPosition(), "%.2f", enemy.getPriority());
 		// Ignore workers and stasised units
@@ -78,17 +79,12 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 		enemy.getType().isFlyer() ? unitRange = unit.getAirRange() + (unit.getType().width() / 2.0) : unitRange = unit.getGroundRange() + (unit.getType().width() / 2.0);
 
 		double enemyToEngage = 0.0;
-		double distance = enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange;
-
-		if (Grids().getDistanceHome(enemy.getWalkPosition()) > 0 && Grids().getDistanceHome(WalkPosition(unit.getEngagePosition())) > 0 && distance < 640)
-		{
-			distance = (8.0 * abs(Grids().getDistanceHome(enemy.getWalkPosition()) - Grids().getDistanceHome(WalkPosition(unit.getEngagePosition())))) - enemyRange;
-		}
-
+		double distance = max(0.0, enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange);
+		
 		if (enemy.getSpeed() > 0.0)
 		{
 			enemyToEngage = max(0.0, distance / enemy.getSpeed());
-			simRatio = max(0.0, simulationTime - min(10.0, (enemyToEngage - unitToEngage)));
+			simRatio = max(0.0, simulationTime - enemyToEngage);
 		}
 		else
 		{
@@ -99,7 +95,6 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 		// Situations where an enemy should be treated as stronger than it actually is
 		if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && !enemy.unit()->isDetected()) simRatio = simRatio * 5.0;
 		if (!enemy.getType().isFlyer() && Broodwar->getGroundHeight(enemy.getTilePosition()) > Broodwar->getGroundHeight(TilePosition(unit.getEngagePosition())))	simRatio = simRatio * 2.0;
-		//if (!enemy.unit()->exists()) simRatio = simRatio * (1.0 + double(Broodwar->getFrameCount() - enemy.getLastVisibleFrame()) / 5000);
 
 		enemyLocalGroundStrength += enemy.getVisibleGroundStrength() * simRatio;
 		enemyLocalAirStrength += enemy.getVisibleAirStrength() * simRatio;
@@ -109,32 +104,13 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 	for (auto &a : allyUnits)
 	{
 		UnitInfo &ally = a.second;
-		double allyToEngage = 0.0;
-		double allyRange = (ally.getType().width() / 2.0) + target.getType().isFlyer() ? ally.getAirRange() : ally.getGroundRange();
-		double distanceA = ally.getPosition().getDistance(ally.getEngagePosition());
-		double distanceB = ally.getPosition().getDistance(unit.getEngagePosition());
-		double speed = ally.getSpeed();
+		if (ally.getPosition().getDistance(unit.getEngagePosition()) / ally.getSpeed() > simulationTime) continue;
+		double distance = ally.getPosition().getDistance(ally.getEngagePosition());
+		double speed = (unit.getTransport() && unit.getTransport()->exists()) ? unit.getTransport()->getType().topSpeed() * 24.0 : ally.getSpeed();
+		double allyToEngage = max(0.0, distance / speed);
+		double simRatio = max(0.0, simulationTime - allyToEngage);
 
-		if (unit.getTransport() && unit.getTransport()->exists())
-		{
-			speed = unit.getTransport()->getType().topSpeed() * 24.0;
-		}
-
-		double distanceC = ally.getPosition().getDistance(unit.getPosition()) - allyRange;
-
-		/*if (Grids().getDistanceHome(ally.getWalkPosition()) > 0 && Grids().getDistanceHome(WalkPosition(ally.getEngagePosition())) > 0 && distanceA <= 640)
-		{
-			distanceA = (8.0 * abs(Grids().getDistanceHome(ally.getWalkPosition()) - Grids().getDistanceHome(WalkPosition(ally.getEngagePosition()))));
-		}
-		if (Grids().getDistanceHome(ally.getWalkPosition()) > 0 && Grids().getDistanceHome(WalkPosition(unit.getEngagePosition())) > 0 && distanceB <= 640)
-		{
-			distanceB = (8.0 * abs(Grids().getDistanceHome(ally.getWalkPosition()) - Grids().getDistanceHome(WalkPosition(unit.getEngagePosition())))) - allyRange;
-		}*/
-
-		if (distanceB / speed > min(10.0 , (unitToEngage + simulationTime))) continue;
-		allyToEngage = max(0.0, distanceA / speed);
-		simRatio = max(0.0, simulationTime - min(10.0, (allyToEngage - unitToEngage)));
-
+		// Situations where an ally should be treated as stronger than it actually is
 		if ((ally.unit()->isCloaked() || ally.unit()->isBurrowed()) && Grids().getEDetectorGrid(WalkPosition(ally.getEngagePosition())) == 0) simRatio = simRatio * 5.0;
 		if (!ally.getType().isFlyer() && Broodwar->getGroundHeight(TilePosition(ally.getEngagePosition())) > Broodwar->getGroundHeight(TilePosition(ally.getTargetPosition())))	simRatio = simRatio * 2.0;
 
