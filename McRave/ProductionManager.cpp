@@ -27,6 +27,7 @@ void ProductionTrackerClass::updateProduction()
 		BuildingInfo &building = b.second;
 		double highestPriority = 0.0;
 		UnitType highestType = UnitTypes::None;
+		UnitType backup = UnitTypes::None;
 		if (building.unit()->isIdle() && !building.getType().isResourceDepot())
 		{
 			if (building.unit()->isIdle() && Units().getSupply() < 380) idle = true;
@@ -42,18 +43,26 @@ void ProductionTrackerClass::updateProduction()
 				}
 				if (Strategy().getUnitScore()[unit] >= highestPriority && isCreateable(building.unit(), unit) && isSuitable(unit) && (BuildOrder().getTechList().find(unit) != BuildOrder().getTechList().end() || isAffordable(unit)))
 				{
+					if (BuildOrder().getTechList().find(unit) == BuildOrder().getTechList().end()) backup = unit;
 					highestPriority = Strategy().getUnitScore()[unit];
-					highestType = unit;
+					highestType = unit;					
 				}
 			}
 			if (highestType != UnitTypes::None)
 			{
-
+				// If we can afford it, train it
 				if (isAffordable(highestType))
 				{
 					building.unit()->train(highestType);
 					idleProduction.erase(building.unit());
 				}
+				// Else if we can't afford it but we can afford a backup unit, train it
+				else if (!isAffordable(highestType) && backup != UnitTypes::None && isAffordable(backup))
+				{
+					building.unit()->train(backup);
+					idleProduction.erase(building.unit());
+				}
+				// Else if this is a tech unit, add it to idle production
 				else if (BuildOrder().getTechList().find(highestType) != BuildOrder().getTechList().end())
 				{
 					idleProduction[building.unit()] = highestType;
@@ -210,7 +219,7 @@ bool ProductionTrackerClass::isSuitable(UnitType unit)
 	{
 		// Gateway Units
 	case UnitTypes::Enum::Protoss_Zealot:
-		return Broodwar->self()->minerals() > Broodwar->self()->gas();
+		return true;
 		break;
 	case UnitTypes::Enum::Protoss_Dragoon:
 		return true;
@@ -219,7 +228,7 @@ bool ProductionTrackerClass::isSuitable(UnitType unit)
 		return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dark_Templar) < 2;
 		break;
 	case UnitTypes::Enum::Protoss_High_Templar:
-		return Broodwar->self()->minerals() < Broodwar->self()->gas() && (Broodwar->self()->hasResearched(TechTypes::Psionic_Storm) || Broodwar->self()->isResearching(TechTypes::Psionic_Storm));
+		return Broodwar->self()->hasResearched(TechTypes::Psionic_Storm) || Broodwar->self()->isResearching(TechTypes::Psionic_Storm);
 		break;
 
 		// Robo Units
