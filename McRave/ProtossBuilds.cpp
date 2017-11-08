@@ -1,6 +1,6 @@
 #include "McRave.h"
 
-void BuildOrderTrackerClass::ZZCore()
+void BuildOrderTrackerClass::PZZCore()
 {
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1;
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 42);
@@ -11,7 +11,7 @@ void BuildOrderTrackerClass::ZZCore()
 	return;
 }
 
-void BuildOrderTrackerClass::ZCore()
+void BuildOrderTrackerClass::PZCore()
 {
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1;
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 38);
@@ -22,7 +22,7 @@ void BuildOrderTrackerClass::ZCore()
 	return;
 }
 
-void BuildOrderTrackerClass::NZCore()
+void BuildOrderTrackerClass::PNZCore()
 {
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1;
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 36);
@@ -33,7 +33,7 @@ void BuildOrderTrackerClass::NZCore()
 	return;
 }
 
-void BuildOrderTrackerClass::FFECannon()
+void BuildOrderTrackerClass::PFFESafe()
 {
 	buildingDesired[UnitTypes::Protoss_Forge] = Units().getSupply() >= 18;
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 28);
@@ -46,7 +46,7 @@ void BuildOrderTrackerClass::FFECannon()
 	return;
 }
 
-void BuildOrderTrackerClass::FFEGateway()
+void BuildOrderTrackerClass::PFFEStandard()
 {
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 50);
 	buildingDesired[UnitTypes::Protoss_Forge] = Units().getSupply() >= 24;
@@ -59,7 +59,7 @@ void BuildOrderTrackerClass::FFEGateway()
 	return;
 }
 
-void BuildOrderTrackerClass::FFENexus()
+void BuildOrderTrackerClass::PFFEGreedy()
 {
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24);
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 26) + (Units().getSupply() >= 42);
@@ -72,18 +72,30 @@ void BuildOrderTrackerClass::FFENexus()
 	return;
 }
 
-void BuildOrderTrackerClass::TwelveNexus()
+void BuildOrderTrackerClass::P12Nexus()
 {
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24);
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 26) + (Units().getSupply() >= 32) + (Units().getSupply() >= 42) + (Units().getSupply() >= 56) + (Units().getSupply() >= 70);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 28) + (Units().getSupply() >= 80);
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = (Units().getSupply() >= 30);
-	getOpening = Units().getSupply() < 170;
+	getOpening = Units().getSupply() < 160;
 	nexusFirst = true;
 	return;
 }
 
-void BuildOrderTrackerClass::DTExpand()
+void BuildOrderTrackerClass::P21Nexus()
+{
+	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 42);
+	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 44);
+	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
+	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
+	buildingDesired[UnitTypes::Protoss_Robotics_Facility] = Units().getSupply() >= 56;
+	getOpening = Units().getSupply() < 70;
+	oneGateCore = true;
+	return;
+}
+
+void BuildOrderTrackerClass::PDTExpand()
 {
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 48);
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 54);
@@ -96,20 +108,7 @@ void BuildOrderTrackerClass::DTExpand()
 	return;
 }
 
-void BuildOrderTrackerClass::RoboExpand()
-{
-	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() > 42);
-	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 42);
-	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
-	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
-	buildingDesired[UnitTypes::Protoss_Robotics_Facility] = Units().getSupply() >= 56;
-	buildingDesired[UnitTypes::Protoss_Robotics_Support_Bay] = Units().getSupply() >= 64;
-	getOpening = Units().getSupply() < 70;
-	oneGateCore = true;
-	return;
-}
-
-void BuildOrderTrackerClass::FourGate()
+void BuildOrderTrackerClass::P4Gate()
 {
 	buildingDesired[UnitTypes::Protoss_Nexus] = 1;
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + 3 * (Units().getSupply() >= 62);
@@ -120,20 +119,20 @@ void BuildOrderTrackerClass::FourGate()
 	return;
 }
 
-void BuildOrderTrackerClass::ZealotRush()
-{
-	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 18) + (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) > 0);
-	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 40;
-	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 44;
-	getOpening = Units().getSupply() < 52;
-	return;
-}
-
-void BuildOrderTrackerClass::TenTwelveGate()
+void BuildOrderTrackerClass::P2GateZealot()
 {
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 24);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 36;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 44;
+	getOpening = Units().getSupply() < 50;
+	return;
+}
+
+void BuildOrderTrackerClass::P2GateDragoon()
+{
+	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 30);
+	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 22;
+	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
 	getOpening = Units().getSupply() < 50;
 	return;
 }

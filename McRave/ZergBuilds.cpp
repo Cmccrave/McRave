@@ -1,6 +1,6 @@
 #include "McRave.h"
 
-void BuildOrderTrackerClass::Overpool()
+void BuildOrderTrackerClass::ZOverpool()
 {
 	buildingDesired[UnitTypes::Zerg_Spawning_Pool] = Units().getSupply() > 18;
 	buildingDesired[UnitTypes::Zerg_Hatchery] = 2 * Units().getSupply() > 28;

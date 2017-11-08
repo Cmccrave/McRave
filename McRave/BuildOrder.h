@@ -26,7 +26,7 @@ public:
 	bool isUnitUnlocked(UnitType unit) { return (unlockedType.find(unit) != unlockedType.end()); }
 
 	map <UnitType, int>& getBuildingDesired() { return buildingDesired; }
-	bool isOpener() { return getOpening; }	
+	bool isOpener() { return getOpening; }
 
 	set <UnitType>& getTechList() { return techList; }
 	bool isOneGateCore() { return oneGateCore; }
@@ -38,7 +38,7 @@ public:
 	void onStart();
 	void update();
 	void updateBuild();
-	
+
 	// Toss Builds
 	void protossOpener();
 	void protossTech();
@@ -52,19 +52,19 @@ public:
 	void zergTech();
 	void zergSituational();
 
-	void ZZCore(), ZCore(), NZCore();
-	void FFECannon(), FFEGateway(), FFENexus();
-	void TwelveNexus();
-	void RoboExpand(), DTExpand();
-	void FourGate(), ZealotRush(), TenTwelveGate(); //ReaverRush();
+	void PZZCore(), PZCore(), PNZCore();			// 1 Gate Core
+	void PFFESafe(), PFFEStandard(), PFFEGreedy();	// FFE
+	void P12Nexus(), P21Nexus(), PDTExpand();		// Early Nexus
+	void P4Gate(), P2GateZealot(), P2GateDragoon(); // 1 Base Aggresion
+	void PDTRush(), PReaverRush();					// 1 Base Tech
 
 	// Terran Builds
-	void TwoFactVult();
-	//void ShallowTwo();
-	void Sparks();
+	void T2Fact();
+	//void TShallowTwo();
+	void TSparks();
 
 	// Zerg Builds
-	void Overpool();
+	void ZOverpool();
 };
 
 typedef Singleton<BuildOrderTrackerClass> BuildOrderTracker;

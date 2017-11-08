@@ -26,7 +26,7 @@ void StrategyTrackerClass::protossStrategy()
 	if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0)
 	{
 		// Check if there's a fast expansion for ally or enemy
-		if (BuildOrder().getCurrentBuild() == "TwelveNexus" || BuildOrder().isForgeExpand()) allyFastExpand = true;
+		if (BuildOrder().isNexusFirst() || BuildOrder().isForgeExpand()) allyFastExpand = true;
 		if (Units().getEnemyComposition()[UnitTypes::Terran_Command_Center] > 1 || Units().getEnemyComposition()[UnitTypes::Zerg_Hatchery] > 1 || Units().getEnemyComposition()[UnitTypes::Protoss_Nexus] > 1) enemyFastExpand = true;
 		
 		// Check if enemy is rushing (detects early 2 gates and early pool)
@@ -47,10 +47,8 @@ void StrategyTrackerClass::protossStrategy()
 		enemyFastExpand = false;
 	}
 
-	if (BuildOrder().isOpener() && BuildOrder().getCurrentBuild() == "TwelveNexus" && UnitTypes::Terran_Factory >= 3)
-	{
-		playPassive = true;
-	}
+	// Check if Terran is playing aggresive in mid game
+	if (BuildOrder().isOpener() && BuildOrder().isNexusFirst() && UnitTypes::Terran_Factory >= 3) playPassive = true;	
 
 	// Check if we need an observer
 	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) <= 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Dark_Templar] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Citadel_of_Adun] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Templar_Archives] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Ghost] > 0 || Units().getEnemyComposition()[UnitTypes::Zerg_Lurker] > 0 || (Units().getEnemyComposition()[UnitTypes::Zerg_Lair] == 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hydralisk] >= 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hatchery] == 0)))

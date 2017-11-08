@@ -1,6 +1,6 @@
 #include "McRave.h"
 
-void BuildOrderTrackerClass::TwoFactVult()
+void BuildOrderTrackerClass::T2Fact()
 {
 	buildingDesired[UnitTypes::Terran_Barracks] = (Units().getSupply() >= 22);
 	buildingDesired[UnitTypes::Terran_Refinery] = (Units().getSupply() >= 24);
@@ -17,7 +17,7 @@ void BuildOrderTrackerClass::TwoFactVult()
 //	buildingDesired[UnitTypes::Terran_Academy] = (Units().getSupply() >= 52);
 //}
 
-void BuildOrderTrackerClass::Sparks()
+void BuildOrderTrackerClass::TSparks()
 {
 	buildingDesired[UnitTypes::Terran_Barracks] = (Units().getSupply() >= 22) + (Units().getSupply() >= 26) + (Units().getSupply() >= 46);
 	//buildingDesired[UnitTypes::Terran_Engineering_Bay] = (Units().getSupply() >= 36);

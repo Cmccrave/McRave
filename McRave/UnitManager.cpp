@@ -111,8 +111,8 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 		UnitInfo &ally = a.second;
 		double allyToEngage = 0.0;
 		double allyRange = (ally.getType().width() / 2.0) + target.getType().isFlyer() ? ally.getAirRange() : ally.getGroundRange();
-		//double distanceA = ally.getPosition().getDistance(ally.getEngagePosition());
-		//double distanceB = ally.getPosition().getDistance(unit.getEngagePosition());
+		double distanceA = ally.getPosition().getDistance(ally.getEngagePosition());
+		double distanceB = ally.getPosition().getDistance(unit.getEngagePosition());
 		double speed = ally.getSpeed();
 
 		if (unit.getTransport() && unit.getTransport()->exists())
@@ -131,8 +131,8 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 			distanceB = (8.0 * abs(Grids().getDistanceHome(ally.getWalkPosition()) - Grids().getDistanceHome(WalkPosition(unit.getEngagePosition())))) - allyRange;
 		}*/
 
-		//if (distanceB / speed > simulationTime) continue;
-		allyToEngage = max(0.0, distanceC / speed);
+		if (distanceB / speed > min(10.0 , (unitToEngage + simulationTime))) continue;
+		allyToEngage = max(0.0, distanceA / speed);
 		simRatio = max(0.0, simulationTime - min(10.0, (allyToEngage - unitToEngage)));
 
 		if ((ally.unit()->isCloaked() || ally.unit()->isBurrowed()) && Grids().getEDetectorGrid(WalkPosition(ally.getEngagePosition())) == 0) simRatio = simRatio * 5.0;

@@ -32,15 +32,8 @@ void InterfaceTrackerClass::drawInformation()
 	int offset = 0;
 	screenOffset = 0;
 
-	// Display global strength calculations	
-	Broodwar->drawTextScreen(575, 16, "%c%.2f/%.2f", Text::White, Units().getGlobalAllyGroundStrength(), Units().getGlobalEnemyGroundStrength());
-
-	// Display resources per minute
-	Broodwar->drawTextScreen(452, 16, "%c%.2f", Text::White, Resources().getMPM());
-	Broodwar->drawTextScreen(520, 16, "%c%.2f", Text::White, Resources().getGPM());
-
 	// Display what build is being used
-	Broodwar->drawTextScreen(575, 32, "%c%s", Text::White, BuildOrder().getCurrentBuild().c_str());	
+	Broodwar->drawTextScreen(452, 16, "%c%s", Text::White, BuildOrder().getCurrentBuild().c_str());	
 
 	// Display unit scoring	
 	for (auto &unit : Strategy().getUnitScore())
@@ -102,13 +95,7 @@ void InterfaceTrackerClass::drawEnemyInfo()
 
 void InterfaceTrackerClass::sendText(string text)
 {
-	if (text == "/debug")
-	{
-		debugging = !debugging;
-	}
-	else
-	{
-		Broodwar->sendText("%s", text.c_str());
-	}
+	if (text == "/debug") debugging = !debugging;	
+	else Broodwar->sendText("%s", text.c_str());	
 	return;
 }

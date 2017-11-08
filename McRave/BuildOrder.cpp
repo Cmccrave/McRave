@@ -24,9 +24,9 @@ void BuildOrderTrackerClass::onStart()
 	double best = 0.0;
 
 	// Write what builds you're using
-	if (Broodwar->self()->getRace() == Races::Protoss) buildNames = { "ZZCore", "ZCore", "NZCore", "FFECannon", "FFEGateway", "FFENexus", "TwelveNexus", "DTExpand", "RoboExpand", "FourGate", "ZealotRush", "TenTwelveGate" };
-	if (Broodwar->self()->getRace() == Races::Terran) buildNames = { "TwoFactVult", "Sparks" };
-	if (Broodwar->self()->getRace() == Races::Zerg) buildNames = { "Overpool" };
+	if (Broodwar->self()->getRace() == Races::Protoss) buildNames = { "PZZCore", "PZCore", "PNZCore", "PFFESafe", "PFFEStandard", "PFFEGreedy", "P12Nexus", "P21Nexus", "PDTExpand", "P4Gate", "P2GateZealot", "P2GateDragoon"/*, "PDTRush", "PReaverRush"*/ };
+	if (Broodwar->self()->getRace() == Races::Terran) buildNames = { "T2Fact", "TSparks" };
+	if (Broodwar->self()->getRace() == Races::Zerg) buildNames = { "ZOverpool" };
 
 	// If we don't have a file in the /read/ folder, then check the /write/ folder
 	if (!config)
@@ -126,58 +126,29 @@ void BuildOrderTrackerClass::onStart()
 
 bool BuildOrderTrackerClass::isBuildAllowed(Race enemy, string build)
 {
-	if (enemy == Races::Zerg || enemy == Races::Random)
-	{
-		if (build == "TwelveNexus" || build == "NZCore" || build == "DTExpand")
-		{
-			return false;
-		}
-	}
-	if (enemy == Races::Terran || enemy == Races::Protoss || enemy == Races::Random)
-	{
-		if (build == "FFECannon" || build == "FFEGateway" || build == "FFENexus")
-		{
-			return false;
-		}
-	}
-	if (enemy == Races::Terran)
-	{
-		if (build == "TenTwelveGate")
-		{
-			return false;
-		}
-	}
-	return true;
+	if (enemy == Races::Zerg && (build == "PFFESafe" || build == "PFFEStandard" || build == "PFFEGreedy" || build == "P2GateZealot" || build == "P4Gate")) return true;
+	if (enemy == Races::Terran && (build == "P12Nexus" || build == "P21Nexus" || build == "PDTExpand" || build == "P2GateDragoon")) return true;	
+	if (enemy == Races::Protoss && (build == "PZCore" || build == "PNZCore")) return true;
+	if (enemy == Races::Random && (build == "PZZCore")) return true;
+	return false;
 }
 
 void BuildOrderTrackerClass::getDefaultBuild()
 {
 	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
-		if (Players().getNumberProtoss() > 0)
-		{
-			currentBuild = "ZZCore";
-		}
-		else if (Players().getNumberZerg() > 0)
-		{
-			currentBuild = "FFECannon";
-		}
-		else if (Players().getNumberTerran() > 0)
-		{
-			currentBuild = "NZCore";
-		}
-		else if (Players().getNumberRandom() > 0)
-		{
-			currentBuild = "TenTwelveGate";
-		}
+		if (Players().getNumberProtoss() > 0) currentBuild = "PZCore";		
+		else if (Players().getNumberZerg() > 0) currentBuild = "PFFESafe";	
+		else if (Players().getNumberTerran() > 0) currentBuild = "P12Nexus";		
+		else if (Players().getNumberRandom() > 0) currentBuild = "PZZCore";		
 	}
 	else if (Broodwar->self()->getRace() == Races::Terran)
 	{
-		currentBuild = "TwoFactVult";
+		currentBuild = "T2Fact";
 	}
 	else if (Broodwar->self()->getRace() == Races::Zerg)
 	{
-		currentBuild = "Overpool";
+		currentBuild = "ZOverpool";
 	}
 	return;
 }
@@ -222,54 +193,49 @@ void BuildOrderTrackerClass::protossOpener()
 {
 	if (getOpening)
 	{
-		if (currentBuild == "ZZCore") ZZCore();
-		if (currentBuild == "ZCore") ZCore();
-		if (currentBuild == "NZCore") NZCore();
-		if (currentBuild == "FFECannon") FFECannon();
-		if (currentBuild == "FFEGateway") FFEGateway();
-		if (currentBuild == "FFENexus") FFENexus();
-		if (currentBuild == "TwelveNexus") TwelveNexus();
-		if (currentBuild == "DTExpand") DTExpand();
-		if (currentBuild == "RoboExpand") RoboExpand();
-		if (currentBuild == "FourGate") FourGate();
-		if (currentBuild == "ZealotRush") ZealotRush();
-		if (currentBuild == "TenTwelveGate") TenTwelveGate();
+		if (currentBuild == "PZZCore") PZZCore();
+		if (currentBuild == "PZCore") PZCore();
+		if (currentBuild == "PNZCore") PNZCore();
+		if (currentBuild == "PFFESafe") PFFESafe();
+		if (currentBuild == "PFFEStandard") PFFEStandard();
+		if (currentBuild == "PFFEGreedy") PFFEGreedy();
+		if (currentBuild == "P12Nexus") P12Nexus();
+		if (currentBuild == "P21Nexus") P21Nexus();
+		if (currentBuild == "PDTExpand") PDTExpand();
+		if (currentBuild == "P4Gate") P4Gate();
+		if (currentBuild == "P2GateZealot") P2GateZealot();
+		if (currentBuild == "P2GateDragoon") P2GateDragoon();
+		//if (currentBuild == "PDTRush") PDTRush();
+		//if (currentBuild == "PReaverRush") PReaverRush();
 	}
 	return;
 }
 
 void BuildOrderTrackerClass::protossTech()
 {
-	int offset = 100;
-	for (auto &unit : unlockedType)
-	{
-		Broodwar->drawTextScreen(50, offset, "%s", unit.c_str());
-		offset += 10;
-	}
-
 	// Some hardcoded techs based on needing detection or specific build orders
 	if (getTech)
 	{
 		if (Strategy().needDetection())
 		{
 			techUnit = UnitTypes::Protoss_Observer;
-			unlockedType.insert(UnitTypes::Protoss_Observer);
-			getTech = false;
+			unlockedType.insert(techUnit);
 			techList.insert(techUnit);
+			getTech = false;
 		}
-		else if (currentBuild == "DTExpand")
+		else if (currentBuild == "PDTExpand")
 		{
 			techUnit = UnitTypes::Protoss_Dark_Templar;
-			unlockedType.insert(UnitTypes::Protoss_Dark_Templar);
-			getTech = false;
+			unlockedType.insert(techUnit);
 			techList.insert(techUnit);
+			getTech = false;
 		}
-		else if (currentBuild == "RoboExpand")
+		else if (currentBuild == "P21Nexus")
 		{
-			techUnit = UnitTypes::Protoss_Reaver;
-			unlockedType.insert(UnitTypes::Protoss_Reaver);
-			getTech = false;
+			Strategy().getUnitScore()[UnitTypes::Protoss_Reaver] > Strategy().getUnitScore()[UnitTypes::Protoss_Observer] ? techUnit = UnitTypes::Protoss_Reaver : techUnit = UnitTypes::Protoss_Observer;			
+			unlockedType.insert(techUnit);			
 			techList.insert(techUnit);
+			getTech = false;		
 		}
 
 		// Otherwise, choose a tech based on highest unit score
@@ -317,7 +283,6 @@ void BuildOrderTrackerClass::protossTech()
 		buildingDesired[UnitTypes::Protoss_Stargate] = 1;
 		buildingDesired[UnitTypes::Protoss_Citadel_of_Adun] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Stargate) > 0;
 		buildingDesired[UnitTypes::Protoss_Templar_Archives] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) > 0;
-
 	}
 	else if (techUnit == UnitTypes::Protoss_Scout)
 	{
@@ -347,7 +312,7 @@ void BuildOrderTrackerClass::protossTech()
 void BuildOrderTrackerClass::protossSituational()
 {
 	// Check if we hit our Zealot cap based on our build
-	if (getOpening && !Strategy().isRush() && ((currentBuild == "ZZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 2) || (currentBuild == "ZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 1) || (currentBuild == "NZCore") || (Players().getNumberTerran() > 0 && !oneGateCore && currentBuild != "ZealotRush")))
+	if (getOpening && !Strategy().isRush() && ((currentBuild == "PZZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 2) || (currentBuild == "PZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 1) || (currentBuild == "PNZCore") || (Players().getNumberTerran() > 0 && currentBuild != "PDTExpand")))
 		unlockedType.erase(UnitTypes::Protoss_Zealot);
 	else unlockedType.insert(UnitTypes::Protoss_Zealot);
 	unlockedType.insert(UnitTypes::Protoss_Dragoon);
@@ -363,7 +328,7 @@ void BuildOrderTrackerClass::protossSituational()
 	{
 		getTech = true;
 	}
-	
+
 	// Pylon logic
 	if (Strategy().isAllyFastExpand() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Pylon) <= 0)
 	{
@@ -423,7 +388,7 @@ void BuildOrderTrackerClass::protossSituational()
 				{
 					buildingDesired[UnitTypes::Protoss_Pylon] += 1;
 				}
-				else if (Grids().getDefenseGrid(base.second.getTilePosition()) < 1 && Broodwar->hasPower(TilePosition(base.second.getPosition())))
+				else if (Grids().getDefenseGrid(base.second.getTilePosition()) <= 0 && Grids().getPylonGrid(base.second.getTilePosition()) > 0)
 				{
 					buildingDesired[UnitTypes::Protoss_Photon_Cannon] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) + 1;
 				}
@@ -437,8 +402,8 @@ void BuildOrderTrackerClass::terranOpener()
 {
 	if (getOpening)
 	{
-		if (currentBuild == "TwoFactVult") TwoFactVult();
-		if (currentBuild == "Sparks") Sparks();
+		if (currentBuild == "T2Fact") T2Fact();
+		if (currentBuild == "TSparks") TSparks();
 	}
 	return;
 }
@@ -525,7 +490,7 @@ void BuildOrderTrackerClass::zergOpener()
 {
 	if (getOpening)
 	{
-		if (currentBuild == "Overpool") Overpool();
+		if (currentBuild == "ZOverpool") ZOverpool();
 	}
 }
 

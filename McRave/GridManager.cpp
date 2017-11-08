@@ -20,10 +20,10 @@ void GridTrackerClass::reset()
 	//{
 	//	for (int y = 0; y <= Broodwar->mapHeight(); y++)
 	//	{			
-	//		/*if (eSplashGrid[x][y] > 0)
-	//		{
-	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
-	//		}*/
+	//		//if (defenseGrid[x][y] > 0)
+	//		//{
+	//		//	Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
+	//		//}
 	//		//if (mobilityGrid[x][y] > 0 && mobilityGrid[x][y] < 4)
 	//		//{
 	//		//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
