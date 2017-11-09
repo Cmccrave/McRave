@@ -195,7 +195,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	// If we are doing nexus first
 	if (BuildOrder().isOpener() && BuildOrder().isNexusFirst() && ((building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 1) || building == UnitTypes::Protoss_Cybernetics_Core || (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(Terrain().getSecondChoke()) <= 0)))
 	{
-		here = getBuildLocationNear(building, Terrain().getSecondChoke());
+		here = building == UnitTypes::Protoss_Pylon ? getBuildLocationNear(building, Terrain().getFFEPosition()) : getBuildLocationNear(building, Terrain().getSecondChoke());
 		if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getPlayerStartingTilePosition());
 		return here;
 	}
@@ -203,7 +203,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	// If we are forge expanding
 	if (BuildOrder().isOpener() && BuildOrder().isForgeExpand() && (building == UnitTypes::Protoss_Photon_Cannon || (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(Terrain().getFFEPosition()) <= 0) || (building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 0) || (building == UnitTypes::Protoss_Forge && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Forge) <= 0)))
 	{
-		here = getBuildLocationNear(building, Terrain().getFFEPosition());
+		here = (building == UnitTypes::Protoss_Pylon || building == UnitTypes::Protoss_Photon_Cannon) ? getBuildLocationNear(building, Terrain().getFFEPosition()) : getBuildLocationNear(building, Terrain().getSecondChoke());
 		if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getPlayerStartingTilePosition());
 		return here;
 	}

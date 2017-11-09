@@ -8,7 +8,6 @@ void BuildOrderTrackerClass::PZZCore()
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 40;
 	getOpening = Units().getSupply() < 60;
 	oneGateCore = true;
-	return;
 }
 
 void BuildOrderTrackerClass::PZCore()
@@ -19,7 +18,6 @@ void BuildOrderTrackerClass::PZCore()
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 34;
 	getOpening = Units().getSupply() < 60;
 	oneGateCore = true;
-	return;
 }
 
 void BuildOrderTrackerClass::PNZCore()
@@ -30,7 +28,6 @@ void BuildOrderTrackerClass::PNZCore()
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
 	getOpening = Units().getSupply() < 60;
 	oneGateCore = true;
-	return;
 }
 
 void BuildOrderTrackerClass::PFFESafe()
@@ -43,7 +40,6 @@ void BuildOrderTrackerClass::PFFESafe()
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 42;
 	getOpening = Units().getSupply() < 60;
 	forgeExpand = true;
-	return;
 }
 
 void BuildOrderTrackerClass::PFFEStandard()
@@ -56,7 +52,6 @@ void BuildOrderTrackerClass::PFFEStandard()
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 44;
 	getOpening = Units().getSupply() < 66;
 	forgeExpand = true;
-	return;
 }
 
 void BuildOrderTrackerClass::PFFEGreedy()
@@ -69,7 +64,6 @@ void BuildOrderTrackerClass::PFFEGreedy()
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 42;
 	getOpening = Units().getSupply() < 66;
 	forgeExpand = true;
-	return;
 }
 
 void BuildOrderTrackerClass::P12Nexus()
@@ -80,7 +74,6 @@ void BuildOrderTrackerClass::P12Nexus()
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = (Units().getSupply() >= 30);
 	getOpening = Units().getSupply() < 160;
 	nexusFirst = true;
-	return;
 }
 
 void BuildOrderTrackerClass::P21Nexus()
@@ -92,7 +85,6 @@ void BuildOrderTrackerClass::P21Nexus()
 	buildingDesired[UnitTypes::Protoss_Robotics_Facility] = Units().getSupply() >= 56;
 	getOpening = Units().getSupply() < 70;
 	oneGateCore = true;
-	return;
 }
 
 void BuildOrderTrackerClass::PDTExpand()
@@ -105,7 +97,6 @@ void BuildOrderTrackerClass::PDTExpand()
 	buildingDesired[UnitTypes::Protoss_Templar_Archives] = Units().getSupply() >= 48;
 	getOpening = Units().getSupply() < 54;
 	oneGateCore = true;
-	return;
 }
 
 void BuildOrderTrackerClass::P4Gate()
@@ -116,7 +107,6 @@ void BuildOrderTrackerClass::P4Gate()
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 34;
 	getOpening = Units().getSupply() < 100;
 	oneGateCore = true;
-	return;
 }
 
 void BuildOrderTrackerClass::P2GateZealot()
@@ -125,7 +115,6 @@ void BuildOrderTrackerClass::P2GateZealot()
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 36;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 44;
 	getOpening = Units().getSupply() < 50;
-	return;
 }
 
 void BuildOrderTrackerClass::P2GateDragoon()
@@ -134,5 +123,4 @@ void BuildOrderTrackerClass::P2GateDragoon()
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 22;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
 	getOpening = Units().getSupply() < 50;
-	return;
 }

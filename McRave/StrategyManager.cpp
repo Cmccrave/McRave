@@ -36,7 +36,7 @@ void StrategyTrackerClass::protossStrategy()
 
 		// Check if we should play passive and/or hold the choke
 		if (allyFastExpand) playPassive = !enemyFastExpand, holdChoke = true;
-		else playPassive = rush, holdChoke = Units().getSupply() > 80;
+		else playPassive = rush, holdChoke = (Units().getSupply() > 80 || Players().getNumberTerran() > 0);
 	}
 	else
 	{		
@@ -174,20 +174,20 @@ void StrategyTrackerClass::updateProtossUnitScore(UnitType unit, int cnt)
 	switch (unit)
 	{
 	case UnitTypes::Enum::Terran_Marine:
-		unitScore[UnitTypes::Protoss_Zealot] += (size * 0.25) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot)));
-		unitScore[UnitTypes::Protoss_Dragoon] += (size * 0.75) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon)));
+		unitScore[UnitTypes::Protoss_Zealot] += (size * 0.35) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot)));
+		unitScore[UnitTypes::Protoss_Dragoon] += (size * 0.65) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon)));
 		unitScore[UnitTypes::Protoss_High_Templar] += (size * 0.90) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_High_Templar)));
 		unitScore[UnitTypes::Protoss_Dark_Templar] += (size * 0.10) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dark_Templar)));
 		break;
 	case UnitTypes::Enum::Terran_Medic:
-		unitScore[UnitTypes::Protoss_Zealot] += (size * 0.25) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot)));
-		unitScore[UnitTypes::Protoss_Dragoon] += (size * 0.75) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon)));
+		unitScore[UnitTypes::Protoss_Zealot] += (size * 0.35) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot)));
+		unitScore[UnitTypes::Protoss_Dragoon] += (size * 0.65) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon)));
 		unitScore[UnitTypes::Protoss_High_Templar] += (size * 0.90) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_High_Templar)));
 		unitScore[UnitTypes::Protoss_Dark_Templar] += (size * 0.10) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dark_Templar)));
 		break;
 	case UnitTypes::Enum::Terran_Firebat:
-		unitScore[UnitTypes::Protoss_Zealot] += (size * 0.25) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot)));
-		unitScore[UnitTypes::Protoss_Dragoon] += (size * 0.75) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon)));
+		unitScore[UnitTypes::Protoss_Zealot] += (size * 0.35) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot)));
+		unitScore[UnitTypes::Protoss_Dragoon] += (size * 0.65) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon)));
 		unitScore[UnitTypes::Protoss_High_Templar] += (size * 0.90) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_High_Templar)));
 		unitScore[UnitTypes::Protoss_Dark_Templar] += (size * 0.10) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dark_Templar)));
 		break;

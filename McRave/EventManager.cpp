@@ -6,36 +6,17 @@ void UnitTrackerClass::onUnitDiscover(Unit unit)
 }
 
 void UnitTrackerClass::onUnitCreate(Unit unit)
-{	
+{
 	if (unit->getPlayer() == Broodwar->self())
 	{
-		// Store supply if it costs supply
-		if (unit->getType().supplyRequired() > 0)
-		{
-			supply += unit->getType().supplyRequired();
-		}
+		if (unit->getType().supplyRequired() > 0) supply += unit->getType().supplyRequired(); // Store supply if it costs supply		
 
-		// Store Buildings, Bases, Pylons
-		if (unit->getType().isResourceDepot())
-		{
-			Bases().storeBase(unit);
-			Buildings().storeBuilding(unit);
-		}
-		else if (unit->getType() == UnitTypes::Protoss_Pylon)
-		{
-			Pylons().storePylon(unit);
-			Buildings().storeBuilding(unit);
-		}
-		else if (unit->getType() == UnitTypes::Protoss_Photon_Cannon)
-		{
-			storeAlly(unit);
-		}
-		else if (unit->getType().isBuilding())
-		{
-			Buildings().storeBuilding(unit);
-		}
+		// Store Buildings on creation rather than completion
+		if (unit->getType().isBuilding()) Buildings().storeBuilding(unit);
+		if (unit->getType().isResourceDepot()) Bases().storeBase(unit);
+		else if (unit->getType() == UnitTypes::Protoss_Pylon) Pylons().storePylon(unit);
+		else if (unit->getType() == UnitTypes::Protoss_Photon_Cannon) storeAlly(unit);
 	}
-	return;
 }
 
 void UnitTrackerClass::onUnitDestroy(Unit unit)
@@ -111,8 +92,8 @@ void UnitTrackerClass::onUnitMorph(Unit unit)
 				Buildings().storeBuilding(unit);
 				supply -= 2;
 			}
-			else if (unit->getType().isWorker()) Workers().storeWorker(unit);			
-			else if (!unit->getType().isWorker() && !unit->getType().isBuilding())storeAlly(unit);			
+			else if (unit->getType().isWorker()) Workers().storeWorker(unit);
+			else if (!unit->getType().isWorker() && !unit->getType().isBuilding())storeAlly(unit);
 		}
 
 		// Protoss morphing
@@ -156,14 +137,13 @@ void UnitTrackerClass::onUnitMorph(Unit unit)
 
 void UnitTrackerClass::onUnitRenegade(Unit unit)
 {
-	// Treat the unit as being destroyed
-	onUnitDestroy(unit);
+	if (!unit->getType().isRefinery()) onUnitDestroy(unit); // Exception is refineries, see: https://docs.google.com/document/d/1p7Rw4v56blhf5bzhSnFVfgrKviyrapDFHh9J4FNUXM0/edit
 	if (unit->getPlayer() == Broodwar->self()) onUnitComplete(unit);
 }
 
 void UnitTrackerClass::onUnitComplete(Unit unit)
 {
-	if (unit->getType() == UnitTypes::Protoss_Scarab || unit->getType() == UnitTypes::Zerg_Larva || unit->getType() == UnitTypes::Terran_Vulture_Spider_Mine) return;	
+	if (unit->getType() == UnitTypes::Protoss_Scarab || unit->getType() == UnitTypes::Zerg_Larva || unit->getType() == UnitTypes::Terran_Vulture_Spider_Mine) return;
 
 	if (unit->getPlayer() == Broodwar->self())
 	{

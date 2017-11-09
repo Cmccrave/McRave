@@ -11,23 +11,15 @@ void ProductionTrackerClass::update()
 
 void ProductionTrackerClass::updateProduction()
 {
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= min(12, (3 * Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Command_Center))))
-	{
-		productionSat = true;
-	}
-	// Gateway saturation - max of 12 so the bot can exceed 4 bases
-	int techSize = max(0, int(BuildOrder().getTechList().size() - 1));
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 3 + (2 * BuildOrder().getTechList().size()))
-	{
-		productionSat = true;
-	}
-
+	int techSize = max(0, int(BuildOrder().getTechList().size()));
+	if (Broodwar->self()->getRace() == Races::Protoss) productionSat = (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 3 + (2 * techSize));
+	else if (Broodwar->self()->getRace() == Races::Terran) productionSat = (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= min(12, (3 * Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Command_Center))));
+		
 	for (auto &b : Buildings().getMyBuildings())
 	{
 		BuildingInfo &building = b.second;
 		double highestPriority = 0.0;
 		UnitType highestType = UnitTypes::None;
-		UnitType backup = UnitTypes::None;
 		if (building.unit()->isIdle() && !building.getType().isResourceDepot())
 		{
 			if (building.unit()->isIdle() && Units().getSupply() < 380) idle = true;
@@ -41,9 +33,8 @@ void ProductionTrackerClass::updateProduction()
 					building.unit()->buildAddon(unit);
 					continue;
 				}
-				if (Strategy().getUnitScore()[unit] >= highestPriority && isCreateable(building.unit(), unit) && isSuitable(unit) && (BuildOrder().getTechList().find(unit) != BuildOrder().getTechList().end() || isAffordable(unit)))
-				{
-					if (BuildOrder().getTechList().find(unit) == BuildOrder().getTechList().end()) backup = unit;
+				if (Strategy().getUnitScore()[unit] >= highestPriority && isCreateable(building.unit(), unit) && isSuitable(unit) && isAffordable(unit))
+				{					
 					highestPriority = Strategy().getUnitScore()[unit];
 					highestType = unit;					
 				}
@@ -55,13 +46,7 @@ void ProductionTrackerClass::updateProduction()
 				{
 					building.unit()->train(highestType);
 					idleProduction.erase(building.unit());
-				}
-				// Else if we can't afford it but we can afford a backup unit, train it
-				else if (!isAffordable(highestType) && backup != UnitTypes::None && isAffordable(backup))
-				{
-					building.unit()->train(backup);
-					idleProduction.erase(building.unit());
-				}
+				}				
 				// Else if this is a tech unit, add it to idle production
 				else if (BuildOrder().getTechList().find(highestType) != BuildOrder().getTechList().end())
 				{
@@ -228,7 +213,7 @@ bool ProductionTrackerClass::isSuitable(UnitType unit)
 		return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dark_Templar) < 2;
 		break;
 	case UnitTypes::Enum::Protoss_High_Templar:
-		return Broodwar->self()->hasResearched(TechTypes::Psionic_Storm) || Broodwar->self()->isResearching(TechTypes::Psionic_Storm);
+		return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_High_Templar) < 10 && (Broodwar->self()->hasResearched(TechTypes::Psionic_Storm) || Broodwar->self()->isResearching(TechTypes::Psionic_Storm));
 		break;
 
 		// Robo Units
