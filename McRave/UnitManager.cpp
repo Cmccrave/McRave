@@ -124,7 +124,7 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
 		if (Players().getNumberZerg() > 0) minThreshold = 0.8, maxThreshold = 1.2;
-		if (Players().getNumberTerran() > 0) minThreshold = 0.6, maxThreshold = 1.0;
+		if (Players().getNumberTerran() > 0) minThreshold = 0.6, maxThreshold = 1.2;
 	}
 	else
 	{
