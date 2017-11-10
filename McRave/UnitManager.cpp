@@ -20,8 +20,7 @@ void UnitTrackerClass::updateUnits()
 	for (auto &u : enemyUnits)
 	{
 		UnitInfo &unit = u.second;
-		if (!unit.unit()) continue; // Ignore improper storage if it happens
-		Broodwar->drawCircleMap(unit.getPosition(), 16, Colors::Red);
+		if (!unit.unit()) continue; // Ignore improper storage if it happens		
 		if (unit.unit()->exists())	updateEnemy(unit); // If unit is visible, update it
 		if (!unit.unit()->exists() && unit.getPosition().isValid() && Broodwar->isVisible(TilePosition(unit.getPosition()))) unit.setPosition(Positions::None); // If unit is not visible but his position is, move it
 		if (unit.getType().isValid()) enemyComposition[unit.getType()] += 1; // If unit has a valid type, update enemy composition tracking
@@ -124,7 +123,7 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
 		if (Players().getNumberZerg() > 0) minThreshold = 0.8, maxThreshold = 1.2;
-		if (Players().getNumberTerran() > 0) minThreshold = 0.6, maxThreshold = 1.2;
+		if (Players().getNumberTerran() > 0) minThreshold = 0.6, maxThreshold = 1.0;
 	}
 	else
 	{

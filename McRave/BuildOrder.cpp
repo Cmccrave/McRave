@@ -127,7 +127,7 @@ void BuildOrderTrackerClass::onStart()
 bool BuildOrderTrackerClass::isBuildAllowed(Race enemy, string build)
 {
 	if (enemy == Races::Zerg && (build == "PFFESafe" || build == "PFFEStandard" || build == "PFFEGreedy" || build == "P2GateZealot" || build == "P4Gate")) return true;
-	if (enemy == Races::Terran && (build == "P12Nexus" || build == "P21Nexus" || build == "PDTExpand" || build == "P2GateDragoon")) return true;	
+	if (enemy == Races::Terran && (build == "P12Nexus" || build == "P21Nexus" || build == "PDTExpand" || build == "P2GateDragoon")) return true;
 	if (enemy == Races::Protoss && (build == "PZCore" || build == "PNZCore")) return true;
 	if (enemy == Races::Random && (build == "PZZCore")) return true;
 	return false;
@@ -137,10 +137,10 @@ void BuildOrderTrackerClass::getDefaultBuild()
 {
 	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
-		if (Players().getNumberProtoss() > 0) currentBuild = "PZCore";		
-		else if (Players().getNumberZerg() > 0) currentBuild = "PFFESafe";	
-		else if (Players().getNumberTerran() > 0) currentBuild = "P12Nexus";		
-		else if (Players().getNumberRandom() > 0) currentBuild = "PZZCore";		
+		if (Players().getNumberProtoss() > 0) currentBuild = "PZCore";
+		else if (Players().getNumberZerg() > 0) currentBuild = "PFFESafe";
+		else if (Players().getNumberTerran() > 0) currentBuild = "P12Nexus";
+		else if (Players().getNumberRandom() > 0) currentBuild = "PZZCore";
 	}
 	else if (Broodwar->self()->getRace() == Races::Terran)
 	{
@@ -232,10 +232,10 @@ void BuildOrderTrackerClass::protossTech()
 		}
 		else if (currentBuild == "P21Nexus")
 		{
-			Strategy().getUnitScore()[UnitTypes::Protoss_Reaver] > Strategy().getUnitScore()[UnitTypes::Protoss_Observer] ? techUnit = UnitTypes::Protoss_Reaver : techUnit = UnitTypes::Protoss_Observer;			
-			unlockedType.insert(techUnit);			
+			Strategy().getUnitScore()[UnitTypes::Protoss_Reaver] > Strategy().getUnitScore()[UnitTypes::Protoss_Observer] ? techUnit = UnitTypes::Protoss_Reaver : techUnit = UnitTypes::Protoss_Observer;
+			unlockedType.insert(techUnit);
 			techList.insert(techUnit);
-			getTech = false;		
+			getTech = false;
 		}
 
 		// Otherwise, choose a tech based on highest unit score
@@ -311,33 +311,32 @@ void BuildOrderTrackerClass::protossTech()
 
 void BuildOrderTrackerClass::protossSituational()
 {
+	bool techSat = techList.size() >= Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
+	bool productionSat = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 3 * Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
+
+	/*Broodwar->drawTextScreen(400, 100, "%d  %d", techSat, productionSat);
+	Broodwar->drawTextScreen(400, 125, "%d", Production().getIdleProduction().size());*/
+
+	/*int offset = 100;
+	for (auto &unit : techList)
+	{
+		Broodwar->drawTextScreen(0, offset, "%s", unit.c_str());
+		offset += 10;
+	}*/
+	
+	if (Broodwar->self()->completedUnitCount(techUnit) > 0) techUnit = UnitTypes::None; // If we have our tech unit, set to none	
+	if (Strategy().needDetection() || (!getOpening && !getTech && !techSat && productionSat && techUnit == UnitTypes::None && (Production().getIdleProduction().size() == 0 || Units().getSupply() > 380))) getTech = true; // If production is saturated and none are idle or we need detection for some invis units, choose a tech
+
 	// Check if we hit our Zealot cap based on our build
 	if (getOpening && !Strategy().isRush() && ((currentBuild == "PZZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 2) || (currentBuild == "PZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 1) || (currentBuild == "PNZCore") || (Players().getNumberTerran() > 0 && currentBuild != "PDTExpand")))
 		unlockedType.erase(UnitTypes::Protoss_Zealot);
 	else unlockedType.insert(UnitTypes::Protoss_Zealot);
-	unlockedType.insert(UnitTypes::Protoss_Dragoon);
-
-	// If we have our tech unit, set to none
-	if (Broodwar->self()->completedUnitCount(techUnit) > 0)
-	{
-		techUnit = UnitTypes::None;
-	}
-
-	// If production is saturated and none are idle or we need detection for some invis units, choose a tech
-	if ((Strategy().needDetection() || (!getOpening && !getTech && techUnit == UnitTypes::None && Production().getIdleProduction().size() == 0 && Production().isProductionSat() && buildingDesired[UnitTypes::Protoss_Nexus] == Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus))))
-	{
-		getTech = true;
-	}
+	unlockedType.insert(UnitTypes::Protoss_Dragoon);	
 
 	// Pylon logic
 	if (Strategy().isAllyFastExpand() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Pylon) <= 0)
-	{
-		buildingDesired[UnitTypes::Protoss_Pylon] = Units().getSupply() >= 14;
-	}
-	else
-	{
-		buildingDesired[UnitTypes::Protoss_Pylon] = min(22, (int)floor((Units().getSupply() / max(14, (16 - Broodwar->self()->allUnitCount(UnitTypes::Protoss_Pylon))))));
-	}
+		buildingDesired[UnitTypes::Protoss_Pylon] = Units().getSupply() >= 14;	
+	else buildingDesired[UnitTypes::Protoss_Pylon] = min(22, (int)floor((Units().getSupply() / max(14, (16 - Broodwar->self()->allUnitCount(UnitTypes::Protoss_Pylon))))));	
 
 	// Additional cannon for FFE logic (add on at most 2 at a time)
 	if (forgeExpand && Units().getGlobalEnemyGroundStrength() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense())
@@ -355,13 +354,13 @@ void BuildOrderTrackerClass::protossSituational()
 	if (!getOpening)
 	{
 		// Expansion logic
-		if (Broodwar->self()->minerals() > 1000 || (techUnit == UnitTypes::None && Resources().isMinSaturated() && Production().isProductionSat() && Production().getIdleProduction().size() == 0 && Units().getGlobalGroundStrategy() == 1))
+		if (Broodwar->self()->minerals() > 1000 || (productionSat && techSat && techUnit == UnitTypes::None && Resources().isMinSaturated() && Production().getIdleProduction().size() == 0))
 		{
 			buildingDesired[UnitTypes::Protoss_Nexus] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) + 1;
 		}
 
 		// Gateway logic
-		if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 2 && (Production().getIdleProduction().size() == 0 && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 150) || (!Production().isGateSat() && Resources().isMinSaturated()))))
+		if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 2 && (Production().getIdleProduction().size() == 0 && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 150) || (!productionSat && Resources().isMinSaturated()))))
 		{
 			buildingDesired[UnitTypes::Protoss_Gateway] = min(Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) + 1);
 		}
@@ -420,6 +419,7 @@ void BuildOrderTrackerClass::terranTech()
 
 void BuildOrderTrackerClass::terranSituational()
 {
+	bool productionSat = (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= min(12, (3 * Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Command_Center))));
 	if (BuildOrder().getCurrentBuild() == "TwoFactVult" && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Marine) >= 4)
 		unlockedType.erase(UnitTypes::Terran_Marine);
 
@@ -438,7 +438,7 @@ void BuildOrderTrackerClass::terranSituational()
 	buildingDesired[UnitTypes::Terran_Supply_Depot] = min(22, (int)floor((Units().getSupply() / max(14, (16 - Broodwar->self()->allUnitCount(UnitTypes::Terran_Supply_Depot))))));
 
 	// Expansion logic
-	if (Units().getGlobalAllyGroundStrength() > Units().getGlobalEnemyGroundStrength() && Resources().isMinSaturated() && Production().isProductionSat() && Production().getIdleProduction().size() == 0)
+	if (Units().getGlobalAllyGroundStrength() > Units().getGlobalEnemyGroundStrength() && Resources().isMinSaturated() && productionSat && Production().getIdleProduction().size() == 0)
 	{
 		buildingDesired[UnitTypes::Terran_Command_Center] = Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) + 1;
 	}
@@ -468,13 +468,13 @@ void BuildOrderTrackerClass::terranSituational()
 	}
 
 	// Barracks logic
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Barracks) >= 3 && (Production().getIdleProduction().size() == 0 && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 200) || (!Production().isProductionSat() && Resources().isMinSaturated()))))
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Barracks) >= 3 && (Production().getIdleProduction().size() == 0 && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 200) || (!productionSat && Resources().isMinSaturated()))))
 	{
 		buildingDesired[UnitTypes::Terran_Barracks] = min(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Barracks) + 1);
 	}
 
 	// Factory logic
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= 2 && (Production().getIdleProduction().size() == 0 && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 200 && Broodwar->self()->gas() - Production().getReservedGas() - Buildings().getQueuedGas() > 100) || (!Production().isProductionSat() && Resources().isMinSaturated()))))
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= 2 && (Production().getIdleProduction().size() == 0 && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 200 && Broodwar->self()->gas() - Production().getReservedGas() - Buildings().getQueuedGas() > 100) || (!productionSat && Resources().isMinSaturated()))))
 	{
 		buildingDesired[UnitTypes::Terran_Factory] = min(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Factory) + 1);
 	}

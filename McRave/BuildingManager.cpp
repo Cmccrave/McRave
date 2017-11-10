@@ -365,7 +365,7 @@ bool BuildingTrackerClass::isSuitable(UnitType building, TilePosition buildTileP
 				{
 					return false;
 				}
-				if (Grids().getBuildingGrid(x, y) > 0 && !Broodwar->isBuildable(TilePosition(x, y), true))
+				if (Grids().getBuildingGrid(x, y) > 0 || !Broodwar->isBuildable(TilePosition(x, y), true))
 				{
 					return false;
 				}

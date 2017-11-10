@@ -48,7 +48,7 @@ void StrategyTrackerClass::protossStrategy()
 	}
 
 	// Check if Terran is playing aggresive in mid game
-	if (BuildOrder().isOpener() && BuildOrder().isNexusFirst() && UnitTypes::Terran_Factory >= 3) playPassive = true;	
+	if (BuildOrder().isOpener() && BuildOrder().isNexusFirst()) playPassive = true;	
 
 	// Check if we need an observer
 	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) <= 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Dark_Templar] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Citadel_of_Adun] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Templar_Archives] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Ghost] > 0 || Units().getEnemyComposition()[UnitTypes::Zerg_Lurker] > 0 || (Units().getEnemyComposition()[UnitTypes::Zerg_Lair] == 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hydralisk] >= 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hatchery] == 0)))

@@ -10,12 +10,7 @@ class ProductionTrackerClass
 	map <Unit, UnitType> idleProduction;
 	map <Unit, TechType> idleTech;
 	map <Unit, UpgradeType> idleUpgrade;
-	int reservedMineral, reservedGas;	
-	bool gateSat = false;
-	bool partiallySat = false;
-	bool barracksSat = false;
-	bool hatchSat = false;
-	bool productionSat = false;
+	int reservedMineral, reservedGas;
 	bool idle = false;
 public:
 	map <Unit, UnitType>& getIdleProduction() { return idleProduction; }
@@ -24,9 +19,6 @@ public:
 
 	int getReservedMineral() { return reservedMineral; }
 	int getReservedGas() { return reservedGas; }
-	bool isGateSat() { return gateSat; }
-	bool isBarracksSat() { return barracksSat; }
-	bool isProductionSat() { return productionSat; }
 	bool hasIdleProduction() { return idle; }
 
 	void update();

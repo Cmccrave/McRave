@@ -33,7 +33,6 @@ void TerrainTrackerClass::updateAreas()
 		for (auto &b : Bases().getEnemyBases())
 		{
 			BaseInfo &base = b.second;
-			Broodwar->drawCircleMap(base.getPosition(), 16, Colors::Red);
 			if (Grids().getEnemyArmyCenter().getDistance(base.getPosition()) > closestD)
 			{
 				closestD = Grids().getEnemyArmyCenter().getDistance(base.getPosition());

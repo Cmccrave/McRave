@@ -282,12 +282,12 @@ void CommandTrackerClass::move(UnitInfo& unit)
 	// If target doesn't exist, move towards it
 	else if (unit.getTarget() && unit.getTargetPosition().isValid() && unit.getPosition().getDistance(unit.getTargetPosition()) < 640)
 	{
-		unit.unit()->move(unit.getTargetPosition());
+		if (unit.unit()->getLastCommand().getTargetPosition() != unit.getTargetPosition() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move) unit.unit()->move(unit.getTargetPosition());		
 	}
 
 	else if (Terrain().getAttackPosition().isValid())
 	{
-		unit.unit()->move(Terrain().getAttackPosition());
+		if (unit.unit()->getLastCommand().getTargetPosition() != Terrain().getAttackPosition() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move) unit.unit()->move(Terrain().getAttackPosition());
 	}
 
 	// If no target and no enemy bases, move to a random base
@@ -463,7 +463,7 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 void CommandTrackerClass::approach(UnitInfo& unit)
 {
 	// TODO, use linear interpolation to approach closer, so that units can approach a cliff to snipe units on higher terrain (carriers, tanks)
-	if (unit.getTargetPosition().isValid())
+	if (unit.getTargetPosition().isValid() && (unit.unit()->getLastCommand().getTargetPosition() != unit.getTargetPosition() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move))
 	{
 		unit.unit()->move(unit.getTargetPosition());
 	}
