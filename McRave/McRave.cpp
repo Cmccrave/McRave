@@ -12,8 +12,9 @@
 // if overkill, reduce targeting % chance by % overkill
 // Gas steal fucks up 1 gate core stuff
 // Units getting stuck
-// Add buffer to targeting distance to allow targeting from further than distance of 1.0
 // Production stall issue
+// Make inRange Units() function including widths
+// Hit repairing scvs
 
 void McRaveModule::onStart()
 {

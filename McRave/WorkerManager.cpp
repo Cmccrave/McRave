@@ -272,7 +272,7 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 	}
 
 	// If we need to use workers for defense - TEMP Removed probe pull stuff
-	if (!Strategy().isHoldChoke() && ((Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0 && Grids().getResourceGrid(worker.getTilePosition()) > 0 && Units().getSupply() < 80) || (BuildOrder().getCurrentBuild() == "Sparks" && Units().getGlobalGroundStrategy() == 1)))
+	if (((Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0 && Grids().getResourceGrid(worker.getTilePosition()) > 0 && Units().getSupply() < 60) || (BuildOrder().getCurrentBuild() == "Sparks" && Units().getGlobalGroundStrategy() == 1)))
 	{
 		Units().storeAlly(worker.unit());
 		return;

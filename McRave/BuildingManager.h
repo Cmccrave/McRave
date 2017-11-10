@@ -19,7 +19,7 @@ public:
 	map <Unit, BuildingInfo>& getMyBuildings() { return myBuildings; }
 	map <TilePosition, UnitType>& getBuildingsQueued() { return buildingsQueued; }
 	TilePosition getBuildLocation(UnitType);
-	TilePosition getBuildLocationNear(UnitType, TilePosition);
+	TilePosition getBuildLocationNear(UnitType, TilePosition, bool ignoreCond = false);
 
 	bool isBuildable(UnitType, TilePosition);
 	bool isSuitable(UnitType, TilePosition);

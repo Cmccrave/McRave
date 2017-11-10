@@ -163,7 +163,7 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 		}
 		else
 		{
-			if (Terrain().isInAllyTerritory(target.getTilePosition()) || unit.getPosition().getDistance(unit.getTargetPosition()) < unit.getGroundRange()) unit.setStrategy(1);
+			if (Terrain().isInAllyTerritory(target.getTilePosition()) || unit.getPosition().getDistance(unit.getTargetPosition()) - (double(unit.getType().width()) / 2.0) - (double(target.getType().width()) / 2.0) <= unit.getGroundRange()) unit.setStrategy(1);
 			else if (unit.getPosition().getDistance(unit.getTargetPosition()) > enemyRange + target.getSpeed()) unit.setStrategy(2);
 			else unit.setStrategy(0);
 		}
