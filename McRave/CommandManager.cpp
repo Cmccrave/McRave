@@ -10,42 +10,23 @@ void CommandTrackerClass::update()
 
 void CommandTrackerClass::updateAlliedUnits()
 {
-	set <Unit> fuckingMoveIdiots;
+	// Add units that are targets of large splash threats
+	set <Unit> moveGroup;
 	for (auto &u : Units().getEnemyUnits())
 	{
 		UnitInfo &unit = u.second;
-		if ((unit.getType() == UnitTypes::Protoss_Scarab || unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine) && unit.getTarget() && unit.getTarget()->exists()) fuckingMoveIdiots.insert(unit.getTarget());		
+		if ((unit.getType() == UnitTypes::Protoss_Scarab || unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine) && unit.getTarget() && unit.getTarget()->exists()) moveGroup.insert(unit.getTarget());
 	}
 
 	for (auto &u : Units().getAllyUnits())
 	{
-		UnitInfo &unit = u.second;
-
-		// Prevent crashes
-		if (!unit.unit() || (unit.unit() && !unit.unit()->exists()))
-		{
-			continue;
-		}
-
-		// Support units and transports have their own commands
-		if (unit.getType() == UnitTypes::Protoss_Observer || unit.getType() == UnitTypes::Protoss_Arbiter || unit.getType() == UnitTypes::Protoss_Shuttle)
-		{
-			continue;
-		}
-
-		// If the unit received a command already during this frame
-		if (unit.getLastCommandFrame() >= Broodwar->getFrameCount())
-		{
-			continue;
-		}
-
-		// Ignore the unit if it is locked down, maelstrommed, stassised, or not completed
-		if (unit.unit()->exists() && (unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted()))
-		{
-			continue;
-		}
+		UnitInfo &unit = u.second;		
+		if (!unit.unit() || !unit.unit()->exists()) continue; // Prevent crashes		
+		if (unit.getType() == UnitTypes::Protoss_Observer || unit.getType() == UnitTypes::Protoss_Arbiter || unit.getType() == UnitTypes::Protoss_Shuttle) continue; // Support units and transports have their own commands
+		if (unit.getLastCommandFrame() >= Broodwar->getFrameCount()) continue; // If the unit received a command already during this frame		
+		if (unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted()) continue; // If the unit is locked down, maelstrommed, stassised, or not completed
 		
-		// Remove wall if needed
+		// Remove wall if needed - testing
 		if (Units().getSupply() > 200 && unit.unit()->isStuck())
 		{
 			Broodwar << "test" << endl;
@@ -58,82 +39,29 @@ void CommandTrackerClass::updateAlliedUnits()
 		if (Broodwar->getFrameCount() - unit.getLastAttackFrame() > unit.getMinStopFrame() - Broodwar->getLatencyFrames())
 		{
 			// If we are the target of a mine or scarab, move forward
-			if (fuckingMoveIdiots.find(unit.unit()) != fuckingMoveIdiots.end())
+			if (moveGroup.find(unit.unit()) != moveGroup.end())
 			{
-				if (unit.unit()->getGroundWeaponCooldown() > 0)
-				{
-					approach(unit);
-					continue;
-				}
-				else
-				{
-					attack(unit);
-					continue;
-				}
-			}
-
-			// If under a storm, dark swarm or EMP
-			if (Grids().getPsiStormGrid(unit.getWalkPosition()) > 0 || Grids().getEMPGrid(unit.getWalkPosition()) > 0 || Grids().getESplashGrid(unit.getWalkPosition()) > 0)
-			{
-				flee(unit);
-				continue;
-			}
+				if (unit.unit()->getGroundWeaponCooldown() > 0) approach(unit);
+				else attack(unit);
+			}			
+			else if (Grids().getPsiStormGrid(unit.getWalkPosition()) > 0 || Grids().getEMPGrid(unit.getWalkPosition()) > 0 || Grids().getESplashGrid(unit.getWalkPosition()) > 0) flee(unit); // If under a storm, dark swarm or EMP
 			
 			// If globally behind
-			if ((Units().getGlobalGroundStrategy() == 0 && !unit.getType().isFlyer()) || (Units().getGlobalAirStrategy() == 0 && unit.getType().isFlyer()))
-			{
-				// If locally behind, flee
-				if (unit.getStrategy() == 0)
-				{
-					flee(unit);
-					continue;
-				}
-
-				// If locally ahead, attack
-				else if (unit.getStrategy() == 1 && unit.getTarget()->exists())
-				{
-					attack(unit);
-					continue;
-				}
-				else
-				{
-					// Defend otherwise
-					defend(unit); 
-					continue;
-				}
+			else if ((Units().getGlobalGroundStrategy() == 0 && !unit.getType().isFlyer()) || (Units().getGlobalAirStrategy() == 0 && unit.getType().isFlyer())) 
+			{				
+				if (unit.getStrategy() == 0) flee(unit); // If locally behind, flee				
+				else if (unit.getStrategy() == 1 && unit.getTarget()->exists()) attack(unit); // If locally ahead, attack
+				else defend(unit);
 			}
 
 			// If globally ahead
 			else if ((Units().getGlobalGroundStrategy() == 1 && !unit.getType().isFlyer()) || (Units().getGlobalAirStrategy() == 1 && unit.getType().isFlyer()))
-			{
-				// If locally behind, flee
-				if (unit.getStrategy() == 0)
-				{
-					flee(unit);
-					continue;
-				}
-				// If locally ahead, attack
-				else if (unit.getStrategy() == 1 && unit.getTarget()->exists())
-				{
-					attack(unit);
-					continue;
-				}
-				// If within ally territory, defend
-				else if (unit.getStrategy() == 2)
-				{
-					defend(unit);
-					continue;
-				}
-				// Else move unit
-				else
-				{
-					move(unit);
-					continue;
-				}
+			{				
+				if (unit.getStrategy() == 0) flee(unit); // If locally behind, flee				
+				else if (unit.getStrategy() == 1 && unit.getTarget()->exists()) attack(unit); // If locally ahead, attack				
+				else if (unit.getStrategy() == 2) defend(unit); // If within ally territory, defend				
+				else move(unit); // Else move unit
 			}
-			// Else move unit
-			move(unit);
-			continue;
 		}
 	}
 	return;
@@ -367,12 +295,12 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 	}
 
 	// Find suitable position to hold at chokepoint
-	closestD = unit.getPosition().getDistance(Position(choke));
+	if (Terrain().isInAllyTerritory(unit.getTilePosition())) closestD = unit.getPosition().getDistance(Position(choke));
 	for (int x = choke.x - 35; x <= choke.x + 35; x++)
 	{
 		for (int y = choke.y - 35; y <= choke.y + 35; y++)
 		{
-			if (WalkPosition(x, y).isValid() && theMap.GetArea(WalkPosition(x, y)) && Terrain().getAllyTerritory().find(theMap.GetArea(WalkPosition(x, y))->Id()) != Terrain().getAllyTerritory().end() && Position(WalkPosition(x, y)).getDistance(Position(choke)) > min && Position(WalkPosition(x, y)).getDistance(Position(choke)) < max && Position(WalkPosition(x, y)).getDistance(Position(choke)) < closestD)
+			if (WalkPosition(x, y).isValid() && theMap.GetArea(WalkPosition(x, y)) && Terrain().getAllyTerritory().find(theMap.GetArea(WalkPosition(x, y))->Id()) != Terrain().getAllyTerritory().end() && Position(WalkPosition(x, y)).getDistance(Position(choke)) > min && Position(WalkPosition(x, y)).getDistance(Position(choke)) < max && (Position(WalkPosition(x, y)).getDistance(Position(choke)) < closestD || closestD == 0.0))
 			{
 				if (Util().isMobile(start, WalkPosition(x, y), unit.getType()))
 				{

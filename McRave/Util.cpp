@@ -454,3 +454,22 @@ bool UtilTrackerClass::isMobile(WalkPosition start, WalkPosition end, UnitType u
 	}
 	return true;
 }
+
+bool UtilTrackerClass::unitInRange(UnitInfo& unit)
+{
+	if (!unit.getTarget()) return false;
+	UnitInfo& target = Units().getEnemyUnit(unit.getTarget());
+	double allyRange = (unit.getType().tileWidth() * 32) + (target.getType().tileWidth() * 32) + target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
+	if (unit.getPosition().getDistance(unit.getTargetPosition()) <= allyRange) return true;
+	return false;
+}
+
+
+bool UtilTrackerClass::targetInRange(UnitInfo& unit)
+{
+	if (!unit.getTarget()) return false;
+	UnitInfo& target = Units().getEnemyUnit(unit.getTarget());
+	double enemyRange = (unit.getType().tileWidth() * 32) + (target.getType().tileWidth() * 32) + unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange();
+	if (target.getPosition().getDistance(unit.getPosition()) <= enemyRange) return true;
+	return false;
+}

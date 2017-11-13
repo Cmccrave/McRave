@@ -33,10 +33,12 @@ public:
 	// If groundcheck/aircheck, then this function checks if every WalkPosition around finish has no ground/air threat
 	bool isSafe(WalkPosition finish, UnitType, bool groundCheck, bool airCheck);
 
-
-	//
+	// Returns 1 if the tiles at the finish are all walkable tiles and checks for overlap with this unit
 	bool isMobile(WalkPosition start, WalkPosition finish, UnitType);
-	
+
+	// Returns 1 if the unit is in range of a position
+	bool unitInRange(UnitInfo& unit);
+	bool targetInRange(UnitInfo& unit);
 };
 
 typedef Singleton<UtilTrackerClass> UtilTracker;

@@ -10,15 +10,14 @@
 // TODO:
 // unQueueBuilding->ONS qM + qG and #buildings queued
 // if overkill, reduce targeting % chance by % overkill
-// Gas steal fucks up 1 gate core stuff
 // Units getting stuck
-// Production stall issue
 // Make inRange Units() function including widths
 // Hit repairing scvs
 // Pylon spacing
 // Wall placement
 // Units outside ally territory during passive play dont move
 // Production sat based on active mining bases instead
+// Test using isLastCommand in Units()
 
 void McRaveModule::onStart()
 {

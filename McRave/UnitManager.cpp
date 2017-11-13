@@ -69,8 +69,9 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 		// Ignore workers and stasised units
 		if (!enemy.unit() || enemy.getType().isWorker() || (enemy.unit() && enemy.unit()->exists() && enemy.unit()->isStasised())) continue;
 
-		double enemyRange = unit.getType().isFlyer() ? enemy.getAirRange() + (enemy.getType().width() / 2.0) : enemy.getGroundRange() + (enemy.getType().width() / 2.0);
-		double unitRange = enemy.getType().isFlyer() ? unit.getAirRange() + (unit.getType().width() / 2.0) : unit.getGroundRange() + (unit.getType().width() / 2.0);
+		double widths = enemy.getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
+		double enemyRange = widths + unit.getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange();
+		double unitRange = widths + enemy.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
 		double enemyToEngage = 0.0;
 		double distance = max(0.0, enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange);
 
@@ -79,10 +80,10 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 			enemyToEngage = max(0.0, distance / enemy.getSpeed());
 			simRatio = max(0.0, simulationTime - enemyToEngage);
 		}
-		else
+		else if (distance - widths <= enemyRange)
 		{
-			enemyToEngage = 0.0;
-			enemy.getPosition().getDistance(unit.getEngagePosition()) - (unit.getType().width() / 2.0) - 32 <= enemyRange ? simRatio = simulationTime : simRatio = 0.0; // 32 is a buffer in case unit moves through the defense
+			enemyToEngage = (unit.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths) / unit.getSpeed();
+			simRatio = max(0.0, simulationTime - enemyToEngage);
 		}
 
 		// Situations where an enemy should be treated as stronger than it actually is
@@ -119,16 +120,16 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 {
 	// Latch based engagement decision making based on what race we are playing
-	double minThreshold = 1.0, maxThreshold = 1.0;
+	double minThreshold, maxThreshold;
 	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
-		if (Players().getNumberZerg() > 0) minThreshold = 0.8, maxThreshold = 1.2;
+		if (Players().getNumberZerg() > 0 || Players().getNumberProtoss() > 0) minThreshold = 0.8, maxThreshold = 1.2;
 		if (Players().getNumberTerran() > 0) minThreshold = 0.6, maxThreshold = 1.0;
 	}
 	else
 	{
-		if (Players().getNumberZerg() > 0) minThreshold = 1.1, maxThreshold = 1.3;
-		if (Players().getNumberProtoss() > 0) minThreshold = 1.1, maxThreshold = 1.3;
+		if (Players().getNumberTerran() > 0) minThreshold = 0.8, maxThreshold = 1.2;
+		if (Players().getNumberZerg() > 0 || Players().getNumberProtoss() > 0) minThreshold = 1.0, maxThreshold = 1.4;
 	}
 
 	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());
@@ -136,7 +137,6 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 	double decisionGlobal = unit.getType().isFlyer() ? globalAirStrategy : globalGroundStrategy;
 	double allyRange = target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
 	double enemyRange = unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange();
-
 
 	if (!unit.getTarget()) unit.setStrategy(3);	 // If unit does not have a target, set as "no local"
 	else if (unit.getType().isWorker() && unit.getTarget()->exists()) unit.setStrategy(1); // If unit is a worker, always fight
