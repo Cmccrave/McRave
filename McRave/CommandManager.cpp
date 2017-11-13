@@ -44,6 +44,15 @@ void CommandTrackerClass::updateAlliedUnits()
 		{
 			continue;
 		}
+		
+		// Remove wall if needed
+		if (Units().getSupply() > 200 && unit.unit()->isStuck())
+		{
+			Broodwar << "test" << endl;
+			Unit wall = Broodwar->getClosestUnit(Position(Terrain().getLargeWall()), Filter::IsAlly && Filter::GetType == UnitTypes::Protoss_Gateway, 32);
+			unit.unit()->attack(wall);
+			continue;
+		}
 
 		// If the unit is ready to perform an action after an attack (certain units have minimum frames after an attack before they can receive a new command)
 		if (Broodwar->getFrameCount() - unit.getLastAttackFrame() > unit.getMinStopFrame() - Broodwar->getLatencyFrames())

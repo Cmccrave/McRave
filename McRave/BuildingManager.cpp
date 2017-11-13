@@ -61,18 +61,16 @@ void BuildingTrackerClass::queueBuildings()
 
 void BuildingTrackerClass::constructBuildings()
 {
-	int offset = 200;
 	queuedMineral = 0;
 	queuedGas = 0;
 	buildingsQueued.clear();
 	for (auto &worker : Workers().getMyWorkers())
 	{
 		if (worker.second.getBuildingType().isValid() && worker.second.getBuildPosition().isValid())
-		{
+		{			
 			buildingsQueued[worker.second.getBuildPosition()] = worker.second.getBuildingType();
 			queuedMineral += worker.second.getBuildingType().mineralPrice();
 			queuedGas += worker.second.getBuildingType().gasPrice();
-			offset += 10;
 		}
 	}
 }
@@ -192,19 +190,33 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	}
 
 	// If we are doing nexus first
-	if (BuildOrder().isOpener() && BuildOrder().isNexusFirst() && ((building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 1) || building == UnitTypes::Protoss_Cybernetics_Core || (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(Terrain().getSecondChoke()) <= 0)))
+	if (BuildOrder().isOpener() && BuildOrder().isNexusFirst() && ((building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 0) || building == UnitTypes::Protoss_Cybernetics_Core || (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(Terrain().getSecondChoke()) <= 0)))
 	{
-		here = building == UnitTypes::Protoss_Pylon ? getBuildLocationNear(building, Terrain().getFFEPosition()) : getBuildLocationNear(building, Terrain().getSecondChoke());
+		if (building == UnitTypes::Protoss_Pylon) return Terrain().getSmallWall();
+		if (building == UnitTypes::Protoss_Cybernetics_Core) return Terrain().getMediumWall();
+		if (building == UnitTypes::Protoss_Gateway) return Terrain().getLargeWall();
+		if (building == UnitTypes::Protoss_Photon_Cannon) here = getBuildLocationNear(building, Terrain().getFFEPosition());
 		if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getFFEPosition(), true);
 		return here;
+
+		//here = building == UnitTypes::Protoss_Pylon ? getBuildLocationNear(building, Terrain().getFFEPosition()) : getBuildLocationNear(building, Terrain().getSecondChoke());
+		//if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getFFEPosition(), true);
+		//return here;
 	}
 
 	// If we are forge expanding
-	if (BuildOrder().isOpener() && BuildOrder().isForgeExpand() && (building == UnitTypes::Protoss_Photon_Cannon || (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(Terrain().getFFEPosition()) <= 0) || (building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 0) || (building == UnitTypes::Protoss_Forge && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Forge) <= 0)))
+	if (BuildOrder().isOpener() && BuildOrder().isForgeExpand() && (building == UnitTypes::Protoss_Photon_Cannon || (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(Terrain().getSecondChoke()) <= 0) || (building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 0) || (building == UnitTypes::Protoss_Forge && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Forge) <= 0)))
 	{
-		here = (building == UnitTypes::Protoss_Pylon || building == UnitTypes::Protoss_Photon_Cannon) ? getBuildLocationNear(building, Terrain().getFFEPosition()) : getBuildLocationNear(building, Terrain().getSecondChoke());
+		if (building == UnitTypes::Protoss_Pylon) return Terrain().getSmallWall();
+		if (building == UnitTypes::Protoss_Forge) return Terrain().getMediumWall();
+		if (building == UnitTypes::Protoss_Gateway) return Terrain().getLargeWall();
+		if (building == UnitTypes::Protoss_Photon_Cannon) here = getBuildLocationNear(building, Terrain().getFFEPosition());
 		if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getFFEPosition(), true);
 		return here;
+		
+		//here = (building == UnitTypes::Protoss_Pylon || building == UnitTypes::Protoss_Photon_Cannon) ? getBuildLocationNear(building, Terrain().getFFEPosition()) : getBuildLocationNear(building, Terrain().getSecondChoke());
+		//if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getFFEPosition(), true);
+		//return here;
 	}
 
 	// If we are being rushed and need a battery
@@ -270,10 +282,10 @@ bool BuildingTrackerClass::isBuildable(UnitType building, TilePosition buildTile
 			if (!TilePosition(x, y).isValid()) return false;
 			if (!Broodwar->isBuildable(TilePosition(x, y), true)) return false; // If it's on an unbuildable tile
 			if (Grids().getBuildingGrid(x, y) > 0 && !building.isResourceDepot()) return false; // If it's reserved for expansions				
-			if (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(x, y) >= 2) return false; // If it's a pylon and overlapping too many pylons				
+			if (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(x, y) >= 2) return false; // If it's a pylon and overlapping too many pylons					
 			if (!building.isResourceDepot() && building != UnitTypes::Protoss_Photon_Cannon && building != UnitTypes::Protoss_Shield_Battery && building != UnitTypes::Terran_Bunker && Grids().getResourceGrid(x, y) > 0) return false; // If it's not a defensive structure and on top of the resource grid
 		}
-	}
+	}	
 
 	// If the building is not a resource depot and being placed on an expansion
 	if (!building.isResourceDepot())
@@ -286,7 +298,7 @@ bool BuildingTrackerClass::isBuildable(UnitType building, TilePosition buildTile
 				{
 					// If the x value of this tile of the building is within an expansion and the y value of this tile of the building is within an expansion, return false
 					if (buildTilePosition.x + i >= base.x && buildTilePosition.x + i < base.x + 4 && buildTilePosition.y + j >= base.y && buildTilePosition.y + j < base.y + 3)
-					{
+					{						
 						return false;
 					}
 				}
@@ -307,7 +319,7 @@ bool BuildingTrackerClass::isBuildable(UnitType building, TilePosition buildTile
 				}
 			}
 		}
-	}	
+	}
 
 	// If no issues, return true
 	return true;
@@ -352,7 +364,7 @@ bool BuildingTrackerClass::isSuitable(UnitType building, TilePosition buildTileP
 			}
 		}
 		if (!validFFE) return false;
-	}	
+	}
 
 	// If the building requires an offset (production buildings and first pylon)
 	else if (buildingOffset > 0)

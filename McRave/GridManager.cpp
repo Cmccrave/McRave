@@ -19,11 +19,15 @@ void GridTrackerClass::reset()
 	//for (int x = 0; x <= Broodwar->mapWidth(); x++)
 	//{
 	//	for (int y = 0; y <= Broodwar->mapHeight(); y++)
-	//	{			
-	//		//if (defenseGrid[x][y] > 0)
-	//		//{
-	//		//	Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
-	//		//}
+	//	{
+	//		/*if (buildingGrid[x][y] > 0)
+	//		{
+	//		Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
+	//		}*/
+	//		if (resourceGrid[x][y] > 0)
+	//		{
+	//			Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
+	//		}
 	//		//if (mobilityGrid[x][y] > 0 && mobilityGrid[x][y] < 4)
 	//		//{
 	//		//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
@@ -199,7 +203,7 @@ void GridTrackerClass::updateEnemyGrids()
 		double gRange = unit.getGroundRange(), aRange = unit.getAirRange();
 		int radius = 0;
 		WalkPosition start = unit.getWalkPosition();
-		
+
 		if (((unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine && !unit.unit()->isBurrowed()) || unit.getType() == UnitTypes::Protoss_Scarab) && unit.getTarget() && unit.getTarget()->exists() && unit.getTarget()->getPlayer() == Broodwar->self() && !unit.getTarget()->getType().isWorker())
 		{
 			UnitInfo &target = Units().getAllyUnit(unit.getTarget());
@@ -300,7 +304,7 @@ void GridTrackerClass::updateEnemyGrids()
 void GridTrackerClass::updateBuildingGrid(BuildingInfo& building)
 {
 	int buildingOffset;
-	if (building.getType() == UnitTypes::Terran_Supply_Depot || (!building.getType().isResourceDepot() && building.getType().buildsWhat().size() > 0))
+	if (building.getType() == UnitTypes::Terran_Supply_Depot || (!building.getType().isResourceDepot() && building.getType().buildsWhat().size() > 0 && building.getTilePosition() != Terrain().getLargeWall()))
 	{
 		buildingOffset = 1;
 	}
@@ -396,7 +400,7 @@ void GridTrackerClass::updateResourceGrid(ResourceInfo& resource)
 		{
 			for (int y = tile.y - 5; y < tile.y + resource.getType().tileHeight() + 5; y++)
 			{
-				if (TilePosition(x, y).isValid())
+				if (TilePosition(x, y).isValid() && baseGrid[x][y] > 0)
 				{
 					if (resource.getResourceClusterPosition().getDistance(Position(TilePosition(x, y))) <= 192 && resource.getClosestBasePosition().isValid() && resource.getPosition().getDistance(resource.getClosestBasePosition()) > Position(x * 32, y * 32).getDistance(resource.getClosestBasePosition()))
 					{
@@ -419,7 +423,7 @@ void GridTrackerClass::updateResourceGrid(ResourceInfo& resource)
 		{
 			for (int y = tile.y - 2; y < tile.y + resource.getType().tileHeight() + 2; y++)
 			{
-				if (TilePosition(x, y).isValid())
+				if (TilePosition(x, y).isValid() && baseGrid[x][y] > 0)
 				{
 					if (baseGrid[x][y] > 0 && TilePosition(x, y).getDistance(TilePosition(resource.getClosestBasePosition())) < resource.getTilePosition().getDistance(TilePosition(resource.getClosestBasePosition())))
 					{
@@ -638,36 +642,13 @@ void GridTrackerClass::updateMobilityGrids()
 			{
 				for (int y = start.y - 1; y <= start.y + 1; y++)
 				{
-					if (!TilePosition(x, y).isValid())
+					if (!TilePosition(x, y).isValid()) continue;
+					if (buildingGrid[x][y] == 1 || basebuildingGrid[x][y] == 1) continue;
+					if ((x == start.x - 1 && y == start.y - 1) || (x == start.x - 1 && y == start.y + 1) || (x == start.x + 1 && y == start.y - 1) || (x == start.x + 1 && y == start.y + 1)) continue;
+					if (Grids().getDistanceHome(WalkPosition(TilePosition(x, y))) * TilePosition(x, y).getDistance(end) < closestD || closestD == 0.0)
 					{
-						continue;
-					}
-					if (buildingGrid[x][y] == 1 || basebuildingGrid[x][y] == 1)
-					{
-						continue;
-					}
-					if ((x == start.x - 1 && y == start.y - 1) || (x == start.x - 1 && y == start.y + 1) || (x == start.x + 1 && y == start.y - 1) || (x == start.x + 1 && y == start.y + 1))
-					{
-						continue;
-					}
-					if (Grids().getDistanceHome(WalkPosition(TilePosition(x, y))) < closestD || closestD == 0.0)
-					{
-						bool bestTile = true;
-						for (int i = 0; i <= 1; i++)
-						{
-							for (int j = 0; j <= 1; j++)
-							{
-								if (Grids().getMobilityGrid(WalkPosition(TilePosition(x, y)) + WalkPosition(i, j)) <= 0)
-								{
-									bestTile = false;
-								}
-							}
-						}
-						if (bestTile)
-						{
-							closestD = Grids().getDistanceHome(WalkPosition(TilePosition(x, y)));
-							closestT = TilePosition(x, y);
-						}
+						closestD = Grids().getDistanceHome(WalkPosition(TilePosition(x, y)))  * TilePosition(x, y).getDistance(end);
+						closestT = TilePosition(x, y);
 					}
 				}
 			}
@@ -675,30 +656,14 @@ void GridTrackerClass::updateMobilityGrids()
 			if (closestT.isValid())
 			{
 				start = closestT;
-				buildingGrid[closestT.x][closestT.y] = 1;
+				reservePathHome[closestT.x][closestT.y] = 10;
 			}
 
-			if (start.getDistance(end) < 3)
+			if (start.getDistance(end) < 2)
 			{
 				break;
 			}
 		}
-
-		start = Terrain().getSecondChoke();
-		for (int i = start.x - 3; i <= start.x + 3; i++)
-		{
-			for (int j = start.y - 3; j <= start.y + 3; j++)
-			{
-				if (WalkPosition(i, j).isValid())
-				{
-					if (Grids().getDistanceHome(WalkPosition(TilePosition(i, j))) >= Grids().getDistanceHome(WalkPosition(start)))
-					{
-						buildingGrid[i][j] = 1;
-					}
-				}
-			}
-		}
-
 	}
 	return;
 }

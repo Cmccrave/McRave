@@ -5,6 +5,7 @@ void TerrainTrackerClass::update()
 	Display().startClock();
 	updateAreas();
 	updateChokes();
+	updateWalls();
 	Display().performanceTest(__FUNCTION__);
 	return;
 }
@@ -17,11 +18,22 @@ void TerrainTrackerClass::updateAreas()
 		for (auto &u : Units().getEnemyUnits())
 		{
 			UnitInfo &unit = u.second;
-			double distance = 0.0;
+			double distance = 10000.0;
 			TilePosition closest;
-			if (!unit.getType().isBuilding()) continue;
-			enemyStartingPosition = getClosestBaseCenter(unit.unit());
-			enemyStartingTilePosition = TilePosition(getClosestBaseCenter(unit.unit()));
+			if (!unit.getType().isBuilding() || !unit.getTilePosition().isValid()) continue;
+			for (auto start : Broodwar->getStartLocations())
+			{
+				if (start.getDistance(unit.getTilePosition()) < distance)
+				{
+					distance = start.getDistance(unit.getTilePosition());
+					closest = start;
+				}
+			}
+			if (closest.isValid())
+			{
+				enemyStartingPosition = Position(TilePosition(closest.x + 2, closest.y + 1));
+				enemyStartingTilePosition = closest;
+			}
 		}
 	}
 
@@ -73,7 +85,6 @@ void TerrainTrackerClass::updateChokes()
 		int y = 0;
 		const Area* closestA = nullptr;
 		double closestBaseDistance = 0.0, furthestChokeDistance = 0.0, closestChokeDistance = 0.0;
-		TilePosition natural;
 		for (auto &area : theMap.Areas())
 		{
 			for (auto &base : area.Bases())
@@ -103,12 +114,14 @@ void TerrainTrackerClass::updateChokes()
 				}
 			}
 
+			double size = 0.0, distance = 100000.0;
 			for (auto &choke : closestA->ChokePoints())
 			{
-				if (choke && TilePosition(choke->Center()) != firstChoke && (Position(choke->Center()).getDistance(playerStartingPosition) / choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2)) < furthestChokeDistance || furthestChokeDistance == 0))
+				if (TilePosition(choke->Center()) != firstChoke && ((choke->GetAreas().first->MiniTiles() + choke->GetAreas().second->MiniTiles()) > size || (choke->GetAreas().first->MiniTiles() + choke->GetAreas().second->MiniTiles() == size && Position(choke->Center()).getDistance(playerStartingPosition) < distance)))
 				{
 					secondChoke = TilePosition(choke->Center());
-					furthestChokeDistance = Position(choke->Center()).getDistance(playerStartingPosition) / choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2));
+					size = choke->GetAreas().first->MiniTiles() + choke->GetAreas().second->MiniTiles();
+					distance = Position(choke->Center()).getDistance(playerStartingPosition);
 				}
 			}
 
@@ -122,13 +135,121 @@ void TerrainTrackerClass::updateChokes()
 					}
 				}
 			}
-			FFEPosition = TilePosition(int(secondChoke.x*0.35 + natural.x*0.65), int(secondChoke.y*0.35 + natural.y*0.65));
+			FFEPosition = TilePosition(int(secondChoke.x*0.5 + natural.x*0.5), int(secondChoke.y*0.5 + natural.y*0.5));
 			if (BuildOrder().isForgeExpand() && FFEPosition.isValid() && theMap.GetArea(FFEPosition))
 			{
 				allyTerritory.insert(theMap.GetArea(FFEPosition)->Id());
 			}
 		}
 	}
+}
+
+void TerrainTrackerClass::updateWalls()
+{
+	TilePosition start = secondChoke;
+	double distance = 0.0;
+	bool valid = false;
+
+	// Large Building placement
+	for (int x = start.x - 6; x <= start.x + 6; x++)
+	{
+		for (int y = start.y - 6; y <= start.y + 6; y++)
+		{
+			if (!TilePosition(x, y).isValid()) continue;			
+
+			valid = true;
+			for (int i = x; i < x + 4; i++)
+			{
+				for (int j = y; j < y + 3; j++)
+				{
+					if (!Broodwar->isBuildable(TilePosition(i, j))) valid = false;
+				}
+			}
+			if (!valid) continue;
+
+			valid = false;
+			int dx = x + 4;
+			for (int dy = y; dy <= y + 3; dy++)
+			{
+				if (!Broodwar->isBuildable(TilePosition(dx, dy))) valid = true;
+			}
+
+			int dy = y + 3;
+			for (int dx = x; dx <= x + 4; dx++)
+			{
+				if (!Broodwar->isBuildable(TilePosition(dx, dy))) valid = true;
+			}
+
+			if (valid && (TilePosition(x, y).getDistance(secondChoke) < distance || distance == 0.0)) bLarge = TilePosition(x, y), distance = TilePosition(x, y).getDistance(secondChoke);
+		}
+	}
+
+	// Medium Building placement
+	valid = false;
+	distance = 0.0;
+	for (int x = start.x - 6; x <= start.x + 6; x++)
+	{
+		for (int y = start.y - 6; y <= start.y + 6; y++)
+		{
+			if (!TilePosition(x, y).isValid()) continue;
+
+			valid = true;
+			for (int i = x; i < x + 3; i++)
+			{
+				for (int j = y; j < y + 2; j++)
+				{
+					if (!Broodwar->isBuildable(TilePosition(i, j))) valid = false;
+					if (i >= bLarge.x && i < bLarge.x + 4 && j >= bLarge.y && j < bLarge.y + 3) valid = false;
+				}
+			}
+			if (!valid) continue;
+
+			valid = false;
+			int dx = x - 1;
+			for (int dy = y; dy < y + 2; dy++)
+			{
+				if (!Broodwar->isBuildable(TilePosition(dx, dy))) valid = true;
+			}
+
+			int dy = y - 1;
+			for (int dx = x; dx < x + 3; dx++)
+			{
+				if (!Broodwar->isBuildable(TilePosition(dx, dy))) valid = true;
+			}
+
+			if (valid && (TilePosition(x, y).getDistance(secondChoke) < distance || distance == 0.0)) bMedium = TilePosition(x, y), distance = TilePosition(x, y).getDistance(secondChoke);
+		}
+	}
+
+	// Pylon placement
+	valid = false;
+	distance = 0.0;
+	for (int x = bMedium.x - 20; x <= bMedium.x + 20; x++)
+	{
+		for (int y = bMedium.y - 20; y <= bMedium.y + 20; y++)
+		{
+			if (!TilePosition(x, y).isValid()) continue;
+			if (theMap.GetArea(TilePosition(x, y)) != theMap.GetArea(natural)) continue;
+
+			valid = true;
+			for (int i = x; i < x + 2; i++)
+			{
+				for (int j = y; j < y + 2; j++)
+				{
+					if (!Broodwar->isBuildable(TilePosition(i, j))) valid = false;
+					if (i >= bMedium.x && i < bMedium.x + 3 && j >= bMedium.y && j < bMedium.y + 2) valid = false;
+					if (i >= bLarge.x && i < bLarge.x + 4 && j >= bLarge.y && j < bLarge.y + 3) valid = false;
+				}
+			}
+			if (!valid) continue;
+			if (valid && TilePosition(x, y).getDistance(secondChoke) > 3 && (TilePosition(x, y).getDistance(secondChoke) < distance || distance == 0.0)) bSmall = TilePosition(x, y), distance = TilePosition(x, y).getDistance(secondChoke);
+		}
+	}
+	
+	Broodwar->drawBoxMap(Position(bSmall), Position(bSmall) + Position(64, 64), Colors::Red);
+	Broodwar->drawBoxMap(Position(bMedium), Position(bMedium) + Position(94, 64), Colors::Red);
+	Broodwar->drawBoxMap(Position(bLarge), Position(bLarge) + Position(128, 96), Colors::Red);
+	Broodwar->drawCircleMap(Position(secondChoke), 16, Colors::Green);
 }
 
 void TerrainTrackerClass::onStart()

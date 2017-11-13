@@ -312,7 +312,7 @@ void BuildOrderTrackerClass::protossTech()
 void BuildOrderTrackerClass::protossSituational()
 {
 	bool techSat = techList.size() >= Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
-	bool productionSat = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 3 * Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
+	bool productionSat = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) >= (3 - Players().getNumberTerran()) * Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
 
 	/*Broodwar->drawTextScreen(400, 100, "%d  %d", techSat, productionSat);
 	Broodwar->drawTextScreen(400, 125, "%d", Production().getIdleProduction().size());*/
@@ -324,11 +324,11 @@ void BuildOrderTrackerClass::protossSituational()
 		offset += 10;
 	}*/
 	
-	if (Broodwar->self()->completedUnitCount(techUnit) > 0) techUnit = UnitTypes::None; // If we have our tech unit, set to none	
-	if (Strategy().needDetection() || (!getOpening && !getTech && !techSat && productionSat && techUnit == UnitTypes::None && (Production().getIdleProduction().size() == 0 || Units().getSupply() > 380))) getTech = true; // If production is saturated and none are idle or we need detection for some invis units, choose a tech
+	if (Broodwar->self()->visibleUnitCount(techUnit) > 0) techUnit = UnitTypes::None; // If we have our tech unit, set to none	
+	if (Strategy().needDetection() || (!getOpening && !getTech && productionSat && techUnit == UnitTypes::None && (!Production().hasIdleProduction() || Units().getSupply() > 380))) getTech = true; // If production is saturated and none are idle or we need detection, choose a tech
 
 	// Check if we hit our Zealot cap based on our build
-	if (getOpening && !Strategy().isRush() && ((currentBuild == "PZZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 2) || (currentBuild == "PZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 1) || (currentBuild == "PNZCore") || (Players().getNumberTerran() > 0 && currentBuild != "PDTExpand")))
+	if (getOpening && !Strategy().isRush() && (((currentBuild == "PZZCore" || currentBuild == "PDTExpand") && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 2) || (currentBuild == "PZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 1) || (currentBuild == "PNZCore") || (Players().getNumberTerran() > 0 && currentBuild != "PDTExpand")))
 		unlockedType.erase(UnitTypes::Protoss_Zealot);
 	else unlockedType.insert(UnitTypes::Protoss_Zealot);
 	unlockedType.insert(UnitTypes::Protoss_Dragoon);	
@@ -354,13 +354,13 @@ void BuildOrderTrackerClass::protossSituational()
 	if (!getOpening)
 	{
 		// Expansion logic
-		if (Broodwar->self()->minerals() > 1000 || (productionSat && techSat && techUnit == UnitTypes::None && Resources().isMinSaturated() && Production().getIdleProduction().size() == 0))
+		if (Broodwar->self()->minerals() > 1000 || (techSat && productionSat && techUnit == UnitTypes::None && Resources().isMinSaturated() && !Production().hasIdleProduction()))
 		{
 			buildingDesired[UnitTypes::Protoss_Nexus] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) + 1;
 		}
 
 		// Gateway logic
-		if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 2 && (Production().getIdleProduction().size() == 0 && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 150) || (!productionSat && Resources().isMinSaturated()))))
+		if (!Production().hasIdleProduction() && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 150) || (!productionSat && Resources().isMinSaturated())))
 		{
 			buildingDesired[UnitTypes::Protoss_Gateway] = min(Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) + 1);
 		}

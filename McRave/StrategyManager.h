@@ -13,9 +13,8 @@ class StrategyTrackerClass
 	bool invis = false;
 	bool rush = false;
 	bool holdChoke = false;
-	bool zealotsLocked = false;
-	bool marinesLocked = false;
 	bool playPassive = false;
+	bool hideTech = false;
 	double recallFrame = 0.0;
 
 	// Testing stuff
@@ -30,7 +29,6 @@ public:
 	bool needDetection() { return invis; }
 	bool isRush() { return rush; }
 	bool isHoldChoke() { return holdChoke; }
-	bool isZealotsLocked() { return zealotsLocked; }
 	bool isPlayPassive() { return playPassive; }
 	
 

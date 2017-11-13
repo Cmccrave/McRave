@@ -177,14 +177,10 @@ double UtilTrackerClass::getVisibleAirStrength(UnitInfo& unit)
 double UtilTrackerClass::getPriority(UnitInfo& unit)
 {
 	// If an enemy detector is within range of an Arbiter, give it higher priority
-	if (Grids().getArbiterGrid(unit.getWalkPosition()) > 0 && unit.getType().isDetector() && unit.getPlayer()->isEnemy(Broodwar->self()))
-	{
-		return 10.0;
-	}
-	if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine)
-	{
-		return 100.0;
-	}
+	if (Grids().getArbiterGrid(unit.getWalkPosition()) > 0 && unit.getType().isDetector() && unit.getPlayer()->isEnemy(Broodwar->self())) return 10.0;	
+	if (unit.getType().isWorker()) return 3.00;
+	if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine) return 100.0;	
+
 	double mineral, gas;
 
 	if (unit.getType() == UnitTypes::Protoss_Archon) mineral = 100.0, gas = 300.0;
@@ -409,7 +405,7 @@ set<WalkPosition> UtilTrackerClass::getWalkPositionsUnderUnit(Unit unit)
 
 bool UtilTrackerClass::isSafe(WalkPosition end, UnitType unitType, bool groundCheck, bool airCheck)
 {
-	int width = unitType.width() / 8;
+	int width = unitType.tileWidth() * 4;
 	int halfWidth = width / 2;
 	for (int x = end.x - halfWidth; x <= end.x + halfWidth; x++)
 	{
@@ -419,7 +415,6 @@ bool UtilTrackerClass::isSafe(WalkPosition end, UnitType unitType, bool groundCh
 			{
 				continue;
 			}
-
 			if ((groundCheck && Grids().getEGroundThreat(x, y) != 0.0) || (airCheck && Grids().getEAirThreat(x, y) != 0.0))
 			{
 				return false;

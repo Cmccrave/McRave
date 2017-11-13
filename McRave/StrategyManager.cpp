@@ -30,12 +30,16 @@ void StrategyTrackerClass::protossStrategy()
 		if (Units().getEnemyComposition()[UnitTypes::Terran_Command_Center] > 1 || Units().getEnemyComposition()[UnitTypes::Zerg_Hatchery] > 1 || Units().getEnemyComposition()[UnitTypes::Protoss_Nexus] > 1) enemyFastExpand = true;
 		
 		// Check if enemy is rushing (detects early 2 gates and early pool)
-		if (Units().getSupply() < 60 && ((Players().getNumberProtoss() > 0 || Players().getNumberRandom() > 0) && Units().getEnemyComposition()[UnitTypes::Protoss_Forge] == 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] >= 2 || Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] == 0) && Units().getEnemyComposition()[UnitTypes::Protoss_Assimilator] == 0 && Units().getEnemyComposition()[UnitTypes::Protoss_Nexus] == 1) || ((Players().getNumberRandom() > 0 || Players().getNumberZerg() > 0) && Units().getEnemyComposition()[UnitTypes::Zerg_Zergling] >= 6 && Units().getEnemyComposition()[UnitTypes::Zerg_Drone] < 6))
+		if (Units().getSupply() < 60 && ((Players().getNumberProtoss() > 0 || Players().getNumberRandom() > 0) && Units().getEnemyComposition()[UnitTypes::Protoss_Forge] == 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] >= 2 || Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] == 0) && Units().getEnemyComposition()[UnitTypes::Protoss_Assimilator] == 0 && Units().getEnemyComposition()[UnitTypes::Protoss_Nexus] == 1) || ((Players().getNumberRandom() > 0 || Players().getNumberZerg() > 0) && Units().getEnemyComposition()[UnitTypes::Zerg_Zergling] >= 6 && Units().getEnemyComposition()[UnitTypes::Zerg_Drone] < 6) || (Players().getNumberTerran() > 0 && Units().getEnemyComposition()[UnitTypes::Terran_SCV] <= 6 && Units().getEnemyComposition()[UnitTypes::Terran_Barracks] > 0 && Units().getEnemyComposition()[UnitTypes::Terran_Supply_Depot] <= 0))
 			rush = true;
 		else rush = false;
 
+		// Check if we should hide our tech
+		if (BuildOrder().getCurrentBuild() == "PDTExpand" && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dark_Templar) == 0) hideTech = true;
+
 		// Check if we should play passive and/or hold the choke
 		if (allyFastExpand) playPassive = !enemyFastExpand, holdChoke = true;
+		else if (hideTech) playPassive = true, holdChoke = true;
 		else playPassive = rush, holdChoke = (Units().getSupply() > 80 || Players().getNumberTerran() > 0);
 	}
 	else

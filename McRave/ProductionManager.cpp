@@ -11,22 +11,14 @@ void ProductionTrackerClass::update()
 
 void ProductionTrackerClass::updateProduction()
 {
-	UnitType highestType = UnitTypes::None;
-	double highest = 0.0;
-	for (auto &u : Strategy().getUnitScore())
-	{
-		if (u.second > highest) highest = u.second, highestType = u.first;
-	}
-
-
+	idle = false;
 	for (auto &b : Buildings().getMyBuildings())
 	{
 		BuildingInfo &building = b.second;
 		double best = 0.0;
 		UnitType bestType = UnitTypes::None;
 		if (building.unit()->isIdle() && !building.getType().isResourceDepot())
-		{
-			//if (building.unit()->isIdle() && Units().getSupply() < 380) idle = true;
+		{			
 			idleProduction.erase(building.unit());
 			idleUpgrade.erase(building.unit());
 			idleTech.erase(building.unit());
@@ -37,14 +29,19 @@ void ProductionTrackerClass::updateProduction()
 					building.unit()->buildAddon(unit);
 					continue;
 				}
-				if (Strategy().getUnitScore()[unit] >= best && isCreateable(building.unit(), unit) && isSuitable(unit) && isAffordable(unit))
+				if (unit == UnitTypes::Protoss_Dark_Templar && BuildOrder().getCurrentBuild() == "PDTExpand" && Broodwar->self()->visibleUnitCount(unit) < 2 && isCreateable(building.unit(), unit) && isSuitable(unit)) // stupid hardcode stuff TODO
+				{
+					best = 100;
+					bestType = unit;
+				}
+				else if (Strategy().getUnitScore()[unit] >= best && isCreateable(building.unit(), unit) && isSuitable(unit) && isAffordable(unit))
 				{
 					best = Strategy().getUnitScore()[unit];
 					bestType = unit;
 				}
 			}
 			if (bestType != UnitTypes::None)
-			{
+			{				
 				// If we can afford it, train it
 				if (isAffordable(bestType))
 				{
@@ -52,9 +49,10 @@ void ProductionTrackerClass::updateProduction()
 					idleProduction.erase(building.unit());
 				}
 				// Else if this is a tech unit, add it to idle production
-				else if (bestType == highestType && BuildOrder().getTechList().find(bestType) != BuildOrder().getTechList().end())
-				{
-					idleProduction[building.unit()] = highestType;
+				else if (BuildOrder().getTechList().find(bestType) != BuildOrder().getTechList().end())
+				{				
+					if (Units().getSupply() < 380) idle = true;
+					idleProduction[building.unit()] = bestType;
 				}
 			}
 
@@ -77,7 +75,6 @@ void ProductionTrackerClass::updateProduction()
 					else idleUpgrade[building.unit()] = upgrade;
 				}
 			}
-
 		}
 	}
 }

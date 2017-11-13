@@ -15,6 +15,10 @@
 // Production stall issue
 // Make inRange Units() function including widths
 // Hit repairing scvs
+// Pylon spacing
+// Wall placement
+// Units outside ally territory during passive play dont move
+// Production sat based on active mining bases instead
 
 void McRaveModule::onStart()
 {

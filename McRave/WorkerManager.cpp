@@ -36,14 +36,14 @@ void WorkerTrackerClass::updateScout(WorkerInfo& worker)
 			}
 		}
 	}
-
+	
 	// Update scout probes decision if we are above 9 supply and just placed a pylon
 	if (!Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge))
 	{
-		if (Bases().getEnemyBases().size() == 0)
-		{
+		if (!Terrain().getEnemyStartingPosition().isValid() || !Broodwar->isExplored(Terrain().getEnemyStartingTilePosition()))
+		{			
 			for (auto &start : theMap.StartingLocations())
-			{
+			{							
 				if (!Broodwar->isExplored(start) && (Position(start).getDistance(Terrain().getPlayerStartingPosition()) < closestD || closestD == 0.0))
 				{
 					closestD = Position(start).getDistance(Terrain().getPlayerStartingPosition());
@@ -56,7 +56,7 @@ void WorkerTrackerClass::updateScout(WorkerInfo& worker)
 			}
 			return;
 		}
-		if (Bases().getEnemyBases().size() > 0)
+		else if (Bases().getEnemyBases().size() > 0)
 		{
 			exploreArea(worker);
 			return;
@@ -97,22 +97,24 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 {
 	WalkPosition start = worker.getWalkPosition();
 	Position bestPosition = Terrain().getPlayerStartingPosition();
-	Position destination;
+	Position destination = Terrain().getEnemyStartingPosition();
 	int longest = 0;
 
-	Unit closest = worker.unit()->getClosestUnit(Filter::IsEnemy && Filter::CanAttack);
-	if (!closest || (closest && closest->exists() && worker.unit()->getDistance(closest) > 640))
+	if (Broodwar->isExplored(Terrain().getEnemyStartingTilePosition()))
 	{
-		worker.unit()->move(Terrain().getEnemyStartingPosition());
-		return;
-	}
-
-	for (auto &base : Bases().getEnemyBases())
-	{
-		if (Broodwar->getFrameCount() - base.second.getLastVisibleFrame() >= longest)
+		for (auto &base : Bases().getEnemyBases())
 		{
-			longest = Broodwar->getFrameCount() - base.second.getLastVisibleFrame();
-			destination = base.second.getPosition();
+			if (Broodwar->getFrameCount() - base.second.getLastVisibleFrame() >= longest)
+			{
+				longest = Broodwar->getFrameCount() - base.second.getLastVisibleFrame();
+				destination = base.second.getPosition();
+			}
+		}
+		Unit closest = worker.unit()->getClosestUnit(Filter::IsEnemy && Filter::CanAttack);
+		if (destination.isValid() && (!closest || (closest && closest->exists() && worker.unit()->getDistance(closest) > 640)))
+		{			
+			worker.unit()->move(destination);
+			return;
 		}
 	}
 
@@ -221,7 +223,7 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 		}
 		else
 		{
-			if (Broodwar->self()->minerals() >= worker.getBuildingType().mineralPrice() - (((Resources().getMPM() / 30.0) * worker.getPosition().getDistance(Position(worker.getBuildPosition()))) / (worker.getType().topSpeed() * 24.0)) && Broodwar->self()->minerals() <= worker.getBuildingType().mineralPrice() && Broodwar->self()->gas() >= worker.getBuildingType().gasPrice() - (((Resources().getGPM() / 30.0) * worker.getPosition().getDistance(Position(worker.getBuildPosition()))) / (worker.getType().topSpeed() * 24.0)) && Broodwar->self()->gas() <= worker.getBuildingType().gasPrice())
+			if (Broodwar->self()->minerals() >= worker.getBuildingType().mineralPrice() - (((Resources().getMPM() / 60.0) * worker.getPosition().getDistance(Position(worker.getBuildPosition()))) / (worker.getType().topSpeed() * 24.0)) && Broodwar->self()->minerals() <= worker.getBuildingType().mineralPrice() && Broodwar->self()->gas() >= worker.getBuildingType().gasPrice() - (((Resources().getGPM() / 60.0) * worker.getPosition().getDistance(Position(worker.getBuildPosition()))) / (worker.getType().topSpeed() * 24.0)) && Broodwar->self()->gas() <= worker.getBuildingType().gasPrice())
 			{
 				if (worker.unit()->getOrderTargetPosition() != Position(worker.getBuildPosition()) || worker.unit()->isStuck())
 				{
@@ -231,7 +233,8 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 			}
 			else if (Broodwar->self()->minerals() >= worker.getBuildingType().mineralPrice() && Broodwar->self()->gas() >= worker.getBuildingType().gasPrice())
 			{
-				if (worker.unit()->getOrderTargetPosition() != Position(worker.getBuildPosition()) || worker.unit()->isStuck())
+				if (worker.getPosition().getDistance(Position(worker.getBuildPosition())) > 320) worker.unit()->move(Position(worker.getBuildPosition()));
+				else if (worker.unit()->getOrderTargetPosition() != Position(worker.getBuildPosition()) || worker.unit()->isStuck())
 				{
 					worker.unit()->build(worker.getBuildingType(), worker.getBuildPosition());
 				}

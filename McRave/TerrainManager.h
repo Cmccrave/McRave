@@ -15,12 +15,15 @@ class TerrainTrackerClass
 	TilePosition secondChoke, firstChoke;
 	Position mineralHold, backMineralHold;
 	Position attackPosition;
+	TilePosition natural;
+	TilePosition bMedium, bLarge, bSmall;
 
 public:
 	void onStart();
 	void update();
 	void updateAreas();
 	void updateChokes();	
+	void updateWalls();
 
 	Position getClosestBaseCenter(Unit);
 	Position getMineralHoldPosition() { return mineralHold; }
@@ -39,6 +42,11 @@ public:
 	TilePosition getFFEPosition() { return FFEPosition; }
 	TilePosition getFirstChoke() { return firstChoke; }
 	TilePosition getSecondChoke() { return secondChoke; }
+
+	TilePosition getSmallWall() { return bSmall; }
+	TilePosition getMediumWall() { return bMedium; }
+	TilePosition getLargeWall() { return bLarge; }
+
 
 	Position getAttackPosition() { return attackPosition; }
 };
