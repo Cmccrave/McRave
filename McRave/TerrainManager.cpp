@@ -135,7 +135,7 @@ void TerrainTrackerClass::updateChokes()
 					}
 				}
 			}
-			FFEPosition = TilePosition(int(secondChoke.x*0.5 + natural.x*0.5), int(secondChoke.y*0.5 + natural.y*0.5));
+			FFEPosition = TilePosition(int(secondChoke.x*0.25 + natural.x*0.75), int(secondChoke.y*0.25 + natural.y*0.75));
 			if (BuildOrder().isForgeExpand() && FFEPosition.isValid() && theMap.GetArea(FFEPosition))
 			{
 				allyTerritory.insert(theMap.GetArea(FFEPosition)->Id());
@@ -151,11 +151,11 @@ void TerrainTrackerClass::updateWalls()
 	bool valid = false;
 
 	// Large Building placement
-	for (int x = start.x - 6; x <= start.x + 6; x++)
+	for (int x = start.x - 20; x <= start.x + 20; x++)
 	{
-		for (int y = start.y - 6; y <= start.y + 6; y++)
+		for (int y = start.y - 20; y <= start.y + 20; y++)
 		{
-			if (!TilePosition(x, y).isValid()) continue;			
+			if (!TilePosition(x, y).isValid()) continue;
 
 			valid = true;
 			for (int i = x; i < x + 4; i++)
@@ -171,25 +171,25 @@ void TerrainTrackerClass::updateWalls()
 			int dx = x + 4;
 			for (int dy = y; dy <= y + 3; dy++)
 			{
-				if (!Broodwar->isBuildable(TilePosition(dx, dy))) valid = true;
+				if (!Broodwar->isBuildable(TilePosition(dx, dy)) /*&& !Util().isWalkable(TilePosition(dx,dy))*/) valid = true;
 			}
 
 			int dy = y + 3;
 			for (int dx = x; dx <= x + 4; dx++)
 			{
-				if (!Broodwar->isBuildable(TilePosition(dx, dy))) valid = true;
+				if (!Broodwar->isBuildable(TilePosition(dx, dy))/* && !Util().isWalkable(TilePosition(dx, dy))*/) valid = true;
 			}
 
-			if (valid && (TilePosition(x, y).getDistance(secondChoke) < distance || distance == 0.0)) bLarge = TilePosition(x, y), distance = TilePosition(x, y).getDistance(secondChoke);
+			if (valid && TilePosition(x, y).getDistance(natural) <= 10 && (TilePosition(x, y).getDistance(secondChoke) < distance || distance == 0.0)) bLarge = TilePosition(x, y), distance = TilePosition(x, y).getDistance(secondChoke);
 		}
 	}
 
 	// Medium Building placement
 	valid = false;
 	distance = 0.0;
-	for (int x = start.x - 6; x <= start.x + 6; x++)
+	for (int x = start.x - 20; x <= start.x + 20; x++)
 	{
-		for (int y = start.y - 6; y <= start.y + 6; y++)
+		for (int y = start.y - 20; y <= start.y + 20; y++)
 		{
 			if (!TilePosition(x, y).isValid()) continue;
 
@@ -208,25 +208,25 @@ void TerrainTrackerClass::updateWalls()
 			int dx = x - 1;
 			for (int dy = y; dy < y + 2; dy++)
 			{
-				if (!Broodwar->isBuildable(TilePosition(dx, dy))) valid = true;
+				if (!Broodwar->isBuildable(TilePosition(dx, dy)) && !Util().isWalkable(TilePosition(dx, dy))) valid = true;
 			}
 
 			int dy = y - 1;
 			for (int dx = x; dx < x + 3; dx++)
 			{
-				if (!Broodwar->isBuildable(TilePosition(dx, dy))) valid = true;
+				if ((!Broodwar->isBuildable(TilePosition(dx, dy)) && !Util().isWalkable(TilePosition(dx, dy))) || dy == bLarge.y + 2) valid = true;
 			}
 
-			if (valid && (TilePosition(x, y).getDistance(secondChoke) < distance || distance == 0.0)) bMedium = TilePosition(x, y), distance = TilePosition(x, y).getDistance(secondChoke);
+			if (valid && TilePosition(x, y).getDistance(natural) <= 10 && (TilePosition(x, y).getDistance(secondChoke) < distance || distance == 0.0)) bMedium = TilePosition(x, y), distance = TilePosition(x, y).getDistance(secondChoke);
 		}
 	}
 
 	// Pylon placement
 	valid = false;
 	distance = 0.0;
-	for (int x = bMedium.x - 20; x <= bMedium.x + 20; x++)
+	for (int x = natural.x - 20; x <= natural.x + 20; x++)
 	{
-		for (int y = bMedium.y - 20; y <= bMedium.y + 20; y++)
+		for (int y = natural.y - 20; y <= natural.y + 20; y++)
 		{
 			if (!TilePosition(x, y).isValid()) continue;
 			if (theMap.GetArea(TilePosition(x, y)) != theMap.GetArea(natural)) continue;
@@ -239,13 +239,14 @@ void TerrainTrackerClass::updateWalls()
 					if (!Broodwar->isBuildable(TilePosition(i, j))) valid = false;
 					if (i >= bMedium.x && i < bMedium.x + 3 && j >= bMedium.y && j < bMedium.y + 2) valid = false;
 					if (i >= bLarge.x && i < bLarge.x + 4 && j >= bLarge.y && j < bLarge.y + 3) valid = false;
+					if (i >= natural.x && i < natural.x + 4 && j >= natural.y && j < natural.y + 3) valid = false;
 				}
 			}
 			if (!valid) continue;
-			if (valid && TilePosition(x, y).getDistance(secondChoke) > 3 && (TilePosition(x, y).getDistance(secondChoke) < distance || distance == 0.0)) bSmall = TilePosition(x, y), distance = TilePosition(x, y).getDistance(secondChoke);
+			if (valid && TilePosition(x, y).getDistance(bLarge) <= 4 && TilePosition(x, y).getDistance(bMedium) <= 4 && (TilePosition(x, y).getDistance(natural) < distance || distance == 0.0)) bSmall = TilePosition(x, y), distance = TilePosition(x, y).getDistance(natural);
 		}
 	}
-	
+
 	Broodwar->drawBoxMap(Position(bSmall), Position(bSmall) + Position(64, 64), Colors::Red);
 	Broodwar->drawBoxMap(Position(bMedium), Position(bMedium) + Position(94, 64), Colors::Red);
 	Broodwar->drawBoxMap(Position(bLarge), Position(bLarge) + Position(128, 96), Colors::Red);

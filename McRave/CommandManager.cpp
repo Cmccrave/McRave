@@ -20,16 +20,15 @@ void CommandTrackerClass::updateAlliedUnits()
 
 	for (auto &u : Units().getAllyUnits())
 	{
-		UnitInfo &unit = u.second;		
+		UnitInfo &unit = u.second;
 		if (!unit.unit() || !unit.unit()->exists()) continue; // Prevent crashes		
 		if (unit.getType() == UnitTypes::Protoss_Observer || unit.getType() == UnitTypes::Protoss_Arbiter || unit.getType() == UnitTypes::Protoss_Shuttle) continue; // Support units and transports have their own commands
 		if (unit.getLastCommandFrame() >= Broodwar->getFrameCount()) continue; // If the unit received a command already during this frame		
 		if (unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted()) continue; // If the unit is locked down, maelstrommed, stassised, or not completed
-		
+
 		// Remove wall if needed - testing
 		if (Units().getSupply() > 200 && unit.unit()->isStuck())
 		{
-			Broodwar << "test" << endl;
 			Unit wall = Broodwar->getClosestUnit(Position(Terrain().getLargeWall()), Filter::IsAlly && Filter::GetType == UnitTypes::Protoss_Gateway, 32);
 			unit.unit()->attack(wall);
 			continue;
@@ -43,12 +42,12 @@ void CommandTrackerClass::updateAlliedUnits()
 			{
 				if (unit.unit()->getGroundWeaponCooldown() > 0) approach(unit);
 				else attack(unit);
-			}			
+			}
 			else if (Grids().getPsiStormGrid(unit.getWalkPosition()) > 0 || Grids().getEMPGrid(unit.getWalkPosition()) > 0 || Grids().getESplashGrid(unit.getWalkPosition()) > 0) flee(unit); // If under a storm, dark swarm or EMP
-			
+
 			// If globally behind
-			else if ((Units().getGlobalGroundStrategy() == 0 && !unit.getType().isFlyer()) || (Units().getGlobalAirStrategy() == 0 && unit.getType().isFlyer())) 
-			{				
+			else if ((Units().getGlobalGroundStrategy() == 0 && !unit.getType().isFlyer()) || (Units().getGlobalAirStrategy() == 0 && unit.getType().isFlyer()))
+			{
 				if (unit.getStrategy() == 0) flee(unit); // If locally behind, flee				
 				else if (unit.getStrategy() == 1 && unit.getTarget()->exists()) attack(unit); // If locally ahead, attack
 				else defend(unit);
@@ -56,7 +55,7 @@ void CommandTrackerClass::updateAlliedUnits()
 
 			// If globally ahead
 			else if ((Units().getGlobalGroundStrategy() == 1 && !unit.getType().isFlyer()) || (Units().getGlobalAirStrategy() == 1 && unit.getType().isFlyer()))
-			{				
+			{
 				if (unit.getStrategy() == 0) flee(unit); // If locally behind, flee				
 				else if (unit.getStrategy() == 1 && unit.getTarget()->exists()) attack(unit); // If locally ahead, attack				
 				else if (unit.getStrategy() == 2) defend(unit); // If within ally territory, defend				
@@ -79,7 +78,7 @@ void CommandTrackerClass::attack(UnitInfo& unit)
 		}
 		else
 		{
-			if (!isLastCommand(unit, UnitCommandTypes::Move, unit.getTargetPosition())) unit.unit()->move(unit.getTargetPosition());			
+			if (!isLastCommand(unit, UnitCommandTypes::Move, unit.getTargetPosition())) unit.unit()->move(unit.getTargetPosition());
 		}
 		return;
 	}
@@ -219,7 +218,7 @@ void CommandTrackerClass::move(UnitInfo& unit)
 	// If target doesn't exist, move towards it
 	else if (unit.getTarget() && unit.getTargetPosition().isValid() && unit.getPosition().getDistance(unit.getTargetPosition()) < 640)
 	{
-		if (unit.unit()->getLastCommand().getTargetPosition() != unit.getTargetPosition() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move) unit.unit()->move(unit.getTargetPosition());		
+		if (unit.unit()->getLastCommand().getTargetPosition() != unit.getTargetPosition() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move) unit.unit()->move(unit.getTargetPosition());
 	}
 
 	else if (Terrain().getAttackPosition().isValid())

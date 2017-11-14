@@ -347,9 +347,9 @@ void GridTrackerClass::updateBuildingGrid(BuildingInfo& building)
 		// Pylon Grid
 		if (building.getType() == UnitTypes::Protoss_Pylon)
 		{
-			for (int x = building.getTilePosition().x - 4; x < building.getTilePosition().x + building.getType().tileWidth() + 4; x++)
+			for (int x = building.getTilePosition().x - 6; x < building.getTilePosition().x + building.getType().tileWidth() + 6; x++)
 			{
-				for (int y = building.getTilePosition().y - 4; y < building.getTilePosition().y + building.getType().tileHeight() + 4; y++)
+				for (int y = building.getTilePosition().y - 6; y < building.getTilePosition().y + building.getType().tileHeight() + 6; y++)
 				{
 					if (TilePosition(x, y).isValid())
 					{

@@ -312,18 +312,8 @@ void BuildOrderTrackerClass::protossTech()
 void BuildOrderTrackerClass::protossSituational()
 {
 	bool techSat = techList.size() >= Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
-	bool productionSat = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) >= (3 - Players().getNumberTerran()) * Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
-
-	/*Broodwar->drawTextScreen(400, 100, "%d  %d", techSat, productionSat);
-	Broodwar->drawTextScreen(400, 125, "%d", Production().getIdleProduction().size());*/
-
-	/*int offset = 100;
-	for (auto &unit : techList)
-	{
-		Broodwar->drawTextScreen(0, offset, "%s", unit.c_str());
-		offset += 10;
-	}*/
-	
+	bool productionSat = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= (3 - Players().getNumberTerran() > 0) * Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus);
+		
 	if (Broodwar->self()->visibleUnitCount(techUnit) > 0) techUnit = UnitTypes::None; // If we have our tech unit, set to none	
 	if (Strategy().needDetection() || (!getOpening && !getTech && productionSat && techUnit == UnitTypes::None && (!Production().hasIdleProduction() || Units().getSupply() > 380))) getTech = true; // If production is saturated and none are idle or we need detection, choose a tech
 
@@ -354,7 +344,7 @@ void BuildOrderTrackerClass::protossSituational()
 	if (!getOpening)
 	{
 		// Expansion logic
-		if (Broodwar->self()->minerals() > 1000 || (techSat && productionSat && techUnit == UnitTypes::None && Resources().isMinSaturated() && !Production().hasIdleProduction()))
+		if (Broodwar->self()->minerals() > 1000 || (productionSat && techUnit == UnitTypes::None && Resources().isMinSaturated() && !Production().hasIdleProduction()))
 		{
 			buildingDesired[UnitTypes::Protoss_Nexus] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) + 1;
 		}

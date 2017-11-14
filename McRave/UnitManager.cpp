@@ -17,7 +17,7 @@ void UnitTrackerClass::updateUnits()
 	enemyDefense = 0.0;
 
 	// Update Enemy Units
-	for (auto &u : enemyUnits)
+	for (auto &u : enemyUnits) 
 	{
 		UnitInfo &unit = u.second;
 		if (!unit.unit()) continue; // Ignore improper storage if it happens		
@@ -102,7 +102,7 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 		double distance = ally.getPosition().getDistance(ally.getEngagePosition());
 		double speed = (unit.getTransport() && unit.getTransport()->exists()) ? unit.getTransport()->getType().topSpeed() * 24.0 : ally.getSpeed();
 		double allyToEngage = max(0.0, distance / speed);
-		double simRatio = max(0.0, simulationTime - (allyToEngage - unitToEngage));
+		double simRatio = ally.unit() == unit.unit() ? unitToEngage : max(0.0, simulationTime - (allyToEngage - unitToEngage));
 
 		// Situations where an ally should be treated as stronger than it actually is
 		if ((ally.unit()->isCloaked() || ally.unit()->isBurrowed()) && Grids().getEDetectorGrid(WalkPosition(ally.getEngagePosition())) == 0) simRatio = simRatio * 5.0;

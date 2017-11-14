@@ -39,6 +39,8 @@ public:
 	// Returns 1 if the unit is in range of a position
 	bool unitInRange(UnitInfo& unit);
 	bool targetInRange(UnitInfo& unit);
+
+	bool isWalkable(TilePosition here);
 };
 
 typedef Singleton<UtilTrackerClass> UtilTracker;

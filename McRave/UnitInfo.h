@@ -7,7 +7,7 @@ using namespace std;
 // Class for storing information about all units
 class UnitInfo {
 	double percentHealth, visibleGroundStrength, visibleAirStrength, maxGroundStrength, maxAirStrength, groundLocal, airLocal, groundRange, airRange, priority, groundDamage, airDamage, speed;
-	int strategy, lastAttackFrame, lastCommandFrame, minStopFrame, lastVisibleFrame;
+	int strategy, lastAttackFrame, lastCommandFrame, minStopFrame, lastVisibleFrame, shields;
 
 	Unit target, thisUnit, transport;
 	UnitType unitType;
@@ -74,6 +74,8 @@ public:
 
 	// Returns the last frame since this unit was visible
 	int getLastVisibleFrame() { return lastVisibleFrame; }
+
+	int getShields() { return shields; }
 
 	Unit unit() { return thisUnit; }
 	Unit getTarget() { return target; }
