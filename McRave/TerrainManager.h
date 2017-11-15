@@ -17,6 +17,7 @@ class TerrainTrackerClass
 	Position attackPosition;
 	TilePosition natural;
 	TilePosition bMedium, bLarge, bSmall;
+	Area const * naturalArea;
 
 public:
 	void onStart();
@@ -24,6 +25,10 @@ public:
 	void updateAreas();
 	void updateChokes();	
 	void updateWalls();
+
+	void findFirstChoke();
+	void findSecondChoke();
+	void findNatural();
 
 	Position getClosestBaseCenter(Unit);
 	Position getMineralHoldPosition() { return mineralHold; }

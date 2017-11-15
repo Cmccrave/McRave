@@ -12,6 +12,13 @@ void TerrainTrackerClass::update()
 
 void TerrainTrackerClass::updateAreas()
 {
+	if (Broodwar->getFrameCount() >= 100 && Broodwar->getFrameCount() < 105)
+	{
+		findNatural();
+		findFirstChoke();
+		findSecondChoke();
+	}
+
 	// If we see a building, check for closest starting location
 	if (!enemyStartingPosition.isValid())
 	{
@@ -79,67 +86,25 @@ void TerrainTrackerClass::updateChokes()
 	}
 
 	// Establish FFE position	
-	if (Broodwar->getFrameCount() > 100)
+	if (naturalArea)
 	{
-		int x = 0;
-		int y = 0;
-		const Area* closestA = nullptr;
-		double closestBaseDistance = 0.0, furthestChokeDistance = 0.0, closestChokeDistance = 0.0;
-		for (auto &area : theMap.Areas())
-		{
-			for (auto &base : area.Bases())
-			{
-				if (base.Geysers().size() == 0 || area.AccessibleNeighbours().size() == 0)
-				{
-					continue;
-				}
+		//Broodwar->drawCircleMap(Position(firstChoke), 16, Colors::Blue);
+		//Broodwar->drawCircleMap(Position(secondChoke), 16, Colors::Green);
 
-				if (Grids().getDistanceHome(WalkPosition(base.Location())) > 50 && (Grids().getDistanceHome(WalkPosition(base.Location())) < closestBaseDistance || closestBaseDistance == 0))
+		for (auto &area : naturalArea->AccessibleNeighbours())
+		{
+			for (auto & choke : area->ChokePoints())
+			{
+				if (TilePosition(choke->Center()) == firstChoke && allyTerritory.find(area->Id()) == allyTerritory.end())
 				{
-					closestBaseDistance = Grids().getDistanceHome(WalkPosition(base.Location()));
-					closestA = base.GetArea();
-					natural = base.Location();
+					allyTerritory.insert(area->Id());
 				}
 			}
 		}
-		if (closestA)
+		FFEPosition = TilePosition(int(secondChoke.x*0.25 + natural.x*0.75), int(secondChoke.y*0.25 + natural.y*0.75));
+		if (BuildOrder().isForgeExpand() && FFEPosition.isValid() && theMap.GetArea(FFEPosition))
 		{
-			double largest = 0.0;
-			for (auto &choke : closestA->ChokePoints())
-			{
-				if (choke && (Grids().getDistanceHome(choke->Center()) < closestChokeDistance || closestChokeDistance == 0.0))
-				{
-					firstChoke = TilePosition(choke->Center());
-					closestChokeDistance = Grids().getDistanceHome(choke->Center());
-				}
-			}
-
-			double size = 0.0, distance = 100000.0;
-			for (auto &choke : closestA->ChokePoints())
-			{
-				if (TilePosition(choke->Center()) != firstChoke && ((choke->GetAreas().first->MiniTiles() + choke->GetAreas().second->MiniTiles()) > size || (choke->GetAreas().first->MiniTiles() + choke->GetAreas().second->MiniTiles() == size && Position(choke->Center()).getDistance(playerStartingPosition) < distance)))
-				{
-					secondChoke = TilePosition(choke->Center());
-					size = choke->GetAreas().first->MiniTiles() + choke->GetAreas().second->MiniTiles();
-					distance = Position(choke->Center()).getDistance(playerStartingPosition);
-				}
-			}
-
-			for (auto &area : closestA->AccessibleNeighbours())
-			{
-				for (auto & choke : area->ChokePoints())
-				{
-					if (TilePosition(choke->Center()) == firstChoke && allyTerritory.find(area->Id()) == allyTerritory.end())
-					{
-						allyTerritory.insert(area->Id());
-					}
-				}
-			}
-			FFEPosition = TilePosition(int(secondChoke.x*0.25 + natural.x*0.75), int(secondChoke.y*0.25 + natural.y*0.75));
-			if (BuildOrder().isForgeExpand() && FFEPosition.isValid() && theMap.GetArea(FFEPosition))
-			{
-				allyTerritory.insert(theMap.GetArea(FFEPosition)->Id());
-			}
+			allyTerritory.insert(theMap.GetArea(FFEPosition)->Id());
 		}
 	}
 }
@@ -247,10 +212,10 @@ void TerrainTrackerClass::updateWalls()
 		}
 	}
 
-	Broodwar->drawBoxMap(Position(bSmall), Position(bSmall) + Position(64, 64), Colors::Red);
-	Broodwar->drawBoxMap(Position(bMedium), Position(bMedium) + Position(94, 64), Colors::Red);
-	Broodwar->drawBoxMap(Position(bLarge), Position(bLarge) + Position(128, 96), Colors::Red);
-	Broodwar->drawCircleMap(Position(secondChoke), 16, Colors::Green);
+	//Broodwar->drawBoxMap(Position(bSmall), Position(bSmall) + Position(64, 64), Colors::Red);
+	//Broodwar->drawBoxMap(Position(bMedium), Position(bMedium) + Position(94, 64), Colors::Red);
+	//Broodwar->drawBoxMap(Position(bLarge), Position(bLarge) + Position(128, 96), Colors::Red);
+	//Broodwar->drawCircleMap(Position(secondChoke), 16, Colors::Green);
 }
 
 void TerrainTrackerClass::onStart()
@@ -262,6 +227,66 @@ void TerrainTrackerClass::onStart()
 	playerStartingTilePosition = Broodwar->self()->getStartLocation();
 	playerStartingPosition = Position(32 * playerStartingTilePosition.x + 64, 32 * playerStartingTilePosition.y + 48);
 	return;
+}
+
+void TerrainTrackerClass::findNatural()
+{
+	// Find natural area
+	double distance = 0.0;
+	for (auto &area : theMap.Areas())
+	{
+		for (auto &base : area.Bases())
+		{
+			if (base.Geysers().size() == 0 || area.AccessibleNeighbours().size() == 0) continue;			
+			if (Grids().getDistanceHome(WalkPosition(base.Location())) > 50 && (Grids().getDistanceHome(WalkPosition(base.Location())) < distance || distance == 0.0))
+			{
+				distance = Grids().getDistanceHome(WalkPosition(base.Location()));
+				naturalArea = base.GetArea();
+				natural = base.Location();
+			}
+		}
+	}
+}
+
+void TerrainTrackerClass::findFirstChoke()
+{
+	// Find the first choke
+	double distance = 0.0;
+	for (auto &choke : naturalArea->ChokePoints())
+	{
+		if (choke && (Grids().getDistanceHome(choke->Center()) < distance || distance == 0.0))
+		{
+			firstChoke = TilePosition(choke->Center());
+			distance = Grids().getDistanceHome(choke->Center());
+		}
+	}
+}
+
+void TerrainTrackerClass::findSecondChoke()
+{
+	// Find area closest to the center of the map to wall off
+	double distanceToCenter = 0.0;
+	const Area* second = nullptr;
+	for (auto &area : naturalArea->AccessibleNeighbours())
+	{
+		WalkPosition center = WalkPosition((area->TopLeft() + area->BottomRight()) / 2);
+		if (center.isValid() && (Position(center).getDistance(theMap.Center()) < distanceToCenter || distanceToCenter == 0.0))
+		{
+			distanceToCenter = Position(center).getDistance(theMap.Center());
+			second = area;
+		}
+	}
+
+	// Find second choke
+	double distance = 0.0;
+	for (auto &choke : naturalArea->ChokePoints())
+	{
+		if (TilePosition(choke->Center()) != firstChoke && (choke->GetAreas().first == second || choke->GetAreas().second == second) && (Position(choke->Center()).getDistance(playerStartingPosition) < distance || distance == 0.0))
+		{
+			distance = Position(choke->Center()).getDistance(playerStartingPosition);
+			secondChoke = TilePosition(choke->Center());
+		}
+	}
 }
 
 bool TerrainTrackerClass::isInAllyTerritory(TilePosition here)

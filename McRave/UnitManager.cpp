@@ -55,9 +55,9 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 {
 	// Variables for calculating local strengths
 	double enemyLocalGroundStrength = 0.0, allyLocalGroundStrength = 0.0;
-	double enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;
-	double simulationTime = 5.0;
+	double enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;	
 	double unitToEngage = max(0.0, unit.getPosition().getDistance(unit.getEngagePosition()) / unit.getSpeed());
+	double simulationTime = unitToEngage + 5.0;
 	UnitInfo &target = Units().getEnemyUnit(unit.getTarget());
 
 	// Check every enemy unit being in range of the target
@@ -84,6 +84,7 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 		{
 			enemyToEngage = (unit.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths) / unit.getSpeed();
 			simRatio = max(0.0, simulationTime - enemyToEngage);
+			Broodwar << simRatio << endl;
 		}
 
 		// Situations where an enemy should be treated as stronger than it actually is

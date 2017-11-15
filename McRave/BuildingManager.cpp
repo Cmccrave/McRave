@@ -282,7 +282,7 @@ bool BuildingTrackerClass::isBuildable(UnitType building, TilePosition buildTile
 			if (!TilePosition(x, y).isValid()) return false;
 			if (!Broodwar->isBuildable(TilePosition(x, y), true)) return false; // If it's on an unbuildable tile
 			if (Grids().getBuildingGrid(x, y) > 0 && !building.isResourceDepot()) return false; // If it's reserved for expansions				
-			if (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(x, y) >= 1) return false; // If it's a pylon and overlapping too many pylons					
+			if (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(x, y) >= 2) return false; // If it's a pylon and overlapping too many pylons					
 			if (!building.isResourceDepot() && building != UnitTypes::Protoss_Photon_Cannon && building != UnitTypes::Protoss_Shield_Battery && building != UnitTypes::Terran_Bunker && Grids().getResourceGrid(x, y) > 0) return false; // If it's not a defensive structure and on top of the resource grid
 		}
 	}	
@@ -377,7 +377,7 @@ bool BuildingTrackerClass::isSuitable(UnitType building, TilePosition buildTileP
 				{
 					return false;
 				}
-				if (Grids().getBuildingGrid(x, y) > 0 || !Broodwar->isBuildable(TilePosition(x, y), true))
+				if (Grids().getBuildingGrid(x, y) > 0 && !Broodwar->isBuildable(TilePosition(x, y), true))
 				{
 					return false;
 				}

@@ -34,7 +34,7 @@ void ProductionTrackerClass::updateProduction()
 					best = 100;
 					bestType = unit;
 				}
-				else if (Strategy().getUnitScore()[unit] >= best && isCreateable(building.unit(), unit) && isSuitable(unit) && isAffordable(unit))
+				else if (Strategy().getUnitScore()[unit] >= best && isCreateable(building.unit(), unit) && isSuitable(unit))
 				{
 					best = Strategy().getUnitScore()[unit];
 					bestType = unit;

@@ -223,14 +223,14 @@ void BuildOrderTrackerClass::protossTech()
 			techList.insert(techUnit);
 			getTech = false;
 		}
-		else if (currentBuild == "PDTExpand")
+		else if (currentBuild == "PDTExpand" && techList.size() == 0)
 		{
 			techUnit = UnitTypes::Protoss_Dark_Templar;
 			unlockedType.insert(techUnit);
 			techList.insert(techUnit);
 			getTech = false;
 		}
-		else if (currentBuild == "P21Nexus")
+		else if (currentBuild == "P21Nexus" && techList.size() == 0)
 		{
 			Strategy().getUnitScore()[UnitTypes::Protoss_Reaver] > Strategy().getUnitScore()[UnitTypes::Protoss_Observer] ? techUnit = UnitTypes::Protoss_Reaver : techUnit = UnitTypes::Protoss_Observer;
 			unlockedType.insert(techUnit);
@@ -311,9 +311,10 @@ void BuildOrderTrackerClass::protossTech()
 
 void BuildOrderTrackerClass::protossSituational()
 {
+	int sat = Players().getNumberTerran() > 0 ? 2 : 3;
 	bool techSat = techList.size() >= Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
-	bool productionSat = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= (3 - Players().getNumberTerran() > 0) * Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus);
-		
+	bool productionSat = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >=  sat * Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus);
+
 	if (Broodwar->self()->visibleUnitCount(techUnit) > 0) techUnit = UnitTypes::None; // If we have our tech unit, set to none	
 	if (Strategy().needDetection() || (!getOpening && !getTech && productionSat && techUnit == UnitTypes::None && (!Production().hasIdleProduction() || Units().getSupply() > 380))) getTech = true; // If production is saturated and none are idle or we need detection, choose a tech
 
