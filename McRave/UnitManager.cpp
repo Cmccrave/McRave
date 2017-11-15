@@ -82,9 +82,8 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 		}
 		else if (distance - widths <= enemyRange)
 		{
-			enemyToEngage = (unit.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths) / unit.getSpeed();
+			enemyToEngage = max(0.0, (unit.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths) / unit.getSpeed());
 			simRatio = max(0.0, simulationTime - enemyToEngage);
-			Broodwar << simRatio << endl;
 		}
 
 		// Situations where an enemy should be treated as stronger than it actually is

@@ -284,6 +284,8 @@ bool BuildingTrackerClass::isBuildable(UnitType building, TilePosition buildTile
 			if (Grids().getBuildingGrid(x, y) > 0 && !building.isResourceDepot()) return false; // If it's reserved for expansions				
 			if (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(x, y) >= 2) return false; // If it's a pylon and overlapping too many pylons					
 			if (!building.isResourceDepot() && building != UnitTypes::Protoss_Photon_Cannon && building != UnitTypes::Protoss_Shield_Battery && building != UnitTypes::Terran_Bunker && Grids().getResourceGrid(x, y) > 0) return false; // If it's not a defensive structure and on top of the resource grid
+			if (building == UnitTypes::Protoss_Photon_Cannon && x >= Terrain().getMediumWall().x && x < Terrain().getMediumWall().x + 3 && y >= Terrain().getMediumWall().y && y < Terrain().getMediumWall().y + 2) return false;
+			if (building == UnitTypes::Protoss_Photon_Cannon && x >= Terrain().getLargeWall().x && x < Terrain().getLargeWall().x + 4 && y >= Terrain().getLargeWall().y && y < Terrain().getLargeWall().y + 3) return false;
 		}
 	}	
 
