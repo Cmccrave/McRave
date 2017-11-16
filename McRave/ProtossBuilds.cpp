@@ -76,6 +76,11 @@ void BuildOrderTrackerClass::P12Nexus()
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
 		getOpening = Units().getSupply() < 60;
 	}
+	else if (Strategy().isEnemyFastExpand())
+	{
+		buildingDesired[UnitTypes::Protoss_Nexus] = 3;
+		getOpening = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) >= 3;
+	}
 	else
 	{
 		buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24);

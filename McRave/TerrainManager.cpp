@@ -145,7 +145,7 @@ void TerrainTrackerClass::updateWalls()
 				if (!Broodwar->isBuildable(TilePosition(dx, dy))/* && !Util().isWalkable(TilePosition(dx, dy))*/) valid = true;
 			}
 
-			if (valid && TilePosition(x, y).getDistance(natural) <= 10 && (TilePosition(x, y).getDistance(secondChoke) < distance || distance == 0.0)) bLarge = TilePosition(x, y), distance = TilePosition(x, y).getDistance(secondChoke);
+			if (valid && TilePosition(x, y).getDistance(natural) <= 16 && (TilePosition(x, y).getDistance(secondChoke) < distance || distance == 0.0)) bLarge = TilePosition(x, y), distance = TilePosition(x, y).getDistance(secondChoke);
 		}
 	}
 
@@ -173,16 +173,16 @@ void TerrainTrackerClass::updateWalls()
 			int dx = x - 1;
 			for (int dy = y; dy < y + 2; dy++)
 			{
-				if (!Broodwar->isBuildable(TilePosition(dx, dy)) && !Util().isWalkable(TilePosition(dx, dy))) valid = true;
+				if (!Broodwar->isBuildable(TilePosition(dx, dy)) /*&& !Util().isWalkable(TilePosition(dx, dy))*/) valid = true;
 			}
 
 			int dy = y - 1;
 			for (int dx = x; dx < x + 3; dx++)
 			{
-				if ((!Broodwar->isBuildable(TilePosition(dx, dy)) && !Util().isWalkable(TilePosition(dx, dy))) || dy == bLarge.y + 2) valid = true;
+				if ((!Broodwar->isBuildable(TilePosition(dx, dy)) /*&& !Util().isWalkable(TilePosition(dx, dy))*/) || dy == bLarge.y + 2) valid = true;
 			}
 
-			if (valid && TilePosition(x, y).getDistance(natural) <= 10 && (TilePosition(x, y).getDistance(secondChoke) < distance || distance == 0.0)) bMedium = TilePosition(x, y), distance = TilePosition(x, y).getDistance(secondChoke);
+			if (valid && TilePosition(x, y).getDistance(natural) <= 16 && TilePosition(x, y).getDistance(bLarge) <= 6 && (TilePosition(x, y).getDistance(secondChoke) < distance || distance == 0.0)) bMedium = TilePosition(x, y), distance = TilePosition(x, y).getDistance(secondChoke);
 		}
 	}
 

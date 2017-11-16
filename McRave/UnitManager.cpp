@@ -125,6 +125,8 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 	{
 		if (Players().getNumberZerg() > 0 || Players().getNumberProtoss() > 0) minThreshold = 0.8, maxThreshold = 1.2;
 		if (Players().getNumberTerran() > 0) minThreshold = 0.6, maxThreshold = 1.0;
+		if (Players().getNumberRandom() > 0 && Broodwar->enemy()->getRace() == Races::Terran) minThreshold = 0.6, maxThreshold = 1.0;
+		if (Players().getNumberRandom() > 0 && Broodwar->enemy()->getRace() != Races::Terran) minThreshold = 0.8, maxThreshold = 1.2;
 	}
 	else
 	{

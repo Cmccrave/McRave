@@ -319,7 +319,7 @@ void BuildOrderTrackerClass::protossSituational()
 	if (Strategy().needDetection() || (!getOpening && !getTech && productionSat && techUnit == UnitTypes::None && (!Production().hasIdleProduction() || Units().getSupply() > 380))) getTech = true; // If production is saturated and none are idle or we need detection, choose a tech
 
 	// Check if we hit our Zealot cap based on our build
-	if (getOpening && !Strategy().isRush() && (((currentBuild == "PZZCore" || currentBuild == "PDTExpand") && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 2) || (currentBuild == "PZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 1) || (currentBuild == "PNZCore") || (Players().getNumberTerran() > 0 && currentBuild != "PDTExpand")))
+	if (getOpening && !Strategy().isRush() && (((currentBuild == "PZZCore" || currentBuild == "PDTExpand") && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 2) || (currentBuild == "PZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 1) || (currentBuild == "PNZCore") || (Players().getNumberTerran() > 0 && currentBuild != "PDTExpand" && !Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) && !Broodwar->self()->isUpgrading(UpgradeTypes::Leg_Enhancements))))
 		unlockedType.erase(UnitTypes::Protoss_Zealot);
 	else unlockedType.insert(UnitTypes::Protoss_Zealot);
 	unlockedType.insert(UnitTypes::Protoss_Dragoon);	

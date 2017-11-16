@@ -19,6 +19,12 @@
 // Production sat based on active mining bases instead
 // Test using isLastCommand in Units()
 
+// Critical (caused losses)
+// Dont chase scouting drone
+// Not taking gases
+// Reaction to CC when doing fast expands
+
+
 void McRaveModule::onStart()
 {
 	Broodwar->enableFlag(Flag::UserInput);

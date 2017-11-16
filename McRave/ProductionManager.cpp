@@ -24,6 +24,9 @@ void ProductionTrackerClass::updateProduction()
 			idleTech.erase(building.unit());
 			for (auto &unit : building.getType().buildsWhat())
 			{
+				double mineral = max(0.0, double(Broodwar->self()->minerals() - unit.mineralPrice() - reservedMineral - Buildings().getQueuedMineral()));
+				double gas = max(0.0, double(Broodwar->self()->gas() - unit.gasPrice() - reservedGas - Buildings().getQueuedGas()));
+				double value = Strategy().getUnitScore()[unit] * mineral * gas;
 				if (unit.isAddon() && BuildOrder().getBuildingDesired()[unit] > Broodwar->self()->visibleUnitCount(unit))
 				{
 					building.unit()->buildAddon(unit);
@@ -34,7 +37,7 @@ void ProductionTrackerClass::updateProduction()
 					best = 100;
 					bestType = unit;
 				}
-				else if (Strategy().getUnitScore()[unit] >= best && isCreateable(building.unit(), unit) && isSuitable(unit))
+				else if (value >= best && isCreateable(building.unit(), unit) && isSuitable(unit))
 				{
 					best = Strategy().getUnitScore()[unit];
 					bestType = unit;
@@ -53,6 +56,9 @@ void ProductionTrackerClass::updateProduction()
 				{				
 					if (Units().getSupply() < 380) idle = true;
 					idleProduction[building.unit()] = bestType;
+					reservedMineral += bestType.mineralPrice();
+					reservedGas += bestType.gasPrice();
+
 				}
 			}
 
@@ -63,6 +69,8 @@ void ProductionTrackerClass::updateProduction()
 				{
 					if (isAffordable(research)) building.unit()->research(research), idleTech.erase(building.unit());
 					else idleTech[building.unit()] = research;
+					reservedMineral += research.mineralPrice();
+					reservedGas += research.gasPrice();
 				}
 			}
 
@@ -73,6 +81,8 @@ void ProductionTrackerClass::updateProduction()
 				{
 					if (isAffordable(upgrade)) building.unit()->upgrade(upgrade), idleUpgrade.erase(building.unit());
 					else idleUpgrade[building.unit()] = upgrade;
+					reservedMineral += upgrade.mineralPrice();
+					reservedGas += upgrade.gasPrice();
 				}
 			}
 		}
@@ -314,7 +324,7 @@ bool ProductionTrackerClass::isSuitable(UpgradeType upgrade)
 	case UpgradeTypes::Enum::Gravitic_Boosters:
 		return (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
 	case UpgradeTypes::Enum::Leg_Enhancements:
-		return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 6;
+		return true;
 
 		// Ground unit upgrades
 	case UpgradeTypes::Enum::Protoss_Ground_Weapons:
