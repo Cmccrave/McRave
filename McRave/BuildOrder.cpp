@@ -216,7 +216,7 @@ void BuildOrderTrackerClass::protossTech()
 	// Some hardcoded techs based on needing detection or specific build orders
 	if (getTech)
 	{
-		if (Strategy().needDetection())
+		if (Strategy().needDetection() || (Players().getNumberProtoss() > 0 && techList.find(UnitTypes::Protoss_Observer) == techList.end()))
 		{
 			techUnit = UnitTypes::Protoss_Observer;
 			unlockedType.insert(techUnit);
@@ -345,7 +345,7 @@ void BuildOrderTrackerClass::protossSituational()
 	if (!getOpening)
 	{
 		// Expansion logic
-		if (Broodwar->self()->minerals() > 1000 || (productionSat && techUnit == UnitTypes::None && Resources().isMinSaturated() && !Production().hasIdleProduction()))
+		if (Broodwar->self()->minerals() > 600 + 200 * Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) || (productionSat && techUnit == UnitTypes::None && Resources().isMinSaturated() && !Production().hasIdleProduction()))
 		{
 			buildingDesired[UnitTypes::Protoss_Nexus] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) + 1;
 		}
