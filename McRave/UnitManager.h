@@ -45,6 +45,7 @@ public:
 	int getGlobalGroundStrategy() { return globalGroundStrategy; }
 	int getGlobalAirStrategy() { return globalAirStrategy; }
 	int getSupply() { return supply; }
+	void increaseAlly(double strength) { globalAllyGroundStrength += strength; }
 
 	bool shouldAttack(UnitInfo&);
 	bool shouldDefend(UnitInfo&);

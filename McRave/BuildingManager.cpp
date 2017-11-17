@@ -134,16 +134,22 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	// Refineries are only built on my own gas resources
 	if (building.isRefinery())
 	{
+		double best = 0.0;
+		TilePosition here = TilePositions::Invalid;
 		for (auto &gas : Resources().getMyGas())
 		{
-			if (Grids().getBaseGrid(gas.second.getTilePosition()) > 0 && gas.second.getType() == UnitTypes::Resource_Vespene_Geyser) return gas.second.getTilePosition();
+			if (Grids().getBaseGrid(gas.second.getTilePosition()) > 1 && gas.second.getType() == UnitTypes::Resource_Vespene_Geyser && (gas.second.getPosition().getDistance(Terrain().getPlayerStartingPosition()) < best || best == 0.0))
+			{
+				here = gas.second.getTilePosition();
+				best = gas.second.getPosition().getDistance(Terrain().getPlayerStartingPosition());
+			}
 		}
-		return TilePositions::Invalid;
+		return here;
 	}
 
 	// If we are expanding, it must be on an expansion area
-	double closestD = 0.0;
-	TilePosition closestP, here = TilePositions::Invalid;
+	double best = 0.0;
+	TilePosition bestLocation, here = TilePositions::Invalid;
 	if (building.isResourceDepot())
 	{
 		// Fast expands must be as close to home and have a gas geyser
@@ -153,14 +159,11 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 			{
 				for (auto &base : area.Bases())
 				{
-					if ((base.Geysers().size() == 0) || area.AccessibleNeighbours().size() == 0)
+					if ((base.Geysers().size() == 0) || area.AccessibleNeighbours().size() == 0) continue;					
+					if (Grids().getBaseGrid(base.Location()) == 0 && (Grids().getDistanceHome(WalkPosition(base.Location())) < best || best == 0.0))
 					{
-						continue;
-					}
-					if (Grids().getBaseGrid(base.Location()) == 0 && (Grids().getDistanceHome(WalkPosition(base.Location())) < closestD || closestD == 0.0))
-					{
-						closestD = Grids().getDistanceHome(WalkPosition(base.Location()));
-						closestP = base.Location();
+						best = Grids().getDistanceHome(WalkPosition(base.Location()));
+						bestLocation = base.Location();
 					}
 				}
 			}
@@ -172,21 +175,22 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 			for (auto &area : theMap.Areas())
 			{
 				for (auto &base : area.Bases())
-				{
-					if (area.AccessibleNeighbours().size() == 0 || base.Center() == Terrain().getEnemyStartingPosition())
+				{					
+					if (area.AccessibleNeighbours().size() == 0 || base.Center() == Terrain().getEnemyStartingPosition()) continue;		
+
+					double value = double(base.Minerals().size() + (3 * base.Geysers().size()));
+					double distance = double(Grids().getDistanceHome(WalkPosition(base.Location())) / base.Center().getDistance(Terrain().getEnemyStartingPosition()));					
+
+					if (Grids().getBuildingGrid(base.Location()) == 0 && (value / distance > best))
 					{
-						continue;
-					}
-					if (Grids().getBuildingGrid(base.Location()) == 0 && (Grids().getDistanceHome(WalkPosition(base.Location())) / base.Center().getDistance(Terrain().getEnemyStartingPosition()) < closestD || closestD == 0.0))
-					{
-						closestD = Grids().getDistanceHome(WalkPosition(base.Location())) / base.Center().getDistance(Terrain().getEnemyStartingPosition());
-						closestP = base.Location();
+						best = value / distance;
+						bestLocation = base.Location();
 					}
 				}
 			}
 		}
-		currentExpansion = closestP;
-		return closestP;
+		currentExpansion = bestLocation;
+		return bestLocation;
 	}
 
 	// If we are doing nexus first

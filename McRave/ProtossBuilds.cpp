@@ -78,13 +78,17 @@ void BuildOrderTrackerClass::P12Nexus()
 	}
 	else if (Strategy().isEnemyFastExpand())
 	{
-		buildingDesired[UnitTypes::Protoss_Nexus] = 3;
-		getOpening = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) >= 3;
+		buildingDesired[UnitTypes::Protoss_Nexus] = buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24) + (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Cybernetics_Core) > 0);
+		buildingDesired[UnitTypes::Protoss_Gateway] = (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core)) + (Units().getSupply() >= 26);
+		buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 28);
+		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 30;
+		getOpening = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) < 3;
+		nexusFirst = true;
 	}
 	else
 	{
 		buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24);
-		buildingDesired[UnitTypes::Protoss_Gateway] = (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core)) + (Units().getSupply() >= 26) + (Units().getSupply() >= 42) + (Units().getSupply() >= 56) + (Units().getSupply() >= 70);
+		buildingDesired[UnitTypes::Protoss_Gateway] = (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core)) + (Units().getSupply() >= 26) + (Units().getSupply() >= 70) + (Units().getSupply() >= 82);
 		buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 28) + (Units().getSupply() >= 80);
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = (Units().getSupply() >= 30);
 		getOpening = Units().getSupply() < 160;

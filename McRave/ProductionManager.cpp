@@ -300,7 +300,7 @@ bool ProductionTrackerClass::isSuitable(UpgradeType upgrade)
 
 		// Range upgrades
 	case UpgradeTypes::Enum::Singularity_Charge:
-		return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon) >= 2;
+		return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon) >= 2 * (1 + BuildOrder().isNexusFirst());
 
 		// Sight upgrades
 	case UpgradeTypes::Enum::Apial_Sensors:

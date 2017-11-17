@@ -47,7 +47,7 @@ void UnitTrackerClass::updateUnits()
 
 		if (!unit.getType().isBuilding()) unit.getType().isFlyer() ? globalAllyAirStrength += unit.getVisibleAirStrength() : globalAllyGroundStrength += unit.getVisibleGroundStrength();
 		if (unit.getType().isWorker() && Workers().getMyWorkers().find(unit.unit()) != Workers().getMyWorkers().end()) Workers().removeWorker(unit.unit()); // Remove the worker role if needed			
-		if ((unit.getType().isWorker() && (Grids().getResourceGrid(unit.getTilePosition()) == 0 || Grids().getEGroundThreat(unit.getWalkPosition()) == 0.0)) || (BuildOrder().getCurrentBuild() == "Sparks" && Units().getGlobalGroundStrategy() != 1)) Workers().storeWorker(unit.unit()); // If this is a worker and is ready to go back to being a worker
+		if (unit.getType().isWorker() && ((Grids().getResourceGrid(unit.getTilePosition()) == 0 || Grids().getEGroundThreat(unit.getWalkPosition()) == 0.0) || (BuildOrder().getCurrentBuild() == "Sparks" && Units().getGlobalGroundStrategy() != 1) || (Units().getGlobalEnemyGroundStrength() <= Units().getGlobalAllyGroundStrength() + Units().getAllyDefense()))) Workers().storeWorker(unit.unit()); // If this is a worker and is ready to go back to being a worker
 	}
 }
 
@@ -166,7 +166,7 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 		else
 		{
 			if (Terrain().isInAllyTerritory(target.getTilePosition()) || unit.getPosition().getDistance(unit.getTargetPosition()) - (double(unit.getType().width()) / 2.0) - (double(target.getType().width()) / 2.0) <= unit.getGroundRange()) unit.setStrategy(1);
-			else if (unit.getPosition().getDistance(unit.getTargetPosition()) > enemyRange + target.getSpeed()) unit.setStrategy(2);
+			else if (unit.getPosition().getDistance(unit.getTargetPosition()) > enemyRange + target.getSpeed() || allyRange >= enemyRange) unit.setStrategy(2);
 			else unit.setStrategy(0);
 		}
 	}

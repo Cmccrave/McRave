@@ -36,14 +36,14 @@ void WorkerTrackerClass::updateScout(WorkerInfo& worker)
 			}
 		}
 	}
-	
+
 	// Update scout probes decision if we are above 9 supply and just placed a pylon
 	if (!Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge))
 	{
 		if (!Terrain().getEnemyStartingPosition().isValid() || !Broodwar->isExplored(Terrain().getEnemyStartingTilePosition()))
-		{			
+		{
 			for (auto &start : theMap.StartingLocations())
-			{							
+			{
 				if (!Broodwar->isExplored(start) && (Position(start).getDistance(Terrain().getPlayerStartingPosition()) < closestD || closestD == 0.0))
 				{
 					closestD = Position(start).getDistance(Terrain().getPlayerStartingPosition());
@@ -112,7 +112,7 @@ void WorkerTrackerClass::exploreArea(WorkerInfo& worker)
 		}
 		Unit closest = worker.unit()->getClosestUnit(Filter::IsEnemy && Filter::CanAttack);
 		if (destination.isValid() && (!closest || (closest && closest->exists() && worker.unit()->getDistance(closest) > 640)))
-		{			
+		{
 			worker.unit()->move(destination);
 			return;
 		}
@@ -275,14 +275,15 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 	}
 
 	// If we need to use workers for defense - TEMP Removed probe pull stuff
-	if (((Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0 && Grids().getResourceGrid(worker.getTilePosition()) > 0 && Units().getSupply() < 60) || (BuildOrder().getCurrentBuild() == "Sparks" && Units().getGlobalGroundStrategy() == 1)))
+	if ((Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0 && Grids().getResourceGrid(worker.getTilePosition()) > 0 && Units().getSupply() < 60) || (BuildOrder().getCurrentBuild() == "Sparks" && Units().getGlobalGroundStrategy() == 1) || (Units().getGlobalEnemyGroundStrength() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense() && Grids().getEnemyArmyCenter().getDistance(Position(Terrain().getSecondChoke())) < 320 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) == 0))
 	{
 		Units().storeAlly(worker.unit());
+		Units().increaseAlly(1.44);
 		return;
 	}
 
 	// Reassignment logic
-	if (worker.getResource() && worker.getResource()->exists() && ((!Resources().isGasSaturated() && minWorkers > gasWorkers * 10) || (!Resources().isMinSaturated() && minWorkers < gasWorkers * 4)))
+	if (worker.getResource() && worker.getResource()->exists() && ((!Resources().isGasSaturated() && minWorkers > gasWorkers * 10) || (!Resources().isMinSaturated() && minWorkers < gasWorkers * 4) || (theMap.GetArea(TilePosition(worker.getResourcePosition())) && theMap.GetArea(TilePosition(worker.getResourcePosition())) == theMap.GetArea(TilePosition(Grids().getEnemyArmyCenter())))))
 	{
 		reAssignWorker(worker);
 	}
@@ -404,7 +405,7 @@ void WorkerTrackerClass::assignWorker(WorkerInfo& worker)
 	{
 		for (auto &g : Resources().getMyGas())
 		{
-			ResourceInfo &gas = g.second;
+			ResourceInfo &gas = g.second;			
 			if (gas.getType() != UnitTypes::Resource_Vespene_Geyser && gas.unit()->isCompleted() && gas.getGathererCount() < 3 && Grids().getBaseGrid(gas.getTilePosition()) > 0)
 			{
 				gas.setGathererCount(gas.getGathererCount() + 1);
@@ -423,7 +424,7 @@ void WorkerTrackerClass::assignWorker(WorkerInfo& worker)
 		{
 			for (auto &m : Resources().getMyMinerals())
 			{
-				ResourceInfo &mineral = m.second;
+				ResourceInfo &mineral = m.second;				
 				if (mineral.getGathererCount() < i && Grids().getBaseGrid(mineral.getTilePosition()) > 0)
 				{
 					mineral.setGathererCount(mineral.getGathererCount() + 1);

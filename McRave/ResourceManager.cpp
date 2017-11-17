@@ -14,7 +14,7 @@ void ResourceTrackerClass::updateResources()
 	minSat = true;
 	for (auto &m : myMinerals)
 	{
-		ResourceInfo& resource = m.second;
+		ResourceInfo& resource = m.second;		
 		if (resource.unit()->exists())
 		{
 			resource.setRemainingResources(resource.unit()->getResources());

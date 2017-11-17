@@ -193,8 +193,7 @@ void TerrainTrackerClass::updateWalls()
 	{
 		for (int y = natural.y - 20; y <= natural.y + 20; y++)
 		{
-			if (!TilePosition(x, y).isValid()) continue;
-			if (theMap.GetArea(TilePosition(x, y)) != theMap.GetArea(natural)) continue;
+			if (!TilePosition(x, y).isValid()) continue;			
 
 			valid = true;
 			for (int i = x; i < x + 2; i++)
