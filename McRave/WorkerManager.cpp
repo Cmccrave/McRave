@@ -220,6 +220,8 @@ void WorkerTrackerClass::updateGathering(WorkerInfo& worker)
 		{
 			worker.setBuildingType(UnitTypes::None);
 			worker.setBuildPosition(TilePositions::None);
+			worker.unit()->stop();
+			return;
 		}
 		else
 		{

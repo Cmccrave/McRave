@@ -18,7 +18,6 @@
 
 // Critical (caused losses)
 // Dont chase scouting drone
-// 
 
 
 void McRaveModule::onStart()

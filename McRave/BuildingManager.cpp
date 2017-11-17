@@ -178,7 +178,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 				{					
 					if (area.AccessibleNeighbours().size() == 0 || base.Center() == Terrain().getEnemyStartingPosition()) continue;		
 
-					double value = double(base.Minerals().size() + (3 * base.Geysers().size()));
+					double value = double(base.Minerals().size() + (3 * base.Geysers().size() > 0));
 					double distance = double(Grids().getDistanceHome(WalkPosition(base.Location())) / base.Center().getDistance(Terrain().getEnemyStartingPosition()));					
 
 					if (Grids().getBuildingGrid(base.Location()) == 0 && (value / distance > best))
@@ -379,18 +379,10 @@ bool BuildingTrackerClass::isSuitable(UnitType building, TilePosition buildTileP
 		{
 			for (int y = buildTilePosition.y - buildingOffset; y < buildTilePosition.y + building.tileHeight() + buildingOffset; y++)
 			{
-				if (!TilePosition(x, y).isValid())
-				{
-					return false;
-				}
-				if (Grids().getBuildingGrid(x, y) > 0 && !Broodwar->isBuildable(TilePosition(x, y), true))
-				{
-					return false;
-				}
-				if (building == UnitTypes::Protoss_Pylon && !Broodwar->isBuildable(TilePosition(x, y), true))
-				{
-					return false;
-				}
+				if (!TilePosition(x, y).isValid()) return false;				
+				if (Grids().getBuildingGrid(x, y) > 0 && !Broodwar->isBuildable(TilePosition(x, y), true)) return false;			
+				if (!Broodwar->isBuildable(TilePosition(x, y))) return false;
+				if (building == UnitTypes::Protoss_Pylon && !Broodwar->isBuildable(TilePosition(x, y), true)) return false;			
 			}
 		}
 	}
