@@ -91,7 +91,7 @@ void BuildOrderTrackerClass::P12Nexus()
 		buildingDesired[UnitTypes::Protoss_Gateway] = (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core)) + (Units().getSupply() >= 26) + (Units().getSupply() >= 70) + (Units().getSupply() >= 82);
 		buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 28) + (Units().getSupply() >= 80);
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = (Units().getSupply() >= 30);
-		getOpening = Units().getSupply() < 160;
+		getOpening = Units().getSupply() < 140;
 		nexusFirst = true;
 	}
 }
