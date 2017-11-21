@@ -138,7 +138,7 @@ void BuildOrderTrackerClass::getDefaultBuild()
 	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
 		if (Players().getNumberProtoss() > 0) currentBuild = "PZCore";
-		else if (Players().getNumberZerg() > 0) currentBuild = "PFFESafe";
+		else if (Players().getNumberZerg() > 0) currentBuild = "P4Gate";
 		else if (Players().getNumberTerran() > 0) currentBuild = "P12Nexus";
 		else if (Players().getNumberRandom() > 0) currentBuild = "PZZCore";
 	}
