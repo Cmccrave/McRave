@@ -76,7 +76,7 @@ void ResourceTrackerClass::storeMineral(Unit resource)
 	m.setRemainingResources(resource->getResources());
 	m.setUnit(resource);
 	m.setResourceClusterPosition(resourceClusterCenter(resource));
-	m.setClosestBasePosition(Terrain().getClosestBaseCenter(resource));
+	m.setClosestBasePosition(Terrain().getClosestBaseCenter(resource->getPosition()));
 	m.setType(resource->getType());
 	m.setPosition(resource->getPosition());
 	m.setWalkPosition(Util().getWalkPosition(resource));
@@ -92,7 +92,7 @@ void ResourceTrackerClass::storeGas(Unit resource)
 	g.setRemainingResources(resource->getResources());
 	g.setUnit(resource);
 	g.setResourceClusterPosition(resourceClusterCenter(resource));
-	g.setClosestBasePosition(Terrain().getClosestBaseCenter(resource));
+	g.setClosestBasePosition(Terrain().getClosestBaseCenter(resource->getPosition()));
 	g.setType(resource->getType());
 	g.setPosition(resource->getPosition());
 	g.setWalkPosition(Util().getWalkPosition(resource));
@@ -122,11 +122,6 @@ void ResourceTrackerClass::removeResource(Unit resource)
 		Grids().updateResourceGrid(myMinerals[resource]);
 		myMinerals.erase(resource);
 	}
-	else if (myGas.find(resource) != myGas.end())
-	{
-		Grids().updateResourceGrid(myGas[resource]);
-		myGas.erase(resource);
-	}
 	else if (myBoulders.find(resource) != myBoulders.end())
 	{
 		Grids().updateResourceGrid(myBoulders[resource]);
@@ -155,7 +150,7 @@ Position ResourceTrackerClass::resourceClusterCenter(Unit resource)
 		avgY = avgY + m->getPosition().y;
 		size++;
 	}
-	Position base = Terrain().getClosestBaseCenter(resource);
+	Position base = Terrain().getClosestBaseCenter(resource->getPosition());
 
 	if (size == 0 || !base.isValid())
 	{

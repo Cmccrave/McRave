@@ -24,8 +24,8 @@ void ProductionTrackerClass::updateProduction()
 			idleTech.erase(building.unit());
 			for (auto &unit : building.getType().buildsWhat())
 			{
-				double mineral = max(0.0, double(Broodwar->self()->minerals() - unit.mineralPrice() - reservedMineral - Buildings().getQueuedMineral()));
-				double gas = max(0.0, double(Broodwar->self()->gas() - unit.gasPrice() - reservedGas - Buildings().getQueuedGas()));
+				double mineral = max(0.0, min(1.0, double(Broodwar->self()->minerals() - reservedMineral - Buildings().getQueuedMineral()) / unit.mineralPrice()));
+				double gas = max(0.0, min(1.0, double(Broodwar->self()->gas() - reservedGas - Buildings().getQueuedGas()) / unit.gasPrice()));
 				double value = Strategy().getUnitScore()[unit] * mineral * gas;
 				if (unit.isAddon() && BuildOrder().getBuildingDesired()[unit] > Broodwar->self()->visibleUnitCount(unit))
 				{
@@ -280,7 +280,6 @@ bool ProductionTrackerClass::isSuitable(UnitType unit)
 
 bool ProductionTrackerClass::isSuitable(UpgradeType upgrade)
 {
-	if (upgrade != UpgradeTypes::Singularity_Charge && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0) return false;
 	// If this is a specific unit upgrade, check if it's unlocked
 	if (upgrade.whatUses().size() == 1)
 	{
@@ -290,62 +289,81 @@ bool ProductionTrackerClass::isSuitable(UpgradeType upgrade)
 		}
 	}
 
-	switch (upgrade)
+	// If we're playing Protoss, check Protoss upgrades
+	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
-		// Energy upgrades
-	case UpgradeTypes::Enum::Khaydarin_Amulet:
-		return (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_High_Templar) >= 4 && Broodwar->self()->hasResearched(TechTypes::Psionic_Storm));
-	case UpgradeTypes::Enum::Khaydarin_Core:
-		return true;
+		if (upgrade != UpgradeTypes::Singularity_Charge && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0) return false;
 
-		// Range upgrades
-	case UpgradeTypes::Enum::Singularity_Charge:
-		return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon) >= 2 * (1 + BuildOrder().isNexusFirst());
+		switch (upgrade)
+		{
+			// Energy upgrades
+		case UpgradeTypes::Enum::Khaydarin_Amulet:
+			return (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_High_Templar) >= 4 && Broodwar->self()->hasResearched(TechTypes::Psionic_Storm));
+		case UpgradeTypes::Enum::Khaydarin_Core:
+			return true;
 
-		// Sight upgrades
-	case UpgradeTypes::Enum::Apial_Sensors:
-		return (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
-	case UpgradeTypes::Enum::Sensor_Array:
-		return (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
+			// Range upgrades
+		case UpgradeTypes::Enum::Singularity_Charge:
+			return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon) >= 2 * (1 + BuildOrder().isNexusFirst());
 
-		// Capacity upgrades
-	case UpgradeTypes::Enum::Carrier_Capacity:
-		return true;
-	case UpgradeTypes::Enum::Reaver_Capacity:
-		return (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
-	case UpgradeTypes::Enum::Scarab_Damage:
-		return (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
+			// Sight upgrades
+		case UpgradeTypes::Enum::Apial_Sensors:
+			return (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
+		case UpgradeTypes::Enum::Sensor_Array:
+			return (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
 
-		// Speed upgrades
-	case UpgradeTypes::Enum::Gravitic_Drive:
-		return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle) > 0;
-	case UpgradeTypes::Enum::Gravitic_Thrusters:
-		return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Scout) > 0;
-	case UpgradeTypes::Enum::Gravitic_Boosters:
-		return (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
-	case UpgradeTypes::Enum::Leg_Enhancements:
-		return true;
+			// Capacity upgrades
+		case UpgradeTypes::Enum::Carrier_Capacity:
+			return true;
+		case UpgradeTypes::Enum::Reaver_Capacity:
+			return (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
+		case UpgradeTypes::Enum::Scarab_Damage:
+			return (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
 
-		// Ground unit upgrades
-	case UpgradeTypes::Enum::Protoss_Ground_Weapons:
-		return (Units().getSupply() > 120 || (Players().getNumberZerg() > 0 && !BuildOrder().isOpener()));
-	case UpgradeTypes::Enum::Protoss_Ground_Armor:
-		return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Armor);
-	case UpgradeTypes::Enum::Protoss_Plasma_Shields:
-		return (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) >= 2 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Armor) >= 2);
+			// Speed upgrades
+		case UpgradeTypes::Enum::Gravitic_Drive:
+			return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle) > 0;
+		case UpgradeTypes::Enum::Gravitic_Thrusters:
+			return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Scout) > 0;
+		case UpgradeTypes::Enum::Gravitic_Boosters:
+			return (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
+		case UpgradeTypes::Enum::Leg_Enhancements:
+			return true;
 
-		// Air unit upgrades
-	case UpgradeTypes::Enum::Protoss_Air_Weapons:
-		return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Corsair) > 0;
-	case UpgradeTypes::Enum::Protoss_Air_Armor:
-		return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Air_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Air_Armor);
+			// Ground unit upgrades
+		case UpgradeTypes::Enum::Protoss_Ground_Weapons:
+			return (Units().getSupply() > 120 || (Players().getNumberZerg() > 0 && !BuildOrder().isOpener()));
+		case UpgradeTypes::Enum::Protoss_Ground_Armor:
+			return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Armor);
+		case UpgradeTypes::Enum::Protoss_Plasma_Shields:
+			return (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) >= 2 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Armor) >= 2);
+
+			// Air unit upgrades
+		case UpgradeTypes::Enum::Protoss_Air_Weapons:
+			return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Corsair) > 0;
+		case UpgradeTypes::Enum::Protoss_Air_Armor:
+			return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Air_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Air_Armor);
+		}		
+	}
+
+	// If we're playing Terran, check Terran upgrades
+	else if (Broodwar->self()->getRace() == Races::Terran)
+	{
+		switch (upgrade)
+		{
+		case UpgradeTypes::Enum::Ion_Thrusters:
+			return true;
+		case UpgradeTypes::Enum::Charon_Boosters:
+			return Strategy().getUnitScore()[UnitTypes::Terran_Goliath] > 1.00;
+		case UpgradeTypes::Enum::U_238_Shells:
+			return Broodwar->self()->hasResearched(TechTypes::Stim_Packs);
+		}
 	}
 	return false;
 }
 
 bool ProductionTrackerClass::isSuitable(TechType tech)
 {
-	if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0) return false;
 	// If this is a specific unit tech, check if it's unlocked
 	if (tech.whatUses().size() == 1)
 	{
@@ -355,14 +373,34 @@ bool ProductionTrackerClass::isSuitable(TechType tech)
 		}
 	}
 
-	switch (tech)
+	// If we're playing Protoss, check Protoss tech
+	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
-	case TechTypes::Enum::Psionic_Storm:
-		return true;
-	case TechTypes::Enum::Stasis_Field:
-		return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Khaydarin_Core) > 0;
-	case TechTypes::Enum::Recall:
-		return (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
+		if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0) return false;	
+
+		switch (tech)
+		{
+		case TechTypes::Enum::Psionic_Storm:
+			return true;
+		case TechTypes::Enum::Stasis_Field:
+			return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Khaydarin_Core) > 0;
+		case TechTypes::Enum::Recall:
+			return (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
+		}
+	}
+	
+	// If we're playing Terran, check Terran tech
+	else if (Broodwar->self()->getRace() == Races::Terran)
+	{
+		switch (tech)
+		{
+		case TechTypes::Enum::Stim_Packs:
+			return BuildOrder().isBioBuild();		
+		case TechTypes::Enum::Spider_Mines:
+			return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Ion_Thrusters) > 0 || Broodwar->self()->isUpgrading(UpgradeTypes::Ion_Thrusters);
+		case TechTypes::Enum::Tank_Siege_Mode:
+			return Broodwar->self()->hasResearched(TechTypes::Spider_Mines) || Broodwar->self()->isResearching(TechTypes::Spider_Mines);
+		}
 	}
 	return false;
 }

@@ -30,7 +30,7 @@ public:
 	void findSecondChoke();
 	void findNatural();
 
-	Position getClosestBaseCenter(Unit);
+	Position getClosestBaseCenter(Position);
 	Position getMineralHoldPosition() { return mineralHold; }
 	Position getBackMineralHoldPosition() { return backMineralHold; }
 	bool isInAllyTerritory(TilePosition);

@@ -298,7 +298,7 @@ void BuildOrderTrackerClass::protossTech()
 		buildingDesired[UnitTypes::Protoss_Citadel_of_Adun] = 1;
 		buildingDesired[UnitTypes::Protoss_Stargate] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) > 0;
 		buildingDesired[UnitTypes::Protoss_Templar_Archives] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) > 0;
-		buildingDesired[UnitTypes::Protoss_Arbiter_Tribunal] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Templar_Archives) > 0;
+		buildingDesired[UnitTypes::Protoss_Arbiter_Tribunal] = (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Templar_Archives) > 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Stargate) > 0);
 	}
 	else if (techUnit == UnitTypes::Protoss_High_Templar)
 	{
@@ -313,7 +313,7 @@ void BuildOrderTrackerClass::protossSituational()
 {
 	int sat = Players().getNumberTerran() > 0 ? 2 : 3;
 	bool techSat = techList.size() >= Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
-	bool productionSat = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >=  sat * Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus);
+	bool productionSat = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >=  sat * techList.size();
 
 	if (Broodwar->self()->visibleUnitCount(techUnit) > 0) techUnit = UnitTypes::None; // If we have our tech unit, set to none	
 	if (Strategy().needDetection() || (!getOpening && !getTech && productionSat && techUnit == UnitTypes::None && (!Production().hasIdleProduction() || Units().getSupply() > 380))) getTech = true; // If production is saturated and none are idle or we need detection, choose a tech
@@ -322,7 +322,7 @@ void BuildOrderTrackerClass::protossSituational()
 	if (!Strategy().isRush() && (((currentBuild == "PZZCore" || currentBuild == "PDTExpand") && getOpening &&  Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 2) || (currentBuild == "PZCore" && getOpening &&  Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 1) || (getOpening && currentBuild == "PNZCore") || (Players().getNumberTerran() > 0 && currentBuild != "PDTExpand" && !Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) && !Broodwar->self()->isUpgrading(UpgradeTypes::Leg_Enhancements) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) <= 0)))
 		unlockedType.erase(UnitTypes::Protoss_Zealot);
 	else unlockedType.insert(UnitTypes::Protoss_Zealot);
-	unlockedType.insert(UnitTypes::Protoss_Dragoon);	
+	unlockedType.insert(UnitTypes::Protoss_Dragoon);
 
 	// Pylon logic
 	if (Strategy().isAllyFastExpand() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Pylon) <= 0)
@@ -345,7 +345,7 @@ void BuildOrderTrackerClass::protossSituational()
 	if (!getOpening)
 	{
 		// Expansion logic
-		if (Broodwar->self()->minerals() > 600 + 200 * Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) || (productionSat && techUnit == UnitTypes::None && Resources().isMinSaturated() && !Production().hasIdleProduction()))
+		if (Broodwar->self()->minerals() > 500 + 100 * Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) || (productionSat && Resources().isMinSaturated() && !Production().hasIdleProduction()))
 		{
 			buildingDesired[UnitTypes::Protoss_Nexus] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) + 1;
 		}
@@ -411,8 +411,11 @@ void BuildOrderTrackerClass::terranTech()
 void BuildOrderTrackerClass::terranSituational()
 {
 	bool productionSat = (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= min(12, (3 * Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Command_Center))));
-	if (BuildOrder().getCurrentBuild() == "TwoFactVult" && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Marine) >= 4)
+
+	if (!BuildOrder().isBioBuild() && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Marine) >= 4)
+	{
 		unlockedType.erase(UnitTypes::Terran_Marine);
+	}
 
 	if (!BuildOrder().isBioBuild())
 	{
@@ -424,6 +427,10 @@ void BuildOrderTrackerClass::terranSituational()
 		unlockedType.insert(UnitTypes::Terran_Medic);
 		unlockedType.insert(UnitTypes::Terran_Firebat);
 	}
+	
+	unlockedType.insert(UnitTypes::Terran_Vulture);
+	unlockedType.insert(UnitTypes::Terran_Siege_Tank_Tank_Mode);
+	unlockedType.insert(UnitTypes::Terran_Goliath);
 
 	// Supply Depot logic
 	buildingDesired[UnitTypes::Terran_Supply_Depot] = min(22, (int)floor((Units().getSupply() / max(14, (16 - Broodwar->self()->allUnitCount(UnitTypes::Terran_Supply_Depot))))));

@@ -18,6 +18,8 @@
 
 // Critical (caused losses)
 // Dont chase scouting drone
+// Oversat on a resource
+// Resource grid incorrectly not updating
 
 
 void McRaveModule::onStart()

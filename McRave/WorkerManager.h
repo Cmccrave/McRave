@@ -23,9 +23,14 @@ public:
 	
 	void update();
 	void updateWorkers();
+	
+	void updateBuilding(WorkerInfo&);
+	void updateScouting(WorkerInfo&);
+	void updateGathering(WorkerInfo&);
+
 	void updateScout(WorkerInfo&);
 	void updateInformation(WorkerInfo&);
-	void updateGathering(WorkerInfo&);
+	void updateDecision(WorkerInfo&);
 	void assignWorker(WorkerInfo&);
 	void reAssignWorker(WorkerInfo&);
 	void exploreArea(WorkerInfo&);

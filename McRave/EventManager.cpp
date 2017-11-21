@@ -72,7 +72,7 @@ void UnitTrackerClass::onUnitDestroy(Unit unit)
 		}
 	}
 
-	if (unit->getType().isResourceContainer() && unit->getType().isMineralField())
+	if (unit->getType().isResourceContainer())
 	{
 		Resources().removeResource(unit);
 	}

@@ -312,16 +312,16 @@ bool TerrainTrackerClass::isInEnemyTerritory(TilePosition here)
 	return false;
 }
 
-Position TerrainTrackerClass::getClosestBaseCenter(Unit unit)
+Position TerrainTrackerClass::getClosestBaseCenter(Position here)
 {
 	double closestD = 0.0;
 	Position closestB;
-	if (!unit->getTilePosition().isValid() || !theMap.GetArea(unit->getTilePosition())) return Positions::Invalid;
-	for (auto &base : theMap.GetArea(unit->getTilePosition())->Bases())
+	if (!here.isValid() || !theMap.GetArea(TilePosition(here))) return Positions::Invalid;
+	for (auto &base : theMap.GetArea(TilePosition(here))->Bases())
 	{
-		if (unit->getDistance(base.Center()) < closestD || closestD == 0.0)
+		if (here.getDistance(base.Center()) < closestD || closestD == 0.0)
 		{
-			closestD = unit->getDistance(base.Center());
+			closestD = here.getDistance(base.Center());
 			closestB = base.Center();
 		}
 	}

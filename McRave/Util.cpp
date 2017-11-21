@@ -13,8 +13,6 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit)
 	else if (unit.getType() == UnitTypes::Terran_Medic) return 2.5;
 	else if (unit.getType() == UnitTypes::Protoss_High_Templar) return 10.0;
 	else if (unit.getType() == UnitTypes::Protoss_Reaver) return 25.0;
-	else if (unit.getType() == UnitTypes::Protoss_Interceptor) return 1.0;
-	else if (unit.getType().isWorker() && unit.getPlayer() == Broodwar->self()) return 1.5;
 
 	double range, damage, hp, speed;
 	range = cbrt(unit.getGroundRange());
@@ -67,20 +65,12 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit)
 
 double UtilTrackerClass::getVisibleGroundStrength(UnitInfo& unit)
 {
-	if (unit.unit()->isMaelstrommed() || unit.unit()->isStasised())
-	{
-		return 0.0;
-	}
-
+	if (unit.unit()->isMaelstrommed() || unit.unit()->isStasised()) return 0.0;
 	return unit.getPercentHealth() * unit.getMaxGroundStrength();
 }
 
 double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit)
 {
-	if (unit.getType() == UnitTypes::Protoss_Interceptor || unit.getType() == UnitTypes::Zerg_Scourge)
-	{
-		return 2.5;
-	}
 	double range, damage, hp, speed;
 	hp = sqrt((unit.getType().maxHitPoints() + unit.getType().maxShields()) / 10.0);
 	damage = unit.getAirDamage() / double(unit.getType().airWeapon().damageCooldown());
@@ -137,10 +127,7 @@ double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit)
 
 double UtilTrackerClass::getVisibleAirStrength(UnitInfo& unit)
 {
-	if (unit.unit()->isMaelstrommed() || unit.unit()->isStasised())
-	{
-		return 0.0;
-	}
+	if (unit.unit()->isMaelstrommed() || unit.unit()->isStasised()) return 0.0;
 	return unit.getPercentHealth() * unit.getMaxAirStrength();
 }
 
@@ -375,24 +362,15 @@ set<WalkPosition> UtilTrackerClass::getWalkPositionsUnderUnit(Unit unit)
 
 bool UtilTrackerClass::isSafe(WalkPosition end, UnitType unitType, bool groundCheck, bool airCheck)
 {
-	int width = unitType.tileWidth() * 4;
-	int halfWidth = width / 2;
+	int walkWidth = unitType.tileWidth() * 4;
+	int halfWidth = walkWidth / 2;
 	for (int x = end.x - halfWidth; x <= end.x + halfWidth; x++)
 	{
 		for (int y = end.y - halfWidth; y <= end.y + halfWidth; y++)
 		{
-			if (!WalkPosition(x, y).isValid())
-			{
-				continue;
-			}
-			if ((groundCheck && Grids().getEGroundThreat(x, y) != 0.0) || (airCheck && Grids().getEAirThreat(x, y) != 0.0))
-			{
-				return false;
-			}
-			if (Grids().getPsiStormGrid(x, y) > 0 || (Grids().getEMPGrid(x, y) > 0 && unitType.isSpellcaster()))
-			{
-				return false;
-			}
+			if (!WalkPosition(x, y).isValid()) continue;
+			if ((groundCheck && Grids().getEGroundThreat(x, y) != 0.0) || (airCheck && Grids().getEAirThreat(x, y) != 0.0))	return false;
+			if (Grids().getPsiStormGrid(x, y) > 0 || (Grids().getEMPGrid(x, y) > 0 && unitType.isSpellcaster())) return false;
 		}
 	}
 	return true;
@@ -401,25 +379,15 @@ bool UtilTrackerClass::isSafe(WalkPosition end, UnitType unitType, bool groundCh
 bool UtilTrackerClass::isMobile(WalkPosition start, WalkPosition end, UnitType unitType)
 {
 	if (unitType.isFlyer()) return true;
-	int walkWidth = unitType.width() / 8;
+	int walkWidth = unitType.tileWidth() * 4;
 	int halfWidth = walkWidth / 2;
 	for (int x = end.x - halfWidth; x <= end.x + halfWidth; x++)
 	{
 		for (int y = end.y - halfWidth; y <= end.y + halfWidth; y++)
 		{
-			if (!WalkPosition(x, y).isValid())
-			{
-				return false;
-			}
-			// If WalkPosition shared with WalkPositions under unit, ignore
-			if (x >= start.x && x < start.x + walkWidth && y >= start.y && y < start.y + walkWidth && Grids().getMobilityGrid(x, y) > 0)
-			{
-				continue;
-			}
-			if (Grids().getMobilityGrid(x, y) <= 0 || Grids().getAntiMobilityGrid(x, y) > 0)
-			{
-				return false;
-			}
+			if (!WalkPosition(x, y).isValid()) return false;		
+			if (x >= start.x && x < start.x + walkWidth && y >= start.y && y < start.y + walkWidth && Grids().getMobilityGrid(x, y) > 0) continue; // If WalkPosition shared with WalkPositions under unit, ignore
+			if (Grids().getMobilityGrid(x, y) <= 0 || Grids().getAntiMobilityGrid(x, y) > 0) return false;
 		}
 	}
 	return true;

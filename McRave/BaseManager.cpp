@@ -13,14 +13,11 @@ void BaseTrackerClass::updateBases()
 	for (auto &b : myBases)
 	{
 		BaseInfo& base = b.second;
-		if (base.unit() && base.unit()->exists())
-		{
-			if (Grids().getBaseGrid(base.getTilePosition()) == 1 && base.unit()->isCompleted())
-			{
-				Grids().updateBaseGrid(base);
-			}
-			updateProduction(base);
-		}
+		if (!base.unit() || !base.unit()->exists()) continue;
+		updateProduction(base);
+
+		if (Grids().getBaseGrid(base.getTilePosition()) == 1 && base.unit()->isCompleted())
+			Grids().updateBaseGrid(base);
 	}
 	for (auto &b : enemyBases)
 	{
@@ -52,14 +49,14 @@ void BaseTrackerClass::updateProduction(BaseInfo& base)
 		{
 			if (unit.isWorker())
 			{
-				if (Broodwar->self()->completedUnitCount(unit) < 60 && (Broodwar->self()->minerals() >= unit.mineralPrice() + Production().getReservedMineral() + Buildings().getQueuedMineral()))
+				if (Broodwar->self()->completedUnitCount(unit) < 75 && (Broodwar->self()->minerals() >= unit.mineralPrice() + Production().getReservedMineral() + Buildings().getQueuedMineral()))
 				{
 					base.unit()->train(unit);
 				}
 			}
 		}
 		for (auto &unit : base.unit()->getLarva())
-		{			
+		{
 			if (Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Drone) < 60 && (Broodwar->self()->minerals() >= UnitTypes::Zerg_Drone.mineralPrice() + Production().getReservedMineral() + Buildings().getQueuedMineral()))
 			{
 				base.unit()->morph(UnitTypes::Zerg_Drone);
@@ -109,6 +106,18 @@ void BaseTrackerClass::storeBase(Unit base)
 			Terrain().getEnemyTerritory().insert(theMap.GetArea(b.getTilePosition())->Id());
 		}
 	}
+
+	if (base->getPlayer() == Broodwar->self())
+	{
+		for (auto r : Resources().getMyMinerals())
+		{
+			ResourceInfo &resource = r.second;
+			if (resource.getClosestBasePosition() == base->getPosition())
+			{
+				Grids().updateResourceGrid(resource);
+			}
+		}
+	}
 	return;
 }
 
@@ -125,6 +134,18 @@ void BaseTrackerClass::removeBase(Unit base)
 	{
 		Terrain().getEnemyTerritory().erase(theMap.GetArea(base->getTilePosition())->Id());
 		enemyBases.erase(base);
+	}
+
+	if (base->getPlayer() == Broodwar->self())
+	{
+		for (auto r : Resources().getMyMinerals())
+		{
+			ResourceInfo &resource = r.second;
+			if (resource.getClosestBasePosition() == base->getPosition())
+			{
+				Grids().updateResourceGrid(resource);
+			}
+		}
 	}
 	return;
 }

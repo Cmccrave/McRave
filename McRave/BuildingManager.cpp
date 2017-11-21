@@ -18,14 +18,10 @@ void BuildingTrackerClass::updateBuildings()
 		building.setIdleStatus(building.unit()->getRemainingTrainTime() == 0);
 		building.setEnergy(building.unit()->getEnergy());
 
-		if (b.second.getType().getRace() == Races::Terran && !building.unit()->isCompleted() && !building.unit()->getBuildUnit())
+		if (building.getType().getRace() == Races::Terran && !building.unit()->isCompleted() && !building.unit()->getBuildUnit())
 		{
 			Unit builder = Workers().getClosestWorker(building.getPosition());
-			if (builder)
-			{
-				builder->rightClick(building.unit());
-			}
-			continue;
+			if (builder) builder->rightClick(building.unit());
 		}
 	}
 	return;
@@ -67,7 +63,7 @@ void BuildingTrackerClass::constructBuildings()
 	for (auto &worker : Workers().getMyWorkers())
 	{
 		if (worker.second.getBuildingType().isValid() && worker.second.getBuildPosition().isValid())
-		{			
+		{
 			buildingsQueued[worker.second.getBuildPosition()] = worker.second.getBuildingType();
 			queuedMineral += worker.second.getBuildingType().mineralPrice();
 			queuedGas += worker.second.getBuildingType().gasPrice();
@@ -106,7 +102,7 @@ TilePosition BuildingTrackerClass::getBuildLocationNear(UnitType building, TileP
 	while (length < 50)
 	{
 		// If we can build here, return this tile position		
-		if (TilePosition(x, y).isValid() && isBuildable(building, TilePosition(x, y)) && isQueueable(building, TilePosition(x, y)) && (isSuitable(building, TilePosition(x, y)) || ignoreCond)) return TilePosition(x, y);
+		if (TilePosition(x, y).isValid() && isBuildable(building, TilePosition(x, y)) && isQueueable(building, TilePosition(x, y)) && isSuitable(building, TilePosition(x, y))) return TilePosition(x, y);
 
 		// Otherwise spiral out and find a new tile
 		x = x + dx;
@@ -136,12 +132,13 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	{
 		double best = 0.0;
 		TilePosition here = TilePositions::Invalid;
-		for (auto &gas : Resources().getMyGas())
+		for (auto &g : Resources().getMyGas())
 		{
-			if (Grids().getBaseGrid(gas.second.getTilePosition()) > 1 && gas.second.getType() == UnitTypes::Resource_Vespene_Geyser && (gas.second.getPosition().getDistance(Terrain().getPlayerStartingPosition()) < best || best == 0.0))
+			ResourceInfo &gas = g.second;
+			if (Grids().getBaseGrid(gas.getTilePosition()) > 1 && gas.getType() == UnitTypes::Resource_Vespene_Geyser && (gas.getPosition().getDistance(Terrain().getPlayerStartingPosition()) < best || best == 0.0))
 			{
-				here = gas.second.getTilePosition();
-				best = gas.second.getPosition().getDistance(Terrain().getPlayerStartingPosition());
+				best = gas.getPosition().getDistance(Terrain().getPlayerStartingPosition());
+				here = gas.getTilePosition();
 			}
 		}
 		return here;
@@ -159,7 +156,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 			{
 				for (auto &base : area.Bases())
 				{
-					if ((base.Geysers().size() == 0) || area.AccessibleNeighbours().size() == 0) continue;					
+					if ((base.Geysers().size() == 0) || area.AccessibleNeighbours().size() == 0) continue;
 					if (Grids().getBaseGrid(base.Location()) == 0 && (Grids().getDistanceHome(WalkPosition(base.Location())) < best || best == 0.0))
 					{
 						best = Grids().getDistanceHome(WalkPosition(base.Location()));
@@ -175,11 +172,21 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 			for (auto &area : theMap.Areas())
 			{
 				for (auto &base : area.Bases())
-				{					
-					if (area.AccessibleNeighbours().size() == 0 || base.Center() == Terrain().getEnemyStartingPosition()) continue;		
+				{
+					if (area.AccessibleNeighbours().size() == 0 || base.Center() == Terrain().getEnemyStartingPosition()) continue;
+					double value = 0.0;
 
-					double value = double(base.Minerals().size() + (3 * base.Geysers().size() > 0));
-					double distance = double(Grids().getDistanceHome(WalkPosition(base.Location())) / base.Center().getDistance(Terrain().getEnemyStartingPosition()));					
+					for (auto &mineral : base.Minerals())
+					{
+						value += double(mineral->Amount());
+					}
+					for (auto &gas : base.Geysers())
+					{
+						value += double(gas->Amount());
+					}
+					if (base.Geysers().size() == 0) value = value / 10.0;
+
+					double distance = double(Grids().getDistanceHome(WalkPosition(base.Location())) / base.Center().getDistance(Terrain().getEnemyStartingPosition()));
 
 					if (Grids().getBuildingGrid(base.Location()) == 0 && (value / distance > best))
 					{
@@ -202,10 +209,6 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		if (building == UnitTypes::Protoss_Photon_Cannon) here = getBuildLocationNear(building, Terrain().getFFEPosition());
 		if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getFFEPosition(), true);
 		return here;
-
-		//here = building == UnitTypes::Protoss_Pylon ? getBuildLocationNear(building, Terrain().getFFEPosition()) : getBuildLocationNear(building, Terrain().getSecondChoke());
-		//if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getFFEPosition(), true);
-		//return here;
 	}
 
 	// If we are forge expanding
@@ -217,10 +220,6 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		if (building == UnitTypes::Protoss_Photon_Cannon) here = getBuildLocationNear(building, Terrain().getFFEPosition());
 		if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getFFEPosition(), true);
 		return here;
-		
-		//here = (building == UnitTypes::Protoss_Pylon || building == UnitTypes::Protoss_Photon_Cannon) ? getBuildLocationNear(building, Terrain().getFFEPosition()) : getBuildLocationNear(building, Terrain().getSecondChoke());
-		//if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getFFEPosition(), true);
-		//return here;
 	}
 
 	// If we are being rushed and need a battery
@@ -265,17 +264,26 @@ bool BuildingTrackerClass::isQueueable(UnitType building, TilePosition buildTile
 	// Check if there's a building queued there already
 	for (auto &queued : buildingsQueued)
 	{
-		if (buildTilePosition.x < queued.first.x + queued.second.tileWidth() && queued.first.x < buildTilePosition.x + building.tileWidth() && buildTilePosition.y < queued.first.y + queued.second.tileHeight() && queued.first.y < buildTilePosition.y + building.tileHeight())
-		{
-			return false;
-		}
+		if (buildTilePosition.x < queued.first.x + queued.second.tileWidth() && queued.first.x < buildTilePosition.x + building.tileWidth() && buildTilePosition.y < queued.first.y + queued.second.tileHeight() && queued.first.y < buildTilePosition.y + building.tileHeight()) return false;
 	}
 	return true;
 }
 
 bool BuildingTrackerClass::isBuildable(UnitType building, TilePosition buildTilePosition)
 {
-	if (building.isRefinery()) return true;
+	// Refineries are only built on my own gas resources
+	if (building.isRefinery())
+	{
+		double best = 0.0;
+		TilePosition here = TilePositions::Invalid;
+		for (auto &g : Resources().getMyGas())
+		{
+			ResourceInfo &gas = g.second;
+			if (buildTilePosition == gas.getTilePosition() && Grids().getBaseGrid(gas.getTilePosition()) > 1 && gas.getType() == UnitTypes::Resource_Vespene_Geyser) return true;
+		}
+		return false;
+	}
+
 	if (Broodwar->self()->getRace() == Races::Protoss && building.requiresPsi() && !Pylons().hasPower(buildTilePosition, building)) return false; // If Protoss, check if it's not a pylon and in a preset buildable position based on power grid
 	if (building == UnitTypes::Protoss_Shield_Battery && Terrain().getMineralHoldPosition().getDistance(Position(buildTilePosition)) > 160) return false;
 
@@ -286,12 +294,12 @@ bool BuildingTrackerClass::isBuildable(UnitType building, TilePosition buildTile
 			if (!TilePosition(x, y).isValid()) return false;
 			if (!Broodwar->isBuildable(TilePosition(x, y), true)) return false; // If it's on an unbuildable tile
 			if (Grids().getBuildingGrid(x, y) > 0 && !building.isResourceDepot()) return false; // If it's reserved for expansions				
-			if (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(x, y) >= 2) return false; // If it's a pylon and overlapping too many pylons					
+			if (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(x, y) >= 3) return false; // If it's a pylon and overlapping too many pylons					
 			if (!building.isResourceDepot() && building != UnitTypes::Protoss_Photon_Cannon && building != UnitTypes::Protoss_Shield_Battery && building != UnitTypes::Terran_Bunker && Grids().getResourceGrid(x, y) > 0) return false; // If it's not a defensive structure and on top of the resource grid
 			if (building == UnitTypes::Protoss_Photon_Cannon && x >= Terrain().getMediumWall().x && x < Terrain().getMediumWall().x + 3 && y >= Terrain().getMediumWall().y && y < Terrain().getMediumWall().y + 2) return false;
 			if (building == UnitTypes::Protoss_Photon_Cannon && x >= Terrain().getLargeWall().x && x < Terrain().getLargeWall().x + 4 && y >= Terrain().getLargeWall().y && y < Terrain().getLargeWall().y + 3) return false;
 		}
-	}	
+	}
 
 	// If the building is not a resource depot and being placed on an expansion
 	if (!building.isResourceDepot())
@@ -304,7 +312,7 @@ bool BuildingTrackerClass::isBuildable(UnitType building, TilePosition buildTile
 				{
 					// If the x value of this tile of the building is within an expansion and the y value of this tile of the building is within an expansion, return false
 					if (buildTilePosition.x + i >= base.x && buildTilePosition.x + i < base.x + 4 && buildTilePosition.y + j >= base.y && buildTilePosition.y + j < base.y + 3)
-					{						
+					{
 						return false;
 					}
 				}
@@ -319,10 +327,7 @@ bool BuildingTrackerClass::isBuildable(UnitType building, TilePosition buildTile
 		{
 			for (int y = buildTilePosition.y + 1; y <= buildTilePosition.y + 3; y++)
 			{
-				if (Grids().getBuildingGrid(x, y) > 0 || !Broodwar->isBuildable(TilePosition(x, y), true))
-				{
-					return false;
-				}
+				if (Grids().getBuildingGrid(x, y) > 0 || !Broodwar->isBuildable(TilePosition(x, y), true)) return false;
 			}
 		}
 	}
@@ -335,6 +340,7 @@ bool BuildingTrackerClass::isSuitable(UnitType building, TilePosition buildTileP
 {
 	// Production buildings that create ground units require spacing so they don't trap units -- TEMP: Supply depot to not block SCVs (need to find solution)
 	if (building == UnitTypes::Terran_Supply_Depot || (!building.isResourceDepot() && building.buildsWhat().size() > 0)) buildingOffset = 1;
+	else if (building == UnitTypes::Protoss_Pylon && Broodwar->self()->completedUnitCount(building) < 10 && Position(buildTilePosition).getDistance(Terrain().getClosestBaseCenter(Position(buildTilePosition))) > 128) buildingOffset = 3;
 	else buildingOffset = 0;
 
 	// Check suitability for fast expands
@@ -379,10 +385,15 @@ bool BuildingTrackerClass::isSuitable(UnitType building, TilePosition buildTileP
 		{
 			for (int y = buildTilePosition.y - buildingOffset; y < buildTilePosition.y + building.tileHeight() + buildingOffset; y++)
 			{
-				if (!TilePosition(x, y).isValid()) return false;				
-				if (Grids().getBuildingGrid(x, y) > 0 && !Broodwar->isBuildable(TilePosition(x, y), true)) return false;			
-				if (!Broodwar->isBuildable(TilePosition(x, y))) return false;
-				if (building == UnitTypes::Protoss_Pylon && !Broodwar->isBuildable(TilePosition(x, y), true)) return false;			
+				if (!TilePosition(x, y).isValid()) return false;
+				if (building == UnitTypes::Protoss_Pylon)
+				{
+					if (!Broodwar->isBuildable(TilePosition(x, y))) return false;
+				}
+				else
+				{
+					if (Grids().getBuildingGrid(x, y) > 0 || !Broodwar->isBuildable(TilePosition(x, y), true)) return false;
+				}
 			}
 		}
 	}

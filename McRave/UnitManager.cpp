@@ -80,7 +80,7 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 			enemyToEngage = max(0.0, distance / enemy.getSpeed());
 			simRatio = max(0.0, simulationTime - enemyToEngage);
 		}
-		else if (distance - widths <= enemyRange)
+		else if (distance - widths <= 0.0)
 		{
 			enemyToEngage = max(0.0, (unit.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths) / unit.getSpeed());
 			simRatio = max(0.0, simulationTime - enemyToEngage);
@@ -88,7 +88,8 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 
 		// Situations where an enemy should be treated as stronger than it actually is
 		if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && !enemy.unit()->isDetected()) simRatio = simRatio * 5.0;
-		if (!enemy.getType().isFlyer() && Broodwar->getGroundHeight(enemy.getTilePosition()) > Broodwar->getGroundHeight(TilePosition(unit.getEngagePosition())))	simRatio = simRatio * 2.0;
+		if (!enemy.getType().isFlyer() && Broodwar->getGroundHeight(enemy.getTilePosition()) > Broodwar->getGroundHeight(TilePosition(unit.getEngagePosition()))) simRatio = simRatio * 2.0;
+		if (enemy.getLastVisibleFrame() < Broodwar->getFrameCount()) simRatio = simRatio * (1.0 + ((Broodwar->getFrameCount() - enemy.getLastVisibleFrame()) / 5000));
 
 		enemyLocalGroundStrength += enemy.getVisibleGroundStrength() * simRatio;
 		enemyLocalAirStrength += enemy.getVisibleAirStrength() * simRatio;
@@ -102,7 +103,7 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 		double distance = ally.getPosition().getDistance(ally.getEngagePosition());
 		double speed = (unit.getTransport() && unit.getTransport()->exists()) ? unit.getTransport()->getType().topSpeed() * 24.0 : ally.getSpeed();
 		double allyToEngage = max(0.0, distance / speed);
-		double simRatio = ally.unit() == unit.unit() ? unitToEngage : max(0.0, simulationTime - allyToEngage);
+		double simRatio = max(0.0, simulationTime - allyToEngage);
 
 		// Situations where an ally should be treated as stronger than it actually is
 		if ((ally.unit()->isCloaked() || ally.unit()->isBurrowed()) && Grids().getEDetectorGrid(WalkPosition(ally.getEngagePosition())) == 0) simRatio = simRatio * 5.0;
@@ -205,32 +206,23 @@ void UnitTrackerClass::updateGlobalSimulation()
 	}
 	else if (Broodwar->self()->getRace() == Races::Terran)
 	{
-		if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Ion_Thrusters) > 0)
-		{
-			if (globalAllyGroundStrength > globalEnemyGroundStrength)
-			{
-				globalGroundStrategy = 1;
-				return;
-			}
-			else
-			{
-				globalGroundStrategy = 0;
-				return;
-			}
-		}
-		else if (Broodwar->self()->hasResearched(TechTypes::Stim_Packs) && BuildOrder().getCurrentBuild() == "Sparks")
-		{
-			globalGroundStrategy = 1;
-			return;
-		}
-		else
-		{
-			globalGroundStrategy = 0;
-			return;
-		}
+		double offset = 1.0;
+		if (Players().getNumberZerg() > 0) offset = 1.4;
+		if (Players().getNumberProtoss() > 0) offset = 1.4;
+
+		if (Strategy().isPlayPassive())	globalGroundStrategy = 0;
+		else if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Ion_Thrusters)) globalGroundStrategy = 1;
+		else if (Broodwar->self()->hasResearched(TechTypes::Stim_Packs) && BuildOrder().getCurrentBuild() == "Sparks") globalGroundStrategy = 1;
+		else if (globalAllyGroundStrength < globalEnemyGroundStrength * offset) globalGroundStrategy = 0;
+		else globalGroundStrategy = 1;
+
+		if (Strategy().isPlayPassive())	globalAirStrategy = 0;
+		else if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Ion_Thrusters)) globalAirStrategy = 1;
+		else if (Broodwar->self()->hasResearched(TechTypes::Stim_Packs) && BuildOrder().getCurrentBuild() == "Sparks") globalGroundStrategy = 1;
+		else if (globalAllyAirStrength < globalEnemyAirStrength * offset) globalAirStrategy = 0;
+		else globalAirStrategy = 1;
+		return;
 	}
-	globalGroundStrategy = 1;
-	return;
 }
 
 UnitInfo& UnitTrackerClass::getAllyUnit(Unit unit)

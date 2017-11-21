@@ -88,10 +88,10 @@ void BuildOrderTrackerClass::P12Nexus()
 	else
 	{
 		buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24);
-		buildingDesired[UnitTypes::Protoss_Gateway] = (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core)) + (Units().getSupply() >= 26) + (Units().getSupply() >= 70) + (Units().getSupply() >= 82);
-		buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 28) + (Units().getSupply() >= 80);
+		buildingDesired[UnitTypes::Protoss_Gateway] = (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core)) + (Units().getSupply() >= 26) + (Units().getSupply() >= 76) + (Units().getSupply() >= 82);
+		buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 28) + (Units().getSupply() >= 70);
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = (Units().getSupply() >= 30);
-		getOpening = Units().getSupply() < 140;
+		getOpening = Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) <= 0;
 		nexusFirst = true;
 	}
 }
@@ -139,8 +139,19 @@ void BuildOrderTrackerClass::P2GateZealot()
 
 void BuildOrderTrackerClass::P2GateDragoon()
 {
-	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 30);
-	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 22;
-	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
-	getOpening = Units().getSupply() < 50;
+	if (Strategy().isEnemyFastExpand())
+	{
+		buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 30);
+		buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 22;
+		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
+		getOpening = Units().getSupply() < 50;
+	}
+	else
+	{
+		buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 50) + (Units().getSupply() >= 70);
+		buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 30);
+		buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 22;
+		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
+		getOpening = Units().getSupply() < 100;
+	}
 }

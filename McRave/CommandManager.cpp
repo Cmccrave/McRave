@@ -203,7 +203,7 @@ void CommandTrackerClass::move(UnitInfo& unit)
 	// If it's a tank, make sure we're unsieged before moving - TODO: Check that target has velocity and > 512 or no velocity and < tank range
 	if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
 	{
-		if (unit.unit()->getDistance(unit.getTargetPosition()) > 512 || unit.unit()->getDistance(unit.getTargetPosition()) < 128)
+		if (unit.unit()->getDistance(unit.getTargetPosition()) > 512 || unit.unit()->getDistance(unit.getTargetPosition()) < 64)
 		{
 			unit.unit()->unsiege();
 		}
@@ -335,7 +335,7 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 	// If it's a tank, make sure we're unsieged before moving -  TODO: Check that target has velocity and > 512 or no velocity and < tank range
 	if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
 	{
-		if (unit.unit()->getDistance(unit.getTargetPosition()) > 512 || unit.unit()->getDistance(unit.getTargetPosition()) < 128)
+		if (unit.unit()->getDistance(unit.getTargetPosition()) > 512 || unit.unit()->getDistance(unit.getTargetPosition()) < 64)
 		{
 			unit.unit()->unsiege();
 			return;
@@ -360,8 +360,8 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 	}
 
 	WalkPosition start = unit.getWalkPosition();
-	WalkPosition bestPosition = start;
-	double best = 0.0;
+	WalkPosition bestPosition = WalkPositions::Invalid;
+	double best, closest;
 	double mobility, distance, threat;
 	// Search a 16x16 grid around the unit
 	for (int x = start.x - 16; x <= start.x + 16 + (unit.getType().width() / 8.0); x++)
@@ -372,13 +372,14 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 			if (Grids().getPsiStormGrid(WalkPosition(x, y)) > 0 || Grids().getEMPGrid(WalkPosition(x, y)) > 0 || Grids().getESplashGrid(WalkPosition(x, y)) > 0) continue;
 
 			distance = double(Grids().getDistanceHome(x, y)); // Distance value		
-			unit.getType().isFlyer() ? mobility = 1.0 : mobility = double(Grids().getMobilityGrid(x, y)); // If unit is a flyer, ignore mobility
-			unit.getType().isFlyer() ? threat = max(0.01, Grids().getEAirThreat(x, y)) : threat = max(0.01, Grids().getEGroundThreat(x, y)); // If unit is a flyer, use air threat
-
-			if (mobility / (threat * distance) > best && Util().isMobile(start, WalkPosition(x, y), unit.getType()))
+			mobility = unit.getType().isFlyer() ? 1.0 : double(Grids().getMobilityGrid(x, y)); // If unit is a flyer, ignore mobility
+			threat = unit.getType().isFlyer() ? max(0.01, Grids().getEAirThreat(x, y)) : max(0.01, Grids().getEGroundThreat(x, y)); // If unit is a flyer, use air threat
+			
+			if ((!bestPosition.isValid() || distance < closest || (distance <= closest && mobility / threat > best)) && Util().isMobile(start, WalkPosition(x, y), unit.getType()))
 			{
 				bestPosition = WalkPosition(x, y);
-				best = mobility / (threat * distance);
+				closest = distance;
+				best = mobility / threat;
 			}
 		}
 	}

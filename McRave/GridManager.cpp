@@ -404,14 +404,7 @@ void GridTrackerClass::updateResourceGrid(ResourceInfo& resource)
 				{
 					if (resource.getResourceClusterPosition().getDistance(Position(TilePosition(x, y))) <= 192 && resource.getClosestBasePosition().isValid() && resource.getPosition().getDistance(resource.getClosestBasePosition()) > Position(x * 32, y * 32).getDistance(resource.getClosestBasePosition()))
 					{
-						if (resource.unit()->exists())
-						{
-							resourceGrid[x][y] += 1;
-						}
-						else
-						{
-							resourceGrid[x][y] -= 1;
-						}
+						resource.unit()->exists() ? resourceGrid[x][y] += 1 : resourceGrid[x][y] -= 1;
 					}
 				}
 			}
@@ -425,9 +418,9 @@ void GridTrackerClass::updateResourceGrid(ResourceInfo& resource)
 			{
 				if (TilePosition(x, y).isValid() && baseGrid[x][y] > 0)
 				{
-					if (baseGrid[x][y] > 0 && TilePosition(x, y).getDistance(TilePosition(resource.getClosestBasePosition())) < resource.getTilePosition().getDistance(TilePosition(resource.getClosestBasePosition())))
+					if (TilePosition(x, y).getDistance(TilePosition(resource.getClosestBasePosition())) < resource.getTilePosition().getDistance(TilePosition(resource.getClosestBasePosition())))
 					{
-						resourceGrid[x][y] += 1;
+						resource.unit()->exists() ? resourceGrid[x][y] += 1 : resourceGrid[x][y] -= 1;
 					}
 				}
 			}
