@@ -217,7 +217,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		if (building == UnitTypes::Protoss_Pylon) return Terrain().getSmallWall();
 		if (building == UnitTypes::Protoss_Forge) return Terrain().getMediumWall();
 		if (building == UnitTypes::Protoss_Gateway) return Terrain().getLargeWall();
-		if (building == UnitTypes::Protoss_Photon_Cannon) here = getBuildLocationNear(building, Terrain().getFFEPosition());
+		if (building == UnitTypes::Protoss_Photon_Cannon) here = getBuildLocationNear(building, Terrain().getSecondChoke());
 		if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getFFEPosition(), true);
 		return here;
 	}
@@ -376,6 +376,12 @@ bool BuildingTrackerClass::isSuitable(UnitType building, TilePosition buildTileP
 			}
 		}
 		if (!validFFE) return false;
+	}
+
+	if (BuildOrder().isOpener() && BuildOrder().isForgeExpand() && building == UnitTypes::Protoss_Photon_Cannon)
+	{
+		Position center = Position(buildTilePosition + TilePosition(1, 1));
+		if (center.getDistance(Position(Terrain().getSecondChoke())) < 64 || center.getDistance(Position(Terrain().getSecondChoke())) > 256 || !Terrain().isInAllyTerritory(TilePosition(center))) return false;
 	}
 
 	// If the building requires an offset (production buildings and first pylon)

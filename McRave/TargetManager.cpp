@@ -10,8 +10,9 @@ Unit TargetTrackerClass::getTarget(UnitInfo& unit)
 Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 {
 	double highest = 0.0, thisUnit = 0.0;
+	double closest = 0.0;
 	Unit target = nullptr;
-	Position targetPosition;
+	Position targetPosition, simPosition;
 	WalkPosition targetWalkPosition;
 	TilePosition targetTilePosition;
 
@@ -23,12 +24,20 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		double allyRange = (unit.getType().width() / 2.0) + enemy.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
 		double distance = pow(max(allyRange, unit.getPosition().getDistance(enemy.getPosition())), 5.0);
 
+		if ((unit.getType().isFlyer() && enemy.getAirDamage() > 0.0) || (!unit.getType().isFlyer() && enemy.getGroundDamage() > 0.0) || (enemy.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0))
+		{
+			if (unit.getPosition().getDistance(enemy.getPosition()) < closest || closest == 0.0)
+			{
+				simPosition = enemy.getPosition();
+				closest = unit.getPosition().getDistance(enemy.getPosition());
+			}
+		}
+
 		if (enemy.getType() == UnitTypes::Zerg_Egg || enemy.getType() == UnitTypes::Zerg_Larva) continue; // If it's an egg or larva, ignore it		
 		if (!unit.getType().isDetector() && ((enemy.getType().isFlyer() && unit.getAirRange() == 0.0) || (!enemy.getType().isFlyer() && unit.getGroundRange() == 0.0))) continue; // If unit is dead or unattackable, ignore it		
 		if (enemy.unit()->exists() && enemy.unit()->isStasised()) continue; // If the enemy is stasised, ignore it		
 		if (enemy.getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.getGroundRange() < 32 && unit.getType() != UnitTypes::Protoss_Dark_Templar) continue; // If the enemy is a mine and this is a melee unit (except DT), ignore it
-		if (unit.getTransport() && enemy.getType().isBuilding()) continue; // If unit is loaded, don't target buildings
-		
+		if (unit.getTransport() && enemy.getType().isBuilding()) continue; // If unit is loaded, don't target buildings		
 
 		// If this is a detector unit, target invisible units only
 		if (unit.getType().isDetector() && !unit.getType().isBuilding())
@@ -74,6 +83,8 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 			targetTilePosition = enemy.getTilePosition();
 		}
 	}
+	unit.setSimPosition(simPosition);
+
 	if (target)
 	{
 		unit.setTargetPosition(targetPosition);

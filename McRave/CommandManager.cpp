@@ -18,6 +18,8 @@ void CommandTrackerClass::updateAlliedUnits()
 		if ((unit.getType() == UnitTypes::Protoss_Scarab || unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine) && unit.getTarget() && unit.getTarget()->exists()) moveGroup.insert(unit.getTarget());
 	}
 
+	Unit wall = Broodwar->getClosestUnit(Position(Terrain().getLargeWall()), Filter::IsAlly && Filter::GetType == UnitTypes::Protoss_Gateway, 32);	
+
 	for (auto &u : Units().getAllyUnits())
 	{
 		UnitInfo &unit = u.second;
@@ -25,15 +27,7 @@ void CommandTrackerClass::updateAlliedUnits()
 		if (unit.getType() == UnitTypes::Protoss_Observer || unit.getType() == UnitTypes::Protoss_Arbiter || unit.getType() == UnitTypes::Protoss_Shuttle) continue; // Support units and transports have their own commands
 		if (unit.getLastCommandFrame() >= Broodwar->getFrameCount()) continue; // If the unit received a command already during this frame		
 		if (unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted()) continue; // If the unit is locked down, maelstrommed, stassised, or not completed
-
-		// Remove wall if needed - testing
-		if (Units().getSupply() > 200 && unit.unit()->isStuck())
-		{
-			Unit wall = Broodwar->getClosestUnit(Position(Terrain().getLargeWall()), Filter::IsAlly && Filter::GetType == UnitTypes::Protoss_Gateway, 32);
-			unit.unit()->attack(wall);
-			continue;
-		}
-
+		
 		// If the unit is ready to perform an action after an attack (certain units have minimum frames after an attack before they can receive a new command)
 		if (Broodwar->getFrameCount() - unit.getLastAttackFrame() > unit.getMinStopFrame() - Broodwar->getLatencyFrames())
 		{
@@ -44,6 +38,16 @@ void CommandTrackerClass::updateAlliedUnits()
 				else attack(unit);
 			}
 			else if (Grids().getPsiStormGrid(unit.getWalkPosition()) > 0 || Grids().getEMPGrid(unit.getWalkPosition()) > 0 || Grids().getESplashGrid(unit.getWalkPosition()) > 0) flee(unit); // If under a storm, dark swarm or EMP
+
+			// Remove wall if needed - testing
+			if (unit.getStrategy() == 3 && unit.getGroundDamage() > 0.0 && Units().getSupply() > 200 && wall && wall->exists() && BuildOrder().isForgeExpand() && wall->getPosition().getDistance(unit.getPosition()) < 320)
+			{
+				if (unit.unit()->getLastCommand().getTarget() != wall)
+				{
+					unit.unit()->attack(wall);
+				}
+				continue;
+			}
 
 			// If globally behind
 			else if ((Units().getGlobalGroundStrategy() == 0 && !unit.getType().isFlyer()) || (Units().getGlobalAirStrategy() == 0 && unit.getType().isFlyer()))
@@ -158,7 +162,7 @@ void CommandTrackerClass::attack(UnitInfo& unit)
 		}
 
 		// If enemy is invis, run from it
-		else if ((unit.getTarget()->isBurrowed() || unit.getTarget()->isCloaked()) && !unit.getTarget()->isDetected())
+		else if ((unit.getTarget()->isBurrowed() || unit.getTarget()->isCloaked()) && !unit.getTarget()->isDetected() && target.getPosition().getDistance(unit.getPosition()) < target.getGroundRange())
 		{
 			flee(unit);
 		}
@@ -176,7 +180,7 @@ void CommandTrackerClass::attack(UnitInfo& unit)
 		}
 
 		// If approaching is necessary
-		if (unit.getGroundRange() > 32 && unit.getGroundRange() < target.getGroundRange() && !target.getType().isBuilding() && unit.getSpeed() > target.getSpeed())
+		if ((unit.getGroundRange() > 32 && unit.getGroundRange() < target.getGroundRange() && !target.getType().isBuilding() && unit.getSpeed() > target.getSpeed()) || (unit.getType().isFlyer() && target.getType() != UnitTypes::Zerg_Scourge))
 		{
 			moveTo = true;
 		}
@@ -216,12 +220,12 @@ void CommandTrackerClass::move(UnitInfo& unit)
 	}
 
 	// If target doesn't exist, move towards it
-	else if (unit.getTarget() && unit.getTargetPosition().isValid() && unit.getPosition().getDistance(unit.getTargetPosition()) < 640)
+	else if (unit.getTarget() && unit.getTargetPosition().isValid() && (unit.getPosition().getDistance(unit.getTargetPosition()) < 640 || unit.getType().isFlyer()))
 	{
 		if (unit.unit()->getLastCommand().getTargetPosition() != unit.getTargetPosition() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move) unit.unit()->move(unit.getTargetPosition());
 	}
 
-	else if (Terrain().getAttackPosition().isValid())
+	else if (Terrain().getAttackPosition().isValid() && !unit.getType().isFlyer())
 	{
 		if (unit.unit()->getLastCommand().getTargetPosition() != Terrain().getAttackPosition() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move) unit.unit()->move(Terrain().getAttackPosition());
 	}
@@ -252,12 +256,6 @@ void CommandTrackerClass::move(UnitInfo& unit)
 
 void CommandTrackerClass::defend(UnitInfo& unit)
 {
-	if (unit.getType().isFlyer() && Units().getGlobalGroundStrategy() == 1)
-	{
-		unit.unit()->move(Grids().getAllyArmyCenter());
-		return;
-	}
-
 	// Early on, defend mineral line - TODO: Use ordered bases to check which one to hold
 	if (!Strategy().isHoldChoke())
 	{
@@ -369,9 +367,9 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 		for (int y = start.y - 16; y <= start.y + 16 + (unit.getType().height() / 8.0); y++)
 		{
 			if (!WalkPosition(x, y).isValid()) continue;
-			if (Grids().getPsiStormGrid(WalkPosition(x, y)) > 0 || Grids().getEMPGrid(WalkPosition(x, y)) > 0 || Grids().getESplashGrid(WalkPosition(x, y)) > 0) continue;
+			if (Grids().getPsiStormGrid(WalkPosition(x, y)) > 0 || Grids().getEMPGrid(WalkPosition(x, y)) > 0 || Grids().getESplashGrid(WalkPosition(x, y)) > 0) continue;			
 
-			distance = double(Grids().getDistanceHome(x, y)); // Distance value		
+			distance = unit.getType().isFlyer() ? Position(WalkPosition(x,y)).getDistance(Terrain().getPlayerStartingPosition()) : double(Grids().getDistanceHome(x, y)); // Distance value		
 			mobility = unit.getType().isFlyer() ? 1.0 : double(Grids().getMobilityGrid(x, y)); // If unit is a flyer, ignore mobility
 			threat = unit.getType().isFlyer() ? max(0.01, Grids().getEAirThreat(x, y)) : max(0.01, Grids().getEGroundThreat(x, y)); // If unit is a flyer, use air threat
 			

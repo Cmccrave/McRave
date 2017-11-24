@@ -18,7 +18,7 @@ void ProductionTrackerClass::updateProduction()
 		double best = 0.0;
 		UnitType bestType = UnitTypes::None;
 		if (building.unit()->isIdle() && !building.getType().isResourceDepot())
-		{			
+		{
 			idleProduction.erase(building.unit());
 			idleUpgrade.erase(building.unit());
 			idleTech.erase(building.unit());
@@ -38,13 +38,13 @@ void ProductionTrackerClass::updateProduction()
 					bestType = unit;
 				}
 				else if (value >= best && isCreateable(building.unit(), unit) && isSuitable(unit))
-				{
+				{					
 					best = Strategy().getUnitScore()[unit];
 					bestType = unit;
 				}
 			}
 			if (bestType != UnitTypes::None)
-			{				
+			{
 				// If we can afford it, train it
 				if (isAffordable(bestType))
 				{
@@ -53,7 +53,7 @@ void ProductionTrackerClass::updateProduction()
 				}
 				// Else if this is a tech unit, add it to idle production
 				else if (BuildOrder().getTechList().find(bestType) != BuildOrder().getTechList().end())
-				{				
+				{
 					if (Units().getSupply() < 380) idle = true;
 					idleProduction[building.unit()] = bestType;
 					reservedMineral += bestType.mineralPrice();
@@ -343,7 +343,7 @@ bool ProductionTrackerClass::isSuitable(UpgradeType upgrade)
 			return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Corsair) > 0;
 		case UpgradeTypes::Enum::Protoss_Air_Armor:
 			return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Air_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Air_Armor);
-		}		
+		}
 	}
 
 	// If we're playing Terran, check Terran upgrades
@@ -376,7 +376,7 @@ bool ProductionTrackerClass::isSuitable(TechType tech)
 	// If we're playing Protoss, check Protoss tech
 	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
-		if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0) return false;	
+		if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0) return false;
 
 		switch (tech)
 		{
@@ -388,14 +388,14 @@ bool ProductionTrackerClass::isSuitable(TechType tech)
 			return (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
 		}
 	}
-	
+
 	// If we're playing Terran, check Terran tech
 	else if (Broodwar->self()->getRace() == Races::Terran)
 	{
 		switch (tech)
 		{
 		case TechTypes::Enum::Stim_Packs:
-			return BuildOrder().isBioBuild();		
+			return BuildOrder().isBioBuild();
 		case TechTypes::Enum::Spider_Mines:
 			return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Ion_Thrusters) > 0 || Broodwar->self()->isUpgrading(UpgradeTypes::Ion_Thrusters);
 		case TechTypes::Enum::Tank_Siege_Mode:

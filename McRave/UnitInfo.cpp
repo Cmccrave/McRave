@@ -15,6 +15,8 @@ UnitInfo::UnitInfo()
 	airDamage = 0.0;
 	speed = 0.0;
 	strategy = 0;
+	shields = 0;
+	health = 0;
 	lastAttackFrame = 0;
 	lastCommandFrame = 0;
 	lastVisibleFrame = 0;

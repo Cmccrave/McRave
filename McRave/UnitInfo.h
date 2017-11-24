@@ -7,14 +7,14 @@ using namespace std;
 // Class for storing information about all units
 class UnitInfo {
 	double percentHealth, visibleGroundStrength, visibleAirStrength, maxGroundStrength, maxAirStrength, groundLocal, airLocal, groundRange, airRange, priority, groundDamage, airDamage, speed;
-	int strategy, lastAttackFrame, lastCommandFrame, minStopFrame, lastVisibleFrame, shields;
+	int strategy, lastAttackFrame, lastCommandFrame, minStopFrame, lastVisibleFrame, shields, health;
 
 	Unit target, thisUnit, transport;
 	UnitType unitType;
 	UnitCommand command;
 	Player who;
 
-	Position position, targetPosition, engagePosition, destination;
+	Position position, targetPosition, engagePosition, destination, simPosition;
 	WalkPosition walkPosition, targetWalkPosition;
 	TilePosition tilePosition, targetTilePosition;
 public:
@@ -76,6 +76,9 @@ public:
 	int getLastVisibleFrame() { return lastVisibleFrame; }
 
 	int getShields() { return shields; }
+	int getHealth() { return health; }
+
+	Position getSimPosition() { return simPosition; }
 
 	Unit unit() { return thisUnit; }
 	Unit getTarget() { return target; }
@@ -106,6 +109,8 @@ public:
 	void setGroundDamage(double newGroundDamage) { groundDamage = newGroundDamage; }
 	void setAirDamage(double newAirDamage) { airDamage = newAirDamage; }
 	void setSpeed(double newSpeed) { speed = newSpeed; }
+	void setHealth(int value) { health = value; }
+	void setShields(int value) { shields = value; }
 	void setStrategy(int newStrategy){ strategy = newStrategy; }
 	void setLastAttackFrame(int newAttackFrame) { lastAttackFrame = newAttackFrame; }
 	void setLastCommandFrame(int newCommandFrame) { lastCommandFrame = newCommandFrame; }
@@ -118,6 +123,8 @@ public:
 	void setType(UnitType newType) { unitType = newType; }
 	void setLastCommand(UnitCommand newCommand) { command = newCommand; }
 	void setPlayer(Player newOwner) { who = newOwner; }
+
+	void setSimPosition(Position newPosition) { simPosition = newPosition; }
 
 	void setPosition(Position newPosition){ position = newPosition; }
 	void setTargetPosition(Position newPosition) { targetPosition = newPosition; }

@@ -22,6 +22,7 @@ class UnitTrackerClass
 	double globalAllyGroundStrength, globalEnemyGroundStrength;
 	double globalAllyAirStrength, globalEnemyAirStrength;
 	double allyDefense, enemyDefense;
+	double minThreshold, maxThreshold;
 	int supply, globalGroundStrategy, globalAirStrategy;
 public:
 

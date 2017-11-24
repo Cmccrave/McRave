@@ -47,7 +47,7 @@ void BuildOrderTrackerClass::PFFEStandard()
 	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 50);
 	buildingDesired[UnitTypes::Protoss_Forge] = Units().getSupply() >= 24;
 	buildingDesired[UnitTypes::Protoss_Photon_Cannon] = (Units().getSupply() >= 30);
-	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 46);
+	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 42);
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 40;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 44;
 	getOpening = Units().getSupply() < 66;

@@ -71,6 +71,10 @@ double UtilTrackerClass::getVisibleGroundStrength(UnitInfo& unit)
 
 double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit)
 {
+	if (unit.getType() == UnitTypes::Zerg_Scourge)
+	{
+		return 8.0;
+	}
 	double range, damage, hp, speed;
 	hp = sqrt((unit.getType().maxHitPoints() + unit.getType().maxShields()) / 10.0);
 	damage = unit.getAirDamage() / double(unit.getType().airWeapon().damageCooldown());

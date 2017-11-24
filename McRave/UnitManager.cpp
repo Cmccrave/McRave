@@ -16,6 +16,20 @@ void UnitTrackerClass::updateUnits()
 	allyDefense = 0.0;
 	enemyDefense = 0.0;
 
+	// Latch based engagement decision making based on what race we are playing	
+	if (Broodwar->self()->getRace() == Races::Protoss)
+	{
+		if (Players().getNumberZerg() > 0 || Players().getNumberProtoss() > 0) minThreshold = 0.8, maxThreshold = 1.2;
+		if (Players().getNumberTerran() > 0) minThreshold = 0.6, maxThreshold = 1.0;
+		if (Players().getNumberRandom() > 0 && Broodwar->enemy()->getRace() == Races::Terran) minThreshold = 0.6, maxThreshold = 1.0;
+		if (Players().getNumberRandom() > 0 && Broodwar->enemy()->getRace() != Races::Terran) minThreshold = 0.8, maxThreshold = 1.2;
+	}
+	else
+	{
+		if (Players().getNumberTerran() > 0) minThreshold = 0.8, maxThreshold = 1.2;
+		if (Players().getNumberZerg() > 0 || Players().getNumberProtoss() > 0) minThreshold = 1.0, maxThreshold = 1.4;
+	}
+
 	// Update Enemy Units
 	for (auto &u : enemyUnits) 
 	{
@@ -77,13 +91,17 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 
 		if (enemy.getSpeed() > 0.0)
 		{
-			enemyToEngage = max(0.0, distance / enemy.getSpeed());
+			enemyToEngage = max(0.0, (distance - widths) / enemy.getSpeed());
 			simRatio = max(0.0, simulationTime - enemyToEngage);
 		}
 		else if (distance - widths <= 0.0)
 		{
 			enemyToEngage = max(0.0, (unit.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths) / unit.getSpeed());
 			simRatio = max(0.0, simulationTime - enemyToEngage);
+		}
+		else
+		{
+			continue;
 		}
 
 		// Situations where an enemy should be treated as stronger than it actually is
@@ -120,21 +138,6 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 
 void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 {
-	// Latch based engagement decision making based on what race we are playing
-	double minThreshold, maxThreshold;
-	if (Broodwar->self()->getRace() == Races::Protoss)
-	{
-		if (Players().getNumberZerg() > 0 || Players().getNumberProtoss() > 0) minThreshold = 0.8, maxThreshold = 1.2;
-		if (Players().getNumberTerran() > 0) minThreshold = 0.6, maxThreshold = 1.0;
-		if (Players().getNumberRandom() > 0 && Broodwar->enemy()->getRace() == Races::Terran) minThreshold = 0.6, maxThreshold = 1.0;
-		if (Players().getNumberRandom() > 0 && Broodwar->enemy()->getRace() != Races::Terran) minThreshold = 0.8, maxThreshold = 1.2;
-	}
-	else
-	{
-		if (Players().getNumberTerran() > 0) minThreshold = 0.8, maxThreshold = 1.2;
-		if (Players().getNumberZerg() > 0 || Players().getNumberProtoss() > 0) minThreshold = 1.0, maxThreshold = 1.4;
-	}
-
 	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());
 	double decisionLocal = unit.getType().isFlyer() ? unit.getAirLocal() : unit.getGroundLocal();
 	double decisionGlobal = unit.getType().isFlyer() ? globalAirStrategy : globalGroundStrategy;
@@ -156,23 +159,25 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 		if (unit.getTarget()->exists()) unit.setStrategy(1);
 		else unit.setStrategy(3);
 	}
-	else if ((Terrain().isInAllyTerritory(unit.getTilePosition()) && decisionGlobal == 0) || Terrain().isInAllyTerritory(target.getTilePosition())) // If unit is in ally territory
+	else if (unit.getPosition().getDistance(unit.getSimPosition()) > 640.0 && decisionGlobal == 1) unit.setStrategy(3); // If a unit is clearly out of range, set as "no local"
+	else if ((Terrain().isInAllyTerritory(unit.getTilePosition()) && (decisionGlobal == 0 || (!unit.getType().isFlyer() && unit.getGroundLocal() < minThreshold) || (unit.getType().isFlyer() && unit.getAirLocal() < minThreshold))) || (Terrain().isInAllyTerritory(target.getTilePosition()))) // If unit is in ally territory
 	{
 		if (!unit.getTarget()->exists()) unit.setStrategy(2);
 		else if (!Strategy().isHoldChoke())
 		{
-			if (Grids().getBaseGrid(target.getTilePosition()) > 0) unit.setStrategy(1);
+			if (Grids().getBaseGrid(target.getTilePosition()) > 0 && (!target.getType().isWorker() || Broodwar->getFrameCount() - target.getLastAttackFrame() < 500)) unit.setStrategy(1);
 			else unit.setStrategy(2);
 		}
 		else
 		{
-			if (Terrain().isInAllyTerritory(target.getTilePosition()) || unit.getPosition().getDistance(unit.getTargetPosition()) - (double(unit.getType().width()) / 2.0) - (double(target.getType().width()) / 2.0) <= unit.getGroundRange()) unit.setStrategy(1);
+			if ((Terrain().isInAllyTerritory(target.getTilePosition()) && (!target.getType().isWorker() || Broodwar->getFrameCount() - target.getLastAttackFrame() < 500)) || unit.getPosition().getDistance(unit.getTargetPosition()) - (double(unit.getType().width()) / 2.0) - (double(target.getType().width()) / 2.0) <= unit.getGroundRange()) unit.setStrategy(1);
 			else if (unit.getPosition().getDistance(unit.getTargetPosition()) > enemyRange || allyRange >= enemyRange) unit.setStrategy(2);
 			else unit.setStrategy(0);
 		}
 	}
+	else if (unit.getType() == UnitTypes::Protoss_Corsair && globalEnemyAirStrength > 0.0 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Air_Weapons) <= 0) unit.setStrategy(2);
 	else if (Strategy().isPlayPassive() && !Terrain().isInAllyTerritory(unit.getTilePosition())) unit.setStrategy(2);
-	else if (unit.getPosition().getDistance(unit.getTargetPosition()) > 640.0) unit.setStrategy(3); // If a unit is clearly out of range, set as "no local"		
+			
 	else if (unit.getStrategy() == 1) // If last command was engage
 	{
 		if ((!unit.getType().isFlyer() && unit.getGroundLocal() < minThreshold) || (unit.getType().isFlyer() && unit.getAirLocal() < minThreshold)) unit.setStrategy(0);
@@ -271,6 +276,8 @@ void UnitTrackerClass::updateEnemy(UnitInfo& unit)
 	unit.setPlayer(unit.unit()->getPlayer());
 
 	// Update statistics
+	unit.setHealth(unit.unit()->getHitPoints());
+	unit.setShields(unit.unit()->getShields());
 	unit.setPercentHealth(Util().getPercentHealth(unit));
 	unit.setGroundRange(Util().getTrueGroundRange(unit));
 	unit.setAirRange(Util().getTrueAirRange(unit));
@@ -321,6 +328,8 @@ void UnitTrackerClass::updateAlly(UnitInfo& unit)
 	unit.setLastCommand(unit.unit()->getLastCommand());
 
 	// Update statistics
+	unit.setHealth(unit.unit()->getHitPoints());
+	unit.setShields(unit.unit()->getShields());
 	unit.setPercentHealth(Util().getPercentHealth(unit));
 	unit.setGroundRange(Util().getTrueGroundRange(unit));
 	unit.setAirRange(Util().getTrueAirRange(unit));
