@@ -31,7 +31,7 @@ void UnitTrackerClass::updateUnits()
 	}
 
 	// Update Enemy Units
-	for (auto &u : enemyUnits) 
+	for (auto &u : enemyUnits)
 	{
 		UnitInfo &unit = u.second;
 		if (!unit.unit()) continue; // Ignore improper storage if it happens		
@@ -69,7 +69,7 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 {
 	// Variables for calculating local strengths
 	double enemyLocalGroundStrength = 0.0, allyLocalGroundStrength = 0.0;
-	double enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;	
+	double enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;
 	double unitToEngage = max(0.0, unit.getPosition().getDistance(unit.getEngagePosition()) / unit.getSpeed());
 	double simulationTime = unitToEngage + 5.0;
 	UnitInfo &target = Units().getEnemyUnit(unit.getTarget());
@@ -139,31 +139,19 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 {
 	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());
+	double widths = target.getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
 	double decisionLocal = unit.getType().isFlyer() ? unit.getAirLocal() : unit.getGroundLocal();
 	double decisionGlobal = unit.getType().isFlyer() ? globalAirStrategy : globalGroundStrategy;
-	double allyRange = target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
-	double enemyRange = unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange();
+	double allyRange = widths + target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
+	double enemyRange = widths + unit.getType().tileWidth() + unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange();
 
-	if (!unit.getTarget()) unit.setStrategy(3);	 // If unit does not have a target, set as "no local"
-	else if (unit.getType().isWorker() && unit.getTarget()->exists()) unit.setStrategy(1); // If unit is a worker, always fight
-	else if ((unit.unit()->isCloaked() || unit.unit()->isBurrowed()) && Grids().getEDetectorGrid(WalkPosition(unit.getEngagePosition())) <= 0) unit.setStrategy(1); // If unit is invisible and won't be detected, attack
-	else if (unit.getType() == UnitTypes::Protoss_Zealot && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) == 0 && target.getType() == UnitTypes::Terran_Vulture) unit.setStrategy(0);
-	else if (unit.getType() == UnitTypes::Protoss_High_Templar && unit.unit()->getEnergy() < 75) unit.setStrategy(0); // If unit is a High Templar and low energy, retreat	
-	else if (unit.getType() == UnitTypes::Terran_Medic && unit.unit()->getEnergy() <= 0) unit.setStrategy(0); // If unit is a Medic and no energy, retreat	
-	else if (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && unit.getGroundRange() >= unit.getPosition().getDistance(unit.getTargetPosition())) unit.setStrategy(1); // If a unit is a Reaver and within range of an enemy	
-	else if (!unit.getType().isFlyer() && max(unit.getGroundRange(), unit.getAirRange()) <= 32 && (target.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || target.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && unit.getPosition().getDistance(unit.getTargetPosition()) < 128) unit.setStrategy(1); // If unit is a melee ground unit, stay on tanks
-	else if (!unit.getType().isFlyer() && max(unit.getGroundRange(), unit.getAirRange()) <= 32 && target.getType() == UnitTypes::Terran_Vulture_Spider_Mine && !unit.getType().isWorker() && unit.getType() != UnitTypes::Terran_Vulture && unit.getType() != UnitTypes::Protoss_Archon && unit.getType() != UnitTypes::Protoss_Dark_Archon && unit.getType() != UnitTypes::Protoss_Dark_Templar) unit.setStrategy(0); // Avoid attacking mines unless it is a Dark Templar or a floating unit
+	if (!unit.getTarget() || (unit.getPosition().getDistance(unit.getSimPosition()) > 640.0 && decisionGlobal == 1)) unit.setStrategy(3);	 // If unit does not have a target or clearly out of range of sim target, set as "no local"
+	else if (shouldAttack(unit)) unit.setStrategy(1);
+	else if (shouldRetreat(unit)) unit.setStrategy(2);
 
-	else if (BuildOrder().getCurrentBuild() == "Sparks" && !BuildOrder().isOpener()) // Stupid way to hardcode only aggresion from sparks build
-	{
-		if (unit.getTarget()->exists()) unit.setStrategy(1);
-		else unit.setStrategy(3);
-	}
-	else if (unit.getPosition().getDistance(unit.getSimPosition()) > 640.0 && decisionGlobal == 1) unit.setStrategy(3); // If a unit is clearly out of range, set as "no local"
 	else if ((Terrain().isInAllyTerritory(unit.getTilePosition()) && (decisionGlobal == 0 || (!unit.getType().isFlyer() && unit.getGroundLocal() < minThreshold) || (unit.getType().isFlyer() && unit.getAirLocal() < minThreshold))) || (Terrain().isInAllyTerritory(target.getTilePosition()))) // If unit is in ally territory
 	{
-		if (!unit.getTarget()->exists()) unit.setStrategy(2);
-		else if (!Strategy().isHoldChoke())
+		if (!Strategy().isHoldChoke())
 		{
 			if (Grids().getBaseGrid(target.getTilePosition()) > 0 && (!target.getType().isWorker() || Broodwar->getFrameCount() - target.getLastAttackFrame() < 500)) unit.setStrategy(1);
 			else unit.setStrategy(2);
@@ -175,9 +163,10 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 			else unit.setStrategy(0);
 		}
 	}
-	else if (unit.getType() == UnitTypes::Protoss_Corsair && globalEnemyAirStrength > 0.0 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Air_Weapons) <= 0) unit.setStrategy(2);
+	else if (unit.getType().isFlyer() && Players().getNumberZerg() > 0 && globalEnemyAirStrength > 0.0 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Air_Weapons) <= 0) unit.setStrategy(2);
+	else if (!unit.getType().isFlyer() && Players().getNumberZerg() > 0 && BuildOrder().isForgeExpand() && globalEnemyGroundStrength > 0.0 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) <= 0) unit.setStrategy(2);
 	else if (Strategy().isPlayPassive() && !Terrain().isInAllyTerritory(unit.getTilePosition())) unit.setStrategy(2);
-			
+
 	else if (unit.getStrategy() == 1) // If last command was engage
 	{
 		if ((!unit.getType().isFlyer() && unit.getGroundLocal() < minThreshold) || (unit.getType().isFlyer() && unit.getAirLocal() < minThreshold)) unit.setStrategy(0);
@@ -188,6 +177,27 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 		if ((!unit.getType().isFlyer() && unit.getGroundLocal() > maxThreshold) || (unit.getType().isFlyer() && unit.getAirLocal() > maxThreshold)) unit.setStrategy(1);
 		else unit.setStrategy(0);
 	}
+}
+
+bool UnitTrackerClass::shouldAttack(UnitInfo& unit)
+{
+	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());
+
+	if (unit.getType().isWorker() && unit.getTarget()->exists()) return true; // If unit is a worker, always fight
+	else if ((unit.unit()->isCloaked() || unit.unit()->isBurrowed()) && Grids().getEDetectorGrid(WalkPosition(unit.getEngagePosition())) <= 0) return true;
+	else if (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && Util().unitInRange(unit)) return true; // If a unit is a Reaver and within range of an enemy	
+	else if (!unit.getType().isFlyer() && (target.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || target.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && unit.getPosition().getDistance(unit.getTargetPosition()) < 128) return true; // If unit is close to a tank, keep attacking it
+	return false;
+}
+
+bool UnitTrackerClass::shouldRetreat(UnitInfo& unit)
+{
+	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());
+
+	if (unit.getType() == UnitTypes::Protoss_Zealot && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) == 0 && target.getType() == UnitTypes::Terran_Vulture) return true; // If unit is a Zealot, don't chase Vultures TODO -- check for mobility
+	else if (unit.getType() == UnitTypes::Protoss_High_Templar && unit.unit()->getEnergy() < 75) return true; // If unit is a High Templar and low energy, retreat	
+	else if (unit.getType() == UnitTypes::Terran_Medic && unit.unit()->getEnergy() <= 0) return true; // If unit is a Medic and no energy, retreat	
+	return false;
 }
 
 void UnitTrackerClass::updateGlobalSimulation()

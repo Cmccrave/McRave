@@ -73,7 +73,7 @@ double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit)
 {
 	if (unit.getType() == UnitTypes::Zerg_Scourge)
 	{
-		return 8.0;
+		return 2.0;
 	}
 	double range, damage, hp, speed;
 	hp = sqrt((unit.getType().maxHitPoints() + unit.getType().maxShields()) / 10.0);
@@ -152,6 +152,9 @@ double UtilTrackerClass::getPriority(UnitInfo& unit)
 	double strength = max({ unit.getMaxGroundStrength(), unit.getMaxAirStrength(), 1.0 });
 	double cost = ((mineral * 0.33) + (gas * 0.66)) * max(double(unit.getType().supplyRequired()), 0.1);
 	double survivability = max(24.0, unit.getSpeed()) * (unit.getType().maxHitPoints() + unit.getType().maxShields()) / 100.0;
+
+	if (unit.getType() == UnitTypes::Zerg_Scourge || unit.getType() == UnitTypes::Zerg_Infested_Terran) strength = strength * 5.0; // Higher priority on suicidal units
+
 	return strength * cost / survivability;
 }
 

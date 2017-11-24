@@ -8,19 +8,13 @@
 
 // --- AUTHOR NOTES ---
 // TODO:
+// Workers getting stuck when building
 // unQueueBuilding->ONS qM + qG and #buildings queued
 // if overkill, reduce targeting % chance by % overkill
-// Make inRange Units() function including widths
 // Units outside ally territory during passive play dont move
 // Production sat based on active mining bases instead
 // Test using isLastCommand in Units()
 // 4 gate PvT proxy
-
-// Critical (caused losses)
-// Dont chase scouting drone
-// Oversat on a resource
-// Resource grid incorrectly not updating
-
 
 void McRaveModule::onStart()
 {
