@@ -84,18 +84,21 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 		if (!enemy.unit() || enemy.getType().isWorker() || (enemy.unit() && enemy.unit()->exists() && enemy.unit()->isStasised())) continue;
 
 		double widths = enemy.getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
-		double enemyRange = widths + unit.getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange();
-		double unitRange = widths + enemy.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
+		double enemyRange = widths + (unit.getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange());
+		double unitRange = widths + (enemy.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
 		double enemyToEngage = 0.0;
 		double distance = max(0.0, enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange);
+		
+		Broodwar->drawTextMap(enemy.getPosition(), "%.2f", enemyRange);
 
 		if (enemy.getSpeed() > 0.0)
 		{
 			enemyToEngage = max(0.0, (distance - widths) / enemy.getSpeed());
 			simRatio = max(0.0, simulationTime - enemyToEngage);
 		}
-		else if (distance - widths <= 0.0)
+		else if (distance <= 64.0)
 		{
+			Broodwar->drawCircleMap(enemy.getPosition(),16, Colors::Red);
 			enemyToEngage = max(0.0, (unit.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths) / unit.getSpeed());
 			simRatio = max(0.0, simulationTime - enemyToEngage);
 		}
@@ -142,8 +145,8 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 	double widths = target.getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
 	double decisionLocal = unit.getType().isFlyer() ? unit.getAirLocal() : unit.getGroundLocal();
 	double decisionGlobal = unit.getType().isFlyer() ? globalAirStrategy : globalGroundStrategy;
-	double allyRange = widths + target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
-	double enemyRange = widths + unit.getType().tileWidth() + unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange();
+	double allyRange = widths + (target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
+	double enemyRange = widths + (unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange());
 
 	if (!unit.getTarget() || (unit.getPosition().getDistance(unit.getSimPosition()) > 640.0 && decisionGlobal == 1)) unit.setStrategy(3);	 // If unit does not have a target or clearly out of range of sim target, set as "no local"
 	else if (shouldAttack(unit)) unit.setStrategy(1);
