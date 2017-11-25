@@ -66,7 +66,7 @@ void StrategyTrackerClass::protossStrategy()
 		playPassive = true;
 
 	// Check if we need an observer
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) <= 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Dark_Templar] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Citadel_of_Adun] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Templar_Archives] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Ghost] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Vulture] > 4 || Units().getEnemyComposition()[UnitTypes::Zerg_Lurker] > 0 || (Units().getEnemyComposition()[UnitTypes::Zerg_Lair] == 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hydralisk] >= 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hatchery] == 0)))
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) <= 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Dark_Templar] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Citadel_of_Adun] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Templar_Archives] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Ghost] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Vulture] > 8 || Units().getEnemyComposition()[UnitTypes::Zerg_Lurker] > 0 || (Units().getEnemyComposition()[UnitTypes::Zerg_Lair] == 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hydralisk] >= 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hatchery] == 0)))
 		invis = true;
 	else invis = false;
 }

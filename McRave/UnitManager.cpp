@@ -87,9 +87,7 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 		double enemyRange = widths + (unit.getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange());
 		double unitRange = widths + (enemy.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
 		double enemyToEngage = 0.0;
-		double distance = max(0.0, enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange);
-		
-		Broodwar->drawTextMap(enemy.getPosition(), "%.2f", enemyRange);
+		double distance = max(0.0, enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange);		
 
 		if (enemy.getSpeed() > 0.0)
 		{
@@ -98,7 +96,6 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 		}
 		else if (distance <= 64.0)
 		{
-			Broodwar->drawCircleMap(enemy.getPosition(),16, Colors::Red);
 			enemyToEngage = max(0.0, (unit.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths) / unit.getSpeed());
 			simRatio = max(0.0, simulationTime - enemyToEngage);
 		}
@@ -111,7 +108,7 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 		if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && !enemy.unit()->isDetected()) simRatio = simRatio * 5.0;
 		if (!enemy.getType().isFlyer() && Broodwar->getGroundHeight(enemy.getTilePosition()) > Broodwar->getGroundHeight(TilePosition(unit.getEngagePosition()))) simRatio = simRatio * 2.0;
 		if (enemy.getLastVisibleFrame() < Broodwar->getFrameCount()) simRatio = simRatio * (1.0 + ((Broodwar->getFrameCount() - enemy.getLastVisibleFrame()) / 5000));
-
+		
 		enemyLocalGroundStrength += enemy.getVisibleGroundStrength() * simRatio;
 		enemyLocalAirStrength += enemy.getVisibleAirStrength() * simRatio;
 	}
@@ -310,7 +307,7 @@ void UnitTrackerClass::updateEnemy(UnitInfo& unit)
 	// Set last command frame
 	if (unit.unit()->isStartingAttack()) unit.setLastAttackFrame(Broodwar->getFrameCount());
 	if (unit.unit()->getTarget() && unit.unit()->getTarget()->exists()) unit.setTarget(unit.unit()->getTarget());
-	else if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine) unit.setTarget(unit.unit()->getClosestUnit(Filter::GetPlayer == Broodwar->self(), 128));
+	else if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine) unit.setTarget(unit.unit()->getClosestUnit(Filter::GetPlayer == Broodwar->self() && !Filter::IsBuilding && !Filter::IsWorker, 128));
 }
 
 void UnitTrackerClass::storeAlly(Unit unit)

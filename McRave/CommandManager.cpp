@@ -40,7 +40,7 @@ void CommandTrackerClass::updateAlliedUnits()
 			else if (Grids().getPsiStormGrid(unit.getWalkPosition()) > 0 || Grids().getEMPGrid(unit.getWalkPosition()) > 0 || Grids().getESplashGrid(unit.getWalkPosition()) > 0) flee(unit); // If under a storm, dark swarm or EMP
 
 			// Remove wall if needed - testing
-			if (unit.getStrategy() == 3 && unit.getGroundDamage() > 0.0 && Units().getSupply() > 200 && wall && wall->exists() && BuildOrder().isForgeExpand() && wall->getPosition().getDistance(unit.getPosition()) < 320)
+			else if (unit.getStrategy() == 3 && unit.getGroundDamage() > 0.0 && Units().getSupply() > 200 && wall && wall->exists() && BuildOrder().isForgeExpand() && wall->getPosition().getDistance(unit.getPosition()) < 320)
 			{
 				if (unit.unit()->getLastCommand().getTarget() != wall)
 				{

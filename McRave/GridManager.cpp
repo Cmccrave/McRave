@@ -16,17 +16,21 @@ void GridTrackerClass::update()
 void GridTrackerClass::reset()
 {
 	//// Temp debugging for tile positions
-	//for (int x = 0; x <= Broodwar->mapWidth(); x++)
+	//for (int x = 0; x <= Broodwar->mapWidth()*4; x++)
 	//{
-	//	for (int y = 0; y <= Broodwar->mapHeight(); y++)
+	//	for (int y = 0; y <= Broodwar->mapHeight()*4; y++)
 	//	{
 	//		/*if (buildingGrid[x][y] > 0)
 	//		{
 	//		Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
 	//		}*/
-	//		if (resourceGrid[x][y] > 0)
+	//		/*if (resourceGrid[x][y] > 0)
 	//		{
 	//			Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
+	//		}*/
+	//		if (aGroundClusterGrid[x][y] > 0)
+	//		{
+	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
 	//		}
 	//		//if (mobilityGrid[x][y] > 0 && mobilityGrid[x][y] < 4)
 	//		//{
