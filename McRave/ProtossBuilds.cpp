@@ -89,22 +89,37 @@ void BuildOrderTrackerClass::P12Nexus()
 	{
 		buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24);
 		buildingDesired[UnitTypes::Protoss_Gateway] = (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core)) + (Units().getSupply() >= 26) + (Units().getSupply() >= 76) + (Units().getSupply() >= 82);
-		buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 28) + (Units().getSupply() >= 70);
+		buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 30) + (Units().getSupply() >= 70);
+		buildingDesired[UnitTypes::Protoss_Shield_Battery] = (Units().getSupply() >= 70);
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = (Units().getSupply() >= 30);
-		getOpening = Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) <= 0;
+		getOpening = Units().getSupply() < 120;
 		nexusFirst = true;
 	}
 }
 
 void BuildOrderTrackerClass::P21Nexus()
 {
-	buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 42);
-	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 44);
-	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
-	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
-	buildingDesired[UnitTypes::Protoss_Robotics_Facility] = Units().getSupply() >= 56;
-	getOpening = Units().getSupply() < 70;
-	oneGateCore = true;
+	if (Strategy().isEnemyFastExpand())
+	{
+		buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 42);
+		buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 44);
+		buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
+		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
+		buildingDesired[UnitTypes::Protoss_Robotics_Facility] = Units().getSupply() >= 56;
+		getOpening = Units().getSupply() < 70;
+		nexusFirst = true;
+	}
+	else
+	{
+		buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 42);
+		buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 44) + (Units().getSupply() >= 76);
+		buildingDesired[UnitTypes::Protoss_Shield_Battery] = (Units().getSupply() >= 70);
+		buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
+		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
+		buildingDesired[UnitTypes::Protoss_Robotics_Facility] = Units().getSupply() >= 56;
+		getOpening = Units().getSupply() < 100;
+		nexusFirst = true;
+	}
 }
 
 void BuildOrderTrackerClass::PDTExpand()

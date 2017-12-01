@@ -69,7 +69,7 @@ void SpecialUnitTrackerClass::updateDetectors()
 		}
 
 		// Check if any expansions need detection on them
-		if (BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] > Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) && Grids().getADetectorGrid(WalkPosition(Buildings().getCurrentExpansion())) == 0)
+		if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) > 1 && BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] > Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) && Grids().getADetectorGrid(WalkPosition(Buildings().getCurrentExpansion())) == 0)
 		{
 			detector.setEngagePosition(Position((Buildings().getCurrentExpansion())));
 			detector.unit()->move(Position((Buildings().getCurrentExpansion())));

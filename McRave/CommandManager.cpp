@@ -18,7 +18,7 @@ void CommandTrackerClass::updateAlliedUnits()
 		if ((unit.getType() == UnitTypes::Protoss_Scarab || unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine) && unit.getTarget() && unit.getTarget()->exists()) moveGroup.insert(unit.getTarget());
 	}
 
-	Unit wall = Broodwar->getClosestUnit(Position(Terrain().getLargeWall()), Filter::IsAlly && Filter::GetType == UnitTypes::Protoss_Gateway, 32);	
+	Unit wall = Broodwar->getClosestUnit(Position(Terrain().getLargeWall()), Filter::IsAlly && Filter::GetType == UnitTypes::Protoss_Gateway, 32);
 
 	for (auto &u : Units().getAllyUnits())
 	{
@@ -27,7 +27,7 @@ void CommandTrackerClass::updateAlliedUnits()
 		if (unit.getType() == UnitTypes::Protoss_Observer || unit.getType() == UnitTypes::Protoss_Arbiter || unit.getType() == UnitTypes::Protoss_Shuttle) continue; // Support units and transports have their own commands
 		if (unit.getLastCommandFrame() >= Broodwar->getFrameCount()) continue; // If the unit received a command already during this frame		
 		if (unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted()) continue; // If the unit is locked down, maelstrommed, stassised, or not completed
-		
+
 		// If the unit is ready to perform an action after an attack (certain units have minimum frames after an attack before they can receive a new command)
 		if (Broodwar->getFrameCount() - unit.getLastAttackFrame() > unit.getMinStopFrame() - Broodwar->getLatencyFrames())
 		{
@@ -35,7 +35,7 @@ void CommandTrackerClass::updateAlliedUnits()
 			if (moveGroup.find(unit.unit()) != moveGroup.end())
 			{
 				if (unit.unit()->getGroundWeaponCooldown() > 0) approach(unit);
-				else attack(unit);
+				else if (unit.getTarget() && unit.getTarget()->exists()) attack(unit);
 			}
 			else if (Grids().getPsiStormGrid(unit.getWalkPosition()) > 0 || Grids().getEMPGrid(unit.getWalkPosition()) > 0 || Grids().getESplashGrid(unit.getWalkPosition()) > 0) flee(unit); // If under a storm, dark swarm or EMP
 
@@ -53,7 +53,7 @@ void CommandTrackerClass::updateAlliedUnits()
 			else if ((Units().getGlobalGroundStrategy() == 0 && !unit.getType().isFlyer()) || (Units().getGlobalAirStrategy() == 0 && unit.getType().isFlyer()))
 			{
 				if (unit.getStrategy() == 0) flee(unit); // If locally behind, flee				
-				else if (unit.getStrategy() == 1 && unit.getTarget()->exists()) attack(unit); // If locally ahead, attack
+				else if (unit.getStrategy() == 1 && unit.getTarget()->exists()) engage(unit); // If locally ahead, attack
 				else defend(unit);
 			}
 
@@ -61,7 +61,7 @@ void CommandTrackerClass::updateAlliedUnits()
 			else if ((Units().getGlobalGroundStrategy() == 1 && !unit.getType().isFlyer()) || (Units().getGlobalAirStrategy() == 1 && unit.getType().isFlyer()))
 			{
 				if (unit.getStrategy() == 0) flee(unit); // If locally behind, flee				
-				else if (unit.getStrategy() == 1 && unit.getTarget()->exists()) attack(unit); // If locally ahead, attack				
+				else if (unit.getStrategy() == 1 && unit.getTarget()->exists()) engage(unit); // If locally ahead, attack				
 				else if (unit.getStrategy() == 2) defend(unit); // If within ally territory, defend				
 				else move(unit); // Else move unit
 			}
@@ -70,7 +70,7 @@ void CommandTrackerClass::updateAlliedUnits()
 	return;
 }
 
-void CommandTrackerClass::attack(UnitInfo& unit)
+void CommandTrackerClass::engage(UnitInfo& unit)
 {
 	// Specific Medic behavior
 	if (unit.getType() == UnitTypes::Terran_Medic)
@@ -88,7 +88,6 @@ void CommandTrackerClass::attack(UnitInfo& unit)
 	}
 	else
 	{
-		// TEMP -- Set to false initially
 		bool moveAway = false;
 		bool moveTo = false;
 		UnitInfo &target = Units().getEnemyUnit(unit.getTarget());
@@ -155,51 +154,17 @@ void CommandTrackerClass::attack(UnitInfo& unit)
 			}
 		}
 
-		// If kiting unnecessary, disable
-		if (unit.getTarget()->getType().isBuilding())
-		{
-			moveAway = false;
-		}
-
 		// If enemy is invis, run from it
-		else if ((unit.getTarget()->isBurrowed() || unit.getTarget()->isCloaked()) && !unit.getTarget()->isDetected() && target.getPosition().getDistance(unit.getPosition()) < target.getGroundRange())
+		if ((target.unit()->isBurrowed() || target.unit()->isCloaked()) && !target.unit()->isDetected() && target.getPosition().getDistance(unit.getPosition()) < target.getGroundRange() + target.getSpeed())
 		{
 			flee(unit);
 		}
 
-		// Reavers should always kite away from their target if it has lower range
-		else if (unit.getType() == UnitTypes::Protoss_Reaver && target.getGroundRange() < unit.getGroundRange())
-		{
-			moveAway = true;
-		}
-
-		// If kiting is a good idea, enable
-		else if ((unit.getGroundRange() > 32 && unit.unit()->isUnderAttack()) || (target.getGroundRange() <= unit.getGroundRange() && (unit.unit()->getDistance(unit.getTargetPosition()) <= unit.getGroundRange() - target.getGroundRange() && target.getGroundRange() > 0 && unit.getGroundRange() > 32 || unit.unit()->getHitPoints() < 40)))
-		{
-			moveAway = true;
-		}
-
-		// If approaching is necessary
-		if ((unit.getGroundRange() > 32 && unit.getGroundRange() < target.getGroundRange() && !target.getType().isBuilding() && unit.getSpeed() > target.getSpeed()) || (unit.getType().isFlyer() && target.getType() != UnitTypes::Zerg_Scourge))
-		{
-			moveTo = true;
-		}
-
-		// If kite is true and weapon on cooldown, move
-		if ((!target.getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() > 0 || target.getType().isFlyer() && unit.unit()->getAirWeaponCooldown() > 0 || (unit.getTarget()->exists() && (unit.getTarget()->isCloaked() || unit.getTarget()->isBurrowed()) && !unit.getTarget()->isDetected())))
-		{
-			if (moveTo) approach(unit);
-			else if (moveAway) flee(unit);
-		}
-		else
-		{
-			if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Attack_Unit || unit.unit()->getLastCommand().getTarget() != unit.getTarget())
-			{
-				unit.unit()->attack(unit.getTarget());
-			}
-		}
+		// TODO
+		if (shouldAttack(unit)) attack(unit);
+		else if (shouldApproach(unit)) approach(unit);
+		else if (shouldKite(unit)) flee(unit);
 	}
-	return;
 }
 
 void CommandTrackerClass::move(UnitInfo& unit)
@@ -216,47 +181,39 @@ void CommandTrackerClass::move(UnitInfo& unit)
 	// If unit has a transport, move to it or load into it
 	else if (unit.getTransport() && unit.getTransport()->exists())
 	{
-		unit.unit()->rightClick(unit.getTransport());
+		if (!isLastCommand(unit, UnitCommandTypes::Right_Click_Unit, unit.getTransport()->getPosition()))
+			unit.unit()->rightClick(unit.getTransport());
 	}
 
 	// If target doesn't exist, move towards it
-	else if (unit.getTarget() && unit.getTargetPosition().isValid() && (unit.getPosition().getDistance(unit.getTargetPosition()) < 640 || unit.getType().isFlyer()))
+	else if (unit.getTarget() && unit.getTargetPosition().isValid())
 	{
-		if (unit.unit()->getLastCommand().getTargetPosition() != unit.getTargetPosition() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move) unit.unit()->move(unit.getTargetPosition());
+		if (!isLastCommand(unit, UnitCommandTypes::Move, unit.getTargetPosition()))
+			unit.unit()->move(unit.getTargetPosition());
 	}
 
 	else if (Terrain().getAttackPosition().isValid() && !unit.getType().isFlyer())
 	{
-		if (unit.unit()->getLastCommand().getTargetPosition() != Terrain().getAttackPosition() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move) unit.unit()->move(Terrain().getAttackPosition());
+		if (!isLastCommand(unit, UnitCommandTypes::Move, Terrain().getAttackPosition()))
+			unit.unit()->move(Terrain().getAttackPosition());
 	}
 
 	// If no target and no enemy bases, move to a random base
-	else
+	else if (unit.unit()->isIdle())
 	{
 		int random = rand() % (Terrain().getAllBaseLocations().size() - 1);
 		int i = 0;
-		if (unit.unit()->isIdle())
+		for (auto &base : Terrain().getAllBaseLocations())
 		{
-			for (auto &base : Terrain().getAllBaseLocations())
-			{
-				if (i == random)
-				{
-					unit.unit()->move(Position(base));
-					return;
-				}
-				else
-				{
-					i++;
-				}
-			}
+			if (i == random) unit.unit()->move(Position(base));
+			else i++;
 		}
 	}
-	return;
 }
 
 void CommandTrackerClass::defend(UnitInfo& unit)
 {
-	// Early on, defend mineral line - TODO: Use ordered bases to check which one to hold
+	// Early on, defend mineral line
 	if (!Strategy().isHoldChoke())
 	{
 		if (unit.getType() == UnitTypes::Protoss_Dragoon && Terrain().getBackMineralHoldPosition().isValid())
@@ -265,7 +222,6 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 			{
 				unit.unit()->move(Terrain().getBackMineralHoldPosition());
 			}
-			return;
 		}
 		else
 		{
@@ -273,51 +229,51 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 			{
 				unit.unit()->move(Terrain().getMineralHoldPosition());
 			}
-			return;
 		}
 	}
-
-	// Defend chokepoint with concave
-	int min = max(64, int(unit.getGroundRange()));
-	int max = int(unit.getGroundRange()) + 256;
-	double closestD = 0.0;
-	WalkPosition start = unit.getWalkPosition();
-	WalkPosition bestPosition = start;
-
-	// Find closest chokepoint
-	WalkPosition choke = WalkPosition(Terrain().getFirstChoke());
-	if (BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] >= 2 || BuildOrder().getBuildingDesired()[UnitTypes::Terran_Command_Center] >= 2 || Strategy().isAllyFastExpand())
+	else
 	{
-		choke = WalkPosition(Terrain().getSecondChoke());
-	}
+		// Defend chokepoint with concave
+		int min = max(64, int(unit.getGroundRange()));
+		int max = int(unit.getGroundRange()) + 256;
+		double closestD = 0.0;
+		WalkPosition start = unit.getWalkPosition();
+		WalkPosition bestPosition = start;
 
-	// Find suitable position to hold at chokepoint
-	if (Terrain().isInAllyTerritory(unit.getTilePosition())) closestD = unit.getPosition().getDistance(Position(choke));
-	for (int x = choke.x - 35; x <= choke.x + 35; x++)
-	{
-		for (int y = choke.y - 35; y <= choke.y + 35; y++)
+		// Find closest chokepoint
+		WalkPosition choke = WalkPosition(Terrain().getFirstChoke());
+		if (BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] >= 2 || BuildOrder().getBuildingDesired()[UnitTypes::Terran_Command_Center] >= 2 || Strategy().isAllyFastExpand())
 		{
-			if (WalkPosition(x, y).isValid() && theMap.GetArea(WalkPosition(x, y)) && Terrain().getAllyTerritory().find(theMap.GetArea(WalkPosition(x, y))->Id()) != Terrain().getAllyTerritory().end() && Position(WalkPosition(x, y)).getDistance(Position(choke)) > min && Position(WalkPosition(x, y)).getDistance(Position(choke)) < max && (Position(WalkPosition(x, y)).getDistance(Position(choke)) < closestD || closestD == 0.0))
+			choke = WalkPosition(Terrain().getSecondChoke());
+		}
+
+		// Find suitable position to hold at chokepoint
+		if (Terrain().isInAllyTerritory(unit.getTilePosition())) closestD = unit.getPosition().getDistance(Position(choke));
+		for (int x = choke.x - 35; x <= choke.x + 35; x++)
+		{
+			for (int y = choke.y - 35; y <= choke.y + 35; y++)
 			{
-				if (Util().isMobile(start, WalkPosition(x, y), unit.getType()))
+				if (WalkPosition(x, y).isValid() && theMap.GetArea(WalkPosition(x, y)) && Terrain().getAllyTerritory().find(theMap.GetArea(WalkPosition(x, y))->Id()) != Terrain().getAllyTerritory().end() && Position(WalkPosition(x, y)).getDistance(Position(choke)) > min && Position(WalkPosition(x, y)).getDistance(Position(choke)) < max && (Position(WalkPosition(x, y)).getDistance(Position(choke)) < closestD || closestD == 0.0))
 				{
-					bestPosition = WalkPosition(x, y);
-					closestD = Position(WalkPosition(x, y)).getDistance(Position(choke));
+					if (Util().isMobile(start, WalkPosition(x, y), unit.getType()))
+					{
+						bestPosition = WalkPosition(x, y);
+						closestD = Position(WalkPosition(x, y)).getDistance(Position(choke));
+					}
 				}
 			}
 		}
-	}
 
-	if (bestPosition.isValid() && bestPosition != start)
-	{
-		if (unit.unit()->getLastCommand().getTargetPosition() != Position(bestPosition) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
+		if (bestPosition.isValid() && bestPosition != start)
 		{
-			unit.unit()->move(Position(bestPosition));
+			if (unit.unit()->getLastCommand().getTargetPosition() != Position(bestPosition) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
+			{
+				unit.unit()->move(Position(bestPosition));
+			}
+			unit.setDestination(Position(bestPosition));
+			Grids().updateAllyMovement(unit.unit(), bestPosition);
 		}
-		unit.setDestination(Position(bestPosition));
-		Grids().updateAllyMovement(unit.unit(), bestPosition);
 	}
-	return;
 }
 
 void CommandTrackerClass::flee(UnitInfo& unit)
@@ -367,12 +323,14 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 		for (int y = start.y - 16; y <= start.y + 16 + (unit.getType().height() / 8.0); y++)
 		{
 			if (!WalkPosition(x, y).isValid()) continue;
-			if (Grids().getPsiStormGrid(WalkPosition(x, y)) > 0 || Grids().getEMPGrid(WalkPosition(x, y)) > 0 || Grids().getESplashGrid(WalkPosition(x, y)) > 0) continue;			
+			if (Grids().getPsiStormGrid(WalkPosition(x, y)) > 0 || Grids().getEMPGrid(WalkPosition(x, y)) > 0 || Grids().getESplashGrid(WalkPosition(x, y)) > 0) continue;
 
-			distance = unit.getType().isFlyer() ? Position(WalkPosition(x,y)).getDistance(Terrain().getPlayerStartingPosition()) : double(Grids().getDistanceHome(x, y)); // Distance value		
+			if (Terrain().isInAllyTerritory(unit.getTilePosition())) distance = 1.0 / (32.0 + Position(WalkPosition(x, y)).getDistance(unit.getTargetPosition()));
+			else distance = unit.getType().isFlyer() ? Position(WalkPosition(x, y)).getDistance(Terrain().getPlayerStartingPosition()) : double(Grids().getDistanceHome(x, y)); // Distance value	
+
 			mobility = unit.getType().isFlyer() ? 1.0 : double(Grids().getMobilityGrid(x, y)); // If unit is a flyer, ignore mobility
 			threat = unit.getType().isFlyer() ? max(0.01, Grids().getEAirThreat(x, y)) : max(0.01, Grids().getEGroundThreat(x, y)); // If unit is a flyer, use air threat
-			
+
 			if ((!bestPosition.isValid() || distance < closest || (distance <= closest && mobility / threat > best)) && Util().isMobile(start, WalkPosition(x, y), unit.getType()))
 			{
 				bestPosition = WalkPosition(x, y);
@@ -392,17 +350,21 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 			unit.unit()->move(Position(bestPosition));
 		}
 	}
-	return;
+}
+
+void CommandTrackerClass::attack(UnitInfo& unit)
+{
+	if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Attack_Unit || unit.unit()->getLastCommand().getTarget() != unit.getTarget())
+	{
+		unit.unit()->attack(unit.getTarget());
+	}
 }
 
 void CommandTrackerClass::approach(UnitInfo& unit)
 {
 	// TODO, use linear interpolation to approach closer, so that units can approach a cliff to snipe units on higher terrain (carriers, tanks)
 	if (unit.getTargetPosition().isValid() && (unit.unit()->getLastCommand().getTargetPosition() != unit.getTargetPosition() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move))
-	{
 		unit.unit()->move(unit.getTargetPosition());
-	}
-	return;
 }
 
 void CommandTrackerClass::exploreArea(UnitInfo& unit)
@@ -413,6 +375,44 @@ void CommandTrackerClass::exploreArea(UnitInfo& unit)
 	// Last explored
 	// Unit deaths
 	// Untouched resources
+}
+
+bool CommandTrackerClass::shouldAttack(UnitInfo& unit)
+{
+	UnitInfo &target = Units().getEnemyUnit(unit.getTarget());
+	double widths = target.getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
+	double enemyRange = widths + (unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange());
+	double allyRange = widths + (target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
+
+	if (!target.getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() <= 0) return true;
+	else if (target.getType().isFlyer() && unit.unit()->getAirWeaponCooldown() <= 0) return true;
+	return false;
+}
+
+bool CommandTrackerClass::shouldKite(UnitInfo& unit)
+{
+	UnitInfo &target = Units().getEnemyUnit(unit.getTarget());
+	double widths = target.getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
+	double enemyRange = widths + (unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange());
+	double allyRange = widths + (target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
+
+	if (target.getType().isBuilding()) return false; // Don't kite buildings
+	else if (unit.getType() == UnitTypes::Protoss_Reaver && target.getGroundRange() < unit.getGroundRange()) return true; // Reavers should always kite away from their target if it has lower range
+	else if (allyRange > 32.0 && unit.unit()->isUnderAttack() && allyRange >= enemyRange) return true;
+	else if (enemyRange <= allyRange && (unit.unit()->getDistance(unit.getTargetPosition()) <= allyRange - enemyRange) || unit.unit()->getHitPoints() < 40) return true;
+	return false;
+}
+
+bool CommandTrackerClass::shouldApproach(UnitInfo& unit)
+{
+	UnitInfo &target = Units().getEnemyUnit(unit.getTarget());
+	double widths = target.getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
+	double enemyRange = widths + (unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange());
+	double allyRange = widths + (target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
+
+	if (unit.getGroundRange() > 32 && unit.getGroundRange() < target.getGroundRange() && !target.getType().isBuilding() && unit.getSpeed() > target.getSpeed()) return true;
+	else if (unit.getType().isFlyer() && target.getType() != UnitTypes::Zerg_Scourge) return true;
+	return false;
 }
 
 bool CommandTrackerClass::isLastCommand(UnitInfo& unit, UnitCommandType thisCommand, Position thisPosition)

@@ -21,8 +21,10 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		thisUnit = 0.0;
 		UnitInfo &enemy = e.second;
 		if (!enemy.unit()) continue;
-		double allyRange = (unit.getType().width() / 2.0) + enemy.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
+		double widths = unit.getType().tileWidth() * 16.0 + enemy.getType().tileWidth() * 16.0;
+		double allyRange = widths + (enemy.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
 		double distance = pow(max(allyRange, unit.getPosition().getDistance(enemy.getPosition())), 5.0);
+		
 
 		if ((unit.getType().isFlyer() && enemy.getAirDamage() > 0.0) || (!unit.getType().isFlyer() && enemy.getGroundDamage() > 0.0) || (enemy.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0))
 		{
@@ -34,7 +36,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		}
 
 		if (enemy.getType() == UnitTypes::Zerg_Egg || enemy.getType() == UnitTypes::Zerg_Larva) continue; // If it's an egg or larva, ignore it		
-		if (!unit.getType().isDetector() && ((enemy.getType().isFlyer() && unit.getAirRange() == 0.0) || (!enemy.getType().isFlyer() && unit.getGroundRange() == 0.0))) continue; // If unit is dead or unattackable, ignore it		
+		if (!unit.getType().isDetector() && ((enemy.getType().isFlyer() && unit.getAirRange() <= 0.0) || (!enemy.getType().isFlyer() && unit.getGroundRange() <= 0.0))) continue; // If unit is dead or unattackable, ignore it		
 		if (enemy.unit()->exists() && enemy.unit()->isStasised()) continue; // If the enemy is stasised, ignore it		
 		if (enemy.getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.getGroundRange() < 32 && unit.getType() != UnitTypes::Protoss_Dark_Templar) continue; // If the enemy is a mine and this is a melee unit (except DT), ignore it
 		if (unit.getTransport() && enemy.getType().isBuilding()) continue; // If unit is loaded, don't target buildings		
@@ -64,14 +66,13 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		// High Templars target the highest priority with the largest cluster
 		else if (unit.getType() == UnitTypes::Protoss_High_Templar)
 		{
-			if (Grids().getPsiStormGrid(enemy.getWalkPosition()) == 0 && Grids().getAGroundCluster(enemy.getWalkPosition()) < (Grids().getEAirCluster(enemy.getWalkPosition()) + Grids().getEGroundCluster(enemy.getWalkPosition())) && !enemy.getType().isBuilding())
+			if (Grids().getPsiStormGrid(enemy.getWalkPosition()) == 0 && (Grids().getAGroundCluster(enemy.getWalkPosition()) + Grids().getAAirCluster(enemy.getWalkPosition())) < (Grids().getEAirCluster(enemy.getWalkPosition()) + Grids().getEGroundCluster(enemy.getWalkPosition())) && !enemy.getType().isBuilding())
 			{
-				thisUnit = (enemy.getPriority() * max(Grids().getEGroundCluster(enemy.getWalkPosition()), Grids().getEAirCluster(enemy.getWalkPosition()))) / distance;
+				thisUnit = (enemy.getPriority() * (Grids().getEGroundCluster(enemy.getWalkPosition()) + Grids().getEAirCluster(enemy.getWalkPosition()))) / distance;
 			}
 		}
 
-		else if ((enemy.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0)) thisUnit = enemy.getPriority() / distance;
-		//if (!enemy.unit()->exists()) thisUnit = thisUnit * (1.0 - max(0.75, double(Broodwar->getFrameCount() - enemy.getLastVisibleFrame()) / 5000));	
+		else if ((enemy.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0)) thisUnit = enemy.getPriority() / distance;		
 
 		// If this is the strongest enemy around, target it
 		if (thisUnit >= highest)
@@ -115,15 +116,8 @@ Unit TargetTrackerClass::allyTarget(UnitInfo& unit)
 	for (auto &a : Units().getAllyUnits())
 	{
 		UnitInfo ally = a.second;
-		if (!ally.unit() || !ally.getType().isOrganic())
-		{
-			continue;
-		}
-
-		if (ally.unit()->isBeingHealed() || unit.unit() != ally.unit())
-		{
-			continue;
-		}
+		if (!ally.unit() || !ally.getType().isOrganic()) continue;
+		if (ally.unit()->isBeingHealed() || unit.unit() != ally.unit())	continue;
 
 		double distance = unit.getPosition().getDistance(ally.getPosition());
 

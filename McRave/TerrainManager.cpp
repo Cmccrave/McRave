@@ -63,6 +63,9 @@ void TerrainTrackerClass::updateAreas()
 	else if (enemyStartingPosition.isValid() && !Broodwar->isExplored(enemyStartingTilePosition)) attackPosition = enemyStartingPosition;
 	else attackPosition = Positions::Invalid;
 
+	if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) <= 1) defendPosition = Position(firstChoke);
+	else if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) > 1) defendPosition = Position(secondChoke);
+
 	// Set mineral holding positions
 	for (auto &base : Bases().getMyBases())
 	{

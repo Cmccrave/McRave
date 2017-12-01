@@ -14,7 +14,7 @@ class TerrainTrackerClass
 	TilePosition enemyStartingTilePosition, playerStartingTilePosition, FFEPosition;
 	TilePosition secondChoke, firstChoke;
 	Position mineralHold, backMineralHold;
-	Position attackPosition;
+	Position attackPosition, defendPosition;
 	TilePosition natural;
 	TilePosition bMedium, bLarge, bSmall;
 	Area const * naturalArea;
@@ -52,8 +52,8 @@ public:
 	TilePosition getMediumWall() { return bMedium; }
 	TilePosition getLargeWall() { return bLarge; }
 
-
 	Position getAttackPosition() { return attackPosition; }
+	Position getDefendPosition() { return defendPosition; }
 };
 
 typedef Singleton<TerrainTrackerClass> TerrainTracker;

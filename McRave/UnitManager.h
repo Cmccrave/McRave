@@ -18,6 +18,7 @@ class UnitTrackerClass
 
 	set<Unit> returnValues;
 	set<Unit> enemyThreats;
+	set<Unit> armedMines;
 
 	double globalAllyGroundStrength, globalEnemyGroundStrength;
 	double globalAllyAirStrength, globalEnemyAirStrength;
@@ -33,6 +34,7 @@ public:
 	map<UnitType, int>& getEnemyComposition() { return enemyComposition; }
 
 	set<Unit> getAllyUnitsFilter(UnitType);
+	set<Unit> getEnemyUnitsFilter(UnitType);
 
 	UnitInfo& getAllyUnit(Unit);
 	UnitInfo& getEnemyUnit(Unit);
@@ -51,6 +53,8 @@ public:
 	bool shouldAttack(UnitInfo&);
 	bool shouldDefend(UnitInfo&);
 	bool shouldRetreat(UnitInfo&);
+	bool isBehind(UnitInfo&);
+	bool isAhead(UnitInfo&);
 
 	// Updating
 	void update();

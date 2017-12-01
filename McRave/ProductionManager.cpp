@@ -58,7 +58,11 @@ void ProductionTrackerClass::updateProduction()
 					idleProduction[building.unit()] = bestType;
 					reservedMineral += bestType.mineralPrice();
 					reservedGas += bestType.gasPrice();
-
+				}
+				else
+				{
+					reservedMineral += bestType.mineralPrice();
+					reservedGas += bestType.gasPrice();
 				}
 			}
 
@@ -229,7 +233,7 @@ bool ProductionTrackerClass::isSuitable(UnitType unit)
 
 		// Robo Units
 	case UnitTypes::Enum::Protoss_Shuttle:
-		return (!Strategy().needDetection() && 2 * Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle) < Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver));
+		return (!Strategy().needDetection() && 2 * Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle) < (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_High_Templar)));
 		break;
 	case UnitTypes::Enum::Protoss_Reaver:
 		return !Strategy().needDetection();
@@ -240,7 +244,7 @@ bool ProductionTrackerClass::isSuitable(UnitType unit)
 
 		// Stargate Units
 	case UnitTypes::Enum::Protoss_Corsair:
-		return true;
+		return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Corsair) < 10;
 		break;
 	case UnitTypes::Enum::Protoss_Scout:
 		return true;
@@ -304,7 +308,7 @@ bool ProductionTrackerClass::isSuitable(UpgradeType upgrade)
 
 			// Range upgrades
 		case UpgradeTypes::Enum::Singularity_Charge:
-			return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon) >= 2 * (1 + BuildOrder().isNexusFirst());
+			return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon) >= 2 * (1 + BuildOrder().isNexusFirst());			
 
 			// Sight upgrades
 		case UpgradeTypes::Enum::Apial_Sensors:

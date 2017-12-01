@@ -165,7 +165,7 @@ void WorkerTrackerClass::updateDecision(WorkerInfo& worker)
 	}
 
 	// Scout logic
-	if (!scout || (scout && !scout->exists()))
+	if ((!Terrain().getEnemyStartingPosition().isValid() || !Strategy().isPlayPassive()) && (!scout || !scout->exists()))
 	{
 		scout = getClosestWorker(Position(Terrain().getSecondChoke()));
 	}

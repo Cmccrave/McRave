@@ -61,12 +61,12 @@ void StrategyTrackerClass::protossStrategy()
 		enemyFastExpand = false;
 	}
 
-	// Check if Terran is playing aggresive in mid game
-	if (BuildOrder().isOpener() && BuildOrder().isNexusFirst())
-		playPassive = true;
+	// If it's Nexus first and in opener, need to play passive
+	if (!enemyFastExpand && BuildOrder().isOpener() && BuildOrder().isNexusFirst())
+		//playPassive = true;
 
 	// Check if we need an observer
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) <= 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Dark_Templar] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Citadel_of_Adun] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Templar_Archives] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Ghost] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Vulture] > 8 || Units().getEnemyComposition()[UnitTypes::Zerg_Lurker] > 0 || (Units().getEnemyComposition()[UnitTypes::Zerg_Lair] == 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hydralisk] >= 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hatchery] == 0)))
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) <= 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Dark_Templar] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Citadel_of_Adun] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Templar_Archives] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Ghost] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Vulture] >= 10 || Units().getEnemyComposition()[UnitTypes::Zerg_Lurker] > 0 || (Units().getEnemyComposition()[UnitTypes::Zerg_Lair] == 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hydralisk] >= 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hatchery] == 0)))
 		invis = true;
 	else invis = false;
 }
@@ -130,6 +130,9 @@ void StrategyTrackerClass::updateScoring()
 			updateTerranUnitScore(t.first, t.second);
 		t.second = 0;
 	}
+
+	if (Broodwar->self()->getRace() == Races::Protoss)
+		unitScore[UnitTypes::Protoss_Shuttle] += ceil((double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_High_Templar)) / 4.0) + (double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) / 2))) - Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle);
 
 	// Update Unit score based on performance
 	for (auto &t : unitScore)

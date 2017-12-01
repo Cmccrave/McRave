@@ -28,7 +28,7 @@ void GridTrackerClass::reset()
 	//		{
 	//			Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
 	//		}*/
-	//		if (aGroundClusterGrid[x][y] > 0)
+	//		if (eGroundClusterGrid[x][y] > 0)
 	//		{
 	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
 	//		}
@@ -104,11 +104,12 @@ void GridTrackerClass::updateAllyGrids()
 	for (auto &u : Units().getAllyUnits())
 	{
 		UnitInfo &unit = u.second;
-		if (unit.getType() == UnitTypes::Protoss_Arbiter || unit.getType() == UnitTypes::Protoss_Observer) continue;
+		if (unit.getType() == UnitTypes::Protoss_Arbiter || unit.getType() == UnitTypes::Protoss_Observer || unit.getType() == UnitTypes::Protoss_Shuttle) continue;
 		double width = double(unit.getType().width());
 		int walkWidth = int(double(unit.getType().width()) / 8.0);
-		int radius = int((unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0);
+		int radius = max(12, int((unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0));
 		WalkPosition start = unit.getWalkPosition();
+		WalkPosition center = WalkPosition(start.x + walkWidth, start.y + walkWidth);
 
 		for (int x = start.x - radius; x <= start.x + radius + walkWidth; x++)
 		{
@@ -119,7 +120,7 @@ void GridTrackerClass::updateAllyGrids()
 				double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(unit.getPosition()) - (width / 2.0));
 
 				// Cluster grids
-				if (start.getDistance(WalkPosition(x, y)) <= 20)
+				if (center.getDistance(WalkPosition(x, y)) <= 12)
 				{
 					if (unit.getType().isFlyer())
 					{
@@ -207,6 +208,7 @@ void GridTrackerClass::updateEnemyGrids()
 		double gRange = unit.getGroundRange(), aRange = unit.getAirRange();
 		int radius = 0;
 		WalkPosition start = unit.getWalkPosition();
+		WalkPosition center = WalkPosition(start.x + walkWidth, start.y + walkWidth);
 
 		if (((unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine && !unit.unit()->isBurrowed()) || unit.getType() == UnitTypes::Protoss_Scarab) && unit.getTarget() && unit.getTarget()->exists() && unit.getTarget()->getPlayer() == Broodwar->self() && !unit.getTarget()->getType().isWorker())
 		{
@@ -228,14 +230,14 @@ void GridTrackerClass::updateEnemyGrids()
 		{
 			if (unit.unit()->exists() && (!Terrain().isInAllyTerritory(unit.getTilePosition()) || (Broodwar->getFrameCount() - unit.getLastAttackFrame() < 500)))
 			{
-				radius = int((unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0);
+				radius = max(12, int((unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0));
 				gReach = unit.getGroundRange() + unit.getSpeed();
 			}
 			else continue;
 		}
 		else
 		{
-			radius = int((unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0);
+			radius = max(12, int((unit.getSpeed() + max(unit.getGroundRange(), unit.getAirRange())) / 8.0));
 			gReach = unit.getGroundRange() + unit.getSpeed();
 			aReach = unit.getAirRange() + unit.getSpeed();
 		}
@@ -255,7 +257,7 @@ void GridTrackerClass::updateEnemyGrids()
 				double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(unit.getPosition()) - (width / 2.0));
 
 				// Cluster grids
-				if (x >= start.x - 4 && x < start.x + 4 + (width / 8.0) && y >= start.y - 4 && y < start.y + 4 + (width / 8.0))
+				if (!unit.getType().isBuilding() && center.getDistance(WalkPosition(x, y)) <= 12)
 				{
 					if (unit.getType().isFlyer())
 					{

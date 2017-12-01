@@ -140,7 +140,7 @@ double UtilTrackerClass::getPriority(UnitInfo& unit)
 	// If an enemy detector is within range of an Arbiter, give it higher priority
 	if (Grids().getArbiterGrid(unit.getWalkPosition()) > 0 && unit.getType().isDetector() && unit.getPlayer()->isEnemy(Broodwar->self())) return 10.0;
 	if (unit.getType().isWorker()) return 3.00;
-	if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine) return 100.0;
+	if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine) return 10.0;
 
 	double mineral, gas;
 
@@ -150,7 +150,7 @@ double UtilTrackerClass::getPriority(UnitInfo& unit)
 	else mineral = unit.getType().mineralPrice(), gas = unit.getType().gasPrice();
 
 	double strength = max({ unit.getMaxGroundStrength(), unit.getMaxAirStrength(), 1.0 });
-	double cost = ((mineral * 0.33) + (gas * 0.66)) * max(double(unit.getType().supplyRequired()), 0.1);
+	double cost = ((mineral * 0.33) + (gas * 0.66)) * max(double(unit.getType().supplyRequired()), 0.50);
 	double survivability = max(24.0, unit.getSpeed()) * (unit.getType().maxHitPoints() + unit.getType().maxShields()) / 100.0;
 
 	if (unit.getType() == UnitTypes::Zerg_Scourge || unit.getType() == UnitTypes::Zerg_Infested_Terran) strength = strength * 5.0; // Higher priority on suicidal units
@@ -404,7 +404,8 @@ bool UtilTrackerClass::unitInRange(UnitInfo& unit)
 {
 	if (!unit.getTarget()) return false;
 	UnitInfo& target = Units().getEnemyUnit(unit.getTarget());
-	double allyRange = (unit.getType().tileWidth() * 32) + (target.getType().tileWidth() * 32) + (target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
+	double widths = target.getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
+	double allyRange = widths + (target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
 	if (unit.getPosition().getDistance(unit.getTargetPosition()) <= allyRange) return true;
 	return false;
 }
@@ -413,7 +414,8 @@ bool UtilTrackerClass::targetInRange(UnitInfo& unit)
 {
 	if (!unit.getTarget()) return false;
 	UnitInfo& target = Units().getEnemyUnit(unit.getTarget());
-	double enemyRange = (unit.getType().tileWidth() * 32) + (target.getType().tileWidth() * 32) + (unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange());
+	double widths = target.getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
+	double enemyRange = widths + (target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
 	if (target.getPosition().getDistance(unit.getPosition()) <= enemyRange) return true;
 	return false;
 }

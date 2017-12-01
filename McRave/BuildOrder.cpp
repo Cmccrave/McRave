@@ -113,7 +113,7 @@ void BuildOrderTrackerClass::onStart()
 				double winRate = gamesPlayed > 0 ? wins / static_cast<double>(gamesPlayed) : 0;
 				double ucbVal = 0.5 * sqrt(log((double)totalGamesPlayed) / gamesPlayed);
 				double val = winRate + ucbVal;
-				if (val > best)
+				if (val >= best)
 				{
 					best = val;
 					currentBuild = build;
@@ -126,7 +126,7 @@ void BuildOrderTrackerClass::onStart()
 
 bool BuildOrderTrackerClass::isBuildAllowed(Race enemy, string build)
 {
-	if (enemy == Races::Zerg && (build == "PFFESafe" || build == "PFFEStandard" /*|| build == "PFFEGreedy" */|| build == "P2GateZealot" || build == "P4Gate")) return true;
+	if (enemy == Races::Zerg && (build == "PFFESafe" || build == "PFFEStandard" /*|| build == "PFFEGreedy" */ || build == "P2GateZealot" || build == "P4Gate")) return true;
 	if (enemy == Races::Terran && (build == "P12Nexus" || build == "P21Nexus" || build == "PDTExpand" || build == "P2GateDragoon")) return true;
 	if (enemy == Races::Protoss && (build == "PZCore" || build == "PNZCore")) return true;
 	if (enemy == Races::Random && (build == "PZZCore")) return true;
@@ -216,7 +216,7 @@ void BuildOrderTrackerClass::protossTech()
 	// Some hardcoded techs based on needing detection or specific build orders
 	if (getTech)
 	{
-		if (Strategy().needDetection() || (Players().getNumberProtoss() > 0 && techList.find(UnitTypes::Protoss_Observer) == techList.end()))
+		if (Strategy().needDetection())
 		{
 			techUnit = UnitTypes::Protoss_Observer;
 			unlockedType.insert(techUnit);
@@ -225,9 +225,11 @@ void BuildOrderTrackerClass::protossTech()
 		}
 		else if (currentBuild == "PDTExpand" && techList.size() == 0)
 		{
-			techUnit = UnitTypes::Protoss_Dark_Templar;
-			unlockedType.insert(techUnit);
-			techList.insert(techUnit);
+			techUnit = UnitTypes::Protoss_Arbiter;
+			unlockedType.insert(UnitTypes::Protoss_Arbiter);
+			unlockedType.insert(UnitTypes::Protoss_Dark_Templar);
+			techList.insert(UnitTypes::Protoss_Arbiter);
+			techList.insert(UnitTypes::Protoss_Dark_Templar);
 			getTech = false;
 		}
 		else if (currentBuild == "P21Nexus" && techList.size() == 0)
@@ -272,8 +274,9 @@ void BuildOrderTrackerClass::protossTech()
 		unlockedType.insert(UnitTypes::Protoss_Reaver);
 		unlockedType.insert(UnitTypes::Protoss_Observer);
 		buildingDesired[UnitTypes::Protoss_Robotics_Facility] = 1;
-		buildingDesired[UnitTypes::Protoss_Robotics_Support_Bay] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Robotics_Facility) > 0;
-		buildingDesired[UnitTypes::Protoss_Observatory] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) > 0;
+		buildingDesired[UnitTypes::Protoss_Observatory] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Robotics_Facility) > 0;
+		buildingDesired[UnitTypes::Protoss_Robotics_Support_Bay] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Observer) > 0;
+
 	}
 	else if (techUnit == UnitTypes::Protoss_Corsair)
 	{
@@ -294,9 +297,8 @@ void BuildOrderTrackerClass::protossTech()
 	{
 		unlockedType.insert(UnitTypes::Protoss_Arbiter);
 		unlockedType.insert(UnitTypes::Protoss_Dark_Templar);
-		unlockedType.insert(UnitTypes::Protoss_High_Templar);
 		buildingDesired[UnitTypes::Protoss_Citadel_of_Adun] = 1;
-		buildingDesired[UnitTypes::Protoss_Stargate] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) > 0;
+		buildingDesired[UnitTypes::Protoss_Stargate] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Templar_Archives) > 0;
 		buildingDesired[UnitTypes::Protoss_Templar_Archives] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) > 0;
 		buildingDesired[UnitTypes::Protoss_Arbiter_Tribunal] = (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Templar_Archives) > 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Stargate) > 0);
 	}
@@ -326,8 +328,8 @@ void BuildOrderTrackerClass::protossSituational()
 
 	// Pylon logic
 	if (Strategy().isAllyFastExpand() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Pylon) <= 0)
-		buildingDesired[UnitTypes::Protoss_Pylon] = Units().getSupply() >= 14;	
-	else buildingDesired[UnitTypes::Protoss_Pylon] = min(22, (int)floor((Units().getSupply() / max(14, (16 - Broodwar->self()->allUnitCount(UnitTypes::Protoss_Pylon))))));	
+		buildingDesired[UnitTypes::Protoss_Pylon] = Units().getSupply() >= 14;
+	else buildingDesired[UnitTypes::Protoss_Pylon] = min(22, (int)floor((Units().getSupply() / max(14, (16 - Broodwar->self()->allUnitCount(UnitTypes::Protoss_Pylon))))));
 
 	// Additional cannon for FFE logic (add on at most 2 at a time)
 	if (forgeExpand && Units().getGlobalEnemyGroundStrength() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense())
@@ -427,7 +429,7 @@ void BuildOrderTrackerClass::terranSituational()
 		unlockedType.insert(UnitTypes::Terran_Medic);
 		unlockedType.insert(UnitTypes::Terran_Firebat);
 	}
-	
+
 	unlockedType.insert(UnitTypes::Terran_Vulture);
 	unlockedType.insert(UnitTypes::Terran_Siege_Tank_Tank_Mode);
 	unlockedType.insert(UnitTypes::Terran_Goliath);
