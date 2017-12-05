@@ -20,6 +20,8 @@ class UnitTrackerClass
 	set<Unit> enemyThreats;
 	set<Unit> armedMines;
 
+	double threatInAllyTerritory;
+
 	double globalAllyGroundStrength, globalEnemyGroundStrength;
 	double globalAllyAirStrength, globalEnemyAirStrength;
 	double allyDefense, enemyDefense;
@@ -39,6 +41,8 @@ public:
 	UnitInfo& getAllyUnit(Unit);
 	UnitInfo& getEnemyUnit(Unit);
 
+	double getImmThreats() { return threatInAllyTerritory; }
+
 	double getGlobalAllyGroundStrength() { return globalAllyGroundStrength; }
 	double getGlobalEnemyGroundStrength() { return globalEnemyGroundStrength; }
 	double getGlobalAllyAirStrength() { return globalAllyAirStrength; }
@@ -55,6 +59,7 @@ public:
 	bool shouldRetreat(UnitInfo&);
 	bool isBehind(UnitInfo&);
 	bool isAhead(UnitInfo&);
+	bool isThreatening(UnitInfo&);
 
 	// Updating
 	void update();

@@ -3,7 +3,8 @@
 void GridTrackerClass::update()
 {
 	Display().startClock();
-	reset();
+	draw();
+	reset();	
 	updateMobilityGrids();
 	updateAllyGrids();
 	updateEnemyGrids();
@@ -15,47 +16,6 @@ void GridTrackerClass::update()
 
 void GridTrackerClass::reset()
 {
-	//// Temp debugging for tile positions
-	//for (int x = 0; x <= Broodwar->mapWidth()*4; x++)
-	//{
-	//	for (int y = 0; y <= Broodwar->mapHeight()*4; y++)
-	//	{
-	//		/*if (buildingGrid[x][y] > 0)
-	//		{
-	//		Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
-	//		}*/
-	//		/*if (resourceGrid[x][y] > 0)
-	//		{
-	//			Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
-	//		}*/
-	//		if (eGroundClusterGrid[x][y] > 0)
-	//		{
-	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
-	//		}
-	//		//if (mobilityGrid[x][y] > 0 && mobilityGrid[x][y] < 4)
-	//		//{
-	//		//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
-	//		//	//Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
-	//		//}
-	//		//if (mobilityGrid[x][y] >= 4 && mobilityGrid[x][y] < 6)
-	//		//{
-	//		//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Purple);
-	//		//}
-	//		//if (mobilityGrid[x][y] >= 6 && mobilityGrid[x][y] < 8)
-	//		//{
-	//		//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Blue);
-	//		//}
-	//		//if (mobilityGrid[x][y] >= 8 && mobilityGrid[x][y] < 10)
-	//		//{
-	//		//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Green);
-	//		//}
-	//		//if (mobilityGrid[x][y] >= 10)
-	//		//{
-	//		//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Red);
-	//		//}
-	//	}
-	//}
-
 	int aCenter = 0, eCenter = 0;
 	for (int x = 0; x < 1024; x++) for (int y = 0; y < 1024; y++)
 	{
@@ -93,9 +53,53 @@ void GridTrackerClass::reset()
 		antiMobilityGrid[x][y] = 0;
 	}
 
-	// Wipe all the information in our hashed set before gathering information
+	// Wipe all the information
 	memset(resetGrid, 0, 1024 * 1024 * sizeof(bool));
 	return;
+}
+
+void GridTrackerClass::draw()
+{
+	//// Temp debugging for tile positions
+	//for (int x = 0; x <= Broodwar->mapWidth() * 4; x++)
+	//{
+	//	for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
+	//	{
+	//		/*	if (buildingGrid[x][y] > 0)
+	//		{
+	//		Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
+	//		}*/
+	//		/*if (resourceGrid[x][y] > 0)
+	//		{
+	//		Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
+	//		}*/
+	//		if (eGroundThreat[x][y] > 0)
+	//		{
+	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
+	//		}
+	//		//if (mobilityGrid[x][y] > 0 && mobilityGrid[x][y] < 4)
+	//		//{
+	//		//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
+	//		//	//Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
+	//		//}
+	//		//if (mobilityGrid[x][y] >= 4 && mobilityGrid[x][y] < 6)
+	//		//{
+	//		//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Purple);
+	//		//}
+	//		//if (mobilityGrid[x][y] >= 6 && mobilityGrid[x][y] < 8)
+	//		//{
+	//		//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Blue);
+	//		//}
+	//		//if (mobilityGrid[x][y] >= 8 && mobilityGrid[x][y] < 10)
+	//		//{
+	//		//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Green);
+	//		//}
+	//		//if (mobilityGrid[x][y] >= 10)
+	//		//{
+	//		//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Red);
+	//		//}
+	//	}
+	//}
 }
 
 void GridTrackerClass::updateAllyGrids()
@@ -400,6 +404,16 @@ void GridTrackerClass::updateBuildingGrid(BuildingInfo& building)
 void GridTrackerClass::updateResourceGrid(ResourceInfo& resource)
 {
 	TilePosition tile = resource.getTilePosition();
+
+	for (int x = tile.x; x < tile.x + resource.getType().tileWidth(); x++)
+	{
+		for (int y = tile.y; y < tile.y + resource.getType().tileHeight(); y++)
+		{
+			if (!TilePosition(x, y).isValid()) continue;
+			resource.unit()->exists() ? buildingGrid[x][y] += 1 : buildingGrid[x][y] -= 1;
+		}
+	}
+
 	if (resource.getType().isMineralField())
 	{
 		for (int x = tile.x - 5; x < tile.x + resource.getType().tileWidth() + 5; x++)
@@ -546,7 +560,8 @@ void GridTrackerClass::updateMobilityGrids()
 		{
 			for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
 			{
-				if (WalkPosition(x, y).isValid() && theMap.getWalkPosition(WalkPosition(x, y)).Walkable())
+				if (!WalkPosition(x, y).isValid()) continue;
+				if (theMap.getWalkPosition(WalkPosition(x, y)).Walkable())
 				{
 					for (int i = -12; i <= 12; i++)
 					{
@@ -789,6 +804,7 @@ void GridTrackerClass::updateDistanceGrid()
 			{
 				for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
 				{
+					if (!WalkPosition(x, y).isValid()) continue;
 					// If any of the grid is 0, we're not done yet
 					if (distanceGridHome[x][y] == 0 && theMap.getWalkPosition(WalkPosition(x, y)).AreaId() > 0)
 					{

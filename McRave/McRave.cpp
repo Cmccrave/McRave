@@ -8,15 +8,8 @@
 
 // --- AUTHOR NOTES ---
 // TODO:
-// unQueueBuilding->ONS qM + qG and #buildings queued
-// if overkill, reduce targeting % chance by % overkill
-// Units outside ally territory during passive play dont move
 // Production sat based on active mining bases instead
-// Test using isLastCommand in Units()
-// 4 gate PvT proxy
-// Mine grid to prevent walking on mines accidentally
-// Mine arming, mines can't aquire a target before being armed
-// (For mine based stuff, if being planted, move away, if armed + unburrowed, move on top)
+// Rework reserved/queued resources (issues with low tech units overlapping high tech, issues with probe production stopping)
 
 void McRaveModule::onStart()
 {

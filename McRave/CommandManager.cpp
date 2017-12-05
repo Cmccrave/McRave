@@ -17,8 +17,12 @@ void CommandTrackerClass::updateAlliedUnits()
 		UnitInfo &unit = u.second;
 		if ((unit.getType() == UnitTypes::Protoss_Scarab || unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine) && unit.getTarget() && unit.getTarget()->exists()) moveGroup.insert(unit.getTarget());
 	}
-
+	
 	Unit wall = Broodwar->getClosestUnit(Position(Terrain().getLargeWall()), Filter::IsAlly && Filter::GetType == UnitTypes::Protoss_Gateway, 32);
+	if (!wallDown && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) > 2)
+	{		
+		if (!wall)	wallDown = true;
+	}
 
 	for (auto &u : Units().getAllyUnits())
 	{

@@ -423,12 +423,20 @@ bool UtilTrackerClass::targetInRange(UnitInfo& unit)
 bool UtilTrackerClass::isWalkable(TilePosition here)
 {
 	WalkPosition start = WalkPosition(here);
-	for (int x = start.x; x < start.x + 1; x++)
+	for (int x = start.x; x < start.x + 4; x++)
 	{
-		for (int y = start.y; y < start.y + 1; y++)
+		for (int y = start.y; y < start.y + 4; y++)
 		{
-			if (!theMap.getWalkPosition(WalkPosition(x,y)).Walkable()) return false;
+			if (Grids().getMobilityGrid(WalkPosition(x,y)) == -1) return false;
 		}
 	}
 	return true;
+}
+
+bool UtilTrackerClass::shouldPullWorker(Unit unit)
+{
+	if (Grids().getEGroundThreat(getWalkPosition(unit)) > 0.0 && Grids().getResourceGrid(unit->getTilePosition()) > 0 && Units().getSupply() < 60) return true;
+	else if (BuildOrder().getCurrentBuild() == "Sparks" && Units().getGlobalGroundStrategy() == 1) return true;
+	else if (Units().getImmThreats() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) <= 2) return true;
+	return false;
 }

@@ -39,24 +39,16 @@ public:
 	void update();
 	void updateBuild();
 
-	// Toss Builds
-	void protossOpener();
-	void protossTech();
-	void protossSituational();
+	void protossOpener(), protossTech(), protossSituational();
+	void terranOpener(), terranTech(), terranSituational();
+	void zergOpener(), zergTech(), zergSituational();
 
-	void terranOpener();
-	void terranTech();
-	void terranSituational();
-
-	void zergOpener();
-	void zergTech();
-	void zergSituational();
-
-	void PZZCore(), PZCore(), PNZCore();			// 1 Gate Core
-	void PFFESafe(), PFFEStandard(), PFFEGreedy();	// FFE
-	void P12Nexus(), P21Nexus(), PDTExpand();		// Early Nexus
-	void P4Gate(), P2GateZealot(), P2GateDragoon(); // 1 Base Aggresion
-	void PDTRush(), PReaverRush();					// 1 Base Tech
+	// Protoss Builds																
+	void PFFESafe(), PFFEStandard();												// PvZ Builds
+	void P12Nexus(), P21Nexus(), PDTExpand(), P2GateDragoon();						// PvT Builds
+	void P3GateObs(), PNZCore(), PZCore();											// PvP Builds
+	void PZZCore(), P4Gate();														// Misc
+	// Retired or not created	void PFFEGreedy(), P2GateDT(), P1GateReaver();									
 
 	// Terran Builds
 	void T2Fact();

@@ -22,9 +22,9 @@ void BuildOrderTrackerClass::onStart()
 	ifstream config("bwapi-data/read/" + Broodwar->enemy()->getName() + ".txt");
 	int wins, losses, gamesPlayed, totalGamesPlayed = 0;
 	double best = 0.0;
-
+	
 	// Write what builds you're using
-	if (Broodwar->self()->getRace() == Races::Protoss) buildNames = { "PZZCore", "PZCore", "PNZCore", "PFFESafe", "PFFEStandard",/* "PFFEGreedy",*/ "P12Nexus", "P21Nexus", "PDTExpand", "P4Gate", "P2GateZealot", "P2GateDragoon"/*, "PDTRush", "PReaverRush"*/ };
+	if (Broodwar->self()->getRace() == Races::Protoss) buildNames = { "PZZCore", "PZCore", "PNZCore", "P4Gate", "PFFESafe", "PFFEStandard", "P12Nexus", "P21Nexus", "PDTExpand", "P2GateDragoon" };
 	if (Broodwar->self()->getRace() == Races::Terran) buildNames = { "T2Fact", "TSparks" };
 	if (Broodwar->self()->getRace() == Races::Zerg) buildNames = { "ZOverpool" };
 
@@ -126,10 +126,10 @@ void BuildOrderTrackerClass::onStart()
 
 bool BuildOrderTrackerClass::isBuildAllowed(Race enemy, string build)
 {
-	if (enemy == Races::Zerg && (build == "PFFESafe" || build == "PFFEStandard" /*|| build == "PFFEGreedy" */ || build == "P2GateZealot" || build == "P4Gate")) return true;
+	if (enemy == Races::Zerg && (build == "PFFESafe" || build == "PFFEStandard" || build == "P4Gate")) return true;
 	if (enemy == Races::Terran && (build == "P12Nexus" || build == "P21Nexus" || build == "PDTExpand" || build == "P2GateDragoon")) return true;
-	if (enemy == Races::Protoss && (build == "PZCore" || build == "PNZCore")) return true;
-	if (enemy == Races::Random && (build == "PZZCore")) return true;
+	if (enemy == Races::Protoss && (build == "PZCore" || build == "PNZCore" || build == "P4Gate")) return true;
+	if (enemy == Races::Random && (build == "PZZCore" || build == "P4Gate" || build == "PFFEStandard")) return true;
 	return false;
 }
 
@@ -193,20 +193,16 @@ void BuildOrderTrackerClass::protossOpener()
 {
 	if (getOpening)
 	{
-		if (currentBuild == "PZZCore") PZZCore();
+		if (currentBuild == "PZZCore") PZZCore();		
 		if (currentBuild == "PZCore") PZCore();
 		if (currentBuild == "PNZCore") PNZCore();
+		if (currentBuild == "P4Gate") P4Gate();
 		if (currentBuild == "PFFESafe") PFFESafe();
-		if (currentBuild == "PFFEStandard") PFFEStandard();
-		//if (currentBuild == "PFFEGreedy") PFFEGreedy();
+		if (currentBuild == "PFFEStandard") PFFEStandard();		
 		if (currentBuild == "P12Nexus") P12Nexus();
 		if (currentBuild == "P21Nexus") P21Nexus();
 		if (currentBuild == "PDTExpand") PDTExpand();
-		if (currentBuild == "P4Gate") P4Gate();
-		if (currentBuild == "P2GateZealot") P2GateZealot();
-		if (currentBuild == "P2GateDragoon") P2GateDragoon();
-		//if (currentBuild == "PDTRush") PDTRush();
-		//if (currentBuild == "PReaverRush") PReaverRush();
+		if (currentBuild == "P2GateDragoon") P2GateDragoon();		
 	}
 	return;
 }
@@ -315,7 +311,7 @@ void BuildOrderTrackerClass::protossSituational()
 {
 	int sat = Players().getNumberTerran() > 0 ? 2 : 3;
 	bool techSat = techList.size() >= Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
-	bool productionSat = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= sat * techList.size();
+	bool productionSat = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= sat * (techList.size() + 1);
 
 	if (Broodwar->self()->visibleUnitCount(techUnit) > 0) techUnit = UnitTypes::None; // If we have our tech unit, set to none	
 	if (Strategy().needDetection() || (!getOpening && !getTech && productionSat && techUnit == UnitTypes::None && (!Production().hasIdleProduction() || Units().getSupply() > 380))) getTech = true; // If production is saturated and none are idle or we need detection, choose a tech

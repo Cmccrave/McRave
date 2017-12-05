@@ -7,6 +7,7 @@ using namespace std;
 
 class CommandTrackerClass
 {
+	bool wallDown = false;
 public:
 	void update();
 	void updateAlliedUnits();

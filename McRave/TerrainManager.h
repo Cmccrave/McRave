@@ -16,7 +16,7 @@ class TerrainTrackerClass
 	Position mineralHold, backMineralHold;
 	Position attackPosition, defendPosition;
 	TilePosition natural;
-	TilePosition bMedium, bLarge, bSmall;
+	TilePosition bMedium = TilePositions::None, bLarge = TilePositions::None, bSmall;
 	Area const * naturalArea;
 
 public:

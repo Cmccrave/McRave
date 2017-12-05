@@ -40,6 +40,9 @@ public:
 	bool unitInRange(UnitInfo& unit);
 	bool targetInRange(UnitInfo& unit);
 
+	// Returns 1 if the worker should fight
+	bool shouldPullWorker(Unit unit);
+
 	bool isWalkable(TilePosition here);
 };
 

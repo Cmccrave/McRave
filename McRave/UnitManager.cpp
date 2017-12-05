@@ -13,6 +13,7 @@ void UnitTrackerClass::updateUnits()
 	// Reset global strengths
 	globalEnemyGroundStrength = 0.0;
 	globalAllyGroundStrength = 0.0;
+	threatInAllyTerritory = 0.0;
 	allyDefense = 0.0;
 	enemyDefense = 0.0;
 
@@ -38,7 +39,8 @@ void UnitTrackerClass::updateUnits()
 		if (unit.unit()->exists())	updateEnemy(unit); // If unit is visible, update it
 		if (!unit.unit()->exists() && unit.getPosition().isValid() && Broodwar->isVisible(unit.getTilePosition())) unit.setPosition(Positions::None); // If unit is not visible but his position is, move it
 		if (unit.getType().isValid()) enemyComposition[unit.getType()] += 1; // If unit has a valid type, update enemy composition tracking
-		if (!unit.getType().isWorker() && !unit.getType().isBuilding()) unit.getType().isFlyer() ? globalEnemyAirStrength += unit.getVisibleAirStrength() : globalEnemyGroundStrength += unit.getVisibleGroundStrength(); // If unit is not a worker or building, add it to global strength	
+		if (!unit.getType().isBuilding() && !unit.getType().isWorker()) unit.getType().isFlyer() ? globalEnemyAirStrength += unit.getVisibleAirStrength() : globalEnemyGroundStrength += unit.getVisibleGroundStrength(); // If unit is not a worker or building, add it to global strength	
+		if (Terrain().isInAllyTerritory(unit.getTilePosition())) threatInAllyTerritory += unit.getVisibleGroundStrength();
 		if (unit.getType().isBuilding() && unit.getGroundDamage() > 0 && unit.unit()->isCompleted()) enemyDefense += unit.getVisibleGroundStrength(); // If unit is a building and deals damage, add it to global defense		
 	}
 
@@ -59,9 +61,9 @@ void UnitTrackerClass::updateUnits()
 		updateLocalSimulation(unit);
 		updateStrategy(unit);
 
-		if (!unit.getType().isBuilding()) unit.getType().isFlyer() ? globalAllyAirStrength += unit.getVisibleAirStrength() : globalAllyGroundStrength += unit.getVisibleGroundStrength();
-		if (unit.getType().isWorker() && Workers().getMyWorkers().find(unit.unit()) != Workers().getMyWorkers().end()) Workers().removeWorker(unit.unit()); // Remove the worker role if needed			
-		if (unit.getType().isWorker() && ((Grids().getResourceGrid(unit.getTilePosition()) == 0 || Grids().getEGroundThreat(unit.getWalkPosition()) == 0.0) || (BuildOrder().getCurrentBuild() == "Sparks" && Units().getGlobalGroundStrategy() != 1) || (Units().getGlobalEnemyGroundStrength() < Units().getGlobalAllyGroundStrength() + Units().getAllyDefense()))) Workers().storeWorker(unit.unit()); // If this is a worker and is ready to go back to being a worker
+		if (unit.getType().isWorker() && Workers().getMyWorkers().find(unit.unit()) != Workers().getMyWorkers().end()) Workers().removeWorker(unit.unit()); // Remove the worker role if needed	
+		if (unit.getType().isWorker() && !Util().shouldPullWorker(unit.unit())) Workers().storeWorker(unit.unit()); // If this is a worker and is ready to go back to being a worker
+		if (!unit.getType().isBuilding()) unit.getType().isFlyer() ? globalAllyAirStrength += unit.getVisibleAirStrength() : globalAllyGroundStrength += unit.getVisibleGroundStrength();		
 	}
 }
 
@@ -159,20 +161,20 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 	{
 		if (!Strategy().isHoldChoke())
 		{
-			if (Grids().getBaseGrid(target.getTilePosition()) > 0 && (!target.getType().isWorker() || Broodwar->getFrameCount() - target.getLastAttackFrame() < 500)) unit.setStrategy(1);
+			if (Grids().getBaseGrid(target.getTilePosition()) > 0 && isThreatening(target)) unit.setStrategy(1);
 			else unit.setStrategy(2);
 		}
 		else
 		{
-			if ((Terrain().isInAllyTerritory(target.getTilePosition()) && (!target.getType().isWorker() || Broodwar->getFrameCount() - target.getLastAttackFrame() < 500)) || Util().unitInRange(unit)) unit.setStrategy(1);
+			if ((Terrain().isInAllyTerritory(target.getTilePosition()) && isThreatening(target)) || Util().unitInRange(unit)) unit.setStrategy(1);
 			else if (!Util().targetInRange(unit) || allyRange >= enemyRange) unit.setStrategy(2);
 			else unit.setStrategy(0);
 		}
 	}
 
-	else if (shouldAttack(unit)) unit.setStrategy(1);
-	else if (shouldDefend(unit)) unit.setStrategy(2);	
 	else if (shouldRetreat(unit)) unit.setStrategy(0);
+	else if (shouldDefend(unit)) unit.setStrategy(2);
+	else if (shouldAttack(unit)) unit.setStrategy(1);	
 
 	else if (unit.getStrategy() == 1) // If last command was engage
 	{
@@ -205,6 +207,7 @@ bool UnitTrackerClass::shouldRetreat(UnitInfo& unit)
 	if (unit.getType() == UnitTypes::Protoss_Zealot && target.getType() == UnitTypes::Terran_Vulture && Grids().getMobilityGrid(target.getWalkPosition()) > 3 && Grids().getEGroundCluster(target.getWalkPosition()) < 5) return true; // If unit is a Zealot, don't chase Vultures TODO -- check for mobility
 	else if (unit.getType() == UnitTypes::Protoss_High_Templar && unit.unit()->getEnergy() < 75) return true; // If unit is a High Templar and low energy, retreat	
 	else if (unit.getType() == UnitTypes::Terran_Medic && unit.unit()->getEnergy() <= 0) return true; // If unit is a Medic and no energy, retreat	
+	else if ((target.unit()->isCloaked() || target.unit()->isBurrowed()) && !target.unit()->isDetected()) return true;
 	return false;
 }
 
@@ -230,6 +233,12 @@ bool UnitTrackerClass::isAhead(UnitInfo& unit)
 	double decisionLocal = unit.getType().isFlyer() ? unit.getAirLocal() : unit.getGroundLocal();
 	double decisionGlobal = unit.getType().isFlyer() ? globalAirStrategy : globalGroundStrategy;
 	return (decisionGlobal == 1 || (!unit.getType().isFlyer() && unit.getGroundLocal() > minThreshold) || (unit.getType().isFlyer() && unit.getAirLocal() > minThreshold));
+}
+
+bool UnitTrackerClass::isThreatening(UnitInfo& unit)
+{
+	if (!unit.getType().isWorker() || Broodwar->getFrameCount() - unit.getLastAttackFrame() < 500) return true;
+	return false;
 }
 
 void UnitTrackerClass::updateGlobalSimulation()

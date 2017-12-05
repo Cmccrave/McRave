@@ -58,6 +58,7 @@ public:
 
 	// Update functions
 	void reset();
+	void draw();
 	void update();
 	void updateAllyGrids();
 	void updateEnemyGrids();

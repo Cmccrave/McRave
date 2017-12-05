@@ -216,7 +216,7 @@ void WorkerTrackerClass::updateDecision(WorkerInfo& worker)
 	}
 
 	// If we need to use workers for defense
-	if ((Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0 && Grids().getResourceGrid(worker.getTilePosition()) > 0 && Units().getSupply() < 60) || (BuildOrder().getCurrentBuild() == "Sparks" && Units().getGlobalGroundStrategy() == 1) || (Units().getGlobalEnemyGroundStrength() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense() && Grids().getEnemyArmyCenter().getDistance(Position(Terrain().getSecondChoke())) < 320 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) == 0))
+	if (Util().shouldPullWorker(worker.unit()))
 	{
 		Units().storeAlly(worker.unit());
 		Units().increaseAlly(1.44);
@@ -224,7 +224,7 @@ void WorkerTrackerClass::updateDecision(WorkerInfo& worker)
 	}
 
 	// Reassignment logic
-	if (worker.getResource() && worker.getResource()->exists() && ((!Resources().isGasSaturated() && minWorkers > gasWorkers * 8) || (!Resources().isMinSaturated() && minWorkers < gasWorkers * 4)))
+	if ((!Resources().isGasSaturated() && minWorkers > gasWorkers * 6) || (!Resources().isMinSaturated() && minWorkers < gasWorkers * 4))
 	{
 		reAssignWorker(worker);
 		return;
@@ -374,7 +374,7 @@ void WorkerTrackerClass::removeWorker(Unit worker)
 void WorkerTrackerClass::assignWorker(WorkerInfo& worker)
 {
 	// Check if we need gas workers
-	if ((!Resources().isGasSaturated() && minWorkers > gasWorkers * 8) || (Resources().isMinSaturated()))
+	if ((!Resources().isGasSaturated() && minWorkers > gasWorkers * 6) || (Resources().isMinSaturated()))
 	{
 		for (auto &g : Resources().getMyGas())
 		{
@@ -414,15 +414,18 @@ void WorkerTrackerClass::assignWorker(WorkerInfo& worker)
 
 void WorkerTrackerClass::reAssignWorker(WorkerInfo& worker)
 {
-	if (Resources().getMyGas().find(worker.getResource()) != Resources().getMyGas().end())
+	if (worker.getResource())
 	{
-		Resources().getMyGas()[worker.getResource()].setGathererCount(Resources().getMyGas()[worker.getResource()].getGathererCount() - 1);
-		gasWorkers--;
-	}
-	if (Resources().getMyMinerals().find(worker.getResource()) != Resources().getMyMinerals().end())
-	{
-		Resources().getMyMinerals()[worker.getResource()].setGathererCount(Resources().getMyMinerals()[worker.getResource()].getGathererCount() - 1);
-		minWorkers--;
+		if (Resources().getMyGas().find(worker.getResource()) != Resources().getMyGas().end())
+		{
+			Resources().getMyGas()[worker.getResource()].setGathererCount(Resources().getMyGas()[worker.getResource()].getGathererCount() - 1);
+			gasWorkers--;
+		}
+		if (Resources().getMyMinerals().find(worker.getResource()) != Resources().getMyMinerals().end())
+		{
+			Resources().getMyMinerals()[worker.getResource()].setGathererCount(Resources().getMyMinerals()[worker.getResource()].getGathererCount() - 1);
+			minWorkers--;
+		}
 	}
 	assignWorker(worker);
 	return;

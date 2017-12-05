@@ -91,9 +91,6 @@ void TerrainTrackerClass::updateChokes()
 	// Establish FFE position	
 	if (naturalArea)
 	{
-		//Broodwar->drawCircleMap(Position(firstChoke), 16, Colors::Blue);
-		//Broodwar->drawCircleMap(Position(secondChoke), 16, Colors::Green);
-
 		for (auto &area : naturalArea->AccessibleNeighbours())
 		{
 			for (auto & choke : area->ChokePoints())
@@ -104,11 +101,8 @@ void TerrainTrackerClass::updateChokes()
 				}
 			}
 		}
-		FFEPosition = TilePosition(int(secondChoke.x*0.25 + natural.x*0.75), int(secondChoke.y*0.25 + natural.y*0.75));
-		if (BuildOrder().isForgeExpand() && FFEPosition.isValid() && theMap.GetArea(FFEPosition))
-		{
-			allyTerritory.insert(theMap.GetArea(FFEPosition)->Id());
-		}
+
+		if (BuildOrder().isForgeExpand() || BuildOrder().isNexusFirst()) allyTerritory.insert(naturalArea->Id());	
 	}
 }
 
@@ -116,107 +110,137 @@ void TerrainTrackerClass::updateWalls()
 {
 	TilePosition start = secondChoke;
 	double distance = 0.0;
-	bool valid = false;
 
 	// Large Building placement
-	for (int x = start.x - 20; x <= start.x + 20; x++)
+	if (Broodwar->getFrameCount() < 500 && Broodwar->getFrameCount() >= 400)
 	{
-		for (int y = start.y - 20; y <= start.y + 20; y++)
+		for (int x = start.x - 20; x <= start.x + 20; x++)
 		{
-			if (!TilePosition(x, y).isValid()) continue;
-
-			valid = true;
-			for (int i = x; i < x + 4; i++)
+			for (int y = start.y - 20; y <= start.y + 20; y++)
 			{
-				for (int j = y; j < y + 3; j++)
+				if (!TilePosition(x, y).isValid()) continue;
+				Position center = Position(TilePosition(x, y)) + Position(64, 48);
+				Position chokeCenter = Position(secondChoke) + Position(16, 16);
+				bool buildable = true;
+				int valid = 0;
+				for (int i = x; i < x + 4; i++)
 				{
-					if (!Broodwar->isBuildable(TilePosition(i, j))) valid = false;
+					for (int j = y; j < y + 3; j++)
+					{
+						if (!TilePosition(i, j).isValid()) continue;
+						if (!Broodwar->isBuildable(TilePosition(i, j)) || Grids().getBuildingGrid(TilePosition(i, j)) > 0) buildable = false;
+						if (i >= natural.x && i < natural.x + 4 && j >= natural.y && j < natural.y + 3) buildable = false;
+						if (theMap.GetArea(TilePosition(i,j)) && theMap.GetArea(TilePosition(i,j)) == theMap.GetArea(natural)) valid = 1;
+					}
 				}
-			}
-			if (!valid) continue;
+				if (!buildable) continue;
 
-			valid = false;
-			int dx = x + 4;
-			for (int dy = y; dy <= y + 3; dy++)
+
+				int dx = x + 4;
+				for (int dy = y; dy < y + 3; dy++)
+				{
+					if (!Util().isWalkable(TilePosition(dx, dy)) || Grids().getBuildingGrid(TilePosition(dx, dy)) > 0) valid++;
+				}
+
+				int dy = y + 3;
+				for (int dx = x; dx < x + 4; dx++)
+				{
+					if (!Util().isWalkable(TilePosition(dx, dy)) || Grids().getBuildingGrid(TilePosition(dx, dy)) > 0) valid++;
+				}
+
+				if (valid >= 2 && center.getDistance(Position(natural)) <= 512 && (center.getDistance(chokeCenter) < distance || distance == 0.0)) bLarge = TilePosition(x, y), distance = center.getDistance(chokeCenter);
+			}
+		}
+
+		// Medium Building placement
+		distance = 0.0;
+		for (int x = start.x - 20; x <= start.x + 20; x++)
+		{
+			for (int y = start.y - 20; y <= start.y + 20; y++)
 			{
-				if (!Broodwar->isBuildable(TilePosition(dx, dy)) /*&& !Util().isWalkable(TilePosition(dx,dy))*/) valid = true;
-			}
+				if (!TilePosition(x, y).isValid()) continue;
+				Position center = Position(TilePosition(x, y)) + Position(48, 32);
+				Position chokeCenter = Position(secondChoke) + Position(16, 16);
+				Position bLargeCenter = Position(bLarge) + Position(64, 48);
 
-			int dy = y + 3;
-			for (int dx = x; dx <= x + 4; dx++)
+				bool buildable = true;
+				bool within = false;
+				int valid = 0;
+				for (int i = x; i < x + 3; i++)
+				{
+					for (int j = y; j < y + 2; j++)
+					{
+						if (!TilePosition(i, j).isValid()) continue;
+						if (!Broodwar->isBuildable(TilePosition(i, j)) || Grids().getBuildingGrid(TilePosition(i, j)) > 0) buildable = false;
+						if (i >= natural.x && i < natural.x + 4 && j >= natural.y && j < natural.y + 3) buildable = false;
+						if (i >= bLarge.x && i < bLarge.x + 4 && j >= bLarge.y && j < bLarge.y + 3) buildable = false;
+						if (theMap.GetArea(TilePosition(i, j)) == theMap.GetArea(natural)) within = true;
+					}
+				}
+
+				for (int i = x-1; i < x + 4; i++)
+				{
+					for (int j = y-1; j < y + 3; j++)
+					{
+						if (i >= bLarge.x && i < bLarge.x + 4 && j >= bLarge.y && j < bLarge.y + 3) buildable = false;
+					}
+				}
+
+				if (!buildable || !within) continue;
+
+				int dx = x - 1;
+				for (int dy = y; dy < y + 2; dy++)
+				{
+					if (dx >= bLarge.x && dx < bLarge.x + 4 && dy >= bLarge.y && dy < bLarge.y + 3) buildable = false;
+					if (!Util().isWalkable(TilePosition(dx, dy)) || Grids().getBuildingGrid(TilePosition(dx, dy)) > 0) valid++;					
+				}
+
+				int dy = y - 1;
+				for (int dx = x; dx < x + 3; dx++)
+				{
+					if (dx >= bLarge.x && dx < bLarge.x + 4 && dy >= bLarge.y && dy < bLarge.y + 3) buildable = false;
+					if (!Util().isWalkable(TilePosition(dx, dy)) || Grids().getBuildingGrid(TilePosition(dx, dy)) > 0) valid++;					
+				}
+
+				if (!buildable) continue;
+
+				if (valid >= 1 && center.getDistance(Position(natural)) <= 512 && (center.getDistance(chokeCenter) < distance || distance == 0.0)) bMedium = TilePosition(x, y), distance = center.getDistance(chokeCenter);
+			}
+		}
+
+		// Pylon placement 
+		distance = 0.0;
+		for (int x = natural.x - 20; x <= natural.x + 20; x++)
+		{
+			for (int y = natural.y - 20; y <= natural.y + 20; y++)
 			{
-				if (!Broodwar->isBuildable(TilePosition(dx, dy))/* && !Util().isWalkable(TilePosition(dx, dy))*/) valid = true;
-			}
+				if (!TilePosition(x, y).isValid()) continue;
+				if (TilePosition(x, y) == secondChoke) continue;
+				Position center = Position(TilePosition(x, y)) + Position(32, 32);
+				Position bLargeCenter = Position(bLarge) + Position(64, 48);
+				Position bMediumCenter = Position(bMedium) + Position(48, 32);
 
-			if (valid && TilePosition(x, y).getDistance(natural) <= 16 && (TilePosition(x, y).getDistance(secondChoke) < distance || distance == 0.0)) bLarge = TilePosition(x, y), distance = TilePosition(x, y).getDistance(secondChoke);
+				bool buildable = true;
+				for (int i = x; i < x + 2; i++)
+				{
+					for (int j = y; j < y + 2; j++)
+					{
+						if (!Broodwar->isBuildable(TilePosition(i, j)) || Grids().getBuildingGrid(TilePosition(i,j)) > 0) buildable = false;
+						if (i >= bMedium.x && i < bMedium.x + 3 && j >= bMedium.y && j < bMedium.y + 2) buildable = false;
+						if (i >= bLarge.x && i < bLarge.x + 4 && j >= bLarge.y && j < bLarge.y + 3) buildable = false;
+						if (i >= natural.x && i < natural.x + 4 && j >= natural.y && j < natural.y + 3) buildable = false;
+					}
+				}
+
+				if (!buildable) continue;
+				if (buildable && theMap.GetArea(TilePosition(center)) == theMap.GetArea(natural) && center.getDistance(bLargeCenter) <= 160 && center.getDistance(bMediumCenter) <= 160 && (center.getDistance(Position(secondChoke)) > distance || distance == 0.0)) bSmall = TilePosition(x, y), distance = center.getDistance(Position(secondChoke));
+			}
 		}
 	}
 
-	// Medium Building placement
-	valid = false;
-	distance = 0.0;
-	for (int x = start.x - 20; x <= start.x + 20; x++)
-	{
-		for (int y = start.y - 20; y <= start.y + 20; y++)
-		{
-			if (!TilePosition(x, y).isValid()) continue;
-
-			valid = true;
-			for (int i = x; i < x + 3; i++)
-			{
-				for (int j = y; j < y + 2; j++)
-				{
-					if (!Broodwar->isBuildable(TilePosition(i, j))) valid = false;
-					if (i >= bLarge.x && i < bLarge.x + 4 && j >= bLarge.y && j < bLarge.y + 3) valid = false;
-				}
-			}
-			if (!valid) continue;
-
-			valid = false;
-			int dx = x - 1;
-			for (int dy = y; dy < y + 2; dy++)
-			{
-				if (!Broodwar->isBuildable(TilePosition(dx, dy)) /*&& !Util().isWalkable(TilePosition(dx, dy))*/) valid = true;
-			}
-
-			int dy = y - 1;
-			for (int dx = x; dx < x + 3; dx++)
-			{
-				if ((!Broodwar->isBuildable(TilePosition(dx, dy)) /*&& !Util().isWalkable(TilePosition(dx, dy))*/) || dy == bLarge.y + 2) valid = true;
-			}
-
-			if (valid && TilePosition(x, y).getDistance(natural) <= 16 && TilePosition(x, y).getDistance(bLarge) <= 6 && (TilePosition(x, y).getDistance(secondChoke) < distance || distance == 0.0)) bMedium = TilePosition(x, y), distance = TilePosition(x, y).getDistance(secondChoke);
-		}
-	}
-
-	// Pylon placement
-	valid = false;
-	distance = 0.0;
-	for (int x = natural.x - 20; x <= natural.x + 20; x++)
-	{
-		for (int y = natural.y - 20; y <= natural.y + 20; y++)
-		{
-			if (!TilePosition(x, y).isValid()) continue;			
-
-			valid = true;
-			for (int i = x; i < x + 2; i++)
-			{
-				for (int j = y; j < y + 2; j++)
-				{
-					if (!Broodwar->isBuildable(TilePosition(i, j))) valid = false;
-					if (i >= bMedium.x && i < bMedium.x + 3 && j >= bMedium.y && j < bMedium.y + 2) valid = false;
-					if (i >= bLarge.x && i < bLarge.x + 4 && j >= bLarge.y && j < bLarge.y + 3) valid = false;
-					if (i >= natural.x && i < natural.x + 4 && j >= natural.y && j < natural.y + 3) valid = false;
-				}
-			}
-			if (!valid) continue;
-			if (valid && TilePosition(x, y).getDistance(bLarge) <= 4 && TilePosition(x, y).getDistance(bMedium) <= 4 && (TilePosition(x, y).getDistance(natural) < distance || distance == 0.0)) bSmall = TilePosition(x, y), distance = TilePosition(x, y).getDistance(natural);
-		}
-	}
-
-	//Broodwar->drawBoxMap(Position(bSmall), Position(bSmall) + Position(64, 64), Colors::Red);
-	//Broodwar->drawBoxMap(Position(bMedium), Position(bMedium) + Position(94, 64), Colors::Red);
-	//Broodwar->drawBoxMap(Position(bLarge), Position(bLarge) + Position(128, 96), Colors::Red);
+	//Broodwar->drawBoxMap(Position(bSmall), Position(bSmall) + Position(64, 64), Colors::Blue);
+	//Broodwar->drawBoxMap(Position(bMedium), Position(bMedium) + Position(94, 64), Colors::Blue);
+	//Broodwar->drawBoxMap(Position(bLarge), Position(bLarge) + Position(128, 96), Colors::Blue);
 	//Broodwar->drawCircleMap(Position(secondChoke), 16, Colors::Green);
 }
 
@@ -239,7 +263,7 @@ void TerrainTrackerClass::findNatural()
 	{
 		for (auto &base : area.Bases())
 		{
-			if (base.Geysers().size() == 0 || area.AccessibleNeighbours().size() == 0) continue;			
+			if (base.Geysers().size() == 0 || area.AccessibleNeighbours().size() == 0) continue;
 			if (Grids().getDistanceHome(WalkPosition(base.Location())) > 50 && (Grids().getDistanceHome(WalkPosition(base.Location())) < distance || distance == 0.0))
 			{
 				distance = Grids().getDistanceHome(WalkPosition(base.Location()));
@@ -283,6 +307,7 @@ void TerrainTrackerClass::findSecondChoke()
 	double distance = 0.0;
 	for (auto &choke : naturalArea->ChokePoints())
 	{
+		//Broodwar << choke->Pos(choke->end1) << endl;
 		if (TilePosition(choke->Center()) != firstChoke && (choke->GetAreas().first == second || choke->GetAreas().second == second) && (Position(choke->Center()).getDistance(playerStartingPosition) < distance || distance == 0.0))
 		{
 			distance = Position(choke->Center()).getDistance(playerStartingPosition);
@@ -330,3 +355,15 @@ Position TerrainTrackerClass::getClosestBaseCenter(Position here)
 	}
 	return closestB;
 }
+
+//int MapManager::getGroundDistance(BWAPI::Position start, BWAPI::Position end) {
+//	int dist = 0;
+//
+//	for (auto cpp : BWEM::Map::Instance().GetPath(start, end)) {
+//		auto center = BWAPI::Position{ cpp->Center() };
+//		dist += start.getDistance(center);
+//		start = center;
+//	}
+//
+//	return dist += start.getDistance(end);
+//}

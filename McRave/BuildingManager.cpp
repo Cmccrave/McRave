@@ -214,7 +214,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		if (building == UnitTypes::Protoss_Pylon) return Terrain().getSmallWall();
 		if (building == UnitTypes::Protoss_Cybernetics_Core) return Terrain().getMediumWall();
 		if (building == UnitTypes::Protoss_Gateway) return Terrain().getLargeWall();
-		if (building == UnitTypes::Protoss_Photon_Cannon) here = getBuildLocationNear(building, Terrain().getFFEPosition());
+		if (building == UnitTypes::Protoss_Photon_Cannon) here = getBuildLocationNear(building, Terrain().getSecondChoke());
 		if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getFFEPosition(), true);
 		return here;
 	}
@@ -244,7 +244,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	{
 		for (auto &base : Bases().getMyBases())
 		{
-			if (Grids().getPylonGrid(base.second.getTilePosition()) == 0) return getBuildLocationNear(building, base.second.getTilePosition());
+			if (Grids().getPylonGrid(base.second.getTilePosition()) <= 1) return getBuildLocationNear(building, base.second.getTilePosition());
 		}
 	}
 
@@ -291,8 +291,17 @@ bool BuildingTrackerClass::isBuildable(UnitType building, TilePosition buildTile
 		return false;
 	}
 
+	if (BuildOrder().isOpener() && (BuildOrder().isForgeExpand() || BuildOrder().isNexusFirst()))
+	{
+		if (building == UnitTypes::Protoss_Gateway && buildTilePosition == Terrain().getLargeWall()) return true;
+		if ((building == UnitTypes::Protoss_Forge || building == UnitTypes::Protoss_Cybernetics_Core) && buildTilePosition == Terrain().getMediumWall()) return true;
+	}
+
+
 	if (Broodwar->self()->getRace() == Races::Protoss && building.requiresPsi() && !Pylons().hasPower(buildTilePosition, building)) return false; // If Protoss, check if it's not a pylon and in a preset buildable position based on power grid
-	if (building == UnitTypes::Protoss_Shield_Battery && Terrain().getDefendPosition().getDistance(Position(buildTilePosition)) < 160 && !Terrain().isInAllyTerritory(buildTilePosition)) return false;
+	if (building == UnitTypes::Protoss_Shield_Battery && (Terrain().getDefendPosition().getDistance(Position(buildTilePosition)) < 256 || !Terrain().isInAllyTerritory(buildTilePosition))) return false;
+
+	
 
 	for (int x = buildTilePosition.x; x < buildTilePosition.x + building.tileWidth(); x++)
 	{
@@ -302,7 +311,7 @@ bool BuildingTrackerClass::isBuildable(UnitType building, TilePosition buildTile
 			if (!Broodwar->isBuildable(TilePosition(x, y), true)) return false; // If it's on an unbuildable tile
 			if (Grids().getBuildingGrid(x, y) > 0 && !building.isResourceDepot()) return false; // If it's reserved for expansions				
 			if (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(x, y) >= 3) return false; // If it's a pylon and overlapping too many pylons					
-			if (Grids().getResourceGrid(x, y) > 0 && ((!building.isResourceDepot() && building != UnitTypes::Protoss_Photon_Cannon && building != UnitTypes::Protoss_Shield_Battery && building != UnitTypes::Terran_Bunker) || (Strategy().isAllyFastExpand() && buildTilePosition != Terrain().getLargeWall() && buildTilePosition != Terrain().getMediumWall() && buildTilePosition != Terrain().getSmallWall()))) return false; // If it's not a defensive structure and on top of the resource grid
+			if (Grids().getResourceGrid(x, y) > 0 && !building.isResourceDepot() && building != UnitTypes::Protoss_Photon_Cannon && building != UnitTypes::Protoss_Shield_Battery && building != UnitTypes::Terran_Bunker) return false; // If it's not a defensive structure and on top of the resource grid
 			if (building == UnitTypes::Protoss_Photon_Cannon && x >= Terrain().getMediumWall().x && x < Terrain().getMediumWall().x + 3 && y >= Terrain().getMediumWall().y && y < Terrain().getMediumWall().y + 2) return false;
 			if (building == UnitTypes::Protoss_Photon_Cannon && x >= Terrain().getLargeWall().x && x < Terrain().getLargeWall().x + 4 && y >= Terrain().getLargeWall().y && y < Terrain().getLargeWall().y + 3) return false;
 		}
@@ -350,45 +359,10 @@ bool BuildingTrackerClass::isSuitable(UnitType building, TilePosition buildTileP
 	else if (building == UnitTypes::Protoss_Pylon && Broodwar->self()->completedUnitCount(building) < 10 && Position(buildTilePosition).getDistance(Terrain().getClosestBaseCenter(Position(buildTilePosition))) > 128) buildingOffset = 3;
 	else buildingOffset = 0;
 
-	// Check suitability for fast expands
-	if (Strategy().isAllyFastExpand() && ((building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 0) || (building == UnitTypes::Protoss_Forge && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Forge) <= 0)))
-	{
-		bool validFFE = false;
-		if (building == UnitTypes::Protoss_Gateway)
-		{
-			int dx = buildTilePosition.x + building.tileWidth();
-			for (int y = buildTilePosition.y; y < buildTilePosition.y + building.tileHeight(); y++)
-			{
-				if (!Broodwar->isBuildable(TilePosition(dx, y))) validFFE = true;
-			}
-
-			int dy = buildTilePosition.y + building.tileHeight();
-			for (int x = buildTilePosition.x; x < buildTilePosition.x + building.tileWidth(); x++)
-			{
-				if (!Broodwar->isBuildable(TilePosition(x, dy))) validFFE = true;
-			}
-		}
-		if (building == UnitTypes::Protoss_Forge)
-		{
-			int dx = buildTilePosition.x - 1;
-			for (int y = buildTilePosition.y; y < buildTilePosition.y + building.tileHeight(); y++)
-			{
-				if (!Broodwar->isBuildable(TilePosition(dx, y))) validFFE = true;
-			}
-
-			int dy = buildTilePosition.y - 1;
-			for (int x = buildTilePosition.x; x < buildTilePosition.x + building.tileWidth(); x++)
-			{
-				if (!Broodwar->isBuildable(TilePosition(x, dy))) validFFE = true;
-			}
-		}
-		if (!validFFE) return false;
-	}
-
 	if (BuildOrder().isOpener() && BuildOrder().isForgeExpand() && building == UnitTypes::Protoss_Photon_Cannon)
 	{
 		Position center = Position(buildTilePosition + TilePosition(1, 1));
-		if (center.getDistance(Position(Terrain().getSecondChoke())) < 64 || center.getDistance(Position(Terrain().getSecondChoke())) > 256 || !Terrain().isInAllyTerritory(TilePosition(center))) return false;
+		if (center.getDistance(Position(Terrain().getSecondChoke())) < 160 || !Terrain().isInAllyTerritory(TilePosition(center))) return false;
 	}
 
 	// If the building requires an offset (production buildings and first pylon)

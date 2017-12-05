@@ -24,11 +24,11 @@ namespace detail
 
 } // namespace details
 
-#define bwem_assert_debug_only(expr)			assert(expr)
-#define bwem_assert_plus(expr, message)			assert(expr)
-#define bwem_assert(expr)						bwem_assert_plus(expr, "")
-#define bwem_assert_throw_plus(expr, message)   ((expr)?(void)0:detail::onAssertThrowFailed(__FILE__,__LINE__, #expr, message))
-#define bwem_assert_throw(expr)					bwem_assert_throw_plus(expr, "")
+#define bwem_assert_debug_only(expr)			;//assert(expr)
+#define bwem_assert_plus(expr, message)			;//assert(expr)
+#define bwem_assert(expr)						;//bwem_assert_plus(expr, "")
+#define bwem_assert_throw_plus(expr, message)   ;//((expr)?(void)0:detail::onAssertThrowFailed(__FILE__,__LINE__, #expr, message))
+#define bwem_assert_throw(expr)					;//bwem_assert_throw_plus(expr, "")
 
 
 #define BWEM_USE_WINUTILS 1		// enable(1) or disable(0) the compilation of winutils.cpp

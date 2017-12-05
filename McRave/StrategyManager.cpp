@@ -66,7 +66,7 @@ void StrategyTrackerClass::protossStrategy()
 		//playPassive = true;
 
 	// Check if we need an observer
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) <= 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Dark_Templar] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Citadel_of_Adun] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Templar_Archives] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Ghost] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Vulture] >= 10 || Units().getEnemyComposition()[UnitTypes::Zerg_Lurker] > 0 || (Units().getEnemyComposition()[UnitTypes::Zerg_Lair] == 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hydralisk] >= 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hatchery] == 0)))
+	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) <= 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Dark_Templar] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Citadel_of_Adun] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Templar_Archives] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Ghost] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Vulture] >= 10 || Units().getEnemyComposition()[UnitTypes::Zerg_Lurker] > 0 || (Units().getEnemyComposition()[UnitTypes::Zerg_Lair] == 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hydralisk_Den] >= 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hatchery] == 0)))
 		invis = true;
 	else invis = false;
 }
@@ -166,22 +166,26 @@ void StrategyTrackerClass::updateProtossUnitScore(UnitType unit, int cnt)
 		break;
 	case UnitTypes::Enum::Terran_Vulture:
 		unitScore[UnitTypes::Protoss_Dragoon] += (size * 1.00) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon)));
-		unitScore[UnitTypes::Protoss_Observer] += (size * 1.00) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Observer)));
+		unitScore[UnitTypes::Protoss_Observer] += (size * 0.70) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Observer)));		
+		unitScore[UnitTypes::Protoss_High_Templar] += (size * 0.30) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_High_Templar)));
 		break;
 	case UnitTypes::Enum::Terran_Goliath:
 		unitScore[UnitTypes::Protoss_Zealot] += (size * 0.50) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot)));
 		unitScore[UnitTypes::Protoss_Dragoon] += (size * 0.50) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon)));
-		unitScore[UnitTypes::Protoss_Arbiter] += (size * 1.00) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Arbiter)));
+		unitScore[UnitTypes::Protoss_Arbiter] += (size * 0.70) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Arbiter)));
+		unitScore[UnitTypes::Protoss_High_Templar] += (size * 0.30) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_High_Templar)));
 		break;
 	case UnitTypes::Enum::Terran_Siege_Tank_Siege_Mode:
 		unitScore[UnitTypes::Protoss_Zealot] += (size * 0.85) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot)));
 		unitScore[UnitTypes::Protoss_Dragoon] += (size * 0.15) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon)));
-		unitScore[UnitTypes::Protoss_Arbiter] += (size * 1.00) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Arbiter)));
+		unitScore[UnitTypes::Protoss_Arbiter] += (size * 0.70) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Arbiter)));
+		unitScore[UnitTypes::Protoss_High_Templar] += (size * 0.30) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_High_Templar)));
 		break;
 	case UnitTypes::Enum::Terran_Siege_Tank_Tank_Mode:
 		unitScore[UnitTypes::Protoss_Zealot] += (size * 0.85) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot)));
 		unitScore[UnitTypes::Protoss_Dragoon] += (size * 0.15) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon)));
-		unitScore[UnitTypes::Protoss_Arbiter] += (size * 1.00) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Arbiter)));
+		unitScore[UnitTypes::Protoss_Arbiter] += (size * 0.70) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Arbiter)));
+		unitScore[UnitTypes::Protoss_High_Templar] += (size * 0.30) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_High_Templar)));
 		break;
 	case UnitTypes::Enum::Terran_Wraith:
 		unitScore[UnitTypes::Protoss_Dragoon] += (size * 1.00) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon)));
@@ -242,7 +246,7 @@ void StrategyTrackerClass::updateProtossUnitScore(UnitType unit, int cnt)
 		break;
 	case UnitTypes::Enum::Protoss_Dragoon:
 		unitScore[UnitTypes::Protoss_Reaver] += (size * .60) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver)));
-		unitScore[UnitTypes::Protoss_High_Templar] += (size * .30) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_High_Templar)));
+		unitScore[UnitTypes::Protoss_High_Templar] += (size * 0.30) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_High_Templar)));
 		unitScore[UnitTypes::Protoss_Dark_Templar] += (size * 0.10) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dark_Templar)));
 		break;
 	case UnitTypes::Enum::Protoss_High_Templar:
