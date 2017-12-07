@@ -1,6 +1,5 @@
 # McRave - A Broodwar Bot
-## For any questions, email christianmccrave@gmail.com
-## Bot started January 3rd 2017, latest readme update November 23rd 2017.
+For any questions, email christianmccrave@gmail.com , McRave was started January 3rd 2017, latest readme update December 6th 2017.
 
 ## Thanks to:
 - Nathan Roth (Antiga/Iruian) for expert analysis on my replays and advice on build orders.
