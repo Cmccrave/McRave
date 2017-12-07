@@ -4,6 +4,7 @@ For any questions, email christianmccrave@gmail.com , McRave was started January
 **Thanks to:**
 - Nathan Roth (Antiga/Iruian) for expert analysis on my replays and advice on build orders.
 - Dan Gant (PurpleWave) for help with learning C++, coding structure and general Broodwar gameplay.
+- jaj22 for help with learning C++ and Broodwar engine discussions.
 
 **New Features:**
 - Further refined some early game build orders.
