@@ -6,5 +6,6 @@ For any questions, email christianmccrave@gmail.com , McRave was started January
 - Dan Gant (PurpleWave) for help with learning C++, coding structure and general Broodwar gameplay.
 
 **New Features:**
-- Corsair attack and move forward (probably works for most air units)
-- Improved a few early game strategies and build orders
+- Further refined some early game build orders.
+- Added better worker micro and decisions to pull workers out to defend.
+- Improved HT micro.
