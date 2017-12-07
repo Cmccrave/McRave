@@ -2,8 +2,8 @@
 
 Unit TargetTrackerClass::getTarget(UnitInfo& unit)
 {
-	if (unit.getType() == UnitTypes::Terran_Medic) return allyTarget(unit);	
-	else return enemyTarget(unit);	
+	if (unit.getType() == UnitTypes::Terran_Medic) return allyTarget(unit);
+	else return enemyTarget(unit);
 	return nullptr;
 }
 
@@ -23,10 +23,13 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		if (!enemy.unit()) continue;
 		double widths = unit.getType().tileWidth() * 16.0 + enemy.getType().tileWidth() * 16.0;
 		double allyRange = widths + (enemy.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
-		double distance = pow(max(allyRange, unit.getPosition().getDistance(enemy.getPosition())), 5.0);
-		
+		double distance = pow(max(allyRange, unit.getPosition().getDistance(enemy.getPosition())), 10.0);
 
-		if ((unit.getType().isFlyer() && enemy.getAirDamage() > 0.0) || (!unit.getType().isFlyer() && enemy.getGroundDamage() > 0.0) || (enemy.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0))
+		bool enemyCanAttack = ((unit.getType().isFlyer() && enemy.getAirDamage() > 0.0) || (!unit.getType().isFlyer() && enemy.getGroundDamage() > 0.0));
+		bool unitCanAttack = ((enemy.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0));
+
+
+		if (enemyCanAttack || unitCanAttack)
 		{
 			if (unit.getPosition().getDistance(enemy.getPosition()) < closest || closest == 0.0)
 			{
@@ -40,6 +43,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		if (enemy.unit()->exists() && enemy.unit()->isStasised()) continue; // If the enemy is stasised, ignore it		
 		if (enemy.getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.getGroundRange() < 32 && unit.getType() != UnitTypes::Protoss_Dark_Templar) continue; // If the enemy is a mine and this is a melee unit (except DT), ignore it
 		if (unit.getTransport() && enemy.getType().isBuilding()) continue; // If unit is loaded, don't target buildings		
+		if ((enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && !enemy.unit()->isDetected() && !enemyCanAttack) continue;
 
 		// If this is a detector unit, target invisible units only
 		if (unit.getType().isDetector() && !unit.getType().isBuilding())
@@ -72,7 +76,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 			}
 		}
 
-		else if ((enemy.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0)) thisUnit = enemy.getPriority() / distance;		
+		else if ((enemy.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0)) thisUnit = enemy.getPriority() / distance;
 
 		// If this is the strongest enemy around, target it
 		if (thisUnit >= highest)
@@ -100,7 +104,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		{
 			unit.setEngagePosition(unit.getPosition());
 		}
-	}	
+	}
 	return target;
 }
 

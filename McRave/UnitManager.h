@@ -20,7 +20,7 @@ class UnitTrackerClass
 	set<Unit> enemyThreats;
 	set<Unit> armedMines;
 
-	double threatInAllyTerritory;
+	double immThreat, proxThreat;
 
 	double globalAllyGroundStrength, globalEnemyGroundStrength;
 	double globalAllyAirStrength, globalEnemyAirStrength;
@@ -41,7 +41,8 @@ public:
 	UnitInfo& getAllyUnit(Unit);
 	UnitInfo& getEnemyUnit(Unit);
 
-	double getImmThreats() { return threatInAllyTerritory; }
+	double getImmThreat() { return immThreat; }
+	double getProxThreat() { return proxThreat; }
 
 	double getGlobalAllyGroundStrength() { return globalAllyGroundStrength; }
 	double getGlobalEnemyGroundStrength() { return globalEnemyGroundStrength; }

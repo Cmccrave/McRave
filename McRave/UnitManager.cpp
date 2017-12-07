@@ -13,7 +13,8 @@ void UnitTrackerClass::updateUnits()
 	// Reset global strengths
 	globalEnemyGroundStrength = 0.0;
 	globalAllyGroundStrength = 0.0;
-	threatInAllyTerritory = 0.0;
+	immThreat = 0.0;
+	proxThreat = 0.0;
 	allyDefense = 0.0;
 	enemyDefense = 0.0;
 
@@ -40,7 +41,8 @@ void UnitTrackerClass::updateUnits()
 		if (!unit.unit()->exists() && unit.getPosition().isValid() && Broodwar->isVisible(unit.getTilePosition())) unit.setPosition(Positions::None); // If unit is not visible but his position is, move it
 		if (unit.getType().isValid()) enemyComposition[unit.getType()] += 1; // If unit has a valid type, update enemy composition tracking
 		if (!unit.getType().isBuilding() && !unit.getType().isWorker()) unit.getType().isFlyer() ? globalEnemyAirStrength += unit.getVisibleAirStrength() : globalEnemyGroundStrength += unit.getVisibleGroundStrength(); // If unit is not a worker or building, add it to global strength	
-		if (Terrain().isInAllyTerritory(unit.getTilePosition())) threatInAllyTerritory += unit.getVisibleGroundStrength();
+		if ((Terrain().isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(Terrain().getDefendPosition()) < 64) && (!unit.getType().isWorker() || unit.getLastAttackFrame() > 0)) proxThreat += unit.getVisibleGroundStrength();
+		if (Grids().getBaseGrid(unit.getTilePosition()) > 0 && (!unit.getType().isWorker() || unit.getLastAttackFrame() > 0)) immThreat += unit.getVisibleGroundStrength();
 		if (unit.getType().isBuilding() && unit.getGroundDamage() > 0 && unit.unit()->isCompleted()) enemyDefense += unit.getVisibleGroundStrength(); // If unit is a building and deals damage, add it to global defense		
 	}
 

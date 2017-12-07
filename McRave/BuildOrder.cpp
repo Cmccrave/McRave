@@ -272,14 +272,12 @@ void BuildOrderTrackerClass::protossTech()
 		buildingDesired[UnitTypes::Protoss_Robotics_Facility] = 1;
 		buildingDesired[UnitTypes::Protoss_Observatory] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Robotics_Facility) > 0;
 		buildingDesired[UnitTypes::Protoss_Robotics_Support_Bay] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Observer) > 0;
-
 	}
 	else if (techUnit == UnitTypes::Protoss_Corsair)
 	{
 		unlockedType.insert(UnitTypes::Protoss_Corsair);
 		unlockedType.insert(UnitTypes::Protoss_Dark_Templar);
 		buildingDesired[UnitTypes::Protoss_Stargate] = 1 + (Units().getSupply() >= 200);
-		buildingDesired[UnitTypes::Protoss_Stargate] = 1;
 		buildingDesired[UnitTypes::Protoss_Citadel_of_Adun] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Stargate) > 0;
 		buildingDesired[UnitTypes::Protoss_Templar_Archives] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) > 0;
 	}
@@ -317,10 +315,11 @@ void BuildOrderTrackerClass::protossSituational()
 	if (Strategy().needDetection() || (!getOpening && !getTech && productionSat && techUnit == UnitTypes::None && (!Production().hasIdleProduction() || Units().getSupply() > 380))) getTech = true; // If production is saturated and none are idle or we need detection, choose a tech
 
 	// Check if we hit our Zealot cap based on our build
-	if (!Strategy().isRush() && (((currentBuild == "PZZCore" || currentBuild == "PDTExpand") && getOpening &&  Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 2) || (currentBuild == "PZCore" && getOpening &&  Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 1) || (getOpening && currentBuild == "PNZCore") || (Players().getNumberTerran() > 0 && currentBuild != "PDTExpand" && !Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) && !Broodwar->self()->isUpgrading(UpgradeTypes::Leg_Enhancements) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) <= 0)))
+	if (!Strategy().isRush() && (((currentBuild == "PZZCore" || currentBuild == "PDTExpand") && getOpening && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 2) || (currentBuild == "PZCore" && getOpening &&  Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 1) || (getOpening && currentBuild == "PNZCore") || (Players().getNumberTerran() > 0 && currentBuild != "PDTExpand" && !Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) && !Broodwar->self()->isUpgrading(UpgradeTypes::Leg_Enhancements) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) <= 0)))
 		unlockedType.erase(UnitTypes::Protoss_Zealot);
 	else unlockedType.insert(UnitTypes::Protoss_Zealot);
 	unlockedType.insert(UnitTypes::Protoss_Dragoon);
+	unlockedType.insert(UnitTypes::Protoss_Shuttle);
 
 	// Pylon logic
 	if (Strategy().isAllyFastExpand() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Pylon) <= 0)
@@ -363,7 +362,7 @@ void BuildOrderTrackerClass::protossSituational()
 		// Forge logic
 		if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) >= 3 && Units().getSupply() > 200)
 		{
-			buildingDesired[UnitTypes::Protoss_Forge] = 1;
+			buildingDesired[UnitTypes::Protoss_Forge] = 2;
 		}
 
 		// Cannon logic

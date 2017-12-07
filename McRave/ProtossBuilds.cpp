@@ -8,6 +8,7 @@ void BuildOrderTrackerClass::P4Gate()
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 34;
 	getOpening = Units().getSupply() < 100;
 	oneGateCore = true;
+	scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) > 0;
 }
 
 void BuildOrderTrackerClass::PFFESafe()
@@ -20,6 +21,7 @@ void BuildOrderTrackerClass::PFFESafe()
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 42;
 	getOpening = Units().getSupply() < 60;
 	forgeExpand = true;
+	scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 0;
 }
 
 void BuildOrderTrackerClass::PFFEStandard()
@@ -32,6 +34,7 @@ void BuildOrderTrackerClass::PFFEStandard()
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 44;
 	getOpening = Units().getSupply() < 66;
 	forgeExpand = true;
+	scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 0;
 }
 
 void BuildOrderTrackerClass::P12Nexus()
@@ -43,25 +46,28 @@ void BuildOrderTrackerClass::P12Nexus()
 		buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
 		getOpening = Units().getSupply() < 60;
+		scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core) > 0;
 	}
 	else if (Strategy().isEnemyFastExpand())
 	{
 		buildingDesired[UnitTypes::Protoss_Nexus] = buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24) + (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Cybernetics_Core) > 0);
-		buildingDesired[UnitTypes::Protoss_Gateway] = (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core)) + (Units().getSupply() >= 26);
+		buildingDesired[UnitTypes::Protoss_Gateway] = (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core)) + (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) > 1);
 		buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 28);
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 30;
 		getOpening = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) < 3;
 		nexusFirst = true;
+		scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core) > 0;
 	}
 	else
 	{
 		buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24);
-		buildingDesired[UnitTypes::Protoss_Gateway] = (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core)) + (Units().getSupply() >= 26) + (Units().getSupply() >= 76) + (Units().getSupply() >= 82);
+		buildingDesired[UnitTypes::Protoss_Gateway] = (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core)) + (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) > 1) + (Units().getSupply() >= 76) + (Units().getSupply() >= 82);
 		buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 30) + (Units().getSupply() >= 70);
 		buildingDesired[UnitTypes::Protoss_Shield_Battery] = (Units().getSupply() >= 70);
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = (Units().getSupply() >= 30);
 		getOpening = Units().getSupply() < 120;
 		nexusFirst = true;
+		scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core) > 0;
 	}
 }
 
@@ -76,6 +82,7 @@ void BuildOrderTrackerClass::P21Nexus()
 		buildingDesired[UnitTypes::Protoss_Robotics_Facility] = Units().getSupply() >= 56;
 		getOpening = Units().getSupply() < 70;
 		nexusFirst = true;
+		scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core) > 0;
 	}
 	else
 	{
@@ -87,6 +94,7 @@ void BuildOrderTrackerClass::P21Nexus()
 		buildingDesired[UnitTypes::Protoss_Robotics_Facility] = Units().getSupply() >= 56;
 		getOpening = Units().getSupply() < 100;
 		nexusFirst = true;
+		scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core) > 0;
 	}
 }
 
@@ -100,6 +108,7 @@ void BuildOrderTrackerClass::PDTExpand()
 	buildingDesired[UnitTypes::Protoss_Templar_Archives] = Units().getSupply() >= 48;
 	getOpening = Units().getSupply() < 54;
 	oneGateCore = true;
+	scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) > 0;
 }
 
 void BuildOrderTrackerClass::P2GateDragoon()
@@ -110,6 +119,7 @@ void BuildOrderTrackerClass::P2GateDragoon()
 		buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 22;
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
 		getOpening = Units().getSupply() < 50;
+		scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core) > 0;
 	}
 	else
 	{
@@ -118,6 +128,7 @@ void BuildOrderTrackerClass::P2GateDragoon()
 		buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 22;
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
 		getOpening = Units().getSupply() < 100;
+		scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core) > 0;
 	}
 }
 
@@ -129,6 +140,7 @@ void BuildOrderTrackerClass::P3GateObs()
 	buildingDesired[UnitTypes::Protoss_Robotics_Facility] = Units().getSupply() >= 52;
 	getOpening = Units().getSupply() < 80;
 	oneGateCore = true;
+	scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 0;
 }
 
 void BuildOrderTrackerClass::PNZCore()
@@ -139,6 +151,7 @@ void BuildOrderTrackerClass::PNZCore()
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
 	getOpening = Units().getSupply() < 60;
 	oneGateCore = true;
+	scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 0;
 }
 
 void BuildOrderTrackerClass::PZCore()
@@ -149,6 +162,7 @@ void BuildOrderTrackerClass::PZCore()
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 34;
 	getOpening = Units().getSupply() < 60;
 	oneGateCore = true;
+	scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 0;
 }
 
 void BuildOrderTrackerClass::PZZCore()
@@ -159,6 +173,7 @@ void BuildOrderTrackerClass::PZZCore()
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 40;
 	getOpening = Units().getSupply() < 60;
 	oneGateCore = true;
+	scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 0;
 }
 
 // Retired builds for now

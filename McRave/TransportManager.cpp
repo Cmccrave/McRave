@@ -90,8 +90,8 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 		{
 			transport.setDestination(cargo.getTargetPosition());
 			// If cargo wants to fight, find a spot to unload
-			if (cargo.getStrategy() == 1) transport.setUnloading(true);			
-			if (transport.getPosition().getDistance(transport.getDestination()) <= cargo.getGroundRange() + 32)
+			if (cargo.getStrategy() == 1) transport.setUnloading(true);
+			if (transport.getPosition().getDistance(transport.getDestination()) <= cargo.getGroundRange() + 32 && cargo.getStrategy() == 1 && ((cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.unit()->getEnergy() >= 75) || (cargo.getType() == UnitTypes::Protoss_Reaver && cargo.unit()->getScarabCount() >= 5)))
 			{
 				transport.unit()->unload(cargo.unit());				
 			}

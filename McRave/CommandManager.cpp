@@ -99,11 +99,15 @@ void CommandTrackerClass::engage(UnitInfo& unit)
 		// Specific High Templar behavior
 		if (unit.getType() == UnitTypes::Protoss_High_Templar)
 		{
-			if (unit.getTarget() && unit.getTarget()->exists() && unit.unit()->getEnergy() >= 75)
+			if (unit.getTarget() && unit.getTarget()->exists() && unit.unit()->getEnergy() >= 75 && (Grids().getEGroundCluster(target.getWalkPosition()) + Grids().getEAirCluster(target.getWalkPosition()) < 4 || unit.unit()->isUnderAttack()))
 			{
 				unit.unit()->useTech(TechTypes::Psionic_Storm, unit.getTarget());
 				Grids().updatePsiStorm(unit.getTargetWalkPosition());
 				return;
+			}
+			else
+			{
+				flee(unit);
 			}
 		}
 

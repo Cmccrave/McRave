@@ -58,12 +58,7 @@ void ProductionTrackerClass::updateProduction()
 					idleProduction[building.unit()] = bestType;
 					reservedMineral += bestType.mineralPrice();
 					reservedGas += bestType.gasPrice();
-				}
-				else
-				{
-					reservedMineral += bestType.mineralPrice();
-					reservedGas += bestType.gasPrice();
-				}
+				}				
 			}
 
 			// If this building researches things
@@ -147,7 +142,7 @@ bool ProductionTrackerClass::isCreateable(Unit building, UnitType unit)
 
 		// Robo Units
 	case UnitTypes::Enum::Protoss_Shuttle:
-		return true;
+		return false; //  TODO Fix shuttles
 		break;
 	case UnitTypes::Enum::Protoss_Reaver:
 		return Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Robotics_Support_Bay) > 0;
@@ -302,7 +297,7 @@ bool ProductionTrackerClass::isSuitable(UpgradeType upgrade)
 		{
 			// Energy upgrades
 		case UpgradeTypes::Enum::Khaydarin_Amulet:
-			return (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_High_Templar) >= 4 && Broodwar->self()->hasResearched(TechTypes::Psionic_Storm));
+			return (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Assimilator) >= 4 && Broodwar->self()->hasResearched(TechTypes::Psionic_Storm));
 		case UpgradeTypes::Enum::Khaydarin_Core:
 			return true;
 
@@ -338,7 +333,7 @@ bool ProductionTrackerClass::isSuitable(UpgradeType upgrade)
 		case UpgradeTypes::Enum::Protoss_Ground_Weapons:
 			return (Units().getSupply() > 120 || (Players().getNumberZerg() > 0 && !BuildOrder().isOpener()));
 		case UpgradeTypes::Enum::Protoss_Ground_Armor:
-			return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Armor);
+			return (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Armor) || Broodwar->self()->isUpgrading(UpgradeTypes::Protoss_Ground_Weapons));
 		case UpgradeTypes::Enum::Protoss_Plasma_Shields:
 			return (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) >= 2 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Armor) >= 2);
 

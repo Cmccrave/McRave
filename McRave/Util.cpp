@@ -435,8 +435,9 @@ bool UtilTrackerClass::isWalkable(TilePosition here)
 
 bool UtilTrackerClass::shouldPullWorker(Unit unit)
 {
-	if (Grids().getEGroundThreat(getWalkPosition(unit)) > 0.0 && Grids().getResourceGrid(unit->getTilePosition()) > 0 && Units().getSupply() < 60) return true;
+	if (Terrain().isInAllyTerritory(unit->getTilePosition()) && Grids().getEGroundThreat(getWalkPosition(unit)) > 0.0 && Grids().getResourceGrid(unit->getTilePosition()) > 0 && Units().getSupply() < 60) return true;
 	else if (BuildOrder().getCurrentBuild() == "Sparks" && Units().getGlobalGroundStrategy() == 1) return true;
-	else if (Units().getImmThreats() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) <= 2) return true;
+	else if (Strategy().isHoldChoke() && Units().getProxThreat() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) <= 2) return true;
+	else if (!Strategy().isHoldChoke() && Units().getImmThreat() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense()) return true;
 	return false;
 }

@@ -12,6 +12,7 @@ class BuildOrderTrackerClass
 	bool getOpening = true, getTech = false, learnedOpener = false;
 	bool oneGateCore = false, forgeExpand = false, nexusFirst = false;
 	bool bioBuild = false;
+	bool scout = false;
 	UnitType techUnit;
 	set <UnitType> techList;
 	set <UnitType> unlockedType;
@@ -27,6 +28,7 @@ public:
 
 	map <UnitType, int>& getBuildingDesired() { return buildingDesired; }
 	bool isOpener() { return getOpening; }
+	bool shouldScout() { return scout; }
 
 	set <UnitType>& getTechList() { return techList; }
 	bool isOneGateCore() { return oneGateCore; }

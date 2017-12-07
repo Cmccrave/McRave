@@ -10,32 +10,40 @@ class WorkerTrackerClass
 {
 	map <Unit, WorkerInfo> myWorkers;
 	map <WalkPosition, int> recentExplorations;
-	Unit scout;
+	Unit scouter;
 	bool scouting = true;
 	int deadScoutFrame = 0;
 	int minWorkers, gasWorkers;
 public:
-
 	bool isScouting() { return scouting; }
 	map <Unit, WorkerInfo>& getMyWorkers() { return myWorkers; }
-	Unit getScout() { return scout; }
+	Unit getScout() { return scouter; }
 	Unit getClosestWorker(Position);
-	
+
 	void update();
 	void updateWorkers();
-	
-	void updateBuilding(WorkerInfo&);
-	void updateScouting(WorkerInfo&);
-	void updateGathering(WorkerInfo&);
-
-	void updateScout(WorkerInfo&);
 	void updateInformation(WorkerInfo&);
 	void updateDecision(WorkerInfo&);
-	void assignWorker(WorkerInfo&);
-	void reAssignWorker(WorkerInfo&);
-	void exploreArea(WorkerInfo&);
 
-	void shouldMoveToBuild(WorkerInfo&);
+	//bool shouldMoveToBuild(WorkerInfo&);
+
+	bool shouldAssign(WorkerInfo&);
+	bool shouldBuild(WorkerInfo&);
+	bool shouldFight(WorkerInfo&);
+	bool shouldGather(WorkerInfo&);
+	bool shouldRepair(WorkerInfo&);
+	bool shouldReturnCargo(WorkerInfo&);
+	bool shouldScout(WorkerInfo&);
+
+	void assign(WorkerInfo&);
+	void build(WorkerInfo&);
+	void fight(WorkerInfo&);
+	void gather(WorkerInfo&);
+	void repair(WorkerInfo&);
+	void returnCargo(WorkerInfo&);
+	void scout(WorkerInfo&);
+
+	void explore(WorkerInfo&);
 
 	void storeWorker(Unit);
 	void removeWorker(Unit);

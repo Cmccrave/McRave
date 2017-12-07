@@ -244,7 +244,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	{
 		for (auto &base : Bases().getMyBases())
 		{
-			if (Grids().getPylonGrid(base.second.getTilePosition()) <= 1) return getBuildLocationNear(building, base.second.getTilePosition());
+			if (Grids().getPylonGrid(base.second.getTilePosition()) <= 0) return getBuildLocationNear(building, base.second.getTilePosition());
 		}
 	}
 
@@ -300,9 +300,7 @@ bool BuildingTrackerClass::isBuildable(UnitType building, TilePosition buildTile
 
 	if (Broodwar->self()->getRace() == Races::Protoss && building.requiresPsi() && !Pylons().hasPower(buildTilePosition, building)) return false; // If Protoss, check if it's not a pylon and in a preset buildable position based on power grid
 	if (building == UnitTypes::Protoss_Shield_Battery && (Terrain().getDefendPosition().getDistance(Position(buildTilePosition)) < 256 || !Terrain().isInAllyTerritory(buildTilePosition))) return false;
-
 	
-
 	for (int x = buildTilePosition.x; x < buildTilePosition.x + building.tileWidth(); x++)
 	{
 		for (int y = buildTilePosition.y; y < buildTilePosition.y + building.tileHeight(); y++)
@@ -310,7 +308,7 @@ bool BuildingTrackerClass::isBuildable(UnitType building, TilePosition buildTile
 			if (!TilePosition(x, y).isValid()) return false;
 			if (!Broodwar->isBuildable(TilePosition(x, y), true)) return false; // If it's on an unbuildable tile
 			if (Grids().getBuildingGrid(x, y) > 0 && !building.isResourceDepot()) return false; // If it's reserved for expansions				
-			if (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(x, y) >= 3) return false; // If it's a pylon and overlapping too many pylons					
+			if (building == UnitTypes::Protoss_Pylon && ((Grids().getPylonGrid(x, y) >= 3 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) >= 4) || (Grids().getPylonGrid(x,y) > 0 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) < 4))) return false; // If it's a pylon and overlapping too many pylons					
 			if (Grids().getResourceGrid(x, y) > 0 && !building.isResourceDepot() && building != UnitTypes::Protoss_Photon_Cannon && building != UnitTypes::Protoss_Shield_Battery && building != UnitTypes::Terran_Bunker) return false; // If it's not a defensive structure and on top of the resource grid
 			if (building == UnitTypes::Protoss_Photon_Cannon && x >= Terrain().getMediumWall().x && x < Terrain().getMediumWall().x + 3 && y >= Terrain().getMediumWall().y && y < Terrain().getMediumWall().y + 2) return false;
 			if (building == UnitTypes::Protoss_Photon_Cannon && x >= Terrain().getLargeWall().x && x < Terrain().getLargeWall().x + 4 && y >= Terrain().getLargeWall().y && y < Terrain().getLargeWall().y + 3) return false;
