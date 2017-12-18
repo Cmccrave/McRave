@@ -19,6 +19,11 @@ void TerrainTrackerClass::updateAreas()
 		findSecondChoke();
 	}
 
+	if (enemyStartingPosition.isValid() && !enemyNatural.isValid())
+	{
+		findEnemyNatural();
+	}
+
 	// If we see a building, check for closest starting location
 	if (!enemyStartingPosition.isValid())
 	{
@@ -52,9 +57,9 @@ void TerrainTrackerClass::updateAreas()
 		for (auto &b : Bases().getEnemyBases())
 		{
 			BaseInfo &base = b.second;
-			if (Grids().getEnemyArmyCenter().getDistance(base.getPosition()) > closestD)
+			if (enemyStartingPosition.getDistance(base.getPosition()) > closestD)
 			{
-				closestD = Grids().getEnemyArmyCenter().getDistance(base.getPosition());
+				closestD = enemyStartingPosition.getDistance(base.getPosition());
 				closestP = base.getPosition();
 			}
 		}
@@ -63,7 +68,8 @@ void TerrainTrackerClass::updateAreas()
 	else if (enemyStartingPosition.isValid() && !Broodwar->isExplored(enemyStartingTilePosition)) attackPosition = enemyStartingPosition;
 	else attackPosition = Positions::Invalid;
 
-	if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) <= 1) defendPosition = Position(firstChoke);
+	if (!Strategy().isHoldChoke() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) <= 1) defendPosition = playerStartingPosition;
+	else if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) <= 1) defendPosition = Position(firstChoke);
 	else if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) > 1) defendPosition = Position(secondChoke);
 
 	// Set mineral holding positions
@@ -102,7 +108,7 @@ void TerrainTrackerClass::updateChokes()
 			}
 		}
 
-		if (BuildOrder().isForgeExpand() || BuildOrder().isNexusFirst()) allyTerritory.insert(naturalArea->Id());	
+		if (BuildOrder().isForgeExpand() || BuildOrder().isNexusFirst() || BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] > 1) allyTerritory.insert(naturalArea->Id());	
 	}
 }
 
@@ -238,10 +244,10 @@ void TerrainTrackerClass::updateWalls()
 		}
 	}
 
-	//Broodwar->drawBoxMap(Position(bSmall), Position(bSmall) + Position(64, 64), Colors::Blue);
-	//Broodwar->drawBoxMap(Position(bMedium), Position(bMedium) + Position(94, 64), Colors::Blue);
-	//Broodwar->drawBoxMap(Position(bLarge), Position(bLarge) + Position(128, 96), Colors::Blue);
-	//Broodwar->drawCircleMap(Position(secondChoke), 16, Colors::Green);
+	Broodwar->drawBoxMap(Position(bSmall), Position(bSmall) + Position(64, 64), Colors::Blue);
+	Broodwar->drawBoxMap(Position(bMedium), Position(bMedium) + Position(94, 64), Colors::Blue);
+	Broodwar->drawBoxMap(Position(bLarge), Position(bLarge) + Position(128, 96), Colors::Blue);
+	Broodwar->drawCircleMap(Position(secondChoke), 16, Colors::Green);
 }
 
 void TerrainTrackerClass::onStart()
@@ -269,6 +275,25 @@ void TerrainTrackerClass::findNatural()
 				distance = Grids().getDistanceHome(WalkPosition(base.Location()));
 				naturalArea = base.GetArea();
 				natural = base.Location();
+			}
+		}
+	}
+}
+
+void TerrainTrackerClass::findEnemyNatural()
+{
+	// Find enemy natural area
+	double distance = 0.0;
+	for (auto &area : theMap.Areas())
+	{
+		for (auto &base : area.Bases())
+		{
+			if (base.Geysers().size() == 0 || area.AccessibleNeighbours().size() == 0) continue;	
+			if (base.Center().getDistance(enemyStartingPosition) < 128) continue;
+			if (getGroundDistance(base.Center(), enemyStartingPosition) < distance || distance == 0.0)
+			{
+				distance = getGroundDistance(base.Center(), enemyStartingPosition);				
+				enemyNatural = base.Location();
 			}
 		}
 	}
@@ -356,14 +381,29 @@ Position TerrainTrackerClass::getClosestBaseCenter(Position here)
 	return closestB;
 }
 
-//int MapManager::getGroundDistance(BWAPI::Position start, BWAPI::Position end) {
-//	int dist = 0;
-//
-//	for (auto cpp : BWEM::Map::Instance().GetPath(start, end)) {
-//		auto center = BWAPI::Position{ cpp->Center() };
-//		dist += start.getDistance(center);
-//		start = center;
-//	}
-//
-//	return dist += start.getDistance(end);
-//}
+int TerrainTrackerClass::getGroundDistance(Position start, Position end) 
+{
+	int dist = 0;
+	if (!start.isValid() || !end.isValid()) return INT_MAX;
+	if (!theMap.GetArea(WalkPosition(start)) || !theMap.GetArea(WalkPosition(end))) return INT_MAX;
+
+	for (auto cpp : Map::Instance().GetPath(start, end))
+	{
+		auto center = Position{ cpp->Center() };
+		dist += start.getDistance(center);
+		start = center;
+	}
+
+	return dist += start.getDistance(end);
+}
+
+bool TerrainTrackerClass::overlapsWall(TilePosition here)
+{
+	int x = here.x;
+	int y = here.y;
+
+	if (x >= Terrain().getSmallWall().x && x < Terrain().getSmallWall().x + 2 && y >= Terrain().getSmallWall().y && y < Terrain().getSmallWall().y + 2) return true;
+	if (x >= Terrain().getMediumWall().x && x < Terrain().getMediumWall().x + 3 && y >= Terrain().getMediumWall().y && y < Terrain().getMediumWall().y + 2) return true;
+	if (x >= Terrain().getLargeWall().x && x < Terrain().getLargeWall().x + 4 && y >= Terrain().getLargeWall().y && y < Terrain().getLargeWall().y + 3) return true;
+	return false;
+}

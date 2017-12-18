@@ -291,7 +291,8 @@ bool ProductionTrackerClass::isSuitable(UpgradeType upgrade)
 	// If we're playing Protoss, check Protoss upgrades
 	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
-		if (upgrade != UpgradeTypes::Singularity_Charge && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0) return false;
+		if (BuildOrder().getFirstUpgrade() != UpgradeTypes::None && upgrade != BuildOrder().getFirstUpgrade() && Broodwar->self()->getUpgradeLevel(BuildOrder().getFirstUpgrade()) <= 0 && !Broodwar->self()->isUpgrading(BuildOrder().getFirstUpgrade())) return false;
+		if (BuildOrder().getFirstTech() != TechTypes::None && !Broodwar->self()->hasResearched(BuildOrder().getFirstTech()) && !Broodwar->self()->isResearching(BuildOrder().getFirstTech())) return false;
 
 		switch (upgrade)
 		{
@@ -339,7 +340,7 @@ bool ProductionTrackerClass::isSuitable(UpgradeType upgrade)
 
 			// Air unit upgrades
 		case UpgradeTypes::Enum::Protoss_Air_Weapons:
-			return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Corsair) > 0;
+			return (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Corsair) > 0 || Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Scout) > 0);
 		case UpgradeTypes::Enum::Protoss_Air_Armor:
 			return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Air_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Air_Armor);
 		}
@@ -356,6 +357,15 @@ bool ProductionTrackerClass::isSuitable(UpgradeType upgrade)
 			return Strategy().getUnitScore()[UnitTypes::Terran_Goliath] > 1.00;
 		case UpgradeTypes::Enum::U_238_Shells:
 			return Broodwar->self()->hasResearched(TechTypes::Stim_Packs);
+		}
+	}
+
+	else if (Broodwar->self()->getRace() == Races::Zerg)
+	{
+		switch (upgrade)
+		{
+		case UpgradeTypes::Enum::Metabolic_Boost:
+			return true;
 		}
 	}
 	return false;
@@ -375,7 +385,8 @@ bool ProductionTrackerClass::isSuitable(TechType tech)
 	// If we're playing Protoss, check Protoss tech
 	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
-		if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0) return false;
+		if (BuildOrder().getFirstTech() != TechTypes::None && tech != BuildOrder().getFirstTech() && !Broodwar->self()->hasResearched(BuildOrder().getFirstTech()) && !Broodwar->self()->isResearching(BuildOrder().getFirstTech())) return false;
+		if (BuildOrder().getFirstUpgrade() != UpgradeTypes::None && Broodwar->self()->getUpgradeLevel(BuildOrder().getFirstUpgrade()) <= 0 && !Broodwar->self()->isUpgrading(BuildOrder().getFirstUpgrade())) return false;
 
 		switch (tech)
 		{

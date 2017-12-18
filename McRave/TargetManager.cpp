@@ -21,9 +21,14 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		thisUnit = 0.0;
 		UnitInfo &enemy = e.second;
 		if (!enemy.unit()) continue;
+		double groundDist = double(Grids().getDistanceHome(enemy.getWalkPosition()) - Grids().getDistanceHome(unit.getWalkPosition()));
+		double airDist = unit.getPosition().getDistance(enemy.getPosition());
 		double widths = unit.getType().tileWidth() * 16.0 + enemy.getType().tileWidth() * 16.0;
+
+		double distance = widths + (unit.getType().isFlyer() ? airDist : max(groundDist, airDist));
 		double allyRange = widths + (enemy.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
-		double distance = pow(max(allyRange, unit.getPosition().getDistance(enemy.getPosition())), 10.0);
+		double aqRange = pow(max(allyRange, distance), 10.0);
+		double health = 1.0 + (0.25 * unit.getPercentHealth());
 
 		bool enemyCanAttack = ((unit.getType().isFlyer() && enemy.getAirDamage() > 0.0) || (!unit.getType().isFlyer() && enemy.getGroundDamage() > 0.0));
 		bool unitCanAttack = ((enemy.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0));
@@ -50,7 +55,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		{
 			if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && ((!enemy.getType().isFlyer() && Grids().getAGroundThreat(enemy.getWalkPosition()) > 0.0) || (enemy.getType().isFlyer() && Grids().getAAirThreat(enemy.getWalkPosition()) > 0.0) || Terrain().isInAllyTerritory(enemy.getTilePosition())) && Grids().getEDetectorGrid(enemy.getWalkPosition()) == 0)
 			{
-				thisUnit = enemy.getPriority() / distance;
+				thisUnit = enemy.getPriority() / aqRange;
 			}
 			else
 			{
@@ -70,16 +75,20 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		// High Templars target the highest priority with the largest cluster
 		else if (unit.getType() == UnitTypes::Protoss_High_Templar)
 		{
-			if (Grids().getPsiStormGrid(enemy.getWalkPosition()) == 0 && (Grids().getAGroundCluster(enemy.getWalkPosition()) + Grids().getAAirCluster(enemy.getWalkPosition())) < (Grids().getEAirCluster(enemy.getWalkPosition()) + Grids().getEGroundCluster(enemy.getWalkPosition())) && !enemy.getType().isBuilding())
+			int eGrid = Grids().getEGroundCluster(enemy.getWalkPosition()) + Grids().getEAirCluster(enemy.getWalkPosition());
+			int aGrid = Grids().getAGroundCluster(enemy.getWalkPosition()) + Grids().getAAirCluster(enemy.getWalkPosition());
+			double cluster = double(eGrid) / double(1 + aGrid);
+		
+			if (Grids().getPsiStormGrid(enemy.getWalkPosition()) == 0 && !enemy.getType().isBuilding())
 			{
-				thisUnit = (enemy.getPriority() * (Grids().getEGroundCluster(enemy.getWalkPosition()) + Grids().getEAirCluster(enemy.getWalkPosition()))) / distance;
+				thisUnit = (enemy.getPriority() * cluster) / aqRange;
 			}
 		}
 
-		else if ((enemy.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0)) thisUnit = enemy.getPriority() / distance;
+		else if ((enemy.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0)) thisUnit = (enemy.getPriority() * health) / aqRange;
 
 		// If this is the strongest enemy around, target it
-		if (thisUnit >= highest)
+		if (thisUnit > highest)
 		{
 			target = enemy.unit();
 			highest = thisUnit;

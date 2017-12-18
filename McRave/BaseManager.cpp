@@ -43,6 +43,16 @@ void BaseTrackerClass::updateProduction(BaseInfo& base)
 		base.unit()->buildAddon(UnitTypes::Terran_Comsat_Station);
 	}
 
+	int ovie = 0;
+	for (auto &u : Units().getAllyUnitsFilter(UnitTypes::Zerg_Egg))
+	{
+		UnitInfo& unit = Units().getAllyUnit(u);
+		if (unit.getType() == UnitTypes::Zerg_Overlord)
+		{
+			ovie++;
+		}
+	}
+
 	if (base.unit() && base.unit()->isIdle() && ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) || BuildOrder().getCurrentBuild() == "Sparks"))
 	{
 		for (auto &unit : base.getType().buildsWhat())
@@ -55,12 +65,21 @@ void BaseTrackerClass::updateProduction(BaseInfo& base)
 				}
 			}
 		}
-		for (auto &unit : base.unit()->getLarva())
+	}
+
+	for (auto &unit : base.unit()->getLarva())
+	{
+		if ((Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Overlord) + ovie) - 1 < min(22, (int)floor((Units().getSupply() / max(14, (16 - Broodwar->self()->allUnitCount(UnitTypes::Zerg_Overlord)))))))
 		{
-			if (Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Drone) < 60 && (Broodwar->self()->minerals() >= UnitTypes::Zerg_Drone.mineralPrice() + Production().getReservedMineral() + Buildings().getQueuedMineral()))
-			{
-				base.unit()->morph(UnitTypes::Zerg_Drone);
-			}
+			base.unit()->morph(UnitTypes::Zerg_Overlord);
+		}
+		else if (Units().getGlobalEnemyGroundStrength() > Units().getGlobalAllyGroundStrength())
+		{
+			base.unit()->morph(UnitTypes::Zerg_Zergling);
+		}
+		else if ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) && Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Drone) < 60 && (Broodwar->self()->minerals() >= UnitTypes::Zerg_Drone.mineralPrice() + Production().getReservedMineral() + Buildings().getQueuedMineral()))
+		{
+			base.unit()->morph(UnitTypes::Zerg_Drone);
 		}
 	}
 	return;

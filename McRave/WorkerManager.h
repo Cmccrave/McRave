@@ -18,7 +18,7 @@ public:
 	bool isScouting() { return scouting; }
 	map <Unit, WorkerInfo>& getMyWorkers() { return myWorkers; }
 	Unit getScout() { return scouter; }
-	Unit getClosestWorker(Position);
+	Unit getClosestWorker(Position, bool);
 
 	void update();
 	void updateWorkers();

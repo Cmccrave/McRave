@@ -31,9 +31,14 @@ void InterfaceTrackerClass::drawInformation()
 {
 	int offset = 0;
 	screenOffset = 0;
+	int time = Broodwar->getFrameCount() / 24;
+
+	int seconds = time % 60;
+	int minute = time / 60;
 
 	// Display what build is being used
-	Broodwar->drawTextScreen(452, 16, "%c%s", Text::White, BuildOrder().getCurrentBuild().c_str());	
+	Broodwar->drawTextScreen(452, 16, "%c%s vs %s", Text::White, BuildOrder().getCurrentBuild().c_str(), Strategy().getEnemyBuild().c_str());	
+	Broodwar->drawTextScreen(452, 32, "%d:%d", minute, seconds);
 
 	// Display unit scoring	
 	for (auto &unit : Strategy().getUnitScore())

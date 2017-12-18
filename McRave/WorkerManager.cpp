@@ -9,7 +9,7 @@ void WorkerTrackerClass::update()
 }
 
 void WorkerTrackerClass::updateWorkers()
-{	
+{
 	for (auto &worker : myWorkers)
 	{
 		updateInformation(worker.second);
@@ -33,23 +33,29 @@ void WorkerTrackerClass::explore(WorkerInfo& worker)
 	Position bestPosition = Terrain().getPlayerStartingPosition();
 	Position destination = Terrain().getEnemyStartingPosition();
 	int longest = 0;
-
+	
 	if (Broodwar->isExplored(Terrain().getEnemyStartingTilePosition()))
 	{
 		for (auto &base : Bases().getEnemyBases())
 		{
-			if (Broodwar->getFrameCount() - base.second.getLastVisibleFrame() >= longest)
+			if (Broodwar->getFrameCount() - base.second.getLastVisibleFrame() >= 2000 && Broodwar->getFrameCount() - base.second.getLastVisibleFrame() >= longest)
 			{
 				longest = Broodwar->getFrameCount() - base.second.getLastVisibleFrame();
 				destination = base.second.getPosition();
 			}
-		}
-		Unit closest = worker.unit()->getClosestUnit(Filter::IsEnemy && Filter::CanAttack);
-		if (destination.isValid() && (!closest || (closest && closest->exists() && worker.unit()->getDistance(closest) > 640)))
-		{
-			worker.unit()->move(destination);
-			return;
-		}
+		}		
+	}
+
+	if (Players().getNumberZerg() > 0 && Strategy().getPoolFrame() > 0 && !Strategy().isEnemyFastExpand())
+	{
+		destination = Position(Terrain().getEnemyNatural());
+	}
+
+	Unit closest = worker.unit()->getClosestUnit(Filter::IsEnemy && Filter::CanAttack);
+	if (destination.isValid() && (!closest || (closest && closest->exists() && worker.unit()->getDistance(closest) > 640)))
+	{
+		worker.unit()->move(destination);
+		return;
 	}
 
 	// Check a 8x8 walkposition grid for a potential new place to scout
@@ -58,18 +64,27 @@ void WorkerTrackerClass::explore(WorkerInfo& worker)
 	{
 		for (int y = start.y - 8; y < start.y + 8 + worker.getType().tileHeight() * 4; y++)
 		{
-			if (!WalkPosition(x, y).isValid() || Grids().getDistanceHome(start) - Grids().getDistanceHome(WalkPosition(x, y)) > 16)	continue;
+			if (!WalkPosition(x, y).isValid() || Grids().getDistanceHome(start) - Grids().getDistanceHome(WalkPosition(x, y)) > 16)	continue;			
 
 			double mobility = double(Grids().getMobilityGrid(x, y));
 			double threat = Grids().getEGroundThreat(x, y);
 			double distance = max(1.0, Position(WalkPosition(x, y)).getDistance(destination));
-			double time = max(1.0, double(Broodwar->getFrameCount() - recentExplorations[WalkPosition(x, y)]));
+			double time = min(100.0, double(Broodwar->getFrameCount() - recentExplorations[WalkPosition(x, y)]));
 
-			if ((threat < safest || (threat == safest && (time * mobility) / distance >= best)) && Util().isMobile(start, WalkPosition(x, y), worker.getType()))
-			{
-				safest = threat;
-				best = (time * mobility) / distance;
+			if (Terrain().isInEnemyTerritory(TilePosition(x, y)) && !Broodwar->isExplored(TilePosition(WalkPosition(x, y))) && 1000 / distance > best && Util().isMobile(start, WalkPosition(x, y), worker.getType()))
+			{			
+				safest = -1;
+				best = 1000 / distance;
 				bestPosition = Position(WalkPosition(x, y));
+			}
+			else
+			{
+				if ((threat < safest || (threat == safest && (time * mobility) / distance >= best)) && Util().isMobile(start, WalkPosition(x, y), worker.getType()))
+				{
+					safest = threat;
+					best = (time * mobility) / distance;
+					bestPosition = Position(WalkPosition(x, y));
+				}
 			}
 		}
 	}
@@ -84,6 +99,8 @@ void WorkerTrackerClass::updateDecision(WorkerInfo& worker)
 {
 	// If ready to remove unit role
 	if (Units().getAllyUnits().find(worker.unit()) != Units().getAllyUnits().end()) Units().getAllyUnits().erase(worker.unit());
+
+	if (BuildOrder().shouldScout() && (!Terrain().getEnemyStartingPosition().isValid() || !Strategy().isPlayPassive()) && (!scouter || !scouter->exists())) scouter = getClosestWorker(Position(Terrain().getSecondChoke()), false);
 
 	// Boulder removal logic
 	if (Resources().getMyBoulders().size() > 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) >= 2)
@@ -100,12 +117,12 @@ void WorkerTrackerClass::updateDecision(WorkerInfo& worker)
 			}
 		}
 	}
-
+	
 	// Assign, return, scout, building, repair, fight, gather
 	if (shouldAssign(worker)) assign(worker);
 	if (shouldReturnCargo(worker)) returnCargo(worker);
-	else if (shouldScout(worker)) scout(worker);
 	else if (shouldBuild(worker)) build(worker);
+	else if (shouldScout(worker)) scout(worker);	
 	else if (shouldRepair(worker)) repair(worker);
 	else if (shouldFight(worker)) fight(worker);
 	else if (shouldGather(worker)) gather(worker);
@@ -126,14 +143,13 @@ bool WorkerTrackerClass::shouldBuild(WorkerInfo& worker)
 
 bool WorkerTrackerClass::shouldFight(WorkerInfo& worker)
 {
-	if (Util().shouldPullWorker(worker.unit()) && worker.unit() == getClosestWorker(Terrain().getDefendPosition())) return true;
+	if (Util().shouldPullWorker(worker.unit()) && worker.unit() == getClosestWorker(Terrain().getDefendPosition(), false)) return true;
 	return false;
 }
 
 bool WorkerTrackerClass::shouldGather(WorkerInfo& worker)
 {
 	if ((worker.unit()->isGatheringMinerals() || worker.unit()->isGatheringGas()) && worker.unit()->getTarget() && worker.unit()->getTarget() != worker.getResource() && worker.getResource() && Grids().getBaseGrid(TilePosition(worker.getResourcePosition())) == 2) return true;
-	//else if (worker.getResource() && worker.getResourcePosition().isValid() && !worker.unit()->isGatheringGas() && !worker.unit()->isGatheringMinerals()) return true;
 	else if (worker.unit()->isIdle() || worker.unit()->getLastCommand().getType() != UnitCommandTypes::Gather) return true;
 	return false;
 }
@@ -159,10 +175,8 @@ bool WorkerTrackerClass::shouldReturnCargo(WorkerInfo& worker)
 
 bool WorkerTrackerClass::shouldScout(WorkerInfo& worker)
 {
-	if ((!Terrain().getEnemyStartingPosition().isValid() || !Strategy().isPlayPassive()) && (!scouter || !scouter->exists())) scouter = getClosestWorker(Position(Terrain().getSecondChoke()));
-
 	// TODO : Scouting based on build supply count
-	if (worker.unit() == scouter && worker.getBuildingType() == UnitTypes::None && Broodwar->getFrameCount() - deadScoutFrame > 1000 && BuildOrder().shouldScout()) return true;
+	if (worker.unit() == scouter && worker.getBuildingType() == UnitTypes::None && BuildOrder().shouldScout()) return true;
 	return false;
 }
 
@@ -238,48 +252,36 @@ void WorkerTrackerClass::build(WorkerInfo& worker)
 	}
 
 	// If our building desired has changed recently, remove
-	if (!worker.unit()->isConstructing() && BuildOrder().getBuildingDesired()[worker.getBuildingType()] <= Broodwar->self()->visibleUnitCount(worker.getBuildingType()))
+	if (!worker.unit()->isConstructing() && (BuildOrder().getBuildingDesired()[worker.getBuildingType()] <= Broodwar->self()->visibleUnitCount(worker.getBuildingType()) || !Buildings().isBuildable(worker.getBuildingType(), worker.getBuildPosition())))
 	{
 		worker.setBuildingType(UnitTypes::None);
-		worker.setBuildPosition(TilePositions::None);
+		worker.setBuildPosition(TilePositions::Invalid);
 		worker.unit()->stop();
 		return;
 	}
 
-	// If our building position is no longer buildable, remove
-	if (!Buildings().isBuildable(worker.getBuildingType(), worker.getBuildPosition()))
+	else if (Broodwar->self()->minerals() >= worker.getBuildingType().mineralPrice() - (((Resources().getMPM() / 60.0) * worker.getPosition().getDistance(Position(worker.getBuildPosition()))) / (worker.getType().topSpeed() * 24.0)) && Broodwar->self()->minerals() <= worker.getBuildingType().mineralPrice() && Broodwar->self()->gas() >= worker.getBuildingType().gasPrice() - (((Resources().getGPM() / 60.0) * worker.getPosition().getDistance(Position(worker.getBuildPosition()))) / (worker.getType().topSpeed() * 24.0)) && Broodwar->self()->gas() <= worker.getBuildingType().gasPrice())
 	{
-		worker.setBuildingType(UnitTypes::None);
-		worker.setBuildPosition(TilePositions::None);
-		worker.unit()->stop();
+		if (worker.unit()->getOrderTargetPosition() != Position(worker.getBuildPosition()) || worker.unit()->isIdle())
+		{
+			worker.unit()->move(Position(worker.getBuildPosition()));
+		}
 		return;
 	}
-	else
+	else if (Broodwar->self()->minerals() >= worker.getBuildingType().mineralPrice() && Broodwar->self()->gas() >= worker.getBuildingType().gasPrice())
 	{
-		if (Broodwar->self()->minerals() >= worker.getBuildingType().mineralPrice() - (((Resources().getMPM() / 60.0) * worker.getPosition().getDistance(Position(worker.getBuildPosition()))) / (worker.getType().topSpeed() * 24.0)) && Broodwar->self()->minerals() <= worker.getBuildingType().mineralPrice() && Broodwar->self()->gas() >= worker.getBuildingType().gasPrice() - (((Resources().getGPM() / 60.0) * worker.getPosition().getDistance(Position(worker.getBuildPosition()))) / (worker.getType().topSpeed() * 24.0)) && Broodwar->self()->gas() <= worker.getBuildingType().gasPrice())
+		if (worker.getPosition().getDistance(Position(worker.getBuildPosition())) > 320) worker.unit()->move(Position(worker.getBuildPosition()));
+		else if (worker.unit()->getOrderTargetPosition() != Position(worker.getBuildPosition()) || worker.unit()->isIdle())
 		{
-			if (worker.unit()->getOrderTargetPosition() != Position(worker.getBuildPosition()) || worker.unit()->isIdle())
-			{
-				worker.unit()->move(Position(worker.getBuildPosition()));
-			}
-			return;
+			worker.unit()->build(worker.getBuildingType(), worker.getBuildPosition());
 		}
-		else if (Broodwar->self()->minerals() >= worker.getBuildingType().mineralPrice() && Broodwar->self()->gas() >= worker.getBuildingType().gasPrice())
-		{
-			if (worker.getPosition().getDistance(Position(worker.getBuildPosition())) > 320) worker.unit()->move(Position(worker.getBuildPosition()));
-			else if (worker.unit()->getOrderTargetPosition() != Position(worker.getBuildPosition()) || worker.unit()->isIdle())
-			{
-				worker.unit()->build(worker.getBuildingType(), worker.getBuildPosition());
-			}
-			return;
-		}
+		return;
 	}
 }
 
 void WorkerTrackerClass::fight(WorkerInfo& worker)
 {
 	Units().storeAlly(worker.unit());
-	Units().increaseAlly(1.44);
 	return;
 }
 
@@ -370,22 +372,23 @@ void WorkerTrackerClass::scout(WorkerInfo& worker)
 	return;
 }
 
-Unit WorkerTrackerClass::getClosestWorker(Position here)
+Unit WorkerTrackerClass::getClosestWorker(Position here, bool isBuilding)
 {
 	// Currently gets the closest worker that doesn't mine gas
 	Unit closestWorker = nullptr;
 	double closestD = 0.0;
-	for (auto &worker : myWorkers)
+	for (auto &w : myWorkers)
 	{
-		if (worker.first == scouter) continue;
-		if (worker.second.getResource() && worker.second.getResource()->exists() && !worker.second.getResource()->getType().isMineralField()) continue;
-		if (worker.second.getBuildingType() != UnitTypes::None) continue;
-		if (worker.first->getLastCommand().getType() == UnitCommandTypes::Gather && worker.first->getLastCommand().getTarget()->exists() && worker.first->getLastCommand().getTarget()->getInitialResources() == 0)	continue;
-		if (worker.second.getType() != UnitTypes::Protoss_Probe && worker.second.unit()->isConstructing()) continue;
-		if (worker.first->getDistance(here) < closestD || closestD == 0.0)
+		WorkerInfo &worker = w.second;
+		if (isBuilding && worker.getResource() && worker.getResource()->exists() && !worker.getResource()->getType().isMineralField()) continue;
+		if (isBuilding && worker.getBuildPosition().isValid())	continue;
+		if (worker.unit() == scouter) continue;		
+		if (worker.unit()->getLastCommand().getType() == UnitCommandTypes::Gather && worker.unit()->getLastCommand().getTarget()->exists() && worker.unit()->getLastCommand().getTarget()->getInitialResources() == 0)	continue;
+		if (worker.getType() != UnitTypes::Protoss_Probe && worker.unit()->isConstructing()) continue;
+		if (Terrain().getGroundDistance(worker.getPosition(), here) < closestD || closestD == 0.0)
 		{
-			closestWorker = worker.first;
-			closestD = worker.first->getDistance(here);
+			closestWorker = worker.unit();
+			closestD = Terrain().getGroundDistance(worker.getPosition(), here);
 		}
 	}
 	return closestWorker;
@@ -416,121 +419,3 @@ void WorkerTrackerClass::removeWorker(Unit worker)
 	myWorkers.erase(worker);
 	return;
 }
-
-
-
-
-//// If idle and carrying gas or minerals, return cargo			
-//if (worker.unit()->isCarryingGas() || worker.unit()->isCarryingMinerals())
-//{
-//	if (worker.unit()->getLastCommand().getType() != UnitCommandTypes::Return_Cargo)
-//	{
-//		worker.unit()->returnCargo();
-//	}
-//	return;
-//}
-//
-//// Scout logic
-//if ((!Terrain().getEnemyStartingPosition().isValid() || !Strategy().isPlayPassive()) && (!scouter || !scouter->exists()))
-//{
-//	scouter = getClosestWorker(Position(Terrain().getSecondChoke()));
-//}
-//if (scouter && worker.unit() == scouter && !worker.unit()->isCarryingMinerals() && worker.getBuildingType() == UnitTypes::None && Broodwar->getFrameCount() - deadScoutFrame > 1000 && (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 0 || Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Barracks) > 0))
-//{
-//	scout(worker);
-//	return;
-//}
-//
-//// Boulder removal logic
-//if (Resources().getMyBoulders().size() > 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) >= 2)
-//{
-//	for (auto &b : Resources().getMyBoulders())
-//	{
-//		if (b.first && b.first->exists() && !worker.unit()->isCarryingMinerals() && worker.unit()->getDistance(b.second.getPosition()) < 320)
-//		{
-//			if (worker.unit()->getOrderTargetPosition() != b.second.getPosition() && !worker.unit()->isGatheringMinerals())
-//			{
-//				worker.unit()->gather(b.first);
-//			}
-//			return;
-//		}
-//	}
-//}
-//
-//// Building logic
-//if (worker.getBuildingType().isValid() && worker.getBuildPosition().isValid())
-//{
-//	updateBuilding(worker);
-//	return;
-//}
-//
-//// Bunker repair logic
-//if (Grids().getBunkerGrid(worker.getTilePosition()) > 0)
-//{
-//	for (auto &b : Buildings().getAllyBuildingsFilter(UnitTypes::Terran_Bunker))
-//	{
-//		BuildingInfo &bunker = Buildings().getAllyBuilding(b);
-//		if (bunker.unit()->getHitPoints() < bunker.unit()->getType().maxHitPoints())
-//		{
-//			if (worker.unit()->getLastCommand().getType() != UnitCommandTypes::Repair)
-//			{
-//				worker.unit()->repair(bunker.unit());
-//			}
-//			return;
-//		}
-//	}
-//}
-//
-//// If we need to use workers for defense
-//if (Util().shouldPullWorker(worker.unit()))
-//{
-//	Units().storeAlly(worker.unit());
-//	Units().increaseAlly(1.44);
-//	return;
-//}
-//
-//// Reassignment logic
-//if ((!Resources().isGasSaturated() && minWorkers > gasWorkers * 6) || (!Resources().isMinSaturated() && minWorkers < gasWorkers * 2))
-//{
-//	reAssignWorker(worker);
-//	return;
-//}
-//
-//// If worker doesn't have an assigned resource, assign one
-//if (!worker.getResource())
-//{
-//	assignWorker(worker);
-//	if (worker.unit()->getClosestUnit(Filter::IsMineralField) && worker.unit()->getLastCommand().getType() != UnitCommandTypes::Gather)
-//	{
-//		worker.unit()->gather(worker.unit()->getClosestUnit(Filter::IsMineralField));
-//	}
-//	return;
-//}
-//
-//// If not targeting the mineral field the worker is mapped to
-//if (!worker.unit()->isCarryingGas() && !worker.unit()->isCarryingMinerals())
-//{
-//	if ((worker.unit()->isGatheringMinerals() || worker.unit()->isGatheringGas()) && worker.unit()->getTarget() == worker.getResource()) return; // If the worker is mining their assigned target, continue		
-//	if (worker.unit()->getTarget() && worker.unit()->getTarget()->getType().isMineralField() && worker.unit()->getTarget()->getResources() == 0) return; // If the worker is mining a boulder, continue
-//
-//	if (worker.getResource() && Grids().getBaseGrid(TilePosition(worker.getResourcePosition())) == 2) // If the mineral field is a valid mining target
-//	{
-//		// If it exists, mine it
-//		if (worker.getResource()->exists())
-//		{
-//			worker.unit()->gather(worker.getResource());
-//			return;
-//		}
-//		// Else, move to it
-//		else
-//		{
-//			worker.unit()->move(worker.getResourcePosition());
-//			return;
-//		}
-//	}
-//	else if (worker.unit()->getClosestUnit(Filter::IsMineralField) && worker.unit()->getLastCommand().getType() != UnitCommandTypes::Gather)
-//	{
-//		worker.unit()->gather(worker.unit()->getClosestUnit(Filter::IsMineralField));
-//		return;
-//	}
-//}

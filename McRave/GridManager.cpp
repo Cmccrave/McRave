@@ -4,7 +4,7 @@ void GridTrackerClass::update()
 {
 	Display().startClock();
 	draw();
-	reset();	
+	reset();
 	updateMobilityGrids();
 	updateAllyGrids();
 	updateEnemyGrids();
@@ -16,6 +16,8 @@ void GridTrackerClass::update()
 
 void GridTrackerClass::reset()
 {
+	allyArmyCenter = Positions::Invalid;
+	enemyArmyCenter = Positions::Invalid;
 	int aCenter = 0, eCenter = 0;
 	for (int x = 0; x < 1024; x++) for (int y = 0; y < 1024; y++)
 	{
@@ -60,46 +62,48 @@ void GridTrackerClass::reset()
 
 void GridTrackerClass::draw()
 {
-	//// Temp debugging for tile positions
-	//for (int x = 0; x <= Broodwar->mapWidth() * 4; x++)
-	//{
-	//	for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
-	//	{
-	//		/*	if (buildingGrid[x][y] > 0)
-	//		{
-	//		Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
-	//		}*/
-	//		/*if (resourceGrid[x][y] > 0)
-	//		{
-	//		Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
-	//		}*/
-	//		if (eGroundThreat[x][y] > 0)
-	//		{
-	//			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
-	//		}
-	//		//if (mobilityGrid[x][y] > 0 && mobilityGrid[x][y] < 4)
-	//		//{
-	//		//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
-	//		//	//Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
-	//		//}
-	//		//if (mobilityGrid[x][y] >= 4 && mobilityGrid[x][y] < 6)
-	//		//{
-	//		//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Purple);
-	//		//}
-	//		//if (mobilityGrid[x][y] >= 6 && mobilityGrid[x][y] < 8)
-	//		//{
-	//		//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Blue);
-	//		//}
-	//		//if (mobilityGrid[x][y] >= 8 && mobilityGrid[x][y] < 10)
-	//		//{
-	//		//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Green);
-	//		//}
-	//		//if (mobilityGrid[x][y] >= 10)
-	//		//{
-	//		//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Red);
-	//		//}
-	//	}
-	//}
+	return; // Remove this to draw stuff
+
+	// Temp debugging for tile positions
+	for (int x = 0; x <= Broodwar->mapWidth(); x++)
+	{
+		for (int y = 0; y <= Broodwar->mapHeight(); y++)
+		{
+			if (buildingGrid[x][y] > 1)
+			{
+				Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
+			}
+			/*if (resourceGrid[x][y] > 0)
+			{
+			Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
+			}*/
+			/*if (buildingGrid[x][y] > 0)
+			{
+			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
+			}*/
+			//if (mobilityGrid[x][y] > 0 && mobilityGrid[x][y] < 4)
+			//{
+			//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
+			//	//Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
+			//}
+			//if (mobilityGrid[x][y] >= 4 && mobilityGrid[x][y] < 6)
+			//{
+			//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Purple);
+			//}
+			//if (mobilityGrid[x][y] >= 6 && mobilityGrid[x][y] < 8)
+			//{
+			//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Blue);
+			//}
+			//if (mobilityGrid[x][y] >= 8 && mobilityGrid[x][y] < 10)
+			//{
+			//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Green);
+			//}
+			//if (mobilityGrid[x][y] >= 10)
+			//{
+			//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Red);
+			//}
+		}
+	}
 }
 
 void GridTrackerClass::updateAllyGrids()
@@ -266,12 +270,12 @@ void GridTrackerClass::updateEnemyGrids()
 					if (unit.getType().isFlyer())
 					{
 						resetGrid[x][y] = true;
-						eAirClusterGrid[x][y] += 1;
+						eAirClusterGrid[x][y] += unit.getPriority();
 					}
 					if (!unit.getType().isFlyer())
 					{
 						resetGrid[x][y] = true;
-						eGroundClusterGrid[x][y] += 1;
+						eGroundClusterGrid[x][y] += unit.getPriority();
 					}
 					if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode)
 					{
@@ -494,7 +498,7 @@ void GridTrackerClass::updateDefenseGrid(UnitInfo& unit)
 					{
 						defenseGrid[x][y] -= 1;
 					}
-					if (x >= unit.getTilePosition().x && x < unit.getTilePosition().x + unit.getType().tileWidth() && y >= unit.getTilePosition().y && y < unit.getTilePosition().y + unit.getType().tileHeight())
+				/*	if (x >= unit.getTilePosition().x && x < unit.getTilePosition().x + unit.getType().tileWidth() && y >= unit.getTilePosition().y && y < unit.getTilePosition().y + unit.getType().tileHeight())
 					{
 						if (unit.unit()->exists())
 						{
@@ -504,7 +508,7 @@ void GridTrackerClass::updateDefenseGrid(UnitInfo& unit)
 						{
 							buildingGrid[x][y] -= 1;
 						}
-					}
+					}*/
 				}
 			}
 		}
@@ -626,10 +630,9 @@ void GridTrackerClass::updateMobilityGrids()
 		}
 	}
 
-	bool reservePath = false;
-	if (reservePath && Broodwar->getFrameCount() > 500)
+	
+	if (Broodwar->getFrameCount() == 500)
 	{
-		reservePath = false;
 		// Create reserve path home
 		int basebuildingGrid[256][256] = {};
 		for (auto &area : theMap.Areas())
@@ -645,38 +648,53 @@ void GridTrackerClass::updateMobilityGrids()
 				}
 			}
 		}
-		TilePosition end = Terrain().getPlayerStartingTilePosition();
-		TilePosition start = Terrain().getSecondChoke();
+		TilePosition start = Terrain().getFirstChoke();
+		TilePosition end = Terrain().getSmallWall() + TilePosition(1,1);
+		TilePosition middle = (Terrain().getLargeWall() + Terrain().getMediumWall()) / 2;
 
-		for (int i = 0; i <= 50; i++)
+		start = (Terrain().getLargeWall() + Terrain().getMediumWall()) / 2;
+		end = Terrain().getFirstChoke();
+		int range = (Grids().getDistanceHome(WalkPosition(Terrain().getSecondChoke())) - Grids().getDistanceHome(WalkPosition(Terrain().getFirstChoke()))) / 2;
+		
+		for (int i = 0; i <= range; i++)
 		{
+			set<TilePosition> testCases;
+			testCases.insert(TilePosition(start.x - 1, start.y));
+			testCases.insert(TilePosition(start.x + 1, start.y));
+			testCases.insert(TilePosition(start.x, start.y - 1));
+			testCases.insert(TilePosition(start.x, start.y + 1));
+
+			TilePosition closestT;
 			double closestD = 0.0;
-			TilePosition closestT = TilePositions::None;
-			for (int x = start.x - 1; x <= start.x + 1; x++)
+			for (auto tile : testCases)
 			{
-				for (int y = start.y - 1; y <= start.y + 1; y++)
+				if (!tile.isValid() || Terrain().overlapsWall(tile)) continue;
+				if (Grids().getBuildingGrid(tile) > 0 || basebuildingGrid[tile.x][tile.y] > 0) continue;
+				if (theMap.GetArea(Terrain().getPlayerStartingTilePosition()) == theMap.GetArea(tile)) continue;
+				if (Grids().getDistanceHome(WalkPosition(tile)) < 0) continue;
+				if (Grids().getDistanceHome(WalkPosition(tile)) * Terrain().getGroundDistance(Position(tile), Position(end)) < closestD || closestD == 0.0)
 				{
-					if (!TilePosition(x, y).isValid()) continue;
-					if (buildingGrid[x][y] == 1 || basebuildingGrid[x][y] == 1) continue;
-					if ((x == start.x - 1 && y == start.y - 1) || (x == start.x - 1 && y == start.y + 1) || (x == start.x + 1 && y == start.y - 1) || (x == start.x + 1 && y == start.y + 1)) continue;
-					if (Grids().getDistanceHome(WalkPosition(TilePosition(x, y))) * TilePosition(x, y).getDistance(end) < closestD || closestD == 0.0)
-					{
-						closestD = Grids().getDistanceHome(WalkPosition(TilePosition(x, y)))  * TilePosition(x, y).getDistance(end);
-						closestT = TilePosition(x, y);
-					}
+					closestD = Grids().getDistanceHome(WalkPosition(tile)) * Terrain().getGroundDistance(Position(tile), Position(end));
+					closestT = tile;
 				}
 			}
-
+			
 			if (closestT.isValid())
 			{
 				start = closestT;
-				reservePathHome[closestT.x][closestT.y] = 10;
+				buildingGrid[closestT.x][closestT.y] = 1;
 			}
+			else break;
 
 			if (start.getDistance(end) < 2)
 			{
 				break;
+			//	end = Terrain().getSecondChoke();
 			}
+			/*else if (end == Terrain().getSecondChoke() && (start.getDistance(end) < 2 || start.getDistance(middle) < 2))
+			{
+				break;
+			}*/
 		}
 	}
 	return;

@@ -24,7 +24,7 @@ void BuildOrderTrackerClass::onStart()
 	double best = 0.0;
 	
 	// Write what builds you're using
-	if (Broodwar->self()->getRace() == Races::Protoss) buildNames = { "PZZCore", "PZCore", "PNZCore", "P4Gate", "PFFESafe", "PFFEStandard", "P12Nexus", "P21Nexus", "PDTExpand", "P2GateDragoon" };
+	if (Broodwar->self()->getRace() == Races::Protoss) buildNames = { "PZZCore", "PZCore", "PNZCore", "P4Gate", "PFFEStandard", "P12Nexus", "P21Nexus", "PDTExpand", "P2GateDragoon" };
 	if (Broodwar->self()->getRace() == Races::Terran) buildNames = { "T2Fact", "TSparks" };
 	if (Broodwar->self()->getRace() == Races::Zerg) buildNames = { "ZOverpool" };
 
@@ -95,7 +95,7 @@ void BuildOrderTrackerClass::onStart()
 		gamesPlayed = wins + losses;
 
 		// Against static easy bots to beat, just stick with whatever is working (prevents uncessary losses)
-		if (gamesPlayed > 0 && losses == 0)
+		if (gamesPlayed > 0 && losses == 0 && ((Players().getNumberProtoss() > 0 && isBuildAllowed(Races::Protoss, build)) || (Players().getNumberTerran() > 0 && isBuildAllowed(Races::Terran, build)) || (Players().getNumberZerg() > 0 && isBuildAllowed(Races::Zerg, build)) || (Players().getNumberRandom() > 0 && isBuildAllowed(Races::Random, build))))
 		{
 			currentBuild = build;
 			return;
@@ -126,10 +126,25 @@ void BuildOrderTrackerClass::onStart()
 
 bool BuildOrderTrackerClass::isBuildAllowed(Race enemy, string build)
 {
-	if (enemy == Races::Zerg && (build == "PFFESafe" || build == "PFFEStandard" || build == "P4Gate")) return true;
-	if (enemy == Races::Terran && (build == "P12Nexus" || build == "P21Nexus" || build == "PDTExpand" || build == "P2GateDragoon")) return true;
-	if (enemy == Races::Protoss && (build == "PZCore" || build == "PNZCore" || build == "P4Gate")) return true;
-	if (enemy == Races::Random && (build == "PZZCore" || build == "P4Gate" || build == "PFFEStandard")) return true;
+	if (Broodwar->self()->getRace() == Races::Protoss)
+	{
+		if (enemy == Races::Zerg && (build == "PFFEStandard" || build == "P4Gate")) return true;
+		if (enemy == Races::Terran && (build == "P12Nexus" || build == "P21Nexus" || build == "PDTExpand" || build == "P2GateDragoon")) return true;
+		if (enemy == Races::Protoss && (build == "PZCore" || build == "PNZCore" || build == "P4Gate")) return true;
+		if (enemy == Races::Random && (build == "PZZCore" || build == "P4Gate" || build == "PFFEStandard")) return true;
+	}
+	else if (Broodwar->self()->getRace() == Races::Terran)
+	{
+		return true;
+	}
+	return false;
+}
+
+bool BuildOrderTrackerClass::techComplete()
+{
+	if (techUnit == UnitTypes::Protoss_Scout || techUnit == UnitTypes::Protoss_Corsair || techUnit == UnitTypes::Protoss_Observer || techUnit == UnitTypes::Protoss_Reaver) return (Broodwar->self()->completedUnitCount(techUnit) > 0);
+	if (techUnit == UnitTypes::Protoss_High_Templar) return (Broodwar->self()->hasResearched(TechTypes::Psionic_Storm));
+	if (techUnit == UnitTypes::Protoss_Arbiter) return (Broodwar->self()->visibleUnitCount(techUnit) > 0);
 	return false;
 }
 
@@ -185,202 +200,6 @@ void BuildOrderTrackerClass::updateBuild()
 		zergOpener();
 		zergTech();
 		zergSituational();
-	}
-	return;
-}
-
-void BuildOrderTrackerClass::protossOpener()
-{
-	if (getOpening)
-	{
-		if (currentBuild == "PZZCore") PZZCore();		
-		if (currentBuild == "PZCore") PZCore();
-		if (currentBuild == "PNZCore") PNZCore();
-		if (currentBuild == "P4Gate") P4Gate();
-		if (currentBuild == "PFFESafe") PFFESafe();
-		if (currentBuild == "PFFEStandard") PFFEStandard();		
-		if (currentBuild == "P12Nexus") P12Nexus();
-		if (currentBuild == "P21Nexus") P21Nexus();
-		if (currentBuild == "PDTExpand") PDTExpand();
-		if (currentBuild == "P2GateDragoon") P2GateDragoon();		
-	}
-	return;
-}
-
-void BuildOrderTrackerClass::protossTech()
-{
-	// Some hardcoded techs based on needing detection or specific build orders
-	if (getTech)
-	{
-		if (Strategy().needDetection())
-		{
-			techUnit = UnitTypes::Protoss_Observer;
-			unlockedType.insert(techUnit);
-			techList.insert(techUnit);
-			getTech = false;
-		}
-		else if (currentBuild == "PDTExpand" && techList.size() == 0)
-		{
-			techUnit = UnitTypes::Protoss_Arbiter;
-			unlockedType.insert(UnitTypes::Protoss_Arbiter);
-			unlockedType.insert(UnitTypes::Protoss_Dark_Templar);
-			techList.insert(UnitTypes::Protoss_Arbiter);
-			techList.insert(UnitTypes::Protoss_Dark_Templar);
-			getTech = false;
-		}
-		else if (currentBuild == "P21Nexus" && techList.size() == 0)
-		{
-			Strategy().getUnitScore()[UnitTypes::Protoss_Reaver] > Strategy().getUnitScore()[UnitTypes::Protoss_Observer] ? techUnit = UnitTypes::Protoss_Reaver : techUnit = UnitTypes::Protoss_Observer;
-			unlockedType.insert(techUnit);
-			techList.insert(techUnit);
-			getTech = false;
-		}
-
-		// Otherwise, choose a tech based on highest unit score
-		else if (techUnit == UnitTypes::None)
-		{
-			double highest = 0.0;
-			for (auto &tech : Strategy().getUnitScore())
-			{
-				if (tech.first == UnitTypes::Protoss_Dragoon || tech.first == UnitTypes::Protoss_Zealot)
-				{
-					continue;
-				}
-				if (tech.second > highest)
-				{
-					highest = tech.second;
-					techUnit = tech.first;
-				}
-			}
-
-			// No longer need to choose a tech
-			getTech = false;
-			techList.insert(techUnit);
-		}
-	}
-
-	if (techUnit == UnitTypes::Protoss_Observer)
-	{
-		unlockedType.insert(UnitTypes::Protoss_Observer);
-		buildingDesired[UnitTypes::Protoss_Robotics_Facility] = 1;
-		buildingDesired[UnitTypes::Protoss_Observatory] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Robotics_Facility) > 0;
-	}
-	else if (techUnit == UnitTypes::Protoss_Reaver)
-	{
-		unlockedType.insert(UnitTypes::Protoss_Reaver);
-		unlockedType.insert(UnitTypes::Protoss_Observer);
-		buildingDesired[UnitTypes::Protoss_Robotics_Facility] = 1;
-		buildingDesired[UnitTypes::Protoss_Observatory] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Robotics_Facility) > 0;
-		buildingDesired[UnitTypes::Protoss_Robotics_Support_Bay] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Observer) > 0;
-	}
-	else if (techUnit == UnitTypes::Protoss_Corsair)
-	{
-		unlockedType.insert(UnitTypes::Protoss_Corsair);
-		unlockedType.insert(UnitTypes::Protoss_Dark_Templar);
-		buildingDesired[UnitTypes::Protoss_Stargate] = 1 + (Units().getSupply() >= 200);
-		buildingDesired[UnitTypes::Protoss_Citadel_of_Adun] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Stargate) > 0;
-		buildingDesired[UnitTypes::Protoss_Templar_Archives] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) > 0;
-	}
-	else if (techUnit == UnitTypes::Protoss_Scout)
-	{
-		unlockedType.insert(UnitTypes::Protoss_Scout);
-		buildingDesired[UnitTypes::Protoss_Stargate] = 1 + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Stargate) > 0;
-		buildingDesired[UnitTypes::Protoss_Fleet_Beacon] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Stargate) > 0;
-	}
-	else if (techUnit == UnitTypes::Protoss_Arbiter)
-	{
-		unlockedType.insert(UnitTypes::Protoss_Arbiter);
-		unlockedType.insert(UnitTypes::Protoss_Dark_Templar);
-		buildingDesired[UnitTypes::Protoss_Citadel_of_Adun] = 1;
-		buildingDesired[UnitTypes::Protoss_Stargate] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Templar_Archives) > 0;
-		buildingDesired[UnitTypes::Protoss_Templar_Archives] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) > 0;
-		buildingDesired[UnitTypes::Protoss_Arbiter_Tribunal] = (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Templar_Archives) > 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Stargate) > 0);
-	}
-	else if (techUnit == UnitTypes::Protoss_High_Templar)
-	{
-		unlockedType.insert(UnitTypes::Protoss_High_Templar);
-		buildingDesired[UnitTypes::Protoss_Citadel_of_Adun] = 1;
-		buildingDesired[UnitTypes::Protoss_Templar_Archives] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) > 0;
-	}
-	return;
-}
-
-void BuildOrderTrackerClass::protossSituational()
-{
-	int sat = Players().getNumberTerran() > 0 ? 2 : 3;
-	bool techSat = techList.size() >= Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
-	bool productionSat = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= sat * (techList.size() + 1);
-
-	if (Broodwar->self()->visibleUnitCount(techUnit) > 0) techUnit = UnitTypes::None; // If we have our tech unit, set to none	
-	if (Strategy().needDetection() || (!getOpening && !getTech && productionSat && techUnit == UnitTypes::None && (!Production().hasIdleProduction() || Units().getSupply() > 380))) getTech = true; // If production is saturated and none are idle or we need detection, choose a tech
-
-	// Check if we hit our Zealot cap based on our build
-	if (!Strategy().isRush() && (((currentBuild == "PZZCore" || currentBuild == "PDTExpand") && getOpening && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 2) || (currentBuild == "PZCore" && getOpening &&  Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) >= 1) || (getOpening && currentBuild == "PNZCore") || (Players().getNumberTerran() > 0 && currentBuild != "PDTExpand" && !Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) && !Broodwar->self()->isUpgrading(UpgradeTypes::Leg_Enhancements) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) <= 0)))
-		unlockedType.erase(UnitTypes::Protoss_Zealot);
-	else unlockedType.insert(UnitTypes::Protoss_Zealot);
-	unlockedType.insert(UnitTypes::Protoss_Dragoon);
-	unlockedType.insert(UnitTypes::Protoss_Shuttle);
-
-	// Pylon logic
-	if (Strategy().isAllyFastExpand() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Pylon) <= 0)
-		buildingDesired[UnitTypes::Protoss_Pylon] = Units().getSupply() >= 14;
-	else buildingDesired[UnitTypes::Protoss_Pylon] = min(22, (int)floor((Units().getSupply() / max(14, (16 - Broodwar->self()->allUnitCount(UnitTypes::Protoss_Pylon))))));
-
-	// Additional cannon for FFE logic (add on at most 2 at a time)
-	if (forgeExpand && Units().getGlobalEnemyGroundStrength() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense())
-	{
-		buildingDesired[UnitTypes::Protoss_Photon_Cannon] = min(2 + Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Photon_Cannon), 1 + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon));
-	}
-
-	// Shield battery logic
-	if ((Players().getNumberTerran() == 0 && Strategy().isRush() && !Strategy().isAllyFastExpand()) || (oneGateCore && Players().getNumberZerg() > 0 && Units().getGlobalGroundStrategy() == 0))
-	{
-		buildingDesired[UnitTypes::Protoss_Shield_Battery] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core);
-	}
-
-	// If we're not in our opener
-	if (!getOpening)
-	{
-		// Expansion logic
-		if (Broodwar->self()->minerals() > 500 + 100 * Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) || (productionSat && Resources().isMinSaturated() && !Production().hasIdleProduction()))
-		{
-			buildingDesired[UnitTypes::Protoss_Nexus] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) + 1;
-		}
-
-		// Gateway logic
-		if (!Production().hasIdleProduction() && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 150) || (!productionSat && Resources().isMinSaturated())))
-		{
-			buildingDesired[UnitTypes::Protoss_Gateway] = min(Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) + 1);
-		}
-
-		// Assimilator logic
-		if (!Strategy().isPlayPassive() && Resources().isGasSaturated() && Broodwar->self()->gas() < Broodwar->self()->minerals() * 3 && Broodwar->self()->minerals() > 100)
-		{
-			buildingDesired[UnitTypes::Protoss_Assimilator] = Resources().getTempGasCount();
-		}
-
-		// Forge logic
-		if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) >= 3 && Units().getSupply() > 200)
-		{
-			buildingDesired[UnitTypes::Protoss_Forge] = 2;
-		}
-
-		// Cannon logic
-		if (!Strategy().isAllyFastExpand() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Forge))
-		{
-			buildingDesired[UnitTypes::Protoss_Photon_Cannon] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon);
-			for (auto &base : Bases().getMyBases())
-			{
-				if (Grids().getPylonGrid(base.second.getTilePosition()) == 0)
-				{
-					buildingDesired[UnitTypes::Protoss_Pylon] += 1;
-				}
-				else if (Grids().getDefenseGrid(base.second.getTilePosition()) <= 0 && Grids().getPylonGrid(base.second.getTilePosition()) > 0)
-				{
-					buildingDesired[UnitTypes::Protoss_Photon_Cannon] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) + 1;
-				}
-			}
-		}
 	}
 	return;
 }

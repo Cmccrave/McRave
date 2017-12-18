@@ -15,14 +15,16 @@ class StrategyTrackerClass
 	bool holdChoke = false;
 	bool playPassive = false;
 	bool hideTech = false;
-	double recallFrame = 0.0;
+	string enemyBuild = "Unknown";
+	int poolFrame, lingFrame;
+	int enemyGas;
 
 	// Testing stuff
 	set <Bullet> myBullets;
 	map <UnitType, double> unitPerformance;
 
 public:
-
+	string getEnemyBuild() { return enemyBuild; }
 	map <UnitType, double>& getUnitScore() { return unitScore; }
 	bool isAllyFastExpand() { return allyFastExpand; }
 	bool isEnemyFastExpand() { return enemyFastExpand; }
@@ -30,7 +32,7 @@ public:
 	bool isRush() { return rush; }
 	bool isHoldChoke() { return holdChoke; }
 	bool isPlayPassive() { return playPassive; }
-	
+	int getPoolFrame() { return poolFrame; }
 
 	// Updating
 	void update();
@@ -40,15 +42,19 @@ public:
 	void terranStrategy();
 	void zergStrategy();
 	void updateSituationalBehaviour();
+	void updateEnemyBuild();
 	void updateProtossUnitScore(UnitType, int);
 	void updateTerranUnitScore(UnitType, int);
 	void updateZergUnitScore(UnitType, int);
 
+	bool shouldPlayPassive();
+	bool shouldDefendRush();
+	bool shouldHoldChoke();
+	bool shouldHideTech();
+	bool shouldGetDetection();	
+
 	// Check if we have locked a unit out of being allowed
 	bool isLocked(UnitType);
-
-	void recallEvent() { recallFrame = Broodwar->getFrameCount(); }
-	double getRecallFrame() { return recallFrame; }
 };
 
 typedef Singleton<StrategyTrackerClass> StrategyTracker;

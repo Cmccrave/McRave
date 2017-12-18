@@ -7,9 +7,17 @@
 #include "McRave.h"
 
 // --- AUTHOR NOTES ---
-// TODO:
+// TODO before SSCAIT:
+// Disable DT Expand
+// Fix chasing scouts
+// Deny expansions
+// Add repairing scvs to sim
+
+// TODO after:
 // Production sat based on active mining bases instead
-// Rework reserved/queued resources (issues with low tech units overlapping high tech, issues with probe production stopping)
+// Create building clustering/simcity
+// Rework reserved/queued resources
+// Rework pylon building timings (note: overbuilding when not producing units fast enough to keep up)
 
 void McRaveModule::onStart()
 {

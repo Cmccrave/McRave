@@ -2,6 +2,7 @@
 #include <BWAPI.h>
 #include "Singleton.h"
 #include "UnitInfo.h"
+#include "FAP.h"
 
 using namespace BWAPI;
 using namespace std;

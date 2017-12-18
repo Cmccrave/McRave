@@ -18,6 +18,7 @@ class TerrainTrackerClass
 	TilePosition natural;
 	TilePosition bMedium = TilePositions::None, bLarge = TilePositions::None, bSmall;
 	Area const * naturalArea;
+	TilePosition enemyNatural = TilePositions::Invalid;
 
 public:
 	void onStart();
@@ -29,12 +30,16 @@ public:
 	void findFirstChoke();
 	void findSecondChoke();
 	void findNatural();
+	void findEnemyNatural();
 
+	int getGroundDistance(Position, Position);
 	Position getClosestBaseCenter(Position);
 	Position getMineralHoldPosition() { return mineralHold; }
 	Position getBackMineralHoldPosition() { return backMineralHold; }
 	bool isInAllyTerritory(TilePosition);
 	bool isInEnemyTerritory(TilePosition);
+	bool overlapsWall(TilePosition);
+	Area const * getNaturalArea() { return naturalArea; }
 
 	set <int>& getAllyTerritory() { return allyTerritory; }
 	set <int>& getEnemyTerritory() { return enemyTerritory; }
@@ -42,11 +47,13 @@ public:
 
 	Position getEnemyStartingPosition() { return enemyStartingPosition; }
 	Position getPlayerStartingPosition() { return playerStartingPosition; }
+	TilePosition getEnemyNatural() { return enemyNatural; }
 	TilePosition getEnemyStartingTilePosition() { return enemyStartingTilePosition; }
 	TilePosition getPlayerStartingTilePosition() { return playerStartingTilePosition; }
 	TilePosition getFFEPosition() { return FFEPosition; }
 	TilePosition getFirstChoke() { return firstChoke; }
 	TilePosition getSecondChoke() { return secondChoke; }
+	TilePosition getNatural() { return natural; }
 
 	TilePosition getSmallWall() { return bSmall; }
 	TilePosition getMediumWall() { return bMedium; }

@@ -22,7 +22,7 @@ void UnitTrackerClass::updateUnits()
 	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
 		if (Players().getNumberZerg() > 0 || Players().getNumberProtoss() > 0) minThreshold = 0.8, maxThreshold = 1.2;
-		if (Players().getNumberTerran() > 0) minThreshold = 0.6, maxThreshold = 1.0;
+		if (Players().getNumberTerran() > 0) minThreshold = 0.6, maxThreshold = 1.4;
 		if (Players().getNumberRandom() > 0 && Broodwar->enemy()->getRace() == Races::Terran) minThreshold = 0.6, maxThreshold = 1.0;
 		if (Players().getNumberRandom() > 0 && Broodwar->enemy()->getRace() != Races::Terran) minThreshold = 0.8, maxThreshold = 1.2;
 	}
@@ -37,7 +37,7 @@ void UnitTrackerClass::updateUnits()
 	{
 		UnitInfo &unit = u.second;
 		if (!unit.unit()) continue; // Ignore improper storage if it happens		
-		if (unit.unit()->exists())	updateEnemy(unit); // If unit is visible, update it
+		if (unit.unit()->exists() && unit.unit()->isVisible())	updateEnemy(unit); // If unit is visible, update it
 		if (!unit.unit()->exists() && unit.getPosition().isValid() && Broodwar->isVisible(unit.getTilePosition())) unit.setPosition(Positions::None); // If unit is not visible but his position is, move it
 		if (unit.getType().isValid()) enemyComposition[unit.getType()] += 1; // If unit has a valid type, update enemy composition tracking
 		if (!unit.getType().isBuilding() && !unit.getType().isWorker()) unit.getType().isFlyer() ? globalEnemyAirStrength += unit.getVisibleAirStrength() : globalEnemyGroundStrength += unit.getVisibleGroundStrength(); // If unit is not a worker or building, add it to global strength	
@@ -51,7 +51,7 @@ void UnitTrackerClass::updateUnits()
 	{
 		UnitInfo &unit = u.second;
 		updateAlly(unit);
-		allyDefense += unit.getMaxGroundStrength();
+		if (unit.unit()->isCompleted()) allyDefense += unit.getMaxGroundStrength();
 	}
 
 	// Update Ally Units
@@ -65,7 +65,7 @@ void UnitTrackerClass::updateUnits()
 
 		if (unit.getType().isWorker() && Workers().getMyWorkers().find(unit.unit()) != Workers().getMyWorkers().end()) Workers().removeWorker(unit.unit()); // Remove the worker role if needed	
 		if (unit.getType().isWorker() && !Util().shouldPullWorker(unit.unit())) Workers().storeWorker(unit.unit()); // If this is a worker and is ready to go back to being a worker
-		if (!unit.getType().isBuilding()) unit.getType().isFlyer() ? globalAllyAirStrength += unit.getVisibleAirStrength() : globalAllyGroundStrength += unit.getVisibleGroundStrength();		
+		if (!unit.getType().isBuilding()) unit.getType().isFlyer() ? globalAllyAirStrength += unit.getVisibleAirStrength() : globalAllyGroundStrength += unit.getVisibleGroundStrength();
 	}
 }
 
@@ -90,7 +90,7 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 		double enemyRange = widths + (unit.getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange());
 		double unitRange = widths + (enemy.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
 		double enemyToEngage = 0.0;
-		double distance = max(0.0, enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange);
+		double distance = max(0.0, enemy.getPosition().getDistance(unit.getPosition()) - enemyRange);
 		double simRatio = 0.0;
 
 		if (enemy.getSpeed() > 0.0)
@@ -98,7 +98,7 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 			enemyToEngage = max(0.0, (distance - widths) / enemy.getSpeed());
 			simRatio = max(0.0, simulationTime - enemyToEngage);
 		}
-		else if (distance <= 0.0)
+		else if (enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths <= 0.0)
 		{
 			enemyToEngage = max(0.0, (unit.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths) / unit.getSpeed());
 			simRatio = max(0.0, simulationTime - enemyToEngage);
@@ -114,7 +114,6 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 		if (enemy.getLastVisibleFrame() < Broodwar->getFrameCount()) simRatio = simRatio * (1.0 + min(0.2, (double(Broodwar->getFrameCount() - enemy.getLastVisibleFrame()) / 5000.0)));
 
 		if (simRatio > 0.0 && enemyRange > maxRange) maxRange = enemyRange;
-		
 
 		enemyLocalGroundStrength += enemy.getVisibleGroundStrength() * simRatio;
 		enemyLocalAirStrength += enemy.getVisibleAirStrength() * simRatio;
@@ -123,7 +122,7 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 	// Check every ally being in range of the target
 	for (auto &a : allyUnits)
 	{
-		UnitInfo &ally = a.second;	
+		UnitInfo &ally = a.second;
 
 		double widths = ally.getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
 		double allyRange = widths + (unit.getType().isFlyer() ? ally.getAirRange() : ally.getGroundRange());
@@ -132,9 +131,9 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 
 		if (ally.getPosition().getDistance(unit.getEngagePosition()) / speed > simulationTime) continue;
 
-		offset = max(0.0, (distance - maxRange) / speed);		
+		offset = max(0.0, (distance - maxRange) / speed);
 		double allyToEngage = max(0.0, (distance / speed) - offset);
-		double simRatio = max(0.0, simulationTime - allyToEngage);		
+		double simRatio = max(0.0, simulationTime - allyToEngage);
 
 		// Situations where an ally should be treated as stronger than it actually is
 		if ((ally.unit()->isCloaked() || ally.unit()->isBurrowed()) && Grids().getEDetectorGrid(WalkPosition(ally.getEngagePosition())) == 0) simRatio = simRatio * 5.0;
@@ -164,11 +163,12 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 		if (!Strategy().isHoldChoke())
 		{
 			if (Grids().getBaseGrid(target.getTilePosition()) > 0 && isThreatening(target)) unit.setStrategy(1);
+			else if (allyRange > enemyRange && Terrain().isInAllyTerritory(target.getTilePosition())) unit.setStrategy(1);
 			else unit.setStrategy(2);
 		}
 		else
 		{
-			if ((Terrain().isInAllyTerritory(target.getTilePosition()) && isThreatening(target)) || Util().unitInRange(unit)) unit.setStrategy(1);
+			if ((Terrain().isInAllyTerritory(target.getTilePosition()) && (isThreatening(target)) || isAhead(unit)) || Util().unitInRange(unit)) unit.setStrategy(1);
 			else if (!Util().targetInRange(unit) || allyRange >= enemyRange) unit.setStrategy(2);
 			else unit.setStrategy(0);
 		}
@@ -176,7 +176,7 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 
 	else if (shouldRetreat(unit)) unit.setStrategy(0);
 	else if (shouldDefend(unit)) unit.setStrategy(2);
-	else if (shouldAttack(unit)) unit.setStrategy(1);	
+	else if (shouldAttack(unit)) unit.setStrategy(1);
 
 	else if (unit.getStrategy() == 1) // If last command was engage
 	{
@@ -206,7 +206,7 @@ bool UnitTrackerClass::shouldRetreat(UnitInfo& unit)
 {
 	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());
 
-	if (unit.getType() == UnitTypes::Protoss_Zealot && target.getType() == UnitTypes::Terran_Vulture && Grids().getMobilityGrid(target.getWalkPosition()) > 3 && Grids().getEGroundCluster(target.getWalkPosition()) < 5) return true; // If unit is a Zealot, don't chase Vultures TODO -- check for mobility
+	if (unit.getType() == UnitTypes::Protoss_Zealot && target.getType() == UnitTypes::Terran_Vulture && Grids().getMobilityGrid(target.getWalkPosition()) > 6 && Grids().getAntiMobilityGrid(target.getWalkPosition()) < 2) return true; // If unit is a Zealot, don't chase Vultures TODO -- check for mobility
 	else if (unit.getType() == UnitTypes::Protoss_High_Templar && unit.unit()->getEnergy() < 75) return true; // If unit is a High Templar and low energy, retreat	
 	else if (unit.getType() == UnitTypes::Terran_Medic && unit.unit()->getEnergy() <= 0) return true; // If unit is a Medic and no energy, retreat	
 	else if ((target.unit()->isCloaked() || target.unit()->isBurrowed()) && !target.unit()->isDetected()) return true;
@@ -217,8 +217,8 @@ bool UnitTrackerClass::shouldDefend(UnitInfo& unit)
 {
 	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());
 
-	if (unit.getType().isFlyer() && Players().getNumberZerg() > 0 && globalEnemyAirStrength > 0.0 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Air_Weapons) <= 0) return true;
-	else if (!unit.getType().isFlyer() && Players().getNumberZerg() > 0 && BuildOrder().isForgeExpand() && globalEnemyGroundStrength > 0.0 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) <= 0) return true;
+	if (unit.getType().isFlyer() && Players().getNumberZerg() > 0 && globalEnemyAirStrength > 0.0 && Broodwar->self()->getUpgradeLevel(BuildOrder().getFirstUpgrade()) <= 0) return true;
+	else if (!unit.getType().isFlyer() && Players().getNumberZerg() > 0 && BuildOrder().isForgeExpand() && globalEnemyGroundStrength > 0.0 && Broodwar->self()->getUpgradeLevel(BuildOrder().getFirstUpgrade()) <= 0) return true;
 	else if (Strategy().isPlayPassive() && !Terrain().isInAllyTerritory(unit.getTilePosition())) return true;
 	return false;
 }
@@ -227,7 +227,7 @@ bool UnitTrackerClass::isBehind(UnitInfo& unit)
 {
 	double decisionLocal = unit.getType().isFlyer() ? unit.getAirLocal() : unit.getGroundLocal();
 	double decisionGlobal = unit.getType().isFlyer() ? globalAirStrategy : globalGroundStrategy;
-	return (decisionGlobal == 0 || (!unit.getType().isFlyer() && unit.getGroundLocal() < minThreshold) || (unit.getType().isFlyer() && unit.getAirLocal() < minThreshold));
+	return (decisionGlobal == 0 || (!unit.getType().isFlyer() && unit.getGroundLocal() <= minThreshold) || (unit.getType().isFlyer() && unit.getAirLocal() <= minThreshold));
 }
 
 bool UnitTrackerClass::isAhead(UnitInfo& unit)
@@ -247,20 +247,15 @@ void UnitTrackerClass::updateGlobalSimulation()
 {
 	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
-		double offset = 1.0;
-		if (Players().getNumberZerg() > 0) offset = 1.1;
-		if (Players().getNumberTerran() > 0) offset = 0.8;
-
 		if (Strategy().isPlayPassive())	globalGroundStrategy = 0;
-		else if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) >= 1)	globalGroundStrategy = 1;
-		else if (globalAllyGroundStrength < globalEnemyGroundStrength * offset) globalGroundStrategy = 0;
+		else if (Broodwar->self()->getUpgradeLevel(BuildOrder().getFirstUpgrade()) >= 1 || Broodwar->self()->hasResearched(BuildOrder().getFirstTech()))	globalGroundStrategy = 1;
+		else if (globalAllyGroundStrength < globalEnemyGroundStrength * maxThreshold) globalGroundStrategy = 0;
 		else globalGroundStrategy = 1;
 
 		if (Strategy().isPlayPassive())	globalAirStrategy = 0;
-		else if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) >= 1)	globalAirStrategy = 1;
-		else if (globalAllyAirStrength < globalEnemyAirStrength * offset) globalAirStrategy = 0;
+		else if ((Broodwar->self()->getUpgradeLevel(BuildOrder().getFirstUpgrade()) >= 1 || Broodwar->self()->hasResearched(BuildOrder().getFirstTech())))	globalAirStrategy = 1;
+		else if (globalAllyAirStrength < globalEnemyAirStrength * maxThreshold) globalAirStrategy = 0;
 		else globalAirStrategy = 1;
-		return;
 	}
 	else if (Broodwar->self()->getRace() == Races::Terran)
 	{
@@ -279,7 +274,19 @@ void UnitTrackerClass::updateGlobalSimulation()
 		else if (Broodwar->self()->hasResearched(TechTypes::Stim_Packs) && BuildOrder().getCurrentBuild() == "Sparks") globalGroundStrategy = 1;
 		else if (globalAllyAirStrength < globalEnemyAirStrength * offset) globalAirStrategy = 0;
 		else globalAirStrategy = 1;
-		return;
+	}
+	else if (Broodwar->self()->getRace() == Races::Zerg)
+	{
+		double offset = 1.0;
+		if (Strategy().isPlayPassive())	globalGroundStrategy = 0;
+		else if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Metabolic_Boost) >= 1)	globalGroundStrategy = 1;
+		else if (globalAllyGroundStrength < globalEnemyGroundStrength * offset) globalGroundStrategy = 0;
+		else globalGroundStrategy = 1;
+
+		if (Strategy().isPlayPassive())	globalAirStrategy = 0;
+		else if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Metabolic_Boost) >= 1)	globalAirStrategy = 1;
+		else if (globalAllyGroundStrength < globalEnemyGroundStrength * offset) globalAirStrategy = 0;
+		else globalAirStrategy = 1;
 	}
 }
 
@@ -359,7 +366,7 @@ void UnitTrackerClass::updateEnemy(UnitInfo& unit)
 	unit.setPriority(Util().getPriority(unit));
 
 	// Set last command frame
-	if (unit.unit()->isStartingAttack()) unit.setLastAttackFrame(Broodwar->getFrameCount());
+	if (unit.unit()->isStartingAttack() || unit.unit()->isRepairing()) unit.setLastAttackFrame(Broodwar->getFrameCount());
 	if (unit.unit()->getTarget() && unit.unit()->getTarget()->exists()) unit.setTarget(unit.unit()->getTarget());
 	else if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.unit()->getOrderTarget()) unit.setTarget(unit.unit()->getOrderTarget());
 }

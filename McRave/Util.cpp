@@ -11,15 +11,16 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit)
 	// Some hardcoded values that don't have attacks but should still be considered for strength
 	if (unit.getType() == UnitTypes::Protoss_Scarab || unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Zerg_Egg || unit.getType() == UnitTypes::Zerg_Larva) return 0.0;
 	else if (unit.getType() == UnitTypes::Terran_Medic) return 2.5;
-	else if (unit.getType() == UnitTypes::Protoss_High_Templar) return 10.0;
+	else if (unit.getType() == UnitTypes::Protoss_High_Templar) return 25.0;
 	else if (unit.getType() == UnitTypes::Protoss_Reaver) return 25.0;
 
 	double range, damage, hp, speed;
-	range = cbrt(unit.getGroundRange());
-	hp = sqrt((unit.getType().maxHitPoints() + unit.getType().maxShields()) / 10.0);
+	range = max(0.0, log(unit.getGroundRange()));
+	hp = log(double(unit.getType().maxHitPoints() + unit.getType().maxShields()) / 10.0);
 
-	if (unit.getType().groundWeapon().damageCooldown() > 0) damage = unit.getGroundDamage() / double(unit.getType().groundWeapon().damageCooldown());
+	if (unit.getType() == UnitTypes::Protoss_Interceptor) damage = unit.getGroundDamage() / 36.0;
 	else if (unit.getType() == UnitTypes::Terran_Bunker) damage = unit.getGroundDamage() / 15.0;
+	else if (unit.getType().groundWeapon().damageCooldown() > 0) damage = unit.getGroundDamage() / double(unit.getType().groundWeapon().damageCooldown());	
 
 	double effectiveness = 1.0;
 	speed = max(24.0, unit.getSpeed());
@@ -71,27 +72,19 @@ double UtilTrackerClass::getVisibleGroundStrength(UnitInfo& unit)
 
 double UtilTrackerClass::getMaxAirStrength(UnitInfo& unit)
 {
-	if (unit.getType() == UnitTypes::Zerg_Scourge)
-	{
-		return 2.0;
-	}
+	if (unit.getType() == UnitTypes::Zerg_Scourge) return 2.0;
+	else if (unit.getType() == UnitTypes::Protoss_High_Templar) return 25.0;
+	
 	double range, damage, hp, speed;
-	hp = sqrt((unit.getType().maxHitPoints() + unit.getType().maxShields()) / 10.0);
+	range = max(0.0, log(unit.getAirRange()));
+	hp = log(double(unit.getType().maxHitPoints() + unit.getType().maxShields()) / 10.0);
 	damage = unit.getAirDamage() / double(unit.getType().airWeapon().damageCooldown());
-	range = cbrt(unit.getAirRange());
 
-	if (unit.getType().airWeapon().damageCooldown() > 0)
-	{
-		damage = unit.getAirDamage() / double(unit.getType().airWeapon().damageCooldown());
-	}
-	else if (unit.getType() == UnitTypes::Terran_Bunker)
-	{
-		damage = unit.getAirDamage() / 15.0;
-	}
-	else
-	{
-		damage = unit.getAirDamage() / 24.0;
-	}
+	
+	if (unit.getType() == UnitTypes::Protoss_Interceptor) damage = unit.getAirDamage() / 36.0;
+	else if (unit.getType() == UnitTypes::Terran_Bunker) damage = unit.getAirDamage() / 15.0;
+	else if (unit.getType().airWeapon().damageCooldown() > 0) damage = unit.getAirDamage() / double(unit.getType().airWeapon().damageCooldown());	
+	else damage = unit.getAirDamage() / 24.0;	
 
 	double effectiveness = 1.0;
 	speed = max(24.0, unit.getSpeed());
@@ -139,8 +132,9 @@ double UtilTrackerClass::getPriority(UnitInfo& unit)
 {
 	// If an enemy detector is within range of an Arbiter, give it higher priority
 	if (Grids().getArbiterGrid(unit.getWalkPosition()) > 0 && unit.getType().isDetector() && unit.getPlayer()->isEnemy(Broodwar->self())) return 10.0;
-	if (unit.getType().isWorker()) return 3.00;
+	if (unit.getType().isWorker()) return (Broodwar->getFrameCount() - unit.getLastAttackFrame()) < 500 ? 10.0: 3.0;
 	if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine) return 10.0;
+	if (unit.getType() == UnitTypes::Protoss_Carrier) return 0.5;
 
 	double mineral, gas;
 
@@ -369,7 +363,7 @@ set<WalkPosition> UtilTrackerClass::getWalkPositionsUnderUnit(Unit unit)
 
 bool UtilTrackerClass::isSafe(WalkPosition end, UnitType unitType, bool groundCheck, bool airCheck)
 {
-	int walkWidth = unitType.tileWidth() * 4;
+	int walkWidth = unitType.width() / 8;
 	int halfWidth = walkWidth / 2;
 	for (int x = end.x - halfWidth; x <= end.x + halfWidth; x++)
 	{
@@ -386,7 +380,7 @@ bool UtilTrackerClass::isSafe(WalkPosition end, UnitType unitType, bool groundCh
 bool UtilTrackerClass::isMobile(WalkPosition start, WalkPosition end, UnitType unitType)
 {
 	if (unitType.isFlyer()) return true;
-	int walkWidth = unitType.tileWidth() * 4;
+	int walkWidth = unitType.width() / 8;
 	int halfWidth = walkWidth / 2;
 	for (int x = end.x - halfWidth; x <= end.x + halfWidth; x++)
 	{
@@ -435,9 +429,10 @@ bool UtilTrackerClass::isWalkable(TilePosition here)
 
 bool UtilTrackerClass::shouldPullWorker(Unit unit)
 {
-	if (Terrain().isInAllyTerritory(unit->getTilePosition()) && Grids().getEGroundThreat(getWalkPosition(unit)) > 0.0 && Grids().getResourceGrid(unit->getTilePosition()) > 0 && Units().getSupply() < 60) return true;
+	if (!Strategy().isHoldChoke() && Terrain().isInAllyTerritory(unit->getTilePosition()) && Grids().getEGroundThreat(getWalkPosition(unit)) > 0.0 && Grids().getResourceGrid(unit->getTilePosition()) > 0 && Units().getSupply() < 60) return true;
 	else if (BuildOrder().getCurrentBuild() == "Sparks" && Units().getGlobalGroundStrategy() == 1) return true;
 	else if (Strategy().isHoldChoke() && Units().getProxThreat() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) <= 2) return true;
 	else if (!Strategy().isHoldChoke() && Units().getImmThreat() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense()) return true;
+	else if ((Strategy().getEnemyBuild() == "Z5Pool" || Strategy().getEnemyBuild() == "Unknown") && BuildOrder().isForgeExpand() && Units().getGlobalAllyGroundStrength() < 3.00 && Units().getGlobalEnemyGroundStrength() > 0.00 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Photon_Cannon) < 2 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) > 0) return true;
 	return false;
 }
