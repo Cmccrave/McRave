@@ -146,7 +146,7 @@ void BuildOrderTrackerClass::protossSituational()
 	int satVal = Players().getNumberTerran() > 0 ? 2 : 3;
 	int gateVal = Players().getNumberTerran() > 0 ? Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) : Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway);
 	int techVal = techList.size() + 1;
-	bool productionSat = gateVal >= satVal * techVal;
+	bool productionSat = (gateVal >= satVal * techVal);	
 
 	if (techComplete()) techUnit = UnitTypes::None; // If we have our tech unit, set to none	
 	if (Strategy().needDetection() || (!getOpening && !getTech && productionSat && techUnit == UnitTypes::None && (!Production().hasIdleProduction() || Units().getSupply() > 380))) getTech = true; // If production is saturated and none are idle or we need detection, choose a tech
