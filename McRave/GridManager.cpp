@@ -69,7 +69,7 @@ void GridTrackerClass::draw()
 	{
 		for (int y = 0; y <= Broodwar->mapHeight(); y++)
 		{
-			if (buildingGrid[x][y] > 1)
+			if (baseGrid[x][y] > 1)
 			{
 				Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
 			}
@@ -456,9 +456,9 @@ void GridTrackerClass::updateBaseGrid(BaseInfo& base)
 {
 	// Base Grid
 	TilePosition tile = base.getTilePosition();
-	for (int x = tile.x - 8; x < tile.x + 12; x++)
+	for (int x = tile.x - 6; x < tile.x + 10; x++)
 	{
-		for (int y = tile.y - 8; y < tile.y + 11; y++)
+		for (int y = tile.y - 6; y < tile.y + 9; y++)
 		{
 			if (TilePosition(x, y).isValid())
 			{

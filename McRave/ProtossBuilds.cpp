@@ -2,20 +2,34 @@
 
 void BuildOrderTrackerClass::P4Gate()
 {
-	firstUpgrade = UpgradeTypes::Singularity_Charge;
-	firstTech = TechTypes::None;
-	buildingDesired[UnitTypes::Protoss_Nexus] = 1;
-	buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + 3 * (Units().getSupply() >= 62);
-	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 32;
-	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 34;
-	getOpening = Units().getSupply() < 100;
-	oneGateCore = true;
-	scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) > 0;
+	if (Broodwar->enemy()->getRace() == Races::Zerg)
+	{
+		firstUpgrade = UpgradeTypes::Singularity_Charge;
+		firstTech = TechTypes::None;
+		buildingDesired[UnitTypes::Protoss_Nexus] = 1;
+		buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + (Units().getSupply() >= 24) + (Units().getSupply() >= 62) + (Units().getSupply() >= 70);
+		buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 42;
+		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 48;
+		getOpening = Units().getSupply() < 120;
+		scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) > 0;
+	}
+	else
+	{
+		firstUpgrade = UpgradeTypes::Singularity_Charge;
+		firstTech = TechTypes::None;
+		buildingDesired[UnitTypes::Protoss_Nexus] = 1;
+		buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 20) + 3 * (Units().getSupply() >= 62);
+		buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 32;
+		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 34;
+		getOpening = Units().getSupply() < 120;
+		oneGateCore = true;
+		scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) > 0;
+	}
 }
 
 void BuildOrderTrackerClass::PFFEStandard()
 {
-	if ((Strategy().getEnemyBuild() == "Unknown" && !Terrain().getEnemyStartingPosition().isValid()) || Strategy().getEnemyBuild() == "Z5Pool" || Strategy().getEnemyBuild() == "Z9Pool" || Strategy().isRush()) // Cannons first against early lings or no scouting information
+	if ((Strategy().getEnemyBuild() == "Unknown" && !Terrain().getEnemyStartingPosition().isValid()) || Strategy().getEnemyBuild() == "Z9Pool") // Cannons first against early lings or no scouting information
 	{
 		firstUpgrade = UpgradeTypes::Singularity_Charge;
 		firstTech = TechTypes::None;
@@ -23,6 +37,19 @@ void BuildOrderTrackerClass::PFFEStandard()
 		buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 42);
 		buildingDesired[UnitTypes::Protoss_Photon_Cannon] = (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) > 0) + (Units().getSupply() >= 24);
 		buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 32) + (Units().getSupply() >= 46);
+		buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 38) + (Units().getSupply() >= 68);
+		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 42;
+		getOpening = Units().getSupply() < 80;
+		forgeExpand = true;
+	}
+	else if (Strategy().getEnemyBuild() == "Z5Pool" || Strategy().isRush())
+	{
+		firstUpgrade = UpgradeTypes::Singularity_Charge;
+		firstTech = TechTypes::None;
+		buildingDesired[UnitTypes::Protoss_Forge] = Units().getSupply() >= 18;
+		buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 42);
+		buildingDesired[UnitTypes::Protoss_Photon_Cannon] = 2*(Units().getSupply() >= 18) + (Broodwar->self()->minerals() >= 125);
+		buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 26) + (Units().getSupply() >= 46);
 		buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 38) + (Units().getSupply() >= 68);
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 42;
 		getOpening = Units().getSupply() < 80;

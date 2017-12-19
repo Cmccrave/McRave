@@ -156,17 +156,19 @@ void StrategyTrackerClass::updateEnemyBuild()
 				{
 					if (p->exists() && poolFrame == 0)
 					{
-						poolFrame = Broodwar->getFrameCount() + (double(p->getType().buildTime()) * (double(p->getType().maxHitPoints() - p->getHitPoints()) / double(p->getType().maxHitPoints())));
-						Broodwar << "Pool at: " << poolFrame << endl;
+						poolFrame = Broodwar->getFrameCount() + (double(p->getType().buildTime()) * (double(p->getType().maxHitPoints() - p->getHitPoints()) / double(p->getType().maxHitPoints())));						
 					}
 				}
 			}
 			if (Units().getEnemyComposition()[UnitTypes::Zerg_Zergling] >= 6)
 			{
-				if (lingFrame == 0) lingFrame = Broodwar->getFrameCount();
+				if (lingFrame == 0)
+				{
+					lingFrame = Broodwar->getFrameCount();
+				}
 			}
 
-			if (enemyGas < 124 && (poolFrame < 2500 || (lingFrame < 3000 && lingFrame > 0)) && poolFrame > 0) enemyBuild = "Z5Pool";
+			if (enemyGas < 124 && ((poolFrame < 2500 && poolFrame > 0) || (lingFrame < 3500 && lingFrame > 0))) enemyBuild = "Z5Pool";
 			else if (enemyGas < 124 && enemyGas > 0 && poolFrame < 3000 && poolFrame > 0) enemyBuild = "Z9Pool";
 			else if (enemyGas < 124 && enemyGas >= 100 && poolFrame > 3000 && Units().getEnemyComposition()[UnitTypes::Zerg_Hatchery] >= 3) enemyBuild = "Z3HatchLing";
 			else if (enemyGas >= 124 && poolFrame > 3000 && Strategy().isEnemyFastExpand() && Units().getEnemyComposition()[UnitTypes::Zerg_Hydralisk_Den] >= 1) enemyBuild = "Z12HatchHydra";

@@ -100,7 +100,7 @@ void WorkerTrackerClass::updateDecision(WorkerInfo& worker)
 	// If ready to remove unit role
 	if (Units().getAllyUnits().find(worker.unit()) != Units().getAllyUnits().end()) Units().getAllyUnits().erase(worker.unit());
 
-	if (BuildOrder().shouldScout() && (!Terrain().getEnemyStartingPosition().isValid() || !Strategy().isPlayPassive()) && (!scouter || !scouter->exists())) scouter = getClosestWorker(Position(Terrain().getSecondChoke()), false);
+	if (BuildOrder().shouldScout() && Broodwar->getFrameCount() - deadScoutFrame > 1000 && (!Terrain().getEnemyStartingPosition().isValid() || !Strategy().isPlayPassive()) && (!scouter || !scouter->exists())) scouter = getClosestWorker(Position(Terrain().getSecondChoke()), false);
 
 	// Boulder removal logic
 	if (Resources().getMyBoulders().size() > 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) >= 2)
