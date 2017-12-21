@@ -136,7 +136,7 @@ bool StrategyTrackerClass::shouldGetDetection()
 
 void StrategyTrackerClass::updateEnemyBuild()
 {
-	if (Players().getPlayers().size() > 1 || !BuildOrder().isOpener()) return;
+	if (Players().getPlayers().size() > 1 || enemyBuild != "Unknown") return;
 
 	for (auto &p : Players().getPlayers())
 	{
@@ -177,15 +177,18 @@ void StrategyTrackerClass::updateEnemyBuild()
 		if (player.getRace() == Races::Protoss)
 		{
 			bool cannonRush = false;
-			if (Units().getEnemyComposition()[UnitTypes::Protoss_Forge] >= 1 && Units().getEnemyComposition()[UnitTypes::Protoss_Photon_Cannon] >= 2)
+			if (Units().getEnemyComposition()[UnitTypes::Protoss_Forge] >= 1)
 			{
-				for (auto &p : Units().getEnemyUnitsFilter(UnitTypes::Protoss_Photon_Cannon))
+				if (Units().getEnemyComposition()[UnitTypes::Protoss_Photon_Cannon] >= 1)
 				{
-					if (p->exists() && !Terrain().isInAllyTerritory(p->getTilePosition())) cannonRush = true;
-				}
-				if (!cannonRush) enemyBuild = "PFFE";
-				else enemyBuild = "PCannonRush";
-				return;
+					for (auto &p : Units().getEnemyUnitsFilter(UnitTypes::Protoss_Photon_Cannon))
+					{
+						if (p->exists() && p->getPosition().getDistance(Terrain().getPlayerStartingPosition()) < p->getPosition().getDistance(Terrain().getEnemyStartingPosition()))	cannonRush = true;
+					}
+						if (cannonRush) enemyBuild = "PCannonRush";
+						else enemyBuild = "PFFE";
+						return;
+				}				
 			}
 			else if (Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] >= 2 && Units().getEnemyComposition()[UnitTypes::Protoss_Assimilator] == 0) enemyBuild = "P2GateZealot";
 			else if (Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] <= 1 && Units().getEnemyComposition()[UnitTypes::Protoss_Cybernetics_Core] >= 1) enemyBuild = "P1GateCore";
@@ -333,14 +336,14 @@ void StrategyTrackerClass::updateProtossUnitScore(UnitType unit, int cnt)
 		break;
 
 	case UnitTypes::Enum::Protoss_Zealot:
-		unitScore[UnitTypes::Protoss_Zealot] += (size * 0.50) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot)));
-		unitScore[UnitTypes::Protoss_Dragoon] += (size * 0.50) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon)));
+		unitScore[UnitTypes::Protoss_Zealot] += (size * 0.05) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot)));
+		unitScore[UnitTypes::Protoss_Dragoon] += (size * 0.95) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon)));
 		unitScore[UnitTypes::Protoss_Reaver] += (size * 0.90) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver)));
 		unitScore[UnitTypes::Protoss_Dark_Templar] += (size * 0.10) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dark_Templar)));
 		break;
 	case UnitTypes::Enum::Protoss_Dragoon:
-		unitScore[UnitTypes::Protoss_Zealot] += (size * 0.50) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot)));
-		unitScore[UnitTypes::Protoss_Dragoon] += (size * 0.50) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon)));
+		unitScore[UnitTypes::Protoss_Zealot] += (size * 0.05) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot)));
+		unitScore[UnitTypes::Protoss_Dragoon] += (size * 0.95) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon)));
 		unitScore[UnitTypes::Protoss_Reaver] += (size * .60) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver)));
 		unitScore[UnitTypes::Protoss_High_Templar] += (size * 0.30) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_High_Templar)));
 		unitScore[UnitTypes::Protoss_Dark_Templar] += (size * 0.10) / max(1.0, double(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dark_Templar)));

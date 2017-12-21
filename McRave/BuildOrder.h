@@ -22,8 +22,8 @@ class BuildOrderTrackerClass
 	vector <string> buildNames;
 	string currentBuild = "Test";
 	stringstream ss;
-	int satVal, gateVal, techVal;
-	bool productionSat;
+	int satVal, gateVal, techVal, baseVal;
+	bool productionSat, techSat;
 public:
 	// Build learning functions
 	string getCurrentBuild() { return currentBuild; }

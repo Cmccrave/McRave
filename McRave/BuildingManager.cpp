@@ -10,6 +10,24 @@ void BuildingTrackerClass::update()
 	return;
 }
 
+bool isSmall(UnitType building)
+{
+	if (building == UnitTypes::Protoss_Pylon || building == UnitTypes::Protoss_Photon_Cannon) return true;
+	return false;
+}
+
+bool isMedium(UnitType building)
+{
+	if (building == UnitTypes::Protoss_Forge || building == UnitTypes::Protoss_Cybernetics_Core || building == UnitTypes::Protoss_Shield_Battery) return true;
+	return false;
+}
+
+bool isLarge(UnitType building)
+{
+	if (building == UnitTypes::Protoss_Gateway || building == UnitTypes::Protoss_Stargate) return true;
+	return false;
+}
+
 void BuildingTrackerClass::updateBuildings()
 {
 	for (auto& b : myBuildings)
@@ -189,11 +207,11 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 					double distance = 0.0;
 					if (Players().getPlayers().size() > 1)
 					{
-						distance = double(Grids().getDistanceHome(WalkPosition(base.Location())));
+						distance = Terrain().getGroundDistance(Terrain().getPlayerStartingPosition(), base.Center());
 					}
 					else
 					{
-						distance = double(Grids().getDistanceHome(WalkPosition(base.Location())) / base.Center().getDistance(Terrain().getEnemyStartingPosition()));
+						distance = Terrain().getGroundDistance(Terrain().getPlayerStartingPosition(), base.Center()) / pow(Terrain().getGroundDistance(Terrain().getEnemyStartingPosition(), base.Center()), 2.0);
 					}
 
 					if (Grids().getBuildingGrid(base.Location()) == 0 && (value / distance > best))
@@ -261,6 +279,51 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		return TilePositions::Invalid;
 	}
 
+	if (isSmall(building))
+	{
+		double distBest = DBL_MAX;
+		for (auto tile : Terrain().getSmallPosition())
+		{
+			double dist = Position(tile).getDistance(Terrain().getPlayerStartingPosition());
+			if (dist < distBest && Broodwar->isBuildable(tile, true))
+			{
+				here = tile;
+				distBest = dist;
+			}
+		}
+		if (here.isValid()) return here;
+	}
+
+	if (isMedium(building))
+	{
+		double distBest = DBL_MAX;
+		for (auto tile : Terrain().getMediumPosition())
+		{
+			double dist = Position(tile).getDistance(Terrain().getPlayerStartingPosition());
+			if (dist < distBest && Broodwar->isBuildable(tile, true))
+			{
+				here = tile;
+				distBest = dist;
+			}
+		}
+		if (here.isValid()) return here;
+	}
+
+	if (isLarge(building))
+	{
+		double distBest = DBL_MAX;
+		for (auto tile : Terrain().getLargePosition())
+		{
+			double dist = Position(tile).getDistance(Terrain().getPlayerStartingPosition());
+			if (dist < distBest && Broodwar->isBuildable(tile, true))
+			{
+				here = tile;
+				distBest = dist;
+			}
+		}
+		if (here.isValid()) return here;
+	}
+
 	// For each base, check if you can build near it, starting at the main
 	for (auto &base : Bases().getMyOrderedBases())
 	{
@@ -311,8 +374,8 @@ bool BuildingTrackerClass::isBuildable(UnitType building, TilePosition buildTile
 		{
 			if (!TilePosition(x, y).isValid()) return false;
 			if (!Broodwar->isBuildable(TilePosition(x, y), true)) return false; // If it's on an unbuildable tile
-			if (Grids().getBuildingGrid(x, y) > 0 && !building.isResourceDepot()) return false; // If it's reserved for expansions				
-			if (building == UnitTypes::Protoss_Pylon && ((Grids().getPylonGrid(x, y) >= 3 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) >= 4) || (Grids().getPylonGrid(x, y) > 0 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) < 4))) return false; // If it's a pylon and overlapping too many pylons					
+			//if (Grids().getBuildingGrid(x, y) > 0 && !building.isResourceDepot()) return false; // If it's reserved for expansions				
+			//if (building == UnitTypes::Protoss_Pylon && ((Grids().getPylonGrid(x, y) >= 3 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) >= 4) || (Grids().getPylonGrid(x, y) > 0 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) < 4))) return false; // If it's a pylon and overlapping too many pylons					
 			if (Grids().getResourceGrid(x, y) > 0 && !building.isResourceDepot() && building != UnitTypes::Protoss_Photon_Cannon && building != UnitTypes::Protoss_Shield_Battery && building != UnitTypes::Terran_Bunker) return false; // If it's not a defensive structure and on top of the resource grid
 			if (building == UnitTypes::Protoss_Photon_Cannon && x >= Terrain().getMediumWall().x && x < Terrain().getMediumWall().x + 3 && y >= Terrain().getMediumWall().y && y < Terrain().getMediumWall().y + 2) return false;
 			if (building == UnitTypes::Protoss_Photon_Cannon && x >= Terrain().getLargeWall().x && x < Terrain().getLargeWall().x + 4 && y >= Terrain().getLargeWall().y && y < Terrain().getLargeWall().y + 3) return false;

@@ -6,6 +6,7 @@ void TerrainTrackerClass::update()
 	updateAreas();
 	updateChokes();
 	updateWalls();
+	updateBlocks();
 	Display().performanceTest(__FUNCTION__);
 	return;
 }
@@ -23,6 +24,8 @@ void TerrainTrackerClass::updateAreas()
 	{
 		findEnemyNatural();
 	}
+
+	Broodwar->drawCircleMap(Position(enemyNatural), 16, Colors::Red);
 
 	// If we see a building, check for closest starting location
 	if (!enemyStartingPosition.isValid())
@@ -108,7 +111,7 @@ void TerrainTrackerClass::updateChokes()
 			}
 		}
 
-		if (BuildOrder().isForgeExpand() || BuildOrder().isNexusFirst() || BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] > 1) allyTerritory.insert(naturalArea->Id());	
+		if (BuildOrder().isForgeExpand() || BuildOrder().isNexusFirst() || BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] > 1) allyTerritory.insert(naturalArea->Id());
 	}
 }
 
@@ -136,7 +139,7 @@ void TerrainTrackerClass::updateWalls()
 						if (!TilePosition(i, j).isValid()) continue;
 						if (!Broodwar->isBuildable(TilePosition(i, j)) || Grids().getBuildingGrid(TilePosition(i, j)) > 0) buildable = false;
 						if (i >= natural.x && i < natural.x + 4 && j >= natural.y && j < natural.y + 3) buildable = false;
-						if (theMap.GetArea(TilePosition(i,j)) && theMap.GetArea(TilePosition(i,j)) == theMap.GetArea(natural)) valid = 1;
+						if (theMap.GetArea(TilePosition(i, j)) && theMap.GetArea(TilePosition(i, j)) == theMap.GetArea(natural)) valid = 1;
 					}
 				}
 				if (!buildable) continue;
@@ -184,9 +187,9 @@ void TerrainTrackerClass::updateWalls()
 					}
 				}
 
-				for (int i = x-1; i < x + 4; i++)
+				for (int i = x - 1; i < x + 4; i++)
 				{
-					for (int j = y-1; j < y + 3; j++)
+					for (int j = y - 1; j < y + 3; j++)
 					{
 						if (i >= bLarge.x && i < bLarge.x + 4 && j >= bLarge.y && j < bLarge.y + 3) buildable = false;
 					}
@@ -198,14 +201,14 @@ void TerrainTrackerClass::updateWalls()
 				for (int dy = y; dy < y + 2; dy++)
 				{
 					if (dx >= bLarge.x && dx < bLarge.x + 4 && dy >= bLarge.y && dy < bLarge.y + 3) buildable = false;
-					if (!Util().isWalkable(TilePosition(dx, dy)) || Grids().getBuildingGrid(TilePosition(dx, dy)) > 0) valid++;					
+					if (!Util().isWalkable(TilePosition(dx, dy)) || Grids().getBuildingGrid(TilePosition(dx, dy)) > 0) valid++;
 				}
 
 				int dy = y - 1;
 				for (int dx = x; dx < x + 3; dx++)
 				{
 					if (dx >= bLarge.x && dx < bLarge.x + 4 && dy >= bLarge.y && dy < bLarge.y + 3) buildable = false;
-					if (!Util().isWalkable(TilePosition(dx, dy)) || Grids().getBuildingGrid(TilePosition(dx, dy)) > 0) valid++;					
+					if (!Util().isWalkable(TilePosition(dx, dy)) || Grids().getBuildingGrid(TilePosition(dx, dy)) > 0) valid++;
 				}
 
 				if (!buildable) continue;
@@ -231,7 +234,7 @@ void TerrainTrackerClass::updateWalls()
 				{
 					for (int j = y; j < y + 2; j++)
 					{
-						if (!Broodwar->isBuildable(TilePosition(i, j)) || Grids().getBuildingGrid(TilePosition(i,j)) > 0) buildable = false;
+						if (!Broodwar->isBuildable(TilePosition(i, j)) || Grids().getBuildingGrid(TilePosition(i, j)) > 0) buildable = false;
 						if (i >= bMedium.x && i < bMedium.x + 3 && j >= bMedium.y && j < bMedium.y + 2) buildable = false;
 						if (i >= bLarge.x && i < bLarge.x + 4 && j >= bLarge.y && j < bLarge.y + 3) buildable = false;
 						if (i >= natural.x && i < natural.x + 4 && j >= natural.y && j < natural.y + 3) buildable = false;
@@ -249,6 +252,136 @@ void TerrainTrackerClass::updateWalls()
 	Broodwar->drawBoxMap(Position(bLarge), Position(bLarge) + Position(128, 96), Colors::Blue);
 	Broodwar->drawCircleMap(Position(secondChoke), 16, Colors::Green);
 }
+
+bool canSmallBlock(TilePosition here)
+{
+
+}
+
+bool canMediumBlock(TilePosition here)
+{
+	for (int x = here.x; x < here.x + 6; x++)
+	{
+		for (int y = here.y; y < here.y + 8; y++)
+		{
+			if (!Broodwar->isBuildable(x, y, true)) return false;
+			if (Grids().getResourceGrid(x, y) > 0) return false;
+		}
+	}
+	return true;
+}
+
+bool canLargeBlock(TilePosition here)
+{
+
+}
+
+void TerrainTrackerClass::insertSmallBlock(TilePosition here, bool mirror)
+{
+
+}
+
+void TerrainTrackerClass::insertMediumBlock(TilePosition here, bool mirror)
+{
+	// https://imgur.com/a/nE7dL for reference
+	mediumPosition.insert(best + TilePosition(0, 6));
+	mediumPosition.insert(best + TilePosition(3, 6));
+
+	if (mirror)
+	{
+		smallPosition.insert(here);
+		smallPosition.insert(here + TilePosition(0, 2));
+		smallPosition.insert(here + TilePosition(0, 4));
+		largePosition.insert(here + TilePosition(2, 0));
+		largePosition.insert(here + TilePosition(2, 3));
+	}
+	else
+	{
+		smallPosition.insert(best + TilePosition(4, 0));
+		smallPosition.insert(best + TilePosition(4, 2));
+		smallPosition.insert(best + TilePosition(4, 4));
+		largePosition.insert(best);
+		largePosition.insert(best + TilePosition(0, 3));
+	}
+}
+
+void TerrainTrackerClass::insertLargeBlock(TilePosition here, bool mirror)
+{
+
+}
+
+
+void TerrainTrackerClass::updateBlocks()
+{
+	Area const * mainArea = theMap.GetArea(playerStartingTilePosition);
+	set<TilePosition> mainTiles;
+
+	for (int x = 0; x <= Broodwar->mapWidth(); x++)
+	{
+		for (int y = 0; y <= Broodwar->mapHeight(); y++)
+		{
+			if (!TilePosition(x, y).isValid()) continue;
+			if (!theMap.GetArea(TilePosition(x, y))) continue;
+			if (theMap.GetArea(TilePosition(x, y)) == mainArea) mainTiles.insert(TilePosition(x, y));		
+		}
+	}
+
+	// Find ramp
+	double rampDist = DBL_MAX;
+	Position ramp;
+	for (auto chokepoint : mainArea->ChokePoints())
+	{
+		double dist = getGroundDistance(Position(chokepoint->Center()), playerStartingPosition);
+		if (dist < rampDist)
+			ramp = Position(chokepoint->Center()), rampDist = dist;
+	}
+	Broodwar->drawCircleMap(Position(ramp), 6, Colors::Orange);
+
+	// Mirror? (Gate on right)
+	bool mirror = false;
+	if (ramp.x > playerStartingPosition.x) mirror = true;
+
+	// Find first chunk position
+	if (Broodwar->getFrameCount() == 500)
+	{
+		double distA = DBL_MAX;
+		for (int x = playerStartingTilePosition.x - 8; x < playerStartingTilePosition.x + 12; x++)
+		{
+			for (int y = playerStartingTilePosition.y - 10; y < playerStartingTilePosition.y + 11; y++)
+			{
+				if (!canMediumBlock(TilePosition(x, y))) continue;
+
+				Position blockCenter = Position(TilePosition(x + 3, y + 4));
+
+				double distB = blockCenter.getDistance(playerStartingPosition) * blockCenter.getDistance(ramp);
+				if (distB < distA)
+				{
+					distA = distB;
+					best = TilePosition(x, y);
+				}
+			}
+		}
+		insertMediumBlock(best, mirror);
+
+		for (auto tile : mainTiles)
+		{
+			if (canMediumBlock(tile)) insertMediumBlock(tile, mirror);
+		}
+
+	}
+
+
+
+
+
+	for (auto tile : smallPosition)
+		Broodwar->drawBoxMap(Position(tile), Position(tile + TilePosition(2, 2)), Broodwar->self()->getColor());
+	for (auto tile : mediumPosition)
+		Broodwar->drawBoxMap(Position(tile), Position(tile + TilePosition(3, 2)), Broodwar->self()->getColor());
+	for (auto tile : largePosition)
+		Broodwar->drawBoxMap(Position(tile), Position(tile + TilePosition(4, 3)), Broodwar->self()->getColor());
+}
+
 
 void TerrainTrackerClass::onStart()
 {
@@ -288,11 +421,11 @@ void TerrainTrackerClass::findEnemyNatural()
 	{
 		for (auto &base : area.Bases())
 		{
-			if (base.Geysers().size() == 0 || area.AccessibleNeighbours().size() == 0) continue;	
+			if (base.Geysers().size() == 0 || area.AccessibleNeighbours().size() == 0) continue;
 			if (base.Center().getDistance(enemyStartingPosition) < 128) continue;
 			if (getGroundDistance(base.Center(), enemyStartingPosition) < distance || distance == 0.0)
 			{
-				distance = getGroundDistance(base.Center(), enemyStartingPosition);				
+				distance = getGroundDistance(base.Center(), enemyStartingPosition);
 				enemyNatural = base.Location();
 			}
 		}
@@ -381,7 +514,7 @@ Position TerrainTrackerClass::getClosestBaseCenter(Position here)
 	return closestB;
 }
 
-int TerrainTrackerClass::getGroundDistance(Position start, Position end) 
+int TerrainTrackerClass::getGroundDistance(Position start, Position end)
 {
 	int dist = 0;
 	if (!start.isValid() || !end.isValid()) return INT_MAX;

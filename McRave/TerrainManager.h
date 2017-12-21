@@ -20,6 +20,10 @@ class TerrainTrackerClass
 	Area const * naturalArea;
 	TilePosition enemyNatural = TilePositions::Invalid;
 
+	// Experimental
+	TilePosition best;
+	set<TilePosition> smallPosition, mediumPosition, largePosition;
+
 public:
 	void onStart();
 	void update();
@@ -31,6 +35,8 @@ public:
 	void findSecondChoke();
 	void findNatural();
 	void findEnemyNatural();
+
+	void updateBlocks();
 
 	int getGroundDistance(Position, Position);
 	Position getClosestBaseCenter(Position);
@@ -61,6 +67,15 @@ public:
 
 	Position getAttackPosition() { return attackPosition; }
 	Position getDefendPosition() { return defendPosition; }
+
+	// Experimental
+	set<TilePosition> getSmallPosition() { return smallPosition; }
+	set<TilePosition> getMediumPosition() { return mediumPosition; }
+	set<TilePosition> getLargePosition() { return largePosition; }
+
+	void insertSmallBlock(TilePosition, bool);
+	void insertMediumBlock(TilePosition, bool);
+	void insertLargeBlock(TilePosition, bool);
 };
 
 typedef Singleton<TerrainTrackerClass> TerrainTracker;

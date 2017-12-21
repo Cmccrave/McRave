@@ -227,7 +227,7 @@ bool UnitTrackerClass::isBehind(UnitInfo& unit)
 {
 	double decisionLocal = unit.getType().isFlyer() ? unit.getAirLocal() : unit.getGroundLocal();
 	double decisionGlobal = unit.getType().isFlyer() ? globalAirStrategy : globalGroundStrategy;
-	return (decisionGlobal == 0 || (!unit.getType().isFlyer() && unit.getGroundLocal() <= minThreshold) || (unit.getType().isFlyer() && unit.getAirLocal() <= minThreshold));
+	return (Strategy().isPlayPassive() || decisionGlobal == 0 || (!unit.getType().isFlyer() && unit.getGroundLocal() <= minThreshold) || (unit.getType().isFlyer() && unit.getAirLocal() <= minThreshold));
 }
 
 bool UnitTrackerClass::isAhead(UnitInfo& unit)

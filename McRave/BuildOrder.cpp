@@ -129,7 +129,7 @@ bool BuildOrderTrackerClass::isBuildAllowed(Race enemy, string build)
 	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
 		if (enemy == Races::Zerg && (build == "PFFEStandard" || build == "P4Gate")) return true;
-		if (enemy == Races::Terran && (build == "P12Nexus" || build == "P21Nexus" || build == "PDTExpand" || build == "P2GateDragoon")) return true;
+		if (enemy == Races::Terran && (build == "P12Nexus" || build == "P21Nexus" /*|| build == "PDTExpand"*/ || build == "P2GateDragoon")) return true;
 		if (enemy == Races::Protoss && (build == "PZCore" || build == "PNZCore" || build == "P4Gate")) return true;
 		if (enemy == Races::Random && (build == "PZZCore" || build == "P4Gate" || build == "PFFEStandard")) return true;
 	}
