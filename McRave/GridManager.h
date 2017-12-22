@@ -16,7 +16,8 @@ class GridTrackerClass
 	double aAirThreat[1024][1024] = {};
 	int aGroundClusterGrid[1024][1024] = {};
 	int aAirClusterGrid[1024][1024] = {};
-	int buildingGrid[256][256] = {};
+	//int buildingGrid[256][256] = {};
+	int path[256][256] = {};
 	int baseGrid[256][256] = {};
 	int pylonGrid[256][256] = {};
 	int batteryGrid[256][256] = {};
@@ -109,8 +110,8 @@ public:
 	int getAAirCluster(WalkPosition here) { return aAirClusterGrid[here.x][here.y]; }
 
 	// Returns 1 if the given TilePosition has a building on it, 0 otherwise
-	int getBuildingGrid(int x, int y) { return buildingGrid[x][y]; }
-	int getBuildingGrid(TilePosition here) { return buildingGrid[here.x][here.y]; }
+	//int getBuildingGrid(int x, int y) { return buildingGrid[x][y]; }
+	//int getBuildingGrid(TilePosition here) { return buildingGrid[here.x][here.y]; }
 
 	// Returns 2 if the given TilePosition is within range of a base that is completed, 1 if constructing and 0 otherwise
 	int getBaseGrid(int x, int y) { return baseGrid[x][y]; }

@@ -397,17 +397,17 @@ bool UtilTrackerClass::isMobile(WalkPosition start, WalkPosition end, UnitType u
 bool UtilTrackerClass::unitInRange(UnitInfo& unit)
 {
 	if (!unit.getTarget()) return false;
-	UnitInfo& target = Units().getEnemyUnit(unit.getTarget());
+	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());
 	double widths = target.getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
 	double allyRange = widths + (target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
-	if (unit.getPosition().getDistance(unit.getTargetPosition()) <= allyRange) return true;
+	if (unit.getPosition().getDistance(target.getPosition()) <= allyRange) return true;
 	return false;
 }
 
 bool UtilTrackerClass::targetInRange(UnitInfo& unit)
 {
 	if (!unit.getTarget()) return false;
-	UnitInfo& target = Units().getEnemyUnit(unit.getTarget());
+	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());
 	double widths = target.getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
 	double enemyRange = widths + (target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
 	if (target.getPosition().getDistance(unit.getPosition()) <= enemyRange) return true;

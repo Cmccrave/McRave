@@ -33,7 +33,7 @@ void WorkerTrackerClass::explore(WorkerInfo& worker)
 	Position bestPosition = Terrain().getPlayerStartingPosition();
 	Position destination = Terrain().getEnemyStartingPosition();
 	int longest = 0;
-	
+
 	if (Broodwar->isExplored(Terrain().getEnemyStartingTilePosition()))
 	{
 		for (auto &base : Bases().getEnemyBases())
@@ -43,7 +43,7 @@ void WorkerTrackerClass::explore(WorkerInfo& worker)
 				longest = Broodwar->getFrameCount() - base.second.getLastVisibleFrame();
 				destination = base.second.getPosition();
 			}
-		}		
+		}
 	}
 
 	if (Players().getNumberZerg() > 0 && Strategy().getPoolFrame() > 0 && !Strategy().isEnemyFastExpand())
@@ -64,7 +64,7 @@ void WorkerTrackerClass::explore(WorkerInfo& worker)
 	{
 		for (int y = start.y - 8; y < start.y + 8 + worker.getType().tileHeight() * 4; y++)
 		{
-			if (!WalkPosition(x, y).isValid() || Grids().getDistanceHome(start) - Grids().getDistanceHome(WalkPosition(x, y)) > 16)	continue;			
+			if (!WalkPosition(x, y).isValid() || Grids().getDistanceHome(start) - Grids().getDistanceHome(WalkPosition(x, y)) > 16)	continue;
 
 			double mobility = double(Grids().getMobilityGrid(x, y));
 			double threat = Grids().getEGroundThreat(x, y);
@@ -72,7 +72,7 @@ void WorkerTrackerClass::explore(WorkerInfo& worker)
 			double time = min(100.0, double(Broodwar->getFrameCount() - recentExplorations[WalkPosition(x, y)]));
 
 			if (Terrain().isInEnemyTerritory(TilePosition(x, y)) && !Broodwar->isExplored(TilePosition(WalkPosition(x, y))) && 1000 / distance > best && Util().isMobile(start, WalkPosition(x, y), worker.getType()))
-			{			
+			{
 				safest = -1;
 				best = 1000 / distance;
 				bestPosition = Position(WalkPosition(x, y));
@@ -117,12 +117,13 @@ void WorkerTrackerClass::updateDecision(WorkerInfo& worker)
 			}
 		}
 	}
-	
+
 	// Assign, return, scout, building, repair, fight, gather
 	if (shouldAssign(worker)) assign(worker);
 	if (shouldReturnCargo(worker)) returnCargo(worker);
+	else if (shouldClearPath(worker)) clearPath(worker);
 	else if (shouldBuild(worker)) build(worker);
-	else if (shouldScout(worker)) scout(worker);	
+	else if (shouldScout(worker)) scout(worker);
 	else if (shouldRepair(worker)) repair(worker);
 	else if (shouldFight(worker)) fight(worker);
 	else if (shouldGather(worker)) gather(worker);
@@ -138,6 +139,18 @@ bool WorkerTrackerClass::shouldAssign(WorkerInfo& worker)
 bool WorkerTrackerClass::shouldBuild(WorkerInfo& worker)
 {
 	if (worker.getBuildingType().isValid() && worker.getBuildPosition().isValid()) return true;
+	return false;
+}
+
+bool WorkerTrackerClass::shouldClearPath(WorkerInfo& worker)
+{
+	if (Resources().getMyBoulders().size() == 0 || Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) < 2) return false;
+	for (auto &b : Resources().getMyBoulders())
+	{
+		ResourceInfo boulder = b.second;
+		if (!boulder.unit() || !boulder.unit()->exists()) continue;
+		if (worker.getPosition().getDistance(boulder.getPosition()) < 320)	return true;
+	}
 	return false;
 }
 
@@ -279,6 +292,23 @@ void WorkerTrackerClass::build(WorkerInfo& worker)
 	}
 }
 
+void WorkerTrackerClass::clearPath(WorkerInfo& worker)
+{
+	for (auto &b : Resources().getMyBoulders())
+	{
+		ResourceInfo& boulder = b.second;
+		for (auto &b : Resources().getMyBoulders())
+		{
+			ResourceInfo boulder = b.second;
+			if (!boulder.unit() || !boulder.unit()->exists()) continue;
+			if (worker.getPosition().getDistance(boulder.getPosition()) >= 320) continue;
+			if (worker.unit()->getOrderTargetPosition() != b.second.getPosition() && !worker.unit()->isGatheringMinerals())
+				worker.unit()->gather(b.first);
+			return;
+		}
+	}
+}
+
 void WorkerTrackerClass::fight(WorkerInfo& worker)
 {
 	Units().storeAlly(worker.unit());
@@ -382,7 +412,7 @@ Unit WorkerTrackerClass::getClosestWorker(Position here, bool isBuilding)
 		WorkerInfo &worker = w.second;
 		if (isBuilding && worker.getResource() && worker.getResource()->exists() && !worker.getResource()->getType().isMineralField()) continue;
 		if (isBuilding && worker.getBuildPosition().isValid())	continue;
-		if (worker.unit() == scouter) continue;		
+		if (worker.unit() == scouter) continue;
 		if (worker.unit()->getLastCommand().getType() == UnitCommandTypes::Gather && worker.unit()->getLastCommand().getTarget()->exists() && worker.unit()->getLastCommand().getTarget()->getInitialResources() == 0)	continue;
 		if (worker.getType() != UnitTypes::Protoss_Probe && worker.unit()->isConstructing()) continue;
 		if (Terrain().getGroundDistance(worker.getPosition(), here) < closestD || closestD == 0.0)

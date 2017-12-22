@@ -71,7 +71,8 @@ void InterfaceTrackerClass::drawAllyInfo()
 		for (auto &u : Units().getAllyUnits())
 		{
 			UnitInfo &unit = u.second;
-			Broodwar->drawLineMap(unit.getTargetPosition(), unit.getPosition(), Broodwar->self()->getColor());
+			UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());
+			Broodwar->drawLineMap(target.getPosition(), unit.getPosition(), Broodwar->self()->getColor());
 			if (unit.getVisibleGroundStrength() > 0.0 || unit.getVisibleAirStrength() > 0.0)
 			{
 				Broodwar->drawTextMap(unit.getPosition() + Position(5, -10), "%c Grd: %c %.2f, %.2f", Text::White, Text::Brown, unit.getVisibleGroundStrength(), unit.getGroundLocal());

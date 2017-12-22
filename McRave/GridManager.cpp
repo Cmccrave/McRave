@@ -317,46 +317,46 @@ void GridTrackerClass::updateEnemyGrids()
 
 void GridTrackerClass::updateBuildingGrid(BuildingInfo& building)
 {
-	int buildingOffset;
-	if (building.getType() == UnitTypes::Terran_Supply_Depot || (!building.getType().isResourceDepot() && building.getType().buildsWhat().size() > 0 && building.getTilePosition() != Terrain().getLargeWall()))
-	{
-		buildingOffset = 1;
-	}
-	else
-	{
-		buildingOffset = 0;
-	}
+	//int buildingOffset;
+	//if (building.getType() == UnitTypes::Terran_Supply_Depot || (!building.getType().isResourceDepot() && building.getType().buildsWhat().size() > 0 && building.getTilePosition() != Terrain().getLargeWall()))
+	//{
+	//	buildingOffset = 1;
+	//}
+	//else
+	//{
+	//	buildingOffset = 0;
+	//}
 
-	// Add/remove building to/from grid
+	//// Add/remove building to/from grid
 	TilePosition tile = building.getTilePosition();
 	if (building.unit() && tile.isValid())
 	{
-		// Building Grid
-		for (int x = tile.x - buildingOffset; x < tile.x + building.getType().tileWidth() + buildingOffset; x++)
-		{
-			for (int y = tile.y - buildingOffset; y < tile.y + building.getType().tileHeight() + buildingOffset; y++)
-			{
-				if (TilePosition(x, y).isValid())
-				{
-					building.unit()->exists() ? buildingGrid[x][y] += 1 : buildingGrid[x][y] -= 1;
-				}
-			}
-		}
+	//	// Building Grid
+	//	for (int x = tile.x - buildingOffset; x < tile.x + building.getType().tileWidth() + buildingOffset; x++)
+	//	{
+	//		for (int y = tile.y - buildingOffset; y < tile.y + building.getType().tileHeight() + buildingOffset; y++)
+	//		{
+	//			if (TilePosition(x, y).isValid())
+	//			{
+	//				building.unit()->exists() ? buildingGrid[x][y] += 1 : buildingGrid[x][y] -= 1;
+	//			}
+	//		}
+	//	}
 
-		// If the building can build addons
-		if (building.getType().canBuildAddon())
-		{
-			for (int x = building.getTilePosition().x + building.getType().tileWidth(); x <= building.getTilePosition().x + building.getType().tileWidth() + 2; x++)
-			{
-				for (int y = building.getTilePosition().y + 1; y <= building.getTilePosition().y + 3; y++)
-				{
-					if (TilePosition(x, y).isValid())
-					{
-						building.unit()->exists() ? buildingGrid[x][y] += 1 : buildingGrid[x][y] -= 1;
-					}
-				}
-			}
-		}
+	//	// If the building can build addons
+	//	if (building.getType().canBuildAddon())
+	//	{
+	//		for (int x = building.getTilePosition().x + building.getType().tileWidth(); x <= building.getTilePosition().x + building.getType().tileWidth() + 2; x++)
+	//		{
+	//			for (int y = building.getTilePosition().y + 1; y <= building.getTilePosition().y + 3; y++)
+	//			{
+	//				if (TilePosition(x, y).isValid())
+	//				{
+	//					building.unit()->exists() ? buildingGrid[x][y] += 1 : buildingGrid[x][y] -= 1;
+	//				}
+	//			}
+	//		}
+	//	}
 
 		// Pylon Grid
 		if (building.getType() == UnitTypes::Protoss_Pylon)
@@ -409,14 +409,14 @@ void GridTrackerClass::updateResourceGrid(ResourceInfo& resource)
 {
 	TilePosition tile = resource.getTilePosition();
 
-	for (int x = tile.x; x < tile.x + resource.getType().tileWidth(); x++)
+	/*for (int x = tile.x; x < tile.x + resource.getType().tileWidth(); x++)
 	{
 		for (int y = tile.y; y < tile.y + resource.getType().tileHeight(); y++)
 		{
 			if (!TilePosition(x, y).isValid()) continue;
 			resource.unit()->exists() ? buildingGrid[x][y] += 1 : buildingGrid[x][y] -= 1;
 		}
-	}
+	}*/
 
 	if (resource.getType().isMineralField())
 	{
@@ -633,21 +633,7 @@ void GridTrackerClass::updateMobilityGrids()
 	
 	if (Broodwar->getFrameCount() == 500)
 	{
-		// Create reserve path home
-		int basebuildingGrid[256][256] = {};
-		for (auto &area : theMap.Areas())
-		{
-			for (auto &base : area.Bases())
-			{
-				for (int x = base.Location().x; x < base.Location().x + 4; x++)
-				{
-					for (int y = base.Location().y; y < base.Location().y + 4; y++)
-					{
-						basebuildingGrid[x][y] = 1;
-					}
-				}
-			}
-		}
+		// Create reserve path home		
 		TilePosition start = Terrain().getFirstChoke();
 		TilePosition end = Terrain().getSmallWall() + TilePosition(1,1);
 		TilePosition middle = (Terrain().getLargeWall() + Terrain().getMediumWall()) / 2;
@@ -669,7 +655,7 @@ void GridTrackerClass::updateMobilityGrids()
 			for (auto tile : testCases)
 			{
 				if (!tile.isValid() || Terrain().overlapsWall(tile)) continue;
-				if (Grids().getBuildingGrid(tile) > 0 || basebuildingGrid[tile.x][tile.y] > 0) continue;
+				if (Terrain().overlapsBases(tile)) continue;
 				if (theMap.GetArea(Terrain().getPlayerStartingTilePosition()) == theMap.GetArea(tile)) continue;
 				if (Grids().getDistanceHome(WalkPosition(tile)) < 0) continue;
 				if (Grids().getDistanceHome(WalkPosition(tile)) * Terrain().getGroundDistance(Position(tile), Position(end)) < closestD || closestD == 0.0)
@@ -682,7 +668,7 @@ void GridTrackerClass::updateMobilityGrids()
 			if (closestT.isValid())
 			{
 				start = closestT;
-				buildingGrid[closestT.x][closestT.y] = 1;
+				path[closestT.x][closestT.y] = 1;
 			}
 			else break;
 

@@ -69,6 +69,7 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 	for (auto &c : transport.getAssignedCargo())
 	{
 		UnitInfo& cargo = Units().getAllyUnit(c);
+		UnitInfo &target = cargo.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(cargo.getTarget()) : Units().getEnemyUnit(cargo.getTarget());
 		if (!cargo.unit())	continue;
 
 		// If the cargo is not loaded
@@ -78,7 +79,7 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 			transport.getPosition().getDistance(transport.getDestination()) <= cargo.getGroundRange() + 32 ? transport.setMonitoring(true) : transport.setMonitoring(false);
 
 			// If it's requesting a pickup, set load state to 1
-			if (cargo.getTargetPosition().getDistance(cargo.getPosition()) > cargo.getGroundRange() + 64 || cargo.getStrategy() != 1 || (cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.unit()->getEnergy() < 75) || (cargo.getType() == UnitTypes::Protoss_Reaver && cargo.unit()->getScarabCount() < 5))
+			if (target.getPosition().getDistance(cargo.getPosition()) > cargo.getGroundRange() + 64 || cargo.getStrategy() != 1 || (cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.unit()->getEnergy() < 75) || (cargo.getType() == UnitTypes::Protoss_Reaver && cargo.unit()->getScarabCount() < 5))
 			{
 				transport.setLoading(true);
 				transport.unit()->load(cargo.unit());
@@ -86,9 +87,9 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 			}			
 		}
 		// Else if the cargo is loaded
-		else if (cargo.unit()->isLoaded() && cargo.getTargetPosition().isValid())
+		else if (cargo.unit()->isLoaded() && target.getPosition().isValid())
 		{
-			transport.setDestination(cargo.getTargetPosition());
+			transport.setDestination(target.getPosition());
 			// If cargo wants to fight, find a spot to unload
 			if (cargo.getStrategy() == 1) transport.setUnloading(true);
 			if (transport.getPosition().getDistance(transport.getDestination()) <= cargo.getGroundRange() + 32 && cargo.getStrategy() == 1 && ((cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.unit()->getEnergy() >= 75) || (cargo.getType() == UnitTypes::Protoss_Reaver && cargo.unit()->getScarabCount() >= 5)))

@@ -77,7 +77,7 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 	double unitToEngage = max(0.0, unit.getPosition().getDistance(unit.getEngagePosition()) / unit.getSpeed());
 	double simulationTime = unitToEngage + 5.0;
 	double offset = 0.0, maxRange = 0.0;
-	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());
+	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());	
 
 	// Check every enemy unit being in range of the target
 	for (auto &e : enemyUnits)
@@ -123,7 +123,8 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 	for (auto &a : allyUnits)
 	{
 		UnitInfo &ally = a.second;
-
+		UnitInfo &allyTarget = ally.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(ally.getTarget()) : Units().getEnemyUnit(ally.getTarget());
+		
 		double widths = ally.getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
 		double allyRange = widths + (unit.getType().isFlyer() ? ally.getAirRange() : ally.getGroundRange());
 		double distance = ally.getPosition().getDistance(ally.getEngagePosition());
@@ -137,7 +138,7 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 
 		// Situations where an ally should be treated as stronger than it actually is
 		if ((ally.unit()->isCloaked() || ally.unit()->isBurrowed()) && Grids().getEDetectorGrid(WalkPosition(ally.getEngagePosition())) == 0) simRatio = simRatio * 5.0;
-		if (!ally.getType().isFlyer() && Broodwar->getGroundHeight(TilePosition(ally.getEngagePosition())) > Broodwar->getGroundHeight(TilePosition(ally.getTargetPosition())))	simRatio = simRatio * 2.0;
+		if (!ally.getType().isFlyer() && Broodwar->getGroundHeight(TilePosition(ally.getEngagePosition())) > Broodwar->getGroundHeight(TilePosition(allyTarget.getPosition())))	simRatio = simRatio * 2.0;
 
 		allyLocalGroundStrength += ally.getVisibleGroundStrength() * simRatio;
 		allyLocalAirStrength += ally.getVisibleAirStrength() * simRatio;
@@ -198,7 +199,7 @@ bool UnitTrackerClass::shouldAttack(UnitInfo& unit)
 	else if (Grids().getBaseGrid(target.getTilePosition()) > 0 && (!target.getType().isWorker() || Broodwar->getFrameCount() - target.getLastAttackFrame() < 500)) return true;
 	else if ((unit.unit()->isCloaked() || unit.unit()->isBurrowed()) && Grids().getEDetectorGrid(WalkPosition(unit.getEngagePosition())) <= 0) return true;
 	else if (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && Util().unitInRange(unit)) return true; // If a unit is a Reaver and within range of an enemy	
-	else if ((target.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || target.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && unit.getPosition().getDistance(unit.getTargetPosition()) < 128) return true; // If unit is close to a tank, keep attacking it
+	else if ((target.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || target.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && unit.getPosition().getDistance(target.getPosition()) < 128) return true; // If unit is close to a tank, keep attacking it
 	return false;
 }
 

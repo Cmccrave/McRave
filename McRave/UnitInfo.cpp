@@ -21,7 +21,6 @@ UnitInfo::UnitInfo()
 	lastCommandFrame = 0;
 	lastVisibleFrame = 0;
 	position = Positions::None;
-	targetPosition = Positions::None;
 	engagePosition = Positions::None;
 	destination = Positions::None;
 	walkPosition = WalkPositions::None;

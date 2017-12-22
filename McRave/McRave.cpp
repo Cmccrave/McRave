@@ -7,17 +7,18 @@
 #include "McRave.h"
 
 // --- AUTHOR NOTES ---
-// TODO before SSCAIT:
-// Disable DT Expand
-// Fix chasing scouts
-// Deny expansions
+// TODO:
 // Add repairing scvs to sim
-
-// TODO after:
+// Check psi storm and emp grids, bullet positions may not be the center
 // Production sat based on active mining bases instead
-// Create building clustering/simcity
 // Rework reserved/queued resources
 // Rework pylon building timings (note: overbuilding when not producing units fast enough to keep up)
+
+// Test:
+// Create building clustering/simcity
+// Removed building grid
+// Remove targetposition in unitinfo
+// Medics disabled
 
 void McRaveModule::onStart()
 {
@@ -37,6 +38,7 @@ void McRaveModule::onEnd(bool isWinner)
 
 void McRaveModule::onFrame()
 {	
+	Blocks().update();
 	Terrain().update();
 	Grids().update();
 	Resources().update();

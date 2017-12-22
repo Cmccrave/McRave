@@ -17,13 +17,15 @@ class TerrainTrackerClass
 	Position attackPosition, defendPosition;
 	TilePosition natural;
 	TilePosition bMedium = TilePositions::None, bLarge = TilePositions::None, bSmall;
-	Area const * naturalArea;
+
+	
 	TilePosition enemyNatural = TilePositions::Invalid;
 
+	Area const * naturalArea;
+	Area const * mainArea;
+
 	// Experimental
-	TilePosition best;
-	set<TilePosition> smallPosition, mediumPosition, largePosition;
-	set<TilePosition> smallBlocks, mediumBlocks, largeBlocks;
+
 
 public:
 	void onStart();
@@ -36,8 +38,6 @@ public:
 	void findSecondChoke();
 	void findNatural();
 	void findEnemyNatural();
-
-	void updateBlocks();
 
 	int getGroundDistance(Position, Position);
 	Position getClosestBaseCenter(Position);
@@ -70,14 +70,6 @@ public:
 	Position getDefendPosition() { return defendPosition; }
 
 	// Experimental
-	set<TilePosition> getSmallPosition() { return smallPosition; }
-	set<TilePosition> getMediumPosition() { return mediumPosition; }
-	set<TilePosition> getLargePosition() { return largePosition; }
-
-	void insertSmallBlock(TilePosition, bool);
-	void insertMediumBlock(TilePosition, bool);
-	void insertLargeBlock(TilePosition, bool);
-	bool overlapsBlocks(TilePosition);
 	bool overlapsBases(TilePosition);
 };
 

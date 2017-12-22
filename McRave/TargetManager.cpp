@@ -93,21 +93,15 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 			target = enemy.unit();
 			highest = thisUnit;
 			targetPosition = enemy.getPosition();
-			targetWalkPosition = enemy.getWalkPosition();
-			targetTilePosition = enemy.getTilePosition();
 		}
 	}
 	unit.setSimPosition(simPosition);
 
 	if (target)
 	{
-		unit.setTargetPosition(targetPosition);
-		unit.setTargetWalkPosition(targetWalkPosition);
-		unit.setTargetTilePosition(targetTilePosition);
-
-		if (unit.getPosition().getDistance(unit.getTargetPosition()) > max(unit.getGroundRange(), unit.getAirRange()))
+		if (unit.getPosition().getDistance(targetPosition) > max(unit.getGroundRange(), unit.getAirRange()))
 		{
-			unit.setEngagePosition(unit.getPosition() + Position((unit.getTargetPosition() - unit.getPosition()) * (unit.getPosition().getDistance(unit.getTargetPosition()) - max(unit.getGroundRange(), unit.getAirRange())) / unit.getPosition().getDistance(unit.getTargetPosition())));
+			unit.setEngagePosition(unit.getPosition() + Position((targetPosition - unit.getPosition()) * (unit.getPosition().getDistance(targetPosition) - max(unit.getGroundRange(), unit.getAirRange())) / unit.getPosition().getDistance(targetPosition)));
 		}
 		else
 		{
@@ -143,14 +137,6 @@ Unit TargetTrackerClass::allyTarget(UnitInfo& unit)
 			targetWalkPosition = ally.getWalkPosition();
 			targetTilePosition = ally.getTilePosition();
 		}
-	}
-
-	// If we found an ally target, store the position
-	if (target)
-	{
-		unit.setTargetPosition(targetPosition);
-		unit.setTargetWalkPosition(targetWalkPosition);
-		unit.setTargetTilePosition(targetTilePosition);
 	}
 	return target;
 }

@@ -61,19 +61,21 @@ void CommandTrackerClass::updateAlliedUnits()
 
 void CommandTrackerClass::engage(UnitInfo& unit)
 {
+	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());
+
 	// Specific Medic behavior
 	if (unit.getType() == UnitTypes::Terran_Medic)
 	{
-		UnitInfo &target = Units().getAllyUnit(unit.getTarget());
-		if (target.getPercentHealth() < 1.0)
-		{
-			if (!isLastCommand(unit, UnitCommandTypes::Move, unit.getTargetPosition())) unit.unit()->useTech(TechTypes::Healing, unit.getTarget());
-		}
-		else
-		{
-			if (!isLastCommand(unit, UnitCommandTypes::Move, unit.getTargetPosition())) unit.unit()->move(unit.getTargetPosition());
-		}
-		return;
+		//UnitInfo &target = Units().getAllyUnit(unit.getTarget());
+		//if (target.getPercentHealth() < 1.0)
+		//{
+		//	if (!isLastCommand(unit, UnitCommandTypes::Move, unit.getTargetPosition())) unit.unit()->useTech(TechTypes::Healing, unit.getTarget());
+		//}
+		//else
+		//{
+		//	if (!isLastCommand(unit, UnitCommandTypes::Move, unit.getTargetPosition())) unit.unit()->move(unit.getTargetPosition());
+		//}
+		//return;
 	}
 	else
 	{
@@ -87,7 +89,7 @@ void CommandTrackerClass::engage(UnitInfo& unit)
 			if (target.unit() && target.unit()->exists() && unit.unit()->getEnergy() >= 75 && Grids().getEGroundCluster(target.getWalkPosition()) + Grids().getEAirCluster(target.getWalkPosition()) > 3.0)
 			{
 				unit.unit()->useTech(TechTypes::Psionic_Storm, target.unit());
-				Grids().updatePsiStorm(unit.getTargetWalkPosition());
+				Grids().updatePsiStorm(target.getWalkPosition());
 				return;
 			}
 			else
@@ -98,7 +100,7 @@ void CommandTrackerClass::engage(UnitInfo& unit)
 		}
 
 		// Specific Marine and Firebat behavior	
-		if ((unit.getType() == UnitTypes::Terran_Marine || unit.getType() == UnitTypes::Terran_Firebat) && !unit.unit()->isStimmed() && unit.getTargetPosition().isValid() && unit.unit()->getDistance(unit.getTargetPosition()) <= unit.getGroundRange())
+		if ((unit.getType() == UnitTypes::Terran_Marine || unit.getType() == UnitTypes::Terran_Firebat) && !unit.unit()->isStimmed() && target.getPosition().isValid() && unit.unit()->getDistance(target.getPosition()) <= unit.getGroundRange())
 		{
 			unit.unit()->useTech(TechTypes::Stim_Packs);
 		}
@@ -106,14 +108,14 @@ void CommandTrackerClass::engage(UnitInfo& unit)
 		// Specific Tank behavior
 		if (unit.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode)
 		{
-			if (unit.unit()->getDistance(unit.getTargetPosition()) <= 400 && unit.unit()->getDistance(unit.getTargetPosition()) > 128)
+			if (unit.unit()->getDistance(target.getPosition()) <= 400 && unit.unit()->getDistance(target.getPosition()) > 128)
 			{
 				unit.unit()->siege();
 			}
 		}
 		if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
 		{
-			if (unit.unit()->getDistance(unit.getTargetPosition()) > 400 || unit.unit()->getDistance(unit.getTargetPosition()) < 128)
+			if (unit.unit()->getDistance(target.getPosition()) > 400 || unit.unit()->getDistance(target.getPosition()) < 128)
 			{
 				unit.unit()->unsiege();
 			}
@@ -163,10 +165,12 @@ void CommandTrackerClass::engage(UnitInfo& unit)
 
 void CommandTrackerClass::move(UnitInfo& unit)
 {
+	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());
+
 	// If it's a tank, make sure we're unsieged before moving - TODO: Check that target has velocity and > 512 or no velocity and < tank range
 	if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
 	{
-		if (unit.unit()->getDistance(unit.getTargetPosition()) > 512 || unit.unit()->getDistance(unit.getTargetPosition()) < 64)
+		if (unit.unit()->getDistance(target.getPosition()) > 512 || unit.unit()->getDistance(target.getPosition()) < 64)
 			unit.unit()->unsiege();
 	}
 
@@ -178,10 +182,10 @@ void CommandTrackerClass::move(UnitInfo& unit)
 	}
 
 	// If target doesn't exist, move towards it
-	else if (unit.getTarget() && unit.getTargetPosition().isValid() && Grids().getMobilityGrid(WalkPosition(unit.getEngagePosition())) > 0)
+	else if (unit.getTarget() && target.getPosition().isValid() && Grids().getMobilityGrid(WalkPosition(unit.getEngagePosition())) > 0)
 	{
-		if (!isLastCommand(unit, UnitCommandTypes::Move, unit.getTargetPosition()))
-			unit.unit()->move(unit.getTargetPosition());
+		if (!isLastCommand(unit, UnitCommandTypes::Move, target.getPosition()))
+			unit.unit()->move(target.getPosition());
 	}
 
 	else if (Terrain().getAttackPosition().isValid() && !unit.getType().isFlyer())
@@ -209,6 +213,7 @@ void CommandTrackerClass::move(UnitInfo& unit)
 
 void CommandTrackerClass::defend(UnitInfo& unit)
 {
+	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());
 
 	if (unit.getType().isFlyer())
 	{
@@ -281,6 +286,8 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 
 void CommandTrackerClass::flee(UnitInfo& unit)
 {
+	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());
+
 	if (unit.getType().isWorker() && Grids().getResourceGrid(unit.getTilePosition()) > 0)
 	{
 		unit.unit()->gather(unit.unit()->getClosestUnit(Filter::IsMineralField, 128));
@@ -292,7 +299,7 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 	// If it's a tank, make sure we're unsieged before moving -  TODO: Check that target has velocity and > 512 or no velocity and < tank range
 	if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
 	{
-		if (unit.unit()->getDistance(unit.getTargetPosition()) > 512 || unit.unit()->getDistance(unit.getTargetPosition()) < 64)
+		if (unit.unit()->getDistance(target.getPosition()) > 512 || unit.unit()->getDistance(target.getPosition()) < 64)
 		{
 			unit.unit()->unsiege();
 			return;
@@ -328,7 +335,7 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 			if (!WalkPosition(x, y).isValid()) continue;
 			if (Grids().getPsiStormGrid(WalkPosition(x, y)) > 0 || Grids().getEMPGrid(WalkPosition(x, y)) > 0 || Grids().getESplashGrid(WalkPosition(x, y)) > 0) continue;
 
-			if (Terrain().isInAllyTerritory(unit.getTilePosition())) distance = 1.0 / (32.0 + Position(WalkPosition(x, y)).getDistance(unit.getTargetPosition()));
+			if (Terrain().isInAllyTerritory(unit.getTilePosition())) distance = 1.0 / (32.0 + Position(WalkPosition(x, y)).getDistance(target.getPosition()));
 			else distance = unit.getType().isFlyer() ? Position(WalkPosition(x, y)).getDistance(Terrain().getPlayerStartingPosition()) : double(Grids().getDistanceHome(x, y)); // Distance value	
 
 			mobility = unit.getType().isFlyer() ? 1.0 : double(Grids().getMobilityGrid(x, y)); // If unit is a flyer, ignore mobility
@@ -365,9 +372,11 @@ void CommandTrackerClass::attack(UnitInfo& unit)
 
 void CommandTrackerClass::approach(UnitInfo& unit)
 {
+	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());
+
 	// TODO, use linear interpolation to approach closer, so that units can approach a cliff to snipe units on higher terrain (carriers, tanks)
-	if (unit.getTargetPosition().isValid() && (unit.unit()->getLastCommand().getTargetPosition() != unit.getTargetPosition() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move))
-		unit.unit()->move(unit.getTargetPosition());
+	if (target.getPosition().isValid() && (unit.unit()->getLastCommand().getTargetPosition() != target.getPosition() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move))
+		unit.unit()->move(target.getPosition());
 }
 
 void CommandTrackerClass::exploreArea(UnitInfo& unit)
@@ -404,7 +413,7 @@ bool CommandTrackerClass::shouldKite(UnitInfo& unit)
 	if (target.getType().isBuilding()) return false; // Don't kite buildings
 	else if (unit.getType() == UnitTypes::Protoss_Reaver && target.getGroundRange() < unit.getGroundRange()) return true; // Reavers should always kite away from their target if it has lower range
 	else if (allyRange > 32.0 && unit.unit()->isUnderAttack() && allyRange >= enemyRange) return true;
-	else if (enemyRange <= allyRange && (unit.unit()->getDistance(unit.getTargetPosition()) <= allyRange - enemyRange) || unit.unit()->getHitPoints() < 40) return true;
+	else if (enemyRange <= allyRange && (unit.unit()->getDistance(target.getPosition()) <= allyRange - enemyRange) || unit.unit()->getHitPoints() < 40) return true;
 	return false;
 }
 

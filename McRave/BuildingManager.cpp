@@ -192,29 +192,23 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 				for (auto &base : area.Bases())
 				{
 					if (area.AccessibleNeighbours().size() == 0 || base.Center() == Terrain().getEnemyStartingPosition()) continue;
+					
+					// Get value of the expansion
 					double value = 0.0;
-
-					for (auto &mineral : base.Minerals())
-					{
-						value += double(mineral->Amount());
-					}
-					for (auto &gas : base.Geysers())
-					{
+					for (auto &mineral : base.Minerals())					
+						value += double(mineral->Amount());					
+					for (auto &gas : base.Geysers())					
 						value += double(gas->Amount());
-					}
 					if (base.Geysers().size() == 0) value = value / 10.0;
+					
+					// Get distance of the expansion
+					double distance;
+					if (Players().getPlayers().size() > 1)	
+						distance = Terrain().getGroundDistance(Terrain().getPlayerStartingPosition(), base.Center());				
+					else					
+						distance = Terrain().getGroundDistance(Terrain().getPlayerStartingPosition(), base.Center()) / pow(Terrain().getGroundDistance(Terrain().getEnemyStartingPosition(), base.Center()), 2.0);				
 
-					double distance = 0.0;
-					if (Players().getPlayers().size() > 1)
-					{
-						distance = Terrain().getGroundDistance(Terrain().getPlayerStartingPosition(), base.Center());
-					}
-					else
-					{
-						distance = Terrain().getGroundDistance(Terrain().getPlayerStartingPosition(), base.Center()) / pow(Terrain().getGroundDistance(Terrain().getEnemyStartingPosition(), base.Center()), 2.0);
-					}
-
-					if (Grids().getBuildingGrid(base.Location()) == 0 && (value / distance > best))
+					if (/*Grids().getBuildingGrid(base.Location()) == 0 && */(value / distance > best))
 					{
 						best = value / distance;
 						bestLocation = base.Location();
@@ -280,9 +274,9 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	}
 
 	set<TilePosition> placements;
-	if (isSmall(building)) placements = Terrain().getSmallPosition();
-	else if (isMedium(building)) placements = Terrain().getMediumPosition();
-	else if (isLarge(building)) placements = Terrain().getLargePosition();
+	if (isSmall(building)) placements = Blocks().getSmallPosition();
+	else if (isMedium(building)) placements = Blocks().getMediumPosition();
+	else if (isLarge(building)) placements = Blocks().getLargePosition();
 
 	double distBest = DBL_MAX;
 	for (auto tile : placements)

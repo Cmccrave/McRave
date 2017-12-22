@@ -6,7 +6,6 @@ void TerrainTrackerClass::update()
 	updateAreas();
 	updateChokes();
 	updateWalls();
-	updateBlocks();
 	Display().performanceTest(__FUNCTION__);
 	return;
 }
@@ -97,7 +96,7 @@ void TerrainTrackerClass::updateChokes()
 		}
 	}
 
-	// Establish FFE position	
+	// Add "empty" areas (ie. Andromeda areas around main)	
 	if (naturalArea)
 	{
 		for (auto &area : naturalArea->AccessibleNeighbours())
@@ -118,7 +117,7 @@ void TerrainTrackerClass::updateChokes()
 void TerrainTrackerClass::updateWalls()
 {
 	TilePosition start = secondChoke;
-	double distance = 0.0;
+	double distance = DBL_MAX;
 
 	// Large Building placement
 	if (Broodwar->getFrameCount() < 500 && Broodwar->getFrameCount() >= 400)
@@ -137,7 +136,7 @@ void TerrainTrackerClass::updateWalls()
 					for (int j = y; j < y + 3; j++)
 					{
 						if (!TilePosition(i, j).isValid()) continue;
-						if (!Broodwar->isBuildable(TilePosition(i, j)) || Grids().getBuildingGrid(TilePosition(i, j)) > 0) buildable = false;
+						if (!Broodwar->isBuildable(TilePosition(i, j))) buildable = false;
 						if (i >= natural.x && i < natural.x + 4 && j >= natural.y && j < natural.y + 3) buildable = false;
 						if (theMap.GetArea(TilePosition(i, j)) && theMap.GetArea(TilePosition(i, j)) == theMap.GetArea(natural)) valid = 1;
 					}
@@ -148,16 +147,19 @@ void TerrainTrackerClass::updateWalls()
 				int dx = x + 4;
 				for (int dy = y; dy < y + 3; dy++)
 				{
-					if (!Util().isWalkable(TilePosition(dx, dy)) || Grids().getBuildingGrid(TilePosition(dx, dy)) > 0) valid++;
+					if (!Util().isWalkable(TilePosition(dx, dy))) valid++;
 				}
 
 				int dy = y + 3;
 				for (int dx = x; dx < x + 4; dx++)
 				{
-					if (!Util().isWalkable(TilePosition(dx, dy)) || Grids().getBuildingGrid(TilePosition(dx, dy)) > 0) valid++;
+					if (!Util().isWalkable(TilePosition(dx, dy))) valid++;
 				}
 
-				if (valid >= 2 && center.getDistance(Position(natural)) <= 512 && (center.getDistance(chokeCenter) < distance || distance == 0.0)) bLarge = TilePosition(x, y), distance = center.getDistance(chokeCenter);
+				double distNat = center.getDistance(Position(natural));
+				double distChoke = center.getDistance(chokeCenter);
+				if (valid >= 2 && distNat <= 512 && distChoke < distance)
+					bLarge = TilePosition(x, y), distance = distChoke;
 			}
 		}
 
@@ -180,7 +182,7 @@ void TerrainTrackerClass::updateWalls()
 					for (int j = y; j < y + 2; j++)
 					{
 						if (!TilePosition(i, j).isValid()) continue;
-						if (!Broodwar->isBuildable(TilePosition(i, j)) || Grids().getBuildingGrid(TilePosition(i, j)) > 0) buildable = false;
+						if (!Broodwar->isBuildable(TilePosition(i, j))) buildable = false;
 						if (i >= natural.x && i < natural.x + 4 && j >= natural.y && j < natural.y + 3) buildable = false;
 						if (i >= bLarge.x && i < bLarge.x + 4 && j >= bLarge.y && j < bLarge.y + 3) buildable = false;
 						if (theMap.GetArea(TilePosition(i, j)) == theMap.GetArea(natural)) within = true;
@@ -201,14 +203,14 @@ void TerrainTrackerClass::updateWalls()
 				for (int dy = y; dy < y + 2; dy++)
 				{
 					if (dx >= bLarge.x && dx < bLarge.x + 4 && dy >= bLarge.y && dy < bLarge.y + 3) buildable = false;
-					if (!Util().isWalkable(TilePosition(dx, dy)) || Grids().getBuildingGrid(TilePosition(dx, dy)) > 0) valid++;
+					if (!Util().isWalkable(TilePosition(dx, dy))) valid++;
 				}
 
 				int dy = y - 1;
 				for (int dx = x; dx < x + 3; dx++)
 				{
 					if (dx >= bLarge.x && dx < bLarge.x + 4 && dy >= bLarge.y && dy < bLarge.y + 3) buildable = false;
-					if (!Util().isWalkable(TilePosition(dx, dy)) || Grids().getBuildingGrid(TilePosition(dx, dy)) > 0) valid++;
+					if (!Util().isWalkable(TilePosition(dx, dy))) valid++;
 				}
 
 				if (!buildable) continue;
@@ -234,7 +236,7 @@ void TerrainTrackerClass::updateWalls()
 				{
 					for (int j = y; j < y + 2; j++)
 					{
-						if (!Broodwar->isBuildable(TilePosition(i, j)) || Grids().getBuildingGrid(TilePosition(i, j)) > 0) buildable = false;
+						if (!Broodwar->isBuildable(TilePosition(i, j))) buildable = false;
 						if (i >= bMedium.x && i < bMedium.x + 3 && j >= bMedium.y && j < bMedium.y + 2) buildable = false;
 						if (i >= bLarge.x && i < bLarge.x + 4 && j >= bLarge.y && j < bLarge.y + 3) buildable = false;
 						if (i >= natural.x && i < natural.x + 4 && j >= natural.y && j < natural.y + 3) buildable = false;
@@ -253,191 +255,12 @@ void TerrainTrackerClass::updateWalls()
 	Broodwar->drawCircleMap(Position(secondChoke), 16, Colors::Green);
 }
 
-bool TerrainTrackerClass::overlapsBlocks(TilePosition here)
-{
-	for (auto block : mediumBlocks)
-	{
-		if (here.x >= block.x && here.x < block.x + 6 && here.y >= block.y && here.y < block.y + 8) return true;
-	}
-	for (auto block : smallBlocks)
-	{
-		if (here.x >= block.x && here.x < block.x + 4 && here.y >= block.y && here.y < block.y + 5) return true;
-	}
-	return false;
-}
-
 bool TerrainTrackerClass::overlapsBases(TilePosition here)
 {
 	for (auto base : allBaseLocations)
-	{
 		if (here.x >= base.x && here.x < base.x + 4 && here.y >= base.y && here.y < base.y + 3) return true;
-	}
 	return false;
 }
-
-bool canSmallBlock(TilePosition here)
-{
-	for (int x = here.x; x < here.x + 4; x++)
-	{
-		for (int y = here.y; y < here.y + 5; y++)
-		{
-			if (!TilePosition(x, y).isValid()) return false;
-			if (!theMap.GetTile(TilePosition(x, y)).Buildable()) return false;
-			if (Grids().getResourceGrid(x, y) > 0) return false;
-			if (Terrain().overlapsBlocks(TilePosition(x, y))) return false;
-			if (Terrain().overlapsBases(TilePosition(x, y))) return false;
-		}
-	}
-	return true;
-}
-
-bool canMediumBlock(TilePosition here)
-{
-	for (int x = here.x; x < here.x + 6; x++)
-	{
-		for (int y = here.y; y < here.y + 8; y++)
-		{
-			if (!TilePosition(x, y).isValid()) return false;
-			if (!theMap.GetTile(TilePosition(x,y)).Buildable()) return false;
-			if (Grids().getResourceGrid(x, y) > 0) return false;
-			if (Terrain().overlapsBlocks(TilePosition(x,y))) return false;
-			if (Terrain().overlapsBases(TilePosition(x, y))) return false;
-		}
-	}
-	return true;
-}
-
-bool canLargeBlock(TilePosition here)
-{
-
-}
-
-void TerrainTrackerClass::insertSmallBlock(TilePosition here, bool mirror)
-{
-	smallBlocks.insert(here);
-
-	if (mirror)
-	{
-		smallPosition.insert(here);
-		smallPosition.insert(here + TilePosition(2, 0));
-		largePosition.insert(here + TilePosition(0, 2));
-	}
-	else
-	{
-		smallPosition.insert(here + TilePosition(0, 2));
-		smallPosition.insert(here + TilePosition(2, 2));
-		largePosition.insert(here);
-	}
-}
-
-void TerrainTrackerClass::insertMediumBlock(TilePosition here, bool mirror)
-{
-	// https://imgur.com/a/nE7dL for reference
-
-	mediumBlocks.insert(here);
-
-	mediumPosition.insert(here + TilePosition(0, 6));
-	mediumPosition.insert(here + TilePosition(3, 6));
-
-	if (mirror)
-	{
-		smallPosition.insert(here);
-		smallPosition.insert(here + TilePosition(0, 2));
-		smallPosition.insert(here + TilePosition(0, 4));
-		largePosition.insert(here + TilePosition(2, 0));
-		largePosition.insert(here + TilePosition(2, 3));
-	}
-	else
-	{
-		smallPosition.insert(here + TilePosition(4, 0));
-		smallPosition.insert(here + TilePosition(4, 2));
-		smallPosition.insert(here + TilePosition(4, 4));
-		largePosition.insert(here);
-		largePosition.insert(here + TilePosition(0, 3));
-	}
-}
-
-void TerrainTrackerClass::insertLargeBlock(TilePosition here, bool mirror)
-{
-
-}
-
-
-void TerrainTrackerClass::updateBlocks()
-{
-	Area const * mainArea = theMap.GetArea(playerStartingTilePosition);
-	set<TilePosition> mainTiles;
-
-	for (int x = 0; x <= Broodwar->mapWidth(); x++)
-	{
-		for (int y = 0; y <= Broodwar->mapHeight(); y++)
-		{
-			if (!TilePosition(x, y).isValid()) continue;
-			if (!theMap.GetArea(TilePosition(x, y))) continue;
-			if (theMap.GetArea(TilePosition(x, y)) == mainArea) mainTiles.insert(TilePosition(x, y));		
-		}
-	}
-
-	// Find ramp
-	double rampDist = DBL_MAX;
-	Position ramp;
-	for (auto chokepoint : mainArea->ChokePoints())
-	{
-		double dist = getGroundDistance(Position(chokepoint->Center()), playerStartingPosition);
-		if (dist < rampDist)
-			ramp = Position(chokepoint->Center()), rampDist = dist;
-	}
-	Broodwar->drawCircleMap(Position(ramp), 6, Colors::Orange);
-
-	// Mirror? (Gate on right)
-	bool mirror = false;
-	if (ramp.x > playerStartingPosition.x) mirror = true;
-
-	// Find first chunk position
-	if (Broodwar->getFrameCount() == 500)
-	{
-		double distA = DBL_MAX;
-		for (int x = playerStartingTilePosition.x - 8; x < playerStartingTilePosition.x + 12; x++)
-		{
-			for (int y = playerStartingTilePosition.y - 10; y < playerStartingTilePosition.y + 11; y++)
-			{
-				if (!canMediumBlock(TilePosition(x, y))) continue;
-
-				Position blockCenter = Position(TilePosition(x + 3, y + 4));
-
-				double distB = blockCenter.getDistance(playerStartingPosition) * blockCenter.getDistance(ramp);
-				if (distB < distA)
-				{
-					distA = distB;
-					best = TilePosition(x, y);
-				}
-			}
-		}
-		insertMediumBlock(best, mirror);
-
-		for (auto tile : mainTiles)
-		{
-			if (canMediumBlock(tile)) insertMediumBlock(tile, mirror);			
-		}
-		for (auto tile : mainTiles)
-		{
-			if (canSmallBlock(tile)) insertSmallBlock(tile, mirror);
-		}
-
-	}
-
-
-
-
-
-	for (auto tile : smallPosition)
-		Broodwar->drawBoxMap(Position(tile), Position(tile + TilePosition(2, 2)), Broodwar->self()->getColor());
-	for (auto tile : mediumPosition)
-		Broodwar->drawBoxMap(Position(tile), Position(tile + TilePosition(3, 2)), Broodwar->self()->getColor());
-	for (auto tile : largePosition)
-		Broodwar->drawBoxMap(Position(tile), Position(tile + TilePosition(4, 3)), Broodwar->self()->getColor());
-}
-
 
 void TerrainTrackerClass::onStart()
 {
@@ -472,18 +295,17 @@ void TerrainTrackerClass::findNatural()
 void TerrainTrackerClass::findEnemyNatural()
 {
 	// Find enemy natural area
-	double distance = 0.0;
+	double distBest = DBL_MAX;
 	for (auto &area : theMap.Areas())
 	{
 		for (auto &base : area.Bases())
 		{
 			if (base.Geysers().size() == 0 || area.AccessibleNeighbours().size() == 0) continue;
 			if (base.Center().getDistance(enemyStartingPosition) < 128) continue;
-			if (getGroundDistance(base.Center(), enemyStartingPosition) < distance || distance == 0.0)
-			{
-				distance = getGroundDistance(base.Center(), enemyStartingPosition);
-				enemyNatural = base.Location();
-			}
+
+			double dist = getGroundDistance(base.Center(), enemyStartingPosition);
+			if (dist < distBest)
+				enemyNatural = base.Location(), distBest = dist;
 		}
 	}
 }
@@ -491,83 +313,67 @@ void TerrainTrackerClass::findEnemyNatural()
 void TerrainTrackerClass::findFirstChoke()
 {
 	// Find the first choke
-	double distance = 0.0;
+	double distBest = DBL_MAX;
 	for (auto &choke : naturalArea->ChokePoints())
 	{
-		if (choke && (Grids().getDistanceHome(choke->Center()) < distance || distance == 0.0))
-		{
-			firstChoke = TilePosition(choke->Center());
-			distance = Grids().getDistanceHome(choke->Center());
-		}
+		double dist = getGroundDistance(Position(choke->Center()), playerStartingPosition);
+		if (choke && dist < distBest)
+			firstChoke = TilePosition(choke->Center()), distBest = dist;
 	}
 }
 
 void TerrainTrackerClass::findSecondChoke()
 {
-	// Find area closest to the center of the map to wall off
-	double distanceToCenter = 0.0;
+	// Find area that shares the choke we need to defend
+	double distBest = DBL_MAX;
 	const Area* second = nullptr;
 	for (auto &area : naturalArea->AccessibleNeighbours())
 	{
-		WalkPosition center = WalkPosition((area->TopLeft() + area->BottomRight()) / 2);
-		if (center.isValid() && (Position(center).getDistance(theMap.Center()) < distanceToCenter || distanceToCenter == 0.0))
-		{
-			distanceToCenter = Position(center).getDistance(theMap.Center());
-			second = area;
-		}
+		WalkPosition center = area->Top();
+		double dist = Position(center).getDistance(theMap.Center());
+		if (center.isValid() && dist < distBest)
+			second = area, distBest = dist;
 	}
 
-	// Find second choke
-	double distance = 0.0;
+	// Find second choke based on the connected area
+	distBest = DBL_MAX;
 	for (auto &choke : naturalArea->ChokePoints())
 	{
-		//Broodwar << choke->Pos(choke->end1) << endl;
-		if (TilePosition(choke->Center()) != firstChoke && (choke->GetAreas().first == second || choke->GetAreas().second == second) && (Position(choke->Center()).getDistance(playerStartingPosition) < distance || distance == 0.0))
-		{
-			distance = Position(choke->Center()).getDistance(playerStartingPosition);
-			secondChoke = TilePosition(choke->Center());
-		}
+		if (TilePosition(choke->Center()) == firstChoke) continue;
+		if (choke->GetAreas().first != second && choke->GetAreas().second != second) continue;
+		double dist = Position(choke->Center()).getDistance(playerStartingPosition);
+		if (dist < distBest)
+			secondChoke = TilePosition(choke->Center()), distBest = dist;
 	}
 }
 
 bool TerrainTrackerClass::isInAllyTerritory(TilePosition here)
 {
-	if (here.isValid() && theMap.GetArea(here))
-	{
-		if (allyTerritory.find(theMap.GetArea(here)->Id()) != allyTerritory.end())
-		{
-			return true;
-		}
-	}
+	// Find the area of this tile position and see if it exists in ally territory
+	if (here.isValid() && theMap.GetArea(here) && allyTerritory.find(theMap.GetArea(here)->Id()) != allyTerritory.end()) return true;
 	return false;
 }
 
 bool TerrainTrackerClass::isInEnemyTerritory(TilePosition here)
 {
-	if (here.isValid() && theMap.GetArea(here))
-	{
-		if (enemyTerritory.find(theMap.GetArea(here)->Id()) != enemyTerritory.end())
-		{
-			return true;
-		}
-	}
+	// Find the area of this tile position and see if it exists in enemy territory
+	if (here.isValid() && theMap.GetArea(here) && enemyTerritory.find(theMap.GetArea(here)->Id()) != enemyTerritory.end()) return true;
 	return false;
 }
 
 Position TerrainTrackerClass::getClosestBaseCenter(Position here)
-{
-	double closestD = 0.0;
-	Position closestB;
+{ 
+	// Find the base within the area of this position if one exists
+	double distBest = DBL_MAX;
+	Position posBest;
 	if (!here.isValid() || !theMap.GetArea(TilePosition(here))) return Positions::Invalid;
 	for (auto &base : theMap.GetArea(TilePosition(here))->Bases())
 	{
-		if (here.getDistance(base.Center()) < closestD || closestD == 0.0)
-		{
-			closestD = here.getDistance(base.Center());
-			closestB = base.Center();
-		}
+		double dist = here.getDistance(base.Center());
+		if (dist < distBest)
+			posBest = base.Center(), distBest = here.getDistance(base.Center());
 	}
-	return closestB;
+	return posBest;
 }
 
 int TerrainTrackerClass::getGroundDistance(Position start, Position end)

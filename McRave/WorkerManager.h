@@ -29,6 +29,7 @@ public:
 
 	bool shouldAssign(WorkerInfo&);
 	bool shouldBuild(WorkerInfo&);
+	bool shouldClearPath(WorkerInfo&);
 	bool shouldFight(WorkerInfo&);
 	bool shouldGather(WorkerInfo&);
 	bool shouldRepair(WorkerInfo&);
@@ -37,6 +38,7 @@ public:
 
 	void assign(WorkerInfo&);
 	void build(WorkerInfo&);
+	void clearPath(WorkerInfo&);
 	void fight(WorkerInfo&);
 	void gather(WorkerInfo&);
 	void repair(WorkerInfo&);

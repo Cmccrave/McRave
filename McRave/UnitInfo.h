@@ -14,9 +14,9 @@ class UnitInfo {
 	UnitCommand command;
 	Player who;
 
-	Position position, targetPosition, engagePosition, destination, simPosition;
-	WalkPosition walkPosition, targetWalkPosition;
-	TilePosition tilePosition, targetTilePosition;
+	Position position, engagePosition, destination, simPosition;
+	WalkPosition walkPosition;
+	TilePosition tilePosition;
 public:
 	UnitInfo();
 
@@ -88,13 +88,10 @@ public:
 	Player getPlayer() { return who; }
 
 	Position getPosition(){ return position; }
-	Position getTargetPosition() { return targetPosition; }
 	Position getEngagePosition() { return engagePosition; }
 	Position getDestination() { return destination; }
 	WalkPosition getWalkPosition() { return walkPosition; }
-	WalkPosition getTargetWalkPosition() { return targetWalkPosition; }
 	TilePosition getTilePosition() { return tilePosition; }
-	TilePosition getTargetTilePosition() { return targetTilePosition; }
 
 	void setPercentHealth(double newPercent) { percentHealth = newPercent; }
 	void setVisibleGroundStrength(double newStrength) { visibleGroundStrength = newStrength; }
@@ -127,11 +124,8 @@ public:
 	void setSimPosition(Position newPosition) { simPosition = newPosition; }
 
 	void setPosition(Position newPosition){ position = newPosition; }
-	void setTargetPosition(Position newPosition) { targetPosition = newPosition; }
 	void setEngagePosition(Position newPosition) { engagePosition = newPosition; }
 	void setDestination(Position newPosition) { destination = newPosition; }
 	void setWalkPosition(WalkPosition newWalkPosition) { walkPosition = newWalkPosition; }
-	void setTargetWalkPosition(WalkPosition newWalkPosition) { targetWalkPosition = newWalkPosition; }
 	void setTilePosition(TilePosition newTilePosition) { tilePosition = newTilePosition; }
-	void setTargetTilePosition(TilePosition newTilePosition) { targetTilePosition = newTilePosition; }
 };

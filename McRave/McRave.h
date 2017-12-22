@@ -26,6 +26,7 @@ class UnitInfo;
 class ResourceInfo;
 
 // Include other source files
+#include "BlockManager.h"
 #include "BuildingManager.h"
 #include "BuildOrder.h"
 #include "CommandManager.h"
@@ -48,6 +49,7 @@ class ResourceInfo;
 // Namespace to access all trackers globally
 namespace McRave
 {	
+	inline BlockTrackerClass& Blocks() { return BlockTracker::Instance(); }
 	inline BuildingTrackerClass& Buildings() { return BuildingTracker::Instance(); }
 	inline BuildOrderTrackerClass& BuildOrder() { return BuildOrderTracker::Instance(); }
 	inline CommandTrackerClass& Commands() { return CommandTracker::Instance(); }
