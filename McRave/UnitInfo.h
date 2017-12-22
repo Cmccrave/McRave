@@ -93,39 +93,38 @@ public:
 	WalkPosition getWalkPosition() { return walkPosition; }
 	TilePosition getTilePosition() { return tilePosition; }
 
-	void setPercentHealth(double newPercent) { percentHealth = newPercent; }
-	void setVisibleGroundStrength(double newStrength) { visibleGroundStrength = newStrength; }
-	void setMaxGroundStrength(double newMaxStrength) { maxGroundStrength = newMaxStrength; }
-	void setVisibleAirStrength(double newStrength) { visibleAirStrength = newStrength; }
-	void setMaxAirStrength(double newMaxStrength) { maxAirStrength = newMaxStrength; }
-	void setGroundLocal(double newLocal) { groundLocal = newLocal; }
-	void setAirLocal(double newLocal) { airLocal = newLocal; }
-	void setGroundRange(double newGroundRange) { groundRange = newGroundRange; }
-	void setAirRange(double newAirRange) { airRange = newAirRange; }
-	void setPriority(double newPriority) { priority = newPriority; }
-	void setGroundDamage(double newGroundDamage) { groundDamage = newGroundDamage; }
-	void setAirDamage(double newAirDamage) { airDamage = newAirDamage; }
-	void setSpeed(double newSpeed) { speed = newSpeed; }
-	void setHealth(int value) { health = value; }
-	void setShields(int value) { shields = value; }
-	void setStrategy(int newStrategy){ strategy = newStrategy; }
-	void setLastAttackFrame(int newAttackFrame) { lastAttackFrame = newAttackFrame; }
-	void setLastCommandFrame(int newCommandFrame) { lastCommandFrame = newCommandFrame; }
-	void setMinStopFrame(int newFrame) { minStopFrame = newFrame; }
-	void setLastVisibleFrame(int newFrame) { lastVisibleFrame = newFrame; }
+	void setPercentHealth(double newValue) { percentHealth = newValue; }
+	void setVisibleGroundStrength(double newValue) { visibleGroundStrength = newValue; }
+	void setMaxGroundStrength(double newValue) { maxGroundStrength = newValue; }
+	void setVisibleAirStrength(double newValue) { visibleAirStrength = newValue; }
+	void setMaxAirStrength(double newValue) { maxAirStrength = newValue; }
+	void setGroundLocal(double newValue) { groundLocal = newValue; }
+	void setAirLocal(double newValue) { airLocal = newValue; }
+	void setGroundRange(double newValue) { groundRange = newValue; }
+	void setAirRange(double newValue) { airRange = newValue; }
+	void setPriority(double newValue) { priority = newValue; }
+	void setGroundDamage(double newValue) { groundDamage = newValue; }
+	void setAirDamage(double newValue) { airDamage = newValue; }
+	void setSpeed(double newValue) { speed = newValue; }
+	void setHealth(int newValue) { health = newValue; }
+	void setShields(int newValue) { shields = newValue; }
+	void setStrategy(int newValue){ strategy = newValue; }
+	void setLastAttackFrame(int newValue) { lastAttackFrame = newValue; }
+	void setLastCommandFrame(int newValue) { lastCommandFrame = newValue; }
+	void setMinStopFrame(int newValue) { minStopFrame = newValue; }
+	void setLastVisibleFrame(int newValue) { lastVisibleFrame = newValue; }
 
 	void setUnit(Unit newUnit) { thisUnit = newUnit; }
-	void setTarget(Unit newTarget){ target = newTarget; }
-	void setTransport(Unit newTransport) { transport = newTransport; }
+	void setTarget(Unit newUnit){ target = newUnit; }
+	void setTransport(Unit newUnit) { transport = newUnit; }
 	void setType(UnitType newType) { unitType = newType; }
 	void setLastCommand(UnitCommand newCommand) { command = newCommand; }
-	void setPlayer(Player newOwner) { who = newOwner; }
+	void setPlayer(Player newPlayer) { who = newPlayer; }
 
 	void setSimPosition(Position newPosition) { simPosition = newPosition; }
-
 	void setPosition(Position newPosition){ position = newPosition; }
 	void setEngagePosition(Position newPosition) { engagePosition = newPosition; }
 	void setDestination(Position newPosition) { destination = newPosition; }
-	void setWalkPosition(WalkPosition newWalkPosition) { walkPosition = newWalkPosition; }
-	void setTilePosition(TilePosition newTilePosition) { tilePosition = newTilePosition; }
+	void setWalkPosition(WalkPosition newPosition) { walkPosition = newPosition; }
+	void setTilePosition(TilePosition newPosition) { tilePosition = newPosition; }
 };
