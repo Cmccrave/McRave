@@ -253,9 +253,42 @@ void TerrainTrackerClass::updateWalls()
 	Broodwar->drawCircleMap(Position(secondChoke), 16, Colors::Green);
 }
 
+bool TerrainTrackerClass::overlapsBlocks(TilePosition here)
+{
+	for (auto block : mediumBlocks)
+	{
+		if (here.x >= block.x && here.x < block.x + 6 && here.y >= block.y && here.y < block.y + 8) return true;
+	}
+	for (auto block : smallBlocks)
+	{
+		if (here.x >= block.x && here.x < block.x + 4 && here.y >= block.y && here.y < block.y + 5) return true;
+	}
+	return false;
+}
+
+bool TerrainTrackerClass::overlapsBases(TilePosition here)
+{
+	for (auto base : allBaseLocations)
+	{
+		if (here.x >= base.x && here.x < base.x + 4 && here.y >= base.y && here.y < base.y + 3) return true;
+	}
+	return false;
+}
+
 bool canSmallBlock(TilePosition here)
 {
-
+	for (int x = here.x; x < here.x + 4; x++)
+	{
+		for (int y = here.y; y < here.y + 5; y++)
+		{
+			if (!TilePosition(x, y).isValid()) return false;
+			if (!theMap.GetTile(TilePosition(x, y)).Buildable()) return false;
+			if (Grids().getResourceGrid(x, y) > 0) return false;
+			if (Terrain().overlapsBlocks(TilePosition(x, y))) return false;
+			if (Terrain().overlapsBases(TilePosition(x, y))) return false;
+		}
+	}
+	return true;
 }
 
 bool canMediumBlock(TilePosition here)
@@ -264,8 +297,11 @@ bool canMediumBlock(TilePosition here)
 	{
 		for (int y = here.y; y < here.y + 8; y++)
 		{
-			if (!Broodwar->isBuildable(x, y, true)) return false;
+			if (!TilePosition(x, y).isValid()) return false;
+			if (!theMap.GetTile(TilePosition(x,y)).Buildable()) return false;
 			if (Grids().getResourceGrid(x, y) > 0) return false;
+			if (Terrain().overlapsBlocks(TilePosition(x,y))) return false;
+			if (Terrain().overlapsBases(TilePosition(x, y))) return false;
 		}
 	}
 	return true;
@@ -278,14 +314,30 @@ bool canLargeBlock(TilePosition here)
 
 void TerrainTrackerClass::insertSmallBlock(TilePosition here, bool mirror)
 {
+	smallBlocks.insert(here);
 
+	if (mirror)
+	{
+		smallPosition.insert(here);
+		smallPosition.insert(here + TilePosition(2, 0));
+		largePosition.insert(here + TilePosition(0, 2));
+	}
+	else
+	{
+		smallPosition.insert(here + TilePosition(0, 2));
+		smallPosition.insert(here + TilePosition(2, 2));
+		largePosition.insert(here);
+	}
 }
 
 void TerrainTrackerClass::insertMediumBlock(TilePosition here, bool mirror)
 {
 	// https://imgur.com/a/nE7dL for reference
-	mediumPosition.insert(best + TilePosition(0, 6));
-	mediumPosition.insert(best + TilePosition(3, 6));
+
+	mediumBlocks.insert(here);
+
+	mediumPosition.insert(here + TilePosition(0, 6));
+	mediumPosition.insert(here + TilePosition(3, 6));
 
 	if (mirror)
 	{
@@ -297,11 +349,11 @@ void TerrainTrackerClass::insertMediumBlock(TilePosition here, bool mirror)
 	}
 	else
 	{
-		smallPosition.insert(best + TilePosition(4, 0));
-		smallPosition.insert(best + TilePosition(4, 2));
-		smallPosition.insert(best + TilePosition(4, 4));
-		largePosition.insert(best);
-		largePosition.insert(best + TilePosition(0, 3));
+		smallPosition.insert(here + TilePosition(4, 0));
+		smallPosition.insert(here + TilePosition(4, 2));
+		smallPosition.insert(here + TilePosition(4, 4));
+		largePosition.insert(here);
+		largePosition.insert(here + TilePosition(0, 3));
 	}
 }
 
@@ -365,7 +417,11 @@ void TerrainTrackerClass::updateBlocks()
 
 		for (auto tile : mainTiles)
 		{
-			if (canMediumBlock(tile)) insertMediumBlock(tile, mirror);
+			if (canMediumBlock(tile)) insertMediumBlock(tile, mirror);			
+		}
+		for (auto tile : mainTiles)
+		{
+			if (canSmallBlock(tile)) insertSmallBlock(tile, mirror);
 		}
 
 	}

@@ -23,6 +23,7 @@ class TerrainTrackerClass
 	// Experimental
 	TilePosition best;
 	set<TilePosition> smallPosition, mediumPosition, largePosition;
+	set<TilePosition> smallBlocks, mediumBlocks, largeBlocks;
 
 public:
 	void onStart();
@@ -76,6 +77,8 @@ public:
 	void insertSmallBlock(TilePosition, bool);
 	void insertMediumBlock(TilePosition, bool);
 	void insertLargeBlock(TilePosition, bool);
+	bool overlapsBlocks(TilePosition);
+	bool overlapsBases(TilePosition);
 };
 
 typedef Singleton<TerrainTrackerClass> TerrainTracker;
