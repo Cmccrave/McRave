@@ -10,7 +10,7 @@ class Block
 	int w, h;
 	TilePosition t;
 public:
-	Block();
+	Block() { };
 	Block(int width, int height, TilePosition tile) { w = width, h = height, t = tile; }
 	int width() { return w; }
 	int height() { return h; }
@@ -26,9 +26,9 @@ class BlockTrackerClass
 	bool overlapsBlocks(TilePosition);
 	bool canAddBlock(TilePosition, int, int);
 
-	void insertSmallBlock(TilePosition, bool);
-	void insertMediumBlock(TilePosition, bool);
-	void insertLargeBlock(TilePosition, bool);
+	void insertSmallBlock(TilePosition, bool, bool);
+	void insertMediumBlock(TilePosition, bool, bool);
+	void insertLargeBlock(TilePosition, bool, bool);
 
 public:
 	void update();	

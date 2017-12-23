@@ -168,7 +168,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	if (building.isResourceDepot())
 	{
 		// Fast expands must be as close to home and have a gas geyser
-		if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1)
+		if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1 || Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Command_Center) == 1)
 		{
 			for (auto &area : theMap.Areas())
 			{
@@ -282,11 +282,12 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	for (auto tile : placements)
 	{
 		double dist = Position(tile).getDistance(Terrain().getPlayerStartingPosition());
-		if (dist < distBest && Broodwar->isBuildable(tile, true))
+		if (dist < distBest && isBuildable(building, tile))
 		{
+			Broodwar->drawCircleMap(Position(tile), 12, Colors::Red);
 			here = tile;
 			distBest = dist;
-		}
+		}		
 	}
 	if (here.isValid()) return here;
 
@@ -336,14 +337,15 @@ bool BuildingTrackerClass::isBuildable(UnitType building, TilePosition buildTile
 	{
 		for (int y = buildTilePosition.y; y < buildTilePosition.y + building.tileHeight(); y++)
 		{
-			if (!TilePosition(x, y).isValid()) return false;
-			if (!building.isResourceDepot() && Terrain().overlapsBases(TilePosition(x, y))) return false;
-			if (!theMap.GetTile(TilePosition(x,y)).Buildable()) return false; // If it's on an unbuildable tile			
+			if (!TilePosition(x, y).isValid()) return false;	
+			if (!theMap.GetTile(TilePosition(x, y)).Buildable() || !Broodwar->isBuildable(x, y, true)) return false;
+			if (Terrain().overlapsBases(TilePosition(x, y)) && !building.isResourceDepot()) return false;
+			if (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(x, y) > 1 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) < 4) return false;
 			if (building == UnitTypes::Protoss_Photon_Cannon && x >= Terrain().getMediumWall().x && x < Terrain().getMediumWall().x + 3 && y >= Terrain().getMediumWall().y && y < Terrain().getMediumWall().y + 2) return false;
 			if (building == UnitTypes::Protoss_Photon_Cannon && x >= Terrain().getLargeWall().x && x < Terrain().getLargeWall().x + 4 && y >= Terrain().getLargeWall().y && y < Terrain().getLargeWall().y + 3) return false;
 		}
 	}	
-
+	
 	// If no issues, return true
 	return true;
 }

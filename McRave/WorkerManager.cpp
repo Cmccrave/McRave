@@ -284,10 +284,7 @@ void WorkerTrackerClass::build(WorkerInfo& worker)
 	else if (Broodwar->self()->minerals() >= worker.getBuildingType().mineralPrice() && Broodwar->self()->gas() >= worker.getBuildingType().gasPrice())
 	{
 		if (worker.getPosition().getDistance(Position(worker.getBuildPosition())) > 320) worker.unit()->move(Position(worker.getBuildPosition()));
-		else if (worker.unit()->getOrderTargetPosition() != Position(worker.getBuildPosition()) || worker.unit()->isIdle())
-		{
-			worker.unit()->build(worker.getBuildingType(), worker.getBuildPosition());
-		}
+		else worker.unit()->build(worker.getBuildingType(), worker.getBuildPosition());
 		return;
 	}
 }

@@ -135,7 +135,7 @@ void SpecialUnitTrackerClass::updateVultures()
 		int y = rand() % 64 - 64;
 		Position closestP;
 		// If we have mines, plant them at a either the target or a chokepoint
-		if (vulture.unit()->getSpiderMineCount() > 0 && (vulture.getStrategy() == 1 || vulture.getStrategy() == 0) && Broodwar->getUnitsInRadius(vulture.getPosition(), 64, Filter::GetType == UnitTypes::Terran_Vulture_Spider_Mine).size() <= 0)
+		if (Broodwar->self()->hasResearched(TechTypes::Spider_Mines) && vulture.unit()->getSpiderMineCount() > 0 && (vulture.getStrategy() == 1 || vulture.getStrategy() == 0) && Broodwar->getUnitsInRadius(vulture.getPosition(), 64, Filter::GetType == UnitTypes::Terran_Vulture_Spider_Mine).size() <= 0)
 		{
 			if (vulture.unit()->getLastCommand().getTechType() != TechTypes::Spider_Mines || vulture.unit()->getLastCommand().getTargetPosition().getDistance(vulture.getPosition()) > 10)
 			{

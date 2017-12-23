@@ -9,7 +9,6 @@ class TerrainTrackerClass
 {
 	set <int> allyTerritory;
 	set <int> enemyTerritory;
-	set<TilePosition> allBaseLocations;
 	Position enemyStartingPosition = Positions::Invalid, playerStartingPosition;
 	TilePosition enemyStartingTilePosition, playerStartingTilePosition, FFEPosition;
 	TilePosition secondChoke, firstChoke;
@@ -17,10 +16,9 @@ class TerrainTrackerClass
 	Position attackPosition, defendPosition;
 	TilePosition natural;
 	TilePosition bMedium = TilePositions::None, bLarge = TilePositions::None, bSmall;
-
-	
 	TilePosition enemyNatural = TilePositions::Invalid;
 
+	set<const Base*> allBases;
 	Area const * naturalArea;
 	Area const * mainArea;
 
@@ -31,7 +29,7 @@ public:
 	void onStart();
 	void update();
 	void updateAreas();
-	void updateChokes();	
+	void updateChokes();
 	void updateWalls();
 
 	void findFirstChoke();
@@ -50,7 +48,7 @@ public:
 
 	set <int>& getAllyTerritory() { return allyTerritory; }
 	set <int>& getEnemyTerritory() { return enemyTerritory; }
-	set<TilePosition>& getAllBaseLocations() { return allBaseLocations; }
+	const set <const Base*>& getAllBases() { return allBases; }
 
 	Position getEnemyStartingPosition() { return enemyStartingPosition; }
 	Position getPlayerStartingPosition() { return playerStartingPosition; }
@@ -71,6 +69,7 @@ public:
 
 	// Experimental
 	bool overlapsBases(TilePosition);
+	bool overlapsNeutrals(TilePosition);
 };
 
 typedef Singleton<TerrainTrackerClass> TerrainTracker;

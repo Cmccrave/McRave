@@ -197,13 +197,13 @@ void CommandTrackerClass::move(UnitInfo& unit)
 	// If no target and no enemy bases, move to a random base
 	else if (unit.unit()->isIdle())
 	{
-		int random = rand() % (Terrain().getAllBaseLocations().size() - 1);
+		int random = rand() % (Terrain().getAllBases().size() - 1);
 		int i = 0;
-		for (auto &base : Terrain().getAllBaseLocations())
+		for (auto &base : Terrain().getAllBases())
 		{
 			if (i == random)
 			{
-				unit.unit()->move(Position(base));
+				unit.unit()->move(base->Center());
 				return;
 			}
 			else i++;

@@ -172,7 +172,7 @@ void BuildOrderTrackerClass::protossSituational()
 	// Pylon logic
 	if (Strategy().isAllyFastExpand() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Pylon) <= 0)
 		buildingDesired[UnitTypes::Protoss_Pylon] = Units().getSupply() >= 14;
-	else buildingDesired[UnitTypes::Protoss_Pylon] = min(22, (int)floor((Units().getSupply() / max(14, (16 - Broodwar->self()->allUnitCount(UnitTypes::Protoss_Pylon))))));
+	else buildingDesired[UnitTypes::Protoss_Pylon] = min(22, (int)floor((Units().getSupply() / max(15, (16 - Broodwar->self()->allUnitCount(UnitTypes::Protoss_Pylon))))));
 
 	// Additional cannon for FFE logic (add on at most 2 at a time)
 	if (forgeExpand && Units().getGlobalEnemyGroundStrength() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense())
@@ -227,25 +227,6 @@ void BuildOrderTrackerClass::protossSituational()
 		}
 	}
 	return;
-}
-
-bool BuildOrderTrackerClass::shouldExpand()
-{
-	if (Broodwar->self()->minerals() > 500 + (100 * Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus))) return true;
-	else if ((techUnit == UnitTypes::None && !Production().hasIdleProduction() && Resources().isMinSaturated() && techSat && productionSat) || (productionSat && Players().getPlayers().size() <= 1 && Players().getNumberTerran() > 0)) return true;
-	return false;
-}
-
-bool BuildOrderTrackerClass::shouldAddProduction()
-{
-	if (!Production().hasIdleProduction() && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 150) || (!productionSat && Resources().isMinSaturated()))) return true;
-	return false;
-}
-
-bool BuildOrderTrackerClass::shouldAddGas()
-{
-	if (!Strategy().isPlayPassive() && Resources().isGasSaturated() && Broodwar->self()->gas() < Broodwar->self()->minerals() * 3 && Broodwar->self()->minerals() > 100) return true;
-	return false;
 }
 
 void BuildOrderTrackerClass::PvPSituational()

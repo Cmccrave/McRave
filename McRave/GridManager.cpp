@@ -62,14 +62,14 @@ void GridTrackerClass::reset()
 
 void GridTrackerClass::draw()
 {
-	return; // Remove this to draw stuff
+//	return; // Remove this to draw stuff
 
 	// Temp debugging for tile positions
 	for (int x = 0; x <= Broodwar->mapWidth(); x++)
 	{
 		for (int y = 0; y <= Broodwar->mapHeight(); y++)
 		{
-			if (baseGrid[x][y] > 1)
+			if (resourceGrid[x][y] > 1)
 			{
 				Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
 			}
@@ -426,7 +426,7 @@ void GridTrackerClass::updateResourceGrid(ResourceInfo& resource)
 			{
 				if (TilePosition(x, y).isValid() && baseGrid[x][y] > 0)
 				{
-					if (resource.getResourceClusterPosition().getDistance(Position(TilePosition(x, y))) <= 192 && resource.getClosestBasePosition().isValid() && resource.getPosition().getDistance(resource.getClosestBasePosition()) > Position(x * 32, y * 32).getDistance(resource.getClosestBasePosition()))
+					if (resource.getResourceClusterPosition().getDistance(Position(TilePosition(x, y))) <= 160 && resource.getClosestBasePosition().isValid() && resource.getPosition().getDistance(resource.getClosestBasePosition()) > Position(x * 32, y * 32).getDistance(resource.getClosestBasePosition()))
 					{
 						resource.unit()->exists() ? resourceGrid[x][y] += 1 : resourceGrid[x][y] -= 1;
 					}

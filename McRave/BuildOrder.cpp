@@ -133,10 +133,8 @@ bool BuildOrderTrackerClass::isBuildAllowed(Race enemy, string build)
 		if (enemy == Races::Protoss && (build == "PZCore" || build == "PNZCore" || build == "P4Gate")) return true;
 		if (enemy == Races::Random && (build == "PZZCore" || build == "P4Gate" || build == "PFFEStandard")) return true;
 	}
-	else if (Broodwar->self()->getRace() == Races::Terran)
-	{
-		return true;
-	}
+	else if (Broodwar->self()->getRace() == Races::Terran) return true;
+	else if (Broodwar->self()->getRace() == Races::Zerg) return true;
 	return false;
 }
 
@@ -204,102 +202,6 @@ void BuildOrderTrackerClass::updateBuild()
 	return;
 }
 
-void BuildOrderTrackerClass::terranOpener()
-{
-	if (getOpening)
-	{
-		if (currentBuild == "T2Fact") T2Fact();
-		if (currentBuild == "TSparks") TSparks();
-	}
-	return;
-}
-
-void BuildOrderTrackerClass::terranTech()
-{
-	// If we have a Core and 2 Gates, opener is done
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= 2 && getOpening)
-	{
-		// Put opener function here instead
-		getOpening = false;
-	}
-}
-
-void BuildOrderTrackerClass::terranSituational()
-{
-	bool productionSat = (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= min(12, (3 * Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Command_Center))));
-
-	if (!BuildOrder().isBioBuild() && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Marine) >= 4)
-	{
-		unlockedType.erase(UnitTypes::Terran_Marine);
-	}
-
-	if (!BuildOrder().isBioBuild())
-	{
-		unlockedType.erase(UnitTypes::Terran_Medic);
-		unlockedType.erase(UnitTypes::Terran_Firebat);
-	}
-	else
-	{
-		unlockedType.insert(UnitTypes::Terran_Medic);
-		unlockedType.insert(UnitTypes::Terran_Firebat);
-	}
-
-	unlockedType.insert(UnitTypes::Terran_Vulture);
-	unlockedType.insert(UnitTypes::Terran_Siege_Tank_Tank_Mode);
-	unlockedType.insert(UnitTypes::Terran_Goliath);
-
-	// Supply Depot logic
-	buildingDesired[UnitTypes::Terran_Supply_Depot] = min(22, (int)floor((Units().getSupply() / max(14, (16 - Broodwar->self()->allUnitCount(UnitTypes::Terran_Supply_Depot))))));
-
-	// Expansion logic
-	if (Units().getGlobalAllyGroundStrength() > Units().getGlobalEnemyGroundStrength() && Resources().isMinSaturated() && productionSat && Production().getIdleProduction().size() == 0)
-	{
-		buildingDesired[UnitTypes::Terran_Command_Center] = Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) + 1;
-	}
-
-	// Bunker logic
-	if (Strategy().isRush())
-	{
-		buildingDesired[UnitTypes::Terran_Bunker] = 1;
-	}
-
-	// Refinery logic
-	if (!Strategy().isPlayPassive() && Resources().isGasSaturated() && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) == buildingDesired[UnitTypes::Terran_Command_Center] && Broodwar->self()->gas() < Broodwar->self()->minerals() * 5 && Broodwar->self()->minerals() > 100)
-	{
-		buildingDesired[UnitTypes::Terran_Refinery] = Resources().getTempGasCount();
-	}
-
-	// Armory logic - TODO find a better solution to this garbage
-	if (Strategy().getUnitScore()[UnitTypes::Terran_Goliath] > 1.0)
-	{
-		buildingDesired[UnitTypes::Terran_Armory] = 1;
-	}
-
-	// Academy logic
-	if (Strategy().needDetection())
-	{
-		buildingDesired[UnitTypes::Terran_Academy] = 1;
-	}
-
-	// Barracks logic
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Barracks) >= 3 && (Production().getIdleProduction().size() == 0 && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 200) || (!productionSat && Resources().isMinSaturated()))))
-	{
-		buildingDesired[UnitTypes::Terran_Barracks] = min(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Barracks) + 1);
-	}
-
-	// Factory logic
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= 2 && (Production().getIdleProduction().size() == 0 && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 200 && Broodwar->self()->gas() - Production().getReservedGas() - Buildings().getQueuedGas() > 100) || (!productionSat && Resources().isMinSaturated()))))
-	{
-		buildingDesired[UnitTypes::Terran_Factory] = min(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Factory) + 1);
-	}
-
-	// Machine Shop logic
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= 1)
-	{
-		buildingDesired[UnitTypes::Terran_Machine_Shop] = Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) - (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center));
-	}
-}
-
 void BuildOrderTrackerClass::zergOpener()
 {
 	if (getOpening)
@@ -316,4 +218,28 @@ void BuildOrderTrackerClass::zergTech()
 void BuildOrderTrackerClass::zergSituational()
 {
 
+}
+
+bool BuildOrderTrackerClass::shouldExpand()
+{
+	UnitType baseType;
+	if (Broodwar->self()->getRace() == Races::Protoss) baseType = UnitTypes::Protoss_Nexus;
+	else if (Broodwar->self()->getRace() == Races::Terran) baseType == UnitTypes::Terran_Command_Center;
+	else baseType == UnitTypes::Zerg_Hatchery;
+
+	if (Broodwar->self()->minerals() > 500 + (100 * Broodwar->self()->completedUnitCount(baseType))) return true;
+	else if ((techUnit == UnitTypes::None && !Production().hasIdleProduction() && Resources().isMinSaturated() && techSat && productionSat) || (productionSat && Players().getPlayers().size() <= 1 && Players().getNumberTerran() > 0)) return true;
+	return false;
+}
+
+bool BuildOrderTrackerClass::shouldAddProduction()
+{
+	if (!Production().hasIdleProduction() && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 150) || (!productionSat && Resources().isMinSaturated()))) return true;
+	return false;
+}
+
+bool BuildOrderTrackerClass::shouldAddGas()
+{
+	if (!Strategy().isPlayPassive() && Resources().isGasSaturated() && Broodwar->self()->gas() < Broodwar->self()->minerals() * 3 && Broodwar->self()->minerals() > 100) return true;
+	return false;
 }

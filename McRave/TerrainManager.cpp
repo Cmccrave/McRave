@@ -84,18 +84,6 @@ void TerrainTrackerClass::updateAreas()
 
 void TerrainTrackerClass::updateChokes()
 {
-	// Store non island bases	
-	for (auto &area : theMap.Areas())
-	{
-		if (area.AccessibleNeighbours().size() > 0)
-		{
-			for (auto &base : area.Bases())
-			{
-				allBaseLocations.insert(base.Location());
-			}
-		}
-	}
-
 	// Add "empty" areas (ie. Andromeda areas around main)	
 	if (naturalArea)
 	{
@@ -257,8 +245,11 @@ void TerrainTrackerClass::updateWalls()
 
 bool TerrainTrackerClass::overlapsBases(TilePosition here)
 {
-	for (auto base : allBaseLocations)
-		if (here.x >= base.x && here.x < base.x + 4 && here.y >= base.y && here.y < base.y + 3) return true;
+	for (auto base : allBases)
+	{
+		TilePosition tile = base->Location();
+		if (here.x >= tile.x && here.x < tile.x + 4 && here.y >= tile.y && here.y < tile.y + 3) return true;
+	}
 	return false;
 }
 
@@ -269,7 +260,18 @@ void TerrainTrackerClass::onStart()
 	bool startingLocationsOK = theMap.FindBasesForStartingLocations();
 	assert(startingLocationsOK);
 	playerStartingTilePosition = Broodwar->self()->getStartLocation();
-	playerStartingPosition = Position(32 * playerStartingTilePosition.x + 64, 32 * playerStartingTilePosition.y + 48);
+	playerStartingPosition = Position(playerStartingTilePosition) + Position(64,48);
+
+	// Store non island bases	
+	for (auto &area : theMap.Areas())
+	{
+		if (area.AccessibleNeighbours().size() == 0) continue;
+		for (auto &base : area.Bases())
+		{
+			allBases.insert(&base);
+		}
+	}
+
 	return;
 }
 
@@ -362,7 +364,7 @@ bool TerrainTrackerClass::isInEnemyTerritory(TilePosition here)
 }
 
 Position TerrainTrackerClass::getClosestBaseCenter(Position here)
-{ 
+{
 	// Find the base within the area of this position if one exists
 	double distBest = DBL_MAX;
 	Position posBest;
@@ -400,5 +402,21 @@ bool TerrainTrackerClass::overlapsWall(TilePosition here)
 	if (x >= Terrain().getSmallWall().x && x < Terrain().getSmallWall().x + 2 && y >= Terrain().getSmallWall().y && y < Terrain().getSmallWall().y + 2) return true;
 	if (x >= Terrain().getMediumWall().x && x < Terrain().getMediumWall().x + 3 && y >= Terrain().getMediumWall().y && y < Terrain().getMediumWall().y + 2) return true;
 	if (x >= Terrain().getLargeWall().x && x < Terrain().getLargeWall().x + 4 && y >= Terrain().getLargeWall().y && y < Terrain().getLargeWall().y + 3) return true;
+	return false;
+}
+
+bool TerrainTrackerClass::overlapsNeutrals(TilePosition here)
+{
+	for (auto &m : Resources().getMyMinerals())
+	{
+		ResourceInfo &mineral = m.second;
+		if (here.x >= mineral.getTilePosition().x && here.x < mineral.getTilePosition().x + 2 && here.y >= mineral.getTilePosition().y && here.y < mineral.getTilePosition().y + 1) return true;
+	}
+
+	for (auto &g : Resources().getMyGas())
+	{
+		ResourceInfo &gas = g.second;
+		if (here.x >= gas.getTilePosition().x && here.x < gas.getTilePosition().x + 4 && here.y >= gas.getTilePosition().y && here.y < gas.getTilePosition().y + 2) return true;
+	}
 	return false;
 }
