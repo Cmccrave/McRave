@@ -288,7 +288,7 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 {
 	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());
 
-	if (unit.getType().isWorker() && Grids().getResourceGrid(unit.getTilePosition()) > 0)
+	if (unit.getType().isWorker() && unit.getPosition().getDistance(Terrain().getMineralHoldPosition()) < 256)
 	{
 		unit.unit()->gather(unit.unit()->getClosestUnit(Filter::IsMineralField, 128));
 		return;

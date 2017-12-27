@@ -12,16 +12,10 @@ void BuildOrderTrackerClass::terranOpener()
 
 void BuildOrderTrackerClass::terranTech()
 {
-	// More than 2 factories for 2 fact builds
 	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= 2 && getOpening)
-	{
 		getOpening = false;
-	}
-	// More than 2 barracks for sparks
 	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Barracks) >= 2 && getOpening)
-	{
 		getOpening = false;
-	}
 }
 
 void BuildOrderTrackerClass::terranSituational()
@@ -54,7 +48,6 @@ void BuildOrderTrackerClass::terranSituational()
 	// Expansion logic
 	if (shouldExpand())
 	{
-		Broodwar << "Test" << endl;
 		buildingDesired[UnitTypes::Terran_Command_Center] = Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) + 1;
 	}
 

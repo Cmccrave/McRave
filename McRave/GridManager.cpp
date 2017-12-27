@@ -62,21 +62,13 @@ void GridTrackerClass::reset()
 
 void GridTrackerClass::draw()
 {
-//	return; // Remove this to draw stuff
+	return; // Remove this to draw stuff
 
 	// Temp debugging for tile positions
 	for (int x = 0; x <= Broodwar->mapWidth(); x++)
 	{
 		for (int y = 0; y <= Broodwar->mapHeight(); y++)
 		{
-			if (resourceGrid[x][y] > 1)
-			{
-				Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
-			}
-			/*if (resourceGrid[x][y] > 0)
-			{
-			Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Black);
-			}*/
 			/*if (buildingGrid[x][y] > 0)
 			{
 			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
@@ -398,53 +390,6 @@ void GridTrackerClass::updateBuildingGrid(BuildingInfo& building)
 					if (TilePosition(x, y).isValid() && building.getPosition().getDistance(Position(TilePosition(x, y))) < 320)
 					{
 						building.unit()->exists() ? bunkerGrid[x][y] += 1 : bunkerGrid[x][y] -= 1;
-					}
-				}
-			}
-		}
-	}
-}
-
-void GridTrackerClass::updateResourceGrid(ResourceInfo& resource)
-{
-	TilePosition tile = resource.getTilePosition();
-
-	/*for (int x = tile.x; x < tile.x + resource.getType().tileWidth(); x++)
-	{
-		for (int y = tile.y; y < tile.y + resource.getType().tileHeight(); y++)
-		{
-			if (!TilePosition(x, y).isValid()) continue;
-			resource.unit()->exists() ? buildingGrid[x][y] += 1 : buildingGrid[x][y] -= 1;
-		}
-	}*/
-
-	if (resource.getType().isMineralField())
-	{
-		for (int x = tile.x - 5; x < tile.x + resource.getType().tileWidth() + 5; x++)
-		{
-			for (int y = tile.y - 5; y < tile.y + resource.getType().tileHeight() + 5; y++)
-			{
-				if (TilePosition(x, y).isValid() && baseGrid[x][y] > 0)
-				{
-					if (resource.getResourceClusterPosition().getDistance(Position(TilePosition(x, y))) <= 160 && resource.getClosestBasePosition().isValid() && resource.getPosition().getDistance(resource.getClosestBasePosition()) > Position(x * 32, y * 32).getDistance(resource.getClosestBasePosition()))
-					{
-						resource.unit()->exists() ? resourceGrid[x][y] += 1 : resourceGrid[x][y] -= 1;
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		for (int x = tile.x - 2; x < tile.x + resource.getType().tileWidth() + 2; x++)
-		{
-			for (int y = tile.y - 2; y < tile.y + resource.getType().tileHeight() + 2; y++)
-			{
-				if (TilePosition(x, y).isValid() && baseGrid[x][y] > 0)
-				{
-					if (TilePosition(x, y).getDistance(TilePosition(resource.getClosestBasePosition())) < resource.getTilePosition().getDistance(TilePosition(resource.getClosestBasePosition())))
-					{
-						resource.unit()->exists() ? resourceGrid[x][y] += 1 : resourceGrid[x][y] -= 1;
 					}
 				}
 			}

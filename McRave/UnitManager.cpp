@@ -163,7 +163,7 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 	{
 		if (!Strategy().isHoldChoke())
 		{
-			if (Grids().getResourceGrid(target.getTilePosition()) > 0 && isThreatening(target)) unit.setStrategy(1);
+			if (unit.getPosition().getDistance(Terrain().getMineralHoldPosition()) < 256 && isThreatening(target)) unit.setStrategy(1);
 			else if (allyRange > enemyRange && Terrain().isInAllyTerritory(target.getTilePosition())) unit.setStrategy(1);
 			else unit.setStrategy(2);
 		}
