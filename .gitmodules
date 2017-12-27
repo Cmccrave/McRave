@@ -1,4 +1,4 @@
 [submodule "BWEB"]
 	path = BWEB
-	url = https://github.com/Cmccrave/BWEB
+	url = https://github.com/Cmccrave/BWEB/tree/master
 	branch = master
