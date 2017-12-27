@@ -1,5 +1,5 @@
 # McRave - A Broodwar Bot
-For any questions, email christianmccrave@gmail.com , McRave was started January 3rd 2017, latest readme update December 6th 2017 and is developed in C++ using Visual Studio Express 2013, BWAPI 4.1.2 and BWEM 1.4.1.
+For any questions, email christianmccrave@gmail.com , McRave was started January 3rd 2017, latest readme update December 6th 2017 and is developed in C++ using Visual Studio Express 2013, BWAPI 4.1.2, BWEM 1.4.1 and BWEB 0.6.
 
 **Thanks to:**
 - Nathan Roth (Antiga/Iruian) for expert analysis on my replays and advice on build orders.
@@ -8,6 +8,5 @@ For any questions, email christianmccrave@gmail.com , McRave was started January
 - Hannes Bredberg for helping with optimization of pieces of code and research with FAP/NN.
 
 **New Features:**
-- Further refined some early game build orders.
-- Added better worker micro and decisions to pull workers out to defend.
-- Improved HT micro.
+- Added BWEB v0.6
+- Updated T build order
