@@ -82,6 +82,8 @@ void BuildOrderTrackerClass::terranSituational()
 		buildingDesired[UnitTypes::Terran_Academy] = 1;
 	}
 
+
+
 	// Barracks logic
 	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Barracks) >= 3 && (Production().getIdleProduction().size() == 0 && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 200) || (!productionSat && Resources().isMinSaturated()))))
 	{
