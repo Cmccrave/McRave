@@ -28,6 +28,12 @@ bool isLarge(UnitType building)
 	return false;
 }
 
+bool isDefensive(UnitType building)
+{
+	if (building == UnitTypes::Protoss_Shield_Battery || building == UnitTypes::Protoss_Photon_Cannon || building == UnitTypes::Terran_Bunker) return true;
+	return false;
+}
+
 void BuildingTrackerClass::updateBuildings()
 {
 	for (auto& b : myBuildings)
@@ -208,7 +214,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 					else					
 						distance = Terrain().getGroundDistance(Terrain().getPlayerStartingPosition(), base.Center()) / pow(Terrain().getGroundDistance(Terrain().getEnemyStartingPosition(), base.Center()), 2.0);				
 
-					if (/*Grids().getBuildingGrid(base.Location()) == 0 && */(value / distance > best))
+					if (Broodwar->isBuildable(base.Location(), true) && value / distance > best)
 					{
 						best = value / distance;
 						bestLocation = base.Location();
@@ -245,16 +251,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getFFEPosition(), true);
 		return here;
 	}
-
-	// If we are being rushed and need a battery
-	if (building == UnitTypes::Protoss_Shield_Battery)
-	{
-		here = getBuildLocationNear(building, TilePosition(Terrain().getDefendPosition()));
-		if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getPlayerStartingTilePosition(), true);
-		return here;
-	}
-
-
+	
 	// If it's a pylon, check if any bases need a pylon
 	if (building == UnitTypes::Protoss_Pylon && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) >= 2)
 	{
@@ -274,15 +271,27 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	}
 
 	set<TilePosition> placements;
-	if (isSmall(building)) placements = Blocks().getSmallPosition();
-	else if (isMedium(building)) placements = Blocks().getMediumPosition();
-	else if (isLarge(building)) placements = Blocks().getLargePosition();
+	if (isSmall(building))
+	{
+		if (isDefensive(building))
+			placements = theBuilder.getSDefPosition();
+		else
+			placements = theBuilder.getSmallPosition();
+	}
+	else if (isMedium(building))
+	{
+		if (isDefensive(building))
+			placements = theBuilder.getMDefPosition();
+		else 
+			placements = theBuilder.getMediumPosition();
+	}
+	else if (isLarge(building)) placements = theBuilder.getLargePosition();
 
 	double distBest = DBL_MAX;
 	for (auto tile : placements)
 	{
 		double dist = Position(tile).getDistance(Terrain().getPlayerStartingPosition());
-		if (dist < distBest && isBuildable(building, tile))
+		if (dist < distBest && isBuildable(building, tile) && isQueueable(building, tile))
 		{
 			Broodwar->drawCircleMap(Position(tile), 12, Colors::Red);
 			here = tile;

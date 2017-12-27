@@ -25,6 +25,7 @@ public:
 	bool isSuitable(UnitType, TilePosition);
 	bool isQueueable(UnitType, TilePosition);
 
+
 	// Returns the minerals that are reserved for queued buildings
 	int getQueuedMineral() { return queuedMineral; }
 

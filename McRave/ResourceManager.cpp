@@ -81,7 +81,6 @@ void ResourceTrackerClass::storeMineral(Unit resource)
 	m.setPosition(resource->getPosition());
 	m.setWalkPosition(Util().getWalkPosition(resource));
 	m.setTilePosition(resource->getTilePosition());
-	Grids().updateResourceGrid(m);
 	return;
 }
 
@@ -97,7 +96,6 @@ void ResourceTrackerClass::storeGas(Unit resource)
 	g.setPosition(resource->getPosition());
 	g.setWalkPosition(Util().getWalkPosition(resource));
 	g.setTilePosition(resource->getTilePosition());
-	Grids().updateResourceGrid(g);
 	return;
 }
 
@@ -119,12 +117,10 @@ void ResourceTrackerClass::removeResource(Unit resource)
 	// Remove dead resources
 	if (myMinerals.find(resource) != myMinerals.end())
 	{
-		Grids().updateResourceGrid(myMinerals[resource]);
 		myMinerals.erase(resource);
 	}
 	else if (myBoulders.find(resource) != myBoulders.end())
 	{
-		Grids().updateResourceGrid(myBoulders[resource]);
 		myBoulders.erase(resource);
 	}
 

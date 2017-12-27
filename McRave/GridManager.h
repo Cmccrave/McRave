@@ -33,9 +33,6 @@ class GridTrackerClass
 	int eAirClusterGrid[1024][1024] = {};
 	int stasisClusterGrid[1024][1024] = {};
 
-	// Neutral grids	
-	int resourceGrid[256][256] = {};
-
 	// Mobility grids
 	int mobilityGrid[1024][1024] = {};
 	int antiMobilityGrid[1024][1024] = {};
@@ -80,9 +77,6 @@ public:
 
 	// On start functions
 	void updateDistanceGrid();
-
-	// Updates a resource if it is destroyed or created
-	void updateResourceGrid(ResourceInfo&);
 
 	// Updates a building if it is destroyed or created
 	void updateBuildingGrid(BuildingInfo&);
@@ -156,10 +150,6 @@ public:
 	// Returns the number of valuable stasis targets within range of stasis
 	int getStasisCluster(int x, int y) { return stasisClusterGrid[x][y]; }
 	int getStasisCluster(WalkPosition here) { return stasisClusterGrid[here.x][here.y]; }
-
-	// Returns 1 if the tile is between a resource and a base, 0 otherwise
-	int getResourceGrid(int x, int y) { return resourceGrid[x][y]; }
-	int getResourceGrid(TilePosition here) { return resourceGrid[here.x][here.y]; }
 
 	// Returns the ground mobility of the given walk position
 	int getMobilityGrid(int x, int y) { return mobilityGrid[x][y]; }

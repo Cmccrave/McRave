@@ -125,18 +125,6 @@ void BaseTrackerClass::storeBase(Unit base)
 			Terrain().getEnemyTerritory().insert(theMap.GetArea(b.getTilePosition())->Id());
 		}
 	}
-
-	if (base->getPlayer() == Broodwar->self())
-	{
-		for (auto r : Resources().getMyMinerals())
-		{
-			ResourceInfo &resource = r.second;
-			if (resource.getClosestBasePosition() == base->getPosition())
-			{
-				Grids().updateResourceGrid(resource);
-			}
-		}
-	}
 	return;
 }
 
@@ -153,18 +141,6 @@ void BaseTrackerClass::removeBase(Unit base)
 	{
 		Terrain().getEnemyTerritory().erase(theMap.GetArea(base->getTilePosition())->Id());
 		enemyBases.erase(base);
-	}
-
-	if (base->getPlayer() == Broodwar->self())
-	{
-		for (auto r : Resources().getMyMinerals())
-		{
-			ResourceInfo &resource = r.second;
-			if (resource.getClosestBasePosition() == base->getPosition())
-			{
-				Grids().updateResourceGrid(resource);
-			}
-		}
 	}
 	return;
 }

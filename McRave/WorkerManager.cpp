@@ -138,6 +138,7 @@ bool WorkerTrackerClass::shouldAssign(WorkerInfo& worker)
 
 bool WorkerTrackerClass::shouldBuild(WorkerInfo& worker)
 {
+	if (worker.getBuildingType().isValid() && worker.getBuildPosition().isValid()) Broodwar->drawLineMap(worker.getPosition(), Position(worker.getBuildPosition()), Colors::Red);
 	if (worker.getBuildingType().isValid() && worker.getBuildPosition().isValid()) return true;
 	return false;
 }
