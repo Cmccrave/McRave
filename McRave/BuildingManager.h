@@ -11,6 +11,7 @@ class BuildingTrackerClass
 	int queuedMineral, queuedGas;
 	map <TilePosition, UnitType> buildingsQueued;
 	map <Unit, BuildingInfo> myBuildings;
+	set<TilePosition> usedTiles;
 	set<Unit> returnValues;
 	TilePosition currentExpansion;
 	UnitType lastBadBuilding;
@@ -19,7 +20,6 @@ public:
 	map <Unit, BuildingInfo>& getMyBuildings() { return myBuildings; }
 	map <TilePosition, UnitType>& getBuildingsQueued() { return buildingsQueued; }
 	TilePosition getBuildLocation(UnitType);
-	TilePosition getBuildLocationNear(UnitType, TilePosition, bool ignoreCond = false);
 
 	bool isBuildable(UnitType, TilePosition);
 	bool isSuitable(UnitType, TilePosition);

@@ -10,30 +10,6 @@ void BuildingTrackerClass::update()
 	return;
 }
 
-bool isSmall(UnitType building)
-{
-	if (building.tileWidth() == 2 && building.tileHeight() == 2) return true;
-	return false;
-}
-
-bool isMedium(UnitType building)
-{
-	if (building.tileWidth() == 3 && building.tileHeight() == 2) return true;
-	return false;
-}
-
-bool isLarge(UnitType building)
-{
-	if (building.tileWidth() == 4 && building.tileHeight() == 3) return true;
-	return false;
-}
-
-bool isDefensive(UnitType building)
-{
-	if (building == UnitTypes::Protoss_Shield_Battery || building == UnitTypes::Protoss_Photon_Cannon || building == UnitTypes::Terran_Bunker) return true;
-	return false;
-}
-
 void BuildingTrackerClass::updateBuildings()
 {
 	for (auto& b : myBuildings)
@@ -104,6 +80,7 @@ void BuildingTrackerClass::storeBuilding(Unit building)
 	b.setPosition(building->getPosition());
 	b.setWalkPosition(Util().getWalkPosition(building));
 	b.setTilePosition(building->getTilePosition());
+	usedTiles.insert(building->getTilePosition());
 	Grids().updateBuildingGrid(b);
 	return;
 }
@@ -111,42 +88,9 @@ void BuildingTrackerClass::storeBuilding(Unit building)
 void BuildingTrackerClass::removeBuilding(Unit building)
 {
 	Grids().updateBuildingGrid(myBuildings[building]);
+	usedTiles.erase(building->getTilePosition());
 	myBuildings.erase(building);
 	return;
-}
-
-TilePosition BuildingTrackerClass::getBuildLocationNear(UnitType building, TilePosition buildTilePosition, bool ignoreCond)
-{
-	int x = buildTilePosition.x;
-	int y = buildTilePosition.y;
-	int length = 1, j = 0, dx = 0, dy = 1;
-	bool first = true;
-
-	// Searches in a spiral around the specified tile position
-	while (length < 50)
-	{
-		// If we can build here, return this tile position		
-		if (TilePosition(x, y).isValid() && isBuildable(building, TilePosition(x, y)) && isQueueable(building, TilePosition(x, y)) && isSuitable(building, TilePosition(x, y))) return TilePosition(x, y);
-
-		// Otherwise spiral out and find a new tile
-		x = x + dx;
-		y = y + dy;
-		j++;
-		if (j == length)
-		{
-			j = 0;
-			if (!first) length++;
-			first = !first;
-			if (dx == 0) dx = dy, dy = 0;
-			else dy = -dx, dx = 0;
-		}
-	}
-	if (Broodwar->getFrameCount() - errorTime > 500)
-	{
-		Broodwar << "Issues placing a " << building.c_str() << endl;
-		errorTime = Broodwar->getFrameCount();
-	}
-	return TilePositions::Invalid;
 }
 
 TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
@@ -176,18 +120,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		// Fast expands must be as close to home and have a gas geyser
 		if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1 || Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Command_Center) == 1)
 		{
-			for (auto &area : theMap.Areas())
-			{
-				for (auto &base : area.Bases())
-				{
-					if ((base.Geysers().size() == 0) || area.AccessibleNeighbours().size() == 0) continue;
-					if (Grids().getBaseGrid(base.Location()) == 0 && (Grids().getDistanceHome(WalkPosition(base.Location())) < best || best == 0.0))
-					{
-						best = Grids().getDistanceHome(WalkPosition(base.Location()));
-						bestLocation = base.Location();
-					}
-				}
-			}
+			bestLocation = Terrain().getNatural();
 		}
 
 		// Other expansions must be as close to home but as far away from the opponent
@@ -232,8 +165,8 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		if (building == UnitTypes::Protoss_Pylon) return Terrain().getSmallWall();
 		if (building == UnitTypes::Protoss_Cybernetics_Core) return Terrain().getMediumWall();
 		if (building == UnitTypes::Protoss_Gateway) return Terrain().getLargeWall();
-		if (building == UnitTypes::Protoss_Photon_Cannon) here = getBuildLocationNear(building, Terrain().getSecondChoke());
-		if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getFFEPosition(), true);
+		//if (building == UnitTypes::Protoss_Photon_Cannon) here = getBuildLocationNear(building, Terrain().getSecondChoke());
+		//if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getFFEPosition(), true);
 		return here;
 	}
 
@@ -245,66 +178,24 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		if (building == UnitTypes::Protoss_Gateway) return Terrain().getLargeWall();
 		if (building == UnitTypes::Protoss_Photon_Cannon)
 		{
-			if (Strategy().getEnemyBuild() == "Z12HatchMuta" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) >= 2 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) < 4) here = getBuildLocationNear(building, Terrain().getPlayerStartingTilePosition());
-			else here = getBuildLocationNear(building, Terrain().getSecondChoke());
+		//	if (Strategy().getEnemyBuild() == "Z12HatchMuta" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) >= 2 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) < 4) here = getBuildLocationNear(building, Terrain().getPlayerStartingTilePosition());
+		//	else here = getBuildLocationNear(building, Terrain().getSecondChoke());
 		}
-		if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getFFEPosition(), true);
+		//if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getFFEPosition(), true);
 		return here;
-	}
-	
-	// If it's a pylon, check if any bases need a pylon
-	if (building == UnitTypes::Protoss_Pylon && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) >= 2)
-	{
-		for (auto &base : Bases().getMyBases())
-		{
-			if (Grids().getPylonGrid(base.second.getTilePosition()) <= 0) return getBuildLocationNear(building, base.second.getTilePosition());
-		}
-	}
+	}	
 
-	if (building == UnitTypes::Protoss_Photon_Cannon)
+	/*if (building == UnitTypes::Protoss_Photon_Cannon)
 	{
 		for (auto &base : Bases().getMyBases())
 		{
 			if (Grids().getDefenseGrid(base.second.getTilePosition()) <= 0 && Grids().getPylonGrid(base.second.getTilePosition()) > 0) return getBuildLocationNear(building, base.second.getTilePosition());
 		}
 		return TilePositions::Invalid;
-	}
+	}*/
 
-	set<TilePosition> placements;
-	if (isSmall(building))
-	{
-		if (isDefensive(building))
-			placements = theBuilder.getSDefPosition();
-		else
-			placements = theBuilder.getSmallPosition();
-	}
-	else if (isMedium(building))
-	{
-		if (isDefensive(building))
-			placements = theBuilder.getMDefPosition();
-		else 
-			placements = theBuilder.getMediumPosition();
-	}
-	else if (isLarge(building)) placements = theBuilder.getLargePosition();
-
-	double distBest = DBL_MAX;
-	for (auto tile : placements)
-	{
-		double dist = Position(tile).getDistance(Terrain().getPlayerStartingPosition());
-		if (dist < distBest && isBuildable(building, tile) && isQueueable(building, tile))
-		{
-			Broodwar->drawCircleMap(Position(tile), 12, Colors::Red);
-			here = tile;
-			distBest = dist;
-		}		
-	}
+	here = theBuilder.getBuildPosition(building, &usedTiles);
 	if (here.isValid()) return here;
-
-	for (auto &base : Bases().getMyOrderedBases())
-	{
-		here = getBuildLocationNear(building, base.second);
-		if (here.isValid()) return here;
-	}
 	return TilePositions::Invalid;
 }
 
@@ -333,27 +224,27 @@ bool BuildingTrackerClass::isBuildable(UnitType building, TilePosition buildTile
 		return false;
 	}
 
-	if (BuildOrder().isOpener() && (BuildOrder().isForgeExpand() || BuildOrder().isNexusFirst()))
-	{
-		if (building == UnitTypes::Protoss_Gateway && buildTilePosition == Terrain().getLargeWall()) return true;
-		if ((building == UnitTypes::Protoss_Forge || building == UnitTypes::Protoss_Cybernetics_Core) && buildTilePosition == Terrain().getMediumWall()) return true;
-	}
+	//if (BuildOrder().isOpener() && (BuildOrder().isForgeExpand() || BuildOrder().isNexusFirst()))
+	//{
+	//	if (building == UnitTypes::Protoss_Gateway && buildTilePosition == Terrain().getLargeWall()) return true;
+	//	if ((building == UnitTypes::Protoss_Forge || building == UnitTypes::Protoss_Cybernetics_Core) && buildTilePosition == Terrain().getMediumWall()) return true;
+	//}
 
-	if (Broodwar->self()->getRace() == Races::Protoss && building.requiresPsi() && !Pylons().hasPower(buildTilePosition, building)) return false; // If Protoss, check if it's not a pylon and in a preset buildable position based on power grid
-	if (building == UnitTypes::Protoss_Shield_Battery && Strategy().isHoldChoke() && (Terrain().getDefendPosition().getDistance(Position(buildTilePosition)) < 256 || !Terrain().isInAllyTerritory(buildTilePosition))) return false;
+	//if (Broodwar->self()->getRace() == Races::Protoss && building.requiresPsi() && !Pylons().hasPower(buildTilePosition, building)) return false; // If Protoss, check if it's not a pylon and in a preset buildable position based on power grid
+	//if (building == UnitTypes::Protoss_Shield_Battery && Strategy().isHoldChoke() && (Terrain().getDefendPosition().getDistance(Position(buildTilePosition)) < 256 || !Terrain().isInAllyTerritory(buildTilePosition))) return false;
 
-	for (int x = buildTilePosition.x; x < buildTilePosition.x + building.tileWidth(); x++)
-	{
-		for (int y = buildTilePosition.y; y < buildTilePosition.y + building.tileHeight(); y++)
-		{
-			if (!TilePosition(x, y).isValid()) return false;	
-			if (!theMap.GetTile(TilePosition(x, y)).Buildable() || !Broodwar->isBuildable(x, y, true)) return false;
-			if (Terrain().overlapsBases(TilePosition(x, y)) && !building.isResourceDepot()) return false;
-			if (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(x, y) > 1 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) < 4) return false;
-			if (building == UnitTypes::Protoss_Photon_Cannon && x >= Terrain().getMediumWall().x && x < Terrain().getMediumWall().x + 3 && y >= Terrain().getMediumWall().y && y < Terrain().getMediumWall().y + 2) return false;
-			if (building == UnitTypes::Protoss_Photon_Cannon && x >= Terrain().getLargeWall().x && x < Terrain().getLargeWall().x + 4 && y >= Terrain().getLargeWall().y && y < Terrain().getLargeWall().y + 3) return false;
-		}
-	}	
+	//for (int x = buildTilePosition.x; x < buildTilePosition.x + building.tileWidth(); x++)
+	//{
+	//	for (int y = buildTilePosition.y; y < buildTilePosition.y + building.tileHeight(); y++)
+	//	{
+	//		if (!TilePosition(x, y).isValid()) return false;	
+	//		if (!theMap.GetTile(TilePosition(x, y)).Buildable() || !Broodwar->isBuildable(x, y, true)) return false;
+	//		if (Terrain().overlapsBases(TilePosition(x, y)) && !building.isResourceDepot()) return false;
+	//		if (building == UnitTypes::Protoss_Pylon && Grids().getPylonGrid(x, y) > 1 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) < 4) return false;
+	//		if (building == UnitTypes::Protoss_Photon_Cannon && x >= Terrain().getMediumWall().x && x < Terrain().getMediumWall().x + 3 && y >= Terrain().getMediumWall().y && y < Terrain().getMediumWall().y + 2) return false;
+	//		if (building == UnitTypes::Protoss_Photon_Cannon && x >= Terrain().getLargeWall().x && x < Terrain().getLargeWall().x + 4 && y >= Terrain().getLargeWall().y && y < Terrain().getLargeWall().y + 3) return false;
+	//	}
+	//}	
 	
 	// If no issues, return true
 	return true;
