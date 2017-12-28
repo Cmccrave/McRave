@@ -29,7 +29,7 @@ void McRaveModule::onStart()
 	Terrain().onStart();
 	Players().onStart();
 	BuildOrder().onStart();
-	theBuilder.onStart();
+	BWEB.onStart();
 }
 
 void McRaveModule::onEnd(bool isWinner)
@@ -39,7 +39,7 @@ void McRaveModule::onEnd(bool isWinner)
 
 void McRaveModule::onFrame()
 {	
-	theBuilder.draw();
+	BWEB.draw();
 	Terrain().update();
 	Grids().update();
 	Resources().update();

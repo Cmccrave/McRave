@@ -120,7 +120,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		// Fast expands must be as close to home and have a gas geyser
 		if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1 || Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Command_Center) == 1)
 		{
-			bestLocation = Terrain().getNatural();
+			bestLocation = BWEB.getNatural();
 		}
 
 		// Other expansions must be as close to home but as far away from the opponent
@@ -162,9 +162,9 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	// If we are doing nexus first
 	if (BuildOrder().isOpener() && BuildOrder().isNexusFirst() && ((building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 0) || building == UnitTypes::Protoss_Cybernetics_Core || (building == UnitTypes::Protoss_Pylon && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) <= 0)))
 	{
-		if (building == UnitTypes::Protoss_Pylon) return Terrain().getSmallWall();
-		if (building == UnitTypes::Protoss_Cybernetics_Core) return Terrain().getMediumWall();
-		if (building == UnitTypes::Protoss_Gateway) return Terrain().getLargeWall();
+		if (building == UnitTypes::Protoss_Pylon) return BWEB.getSmallWall();
+		if (building == UnitTypes::Protoss_Cybernetics_Core) return BWEB.getMediumWall();
+		if (building == UnitTypes::Protoss_Gateway) return BWEB.getLargeWall();
 		//if (building == UnitTypes::Protoss_Photon_Cannon) here = getBuildLocationNear(building, Terrain().getSecondChoke());
 		//if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getFFEPosition(), true);
 		return here;
@@ -173,13 +173,13 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	// If we are forge expanding
 	if (BuildOrder().isOpener() && BuildOrder().isForgeExpand() && (building == UnitTypes::Protoss_Photon_Cannon || (building == UnitTypes::Protoss_Pylon && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) <= 0) || (building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 0) || (building == UnitTypes::Protoss_Forge && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Forge) <= 0)))
 	{
-		if (building == UnitTypes::Protoss_Pylon) return Terrain().getSmallWall();
-		if (building == UnitTypes::Protoss_Forge) return Terrain().getMediumWall();
-		if (building == UnitTypes::Protoss_Gateway) return Terrain().getLargeWall();
+		if (building == UnitTypes::Protoss_Pylon) return BWEB.getSmallWall();
+		if (building == UnitTypes::Protoss_Forge) return BWEB.getMediumWall();
+		if (building == UnitTypes::Protoss_Gateway) return BWEB.getLargeWall();
 		if (building == UnitTypes::Protoss_Photon_Cannon)
 		{
-		//	if (Strategy().getEnemyBuild() == "Z12HatchMuta" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) >= 2 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) < 4) here = getBuildLocationNear(building, Terrain().getPlayerStartingTilePosition());
-		//	else here = getBuildLocationNear(building, Terrain().getSecondChoke());
+			if (Strategy().getEnemyBuild() == "Z12HatchMuta" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) >= 2 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) < 4) here = BWEB.getDefBuildPosition(building, &usedTiles);
+			else here = BWEB.getDefBuildPosition(building, &usedTiles, BWEB.getSecondChoke());
 		}
 		//if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getFFEPosition(), true);
 		return here;
@@ -194,7 +194,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		return TilePositions::Invalid;
 	}*/
 
-	here = theBuilder.getBuildPosition(building, &usedTiles);
+	here = BWEB.getBuildPosition(building, &usedTiles);
 	if (here.isValid()) return here;
 	return TilePositions::Invalid;
 }
@@ -255,7 +255,7 @@ bool BuildingTrackerClass::isSuitable(UnitType building, TilePosition buildTileP
 	if (BuildOrder().isOpener() && BuildOrder().isForgeExpand() && building == UnitTypes::Protoss_Photon_Cannon)
 	{
 		Position center = Position(buildTilePosition + TilePosition(1, 1));
-		if (center.getDistance(Position(Terrain().getSecondChoke())) < 128 || !Terrain().isInAllyTerritory(TilePosition(center))) return false;
+		if (center.getDistance(Position(BWEB.getSecondChoke())) < 128 || !Terrain().isInAllyTerritory(TilePosition(center))) return false;
 	}
 	return true;
 }

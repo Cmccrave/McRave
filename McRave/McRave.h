@@ -13,7 +13,7 @@ using namespace BWEM;
 namespace
 {
 	auto & theMap = Map::Instance();
-	auto & theBuilder = BWEB::Instance();
+	auto & BWEB = BWEBClass::Instance();
 }
 
 // Include standard libraries that are needed

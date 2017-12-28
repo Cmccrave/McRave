@@ -5,20 +5,12 @@ void TerrainTrackerClass::update()
 	Display().startClock();
 	updateAreas();
 	updateChokes();
-	updateWalls();
 	Display().performanceTest(__FUNCTION__);
 	return;
 }
 
 void TerrainTrackerClass::updateAreas()
 {
-	if (Broodwar->getFrameCount() >= 100 && Broodwar->getFrameCount() < 105)
-	{
-		findNatural();
-		findFirstChoke();
-		findSecondChoke();
-	}
-
 	if (enemyStartingPosition.isValid() && !enemyNatural.isValid())
 	{
 		findEnemyNatural();
@@ -102,147 +94,6 @@ void TerrainTrackerClass::updateChokes()
 	}
 }
 
-void TerrainTrackerClass::updateWalls()
-{
-	TilePosition start = secondChoke;
-	double distance = DBL_MAX;
-
-	// Large Building placement
-	if (Broodwar->getFrameCount() < 500 && Broodwar->getFrameCount() >= 400)
-	{
-		for (int x = start.x - 20; x <= start.x + 20; x++)
-		{
-			for (int y = start.y - 20; y <= start.y + 20; y++)
-			{
-				if (!TilePosition(x, y).isValid()) continue;
-				Position center = Position(TilePosition(x, y)) + Position(64, 48);
-				Position chokeCenter = Position(secondChoke) + Position(16, 16);
-				bool buildable = true;
-				int valid = 0;
-				for (int i = x; i < x + 4; i++)
-				{
-					for (int j = y; j < y + 3; j++)
-					{
-						if (!TilePosition(i, j).isValid()) continue;
-						if (!Broodwar->isBuildable(TilePosition(i, j))) buildable = false;
-						if (i >= natural.x && i < natural.x + 4 && j >= natural.y && j < natural.y + 3) buildable = false;
-						if (theMap.GetArea(TilePosition(i, j)) && theMap.GetArea(TilePosition(i, j)) == theMap.GetArea(natural)) valid = 1;
-					}
-				}
-				if (!buildable) continue;
-
-
-				int dx = x + 4;
-				for (int dy = y; dy < y + 3; dy++)
-				{
-					if (!Util().isWalkable(TilePosition(dx, dy))) valid++;
-				}
-
-				int dy = y + 3;
-				for (int dx = x; dx < x + 4; dx++)
-				{
-					if (!Util().isWalkable(TilePosition(dx, dy))) valid++;
-				}
-
-				double distNat = center.getDistance(Position(natural));
-				double distChoke = center.getDistance(chokeCenter);
-				if (valid >= 2 && distNat <= 512 && distChoke < distance)
-					bLarge = TilePosition(x, y), distance = distChoke;
-			}
-		}
-
-		// Medium Building placement
-		distance = 0.0;
-		for (int x = start.x - 20; x <= start.x + 20; x++)
-		{
-			for (int y = start.y - 20; y <= start.y + 20; y++)
-			{
-				if (!TilePosition(x, y).isValid()) continue;
-				Position center = Position(TilePosition(x, y)) + Position(48, 32);
-				Position chokeCenter = Position(secondChoke) + Position(16, 16);
-				Position bLargeCenter = Position(bLarge) + Position(64, 48);
-
-				bool buildable = true;
-				bool within = false;
-				int valid = 0;
-				for (int i = x; i < x + 3; i++)
-				{
-					for (int j = y; j < y + 2; j++)
-					{
-						if (!TilePosition(i, j).isValid()) continue;
-						if (!Broodwar->isBuildable(TilePosition(i, j))) buildable = false;
-						if (i >= natural.x && i < natural.x + 4 && j >= natural.y && j < natural.y + 3) buildable = false;
-						if (i >= bLarge.x && i < bLarge.x + 4 && j >= bLarge.y && j < bLarge.y + 3) buildable = false;
-						if (theMap.GetArea(TilePosition(i, j)) == theMap.GetArea(natural)) within = true;
-					}
-				}
-
-				for (int i = x - 1; i < x + 4; i++)
-				{
-					for (int j = y - 1; j < y + 3; j++)
-					{
-						if (i >= bLarge.x && i < bLarge.x + 4 && j >= bLarge.y && j < bLarge.y + 3) buildable = false;
-					}
-				}
-
-				if (!buildable || !within) continue;
-
-				int dx = x - 1;
-				for (int dy = y; dy < y + 2; dy++)
-				{
-					if (dx >= bLarge.x && dx < bLarge.x + 4 && dy >= bLarge.y && dy < bLarge.y + 3) buildable = false;
-					if (!Util().isWalkable(TilePosition(dx, dy))) valid++;
-				}
-
-				int dy = y - 1;
-				for (int dx = x; dx < x + 3; dx++)
-				{
-					if (dx >= bLarge.x && dx < bLarge.x + 4 && dy >= bLarge.y && dy < bLarge.y + 3) buildable = false;
-					if (!Util().isWalkable(TilePosition(dx, dy))) valid++;
-				}
-
-				if (!buildable) continue;
-
-				if (valid >= 1 && center.getDistance(Position(natural)) <= 512 && (center.getDistance(chokeCenter) < distance || distance == 0.0)) bMedium = TilePosition(x, y), distance = center.getDistance(chokeCenter);
-			}
-		}
-
-		// Pylon placement 
-		distance = 0.0;
-		for (int x = natural.x - 20; x <= natural.x + 20; x++)
-		{
-			for (int y = natural.y - 20; y <= natural.y + 20; y++)
-			{
-				if (!TilePosition(x, y).isValid()) continue;
-				if (TilePosition(x, y) == secondChoke) continue;
-				Position center = Position(TilePosition(x, y)) + Position(32, 32);
-				Position bLargeCenter = Position(bLarge) + Position(64, 48);
-				Position bMediumCenter = Position(bMedium) + Position(48, 32);
-
-				bool buildable = true;
-				for (int i = x; i < x + 2; i++)
-				{
-					for (int j = y; j < y + 2; j++)
-					{
-						if (!Broodwar->isBuildable(TilePosition(i, j))) buildable = false;
-						if (i >= bMedium.x && i < bMedium.x + 3 && j >= bMedium.y && j < bMedium.y + 2) buildable = false;
-						if (i >= bLarge.x && i < bLarge.x + 4 && j >= bLarge.y && j < bLarge.y + 3) buildable = false;
-						if (i >= natural.x && i < natural.x + 4 && j >= natural.y && j < natural.y + 3) buildable = false;
-					}
-				}
-
-				if (!buildable) continue;
-				if (buildable && theMap.GetArea(TilePosition(center)) == theMap.GetArea(natural) && center.getDistance(bLargeCenter) <= 160 && center.getDistance(bMediumCenter) <= 160 && (center.getDistance(Position(secondChoke)) > distance || distance == 0.0)) bSmall = TilePosition(x, y), distance = center.getDistance(Position(secondChoke));
-			}
-		}
-	}
-
-	Broodwar->drawBoxMap(Position(bSmall), Position(bSmall) + Position(64, 64), Colors::Blue);
-	Broodwar->drawBoxMap(Position(bMedium), Position(bMedium) + Position(94, 64), Colors::Blue);
-	Broodwar->drawBoxMap(Position(bLarge), Position(bLarge) + Position(128, 96), Colors::Blue);
-	Broodwar->drawCircleMap(Position(secondChoke), 16, Colors::Green);
-}
-
 bool TerrainTrackerClass::overlapsBases(TilePosition here)
 {
 	for (auto base : allBases)
@@ -275,25 +126,6 @@ void TerrainTrackerClass::onStart()
 	return;
 }
 
-void TerrainTrackerClass::findNatural()
-{
-	// Find natural area
-	double distance = 0.0;
-	for (auto &area : theMap.Areas())
-	{
-		for (auto &base : area.Bases())
-		{
-			if (base.Geysers().size() == 0 || area.AccessibleNeighbours().size() == 0) continue;
-			if (Grids().getDistanceHome(WalkPosition(base.Location())) > 50 && (Grids().getDistanceHome(WalkPosition(base.Location())) < distance || distance == 0.0))
-			{
-				distance = Grids().getDistanceHome(WalkPosition(base.Location()));
-				naturalArea = base.GetArea();
-				natural = base.Location();
-			}
-		}
-	}
-}
-
 void TerrainTrackerClass::findEnemyNatural()
 {
 	// Find enemy natural area
@@ -309,43 +141,6 @@ void TerrainTrackerClass::findEnemyNatural()
 			if (dist < distBest)
 				enemyNatural = base.Location(), distBest = dist;
 		}
-	}
-}
-
-void TerrainTrackerClass::findFirstChoke()
-{
-	// Find the first choke
-	double distBest = DBL_MAX;
-	for (auto &choke : naturalArea->ChokePoints())
-	{
-		double dist = getGroundDistance(Position(choke->Center()), playerStartingPosition);
-		if (choke && dist < distBest)
-			firstChoke = TilePosition(choke->Center()), distBest = dist;
-	}
-}
-
-void TerrainTrackerClass::findSecondChoke()
-{
-	// Find area that shares the choke we need to defend
-	double distBest = DBL_MAX;
-	const Area* second = nullptr;
-	for (auto &area : naturalArea->AccessibleNeighbours())
-	{
-		WalkPosition center = area->Top();
-		double dist = Position(center).getDistance(theMap.Center());
-		if (center.isValid() && dist < distBest)
-			second = area, distBest = dist;
-	}
-
-	// Find second choke based on the connected area
-	distBest = DBL_MAX;
-	for (auto &choke : naturalArea->ChokePoints())
-	{
-		if (TilePosition(choke->Center()) == firstChoke) continue;
-		if (choke->GetAreas().first != second && choke->GetAreas().second != second) continue;
-		double dist = Position(choke->Center()).getDistance(playerStartingPosition);
-		if (dist < distBest)
-			secondChoke = TilePosition(choke->Center()), distBest = dist;
 	}
 }
 
@@ -392,17 +187,6 @@ int TerrainTrackerClass::getGroundDistance(Position start, Position end)
 	}
 
 	return dist += start.getDistance(end);
-}
-
-bool TerrainTrackerClass::overlapsWall(TilePosition here)
-{
-	int x = here.x;
-	int y = here.y;
-
-	if (x >= Terrain().getSmallWall().x && x < Terrain().getSmallWall().x + 2 && y >= Terrain().getSmallWall().y && y < Terrain().getSmallWall().y + 2) return true;
-	if (x >= Terrain().getMediumWall().x && x < Terrain().getMediumWall().x + 3 && y >= Terrain().getMediumWall().y && y < Terrain().getMediumWall().y + 2) return true;
-	if (x >= Terrain().getLargeWall().x && x < Terrain().getLargeWall().x + 4 && y >= Terrain().getLargeWall().y && y < Terrain().getLargeWall().y + 3) return true;
-	return false;
 }
 
 bool TerrainTrackerClass::overlapsNeutrals(TilePosition here)

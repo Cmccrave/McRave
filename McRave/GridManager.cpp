@@ -573,62 +573,7 @@ void GridTrackerClass::updateMobilityGrids()
 				}
 			}
 		}
-	}
-
-	
-	if (Broodwar->getFrameCount() == 500)
-	{
-		// Create reserve path home		
-		TilePosition start = Terrain().getFirstChoke();
-		TilePosition end = Terrain().getSmallWall() + TilePosition(1,1);
-		TilePosition middle = (Terrain().getLargeWall() + Terrain().getMediumWall()) / 2;
-
-		start = (Terrain().getLargeWall() + Terrain().getMediumWall()) / 2;
-		end = Terrain().getFirstChoke();
-		int range = (Grids().getDistanceHome(WalkPosition(Terrain().getSecondChoke())) - Grids().getDistanceHome(WalkPosition(Terrain().getFirstChoke()))) / 2;
-		
-		for (int i = 0; i <= range; i++)
-		{
-			set<TilePosition> testCases;
-			testCases.insert(TilePosition(start.x - 1, start.y));
-			testCases.insert(TilePosition(start.x + 1, start.y));
-			testCases.insert(TilePosition(start.x, start.y - 1));
-			testCases.insert(TilePosition(start.x, start.y + 1));
-
-			TilePosition closestT;
-			double closestD = 0.0;
-			for (auto tile : testCases)
-			{
-				if (!tile.isValid() || Terrain().overlapsWall(tile)) continue;
-				if (Terrain().overlapsBases(tile)) continue;
-				if (theMap.GetArea(Terrain().getPlayerStartingTilePosition()) == theMap.GetArea(tile)) continue;
-				if (Grids().getDistanceHome(WalkPosition(tile)) < 0) continue;
-				if (Grids().getDistanceHome(WalkPosition(tile)) * Terrain().getGroundDistance(Position(tile), Position(end)) < closestD || closestD == 0.0)
-				{
-					closestD = Grids().getDistanceHome(WalkPosition(tile)) * Terrain().getGroundDistance(Position(tile), Position(end));
-					closestT = tile;
-				}
-			}
-			
-			if (closestT.isValid())
-			{
-				start = closestT;
-				path[closestT.x][closestT.y] = 1;
-			}
-			else break;
-
-			if (start.getDistance(end) < 2)
-			{
-				break;
-			//	end = Terrain().getSecondChoke();
-			}
-			/*else if (end == Terrain().getSecondChoke() && (start.getDistance(end) < 2 || start.getDistance(middle) < 2))
-			{
-				break;
-			}*/
-		}
-	}
-	return;
+	}	
 }
 
 void GridTrackerClass::updateDetectorMovement(UnitInfo& observer)

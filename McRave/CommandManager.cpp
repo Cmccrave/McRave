@@ -217,7 +217,7 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 
 	if (unit.getType().isFlyer())
 	{
-		unit.unit()->move(Position(Terrain().getNatural()));
+		unit.unit()->move(Position(BWEB.getNatural()));
 		return;
 	}
 
@@ -249,10 +249,10 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 		WalkPosition bestPosition = start;
 
 		// Find closest chokepoint
-		WalkPosition choke = WalkPosition(Terrain().getFirstChoke());
+		WalkPosition choke = WalkPosition(BWEB.getFirstChoke());
 		if (BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] >= 2 || BuildOrder().getBuildingDesired()[UnitTypes::Terran_Command_Center] >= 2 || Strategy().isAllyFastExpand())
 		{
-			choke = WalkPosition(Terrain().getSecondChoke());
+			choke = WalkPosition(BWEB.getSecondChoke());
 		}
 
 		// Find suitable position to hold at chokepoint

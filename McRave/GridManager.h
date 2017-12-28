@@ -16,7 +16,6 @@ class GridTrackerClass
 	double aAirThreat[1024][1024] = {};
 	int aGroundClusterGrid[1024][1024] = {};
 	int aAirClusterGrid[1024][1024] = {};
-	//int buildingGrid[256][256] = {};
 	int path[256][256] = {};
 	int baseGrid[256][256] = {};
 	int pylonGrid[256][256] = {};
@@ -36,8 +35,7 @@ class GridTrackerClass
 	// Mobility grids
 	int mobilityGrid[1024][1024] = {};
 	int antiMobilityGrid[1024][1024] = {};
-	int distanceGridHome[1024][1024] = {};
-	int reservePathHome[256][256] = {};
+	int distanceGridHome[1024][1024] = {};	
 
 	// Special Unit grids
 	int aDetectorGrid[1024][1024] = {};
