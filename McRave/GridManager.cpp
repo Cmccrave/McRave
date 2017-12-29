@@ -65,9 +65,9 @@ void GridTrackerClass::draw()
 	return; // Remove this to draw stuff
 
 	// Temp debugging for tile positions
-	for (int x = 0; x <= Broodwar->mapWidth(); x++)
+	for (int x = 0; x <= Broodwar->mapWidth() * 4; x++)
 	{
-		for (int y = 0; y <= Broodwar->mapHeight(); y++)
+		for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
 		{
 			/*if (buildingGrid[x][y] > 0)
 			{
@@ -94,6 +94,27 @@ void GridTrackerClass::draw()
 			//{
 			//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Red);
 			//}
+
+			if (distanceGridHome[x][y] < 100)
+			{
+				Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
+			}
+			if (distanceGridHome[x][y] >= 100 && distanceGridHome[x][y] < 500)
+			{
+				Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Brown);
+			}
+			if (distanceGridHome[x][y] >= 500 && distanceGridHome[x][y] < 1000)
+			{
+				Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Purple);
+			}
+			if (distanceGridHome[x][y] >= 1000 && distanceGridHome[x][y] < 1500)
+			{
+				Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Blue);
+			}
+			if (distanceGridHome[x][y] >= 1500 && distanceGridHome[x][y] < 2000)
+			{
+				Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Green);
+			}
 		}
 	}
 }
@@ -309,47 +330,10 @@ void GridTrackerClass::updateEnemyGrids()
 
 void GridTrackerClass::updateBuildingGrid(BuildingInfo& building)
 {
-	//int buildingOffset;
-	//if (building.getType() == UnitTypes::Terran_Supply_Depot || (!building.getType().isResourceDepot() && building.getType().buildsWhat().size() > 0 && building.getTilePosition() != Terrain().getLargeWall()))
-	//{
-	//	buildingOffset = 1;
-	//}
-	//else
-	//{
-	//	buildingOffset = 0;
-	//}
-
 	//// Add/remove building to/from grid
 	TilePosition tile = building.getTilePosition();
 	if (building.unit() && tile.isValid())
 	{
-	//	// Building Grid
-	//	for (int x = tile.x - buildingOffset; x < tile.x + building.getType().tileWidth() + buildingOffset; x++)
-	//	{
-	//		for (int y = tile.y - buildingOffset; y < tile.y + building.getType().tileHeight() + buildingOffset; y++)
-	//		{
-	//			if (TilePosition(x, y).isValid())
-	//			{
-	//				building.unit()->exists() ? buildingGrid[x][y] += 1 : buildingGrid[x][y] -= 1;
-	//			}
-	//		}
-	//	}
-
-	//	// If the building can build addons
-	//	if (building.getType().canBuildAddon())
-	//	{
-	//		for (int x = building.getTilePosition().x + building.getType().tileWidth(); x <= building.getTilePosition().x + building.getType().tileWidth() + 2; x++)
-	//		{
-	//			for (int y = building.getTilePosition().y + 1; y <= building.getTilePosition().y + 3; y++)
-	//			{
-	//				if (TilePosition(x, y).isValid())
-	//				{
-	//					building.unit()->exists() ? buildingGrid[x][y] += 1 : buildingGrid[x][y] -= 1;
-	//				}
-	//			}
-	//		}
-	//	}
-
 		// Pylon Grid
 		if (building.getType() == UnitTypes::Protoss_Pylon)
 		{
@@ -442,18 +426,7 @@ void GridTrackerClass::updateDefenseGrid(UnitInfo& unit)
 					else
 					{
 						defenseGrid[x][y] -= 1;
-					}
-				/*	if (x >= unit.getTilePosition().x && x < unit.getTilePosition().x + unit.getType().tileWidth() && y >= unit.getTilePosition().y && y < unit.getTilePosition().y + unit.getType().tileHeight())
-					{
-						if (unit.unit()->exists())
-						{
-							buildingGrid[x][y] += 1;
-						}
-						else
-						{
-							buildingGrid[x][y] -= 1;
-						}
-					}*/
+					}				
 				}
 			}
 		}
@@ -674,56 +647,15 @@ void GridTrackerClass::updateDistanceGrid()
 	// TODO: Improve this somehow
 	if (!distanceAnalysis)
 	{
-		WalkPosition start = WalkPosition(Terrain().getPlayerStartingPosition());
-		distanceGridHome[start.x][start.y] = 1;
 		distanceAnalysis = true;
-		bool done = false;
-		int cnt = 0;
-		int segment = 0;
-		clock_t myClock;
-		double duration;
-		myClock = clock();
-
-		while (!done)
+		for (int x = 0; x <= Broodwar->mapWidth() * 4; x++)
 		{
-			duration = (clock() - myClock) / (double)CLOCKS_PER_SEC;
-			if (duration > 9.9)
+			for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
 			{
-				break;
+				WalkPosition here = WalkPosition(x, y);
+				if (distanceGridHome[x][y] < 0) continue;
+				distanceGridHome[x][y] = BWEB.getGroundDistance(Position(here), Terrain().getPlayerStartingPosition());
 			}
-			done = true;
-			cnt++;
-			segment += 8;
-			for (int x = 0; x <= Broodwar->mapWidth() * 4; x++)
-			{
-				for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
-				{
-					if (!WalkPosition(x, y).isValid()) continue;
-					// If any of the grid is 0, we're not done yet
-					if (distanceGridHome[x][y] == 0 && theMap.getWalkPosition(WalkPosition(x, y)).AreaId() > 0)
-					{
-						done = false;
-					}
-					if (distanceGridHome[x][y] == cnt)
-					{
-						for (int i = x - 1; i <= x + 1; i++)
-						{
-							for (int j = y - 1; j <= y + 1; j++)
-							{
-								if (distanceGridHome[i][j] == 0 && Position(WalkPosition(i, j)).getDistance(Position(start)) <= segment)
-								{
-									distanceGridHome[i][j] = cnt + 1;
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		Broodwar << "Distance Grid Analysis time: " << duration << endl;
-		if (duration > 9.9)
-		{
-			Broodwar << "Hit maximum, check for islands." << endl;
-		}
+		}		
 	}
 }

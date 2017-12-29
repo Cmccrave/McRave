@@ -12,7 +12,7 @@ void UnitTrackerClass::onUnitCreate(Unit unit)
 		if (unit->getType().supplyRequired() > 0) supply += unit->getType().supplyRequired(); // Store supply if it costs supply		
 
 		// Store Buildings on creation rather than completion
-		if (unit->getType().isBuilding() && unit->getType() != UnitTypes::Protoss_Photon_Cannon) Buildings().storeBuilding(unit);
+		if (unit->getType().isBuilding()) Buildings().storeBuilding(unit);
 		if (unit->getType().isResourceDepot()) Bases().storeBase(unit);
 		else if (unit->getType() == UnitTypes::Protoss_Pylon) Pylons().storePylon(unit);
 		else if (unit->getType() == UnitTypes::Protoss_Photon_Cannon) storeAlly(unit);
@@ -32,7 +32,6 @@ void UnitTrackerClass::onUnitDestroy(Unit unit)
 	}
 	else if (allyDefenses.find(unit) != allyDefenses.end())
 	{
-		Grids().updateDefenseGrid(allyDefenses[unit]);
 		allyDefenses.erase(unit);
 	}
 	else if (enemyUnits.find(unit) != enemyUnits.end())

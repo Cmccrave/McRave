@@ -379,8 +379,7 @@ void UnitTrackerClass::storeAlly(Unit unit)
 		allyDefenses[unit].setUnit(unit);
 		allyDefenses[unit].setType(unit->getType());
 		allyDefenses[unit].setTilePosition(unit->getTilePosition());
-		allyDefenses[unit].setPosition(unit->getPosition());
-		Grids().updateDefenseGrid(allyDefenses[unit]);
+		allyDefenses[unit].setPosition(unit->getPosition());		
 	}
 	else allyUnits[unit].setUnit(unit);
 }
