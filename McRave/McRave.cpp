@@ -20,6 +20,12 @@
 // Remove targetposition in unitinfo
 // Medics disabled
 
+// Losses in SSCAIT17
+// Wuli - Improve early D / Probe pull issue
+// Kaon - Learning loss, no change needed
+// CherryPi - Storm usage
+// Aiur - Cannon rush
+
 void McRaveModule::onStart()
 {
 	Broodwar->enableFlag(Flag::UserInput);

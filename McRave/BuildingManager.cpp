@@ -162,9 +162,9 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	// If we are doing nexus first
 	if (BuildOrder().isOpener() && BuildOrder().isNexusFirst() && ((building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 0) || building == UnitTypes::Protoss_Cybernetics_Core || (building == UnitTypes::Protoss_Pylon && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) <= 0)))
 	{
-		if (building == UnitTypes::Protoss_Pylon) return BWEB.getSmallWall();
-		if (building == UnitTypes::Protoss_Cybernetics_Core) return BWEB.getMediumWall();
-		if (building == UnitTypes::Protoss_Gateway) return BWEB.getLargeWall();
+		if (building == UnitTypes::Protoss_Pylon) return BWEB.getWall(BWEB.getNaturalArea()).getSmallWall();
+		if (building == UnitTypes::Protoss_Cybernetics_Core) return BWEB.getWall(BWEB.getNaturalArea()).getMediumWall();
+		if (building == UnitTypes::Protoss_Gateway) return BWEB.getWall(BWEB.getNaturalArea()).getLargeWall();
 		//if (building == UnitTypes::Protoss_Photon_Cannon) here = getBuildLocationNear(building, Terrain().getSecondChoke());
 		//if (!here.isValid()) here = getBuildLocationNear(building, Terrain().getFFEPosition(), true);
 		return here;
@@ -173,9 +173,9 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	// If we are forge expanding
 	if (BuildOrder().isOpener() && BuildOrder().isForgeExpand() && (building == UnitTypes::Protoss_Photon_Cannon || (building == UnitTypes::Protoss_Pylon && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) <= 0) || (building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 0) || (building == UnitTypes::Protoss_Forge && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Forge) <= 0)))
 	{
-		if (building == UnitTypes::Protoss_Pylon) return BWEB.getSmallWall();
-		if (building == UnitTypes::Protoss_Forge) return BWEB.getMediumWall();
-		if (building == UnitTypes::Protoss_Gateway) return BWEB.getLargeWall();
+		if (building == UnitTypes::Protoss_Pylon) return BWEB.getWall(BWEB.getNaturalArea()).getSmallWall();
+		if (building == UnitTypes::Protoss_Forge) return BWEB.getWall(BWEB.getNaturalArea()).getMediumWall();
+		if (building == UnitTypes::Protoss_Gateway) return BWEB.getWall(BWEB.getNaturalArea()).getLargeWall();
 		if (building == UnitTypes::Protoss_Photon_Cannon)
 		{
 			if (Strategy().getEnemyBuild() == "Z12HatchMuta" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) >= 2 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) < 4) here = BWEB.getDefBuildPosition(building, &usedTiles);
