@@ -1,30 +1,5 @@
 #include "McRave.h"
 
-bool isSmall(UnitType building)
-{
-	if (building.tileWidth() == 2 && building.tileHeight() == 2) return true;
-	return false;
-}
-
-bool isMedium(UnitType building)
-{
-	if (building.tileWidth() == 3 && building.tileHeight() == 2) return true;
-	return false;
-}
-
-bool isLarge(UnitType building)
-{
-	if (building.tileWidth() == 4 && building.tileHeight() == 3) return true;
-	return false;
-}
-
-bool isDefensive(UnitType building)
-{
-	if (building == UnitTypes::Protoss_Shield_Battery || building == UnitTypes::Protoss_Photon_Cannon || building == UnitTypes::Terran_Bunker) return true;
-	return false;
-}
-
-
 void BuildingTrackerClass::update()
 {
 	Display().startClock();
@@ -120,6 +95,11 @@ void BuildingTrackerClass::removeBuilding(Unit building)
 
 TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 {
+	if (building.getRace() == Races::Zerg && !building.isResourceDepot())
+	{
+		return Broodwar->getBuildLocation(building, Terrain().getPlayerStartingTilePosition());
+	}
+	
 	// Refineries are only built on my own gas resources
 	if (building.isRefinery())
 	{
@@ -128,7 +108,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		for (auto &g : Resources().getMyGas())
 		{
 			ResourceInfo &gas = g.second;
-			if (Grids().getBaseGrid(gas.getTilePosition()) > 1 && gas.getType() == UnitTypes::Resource_Vespene_Geyser && (gas.getPosition().getDistance(Terrain().getPlayerStartingPosition()) < best || best == 0.0))
+			if (gas.getState() >= 2 && gas.getType() == UnitTypes::Resource_Vespene_Geyser && (gas.getPosition().getDistance(Terrain().getPlayerStartingPosition()) < best || best == 0.0))
 			{
 				best = gas.getPosition().getDistance(Terrain().getPlayerStartingPosition());
 				here = gas.getTilePosition();
@@ -145,32 +125,32 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		// Fast expands must be as close to home and have a gas geyser
 		if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1 || Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Command_Center) == 1)
 		{
-			bestLocation = BWEB.getNatural();
+			bestLocation = mapBWEB.getNatural();
 		}
 
 		// Other expansions must be as close to home but as far away from the opponent
 		else
 		{
-			for (auto &area : theMap.Areas())
+			for (auto &area : mapBWEM.Areas())
 			{
 				for (auto &base : area.Bases())
 				{
 					if (area.AccessibleNeighbours().size() == 0 || base.Center() == Terrain().getEnemyStartingPosition()) continue;
-					
+
 					// Get value of the expansion
 					double value = 0.0;
-					for (auto &mineral : base.Minerals())					
-						value += double(mineral->Amount());					
-					for (auto &gas : base.Geysers())					
+					for (auto &mineral : base.Minerals())
+						value += double(mineral->Amount());
+					for (auto &gas : base.Geysers())
 						value += double(gas->Amount());
 					if (base.Geysers().size() == 0) value = value / 10.0;
-					
+
 					// Get distance of the expansion
 					double distance;
-					if (Players().getPlayers().size() > 1)	
-						distance = Terrain().getGroundDistance(Terrain().getPlayerStartingPosition(), base.Center());				
-					else					
-						distance = Terrain().getGroundDistance(Terrain().getPlayerStartingPosition(), base.Center()) / pow(Terrain().getGroundDistance(Terrain().getEnemyStartingPosition(), base.Center()), 2.0);				
+					if (Players().getPlayers().size() > 1)
+						distance = Terrain().getGroundDistance(Terrain().getPlayerStartingPosition(), base.Center());
+					else
+						distance = Terrain().getGroundDistance(Terrain().getPlayerStartingPosition(), base.Center()) / pow(Terrain().getGroundDistance(Terrain().getEnemyStartingPosition(), base.Center()), 2.0);
 
 					if (Broodwar->isBuildable(base.Location(), true) && value / distance > best)
 					{
@@ -184,61 +164,34 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 		return bestLocation;
 	}
 
-	// If we are doing nexus first
-	if (BuildOrder().isOpener() && BuildOrder().isNexusFirst() && ((building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 0) || building == UnitTypes::Protoss_Cybernetics_Core || (building == UnitTypes::Protoss_Pylon && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) <= 0)))
+	if (building == UnitTypes::Protoss_Pylon && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) >= 4)
 	{
-		if (building == UnitTypes::Protoss_Pylon) return BWEB.getWall(BWEB.getNaturalArea()).getSmallWall();
-		if (building == UnitTypes::Protoss_Cybernetics_Core) return BWEB.getWall(BWEB.getNaturalArea()).getMediumWall();
-		if (building == UnitTypes::Protoss_Gateway) return BWEB.getWall(BWEB.getNaturalArea()).getLargeWall();
-		return here;
+		here = findDefLocation(building, Terrain().getPlayerStartingPosition());
+		if (here.isValid() && isBuildable(building, here)) return here;
 	}
 
-	// If we are forge expanding
-	if (BuildOrder().isOpener() && BuildOrder().isForgeExpand() && (building == UnitTypes::Protoss_Photon_Cannon || (building == UnitTypes::Protoss_Pylon && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) <= 0) || (building == UnitTypes::Protoss_Gateway && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) <= 0) || (building == UnitTypes::Protoss_Forge && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Forge) <= 0)))
+	// If this is a defensive building
+	if (building == UnitTypes::Protoss_Photon_Cannon)
 	{
-		if (building == UnitTypes::Protoss_Pylon) return BWEB.getWall(BWEB.getNaturalArea()).getSmallWall();
-		if (building == UnitTypes::Protoss_Forge) return BWEB.getWall(BWEB.getNaturalArea()).getMediumWall();
-		if (building == UnitTypes::Protoss_Gateway) return BWEB.getWall(BWEB.getNaturalArea()).getLargeWall();
-		if (building == UnitTypes::Protoss_Photon_Cannon)
+		if (Strategy().getEnemyBuild() == "Z12HatchMuta")
+			here = findDefLocation(building, Terrain().getPlayerStartingPosition());
+		if (!here.isValid())
+			here = findDefLocation(building, Position(mapBWEB.getSecondChoke()));
+	}
+	else
+	{
+		// If we are fast expanding
+		if (BuildOrder().isOpener() && (BuildOrder().isForgeExpand() || BuildOrder().isNexusFirst()))
 		{
-			if (Strategy().getEnemyBuild() == "Z12HatchMuta" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) >= 2 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) < 4) here = BWEB.getDefBuildPosition(building, &usedTiles);
-			else here = BWEB.getDefBuildPosition(building, &usedTiles, BWEB.getSecondChoke());
+			BWEB::Wall naturalWall = mapBWEB.getWall(mapBWEB.getNaturalArea());
+			if (building.tileWidth() == 2) here = naturalWall.getSmallWall();
+			else if (building.tileWidth() == 3) here = naturalWall.getMediumWall();
+			else if (building.tileWidth() == 4) here = naturalWall.getLargeWall();
+			if (here.isValid() && isBuildable(building, here)) return here;
 		}
-		return here;
-	}	
 
-	set<TilePosition> placements;
-	if (isSmall(building))
-	{
-		if (isDefensive(building))
-			placements = BWEB.getSDefPosition();
-		else
-			placements = BWEB.getSmallPosition();
+		here = findProdLocation(building, Terrain().getPlayerStartingPosition());
 	}
-	else if (isMedium(building))
-	{
-		if (isDefensive(building))
-			placements = BWEB.getMDefPosition();
-		else
-			placements = BWEB.getMediumPosition();
-	}
-	else if (isLarge(building)) placements = BWEB.getLargePosition();
-
-	double distBest = DBL_MAX;
-	for (auto tile : placements)
-	{
-		double dist = Position(tile).getDistance(Terrain().getPlayerStartingPosition());
-		if (dist < distBest && isBuildable(building, tile) && isQueueable(building, tile))
-		{
-			Broodwar->drawCircleMap(Position(tile), 12, Colors::Red);
-			here = tile;
-			distBest = dist;
-		}
-	}
-
-	if (here.isValid()) return here;
-
-	here = BWEB.getBuildPosition(building, &usedTiles);
 	if (here.isValid()) return here;
 	return TilePositions::Invalid;
 }
@@ -263,7 +216,7 @@ bool BuildingTrackerClass::isBuildable(UnitType building, TilePosition buildTile
 		for (auto &g : Resources().getMyGas())
 		{
 			ResourceInfo &gas = g.second;
-			if (buildTilePosition == gas.getTilePosition() && Grids().getBaseGrid(gas.getTilePosition()) > 1 && gas.getType() == UnitTypes::Resource_Vespene_Geyser) return true;
+			if (buildTilePosition == gas.getTilePosition() && gas.getState() >= 2 && gas.getType() == UnitTypes::Resource_Vespene_Geyser) return true;
 		}
 		return false;
 	}
@@ -278,7 +231,7 @@ bool BuildingTrackerClass::isSuitable(UnitType building, TilePosition buildTileP
 	if (BuildOrder().isOpener() && BuildOrder().isForgeExpand() && building == UnitTypes::Protoss_Photon_Cannon)
 	{
 		Position center = Position(buildTilePosition + TilePosition(1, 1));
-		if (center.getDistance(Position(BWEB.getSecondChoke())) < 128 || !Terrain().isInAllyTerritory(TilePosition(center))) return false;
+		if (center.getDistance(Position(mapBWEB.getSecondChoke())) < 128 || !Terrain().isInAllyTerritory(TilePosition(center))) return false;
 	}
 	return true;
 }
@@ -302,4 +255,74 @@ BuildingInfo& BuildingTrackerClass::getAllyBuilding(Unit building)
 	if (myBuildings.find(building) != myBuildings.end()) return myBuildings[building];
 	assert();
 	return BuildingInfo();
+}
+
+TilePosition BuildingTrackerClass::findDefLocation(UnitType building, Position here)
+{
+	set<TilePosition> placements;
+	TilePosition tileBest = TilePositions::Invalid;
+	double distBest = DBL_MAX;
+
+	if (building == UnitTypes::Protoss_Photon_Cannon)
+	{
+		for (auto &w : mapBWEB.getWalls())
+		{
+			BWEB::Wall wall = w.second;
+
+			for (auto &defense : wall.getDefenses())
+			{
+				Position defenseCenter = Position(defense) + Position(32, 32);
+				double dist = defenseCenter.getDistance(here);
+				if (dist < distBest && usedTiles.find(defense) == usedTiles.end())
+					distBest = dist, tileBest = defense;
+			}
+		}
+	}
+
+	for (auto &station : mapBWEB.Stations())
+	{
+		if (usedTiles.find(station.BWEMBase()->Location()) == usedTiles.end()) continue;
+		if (building == UnitTypes::Protoss_Pylon)
+		{			
+			TilePosition tile = *station.DefenseLocations().begin();
+			if (usedTiles.find(tile) == usedTiles.end() && isBuildable(building, tile))
+				tileBest = tile;
+		}
+		else
+		{
+			for (auto tile : placements)
+			{
+				double dist = Position(tile).getDistance(here);
+				if (dist < distBest && usedTiles.find(tile) == usedTiles.end() && isBuildable(building, tile))
+					distBest = dist, tileBest = tile;
+			}
+		}
+	}
+	return tileBest;
+}
+
+TilePosition BuildingTrackerClass::findProdLocation(UnitType building, Position here)
+{
+	set<TilePosition> placements;
+	TilePosition tileBest = TilePositions::Invalid;
+	double distBest = DBL_MAX;
+	for (auto &block : mapBWEB.Blocks())
+	{
+		Position blockCenter = Position(block.Location()) + Position(block.width() * 16, block.height() * 16);
+
+		if (building.tileWidth() == 4) placements = block.LargeTiles();
+		else if (building.tileWidth() == 3) placements = block.MediumTiles();
+		else placements = block.SmallTiles();
+		double dist = blockCenter.getDistance(here);
+
+		if (dist < distBest)
+		{
+			for (auto tile : placements)
+			{
+				if (usedTiles.find(tile) == usedTiles.end())
+					distBest = dist, tileBest = tile;
+			}
+		}
+	}
+	return tileBest;
 }

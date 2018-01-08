@@ -7,81 +7,83 @@
 using namespace BWAPI;
 using namespace std;
 
-class UnitTrackerClass
+namespace McRave
 {
-	map <Unit, UnitInfo> enemyUnits;
-	map <Unit, UnitInfo> enemyDefenses;	
-	map <Unit, UnitInfo> allyUnits;
-	map <Unit, UnitInfo> allyDefenses;
-	map <UnitSizeType, int> allySizes;
-	map <UnitSizeType, int> enemySizes;
-	map <UnitType, int> enemyComposition;
+	class UnitTrackerClass
+	{
+		map <Unit, UnitInfo> enemyUnits;
+		map <Unit, UnitInfo> enemyDefenses;
+		map <Unit, UnitInfo> allyUnits;
+		map <Unit, UnitInfo> allyDefenses;
+		map <UnitSizeType, int> allySizes;
+		map <UnitSizeType, int> enemySizes;
+		map <UnitType, int> enemyComposition;
 
-	set<Unit> returnValues;
-	set<Unit> enemyThreats;
-	set<Unit> armedMines;
+		set<Unit> returnValues;
+		set<Unit> enemyThreats;
+		set<Unit> armedMines;
 
-	double immThreat, proxThreat;
+		double immThreat, proxThreat;
 
-	double globalAllyGroundStrength, globalEnemyGroundStrength;
-	double globalAllyAirStrength, globalEnemyAirStrength;
-	double allyDefense, enemyDefense;
-	double minThreshold, maxThreshold;
-	int supply, globalGroundStrategy, globalAirStrategy;
-public:
+		double globalAllyGroundStrength, globalEnemyGroundStrength;
+		double globalAllyAirStrength, globalEnemyAirStrength;
+		double allyDefense, enemyDefense;
+		double minThreshold, maxThreshold;
+		int supply, globalGroundStrategy, globalAirStrategy;
+	public:
 
-	map<Unit, UnitInfo>& getAllyUnits() { return allyUnits; }
-	map<Unit, UnitInfo>& getEnemyUnits() { return enemyUnits; }
-	map<UnitSizeType, int>& getAllySizes() { return allySizes; }
-	map<UnitSizeType, int>& getEnemySizes() { return enemySizes; }
-	map<UnitType, int>& getEnemyComposition() { return enemyComposition; }
+		map<Unit, UnitInfo>& getAllyUnits() { return allyUnits; }
+		map<Unit, UnitInfo>& getEnemyUnits() { return enemyUnits; }
+		map<UnitSizeType, int>& getAllySizes() { return allySizes; }
+		map<UnitSizeType, int>& getEnemySizes() { return enemySizes; }
+		map<UnitType, int>& getEnemyComposition() { return enemyComposition; }
 
-	set<Unit> getAllyUnitsFilter(UnitType);
-	set<Unit> getEnemyUnitsFilter(UnitType);
+		set<Unit> getAllyUnitsFilter(UnitType);
+		set<Unit> getEnemyUnitsFilter(UnitType);
 
-	UnitInfo& getAllyUnit(Unit);
-	UnitInfo& getEnemyUnit(Unit);
+		UnitInfo& getUnitInfo(Unit);
 
-	double getImmThreat() { return immThreat; }
-	double getProxThreat() { return proxThreat; }
+		double getImmThreat() { return immThreat; }
+		double getProxThreat() { return proxThreat; }
 
-	double getGlobalAllyGroundStrength() { return globalAllyGroundStrength; }
-	double getGlobalEnemyGroundStrength() { return globalEnemyGroundStrength; }
-	double getGlobalAllyAirStrength() { return globalAllyAirStrength; }
-	double getGlobalEnemyAirStrength() { return globalEnemyAirStrength; }
-	double getAllyDefense() { return allyDefense; }
-	double getEnemyDefense() { return enemyDefense; }
-	int getGlobalGroundStrategy() { return globalGroundStrategy; }
-	int getGlobalAirStrategy() { return globalAirStrategy; }
-	int getSupply() { return supply; }
-	void increaseAlly(double strength) { globalAllyGroundStrength += strength; }
+		double getGlobalAllyGroundStrength() { return globalAllyGroundStrength; }
+		double getGlobalEnemyGroundStrength() { return globalEnemyGroundStrength; }
+		double getGlobalAllyAirStrength() { return globalAllyAirStrength; }
+		double getGlobalEnemyAirStrength() { return globalEnemyAirStrength; }
+		double getAllyDefense() { return allyDefense; }
+		double getEnemyDefense() { return enemyDefense; }
+		int getGlobalGroundStrategy() { return globalGroundStrategy; }
+		int getGlobalAirStrategy() { return globalAirStrategy; }
+		int getSupply() { return supply; }
+		void increaseAlly(double strength) { globalAllyGroundStrength += strength; }
 
-	bool shouldAttack(UnitInfo&);
-	bool shouldDefend(UnitInfo&);
-	bool shouldRetreat(UnitInfo&);
-	bool isBehind(UnitInfo&);
-	bool isAhead(UnitInfo&);
-	bool isThreatening(UnitInfo&);
+		bool shouldAttack(UnitInfo&);
+		bool shouldDefend(UnitInfo&);
+		bool shouldRetreat(UnitInfo&);
+		bool isBehind(UnitInfo&);
+		bool isAhead(UnitInfo&);
+		bool isThreatening(UnitInfo&);
 
-	// Updating
-	void update();
-	void updateUnits();
-	void updateEnemy(UnitInfo&);
-	void updateAlly(UnitInfo&);
-	void updateLocalSimulation(UnitInfo&);
-	void updateStrategy(UnitInfo&);
-	void updateGlobalSimulation();
+		// Updating
+		void update();
+		void updateUnits();
+		void updateEnemy(UnitInfo&);
+		void updateAlly(UnitInfo&);
+		void updateLocalSimulation(UnitInfo&);
+		void updateStrategy(UnitInfo&);
+		void updateGlobalSimulation();
 
-	// Storage
-	void onUnitDiscover(Unit);
-	void onUnitCreate(Unit);
-	void onUnitDestroy(Unit);
-	void onUnitMorph(Unit);
-	void onUnitRenegade(Unit);
-	void onUnitComplete(Unit);
-	void storeAlly(Unit);
-	void storeEnemy(Unit);
-	void removeUnit(Unit);
-};
+		// Storage
+		void onUnitDiscover(Unit);
+		void onUnitCreate(Unit);
+		void onUnitDestroy(Unit);
+		void onUnitMorph(Unit);
+		void onUnitRenegade(Unit);
+		void onUnitComplete(Unit);
+		void storeAlly(Unit);
+		void storeEnemy(Unit);
+		void removeUnit(Unit);
+	};
+}
 
-typedef Singleton<UnitTrackerClass> UnitTracker;
+typedef Singleton<McRave::UnitTrackerClass> UnitTracker;

@@ -113,7 +113,7 @@ public:
 	const Tile &						GetTile(const BWAPI::TilePosition & p, utils::check_t checkMode = utils::check_t::check) const	{ bwem_assert((checkMode == utils::check_t::no_check) || Valid(p)); utils::unused(checkMode); return m_Tiles[Size().x * p.y + p.x]; }
 
 	// Returns a MiniTile, given its position.
-	const MiniTile &					getWalkPosition(const BWAPI::WalkPosition & p, utils::check_t checkMode = utils::check_t::check) const	{ bwem_assert((checkMode == utils::check_t::no_check) || Valid(p)); utils::unused(checkMode); return m_MiniTiles[WalkSize().x * p.y + p.x]; }
+	const MiniTile &					GetMiniTile(const BWAPI::WalkPosition & p, utils::check_t checkMode = utils::check_t::check) const	{ bwem_assert((checkMode == utils::check_t::no_check) || Valid(p)); utils::unused(checkMode); return m_MiniTiles[WalkSize().x * p.y + p.x]; }
 
 	// Returns a Tile or a MiniTile, given its position.
 	// Provided as a support of generic algorithms.
@@ -218,7 +218,7 @@ protected:
 										Map() = default;
 
 	Tile &								GetTile_(const BWAPI::TilePosition & p, utils::check_t checkMode = utils::check_t::check)		{ return const_cast<Tile &>(static_cast<const Map &>(*this).GetTile(p, checkMode)); }
-	MiniTile &							getWalkPosition_(const BWAPI::WalkPosition & p, utils::check_t checkMode = utils::check_t::check)	{ return const_cast<MiniTile &>(static_cast<const Map &>(*this).getWalkPosition(p, checkMode)); }
+	MiniTile &							GetMiniTile_(const BWAPI::WalkPosition & p, utils::check_t checkMode = utils::check_t::check)	{ return const_cast<MiniTile &>(static_cast<const Map &>(*this).GetMiniTile(p, checkMode)); }
 
 	int							m_size = 0;
 	BWAPI::TilePosition			m_Size;
@@ -245,7 +245,7 @@ inline const Tile & Map::GetTTile<BWAPI::TilePosition>(const BWAPI::TilePosition
 template<>
 inline const MiniTile & Map::GetTTile<BWAPI::WalkPosition>(const BWAPI::WalkPosition & w, utils::check_t checkMode) const
 {
-	return getWalkPosition(w, checkMode);
+	return GetMiniTile(w, checkMode);
 }
 
 

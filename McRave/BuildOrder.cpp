@@ -66,9 +66,7 @@ void BuildOrderTrackerClass::onStart()
 	for (auto &build : buildNames)
 	{
 		if (s.find(build) == s.npos)
-		{
 			ss << build << " 0 0 ";
-		}
 	}
 
 	// Calculate how many games we've played against this opponent
@@ -133,8 +131,11 @@ bool BuildOrderTrackerClass::isBuildAllowed(Race enemy, string build)
 		if (enemy == Races::Protoss && (build == "PZCore" || build == "PNZCore" || build == "P4Gate")) return true;
 		if (enemy == Races::Random && (build == "PZZCore" || build == "P4Gate" || build == "PFFEStandard")) return true;
 	}
-	else if (Broodwar->self()->getRace() == Races::Terran) return true;
-	else if (Broodwar->self()->getRace() == Races::Zerg) return true;
+	else if (Broodwar->self()->getRace() == Races::Terran)
+	{
+		if (build == "TSparks" || build == "T2Fact") return true;
+	}
+	else if (Broodwar->self()->getRace() == Races::Zerg && build == "ZOverpool") return true;
 	return false;
 }
 
@@ -217,15 +218,16 @@ void BuildOrderTrackerClass::zergTech()
 
 void BuildOrderTrackerClass::zergSituational()
 {
-
+	if (shouldExpand())
+		buildingDesired[UnitTypes::Zerg_Hatchery] = Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Hatchery) + Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Lair) + Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Hive) + 1;
 }
 
 bool BuildOrderTrackerClass::shouldExpand()
 {
 	UnitType baseType;
 	if (Broodwar->self()->getRace() == Races::Protoss) baseType = UnitTypes::Protoss_Nexus;
-	else if (Broodwar->self()->getRace() == Races::Terran) baseType == UnitTypes::Terran_Command_Center;
-	else baseType == UnitTypes::Zerg_Hatchery;
+	else if (Broodwar->self()->getRace() == Races::Terran) baseType = UnitTypes::Terran_Command_Center;
+	else baseType = UnitTypes::Zerg_Hatchery;
 
 	if (Broodwar->self()->minerals() > 500 + (100 * Broodwar->self()->completedUnitCount(baseType))) return true;
 	else if ((techUnit == UnitTypes::None && !Production().hasIdleProduction() && Resources().isMinSaturated() && techSat && productionSat) || (productionSat && Players().getPlayers().size() <= 1 && Players().getNumberTerran() > 0)) return true;

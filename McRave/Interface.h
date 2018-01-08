@@ -5,21 +5,24 @@
 using namespace BWAPI;
 using namespace std;
 
-class InterfaceTrackerClass
+namespace McRave
 {
-	chrono::steady_clock::time_point start;
-	int screenOffset = 0;
-	map <string, double> myTest;
-	bool debugging = false;
-public:
-	void update();
-	void drawAllyInfo();
-	void drawEnemyInfo();
-	void drawInformation();
+	class InterfaceTrackerClass
+	{
+		chrono::steady_clock::time_point start;
+		int screenOffset = 0;
+		map <string, double> myTest;
+		bool debugging = false;
+	public:
+		void update();
+		void drawAllyInfo();
+		void drawEnemyInfo();
+		void drawInformation();
 
-	void startClock();
-	void performanceTest(string);
-	void sendText(string);
-};
+		void startClock();
+		void performanceTest(string);
+		void sendText(string);
+	};
+}
 
-typedef Singleton<InterfaceTrackerClass> InterfaceTracker;
+typedef Singleton<McRave::InterfaceTrackerClass> InterfaceTracker;

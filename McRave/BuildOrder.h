@@ -6,77 +6,80 @@
 using namespace BWAPI;
 using namespace std;
 
-class BuildOrderTrackerClass
+namespace McRave
 {
-	map <UnitType, int> buildingDesired;
-	bool getOpening = true, getTech = false, learnedOpener = false;
-	bool oneGateCore = false, forgeExpand = false, nexusFirst = false;
-	bool bioBuild = false;
-	bool scout = false;
-	bool reinforceWall = false;
-	UpgradeType firstUpgrade;
-	TechType firstTech;
-	UnitType techUnit;
-	set <UnitType> techList;
-	set <UnitType> unlockedType;
-	vector <string> buildNames;
-	string currentBuild = "Test";
-	stringstream ss;
-	int satVal, gateVal, techVal, baseVal;
-	bool productionSat, techSat;
-public:
-	// Build learning functions
-	string getCurrentBuild() { return currentBuild; }
-	void getDefaultBuild();
-	bool isBuildAllowed(Race, string);
-	bool isUnitUnlocked(UnitType unit) { return (unlockedType.find(unit) != unlockedType.end()); }
-	bool shouldReinforceWall() { return reinforceWall; }
+	class BuildOrderTrackerClass
+	{
+		map <UnitType, int> buildingDesired;
+		bool getOpening = true, getTech = false, learnedOpener = false;
+		bool oneGateCore = false, forgeExpand = false, nexusFirst = false;
+		bool bioBuild = false;
+		bool scout = false;
+		bool reinforceWall = false;
+		UpgradeType firstUpgrade;
+		TechType firstTech;
+		UnitType techUnit;
+		set <UnitType> techList;
+		set <UnitType> unlockedType;
+		vector <string> buildNames;
+		string currentBuild = "Test";
+		stringstream ss;
+		int satVal, gateVal, techVal, baseVal;
+		bool productionSat, techSat;
+	public:
+		// Build learning functions
+		string getCurrentBuild() { return currentBuild; }
+		void getDefaultBuild();
+		bool isBuildAllowed(Race, string);
+		bool isUnitUnlocked(UnitType unit) { return (unlockedType.find(unit) != unlockedType.end()); }
+		bool shouldReinforceWall() { return reinforceWall; }
 
-	map <UnitType, int>& getBuildingDesired() { return buildingDesired; }
-	bool isOpener() { return getOpening; }
-	
-	UpgradeType getFirstUpgrade() { return firstUpgrade; }
-	TechType getFirstTech() { return firstTech; }
+		map <UnitType, int>& getBuildingDesired() { return buildingDesired; }
+		bool isOpener() { return getOpening; }
 
-	set <UnitType>& getTechList() { return techList; }
-	bool isOneGateCore() { return oneGateCore; }
-	bool isForgeExpand() { return forgeExpand; }
-	bool isBioBuild() { return bioBuild; }
-	bool isNexusFirst() { return nexusFirst; }
+		UpgradeType getFirstUpgrade() { return firstUpgrade; }
+		TechType getFirstTech() { return firstTech; }
 
-	bool shouldExpand();
-	bool shouldTech();
-	bool shouldAddProduction();
-	bool shouldAddGas();
-	bool shouldScout() { return scout; }
+		set <UnitType>& getTechList() { return techList; }
+		bool isOneGateCore() { return oneGateCore; }
+		bool isForgeExpand() { return forgeExpand; }
+		bool isBioBuild() { return bioBuild; }
+		bool isNexusFirst() { return nexusFirst; }
 
-	bool techComplete();
+		bool shouldExpand();
+		bool shouldTech();
+		bool shouldAddProduction();
+		bool shouldAddGas();
+		bool shouldScout() { return scout; }
 
-	void onEnd(bool);
-	void onStart();
-	void update();
-	void updateBuild();
+		bool techComplete();
 
-	void protossOpener(), protossTech(), protossSituational();
-	void terranOpener(), terranTech(), terranSituational();
-	void zergOpener(), zergTech(), zergSituational();
+		void onEnd(bool);
+		void onStart();
+		void update();
+		void updateBuild();
 
-	void PvPSituational(), PvTSituational(), PvZSituational();
+		void protossOpener(), protossTech(), protossSituational();
+		void terranOpener(), terranTech(), terranSituational();
+		void zergOpener(), zergTech(), zergSituational();
 
-	// Protoss Builds																
-	void PFFEStandard();															// PvZ Builds
-	void P12Nexus(), P21Nexus(), PDTExpand(), P2GateDragoon();						// PvT Builds
-	void P3GateObs(), PNZCore(), PZCore();											// PvP Builds
-	void PZZCore(), P4Gate();														// Misc
-	// Retired or not created	void PFFEGreedy(), PFFESafe(), P2GateDT(), P1GateReaver();									
+		void PvPSituational(), PvTSituational(), PvZSituational();
 
-	// Terran Builds
-	void T2Fact();
-	//void TShallowTwo();
-	void TSparks();
+		// Protoss Builds																
+		void PFFEStandard();															// PvZ Builds
+		void P12Nexus(), P21Nexus(), PDTExpand(), P2GateDragoon();						// PvT Builds
+		void P3GateObs(), PNZCore(), PZCore();											// PvP Builds
+		void PZZCore(), P4Gate();														// Misc
+		// Retired or not created	void PFFEGreedy(), PFFESafe(), P2GateDT(), P1GateReaver();									
 
-	// Zerg Builds
-	void ZOverpool();
-};
+		// Terran Builds
+		void T2Fact();
+		//void TShallowTwo();
+		void TSparks();
 
-typedef Singleton<BuildOrderTrackerClass> BuildOrderTracker;
+		// Zerg Builds
+		void ZOverpool();
+	};
+}
+
+typedef Singleton<McRave::BuildOrderTrackerClass> BuildOrderTracker;

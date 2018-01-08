@@ -57,7 +57,7 @@ public:
 
 	// Unique id > 0 of this Area. Range = 1 .. Map::Areas().size()
 	// this == Map::GetArea(Id())
-	// Id() == Map::getWalkPosition(w).AreaId() for each walkable MiniTile w in this Area.
+	// Id() == Map::GetMiniTile(w).AreaId() for each walkable MiniTile w in this Area.
 	// Area::ids are guaranteed to remain unchanged.
 	id								Id() const						{ return m_id; }
 
@@ -74,7 +74,7 @@ public:
 	// Position of the MiniTile with the highest Altitude() value.
 	const BWAPI::WalkPosition &		Top() const						{ return m_top; }
 
-	// Returns Map::getWalkPosition(Top()).Altitude().
+	// Returns Map::GetMiniTile(Top()).Altitude().
 	altitude_t						MaxAltitude() const				{ return m_maxAltitude; }
 
 	// Returns the number of MiniTiles in this Area.

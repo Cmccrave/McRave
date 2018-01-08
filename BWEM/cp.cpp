@@ -47,8 +47,8 @@ ChokePoint::ChokePoint(detail::Graph * pGraph, index idx, const Area * area1, co
 	m_nodes[end2] = Geometry.back();
 
 	int i = Geometry.size() / 2;
-	while ((i > 0)                      && (GetMap()->getWalkPosition(Geometry[i-1]).Altitude() > GetMap()->getWalkPosition(Geometry[i]).Altitude())) --i;
-	while ((i < (int)Geometry.size()-1) && (GetMap()->getWalkPosition(Geometry[i+1]).Altitude() > GetMap()->getWalkPosition(Geometry[i]).Altitude())) ++i;
+	while ((i > 0)                      && (GetMap()->GetMiniTile(Geometry[i-1]).Altitude() > GetMap()->GetMiniTile(Geometry[i]).Altitude())) --i;
+	while ((i < (int)Geometry.size()-1) && (GetMap()->GetMiniTile(Geometry[i+1]).Altitude() > GetMap()->GetMiniTile(Geometry[i]).Altitude())) ++i;
 	m_nodes[middle] = Geometry[i];
 
 	for (int n = 0 ; n < node_count ; ++n)

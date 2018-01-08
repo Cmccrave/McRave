@@ -40,7 +40,7 @@ void UnitTrackerClass::onUnitDestroy(Unit unit)
 		enemyUnits.erase(unit);
 	}
 
-	if (unit->getPlayer() == Broodwar->self())
+	else if (unit->getPlayer() == Broodwar->self())
 	{
 		supply -= unit->getType().supplyRequired();
 
@@ -89,7 +89,7 @@ void UnitTrackerClass::onUnitMorph(Unit unit)
 			if (unit->getType().isBuilding() && Workers().getMyWorkers().find(unit) != Workers().getMyWorkers().end())
 			{
 				Workers().removeWorker(unit);
-				Buildings().storeBuilding(unit);
+				onUnitCreate(unit);
 				supply -= 2;
 			}
 			else if (unit->getType().isWorker()) Workers().storeWorker(unit);
@@ -145,7 +145,7 @@ void UnitTrackerClass::onUnitComplete(Unit unit)
 {
 	if (unit->getType() == UnitTypes::Protoss_Scarab || unit->getType() == UnitTypes::Zerg_Larva || unit->getType() == UnitTypes::Terran_Vulture_Spider_Mine) return;
 
-	if (unit->getPlayer() == Broodwar->self())
+	if (unit->getPlayer() == Broodwar->self() && !unit->getType().isBuilding())
 	{
 		allySizes[unit->getType().size()] += 1;
 		if (unit->getType().isWorker()) Workers().storeWorker(unit);
@@ -153,5 +153,6 @@ void UnitTrackerClass::onUnitComplete(Unit unit)
 		else if (!unit->getType().isWorker()) storeAlly(unit);
 	}
 
+	if (unit->getType().isResourceDepot()) Bases().storeBase(unit);
 	if (unit->getType().isResourceContainer()) Resources().storeResource(unit);
 }

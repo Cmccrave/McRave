@@ -60,8 +60,8 @@ altitude_t minAltitudeTop(const TilePosition & tile, const Map & theMap)
 {
 	WalkPosition w(tile);
 
-	return min(theMap.getWalkPosition(w + WalkPosition(1, 0), utils::check_t::no_check).Altitude(),
-			   theMap.getWalkPosition(w + WalkPosition(2, 0), utils::check_t::no_check).Altitude());
+	return min(theMap.GetMiniTile(w + WalkPosition(1, 0), utils::check_t::no_check).Altitude(),
+			   theMap.GetMiniTile(w + WalkPosition(2, 0), utils::check_t::no_check).Altitude());
 }
 
 
@@ -69,8 +69,8 @@ altitude_t minAltitudeBottom(const TilePosition & tile, const Map & theMap)
 {
 	WalkPosition w(tile);
 
-	return min(theMap.getWalkPosition(w + WalkPosition(1, 3), utils::check_t::no_check).Altitude(),
-			   theMap.getWalkPosition(w + WalkPosition(2, 3), utils::check_t::no_check).Altitude());
+	return min(theMap.GetMiniTile(w + WalkPosition(1, 3), utils::check_t::no_check).Altitude(),
+			   theMap.GetMiniTile(w + WalkPosition(2, 3), utils::check_t::no_check).Altitude());
 }
 
 
@@ -78,8 +78,8 @@ altitude_t minAltitudeLeft(const TilePosition & tile, const Map & theMap)
 {
 	WalkPosition w(tile);
 
-	return min(theMap.getWalkPosition(w + WalkPosition(0, 1), utils::check_t::no_check).Altitude(),
-			   theMap.getWalkPosition(w + WalkPosition(0, 2), utils::check_t::no_check).Altitude());
+	return min(theMap.GetMiniTile(w + WalkPosition(0, 1), utils::check_t::no_check).Altitude(),
+			   theMap.GetMiniTile(w + WalkPosition(0, 2), utils::check_t::no_check).Altitude());
 }
 
 
@@ -87,8 +87,8 @@ altitude_t minAltitudeRight(const TilePosition & tile, const Map & theMap)
 {
 	WalkPosition w(tile);
 
-	return min(theMap.getWalkPosition(w + WalkPosition(3, 1), utils::check_t::no_check).Altitude(),
-			   theMap.getWalkPosition(w + WalkPosition(3, 2), utils::check_t::no_check).Altitude());
+	return min(theMap.GetMiniTile(w + WalkPosition(3, 1), utils::check_t::no_check).Altitude(),
+			   theMap.GetMiniTile(w + WalkPosition(3, 2), utils::check_t::no_check).Altitude());
 }
 
 

@@ -5,12 +5,15 @@
 using namespace BWAPI;
 using namespace std;
 
-class TargetTrackerClass
+namespace McRave
 {
-public:
-	Unit getTarget(UnitInfo&);
-	Unit enemyTarget(UnitInfo&);
-	Unit allyTarget(UnitInfo&);
-};
+	class TargetTrackerClass
+	{
+	public:
+		void getTarget(UnitInfo&);
+		void enemyTarget(UnitInfo&);
+		void allyTarget(UnitInfo&);
+	};
+}
 
-typedef Singleton<TargetTrackerClass> TargetTracker;
+typedef Singleton<McRave::TargetTrackerClass> TargetTracker;

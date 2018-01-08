@@ -81,7 +81,7 @@ static vector<TilePosition> findBuildableBorderTiles(const Map & theMap, WalkPos
 			if (theMap.Valid(next))
 				if (!contains(Visited, next))
 				{
-					const MiniTile & Next = theMap.getWalkPosition(next, check_t::no_check); 
+					const MiniTile & Next = theMap.GetMiniTile(next, check_t::no_check); 
 					const Tile & NextTile = theMap.GetTile(TilePosition(next), check_t::no_check); 
 
 					const bool seaside = (Next.Altitude() <= (seasideCount <= 8 ? 24 : 11)) &&
@@ -307,7 +307,7 @@ void ExampleWall::Compute(int wallSize, const vector<TilePosition> & BuildableBo
 							if (!zerglingTight) continue;
 						}
 
-						const altitude_t maxAltitudeOfCP = m_theMap->getWalkPosition(m_cp->Center()).Altitude();
+						const altitude_t maxAltitudeOfCP = m_theMap->GetMiniTile(m_cp->Center()).Altitude();
 						const int lengthCP = 2*maxAltitudeOfCP;
 
 						bool blockingDepot = false;

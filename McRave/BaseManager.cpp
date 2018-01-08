@@ -10,14 +10,9 @@ void BaseTrackerClass::update()
 
 void BaseTrackerClass::updateBases()
 {
-	for (auto &b : myBases)
-	{
-		BaseInfo& base = b.second;
-		if (!base.unit() || !base.unit()->exists()) continue;
-		updateProduction(base);
+	for (auto &b : myStations)
+	{	
 
-		if (Grids().getBaseGrid(base.getTilePosition()) == 1 && base.unit()->isCompleted())
-			Grids().updateBaseGrid(base);
 	}
 	for (auto &b : enemyBases)
 	{
@@ -46,8 +41,8 @@ void BaseTrackerClass::updateProduction(BaseInfo& base)
 	int ovie = 0;
 	for (auto &u : Units().getAllyUnitsFilter(UnitTypes::Zerg_Egg))
 	{
-		UnitInfo& unit = Units().getAllyUnit(u);
-		if (unit.getType() == UnitTypes::Zerg_Overlord)
+		UnitInfo& unit = Units().getUnitInfo(u);
+		if (unit.unit()->getBuildType() == UnitTypes::Zerg_Overlord)
 		{
 			ovie++;
 		}
@@ -69,17 +64,21 @@ void BaseTrackerClass::updateProduction(BaseInfo& base)
 
 	for (auto &unit : base.unit()->getLarva())
 	{
-		if ((Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Overlord) + ovie) - 1 < min(22, (int)floor((Units().getSupply() / max(14, (16 - Broodwar->self()->allUnitCount(UnitTypes::Zerg_Overlord)))))))
+		if ((Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Overlord) + ovie - 1) < min(22, (int)floor((Units().getSupply() / max(14, (16 - Broodwar->self()->allUnitCount(UnitTypes::Zerg_Overlord)))))))
 		{
 			base.unit()->morph(UnitTypes::Zerg_Overlord);
 		}
-		else if (Units().getGlobalEnemyGroundStrength() > Units().getGlobalAllyGroundStrength())
+		else if (Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0 && (Units().getGlobalEnemyGroundStrength() > Units().getGlobalAllyGroundStrength() || Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Zergling) < 6))
 		{
 			base.unit()->morph(UnitTypes::Zerg_Zergling);
 		}
 		else if ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) && Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Drone) < 60 && (Broodwar->self()->minerals() >= UnitTypes::Zerg_Drone.mineralPrice() + Production().getReservedMineral() + Buildings().getQueuedMineral()))
 		{
 			base.unit()->morph(UnitTypes::Zerg_Drone);
+		}
+		else
+		{
+			base.unit()->morph(UnitTypes::Zerg_Zergling);
 		}
 	}
 	return;
@@ -103,26 +102,57 @@ Position BaseTrackerClass::getClosestEnemyBase(Position here)
 
 void BaseTrackerClass::storeBase(Unit base)
 {
-	BaseInfo& b = base->getPlayer() == Broodwar->self() ? myBases[base] : enemyBases[base];
-	b.setUnit(base);
-	b.setType(base->getType());
-	b.setResourcesPosition(TilePosition(Resources().resourceClusterCenter(base)));
-	b.setPosition(base->getPosition());
-	b.setWalkPosition(Util().getWalkPosition(base));
-	b.setTilePosition(base->getTilePosition());
-	b.setPosition(base->getPosition());
-
-	if (b.getTilePosition().isValid() && theMap.GetArea(b.getTilePosition()))
+	// TODO - Find BWEB Station based on closest
+	BWEB::Station station = mapBWEB.getClosestStation(base->getTilePosition());
+	base->getPlayer() == Broodwar->self() ? myStations.push_back(station) : enemyStations.push_back(station);
+	
+	if (base->getPlayer() == Broodwar->self())
 	{
-		if (base->getPlayer() == Broodwar->self())
+		if (base->isCompleted())
 		{
-			myOrderedBases[base->getPosition().getDistance(Terrain().getPlayerStartingPosition())] = base->getTilePosition();
-			Terrain().getAllyTerritory().insert(theMap.GetArea(b.getTilePosition())->Id());
-			Grids().updateBaseGrid(b);
+			// Update resources to state 2
+			for (auto &mineral : station.BWEMBase()->Minerals())
+			{
+				Resources().getMyMinerals()[mineral->Unit()].setState(2);
+			}
+			// Update resources to state 2
+			for (auto &gas : station.BWEMBase()->Geysers())
+			{
+				Resources().getMyGas()[gas->Unit()].setState(2);
+			}
 		}
 		else
 		{
-			Terrain().getEnemyTerritory().insert(theMap.GetArea(b.getTilePosition())->Id());
+			// Update resources to state 2
+			for (auto &mineral : station.BWEMBase()->Minerals())
+			{
+				Resources().getMyMinerals()[mineral->Unit()].setState(1);
+			}
+			// Update resources to state 2
+			for (auto &gas : station.BWEMBase()->Geysers())
+			{
+				Resources().getMyGas()[gas->Unit()].setState(1);
+			}
+		}
+	}
+
+	/*BaseInfo& b = base->getPlayer() == Broodwar->self() ? myBases[base] : enemyBases[base];
+	b.setUnit(base);
+	b.setType(base->getType());
+	b.setPosition(base->getPosition());
+	b.setWalkPosition(Util().getWalkPosition(base));
+	b.setTilePosition(base->getTilePosition());
+	b.setPosition(base->getPosition());*/
+
+	if (base->getTilePosition().isValid() && mapBWEM.GetArea(base->getTilePosition()))
+	{
+		if (base->getPlayer() == Broodwar->self())
+		{
+			Terrain().getAllyTerritory().insert(mapBWEM.GetArea(base->getTilePosition())->Id());
+		}
+		else
+		{
+			Terrain().getEnemyTerritory().insert(mapBWEM.GetArea(base->getTilePosition())->Id());
 		}
 	}
 	return;
@@ -130,17 +160,21 @@ void BaseTrackerClass::storeBase(Unit base)
 
 void BaseTrackerClass::removeBase(Unit base)
 {
+	BWEB::Station station = mapBWEB.getClosestStation(base->getTilePosition());
+
+	// Update resources to state 2
+	for (auto &mineral : station.BWEMBase()->Minerals())
+	{
+		Resources().getMyMinerals()[mineral->Unit()].setState(0);
+	}
+
 	if (base->getPlayer() == Broodwar->self())
 	{
-		Terrain().getAllyTerritory().erase(theMap.GetArea(base->getTilePosition())->Id());
-		Grids().updateBaseGrid(myBases[base]);
-		myOrderedBases.erase(base->getPosition().getDistance(Terrain().getPlayerStartingPosition()));
-		myBases.erase(base);
+		Terrain().getAllyTerritory().erase(mapBWEM.GetArea(base->getTilePosition())->Id());
 	}
 	else
 	{
-		Terrain().getEnemyTerritory().erase(theMap.GetArea(base->getTilePosition())->Id());
-		enemyBases.erase(base);
+		Terrain().getEnemyTerritory().erase(mapBWEM.GetArea(base->getTilePosition())->Id());
 	}
 	return;
 }

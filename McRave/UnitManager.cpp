@@ -42,14 +42,16 @@ void UnitTrackerClass::updateUnits()
 		if (unit.getType().isValid()) enemyComposition[unit.getType()] += 1; // If unit has a valid type, update enemy composition tracking
 		if (!unit.getType().isBuilding() && !unit.getType().isWorker()) unit.getType().isFlyer() ? globalEnemyAirStrength += unit.getVisibleAirStrength() : globalEnemyGroundStrength += unit.getVisibleGroundStrength(); // If unit is not a worker or building, add it to global strength	
 		if ((Terrain().isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(Terrain().getDefendPosition()) < 64) && (!unit.getType().isWorker() || unit.getLastAttackFrame() > 0)) proxThreat += unit.getVisibleGroundStrength();
-		if (Grids().getBaseGrid(unit.getTilePosition()) > 0 && (!unit.getType().isWorker() || unit.getLastAttackFrame() > 0)) immThreat += unit.getVisibleGroundStrength();
+		// TODO // if (Grids().getBaseGrid(unit.getTilePosition()) > 0 && (!unit.getType().isWorker() || unit.getLastAttackFrame() > 0)) immThreat += unit.getVisibleGroundStrength();
 		if (unit.getType().isBuilding() && unit.getGroundDamage() > 0 && unit.unit()->isCompleted()) enemyDefense += unit.getVisibleGroundStrength(); // If unit is a building and deals damage, add it to global defense		
+		Broodwar->drawTextMap(unit.getPosition(), "%s", unit.getType().c_str());
 	}
 
 	// Update Ally Defenses
 	for (auto &u : allyDefenses)
 	{
 		UnitInfo &unit = u.second;
+		if (!unit.unit()) continue;
 		updateAlly(unit);
 		if (unit.unit()->isCompleted()) allyDefense += unit.getMaxGroundStrength();
 	}
@@ -62,6 +64,8 @@ void UnitTrackerClass::updateUnits()
 		updateAlly(unit);
 		updateLocalSimulation(unit);
 		updateStrategy(unit);
+
+		Broodwar->drawTextMap(unit.getPosition(), "%s", unit.getType().c_str());
 
 		if (unit.getType().isWorker() && Workers().getMyWorkers().find(unit.unit()) != Workers().getMyWorkers().end()) Workers().removeWorker(unit.unit()); // Remove the worker role if needed	
 		if (unit.getType().isWorker() && !Util().shouldPullWorker(unit.unit())) Workers().storeWorker(unit.unit()); // If this is a worker and is ready to go back to being a worker
@@ -77,7 +81,6 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 	double unitToEngage = max(0.0, unit.getPosition().getDistance(unit.getEngagePosition()) / unit.getSpeed());
 	double simulationTime = unitToEngage + 5.0;
 	double offset = 0.0, maxRange = 0.0;
-	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());	
 
 	// Check every enemy unit being in range of the target
 	for (auto &e : enemyUnits)
@@ -123,8 +126,9 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 	for (auto &a : allyUnits)
 	{
 		UnitInfo &ally = a.second;
-		UnitInfo &allyTarget = ally.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(ally.getTarget()) : Units().getEnemyUnit(ally.getTarget());
-		
+
+		if (!ally.hasTarget()) continue;		
+
 		double widths = ally.getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
 		double allyRange = widths + (unit.getType().isFlyer() ? ally.getAirRange() : ally.getGroundRange());
 		double distance = ally.getPosition().getDistance(ally.getEngagePosition());
@@ -138,7 +142,7 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 
 		// Situations where an ally should be treated as stronger than it actually is
 		if ((ally.unit()->isCloaked() || ally.unit()->isBurrowed()) && Grids().getEDetectorGrid(WalkPosition(ally.getEngagePosition())) == 0) simRatio = simRatio * 5.0;
-		if (!ally.getType().isFlyer() && Broodwar->getGroundHeight(TilePosition(ally.getEngagePosition())) > Broodwar->getGroundHeight(TilePosition(allyTarget.getPosition())))	simRatio = simRatio * 2.0;
+		if (!ally.getType().isFlyer() && Broodwar->getGroundHeight(TilePosition(ally.getEngagePosition())) > Broodwar->getGroundHeight(TilePosition(ally.getTarget().getPosition())))	simRatio = simRatio * 2.0;
 
 		allyLocalGroundStrength += ally.getVisibleGroundStrength() * simRatio;
 		allyLocalAirStrength += ally.getVisibleAirStrength() * simRatio;
@@ -151,25 +155,28 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 
 void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 {
-	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());
-	double widths = target.getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
-	double allyRange = widths + (target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
-	double enemyRange = widths + (unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange());
-
 	// If unit does not have a target or clearly out of range of sim target, set as "no local"
-	if (!unit.getTarget() || (unit.getPosition().getDistance(unit.getSimPosition()) > 640.0 && isAhead(unit))) unit.setStrategy(3);
+	if (!unit.hasTarget() || !unit.getTarget().unit() || (unit.getPosition().getDistance(unit.getSimPosition()) > 640.0 && isAhead(unit)))
+	{
+		unit.setStrategy(3);
+		return;
+	}
 
-	else if ((Terrain().isInAllyTerritory(unit.getTilePosition()) && isBehind(unit)) || (Terrain().isInAllyTerritory(target.getTilePosition()))) // If unit is in ally territory
+	double widths = unit.getTarget().getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
+	double allyRange = widths + (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
+	double enemyRange = widths + (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
+
+	if ((Terrain().isInAllyTerritory(unit.getTilePosition()) && isBehind(unit)) || (Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()))) // If unit is in ally territory
 	{
 		if (!Strategy().isHoldChoke())
 		{
-			if (unit.getPosition().getDistance(Terrain().getMineralHoldPosition()) < 256 && isThreatening(target)) unit.setStrategy(1);
-			else if (allyRange > enemyRange && Terrain().isInAllyTerritory(target.getTilePosition())) unit.setStrategy(1);
+			if (unit.getPosition().getDistance(Terrain().getMineralHoldPosition()) < 256 && isThreatening(unit.getTarget())) unit.setStrategy(1);
+			else if (allyRange > enemyRange && Terrain().isInAllyTerritory(unit.getTarget().getTilePosition())) unit.setStrategy(1);
 			else unit.setStrategy(2);
 		}
 		else
 		{
-			if ((Terrain().isInAllyTerritory(target.getTilePosition()) && (isThreatening(target)) || isAhead(unit)) || Util().unitInRange(unit)) unit.setStrategy(1);
+			if ((Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()) && (isThreatening(unit.getTarget())) || isAhead(unit)) || Util().unitInRange(unit)) unit.setStrategy(1);
 			else if (!Util().targetInRange(unit) || allyRange >= enemyRange) unit.setStrategy(2);
 			else unit.setStrategy(0);
 		}
@@ -193,31 +200,25 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 
 bool UnitTrackerClass::shouldAttack(UnitInfo& unit)
 {
-	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());
-
-	if (unit.getType().isWorker() && unit.getTarget()->exists()) return true; // If unit is a worker, always fight
-	else if (Grids().getBaseGrid(target.getTilePosition()) > 0 && (!target.getType().isWorker() || Broodwar->getFrameCount() - target.getLastAttackFrame() < 500)) return true;
+	if (unit.getType().isWorker() && unit.getTarget().unit()->exists()) return true; // If unit is a worker, always fight
+	// TODO // else if (Grids().getBaseGrid(target.getTilePosition()) > 0 && (!target.getType().isWorker() || Broodwar->getFrameCount() - target.getLastAttackFrame() < 500)) return true;
 	else if ((unit.unit()->isCloaked() || unit.unit()->isBurrowed()) && Grids().getEDetectorGrid(WalkPosition(unit.getEngagePosition())) <= 0) return true;
 	else if (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && Util().unitInRange(unit)) return true; // If a unit is a Reaver and within range of an enemy	
-	else if ((target.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || target.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && unit.getPosition().getDistance(target.getPosition()) < 128) return true; // If unit is close to a tank, keep attacking it
+	else if ((unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && unit.getPosition().getDistance(unit.getTarget().getPosition()) < 128) return true; // If unit is close to a tank, keep attacking it
 	return false;
 }
 
 bool UnitTrackerClass::shouldRetreat(UnitInfo& unit)
 {
-	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());
-
-	if (unit.getType() == UnitTypes::Protoss_Zealot && target.getType() == UnitTypes::Terran_Vulture && Grids().getMobilityGrid(target.getWalkPosition()) > 6 && Grids().getAntiMobilityGrid(target.getWalkPosition()) < 2) return true; // If unit is a Zealot, don't chase Vultures TODO -- check for mobility
+	if (unit.getType() == UnitTypes::Protoss_Zealot && unit.getTarget().getType() == UnitTypes::Terran_Vulture && Grids().getMobilityGrid(unit.getTarget().getWalkPosition()) > 6 && Grids().getAntiMobilityGrid(unit.getTarget().getWalkPosition()) < 2) return true; // If unit is a Zealot, don't chase Vultures TODO -- check for mobility
 	else if (unit.getType() == UnitTypes::Protoss_High_Templar && unit.unit()->getEnergy() < 75) return true; // If unit is a High Templar and low energy, retreat	
 	else if (unit.getType() == UnitTypes::Terran_Medic && unit.unit()->getEnergy() <= 0) return true; // If unit is a Medic and no energy, retreat	
-	else if ((target.unit()->isCloaked() || target.unit()->isBurrowed()) && !target.unit()->isDetected()) return true;
+	else if (unit.hasTarget() && unit.getTarget().unit() && unit.getTarget().unit()->exists() && (unit.getTarget().unit()->isCloaked() || unit.getTarget().unit()->isBurrowed()) && !unit.getTarget().unit()->isDetected()) return true;
 	return false;
 }
 
 bool UnitTrackerClass::shouldDefend(UnitInfo& unit)
 {
-	UnitInfo &target = unit.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(unit.getTarget()) : Units().getEnemyUnit(unit.getTarget());
-
 	if (unit.getType().isFlyer() && Players().getNumberZerg() > 0 && globalEnemyAirStrength > 0.0 && Broodwar->self()->getUpgradeLevel(BuildOrder().getFirstUpgrade()) <= 0) return true;
 	else if (!unit.getType().isFlyer() && Players().getNumberZerg() > 0 && BuildOrder().isForgeExpand() && globalEnemyGroundStrength > 0.0 && Broodwar->self()->getUpgradeLevel(BuildOrder().getFirstUpgrade()) <= 0) return true;
 	else if (Strategy().isPlayPassive() && !Terrain().isInAllyTerritory(unit.getTilePosition())) return true;
@@ -291,18 +292,16 @@ void UnitTrackerClass::updateGlobalSimulation()
 	}
 }
 
-UnitInfo& UnitTrackerClass::getAllyUnit(Unit unit)
+UnitInfo& UnitTrackerClass::getUnitInfo(Unit unit)
 {
-	if (allyUnits.find(unit) != allyUnits.end()) return allyUnits[unit];
-	assert(0);
-	return UnitInfo();
-}
-
-UnitInfo& UnitTrackerClass::getEnemyUnit(Unit unit)
-{
-	if (enemyUnits.find(unit) != enemyUnits.end()) return enemyUnits[unit];
-	assert(0);
-	return UnitInfo();
+	if (unit)
+	{
+		auto &units = (!unit->exists() || unit->getPlayer() == Broodwar->self()) ? allyUnits : enemyUnits;
+		auto it = units.find(unit);
+		if (it != units.end()) return it->second;
+	}
+	static UnitInfo dummy{}; // Should never have to be used, but let's not crash if we do
+	return dummy;
 }
 
 set<Unit> UnitTrackerClass::getAllyUnitsFilter(UnitType type)
@@ -368,18 +367,18 @@ void UnitTrackerClass::updateEnemy(UnitInfo& unit)
 
 	// Set last command frame
 	if (unit.unit()->isStartingAttack() || unit.unit()->isRepairing()) unit.setLastAttackFrame(Broodwar->getFrameCount());
-	if (unit.unit()->getTarget() && unit.unit()->getTarget()->exists()) unit.setTarget(unit.unit()->getTarget());
-	else if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.unit()->getOrderTarget()) unit.setTarget(unit.unit()->getOrderTarget());
+	if (unit.unit()->getTarget() && unit.unit()->getTarget()->exists() && unit.unit()->getTarget()->getPlayer() == Broodwar->self()) unit.setTarget(&allyUnits[unit.unit()->getTarget()]);
+	else if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.unit()->getOrderTarget() && unit.unit()->getOrderTarget()->getPlayer() == Broodwar->self()) unit.setTarget(&allyUnits[unit.unit()->getTarget()]);
 }
 
 void UnitTrackerClass::storeAlly(Unit unit)
 {
 	if (unit->getType().isBuilding())
 	{
-		allyDefenses[unit].setUnit(unit);
-		allyDefenses[unit].setType(unit->getType());
-		allyDefenses[unit].setTilePosition(unit->getTilePosition());
-		allyDefenses[unit].setPosition(unit->getPosition());		
+		//allyDefenses[unit].setUnit(unit);
+		//allyDefenses[unit].setType(unit->getType());
+		//allyDefenses[unit].setTilePosition(unit->getTilePosition());
+		//allyDefenses[unit].setPosition(unit->getPosition());		
 	}
 	else allyUnits[unit].setUnit(unit);
 }
@@ -417,7 +416,7 @@ void UnitTrackerClass::updateAlly(UnitInfo& unit)
 	unit.setPriority(Util().getPriority(unit));
 
 	// Update target
-	unit.setTarget(Targets().getTarget(unit));
+	Targets().getTarget(unit);
 
 	// Set last command frame
 	if (unit.unit()->isStartingAttack()) unit.setLastAttackFrame(Broodwar->getFrameCount());

@@ -28,11 +28,11 @@ namespace utils {
 
 bool seaSide(WalkPosition p, const Map * pMap)
 {
-	if (!pMap->getWalkPosition(p).Sea()) return false;
+	if (!pMap->GetMiniTile(p).Sea()) return false;
 
 	for (WalkPosition delta : {WalkPosition(0, -1), WalkPosition(-1, 0), WalkPosition(+1, 0), WalkPosition(0, +1)})
 		if (pMap->Valid(p + delta))
-			if (!pMap->getWalkPosition(p + delta, check_t::no_check).Sea())
+			if (!pMap->GetMiniTile(p + delta, check_t::no_check).Sea())
 				return true;
 
 	return false;

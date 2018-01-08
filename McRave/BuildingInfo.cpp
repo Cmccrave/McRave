@@ -1,6 +1,6 @@
 #include "BuildingInfo.h"
 
-BuildingInfo::BuildingInfo()
+McRave::BuildingInfo::BuildingInfo()
 {
 	energy = 0;
 	idleStatus = true;

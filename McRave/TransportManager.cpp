@@ -28,7 +28,7 @@ void TransportTrackerClass::updateCargo(TransportInfo& transport)
 		// See if any Reavers need a shuttle
 		for (auto &r : Units().getAllyUnitsFilter(UnitTypes::Protoss_Reaver))
 		{
-			UnitInfo &reaver = Units().getAllyUnit(r);
+			UnitInfo &reaver = Units().getUnitInfo(r);
 
 			if (reaver.unit() && reaver.unit()->exists() && !reaver.getTransport() && transport.getCargoSize() + reaver.getType().spaceRequired() <= 8)
 			{
@@ -39,7 +39,7 @@ void TransportTrackerClass::updateCargo(TransportInfo& transport)
 		// See if any High Templars need a shuttle
 		for (auto &t : Units().getAllyUnitsFilter(UnitTypes::Protoss_High_Templar))
 		{
-			UnitInfo &templar = Units().getAllyUnit(t);
+			UnitInfo &templar = Units().getUnitInfo(t);
 			if (templar.unit() && templar.unit()->exists() && !templar.getTransport() && transport.getCargoSize() + templar.getType().spaceRequired() <= 8)
 			{
 				templar.setTransport(transport.unit());
@@ -68,9 +68,8 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 	// Check if we should be loading/unloading any cargo
 	for (auto &c : transport.getAssignedCargo())
 	{
-		UnitInfo& cargo = Units().getAllyUnit(c);
-		UnitInfo &target = cargo.getType() == UnitTypes::Terran_Medic ? Units().getAllyUnit(cargo.getTarget()) : Units().getEnemyUnit(cargo.getTarget());
-		if (!cargo.unit())	continue;
+		UnitInfo& cargo = Units().getUnitInfo(c);
+		if (!cargo.unit() || !cargo.hasTarget()) continue;
 
 		// If the cargo is not loaded
 		if (!cargo.unit()->isLoaded())
@@ -79,7 +78,7 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 			transport.getPosition().getDistance(transport.getDestination()) <= cargo.getGroundRange() + 32 ? transport.setMonitoring(true) : transport.setMonitoring(false);
 
 			// If it's requesting a pickup, set load state to 1
-			if (target.getPosition().getDistance(cargo.getPosition()) > cargo.getGroundRange() + 64 || cargo.getStrategy() != 1 || (cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.unit()->getEnergy() < 75) || (cargo.getType() == UnitTypes::Protoss_Reaver && cargo.unit()->getScarabCount() < 5))
+			if (cargo.getTarget().getPosition().getDistance(cargo.getPosition()) > cargo.getGroundRange() + 64 || cargo.getStrategy() != 1 || (cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.unit()->getEnergy() < 75) || (cargo.getType() == UnitTypes::Protoss_Reaver && cargo.unit()->getScarabCount() < 5))
 			{
 				transport.setLoading(true);
 				transport.unit()->load(cargo.unit());
@@ -87,9 +86,9 @@ void TransportTrackerClass::updateDecision(TransportInfo& transport)
 			}			
 		}
 		// Else if the cargo is loaded
-		else if (cargo.unit()->isLoaded() && target.getPosition().isValid())
+		else if (cargo.unit()->isLoaded() && cargo.getTarget().getPosition().isValid())
 		{
-			transport.setDestination(target.getPosition());
+			transport.setDestination(cargo.getTarget().getPosition());
 			// If cargo wants to fight, find a spot to unload
 			if (cargo.getStrategy() == 1) transport.setUnloading(true);
 			if (transport.getPosition().getDistance(transport.getDestination()) <= cargo.getGroundRange() + 32 && cargo.getStrategy() == 1 && ((cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.unit()->getEnergy() >= 75) || (cargo.getType() == UnitTypes::Protoss_Reaver && cargo.unit()->getScarabCount() >= 5)))
@@ -126,7 +125,7 @@ void TransportTrackerClass::updateMovement(TransportInfo& transport)
 			{
 				for (auto &u : transport.getAssignedCargo())
 				{
-					UnitInfo& unit = Units().getAllyUnit(u);
+					UnitInfo& unit = Units().getUnitInfo(u);
 					if (unit.getPosition().getDistance(Position(WalkPosition(x, y))) > 128) continue;
 				}
 			}
@@ -168,7 +167,7 @@ void TransportTrackerClass::removeUnit(Unit unit)
 	{
 		for (auto &c : myTransports[unit].getAssignedCargo())
 		{
-			UnitInfo &cargo = Units().getAllyUnit(c);
+			UnitInfo &cargo = Units().getUnitInfo(c);
 			cargo.setTransport(nullptr);
 		}
 		myTransports.erase(unit);

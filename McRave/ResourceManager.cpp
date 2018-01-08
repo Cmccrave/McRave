@@ -14,12 +14,13 @@ void ResourceTrackerClass::updateResources()
 	minSat = true;
 	for (auto &m : myMinerals)
 	{
-		ResourceInfo& resource = m.second;		
+		ResourceInfo& resource = m.second;	
+		if (!resource.unit()) continue;
 		if (resource.unit()->exists())
 		{
 			resource.setRemainingResources(resource.unit()->getResources());
 		}
-		if (minSat && resource.getGathererCount() < 2 && Grids().getBaseGrid(resource.getTilePosition()) > 0)
+		if (minSat && resource.getGathererCount() < 2 && resource.getState() > 0)
 		{
 			minSat = false;
 		}
@@ -31,16 +32,17 @@ void ResourceTrackerClass::updateResources()
 	for (auto &g : myGas)
 	{
 		ResourceInfo& resource = g.second;
+		if (!resource.unit()) continue;
 		if (resource.unit()->exists())
 		{
 			resource.setType(resource.unit()->getType());
 			resource.setRemainingResources(resource.unit()->getResources());
 		}
-		if (resource.getGathererCount() < 3 && resource.getType() != UnitTypes::Resource_Vespene_Geyser && resource.unit()->isCompleted() && Grids().getBaseGrid(resource.getTilePosition()) > 0)
+		if (resource.getGathererCount() < 3 && resource.getType() != UnitTypes::Resource_Vespene_Geyser && resource.unit()->isCompleted() && resource.getState() > 0)
 		{			
 			gasSat = false;
 		}
-		if (Grids().getBaseGrid(resource.getTilePosition()) == 2)
+		if (resource.getState() == 2)
 		{
 			tempGasCount++;
 		}
@@ -75,8 +77,6 @@ void ResourceTrackerClass::storeMineral(Unit resource)
 	m.setGathererCount(0);
 	m.setRemainingResources(resource->getResources());
 	m.setUnit(resource);
-	m.setResourceClusterPosition(resourceClusterCenter(resource));
-	m.setClosestBasePosition(Terrain().getClosestBaseCenter(resource->getPosition()));
 	m.setType(resource->getType());
 	m.setPosition(resource->getPosition());
 	m.setWalkPosition(Util().getWalkPosition(resource));
@@ -90,8 +90,6 @@ void ResourceTrackerClass::storeGas(Unit resource)
 	g.setGathererCount(0);
 	g.setRemainingResources(resource->getResources());
 	g.setUnit(resource);
-	g.setResourceClusterPosition(resourceClusterCenter(resource));
-	g.setClosestBasePosition(Terrain().getClosestBaseCenter(resource->getPosition()));
 	g.setType(resource->getType());
 	g.setPosition(resource->getPosition());
 	g.setWalkPosition(Util().getWalkPosition(resource));
@@ -127,34 +125,10 @@ void ResourceTrackerClass::removeResource(Unit resource)
 	// Any workers that targeted that resource now have no target
 	for (auto &worker : Workers().getMyWorkers())
 	{
-		if (worker.second.getResource() == resource)
+		if (worker.second.hasResource() && worker.second.getResource().unit() == resource)
 		{
 			worker.second.setResource(nullptr);
 		}
 	}
 	return;
-}
-
-// TEMP - Needs a permanent fix once proper resource storage setup
-Position ResourceTrackerClass::resourceClusterCenter(Unit resource)
-{
-	// Get average of minerals	
-	int avgX = 0, avgY = 0, size = 0;
-	for (auto &m : Broodwar->getUnitsInRadius(resource->getPosition(), 320, Filter::IsMineralField))
-	{
-		avgX = avgX + m->getPosition().x;
-		avgY = avgY + m->getPosition().y;
-		size++;
-	}
-	Position base = Terrain().getClosestBaseCenter(resource->getPosition());
-
-	if (size == 0 || !base.isValid())
-	{
-		return Positions::None;
-	}
-
-	avgX = avgX / size;
-	avgY = avgY / size;
-
-	return (Position(avgX, avgY) + base) / 2;
 }

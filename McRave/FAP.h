@@ -8,13 +8,16 @@
 using namespace BWAPI;
 using namespace std;
 
-class UnitInfo;
+namespace McRave
+{
+	class UnitInfo;
+}
 
 namespace Neolib {
 
 	class FastAPproximation {
 		struct FAPUnit {
-			FAPUnit(UnitInfo ed);
+			FAPUnit(McRave::UnitInfo ed);
 			const FAPUnit &operator= (const FAPUnit &other) const;
 
 			int id = 0;

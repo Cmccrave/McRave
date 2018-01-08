@@ -1,25 +1,33 @@
 #include "McRave.h"
 
-Unit TargetTrackerClass::getTarget(UnitInfo& unit)
+void TargetTrackerClass::getTarget(UnitInfo& unit)
 {
-	if (unit.getType() == UnitTypes::Terran_Medic) return allyTarget(unit);
-	else return enemyTarget(unit);
-	return nullptr;
+	if (unit.getType() == UnitTypes::Terran_Medic)allyTarget(unit);
+	else enemyTarget(unit);
 }
 
-Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
+void TargetTrackerClass::enemyTarget(UnitInfo& unit)
 {
 	double highest = 0.0, thisUnit = 0.0;
 	double closest = 0.0;
-	Unit target = nullptr;
 	Position targetPosition, simPosition;
 	WalkPosition targetWalkPosition;
 	TilePosition targetTilePosition;
 
-	for (auto &e : Units().getEnemyUnits())
+	if (Units().getEnemyUnits().size() == 0)
 	{
+		unit.setTarget(nullptr);
+		return;
+	}
+	
+	auto& bestTarget = Units().getEnemyUnits().begin()->second;
+	/*unit.setTarget(&bestTarget);
+	return;*/
+
+	for (auto e = Units().getEnemyUnits().begin(); e != Units().getEnemyUnits().end(); e++)
+	{
+		UnitInfo &enemy = e->second;
 		thisUnit = 0.0;
-		UnitInfo &enemy = e.second;
 		if (!enemy.unit()) continue;
 		double groundDist = double(Grids().getDistanceHome(enemy.getWalkPosition()) - Grids().getDistanceHome(unit.getWalkPosition()));
 		double airDist = unit.getPosition().getDistance(enemy.getPosition());
@@ -78,7 +86,7 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 			int eGrid = Grids().getEGroundCluster(enemy.getWalkPosition()) + Grids().getEAirCluster(enemy.getWalkPosition());
 			int aGrid = Grids().getAGroundCluster(enemy.getWalkPosition()) + Grids().getAAirCluster(enemy.getWalkPosition());
 			double cluster = double(eGrid) / double(1 + aGrid);
-		
+
 			if (Grids().getPsiStormGrid(enemy.getWalkPosition()) == 0 && !enemy.getType().isBuilding())
 			{
 				thisUnit = (enemy.getPriority() * cluster) / aqRange;
@@ -90,39 +98,40 @@ Unit TargetTrackerClass::enemyTarget(UnitInfo& unit)
 		// If this is the strongest enemy around, target it
 		if (thisUnit > highest)
 		{
-			target = enemy.unit();
+			bestTarget = enemy;
 			highest = thisUnit;
 			targetPosition = enemy.getPosition();
 		}
 	}
 	unit.setSimPosition(simPosition);
-
-	if (target)
+	if (unit.getPosition().getDistance(targetPosition) > max(unit.getGroundRange(), unit.getAirRange()))
 	{
-		if (unit.getPosition().getDistance(targetPosition) > max(unit.getGroundRange(), unit.getAirRange()))
-		{
-			unit.setEngagePosition(unit.getPosition() + Position((targetPosition - unit.getPosition()) * (unit.getPosition().getDistance(targetPosition) - max(unit.getGroundRange(), unit.getAirRange())) / unit.getPosition().getDistance(targetPosition)));
-		}
-		else
-		{
-			unit.setEngagePosition(unit.getPosition());
-		}
+		unit.setEngagePosition(unit.getPosition() + Position((targetPosition - unit.getPosition()) * (unit.getPosition().getDistance(targetPosition) - max(unit.getGroundRange(), unit.getAirRange())) / unit.getPosition().getDistance(targetPosition)));
 	}
-	return target;
+	else
+	{
+		unit.setEngagePosition(unit.getPosition());
+	}
+
+	//unit.setTarget(nullptr);
+	unit.setTarget(&bestTarget);
 }
 
-Unit TargetTrackerClass::allyTarget(UnitInfo& unit)
+void TargetTrackerClass::allyTarget(UnitInfo& unit)
 {
 	double best = 1.1, closest = 1000.0;
 	Unit target = nullptr;
 	Position targetPosition;
 	WalkPosition targetWalkPosition;
 	TilePosition targetTilePosition;
+	
+	if (Units().getAllyUnits().size() == 0) unit.setTarget(nullptr);
 
 	// Search for an ally target that needs healing for medics
-	for (auto &a : Units().getAllyUnits())
+	auto bestTarget = Units().getAllyUnits().end()->second;
+	for (auto a = Units().getAllyUnits().begin(); a != Units().getAllyUnits().end(); ++a)
 	{
-		UnitInfo ally = a.second;
+		UnitInfo &ally = a->second;
 		if (!ally.unit() || !ally.getType().isOrganic()) continue;
 		if (ally.unit()->isBeingHealed() || unit.unit() != ally.unit())	continue;
 
@@ -138,5 +147,5 @@ Unit TargetTrackerClass::allyTarget(UnitInfo& unit)
 			targetTilePosition = ally.getTilePosition();
 		}
 	}
-	return target;
+	unit.setTarget(&bestTarget);
 }

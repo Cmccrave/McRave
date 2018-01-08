@@ -42,7 +42,7 @@ Area::Area(Graph * pGraph, id areaId, WalkPosition top, int miniTiles)
 {
 	bwem_assert(areaId > 0);
 
-	auto & topMiniTile = GetMap()->getWalkPosition(top);
+	auto & topMiniTile = GetMap()->GetMiniTile(top);
 	bwem_assert(topMiniTile.AreaId() == areaId);
 
 	m_maxAltitude = topMiniTile.Altitude();

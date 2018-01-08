@@ -7,13 +7,20 @@
 
 // Namespaces
 using namespace BWAPI;
-using namespace std;
 using namespace BWEM;
+using namespace std;
+
+namespace McRave
+{
+	class BaseInfo;
+	class UnitInfo;
+	class WorkerInfo;
+}
 
 namespace
 {
-	auto & theMap = Map::Instance();
-	auto & BWEB = BWEBClass::Instance();
+	auto & mapBWEM = BWEM::Map::Instance();
+	auto & mapBWEB = BWEB::Map::Instance();
 }
 
 // Include standard libraries that are needed
@@ -21,11 +28,6 @@ namespace
 #include <set>
 #include <ctime>
 #include <chrono>
-
-// Forward declare classes needed in other header files than their defined header
-class BaseInfo;
-class UnitInfo;
-class ResourceInfo;
 
 // Include other source files
 #include "BuildingManager.h"
@@ -49,7 +51,7 @@ class ResourceInfo;
 
 // Namespace to access all trackers globally
 namespace McRave
-{		
+{
 	inline BuildingTrackerClass& Buildings() { return BuildingTracker::Instance(); }
 	inline BuildOrderTrackerClass& BuildOrder() { return BuildOrderTracker::Instance(); }
 	inline CommandTrackerClass& Commands() { return CommandTracker::Instance(); }

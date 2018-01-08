@@ -15,7 +15,7 @@ void SpecialUnitTrackerClass::updateArbiters()
 {
 	for (auto &a : Units().getAllyUnitsFilter(UnitTypes::Protoss_Arbiter))
 	{
-		UnitInfo &arbiter = Units().getAllyUnit(a);
+		UnitInfo &arbiter = Units().getUnitInfo(a);
 		int bestCluster = 0;
 		double closestD = 0.0;
 		Position bestPosition = Grids().getAllyArmyCenter();
@@ -44,9 +44,9 @@ void SpecialUnitTrackerClass::updateArbiters()
 		Grids().updateArbiterMovement(arbiter);
 
 		// If there's a stasis target, cast stasis on it		
-		if (arbiter.getTarget() && arbiter.getTarget()->exists() && arbiter.unit()->getEnergy() >= 100)
+		if (arbiter.hasTarget() && arbiter.getTarget().unit()->exists() && arbiter.unit()->getEnergy() >= 100)
 		{
-			arbiter.unit()->useTech(TechTypes::Stasis_Field, arbiter.getTarget());
+			arbiter.unit()->useTech(TechTypes::Stasis_Field, arbiter.getTarget().unit());
 		}
 	}
 	return;
@@ -56,14 +56,13 @@ void SpecialUnitTrackerClass::updateDetectors()
 {
 	for (auto &d : Units().getAllyUnitsFilter(UnitTypes::Protoss_Observer))
 	{
-		UnitInfo &detector = Units().getAllyUnit(d);
-		UnitInfo &target = Units().getEnemyUnit(detector.getTarget());
+		UnitInfo &detector = Units().getUnitInfo(d);
 
 		// Check if there is a unit that needs revealing
-		if (target.unit() && target.unit()->exists() && Grids().getAAirThreat(target.getWalkPosition()) > Grids().getEAirThreat(target.getWalkPosition()))
+		if (detector.hasTarget() && detector.getTarget().unit()->exists() && Grids().getAAirThreat(detector.getTarget().getWalkPosition()) > Grids().getEAirThreat(detector.getTarget().getWalkPosition()))
 		{
-			detector.setEngagePosition(target.getPosition());
-			detector.unit()->move(target.getPosition());
+			detector.setEngagePosition(detector.getTarget().getPosition());
+			detector.unit()->move(detector.getTarget().getPosition());
 			Grids().updateDetectorMovement(detector);
 			continue;
 		}
@@ -113,7 +112,7 @@ void SpecialUnitTrackerClass::updateReavers()
 {
 	for (auto &r : Units().getAllyUnitsFilter(UnitTypes::Protoss_Reaver))
 	{
-		UnitInfo &reaver = Units().getAllyUnit(r);
+		UnitInfo &reaver = Units().getUnitInfo(r);
 
 		// If we need Scarabs
 		if (!reaver.unit()->isLoaded() && reaver.unit()->getScarabCount() < 5)
@@ -129,7 +128,7 @@ void SpecialUnitTrackerClass::updateVultures()
 {
 	for (auto &v : Units().getAllyUnitsFilter(UnitTypes::Terran_Vulture))
 	{
-		UnitInfo &vulture = Units().getAllyUnit(v);
+		UnitInfo &vulture = Units().getUnitInfo(v);
 		double closestD = 0.0;
 		int x = rand() % 64 - 64;
 		int y = rand() % 64 - 64;

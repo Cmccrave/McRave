@@ -13,6 +13,7 @@
 #if BWEM_USE_MAP_PRINTER
 
 #include "map.h"
+#include "../EasyBMP_1.06/EasyBMP.h"
 
 
 using namespace BWAPI;
@@ -74,6 +75,43 @@ const MapPrinter::Color MapPrinter::Color::staticBuildings		= Color(255, 0, 255)
 const MapPrinter::Color MapPrinter::Color::blockingNeutrals		= Color(0, 0, 0);
 const MapPrinter::Color MapPrinter::Color::startingLocations	= Color(255, 255, 0);
 const MapPrinter::Color MapPrinter::Color::bases				= Color(0, 0, 255);
+
+
+void MapPrinter::Initialize(const Map * pMap)
+{
+	bwem_assert_throw(pMap->Initialized());
+	bwem_assert_throw_plus(canWrite(m_fileName), "MapPrinter could not create the file " + m_fileName);
+
+	m_pMap = pMap;
+	m_pBMP = make_unique<BMP>();
+	m_pBMP->SetSize(bw->mapWidth()*4, bw->mapHeight()*4);
+	m_pBMP->SetBitDepth(24);
+}
+
+
+MapPrinter::~MapPrinter()
+{
+	if (canWrite(m_fileName)) m_pBMP->WriteToFile(m_fileName.c_str());
+
+//	Uncomment the 2 lines below to write one more copy of the bitmap, in the folder of the map used, with the same name.
+//	string twinFileName = bw->mapPathName().substr(0, bw->mapPathName().size()-3) + "bmp";
+//	if (canWrite(twinFileName)) m_pBMP->WriteToFile(twinFileName.c_str());
+}
+
+
+void MapPrinter::Point(int x, int y, Color col)
+{
+	bwem_assert((0 <= x) && (x < m_pBMP->TellWidth()));
+	bwem_assert((0 <= y) && (y < m_pBMP->TellHeight()));
+
+	RGBApixel rgba;
+	rgba.Red = col.red;
+	rgba.Green = col.green;
+	rgba.Blue = col.blue;
+
+	m_pBMP->SetPixel(x, y, rgba);
+}
+
 
 void MapPrinter::Line(WalkPosition A, WalkPosition B, Color col, dashed_t dashedMode)
 {

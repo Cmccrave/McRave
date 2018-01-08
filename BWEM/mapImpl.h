@@ -53,7 +53,7 @@ public:
 	static const MapImpl *		Get(const Map * pMap)		{ return static_cast<const MapImpl *>(pMap); }
 
 	using Map::GetTile_;
-	using Map::getWalkPosition_;
+	using Map::GetMiniTile_;
 
 								MapImpl();
 								~MapImpl();

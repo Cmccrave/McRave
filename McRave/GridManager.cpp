@@ -31,7 +31,7 @@ void GridTrackerClass::reset()
 		}
 		if (eGroundClusterGrid[x][y] * eGroundThreat[x][y] + eAirClusterGrid[x][y] * eAirThreat[x][y] > eCenter)
 		{
-			eCenter = eGroundClusterGrid[x][y] * eGroundThreat[x][y] + eAirClusterGrid[x][y] * eAirThreat[x][y];
+			eCenter = eGroundClusterGrid[x][y] * int(eGroundThreat[x][y]) + eAirClusterGrid[x][y] * int(eAirThreat[x][y]);
 			enemyArmyCenter = Position(WalkPosition(x, y));
 		}
 
@@ -231,17 +231,16 @@ void GridTrackerClass::updateEnemyGrids()
 		WalkPosition start = unit.getWalkPosition();
 		WalkPosition center = WalkPosition(start.x + walkWidth, start.y + walkWidth);
 
-		if (((unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine && !unit.unit()->isBurrowed()) || unit.getType() == UnitTypes::Protoss_Scarab) && unit.getTarget() && unit.getTarget()->exists() && unit.getTarget()->getPlayer() == Broodwar->self() && !unit.getTarget()->getType().isWorker())
+		if (((unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine && !unit.unit()->isBurrowed()) || unit.getType() == UnitTypes::Protoss_Scarab) && unit.hasTarget() && unit.getTarget().unit()->exists() && unit.getTarget().getPlayer() == Broodwar->self() && !unit.getTarget().getType().isWorker())
 		{
-			UnitInfo &target = Units().getAllyUnit(unit.getTarget());
-			WalkPosition targetWalk = target.getWalkPosition();
+			WalkPosition targetWalk = unit.getTarget().getWalkPosition();
 			for (int x = targetWalk.x - 12; x <= targetWalk.x + 12 + walkWidth; x++)
 			{
 				for (int y = targetWalk.y - 12; y <= targetWalk.y + 12 + walkWidth; y++)
 				{
 					if (!WalkPosition(x, y).isValid()) continue;
 					if (x > targetWalk.x && x <= targetWalk.x + walkWidth && y > targetWalk.y && y <= targetWalk.y + walkWidth) continue;
-					if (unit.getTarget()->getPosition().getDistance(Position(WalkPosition(x, y))) > 96) continue;
+					if (unit.getTarget().getPosition().getDistance(Position(WalkPosition(x, y))) > 96) continue;
 					eSplashGrid[x][y] += 1;
 				}
 			}
@@ -381,33 +380,6 @@ void GridTrackerClass::updateBuildingGrid(BuildingInfo& building)
 	}
 }
 
-void GridTrackerClass::updateBaseGrid(BaseInfo& base)
-{
-	// Base Grid
-	TilePosition tile = base.getTilePosition();
-	for (int x = tile.x - 8; x < tile.x + 12; x++)
-	{
-		for (int y = tile.y - 8; y < tile.y + 11; y++)
-		{
-			if (TilePosition(x, y).isValid())
-			{
-				if (base.unit()->isCompleted() && base.unit()->exists())
-				{
-					baseGrid[x][y] = 2;
-				}
-				else if (base.unit()->exists())
-				{
-					baseGrid[x][y] = 1;
-				}
-				else
-				{
-					baseGrid[x][y] = 0;
-				}
-			}
-		}
-	}
-}
-
 void GridTrackerClass::updateDefenseGrid(UnitInfo& unit)
 {
 	// Defense Grid
@@ -483,14 +455,14 @@ void GridTrackerClass::updateMobilityGrids()
 			for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
 			{
 				if (!WalkPosition(x, y).isValid()) continue;
-				if (theMap.getWalkPosition(WalkPosition(x, y)).Walkable())
+				if (mapBWEM.GetMiniTile(WalkPosition(x, y)).Walkable())
 				{
 					for (int i = -12; i <= 12; i++)
 					{
 						for (int j = -12; j <= 12; j++)
 						{
 							// The more tiles around x,y that are walkable, the more mobility x,y has				
-							if (WalkPosition(x + i, y + j).isValid() && theMap.getWalkPosition(WalkPosition(x + i, y + j)).Walkable())
+							if (WalkPosition(x + i, y + j).isValid() && mapBWEM.GetMiniTile(WalkPosition(x + i, y + j)).Walkable())
 							{
 								mobilityGrid[x][y] += 1;
 							}
@@ -498,7 +470,7 @@ void GridTrackerClass::updateMobilityGrids()
 					}
 					mobilityGrid[x][y] = int(double(mobilityGrid[x][y]) / 56);
 
-					for (auto &area : theMap.Areas())
+					for (auto &area : mapBWEM.Areas())
 					{
 						for (auto &choke : area.ChokePoints())
 						{
@@ -510,7 +482,7 @@ void GridTrackerClass::updateMobilityGrids()
 								{
 									for (int j = 0 - startRatio; j <= 0 - startRatio; j++)
 									{
-										if (WalkPosition(x + i, y + j).isValid() && !theMap.getWalkPosition(WalkPosition(x + i, y + j)).Walkable())
+										if (WalkPosition(x + i, y + j).isValid() && !mapBWEM.GetMiniTile(WalkPosition(x + i, y + j)).Walkable())
 										{
 											notCorner = false;
 										}
@@ -529,7 +501,7 @@ void GridTrackerClass::updateMobilityGrids()
 					mobilityGrid[x][y] = min(mobilityGrid[x][y], 10);
 				}
 
-				if (!theMap.GetArea(WalkPosition(x, y)) || theMap.GetArea(WalkPosition(x, y))->AccessibleNeighbours().size() == 0)
+				if (!mapBWEM.GetArea(WalkPosition(x, y)) || mapBWEM.GetArea(WalkPosition(x, y))->AccessibleNeighbours().size() == 0)
 				{
 					// Island
 					mobilityGrid[x][y] = -1;
@@ -600,6 +572,7 @@ void GridTrackerClass::updateAllyMovement(Unit unit, WalkPosition here)
 			}
 		}
 	}
+		
 	return;
 }
 
@@ -654,7 +627,7 @@ void GridTrackerClass::updateDistanceGrid()
 			{
 				WalkPosition here = WalkPosition(x, y);
 				if (distanceGridHome[x][y] < 0) continue;
-				distanceGridHome[x][y] = BWEB.getGroundDistance(Position(here), Terrain().getPlayerStartingPosition());
+				distanceGridHome[x][y] = mapBWEB.getGroundDistance(Position(here), Terrain().getPlayerStartingPosition());
 			}
 		}		
 	}

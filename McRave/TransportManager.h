@@ -6,19 +6,22 @@
 using namespace BWAPI;
 using namespace std;
 
-class TransportTrackerClass
+namespace McRave
 {
-	map <Unit, TransportInfo> myTransports;
-	map <WalkPosition, int> recentExplorations;
-public:
-	void update();
-	void updateTransports();
-	void updateInformation(TransportInfo&);
-	void updateCargo(TransportInfo&);
-	void updateDecision(TransportInfo&);
-	void updateMovement(TransportInfo&);
-	void removeUnit(Unit);
-	void storeUnit(Unit);
-};
+	class TransportTrackerClass
+	{
+		map <Unit, TransportInfo> myTransports;
+		map <WalkPosition, int> recentExplorations;
+	public:
+		void update();
+		void updateTransports();
+		void updateInformation(TransportInfo&);
+		void updateCargo(TransportInfo&);
+		void updateDecision(TransportInfo&);
+		void updateMovement(TransportInfo&);
+		void removeUnit(Unit);
+		void storeUnit(Unit);
+	};
+}
 
-typedef Singleton<TransportTrackerClass> TransportTracker;
+typedef Singleton<McRave::TransportTrackerClass> TransportTracker;

@@ -52,7 +52,7 @@ Area * mainArea(MapImpl * pMap, TilePosition topLeft, TilePosition size)
 
 const Area * Graph::GetArea(WalkPosition w) const
 {
-	Area::id id = GetMap()->getWalkPosition(w).AreaId();
+	Area::id id = GetMap()->GetMiniTile(w).AreaId();
 	return id > 0 ? GetArea(id) : nullptr;
 }
 
@@ -132,7 +132,7 @@ void Graph::CreateChokePoints()
 		{
 			vector<altitude_t> Altitudes;
 			for (auto w : RawFrontierAB)
-				Altitudes.push_back(GetMap()->getWalkPosition(w).Altitude());
+				Altitudes.push_back(GetMap()->GetMiniTile(w).Altitude());
 
 			bwem_assert(is_sorted(Altitudes.rbegin(), Altitudes.rend()));
 		}

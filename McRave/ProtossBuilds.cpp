@@ -48,7 +48,7 @@ void BuildOrderTrackerClass::PFFEStandard()
 		firstTech = TechTypes::None;
 		buildingDesired[UnitTypes::Protoss_Forge] = Units().getSupply() >= 18;
 		buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 42);
-		buildingDesired[UnitTypes::Protoss_Photon_Cannon] = 2*(Units().getSupply() >= 18) + (Broodwar->self()->minerals() >= 125);
+		buildingDesired[UnitTypes::Protoss_Photon_Cannon] = (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Forge) > 0 && Broodwar->self()->minerals() > 100) + (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) > 0);
 		buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 26) + (Units().getSupply() >= 46);
 		buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 38) + (Units().getSupply() >= 68);
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 42;

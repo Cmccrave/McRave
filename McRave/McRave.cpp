@@ -12,19 +12,18 @@
 // Check psi storm and emp grids, bullet positions may not be the center
 // Production sat based on active mining bases instead
 // Rework reserved/queued resources
-// Rework pylon building timings (note: overbuilding when not producing units fast enough to keep up)
 
 // Test:
-// Create building clustering/simcity
-// Removed building grid
-// Remove targetposition in unitinfo
 // Medics disabled
 
 // Losses in SSCAIT17
 // Wuli - Improve early D / Probe pull issue
 // Kaon - Learning loss, no change needed
 // CherryPi - Storm usage
-// Aiur - Cannon rush
+// 2x Aiur - Cannon rush
+// Iron - Bunker rush
+// Juno - Cannon rush/contain
+// Zia - Storm usage
 
 void McRaveModule::onStart()
 {
@@ -35,7 +34,7 @@ void McRaveModule::onStart()
 	Terrain().onStart();
 	Players().onStart();
 	BuildOrder().onStart();
-	BWEB.onStart();
+	mapBWEB.onStart();
 }
 
 void McRaveModule::onEnd(bool isWinner)
@@ -45,7 +44,7 @@ void McRaveModule::onEnd(bool isWinner)
 
 void McRaveModule::onFrame()
 {	
-	BWEB.draw();
+	mapBWEB.draw();
 	Terrain().update();
 	Grids().update();
 	Resources().update();

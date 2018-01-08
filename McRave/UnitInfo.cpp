@@ -1,6 +1,6 @@
 #include "UnitInfo.h"
 
-UnitInfo::UnitInfo()
+McRave::UnitInfo::UnitInfo()
 {
 	maxGroundStrength = 0.0;
 	visibleGroundStrength = 0.0;

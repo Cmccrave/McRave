@@ -16,8 +16,6 @@ void TerrainTrackerClass::updateAreas()
 		findEnemyNatural();
 	}
 
-	Broodwar->drawCircleMap(Position(enemyNatural), 16, Colors::Red);
-
 	// If we see a building, check for closest starting location
 	if (!enemyStartingPosition.isValid())
 	{
@@ -77,9 +75,9 @@ void TerrainTrackerClass::updateAreas()
 void TerrainTrackerClass::updateChokes()
 {
 	// Add "empty" areas (ie. Andromeda areas around main)	
-	if (naturalArea)
+	if (mapBWEB.getNaturalArea())
 	{
-		for (auto &area : naturalArea->AccessibleNeighbours())
+		for (auto &area : mapBWEB.getNaturalArea()->AccessibleNeighbours())
 		{
 			for (auto & choke : area->ChokePoints())
 			{
@@ -90,7 +88,7 @@ void TerrainTrackerClass::updateChokes()
 			}
 		}
 
-		if (BuildOrder().isForgeExpand() || BuildOrder().isNexusFirst() || BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] > 1) allyTerritory.insert(naturalArea->Id());
+		if (BuildOrder().isForgeExpand() || BuildOrder().isNexusFirst() || BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] > 1) allyTerritory.insert(mapBWEB.getNaturalArea()->Id());
 	}
 }
 
@@ -106,15 +104,15 @@ bool TerrainTrackerClass::overlapsBases(TilePosition here)
 
 void TerrainTrackerClass::onStart()
 {
-	theMap.Initialize();
-	theMap.EnableAutomaticPathAnalysis();
-	bool startingLocationsOK = theMap.FindBasesForStartingLocations();
+	mapBWEM.Initialize();
+	mapBWEM.EnableAutomaticPathAnalysis();
+	bool startingLocationsOK = mapBWEM.FindBasesForStartingLocations();
 	assert(startingLocationsOK);
 	playerStartingTilePosition = Broodwar->self()->getStartLocation();
 	playerStartingPosition = Position(playerStartingTilePosition) + Position(64,48);
 
 	// Store non island bases	
-	for (auto &area : theMap.Areas())
+	for (auto &area : mapBWEM.Areas())
 	{
 		if (area.AccessibleNeighbours().size() == 0) continue;
 		for (auto &base : area.Bases())
@@ -130,7 +128,7 @@ void TerrainTrackerClass::findEnemyNatural()
 {
 	// Find enemy natural area
 	double distBest = DBL_MAX;
-	for (auto &area : theMap.Areas())
+	for (auto &area : mapBWEM.Areas())
 	{
 		for (auto &base : area.Bases())
 		{
@@ -147,14 +145,14 @@ void TerrainTrackerClass::findEnemyNatural()
 bool TerrainTrackerClass::isInAllyTerritory(TilePosition here)
 {
 	// Find the area of this tile position and see if it exists in ally territory
-	if (here.isValid() && theMap.GetArea(here) && allyTerritory.find(theMap.GetArea(here)->Id()) != allyTerritory.end()) return true;
+	if (here.isValid() && mapBWEM.GetArea(here) && allyTerritory.find(mapBWEM.GetArea(here)->Id()) != allyTerritory.end()) return true;
 	return false;
 }
 
 bool TerrainTrackerClass::isInEnemyTerritory(TilePosition here)
 {
 	// Find the area of this tile position and see if it exists in enemy territory
-	if (here.isValid() && theMap.GetArea(here) && enemyTerritory.find(theMap.GetArea(here)->Id()) != enemyTerritory.end()) return true;
+	if (here.isValid() && mapBWEM.GetArea(here) && enemyTerritory.find(mapBWEM.GetArea(here)->Id()) != enemyTerritory.end()) return true;
 	return false;
 }
 
@@ -163,8 +161,8 @@ Position TerrainTrackerClass::getClosestBaseCenter(Position here)
 	// Find the base within the area of this position if one exists
 	double distBest = DBL_MAX;
 	Position posBest;
-	if (!here.isValid() || !theMap.GetArea(TilePosition(here))) return Positions::Invalid;
-	for (auto &base : theMap.GetArea(TilePosition(here))->Bases())
+	if (!here.isValid() || !mapBWEM.GetArea(TilePosition(here))) return Positions::Invalid;
+	for (auto &base : mapBWEM.GetArea(TilePosition(here))->Bases())
 	{
 		double dist = here.getDistance(base.Center());
 		if (dist < distBest)
@@ -173,13 +171,13 @@ Position TerrainTrackerClass::getClosestBaseCenter(Position here)
 	return posBest;
 }
 
-int TerrainTrackerClass::getGroundDistance(Position start, Position end)
+double TerrainTrackerClass::getGroundDistance(Position start, Position end)
 {
-	int dist = 0;
+	double dist = 0.0;
 	if (!start.isValid() || !end.isValid()) return INT_MAX;
-	if (!theMap.GetArea(WalkPosition(start)) || !theMap.GetArea(WalkPosition(end))) return INT_MAX;
+	if (!mapBWEM.GetArea(WalkPosition(start)) || !mapBWEM.GetArea(WalkPosition(end))) return INT_MAX;
 
-	for (auto cpp : Map::Instance().GetPath(start, end))
+	for (auto cpp : BWEM::Map::Instance().GetPath(start, end))
 	{
 		auto center = Position{ cpp->Center() };
 		dist += start.getDistance(center);

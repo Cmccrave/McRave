@@ -1,6 +1,6 @@
 #include "WorkerInfo.h"
 
-WorkerInfo::WorkerInfo()
+McRave::WorkerInfo::WorkerInfo()
 {
 	thisUnit = nullptr;
 	resource = nullptr;

@@ -408,7 +408,7 @@ namespace Neolib {
 	}
 
 	void FastAPproximation::convertToUnitType(const FAPUnit &fu, BWAPI::UnitType ut) {
-		UnitInfo ui;
+		McRave::UnitInfo ui;
 		ui.setType(ut);
 		ui.setPosition({ fu.x, fu.y });
 		ui.setPlayer(fu.player);
@@ -420,7 +420,7 @@ namespace Neolib {
 		fu.operator=(uinew);
 	}
 
-	FastAPproximation::FAPUnit::FAPUnit(UnitInfo ui) :
+	FastAPproximation::FAPUnit::FAPUnit(McRave::UnitInfo ui) :
 		x(ui.getPosition().x),
 		y(ui.getPosition().y),
 

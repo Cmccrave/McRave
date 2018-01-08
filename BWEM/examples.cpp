@@ -29,7 +29,7 @@ using namespace BWAPI_ext;
 
 namespace utils
 {
-
+	
 
 struct SimpleGridMapCell
 {

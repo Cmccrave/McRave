@@ -156,7 +156,7 @@ void StrategyTrackerClass::updateEnemyBuild()
 				{
 					if (p->exists() && poolFrame == 0)
 					{
-						poolFrame = Broodwar->getFrameCount() + (double(p->getType().buildTime()) * (double(p->getType().maxHitPoints() - p->getHitPoints()) / double(p->getType().maxHitPoints())));						
+						poolFrame = Broodwar->getFrameCount() + int(double(p->getType().buildTime()) * (double(p->getType().maxHitPoints() - p->getHitPoints()) / double(p->getType().maxHitPoints())));						
 					}
 				}
 			}

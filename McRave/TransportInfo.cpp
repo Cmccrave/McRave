@@ -1,6 +1,6 @@
 #include "TransportInfo.h"
 
-TransportInfo::TransportInfo()
+McRave::TransportInfo::TransportInfo()
 {
 	position = Positions::None;
 	destination = Positions::None;
@@ -13,14 +13,14 @@ TransportInfo::TransportInfo()
 	unloading = false;
 }
 
-void TransportInfo::assignCargo(Unit unit)
+void McRave::TransportInfo::assignCargo(Unit unit)
 {
 	assignedCargo.insert(unit);
 	cargoSize = cargoSize + unit->getType().spaceRequired();
 	return;
 }
 
-void TransportInfo::removeCargo(Unit unit)
+void McRave::TransportInfo::removeCargo(Unit unit)
 {
 	assignedCargo.erase(unit);
 	cargoSize = cargoSize - unit->getType().spaceRequired();

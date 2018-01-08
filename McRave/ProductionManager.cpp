@@ -85,6 +85,22 @@ void ProductionTrackerClass::updateProduction()
 				}
 			}
 		}
+		else if (building.getType().isResourceDepot())
+		{
+			if (building.unit() && building.unit()->isIdle() && ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) || BuildOrder().getCurrentBuild() == "Sparks"))
+			{
+				for (auto &unit : building.getType().buildsWhat())
+				{
+					if (unit.isWorker())
+					{
+						if (Broodwar->self()->completedUnitCount(unit) < 75 && (Broodwar->self()->minerals() >= unit.mineralPrice() + Production().getReservedMineral() + Buildings().getQueuedMineral()))
+						{
+							building.unit()->train(unit);
+						}
+					}
+				}
+			}
+		}
 	}
 }
 

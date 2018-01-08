@@ -29,7 +29,7 @@ class Map;
 //////////////////////////////////////////////////////////////////////////////////////////////
 //
 // Corresponds to BWAPI/Starcraft's concept of minitile (8x8 pixels).
-// MiniTiles are accessed using WalkPositions (Cf. Map::getWalkPosition).
+// MiniTiles are accessed using WalkPositions (Cf. Map::GetMiniTile).
 // A Map holds Map::WalkSize().x * Map::WalkSize().y MiniTiles as its "MiniTile map".
 // A MiniTile contains essentialy 3 informations:
 //	- its Walkability

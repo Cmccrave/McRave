@@ -1,6 +1,6 @@
 #include "BaseInfo.h"
 
-BaseInfo::BaseInfo()
+McRave::BaseInfo::BaseInfo()
 {
 	lastVisibleFrame = 0;
 	thisUnit = nullptr;
