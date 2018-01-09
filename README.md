@@ -10,3 +10,5 @@ For any questions, email christianmccrave@gmail.com , McRave was started January
 **New Features:**
 - Added BWEB
 - Updated T build order
+
+**Copyright 2018 Christian McCrave, all rights reserved.**
