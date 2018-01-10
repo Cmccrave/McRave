@@ -6,21 +6,21 @@ void UnitTrackerClass::onUnitDiscover(Unit unit)
 }
 
 void UnitTrackerClass::onUnitCreate(Unit unit)
-{
+{	
 	if (unit->getPlayer() == Broodwar->self())
 	{
 		if (unit->getType().supplyRequired() > 0) supply += unit->getType().supplyRequired(); // Store supply if it costs supply		
 
 		// Store Buildings on creation rather than completion
 		if (unit->getType().isBuilding()) Buildings().storeBuilding(unit);
-		if (unit->getType().isResourceDepot()) Bases().storeBase(unit);
+		if (unit->getType().isResourceDepot()) Stations().storeStation(unit);
 		else if (unit->getType() == UnitTypes::Protoss_Pylon) Pylons().storePylon(unit);
 		else if (unit->getType() == UnitTypes::Protoss_Photon_Cannon) storeAlly(unit);
 	}
 }
 
 void UnitTrackerClass::onUnitDestroy(Unit unit)
-{
+{	
 	if (allyUnits.find(unit) != allyUnits.end())
 	{
 		if (allyUnits[unit].getTransport())
@@ -46,7 +46,7 @@ void UnitTrackerClass::onUnitDestroy(Unit unit)
 
 		if (unit->getType().isResourceDepot())
 		{
-			Bases().removeBase(unit);
+			Stations().removeStation(unit);
 			Buildings().removeBuilding(unit);
 		}
 		else if (unit->getType().isBuilding())
@@ -67,7 +67,7 @@ void UnitTrackerClass::onUnitDestroy(Unit unit)
 	{
 		if (unit->getType().isResourceDepot())
 		{
-			Bases().removeBase(unit);
+			Stations().removeStation(unit);
 		}
 	}
 
@@ -153,6 +153,6 @@ void UnitTrackerClass::onUnitComplete(Unit unit)
 		else if (!unit->getType().isWorker()) storeAlly(unit);
 	}
 
-	if (unit->getType().isResourceDepot()) Bases().storeBase(unit);
+	if (unit->getType().isResourceDepot()) Stations().storeStation(unit);
 	if (unit->getType().isResourceContainer()) Resources().storeResource(unit);
 }

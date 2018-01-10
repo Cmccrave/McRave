@@ -44,7 +44,6 @@ void UnitTrackerClass::updateUnits()
 		if ((Terrain().isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(Terrain().getDefendPosition()) < 64) && (!unit.getType().isWorker() || unit.getLastAttackFrame() > 0)) proxThreat += unit.getVisibleGroundStrength();
 		// TODO // if (Grids().getBaseGrid(unit.getTilePosition()) > 0 && (!unit.getType().isWorker() || unit.getLastAttackFrame() > 0)) immThreat += unit.getVisibleGroundStrength();
 		if (unit.getType().isBuilding() && unit.getGroundDamage() > 0 && unit.unit()->isCompleted()) enemyDefense += unit.getVisibleGroundStrength(); // If unit is a building and deals damage, add it to global defense		
-		Broodwar->drawTextMap(unit.getPosition(), "%s", unit.getType().c_str());
 	}
 
 	// Update Ally Defenses
@@ -64,9 +63,6 @@ void UnitTrackerClass::updateUnits()
 		updateAlly(unit);
 		updateLocalSimulation(unit);
 		updateStrategy(unit);
-
-		Broodwar->drawTextMap(unit.getPosition(), "%s", unit.getType().c_str());
-
 		if (unit.getType().isWorker() && Workers().getMyWorkers().find(unit.unit()) != Workers().getMyWorkers().end()) Workers().removeWorker(unit.unit()); // Remove the worker role if needed	
 		if (unit.getType().isWorker() && !Util().shouldPullWorker(unit.unit())) Workers().storeWorker(unit.unit()); // If this is a worker and is ready to go back to being a worker
 		if (!unit.getType().isBuilding()) unit.getType().isFlyer() ? globalAllyAirStrength += unit.getVisibleAirStrength() : globalAllyGroundStrength += unit.getVisibleGroundStrength();
@@ -117,7 +113,7 @@ void UnitTrackerClass::updateLocalSimulation(UnitInfo& unit)
 		if (enemy.getLastVisibleFrame() < Broodwar->getFrameCount()) simRatio = simRatio * (1.0 + min(0.2, (double(Broodwar->getFrameCount() - enemy.getLastVisibleFrame()) / 5000.0)));
 
 		if (simRatio > 0.0 && enemyRange > maxRange) maxRange = enemyRange;
-
+		
 		enemyLocalGroundStrength += enemy.getVisibleGroundStrength() * simRatio;
 		enemyLocalAirStrength += enemy.getVisibleAirStrength() * simRatio;
 	}
@@ -330,7 +326,7 @@ void UnitTrackerClass::storeEnemy(Unit unit)
 {
 	enemyUnits[unit].setUnit(unit);
 	enemySizes[unit->getType().size()] += 1;
-	if (unit->getType().isResourceDepot()) Bases().storeBase(unit);
+	if (unit->getType().isResourceDepot()) Stations().storeStation(unit);
 }
 
 void UnitTrackerClass::updateEnemy(UnitInfo& unit)
@@ -375,10 +371,10 @@ void UnitTrackerClass::storeAlly(Unit unit)
 {
 	if (unit->getType().isBuilding())
 	{
-		//allyDefenses[unit].setUnit(unit);
-		//allyDefenses[unit].setType(unit->getType());
-		//allyDefenses[unit].setTilePosition(unit->getTilePosition());
-		//allyDefenses[unit].setPosition(unit->getPosition());		
+		allyDefenses[unit].setUnit(unit);
+		allyDefenses[unit].setType(unit->getType());
+		allyDefenses[unit].setTilePosition(unit->getTilePosition());
+		allyDefenses[unit].setPosition(unit->getPosition());		
 	}
 	else allyUnits[unit].setUnit(unit);
 }

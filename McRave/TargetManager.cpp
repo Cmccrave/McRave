@@ -1,151 +1,108 @@
 #include "McRave.h"
 
-void TargetTrackerClass::getTarget(UnitInfo& unit)
+namespace McRave
 {
-	if (unit.getType() == UnitTypes::Terran_Medic)allyTarget(unit);
-	else enemyTarget(unit);
-}
-
-void TargetTrackerClass::enemyTarget(UnitInfo& unit)
-{
-	double highest = 0.0, thisUnit = 0.0;
-	double closest = 0.0;
-	Position targetPosition, simPosition;
-	WalkPosition targetWalkPosition;
-	TilePosition targetTilePosition;
-
-	if (Units().getEnemyUnits().size() == 0)
+	void TargetTrackerClass::getTarget(UnitInfo& unit)
 	{
-		unit.setTarget(nullptr);
-		return;
+		if (unit.getType() == UnitTypes::Terran_Medic) allyTarget(unit);		
+		else enemyTarget(unit);
 	}
-	
-	auto& bestTarget = Units().getEnemyUnits().begin()->second;
-	/*unit.setTarget(&bestTarget);
-	return;*/
 
-	for (auto e = Units().getEnemyUnits().begin(); e != Units().getEnemyUnits().end(); e++)
+	void TargetTrackerClass::enemyTarget(UnitInfo& unit)
 	{
-		UnitInfo &enemy = e->second;
-		thisUnit = 0.0;
-		if (!enemy.unit()) continue;
-		double groundDist = double(Grids().getDistanceHome(enemy.getWalkPosition()) - Grids().getDistanceHome(unit.getWalkPosition()));
-		double airDist = unit.getPosition().getDistance(enemy.getPosition());
-		double widths = unit.getType().tileWidth() * 16.0 + enemy.getType().tileWidth() * 16.0;
-
-		double distance = widths + (unit.getType().isFlyer() ? airDist : max(groundDist, airDist));
-		double allyRange = widths + (enemy.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
-		double aqRange = pow(max(allyRange, distance), 10.0);
-		double health = 1.0 + (0.25 * unit.getPercentHealth());
-
-		bool enemyCanAttack = ((unit.getType().isFlyer() && enemy.getAirDamage() > 0.0) || (!unit.getType().isFlyer() && enemy.getGroundDamage() > 0.0));
-		bool unitCanAttack = ((enemy.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0));
-
-
-		if (enemyCanAttack || unitCanAttack)
+		if (Units().getEnemyUnits().size() == 0)
 		{
-			if (unit.getPosition().getDistance(enemy.getPosition()) < closest || closest == 0.0)
+			unit.setTarget(nullptr);
+			return;
+		}
+
+		auto& bestTarget = Units().getEnemyUnits().begin();
+		double highest = 0.0;
+		for (auto e = Units().getEnemyUnits().begin(); e != Units().getEnemyUnits().end(); ++e)
+		{
+			UnitInfo &enemy = e->second;
+			if (!enemy.unit()) continue;
+
+			bool enemyCanAttack = ((unit.getType().isFlyer() && enemy.getAirDamage() > 0.0) || (!unit.getType().isFlyer() && enemy.getGroundDamage() > 0.0));
+			bool unitCanAttack = ((enemy.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0));
+
+			if (enemy.getType() == UnitTypes::Zerg_Egg || enemy.getType() == UnitTypes::Zerg_Larva) continue; // If it's an egg or larva, ignore it		
+			if (!unit.getType().isDetector() && ((enemy.getType().isFlyer() && unit.getAirRange() <= 0.0) || (!enemy.getType().isFlyer() && unit.getGroundRange() <= 0.0))) continue; // If unit is dead or unattackable, ignore it		
+			if (enemy.unit()->exists() && enemy.unit()->isStasised()) continue; // If the enemy is stasised, ignore it		
+			if (enemy.getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.getGroundRange() < 32 && unit.getType() != UnitTypes::Protoss_Dark_Templar) continue; // If the enemy is a mine and this is a melee unit (except DT), ignore it
+			if (unit.getTransport() && enemy.getType().isBuilding()) continue; // If unit is loaded, don't target buildings		
+			if ((enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && !enemy.unit()->isDetected() && !enemyCanAttack) continue;
+
+			double thisUnit = 0.0;
+			double groundDist = double(Grids().getDistanceHome(enemy.getWalkPosition()) - Grids().getDistanceHome(unit.getWalkPosition()));
+			double airDist = unit.getPosition().getDistance(enemy.getPosition());
+			double widths = unit.getType().tileWidth() * 16.0 + enemy.getType().tileWidth() * 16.0;
+			double distance = widths + (unit.getType().isFlyer() ? airDist : max(groundDist, airDist));
+			double allyRange = widths + (enemy.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
+			double aqRange = pow(max(allyRange, distance), 10.0);
+			double health = 1.0 + (0.25 * unit.getPercentHealth());
+
+			// Detectors only target invis units
+			if (unit.getType().isDetector() && !unit.getType().isBuilding())
 			{
-				simPosition = enemy.getPosition();
-				closest = unit.getPosition().getDistance(enemy.getPosition());
+				if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && ((!enemy.getType().isFlyer() && Grids().getAGroundThreat(enemy.getWalkPosition()) > 0.0) || (enemy.getType().isFlyer() && Grids().getAAirThreat(enemy.getWalkPosition()) > 0.0) || Terrain().isInAllyTerritory(enemy.getTilePosition())) && Grids().getEDetectorGrid(enemy.getWalkPosition()) == 0)
+				{
+					thisUnit = (health * enemy.getPriority()) / aqRange;
+				}
+			}
+			// Arbiters only target tanks - Testing no regard for distance
+			if (unit.getType() == UnitTypes::Protoss_Arbiter)
+			{
+				if (enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || enemy.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode || enemy.getType() == UnitTypes::Terran_Science_Vessel)
+				{
+					thisUnit = (enemy.getPriority() * Grids().getStasisCluster(enemy.getWalkPosition()));
+					thisUnit = (health * enemy.getPriority()) / aqRange;
+				}
+			}
+
+			// High Templars target the highest priority with the largest cluster
+			else if (unit.getType() == UnitTypes::Protoss_High_Templar)
+			{
+				int eGrid = Grids().getEGroundCluster(enemy.getWalkPosition()) + Grids().getEAirCluster(enemy.getWalkPosition());
+				int aGrid = Grids().getAGroundCluster(enemy.getWalkPosition()) + Grids().getAAirCluster(enemy.getWalkPosition());
+				double cluster = double(eGrid) / double(1 + aGrid);
+
+				if (Grids().getPsiStormGrid(enemy.getWalkPosition()) == 0 && !enemy.getType().isBuilding())
+					if (thisUnit > highest)
+					{
+						thisUnit = (enemy.getPriority() * cluster) / aqRange;
+						highest = thisUnit;
+						bestTarget = e;
+						unit.setEngagePosition(getEngagePosition(unit, enemy));
+						unit.setSimPosition(enemy.getPosition());
+					}
+			}
+
+			else if ((enemy.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0)) thisUnit = (enemy.getPriority() * health) / aqRange;	
+
+			if (thisUnit > highest)
+			{
+				highest = thisUnit;
+				bestTarget = e;
+				unit.setEngagePosition(getEngagePosition(unit, enemy));
+				unit.setSimPosition(enemy.getPosition());
 			}
 		}
 
-		if (enemy.getType() == UnitTypes::Zerg_Egg || enemy.getType() == UnitTypes::Zerg_Larva) continue; // If it's an egg or larva, ignore it		
-		if (!unit.getType().isDetector() && ((enemy.getType().isFlyer() && unit.getAirRange() <= 0.0) || (!enemy.getType().isFlyer() && unit.getGroundRange() <= 0.0))) continue; // If unit is dead or unattackable, ignore it		
-		if (enemy.unit()->exists() && enemy.unit()->isStasised()) continue; // If the enemy is stasised, ignore it		
-		if (enemy.getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.getGroundRange() < 32 && unit.getType() != UnitTypes::Protoss_Dark_Templar) continue; // If the enemy is a mine and this is a melee unit (except DT), ignore it
-		if (unit.getTransport() && enemy.getType().isBuilding()) continue; // If unit is loaded, don't target buildings		
-		if ((enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && !enemy.unit()->isDetected() && !enemyCanAttack) continue;
-
-		// If this is a detector unit, target invisible units only
-		if (unit.getType().isDetector() && !unit.getType().isBuilding())
-		{
-			if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && ((!enemy.getType().isFlyer() && Grids().getAGroundThreat(enemy.getWalkPosition()) > 0.0) || (enemy.getType().isFlyer() && Grids().getAAirThreat(enemy.getWalkPosition()) > 0.0) || Terrain().isInAllyTerritory(enemy.getTilePosition())) && Grids().getEDetectorGrid(enemy.getWalkPosition()) == 0)
-			{
-				thisUnit = enemy.getPriority() / aqRange;
-			}
-			else
-			{
-				continue;
-			}
-		}
-
-		// Arbiters only target tanks - Testing no regard for distance
-		if (unit.getType() == UnitTypes::Protoss_Arbiter)
-		{
-			if (enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || enemy.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode || enemy.getType() == UnitTypes::Terran_Science_Vessel)
-			{
-				thisUnit = (enemy.getPriority() * Grids().getStasisCluster(enemy.getWalkPosition()));
-			}
-		}
-
-		// High Templars target the highest priority with the largest cluster
-		else if (unit.getType() == UnitTypes::Protoss_High_Templar)
-		{
-			int eGrid = Grids().getEGroundCluster(enemy.getWalkPosition()) + Grids().getEAirCluster(enemy.getWalkPosition());
-			int aGrid = Grids().getAGroundCluster(enemy.getWalkPosition()) + Grids().getAAirCluster(enemy.getWalkPosition());
-			double cluster = double(eGrid) / double(1 + aGrid);
-
-			if (Grids().getPsiStormGrid(enemy.getWalkPosition()) == 0 && !enemy.getType().isBuilding())
-			{
-				thisUnit = (enemy.getPriority() * cluster) / aqRange;
-			}
-		}
-
-		else if ((enemy.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0)) thisUnit = (enemy.getPriority() * health) / aqRange;
-
-		// If this is the strongest enemy around, target it
-		if (thisUnit > highest)
-		{
-			bestTarget = enemy;
-			highest = thisUnit;
-			targetPosition = enemy.getPosition();
-		}
+		unit.setTarget(&bestTarget->second);
 	}
-	unit.setSimPosition(simPosition);
-	if (unit.getPosition().getDistance(targetPosition) > max(unit.getGroundRange(), unit.getAirRange()))
+
+	void TargetTrackerClass::allyTarget(UnitInfo& unit)
 	{
-		unit.setEngagePosition(unit.getPosition() + Position((targetPosition - unit.getPosition()) * (unit.getPosition().getDistance(targetPosition) - max(unit.getGroundRange(), unit.getAirRange())) / unit.getPosition().getDistance(targetPosition)));
-	}
-	else
-	{
-		unit.setEngagePosition(unit.getPosition());
+
 	}
 
-	//unit.setTarget(nullptr);
-	unit.setTarget(&bestTarget);
-}
-
-void TargetTrackerClass::allyTarget(UnitInfo& unit)
-{
-	double best = 1.1, closest = 1000.0;
-	Unit target = nullptr;
-	Position targetPosition;
-	WalkPosition targetWalkPosition;
-	TilePosition targetTilePosition;
-	
-	if (Units().getAllyUnits().size() == 0) unit.setTarget(nullptr);
-
-	// Search for an ally target that needs healing for medics
-	auto bestTarget = Units().getAllyUnits().end()->second;
-	for (auto a = Units().getAllyUnits().begin(); a != Units().getAllyUnits().end(); ++a)
+	Position TargetTrackerClass::getEngagePosition(UnitInfo& unit, UnitInfo& enemy)
 	{
-		UnitInfo &ally = a->second;
-		if (!ally.unit() || !ally.getType().isOrganic()) continue;
-		if (ally.unit()->isBeingHealed() || unit.unit() != ally.unit())	continue;
-
-		double distance = unit.getPosition().getDistance(ally.getPosition());
-
-		if (ally.getPercentHealth() < best || (ally.getPercentHealth() == best && distance <= closest))
+		if (unit.getPosition().getDistance(enemy.getPosition()) > max(unit.getGroundRange(), unit.getAirRange()))
 		{
-			closest = distance;
-			best = ally.getPercentHealth();
-			target = ally.unit();
-			targetPosition = ally.getPosition();
-			targetWalkPosition = ally.getWalkPosition();
-			targetTilePosition = ally.getTilePosition();
+			return (unit.getPosition() + Position((enemy.getPosition() - unit.getPosition()) * (unit.getPosition().getDistance(enemy.getPosition()) - max(unit.getGroundRange(), unit.getAirRange())) / unit.getPosition().getDistance(enemy.getPosition())));
 		}
+		return (unit.getPosition());
 	}
-	unit.setTarget(&bestTarget);
 }

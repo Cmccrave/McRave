@@ -32,14 +32,15 @@ void BuildingTrackerClass::queueBuildings()
 	// For each building desired
 	for (auto &b : BuildOrder().getBuildingDesired())
 	{
-		int cnt = 0;
+		int buildingDesired = b.second;
+		int buildingQueued = 0;
 		for (auto &queued : buildingsQueued)
 		{
-			if (queued.second == b.first) cnt++;
+			if (queued.second == b.first) buildingQueued++;
 		}
 
 		// If our visible count is lower than our desired count
-		if (b.second > Broodwar->self()->visibleUnitCount(b.first) && b.second - Broodwar->self()->visibleUnitCount(b.first) > cnt)
+		if (buildingDesired > buildingQueued + Broodwar->self()->visibleUnitCount(b.first))
 		{
 			TilePosition here = Buildings().getBuildLocation(b.first);
 			Unit builder = Workers().getClosestWorker(Position(here), true);
@@ -50,6 +51,8 @@ void BuildingTrackerClass::queueBuildings()
 				// Queue at this building type a pair of building placement and builder	
 				Workers().getMyWorkers()[builder].setBuildingType(b.first);
 				Workers().getMyWorkers()[builder].setBuildPosition(here);
+				buildingsQueued[here] = b.first;
+				buildingQueued++;
 			}
 		}
 	}
@@ -60,13 +63,14 @@ void BuildingTrackerClass::constructBuildings()
 	queuedMineral = 0;
 	queuedGas = 0;
 	buildingsQueued.clear();
-	for (auto &worker : Workers().getMyWorkers())
+	for (auto &w : Workers().getMyWorkers())
 	{
-		if (worker.second.getBuildingType().isValid() && worker.second.getBuildPosition().isValid())
+		WorkerInfo &worker = w.second;
+		if (worker.getBuildingType().isValid() && worker.getBuildPosition().isValid())
 		{
-			buildingsQueued[worker.second.getBuildPosition()] = worker.second.getBuildingType();
-			queuedMineral += worker.second.getBuildingType().mineralPrice();
-			queuedGas += worker.second.getBuildingType().gasPrice();
+			buildingsQueued[worker.getBuildPosition()] = worker.getBuildingType();
+			queuedMineral += worker.getBuildingType().mineralPrice();
+			queuedGas += worker.getBuildingType().gasPrice();
 		}
 	}
 }
@@ -99,7 +103,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	{
 		return Broodwar->getBuildLocation(building, Terrain().getPlayerStartingTilePosition());
 	}
-	
+
 	// Refineries are only built on my own gas resources
 	if (building.isRefinery())
 	{
@@ -253,7 +257,6 @@ set<Unit> BuildingTrackerClass::getAllyBuildingsFilter(UnitType type)
 BuildingInfo& BuildingTrackerClass::getAllyBuilding(Unit building)
 {
 	if (myBuildings.find(building) != myBuildings.end()) return myBuildings[building];
-	assert();
 	return BuildingInfo();
 }
 
@@ -262,6 +265,7 @@ TilePosition BuildingTrackerClass::findDefLocation(UnitType building, Position h
 	set<TilePosition> placements;
 	TilePosition tileBest = TilePositions::Invalid;
 	double distBest = DBL_MAX;
+	BWEB::Station station = mapBWEB.getClosestStation(TilePosition(here));
 
 	if (building == UnitTypes::Protoss_Photon_Cannon)
 	{
@@ -269,31 +273,34 @@ TilePosition BuildingTrackerClass::findDefLocation(UnitType building, Position h
 		{
 			BWEB::Wall wall = w.second;
 
-			for (auto &defense : wall.getDefenses())
+			for (auto &tile : wall.getDefenses())
 			{
-				Position defenseCenter = Position(defense) + Position(32, 32);
+				Position defenseCenter = Position(tile) + Position(32, 32);
 				double dist = defenseCenter.getDistance(here);
-				if (dist < distBest && usedTiles.find(defense) == usedTiles.end())
-					distBest = dist, tileBest = defense;
+				if (dist < distBest && usedTiles.find(tile) == usedTiles.end() && isQueueable(building, tile) && isBuildable(building, tile))
+					distBest = dist, tileBest = tile;
 			}
 		}
 	}
 
-	for (auto &station : mapBWEB.Stations())
+	for (auto &defense : station.DefenseLocations())
 	{
-		if (usedTiles.find(station.BWEMBase()->Location()) == usedTiles.end()) continue;
 		if (building == UnitTypes::Protoss_Pylon)
-		{			
-			TilePosition tile = *station.DefenseLocations().begin();
-			if (usedTiles.find(tile) == usedTiles.end() && isBuildable(building, tile))
-				tileBest = tile;
+		{
+			double dist = Position(defense).getDistance(Position(station.ResourceCenter()));
+			if (dist < distBest)
+			{
+				distBest = dist;
+				if (usedTiles.find(defense) == usedTiles.end() && Grids().getPylonGrid(TilePosition(station.BWEMBase()->Center())) <= 0 && isQueueable(building, defense) && isBuildable(building, defense))
+					tileBest = defense;
+			}
 		}
 		else
 		{
 			for (auto tile : placements)
 			{
 				double dist = Position(tile).getDistance(here);
-				if (dist < distBest && usedTiles.find(tile) == usedTiles.end() && isBuildable(building, tile))
+				if (dist < distBest && usedTiles.find(tile) == usedTiles.end() && isQueueable(building, tile) && isBuildable(building, tile))
 					distBest = dist, tileBest = tile;
 			}
 		}
@@ -319,7 +326,7 @@ TilePosition BuildingTrackerClass::findProdLocation(UnitType building, Position 
 		{
 			for (auto tile : placements)
 			{
-				if (usedTiles.find(tile) == usedTiles.end())
+				if (usedTiles.find(tile) == usedTiles.end() && isQueueable(building, tile) && isBuildable(building, tile))
 					distBest = dist, tileBest = tile;
 			}
 		}

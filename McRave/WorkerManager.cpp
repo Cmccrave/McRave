@@ -36,14 +36,8 @@ void WorkerTrackerClass::explore(WorkerInfo& worker)
 
 	if (Broodwar->isExplored(Terrain().getEnemyStartingTilePosition()))
 	{
-		for (auto &base : Bases().getEnemyBases())
-		{
-			if (Broodwar->getFrameCount() - base.second.getLastVisibleFrame() >= 2000 && Broodwar->getFrameCount() - base.second.getLastVisibleFrame() >= longest)
-			{
-				longest = Broodwar->getFrameCount() - base.second.getLastVisibleFrame();
-				destination = base.second.getPosition();
-			}
-		}
+		for (auto &station : Stations().getMyStations())		
+			destination = station.BWEMBase()->Center();		
 	}
 
 	if (Players().getNumberZerg() > 0 && Strategy().getPoolFrame() > 0 && !Strategy().isEnemyFastExpand())
@@ -99,26 +93,7 @@ void WorkerTrackerClass::updateDecision(WorkerInfo& worker)
 {
 	// If ready to remove unit role
 	if (Units().getAllyUnits().find(worker.unit()) != Units().getAllyUnits().end()) Units().getAllyUnits().erase(worker.unit());
-
 	if (BuildOrder().shouldScout() && Broodwar->getFrameCount() - deadScoutFrame > 1000 && (!Terrain().getEnemyStartingPosition().isValid() || !Strategy().isPlayPassive()) && (!scouter || !scouter->exists())) scouter = getClosestWorker(Position(mapBWEB.getSecondChoke()), false);
-
-	// Boulder removal logic
-	if (Resources().getMyBoulders().size() > 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) >= 2)
-	{
-		for (auto &b : Resources().getMyBoulders())
-		{
-			if (b.first && b.first->exists() && !worker.unit()->isCarryingMinerals() && worker.unit()->getDistance(b.second.getPosition()) < 320)
-			{
-				if (worker.unit()->getOrderTargetPosition() != b.second.getPosition() && !worker.unit()->isGatheringMinerals())
-				{
-					worker.unit()->gather(b.first);
-				}
-				return;
-			}
-		}
-	}
-	
-	if (worker.hasResource() && worker.getResource().getPosition().isValid()) Broodwar->drawLineMap(worker.getPosition(), worker.getResource().getPosition(), Colors::Red);
 
 	// Assign, return, scout, building, repair, fight, gather
 	if (shouldAssign(worker)) assign(worker);
@@ -140,7 +115,6 @@ bool WorkerTrackerClass::shouldAssign(WorkerInfo& worker)
 
 bool WorkerTrackerClass::shouldBuild(WorkerInfo& worker)
 {
-	if (worker.getBuildingType().isValid() && worker.getBuildPosition().isValid()) Broodwar->drawLineMap(worker.getPosition(), Position(worker.getBuildPosition()), Colors::Red);
 	if (worker.getBuildingType().isValid() && worker.getBuildPosition().isValid()) return true;
 	return false;
 }
@@ -164,7 +138,7 @@ bool WorkerTrackerClass::shouldFight(WorkerInfo& worker)
 }
 
 bool WorkerTrackerClass::shouldGather(WorkerInfo& worker)
-{	
+{
 	if (worker.hasResource() && (worker.unit()->isGatheringMinerals() || worker.unit()->isGatheringGas()) && worker.unit()->getTarget() != worker.getResource().unit() && worker.getResource().getState() == 2) return true;
 	else if (worker.unit()->isIdle() || worker.unit()->getLastCommand().getType() != UnitCommandTypes::Gather) return true;
 	return false;
@@ -365,7 +339,7 @@ void WorkerTrackerClass::scout(WorkerInfo& worker)
 			}
 			return;
 		}
-		else if (Bases().getEnemyBases().size() > 0)
+		else if (Stations().getEnemyStations().size() > 0)
 		{
 			explore(worker);
 			return;

@@ -213,13 +213,13 @@ void BuildOrderTrackerClass::protossSituational()
 		if (!Strategy().isAllyFastExpand() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Forge))
 		{
 			buildingDesired[UnitTypes::Protoss_Photon_Cannon] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon);
-			for (auto &base : Bases().getMyBases())
+			for (auto &station : Stations().getMyStations())
 			{
-				if (Grids().getPylonGrid(base.second.getTilePosition()) == 0)
+				if (Grids().getPylonGrid(station.BWEMBase()->Location()) == 0)
 				{
 					buildingDesired[UnitTypes::Protoss_Pylon] += 1;
 				}
-				else if (Grids().getDefenseGrid(base.second.getTilePosition()) <= 0 && Grids().getPylonGrid(base.second.getTilePosition()) > 0)
+				else if (Grids().getDefenseGrid(station.BWEMBase()->Location()) <= 0 && Grids().getPylonGrid(station.BWEMBase()->Location()) > 0)
 				{
 					//buildingDesired[UnitTypes::Protoss_Photon_Cannon] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) + 1;
 				}

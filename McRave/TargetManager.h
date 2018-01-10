@@ -9,6 +9,7 @@ namespace McRave
 {
 	class TargetTrackerClass
 	{
+		Position getEngagePosition(UnitInfo&, UnitInfo&);
 	public:
 		void getTarget(UnitInfo&);
 		void enemyTarget(UnitInfo&);

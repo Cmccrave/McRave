@@ -42,17 +42,16 @@ void TerrainTrackerClass::updateAreas()
 	}
 
 	// If there is at least one base position, set up attack position
-	if (Bases().getEnemyBases().size() > 0 && Grids().getEnemyArmyCenter().isValid())
+	if (Stations().getEnemyStations().size() > 0 && Grids().getEnemyArmyCenter().isValid())
 	{
 		double closestD = 0.0;
 		Position closestP;
-		for (auto &b : Bases().getEnemyBases())
+		for (auto &station : Stations().getEnemyStations())
 		{
-			BaseInfo &base = b.second;
-			if (enemyStartingPosition.getDistance(base.getPosition()) > closestD)
+			if (enemyStartingPosition.getDistance(station.BWEMBase()->Center()) > closestD)
 			{
-				closestD = enemyStartingPosition.getDistance(base.getPosition());
-				closestP = base.getPosition();
+				closestD = enemyStartingPosition.getDistance(station.BWEMBase()->Center());
+				closestP = station.BWEMBase()->Center();
 			}
 		}
 		attackPosition = closestP;
@@ -65,10 +64,10 @@ void TerrainTrackerClass::updateAreas()
 	else if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) > 1) defendPosition = Position(secondChoke);
 
 	// Set mineral holding positions
-	for (auto &base : Bases().getMyBases())
+	for (auto &station : Stations().getMyStations())
 	{
-		mineralHold = Position(base.second.getResourcesPosition());
-		backMineralHold = (Position(base.second.getResourcesPosition()) - Position(base.second.getPosition())) + Position(base.second.getResourcesPosition());
+		mineralHold = Position(station.ResourceCenter());
+		backMineralHold = (Position(station.ResourceCenter()) - Position(station.BWEMBase()->Center())) + Position(station.ResourceCenter());
 	}
 }
 

@@ -18,7 +18,6 @@ void CommandTrackerClass::updateAlliedUnits()
 		if ((unit.getType() == UnitTypes::Protoss_Scarab || unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine) && unit.hasTarget() && unit.getTarget().unit()->exists()) moveGroup.insert(unit.getTarget().unit());
 	}
 
-
 	for (auto &u : Units().getAllyUnits())
 	{
 		UnitInfo &unit = u.second;
@@ -50,10 +49,7 @@ void CommandTrackerClass::updateAlliedUnits()
 			else if ((Units().getGlobalGroundStrategy() == 1 && !unit.getType().isFlyer()) || (Units().getGlobalAirStrategy() == 1 && unit.getType().isFlyer()))
 			{
 				if (unit.getStrategy() == 0) flee(unit); // If locally behind, flee				
-				else if (unit.getStrategy() == 1 &&
-					unit.hasTarget() &&
-					unit.getTarget().unit() &&
-					unit.getTarget().unit()->exists()) engage(unit); // If locally ahead, attack				
+				else if (unit.getStrategy() == 1 &&	unit.hasTarget() &&	unit.getTarget().unit() && unit.getTarget().unit()->exists()) engage(unit); // If locally ahead, attack				
 				else if (unit.getStrategy() == 2) defend(unit); // If within ally territory, defend				
 				else move(unit); // Else move unit
 			}
@@ -92,17 +88,13 @@ void CommandTrackerClass::engage(UnitInfo& unit)
 	// Specific Tank behavior
 	if (unit.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode)
 	{
-		if (unit.unit()->getDistance(unit.getTarget().getPosition()) <= 400 && unit.unit()->getDistance(unit.getTarget().getPosition()) > 128)
-		{
-			unit.unit()->siege();
-		}
+		if (unit.unit()->getDistance(unit.getTarget().getPosition()) <= 400 && unit.unit()->getDistance(unit.getTarget().getPosition()) > 128)		
+			unit.unit()->siege();		
 	}
 	if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
 	{
-		if (unit.unit()->getDistance(unit.getTarget().getPosition()) > 400 || unit.unit()->getDistance(unit.getTarget().getPosition()) < 128)
-		{
-			unit.unit()->unsiege();
-		}
+		if (unit.unit()->getDistance(unit.getTarget().getPosition()) > 400 || unit.unit()->getDistance(unit.getTarget().getPosition()) < 128)	
+			unit.unit()->unsiege();		
 	}
 
 	// If we can use a Shield Battery
@@ -149,7 +141,7 @@ void CommandTrackerClass::engage(UnitInfo& unit)
 void CommandTrackerClass::move(UnitInfo& unit)
 {
 	// If it's a tank, make sure we're unsieged before moving - TODO: Check that target has velocity and > 512 or no velocity and < tank range
-	if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
+	if (unit.hasTarget() && unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode)
 	{
 		if (unit.unit()->getDistance(unit.getTarget().getPosition()) > 512 || unit.unit()->getDistance(unit.getTarget().getPosition()) < 64)
 			unit.unit()->unsiege();
@@ -205,17 +197,13 @@ void CommandTrackerClass::defend(UnitInfo& unit)
 	{
 		if (unit.getType() == UnitTypes::Protoss_Dragoon && Terrain().getBackMineralHoldPosition().isValid())
 		{
-			if (unit.unit()->getLastCommand().getTargetPosition() != Terrain().getBackMineralHoldPosition() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
-			{
-				unit.unit()->move(Terrain().getBackMineralHoldPosition());
-			}
+			if (unit.unit()->getLastCommand().getTargetPosition() != Terrain().getBackMineralHoldPosition() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)			
+				unit.unit()->move(Terrain().getBackMineralHoldPosition());		
 		}
 		else
 		{
-			if (unit.unit()->getLastCommand().getTargetPosition() != Terrain().getMineralHoldPosition() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
-			{
-				unit.unit()->move(Terrain().getMineralHoldPosition());
-			}
+			if (unit.unit()->getLastCommand().getTargetPosition() != Terrain().getMineralHoldPosition() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)		
+				unit.unit()->move(Terrain().getMineralHoldPosition());			
 		}
 	}
 	else
@@ -333,18 +321,14 @@ void CommandTrackerClass::flee(UnitInfo& unit)
 		Grids().updateAllyMovement(unit.unit(), bestPosition);
 		unit.setDestination(Position(bestPosition));
 		if (unit.unit()->getLastCommand().getTargetPosition() != Position(bestPosition) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
-		{
 			unit.unit()->move(Position(bestPosition));
-		}
 	}
 }
 
 void CommandTrackerClass::attack(UnitInfo& unit)
 {
 	if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Attack_Unit || unit.unit()->getLastCommand().getTarget() != unit.getTarget().unit())
-	{
 		unit.unit()->attack(unit.getTarget().unit());
-	}
 }
 
 void CommandTrackerClass::approach(UnitInfo& unit)

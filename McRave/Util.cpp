@@ -20,7 +20,8 @@ double UtilTrackerClass::getMaxGroundStrength(UnitInfo& unit)
 
 	if (unit.getType() == UnitTypes::Protoss_Interceptor) damage = unit.getGroundDamage() / 36.0;
 	else if (unit.getType() == UnitTypes::Terran_Bunker) damage = unit.getGroundDamage() / 15.0;
-	else if (unit.getType().groundWeapon().damageCooldown() > 0) damage = unit.getGroundDamage() / double(unit.getType().groundWeapon().damageCooldown());	
+	else if (unit.getType().groundWeapon().damageCooldown() > 0) damage = unit.getGroundDamage() / double(unit.getType().groundWeapon().damageCooldown());
+	else damage = unit.getGroundDamage() / 24.0;
 
 	double effectiveness = 1.0;
 	speed = max(24.0, unit.getSpeed());
@@ -131,7 +132,7 @@ double UtilTrackerClass::getVisibleAirStrength(UnitInfo& unit)
 double UtilTrackerClass::getPriority(UnitInfo& unit)
 {
 	// If an enemy detector is within range of an Arbiter, give it higher priority
-	if (Grids().getArbiterGrid(unit.getWalkPosition()) > 0 && unit.getType().isDetector() && unit.getPlayer()->isEnemy(Broodwar->self())) return 10.0;
+	//if (Grids().getArbiterGrid(unit.getWalkPosition()) > 0 && unit.getType().isDetector() && unit.getPlayer()->isEnemy(Broodwar->self())) return 10.0;
 	if (unit.getType().isWorker()) return (Broodwar->getFrameCount() - unit.getLastAttackFrame()) < 500 ? 10.0: 3.0;
 	if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine) return 10.0;
 	if (unit.getType() == UnitTypes::Protoss_Carrier) return 0.5;

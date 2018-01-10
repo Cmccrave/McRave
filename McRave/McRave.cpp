@@ -57,7 +57,7 @@ void McRaveModule::onFrame()
 	Buildings().update();
 	Production().update();
 	BuildOrder().update();
-	Bases().update();
+	Stations().update();
 	Display().update();
 }
 
@@ -81,6 +81,7 @@ void McRaveModule::onNukeDetect(Position target)
 
 void McRaveModule::onUnitDiscover(Unit unit)
 {
+	mapBWEB.onUnitDiscover(unit);
 	Units().onUnitDiscover(unit);
 }
 
@@ -103,6 +104,7 @@ void McRaveModule::onUnitCreate(Unit unit)
 
 void McRaveModule::onUnitDestroy(Unit unit)
 {
+	mapBWEB.onUnitDestroy(unit);
 	Units().onUnitDestroy(unit);
 }
 

@@ -15,6 +15,7 @@ void ProductionTrackerClass::updateProduction()
 	for (auto &b : Buildings().getMyBuildings())
 	{
 		BuildingInfo &building = b.second;
+		if (!building.unit()) continue;
 		double best = 0.0;
 		UnitType bestType = UnitTypes::None;
 		if (building.unit()->isIdle() && !building.getType().isResourceDepot())
@@ -38,7 +39,7 @@ void ProductionTrackerClass::updateProduction()
 					bestType = unit;
 				}
 				else if (value >= best && isCreateable(building.unit(), unit) && isSuitable(unit))
-				{					
+				{
 					best = Strategy().getUnitScore()[unit];
 					bestType = unit;
 				}
@@ -58,7 +59,7 @@ void ProductionTrackerClass::updateProduction()
 					idleProduction[building.unit()] = bestType;
 					reservedMineral += bestType.mineralPrice();
 					reservedGas += bestType.gasPrice();
-				}				
+				}
 			}
 
 			// If this building researches things
@@ -85,20 +86,12 @@ void ProductionTrackerClass::updateProduction()
 				}
 			}
 		}
-		else if (building.getType().isResourceDepot())
+		else if (building.getType().isResourceDepot() && building.unit()->isIdle() && ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) || BuildOrder().getCurrentBuild() == "Sparks"))
 		{
-			if (building.unit() && building.unit()->isIdle() && ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) || BuildOrder().getCurrentBuild() == "Sparks"))
+			for (auto &unit : building.getType().buildsWhat())
 			{
-				for (auto &unit : building.getType().buildsWhat())
-				{
-					if (unit.isWorker())
-					{
-						if (Broodwar->self()->completedUnitCount(unit) < 75 && (Broodwar->self()->minerals() >= unit.mineralPrice() + Production().getReservedMineral() + Buildings().getQueuedMineral()))
-						{
-							building.unit()->train(unit);
-						}
-					}
-				}
+				if (unit.isWorker() && Broodwar->self()->completedUnitCount(unit) < 75 && isAffordable(unit))
+					building.unit()->train(unit);
 			}
 		}
 	}
@@ -320,7 +313,7 @@ bool ProductionTrackerClass::isSuitable(UpgradeType upgrade)
 
 			// Range upgrades
 		case UpgradeTypes::Enum::Singularity_Charge:
-			return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon) >= 2 * (1 + BuildOrder().isNexusFirst());			
+			return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon) >= 2 * (1 + BuildOrder().isNexusFirst());
 
 			// Sight upgrades
 		case UpgradeTypes::Enum::Apial_Sensors:
