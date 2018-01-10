@@ -94,7 +94,39 @@ namespace McRave
 
 	void TargetTrackerClass::allyTarget(UnitInfo& unit)
 	{
+		if (Units().getAllyUnits().size() == 0)
+		{
+			unit.setTarget(nullptr);
+			return;
+		}
 
+		auto& bestTarget = Units().getAllyUnits().begin();
+		double highest = 0.0;
+
+		for (auto a = Units().getAllyUnits().begin(); a != Units().getAllyUnits().end(); ++a)
+		{
+			UnitInfo &ally = a->second;
+			if (!ally.unit()) continue;
+
+			if (ally.getType() == UnitTypes::Terran_Medic) continue;
+			if (ally.getType() != UnitTypes::Terran_Marine && ally.getType() != UnitTypes::Terran_Firebat) continue;
+			double thisUnit = 0.0;
+			double groundDist = double(Grids().getDistanceHome(ally.getWalkPosition()) - Grids().getDistanceHome(unit.getWalkPosition()));
+			double airDist = unit.getPosition().getDistance(ally.getPosition());
+			double widths = unit.getType().tileWidth() * 16.0 + ally.getType().tileWidth() * 16.0;
+			double distance = widths + (unit.getType().isFlyer() ? airDist : max(groundDist, airDist));
+			double health = 1.0 + (0.50 * unit.getPercentHealth());
+
+			thisUnit = (health * ally.getPriority()) / distance;
+			if (thisUnit > highest)
+			{
+				highest = thisUnit;
+				bestTarget = a;
+				unit.setEngagePosition(ally.getPosition());
+				unit.setSimPosition(ally.getPosition());
+			}
+		}
+		unit.setTarget(&bestTarget->second);
 	}
 
 	Position TargetTrackerClass::getEngagePosition(UnitInfo& unit, UnitInfo& enemy)

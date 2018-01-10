@@ -356,6 +356,7 @@ bool CommandTrackerClass::shouldAttack(UnitInfo& unit)
 
 	if (!unit.getTarget().getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() <= 0) return true;
 	else if (unit.getTarget().getType().isFlyer() && unit.unit()->getAirWeaponCooldown() <= 0) return true;
+	else if (unit.getType() == UnitTypes::Terran_Medic) return true;
 	return false;
 }
 

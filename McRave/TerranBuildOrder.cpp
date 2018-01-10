@@ -12,10 +12,7 @@ void BuildOrderTrackerClass::terranOpener()
 
 void BuildOrderTrackerClass::terranTech()
 {
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= 2 && getOpening)
-		getOpening = false;
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Barracks) >= 2 && getOpening)
-		getOpening = false;
+
 }
 
 void BuildOrderTrackerClass::terranSituational()
@@ -39,11 +36,10 @@ void BuildOrderTrackerClass::terranSituational()
 	}
 
 	unlockedType.insert(UnitTypes::Terran_Vulture);
-	unlockedType.insert(UnitTypes::Terran_Siege_Tank_Tank_Mode);
-	unlockedType.insert(UnitTypes::Terran_Goliath);
+	unlockedType.insert(UnitTypes::Terran_Siege_Tank_Tank_Mode);	
 
 	// Supply Depot logic
-	buildingDesired[UnitTypes::Terran_Supply_Depot] = min(22, (int)floor((Units().getSupply() / max(14, (16 - Broodwar->self()->allUnitCount(UnitTypes::Terran_Supply_Depot))))));
+	buildingDesired[UnitTypes::Terran_Supply_Depot] = min(22, (int)floor((Units().getSupply() / max(15, (16 - Broodwar->self()->allUnitCount(UnitTypes::Terran_Supply_Depot))))));
 
 	// Expansion logic
 	if (shouldExpand())
@@ -66,6 +62,7 @@ void BuildOrderTrackerClass::terranSituational()
 	// Armory logic - TODO find a better solution to this garbage
 	if (Strategy().getUnitScore()[UnitTypes::Terran_Goliath] > 1.0)
 	{
+		unlockedType.insert(UnitTypes::Terran_Goliath);
 		buildingDesired[UnitTypes::Terran_Armory] = 1;
 	}
 
@@ -74,8 +71,6 @@ void BuildOrderTrackerClass::terranSituational()
 	{
 		buildingDesired[UnitTypes::Terran_Academy] = 1;
 	}
-
-
 
 	// Barracks logic
 	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Barracks) >= 3 && (Production().getIdleProduction().size() == 0 && ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 200) || (!productionSat && Resources().isMinSaturated()))))

@@ -19,8 +19,7 @@ void BuildOrderTrackerClass::T2Fact()
 
 void BuildOrderTrackerClass::TSparks()
 {
-	buildingDesired[UnitTypes::Terran_Barracks] = (Units().getSupply() >= 22) + (Units().getSupply() >= 26) + (Units().getSupply() >= 46);
-	//buildingDesired[UnitTypes::Terran_Engineering_Bay] = (Units().getSupply() >= 36);
+	buildingDesired[UnitTypes::Terran_Barracks] = (Units().getSupply() >= 20) + (Units().getSupply() >= 22) + (Units().getSupply() >= 46);	
 	buildingDesired[UnitTypes::Terran_Refinery] = (Units().getSupply() >= 40);
 	buildingDesired[UnitTypes::Terran_Academy] = (Units().getSupply() >= 42);
 	getOpening = Units().getSupply() < 60;
