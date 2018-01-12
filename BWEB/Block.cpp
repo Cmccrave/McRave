@@ -17,7 +17,7 @@ namespace BWEB
 				if (!tile.isValid()) continue;
 				Position blockCenter = Position(tile) + Position(128, 80);
 				double dist = blockCenter.getDistance(pStart) + blockCenter.getDistance(Position(firstChoke));
-				if (dist < distBest && canAddBlock(tile, 8, 5, true))
+				if (dist < distBest && ((Broodwar->self()->getRace() == Races::Protoss && canAddBlock(tile, 8, 5, true)) || (Broodwar->self()->getRace() == Races::Terran && canAddBlock(tile, 6, 5, true))))
 				{
 					best = tile;
 					distBest = dist;
@@ -238,12 +238,11 @@ namespace BWEB
 		}
 		else if (Broodwar->self()->getRace() == Races::Terran)
 		{
-			Block newBlock(8, 5, here);
-			newBlock.insertLarge(here);
-			newBlock.insertLarge(here + TilePosition(4, 0));
-			newBlock.insertSmall(here + TilePosition(0, 3));
-			newBlock.insertMedium(here + TilePosition(2, 3));
-			newBlock.insertMedium(here + TilePosition(5, 3));
+			Block newBlock(6, 5, here);
+			newBlock.insertLarge(here);			
+			newBlock.insertSmall(here + TilePosition(4, 1));
+			newBlock.insertMedium(here + TilePosition(0, 3));
+			newBlock.insertMedium(here + TilePosition(3, 3));
 			blocks.push_back(newBlock);
 		}
 	}

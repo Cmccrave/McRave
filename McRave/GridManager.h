@@ -62,6 +62,7 @@ namespace McRave
 		void updateEnemyGrids();
 		void updateNeutralGrids();
 		void updateMobilityGrids();
+		void onStart();
 
 		// Unit and building based functions
 		void updateArbiterMovement(UnitInfo&);

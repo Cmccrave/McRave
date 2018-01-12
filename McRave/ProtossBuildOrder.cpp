@@ -170,28 +170,18 @@ void BuildOrderTrackerClass::protossSituational()
 	unlockedType.insert(UnitTypes::Protoss_Shuttle);
 
 	// Pylon logic
-	if (Strategy().isAllyFastExpand() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Pylon) <= 0)
+	if (isFastExpand() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Pylon) <= 0)
 		buildingDesired[UnitTypes::Protoss_Pylon] = Units().getSupply() >= 14;
-	else buildingDesired[UnitTypes::Protoss_Pylon] = min(22, (int)floor((Units().getSupply() / max(15, (16 - Broodwar->self()->allUnitCount(UnitTypes::Protoss_Pylon))))));
+	else buildingDesired[UnitTypes::Protoss_Pylon] = min(22, (int)floor((Units().getSupply() / max(15, (16 - Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon))))));
 
-	// Additional cannon for FFE logic (add on at most 2 at a time)
-	if (forgeExpand && Units().getGlobalEnemyGroundStrength() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense())
-	{
-		reinforceWall = true;
-		buildingDesired[UnitTypes::Protoss_Photon_Cannon] = min(2 + Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Photon_Cannon), 1 + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon));
-	}
-	else
-	{
-		reinforceWall = false;
-	}
-
+	// Reaction to enemy FFE
 	if (Strategy().getEnemyBuild() == "PFFE" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1)
 	{
 		buildingDesired[UnitTypes::Protoss_Nexus] = 2;
 	}
 
 	// Shield battery logic
-	if ((Players().getNumberTerran() == 0 && Strategy().isRush() && !Strategy().isAllyFastExpand()) || (oneGateCore && Players().getNumberZerg() > 0 && Units().getGlobalGroundStrategy() == 0))
+	if ((Players().getNumberTerran() == 0 && Strategy().isRush() && !isFastExpand()) || (!fastExpand && Players().getNumberZerg() > 0 && Units().getGlobalGroundStrategy() == 0))
 	{
 		buildingDesired[UnitTypes::Protoss_Shield_Battery] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core);
 	}
@@ -210,7 +200,7 @@ void BuildOrderTrackerClass::protossSituational()
 		}
 
 		// Cannon logic
-		if (!Strategy().isAllyFastExpand() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Forge))
+		if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Forge))
 		{
 			buildingDesired[UnitTypes::Protoss_Photon_Cannon] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon);
 			for (auto &station : Stations().getMyStations())
@@ -221,7 +211,7 @@ void BuildOrderTrackerClass::protossSituational()
 				}
 				else if (Grids().getDefenseGrid(station.BWEMBase()->Location()) <= 0 && Grids().getPylonGrid(station.BWEMBase()->Location()) > 0)
 				{
-					//buildingDesired[UnitTypes::Protoss_Photon_Cannon] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) + 1;
+					buildingDesired[UnitTypes::Protoss_Photon_Cannon] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) + 1;
 				}
 			}
 		}

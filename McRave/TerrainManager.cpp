@@ -87,7 +87,7 @@ void TerrainTrackerClass::updateChokes()
 			}
 		}
 
-		if (BuildOrder().isForgeExpand() || BuildOrder().isNexusFirst() || BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] > 1) allyTerritory.insert(mapBWEB.getNaturalArea()->Id());
+		if (BuildOrder().isFastExpand() || BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] > 1 || BuildOrder().getBuildingDesired()[UnitTypes::Terran_Command_Center] > 1) allyTerritory.insert(mapBWEB.getNaturalArea()->Id());
 	}
 }
 

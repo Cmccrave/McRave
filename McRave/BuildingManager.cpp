@@ -66,7 +66,7 @@ void BuildingTrackerClass::constructBuildings()
 	for (auto &w : Workers().getMyWorkers())
 	{
 		WorkerInfo &worker = w.second;
-		if (worker.getBuildingType().isValid() && worker.getBuildPosition().isValid())
+		if (worker.getBuildingType().isValid() && worker.getBuildPosition().isValid() && usedTiles.find(worker.getBuildPosition()) == usedTiles.end())
 		{
 			buildingsQueued[worker.getBuildPosition()] = worker.getBuildingType();
 			queuedMineral += worker.getBuildingType().mineralPrice();
@@ -185,7 +185,7 @@ TilePosition BuildingTrackerClass::getBuildLocation(UnitType building)
 	else
 	{
 		// If we are fast expanding
-		if (BuildOrder().isOpener() && (BuildOrder().isForgeExpand() || BuildOrder().isNexusFirst()))
+		if (BuildOrder().isOpener() && BuildOrder().isFastExpand())
 		{
 			BWEB::Wall naturalWall = mapBWEB.getWall(mapBWEB.getNaturalArea());
 			if (building.tileWidth() == 2) here = naturalWall.getSmallWall();
@@ -232,7 +232,7 @@ bool BuildingTrackerClass::isBuildable(UnitType building, TilePosition buildTile
 
 bool BuildingTrackerClass::isSuitable(UnitType building, TilePosition buildTilePosition)
 {
-	if (BuildOrder().isOpener() && BuildOrder().isForgeExpand() && building == UnitTypes::Protoss_Photon_Cannon)
+	if (BuildOrder().isOpener() && BuildOrder().isFastExpand() && building == UnitTypes::Protoss_Photon_Cannon)
 	{
 		Position center = Position(buildTilePosition + TilePosition(1, 1));
 		if (center.getDistance(Position(mapBWEB.getSecondChoke())) < 128 || !Terrain().isInAllyTerritory(TilePosition(center))) return false;

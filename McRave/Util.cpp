@@ -432,7 +432,7 @@ bool UtilTrackerClass::shouldPullWorker(Unit unit)
 	else if (BuildOrder().getCurrentBuild() == "Sparks" && Units().getGlobalGroundStrategy() == 1) return true;
 	else if (Strategy().isHoldChoke() && Units().getProxThreat() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) <= 2) return true;
 	else if (!Strategy().isHoldChoke() && Units().getImmThreat() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense()) return true;
-	else if ((Strategy().getEnemyBuild() == "Z5Pool" || Strategy().isRush()) && BuildOrder().isForgeExpand() && Units().getGlobalEnemyGroundStrength() > 0.00 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Photon_Cannon) < 1 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) > 0) return true;
-	else if (Strategy().getEnemyBuild() == "Unknown" && BuildOrder().isForgeExpand() && Units().getGlobalAllyGroundStrength() < 3.00 && Units().getGlobalEnemyGroundStrength() > 0.00 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Photon_Cannon) < 2 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) > 0) return true;
+	else if ((Strategy().getEnemyBuild() == "Z5Pool" || Strategy().isRush()) && BuildOrder().isFastExpand() && Units().getGlobalEnemyGroundStrength() > 0.00 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Photon_Cannon) < 1 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) > 0) return true;
+	else if (Strategy().getEnemyBuild() == "Unknown" && BuildOrder().isFastExpand() && Units().getGlobalAllyGroundStrength() < 3.00 && Units().getGlobalEnemyGroundStrength() > 0.00 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Photon_Cannon) < 2 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) > 0) return true;
 	return false;
 }

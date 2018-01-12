@@ -31,7 +31,7 @@ void ProductionTrackerClass::updateProduction()
 				if (unit.isAddon() && BuildOrder().getBuildingDesired()[unit] > Broodwar->self()->visibleUnitCount(unit))
 				{
 					building.unit()->buildAddon(unit);
-					continue;
+					break;
 				}
 				if (unit == UnitTypes::Protoss_Dark_Templar && BuildOrder().getCurrentBuild() == "PDTExpand" && Broodwar->self()->visibleUnitCount(unit) < 2 && isCreateable(building.unit(), unit) && isSuitable(unit)) // stupid hardcode stuff TODO
 				{
@@ -128,10 +128,8 @@ bool ProductionTrackerClass::isAffordable(UpgradeType upgrade)
 
 bool ProductionTrackerClass::isCreateable(Unit building, UnitType unit)
 {
-	if (!BuildOrder().isUnitUnlocked(unit))
-	{
+	if (!BuildOrder().isUnitUnlocked(unit))	
 		return false;
-	}
 
 	switch (unit)
 	{
@@ -202,18 +200,14 @@ bool ProductionTrackerClass::isCreateable(Unit building, UnitType unit)
 bool ProductionTrackerClass::isCreateable(UpgradeType upgrade)
 {
 	for (auto &unit : upgrade.whatUses())
-	{
 		if (BuildOrder().isUnitUnlocked(unit) && Broodwar->self()->getUpgradeLevel(upgrade) != upgrade.maxRepeats() && !Broodwar->self()->isUpgrading(upgrade)) return true;
-	}
 	return false;
 }
 
 bool ProductionTrackerClass::isCreateable(TechType tech)
 {
 	for (auto &unit : tech.whatUses())
-	{
 		if (BuildOrder().isUnitUnlocked(unit) && !Broodwar->self()->hasResearched(tech) && !Broodwar->self()->isResearching(tech)) return true;
-	}
 	return false;
 }
 
@@ -274,7 +268,7 @@ bool ProductionTrackerClass::isSuitable(UnitType unit)
 
 		// Factory Units
 	case UnitTypes::Enum::Terran_Vulture:
-		return Broodwar->self()->minerals() > Broodwar->self()->gas();
+		return true;
 		break;
 	case UnitTypes::Enum::Terran_Siege_Tank_Tank_Mode:
 		return true;
@@ -313,7 +307,7 @@ bool ProductionTrackerClass::isSuitable(UpgradeType upgrade)
 
 			// Range upgrades
 		case UpgradeTypes::Enum::Singularity_Charge:
-			return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon) >= 2 * (1 + BuildOrder().isNexusFirst());
+			return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon) >= 2 * (1 + BuildOrder().isFastExpand());
 
 			// Sight upgrades
 		case UpgradeTypes::Enum::Apial_Sensors:
@@ -366,6 +360,11 @@ bool ProductionTrackerClass::isSuitable(UpgradeType upgrade)
 			return Strategy().getUnitScore()[UnitTypes::Terran_Goliath] > 1.00;
 		case UpgradeTypes::Enum::U_238_Shells:
 			return Broodwar->self()->hasResearched(TechTypes::Stim_Packs);
+
+		case UpgradeTypes::Enum::Terran_Vehicle_Weapons:
+			return (Units().getSupply() > 120);
+		case UpgradeTypes::Enum::Terran_Vehicle_Plating:
+			return (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Terran_Vehicle_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Terran_Vehicle_Plating) || Broodwar->self()->isUpgrading(UpgradeTypes::Terran_Vehicle_Weapons));
 		}
 	}
 

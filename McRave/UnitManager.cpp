@@ -216,8 +216,8 @@ bool UnitTrackerClass::shouldRetreat(UnitInfo& unit)
 bool UnitTrackerClass::shouldDefend(UnitInfo& unit)
 {
 	if (unit.getType().isFlyer() && Players().getNumberZerg() > 0 && globalEnemyAirStrength > 0.0 && Broodwar->self()->getUpgradeLevel(BuildOrder().getFirstUpgrade()) <= 0) return true;
-	else if (!unit.getType().isFlyer() && Players().getNumberZerg() > 0 && BuildOrder().isForgeExpand() && globalEnemyGroundStrength > 0.0 && Broodwar->self()->getUpgradeLevel(BuildOrder().getFirstUpgrade()) <= 0) return true;
-	else if (Strategy().isPlayPassive() && !Terrain().isInAllyTerritory(unit.getTilePosition())) return true;
+	else if (!unit.getType().isFlyer() && Players().getNumberZerg() > 0 && BuildOrder().isFastExpand() && globalEnemyGroundStrength > 0.0 && Broodwar->self()->getUpgradeLevel(BuildOrder().getFirstUpgrade()) <= 0) return true;
+	else if (Strategy().isPlayPassive() && unit.getType() != UnitTypes::Terran_Vulture && !Terrain().isInAllyTerritory(unit.getTilePosition())) return true;
 	return false;
 }
 
@@ -225,14 +225,14 @@ bool UnitTrackerClass::isBehind(UnitInfo& unit)
 {
 	double decisionLocal = unit.getType().isFlyer() ? unit.getAirLocal() : unit.getGroundLocal();
 	double decisionGlobal = unit.getType().isFlyer() ? globalAirStrategy : globalGroundStrategy;
-	return (Strategy().isPlayPassive() || decisionGlobal == 0 || (!unit.getType().isFlyer() && unit.getGroundLocal() <= minThreshold) || (unit.getType().isFlyer() && unit.getAirLocal() <= minThreshold));
+	return ((Strategy().isPlayPassive() && unit.getType() != UnitTypes::Terran_Vulture) || decisionGlobal == 0 || (!unit.getType().isFlyer() && unit.getGroundLocal() <= minThreshold) || (unit.getType().isFlyer() && unit.getAirLocal() <= minThreshold));
 }
 
 bool UnitTrackerClass::isAhead(UnitInfo& unit)
 {
 	double decisionLocal = unit.getType().isFlyer() ? unit.getAirLocal() : unit.getGroundLocal();
 	double decisionGlobal = unit.getType().isFlyer() ? globalAirStrategy : globalGroundStrategy;
-	return (decisionGlobal == 1 || (!unit.getType().isFlyer() && unit.getGroundLocal() > minThreshold) || (unit.getType().isFlyer() && unit.getAirLocal() > minThreshold));
+	return (!Strategy().isPlayPassive() && (decisionGlobal == 1 || (!unit.getType().isFlyer() && unit.getGroundLocal() > minThreshold) || (unit.getType().isFlyer() && unit.getAirLocal() > minThreshold)));
 }
 
 bool UnitTrackerClass::isThreatening(UnitInfo& unit)
@@ -245,13 +245,11 @@ void UnitTrackerClass::updateGlobalSimulation()
 {
 	if (Broodwar->self()->getRace() == Races::Protoss)
 	{
-		if (Strategy().isPlayPassive())	globalGroundStrategy = 0;
-		else if (Broodwar->self()->getUpgradeLevel(BuildOrder().getFirstUpgrade()) >= 1 || Broodwar->self()->hasResearched(BuildOrder().getFirstTech()))	globalGroundStrategy = 1;
+		if (Broodwar->self()->getUpgradeLevel(BuildOrder().getFirstUpgrade()) >= 1 || Broodwar->self()->hasResearched(BuildOrder().getFirstTech()))	globalGroundStrategy = 1;
 		else if (globalAllyGroundStrength < globalEnemyGroundStrength * maxThreshold) globalGroundStrategy = 0;
 		else globalGroundStrategy = 1;
 
-		if (Strategy().isPlayPassive())	globalAirStrategy = 0;
-		else if ((Broodwar->self()->getUpgradeLevel(BuildOrder().getFirstUpgrade()) >= 1 || Broodwar->self()->hasResearched(BuildOrder().getFirstTech())))	globalAirStrategy = 1;
+		if ((Broodwar->self()->getUpgradeLevel(BuildOrder().getFirstUpgrade()) >= 1 || Broodwar->self()->hasResearched(BuildOrder().getFirstTech())))	globalAirStrategy = 1;
 		else if (globalAllyAirStrength < globalEnemyAirStrength * maxThreshold) globalAirStrategy = 0;
 		else globalAirStrategy = 1;
 	}
@@ -261,28 +259,22 @@ void UnitTrackerClass::updateGlobalSimulation()
 		if (Players().getNumberZerg() > 0) offset = 1.4;
 		if (Players().getNumberProtoss() > 0) offset = 1.4;
 
-		if (Strategy().isPlayPassive())	globalGroundStrategy = 0;
-		else if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Ion_Thrusters)) globalGroundStrategy = 1;
-		else if (Broodwar->self()->hasResearched(TechTypes::Stim_Packs) && BuildOrder().getCurrentBuild() == "Sparks") globalGroundStrategy = 1;
+		if (Broodwar->self()->getUpgradeLevel(BuildOrder().getFirstUpgrade()) >= 1 || Broodwar->self()->hasResearched(BuildOrder().getFirstTech()))	globalGroundStrategy = 1;
 		else if (globalAllyGroundStrength < globalEnemyGroundStrength * offset) globalGroundStrategy = 0;
 		else globalGroundStrategy = 1;
 
-		if (Strategy().isPlayPassive())	globalAirStrategy = 0;
-		else if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Ion_Thrusters)) globalAirStrategy = 1;
-		else if (Broodwar->self()->hasResearched(TechTypes::Stim_Packs) && BuildOrder().getCurrentBuild() == "Sparks") globalGroundStrategy = 1;
+		if (Broodwar->self()->getUpgradeLevel(BuildOrder().getFirstUpgrade()) >= 1 || Broodwar->self()->hasResearched(BuildOrder().getFirstTech()))	globalAirStrategy = 1;
 		else if (globalAllyAirStrength < globalEnemyAirStrength * offset) globalAirStrategy = 0;
 		else globalAirStrategy = 1;
 	}
 	else if (Broodwar->self()->getRace() == Races::Zerg)
 	{
 		double offset = 1.0;
-		if (Strategy().isPlayPassive())	globalGroundStrategy = 0;
-		else if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Metabolic_Boost) >= 1)	globalGroundStrategy = 1;
+		if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Metabolic_Boost) >= 1)	globalGroundStrategy = 1;
 		else if (globalAllyGroundStrength < globalEnemyGroundStrength * offset) globalGroundStrategy = 0;
 		else globalGroundStrategy = 1;
 
-		if (Strategy().isPlayPassive())	globalAirStrategy = 0;
-		else if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Metabolic_Boost) >= 1)	globalAirStrategy = 1;
+		 if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Metabolic_Boost) >= 1)	globalAirStrategy = 1;
 		else if (globalAllyGroundStrength < globalEnemyGroundStrength * offset) globalAirStrategy = 0;
 		else globalAirStrategy = 1;
 	}

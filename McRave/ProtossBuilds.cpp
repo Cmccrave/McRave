@@ -22,7 +22,6 @@ void BuildOrderTrackerClass::P4Gate()
 		buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 32;
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 34;
 		getOpening = Units().getSupply() < 120;
-		oneGateCore = true;
 		scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) > 0;
 	}
 }
@@ -40,7 +39,7 @@ void BuildOrderTrackerClass::PFFEStandard()
 		buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 38) + (Units().getSupply() >= 68);
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 42;
 		getOpening = Units().getSupply() < 80;
-		forgeExpand = true;
+		fastExpand = true;
 	}
 	else if (Strategy().getEnemyBuild() == "Z5Pool" || Strategy().isRush())
 	{
@@ -53,7 +52,7 @@ void BuildOrderTrackerClass::PFFEStandard()
 		buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 38) + (Units().getSupply() >= 68);
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 42;
 		getOpening = Units().getSupply() < 80;
-		forgeExpand = true;
+		fastExpand = true;
 	}
 	else if (Strategy().getEnemyBuild() == "Z3HatchLing")
 	{
@@ -66,7 +65,7 @@ void BuildOrderTrackerClass::PFFEStandard()
 		buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 38) + (Units().getSupply() >= 68);
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 42;
 		getOpening = Units().getSupply() < 80;
-		forgeExpand = true;
+		fastExpand = true;
 	}
 	else if (Strategy().getEnemyBuild() == "None" && Terrain().getEnemyStartingPosition().isValid() && Strategy().isEnemyFastExpand())
 	{
@@ -79,7 +78,7 @@ void BuildOrderTrackerClass::PFFEStandard()
 		buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 38) + (Units().getSupply() >= 68);
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 42;
 		getOpening = Units().getSupply() < 80;
-		forgeExpand = true;
+		fastExpand = true;
 	}
 	else if (Strategy().getEnemyBuild() == "Z12HatchHydra")
 	{
@@ -91,11 +90,11 @@ void BuildOrderTrackerClass::PFFEStandard()
 		buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24);
 		buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 26) + (Units().getSupply() >= 42);
 		buildingDesired[UnitTypes::Protoss_Forge] = (Units().getSupply() >= 28);
-		buildingDesired[UnitTypes::Protoss_Photon_Cannon] = (Units().getSupply() >= 30) + 3*(Units().getSupply() > 44);
+		buildingDesired[UnitTypes::Protoss_Photon_Cannon] = (Units().getSupply() >= 30) + 3 * (Units().getSupply() > 44);
 		buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 38) + (Units().getSupply() >= 68);
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = (Units().getSupply() >= 42);
 		getOpening = Units().getSupply() < 80;
-		forgeExpand = true;
+		fastExpand = true;
 	}
 	else if (Strategy().getEnemyBuild() == "Z12HatchMuta")
 	{
@@ -107,16 +106,16 @@ void BuildOrderTrackerClass::PFFEStandard()
 		buildingDesired[UnitTypes::Protoss_Nexus] = 1 + (Units().getSupply() >= 24);
 		buildingDesired[UnitTypes::Protoss_Gateway] = (Units().getSupply() >= 26);
 		buildingDesired[UnitTypes::Protoss_Forge] = (Units().getSupply() >= 28);
-		
+
 		if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Stargate) > 0)
 		{
 			buildingDesired[UnitTypes::Protoss_Photon_Cannon] = 2 + (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) >= 2) + (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) >= 3) + (Units().getSupply() >= 74);
 		}
-		
+
 		buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 38) + (Units().getSupply() >= 60);
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 40;
 		getOpening = Units().getSupply() < 80;
-		forgeExpand = true;
+		fastExpand = true;
 	}
 	else
 	{
@@ -129,7 +128,7 @@ void BuildOrderTrackerClass::PFFEStandard()
 		buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 38) + (Units().getSupply() >= 68);
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 44;
 		getOpening = Units().getSupply() < 80;
-		forgeExpand = true;
+		fastExpand = true;
 	}
 	scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 0;
 }
@@ -156,7 +155,7 @@ void BuildOrderTrackerClass::P12Nexus()
 		buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 28);
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 30;
 		getOpening = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) < 3;
-		nexusFirst = true;
+		fastExpand = true;
 		scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core) > 0;
 	}
 	else
@@ -169,7 +168,7 @@ void BuildOrderTrackerClass::P12Nexus()
 		buildingDesired[UnitTypes::Protoss_Shield_Battery] = (Units().getSupply() >= 80);
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = (Units().getSupply() >= 30);
 		getOpening = Units().getSupply() < 120;
-		nexusFirst = true;
+		fastExpand = true;
 		scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core) > 0;
 	}
 }
@@ -186,7 +185,7 @@ void BuildOrderTrackerClass::P21Nexus()
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
 		buildingDesired[UnitTypes::Protoss_Robotics_Facility] = Units().getSupply() >= 80;
 		getOpening = Units().getSupply() < 100;
-		nexusFirst = true;
+		fastExpand = true;
 		scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core) > 0;
 	}
 	else
@@ -200,7 +199,7 @@ void BuildOrderTrackerClass::P21Nexus()
 		buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
 		buildingDesired[UnitTypes::Protoss_Robotics_Facility] = Units().getSupply() >= 56;
 		getOpening = Units().getSupply() < 100;
-		nexusFirst = true;
+		fastExpand = true;
 		scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core) > 0;
 	}
 }
@@ -216,7 +215,6 @@ void BuildOrderTrackerClass::PDTExpand()
 	buildingDesired[UnitTypes::Protoss_Citadel_of_Adun] = Units().getSupply() >= 36;
 	buildingDesired[UnitTypes::Protoss_Templar_Archives] = Units().getSupply() >= 48;
 	getOpening = Units().getSupply() < 54;
-	oneGateCore = true;
 	scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) > 0;
 }
 
@@ -254,7 +252,6 @@ void BuildOrderTrackerClass::P3GateObs()
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 28;
 	buildingDesired[UnitTypes::Protoss_Robotics_Facility] = Units().getSupply() >= 52;
 	getOpening = Units().getSupply() < 80;
-	oneGateCore = true;
 	scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 0;
 }
 
@@ -267,7 +264,6 @@ void BuildOrderTrackerClass::PNZCore()
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 24;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 26;
 	getOpening = Units().getSupply() < 60;
-	oneGateCore = true;
 	scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 0;
 }
 
@@ -280,7 +276,6 @@ void BuildOrderTrackerClass::PZCore()
 	buildingDesired[UnitTypes::Protoss_Assimilator] = (Units().getSupply() >= 24);
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = (Units().getSupply() >= 34);
 	getOpening = Units().getSupply() < 60;
-	oneGateCore = true;
 	scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 0;
 }
 
@@ -293,7 +288,6 @@ void BuildOrderTrackerClass::PZZCore()
 	buildingDesired[UnitTypes::Protoss_Assimilator] = Units().getSupply() >= 32;
 	buildingDesired[UnitTypes::Protoss_Cybernetics_Core] = Units().getSupply() >= 40;
 	getOpening = Units().getSupply() < 60;
-	oneGateCore = true;
 	scout = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 0;
 }
 

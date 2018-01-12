@@ -35,6 +35,7 @@ void McRaveModule::onStart()
 	Players().onStart();
 	BuildOrder().onStart();
 	mapBWEB.onStart();
+	Grids().onStart();
 }
 
 void McRaveModule::onEnd(bool isWinner)

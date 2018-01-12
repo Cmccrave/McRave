@@ -34,12 +34,10 @@ void StrategyTrackerClass::protossStrategy()
 		else enemyFastExpand = false;
 
 		// Check if there's a fast expansion for ally or enemy
-		if (BuildOrder().isNexusFirst() || BuildOrder().isForgeExpand())
+		if (BuildOrder().isFastExpand())
 			allyFastExpand = true;
 		if (Units().getEnemyComposition()[UnitTypes::Terran_Command_Center] > 1 || (Units().getEnemyComposition()[UnitTypes::Zerg_Hatchery] + Units().getEnemyComposition()[UnitTypes::Zerg_Lair]) > 1 || Units().getEnemyComposition()[UnitTypes::Protoss_Nexus] > 1)
 			enemyFastExpand = true;
-
-		
 
 		// Check early game strategies
 		rush = shouldDefendRush();
@@ -56,37 +54,29 @@ void StrategyTrackerClass::protossStrategy()
 		enemyFastExpand = false;
 	}
 
-	// Check if we need an observer
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) <= 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Dark_Templar] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Citadel_of_Adun] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Templar_Archives] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Ghost] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Vulture] >= 10 || Units().getEnemyComposition()[UnitTypes::Zerg_Lurker] > 0 || (Units().getEnemyComposition()[UnitTypes::Zerg_Lair] == 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hydralisk_Den] >= 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hatchery] == 0)))
-		invis = true;
-	else invis = false;
+	invis = shouldGetDetection();
 }
 
 void StrategyTrackerClass::terranStrategy()
 {
-	// If it's early on and we're being rushed
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) < 2)
+	// Check if it's early enough to run specific strategies
+	if ((BuildOrder().isBioBuild() && !Broodwar->self()->hasResearched(TechTypes::Stim_Packs) && !Broodwar->self()->isResearching(TechTypes::Stim_Packs)) || (!BuildOrder().isBioBuild() && !Broodwar->self()->hasResearched(TechTypes::Tank_Siege_Mode)))
 	{
-		// Ramp holding logic
-		if ((Broodwar->self()->completedUnitCount(UnitTypes::Terran_Siege_Tank_Siege_Mode) + Broodwar->self()->completedUnitCount(UnitTypes::Terran_Siege_Tank_Tank_Mode)) < 2)
-			holdChoke = false;
-		else holdChoke = true;
-
-		// Check if enemy is rushing (detects early 2 gates and early pool)
-		if (Units().getSupply() < 60 && ((Players().getNumberProtoss() > 0 || Players().getNumberRandom() > 0) && Units().getEnemyComposition()[UnitTypes::Protoss_Forge] == 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] >= 2 || Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] == 0) && Units().getEnemyComposition()[UnitTypes::Protoss_Assimilator] == 0 && Units().getEnemyComposition()[UnitTypes::Protoss_Nexus] == 1) || ((Players().getNumberRandom() > 0 || Players().getNumberZerg() > 0) && Units().getEnemyComposition()[UnitTypes::Zerg_Zergling] >= 6 && Units().getEnemyComposition()[UnitTypes::Zerg_Drone] < 6))
-			rush = true;
-		else rush = false;
+		rush = shouldDefendRush();
+		hideTech = shouldHideTech();
+		holdChoke = shouldHoldChoke();
+		playPassive = true;
 	}
 	else
 	{
-		holdChoke = true;
 		rush = false;
+		holdChoke = true;
+		playPassive = false;
+		allyFastExpand = false;
+		enemyFastExpand = false;
 	}
 
-	// Check if we need detection
-	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Comsat_Station) <= 0 && (Units().getEnemyComposition()[UnitTypes::Protoss_Dark_Templar] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Citadel_of_Adun] > 0 || Units().getEnemyComposition()[UnitTypes::Protoss_Templar_Archives] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Vulture] > 0 || Units().getEnemyComposition()[UnitTypes::Terran_Ghost] > 0 || Units().getEnemyComposition()[UnitTypes::Zerg_Lurker] > 0 || (Units().getEnemyComposition()[UnitTypes::Zerg_Lair] == 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hydralisk] >= 1 && Units().getEnemyComposition()[UnitTypes::Zerg_Hatchery] == 0)))
-		invis = true;
-	else invis = false;
+	invis = shouldGetDetection();
 }
 
 void StrategyTrackerClass::zergStrategy()
@@ -115,7 +105,7 @@ bool StrategyTrackerClass::shouldDefendRush()
 bool StrategyTrackerClass::shouldHoldChoke()
 {
 	if (allyFastExpand || hideTech) return true;
-	else if (Units().getSupply() > 80 || Players().getNumberTerran() > 0 || (Players().getNumberRandom() > 0 && Broodwar->enemy()->getRace() == Races::Terran)) return true;
+	else if (Units().getSupply() > 80 || (Broodwar->self()->getRace() == Races::Protoss && Players().getNumberTerran() > 0) || (Players().getNumberRandom() > 0 && Broodwar->enemy()->getRace() == Races::Terran)) return true;
 	return false;
 }
 
@@ -156,7 +146,7 @@ void StrategyTrackerClass::updateEnemyBuild()
 				{
 					if (p->exists() && poolFrame == 0)
 					{
-						poolFrame = Broodwar->getFrameCount() + int(double(p->getType().buildTime()) * (double(p->getType().maxHitPoints() - p->getHitPoints()) / double(p->getType().maxHitPoints())));						
+						poolFrame = Broodwar->getFrameCount() + int(double(p->getType().buildTime()) * (double(p->getType().maxHitPoints() - p->getHitPoints()) / double(p->getType().maxHitPoints())));
 					}
 				}
 			}
@@ -185,10 +175,10 @@ void StrategyTrackerClass::updateEnemyBuild()
 					{
 						if (p->exists() && p->getPosition().getDistance(Terrain().getPlayerStartingPosition()) < p->getPosition().getDistance(Terrain().getEnemyStartingPosition()))	cannonRush = true;
 					}
-						if (cannonRush) enemyBuild = "PCannonRush";
-						else enemyBuild = "PFFE";
-						return;
-				}				
+					if (cannonRush) enemyBuild = "PCannonRush";
+					else enemyBuild = "PFFE";
+					return;
+				}
 			}
 			else if (Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] >= 2 && Units().getEnemyComposition()[UnitTypes::Protoss_Assimilator] == 0) enemyBuild = "P2GateZealot";
 			else if (Units().getEnemyComposition()[UnitTypes::Protoss_Gateway] <= 1 && Units().getEnemyComposition()[UnitTypes::Protoss_Cybernetics_Core] >= 1) enemyBuild = "P1GateCore";

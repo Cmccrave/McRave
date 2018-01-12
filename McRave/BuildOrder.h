@@ -12,10 +12,9 @@ namespace McRave
 	{
 		map <UnitType, int> buildingDesired;
 		bool getOpening = true, getTech = false, learnedOpener = false;
-		bool oneGateCore = false, forgeExpand = false, nexusFirst = false;
+		bool fastExpand = false;
 		bool bioBuild = false;
 		bool scout = false;
-		bool reinforceWall = false;
 		UpgradeType firstUpgrade;
 		TechType firstTech;
 		UnitType techUnit;
@@ -32,7 +31,6 @@ namespace McRave
 		void getDefaultBuild();
 		bool isBuildAllowed(Race, string);
 		bool isUnitUnlocked(UnitType unit) { return (unlockedType.find(unit) != unlockedType.end()); }
-		bool shouldReinforceWall() { return reinforceWall; }
 
 		map <UnitType, int>& getBuildingDesired() { return buildingDesired; }
 		bool isOpener() { return getOpening; }
@@ -41,10 +39,8 @@ namespace McRave
 		TechType getFirstTech() { return firstTech; }
 
 		set <UnitType>& getTechList() { return techList; }
-		bool isOneGateCore() { return oneGateCore; }
-		bool isForgeExpand() { return forgeExpand; }
 		bool isBioBuild() { return bioBuild; }
-		bool isNexusFirst() { return nexusFirst; }
+		bool isFastExpand() { return fastExpand; }
 
 		bool shouldExpand();
 		bool shouldTech();

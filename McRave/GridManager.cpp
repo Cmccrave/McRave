@@ -5,13 +5,19 @@ void GridTrackerClass::update()
 	Display().startClock();
 	draw();
 	reset();
-	updateMobilityGrids();
+
 	updateAllyGrids();
 	updateEnemyGrids();
 	updateNeutralGrids();
-	updateDistanceGrid();
+
 	Display().performanceTest(__FUNCTION__);
 	return;
+}
+
+void GridTrackerClass::onStart()
+{
+	updateMobilityGrids();
+	updateDistanceGrid();
 }
 
 void GridTrackerClass::reset()
@@ -62,13 +68,18 @@ void GridTrackerClass::reset()
 
 void GridTrackerClass::draw()
 {
-	return; // Remove this to draw stuff
+	//return; // Remove this to draw stuff
 
 	// Temp debugging for tile positions
 	for (int x = 0; x <= Broodwar->mapWidth() * 4; x++)
 	{
 		for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
 		{
+			if (antiMobilityGrid[x][y] > 0)
+			{
+				Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
+			}
+
 			/*if (buildingGrid[x][y] > 0)
 			{
 			Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
@@ -95,26 +106,26 @@ void GridTrackerClass::draw()
 			//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Red);
 			//}
 
-			if (distanceGridHome[x][y] < 100)
-			{
-				Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
-			}
-			if (distanceGridHome[x][y] >= 100 && distanceGridHome[x][y] < 500)
-			{
-				Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Brown);
-			}
-			if (distanceGridHome[x][y] >= 500 && distanceGridHome[x][y] < 1000)
-			{
-				Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Purple);
-			}
-			if (distanceGridHome[x][y] >= 1000 && distanceGridHome[x][y] < 1500)
-			{
-				Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Blue);
-			}
-			if (distanceGridHome[x][y] >= 1500 && distanceGridHome[x][y] < 2000)
-			{
-				Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Green);
-			}
+			//if (distanceGridHome[x][y] < 100)
+			//{
+			//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Black);
+			//}
+			//if (distanceGridHome[x][y] >= 100 && distanceGridHome[x][y] < 500)
+			//{
+			//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Brown);
+			//}
+			//if (distanceGridHome[x][y] >= 500 && distanceGridHome[x][y] < 1000)
+			//{
+			//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Purple);
+			//}
+			//if (distanceGridHome[x][y] >= 1000 && distanceGridHome[x][y] < 1500)
+			//{
+			//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Blue);
+			//}
+			//if (distanceGridHome[x][y] >= 1500 && distanceGridHome[x][y] < 2000)
+			//{
+			//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 4, Colors::Green);
+			//}
 		}
 	}
 }
@@ -398,7 +409,7 @@ void GridTrackerClass::updateDefenseGrid(UnitInfo& unit)
 					else
 					{
 						defenseGrid[x][y] -= 1;
-					}				
+					}
 				}
 			}
 		}
@@ -411,21 +422,17 @@ void GridTrackerClass::updateNeutralGrids()
 	for (auto &u : Broodwar->neutral()->getUnits())
 	{
 		WalkPosition start = Util().getWalkPosition(u);
-		if (u->getType().isFlyer())
-		{
-			continue;
-		}
+		if (u->getType().isFlyer()) continue;
+
 		int startX = (u->getTilePosition().x * 4);
 		int startY = (u->getTilePosition().y * 4);
 		for (int x = startX; x < startX + u->getType().tileWidth() * 4; x++)
 		{
 			for (int y = startY; y < startY + u->getType().tileHeight() * 4; y++)
 			{
-				if (WalkPosition(x, y).isValid())
-				{
-					resetGrid[x][y] = true;
-					antiMobilityGrid[x][y] = 1;
-				}
+				if (!WalkPosition(x, y).isValid()) continue;
+				resetGrid[x][y] = true;
+				antiMobilityGrid[x][y] = 1;
 			}
 		}
 
@@ -434,11 +441,9 @@ void GridTrackerClass::updateNeutralGrids()
 			for (int y = start.y; y < start.y + u->getType().tileHeight() * 4; y++)
 			{
 				// Anti Mobility Grid directly under building
-				if (WalkPosition(x, y).isValid())
-				{
-					resetGrid[x][y] = true;
-					antiMobilityGrid[x][y] = 1;
-				}
+				if (!WalkPosition(x, y).isValid()) continue;
+				resetGrid[x][y] = true;
+				antiMobilityGrid[x][y] = 1;
 			}
 		}
 	}
@@ -447,78 +452,74 @@ void GridTrackerClass::updateNeutralGrids()
 
 void GridTrackerClass::updateMobilityGrids()
 {
-	if (!mobilityAnalysis)
+	for (int x = 0; x <= Broodwar->mapWidth() * 4; x++)
 	{
-		mobilityAnalysis = true;
-		for (int x = 0; x <= Broodwar->mapWidth() * 4; x++)
+		for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
 		{
-			for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
+			if (!WalkPosition(x, y).isValid()) continue;
+			if (!mapBWEM.GetMiniTile(WalkPosition(x, y)).Walkable()) continue;
+
+			for (int i = -12; i <= 12; i++)
 			{
-				if (!WalkPosition(x, y).isValid()) continue;
-				if (mapBWEM.GetMiniTile(WalkPosition(x, y)).Walkable())
+				for (int j = -12; j <= 12; j++)
 				{
-					for (int i = -12; i <= 12; i++)
+					// The more tiles around x,y that are walkable, the more mobility x,y has				
+					if (WalkPosition(x + i, y + j).isValid() && mapBWEM.GetMiniTile(WalkPosition(x + i, y + j)).Walkable())
 					{
-						for (int j = -12; j <= 12; j++)
-						{
-							// The more tiles around x,y that are walkable, the more mobility x,y has				
-							if (WalkPosition(x + i, y + j).isValid() && mapBWEM.GetMiniTile(WalkPosition(x + i, y + j)).Walkable())
-							{
-								mobilityGrid[x][y] += 1;
-							}
-						}
+						mobilityGrid[x][y] += 1;
 					}
-					mobilityGrid[x][y] = int(double(mobilityGrid[x][y]) / 56);
-
-					for (auto &area : mapBWEM.Areas())
-					{
-						for (auto &choke : area.ChokePoints())
-						{
-							if (WalkPosition(x, y).getDistance(choke->Center()) < 40)
-							{
-								bool notCorner = true;
-								int startRatio = int(pow(choke->Center().getDistance(WalkPosition(x, y)) / 8, 2.0));
-								for (int i = 0 - startRatio; i <= startRatio; i++)
-								{
-									for (int j = 0 - startRatio; j <= 0 - startRatio; j++)
-									{
-										if (WalkPosition(x + i, y + j).isValid() && !mapBWEM.GetMiniTile(WalkPosition(x + i, y + j)).Walkable())
-										{
-											notCorner = false;
-										}
-									}
-								}
-
-								if (notCorner)
-								{
-									mobilityGrid[x][y] = 10;
-								}
-							}
-						}
-					}
-
-					// Max a mini grid to 10
-					mobilityGrid[x][y] = min(mobilityGrid[x][y], 10);
-				}
-
-				if (!mapBWEM.GetArea(WalkPosition(x, y)) || mapBWEM.GetArea(WalkPosition(x, y))->AccessibleNeighbours().size() == 0)
-				{
-					// Island
-					mobilityGrid[x][y] = -1;
-				}
-
-				// Setup what is possible to check ground distances on
-				if (mobilityGrid[x][y] <= 0)
-				{
-					distanceGridHome[x][y] = -1;
-				}
-				else if (mobilityGrid[x][y] > 0)
-				{
-					distanceGridHome[x][y] = 0;
 				}
 			}
+			mobilityGrid[x][y] = int(double(mobilityGrid[x][y]) / 56);
+
+			for (auto &area : mapBWEM.Areas())
+			{
+				for (auto &choke : area.ChokePoints())
+				{
+					if (WalkPosition(x, y).getDistance(choke->Center()) < 40)
+					{
+						bool notCorner = true;
+						int startRatio = int(pow(choke->Center().getDistance(WalkPosition(x, y)) / 8, 2.0));
+						for (int i = 0 - startRatio; i <= startRatio; i++)
+						{
+							for (int j = 0 - startRatio; j <= 0 - startRatio; j++)
+							{
+								if (WalkPosition(x + i, y + j).isValid() && !mapBWEM.GetMiniTile(WalkPosition(x + i, y + j)).Walkable())
+								{
+									notCorner = false;
+								}
+							}
+						}
+
+						if (notCorner)
+						{
+							mobilityGrid[x][y] = 10;
+						}
+					}
+				}
+			}
+
+			// Max a mini grid to 10
+			mobilityGrid[x][y] = min(mobilityGrid[x][y], 10);
+
+
+			if (!mapBWEM.GetArea(WalkPosition(x, y)) || mapBWEM.GetArea(WalkPosition(x, y))->AccessibleNeighbours().size() == 0)
+			{
+				// Island
+				mobilityGrid[x][y] = -1;
+			}
+
+			// Setup what is possible to check ground distances on
+			if (mobilityGrid[x][y] <= 0)
+			{
+				distanceGridHome[x][y] = -1;
+			}
+			else if (mobilityGrid[x][y] > 0)
+			{
+				distanceGridHome[x][y] = 0;
+			}
 		}
-	}	
+	}
 }
 
 void GridTrackerClass::updateDetectorMovement(UnitInfo& observer)
@@ -572,7 +573,7 @@ void GridTrackerClass::updateAllyMovement(Unit unit, WalkPosition here)
 			}
 		}
 	}
-		
+
 	return;
 }
 
@@ -617,18 +618,13 @@ void GridTrackerClass::updateEMP(Bullet EMP)
 
 void GridTrackerClass::updateDistanceGrid()
 {
-	// TODO: Improve this somehow
-	if (!distanceAnalysis)
+	for (int x = 0; x <= Broodwar->mapWidth() * 4; x++)
 	{
-		distanceAnalysis = true;
-		for (int x = 0; x <= Broodwar->mapWidth() * 4; x++)
+		for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
 		{
-			for (int y = 0; y <= Broodwar->mapHeight() * 4; y++)
-			{
-				WalkPosition here = WalkPosition(x, y);
-				if (distanceGridHome[x][y] < 0) continue;
-				distanceGridHome[x][y] = mapBWEB.getGroundDistance(Position(here), Terrain().getPlayerStartingPosition());
-			}
-		}		
+			WalkPosition here = WalkPosition(x, y);
+			if (distanceGridHome[x][y] < 0) continue;
+			distanceGridHome[x][y] = mapBWEB.getGroundDistance(Position(here), Terrain().getPlayerStartingPosition());
+		}
 	}
 }

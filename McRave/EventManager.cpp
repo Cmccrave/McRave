@@ -40,7 +40,7 @@ void UnitTrackerClass::onUnitDestroy(Unit unit)
 		enemyUnits.erase(unit);
 	}
 
-	else if (unit->getPlayer() == Broodwar->self())
+	if (unit->getPlayer() == Broodwar->self())
 	{
 		supply -= unit->getType().supplyRequired();
 

@@ -41,10 +41,10 @@ namespace BWEB
 				{
 					Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Blue, true);
 				}
-				if (usedTiles.find(TilePosition(x, y)) != usedTiles.end())
-				{
-					Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Purple, true);
-				}
+				//if (usedTiles.find(TilePosition(x, y)) != usedTiles.end())
+				//{
+				//	Broodwar->drawCircleMap(Position(TilePosition(x, y)) + Position(16, 16), 4, Colors::Purple, true);
+				//}
 			}
 		}
 	}
@@ -52,13 +52,9 @@ namespace BWEB
 	void Map::onStart()
 	{
 		// For reference: https://imgur.com/a/I6IwH
-		// TODO:	
-		// - Simplify accessor functions
-		// - Blocks for areas other than main
+		// TODO:		
 		// - Improve reservePath, fails on some FFE on non SSCAIT maps
-		// - Test goldrush again for overlapping egg
 		// - Add pylon grid
-		// - Add used tiles into BWEB rather than locally in McRave?
 		// - Stricter definition on chokes
 
 		findMain();
@@ -88,7 +84,7 @@ namespace BWEB
 
 	void Map::onUnitDestroy(Unit unit)
 	{
-		if (!unit || !unit->exists() || !unit->getType().isBuilding() || unit->isFlying()) return;
+		if (!unit || !unit->getType().isBuilding() || unit->isFlying()) return;
 		TilePosition here = unit->getTilePosition();
 		UnitType building = unit->getType();
 		for (int x = here.x; x < here.x + building.tileWidth(); x++)
@@ -200,7 +196,7 @@ namespace BWEB
 			if (choke->GetAreas().first != second && choke->GetAreas().second != second) continue;
 			double dist = Position(choke->Center()).getDistance(Position(Broodwar->self()->getStartLocation()));
 			if (dist < distBest)
-				secondChoke = TilePosition(choke->Center()), distBest = dist;
+				secondChoke = TilePosition(choke->Center()), naturalChoke = choke, distBest = dist;
 		}
 	}
 

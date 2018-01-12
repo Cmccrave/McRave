@@ -42,6 +42,7 @@ namespace BWEB
 		set<TilePosition> usedTiles;
 		BWEM::Area const * naturalArea;
 		BWEM::Area const * mainArea;
+		BWEM::ChokePoint const * naturalChoke;
 		Position pStart;
 		bool buildingFits(TilePosition, UnitType, const set<TilePosition>& = {});
 

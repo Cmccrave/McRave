@@ -42,6 +42,9 @@ namespace McRave
 			double aqRange = pow(max(allyRange, distance), 10.0);
 			double health = 1.0 + (0.25 * unit.getPercentHealth());
 
+			// Allow tanks to target units at their maximum sieged tank
+			if (unit.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) aqRange = pow(max(384.0, distance), 10.0);
+
 			// Detectors only target invis units
 			if (unit.getType().isDetector() && !unit.getType().isBuilding())
 			{

@@ -229,8 +229,15 @@ bool BuildOrderTrackerClass::shouldExpand()
 	else if (Broodwar->self()->getRace() == Races::Terran) baseType = UnitTypes::Terran_Command_Center;
 	else baseType = UnitTypes::Zerg_Hatchery;
 
-	if (Broodwar->self()->minerals() > 500 + (100 * Broodwar->self()->completedUnitCount(baseType))) return true;
-	else if ((techUnit == UnitTypes::None && !Production().hasIdleProduction() && Resources().isMinSaturated() && techSat && productionSat) || (productionSat && Players().getPlayers().size() <= 1 && Players().getNumberTerran() > 0)) return true;
+	if (Broodwar->self()->getRace() == Races::Protoss)
+	{
+		if (Broodwar->self()->minerals() > 500 + (100 * Broodwar->self()->completedUnitCount(baseType))) return true;
+		else if ((techUnit == UnitTypes::None && !Production().hasIdleProduction() && Resources().isMinSaturated() && techSat && productionSat) || (productionSat && Players().getPlayers().size() <= 1 && Players().getNumberTerran() > 0)) return true;
+	}
+	else if (Broodwar->self()->getRace() == Races::Terran)
+	{
+		if (Broodwar->self()->minerals() > 500 + (100 * Broodwar->self()->completedUnitCount(baseType))) return true;
+	}
 	return false;
 }
 
