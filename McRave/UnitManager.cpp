@@ -158,6 +158,12 @@ void UnitTrackerClass::updateStrategy(UnitInfo& unit)
 		return;
 	}
 
+	if (unit.getType() == UnitTypes::Protoss_Scout && unit.getShields() < 25)
+	{
+		unit.setStrategy(0);
+		return;
+	}
+
 	double widths = unit.getTarget().getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
 	double allyRange = widths + (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
 	double enemyRange = widths + (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());

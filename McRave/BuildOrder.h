@@ -75,6 +75,7 @@ namespace McRave
 
 		// Zerg Builds
 		void ZOverpool();
+		void FFEScout();
 	};
 }
 

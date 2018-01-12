@@ -13,6 +13,7 @@ void BuildOrderTrackerClass::protossOpener()
 		if (currentBuild == "P21Nexus") P21Nexus();
 		if (currentBuild == "PDTExpand") PDTExpand();
 		if (currentBuild == "P2GateDragoon") P2GateDragoon();
+		if (currentBuild == "FFEScout") FFEScout();
 	}
 	return;
 }
@@ -114,14 +115,14 @@ void BuildOrderTrackerClass::protossTech()
 	{
 		unlockedType.insert(UnitTypes::Protoss_Corsair);
 		unlockedType.insert(UnitTypes::Protoss_Dark_Templar);
-		buildingDesired[UnitTypes::Protoss_Stargate] = (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Cybernetics_Core) > 0) +(Units().getSupply() >= 200);
+		buildingDesired[UnitTypes::Protoss_Stargate] = (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Cybernetics_Core) > 0) + (Units().getSupply() >= 200);
 		buildingDesired[UnitTypes::Protoss_Citadel_of_Adun] = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Corsair) > 0;
 		buildingDesired[UnitTypes::Protoss_Templar_Archives] = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) > 0;
 	}
 	else if (techUnit == UnitTypes::Protoss_Scout)
 	{
 		unlockedType.insert(UnitTypes::Protoss_Scout);
-		buildingDesired[UnitTypes::Protoss_Stargate] = 2;
+		buildingDesired[UnitTypes::Protoss_Stargate] = 2 * (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Cybernetics_Core) > 0);
 		buildingDesired[UnitTypes::Protoss_Fleet_Beacon] = (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Stargate) > 0);
 	}
 	else if (techUnit == UnitTypes::Protoss_Arbiter)
