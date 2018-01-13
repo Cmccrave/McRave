@@ -14,6 +14,13 @@ namespace BWEB
 				Broodwar->drawBoxMap(Position(tile), Position(tile + TilePosition(4, 3)), Broodwar->self()->getColor());
 		}
 
+		Broodwar << naturalChoke->Geometry().size() << endl;
+
+		for (auto tile : chokeTiles)
+		{
+			Broodwar->drawBoxMap(Position(tile), Position(tile + TilePosition(1, 1)), Broodwar->self()->getColor());
+		}
+
 		for (auto &station : stations)
 		{
 			for (auto tile : station.DefenseLocations())
@@ -193,6 +200,7 @@ namespace BWEB
 		for (auto &choke : naturalArea->ChokePoints())
 		{
 			if (TilePosition(choke->Center()) == firstChoke) continue;
+			if (choke->Blocked() || choke->Geometry().size() <= 3) continue;
 			if (choke->GetAreas().first != second && choke->GetAreas().second != second) continue;
 			double dist = Position(choke->Center()).getDistance(Position(Broodwar->self()->getStartLocation()));
 			if (dist < distBest)

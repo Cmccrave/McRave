@@ -27,7 +27,7 @@ void ProductionTrackerClass::updateProduction()
 			{
 				double mineral = max(0.0, min(1.0, double(Broodwar->self()->minerals() - reservedMineral - Buildings().getQueuedMineral()) / unit.mineralPrice()));
 				double gas = max(0.0, min(1.0, double(Broodwar->self()->gas() - reservedGas - Buildings().getQueuedGas()) / unit.gasPrice()));
-				double value = Strategy().getUnitScore()[unit] * mineral * gas;
+				double value = max(0.01, Strategy().getUnitScore()[unit]) * mineral * gas;
 				if (unit.isAddon() && BuildOrder().getBuildingDesired()[unit] > Broodwar->self()->visibleUnitCount(unit))
 				{
 					building.unit()->buildAddon(unit);

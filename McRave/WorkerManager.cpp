@@ -36,7 +36,7 @@ void WorkerTrackerClass::explore(WorkerInfo& worker)
 
 	if (Broodwar->isExplored(Terrain().getEnemyStartingTilePosition()))
 	{
-		for (auto &station : Stations().getMyStations())		
+		for (auto &station : Stations().getEnemyStations())		
 			destination = station.BWEMBase()->Center();		
 	}
 

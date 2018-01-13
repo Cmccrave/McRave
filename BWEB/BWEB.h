@@ -35,6 +35,8 @@ namespace BWEB
 		bool canPlaceHere(UnitType, TilePosition);
 		map<BWEM::Area const *, Wall> areaWalls;
 		int reservePath[256][256] = {};
+		int overlapsChoke(UnitType, TilePosition);
+		set<TilePosition> chokeTiles;
 
 		// Map
 		void findMain(), findFirstChoke(), findSecondChoke(), findNatural();

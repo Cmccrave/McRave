@@ -28,8 +28,11 @@ void BuildOrderTrackerClass::onStart()
 	if (Broodwar->self()->getRace() == Races::Terran) buildNames = { "T2Fact", "TSparks" };
 	if (Broodwar->self()->getRace() == Races::Zerg) buildNames = { "ZOverpool" };
 
-	currentBuild = "FFEScout";
-	return;
+	if (Broodwar->self()->getRace() == Races::Protoss)
+	{
+		currentBuild = "FFEScout";
+		return;
+	}
 
 	// If we don't have a file in the /read/ folder, then check the /write/ folder
 	if (!config)

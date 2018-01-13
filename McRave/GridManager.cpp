@@ -68,7 +68,7 @@ void GridTrackerClass::reset()
 
 void GridTrackerClass::draw()
 {
-	//return; // Remove this to draw stuff
+	return; // Remove this to draw stuff
 
 	// Temp debugging for tile positions
 	for (int x = 0; x <= Broodwar->mapWidth() * 4; x++)
