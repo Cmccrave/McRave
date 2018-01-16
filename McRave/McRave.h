@@ -9,6 +9,7 @@
 using namespace BWAPI;
 using namespace BWEM;
 using namespace std;
+using namespace BWEB;
 
 namespace McRave
 {

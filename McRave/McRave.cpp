@@ -11,10 +11,6 @@
 // Add repairing scvs to sim
 // Check psi storm and emp grids, bullet positions may not be the center
 // Production sat based on active mining bases instead
-// Rework reserved/queued resources
-
-// Test:
-// Medics disabled
 
 // Losses in SSCAIT17
 // Wuli - Improve early D / Probe pull issue

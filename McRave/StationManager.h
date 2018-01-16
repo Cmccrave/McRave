@@ -9,15 +9,14 @@ namespace McRave
 {
 	class StationTrackerClass
 	{		
-		vector <const BWEB::Station> myStations;
-		vector <const BWEB::Station> enemyStations;
+		vector <const BWEB::Station> myStations, enemyStations;
+		void updateStations();
 	public:
 		vector <const BWEB::Station>& getMyStations() {	return myStations; };
 		vector <const BWEB::Station>& getEnemyStations() { return enemyStations; }
 
 		Position getClosestEnemyStation(Position);
-		void update();
-		void updateStations();
+		void update();		
 		void storeStation(Unit);
 		void removeStation(Unit);
 	};

@@ -14,6 +14,11 @@ namespace McRave
 		map <Unit, UpgradeType> idleUpgrade;
 		int reservedMineral, reservedGas;
 		bool idle = false;
+
+		bool isAffordable(UnitType), isAffordable(UpgradeType), isAffordable(TechType);
+		bool isCreateable(Unit, UnitType), isCreateable(UpgradeType), isCreateable(TechType);
+		bool isSuitable(UnitType), isSuitable(UpgradeType), isSuitable(TechType);
+		void updateProduction(), updateReservedResources();
 	public:
 		map <Unit, UnitType>& getIdleProduction() { return idleProduction; }
 		map <Unit, TechType>& getIdleTech() { return idleTech; }
@@ -24,18 +29,6 @@ namespace McRave
 		bool hasIdleProduction() { return idle; }
 
 		void update();
-		void updateProduction();
-		void updateReservedResources();
-
-		bool isAffordable(UnitType);
-		bool isAffordable(UpgradeType);
-		bool isAffordable(TechType);
-		bool isCreateable(Unit, UnitType);
-		bool isCreateable(UpgradeType);
-		bool isCreateable(TechType);
-		bool isSuitable(UnitType);
-		bool isSuitable(UpgradeType);
-		bool isSuitable(TechType);
 	};
 }
 

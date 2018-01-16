@@ -69,11 +69,11 @@ namespace McRave
 				int eGrid = Grids().getEGroundCluster(enemy.getWalkPosition()) + Grids().getEAirCluster(enemy.getWalkPosition());
 				int aGrid = Grids().getAGroundCluster(enemy.getWalkPosition()) + Grids().getAAirCluster(enemy.getWalkPosition());
 				double cluster = double(eGrid) / double(1 + aGrid);
+				thisUnit = (enemy.getPriority() * cluster) / aqRange;
 
 				if (Grids().getPsiStormGrid(enemy.getWalkPosition()) == 0 && !enemy.getType().isBuilding())
 					if (thisUnit > highest)
-					{
-						thisUnit = (enemy.getPriority() * cluster) / aqRange;
+					{						
 						highest = thisUnit;
 						bestTarget = e;
 						unit.setEngagePosition(getEngagePosition(unit, enemy));

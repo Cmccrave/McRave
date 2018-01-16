@@ -9,15 +9,9 @@ namespace McRave
 {
 	class SpecialUnitTrackerClass
 	{
+		void updateArbiters(), updateDarchons(), updateDefilers(), updateDetectors(), updateQueens(), updateReavers(), updateVultures();
 	public:
 		void update();
-		void updateArbiters();
-		void updateDarchons();
-		void updateDefilers();
-		void updateDetectors();
-		void updateQueens();
-		void updateReavers();
-		void updateVultures();
 	};
 }
 

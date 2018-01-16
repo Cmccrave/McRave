@@ -1,7 +1,10 @@
 #include "PlayerInfo.h"
 
-McRave::PlayerInfo::PlayerInfo()
+namespace McRave
 {
-	race = Races::None;
-	alive = true;
+	PlayerInfo::PlayerInfo()
+	{
+		race = Races::None;
+		alive = true;
+	}
 }

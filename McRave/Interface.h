@@ -13,15 +13,9 @@ namespace McRave
 		int screenOffset = 0;
 		map <string, double> myTest;
 		bool debugging = false;
+		void drawAllyInfo(), drawEnemyInfo(), drawInformation();
 	public:
-		void update();
-		void drawAllyInfo();
-		void drawEnemyInfo();
-		void drawInformation();
-
-		void startClock();
-		void performanceTest(string);
-		void sendText(string);
+		void update(), startClock(), performanceTest(string), sendText(string);
 	};
 }
 

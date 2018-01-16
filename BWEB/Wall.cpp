@@ -72,7 +72,6 @@ namespace BWEB
 	{
 		double best = 0.0;
 		TilePosition medium;
-		TilePosition large = areaWalls[naturalArea].getLargeWall();
 		Position chokeCenter = Position(secondChoke) + Position(16, 16);
 		Position natCenter = Position(natural) + Position(64, 48);
 		// Medium Building placement
@@ -194,17 +193,17 @@ namespace BWEB
 		TilePosition small = areaWalls[naturalArea].getSmallWall();
 		TilePosition medium = areaWalls[naturalArea].getMediumWall();
 		TilePosition large = areaWalls[naturalArea].getLargeWall();
-		TilePosition end = firstChoke;
+		TilePosition end = natural;
 		TilePosition start, middle;
 		set<TilePosition> testedTiles;
 
-		double distBest = DBL_MAX;
+		double distBest = 0.0;
 		if (naturalChoke)
 		{
 			for (auto tile : naturalChoke->Geometry())
 			{
 				double dist = tile.getDistance(WalkPosition(large));
-				if (dist < distBest && !BWEBUtil().overlapsAnything(TilePosition(tile)))
+				if (dist > distBest && !BWEBUtil().overlapsAnything(TilePosition(tile)))
 					start = TilePosition(tile), distBest = dist;
 			}
 		}
@@ -223,7 +222,7 @@ namespace BWEB
 			distBest = DBL_MAX;
 			for (auto tile : testCases)
 			{
-				if (!tile.isValid() || BWEBUtil().overlapsAnything(tile) || !BWEBUtil().isWalkable(tile)) continue;
+				if (!tile.isValid() || BWEBUtil().overlapsAnything(tile) || !BWEBUtil().isWalkable(tile) || reservePath[tile.x][tile.y] != 0) continue;
 				if (BWEM::Map::Instance().GetArea(tStart) == BWEM::Map::Instance().GetArea(tile)) continue;
 
 				double dist = Map::Instance().getGroundDistance(Position(tile), Position(end));
@@ -238,6 +237,10 @@ namespace BWEB
 			{
 				middle = bestTile;
 				reservePath[bestTile.x][bestTile.y] = 1;
+				if (i > 4)
+				{
+					end = firstChoke;
+				}
 			}
 			else break;
 		}

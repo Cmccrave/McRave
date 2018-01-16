@@ -10,23 +10,12 @@ namespace McRave
 	class UnitInfo;
 	class CommandTrackerClass
 	{
-		bool wallDown = false;
+		void updateAlliedUnits();
+		void engage(UnitInfo&), move(UnitInfo&), approach(UnitInfo&), defend(UnitInfo&), flee(UnitInfo&), attack(UnitInfo&);
+		bool shouldAttack(UnitInfo&), shouldKite(UnitInfo&), shouldApproach(UnitInfo&);
+		bool isLastCommand(UnitInfo&, UnitCommandType, Position);
 	public:
 		void update();
-		void updateAlliedUnits();
-
-		void engage(UnitInfo&);
-		void move(UnitInfo&);
-		void approach(UnitInfo&);
-		void defend(UnitInfo&);
-		void exploreArea(UnitInfo&);
-		void flee(UnitInfo&);
-		void attack(UnitInfo&);
-
-		bool shouldAttack(UnitInfo&);
-		bool shouldKite(UnitInfo&);
-		bool shouldApproach(UnitInfo&);
-		bool isLastCommand(UnitInfo&, UnitCommandType, Position);
 	};
 }
 

@@ -1,42 +1,45 @@
 #include "McRave.h"
 
-void PlayerTrackerClass::onStart()
+namespace McRave
 {
-	// Store enemy races
-	for (auto &player : Broodwar->enemies())
+	void PlayerTrackerClass::onStart()
 	{
-		thePlayers[player].setAlive(true);
-		thePlayers[player].setRace(player->getRace());
+		// Store enemy races
+		for (auto &player : Broodwar->enemies())
+		{
+			thePlayers[player].setAlive(true);
+			thePlayers[player].setRace(player->getRace());
 
-		if (player->getRace() == Races::Zerg)
-		{
-			eZerg++;
+			if (player->getRace() == Races::Zerg)
+			{
+				eZerg++;
+			}
+			else if (player->getRace() == Races::Protoss)
+			{
+				eProtoss++;
+			}
+			else if (player->getRace() == Races::Terran)
+			{
+				eTerran++;
+			}
+			else
+			{
+				eRandom++;
+			}
 		}
-		else if (player->getRace() == Races::Protoss)
+		return;
+	}
+
+	void PlayerTrackerClass::update()
+	{
+		for (auto &player : thePlayers)
 		{
-			eProtoss++;
-		}
-		else if (player->getRace() == Races::Terran)
-		{
-			eTerran++;
-		}
-		else
-		{
-			eRandom++;
+			updateUpgrades(player.second);
 		}
 	}
-	return;
-}
 
-void PlayerTrackerClass::update()
-{
-	for (auto &player : thePlayers)
+	void PlayerTrackerClass::updateUpgrades(PlayerInfo& player)
 	{
-		updateUpgrades(player.second);
-	}
-}
 
-void PlayerTrackerClass::updateUpgrades(PlayerInfo& player)
-{
-	
+	}
 }

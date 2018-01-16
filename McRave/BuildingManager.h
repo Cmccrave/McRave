@@ -16,19 +16,15 @@ namespace McRave
 		set<TilePosition> usedTiles;
 		set<Unit> returnValues;
 		TilePosition currentExpansion;
-		UnitType lastBadBuilding;
-		int errorTime = 0, buildingOffset = 0;
 
 		void updateBuildings(), queueBuildings(), constructBuildings();
-		TilePosition findProdLocation(UnitType, Position), findDefLocation(UnitType, Position);
+		TilePosition findProdLocation(UnitType, Position), findDefLocation(UnitType, Position), findTechLocation(UnitType, Position), findExpoLocation();
+		TilePosition getBuildLocation(UnitType);
 
 	public:
 		map <Unit, BuildingInfo>& getMyBuildings() { return myBuildings; }
-		map <TilePosition, UnitType>& getBuildingsQueued() { return buildingsQueued; }
-		TilePosition getBuildLocation(UnitType);
 
 		bool isBuildable(UnitType, TilePosition);
-		bool isSuitable(UnitType, TilePosition);
 		bool isQueueable(UnitType, TilePosition);
 
 		void update();

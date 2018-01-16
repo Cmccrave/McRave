@@ -11,10 +11,7 @@ namespace McRave
 		int eZerg, eProtoss, eTerran, eRandom;
 	public:
 		map <Player, PlayerInfo>& getPlayers() { return thePlayers; }
-
-		void onStart();
-		void update();
-		void updateUpgrades(PlayerInfo&);
+		void onStart(), update(), updateUpgrades(PlayerInfo&);
 
 		int getNumberZerg() { return eZerg; }
 		int getNumberProtoss() { return eProtoss; }

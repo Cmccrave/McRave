@@ -39,6 +39,5 @@ namespace McRave
 		void setPosition(Position newPosition) { position = newPosition; }
 		void setWalkPosition(WalkPosition newPosition) { walkPosition = newPosition; }
 		void setTilePosition(TilePosition newPosition) { tilePosition = newPosition; }
-
 	};
 }
