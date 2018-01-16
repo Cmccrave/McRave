@@ -8,7 +8,6 @@ For any questions, email christianmccrave@gmail.com , McRave was started January
 - Hannes Bredberg for helping with optimization of pieces of code and research with FAP/NN.
 
 **New Features:**
-- Added BWEB
-- Updated T build order
+- Added FFE into scouts as only public build for now. (I have my reasons)
 
 **Copyright 2018 Christian McCrave, all rights reserved.**
