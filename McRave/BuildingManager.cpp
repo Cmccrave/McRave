@@ -180,7 +180,14 @@ namespace McRave
 
 	BuildingInfo& BuildingTrackerClass::getAllyBuilding(Unit building)
 	{
-		if (myBuildings.find(building) != myBuildings.end()) return myBuildings[building];
+		if (building)
+		{
+			auto &buildings = myBuildings;
+			auto it = buildings.find(building);
+			if (it != buildings.end()) return it->second;
+		}
+		static BuildingInfo dummy{}; // Should never have to be used, but let's not crash if we do
+		return dummy;
 	}
 
 	TilePosition BuildingTrackerClass::findDefLocation(UnitType building, Position here)

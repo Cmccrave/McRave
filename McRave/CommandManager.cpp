@@ -213,16 +213,15 @@ namespace McRave
 			// Defend chokepoint with concave
 			int min = max(64, int(unit.getGroundRange()));
 			int max = int(unit.getGroundRange()) + 256;
-			double closestD = 0.0;
+			double closestD = DBL_MAX;
 			WalkPosition start = unit.getWalkPosition();
 			WalkPosition bestPosition = start;
 
-			// Find closest chokepoint
-			WalkPosition choke = WalkPosition(mapBWEB.getFirstChoke());
+			// Find closest chokepoint to defend
+			WalkPosition choke;
 			if (BuildOrder().getBuildingDesired()[UnitTypes::Protoss_Nexus] >= 2 || BuildOrder().getBuildingDesired()[UnitTypes::Terran_Command_Center] >= 2 || Strategy().isAllyFastExpand())
-			{
 				choke = WalkPosition(mapBWEB.getSecondChoke());
-			}
+			else choke = WalkPosition(mapBWEB.getFirstChoke());
 
 			// Find suitable position to hold at chokepoint
 			if (Terrain().isInAllyTerritory(unit.getTilePosition())) closestD = unit.getPosition().getDistance(Position(choke));
@@ -230,13 +229,12 @@ namespace McRave
 			{
 				for (int y = choke.y - 35; y <= choke.y + 35; y++)
 				{
-					if (WalkPosition(x, y).isValid() && mapBWEM.GetArea(WalkPosition(x, y)) && Terrain().getAllyTerritory().find(mapBWEM.GetArea(WalkPosition(x, y))->Id()) != Terrain().getAllyTerritory().end() && Position(WalkPosition(x, y)).getDistance(Position(choke)) > min && Position(WalkPosition(x, y)).getDistance(Position(choke)) < max && (Position(WalkPosition(x, y)).getDistance(Position(choke)) < closestD || closestD == 0.0))
+					if (!WalkPosition(x, y).isValid() || !Util().isMobile(start, WalkPosition(x, y), unit.getType())) continue;
+
+					if (Terrain().isInAllyTerritory(TilePosition(WalkPosition(x, y))) && Position(WalkPosition(x, y)).getDistance(Position(choke)) > min && Position(WalkPosition(x, y)).getDistance(Position(choke)) < max && Position(WalkPosition(x, y)).getDistance(Position(choke)) < closestD)
 					{
-						if (Util().isMobile(start, WalkPosition(x, y), unit.getType()))
-						{
-							bestPosition = WalkPosition(x, y);
-							closestD = Position(WalkPosition(x, y)).getDistance(Position(choke));
-						}
+						bestPosition = WalkPosition(x, y);
+						closestD = Position(WalkPosition(x, y)).getDistance(Position(choke));
 					}
 				}
 			}
@@ -255,6 +253,10 @@ namespace McRave
 
 	void CommandTrackerClass::flee(UnitInfo& unit)
 	{
+		double widths = unit.getTarget().getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
+		double allyRange = widths + (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
+		double enemyRange = widths + (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
+
 		if (unit.getType().isWorker() && unit.getPosition().getDistance(Terrain().getMineralHoldPosition()) < 256)
 		{
 			unit.unit()->gather(unit.unit()->getClosestUnit(Filter::IsMineralField, 128));
