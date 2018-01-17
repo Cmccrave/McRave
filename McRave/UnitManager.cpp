@@ -182,10 +182,10 @@ bool UnitTrackerClass::shouldRetreat(UnitInfo& unit)
 {	
 	if ((unit.getType() == UnitTypes::Protoss_Scout || unit.getType() == UnitTypes::Protoss_Corsair) && unit.getShields() < 25) return true;
 	else if (Terrain().isInAllyTerritory(unit.getTilePosition()) && Grids().getEGroundThreat(unit.getWalkPosition()) > 0.0 && isBehind(unit)) return true;
-	//else if (unit.getType() == UnitTypes::Protoss_Zealot && unit.getTarget().getType() == UnitTypes::Terran_Vulture && Grids().getMobilityGrid(unit.getTarget().getWalkPosition()) > 6 && Grids().getAntiMobilityGrid(unit.getTarget().getWalkPosition()) < 2) return true; // If unit is a Zealot, don't chase Vultures TODO -- check for mobility
-	//else if (unit.getType() == UnitTypes::Protoss_High_Templar && unit.unit()->getEnergy() < 75) return true; // If unit is a High Templar and low energy, retreat	
-	//else if (unit.getType() == UnitTypes::Terran_Medic && unit.unit()->getEnergy() <= 0) return true; // If unit is a Medic and no energy, retreat	
-	//else if (unit.hasTarget() && unit.getTarget().unit() && unit.getTarget().unit()->exists() && (unit.getTarget().unit()->isCloaked() || unit.getTarget().unit()->isBurrowed()) && !unit.getTarget().unit()->isDetected()) return true;
+	else if (unit.getType() == UnitTypes::Protoss_Zealot && unit.getTarget().getType() == UnitTypes::Terran_Vulture && Grids().getMobilityGrid(unit.getTarget().getWalkPosition()) > 6 && Grids().getAntiMobilityGrid(unit.getTarget().getWalkPosition()) < 2) return true; // If unit is a Zealot, don't chase Vultures TODO -- check for mobility
+	else if (unit.getType() == UnitTypes::Protoss_High_Templar && unit.unit()->getEnergy() < 75) return true; // If unit is a High Templar and low energy, retreat	
+	else if (unit.getType() == UnitTypes::Terran_Medic && unit.unit()->getEnergy() <= 0) return true; // If unit is a Medic and no energy, retreat	
+	else if (unit.hasTarget() && unit.getTarget().unit() && unit.getTarget().unit()->exists() && (unit.getTarget().unit()->isCloaked() || unit.getTarget().unit()->isBurrowed()) && !unit.getTarget().unit()->isDetected()) return true;
 	return false;
 }
 
@@ -196,9 +196,9 @@ bool UnitTrackerClass::shouldAttack(UnitInfo& unit)
 	double enemyRange = widths + (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
 
 	if (Terrain().isInAllyTerritory(unit.getTilePosition()) && (isThreatening(unit.getTarget()) || Util().unitInRange(unit) || (allyRange > enemyRange && Terrain().isInAllyTerritory(unit.getTarget().getTilePosition())))) return true;
-	//else if (unit.getType().isWorker() && unit.getTarget().unit()->exists()) return true; // If unit is a worker, always fight
-	//else if ((unit.unit()->isCloaked() || unit.unit()->isBurrowed()) && Grids().getEDetectorGrid(WalkPosition(unit.getEngagePosition())) <= 0) return true;
-	//else if (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && Util().unitInRange(unit)) return true; // If a unit is a Reaver and within range of an enemy
+	else if (unit.getType().isWorker() && unit.getTarget().unit()->exists()) return true; // If unit is a worker, always fight
+	else if ((unit.unit()->isCloaked() || unit.unit()->isBurrowed()) && Grids().getEDetectorGrid(WalkPosition(unit.getEngagePosition())) <= 0) return true;
+	else if (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && Util().unitInRange(unit)) return true; // If a unit is a Reaver and within range of an enemy
 	return false;
 }
 
