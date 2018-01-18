@@ -7,6 +7,4 @@ For any questions, email christianmccrave@gmail.com , McRave was started January
 - jaj22 for help with learning C++ and Broodwar engine discussions.
 - Hannes Bredberg for helping with optimization of pieces of code and research with FAP/NN.
 
-**New Features:**
-
 **Copyright 2018 Christian McCrave, all rights reserved.**
