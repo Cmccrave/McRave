@@ -42,7 +42,7 @@ void UnitTrackerClass::updateUnits()
 		if (unit.getType().isValid()) enemyComposition[unit.getType()] += 1; // If unit has a valid type, update enemy composition tracking
 		if (!unit.getType().isBuilding() && !unit.getType().isWorker()) unit.getType().isFlyer() ? globalEnemyAirStrength += unit.getVisibleAirStrength() : globalEnemyGroundStrength += unit.getVisibleGroundStrength(); // If unit is not a worker or building, add it to global strength	
 		if ((Terrain().isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(Terrain().getDefendPosition()) < 64) && (!unit.getType().isWorker() || unit.getLastAttackFrame() > 0)) proxThreat += unit.getVisibleGroundStrength();
-		// TODO // if (Grids().getBaseGrid(unit.getTilePosition()) > 0 && (!unit.getType().isWorker() || unit.getLastAttackFrame() > 0)) immThreat += unit.getVisibleGroundStrength();
+		if (isThreatening(unit)) immThreat += unit.getVisibleGroundStrength();
 		if (unit.getType().isBuilding() && unit.getGroundDamage() > 0 && unit.unit()->isCompleted()) enemyDefense += unit.getVisibleGroundStrength(); // If unit is a building and deals damage, add it to global defense		
 	}
 
