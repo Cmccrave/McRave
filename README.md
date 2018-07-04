@@ -1,5 +1,7 @@
 # McRave
 
+McRave is a simple AI that can play all 3 races to an extent, but is best at Protoss. It has a small but refined set of builds it is capable of performing, as well as reactions to enemy builds and tech choices. The goal of McRave is to play as closely to humans play, regardless of the AI meta, so that it may be prepared for the future when AI can compete at the level of professional Broodwar players.
+
 **Results:**
 - 12th at CIG 2017.
 - 7th at AIIDE 2017.
