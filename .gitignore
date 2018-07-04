@@ -1,2 +1,21 @@
 
-BWEB/
+BWEM/EasyBMP_1.06/BSD_(revised)_license.txt
+BWEM/EasyBMP_1.06/EasyBMP.cpp
+BWEM/EasyBMP_1.06/EasyBMP_BMP.h
+BWEM/EasyBMP_1.06/EasyBMP_DataStructures.h
+BWEM/EasyBMP_1.06/EasyBMP_ChangeLog.txt
+BWEM/EasyBMP_1.06/EasyBMP.h
+BWEM/EasyBMP_1.06/sample/EasyBMPsample.cpp
+BWEM/EasyBMP_1.06/sample/EasyBMPbackground.bmp
+BWEM/EasyBMP_1.06/EasyBMP_VariousBMPutilities.h
+BWEM/EasyBMP_1.06/EasyBMP_UserManual.pdf
+BWEM/EasyBMP_1.06/sample/EasyBMPtext.bmp
+BWEM/EasyBMP_1.06/sample/makefile
+VisualStudio/.vs/McRave/v15/.suo
+VisualStudio/Debug/area.obj
+*.obj
+*.log
+*.tlog
+*.exp
+*.lib
+*.pdb

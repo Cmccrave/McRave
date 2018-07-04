@@ -1,0 +1,306 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="McRaveT|Win32">
+      <Configuration>McRaveT</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="McRaveZ|Win32">
+      <Configuration>McRaveZ</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\Source\BWEB\PathFind.cpp" />
+    <ClCompile Include="..\Source\BWEB\Block.cpp" />
+    <ClCompile Include="..\Source\BWEB\BWEB.cpp" />
+    <ClCompile Include="..\Source\BWEB\BWEBUtil.cpp" />
+    <ClCompile Include="..\Source\BWEB\Station.cpp" />
+    <ClCompile Include="..\Source\BWEB\Wall.cpp" />
+    <ClCompile Include="..\Source\BWEM\area.cpp" />
+    <ClCompile Include="..\Source\BWEM\base.cpp" />
+    <ClCompile Include="..\Source\BWEM\BaseFinder\BaseFinder.cpp" />
+    <ClCompile Include="..\Source\BWEM\bwapiExt.cpp" />
+    <ClCompile Include="..\Source\BWEM\bwem.cpp" />
+    <ClCompile Include="..\Source\BWEM\cp.cpp" />
+    <ClCompile Include="..\Source\BWEM\examples.cpp" />
+    <ClCompile Include="..\Source\BWEM\exampleWall.cpp" />
+    <ClCompile Include="..\Source\BWEM\graph.cpp" />
+    <ClCompile Include="..\Source\BWEM\gridMap.cpp" />
+    <ClCompile Include="..\Source\BWEM\map.cpp" />
+    <ClCompile Include="..\Source\BWEM\mapDrawer.cpp" />
+    <ClCompile Include="..\Source\BWEM\mapImpl.cpp" />
+    <ClCompile Include="..\Source\BWEM\neutral.cpp" />
+    <ClCompile Include="..\Source\BWEM\tiles.cpp" />
+    <ClCompile Include="..\Source\BWEM\utils.cpp" />
+    <ClCompile Include="..\Source\BWEM\winutils.cpp" />
+    <ClCompile Include="..\Source\McRave\BuildingInfo.cpp" />
+    <ClCompile Include="..\Source\McRave\BuildingManager.cpp" />
+    <ClCompile Include="..\Source\McRave\BuildOrder.cpp" />
+    <ClCompile Include="..\Source\McRave\CommandManager.cpp" />
+    <ClCompile Include="..\Source\McRave\Dll.cpp" />
+    <ClCompile Include="..\Source\McRave\EventManager.cpp" />
+    <ClCompile Include="..\Source\McRave\FAP.cpp" />
+    <ClCompile Include="..\Source\McRave\GridManager.cpp" />
+    <ClCompile Include="..\Source\McRave\Interface.cpp" />
+    <ClCompile Include="..\Source\McRave\McRave.cpp" />
+    <ClCompile Include="..\Source\McRave\PlayerInfo.cpp" />
+    <ClCompile Include="..\Source\McRave\PlayerManager.cpp" />
+    <ClCompile Include="..\Source\McRave\ProductionManager.cpp" />
+    <ClCompile Include="..\Source\McRave\ProtossBuildOrder.cpp" />
+    <ClCompile Include="..\Source\McRave\ProtossBuilds.cpp" />
+    <ClCompile Include="..\Source\McRave\PylonManager.cpp" />
+    <ClCompile Include="..\Source\McRave\ResourceInfo.cpp" />
+    <ClCompile Include="..\Source\McRave\ResourceManager.cpp" />
+    <ClCompile Include="..\Source\McRave\SpecialManager.cpp" />
+    <ClCompile Include="..\Source\McRave\StationManager.cpp" />
+    <ClCompile Include="..\Source\McRave\StrategyManager.cpp" />
+    <ClCompile Include="..\Source\McRave\TargetManager.cpp" />
+    <ClCompile Include="..\Source\McRave\TerrainManager.cpp" />
+    <ClCompile Include="..\Source\McRave\TerranBuildOrder.cpp" />
+    <ClCompile Include="..\Source\McRave\TerranBuilds.cpp" />
+    <ClCompile Include="..\Source\McRave\TransportInfo.cpp" />
+    <ClCompile Include="..\Source\McRave\TransportManager.cpp" />
+    <ClCompile Include="..\Source\McRave\UnitInfo.cpp" />
+    <ClCompile Include="..\Source\McRave\UnitManager.cpp" />
+    <ClCompile Include="..\Source\McRave\Util.cpp" />
+    <ClCompile Include="..\Source\McRave\WorkerInfo.cpp" />
+    <ClCompile Include="..\Source\McRave\WorkerManager.cpp" />
+    <ClCompile Include="..\Source\McRave\ZergBuildOrder.cpp" />
+    <ClCompile Include="..\Source\McRave\ZergBuilds.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\Source\BWEB\Block.h" />
+    <ClInclude Include="..\Source\BWEB\BWEB.h" />
+    <ClInclude Include="..\Source\BWEB\Station.h" />
+    <ClInclude Include="..\Source\BWEB\Wall.h" />
+    <ClInclude Include="..\Source\BWEM\area.h" />
+    <ClInclude Include="..\Source\BWEM\base.h" />
+    <ClInclude Include="..\Source\BWEM\BaseFinder\BaseFinder.h" />
+    <ClInclude Include="..\Source\BWEM\bwapiExt.h" />
+    <ClInclude Include="..\Source\BWEM\bwem.h" />
+    <ClInclude Include="..\Source\BWEM\cp.h" />
+    <ClInclude Include="..\Source\BWEM\defs.h" />
+    <ClInclude Include="..\Source\BWEM\examples.h" />
+    <ClInclude Include="..\Source\BWEM\exampleWall.h" />
+    <ClInclude Include="..\Source\BWEM\graph.h" />
+    <ClInclude Include="..\Source\BWEM\gridMap.h" />
+    <ClInclude Include="..\Source\BWEM\map.h" />
+    <ClInclude Include="..\Source\BWEM\mapDrawer.h" />
+    <ClInclude Include="..\Source\BWEM\mapImpl.h" />
+    <ClInclude Include="..\Source\BWEM\neutral.h" />
+    <ClInclude Include="..\Source\BWEM\tiles.h" />
+    <ClInclude Include="..\Source\BWEM\utils.h" />
+    <ClInclude Include="..\Source\BWEM\winutils.h" />
+    <ClInclude Include="..\Source\McRave\BuildingInfo.h" />
+    <ClInclude Include="..\Source\McRave\BuildingManager.h" />
+    <ClInclude Include="..\Source\McRave\BuildOrder.h" />
+    <ClInclude Include="..\Source\McRave\CommandManager.h" />
+    <ClInclude Include="..\Source\McRave\FAP.h" />
+    <ClInclude Include="..\Source\McRave\GridManager.h" />
+    <ClInclude Include="..\Source\McRave\Header.h" />
+    <ClInclude Include="..\Source\McRave\Interface.h" />
+    <ClInclude Include="..\Source\McRave\McRave.h" />
+    <ClInclude Include="..\Source\McRave\PlayerInfo.h" />
+    <ClInclude Include="..\Source\McRave\PlayerManager.h" />
+    <ClInclude Include="..\Source\McRave\ProductionManager.h" />
+    <ClInclude Include="..\Source\McRave\PylonManager.h" />
+    <ClInclude Include="..\Source\McRave\ResourceInfo.h" />
+    <ClInclude Include="..\Source\McRave\ResourceManager.h" />
+    <ClInclude Include="..\Source\McRave\Singleton.h" />
+    <ClInclude Include="..\Source\McRave\StationManager.h" />
+    <ClInclude Include="..\Source\McRave\StrategyManager.h" />
+    <ClInclude Include="..\Source\McRave\TargetManager.h" />
+    <ClInclude Include="..\Source\McRave\TerrainManager.h" />
+    <ClInclude Include="..\Source\McRave\TransportInfo.h" />
+    <ClInclude Include="..\Source\McRave\TransportManager.h" />
+    <ClInclude Include="..\Source\McRave\UnitInfo.h" />
+    <ClInclude Include="..\Source\McRave\UnitManager.h" />
+    <ClInclude Include="..\Source\McRave\Util.h" />
+    <ClInclude Include="..\Source\McRave\WorkerInfo.h" />
+    <ClInclude Include="..\Source\McRave\WorkerManager.h" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{2E63AE74-758A-4607-9DE4-D28E814A6E13}</ProjectGuid>
+    <RootNamespace>ExampleAIModule</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <ProjectName>McRave</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='McRaveZ|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='McRaveT|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='McRaveZ|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='McRaveT|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='McRaveZ|Win32'">false</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='McRaveT|Win32'">false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>..\Source\BWEB;..\Source\BWEM;..\Source\McRave;..\..\..\include;$(IncludePath)</IncludePath>
+    <OutDir>..\..\..\..\StarCraft McRave\bwapi-data\AI\</OutDir>
+    <LibraryPath>..\..\..\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='McRaveZ|Win32'">
+    <IncludePath>D:\BWAPI\include;D:\BWAPI\Module\McRaveDev\Source\BWEB;D:\BWAPI\Module\McRaveDev\Source\BWEM;$(IncludePath)</IncludePath>
+    <OutDir>..\..\..\..\StarCraft McRave\bwapi-data\AI\</OutDir>
+    <LibraryPath>D:\BWAPI\lib;$(LibraryPath)</LibraryPath>
+    <TargetName>$(ProjectName)Z</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='McRaveT|Win32'">
+    <IncludePath>D:\BWAPI\include;D:\BWAPI\Module\McRaveDev\Source\BWEB;D:\BWAPI\Module\McRaveDev\Source\BWEM;$(IncludePath)</IncludePath>
+    <OutDir>..\..\..\..\StarCraft McRave\bwapi-data\AI\</OutDir>
+    <LibraryPath>D:\BWAPI\lib;$(LibraryPath)</LibraryPath>
+    <TargetName>$(ProjectName)T</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>..\..\..\include;..\Source\BWEB;..\Source\BWEM;$(IncludePath)</IncludePath>
+    <LibraryPath>..\..\..\lib;$(LibraryPath)</LibraryPath>
+    <OutDir>..\..\..\..\StarCraft McRave\bwapi-data\AI\</OutDir>
+    <TargetName>$(ProjectName)d</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;WIN32;_DEBUG;_WINDOWS;_USRDLL;EXAMPLEAIMODULE_EXPORTS;MCRAVE_PROTOSS;MCRAVE_TERRAN;MCRAVE_ZERG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <PreLinkEvent />
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <ImportLibrary>$(IntDir)$(TargetName).lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>../lib/BWAPId.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;WIN32;NDEBUG;_WINDOWS;_USRDLL;EXAMPLEAIMODULE_EXPORTS;MCRAVE_ZERG;MCRAVE_TERRAN;MCRAVE_PROTOSS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <PreLinkEvent />
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <ImportLibrary>$(IntDir)$(TargetName).lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>../lib/BWAPI.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='McRaveZ|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;WIN32;NDEBUG;_WINDOWS;_USRDLL;EXAMPLEAIMODULE_EXPORTS;MCRAVE_ZERG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <PreLinkEvent />
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <ImportLibrary>$(IntDir)$(TargetName).lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>../lib/BWAPI.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='McRaveT|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;WIN32;NDEBUG;_WINDOWS;_USRDLL;EXAMPLEAIMODULE_EXPORTS;MCRAVE_TERRAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <PreLinkEvent />
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <ImportLibrary>$(IntDir)$(TargetName).lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>../lib/BWAPI.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

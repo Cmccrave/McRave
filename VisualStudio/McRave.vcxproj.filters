@@ -1,0 +1,339 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\Source\BWEB\Block.cpp">
+      <Filter>BWEB</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEB\BWEB.cpp">
+      <Filter>BWEB</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEB\BWEBUtil.cpp">
+      <Filter>BWEB</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEB\Station.cpp">
+      <Filter>BWEB</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEB\Wall.cpp">
+      <Filter>BWEB</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEM\area.cpp">
+      <Filter>BWEM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEM\base.cpp">
+      <Filter>BWEM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEM\bwapiExt.cpp">
+      <Filter>BWEM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEM\bwem.cpp">
+      <Filter>BWEM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEM\cp.cpp">
+      <Filter>BWEM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEM\examples.cpp">
+      <Filter>BWEM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEM\exampleWall.cpp">
+      <Filter>BWEM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEM\graph.cpp">
+      <Filter>BWEM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEM\gridMap.cpp">
+      <Filter>BWEM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEM\map.cpp">
+      <Filter>BWEM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEM\mapDrawer.cpp">
+      <Filter>BWEM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEM\mapImpl.cpp">
+      <Filter>BWEM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEM\neutral.cpp">
+      <Filter>BWEM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEM\tiles.cpp">
+      <Filter>BWEM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEM\utils.cpp">
+      <Filter>BWEM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEM\winutils.cpp">
+      <Filter>BWEM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\BuildingManager.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\BuildOrder.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\CommandManager.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Dll.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\EventManager.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\FAP.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\GridManager.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Interface.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\McRave.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\PlayerInfo.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\PlayerManager.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\ProductionManager.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\ProtossBuildOrder.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\ProtossBuilds.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\PylonManager.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\ResourceInfo.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\ResourceManager.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\StationManager.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\StrategyManager.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\TargetManager.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\TerrainManager.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\TerranBuildOrder.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\TerranBuilds.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\TransportInfo.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\TransportManager.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\UnitInfo.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\UnitManager.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Util.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\WorkerInfo.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\WorkerManager.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\ZergBuildOrder.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\ZergBuilds.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\BuildingInfo.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEM\BaseFinder\BaseFinder.cpp">
+      <Filter>BWEM\BaseFinder</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEB\PathFind.cpp">
+      <Filter>BWEB</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\SpecialManager.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\Source\BWEB\Block.h">
+      <Filter>BWEB</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEB\BWEB.h">
+      <Filter>BWEB</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEB\Station.h">
+      <Filter>BWEB</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEB\Wall.h">
+      <Filter>BWEB</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEM\area.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEM\base.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEM\bwapiExt.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEM\bwem.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEM\cp.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEM\defs.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEM\examples.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEM\exampleWall.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEM\graph.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEM\gridMap.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEM\map.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEM\mapDrawer.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEM\mapImpl.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEM\neutral.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEM\tiles.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEM\utils.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEM\winutils.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\BuildingManager.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\BuildOrder.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\CommandManager.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\FAP.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\GridManager.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Header.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Interface.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\McRave.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\PlayerInfo.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\PlayerManager.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\ProductionManager.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\PylonManager.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\ResourceInfo.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\ResourceManager.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Singleton.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\StationManager.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\StrategyManager.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\TargetManager.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\TerrainManager.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\TransportInfo.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\TransportManager.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\UnitInfo.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\UnitManager.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Util.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\WorkerInfo.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\WorkerManager.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\BuildingInfo.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEM\BaseFinder\BaseFinder.h">
+      <Filter>BWEM\BaseFinder</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="BWEM">
+      <UniqueIdentifier>{3e14d27e-deb4-4133-aa73-c5da07446ee6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave">
+      <UniqueIdentifier>{74abad17-2dc8-41e2-933b-93e9cb0249af}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="BWEB">
+      <UniqueIdentifier>{b8528e1c-6b41-44c6-888b-7c26e95822af}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="BWEM\BaseFinder">
+      <UniqueIdentifier>{0e1ecd94-9211-4cea-8f45-228b7ee6c529}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
