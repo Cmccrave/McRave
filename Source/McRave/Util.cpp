@@ -8,14 +8,13 @@ double UtilManager::getPercentHealth(UnitInfo& unit)
 
 double UtilManager::getMaxGroundStrength(UnitInfo& unit)
 {
+	// HACK: Some hardcoded values
 	if (unit.getType() == UnitTypes::Terran_Medic)
 		return 5.0;
 	else if (unit.getType() == UnitTypes::Protoss_Scarab || unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Zerg_Egg || unit.getType() == UnitTypes::Zerg_Larva || unit.getGroundRange() <= 0.0)
 		return 0.0;
-
 	else if (unit.getType() == UnitTypes::Protoss_Interceptor)
 		return 2.0;
-
 	else if (unit.getType() == UnitTypes::Protoss_Carrier) {
 		double cnt = 0.0;
 		for (auto &i : unit.unit()->getInterceptors()) {
@@ -86,10 +85,8 @@ double UtilManager::getPriority(UnitInfo& unit)
 	const auto area = mapBWEM.GetArea(unit.getTilePosition());
 	if (area && Terrain().isInAllyTerritory(unit.getTilePosition())) {
 		for (auto &gas : area->Geysers()) {
-			if (gas->TopLeft().getDistance(unit.getTilePosition()) < 2 && !unit.unit()->isInvincible()) {
-				//Broodwar->drawCircleMap(unit.getPosition(), 8, Colors::Green, true);
+			if (gas->TopLeft().getDistance(unit.getTilePosition()) < 2 && !unit.unit()->isInvincible())
 				return 100.0;
-			}
 		}
 	}
 
@@ -108,34 +105,13 @@ double UtilManager::getPriority(UnitInfo& unit)
 	double cost = max(log((mineral * 0.33) + (gas * 0.66)) * (double)max(unit.getType().supplyRequired(), 1), 5.00);
 	double surv = survivability(unit);
 
-	//Broodwar->drawTextMap(unit.getPosition(), "%.2f", unit.getPriority());
-
-	return log(dps * cost / surv);
+	return log(10.0 + (dps * cost / surv));
 }
 
 WalkPosition UtilManager::getWalkPosition(Unit unit)
 {
-	int pixelX = unit->getPosition().x;
-	int pixelY = unit->getPosition().y;
-
-	// If it's a unit, we want to find the closest mini tile with the highest resolution (actual pixel width/height)
-	if (!unit->getType().isBuilding()) {
-
-		int diffX = pixelX - (unit->getType().width() / 2);
-		int walkX = diffX / 8;
-
-		if (diffX % 8 > 4)
-			walkX++;
-
-		int diffY = pixelY - (unit->getType().height() / 2);
-		int walkY = diffY / 8;
-
-		if (diffY % 8 > 4)
-			walkY++;
-
-		return WalkPosition(walkX, walkY);
-	}
-	// For buildings, we want the actual tile size resolution (convert half the tile size to pixels by 0.5*tile*32 = 16.0)
+	if (!unit->getType().isBuilding())
+		return WalkPosition(Position(unit->getLeft(), unit->getTop()));
 	else
 		return WalkPosition(unit->getTilePosition());
 	return WalkPositions::None;
@@ -145,8 +121,8 @@ bool UtilManager::isSafe(WalkPosition end, UnitType unitType, bool groundCheck, 
 {
 	int walkWidth = (int)ceil(unitType.width() / 8.0);
 	int walkHeight = (int)ceil(unitType.height() / 8.0);
-	int halfW = walkWidth / 2;
-	int halfH = walkHeight / 2;
+	int halfW = ceil(walkWidth / 2);
+	int halfH = ceil(walkHeight / 2);
 
 	for (int x = end.x - halfW; x <= end.x + halfW; x++) {
 		for (int y = end.y - halfH; y <= end.y + halfH; y++) {
@@ -163,8 +139,8 @@ bool UtilManager::isSafe(WalkPosition end, UnitType unitType, bool groundCheck, 
 
 bool UtilManager::isMobile(WalkPosition start, WalkPosition end, UnitType unitType)
 {
-	int walkWidth = (int)ceil(unitType.width() / 8.0);
-	int walkHeight = (int)ceil(unitType.height() / 8.0);
+	int walkWidth = (int)ceil(unitType.width() / 8.0) + 1;
+	int walkHeight = (int)ceil(unitType.height() / 8.0) + 1;
 	int halfW = walkWidth / 2;
 	int halfH = walkHeight / 2;
 
@@ -175,8 +151,8 @@ bool UtilManager::isMobile(WalkPosition start, WalkPosition end, UnitType unitTy
 		return false;
 	};
 
-	for (int x = end.x - halfW; x <= end.x + halfW; x++) {
-		for (int y = end.y - halfH; y <= end.y + halfH; y++) {
+	for (int x = end.x - halfW; x < end.x + halfW; x++) {
+		for (int y = end.y - halfH; y < end.y + halfH; y++) {
 			WalkPosition w(x, y);
 			if (!w.isValid())
 				return false;
@@ -195,7 +171,11 @@ bool UtilManager::unitInRange(UnitInfo& unit)
 		return false;
 
 	double widths = unit.getTarget().getType().width() + unit.getType().width();
-	double allyRange = widths + (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
+	double allyRange = (widths / 2) + (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
+
+	// HACK: Reavers have a weird ground distance range, try to reduce the amount of times Reavers try to engage
+	if (unit.getType() == UnitTypes::Protoss_Reaver)
+		allyRange -= 96.0;
 
 	if (unit.getPosition().getDistance(unit.getTarget().getPosition()) <= allyRange)
 		return true;
@@ -204,18 +184,38 @@ bool UtilManager::unitInRange(UnitInfo& unit)
 
 bool UtilManager::proactivePullWorker(Unit unit)
 {
-	if (Broodwar->self()->getRace() == Races::Protoss && BuildOrder().isWallNat()) {
+	if (Broodwar->self()->getRace() == Races::Protoss) {
 		int completedDefenders = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Photon_Cannon) + Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot);
 		int visibleDefenders = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot);
 
-		if (unit->getShields() < 5)
+		if (unit->getType() == UnitTypes::Protoss_Probe && unit->getShields() < 20)
 			return false;
-		if (Players().getNumberZerg() > 0 && BuildOrder().isWallNat()) {
-			if (Strategy().getEnemyBuild() == "Z5Pool" && Units().getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
+
+		if (BuildOrder().isHideTech() && completedDefenders == 1 && Units().getMyUnits().size() == 1)
+			return true;
+
+		if (BuildOrder().getCurrentBuild() == "PFFE") {
+			if (Units().getEnemyCount(UnitTypes::Zerg_Zergling) >= 5) {
+				if (Strategy().getEnemyBuild() == "Z5Pool" && Units().getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
+					return true;
+				if (Strategy().getEnemyBuild() == "Z9Pool" && Units().getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 5 && visibleDefenders >= 2)
+					return true;
+				if (!Terrain().getEnemyStartingPosition().isValid() && Strategy().getEnemyBuild() == "Unknown" && Units().getGlobalAllyGroundStrength() < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
+					return true;
+				if (Units().getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
+					return true;
+			}
+			else {
+				if (Strategy().getEnemyBuild() == "Z5Pool" && Units().getGlobalAllyGroundStrength() < 1.00 && completedDefenders < 2 && visibleDefenders >= 2)
+					return true;
+				if (!Terrain().getEnemyStartingPosition().isValid() && Strategy().getEnemyBuild() == "Unknown" && Units().getGlobalAllyGroundStrength() < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
+					return true;
+			}
+		}
+		else if (BuildOrder().getCurrentBuild() == "P2GateExpand") {
+			if (Strategy().getEnemyBuild() == "Z5Pool" && Units().getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 2)
 				return true;
-			if (Strategy().getEnemyBuild() == "Z9Pool" && Units().getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 5 && visibleDefenders >= 2)
-				return true;
-			if (!Terrain().getEnemyStartingPosition().isValid() && Strategy().getEnemyBuild() == "Unknown" && Units().getGlobalAllyGroundStrength() < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
+			if (Strategy().getEnemyBuild() == "Z9Pool" && Units().getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 3)
 				return true;
 		}
 	}
@@ -224,7 +224,7 @@ bool UtilManager::proactivePullWorker(Unit unit)
 			return true;
 	}
 
-	if (Players().getNumberZerg() > 0 && Units().getImmThreat() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense())
+	if (Strategy().enemyProxy() && Strategy().getEnemyBuild() != "P2Gate" && Units().getImmThreat() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense())
 		return true;
 
 	return false;
@@ -236,7 +236,7 @@ bool UtilManager::reactivePullWorker(Unit unit)
 		return false;
 
 	if (Broodwar->self()->getRace() == Races::Protoss) {
-		if (unit->getShields() < 5)
+		if (unit->getShields() < 8)
 			return false;
 	}
 
@@ -245,23 +245,40 @@ bool UtilManager::reactivePullWorker(Unit unit)
 		if (Terrain().isInAllyTerritory(unit->getTilePosition()) && Grids().getEGroundThreat(getWalkPosition(unit)) > 0.0 && Broodwar->getFrameCount() < 10000)
 			return true;
 	}
+
+	// If we have no combat units and there is a threat
+	if (Units().getImmThreat() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense()) {
+		if (Broodwar->self()->getRace() == Races::Protoss) {
+			if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) == 0)
+				return true;
+		}
+		else if (Broodwar->self()->getRace() == Races::Zerg) {
+			if (Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Zergling) == 0)
+				return true;
+		}
+		else if (Broodwar->self()->getRace() == Races::Terran) {
+			if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Marine) == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Vulture) == 0)
+				return true;
+		}
+	}
 	return false;
 }
 
 bool UtilManager::pullRepairWorker(Unit unit)
 {
-	int mechUnits = Broodwar->self()->completedUnitCount(UnitTypes::Terran_Vulture)
-		+ Broodwar->self()->completedUnitCount(UnitTypes::Terran_Siege_Tank_Siege_Mode)
-		+ Broodwar->self()->completedUnitCount(UnitTypes::Terran_Siege_Tank_Tank_Mode)
-		+ Broodwar->self()->completedUnitCount(UnitTypes::Terran_Goliath)
-		+ Broodwar->self()->completedUnitCount(UnitTypes::Terran_Wraith)
-		+ Broodwar->self()->completedUnitCount(UnitTypes::Terran_Battlecruiser)
-		+ Broodwar->self()->completedUnitCount(UnitTypes::Terran_Valkyrie);
+	if (Broodwar->self()->getRace() == Races::Terran) {
+		int mechUnits = Broodwar->self()->completedUnitCount(UnitTypes::Terran_Vulture)
+			+ Broodwar->self()->completedUnitCount(UnitTypes::Terran_Siege_Tank_Siege_Mode)
+			+ Broodwar->self()->completedUnitCount(UnitTypes::Terran_Siege_Tank_Tank_Mode)
+			+ Broodwar->self()->completedUnitCount(UnitTypes::Terran_Goliath)
+			+ Broodwar->self()->completedUnitCount(UnitTypes::Terran_Wraith)
+			+ Broodwar->self()->completedUnitCount(UnitTypes::Terran_Battlecruiser)
+			+ Broodwar->self()->completedUnitCount(UnitTypes::Terran_Valkyrie);
 
-	if (Broodwar->self()->getRace() == Races::Terran && mechUnits > 0 && Units().getRepairWorkers() < Units().getSupply() / 30)
-		return true;
-	if (Broodwar->self()->getRace() == Races::Terran && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) > 0 && BuildOrder().isFastExpand() && Units().getRepairWorkers() < 2)
-		return true;
+		if ((mechUnits > 0 && Units().getRepairWorkers() < Units().getSupply() / 30)
+			|| (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) > 0 && BuildOrder().isFastExpand() && Units().getRepairWorkers() < 2))
+			return true;
+	}
 	return false;
 }
 
@@ -311,8 +328,8 @@ double UtilManager::aWeaponCooldown(UnitInfo& unit)
 
 double UtilManager::splashModifier(UnitInfo& unit)
 {
-	if (unit.getType() == UnitTypes::Protoss_Archon || unit.getType() == UnitTypes::Protoss_Corsair || unit.getType() == UnitTypes::Terran_Firebat) return 1.25;
-	if (unit.getType() == UnitTypes::Protoss_Reaver) return 2.00;
+	if (unit.getType() == UnitTypes::Protoss_Archon || unit.getType() == UnitTypes::Terran_Firebat) return 1.25;
+	if (unit.getType() == UnitTypes::Protoss_Reaver) return 1.25;
 	if (unit.getType() == UnitTypes::Protoss_High_Templar) return 6.00;
 	if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode) return 2.50;
 	if (unit.getType() == UnitTypes::Terran_Valkyrie || unit.getType() == UnitTypes::Zerg_Mutalisk) return 1.50;
@@ -422,6 +439,49 @@ double UtilManager::speed(UnitInfo& unit)
 int UtilManager::getMinStopFrame(UnitType unitType)
 {
 	if (unitType == UnitTypes::Protoss_Dragoon)	return 9;
-	else if (unitType == UnitTypes::Zerg_Devourer) return 7;
+	else if (unitType == UnitTypes::Zerg_Devourer) return 11;
 	return 0;
+}
+
+const BWEM::ChokePoint * UtilManager::getClosestChokepoint(Position here)
+{
+	double distBest = DBL_MAX;
+	const BWEM::ChokePoint * closest = nullptr;
+	for (auto &area : mapBWEM.Areas()) {
+		for (auto &choke : area.ChokePoints()) {
+			double dist = Position(choke->Center()).getDistance(here);
+			if (dist < distBest) {
+				distBest = dist;
+				closest = choke;
+			}
+		}
+	}
+	return closest;
+}
+
+UnitInfo * UtilManager::getClosestUnit(Position here, Player p, UnitType t) {
+	double distBest = DBL_MAX;
+	UnitInfo* best = nullptr;
+	auto &units = (p == Broodwar->self()) ? Units().getMyUnits() : Units().getEnemyUnits();
+
+	for (auto &u : units) {
+		UnitInfo &unit = u.second;
+
+		if (!unit.unit() || (t != UnitTypes::None && unit.getType() != t))
+			continue;
+
+		double dist = here.getDistance(unit.getPosition());
+		if (dist < distBest) {
+			best = &unit;
+			distBest = dist;
+		}
+	}
+	return best;
+}
+
+int UtilManager::chokeWidth(const BWEM::ChokePoint * choke)
+{
+	if (!choke)
+		return 0;
+	return int(choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2))) * 8;
 }

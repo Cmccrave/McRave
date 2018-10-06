@@ -9,13 +9,15 @@ namespace McRave
 
 	void PylonManager::updatePower(Unit unit)
 	{
-		TilePosition pylonTile = unit->getTilePosition();
+		TilePosition start = unit->getTilePosition();
 		int cnt = unit->exists() ? 1 : -1;
 
 		for (int x = 0; x <= 15; x++) {
 			for (int y = 0; y <= 9; y++) {
-				TilePosition tile = TilePosition(x, y) + pylonTile - TilePosition(8, 5);
-				if (!tile.isValid()) continue;
+				TilePosition tile = TilePosition(x, y) + start - TilePosition(8, 5);
+
+				if (!tile.isValid())
+					continue;
 
 				if (y == 0) {
 					if (x >= 4 && x <= 9)
@@ -47,7 +49,6 @@ namespace McRave
 				}
 			}
 		}
-		return;
 	}
 
 	bool PylonManager::hasPower(TilePosition here, UnitType building)

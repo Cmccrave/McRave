@@ -48,7 +48,6 @@
     <ClCompile Include="..\Source\McRave\CommandManager.cpp" />
     <ClCompile Include="..\Source\McRave\Dll.cpp" />
     <ClCompile Include="..\Source\McRave\EventManager.cpp" />
-    <ClCompile Include="..\Source\McRave\FAP.cpp" />
     <ClCompile Include="..\Source\McRave\GridManager.cpp" />
     <ClCompile Include="..\Source\McRave\Interface.cpp" />
     <ClCompile Include="..\Source\McRave\McRave.cpp" />
@@ -57,6 +56,7 @@
     <ClCompile Include="..\Source\McRave\ProductionManager.cpp" />
     <ClCompile Include="..\Source\McRave\ProtossBuildOrder.cpp" />
     <ClCompile Include="..\Source\McRave\ProtossBuilds.cpp" />
+    <ClCompile Include="..\Source\McRave\ProtossMemes.cpp" />
     <ClCompile Include="..\Source\McRave\PylonManager.cpp" />
     <ClCompile Include="..\Source\McRave\ResourceInfo.cpp" />
     <ClCompile Include="..\Source\McRave\ResourceManager.cpp" />
@@ -104,7 +104,6 @@
     <ClInclude Include="..\Source\McRave\BuildingManager.h" />
     <ClInclude Include="..\Source\McRave\BuildOrder.h" />
     <ClInclude Include="..\Source\McRave\CommandManager.h" />
-    <ClInclude Include="..\Source\McRave\FAP.h" />
     <ClInclude Include="..\Source\McRave\GridManager.h" />
     <ClInclude Include="..\Source\McRave\Header.h" />
     <ClInclude Include="..\Source\McRave\Interface.h" />

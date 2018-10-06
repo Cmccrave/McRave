@@ -11,16 +11,19 @@ namespace McRave
 	class WorkerManager
 	{
 		map <Unit, WorkerInfo> myWorkers;
-		map <WalkPosition, int> recentExplorations;
 		set<Position> scoutAssignments;
 		set<Unit> scouts;
 
 		int deadScoutFrame = 0;
-		int minWorkers, gasWorkers;
+		int minWorkers = 0, gasWorkers = 0;
 		int scoutCount;		
+
+		bool needGas();
+		bool proxyCheck = false;
 	public:
 		map <Unit, WorkerInfo>& getMyWorkers() { return myWorkers; }
 		Unit getClosestWorker(Position, bool);
+		WorkerInfo* getClosestScout(Position);
 
 		void onFrame();
 		void updateWorkers();

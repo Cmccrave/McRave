@@ -8,30 +8,27 @@ namespace McRave
 {
 	class BuildingInfo
 	{
+		int remainingTrainFrame;
 		int energy;
 		Unit thisUnit;
-		UnitType unitType, nextUnit;
+		UnitType type, nextUnit;
 		Position position;
 		WalkPosition walkPosition;
 		TilePosition tilePosition;
 
 	public:
 		BuildingInfo();
+		void update();
 
+		int getRemainingTrainFrames()					{ return remainingTrainFrame; }
 		int getEnergy()									{ return energy; }
 		Unit unit()										{ return thisUnit; }
-		UnitType getType()								{ return unitType; }
-		UnitType getNextUnit()							{ return nextUnit; }
+		UnitType getType()								{ return type; }
 		Position getPosition()							{ return position; }
 		WalkPosition getWalkPosition()					{ return walkPosition; }
 		TilePosition getTilePosition()					{ return tilePosition; }
 
-		void setEnergy(int newEnergy)					{ energy = newEnergy; }
+		void setRemainingTrainFrame(int newFrame)		{ remainingTrainFrame = newFrame; }		
 		void setUnit(Unit newUnit)						{ thisUnit = newUnit; }
-		void setType(UnitType newBuildingType)			{ unitType = newBuildingType; }
-		void setNextUnit(UnitType newNextUnit)			{ nextUnit = newNextUnit; }
-		void setPosition(Position newPosition)			{ position = newPosition; }
-		void setWalkPosition(WalkPosition newPosition)	{ walkPosition = newPosition; }
-		void setTilePosition(TilePosition newPosition)	{ tilePosition = newPosition; }
 	};
 }

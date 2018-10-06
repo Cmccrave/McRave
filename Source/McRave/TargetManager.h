@@ -9,13 +9,12 @@ namespace McRave
 {
 	class TargetManager
 	{
-		Position getEngagePosition(UnitInfo&);
+		void getEngagePosition(UnitInfo&);
+		void getPathToTarget(UnitInfo&);
 	public:
 		void getTarget(UnitInfo&);
 		void enemyTarget(UnitInfo&);
 		void allyTarget(UnitInfo&);
-
-		void getPathToTarget(UnitInfo&);
 	};
 }
 

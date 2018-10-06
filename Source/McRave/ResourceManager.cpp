@@ -5,7 +5,6 @@ void ResourceManager::onFrame()
 	Display().startClock();
 	updateResources();
 	Display().performanceTest(__FUNCTION__);
-	return;
 }
 
 void ResourceManager::updateResources()
@@ -15,44 +14,44 @@ void ResourceManager::updateResources()
 	incomeMineral = 0, incomeGas = 0;
 	gasCount = 0;
 
-	for (auto &m : myMinerals) {
-		ResourceInfo& resource = m.second;
+	const auto update = [&](ResourceInfo& resource) {
 		if (!resource.unit())
-			continue;
-
+			return;
 		updateInformation(resource);
 		updateIncome(resource);
+	};
+
+	for (auto &m : myMinerals) {
+		ResourceInfo& resource = m.second;
+		update(resource);
 	}
 
 	for (auto &g : myGas) {
 		ResourceInfo& resource = g.second;
-		if (!resource.unit())
-			continue;
-
-		for (auto block = mapBWEM.GetTile(resource.getTilePosition()).GetNeutral(); block; block = block->NextStacked()) {
-			if (block && block->Unit() && block->Unit()->isInvincible() && !block->IsGeyser())
-				resource.setState(0);
+		update(resource);
+		
+		// If resource is blocked from usage
+		if (resource.getTilePosition().isValid()) {
+			for (auto block = mapBWEM.GetTile(resource.getTilePosition()).GetNeutral(); block; block = block->NextStacked()) {
+				if (block && block->Unit() && block->Unit()->exists() && block->Unit()->isInvincible() && !block->IsGeyser())
+					resource.setState(0);
+			}
 		}
-
-		updateInformation(resource);
-		updateIncome(resource);
 	}
 }
 
 void ResourceManager::updateInformation(ResourceInfo& resource)
 {
 	// If unit exists, update BW information
-	if (resource.unit()->exists()) {
-		resource.setType(resource.unit()->getType());
-		resource.setRemainingResources(resource.unit()->getResources());
-	}
+	if (resource.unit()->exists())
+		resource.updateResource();	
 
 	UnitType geyserType = Broodwar->self()->getRace().getRefinery();	
 
 	// Update saturation
 	if (resource.getType().isMineralField() && minSat && resource.getGathererCount() < 2 && resource.getState() > 0)
 		minSat = false;
-	else if (resource.getType() == geyserType && resource.getGathererCount() < 3 && resource.unit()->isCompleted() && resource.getState() > 0)
+	else if (resource.getType() == geyserType && resource.unit()->isCompleted() && resource.getState() > 0 && ((BuildOrder().isOpener() && resource.getGathererCount() < min(3, BuildOrder().gasWorkerLimit())) || (!BuildOrder().isOpener() && resource.getGathererCount() < 3)))
 		gasSat = false;
 	
 	if (!resource.getType().isMineralField() && resource.getState() == 2)
@@ -61,66 +60,33 @@ void ResourceManager::updateInformation(ResourceInfo& resource)
 
 void ResourceManager::updateIncome(ResourceInfo& resource)
 {
-	if (resource.getType().isMineralField()) {
-		if (resource.getGathererCount() == 1)
-			incomeMineral += 65;
-		else if (resource.getGathererCount() == 2)
-			incomeMineral += 126;
-	}
-	else {
-		if (resource.getRemainingResources())
-			incomeGas += 103 * resource.getGathererCount();
-		else
-			incomeGas += 26 * resource.getGathererCount();
-	}
+	// Estimate income
+	auto cnt = resource.getGathererCount();
+	if (resource.getType().isMineralField())
+		incomeMineral += cnt == 1 ? 65 : 126;	
+	else
+		incomeGas += resource.getRemainingResources() ? 103 * cnt : 26 * cnt;	
 }
 
 void ResourceManager::storeResource(Unit resource)
 {
-	if (resource->getInitialResources() > 300)
-		resource->getType().isMineralField() ? storeMineral(resource) : storeGas(resource);
-	else if (resource->getType().isMineralField())
-		storeBoulder(resource);
-	return;
-}
+	auto &r = (resource->getResources() > 0 ? (resource->getType().isMineralField() ? myMinerals[resource] : myGas[resource]) : myBoulders[resource]);
+	r.setUnit(resource);
 
-void ResourceManager::storeMineral(Unit resource)
-{
-	ResourceInfo& m = myMinerals[resource];
-	m.setGathererCount(0);
-	m.setRemainingResources(resource->getResources());
-	m.setUnit(resource);
-	m.setType(resource->getType());
-	m.setPosition(resource->getPosition());
-	m.setWalkPosition(Util().getWalkPosition(resource));
-	m.setTilePosition(resource->getTilePosition());
-	return;
-}
+	// If we are not on an inital frame, a geyser was just created and we need to see if we own it
+	if (Broodwar->getFrameCount() > 0) {
+		auto newStation = mapBWEB.getClosestStation(resource->getTilePosition());
 
-void ResourceManager::storeGas(Unit resource)
-{
-	ResourceInfo& g = myGas[resource];
-	g.setGathererCount(0);
-	g.setRemainingResources(resource->getResources());
-	g.setUnit(resource);
-	g.setType(resource->getType());
-	g.setPosition(resource->getPosition());
-	g.setWalkPosition(Util().getWalkPosition(resource));
-	g.setTilePosition(resource->getTilePosition());
-	return;
-}
-
-void ResourceManager::storeBoulder(Unit resource)
-{
-	ResourceInfo& b = myBoulders[resource];
-	b.setGathererCount(0);
-	b.setRemainingResources(resource->getResources());
-	b.setUnit(resource);
-	b.setType(resource->getType());
-	b.setPosition(resource->getPosition());
-	b.setWalkPosition(Util().getWalkPosition(resource));
-	b.setTilePosition(resource->getTilePosition());
-	return;
+		if (newStation) {
+			for (auto &s : Stations().getMyStations()) {
+				auto station = s.second;
+				if (station.BWEMBase() == newStation->BWEMBase()) {
+					r.setState(2);
+					break;
+				}
+			}
+		}
+	}
 }
 
 void ResourceManager::removeResource(Unit resource)
@@ -130,11 +96,13 @@ void ResourceManager::removeResource(Unit resource)
 		myMinerals.erase(resource);
 	else if (myBoulders.find(resource) != myBoulders.end())
 		myBoulders.erase(resource);
+	else if (myGas.find(resource) != myGas.end())
+		myGas.erase(resource);
 
 	// Any workers that targeted that resource now have no target
-	for (auto &worker : Workers().getMyWorkers()) {
-		if (worker.second.hasResource() && worker.second.getResource().unit() == resource)
-			worker.second.setResource(nullptr);
+	for (auto &w : Workers().getMyWorkers()) {
+		WorkerInfo& worker = w.second;
+		if (worker.hasResource() && worker.getResource().unit() == resource)
+			worker.setResource(nullptr);
 	}
-	return;
 }

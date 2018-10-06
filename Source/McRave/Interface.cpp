@@ -34,6 +34,9 @@ namespace McRave
 		// Reset the screenOffset for the performance tests
 		screenOffset = 0;
 
+		//WalkPosition mouse(Broodwar->getMousePosition() + Broodwar->getScreenPosition());
+		//Broodwar->drawTextScreen(Broodwar->getMousePosition() - Position(0, 16), "%d", mapBWEM.GetMiniTile(mouse).Altitude());
+
 		if (builds) {
 			int offset = 0;
 			int time = Broodwar->getFrameCount() / 24;
@@ -91,8 +94,8 @@ namespace McRave
 					Broodwar->drawLineMap(unit.getTarget().getPosition(), unit.getPosition(), unit.getPlayer()->getColor());
 
 				if (unit.getVisibleGroundStrength() > 0.0 || unit.getVisibleAirStrength() > 0.0) {
-					Broodwar->drawTextMap(unit.getPosition() + Position(5, -10), "Grd: %c %.2f", Text::Brown, unit.getVisibleGroundStrength());
-					Broodwar->drawTextMap(unit.getPosition() + Position(5, 2), "Air: %c %.2f", Text::Blue, unit.getVisibleAirStrength());
+					//Broodwar->drawTextMap(unit.getPosition() + Position(5, -10), "Grd: %c %.2f", Text::Brown, unit.getVisibleGroundStrength());
+					//Broodwar->drawTextMap(unit.getPosition() + Position(5, 2), "Air: %c %.2f", Text::Blue, unit.getVisibleAirStrength());
 				}
 			}
 		}
@@ -162,19 +165,14 @@ namespace McRave
 		TilePosition next = TilePositions::Invalid;
 		for (auto &tile : path) {
 
-			//if (tile == *(path.begin()))
-			//	continue;
+			if (tile == *(path.begin()))
+				continue;
 
 			if (next.isValid() && tile.isValid())
 				Broodwar->drawLineMap(Position(next) + Position(16, 16), Position(tile) + Position(16, 16), color);
 
 			next = tile;
 		}
-		
-		/*if (path.size() >= 2) {
-			Broodwar->drawLineMap(unit.getPosition(), (Position)*(path.end() - 1) + Position(16, 16), color);
-			Broodwar->drawLineMap(unit.getTarget().getPosition(), (Position)*(path.begin() + 1) + Position(16, 16), color);
-		}*/
 	}
 
 	void InterfaceManager::displaySim(UnitInfo& unit, double simValue)

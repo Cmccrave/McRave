@@ -10,17 +10,21 @@ namespace McRave
 	class WorkerInfo{
 		Unit thisUnit;
 		Unit transport;
-		UnitType unitType, buildingType;
+		UnitType type, buildingType;
 		WalkPosition walkPosition;
 		Position position, destination;
 		TilePosition tilePosition, buildPosition;
 		ResourceInfo* resource;
+		int resourceHeldFrames;
 	public:
 		WorkerInfo();
+		void update();
+
 		bool hasResource()								{ return resource != nullptr; }
+		int framesHoldingResource()						{ return resourceHeldFrames; }
 		Unit unit()										{ return thisUnit; }
 		Unit getTransport()								{ return transport; }
-		UnitType getType()								{ return unitType; }
+		UnitType getType()								{ return type; }
 		UnitType getBuildingType()						{ return buildingType; }
 		Position getPosition()							{ return position; }
 		Position getDestination()						{ return destination; }
@@ -30,13 +34,9 @@ namespace McRave
 		ResourceInfo &getResource()						{ return *resource; }
 
 		void setUnit(Unit newUnit)						{ thisUnit = newUnit; }		
-		void setTransport(Unit newTransport)			{ transport = newTransport;	}
-		void setType(UnitType newType)					{ unitType = newType; }
-		void setBuildingType(UnitType newType)			{ buildingType = newType; }
-		void setPosition(Position newPosition)			{ position = newPosition; }
-		void setDestination(Position newPosition)		{ destination = newPosition; }
-		void setWalkPosition(WalkPosition newPosition)	{ walkPosition = newPosition; }
-		void setTilePosition(TilePosition newPosition)	{ tilePosition = newPosition; }
+		void setTransport(Unit newTransport)			{ transport = newTransport;	}		
+		void setBuildingType(UnitType newType)			{ buildingType = newType; }		
+		void setDestination(Position newPosition)		{ destination = newPosition; }		
 		void setBuildPosition(TilePosition newPosition) { buildPosition = newPosition; }
 		void setResource(ResourceInfo * newResource)	{ resource = newResource; }
 	};

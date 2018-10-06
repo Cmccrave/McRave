@@ -22,14 +22,12 @@ namespace McRave
 				eRandom++;
 		
 		}
-		return;
 	}
 
 	void PlayerManager::onFrame()
 	{
-		for (auto &player : thePlayers) {
-			update(player.second);
-		}
+		for (auto &player : thePlayers)
+			update(player.second);		
 	}
 
 	void PlayerManager::update(PlayerInfo& player)

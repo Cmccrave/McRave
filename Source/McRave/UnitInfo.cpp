@@ -1,4 +1,5 @@
 #include "UnitInfo.h"
+#include "McRave.h"
 
 namespace McRave
 {
@@ -20,20 +21,21 @@ namespace McRave
 		localStrategy = 0;
 		globalStrategy = 0;
 		lastAttackFrame = 0;
-		lastCommandFrame = 0;
 		lastVisibleFrame = 0;
+		lastMoveFrame = 0;
 		shields = 0;
 		health = 0;
 		minStopFrame = 0;
 
 		killCount = 0;
+		simBonus = 1.0;
 
 		burrowed = false;
 
 		thisUnit = nullptr;
 		transport = nullptr;
 		unitType = UnitTypes::None;
-		who = nullptr;
+		player = nullptr;
 		target = nullptr;
 
 		position = Positions::Invalid;
@@ -52,5 +54,90 @@ namespace McRave
 		lastPos = this->getPosition();
 		lastTile = this->getTilePosition();
 		//lastWalk =  this->unit()->getWalkPosition();
+	}
+
+	void UnitInfo::updateUnit()
+	{
+		auto t = this->unit()->getType();
+		auto p = this->unit()->getPlayer();
+
+		this->setLastPositions();
+
+		// Update unit positions		
+		position				= thisUnit->getPosition();
+		destination				= Positions::None;
+		tilePosition			= unit()->getTilePosition();
+		walkPosition			= Util().getWalkPosition(thisUnit);
+
+		// Update unit stats
+		unitType				= t;
+		player					= p;
+		health					= thisUnit->getHitPoints();
+		shields					= thisUnit->getShields();
+		percentHealth			= Util().getPercentHealth(*this);
+		groundRange				= Util().groundRange(*this);
+		airRange				= Util().airRange(*this);
+		groundDamage			= Util().groundDamage(*this);
+		airDamage				= Util().airDamage(*this);
+		speed 					= Util().speed(*this);
+		minStopFrame			= Util().getMinStopFrame(t);
+		burrowed				= (thisUnit->isBurrowed() || thisUnit->getOrder() == Orders::Burrowing || thisUnit->getOrder() == Orders::VultureMine);
+
+		// Update McRave stats
+		visibleGroundStrength	= Util().getVisibleGroundStrength(*this);
+		maxGroundStrength		= Util().getMaxGroundStrength(*this);
+		visibleAirStrength		= Util().getVisibleAirStrength(*this);
+		maxAirStrength			= Util().getMaxAirStrength(*this);
+		priority				= Util().getPriority(*this);
+		lastAttackFrame			= (t != UnitTypes::Protoss_Reaver && (thisUnit->isStartingAttack() || thisUnit->isRepairing())) ? Broodwar->getFrameCount() : lastAttackFrame;
+		killCount				= unit()->getKillCount();
+		simBonus				= 1.0;
+
+		this->updateTarget();
+		this->resetForces();		
+		this->updateStuckCheck();
+	}
+
+	void UnitInfo::updateTarget()
+	{
+		// Update my targets
+		if (player && player == Broodwar->self()) {
+			if (unitType == UnitTypes::Terran_Vulture_Spider_Mine) {
+				auto mineTarget = unit()->getOrderTarget();
+
+				if (Units().getEnemyUnits().find(mineTarget) != Units().getEnemyUnits().end())
+					target = mineTarget != nullptr ? &Units().getEnemyUnits()[mineTarget] : nullptr;
+				else
+					target = nullptr;
+			}
+			else
+				Targets().getTarget(*this);
+		}
+
+		// Assume enemy targets
+		else if (player && player->isEnemy(Broodwar->self())) {
+
+			if (unitType == UnitTypes::Terran_Vulture_Spider_Mine && thisUnit->getOrderTarget() && thisUnit->getOrderTarget()->getPlayer() == Broodwar->self())
+				target = &Units().getMyUnits()[thisUnit->getOrderTarget()];
+			else if (unitType != UnitTypes::Terran_Vulture_Spider_Mine && thisUnit->getOrderTarget() && Units().getMyUnits().find(thisUnit->getOrderTarget()) != Units().getMyUnits().end())
+				target = &Units().getMyUnits()[thisUnit->getOrderTarget()];
+			else
+				target = nullptr;
+		}
+	}
+
+	void UnitInfo::updateStuckCheck() {
+		if (player != Broodwar->self() || lastPos != position || !thisUnit->isMoving() || thisUnit->getLastCommand().getType() == UnitCommandTypes::Stop || lastAttackFrame == Broodwar->getFrameCount())
+			lastMoveFrame = Broodwar->getFrameCount();
+	}
+
+	void UnitInfo::createDummy(UnitType t) {
+		unitType				= t;
+		player					= Broodwar->self();
+		groundRange				= Util().groundRange(*this);
+		airRange				= Util().airRange(*this);
+		groundDamage			= Util().groundDamage(*this);
+		airDamage				= Util().airDamage(*this);
+		speed 					= Util().speed(*this);
 	}
 }

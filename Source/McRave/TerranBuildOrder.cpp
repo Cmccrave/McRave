@@ -1,5 +1,4 @@
 #include "McRave.h"
-#ifdef MCRAVE_TERRAN
 
 void BuildOrderManager::terranOpener()
 {
@@ -196,7 +195,7 @@ void BuildOrderManager::terranSituational()
 
 	// Machine Shop
 	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= 1)
-		itemQueue[UnitTypes::Terran_Machine_Shop] = Item(max(1, Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) - (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center))));
+		itemQueue[UnitTypes::Terran_Machine_Shop] = Item(max(0, Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) - (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center))));
 
 	// Supply Depot logic
 	if (Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Supply_Depot) > (int)fastExpand)
@@ -210,7 +209,7 @@ void BuildOrderManager::terranSituational()
 		itemQueue[UnitTypes::Terran_Command_Center] = Item(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) + 1);
 
 	// Bunker logic
-	if (Strategy().enemyRush() && (!wallNat || (Terrain().getWall() && Terrain().getWall()->getDoor().isValid())))
+	if (Strategy().enemyRush())
 		itemQueue[UnitTypes::Terran_Bunker] = Item(1);
 
 	if (!getOpening)
@@ -254,4 +253,3 @@ void BuildOrderManager::terranSituational()
 			itemQueue[UnitTypes::Terran_Missile_Turret] = Item(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) * 2);
 	}
 }
-#endif

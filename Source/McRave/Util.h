@@ -10,6 +10,13 @@ namespace McRave
 	class UtilManager
 	{
 	public:
+
+		// New stuff
+		UnitInfo * getClosestUnit(Position, Player, UnitType t = UnitTypes::None);
+
+		// Returns the width of the choke in pixels
+		int chokeWidth(const BWEM::ChokePoint *);
+
 		double getPercentHealth(UnitInfo&);
 		double getMaxGroundStrength(UnitInfo&);
 		double getVisibleGroundStrength(UnitInfo&);
@@ -44,7 +51,7 @@ namespace McRave
 		// Returns 1 if the tiles at the finish are all walkable tiles and checks for overlap with this unit
 		bool isMobile(WalkPosition start, WalkPosition finish, UnitType);
 
-		// Returns 1 if the unit is in range of a position
+		// Returns 1 if the unit is in range of its target
 		bool unitInRange(UnitInfo& unit);
 
 		// Returns 1 if the worker should fight
@@ -68,61 +75,74 @@ namespace McRave
 		template <class T>
 		const Position getConcavePosition(T &unit, BWEM::Area const * area = nullptr, Position here = Positions::Invalid) {
 
-			// Defend chokepoint with concave
+			// Setup parameters
 			int min = int(unit.getGroundRange());
-			int max = int(unit.getGroundRange()) + 256;
-
-			if (Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Zergling) == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) == 0)
-				min = 0, max = 256;
-
-			if (unit.getType() == UnitTypes::Protoss_Zealot)
-				min = 64;
-			if (unit.getType() == UnitTypes::Zerg_Zergling)
-				min = 128;
-
 			double distBest = DBL_MAX;
-			WalkPosition start = unit.getWalkPosition();
-			WalkPosition choke;
-			Position bestPosition;
-			
-			if (here.isValid())
-				choke = (WalkPosition)here;
-			else if (area == mapBWEB.getNaturalArea())
-				choke = mapBWEB.getNaturalChoke()->Center();
-			else if (area == mapBWEB.getMainArea())
-				choke = mapBWEB.getMainChoke()->Center();
+			WalkPosition center = WalkPositions::None;
+			Position bestPosition = Positions::None;
 
-			else if (area){
-				for (auto &c : area->ChokePoints()) {
-					double dist = mapBWEB.getGroundDistance(Position(c->Center()),Terrain().getEnemyStartingPosition());
-					if (dist < distBest) {
-						distBest = dist;
-						choke = c->Center();
+			// HACK: I found my reavers getting picked off too often when they held too close
+			if (unit.getType() == UnitTypes::Protoss_Reaver)
+				min += 64;
+
+			// Finds which position we are forming the concave at
+			const auto getConcaveCenter = [&]() {
+				if (here.isValid())
+					center = (WalkPosition)here;
+				else if (area == mapBWEB.getNaturalArea() && mapBWEB.getNaturalChoke())
+					center = mapBWEB.getNaturalChoke()->Center();
+				else if (area == mapBWEB.getMainArea() && mapBWEB.getMainChoke())
+					center = mapBWEB.getMainChoke()->Center();
+
+				else if (area) {
+					for (auto &c : area->ChokePoints()) {
+						double dist = mapBWEB.getGroundDistance(Position(c->Center()), Terrain().getEnemyStartingPosition());
+						if (dist < distBest) {
+							distBest = dist;
+							center = c->Center();
+						}
 					}
+				}
+			};
+
+			const auto checkbest = [&](WalkPosition w) {
+				TilePosition t(w);
+				Position p = Position(w) + Position(4, 4);
+
+				double dist = p.getDistance(Position(center)) * log(p.getDistance(mapBWEB.getMainPosition()));
+
+				if (!w.isValid()
+					|| !Util().isMobile(unit.getWalkPosition(), w, unit.getType())
+					|| (here != Terrain().getDefendPosition() && area && mapBWEM.GetArea(t) != area)
+					|| (unit.getGroundRange() > 32.0 && p.getDistance(Position(center)) < min)
+					|| Buildings().overlapsQueuedBuilding(unit.getType(), t)					
+					|| dist > distBest
+					|| Commands().overlapsCommands(unit.unit(), UnitTypes::None, p, 8)
+					|| (unit.getType() == UnitTypes::Protoss_Reaver && Terrain().isDefendNatural() && mapBWEM.GetArea(w) != mapBWEB.getNaturalArea()))
+					return false;
+
+				bestPosition = p;
+				distBest = dist;
+				return true;
+			};
+
+			// Find the center
+			getConcaveCenter();
+
+			// If this is the defending position, grab from a vector we already made
+			// TODO: generate a vector for every choke and store as a map<Choke, vector<Position>>?
+			if (here == Terrain().getDefendPosition()) {
+				for (auto &position : Terrain().getChokePositions()) {
+					checkbest(WalkPosition(position));
 				}
 			}
 
-			// Find closest chokepoint to defend			
-			double distHome = Grids().getDistanceHome(choke);
-			distBest = DBL_MAX;
-
-			for (int x = choke.x - 24; x <= choke.x + 24; x++) {
-				for (int y = choke.y - 24; y <= choke.y + 24; y++) {
-					WalkPosition w(x, y);
-					TilePosition t(w);
-					Position p = Position(w) + Position(4, 4);
-
-					if (!w.isValid() || !Util().isMobile(start, w, unit.getType()))
-						continue;
-					if ((area && mapBWEM.GetArea(t) != area) || p.getDistance(Position(choke)) < min || p.getDistance(Position(choke)) > max || Buildings().overlapsQueuedBuilding(unit.getType(), t))
-						continue;
-					if (here == Terrain().getDefendPosition() && Grids().getDistanceHome(w) > distHome)
-						continue;
-
-					double dist = p.getDistance(Position(choke));
-					if (dist < distBest) {
-						bestPosition = p;
-						distBest = dist;
+			// Find a position around the center that is suitable
+			else {
+				for (int x = center.x - 40; x <= center.x + 40; x++) {
+					for (int y = center.y - 40; y <= center.y + 40; y++) {
+						WalkPosition w(x, y);
+						checkbest(w);
 					}
 				}
 			}
@@ -134,7 +154,7 @@ namespace McRave
 		{
 			double distBest = DBL_MAX;
 			UnitInfo* best = nullptr;
-			for (auto&a : Units().getMyUnits()) {
+			for (auto &a : Units().getMyUnits()) {
 				UnitInfo& ally = a.second;
 				if (!ally.unit() || (pred.isValid() && !pred(ally.unit())))
 					continue;
@@ -147,33 +167,14 @@ namespace McRave
 			}
 			return best;
 		}
-
-		template<class T>
-		static UnitInfo* getClosestEnemyUnit(T& unit, const UnitFilter& pred = nullptr)
-		{
-			double distBest = DBL_MAX;
-			UnitInfo* best = nullptr;
-			for (auto&e : Units().getEnemyUnits()) {
-				UnitInfo& enemy = e.second;
-
-				if (!enemy.unit() || (pred.isValid() && !pred(enemy.unit())))
-					continue;
-
-				if (unit.unit() != enemy.unit()) {
-					double dist = unit.getPosition().getDistance(enemy.getPosition());
-					if (dist < distBest)
-						best = &enemy, distBest = dist;
-				}
-			}
-			return best;
-		}
+				
 
 		template<class T>
 		static BuildingInfo* getClosestAllyBuilding(T& unit, const UnitFilter& pred = nullptr)
 		{
 			double distBest = DBL_MAX;
 			BuildingInfo* best = nullptr;
-			for (auto&a : Buildings().getMyBuildings()) {
+			for (auto &a : Buildings().getMyBuildings()) {
 				BuildingInfo& ally = a.second;
 				if (!ally.unit() || (pred.isValid() && !pred(ally.unit())))
 					continue;
@@ -205,6 +206,68 @@ namespace McRave
 			}
 			return best;
 		}
+
+		template<class T>
+		const Position getKitePosition(T &unit)
+		{
+			double best = 0.0;
+			int radius = 16;
+			WalkPosition start = unit.getWalkPosition();
+			Position posBest = Positions::Invalid;
+
+			// If size of unit is even, we want the division between the WalkPosition
+			int walkWidth = (int)ceil(unit.getType().width() / 8.0);
+			bool evenW = walkWidth % 2 == 0;
+
+			int walkHeight = (int)ceil(unit.getType().height() / 8.0);
+			bool evenH = walkHeight % 2 == 0;
+
+			// Search a grid around the unit
+			for (int x = start.x - radius; x <= start.x + radius + walkWidth; x++) {
+				for (int y = start.y - radius; y <= start.y + radius + walkHeight; y++) {
+					WalkPosition w(x, y);
+					Position p = Position(w) + Position(4, 4) + Position(4 * evenW, 4 * evenH);
+
+					if (!w.isValid()
+						|| p.getDistance(unit.getPosition()) < 32.0
+						|| Commands().isInDanger(p)
+						|| !Util().isMobile(start, w, unit.getType())
+						|| p.getDistance(unit.getPosition()) > radius * 8
+						|| Grids().getESplash(w) > 0
+						|| Buildings().overlapsQueuedBuilding(unit.getType(), unit.getTilePosition()))
+						continue;
+
+					double distance;
+					if (!Strategy().defendChoke() && unit.getType() == UnitTypes::Protoss_Zealot && unit.hasTarget() && Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()))
+						distance = p.getDistance(Terrain().getMineralHoldPosition());
+					else if (unit.hasTarget() && (Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()) || Terrain().isInAllyTerritory(unit.getTilePosition())))
+						distance = 1.0 / (32.0 + p.getDistance(unit.getTarget().getPosition()));
+					else
+						distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(mapBWEB.getMainPosition()) : exp(Grids().getDistanceHome(w)); // Distance value	
+
+					double mobility = 1.0; // temp ignore mobility
+
+					double threat = unit.getType().isFlyer() ? max(0.1, Grids().getEAirThreat(w)) : max(0.1, Grids().getEGroundThreat(w));			// If unit is a flyer, use air threat
+					double grouping = (unit.getType().isFlyer() && double(Grids().getAAirCluster(w)) > 1.0) ? 2.0 : 1.0;							// Flying units should try to cluster
+					double score = grouping * mobility / (threat * distance);
+
+					// If position is valid and better score than current, set as current best
+					if (score > best) {
+						posBest = p;
+						best = score;
+					}
+				}
+			}
+			return posBest;
+		}
+
+		template<class T>
+		const Position getExplorePosition(T &unit)
+		{
+
+		}
+
+		const BWEM::ChokePoint * getClosestChokepoint(Position);
 	};
 }
 

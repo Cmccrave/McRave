@@ -1,64 +1,55 @@
 #include "McRave.h"
 
-void TerrainManager::onFrame()
+void TerrainManager::onStart()
 {
-	Display().startClock();
-	updateTerrain();
-	Display().performanceTest(__FUNCTION__);
-	return;
+	mapBWEM.Initialize();
+	mapBWEM.EnableAutomaticPathAnalysis();
+	bool startingLocationsOK = mapBWEM.FindBasesForStartingLocations();
+	assert(startingLocationsOK);
+	playerStartingTilePosition = Broodwar->self()->getStartLocation();
+	playerStartingPosition = Position(playerStartingTilePosition) + Position(64, 48);
+
+	// Check if the map is an island map
+	islandMap = false;
+	for (auto &start : mapBWEM.StartingLocations()) {
+		if (!mapBWEM.GetArea(start)->AccessibleFrom(mapBWEM.GetArea(playerStartingTilePosition)))
+			islandMap = true;
+	}
+
+	// HACK: Play Plasma as an island map
+	if (Broodwar->mapFileName().find("Plasma") != string::npos)
+		islandMap = true;
+
+	// Store non island bases	
+	for (auto &area : mapBWEM.Areas()) {
+		if (!islandMap && area.AccessibleNeighbours().size() == 0)
+			continue;
+		for (auto &base : area.Bases())
+			allBases.insert(&base);
+	}
 }
 
-void TerrainManager::updateTerrain()
+void TerrainManager::onFrame()
 {
-	if (!enemyStartingPosition.isValid())
-		findEnemyStartingPosition();
-
-	else if (!enemyNatural.isValid())
-		findEnemyNatural();
-
+	findEnemyStartingPosition();
+	findEnemyNatural();
+	findEnemyNextExpand();
 	findAttackPosition();
 	findDefendPosition();
-	findEnemyNextExpand();
 
-	// Squish areas
-	if (mapBWEB.getNaturalArea()) {
-
-		// Add "empty" areas (ie. Andromeda areas around main)	
-		for (auto &area : mapBWEB.getNaturalArea()->AccessibleNeighbours()) {
-			for (auto &choke : area->ChokePoints()) {
-				if (choke->Center() == mapBWEB.getMainChoke()->Center() && allyTerritory.find(area) == allyTerritory.end())
-					allyTerritory.insert(area);
-			}
-		}
-
-		UnitType baseType = Broodwar->self()->getRace().getResourceDepot();
-		if ((BuildOrder().buildCount(baseType) >= 2 || BuildOrder().isWallNat()) && mapBWEB.getNaturalArea())
-			allyTerritory.insert(mapBWEB.getNaturalArea());
-
-		if (mapBWEB.getMainChoke() == mapBWEB.getNaturalChoke())
-			allyTerritory.insert(mapBWEB.getNaturalArea());
-	}
-
-	// Check if enemy is walled
-	if (enemyStartingTilePosition.isValid() && enemyNatural.isValid() && !enemyWall) {
-		return;
-
-		auto &enemyPath = mapBWEB.findPath(mapBWEB, enemyStartingTilePosition, enemyNatural, true, true, false, false);
-		if (enemyPath.empty())
-			enemyWall = true;
-
-		if (enemyWall)
-			Broodwar << "Detected enemy wall" << endl;
-	}
-
+	updateConcavePositions();
+	updateAreas();
 }
 
 void TerrainManager::findEnemyStartingPosition()
 {
+	if (enemyStartingPosition.isValid())
+		return;
+
 	// Find closest enemy building
 	for (auto &u : Units().getEnemyUnits()) {
 		UnitInfo &unit = u.second;
-		double distBest = DBL_MAX;
+		double distBest = 1280.0;
 		TilePosition tileBest = TilePositions::Invalid;
 		if (!unit.getType().isBuilding() || !unit.getTilePosition().isValid())
 			continue;
@@ -77,6 +68,9 @@ void TerrainManager::findEnemyStartingPosition()
 
 void TerrainManager::findEnemyNatural()
 {
+	if (enemyNatural.isValid())
+		return;
+
 	// Find enemy natural area
 	double distBest = DBL_MAX;
 	for (auto &area : mapBWEM.Areas()) {
@@ -140,22 +134,28 @@ void TerrainManager::findEnemyNextExpand()
 
 void TerrainManager::findAttackPosition()
 {
+	// HACK: Hitchhiker has issues pathing to enemy expansions, just attack the main for now
+	if (Broodwar->mapFileName().find("Hitchhiker") != string::npos)
+		attackPosition = enemyStartingPosition;
+
 	// Attack possible enemy expansion location
-	if (enemyExpand.isValid() && !Broodwar->isExplored(enemyExpand) && !Broodwar->isExplored(enemyExpand + TilePosition(4, 3)))
+	else if (enemyExpand.isValid() && !Broodwar->isExplored(enemyExpand) && !Broodwar->isExplored(enemyExpand + TilePosition(4, 3)))
 		attackPosition = (Position)enemyExpand;
 
 	// Attack furthest enemy station
 	else if (Stations().getEnemyStations().size() > 0) {
-		double closestD = 0.0;
-		Position closestP;
+		double distBest = 0.0;
+		Position posBest;
+
 		for (auto &station : Stations().getEnemyStations()) {
 			Station s = station.second;
-			if (enemyStartingPosition.getDistance(s.BWEMBase()->Center()) >= closestD) {
-				closestD = enemyStartingPosition.getDistance(s.BWEMBase()->Center());
-				closestP = s.BWEMBase()->Center();
+			double dist = Players().vP() ? 1.0 / enemyStartingPosition.getDistance(s.BWEMBase()->Center()) : enemyStartingPosition.getDistance(s.BWEMBase()->Center());
+			if (dist >= distBest) {
+				distBest = dist;
+				posBest = s.BWEMBase()->Center();
 			}
 		}
-		attackPosition = closestP;
+		attackPosition = posBest;
 	}
 
 	// Attack enemy main
@@ -168,9 +168,20 @@ void TerrainManager::findAttackPosition()
 void TerrainManager::findDefendPosition()
 {
 	UnitType baseType = Broodwar->self()->getRace().getResourceDepot();
+	Position oldDefendPosition = defendPosition;
+	reverseRamp = Broodwar->getGroundHeight(mapBWEB.getMainTile()) < Broodwar->getGroundHeight(mapBWEB.getNaturalTile());
+	flatRamp = Broodwar->getGroundHeight(mapBWEB.getMainTile()) == Broodwar->getGroundHeight(mapBWEB.getNaturalTile());
+	narrowNatural = int(mapBWEB.getNaturalChoke()->Pos(mapBWEB.getNaturalChoke()->end1).getDistance(mapBWEB.getNaturalChoke()->Pos(mapBWEB.getNaturalChoke()->end2)) / 4) <= 2;
+	defendNatural = (mapBWEB.getNaturalChoke() && (BuildOrder().buildCount(baseType) > 1 || Broodwar->self()->visibleUnitCount(baseType) > 1 || (defendPosition == Position(mapBWEB.getNaturalChoke()->Center())) || reverseRamp));
 
 	if (islandMap) {
 		defendPosition = mapBWEB.getMainPosition();
+		return;
+	}
+
+	// Defend our main choke if we're hiding tech
+	if (BuildOrder().isHideTech() && mapBWEB.getMainChoke() && Broodwar->self()->visibleUnitCount(baseType) == 1) {
+		defendPosition = (Position)mapBWEB.getMainChoke()->Center();
 		return;
 	}
 
@@ -182,7 +193,7 @@ void TerrainManager::findDefendPosition()
 		if (Terrain().getEnemyStartingPosition().isValid())
 			dist = mapBWEB.getGroundDistance(Terrain().getEnemyStartingPosition(), Position(s.ResourceCentroid()));
 		else
-			dist = mapBWEB.getGroundDistance(mapBWEM.Center(), Position(s.ResourceCentroid()));
+			dist = mapBWEM.Center().getDistance(Position(s.ResourceCentroid()));
 
 		if (dist < distBest) {
 			distBest = dist;
@@ -191,49 +202,263 @@ void TerrainManager::findDefendPosition()
 		}
 	}
 
-	if (Strategy().enemyProxy()) {
+	// Natural defending
+	if (naturalWall) {
+		Position door(naturalWall->getDoor());
+		defendPosition = door.isValid() ? door : naturalWall->getCentroid();
+		allyTerritory.insert(mapBWEB.getNaturalArea());
+		defendNatural = true;
+	}
+	else if (defendNatural) {
 		defendPosition = Position(mapBWEB.getNaturalChoke()->Center());
+		allyTerritory.insert(mapBWEB.getNaturalArea());
+
+		// Move the defend position on maps like destination
+		while (!Broodwar->isBuildable((TilePosition)defendPosition)) {
+			double distBest = DBL_MAX;
+			TilePosition test = (TilePosition)defendPosition;
+			for (int x = test.x - 1; x <= test.x + 1; x++) {
+				for (int y = test.y - 1; y <= test.y + 1; y++) {
+					TilePosition t(x, y);
+					if (!t.isValid())
+						continue;
+
+					double dist = Position(t).getDistance((Position)mapBWEB.getNaturalArea()->Top());
+
+					if (dist < distBest) {
+						distBest = dist;
+						defendPosition = (Position)t;
+					}
+				}
+			}
+		}
 	}
 
-	else if (wall = mapBWEB.getWall(mapBWEB.getNaturalArea())) {
-		/*Position door(wall->getDoor());
-		if (door.isValid())
-			defendPosition = door;
-		else 	*/
-		defendPosition = wall->getCentroid();
+	// Main defending
+	else if (mainWall) {
+		Position door(mainWall->getDoor());
+		defendPosition = door.isValid() ? door : mainWall->getCentroid();
 	}
-	else if (!Strategy().defendChoke())
-		defendPosition = mineralHold;
-	else if (mapBWEB.getMainChoke() && Strategy().defendChoke() && BuildOrder().buildCount(baseType) <= 1)
+	else
 		defendPosition = Position(mapBWEB.getMainChoke()->Center());
-	else if (mapBWEB.getNaturalChoke() && Strategy().defendChoke() && BuildOrder().buildCount(baseType) >= 2)
-		defendPosition = Position(mapBWEB.getNaturalChoke()->Center());
+
+	// If enemy proxy, defend natural choke
+	if (Strategy().enemyProxy() && Strategy().getEnemyBuild() != "P2Gate" && mapBWEB.getNaturalChoke()) {
+		//defendPosition = Position(mapBWEB.getNaturalChoke()->Center());
+		//allyTerritory.insert(mapBWEB.getNaturalArea());
+	}
+
+	// If this isn't the same as the last position, make new concave positions
+	if (defendPosition != oldDefendPosition)
+		chokePositions.clear();
 }
+
+void TerrainManager::updateConcavePositions()
+{
+	for (auto tile : chokePositions) {
+		Broodwar->drawCircleMap(Position(tile), 8, Colors::Blue);
+		
+	}
+
+	if (!chokePositions.empty() || Broodwar->getFrameCount() < 100 || defendPosition == mineralHold)
+		return;
+	
+	// Off for now
+	if (false) {
+		// Draw a line perpendicular to the choke, draw until it is out of the area
+		// Trying natural area
+		auto choke = defendNatural ? mapBWEB.getNaturalChoke() : mapBWEB.getMainChoke();
+		auto center = defendPosition;
+		auto area = defendNatural ? mapBWEB.getNaturalArea() : mapBWEB.getMainArea();
+
+		// First two points
+		Position n1 = Position(choke->Pos(choke->end1));
+		Position n2 = Position(choke->Pos(choke->end2));
+		Broodwar->drawLineMap(n1, n2, Colors::Orange);
+
+		// Differences
+		auto dx1 = n2.x - n1.x;
+		auto dy1 = n2.y - n1.y;
+		auto dx2 = n1.x - n2.x;
+		auto dy2 = n1.y - n2.y;
+		auto lengthTiles = max(1.0, n1.getDistance(n2));
+		Position direction1 = Position(32 * -dy1 / (int)lengthTiles, 32 * dx1 / (int)lengthTiles);
+		Position direction2 = Position(32 * -dy2 / (int)lengthTiles, 32 * dx2 / (int)lengthTiles);
+
+		// Perpendicular line
+		Position trueDirection = mapBWEB.getGroundDistance(center + direction1, mapBWEB.getMainPosition()) < mapBWEB.getGroundDistance(center + direction2, mapBWEB.getMainPosition()) ? direction1 : direction2;
+		Position n3 = Position(trueDirection.x * 2, trueDirection.y * 2) + defendPosition;
+
+		Broodwar->drawLineMap(n3, center, Colors::Green);
+
+		Position slope = mapBWEB.getGroundDistance(direction1, mapBWEB.getMainPosition()) < mapBWEB.getGroundDistance(direction2, mapBWEB.getMainPosition()) ? Position(dx1, dy1) : Position(dx2, dy2);
+		auto goonLengths = n1.getDistance(n2) / 48.0;
+		auto zealotLengths = n1.getDistance(n2) / 32.0;
+
+		// Create 2 lines for Zealots
+		for (int i = 0; i < 3; i++) {
+			auto offset = i;
+			Position dn1 = defendPosition + (trueDirection * offset);
+			auto start1 = dn1 + (slope / zealotLengths);
+			auto start2 = dn1 - (slope / zealotLengths);
+
+			if (dn1.isValid() && Util().isMobile(WalkPosition(dn1), WalkPosition(dn1), UnitTypes::Protoss_Zealot) && ((!mapBWEM.GetArea(TilePosition(dn1)) && Util().isWalkable(dn1)) || mapBWEM.GetArea(TilePosition(dn1)) == area))
+				chokePositions.push_back(dn1);			
+
+			while (start1.isValid() && Util().isMobile(WalkPosition(start1), WalkPosition(start1), UnitTypes::Protoss_Zealot) && ((!mapBWEM.GetArea(TilePosition(start1)) && Util().isWalkable(start1)) || mapBWEM.GetArea(TilePosition(start1)) == area)) {
+				chokePositions.push_back(start1);
+				start1 += (slope / zealotLengths);
+			}
+			while (start2.isValid() && Util().isMobile(WalkPosition(start2), WalkPosition(start2), UnitTypes::Protoss_Zealot) && ((!mapBWEM.GetArea(TilePosition(start2)) && Util().isWalkable(start2)) || mapBWEM.GetArea(TilePosition(start2)) == area)) {
+				chokePositions.push_back(start2);
+				start2 -= (slope / zealotLengths);
+			}
+		}
+
+		// Create 3 lines for Dragoons/Reavers
+		for (int i = 0; i < 3; i++) {
+			auto offset = i + 4;
+			Position dn1 = defendPosition + (trueDirection * offset);
+			auto start1 = dn1 + (slope / goonLengths);
+			auto start2 = dn1 - (slope / goonLengths);
+			chokePositions.push_back(dn1);
+
+			if (dn1.isValid() && Util().isMobile(WalkPosition(dn1), WalkPosition(dn1), UnitTypes::Protoss_Zealot) && ((!mapBWEM.GetArea(TilePosition(dn1)) && Util().isWalkable(dn1)) || mapBWEM.GetArea(TilePosition(dn1)) == area))
+				chokePositions.push_back(dn1);
+
+			while (start1.isValid() && Util().isMobile(WalkPosition(start1), WalkPosition(start1), UnitTypes::Protoss_Dragoon) && (mapBWEM.GetArea(TilePosition(start1)) && mapBWEM.GetArea(TilePosition(start1)) == area)) {
+				chokePositions.push_back(start1);
+				start1 += (slope / goonLengths);
+			}
+			while (start2.isValid() && Util().isMobile(WalkPosition(start2), WalkPosition(start2), UnitTypes::Protoss_Dragoon) && (mapBWEM.GetArea(TilePosition(start2)) && mapBWEM.GetArea(TilePosition(start2)) == area)) {
+				chokePositions.push_back(start2);
+				start2 -= (slope / goonLengths);
+			}
+		}
+	}
+	else {
+		// Setup parameters
+		int min = 0;
+		int max = 480.0;
+		double distBest = DBL_MAX;
+		WalkPosition center = WalkPosition(defendPosition);
+		Position bestPosition = Positions::None;
+
+		const auto tooClose =[&](Position p) {
+			for (auto position : chokePositions) {
+				if (position.getDistance(p) < 32.0)
+					return true;
+			}
+			return false;
+		};
+
+		const auto checkValid = [&](WalkPosition w) {
+			TilePosition t(w);
+			Position p = Position(w) + Position(4, 4);
+
+			double dist = p.getDistance(Position(center)) / log(p.getDistance(mapBWEB.getMainPosition()));
+
+			if (!w.isValid()
+				|| !Util().isMobile(w, w, UnitTypes::Protoss_Dragoon)
+				|| p.getDistance(Position(center)) < min
+				|| p.getDistance(Position(center)) > max
+				|| tooClose(p)
+				|| (!isInAllyTerritory(t))
+				|| p.getDistance(mineralHold) < 128.0
+				|| mapBWEB.getGroundDistance(p, mapBWEB.getMainPosition()) > mapBWEB.getGroundDistance(Position(center), mapBWEB.getMainPosition()))
+				return false;
+			return true;
+		};
+
+		// Find a position around the center that is suitable
+		for (int x = center.x - 40; x <= center.x + 40; x++) {
+			for (int y = center.y - 40; y <= center.y + 40; y++) {
+				WalkPosition w(x, y);
+				if (checkValid(w))
+					chokePositions.push_back(Position(w));
+			}
+		}
+	}	
+}
+
+void TerrainManager::updateAreas()
+{
+	// Squish areas
+	if (mapBWEB.getNaturalArea()) {
+
+		// Add "empty" areas (ie. Andromeda areas around main)	
+		for (auto &area : mapBWEB.getNaturalArea()->AccessibleNeighbours()) {
+			for (auto &choke : area->ChokePoints()) {
+				if (choke->Center() == mapBWEB.getMainChoke()->Center())
+					allyTerritory.insert(area);
+			}
+		}
+
+		UnitType baseType = Broodwar->self()->getRace().getResourceDepot();
+		if ((BuildOrder().buildCount(baseType) >= 2 || BuildOrder().isWallNat()) && mapBWEB.getNaturalArea())
+			allyTerritory.insert(mapBWEB.getNaturalArea());
+
+		// HACK: Add to my territory if chokes are shared
+		if (mapBWEB.getMainChoke() == mapBWEB.getNaturalChoke())
+			allyTerritory.insert(mapBWEB.getNaturalArea());
+	}
+}
+
+
 
 bool TerrainManager::findNaturalWall(vector<UnitType>& types, const vector<UnitType>& defenses)
 {
-	if (wall)
-		return true;
-	UnitType wallTight = Broodwar->enemy()->getRace() == Races::Protoss ? UnitTypes::Protoss_Zealot : UnitTypes::Zerg_Zergling;
+	// Hack: Make a bunch of walls as Zerg for testing - disabled atm
+	if (Broodwar->self()->getRace() == Races::Zerg) {
+		//for (auto &area : mapBWEM.Areas()) {
 
-	if (Broodwar->self()->getRace() == Races::Protoss) {
-		mapBWEB.createWall(types, mapBWEB.getNaturalArea(), mapBWEB.getNaturalChoke(), UnitTypes::None, defenses, true);
-		wall = mapBWEB.getWall(mapBWEB.getNaturalArea());
+		//	// Only make walls at gas bases that aren't starting bases
+		//	bool invalidBase = false;
+		//	for (auto &base : area.Bases()) {
+		//		if (base.Starting())
+		//			invalidBase = true;
+		//	}
+		//	if (invalidBase)
+		//		continue;
+
+		//	const ChokePoint * bestChoke = nullptr;
+		//	double distBest = DBL_MAX;
+		//	for (auto &choke : area.ChokePoints()) {
+		//		auto dist = Position(choke->Center()).getDistance(mapBWEM.Center());
+		//		if (dist < distBest) {
+		//			distBest = dist;
+		//			bestChoke = choke;
+		//		}
+		//	}
+		//	mapBWEB.createWall(types, &area, bestChoke, UnitTypes::None, defenses);
+
+		//	if (&area == mapBWEB.getNaturalArea())
+		//		naturalWall = mapBWEB.getWall(mapBWEB.getNaturalArea());
+		//}
+		//return true;
 	}
 
-	else if (Broodwar->self()->getRace() == Races::Terran) {
-		mapBWEB.createWall(types, mapBWEB.getNaturalArea(), mapBWEB.getNaturalChoke(), wallTight, defenses);
-		wall = mapBWEB.getWall(mapBWEB.getNaturalArea());
+	else {
+		if (naturalWall)
+			return true;
+
+		UnitType wallTight;
+		bool reservePath = Broodwar->self()->getRace() != Races::Terran;
+
+		if (Broodwar->self()->getRace() == Races::Terran && Players().vP())
+			wallTight = UnitTypes::Protoss_Zealot;
+		else if (Players().vZ())
+			wallTight = UnitTypes::Zerg_Zergling;
+		else
+			wallTight = UnitTypes::None;
+
+		// Create a wall
+		mapBWEB.createWall(types, mapBWEB.getNaturalArea(), mapBWEB.getNaturalChoke(), wallTight, defenses, reservePath);
+		naturalWall = mapBWEB.getWall(mapBWEB.getNaturalArea());
+
+		if (naturalWall)
+			return true;
 	}
-
-	else if (Broodwar->self()->getRace() == Races::Zerg) {
-		mapBWEB.createWall(types, mapBWEB.getNaturalArea(), mapBWEB.getNaturalChoke(), wallTight, defenses, true);
-		wall = mapBWEB.getWall(mapBWEB.getNaturalArea());
-	}
-
-	if (wall)
-		return true;
-
 	return false;
 }
 
@@ -245,61 +470,18 @@ bool TerrainManager::findMainWall(vector<UnitType>& types, const vector<UnitType
 
 	mapBWEB.createWall(types, mapBWEB.getMainArea(), mapBWEB.getMainChoke(), wallTight, defenses, false, true);
 	Wall * wallB = mapBWEB.getWall(mapBWEB.getMainArea(), mapBWEB.getMainChoke());
-	if (!wallB)
-		return false;
-	else {
-		wall = wallB;
+	if (wallB) {
+		mainWall = wallB;
 		return true;
 	}
 
 	mapBWEB.createWall(types, mapBWEB.getNaturalArea(), mapBWEB.getMainChoke(), wallTight, defenses, false, true);
 	Wall * wallA = mapBWEB.getWall(mapBWEB.getNaturalArea(), mapBWEB.getMainChoke());
-	if (!wallA)
-		return false;
-	else {
-		wall = wallA;
+	if (wallA) {
+		mainWall = wallA;
 		return true;
 	}
-}
-
-bool TerrainManager::overlapsBases(TilePosition here)
-{
-	for (auto base : allBases)
-	{
-		TilePosition tile = base->Location();
-		if (here.x >= tile.x && here.x < tile.x + 4 && here.y >= tile.y && here.y < tile.y + 3) return true;
-	}
 	return false;
-}
-
-void TerrainManager::onStart()
-{
-	mapBWEM.Initialize();
-	mapBWEM.EnableAutomaticPathAnalysis();
-	bool startingLocationsOK = mapBWEM.FindBasesForStartingLocations();
-	assert(startingLocationsOK);
-	playerStartingTilePosition = Broodwar->self()->getStartLocation();
-	playerStartingPosition = Position(playerStartingTilePosition) + Position(64, 48);
-
-	// Check if the map is an island map
-	islandMap = false;
-	for (auto &start : mapBWEM.StartingLocations()) {
-		if (!mapBWEM.GetArea(start)->AccessibleFrom(mapBWEM.GetArea(playerStartingTilePosition))) {
-			islandMap = true;
-			Broodwar << "Island map? Really?" << endl;
-			break;
-		}
-	}
-
-	// Store non island bases	
-	for (auto &area : mapBWEM.Areas()) {
-		if (!islandMap && area.AccessibleNeighbours().size() == 0)
-			continue;
-		for (auto &base : area.Bases()) {
-			allBases.insert(&base);
-		}
-	}
-	return;
 }
 
 bool TerrainManager::isInAllyTerritory(TilePosition here)
@@ -318,22 +500,6 @@ bool TerrainManager::isInEnemyTerritory(TilePosition here)
 	return false;
 }
 
-bool TerrainManager::overlapsNeutrals(TilePosition here)
-{
-	for (auto &m : Resources().getMyMinerals()) {
-		ResourceInfo &mineral = m.second;
-		if (here.x >= mineral.getTilePosition().x && here.x < mineral.getTilePosition().x + 2 && here.y >= mineral.getTilePosition().y && here.y < mineral.getTilePosition().y + 1)
-			return true;
-	}
-
-	for (auto &g : Resources().getMyGas()) {
-		ResourceInfo &gas = g.second;
-		if (here.x >= gas.getTilePosition().x && here.x < gas.getTilePosition().x + 4 && here.y >= gas.getTilePosition().y && here.y < gas.getTilePosition().y + 2)
-			return true;
-	}
-	return false;
-}
-
 bool TerrainManager::isStartingBase(TilePosition here)
 {
 	for (auto tile : Broodwar->getStartLocations()) {
@@ -341,4 +507,32 @@ bool TerrainManager::isStartingBase(TilePosition here)
 			return true;
 	}
 	return false;
+}
+
+Position TerrainManager::closestUnexploredStart() {
+	double distBest = DBL_MAX;
+	Position posBest = Positions::None;
+	for (auto &tile : mapBWEM.StartingLocations()) {
+		Position center = Position(tile) + Position(64, 48);
+		double dist = center.getDistance(mapBWEB.getMainPosition());
+
+		if (!Broodwar->isExplored(tile) && dist < distBest) {
+			distBest = dist;
+			posBest = center;
+		}
+	}
+	return posBest;
+}
+
+Position TerrainManager::randomBasePosition()
+{
+	int random = rand() % (Terrain().getAllBases().size());
+	int i = 0;
+	for (auto &base : Terrain().getAllBases()) {
+		if (i == random)
+			return base->Center();
+		else
+			i++;
+	}
+	return mapBWEB.getMainPosition();
 }

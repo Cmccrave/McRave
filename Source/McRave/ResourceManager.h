@@ -17,7 +17,6 @@ namespace McRave
 		int gasCount;
 		int incomeMineral, incomeGas;
 
-		void storeMineral(Unit), storeGas(Unit), storeBoulder(Unit);
 		void updateResources(), updateIncome(ResourceInfo&), updateInformation(ResourceInfo&);
 	public:
 		int getGasCount() { return gasCount; }
