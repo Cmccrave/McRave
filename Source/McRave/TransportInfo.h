@@ -17,8 +17,11 @@ namespace McRave
 		Unit thisUnit;
 		UnitType transportType;
 
+		bool retreat, engage;
+
 		set<WorkerInfo*> assignedWorkers;
 		set<UnitInfo*> assignedCargo;
+		vector<Position> cargoTargets;
 
 		Position position, destination;
 		WalkPosition walkPosition;
@@ -32,11 +35,13 @@ namespace McRave
 		bool isUnloading() { return unloading; }
 		bool isHarassing() { return harassing; }
 		bool isMonitoring() { return monitoring; }
+		bool isRetreating() { return retreat; }
+		bool isEngaging() { return engage; }
 		Unit unit() { return thisUnit; }
 		UnitType getType() { return transportType; }
 
 		set<WorkerInfo*>& getAssignedWorkers() { return assignedWorkers; }
-		set<UnitInfo*>& getAssignedCargo() { return assignedCargo; }
+		set<UnitInfo*>& getAssignedCargo() { return assignedCargo; }		
 		Position getPosition() { return position; }
 		Position getDestination() { return destination; }
 		WalkPosition getWalkPosition() { return walkPosition; }
@@ -48,6 +53,8 @@ namespace McRave
 		void setUnloading(bool newState) { unloading = newState; }
 		void setHarassing(bool newState) { harassing = newState; }
 		void setMonitoring(bool newState) { monitoring = newState; }
+		void setRetreating(bool newState) { retreat = newState; }
+		void setEngaging(bool newState) { engage = newState; }
 		void setUnit(Unit newTransport) { thisUnit = newTransport; }
 		void setType(UnitType newType) { transportType = newType; }
 		void setPosition(Position newPosition) { position = newPosition; }
@@ -58,6 +65,10 @@ namespace McRave
 		// Add cargo to the assigned cargo set
 		void assignCargo(UnitInfo*);
 		void assignWorker(WorkerInfo*);
+
+		// Cargo targets for easier use
+		void addCargoTarget(Position here) { cargoTargets.push_back(here); }
+		vector<Position>& getCargoTargets() { return cargoTargets; }
 
 		// Remove cargo from the assigned cargo set
 		void removeCargo(UnitInfo*);

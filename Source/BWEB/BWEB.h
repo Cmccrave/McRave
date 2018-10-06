@@ -23,6 +23,9 @@ namespace BWEB
 		vector<Station> stations;
 		vector<Wall> walls;
 		vector<Block> blocks;
+
+		TilePosition testTile;
+		vector<TilePosition> chokeTiles;
 		
 		// Blocks
 		// TODO: Add this function. This would be used to create a block that makes room for a specific type (possibly better generation than floodfill)
@@ -31,29 +34,23 @@ namespace BWEB
 		void findStartBlock();
 		void findStartBlock(BWAPI::Player);
 		void findStartBlock(BWAPI::Race);
-		void findHiddenTechBlock();
-		void findHiddenTechBlock(BWAPI::Player);
-		void findHiddenTechBlock(BWAPI::Race);
 		bool canAddBlock(TilePosition, int, int);
 
 		void insertStartBlock(TilePosition, bool, bool);
 		void insertStartBlock(BWAPI::Player, TilePosition, bool, bool);
 		void insertStartBlock(BWAPI::Race, TilePosition, bool, bool);
-
-		void insertTechBlock(TilePosition, bool, bool);
-		void insertTechBlock(BWAPI::Player, TilePosition, bool, bool);
-		void insertTechBlock(BWAPI::Race, TilePosition, bool, bool);
 		map<const BWEM::Area *, int> typePerArea;
 
 		// Walls
-		bool isWallTight(UnitType, TilePosition);
-		bool isPoweringWall(TilePosition);
-		bool iteratePieces();
-		bool checkPiece(TilePosition);
-		bool testPiece(TilePosition);
-		bool placePiece(TilePosition);
-		bool identicalPiece(TilePosition, UnitType, TilePosition, UnitType);
-		void findCurrentHole(bool ignoreOverlap = false);
+		bool isWallTight(Wall&, UnitType, TilePosition);
+		bool isPoweringWall(Wall&, TilePosition);
+		bool iteratePieces(Wall&);
+		void findCurrentHole(Wall&, bool);
+
+		TilePosition initialStart, initialEnd;
+		void initializePathPoints(Wall&);
+		void checkPathPoints(Wall&);
+
 		int reserveGrid[256][256] = {};
 
 		double bestWallScore = 0.0;
@@ -62,28 +59,15 @@ namespace BWEB
 		vector<UnitType>::iterator typeIterator;
 		map<TilePosition, UnitType> bestWall;
 		map<TilePosition, UnitType> currentWall;
-
-		void setStartTile(), setEndTile(), resetStartEndTiles();
+		double currentPathSize{};
 
 		// Information that is passed in
-		vector<UnitType> buildings;
-		const BWEM::ChokePoint * choke{};
-		const BWEM::Area * area{};
 		BWEM::Map& mapBWEM;
 		UnitType tight;
 		bool reservePath{};
 		bool requireTight;
 		int chokeWidth;
-		TilePosition wallBase;
-
-		// TilePosition grid of what has been visited for wall placement
-		struct VisitGrid
-		{
-			int location[256][256] = {};
-		};
-		map<UnitType, VisitGrid> visited;
-		bool parentSame{}, currentSame{};
-		double currentPathSize{};
+		Position wallBase;
 
 		// Map
 		void findMain(), findMainChoke(), findNatural(), findNaturalChoke(), findNeutrals();
@@ -99,20 +83,20 @@ namespace BWEB
 
 		// Stations
 		void findStations();
-		set<TilePosition>& stationDefenses(BWAPI::Race, TilePosition, bool, bool);
-		set<TilePosition>& stationDefenses(BWAPI::Player, TilePosition, bool, bool);
-		set<TilePosition>& stationDefenses(TilePosition, bool, bool);
-		set<TilePosition> returnValues;
+		set<TilePosition> stationDefenses(BWAPI::Race, TilePosition, bool, bool);
+		set<TilePosition> stationDefenses(BWAPI::Player, TilePosition, bool, bool);
+		set<TilePosition> stationDefenses(TilePosition, bool, bool);
 
 		// General
 		static Map* BWEBInstance;
-		int usedGrid[256][256] = {};
+		int testGrid[256][256];
 
 	public:
 		Map(BWEM::Map& map);
 		void draw(), onStart(), onUnitDiscover(Unit), onUnitDestroy(Unit), onUnitMorph(Unit);
 		static Map &Instance();
 		int overlapGrid[256][256] = {};
+		int usedGrid[256][256] ={};
 
 		/// This is just put here so AStar can use it for now
 		UnitType overlapsCurrentWall(TilePosition tile, int width = 1, int height = 1);
@@ -217,9 +201,18 @@ namespace BWEB
 		/// <summary> Initializes the building of every BWEB::Block on the map, call it only once per game. </summary>
 		void findBlocks(BWAPI::Player);
 		void findBlocks(BWAPI::Race);
-		void findBlocks();
+		void findBlocks();		
+	};
 
-		vector<TilePosition> findPath(BWEB::Map&, const TilePosition, const TilePosition, bool ignoreOverlap = false, bool ignoreWalls = false, bool ignoreBuildings = true, bool diagonal = false);
+	class Path {
+		vector<TilePosition> tiles;
+		double dist;		
+	public:
+		Path();
+		vector<TilePosition>& getTiles() { return tiles; }
+		double getDistance() { return dist; }
+		void createUnitPath(BWEB::Map&, BWEM::Map&, const Position, const Position);
+		void createWallPath(BWEB::Map&, BWEM::Map&, const TilePosition, const TilePosition, bool);
 	};
 
 	// This namespace contains functions which could be used for backward compatibility

@@ -14,11 +14,13 @@ namespace McRave
 	{
 		bool resetGrid[1024][1024] ={};
 		int timeGrid[1024][1024] ={};
+		int visibleGrid[256][256] ={};
 		vector<WalkPosition> resetVector;
 
 		int currentFrame = 0;
 
 		// Ally Grid
+		double parentDistance[1024][1024];
 		double aGroundCluster[1024][1024] ={};
 		double aAirCluster[1024][1024] ={};
 		int defense[256][256] ={};
@@ -37,7 +39,7 @@ namespace McRave
 
 		Position armyCenter;
 		void saveReset(WalkPosition);
-		void updateDistance(), updateMobility(), updateAlly(), updateEnemy(), updateNeutral(), reset(), draw();
+		void updateDistance(), updateMobility(), updateAlly(), updateEnemy(), updateNeutral(), updateVisibility(), reset(), draw();
 
 		void addThreat(UnitInfo&);
 		void addCluster(UnitInfo&);
@@ -75,6 +77,8 @@ namespace McRave
 		int getMobility(WalkPosition here) { return mobility[here.x][here.y]; }
 		double getDistanceHome(WalkPosition here) { return distanceHome[here.x][here.y]; }
 
+		int lastVisibleFrame(TilePosition t) { return visibleGrid[t.x][t.y]; }
+
 
 
 	private:
@@ -86,8 +90,8 @@ namespace McRave
 				return;
 
 			// Setup parameters
-			int walkWidth = unit.getType().isBuilding() ? unit.getType().tileWidth() * 4 : (int)ceil(unit.getType().width() / 8.0);
-			int walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : (int)ceil(unit.getType().height() / 8.0);
+			int walkWidth = unit.getType().isBuilding() ? unit.getType().tileWidth() * 4 : (int)ceil(unit.getType().width() / 8.0) + 1;
+			int walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : (int)ceil(unit.getType().height() / 8.0) + 1;
 			//int frame = Broodwar->getFrameCount();
 
 			// Iterate tiles and add to grid
@@ -97,7 +101,7 @@ namespace McRave
 					WalkPosition w(x, y);
 					if (!w.isValid())
 						continue;
-
+					
 					collision[x][y] = 1;
 					saveReset(w);
 				}

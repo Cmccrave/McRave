@@ -17,6 +17,10 @@ namespace McRave
 		int getNumberProtoss() { return eProtoss; }
 		int getNumberTerran() { return eTerran; }
 		int getNumberRandom() { return eRandom; }
+
+		bool vP() { return (thePlayers.size() == 1 && (eProtoss > 0 || Broodwar->enemy()->getRace() == Races::Protoss)); }
+		bool vT() { return (thePlayers.size() == 1 && (eTerran > 0 || Broodwar->enemy()->getRace() == Races::Terran)); }
+		bool vZ() { return (thePlayers.size() == 1 && (eZerg > 0 || Broodwar->enemy()->getRace() == Races::Zerg)); }
 	};
 }
 

@@ -21,6 +21,7 @@ namespace McRave
 		void onFrame();
 		void storeStation(Unit);
 		void removeStation(Unit);
+		bool needDefenses(const Station);
 	};
 }
 

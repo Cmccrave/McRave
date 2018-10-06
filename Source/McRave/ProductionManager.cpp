@@ -14,10 +14,12 @@ namespace McRave
 	{
 		for (auto &b : Buildings().getMyBuildings()) {
 			BuildingInfo &building = b.second;
-			if (!building.unit())
+			if (!building.unit() || !building.unit()->isCompleted() || Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0)
 				continue;
 
-			if (building.unit()->isIdle() && (!building.getType().isResourceDepot() || (building.getType() != UnitTypes::Zerg_Hatchery && building.getType().getRace() == Races::Zerg))) {
+			bool latencyIdle = building.getRemainingTrainFrames() < Broodwar->getRemainingLatencyFrames() || building.unit()->isIdle();
+
+			if (latencyIdle && (!building.getType().isResourceDepot() || (building.getType() != UnitTypes::Zerg_Hatchery && building.getType().getRace() == Races::Zerg))) {
 				idleProduction.erase(building.unit());
 				idleUpgrade.erase(building.unit());
 				idleTech.erase(building.unit());
@@ -28,15 +30,16 @@ namespace McRave
 			}
 
 			// CC/Nexus
-			else if (building.getType().isResourceDepot() && building.unit()->isIdle()) {
+			else if (building.getType().isResourceDepot() && latencyIdle) {
 				for (auto &unit : building.getType().buildsWhat()) {
-					if (unit.isAddon() && !building.unit()->getAddon() && BuildOrder().getItemQueue().find(unit) != BuildOrder().getItemQueue().end() && BuildOrder().getItemQueue().at(unit).getActualCount() > Broodwar->self()->visibleUnitCount(unit))
-					{
+					if (unit.isAddon() && !building.unit()->getAddon() && BuildOrder().getItemQueue().find(unit) != BuildOrder().getItemQueue().end() && BuildOrder().getItemQueue().at(unit).getActualCount() > Broodwar->self()->visibleUnitCount(unit)) {
 						building.unit()->buildAddon(unit);
 						continue;
 					}
-					if (unit.isWorker() && Broodwar->self()->completedUnitCount(unit) < 75 && isAffordable(unit) && (!Resources().isMinSaturated() || !Resources().isGasSaturated()))
+					if (unit.isWorker() && Broodwar->self()->completedUnitCount(unit) < 75 && (isAffordable(unit) || unit == UnitTypes::Terran_SCV) && (!Resources().isGasSaturated() || !Resources().isMinSaturated())) {
 						building.unit()->train(unit);
+						building.setRemainingTrainFrame(unit.buildTime());
+					}
 				}
 			}
 
@@ -51,7 +54,7 @@ namespace McRave
 		// Check current overlord count
 		int ovie = 0;
 		for (auto &u : Units().getMyUnits()) {
-			UnitInfo& unit = u.second;
+			UnitInfo &unit = u.second;
 			if (unit.getType() == UnitTypes::Zerg_Egg && unit.unit()->getBuildType() == UnitTypes::Zerg_Overlord)
 				ovie++;
 		}
@@ -60,7 +63,7 @@ namespace McRave
 			idleProduction[building.unit()] = UnitTypes::Zerg_Larva;
 		else
 			idleProduction.erase(building.unit());
-		
+
 		for (auto &larva : building.unit()->getLarva()) {
 
 			if ((Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Overlord) + ovie - 1) < min(22, (int)floor((Units().getSupply() / max(14, (16 - Broodwar->self()->allUnitCount(UnitTypes::Zerg_Overlord))))))) {
@@ -73,28 +76,29 @@ namespace McRave
 
 				for (auto &type : Strategy().getUnitScores()) {
 					UnitType unit = type.first;
-					double mineral = unit.mineralPrice() > 0 ? max(0.0, min(2.0, double(Broodwar->self()->minerals() /*- reservedMineral - Buildings().getQueuedMineral()*/) / (double)unit.mineralPrice())) : 1.0;
-					double gas = unit.gasPrice() > 0 ? max(0.0, min(2.0, double(Broodwar->self()->gas()/* - reservedGas - Buildings().getQueuedGas()*/) / (double)unit.gasPrice())) : 1.0;
+					double mineral = unit.mineralPrice() > 0 ? max(0.0, min(2.0, double(Broodwar->self()->minerals() - reservedMineral - Buildings().getQueuedMineral()) / (double)unit.mineralPrice())) : 1.0;
+					double gas = unit.gasPrice() > 0 ? max(0.0, min(2.0, double(Broodwar->self()->gas() - reservedGas - Buildings().getQueuedGas()) / (double)unit.gasPrice())) : 1.0;
 					double score = Strategy().getUnitScore(unit);
-					double value = max(0.01, score * mineral * gas);
+					double value = score * mineral * gas;
 
-					if (unit == UnitTypes::Zerg_Zergling)
-						score = score / 2.0;
-
-					if ((type.first.isWorker() || BuildOrder().isUnitUnlocked(type.first)) && value > best && isCreateable(building.unit(), type.first) && (isAffordable(type.first) || type.first == Strategy().getHighestUnitScore()) && isSuitable(type.first)) {
+					if (BuildOrder().isUnitUnlocked(type.first) && value > best && isCreateable(building.unit(), type.first) && (isAffordable(type.first) || type.first == Strategy().getHighestUnitScore()) && isSuitable(type.first)) {
 						best = value, typeBest = type.first;
 					}
 				}
 
 				if (typeBest != UnitTypes::None) {
-					if (isAffordable(typeBest))
+					if (isAffordable(typeBest)) {
 						larva->morph(typeBest);
+						return;	// Only produce 1 unit per frame to allow for scores to be re-calculated
+					}
 					else {
 						idleProduction[building.unit()] = typeBest;
 						reservedMineral += typeBest.mineralPrice();
 						reservedGas += typeBest.gasPrice();
 					}
 				}
+				else if (BuildOrder().isRush() && BuildOrder().isOpener())
+					larva->morph(UnitTypes::Zerg_Zergling);
 				else if (isCreateable(building.unit(), UnitTypes::Zerg_Drone) && isAffordable(UnitTypes::Zerg_Drone) && isSuitable(UnitTypes::Zerg_Drone))
 					larva->morph(UnitTypes::Zerg_Drone);
 			}
@@ -110,8 +114,8 @@ namespace McRave
 
 			double mineral = unit.mineralPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->minerals() - reservedMineral - Buildings().getQueuedMineral()) / (double)unit.mineralPrice())) : 1.0;
 			double gas = unit.gasPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->gas() - reservedGas - Buildings().getQueuedGas()) / (double)unit.gasPrice())) : 1.0;
-			double score = Strategy().getUnitScore(unit);
-			double value = max(0.01, score * mineral * gas);
+			double score = max(0.01, Strategy().getUnitScore(unit));
+			double value = score * mineral * gas;
 
 			if (unit.isAddon() && BuildOrder().getItemQueue().find(unit) != BuildOrder().getItemQueue().end() && BuildOrder().getItemQueue().at(unit).getActualCount() > Broodwar->self()->visibleUnitCount(unit)) {
 				building.unit()->buildAddon(unit);
@@ -119,11 +123,19 @@ namespace McRave
 			}
 
 			// If we teched to DTs, try to create as many as possible
-			if (unit == UnitTypes::Protoss_Dark_Templar && BuildOrder().getTechList().size() == 1 && isCreateable(building.unit(), unit) && isSuitable(unit)) {
+			if (unit == UnitTypes::Protoss_Dark_Templar && BuildOrder().getTechList().size() == 1 && isCreateable(building.unit(), unit) && isSuitable(unit)) {				
 				best = DBL_MAX;
 				bestType = unit;
 			}
-			else if (value >= best && isCreateable(building.unit(), unit) && isSuitable(unit)) {
+			else if (unit == BuildOrder().getTechUnit() && isCreateable(building.unit(), unit) && isSuitable(unit) && Broodwar->self()->visibleUnitCount(unit) == 0) {
+				best = DBL_MAX;
+				bestType = unit;
+			}
+			else if (unit == UnitTypes::Protoss_Observer && isCreateable(building.unit(), unit) && isSuitable(unit) && Broodwar->self()->visibleUnitCount(unit) < Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus)) {
+				best = DBL_MAX;
+				bestType = unit;
+			}
+			else if (value >= best && isCreateable(building.unit(), unit) && isSuitable(unit) && (isAffordable(bestType) || BuildOrder().getTechUnit() == bestType || BuildOrder().getTechList().find(bestType) != BuildOrder().getTechList().end())) {
 				best = value;
 				bestType = unit;
 			}
@@ -134,18 +146,22 @@ namespace McRave
 			// If we can afford it, train it
 			if (isAffordable(bestType)) {
 				building.unit()->train(bestType);
-				idleProduction.erase(building.unit());
+				building.setRemainingTrainFrame(bestType.buildTime());
+				idleProduction.erase(building.unit());				
 			}
 
+			if (bestType == UnitTypes::Protoss_Dark_Templar && !isAffordable(UnitTypes::Protoss_Dark_Templar) && Players().vP() && Broodwar->self()->minerals() > 300)
+				bestType = UnitTypes::Protoss_Zealot;
+
 			// Else if this is a tech unit, add it to idle production
-			else if (bestType == Strategy().getHighestUnitScore() && BuildOrder().getTechList().find(bestType) != BuildOrder().getTechList().end()) {
+			else if (BuildOrder().getTechUnit() == bestType || BuildOrder().getTechList().find(bestType) != BuildOrder().getTechList().end()) {
 				if (Units().getSupply() < 380)
 					idleFrame = Broodwar->getFrameCount();
 
 				idleProduction[building.unit()] = bestType;
 				reservedMineral += bestType.mineralPrice();
 				reservedGas += bestType.gasPrice();
-			}
+			}			
 		}
 	}
 
@@ -179,8 +195,8 @@ namespace McRave
 
 	bool ProductionManager::isAffordable(UnitType unit)
 	{
-		// If best tech unit choice
-		if (BuildOrder().getTechList().find(unit) != BuildOrder().getTechList().end() && unit == Strategy().getHighestUnitScore()) {
+		// If tech
+		if (BuildOrder().getTechList().find(unit) != BuildOrder().getTechList().end()) {
 
 			// If a tech unit and we can afford it including buildings queued
 			if (Broodwar->self()->minerals() >= unit.mineralPrice() + Buildings().getQueuedMineral() && (Broodwar->self()->gas() >= unit.gasPrice() + Buildings().getQueuedGas() || unit.gasPrice() == 0)) {
@@ -279,9 +295,10 @@ namespace McRave
 			return (Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Hydralisk_Den) > 0);
 		case UnitTypes::Enum::Zerg_Mutalisk:
 			return (Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Spire) > 0);
+		case UnitTypes::Enum::Zerg_Scourge:
+			return (Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Spire) > 0);
 		case UnitTypes::Enum::Zerg_Ultralisk:
 			return (Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Ultralisk_Cavern) > 0);
-
 		}
 		return false;
 	}
@@ -314,6 +331,23 @@ namespace McRave
 		if (unit.getRace() == Races::Zerg)
 			return true;
 
+		bool needReavers = false;
+		bool needShuttles = false;
+
+		// Determine whether we want reavers or shuttles;
+		if (!Strategy().needDetection()) {
+			if ((Terrain().isIslandMap() && Broodwar->self()->visibleUnitCount(unit) < 2 * Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus))
+				|| (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) > (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle) * 2))
+				|| (Broodwar->mapFileName().find("Great Barrier") != string::npos && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle) < 1))
+				needShuttles = true;
+			if (!Terrain().isIslandMap() || (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) <= (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle) * 2)))
+				needReavers = true;
+		}
+
+		// HACK: Want x reavers before a shuttle
+		if (Players().vP() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) < (2 + int(Strategy().getEnemyBuild() == "P4Gate")))
+			needShuttles = false;
+
 		switch (unit)
 		{
 			// Gateway Units
@@ -328,15 +362,15 @@ namespace McRave
 
 			// Robo Units
 		case Protoss_Shuttle:
-			return (!Strategy().needDetection() && Terrain().isIslandMap() && Broodwar->self()->visibleUnitCount(unit) < 2 * Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus));
+			return needShuttles;
 		case Protoss_Reaver:
-			return !Strategy().needDetection();
+			return needReavers;
 		case Protoss_Observer:
-			return Broodwar->self()->visibleUnitCount(unit) < 4;
+			return Broodwar->self()->visibleUnitCount(unit) < 1 + (Units().getSupply() / 100);
 
 			// Stargate Units
 		case Protoss_Corsair:
-			return Broodwar->self()->visibleUnitCount(unit) < 10;
+			return Broodwar->self()->visibleUnitCount(unit) < (10 + (Terrain().isIslandMap() * 10));
 		case Protoss_Scout:
 			return true;
 		case Protoss_Carrier:
@@ -434,13 +468,13 @@ namespace McRave
 			case Gravitic_Boosters:
 				return (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
 			case Leg_Enhancements:
-				return true;
+				return (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) >= 2);
 
 				// Ground unit upgrades
 			case Protoss_Ground_Weapons:
-				return (Units().getSupply() > 120 || Players().getNumberZerg() > 0);
+				return !Terrain().isIslandMap() && (Units().getSupply() > 120 || Players().getNumberZerg() > 0);
 			case Protoss_Ground_Armor:
-				return (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Armor) || Broodwar->self()->isUpgrading(UpgradeTypes::Protoss_Ground_Weapons));
+				return !Terrain().isIslandMap() && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Armor) || Broodwar->self()->isUpgrading(UpgradeTypes::Protoss_Ground_Weapons));
 			case Protoss_Plasma_Shields:
 				return (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) >= 2 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Armor) >= 2);
 
@@ -489,6 +523,8 @@ namespace McRave
 				return (Units().getSupply() > 160);
 			case Anabolic_Synthesis:
 				return true;
+			case Adrenal_Glands:
+				return true;
 
 				// Ground unit upgrades
 			case Zerg_Melee_Attacks:
@@ -529,8 +565,7 @@ namespace McRave
 		}
 
 		if (Broodwar->self()->getRace() == Races::Protoss) {
-			switch (tech)
-			{
+			switch (tech) {
 			case Psionic_Storm:
 				return true;
 			case Stasis_Field:
@@ -543,8 +578,7 @@ namespace McRave
 		}
 
 		else if (Broodwar->self()->getRace() == Races::Terran) {
-			switch (tech)
-			{
+			switch (tech) {
 			case Stim_Packs:
 				return BuildOrder().isBioBuild();
 			case Spider_Mines:
@@ -557,6 +591,13 @@ namespace McRave
 				return Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Battlecruiser) >= 0;
 			case Personnel_Cloaking:
 				return Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Ghost) >= 2;
+			}
+		}
+
+		else if (Broodwar->self()->getRace() == Races::Zerg) {
+			switch (tech) {
+			case Lurker_Aspect:
+				return true;
 			}
 		}
 		return false;

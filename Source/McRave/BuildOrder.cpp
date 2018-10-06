@@ -14,36 +14,25 @@ namespace McRave
 			t1 == currentBuild ? (isWinner ? t2++ : t3++) : 0;
 			config << t1 << " " << t2 << " " << t3 << endl;
 		}
-		return;
 	}
 
 	void BuildOrderManager::onStart()
 	{
 		if (!Broodwar->enemy())
 			getDefaultBuild();
-
+		
 		string build, buffer;
 		ifstream config("bwapi-data/read/" + Broodwar->enemy()->getName() + ".txt");
 		int wins, losses, gamesPlayed, totalGamesPlayed = 0;
 		double best = 0.0;
 		getOpening = true;
-
-		// Write what builds you're using
-#ifdef MCRAVE_PROTOSS
+				
 		if (Broodwar->self()->getRace() == Races::Protoss)
-			buildNames ={ "PZZCore", "PZCore", "PNZCore", "P4Gate", "PDTExpand", "P2GateDragoon", "PProxy6", "PProxy99", "PFFE", "P12Nexus", "P21Nexus", "P2GateExpand", "P1GateRobo" };
-
-#endif // MCRAVE_PROTOSS
-
-#ifdef MCRAVE_TERRAN
+			buildNames ={ "PZZCore", "PZCore", "PNZCore", "P4Gate", "PDTExpand", "P2GateDragoon", "PProxy6", "PProxy99", "PFFE", "P12Nexus", "P21Nexus", "P2GateExpand", "P1GateRobo", "PZealotDrop", "P1GateCorsair" };
 		if (Broodwar->self()->getRace() == Races::Terran)
 			buildNames ={ "T2Fact", "TSparks", "T2PortWraith", "T1RaxFE", "T2RaxFE", "T1FactFE", "TBCMemes" };
-#endif // MCRAVE_TERRAN
-
-#ifdef MCRAVE_ZERG
 		if (Broodwar->self()->getRace() == Races::Zerg)
-			buildNames ={ "Z2HatchMuta", "Z3HatchLing", "Z4Pool", "Z9Pool", "Z2HatchHydra" };
-#endif // MCRAVE_ZERG
+			buildNames ={ "Z2HatchMuta", "Z3HatchLing", "Z4Pool", "Z9Pool", "Z2HatchHydra", "Z3HatchBeforePool", "ZLurkerTurtle" };
 
 		// If we don't have a file in the /read/ folder, then check the /write/ folder
 		if (!config) {
@@ -121,7 +110,6 @@ namespace McRave
 		}
 		if (!isBuildPossible(currentBuild))
 			getDefaultBuild();
-		return;
 	}
 
 	bool BuildOrderManager::isBuildPossible(string build)
@@ -129,11 +117,19 @@ namespace McRave
 		using namespace UnitTypes;
 		vector<UnitType> buildings, defenses;
 
-		if (Terrain().isIslandMap())
-			return (build == "P12Nexus");
-
-#ifdef MCRAVE_PROTOSS
 		if (Broodwar->self()->getRace() == Races::Protoss) {
+
+			if (Terrain().isIslandMap())
+				return (build == "P12Nexus" || build == "PZealotDrop" || build == "P1GateCorsair");
+
+			// Blue Storm
+			if (Broodwar->mapFileName().find("BlueStorm") != string::npos)
+				return (build == "P12Nexus" || build == "PProxy99");
+
+			// Destination - No 4Gate
+			if (Broodwar->mapFileName().find("Destination") != string::npos && build == "P4Gate")
+				return false;
+
 			if (build == "P2GateDragoon") {
 				buildings ={ Protoss_Gateway, Protoss_Gateway, Protoss_Cybernetics_Core, Protoss_Pylon };
 			}
@@ -141,12 +137,12 @@ namespace McRave
 				buildings ={ Protoss_Gateway, Protoss_Gateway, Protoss_Pylon };
 				defenses.insert(defenses.end(), 6, Protoss_Photon_Cannon);
 			}
-			else if (build == "P12Nexus" || build == "P21Nexus" || build == "P1GateRobo" || build == "P3Nexus") {
+			else if (build == "P12Nexus" || build == "P21Nexus" || build == "P3Nexus") {
 				buildings ={ Protoss_Gateway, Protoss_Cybernetics_Core, Protoss_Pylon };
 			}
 			else if (build == "PFFE" || build == "PScoutMemes" || build == "PDWEBMemes") {
 				buildings ={ Protoss_Gateway, Protoss_Forge, Protoss_Pylon };
-				defenses.insert(defenses.end(), 6, Protoss_Photon_Cannon);
+				defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
 			}
 			else if (Broodwar->mapFileName().find("Alchemist") != string::npos && build != "P4Gate") {
 				return false;
@@ -154,23 +150,14 @@ namespace McRave
 			else
 				return true;
 		}
-#endif // MCRAVE_PROTOSS
 
-#ifdef MCRAVE_TERRAN
-		if (Broodwar->self()->getRace() == Races::Terran) {
-			if (build == "T1RaxFE" || build == "T2RaxFE" || build == "T2Fact" || build == "T1FactFE" || build == "TBCMemes")
-				buildings ={ Terran_Barracks, Terran_Supply_Depot, Terran_Supply_Depot };
-			else
-				return true;
-		}
-#endif // MCRAVE_TERRAN
+		if (Broodwar->self()->getRace() == Races::Terran)
+			buildings ={ Terran_Barracks, Terran_Supply_Depot, Terran_Supply_Depot };					
 
-#ifdef MCRAVE_ZERG
 		if (Broodwar->self()->getRace() == Races::Zerg) {
 			buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber };
-			defenses.insert(defenses.end(), 6, Zerg_Sunken_Colony);
+			defenses.insert(defenses.end(), 3, Zerg_Sunken_Colony);
 		}
-#endif // MCRAVE_ZERG
 
 		if (build == "T2Fact" || build == "TSparks") {
 			if (Terrain().findMainWall(buildings, defenses))
@@ -185,56 +172,75 @@ namespace McRave
 
 	bool BuildOrderManager::isBuildAllowed(Race enemy, string build)
 	{
-		if (Terrain().isIslandMap())
-			return (build == "P12Nexus");
-
-#ifdef MCRAVE_PROTOSS
 		if (Broodwar->self()->getRace() == Races::Protoss) {
-			if (enemy == Races::Zerg && (build == "PFFE" || build == "P4Gate" || build == "P2GateExpand"))
+			if (Terrain().isIslandMap()) {
+				if (enemy == Races::Zerg)
+					return (build == "P1GateCorsair");
+				else if (enemy == Races::Random)
+					return (build == "PZealotDrop");
+				else
+					return (build == "P12Nexus" || build == "PZealotDrop");
+			}
+
+			// HACK: Blue Storm hardcoded builds due to lack of pathfinding around chokes
+			if (Broodwar->mapFileName().find("BlueStorm") != string::npos) {
+				if (enemy == Races::Terran)
+					return (build == "PProxy99" || build == "P12Nexus" || build == "P21Nexus" || build == "PDTExpand");
+				else if (enemy == Races::Zerg)
+					return (build == "PProxy99" || build == "PFFE");
+				else if (enemy == Races::Protoss || enemy == Races::Random)
+					return (build == "PProxy99" || build == "PZCore");
+			}
+
+			// HACK: Only 4gate on Alchemist
+			if (Broodwar->mapFileName().find("Alchemist") != string::npos && build != "P4Gate")
+				return false;
+
+			if (enemy == Races::Zerg && (build == "PFFE" || build == "P4Gate" || build == "P2GateExpand" || build == "P1GateCorsair"))
 				return true;
 			if (enemy == Races::Terran && (build == "P12Nexus" || build == "P21Nexus" || build == "PDTExpand" || build == "P2GateDragoon"))
 				return true;
-			if (enemy == Races::Protoss && (build == "PZCore" || build == "PNZCore" || build == "P4Gate" || build == "P1GateRobo"))
+			if (enemy == Races::Protoss && (build == "PZCore" || build == "P4Gate" || build == "P1GateRobo" || build == "P2GateExpand"))
 				return true;
-			if (enemy == Races::Random && (build == "PZZCore" || build == "P4Gate" || build == "PFFE"))
+			if (enemy == Races::Random && (build == "PZZCore" || build == "P4Gate" || build == "PFFE" || build == "P2GateExpand"))
 				return true;
+
+			// HACK: Only 4gate on Alchemist
 			if (Broodwar->mapFileName().find("Alchemist") != string::npos && build == "P4Gate")
 				return true;
 		}
-#endif
 
-#ifdef MCRAVE_TERRAN
 		if (Broodwar->self()->getRace() == Races::Terran) {
 			if (build == "TSparks" || build == "T2Fact" || build == "T2PortWraith")
 				return true;
 			if (build == "T1RaxFE" || build == "T2RaxFE" || build == "T1FactFE")
 				return true;
 		}
-#endif
 
-#ifdef MCRAVE_ZERG
 		if (Broodwar->self()->getRace() == Races::Zerg) {
-			if (build == "Z2HatchMuta")
+			if (find(buildNames.begin(), buildNames.end(), build) != buildNames.end())
 				return true;
 		}
 		return false;
-
-#endif
 	}
 
 	bool BuildOrderManager::techComplete()
 	{
-		if (techUnit == UnitTypes::Protoss_Scout || techUnit == UnitTypes::Protoss_Corsair || techUnit == UnitTypes::Protoss_Observer || techUnit == UnitTypes::Protoss_Reaver || techUnit == UnitTypes::Terran_Science_Vessel) return (Broodwar->self()->completedUnitCount(techUnit) > 0);
-		if (techUnit == UnitTypes::Protoss_High_Templar) return (Broodwar->self()->hasResearched(TechTypes::Psionic_Storm));
-		if (techUnit == UnitTypes::Protoss_Arbiter) return (Broodwar->self()->visibleUnitCount(techUnit) > 0);
-		if (techUnit == UnitTypes::Protoss_Dark_Templar) return (Broodwar->self()->visibleUnitCount(techUnit) > 0);
-		else return (Broodwar->self()->visibleUnitCount(techUnit) > 0);
-		return false;
+		if (techUnit == UnitTypes::Protoss_Scout || techUnit == UnitTypes::Protoss_Corsair || techUnit == UnitTypes::Protoss_Observer || techUnit == UnitTypes::Terran_Science_Vessel)
+			return (Broodwar->self()->completedUnitCount(techUnit) > 0);
+		if (techUnit == UnitTypes::Protoss_High_Templar)
+			return (Broodwar->self()->hasResearched(TechTypes::Psionic_Storm));
+		if (techUnit == UnitTypes::Protoss_Arbiter)
+			return (Broodwar->self()->visibleUnitCount(techUnit) > 0);
+		if (techUnit == UnitTypes::Protoss_Dark_Templar)
+			return (Broodwar->self()->completedUnitCount(techUnit) >= 2);
+		if (techUnit == UnitTypes::Protoss_Reaver)
+			return (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Shuttle) >= 1) || (Broodwar->self()->completedUnitCount(techUnit) > 0 && Terrain().isNarrowNatural());
+		return (Broodwar->self()->visibleUnitCount(techUnit) > 0);
 	}
 
 	void BuildOrderManager::getDefaultBuild()
 	{
-#ifdef MCRAVE_PROTOSS
 		if (Broodwar->self()->getRace() == Races::Protoss) {
 			if (Players().getNumberProtoss() > 0)
 				currentBuild = "PZCore";
@@ -243,21 +249,12 @@ namespace McRave
 			else if (Players().getNumberTerran() > 0)
 				currentBuild = "P12Nexus";
 			else if (Players().getNumberRandom() > 0)
-				currentBuild = "PZZCore";
+				currentBuild = "P4Gate";
 		}
-#endif
-
-#ifdef MCRAVE_TERRAN
-		if (Broodwar->self()->getRace() == Races::Terran) {
+		if (Broodwar->self()->getRace() == Races::Terran)
 			currentBuild = "TSparks";
-		}
-#endif
-
-#ifdef MCRAVE_ZERG
-		if (Broodwar->self()->getRace() == Races::Zerg) {
+		if (Broodwar->self()->getRace() == Races::Zerg)
 			currentBuild = "Z2HatchMuta";
-		}
-#endif
 		return;
 	}
 
@@ -266,53 +263,44 @@ namespace McRave
 		Display().startClock();
 		updateBuild();
 		Display().performanceTest(__FUNCTION__);
-		return;
 	}
 
 	void BuildOrderManager::updateBuild()
 	{
-#ifdef MCRAVE_PROTOSS
 		if (Broodwar->self()->getRace() == Races::Protoss) {
 			protossOpener();
 			protossTech();
 			protossSituational();
+			protossUnlocks();
 		}
-#endif // MCRAVE_PROTOSS
-
-#ifdef MCRAVE_TERRAN
 		if (Broodwar->self()->getRace() == Races::Terran) {
 			terranOpener();
 			terranTech();
 			terranSituational();
 		}
-#endif // MCRAVE_TERRAN
-
-#ifdef MCRAVE_ZERG
 		if (Broodwar->self()->getRace() == Races::Zerg) {
 			zergOpener();
 			zergTech();
 			zergSituational();
 		}
-#endif // MCRAVE_ZERG
 	}
 
 	bool BuildOrderManager::shouldExpand()
 	{
 		UnitType baseType = Broodwar->self()->getRace().getResourceDepot();
 
-		if (Broodwar->self()->getRace() == Races::Protoss)
-		{
-			if (Broodwar->self()->minerals() > 500 + (100 * Broodwar->self()->completedUnitCount(baseType))) return true;
-			else if (techUnit == UnitTypes::None && !Production().hasIdleProduction() && Resources().isMinSaturated() && techSat && productionSat) return true;
+		if (Broodwar->self()->getRace() == Races::Protoss) {
+			if (Broodwar->self()->minerals() > 500 + (100 * Broodwar->self()->completedUnitCount(baseType)))
+				return true;
+			else if (techUnit == UnitTypes::None && !Production().hasIdleProduction() && Resources().isMinSaturated() && techSat && productionSat)
+				return true;
 		}
-		else if (Broodwar->self()->getRace() == Races::Terran)
-		{
+		else if (Broodwar->self()->getRace() == Races::Terran) {
 			if (Broodwar->self()->minerals() > 400 + (100 * Broodwar->self()->completedUnitCount(baseType)))
 				return true;
 		}
-		else if (Broodwar->self()->getRace() == Races::Zerg)
-		{
-			if (Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 450)
+		else if (Broodwar->self()->getRace() == Races::Zerg) {
+			if (Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() >= 300)
 				return true;
 		}
 		return false;
@@ -320,9 +308,8 @@ namespace McRave
 
 	bool BuildOrderManager::shouldAddProduction()
 	{
-		if (Broodwar->self()->getRace() == Races::Zerg)
-		{
-			if (Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Larva) <= 2 && Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 300)
+		if (Broodwar->self()->getRace() == Races::Zerg) {
+			if (Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Larva) <= 1 && Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 100)
 				return true;
 		}
 		else {
@@ -335,13 +322,19 @@ namespace McRave
 	bool BuildOrderManager::shouldAddGas()
 	{
 		if (Broodwar->self()->getRace() == Races::Zerg) {
-			if (Resources().isGasSaturated() && Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 400)
+			if (Resources().isGasSaturated() && Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 100)
 				return true;
 		}
-		else {
-			//if (Resources().isGasSaturated() /*&& Broodwar->self()->gas() < Broodwar->self()->minerals() * 3*/ && Broodwar->self()->minerals() > 100) 
-			return true;
+		
+		else if (Broodwar->self()->getRace() == Races::Protoss) {
+			if (Players().vP())
+				return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Assimilator) != 1 || Workers().getMyWorkers().size() >= 36 || Broodwar->self()->minerals() > 600;
+			else if (Players().vT() || Players().vZ())
+				return true;
 		}
+
+		else if (Broodwar->self()->getRace() == Races::Terran)
+			return true;
 		return false;
 	}
 
@@ -358,6 +351,148 @@ namespace McRave
 			return true;
 		else if (firstUpgrade != UpgradeTypes::None && Broodwar->self()->getUpgradeLevel(firstUpgrade) > 0)
 			return true;
+		else if (firstTech == TechTypes::None && firstUpgrade == UpgradeTypes::None)
+			return true;
 		return false;
+	}
+
+	void BuildOrderManager::getNewTech()
+	{
+		if (!getTech)
+			return;
+
+		// Otherwise, choose a tech based on highest unit score
+		double highest = 0.0;
+		for (auto &tech : Strategy().getUnitScores()) {
+			if (tech.first == UnitTypes::Protoss_Dragoon
+				|| tech.first == UnitTypes::Protoss_Zealot
+				|| tech.first == UnitTypes::Protoss_Shuttle)
+				continue;
+
+			if (tech.second > highest) {
+				highest = tech.second;
+				techUnit = tech.first;
+			}
+		}
+	}
+
+	void BuildOrderManager::checkNewTech()
+	{
+		// No longer need to choose a tech
+		if (techUnit != UnitTypes::None) {
+			getTech = false;
+			techList.insert(techUnit);
+			unlockedType.insert(techUnit);
+		}
+
+		// Multi-unlock
+		if (techUnit == UnitTypes::Protoss_Arbiter || techUnit == UnitTypes::Protoss_High_Templar) {
+			unlockedType.insert(UnitTypes::Protoss_Dark_Templar);
+			techList.insert(UnitTypes::Protoss_Dark_Templar);
+		}
+		else if (techUnit == UnitTypes::Protoss_Reaver) {
+			unlockedType.insert(UnitTypes::Protoss_Shuttle);
+			techList.insert(UnitTypes::Protoss_Shuttle);
+		}
+		else if (techUnit == UnitTypes::Zerg_Mutalisk) {
+			techList.insert(UnitTypes::Zerg_Scourge);
+			unlockedType.insert(UnitTypes::Zerg_Scourge);
+		}
+		else if (techUnit == UnitTypes::Zerg_Lurker) {
+			techList.insert(UnitTypes::Zerg_Hydralisk);
+			unlockedType.insert(UnitTypes::Zerg_Hydralisk);
+		}
+
+		// HACK: If we have a Reaver add Obs to the tech
+		if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Reaver) >= 3) {
+			techList.insert(UnitTypes::Protoss_Observer);
+			unlockedType.insert(UnitTypes::Protoss_Observer);
+		}
+	}
+
+	void BuildOrderManager::checkAllTech()
+	{
+		bool moreToAdd;
+		set<UnitType> toCheck;
+
+		// For every unit in our tech list, ensure we are building the required buildings
+		for (auto &type : techList) {
+			toCheck.insert(type);
+			toCheck.insert(type.whatBuilds().first);
+		}
+
+		// Iterate all required branches of buildings that are required for this tech unit
+		do {
+			moreToAdd = false;
+			for (auto &check : toCheck) {
+				for (auto &pair : check.requiredUnits()) {
+					UnitType type(pair.first);
+					if (Broodwar->self()->completedUnitCount(type) == 0 && toCheck.find(type) == toCheck.end()) {
+						toCheck.insert(type);
+						moreToAdd = true;
+					}
+				}
+			}
+		} while (moreToAdd);
+
+		// For each building we need to check, add to our queue whatever is possible to build based on its required branch
+		int i = 0;
+		for (auto &check : toCheck) {
+
+			if (!check.isBuilding())
+				continue;
+
+			i += 10;
+
+			bool canAdd = true;
+			for (auto &pair : check.requiredUnits()) {
+				UnitType type(pair.first);
+				if (type.isBuilding() && Broodwar->self()->completedUnitCount(type) == 0) {
+					canAdd = false;
+				}
+			}
+
+			// HACK: Our check doesn't look for required buildings for tech needed for Lurkers
+			if (check == UnitTypes::Zerg_Lurker)
+				itemQueue[UnitTypes::Zerg_Lair] = Item(1);
+
+			// Add extra production - TODO: move to shouldAddProduction
+			int s = Units().getSupply();
+			if (canAdd && buildCount(check) <= 1) {
+				if (check == UnitTypes::Protoss_Stargate) {
+					if ((s >= 150 && techList.find(UnitTypes::Protoss_Corsair) != techList.end())
+						|| (s >= 300 && techList.find(UnitTypes::Protoss_Arbiter) != techList.end()))
+						itemQueue[check] = Item(2);
+					else
+						itemQueue[check] = Item(1);
+				}
+				else if (check != UnitTypes::Protoss_Gateway)
+					itemQueue[check] = Item(1);
+
+			}
+		}
+	}
+
+	void BuildOrderManager::checkExoticTech()
+	{
+		// Corsair/Scout upgrades
+		if ((techList.find(UnitTypes::Protoss_Scout) != techList.end() && currentBuild != "PDTExpand") || (techList.find(UnitTypes::Protoss_Corsair) != techList.end() && Units().getSupply() >= 300))
+			itemQueue[UnitTypes::Protoss_Fleet_Beacon] = Item(1);
+
+		// HACK: Bluestorm carrier hack
+		if (Broodwar->mapFileName().find("BlueStorm") != string::npos && techList.find(UnitTypes::Protoss_Carrier) != techList.end())
+			itemQueue[UnitTypes::Protoss_Stargate] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus));
+
+		// Hive upgrades
+		if (Broodwar->self()->getRace() == Races::Zerg && Units().getSupply() >= 200) {
+			itemQueue[UnitTypes::Zerg_Queens_Nest] = Item(1);
+			itemQueue[UnitTypes::Zerg_Hive] = Item(Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Queens_Nest) >= 1);
+			itemQueue[UnitTypes::Zerg_Lair] = Item(Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Queens_Nest) < 1);
+		}
+	}
+
+	void BuildOrderManager::checkUnitLimits()
+	{
+
 	}
 }

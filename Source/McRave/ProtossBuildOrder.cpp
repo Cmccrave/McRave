@@ -1,7 +1,5 @@
 #include "McRave.h"
 
-#ifdef MCRAVE_PROTOSS
-
 namespace McRave
 {
 	void BuildOrderManager::protossOpener()
@@ -23,155 +21,80 @@ namespace McRave
 		if (currentBuild == "PArbiterMemes") PArbiterMemes();
 		if (currentBuild == "P1GateRobo") P1GateRobo();
 		if (currentBuild == "P3Nexus") P3Nexus();
-		return;
+		if (currentBuild == "PZealotDrop") PZealotDrop();
+		if (currentBuild == "P1GateCorsair") P1GateCorsair();
 	}
 
 	void BuildOrderManager::protossTech()
 	{
-		bool moreToAdd;
-		set<UnitType> toCheck;
-
-		if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Cybernetics_Core) == 0)
+		if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Cybernetics_Core) == 0)
 			return;
 
 		// Some hardcoded techs based on needing detection or specific build orders
 		if (getTech) {
 
-			// If we need detection, immediately stop building other tech
-			if (Strategy().needDetection()) {
-				techList.insert(UnitTypes::Protoss_Observer);
-				unlockedType.insert(UnitTypes::Protoss_Observer);
-				itemQueue[UnitTypes::Protoss_Robotics_Facility] = Item(1);
-				itemQueue[UnitTypes::Protoss_Observatory] =	 Item(Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Robotics_Facility) > 0);
-				return; // This return prevents us building other tech
-			}
+			// If we need observers
+			if ((Strategy().needDetection()) || (!Terrain().isIslandMap() && Players().vP() && techList.find(UnitTypes::Protoss_Observer) == techList.end() && !techList.empty()))
+				techUnit = UnitTypes::Protoss_Observer;
 
-			// Just double adds tech units on island maps
-			else if (Terrain().isIslandMap() && techList.size() <= 1) {
+			// HACK: Make carriers on Blue Storm
+			else if (Broodwar->mapFileName().find("BlueStorm") != string::npos && techList.find(UnitTypes::Protoss_Carrier) == techList.end() && Players().vT())
+				techUnit = UnitTypes::Protoss_Carrier;
+
+			// HACK: Just double adds tech units on island maps
+			else if (techUnit == UnitTypes::None && currentBuild == "P12Nexus" && Terrain().isIslandMap() && techList.size() <= 2) {
 				techList.insert(UnitTypes::Protoss_Shuttle);
 				unlockedType.insert(UnitTypes::Protoss_Shuttle);
 
-				if (Players().getNumberTerran() > 0) {
+				if (Players().getNumberTerran() > 0 || Broodwar->enemy()->getRace() == Races::Terran)
 					techUnit = UnitTypes::Protoss_Carrier;
-				}
-				else if (Players().getNumberZerg() > 0) {
-					techUnit = UnitTypes::Protoss_Corsair;					
-				}
-
-				// PvP double tech
-				if (Players().getNumberProtoss() > 0) {
-					techList.insert(UnitTypes::Protoss_Corsair);
-					unlockedType.insert(UnitTypes::Protoss_Corsair);
-					techList.insert(UnitTypes::Protoss_Reaver);
-					unlockedType.insert(UnitTypes::Protoss_Reaver);
-				}				
+				else if (Players().getNumberZerg() > 0 || Broodwar->enemy()->getRace() == Races::Zerg)
+					techUnit = UnitTypes::Protoss_Corsair;
+				else if (Players().getNumberProtoss() > 0 || Broodwar->enemy()->getRace() == Races::Protoss)
+					techUnit = UnitTypes::Protoss_Carrier;
 			}
 
-			// Otherwise, choose a tech based on highest unit score
-			else if (techUnit == UnitTypes::None) {
-				double highest = 0.0;
-				for (auto &tech : Strategy().getUnitScores()) {
-					if (tech.first == UnitTypes::Protoss_Dragoon
-						|| tech.first == UnitTypes::Protoss_Zealot
-						|| tech.first == UnitTypes::Protoss_Shuttle)
-						continue;
-
-					if (tech.second > highest) {
-						highest = tech.second;
-						techUnit = tech.first;
-					}
-				}
-			}
-
-			// No longer need to choose a tech
-			if (techUnit != UnitTypes::None) {
-				getTech = false;
-				techList.insert(techUnit);
-				unlockedType.insert(techUnit);
-			}
+			else if (Strategy().getEnemyBuild() == "P4Gate" && currentBuild != "P4Gate" && techList.find(UnitTypes::Protoss_Dark_Templar) == techList.end() && !Strategy().enemyGasSteal())
+				techUnit = UnitTypes::Protoss_Dark_Templar;
+			else if (Terrain().isIslandMap() && techUnit == UnitTypes::None && currentBuild == "P1GateCorsair" && techList.find(UnitTypes::Protoss_Shuttle) == techList.end())
+				techUnit = UnitTypes::Protoss_Shuttle;
+			else if (techUnit == UnitTypes::None && currentBuild == "PZealotDrop" && techList.find(UnitTypes::Protoss_Scout) == techList.end() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Shuttle) > 0)
+				techUnit = UnitTypes::Protoss_Scout;
+			else if (techUnit == UnitTypes::None)
+				getNewTech();
 		}
 
-		// Multi-unlock
-		if (techUnit == UnitTypes::Protoss_Arbiter) {
-			unlockedType.insert(UnitTypes::Protoss_Dark_Templar);
-			techList.insert(UnitTypes::Protoss_Dark_Templar);
-		}
-
-		// For every unit in our tech list, ensure we are building the required buildings
-		for (auto &type : techList) {
-			toCheck.insert(type);
-			toCheck.insert(type.whatBuilds().first);
-		}
-
-		// Iterate all required branches of buildings that are required for this tech unit
-		do {
-			moreToAdd = false;
-			for (auto &check : toCheck) {
-				for (auto &pair : check.requiredUnits()) {
-					UnitType type(pair.first);
-					if (Broodwar->self()->completedUnitCount(type) == 0 && toCheck.find(type) == toCheck.end()) {
-						toCheck.insert(type);
-						moreToAdd = true;
-					}
-				}
-			}
-		} while (moreToAdd);
-
-		// For each building we need to check, add to our queue whatever is possible to build based on its required branch
-		int i = 0;
-		for (auto &check : toCheck) {
-
-			if (!check.isBuilding())
-				continue;
-
-			bool canAdd = true;
-			for (auto &pair : check.requiredUnits()) {
-				UnitType type(pair.first);
-				if (type.isBuilding() && Broodwar->self()->completedUnitCount(type) == 0) {
-					canAdd = false;
-				}
-			}
-
-			// Add extra production - TODO: move to shouldAddProduction
-			int s = Units().getSupply();
-			if (canAdd && buildCount(check) <= 1) {
-				if (check == UnitTypes::Protoss_Stargate) {
-					if ((s >= 150 && techList.find(UnitTypes::Protoss_Corsair) != techList.end())
-						|| (s >= 300 && techList.find(UnitTypes::Protoss_Arbiter) != techList.end()))
-						itemQueue[check] = Item(2);
-					else
-						itemQueue[check] = Item(1);
-				}
-				else if (check == UnitTypes::Protoss_Robotics_Facility) {
-					if (s >= 200 && techList.find(UnitTypes::Protoss_Reaver) != techList.end()) {
-						itemQueue[check] = Item(2);
-					}
-					else
-						itemQueue[check] = Item(1);
-				}
-				else if (check != UnitTypes::Protoss_Gateway)
-					itemQueue[check] = Item(1);
-
-			}
-		}
-
-		// Exotic tech/upgrades
-		if (techList.find(UnitTypes::Protoss_Scout) != techList.end() || (techList.find(UnitTypes::Protoss_Corsair) != techList.end() && Units().getSupply() >= 300))
-			itemQueue[UnitTypes::Protoss_Fleet_Beacon] = Item(1);
+		checkNewTech();
+		checkAllTech();
+		checkExoticTech();
 	}
 
 	void BuildOrderManager::protossSituational()
 	{
+		auto skipFirstTech = (currentBuild == "P4Gate" || (Strategy().enemyGasSteal() && !Terrain().isNarrowNatural()));
+
 		// Metrics for when to Expand/Add Production/Add Tech
-		satVal = Players().getNumberTerran() > 0 ? 2 : 3;
-		prodVal = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway);
-		baseVal = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
-		techVal = techList.size() + 1 + (currentBuild == "P4Gate") + (Players().getNumberTerran() > 0);
+		satVal = (Players().getNumberTerran() > 0 || Broodwar->enemy()->getRace() == Races::Terran) ? 2 : 3;
+		prodVal = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) + (satVal * skipFirstTech);
+		baseVal = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus);
+		techVal = techList.size() + skipFirstTech + (Broodwar->enemy()->getRace() == Races::Terran);
+
+		// HACK: Don't count obs as a tech unit
+		if (techList.find(UnitTypes::Protoss_Observer) != techList.end())
+			techVal--;
+
+		// HACK: No gas workers until at 14 supply (sometimes we get gas early to prevent steals
+		if (Units().getSupply() < 28 || Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Assimilator) == 0)
+			gasLimit = 0;
+
+		// HACK: Against FFE just add a Nexus
+		if (Strategy().getEnemyBuild() == "PFFE" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1)
+			itemQueue[UnitTypes::Protoss_Nexus] = Item(2);
 
 		// Saturation
 		productionSat = (prodVal >= satVal * baseVal);
-		techSat = (techVal > baseVal);
-		
+		techSat = (techVal >= baseVal);
+
 		// If we have our tech unit, set to none
 		if (techComplete())
 			techUnit = UnitTypes::None;
@@ -180,154 +103,143 @@ namespace McRave
 		if (Terrain().isIslandMap() || Strategy().needDetection() || (!getOpening && !getTech && !techSat && !Production().hasIdleProduction()))
 			getTech = true;
 
-		// Check if we should always make Zealots
-		if ((Players().getNumberTerran() == 0 && firstReady())
-			|| Players().getNumberZerg() > 0
-			|| Terrain().isIslandMap()
-			|| BuildOrder().getCurrentBuild() == "P1GateRobo"
-			|| BuildOrder().getCurrentBuild() == "PScoutMemes"
-			|| BuildOrder().getCurrentBuild() == "PDWEBMemes"
-			|| BuildOrder().getCurrentBuild() == "P4Gate"
-			|| (BuildOrder().getCurrentBuild() == "PZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) < 1)
-			|| (BuildOrder().getCurrentBuild() == "PZZCore" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) < 2)
-			|| (BuildOrder().getCurrentBuild() == "PDTExpand" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot) < 2)
-			|| Strategy().enemyProxy()
-			|| Strategy().enemyRush()
-			|| Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements)
-			|| Broodwar->self()->isUpgrading(UpgradeTypes::Leg_Enhancements)
-			|| Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) > 0) {
-			unlockedType.insert(UnitTypes::Protoss_Zealot);
-		}
-		else
-			unlockedType.erase(UnitTypes::Protoss_Zealot);
-
-		// Check if we should always make Dragoons
-		if (Terrain().isIslandMap()
-			|| ((BuildOrder().getCurrentBuild() == "PScoutMemes" || BuildOrder().getCurrentBuild() == "PDWEBMemes") && !firstReady())
-			|| (currentBuild == "PFFE" && Broodwar->getFrameCount() < 20000))
-			unlockedType.erase(UnitTypes::Protoss_Dragoon);
-		else 
-			unlockedType.insert(UnitTypes::Protoss_Dragoon);		
-
-		// Shield battery for meme builds
-		if ((BuildOrder().getCurrentBuild() == "PScoutMemes" || BuildOrder().getCurrentBuild() == "PDWEBMemes") && firstReady() && Units().getSupply() > 220)
-			itemQueue[UnitTypes::Protoss_Shield_Battery] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus));
-
 		// Pylon logic
-		if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > fastExpand) {
-			int providers = max(14, 16 - buildCount(UnitTypes::Protoss_Pylon));
+		if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > int(fastExpand)) {
+			int providers = buildCount(UnitTypes::Protoss_Pylon) > 0 ? 14 : 16;
 			int count = min(22, Units().getSupply() / providers);
 
-			if (buildCount(UnitTypes::Protoss_Pylon) + buildCount(UnitTypes::Protoss_Nexus) - 1 < count)
+			if (buildCount(UnitTypes::Protoss_Pylon) < count)
 				itemQueue[UnitTypes::Protoss_Pylon] = Item(count);
 
 			if (!getOpening && !Buildings().hasPoweredPositions() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 10)
 				itemQueue[UnitTypes::Protoss_Pylon] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) + 1);
 		}
 
-		// Reaction to enemy FFE
-		if (Strategy().getEnemyBuild() == "PFFE" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1)
-			itemQueue[UnitTypes::Protoss_Nexus] = Item(2);
-		
 		// If we're not in our opener
 		if (!getOpening) {
 			gasLimit = INT_MAX;
+
+			// Adding bases
 			if (shouldExpand())
 				itemQueue[UnitTypes::Protoss_Nexus] = Item(Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) + 1);
 
+			// Adding production
 			if (shouldAddProduction()) {
-				if (Terrain().isIslandMap()) {
-
-					// PvZ island
-					if (Broodwar->enemy()->getRace() == Races::Zerg) {
-						int nexusCount = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
-						int roboCount = min(nexusCount - 2, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Robotics_Facility) + 1);
-						int stargateCount = min(nexusCount, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Stargate) + 1);
-
-						if (Broodwar->self()->gas() - Production().getReservedGas() - Buildings().getQueuedGas() > 150) {
-							itemQueue[UnitTypes::Protoss_Stargate] = Item(stargateCount);
-							itemQueue[UnitTypes::Protoss_Robotics_Facility] = Item(roboCount);
-							itemQueue[UnitTypes::Protoss_Robotics_Support_Bay] = Item(1);
-						}
-						itemQueue[UnitTypes::Protoss_Gateway] = Item(nexusCount);
-					}
-
-					// PvP island
-					else if (Broodwar->enemy()->getRace() == Races::Protoss) {
-						int nexusCount = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
-						int roboCount = min(nexusCount - 1, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Robotics_Facility) + 1);
-						int stargateCount = min(nexusCount - 1, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Stargate) + 1);
-
-						if (Broodwar->self()->gas() - Production().getReservedGas() - Buildings().getQueuedGas() > 150) {
-							itemQueue[UnitTypes::Protoss_Stargate] = Item(stargateCount);
-							itemQueue[UnitTypes::Protoss_Robotics_Facility] = Item(roboCount);
-							itemQueue[UnitTypes::Protoss_Robotics_Support_Bay] = Item(1);
-						}
-						itemQueue[UnitTypes::Protoss_Gateway] = Item(nexusCount - 1);
-					}
-
-					// PvT island
-					else {
-						int nexusCount = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
-						int stargateCount = min(nexusCount - 1, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Stargate) + 1);
-						if (Broodwar->self()->gas() - Production().getReservedGas() - Buildings().getQueuedGas() > 150) {
-							itemQueue[UnitTypes::Protoss_Stargate] = Item(stargateCount);
-							itemQueue[UnitTypes::Protoss_Robotics_Facility] = Item(min(1, stargateCount - 2));
-							itemQueue[UnitTypes::Protoss_Robotics_Support_Bay] = Item(1);
-						}
-						itemQueue[UnitTypes::Protoss_Gateway] = Item(nexusCount);
-					}
-				}
+				if (Terrain().isIslandMap())
+					protossIslandPlay();				
 				else {
-
-					// Gates - TODO add stargates/robos
 					int gateCount = min(Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) + 1);
 					itemQueue[UnitTypes::Protoss_Gateway] = Item(gateCount);
 				}
-
 			}
 
+			// Adding gas
 			if (shouldAddGas())
 				itemQueue[UnitTypes::Protoss_Assimilator] = Item(Resources().getGasCount());
 
-			// Air/Ground upgrade buildings
-			if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) >= 3 || Units().getSupply() > 260) {
-
-				if (Terrain().isIslandMap()) {
-					itemQueue[UnitTypes::Protoss_Cybernetics_Core] = Item(2);
-					itemQueue[UnitTypes::Protoss_Forge] = Item(1);
-				}
-				else {
-					itemQueue[UnitTypes::Protoss_Cybernetics_Core] = Item(1);
-					itemQueue[UnitTypes::Protoss_Forge] = Item(2);
-				}
+			// Adding upgrade buildings
+			if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Assimilator) >= 4 - (int)Players().vT()) {
+				itemQueue[UnitTypes::Protoss_Cybernetics_Core] = Item(1 + (int)Terrain().isIslandMap());
+				itemQueue[UnitTypes::Protoss_Forge] = Item(2 - (int)Terrain().isIslandMap());
 			}
 
-			// Make sure we have a core
+			// Ensure we build a core outside our opening book
 			if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 2)
 				itemQueue[UnitTypes::Protoss_Cybernetics_Core] = Item(1);
 
-			// Cannon logic
-			if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Forge) >= 1 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) >= 3 + (Players().getNumberTerran() > 0 || Players().getNumberProtoss() > 0)) {
+			// Defensive Cannons
+			if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Forge) >= 1 && ((Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) >= 3 + (Players().getNumberTerran() > 0 || Players().getNumberProtoss() > 0)) || (Terrain().isIslandMap() && Players().getNumberZerg() > 0))) {
 				itemQueue[UnitTypes::Protoss_Photon_Cannon] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon));
 
 				for (auto &station : Stations().getMyStations()) {
 					Station s = station.second;
 
-					if (!Pylons().hasPower((TilePosition)s.ResourceCentroid(), UnitTypes::Protoss_Photon_Cannon))
-						continue;
-
-					if ((s.BWEMBase()->Location() == mapBWEB.getNaturalTile() || s.BWEMBase()->Location() == mapBWEB.getMainTile()) && Grids().getDefense(TilePosition(s.ResourceCentroid())) <= 0)
-						itemQueue[UnitTypes::Protoss_Photon_Cannon] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) + 1);
-					else if (Grids().getDefense(TilePosition(s.ResourceCentroid())) <= 1)
-						itemQueue[UnitTypes::Protoss_Photon_Cannon] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) + 1);
-					else if ((Players().getPlayers().size() > 1 || Broodwar->enemy()->getRace() == Races::Zerg) && s.BWEMBase()->Location() != mapBWEB.getMainTile() && s.BWEMBase()->Location() != mapBWEB.getNaturalTile() && Grids().getDefense(TilePosition(s.ResourceCentroid())) <= 3)
+					if (Stations().needDefenses(s))
 						itemQueue[UnitTypes::Protoss_Photon_Cannon] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) + 1);
 				}
 			}
 		}
 		return;
 	}
-}
 
-#endif // MCRAVE_PROTOSS
+	void BuildOrderManager::protossUnlocks()
+	{
+		// Leg upgrade check
+		auto isUpgradingLegs = Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements)
+			|| Broodwar->self()->isUpgrading(UpgradeTypes::Leg_Enhancements)
+			|| (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) > 0 && firstReady());
+
+		// Check if we should always make Zealots
+		if ((Players().vZ() && (!Terrain().isIslandMap() || Broodwar->getFrameCount() > 10000))
+			|| (Terrain().isIslandMap() && currentBuild != "P1GateCorsair")
+			|| (zealotLimit > Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot))
+			|| Strategy().enemyProxy()
+			|| Strategy().enemyRush()
+			|| isUpgradingLegs
+			|| (techUnit == UnitTypes::Protoss_Dark_Templar && Players().vP())
+			|| (Broodwar->mapFileName().find("BlueStorm") != string::npos && techList.find(UnitTypes::Protoss_Zealot) == techList.end())) {
+			unlockedType.insert(UnitTypes::Protoss_Zealot);
+		}
+		else
+			unlockedType.erase(UnitTypes::Protoss_Zealot);
+
+		// TEST
+		if (!techComplete() && techUnit == UnitTypes::Protoss_Dark_Templar && techList.size() == 1 && Players().vP() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) == 1)
+			dragoonLimit = 0;
+
+		// Check if we should always make Dragoons
+		if (!Terrain().isIslandMap() && Broodwar->mapFileName().find("BlueStorm") == string::npos &&
+			((Players().vZ() && Broodwar->getFrameCount() > 20000)
+				|| Units().getEnemyCount(UnitTypes::Zerg_Lurker) > 0
+				|| dragoonLimit > Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon)))
+			unlockedType.insert(UnitTypes::Protoss_Dragoon);
+		else
+			unlockedType.erase(UnitTypes::Protoss_Dragoon);
+	}
+
+	void BuildOrderManager::protossIslandPlay()
+	{
+		if (shouldAddProduction()) {
+
+			// PvZ island
+			if (Broodwar->enemy()->getRace() == Races::Zerg) {
+				int nexusCount = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
+				int roboCount = min(nexusCount - 2, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Robotics_Facility) + 1);
+				int stargateCount = min(nexusCount, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Stargate) + 1);
+
+				if (Broodwar->self()->gas() - Production().getReservedGas() - Buildings().getQueuedGas() > 150) {
+					itemQueue[UnitTypes::Protoss_Stargate] = Item(stargateCount);
+					itemQueue[UnitTypes::Protoss_Robotics_Facility] = Item(roboCount);
+					itemQueue[UnitTypes::Protoss_Robotics_Support_Bay] = Item(1);
+				}
+				itemQueue[UnitTypes::Protoss_Gateway] = Item(nexusCount);
+			}
+
+			// PvP island
+			else if (Broodwar->enemy()->getRace() == Races::Protoss) {
+				int nexusCount = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
+				int gateCount = min(Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) + 1);
+
+				if (Broodwar->self()->gas() - Production().getReservedGas() - Buildings().getQueuedGas() > 200) {
+					itemQueue[UnitTypes::Protoss_Robotics_Support_Bay] = Item(1);
+					if (techList.find(UnitTypes::Protoss_Scout) != techList.end() || techList.find(UnitTypes::Protoss_Carrier) != techList.end())
+						itemQueue[UnitTypes::Protoss_Stargate] = Item(nexusCount);
+				}
+
+				itemQueue[UnitTypes::Protoss_Gateway] = Item(gateCount);
+			}
+
+			// PvT island
+			else {
+				int nexusCount = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
+				int stargateCount = min(nexusCount + 1, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Stargate) + 1);
+				if (Broodwar->self()->gas() - Production().getReservedGas() - Buildings().getQueuedGas() > 150) {
+					itemQueue[UnitTypes::Protoss_Stargate] = Item(stargateCount);
+					itemQueue[UnitTypes::Protoss_Robotics_Facility] = Item(min(1, stargateCount - 2));
+					itemQueue[UnitTypes::Protoss_Robotics_Support_Bay] = Item(1);
+				}
+				itemQueue[UnitTypes::Protoss_Gateway] = Item(nexusCount);
+			}
+		}
+	}
+}

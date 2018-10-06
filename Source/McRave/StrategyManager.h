@@ -17,10 +17,17 @@ namespace McRave
 		bool holdChoke = false;
 		bool hideTech = false;
 		bool proxy = false;
+		bool gasSteal = false;
+		bool enemyScout = false;
 		string enemyBuild = "Unknown";
 		int poolFrame, lingFrame;
 		int enemyGas;
 		int enemyFrame;
+
+		int inboundScoutFrame;
+		int inboundLingFrame;
+
+		bool confidentEnemyBuild = false;
 
 		// Testing stuff
 		set <Bullet> myBullets;
@@ -42,6 +49,9 @@ namespace McRave
 		bool needDetection() { return invis; }
 		bool defendChoke() { return holdChoke; }
 		bool enemyProxy() { return proxy; }
+		bool enemyGasSteal() { return gasSteal; }
+		bool enemyScouted() { return enemyScout; }
+		bool enemyBust() { return enemyBuild.find("Hydra") != string::npos; }
 		int getPoolFrame() { return poolFrame; }
 			
 
@@ -54,8 +64,9 @@ namespace McRave
 		void zergStrategy();
 		void updateSituationalBehaviour();
 		void updateEnemyBuild();
+		void updateScoutTargets();
 
-		void updateMadMixScore(UnitType, int);
+		void updateMadMixScore();
 
 		void updateProtossUnitScore(UnitType, int);
 		void updateTerranUnitScore(UnitType, int);

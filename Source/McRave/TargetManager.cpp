@@ -8,78 +8,105 @@ namespace McRave
 			allyTarget(unit);
 		else
 			enemyTarget(unit);
+
+		getEngagePosition(unit);
+		getPathToTarget(unit);
 	}
 
-	void TargetManager::enemyTarget(UnitInfo& u)
+	void TargetManager::enemyTarget(UnitInfo& unit)
 	{
 		UnitInfo* bestTarget = nullptr;
 		double closest = DBL_MAX, highest = 0.0;
-		for (auto &enemy : Units().getEnemyUnits()) {
 
-			UnitInfo &e = enemy.second;
-			if (!e.unit()) continue;
-			if (!e.getWalkPosition().isValid() || !u.getWalkPosition().isValid()) continue;
-			if (e.getType().isBuilding() && !Units().isThreatening(e) && Broodwar->getFrameCount() < 6000) continue;
+		const auto shouldTarget = [&](UnitInfo& enemy, bool unitCanAttack, bool enemyCanAttack) {
+			if ((unit.getType() == UnitTypes::Protoss_Zealot && enemy.getType().isWorker() && !Units().isThreatening(enemy) && Terrain().isInAllyTerritory(enemy.getTilePosition()))
+				|| (enemy.getType() == UnitTypes::Zerg_Egg || enemy.getType() == UnitTypes::Zerg_Larva || enemy.getType() == UnitTypes::Protoss_Scarab) // If enemy is an egg or larva
+				|| (!unit.getType().isDetector() && !unitCanAttack) 													// If unit can't attack and unit is not a detector
+				|| (enemy.unit()->exists() && enemy.unit()->isStasised()) 												// If enemy is stasised
+				|| (enemy.getType().isBuilding() && enemy.getAirDamage() == 0.0 && enemy.getGroundDamage() == 0.0 && unit.getType() == UnitTypes::Zerg_Mutalisk)
+				|| (enemy.getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.getType() == UnitTypes::Protoss_Zealot && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) < 2)				// If enemy is a mine and my unit is melee
+				|| (unit.getTransport() && enemy.getType().isBuilding() && Broodwar->getFrameCount() < 15000) 													// If unit has an assigned transport, don't target buildings
+				|| ((enemy.isBurrowed() || enemy.unit()->isCloaked()) && !enemy.unit()->isDetected() && !enemyCanAttack && !unit.getType().isDetector())		// If enemy is invisible and can't attack this unit
+				|| (!enemy.getType().isFlyer() && enemy.unit()->isUnderDisruptionWeb() && unit.getGroundRange() <= 64)		// If enemy is under DWEB and my unit is melee 
+				|| (unit.getType() == UnitTypes::Protoss_Dark_Templar && enemy.getType() == UnitTypes::Terran_Vulture)
+				|| (unit.getType().isFlyer() && enemy.getType() == UnitTypes::Protoss_Interceptor)
+				|| (unit.getType() == UnitTypes::Protoss_Zealot && BuildOrder().isRush() && !enemy.getType().isWorker() && Broodwar->getFrameCount() < 10000))
+				return false;
+			return true;
+		};
 
-			bool enemyCanAttack = ((u.getType().isFlyer() && e.getAirDamage() > 0.0) || (!u.getType().isFlyer() && e.getGroundDamage() > 0.0) || (!u.getType().isFlyer() && e.getType() == UnitTypes::Terran_Vulture_Spider_Mine));
-			bool unitCanAttack = ((e.getType().isFlyer() && u.getAirDamage() > 0.0) || (!e.getType().isFlyer() && u.getGroundDamage() > 0.0));
+		const auto checkBest = [&](UnitInfo& enemy, double thisUnit, double health, double distance) {
 
-			if (u.getType() == UnitTypes::Protoss_Carrier)
-				unitCanAttack = true;
+			auto priority = (enemy.getType().isBuilding() && enemy.getGroundDamage() == 0.0 && enemy.getAirDamage() == 0.0) ? enemy.getPriority() / 2.0 : enemy.getPriority();
 
-			double allyRange = e.getType().isFlyer() ? u.getAirRange() : u.getGroundRange();
-			double airDist = u.getPosition().getDistance(e.getPosition());
-			double widths = u.getType().tileWidth() * 16.0 + e.getType().tileWidth() * 16.0;
-			double distance = widths + max(allyRange, airDist);
-			double health = 1.0 + (0.15 / u.getPercentHealth());
-			double thisUnit = 0.0;
-
-
-			if ((unitCanAttack || enemyCanAttack) && distance < closest) {
-				u.setSimPosition(e.getPosition());
-				closest = distance;
+			// Detector targeting
+			if (unit.getType().isDetector() && !unit.getType().isBuilding()) {
+				if (enemy.isBurrowed() || enemy.unit()->isCloaked())
+					thisUnit = (priority * health) / distance;
 			}
 
-			if (!unitCanAttack) continue;
-			if (e.getType() == UnitTypes::Zerg_Egg || e.getType() == UnitTypes::Zerg_Larva) continue;					// If enemy is an egg or larva
-			if (!u.getType().isDetector() && !unitCanAttack) continue;													// If unit can't attack and unit is not a detector
-			if (e.unit()->exists() && e.unit()->isStasised()) continue;													// If enemy is stasised
-			if (e.getType() == UnitTypes::Terran_Vulture_Spider_Mine && u.getType() == UnitTypes::Protoss_Zealot && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Air_Weapons) < 2) continue;				// If enemy is a mine and my unit is melee
-			//if (u.getTransport() && e.getType().isBuilding()) continue;							// If unit has an assigned transport, don't target buildings
-			if ((e.isBurrowed() || e.unit()->isCloaked()) && !e.unit()->isDetected() && !enemyCanAttack && !u.getType().isDetector()) continue;		// If enemy is invisible and can't attack this unit
-			if (!e.getType().isFlyer() && e.unit()->isUnderDisruptionWeb() && u.getGroundRange() <= 64) continue;		// If enemy is under DWEB and my unit is melee 
-			if (u.getType() == UnitTypes::Protoss_Dark_Templar && e.getType() == UnitTypes::Terran_Vulture) continue;
-			//if (u.getType() == UnitTypes::Protoss_Arbiter && e.getType() != UnitTypes::Terran_Siege_Tank_Siege_Mode && e.getType() != UnitTypes::Terran_Siege_Tank_Tank_Mode) continue;
+			// Cluster targeting for AoE units
+			else if (unit.getType() == UnitTypes::Protoss_High_Templar || unit.getType() == UnitTypes::Protoss_Arbiter) {
+				if (!enemy.getType().isBuilding() && enemy.getType() != UnitTypes::Terran_Vulture_Spider_Mine) {
 
-			// Detectors only target invis units
-			else if (u.getType().isDetector() && !u.getType().isBuilding()) {
-				//Broodwar->drawCircleMap(u.getPosition(), 8, Colors::Green);
-				if (e.isBurrowed() || e.unit()->isCloaked())
-					thisUnit = (e.getPriority() * health) / distance;
-			}
-
-			// High Templars target the highest priority with the largest cluster
-			else if (u.getType() == UnitTypes::Protoss_High_Templar || u.getType() == UnitTypes::Protoss_Arbiter) {
-				if (!e.getType().isBuilding() && e.getType() != UnitTypes::Terran_Vulture_Spider_Mine) {
-
-					double eGrid = Grids().getEGroundCluster(e.getWalkPosition()) + Grids().getEAirCluster(e.getWalkPosition());
-					double aGrid = Grids().getAGroundCluster(e.getWalkPosition()) + Grids().getAAirCluster(e.getWalkPosition());
-					double score = eGrid / (1.0 + aGrid);
+					double eGrid = Grids().getEGroundCluster(enemy.getWalkPosition()) + Grids().getEAirCluster(enemy.getWalkPosition());
+					double aGrid = Grids().getAGroundCluster(enemy.getWalkPosition()) + Grids().getAAirCluster(enemy.getWalkPosition());
+					double score = eGrid;
 
 					if (eGrid > aGrid)
-						thisUnit = (e.getPriority() * score) / distance;
+						thisUnit = (priority * score) / distance;
 				}
 			}
 
-			// All other units target based on priority
+			// Proximity targeting
+			else if (unit.getType() == UnitTypes::Protoss_Reaver) {
+				if (enemy.getType().isBuilding() && (enemy.getGroundDamage() == 0.0 || enemy.getAirDamage() == 0.0))
+					thisUnit = 0.1 / distance;
+				else
+					thisUnit = health / distance;
+			}
+
+			// Priority targeting
 			else
-				thisUnit = (e.getPriority() * health) / distance;
+				thisUnit = (priority * health) / distance;
 
 			// If this enemy is more important to target, set as current target
 			if (thisUnit > highest) {
 				highest = thisUnit;
-				bestTarget = &e;
+				bestTarget = &enemy;
 			}
+			return;
+		};
+
+		for (auto &e : Units().getEnemyUnits()) {
+			UnitInfo &enemy = e.second;
+
+			// Valid check;
+			if (!enemy.unit()
+				|| !enemy.getWalkPosition().isValid()
+				|| !unit.getWalkPosition().isValid()
+				|| (enemy.getType().isBuilding() && !Units().isThreatening(enemy) && enemy.getGroundDamage() == 0.0 && Terrain().isInAllyTerritory(enemy.getTilePosition()) && Broodwar->getFrameCount() < 10000))
+				continue;
+
+			bool enemyCanAttack = ((unit.getType().isFlyer() && enemy.getAirDamage() > 0.0) || (!unit.getType().isFlyer() && enemy.getGroundDamage() > 0.0) || (!unit.getType().isFlyer() && enemy.getType() == UnitTypes::Terran_Vulture_Spider_Mine));
+			bool unitCanAttack = ((enemy.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!enemy.getType().isFlyer() && unit.getGroundDamage() > 0.0) || (unit.getType() == UnitTypes::Protoss_Carrier));
+
+			double allyRange = enemy.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
+			double airDist = unit.getPosition().getDistance(enemy.getPosition());
+			double widths = unit.getType().tileWidth() * 16.0 + enemy.getType().tileWidth() * 16.0;
+			double distance = widths + max(allyRange, airDist);
+			double health = enemyCanAttack ? 1.0 + (0.2*(1.0 - unit.getPercentHealth())) : 1.0;
+			double thisUnit = 0.0;
+
+			// Set sim position
+			if ((unitCanAttack || enemyCanAttack) && distance < closest) {
+				unit.setSimPosition(enemy.getPosition());
+				closest = distance;
+			}
+
+			// If should target, check if it's best
+			if (shouldTarget(enemy, unitCanAttack, enemyCanAttack))
+				checkBest(enemy, thisUnit, health, distance);
 		}
 
 		for (auto &n : Units().getNeutralUnits()) {
@@ -87,17 +114,18 @@ namespace McRave
 			if (!neutral.unit())
 				continue;
 
-			double health = 1.0 + (0.15 / u.getPercentHealth());
-			double airDist = u.getPosition().getDistance(neutral.getPosition());
-			double widths = u.getType().tileWidth() * 16.0 + neutral.getType().tileWidth() * 16.0;
+			double health = 1.0 + (0.15 / unit.getPercentHealth());
+			double airDist = unit.getPosition().getDistance(neutral.getPosition());
+			double widths = unit.getType().tileWidth() * 16.0 + neutral.getType().tileWidth() * 16.0;
 			double distance = widths + airDist;
 			double thisUnit = 0.0;
-			bool unitCanAttack = ((neutral.getType().isFlyer() && u.getAirDamage() > 0.0) || (!neutral.getType().isFlyer() && u.getGroundDamage() > 0.0));
+			bool unitCanAttack = ((neutral.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!neutral.getType().isFlyer() && unit.getGroundDamage() > 0.0));
 
 			if (!unitCanAttack)
 				continue;
 
-			if (u.getTransport() && neutral.getType().isBuilding()) continue;
+			if (unit.getTransport() && neutral.getType().isBuilding())
+				continue;
 
 			thisUnit = neutral.getPriority() / distance;
 
@@ -107,10 +135,7 @@ namespace McRave
 				bestTarget = &neutral;
 			}
 		}
-
-		u.setTarget(bestTarget);
-		u.setEngagePosition(getEngagePosition(u));
-		getPathToTarget(u);
+		unit.setTarget(bestTarget);
 	}
 
 	void TargetManager::allyTarget(UnitInfo& unit)
@@ -150,63 +175,87 @@ namespace McRave
 		unit.setTarget(bestTarget);
 	}
 
-	Position TargetManager::getEngagePosition(UnitInfo& unit)
+	void TargetManager::getEngagePosition(UnitInfo& unit)
 	{
-		// TODO: Check this
+		if (!unit.hasTarget()) {
+			unit.setEngagePosition(Positions::None);
+			return;
+		}
+
 		double distance = unit.getDistance(unit.getTarget());
 		double range = unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
-		Position direction = (unit.getPosition() - unit.getTarget().getPosition()) / distance;
+		double leftover = distance - range;
+		Position direction = (unit.getPosition() - unit.getTarget().getPosition()) * leftover / distance;
 
-		if (distance > range)		
-			return (unit.getPosition() + Position(direction*range));		
-		return (unit.getPosition());
+		if (distance > range)
+			unit.setEngagePosition(unit.getPosition() - direction);
+		else
+			unit.setEngagePosition(unit.getPosition());
+
+
+		// See if we pass any narrow chokes while trying to fight
+		if (unit.getEngagePosition().isValid() && !unit.getType().isFlyer() && !unit.getTransport() && Units().getSupply() >= 80 && mapBWEM.GetArea(unit.getTilePosition()) && mapBWEM.GetArea((TilePosition)unit.getEngagePosition())) {
+			auto unitWidth = min(unit.getType().width(), unit.getType().height());
+			auto chokeWidth = 0;
+
+			for (auto choke : mapBWEM.GetPath(unit.getPosition(), unit.getEngagePosition())) {
+				chokeWidth = Util().chokeWidth(choke);				
+
+				if (unitWidth > 0.0 && unitWidth <= 5.0) {
+					auto squeeze = max(1, chokeWidth / unitWidth); /// How many of this unit can fit through at once
+					auto ratio = 1.0 - (max(1.0, double(squeeze)) / 10.0);
+
+					if (ratio <= 1.0 && ratio > 0.0)
+						unit.setSimBonus(ratio);
+				}
+			}
+
+			Broodwar->drawTextMap(unit.getPosition(), "%.2f", unit.getSimBonus());
+		}
 	}
 
 	void TargetManager::getPathToTarget(UnitInfo& unit)
 	{
-		if (!unit.hasTarget()) {
-			unit.setEngDist(0.0);
-			unit.setTargetPath(vector<TilePosition>{});
-			return;
-		}
-
-		if (unit.getTarget().getType().isBuilding()) {
-			unit.setEngDist(unit.getPosition().getDistance(unit.getEngagePosition()));
-			unit.setTargetPath(vector<TilePosition>{});
-			return;
-		}
-
-		auto const shouldCreatePath = [&]() {			
-			if (!unit.getTargetPath().empty() && unit.samePath())															// If both units have the same tile
+		auto const shouldCreatePath = [&]() {
+			if (!unit.getTargetPath().getTiles().empty() && unit.samePath())												// If both units have the same tile
 				return false;
 
 			if (!unit.getTransport()																						// If unit has no transport
-				&& mapBWEM.GetArea(unit.getTilePosition()) && mapBWEM.GetArea(unit.getTarget().getTilePosition())			// Valid areas exist
+				&& unit.getTilePosition().isValid() && unit.getTarget().getTilePosition().isValid()							// If both units have valid tiles
 				&& mapBWEB.getUsedTiles().find(unit.getTarget().getTilePosition()) == mapBWEB.getUsedTiles().end()			// Doesn't overlap buildings
 				&& !unit.getType().isFlyer() && !unit.getTarget().getType().isFlyer()										// Doesn't include flyers
-				&& unit.getPosition().getDistance(unit.getTarget().getPosition()) < 800.0									// Isn't too far from engaging
+				&& unit.getPosition().getDistance(unit.getTarget().getPosition()) < 480.0									// Isn't too far from engaging
+				&& mapBWEB.getGroundDistance(unit.getPosition(), unit.getTarget().getPosition()) < 480.0					// TEMP: Check ground distance too
 				&& mapBWEB.isWalkable(unit.getTilePosition()) && mapBWEB.isWalkable(unit.getTarget().getTilePosition()))	// Walkable tiles
 				return true;
 			return false;
-		};		
+		};
 
-		// If should create path, grab one from BWEB
-		if (shouldCreatePath()) {			
-			auto path = mapBWEB.findPath(mapBWEB, unit.getTilePosition(), unit.getTarget().getTilePosition(), true, true, false, false);
-			unit.setTargetPath(path);
+		// If no target, no distance/path available
+		if (!unit.hasTarget()) {
+			unit.setEngDist(0.0);
+			unit.setTargetPath(BWEB::Path());
+			return;
 		}
 
-		// If empty, assume unreachable
-		if (unit.getTargetPath().empty())
-			unit.setEngDist(DBL_MAX);
+		// Set distance as estimate when targeting a building/flying unit or far away
+		if (unit.getTarget().getType().isBuilding() || unit.getTarget().getType().isFlyer() || unit.getPosition().getDistance(unit.getTarget().getPosition()) >= 800.0 || unit.getTilePosition() == unit.getTarget().getTilePosition()) {
+			unit.setEngDist(unit.getPosition().getDistance(unit.getEngagePosition()));
+			unit.setTargetPath(BWEB::Path());
+			return;
+		}
 
-		// If path is longer than 2 tiles, resize path to fufill position level resolution of both units
-		else if (unit.getTargetPath().size() >= 3) {
-			auto distOffset = unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
-			auto posCorrection = unit.getPosition().getDistance((Position)*(unit.getTargetPath().end() - 1)) + unit.getTarget().getPosition().getDistance((Position)*(unit.getTargetPath().begin() + 1));
-			auto dist = max(0.0, ((double)unit.getTargetPath().size() * 32.0) - distOffset - 64.0 + posCorrection);
+		// If should create path, grab one from BWEB
+		if (shouldCreatePath()) {
+			Path newPath;
+			newPath.createUnitPath(mapBWEB, mapBWEM, unit.getPosition(), unit.getTarget().getPosition());
+			unit.setTargetPath(newPath);
+		}
 
-			unit.setEngDist(dist);
+		// Measure distance minus range
+		if (!unit.getTargetPath().getTiles().empty()) {
+			double range = unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
+			unit.setEngDist(max(0.0, unit.getTargetPath().getDistance() - range));
 		}
 
 		// Otherwise approximate
@@ -217,10 +266,6 @@ namespace McRave
 
 		// Display path
 		if (unit.getTarget().unit()->exists())
-			Display().displayPath(unit, unit.getTargetPath());
-
-		if (unit.getEngDist() != DBL_MAX)
-			Broodwar->drawTextMap(unit.getPosition(), "%.2f", unit.getEngDist());
-
+			Display().displayPath(unit, unit.getTargetPath().getTiles());
 	}
 }

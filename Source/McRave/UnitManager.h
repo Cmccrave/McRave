@@ -28,6 +28,7 @@ namespace McRave
 		set<Unit> splashTargets;
 
 		double immThreat, proxThreat;
+		double avgGrdSim = 1.0, avgAirSim = 1.0;
 		bool ignoreSim;
 
 		double globalAllyGroundStrength, globalEnemyGroundStrength;
@@ -36,6 +37,8 @@ namespace McRave
 		double minThreshold, maxThreshold;
 		int supply;
 		int repWorkers;
+
+		//MCRSimOutput sim;
 	public:
 		int getRepairWorkers() { return repWorkers; }
 

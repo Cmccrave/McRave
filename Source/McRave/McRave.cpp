@@ -6,21 +6,15 @@
 #include "Header.h"
 #include "McRave.h"
 
-// --- AUTHOR NOTES ---
-// TODO:
-// Air unit kiting
-// Scout block building spots
-// Safe transfering
-// Defend position adjustment for probe pulls
-// Cannon rush detection
-// Rework DT Expand
-// Pylon too many early game
-// Sim distance
-// Check grids, added width to threat grids
-// 4gate weird over-saturation of probes
-// If expo blocked, skip Nexus and build units
-// Fix BWEB doors
-// Ovie scouting
+// Authors Notes
+
+// Check unit sizes and types map
+// Neo Moon Glaive natural choke picking BWEB
+// High temp shouldn't reserve?
+// Units getting stuck that block buildings - CRITICAL
+// Send zealots to expos instead of goons
+// OBS too suicidal
+// Probes getting stuck trying to build
 
 void McRaveModule::onStart()
 {
@@ -75,7 +69,7 @@ void McRaveModule::onPlayerLeft(Player player)
 
 void McRaveModule::onNukeDetect(Position target)
 {
-	Commands().addCommand(target, TechTypes::Nuclear_Strike);
+	Commands().addCommand(nullptr, target, TechTypes::Nuclear_Strike);
 }
 
 void McRaveModule::onUnitDiscover(Unit unit)
