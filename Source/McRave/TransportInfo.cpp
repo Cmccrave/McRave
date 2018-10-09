@@ -26,16 +26,4 @@ namespace McRave {
 		cargoSize = cargoSize - unit->getType().spaceRequired();
 	}
 
-	void TransportInfo::assignWorker(WorkerInfo* worker)
-	{
-		assignedWorkers.insert(worker);
-		cargoSize = cargoSize + 1;
-	}
-
-	void TransportInfo::removeWorker(WorkerInfo* worker)
-	{
-		assignedWorkers.erase(worker);
-		cargoSize = cargoSize - 1;
-	}
-
 }

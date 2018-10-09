@@ -292,8 +292,8 @@ void TerrainManager::updateConcavePositions()
 		Broodwar->drawLineMap(n3, center, Colors::Green);
 
 		Position slope = mapBWEB.getGroundDistance(direction1, mapBWEB.getMainPosition()) < mapBWEB.getGroundDistance(direction2, mapBWEB.getMainPosition()) ? Position(dx1, dy1) : Position(dx2, dy2);
-		auto goonLengths = n1.getDistance(n2) / 48.0;
-		auto zealotLengths = n1.getDistance(n2) / 32.0;
+		auto goonLengths = int(n1.getDistance(n2) / 48.0);
+		auto zealotLengths = int(n1.getDistance(n2) / 32.0);
 
 		// Create 2 lines for Zealots
 		for (int i = 0; i < 3; i++) {
@@ -339,7 +339,7 @@ void TerrainManager::updateConcavePositions()
 	else {
 		// Setup parameters
 		int min = 0;
-		int max = 480.0;
+		int max = 480;
 		double distBest = DBL_MAX;
 		WalkPosition center = WalkPosition(defendPosition);
 		Position bestPosition = Positions::None;

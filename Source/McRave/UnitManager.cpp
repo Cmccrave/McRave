@@ -376,7 +376,7 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 void UnitManager::updateStrategy(UnitInfo& unit)
 {
 	// HACK: Strategy radius 
-	int radius = 320.0;
+	double radius = 320.0;
 
 	if (supply >= 100)
 		radius = 480.0;

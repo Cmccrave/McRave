@@ -23,29 +23,29 @@ void TransportManager::updateTransports()
 	return;
 }
 
-void TransportManager::updateCargo(TransportInfo& transport)
+void TransportManager::updateCargo(UnitInfo& transport)
 {
-	// Check if we are ready to assign this worker to a transport
-	const auto readyToAssignWorker = [&](WorkerInfo& worker) {
-		if (transport.getCargoSize() + worker.getType().spaceRequired() > 8 || worker.getTransport())
-			return false;
+	//// Check if we are ready to assign this worker to a transport
+	//const auto readyToAssignWorker = [&](UnitInfo& worker) {
+	//	if (transport.getCargoSize() + worker.getType().spaceRequired() > 8 || worker.getTransport())
+	//		return false;
 
-		// Temp
-		return false;
+	//	// Temp
+	//	return false;
 
-		auto buildDist = worker.getBuildingType().isValid() ? mapBWEB.getGroundDistance((Position)worker.getBuildPosition(), (Position)worker.getTilePosition()) : 0.0;
-		auto resourceDist = worker.hasResource() ? mapBWEB.getGroundDistance(worker.getPosition(), worker.getResource().getPosition()) : 0.0;
+	//	auto buildDist = worker.getBuildingType().isValid() ? mapBWEB.getGroundDistance((Position)worker.getBuildPosition(), (Position)worker.getTilePosition()) : 0.0;
+	//	auto resourceDist = worker.hasResource() ? mapBWEB.getGroundDistance(worker.getPosition(), worker.getResource().getPosition()) : 0.0;
 
-		if ((worker.getBuildPosition().isValid() && buildDist == DBL_MAX) || (worker.getBuildingType().isResourceDepot() && Terrain().isIslandMap()))
-			return true;
-		if (worker.hasResource() && resourceDist == DBL_MAX)
-			return true;
-		return false;
-	};
+	//	if ((worker.getBuildPosition().isValid() && buildDist == DBL_MAX) || (worker.getBuildingType().isResourceDepot() && Terrain().isIslandMap()))
+	//		return true;
+	//	if (worker.hasResource() && resourceDist == DBL_MAX)
+	//		return true;
+	//	return false;
+	//};
 
 	// Check if we are ready to assign this unit to a transport
 	const auto readyToAssignUnit = [&](UnitInfo& unit) {
-		if (transport.getCargoSize() + unit.getType().spaceRequired() > 8 || unit.getTransport())
+		if (transport.getCargoSize() + unit.getType().spaceRequired() > 8 || unit.hasTransport())
 			return false;
 
 		auto targetDist = mapBWEB.getGroundDistance(unit.getPosition(), unit.getEngagePosition());
@@ -78,14 +78,14 @@ void TransportManager::updateCargo(TransportInfo& transport)
 			UnitInfo &unit = u.second;
 
 			if (readyToAssignUnit(unit)) {
-				unit.setTransport(transport.unit());
+				unit.setTransport(transport);
 				transport.assignCargo(&unit);
 			}
 		}
 	}
 }
 
-void TransportManager::updateInformation(TransportInfo& transport)
+void TransportManager::updateInformation(UnitInfo& transport)
 {
 	transport.setType(transport.unit()->getType());
 	transport.setPosition(transport.unit()->getPosition());
@@ -100,7 +100,7 @@ void TransportManager::updateInformation(TransportInfo& transport)
 	transport.getCargoTargets().clear();
 }
 
-void TransportManager::updateDecision(TransportInfo& transport)
+void TransportManager::updateDecision(UnitInfo& transport)
 {
 	// TODO: Broke transports for islands, fix later
 
@@ -220,60 +220,60 @@ void TransportManager::updateDecision(TransportInfo& transport)
 		}
 	}
 
-	for (auto &w : transport.getAssignedWorkers()) {
-		bool miner = false;
-		bool builder = false;
+	//for (auto &w : transport.getAssignedWorkers()) {
+	//	bool miner = false;
+	//	bool builder = false;
 
-		if (!w || !w->unit())
-			continue;
+	//	if (!w || !w->unit())
+	//		continue;
 
-		auto &worker = *w;
-		builder = worker.getBuildPosition().isValid();
-		miner = !worker.getBuildPosition().isValid() && worker.hasResource();
+	//	auto &worker = *w;
+	//	builder = worker.getBuildPosition().isValid();
+	//	miner = !worker.getBuildPosition().isValid() && worker.hasResource();
 
-		if (worker.unit()->exists() && !worker.unit()->isLoaded() && !worker.unit()->isCarryingMinerals() && !worker.unit()->isCarryingGas()) {
-			if ((miner && readyToMine(worker)) || (builder && readyToBuild(worker))) {
-				transport.removeWorker(&worker);
-				worker.setTransport(nullptr);
-				return;
-			}
-			else if (transport.unit()->getLoadedUnits().empty() || transport.getPosition().getDistance(worker.getPosition()) < 320.0) {
-				transport.setLoading(true);
-				transport.unit()->load(worker.unit());
-				return;
-			}
-		}
-		else {
-			double airDist = DBL_MAX;
-			double grdDist = DBL_MAX;
+	//	if (worker.unit()->exists() && !worker.unit()->isLoaded() && !worker.unit()->isCarryingMinerals() && !worker.unit()->isCarryingGas()) {
+	//		if ((miner && readyToMine(worker)) || (builder && readyToBuild(worker))) {
+	//			transport.removeWorker(&worker);
+	//			worker.setTransport(nullptr);
+	//			return;
+	//		}
+	//		else if (transport.unit()->getLoadedUnits().empty() || transport.getPosition().getDistance(worker.getPosition()) < 320.0) {
+	//			transport.setLoading(true);
+	//			transport.unit()->load(worker.unit());
+	//			return;
+	//		}
+	//	}
+	//	else {
+	//		double airDist = DBL_MAX;
+	//		double grdDist = DBL_MAX;
 
-			if (worker.getBuildPosition().isValid())
-				transport.setDestination((Position)worker.getBuildPosition());
+	//		if (worker.getBuildPosition().isValid())
+	//			transport.setDestination((Position)worker.getBuildPosition());
 
-			else if (worker.hasResource())
-				transport.setDestination(worker.getResource().getPosition());
+	//		else if (worker.hasResource())
+	//			transport.setDestination(worker.getResource().getPosition());
 
-			if ((miner && readyToMine(worker)) || (builder && readyToBuild(worker)))
-				transport.unit()->unload(worker.unit());
-		}
-	}
+	//		if ((miner && readyToMine(worker)) || (builder && readyToBuild(worker)))
+	//			transport.unit()->unload(worker.unit());
+	//	}
+	//}
 
-	if (transport.getDestination() == mapBWEB.getMainPosition() && Terrain().isIslandMap()) {
-		double distBest = DBL_MAX;
-		Position posBest = Positions::None;
-		for (auto &tile : mapBWEM.StartingLocations()) {
-			Position center = Position(tile) + Position(64, 48);
-			double dist = center.getDistance(mapBWEB.getMainPosition());
+	//if (transport.getDestination() == mapBWEB.getMainPosition() && Terrain().isIslandMap()) {
+	//	double distBest = DBL_MAX;
+	//	Position posBest = Positions::None;
+	//	for (auto &tile : mapBWEM.StartingLocations()) {
+	//		Position center = Position(tile) + Position(64, 48);
+	//		double dist = center.getDistance(mapBWEB.getMainPosition());
 
-			if (!Broodwar->isExplored(tile) && dist < distBest) {
-				distBest = dist;
-				posBest = center;
-			}
-		}
-		if (posBest.isValid()) {
-			transport.setDestination(posBest);
-		}
-	}
+	//		if (!Broodwar->isExplored(tile) && dist < distBest) {
+	//			distBest = dist;
+	//			posBest = center;
+	//		}
+	//	}
+	//	if (posBest.isValid()) {
+	//		transport.setDestination(posBest);
+	//	}
+	//}
 }
 
 void TransportManager::updateMovement(TransportInfo& transport)

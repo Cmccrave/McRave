@@ -18,8 +18,7 @@ namespace McRave
 		UnitType transportType;
 
 		bool retreat, engage;
-
-		set<WorkerInfo*> assignedWorkers;
+				
 		set<UnitInfo*> assignedCargo;
 		vector<Position> cargoTargets;
 
@@ -39,8 +38,7 @@ namespace McRave
 		bool isEngaging() { return engage; }
 		Unit unit() { return thisUnit; }
 		UnitType getType() { return transportType; }
-
-		set<WorkerInfo*>& getAssignedWorkers() { return assignedWorkers; }
+		
 		set<UnitInfo*>& getAssignedCargo() { return assignedCargo; }		
 		Position getPosition() { return position; }
 		Position getDestination() { return destination; }
