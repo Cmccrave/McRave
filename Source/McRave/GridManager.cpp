@@ -124,7 +124,7 @@ namespace McRave
 
 		// Worker grid update
 		for (auto &w : Workers().getMyWorkers()) {
-			WorkerInfo& worker = w.second;
+			WorkerUnit& worker = w.second;
 			addCollision(worker);
 		}
 
@@ -141,7 +141,7 @@ namespace McRave
 				continue;
 
 			UnitInfo* c = Util().getClosestAllyUnit(unit);
-			WorkerInfo* w = Util().getClosestAllyWorker(unit);
+			WorkerUnit* w = Util().getClosestAllyWorker(unit);
 
 			if ((!w || w->getPosition().getDistance(unit.getPosition()) > 720) && (!c || c->getPosition().getDistance(unit.getPosition()) > 720))
 				continue;

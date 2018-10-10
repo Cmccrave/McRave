@@ -189,12 +189,12 @@ namespace McRave
 		}
 
 		template<class T>
-		static WorkerInfo* getClosestAllyWorker(T& unit, const UnitFilter& pred = nullptr)
+		static WorkerUnit* getClosestAllyWorker(T& unit, const UnitFilter& pred = nullptr)
 		{
 			double distBest = DBL_MAX;
-			WorkerInfo* best = nullptr;
+			WorkerUnit* best = nullptr;
 			for (auto&a : Workers().getMyWorkers()) {
-				WorkerInfo& ally = a.second;
+				WorkerUnit& ally = a.second;
 				if (!ally.unit() || (pred.isValid() && !pred(ally.unit())))
 					continue;
 

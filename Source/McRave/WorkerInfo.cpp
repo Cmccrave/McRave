@@ -3,16 +3,19 @@
 
 namespace McRave
 {
-	WorkerInfo::WorkerInfo()
+	WorkerUnit::WorkerUnit(UnitInfo * newUnit)
 	{
-		unitInfo = nullptr;
+		// Store UnitInfo pointer
+		unitInfo = newUnit;
+
+		// Initialize the rest
 		buildingType = UnitTypes::None;
 		buildPosition = TilePositions::Invalid;
 		assignedResource = nullptr;
 		resourceHeldFrames = 0;		
 	}
 
-	void WorkerInfo::update() {
+	void WorkerUnit::updateWorkerUnit() {
 		if (unitInfo->unit()->isCarryingGas() || unitInfo->unit()->isCarryingMinerals())
 			resourceHeldFrames = max(resourceHeldFrames, 0) + 1;
 		else if (unitInfo->unit()->isGatheringGas() || unitInfo->unit()->isGatheringMinerals())

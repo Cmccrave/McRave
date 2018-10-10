@@ -20,35 +20,73 @@ namespace McRave
 
 	//};
 
+	class CombatUnit {
+		double visibleGroundStrength, visibleAirStrength, maxGroundStrength, maxAirStrength, priority, engageDist, simValue, simBonus;
+		TransportUnit* assignedTransport;
+		UnitInfo * unitInfo;
+		UnitInfo * assignedTarget;
+		Path targetPath;
+
+		void updateTarget();
+	public:
+		CombatUnit(UnitInfo *);
+
+		// McRave stats
+		double getVisibleGroundStrength() { return visibleGroundStrength; }	
+		double getMaxGroundStrength() { return maxGroundStrength; }	
+		double getVisibleAirStrength() { return visibleAirStrength; }	
+		double getMaxAirStrength() { return maxAirStrength; }
+		double getPriority() { return priority; }
+		
+		// Simulation
+		void setSimValue(double newValue) { simValue = newValue; }
+		double getSimValue() { return simValue; }
+		double getSimBonus() { return simBonus; }
+		void setSimBonus(double newValue) { simBonus = newValue; }
+
+		// Engagement distances
+		double getEngDist() { return engageDist; }
+		void setEngDist(double newValue) { engageDist = newValue; }
+
+		// Transport
+		TransportUnit * getTransport() { return assignedTransport; }
+		void setTransport(TransportUnit * unit) { assignedTransport = unit; }
+
+		// Info
+		UnitInfo * info() { return unitInfo; }
+
+		// Targeting		
+		bool hasTarget() { return assignedTarget != nullptr; }
+		UnitInfo &getTarget() { return *assignedTarget; }
+		void setTarget(UnitInfo * unit) { assignedTarget = unit; }
+
+		// Target path
+		void setTargetPath(BWEB::Path& newPath) { targetPath = newPath; }
+		BWEB::Path& getTargetPath() { return targetPath; }
+		bool samePath() {
+			return (targetPath.getTiles().front() == assignedTarget->getTilePosition() && targetPath.getTiles().back() == unitInfo->getTilePosition());
+		}
+	};
+
 	class UnitInfo {
-		double percentHealth, groundRange, airRange, groundDamage, airDamage, speed;						// StarCraft stats
-		double visibleGroundStrength, visibleAirStrength, maxGroundStrength, maxAirStrength, priority;		// McRave stats
-		double engageDist;
-		double simValue;
+		// StarCraft stats
+		double percentHealth, groundRange, airRange, groundDamage, airDamage, speed;								
 		int localStrategy, globalStrategy, lastAttackFrame, lastVisibleFrame, shields, health, minStopFrame;
 		int killCount, frameCreated;
 		int lastMoveFrame;
-		double simBonus;
 
 		bool burrowed;
 		bool engage, retreat;
 
-		Unit thisUnit, transport;
+		Unit thisUnit;
 		UnitType unitType;
 		Player player;
-
-		UnitInfo* assignedTarget;
-		TransportInfo* assignedTransport;
-		ResourceInfo* assignedResource;
-		set<UnitInfo*> assignedCargo;
 		Role assignedRole;
 
 		Position position, engagePosition, destination, simPosition, lastPos;
 		WalkPosition walkPosition, lastWalk;
-		TilePosition tilePosition, lastTile;
-
-		BWEB::Path targetPath;
-		void updateTarget();
+		TilePosition tilePosition, lastTile;		
+		
 		void updateStuckCheck();
 	public:
 		UnitInfo();
@@ -61,10 +99,6 @@ namespace McRave
 		// Roles
 		Role getRole() { return assignedRole; }
 
-		// Simulation
-		void setSimValue(double newValue) { simValue = newValue; }
-		double getSimValue() { return simValue; }
-
 		// Engage/Retreat
 		void resetForces() { engage = false, retreat = false; }
 		void setRetreat() { retreat = true; }
@@ -72,37 +106,12 @@ namespace McRave
 		bool shouldRetreat() { return retreat; }
 		bool shouldEngage() { return engage; }
 
-		// Target
-		bool hasTarget() { return assignedTarget != nullptr; }
-		UnitInfo &getTarget() { return *assignedTarget; }
-		void setTarget(UnitInfo * unit) { assignedTarget = unit; }		
-
-		// Transport
-		TransportInfo * getTransport() { return assignedTransport; }
-		void setTransport(TransportInfo * unit) { assignedTransport = unit; }
-
-		// Resource
-		bool hasResource() { return assignedResource != nullptr; }
-		ResourceInfo &getResource() { return *assignedResource; }
-		void setResource(ResourceInfo * unit) { assignedResource = unit; }
-
-		// Engagement distances
-		double getEngDist() { return engageDist; }
-		void setEngDist(double newValue) { engageDist = newValue; }
-
 		// Last positions
 		Position getLastPosition() { return lastPos; }
 		WalkPosition getLastWalk() { return lastWalk; }
 		TilePosition getLastTile() { return lastTile; }
 		bool sameTile() { return lastTile == tilePosition; }
 		void setLastPositions();
-
-		// Target path
-		void setTargetPath(BWEB::Path& newPath) { targetPath = newPath; }
-		BWEB::Path& getTargetPath() { return targetPath; }
-		bool samePath() {
-			return (targetPath.getTiles().front() == assignedTarget->getTilePosition() && targetPath.getTiles().back() == tilePosition);
-		}
 
 		// Attack frame
 		bool hasAttackedRecently() {
@@ -120,10 +129,6 @@ namespace McRave
 		
 		// Starcraft Stats
 		double getPercentHealth()			{ return percentHealth; }				// Returns the units health and shield percentage		
-		double getVisibleGroundStrength()	{ return visibleGroundStrength; }		// Returns the units visible ground strength		
-		double getMaxGroundStrength()		{ return maxGroundStrength; }			// Returns the units max ground strength		
-		double getVisibleAirStrength()		{ return visibleAirStrength; }			// Returns the units visible air strength		
-		double getMaxAirStrength()			{ return maxAirStrength; }				// Returns the units max air strength
 		double getGroundRange()				{ return groundRange; }					// Returns the units ground range including upgrades		
 		double getAirRange()				{ return airRange; }					// Returns the units air range including upgrades				
 		double getGroundDamage()			{ return groundDamage; }				// Returns the units ground damage (not including most upgrades)		
@@ -136,10 +141,8 @@ namespace McRave
 		int getLastVisibleFrame()			{ return lastVisibleFrame; }			// Returns the last frame since this unit was visible
 
 		// McRave Stats
-		double getPriority()				{ return priority; }					// Returns the units priority for targeting purposes based on strength (not including value)
 		int getLocalStrategy()				{ return localStrategy; }				// Returns the units local strategy		
-		int getGlobalStrategy()				{ return globalStrategy; }				// Returns the units global strategy		
-		double getSimBonus()				{ return simBonus; }
+		int getGlobalStrategy()				{ return globalStrategy; }				// Returns the units global strategy				
 
 		// Kill count
 		int getKillCount()					{ return killCount; }
@@ -161,8 +164,7 @@ namespace McRave
 		Position getDestination()						{ return destination; }
 		WalkPosition getWalkPosition()					{ return walkPosition; }
 		TilePosition getTilePosition()					{ return tilePosition; }
-
-		void setSimBonus(double newValue)				{ simBonus = newValue; }
+		
 		void setLocalStrategy(int newValue)				{ localStrategy = newValue; }
 		void setGlobalStrategy(int newValue)			{ globalStrategy = newValue; }
 		void setLastAttackFrame(int newValue)			{ lastAttackFrame = newValue; }
