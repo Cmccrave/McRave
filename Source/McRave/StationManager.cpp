@@ -32,9 +32,7 @@ Position StationManager::getClosestEnemyStation(Position here)
 void StationManager::storeStation(Unit unit)
 {
 	const Station * station = mapBWEB.getClosestStation(unit->getTilePosition());
-	if (!station)
-		return;
-	if (unit->getTilePosition() != station->BWEMBase()->Location())
+	if (!station || unit->getTilePosition() != station->BWEMBase()->Location())
 		return;
 
 	unit->getPlayer() == Broodwar->self() ? myStations.emplace(unit, *station) : enemyStations.emplace(unit, *station);

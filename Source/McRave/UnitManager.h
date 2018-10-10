@@ -10,7 +10,7 @@ using namespace std;
 namespace McRave
 {	
 	class WorkerInfo;
-	class BuildingInfo;		
+	class BuildingInfo;
 	class UnitManager
 	{
 		map <Unit, UnitInfo> enemyUnits;
@@ -85,9 +85,9 @@ namespace McRave
 		void onUnitRenegade(Unit);
 		void onUnitComplete(Unit);
 
-		void storeAlly(Unit);
-		void storeEnemy(Unit);
-		void storeNeutral(Unit);
+		void storeMyUnit(Unit);
+		void storeEnemyUnit(Unit);
+		void storeNeutralUnit(Unit);
 	};
 }
 

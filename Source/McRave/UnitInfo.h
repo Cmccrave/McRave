@@ -7,10 +7,18 @@ using namespace std;
 
 namespace McRave
 {
-	enum Role
-	{
-		Worker, Combat, Transport, Scout, Production, Defense, Support
-	};
+
+	//class TroopInfo {
+
+	//};
+
+	//class DefenseInfo {
+
+	//};
+
+	//class SupportInfo {
+
+	//};
 
 	class UnitInfo {
 		double percentHealth, groundRange, airRange, groundDamage, airDamage, speed;						// StarCraft stats
@@ -30,9 +38,10 @@ namespace McRave
 		Player player;
 
 		UnitInfo* assignedTarget;
-		UnitInfo* assignedTransport;
+		TransportInfo* assignedTransport;
 		ResourceInfo* assignedResource;
 		set<UnitInfo*> assignedCargo;
+		Role assignedRole;
 
 		Position position, engagePosition, destination, simPosition, lastPos;
 		WalkPosition walkPosition, lastWalk;
@@ -48,6 +57,9 @@ namespace McRave
 		void updateUnit();
 		void createDummy(UnitType);
 		double getDistance(UnitInfo unit) { return position.getDistance(unit.getPosition()); }
+
+		// Roles
+		Role getRole() { return assignedRole; }
 
 		// Simulation
 		void setSimValue(double newValue) { simValue = newValue; }
@@ -66,9 +78,8 @@ namespace McRave
 		void setTarget(UnitInfo * unit) { assignedTarget = unit; }		
 
 		// Transport
-		bool hasTransport() { return assignedTransport != nullptr; }
-		UnitInfo &getTransport() { return *assignedTransport; }
-		void setTransport(UnitInfo * unit) { assignedTransport = unit; }
+		TransportInfo * getTransport() { return assignedTransport; }
+		void setTransport(TransportInfo * unit) { assignedTransport = unit; }
 
 		// Resource
 		bool hasResource() { return assignedResource != nullptr; }

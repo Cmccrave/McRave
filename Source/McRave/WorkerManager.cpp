@@ -2,17 +2,15 @@
 
 void WorkerManager::onFrame()
 {
-	Display().startClock();
+	// TODO: Move scouts to another manager system
 	updateScouts();
-	updateWorkers();
-	Display().performanceTest(__FUNCTION__);
-}
+	for (auto &w : myWorkers) {
+		auto &worker = w.second;
+		worker.updateWorkerInfo();
 
-void WorkerManager::updateWorkers()
-{
-	for (auto &worker : myWorkers) {
-		updateInformation(worker.second);
-		updateDecision(worker.second);
+		if (worker.info()->getRole() == Role::Worker) {
+			updateDecision(worker);
+		}
 	}
 }
 
@@ -60,17 +58,12 @@ void WorkerManager::updateScouts()
 		scouts.insert(getClosestWorker(Position(mapBWEB.getNaturalChoke()->Center()), false));
 }
 
-void WorkerManager::updateInformation(WorkerInfo& worker)
-{
-	worker.update();
-}
-
 void WorkerManager::updateDecision(WorkerInfo& worker)
 {
 	// Workers that have a transport coming to pick them up should not do anything other than returning cargo
-	if (worker.getTransport() && !worker.unit()->isCarryingMinerals() && !worker.unit()->isCarryingGas()) {
+	if (worker.info()->getTransport() && !worker.unit()->isCarryingMinerals() && !worker.unit()->isCarryingGas()) {
 		if (worker.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
-			worker.unit()->move(worker.getTransport()->getPosition());
+			worker.unit()->move(worker.info()->getTransport()->getPosition());
 		return;
 	}
 
@@ -149,7 +142,7 @@ bool WorkerManager::shouldClearPath(WorkerInfo& worker)
 
 bool WorkerManager::shouldFight(WorkerInfo& worker)
 {
-	if (worker.getTransport())
+	if (worker.info()->getTransport())
 		return false;
 	if (Util().reactivePullWorker(worker.unit()) || (Util().proactivePullWorker(worker.unit()) && worker.unit() == getClosestWorker(Terrain().getDefendPosition(), true)))
 		return true;
@@ -567,7 +560,7 @@ Unit WorkerManager::getClosestWorker(Position here, bool isRemoving)
 
 void WorkerManager::storeWorker(Unit unit)
 {
-	myWorkers[unit].setUnit(unit);
+	myWorkers[unit];
 }
 
 void WorkerManager::removeWorker(Unit worker)

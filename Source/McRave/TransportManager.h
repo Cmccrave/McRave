@@ -10,15 +10,13 @@ namespace McRave
 {
 	class TransportManager
 	{
-		map <Unit, UnitInfo> myTransports;
+		map <Unit, TransportInfo> myTransports;
 		map <WalkPosition, int> recentExplorations;
 	public:
 		void onFrame();
-		void updateTransports();
-		void updateInformation(UnitInfo&);
-		void updateCargo(UnitInfo&);
-		void updateDecision(UnitInfo&);
-		void updateMovement(UnitInfo&);
+		void updateCargo(TransportInfo&);
+		void updateDecision(TransportInfo&);
+		void updateMovement(TransportInfo&);
 		void removeUnit(Unit);
 		void storeUnit(Unit);
 	};

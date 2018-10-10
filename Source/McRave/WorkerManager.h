@@ -26,8 +26,6 @@ namespace McRave
 		WorkerInfo* getClosestScout(Position);
 
 		void onFrame();
-		void updateWorkers();
-		void updateInformation(WorkerInfo&);
 		void updateDecision(WorkerInfo&);
 		void updateScouts();
 		

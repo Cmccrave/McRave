@@ -19,6 +19,11 @@ namespace McRave
 {
 	class UnitInfo;
 	class WorkerInfo;
+
+	enum Role
+	{
+		None, Worker, Troop, Transport, Scout, Production, Defense, Support
+	};
 }
 
 namespace

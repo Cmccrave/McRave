@@ -251,7 +251,7 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 		// Setup distance values
 		double dist = ally.getEngDist();
 		double widths = (double)ally.getType().tileWidth() * 16.0 + (double)ally.getTarget().getType().tileWidth() * 16.0;
-		double speed = (ally.getTransport() && ally.getTransport()->exists()) ? ally.getTransport()->getType().topSpeed() * 24.0 : (24.0 * ally.getSpeed());
+		double speed = (ally.getTransport() && ally.getTransport()->info()->unit()->exists()) ? ally.getTransport()->info()->getType().topSpeed() * 24.0 : (24.0 * ally.getSpeed());
 
 		// Setup true distance
 		double distance = max(0.0, dist - widths);
@@ -562,44 +562,31 @@ UnitInfo* UnitManager::getClosestInvisEnemy(BuildingInfo& unit)
 	return best;
 }
 
-void UnitManager::storeEnemy(Unit unit)
+void UnitManager::storeEnemyUnit(Unit unit)
 {	
 	enemyUnits[unit].setUnit(unit);
 	enemyUnits[unit].updateUnit();
 	enemySizes[unit->getType().size()] += 1;
+
 	if (unit->getType().isResourceDepot())
 		Stations().storeStation(unit);
 }
 
-void UnitManager::updateEnemy(UnitInfo& unit)
+void UnitManager::storeMyUnit(Unit unit)
 {
+	//if (unit->getType().isBuilding()) {
+	//	allyDefenses[unit].setUnit(unit);
+	//	allyDefenses[unit].setType(unit->getType());
+	//	allyDefenses[unit].setTilePosition(unit->getTilePosition());
+	//	allyDefenses[unit].setPosition(unit->getPosition());
+	//	Grids().updateDefense(allyDefenses[unit]);
+	//}
+	//else
 
+	myUnits[unit].setUnit(unit);
 }
 
-void UnitManager::storeAlly(Unit unit)
-{
-	if (unit->getType().isBuilding()) {
-		allyDefenses[unit].setUnit(unit);
-		allyDefenses[unit].setType(unit->getType());
-		allyDefenses[unit].setTilePosition(unit->getTilePosition());
-		allyDefenses[unit].setPosition(unit->getPosition());
-		Grids().updateDefense(allyDefenses[unit]);
-	}
-	else
-		myUnits[unit].setUnit(unit);
-}
-
-void UnitManager::updateAlly(UnitInfo& unit)
-{
-
-}
-
-void UnitManager::storeNeutral(Unit unit)
+void UnitManager::storeNeutralUnit(Unit unit)
 {
 	neutrals[unit].setUnit(unit);
-}
-
-void UnitManager::updateNeutral(UnitInfo& unit)
-{
-
 }

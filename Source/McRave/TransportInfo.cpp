@@ -3,15 +3,18 @@
 namespace McRave {
 	McRave::TransportInfo::TransportInfo()
 	{
-		position = Positions::None;
-		destination = Positions::None;
-		walkPosition = WalkPositions::None;
-		thisUnit = nullptr;
 		cargoSize = 0;
-		lastDropFrame = 0;
 		harassing = false;
 		loading = false;
 		unloading = false;
+	}
+
+	void TransportInfo::updateTransportInfo()
+	{
+		loading = false;
+		unloading = false;
+		monitoring = false;
+		cargoTargets.clear();
 	}
 
 	void TransportInfo::assignCargo(UnitInfo* unit)

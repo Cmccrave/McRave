@@ -7,30 +7,32 @@ namespace McRave
 		mapBWEB.onUnitDiscover(unit);
 
 		if (unit->getPlayer()->isEnemy(Broodwar->self()))
-			Units().storeEnemy(unit);
+			storeEnemyUnit(unit);
 
 		if (Terrain().isIslandMap() && unit->getPlayer() == Broodwar->neutral() && !unit->getType().isResourceContainer() && unit->getType().isBuilding())
-			Units().storeNeutral(unit);
+			storeNeutralUnit(unit);
 	}
 
 	void UnitManager::onUnitCreate(Unit unit)
 	{
 		if (unit->getPlayer() == Broodwar->self()) {
 
+			// TODO - Move to store area
 			// Store supply if it costs supply
 			if (unit->getType().supplyRequired() > 0)
 				supply += unit->getType().supplyRequired();
+			storeMyUnit(unit);
 
 			// Store Buildings on creation rather than completion
-			if (unit->getType().isBuilding())
-				Buildings().storeBuilding(unit);
+			//if (unit->getType().isBuilding())
+			//	Buildings().storeBuilding(unit);
 
-			if (unit->getType().isResourceDepot())
-				Stations().storeStation(unit);
-			else if (unit->getType() == UnitTypes::Protoss_Pylon)
-				Pylons().storePylon(unit);
-			else if (unit->getType() == UnitTypes::Protoss_Photon_Cannon || unit->getType() == UnitTypes::Terran_Missile_Turret || unit->getType() == UnitTypes::Zerg_Creep_Colony)
-				storeAlly(unit);
+			//if (unit->getType().isResourceDepot())
+			//	Stations().storeStation(unit);
+			//else if (unit->getType() == UnitTypes::Protoss_Pylon)
+			//	Pylons().storePylon(unit);
+			//else if (unit->getType() == UnitTypes::Protoss_Photon_Cannon || unit->getType() == UnitTypes::Terran_Missile_Turret || unit->getType() == UnitTypes::Zerg_Creep_Colony)
+			//	storeAlly(unit);
 		}
 
 		if (unit->getType().isResourceContainer())
@@ -39,53 +41,27 @@ namespace McRave
 
 	void UnitManager::onUnitDestroy(Unit unit)
 	{
-		if (Terrain().isIslandMap() && neutrals.find(unit) != neutrals.end())
-			neutrals.erase(unit);
-
+		auto myUnit = myUnits.find(unit) != myUnits.end();
+		auto enemyUnit = enemyUnits.find(unit) != enemyUnits.end();
 		mapBWEB.onUnitDestroy(unit);
 
-		// If this is my unit
-		// TODO: Check if we can put this in the if statement below for my units, when do players change?
-		if (myUnits.find(unit) != myUnits.end()) {
-
-			if (myUnits[unit].getTransport())
-				Transport().removeUnit(unit);
-
+		if (myUnit) {
+			supply -= unit->getType().supplyRequired();
 			allySizes[unit->getType().size()] -= 1;
 			myUnits.erase(unit);
+
+			Transport().removeUnit(unit);
+			Workers().removeWorker(unit);
 		}
-
-		// If it is my defensive unit
-		else if (allyDefenses.find(unit) != allyDefenses.end())
-			allyDefenses.erase(unit);
-
-		// Enemy unit
-		else if (enemyUnits.find(unit) != enemyUnits.end()) {
+		else if (enemyUnit) {
 			enemySizes[unit->getType().size()] -= 1;
 			enemyUnits.erase(unit);
-
-			if (unit->getType().isResourceDepot())
-				Stations().removeStation(unit);
+			Stations().removeStation(unit);
 		}
-
-		// My unit
-		if (unit->getPlayer() == Broodwar->self()) {
-			supply -= unit->getType().supplyRequired();
-
-			if (unit->getType().isResourceDepot())
-				Stations().removeStation(unit);
-
-			if (unit->getType().isBuilding())
-				Buildings().removeBuilding(unit);
-			else if (unit->getType().isWorker())
-				Workers().removeWorker(unit);
-			else if (unit->getType() == UnitTypes::Protoss_Shuttle)
-				Transport().removeUnit(unit);
+		else {
+			neutrals.erase(unit);
+			Resources().removeResource(unit);
 		}
-
-		// Resource
-		if (unit->getType().isResourceContainer())
-			Resources().removeResource(unit);		
 	}
 
 	void UnitManager::onUnitMorph(Unit unit)
@@ -112,7 +88,7 @@ namespace McRave
 				else if (unit->getType().isWorker())
 					Workers().storeWorker(unit);
 				else if (!unit->getType().isWorker() && !unit->getType().isBuilding())
-					storeAlly(unit);
+					storeMyUnit(unit);
 			}
 
 			// Protoss morphing
@@ -136,7 +112,7 @@ namespace McRave
 				enemySizes[unit->getType().size()] ++;
 			}
 			else
-				storeEnemy(unit);
+				storeEnemyUnit(unit);
 		}
 
 		// Refinery that morphed as an enemy
@@ -174,7 +150,7 @@ namespace McRave
 			else if (unit->getType() == UnitTypes::Protoss_Shuttle || unit->getType() == UnitTypes::Terran_Dropship)
 				Transport().storeUnit(unit);
 			else if (!unit->getType().isWorker())
-				storeAlly(unit);
+				storeMyUnit(unit);
 		}
 
 		if (unit->getType().isResourceDepot())

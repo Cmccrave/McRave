@@ -8,36 +8,38 @@ using namespace std;
 namespace McRave
 {
 	class WorkerInfo{
-		Unit thisUnit;
-		Unit transport;
-		UnitType type, buildingType;
-		WalkPosition walkPosition;
-		Position position, destination;
-		TilePosition tilePosition, buildPosition;
-		ResourceInfo* resource;
-		int resourceHeldFrames;
+		UnitInfo * unitInfo;
+		UnitType buildingType;		
+		TilePosition buildPosition;
+		ResourceInfo* assignedResource;
+		int resourceHeldFrames;		
 	public:
 		WorkerInfo();
-		void update();
 
-		bool hasResource()								{ return resource != nullptr; }
+		// WorkInfo members
+		void updateWorkerInfo();
+
+		bool hasResource()								{ return assignedResource != nullptr; }
 		int framesHoldingResource()						{ return resourceHeldFrames; }
-		Unit unit()										{ return thisUnit; }
-		Unit getTransport()								{ return transport; }
-		UnitType getType()								{ return type; }
 		UnitType getBuildingType()						{ return buildingType; }
-		Position getPosition()							{ return position; }
-		Position getDestination()						{ return destination; }
-		WalkPosition getWalkPosition()					{ return walkPosition; }
-		TilePosition getTilePosition()					{ return tilePosition; }
 		TilePosition getBuildPosition()					{ return buildPosition; }		
-		ResourceInfo &getResource()						{ return *resource; }
+		ResourceInfo &getResource()						{ return *assignedResource; }		
 
-		void setUnit(Unit newUnit)						{ thisUnit = newUnit; }		
-		void setTransport(Unit newTransport)			{ transport = newTransport;	}		
-		void setBuildingType(UnitType newType)			{ buildingType = newType; }		
-		void setDestination(Position newPosition)		{ destination = newPosition; }		
+		void setBuildingType(UnitType newType)			{ buildingType = newType; }			
 		void setBuildPosition(TilePosition newPosition) { buildPosition = newPosition; }
-		void setResource(ResourceInfo * newResource)	{ resource = newResource; }
+		void setResource(ResourceInfo * newResource)	{ assignedResource = newResource; }
+
+		// UnitInfo members
+		Position getPosition() { return unitInfo->getPosition(); }
+		Position getDestination() { return unitInfo->getDestination(); }
+		WalkPosition getWalkPosition() { return unitInfo->getWalkPosition(); }
+		TilePosition getTilePosition() { return unitInfo->getTilePosition(); }
+		Unit unit() { return unitInfo->unit(); }
+		UnitType getType() { return unitInfo->getType(); }
+		UnitInfo* info() { return unitInfo; }
+
+		void setDestination(Position newPosition) { unitInfo->setDestination(newPosition); }
+		void setTransport(TransportInfo * newTransport) { unitInfo->setTransport(newTransport); }		
+		TransportInfo * getTransport() { return unitInfo->getTransport(); }
 	};
 }
