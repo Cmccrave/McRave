@@ -1,7 +1,7 @@
 #include "TransportInfo.h"
 
 namespace McRave {
-	McRave::TransportInfo::TransportInfo()
+	McRave::TransportUnit::TransportUnit()
 	{
 		cargoSize = 0;
 		harassing = false;
@@ -9,7 +9,7 @@ namespace McRave {
 		unloading = false;
 	}
 
-	void TransportInfo::updateTransportInfo()
+	void TransportUnit::updateTransportUnit()
 	{
 		loading = false;
 		unloading = false;
@@ -17,13 +17,13 @@ namespace McRave {
 		cargoTargets.clear();
 	}
 
-	void TransportInfo::assignCargo(UnitInfo* unit)
+	void TransportUnit::assignCargo(UnitInfo* unit)
 	{
 		assignedCargo.insert(unit);
 		cargoSize = cargoSize + unit->getType().spaceRequired();
 	}
 
-	void TransportInfo::removeCargo(UnitInfo* unit)
+	void TransportUnit::removeCargo(UnitInfo* unit)
 	{
 		assignedCargo.erase(unit);
 		cargoSize = cargoSize - unit->getType().spaceRequired();

@@ -10,7 +10,7 @@ namespace McRave
 {
 	class WorkerManager
 	{
-		map <Unit, WorkerInfo> myWorkers;
+		map <Unit, WorkerUnit> myWorkers;
 		set<Position> scoutAssignments;
 		set<Unit> scouts;
 
@@ -21,31 +21,31 @@ namespace McRave
 		bool needGas();
 		bool proxyCheck = false;
 	public:
-		map <Unit, WorkerInfo>& getMyWorkers() { return myWorkers; }
+		map <Unit, WorkerUnit>& getMyWorkers() { return myWorkers; }
 		Unit getClosestWorker(Position, bool);
-		WorkerInfo* getClosestScout(Position);
+		WorkerUnit* getClosestScout(Position);
 
 		void onFrame();
-		void updateDecision(WorkerInfo&);
+		void updateDecision(WorkerUnit&);
 		void updateScouts();
 		
-		bool shouldAssign(WorkerInfo&);
-		bool shouldBuild(WorkerInfo&);
-		bool shouldClearPath(WorkerInfo&);
-		bool shouldFight(WorkerInfo&);
-		bool shouldGather(WorkerInfo&);
-		bool shouldReturnCargo(WorkerInfo&);
-		bool shouldScout(WorkerInfo&);
+		bool shouldAssign(WorkerUnit&);
+		bool shouldBuild(WorkerUnit&);
+		bool shouldClearPath(WorkerUnit&);
+		bool shouldFight(WorkerUnit&);
+		bool shouldGather(WorkerUnit&);
+		bool shouldReturnCargo(WorkerUnit&);
+		bool shouldScout(WorkerUnit&);
 
-		void assign(WorkerInfo&);
-		void build(WorkerInfo&);
-		void clearPath(WorkerInfo&);
-		void fight(WorkerInfo&);
-		void gather(WorkerInfo&);
-		void returnCargo(WorkerInfo&);
-		void scout(WorkerInfo&);
-		void safeMove(WorkerInfo&);
-		void explore(WorkerInfo&);
+		void assign(WorkerUnit&);
+		void build(WorkerUnit&);
+		void clearPath(WorkerUnit&);
+		void fight(WorkerUnit&);
+		void gather(WorkerUnit&);
+		void returnCargo(WorkerUnit&);
+		void scout(WorkerUnit&);
+		void safeMove(WorkerUnit&);
+		void explore(WorkerUnit&);
 
 		void storeWorker(Unit);
 		void removeWorker(Unit);

@@ -8,9 +8,9 @@ void TransportManager::onFrame()
 
 	for (auto &t : myTransports) {
 		auto &transport = t.second;
-		transport.updateTransportInfo();
+		transport.updateTransportUnit();
 
-		if (transport.info()->getRole() == Role::Transport) {
+		if (transport.info()->getRole() == Role::Transporting) {
 			updateCargo(transport);
 			updateDecision(transport);
 			updateMovement(transport);
@@ -19,10 +19,10 @@ void TransportManager::onFrame()
 	return;
 }
 
-void TransportManager::updateCargo(TransportInfo& transport)
+void TransportManager::updateCargo(TransportUnit& transport)
 {
 	// Check if we are ready to assign this worker to a transport
-	const auto readyToAssignWorker = [&](WorkerInfo& worker) {
+	const auto readyToAssignWorker = [&](WorkerUnit& worker) {
 		if (transport.getCargoSize() + worker.getType().spaceRequired() > 8 || worker.getTransport())
 			return false;
 
@@ -40,17 +40,17 @@ void TransportManager::updateCargo(TransportInfo& transport)
 	};
 
 	// Check if we are ready to assign this unit to a transport
-	const auto readyToAssignUnit = [&](UnitInfo& unit) {
-		if (transport.getCargoSize() + unit.getType().spaceRequired() > 8 || unit.getTransport())
+	const auto readyToAssignUnit = [&](CombatUnit& unit) {
+		if (transport.getCargoSize() + unit.info()->getType().spaceRequired() > 8 || unit.getTransport())
 			return false;
 
-		auto targetDist = mapBWEB.getGroundDistance(unit.getPosition(), unit.getEngagePosition());
+		auto targetDist = mapBWEB.getGroundDistance(unit.info()->getPosition(), unit.info()->getEngagePosition());
 
 		// Only assign units that are close, or if the shuttle is empty
-		if (transport.info()->unit()->getLoadedUnits().empty() || transport.getPosition().getDistance(unit.getPosition()) < 320.0) {
-			if (!Terrain().isIslandMap() && (unit.getType() == UnitTypes::Protoss_Reaver /*|| unit.getType() == UnitTypes::Protoss_High_Templar*/))
+		if (transport.info()->unit()->getLoadedUnits().empty() || transport.getPosition().getDistance(unit.info()->getPosition()) < 320.0) {
+			if (!Terrain().isIslandMap() && (unit.info()->getType() == UnitTypes::Protoss_Reaver /*|| unit.getType() == UnitTypes::Protoss_High_Templar*/))
 				return true;
-			if (Terrain().isIslandMap() && !unit.getType().isFlyer() && targetDist > 640.0)
+			if (Terrain().isIslandMap() && !unit.info()->getType().isFlyer() && targetDist > 640.0)
 				return true;
 		}
 		return false;
@@ -70,7 +70,7 @@ void TransportManager::updateCargo(TransportInfo& transport)
 		}
 
 		/*for (auto &u : Workers().getMyWorkers()) {
-			WorkerInfo &unit = u.second;
+			WorkerUnit &unit = u.second;
 
 			if (unit.info()->getRole() == Role::Worker && readyToAssignWorker(unit)) {
 				unit.setTransport(&transport);
@@ -80,7 +80,7 @@ void TransportManager::updateCargo(TransportInfo& transport)
 	}
 }
 
-void TransportManager::updateDecision(TransportInfo& transport)
+void TransportManager::updateDecision(TransportUnit& transport)
 {
 	// TODO: Broke transports for islands, fix later
 
@@ -124,14 +124,14 @@ void TransportManager::updateDecision(TransportInfo& transport)
 	};
 
 	// Check if this worker is ready to mine
-	const auto readyToMine = [&](WorkerInfo& worker) {
+	const auto readyToMine = [&](WorkerUnit& worker) {
 		if (Terrain().isIslandMap() && worker.hasResource() && worker.getResource().getTilePosition().isValid() && mapBWEM.GetArea(transport.getTilePosition()) == mapBWEM.GetArea(worker.getResource().getTilePosition()))
 			return true;
 		return false;
 	};
 
 	// Check if this worker is ready to build
-	const auto readyToBuild = [&](WorkerInfo& worker) {
+	const auto readyToBuild = [&](WorkerUnit& worker) {
 		if (Terrain().isIslandMap() && worker.getBuildPosition().isValid() && mapBWEM.GetArea(worker.getTilePosition()) == mapBWEM.GetArea(worker.getBuildPosition()))
 			return true;
 		return false;
@@ -254,7 +254,7 @@ void TransportManager::updateDecision(TransportInfo& transport)
 	//}
 }
 
-void TransportManager::updateMovement(TransportInfo& transport)
+void TransportManager::updateMovement(TransportUnit& transport)
 {
 	// Determine highest threat possible here
 	const auto highestThreat = [&](WalkPosition here, UnitType t) {

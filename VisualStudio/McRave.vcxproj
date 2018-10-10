@@ -45,6 +45,7 @@
     <ClCompile Include="..\Source\McRave\BuildingInfo.cpp" />
     <ClCompile Include="..\Source\McRave\BuildingManager.cpp" />
     <ClCompile Include="..\Source\McRave\BuildOrder.cpp" />
+    <ClCompile Include="..\Source\McRave\CombatUnitManager.cpp" />
     <ClCompile Include="..\Source\McRave\CommandManager.cpp" />
     <ClCompile Include="..\Source\McRave\Dll.cpp" />
     <ClCompile Include="..\Source\McRave\EventManager.cpp" />
@@ -103,6 +104,7 @@
     <ClInclude Include="..\Source\McRave\BuildingInfo.h" />
     <ClInclude Include="..\Source\McRave\BuildingManager.h" />
     <ClInclude Include="..\Source\McRave\BuildOrder.h" />
+    <ClInclude Include="..\Source\McRave\CombatUnitManager.h" />
     <ClInclude Include="..\Source\McRave\CommandManager.h" />
     <ClInclude Include="..\Source\McRave\GridManager.h" />
     <ClInclude Include="..\Source\McRave\Header.h" />

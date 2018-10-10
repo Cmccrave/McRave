@@ -16,6 +16,9 @@
 // OBS too suicidal
 // Probes getting stuck trying to build
 
+// Restructuring:
+// Enemy targets are only done for combat units, make all enemy units a combat unit?
+
 void McRaveModule::onStart()
 {
 	Broodwar->enableFlag(Flag::UserInput);

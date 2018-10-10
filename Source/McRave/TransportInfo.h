@@ -8,27 +8,25 @@ using namespace std;
 
 namespace McRave
 {
-	class WorkerInfo;
-	class UnitInfo;
-	class TransportInfo
+	class TransportUnit
 	{
 		int cargoSize;
 		bool harassing, loading, unloading, monitoring;
 		UnitInfo * unitInfo;
-		set<UnitInfo*> assignedCargo;
+		set<CombatUnit*> assignedCargo;
 		vector<Position> cargoTargets;
 	public:
-		TransportInfo();
-		void updateTransportInfo();
+		TransportUnit();
+		void updateTransportUnit();
 
 		// Cargo
 		int getCargoSize() { return cargoSize; }
 		void setCargoSize(int newSize) { cargoSize = newSize; }
-		set<UnitInfo*>& getAssignedCargo() { return assignedCargo; }
-		void assignCargo(UnitInfo*);
-		//void assignWorker(WorkerInfo*);
-		void removeCargo(UnitInfo*);
-		//void removeWorker(WorkerInfo*);
+		set<CombatUnit*>& getAssignedCargo() { return assignedCargo; }
+		void assignCargo(CombatUnit*);
+		//void assignWorker(WorkerUnit*);
+		void removeCargo(CombatUnit*);
+		//void removeWorker(WorkerUnit*);
 
 		// Cargo targets
 		void addCargoTarget(Position here) { cargoTargets.push_back(here); }
