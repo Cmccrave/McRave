@@ -6,15 +6,31 @@
 #include "Header.h"
 #include "McRave.h"
 
-// Authors Notes
-
+// *** Bugs ***
 // Check unit sizes and types map
 // Neo Moon Glaive natural choke picking BWEB
 // High temp shouldn't reserve?
-// Units getting stuck that block buildings - CRITICAL
+// Units getting stuck that block buildings
 // Send zealots to expos instead of goons
 // OBS too suicidal
 // Probes getting stuck trying to build
+
+// *** Restructuring ***
+// Pylons - add enemy and check self, could use for artosis pylons
+// Buildings - test
+// Workers - test
+// Transports - test
+// Scanner targets
+// Defense grids
+// Remove global/local strategy -> use combat state
+
+// *** SSCAIT2018 Goals ***
+// Commands:
+// Escort Command: air units assigned a goal of a transport are to spread out around a transport
+// Hunt Command: find alternative closest route to target (using visibility, distance and threat)
+// Unit Movement: kiting/defending
+// Unit formations
+// "Make expand and defense it"
 
 void McRaveModule::onStart()
 {
@@ -38,19 +54,26 @@ void McRaveModule::onEnd(bool isWinner)
 
 void McRaveModule::onFrame()
 {	
-	Terrain().onFrame();
-	Grids().onFrame();
+	// Update relevant map information and strategy
+	Terrain().onFrame();	
 	Resources().onFrame();
 	Strategy().onFrame();
-	Workers().onFrame();
-	Units().onFrame();
-	Transport().onFrame();
-	Commands().onFrame();
-	Buildings().onFrame();
-	Production().onFrame();
 	BuildOrder().onFrame();
 	Stations().onFrame();
-	Display().onFrame();
+
+	// Update unit information and grids based on the information
+	Units().onFrame();
+	Grids().onFrame();
+
+	// Update commands
+	Workers().onFrame();	
+	Transport().onFrame();
+	Buildings().onFrame();
+	Production().onFrame();
+	Commands().onFrame();
+	
+	// Display information from this frame
+	Display().onFrame();	
 }
 
 void McRaveModule::onSendText(string text)

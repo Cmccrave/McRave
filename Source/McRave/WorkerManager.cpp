@@ -99,8 +99,6 @@ void WorkerManager::updateDecision(UnitInfo& worker)
 		build(worker);
 	else if (shouldScout(worker))
 		scout(worker);
-	else if (shouldFight(worker))
-		fight(worker);
 	else if (shouldGather(worker))
 		gather(worker);
 }
@@ -311,11 +309,6 @@ void WorkerManager::clearPath(UnitInfo& worker)
 			return;
 		}
 	}
-}
-
-void WorkerManager::fight(UnitInfo& worker)
-{
-	Units().storeAlly(worker.unit());
 }
 
 void WorkerManager::gather(UnitInfo& worker)

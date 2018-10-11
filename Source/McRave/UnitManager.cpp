@@ -19,7 +19,7 @@ void UnitManager::updateUnits()
 	allyDefense = 0.0;
 	splashTargets.clear();
 	enemyComposition.clear();
-	minThreshold = 0.75, maxThreshold = 1.25;	
+	minThreshold = 0.75, maxThreshold = 1.25;
 
 	double currentSim = 0.0;
 
@@ -30,14 +30,14 @@ void UnitManager::updateUnits()
 	// If playing PvT
 	if (Players().vT())
 		minThreshold = 0.5; maxThreshold = 1.5;
-	
+
 	// PvP
 	if (Players().vP())
 		minThreshold = 0.75, maxThreshold = 1.25;
 
 	if (BuildOrder().isRush())
 		minThreshold = 0.0, maxThreshold = 0.75;
-	
+
 	// Update Enemy Units
 	for (auto &u : enemyUnits) {
 		UnitInfo &unit = u.second;
@@ -106,22 +106,9 @@ void UnitManager::updateUnits()
 		}
 	}
 
-	// Update Ally Defenses
-	for (auto &u : allyDefenses) {
-		UnitInfo &unit = u.second;
-		if (!unit.unit())
-			continue;
-
-		unit.updateUnit();
-
-		if (unit.unit()->isCompleted())
-			allyDefense += unit.getMaxGroundStrength();
-	}
-
-	repWorkers = 0;
 	// Update myUnits
 	for (auto &u : myUnits) {
-		UnitInfo &unit = u.second;
+		auto &unit = u.second;
 		if (!unit.unit())
 			continue;
 
@@ -129,7 +116,8 @@ void UnitManager::updateUnits()
 		updateLocalSimulation(unit);
 		updateStrategy(unit);
 		updateRole(unit);
-				
+
+
 		//// Remove the worker role if needed
 		//if (unit.getType().isWorker() && Workers().getMyWorkers().find(unit.unit()) != Workers().getMyWorkers().end())
 		//	Workers().removeWorker(unit.unit());
@@ -141,7 +129,7 @@ void UnitManager::updateUnits()
 		// If unit is not a building and deals damage, add it to global strength	
 		if (!unit.getType().isBuilding())
 			unit.getType().isFlyer() ? globalAllyAirStrength += unit.getVisibleAirStrength() : globalAllyGroundStrength += unit.getVisibleGroundStrength();
-		
+
 		for (auto p : Terrain().getChokePositions()) {
 			auto dist = unit.getPosition().getDistance(p);
 			if (dist < 32)
@@ -149,11 +137,8 @@ void UnitManager::updateUnits()
 		}
 	}
 
-	if (supply >= 60 && myUnits.size() > 0)
-		avgGrdSim = (avgGrdSim * 119.0/120.0) + (currentSim / (myUnits.size() * 120.0));
-
 	for (auto &u : neutrals) {
-		UnitInfo &unit = u.second;
+		auto &unit = u.second;
 		if (!unit.unit() || !unit.unit()->exists())
 			continue;
 
@@ -218,7 +203,7 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 		// If enemy can't move, it must be in range of our engage position to be added
 		else if (enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths <= 0.0) {
 			enemyToEngage = max(0.0, distance / unitSpeed);
-			simRatio = max(0.0, simulationTime - enemyToEngage);			
+			simRatio = max(0.0, simulationTime - enemyToEngage);
 		}
 		else
 			continue;
@@ -230,7 +215,7 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 			simRatio = simRatio * 2.0;
 		if (enemy.getLastVisibleFrame() < Broodwar->getFrameCount())
 			simRatio = simRatio * (1.0 + min(1.0, (double(Broodwar->getFrameCount() - enemy.getLastVisibleFrame()) / 1000.0)));
-		
+
 		enemyLocalGroundStrength += enemy.getVisibleGroundStrength() * simRatio;
 		enemyLocalAirStrength += enemy.getVisibleAirStrength() * simRatio;
 	}
@@ -495,7 +480,7 @@ bool UnitManager::isThreatening(UnitInfo& unit)
 	}
 
 	// If unit is close to any piece our wall
-	else if (Terrain().getNaturalWall()) {		
+	else if (Terrain().getNaturalWall()) {
 		if (!Strategy().enemyBust()) {
 			for (auto &piece : Terrain().getNaturalWall()->largeTiles()) {
 				Position center = Position(piece) + Position(64, 48);
@@ -538,70 +523,9 @@ int UnitManager::getEnemyCount(UnitType t)
 	return 0;
 }
 
-UnitInfo& UnitManager::getUnitInfo(Unit unit)
+void UnitManager::storeUnit(Unit unit)
 {
-	if (unit) {
-		auto &units = (!unit->exists() || unit->getPlayer() == Broodwar->self()) ? myUnits : enemyUnits;
-		auto it = units.find(unit);
-		if (it != units.end()) return it->second;
-	}
-	static UnitInfo dummy{}; // Should never have to be used, but let's not crash if we do
-	return dummy;
-}
-
-UnitInfo* UnitManager::getClosestInvisEnemy(BuildingInfo& unit)
-{
-	double distBest = DBL_MAX;
-	UnitInfo* best = nullptr;
-	for (auto&e : enemyUnits) {
-		UnitInfo& enemy = e.second;
-		if (unit.unit() != enemy.unit() && enemy.getPosition().isValid() && !Commands().overlapsAllyDetection(enemy.getPosition()) && (enemy.isBurrowed() || enemy.unit()->isCloaked())) {
-			double dist = unit.getPosition().getDistance(enemy.getPosition());
-			if (dist < distBest)
-				best = &enemy, distBest = dist;
-		}
-	}
-	return best;
-}
-
-void UnitManager::storeEnemy(Unit unit)
-{	
-	enemyUnits[unit].setUnit(unit);
-	enemyUnits[unit].updateUnit();
-	enemySizes[unit->getType().size()] += 1;
-	if (unit->getType().isResourceDepot())
-		Stations().storeStation(unit);
-}
-
-void UnitManager::updateEnemy(UnitInfo& unit)
-{
-
-}
-
-void UnitManager::storeAlly(Unit unit)
-{
-	if (unit->getType().isBuilding()) {
-		allyDefenses[unit].setUnit(unit);
-		allyDefenses[unit].setType(unit->getType());
-		allyDefenses[unit].setTilePosition(unit->getTilePosition());
-		allyDefenses[unit].setPosition(unit->getPosition());
-		Grids().updateDefense(allyDefenses[unit]);
-	}
-	else
-		myUnits[unit].setUnit(unit);
-}
-
-void UnitManager::updateAlly(UnitInfo& unit)
-{
-
-}
-
-void UnitManager::storeNeutral(Unit unit)
-{
-	neutrals[unit].setUnit(unit);
-}
-
-void UnitManager::updateNeutral(UnitInfo& unit)
-{
-
+	auto &info = unit->getPlayer() == Broodwar->self() ? myUnits[unit] : (unit->getPlayer() == Broodwar->enemy() ? enemyUnits[unit] : allyUnits[unit]);
+	info.setUnit(unit);
+	info.updateUnit();
 }

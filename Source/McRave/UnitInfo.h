@@ -19,6 +19,7 @@ namespace McRave
 		int killCount, frameCreated;
 		int lastMoveFrame;
 		int resourceHeldFrames;
+		int remainingTrainFrame;
 
 		bool burrowed;
 		bool engage, retreat;
@@ -115,6 +116,10 @@ namespace McRave
 		bool hasAttackedRecently() {
 			return (Broodwar->getFrameCount() - lastAttackFrame < 50);
 		}
+
+		// Training frame
+		void setRemainingTrainFrame(int newFrame) { remainingTrainFrame = newFrame; }
+		int getRemainingTrainFrames() { return remainingTrainFrame; }
 
 		// Stuck
 		bool isStuck() {

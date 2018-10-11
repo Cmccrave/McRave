@@ -10,14 +10,14 @@ using namespace std;
 namespace McRave
 {	
 	class UnitInfo;
-	class BuildingInfo;		
+	class UnitInfo;		
 	class UnitManager
 	{
 		map <Unit, UnitInfo> enemyUnits;
 		map <Unit, UnitInfo> myUnits;
+		map <Unit, UnitInfo> allyUnits;
 		map <Unit, UnitInfo> neutrals;
 
-		map <Unit, UnitInfo> allyDefenses;
 		map <UnitSizeType, int> allySizes;
 		map <UnitSizeType, int> enemySizes;
 		map <UnitType, int> enemyComposition;
@@ -36,8 +36,6 @@ namespace McRave
 		double minThreshold, maxThreshold;
 		int supply;
 		int repWorkers;
-
-		//MCRSimOutput sim;
 	public:
 		int getRepairWorkers() { return repWorkers; }
 
@@ -50,9 +48,6 @@ namespace McRave
 		map<UnitSizeType, int>& getAllySizes() { return allySizes; }
 		map<UnitSizeType, int>& getEnemySizes() { return enemySizes; }
 		map<UnitType, int>& getEnemyComposition() { return enemyComposition; }
-
-		UnitInfo& getUnitInfo(Unit);
-		UnitInfo* getClosestInvisEnemy(BuildingInfo&);	// TODO: just for scanners for now
 
 		double getImmThreat() { return immThreat; }
 		double getProxThreat() { return proxThreat; }
@@ -70,10 +65,6 @@ namespace McRave
 		// Updating
 		void onFrame();
 		void updateUnits();
-		void updateEnemy(UnitInfo&);
-		void updateAlly(UnitInfo&);
-		void updateNeutral(UnitInfo&);
-
 		void updateLocalSimulation(UnitInfo&);
 		void updateStrategy(UnitInfo&);
 		void updateRole(UnitInfo&);
@@ -86,9 +77,7 @@ namespace McRave
 		void onUnitRenegade(Unit);
 		void onUnitComplete(Unit);
 
-		void storeAlly(Unit);
-		void storeEnemy(Unit);
-		void storeNeutral(Unit);
+		void storeUnit(Unit);
 	};
 }
 

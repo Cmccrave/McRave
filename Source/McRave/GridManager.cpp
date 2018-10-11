@@ -118,10 +118,6 @@ namespace McRave
 			}
 		}
 
-		// Building grid update
-		for (auto &b : Buildings().getMyBuildings())
-			addCollision(b.second);
-
 		Display().performanceTest(__FUNCTION__);
 	}
 

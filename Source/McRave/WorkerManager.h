@@ -38,7 +38,6 @@ namespace McRave
 		void assign(UnitInfo&);
 		void build(UnitInfo&);
 		void clearPath(UnitInfo&);
-		void fight(UnitInfo&);
 		void gather(UnitInfo&);
 		void returnCargo(UnitInfo&);
 		void scout(UnitInfo&);

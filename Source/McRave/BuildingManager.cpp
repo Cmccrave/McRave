@@ -57,14 +57,13 @@ namespace McRave
 		}
 
 		// Update all my buildings
-		for (auto &b : myBuildings) {
-			BuildingInfo &building = b.second;
-			building.update();
+		for (auto &b : Units().getMyUnits()) {
+			auto &building = b.second;
 			updateCommands(building);
 		}
 	}
 
-	void BuildingManager::updateCommands(BuildingInfo& building)
+	void BuildingManager::updateCommands(UnitInfo& building)
 	{
 		// Lair morphing
 		if (building.getType() == UnitTypes::Zerg_Hatchery && BuildOrder().buildCount(UnitTypes::Zerg_Lair) > Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Lair) + Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Hive) + lairsMorphing + hivesMorphing) {
@@ -127,13 +126,7 @@ namespace McRave
 
 		// Comsat scans
 		if (building.getType() == UnitTypes::Terran_Comsat_Station) {
-			if (building.getEnergy() >= TechTypes::Scanner_Sweep.energyCost()) {
-				UnitInfo* enemy = Units().getClosestInvisEnemy(building);
-				if (enemy && enemy->unit() && enemy->unit()->exists() && !Commands().overlapsAllyDetection(enemy->getPosition())) {
-					building.unit()->useTech(TechTypes::Scanner_Sweep, enemy->getPosition());
-					Commands().addCommand(building.unit(), enemy->getPosition(), UnitTypes::Spell_Scanner_Sweep);
-				}
-			}
+			// Add scanning here
 		}
 	}
 
@@ -196,17 +189,6 @@ namespace McRave
 				}
 			}
 		}
-	}
-
-	void BuildingManager::storeBuilding(Unit building)
-	{
-		BuildingInfo &b = myBuildings[building];
-		b.setUnit(building);
-	}
-
-	void BuildingManager::removeBuilding(Unit building)
-	{
-		myBuildings.erase(building);
 	}
 
 	TilePosition BuildingManager::getBuildLocation(UnitType building)

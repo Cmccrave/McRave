@@ -5,25 +5,26 @@ void TransportManager::onFrame()
 	Display().startClock();
 	updateTransports();
 	Display().performanceTest(__FUNCTION__);
-	return;
 }
 
 void TransportManager::updateTransports()
 {
-	for (auto &transport : myTransports) {
-		updateCargo(transport.second);
-		updateDecision(transport.second);
-		updateMovement(transport.second);
+	for (auto &u : Units().getMyUnits()) {
+		auto &unit = u.second;
+		
+		if (unit.getRole() == Role::Transporting) {
+			updateCargo(unit);
+			updateDecision(unit);
+			updateMovement(unit);
+		}
 	}
-	return;
 }
 
 void TransportManager::updateCargo(UnitInfo& transport)
 {
 	auto cargoSize = 0;
-	for (auto u : transport.getAssignedCargo()) {
+	for (auto u : transport.getAssignedCargo())
 		cargoSize += u->getType().spaceRequired();
-	}
 	
 	// Check if we are ready to assign this worker to a transport
 	const auto readyToAssignWorker = [&](UnitInfo& unit) {
@@ -352,9 +353,4 @@ void TransportManager::removeUnit(Unit unit)
 				cargo->setTransport(nullptr);			
 		}
 	}
-}
-
-void TransportManager::storeUnit(Unit unit)
-{
-	myTransports[unit].setUnit(unit);
 }

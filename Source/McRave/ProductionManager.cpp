@@ -12,9 +12,10 @@ namespace McRave
 
 	void ProductionManager::updateProduction()
 	{
-		for (auto &b : Buildings().getMyBuildings()) {
-			BuildingInfo &building = b.second;
-			if (!building.unit() || !building.unit()->isCompleted() || Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0)
+		for (auto &b : Units().getMyUnits()) {
+			auto &building = b.second;
+
+			if (!building.unit() || building.getRole() != Role::Producing || !building.unit()->isCompleted() || Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0)
 				continue;
 
 			bool latencyIdle = building.getRemainingTrainFrames() < Broodwar->getRemainingLatencyFrames() || building.unit()->isIdle();
@@ -49,7 +50,7 @@ namespace McRave
 		}
 	}
 
-	void ProductionManager::MadMix(BuildingInfo& building)
+	void ProductionManager::MadMix(UnitInfo& building)
 	{
 		// Check current overlord count
 		int ovie = 0;
@@ -106,7 +107,7 @@ namespace McRave
 
 	}
 
-	void ProductionManager::produce(BuildingInfo& building)
+	void ProductionManager::produce(UnitInfo& building)
 	{
 		double best = 0.0;
 		UnitType bestType = UnitTypes::None;
@@ -165,7 +166,7 @@ namespace McRave
 		}
 	}
 
-	void ProductionManager::research(BuildingInfo& building)
+	void ProductionManager::research(UnitInfo& building)
 	{
 		for (auto &research : building.getType().researchesWhat()) {
 			if (isCreateable(research) && isSuitable(research)) {
@@ -179,7 +180,7 @@ namespace McRave
 		}
 	}
 
-	void ProductionManager::upgrade(BuildingInfo& building)
+	void ProductionManager::upgrade(UnitInfo& building)
 	{
 		for (auto &upgrade : building.getType().upgradesWhat()) {
 			if (isCreateable(upgrade) && isSuitable(upgrade)) {

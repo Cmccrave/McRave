@@ -1,5 +1,7 @@
 #include "McRave.h"
 
+// Information from: https://docs.google.com/document/d/1p7Rw4v56blhf5bzhSnFVfgrKviyrapDFHh9J4FNUXM0
+
 namespace McRave
 {
 	void UnitManager::onUnitDiscover(Unit unit)
@@ -7,10 +9,10 @@ namespace McRave
 		mapBWEB.onUnitDiscover(unit);
 
 		if (unit->getPlayer()->isEnemy(Broodwar->self()))
-			Units().storeEnemy(unit);
+			storeUnit(unit);
 
 		if (Terrain().isIslandMap() && unit->getPlayer() == Broodwar->neutral() && !unit->getType().isResourceContainer() && unit->getType().isBuilding())
-			Units().storeNeutral(unit);
+			storeUnit(unit);
 	}
 
 	void UnitManager::onUnitCreate(Unit unit)
@@ -21,20 +23,17 @@ namespace McRave
 			if (unit->getType().supplyRequired() > 0)
 				supply += unit->getType().supplyRequired();
 
-			// Store Buildings on creation rather than completion
 			if (unit->getType().isBuilding())
-				Buildings().storeBuilding(unit);
+				storeUnit(unit);
 
-			if (unit->getType().isResourceDepot())
-				Stations().storeStation(unit);
-			else if (unit->getType() == UnitTypes::Protoss_Pylon)
-				Pylons().storePylon(unit);
-			else if (unit->getType() == UnitTypes::Protoss_Photon_Cannon || unit->getType() == UnitTypes::Terran_Missile_Turret || unit->getType() == UnitTypes::Zerg_Creep_Colony)
-				storeAlly(unit);
+			if (unit->getType() == UnitTypes::Protoss_Pylon)
+				Pylons().storePylon(unit);				
 		}
 
 		if (unit->getType().isResourceContainer())
-			Resources().storeResource(unit);		
+			Resources().storeResource(unit);
+		if (unit->getType().isResourceDepot())
+			Stations().storeStation(unit);
 	}
 
 	void UnitManager::onUnitDestroy(Unit unit)
@@ -44,48 +43,29 @@ namespace McRave
 
 		mapBWEB.onUnitDestroy(unit);
 
-		// If this is my unit
-		// TODO: Check if we can put this in the if statement below for my units, when do players change?
-		if (myUnits.find(unit) != myUnits.end()) {
-
-			if (myUnits[unit].hasTransport())
-				Transport().removeUnit(unit);
-
-			allySizes[unit->getType().size()] -= 1;
-			myUnits.erase(unit);
-		}
-
-		// If it is my defensive unit
-		else if (allyDefenses.find(unit) != allyDefenses.end())
-			allyDefenses.erase(unit);
-
-		// Enemy unit
-		else if (enemyUnits.find(unit) != enemyUnits.end()) {
-			enemySizes[unit->getType().size()] -= 1;
-			enemyUnits.erase(unit);
-
-			if (unit->getType().isResourceDepot())
-				Stations().removeStation(unit);
-		}
-
 		// My unit
 		if (unit->getPlayer() == Broodwar->self()) {
 			supply -= unit->getType().supplyRequired();
+			Transport().removeUnit(unit);
+			myUnits.erase(unit);			
+		}
 
-			if (unit->getType().isResourceDepot())
-				Stations().removeStation(unit);
-
-			if (unit->getType().isBuilding())
-				Buildings().removeBuilding(unit);
-			else if (unit->getType().isWorker())
-				myUnits.erase(unit);
-			else if (unit->getType() == UnitTypes::Protoss_Shuttle)
-				Transport().removeUnit(unit);
+		// Enemy unit
+		else if (unit->getPlayer() == Broodwar->enemy()){
+			enemySizes[unit->getType().size()] -= 1;
+			enemyUnits.erase(unit);
+		}
+		else if (unit->getPlayer()->isAlly(Broodwar->self())) {
+			allyUnits.erase(unit);
 		}
 
 		// Resource
 		if (unit->getType().isResourceContainer())
-			Resources().removeResource(unit);		
+			Resources().removeResource(unit);
+
+		// Station
+		if (unit->getType().isResourceDepot())
+			Stations().removeStation(unit);
 	}
 
 	void UnitManager::onUnitMorph(Unit unit)
@@ -95,11 +75,7 @@ namespace McRave
 		// My unit
 		if (unit->getPlayer() == Broodwar->self()) {
 
-			// Refinery
-			if (unit->getType().isRefinery())
-				Buildings().storeBuilding(unit);
-
-			// Zerg morphing
+			// TODO: Zerg morphing
 			if (unit->getType().getRace() == Races::Zerg) {
 				supply += unit->getType().supplyRequired();
 
@@ -108,11 +84,7 @@ namespace McRave
 					onUnitCreate(unit);
 					supply -= 2;
 				}
-
-				else if (unit->getType().isWorker())
-					myUnits.erase(unit);
-				else if (!unit->getType().isWorker() && !unit->getType().isBuilding())
-					storeAlly(unit);
+				storeUnit(unit);
 			}
 
 			// Protoss morphing
@@ -136,7 +108,7 @@ namespace McRave
 				enemySizes[unit->getType().size()] ++;
 			}
 			else
-				storeEnemy(unit);
+				storeUnit(unit);
 		}
 
 		// Refinery that morphed as an enemy
@@ -158,23 +130,20 @@ namespace McRave
 
 	void UnitManager::onUnitRenegade(Unit unit)
 	{
-		// Exception is refineries, see: https://docs.google.com/document/d/1p7Rw4v56blhf5bzhSnFVfgrKviyrapDFHh9J4FNUXM0/edit
+		// TODO: Refinery is added in onUnitDiscover for enemy units (keep resource unit the same)
+		// Destroy the unit otherwise
 		if (!unit->getType().isRefinery())
 			onUnitDestroy(unit);
+
 		if (unit->getPlayer() == Broodwar->self())
 			onUnitComplete(unit);
 	}
 
 	void UnitManager::onUnitComplete(Unit unit)
 	{
-		if (unit->getPlayer() == Broodwar->self() && !unit->getType().isBuilding()) {
+		if (unit->getPlayer() == Broodwar->self()) {
 			allySizes[unit->getType().size()] += 1;
-			if (unit->getType().isWorker())
-				storeAlly(unit);
-			else if (unit->getType() == UnitTypes::Protoss_Shuttle || unit->getType() == UnitTypes::Terran_Dropship)
-				Transport().storeUnit(unit);
-			else if (!unit->getType().isWorker())
-				storeAlly(unit);
+			storeUnit(unit);
 		}
 
 		if (unit->getType().isResourceDepot())

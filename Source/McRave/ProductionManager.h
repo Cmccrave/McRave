@@ -20,9 +20,9 @@ namespace McRave
 		bool isSuitable(UnitType), isSuitable(UpgradeType), isSuitable(TechType);
 		void updateProduction(), updateReservedResources();
 
-		void produce(BuildingInfo&), research(BuildingInfo&), upgrade(BuildingInfo&);
+		void produce(UnitInfo&), research(UnitInfo&), upgrade(UnitInfo&);
 
-		void MadMix(BuildingInfo&);
+		void MadMix(UnitInfo&);
 	public:
 		int getReservedMineral() { return reservedMineral; }
 		int getReservedGas() { return reservedGas; }

@@ -58,10 +58,9 @@ namespace McRave
 		// Defend my expansions
 		for (auto &s : Stations().getMyStations()) {
 			Station station = s.second;
-			BuildingInfo& base = Buildings().getMyBuildings().at(s.first);
 
 			if (station.BWEMBase()->Location() != mapBWEB.getNaturalTile() && station.BWEMBase()->Location() != mapBWEB.getMainTile() && Grids().getDefense(station.BWEMBase()->Location()) == 0) {
-
+				// ASSIGN UNITS HERE
 				myGoals[station.ResourceCentroid()] = 0.1;
 				//UnitInfo* rangedUnit = Util().getClosestAllyUnit(base, Filter::GetType == UnitTypes::Protoss_Dragoon || Filter::GetType == UnitTypes::Terran_Siege_Tank_Tank_Mode);
 

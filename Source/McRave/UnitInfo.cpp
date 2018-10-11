@@ -102,6 +102,17 @@ namespace McRave
 		killCount				= unit()->getKillCount();
 		simBonus				= 1.0;
 
+		// Resource held frame
+		if (thisUnit->isCarryingGas() || thisUnit->isCarryingMinerals())
+			resourceHeldFrames = max(resourceHeldFrames, 0) + 1;
+		else if (thisUnit->isGatheringGas() || thisUnit->isGatheringMinerals())
+			resourceHeldFrames = min(resourceHeldFrames, 0) - 1;
+		else
+			resourceHeldFrames = 0;
+
+		// Remaining train frame
+		remainingTrainFrame = max(0, remainingTrainFrame - 1);
+
 		this->updateTarget();
 		this->resetForces();		
 		this->updateStuckCheck();
@@ -121,13 +132,6 @@ namespace McRave
 			}
 			else
 				Targets.getTarget(*this);
-
-			if (thisUnit->isCarryingGas() || thisUnit->isCarryingMinerals())
-				resourceHeldFrames = max(resourceHeldFrames, 0) + 1;
-			else if (thisUnit->isGatheringGas() || thisUnit->isGatheringMinerals())
-				resourceHeldFrames = min(resourceHeldFrames, 0) - 1;
-			else
-				resourceHeldFrames = 0;
 		}
 
 		// Assume enemy targets

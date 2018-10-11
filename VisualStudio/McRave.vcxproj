@@ -42,7 +42,6 @@
     <ClCompile Include="..\Source\BWEM\tiles.cpp" />
     <ClCompile Include="..\Source\BWEM\utils.cpp" />
     <ClCompile Include="..\Source\BWEM\winutils.cpp" />
-    <ClCompile Include="..\Source\McRave\BuildingInfo.cpp" />
     <ClCompile Include="..\Source\McRave\BuildingManager.cpp" />
     <ClCompile Include="..\Source\McRave\BuildOrder.cpp" />
     <ClCompile Include="..\Source\McRave\CommandManager.cpp" />
@@ -98,7 +97,6 @@
     <ClInclude Include="..\Source\BWEM\tiles.h" />
     <ClInclude Include="..\Source\BWEM\utils.h" />
     <ClInclude Include="..\Source\BWEM\winutils.h" />
-    <ClInclude Include="..\Source\McRave\BuildingInfo.h" />
     <ClInclude Include="..\Source\McRave\BuildingManager.h" />
     <ClInclude Include="..\Source\McRave\BuildOrder.h" />
     <ClInclude Include="..\Source\McRave\CommandManager.h" />

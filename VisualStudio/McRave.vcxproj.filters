@@ -151,9 +151,6 @@
     <ClCompile Include="..\Source\McRave\ZergBuilds.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\BuildingInfo.cpp">
-      <Filter>McRave</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\BWEM\BaseFinder\BaseFinder.cpp">
       <Filter>BWEM\BaseFinder</Filter>
     </ClCompile>
@@ -298,9 +295,6 @@
       <Filter>McRave</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\McRave\WorkerManager.h">
-      <Filter>McRave</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\BuildingInfo.h">
       <Filter>McRave</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\BWEM\BaseFinder\BaseFinder.h">
