@@ -9,8 +9,8 @@ void CommandManager::updateArbiter(UnitInfo& arbiter)
 	// Determine highest threat possible here
 	const auto highestThreat = [&](WalkPosition here, UnitType t) {
 		double highest = 0.1;
-		auto dx = t.width() / 16.0;		// Half walk resolution width
-		auto dy = t.height() / 16.0;	// Half walk resolution height
+		auto dx = int(t.width() / 16.0);		// Half walk resolution width
+		auto dy = int(t.height() / 16.0);	// Half walk resolution height
 
 		for (int x = here.x - dx; x < here.x + dx; x++) {
 			for (int y = here.y - dy; y < here.y + dy; y++) {

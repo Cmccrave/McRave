@@ -283,7 +283,7 @@ void StrategyManager::updateEnemyBuild()
 					enemyScout = true;
 				if (unit.getType().isWorker() && inboundScoutFrame == 0) {
 					auto dist = unit.getPosition().getDistance(mapBWEB.getMainPosition());
-					inboundScoutFrame = Broodwar->getFrameCount() + (dist / unit.getType().topSpeed());
+					inboundScoutFrame = Broodwar->getFrameCount() + int(dist / unit.getType().topSpeed());
 				}
 
 				// Monitor gas intake or gas steal
@@ -342,7 +342,7 @@ void StrategyManager::updateEnemyBuild()
 						enemyBuild = "P1GateRobo";
 					else if (Units().getEnemyCount(UnitTypes::Protoss_Gateway) >= 4)
 						enemyBuild = "P4Gate";
-					else if (Units().getEnemyCount(UnitTypes::Protoss_Nexus) == 1 && (Units().getEnemyCount(UnitTypes::Protoss_Citadel_of_Adun) >= 1 || Units().getEnemyCount(UnitTypes::Protoss_Templar_Archives) >= 1 || (!goonRange && Units().getEnemyCount(UnitTypes::Protoss_Dragoon) < 2 && Units().getSupply() > 80)))
+					else if (Units().getEnemyCount(UnitTypes::Protoss_Citadel_of_Adun) >= 1 || Units().getEnemyCount(UnitTypes::Protoss_Templar_Archives) >= 1 || (!goonRange && Units().getEnemyCount(UnitTypes::Protoss_Dragoon) < 2 && Units().getSupply() > 80))
 						enemyBuild = "P1GateDT";
 					else
 						enemyBuild = "Unknown";

@@ -105,7 +105,7 @@ bool StationManager::needDefenses(const Station station)
 		return true;
 	else if (defenseCount <= 1)
 		return true;
-	else if ((Players().getPlayers().size() > 1 || Broodwar->enemy()->getRace() == Races::Zerg) && !main && !nat && defenseCount < station.DefenseLocations().size())
+	else if ((Players().getPlayers().size() > 1 || Broodwar->enemy()->getRace() == Races::Zerg) && !main && !nat && defenseCount < int(station.DefenseLocations().size()))
 		return true;
 	return false;
 }

@@ -173,48 +173,54 @@ namespace McRave
 	bool BuildOrderManager::isBuildAllowed(Race enemy, string build)
 	{
 		if (Broodwar->self()->getRace() == Races::Protoss) {
-			if (Terrain().isIslandMap()) {
-				if (enemy == Races::Zerg)
-					return (build == "P1GateCorsair");
-				else if (enemy == Races::Random)
-					return (build == "PZealotDrop");
-				else
-					return (build == "P12Nexus" || build == "PZealotDrop");
-			}
+			//if (Terrain().isIslandMap()) {
+			//	if (enemy == Races::Zerg)
+			//		return (build == "P1GateCorsair");
+			//	else if (enemy == Races::Random)
+			//		return (build == "PZealotDrop");
+			//	else
+			//		return (build == "P12Nexus" || build == "PZealotDrop");
+			//}
 
-			// HACK: Blue Storm hardcoded builds due to lack of pathfinding around chokes
-			if (Broodwar->mapFileName().find("BlueStorm") != string::npos) {
-				if (enemy == Races::Terran)
-					return (build == "PProxy99" || build == "P12Nexus" || build == "P21Nexus" || build == "PDTExpand");
-				else if (enemy == Races::Zerg)
-					return (build == "PProxy99" || build == "PFFE");
-				else if (enemy == Races::Protoss || enemy == Races::Random)
-					return (build == "PProxy99" || build == "PZCore");
-			}
+			//// HACK: Blue Storm hardcoded builds due to lack of pathfinding around chokes
+			//if (Broodwar->mapFileName().find("BlueStorm") != string::npos) {
+			//	if (enemy == Races::Terran)
+			//		return (build == "PProxy99" || build == "P12Nexus" || build == "P21Nexus" || build == "PDTExpand");
+			//	else if (enemy == Races::Zerg)
+			//		return (build == "PProxy99" || build == "PFFE");
+			//	else if (enemy == Races::Protoss || enemy == Races::Random)
+			//		return (build == "PProxy99" || build == "PZCore");
+			//}
 
-			// HACK: Only 4gate on Alchemist
-			if (Broodwar->mapFileName().find("Alchemist") != string::npos && build != "P4Gate")
-				return false;
+			//// HACK: Only 4gate on Alchemist
+			//if (Broodwar->mapFileName().find("Alchemist") != string::npos && build != "P4Gate")
+			//	return false;
 
-			if (enemy == Races::Zerg && (build == "PFFE" || build == "P4Gate" || build == "P2GateExpand" || build == "P1GateCorsair"))
-				return true;
-			if (enemy == Races::Terran && (build == "P12Nexus" || build == "P21Nexus" || build == "PDTExpand" || build == "P2GateDragoon"))
-				return true;
-			if (enemy == Races::Protoss && (build == "PZCore" || build == "P4Gate" || build == "P1GateRobo" || build == "P2GateExpand"))
-				return true;
-			if (enemy == Races::Random && (build == "PZZCore" || build == "P4Gate" || build == "PFFE" || build == "P2GateExpand"))
-				return true;
+			//if (enemy == Races::Zerg && (build == "PFFE" || build == "P4Gate" || build == "P2GateExpand" || build == "P1GateCorsair"))
+			//	return true;
+			//if (enemy == Races::Terran && (build == "P12Nexus" || build == "P21Nexus" || build == "PDTExpand" || build == "P2GateDragoon"))
+			//	return true;
+			//if (enemy == Races::Protoss && (build == "PZCore" || build == "P4Gate" || build == "P1GateRobo" || build == "P2GateExpand"))
+			//	return true;
+			//if (enemy == Races::Random && (build == "PZZCore" || build == "P4Gate" || build == "PFFE" || build == "P2GateExpand"))
+			//	return true;
 
-			// HACK: Only 4gate on Alchemist
-			if (Broodwar->mapFileName().find("Alchemist") != string::npos && build == "P4Gate")
-				return true;
+			//// HACK: Only 4gate on Alchemist
+			//if (Broodwar->mapFileName().find("Alchemist") != string::npos && build == "P4Gate")
+			//	return true;
+			return build == "PFFE";
 		}
 
 		if (Broodwar->self()->getRace() == Races::Terran) {
-			if (build == "TSparks" || build == "T2Fact" || build == "T2PortWraith")
+			/*if (build == "TSparks" || build == "T2Fact" || build == "T2PortWraith")
 				return true;
 			if (build == "T1RaxFE" || build == "T2RaxFE" || build == "T1FactFE")
+				return true;*/
+
+			if (build == "T2Fact")
 				return true;
+			else
+				return false;
 		}
 
 		if (Broodwar->self()->getRace() == Races::Zerg) {

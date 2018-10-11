@@ -611,9 +611,9 @@ namespace McRave
 		}
 		else {
 			if (BuildOrder().isWallMain())
-				wall = mapBWEB.getWall(mapBWEB.getMainArea());
+				wall = Terrain().getMainWall();
 			else if (BuildOrder().isWallNat())
-				wall = mapBWEB.getWall(mapBWEB.getNaturalArea());
+				wall = Terrain().getNaturalWall();
 		}
 
 		if (!wall)

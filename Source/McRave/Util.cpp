@@ -119,10 +119,10 @@ WalkPosition UtilManager::getWalkPosition(Unit unit)
 
 bool UtilManager::isSafe(WalkPosition end, UnitType unitType, bool groundCheck, bool airCheck)
 {
-	int walkWidth = (int)ceil(unitType.width() / 8.0);
-	int walkHeight = (int)ceil(unitType.height() / 8.0);
-	int halfW = ceil(walkWidth / 2);
-	int halfH = ceil(walkHeight / 2);
+	int walkWidth = int(ceil(unitType.width() / 8.0));
+	int walkHeight = int(ceil(unitType.height() / 8.0));
+	int halfW = int(ceil(walkWidth / 2));
+	int halfH = int(ceil(walkHeight / 2));
 
 	for (int x = end.x - halfW; x <= end.x + halfW; x++) {
 		for (int y = end.y - halfH; y <= end.y + halfH; y++) {

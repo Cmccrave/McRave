@@ -7,6 +7,11 @@ using namespace std;
 
 namespace McRave
 {
+	enum Role
+	{
+		Worker, Combat, Transport, Scout, Production, Defense, Support
+	};
+
 	class UnitInfo {
 		double percentHealth, groundRange, airRange, groundDamage, airDamage, speed;						// StarCraft stats
 		double visibleGroundStrength, visibleAirStrength, maxGroundStrength, maxAirStrength, priority;		// McRave stats
@@ -24,7 +29,10 @@ namespace McRave
 		UnitType unitType;
 		Player player;
 
-		UnitInfo* target;
+		UnitInfo* assignedTarget;
+		UnitInfo* assignedTransport;
+		ResourceInfo* assignedResource;
+		set<UnitInfo*> assignedCargo;
 
 		Position position, engagePosition, destination, simPosition, lastPos;
 		WalkPosition walkPosition, lastWalk;
@@ -36,11 +44,12 @@ namespace McRave
 	public:
 		UnitInfo();
 
-		// General update function
+		// General use
 		void updateUnit();
 		void createDummy(UnitType);
+		double getDistance(UnitInfo unit) { return position.getDistance(unit.getPosition()); }
 
-		// Set sim values
+		// Simulation
 		void setSimValue(double newValue) { simValue = newValue; }
 		double getSimValue() { return simValue; }
 
@@ -52,12 +61,21 @@ namespace McRave
 		bool shouldEngage() { return engage; }
 
 		// Target
-		bool hasTarget() { return target != nullptr; }
-		UnitInfo &getTarget() { return *target; }
-		void setTarget(UnitInfo * unit) { target = unit; }
-		double getDistance(UnitInfo unit) { return position.getDistance(unit.getPosition()); }
+		bool hasTarget() { return assignedTarget != nullptr; }
+		UnitInfo &getTarget() { return *assignedTarget; }
+		void setTarget(UnitInfo * unit) { assignedTarget = unit; }		
 
-		// Engagement distance
+		// Transport
+		bool hasTransport() { return assignedTransport != nullptr; }
+		UnitInfo &getTransport() { return *assignedTransport; }
+		void setTransport(UnitInfo * unit) { assignedTransport = unit; }
+
+		// Resource
+		bool hasResource() { return assignedResource != nullptr; }
+		ResourceInfo &getResource() { return *assignedResource; }
+		void setResource(ResourceInfo * unit) { assignedResource = unit; }
+
+		// Engagement distances
 		double getEngDist() { return engageDist; }
 		void setEngDist(double newValue) { engageDist = newValue; }
 
@@ -72,7 +90,7 @@ namespace McRave
 		void setTargetPath(BWEB::Path& newPath) { targetPath = newPath; }
 		BWEB::Path& getTargetPath() { return targetPath; }
 		bool samePath() {
-			return (targetPath.getTiles().front() == target->getTilePosition() && targetPath.getTiles().back() == tilePosition);
+			return (targetPath.getTiles().front() == assignedTarget->getTilePosition() && targetPath.getTiles().back() == tilePosition);
 		}
 
 		// Attack frame
@@ -80,6 +98,7 @@ namespace McRave
 			return (Broodwar->getFrameCount() - lastAttackFrame < 50);
 		}
 
+		// Stuck
 		bool isStuck() {
 			return (Broodwar->getFrameCount() - lastMoveFrame > 50);
 		}
@@ -109,7 +128,7 @@ namespace McRave
 		double getPriority()				{ return priority; }					// Returns the units priority for targeting purposes based on strength (not including value)
 		int getLocalStrategy()				{ return localStrategy; }				// Returns the units local strategy		
 		int getGlobalStrategy()				{ return globalStrategy; }				// Returns the units global strategy		
-		double getSimBonus()			{ return simBonus; }
+		double getSimBonus()				{ return simBonus; }
 
 		// Kill count
 		int getKillCount()					{ return killCount; }
@@ -122,8 +141,7 @@ namespace McRave
 
 		bool isBurrowed()								{ return burrowed; }
 		Position getSimPosition()						{ return simPosition; }
-		Unit unit()										{ return thisUnit; }
-		Unit getTransport()								{ return transport; }
+		Unit unit()										{ return thisUnit; }		
 		UnitType getType()								{ return unitType; }
 		Player getPlayer()								{ return player; }
 
@@ -133,13 +151,12 @@ namespace McRave
 		WalkPosition getWalkPosition()					{ return walkPosition; }
 		TilePosition getTilePosition()					{ return tilePosition; }
 
-		void setSimBonus(double newValue)			{ simBonus = newValue; }
+		void setSimBonus(double newValue)				{ simBonus = newValue; }
 		void setLocalStrategy(int newValue)				{ localStrategy = newValue; }
 		void setGlobalStrategy(int newValue)			{ globalStrategy = newValue; }
 		void setLastAttackFrame(int newValue)			{ lastAttackFrame = newValue; }
 
-		void setUnit(Unit newUnit)						{ thisUnit = newUnit; }
-		void setTransport(Unit newUnit)					{ transport = newUnit; }
+		void setUnit(Unit newUnit)						{ thisUnit = newUnit; }		
 		void setType(UnitType newType)					{ unitType = newType; }
 		void setPlayer(Player newPlayer)				{ player = newPlayer; }
 
