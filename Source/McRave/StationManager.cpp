@@ -32,7 +32,9 @@ Position StationManager::getClosestEnemyStation(Position here)
 void StationManager::storeStation(Unit unit)
 {
 	const Station * station = mapBWEB.getClosestStation(unit->getTilePosition());
-	if (!station || unit->getTilePosition() != station->BWEMBase()->Location())
+	if (!station)
+		return;
+	if (unit->getTilePosition() != station->BWEMBase()->Location())
 		return;
 
 	unit->getPlayer() == Broodwar->self() ? myStations.emplace(unit, *station) : enemyStations.emplace(unit, *station);
@@ -103,7 +105,7 @@ bool StationManager::needDefenses(const Station station)
 		return true;
 	else if (defenseCount <= 1)
 		return true;
-	else if ((Players().getPlayers().size() > 1 || Broodwar->enemy()->getRace() == Races::Zerg) && !main && !nat && defenseCount < int(station.DefenseLocations().size()))
+	else if ((Players().getPlayers().size() > 1 || Broodwar->enemy()->getRace() == Races::Zerg) && !main && !nat && defenseCount < station.DefenseLocations().size())
 		return true;
 	return false;
 }

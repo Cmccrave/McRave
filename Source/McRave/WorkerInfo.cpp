@@ -3,22 +3,32 @@
 
 namespace McRave
 {
-	WorkerUnit::WorkerUnit(UnitInfo * newUnit)
+	WorkerInfo::WorkerInfo()
 	{
-		// Store UnitInfo pointer
-		unitInfo = newUnit;
+		thisUnit = nullptr;
+		resource = nullptr;
+		transport = nullptr;
+		resourceHeldFrames = 0;
 
-		// Initialize the rest
+		type = UnitTypes::None;
 		buildingType = UnitTypes::None;
-		buildPosition = TilePositions::Invalid;
-		assignedResource = nullptr;
-		resourceHeldFrames = 0;		
+
+		position = Positions::None;
+		destination = Positions::None;
+		walkPosition = WalkPositions::None;
+		tilePosition = TilePositions::None;
+		buildPosition = TilePositions::None;
 	}
 
-	void WorkerUnit::updateWorkerUnit() {
-		if (unitInfo->unit()->isCarryingGas() || unitInfo->unit()->isCarryingMinerals())
+	void WorkerInfo::update() {
+		position =  thisUnit->getPosition();
+		walkPosition = Util().getWalkPosition(thisUnit);
+		tilePosition = thisUnit->getTilePosition();
+		type = thisUnit->getType();
+
+		if (thisUnit->isCarryingGas() || thisUnit->isCarryingMinerals())
 			resourceHeldFrames = max(resourceHeldFrames, 0) + 1;
-		else if (unitInfo->unit()->isGatheringGas() || unitInfo->unit()->isGatheringMinerals())
+		else if (thisUnit->isGatheringGas() || thisUnit->isGatheringMinerals())
 			resourceHeldFrames = min(resourceHeldFrames, 0) - 1;
 		else
 			resourceHeldFrames = 0;

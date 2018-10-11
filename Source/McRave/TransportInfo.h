@@ -8,50 +8,70 @@ using namespace std;
 
 namespace McRave
 {
-	class TransportUnit
+	class WorkerInfo;
+	class UnitInfo;
+	class TransportInfo
 	{
-		int cargoSize;
+		int cargoSize, lastDropFrame;
 		bool harassing, loading, unloading, monitoring;
-		UnitInfo * unitInfo;
-		set<CombatUnit*> assignedCargo;
+		Unit thisUnit;
+		UnitType transportType;
+
+		bool retreat, engage;
+
+		set<WorkerInfo*> assignedWorkers;
+		set<UnitInfo*> assignedCargo;
 		vector<Position> cargoTargets;
+
+		Position position, destination;
+		WalkPosition walkPosition;
+		TilePosition tilePosition;
 	public:
-		TransportUnit();
-		void updateTransportUnit();
+		TransportInfo();
 
-		// Cargo
 		int getCargoSize() { return cargoSize; }
-		void setCargoSize(int newSize) { cargoSize = newSize; }
-		set<CombatUnit*>& getAssignedCargo() { return assignedCargo; }
-		void assignCargo(CombatUnit*);
-		//void assignWorker(WorkerUnit*);
-		void removeCargo(CombatUnit*);
-		//void removeWorker(WorkerUnit*);
-
-		// Cargo targets
-		void addCargoTarget(Position here) { cargoTargets.push_back(here); }
-		vector<Position>& getCargoTargets() { return cargoTargets; }
-
-		// Decision
+		int getLastDropFrame() { return lastDropFrame; }
 		bool isLoading() { return loading; }
 		bool isUnloading() { return unloading; }
 		bool isHarassing() { return harassing; }
 		bool isMonitoring() { return monitoring; }
+		bool isRetreating() { return retreat; }
+		bool isEngaging() { return engage; }
+		Unit unit() { return thisUnit; }
+		UnitType getType() { return transportType; }
 
+		set<WorkerInfo*>& getAssignedWorkers() { return assignedWorkers; }
+		set<UnitInfo*>& getAssignedCargo() { return assignedCargo; }		
+		Position getPosition() { return position; }
+		Position getDestination() { return destination; }
+		WalkPosition getWalkPosition() { return walkPosition; }
+		TilePosition getTilePosition() { return tilePosition; }
+
+		void setCargoSize(int newSize) { cargoSize = newSize; }
+		void setLastDropFrame(int newDropFrame) { lastDropFrame = newDropFrame; }
 		void setLoading(bool newState) { loading = newState; }
 		void setUnloading(bool newState) { unloading = newState; }
 		void setHarassing(bool newState) { harassing = newState; }
 		void setMonitoring(bool newState) { monitoring = newState; }
+		void setRetreating(bool newState) { retreat = newState; }
+		void setEngaging(bool newState) { engage = newState; }
+		void setUnit(Unit newTransport) { thisUnit = newTransport; }
+		void setType(UnitType newType) { transportType = newType; }
+		void setPosition(Position newPosition) { position = newPosition; }
+		void setDestination(Position newPosition) { destination = newPosition; }
+		void setWalkPosition(WalkPosition newWalkPosition) { walkPosition = newWalkPosition; }
+		void setTilePosition(TilePosition newTilePosition) { tilePosition = newTilePosition; }
 
-		// UnitInfo shortcuts
-		UnitInfo * info() { return unitInfo; }
-		UnitType getType() { return unitInfo->getType(); }
-		Position getPosition() { return unitInfo->getPosition(); }
-		Position getDestination() { return unitInfo->getDestination(); }
-		WalkPosition getWalkPosition() { return unitInfo->getWalkPosition(); }
-		TilePosition getTilePosition() { return unitInfo->getTilePosition(); }
-		void setDestination(Position newPosition) { unitInfo->setDestination(newPosition); }
-		void setEngage() { unitInfo->setEngage(); }
-		void setRetreat() { unitInfo->setRetreat(); }
+		// Add cargo to the assigned cargo set
+		void assignCargo(UnitInfo*);
+		void assignWorker(WorkerInfo*);
+
+		// Cargo targets for easier use
+		void addCargoTarget(Position here) { cargoTargets.push_back(here); }
+		vector<Position>& getCargoTargets() { return cargoTargets; }
+
+		// Remove cargo from the assigned cargo set
+		void removeCargo(UnitInfo*);
+		void removeWorker(WorkerInfo*);
 	};
 }

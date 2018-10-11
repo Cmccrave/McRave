@@ -101,7 +101,7 @@ void ResourceManager::removeResource(Unit resource)
 
 	// Any workers that targeted that resource now have no target
 	for (auto &w : Workers().getMyWorkers()) {
-		WorkerUnit& worker = w.second;
+		WorkerInfo& worker = w.second;
 		if (worker.hasResource() && worker.getResource().unit() == resource)
 			worker.setResource(nullptr);
 	}

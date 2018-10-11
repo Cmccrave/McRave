@@ -145,7 +145,7 @@ namespace McRave
 
 		// Add up how many buildings we have assigned to workers
 		for (auto &worker : Workers().getMyWorkers()) {
-			WorkerUnit &w = worker.second;
+			WorkerInfo &w = worker.second;
 			if (w.getBuildingType().isValid() && w.getBuildPosition().isValid() && (w.getBuildingType().isRefinery() || mapBWEB.getUsedTiles().find(w.getBuildPosition()) == mapBWEB.getUsedTiles().end())) {
 				buildingsQueued[w.getBuildPosition()] = w.getBuildingType();
 			}
@@ -611,9 +611,9 @@ namespace McRave
 		}
 		else {
 			if (BuildOrder().isWallMain())
-				wall = Terrain().getMainWall();
+				wall = mapBWEB.getWall(mapBWEB.getMainArea());
 			else if (BuildOrder().isWallNat())
-				wall = Terrain().getNaturalWall();
+				wall = mapBWEB.getWall(mapBWEB.getNaturalArea());
 		}
 
 		if (!wall)

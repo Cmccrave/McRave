@@ -310,9 +310,9 @@ namespace McRave
 		}
 
 		// If unit has a transport, move to it or load into it
-		else if (unit.hasTransport() && unit.getTransport().unit()->exists()) {
-			if (!isLastCommand(unit, UnitCommandTypes::Right_Click_Unit, unit.getTransport().getPosition()))
-				unit.unit()->rightClick(unit.getTransport().unit());
+		else if (unit.getTransport() && unit.getTransport()->exists()) {
+			if (!isLastCommand(unit, UnitCommandTypes::Right_Click_Unit, unit.getTransport()->getPosition()))
+				unit.unit()->rightClick(unit.getTransport());
 		}
 
 		// If target doesn't exist, move towards it
@@ -427,9 +427,9 @@ namespace McRave
 		// If unit has a transport, move to it or load into it - TODO: add scarab count upgrade check
 		// HACK: This is just for Reavers atm, add HT before AIIDE hopefully
 		if (unit.getType() == UnitTypes::Protoss_Reaver) {
-			if (unit.hasTransport() && unit.getTransport().unit()->exists() && unit.unit()->getScarabCount() != 5 && Grids().getEGroundThreat(unit.getWalkPosition()) == 0.0) {
-				if (!isLastCommand(unit, UnitCommandTypes::Right_Click_Unit, unit.getTransport().getPosition()))
-					unit.unit()->rightClick(unit.getTransport().unit());
+			if (unit.getTransport() && unit.getTransport()->exists() && unit.unit()->getScarabCount() != 5 && Grids().getEGroundThreat(unit.getWalkPosition()) == 0.0) {
+				if (!isLastCommand(unit, UnitCommandTypes::Right_Click_Unit, unit.getTransport()->getPosition()))
+					unit.unit()->rightClick(unit.getTransport());
 				return;
 			}
 		}

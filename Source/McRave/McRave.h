@@ -18,12 +18,7 @@ using namespace BWEB;
 namespace McRave
 {
 	class UnitInfo;
-	class WorkerUnit;
-
-	enum Role
-	{
-		None, Working, Fighting, Transporting, Scouting, Producing, Defending, Supporting
-	};
+	class WorkerInfo;
 }
 
 namespace

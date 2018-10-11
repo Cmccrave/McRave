@@ -2,13 +2,16 @@
 #include <BWAPI.h>
 #include "Singleton.h"
 #include "UnitInfo.h"
+#include "FAP.h"
 #include <set>
 
 using namespace BWAPI;
 using namespace std;
 
 namespace McRave
-{
+{	
+	class WorkerInfo;
+	class BuildingInfo;		
 	class UnitManager
 	{
 		map <Unit, UnitInfo> enemyUnits;
@@ -60,7 +63,7 @@ namespace McRave
 		double getGlobalAllyAirStrength() { return globalAllyAirStrength; }
 		double getGlobalEnemyAirStrength() { return globalEnemyAirStrength; }
 		double getAllyDefense() { return allyDefense; }
-		int getSupply() { return supply; }
+		int getSupply() { return supply; }	
 
 		bool isThreatening(UnitInfo&);
 		int getEnemyCount(UnitType);
@@ -83,9 +86,9 @@ namespace McRave
 		void onUnitRenegade(Unit);
 		void onUnitComplete(Unit);
 
-		void storeMyUnit(Unit);
-		void storeEnemyUnit(Unit);
-		void storeNeutralUnit(Unit);
+		void storeAlly(Unit);
+		void storeEnemy(Unit);
+		void storeNeutral(Unit);
 	};
 }
 

@@ -124,7 +124,7 @@ namespace McRave
 
 		// Worker grid update
 		for (auto &w : Workers().getMyWorkers()) {
-			WorkerUnit& worker = w.second;
+			WorkerInfo& worker = w.second;
 			addCollision(worker);
 		}
 
@@ -141,7 +141,7 @@ namespace McRave
 				continue;
 
 			UnitInfo* c = Util().getClosestAllyUnit(unit);
-			WorkerUnit* w = Util().getClosestAllyWorker(unit);
+			WorkerInfo* w = Util().getClosestAllyWorker(unit);
 
 			if ((!w || w->getPosition().getDistance(unit.getPosition()) > 720) && (!c || c->getPosition().getDistance(unit.getPosition()) > 720))
 				continue;
@@ -402,14 +402,14 @@ namespace McRave
 		int speed = int(max(unit.getSpeed(), 1.0));
 
 		int pixelSize = max(unit.getType().width(), unit.getType().height());
-		int walkSize = int(ceil(pixelSize / 8));
+		int walkSize = ceil(pixelSize / 8);
 
 		int grdReach = int(max(unit.getGroundRange(), 32.0) + (speed * 24.0) + (pixelSize / 2)) + 1;
 		int airReach = int(max(unit.getAirRange(), 32.0) + (speed * 24.0) + (pixelSize / 2)) + 1;
 
 		if (unit.getType().isWorker()) {
-			grdReach = int(grdReach / 1.5);
-			airReach = int(airReach / 1.5);
+			grdReach = grdReach / 1.5;
+			airReach = airReach / 1.5;
 		}
 
 		int radius = 1 + (max(grdReach, airReach))/8;

@@ -185,7 +185,7 @@ namespace McRave
 		double distance = unit.getDistance(unit.getTarget());
 		double range = unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
 		double leftover = distance - range;
-		Position direction = (unit.getPosition() - unit.getTarget().getPosition()) * int(leftover / distance);
+		Position direction = (unit.getPosition() - unit.getTarget().getPosition()) * leftover / distance;
 
 		if (distance > range)
 			unit.setEngagePosition(unit.getPosition() - direction);

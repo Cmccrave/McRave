@@ -209,7 +209,7 @@ void BuildOrderManager::terranSituational()
 		itemQueue[UnitTypes::Terran_Command_Center] = Item(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) + 1);
 
 	// Bunker logic
-	if (Strategy().enemyRush() && !wallMain)
+	if (Strategy().enemyRush())
 		itemQueue[UnitTypes::Terran_Bunker] = Item(1);
 
 	if (!getOpening)

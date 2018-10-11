@@ -172,9 +172,6 @@
     <ClCompile Include="..\Source\McRave\ProtossMemes.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\CombatUnitManager.cpp">
-      <Filter>McRave</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">
@@ -320,9 +317,6 @@
     </ClInclude>
     <ClInclude Include="..\Source\BWEM\BaseFinder\BaseFinder.h">
       <Filter>BWEM\BaseFinder</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\CombatUnitManager.h">
-      <Filter>McRave</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

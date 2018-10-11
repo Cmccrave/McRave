@@ -3,58 +3,14 @@
 
 namespace McRave
 {
-	CombatUnit::CombatUnit(UnitInfo * newUnit) {
-		// Store UnitInfo pointer
-		unitInfo = newUnit;
-
-		// Initialize the rest
+	UnitInfo::UnitInfo()
+	{
 		visibleGroundStrength = 0.0;
 		visibleAirStrength = 0.0;
 		maxGroundStrength = 0.0;
 		maxAirStrength = 0.0;
 		priority = 0.0;
-		simBonus = 1.0;
 
-		assignedTarget = nullptr;
-		assignedTransport = nullptr;
-
-		visibleGroundStrength	= Util().getVisibleGroundStrength(*unitInfo);
-		maxGroundStrength		= Util().getMaxGroundStrength(*unitInfo);
-		visibleAirStrength		= Util().getVisibleAirStrength(*unitInfo);
-		maxAirStrength			= Util().getMaxAirStrength(*unitInfo);
-		priority				= Util().getPriority(*unitInfo);
-	}
-
-	void CombatUnit::updateTarget()
-	{
-		// Update my targets
-		if (info()->getPlayer() && info()->getPlayer() == Broodwar->self()) {
-			if (info()->getType() == UnitTypes::Terran_Vulture_Spider_Mine) {
-				auto mineTarget = info()->unit()->getOrderTarget();
-
-				if (Units().getEnemyUnits().find(mineTarget) != Units().getEnemyUnits().end())
-					assignedTarget = mineTarget != nullptr ? &Units().getEnemyUnits()[mineTarget] : nullptr;
-				else
-					assignedTarget = nullptr;
-			}
-			else
-				Targets().getTarget(*unitInfo);
-		}
-
-		// Assume enemy targets
-		else if (info()->getPlayer() && info()->getPlayer()->isEnemy(Broodwar->self())) {
-
-			if (info()->getType() == UnitTypes::Terran_Vulture_Spider_Mine && unitInfo->unit()->getOrderTarget() && unitInfo->unit()->getOrderTarget()->getPlayer() == Broodwar->self())
-				assignedTarget = &Units().getMyUnits()[unitInfo->unit()->getOrderTarget()];
-			else if (info()->getType() != UnitTypes::Terran_Vulture_Spider_Mine && unitInfo->unit()->getOrderTarget() && Units().getMyUnits().find(unitInfo->unit()->getOrderTarget()) != Units().getMyUnits().end())
-				assignedTarget = &Units().getMyUnits()[unitInfo->unit()->getOrderTarget()];
-			else
-				assignedTarget = nullptr;
-		}
-	}
-
-	UnitInfo::UnitInfo()
-	{
 		percentHealth = 0.0;
 		groundRange = 0.0;
 		airRange = 0.0;
@@ -70,12 +26,17 @@ namespace McRave
 		shields = 0;
 		health = 0;
 		minStopFrame = 0;
-		killCount = 0;		
+
+		killCount = 0;
+		simBonus = 1.0;
 
 		burrowed = false;
-		thisUnit = nullptr;	
-		player = nullptr;		
+
+		thisUnit = nullptr;
+		transport = nullptr;
 		unitType = UnitTypes::None;
+		player = nullptr;
+		target = nullptr;
 
 		position = Positions::Invalid;
 		engagePosition = Positions::Invalid;
@@ -123,11 +84,46 @@ namespace McRave
 		burrowed				= (thisUnit->isBurrowed() || thisUnit->getOrder() == Orders::Burrowing || thisUnit->getOrder() == Orders::VultureMine);
 
 		// Update McRave stats
+		visibleGroundStrength	= Util().getVisibleGroundStrength(*this);
+		maxGroundStrength		= Util().getMaxGroundStrength(*this);
+		visibleAirStrength		= Util().getVisibleAirStrength(*this);
+		maxAirStrength			= Util().getMaxAirStrength(*this);
+		priority				= Util().getPriority(*this);
 		lastAttackFrame			= (t != UnitTypes::Protoss_Reaver && (thisUnit->isStartingAttack() || thisUnit->isRepairing())) ? Broodwar->getFrameCount() : lastAttackFrame;
 		killCount				= unit()->getKillCount();
-		
+		simBonus				= 1.0;
+
+		this->updateTarget();
 		this->resetForces();		
 		this->updateStuckCheck();
+	}
+
+	void UnitInfo::updateTarget()
+	{
+		// Update my targets
+		if (player && player == Broodwar->self()) {
+			if (unitType == UnitTypes::Terran_Vulture_Spider_Mine) {
+				auto mineTarget = unit()->getOrderTarget();
+
+				if (Units().getEnemyUnits().find(mineTarget) != Units().getEnemyUnits().end())
+					target = mineTarget != nullptr ? &Units().getEnemyUnits()[mineTarget] : nullptr;
+				else
+					target = nullptr;
+			}
+			else
+				Targets().getTarget(*this);
+		}
+
+		// Assume enemy targets
+		else if (player && player->isEnemy(Broodwar->self())) {
+
+			if (unitType == UnitTypes::Terran_Vulture_Spider_Mine && thisUnit->getOrderTarget() && thisUnit->getOrderTarget()->getPlayer() == Broodwar->self())
+				target = &Units().getMyUnits()[thisUnit->getOrderTarget()];
+			else if (unitType != UnitTypes::Terran_Vulture_Spider_Mine && thisUnit->getOrderTarget() && Units().getMyUnits().find(thisUnit->getOrderTarget()) != Units().getMyUnits().end())
+				target = &Units().getMyUnits()[thisUnit->getOrderTarget()];
+			else
+				target = nullptr;
+		}
 	}
 
 	void UnitInfo::updateStuckCheck() {
