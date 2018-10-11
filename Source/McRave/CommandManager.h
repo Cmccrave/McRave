@@ -32,8 +32,8 @@ namespace McRave
 		vector <CommandType> enemyCommands;
 		map<Position, double> myGoals;
 
-		void updateArbiter(UnitInfo&), updateDarchon(UnitInfo&), updateDefiler(UnitInfo&), updateDetector(UnitInfo&), updateQueen(UnitInfo&);
-		void updateAlliedUnits(), updateEnemyCommands();
+		void updateArbiter(UnitInfo&), updateDetector(UnitInfo&);
+		void updateUnits(), updateDecision(UnitInfo&), updateEnemyCommands();
 		void updateGoals();
 		void assignClosestToGoal(Position, vector<UnitType>);
 

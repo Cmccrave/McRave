@@ -88,9 +88,9 @@ namespace McRave
 
 		// Terran building needs new scv
 		else if (building.getType().getRace() == Races::Terran && !building.unit()->isCompleted() && !building.unit()->getBuildUnit()) {
-			Unit builder = Workers().getClosestWorker(building.getPosition(), true);
+			auto builder = Util().getClosestBuilder(building.getPosition());
 			if (builder)
-				builder->rightClick(building.unit());
+				builder->unit()->rightClick(building.unit());
 		}
 
 		// Nuke counting
@@ -144,10 +144,13 @@ namespace McRave
 		buildingsQueued.clear();
 
 		// Add up how many buildings we have assigned to workers
-		for (auto &worker : Workers().getMyWorkers()) {
-			WorkerInfo &w = worker.second;
-			if (w.getBuildingType().isValid() && w.getBuildPosition().isValid() && (w.getBuildingType().isRefinery() || mapBWEB.getUsedTiles().find(w.getBuildPosition()) == mapBWEB.getUsedTiles().end())) {
-				buildingsQueued[w.getBuildPosition()] = w.getBuildingType();
+		for (auto &u : Units().getMyUnits()) {
+			UnitInfo &unit = u.second;
+
+			if (unit.getRole() == Role::Working) {
+				if (unit.getBuildingType().isValid() && unit.getBuildPosition().isValid() && (unit.getBuildingType().isRefinery() || mapBWEB.getUsedTiles().find(unit.getBuildPosition()) == mapBWEB.getUsedTiles().end())) {
+					buildingsQueued[unit.getBuildPosition()] = unit.getBuildingType();
+				}
 			}
 		}
 
@@ -184,15 +187,13 @@ namespace McRave
 			// Queue building if our actual count is higher than our visible count
 			if (!building.isAddon() && bDesired > (bQueued + Broodwar->self()->visibleUnitCount(building) + offset)) {
 				TilePosition here = getBuildLocation(building);
-				Unit builder = Workers().getClosestWorker(Position(here), true);
+				auto builder = Util().getClosestBuilder(Position(here));
 
 				if (here.isValid() && builder) {
-					Workers().getMyWorkers()[builder].setBuildingType(building);
-					Workers().getMyWorkers()[builder].setBuildPosition(here);
+					builder->setBuildingType(building);
+					builder->setBuildPosition(here);
 					buildingsQueued[here] = building;
 				}
-				//if (!here.isValid())
-					//Broodwar << "Failed to place " << building.c_str() << endl;
 			}
 		}
 	}
@@ -402,7 +403,7 @@ namespace McRave
 			return false;
 
 		// HACK: Had to find a way to let hatcheries be prevented from being queued by a BWEB block too close to resources
-		if (building == UnitTypes::Zerg_Hatchery && !Broodwar->canBuildHere(here, building, Workers().getClosestWorker(Position(here), false)))
+		if (building == UnitTypes::Zerg_Hatchery && !Broodwar->canBuildHere(here, building))
 			return false;
 		return true;
 	}

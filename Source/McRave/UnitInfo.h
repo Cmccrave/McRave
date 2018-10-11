@@ -1,42 +1,44 @@
 #pragma once
 #include <BWAPI.h>
 #include "..\BWEB\BWEB.h"
+#include "McRave.h"
 
 using namespace BWAPI;
 using namespace std;
 
 namespace McRave
 {
-	enum Role
-	{
-		Worker, Combat, Transport, Scout, Production, Defense, Support
-	};
+	class ResourceInfo;
 
 	class UnitInfo {
 		double percentHealth, groundRange, airRange, groundDamage, airDamage, speed;						// StarCraft stats
 		double visibleGroundStrength, visibleAirStrength, maxGroundStrength, maxAirStrength, priority;		// McRave stats
 		double engageDist;
-		double simValue;
+		double simValue, simBonus;
 		int localStrategy, globalStrategy, lastAttackFrame, lastVisibleFrame, shields, health, minStopFrame;
 		int killCount, frameCreated;
 		int lastMoveFrame;
-		double simBonus;
+		int resourceHeldFrames;
 
 		bool burrowed;
 		bool engage, retreat;
 
-		Unit thisUnit, transport;
-		UnitType unitType;
+		Unit thisUnit;
+		UnitType unitType, buildingType;
 		Player player;
 
-		UnitInfo* assignedTarget;
-		UnitInfo* assignedTransport;
-		ResourceInfo* assignedResource;
+		McRave::Role role;
+		McRave::TransportState tState;
+		McRave::CombatState cState;
+
+		UnitInfo* target;
+		UnitInfo* transport;
+		ResourceInfo* resource;
 		set<UnitInfo*> assignedCargo;
 
 		Position position, engagePosition, destination, simPosition, lastPos;
 		WalkPosition walkPosition, lastWalk;
-		TilePosition tilePosition, lastTile;
+		TilePosition tilePosition, buildPosition, lastTile;
 
 		BWEB::Path targetPath;
 		void updateTarget();
@@ -49,6 +51,10 @@ namespace McRave
 		void createDummy(UnitType);
 		double getDistance(UnitInfo unit) { return position.getDistance(unit.getPosition()); }
 
+		// Roles
+		McRave::Role getRole() { return role; }
+		void setRole(McRave::Role newRole) { role = newRole; }
+
 		// Simulation
 		void setSimValue(double newValue) { simValue = newValue; }
 		double getSimValue() { return simValue; }
@@ -60,20 +66,32 @@ namespace McRave
 		bool shouldRetreat() { return retreat; }
 		bool shouldEngage() { return engage; }
 
-		// Target
-		bool hasTarget() { return assignedTarget != nullptr; }
-		UnitInfo &getTarget() { return *assignedTarget; }
-		void setTarget(UnitInfo * unit) { assignedTarget = unit; }		
+		// Assigned Target
+		bool hasTarget() { return target != nullptr; }
+		UnitInfo &getTarget() { return *target; }
+		void setTarget(UnitInfo * unit) { target = unit; }
 
-		// Transport
-		bool hasTransport() { return assignedTransport != nullptr; }
-		UnitInfo &getTransport() { return *assignedTransport; }
-		void setTransport(UnitInfo * unit) { assignedTransport = unit; }
+		// Assigned Transport
+		bool hasTransport() { return transport != nullptr; }
+		UnitInfo &getTransport() { return *transport; }
+		void setTransport(UnitInfo * unit) { transport = unit; }
 
-		// Resource
-		bool hasResource() { return assignedResource != nullptr; }
-		ResourceInfo &getResource() { return *assignedResource; }
-		void setResource(ResourceInfo * unit) { assignedResource = unit; }
+		// Assigned Resource
+		bool hasResource() { return resource != nullptr; }
+		ResourceInfo &getResource() { return *resource; }
+		void setResource(ResourceInfo * unit) { resource = unit; }
+
+		// Assigned Cargo
+		set<UnitInfo*>& getAssignedCargo() { return assignedCargo; }
+
+		// States
+		McRave::TransportState getTransportState() { return tState; }
+		void setTransportState(McRave::TransportState newState) { tState = newState; }
+		McRave::CombatState getCombatState() { return cState; }
+		void setCombatState(McRave::CombatState newState) { cState = newState; }
+
+		// Holding resource
+		int framesHoldingResource() { return resourceHeldFrames; }
 
 		// Engagement distances
 		double getEngDist() { return engageDist; }
@@ -90,7 +108,7 @@ namespace McRave
 		void setTargetPath(BWEB::Path& newPath) { targetPath = newPath; }
 		BWEB::Path& getTargetPath() { return targetPath; }
 		bool samePath() {
-			return (targetPath.getTiles().front() == assignedTarget->getTilePosition() && targetPath.getTiles().back() == tilePosition);
+			return (targetPath.getTiles().front() == target->getTilePosition() && targetPath.getTiles().back() == tilePosition);
 		}
 
 		// Attack frame
@@ -143,6 +161,7 @@ namespace McRave
 		Position getSimPosition()						{ return simPosition; }
 		Unit unit()										{ return thisUnit; }		
 		UnitType getType()								{ return unitType; }
+		UnitType getBuildingType()						{ return buildingType; }
 		Player getPlayer()								{ return player; }
 
 		Position getPosition()							{ return position; }
@@ -150,6 +169,7 @@ namespace McRave
 		Position getDestination()						{ return destination; }
 		WalkPosition getWalkPosition()					{ return walkPosition; }
 		TilePosition getTilePosition()					{ return tilePosition; }
+		TilePosition getBuildPosition()					{ return buildPosition; }
 
 		void setSimBonus(double newValue)				{ simBonus = newValue; }
 		void setLocalStrategy(int newValue)				{ localStrategy = newValue; }
@@ -158,6 +178,7 @@ namespace McRave
 
 		void setUnit(Unit newUnit)						{ thisUnit = newUnit; }		
 		void setType(UnitType newType)					{ unitType = newType; }
+		void setBuildingType(UnitType newType)			{ buildingType = newType; }
 		void setPlayer(Player newPlayer)				{ player = newPlayer; }
 
 		void setSimPosition(Position newPosition)		{ simPosition = newPosition; }
@@ -166,5 +187,6 @@ namespace McRave
 		void setDestination(Position newPosition)		{ destination = newPosition; }
 		void setWalkPosition(WalkPosition newPosition)	{ walkPosition = newPosition; }
 		void setTilePosition(TilePosition newPosition)	{ tilePosition = newPosition; }
+		void setBuildPosition(TilePosition newPosition) { buildPosition = newPosition; }
 	};
 }

@@ -10,9 +10,10 @@ void WorkerManager::onFrame()
 
 void WorkerManager::updateWorkers()
 {
-	for (auto &worker : myWorkers) {
-		updateInformation(worker.second);
-		updateDecision(worker.second);
+	for (auto &w : Units().getMyUnits()) {
+		auto &worker = w.second;
+		if (worker.getRole() == Role::Working)
+			updateDecision(worker);
 	}
 }
 
@@ -57,20 +58,15 @@ void WorkerManager::updateScouts()
 
 	// If we have too few scouts
 	if (mapBWEB.getNaturalChoke() && BuildOrder().shouldScout() && (int)scouts.size() < scoutCount)
-		scouts.insert(getClosestWorker(Position(mapBWEB.getNaturalChoke()->Center()), false));
+		scouts.insert(Util().getClosestUnit(Position(mapBWEB.getNaturalChoke()->Center()), Broodwar->self(), UnitTypes::Protoss_Probe)->unit());
 }
 
-void WorkerManager::updateInformation(WorkerInfo& worker)
-{
-	worker.update();
-}
-
-void WorkerManager::updateDecision(WorkerInfo& worker)
+void WorkerManager::updateDecision(UnitInfo& worker)
 {
 	// Workers that have a transport coming to pick them up should not do anything other than returning cargo
-	if (worker.getTransport() && !worker.unit()->isCarryingMinerals() && !worker.unit()->isCarryingGas()) {
+	if (worker.hasTransport() && !worker.unit()->isCarryingMinerals() && !worker.unit()->isCarryingGas()) {
 		if (worker.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
-			worker.unit()->move(worker.getTransport()->getPosition());
+			worker.unit()->move(worker.getTransport().getPosition());
 		return;
 	}
 
@@ -109,7 +105,7 @@ void WorkerManager::updateDecision(WorkerInfo& worker)
 		gather(worker);
 }
 
-bool WorkerManager::shouldAssign(WorkerInfo& worker)
+bool WorkerManager::shouldAssign(UnitInfo& worker)
 {
 	if (find(scouts.begin(), scouts.end(), worker.unit()) != scouts.end())
 		return false;
@@ -125,14 +121,14 @@ bool WorkerManager::shouldAssign(WorkerInfo& worker)
 	return false;
 }
 
-bool WorkerManager::shouldBuild(WorkerInfo& worker)
+bool WorkerManager::shouldBuild(UnitInfo& worker)
 {
 	if (worker.getBuildingType().isValid() && worker.getBuildPosition().isValid())
 		return true;
 	return false;
 }
 
-bool WorkerManager::shouldClearPath(WorkerInfo& worker)
+bool WorkerManager::shouldClearPath(UnitInfo& worker)
 {
 	if (Broodwar->getFrameCount() < 10000)
 		return false;
@@ -147,18 +143,20 @@ bool WorkerManager::shouldClearPath(WorkerInfo& worker)
 	return false;
 }
 
-bool WorkerManager::shouldFight(WorkerInfo& worker)
+bool WorkerManager::shouldFight(UnitInfo& worker)
 {
-	if (worker.getTransport())
+	if (worker.hasTransport())
 		return false;
-	if (Util().reactivePullWorker(worker.unit()) || (Util().proactivePullWorker(worker.unit()) && worker.unit() == getClosestWorker(Terrain().getDefendPosition(), true)))
-		return true;
-	if (Util().pullRepairWorker(worker.unit()) && worker.unit() == getClosestWorker(Terrain().getDefendPosition(), true))
-		return true;
+
+	// This won't work
+	//if (Util().reactivePullWorker(worker.unit()) || (Util().proactivePullWorker(worker.unit()) && &worker == Util().getClosestUnit(Terrain().getDefendPosition(), Broodwar->self(), worker.getType())))
+	//	return true;
+	//if (Util().pullRepairWorker(worker.unit()) && &worker == Util().getClosestUnit(Terrain().getDefendPosition(), Broodwar->self(), worker.getType()))
+	//	return true;
 	return false;
 }
 
-bool WorkerManager::shouldGather(WorkerInfo& worker)
+bool WorkerManager::shouldGather(UnitInfo& worker)
 {
 	if (worker.hasResource() && (worker.unit()->isGatheringMinerals() || worker.unit()->isGatheringGas()) && worker.unit()->getTarget() != worker.getResource().unit() && worker.getResource().getState() == 2)
 		return true;
@@ -167,7 +165,7 @@ bool WorkerManager::shouldGather(WorkerInfo& worker)
 	return false;
 }
 
-bool WorkerManager::shouldReturnCargo(WorkerInfo& worker)
+bool WorkerManager::shouldReturnCargo(UnitInfo& worker)
 {
 	// Don't return cargo if we're on an island and just mined a blocking mineral
 	if (worker.getBuildingType().isResourceDepot() && worker.getBuildPosition().isValid() && mapBWEM.GetArea(worker.getBuildPosition()) && !mapBWEM.GetArea(worker.getBuildPosition())->AccessibleFrom(mapBWEB.getMainArea()) && worker.getPosition().getDistance((Position)worker.getBuildPosition()) < 160.0)
@@ -177,7 +175,7 @@ bool WorkerManager::shouldReturnCargo(WorkerInfo& worker)
 	return false;
 }
 
-bool WorkerManager::shouldScout(WorkerInfo& worker)
+bool WorkerManager::shouldScout(UnitInfo& worker)
 {
 	if (worker.getBuildPosition().isValid())
 		return false;
@@ -190,7 +188,7 @@ bool WorkerManager::shouldScout(WorkerInfo& worker)
 	return false;
 }
 
-void WorkerManager::assign(WorkerInfo& worker)
+void WorkerManager::assign(UnitInfo& worker)
 {
 	// Remove current assignment if it has one
 	if (worker.hasResource()) {
@@ -245,7 +243,7 @@ void WorkerManager::assign(WorkerInfo& worker)
 	worker.setResource(nullptr);
 }
 
-void WorkerManager::build(WorkerInfo& worker)
+void WorkerManager::build(UnitInfo& worker)
 {
 	Position center = Position(worker.getBuildPosition()) + Position(worker.getBuildingType().tileWidth() * 16, worker.getBuildingType().tileHeight() * 16);
 
@@ -298,7 +296,7 @@ void WorkerManager::build(WorkerInfo& worker)
 	}
 }
 
-void WorkerManager::clearPath(WorkerInfo& worker)
+void WorkerManager::clearPath(UnitInfo& worker)
 {
 	for (auto &b : Resources().getMyBoulders()) {
 		ResourceInfo &boulder = b.second;
@@ -315,12 +313,12 @@ void WorkerManager::clearPath(WorkerInfo& worker)
 	}
 }
 
-void WorkerManager::fight(WorkerInfo& worker)
+void WorkerManager::fight(UnitInfo& worker)
 {
 	Units().storeAlly(worker.unit());
 }
 
-void WorkerManager::gather(WorkerInfo& worker)
+void WorkerManager::gather(UnitInfo& worker)
 {
 	if (worker.hasResource() && worker.getResource().getState() == 2) {
 		if (worker.getResource().unit() && worker.getResource().unit()->exists() && (worker.getPosition().getDistance(worker.getResource().getPosition()) < 320.0 || worker.unit()->getShields() < 20))
@@ -335,13 +333,13 @@ void WorkerManager::gather(WorkerInfo& worker)
 	}
 }
 
-void WorkerManager::returnCargo(WorkerInfo& worker)
+void WorkerManager::returnCargo(UnitInfo& worker)
 {
 	if (worker.unit()->getOrder() != Orders::ReturnMinerals && worker.unit()->getOrder() != Orders::ReturnGas && worker.unit()->getLastCommand().getType() != UnitCommandTypes::Return_Cargo)
 		worker.unit()->returnCargo();
 }
 
-void WorkerManager::scout(WorkerInfo& worker)
+void WorkerManager::scout(UnitInfo& worker)
 {
 	WalkPosition start = worker.getWalkPosition();
 	double distBest = DBL_MAX;
@@ -427,7 +425,7 @@ void WorkerManager::scout(WorkerInfo& worker)
 	}
 }
 
-void WorkerManager::explore(WorkerInfo& worker)
+void WorkerManager::explore(UnitInfo& worker)
 {
 	WalkPosition start = worker.getWalkPosition();
 	Position bestPosition = worker.getDestination();
@@ -498,7 +496,7 @@ void WorkerManager::explore(WorkerInfo& worker)
 	}
 }
 
-void WorkerManager::safeMove(WorkerInfo& worker)
+void WorkerManager::safeMove(UnitInfo& worker)
 {
 	UnitInfo* enemy = Util().getClosestUnit(worker.getPosition(), Broodwar->enemy());
 	Position bestPosition(worker.getBuildPosition());
@@ -539,67 +537,9 @@ void WorkerManager::safeMove(WorkerInfo& worker)
 		worker.unit()->move(bestPosition);
 }
 
-Unit WorkerManager::getClosestWorker(Position here, bool isRemoving)
+UnitInfo* WorkerManager::getClosestScout(Position here)
 {
-	// Currently gets the closest worker that doesn't mine gas
-	Unit closestWorker = nullptr;
-	double closestD = DBL_MAX;
-	for (auto &w : myWorkers) {
-		WorkerInfo &worker = w.second;
-
-		if (worker.hasResource() && !worker.getResource().getType().isMineralField()) continue;
-		if (isRemoving && worker.getBuildPosition().isValid()) continue;
-		if (find(scouts.begin(), scouts.end(), worker.unit()) != scouts.end()) continue;
-		if (worker.unit()->getLastCommand().getType() == UnitCommandTypes::Gather && worker.unit()->getLastCommand().getTarget()->exists() && worker.unit()->getLastCommand().getTarget()->getInitialResources() == 0)	continue;
-		if (worker.getType() != UnitTypes::Protoss_Probe && worker.unit()->isConstructing()) continue;
-
-		double dist = mapBWEB.getGroundDistance(worker.getPosition(), here);
-		if (dist == DBL_MAX)
-			dist = worker.getPosition().getDistance(here);
-
-		if (dist < closestD) {
-			closestWorker = worker.unit();
-			closestD = dist;
-		}
-	}
-	return closestWorker;
-}
-
-void WorkerManager::storeWorker(Unit unit)
-{
-	myWorkers[unit].setUnit(unit);
-}
-
-void WorkerManager::removeWorker(Unit worker)
-{
-	WorkerInfo &thisWorker = myWorkers[worker];
-	if (thisWorker.hasResource()) {
-		thisWorker.getResource().setGathererCount(thisWorker.getResource().getGathererCount() - 1);
-		thisWorker.getResource().getType().isMineralField() ? minWorkers-- : gasWorkers--;
-	}
-
-	if (find(scouts.begin(), scouts.end(), worker) != scouts.end()) {
-		deadScoutFrame = Broodwar->getFrameCount();
-		scouts.erase(find(scouts.begin(), scouts.end(), worker));
-	}
-	myWorkers.erase(worker);
-}
-
-WorkerInfo* WorkerManager::getClosestScout(Position here)
-{
-	double distBest = DBL_MAX;
-	WorkerInfo* closestWorker = nullptr;
-	for (auto &worker : scouts) {
-		if (!worker)
-			continue;
-
-		double dist = mapBWEB.getGroundDistance(myWorkers[worker].getPosition(), here);
-		if (dist < distBest) {
-			closestWorker = &myWorkers[worker];
-			distBest = dist;
-		}
-	}
-	return closestWorker;
+	return nullptr;
 }
 
 bool WorkerManager::needGas() {

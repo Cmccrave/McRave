@@ -100,9 +100,9 @@ void ResourceManager::removeResource(Unit resource)
 		myGas.erase(resource);
 
 	// Any workers that targeted that resource now have no target
-	for (auto &w : Workers().getMyWorkers()) {
-		WorkerInfo& worker = w.second;
-		if (worker.hasResource() && worker.getResource().unit() == resource)
-			worker.setResource(nullptr);
+	for (auto &u : Units().getMyUnits()) {
+		UnitInfo& unit = u.second;
+		if (unit.hasResource() && unit.getResource().unit() == resource)
+			unit.setResource(nullptr);
 	}
 }

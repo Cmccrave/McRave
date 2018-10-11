@@ -1,7 +1,6 @@
 #pragma once
 #include <BWAPI.h>
 #include "Singleton.h"
-#include "TransportInfo.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -15,7 +14,6 @@ namespace McRave
 	public:
 		void onFrame();
 		void updateTransports();
-		void updateInformation(UnitInfo&);
 		void updateCargo(UnitInfo&);
 		void updateDecision(UnitInfo&);
 		void updateMovement(UnitInfo&);

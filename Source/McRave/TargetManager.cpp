@@ -25,7 +25,7 @@ namespace McRave
 				|| (enemy.unit()->exists() && enemy.unit()->isStasised()) 												// If enemy is stasised
 				|| (enemy.getType().isBuilding() && enemy.getAirDamage() == 0.0 && enemy.getGroundDamage() == 0.0 && unit.getType() == UnitTypes::Zerg_Mutalisk)
 				|| (enemy.getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.getType() == UnitTypes::Protoss_Zealot && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) < 2)				// If enemy is a mine and my unit is melee
-				|| (unit.getTransport() && enemy.getType().isBuilding() && Broodwar->getFrameCount() < 15000) 													// If unit has an assigned transport, don't target buildings
+				|| (unit.hasTransport() && enemy.getType().isBuilding() && Broodwar->getFrameCount() < 15000) 													// If unit has an assigned transport, don't target buildings
 				|| ((enemy.isBurrowed() || enemy.unit()->isCloaked()) && !enemy.unit()->isDetected() && !enemyCanAttack && !unit.getType().isDetector())		// If enemy is invisible and can't attack this unit
 				|| (!enemy.getType().isFlyer() && enemy.unit()->isUnderDisruptionWeb() && unit.getGroundRange() <= 64)		// If enemy is under DWEB and my unit is melee 
 				|| (unit.getType() == UnitTypes::Protoss_Dark_Templar && enemy.getType() == UnitTypes::Terran_Vulture)
@@ -124,7 +124,7 @@ namespace McRave
 			if (!unitCanAttack)
 				continue;
 
-			if (unit.getTransport() && neutral.getType().isBuilding())
+			if (unit.hasTransport() && neutral.getType().isBuilding())
 				continue;
 
 			thisUnit = neutral.getPriority() / distance;
@@ -194,7 +194,7 @@ namespace McRave
 
 
 		// See if we pass any narrow chokes while trying to fight
-		if (unit.getEngagePosition().isValid() && !unit.getType().isFlyer() && !unit.getTransport() && Units().getSupply() >= 80 && mapBWEM.GetArea(unit.getTilePosition()) && mapBWEM.GetArea((TilePosition)unit.getEngagePosition())) {
+		if (unit.getEngagePosition().isValid() && !unit.getType().isFlyer() && !unit.hasTransport() && Units().getSupply() >= 80 && mapBWEM.GetArea(unit.getTilePosition()) && mapBWEM.GetArea((TilePosition)unit.getEngagePosition())) {
 			auto unitWidth = min(unit.getType().width(), unit.getType().height());
 			auto chokeWidth = 0;
 
@@ -220,7 +220,7 @@ namespace McRave
 			if (!unit.getTargetPath().getTiles().empty() && unit.samePath())												// If both units have the same tile
 				return false;
 
-			if (!unit.getTransport()																						// If unit has no transport
+			if (!unit.hasTransport()																						// If unit has no transport
 				&& unit.getTilePosition().isValid() && unit.getTarget().getTilePosition().isValid()							// If both units have valid tiles
 				&& mapBWEB.getUsedTiles().find(unit.getTarget().getTilePosition()) == mapBWEB.getUsedTiles().end()			// Doesn't overlap buildings
 				&& !unit.getType().isFlyer() && !unit.getTarget().getType().isFlyer()										// Doesn't include flyers

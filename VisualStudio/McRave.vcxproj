@@ -67,12 +67,10 @@
     <ClCompile Include="..\Source\McRave\TerrainManager.cpp" />
     <ClCompile Include="..\Source\McRave\TerranBuildOrder.cpp" />
     <ClCompile Include="..\Source\McRave\TerranBuilds.cpp" />
-    <ClCompile Include="..\Source\McRave\TransportInfo.cpp" />
     <ClCompile Include="..\Source\McRave\TransportManager.cpp" />
     <ClCompile Include="..\Source\McRave\UnitInfo.cpp" />
     <ClCompile Include="..\Source\McRave\UnitManager.cpp" />
     <ClCompile Include="..\Source\McRave\Util.cpp" />
-    <ClCompile Include="..\Source\McRave\WorkerInfo.cpp" />
     <ClCompile Include="..\Source\McRave\WorkerManager.cpp" />
     <ClCompile Include="..\Source\McRave\ZergBuildOrder.cpp" />
     <ClCompile Include="..\Source\McRave\ZergBuilds.cpp" />
@@ -119,12 +117,10 @@
     <ClInclude Include="..\Source\McRave\StrategyManager.h" />
     <ClInclude Include="..\Source\McRave\TargetManager.h" />
     <ClInclude Include="..\Source\McRave\TerrainManager.h" />
-    <ClInclude Include="..\Source\McRave\TransportInfo.h" />
     <ClInclude Include="..\Source\McRave\TransportManager.h" />
     <ClInclude Include="..\Source\McRave\UnitInfo.h" />
     <ClInclude Include="..\Source\McRave\UnitManager.h" />
     <ClInclude Include="..\Source\McRave\Util.h" />
-    <ClInclude Include="..\Source\McRave\WorkerInfo.h" />
     <ClInclude Include="..\Source\McRave\WorkerManager.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

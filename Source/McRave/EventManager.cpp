@@ -48,7 +48,7 @@ namespace McRave
 		// TODO: Check if we can put this in the if statement below for my units, when do players change?
 		if (myUnits.find(unit) != myUnits.end()) {
 
-			if (myUnits[unit].getTransport())
+			if (myUnits[unit].hasTransport())
 				Transport().removeUnit(unit);
 
 			allySizes[unit->getType().size()] -= 1;
@@ -78,7 +78,7 @@ namespace McRave
 			if (unit->getType().isBuilding())
 				Buildings().removeBuilding(unit);
 			else if (unit->getType().isWorker())
-				Workers().removeWorker(unit);
+				myUnits.erase(unit);
 			else if (unit->getType() == UnitTypes::Protoss_Shuttle)
 				Transport().removeUnit(unit);
 		}
@@ -103,14 +103,14 @@ namespace McRave
 			if (unit->getType().getRace() == Races::Zerg) {
 				supply += unit->getType().supplyRequired();
 
-				if (unit->getType().isBuilding() && Workers().getMyWorkers().find(unit) != Workers().getMyWorkers().end()) {
-					Workers().removeWorker(unit);
+				if (unit->getType().isBuilding() && myUnits.find(unit) != myUnits.end()) {
+					myUnits.erase(unit);
 					onUnitCreate(unit);
 					supply -= 2;
 				}
 
 				else if (unit->getType().isWorker())
-					Workers().storeWorker(unit);
+					myUnits.erase(unit);
 				else if (!unit->getType().isWorker() && !unit->getType().isBuilding())
 					storeAlly(unit);
 			}
@@ -170,7 +170,7 @@ namespace McRave
 		if (unit->getPlayer() == Broodwar->self() && !unit->getType().isBuilding()) {
 			allySizes[unit->getType().size()] += 1;
 			if (unit->getType().isWorker())
-				Workers().storeWorker(unit);
+				storeAlly(unit);
 			else if (unit->getType() == UnitTypes::Protoss_Shuttle || unit->getType() == UnitTypes::Terran_Dropship)
 				Transport().storeUnit(unit);
 			else if (!unit->getType().isWorker())

@@ -9,7 +9,7 @@ using namespace std;
 
 namespace McRave
 {	
-	class WorkerInfo;
+	class UnitInfo;
 	class BuildingInfo;		
 	class UnitManager
 	{
@@ -76,6 +76,7 @@ namespace McRave
 
 		void updateLocalSimulation(UnitInfo&);
 		void updateStrategy(UnitInfo&);
+		void updateRole(UnitInfo&);
 
 		// Storage
 		void onUnitDiscover(Unit);

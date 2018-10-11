@@ -327,6 +327,7 @@ namespace McRave
 
 	bool BuildOrderManager::shouldAddGas()
 	{
+		auto workerCount = Broodwar->self()->completedUnitCount(Broodwar->self()->getRace().getWorker());
 		if (Broodwar->self()->getRace() == Races::Zerg) {
 			if (Resources().isGasSaturated() && Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 100)
 				return true;
@@ -334,7 +335,7 @@ namespace McRave
 		
 		else if (Broodwar->self()->getRace() == Races::Protoss) {
 			if (Players().vP())
-				return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Assimilator) != 1 || Workers().getMyWorkers().size() >= 36 || Broodwar->self()->minerals() > 600;
+				return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Assimilator) != 1 || workerCount >= 32 || Broodwar->self()->minerals() > 600;
 			else if (Players().vT() || Players().vZ())
 				return true;
 		}

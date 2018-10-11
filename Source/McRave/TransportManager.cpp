@@ -10,12 +10,7 @@ void TransportManager::onFrame()
 
 void TransportManager::updateTransports()
 {
-	// HACK: Prevent overlords from spazzing out
-	if (Broodwar->self()->getRace() == Races::Zerg)
-		return;
-
 	for (auto &transport : myTransports) {
-		updateInformation(transport.second);
 		updateCargo(transport.second);
 		updateDecision(transport.second);
 		updateMovement(transport.second);
@@ -25,27 +20,32 @@ void TransportManager::updateTransports()
 
 void TransportManager::updateCargo(UnitInfo& transport)
 {
-	//// Check if we are ready to assign this worker to a transport
-	//const auto readyToAssignWorker = [&](UnitInfo& worker) {
-	//	if (transport.getCargoSize() + worker.getType().spaceRequired() > 8 || worker.getTransport())
-	//		return false;
+	auto cargoSize = 0;
+	for (auto u : transport.getAssignedCargo()) {
+		cargoSize += u->getType().spaceRequired();
+	}
+	
+	// Check if we are ready to assign this worker to a transport
+	const auto readyToAssignWorker = [&](UnitInfo& unit) {
+		if (cargoSize + unit.getType().spaceRequired() > 8 || unit.hasTransport())
+			return false;
 
-	//	// Temp
-	//	return false;
+		// Temp
+		return false;
 
-	//	auto buildDist = worker.getBuildingType().isValid() ? mapBWEB.getGroundDistance((Position)worker.getBuildPosition(), (Position)worker.getTilePosition()) : 0.0;
-	//	auto resourceDist = worker.hasResource() ? mapBWEB.getGroundDistance(worker.getPosition(), worker.getResource().getPosition()) : 0.0;
+		auto buildDist = unit.getBuildingType().isValid() ? mapBWEB.getGroundDistance((Position)unit.getBuildPosition(), (Position)unit.getTilePosition()) : 0.0;
+		auto resourceDist = unit.hasResource() ? mapBWEB.getGroundDistance(unit.getPosition(), unit.getResource().getPosition()) : 0.0;
 
-	//	if ((worker.getBuildPosition().isValid() && buildDist == DBL_MAX) || (worker.getBuildingType().isResourceDepot() && Terrain().isIslandMap()))
-	//		return true;
-	//	if (worker.hasResource() && resourceDist == DBL_MAX)
-	//		return true;
-	//	return false;
-	//};
+		if ((unit.getBuildPosition().isValid() && buildDist == DBL_MAX) || (unit.getBuildingType().isResourceDepot() && Terrain().isIslandMap()))
+			return true;
+		if (unit.hasResource() && resourceDist == DBL_MAX)
+			return true;
+		return false;
+	};
 
 	// Check if we are ready to assign this unit to a transport
 	const auto readyToAssignUnit = [&](UnitInfo& unit) {
-		if (transport.getCargoSize() + unit.getType().spaceRequired() > 8 || unit.hasTransport())
+		if (cargoSize + unit.getType().spaceRequired() > 8 || unit.hasTransport())
 			return false;
 
 		auto targetDist = mapBWEB.getGroundDistance(unit.getPosition(), unit.getEngagePosition());
@@ -61,48 +61,29 @@ void TransportManager::updateCargo(UnitInfo& transport)
 	};
 
 	// Update cargo information
-	if (transport.getCargoSize() < 8 && !transport.isUnloading()) {
-
-		// See if any workers need a shuttle
-		for (auto &w : Workers().getMyWorkers()) {
-			WorkerInfo &worker = w.second;
-
-			if (readyToAssignWorker(worker)) {
-				worker.setTransport(transport.unit());
-				transport.assignWorker(&worker);
-			}
-		}
-
-		// See if any units need a shuttle
+	if (cargoSize < 8) {
 		for (auto &u : Units().getMyUnits()) {
-			UnitInfo &unit = u.second;
+			auto &unit = u.second;
 
 			if (readyToAssignUnit(unit)) {
-				unit.setTransport(transport);
-				transport.assignCargo(&unit);
+				unit.setTransport(&transport);
+				transport.getAssignedCargo().insert(&unit);
+			}
+
+			if (readyToAssignWorker(unit)) {
+				unit.setTransport(&transport);
+				transport.getAssignedCargo().insert(&unit);
 			}
 		}
 	}
 }
 
-void TransportManager::updateInformation(UnitInfo& transport)
-{
-	transport.setType(transport.unit()->getType());
-	transport.setPosition(transport.unit()->getPosition());
-	transport.setWalkPosition(Util().getWalkPosition(transport.unit()));
-	transport.setTilePosition(transport.unit()->getTilePosition());
-	transport.setLoading(false);
-	transport.setUnloading(false);
-	transport.setRetreating(false);
-	transport.setEngaging(false);
-	transport.setMonitoring(false);
-	transport.setDestination(mapBWEB.getMainPosition());
-	transport.getCargoTargets().clear();
-}
-
 void TransportManager::updateDecision(UnitInfo& transport)
 {
 	// TODO: Broke transports for islands, fix later
+	transport.setDestination(mapBWEB.getMainPosition());
+	//transport.getCargoTargets().clear();
+	transport.setTransportState(TransportState::None);
 
 	// Check if this unit is ready to fight
 	const auto readyToFight = [&](UnitInfo& cargo) {
@@ -144,14 +125,14 @@ void TransportManager::updateDecision(UnitInfo& transport)
 	};
 
 	// Check if this worker is ready to mine
-	const auto readyToMine = [&](WorkerInfo& worker) {
+	const auto readyToMine = [&](UnitInfo& worker) {
 		if (Terrain().isIslandMap() && worker.hasResource() && worker.getResource().getTilePosition().isValid() && mapBWEM.GetArea(transport.getTilePosition()) == mapBWEM.GetArea(worker.getResource().getTilePosition()))
 			return true;
 		return false;
 	};
 
 	// Check if this worker is ready to build
-	const auto readyToBuild = [&](WorkerInfo& worker) {
+	const auto readyToBuild = [&](UnitInfo& worker) {
 		if (Terrain().isIslandMap() && worker.getBuildPosition().isValid() && mapBWEM.GetArea(worker.getTilePosition()) == mapBWEM.GetArea(worker.getBuildPosition()))
 			return true;
 		return false;
@@ -169,50 +150,35 @@ void TransportManager::updateDecision(UnitInfo& transport)
 			continue;
 		auto &cargo = *c;
 
-		if (cargo.hasTarget())
-			transport.addCargoTarget(cargo.getTarget().getPosition());
-
 		// If the cargo is not loaded
 		if (!cargo.unit()->isLoaded()) {
 
 			// If it's requesting a pickup, set load state to 1	
 			if (readyToPickup(cargo)) {
-				transport.setLoading(true);
+				transport.setTransportState(TransportState::Loading);
 				transport.setDestination(pickupPosition(cargo));
 				cargo.unit()->rightClick(transport.unit());
-
-				// Turn off everything else
-				transport.setMonitoring(false);
-				transport.setRetreating(false);
-				transport.setEngaging(false);
-				transport.setUnloading(false);
 				return;
 			}
 			else if (readyToFight(cargo))
-				transport.setMonitoring(true);
-
-
-			// HACK: Island maps just shuttle units for now
-			if (readyToFight(cargo) && Terrain().isIslandMap()) {
-				transport.removeCargo(&cargo);
-				cargo.setTransport(nullptr);
-				return;
-			}
+				transport.setTransportState(TransportState::Monitoring);
 		}
 
 		// Else if the cargo is loaded
 		else if (cargo.unit()->isLoaded() && cargo.hasTarget() && cargo.getEngagePosition().isValid()) {
 			transport.setDestination(cargo.getEngagePosition());
 
-			if (readyToFight(cargo)) {
-				transport.setEngaging(true);
-				transport.setUnloading(true);
 
-				if (readyToUnload(cargo))
+			if (readyToFight(cargo)) {
+				if (readyToUnload(cargo)) {
 					transport.unit()->unload(cargo.unit());
+					transport.setTransportState(TransportState::Unloading);
+				}
+				else
+					transport.setTransportState(TransportState::Engaging);
 			}
 			else
-				transport.setRetreating(true);
+				transport.setTransportState(TransportState::Retreating);
 
 			// Dont attack until we're ready
 			if (cargo.getGlobalStrategy() == 0 && !cargo.shouldEngage())
@@ -276,7 +242,7 @@ void TransportManager::updateDecision(UnitInfo& transport)
 	//}
 }
 
-void TransportManager::updateMovement(TransportInfo& transport)
+void TransportManager::updateMovement(UnitInfo& transport)
 {
 	// Determine highest threat possible here
 	const auto highestThreat = [&](WalkPosition here, UnitType t) {
@@ -298,11 +264,14 @@ void TransportManager::updateMovement(TransportInfo& transport)
 	auto dropTarget = transport.getDestination();
 	if (!Util().isWalkable(dropTarget) || mapBWEB.getGroundDistance(transport.getPosition(), dropTarget) == DBL_MAX) {
 		auto distBest = DBL_MAX;
-		for (auto pos : transport.getCargoTargets()) {
-			auto dist = pos.getDistance(transport.getPosition());
-			if (Util().isWalkable(pos) && dist < distBest) {
-				dropTarget = pos;
-				distBest = dist;
+		for (auto cargo : transport.getAssignedCargo()) {
+			if (cargo->hasTarget()) {
+				auto cargoTarget = cargo->getTarget().getPosition();
+				auto dist = cargoTarget.getDistance(transport.getPosition());
+				if (Util().isWalkable(cargoTarget) && dist < distBest) {
+					dropTarget = cargoTarget;
+					distBest = dist;
+				}
 			}
 		}
 	}
@@ -321,14 +290,14 @@ void TransportManager::updateMovement(TransportInfo& transport)
 				Position p = Position(w) + Position(4, 4);
 				if (!w.isValid()
 					|| p.getDistance(transport.getPosition()) <= 32.0
-					|| (transport.isUnloading() && !Util().isMobile(start, w, UnitTypes::Protoss_Reaver))
-					|| (transport.isUnloading() && Broodwar->getGroundHeight(TilePosition(w)) < Broodwar->getGroundHeight(TilePosition(dropTarget)))
+					|| (transport.getTransportState() == TransportState::Unloading && !Util().isMobile(start, w, UnitTypes::Protoss_Reaver))
+					|| (transport.getTransportState() == TransportState::Unloading && Broodwar->getGroundHeight(TilePosition(w)) < Broodwar->getGroundHeight(TilePosition(dropTarget)))
 					|| (p.getDistance(dropTarget) < 128.0 && dropTarget != Terrain().getDefendPosition())
 					|| (Terrain().getEnemyStartingTilePosition().isValid() && mapBWEM.GetArea(w) == mapBWEM.GetArea(Terrain().getEnemyStartingTilePosition())))
 					continue;
 
 				// If we just dropped units, we need to make sure not to leave them
-				if (transport.isMonitoring()) {
+				if (transport.getTransportState() == TransportState::Monitoring) {
 					bool proximity = true;
 					for (auto &u : transport.getAssignedCargo()) {
 						if (!u->unit()->isLoaded() && u->getPosition().getDistance(p) > 64.0)
@@ -343,12 +312,12 @@ void TransportManager::updateMovement(TransportInfo& transport)
 				auto distAway = p.getDistance(enemy->getPosition()) / p.getDistance(mapBWEB.getNaturalPosition());
 				
 				
-				double distance = 1.0 + (transport.isRetreating() ? 1.0 / distAway : distDrop);
+				double distance = 1.0 + (transport.getTransportState() == TransportState::Retreating ? 1.0 / distAway : distDrop);
 				double threat = highestThreat(w, transport.getType());
 				double cluster = 0.1 + Grids().getAGroundCluster(w);
 				double score = 1.0 / (distance * threat * cluster);
 
-				if (transport.isLoading() && p.getDistance(transport.getDestination()) < 64.0)
+				if (transport.getTransportState() == TransportState::Loading && p.getDistance(transport.getDestination()) < 64.0)
 					threat = 0.01;
 
 				if (score > best) {
@@ -366,30 +335,22 @@ void TransportManager::updateMovement(TransportInfo& transport)
 }
 
 void TransportManager::removeUnit(Unit unit)
-{
-	// Delete if it's a shuttled unit
-	for (auto &transport : myTransports) {
-		for (auto &cargo : transport.second.getAssignedCargo()) {
-			if (cargo->unit() == unit) {
-				transport.second.removeCargo(cargo);
-				return;
-			}
-		}
-		for (auto &worker : transport.second.getAssignedWorkers()) {
-			if (worker->unit() == unit) {
-				transport.second.removeWorker(worker);
-				return;
-			}
-		}
-	}
+{	
+	for (auto &t : Units().getMyUnits()) {
+		auto &transport = t.second;
 
-	// Delete if it's the shuttle
-	if (myTransports.find(unit) != myTransports.end()) {
-		for (auto &c : myTransports[unit].getAssignedCargo())
-			c->setTransport(nullptr);
-		for (auto &w : myTransports[unit].getAssignedWorkers())
-			w->setTransport(nullptr);
-		myTransports.erase(unit);
+		for (auto &cargo : transport.getAssignedCargo()) {
+
+			// Remove cargo if cargo died
+			if (cargo->unit() == unit) {
+				transport.getAssignedCargo().erase(cargo);
+				return;
+			}
+
+			// Set transport as nullptr if the transport died
+			if (cargo->hasTransport() && cargo->getTransport().unit() == transport.unit())
+				cargo->setTransport(nullptr);			
+		}
 	}
 }
 

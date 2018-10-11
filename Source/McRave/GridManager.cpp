@@ -122,12 +122,6 @@ namespace McRave
 		for (auto &b : Buildings().getMyBuildings())
 			addCollision(b.second);
 
-		// Worker grid update
-		for (auto &w : Workers().getMyWorkers()) {
-			WorkerInfo& worker = w.second;
-			addCollision(worker);
-		}
-
 		Display().performanceTest(__FUNCTION__);
 	}
 
@@ -140,11 +134,11 @@ namespace McRave
 			if (unit.unit()->exists() && (unit.unit()->isStasised() || unit.unit()->isMaelstrommed()))
 				continue;
 
-			UnitInfo* c = Util().getClosestAllyUnit(unit);
-			WorkerInfo* w = Util().getClosestAllyWorker(unit);
+			//UnitInfo* c = Util().getClosestAllyUnit(unit);
+			//UnitInfo* w = Util().getClosestAllyWorker(unit);
 
-			if ((!w || w->getPosition().getDistance(unit.getPosition()) > 720) && (!c || c->getPosition().getDistance(unit.getPosition()) > 720))
-				continue;
+			//if ((!w || w->getPosition().getDistance(unit.getPosition()) > 720) && (!c || c->getPosition().getDistance(unit.getPosition()) > 720))
+			//	continue;
 
 			WalkPosition start = unit.getWalkPosition();
 			if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Protoss_Scarab) {

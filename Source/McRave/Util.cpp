@@ -479,6 +479,27 @@ UnitInfo * UtilManager::getClosestUnit(Position here, Player p, UnitType t) {
 	return best;
 }
 
+UnitInfo * UtilManager::getClosestBuilder(Position here)
+{
+	double distBest = DBL_MAX;
+	UnitInfo* best = nullptr;
+	auto &units = Units().getMyUnits();
+
+	for (auto &u : units) {
+		UnitInfo &unit = u.second;
+
+		if (!unit.unit() || unit.getType().isWorker())
+			continue;
+
+		double dist = here.getDistance(unit.getPosition());
+		if (dist < distBest) {
+			best = &unit;
+			distBest = dist;
+		}
+	}
+	return best;
+}
+
 int UtilManager::chokeWidth(const BWEM::ChokePoint * choke)
 {
 	if (!choke)

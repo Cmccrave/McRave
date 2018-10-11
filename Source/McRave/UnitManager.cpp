@@ -128,26 +128,20 @@ void UnitManager::updateUnits()
 		unit.updateUnit();
 		updateLocalSimulation(unit);
 		updateStrategy(unit);
-
-		if (unit.getSimValue() < 10.0)
-			currentSim += unit.getSimValue();
+		updateRole(unit);
 				
-		// Remove the worker role if needed
-		if (unit.getType().isWorker() && Workers().getMyWorkers().find(unit.unit()) != Workers().getMyWorkers().end())
-			Workers().removeWorker(unit.unit());
+		//// Remove the worker role if needed
+		//if (unit.getType().isWorker() && Workers().getMyWorkers().find(unit.unit()) != Workers().getMyWorkers().end())
+		//	Workers().removeWorker(unit.unit());
 
-		// If this is a worker and is ready to go back to being a worker
-		if (unit.getType().isWorker() && (!Util().proactivePullWorker(unit.unit()) && !Util().reactivePullWorker(unit.unit())) && (unit.getType() != UnitTypes::Terran_SCV || !Util().pullRepairWorker(unit.unit())))
-			Workers().storeWorker(unit.unit());
+		//// If this is a worker and is ready to go back to being a worker
+		//if (unit.getType().isWorker() && (!Util().proactivePullWorker(unit.unit()) && !Util().reactivePullWorker(unit.unit())) && (unit.getType() != UnitTypes::Terran_SCV || !Util().pullRepairWorker(unit.unit())))
+		//	Workers().storeWorker(unit.unit());
 
 		// If unit is not a building and deals damage, add it to global strength	
 		if (!unit.getType().isBuilding())
 			unit.getType().isFlyer() ? globalAllyAirStrength += unit.getVisibleAirStrength() : globalAllyGroundStrength += unit.getVisibleGroundStrength();
-
-		// TEMP
-		if (unit.getType() == UnitTypes::Terran_SCV)
-			repWorkers++;
-
+		
 		for (auto p : Terrain().getChokePositions()) {
 			auto dist = unit.getPosition().getDistance(p);
 			if (dist < 32)
@@ -251,7 +245,7 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 		// Setup distance values
 		double dist = ally.getEngDist();
 		double widths = (double)ally.getType().tileWidth() * 16.0 + (double)ally.getTarget().getType().tileWidth() * 16.0;
-		double speed = (ally.getTransport() && ally.getTransport()->exists()) ? ally.getTransport()->getType().topSpeed() * 24.0 : (24.0 * ally.getSpeed());
+		double speed = (ally.hasTransport() && ally.getTransport().unit()->exists()) ? ally.getTransport().getType().topSpeed() * 24.0 : (24.0 * ally.getSpeed());
 
 		// Setup true distance
 		double distance = max(0.0, dist - widths);
@@ -447,12 +441,20 @@ void UnitManager::updateStrategy(UnitInfo& unit)
 
 		else if (((unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && unit.getPosition().getDistance(unit.getTarget().getPosition()) < 96.0)
 			|| ((unit.unit()->isCloaked() || unit.isBurrowed()) && !Commands().overlapsEnemyDetection(unit.getEngagePosition()))
-			|| (unit.getType() == UnitTypes::Protoss_Reaver && !unit.getTransport() && Util().unitInRange(unit))
+			|| (unit.getType() == UnitTypes::Protoss_Reaver && !unit.hasTransport() && Util().unitInRange(unit))
 			|| (unit.getGlobalStrategy() == 1 && unit.getLocalStrategy() == 1))
 			unit.setEngage();
 		else
 			unit.setRetreat();
 	}
+}
+
+void UnitManager::updateRole(UnitInfo& unit)
+{
+	if (unit.getType().isWorker())
+		unit.setRole(Role::Working);
+	else
+		unit.setRole(Role::Fighting);
 }
 
 bool UnitManager::isThreatening(UnitInfo& unit)
@@ -471,10 +473,10 @@ bool UnitManager::isThreatening(UnitInfo& unit)
 		return true;
 
 	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Shield_Battery) > 0) {
-		auto battery = Util().getClosestAllyBuilding(unit, Filter::GetType == UnitTypes::Protoss_Shield_Battery);
-		if (battery && unit.getPosition().getDistance(battery->getPosition()) <= 128.0) {
-			return true;
-		}
+		//auto battery = Util().getClosestAllyBuilding(unit, Filter::GetType == UnitTypes::Protoss_Shield_Battery);
+		//if (battery && unit.getPosition().getDistance(battery->getPosition()) <= 128.0) {
+		//	return true;
+		//}
 	}
 
 	if (unit.getType().isBuilding() && Terrain().isInAllyTerritory(unit.getTilePosition()))

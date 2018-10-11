@@ -1,7 +1,7 @@
 #pragma once
 #include <BWAPI.h>
 #include "Singleton.h"
-#include "WorkerInfo.h"
+#include "UnitInfo.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -10,7 +10,6 @@ namespace McRave
 {
 	class WorkerManager
 	{
-		map <Unit, WorkerInfo> myWorkers;
 		set<Position> scoutAssignments;
 		set<Unit> scouts;
 
@@ -21,36 +20,30 @@ namespace McRave
 		bool needGas();
 		bool proxyCheck = false;
 	public:
-		map <Unit, WorkerInfo>& getMyWorkers() { return myWorkers; }
-		Unit getClosestWorker(Position, bool);
-		WorkerInfo* getClosestScout(Position);
+		UnitInfo* getClosestScout(Position);
 
 		void onFrame();
 		void updateWorkers();
-		void updateInformation(WorkerInfo&);
-		void updateDecision(WorkerInfo&);
+		void updateDecision(UnitInfo&);
 		void updateScouts();
 		
-		bool shouldAssign(WorkerInfo&);
-		bool shouldBuild(WorkerInfo&);
-		bool shouldClearPath(WorkerInfo&);
-		bool shouldFight(WorkerInfo&);
-		bool shouldGather(WorkerInfo&);
-		bool shouldReturnCargo(WorkerInfo&);
-		bool shouldScout(WorkerInfo&);
+		bool shouldAssign(UnitInfo&);
+		bool shouldBuild(UnitInfo&);
+		bool shouldClearPath(UnitInfo&);
+		bool shouldFight(UnitInfo&);
+		bool shouldGather(UnitInfo&);
+		bool shouldReturnCargo(UnitInfo&);
+		bool shouldScout(UnitInfo&);
 
-		void assign(WorkerInfo&);
-		void build(WorkerInfo&);
-		void clearPath(WorkerInfo&);
-		void fight(WorkerInfo&);
-		void gather(WorkerInfo&);
-		void returnCargo(WorkerInfo&);
-		void scout(WorkerInfo&);
-		void safeMove(WorkerInfo&);
-		void explore(WorkerInfo&);
-
-		void storeWorker(Unit);
-		void removeWorker(Unit);
+		void assign(UnitInfo&);
+		void build(UnitInfo&);
+		void clearPath(UnitInfo&);
+		void fight(UnitInfo&);
+		void gather(UnitInfo&);
+		void returnCargo(UnitInfo&);
+		void scout(UnitInfo&);
+		void safeMove(UnitInfo&);
+		void explore(UnitInfo&);
 	};
 }
 

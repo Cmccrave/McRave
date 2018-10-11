@@ -54,9 +54,9 @@ void CommandManager::updateArbiter(UnitInfo& arbiter)
 		Commands().addCommand(arbiter.unit(), posBest, arbiter.getType());
 	}
 	else {
-		UnitInfo* closest = Util().getClosestAllyUnit(arbiter);
-		if (closest && closest->getPosition().isValid())
-			arbiter.unit()->move(closest->getPosition());
+		//UnitInfo* closest = Util().getClosestAllyUnit(arbiter);
+		//if (closest && closest->getPosition().isValid())
+		//	arbiter.unit()->move(closest->getPosition());
 	}
 
 	// If there's a stasis target, cast stasis on it		
@@ -175,7 +175,7 @@ bool CommandManager::shouldUseSpecial(UnitInfo& unit)
 
 	// SCV
 	else if (unit.getType() == UnitTypes::Terran_SCV) {
-		UnitInfo* mech = Util().getClosestAllyUnit(unit, Filter::IsMechanical && Filter::HP_Percent < 100);
+		/*UnitInfo* mech = Util().getClosestAllyUnit(unit, Filter::IsMechanical && Filter::HP_Percent < 100);
 		if (!Strategy().enemyRush() && mech && mech->unit() && unit.getPosition().getDistance(mech->getPosition()) <= 320 && Grids().getMobility(mech->getWalkPosition()) > 0) {
 			if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != mech->unit())
 				unit.unit()->repair(mech->unit());
@@ -187,7 +187,7 @@ bool CommandManager::shouldUseSpecial(UnitInfo& unit)
 			if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != building->unit())
 				unit.unit()->repair(building->unit());
 			return true;
-		}
+		}*/
 	}
 
 	// Siege Tanks
@@ -228,14 +228,14 @@ bool CommandManager::shouldUseSpecial(UnitInfo& unit)
 
 	// Archons
 	else if (unit.getType() == UnitTypes::Protoss_High_Templar && (Strategy().getUnitScore(UnitTypes::Protoss_Archon) > Strategy().getUnitScore(UnitTypes::Protoss_High_Templar) || (unit.unit()->getEnergy() < 75 && Grids().getEGroundThreat(unit.getWalkPosition()) > 0.0))) {
-		UnitInfo* templar = Util().getClosestAllyUnit(unit, Filter::GetType == UnitTypes::Protoss_High_Templar && Filter::Energy < TechTypes::Psionic_Storm.energyCost());
-		if (templar && templar->unit() && templar->unit()->exists() && (Strategy().getUnitScore(UnitTypes::Protoss_Archon) > Strategy().getUnitScore(UnitTypes::Protoss_High_Templar) || Grids().getEGroundThreat(templar->getWalkPosition()) > 0.0)) {
-			if (templar->unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp && unit.unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp) {
-				unit.unit()->useTech(TechTypes::Archon_Warp, templar->unit());
-				Broodwar->drawTextMap(unit.getPosition(), "WARPING");
-			}
-			return true;
-		}
+		//UnitInfo* templar = Util().getClosestAllyUnit(unit, Filter::GetType == UnitTypes::Protoss_High_Templar && Filter::Energy < TechTypes::Psionic_Storm.energyCost());
+		//if (templar && templar->unit() && templar->unit()->exists() && (Strategy().getUnitScore(UnitTypes::Protoss_Archon) > Strategy().getUnitScore(UnitTypes::Protoss_High_Templar) || Grids().getEGroundThreat(templar->getWalkPosition()) > 0.0)) {
+		//	if (templar->unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp && unit.unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp) {
+		//		unit.unit()->useTech(TechTypes::Archon_Warp, templar->unit());
+		//		Broodwar->drawTextMap(unit.getPosition(), "WARPING");
+		//	}
+		//	return true;
+		//}
 	}
 
 	// Carriers
@@ -315,25 +315,25 @@ bool CommandManager::shouldUseSpecial(UnitInfo& unit)
 
 	// General: Shield Battery Use
 	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Shield_Battery) > 0 && (unit.unit()->getGroundWeaponCooldown() > Broodwar->getRemainingLatencyFrames() || unit.unit()->getAirWeaponCooldown() > Broodwar->getRemainingLatencyFrames()) && unit.getType().maxShields() > 0 && (unit.unit()->getShields() <= 10 || (unit.unit()->getShields() < unit.getType().maxShields() && unit.unit()->getOrderTarget() && unit.unit()->getOrderTarget()->exists() && unit.unit()->getOrderTarget()->getType() == UnitTypes::Protoss_Shield_Battery && unit.unit()->getOrderTarget()->getEnergy() >= 10))) {
-		BuildingInfo* battery = Util().getClosestAllyBuilding(unit, Filter::GetType == UnitTypes::Protoss_Shield_Battery && Filter::Energy >= 10 && Filter::IsCompleted);
+		/*BuildingInfo* battery = Util().getClosestAllyBuilding(unit, Filter::GetType == UnitTypes::Protoss_Shield_Battery && Filter::Energy >= 10 && Filter::IsCompleted);
 		if (battery && ((unit.getType().isFlyer() && (!unit.hasTarget() || (unit.getTarget().getPosition().getDistance(unit.getPosition()) >= 320))) || unit.unit()->getDistance(battery->getPosition()) < 320)) {
 			if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Right_Click_Unit || unit.unit()->getLastCommand().getTarget() != battery->unit())
 				unit.unit()->rightClick(battery->unit());
 			return true;
-		}
+		}*/
 	}
 
 	// General: Bunker Loading/Unloading
 	if (unit.getType() == UnitTypes::Terran_Marine && unit.getGlobalStrategy() == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) > 0) {
-		BuildingInfo* bunker = Util().getClosestAllyBuilding(unit, Filter::GetType == UnitTypes::Terran_Bunker && Filter::SpaceRemaining > 0);
-		if (bunker && bunker->unit() && unit.hasTarget()) {
-			if (unit.getTarget().unit()->exists() && unit.getTarget().getPosition().getDistance(unit.getPosition()) <= 320) {
-				unit.unit()->rightClick(bunker->unit());
-				return true;
-			}
-			if (unit.unit()->isLoaded() && unit.getTarget().getPosition().getDistance(unit.getPosition()) > 320)
-				bunker->unit()->unloadAll();
-		}
+		//BuildingInfo* bunker = Util().getClosestAllyBuilding(unit, Filter::GetType == UnitTypes::Terran_Bunker && Filter::SpaceRemaining > 0);
+		//if (bunker && bunker->unit() && unit.hasTarget()) {
+		//	if (unit.getTarget().unit()->exists() && unit.getTarget().getPosition().getDistance(unit.getPosition()) <= 320) {
+		//		unit.unit()->rightClick(bunker->unit());
+		//		return true;
+		//	}
+		//	if (unit.unit()->isLoaded() && unit.getTarget().getPosition().getDistance(unit.getPosition()) > 320)
+		//		bunker->unit()->unloadAll();
+		//}
 	}
 
 	// General: Detectors
@@ -342,9 +342,9 @@ bool CommandManager::shouldUseSpecial(UnitInfo& unit)
 
 		// Science Vessels
 		if (unit.getType() == UnitTypes::Terran_Science_Vessel && unit.unit()->getEnergy() >= TechTypes::Defensive_Matrix) {
-			UnitInfo* ally = Util().getClosestAllyUnit(unit, Filter::IsUnderAttack);
-			if (ally && ally->getPosition().getDistance(unit.getPosition()) < 640)
-				unit.unit()->useTech(TechTypes::Defensive_Matrix, ally->unit());
+			//UnitInfo* ally = Util().getClosestAllyUnit(unit, Filter::IsUnderAttack);
+			//if (ally && ally->getPosition().getDistance(unit.getPosition()) < 640)
+			//	unit.unit()->useTech(TechTypes::Defensive_Matrix, ally->unit());
 		}
 		else if (unit.getType() == UnitTypes::Zerg_Overlord) {}
 		// TODO: Check for transport commands here

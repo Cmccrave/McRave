@@ -130,9 +130,6 @@
     <ClCompile Include="..\Source\McRave\TerranBuilds.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\TransportInfo.cpp">
-      <Filter>McRave</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\TransportManager.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
@@ -143,9 +140,6 @@
       <Filter>McRave</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Util.cpp">
-      <Filter>McRave</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\WorkerInfo.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\McRave\WorkerManager.cpp">
@@ -291,9 +285,6 @@
     <ClInclude Include="..\Source\McRave\TerrainManager.h">
       <Filter>McRave</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\TransportInfo.h">
-      <Filter>McRave</Filter>
-    </ClInclude>
     <ClInclude Include="..\Source\McRave\TransportManager.h">
       <Filter>McRave</Filter>
     </ClInclude>
@@ -304,9 +295,6 @@
       <Filter>McRave</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\McRave\Util.h">
-      <Filter>McRave</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\WorkerInfo.h">
       <Filter>McRave</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\McRave\WorkerManager.h">

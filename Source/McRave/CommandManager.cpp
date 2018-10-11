@@ -7,7 +7,7 @@ namespace McRave
 		Display().startClock();
 		updateEnemyCommands();
 		updateGoals();
-		updateAlliedUnits();
+		updateUnits();
 		Display().performanceTest(__FUNCTION__);
 	}
 
@@ -63,10 +63,10 @@ namespace McRave
 			if (station.BWEMBase()->Location() != mapBWEB.getNaturalTile() && station.BWEMBase()->Location() != mapBWEB.getMainTile() && Grids().getDefense(station.BWEMBase()->Location()) == 0) {
 
 				myGoals[station.ResourceCentroid()] = 0.1;
-				UnitInfo* rangedUnit = Util().getClosestAllyUnit(base, Filter::GetType == UnitTypes::Protoss_Dragoon || Filter::GetType == UnitTypes::Terran_Siege_Tank_Tank_Mode);
+				//UnitInfo* rangedUnit = Util().getClosestAllyUnit(base, Filter::GetType == UnitTypes::Protoss_Dragoon || Filter::GetType == UnitTypes::Terran_Siege_Tank_Tank_Mode);
 
-				if (rangedUnit)
-					rangedUnit->setDestination(station.ResourceCentroid());
+				//if (rangedUnit)
+				//	rangedUnit->setDestination(station.ResourceCentroid());
 			}
 			else if (myGoals.find(station.ResourceCentroid()) != myGoals.end())
 				myGoals.erase(station.ResourceCentroid());
@@ -142,71 +142,75 @@ namespace McRave
 		}
 	}
 
-	void CommandManager::updateAlliedUnits()
+	void CommandManager::updateUnits()
 	{
 		myCommands.clear();
 		for (auto &u : Units().getMyUnits()) {
-			UnitInfo &unit = u.second;
-
-			bool attackCooldown = (Broodwar->getFrameCount() - unit.getLastAttackFrame() <= unit.getMinStopFrame() - Broodwar->getRemainingLatencyFrames());
-			//if (Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0)
-				//continue;
-
-			if (!unit.unit() || !unit.unit()->exists()																							// Prevent crashes	
-				|| unit.getType() == UnitTypes::Protoss_Shuttle || unit.getType() == UnitTypes::Terran_Dropship 								// Transports have their own commands	
-				|| unit.getType() == UnitTypes::Protoss_Interceptor																				// Interceptors don't need commands
-				|| unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted()		// If the unit is locked down, maelstrommed, stassised, or not completed	
-				|| (unit.getType() != UnitTypes::Protoss_Carrier && attackCooldown))															// If the unit is not ready to perform an action after an attack (certain units have minimum frames after an attack before they can receive a new command)
-				continue;
-
-			// Temp variables to use
-			if (unit.hasTarget()) {
-				widths = unit.getTarget().getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
-				allyRange = widths + (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
-				enemyRange = widths + (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
-			}
-
-			// Unstick a unit
-			if (unit.isStuck() && unit.unit()->isMoving())
-				unit.unit()->stop();
-
-			// Units targeted by splash need to move away from the army
-			else if (Units().getSplashTargets().find(unit.unit()) != Units().getSplashTargets().end()) {
-				if (unit.hasTarget() && unit.unit()->getGroundWeaponCooldown() <= 0 && unit.hasTarget() && unit.getTarget().unit()->exists())
-					attack(unit);
-				else
-					approach(unit);
-			}
-
-			// If this unit should use a special ability that requires a command
-			else if (shouldUseSpecial(unit))
-				continue;
-
-			// If this unit should engage
-			else if (unit.shouldEngage()) {
-				unit.circleGreen();
-				if (shouldAttack(unit))
-					attack(unit);
-				else if (shouldApproach(unit))
-					approach(unit);
-				else if (shouldKite(unit))
-					kite(unit);
-			}
-
-			// If this unit should retreat
-			else if (unit.shouldRetreat()) {
-				if (shouldDefend(unit))
-					defend(unit);
-				else
-					kite(unit);
-			}
-
-			else {
-				unit.circleYellow();
-				move(unit);
-			}
+			auto &unit = u.second;
+			if (unit.getRole() == Role::Fighting)
+				updateDecision(unit);			
 		}
-		return;
+	}
+
+	void CommandManager::updateDecision(UnitInfo& unit)
+	{
+		bool attackCooldown = (Broodwar->getFrameCount() - unit.getLastAttackFrame() <= unit.getMinStopFrame() - Broodwar->getRemainingLatencyFrames());
+		//if (Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0)
+		//return;
+
+		if (!unit.unit() || !unit.unit()->exists()																							// Prevent crashes	
+			|| unit.getType() == UnitTypes::Protoss_Shuttle || unit.getType() == UnitTypes::Terran_Dropship 								// Transports have their own commands	
+			|| unit.getType() == UnitTypes::Protoss_Interceptor																				// Interceptors don't need commands
+			|| unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted()		// If the unit is locked down, maelstrommed, stassised, or not completed	
+			|| (unit.getType() != UnitTypes::Protoss_Carrier && attackCooldown))															// If the unit is not ready to perform an action after an attack (certain units have minimum frames after an attack before they can receive a new command)
+			return;
+
+		// Temp variables to use
+		if (unit.hasTarget()) {
+			widths = unit.getTarget().getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
+			allyRange = widths + (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
+			enemyRange = widths + (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
+		}
+
+		// Unstick a unit
+		if (unit.isStuck() && unit.unit()->isMoving())
+			unit.unit()->stop();
+
+		// Units targeted by splash need to move away from the army
+		else if (Units().getSplashTargets().find(unit.unit()) != Units().getSplashTargets().end()) {
+			if (unit.hasTarget() && unit.unit()->getGroundWeaponCooldown() <= 0 && unit.hasTarget() && unit.getTarget().unit()->exists())
+				attack(unit);
+			else
+				approach(unit);
+		}
+
+		// If this unit should use a special ability that requires a command
+		else if (shouldUseSpecial(unit))
+			return;
+
+		// If this unit should engage
+		else if (unit.shouldEngage()) {
+			unit.circleGreen();
+			if (shouldAttack(unit))
+				attack(unit);
+			else if (shouldApproach(unit))
+				approach(unit);
+			else if (shouldKite(unit))
+				kite(unit);
+		}
+
+		// If this unit should retreat
+		else if (unit.shouldRetreat()) {
+			if (shouldDefend(unit))
+				defend(unit);
+			else
+				kite(unit);
+		}
+
+		else {
+			unit.circleYellow();
+			move(unit);
+		}
 	}
 
 	bool CommandManager::shouldAttack(UnitInfo& unit)
@@ -305,7 +309,7 @@ namespace McRave
 						unit.unit()->move(Position(bestPosition));
 				}
 			}
-			else if(unit.unit()->getLastCommand().getTargetPosition() != Position(unit.getDestination()) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
+			else if (unit.unit()->getLastCommand().getTargetPosition() != Position(unit.getDestination()) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
 				unit.unit()->move(unit.getDestination());
 		}
 
@@ -351,32 +355,32 @@ namespace McRave
 	{
 		unit.circleRed();
 
-		// HACK: Hardcoded cannon surround, testing
-		if (unit.getType().isWorker() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) > 0) {
-			auto enemy = Util().getClosestUnit(unit.getPosition(), Broodwar->enemy());
-			if (enemy) {
-				auto cannon = Util().getClosestAllyBuilding(*enemy, Filter::GetType == UnitTypes::Protoss_Photon_Cannon);
-				if (cannon) {
-					double distBest = DBL_MAX;
-					auto walkBest = WalkPositions::Invalid;
-					auto start = cannon->getWalkPosition();
-					for (int x = start.x - 2; x < start.x + 10; x++) {
-						for (int y = start.y - 2; y < start.y + 10; y++) {
-							WalkPosition w(x, y);
-							double dist = Position(w).getDistance(mapBWEM.Center());
-							if (dist < distBest && Util().isMobile(unit.getWalkPosition(), w, unit.getType())) {
-								distBest = dist;
-								walkBest = w;
-							}
-						}
-					}
+		//// HACK: Hardcoded cannon surround, testing
+		//if (unit.getType().isWorker() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) > 0) {
+		//	auto enemy = Util().getClosestUnit(unit.getPosition(), Broodwar->enemy());
+		//	if (enemy) {
+		//		auto cannon = Util().getClosestAllyBuilding(*enemy, Filter::GetType == UnitTypes::Protoss_Photon_Cannon);
+		//		if (cannon) {
+		//			double distBest = DBL_MAX;
+		//			auto walkBest = WalkPositions::Invalid;
+		//			auto start = cannon->getWalkPosition();
+		//			for (int x = start.x - 2; x < start.x + 10; x++) {
+		//				for (int y = start.y - 2; y < start.y + 10; y++) {
+		//					WalkPosition w(x, y);
+		//					double dist = Position(w).getDistance(mapBWEM.Center());
+		//					if (dist < distBest && Util().isMobile(unit.getWalkPosition(), w, unit.getType())) {
+		//						distBest = dist;
+		//						walkBest = w;
+		//					}
+		//				}
+		//			}
 
-					if (walkBest.isValid() && unit.unit()->getLastCommand().getTargetPosition() != Position(walkBest))
-						unit.unit()->move(Position(walkBest));
-					return;
-				}
-			}
-		}
+		//			if (walkBest.isValid() && unit.unit()->getLastCommand().getTargetPosition() != Position(walkBest))
+		//				unit.unit()->move(Position(walkBest));
+		//			return;
+		//		}
+		//	}
+		//}
 
 		// HACK: Flyers defend above a base
 		// TODO: Choose a base instead of closest to enemy, sometimes fly over a base I dont own
@@ -412,7 +416,7 @@ namespace McRave
 			Position bestPosition = Util().getConcavePosition(unit, nullptr, Terrain().getDefendPosition());
 			if (bestPosition.isValid()) {
 				if (unit.getPosition().getDistance(bestPosition) > 16.0)
-					unit.unit()->move(bestPosition);				
+					unit.unit()->move(bestPosition);
 				else
 					addCommand(unit.unit(), bestPosition, UnitTypes::None);
 				unit.setDestination(bestPosition);
@@ -443,14 +447,14 @@ namespace McRave
 			}
 		}
 
-		// Mechanical units run to SCVs to be repaired
-		if (unit.getType().isMechanical() && unit.getPercentHealth() < 1.00 && unit.hasTarget() && unit.getPosition().getDistance(unit.getTarget().getPosition()) > 400) {
-			UnitInfo* scv = Util().getClosestAllyUnit(unit, Filter::GetType == UnitTypes::Terran_SCV);
-			if (scv) {
-				unit.unit()->move(scv->getPosition());
-				return;
-			}
-		}
+		//// Mechanical units run to SCVs to be repaired
+		//if (unit.getType().isMechanical() && unit.getPercentHealth() < 1.00 && unit.hasTarget() && unit.getPosition().getDistance(unit.getTarget().getPosition()) > 400) {
+		//	UnitInfo* scv = Util().getClosestAllyUnit(unit, Filter::GetType == UnitTypes::Terran_SCV);
+		//	if (scv) {
+		//		unit.unit()->move(scv->getPosition());
+		//		return;
+		//	}
+		//}
 
 		// Get kite position
 		Position posBest = Util().getKitePosition(unit);

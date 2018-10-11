@@ -13,6 +13,7 @@ namespace McRave
 
 		// New stuff
 		UnitInfo * getClosestUnit(Position, Player, UnitType t = UnitTypes::None);
+		UnitInfo * getClosestBuilder(Position);
 
 		// Returns the width of the choke in pixels
 		int chokeWidth(const BWEM::ChokePoint *);
@@ -147,64 +148,6 @@ namespace McRave
 				}
 			}
 			return bestPosition;
-		}
-
-		template<class T>
-		static UnitInfo* getClosestAllyUnit(T& unit, const UnitFilter& pred = nullptr)
-		{
-			double distBest = DBL_MAX;
-			UnitInfo* best = nullptr;
-			for (auto &a : Units().getMyUnits()) {
-				UnitInfo& ally = a.second;
-				if (!ally.unit() || (pred.isValid() && !pred(ally.unit())))
-					continue;
-
-				if (unit.unit() != ally.unit()) {
-					double dist = unit.getPosition().getDistance(ally.getPosition());
-					if (dist < distBest)
-						best = &ally, distBest = dist;
-				}
-			}
-			return best;
-		}
-				
-
-		template<class T>
-		static BuildingInfo* getClosestAllyBuilding(T& unit, const UnitFilter& pred = nullptr)
-		{
-			double distBest = DBL_MAX;
-			BuildingInfo* best = nullptr;
-			for (auto &a : Buildings().getMyBuildings()) {
-				BuildingInfo& ally = a.second;
-				if (!ally.unit() || (pred.isValid() && !pred(ally.unit())))
-					continue;
-
-				if (unit.unit() != ally.unit()) {
-					double dist = unit.getPosition().getDistance(ally.getPosition());
-					if (dist < distBest)
-						best = &ally, distBest = dist;
-				}
-			}
-			return best;
-		}
-
-		template<class T>
-		static WorkerInfo* getClosestAllyWorker(T& unit, const UnitFilter& pred = nullptr)
-		{
-			double distBest = DBL_MAX;
-			WorkerInfo* best = nullptr;
-			for (auto&a : Workers().getMyWorkers()) {
-				WorkerInfo& ally = a.second;
-				if (!ally.unit() || (pred.isValid() && !pred(ally.unit())))
-					continue;
-
-				if (unit.unit() != ally.unit()) {
-					double dist = unit.getPosition().getDistance(ally.getPosition());
-					if (dist < distBest)
-						best = &ally, distBest = dist;
-				}
-			}
-			return best;
 		}
 
 		template<class T>
