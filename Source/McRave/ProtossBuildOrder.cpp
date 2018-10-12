@@ -12,17 +12,19 @@ namespace McRave
 		if (currentBuild == "P12Nexus") P12Nexus();
 		if (currentBuild == "P21Nexus") P21Nexus();
 		if (currentBuild == "PDTExpand") PDTExpand();
-		if (currentBuild == "P2GateDragoon") P2GateDragoon();
-		if (currentBuild == "PScoutMemes") PScoutMemes();
+		if (currentBuild == "P2GateDragoon") P2GateDragoon();		
 		if (currentBuild == "PProxy6") PProxy6();
 		if (currentBuild == "PProxy99") PProxy99();
 		if (currentBuild == "P2GateExpand") P2GateExpand();
-		if (currentBuild == "PDWEBMemes") PDWEBMemes();
-		if (currentBuild == "PArbiterMemes") PArbiterMemes();
 		if (currentBuild == "P1GateRobo") P1GateRobo();
 		if (currentBuild == "P3Nexus") P3Nexus();
 		if (currentBuild == "PZealotDrop") PZealotDrop();
 		if (currentBuild == "P1GateCorsair") P1GateCorsair();
+
+		if (currentBuild == "PScoutMemes") PScoutMemes();
+		if (currentBuild == "PDWEBMemes") PDWEBMemes();
+		if (currentBuild == "PArbiterMemes") PArbiterMemes();
+		if (currentBuild == "PShuttleMemes") PShuttleMemes();
 	}
 
 	void BuildOrderManager::protossTech()

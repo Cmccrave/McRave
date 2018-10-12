@@ -343,6 +343,9 @@ namespace McRave
 		int walkHeight = (int)ceil(unit.getType().height() / 8.0);
 		//int frame = Broodwar->getFrameCount();
 
+		if (unit.getPlayer() == Broodwar->self() && unit.getRole() != Role::Fighting)
+			return;
+
 		// Choose the grid
 		auto grid = unit.getPlayer() == Broodwar->self() ?
 			(unit.getType().isFlyer() ? aAirCluster : aGroundCluster) :
@@ -381,6 +384,9 @@ namespace McRave
 			return;
 
 		if (unit.getType() == UnitTypes::Protoss_Interceptor)
+			return;
+
+		if (unit.getPlayer() == Broodwar->self() && unit.getRole() != Role::Fighting)
 			return;
 
 		// Speed multipled by 3.0 because we want WalkPositions per second

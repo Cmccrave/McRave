@@ -10,8 +10,6 @@
 
 namespace McRave
 {
-
-
 	UnitInfo::UnitInfo()
 	{
 		visibleGroundStrength = 0.0;
@@ -46,6 +44,7 @@ namespace McRave
 		unitType = UnitTypes::None;
 		player = nullptr;
 		target = nullptr;
+		resource = nullptr;
 
 		position = Positions::Invalid;
 		engagePosition = Positions::Invalid;

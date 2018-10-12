@@ -56,8 +56,6 @@ void UnitManager::updateUnits()
 					mapBWEB.usedGrid[x][y] = 0;
 				}
 			}
-			//unit.setTilePosition(TilePositions::Invalid);
-			//unit.setWalkPosition(WalkPositions::Invalid);
 			continue;
 		}
 
@@ -117,15 +115,6 @@ void UnitManager::updateUnits()
 		updateStrategy(unit);
 		updateRole(unit);
 
-
-		//// Remove the worker role if needed
-		//if (unit.getType().isWorker() && Workers().getMyWorkers().find(unit.unit()) != Workers().getMyWorkers().end())
-		//	Workers().removeWorker(unit.unit());
-
-		//// If this is a worker and is ready to go back to being a worker
-		//if (unit.getType().isWorker() && (!Util().proactivePullWorker(unit.unit()) && !Util().reactivePullWorker(unit.unit())) && (unit.getType() != UnitTypes::Terran_SCV || !Util().pullRepairWorker(unit.unit())))
-		//	Workers().storeWorker(unit.unit());
-
 		// If unit is not a building and deals damage, add it to global strength	
 		if (!unit.getType().isBuilding())
 			unit.getType().isFlyer() ? globalAllyAirStrength += unit.getVisibleAirStrength() : globalAllyGroundStrength += unit.getVisibleGroundStrength();
@@ -141,8 +130,6 @@ void UnitManager::updateUnits()
 		auto &unit = u.second;
 		if (!unit.unit() || !unit.unit()->exists())
 			continue;
-
-		updateNeutral(unit);
 	}
 }
 
@@ -152,7 +139,7 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 	double enemyLocalGroundStrength = 0.0, allyLocalGroundStrength = 0.0;
 	double enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;
 	double unitToEngage = max(0.0, unit.getEngDist() / (24.0 * unit.getSpeed()));
-	double simulationTime = Players().vP() ? 10.0 : 5.0;
+	double simulationTime = unitToEngage + 5.0;
 	double unitSpeed = unit.getSpeed() * 24.0;
 	bool sync = false;
 
@@ -181,18 +168,18 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 			continue;
 
 		// Distance parameters
-		Position tempPosition = (enemy.unit()->exists() && enemy.unit()->getOrder() == Orders::AttackUnit) ? enemy.unit()->getOrderTargetPosition() : enemy.getPosition();
-		double widths = (double)enemy.getType().tileWidth() * 16.0 + (double)unit.getType().tileWidth() * 16.0;
-		double enemyRange = (unit.getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange());
-		double airDist = tempPosition.getDistance(unit.getPosition());
+		auto tempPosition = (enemy.unit()->exists() && enemy.unit()->getOrder() == Orders::AttackUnit) ? enemy.unit()->getOrderTargetPosition() : enemy.getPosition();
+		auto widths = (double)enemy.getType().tileWidth() * 16.0 + (double)unit.getType().tileWidth() * 16.0;
+		auto enemyRange = (unit.getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange());
+		auto airDist = tempPosition.getDistance(unit.getPosition());
 
 		// True distance
-		double distance = airDist - enemyRange - widths;
+		auto distance = airDist - enemyRange - widths;
 
 		// Sim values
-		double enemyToEngage = 0.0;
-		double simRatio = 0.0;
-		double speed = enemy.getSpeed() * 24.0;
+		auto enemyToEngage = 0.0;
+		auto simRatio = 0.0;
+		auto speed = enemy.getSpeed() * 24.0;
 
 		// If enemy can move, distance/speed is time to engage
 		if (speed > 0.0) {
@@ -222,18 +209,18 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 
 	// Check every ally being in range of the target
 	for (auto &a : myUnits) {
-		UnitInfo &ally = a.second;
+		auto &ally = a.second;
 
 		if (!ally.hasTarget() || !ally.getTarget().getType().isValid() || ally.unit()->isStasised() || ally.unit()->isMorphing() || ally.getType() == UnitTypes::Terran_Vulture_Spider_Mine)
 			continue;
 
 		// Setup distance values
-		double dist = ally.getEngDist();
-		double widths = (double)ally.getType().tileWidth() * 16.0 + (double)ally.getTarget().getType().tileWidth() * 16.0;
-		double speed = (ally.hasTransport() && ally.getTransport().unit()->exists()) ? ally.getTransport().getType().topSpeed() * 24.0 : (24.0 * ally.getSpeed());
+		auto dist = ally.getEngDist();
+		auto widths = (double)ally.getType().tileWidth() * 16.0 + (double)ally.getTarget().getType().tileWidth() * 16.0;
+		auto speed = (ally.hasTransport() && ally.getTransport().unit()->exists()) ? ally.getTransport().getType().topSpeed() * 24.0 : (24.0 * ally.getSpeed());
 
 		// Setup true distance
-		double distance = max(0.0, dist - widths);
+		auto distance = max(0.0, dist - widths);
 
 		// HACK: Bunch of hardcoded stuff
 		if (ally.getPosition().getDistance(unit.getEngagePosition()) / speed > simulationTime)
@@ -247,8 +234,8 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 		if (ally.getType() == UnitTypes::Zerg_Mutalisk && Grids().getEAirThreat((WalkPosition)ally.getEngagePosition()) * 5.0 > ally.getHealth() && ally.getHealth() <= 30)
 			continue;
 
-		double allyToEngage = max(0.0, (distance / speed));
-		double simRatio = max(0.0, simulationTime - allyToEngage);
+		auto allyToEngage = max(0.0, (distance / speed));
+		auto simRatio = max(0.0, simulationTime - allyToEngage);
 
 		// Situations where an ally should be treated as stronger than it actually is
 		if ((ally.unit()->isCloaked() || ally.unit()->isBurrowed()) && !Commands().overlapsEnemyDetection(ally.getEngagePosition()))
@@ -355,12 +342,7 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 void UnitManager::updateStrategy(UnitInfo& unit)
 {
 	// HACK: Strategy radius 
-	double radius = 320.0;
-
-	if (supply >= 100)
-		radius = 480.0;
-	if (supply >= 200)
-		radius = 640.0;
+	double radius = 640.0;
 
 	// Global strategy
 	if (Broodwar->self()->getRace() == Races::Protoss) {
@@ -438,6 +420,10 @@ void UnitManager::updateRole(UnitInfo& unit)
 {
 	if (unit.getType().isWorker())
 		unit.setRole(Role::Working);
+	else if (unit.getType().isBuilding() && unit.getGroundDamage() == 0.0 && unit.getAirDamage() == 0.0)
+		unit.setRole(Role::Producing);
+	else if (unit.getType().spaceProvided() > 0)
+		unit.setRole(Role::Transporting);
 	else
 		unit.setRole(Role::Fighting);
 }

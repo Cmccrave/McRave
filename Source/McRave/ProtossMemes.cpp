@@ -88,4 +88,27 @@ namespace McRave {
 
 		itemQueue[UnitTypes::Protoss_Shield_Battery] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus));
 	}
+
+	void BuildOrderManager::PShuttleMemes()
+	{
+		getOpening =		s < 120;
+		fastExpand =		true;
+		wallNat =			true;
+		firstUpgrade =		UpgradeTypes::Gravitic_Drive;
+		firstTech =			TechTypes::None;
+		scout =				vis(Protoss_Pylon) > 0;
+		gasLimit =			INT_MAX;
+
+		if (techList.find(Protoss_Reaver) == techList.end())
+			techUnit =			Protoss_Reaver;
+
+		itemQueue[Protoss_Nexus] =				Item(1 + (s >= 28));
+		itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 48), (s >= 16) + (s >= 48));
+		itemQueue[Protoss_Gateway] =			Item(s >= 28);
+		itemQueue[Protoss_Forge] =				Item(s >= 20);
+		itemQueue[Protoss_Photon_Cannon] =		Item((s >= 24) + (vis(Protoss_Photon_Cannon) > 0) + (s >= 60) + (s >= 64));
+		itemQueue[Protoss_Assimilator] =		Item((s >= 32) + (s >= 66));
+		itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 50);
+		itemQueue[Protoss_Robotics_Facility] =	Item((s >= 60) + (s >= 80));
+	}
 }

@@ -121,12 +121,15 @@ namespace McRave
 
 			// Add used tiles back to grid
 			else if (!building.unit()->isFlying() && building.unit()->getLastCommand().getType() == UnitCommandTypes::Land)
-				mapBWEB.onUnitDiscover(building.unit());
+				mapBWEB.onUnitDiscover(building.unit()); 
 		}
 
-		// Comsat scans
+		// Comsat scans - Move to special manager
 		if (building.getType() == UnitTypes::Terran_Comsat_Station) {
-			// Add scanning here
+			if (building.hasTarget() && building.getTarget().unit()->exists() && !Commands().overlapsAllyDetection(building.getTarget().getPosition())) {
+				building.unit()->useTech(TechTypes::Scanner_Sweep, building.getTarget().getPosition());
+				Commands().addCommand(building.unit(), building.getTarget().getPosition(), TechTypes::Scanner_Sweep);
+			}
 		}
 	}
 

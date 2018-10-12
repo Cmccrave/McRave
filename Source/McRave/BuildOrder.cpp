@@ -18,14 +18,20 @@ namespace McRave
 
 	void BuildOrderManager::onStart()
 	{
-		if (!Broodwar->enemy())
+		if (!Broodwar->enemy()) {
 			getDefaultBuild();
+			return;
+		}
 		
 		string build, buffer;
 		ifstream config("bwapi-data/read/" + Broodwar->enemy()->getName() + ".txt");
 		int wins, losses, gamesPlayed, totalGamesPlayed = 0;
 		double best = 0.0;
 		getOpening = true;
+
+		currentBuild = "PShuttleMemes";
+		isBuildPossible(currentBuild);
+		return;
 				
 		if (Broodwar->self()->getRace() == Races::Protoss)
 			buildNames ={ "PZZCore", "PZCore", "PNZCore", "P4Gate", "PDTExpand", "P2GateDragoon", "PProxy6", "PProxy99", "PFFE", "P12Nexus", "P21Nexus", "P2GateExpand", "P1GateRobo", "PZealotDrop", "P1GateCorsair" };
@@ -140,7 +146,7 @@ namespace McRave
 			else if (build == "P12Nexus" || build == "P21Nexus" || build == "P3Nexus") {
 				buildings ={ Protoss_Gateway, Protoss_Cybernetics_Core, Protoss_Pylon };
 			}
-			else if (build == "PFFE" || build == "PScoutMemes" || build == "PDWEBMemes") {
+			else if (build == "PFFE" || build.find("Meme") != string::npos) {
 				buildings ={ Protoss_Gateway, Protoss_Forge, Protoss_Pylon };
 				defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
 			}
@@ -208,7 +214,7 @@ namespace McRave
 			//// HACK: Only 4gate on Alchemist
 			//if (Broodwar->mapFileName().find("Alchemist") != string::npos && build == "P4Gate")
 			//	return true;
-			return build == "PFFE";
+			return build == "P4Gate";
 		}
 
 		if (Broodwar->self()->getRace() == Races::Terran) {

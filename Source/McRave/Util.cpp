@@ -340,27 +340,27 @@ double UtilManager::splashModifier(UnitInfo& unit)
 double UtilManager::effectiveness(UnitInfo& unit)
 {
 	double effectiveness = 1.0;
-	double aLarge = double(Units().getAllySizes()[UnitSizeTypes::Large]);
-	double aMedium = double(Units().getAllySizes()[UnitSizeTypes::Medium]);
-	double aSmall = double(Units().getAllySizes()[UnitSizeTypes::Small]);
+	//double aLarge = double(Units().getAllySizes()[UnitSizeTypes::Large]);
+	//double aMedium = double(Units().getAllySizes()[UnitSizeTypes::Medium]);
+	//double aSmall = double(Units().getAllySizes()[UnitSizeTypes::Small]);
 
-	double eLarge = double(Units().getEnemySizes()[UnitSizeTypes::Large]);
-	double eMedium = double(Units().getEnemySizes()[UnitSizeTypes::Medium]);
-	double eSmall = double(Units().getEnemySizes()[UnitSizeTypes::Small]);
+	//double eLarge = double(Units().getEnemySizes()[UnitSizeTypes::Large]);
+	//double eMedium = double(Units().getEnemySizes()[UnitSizeTypes::Medium]);
+	//double eSmall = double(Units().getEnemySizes()[UnitSizeTypes::Small]);
 
-	if (unit.getPlayer()->isEnemy(Broodwar->self())) {
-		if (unit.getType().groundWeapon().damageType() == DamageTypes::Explosive)
-			effectiveness = ((aLarge*1.0) + (aMedium*0.75) + (aSmall*0.5)) / max(1.0, aLarge + aMedium + aSmall);
-		else if (unit.getType().groundWeapon().damageType() == DamageTypes::Concussive)
-			effectiveness = ((aLarge*0.25) + (aMedium*0.5) + (aSmall*1.0)) / max(1.0, aLarge + aMedium + aSmall);
-	}
+	//if (unit.getPlayer()->isEnemy(Broodwar->self())) {
+	//	if (unit.getType().groundWeapon().damageType() == DamageTypes::Explosive)
+	//		effectiveness = ((aLarge*1.0) + (aMedium*0.75) + (aSmall*0.5)) / max(1.0, aLarge + aMedium + aSmall);
+	//	else if (unit.getType().groundWeapon().damageType() == DamageTypes::Concussive)
+	//		effectiveness = ((aLarge*0.25) + (aMedium*0.5) + (aSmall*1.0)) / max(1.0, aLarge + aMedium + aSmall);
+	//}
 
-	else {
-		if (unit.getType().groundWeapon().damageType() == DamageTypes::Explosive)
-			effectiveness = ((eLarge*1.0) + (eMedium*0.75) + (eSmall*0.5)) / max(1.0, eLarge + eMedium + eSmall);
-		else if (unit.getType().groundWeapon().damageType() == DamageTypes::Concussive)
-			effectiveness = ((eLarge*0.25) + (eMedium*0.5) + (eSmall*1.0)) / max(1.0, eLarge + eMedium + eSmall);
-	}
+	//else {
+	//	if (unit.getType().groundWeapon().damageType() == DamageTypes::Explosive)
+	//		effectiveness = ((eLarge*1.0) + (eMedium*0.75) + (eSmall*0.5)) / max(1.0, eLarge + eMedium + eSmall);
+	//	else if (unit.getType().groundWeapon().damageType() == DamageTypes::Concussive)
+	//		effectiveness = ((eLarge*0.25) + (eMedium*0.5) + (eSmall*1.0)) / max(1.0, eLarge + eMedium + eSmall);
+	//}
 	return effectiveness;
 }
 
@@ -488,7 +488,7 @@ UnitInfo * UtilManager::getClosestBuilder(Position here)
 	for (auto &u : units) {
 		UnitInfo &unit = u.second;
 
-		if (!unit.unit() || unit.getType().isWorker())
+		if (!unit.unit() || !unit.getType().isWorker())
 			continue;
 
 		double dist = here.getDistance(unit.getPosition());

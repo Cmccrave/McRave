@@ -7,7 +7,6 @@
 #include "McRave.h"
 
 // *** Bugs ***
-// Check unit sizes and types map
 // Neo Moon Glaive natural choke picking BWEB
 // High temp shouldn't reserve?
 // Units getting stuck that block buildings
@@ -16,13 +15,13 @@
 // Probes getting stuck trying to build
 
 // *** Restructuring ***
-// Pylons - add enemy and check self, could use for artosis pylons
-// Buildings - test
-// Workers - test
+// Pylons - add enemy, could use for artosis pylons
 // Transports - test
 // Scanner targets
 // Defense grids
 // Remove global/local strategy -> use combat state
+// Recode unit sizes map
+// Commands to boxes rather than circles (for storm, dweb, etc)
 
 // *** SSCAIT2018 Goals ***
 // Commands:

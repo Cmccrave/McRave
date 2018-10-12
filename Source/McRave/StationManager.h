@@ -10,13 +10,10 @@ namespace McRave
 	class StationManager
 	{
 		map <Unit, const BWEB::Station> myStations, enemyStations;
-		map <TilePosition, int> lastVisible;
 		void updateStations();
 	public:
 		map <Unit, const BWEB::Station>& getMyStations() { return myStations; };
 		map <Unit, const BWEB::Station>& getEnemyStations() { return enemyStations; }
-
-		map <TilePosition, int>& getLastVisible() { return lastVisible; }
 		Position getClosestEnemyStation(Position);
 		void onFrame();
 		void storeStation(Unit);

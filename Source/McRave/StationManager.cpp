@@ -9,11 +9,7 @@ void StationManager::onFrame()
 
 void StationManager::updateStations()
 {
-	for (auto &station : enemyStations) {
-		Station s = station.second;
-		if (Broodwar->isVisible(TilePosition(s.BWEMBase()->Center())))
-			lastVisible[TilePosition(s.BWEMBase()->Center())] = Broodwar->getFrameCount();
-	}
+
 }
 
 Position StationManager::getClosestEnemyStation(Position here)

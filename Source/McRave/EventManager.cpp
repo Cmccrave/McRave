@@ -52,7 +52,7 @@ namespace McRave
 
 		// Enemy unit
 		else if (unit->getPlayer() == Broodwar->enemy()){
-			enemySizes[unit->getType().size()] -= 1;
+			//enemySizes[unit->getType().size()] -= 1;
 			enemyUnits.erase(unit);
 		}
 		else if (unit->getPlayer()->isAlly(Broodwar->self())) {
@@ -89,9 +89,9 @@ namespace McRave
 
 			// Protoss morphing
 			if (myUnits.find(unit) != myUnits.end() && (unit->getType() == UnitTypes::Protoss_Archon || unit->getType() == UnitTypes::Protoss_Dark_Archon)) {
-				allySizes[unit->getType().whatBuilds().first.size()] --;
+				//allySizes[unit->getType().whatBuilds().first.size()] --;
 				myUnits[unit].setType(unit->getType());
-				allySizes[unit->getType().size()] ++;
+				//allySizes[unit->getType().size()] ++;
 			}
 		}
 
@@ -103,9 +103,9 @@ namespace McRave
 				Stations().removeStation(unit);
 
 			if (enemyUnits.find(unit) != enemyUnits.end()) {
-				enemySizes[unit->getType().whatBuilds().first.size()] --;
+				//enemySizes[unit->getType().whatBuilds().first.size()] --;
 				enemyUnits[unit].setType(unit->getType());
-				enemySizes[unit->getType().size()] ++;
+				//enemySizes[unit->getType().size()] ++;
 			}
 			else
 				storeUnit(unit);
@@ -114,15 +114,15 @@ namespace McRave
 		// Refinery that morphed as an enemy
 		else if (unit->getType().isResourceContainer()) {
 			if (enemyUnits.find(unit) != enemyUnits.end()) {
-				enemySizes[unit->getType().whatBuilds().first.size()] --;
+				//enemySizes[unit->getType().whatBuilds().first.size()] --;
 				enemyUnits[unit].setType(unit->getType());
-				enemySizes[unit->getType().size()] ++;
+				//enemySizes[unit->getType().size()] ++;
 			}
 
 			if (myUnits.find(unit) != myUnits.end()) {
-				allySizes[unit->getType().whatBuilds().first.size()] --;
+				//allySizes[unit->getType().whatBuilds().first.size()] --;
 				myUnits[unit].setType(unit->getType());
-				allySizes[unit->getType().size()] ++;
+				//allySizes[unit->getType().size()] ++;
 			}
 			Resources().storeResource(unit);
 		}
@@ -142,7 +142,7 @@ namespace McRave
 	void UnitManager::onUnitComplete(Unit unit)
 	{
 		if (unit->getPlayer() == Broodwar->self()) {
-			allySizes[unit->getType().size()] += 1;
+			//allySizes[unit->getType().size()] += 1;
 			storeUnit(unit);
 		}
 

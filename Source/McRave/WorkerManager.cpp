@@ -80,10 +80,6 @@ void WorkerManager::updateDecision(UnitInfo& worker)
 		}
 	}
 
-	// Remove combat unit role
-	if (Units().getMyUnits().find(worker.unit()) != Units().getMyUnits().end())
-		Units().getMyUnits().erase(worker.unit());
-
 	// Assign a resource
 	if (shouldAssign(worker))
 		assign(worker);

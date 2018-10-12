@@ -59,21 +59,13 @@ namespace McRave
 		for (auto &s : Stations().getMyStations()) {
 			Station station = s.second;
 
-			if (station.BWEMBase()->Location() != mapBWEB.getNaturalTile() && station.BWEMBase()->Location() != mapBWEB.getMainTile() && Grids().getDefense(station.BWEMBase()->Location()) == 0) {
-				// ASSIGN UNITS HERE
-				myGoals[station.ResourceCentroid()] = 0.1;
-				//UnitInfo* rangedUnit = Util().getClosestAllyUnit(base, Filter::GetType == UnitTypes::Protoss_Dragoon || Filter::GetType == UnitTypes::Terran_Siege_Tank_Tank_Mode);
-
-				//if (rangedUnit)
-				//	rangedUnit->setDestination(station.ResourceCentroid());
-			}
-			else if (myGoals.find(station.ResourceCentroid()) != myGoals.end())
-				myGoals.erase(station.ResourceCentroid());
+			if (station.BWEMBase()->Location() != mapBWEB.getNaturalTile() && station.BWEMBase()->Location() != mapBWEB.getMainTile() && Grids().getDefense(station.BWEMBase()->Location()) == 0)
+				assignClosestToGoal(station.BWEMBase()->Center(), vector<UnitType> {UnitTypes::Protoss_Dragoon, 4});
 		}
 
 		// Attack enemy expansions with a small force
 		// PvP / PvT
-		if (!Players().vZ()) {
+		if (Players().vP() || Players().vT()) {
 			auto distBest = 0.0;
 			auto posBest = Positions::Invalid;
 			for (auto &s : Stations().getEnemyStations()) {
@@ -133,7 +125,7 @@ namespace McRave
 			UnitInfo* unit = u.second;
 			if (find(types.begin(), types.end(), u.second->getType()) != types.end() && !u.second->getDestination().isValid()) {
 				u.second->setDestination(here);
-				myGoals[here] += u.second->getVisibleGroundStrength();
+				//myGoals[here] += u.second->getVisibleGroundStrength();
 				i++;
 			}
 			if (i == int(types.size()))
@@ -154,30 +146,20 @@ namespace McRave
 	void CommandManager::updateDecision(UnitInfo& unit)
 	{
 		bool attackCooldown = (Broodwar->getFrameCount() - unit.getLastAttackFrame() <= unit.getMinStopFrame() - Broodwar->getRemainingLatencyFrames());
-		//if (Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0)
-		//return;
 
 		if (!unit.unit() || !unit.unit()->exists()																							// Prevent crashes	
-			|| unit.getType() == UnitTypes::Protoss_Shuttle || unit.getType() == UnitTypes::Terran_Dropship 								// Transports have their own commands	
 			|| unit.getType() == UnitTypes::Protoss_Interceptor																				// Interceptors don't need commands
 			|| unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted()		// If the unit is locked down, maelstrommed, stassised, or not completed	
 			|| (unit.getType() != UnitTypes::Protoss_Carrier && attackCooldown))															// If the unit is not ready to perform an action after an attack (certain units have minimum frames after an attack before they can receive a new command)
 			return;
-
-		// Temp variables to use
-		if (unit.hasTarget()) {
-			widths = unit.getTarget().getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
-			allyRange = widths + (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
-			enemyRange = widths + (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
-		}
-
+		
 		// Unstick a unit
 		if (unit.isStuck() && unit.unit()->isMoving())
 			unit.unit()->stop();
 
 		// Units targeted by splash need to move away from the army
 		else if (Units().getSplashTargets().find(unit.unit()) != Units().getSplashTargets().end()) {
-			if (unit.hasTarget() && unit.unit()->getGroundWeaponCooldown() <= 0 && unit.hasTarget() && unit.getTarget().unit()->exists())
+			if (unit.hasTarget() && unit.unit()->getGroundWeaponCooldown() <= 0 && unit.getTarget().unit()->exists())
 				attack(unit);
 			else
 				approach(unit);
@@ -236,6 +218,10 @@ namespace McRave
 
 	bool CommandManager::shouldKite(UnitInfo& unit)
 	{
+		auto widths = unit.getTarget().getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
+		auto allyRange = widths + (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
+		auto enemyRange = widths + (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
+
 		if (unit.getType() == UnitTypes::Protoss_Carrier || unit.getType() == UnitTypes::Zerg_Mutalisk)
 			return true;
 
@@ -250,7 +236,7 @@ namespace McRave
 			return false;
 
 		if (((unit.getTarget().isBurrowed() || unit.getTarget().unit()->isCloaked()) && !unit.getTarget().unit()->isDetected())		// Invisible Unit
-			|| (unit.getType() == UnitTypes::Protoss_Reaver && unit.getTarget().getGroundRange() < unit.getGroundRange())			// Reavers always kite units with lower range
+			|| (unit.getType() == UnitTypes::Protoss_Reaver)																		// Reavers always kite
 			|| (unit.getType() == UnitTypes::Terran_Vulture)																		// Vultures always kite
 			|| (unit.getType() == UnitTypes::Zerg_Mutalisk)																			// Mutas always kite
 			|| (unit.getType() == UnitTypes::Protoss_Carrier)
@@ -313,10 +299,8 @@ namespace McRave
 		}
 
 		// If unit has a transport, move to it or load into it
-		else if (unit.hasTransport() && unit.getTransport().unit()->exists()) {
-			if (!isLastCommand(unit, UnitCommandTypes::Right_Click_Unit, unit.getTransport().getPosition()))
-				unit.unit()->rightClick(unit.getTransport().unit());
-		}
+		else if (unit.hasTransport() && unit.getTransport().unit()->exists())			
+				unit.unit()->rightClick(unit.getTransport().unit());		
 
 		// If target doesn't exist, move towards it
 		else if (unit.hasTarget() && unit.getTarget().getPosition().isValid() && Grids().getMobility(WalkPosition(unit.getEngagePosition())) > 0 && (unit.getPosition().getDistance(unit.getTarget().getPosition()) < 320.0 || unit.getType().isFlyer())) {
@@ -430,9 +414,8 @@ namespace McRave
 		// If unit has a transport, move to it or load into it - TODO: add scarab count upgrade check
 		// HACK: This is just for Reavers atm, add HT before AIIDE hopefully
 		if (unit.getType() == UnitTypes::Protoss_Reaver) {
-			if (unit.hasTransport() && unit.getTransport().unit()->exists() && unit.unit()->getScarabCount() != 5 && Grids().getEGroundThreat(unit.getWalkPosition()) == 0.0) {
-				if (!isLastCommand(unit, UnitCommandTypes::Right_Click_Unit, unit.getTransport().getPosition()))
-					unit.unit()->rightClick(unit.getTransport().unit());
+			if (unit.hasTransport() && unit.getTransport().unit()->exists() && unit.unit()->getScarabCount() != 5) {				
+				unit.unit()->rightClick(unit.getTransport().unit());
 				return;
 			}
 		}

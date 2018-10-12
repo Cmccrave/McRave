@@ -16,6 +16,7 @@ void TransportManager::updateTransports()
 			updateCargo(unit);
 			updateDecision(unit);
 			updateMovement(unit);
+			Broodwar->drawTextMap(unit.getPosition(), "%d", unit.getTransportState());
 		}
 	}
 }
@@ -23,7 +24,7 @@ void TransportManager::updateTransports()
 void TransportManager::updateCargo(UnitInfo& transport)
 {
 	auto cargoSize = 0;
-	for (auto u : transport.getAssignedCargo())
+	for (auto &u : transport.getAssignedCargo())
 		cargoSize += u->getType().spaceRequired();
 	
 	// Check if we are ready to assign this worker to a transport
@@ -65,6 +66,9 @@ void TransportManager::updateCargo(UnitInfo& transport)
 	if (cargoSize < 8) {
 		for (auto &u : Units().getMyUnits()) {
 			auto &unit = u.second;
+
+			if (unit.hasTransport())
+				Broodwar->drawLineMap(unit.getPosition(), unit.getTransport().getPosition(), Colors::Green);
 
 			if (readyToAssignUnit(unit)) {
 				unit.setTransport(&transport);
@@ -117,7 +121,8 @@ void TransportManager::updateDecision(UnitInfo& transport)
 		auto ht = cargo.getType() == UnitTypes::Protoss_High_Templar;
 		auto targetDist = reaver && cargo.hasTarget() ? mapBWEB.getGroundDistance(cargo.getPosition(), cargo.getTarget().getPosition()) - 256.0 : cargo.getPosition().getDistance(cargo.getEngagePosition());
 		
-		if (transport.unit()->getLoadedUnits().empty() || transport.getPosition().getDistance(cargo.getPosition()) < 160.0) {
+		// ADD If this is the closest cargo atm
+		if (transport.getPosition().getDistance(cargo.getPosition()) < 160.0) {
 			if (!cargo.hasTarget() || cargo.shouldRetreat() || !cargo.shouldEngage() || (targetDist > 128.0 || (ht && cargo.unit()->getEnergy() < 75) || (reaver && attackCooldown))) {
 				return true;
 			}
@@ -141,7 +146,7 @@ void TransportManager::updateDecision(UnitInfo& transport)
 
 	const auto pickupPosition = [&](UnitInfo& cargo) {
 		double distance = transport.getPosition().getDistance(cargo.getPosition());
-		Position direction = (transport.getPosition() - cargo.getPosition()) * int(64.0 / distance);
+		Position direction = (transport.getPosition() - cargo.getPosition()) * 64 / (int)distance;
 		return cargo.getPosition() - direction;
 	};
 
@@ -265,7 +270,7 @@ void TransportManager::updateMovement(UnitInfo& transport)
 	auto dropTarget = transport.getDestination();
 	if (!Util().isWalkable(dropTarget) || mapBWEB.getGroundDistance(transport.getPosition(), dropTarget) == DBL_MAX) {
 		auto distBest = DBL_MAX;
-		for (auto cargo : transport.getAssignedCargo()) {
+		for (auto &cargo : transport.getAssignedCargo()) {
 			if (cargo->hasTarget()) {
 				auto cargoTarget = cargo->getTarget().getPosition();
 				auto dist = cargoTarget.getDistance(transport.getPosition());
@@ -301,7 +306,7 @@ void TransportManager::updateMovement(UnitInfo& transport)
 				if (transport.getTransportState() == TransportState::Monitoring) {
 					bool proximity = true;
 					for (auto &u : transport.getAssignedCargo()) {
-						if (!u->unit()->isLoaded() && u->getPosition().getDistance(p) > 64.0)
+						if (!u->unit()->isLoaded() && u->getPosition().getDistance(p) > 32.0)
 							proximity = false;
 					}
 					if (!proximity)

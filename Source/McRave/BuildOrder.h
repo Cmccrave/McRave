@@ -88,7 +88,7 @@ namespace McRave
 		void terranOpener(), terranTech(), terranSituational();
 		void zergOpener(), zergTech(), zergSituational();										
 	
-		void PScoutMemes(), PDWEBMemes(), PArbiterMemes();	// Gimmick builds	
+		void PScoutMemes(), PDWEBMemes(), PArbiterMemes(), PShuttleMemes();	// Gimmick builds	
 
 		void PFFE();									// FFE - "http://liquipedia.net/starcraft/Protoss_FE_(vs._Zerg)"		
 		void PZZCore(), PZCore(), PNZCore();			// 1Gate Core - "http://liquipedia.net/starcraft/1_Gate_Core_(vs._Protoss)"	
