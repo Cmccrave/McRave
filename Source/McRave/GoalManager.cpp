@@ -4,10 +4,12 @@ namespace McRave
 {
 	void GoalManager::onFrame()
 	{
-		updateGoals();
+		updateProtossGoals();
+		updateTerranGoals();
+		updateZergGoals();
 	}
 
-	void GoalManager::updateGoals()
+	void GoalManager::updateProtossGoals()
 	{
 		// Defend my expansions
 		for (auto &s : Stations().getMyStations()) {
@@ -39,9 +41,8 @@ namespace McRave
 		Position nextExpand(Buildings().getCurrentExpansion());
 		if (nextExpand.isValid() && Players().vT()) {
 			UnitType building = Broodwar->self()->getRace().getResourceDepot();
-			if (BuildOrder().buildCount(building) > Broodwar->self()->visibleUnitCount(building)) {
-				assignClosestToGoal(nextExpand, vector<UnitType> { UnitTypes::Protoss_Dragoon, 2 });
-			}
+			if (BuildOrder().buildCount(building) > Broodwar->self()->visibleUnitCount(building))
+				assignClosestToGoal(nextExpand, vector<UnitType> { UnitTypes::Protoss_Dragoon, 2 });			
 		}
 
 		// Escort shuttles
@@ -55,10 +56,19 @@ namespace McRave
 		}
 
 		// Deny enemy expansions
+		// PvT
 		if (Players().vT() && Stations().getMyStations().size() >= 3 && Stations().getMyStations().size() > Stations().getEnemyStations().size() && Terrain().getEnemyExpand().isValid() && Units().getSupply() >= 200)
 			assignClosestToGoal((Position)Terrain().getEnemyExpand(), vector<UnitType> { UnitTypes::Protoss_Dragoon, 4 });
+	}
 
-		// Send lurkers to expansions for fun
+	void GoalManager::updateTerranGoals()
+	{
+
+	}
+
+	void GoalManager::updateZergGoals()
+	{
+		// Send lurkers to expansions when turtling
 		if (Broodwar->self()->getRace() == Races::Zerg && !Stations().getMyStations().empty()) {
 			auto lurkerPerBase = Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Lurker) / Stations().getMyStations().size();
 
@@ -70,30 +80,29 @@ namespace McRave
 
 	void GoalManager::assignClosestToGoal(Position here, vector<UnitType> types)
 	{
-		// TODO: Remake this so that it grabs the correct number of units
-		// Right now we only grab 1 type of unit, but may want multiple types later
-		// Form concave and set destination
 		map<double, UnitInfo*> unitByDist;
+		map<UnitType, int> unitByType;
 
-		for (auto &type : types) {
-			for (auto &u : Units().getMyUnits()) {
-				UnitInfo &unit = u.second;
+		// Store units by distance if they have a matching type
+		for (auto &u : Units().getMyUnits()) {
+			UnitInfo &unit = u.second;
 
-				if (unit.unit() && unit.getType() == type)
-					unitByDist[unit.getPosition().getDistance(here)] = &u.second;
-			}
+			if (find(types.begin(), types.end(), unit.getType()) != types.end())
+				unitByDist[unit.getPosition().getDistance(here)] = &u.second;
 		}
+		
+		// Count how many of each type we want
+		for (auto &type : types)
+			unitByType[type]++;
 
-		int i = 0;
+		
+		// Iterate through closest units
 		for (auto &u : unitByDist) {
 			UnitInfo* unit = u.second;
-			if (find(types.begin(), types.end(), u.second->getType()) != types.end() && !u.second->getDestination().isValid()) {
-				u.second->setDestination(here);
-				//myGoals[here] += u.second->getVisibleGroundStrength();
-				i++;
+			if (unitByType[unit->getType()] > 0 && !unit->getDestination().isValid()) {
+				unit->setDestination(here);
+				unitByType[unit->getType()] --;
 			}
-			if (i == int(types.size()))
-				break;
 		}
 	}
 }

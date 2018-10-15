@@ -10,7 +10,9 @@ namespace McRave
 	class UnitInfo;
 	class GoalManager
 	{
-		void updateGoals();
+		void updateProtossGoals();
+		void updateTerranGoals();
+		void updateZergGoals();
 		void assignClosestToGoal(Position, vector<UnitType>);
 	public:
 		void onFrame();

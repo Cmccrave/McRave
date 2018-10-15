@@ -117,7 +117,7 @@ namespace McRave
 			double airDist = unit.getPosition().getDistance(target.getPosition());
 			double widths = unit.getType().tileWidth() * 16.0 + target.getType().tileWidth() * 16.0;
 			double distance = widths + max(allyRange, airDist);
-			double health = targetCanAttack ? 1.0 + (0.2*(1.0 - unit.getPercentHealth())) : 1.0;
+			double health = targetCanAttack ? 1.0 + (0.2*(1.0 - unit.getPercentTotal())) : 1.0;
 			double thisUnit = 0.0;
 
 			// Set sim position
@@ -136,7 +136,7 @@ namespace McRave
 		//	if (!neutral.unit())
 		//		continue;
 
-		//	double health = 1.0 + (0.15 / unit.getPercentHealth());
+		//	double health = 1.0 + (0.15 / unit.getPercentTotal());
 		//	double airDist = unit.getPosition().getDistance(neutral.getPosition());
 		//	double widths = unit.getType().tileWidth() * 16.0 + neutral.getType().tileWidth() * 16.0;
 		//	double distance = widths + airDist;
@@ -183,7 +183,7 @@ namespace McRave
 			double airDist = unit.getPosition().getDistance(ally.getPosition());
 			double widths = unit.getType().tileWidth() * 16.0 + ally.getType().tileWidth() * 16.0;
 			double distance = widths + (unit.getType().isFlyer() ? airDist : max(groundDist, airDist));
-			double health = 1.0 + (0.50 * unit.getPercentHealth());
+			double health = 1.0 + (0.50 * unit.getPercentTotal());
 
 			thisUnit = (health * ally.getPriority()) / distance;
 			if (thisUnit > highest)

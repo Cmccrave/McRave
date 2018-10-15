@@ -136,17 +136,17 @@ void UnitManager::updateUnits()
 void UnitManager::updateLocalSimulation(UnitInfo& unit)
 {
 	// Variables for calculating local strengths
-	double enemyLocalGroundStrength = 0.0, allyLocalGroundStrength = 0.0;
-	double enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;
-	double unitToEngage = max(0.0, unit.getEngDist() / (24.0 * unit.getSpeed()));
-	double simulationTime = unitToEngage + 5.0;
-	double unitSpeed = unit.getSpeed() * 24.0;
-	bool sync = false;
+	auto enemyLocalGroundStrength = 0.0, allyLocalGroundStrength = 0.0;
+	auto enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;
+	auto unitToEngage = max(0.0, unit.getEngDist() / (24.0 * unit.getSpeed()));
+	auto simulationTime = unitToEngage + 5.0;
+	auto unitSpeed = unit.getSpeed() * 24.0;
+	auto sync = false;
 
 	// If we have excessive resources, ignore our simulation and engage
-	if (!ignoreSim && Broodwar->self()->minerals() >= 5000 && Broodwar->self()->gas() >= 5000 && Units().getSupply() >= 380)
+	if (!ignoreSim && Broodwar->self()->minerals() >= 2000 && Broodwar->self()->gas() >= 2000 && Units().getSupply() >= 380)
 		ignoreSim = true;
-	if (ignoreSim && Broodwar->self()->minerals() <= 2000 || Broodwar->self()->gas() <= 2000 || Units().getSupply() <= 240)
+	if (ignoreSim && Broodwar->self()->minerals() <= 500 || Broodwar->self()->gas() <= 500 || Units().getSupply() <= 240)
 		ignoreSim = false;
 
 	if (ignoreSim) {
@@ -211,7 +211,7 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 	for (auto &a : myUnits) {
 		auto &ally = a.second;
 
-		if (!ally.hasTarget() || !ally.getTarget().getType().isValid() || ally.unit()->isStasised() || ally.unit()->isMorphing() || ally.getType() == UnitTypes::Terran_Vulture_Spider_Mine)
+		if (!ally.hasTarget() || ally.unit()->isStasised() || ally.unit()->isMorphing())
 			continue;
 
 		// Setup distance values
@@ -229,7 +229,7 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 			continue;
 		if (ally.getType() == UnitTypes::Terran_Wraith && ally.getHealth() <= 100)
 			continue;
-		if (ally.getHealth() + ally.getShields() < LOW_SHIELD_LIMIT && Broodwar->getFrameCount() < 12000)
+		if (ally.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && Broodwar->getFrameCount() < 12000)
 			continue;
 		if (ally.getType() == UnitTypes::Zerg_Mutalisk && Grids().getEAirThreat((WalkPosition)ally.getEngagePosition()) * 5.0 > ally.getHealth() && ally.getHealth() <= 30)
 			continue;
@@ -377,44 +377,50 @@ void UnitManager::updateStrategy(UnitInfo& unit)
 			unit.setGlobalStrategy(1);
 	}
 
-	// Temp 
-	if (unit.hasTarget() && unit.getTarget().unit() && (unit.getTarget().unit()->isCloaked() || unit.getTarget().isBurrowed()) && !unit.getTarget().unit()->isDetected() && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= unit.getTarget().getGroundRange() + 160) {
-		unit.setRetreat();
-	}
+	auto fightingAtHome = ((Terrain().isInAllyTerritory(unit.getTilePosition()) && Util().unitInRange(unit)) || Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()));
+	auto invisTarget = unit.getTarget().unit() && (unit.getTarget().unit()->isCloaked() || unit.getTarget().isBurrowed()) && !unit.getTarget().unit()->isDetected() && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= unit.getTarget().getGroundRange() + 160;
 
-	// Forced local engage/retreat
-	else if ((unit.hasTarget() && Units().isThreatening(unit.getTarget()))
-		|| (unit.hasTarget() && ((Terrain().isInAllyTerritory(unit.getTilePosition()) && Util().unitInRange(unit)) || Terrain().isInAllyTerritory(unit.getTarget().getTilePosition())) && (!unit.getType().isFlyer() || !unit.getTarget().getType().isFlyer()) && (Strategy().defendChoke() || unit.getGroundRange() > 64.0 || isThreatening(unit.getTarget()))))
-		unit.setEngage();
+	if (unit.hasTarget()) {
 
-	else if ((unit.getType() == UnitTypes::Terran_Wraith && unit.getHealth() <= 100)
-		|| (unit.getType() == UnitTypes::Terran_Battlecruiser && unit.getHealth() <= 200)
-		|| (unit.getType() == UnitTypes::Protoss_High_Templar && unit.unit()->getEnergy() < TechTypes::Psionic_Storm.energyCost())
-		|| Commands().isInDanger(unit)
-		|| Grids().getESplash(unit.getWalkPosition()) > 0
-		|| (unit.getGlobalStrategy() == 0))
-		unit.setRetreat();
-
-	else if (unit.hasTarget() && unit.getPosition().getDistance(unit.getSimPosition()) <= radius) {
-		if ((unit.getType() == UnitTypes::Protoss_Zealot && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) == 0 && !BuildOrder().isProxy() && unit.hasTarget() && unit.getTarget().getType() == UnitTypes::Terran_Vulture && Grids().getMobility(unit.getTarget().getWalkPosition()) > 6 && Grids().getCollision(unit.getTarget().getWalkPosition()) < 2)
-			|| ((unit.getType() == UnitTypes::Protoss_Scout || unit.getType() == UnitTypes::Protoss_Corsair) && unit.getTarget().getType() == UnitTypes::Zerg_Overlord && Grids().getEAirThreat((WalkPosition)unit.getEngagePosition()) * 5.0 > (double)unit.getShields())
-			|| (unit.getType() == UnitTypes::Protoss_Corsair && unit.getTarget().getType() == UnitTypes::Zerg_Scourge && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Corsair) < 6)
-			|| (unit.getType() == UnitTypes::Terran_Medic && unit.unit()->getEnergy() <= TechTypes::Healing.energyCost())
-			|| (unit.getType() == UnitTypes::Zerg_Mutalisk && Grids().getEAirThreat((WalkPosition)unit.getEngagePosition()) * 5.0 > unit.getHealth() && unit.getHealth() <= 30)
-			|| (unit.getTarget().unit() && (unit.getTarget().unit()->isCloaked() || unit.getTarget().isBurrowed()) && !unit.getTarget().unit()->isDetected() && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= unit.getTarget().getGroundRange() + 96)
-			|| (unit.getHealth() + unit.getShields() < LOW_SHIELD_LIMIT && Broodwar->getFrameCount() < 12000)
-			|| (unit.getType() == UnitTypes::Terran_SCV && Broodwar->getFrameCount() > 12000))
-			unit.setRetreat();
-
-		else if (unit.getTarget().unit()->exists() &&
-			(((unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && unit.getPosition().getDistance(unit.getTarget().getPosition()) < 96.0)
-				|| ((unit.unit()->isCloaked() || unit.isBurrowed()) && !Commands().overlapsEnemyDetection(unit.getEngagePosition()))
-				|| (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && Util().unitInRange(unit))
-				|| (unit.getGlobalStrategy() == 1 && unit.getLocalStrategy() == 1)))
+		// Force engaging
+		if (!invisTarget && (Units().isThreatening(unit.getTarget())
+			|| (fightingAtHome && (!unit.getType().isFlyer() || !unit.getTarget().getType().isFlyer()) && (Strategy().defendChoke() || unit.getGroundRange() > 64.0))))
 			unit.setEngage();
 
-		else if (unit.getGlobalStrategy() == 0 || unit.getLocalStrategy() == 0)
+		// Force retreating
+		else if ((unit.getType().isMechanical() && unit.getPercentTotal() < LOW_MECH_PERCENT_LIMIT)
+			|| (unit.getType() == UnitTypes::Protoss_High_Templar && unit.getEnergy() < 75)
+			|| Commands().isInDanger(unit)
+			|| Grids().getESplash(unit.getWalkPosition()) > 0
+			|| unit.getGlobalStrategy() == 0
+			|| invisTarget)
 			unit.setRetreat();
+
+		// Close enough to make a decision
+		else if (unit.getPosition().getDistance(unit.getSimPosition()) <= radius) {
+
+			// Retreat
+			if ((unit.getType() == UnitTypes::Protoss_Zealot && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) == 0 && !BuildOrder().isProxy()  && unit.getTarget().getType() == UnitTypes::Terran_Vulture && Grids().getMobility(unit.getTarget().getWalkPosition()) > 6 && Grids().getCollision(unit.getTarget().getWalkPosition()) < 2)
+				|| ((unit.getType() == UnitTypes::Protoss_Scout || unit.getType() == UnitTypes::Protoss_Corsair) && unit.getTarget().getType() == UnitTypes::Zerg_Overlord && Grids().getEAirThreat((WalkPosition)unit.getEngagePosition()) * 5.0 > (double)unit.getShields())
+				|| (unit.getType() == UnitTypes::Protoss_Corsair && unit.getTarget().getType() == UnitTypes::Zerg_Scourge && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Corsair) < 6)
+				|| (unit.getType() == UnitTypes::Terran_Medic && unit.unit()->getEnergy() <= TechTypes::Healing.energyCost())
+				|| (unit.getType() == UnitTypes::Zerg_Mutalisk && Grids().getEAirThreat((WalkPosition)unit.getEngagePosition()) * 5.0 > unit.getHealth() && unit.getHealth() <= 30)
+				|| (unit.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && Broodwar->getFrameCount() < 12000)
+				|| (unit.getType() == UnitTypes::Terran_SCV && Broodwar->getFrameCount() > 12000))
+				unit.setRetreat();
+
+			// Engage
+			else if (unit.getTarget().unit()->exists() &&
+				(((unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && unit.getPosition().getDistance(unit.getTarget().getPosition()) < 96.0)
+					|| ((unit.unit()->isCloaked() || unit.isBurrowed()) && !Commands().overlapsEnemyDetection(unit.getEngagePosition()))
+					|| (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && Util().unitInRange(unit))
+					|| (unit.getGlobalStrategy() == 1 && unit.getLocalStrategy() == 1)))
+				unit.setEngage();
+
+			// Default to retreat
+			else if (unit.getGlobalStrategy() == 0 || unit.getLocalStrategy() == 0)
+				unit.setRetreat();
+		}
 	}
 }
 
@@ -443,6 +449,7 @@ void UnitManager::updateRole(UnitInfo& unit)
 
 int UnitManager::roleCount(Role role)
 {
+	// Find every unit we own with the role we requested
 	auto cnt = 0;
 	for (auto &u : myUnits) {
 		auto &unit = u.second;
@@ -460,18 +467,19 @@ bool UnitManager::isThreatening(UnitInfo& unit)
 	if (unit.unit() && unit.unit()->exists() && unit.getType().isWorker() && !unit.unit()->isAttacking() && unit.unit()->getOrder() != Orders::AttackUnit && unit.unit()->getOrder() != Orders::PlaceBuilding && !unit.unit()->isConstructing())
 		return false;
 
-	// If unit is hitting a building - TODO: Can't use UnitInfo target because it's not an ally unit, it's a building
-	if (unit.hasAttackedRecently() && Terrain().isInAllyTerritory(unit.getTilePosition()) && unit.unit()->exists() && unit.unit()->getOrderTarget() && unit.unit()->getOrderTarget()->exists() && unit.unit()->getOrderTarget()->getType().isBuilding() /*&& unit.hasTarget() && unit.getTarget().getType().isBuilding()*/)
+	// If unit is hitting a building
+	if (unit.hasAttackedRecently() && Terrain().isInAllyTerritory(unit.getTilePosition()) && unit.unit()->exists() && unit.hasTarget() && unit.getTarget().getType().isBuilding())
 		return true;
 
+	// If unit is near our main mineral gathering - TODO: Why do I still use this
 	if (unit.getPosition().getDistance(Terrain().getMineralHoldPosition()) <= 320.0)
 		return true;
 
+	// If unit is near a battery
 	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Shield_Battery) > 0) {
-		//auto battery = Util().getClosestAllyBuilding(unit, Filter::GetType == UnitTypes::Protoss_Shield_Battery);
-		//if (battery && unit.getPosition().getDistance(battery->getPosition()) <= 128.0) {
-		//	return true;
-		//}
+		auto battery = Util().getClosestUnit(unit.getPosition(), Broodwar->self(), UnitTypes::Protoss_Shield_Battery);
+		if (battery && unit.getPosition().getDistance(battery->getPosition()) <= 128.0)
+			return true;		
 	}
 
 	if (unit.getType().isBuilding() && Terrain().isInAllyTerritory(unit.getTilePosition()))

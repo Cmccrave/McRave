@@ -48,14 +48,15 @@ void ScoutManager::updateScouts()
 
 void ScoutManager::scout(UnitInfo& unit)
 {
-	WalkPosition start = unit.getWalkPosition();
-	double distBest = DBL_MAX;
-	Position posBest = unit.getDestination();
+	auto start = unit.getWalkPosition();
+	auto distBest = DBL_MAX;
+	auto posBest = unit.getDestination();
 	
 	if (!BuildOrder().firstReady() || Strategy().getEnemyBuild() == "Unknown") {
 
 		// If it's a proxy (maybe cannon rush), try to find the unit to kill
 		if ((Strategy().enemyProxy() || proxyCheck) && scoutCount > 1 && scoutAssignments.find(mapBWEB.getMainPosition()) == scoutAssignments.end()) {
+
 			UnitInfo* enemyunit = Util().getClosestUnit(unit.getPosition(), Broodwar->enemy(), UnitTypes::Protoss_Probe);
 			scoutAssignments.insert(mapBWEB.getMainPosition());
 
@@ -129,16 +130,14 @@ void ScoutManager::scout(UnitInfo& unit)
 
 void ScoutManager::explore(UnitInfo& unit)
 {
-	WalkPosition start = unit.getWalkPosition();
-	Position bestPosition = unit.getDestination();
-	int longest = 0;
-	UnitInfo* enemy = Util().getClosestUnit(unit.getPosition(), Broodwar->enemy());
-	double test = 0.0;
+	auto bestPosition = unit.getDestination();
+	auto enemy = Util().getClosestThreat(unit);
+	auto enemyClose = enemy && !enemy->getType().isWorker() && enemy->getPosition().getDistance(unit.getPosition()) <= 320.0;
 
-	if (unit.getPosition().getDistance(unit.getDestination()) > 256.0 && (!enemy || (enemy && (enemy->getType().isWorker() || enemy->getPosition().getDistance(unit.getPosition()) > 320.0)))) {
-		bestPosition = unit.getDestination();
+	// If unit isn't a threat
+	if (unit.getPosition().getDistance(unit.getDestination()) > 256.0 && !enemyClose) {
 
-		if (bestPosition.isValid() && bestPosition != Position(start) && unit.unit()->getLastCommand().getTargetPosition() != bestPosition) {
+		if (unit.unit()->getLastCommand().getTargetPosition() != bestPosition) {
 			unit.unit()->move(bestPosition);
 			Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Blue);
 		}

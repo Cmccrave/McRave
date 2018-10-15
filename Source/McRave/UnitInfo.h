@@ -11,7 +11,7 @@ namespace McRave
 	class ResourceInfo;
 
 	class UnitInfo {
-		double percentHealth, groundRange, airRange, groundDamage, airDamage, speed;						// StarCraft stats
+		double percentHealth, percentShield, percentTotal, groundRange, airRange, groundDamage, airDamage, speed;						// StarCraft stats
 		double visibleGroundStrength, visibleAirStrength, maxGroundStrength, maxAirStrength, priority;		// McRave stats
 		double engageDist;
 		double simValue, simBonus;
@@ -132,7 +132,9 @@ namespace McRave
 		int getFrameCreated() { return frameCreated; }
 		
 		// Starcraft Stats
-		double getPercentHealth()			{ return percentHealth; }				// Returns the units health and shield percentage		
+		double getPercentHealth()			{ return percentHealth; }				// Returns the units health percentage
+		double getPercentShield()			{ return percentShield; }
+		double getPercentTotal()			{ return percentTotal; }
 		double getVisibleGroundStrength()	{ return visibleGroundStrength; }		// Returns the units visible ground strength		
 		double getMaxGroundStrength()		{ return maxGroundStrength; }			// Returns the units max ground strength		
 		double getVisibleAirStrength()		{ return visibleAirStrength; }			// Returns the units visible air strength		

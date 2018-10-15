@@ -1,11 +1,5 @@
 #include "McRave.h"
 
-double UtilManager::getPercentHealth(UnitInfo& unit)
-{
-	// Returns the percent of health for a unit, with higher emphasis on health over shields
-	return double(unit.unit()->getHitPoints() + (unit.unit()->getShields() / 2)) / double(unit.getType().maxHitPoints() + (unit.getType().maxShields() / 2));
-}
-
 double UtilManager::getMaxGroundStrength(UnitInfo& unit)
 {
 	// HACK: Some hardcoded values
@@ -37,7 +31,7 @@ double UtilManager::getVisibleGroundStrength(UnitInfo& unit)
 {
 	if (unit.unit()->isMaelstrommed() || unit.unit()->isStasised())
 		return 0.0;
-	return unit.getPercentHealth() * unit.getMaxGroundStrength();
+	return unit.getPercentTotal() * unit.getMaxGroundStrength();
 }
 
 double UtilManager::getMaxAirStrength(UnitInfo& unit)
@@ -70,7 +64,7 @@ double UtilManager::getVisibleAirStrength(UnitInfo& unit)
 {
 	if (unit.unit()->isMaelstrommed() || unit.unit()->isStasised())
 		return 0.0;
-	return unit.getPercentHealth() * unit.getMaxAirStrength();
+	return unit.getPercentTotal() * unit.getMaxAirStrength();
 }
 
 double UtilManager::getPriority(UnitInfo& unit)
@@ -515,7 +509,7 @@ UnitInfo * UtilManager::getClosestThreat(UnitInfo& unit)
 		auto canAttack = unit.getType().isFlyer() ? threat.getAirDamage() > 0.0 : threat.getGroundDamage() > 0.0;
 
 		if (!threat.unit() || !canAttack)
-			continue;		
+			continue;
 
 		double dist = threat.getPosition().getDistance(unit.getPosition());
 		if (dist < distBest) {
@@ -552,4 +546,80 @@ int UtilManager::chokeWidth(const BWEM::ChokePoint * choke)
 	if (!choke)
 		return 0;
 	return int(choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2))) * 8;
+}
+
+Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area = nullptr, Position here = Positions::Invalid)
+{
+	// Setup parameters
+	int min = int(unit.getGroundRange());
+	double distBest = DBL_MAX;
+	WalkPosition center = WalkPositions::None;
+	Position bestPosition = Positions::None;
+
+	// HACK: I found my reavers getting picked off too often when they held too close
+	if (unit.getType() == UnitTypes::Protoss_Reaver)
+		min += 64;
+
+	// Finds which position we are forming the concave at
+	const auto getConcaveCenter = [&]() {
+		if (here.isValid())
+			center = (WalkPosition)here;
+		else if (area == mapBWEB.getNaturalArea() && mapBWEB.getNaturalChoke())
+			center = mapBWEB.getNaturalChoke()->Center();
+		else if (area == mapBWEB.getMainArea() && mapBWEB.getMainChoke())
+			center = mapBWEB.getMainChoke()->Center();
+
+		else if (area) {
+			for (auto &c : area->ChokePoints()) {
+				double dist = mapBWEB.getGroundDistance(Position(c->Center()), Terrain().getEnemyStartingPosition());
+				if (dist < distBest) {
+					distBest = dist;
+					center = c->Center();
+				}
+			}
+		}
+	};
+
+	const auto checkbest = [&](WalkPosition w) {
+		TilePosition t(w);
+		Position p = Position(w) + Position(4, 4);
+
+		double dist = p.getDistance(Position(center)) * log(p.getDistance(mapBWEB.getMainPosition()));
+
+		if (!w.isValid()
+			|| !Util().isMobile(unit.getWalkPosition(), w, unit.getType())
+			|| (here != Terrain().getDefendPosition() && area && mapBWEM.GetArea(t) != area)
+			|| (unit.getGroundRange() > 32.0 && p.getDistance(Position(center)) < min)
+			|| Buildings().overlapsQueuedBuilding(unit.getType(), t)
+			|| dist > distBest
+			|| Commands().overlapsCommands(unit.unit(), UnitTypes::None, p, 8)
+			|| (unit.getType() == UnitTypes::Protoss_Reaver && Terrain().isDefendNatural() && mapBWEM.GetArea(w) != mapBWEB.getNaturalArea()))
+			return false;
+
+		bestPosition = p;
+		distBest = dist;
+		return true;
+	};
+
+	// Find the center
+	getConcaveCenter();
+
+	// If this is the defending position, grab from a vector we already made
+	// TODO: generate a vector for every choke and store as a map<Choke, vector<Position>>?
+	if (here == Terrain().getDefendPosition()) {
+		for (auto &position : Terrain().getChokePositions()) {
+			checkbest(WalkPosition(position));
+		}
+	}
+
+	// Find a position around the center that is suitable
+	else {
+		for (int x = center.x - 40; x <= center.x + 40; x++) {
+			for (int y = center.y - 40; y <= center.y + 40; y++) {
+				WalkPosition w(x, y);
+				checkbest(w);
+			}
+		}
+	}
+	return bestPosition;
 }

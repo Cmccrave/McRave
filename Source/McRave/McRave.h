@@ -7,7 +7,8 @@
 
 #define STORM_LIMIT 5.0
 #define STASIS_LIMIT 8.0
-#define LOW_SHIELD_LIMIT 20
+#define LOW_SHIELD_PERCENT_LIMIT 0.2
+#define LOW_MECH_PERCENT_LIMIT 0.2
 
 // Namespaces
 using namespace BWAPI;

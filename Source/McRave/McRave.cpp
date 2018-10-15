@@ -14,9 +14,12 @@
 // Obs too suicidal
 // Probes getting stuck trying to build - not sure
 // Probes sometimes don't build - re-issue order
+// Scarabs and Mines being used in sim?
 
 // *** Restructuring ***
+// Add percent shield and percent total
 // Scouts
+// Production
 // Pylons - add enemy, could use for artosis pylons
 // Scanner targets
 // Defense grids

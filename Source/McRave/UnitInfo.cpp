@@ -17,52 +17,66 @@ namespace McRave
 		maxGroundStrength = 0.0;
 		maxAirStrength = 0.0;
 		priority = 0.0;
+		
 
 		percentHealth = 0.0;
+		percentShield = 0.0;
+		percentTotal = 0.0;
 		groundRange = 0.0;
 		airRange = 0.0;
 		groundDamage = 0.0;
 		airDamage = 0.0;
 		speed = 0.0;
+		engageDist = 0.0;
+		simValue = 0.0;
+		simBonus = 1.0;
 
 		localStrategy = 0;
 		globalStrategy = 0;
 		lastAttackFrame = 0;
 		lastVisibleFrame = 0;
 		lastMoveFrame = 0;
+		resourceHeldFrames = 0;
+		remainingTrainFrame = 0;
 		shields = 0;
 		health = 0;
 		minStopFrame = 0;
+		energy = 0;
 
 		killCount = 0;
-		simBonus = 1.0;
+		
 
 		burrowed = false;
+		engage = false;
+		retreat = false;
 
 		thisUnit = nullptr;
 		transport = nullptr;
 		unitType = UnitTypes::None;
+		buildingType = UnitTypes::None;
 		player = nullptr;
 		target = nullptr;
 		resource = nullptr;
 		role = Role::None;
+		tState = TransportState::None;
+		cState = CombatState::None;
 
 		position = Positions::Invalid;
 		engagePosition = Positions::Invalid;
 		destination = Positions::Invalid;
 		simPosition = Positions::Invalid;
+		lastPos = Positions::Invalid;
 		walkPosition = WalkPositions::Invalid;
+		lastWalk = WalkPositions::Invalid;
 		tilePosition = TilePositions::Invalid;
+		lastTile = TilePositions::Invalid;
 	}
 
 	void UnitInfo::setLastPositions()
 	{
-		if (!this->unit() || !this->unit()->exists())
-			return;
-
 		lastPos = this->getPosition();
 		lastTile = this->getTilePosition();
-		//lastWalk =  this->unit()->getWalkPosition();
+		lastWalk =  this->getWalkPosition();
 	}
 
 	void UnitInfo::updateUnit()
@@ -84,7 +98,9 @@ namespace McRave
 		health					= thisUnit->getHitPoints();
 		shields					= thisUnit->getShields();
 		energy					= thisUnit->getEnergy();
-		percentHealth			= Util.getPercentHealth(*this);
+		percentHealth			= t.maxHitPoints() > 0 ? double(health) / double(t.maxHitPoints()) : 1.0;
+		percentShield			= t.maxShields() > 0 ? double(shields) / double(t.maxShields()) : 1.0;
+		percentTotal			= t.maxHitPoints() + t.maxShields() > 0 ? double(health + shields) / double(t.maxHitPoints() + t.maxShields()) : 1.0;
 		groundRange				= Util.groundRange(*this);
 		airRange				= Util.airRange(*this);
 		groundDamage			= Util.groundDamage(*this);
