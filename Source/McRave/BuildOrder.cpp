@@ -29,7 +29,7 @@ namespace McRave
 		double best = 0.0;
 		getOpening = true;
 
-		currentBuild = "PShuttleMemes";
+		currentBuild = "PFFE";
 		isBuildPossible(currentBuild);
 		return;
 				

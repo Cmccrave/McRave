@@ -422,9 +422,9 @@ namespace BWEB
 			if (tight != UnitTypes::None && check && (!w.isValid() || !Broodwar->isWalkable(w)))
 				return true;
 
-			//// TEST
-			//if (overlapsAnything(t))
-			//	return true;
+			// If the tile is touching some resources
+			if (overlapsAnything(t))
+				return true;
 
 			// If we don't care about walling tight and the tile isn't walkable
 			if (!requireTight && !isWalkable(t))

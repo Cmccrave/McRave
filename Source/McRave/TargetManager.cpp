@@ -82,7 +82,7 @@ namespace McRave
 
 			// Proximity targeting
 			else if (unit.getType() == UnitTypes::Protoss_Reaver) {
-				if (target.getType().isBuilding() && (target.getGroundDamage() == 0.0 || target.getAirDamage() == 0.0))
+				if (target.getType().isBuilding() && target.getGroundDamage() == 0.0 && target.getAirDamage() == 0.0)
 					thisUnit = 0.1 / distance;
 				else
 					thisUnit = health / distance;

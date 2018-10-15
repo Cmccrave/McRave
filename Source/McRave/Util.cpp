@@ -82,11 +82,13 @@ double UtilManager::getPriority(UnitInfo& unit)
 	if (Broodwar->getFrameCount() < 6000 && Strategy().enemyProxy() && unit.getType() == UnitTypes::Protoss_Pylon)
 		return -5.0;
 
-	const auto area = mapBWEM.GetArea(unit.getTilePosition());
-	if (area && Terrain().isInAllyTerritory(unit.getTilePosition())) {
-		for (auto &gas : area->Geysers()) {
-			if (gas->TopLeft().getDistance(unit.getTilePosition()) < 2 && !unit.unit()->isInvincible())
-				return 100.0;
+	if (unit.getTilePosition().isValid()) {
+		const auto area = mapBWEM.GetArea(unit.getTilePosition());
+		if (area && Terrain().isInAllyTerritory(unit.getTilePosition())) {
+			for (auto &gas : area->Geysers()) {
+				if (gas->TopLeft().getDistance(unit.getTilePosition()) < 2 && !unit.unit()->isInvincible())
+					return 100.0;
+			}
 		}
 	}
 
@@ -139,6 +141,9 @@ bool UtilManager::isSafe(WalkPosition end, UnitType unitType, bool groundCheck, 
 
 bool UtilManager::isMobile(WalkPosition start, WalkPosition end, UnitType unitType)
 {
+	if (unitType.isFlyer())
+		return true;
+
 	int walkWidth = (int)ceil(unitType.width() / 8.0) + 1;
 	int walkHeight = (int)ceil(unitType.height() / 8.0) + 1;
 	int halfW = walkWidth / 2;
@@ -156,9 +161,9 @@ bool UtilManager::isMobile(WalkPosition start, WalkPosition end, UnitType unitTy
 			WalkPosition w(x, y);
 			if (!w.isValid())
 				return false;
-			if (!unitType.isFlyer() && overlapsUnit(x, y) && Grids().getMobility(w) > 0)
+			if (overlapsUnit(x, y) && Grids().getMobility(w) > 0)
 				continue;
-			if (!unitType.isFlyer() && (Grids().getMobility(w) <= 0 || Grids().getCollision(w) > 0))
+			if (Grids().getMobility(w) <= 0 || Grids().getCollision(w) > 0)
 				return false;
 		}
 	}
@@ -182,13 +187,13 @@ bool UtilManager::unitInRange(UnitInfo& unit)
 	return false;
 }
 
-bool UtilManager::proactivePullWorker(Unit unit)
+bool UtilManager::proactivePullWorker(UnitInfo& unit)
 {
 	if (Broodwar->self()->getRace() == Races::Protoss) {
 		int completedDefenders = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Photon_Cannon) + Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot);
 		int visibleDefenders = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot);
 
-		if (unit->getType() == UnitTypes::Protoss_Probe && unit->getShields() < 20)
+		if (unit.getType() == UnitTypes::Protoss_Probe && unit.getShields() < 20)
 			return false;
 
 		if (BuildOrder().isHideTech() && completedDefenders == 1 && Units().getMyUnits().size() == 1)
@@ -230,19 +235,19 @@ bool UtilManager::proactivePullWorker(Unit unit)
 	return false;
 }
 
-bool UtilManager::reactivePullWorker(Unit unit)
+bool UtilManager::reactivePullWorker(UnitInfo& unit)
 {
 	if (Units().getEnemyCount(UnitTypes::Terran_Vulture) > 0)
 		return false;
 
-	if (Broodwar->self()->getRace() == Races::Protoss) {
-		if (unit->getShields() < 8)
+	if (unit.getType() == UnitTypes::Protoss_Probe) {
+		if (unit.getShields() < 8)
 			return false;
 	}
 
-	const BWEB::Station * station = mapBWEB.getClosestStation(unit->getTilePosition());
-	if (station && station->ResourceCentroid().getDistance(unit->getPosition()) < 160.0) {
-		if (Terrain().isInAllyTerritory(unit->getTilePosition()) && Grids().getEGroundThreat(getWalkPosition(unit)) > 0.0 && Broodwar->getFrameCount() < 10000)
+	const BWEB::Station * station = mapBWEB.getClosestStation(unit.getTilePosition());
+	if (station && station->ResourceCentroid().getDistance(unit.getPosition()) < 160.0) {
+		if (Terrain().isInAllyTerritory(unit.getTilePosition()) && Grids().getEGroundThreat(unit.getWalkPosition()) > 0.0 && Broodwar->getFrameCount() < 10000)
 			return true;
 	}
 
@@ -264,7 +269,7 @@ bool UtilManager::reactivePullWorker(Unit unit)
 	return false;
 }
 
-bool UtilManager::pullRepairWorker(Unit unit)
+bool UtilManager::pullRepairWorker(UnitInfo& unit)
 {
 	if (Broodwar->self()->getRace() == Races::Terran) {
 		int mechUnits = Broodwar->self()->completedUnitCount(UnitTypes::Terran_Vulture)
@@ -436,6 +441,26 @@ double UtilManager::speed(UnitInfo& unit)
 	return speed;
 }
 
+double UtilManager::getHighestThreat(WalkPosition here, UnitInfo& unit)
+{
+	// Determine highest threat possible here
+	auto t = unit.getType();
+	auto highest = 0.01;
+	auto dx = int(t.width() / 16.0);		// Half walk resolution width
+	auto dy = int(t.height() / 16.0);		// Half walk resolution height
+
+	for (int x = here.x - dx; x < here.x + dx; x++) {
+		for (int y = here.y - dy; y < here.y + dy; y++) {
+			WalkPosition w(x, y);
+			auto grd = Grids().getEAirThreat(w);
+			auto air = Grids().getEGroundThreat(w);
+			auto current = unit.getRole() == Role::Transporting ? grd + air : (unit.getType().isFlyer() ? air : grd);
+			highest = (current > highest) ? current : highest;
+		}
+	}
+	return highest;
+}
+
 int UtilManager::getMinStopFrame(UnitType unitType)
 {
 	if (unitType == UnitTypes::Protoss_Dragoon)	return 9;
@@ -479,6 +504,28 @@ UnitInfo * UtilManager::getClosestUnit(Position here, Player p, UnitType t) {
 	return best;
 }
 
+UnitInfo * UtilManager::getClosestThreat(UnitInfo& unit)
+{
+	double distBest = DBL_MAX;
+	UnitInfo* best = nullptr;
+	auto &units = (unit.getPlayer() == Broodwar->self()) ? Units().getEnemyUnits() : Units().getMyUnits();
+
+	for (auto &t : units) {
+		UnitInfo &threat = t.second;
+		auto canAttack = unit.getType().isFlyer() ? threat.getAirDamage() > 0.0 : threat.getGroundDamage() > 0.0;
+
+		if (!threat.unit() || !canAttack)
+			continue;		
+
+		double dist = threat.getPosition().getDistance(unit.getPosition());
+		if (dist < distBest) {
+			best = &threat;
+			distBest = dist;
+		}
+	}
+	return best;
+}
+
 UnitInfo * UtilManager::getClosestBuilder(Position here)
 {
 	double distBest = DBL_MAX;
@@ -488,7 +535,7 @@ UnitInfo * UtilManager::getClosestBuilder(Position here)
 	for (auto &u : units) {
 		UnitInfo &unit = u.second;
 
-		if (!unit.unit() || !unit.getType().isWorker())
+		if (!unit.unit() || !unit.getType().isWorker() || unit.getBuildPosition().isValid())
 			continue;
 
 		double dist = here.getDistance(unit.getPosition());

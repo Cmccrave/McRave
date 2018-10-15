@@ -15,6 +15,7 @@ namespace McRave
 		bool resetGrid[1024][1024] ={};
 		int timeGrid[1024][1024] ={};
 		int visibleGrid[256][256] ={};
+		int visitedGrid[256][256] ={};
 		vector<WalkPosition> resetVector;
 
 		int currentFrame = 0;
@@ -78,6 +79,7 @@ namespace McRave
 		double getDistanceHome(WalkPosition here) { return distanceHome[here.x][here.y]; }
 
 		int lastVisibleFrame(TilePosition t) { return visibleGrid[t.x][t.y]; }
+		int lastVisitedFrame(TilePosition t) { return visitedGrid[t.x][t.y]; }
 
 
 

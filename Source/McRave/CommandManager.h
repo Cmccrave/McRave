@@ -33,10 +33,8 @@ namespace McRave
 
 		void updateArbiter(UnitInfo&), updateDetector(UnitInfo&);
 		void updateUnits(), updateDecision(UnitInfo&), updateEnemyCommands();
-		void updateGoals();
-		void assignClosestToGoal(Position, vector<UnitType>);
 
-		void move(UnitInfo&), approach(UnitInfo&), defend(UnitInfo&), kite(UnitInfo&), attack(UnitInfo&), retreat(UnitInfo&);
+		
 		bool shouldAttack(UnitInfo&), shouldKite(UnitInfo&), shouldApproach(UnitInfo&), shouldUseSpecial(UnitInfo&), shouldDefend(UnitInfo&);
 		bool isLastCommand(UnitInfo&, UnitCommandType, Position);
 	public:
@@ -50,6 +48,15 @@ namespace McRave
 
 		bool isInDanger(UnitInfo&);
 		bool isInDanger(Position);
+
+		void move(UnitInfo&);
+		void approach(UnitInfo&);
+		void defend(UnitInfo&);
+		void kite(UnitInfo&);
+		void attack(UnitInfo&);
+		void safeMove(UnitInfo&);
+		void hunt(UnitInfo&);
+		void escort(UnitInfo&);
 
 		/// Adds a command
 		template<class T>

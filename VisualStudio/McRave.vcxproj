@@ -47,6 +47,7 @@
     <ClCompile Include="..\Source\McRave\CommandManager.cpp" />
     <ClCompile Include="..\Source\McRave\Dll.cpp" />
     <ClCompile Include="..\Source\McRave\EventManager.cpp" />
+    <ClCompile Include="..\Source\McRave\GoalManager.cpp" />
     <ClCompile Include="..\Source\McRave\GridManager.cpp" />
     <ClCompile Include="..\Source\McRave\Interface.cpp" />
     <ClCompile Include="..\Source\McRave\McRave.cpp" />
@@ -59,6 +60,7 @@
     <ClCompile Include="..\Source\McRave\PylonManager.cpp" />
     <ClCompile Include="..\Source\McRave\ResourceInfo.cpp" />
     <ClCompile Include="..\Source\McRave\ResourceManager.cpp" />
+    <ClCompile Include="..\Source\McRave\ScoutManager.cpp" />
     <ClCompile Include="..\Source\McRave\SpecialManager.cpp" />
     <ClCompile Include="..\Source\McRave\StationManager.cpp" />
     <ClCompile Include="..\Source\McRave\StrategyManager.cpp" />
@@ -100,6 +102,7 @@
     <ClInclude Include="..\Source\McRave\BuildingManager.h" />
     <ClInclude Include="..\Source\McRave\BuildOrder.h" />
     <ClInclude Include="..\Source\McRave\CommandManager.h" />
+    <ClInclude Include="..\Source\McRave\GoalManager.h" />
     <ClInclude Include="..\Source\McRave\GridManager.h" />
     <ClInclude Include="..\Source\McRave\Header.h" />
     <ClInclude Include="..\Source\McRave\Interface.h" />
@@ -110,6 +113,7 @@
     <ClInclude Include="..\Source\McRave\PylonManager.h" />
     <ClInclude Include="..\Source\McRave\ResourceInfo.h" />
     <ClInclude Include="..\Source\McRave\ResourceManager.h" />
+    <ClInclude Include="..\Source\McRave\ScoutManager.h" />
     <ClInclude Include="..\Source\McRave\Singleton.h" />
     <ClInclude Include="..\Source\McRave\StationManager.h" />
     <ClInclude Include="..\Source\McRave\StrategyManager.h" />

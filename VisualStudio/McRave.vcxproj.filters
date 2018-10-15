@@ -163,6 +163,12 @@
     <ClCompile Include="..\Source\McRave\ProtossMemes.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\McRave\GoalManager.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\ScoutManager.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">
@@ -299,6 +305,12 @@
     </ClInclude>
     <ClInclude Include="..\Source\BWEM\BaseFinder\BaseFinder.h">
       <Filter>BWEM\BaseFinder</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\GoalManager.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\ScoutManager.h">
+      <Filter>McRave</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

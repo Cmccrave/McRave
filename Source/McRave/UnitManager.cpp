@@ -406,26 +406,50 @@ void UnitManager::updateStrategy(UnitInfo& unit)
 			|| (unit.getType() == UnitTypes::Terran_SCV && Broodwar->getFrameCount() > 12000))
 			unit.setRetreat();
 
-		else if (((unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && unit.getPosition().getDistance(unit.getTarget().getPosition()) < 96.0)
-			|| ((unit.unit()->isCloaked() || unit.isBurrowed()) && !Commands().overlapsEnemyDetection(unit.getEngagePosition()))
-			|| (unit.getType() == UnitTypes::Protoss_Reaver && !unit.hasTransport() && Util().unitInRange(unit))
-			|| (unit.getGlobalStrategy() == 1 && unit.getLocalStrategy() == 1))
+		else if (unit.getTarget().unit()->exists() &&
+			(((unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && unit.getPosition().getDistance(unit.getTarget().getPosition()) < 96.0)
+				|| ((unit.unit()->isCloaked() || unit.isBurrowed()) && !Commands().overlapsEnemyDetection(unit.getEngagePosition()))
+				|| (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && Util().unitInRange(unit))
+				|| (unit.getGlobalStrategy() == 1 && unit.getLocalStrategy() == 1)))
 			unit.setEngage();
-		else
+
+		else if (unit.getGlobalStrategy() == 0 || unit.getLocalStrategy() == 0)
 			unit.setRetreat();
 	}
 }
 
 void UnitManager::updateRole(UnitInfo& unit)
 {
-	if (unit.getType().isWorker())
-		unit.setRole(Role::Working);
-	else if (unit.getType().isBuilding() && unit.getGroundDamage() == 0.0 && unit.getAirDamage() == 0.0)
-		unit.setRole(Role::Producing);
-	else if (unit.getType().spaceProvided() > 0)
-		unit.setRole(Role::Transporting);
-	else
-		unit.setRole(Role::Fighting);
+	// Update default role
+	if (unit.getRole() == Role::None) {
+		if (unit.getType().isWorker())
+			unit.setRole(Role::Working);
+		else if (unit.getType().isBuilding() && unit.getGroundDamage() == 0.0 && unit.getAirDamage() == 0.0)
+			unit.setRole(Role::Producing);
+		else if (unit.getType().spaceProvided() > 0)
+			unit.setRole(Role::Transporting);
+		else
+			unit.setRole(Role::Fighting);
+	}
+
+	// Check if workers should fight or work
+	if (unit.getType().isWorker()) {
+		if (unit.getRole() == Role::Working && (Util().reactivePullWorker(unit) || Util().proactivePullWorker(unit) || Util().pullRepairWorker(unit)))
+			unit.setRole(Role::Fighting);
+		else if (unit.getRole() == Role::Fighting)
+			unit.setRole(Role::Working);
+	}
+}
+
+int UnitManager::roleCount(Role role)
+{
+	auto cnt = 0;
+	for (auto &u : myUnits) {
+		auto &unit = u.second;
+		if (unit.getRole() == role)
+			cnt++;
+	}
+	return cnt;
 }
 
 bool UnitManager::isThreatening(UnitInfo& unit)

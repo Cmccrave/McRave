@@ -69,7 +69,7 @@ namespace McRave
 				if (distanceHome[x][y] >= 1500 && distanceHome[x][y] != DBL_MAX)
 					Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Yellow);*/
 
-				if (eGroundThreat[x][y] > 0.0)
+				if (eAirThreat[x][y] > 0.0)
 					Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Blue);
 				//if (distanceHome[x][y] <= 0)
 				//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Blue);
@@ -83,18 +83,6 @@ namespace McRave
 					Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Blue);
 			}
 		}
-
-		for (int x = 0; x <= Broodwar->mapWidth(); x++) {
-			for (int y = 0; y <= Broodwar->mapHeight(); y++) {
-				TilePosition t(x, y);
-				if (visibleGrid[x][y] == -1)
-					Broodwar->drawCircleMap(Position(t) + Position(16, 16), 4, Colors::Red);
-				if (visibleGrid[x][y] == 0)
-					Broodwar->drawCircleMap(Position(t) + Position(16, 16), 4, Colors::Yellow);
-				if (visibleGrid[x][y] == 1)
-					Broodwar->drawCircleMap(Position(t) + Position(16, 16), 4, Colors::Green);
-			}
-		}
 	}
 
 	void GridManager::updateAlly()
@@ -105,6 +93,16 @@ namespace McRave
 			UnitInfo &unit = u.second;
 			if (!unit.unit() || unit.getType() == UnitTypes::Protoss_Arbiter || unit.getType() == UnitTypes::Protoss_Observer || unit.getType() == UnitTypes::Protoss_Shuttle || unit.getType() == UnitTypes::Terran_Science_Vessel)
 				continue;
+
+			auto start = unit.getTilePosition();
+			for (int x = start.x - 4; x < start.x + 4; x++) {
+				for (int y = start.y - 4; y < start.y + 4; y++) {
+					auto t = TilePosition(x, y);
+					if (t.isValid())
+						visitedGrid[x][y] = Broodwar->getFrameCount();
+				}
+			}
+			
 
 			// Spider mines are added to the enemy splash grid so ally units avoid allied mines
 			if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine) {
@@ -377,7 +375,7 @@ namespace McRave
 
 	void GridManager::addThreat(UnitInfo& unit)
 	{
-		if (unit.getType().isWorker() && (!unit.unit()->exists() || unit.unit()->isConstructing() || (Terrain().isInAllyTerritory(unit.getTilePosition()) && (Broodwar->getFrameCount() - unit.getLastAttackFrame() > 500))))
+		if (unit.getType().isWorker() && (!unit.unit()->exists() || Broodwar->getFrameCount() > 10000 || unit.unit()->isConstructing() || (Terrain().isInAllyTerritory(unit.getTilePosition()) && (Broodwar->getFrameCount() - unit.getLastAttackFrame() > 500))))
 			return;
 
 		if (unit.getVisibleGroundStrength() <= 0.0 && unit.getVisibleAirStrength() <= 0.0)
@@ -400,8 +398,8 @@ namespace McRave
 		int pixelSize = max(unit.getType().width(), unit.getType().height());
 		int walkSize = int(ceil(pixelSize / 8));
 
-		int grdReach = int(max(unit.getGroundRange(), 32.0) + (speed * 24.0) + (pixelSize / 2)) + 1;
-		int airReach = int(max(unit.getAirRange(), 32.0) + (speed * 24.0) + (pixelSize / 2)) + 1;
+		int grdReach = int(max(unit.getGroundRange(), 32.0) + (speed * 32.0) + (pixelSize / 2)) + 1;
+		int airReach = int(max(unit.getAirRange(), 32.0) + (speed * 32.0) + (pixelSize / 2)) + 1;
 
 		if (unit.getType().isWorker()) {
 			grdReach = int(grdReach / 1.5);

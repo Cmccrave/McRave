@@ -6,22 +6,6 @@ void CommandManager::updateArbiter(UnitInfo& arbiter)
 	Position posBest(Grids().getArmyCenter());
 	WalkPosition start(arbiter.getWalkPosition());
 
-	// Determine highest threat possible here
-	const auto highestThreat = [&](WalkPosition here, UnitType t) {
-		double highest = 0.1;
-		auto dx = int(t.width() / 16.0);		// Half walk resolution width
-		auto dy = int(t.height() / 16.0);	// Half walk resolution height
-
-		for (int x = here.x - dx; x < here.x + dx; x++) {
-			for (int y = here.y - dy; y < here.y + dy; y++) {
-				WalkPosition w(x, y);
-				double current = t.isFlyer() ? Grids().getEAirThreat(w) : Grids().getEGroundThreat(w);
-				highest = (current > highest) ? current : highest;
-			}
-		}
-		return highest;
-	};
-
 	for (int x = start.x - 20; x <= start.x + 20; x++) {
 		for (int y = start.y - 20; y <= start.y + 20; y++) {
 			WalkPosition w(x, y);
@@ -32,7 +16,7 @@ void CommandManager::updateArbiter(UnitInfo& arbiter)
 				|| Commands().overlapsCommands(arbiter.unit(), arbiter.getType(), p, 96))
 				continue;
 
-			auto threat = 1.0 + highestThreat(w, arbiter.getType());
+			auto threat = 1.0 + Util().getHighestThreat(w, arbiter);
 			auto cluster = 1.0 + Grids().getAGroundCluster(w) + Grids().getAAirCluster(w);
 			auto dist = 1.0 + p.getDistance(Grids().getArmyCenter());
 

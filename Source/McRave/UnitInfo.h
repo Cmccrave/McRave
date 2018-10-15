@@ -20,6 +20,7 @@ namespace McRave
 		int lastMoveFrame;
 		int resourceHeldFrames;
 		int remainingTrainFrame;
+		int energy;
 
 		bool burrowed;
 		bool engage, retreat;
@@ -146,6 +147,7 @@ namespace McRave
 		int getLastAttackFrame()			{ return lastAttackFrame; }				// Returns the frame on which isStartingAttack was last true		
 		int getMinStopFrame()				{ return minStopFrame; }				// Returns the minimum number of frames that the unit needs after a shot before another command can be issued		
 		int getLastVisibleFrame()			{ return lastVisibleFrame; }			// Returns the last frame since this unit was visible
+		int getEnergy()						{ return energy; }
 
 		// McRave Stats
 		double getPriority()				{ return priority; }					// Returns the units priority for targeting purposes based on strength (not including value)

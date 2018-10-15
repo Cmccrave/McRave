@@ -13,6 +13,7 @@ namespace McRave
 
 		// New stuff
 		UnitInfo * getClosestUnit(Position, Player, UnitType t = UnitTypes::None);
+		UnitInfo * getClosestThreat(UnitInfo&);
 		UnitInfo * getClosestBuilder(Position);
 
 		// Returns the width of the choke in pixels
@@ -39,6 +40,9 @@ namespace McRave
 		double gWeaponCooldown(UnitInfo&);
 		double aWeaponCooldown(UnitInfo&);
 
+		//
+		double getHighestThreat(WalkPosition, UnitInfo&);
+
 		// Returns the minimum number of frames for the given unit type to wait before having another command issued to it
 		int getMinStopFrame(UnitType);
 
@@ -49,16 +53,12 @@ namespace McRave
 		// If groundcheck/aircheck, then this function checks if every WalkPosition around finish has no ground/air threat
 		bool isSafe(WalkPosition finish, UnitType, bool groundCheck, bool airCheck);
 
-		// Returns 1 if the tiles at the finish are all walkable tiles and checks for overlap with this unit
 		bool isMobile(WalkPosition start, WalkPosition finish, UnitType);
-
-		// Returns 1 if the unit is in range of its target
 		bool unitInRange(UnitInfo& unit);
-
-		// Returns 1 if the worker should fight
-		bool reactivePullWorker(Unit unit);
-		bool proactivePullWorker(Unit unit);
-		bool pullRepairWorker(Unit unit);
+		
+		bool reactivePullWorker(UnitInfo& unit);
+		bool proactivePullWorker(UnitInfo& unit);
+		bool pullRepairWorker(UnitInfo& unit);
 
 		template<class T>
 		bool isWalkable(T here)
@@ -116,7 +116,7 @@ namespace McRave
 					|| !Util().isMobile(unit.getWalkPosition(), w, unit.getType())
 					|| (here != Terrain().getDefendPosition() && area && mapBWEM.GetArea(t) != area)
 					|| (unit.getGroundRange() > 32.0 && p.getDistance(Position(center)) < min)
-					|| Buildings().overlapsQueuedBuilding(unit.getType(), t)					
+					|| Buildings().overlapsQueuedBuilding(unit.getType(), t)
 					|| dist > distBest
 					|| Commands().overlapsCommands(unit.unit(), UnitTypes::None, p, 8)
 					|| (unit.getType() == UnitTypes::Protoss_Reaver && Terrain().isDefendNatural() && mapBWEM.GetArea(w) != mapBWEB.getNaturalArea()))
@@ -148,60 +148,6 @@ namespace McRave
 				}
 			}
 			return bestPosition;
-		}
-
-		template<class T>
-		const Position getKitePosition(T &unit)
-		{
-			double best = 0.0;
-			int radius = 16;
-			WalkPosition start = unit.getWalkPosition();
-			Position posBest = Positions::Invalid;
-
-			// If size of unit is even, we want the division between the WalkPosition
-			int walkWidth = (int)ceil(unit.getType().width() / 8.0);
-			bool evenW = walkWidth % 2 == 0;
-
-			int walkHeight = (int)ceil(unit.getType().height() / 8.0);
-			bool evenH = walkHeight % 2 == 0;
-
-			// Search a grid around the unit
-			for (int x = start.x - radius; x <= start.x + radius + walkWidth; x++) {
-				for (int y = start.y - radius; y <= start.y + radius + walkHeight; y++) {
-					WalkPosition w(x, y);
-					Position p = Position(w) + Position(4, 4) + Position(4 * evenW, 4 * evenH);
-
-					if (!w.isValid()
-						|| p.getDistance(unit.getPosition()) < 32.0
-						|| Commands().isInDanger(p)
-						|| !Util().isMobile(start, w, unit.getType())
-						|| p.getDistance(unit.getPosition()) > radius * 8
-						|| Grids().getESplash(w) > 0
-						|| Buildings().overlapsQueuedBuilding(unit.getType(), unit.getTilePosition()))
-						continue;
-
-					double distance;
-					if (!Strategy().defendChoke() && unit.getType() == UnitTypes::Protoss_Zealot && unit.hasTarget() && Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()))
-						distance = p.getDistance(Terrain().getMineralHoldPosition());
-					else if (unit.hasTarget() && (Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()) || Terrain().isInAllyTerritory(unit.getTilePosition())))
-						distance = 1.0 / (32.0 + p.getDistance(unit.getTarget().getPosition()));
-					else
-						distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(mapBWEB.getMainPosition()) : exp(Grids().getDistanceHome(w)); // Distance value	
-
-					double mobility = 1.0; // temp ignore mobility
-
-					double threat = unit.getType().isFlyer() ? max(0.1, Grids().getEAirThreat(w)) : max(0.1, Grids().getEGroundThreat(w));			// If unit is a flyer, use air threat
-					double grouping = (unit.getType().isFlyer() && double(Grids().getAAirCluster(w)) > 1.0) ? 2.0 : 1.0;							// Flying units should try to cluster
-					double score = grouping * mobility / (threat * distance);
-
-					// If position is valid and better score than current, set as current best
-					if (score > best) {
-						posBest = p;
-						best = score;
-					}
-				}
-			}
-			return posBest;
 		}
 
 		template<class T>

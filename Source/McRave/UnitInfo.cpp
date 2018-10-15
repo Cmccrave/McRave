@@ -45,6 +45,7 @@ namespace McRave
 		player = nullptr;
 		target = nullptr;
 		resource = nullptr;
+		role = Role::None;
 
 		position = Positions::Invalid;
 		engagePosition = Positions::Invalid;
@@ -82,6 +83,7 @@ namespace McRave
 		player					= p;
 		health					= thisUnit->getHitPoints();
 		shields					= thisUnit->getShields();
+		energy					= thisUnit->getEnergy();
 		percentHealth			= Util.getPercentHealth(*this);
 		groundRange				= Util.groundRange(*this);
 		airRange				= Util.airRange(*this);

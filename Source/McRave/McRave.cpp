@@ -10,13 +10,14 @@
 // Neo Moon Glaive natural choke picking BWEB
 // High temp shouldn't reserve?
 // Units getting stuck that block buildings
-// Send zealots to expos instead of goons
-// OBS too suicidal
-// Probes getting stuck trying to build
+// Send zealots to attack expos instead of goons
+// Obs too suicidal
+// Probes getting stuck trying to build - not sure
+// Probes sometimes don't build - re-issue order
 
 // *** Restructuring ***
+// Scouts
 // Pylons - add enemy, could use for artosis pylons
-// Transports - test
 // Scanner targets
 // Defense grids
 // Remove global/local strategy -> use combat state
@@ -24,12 +25,9 @@
 // Commands to boxes rather than circles (for storm, dweb, etc)
 
 // *** SSCAIT2018 Goals ***
-// Commands:
-// Escort Command: air units assigned a goal of a transport are to spread out around a transport
-// Hunt Command: find alternative closest route to target (using visibility, distance and threat)
 // Unit Movement: kiting/defending
 // Unit formations
-// "Make expand and defense it"
+// Goal management
 
 void McRaveModule::onStart()
 {
@@ -38,10 +36,10 @@ void McRaveModule::onStart()
 	Broodwar->setLatCom(true);
 	Broodwar->setLocalSpeed(0);
 	Terrain().onStart();
-	Players().onStart();	
+	Players().onStart();
 	mapBWEB.onStart();
 	Grids().onStart();
-	BuildOrder().onStart();		
+	BuildOrder().onStart();
 	mapBWEB.findBlocks();
 	Broodwar->sendText("glhf");
 }
@@ -52,9 +50,9 @@ void McRaveModule::onEnd(bool isWinner)
 }
 
 void McRaveModule::onFrame()
-{	
+{
 	// Update relevant map information and strategy
-	Terrain().onFrame();	
+	Terrain().onFrame();
 	Resources().onFrame();
 	Strategy().onFrame();
 	BuildOrder().onFrame();
@@ -65,14 +63,16 @@ void McRaveModule::onFrame()
 	Grids().onFrame();
 
 	// Update commands
-	Workers().onFrame();	
+	Goals().onFrame();
+	Commands().onFrame();
+	Workers().onFrame();
+	Scouts().onFrame();
 	Transport().onFrame();
 	Buildings().onFrame();
-	Production().onFrame();
-	Commands().onFrame();
-	
+	Production().onFrame();	
+
 	// Display information from this frame
-	Display().onFrame();	
+	Display().onFrame();
 }
 
 void McRaveModule::onSendText(string text)
@@ -95,7 +95,7 @@ void McRaveModule::onNukeDetect(Position target)
 }
 
 void McRaveModule::onUnitDiscover(Unit unit)
-{	
+{
 	Units().onUnitDiscover(unit);
 }
 
@@ -117,7 +117,7 @@ void McRaveModule::onUnitCreate(Unit unit)
 }
 
 void McRaveModule::onUnitDestroy(Unit unit)
-{	
+{
 	Units().onUnitDestroy(unit);
 }
 

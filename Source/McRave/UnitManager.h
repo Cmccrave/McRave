@@ -57,7 +57,9 @@ namespace McRave
 		double getGlobalAllyAirStrength() { return globalAllyAirStrength; }
 		double getGlobalEnemyAirStrength() { return globalEnemyAirStrength; }
 		double getAllyDefense() { return allyDefense; }
+
 		int getSupply() { return supply; }	
+		int roleCount(Role);
 
 		bool isThreatening(UnitInfo&);
 		int getEnemyCount(UnitType);

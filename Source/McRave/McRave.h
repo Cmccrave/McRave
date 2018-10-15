@@ -45,6 +45,7 @@ namespace
 #include "BuildingManager.h"
 #include "BuildOrder.h"
 #include "CommandManager.h"
+#include "GoalManager.h"
 #include "GridManager.h"
 #include "Interface.h"
 #include "StationManager.h"
@@ -53,6 +54,7 @@ namespace
 #include "ProductionManager.h"
 #include "PylonManager.h"
 #include "ResourceManager.h"
+#include "ScoutManager.h"
 #include "StrategyManager.h"
 #include "TargetManager.h"
 #include "TerrainManager.h"
@@ -66,13 +68,15 @@ namespace McRave
 	inline BuildingManager& Buildings() { return BuildingSingleton::Instance(); }
 	inline BuildOrderManager& BuildOrder() { return BuildOrderSingleton::Instance(); }
 	inline CommandManager& Commands() { return CommandSingleton::Instance(); }
+	inline GoalManager& Goals() { return GoalSingleton::Instance(); }
 	inline GridManager& Grids() { return GridSingleton::Instance(); }
 	inline InterfaceManager& Display() { return InterfaceSingleton::Instance(); }
-	inline StationManager& Stations() { return StationSingleton::Instance(); }
 	inline PlayerManager& Players() { return PlayerSingleton::Instance(); }
 	inline ProductionManager& Production() { return ProductionSingleton::Instance(); }
 	inline PylonManager& Pylons() { return PylonSingleton::Instance(); }
 	inline ResourceManager& Resources() { return ResourceSingleton::Instance(); }
+	inline ScoutManager& Scouts() { return ScoutSingleton::Instance(); }
+	inline StationManager& Stations() { return StationSingleton::Instance(); }
 	inline StrategyManager& Strategy() { return StrategySingleton::Instance(); }
 	inline TargetManager& Targets() { return TargetSingleton::Instance(); }
 	inline TerrainManager& Terrain() { return TerrainSingleton::Instance(); }

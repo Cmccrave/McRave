@@ -10,22 +10,15 @@ namespace McRave
 {
 	class WorkerManager
 	{
-		set<Position> scoutAssignments;
-		set<Unit> scouts;
-
 		int deadScoutFrame = 0;
 		int minWorkers = 0, gasWorkers = 0;
-		int scoutCount;		
 
-		bool needGas();
-		bool proxyCheck = false;
-	public:
-		UnitInfo* getClosestScout(Position);
+		bool needGas();		
+	public:		
 
 		void onFrame();
 		void updateWorkers();
-		void updateDecision(UnitInfo&);
-		void updateScouts();
+		void updateDecision(UnitInfo&);		
 		
 		bool shouldAssign(UnitInfo&);
 		bool shouldBuild(UnitInfo&);
@@ -40,9 +33,7 @@ namespace McRave
 		void clearPath(UnitInfo&);
 		void gather(UnitInfo&);
 		void returnCargo(UnitInfo&);
-		void scout(UnitInfo&);
-		void safeMove(UnitInfo&);
-		void explore(UnitInfo&);
+
 	};
 }
 
