@@ -18,7 +18,6 @@
 // SafeMove gets workers stuck on bridges
 
 // *** Restructuring ***
-// Add percent shield and percent total
 // Scouts
 // Production
 // Pylons - add enemy, could use for artosis pylons
@@ -28,10 +27,15 @@
 // Recode unit sizes map
 // Commands to boxes rather than circles (for storm, dweb, etc)
 
+// *** Future Improvements ***
+// Use Player pointer instead of BWAPI::Player pointer in UnitInfo, gives advantage of knowing upgrades/tech that are available always
+
 // *** SSCAIT2018 Goals ***
 // Unit Movement: kiting/defending
 // Unit formations
 // Goal management
+// Build detection
+// Observer building timings
 
 void McRaveModule::onStart()
 {

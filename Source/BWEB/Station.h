@@ -11,6 +11,7 @@ namespace BWEB
 		const BWEM::Base * base;
 		set<TilePosition> defenses;
 		Position resourceCentroid;
+		int defenseCount = 0;
 
 	public:
 		Station(Position, const set<TilePosition>&, const BWEM::Base*);
@@ -23,5 +24,9 @@ namespace BWEB
 
 		// Returns the BWEM base associated with this BWEB base
 		const BWEM::Base * BWEMBase() const { return base; }
+
+		// Returns the number of defenses associated with this station
+		const int getDefenseCount() const { return defenseCount; }
+		void setDefenseCount(int newValue) { defenseCount = newValue; }
 	};
 }

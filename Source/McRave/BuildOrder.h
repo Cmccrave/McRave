@@ -69,7 +69,10 @@ namespace McRave
 		int buildCount(UnitType);
 		int gasWorkerLimit() { return gasLimit; }
 
-		bool isUnitUnlocked(UnitType unit) { return (unlockedType.find(unit) != unlockedType.end()); }
+		bool isUnitUnlocked(UnitType unit) { return unlockedType.find(unit) != unlockedType.end(); }
+		bool isTechUnit(UnitType unit) { return techList.find(unit) != techList.end(); }
+
+
 		bool isOpener() { return getOpening; }
 		bool isBioBuild() { return bioBuild; }
 		bool isFastExpand() { return fastExpand; }

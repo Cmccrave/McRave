@@ -44,7 +44,7 @@ namespace McRave
 				}
 			}
 
-			// MadMix
+			// MadMix for fun as Zerg - TODO make Z actually good
 			if (Broodwar->self()->getRace() == Races::Zerg)
 				MadMix(building);
 		}
@@ -124,7 +124,7 @@ namespace McRave
 			}
 
 			// If we teched to DTs, try to create as many as possible
-			if (unit == UnitTypes::Protoss_Dark_Templar && BuildOrder().getTechList().size() == 1 && isCreateable(building.unit(), unit) && isSuitable(unit)) {				
+			if (unit == UnitTypes::Protoss_Dark_Templar && BuildOrder().getTechList().size() == 1 && isCreateable(building.unit(), unit) && isSuitable(unit)) {
 				best = DBL_MAX;
 				bestType = unit;
 			}
@@ -148,7 +148,7 @@ namespace McRave
 			if (isAffordable(bestType)) {
 				building.unit()->train(bestType);
 				building.setRemainingTrainFrame(bestType.buildTime());
-				idleProduction.erase(building.unit());				
+				idleProduction.erase(building.unit());
 			}
 
 			if (bestType == UnitTypes::Protoss_Dark_Templar && !isAffordable(UnitTypes::Protoss_Dark_Templar) && Players().vP() && Broodwar->self()->minerals() > 300)
@@ -162,7 +162,7 @@ namespace McRave
 				idleProduction[building.unit()] = bestType;
 				reservedMineral += bestType.mineralPrice();
 				reservedGas += bestType.gasPrice();
-			}			
+			}
 		}
 	}
 
@@ -196,19 +196,12 @@ namespace McRave
 
 	bool ProductionManager::isAffordable(UnitType unit)
 	{
-		// If tech
-		if (BuildOrder().getTechList().find(unit) != BuildOrder().getTechList().end()) {
+		auto mineralReserve = int(BuildOrder().isTechUnit(unit)) * reservedMineral;
+		auto gasReserve = int(BuildOrder().isTechUnit(unit)) * reservedGas;
+		auto mineralAffordable = (Broodwar->self()->minerals() > unit.mineralPrice() + Buildings().getQueuedMineral() + mineralReserve) || unit.mineralPrice() == 0;
+		auto gasAffordable = (Broodwar->self()->gas() > unit.gasPrice() + Buildings().getQueuedGas() + gasReserve) || unit.gasPrice() == 0;
 
-			// If a tech unit and we can afford it including buildings queued
-			if (Broodwar->self()->minerals() >= unit.mineralPrice() + Buildings().getQueuedMineral() && (Broodwar->self()->gas() >= unit.gasPrice() + Buildings().getQueuedGas() || unit.gasPrice() == 0)) {
-				return true;
-			}
-		}
-		// If we can afford it including buildings queued and tech units queued
-		else if (Broodwar->self()->minerals() >= unit.mineralPrice() + reservedMineral + Buildings().getQueuedMineral() && (Broodwar->self()->gas() >= unit.gasPrice() + reservedGas + Buildings().getQueuedGas() || unit.gasPrice() == 0)) {
-			return true;
-		}
-		return false;
+		return mineralAffordable && gasAffordable;
 	}
 
 	bool ProductionManager::isAffordable(TechType tech)
@@ -288,6 +281,7 @@ namespace McRave
 		case UnitTypes::Enum::Terran_Dropship:
 			return building->getAddon() != nullptr ? true : false;
 
+			// Zerg Units
 		case UnitTypes::Enum::Zerg_Drone:
 			return true;
 		case UnitTypes::Enum::Zerg_Zergling:

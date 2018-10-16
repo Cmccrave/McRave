@@ -90,7 +90,7 @@ void StationManager::removeStation(Unit unit)
 bool StationManager::needDefenses(const Station station)
 {
 	auto centroid = TilePosition(station.ResourceCentroid());
-	auto defenseCount = Grids().getDefense(centroid);
+	auto defenseCount = station.getDefenseCount();
 	auto main = station.BWEMBase()->Location() == mapBWEB.getMainTile();
 	auto nat = station.BWEMBase()->Location() == mapBWEB.getNaturalTile();
 

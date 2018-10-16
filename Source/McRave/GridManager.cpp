@@ -92,6 +92,8 @@ namespace McRave
 
 			UnitInfo &unit = u.second;
 
+
+			// Add a visited grid for rough guideline of what we've seen by this unit recently
 			auto start = unit.getTilePosition();
 			for (int x = start.x - 4; x < start.x + 4; x++) {
 				for (int y = start.y - 4; y < start.y + 4; y++) {
@@ -99,8 +101,7 @@ namespace McRave
 					if (t.isValid())
 						visitedGrid[x][y] = Broodwar->getFrameCount();
 				}
-			}
-			
+			}			
 
 			// Spider mines are added to the enemy splash grid so ally units avoid allied mines
 			if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine) {
@@ -126,12 +127,6 @@ namespace McRave
 			if (unit.unit()->exists() && (unit.unit()->isStasised() || unit.unit()->isMaelstrommed()))
 				continue;
 
-			//UnitInfo* c = Util().getClosestAllyUnit(unit);
-			//UnitInfo* w = Util().getClosestAllyWorker(unit);
-
-			//if ((!w || w->getPosition().getDistance(unit.getPosition()) > 720) && (!c || c->getPosition().getDistance(unit.getPosition()) > 720))
-			//	continue;
-
 			WalkPosition start = unit.getWalkPosition();
 			if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Protoss_Scarab) {
 				if (unit.hasTarget() && unit.getTarget().unit() && unit.getTarget().unit()->exists())
@@ -144,26 +139,6 @@ namespace McRave
 			}
 		}
 		Display().performanceTest(__FUNCTION__);
-	}
-
-	void GridManager::updateDefense(UnitInfo& unit)
-	{
-		// Defense Grid
-		TilePosition tile = unit.getTilePosition();
-		if (!unit.unit() || !tile.isValid())
-			return;
-
-		for (int x = tile.x - 8; x < tile.x + unit.getType().tileWidth() + 8; x++) {
-			for (int y = tile.y - 8; y < tile.y + unit.getType().tileHeight() + 8; y++) {
-				TilePosition t(x, y);
-				if (!t.isValid())
-					continue;
-
-				Position center = Position(t) + Position(16, 16);
-				if (unit.getPosition().getDistance(center) < 256)
-					unit.unit()->exists() ? defense[x][y] += 1 : defense[x][y] -= 1;
-			}
-		}
 	}
 
 	void GridManager::updateNeutral()
@@ -186,7 +161,6 @@ namespace McRave
 
 					collision[x][y] = 1;
 					saveReset(w);
-					/*timeGrid[x][y] = Broodwar->getFrameCount();*/
 				}
 			}
 
@@ -306,7 +280,6 @@ namespace McRave
 	{
 		int walkWidth = (int)ceil(unit.getType().width() / 8.0);
 		int walkHeight = (int)ceil(unit.getType().height() / 8.0);
-		//int frame = Broodwar->getFrameCount();
 
 		WalkPosition start(unit.getTarget().getWalkPosition());
 		Position target = unit.getTarget().getPosition();
@@ -318,12 +291,6 @@ namespace McRave
 				Position p = Position(w) + Position(4, 4);
 				if (!w.isValid())
 					continue;
-
-				/*if (timeGrid[x][y] == frame)
-					eSplash[x][y] += (unit.getTarget().getPosition().getDistance(Position(WalkPosition(x, y))) > 96);
-				else
-					eSplash[x][y] = (unit.getTarget().getPosition().getDistance(Position(WalkPosition(x, y))) > 96);
-				timeGrid[x][y] = frame;*/
 
 				saveReset(w);
 				eSplash[x][y] += (target.getDistance(p) <= 96);
@@ -337,7 +304,6 @@ namespace McRave
 		int radius = unit.getType().isFlyer() ? 12 : 6;
 		int walkWidth = (int)ceil(unit.getType().width() / 8.0);
 		int walkHeight = (int)ceil(unit.getType().height() / 8.0);
-		//int frame = Broodwar->getFrameCount();
 
 		if (unit.getPlayer() == Broodwar->self() && unit.getRole() != Role::Fighting)
 			return;
@@ -358,12 +324,6 @@ namespace McRave
 
 				if (!w.isValid())
 					continue;
-
-				/*if (timeGrid[x][y] == frame)
-					grid[x][y] += (unit.getPriority() * (p.getDistance(unit.getPosition()) < radius*8.0));
-				else
-					grid[x][y] = (unit.getPriority() * (p.getDistance(unit.getPosition()) < radius*8.0));
-				timeGrid[x][y] = frame;*/
 
 				saveReset(w);
 				grid[x][y] += (unit.getPriority() * (p.getDistance(unit.getPosition()) < radius*8.0));
@@ -434,6 +394,29 @@ namespace McRave
 					airGrid[x][y] += (unit.getVisibleAirStrength());
 					saveReset(w);
 				}
+			}
+		}
+	}
+
+	void GridManager::addCollision(UnitInfo& unit) {
+
+		if (unit.getType().isFlyer())
+			return;
+
+		// Setup parameters
+		int walkWidth = unit.getType().isBuilding() ? unit.getType().tileWidth() * 4 : (int)ceil(unit.getType().width() / 8.0) + 1;
+		int walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : (int)ceil(unit.getType().height() / 8.0) + 1;
+
+		// Iterate tiles and add to grid
+		WalkPosition start(Util().getWalkPosition(unit.unit()));
+		for (int x = start.x; x < start.x + walkWidth; x++) {
+			for (int y = start.y; y < start.y + walkHeight; y++) {
+				WalkPosition w(x, y);
+				if (!w.isValid())
+					continue;
+
+				collision[x][y] = 1;
+				saveReset(w);
 			}
 		}
 	}

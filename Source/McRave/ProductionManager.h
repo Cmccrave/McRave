@@ -20,7 +20,10 @@ namespace McRave
 		bool isSuitable(UnitType), isSuitable(UpgradeType), isSuitable(TechType);
 		void updateProduction(), updateReservedResources();
 
-		void produce(UnitInfo&), research(UnitInfo&), upgrade(UnitInfo&);
+		void produce(UnitInfo&);
+		void research(UnitInfo&);
+		void upgrade(UnitInfo&);
+		void addon(UnitInfo&);
 
 		void MadMix(UnitInfo&);
 	public:

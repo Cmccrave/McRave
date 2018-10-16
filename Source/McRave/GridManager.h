@@ -24,7 +24,6 @@ namespace McRave
 		double parentDistance[1024][1024];
 		double aGroundCluster[1024][1024] ={};
 		double aAirCluster[1024][1024] ={};
-		int defense[256][256] ={};
 
 		// Enemy Grid
 		double eGroundThreat[1024][1024] ={};
@@ -45,6 +44,7 @@ namespace McRave
 		void addThreat(UnitInfo&);
 		void addCluster(UnitInfo&);
 		void addSplash(UnitInfo&);
+		void addCollision(UnitInfo&);
 	public:
 
 		// Update functions
@@ -52,19 +52,6 @@ namespace McRave
 
 		void updateAllyMovement(Unit, WalkPosition);
 		Position getArmyCenter() { return armyCenter; }
-
-		// Defense grid
-		void updateDefense(UnitInfo&);
-		int getDefense(TilePosition here) { return defense[here.x][here.y]; }
-
-		//double getAGroundCluster(WalkPosition here) { return (Broodwar->getFrameCount() == timeGrid[here.x][here.y] ? aGroundCluster[here.x][here.y] : 0.0); }
-		//double getAAirCluster(WalkPosition here) { return (Broodwar->getFrameCount() == timeGrid[here.x][here.y] ? aAirCluster[here.x][here.y] : 0.0); }
-		//double getEGroundThreat(WalkPosition here) { return (Broodwar->getFrameCount() == timeGrid[here.x][here.y] ? eGroundThreat[here.x][here.y] : 0.0); }
-		//double getEAirThreat(WalkPosition here) { return (Broodwar->getFrameCount() == timeGrid[here.x][here.y] ? eAirThreat[here.x][here.y] : 0.0); }
-		//double getEGroundCluster(WalkPosition here) { return (Broodwar->getFrameCount() == timeGrid[here.x][here.y] ? eGroundCluster[here.x][here.y] : 0.0); }
-		//double getEAirCluster(WalkPosition here) { return (Broodwar->getFrameCount() == timeGrid[here.x][here.y] ? eAirCluster[here.x][here.y] : 0.0); }
-		//int getCollision(WalkPosition here) { return (Broodwar->getFrameCount() == timeGrid[here.x][here.y] ? collision[here.x][here.y] : 0); }
-		//int getESplash(WalkPosition here) { return (Broodwar->getFrameCount() == timeGrid[here.x][here.y] ? eSplash[here.x][here.y] : 0); }
 
 		double getAGroundCluster(WalkPosition here) { return aGroundCluster[here.x][here.y]; }
 		double getAAirCluster(WalkPosition here) { return aAirCluster[here.x][here.y]; }
@@ -79,36 +66,7 @@ namespace McRave
 		double getDistanceHome(WalkPosition here) { return distanceHome[here.x][here.y]; }
 
 		int lastVisibleFrame(TilePosition t) { return visibleGrid[t.x][t.y]; }
-		int lastVisitedFrame(TilePosition t) { return visitedGrid[t.x][t.y]; }
-
-
-
-	private:
-
-		template<class T>
-		void addCollision(T& unit) {
-
-			if (unit.getType().isFlyer())
-				return;
-
-			// Setup parameters
-			int walkWidth = unit.getType().isBuilding() ? unit.getType().tileWidth() * 4 : (int)ceil(unit.getType().width() / 8.0) + 1;
-			int walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : (int)ceil(unit.getType().height() / 8.0) + 1;
-			//int frame = Broodwar->getFrameCount();
-
-			// Iterate tiles and add to grid
-			WalkPosition start(Util().getWalkPosition(unit.unit()));
-			for (int x = start.x; x < start.x + walkWidth; x++) {
-				for (int y = start.y; y < start.y + walkHeight; y++) {
-					WalkPosition w(x, y);
-					if (!w.isValid())
-						continue;
-					
-					collision[x][y] = 1;
-					saveReset(w);
-				}
-			}
-		}
+		int lastVisitedFrame(TilePosition t) { return visitedGrid[t.x][t.y]; }	
 	};
 
 }

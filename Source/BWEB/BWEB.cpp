@@ -6,15 +6,6 @@
 // Pylon power grid for building placer
 // Dynamic block addition (insert UnitTypes, get block)
 //	- May not be added for a while
-// Check two walkpositions for not being walkable for buildings that have a dimension on one side less than 8
-//	- Not sure how critical this is
-//	- Barracks and depots can be placed in this way
-// Placements are fine if satisfies one condition, needs to satisfy all tight conditions
-//	- The final piece for a Terran wall can be placed such that it is no longer unit-tight
-// Min wall width to prevent walling self in with a depot
-//	- Maps with main/nat on same terrain level can wall itself in
-// Door too far away on destination style maps (where we need to move the start locations away from the choke)
-//	- Consider a line of best fit across the wall pieces for the door instead of using the chokepoint geometry?
 
 namespace BWEB
 {
@@ -54,6 +45,23 @@ namespace BWEB
 				usedGrid[x][y] = 1;
 			}
 		}
+
+		// Add defense count to stations
+		auto type = unit->getType();
+		if (type == UnitTypes::Protoss_Photon_Cannon
+			|| type == UnitTypes::Zerg_Sunken_Colony
+			|| type == UnitTypes::Zerg_Spore_Colony
+			|| type == UnitTypes::Terran_Missile_Turret) {
+
+			for (auto &station : stations) {
+				for (auto &defense : station.DefenseLocations()) {
+					if (unit->getTilePosition() == defense) {
+						station.setDefenseCount(station.getDefenseCount() + 1);
+						return;
+					}
+				}
+			}
+		}
 	}
 
 	void Map::onUnitMorph(const Unit unit)
@@ -79,6 +87,23 @@ namespace BWEB
 					continue;
 				usedTiles.erase(t);
 				usedGrid[x][y] = 0;
+			}
+		}
+
+		// Remove defense count from stations
+		auto type = unit->getType();
+		if (type == UnitTypes::Protoss_Photon_Cannon
+			|| type == UnitTypes::Zerg_Sunken_Colony
+			|| type == UnitTypes::Zerg_Spore_Colony
+			|| type == UnitTypes::Terran_Missile_Turret) {
+
+			for (auto &station : stations) {
+				for (auto &defense : station.DefenseLocations()) {
+					if (unit->getTilePosition() == defense) {
+						station.setDefenseCount(station.getDefenseCount() - 1);
+						return;
+					}
+				}
 			}
 		}
 	}
