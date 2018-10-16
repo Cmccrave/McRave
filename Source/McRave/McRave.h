@@ -9,6 +9,7 @@
 #define STASIS_LIMIT 8.0
 #define LOW_SHIELD_PERCENT_LIMIT 0.2
 #define LOW_MECH_PERCENT_LIMIT 0.2
+#define MIN_THREAT 0.01
 
 // Namespaces
 using namespace BWAPI;

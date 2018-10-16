@@ -15,6 +15,7 @@
 // Probes getting stuck trying to build - not sure
 // Probes sometimes don't build - re-issue order
 // Scarabs and Mines being used in sim?
+// SafeMove gets workers stuck on bridges
 
 // *** Restructuring ***
 // Add percent shield and percent total

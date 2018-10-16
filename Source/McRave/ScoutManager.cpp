@@ -134,15 +134,15 @@ void ScoutManager::explore(UnitInfo& unit)
 	auto enemy = Util().getClosestThreat(unit);
 	auto enemyClose = enemy && !enemy->getType().isWorker() && enemy->getPosition().getDistance(unit.getPosition()) <= 320.0;
 
-	// If unit isn't a threat
-	if (unit.getPosition().getDistance(unit.getDestination()) > 256.0 && !enemyClose) {
+	//// If unit isn't a threat
+	//if (unit.getPosition().getDistance(unit.getDestination()) > 256.0 && !enemyClose) {
 
-		if (unit.unit()->getLastCommand().getTargetPosition() != bestPosition) {
-			unit.unit()->move(bestPosition);
-			Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Blue);
-		}
-	}
-	else
+	//	if (unit.unit()->getLastCommand().getTargetPosition() != bestPosition) {
+	//		unit.unit()->move(bestPosition);
+	//		Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Blue);
+	//	}
+	//}
+	//else
 		Commands().hunt(unit);
 
 

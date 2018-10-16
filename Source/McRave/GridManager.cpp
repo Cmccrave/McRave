@@ -69,7 +69,7 @@ namespace McRave
 				if (distanceHome[x][y] >= 1500 && distanceHome[x][y] != DBL_MAX)
 					Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Yellow);*/
 
-				if (eAirThreat[x][y] > 0.0)
+				if (eGroundThreat[x][y] > 0.0)
 					Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Blue);
 				//if (distanceHome[x][y] <= 0)
 				//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Blue);
@@ -91,8 +91,6 @@ namespace McRave
 		for (auto &u : Units().getMyUnits()) {
 
 			UnitInfo &unit = u.second;
-			if (!unit.unit() || unit.getType() == UnitTypes::Protoss_Arbiter || unit.getType() == UnitTypes::Protoss_Observer || unit.getType() == UnitTypes::Protoss_Shuttle || unit.getType() == UnitTypes::Terran_Science_Vessel)
-				continue;
 
 			auto start = unit.getTilePosition();
 			for (int x = start.x - 4; x < start.x + 4; x++) {
@@ -386,11 +384,7 @@ namespace McRave
 
 		if (unit.getPlayer() == Broodwar->self() && unit.getRole() != Role::Fighting)
 			return;
-
-		// Speed multipled by 3.0 because we want WalkPositions per second
-		// unit.getSpeed() returns pixels per frame
-		// Walks/Second = speed * 24 / 8
-
+		
 		// Setup parameters
 		int maxRange = int(max({ unit.getGroundRange(), unit.getAirRange(), 32.0 }) / 8.0);
 		int speed = int(max(unit.getSpeed(), 1.0));
@@ -398,8 +392,8 @@ namespace McRave
 		int pixelSize = max(unit.getType().width(), unit.getType().height());
 		int walkSize = int(ceil(pixelSize / 8));
 
-		int grdReach = int(max(unit.getGroundRange(), 32.0) + (speed * 32.0) + (pixelSize / 2)) + 1;
-		int airReach = int(max(unit.getAirRange(), 32.0) + (speed * 32.0) + (pixelSize / 2)) + 1;
+		int grdReach = int(max(unit.getGroundRange(), 32.0) + (speed * 24.0) + (pixelSize / 2)) + 1;
+		int airReach = int(max(unit.getAirRange(), 32.0) + (speed * 24.0) + (pixelSize / 2)) + 1;
 
 		if (unit.getType().isWorker()) {
 			grdReach = int(grdReach / 1.5);
@@ -429,8 +423,7 @@ namespace McRave
 			for (int y = top; y < bottom; y++) {
 
 				WalkPosition w(x, y);
-				Position p = Position(w) + Position(4, 4);
-				
+				Position p = Position(w) + Position(4, 4);				
 
 				if (p.getDistance(unit.getPosition()) < grdReach) {
 					grdGrid[x][y] += (unit.getVisibleGroundStrength());

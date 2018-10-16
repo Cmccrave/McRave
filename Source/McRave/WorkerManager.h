@@ -26,7 +26,6 @@ namespace McRave
 		bool shouldFight(UnitInfo&);
 		bool shouldGather(UnitInfo&);
 		bool shouldReturnCargo(UnitInfo&);
-		bool shouldScout(UnitInfo&);
 
 		void assign(UnitInfo&);
 		void build(UnitInfo&);

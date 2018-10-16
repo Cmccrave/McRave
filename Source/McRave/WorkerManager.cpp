@@ -119,19 +119,6 @@ bool WorkerManager::shouldReturnCargo(UnitInfo& worker)
 	return false;
 }
 
-bool WorkerManager::shouldScout(UnitInfo& worker)
-{
-	//if (worker.getBuildPosition().isValid())
-	//	return false;
-	//if (Units().getEnemyCount(UnitTypes::Terran_Vulture) >= 2 && !BuildOrder().firstReady())
-	//	return false;
-	//else if (deadScoutFrame > 0 && Broodwar->getFrameCount() - deadScoutFrame < 2000)
-	//	return false;
-	//else if (find(scouts.begin(), scouts.end(), worker.unit()) != scouts.end() && worker.getBuildingType() == UnitTypes::None && (BuildOrder().shouldScout() || proxyCheck))
-	//	return true;
-	//return false;
-}
-
 void WorkerManager::assign(UnitInfo& worker)
 {
 	// Remove current assignment if it has one

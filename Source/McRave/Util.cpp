@@ -439,15 +439,18 @@ double UtilManager::getHighestThreat(WalkPosition here, UnitInfo& unit)
 {
 	// Determine highest threat possible here
 	auto t = unit.getType();
-	auto highest = 0.01;
-	auto dx = int(t.width() / 16.0);		// Half walk resolution width
-	auto dy = int(t.height() / 16.0);		// Half walk resolution height
+	auto highest = MIN_THREAT;
+	auto dx = ceil(t.width() / 16.0);		// Half walk resolution width
+	auto dy = ceil(t.height() / 16.0);		// Half walk resolution height
 
 	for (int x = here.x - dx; x < here.x + dx; x++) {
 		for (int y = here.y - dy; y < here.y + dy; y++) {
 			WalkPosition w(x, y);
-			auto grd = Grids().getEAirThreat(w);
-			auto air = Grids().getEGroundThreat(w);
+			if (!w.isValid())
+				continue;
+			
+			auto grd = Grids().getEGroundThreat(w);
+			auto air = Grids().getEAirThreat(w);
 			auto current = unit.getRole() == Role::Transporting ? grd + air : (unit.getType().isFlyer() ? air : grd);
 			highest = (current > highest) ? current : highest;
 		}
@@ -548,7 +551,7 @@ int UtilManager::chokeWidth(const BWEM::ChokePoint * choke)
 	return int(choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2))) * 8;
 }
 
-Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area = nullptr, Position here = Positions::Invalid)
+Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area, Position here)
 {
 	// Setup parameters
 	int min = int(unit.getGroundRange());

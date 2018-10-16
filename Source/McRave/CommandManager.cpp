@@ -471,29 +471,40 @@ namespace McRave
 
 	void CommandManager::hunt(UnitInfo& unit)
 	{
-		// Low threat, low visibility, low distance, attack if possible
+		// No threat, low visibility, low distance, attack if possible
 		auto start = unit.getWalkPosition();
 		auto best = 0.0;
 		auto bestPos = unit.getDestination();
 
-		Broodwar->drawTextMap(unit.getPosition(), "Hunt");
-		for (int x = start.x - 12; x < start.x + 16; x++) {
-			for (int y = start.y - 12; y < start.y + 16; y++) {
+		// Some testing stuff
+		auto radius = 8 + int(unit.getSpeed());
+		auto height = int(unit.getType().height() / 8.0);
+		auto width = int(unit.getType().width() / 8.0);
+		auto currentDist = (unit.getType().isFlyer() ? unit.getPosition().getDistance(unit.getDestination()) : mapBWEB.getGroundDistance(unit.getPosition(), unit.getDestination()));
+		auto test = 0.0;
+
+		for (int x = start.x - radius; x < start.x + radius + width; x++) {
+			for (int y = start.y - radius; y < start.y + radius + height; y++) {
 				WalkPosition w(x, y);
 				Position p = Position(w) + Position(4, 4);
 				TilePosition t(w);
+				double distToP = unit.getType().isFlyer() ? unit.getPosition().getDistance(p) : mapBWEB.getGroundDistance(p, unit.getPosition());
+				double grdDist = mapBWEB.getGroundDistance(p, unit.getDestination());
+				double airDist = p.getDistance(unit.getDestination());
 
 				if (!w.isValid()
 					|| !Util().isMobile(start, w, unit.getType())
-					|| p.getDistance(unit.getPosition()) <= 32.0)
+					|| p.getDistance(unit.getPosition()) <= 32.0
+					|| distToP > radius * 8)
 					continue;
 
-				double threat = exp(Util().getHighestThreat(w, unit));
-				double distance = 32.0 + (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : mapBWEB.getGroundDistance(p, unit.getDestination()));
-				double visited = 1.0 + double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(t));
+				double threat = Util().getHighestThreat(w, unit);
+				double distance = (unit.getType().isFlyer() ? airDist : grdDist);
+				double visited = max(100.0, double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(t)));
 
-				double score = 1.0 / (threat * distance * visited);
-				if (score >= best && threat < 2.0) {
+				double score = visited / (threat * distance);
+
+				if (score >= best && threat == MIN_THREAT && distance < DBL_MAX) {
 					best = score;
 					bestPos = Position(w);
 				}
@@ -507,6 +518,7 @@ namespace McRave
 				approach(unit);
 		}
 		else if (bestPos != unit.getDestination()) {
+			Broodwar->drawLineMap(unit.getPosition(), bestPos, Colors::Grey);
 			if (!isLastCommand(unit, UnitCommandTypes::Move, bestPos))
 				unit.unit()->move(bestPos);
 		}
