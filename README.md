@@ -8,6 +8,7 @@ McRave is a simple AI that can play all 3 races to an extent, but is best at Pro
 - 3rd at SSCAIT 2017 Round Robin, 4th in the elimination bracket.
 - 2nd at AIST S1.
 - Has ranked 1st on SSCAIT ladder.
+- 3rd at CIG 2018 (1st young professional).
 
 **Thanks to:**
 - Nathan Roth (Antiga/Iruian) for providing expert analysis of replays and being a strategic advisor.
