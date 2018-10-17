@@ -222,6 +222,8 @@ bool UtilManager::proactivePullWorker(UnitInfo& unit)
 		if (Strategy().enemyRush() && BuildOrder().isFastExpand() && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) < 1)
 			return true;
 	}
+	else if (Broodwar->self()->getRace() == Races::Zerg)
+		return false;
 
 	if (Strategy().enemyProxy() && Strategy().getEnemyBuild() != "P2Gate" && Units().getImmThreat() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense())
 		return true;
@@ -252,7 +254,7 @@ bool UtilManager::reactivePullWorker(UnitInfo& unit)
 				return true;
 		}
 		else if (Broodwar->self()->getRace() == Races::Zerg) {
-			if (Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Zergling) == 0)
+			if (Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Zergling) == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Mutalisk) == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Hydralisk) == 0)
 				return true;
 		}
 		else if (Broodwar->self()->getRace() == Races::Terran) {

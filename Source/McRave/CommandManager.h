@@ -35,7 +35,14 @@ namespace McRave
 		void updateUnits(), updateDecision(UnitInfo&), updateEnemyCommands();
 
 		
-		bool shouldAttack(UnitInfo&), shouldKite(UnitInfo&), shouldApproach(UnitInfo&), shouldUseSpecial(UnitInfo&), shouldDefend(UnitInfo&);
+		bool shouldAttack(UnitInfo&);
+		bool shouldKite(UnitInfo&);
+		bool shouldApproach(UnitInfo&);
+		bool shouldUseSpecial(UnitInfo&);
+		bool shouldDefend(UnitInfo&);
+		bool shouldHunt(UnitInfo&);
+		bool shouldEscort(UnitInfo&);
+
 		bool isLastCommand(UnitInfo&, UnitCommandType, Position);
 	public:
 		void onFrame();

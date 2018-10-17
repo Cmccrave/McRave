@@ -132,8 +132,10 @@ namespace McRave
 	{
 		// TODO: Refinery is added in onUnitDiscover for enemy units (keep resource unit the same)
 		// Destroy the unit otherwise
-		if (!unit->getType().isRefinery())
-			onUnitDestroy(unit);
+		if (!unit->getType().isRefinery()) {
+			enemyUnits.erase(unit);
+			myUnits.erase(unit);
+		}
 
 		if (unit->getPlayer() == Broodwar->self())
 			onUnitComplete(unit);

@@ -101,14 +101,13 @@ namespace McRave
 
 		// If this unit should retreat
 		else if (unit.shouldRetreat()) {
+			unit.circleRed();
 			if (shouldDefend(unit))
 				defend(unit);
-			else if (unit.getType().isFlyer() && unit.getDestination().isValid())	// should escort
+			else if (unit.getType().isFlyer() && unit.getDestination().isValid())	// should escort - temp not using
 				escort(unit);
-			else if (unit.getType().isFlyer()) { // should hunt
-				unit.setDestination(unit.getTarget().getPosition());
-				hunt(unit);
-			}
+			else if (shouldHunt(unit))				
+				hunt(unit);			
 			else
 				kite(unit);
 		}
@@ -202,6 +201,13 @@ namespace McRave
 			return true;
 		return false;
 	}
+	
+	bool CommandManager::shouldHunt(UnitInfo& unit)
+	{
+		if (unit.hasTarget() && (unit.getType().isFlyer() || unit.getType() == UnitTypes::Protoss_Dark_Templar))
+			return true;
+		return false;
+	}
 
 
 
@@ -274,8 +280,6 @@ namespace McRave
 
 	void CommandManager::defend(UnitInfo& unit)
 	{
-		unit.circleRed();
-
 		// HACK: Hardcoded cannon surround, testing
 		if (unit.getType().isWorker() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) > 0) {
 			auto enemy = Util().getClosestUnit(unit.getPosition(), Broodwar->enemy());
@@ -347,7 +351,7 @@ namespace McRave
 		}
 
 		// Workers use mineral fields to help with drilling
-		else if (unit.hasResource() && unit.getResource().unit()->exists() && Terrain().isInAllyTerritory(unit.getTilePosition()))
+		else if (unit.hasResource() && unit.getResource().unit()->exists() && Terrain().isInAllyTerritory(unit.getTilePosition()) && Grids().getEGroundThreat(WalkPosition(unit.getResource().getPosition())) == 0.0)
 			unit.unit()->gather(unit.getResource().unit());
 
 		else {
@@ -471,6 +475,10 @@ namespace McRave
 
 	void CommandManager::hunt(UnitInfo& unit)
 	{
+		// Testing
+		if (unit.hasTarget() && !unit.getDestination().isValid())
+			unit.setDestination(unit.getTarget().getPosition());
+
 		// No threat, low visibility, low distance, attack if possible
 		auto start = unit.getWalkPosition();
 		auto best = 0.0;
@@ -481,7 +489,6 @@ namespace McRave
 		auto height = int(unit.getType().height() / 8.0);
 		auto width = int(unit.getType().width() / 8.0);
 		auto currentDist = (unit.getType().isFlyer() ? unit.getPosition().getDistance(unit.getDestination()) : mapBWEB.getGroundDistance(unit.getPosition(), unit.getDestination()));
-		auto test = 0.0;
 
 		for (int x = start.x - radius; x < start.x + radius + width; x++) {
 			for (int y = start.y - radius; y < start.y + radius + height; y++) {
@@ -500,11 +507,11 @@ namespace McRave
 
 				double threat = Util().getHighestThreat(w, unit);
 				double distance = (unit.getType().isFlyer() ? airDist : grdDist);
-				double visited = max(100.0, double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(t)));
+				double visited = log(10.0 + double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(t)));
 
 				double score = visited / (threat * distance);
 
-				if (score >= best && threat == MIN_THREAT && distance < DBL_MAX) {
+				if (score >= best) {
 					best = score;
 					bestPos = Position(w);
 				}

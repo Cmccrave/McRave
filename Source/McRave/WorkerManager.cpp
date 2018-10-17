@@ -13,6 +13,8 @@ void WorkerManager::updateWorkers()
 		auto &worker = w.second;
 		if (worker.getRole() == Role::Working)
 			updateDecision(worker);
+		else if (!worker.getType().isWorker())
+			worker.setResource(nullptr);
 	}
 }
 
@@ -50,17 +52,19 @@ void WorkerManager::updateDecision(UnitInfo& worker)
 		build(worker);
 	else if (shouldGather(worker))
 		gather(worker);
+
+	// Testing this
+	else if (worker.hasResource() && Grids().getEGroundThreat(WalkPosition(worker.getResource().getPosition())) > 0.0)
+		Commands().kite(worker);
 }
+
 
 bool WorkerManager::shouldAssign(UnitInfo& worker)
 {
 	if (!worker.hasResource()
 		|| needGas()
-		|| (worker.hasResource() && !worker.getResource().getType().isMineralField() && (Broodwar->self()->visibleUnitCount(worker.getType()) <= 10 || gasWorkers > BuildOrder().gasWorkerLimit())))
-		return true;
-
-	// HACK: Try to make Zerg gather less gas
-	if (Broodwar->self()->gas() > Broodwar->self()->minerals() && Broodwar->self()->getRace() == Races::Zerg)
+		|| (worker.hasResource() && !worker.getResource().getType().isMineralField() && (Broodwar->self()->visibleUnitCount(worker.getType()) <= 10 || gasWorkers > BuildOrder().gasWorkerLimit()))
+		|| ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) && worker.hasResource() && Grids().getEGroundThreat(WalkPosition(worker.getResource().getPosition())) > 0.0))
 		return true;
 	return false;
 }
@@ -87,24 +91,14 @@ bool WorkerManager::shouldClearPath(UnitInfo& worker)
 	return false;
 }
 
-bool WorkerManager::shouldFight(UnitInfo& worker)
-{
-	if (worker.hasTransport())
-		return false;
-
-	// This won't work
-	//if (Util().reactivePullWorker(worker.unit()) || (Util().proactivePullWorker(worker.unit()) && &worker == Util().getClosestUnit(Terrain().getDefendPosition(), Broodwar->self(), worker.getType())))
-	//	return true;
-	//if (Util().pullRepairWorker(worker.unit()) && &worker == Util().getClosestUnit(Terrain().getDefendPosition(), Broodwar->self(), worker.getType()))
-	//	return true;
-	return false;
-}
-
 bool WorkerManager::shouldGather(UnitInfo& worker)
 {
+	// Testing this
+	if (worker.hasResource() && Grids().getEGroundThreat(WalkPosition(worker.getResource().getPosition())) > 0.0)
+		return false;
 	if (worker.hasResource() && (worker.unit()->isGatheringMinerals() || worker.unit()->isGatheringGas()) && worker.unit()->getTarget() != worker.getResource().unit() && worker.getResource().getState() == 2)
 		return true;
-	else if (worker.unit()->isIdle() || worker.unit()->getLastCommand().getType() != UnitCommandTypes::Gather)
+	if (worker.unit()->isIdle() || worker.unit()->getLastCommand().getType() != UnitCommandTypes::Gather)
 		return true;
 	return false;
 }
@@ -118,6 +112,7 @@ bool WorkerManager::shouldReturnCargo(UnitInfo& worker)
 		return true;
 	return false;
 }
+
 
 void WorkerManager::assign(UnitInfo& worker)
 {
@@ -135,6 +130,9 @@ void WorkerManager::assign(UnitInfo& worker)
 		for (auto &g : Resources().getMyGas()) {
 			ResourceInfo &gas = g.second;
 			double dist = gas.getPosition().getDistance(worker.getPosition());
+			if ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) && Grids().getEGroundThreat(WalkPosition(gas.getPosition())) > 0.0)
+				continue;
+
 			if (dist < distBest && gas.getType() != UnitTypes::Resource_Vespene_Geyser && gas.unit()->exists() && gas.unit()->isCompleted() && gas.getGathererCount() < 3 && gas.getState() > 0)
 				bestResource = &gas, distBest = dist;
 		}
@@ -157,6 +155,8 @@ void WorkerManager::assign(UnitInfo& worker)
 		for (int i = 1; i <= 2; i++) {
 			for (auto &m : Resources().getMyMinerals()) {
 				ResourceInfo &mineral = m.second;
+				if ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) && Grids().getEGroundThreat(WalkPosition(mineral.getPosition())) > 0.0)
+					continue;
 
 				double dist = mineral.getPosition().getDistance(worker.getPosition());
 				if (((dist < distBest && !injured) || (dist > distBest && injured)) && mineral.getGathererCount() < i && mineral.getState() > 0)
@@ -224,6 +224,8 @@ void WorkerManager::build(UnitInfo& worker)
 	else if (shouldMoveToBuild()) {
 		worker.circleRed();
 		worker.setDestination(center);
+		Broodwar->drawTextMap(worker.getPosition(), "%s", worker.unit()->getOrder().c_str());
+
 		if (worker.getPosition().getDistance(center) > 128.0)
 			Commands().safeMove(worker);
 		else if (worker.unit()->getOrder() != Orders::PlaceBuilding || worker.unit()->isIdle())
@@ -270,10 +272,8 @@ void WorkerManager::returnCargo(UnitInfo& worker)
 		worker.unit()->returnCargo();
 }
 
-bool WorkerManager::needGas() {
-	if (Broodwar->self()->gas() > Broodwar->self()->minerals() && Broodwar->self()->getRace() == Races::Zerg)
-		return false;
 
+bool WorkerManager::needGas() {
 	if (Broodwar->self()->visibleUnitCount(Broodwar->self()->getRace().getWorker()) > 10 && !Resources().isGasSaturated() && ((gasWorkers < BuildOrder().gasWorkerLimit() && BuildOrder().isOpener()) || !BuildOrder().isOpener() || Resources().isMinSaturated()))
 		return true;
 	return false;

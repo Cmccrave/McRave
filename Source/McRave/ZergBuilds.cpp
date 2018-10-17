@@ -15,13 +15,16 @@ namespace McRave
 
 	void BuildOrderManager::Z2HatchMuta()
 	{
-		getOpening		= s < 40;
+		getOpening		= s < 70;
 		fastExpand		= true;
 		wallNat			= vis(Zerg_Spawning_Pool) > 0;
 		gasLimit		= INT_MAX;
 		firstUpgrade	= UpgradeTypes::Metabolic_Boost;
 		firstTech		= TechTypes::None;
-		scout			= vis(Zerg_Spawning_Pool) > 0;
+		scout			= false;
+
+		lingLimit = vis(Zerg_Lair) == 1 ? vis(Zerg_Spawning_Pool) * 8 : 0;
+		droneLimit = Broodwar->self()->isUpgrading(UpgradeTypes::Metabolic_Boost) ? INT_MAX : 12;
 
 		if (Terrain().isIslandMap()) {
 			firstUpgrade = UpgradeTypes::Zerg_Flyer_Attacks;
@@ -30,10 +33,10 @@ namespace McRave
 			itemQueue[Zerg_Hatchery]				= Item(1 + (s >= 24) + (s >= 26));
 		}
 		else {
+			itemQueue[Zerg_Hatchery]				= Item(1 + (s >= 24) + (com(Zerg_Lair) >= 1) + (com(Zerg_Hatchery) >= 3));
 			itemQueue[Zerg_Spawning_Pool]			= Item(vis(Zerg_Hatchery) >= 2);
-			itemQueue[Zerg_Extractor]				= Item(vis(Zerg_Spawning_Pool) >= 1);
-			itemQueue[Zerg_Hatchery]				= Item(1 + (s >= 24));
-			itemQueue[Zerg_Lair]					= Item(Broodwar->self()->gas() > 90);
+			itemQueue[Zerg_Extractor]				= Item((vis(Zerg_Spawning_Pool) >= 1) + (vis(Zerg_Lair)));
+			itemQueue[Zerg_Lair]					= Item(Broodwar->self()->gas() > 90);	
 		}
 
 		if (vis(Zerg_Lair) > 0)

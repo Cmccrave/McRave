@@ -29,9 +29,9 @@ namespace McRave
 		double best = 0.0;
 		getOpening = true;
 
-		currentBuild = "PFFE";
-		isBuildPossible(currentBuild);
-		return;
+		//currentBuild = "PFFE";
+		//isBuildPossible(currentBuild);
+		//return;
 				
 		if (Broodwar->self()->getRace() == Races::Protoss)
 			buildNames ={ "PZZCore", "PZCore", "PNZCore", "P4Gate", "PDTExpand", "P2GateDragoon", "PProxy6", "PProxy99", "PFFE", "P12Nexus", "P21Nexus", "P2GateExpand", "P1GateRobo", "PZealotDrop", "P1GateCorsair" };
@@ -294,6 +294,7 @@ namespace McRave
 			zergOpener();
 			zergTech();
 			zergSituational();
+			zergUnlocks();
 		}
 	}
 

@@ -32,8 +32,8 @@ namespace BWEB
 			|| unit->getType() == UnitTypes::Resource_Vespene_Geyser)
 			return;
 
-		const auto tile(unit->getTilePosition());
-		auto type(unit->getType());
+		const auto tile = unit->getTilePosition();
+		const auto type = unit->getType();
 
 		// Add used tiles
 		for (auto x = tile.x; x < tile.x + type.tileWidth(); x++) {
@@ -47,7 +47,6 @@ namespace BWEB
 		}
 
 		// Add defense count to stations
-		auto type = unit->getType();
 		if (type == UnitTypes::Protoss_Photon_Cannon
 			|| type == UnitTypes::Zerg_Sunken_Colony
 			|| type == UnitTypes::Zerg_Spore_Colony
@@ -76,8 +75,8 @@ namespace BWEB
 			|| unit->isFlying())
 			return;
 
-		const auto tile(unit->getTilePosition());
-		auto type(unit->getType());
+		const auto tile = unit->getTilePosition();
+		const auto type = unit->getType();
 
 		// Remove any used tiles
 		for (auto x = tile.x; x < tile.x + type.tileWidth(); x++) {
@@ -91,7 +90,6 @@ namespace BWEB
 		}
 
 		// Remove defense count from stations
-		auto type = unit->getType();
 		if (type == UnitTypes::Protoss_Photon_Cannon
 			|| type == UnitTypes::Zerg_Sunken_Colony
 			|| type == UnitTypes::Zerg_Spore_Colony

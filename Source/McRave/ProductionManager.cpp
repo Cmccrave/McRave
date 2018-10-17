@@ -77,17 +77,17 @@ namespace McRave
 
 				for (auto &type : Strategy().getUnitScores()) {
 					UnitType unit = type.first;
-					double mineral = unit.mineralPrice() > 0 ? max(0.0, min(2.0, double(Broodwar->self()->minerals() - reservedMineral - Buildings().getQueuedMineral()) / (double)unit.mineralPrice())) : 1.0;
-					double gas = unit.gasPrice() > 0 ? max(0.0, min(2.0, double(Broodwar->self()->gas() - reservedGas - Buildings().getQueuedGas()) / (double)unit.gasPrice())) : 1.0;
-					double score = Strategy().getUnitScore(unit);
+					double mineral = unit.mineralPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->minerals() - reservedMineral - Buildings().getQueuedMineral()) / (double)unit.mineralPrice())) : 1.0;
+					double gas = unit.gasPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->gas() - reservedGas - Buildings().getQueuedGas()) / (double)unit.gasPrice())) : 1.0;
+					double score = 1.0;// max(0.01, Strategy().getUnitScore(unit));
 					double value = score * mineral * gas;
-
+					
 					if (BuildOrder().isUnitUnlocked(type.first) && value > best && isCreateable(building.unit(), type.first) && (isAffordable(type.first) || type.first == Strategy().getHighestUnitScore()) && isSuitable(type.first)) {
 						best = value, typeBest = type.first;
 					}
 				}
-
-				if (typeBest != UnitTypes::None) {
+				
+				if (typeBest != UnitTypes::None) {					
 					if (isAffordable(typeBest)) {
 						larva->morph(typeBest);
 						return;	// Only produce 1 unit per frame to allow for scores to be re-calculated
@@ -98,10 +98,6 @@ namespace McRave
 						reservedGas += typeBest.gasPrice();
 					}
 				}
-				else if (BuildOrder().isRush() && BuildOrder().isOpener())
-					larva->morph(UnitTypes::Zerg_Zergling);
-				else if (isCreateable(building.unit(), UnitTypes::Zerg_Drone) && isAffordable(UnitTypes::Zerg_Drone) && isSuitable(UnitTypes::Zerg_Drone))
-					larva->morph(UnitTypes::Zerg_Drone);
 			}
 		}
 

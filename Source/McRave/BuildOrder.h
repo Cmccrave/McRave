@@ -40,6 +40,8 @@ namespace McRave
 		int gasLimit = INT_MAX;
 		int zealotLimit = INT_MAX;
 		int dragoonLimit = INT_MAX;
+		int lingLimit = INT_MAX;
+		int droneLimit = INT_MAX;
 
 		void getDefaultBuild();
 		bool isBuildAllowed(Race, string);
@@ -88,8 +90,8 @@ namespace McRave
 
 		void onEnd(bool), onStart(), onFrame();
 		void protossOpener(), protossTech(), protossSituational(), protossUnlocks(), protossIslandPlay();
-		void terranOpener(), terranTech(), terranSituational();
-		void zergOpener(), zergTech(), zergSituational();										
+		void terranOpener(), terranTech(), terranSituational(), terranUnlocks(), terranIslandPlay();
+		void zergOpener(), zergTech(), zergSituational(), zergUnlocks(), zergIslandPlay();										
 	
 		void PScoutMemes(), PDWEBMemes(), PArbiterMemes(), PShuttleMemes();	// Gimmick builds	
 

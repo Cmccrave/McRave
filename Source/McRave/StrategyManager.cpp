@@ -515,6 +515,9 @@ void StrategyManager::updateScoring()
 			unitScore[UnitTypes::Protoss_Dragoon] = 0.0;
 		}
 	}
+
+	// Testing
+	unitScore[UnitTypes::Zerg_Drone] = max(0.1, unitScore[UnitTypes::Zerg_Drone]);
 }
 
 double StrategyManager::getUnitScore(UnitType unit)

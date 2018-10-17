@@ -23,7 +23,6 @@ namespace McRave
 		bool shouldAssign(UnitInfo&);
 		bool shouldBuild(UnitInfo&);
 		bool shouldClearPath(UnitInfo&);
-		bool shouldFight(UnitInfo&);
 		bool shouldGather(UnitInfo&);
 		bool shouldReturnCargo(UnitInfo&);
 

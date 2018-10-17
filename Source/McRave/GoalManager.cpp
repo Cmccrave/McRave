@@ -15,7 +15,7 @@ namespace McRave
 		for (auto &s : Stations().getMyStations()) {
 			Station station = s.second;
 
-			if (station.BWEMBase()->Location() != mapBWEB.getNaturalTile() && station.BWEMBase()->Location() != mapBWEB.getMainTile() && Grids().getDefense(station.BWEMBase()->Location()) == 0)
+			if (station.BWEMBase()->Location() != mapBWEB.getNaturalTile() && station.BWEMBase()->Location() != mapBWEB.getMainTile() && station.getDefenseCount() == 0)
 				assignClosestToGoal(station.BWEMBase()->Center(), vector<UnitType> {UnitTypes::Protoss_Dragoon, 4});
 		}
 

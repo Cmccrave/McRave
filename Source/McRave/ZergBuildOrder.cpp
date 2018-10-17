@@ -40,16 +40,10 @@ void BuildOrderManager::zergSituational()
 	if (techComplete())
 		techUnit = UnitTypes::None;
 
-	// When to add colonies
-	if (Units().getGlobalEnemyGroundStrength() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense() && Units().getSupply() >= 40)
-		itemQueue[UnitTypes::Zerg_Creep_Colony] = Item(min(6, max(2, Units().getSupply() / 20)));
-
-	// Island play
-	if (!Terrain().isIslandMap() || Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Zergling) <= 6)
-		unlockedType.insert(UnitTypes::Zerg_Zergling);
-	else
-		unlockedType.erase(UnitTypes::Zerg_Zergling);
-
+	//// When to add colonies
+	//if (Units().getGlobalEnemyGroundStrength() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense() && Units().getSupply() >= 40)
+	//	itemQueue[UnitTypes::Zerg_Creep_Colony] = Item(min(6, max(2, Units().getSupply() / 20)));
+	
 	// Hack
 	if (currentBuild == "ZLurkerTurtle") {
 		if (Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Zergling) >= 6)
@@ -69,5 +63,20 @@ void BuildOrderManager::zergSituational()
 
 		if (Units().getSupply() >= 100)
 			itemQueue[UnitTypes::Zerg_Evolution_Chamber] = Item(2);
+	}
+}
+
+void BuildOrderManager::zergUnlocks()
+{
+	if (getOpening) {
+		if (droneLimit > Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Drone))
+			unlockedType.insert(UnitTypes::Zerg_Drone);
+		else
+			unlockedType.erase(UnitTypes::Zerg_Drone);
+
+		if (lingLimit > Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Zergling))
+			unlockedType.insert(UnitTypes::Zerg_Zergling);
+		else
+			unlockedType.erase(UnitTypes::Zerg_Zergling);
 	}
 }

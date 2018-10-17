@@ -405,7 +405,7 @@ void UnitManager::updateStrategy(UnitInfo& unit)
 				|| ((unit.getType() == UnitTypes::Protoss_Scout || unit.getType() == UnitTypes::Protoss_Corsair) && unit.getTarget().getType() == UnitTypes::Zerg_Overlord && Grids().getEAirThreat((WalkPosition)unit.getEngagePosition()) * 5.0 > (double)unit.getShields())
 				|| (unit.getType() == UnitTypes::Protoss_Corsair && unit.getTarget().getType() == UnitTypes::Zerg_Scourge && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Corsair) < 6)
 				|| (unit.getType() == UnitTypes::Terran_Medic && unit.unit()->getEnergy() <= TechTypes::Healing.energyCost())
-				|| (unit.getType() == UnitTypes::Zerg_Mutalisk && Grids().getEAirThreat((WalkPosition)unit.getEngagePosition()) * 5.0 > unit.getHealth() && unit.getHealth() <= 30)
+				|| (unit.getType() == UnitTypes::Zerg_Mutalisk && Grids().getEAirThreat((WalkPosition)unit.getEngagePosition()) > 0.0 && unit.getHealth() <= 30)
 				|| (unit.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && Broodwar->getFrameCount() < 12000)
 				|| (unit.getType() == UnitTypes::Terran_SCV && Broodwar->getFrameCount() > 12000))
 				unit.setRetreat();
@@ -443,7 +443,7 @@ void UnitManager::updateRole(UnitInfo& unit)
 	if (unit.getType().isWorker()) {
 		if (unit.getRole() == Role::Working && (Util().reactivePullWorker(unit) || Util().proactivePullWorker(unit) || Util().pullRepairWorker(unit)))
 			unit.setRole(Role::Fighting);
-		else if (unit.getRole() == Role::Fighting)
+		else if (unit.getRole() == Role::Fighting && !Util().reactivePullWorker(unit) && !Util().proactivePullWorker(unit) && !Util().pullRepairWorker(unit))
 			unit.setRole(Role::Working);
 	}
 }

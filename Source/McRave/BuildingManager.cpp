@@ -250,8 +250,8 @@ namespace McRave
 				if (here.isValid() && isBuildable(building, here) && isQueueable(building, here))
 					return here;
 			}
-			if (Broodwar->self()->getRace() == Races::Zerg && !BuildOrder().isOpener()) {
-				int test = (int)floor(2.0 * (double)Stations().getMyStations().size());
+			if (Broodwar->self()->getRace() == Races::Zerg) {
+				int test = Stations().getMyStations().size();
 
 				if (test > Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Hatchery))
 					here = findProdLocation(building, mapBWEB.getMainPosition());
@@ -284,10 +284,7 @@ namespace McRave
 		// If this is a defensive building
 		if (building == UnitTypes::Protoss_Photon_Cannon || building == UnitTypes::Zerg_Creep_Colony || building == UnitTypes::Terran_Missile_Turret) {
 
-			if (building == UnitTypes::Protoss_Photon_Cannon && Strategy().getEnemyBuild() == "Z2HatchMuta" && Grids().getDefense(mapBWEB.getMainTile()) == 0)
-				here = findDefLocation(building, mapBWEB.getMainPosition());
-
-			else if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Forge) >= 1 && ((Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) >= 3 + (Players().getNumberTerran() > 0 || Players().getNumberProtoss() > 0)) || (Terrain().isIslandMap() && Players().getNumberZerg() > 0))) {
+			if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Forge) >= 1 && ((Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) >= 3 + (Players().getNumberTerran() > 0 || Players().getNumberProtoss() > 0)) || (Terrain().isIslandMap() && Players().getNumberZerg() > 0))) {
 				for (auto &station : Stations().getMyStations()) {
 					Station s = station.second;
 
@@ -387,9 +384,9 @@ namespace McRave
 		if (building.requiresPsi() && !Pylons().hasPower(here, building))
 			return false;
 
-		// HACK: Had to find a way to let hatcheries be prevented from being queued by a BWEB block too close to resources
-		if (building == UnitTypes::Zerg_Hatchery && !Broodwar->canBuildHere(here, building))
-			return false;
+		//// HACK: Had to find a way to let hatcheries be prevented from being queued by a BWEB block too close to resources
+		//if (building == UnitTypes::Zerg_Hatchery && !Broodwar->canBuildHere(here, building))
+		//	return false;
 		return true;
 	}
 

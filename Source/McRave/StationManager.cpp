@@ -103,5 +103,7 @@ bool StationManager::needDefenses(const Station station)
 		return true;
 	else if ((Players().getPlayers().size() > 1 || Broodwar->enemy()->getRace() == Races::Zerg) && !main && !nat && defenseCount < int(station.DefenseLocations().size()))
 		return true;
+	else if (station.getDefenseCount() < 1 && (Units().getGlobalEnemyAirStrength() > 0.0 || Strategy().getEnemyBuild() == "Z2HatchMuta" || Strategy().getEnemyBuild() == "Z3HatchMuta"))
+		return true;
 	return false;
 }

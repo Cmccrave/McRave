@@ -16,6 +16,7 @@
 // Probes sometimes don't build - re-issue order
 // Scarabs and Mines being used in sim?
 // SafeMove gets workers stuck on bridges
+// getConcavePosition and isMobile are expensive on CPU
 
 // *** Restructuring ***
 // Scouts
@@ -36,6 +37,7 @@
 // Goal management
 // Build detection
 // Observer building timings
+// 12 Nexus -> 2 gate 2 zealot -> goons, see Mini vs Flash ASL
 
 void McRaveModule::onStart()
 {
