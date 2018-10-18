@@ -507,18 +507,19 @@ namespace McRave
 
 				double threat = Util().getHighestThreat(w, unit);
 				double distance = (unit.getType().isFlyer() ? airDist : grdDist);
-				double visited = log(10.0 + double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(t)));
+				double visited = log(max(500.0, double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(w))));
+				double grouping = (unit.getType().isFlyer() && double(Grids().getAAirCluster(w)) > 1.0) ? 2.0 : 1.0;
 
-				double score = visited / (threat * distance);
+				double score = grouping * visited / (threat * distance);
 
-				if (score >= best) {
+				if (score >= best && threat == MIN_THREAT) {
 					best = score;
 					bestPos = Position(w);
 				}
 			}
 		}
 
-		if (unit.hasTarget() && Util().getHighestThreat(WalkPosition(bestPos), unit) < 1.0 && bestPos.getDistance(unit.getTarget().getPosition()) < 16.0 && unit.getPosition().getDistance(unit.getTarget().getPosition()) < 320.0) {
+		if (unit.hasTarget() && Util().getHighestThreat(unit.getWalkPosition(), unit) == MIN_THREAT && Util().unitInRange(unit)) {
 			if (shouldAttack(unit))
 				attack(unit);
 			else

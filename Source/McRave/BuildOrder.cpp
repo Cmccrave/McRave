@@ -29,9 +29,11 @@ namespace McRave
 		double best = 0.0;
 		getOpening = true;
 
-		//currentBuild = "PFFE";
-		//isBuildPossible(currentBuild);
-		//return;
+		if (Broodwar->self()->getRace() == Races::Protoss) {
+			currentBuild = "PFFE";
+			isBuildPossible(currentBuild);
+			return;
+		}
 				
 		if (Broodwar->self()->getRace() == Races::Protoss)
 			buildNames ={ "PZZCore", "PZCore", "PNZCore", "P4Gate", "PDTExpand", "P2GateDragoon", "PProxy6", "PProxy99", "PFFE", "P12Nexus", "P21Nexus", "P2GateExpand", "P1GateRobo", "PZealotDrop", "P1GateCorsair" };
@@ -408,7 +410,7 @@ namespace McRave
 			unlockedType.insert(UnitTypes::Protoss_Shuttle);
 			techList.insert(UnitTypes::Protoss_Shuttle);
 		}
-		else if (techUnit == UnitTypes::Zerg_Mutalisk) {
+		else if (techUnit == UnitTypes::Zerg_Mutalisk && Units().getGlobalEnemyAirStrength() > 0.0) {
 			techList.insert(UnitTypes::Zerg_Scourge);
 			unlockedType.insert(UnitTypes::Zerg_Scourge);
 		}
@@ -505,8 +507,4 @@ namespace McRave
 		}
 	}
 
-	void BuildOrderManager::checkUnitLimits()
-	{
-
-	}
 }

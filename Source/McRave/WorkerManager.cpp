@@ -278,3 +278,7 @@ bool WorkerManager::needGas() {
 		return true;
 	return false;
 }
+
+void WorkerManager::removeUnit(Unit unit)
+{
+}

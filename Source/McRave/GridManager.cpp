@@ -94,10 +94,10 @@ namespace McRave
 
 
 			// Add a visited grid for rough guideline of what we've seen by this unit recently
-			auto start = unit.getTilePosition();
-			for (int x = start.x - 4; x < start.x + 4; x++) {
-				for (int y = start.y - 4; y < start.y + 4; y++) {
-					auto t = TilePosition(x, y);
+			auto start = unit.getWalkPosition();
+			for (int x = start.x - 4; x < start.x + 8; x++) {
+				for (int y = start.y - 4; y < start.y + 8; y++) {
+					auto t = WalkPosition(x, y);
 					if (t.isValid())
 						visitedGrid[x][y] = Broodwar->getFrameCount();
 				}
@@ -349,7 +349,8 @@ namespace McRave
 		int maxRange = int(max({ unit.getGroundRange(), unit.getAirRange(), 32.0 }) / 8.0);
 		int speed = int(max(unit.getSpeed(), 1.0));
 
-		int pixelSize = max(unit.getType().width(), unit.getType().height());
+		// HACK: Need to use width/height properly and find how to balance buildings better
+		int pixelSize = unit.getType().isBuilding() ? (unit.getType().tileWidth()) * 32.0 : max(unit.getType().width(), unit.getType().height());
 		int walkSize = int(ceil(pixelSize / 8));
 
 		int grdReach = int(max(unit.getGroundRange(), 32.0) + (speed * 24.0) + (pixelSize / 2)) + 1;

@@ -53,8 +53,6 @@ namespace McRave
 		void checkAllTech();
 		void checkExoticTech();
 
-		void checkUnitLimits();
-
 	public:
 		bool shouldAddProduction(), shouldAddGas(), techComplete();
 		bool shouldExpand();
@@ -131,6 +129,7 @@ namespace McRave
 		void Z2HatchHydra();
 		void Z3HatchBeforePool();
 		void ZLurkerTurtle();
+		void Z9PoolSpire();
 	};
 
 }

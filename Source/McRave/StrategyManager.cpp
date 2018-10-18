@@ -515,9 +515,6 @@ void StrategyManager::updateScoring()
 			unitScore[UnitTypes::Protoss_Dragoon] = 0.0;
 		}
 	}
-
-	// Testing
-	unitScore[UnitTypes::Zerg_Drone] = max(0.1, unitScore[UnitTypes::Zerg_Drone]);
 }
 
 double StrategyManager::getUnitScore(UnitType unit)
@@ -749,7 +746,7 @@ void StrategyManager::updateMadMixScore()
 			allUnits.push_back(Zerg_Devourer);
 		}
 	}
-
+	
 	for (auto &u : Units().getEnemyUnits()) {
 		auto &unit = u.second;
 		auto type = unit.getType();
@@ -791,4 +788,7 @@ void StrategyManager::updateMadMixScore()
 			}
 		}
 	}
+
+	for (auto &u : allUnits)
+		unitScore[u] = max(0.1, unitScore[u]);
 }

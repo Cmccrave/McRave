@@ -79,7 +79,7 @@ namespace McRave
 					UnitType unit = type.first;
 					double mineral = unit.mineralPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->minerals() - reservedMineral - Buildings().getQueuedMineral()) / (double)unit.mineralPrice())) : 1.0;
 					double gas = unit.gasPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->gas() - reservedGas - Buildings().getQueuedGas()) / (double)unit.gasPrice())) : 1.0;
-					double score = 1.0;// max(0.01, Strategy().getUnitScore(unit));
+					double score = max(0.01, Strategy().getUnitScore(unit));
 					double value = score * mineral * gas;
 					
 					if (BuildOrder().isUnitUnlocked(type.first) && value > best && isCreateable(building.unit(), type.first) && (isAffordable(type.first) || type.first == Strategy().getHighestUnitScore()) && isSuitable(type.first)) {

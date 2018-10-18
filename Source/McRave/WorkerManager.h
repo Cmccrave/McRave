@@ -32,6 +32,7 @@ namespace McRave
 		void gather(UnitInfo&);
 		void returnCargo(UnitInfo&);
 
+		void removeUnit(Unit);
 	};
 }
 

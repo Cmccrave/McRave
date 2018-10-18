@@ -135,9 +135,6 @@ bool UtilManager::isSafe(WalkPosition end, UnitType unitType, bool groundCheck, 
 
 bool UtilManager::isMobile(WalkPosition start, WalkPosition end, UnitType unitType)
 {
-	if (unitType.isFlyer())
-		return true;
-
 	int walkWidth = (int)ceil(unitType.width() / 8.0) + 1;
 	int walkHeight = (int)ceil(unitType.height() / 8.0) + 1;
 	int halfW = walkWidth / 2;
@@ -155,10 +152,12 @@ bool UtilManager::isMobile(WalkPosition start, WalkPosition end, UnitType unitTy
 			WalkPosition w(x, y);
 			if (!w.isValid())
 				return false;
-			if (overlapsUnit(x, y) && Grids().getMobility(w) > 0)
-				continue;
-			if (Grids().getMobility(w) <= 0 || Grids().getCollision(w) > 0)
-				return false;
+			if (!unitType.isFlyer()) {
+				if (overlapsUnit(x, y) && Grids().getMobility(w) > 0)
+					continue;
+				if (Grids().getMobility(w) <= 0 || Grids().getCollision(w) > 0)
+					return false;
+			}
 		}
 	}
 	return true;

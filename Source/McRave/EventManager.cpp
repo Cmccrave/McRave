@@ -27,7 +27,7 @@ namespace McRave
 				storeUnit(unit);
 
 			if (unit->getType() == UnitTypes::Protoss_Pylon)
-				Pylons().storePylon(unit);				
+				Pylons().storePylon(unit);
 		}
 
 		if (unit->getType().isResourceContainer())
@@ -45,13 +45,21 @@ namespace McRave
 
 		// My unit
 		if (unit->getPlayer() == Broodwar->self()) {
+			auto &info = myUnits[unit];
+
 			supply -= unit->getType().supplyRequired();
+
 			Transport().removeUnit(unit);
-			myUnits.erase(unit);			
+			
+			if (info.hasResource())
+				info.getResource().setGathererCount(info.getResource().getGathererCount() - 1);
+
+			myUnits.erase(unit);
+			
 		}
 
 		// Enemy unit
-		else if (unit->getPlayer() == Broodwar->enemy()){
+		else if (unit->getPlayer() == Broodwar->enemy()) {
 			//enemySizes[unit->getType().size()] -= 1;
 			enemyUnits.erase(unit);
 		}
