@@ -122,6 +122,7 @@
     <ClInclude Include="..\Source\McRave\TransportManager.h" />
     <ClInclude Include="..\Source\McRave\UnitInfo.h" />
     <ClInclude Include="..\Source\McRave\UnitManager.h" />
+    <ClInclude Include="..\Source\McRave\UnitMath.h" />
     <ClInclude Include="..\Source\McRave\Util.h" />
     <ClInclude Include="..\Source\McRave\WorkerManager.h" />
   </ItemGroup>

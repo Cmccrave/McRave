@@ -312,6 +312,9 @@
     <ClInclude Include="..\Source\McRave\ScoutManager.h">
       <Filter>McRave</Filter>
     </ClInclude>
+    <ClInclude Include="..\Source\McRave\UnitMath.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="BWEM">

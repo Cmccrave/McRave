@@ -52,13 +52,7 @@ namespace McRave
 
 	void ProductionManager::MadMix(UnitInfo& building)
 	{
-		// Check current overlord count
-		int ovie = 0;
-		for (auto &u : Units().getMyUnits()) {
-			UnitInfo &unit = u.second;
-			if (unit.getType() == UnitTypes::Zerg_Egg && unit.unit()->getBuildType() == UnitTypes::Zerg_Overlord)
-				ovie++;
-		}
+		auto needOverlords = Units().getMyTypeCount(UnitTypes::Zerg_Overlord) < min(22, (int)floor((Units().getSupply() / max(14, 16 - Units().getMyTypeCount(UnitTypes::Zerg_Overlord)))));
 
 		if (building.unit()->getLarva().size() == 0)
 			idleProduction[building.unit()] = UnitTypes::Zerg_Larva;
@@ -67,10 +61,8 @@ namespace McRave
 
 		for (auto &larva : building.unit()->getLarva()) {
 
-			if ((Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Overlord) + ovie - 1) < min(22, (int)floor((Units().getSupply() / max(14, (16 - Broodwar->self()->allUnitCount(UnitTypes::Zerg_Overlord))))))) {
-				building.unit()->morph(UnitTypes::Zerg_Overlord);
-				ovie++;
-			}
+			if (needOverlords)
+				larva->morph(UnitTypes::Zerg_Overlord);
 			else {
 				double best = 0.0;
 				UnitType typeBest;

@@ -19,32 +19,11 @@ namespace McRave
 		int chokeWidth(const BWEM::ChokePoint *);
 		const BWEM::ChokePoint * getClosestChokepoint(Position);
 
-		double getMaxGroundStrength(UnitInfo&);
-		double getVisibleGroundStrength(UnitInfo&);
-		double getMaxAirStrength(UnitInfo&);
-		double getVisibleAirStrength(UnitInfo&);
-		double getPriority(UnitInfo&);
-
-		// Unit statistics
-		double groundRange(UnitInfo&);
-		double airRange(UnitInfo&);
-		double groundDamage(UnitInfo&);
-		double airDamage(UnitInfo&);
-		double speed(UnitInfo&);
-		double splashModifier(UnitInfo&);
-		double groundDPS(UnitInfo&);
-		double airDPS(UnitInfo&);
-		double effectiveness(UnitInfo&);
-		double survivability(UnitInfo&);
-		double gWeaponCooldown(UnitInfo&);
-		double aWeaponCooldown(UnitInfo&);
+		
 
 		// Returns the highest threat in a grid the size of the unit
 		double getHighestThreat(WalkPosition, UnitInfo&);
-
-		// Returns the minimum number of frames for the given unit type to wait before having another command issued to it
-		int getMinStopFrame(UnitType);
-
+		
 		// Returns the WalkPosition of the unit
 		WalkPosition getWalkPosition(Unit);
 

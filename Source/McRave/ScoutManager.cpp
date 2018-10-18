@@ -29,7 +29,7 @@ void ScoutManager::updateScouts()
 		scoutCount = 0;
 
 	// If we have too few scouts
-	if (mapBWEB.getNaturalChoke() && BuildOrder().shouldScout() && Units().roleCount(Role::Scouting) < scoutCount) {
+	if (mapBWEB.getNaturalChoke() && BuildOrder().shouldScout() && Units().getMyRoleCount(Role::Scouting) < scoutCount) {
 		auto type = Broodwar->self()->getRace().getWorker();
 		auto scout = Util().getClosestUnit(Position(mapBWEB.getNaturalChoke()->Center()), Broodwar->self(), type);
 		if (scout)

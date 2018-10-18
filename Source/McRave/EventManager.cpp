@@ -23,6 +23,7 @@ namespace McRave
 			if (unit->getType().supplyRequired() > 0)
 				supply += unit->getType().supplyRequired();
 
+			// Store buildings so grids are updated
 			if (unit->getType().isBuilding())
 				storeUnit(unit);
 

@@ -79,8 +79,9 @@ namespace McRave
 		gasLimit		= 0;
 		firstUpgrade	= UpgradeTypes::None;
 		firstTech		= TechTypes::None;
-		scout			= vis(Zerg_Spawning_Pool) > 0;
+		scout			= false;
 		rush			= true;
+		droneLimit		= 4;
 
 		itemQueue[Zerg_Spawning_Pool]			= Item(Broodwar->self()->minerals() > 176, s >= 8);
 	}

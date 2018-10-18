@@ -2,11 +2,11 @@
 #include "Util.h"
 #include "UnitManager.h"
 #include "TargetManager.h"
+#include "UnitMath.h"
 
 // DEAR GOD PLEASE FUCKING REMOVE THIS WHY DID I DO THIS
 #define Targets TargetSingleton::Instance()
 #define Units UnitSingleton::Instance()
-#define Util UtilSingleton::Instance()
 
 namespace McRave
 {
@@ -18,7 +18,6 @@ namespace McRave
 		maxAirStrength = 0.0;
 		priority = 0.0;
 		
-
 		percentHealth = 0.0;
 		percentShield = 0.0;
 		percentTotal = 0.0;
@@ -90,7 +89,7 @@ namespace McRave
 		position				= thisUnit->getPosition();
 		destination				= Positions::None;
 		tilePosition			= unit()->getTilePosition();
-		walkPosition			= Util.getWalkPosition(thisUnit);
+		walkPosition			= Math::getWalkPosition(thisUnit);
 
 		// Update unit stats
 		unitType				= t;
@@ -101,20 +100,20 @@ namespace McRave
 		percentHealth			= t.maxHitPoints() > 0 ? double(health) / double(t.maxHitPoints()) : 1.0;
 		percentShield			= t.maxShields() > 0 ? double(shields) / double(t.maxShields()) : 1.0;
 		percentTotal			= t.maxHitPoints() + t.maxShields() > 0 ? double(health + shields) / double(t.maxHitPoints() + t.maxShields()) : 1.0;
-		groundRange				= Util.groundRange(*this);
-		airRange				= Util.airRange(*this);
-		groundDamage			= Util.groundDamage(*this);
-		airDamage				= Util.airDamage(*this);
-		speed 					= Util.speed(*this);
-		minStopFrame			= Util.getMinStopFrame(t);
+		groundRange				= Math::groundRange(*this);
+		airRange				= Math::airRange(*this);
+		groundDamage			= Math::groundDamage(*this);
+		airDamage				= Math::airDamage(*this);
+		speed 					= Math::speed(*this);
+		minStopFrame			= Math::getMinStopFrame(t);
 		burrowed				= (thisUnit->isBurrowed() || thisUnit->getOrder() == Orders::Burrowing || thisUnit->getOrder() == Orders::VultureMine);
 
 		// Update McRave stats
-		visibleGroundStrength	= Util.getVisibleGroundStrength(*this);
-		maxGroundStrength		= Util.getMaxGroundStrength(*this);
-		visibleAirStrength		= Util.getVisibleAirStrength(*this);
-		maxAirStrength			= Util.getMaxAirStrength(*this);
-		priority				= Util.getPriority(*this);
+		visibleGroundStrength	= Math::getVisibleGroundStrength(*this);
+		maxGroundStrength		= Math::getMaxGroundStrength(*this);
+		visibleAirStrength		= Math::getVisibleAirStrength(*this);
+		maxAirStrength			= Math::getMaxAirStrength(*this);
+		priority				= Math::getPriority(*this);
 		lastAttackFrame			= (t != UnitTypes::Protoss_Reaver && (thisUnit->isStartingAttack() || thisUnit->isRepairing())) ? Broodwar->getFrameCount() : lastAttackFrame;
 		killCount				= unit()->getKillCount();
 		simBonus				= 1.0;
@@ -171,10 +170,10 @@ namespace McRave
 	void UnitInfo::createDummy(UnitType t) {
 		unitType				= t;
 		player					= Broodwar->self();
-		groundRange				= Util.groundRange(*this);
-		airRange				= Util.airRange(*this);
-		groundDamage			= Util.groundDamage(*this);
-		airDamage				= Util.airDamage(*this);
-		speed 					= Util.speed(*this);
+		groundRange				= Math::groundRange(*this);
+		airRange				= Math::airRange(*this);
+		groundDamage			= Math::groundDamage(*this);
+		airDamage				= Math::airDamage(*this);
+		speed 					= Math::speed(*this);
 	}
 }

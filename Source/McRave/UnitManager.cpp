@@ -20,6 +20,7 @@ void UnitManager::updateUnits()
 	splashTargets.clear();
 	enemyComposition.clear();
 	minThreshold = 0.75, maxThreshold = 1.25;
+	myTypes.clear();
 
 	double currentSim = 0.0;
 
@@ -102,8 +103,8 @@ void UnitManager::updateUnits()
 			else
 				immThreat += unit.getVisibleGroundStrength();
 		}
-	}
-
+	}	
+	
 	// Update myUnits
 	for (auto &u : myUnits) {
 		auto &unit = u.second;
@@ -114,6 +115,9 @@ void UnitManager::updateUnits()
 		updateLocalSimulation(unit);
 		updateStrategy(unit);
 		updateRole(unit);
+
+		auto type = unit.getType() == UnitTypes::Zerg_Egg ? unit.getBuildingType() : unit.getType();		
+		myTypes[type] ++;
 
 		// If unit is not a building and deals damage, add it to global strength	
 		if (!unit.getType().isBuilding())
@@ -427,6 +431,9 @@ void UnitManager::updateStrategy(UnitInfo& unit)
 
 void UnitManager::updateRole(UnitInfo& unit)
 {
+	// Store old role to update counters after
+	auto oldRole = unit.getRole();
+
 	// Update default role
 	if (unit.getRole() == Role::None) {
 		if (unit.getType().isWorker())
@@ -446,18 +453,23 @@ void UnitManager::updateRole(UnitInfo& unit)
 		else if (unit.getRole() == Role::Fighting && !Util().reactivePullWorker(unit) && !Util().proactivePullWorker(unit) && !Util().pullRepairWorker(unit))
 			unit.setRole(Role::Working);
 	}
-}
 
-int UnitManager::roleCount(Role role)
-{
-	// Find every unit we own with the role we requested
-	auto cnt = 0;
-	for (auto &u : myUnits) {
-		auto &unit = u.second;
-		if (unit.getRole() == role)
-			cnt++;
+	// Check if an overlord should scout or support
+	if (unit.getType() == UnitTypes::Zerg_Overlord) {
+		if (unit.getRole() == Role::None || myRoles[Role::Scouting] < myRoles[Role::Supporting] + 1)
+			unit.setRole(Role::Scouting);
+		else if (myRoles[Role::Supporting] < myRoles[Role::Scouting] + 1)
+			unit.setRole[Role::Supporting];
 	}
-	return cnt;
+
+	// Increment new role counter, decrement old role counter
+	auto newRole = unit.getRole();
+	if (oldRole != newRole) {
+		if (oldRole != Role::None)
+			myRoles[oldRole] --;
+		if (newRole != Role::None)
+			myRoles[newRole] ++;
+	}
 }
 
 bool UnitManager::isThreatening(UnitInfo& unit)

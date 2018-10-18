@@ -69,14 +69,18 @@ void BuildOrderManager::zergSituational()
 void BuildOrderManager::zergUnlocks()
 {
 	if (getOpening) {
-		if (droneLimit > Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Drone))
+		if (droneLimit > Units().getMyTypeCount(UnitTypes::Zerg_Drone))
 			unlockedType.insert(UnitTypes::Zerg_Drone);
 		else
 			unlockedType.erase(UnitTypes::Zerg_Drone);
 
-		if (lingLimit > Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Zergling))
+		if (lingLimit > Units().getMyTypeCount(UnitTypes::Zerg_Zergling))
 			unlockedType.insert(UnitTypes::Zerg_Zergling);
 		else
 			unlockedType.erase(UnitTypes::Zerg_Zergling);
+	}
+	else {
+		unlockedType.insert(UnitTypes::Zerg_Drone);
+		unlockedType.insert(UnitTypes::Zerg_Zergling);
 	}
 }

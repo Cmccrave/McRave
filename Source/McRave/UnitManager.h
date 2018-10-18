@@ -8,9 +8,9 @@ using namespace BWAPI;
 using namespace std;
 
 namespace McRave
-{	
+{
 	class UnitInfo;
-	class UnitInfo;		
+	class UnitInfo;
 	class UnitManager
 	{
 		map <Unit, UnitInfo> enemyUnits;
@@ -21,6 +21,9 @@ namespace McRave
 		map <UnitSizeType, int> allySizes;
 		map <UnitSizeType, int> enemySizes;
 		map <UnitType, int> enemyComposition;
+
+		map <UnitType, int> myTypes;
+		map <Role, int> myRoles;
 
 		set<Unit> enemyThreats;
 		set<Unit> armedMines;
@@ -58,8 +61,9 @@ namespace McRave
 		double getGlobalEnemyAirStrength() { return globalEnemyAirStrength; }
 		double getAllyDefense() { return allyDefense; }
 
-		int getSupply() { return supply; }	
-		int roleCount(Role);
+		int getSupply() { return supply; }
+		int getMyRoleCount(Role role) { return myRoles[role]; }
+		int getMyTypeCount(UnitType type) { return myTypes[type]; }
 
 		bool isThreatening(UnitInfo&);
 		int getEnemyCount(UnitType);

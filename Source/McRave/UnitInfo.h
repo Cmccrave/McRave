@@ -2,6 +2,7 @@
 #include <BWAPI.h>
 #include "..\BWEB\BWEB.h"
 #include "McRave.h"
+#include "UnitMath.h"
 
 using namespace BWAPI;
 using namespace std;
