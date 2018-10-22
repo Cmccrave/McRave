@@ -71,6 +71,7 @@
     <ClCompile Include="..\Source\McRave\TransportManager.cpp" />
     <ClCompile Include="..\Source\McRave\UnitInfo.cpp" />
     <ClCompile Include="..\Source\McRave\UnitManager.cpp" />
+    <ClCompile Include="..\Source\McRave\UnitMath.cpp" />
     <ClCompile Include="..\Source\McRave\Util.cpp" />
     <ClCompile Include="..\Source\McRave\WorkerManager.cpp" />
     <ClCompile Include="..\Source\McRave\ZergBuildOrder.cpp" />

@@ -5,14 +5,42 @@ namespace McRave
 {
 	void BuildOrderManager::onEnd(bool isWinner)
 	{
-		ofstream config("bwapi-data/write/" + Broodwar->enemy()->getName() + ".txt");
-		string t1;
-		int t2, t3;
-		int lineBreak = 0;
+		// File extension including our race initial;
+		const string dash = "-";
+		const string noStats = " 0 0 ";
+		const string myRace{ *Broodwar->self()->getRace().c_str() };
+		const string enemyRace{ *Broodwar->enemy()->getRace().c_str() };
+		const string extension = myRace + "v" + enemyRace + " " + Broodwar->enemy()->getName() + " " + Broodwar->mapFileName() + ".txt";
 
-		while (ss >> t1 >> t2 >> t3) {
-			t1 == currentBuild ? (isWinner ? t2++ : t3++) : 0;
-			config << t1 << " " << t2 << " " << t3 << endl;
+		// Write into the write directory 3 tokens at a time (4 if we detect a dash)
+		ofstream config("bwapi-data/write/" + extension);
+		string token;
+
+		const auto shouldIncrement = [&](string name) {
+			return name == currentBuild || name == currentTransition || name == currentOpener;
+		};
+
+		int totalWins, totalLoses;
+		ss >> totalWins >> totalLoses;
+		isWinner ? totalWins++ : totalLoses++;
+		config << totalWins << " " << totalLoses << endl;
+
+		while (ss >> token) {
+			if (token == dash) {
+				int w, l;
+
+				ss >> token >> w >> l;
+				shouldIncrement(token) ? (isWinner ? w++ : l++) : 0;
+				config << dash << endl;
+				config << token << " " << w << " " << l << endl;
+			}
+			else {
+				int w, l;
+
+				ss >> w >> l;
+				shouldIncrement(token) ? (isWinner ? w++ : l++) : 0;
+				config << token << " " << w << " " << l << endl;
+			}
 		}
 	}
 
@@ -22,149 +50,195 @@ namespace McRave
 			getDefaultBuild();
 			return;
 		}
-		
-		string build, buffer;
-		ifstream config("bwapi-data/read/" + Broodwar->enemy()->getName() + ".txt");
-		int wins, losses, gamesPlayed, totalGamesPlayed = 0;
-		double best = 0.0;
-		getOpening = true;
 
+		// File extension including our race initial;
+		const string dash = "-";
+		const string noStats = " 0 0 ";
+		const string myRaceChar{ *Broodwar->self()->getRace().c_str() };
+		const string enemyRaceChar{ *Broodwar->enemy()->getRace().c_str() };
+		const string extension = myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + Broodwar->mapFileName() + ".txt";
+
+		// Tokens
+		string buffer, token;
+
+		// Protoss builds, openers and transitions
 		if (Broodwar->self()->getRace() == Races::Protoss) {
-			currentBuild = "PFFE";
-			isBuildPossible(currentBuild);
-			return;
-		}
-				
-		if (Broodwar->self()->getRace() == Races::Protoss)
-			buildNames ={ "PZZCore", "PZCore", "PNZCore", "P4Gate", "PDTExpand", "P2GateDragoon", "PProxy6", "PProxy99", "PFFE", "P12Nexus", "P21Nexus", "P2GateExpand", "P1GateRobo", "PZealotDrop", "P1GateCorsair" };
-		if (Broodwar->self()->getRace() == Races::Terran)
-			buildNames ={ "T2Fact", "TSparks", "T2PortWraith", "T1RaxFE", "T2RaxFE", "T1FactFE", "TBCMemes" };
-		if (Broodwar->self()->getRace() == Races::Zerg)
-			buildNames ={ "Z2HatchMuta", "Z3HatchLing", "Z4Pool", "Z9Pool", "Z2HatchHydra", "Z3HatchBeforePool", "ZLurkerTurtle" };
+			// 1GateCore
+			myBuilds["P1GateCore"].openers ={ "0Zealot", "1Zealot", "2Zealot" };
+			myBuilds["P1GateCore"].transitions ={ "3GateRobo", "Reaver", "Corsair", "4Gate", "DT" };
 
-		// If we don't have a file in the /read/ folder, then check the /write/ folder
-		if (!config) {
-			ifstream localConfig("bwapi-data/write/" + Broodwar->enemy()->getName() + ".txt");
+			// 2Gate
+			//myBuilds["P2Gate"].openers ={ "Proxy", "Natural", "Main" };
+			//myBuilds["P2Gate"].transitions ={ "ZealotRush", "DT", "Reaver", "Expand", "DoubleExpand" };
 
-			// If still no file, then we need to create one and add all builds to it that we're using
-			if (!localConfig.good()) {
-				for (auto &build : buildNames)
-					ss << build << " 0 0 ";
-			}
+			// FFE
+			myBuilds["PFFE"].openers ={ "Gate", "Nexus", "Forge" };
+			myBuilds["PFFE"].transitions ={ "NeoBisu", "2Stargate", "StormRush" };
 
-			// If there is a file, load it into the stringstream
-			else {
-				while (localConfig >> buffer)
-					ss << buffer << " ";
-			}
+			// 12 Nexus
+			myBuilds["P12Nexus"].openers ={ "Dragoon", "Zealot" };
+			myBuilds["P12Nexus"].transitions ={ "Standard", "DoubleExpand", "ReaverCarrier" };
+
+			// 21 Nexus
+			myBuilds["P21Nexus"].openers ={ "1Gate", "2Gate" };
+			myBuilds["P21Nexus"].transitions ={ "Standard", "DoubleExpand", "Carrier" };
 		}
 
-		// If we do have a file, load it into the stringstream
-		else {
-			while (config >> buffer)
+		// Winrate tracking
+		auto bestBuildWR = 0.0;
+		string bestBuild = "";
+
+		auto bestOpenerWR = 0.0;
+		string bestOpener = "";
+
+		auto bestTransitionWR = 0.0;
+		string bestTransition = "";
+
+		const auto parseLearningFile = [&](ifstream &file) {
+			int dashCnt = -1; // Start at -1 so we can index at 0
+			while (file >> buffer)
 				ss << buffer << " ";
-		}
 
-		// Check SS if the build exists, if it doesn't, add it
-		string s = ss.str();
-		for (auto &build : buildNames) {
-			if (s.find(build) == s.npos)
-				ss << build << " 0 0 ";
-		}
+			// Create a copy so we aren't dumping out the information
+			stringstream sscopy;
+			sscopy << ss.str();
 
-		// Calculate how many games we've played against this opponent
-		stringstream ss2;
-		ss2 << ss.str();
-		while (!ss2.eof()) {
-			ss2 >> build >> wins >> losses;
-			totalGamesPlayed += wins + losses;
-		}
+			// Initialize			
+			string thisBuild = "";
+			string thisOpener = "";
+			Race enemyRace = Broodwar->enemy()->getRace();
+			int totalWins, totalLoses;
 
-		if (totalGamesPlayed == 0) {
-			getDefaultBuild();
-			if (isBuildPossible(currentBuild))
-				return;
-		}
+			// Store total games played to calculate UCB values
+			sscopy >> totalWins >> totalLoses;
+			int totalGamesPlayed = totalWins + totalLoses;
 
-		// Calculate which build is best
-		stringstream ss3;
-		ss3 << ss.str();
-		while (!ss3.eof()) {
-			ss3 >> build >> wins >> losses;
-			gamesPlayed = wins + losses;
+			while (!sscopy.eof()) {
+				sscopy >> token;
 
-			// Against static easy bots to beat, just stick with whatever is working (prevents uncessary losses)
-			if (gamesPlayed > 0 && losses == 0 && ((Players().getNumberProtoss() > 0 && isBuildAllowed(Races::Protoss, build)) || (Players().getNumberTerran() > 0 && isBuildAllowed(Races::Terran, build)) || (Players().getNumberZerg() > 0 && isBuildAllowed(Races::Zerg, build)) || (Players().getNumberRandom() > 0 && isBuildAllowed(Races::Random, build)))) {
-				currentBuild = build;
-				break;
-			}
+				if (token == "-") {
+					dashCnt++;
+					dashCnt %= 3;
+					continue;
+				}
 
-			if ((Players().getNumberProtoss() > 0 && isBuildAllowed(Races::Protoss, build)) || (Players().getNumberTerran() > 0 && isBuildAllowed(Races::Terran, build)) || (Players().getNumberZerg() > 0 && isBuildAllowed(Races::Zerg, build)) || (Players().getNumberRandom() > 0 && isBuildAllowed(Races::Random, build))) {
-				if (gamesPlayed <= 0) {
-					currentBuild = build;
+				int w, l, numGames;
+				sscopy >> w >> l;
+				numGames = w + l;
+
+				double winRate = numGames > 0 ? double(w) / double(numGames) : 0;
+				double ucbVal = sqrt(2.0 * log((double)totalGamesPlayed) / numGames);
+				double val = winRate + ucbVal;
+
+				if (l == 0)
+					val = DBL_MAX;
+				
+				switch (dashCnt) {
+
+					// Builds
+				case 0:
+					if (val > bestBuildWR && isBuildAllowed(enemyRace, token)) {
+						bestBuild = token;
+						bestBuildWR = val;
+
+						bestOpenerWR = 0.0;
+						bestOpener = "";
+
+						bestTransitionWR = 0.0;
+						bestTransition = "";
+					}
+					break;
+
+					// Openers
+				case 1:
+					if (val > bestOpenerWR) {
+						bestOpener = token;
+						bestOpenerWR = val;
+					}
+					break;
+
+					// Transitions
+				case 2:
+					if (val > bestTransitionWR && isTransitionAllowed(enemyRace, bestBuild, token)) {
+						bestTransition = token;
+						bestTransitionWR = val;
+					}
 					break;
 				}
-				else {
-					double winRate = gamesPlayed > 0 ? wins / static_cast<double>(gamesPlayed) : 0;
-					double ucbVal = sqrt(2.0 * log((double)totalGamesPlayed) / gamesPlayed);
-					double val = winRate + ucbVal;
+			}
+			return;
+		};
 
-					if (val >= best) {
-						best = val;
-						currentBuild = build;
-					}
+		// Attempt to read a file from the read directory
+		ifstream readFile("bwapi-data/read/" + extension);
+		ifstream writeFile("bwapi-data/write/" + extension);
+		if (readFile)
+			parseLearningFile(readFile);
+
+		// Try to read a file from the write directory
+		else if (writeFile)
+			parseLearningFile(writeFile);
+
+		// If no file, create one
+		else {
+			if (!writeFile.good()) {
+				ss << noStats;
+				for (auto &b : myBuilds) {
+					auto &build = b.second;
+					ss << dash << " ";
+					ss << b.first << noStats;
+
+					// Load the openers for this build
+					ss << dash << " ";
+					for (auto &opener : build.openers)
+						ss << opener << noStats;
+
+
+					// Load the transitions for this build
+					ss << dash << " ";
+					for (auto &transition : build.transitions)
+						ss << transition << noStats;
 				}
 			}
 		}
-		if (!isBuildPossible(currentBuild))
+
+		// TODO: If the build is possible based on this map (we have wall/island requirements)
+		if (isBuildPossible(bestBuild) && isBuildAllowed(Broodwar->enemy()->getRace(), bestBuild)) {
+			currentBuild = bestBuild;
+			currentOpener = bestOpener;
+			currentTransition = bestTransition;
+		}
+		else
 			getDefaultBuild();
+
 	}
 
 	bool BuildOrderManager::isBuildPossible(string build)
 	{
+		Broodwar << build.c_str() << endl;
 		using namespace UnitTypes;
 		vector<UnitType> buildings, defenses;
 
-		if (Broodwar->self()->getRace() == Races::Protoss) {
-
-			if (Terrain().isIslandMap())
-				return (build == "P12Nexus" || build == "PZealotDrop" || build == "P1GateCorsair");
-
-			// Blue Storm
-			if (Broodwar->mapFileName().find("BlueStorm") != string::npos)
-				return (build == "P12Nexus" || build == "PProxy99");
-
-			// Destination - No 4Gate
-			if (Broodwar->mapFileName().find("Destination") != string::npos && build == "P4Gate")
-				return false;
-
-			if (build == "P2GateDragoon") {
-				buildings ={ Protoss_Gateway, Protoss_Gateway, Protoss_Cybernetics_Core, Protoss_Pylon };
-			}
-			else if (build == "P2GateExpand") {
+		if (Broodwar->self()->getRace() == Races::Protoss) {			
+			if (build == "P2Gate") {
 				buildings ={ Protoss_Gateway, Protoss_Gateway, Protoss_Pylon };
 				defenses.insert(defenses.end(), 6, Protoss_Photon_Cannon);
-			}
-			else if (build == "P12Nexus" || build == "P21Nexus" || build == "P3Nexus") {
-				buildings ={ Protoss_Gateway, Protoss_Cybernetics_Core, Protoss_Pylon };
 			}
 			else if (build == "PFFE" || build.find("Meme") != string::npos) {
 				buildings ={ Protoss_Gateway, Protoss_Forge, Protoss_Pylon };
 				defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
-			}
-			else if (Broodwar->mapFileName().find("Alchemist") != string::npos && build != "P4Gate") {
-				return false;
 			}
 			else
 				return true;
 		}
 
 		if (Broodwar->self()->getRace() == Races::Terran)
-			buildings ={ Terran_Barracks, Terran_Supply_Depot, Terran_Supply_Depot };					
+			buildings ={ Terran_Barracks, Terran_Supply_Depot, Terran_Supply_Depot };
 
 		if (Broodwar->self()->getRace() == Races::Zerg) {
 			buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber };
 			defenses.insert(defenses.end(), 3, Zerg_Sunken_Colony);
+			return true; // no walls for now
 		}
 
 		if (build == "T2Fact" || build == "TSparks") {
@@ -204,19 +278,12 @@ namespace McRave
 			//if (Broodwar->mapFileName().find("Alchemist") != string::npos && build != "P4Gate")
 			//	return false;
 
-			//if (enemy == Races::Zerg && (build == "PFFE" || build == "P4Gate" || build == "P2GateExpand" || build == "P1GateCorsair"))
-			//	return true;
-			//if (enemy == Races::Terran && (build == "P12Nexus" || build == "P21Nexus" || build == "PDTExpand" || build == "P2GateDragoon"))
-			//	return true;
-			//if (enemy == Races::Protoss && (build == "PZCore" || build == "P4Gate" || build == "P1GateRobo" || build == "P2GateExpand"))
-			//	return true;
-			//if (enemy == Races::Random && (build == "PZZCore" || build == "P4Gate" || build == "PFFE" || build == "P2GateExpand"))
-			//	return true;
-
-			//// HACK: Only 4gate on Alchemist
-			//if (Broodwar->mapFileName().find("Alchemist") != string::npos && build == "P4Gate")
-			//	return true;
-			return build == "P4Gate";
+			if (enemy == Races::Protoss)
+				return build == "P1GateCore" || build == "P2Gate" || build == "P12Nexus";
+			if (enemy == Races::Terran)
+				return build == "P1GateCore" || build == "P2Gate" || build == "P12Nexus" || build == "P21Nexus";
+			if (enemy == Races::Zerg)
+				return build == "P1GateCore" || build == "P2Gate" || build == "PFFE";
 		}
 
 		if (Broodwar->self()->getRace() == Races::Terran) {
@@ -225,17 +292,67 @@ namespace McRave
 			if (build == "T1RaxFE" || build == "T2RaxFE" || build == "T1FactFE")
 				return true;*/
 
-			if (build == "T2Fact")
+			if (build == "T2PortWraith")
 				return true;
 			else
 				return false;
 		}
 
 		if (Broodwar->self()->getRace() == Races::Zerg) {
-			if (find(buildNames.begin(), buildNames.end(), build) != buildNames.end())
-				return true;
+			if (Players().vZ())
+				return build == "Z9PoolSpire";
+			else
+				return build == "Z2HatchMuta";
 		}
 		return false;
+	}
+
+	bool BuildOrderManager::isTransitionAllowed(Race enemy, string build, string transition)
+	{
+		// Ban certain transitions from certain race matchups
+		auto p = enemy == Races::Protoss;
+		auto z = enemy == Races::Zerg;
+		auto t = enemy == Races::Terran;
+		auto r = enemy == Races::Unknown || Races::Random;
+
+		if (build == "P1GateCore") {
+			if (transition == "DT")
+				return t;
+			if (transition == "3GateRobo")
+				return p;
+			if (transition == "Corsair")
+				return z;
+			if (transition == "Reaver")
+				return p || t;
+			if (transition == "4Gate")
+				return true;
+		}
+
+		if (build == "P2Gate") {
+			if (transition == "DT")
+				return p;
+			if (transition == "Reaver")
+				return p || t;
+			if (transition == "Expand")
+				return p || z;
+			if (transition == "DoubleExpand")
+				return t;
+			if (transition == "ZealotRush")
+				return true;
+		}
+
+		if (build == "PFFE")
+			return z;
+
+		if (build == "P12Nexus") {
+			if (transition == "DoubleExpand" || transition == "Carriers")
+				return t;
+			if (transition == "5Gate")
+				return t || p;
+		}
+
+		if (build == "P21Nexus")
+			return t;
 	}
 
 	bool BuildOrderManager::techComplete()
@@ -256,19 +373,35 @@ namespace McRave
 	void BuildOrderManager::getDefaultBuild()
 	{
 		if (Broodwar->self()->getRace() == Races::Protoss) {
-			if (Players().getNumberProtoss() > 0)
-				currentBuild = "PZCore";
-			else if (Players().getNumberZerg() > 0)
-				currentBuild = "P4Gate";
-			else if (Players().getNumberTerran() > 0)
-				currentBuild = "P12Nexus";
-			else if (Players().getNumberRandom() > 0)
-				currentBuild = "P4Gate";
+			if (Players().getNumberProtoss() > 0) {
+				currentBuild = "P1GateCore";
+				currentOpener = "1Zealot";
+				currentTransition = "1GateRobo";
+			}
+			else if (Players().getNumberZerg() > 0) {
+				currentBuild = "P1GateCore";
+				currentOpener = "2Zealot";
+				currentTransition = "Corsair";
+			}
+			else if (Players().getNumberTerran() > 0) {
+				currentBuild = "P21Nexus";
+				currentOpener = "1Gate";
+				currentTransition = "Standard";
+			}
+			else if (Players().getNumberRandom() > 0) {
+				currentBuild = "P2Gate";
+				currentOpener = "Main";
+				currentTransition = "2GateReaver";
+			}
 		}
 		if (Broodwar->self()->getRace() == Races::Terran)
 			currentBuild = "TSparks";
-		if (Broodwar->self()->getRace() == Races::Zerg)
-			currentBuild = "Z2HatchMuta";
+		if (Broodwar->self()->getRace() == Races::Zerg) {
+			if (Players().getNumberZerg() > 0)
+				currentBuild = "Z9PoolSpire";
+			else
+				currentBuild = "Z2HatchMuta";
+		}
 		return;
 	}
 
@@ -315,7 +448,7 @@ namespace McRave
 				return true;
 		}
 		else if (Broodwar->self()->getRace() == Races::Zerg) {
-			if (Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() >= 300)
+			if (Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() >= 300 && !getOpening)
 				return true;
 		}
 		return false;
@@ -324,7 +457,7 @@ namespace McRave
 	bool BuildOrderManager::shouldAddProduction()
 	{
 		if (Broodwar->self()->getRace() == Races::Zerg) {
-			if (Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Larva) <= 1 && Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 100)
+			if (Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Larva) <= 1 && Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() >= 200 && !getOpening)
 				return true;
 		}
 		else {
@@ -338,10 +471,10 @@ namespace McRave
 	{
 		auto workerCount = Broodwar->self()->completedUnitCount(Broodwar->self()->getRace().getWorker());
 		if (Broodwar->self()->getRace() == Races::Zerg) {
-			if (Resources().isGasSaturated() && Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 100)
+			if (Resources().isGasSaturated() && Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 500)
 				return true;
 		}
-		
+
 		else if (Broodwar->self()->getRace() == Races::Protoss) {
 			if (Players().vP())
 				return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Assimilator) != 1 || workerCount >= 32 || Broodwar->self()->minerals() > 600;
@@ -506,5 +639,4 @@ namespace McRave
 			itemQueue[UnitTypes::Zerg_Lair] = Item(Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Queens_Nest) < 1);
 		}
 	}
-
 }

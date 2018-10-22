@@ -63,7 +63,7 @@ bool WorkerManager::shouldAssign(UnitInfo& worker)
 {
 	if (!worker.hasResource()
 		|| needGas()
-		|| (worker.hasResource() && !worker.getResource().getType().isMineralField() && (Broodwar->self()->visibleUnitCount(worker.getType()) <= 10 || gasWorkers > BuildOrder().gasWorkerLimit()))
+		|| (worker.hasResource() && !worker.getResource().getType().isMineralField() && gasWorkers > BuildOrder().gasWorkerLimit())
 		|| ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) && worker.hasResource() && Grids().getEGroundThreat(WalkPosition(worker.getResource().getPosition())) > 0.0))
 		return true;
 	return false;
@@ -133,7 +133,7 @@ void WorkerManager::assign(UnitInfo& worker)
 			if ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) && Grids().getEGroundThreat(WalkPosition(gas.getPosition())) > 0.0)
 				continue;
 
-			if (dist < distBest && gas.getType() != UnitTypes::Resource_Vespene_Geyser && gas.unit()->exists() && gas.unit()->isCompleted() && gas.getGathererCount() < 3 && gas.getState() > 0)
+			if (dist < distBest && gas.getType() != UnitTypes::Resource_Vespene_Geyser && gas.unit()->exists() && gas.unit()->isCompleted() && gas.getGathererCount() < 3 && gas.getState() >= 2)
 				bestResource = &gas, distBest = dist;
 		}
 		if (bestResource) {
@@ -226,7 +226,7 @@ void WorkerManager::build(UnitInfo& worker)
 		worker.setDestination(center);
 		Broodwar->drawTextMap(worker.getPosition(), "%s", worker.unit()->getOrder().c_str());
 
-		if (worker.getPosition().getDistance(center) > 128.0)
+		if (worker.getPosition().getDistance(center) > 256.0)
 			Commands().safeMove(worker);
 		else if (worker.unit()->getOrder() != Orders::PlaceBuilding || worker.unit()->isIdle())
 			worker.unit()->build(worker.getBuildingType(), worker.getBuildPosition());
@@ -274,7 +274,7 @@ void WorkerManager::returnCargo(UnitInfo& worker)
 
 
 bool WorkerManager::needGas() {
-	if (Broodwar->self()->visibleUnitCount(Broodwar->self()->getRace().getWorker()) > 10 && !Resources().isGasSaturated() && ((gasWorkers < BuildOrder().gasWorkerLimit() && BuildOrder().isOpener()) || !BuildOrder().isOpener() || Resources().isMinSaturated()))
+	if (!Resources().isGasSaturated() && ((gasWorkers < BuildOrder().gasWorkerLimit() && BuildOrder().isOpener()) || !BuildOrder().isOpener() || Resources().isMinSaturated()))
 		return true;
 	return false;
 }

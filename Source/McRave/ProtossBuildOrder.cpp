@@ -4,22 +4,11 @@ namespace McRave
 {
 	void BuildOrderManager::protossOpener()
 	{
-		if (currentBuild == "PZZCore") PZZCore();
-		if (currentBuild == "PZCore") PZCore();
-		if (currentBuild == "PNZCore") PNZCore();
-		if (currentBuild == "P4Gate") P4Gate();
+		if (currentBuild == "P1GateCore") P1GateCore();
 		if (currentBuild == "PFFE") PFFE();
 		if (currentBuild == "P12Nexus") P12Nexus();
 		if (currentBuild == "P21Nexus") P21Nexus();
-		if (currentBuild == "PDTExpand") PDTExpand();
-		if (currentBuild == "P2GateDragoon") P2GateDragoon();		
-		if (currentBuild == "PProxy6") PProxy6();
-		if (currentBuild == "PProxy99") PProxy99();
-		if (currentBuild == "P2GateExpand") P2GateExpand();
-		if (currentBuild == "P1GateRobo") P1GateRobo();
-		if (currentBuild == "P3Nexus") P3Nexus();
-		if (currentBuild == "PZealotDrop") PZealotDrop();
-		if (currentBuild == "P1GateCorsair") P1GateCorsair();
+
 
 		if (currentBuild == "PScoutMemes") PScoutMemes();
 		if (currentBuild == "PDWEBMemes") PDWEBMemes();

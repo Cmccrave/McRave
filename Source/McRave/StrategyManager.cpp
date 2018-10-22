@@ -766,8 +766,8 @@ void StrategyManager::updateMadMixScore()
 				if (!unit.getPosition().isValid() || type.isBuilding() || type.isSpell())
 					continue;
 
-				double myDPS = type.isFlyer() ? Util().airDPS(dummy) : Util().groundDPS(dummy);
-				double enemyDPS = t.isFlyer() ? Util().airDPS(unit) : Util().groundDPS(unit);
+				double myDPS = type.isFlyer() ? Math::airDPS(dummy) : Math::groundDPS(dummy);
+				double enemyDPS = t.isFlyer() ? Math::airDPS(unit) : Math::groundDPS(unit);
 
 				if (unit.getType() == UnitTypes::Terran_Medic)
 					enemyDPS = 0.775;

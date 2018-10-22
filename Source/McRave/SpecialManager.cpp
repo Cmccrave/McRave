@@ -263,6 +263,7 @@ bool CommandManager::shouldUseSpecial(UnitInfo& unit)
 
 	// Lurkers
 	else if (unit.getType() == UnitTypes::Zerg_Lurker) {
+		Broodwar->drawCircleMap(unit.getPosition(), 2, Colors::Black, true);
 		if (unit.getDestination().isValid()) {
 			if (!unit.unit()->isBurrowed() && unit.getPosition().getDistance(unit.getDestination()) < 64.0) {
 				if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Burrow)

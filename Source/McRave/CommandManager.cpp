@@ -383,8 +383,8 @@ namespace McRave
 					double mobility = 1.0; // HACK: Test ignoring mobility
 
 					double threat = Util().getHighestThreat(w, unit);
-					double grouping = (unit.getType().isFlyer() && double(Grids().getAAirCluster(w)) > 1.0) ? 2.0 : 1.0;
-					double score = grouping * mobility / (threat * distance);
+					double grouping = 1.0 + (unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)): 0.0);
+					double score = grouping / (threat * distance);
 
 					// If position is valid and better score than current, set as current best
 					if (score > best) {
@@ -403,8 +403,13 @@ namespace McRave
 	{
 		bool newOrder = Broodwar->getFrameCount() - unit.unit()->getLastCommandFrame() > Broodwar->getRemainingLatencyFrames();
 
+		// HACK: Flyers don't want to decel when out of range, so we move to the target then attack when in range
+		if (unit.getType().isFlyer() && !Util().unitInRange(unit))
+			unit.unit()->move(unit.getTarget().getPosition());
+
+
 		// DT hold position vs spider mines
-		if (unit.getType() == UnitTypes::Protoss_Dark_Templar && unit.hasTarget() && unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.getTarget().hasTarget() && unit.getTarget().getTarget().unit() == unit.unit() && !unit.getTarget().isBurrowed()) {
+		else if (unit.getType() == UnitTypes::Protoss_Dark_Templar && unit.hasTarget() && unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.getTarget().hasTarget() && unit.getTarget().getTarget().unit() == unit.unit() && !unit.getTarget().isBurrowed()) {
 			if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Hold_Position)
 				unit.unit()->holdPosition();
 		}
@@ -485,7 +490,7 @@ namespace McRave
 		auto bestPos = unit.getDestination();
 
 		// Some testing stuff
-		auto radius = 8 + int(unit.getSpeed());
+		auto radius = 12 + int(unit.getSpeed());
 		auto height = int(unit.getType().height() / 8.0);
 		auto width = int(unit.getType().width() / 8.0);
 		auto currentDist = (unit.getType().isFlyer() ? unit.getPosition().getDistance(unit.getDestination()) : mapBWEB.getGroundDistance(unit.getPosition(), unit.getDestination()));
@@ -501,14 +506,14 @@ namespace McRave
 
 				if (!w.isValid()
 					|| !Util().isMobile(start, w, unit.getType())
-					|| p.getDistance(unit.getPosition()) <= 32.0
+					|| p.getDistance(unit.getPosition()) < 32.0
 					|| distToP > radius * 8)
 					continue;
 
 				double threat = Util().getHighestThreat(w, unit);
 				double distance = (unit.getType().isFlyer() ? airDist : grdDist);
-				double visited = log(max(500.0, double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(w))));
-				double grouping = (unit.getType().isFlyer() && double(Grids().getAAirCluster(w)) > 1.0) ? 2.0 : 1.0;
+				double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(w))));
+				double grouping = exp((unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)) : 0.0));
 
 				double score = grouping * visited / (threat * distance);
 
@@ -519,7 +524,7 @@ namespace McRave
 			}
 		}
 
-		if (unit.hasTarget() && Util().getHighestThreat(unit.getWalkPosition(), unit) == MIN_THREAT && Util().unitInRange(unit)) {
+		if (unit.hasTarget() && Util().getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT && Util().unitInRange(unit)) {
 			if (shouldAttack(unit))
 				attack(unit);
 			else

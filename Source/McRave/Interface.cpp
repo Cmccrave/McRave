@@ -52,8 +52,8 @@ namespace McRave
 			int minute = time / 60;
 
 			// Display what build is being used
-			if (BuildOrder().getCurrentVariant() != "")
-				Broodwar->drawTextScreen(432, 16, "%c%s: %c%s %cvs %s", Text::White, BuildOrder().getCurrentBuild().c_str(), Text::Grey, BuildOrder().getCurrentVariant().c_str(), Text::White, Strategy().getEnemyBuild().c_str());
+			if (BuildOrder().getCurrentOpener() != "")
+				Broodwar->drawTextScreen(432, 16, "%c%s: %c%s %s", Text::White, BuildOrder().getCurrentBuild().c_str(), Text::Grey, BuildOrder().getCurrentOpener().c_str(), BuildOrder().getCurrentTransition().c_str());
 			else
 				Broodwar->drawTextScreen(432, 16, "%c%s vs %s", Text::White, BuildOrder().getCurrentBuild().c_str(), Strategy().getEnemyBuild().c_str());
 

@@ -116,7 +116,7 @@ void UnitManager::updateUnits()
 		updateStrategy(unit);
 		updateRole(unit);
 
-		auto type = unit.getType() == UnitTypes::Zerg_Egg ? unit.getBuildingType() : unit.getType();		
+		auto type = unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType() : unit.getType();		
 		myTypes[type] ++;
 
 		// If unit is not a building and deals damage, add it to global strength	
@@ -221,7 +221,7 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 		// Setup distance values
 		auto dist = ally.getEngDist();
 		auto widths = (double)ally.getType().tileWidth() * 16.0 + (double)ally.getTarget().getType().tileWidth() * 16.0;
-		auto speed = (ally.hasTransport() && ally.getTransport().unit()->exists()) ? ally.getTransport().getType().topSpeed() * 24.0 : (24.0 * ally.getSpeed());
+		auto speed = (ally.hasTransport()) ? ally.getTransport().getType().topSpeed() * 24.0 : (24.0 * ally.getSpeed());
 
 		// Setup true distance
 		auto distance = max(0.0, dist - widths);
@@ -459,7 +459,15 @@ void UnitManager::updateRole(UnitInfo& unit)
 		if (unit.getRole() == Role::None || myRoles[Role::Scouting] < myRoles[Role::Supporting] + 1)
 			unit.setRole(Role::Scouting);
 		else if (myRoles[Role::Supporting] < myRoles[Role::Scouting] + 1)
-			unit.setRole[Role::Supporting];
+			unit.setRole(Role::Supporting);
+	}
+
+	// Check if we should scout - TODO: scout count from scout manager
+	if (mapBWEB.getNaturalChoke() && BuildOrder().shouldScout() && Units().getMyRoleCount(Role::Scouting) < 1) {
+		auto type = Broodwar->self()->getRace().getWorker();
+		auto scout = Util().getClosestUnit(Position(mapBWEB.getNaturalChoke()->Center()), Broodwar->self(), type);
+		if (scout == &unit)
+			scout->setRole(Role::Scouting);
 	}
 
 	// Increment new role counter, decrement old role counter

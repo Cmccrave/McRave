@@ -69,7 +69,7 @@ namespace McRave
 				if (distanceHome[x][y] >= 1500 && distanceHome[x][y] != DBL_MAX)
 					Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Yellow);*/
 
-				if (eGroundThreat[x][y] > 0.0)
+				if (aAirCluster[x][y] > 0.0)
 					Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Blue);
 				//if (distanceHome[x][y] <= 0)
 				//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Blue);
@@ -91,7 +91,6 @@ namespace McRave
 		for (auto &u : Units().getMyUnits()) {
 
 			UnitInfo &unit = u.second;
-
 
 			// Add a visited grid for rough guideline of what we've seen by this unit recently
 			auto start = unit.getWalkPosition();
@@ -146,7 +145,7 @@ namespace McRave
 		// Collision Grid - TODO
 		for (auto &u : Broodwar->neutral()->getUnits()) {
 
-			WalkPosition start = Util().getWalkPosition(u);
+			WalkPosition start = WalkPosition(u->getTilePosition());
 			int width = u->getType().tileWidth() * 4;
 			int height = u->getType().tileHeight() * 4;
 			if (u->getType().isFlyer())
@@ -409,7 +408,7 @@ namespace McRave
 		int walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : (int)ceil(unit.getType().height() / 8.0) + 1;
 
 		// Iterate tiles and add to grid
-		WalkPosition start(Util().getWalkPosition(unit.unit()));
+		auto start = unit.getWalkPosition();
 		for (int x = start.x; x < start.x + walkWidth; x++) {
 			for (int y = start.y; y < start.y + walkHeight; y++) {
 				WalkPosition w(x, y);

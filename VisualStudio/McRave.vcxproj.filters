@@ -169,6 +169,9 @@
     <ClCompile Include="..\Source\McRave\ScoutManager.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\McRave\UnitMath.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">

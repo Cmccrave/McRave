@@ -10,6 +10,7 @@ void BuildOrderManager::zergOpener()
 		if (currentBuild == "Z2HatchHydra") Z2HatchHydra();
 		if (currentBuild == "Z3HatchBeforePool") Z3HatchBeforePool();
 		if (currentBuild == "ZLurkerTurtle") ZLurkerTurtle();
+		if (currentBuild == "Z9PoolSpire") Z9PoolSpire();
 	}
 }
 
@@ -23,10 +24,6 @@ void BuildOrderManager::zergTech()
 
 void BuildOrderManager::zergSituational()
 {
-	// TODO: Cleanup all this
-	if (Strategy().getEnemyBuild() == "PFFE")
-		itemQueue[UnitTypes::Zerg_Hatchery] = Item(5);
-
 	// Adding hatcheries when needed
 	if (shouldExpand() || shouldAddProduction())
 		itemQueue[UnitTypes::Zerg_Hatchery] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Hatchery) + Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Lair) + Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Hive) + 1);

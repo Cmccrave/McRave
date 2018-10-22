@@ -18,14 +18,9 @@ namespace McRave
 		// Returns the width of the choke in pixels
 		int chokeWidth(const BWEM::ChokePoint *);
 		const BWEM::ChokePoint * getClosestChokepoint(Position);
-
 		
-
 		// Returns the highest threat in a grid the size of the unit
 		double getHighestThreat(WalkPosition, UnitInfo&);
-		
-		// Returns the WalkPosition of the unit
-		WalkPosition getWalkPosition(Unit);
 
 		// Returns 1 if the tiles at the finish that would be under the unit meet the criteria of the options chosen
 		// If groundcheck/aircheck, then this function checks if every WalkPosition around finish has no ground/air threat

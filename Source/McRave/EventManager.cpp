@@ -92,6 +92,10 @@ namespace McRave
 					myUnits.erase(unit);
 					onUnitCreate(unit);
 					supply -= 2;
+
+					auto &info = myUnits[unit];
+					if (info.hasResource())
+						info.getResource().setGathererCount(info.getResource().getGathererCount() - 1);
 				}
 				storeUnit(unit);
 			}

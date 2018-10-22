@@ -1,12 +1,5 @@
 #include "McRave.h"
 
-
-
-WalkPosition UtilManager::getWalkPosition(Unit unit)
-{
-
-}
-
 bool UtilManager::isSafe(WalkPosition end, UnitType unitType, bool groundCheck, bool airCheck)
 {
 	int walkWidth = int(ceil(unitType.width() / 8.0));
@@ -33,6 +26,11 @@ bool UtilManager::isMobile(WalkPosition start, WalkPosition end, UnitType unitTy
 	int walkHeight = (int)ceil(unitType.height() / 8.0) + 1;
 	int halfW = walkWidth / 2;
 	int halfH = walkHeight / 2;
+
+	if (unitType.isFlyer()) {
+		halfW += 2;
+		halfH += 2;
+	}
 
 	// If WalkPosition shared with WalkPositions under unit, ignore it
 	auto const overlapsUnit = [&](const int x, const int y) {
@@ -169,9 +167,9 @@ bool UtilManager::pullRepairWorker(UnitInfo& unit)
 			+ Broodwar->self()->completedUnitCount(UnitTypes::Terran_Battlecruiser)
 			+ Broodwar->self()->completedUnitCount(UnitTypes::Terran_Valkyrie);
 
-		if ((mechUnits > 0 && Units().getRepairWorkers() < Units().getSupply() / 30)
-			|| (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) > 0 && BuildOrder().isFastExpand() && Units().getRepairWorkers() < 2))
-			return true;
+		//if ((mechUnits > 0 && Units().getRepairWorkers() < Units().getSupply() / 30)
+		//	|| (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) > 0 && BuildOrder().isFastExpand() && Units().getRepairWorkers() < 2))
+		//	return true;
 	}
 	return false;
 }
@@ -181,8 +179,8 @@ double UtilManager::getHighestThreat(WalkPosition here, UnitInfo& unit)
 	// Determine highest threat possible here
 	auto t = unit.getType();
 	auto highest = MIN_THREAT;
-	auto dx = ceil(t.width() / 16.0);		// Half walk resolution width
-	auto dy = ceil(t.height() / 16.0);		// Half walk resolution height
+	auto dx = int(ceil(t.width() / 16.0));		// Half walk resolution width
+	auto dy = int(ceil(t.height() / 16.0));		// Half walk resolution height
 
 	for (int x = here.x - dx; x < here.x + dx; x++) {
 		for (int y = here.y - dy; y < here.y + dy; y++) {

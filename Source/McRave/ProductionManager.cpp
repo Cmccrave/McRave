@@ -52,7 +52,7 @@ namespace McRave
 
 	void ProductionManager::MadMix(UnitInfo& building)
 	{
-		auto needOverlords = Units().getMyTypeCount(UnitTypes::Zerg_Overlord) < min(22, (int)floor((Units().getSupply() / max(14, 16 - Units().getMyTypeCount(UnitTypes::Zerg_Overlord)))));
+		auto needOverlords = Units().getMyTypeCount(UnitTypes::Zerg_Overlord) <= min(22, (int)floor((Units().getSupply() / max(14, 16 - Units().getMyTypeCount(UnitTypes::Zerg_Overlord)))));
 
 		if (building.unit()->getLarva().size() == 0)
 			idleProduction[building.unit()] = UnitTypes::Zerg_Larva;
@@ -77,6 +77,10 @@ namespace McRave
 					if (BuildOrder().isUnitUnlocked(type.first) && value > best && isCreateable(building.unit(), type.first) && (isAffordable(type.first) || type.first == Strategy().getHighestUnitScore()) && isSuitable(type.first)) {
 						best = value, typeBest = type.first;
 					}
+
+					if (BuildOrder().isUnitUnlocked(type.first) && isCreateable(building.unit(), type.first) && (isAffordable(type.first) || type.first == Strategy().getHighestUnitScore()) && isSuitable(type.first)) {
+						Broodwar << unit.c_str() << "   " << value << endl;
+					}					
 				}
 				
 				if (typeBest != UnitTypes::None) {					
@@ -105,7 +109,7 @@ namespace McRave
 			double gas = unit.gasPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->gas() - reservedGas - Buildings().getQueuedGas()) / (double)unit.gasPrice())) : 1.0;
 			double score = max(0.01, Strategy().getUnitScore(unit));
 			double value = score * mineral * gas;
-
+			
 			if (unit.isAddon() && BuildOrder().getItemQueue().find(unit) != BuildOrder().getItemQueue().end() && BuildOrder().getItemQueue().at(unit).getActualCount() > Broodwar->self()->visibleUnitCount(unit)) {
 				building.unit()->buildAddon(unit);
 				break;
@@ -184,8 +188,8 @@ namespace McRave
 
 	bool ProductionManager::isAffordable(UnitType unit)
 	{
-		auto mineralReserve = int(BuildOrder().isTechUnit(unit)) * reservedMineral;
-		auto gasReserve = int(BuildOrder().isTechUnit(unit)) * reservedGas;
+		auto mineralReserve = int(!BuildOrder().isTechUnit(unit)) * reservedMineral;
+		auto gasReserve = int(!BuildOrder().isTechUnit(unit)) * reservedGas;
 		auto mineralAffordable = (Broodwar->self()->minerals() > unit.mineralPrice() + Buildings().getQueuedMineral() + mineralReserve) || unit.mineralPrice() == 0;
 		auto gasAffordable = (Broodwar->self()->gas() > unit.gasPrice() + Buildings().getQueuedGas() + gasReserve) || unit.gasPrice() == 0;
 

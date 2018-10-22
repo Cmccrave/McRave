@@ -28,21 +28,15 @@ void ScoutManager::updateScouts()
 	if (Strategy().getEnemyBuild() == "Z5Pool" && Units().getEnemyCount(UnitTypes::Zerg_Zergling) >= 5)
 		scoutCount = 0;
 
-	// If we have too few scouts
-	if (mapBWEB.getNaturalChoke() && BuildOrder().shouldScout() && Units().getMyRoleCount(Role::Scouting) < scoutCount) {
-		auto type = Broodwar->self()->getRace().getWorker();
-		auto scout = Util().getClosestUnit(Position(mapBWEB.getNaturalChoke()->Center()), Broodwar->self(), type);
-		if (scout)
-			scout->setRole(Role::Scouting);
-	}
-
 	// If we have too many scouts
 	// TODO: Add removal
 
 	for (auto &u : Units().getMyUnits()) {
 		auto &unit = u.second;
-		if (unit.getRole() == Role::Scouting)
+		if (unit.getRole() == Role::Scouting) {
 			scout(unit);
+			Broodwar->drawCircleMap(unit.getPosition(), 8, Colors::Purple, true);
+		}
 	}
 }
 
@@ -106,7 +100,7 @@ void ScoutManager::scout(UnitInfo& unit)
 			unit.setDestination(Terrain().getEnemyStartingPosition());
 
 		if (unit.getDestination().isValid())
-			explore(unit);
+			Commands().hunt(unit);
 
 		Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Green);
 	}
@@ -126,24 +120,4 @@ void ScoutManager::scout(UnitInfo& unit)
 		if (posBest.isValid() && unit.unit()->getOrderTargetPosition() != posBest)
 			unit.unit()->move(posBest);
 	}
-}
-
-void ScoutManager::explore(UnitInfo& unit)
-{
-	auto bestPosition = unit.getDestination();
-	auto enemy = Util().getClosestThreat(unit);
-	auto enemyClose = enemy && !enemy->getType().isWorker() && enemy->getPosition().getDistance(unit.getPosition()) <= 320.0;
-
-	//// If unit isn't a threat
-	//if (unit.getPosition().getDistance(unit.getDestination()) > 256.0 && !enemyClose) {
-
-	//	if (unit.unit()->getLastCommand().getTargetPosition() != bestPosition) {
-	//		unit.unit()->move(bestPosition);
-	//		Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Blue);
-	//	}
-	//}
-	//else
-		Commands().hunt(unit);
-
-
 }

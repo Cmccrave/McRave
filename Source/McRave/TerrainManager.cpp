@@ -171,8 +171,8 @@ void TerrainManager::findDefendPosition()
 	Position oldDefendPosition = defendPosition;
 	reverseRamp = Broodwar->getGroundHeight(mapBWEB.getMainTile()) < Broodwar->getGroundHeight(mapBWEB.getNaturalTile());
 	flatRamp = Broodwar->getGroundHeight(mapBWEB.getMainTile()) == Broodwar->getGroundHeight(mapBWEB.getNaturalTile());
-	narrowNatural = int(mapBWEB.getNaturalChoke()->Pos(mapBWEB.getNaturalChoke()->end1).getDistance(mapBWEB.getNaturalChoke()->Pos(mapBWEB.getNaturalChoke()->end2)) / 4) <= 2;
-	defendNatural = (mapBWEB.getNaturalChoke() && (BuildOrder().buildCount(baseType) > 1 || Broodwar->self()->visibleUnitCount(baseType) > 1 || (defendPosition == Position(mapBWEB.getNaturalChoke()->Center())) || reverseRamp));
+	narrowNatural = mapBWEB.getNaturalChoke() ? int(mapBWEB.getNaturalChoke()->Pos(mapBWEB.getNaturalChoke()->end1).getDistance(mapBWEB.getNaturalChoke()->Pos(mapBWEB.getNaturalChoke()->end2)) / 4) <= 2 : false;
+	defendNatural = mapBWEB.getNaturalChoke() ? BuildOrder().buildCount(baseType) > 1 || Broodwar->self()->visibleUnitCount(baseType) > 1 || defendPosition == Position(mapBWEB.getNaturalChoke()->Center()) || reverseRamp : false;
 
 	if (islandMap) {
 		defendPosition = mapBWEB.getMainPosition();

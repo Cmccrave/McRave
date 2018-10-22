@@ -22,10 +22,26 @@ namespace McRave
 		int const getActualCount() { return actualCount; }
 	};
 
+	struct Build {
+		vector <string> transitions;
+		vector <string> openers;
+	};
+	
 	class BuildOrderManager
 	{
+		// Testing new build stuff
+		map <string, Build> myBuilds;
+		stringstream ss;
+		string currentBuild = "";
+		string currentOpener = "";
+		string currentTransition = "";
+		void getDefaultBuild();
+		bool isBuildAllowed(Race, string);
+		bool isTransitionAllowed(Race, string, string);
+		bool isBuildPossible(string);
+
 		map <UnitType, Item> itemQueue;
-		bool getOpening, getTech, bioBuild, wallNat, wallMain, scout, productionSat, techSat;
+		bool getOpening = true, getTech, bioBuild, wallNat, wallMain, scout, productionSat, techSat;
 		bool fastExpand, proxy, hideTech, playPassive, rush;
 		UpgradeType firstUpgrade;
 		TechType firstTech;
@@ -33,9 +49,8 @@ namespace McRave
 		UnitType productionUnit;
 		set <UnitType> techList, unlockedType;
 		vector <string> buildNames;
-		string currentBuild = "None";
-		string currentVariant = "";
-		stringstream ss;
+		
+		
 		int satVal, prodVal, techVal, baseVal;
 		int gasLimit = INT_MAX;
 		int zealotLimit = INT_MAX;
@@ -43,9 +58,7 @@ namespace McRave
 		int lingLimit = INT_MAX;
 		int droneLimit = INT_MAX;
 
-		void getDefaultBuild();
-		bool isBuildAllowed(Race, string);
-		bool isBuildPossible(string);
+
 		void updateBuild();
 
 		void getNewTech();
@@ -60,7 +73,9 @@ namespace McRave
 
 		UnitType getTechUnit() { return techUnit; }
 		string getCurrentBuild() { return currentBuild; }
-		string getCurrentVariant() { return currentVariant; }
+		string getCurrentOpener() { return currentOpener; }
+		string getCurrentTransition() { return currentTransition; }
+
 		UpgradeType getFirstUpgrade() { return firstUpgrade; }
 		TechType getFirstTech() { return firstTech; }
 		set <UnitType>& getTechList() { return techList; }	
@@ -94,19 +109,26 @@ namespace McRave
 		void PScoutMemes(), PDWEBMemes(), PArbiterMemes(), PShuttleMemes();	// Gimmick builds	
 
 		void PFFE();									// FFE - "http://liquipedia.net/starcraft/Protoss_FE_(vs._Zerg)"		
-		void PZZCore(), PZCore(), PNZCore();			// 1Gate Core - "http://liquipedia.net/starcraft/1_Gate_Core_(vs._Protoss)"	
 		void PProxy99();								// 2Gate Proxy - "http://liquipedia.net/starcraft/2_Gateway_(vs._Zerg)"		
 		void PProxy6();
 		void P4Gate();									// 4Gate - "http://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)"
 		void P2GateExpand();							// 2Gate Expand		
-		void P12Nexus();								// 12 Nexus - "http://liquipedia.net/starcraft/12_Nexus"		
-		void P21Nexus();								// 21 Nexus - "http://liquipedia.net/starcraft/21_Nexus"		
+		void P12Nexus();										
+		void P21Nexus();										
 		void PDTExpand();								// DT Expand - "http://liquipedia.net/starcraft/DT_Fast_Expand_(vs._Terran)"		
 		void P2GateDragoon();							// 2 Gate Dragoon - "http://liquipedia.net/starcraft/10/15_Gates_(vs._Terran)"		
 		void P1GateRobo();								// 1 Gate Robo - "http://liquipedia.net/starcraft/1_Gate_Reaver"
 		void P3Nexus();									// Triple Nexus
 		void PZealotDrop();								
 		void P1GateCorsair();							// 1 Gate Corsair
+
+		void P1GateCore();
+		//void P2Gate();
+		//void PFFE();
+		//void P21Nexus();
+		//void P12Nexus();
+
+
 
 		void Reaction2GateDefensive();
 		void Reaction2GateAggresive();

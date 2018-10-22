@@ -2,7 +2,7 @@
 #define s Units().getSupply()
 using namespace UnitTypes;
 
-namespace McRave 
+namespace McRave
 {
 	static int vis(UnitType t) {
 		return Broodwar->self()->visibleUnitCount(t);
@@ -25,10 +25,10 @@ namespace McRave
 		gasLimit		= INT_MAX;
 		firstUpgrade	= UpgradeTypes::Metabolic_Boost;
 		firstTech		= TechTypes::None;
-		scout			= false;
+		scout			= s >= 22;
 
-		lingLimit = vis(Zerg_Lair) == 1 ? vis(Zerg_Spawning_Pool) * 6 : 0;
-		droneLimit = lingSpeed() ? INT_MAX : 12;
+		lingLimit = vis(Zerg_Lair) == 1 ? 0 : vis(Zerg_Spawning_Pool) * 6;
+		droneLimit = 14;
 
 		if (Terrain().isIslandMap()) {
 			firstUpgrade = UpgradeTypes::Zerg_Flyer_Attacks;
@@ -36,11 +36,11 @@ namespace McRave
 			itemQueue[Zerg_Extractor]				= Item((vis(Zerg_Hatchery) >= 3 && (s >= 30)));
 			itemQueue[Zerg_Hatchery]				= Item(1 + (s >= 24) + (s >= 26));
 		}
-		else if (Players().vP()){
+		else if (Players().vP()) {
 			itemQueue[Zerg_Hatchery]				= Item(1 + (s >= 24) + (com(Zerg_Lair) >= 1) + (com(Zerg_Hatchery) >= 3));
 			itemQueue[Zerg_Spawning_Pool]			= Item((vis(Zerg_Hatchery) >= 2 && s >= 22));
 			itemQueue[Zerg_Extractor]				= Item((vis(Zerg_Spawning_Pool) >= 1 && s >= 24) + (vis(Zerg_Lair)));
-			itemQueue[Zerg_Lair]					= Item(Broodwar->self()->gas() > 90);	
+			itemQueue[Zerg_Lair]					= Item(Broodwar->self()->gas() > 90);
 		}
 		else if (Players().vT()) {
 			firstUpgrade	= vis(Zerg_Lair) > 0 ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
@@ -144,7 +144,7 @@ namespace McRave
 		gasLimit		= 3;
 		firstUpgrade	= UpgradeTypes::None;
 		firstTech		= TechTypes::Lurker_Aspect;
-		scout			= vis(Zerg_Spawning_Pool) > 0;		
+		scout			= vis(Zerg_Spawning_Pool) > 0;
 		playPassive		= true;
 
 		if (vis(Zerg_Hydralisk_Den) > 0)
@@ -155,7 +155,7 @@ namespace McRave
 		itemQueue[Zerg_Extractor]				= Item(vis(Zerg_Spawning_Pool) >= 1);
 		itemQueue[Zerg_Hydralisk_Den]			= Item(Broodwar->self()->gas() > 40);
 		itemQueue[Zerg_Lair]					= Item(vis(Zerg_Hydralisk_Den) >= 1);
-		itemQueue[Zerg_Creep_Colony]			= Item(3*(com(Zerg_Hatchery) >= 2));
+		itemQueue[Zerg_Creep_Colony]			= Item(3 * (com(Zerg_Hatchery) >= 2));
 	}
 
 	void BuildOrderManager::Z9PoolSpire()
@@ -166,25 +166,16 @@ namespace McRave
 		firstTech		= TechTypes::None;
 		scout			= false;
 		droneLimit		= 10;
-		lingLimit		= 6;
-
-		//9 - Spawning Pool
-		//	8 - Drone
-		//	9 - Extractor
-		//	8 - Overlord
-		//	8 - Drone
-		//	@100% Extractor - Put 3 Drones on Gas(See Gas Mining Technique)
-		//	@100% Spawning Pool - 6 Zerglings
-		//	@First 100 gas, research Zergling Speed(See Speed or Lair first)
-		//	@Second 100 gas, start Lair upgrade(See Speed or Lair first)
-		//	16 / 17 - Overlord
-		//	@100% Lair - Begin Spire construction
+		lingLimit		= 12;
 
 		auto gas100 = Broodwar->self()->gas() >= 100;
 
 		itemQueue[Zerg_Spawning_Pool]			= Item(s >= 18);
 		itemQueue[Zerg_Extractor]				= Item((s >= 18 && vis(Zerg_Spawning_Pool) > 0));
+		itemQueue[Zerg_Lair]					= Item(gas100 && vis(Zerg_Spawning_Pool) > 0);
 		itemQueue[Zerg_Spire]					= Item(lingSpeed() && gas100);
-		
+
+		if (vis(Zerg_Lair) > 0)
+			techUnit = Zerg_Mutalisk;
 	}
 }

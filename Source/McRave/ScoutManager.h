@@ -12,7 +12,6 @@ namespace McRave
 		void updateScouts();
 
 		void scout(UnitInfo&);
-		void explore(UnitInfo&);
 
 		set<Position> scoutAssignments;
 		int scoutCount;
