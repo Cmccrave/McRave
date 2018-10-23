@@ -153,7 +153,7 @@ namespace McRave
 		// Assume enemy targets
 		else if (player && player->isEnemy(Broodwar->self())) {
 
-			if (unitType == UnitTypes::Terran_Vulture_Spider_Mine && thisUnit->getOrderTarget() && thisUnit->getOrderTarget()->getPlayer() == Broodwar->self())
+			if (unitType == UnitTypes::Terran_Vulture_Spider_Mine && Units.getMyUnits().find(thisUnit->getOrderTarget()) != Units.getMyUnits().end())
 				target = &Units.getMyUnits()[thisUnit->getOrderTarget()];
 			else if (unitType != UnitTypes::Terran_Vulture_Spider_Mine && thisUnit->getOrderTarget() && Units.getMyUnits().find(thisUnit->getOrderTarget()) != Units.getMyUnits().end())
 				target = &Units.getMyUnits()[thisUnit->getOrderTarget()];

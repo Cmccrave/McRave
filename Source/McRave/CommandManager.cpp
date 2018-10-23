@@ -64,12 +64,14 @@ namespace McRave
 
 	void CommandManager::updateDecision(UnitInfo& unit)
 	{
-		bool attackCooldown = (Broodwar->getFrameCount() - unit.getLastAttackFrame() <= unit.getMinStopFrame() - Broodwar->getRemainingLatencyFrames());
+		bool attackCooldown = Broodwar->getFrameCount() - unit.getLastAttackFrame() <= unit.getMinStopFrame() - Broodwar->getRemainingLatencyFrames();
+		bool latencyCooldown =	Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;
 
 		if (!unit.unit() || !unit.unit()->exists()																							// Prevent crashes	
 			|| unit.getType() == UnitTypes::Protoss_Interceptor																				// Interceptors don't need commands
 			|| unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted()		// If the unit is locked down, maelstrommed, stassised, or not completed	
-			|| (unit.getType() != UnitTypes::Protoss_Carrier && attackCooldown))															// If the unit is not ready to perform an action after an attack (certain units have minimum frames after an attack before they can receive a new command)
+			|| (unit.getType() != UnitTypes::Protoss_Carrier && attackCooldown)																// If the unit is not ready to perform an action after an attack (certain units have minimum frames after an attack before they can receive a new command)
+			|| latencyCooldown)
 			return;
 
 		// Unstick a unit

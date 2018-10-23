@@ -147,6 +147,10 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 	auto unitSpeed = unit.getSpeed() * 24.0;
 	auto sync = false;
 
+	// Testing
+	auto belowGrdLimits = false;
+	auto belowAirLimits = false;
+
 	// If we have excessive resources, ignore our simulation and engage
 	if (!ignoreSim && Broodwar->self()->minerals() >= 2000 && Broodwar->self()->gas() >= 2000 && Units().getSupply() >= 380)
 		ignoreSim = true;
@@ -172,10 +176,10 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 			continue;
 
 		// Distance parameters
-		auto tempPosition = (enemy.unit()->exists() && enemy.unit()->getOrder() == Orders::AttackUnit) ? enemy.unit()->getOrderTargetPosition() : enemy.getPosition();
+		//auto tempPosition = (enemy.unit()->exists() && enemy.unit()->getOrder() == Orders::AttackUnit) ? enemy.unit()->getOrderTargetPosition() : enemy.getPosition();
 		auto widths = (double)enemy.getType().tileWidth() * 16.0 + (double)unit.getType().tileWidth() * 16.0;
 		auto enemyRange = (unit.getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange());
-		auto airDist = tempPosition.getDistance(unit.getPosition());
+		auto airDist = enemy.getPosition().getDistance(unit.getPosition());
 
 		// True distance
 		auto distance = airDist - enemyRange - widths;
@@ -199,6 +203,9 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 		else
 			continue;
 
+		if (enemy.getType() == UnitTypes::Zerg_Sunken_Colony)
+			Broodwar->drawTextMap(unit.getPosition(), "%.2f", simRatio);
+
 		// Situations where an enemy should be treated as stronger than it actually is
 		if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && !enemy.unit()->isDetected())
 			simRatio = simRatio * 2.0;
@@ -215,7 +222,8 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 	for (auto &a : myUnits) {
 		auto &ally = a.second;
 
-		if (!ally.hasTarget() || ally.unit()->isStasised() || ally.unit()->isMorphing())
+		// HACK: Add fighting role check
+		if (!ally.hasTarget() || ally.unit()->isStasised() || ally.unit()->isMorphing() || ally.getType() == UnitTypes::Protoss_Observer || ally.getType() == UnitTypes::Protoss_Arbiter || ally.getType() == UnitTypes::Protoss_Shuttle)
 			continue;
 
 		// Setup distance values
@@ -256,6 +264,11 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 
 		allyLocalGroundStrength += ally.getVisibleGroundStrength() * simRatio;
 		allyLocalAirStrength += ally.getVisibleAirStrength() * simRatio;
+
+		if (ally.getType().isFlyer() && ally.getSimValue() < maxThreshold && ally.getSimValue() != 0.0)
+			belowAirLimits = true;
+		if (!ally.getType().isFlyer() && ally.getSimValue() < maxThreshold && ally.getSimValue() != 0.0)
+			belowGrdLimits = true;
 	}
 
 	double airair = enemyLocalAirStrength > 0.0 ? allyLocalAirStrength / enemyLocalAirStrength : 10.0;
@@ -264,7 +277,7 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 	double grdgrd = enemyLocalGroundStrength > 0.0 ? allyLocalGroundStrength / enemyLocalGroundStrength : 10.0;
 
 	if (unit.hasTarget()) {
-
+		
 		if (unit.getPosition().getDistance(unit.getSimPosition()) > 720.0)
 			unit.setLocalStrategy(0);
 
@@ -276,6 +289,8 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 			else if (unit.getType().isFlyer() && enemyLocalAirStrength == 0.0)
 				unit.setLocalStrategy(1);
 			else if (grdair < minThreshold && grdgrd < minThreshold)
+				unit.setLocalStrategy(0);
+			else if (belowGrdLimits || belowAirLimits)
 				unit.setLocalStrategy(0);
 
 			Display().displaySim(unit, (grdgrd + grdair) / 2.0);
@@ -290,6 +305,8 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 				unit.setLocalStrategy(1);
 			else if (airgrd < minThreshold && airair < minThreshold)
 				unit.setLocalStrategy(0);
+			else if (belowGrdLimits || belowAirLimits)
+				unit.setLocalStrategy(0);
 
 			Display().displaySim(unit, (airgrd + airair) / 2.0);
 			unit.setSimValue((airgrd + airair) / 2.0);
@@ -302,6 +319,8 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 					unit.setLocalStrategy(1);
 				else if (airair < minThreshold)
 					unit.setLocalStrategy(0);
+				else if (belowAirLimits)
+					unit.setLocalStrategy(0);
 
 				Display().displaySim(unit, airair);
 				unit.setSimValue(airair);
@@ -311,6 +330,8 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 				if (airgrd >= maxThreshold)
 					unit.setLocalStrategy(1);
 				else if (airgrd < minThreshold)
+					unit.setLocalStrategy(0);
+				else if (belowAirLimits)
 					unit.setLocalStrategy(0);
 
 				Display().displaySim(unit, airgrd);
@@ -325,6 +346,8 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 					unit.setLocalStrategy(1);
 				else if (grdair < minThreshold)
 					unit.setLocalStrategy(0);
+				else if (belowGrdLimits)
+					unit.setLocalStrategy(0);
 
 				Display().displaySim(unit, grdair);
 				unit.setSimValue(grdair);
@@ -334,6 +357,8 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 				if (grdgrd >= maxThreshold)
 					unit.setLocalStrategy(1);
 				else if (grdgrd < minThreshold)
+					unit.setLocalStrategy(0);
+				else if (belowGrdLimits)
 					unit.setLocalStrategy(0);
 
 				Display().displaySim(unit, grdgrd);
@@ -385,7 +410,7 @@ void UnitManager::updateStrategy(UnitInfo& unit)
 	if (unit.hasTarget()) {
 
 		auto fightingAtHome = ((Terrain().isInAllyTerritory(unit.getTilePosition()) && Util().unitInRange(unit)) || Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()));
-		auto invisTarget = unit.getTarget().unit() && (unit.getTarget().unit()->isCloaked() || unit.getTarget().isBurrowed()) && !unit.getTarget().unit()->isDetected() && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= unit.getTarget().getGroundRange() + 160;
+		auto invisTarget = unit.getTarget().unit() && (unit.getTarget().unit()->isCloaked() || unit.getTarget().isBurrowed()) && !unit.getTarget().unit()->isDetected() && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= unit.getTarget().getGroundRange() + 100.0;
 
 		// Force engaging
 		if (!invisTarget && (Units().isThreatening(unit.getTarget())

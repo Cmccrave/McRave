@@ -224,14 +224,14 @@ namespace McRave
 			getOpening =		s < 100;
 			currentTransition =	"NeoBisu";
 			firstUpgrade =		UpgradeTypes::Protoss_Air_Weapons;
-			auto twoCannons =	Units().getEnemyCount(Zerg_Zergling) >= 5;
-			auto threeCannons = Strategy().getEnemyBuild() == "Z1HatchHydra";
+			auto twoCannons =	Units().getEnemyCount(Zerg_Zergling) >= 5 && vis(Protoss_Forge) > 0;
+			auto threeCannons = Strategy().getEnemyBuild() == "Z1HatchHydra" && vis(Protoss_Forge) > 0;
 
 			itemQueue[Protoss_Nexus] =				Item(1 + (s >= 32));
 			itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
 			itemQueue[Protoss_Gateway] =			Item((s >= 34));
 			itemQueue[Protoss_Forge] =				Item(s >= 18, s >= 20);
-			itemQueue[Protoss_Photon_Cannon] =		Item((s >= 22) + (twoCannons)+(2 * threeCannons), (com(Protoss_Forge) >= 1) + (twoCannons)+(2 * threeCannons));
+			itemQueue[Protoss_Photon_Cannon] =		Item((s >= 22 && vis(Protoss_Forge) > 0) + (twoCannons)+(2 * threeCannons), (com(Protoss_Forge) >= 1) + (twoCannons)+(2 * threeCannons));
 			itemQueue[Protoss_Assimilator] =		Item((vis(Protoss_Gateway) >= 1) + (vis(Protoss_Stargate) >= 1));
 			itemQueue[Protoss_Cybernetics_Core] =	Item(vis(Protoss_Zealot) >= 1);
 			itemQueue[Protoss_Citadel_of_Adun] =	Item(vis(Protoss_Assimilator) >= 2);

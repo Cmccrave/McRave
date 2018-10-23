@@ -121,7 +121,7 @@ namespace McRave
 
 			// Add used tiles back to grid
 			else if (!building.unit()->isFlying() && building.unit()->getLastCommand().getType() == UnitCommandTypes::Land)
-				mapBWEB.onUnitDiscover(building.unit()); 
+				mapBWEB.onUnitDiscover(building.unit());
 		}
 
 		// Comsat scans - Move to special manager
@@ -143,11 +143,10 @@ namespace McRave
 		for (auto &u : Units().getMyUnits()) {
 			UnitInfo &unit = u.second;
 
-			if (unit.getRole() == Role::Working) {
-				if (unit.getBuildingType().isValid() && unit.getBuildPosition().isValid() && (unit.getBuildingType().isRefinery() || mapBWEB.getUsedTiles().find(unit.getBuildPosition()) == mapBWEB.getUsedTiles().end())) {
-					buildingsQueued[unit.getBuildPosition()] = unit.getBuildingType();
-				}
+			if (unit.getBuildingType().isValid() && unit.getBuildPosition().isValid() && (unit.getBuildingType().isRefinery() || mapBWEB.getUsedTiles().find(unit.getBuildPosition()) == mapBWEB.getUsedTiles().end())) {
+				buildingsQueued[unit.getBuildPosition()] = unit.getBuildingType();
 			}
+
 		}
 
 		// Add up how many more buildings of each type we need

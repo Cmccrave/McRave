@@ -130,7 +130,7 @@ void WorkerManager::assign(UnitInfo& worker)
 		for (auto &g : Resources().getMyGas()) {
 			ResourceInfo &gas = g.second;
 			double dist = gas.getPosition().getDistance(worker.getPosition());
-			if ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) && Grids().getEGroundThreat(WalkPosition(gas.getPosition())) > 0.0)
+			if (!gas.unit() || ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) && Grids().getEGroundThreat(WalkPosition(gas.getPosition())) > 0.0))
 				continue;
 
 			if (dist < distBest && gas.getType() != UnitTypes::Resource_Vespene_Geyser && gas.unit()->exists() && gas.unit()->isCompleted() && gas.getGathererCount() < 3 && gas.getState() >= 2)
