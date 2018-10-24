@@ -361,8 +361,8 @@ namespace McRave
 			auto best = 0.0;
 			auto posBest = Positions::Invalid;
 
-			for (int x = start.x - 12; x < start.x + 16; x++) {
-				for (int y = start.y - 12; y < start.y + 16; y++) {
+			for (int x = start.x - 6; x < start.x + 10; x++) {
+				for (int y = start.y - 6; y < start.y + 10; y++) {
 					WalkPosition w(x, y);
 					Position p = Position(w) + Position(4, 4);
 
@@ -380,7 +380,7 @@ namespace McRave
 					else if (unit.hasTarget() && (Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()) || Terrain().isInAllyTerritory(unit.getTilePosition())))
 						distance = 1.0 / (32.0 + p.getDistance(unit.getTarget().getPosition()));
 					else
-						distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(mapBWEB.getMainPosition()) : exp(Grids().getDistanceHome(w));
+						distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(mapBWEB.getMainPosition()) : Grids().getDistanceHome(w);
 
 					double mobility = 1.0; // HACK: Test ignoring mobility
 

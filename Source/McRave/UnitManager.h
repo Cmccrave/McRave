@@ -39,6 +39,8 @@ namespace McRave
 		double minThreshold, maxThreshold;
 		int supply;
 		int repWorkers;
+
+		void updateUnitSizes();
 	public:
 		int getRepairWorkers() { return repWorkers; }
 

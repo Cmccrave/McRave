@@ -300,12 +300,12 @@ bool CommandManager::shouldUseSpecial(UnitInfo& unit)
 
 	// General: Shield Battery Use
 	if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Shield_Battery) > 0 && (unit.unit()->getGroundWeaponCooldown() > Broodwar->getRemainingLatencyFrames() || unit.unit()->getAirWeaponCooldown() > Broodwar->getRemainingLatencyFrames()) && unit.getType().maxShields() > 0 && (unit.unit()->getShields() <= 10 || (unit.unit()->getShields() < unit.getType().maxShields() && unit.unit()->getOrderTarget() && unit.unit()->getOrderTarget()->exists() && unit.unit()->getOrderTarget()->getType() == UnitTypes::Protoss_Shield_Battery && unit.unit()->getOrderTarget()->getEnergy() >= 10))) {
-		/*UnitInfo* battery = Util().getClosestAllyBuilding(unit, Filter::GetType == UnitTypes::Protoss_Shield_Battery && Filter::Energy >= 10 && Filter::IsCompleted);
-		if (battery && ((unit.getType().isFlyer() && (!unit.hasTarget() || (unit.getTarget().getPosition().getDistance(unit.getPosition()) >= 320))) || unit.unit()->getDistance(battery->getPosition()) < 320)) {
+		UnitInfo* battery = Util().getClosestUnit(unit.getPosition(), unit.getPlayer(), UnitTypes::Protoss_Shield_Battery);
+		if (battery && battery->unit()->isCompleted() && battery->getEnergy() > 10 && ((unit.getType().isFlyer() && (!unit.hasTarget() || (unit.getTarget().getPosition().getDistance(unit.getPosition()) >= 320))) || unit.unit()->getDistance(battery->getPosition()) < 320)) {
 			if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Right_Click_Unit || unit.unit()->getLastCommand().getTarget() != battery->unit())
 				unit.unit()->rightClick(battery->unit());
 			return true;
-		}*/
+		}
 	}
 
 	// General: Bunker Loading/Unloading

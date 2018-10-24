@@ -3,8 +3,27 @@
 void UnitManager::onFrame()
 {
 	Display().startClock();
+	updateUnitSizes();
 	updateUnits();
 	Display().performanceTest(__FUNCTION__);
+}
+
+void UnitManager::updateUnitSizes()
+{
+	allySizes.clear();
+	enemySizes.clear();
+
+	for (auto &u : myUnits) {
+		auto &unit = u.second;
+		if (unit.getRole() == Role::Fighting)
+			allySizes[unit.getType().size()]++;
+	}
+
+	for (auto &u : enemyUnits) {
+		auto &unit = u.second;
+		if (!unit.getType().isBuilding() && !unit.getType().isWorker())
+			enemySizes[unit.getType().size()]++;
+	}
 }
 
 void UnitManager::updateUnits()
@@ -202,9 +221,6 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 		}
 		else
 			continue;
-
-		if (enemy.getType() == UnitTypes::Zerg_Sunken_Colony)
-			Broodwar->drawTextMap(unit.getPosition(), "%.2f", simRatio);
 
 		// Situations where an enemy should be treated as stronger than it actually is
 		if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && !enemy.unit()->isDetected())

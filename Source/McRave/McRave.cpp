@@ -17,15 +17,14 @@
 // Scarabs and Mines being used in sim?
 // SafeMove gets workers stuck on bridges
 // getConcavePosition and isMobile are expensive on CPU
+// Worker pulls - units start to scout?
 
 // *** Restructuring ***
 // Scouts
 // Production
 // Pylons - add enemy, could use for artosis pylons
 // Scanner targets
-// Defense grids
 // Remove global/local strategy -> use combat state
-// Recode unit sizes map
 // Commands to boxes rather than circles (for storm, dweb, etc)
 
 // *** Future Improvements ***
@@ -37,7 +36,6 @@
 // Goal management
 // Build detection
 // Observer building timings
-// 12 Nexus -> 2 gate 2 zealot -> goons, see Mini vs Flash ASL
 // Limit DWEB cast range
 
 void McRaveModule::onStart()

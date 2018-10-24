@@ -96,46 +96,7 @@ namespace McRave
 		itemQueue[Protoss_Shield_Battery] =			Item(vis(Protoss_Zealot) >= 2 && vis(Protoss_Pylon) >= 2);
 		itemQueue[Protoss_Cybernetics_Core] =		Item(s >= 58);
 	}
-
-	void BuildOrderManager::Reaction4Gate() {
-		firstUpgrade =		UpgradeTypes::Singularity_Charge;
-		firstTech =			TechTypes::None;
-		scout =				vis(Protoss_Gateway) > 0;
-		zealotLimit =		INT_MAX;
-		dragoonLimit =		INT_MAX;
-		gasLimit =			INT_MAX;
-
-		if (Players().vZ()) {
-			getOpening =			s < 120;
-
-			itemQueue[Protoss_Nexus] =				Item(1);
-			itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
-			itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 24) + (s >= 62) + (s >= 70));
-			itemQueue[Protoss_Assimilator] =		Item(s >= 44);
-			itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 50);
-		}
-		else {
-			getOpening =			s < 140;
-			zealotLimit	=			2;
-
-			itemQueue[Protoss_Nexus] =				Item(1);
-			itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
-			itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 54) + (2 * (s >= 62)));
-			itemQueue[Protoss_Assimilator] =		Item(s >= 32);
-			itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 34);
-		}
-	}
-
-	void BuildOrderManager::P4Gate()
-	{
-		if (enemyBuild() == "P2Gate")
-			Reaction2GateDefensive();
-		else if (Strategy().enemyGasSteal())
-			Reaction2Gate();
-		else
-			Reaction4Gate();
-	}
-
+	
 	void BuildOrderManager::PFFE()
 	{
 		fastExpand =		true;
@@ -151,7 +112,18 @@ namespace McRave
 		dragoonLimit =		0;
 
 		auto min100 = Broodwar->self()->minerals() >= 100;
+		auto cannonCount = int(com(Protoss_Forge) > 0) + (Units().getEnemyCount(Zerg_Zergling) >= 6) + (Units().getEnemyCount(Zerg_Zergling) >= 12) + (Units().getEnemyCount(Zerg_Zergling) >= 24);
 
+		// TODO: If scout died, go to 2 cannons, if next scout dies, go 3 cannons		
+		if (enemyBuild() == "Z2HatchHydra")
+			cannonCount = 5;
+		else if (enemyBuild() == "Z3HatchHydra")
+			cannonCount = 4;
+		else if (enemyBuild() == "Z2HatchMuta")
+			cannonCount = 7;
+		else if (enemyBuild() == "Z3HatchMuta")
+			cannonCount = 8;
+		
 		// Reactions
 		if ((enemyBuild() == "Unknown" && !Terrain().getEnemyStartingPosition().isValid()) || enemyBuild() == "Z9Pool")
 			false;// currentTransition = "Defensive";
@@ -168,54 +140,37 @@ namespace McRave
 			itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
 			itemQueue[Protoss_Gateway] =			Item((s >= 32) + (s >= 46));
 			itemQueue[Protoss_Forge] =				Item(s >= 20);
-			itemQueue[Protoss_Photon_Cannon] =		Item((vis(Protoss_Forge) > 0 && min100) + (vis(Protoss_Photon_Cannon) > 0));
 		}
 		else if (currentOpener == "Nexus") {
 			itemQueue[Protoss_Nexus] =				Item(1 + (s >= 24));
 			itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
 			itemQueue[Protoss_Gateway] =			Item(vis(Protoss_Forge) > 0);
 			itemQueue[Protoss_Forge] =				Item(vis(Protoss_Nexus) >= 2);
-			itemQueue[Protoss_Photon_Cannon] =		Item((vis(Protoss_Forge) > 0 && min100) + (vis(Protoss_Photon_Cannon) > 0));
 		}
 		else if (currentOpener == "Gate") {
 			itemQueue[Protoss_Nexus] =				Item(1 + (s >= 42));
 			itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 24), (s >= 16) + (s >= 24));
 			itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 46));
 			itemQueue[Protoss_Forge] =				Item(s >= 60);
-			itemQueue[Protoss_Photon_Cannon] =		Item((vis(Protoss_Forge) > 0 && min100) + (vis(Protoss_Photon_Cannon) > 0));
 		}
 
 		// Transitions
-		if (currentTransition == "Defensive") {					
-			
-		}
-		else if (currentTransition == "StormRush") {
+		if (currentTransition == "StormRush") {
 			firstUpgrade =		UpgradeTypes::None;
 			firstTech =			TechTypes::Psionic_Storm;
 			techUnit =			Protoss_High_Templar;
-
-			if (Units().getEnemyCount(UnitTypes::Zerg_Hydralisk) > 0) {
-				if (enemyBuild() == "Z2HatchHydra")
-					itemQueue[Protoss_Photon_Cannon] =		Item((s >= 30) + (3 * (s >= 46)));
-				else
-					itemQueue[Protoss_Photon_Cannon] =		Item((s >= 30) + (3 * (s >= 50)) + (2 * (s >= 54)));
-			}
-			
+						
+			itemQueue[Protoss_Photon_Cannon] =		Item(cannonCount);
 			itemQueue[Protoss_Assimilator] =		Item((s >= 38) + (s >= 60));
 			itemQueue[Protoss_Cybernetics_Core] =	Item((s >= 42));
 		}
 
 		// Muta bust, get Corsairs and Cannon defensively
-		else if (enemyBuild() == "Z2HatchMuta" || enemyBuild() == "Z3HatchMuta") {
-			currentTransition =	"DoubleStargate";
+		else if (currentTransition == "DoubleStargate") {			
 			firstUpgrade =		UpgradeTypes::Protoss_Air_Weapons;
 			firstTech =			TechTypes::None;
-
-			itemQueue[Protoss_Nexus] =				Item(1 + (s >= 24));
-			itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
-			itemQueue[Protoss_Gateway] =			Item((s >= 26));
-			itemQueue[Protoss_Forge] =				Item((s >= 28));
-			itemQueue[Protoss_Photon_Cannon] =		Item(4 * (vis(Protoss_Stargate) > 0) + (s >= 74));
+						
+			itemQueue[Protoss_Photon_Cannon] =		Item(cannonCount);
 			itemQueue[Protoss_Assimilator] =		Item((s >= 38) + (s >= 60));
 			itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 40);
 			itemQueue[Protoss_Stargate] =			Item((vis(Protoss_Corsair) > 0) + (vis(Protoss_Cybernetics_Core) > 0));
@@ -224,14 +179,8 @@ namespace McRave
 			getOpening =		s < 100;
 			currentTransition =	"NeoBisu";
 			firstUpgrade =		UpgradeTypes::Protoss_Air_Weapons;
-			auto twoCannons =	Units().getEnemyCount(Zerg_Zergling) >= 5 && vis(Protoss_Forge) > 0;
-			auto threeCannons = Strategy().getEnemyBuild() == "Z1HatchHydra" && vis(Protoss_Forge) > 0;
-
-			itemQueue[Protoss_Nexus] =				Item(1 + (s >= 32));
-			itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
-			itemQueue[Protoss_Gateway] =			Item((s >= 34));
-			itemQueue[Protoss_Forge] =				Item(s >= 18, s >= 20);
-			itemQueue[Protoss_Photon_Cannon] =		Item((s >= 22 && vis(Protoss_Forge) > 0) + (twoCannons)+(2 * threeCannons), (com(Protoss_Forge) >= 1) + (twoCannons)+(2 * threeCannons));
+						
+			itemQueue[Protoss_Photon_Cannon] =		Item(cannonCount);
 			itemQueue[Protoss_Assimilator] =		Item((vis(Protoss_Gateway) >= 1) + (vis(Protoss_Stargate) >= 1));
 			itemQueue[Protoss_Cybernetics_Core] =	Item(vis(Protoss_Zealot) >= 1);
 			itemQueue[Protoss_Citadel_of_Adun] =	Item(vis(Protoss_Assimilator) >= 2);
@@ -241,11 +190,6 @@ namespace McRave
 	}
 
 
-
-	void BuildOrderManager::PDTExpand()
-	{
-
-	}
 
 	void BuildOrderManager::P2GateDragoon()
 	{
@@ -430,12 +374,7 @@ namespace McRave
 			}
 		}
 	}
-
-	void BuildOrderManager::P1GateRobo()
-	{
 		
-	}
-
 	void BuildOrderManager::P3Nexus()
 	{
 		fastExpand =		true;
@@ -477,10 +416,6 @@ namespace McRave
 		itemQueue[Protoss_Robotics_Facility] =	Item(com(Protoss_Cybernetics_Core) > 0);
 	}
 
-	void BuildOrderManager::P1GateCorsair()
-	{
-
-	}
 
 
 

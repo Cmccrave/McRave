@@ -353,6 +353,7 @@ namespace McRave
 
 		if (build == "P21Nexus")
 			return t;
+		return false;
 	}
 
 	bool BuildOrderManager::techComplete()
