@@ -75,6 +75,7 @@ void McRaveModule::onFrame()
 
 	// Update commands
 	Goals().onFrame();
+	Support::onFrame();
 	Commands().onFrame();
 	Workers().onFrame();
 	Scouts().onFrame();

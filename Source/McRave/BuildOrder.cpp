@@ -215,7 +215,6 @@ namespace McRave
 
 	bool BuildOrderManager::isBuildPossible(string build)
 	{
-		Broodwar << build.c_str() << endl;
 		using namespace UnitTypes;
 		vector<UnitType> buildings, defenses;
 

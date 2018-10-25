@@ -115,8 +115,6 @@ namespace McRave
 			else
 				kite(unit);
 		}
-
-
 	}
 
 	bool CommandManager::shouldAttack(UnitInfo& unit)
@@ -332,10 +330,9 @@ namespace McRave
 
 	void CommandManager::kite(UnitInfo& unit)
 	{
-		// If unit has a transport, move to it or load into it - TODO: add scarab count upgrade check
-		// HACK: This is just for Reavers atm, add HT before AIIDE hopefully
+		// If unit has a transport, move to it or load into it
 		if (unit.hasTransport() && unit.getTransport().unit()->exists()) {
-			if (unit.getType() == UnitTypes::Protoss_Reaver && unit.unit()->getScarabCount() != 5)
+			if (unit.getType() == UnitTypes::Protoss_Reaver && unit.unit()->getScarabCount() != MAX_SCARAB)
 				unit.unit()->rightClick(unit.getTransport().unit());
 			else if (unit.getType() == UnitTypes::Protoss_High_Templar && unit.getEnergy() < 75)
 				unit.unit()->rightClick(unit.getTransport().unit());

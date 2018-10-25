@@ -1,119 +1,5 @@
 #include "McRave.h"
 
-void CommandManager::updateArbiter(UnitInfo& arbiter)
-{
-	double scoreBest = 0.0;
-	Position posBest(Grids().getArmyCenter());
-	WalkPosition start(arbiter.getWalkPosition());
-
-	for (int x = start.x - 20; x <= start.x + 20; x++) {
-		for (int y = start.y - 20; y <= start.y + 20; y++) {
-			WalkPosition w(x, y);
-			Position p(w);
-			if (!w.isValid()
-				|| p.getDistance(arbiter.getPosition()) <= 64
-				|| Commands().isInDanger(p)
-				|| Commands().overlapsCommands(arbiter.unit(), arbiter.getType(), p, 96))
-				continue;
-
-			auto threat = 1.0 + Util().getHighestThreat(w, arbiter);
-			auto cluster = 1.0 + Grids().getAGroundCluster(w) + Grids().getAAirCluster(w);
-			auto dist = 1.0 + p.getDistance(Grids().getArmyCenter());
-
-			if (arbiter.unit()->getShields() <= 20 && threat > 0.0)
-				continue;
-
-			double score = 1.0 / (threat * cluster * dist);
-			if (score > scoreBest) {
-				scoreBest = score;
-				posBest = p;
-			}
-		}
-	}
-
-	// Move and update commands
-	if (posBest.isValid()) {
-		arbiter.setEngagePosition(posBest);
-		arbiter.unit()->move(posBest);
-		Commands().addCommand(arbiter.unit(), posBest, arbiter.getType());
-	}
-	else {
-		//UnitInfo* closest = Util().getClosestAllyUnit(arbiter);
-		//if (closest && closest->getPosition().isValid())
-		//	arbiter.unit()->move(closest->getPosition());
-	}
-
-	// If there's a stasis target, cast stasis on it		
-	if (arbiter.hasTarget() && arbiter.getTarget().unit()->exists() && arbiter.unit()->getEnergy() >= TechTypes::Stasis_Field.energyCost() && !Commands().overlapsCommands(arbiter.unit(), TechTypes::Psionic_Storm, arbiter.getTarget().getPosition(), 96)) {
-		if ((Grids().getEGroundCluster(arbiter.getTarget().getWalkPosition()) + Grids().getEAirCluster(arbiter.getTarget().getWalkPosition())) > STASIS_LIMIT) {
-			arbiter.unit()->useTech(TechTypes::Stasis_Field, arbiter.getTarget().unit());
-			Commands().addCommand(arbiter.unit(), arbiter.getTarget().getPosition(), TechTypes::Stasis_Field);
-		}
-	}
-}
-
-void CommandManager::updateDetector(UnitInfo& detector)
-{
-	UnitType building = Broodwar->self()->getRace().getResourceDepot();
-	Position posBest(Grids().getArmyCenter());
-
-	// HACK: Spells dont move
-	if (detector.getType() == UnitTypes::Spell_Scanner_Sweep) {
-		Commands().addCommand(detector.unit(), detector.getPosition(), UnitTypes::Spell_Scanner_Sweep);
-		return;
-	}
-
-	// Overlord scouting, need to use something different
-	if (!Terrain().getEnemyStartingPosition().isValid())
-		posBest = Terrain().closestUnexploredStart();
-
-	// Check if any expansions need detection on them
-	else if (Broodwar->self()->completedUnitCount(detector.getType()) > 1 && BuildOrder().buildCount(building) > Broodwar->self()->visibleUnitCount(building) && !Commands().overlapsCommands(detector.unit(), detector.getType(), (Position)Buildings().getCurrentExpansion(), 320))
-		posBest = Position(Buildings().getCurrentExpansion());
-
-	// Check if there is a unit that needs revealing
-	else {
-		Position destination(posBest);
-		double scoreBest = 0.0;
-		WalkPosition start = detector.getWalkPosition();
-
-		if (detector.hasTarget() && detector.getTarget().getPosition().isValid())
-			destination = detector.getTarget().getPosition();
-
-		UnitInfo * ally = Util().getClosestUnit(detector.getDestination(), Broodwar->self());
-
-		for (int x = start.x - 20; x <= start.x + 20; x++) {
-			for (int y = start.y - 20; y <= start.y + 20; y++) {
-
-				WalkPosition w(x, y);
-				Position p(w);
-
-				if (!w.isValid()
-					|| Commands().overlapsCommands(detector.unit(), detector.getType(), p, 64)
-					|| p.getDistance(detector.getPosition()) <= 64
-					|| (detector.unit()->isCloaked() && Commands().overlapsEnemyDetection(p) && Grids().getEAirThreat(w) > 0.0)
-					|| (!detector.unit()->isCloaked() && Grids().getEAirThreat(w) > 0.0))
-					continue;
-
-				double score = ((double)Grids().getAGroundCluster(w) + (double)Grids().getAGroundCluster(w)) / p.getDistance(destination);
-				if (detector.hasTarget() && ally && ally->getPosition().getDistance(detector.getTarget().getPosition()) < 320.0 && !Commands().overlapsCommands(detector.unit(), detector.getType(), detector.getTarget().getPosition(), 128))
-					score = 1.0 / p.getDistance(destination);
-
-				if (score > scoreBest) {
-					scoreBest = score;
-					posBest = p;
-				}
-			}
-		}
-	}
-
-	if (posBest.isValid()) {
-		detector.setEngagePosition(posBest);
-		detector.unit()->move(posBest);
-		Commands().addCommand(detector.unit(), posBest, detector.getType());
-	}
-}
-
 bool CommandManager::shouldUseSpecial(UnitInfo& unit)
 {
 	Position p(unit.getEngagePosition());
@@ -159,35 +45,35 @@ bool CommandManager::shouldUseSpecial(UnitInfo& unit)
 
 	// SCV
 	else if (unit.getType() == UnitTypes::Terran_SCV) {
-		/*UnitInfo* mech = Util().getClosestAllyUnit(unit, Filter::IsMechanical && Filter::HP_Percent < 100);
-		if (!Strategy().enemyRush() && mech && mech->unit() && unit.getPosition().getDistance(mech->getPosition()) <= 320 && Grids().getMobility(mech->getWalkPosition()) > 0) {
-			if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != mech->unit())
-				unit.unit()->repair(mech->unit());
-			return true;
-		}
+		//UnitInfo* mech = Util().getClosestUnit(unit, Filter::IsMechanical && Filter::HP_Percent < 100);
+		//if (!Strategy().enemyRush() && mech && mech->unit() && unit.getPosition().getDistance(mech->getPosition()) <= 320 && Grids().getMobility(mech->getWalkPosition()) > 0) {
+		//	if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != mech->unit())
+		//		unit.unit()->repair(mech->unit());
+		//	return true;
+		//}
 
-		UnitInfo* building = Util().getClosestAllyBuilding(unit, Filter::GetPlayer == Broodwar->self() && Filter::IsCompleted && Filter::HP_Percent < 100);
-		if (building && building->unit() && (!Strategy().enemyRush() || building->getType() == UnitTypes::Terran_Bunker)) {
-			if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != building->unit())
-				unit.unit()->repair(building->unit());
-			return true;
-		}*/
+		//UnitInfo* building = Util().getClosestUnit(unit, Filter::GetPlayer == Broodwar->self() && Filter::IsCompleted && Filter::HP_Percent < 100);
+		//if (building && building->unit() && (!Strategy().enemyRush() || building->getType() == UnitTypes::Terran_Bunker)) {
+		//	if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != building->unit())
+		//		unit.unit()->repair(building->unit());
+		//	return true;
+		//}
 	}
 
-	//// Siege Tanks
-	//else if (unit.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) {
-	//	if (unit.getPosition().getDistance(unit.getEngagePosition()) < 32.0 && unit.shouldEngage())
-	//		unit.unit()->siege();
-	//	if (unit.getCombatState() == CombatState::Retreating && unit.getPosition().getDistance(Terrain().getDefendPosition()) < 320)
-	//		unit.unit()->siege();
-	//}
-	//else if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode) {
-	//	if (unit.getPosition().getDistance(unit.getEngagePosition()) > 128.0 || unit.shouldRetreat()) {
-	//		if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Unsiege)
-	//			unit.unit()->unsiege();
-	//		return true;
-	//	}
-	//}
+	// Siege Tanks
+	else if (unit.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) {
+		if (unit.getPosition().getDistance(unit.getEngagePosition()) < 32.0 && unit.getCombatState() == CombatState::Engaging)
+			unit.unit()->siege();
+		if (unit.getCombatState() == CombatState::Retreating && unit.getPosition().getDistance(Terrain().getDefendPosition()) < 320)
+			unit.unit()->siege();
+	}
+	else if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode) {
+		if (unit.getPosition().getDistance(unit.getEngagePosition()) > 128.0 || unit.getCombatState() == CombatState::Retreating) {
+			if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Unsiege)
+				unit.unit()->unsiege();
+			return true;
+		}
+	}
 
 	// Vultures
 	else if (unit.getType() == UnitTypes::Terran_Vulture && Broodwar->self()->hasResearched(TechTypes::Spider_Mines) && unit.unit()->getSpiderMineCount() > 0 && unit.getPosition().getDistance(unit.getSimPosition()) <= 400 && Broodwar->getUnitsInRadius(unit.getPosition(), 4, Filter::GetType == UnitTypes::Terran_Vulture_Spider_Mine).size() <= 0) {
@@ -204,39 +90,50 @@ bool CommandManager::shouldUseSpecial(UnitInfo& unit)
 			unit.unit()->useTech(TechTypes::Cloaking_Field);
 	}
 
-	// Arbiters
-	else if (unit.getType() == UnitTypes::Protoss_Arbiter) {
-		updateArbiter(unit);
-		return true;
-	}
-
 	// Archons
-	else if (unit.getType() == UnitTypes::Protoss_High_Templar && (Strategy().getUnitScore(UnitTypes::Protoss_Archon) > Strategy().getUnitScore(UnitTypes::Protoss_High_Templar) || (unit.unit()->getEnergy() < 75 && Grids().getEGroundThreat(unit.getWalkPosition()) > 0.0))) {
-		//UnitInfo* templar = Util().getClosestAllyUnit(unit, Filter::GetType == UnitTypes::Protoss_High_Templar && Filter::Energy < TechTypes::Psionic_Storm.energyCost());
-		//if (templar && templar->unit() && templar->unit()->exists() && (Strategy().getUnitScore(UnitTypes::Protoss_Archon) > Strategy().getUnitScore(UnitTypes::Protoss_High_Templar) || Grids().getEGroundThreat(templar->getWalkPosition()) > 0.0)) {
-		//	if (templar->unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp && unit.unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp) {
-		//		unit.unit()->useTech(TechTypes::Archon_Warp, templar->unit());
-		//		Broodwar->drawTextMap(unit.getPosition(), "WARPING");
-		//	}
-		//	return true;
-		//}
+	else if (unit.getType() == UnitTypes::Protoss_High_Templar) {
+
+		// If unit has low energy and is threatened or we want more archons
+		auto lowEnergyThreat = unit.getEnergy() < TechTypes::Psionic_Storm.energyCost() && Grids().getEGroundThreat(unit.getWalkPosition()) > 0.0;
+		auto wantArchons = Strategy().getUnitScore(UnitTypes::Protoss_Archon) > Strategy().getUnitScore(UnitTypes::Protoss_High_Templar);
+
+		if (lowEnergyThreat || wantArchons) {
+
+			// Try to find a friendly templar who is low energy and is threatened
+			UnitInfo* templar = Util().getClosestUnit(unit, unit.getPlayer(), UnitTypes::Protoss_High_Templar);
+			auto friendLowEnergyThreat = templar->getEnergy() < TechTypes::Psionic_Storm.energyCost() && Grids().getEGroundThreat(templar->getWalkPosition()) > 0.0;
+
+			// Warp together if wasn't last command
+			if (templar && (wantArchons || friendLowEnergyThreat)) {
+				if (templar->unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp && unit.unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp) {
+					unit.unit()->useTech(TechTypes::Archon_Warp, templar->unit());
+					Broodwar->drawTextMap(unit.getPosition(), "WARPING");
+				}
+				return true;
+			}
+		}
 	}
 
 	// Carriers
-	else if (unit.getType() == UnitTypes::Protoss_Carrier && unit.unit()->getInterceptorCount() < 4 + (4 * Broodwar->self()->getUpgradeLevel(UpgradeTypes::Carrier_Capacity))) {
+	else if (unit.getType() == UnitTypes::Protoss_Carrier && unit.unit()->getInterceptorCount() < MAX_INTERCEPTOR && !unit.unit()->isTraining()) {
 		unit.unit()->train(UnitTypes::Protoss_Interceptor);
 		return false;
 	}
 
 	// Corsairs
 	else if (unit.getType() == UnitTypes::Protoss_Corsair && unit.unit()->getEnergy() >= TechTypes::Disruption_Web.energyCost() && Broodwar->self()->hasResearched(TechTypes::Disruption_Web)) {
-		double distBest = DBL_MAX;
-		Position posBest = Positions::Invalid;
-		for (auto&e : Units().getEnemyUnits()) {
-			UnitInfo& enemy = e.second;
-			double dist = enemy.getPosition().getDistance(unit.getPosition());
-			if (dist < distBest && !overlapsCommands(unit.unit(), TechTypes::Disruption_Web, enemy.getPosition(), 96) && enemy.unit()->isAttacking() && enemy.getSpeed() <= UnitTypes::Protoss_Reaver.topSpeed())
-				distBest = dist, posBest = enemy.getPosition();
+		auto distBest = DBL_MAX;
+		auto posBest = Positions::Invalid;
+
+		// Find an enemy that is attacking and is slow
+		for (auto &e : Units().getEnemyUnits()) {
+			auto &enemy = e.second;
+			auto dist = enemy.getPosition().getDistance(unit.getPosition());
+
+			if (dist < distBest && dist < 256.0 && !overlapsCommands(unit.unit(), TechTypes::Disruption_Web, enemy.getPosition(), 96) && enemy.unit()->isAttacking() && enemy.getSpeed() <= UnitTypes::Protoss_Reaver.topSpeed()) {
+				distBest = dist;
+				posBest = enemy.getPosition();
+			}
 		}
 		if (posBest.isValid()) {
 			addCommand(unit.unit(), posBest, TechTypes::Disruption_Web);
@@ -246,7 +143,7 @@ bool CommandManager::shouldUseSpecial(UnitInfo& unit)
 	}
 
 	// Reavers
-	else if (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && unit.unit()->getScarabCount() < 5 + (5 * Broodwar->self()->getUpgradeLevel(UpgradeTypes::Reaver_Capacity))) {
+	else if (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && unit.unit()->getScarabCount() < MAX_SCARAB && !unit.unit()->isTraining()) {
 		unit.unit()->train(UnitTypes::Protoss_Scarab);
 		unit.setLastAttackFrame(Broodwar->getFrameCount());	/// Use this to fudge whether a Reaver has actually shot when using shuttles due to cooldown reset
 		return false;
@@ -263,7 +160,6 @@ bool CommandManager::shouldUseSpecial(UnitInfo& unit)
 
 	// Lurkers
 	else if (unit.getType() == UnitTypes::Zerg_Lurker) {
-		Broodwar->drawCircleMap(unit.getPosition(), 2, Colors::Black, true);
 		if (unit.getDestination().isValid()) {
 			if (!unit.unit()->isBurrowed() && unit.getPosition().getDistance(unit.getDestination()) < 64.0) {
 				if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Burrow)
@@ -321,20 +217,13 @@ bool CommandManager::shouldUseSpecial(UnitInfo& unit)
 	//	//}
 	//}
 
-	// General: Detectors
-	if (unit.getType().isDetector()) {
-		updateDetector(unit);
-
-		// Science Vessels
-		if (unit.getType() == UnitTypes::Terran_Science_Vessel && unit.unit()->getEnergy() >= TechTypes::Defensive_Matrix) {
-			//UnitInfo* ally = Util().getClosestAllyUnit(unit, Filter::IsUnderAttack);
-			//if (ally && ally->getPosition().getDistance(unit.getPosition()) < 640)
-			//	unit.unit()->useTech(TechTypes::Defensive_Matrix, ally->unit());
-		}
-		else if (unit.getType() == UnitTypes::Zerg_Overlord) {}
-		// TODO: Check for transport commands here
-
+	// Science Vessels
+	if (unit.getType() == UnitTypes::Terran_Science_Vessel && unit.unit()->getEnergy() >= TechTypes::Defensive_Matrix) {
+		//UnitInfo* ally = Util().getClosestAllyUnit(unit, Filter::IsUnderAttack);
+		//if (ally && ally->getPosition().getDistance(unit.getPosition()) < 640)
+		//	unit.unit()->useTech(TechTypes::Defensive_Matrix, ally->unit());
 		return true;
 	}
+
 	return false;
 }

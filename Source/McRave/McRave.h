@@ -12,6 +12,9 @@
 #define MIN_THREAT 0.01
 #define SIM_RADIUS 640.0
 
+#define MAX_SCARAB 5 + (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Reaver_Capacity) * 5)
+#define MAX_INTERCEPTOR 4 + (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Carrier_Capacity) * 4)
+
 // Namespaces
 using namespace BWAPI;
 using namespace BWEM;
@@ -59,6 +62,7 @@ namespace
 #include "ResourceManager.h"
 #include "ScoutManager.h"
 #include "StrategyManager.h"
+#include "SupportManager.h"
 #include "TargetManager.h"
 #include "TerrainManager.h"
 #include "TransportManager.h"

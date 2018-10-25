@@ -349,7 +349,7 @@ namespace McRave
 		int speed = int(max(unit.getSpeed(), 1.0));
 
 		// HACK: Need to use width/height properly and find how to balance buildings better
-		int pixelSize = unit.getType().isBuilding() ? (unit.getType().tileWidth()) * 32.0 : max(unit.getType().width(), unit.getType().height());
+		int pixelSize = unit.getType().isBuilding() ? (unit.getType().tileWidth()) * 32 : max(unit.getType().width(), unit.getType().height());
 		int walkSize = int(ceil(pixelSize / 8));
 
 		int grdReach = int(max(unit.getGroundRange(), 32.0) + (speed * 24.0) + (pixelSize / 2)) + 1;

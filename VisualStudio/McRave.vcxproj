@@ -64,6 +64,7 @@
     <ClCompile Include="..\Source\McRave\SpecialManager.cpp" />
     <ClCompile Include="..\Source\McRave\StationManager.cpp" />
     <ClCompile Include="..\Source\McRave\StrategyManager.cpp" />
+    <ClCompile Include="..\Source\McRave\SupportManager.cpp" />
     <ClCompile Include="..\Source\McRave\TargetManager.cpp" />
     <ClCompile Include="..\Source\McRave\TerrainManager.cpp" />
     <ClCompile Include="..\Source\McRave\TerranBuildOrder.cpp" />
@@ -118,6 +119,7 @@
     <ClInclude Include="..\Source\McRave\Singleton.h" />
     <ClInclude Include="..\Source\McRave\StationManager.h" />
     <ClInclude Include="..\Source\McRave\StrategyManager.h" />
+    <ClInclude Include="..\Source\McRave\SupportManager.h" />
     <ClInclude Include="..\Source\McRave\TargetManager.h" />
     <ClInclude Include="..\Source\McRave\TerrainManager.h" />
     <ClInclude Include="..\Source\McRave\TransportManager.h" />
@@ -247,6 +249,7 @@
       <ImportLibrary>$(IntDir)$(TargetName).lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
       <AdditionalDependencies>../lib/BWAPI.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>/ignore:4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='McRaveZ|Win32'">

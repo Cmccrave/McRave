@@ -235,6 +235,26 @@ UnitInfo * UtilManager::getClosestUnit(Position here, Player p, UnitType t) {
 	return best;
 }
 
+UnitInfo * UtilManager::getClosestUnit(UnitInfo& source, Player p, UnitType t) {
+	double distBest = DBL_MAX;
+	UnitInfo* best = nullptr;
+	auto &units = (p == Broodwar->self()) ? Units().getMyUnits() : Units().getEnemyUnits();
+
+	for (auto &u : units) {
+		UnitInfo &unit = u.second;
+
+		if (!unit.unit() || source.unit() == unit.unit() || (t != UnitTypes::None && unit.getType() != t))
+			continue;
+
+		double dist = source.getPosition().getDistance(unit.getPosition());
+		if (dist < distBest) {
+			best = &unit;
+			distBest = dist;
+		}
+	}
+	return best;
+}
+
 UnitInfo * UtilManager::getClosestThreat(UnitInfo& unit)
 {
 	double distBest = DBL_MAX;

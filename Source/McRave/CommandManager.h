@@ -27,11 +27,9 @@ namespace McRave
 	class UnitInfo;
 	class CommandManager
 	{
-		//double allyRange, enemyRange, widths;
 		vector <CommandType> myCommands;
 		vector <CommandType> enemyCommands;
 
-		void updateArbiter(UnitInfo&), updateDetector(UnitInfo&);
 		void updateUnits(), updateDecision(UnitInfo&), updateEnemyCommands();
 
 		

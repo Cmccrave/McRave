@@ -12,6 +12,7 @@ namespace McRave
 	public:
 
 		UnitInfo * getClosestUnit(Position, Player, UnitType t = UnitTypes::None);
+		UnitInfo * getClosestUnit(UnitInfo&, Player, UnitType t = UnitTypes::None);
 		UnitInfo * getClosestThreat(UnitInfo&);
 		UnitInfo * getClosestBuilder(Position);
 

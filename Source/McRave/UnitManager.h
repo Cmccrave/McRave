@@ -10,7 +10,6 @@ using namespace std;
 namespace McRave
 {
 	class UnitInfo;
-	class UnitInfo;
 	class UnitManager
 	{
 		map <Unit, UnitInfo> enemyUnits;
