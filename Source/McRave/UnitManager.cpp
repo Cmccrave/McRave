@@ -131,9 +131,12 @@ void UnitManager::updateUnits()
 			continue;
 
 		unit.updateUnit();
-		updateLocalSimulation(unit);
-		updateStrategy(unit);
 		updateRole(unit);
+
+		if (unit.getRole() == Role::Fighting) {
+			updateLocalSimulation(unit);
+			updateStrategy(unit);
+		}		
 
 		auto type = unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType() : unit.getType();		
 		myTypes[type] ++;
@@ -176,13 +179,8 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 	if (ignoreSim && Broodwar->self()->minerals() <= 500 || Broodwar->self()->gas() <= 500 || Units().getSupply() <= 240)
 		ignoreSim = false;
 
-	if (ignoreSim) {
-		unit.setLocalStrategy(1);
-		return;
-	}
-
-	if (Terrain().isIslandMap() && !unit.getType().isFlyer()) {
-		unit.setLocalStrategy(1);
+	if (ignoreSim || (Terrain().isIslandMap() && !unit.getType().isFlyer())) {
+		unit.setCombatState(CombatState::Engaging);
 		return;
 	}
 
@@ -281,148 +279,40 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 		allyLocalGroundStrength += ally.getVisibleGroundStrength() * simRatio;
 		allyLocalAirStrength += ally.getVisibleAirStrength() * simRatio;
 
-		if (ally.getType().isFlyer() && ally.getSimValue() < maxThreshold && ally.getSimValue() != 0.0)
-			belowAirLimits = true;
-		if (!ally.getType().isFlyer() && ally.getSimValue() < maxThreshold && ally.getSimValue() != 0.0)
-			belowGrdLimits = true;
+		if (simRatio > 0.0) {
+			if (ally.getType().isFlyer() && ally.getSimValue() < maxThreshold && ally.getSimValue() != 0.0)
+				belowAirLimits = true;
+			if (!ally.getType().isFlyer() && ally.getSimValue() < maxThreshold && ally.getSimValue() != 0.0)
+				belowGrdLimits = true;
+		}
 	}
 
-	double airair = enemyLocalAirStrength > 0.0 ? allyLocalAirStrength / enemyLocalAirStrength : 10.0;
-	double airgrd = enemyLocalGroundStrength > 0.0 ? allyLocalAirStrength / enemyLocalGroundStrength : 10.0;
-	double grdair = enemyLocalAirStrength > 0.0 ? allyLocalGroundStrength / enemyLocalAirStrength : 10.0;
-	double grdgrd = enemyLocalGroundStrength > 0.0 ? allyLocalGroundStrength / enemyLocalGroundStrength : 10.0;
+	double attackAirAsAir = enemyLocalAirStrength > 0.0 ? allyLocalAirStrength / enemyLocalAirStrength : 10.0;
+	double attackAirAsGround = enemyLocalGroundStrength > 0.0 ? allyLocalAirStrength / enemyLocalGroundStrength : 10.0;
+	double attackGroundAsAir = enemyLocalAirStrength > 0.0 ? allyLocalGroundStrength / enemyLocalAirStrength : 10.0;
+	double attackGroundasGround = enemyLocalGroundStrength > 0.0 ? allyLocalGroundStrength / enemyLocalGroundStrength : 10.0;
+	double simValue = 0.0;
 
+	// If unit has a target, decide on its simValue based on whether we are syncing or not
 	if (unit.hasTarget()) {
-		
-		if (unit.getPosition().getDistance(unit.getSimPosition()) > 720.0)
-			unit.setLocalStrategy(0);
-
-		// If simulations need to be synchdd
-		else if (sync && !unit.getTarget().getType().isFlyer()) {
-
-			if (grdair >= maxThreshold && grdgrd >= maxThreshold)
-				unit.setLocalStrategy(1);
-			else if (unit.getType().isFlyer() && enemyLocalAirStrength == 0.0)
-				unit.setLocalStrategy(1);
-			else if (grdair < minThreshold && grdgrd < minThreshold)
-				unit.setLocalStrategy(0);
-			else if (belowGrdLimits || belowAirLimits)
-				unit.setLocalStrategy(0);
-
-			Display().displaySim(unit, (grdgrd + grdair) / 2.0);
-			unit.setSimValue((grdgrd + grdair) / 2.0);
+		if (sync) {
+			if (unit.getType().isFlyer())
+				unit.setSimValue(min(attackAirAsAir, attackAirAsGround));
+			else
+				unit.setSimValue(min(attackGroundAsAir, attackGroundasGround));
 		}
-
-		else if (sync && unit.getTarget().getType().isFlyer()) {
-
-			if (airgrd >= maxThreshold && airair >= maxThreshold)
-				unit.setLocalStrategy(1);
-			else if (!unit.getType().isFlyer() && enemyLocalGroundStrength == 0.0)
-				unit.setLocalStrategy(1);
-			else if (airgrd < minThreshold && airair < minThreshold)
-				unit.setLocalStrategy(0);
-			else if (belowGrdLimits || belowAirLimits)
-				unit.setLocalStrategy(0);
-
-			Display().displaySim(unit, (airgrd + airair) / 2.0);
-			unit.setSimValue((airgrd + airair) / 2.0);
-		}
-
-		else if (unit.getTarget().getType().isFlyer()) {
-			if (unit.getType().isFlyer()) {
-
-				if (airair >= maxThreshold)
-					unit.setLocalStrategy(1);
-				else if (airair < minThreshold)
-					unit.setLocalStrategy(0);
-				else if (belowAirLimits)
-					unit.setLocalStrategy(0);
-
-				Display().displaySim(unit, airair);
-				unit.setSimValue(airair);
-			}
-			else {
-
-				if (airgrd >= maxThreshold)
-					unit.setLocalStrategy(1);
-				else if (airgrd < minThreshold)
-					unit.setLocalStrategy(0);
-				else if (belowAirLimits)
-					unit.setLocalStrategy(0);
-
-				Display().displaySim(unit, airgrd);
-				unit.setSimValue(airgrd);
-			}
-		}
-		else
-		{
-			if (unit.getType().isFlyer()) {
-
-				if (grdair >= maxThreshold)
-					unit.setLocalStrategy(1);
-				else if (grdair < minThreshold)
-					unit.setLocalStrategy(0);
-				else if (belowGrdLimits)
-					unit.setLocalStrategy(0);
-
-				Display().displaySim(unit, grdair);
-				unit.setSimValue(grdair);
-			}
-			else {
-
-				if (grdgrd >= maxThreshold)
-					unit.setLocalStrategy(1);
-				else if (grdgrd < minThreshold)
-					unit.setLocalStrategy(0);
-				else if (belowGrdLimits)
-					unit.setLocalStrategy(0);
-
-				Display().displaySim(unit, grdgrd);
-				unit.setSimValue(grdgrd);
-			}
+		else {
+			if (unit.getType().isFlyer())
+				unit.setSimValue(unit.getTarget().getType().isFlyer() ? attackAirAsAir : attackGroundAsAir);
+			else
+				unit.setSimValue(unit.getTarget().getType().isFlyer() ? attackAirAsGround : attackGroundasGround);
 		}
 	}
+	Display().displaySim(unit, unit.getSimValue());	
 }
 
 void UnitManager::updateStrategy(UnitInfo& unit)
 {
-	// HACK: Strategy radius 
-	double radius = 640.0;
-
-	// Global strategy
-	if (Broodwar->self()->getRace() == Races::Protoss) {
-		if ((!BuildOrder().isFastExpand() && Strategy().enemyFastExpand())
-			|| (Strategy().enemyProxy() && !Strategy().enemyRush())
-			|| BuildOrder().isRush())
-			unit.setGlobalStrategy(1);
-
-		else if ((Strategy().enemyRush() && !Players().vT())
-			|| (!Strategy().enemyRush() && BuildOrder().isHideTech() && BuildOrder().isOpener())
-			|| unit.getType().isWorker()
-			|| (Broodwar->getFrameCount() < 15000 && BuildOrder().isPlayPassive())
-			|| (unit.getType() == UnitTypes::Protoss_Corsair && !BuildOrder().firstReady() && globalEnemyAirStrength > 0.0))
-			unit.setGlobalStrategy(0);
-		else
-			unit.setGlobalStrategy(1);
-	}
-	else if (Broodwar->self()->getRace() == Races::Terran) {
-		if (unit.getType() == UnitTypes::Terran_Vulture)
-			unit.setGlobalStrategy(1);
-		else if (!BuildOrder().firstReady())
-			unit.setGlobalStrategy(0);
-		else if (BuildOrder().isHideTech() && BuildOrder().isOpener())
-			unit.setGlobalStrategy(0);
-		else
-			unit.setGlobalStrategy(1);
-	}
-	else if (Broodwar->self()->getRace() == Races::Zerg) {
-		if (BuildOrder().getCurrentBuild() == "ZLurkerTurtle")
-			unit.setGlobalStrategy(0);
-		else
-			unit.setGlobalStrategy(1);
-	}
-	
-
 	if (unit.hasTarget()) {
 
 		auto fightingAtHome = ((Terrain().isInAllyTerritory(unit.getTilePosition()) && Util().unitInRange(unit)) || Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()));
@@ -431,19 +321,18 @@ void UnitManager::updateStrategy(UnitInfo& unit)
 		// Force engaging
 		if (!invisTarget && (Units().isThreatening(unit.getTarget())
 			|| (fightingAtHome && (!unit.getType().isFlyer() || !unit.getTarget().getType().isFlyer()) && (Strategy().defendChoke() || unit.getGroundRange() > 64.0))))
-			unit.setEngage();
+			unit.setCombatState(CombatState::Engaging);
 
 		// Force retreating
 		else if ((unit.getType().isMechanical() && unit.getPercentTotal() < LOW_MECH_PERCENT_LIMIT)
 			|| (unit.getType() == UnitTypes::Protoss_High_Templar && unit.getEnergy() < 75)
 			|| Commands().isInDanger(unit)
 			|| Grids().getESplash(unit.getWalkPosition()) > 0
-			|| unit.getGlobalStrategy() == 0
 			|| invisTarget)
-			unit.setRetreat();
+			unit.setCombatState(CombatState::Retreating);
 
 		// Close enough to make a decision
-		else if (unit.getPosition().getDistance(unit.getSimPosition()) <= radius) {
+		else if (unit.getPosition().getDistance(unit.getSimPosition()) <= SIM_RADIUS) {
 
 			// Retreat
 			if ((unit.getType() == UnitTypes::Protoss_Zealot && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) == 0 && !BuildOrder().isProxy()  && unit.getTarget().getType() == UnitTypes::Terran_Vulture && Grids().getMobility(unit.getTarget().getWalkPosition()) > 6 && Grids().getCollision(unit.getTarget().getWalkPosition()) < 2)
@@ -452,22 +341,43 @@ void UnitManager::updateStrategy(UnitInfo& unit)
 				|| (unit.getType() == UnitTypes::Terran_Medic && unit.unit()->getEnergy() <= TechTypes::Healing.energyCost())
 				|| (unit.getType() == UnitTypes::Zerg_Mutalisk && Grids().getEAirThreat((WalkPosition)unit.getEngagePosition()) > 0.0 && unit.getHealth() <= 30)
 				|| (unit.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && Broodwar->getFrameCount() < 12000)
-				|| (unit.getType() == UnitTypes::Terran_SCV && Broodwar->getFrameCount() > 12000))
-				unit.setRetreat();
+				|| (unit.getType() == UnitTypes::Terran_SCV && Broodwar->getFrameCount() > 12000)
+				|| unit.getSimValue() <= minThreshold)
+				unit.setCombatState(CombatState::Retreating);
 
 			// Engage
 			else if (unit.getTarget().unit()->exists() &&
 				(((unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && unit.getPosition().getDistance(unit.getTarget().getPosition()) < 96.0)
 					|| ((unit.unit()->isCloaked() || unit.isBurrowed()) && !Commands().overlapsEnemyDetection(unit.getEngagePosition()))
 					|| (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && Util().unitInRange(unit))
-					|| (unit.getGlobalStrategy() == 1 && unit.getLocalStrategy() == 1)))
-				unit.setEngage();
-
-			// Default to retreat
-			else if (unit.getGlobalStrategy() == 0 || unit.getLocalStrategy() == 0)
-				unit.setRetreat();
+					|| unit.getSimValue() >= maxThreshold))
+				unit.setCombatState(CombatState::Engaging);
 		}
 	}
+
+	if (unit.getPosition().getDistance(unit.getSimPosition()) > SIM_RADIUS || !unit.hasTarget()) {
+		if (Broodwar->self()->getRace() == Races::Protoss) {
+			if ((!BuildOrder().isFastExpand() && Strategy().enemyFastExpand())
+				|| (Strategy().enemyProxy() && !Strategy().enemyRush())
+				|| BuildOrder().isRush())
+				unit.setCombatState(CombatState::Engaging);
+
+			else if ((Strategy().enemyRush() && !Players().vT())
+				|| (!Strategy().enemyRush() && BuildOrder().isHideTech() && BuildOrder().isOpener())
+				|| unit.getType().isWorker()
+				|| (Broodwar->getFrameCount() < 15000 && BuildOrder().isPlayPassive())
+				|| (unit.getType() == UnitTypes::Protoss_Corsair && !BuildOrder().firstReady() && globalEnemyAirStrength > 0.0))
+				unit.setCombatState(CombatState::Retreating);
+
+			else
+				unit.setCombatState(CombatState::Engaging);
+		}
+	}
+
+	if (unit.getCombatState() == CombatState::Engaging)
+		Broodwar->drawTextMap(unit.getPosition(), "Engage");
+	if (unit.getCombatState() == CombatState::Retreating)
+		Broodwar->drawTextMap(unit.getPosition(), "Retreat");
 }
 
 void UnitManager::updateRole(UnitInfo& unit)

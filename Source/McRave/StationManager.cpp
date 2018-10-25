@@ -9,7 +9,9 @@ void StationManager::onFrame()
 
 void StationManager::updateStations()
 {
-
+	for (auto &station : myStations) {
+		Broodwar->drawTextMap(station.second.BWEMBase()->Center(), "%d", station.second.getDefenseCount());
+	}
 }
 
 Position StationManager::getClosestEnemyStation(Position here)

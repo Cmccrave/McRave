@@ -56,6 +56,7 @@ namespace BWEB
 				for (auto &defense : station.DefenseLocations()) {
 					if (unit->getTilePosition() == defense) {
 						station.setDefenseCount(station.getDefenseCount() + 1);
+						Broodwar << station.getDefenseCount() + 1 << endl;
 						return;
 					}
 				}

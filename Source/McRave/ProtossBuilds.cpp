@@ -358,8 +358,6 @@ namespace McRave
 			else if (enemyBuild() == "P2Gate") {
 				Reaction2GateDefensive();
 			}
-			else if (Strategy().enemyFastExpand())
-				Reaction4Gate();
 			else {
 				currentTransition =	"Default";
 				zealotLimit	=		5;

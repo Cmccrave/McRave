@@ -568,10 +568,12 @@ namespace BWEB
 	{
 		// Check that the path points are possible to reach
 		checkPathPoints(wall);
+		Position startCenter = Position(startTile) + Position(16, 16);
+		Position endCenter = Position(endTile) + Position(16, 16);
 
 		// Get a new path
 		Path newPath;
-		newPath.createWallPath(*this, mapBWEM, startTile, endTile, ignoreOverlap);
+		newPath.createWallPath(*this, mapBWEM, startCenter, endCenter, ignoreOverlap);
 		currentHole = TilePositions::None;
 		currentPath = newPath.getTiles();
 

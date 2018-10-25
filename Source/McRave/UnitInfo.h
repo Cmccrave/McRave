@@ -16,7 +16,7 @@ namespace McRave
 		double visibleGroundStrength, visibleAirStrength, maxGroundStrength, maxAirStrength, priority;		// McRave stats
 		double engageDist;
 		double simValue, simBonus;
-		int localStrategy, globalStrategy, lastAttackFrame, lastVisibleFrame, shields, health, minStopFrame;
+		int lastAttackFrame, lastVisibleFrame, shields, health, minStopFrame;
 		int killCount, frameCreated;
 		int lastMoveFrame;
 		int resourceHeldFrames;
@@ -24,7 +24,6 @@ namespace McRave
 		int energy;
 
 		bool burrowed;
-		bool engage, retreat;
 
 		Unit thisUnit;
 		UnitType unitType, buildingType;
@@ -61,14 +60,7 @@ namespace McRave
 		// Simulation
 		void setSimValue(double newValue) { simValue = newValue; }
 		double getSimValue() { return simValue; }
-
-		// Engage/Retreat
-		void resetForces() { engage = false, retreat = false; }
-		void setRetreat() { retreat = true; }
-		void setEngage() { engage = true; }
-		bool shouldRetreat() { return retreat; }
-		bool shouldEngage() { return engage; }
-
+		
 		// Assigned Target
 		bool hasTarget() { return target != nullptr; }
 		UnitInfo &getTarget() { return *target; }
@@ -153,9 +145,7 @@ namespace McRave
 		int getEnergy()						{ return energy; }
 
 		// McRave Stats
-		double getPriority()				{ return priority; }					// Returns the units priority for targeting purposes based on strength (not including value)
-		int getLocalStrategy()				{ return localStrategy; }				// Returns the units local strategy		
-		int getGlobalStrategy()				{ return globalStrategy; }				// Returns the units global strategy		
+		double getPriority()				{ return priority; }					// Returns the units priority for targeting purposes based on strength (not including value)		
 		double getSimBonus()				{ return simBonus; }
 
 		// Kill count
@@ -182,8 +172,6 @@ namespace McRave
 		TilePosition getBuildPosition()					{ return buildPosition; }
 
 		void setSimBonus(double newValue)				{ simBonus = newValue; }
-		void setLocalStrategy(int newValue)				{ localStrategy = newValue; }
-		void setGlobalStrategy(int newValue)			{ globalStrategy = newValue; }
 		void setLastAttackFrame(int newValue)			{ lastAttackFrame = newValue; }
 
 		void setUnit(Unit newUnit)						{ thisUnit = newUnit; }		

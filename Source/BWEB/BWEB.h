@@ -212,7 +212,9 @@ namespace BWEB
 		vector<TilePosition>& getTiles() { return tiles; }
 		double getDistance() { return dist; }
 		void createUnitPath(BWEB::Map&, BWEM::Map&, const Position, const Position);
-		void createWallPath(BWEB::Map&, BWEM::Map&, const TilePosition, const TilePosition, bool);
+		void createWallPath(BWEB::Map&, BWEM::Map&, const Position, const Position, bool);
+
+		void createPath(BWEB::Map&, BWEM::Map&, const Position, const Position, function <bool(const TilePosition)>, vector<TilePosition>);
 	};
 
 	// This namespace contains functions which could be used for backward compatibility

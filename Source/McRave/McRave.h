@@ -10,6 +10,7 @@
 #define LOW_SHIELD_PERCENT_LIMIT 0.2
 #define LOW_MECH_PERCENT_LIMIT 0.2
 #define MIN_THREAT 0.01
+#define SIM_RADIUS 640.0
 
 // Namespaces
 using namespace BWAPI;

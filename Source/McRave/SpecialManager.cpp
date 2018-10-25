@@ -174,20 +174,20 @@ bool CommandManager::shouldUseSpecial(UnitInfo& unit)
 		}*/
 	}
 
-	// Siege Tanks
-	else if (unit.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) {
-		if (unit.getPosition().getDistance(unit.getEngagePosition()) < 32.0 && unit.shouldEngage())
-			unit.unit()->siege();
-		if (unit.getGlobalStrategy() == 0 && unit.getPosition().getDistance(Terrain().getDefendPosition()) < 320)
-			unit.unit()->siege();
-	}
-	else if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode) {
-		if (unit.getGlobalStrategy() == 1 && (unit.getPosition().getDistance(unit.getEngagePosition()) > 128.0 || unit.shouldRetreat())) {
-			if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Unsiege)
-				unit.unit()->unsiege();
-			return true;
-		}
-	}
+	//// Siege Tanks
+	//else if (unit.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) {
+	//	if (unit.getPosition().getDistance(unit.getEngagePosition()) < 32.0 && unit.shouldEngage())
+	//		unit.unit()->siege();
+	//	if (unit.getCombatState() == CombatState::Retreating && unit.getPosition().getDistance(Terrain().getDefendPosition()) < 320)
+	//		unit.unit()->siege();
+	//}
+	//else if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode) {
+	//	if (unit.getPosition().getDistance(unit.getEngagePosition()) > 128.0 || unit.shouldRetreat()) {
+	//		if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Unsiege)
+	//			unit.unit()->unsiege();
+	//		return true;
+	//	}
+	//}
 
 	// Vultures
 	else if (unit.getType() == UnitTypes::Terran_Vulture && Broodwar->self()->hasResearched(TechTypes::Spider_Mines) && unit.unit()->getSpiderMineCount() > 0 && unit.getPosition().getDistance(unit.getSimPosition()) <= 400 && Broodwar->getUnitsInRadius(unit.getPosition(), 4, Filter::GetType == UnitTypes::Terran_Vulture_Spider_Mine).size() <= 0) {
@@ -309,17 +309,17 @@ bool CommandManager::shouldUseSpecial(UnitInfo& unit)
 	}
 
 	// General: Bunker Loading/Unloading
-	if (unit.getType() == UnitTypes::Terran_Marine && unit.getGlobalStrategy() == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) > 0) {
-		//UnitInfo* bunker = Util().getClosestAllyBuilding(unit, Filter::GetType == UnitTypes::Terran_Bunker && Filter::SpaceRemaining > 0);
-		//if (bunker && bunker->unit() && unit.hasTarget()) {
-		//	if (unit.getTarget().unit()->exists() && unit.getTarget().getPosition().getDistance(unit.getPosition()) <= 320) {
-		//		unit.unit()->rightClick(bunker->unit());
-		//		return true;
-		//	}
-		//	if (unit.unit()->isLoaded() && unit.getTarget().getPosition().getDistance(unit.getPosition()) > 320)
-		//		bunker->unit()->unloadAll();
-		//}
-	}
+	//if (unit.getType() == UnitTypes::Terran_Marine && unit.getGlobalStrategy() == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) > 0) {
+	//	//UnitInfo* bunker = Util().getClosestAllyBuilding(unit, Filter::GetType == UnitTypes::Terran_Bunker && Filter::SpaceRemaining > 0);
+	//	//if (bunker && bunker->unit() && unit.hasTarget()) {
+	//	//	if (unit.getTarget().unit()->exists() && unit.getTarget().getPosition().getDistance(unit.getPosition()) <= 320) {
+	//	//		unit.unit()->rightClick(bunker->unit());
+	//	//		return true;
+	//	//	}
+	//	//	if (unit.unit()->isLoaded() && unit.getTarget().getPosition().getDistance(unit.getPosition()) > 320)
+	//	//		bunker->unit()->unloadAll();
+	//	//}
+	//}
 
 	// General: Detectors
 	if (unit.getType().isDetector()) {

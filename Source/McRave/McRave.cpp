@@ -26,6 +26,8 @@
 // Scanner targets
 // Remove global/local strategy -> use combat state
 // Commands to boxes rather than circles (for storm, dweb, etc)
+// Move 4gate vs Z to 2 gate category
+// Reorganize sim decision, global decision into command based decisions
 
 // *** Future Improvements ***
 // Use Player pointer instead of BWAPI::Player pointer in UnitInfo, gives advantage of knowing upgrades/tech that are available always

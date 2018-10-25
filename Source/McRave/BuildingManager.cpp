@@ -146,7 +146,6 @@ namespace McRave
 			if (unit.getBuildingType().isValid() && unit.getBuildPosition().isValid() && (unit.getBuildingType().isRefinery() || mapBWEB.getUsedTiles().find(unit.getBuildPosition()) == mapBWEB.getUsedTiles().end())) {
 				buildingsQueued[unit.getBuildPosition()] = unit.getBuildingType();
 			}
-
 		}
 
 		// Add up how many more buildings of each type we need
@@ -305,7 +304,8 @@ namespace McRave
 		}
 
 		// If we are fast expanding
-		if (mapBWEB.getNaturalChoke() && !Strategy().enemyBust() && (BuildOrder().isOpener() || Broodwar->self()->getRace() == Races::Zerg) && (BuildOrder().isWallNat() || BuildOrder().isWallMain())) {
+		auto isWallPiece = building == UnitTypes::Protoss_Forge || building == UnitTypes::Protoss_Gateway || building == UnitTypes::Protoss_Pylon || building == UnitTypes::Terran_Barracks || building == UnitTypes::Terran_Supply_Depot;
+		if (mapBWEB.getNaturalChoke() && isWallPiece && !Strategy().enemyBust() && (BuildOrder().isOpener() || Broodwar->self()->getRace() == Races::Zerg) && (BuildOrder().isWallNat() || BuildOrder().isWallMain())) {
 			here = findWallLocation(building, Position(mapBWEB.getNaturalChoke()->Center()));
 			if (here.isValid() && isBuildable(building, here))
 				return here;

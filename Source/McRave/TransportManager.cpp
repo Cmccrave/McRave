@@ -104,9 +104,9 @@ void TransportManager::updateDecision(UnitInfo& transport)
 		if (Util().getHighestThreat(transport.getWalkPosition(), transport) < 1.0)
 			return true;
 
-		if (cargo.shouldRetreat() || transport.unit()->isUnderAttack() || (cargo.getShields() == 0 && cargo.getSimValue() < 1.2))
+		if (cargo.getCombatState() == CombatState::Retreating || transport.unit()->isUnderAttack() || (cargo.getShields() == 0 && cargo.getSimValue() < 1.2))
 			return false;
-		if (cargo.shouldEngage() && ((reaver && !attackCooldown) || (ht && cargo.getEnergy() >= 75)))
+		if (cargo.getCombatState() == CombatState::Engaging && ((reaver && !attackCooldown) || (ht && cargo.getEnergy() >= 75)))
 			return true;
 		return false;
 	};
@@ -129,7 +129,7 @@ void TransportManager::updateDecision(UnitInfo& transport)
 		auto targetDist = reaver && cargo.hasTarget() ? mapBWEB.getGroundDistance(cargo.getPosition(), cargo.getTarget().getPosition()) - 256.0 : cargo.getPosition().getDistance(cargo.getEngagePosition());
 		
 		if (transport.getPosition().getDistance(cargo.getPosition()) <= 160.0 || &cargo == closestCargo) {
-			if (!cargo.hasTarget() || cargo.shouldRetreat() || !cargo.shouldEngage() || (targetDist > 128.0 || (ht && cargo.unit()->getEnergy() < 75) || (reaver && attackCooldown && threat))) {
+			if (!cargo.hasTarget() || cargo.getCombatState() == CombatState::Retreating || (targetDist > 128.0 || (ht && cargo.unit()->getEnergy() < 75) || (reaver && attackCooldown && threat))) {
 				return true;
 			}
 		}
@@ -177,7 +177,7 @@ void TransportManager::updateDecision(UnitInfo& transport)
 		}
 
 		// Else if the cargo is loaded
-		else if (cargo.unit()->isLoaded() && cargo.hasTarget() && cargo.getEngagePosition().isValid() && cargo.shouldEngage()) {
+		else if (cargo.unit()->isLoaded() && cargo.hasTarget() && cargo.getEngagePosition().isValid() && cargo.getCombatState() == CombatState::Engaging) {
 			transport.setDestination(cargo.getEngagePosition());
 
 			if (readyToFight(cargo)) {
@@ -193,11 +193,8 @@ void TransportManager::updateDecision(UnitInfo& transport)
 		}
 
 		// Dont attack until we're ready
-		else if (cargo.getGlobalStrategy() == 0 && !cargo.shouldEngage())
+		else if (cargo.getCombatState() == CombatState::Retreating)
 			transport.setDestination(mapBWEB.getNaturalPosition());
-
-		else if (cargo.getGlobalStrategy() == 1)
-			transport.setDestination(Terrain().getAttackPosition());
 	}
 
 	//for (auto &w : transport.getAssignedWorkers()) {

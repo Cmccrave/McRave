@@ -26,7 +26,7 @@ namespace McRave
 		vector <string> transitions;
 		vector <string> openers;
 	};
-	
+
 	class BuildOrderManager
 	{
 		// Testing new build stuff
@@ -49,8 +49,8 @@ namespace McRave
 		UnitType productionUnit;
 		set <UnitType> techList, unlockedType;
 		vector <string> buildNames;
-		
-		
+
+
 		int satVal, prodVal, techVal, baseVal;
 		int gasLimit = INT_MAX;
 		int zealotLimit = INT_MAX;
@@ -78,7 +78,7 @@ namespace McRave
 
 		UpgradeType getFirstUpgrade() { return firstUpgrade; }
 		TechType getFirstTech() { return firstTech; }
-		set <UnitType>& getTechList() { return techList; }	
+		set <UnitType>& getTechList() { return techList; }
 		set <UnitType>& getUnlockedList() { return unlockedType; }
 
 		int buildCount(UnitType);
@@ -104,36 +104,29 @@ namespace McRave
 		void onEnd(bool), onStart(), onFrame();
 		void protossOpener(), protossTech(), protossSituational(), protossUnlocks(), protossIslandPlay();
 		void terranOpener(), terranTech(), terranSituational(), terranUnlocks(), terranIslandPlay();
-		void zergOpener(), zergTech(), zergSituational(), zergUnlocks(), zergIslandPlay();										
-	
+		void zergOpener(), zergTech(), zergSituational(), zergUnlocks(), zergIslandPlay();
+
 		void PScoutMemes(), PDWEBMemes(), PArbiterMemes(), PShuttleMemes();	// Gimmick builds	
 
-		void PFFE();									// FFE - "http://liquipedia.net/starcraft/Protoss_FE_(vs._Zerg)"		
+
 		void PProxy99();								// 2Gate Proxy - "http://liquipedia.net/starcraft/2_Gateway_(vs._Zerg)"		
 		void PProxy6();
-		void P4Gate();									// 4Gate - "http://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)"
-		void P2GateExpand();							// 2Gate Expand		
-		void P12Nexus();										
-		void P21Nexus();										
-		void PDTExpand();								// DT Expand - "http://liquipedia.net/starcraft/DT_Fast_Expand_(vs._Terran)"		
+		void P2GateExpand();							// 2Gate Expand			
 		void P2GateDragoon();							// 2 Gate Dragoon - "http://liquipedia.net/starcraft/10/15_Gates_(vs._Terran)"		
-		void P1GateRobo();								// 1 Gate Robo - "http://liquipedia.net/starcraft/1_Gate_Reaver"
 		void P3Nexus();									// Triple Nexus
-		void PZealotDrop();								
-		void P1GateCorsair();							// 1 Gate Corsair
+		void PZealotDrop();
 
 		void P1GateCore();
 		//void P2Gate();
-		//void PFFE();
-		//void P21Nexus();
-		//void P12Nexus();
+		void PFFE();
+		void P21Nexus();
+		void P12Nexus();
 
 
 
 		void Reaction2GateDefensive();
 		void Reaction2GateAggresive();
 		void Reaction2Gate();
-		void Reaction4Gate();
 
 		void T2Fact();
 		void TSparks();

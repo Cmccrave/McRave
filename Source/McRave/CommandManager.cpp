@@ -91,7 +91,7 @@ namespace McRave
 			return;
 
 		// If this unit should engage
-		else if (unit.shouldEngage()) {
+		else if (unit.getCombatState() == CombatState::Engaging) {
 			unit.circleGreen();
 			if (shouldAttack(unit))
 				attack(unit);
@@ -99,10 +99,12 @@ namespace McRave
 				approach(unit);
 			else if (shouldKite(unit))
 				kite(unit);
+			else
+				move(unit);			
 		}
 
 		// If this unit should retreat
-		else if (unit.shouldRetreat()) {
+		else if (unit.getCombatState() == CombatState::Retreating) {
 			unit.circleRed();
 			if (shouldDefend(unit))
 				defend(unit);
@@ -114,17 +116,17 @@ namespace McRave
 				kite(unit);
 		}
 
-		else {
-			unit.circleYellow();
-			move(unit);
-		}
+
 	}
 
 	bool CommandManager::shouldAttack(UnitInfo& unit)
 	{
-		if (unit.getType() == UnitTypes::Zerg_Lurker)
+		// If no target target or a Lurker
+		if (!unit.hasTarget()
+			|| unit.getType() == UnitTypes::Zerg_Lurker)
 			return false;
 
+		// Carrier attack command issuing
 		if (unit.getType() == UnitTypes::Protoss_Carrier) {
 			for (auto &i : unit.unit()->getInterceptors()) {
 				if (!i || !i->isCompleted()) continue;
@@ -135,6 +137,7 @@ namespace McRave
 			return false;
 		}
 
+		// If attack not on cooldown
 		if ((!unit.getTarget().getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames())
 			|| (unit.getTarget().getType().isFlyer() && unit.unit()->getAirWeaponCooldown() < Broodwar->getRemainingLatencyFrames())
 			|| unit.getType() == UnitTypes::Terran_Medic)
@@ -144,52 +147,52 @@ namespace McRave
 
 	bool CommandManager::shouldKite(UnitInfo& unit)
 	{
-		auto widths = unit.getTarget().getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
-		auto allyRange = widths + (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
-		auto enemyRange = widths + (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
-
-		if (unit.getType() == UnitTypes::Protoss_Carrier || unit.getType() == UnitTypes::Zerg_Mutalisk)
+		// Mutas and Carriers
+		if (unit.getType() == UnitTypes::Protoss_Carrier
+			|| unit.getType() == UnitTypes::Zerg_Mutalisk)
 			return true;
 
-		else if (unit.getType() == UnitTypes::Protoss_Corsair)
+		// Corsairs or Zealots at a wall
+		else if (unit.getType() == UnitTypes::Protoss_Corsair
+			|| (unit.getType() == UnitTypes::Protoss_Zealot && Terrain().getNaturalWall() && Position(Terrain().getNaturalWall()->getDoor()).getDistance(unit.getPosition()) < 96.0))
 			return false;
 
-		else if (unit.getType() == UnitTypes::Protoss_Zealot && Terrain().getNaturalWall() && Position(Terrain().getNaturalWall()->getDoor()).getDistance(unit.getPosition()) < 96.0)
-			return false;
+		if (unit.hasTarget()) {
 
-		if ((unit.getPosition().getDistance(Terrain().getDefendPosition()) < 128.0 && allyRange <= 64.0 && Strategy().defendChoke())
-			|| (unit.getTarget().getType().isBuilding()))
-			return false;
+			auto widths = unit.getTarget().getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
+			auto allyRange = widths + (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
+			auto enemyRange = widths + (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
 
-		if (((unit.getTarget().isBurrowed() || unit.getTarget().unit()->isCloaked()) && !unit.getTarget().unit()->isDetected())		// Invisible Unit
-			|| (unit.getType() == UnitTypes::Protoss_Reaver)																		// Reavers always kite
-			|| (unit.getType() == UnitTypes::Terran_Vulture)																		// Vultures always kite
-			|| (unit.getType() == UnitTypes::Zerg_Mutalisk)																			// Mutas always kite
-			|| (unit.getType() == UnitTypes::Protoss_Carrier)
-			|| (allyRange >= 32.0 && unit.unit()->isUnderAttack() && allyRange >= enemyRange)										// Ranged unit under attack by unit with lower range
-			|| ((enemyRange <= allyRange && unit.unit()->getDistance(unit.getTarget().getPosition()) <= allyRange - enemyRange)))	// Ranged unit fighting lower range unit and not at max range
-			return true;
+			// Within defending distance or attacking a building
+			if ((unit.getPosition().getDistance(Terrain().getDefendPosition()) < 128.0 && allyRange <= 64.0 && Strategy().defendChoke())
+				|| (unit.getTarget().getType().isBuilding()))
+				return false;
+						
+			if (((unit.getTarget().isBurrowed() || unit.getTarget().unit()->isCloaked()) && !unit.getTarget().unit()->isDetected())		// Invisible Unit
+				|| (unit.getType() == UnitTypes::Protoss_Reaver)																		// Reavers always kite
+				|| (unit.getType() == UnitTypes::Terran_Vulture)																		// Vultures always kite
+				|| (unit.getType() == UnitTypes::Zerg_Mutalisk)																			// Mutas always kite
+				|| (unit.getType() == UnitTypes::Protoss_Carrier)
+				|| (allyRange >= 32.0 && unit.unit()->isUnderAttack() && allyRange >= enemyRange)										// Ranged unit under attack by unit with lower range
+				|| ((enemyRange <= allyRange && unit.unit()->getDistance(unit.getTarget().getPosition()) <= allyRange - enemyRange)))	// Ranged unit fighting lower range unit and not at max range
+				return true;
+		}
 		return false;
 	}
 
 	bool CommandManager::shouldApproach(UnitInfo& unit)
 	{
-		if (!unit.hasTarget())
+		// No target, Carrier or Muta
+		if (!unit.hasTarget()
+			|| unit.getType() == UnitTypes::Protoss_Carrier
+			|| unit.getType() == UnitTypes::Zerg_Mutalisk)
 			return false;
 
-		if (unit.getSimValue() >= 10.0 && unit.getType() != UnitTypes::Protoss_Reaver && (!unit.getTarget().getType().isWorker() || unit.getGroundRange() <= 32))
-			return true;
-
-		if (unit.getType() == UnitTypes::Protoss_Carrier || unit.getType() == UnitTypes::Zerg_Mutalisk)
-			return false;
-
-		if (unit.getGroundRange() < 32 && unit.getTarget().getType().isWorker())
-			return true;
-
-		if (unit.getType() == UnitTypes::Zerg_Lurker)
-			return true;
-
-		if ((unit.getGroundRange() < unit.getTarget().getGroundRange() && !unit.getTarget().getType().isBuilding() && Grids().getMobility(WalkPosition(unit.getEngagePosition())) > 0)																					// Approach slower units with higher range
+		// Dominant fight, lower range, Lurker or non Scourge targets
+		if ((unit.getSimValue() >= 10.0 && unit.getType() != UnitTypes::Protoss_Reaver && (!unit.getTarget().getType().isWorker() || unit.getGroundRange() <= 32))
+			|| (unit.getGroundRange() < 32 && unit.getTarget().getType().isWorker())
+			|| unit.getType() == UnitTypes::Zerg_Lurker
+			|| (unit.getGroundRange() < unit.getTarget().getGroundRange() && !unit.getTarget().getType().isBuilding() && Grids().getMobility(WalkPosition(unit.getEngagePosition())) > 0)																					// Approach slower units with higher range
 			|| (unit.getType() != UnitTypes::Terran_Battlecruiser && unit.getType() != UnitTypes::Zerg_Guardian && unit.getType().isFlyer() && unit.getTarget().getType() != UnitTypes::Zerg_Scourge))																												// Small flying units approach other flying units except scourge
 			return true;
 		return false;
@@ -215,22 +218,12 @@ namespace McRave
 
 	void CommandManager::move(UnitInfo& unit)
 	{
-		// Temporary testing
-		if (unit.getType() == UnitTypes::Protoss_Corsair) {
-			if (unit.hasTarget())
-				unit.setDestination(unit.getTarget().getPosition());
-			else
-				unit.setDestination(Terrain().getAttackPosition());
-			hunt(unit);
-			return;
-		}
-
-		// If it's a tank, make sure we're unsieged before moving - TODO: Check that target has velocity and > 512 or no velocity and < tank range
+		// MOVE TO SPECIAL COMMANDS: If it's a tank, make sure we're unsieged before moving - TODO: Check that target has velocity and > 512 or no velocity and < tank range
 		if (unit.hasTarget() && unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode && unit.unit()->getDistance(unit.getTarget().getPosition()) > 512 && unit.getTarget().getSpeed() > 0.0)
 			unit.unit()->unsiege();
 
+		// Concave at destination
 		else if (unit.getDestination().isValid()) {
-
 			if (!Terrain().isInEnemyTerritory((TilePosition)unit.getDestination())) {
 				Position bestPosition = Util().getConcavePosition(unit, mapBWEM.GetArea(TilePosition(unit.getDestination())));
 
@@ -257,11 +250,7 @@ namespace McRave
 			if (!isLastCommand(unit, UnitCommandTypes::Move, Terrain().getAttackPosition()))
 				unit.unit()->move(Terrain().getAttackPosition());
 		}
-
-		// What is this
-		else if (unit.getType().isFlyer() && !unit.hasTarget() && unit.getPosition().getDistance(unit.getSimPosition()) < 640.0)
-			kite(unit);
-
+		
 		// If no target and no enemy bases, move to a base location (random if we have found the enemy once already)
 		else if (unit.unit()->isIdle()) {
 			if (Terrain().getEnemyStartingPosition().isValid())
@@ -482,7 +471,7 @@ namespace McRave
 
 	void CommandManager::hunt(UnitInfo& unit)
 	{
-		// Testing
+		// If unit has no destination, give target as a destination
 		if (unit.hasTarget() && !unit.getDestination().isValid())
 			unit.setDestination(unit.getTarget().getPosition());
 

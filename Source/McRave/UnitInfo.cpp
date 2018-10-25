@@ -30,8 +30,6 @@ namespace McRave
 		simValue = 0.0;
 		simBonus = 1.0;
 
-		localStrategy = 0;
-		globalStrategy = 0;
 		lastAttackFrame = 0;
 		lastVisibleFrame = 0;
 		lastMoveFrame = 0;
@@ -46,8 +44,6 @@ namespace McRave
 		
 
 		burrowed = false;
-		engage = false;
-		retreat = false;
 
 		thisUnit = nullptr;
 		transport = nullptr;
@@ -130,7 +126,6 @@ namespace McRave
 		remainingTrainFrame = max(0, remainingTrainFrame - 1);
 
 		this->updateTarget();
-		this->resetForces();		
 		this->updateStuckCheck();
 	}
 

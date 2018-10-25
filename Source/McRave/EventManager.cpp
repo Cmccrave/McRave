@@ -51,22 +51,19 @@ namespace McRave
 			supply -= unit->getType().supplyRequired();
 
 			Transport().removeUnit(unit);
-			
+
 			if (info.hasResource())
 				info.getResource().setGathererCount(info.getResource().getGathererCount() - 1);
 
 			myUnits.erase(unit);
-			
+
 		}
 
 		// Enemy unit
-		else if (unit->getPlayer() == Broodwar->enemy()) {
-			//enemySizes[unit->getType().size()] -= 1;
+		else if (unit->getPlayer() == Broodwar->enemy())
 			enemyUnits.erase(unit);
-		}
-		else if (unit->getPlayer()->isAlly(Broodwar->self())) {
+		else if (unit->getPlayer()->isAlly(Broodwar->self()))
 			allyUnits.erase(unit);
-		}
 
 		// Resource
 		if (unit->getType().isResourceContainer())
@@ -83,28 +80,23 @@ namespace McRave
 
 		// My unit
 		if (unit->getPlayer() == Broodwar->self()) {
+			auto isEgg = unit->getType() == UnitTypes::Zerg_Egg || unit->getType() == UnitTypes::Zerg_Lurker_Egg;
 
-			// TODO: Zerg morphing
+			// Zerg morphing
 			if (unit->getType().getRace() == Races::Zerg) {
-				supply += unit->getType().supplyRequired();
 
-				if (unit->getType().isBuilding() && myUnits.find(unit) != myUnits.end()) {
-					myUnits.erase(unit);
-					onUnitCreate(unit);
+				if (isEgg) {
+					supply -= unit->getType().supplyRequired();
+					supply += unit->getBuildType().supplyRequired();
+				}
+				if (unit->getType().isBuilding())
 					supply -= 2;
 
-					auto &info = myUnits[unit];
-					if (info.hasResource())
-						info.getResource().setGathererCount(info.getResource().getGathererCount() - 1);
-				}
-				storeUnit(unit);
-			}
+				auto &info = myUnits[unit];
+				if (info.hasResource())
+					info.getResource().setGathererCount(info.getResource().getGathererCount() - 1);
 
-			// Protoss morphing
-			if (myUnits.find(unit) != myUnits.end() && (unit->getType() == UnitTypes::Protoss_Archon || unit->getType() == UnitTypes::Protoss_Dark_Archon)) {
-				//allySizes[unit->getType().whatBuilds().first.size()] --;
-				myUnits[unit].setType(unit->getType());
-				//allySizes[unit->getType().size()] ++;
+				storeUnit(unit);
 			}
 		}
 
@@ -114,31 +106,11 @@ namespace McRave
 			// Remove any stations on a canceled hatchery
 			if (unit->getType() == UnitTypes::Zerg_Drone)
 				Stations().removeStation(unit);
-
-			if (enemyUnits.find(unit) != enemyUnits.end()) {
-				//enemySizes[unit->getType().whatBuilds().first.size()] --;
-				enemyUnits[unit].setType(unit->getType());
-				//enemySizes[unit->getType().size()] ++;
-			}
-			else
-				storeUnit(unit);
 		}
 
 		// Refinery that morphed as an enemy
-		else if (unit->getType().isResourceContainer()) {
-			if (enemyUnits.find(unit) != enemyUnits.end()) {
-				//enemySizes[unit->getType().whatBuilds().first.size()] --;
-				enemyUnits[unit].setType(unit->getType());
-				//enemySizes[unit->getType().size()] ++;
-			}
-
-			if (myUnits.find(unit) != myUnits.end()) {
-				//allySizes[unit->getType().whatBuilds().first.size()] --;
-				myUnits[unit].setType(unit->getType());
-				//allySizes[unit->getType().size()] ++;
-			}
+		else if (unit->getType().isResourceContainer())
 			Resources().storeResource(unit);
-		}
 	}
 
 	void UnitManager::onUnitRenegade(Unit unit)
@@ -156,11 +128,8 @@ namespace McRave
 
 	void UnitManager::onUnitComplete(Unit unit)
 	{
-		if (unit->getPlayer() == Broodwar->self()) {
-			//allySizes[unit->getType().size()] += 1;
+		if (unit->getPlayer() == Broodwar->self())
 			storeUnit(unit);
-		}
-
 		if (unit->getType().isResourceDepot())
 			Stations().storeStation(unit);
 		if (unit->getType().isResourceContainer())
