@@ -29,8 +29,8 @@ Position StationManager::getClosestEnemyStation(Position here)
 
 void StationManager::storeStation(Unit unit)
 {
-	const Station * station = mapBWEB.getClosestStation(unit->getTilePosition());
-	if (!station)
+	const Station const * station = mapBWEB.getClosestStation(unit->getTilePosition());
+	if (!station || !unit->getType().isResourceDepot())
 		return;
 	if (unit->getTilePosition() != station->BWEMBase()->Location())
 		return;
@@ -66,8 +66,8 @@ void StationManager::storeStation(Unit unit)
 
 void StationManager::removeStation(Unit unit)
 {
-	const Station * station = mapBWEB.getClosestStation(unit->getTilePosition());
-	if (!station)
+	const Station const * station = mapBWEB.getClosestStation(unit->getTilePosition());
+	if (!station || !unit->getType().isResourceDepot())
 		return;
 
 	if (unit->getPlayer() == Broodwar->self()) {

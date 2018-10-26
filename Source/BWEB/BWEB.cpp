@@ -53,10 +53,11 @@ namespace BWEB
 			|| type == UnitTypes::Terran_Missile_Turret) {
 
 			for (auto &station : stations) {
+				int defCnt = station.getDefenseCount();
 				for (auto &defense : station.DefenseLocations()) {
 					if (unit->getTilePosition() == defense) {
-						station.setDefenseCount(station.getDefenseCount() + 1);
-						Broodwar << station.getDefenseCount() + 1 << endl;
+						station.setDefenseCount(defCnt + 1);
+						Broodwar << station.getDefenseCount() << endl;
 						return;
 					}
 				}
@@ -95,11 +96,12 @@ namespace BWEB
 			|| type == UnitTypes::Zerg_Sunken_Colony
 			|| type == UnitTypes::Zerg_Spore_Colony
 			|| type == UnitTypes::Terran_Missile_Turret) {
-
+			
 			for (auto &station : stations) {
+				int defCnt = station.getDefenseCount();
 				for (auto &defense : station.DefenseLocations()) {
 					if (unit->getTilePosition() == defense) {
-						station.setDefenseCount(station.getDefenseCount() - 1);
+						station.setDefenseCount(defCnt - 1);
 						return;
 					}
 				}
@@ -246,6 +248,8 @@ namespace BWEB
 			for (auto &tile : station.DefenseLocations())
 				Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), Broodwar->self()->getColor());
 			Broodwar->drawBoxMap(Position(station.BWEMBase()->Location()), Position(station.BWEMBase()->Location()) + Position(129, 97), Broodwar->self()->getColor());
+
+			Broodwar->drawTextMap(Position(station.ResourceCentroid()), "%d", station.getDefenseCount());
 		}
 
 		// Draw Walls

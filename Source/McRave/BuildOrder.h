@@ -38,6 +38,7 @@ namespace McRave
 		void getDefaultBuild();
 		bool isBuildAllowed(Race, string);
 		bool isTransitionAllowed(Race, string, string);
+		bool isOpenerAllowed(Race, string, string);
 		bool isBuildPossible(string);
 
 		map <UnitType, Item> itemQueue;

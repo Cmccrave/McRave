@@ -151,7 +151,7 @@ namespace McRave
 
 					// Openers
 				case 1:
-					if (val > bestOpenerWR) {
+					if (val > bestOpenerWR && isOpenerAllowed(enemyRace, bestBuild, token)) {
 						bestOpener = token;
 						bestOpenerWR = val;
 					}
@@ -303,6 +303,39 @@ namespace McRave
 			else
 				return build == "Z2HatchMuta";
 		}
+		return false;
+	}
+
+	bool BuildOrderManager::isOpenerAllowed(Race enemy, string build, string opener)
+	{		
+		// Ban certain openers from certain race matchups
+		auto p = enemy == Races::Protoss;
+		auto z = enemy == Races::Zerg;
+		auto t = enemy == Races::Terran;
+		auto r = enemy == Races::Unknown || Races::Random;
+
+		if (build == "P1GateCore") {
+			if (opener == "0Zealot")
+				return t;
+			if (opener == "1Zealot")
+				return true;
+			if (opener == "2Zealot")
+				return p || t;
+		}
+
+		if (build == "P2Gate") {
+			if (opener == "Proxy" || opener == "Natural")
+				return true;
+			if (opener == "Main")
+				return z;
+		}
+
+		if (build == "PFFE")
+			return true;
+		if (build == "P12Nexus")
+			return true;
+		if (build == "P21Nexus")
+			return true;
 		return false;
 	}
 

@@ -154,6 +154,12 @@ namespace McRave
 			itemQueue[Protoss_Forge] =				Item(s >= 60);
 		}
 
+		// HACK: No cannons before forge obviously
+		if (cannonCount > 0 && com(Protoss_Forge) == 0) {
+			cannonCount = 0;
+			itemQueue[Protoss_Forge] = Item(1);
+		}
+
 		// Transitions
 		if (currentTransition == "StormRush") {
 			firstUpgrade =		UpgradeTypes::None;
