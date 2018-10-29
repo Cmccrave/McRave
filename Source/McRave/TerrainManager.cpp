@@ -304,14 +304,14 @@ void TerrainManager::updateConcavePositions()
 			auto start1 = dn1 + (slope / zealotLengths);
 			auto start2 = dn1 - (slope / zealotLengths);
 
-			if (dn1.isValid() && Util().isMobile(WalkPosition(dn1), WalkPosition(dn1), UnitTypes::Protoss_Zealot) && ((!mapBWEM.GetArea(TilePosition(dn1)) && Util().isWalkable(dn1)) || mapBWEM.GetArea(TilePosition(dn1)) == area))
+			if (dn1.isValid() && Util().isWalkable(WalkPosition(dn1), WalkPosition(dn1), UnitTypes::Protoss_Zealot) && ((!mapBWEM.GetArea(TilePosition(dn1)) && Util().isWalkable(dn1)) || mapBWEM.GetArea(TilePosition(dn1)) == area))
 				chokePositions.push_back(dn1);			
 
-			while (start1.isValid() && Util().isMobile(WalkPosition(start1), WalkPosition(start1), UnitTypes::Protoss_Zealot) && ((!mapBWEM.GetArea(TilePosition(start1)) && Util().isWalkable(start1)) || mapBWEM.GetArea(TilePosition(start1)) == area)) {
+			while (start1.isValid() && Util().isWalkable(WalkPosition(start1), WalkPosition(start1), UnitTypes::Protoss_Zealot) && ((!mapBWEM.GetArea(TilePosition(start1)) && Util().isWalkable(start1)) || mapBWEM.GetArea(TilePosition(start1)) == area)) {
 				chokePositions.push_back(start1);
 				start1 += (slope / zealotLengths);
 			}
-			while (start2.isValid() && Util().isMobile(WalkPosition(start2), WalkPosition(start2), UnitTypes::Protoss_Zealot) && ((!mapBWEM.GetArea(TilePosition(start2)) && Util().isWalkable(start2)) || mapBWEM.GetArea(TilePosition(start2)) == area)) {
+			while (start2.isValid() && Util().isWalkable(WalkPosition(start2), WalkPosition(start2), UnitTypes::Protoss_Zealot) && ((!mapBWEM.GetArea(TilePosition(start2)) && Util().isWalkable(start2)) || mapBWEM.GetArea(TilePosition(start2)) == area)) {
 				chokePositions.push_back(start2);
 				start2 -= (slope / zealotLengths);
 			}
@@ -325,14 +325,14 @@ void TerrainManager::updateConcavePositions()
 			auto start2 = dn1 - (slope / goonLengths);
 			chokePositions.push_back(dn1);
 
-			if (dn1.isValid() && Util().isMobile(WalkPosition(dn1), WalkPosition(dn1), UnitTypes::Protoss_Zealot) && ((!mapBWEM.GetArea(TilePosition(dn1)) && Util().isWalkable(dn1)) || mapBWEM.GetArea(TilePosition(dn1)) == area))
+			if (dn1.isValid() && Util().isWalkable(WalkPosition(dn1), WalkPosition(dn1), UnitTypes::Protoss_Zealot) && ((!mapBWEM.GetArea(TilePosition(dn1)) && Util().isWalkable(dn1)) || mapBWEM.GetArea(TilePosition(dn1)) == area))
 				chokePositions.push_back(dn1);
 
-			while (start1.isValid() && Util().isMobile(WalkPosition(start1), WalkPosition(start1), UnitTypes::Protoss_Dragoon) && (mapBWEM.GetArea(TilePosition(start1)) && mapBWEM.GetArea(TilePosition(start1)) == area)) {
+			while (start1.isValid() && Util().isWalkable(WalkPosition(start1), WalkPosition(start1), UnitTypes::Protoss_Dragoon) && (mapBWEM.GetArea(TilePosition(start1)) && mapBWEM.GetArea(TilePosition(start1)) == area)) {
 				chokePositions.push_back(start1);
 				start1 += (slope / goonLengths);
 			}
-			while (start2.isValid() && Util().isMobile(WalkPosition(start2), WalkPosition(start2), UnitTypes::Protoss_Dragoon) && (mapBWEM.GetArea(TilePosition(start2)) && mapBWEM.GetArea(TilePosition(start2)) == area)) {
+			while (start2.isValid() && Util().isWalkable(WalkPosition(start2), WalkPosition(start2), UnitTypes::Protoss_Dragoon) && (mapBWEM.GetArea(TilePosition(start2)) && mapBWEM.GetArea(TilePosition(start2)) == area)) {
 				chokePositions.push_back(start2);
 				start2 -= (slope / goonLengths);
 			}
@@ -361,7 +361,7 @@ void TerrainManager::updateConcavePositions()
 			double dist = p.getDistance(Position(center)) / log(p.getDistance(mapBWEB.getMainPosition()));
 
 			if (!w.isValid()
-				|| !Util().isMobile(w, w, UnitTypes::Protoss_Dragoon)
+				|| !Util().isWalkable(w, w, UnitTypes::Protoss_Dragoon)
 				|| p.getDistance(Position(center)) < min
 				|| p.getDistance(Position(center)) > max
 				|| tooClose(p)

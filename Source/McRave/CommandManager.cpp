@@ -129,8 +129,9 @@ namespace McRave
 		// Carrier attack command issuing
 		if (unit.getType() == UnitTypes::Protoss_Carrier) {
 			for (auto &i : unit.unit()->getInterceptors()) {
-				if (!i || !i->isCompleted()) continue;
-				UnitInfo interceptor = Units().getMyUnits()[i];
+				if (!i || !i->isCompleted())
+					continue;
+				UnitInfo &interceptor = Units().getMyUnits()[i];
 				if (Broodwar->getFrameCount() - interceptor.getLastAttackFrame() > 100)
 					return true;
 			}
@@ -303,7 +304,7 @@ namespace McRave
 						for (int y = start.y - 2; y < start.y + 10; y++) {
 							WalkPosition w(x, y);
 							double dist = Position(w).getDistance(mapBWEM.Center());
-							if (dist < distBest && Util().isMobile(unit.getWalkPosition(), w, unit.getType())) {
+							if (dist < distBest && Util().isWalkable(unit.getWalkPosition(), w, unit.getType())) {
 								distBest = dist;
 								walkBest = w;
 							}
@@ -378,7 +379,7 @@ namespace McRave
 					if (!w.isValid()
 						|| p.getDistance(unit.getPosition()) < 32.0
 						|| Commands().isInDanger(p)
-						|| !Util().isMobile(start, w, unit.getType())
+						|| Grids().getCollision(w) > 0
 						|| Grids().getESplash(w) > 0
 						|| Buildings().overlapsQueuedBuilding(unit.getType(), unit.getTilePosition()))
 						continue;
@@ -398,7 +399,7 @@ namespace McRave
 					double score = grouping / (threat * distance);
 
 					// If position is valid and better score than current, set as current best
-					if (score > best) {
+					if (score > best && Util().isWalkable(start, w, unit.getType())) {
 						posBest = p;
 						best = score;
 					}
@@ -473,7 +474,7 @@ namespace McRave
 					Position p = Position(w) + Position(4, 4);
 
 					if (!w.isValid()
-						|| !Util().isMobile(start, w, unit.getType())
+						|| !Util().isWalkable(start, w, unit.getType())
 						|| isInDanger(p))
 						continue;
 
@@ -524,8 +525,8 @@ namespace McRave
 				double airDist = p.getDistance(unit.getDestination());
 
 				if (!w.isValid()
-					|| !Util().isMobile(start, w, unit.getType())
-					|| p.getDistance(unit.getPosition()) < 32.0
+					|| !Util().isWalkable(start, w, unit.getType())
+					|| p.getDistance(unit.getPosition()) < 64.0
 					|| distToP > radius * 8
 					|| isInDanger(p))
 					continue;
@@ -576,7 +577,7 @@ namespace McRave
 				TilePosition t(w);
 
 				if (!w.isValid()
-					|| !Util().isMobile(start, w, unit.getType())
+					|| !Util().isWalkable(start, w, unit.getType())
 					|| p.getDistance(unit.getPosition()) <= 32.0)
 					continue;
 

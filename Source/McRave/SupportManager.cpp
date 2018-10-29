@@ -50,6 +50,7 @@ namespace McRave {
 				if ((Grids().getEGroundCluster(unit.getTarget().getWalkPosition()) + Grids().getEAirCluster(unit.getTarget().getWalkPosition())) > STASIS_LIMIT) {
 					unit.unit()->useTech(TechTypes::Stasis_Field, unit.getTarget().unit());
 					Commands().addCommand(unit.unit(), unit.getTarget().getPosition(), TechTypes::Stasis_Field);
+					return;
 				}
 			}
 

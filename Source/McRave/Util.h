@@ -27,12 +27,15 @@ namespace McRave
 		// If groundcheck/aircheck, then this function checks if every WalkPosition around finish has no ground/air threat
 		bool isSafe(WalkPosition finish, UnitType, bool groundCheck, bool airCheck);
 
-		bool isMobile(WalkPosition start, WalkPosition finish, UnitType);
+		bool isWalkable(WalkPosition start, WalkPosition finish, UnitType);
 		bool unitInRange(UnitInfo& unit);
 		
 		bool reactivePullWorker(UnitInfo& unit);
 		bool proactivePullWorker(UnitInfo& unit);
 		bool pullRepairWorker(UnitInfo& unit);
+
+		bool quickThreatOnPath(UnitInfo&, Position, Position);
+		bool accurateThreatOnPath(UnitInfo&);
 
 		template<class T>
 		bool isWalkable(T here)

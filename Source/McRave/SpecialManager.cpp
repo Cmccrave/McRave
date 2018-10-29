@@ -106,10 +106,9 @@ bool CommandManager::shouldUseSpecial(UnitInfo& unit)
 				// Warp together if wasn't last command
 				auto friendLowEnergyThreat = templar->getEnergy() < TechTypes::Psionic_Storm.energyCost() && Grids().getEGroundThreat(templar->getWalkPosition()) > 0.0;
 				if (wantArchons || friendLowEnergyThreat) {
-					if (templar->unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp && unit.unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp) {
+					if (templar->unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp && unit.unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp)
 						unit.unit()->useTech(TechTypes::Archon_Warp, templar->unit());
-						Broodwar->drawTextMap(unit.getPosition(), "WARPING");
-					}
+					Broodwar->drawTextMap(unit.getPosition(), "WARPING");
 					return true;
 				} 
 			}

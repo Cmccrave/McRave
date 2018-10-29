@@ -20,7 +20,7 @@ bool UtilManager::isSafe(WalkPosition end, UnitType unitType, bool groundCheck, 
 	return true;
 }
 
-bool UtilManager::isMobile(WalkPosition start, WalkPosition end, UnitType unitType)
+bool UtilManager::isWalkable(WalkPosition start, WalkPosition end, UnitType unitType)
 {
 	int walkWidth = (int)ceil(unitType.width() / 8.0) + 1;
 	int walkHeight = (int)ceil(unitType.height() / 8.0) + 1;
@@ -71,6 +71,7 @@ bool UtilManager::unitInRange(UnitInfo& unit)
 		return true;
 	return false;
 }
+
 
 bool UtilManager::proactivePullWorker(UnitInfo& unit)
 {
@@ -174,6 +175,7 @@ bool UtilManager::pullRepairWorker(UnitInfo& unit)
 	return false;
 }
 
+
 double UtilManager::getHighestThreat(WalkPosition here, UnitInfo& unit)
 {
 	// Determine highest threat possible here
@@ -195,6 +197,33 @@ double UtilManager::getHighestThreat(WalkPosition here, UnitInfo& unit)
 		}
 	}
 	return highest;
+}
+
+bool UtilManager::quickThreatOnPath(UnitInfo& unit, Position start, Position end)
+{
+	if (!start.isValid() || !end.isValid())
+		return true;	
+
+	for (auto choke : mapBWEM.GetPath(start, end)) {
+		auto threat = unit.getType().isFlyer() ? Grids().getEGroundThreat(choke->Center()) > 0.0 : Grids().getEAirThreat(choke->Center()) > 0.0;
+		if (threat > 0.0)
+			return true;
+	}
+	return false;
+}
+
+bool UtilManager::accurateThreatOnPath(UnitInfo& unit)
+{
+	if (unit.getTargetPath().getTiles().empty())
+		return true;
+
+	for (auto &tile : unit.getTargetPath().getTiles()) {
+		auto w = WalkPosition(tile);
+		auto threat = unit.getType().isFlyer() ? Grids().getEGroundThreat(w) > 0.0 : Grids().getEAirThreat(w) > 0.0;
+		if (threat)
+			return true;
+	}
+	return false;
 }
 
 
@@ -344,7 +373,7 @@ Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area
 		double dist = p.getDistance(Position(center)) * log(p.getDistance(mapBWEB.getMainPosition()));
 
 		if (!w.isValid()
-			|| !Util().isMobile(unit.getWalkPosition(), w, unit.getType())
+			|| !Util().isWalkable(unit.getWalkPosition(), w, unit.getType())
 			|| (here != Terrain().getDefendPosition() && area && mapBWEM.GetArea(t) != area)
 			|| (unit.getGroundRange() > 32.0 && p.getDistance(Position(center)) < min)
 			|| Buildings().overlapsQueuedBuilding(unit.getType(), t)

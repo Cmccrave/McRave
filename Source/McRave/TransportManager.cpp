@@ -300,7 +300,7 @@ void TransportManager::updateMovement(UnitInfo& transport)
 
 		//		if (!w.isValid()
 		//			|| p.getDistance(transport.getPosition()) <= 32.0
-		//			|| (transport.getTransportState() == TransportState::Unloading && !Util().isMobile(start, w, UnitTypes::Protoss_Reaver))
+		//			|| (transport.getTransportState() == TransportState::Unloading && !Util().isWalkable(start, w, UnitTypes::Protoss_Reaver))
 		//			|| (transport.getTransportState() == TransportState::Unloading && Broodwar->getGroundHeight(TilePosition(w)) < Broodwar->getGroundHeight(TilePosition(dropTarget)))
 		//			/*|| (p.getDistance(dropTarget) < 128.0 && dropTarget != Terrain().getDefendPosition())*/
 		//			|| (Terrain().getEnemyStartingTilePosition().isValid() && mapBWEM.GetArea(w) == mapBWEM.GetArea(Terrain().getEnemyStartingTilePosition())))

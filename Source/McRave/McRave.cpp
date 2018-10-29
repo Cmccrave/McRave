@@ -11,19 +11,13 @@
 // High temp shouldn't reserve?
 // Units getting stuck that block buildings
 // Send zealots to attack expos instead of goons
-// Obs too suicidal
 // Probes getting stuck trying to build - not sure
 // Probes sometimes don't build - re-issue order
-// Scarabs and Mines being used in sim?
 // SafeMove gets workers stuck on bridges
-// getConcavePosition and isMobile are expensive on CPU
-// Worker pulls - units start to scout?
+// getConcavePosition and isWalkable are expensive on CPU
+// Worker clear path
 
 // *** Restructuring ***
-// Scouts
-// Production
-// Pylons - add enemy, could use for artosis pylons
-// Scanner targets
 // Commands to boxes rather than circles (for storm, dweb, etc)
 // Move 4gate vs Z to 2 gate category
 
