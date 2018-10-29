@@ -180,7 +180,7 @@ namespace McRave
 		if (!sim || simValue == DBL_MAX)
 			return;
 
-		if (unit.getCombatState() == CombatState::Engaging)
+		if (unit.getLocalState() == LocalState::Engaging)
 			Broodwar->drawTextMap(unit.getPosition() + Position(-9, 16), "%c%.2f", textColor, simValue);
 		else
 			Broodwar->drawTextMap(unit.getPosition() + Position(-9, 16), "%c%.2f", Text::Grey, simValue);

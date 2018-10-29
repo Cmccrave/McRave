@@ -148,7 +148,7 @@ void TerrainManager::findAttackPosition()
 		Position posBest;
 
 		for (auto &station : Stations().getEnemyStations()) {
-			Station s = station.second;
+			auto &s = *station.second;
 			double dist = Players().vP() ? 1.0 / enemyStartingPosition.getDistance(s.BWEMBase()->Center()) : enemyStartingPosition.getDistance(s.BWEMBase()->Center());
 			if (dist >= distBest) {
 				distBest = dist;
@@ -163,6 +163,8 @@ void TerrainManager::findAttackPosition()
 		attackPosition = enemyStartingPosition;
 	else
 		attackPosition = Positions::Invalid;
+
+	Broodwar->drawCircleMap(attackPosition, 16, Colors::Red);
 }
 
 void TerrainManager::findDefendPosition()
@@ -188,7 +190,7 @@ void TerrainManager::findDefendPosition()
 	// Set mineral holding positions
 	double distBest = DBL_MAX;
 	for (auto &station : Stations().getMyStations()) {
-		Station s = station.second;
+		auto &s = *station.second;
 		double dist;
 		if (Terrain().getEnemyStartingPosition().isValid())
 			dist = mapBWEB.getGroundDistance(Terrain().getEnemyStartingPosition(), Position(s.ResourceCentroid()));

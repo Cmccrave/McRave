@@ -105,14 +105,16 @@ namespace McRave
 		firstTech =			TechTypes::None;
 		getOpening =		s < 80;
 		scout =				vis(Protoss_Pylon) > 0;
-		gasLimit =			INT_MAX;
-		techUnit =			Protoss_Corsair;
+		gasLimit =			INT_MAX;		
 
 		zealotLimit =		INT_MAX;
 		dragoonLimit =		0;
 
 		auto min100 = Broodwar->self()->minerals() >= 100;
 		auto cannonCount = int(com(Protoss_Forge) > 0) + (Units().getEnemyCount(Zerg_Zergling) >= 6) + (Units().getEnemyCount(Zerg_Zergling) >= 12) + (Units().getEnemyCount(Zerg_Zergling) >= 24);
+
+		if (techList.find(Protoss_Corsair) == techList.end())
+			techUnit = Protoss_Corsair;
 
 		// TODO: If scout died, go to 2 cannons, if next scout dies, go 3 cannons		
 		if (enemyBuild() == "Z2HatchHydra")
@@ -164,7 +166,9 @@ namespace McRave
 		if (currentTransition == "StormRush") {
 			firstUpgrade =		UpgradeTypes::None;
 			firstTech =			TechTypes::Psionic_Storm;
-			techUnit =			Protoss_High_Templar;
+
+			if (techList.find(Protoss_High_Templar) == techList.end())
+				techUnit = Protoss_High_Templar;
 						
 			itemQueue[Protoss_Photon_Cannon] =		Item(cannonCount);
 			itemQueue[Protoss_Assimilator] =		Item((s >= 38) + (s >= 60));
@@ -428,7 +432,6 @@ namespace McRave
 	{
 		// https://liquipedia.net/starcraft/1_Gate_Core_(vs._Protoss)
 		// https://liquipedia.net/starcraft/1_Gate_Core_(vs._Terran)
-
 		firstUpgrade =		UpgradeTypes::Singularity_Charge;
 		firstTech =			TechTypes::None;
 		scout =				Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
@@ -475,28 +478,37 @@ namespace McRave
 			itemQueue[Protoss_Gateway] =			Item((s >= 20) + (2 * addGates));
 
 			// TODO: Decide whether to reaver or obs here, reaver for now
-			if (vis(Protoss_Robotics_Facility) > 0)
+			if (vis(Protoss_Robotics_Facility) > 0 && techList.find(Protoss_Reaver) == techList.end())
 				techUnit = Protoss_Reaver;
 		}
 		else if (currentTransition == "Reaver") {
 		// http://liquipedia.net/starcraft/1_Gate_Reaver
-			dragoonLimit = INT_MAX;
+			getOpening =		s < 60;
+			dragoonLimit =		INT_MAX;
 
 			if (Players().vP()) {
 				playPassive =		!Strategy().enemyFastExpand() && (com(Protoss_Reaver) < 2 || com(Protoss_Shuttle) < 1);
 				getOpening =		(com(Protoss_Reaver) < 2 && s < 140);
 				zealotLimit =		(com(Protoss_Robotics_Facility) >= 1) ? 6 : zealotLimit;
+
+				itemQueue[Protoss_Gateway] =				Item((s >= 20) + (s >= 60) + (s >= 62));
+				itemQueue[Protoss_Assimilator] =			Item((addGas || Strategy().enemyScouted()));
+				itemQueue[Protoss_Robotics_Facility] =		Item(s >= 52);
 			}
 			else {
+				hideTech =			true;
 				getOpening =		(com(Protoss_Reaver) < 1);
+
+				itemQueue[Protoss_Nexus] =					Item(1 + (s >= 74));
+				itemQueue[Protoss_Gateway] =				Item((s >= 20) + (s >= 60) + (s >= 62));
+				itemQueue[Protoss_Assimilator] =			Item((addGas || Strategy().enemyScouted()));
+				itemQueue[Protoss_Robotics_Facility] =		Item(s >= 52);
 			}
 
-			itemQueue[Protoss_Gateway] =				Item((s >= 20) + (s >= 60) + (s >= 62));
-			itemQueue[Protoss_Assimilator] =			Item((addGas || Strategy().enemyScouted()));
-			itemQueue[Protoss_Robotics_Facility] =		Item(s >= 52);
+
 
 			// TODO: Decide whether to reaver or obs here, reaver for now
-			if (vis(Protoss_Robotics_Facility) > 0)
+			if (vis(Protoss_Robotics_Facility) > 0 && techList.find(Protoss_Reaver) == techList.end())
 				techUnit = Protoss_Reaver;
 		}
 		else if (currentTransition == "Corsair") {
@@ -505,7 +517,9 @@ namespace McRave
 			firstTech =			TechTypes::None;
 			dragoonLimit =		0;
 			zealotLimit	=		INT_MAX;
-			techUnit =			Protoss_Corsair;
+
+			if (techList.find(Protoss_Corsair) == techList.end())
+				techUnit = Protoss_Corsair;
 
 			if (Strategy().enemyRush()) {
 				itemQueue[Protoss_Gateway] =			Item((s >= 18) * 2);
@@ -610,11 +624,13 @@ namespace McRave
 		}
 		else if (currentTransition == "ReaverCarrier") {
 			getOpening =		s < 120;
-			techUnit =			Protoss_Reaver;
 
-			itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 1) + (vis(Protoss_Nexus) > 1) + (s >= 70) + (s >= 80));
-			if (com(Protoss_Reaver))
+			if (techList.find(Protoss_Reaver) != techList.end())
+				techUnit = Protoss_Reaver;
+			if (com(Protoss_Reaver) && techList.find(Protoss_Carrier) != techList.end())
 				techUnit = Protoss_Carrier;
+
+			itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 1) + (vis(Protoss_Nexus) > 1) + (s >= 70) + (s >= 80));			
 		}
 
 		// TODO: Move this hack
@@ -679,14 +695,17 @@ namespace McRave
 
 			itemQueue[Protoss_Assimilator] =		Item(s >= 24);
 			itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
+
+			if (s >= 100 && techList.find(Protoss_Observer) == techList.end())
+				techUnit = Protoss_Observer;
 		}
 		else if (currentTransition == "Carrier") {
 			getOpening =		s < 120;
 
-			itemQueue[Protoss_Assimilator] =		Item((s >= 24) + (vis(Protoss_Nexus) >= 2));
+			itemQueue[Protoss_Assimilator] =		Item((s >= 24) + (com(Protoss_Nexus) >= 2));
 			itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
 
-			if (s >= 100)
+			if (s >= 100 && techList.find(Protoss_Carrier) == techList.end())
 				techUnit = Protoss_Carrier;
 		}
 	}

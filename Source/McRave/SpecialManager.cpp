@@ -62,13 +62,13 @@ bool CommandManager::shouldUseSpecial(UnitInfo& unit)
 
 	// Siege Tanks
 	else if (unit.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) {
-		if (unit.getPosition().getDistance(unit.getEngagePosition()) < 32.0 && unit.getCombatState() == CombatState::Engaging)
+		if (unit.getPosition().getDistance(unit.getEngagePosition()) < 32.0 && unit.getLocalState() == LocalState::Engaging)
 			unit.unit()->siege();
-		if (unit.getCombatState() == CombatState::Retreating && unit.getPosition().getDistance(Terrain().getDefendPosition()) < 320)
+		if (unit.getGlobalState() == GlobalState::Retreating && unit.getPosition().getDistance(Terrain().getDefendPosition()) < 320)
 			unit.unit()->siege();
 	}
 	else if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode) {
-		if (unit.getPosition().getDistance(unit.getEngagePosition()) > 128.0 || unit.getCombatState() == CombatState::Retreating) {
+		if (unit.getPosition().getDistance(unit.getEngagePosition()) > 128.0 || unit.getLocalState() == LocalState::Retreating) {
 			if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Unsiege)
 				unit.unit()->unsiege();
 			return true;
@@ -101,15 +101,17 @@ bool CommandManager::shouldUseSpecial(UnitInfo& unit)
 
 			// Try to find a friendly templar who is low energy and is threatened
 			UnitInfo* templar = Util().getClosestUnit(unit, unit.getPlayer(), UnitTypes::Protoss_High_Templar);
-			auto friendLowEnergyThreat = templar->getEnergy() < TechTypes::Psionic_Storm.energyCost() && Grids().getEGroundThreat(templar->getWalkPosition()) > 0.0;
+			if (templar) {				
 
-			// Warp together if wasn't last command
-			if (templar && (wantArchons || friendLowEnergyThreat)) {
-				if (templar->unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp && unit.unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp) {
-					unit.unit()->useTech(TechTypes::Archon_Warp, templar->unit());
-					Broodwar->drawTextMap(unit.getPosition(), "WARPING");
-				}
-				return true;
+				// Warp together if wasn't last command
+				auto friendLowEnergyThreat = templar->getEnergy() < TechTypes::Psionic_Storm.energyCost() && Grids().getEGroundThreat(templar->getWalkPosition()) > 0.0;
+				if (wantArchons || friendLowEnergyThreat) {
+					if (templar->unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp && unit.unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp) {
+						unit.unit()->useTech(TechTypes::Archon_Warp, templar->unit());
+						Broodwar->drawTextMap(unit.getPosition(), "WARPING");
+					}
+					return true;
+				} 
 			}
 		}
 	}

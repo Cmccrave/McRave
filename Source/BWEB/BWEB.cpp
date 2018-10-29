@@ -57,7 +57,6 @@ namespace BWEB
 				for (auto &defense : station.DefenseLocations()) {
 					if (unit->getTilePosition() == defense) {
 						station.setDefenseCount(defCnt + 1);
-						Broodwar << station.getDefenseCount() << endl;
 						return;
 					}
 				}
@@ -150,11 +149,13 @@ namespace BWEB
 
 		// Find a chokepoint that belongs to main and natural
 		auto distBest = DBL_MAX;
-		for (auto &choke : naturalArea->ChokePoints()) {
-			const auto dist = getGroundDistance(Position(choke->Center()), mainPosition);
-			if (mainChokes.find(choke) != mainChokes.end() && dist < distBest) {
-				mainChoke = choke;
-				distBest = dist;
+		if (naturalArea) {
+			for (auto &choke : naturalArea->ChokePoints()) {
+				const auto dist = getGroundDistance(Position(choke->Center()), mainPosition);
+				if (mainChokes.find(choke) != mainChokes.end() && dist < distBest) {
+					mainChoke = choke;
+					distBest = dist;
+				}
 			}
 		}
 
@@ -185,35 +186,37 @@ namespace BWEB
 		// Find area that shares the choke we need to defend
 		auto distBest = DBL_MAX;
 		const BWEM::Area* second = nullptr;
-		for (auto &area : naturalArea->AccessibleNeighbours()) {
-			auto center = area->Top();
-			const auto dist = Position(center).getDistance(mapBWEM.Center());
+		if (naturalArea) {
+			for (auto &area : naturalArea->AccessibleNeighbours()) {
+				auto center = area->Top();
+				const auto dist = Position(center).getDistance(mapBWEM.Center());
 
-			bool wrongArea = false;
-			for (auto &choke : area->ChokePoints()) {
-				if ((!choke->Blocked() && choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2)) <= 2) || nonChokes.find(choke) != nonChokes.end()) {
-					wrongArea = true;
+				bool wrongArea = false;
+				for (auto &choke : area->ChokePoints()) {
+					if ((!choke->Blocked() && choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2)) <= 2) || nonChokes.find(choke) != nonChokes.end()) {
+						wrongArea = true;
+					}
 				}
+				if (wrongArea)
+					continue;
+
+				if (center.isValid() && dist < distBest)
+					second = area, distBest = dist;
 			}
-			if (wrongArea)
-				continue;
 
-			if (center.isValid() && dist < distBest)
-				second = area, distBest = dist;
-		}
+			// Find second choke based on the connected area
+			distBest = DBL_MAX;
+			for (auto &choke : naturalArea->ChokePoints()) {
+				if (choke->Center() == mainChoke->Center()
+					|| choke->Blocked()
+					|| choke->Geometry().size() <= 3
+					|| (choke->GetAreas().first != second && choke->GetAreas().second != second))
+					continue;
 
-		// Find second choke based on the connected area
-		distBest = DBL_MAX;
-		for (auto &choke : naturalArea->ChokePoints()) {
-			if (choke->Center() == mainChoke->Center()
-				|| choke->Blocked()
-				|| choke->Geometry().size() <= 3
-				|| (choke->GetAreas().first != second && choke->GetAreas().second != second))
-				continue;
-
-			const auto dist = Position(choke->Center()).getDistance(Position(Broodwar->self()->getStartLocation()));
-			if (dist < distBest)
-				naturalChoke = choke, distBest = dist;
+				const auto dist = Position(choke->Center()).getDistance(Position(Broodwar->self()->getStartLocation()));
+				if (dist < distBest)
+					naturalChoke = choke, distBest = dist;
+			}
 		}
 	}
 
@@ -248,8 +251,6 @@ namespace BWEB
 			for (auto &tile : station.DefenseLocations())
 				Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), Broodwar->self()->getColor());
 			Broodwar->drawBoxMap(Position(station.BWEMBase()->Location()), Position(station.BWEMBase()->Location()) + Position(129, 97), Broodwar->self()->getColor());
-
-			Broodwar->drawTextMap(Position(station.ResourceCentroid()), "%d", station.getDefenseCount());
 		}
 
 		// Draw Walls

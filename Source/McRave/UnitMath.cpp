@@ -42,6 +42,7 @@ namespace McRave {
 
 		double getMaxAirStrength(UnitInfo& unit)
 		{
+			// HACK: Some hardcoded values
 			if (unit.getType() == UnitTypes::Protoss_Scarab || unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Zerg_Egg || unit.getType() == UnitTypes::Zerg_Larva || unit.getAirRange() <= 0.0)
 				return 0.0;
 
@@ -76,7 +77,7 @@ namespace McRave {
 		double getPriority(UnitInfo& unit)
 		{
 			if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Terran_Science_Vessel)
-				return 3.0;
+				return 4.0;
 			if ((unit.unit()->isRepairing() || unit.unit()->isConstructing()) && Units().isThreatening(unit))
 				return 100.0;
 			if (Broodwar->getFrameCount() < 6000 && Strategy().enemyProxy() && unit.getType() == UnitTypes::Protoss_Pylon)

@@ -153,7 +153,7 @@ namespace BWEB
 		vector<Station> Stations() const { return stations; }
 
 		/// <summary> Returns the closest BWEB::Station to the given TilePosition. </summary>
-		const Station* getClosestStation(TilePosition) const;
+		const Station * getClosestStation(TilePosition) const;
 
 		/// <summary> Returns the closest BWEB::Wall to the given TilePosition. </summary>
 		const Wall* getClosestWall(TilePosition) const;

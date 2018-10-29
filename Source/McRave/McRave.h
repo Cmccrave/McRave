@@ -31,8 +31,16 @@ namespace McRave
 		None, Loading, Unloading, Monitoring, Engaging, Retreating
 	};
 
-	enum class CombatState {
+	enum class GlobalState {
 		None, Engaging, Retreating
+	};
+
+	enum class LocalState {
+		None, Engaging, Retreating
+	};
+
+	enum class SimState {
+		None, Win, Loss, HighWin, HighLoss
 	};
 }
 

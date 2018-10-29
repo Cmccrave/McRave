@@ -23,15 +23,19 @@ namespace McRave
 		int remainingTrainFrame;
 		int energy;
 
+		int beingAttackedCount;
+
 		bool burrowed;
 
 		Unit thisUnit;
 		UnitType unitType, buildingType;
 		Player player;
 
-		McRave::Role role;
-		McRave::TransportState tState;
-		McRave::CombatState cState;
+		Role role;
+		TransportState tState;
+		GlobalState gState;
+		LocalState lState;
+		SimState sState;
 
 		UnitInfo* target;
 		UnitInfo* transport;
@@ -80,13 +84,21 @@ namespace McRave
 		set<UnitInfo*>& getAssignedCargo() { return assignedCargo; }
 
 		// States
-		McRave::TransportState getTransportState() { return tState; }
-		void setTransportState(McRave::TransportState newState) { tState = newState; }
-		McRave::CombatState getCombatState() { return cState; }
-		void setCombatState(McRave::CombatState newState) { cState = newState; }
+		TransportState getTransportState() { return tState; }
+		void setTransportState(TransportState newState) { tState = newState; }
+		SimState getSimState() { return sState; }
+		void setSimState(SimState newState) { sState = newState; }
+		GlobalState getGlobalState() { return gState; }
+		void setGlobalState(GlobalState newState) { gState = newState; }
+		LocalState getLocalState() { return lState; }
+		void setLocalState(LocalState newState) { lState = newState; }
 
 		// Holding resource
 		int framesHoldingResource() { return resourceHeldFrames; }
+
+		// How many units are targeting this unit
+		int getUnitsAttacking() { return beingAttackedCount; }
+		void incrementBeingAttackedCount() { beingAttackedCount++; }
 
 		// Engagement distances
 		double getEngDist() { return engageDist; }
@@ -153,9 +165,13 @@ namespace McRave
 		void setKillCount(int newValue)		{ killCount = newValue; }
 
 		// Debug circles
-		void circleGreen()								{ Broodwar->drawCircleMap(position, unitType.width(), Colors::Green); }		
-		void circleYellow()								{ Broodwar->drawCircleMap(position, unitType.width(), Colors::Yellow); }
 		void circleRed()								{ Broodwar->drawCircleMap(position, unitType.width(), Colors::Red); }
+		void circleOrange()								{ Broodwar->drawCircleMap(position, unitType.width(), Colors::Orange); }
+		void circleYellow()								{ Broodwar->drawCircleMap(position, unitType.width(), Colors::Yellow); }
+		void circleGreen()								{ Broodwar->drawCircleMap(position, unitType.width(), Colors::Green); }		
+		void circleBlue()								{ Broodwar->drawCircleMap(position, unitType.width(), Colors::Blue); }
+		void circlePurple()								{ Broodwar->drawCircleMap(position, unitType.width(), Colors::Purple); }
+		void circleBlack()								{ Broodwar->drawCircleMap(position, unitType.width(), Colors::Black); }
 
 		bool isBurrowed()								{ return burrowed; }
 		Position getSimPosition()						{ return simPosition; }

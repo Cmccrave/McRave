@@ -14,13 +14,13 @@ namespace McRave
 	{
 		for (auto &b : Units().getMyUnits()) {
 			auto &building = b.second;
-
-			if (!building.unit() || building.getRole() != Role::Producing || !building.unit()->isCompleted() || Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0)
+			
+			if (!building.unit() || building.getRole() != Role::Producing || (!building.unit()->isCompleted() && !building.getType().isResourceDepot() && building.getType().getRace() != Races::Zerg) || Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0)
 				continue;
 
-			bool latencyIdle = building.getRemainingTrainFrames() < Broodwar->getRemainingLatencyFrames() || building.unit()->isIdle();
+			bool latencyIdle = building.getRemainingTrainFrames() < Broodwar->getRemainingLatencyFrames() || building.unit()->isIdle();		
 
-			if (latencyIdle && (!building.getType().isResourceDepot() || (building.getType() != UnitTypes::Zerg_Hatchery && building.getType().getRace() == Races::Zerg))) {
+			if (latencyIdle && !building.getType().isResourceDepot()) {
 				idleProduction.erase(building.unit());
 				idleUpgrade.erase(building.unit());
 				idleTech.erase(building.unit());
@@ -52,12 +52,8 @@ namespace McRave
 
 	void ProductionManager::MadMix(UnitInfo& building)
 	{
-		auto needOverlords = Units().getMyTypeCount(UnitTypes::Zerg_Overlord) <= min(22, (int)floor((Units().getSupply() / max(14, 16 - Units().getMyTypeCount(UnitTypes::Zerg_Overlord)))));
-
-		if (building.unit()->getLarva().size() == 0)
-			idleProduction[building.unit()] = UnitTypes::Zerg_Larva;
-		else
-			idleProduction.erase(building.unit());
+		auto needOverlords = Units().getMyTypeCount(UnitTypes::Zerg_Overlord) <= min(22, (int)floor((Units().getSupply() / max(14, 16 - Units().getMyTypeCount(UnitTypes::Zerg_Overlord)))));	
+		
 
 		for (auto &larva : building.unit()->getLarva()) {
 
@@ -75,12 +71,13 @@ namespace McRave
 					double value = score * mineral * gas;
 					
 					if (BuildOrder().isUnitUnlocked(type.first) && value > best && isCreateable(building.unit(), type.first) && (isAffordable(type.first) || type.first == Strategy().getHighestUnitScore()) && isSuitable(type.first)) {
-						best = value, typeBest = type.first;
+						best = value;
+						typeBest = type.first;
 					}
 
-					if (BuildOrder().isUnitUnlocked(type.first) && isCreateable(building.unit(), type.first) && (isAffordable(type.first) || type.first == Strategy().getHighestUnitScore()) && isSuitable(type.first)) {
+/*					if (BuildOrder().isUnitUnlocked(type.first) && isCreateable(building.unit(), type.first) && (isAffordable(type.first) || type.first == Strategy().getHighestUnitScore()) && isSuitable(type.first)) {
 						Broodwar << unit.c_str() << "   " << value << endl;
-					}					
+					}	*/				
 				}
 				
 				if (typeBest != UnitTypes::None) {					
@@ -88,10 +85,8 @@ namespace McRave
 						larva->morph(typeBest);
 						return;	// Only produce 1 unit per frame to allow for scores to be re-calculated
 					}
-					else {
+					else if (BuildOrder().isTechUnit(typeBest)){
 						idleProduction[building.unit()] = typeBest;
-						reservedMineral += typeBest.mineralPrice();
-						reservedGas += typeBest.gasPrice();
 					}
 				}
 			}
@@ -175,7 +170,7 @@ namespace McRave
 	void ProductionManager::upgrade(UnitInfo& building)
 	{
 		for (auto &upgrade : building.getType().upgradesWhat()) {
-			if (isCreateable(upgrade) && isSuitable(upgrade)) {
+			if (isCreateable(upgrade) && isSuitable(upgrade)) {				
 				if (isAffordable(upgrade))
 					building.unit()->upgrade(upgrade), idleUpgrade.erase(building.unit());
 				else
@@ -292,15 +287,29 @@ namespace McRave
 
 	bool ProductionManager::isCreateable(UpgradeType upgrade)
 	{
-		for (auto &unit : upgrade.whatUses())
-			if (BuildOrder().isUnitUnlocked(unit) && Broodwar->self()->getUpgradeLevel(upgrade) != upgrade.maxRepeats() && !Broodwar->self()->isUpgrading(upgrade)) return true;
+		if (upgrade == BuildOrder().getFirstUpgrade() && Broodwar->self()->getUpgradeLevel(upgrade) == 0 && !Broodwar->self()->isUpgrading(upgrade))
+			return true;
+
+		// Some hardcoded ones
+		if (upgrade == UpgradeTypes::Adrenal_Glands)
+			return Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Hive);
+
+		for (auto &unit : upgrade.whatUses()) {		
+			if (BuildOrder().isUnitUnlocked(unit) && Broodwar->self()->getUpgradeLevel(upgrade) != upgrade.maxRepeats() && !Broodwar->self()->isUpgrading(upgrade))
+				return true;
+		}
 		return false;
 	}
 
 	bool ProductionManager::isCreateable(TechType tech)
 	{
-		for (auto &unit : tech.whatUses())
-			if (BuildOrder().isUnitUnlocked(unit) && !Broodwar->self()->hasResearched(tech) && !Broodwar->self()->isResearching(tech)) return true;
+		if (tech == BuildOrder().getFirstTech() && !Broodwar->self()->hasResearched(tech) && !Broodwar->self()->isResearching(tech))
+			return true;
+
+		for (auto &unit : tech.whatUses()) {
+			if (BuildOrder().isUnitUnlocked(unit) && !Broodwar->self()->hasResearched(tech) && !Broodwar->self()->isResearching(tech))
+				return true;
+		}
 		return false;
 	}
 
@@ -403,6 +412,10 @@ namespace McRave
 	bool ProductionManager::isSuitable(UpgradeType upgrade)
 	{
 		using namespace UpgradeTypes;
+
+		// Allow first upgrade
+		if (upgrade == BuildOrder().getFirstUpgrade() && !BuildOrder().firstReady())
+			return true;
 
 		// If this is a specific unit upgrade, check if it's unlocked
 		if (upgrade.whatUses().size() == 1) {
@@ -534,6 +547,10 @@ namespace McRave
 	bool ProductionManager::isSuitable(TechType tech)
 	{
 		using namespace TechTypes;
+
+		// Allow first upgrade
+		if (tech == BuildOrder().getFirstTech() && !BuildOrder().firstReady())
+			return true;
 
 		// If this is a specific unit tech, check if it's unlocked
 		if (tech.whatUses().size() == 1) {

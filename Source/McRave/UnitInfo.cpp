@@ -54,7 +54,9 @@ namespace McRave
 		resource = nullptr;
 		role = Role::None;
 		tState = TransportState::None;
-		cState = CombatState::None;
+		lState = LocalState::None;
+		gState = GlobalState::None;
+		sState = SimState::None;
 
 		position = Positions::Invalid;
 		engagePosition = Positions::Invalid;
@@ -113,6 +115,12 @@ namespace McRave
 		lastAttackFrame			= (t != UnitTypes::Protoss_Reaver && (thisUnit->isStartingAttack() || thisUnit->isRepairing())) ? Broodwar->getFrameCount() : lastAttackFrame;
 		killCount				= unit()->getKillCount();
 		simBonus				= 1.0;
+		beingAttackedCount		= 0;
+
+		// Reset states
+		lState					= LocalState::None;
+		gState					= GlobalState::None;
+		tState					= TransportState::None;
 
 		// Resource held frame
 		if (thisUnit->isCarryingGas() || thisUnit->isCarryingMinerals())

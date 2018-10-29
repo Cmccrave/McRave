@@ -226,8 +226,11 @@ void WorkerManager::build(UnitInfo& worker)
 		worker.setDestination(center);
 		Broodwar->drawTextMap(worker.getPosition(), "%s", worker.unit()->getOrder().c_str());
 
-		if (worker.getPosition().getDistance(center) > 256.0)
-			Commands().safeMove(worker);
+		if (worker.getPosition().getDistance(center) > 256.0) {
+			if (worker.unit()->getLastCommand().getTargetPosition() != center)
+				worker.unit()->move(center);
+			//Commands().safeMove(worker);
+		}
 		else if (worker.unit()->getOrder() != Orders::PlaceBuilding || worker.unit()->isIdle())
 			worker.unit()->build(worker.getBuildingType(), worker.getBuildPosition());
 	}

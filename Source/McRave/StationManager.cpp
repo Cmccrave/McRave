@@ -9,9 +9,7 @@ void StationManager::onFrame()
 
 void StationManager::updateStations()
 {
-	for (auto &station : myStations) {
-		Broodwar->drawTextMap(station.second.BWEMBase()->Center(), "%d", station.second.getDefenseCount());
-	}
+
 }
 
 Position StationManager::getClosestEnemyStation(Position here)
@@ -19,7 +17,7 @@ Position StationManager::getClosestEnemyStation(Position here)
 	double distBest = DBL_MAX;
 	Position best;
 	for (auto &station : enemyStations) {
-		Station s = station.second;
+		auto s = *station.second;
 		double dist = here.getDistance(s.BWEMBase()->Center());
 		if (dist < distBest)
 			best = s.BWEMBase()->Center(), distBest = dist;
@@ -29,13 +27,14 @@ Position StationManager::getClosestEnemyStation(Position here)
 
 void StationManager::storeStation(Unit unit)
 {
-	const Station const * station = mapBWEB.getClosestStation(unit->getTilePosition());
+	auto station = mapBWEB.getClosestStation(unit->getTilePosition());
 	if (!station || !unit->getType().isResourceDepot())
 		return;
 	if (unit->getTilePosition() != station->BWEMBase()->Location())
 		return;
 
-	unit->getPlayer() == Broodwar->self() ? myStations.emplace(unit, *station) : enemyStations.emplace(unit, *station);
+
+	unit->getPlayer() == Broodwar->self() ? myStations.emplace(unit, station) : enemyStations.emplace(unit, station);
 	int state = 1 + (unit->isCompleted());
 
 	// Change the resource states and store station
@@ -66,7 +65,7 @@ void StationManager::storeStation(Unit unit)
 
 void StationManager::removeStation(Unit unit)
 {
-	const Station const * station = mapBWEB.getClosestStation(unit->getTilePosition());
+	const Station * station = mapBWEB.getClosestStation(unit->getTilePosition());
 	if (!station || !unit->getType().isResourceDepot())
 		return;
 

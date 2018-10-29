@@ -51,6 +51,12 @@ namespace McRave
 			return;
 		}
 
+		// Testing Reavers
+		currentBuild = "P21Nexus";
+		currentOpener = "1Gate";
+		currentTransition = "Standard";
+		return;
+
 		// File extension including our race initial;
 		const string dash = "-";
 		const string noStats = " 0 0 ";

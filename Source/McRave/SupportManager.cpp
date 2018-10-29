@@ -30,8 +30,12 @@ namespace McRave {
 			}
 
 			// Detectors want to stay close to their target
-			if (unit.getType().isDetector() && unit.hasTarget() && unit.getTarget().getPosition().isValid())
-				destination = unit.getTarget().getPosition();
+			if (unit.getType().isDetector() && unit.hasTarget() && unit.getTarget().getPosition().isValid()) {
+				UnitInfo * closest = Util().getClosestUnit(unit, unit.getPlayer());
+
+				if (closest && (closest->getGroundDamage() > 0.0 || closest->getAirDamage() > 0.0) && closest->getPosition().getDistance(unit.getTarget().getPosition()) < 256.0)
+					destination = unit.getTarget().getPosition();
+			}
 
 			// TODO: Overlord scouting, need to use something different to spread overlords
 			if (!Terrain().getEnemyStartingPosition().isValid())

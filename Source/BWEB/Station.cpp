@@ -185,7 +185,7 @@ namespace BWEB
 		return defenses;
 	}
 
-	const Station* Map::getClosestStation(TilePosition here) const
+	const Station * Map::getClosestStation(TilePosition here) const
 	{
 		auto distBest = DBL_MAX;
 		const Station* bestStation = nullptr;

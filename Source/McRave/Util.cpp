@@ -190,7 +190,7 @@ double UtilManager::getHighestThreat(WalkPosition here, UnitInfo& unit)
 			
 			auto grd = Grids().getEGroundThreat(w);
 			auto air = Grids().getEAirThreat(w);
-			auto current = unit.getRole() == Role::Transporting ? grd + air : (unit.getType().isFlyer() ? air : grd);
+			auto current = unit.getType().isFlyer() ? air : grd;
 			highest = (current > highest) ? current : highest;
 		}
 	}
@@ -286,7 +286,7 @@ UnitInfo * UtilManager::getClosestBuilder(Position here)
 	for (auto &u : units) {
 		UnitInfo &unit = u.second;
 
-		if (!unit.unit() || !unit.getType().isWorker() || unit.getBuildPosition().isValid())
+		if (!unit.unit() || !unit.getType().isWorker() || unit.getBuildPosition().isValid() || (unit.hasResource() && !unit.getResource().getType().isMineralField()))
 			continue;
 
 		double dist = here.getDistance(unit.getPosition());

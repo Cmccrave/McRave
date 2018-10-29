@@ -11,10 +11,9 @@ namespace McRave
 	{
 		void getEngagePosition(UnitInfo&);
 		void getPathToTarget(UnitInfo&);
+		void getBestTarget(UnitInfo&);
 	public:
 		void getTarget(UnitInfo&);
-		void enemyTarget(UnitInfo&);
-		void allyTarget(UnitInfo&);
 	};
 }
 

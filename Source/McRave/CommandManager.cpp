@@ -64,7 +64,7 @@ namespace McRave
 
 	void CommandManager::updateDecision(UnitInfo& unit)
 	{
-		bool attackCooldown = Broodwar->getFrameCount() - unit.getLastAttackFrame() <= unit.getMinStopFrame() - Broodwar->getRemainingLatencyFrames();
+		bool attackCooldown = Broodwar->getFrameCount() - unit.getLastAttackFrame() <= unit.getMinStopFrame() - Broodwar->getLatencyFrames();
 		bool latencyCooldown =	Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;
 
 		if (!unit.unit() || !unit.unit()->exists()																							// Prevent crashes	
@@ -83,7 +83,7 @@ namespace McRave
 			if (unit.hasTarget() && unit.unit()->getGroundWeaponCooldown() <= 0 && unit.getTarget().unit()->exists())
 				attack(unit);
 			else
-				approach(unit);
+				kite(unit);
 		}
 
 		// If this unit should use a special ability that requires a command
@@ -91,8 +91,7 @@ namespace McRave
 			return;
 
 		// If this unit should engage
-		else if (unit.getCombatState() == CombatState::Engaging) {
-			unit.circleGreen();
+		else if (unit.getLocalState() == LocalState::Engaging) {			
 			if (shouldAttack(unit))
 				attack(unit);
 			else if (shouldApproach(unit))
@@ -100,28 +99,31 @@ namespace McRave
 			else if (shouldKite(unit))
 				kite(unit);
 			else
-				move(unit);			
+				move(unit);
 		}
 
 		// If this unit should retreat
-		else if (unit.getCombatState() == CombatState::Retreating) {
-			unit.circleRed();
+		else if (unit.getLocalState() == LocalState::Retreating) {
 			if (shouldDefend(unit))
 				defend(unit);
 			else if (unit.getType().isFlyer() && unit.getDestination().isValid())	// should escort - temp not using
 				escort(unit);
-			else if (shouldHunt(unit))				
-				hunt(unit);			
+			else if (shouldHunt(unit))
+				hunt(unit);
 			else
 				kite(unit);
 		}
+		else
+			move(unit);
 	}
 
 	bool CommandManager::shouldAttack(UnitInfo& unit)
 	{
 		// If no target target or a Lurker
 		if (!unit.hasTarget()
-			|| unit.getType() == UnitTypes::Zerg_Lurker)
+			|| !unit.getTarget().unit()->exists()
+			|| unit.getType() == UnitTypes::Zerg_Lurker
+			|| !unit.getTarget().unit()->exists())
 			return false;
 
 		// Carrier attack command issuing
@@ -135,7 +137,7 @@ namespace McRave
 			return false;
 		}
 
-		// If attack not on cooldown
+		// If attack on cooldown
 		if ((!unit.getTarget().getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames())
 			|| (unit.getTarget().getType().isFlyer() && unit.unit()->getAirWeaponCooldown() < Broodwar->getRemainingLatencyFrames())
 			|| unit.getType() == UnitTypes::Terran_Medic)
@@ -145,6 +147,14 @@ namespace McRave
 
 	bool CommandManager::shouldKite(UnitInfo& unit)
 	{
+		// If attack not on cooldown
+		if (unit.hasTarget()) {
+			if ((!unit.getTarget().getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames())
+				|| (unit.getTarget().getType().isFlyer() && unit.unit()->getAirWeaponCooldown() < Broodwar->getRemainingLatencyFrames())
+				|| unit.getType() == UnitTypes::Terran_Medic)
+				return false;
+		}
+
 		// Mutas and Carriers
 		if (unit.getType() == UnitTypes::Protoss_Carrier
 			|| unit.getType() == UnitTypes::Zerg_Mutalisk)
@@ -165,13 +175,13 @@ namespace McRave
 			if ((unit.getPosition().getDistance(Terrain().getDefendPosition()) < 128.0 && allyRange <= 64.0 && Strategy().defendChoke())
 				|| (unit.getTarget().getType().isBuilding()))
 				return false;
-						
-			if (((unit.getTarget().isBurrowed() || unit.getTarget().unit()->isCloaked()) && !unit.getTarget().unit()->isDetected())		// Invisible Unit
-				|| (unit.getType() == UnitTypes::Protoss_Reaver)																		// Reavers always kite
+
+			if (unit.getType() == UnitTypes::Protoss_Reaver																				// Reavers always kite
 				|| (unit.getType() == UnitTypes::Terran_Vulture)																		// Vultures always kite
 				|| (unit.getType() == UnitTypes::Zerg_Mutalisk)																			// Mutas always kite
 				|| (unit.getType() == UnitTypes::Protoss_Carrier)
 				|| (allyRange >= 32.0 && unit.unit()->isUnderAttack() && allyRange >= enemyRange)										// Ranged unit under attack by unit with lower range
+				|| (unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine && !unit.getTarget().isBurrowed())
 				|| ((enemyRange <= allyRange && unit.unit()->getDistance(unit.getTarget().getPosition()) <= allyRange - enemyRange)))	// Ranged unit fighting lower range unit and not at max range
 				return true;
 		}
@@ -180,6 +190,14 @@ namespace McRave
 
 	bool CommandManager::shouldApproach(UnitInfo& unit)
 	{
+		// If attack not on cooldown
+		if (unit.hasTarget()) {
+			if ((!unit.getTarget().getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames())
+				|| (unit.getTarget().getType().isFlyer() && unit.unit()->getAirWeaponCooldown() < Broodwar->getRemainingLatencyFrames())
+				|| unit.getType() == UnitTypes::Terran_Medic)
+				return false;
+		}
+
 		// No target, Carrier or Muta
 		if (!unit.hasTarget()
 			|| unit.getType() == UnitTypes::Protoss_Carrier
@@ -197,17 +215,16 @@ namespace McRave
 	}
 
 	bool CommandManager::shouldDefend(UnitInfo& unit)
-	{
-		bool isSafe = (!unit.getType().isFlyer() && Grids().getEGroundThreat(unit.getWalkPosition()) == 0.0) || (unit.getType().isFlyer() && Grids().getEAirThreat(unit.getWalkPosition()) == 0.0);
-		bool closeToDefend = Terrain().getDefendPosition().getDistance(unit.getPosition()) < 320.0 || Terrain().isInAllyTerritory(unit.getTilePosition()) || Terrain().isInAllyTerritory((TilePosition)unit.getDestination()) || (!unit.getType().isFlyer() && !mapBWEM.GetArea(unit.getTilePosition()));
-		if (/*(!unit.hasTarget() || !Units().isThreatening(unit.getTarget())) &&*/ isSafe && closeToDefend)
+	{		
+		bool closeToDefend = Terrain().getDefendPosition().getDistance(unit.getPosition()) < 320.0 || Terrain().isInAllyTerritory(unit.getTilePosition()) || Terrain().isInAllyTerritory((TilePosition)unit.getDestination()) || (!unit.getType().isFlyer() && !unit.hasTransport() && !mapBWEM.GetArea(unit.getTilePosition()));
+		if (closeToDefend)
 			return true;
 		return false;
 	}
-	
+
 	bool CommandManager::shouldHunt(UnitInfo& unit)
 	{
-		if (unit.hasTarget() && (unit.getType().isFlyer() || unit.getType() == UnitTypes::Protoss_Dark_Templar))
+		if (unit.getType().isFlyer() || unit.getType() == UnitTypes::Protoss_Dark_Templar)
 			return true;
 		return false;
 	}
@@ -216,6 +233,8 @@ namespace McRave
 
 	void CommandManager::move(UnitInfo& unit)
 	{
+		unit.circleYellow();
+
 		// MOVE TO SPECIAL COMMANDS: If it's a tank, make sure we're unsieged before moving - TODO: Check that target has velocity and > 512 or no velocity and < tank range
 		if (unit.hasTarget() && unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode && unit.unit()->getDistance(unit.getTarget().getPosition()) > 512 && unit.getTarget().getSpeed() > 0.0)
 			unit.unit()->unsiege();
@@ -248,7 +267,7 @@ namespace McRave
 			if (!isLastCommand(unit, UnitCommandTypes::Move, Terrain().getAttackPosition()))
 				unit.unit()->move(Terrain().getAttackPosition());
 		}
-		
+
 		// If no target and no enemy bases, move to a base location (random if we have found the enemy once already)
 		else if (unit.unit()->isIdle()) {
 			if (Terrain().getEnemyStartingPosition().isValid())
@@ -269,6 +288,8 @@ namespace McRave
 
 	void CommandManager::defend(UnitInfo& unit)
 	{
+		unit.circleBlack();
+
 		// HACK: Hardcoded cannon surround, testing
 		if (unit.getType().isWorker() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) > 0) {
 			auto enemy = Util().getClosestUnit(unit.getPosition(), Broodwar->enemy());
@@ -330,6 +351,8 @@ namespace McRave
 
 	void CommandManager::kite(UnitInfo& unit)
 	{
+		unit.circleRed();
+
 		// If unit has a transport, move to it or load into it
 		if (unit.hasTransport() && unit.getTransport().unit()->exists()) {
 			if (unit.getType() == UnitTypes::Protoss_Reaver && unit.unit()->getScarabCount() != MAX_SCARAB)
@@ -371,7 +394,7 @@ namespace McRave
 					double mobility = 1.0; // HACK: Test ignoring mobility
 
 					double threat = Util().getHighestThreat(w, unit);
-					double grouping = 1.0 + (unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)): 0.0);
+					double grouping = 1.0 + (unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)) : 0.0);
 					double score = grouping / (threat * distance);
 
 					// If position is valid and better score than current, set as current best
@@ -384,11 +407,13 @@ namespace McRave
 
 			if (!isLastCommand(unit, UnitCommandTypes::Move, posBest))
 				unit.unit()->move(posBest);
+			Broodwar->drawLineMap(unit.getPosition(), posBest, Colors::Red);
 		}
 	}
 
 	void CommandManager::attack(UnitInfo& unit)
 	{
+		unit.circleGreen();
 		bool newOrder = Broodwar->getFrameCount() - unit.unit()->getLastCommandFrame() > Broodwar->getRemainingLatencyFrames();
 
 		// HACK: Flyers don't want to decel when out of range, so we move to the target then attack when in range
@@ -428,6 +453,7 @@ namespace McRave
 
 	void CommandManager::approach(UnitInfo& unit)
 	{
+		unit.circleBlue();
 		if (unit.hasTarget() && unit.getTarget().getPosition().isValid() && !isLastCommand(unit, UnitCommandTypes::Move, unit.getTarget().getPosition()))
 			unit.unit()->move(unit.getTarget().getPosition());
 	}
@@ -447,7 +473,8 @@ namespace McRave
 					Position p = Position(w) + Position(4, 4);
 
 					if (!w.isValid()
-						|| !Util().isMobile(start, w, unit.getType()))
+						|| !Util().isMobile(start, w, unit.getType())
+						|| isInDanger(p))
 						continue;
 
 					double threat = Util().getHighestThreat(w, unit);
@@ -469,8 +496,12 @@ namespace McRave
 	void CommandManager::hunt(UnitInfo& unit)
 	{
 		// If unit has no destination, give target as a destination
-		if (unit.hasTarget() && !unit.getDestination().isValid())
-			unit.setDestination(unit.getTarget().getPosition());
+		if (!unit.getDestination().isValid()) {
+			if (unit.hasTarget())
+				unit.setDestination(unit.getTarget().getPosition());
+			else if (Terrain().getAttackPosition().isValid())
+				unit.setDestination(Terrain().getAttackPosition());
+		}
 
 		// No threat, low visibility, low distance, attack if possible
 		auto start = unit.getWalkPosition();
@@ -495,7 +526,8 @@ namespace McRave
 				if (!w.isValid()
 					|| !Util().isMobile(start, w, unit.getType())
 					|| p.getDistance(unit.getPosition()) < 32.0
-					|| distToP > radius * 8)
+					|| distToP > radius * 8
+					|| isInDanger(p))
 					continue;
 
 				double threat = Util().getHighestThreat(w, unit);
@@ -523,8 +555,10 @@ namespace McRave
 			if (!isLastCommand(unit, UnitCommandTypes::Move, bestPos))
 				unit.unit()->move(bestPos);
 		}
-		else
+		else {
+			Broodwar->drawLineMap(unit.getPosition(), bestPos, Colors::Grey);
 			kite(unit);
+		}
 	}
 
 	void CommandManager::escort(UnitInfo& unit)

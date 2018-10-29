@@ -104,9 +104,9 @@ void TransportManager::updateDecision(UnitInfo& transport)
 		if (Util().getHighestThreat(transport.getWalkPosition(), transport) < 1.0)
 			return true;
 
-		if (cargo.getCombatState() == CombatState::Retreating || transport.unit()->isUnderAttack() || (cargo.getShields() == 0 && cargo.getSimValue() < 1.2))
+		if (cargo.getLocalState() == LocalState::Retreating || transport.unit()->isUnderAttack() || (cargo.getShields() == 0 && cargo.getSimValue() < 1.2))
 			return false;
-		if (cargo.getCombatState() == CombatState::Engaging && ((reaver && !attackCooldown) || (ht && cargo.getEnergy() >= 75)))
+		if (cargo.getLocalState() == LocalState::Engaging && ((reaver && !attackCooldown) || (ht && cargo.getEnergy() >= 75)))
 			return true;
 		return false;
 	};
@@ -129,7 +129,7 @@ void TransportManager::updateDecision(UnitInfo& transport)
 		auto targetDist = reaver && cargo.hasTarget() ? mapBWEB.getGroundDistance(cargo.getPosition(), cargo.getTarget().getPosition()) - 256.0 : cargo.getPosition().getDistance(cargo.getEngagePosition());
 		
 		if (transport.getPosition().getDistance(cargo.getPosition()) <= 160.0 || &cargo == closestCargo) {
-			if (!cargo.hasTarget() || cargo.getCombatState() == CombatState::Retreating || (targetDist > 128.0 || (ht && cargo.unit()->getEnergy() < 75) || (reaver && attackCooldown && threat))) {
+			if (!cargo.hasTarget() || cargo.getLocalState() == LocalState::Retreating || (targetDist > 128.0 || (ht && cargo.unit()->getEnergy() < 75) || (reaver && attackCooldown && threat))) {
 				return true;
 			}
 		}
@@ -177,7 +177,7 @@ void TransportManager::updateDecision(UnitInfo& transport)
 		}
 
 		// Else if the cargo is loaded
-		else if (cargo.unit()->isLoaded() && cargo.hasTarget() && cargo.getEngagePosition().isValid() && cargo.getCombatState() == CombatState::Engaging) {
+		else if (cargo.unit()->isLoaded() && cargo.hasTarget() && cargo.getEngagePosition().isValid() && cargo.getLocalState() == LocalState::Engaging) {
 			transport.setDestination(cargo.getEngagePosition());
 
 			if (readyToFight(cargo)) {
@@ -193,7 +193,7 @@ void TransportManager::updateDecision(UnitInfo& transport)
 		}
 
 		// Dont attack until we're ready
-		else if (cargo.getCombatState() == CombatState::Retreating)
+		else if (cargo.getGlobalState() == GlobalState::Retreating)
 			transport.setDestination(mapBWEB.getNaturalPosition());
 	}
 
@@ -277,69 +277,75 @@ void TransportManager::updateMovement(UnitInfo& transport)
 	auto start = transport.getWalkPosition();
 	auto best = 0.0;
 
+	Commands().hunt(transport);
+	return;
+
+
+
+
+
 	UnitInfo* enemy = Util().getClosestThreat(transport);
 	if (enemy && enemy->getPosition().getDistance(transport.getPosition()) <= 320.0) {
 
 		Broodwar->drawLineMap(enemy->getPosition(), transport.getPosition(), Colors::Purple);
-		Broodwar->drawTextMap(transport.getPosition(), "Transport");
 
-		// First look for mini tiles with no threat that are closest to the enemy and on low mobility
-		for (int x = start.x - 24; x < start.x + 24 + transport.getType().tileWidth() * 4; x++) {
-			for (int y = start.y - 24; y < start.y + 24 + transport.getType().tileWidth() * 4; y++) {
-				WalkPosition w(x, y);
-				Position p = Position(w) + Position(4, 4);
-				TilePosition t(p);
+		//Broodwar->drawTextMap(transport.getPosition(), "Transport");
 
-				if (!w.isValid()
-					|| p.getDistance(transport.getPosition()) <= 32.0
-					|| (transport.getTransportState() == TransportState::Unloading && !Util().isMobile(start, w, UnitTypes::Protoss_Reaver))
-					|| (transport.getTransportState() == TransportState::Unloading && Broodwar->getGroundHeight(TilePosition(w)) < Broodwar->getGroundHeight(TilePosition(dropTarget)))
-					/*|| (p.getDistance(dropTarget) < 128.0 && dropTarget != Terrain().getDefendPosition())*/
-					|| (Terrain().getEnemyStartingTilePosition().isValid() && mapBWEM.GetArea(w) == mapBWEM.GetArea(Terrain().getEnemyStartingTilePosition())))
-					continue;
+		//// First look for mini tiles with no threat that are closest to the enemy and on low mobility
+		//for (int x = start.x - 24; x < start.x + 24 + transport.getType().tileWidth() * 4; x++) {
+		//	for (int y = start.y - 24; y < start.y + 24 + transport.getType().tileWidth() * 4; y++) {
+		//		WalkPosition w(x, y);
+		//		Position p = Position(w) + Position(4, 4);
+		//		TilePosition t(p);
 
-				// If we just dropped units, we need to make sure not to leave them
-				if (transport.getTransportState() == TransportState::Monitoring) {
-					bool proximity = true;
-					for (auto &u : transport.getAssignedCargo()) {
-						if (!u->unit()->isLoaded() && u->getPosition().getDistance(p) > 64.0)
-							proximity = false;
-					}
-					if (!proximity)
-						continue;
-				}
+		//		if (!w.isValid()
+		//			|| p.getDistance(transport.getPosition()) <= 32.0
+		//			|| (transport.getTransportState() == TransportState::Unloading && !Util().isMobile(start, w, UnitTypes::Protoss_Reaver))
+		//			|| (transport.getTransportState() == TransportState::Unloading && Broodwar->getGroundHeight(TilePosition(w)) < Broodwar->getGroundHeight(TilePosition(dropTarget)))
+		//			/*|| (p.getDistance(dropTarget) < 128.0 && dropTarget != Terrain().getDefendPosition())*/
+		//			|| (Terrain().getEnemyStartingTilePosition().isValid() && mapBWEM.GetArea(w) == mapBWEM.GetArea(Terrain().getEnemyStartingTilePosition())))
+		//			continue;
 
-				auto closeHome = transport.getPosition().getDistance(Terrain().getDefendPosition()) < 640.0;
-				auto distDrop = mapBWEB.getGroundDistance(dropTarget, p);
-				auto distAway = p.getDistance(enemy->getPosition());
+		//		// If we just dropped units, we need to make sure not to leave them
+		//		if (transport.getTransportState() == TransportState::Monitoring) {
+		//			bool proximity = true;
+		//			for (auto &u : transport.getAssignedCargo()) {
+		//				if (!u->unit()->isLoaded() && u->getPosition().getDistance(p) > 64.0)
+		//					proximity = false;
+		//			}
+		//			if (!proximity)
+		//				continue;
+		//		}
 
-
-				double distance = log(1.0 + (transport.getTransportState() == TransportState::Retreating ? 1.0 / distAway : distDrop));
-				double threat = Util().getHighestThreat(w, transport);
-				double cluster = 0.1 + Grids().getAGroundCluster(w);
-				double visibility = Grids().lastVisibleFrame(t);
+		//		auto closeHome = transport.getPosition().getDistance(Terrain().getDefendPosition()) < 640.0;
+		//		auto distDrop = mapBWEB.getGroundDistance(dropTarget, p);
+		//		auto distAway = p.getDistance(enemy->getPosition());
 
 
-				double score = 1.0 / (distance * threat * cluster);
+		//		double distance = log(1.0 + (transport.getTransportState() == TransportState::Retreating ? 1.0 / distAway : distDrop));
+		//		double threat = Util().getHighestThreat(w, transport);
+		//		double cluster = 0.1 + Grids().getAGroundCluster(w);
+		//		double visibility = Grids().lastVisibleFrame(t);
 
-				if (transport.getTransportState() == TransportState::Loading && p.getDistance(transport.getDestination()) < 64.0)
-					threat = 0.01;
 
-				if (score > best) {
-					best = score;
-					bestPos = p;
-				}
-			}
-		}
-		Broodwar->drawLineMap(transport.getPosition(), bestPos, Broodwar->self()->getColor());
+		//		double score = 1.0 / (distance * threat * cluster);
 
-		if (bestPos.isValid())
-			transport.unit()->move(bestPos);
-		else
-			Commands().kite(transport);
+		//		if (transport.getTransportState() == TransportState::Loading && p.getDistance(transport.getDestination()) < 64.0)
+		//			threat = 0.01;
+
+		//		if (score > best) {
+		//			best = score;
+		//			bestPos = p;
+		//		}
+		//	}
+		//}
+		//Broodwar->drawLineMap(transport.getPosition(), bestPos, Broodwar->self()->getColor());
 	}
-	else 
-		Commands().hunt(transport);	
+
+	if (bestPos.isValid())
+		transport.unit()->move(bestPos);
+	else
+		Commands().hunt(transport);
 }
 
 void TransportManager::removeUnit(Unit unit)

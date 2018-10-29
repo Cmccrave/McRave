@@ -265,7 +265,7 @@ namespace McRave
 		// If this is a Pylon, check if any Nexus needs a Pylon
 		if (building == UnitTypes::Protoss_Pylon && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Pylon) >= (4 - (2 * Terrain().isIslandMap())) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Forge) >= 1) {
 			for (auto &station : Stations().getMyStations()) {
-				Station s = station.second;
+				auto &s = *station.second;
 				here = findDefLocation(building, Position(s.ResourceCentroid()));
 				if (here.isValid() && isBuildable(building, here) && isQueueable(building, here))
 					return here;
@@ -284,7 +284,7 @@ namespace McRave
 
 			if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Forge) >= 1 && ((Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) >= 3 + (Players().getNumberTerran() > 0 || Players().getNumberProtoss() > 0)) || (Terrain().isIslandMap() && Players().getNumberZerg() > 0))) {
 				for (auto &station : Stations().getMyStations()) {
-					Station s = station.second;
+					auto &s = *station.second;
 
 					if (Stations().needDefenses(s))
 						here = findDefLocation(building, Position(s.ResourceCentroid()));

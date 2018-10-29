@@ -21,7 +21,6 @@ namespace McRave
 	{
 		getOpening		= s < 70;
 		fastExpand		= true;
-		wallNat			= vis(Zerg_Spawning_Pool) > 0;
 		gasLimit		= INT_MAX;
 		firstUpgrade	= UpgradeTypes::Metabolic_Boost;
 		firstTech		= TechTypes::None;
@@ -47,11 +46,12 @@ namespace McRave
 
 			itemQueue[Zerg_Hatchery]				= Item(1 + (s >= 24) + (com(Zerg_Lair) >= 1) + (com(Zerg_Hatchery) >= 3));
 			itemQueue[Zerg_Spawning_Pool]			= Item(vis(Zerg_Hatchery) >= 2);
-			itemQueue[Zerg_Extractor]				= Item((vis(Zerg_Spawning_Pool) >= 1) + (vis(Zerg_Lair)));
+			itemQueue[Zerg_Extractor]				= Item((vis(Zerg_Spawning_Pool) >= 1) + (vis(Zerg_Spire) > 0));
 			itemQueue[Zerg_Lair]					= Item(Broodwar->self()->gas() > 90);
+			itemQueue[Zerg_Creep_Colony]			= Item(vis(Zerg_Extractor) > 0);
 		}
 
-		if (vis(Zerg_Lair) > 0)
+		if (com(Zerg_Lair) > 0)
 			techUnit = Zerg_Mutalisk;
 	}
 
@@ -174,8 +174,9 @@ namespace McRave
 		itemQueue[Zerg_Extractor]				= Item((s >= 18 && vis(Zerg_Spawning_Pool) > 0));
 		itemQueue[Zerg_Lair]					= Item(gas100 && vis(Zerg_Spawning_Pool) > 0);
 		itemQueue[Zerg_Spire]					= Item(lingSpeed() && gas100);
+		itemQueue[Zerg_Hatchery]				= Item(1 + (s >= 56));
 
-		if (vis(Zerg_Lair) > 0)
+		if (com(Zerg_Lair) > 0)
 			techUnit = Zerg_Mutalisk;
 	}
 }

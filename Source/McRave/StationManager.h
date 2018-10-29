@@ -9,11 +9,11 @@ namespace McRave
 {
 	class StationManager
 	{
-		map <Unit, const BWEB::Station> myStations, enemyStations;
+		map <Unit, const BWEB::Station *> myStations, enemyStations;
 		void updateStations();
 	public:
-		map <Unit, const BWEB::Station>& getMyStations() { return myStations; };
-		map <Unit, const BWEB::Station>& getEnemyStations() { return enemyStations; }
+		map <Unit, const BWEB::Station *>& getMyStations() { return myStations; };
+		map <Unit, const BWEB::Station *>& getEnemyStations() { return enemyStations; }
 		Position getClosestEnemyStation(Position);
 		void onFrame();
 		void storeStation(Unit);

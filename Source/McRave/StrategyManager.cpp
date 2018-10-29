@@ -153,7 +153,7 @@ bool StrategyManager::shouldGetDetection()
 
 	// Ghosts/Vultures
 	if (Units().getEnemyCount(UnitTypes::Terran_Ghost) >= 1 || Units().getEnemyCount(UnitTypes::Terran_Vulture) >= 6)
-		return true;
+		return true;	
 
 	// Lurkers
 	if (Units().getEnemyCount(UnitTypes::Zerg_Lurker) >= 1 || (Units().getEnemyCount(UnitTypes::Zerg_Lair) >= 1 && Units().getEnemyCount(UnitTypes::Zerg_Hydralisk_Den) >= 1 && Units().getEnemyCount(UnitTypes::Zerg_Hatchery) <= 0))
@@ -427,7 +427,7 @@ void StrategyManager::updateScoutTargets()
 	// If enemy start is valid and explored, add a target to the most recent one to scout
 	if (Terrain().foundEnemy()) {	
 		for (auto &s : Stations().getEnemyStations()) {
-			auto &station = s.second;
+			auto &station = *s.second;
 			TilePosition tile(station.BWEMBase()->Center());
 			if (tile.isValid())
 				scoutTargets.insert(Position(tile));

@@ -40,6 +40,11 @@ namespace McRave
 		int repWorkers;
 
 		void updateUnitSizes();
+		void updateUnits();
+		void updateLocalSimulation(UnitInfo&);
+		void updateLocalState(UnitInfo&);
+		void updateGlobalState(UnitInfo&);
+		void updateRole(UnitInfo&);
 	public:
 		int getRepairWorkers() { return repWorkers; }
 
@@ -71,10 +76,7 @@ namespace McRave
 
 		// Updating
 		void onFrame();
-		void updateUnits();
-		void updateLocalSimulation(UnitInfo&);
-		void updateStrategy(UnitInfo&);
-		void updateRole(UnitInfo&);
+
 
 		// Storage
 		void onUnitDiscover(Unit);

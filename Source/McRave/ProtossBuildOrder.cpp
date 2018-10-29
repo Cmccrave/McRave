@@ -25,7 +25,7 @@ namespace McRave
 		if (getTech) {
 
 			// If we need observers
-			if ((Strategy().needDetection()) || (!Terrain().isIslandMap() && Players().vP() && techList.find(UnitTypes::Protoss_Observer) == techList.end() && !techList.empty()))
+			if (Strategy().needDetection() || (!Terrain().isIslandMap() && Players().vP() && techList.find(UnitTypes::Protoss_Observer) == techList.end() && !techList.empty()))
 				techUnit = UnitTypes::Protoss_Observer;
 
 			// HACK: Make carriers on Blue Storm
@@ -74,9 +74,9 @@ namespace McRave
 		if (techList.find(UnitTypes::Protoss_Observer) != techList.end())
 			techVal--;
 
-		// HACK: No gas workers until at 14 supply (sometimes we get gas early to prevent steals
-		if (Units().getSupply() < 28 || Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Assimilator) == 0)
-			gasLimit = 0;
+		//// HACK: No gas workers until at 14 supply (sometimes we get gas early to prevent steals
+		//if (Units().getSupply() < 28)
+		//	gasLimit = 0;
 
 		// HACK: Against FFE just add a Nexus
 		if (Strategy().getEnemyBuild() == "PFFE" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1)
@@ -143,7 +143,7 @@ namespace McRave
 				itemQueue[UnitTypes::Protoss_Photon_Cannon] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon));
 
 				for (auto &station : Stations().getMyStations()) {
-					Station s = station.second;
+					auto &s = *station.second;
 
 					if (Stations().needDefenses(s))
 						itemQueue[UnitTypes::Protoss_Photon_Cannon] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) + 1);

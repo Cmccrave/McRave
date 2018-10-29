@@ -79,7 +79,7 @@ void ResourceManager::storeResource(Unit resource)
 
 		if (newStation) {
 			for (auto &s : Stations().getMyStations()) {
-				auto station = s.second;
+				auto &station = *s.second;
 				if (station.BWEMBase() == newStation->BWEMBase()) {
 					r.setState(2);
 					break;

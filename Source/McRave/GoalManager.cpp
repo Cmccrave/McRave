@@ -13,7 +13,7 @@ namespace McRave
 	{
 		// Defend my expansions
 		for (auto &s : Stations().getMyStations()) {
-			Station station = s.second;
+			auto station = *s.second;
 
 			if (station.BWEMBase()->Location() != mapBWEB.getNaturalTile() && station.BWEMBase()->Location() != mapBWEB.getMainTile() && station.getDefenseCount() == 0)
 				assignClosestToGoal(station.BWEMBase()->Center(), vector<UnitType> {UnitTypes::Protoss_Dragoon, 4});
@@ -25,7 +25,7 @@ namespace McRave
 			auto distBest = 0.0;
 			auto posBest = Positions::Invalid;
 			for (auto &s : Stations().getEnemyStations()) {
-				Station station = s.second;
+				auto station = *s.second;
 				auto pos = station.BWEMBase()->Center();
 				auto dist = pos.getDistance(Terrain().getEnemyStartingPosition());
 				if (dist > distBest) {
@@ -73,7 +73,8 @@ namespace McRave
 			auto lurkerPerBase = Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Lurker) / Stations().getMyStations().size();
 
 			for (auto &base : Stations().getMyStations()) {
-				assignClosestToGoal(base.second.ResourceCentroid(), vector<UnitType> { UnitTypes::Zerg_Lurker, UnitTypes::Zerg_Lurker, UnitTypes::Zerg_Lurker, UnitTypes::Zerg_Lurker });
+				auto station = *base.second;
+				assignClosestToGoal(station.ResourceCentroid(), vector<UnitType> { UnitTypes::Zerg_Lurker, UnitTypes::Zerg_Lurker, UnitTypes::Zerg_Lurker, UnitTypes::Zerg_Lurker });
 			}
 		}
 	}

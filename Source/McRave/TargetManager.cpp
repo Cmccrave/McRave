@@ -4,16 +4,12 @@ namespace McRave
 {
 	void TargetManager::getTarget(UnitInfo& unit)
 	{
-		if (unit.getType() == UnitTypes::Terran_Medic)
-			allyTarget(unit);
-		else
-			enemyTarget(unit);
-
+		getBestTarget(unit);
 		getEngagePosition(unit);
 		getPathToTarget(unit);
 	}
 
-	void TargetManager::enemyTarget(UnitInfo& unit)
+	void TargetManager::getBestTarget(UnitInfo& unit)
 	{
 		UnitInfo* bestTarget = nullptr;
 		double closest = DBL_MAX, highest = 0.0;
@@ -52,7 +48,10 @@ namespace McRave
 				|| (unit.getType().isFlyer() && target.getType() == UnitTypes::Protoss_Interceptor)
 
 				// Zealot: Rushing Zealots only attack workers
-				|| (unit.getType() == UnitTypes::Protoss_Zealot && BuildOrder().isRush() && !target.getType().isWorker() && Broodwar->getFrameCount() < 10000))
+				|| (unit.getType() == UnitTypes::Protoss_Zealot && BuildOrder().isRush() && !target.getType().isWorker() && Broodwar->getFrameCount() < 10000)
+				
+				// Don't attack enemy spider mines with more than 2 units
+				|| (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.getUnitsAttacking() >= 2))
 				return false;
 			return true;
 		};
@@ -158,43 +157,10 @@ namespace McRave
 		//	}
 		//}
 		unit.setTarget(bestTarget);
-	}
 
-	void TargetManager::allyTarget(UnitInfo& unit)
-	{
-		if (Units().getMyUnits().size() == 0) {
-			unit.setTarget(nullptr);
-			return;
-		}
-
-		UnitInfo* bestTarget = nullptr;
-		double highest = 0.0;
-
-		for (auto &a : Units().getMyUnits())
-		{
-			UnitInfo &ally = a.second;
-			if (!ally.unit())
-				continue;
-
-			if (ally.getType() == UnitTypes::Terran_Medic) continue;
-			if (ally.getType() != UnitTypes::Terran_Marine && ally.getType() != UnitTypes::Terran_Firebat) continue;
-			double thisUnit = 0.0;
-			double groundDist = double(Grids().getDistanceHome(ally.getWalkPosition()) - Grids().getDistanceHome(unit.getWalkPosition()));
-			double airDist = unit.getPosition().getDistance(ally.getPosition());
-			double widths = unit.getType().tileWidth() * 16.0 + ally.getType().tileWidth() * 16.0;
-			double distance = widths + (unit.getType().isFlyer() ? airDist : max(groundDist, airDist));
-			double health = 1.0 + (0.50 * unit.getPercentTotal());
-
-			thisUnit = (health * ally.getPriority()) / distance;
-			if (thisUnit > highest)
-			{
-				highest = thisUnit;
-				bestTarget = &ally;
-				unit.setEngagePosition(ally.getPosition());
-				unit.setSimPosition(ally.getPosition());
-			}
-		}
-		unit.setTarget(bestTarget);
+		// If unit is close, increment it
+		if (bestTarget && Util().unitInRange(unit))
+			bestTarget->incrementBeingAttackedCount();
 	}
 
 	void TargetManager::getEngagePosition(UnitInfo& unit)
@@ -240,11 +206,12 @@ namespace McRave
 				return false;
 
 			if (!unit.hasTransport()																						// If unit has no transport
+				&& unit.getRole() == Role::Fighting
 				&& unit.getTilePosition().isValid() && unit.getTarget().getTilePosition().isValid()							// If both units have valid tiles
 				&& mapBWEB.getUsedTiles().find(unit.getTarget().getTilePosition()) == mapBWEB.getUsedTiles().end()			// Doesn't overlap buildings
 				&& !unit.getType().isFlyer() && !unit.getTarget().getType().isFlyer()										// Doesn't include flyers
-				&& unit.getPosition().getDistance(unit.getTarget().getPosition()) < 480.0									// Isn't too far from engaging
-				&& mapBWEB.getGroundDistance(unit.getPosition(), unit.getTarget().getPosition()) < 480.0					// TEMP: Check ground distance too
+				&& unit.getPosition().getDistance(unit.getTarget().getPosition()) < SIM_RADIUS								// Isn't too far from engaging
+				&& mapBWEB.getGroundDistance(unit.getPosition(), unit.getTarget().getPosition()) < SIM_RADIUS				// TEMP: Check ground distance too
 				&& mapBWEB.isWalkable(unit.getTilePosition()) && mapBWEB.isWalkable(unit.getTarget().getTilePosition()))	// Walkable tiles
 				return true;
 			return false;
