@@ -112,8 +112,8 @@ namespace McRave
 
 			// Find landing location as production building
 			else if ((Units().getSupply() > 120 || BuildOrder().firstReady()) && building.unit()->isFlying()) {
-				TilePosition here = findProdLocation(building.getType(), mapBWEB.getMainPosition());
-				Position center = (Position)here + Position(building.getType().tileWidth() * 16, building.getType().tileHeight() * 16);
+				auto here = findProdLocation(building.getType(), mapBWEB.getMainPosition());
+				auto center = (Position)here + Position(building.getType().tileWidth() * 16, building.getType().tileHeight() * 16);
 
 				if (building.unit()->getLastCommand().getType() != UnitCommandTypes::Land || building.unit()->getLastCommand().getTargetTilePosition() != here)
 					building.unit()->land(here);
@@ -139,34 +139,43 @@ namespace McRave
 		queuedGas = 0;
 		buildingsQueued.clear();
 
-		// Add up how many buildings we have assigned to workers
+		// 1) Add up how many buildings we have assigned to workers
 		for (auto &u : Units().getMyUnits()) {
-			UnitInfo &unit = u.second;
+			auto &unit = u.second;
 
-			if (unit.getBuildingType().isValid() && unit.getBuildPosition().isValid() && (unit.getBuildingType().isRefinery() || mapBWEB.getUsedTiles().find(unit.getBuildPosition()) == mapBWEB.getUsedTiles().end())) {
-				buildingsQueued[unit.getBuildPosition()] = unit.getBuildingType();
-			}
+			if (unit.getBuildingType().isValid() && unit.getBuildPosition().isValid())
+				buildingsQueued[unit.getBuildPosition()] = unit.getBuildingType();			
 		}
 
-		// Add up how many more buildings of each type we need
+		// 2) Add up how many more buildings of each type we need
 		for (auto &item : BuildOrder().getItemQueue()) {
 			UnitType building = item.first;
 			Item i = item.second;
-			int bQueued = 0;
-			int bDesired = i.getActualCount();
+			int queuedCount = 0;
+
+			auto morphed = !building.whatBuilds().first.isWorker(); //building == UnitTypes::Zerg_Lair || building == UnitTypes::Zerg_Hive || building == UnitTypes::Zerg_Greater_Spire || building == UnitTypes::Zerg_Sunken_Colony || building == UnitTypes::Zerg_Spore_Colony;
+			auto addon = building.isAddon();
+
+			if (addon || morphed)
+				continue;
 
 			// If the building morphed from another building type, add the visible amount of child type to the parent type
 			// i.e. When we have a queued Hatchery, we need to check how many Lairs and Hives we have.
 			int offset = 0;
 			if (building == UnitTypes::Zerg_Creep_Colony)
-				offset = Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Sunken_Colony);
+				offset = Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Sunken_Colony) + Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Spore_Colony);
 			if (building == UnitTypes::Zerg_Hatchery)
 				offset = Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Lair) + Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Hive);
+			if (building == UnitTypes::Zerg_Lair)
+				offset = Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Hive);
 
-			// Reserve building if our reserve count is higher than our visible count
+			// 3) Reserve building if our reserve count is higher than our visible count
 			for (auto &queued : buildingsQueued) {
-				if (queued.second == item.first) {
-					bQueued++;
+				auto queuedType = queued.second;
+				if (queuedType == building) {
+					queuedCount++;
+
+					// If we want to reserve more than we have, reserve resources
 					if (i.getReserveCount() > Broodwar->self()->visibleUnitCount(building) + offset) {
 						queuedMineral += building.mineralPrice();
 						queuedGas += building.gasPrice();
@@ -174,13 +183,9 @@ namespace McRave
 				}
 			}
 
-			// Don't try to build morphed buildings
-			if (building == UnitTypes::Zerg_Lair || building == UnitTypes::Zerg_Hive || building == UnitTypes::Zerg_Greater_Spire || building == UnitTypes::Zerg_Sunken_Colony || building == UnitTypes::Zerg_Spore_Colony)
-				continue;
-
-			// Queue building if our actual count is higher than our visible count
-			if (!building.isAddon() && bDesired > (bQueued + Broodwar->self()->visibleUnitCount(building) + offset)) {
-				TilePosition here = getBuildLocation(building);
+			// 4) Queue building if our actual count is higher than our visible count
+			if (i.getActualCount() > queuedCount + Broodwar->self()->visibleUnitCount(building) + offset) {
+				auto here = getBuildLocation(building);
 				auto builder = Util().getClosestBuilder(Position(here));
 
 				if (here.isValid() && builder) {
@@ -194,7 +199,7 @@ namespace McRave
 
 	TilePosition BuildingManager::getBuildLocation(UnitType building)
 	{
-		TilePosition here = TilePositions::Invalid;
+		auto here = TilePositions::Invalid;
 
 		// HACK: Versus busts, add an extra pylon to the defenses
 		if (building == UnitTypes::Protoss_Pylon && (Strategy().getEnemyBuild() == "Z2HatchHydra" || Strategy().getEnemyBuild() == "Z3HatchHydra") && Terrain().getNaturalWall()) {
@@ -402,8 +407,10 @@ namespace McRave
 			for (int x = here.x - safetyOffset; x < here.x + safetyOffset; x++) {
 				for (int y = here.y - safetyOffset; y < here.y + safetyOffset; y++) {
 					TilePosition t(x, y);
+					auto topLeft = Position(tile.x * 32, tile.y * 32);
+					auto botRight = Position(tile.x * 32 + building.tileWidth(), tile.y * 32 + building.tileHeight());
 
-					if (t.x >= tile.x && t.x < tile.x + building.tileWidth() && t.y >= tile.y && t.y < tile.y + building.tileWidth())
+					if (Util().rectangleIntersect(topLeft, botRight, Position(t)))
 						return true;
 				}
 			}
@@ -576,12 +583,12 @@ namespace McRave
 
 	TilePosition BuildingManager::findWallLocation(UnitType building, Position here)
 	{
-		TilePosition tileBest = TilePositions::Invalid;
-		double distBest = DBL_MAX;
+		auto tileBest = TilePositions::Invalid;
+		auto distBest = DBL_MAX;
 		const Wall* wall = nullptr;
 		set<TilePosition> placements;
-		const Station* station = mapBWEB.getClosestStation(TilePosition(here));
 
+		// Zerg can place at any wall close to this position
 		if (Broodwar->self()->getRace() == Races::Zerg) {
 			for (auto &w : mapBWEB.getWalls()) {
 				auto dist = w.getCentroid().getDistance(here);
@@ -591,6 +598,8 @@ namespace McRave
 				}
 			}
 		}
+
+		// Protoss and Terran only wall at main/natural for now
 		else {
 			if (BuildOrder().isWallMain())
 				wall = Terrain().getMainWall();
@@ -608,16 +617,12 @@ namespace McRave
 		else if (building.tileWidth() == 2)
 			placements = wall->smallTiles();
 
+		// Iterate tiles and check for best
 		for (auto tile : placements) {
 			double dist = Position(tile).getDistance(here);
-			if (dist < distBest && isBuildable(building, tile) && isQueueable(building, tile))
-				tileBest = tile, distBest = dist;
-		}
-		if (station && building == UnitTypes::Protoss_Pylon && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) <= 0 && !tileBest.isValid()) {
-			for (auto tile : station->DefenseLocations()) {
-				double dist = Position(tile).getDistance(here);
-				if (dist < distBest && isBuildable(building, tile) && isQueueable(building, tile))
-					tileBest = tile, distBest = dist;
+			if (dist < distBest && isBuildable(building, tile) && isQueueable(building, tile)) {
+				tileBest = tile;
+				distBest = dist;
 			}
 		}
 		return tileBest;

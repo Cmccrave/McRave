@@ -16,31 +16,23 @@ namespace McRave
 		UnitInfo * getClosestThreat(UnitInfo&);
 		UnitInfo * getClosestBuilder(Position);
 
-		// Returns the width of the choke in pixels
 		int chokeWidth(const BWEM::ChokePoint *);
 		const BWEM::ChokePoint * getClosestChokepoint(Position);
-		
-		// Returns the highest threat in a grid the size of the unit
 		double getHighestThreat(WalkPosition, UnitInfo&);
 
-		// Returns 1 if the tiles at the finish that would be under the unit meet the criteria of the options chosen
-		// If groundcheck/aircheck, then this function checks if every WalkPosition around finish has no ground/air threat
-		bool isSafe(WalkPosition finish, UnitType, bool groundCheck, bool airCheck);
-
-		bool isWalkable(WalkPosition start, WalkPosition finish, UnitType);
-		bool unitInRange(UnitInfo& unit);
-		
+		bool unitInRange(UnitInfo& unit);		
 		bool reactivePullWorker(UnitInfo& unit);
 		bool proactivePullWorker(UnitInfo& unit);
 		bool pullRepairWorker(UnitInfo& unit);
-
 		bool quickThreatOnPath(UnitInfo&, Position, Position);
 		bool accurateThreatOnPath(UnitInfo&);
+		bool rectangleIntersect(Position, Position, Position);
 
+		// Walkability checks
 		template<class T>
 		bool isWalkable(T here)
 		{
-			WalkPosition start(here);
+			auto start = WalkPosition(here);
 			for (int x = start.x; x < start.x + 4; x++) {
 				for (int y = start.y; y < start.y + 4; y++) {
 					if (Grids().getMobility(WalkPosition(x, y)) == -1)
@@ -49,7 +41,7 @@ namespace McRave
 			}
 			return true;
 		}
-
+		bool isWalkable(WalkPosition start, WalkPosition finish, UnitType);
 		
 		Position getConcavePosition(UnitInfo&, BWEM::Area const * area = nullptr, Position here = Positions::Invalid);
 	};

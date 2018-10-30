@@ -1,25 +1,5 @@
 #include "McRave.h"
 
-bool UtilManager::isSafe(WalkPosition end, UnitType unitType, bool groundCheck, bool airCheck)
-{
-	int walkWidth = int(ceil(unitType.width() / 8.0));
-	int walkHeight = int(ceil(unitType.height() / 8.0));
-	int halfW = int(ceil(walkWidth / 2));
-	int halfH = int(ceil(walkHeight / 2));
-
-	for (int x = end.x - halfW; x <= end.x + halfW; x++) {
-		for (int y = end.y - halfH; y <= end.y + halfH; y++) {
-			WalkPosition w(x, y);
-			if (!w.isValid())
-				continue;
-
-			if ((groundCheck && Grids().getEGroundThreat(w) != 0.0) || (airCheck && Grids().getEAirThreat(w) != 0.0))
-				return false;
-		}
-	}
-	return true;
-}
-
 bool UtilManager::isWalkable(WalkPosition start, WalkPosition end, UnitType unitType)
 {
 	int walkWidth = (int)ceil(unitType.width() / 8.0) + 1;
@@ -206,7 +186,7 @@ bool UtilManager::quickThreatOnPath(UnitInfo& unit, Position start, Position end
 
 	for (auto choke : mapBWEM.GetPath(start, end)) {
 		auto threat = unit.getType().isFlyer() ? Grids().getEGroundThreat(choke->Center()) > 0.0 : Grids().getEAirThreat(choke->Center()) > 0.0;
-		if (threat > 0.0)
+		if (threat)
 			return true;
 	}
 	return false;
@@ -223,6 +203,16 @@ bool UtilManager::accurateThreatOnPath(UnitInfo& unit)
 		if (threat)
 			return true;
 	}
+	return false;
+}
+
+bool UtilManager::rectangleIntersect(Position topLeft, Position botRight, Position target)
+{
+	if (target.x >= topLeft.x
+		&& target.x < botRight.x
+		&& target.y >= topLeft.y
+		&& target.y < botRight.x)
+		return true;
 	return false;
 }
 

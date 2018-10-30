@@ -120,8 +120,7 @@ bool StrategyManager::shouldHoldChoke()
 	if (BuildOrder().isWallNat()
 		|| hideTech
 		|| Units().getSupply() > 60
-		|| (Broodwar->self()->getRace() == Races::Protoss && Players().getNumberTerran() > 0)
-		|| (Broodwar->self()->getRace() == Races::Protoss && Players().getNumberRandom() > 0 && Broodwar->enemy()->getRace() == Races::Terran))
+		|| Players().vT())
 		return true;
 	return false;
 }
@@ -186,7 +185,7 @@ void StrategyManager::updateEnemyBuild()
 
 	for (auto &p : Players().getPlayers()) {
 		PlayerInfo &player = p.second;
-		if (player.getRace() == Races::Zerg || Broodwar->enemy()->getRace() == Races::Zerg) {
+		if (player.getRace() == Races::Zerg) {
 
 			// 5 Hatch build detection
 			if (Stations().getEnemyStations().size() >= 3 || (Units().getEnemyCount(UnitTypes::Zerg_Hatchery) + Units().getEnemyCount(UnitTypes::Zerg_Lair) >= 4 && Units().getEnemyCount(UnitTypes::Zerg_Drone) >= 14))
@@ -265,7 +264,7 @@ void StrategyManager::updateEnemyBuild()
 				}
 			}
 		}
-		if (player.getRace() == Races::Protoss || Broodwar->enemy()->getRace() == Races::Protoss) {
+		if (player.getRace() == Races::Protoss) {
 
 			// Detect missing buildings as a potential 2Gate
 			if (Terrain().getEnemyStartingPosition().isValid() && Broodwar->isExplored((TilePosition)Terrain().getEnemyStartingPosition()) && Units().getEnemyCount(UnitTypes::Protoss_Gateway) == 0 && Units().getEnemyCount(UnitTypes::Protoss_Forge) == 0 && Units().getEnemyCount(UnitTypes::Protoss_Assimilator) == 0 && Units().getEnemyCount(UnitTypes::Protoss_Nexus) == 1 && Units().getEnemyCount(UnitTypes::Protoss_Photon_Cannon) == 0) {
@@ -369,7 +368,7 @@ void StrategyManager::updateEnemyBuild()
 				}
 			}
 		}
-		if (player.getRace() == Races::Terran || Broodwar->enemy()->getRace() == Races::Terran) {
+		if (player.getRace() == Races::Terran) {
 			for (auto &u : Units().getEnemyUnits()) {
 				UnitInfo &unit = u.second;
 
@@ -508,7 +507,7 @@ void StrategyManager::updateScoring()
 		if (Broodwar->mapFileName().find("BlueStorm") != string::npos)
 			unitScore[UnitTypes::Protoss_Carrier] = unitScore[UnitTypes::Protoss_Arbiter];
 
-		if (Broodwar->enemy()->getRace() == Races::Protoss && Broodwar->getFrameCount() >= 20000 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) > 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Templar_Archives) > 0) {
+		if (Players().vP() && Broodwar->getFrameCount() >= 20000 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) > 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Templar_Archives) > 0) {
 			unitScore[UnitTypes::Protoss_Zealot] = unitScore[UnitTypes::Protoss_Dragoon];
 			unitScore[UnitTypes::Protoss_Archon] = unitScore[UnitTypes::Protoss_Dragoon];
 			unitScore[UnitTypes::Protoss_High_Templar] += unitScore[UnitTypes::Protoss_Dragoon];

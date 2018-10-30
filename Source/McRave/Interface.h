@@ -23,13 +23,17 @@ namespace McRave
 		bool bweb = false;
 		bool sim = true;
 		bool paths = true;
+		bool strengths = false;
+		bool orders = false;
+		bool local = false;
+		bool resources = false;
+		bool timers = true;
+		bool scores = true;
 
 
 		void drawAllyInfo(), drawEnemyInfo(), drawInformation();	
-		void dingEffect();
 	public:
-		void onFrame(), startClock(), performanceTest(string), onSendText(string);
-		void storeDing(Unit unit) { dings.insert(make_pair(Broodwar->getFrameCount(), unit)); }
+		void onFrame(), startClock(), performanceTest(string), onSendText(string);		
 		void displayPath(UnitInfo&, vector<TilePosition>);
 		void displaySim(UnitInfo&, double);
 	};

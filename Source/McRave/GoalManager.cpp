@@ -95,8 +95,7 @@ namespace McRave
 		// Count how many of each type we want
 		for (auto &type : types)
 			unitByType[type]++;
-
-		
+				
 		// Iterate through closest units
 		for (auto &u : unitByDist) {
 			UnitInfo* unit = u.second;

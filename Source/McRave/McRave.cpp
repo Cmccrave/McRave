@@ -9,16 +9,19 @@
 // *** Bugs ***
 // Neo Moon Glaive natural choke picking BWEB
 // High temp shouldn't reserve?
-// Units getting stuck that block buildings
 // Send zealots to attack expos instead of goons
 // Probes getting stuck trying to build - not sure
 // Probes sometimes don't build - re-issue order
 // SafeMove gets workers stuck on bridges
 // getConcavePosition and isWalkable are expensive on CPU
+
+// *** Testing ***
+// Check all threat/cluster/collision grids
+// Check isInDanger
+// Commands to boxes rather than circles (for storm, dweb, etc)
 // Worker clear path
 
 // *** Restructuring ***
-// Commands to boxes rather than circles (for storm, dweb, etc)
 // Move 4gate vs Z to 2 gate category
 
 // *** Future Improvements ***

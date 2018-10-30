@@ -56,7 +56,7 @@ namespace McRave
 		// Temp debugging for tile positions
 		for (int x = 0; x <= Broodwar->mapWidth() * 4; x++) {
 			for (int y = 0; y <= Broodwar->mapHeight() * 4; y++) {
-				WalkPosition w(x, y);				
+				WalkPosition w(x, y);
 
 				/*if (distanceHome[x][y] <= 0)
 					Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Black);
@@ -100,7 +100,7 @@ namespace McRave
 					if (t.isValid())
 						visitedGrid[x][y] = Broodwar->getFrameCount();
 				}
-			}			
+			}
 
 			// Spider mines are added to the enemy splash grid so ally units avoid allied mines
 			if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine) {
@@ -109,8 +109,7 @@ namespace McRave
 			}
 
 			else if (!unit.unit()->isLoaded()) {
-				addCluster(unit);
-				addCollision(unit);
+				addToGrids(unit);
 			}
 		}
 
@@ -126,15 +125,12 @@ namespace McRave
 			if (unit.unit()->exists() && (unit.unit()->isStasised() || unit.unit()->isMaelstrommed()))
 				continue;
 
-			WalkPosition start = unit.getWalkPosition();
 			if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Protoss_Scarab) {
 				if (unit.hasTarget() && unit.getTarget().unit() && unit.getTarget().unit()->exists())
 					addSplash(unit);
 			}
 			else {
-				addCollision(unit);
-				addCluster(unit);
-				addThreat(unit);
+				addToGrids(unit);
 			}
 		}
 		Display().performanceTest(__FUNCTION__);
@@ -260,7 +256,7 @@ namespace McRave
 					// Add distance and add to queue
 					distanceHome[next.x][next.y] = (i > 4 ? root2 : 1.0) + parentDistance[tile.x][tile.y];
 					parentDistance[next.x][next.y] = distanceHome[next.x][next.y];
-					nodeQueue.emplace(next);					
+					nodeQueue.emplace(next);
 				}
 			}
 		}
@@ -297,126 +293,83 @@ namespace McRave
 		}
 	}
 
-	void GridManager::addCluster(UnitInfo& unit) {
-
-		// Setup parameters
-		int radius = unit.getType().isFlyer() ? 12 : 6;
-		int walkWidth = (int)ceil(unit.getType().width() / 8.0);
-		int walkHeight = (int)ceil(unit.getType().height() / 8.0);
-
-		if (unit.getPlayer() == Broodwar->self() && unit.getRole() != Role::Fighting)
-			return;
-
-		// Choose the grid
-		auto grid = unit.getPlayer() == Broodwar->self() ?
-			(unit.getType().isFlyer() ? aAirCluster : aGroundCluster) :
-			(unit.getType().isFlyer() ? eAirCluster : eGroundCluster);
-
-		WalkPosition start(unit.getWalkPosition());
-
-		// Iterate tiles and add to grid
-		for (int x = start.x - radius; x < start.x + walkWidth + radius; x++) {
-			for (int y = start.y - radius; y < start.y + walkHeight + radius; y++) {
-
-				WalkPosition w(x, y);
-				Position p = Position(w) + Position(4, 4);
-
-				if (!w.isValid())
-					continue;
-
-				saveReset(w);
-				grid[x][y] += (unit.getPriority() * (p.getDistance(unit.getPosition()) < radius*8.0));
-			}
-		}
-	}
-
-	void GridManager::addThreat(UnitInfo& unit)
+	void GridManager::addToGrids(UnitInfo& unit)
 	{
-		if (unit.getType().isWorker() && (!unit.unit()->exists() || Broodwar->getFrameCount() > 10000 || unit.unit()->isConstructing() || (Terrain().isInAllyTerritory(unit.getTilePosition()) && (Broodwar->getFrameCount() - unit.getLastAttackFrame() > 500))))
+		if ((unit.getType().isWorker() && unit.getPlayer() != Broodwar->self() && (!unit.unit()->exists() || Broodwar->getFrameCount() > 10000 || unit.unit()->isConstructing() || (Terrain().isInAllyTerritory(unit.getTilePosition()) && (Broodwar->getFrameCount() - unit.getLastAttackFrame() > 500))))
+			|| unit.getType() == UnitTypes::Protoss_Interceptor
+			|| (unit.getVisibleGroundStrength() <= 0.0 && unit.getVisibleAirStrength() <= 0.0)
+			|| (unit.getPlayer() == Broodwar->self() && unit.getRole() != Role::Fighting))
 			return;
 
-		if (unit.getVisibleGroundStrength() <= 0.0 && unit.getVisibleAirStrength() <= 0.0)
-			return;
+		// Max range and speed
+		auto maxRange = int(max({ unit.getGroundRange(), unit.getAirRange(), 32.0 }) / 8.0);
+		auto speed = int(max(unit.getSpeed(), 1.0));
 
-		if (unit.getType() == UnitTypes::Protoss_Interceptor)
-			return;
+		// Pixel and walk sizes
+		auto pixelSize = unit.getType().isBuilding() ? unit.getType().tileWidth() * 32 : max(unit.getType().width(), unit.getType().height());
+		auto walkWidth = unit.getType().isBuilding() ? unit.getType().tileWidth() * 4 : (int)ceil(unit.getType().width() / 8.0) + 1;
+		auto walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : (int)ceil(unit.getType().height() / 8.0) + 1;
 
-		if (unit.getPlayer() == Broodwar->self() && unit.getRole() != Role::Fighting)
-			return;
-		
-		// Setup parameters
-		int maxRange = int(max({ unit.getGroundRange(), unit.getAirRange(), 32.0 }) / 8.0);
-		int speed = int(max(unit.getSpeed(), 1.0));
+		// Reach: range + size + speed for 1 second
+		auto grdReach = int(unit.getGroundRange() + (speed * 24.0) + (pixelSize / 2));
+		auto airReach = int(unit.getAirRange() + (speed * 24.0) + (pixelSize / 2));
 
-		// HACK: Need to use width/height properly and find how to balance buildings better
-		int pixelSize = unit.getType().isBuilding() ? (unit.getType().tileWidth()) * 32 : max(unit.getType().width(), unit.getType().height());
-		int walkSize = int(ceil(pixelSize / 8));
-
-		int grdReach = int(max(unit.getGroundRange(), 32.0) + (speed * 24.0) + (pixelSize / 2)) + 1;
-		int airReach = int(max(unit.getAirRange(), 32.0) + (speed * 24.0) + (pixelSize / 2)) + 1;
-
+		// HACK: Make workers range smaller
 		if (unit.getType().isWorker()) {
 			grdReach = int(grdReach / 1.5);
 			airReach = int(airReach / 1.5);
 		}
 
-		int radius = 1 + (max(grdReach, airReach))/8;
-
-		// Choose the grid - NULL self grid for now
+		// Choose threat grid
 		auto grdGrid = unit.getPlayer() == Broodwar->self() ? nullptr : eGroundThreat;
 		auto airGrid = unit.getPlayer() == Broodwar->self() ? nullptr : eAirThreat;
 
-		WalkPosition start(unit.getWalkPosition());
+		// Choose cluster grid
+		auto clusterGrid = unit.getPlayer() == Broodwar->self() ?
+			(unit.getType().isFlyer() ? aAirCluster : aGroundCluster) :
+			(unit.getType().isFlyer() ? eAirCluster : eGroundCluster);
 
-		// Safety
-		if (!grdGrid || !airGrid)
-			return;
 
 		// Limit checks so we don't have to check validity
-		auto left = max(0, start.x - radius);
-		auto right = min(1024, start.x + walkSize + radius);
-		auto top = max(0, start.y - radius);
-		auto bottom = min(1024, start.y + walkSize + radius);
+		int radius = 1 + (max(grdReach, airReach)) / 8;
+		auto left = max(0, unit.getWalkPosition().x - radius);
+		auto right = min(1024, unit.getWalkPosition().x + walkWidth + radius);
+		auto top = max(0, unit.getWalkPosition().y - radius);
+		auto bottom = min(1024, unit.getWalkPosition().y + walkHeight + radius);
+
+		// Pixel rectangle
+		auto topLeft = Position(left * 32, top * 32);
+		auto botRight = Position(right * 32, bottom * 32);
 
 		// Iterate tiles and add to grid
 		for (int x = left; x < right; x++) {
 			for (int y = top; y < bottom; y++) {
 
 				WalkPosition w(x, y);
-				Position p = Position(w) + Position(4, 4);				
+				auto p = Position(w) + Position(4, 4);
+				auto dist = p.getDistance(unit.getPosition());
 
-				if (p.getDistance(unit.getPosition()) < grdReach) {
+				// Collision
+				if (!unit.getType().isFlyer() && Util().rectangleIntersect(topLeft, botRight, p)) {
+					collision[x][y] += 1;
+					saveReset(w);
+				}
+
+				// Threat
+				if (grdGrid && dist <= grdReach) {
 					grdGrid[x][y] += (unit.getVisibleGroundStrength());
 					saveReset(w);
 				}
-
-				if (p.getDistance(unit.getPosition()) < airReach) {
+				if (airGrid && dist <= airReach) {
 					airGrid[x][y] += (unit.getVisibleAirStrength());
 					saveReset(w);
 				}
-			}
-		}
-	}
 
-	void GridManager::addCollision(UnitInfo& unit) {
-
-		if (unit.getType().isFlyer())
-			return;
-
-		// Setup parameters
-		int walkWidth = unit.getType().isBuilding() ? unit.getType().tileWidth() * 4 : (int)ceil(unit.getType().width() / 8.0) + 1;
-		int walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : (int)ceil(unit.getType().height() / 8.0) + 1;
-
-		// Iterate tiles and add to grid
-		auto start = unit.getWalkPosition();
-		for (int x = start.x; x < start.x + walkWidth; x++) {
-			for (int y = start.y; y < start.y + walkHeight; y++) {
-				WalkPosition w(x, y);
-				if (!w.isValid())
-					continue;
-
-				collision[x][y] = 1;
-				saveReset(w);
+				// Cluster
+				if (dist < 96.0) {
+					clusterGrid[x][y] += unit.getPriority();
+					saveReset(w);
+				}
 			}
 		}
 	}

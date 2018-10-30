@@ -607,8 +607,11 @@ namespace McRave
 
 	bool CommandManager::overlapsCommands(Unit unit, TechType tech, Position here, int radius)
 	{
+		// TechType checks use a rectangular check
 		for (auto &command : myCommands) {
-			if (command.unit != unit && command.tech == tech && command.pos.getDistance(here) <= radius * 2)
+			auto topLeft = command.pos - Position(radius, radius);
+			auto botRight = command.pos + Position(radius, radius);
+			if (command.unit != unit && command.tech == tech && Util().rectangleIntersect(topLeft, botRight, here))
 				return true;
 		}
 		return false;
@@ -616,6 +619,7 @@ namespace McRave
 
 	bool CommandManager::overlapsCommands(Unit unit, UnitType type, Position here, int radius)
 	{
+		// UnitType checks use a radial check
 		for (auto &command : myCommands) {
 			if (command.unit != unit && command.type == type && command.pos.getDistance(here) <= radius * 2)
 				return true;
@@ -625,6 +629,7 @@ namespace McRave
 
 	bool CommandManager::overlapsAllyDetection(Position here)
 	{
+		// Detection checks use a radial check
 		for (auto &command : myCommands) {
 			if (command.type == UnitTypes::Spell_Scanner_Sweep) {
 				double range = 420.0;
@@ -642,6 +647,7 @@ namespace McRave
 
 	bool CommandManager::overlapsEnemyDetection(Position here)
 	{
+		// Detection checks use a radial check
 		for (auto &command : enemyCommands) {
 			if (command.type == UnitTypes::Spell_Scanner_Sweep) {
 				double range = 420.0;
@@ -662,28 +668,41 @@ namespace McRave
 
 	bool CommandManager::isInDanger(Position here)
 	{
+		// Check that we're not in danger of Storm, DWEB, EMP
 		for (auto &command : myCommands) {
-			if (command.tech == TechTypes::Psionic_Storm && here.getDistance(command.pos) <= 128)
-				return true;
-			if (command.tech == TechTypes::Disruption_Web && here.getDistance(command.pos) <= 128)
-				return true;
-			if (command.tech == TechTypes::EMP_Shockwave && here.getDistance(command.pos) <= 128)
-				return true;
-			if (command.tech == TechTypes::Nuclear_Strike && here.getDistance(command.pos) <= 640)
-				return true;
+			if (command.tech == TechTypes::Psionic_Storm
+				|| command.tech == TechTypes::Disruption_Web
+				|| command.tech == TechTypes::EMP_Shockwave) {
+				auto topLeft = command.pos - Position(48, 48);
+				auto botRight = command.pos + Position(48, 48);
+				
+				return Util().rectangleIntersect(topLeft, botRight, here);
+			}
+
+			if (command.tech == TechTypes::Nuclear_Strike && here.getDistance(command.pos) <= 640) {
+				auto topLeft = command.pos - Position(320, 320);
+				auto botRight = command.pos + Position(320, 320);
+
+				return Util().rectangleIntersect(topLeft, botRight, here);
+			}
 		}
 
 		for (auto &command : enemyCommands) {
-			if (command.tech == TechTypes::Psionic_Storm && here.getDistance(command.pos) <= 128)
-				return true;
-			if (command.tech == TechTypes::Disruption_Web && here.getDistance(command.pos) <= 128)
-				return true;
-			if (command.tech == TechTypes::EMP_Shockwave && here.getDistance(command.pos) <= 128)
-				return true;
-			if (command.tech == TechTypes::Nuclear_Strike && here.getDistance(command.pos) <= 640)
-				return true;
-		}
+			if (command.tech == TechTypes::Psionic_Storm
+				|| command.tech == TechTypes::Disruption_Web
+				|| command.tech == TechTypes::EMP_Shockwave) {
+				auto topLeft = command.pos - Position(48, 48);
+				auto botRight = command.pos + Position(48, 48);
 
+				return Util().rectangleIntersect(topLeft, botRight, here);
+			}
+			if (command.tech == TechTypes::Nuclear_Strike && here.getDistance(command.pos) <= 640) {
+				auto topLeft = command.pos - Position(320, 320);
+				auto botRight = command.pos + Position(320, 320);
+
+				return Util().rectangleIntersect(topLeft, botRight, here);
+			}
+		}
 		return false;
 	}
 

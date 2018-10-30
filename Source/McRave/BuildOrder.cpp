@@ -320,28 +320,30 @@ namespace McRave
 		auto t = enemy == Races::Terran;
 		auto r = enemy == Races::Unknown || Races::Random;
 
-		if (build == "P1GateCore") {
-			if (opener == "0Zealot")
-				return t;
-			if (opener == "1Zealot")
-				return true;
-			if (opener == "2Zealot")
-				return p || t;
-		}
+		if (Broodwar->self()->getRace() == Races::Protoss) {
+			if (build == "P1GateCore") {
+				if (opener == "0Zealot")
+					return t;
+				if (opener == "1Zealot")
+					return true;
+				if (opener == "2Zealot")
+					return p || t;
+			}
 
-		if (build == "P2Gate") {
-			if (opener == "Proxy" || opener == "Natural")
-				return true;
-			if (opener == "Main")
-				return z;
-		}
+			if (build == "P2Gate") {
+				if (opener == "Proxy" || opener == "Natural")
+					return true;
+				if (opener == "Main")
+					return z;
+			}
 
-		if (build == "PFFE")
-			return true;
-		if (build == "P12Nexus")
-			return true;
-		if (build == "P21Nexus")
-			return true;
+			if (build == "PFFE")
+				return true;
+			if (build == "P12Nexus")
+				return true;
+			if (build == "P21Nexus")
+				return true;
+		}
 		return false;
 	}
 
@@ -353,44 +355,46 @@ namespace McRave
 		auto t = enemy == Races::Terran;
 		auto r = enemy == Races::Unknown || Races::Random;
 
-		if (build == "P1GateCore") {
-			if (transition == "DT")
-				return t;
-			if (transition == "3GateRobo")
-				return p;
-			if (transition == "Corsair")
+		if (Broodwar->self()->getRace() == Races::Protoss) {
+			if (build == "P1GateCore") {
+				if (transition == "DT")
+					return t;
+				if (transition == "3GateRobo")
+					return p;
+				if (transition == "Corsair")
+					return z;
+				if (transition == "Reaver")
+					return p || t;
+				if (transition == "4Gate")
+					return true;
+			}
+
+			if (build == "P2Gate") {
+				if (transition == "DT")
+					return p;
+				if (transition == "Reaver")
+					return p || t;
+				if (transition == "Expand")
+					return p || z;
+				if (transition == "DoubleExpand")
+					return t;
+				if (transition == "ZealotRush")
+					return true;
+			}
+
+			if (build == "PFFE")
 				return z;
-			if (transition == "Reaver")
-				return p || t;
-			if (transition == "4Gate")
-				return true;
-		}
 
-		if (build == "P2Gate") {
-			if (transition == "DT")
-				return p;
-			if (transition == "Reaver")
-				return p || t;
-			if (transition == "Expand")
-				return p || z;
-			if (transition == "DoubleExpand")
+			if (build == "P12Nexus") {
+				if (transition == "DoubleExpand" || transition == "Carriers")
+					return t;
+				if (transition == "5Gate")
+					return t || p;
+			}
+
+			if (build == "P21Nexus")
 				return t;
-			if (transition == "ZealotRush")
-				return true;
 		}
-
-		if (build == "PFFE")
-			return z;
-
-		if (build == "P12Nexus") {
-			if (transition == "DoubleExpand" || transition == "Carriers")
-				return t;
-			if (transition == "5Gate")
-				return t || p;
-		}
-
-		if (build == "P21Nexus")
-			return t;
 		return false;
 	}
 

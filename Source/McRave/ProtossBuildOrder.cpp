@@ -37,11 +37,11 @@ namespace McRave
 				techList.insert(UnitTypes::Protoss_Shuttle);
 				unlockedType.insert(UnitTypes::Protoss_Shuttle);
 
-				if (Players().getNumberTerran() > 0 || Broodwar->enemy()->getRace() == Races::Terran)
+				if (Players().vT())
 					techUnit = UnitTypes::Protoss_Carrier;
-				else if (Players().getNumberZerg() > 0 || Broodwar->enemy()->getRace() == Races::Zerg)
+				else if (Players().vZ())
 					techUnit = UnitTypes::Protoss_Corsair;
-				else if (Players().getNumberProtoss() > 0 || Broodwar->enemy()->getRace() == Races::Protoss)
+				else if (Players().vP())
 					techUnit = UnitTypes::Protoss_Carrier;
 			}
 
@@ -65,10 +65,10 @@ namespace McRave
 		auto skipFirstTech = (currentBuild == "P4Gate" || (Strategy().enemyGasSteal() && !Terrain().isNarrowNatural()));
 
 		// Metrics for when to Expand/Add Production/Add Tech
-		satVal = (Players().getNumberTerran() > 0 || Broodwar->enemy()->getRace() == Races::Terran) ? 2 : 3;
+		satVal = Players().vT() ? 2 : 3;
 		prodVal = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) + (satVal * skipFirstTech);
 		baseVal = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus);
-		techVal = techList.size() + skipFirstTech + (Broodwar->enemy()->getRace() == Races::Terran);
+		techVal = techList.size() + skipFirstTech + Players().vT();
 
 		// HACK: Don't count obs as a tech unit
 		if (techList.find(UnitTypes::Protoss_Observer) != techList.end())
@@ -189,7 +189,7 @@ namespace McRave
 		if (shouldAddProduction()) {
 
 			// PvZ island
-			if (Broodwar->enemy()->getRace() == Races::Zerg) {
+			if (Players().vZ()) {
 				int nexusCount = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
 				int roboCount = min(nexusCount - 2, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Robotics_Facility) + 1);
 				int stargateCount = min(nexusCount, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Stargate) + 1);
@@ -203,7 +203,7 @@ namespace McRave
 			}
 
 			// PvP island
-			else if (Broodwar->enemy()->getRace() == Races::Protoss) {
+			else if (Players().vP()) {
 				int nexusCount = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
 				int gateCount = min(Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) + 1);
 

@@ -19,6 +19,9 @@ namespace McRave
 		PlayerInfo();
 		Race getRace() { return race; }
 		bool isAlive() { return alive; }
+		bool isEnemy() { return thisPlayer->isEnemy(Broodwar->self()); }
+		bool isAlly() { return thisPlayer->isAlly(Broodwar->self()); }
+		bool isSelf() { return thisPlayer == Broodwar->self(); }
 		TilePosition getStartingLocation() { return startLocation; }
 
 		Player player() { return thisPlayer; }

@@ -41,6 +41,8 @@ namespace McRave
 		void saveReset(WalkPosition);
 		void updateDistance(), updateMobility(), updateAlly(), updateEnemy(), updateNeutral(), updateVisibility(), reset(), draw();
 
+		void addToGrids(UnitInfo&);
+
 		void addThreat(UnitInfo&);
 		void addCluster(UnitInfo&);
 		void addSplash(UnitInfo&);

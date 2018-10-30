@@ -118,7 +118,7 @@ void TerrainManager::findEnemyNextExpand()
 		double distance;
 		if (!station.BWEMBase()->GetArea()->AccessibleFrom(mapBWEB.getMainArea()))
 			distance = log(station.BWEMBase()->Center().getDistance(Terrain().getEnemyStartingPosition()));
-		else if (Broodwar->enemy()->getRace() != Races::Terran)
+		else if (!Players().vT())
 			distance = mapBWEB.getGroundDistance(Terrain().getEnemyStartingPosition(), station.BWEMBase()->Center()) / (mapBWEB.getGroundDistance(mapBWEB.getMainPosition(), station.BWEMBase()->Center()));
 		else
 			distance = mapBWEB.getGroundDistance(Terrain().getEnemyStartingPosition(), station.BWEMBase()->Center());
@@ -163,8 +163,6 @@ void TerrainManager::findAttackPosition()
 		attackPosition = enemyStartingPosition;
 	else
 		attackPosition = Positions::Invalid;
-
-	Broodwar->drawCircleMap(attackPosition, 16, Colors::Red);
 }
 
 void TerrainManager::findDefendPosition()
@@ -412,32 +410,32 @@ bool TerrainManager::findNaturalWall(vector<UnitType>& types, const vector<UnitT
 {
 	// Hack: Make a bunch of walls as Zerg for testing - disabled atm
 	if (Broodwar->self()->getRace() == Races::Zerg) {
-		//for (auto &area : mapBWEM.Areas()) {
+		for (auto &area : mapBWEM.Areas()) {
 
-		//	// Only make walls at gas bases that aren't starting bases
-		//	bool invalidBase = false;
-		//	for (auto &base : area.Bases()) {
-		//		if (base.Starting())
-		//			invalidBase = true;
-		//	}
-		//	if (invalidBase)
-		//		continue;
+			// Only make walls at gas bases that aren't starting bases
+			bool invalidBase = false;
+			for (auto &base : area.Bases()) {
+				if (base.Starting())
+					invalidBase = true;
+			}
+			if (invalidBase)
+				continue;
 
-		//	const ChokePoint * bestChoke = nullptr;
-		//	double distBest = DBL_MAX;
-		//	for (auto &choke : area.ChokePoints()) {
-		//		auto dist = Position(choke->Center()).getDistance(mapBWEM.Center());
-		//		if (dist < distBest) {
-		//			distBest = dist;
-		//			bestChoke = choke;
-		//		}
-		//	}
-		//	mapBWEB.createWall(types, &area, bestChoke, UnitTypes::None, defenses);
+			const ChokePoint * bestChoke = nullptr;
+			double distBest = DBL_MAX;
+			for (auto &choke : area.ChokePoints()) {
+				auto dist = Position(choke->Center()).getDistance(mapBWEM.Center());
+				if (dist < distBest) {
+					distBest = dist;
+					bestChoke = choke;
+				}
+			}
+			mapBWEB.createWall(types, &area, bestChoke, UnitTypes::None, defenses);
 
-		//	if (&area == mapBWEB.getNaturalArea())
-		//		naturalWall = mapBWEB.getWall(mapBWEB.getNaturalArea());
-		//}
-		//return true;
+			if (&area == mapBWEB.getNaturalArea())
+				naturalWall = mapBWEB.getWall(mapBWEB.getNaturalArea());
+		}
+		return true;
 	}
 
 	else {

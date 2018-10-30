@@ -114,13 +114,13 @@ void WorkerManager::assign(UnitInfo& worker)
 	auto distBest = injured ? 0.0 : DBL_MAX;
 
 	const auto resourceReady = [&](ResourceInfo& resource, int i) {
-		if (!resource.unit()
-			|| ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) && Grids().getEGroundThreat(WalkPosition(resource.getPosition())) > 0.0)
-			|| Util().quickThreatOnPath(worker, worker.getPosition(), resource.getPosition())
+		if (!resource.unit()						
 			|| resource.getType() == UnitTypes::Resource_Vespene_Geyser
 			|| (resource.unit()->exists() && !resource.unit()->isCompleted())
 			|| resource.getGathererCount() >= i
-			|| resource.getState() < 2)
+			|| resource.getState() < 2
+			|| ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) && Grids().getEGroundThreat(WalkPosition(resource.getPosition())) > 0.0)
+			|| Util().quickThreatOnPath(worker, worker.getPosition(), resource.getPosition()))
 			return false;
 		return true;
 	};
@@ -159,15 +159,16 @@ void WorkerManager::assign(UnitInfo& worker)
 		}
 	}
 
-	// 3) Assign resource if it exists and create a path
+	// 3) Assign resource
 	if (bestResource) {
 
-		// Remove current assignment if it has one
+		// Remove current assignment
 		if (worker.hasResource()) {
 			worker.getResource().setGathererCount(worker.getResource().getGathererCount() - 1);
 			worker.getResource().getType().isMineralField() ? minWorkers-- : gasWorkers--;
 		}
 
+		// Add next assignment
 		bestResource->setGathererCount(bestResource->getGathererCount() + 1);
 		bestResource->getType().isMineralField() ? minWorkers++ : gasWorkers++;
 		worker.setResource(bestResource);
@@ -240,8 +241,6 @@ void WorkerManager::clearPath(UnitInfo& worker)
 
 void WorkerManager::gather(UnitInfo& worker)
 {
-	auto closeToResource = worker.hasResource() && (worker.getResource().getPosition().getDistance(worker.getPosition()) < 64.0 || mapBWEM.GetArea(worker.getTilePosition()) == mapBWEM.GetArea(worker.getResource().getTilePosition()));
-
 	// Mine the closest mineral field
 	const auto mineRandom =[&]() {
 		auto closest = worker.unit()->getClosestUnit(Filter::IsMineralField);
@@ -253,6 +252,7 @@ void WorkerManager::gather(UnitInfo& worker)
 	if (worker.hasResource() && worker.getResource().getState() == 2) {
 
 		// 1) If it's close or same area, mine it
+		auto closeToResource = (worker.getResource().getPosition().getDistance(worker.getPosition()) < 64.0 || mapBWEM.GetArea(worker.getTilePosition()) == mapBWEM.GetArea(worker.getResource().getTilePosition()));
 		if (closeToResource && worker.getResource().unit() && worker.getResource().unit()->exists()) {
 			worker.unit()->gather(worker.getResource().unit());
 			return;
