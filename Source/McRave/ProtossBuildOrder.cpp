@@ -74,10 +74,6 @@ namespace McRave
 		if (techList.find(UnitTypes::Protoss_Observer) != techList.end())
 			techVal--;
 
-		//// HACK: No gas workers until at 14 supply (sometimes we get gas early to prevent steals
-		//if (Units().getSupply() < 28)
-		//	gasLimit = 0;
-
 		// HACK: Against FFE just add a Nexus
 		if (Strategy().getEnemyBuild() == "PFFE" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1)
 			itemQueue[UnitTypes::Protoss_Nexus] = Item(2);

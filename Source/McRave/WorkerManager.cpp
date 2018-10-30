@@ -42,10 +42,8 @@ void WorkerManager::updateDecision(UnitInfo& worker)
 	// Choose a command
 	if (shouldReturnCargo(worker))
 		returnCargo(worker);
-	else if (shouldClearPath(worker)) {
-		Broodwar->drawCircleMap(worker.getPosition(), 8, Colors::Purple, true);
+	else if (shouldClearPath(worker))
 		clearPath(worker);
-	}
 	else if (shouldBuild(worker))
 		build(worker);
 	else if (shouldGather(worker))
@@ -78,6 +76,7 @@ bool WorkerManager::shouldClearPath(UnitInfo& worker)
 
 	for (auto &b : Resources().getMyBoulders()) {
 		ResourceInfo &boulder = b.second;
+		Broodwar->drawCircleMap(boulder.getPosition(), 6, Colors::Grey, true);
 		if (!boulder.unit() || !boulder.unit()->exists())
 			continue;
 		if (worker.getPosition().getDistance(boulder.getPosition()) < 480.0)
@@ -88,85 +87,90 @@ bool WorkerManager::shouldClearPath(UnitInfo& worker)
 
 bool WorkerManager::shouldGather(UnitInfo& worker)
 {
-	if (Util().accurateThreatOnPath(worker))
-		return false;
-
-	// Testing this
-	if (worker.hasResource() && Grids().getEGroundThreat(WalkPosition(worker.getResource().getPosition())) > 0.0)
-		return false;
-	if (worker.hasResource() && (worker.unit()->isGatheringMinerals() || worker.unit()->isGatheringGas()) && worker.unit()->getTarget() != worker.getResource().unit() && worker.getResource().getState() == 2)
-		return true;
-	if (worker.unit()->isIdle() || worker.unit()->getLastCommand().getType() != UnitCommandTypes::Gather)
-		return true;
+	if (worker.hasResource()) {
+		if (mapBWEM.GetArea(worker.getTilePosition()) != mapBWEM.GetArea(worker.getResource().getTilePosition()))
+			return true;
+		if ((worker.unit()->isGatheringMinerals() || worker.unit()->isGatheringGas()) && worker.unit()->getTarget() != worker.getResource().unit() && worker.getResource().getState() == 2)
+			return true;
+	}
+	else {
+		if (worker.unit()->isIdle() || worker.unit()->getLastCommand().getType() != UnitCommandTypes::Gather)
+			return true;
+	}
 	return false;
 }
 
 bool WorkerManager::shouldReturnCargo(UnitInfo& worker)
 {
-	// Don't return cargo if we're on an island and just mined a blocking mineral
-	if (worker.getBuildingType().isResourceDepot() && worker.getBuildPosition().isValid() && mapBWEM.GetArea(worker.getBuildPosition()) && !mapBWEM.GetArea(worker.getBuildPosition())->AccessibleFrom(mapBWEB.getMainArea()) && worker.getPosition().getDistance((Position)worker.getBuildPosition()) < 160.0)
-		return false;
-	if (worker.unit()->isCarryingGas() || worker.unit()->isCarryingMinerals())
+	if (mapBWEM.GetArea(worker.getBuildPosition()) && mapBWEM.GetArea(worker.getBuildPosition())->AccessibleFrom(mapBWEB.getMainArea()) && (worker.unit()->isCarryingGas() || worker.unit()->isCarryingMinerals()))
 		return true;
 	return false;
 }
 
-
 void WorkerManager::assign(UnitInfo& worker)
 {
-	// Remove current assignment if it has one
-	if (worker.hasResource()) {
-		worker.getResource().setGathererCount(worker.getResource().getGathererCount() - 1);
-		worker.getResource().getType().isMineralField() ? minWorkers-- : gasWorkers--;
-	}
-
-	double distBest = DBL_MAX;
 	ResourceInfo* bestResource = nullptr;
-	
-	// Check if we need gas workers
+	auto injured = (worker.unit()->getHitPoints() + worker.unit()->getShields() < worker.getType().maxHitPoints() + worker.getType().maxShields());
+	auto distBest = injured ? 0.0 : DBL_MAX;
+
+	const auto resourceReady = [&](ResourceInfo& resource, int i) {
+		if (!resource.unit()
+			|| ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) && Grids().getEGroundThreat(WalkPosition(resource.getPosition())) > 0.0)
+			|| Util().quickThreatOnPath(worker, worker.getPosition(), resource.getPosition())
+			|| resource.getType() == UnitTypes::Resource_Vespene_Geyser
+			|| (resource.unit()->exists() && !resource.unit()->isCompleted())
+			|| resource.getGathererCount() >= i
+			|| resource.getState() < 2)
+			return false;
+		return true;
+	};
+
+	// 1) Check if we need gas workers
 	if (needGas()) {
 		for (auto &g : Resources().getMyGas()) {
-			ResourceInfo &gas = g.second;
-			double dist = gas.getPosition().getDistance(worker.getPosition());
-			if (!gas.unit() || ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) && Grids().getEGroundThreat(WalkPosition(gas.getPosition())) > 0.0))
-				continue;
-			if (Util().quickThreatOnPath(worker, worker.getPosition(), gas.getPosition()))
+			auto &gas = g.second;
+			if (!resourceReady(gas, 3))
 				continue;
 
-			if (dist < distBest && gas.getType() != UnitTypes::Resource_Vespene_Geyser && gas.unit()->exists() && gas.unit()->isCompleted() && gas.getGathererCount() < 3 && gas.getState() >= 2)
-				bestResource = &gas, distBest = dist;
-		}
-	}
-
-	// Check if we need mineral workers
-	else {
-
-		// If worker is injured early on, send him to the furthest mineral field
-		bool injured = (worker.unit()->getHitPoints() + worker.unit()->getShields() < worker.getType().maxHitPoints() + worker.getType().maxShields());
-		if (injured)
-			distBest = 0.0;
-
-		for (int i = 1; i <= 2; i++) {
-			for (auto &m : Resources().getMyMinerals()) {
-				ResourceInfo &mineral = m.second;
-				if ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) && Grids().getEGroundThreat(WalkPosition(mineral.getPosition())) > 0.0)
-					continue;
-				if (Util().quickThreatOnPath(worker, worker.getPosition(), mineral.getPosition()))
-					continue;
-
-				double dist = mineral.getPosition().getDistance(worker.getPosition());
-				if (((dist < distBest && !injured) || (dist > distBest && injured)) && mineral.getGathererCount() < i && mineral.getState() > 0)
-					bestResource = &mineral, distBest = dist;
+			auto dist = gas.getPosition().getDistance(worker.getPosition());
+			if ((dist < distBest && !injured) || (dist > distBest && injured)) {
+				bestResource = &gas;
+				distBest = dist;
 			}
 		}
 	}
-	
-	// Assign resource if it exists and create a path
-	if (bestResource) {		
+
+	// 2) Check if we need mineral workers
+	else {
+		for (int i = 1; i <= 2; i++) {
+			for (auto &m : Resources().getMyMinerals()) {
+				auto &mineral = m.second;
+				if (!resourceReady(mineral, i))
+					continue;
+
+				double dist = mineral.getPosition().getDistance(worker.getPosition());
+				if ((dist < distBest && !injured) || (dist > distBest && injured)) {
+					bestResource = &mineral;
+					distBest = dist;
+				}
+			}
+			if (bestResource)
+				break;
+		}
+	}
+
+	// 3) Assign resource if it exists and create a path
+	if (bestResource) {
+
+		// Remove current assignment if it has one
+		if (worker.hasResource()) {
+			worker.getResource().setGathererCount(worker.getResource().getGathererCount() - 1);
+			worker.getResource().getType().isMineralField() ? minWorkers-- : gasWorkers--;
+		}
+
 		bestResource->setGathererCount(bestResource->getGathererCount() + 1);
 		bestResource->getType().isMineralField() ? minWorkers++ : gasWorkers++;
 		worker.setResource(bestResource);
-		worker.getTargetPath().createUnitPath(mapBWEB, mapBWEM, worker.getPosition(), bestResource->getPosition());
 	}
 }
 
@@ -186,24 +190,23 @@ void WorkerManager::build(UnitInfo& worker)
 		return enoughGas && enoughMins;
 	};
 
-	// Spider mine removal
-	if (worker.getBuildingType().isResourceDepot() && worker.hasTarget()) {
+	// 1) Attack any enemies inside the build area
+	if (worker.hasTarget() &&
+		worker.getTarget().getPosition().getDistance(worker.getPosition()) < 160
+		&& worker.getTarget().getTilePosition().x >= worker.getBuildPosition().x
+		&& worker.getTarget().getTilePosition().x < worker.getBuildPosition().x + worker.getBuildingType().tileWidth()
+		&& worker.getTarget().getTilePosition().y >= worker.getBuildPosition().y
+		&& worker.getTarget().getTilePosition().y < worker.getBuildPosition().y + worker.getBuildingType().tileHeight())
+		Commands().attack(worker);
 
-		if (worker.getTarget().getPosition().getDistance(worker.getPosition()) < 160
-			&& worker.getTarget().getTilePosition().x >= worker.getBuildPosition().x
-			&& worker.getTarget().getTilePosition().x < worker.getBuildPosition().x + worker.getBuildingType().tileWidth()
-			&& worker.getTarget().getTilePosition().y >= worker.getBuildPosition().y
-			&& worker.getTarget().getTilePosition().y < worker.getBuildPosition().y + worker.getBuildingType().tileHeight())
-			Commands().attack(worker);
-	}
-
-	// If our building desired has changed recently, remove
-	if ((BuildOrder().buildCount(worker.getBuildingType()) <= Broodwar->self()->visibleUnitCount(worker.getBuildingType()) || !Buildings().isBuildable(worker.getBuildingType(), worker.getBuildPosition()))) {
+	// 2) Cancel any buildings we don't need
+	else if ((BuildOrder().buildCount(worker.getBuildingType()) <= Broodwar->self()->visibleUnitCount(worker.getBuildingType()) || !Buildings().isBuildable(worker.getBuildingType(), worker.getBuildPosition()))) {
 		worker.setBuildingType(UnitTypes::None);
 		worker.setBuildPosition(TilePositions::Invalid);
 		worker.unit()->stop();
 	}
 
+	// 3) Move to build if we have the resources
 	else if (shouldMoveToBuild()) {
 		worker.circleRed();
 		worker.setDestination(center);
@@ -212,7 +215,6 @@ void WorkerManager::build(UnitInfo& worker)
 		if (worker.getPosition().getDistance(center) > 256.0) {
 			if (worker.unit()->getOrderTargetPosition() != center)
 				worker.unit()->move(center);
-			//Commands().safeMove(worker);
 		}
 		else if (worker.unit()->getOrder() != Orders::PlaceBuilding || worker.unit()->isIdle())
 			worker.unit()->build(worker.getBuildingType(), worker.getBuildPosition());
@@ -237,28 +239,40 @@ void WorkerManager::clearPath(UnitInfo& worker)
 }
 
 void WorkerManager::gather(UnitInfo& worker)
-{	
-	auto closeToResource = worker.hasResource() && (worker.getResource().getPosition().getDistance(worker.getPosition()) < 256.0 || mapBWEM.GetArea(worker.getTilePosition()) == mapBWEM.GetArea(worker.getResource().getTilePosition()));
+{
+	auto closeToResource = worker.hasResource() && (worker.getResource().getPosition().getDistance(worker.getPosition()) < 64.0 || mapBWEM.GetArea(worker.getTilePosition()) == mapBWEM.GetArea(worker.getResource().getTilePosition()));
+
+	// Mine the closest mineral field
+	const auto mineRandom =[&]() {
+		auto closest = worker.unit()->getClosestUnit(Filter::IsMineralField);
+		if (closest && closest->exists() && worker.unit()->isIdle())
+			worker.unit()->gather(closest);
+	};
 
 	// If the resource is close and mineable
-	if (worker.hasResource() && worker.getResource().getState() == 2 && closeToResource) {
-		if (worker.getResource().unit() && worker.getResource().unit()->exists())
-			worker.unit()->gather(worker.getResource().unit());
-		else
-			Commands().safeMove(worker);
-	}
+	if (worker.hasResource() && worker.getResource().getState() == 2) {
 
-	// If the path to the resource is safe
-	else if (worker.hasResource() && !Util().accurateThreatOnPath(worker)) {
-		worker.unit()->move(worker.getResource().getPosition());
+		// 1) If it's close or same area, mine it
+		if (closeToResource && worker.getResource().unit() && worker.getResource().unit()->exists()) {
+			worker.unit()->gather(worker.getResource().unit());
+			return;
+		}
+
+		// 2) If it's far, generate a path
+		auto resourceCentroid = worker.getResource().getStation()->ResourceCentroid();
+		if (worker.getLastTile() != worker.getTilePosition())
+			worker.getTargetPath().createUnitPath(mapBWEB, mapBWEM, worker.getPosition(), resourceCentroid);
+
+		// 3) If no threat on path, mine it			
+		if (!Util().accurateThreatOnPath(worker) && worker.getResource().unit() && worker.getResource().unit()->exists()) {
+			Display().displayPath(worker, worker.getTargetPath().getTiles());
+			worker.unit()->gather(worker.getResource().unit());
+			return;
+		}
 	}
 
 	// Mine something else while waiting
-	else {
-		auto closest = worker.unit()->getClosestUnit(Filter::IsMineralField);
-		if (closest && closest->exists())
-			worker.unit()->gather(closest);
-	}
+	mineRandom();
 }
 
 void WorkerManager::returnCargo(UnitInfo& worker)

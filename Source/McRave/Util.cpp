@@ -215,7 +215,7 @@ bool UtilManager::quickThreatOnPath(UnitInfo& unit, Position start, Position end
 bool UtilManager::accurateThreatOnPath(UnitInfo& unit)
 {
 	if (unit.getTargetPath().getTiles().empty())
-		return true;
+		return false;
 
 	for (auto &tile : unit.getTargetPath().getTiles()) {
 		auto w = WalkPosition(tile);

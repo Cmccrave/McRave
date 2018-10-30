@@ -675,7 +675,7 @@ namespace McRave
 			getOpening =		s < 100;
 
 			itemQueue[Protoss_Nexus] =				Item(1 + (s >= 42) + (s >= 70));
-			itemQueue[Protoss_Assimilator] =		Item((s >= 24) + (s >= 76));
+			itemQueue[Protoss_Assimilator] =		Item(s >= 24);
 			itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
 		}
 		else if (currentTransition == "Defensive") {

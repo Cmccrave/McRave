@@ -54,7 +54,7 @@ namespace McRave
 		// Testing Reavers
 		currentBuild = "P21Nexus";
 		currentOpener = "1Gate";
-		currentTransition = "Standard";
+		currentTransition = "DoubleExpand";
 		return;
 
 		// File extension including our race initial;

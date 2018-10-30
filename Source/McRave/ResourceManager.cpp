@@ -21,14 +21,22 @@ void ResourceManager::updateResources()
 		updateIncome(resource);
 	};
 
+	for (auto &m : myBoulders) {
+		ResourceInfo& resource = m.second;
+		update(resource);
+		Broodwar->drawTextMap(resource.getPosition(), "%d", resource.getGathererCount());
+	}
+
 	for (auto &m : myMinerals) {
 		ResourceInfo& resource = m.second;
 		update(resource);
+		Broodwar->drawTextMap(resource.getPosition(), "%d", resource.getGathererCount());
 	}
 
 	for (auto &g : myGas) {
 		ResourceInfo& resource = g.second;
 		update(resource);
+		Broodwar->drawTextMap(resource.getPosition(), "%d", resource.getGathererCount());
 		
 		// If resource is blocked from usage
 		if (resource.getTilePosition().isValid()) {
@@ -70,7 +78,7 @@ void ResourceManager::updateIncome(ResourceInfo& resource)
 
 void ResourceManager::storeResource(Unit resource)
 {
-	auto &r = (resource->getResources() > 0 ? (resource->getType().isMineralField() ? myMinerals[resource] : myGas[resource]) : myBoulders[resource]);
+	auto &r = (resource->getInitialResources() > 0 ? (resource->getType().isMineralField() ? myMinerals[resource] : myGas[resource]) : myBoulders[resource]);
 	r.setUnit(resource);
 
 	// If we are not on an inital frame, a geyser was just created and we need to see if we own it
