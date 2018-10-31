@@ -17,7 +17,9 @@ namespace McRave
 		int gasCount;
 		int incomeMineral, incomeGas;
 
-		void updateResources(), updateIncome(ResourceInfo&), updateInformation(ResourceInfo&);
+		void updateResources();
+		void updateIncome(ResourceInfo&);
+		void updateInformation(ResourceInfo&);
 	public:
 		int getGasCount() { return gasCount; }
 		int getIncomeMineral() { return incomeMineral; }
@@ -29,7 +31,8 @@ namespace McRave
 		map <Unit, ResourceInfo>& getMyBoulders() { return myBoulders; }
 
 		void onFrame();
-		void storeResource(Unit), removeResource(Unit);
+		void storeResource(Unit);
+		void removeResource(Unit);
 	};
 }
 

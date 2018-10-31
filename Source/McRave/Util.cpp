@@ -192,12 +192,12 @@ bool UtilManager::quickThreatOnPath(UnitInfo& unit, Position start, Position end
 	return false;
 }
 
-bool UtilManager::accurateThreatOnPath(UnitInfo& unit)
+bool UtilManager::accurateThreatOnPath(UnitInfo& unit, Path& path)
 {
-	if (unit.getTargetPath().getTiles().empty())
+	if (path.getTiles().empty())
 		return false;
 
-	for (auto &tile : unit.getTargetPath().getTiles()) {
+	for (auto &tile : path.getTiles()) {
 		auto w = WalkPosition(tile);
 		auto threat = unit.getType().isFlyer() ? Grids().getEAirThreat(w) > 0.0 : Grids().getEGroundThreat(w) > 0.0;
 		if (threat)

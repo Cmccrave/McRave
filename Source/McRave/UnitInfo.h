@@ -26,6 +26,7 @@ namespace McRave
 		int beingAttackedCount;
 
 		bool burrowed;
+		bool commandedThisFrame;
 
 		Unit thisUnit;
 		UnitType unitType, buildingType;
@@ -46,7 +47,8 @@ namespace McRave
 		WalkPosition walkPosition, lastWalk;
 		TilePosition tilePosition, buildPosition, lastTile;
 
-		BWEB::Path targetPath;
+		Path targetPath;
+		Path resourcePath;
 		void updateTarget();
 		void updateStuckCheck();
 	public:

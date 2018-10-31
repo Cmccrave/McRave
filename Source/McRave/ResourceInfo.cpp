@@ -7,7 +7,7 @@ namespace McRave {
 		thisUnit = nullptr;
 		gathererCount = 0;
 		remainingResources = 0;
-		miningState = 0;
+		//rState = ResourceState::None;
 		type = UnitTypes::None;
 		position = Positions::None;
 		tilePosition = TilePositions::None;

@@ -39,7 +39,7 @@ namespace BWEB
 
 		createPath(mapBWEB, mapBWEM, s, t, collision, direction);
 	}
-
+	
 	void Path::createPath(BWEB::Map& mapBWEB, BWEM::Map& mapBWEM, const Position s, const Position t, function <bool(const TilePosition)> collision, vector<TilePosition> direction)
 	{
 		TilePosition source(s);

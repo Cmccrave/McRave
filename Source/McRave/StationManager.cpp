@@ -27,34 +27,48 @@ Position StationManager::getClosestEnemyStation(Position here)
 
 void StationManager::storeStation(Unit unit)
 {
-	auto station = mapBWEB.getClosestStation(unit->getTilePosition());
-	if (!station || !unit->getType().isResourceDepot())
+	auto newStation = mapBWEB.getClosestStation(unit->getTilePosition());
+	if (!newStation
+		|| !unit->getType().isResourceDepot()
+		|| unit->getTilePosition() != newStation->BWEMBase()->Location())
 		return;
-	if (unit->getTilePosition() != station->BWEMBase()->Location())
-		return;
 
+	// 1) Add paths to our station network when completed
+	if (unit->isCompleted() && unit->getPlayer() == Broodwar->self()) {
+		for (auto &s : myStations) {
+			auto station = s.second;
+			if (stationNetworkExists(newStation, station))
+				continue;
 
-	unit->getPlayer() == Broodwar->self() ? myStations.emplace(unit, station) : enemyStations.emplace(unit, station);
-	int state = 1 + (unit->isCompleted());
-
-	// Change the resource states and store station
-	if (unit->getPlayer() == Broodwar->self()) {
-		for (auto &mineral : station->BWEMBase()->Minerals()) {
-			auto &resource = Resources().getMyMinerals()[mineral->Unit()];
-			resource.setState(state);
-
-			if (state == 2)
-				resource.setStation(station);
-		}
-		for (auto &gas : station->BWEMBase()->Geysers()) {
-			auto &resource = Resources().getMyGas()[gas->Unit()];
-			resource.setState(state);
-
-			if (state == 2)
-				resource.setStation(station);
+			Path newPath;
+			newPath.createUnitPath(mapBWEB, mapBWEM, newStation->ResourceCentroid(), station->ResourceCentroid());
+			stationNetwork[station][newStation] = newPath;
 		}
 	}
 
+	// 2) Change the resource states and store station
+	unit->getPlayer() == Broodwar->self() ? myStations.emplace(unit, newStation) : enemyStations.emplace(unit, newStation);
+	ResourceState state = unit->isCompleted() ? ResourceState::Mineable: ResourceState::Assignable;
+	if (unit->getPlayer() == Broodwar->self()) {
+		for (auto &mineral : newStation->BWEMBase()->Minerals()) {
+			auto &resource = Resources().getMyMinerals()[mineral->Unit()];
+			resource.setResourceState(state);
+
+			// HACK: Added this to fix some weird gas steal stuff
+			if (state == ResourceState::Mineable)
+				resource.setStation(newStation);
+		}
+		for (auto &gas : newStation->BWEMBase()->Geysers()) {
+			auto &resource = Resources().getMyGas()[gas->Unit()];
+			resource.setResourceState(state);
+
+			// HACK: Added this to fix some weird gas steal stuff
+			if (state == ResourceState::Mineable)
+				resource.setStation(newStation);
+		}
+	}
+	
+	// 3) Add to territory
 	if (unit->getTilePosition().isValid() && mapBWEM.GetArea(unit->getTilePosition())) {
 		if (unit->getPlayer() == Broodwar->self())
 			Terrain().getAllyTerritory().insert(mapBWEM.GetArea(unit->getTilePosition()));
@@ -69,11 +83,12 @@ void StationManager::removeStation(Unit unit)
 	if (!station || !unit->getType().isResourceDepot())
 		return;
 
+	// 1) Change resource state to not mineable
 	if (unit->getPlayer() == Broodwar->self()) {
 		for (auto &mineral : station->BWEMBase()->Minerals())
-			Resources().getMyMinerals()[mineral->Unit()].setState(0);
+			Resources().getMyMinerals()[mineral->Unit()].setResourceState(ResourceState::None);
 		for (auto &gas : station->BWEMBase()->Geysers())
-			Resources().getMyGas()[gas->Unit()].setState(0);
+			Resources().getMyGas()[gas->Unit()].setResourceState(ResourceState::None);
 		myStations.erase(unit);
 	}
 	else
@@ -107,4 +122,38 @@ bool StationManager::needDefenses(const Station station)
 	else if (station.getDefenseCount() < 1 && (Units().getGlobalEnemyAirStrength() > 0.0 || Strategy().getEnemyBuild() == "Z2HatchMuta" || Strategy().getEnemyBuild() == "Z3HatchMuta"))
 		return true;
 	return false;
+}
+
+bool StationManager::stationNetworkExists(const Station * start, const Station * finish)
+{
+	for (auto &s : stationNetwork) {
+		auto s1 = s.first;
+
+		// For each connected station, check if it exists
+		auto connectedStations = s.second;
+		for (auto &pair : connectedStations) {
+			auto s2 = pair.first;
+			if ((s1 == start && s2 == finish) || (s1 == finish && s2 == start))
+				return true;
+		}
+	}
+	return false;
+}
+
+Path& StationManager::pathStationToStation(const Station * start, const Station * finish)
+{
+	for (auto &s : stationNetwork) {
+		auto s1 = s.first;
+
+		// For each connected station, check if it exists
+		auto connectedStations = s.second;
+		for (auto &pair : connectedStations) {
+			auto s2 = pair.first;
+			auto &path = pair.second;
+			if ((s1 == start && s2 == finish) || (s1 == finish && s2 == start))
+				return path;
+		}
+	}
+	// Return an empty path
+	return Path();
 }

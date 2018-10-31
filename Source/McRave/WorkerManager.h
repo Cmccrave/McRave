@@ -13,6 +13,7 @@ namespace McRave
 		int deadScoutFrame = 0;
 		int minWorkers = 0, gasWorkers = 0;
 
+		bool closeToResource(UnitInfo&);
 		bool needGas();		
 	public:		
 

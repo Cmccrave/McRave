@@ -57,7 +57,8 @@ bool WorkerManager::shouldAssign(UnitInfo& worker)
 	if (!worker.hasResource()
 		|| needGas()
 		|| (worker.hasResource() && !worker.getResource().getType().isMineralField() && gasWorkers > BuildOrder().gasWorkerLimit())
-		|| (worker.hasResource() && Util().accurateThreatOnPath(worker))
+		|| (worker.hasResource() && !closeToResource(worker) && Util().accurateThreatOnPath(worker, worker.getTargetPath()) && Grids().getEGroundThreat(worker.getWalkPosition()) == 0.0)
+		|| (worker.hasResource() && closeToResource(worker) && Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0)
 		|| ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) && worker.hasResource() && Util().quickThreatOnPath(worker, worker.getPosition(), worker.getResource().getPosition())))
 		return true;
 	return false;
@@ -90,7 +91,7 @@ bool WorkerManager::shouldGather(UnitInfo& worker)
 	if (worker.hasResource()) {
 		if (mapBWEM.GetArea(worker.getTilePosition()) != mapBWEM.GetArea(worker.getResource().getTilePosition()))
 			return true;
-		if ((worker.unit()->isGatheringMinerals() || worker.unit()->isGatheringGas()) && worker.unit()->getTarget() != worker.getResource().unit() && worker.getResource().getState() == 2)
+		if ((worker.unit()->isGatheringMinerals() || worker.unit()->isGatheringGas()) && worker.unit()->getTarget() != worker.getResource().unit() && worker.getResource().getResourceState() == ResourceState::Mineable)
 			return true;
 	}
 	if (worker.unit()->isIdle() || worker.unit()->getLastCommand().getType() != UnitCommandTypes::Gather)
@@ -111,7 +112,7 @@ void WorkerManager::assign(UnitInfo& worker)
 {
 	ResourceInfo* bestResource = nullptr;
 	auto injured = (worker.unit()->getHitPoints() + worker.unit()->getShields() < worker.getType().maxHitPoints() + worker.getType().maxShields());
-	auto threatened = (worker.hasResource() && Util().accurateThreatOnPath(worker));
+	auto threatened = (worker.hasResource() && Util().accurateThreatOnPath(worker, worker.getTargetPath()));
 	auto distBest = (injured || threatened) ? 0.0 : DBL_MAX;
 
 	const auto resourceReady = [&](ResourceInfo& resource, int i) {
@@ -119,26 +120,30 @@ void WorkerManager::assign(UnitInfo& worker)
 			|| resource.getType() == UnitTypes::Resource_Vespene_Geyser
 			|| (resource.unit()->exists() && !resource.unit()->isCompleted())
 			|| (resource.getGathererCount() >= i + int(injured || threatened))
-			|| resource.getState() < 2
+			|| resource.getResourceState() == ResourceState::None
 			|| ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) && Grids().getEGroundThreat(WalkPosition(resource.getPosition())) > 0.0)
 			|| Util().quickThreatOnPath(worker, worker.getPosition(), resource.getPosition()))
 			return false;
 		return true;
 	};
 
-	vector<Position> safeCentroids;
-
-	// 1) If threatened, make a path to each station resource centroid and only assign to one of the safe resources
+	vector<const Station *> safeStations;
+	const Station * closest = mapBWEB.getClosestStation(worker.getTilePosition());
+	
+	// 1) If threatened, find safe stations to move to on the Station network or generate a new path
 	if (threatened) {
 		for (auto &s : Stations().getMyStations()) {
-			auto &station = s.second;
-			Path newPath;
-			newPath.createUnitPath(mapBWEB, mapBWEM, worker.getPosition(), station->ResourceCentroid());
-			worker.setTargetPath(newPath);
-			if (!Util().accurateThreatOnPath(worker))
-				safeCentroids.push_back(station->ResourceCentroid());
+			auto station = s.second;
+			Path path;
+			if (closest && worker.getPosition().getDistance(closest->ResourceCentroid()) < 128.0)
+				path = Stations().pathStationToStation(closest, station);
+			else
+				path.createUnitPath(mapBWEB, mapBWEM, worker.getPosition(), station->ResourceCentroid());
+
+			// Store station if it's safe
+			if (!Util().accurateThreatOnPath(worker, path))
+				safeStations.push_back(station);
 		}
-		worker.setTargetPath(Path()); // this is a stupid idea, make a new Util.accurate... which can take a vector
 	}
 
 	// 2) Check if we need gas workers
@@ -147,7 +152,7 @@ void WorkerManager::assign(UnitInfo& worker)
 			auto &resource = r.second;
 			if (!resourceReady(resource, 3))
 				continue;
-			if (threatened && (!resource.getStation() || find(safeCentroids.begin(), safeCentroids.end(), resource.getStation()->ResourceCentroid()) == safeCentroids.end()))
+			if (threatened && !safeStations.empty() && (!resource.getStation() || find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end()))
 				continue;
 
 			auto dist = resource.getPosition().getDistance(worker.getPosition());
@@ -165,7 +170,7 @@ void WorkerManager::assign(UnitInfo& worker)
 				auto &resource = r.second;
 				if (!resourceReady(resource, i))
 					continue;
-				if (threatened && (!resource.getStation() || find(safeCentroids.begin(), safeCentroids.end(), resource.getStation()->ResourceCentroid()) == safeCentroids.end()))
+				if (threatened && !safeStations.empty() && (!resource.getStation() || find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end()))
 					continue;
 
 				double dist = resource.getPosition().getDistance(worker.getPosition());
@@ -273,11 +278,10 @@ void WorkerManager::gather(UnitInfo& worker)
 	};
 
 	// If the resource is close and mineable
-	if (worker.hasResource() && worker.getResource().getState() == 2) {
+	if (worker.hasResource() && worker.getResource().getResourceState() == ResourceState::Mineable) {
 
-		// 1) If it's close or same area, mine it
-		auto closeToResource = (worker.getResource().getPosition().getDistance(worker.getPosition()) < 64.0 || mapBWEM.GetArea(worker.getTilePosition()) == mapBWEM.GetArea(worker.getResource().getTilePosition()));
-		if (closeToResource && worker.getResource().unit() && worker.getResource().unit()->exists()) {
+		// 1) If it's close or same area, mine it		
+		if (closeToResource(worker) && worker.getResource().unit() && worker.getResource().unit()->exists()) {
 			Path emptyPath;
 			worker.unit()->gather(worker.getResource().unit());
 			worker.setTargetPath(emptyPath);
@@ -295,15 +299,17 @@ void WorkerManager::gather(UnitInfo& worker)
 		Display().displayPath(worker, worker.getTargetPath().getTiles());
 
 		// 3) If no threat on path, mine it
-		if (!Util().accurateThreatOnPath(worker)) {
-			worker.circleBlack();
-
+		if (!Util().accurateThreatOnPath(worker, worker.getTargetPath())) {
 			if (worker.getResource().unit() && worker.getResource().unit()->exists())
 				worker.unit()->gather(worker.getResource().unit());
 			else
 				worker.unit()->move(worker.getResource().getPosition());
 			return;
 		}
+
+		// 4) If we are under a threat, try to get away from it
+		if (Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0)
+			Commands().kite(worker);
 	}
 
 	// Mine something else while waiting
@@ -325,6 +331,13 @@ bool WorkerManager::needGas() {
 	if (!Resources().isGasSaturated() && ((gasWorkers < BuildOrder().gasWorkerLimit() && BuildOrder().isOpener()) || !BuildOrder().isOpener() || Resources().isMinSaturated()))
 		return true;
 	return false;
+}
+
+bool WorkerManager::closeToResource(UnitInfo& worker)
+{
+	auto close = worker.getResource().getPosition().getDistance(worker.getPosition()) < 128.0;
+	auto sameArea = mapBWEM.GetArea(worker.getTilePosition()) == mapBWEM.GetArea(worker.getResource().getTilePosition());
+	return close || sameArea;
 }
 
 void WorkerManager::removeUnit(Unit unit)

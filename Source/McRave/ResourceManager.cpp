@@ -39,7 +39,7 @@ void ResourceManager::updateResources()
 		if (resource.getTilePosition().isValid()) {
 			for (auto block = mapBWEM.GetTile(resource.getTilePosition()).GetNeutral(); block; block = block->NextStacked()) {
 				if (block && block->Unit() && block->Unit()->exists() && block->Unit()->isInvincible() && !block->IsGeyser())
-					resource.setState(0);
+					resource.setResourceState(ResourceState::None);
 			}
 		}
 	}
@@ -54,12 +54,12 @@ void ResourceManager::updateInformation(ResourceInfo& resource)
 	UnitType geyserType = Broodwar->self()->getRace().getRefinery();	
 
 	// Update saturation
-	if (resource.getType().isMineralField() && minSat && resource.getGathererCount() < 2 && resource.getState() > 0)
+	if (resource.getType().isMineralField() && minSat && resource.getGathererCount() < 2 && resource.getResourceState() != ResourceState::None)
 		minSat = false;
-	else if (resource.getType() == geyserType && resource.unit()->isCompleted() && resource.getState() > 0 && ((BuildOrder().isOpener() && resource.getGathererCount() < min(3, BuildOrder().gasWorkerLimit())) || (!BuildOrder().isOpener() && resource.getGathererCount() < 3)))
+	else if (resource.getType() == geyserType && resource.unit()->isCompleted() && resource.getResourceState() != ResourceState::None && ((BuildOrder().isOpener() && resource.getGathererCount() < min(3, BuildOrder().gasWorkerLimit())) || (!BuildOrder().isOpener() && resource.getGathererCount() < 3)))
 		gasSat = false;
 	
-	if (!resource.getType().isMineralField() && resource.getState() == 2)
+	if (!resource.getType().isMineralField() && resource.getResourceState() == ResourceState::Mineable)
 		gasCount++;
 }
 
@@ -86,7 +86,7 @@ void ResourceManager::storeResource(Unit resource)
 			for (auto &s : Stations().getMyStations()) {
 				auto &station = *s.second;
 				if (station.BWEMBase() == newStation->BWEMBase()) {
-					r.setState(2);
+					r.setResourceState(ResourceState::Mineable);
 					break;
 				}
 			}

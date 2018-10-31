@@ -358,7 +358,7 @@ namespace McRave
 			for (auto &g : Resources().getMyGas()) {
 				ResourceInfo &gas = g.second;
 
-				if (here == gas.getTilePosition() && gas.getState() >= 1 && gas.getType() != building)
+				if (here == gas.getTilePosition() && gas.getResourceState() != ResourceState::None && gas.getType() != building)
 					return true;
 			}
 			return false;
@@ -506,7 +506,7 @@ namespace McRave
 				if (isBuildable(building, gas.getTilePosition()))
 					Broodwar->drawCircleMap(Position(tileBest), 8, Colors::Orange);
 
-				if (isQueueable(building, gas.getTilePosition()) && isBuildable(building, gas.getTilePosition()) && gas.getState() >= 1 && dist < distBest) {
+				if (isQueueable(building, gas.getTilePosition()) && isBuildable(building, gas.getTilePosition()) && gas.getResourceState() != ResourceState::None && dist < distBest) {
 					distBest = dist;
 					tileBest = gas.getTilePosition();
 				}

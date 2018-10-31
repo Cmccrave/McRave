@@ -31,6 +31,10 @@ namespace McRave
 		None, Loading, Unloading, Monitoring, Engaging, Retreating
 	};
 
+	enum class ResourceState {
+		None, Assignable, Mineable
+	};
+
 	enum class GlobalState {
 		None, Engaging, Retreating
 	};
