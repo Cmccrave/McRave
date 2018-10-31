@@ -4,9 +4,11 @@ namespace McRave
 {
 	void TargetManager::getTarget(UnitInfo& unit)
 	{
-		getBestTarget(unit);
-		getEngagePosition(unit);
-		getPathToTarget(unit);
+		if (unit.getRole() == Role::Fighting) {
+			getBestTarget(unit);
+			getEngagePosition(unit);
+			getPathToTarget(unit);
+		}
 	}
 
 	void TargetManager::getBestTarget(UnitInfo& unit)

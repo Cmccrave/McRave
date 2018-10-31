@@ -199,7 +199,7 @@ bool UtilManager::accurateThreatOnPath(UnitInfo& unit)
 
 	for (auto &tile : unit.getTargetPath().getTiles()) {
 		auto w = WalkPosition(tile);
-		auto threat = unit.getType().isFlyer() ? Grids().getEGroundThreat(w) > 0.0 : Grids().getEAirThreat(w) > 0.0;
+		auto threat = unit.getType().isFlyer() ? Grids().getEAirThreat(w) > 0.0 : Grids().getEGroundThreat(w) > 0.0;
 		if (threat)
 			return true;
 	}
@@ -211,7 +211,7 @@ bool UtilManager::rectangleIntersect(Position topLeft, Position botRight, Positi
 	if (target.x >= topLeft.x
 		&& target.x < botRight.x
 		&& target.y >= topLeft.y
-		&& target.y < botRight.x)
+		&& target.y < botRight.y)
 		return true;
 	return false;
 }

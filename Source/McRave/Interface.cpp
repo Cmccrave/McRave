@@ -71,10 +71,16 @@ namespace McRave
 		
 		// Resource
 		if (resources) {
-			for (auto &r : Resources().getMyMinerals()) 
-				Broodwar->drawTextMap(r.second.getPosition() + Position(-8, 8), "%c%d", Text::White, r.second.getRemainingResources());			
-			for (auto &r : Resources().getMyGas()) 
-				Broodwar->drawTextMap(r.second.getPosition() + Position(-8, 32), "%c%d", Text::Green, r.second.getRemainingResources());			
+			for (auto &r : Resources().getMyMinerals()) {
+				auto &resource = r.second;
+				Broodwar->drawTextMap(resource.getPosition() + Position(-8, 8), "%c%d", Text::GreyBlue, r.second.getRemainingResources());
+				Broodwar->drawTextMap(resource.getPosition() - Position(32, 8), "%cGatherers: %d", textColor, resource.getGathererCount());
+			}
+			for (auto &r : Resources().getMyGas()) {
+				auto &resource = r.second;
+				Broodwar->drawTextMap(resource.getPosition() + Position(-8, 8), "%c%d", Text::Green, r.second.getRemainingResources());
+				Broodwar->drawTextMap(resource.getPosition() - Position(32, 8), "%cGatherers: %d", textColor, resource.getGathererCount());
+			}
 		}
 
 
@@ -92,6 +98,8 @@ namespace McRave
 			if (targets) {
 				if (unit.hasTarget())
 					Broodwar->drawLineMap(unit.getTarget().getPosition(), unit.getPosition(), unit.getPlayer()->getColor());
+				if (unit.hasResource())
+					Broodwar->drawLineMap(unit.getResource().getPosition(), unit.getPosition(), unit.getPlayer()->getColor());
 			}
 
 			if (strengths) {
@@ -103,11 +111,11 @@ namespace McRave
 
 			if (orders) {
 				if (unit.unit() && unit.unit()->exists())
-					Broodwar->drawTextMap(unit.getPosition(), "%c%s", unit.getPlayer()->getColor(), unit.unit()->getOrder().c_str());
+					Broodwar->drawTextMap(unit.getPosition(), "%c%s", unit.getPlayer()->getTextColor(), unit.unit()->getOrder().c_str());
 			}
 
 			if (local) {
-				Broodwar->drawTextMap(unit.getPosition(), "%c%s", unit.getPlayer()->getColor(), unit.getLocalState());
+				Broodwar->drawTextMap(unit.getPosition(), "%c%s", unit.getPlayer()->getTextColor(), unit.getLocalState());
 			}
 		}
 	}

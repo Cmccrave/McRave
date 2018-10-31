@@ -69,7 +69,7 @@ namespace McRave
 				if (distanceHome[x][y] >= 1500 && distanceHome[x][y] != DBL_MAX)
 					Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Yellow);*/
 
-				if (aAirCluster[x][y] > 0.0)
+				if (collision[x][y] > 0.0)
 					Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Blue);
 				//if (distanceHome[x][y] <= 0)
 				//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Blue);
@@ -296,9 +296,7 @@ namespace McRave
 	void GridManager::addToGrids(UnitInfo& unit)
 	{
 		if ((unit.getType().isWorker() && unit.getPlayer() != Broodwar->self() && (!unit.unit()->exists() || Broodwar->getFrameCount() > 10000 || unit.unit()->isConstructing() || (Terrain().isInAllyTerritory(unit.getTilePosition()) && (Broodwar->getFrameCount() - unit.getLastAttackFrame() > 500))))
-			|| unit.getType() == UnitTypes::Protoss_Interceptor
-			|| (unit.getVisibleGroundStrength() <= 0.0 && unit.getVisibleAirStrength() <= 0.0)
-			|| (unit.getPlayer() == Broodwar->self() && unit.getRole() != Role::Fighting))
+			|| unit.getType() == UnitTypes::Protoss_Interceptor)
 			return;
 
 		// Max range and speed
@@ -338,8 +336,8 @@ namespace McRave
 		auto bottom = min(1024, unit.getWalkPosition().y + walkHeight + radius);
 
 		// Pixel rectangle
-		auto topLeft = Position(left * 32, top * 32);
-		auto botRight = Position(right * 32, bottom * 32);
+		auto topLeft = Position(unit.getWalkPosition());
+		auto botRight = topLeft + Position(8 * walkWidth, 8 * walkHeight);
 
 		// Iterate tiles and add to grid
 		for (int x = left; x < right; x++) {

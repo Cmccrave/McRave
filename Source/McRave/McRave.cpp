@@ -19,7 +19,6 @@
 // Check all threat/cluster/collision grids
 // Check isInDanger
 // Commands to boxes rather than circles (for storm, dweb, etc)
-// Worker clear path
 
 // *** Restructuring ***
 // Move 4gate vs Z to 2 gate category

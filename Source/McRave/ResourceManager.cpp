@@ -23,20 +23,17 @@ void ResourceManager::updateResources()
 
 	for (auto &m : myBoulders) {
 		ResourceInfo& resource = m.second;
-		update(resource);
-		Broodwar->drawTextMap(resource.getPosition(), "%d", resource.getGathererCount());
+		update(resource);		
 	}
 
 	for (auto &m : myMinerals) {
 		ResourceInfo& resource = m.second;
 		update(resource);
-		Broodwar->drawTextMap(resource.getPosition(), "%d", resource.getGathererCount());
 	}
 
 	for (auto &g : myGas) {
 		ResourceInfo& resource = g.second;
 		update(resource);
-		Broodwar->drawTextMap(resource.getPosition(), "%d", resource.getGathererCount());
 		
 		// If resource is blocked from usage
 		if (resource.getTilePosition().isValid()) {
