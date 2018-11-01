@@ -1,4 +1,5 @@
 #include "ResourceInfo.h"
+#include "McRave.h"
 
 namespace McRave {
 
@@ -7,7 +8,7 @@ namespace McRave {
 		thisUnit = nullptr;
 		gathererCount = 0;
 		remainingResources = 0;
-		//rState = ResourceState::None;
+		rState = ResourceState::None;
 		type = UnitTypes::None;
 		position = Positions::None;
 		tilePosition = TilePositions::None;

@@ -43,6 +43,7 @@ void McRaveModule::onStart()
 	Terrain().onStart();
 	Players().onStart();
 	mapBWEB.onStart();
+	Stations().onStart();
 	Grids().onStart();
 	BuildOrder().onStart();
 	mapBWEB.findBlocks();

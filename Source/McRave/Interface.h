@@ -34,7 +34,7 @@ namespace McRave
 		void drawAllyInfo(), drawEnemyInfo(), drawInformation();	
 	public:
 		void onFrame(), startClock(), performanceTest(string), onSendText(string);		
-		void displayPath(UnitInfo&, vector<TilePosition>);
+		void displayPath(vector<TilePosition>);
 		void displaySim(UnitInfo&, double);
 	};
 }

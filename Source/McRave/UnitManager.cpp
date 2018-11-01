@@ -320,7 +320,7 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 	// If above/below thresholds, it's a sim win/loss
 	if (unit.getSimValue() >= maxThreshold)
 		unit.setSimState(SimState::Win);
-	if (unit.getSimValue() <= minThreshold || unit.getPosition().getDistance(unit.getSimPosition()) > SIM_RADIUS)
+	if (unit.getSimValue() <= minThreshold)
 		unit.setSimState(SimState::Loss);
 
 	// If drastically above/below, it's a high win/loss
@@ -378,8 +378,6 @@ void UnitManager::updateLocalState(UnitInfo& unit)
 				unit.setLocalState(LocalState::Retreating);
 		}
 	}
-
-	Broodwar->drawTextMap(unit.getPosition() + Position(0, 16), "LS: %d", unit.getLocalState());
 }
 
 void UnitManager::updateGlobalState(UnitInfo& unit)
@@ -401,8 +399,6 @@ void UnitManager::updateGlobalState(UnitInfo& unit)
 	}
 	else
 		unit.setGlobalState(GlobalState::Engaging);
-
-	Broodwar->drawTextMap(unit.getPosition(), "GS: %d", unit.getGlobalState());
 }
 
 void UnitManager::updateRole(UnitInfo& unit)

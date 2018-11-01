@@ -96,10 +96,10 @@ namespace McRave
 			UnitInfo &unit = u.second;
 
 			if (targets) {
-				if (unit.hasTarget())
-					Broodwar->drawLineMap(unit.getTarget().getPosition(), unit.getPosition(), unit.getPlayer()->getColor());
 				if (unit.hasResource())
 					Broodwar->drawLineMap(unit.getResource().getPosition(), unit.getPosition(), unit.getPlayer()->getColor());
+				else if (unit.hasTarget())
+					Broodwar->drawLineMap(unit.getTarget().getPosition(), unit.getPosition(), unit.getPlayer()->getColor());				
 			}
 
 			if (strengths) {
@@ -160,7 +160,7 @@ namespace McRave
 		return;
 	}
 
-	void InterfaceManager::displayPath(UnitInfo& unit, vector<TilePosition> path)
+	void InterfaceManager::displayPath(vector<TilePosition> path)
 	{
 		if (paths && !path.empty()) {
 			TilePosition next = TilePositions::Invalid;

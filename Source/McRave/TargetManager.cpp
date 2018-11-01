@@ -4,11 +4,9 @@ namespace McRave
 {
 	void TargetManager::getTarget(UnitInfo& unit)
 	{
-		if (unit.getRole() == Role::Fighting) {
-			getBestTarget(unit);
-			getEngagePosition(unit);
-			getPathToTarget(unit);
-		}
+		getBestTarget(unit);
+		getEngagePosition(unit);
+		getPathToTarget(unit);
 	}
 
 	void TargetManager::getBestTarget(UnitInfo& unit)
@@ -19,7 +17,7 @@ namespace McRave
 
 		const auto shouldTarget = [&](UnitInfo& target, bool unitCanAttack, bool targetCanAttack) {
 
-				// Zealot: Don't attack non threatening workers in our territory
+			// Zealot: Don't attack non threatening workers in our territory
 			if ((unit.getType() == UnitTypes::Protoss_Zealot && target.getType().isWorker() && !Units().isThreatening(target) && Terrain().isInAllyTerritory(target.getTilePosition()))
 
 				// If target is an egg or larva
@@ -51,7 +49,7 @@ namespace McRave
 
 				// Zealot: Rushing Zealots only attack workers
 				|| (unit.getType() == UnitTypes::Protoss_Zealot && BuildOrder().isRush() && !target.getType().isWorker() && Broodwar->getFrameCount() < 10000)
-				
+
 				// Don't attack enemy spider mines with more than 2 units
 				|| (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.getUnitsAttacking() >= 2))
 				return false;
@@ -204,11 +202,10 @@ namespace McRave
 	void TargetManager::getPathToTarget(UnitInfo& unit)
 	{
 		auto const shouldCreatePath = [&]() {
-			if (!unit.getTargetPath().getTiles().empty() && unit.samePath())												// If both units have the same tile
+			if (!unit.getPath().getTiles().empty() && unit.samePath())														// If both units have the same tile
 				return false;
 
-			if (!unit.hasTransport()																						// If unit has no transport
-				&& unit.getRole() == Role::Fighting
+			if (!unit.hasTransport()																						// If unit has no transport				
 				&& unit.getTilePosition().isValid() && unit.getTarget().getTilePosition().isValid()							// If both units have valid tiles
 				&& mapBWEB.getUsedTiles().find(unit.getTarget().getTilePosition()) == mapBWEB.getUsedTiles().end()			// Doesn't overlap buildings
 				&& !unit.getType().isFlyer() && !unit.getTarget().getType().isFlyer()										// Doesn't include flyers
@@ -219,17 +216,21 @@ namespace McRave
 			return false;
 		};
 
+		// Don't want a path if we're not fighting - waste of CPU
+		if (unit.getRole() != Role::Fighting)
+			return;
+
 		// If no target, no distance/path available
 		if (!unit.hasTarget()) {
 			unit.setEngDist(0.0);
-			unit.setTargetPath(BWEB::Path());
+			unit.setPath(BWEB::Path());
 			return;
 		}
 
 		// Set distance as estimate when targeting a building/flying unit or far away
 		if (unit.getTarget().getType().isBuilding() || unit.getTarget().getType().isFlyer() || unit.getPosition().getDistance(unit.getTarget().getPosition()) >= 800.0 || unit.getTilePosition() == unit.getTarget().getTilePosition()) {
 			unit.setEngDist(unit.getPosition().getDistance(unit.getEngagePosition()));
-			unit.setTargetPath(BWEB::Path());
+			unit.setPath(BWEB::Path());
 			return;
 		}
 
@@ -237,13 +238,13 @@ namespace McRave
 		if (shouldCreatePath()) {
 			Path newPath;
 			newPath.createUnitPath(mapBWEB, mapBWEM, unit.getPosition(), unit.getTarget().getPosition());
-			unit.setTargetPath(newPath);
+			unit.setPath(newPath);
 		}
 
 		// Measure distance minus range
-		if (!unit.getTargetPath().getTiles().empty()) {
+		if (!unit.getPath().getTiles().empty()) {
 			double range = unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
-			unit.setEngDist(max(0.0, unit.getTargetPath().getDistance() - range));
+			unit.setEngDist(max(0.0, unit.getPath().getDistance() - range));
 		}
 
 		// Otherwise approximate
@@ -254,6 +255,6 @@ namespace McRave
 
 		// Display path
 		if (unit.getTarget().unit()->exists())
-			Display().displayPath(unit, unit.getTargetPath().getTiles());
+			Display().displayPath(unit.getPath().getTiles());
 	}
 }

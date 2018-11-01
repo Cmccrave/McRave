@@ -90,31 +90,6 @@ bool CommandManager::shouldUseSpecial(UnitInfo& unit)
 			unit.unit()->useTech(TechTypes::Cloaking_Field);
 	}
 
-	// Archons
-	else if (unit.getType() == UnitTypes::Protoss_High_Templar) {
-
-		// If unit has low energy and is threatened or we want more archons
-		auto lowEnergyThreat = unit.getEnergy() < TechTypes::Psionic_Storm.energyCost() && Grids().getEGroundThreat(unit.getWalkPosition()) > 0.0;
-		auto wantArchons = Strategy().getUnitScore(UnitTypes::Protoss_Archon) > Strategy().getUnitScore(UnitTypes::Protoss_High_Templar);
-
-		if (lowEnergyThreat || wantArchons) {
-
-			// Try to find a friendly templar who is low energy and is threatened
-			UnitInfo* templar = Util().getClosestUnit(unit, unit.getPlayer(), UnitTypes::Protoss_High_Templar);
-			if (templar) {				
-
-				// Warp together if wasn't last command
-				auto friendLowEnergyThreat = templar->getEnergy() < TechTypes::Psionic_Storm.energyCost() && Grids().getEGroundThreat(templar->getWalkPosition()) > 0.0;
-				if (wantArchons || friendLowEnergyThreat) {
-					if (templar->unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp && unit.unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp)
-						unit.unit()->useTech(TechTypes::Archon_Warp, templar->unit());
-					Broodwar->drawTextMap(unit.getPosition(), "WARPING");
-					return true;
-				} 
-			}
-		}
-	}
-
 	// Carriers
 	else if (unit.getType() == UnitTypes::Protoss_Carrier && unit.unit()->getInterceptorCount() < MAX_INTERCEPTOR && !unit.unit()->isTraining()) {
 		unit.unit()->train(UnitTypes::Protoss_Interceptor);
@@ -140,6 +115,40 @@ bool CommandManager::shouldUseSpecial(UnitInfo& unit)
 			addCommand(unit.unit(), posBest, TechTypes::Disruption_Web);
 			unit.unit()->useTech(TechTypes::Disruption_Web, posBest);
 			return true;
+		}
+	}
+
+	// High Templars
+	else if (unit.getType() == UnitTypes::Protoss_High_Templar) {
+
+		// If close to target and can cast a storm
+		if (unit.hasTarget() && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= 400 && !Commands().overlapsCommands(unit.unit(), TechTypes::Psionic_Storm, unit.getTarget().getPosition(), 96) && unit.unit()->getEnergy() >= 75 && (Grids().getEGroundCluster(unit.getTarget().getWalkPosition()) + Grids().getEAirCluster(unit.getTarget().getWalkPosition())) >= STORM_LIMIT) {
+			unit.unit()->useTech(TechTypes::Psionic_Storm, unit.getTarget().unit());
+			addCommand(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm);
+			return true;
+		}
+
+		// If unit has low energy and is threatened or we want more archons
+		else {			
+			auto lowEnergyThreat = unit.getEnergy() < TechTypes::Psionic_Storm.energyCost() && Grids().getEGroundThreat(unit.getWalkPosition()) > 0.0;
+			auto wantArchons = Strategy().getUnitScore(UnitTypes::Protoss_Archon) > Strategy().getUnitScore(UnitTypes::Protoss_High_Templar);
+
+			if (lowEnergyThreat || wantArchons) {
+
+				// Try to find a friendly templar who is low energy and is threatened
+				UnitInfo* templar = Util().getClosestUnit(unit, unit.getPlayer(), UnitTypes::Protoss_High_Templar);
+				if (templar) {
+
+					// Warp together if wasn't last command
+					auto friendLowEnergyThreat = templar->getEnergy() < TechTypes::Psionic_Storm.energyCost() && Grids().getEGroundThreat(templar->getWalkPosition()) > 0.0;
+					if (wantArchons || friendLowEnergyThreat) {
+						if (templar->unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp && unit.unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp)
+							unit.unit()->useTech(TechTypes::Archon_Warp, templar->unit());
+						Broodwar->drawTextMap(unit.getPosition(), "WARPING");
+						return true;
+					}
+				}
+			}
 		}
 	}
 

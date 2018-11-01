@@ -7,9 +7,32 @@ void StationManager::onFrame()
 	Display().performanceTest(__FUNCTION__);
 }
 
+void StationManager::onStart()
+{
+	// Add paths to our station network
+	for (auto &s1 : mapBWEB.Stations()) {
+		for (auto &s2 : mapBWEB.Stations()) {
+			const Station * ptrs1 = &s1;
+			const Station * ptrs2 = &s2;
+			if (stationNetworkExists(ptrs1, ptrs2) || ptrs1 == ptrs2)
+				continue;
+
+			Path newPath;
+			newPath.createUnitPath(mapBWEB, mapBWEM, ptrs1->ResourceCentroid(), ptrs2->ResourceCentroid());
+			stationNetwork[ptrs1][ptrs2] = newPath;
+		}
+	}
+}
+
 void StationManager::updateStations()
 {
-
+	return; // Turn this off to draw station network
+	for (auto &s1 : stationNetwork) {
+		auto connectedPair = s1.second;
+		for (auto &path : connectedPair) {
+			Display().displayPath(path.second.getTiles());
+		}
+	}
 }
 
 Position StationManager::getClosestEnemyStation(Position here)
@@ -33,22 +56,9 @@ void StationManager::storeStation(Unit unit)
 		|| unit->getTilePosition() != newStation->BWEMBase()->Location())
 		return;
 
-	// 1) Add paths to our station network when completed
-	if (unit->isCompleted() && unit->getPlayer() == Broodwar->self()) {
-		for (auto &s : myStations) {
-			auto station = s.second;
-			if (stationNetworkExists(newStation, station))
-				continue;
-
-			Path newPath;
-			newPath.createUnitPath(mapBWEB, mapBWEM, newStation->ResourceCentroid(), station->ResourceCentroid());
-			stationNetwork[station][newStation] = newPath;
-		}
-	}
-
-	// 2) Change the resource states and store station
+	// 1) Change the resource states and store station
 	unit->getPlayer() == Broodwar->self() ? myStations.emplace(unit, newStation) : enemyStations.emplace(unit, newStation);
-	ResourceState state = unit->isCompleted() ? ResourceState::Mineable: ResourceState::Assignable;
+	ResourceState state = unit->isCompleted() ? ResourceState::Mineable : ResourceState::Assignable;
 	if (unit->getPlayer() == Broodwar->self()) {
 		for (auto &mineral : newStation->BWEMBase()->Minerals()) {
 			auto &resource = Resources().getMyMinerals()[mineral->Unit()];
@@ -67,8 +77,8 @@ void StationManager::storeStation(Unit unit)
 				resource.setStation(newStation);
 		}
 	}
-	
-	// 3) Add to territory
+
+	// 2) Add to territory
 	if (unit->getTilePosition().isValid() && mapBWEM.GetArea(unit->getTilePosition())) {
 		if (unit->getPlayer() == Broodwar->self())
 			Terrain().getAllyTerritory().insert(mapBWEM.GetArea(unit->getTilePosition()));
@@ -94,7 +104,7 @@ void StationManager::removeStation(Unit unit)
 	else
 		enemyStations.erase(unit);
 
-
+	// 2) Remove any territory it was in
 	if (unit->getTilePosition().isValid() && mapBWEM.GetArea(unit->getTilePosition())) {
 		if (unit->getPlayer() == Broodwar->self())
 			Terrain().getAllyTerritory().erase(mapBWEM.GetArea(unit->getTilePosition()));

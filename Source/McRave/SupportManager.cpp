@@ -42,7 +42,7 @@ namespace McRave {
 				posBest = Terrain().closestUnexploredStart();
 
 			// Check if any expansions need detection on them
-			else if (unit.getType().isDetector() && Broodwar->self()->completedUnitCount(unit.getType()) > 1 && BuildOrder().buildCount(building) > Broodwar->self()->visibleUnitCount(building) && !Commands().overlapsCommands(unit.unit(), unit.getType(), (Position)Buildings().getCurrentExpansion(), 320))
+			else if (unit.getType().isDetector() && Broodwar->self()->completedUnitCount(unit.getType()) >= 1 && BuildOrder().buildCount(building) > Broodwar->self()->visibleUnitCount(building) && !Commands().overlapsCommands(unit.unit(), unit.getType(), (Position)Buildings().getCurrentExpansion(), 320))
 				posBest = Position(Buildings().getCurrentExpansion());
 
 			// Arbiters cast stasis on a target		
@@ -89,6 +89,7 @@ namespace McRave {
 
 			// Move and update commands
 			if (posBest.isValid()) {
+				Broodwar->drawLineMap(unit.getPosition(), posBest, Colors::Green);
 				unit.setEngagePosition(posBest);
 				unit.unit()->move(posBest);
 				Commands().addCommand(unit.unit(), posBest, unit.getType());

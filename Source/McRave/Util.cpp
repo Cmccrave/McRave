@@ -179,19 +179,6 @@ double UtilManager::getHighestThreat(WalkPosition here, UnitInfo& unit)
 	return highest;
 }
 
-bool UtilManager::quickThreatOnPath(UnitInfo& unit, Position start, Position end)
-{
-	if (!start.isValid() || !end.isValid())
-		return true;	
-
-	for (auto choke : mapBWEM.GetPath(start, end)) {
-		auto threat = unit.getType().isFlyer() ? Grids().getEGroundThreat(choke->Center()) > 0.0 : Grids().getEAirThreat(choke->Center()) > 0.0;
-		if (threat)
-			return true;
-	}
-	return false;
-}
-
 bool UtilManager::accurateThreatOnPath(UnitInfo& unit, Path& path)
 {
 	if (path.getTiles().empty())

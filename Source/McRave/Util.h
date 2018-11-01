@@ -24,7 +24,6 @@ namespace McRave
 		bool reactivePullWorker(UnitInfo& unit);
 		bool proactivePullWorker(UnitInfo& unit);
 		bool pullRepairWorker(UnitInfo& unit);
-		bool quickThreatOnPath(UnitInfo&, Position, Position);
 		bool accurateThreatOnPath(UnitInfo&, Path&);
 		bool rectangleIntersect(Position, Position, Position);
 

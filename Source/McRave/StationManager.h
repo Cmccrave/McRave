@@ -18,6 +18,7 @@ namespace McRave
 		map <Unit, const BWEB::Station *>& getEnemyStations() { return enemyStations; }
 		Position getClosestEnemyStation(Position);
 		void onFrame();
+		void onStart();
 		void storeStation(Unit);
 		void removeStation(Unit);
 		bool needDefenses(const Station);		

@@ -98,8 +98,6 @@ namespace McRave
 				approach(unit);
 			else if (shouldKite(unit))
 				kite(unit);
-			else
-				move(unit);
 		}
 
 		// If this unit should retreat
@@ -421,19 +419,10 @@ namespace McRave
 		if (unit.getType().isFlyer() && !Util().unitInRange(unit))
 			unit.unit()->move(unit.getTarget().getPosition());
 
-
 		// DT hold position vs spider mines
 		else if (unit.getType() == UnitTypes::Protoss_Dark_Templar && unit.hasTarget() && unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.getTarget().hasTarget() && unit.getTarget().getTarget().unit() == unit.unit() && !unit.getTarget().isBurrowed()) {
 			if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Hold_Position)
 				unit.unit()->holdPosition();
-		}
-
-		// TODO: Move to special - If close enough, set the current area as a psi storm area so units move and storms don't overlap
-		else if (unit.getType() == UnitTypes::Protoss_High_Templar) {
-			if (unit.getPosition().getDistance(unit.getTarget().getPosition()) <= 640 && !Commands().overlapsCommands(unit.unit(), TechTypes::Psionic_Storm, unit.getTarget().getPosition(), 96) && unit.unit()->getEnergy() >= 75 && (Grids().getEGroundCluster(unit.getTarget().getWalkPosition()) + Grids().getEAirCluster(unit.getTarget().getWalkPosition())) >= STORM_LIMIT) {
-				unit.unit()->useTech(TechTypes::Psionic_Storm, unit.getTarget().unit());
-				addCommand(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm);
-			}
 		}
 
 		// Medic's just attack move

@@ -47,7 +47,7 @@ namespace McRave
 		WalkPosition walkPosition, lastWalk;
 		TilePosition tilePosition, buildPosition, lastTile;
 
-		Path targetPath;
+		Path path;
 		Path resourcePath;
 		void updateTarget();
 		void updateStuckCheck();
@@ -114,10 +114,10 @@ namespace McRave
 		void setLastPositions();
 
 		// Target path
-		void setTargetPath(BWEB::Path& newPath) { targetPath = newPath; }
-		BWEB::Path& getTargetPath() { return targetPath; }
+		void setPath(BWEB::Path& newPath) { path = newPath; }
+		BWEB::Path& getPath() { return path; }
 		bool samePath() {
-			return (targetPath.getTiles().front() == target->getTilePosition() && targetPath.getTiles().back() == tilePosition);
+			return (path.getTiles().front() == target->getTilePosition() && path.getTiles().back() == tilePosition);
 		}
 
 		// Attack frame

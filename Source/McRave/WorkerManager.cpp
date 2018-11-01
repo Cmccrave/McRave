@@ -57,9 +57,8 @@ bool WorkerManager::shouldAssign(UnitInfo& worker)
 	if (!worker.hasResource()
 		|| needGas()
 		|| (worker.hasResource() && !worker.getResource().getType().isMineralField() && gasWorkers > BuildOrder().gasWorkerLimit())
-		|| (worker.hasResource() && !closeToResource(worker) && Util().accurateThreatOnPath(worker, worker.getTargetPath()) && Grids().getEGroundThreat(worker.getWalkPosition()) == 0.0)
-		|| (worker.hasResource() && closeToResource(worker) && Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0)
-		|| ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) && worker.hasResource() && Util().quickThreatOnPath(worker, worker.getPosition(), worker.getResource().getPosition())))
+		|| (worker.hasResource() && !closeToResource(worker) && Util().accurateThreatOnPath(worker, worker.getPath()) && Grids().getEGroundThreat(worker.getWalkPosition()) == 0.0)
+		|| (worker.hasResource() && closeToResource(worker) && Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0))
 		return true;
 	return false;
 }
@@ -112,7 +111,7 @@ void WorkerManager::assign(UnitInfo& worker)
 {
 	ResourceInfo* bestResource = nullptr;
 	auto injured = (worker.unit()->getHitPoints() + worker.unit()->getShields() < worker.getType().maxHitPoints() + worker.getType().maxShields());
-	auto threatened = (worker.hasResource() && Util().accurateThreatOnPath(worker, worker.getTargetPath()));
+	auto threatened = (worker.hasResource() && Util().accurateThreatOnPath(worker, worker.getPath()));
 	auto distBest = (injured || threatened) ? 0.0 : DBL_MAX;
 
 	const auto resourceReady = [&](ResourceInfo& resource, int i) {
@@ -121,8 +120,7 @@ void WorkerManager::assign(UnitInfo& worker)
 			|| (resource.unit()->exists() && !resource.unit()->isCompleted())
 			|| (resource.getGathererCount() >= i + int(injured || threatened))
 			|| resource.getResourceState() == ResourceState::None
-			|| ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) && Grids().getEGroundThreat(WalkPosition(resource.getPosition())) > 0.0)
-			|| Util().quickThreatOnPath(worker, worker.getPosition(), resource.getPosition()))
+			|| ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) && Grids().getEGroundThreat(WalkPosition(resource.getPosition())) > 0.0))
 			return false;
 		return true;
 	};
@@ -135,7 +133,7 @@ void WorkerManager::assign(UnitInfo& worker)
 		for (auto &s : Stations().getMyStations()) {
 			auto station = s.second;
 			Path path;
-			if (closest && worker.getPosition().getDistance(closest->ResourceCentroid()) < 128.0)
+			if (closest && worker.getPosition().getDistance(closest->ResourceCentroid()) < 320.0)
 				path = Stations().pathStationToStation(closest, station);
 			else
 				path.createUnitPath(mapBWEB, mapBWEM, worker.getPosition(), station->ResourceCentroid());
@@ -200,13 +198,15 @@ void WorkerManager::assign(UnitInfo& worker)
 
 		Path emptyPath;
 		worker.setResource(bestResource);
-		worker.setTargetPath(emptyPath);
+		worker.setPath(emptyPath);
 	}
 }
 
 void WorkerManager::build(UnitInfo& worker)
 {
 	Position center = Position(worker.getBuildPosition()) + Position(worker.getBuildingType().tileWidth() * 16, worker.getBuildingType().tileHeight() * 16);
+	Position topLeft = Position(worker.getBuildPosition());
+	Position botRight = topLeft + Position(worker.getBuildingType().tileWidth() * 32, worker.getBuildingType().tileHeight() * 32);
 
 	const auto shouldMoveToBuild = [&]() {
 		auto mineralIncome = (minWorkers - 1) * 0.045;
@@ -221,13 +221,9 @@ void WorkerManager::build(UnitInfo& worker)
 	};
 
 	// 1) Attack any enemies inside the build area
-	if (worker.hasTarget() &&
-		worker.getTarget().getPosition().getDistance(worker.getPosition()) < 160
-		&& worker.getTarget().getTilePosition().x >= worker.getBuildPosition().x
-		&& worker.getTarget().getTilePosition().x < worker.getBuildPosition().x + worker.getBuildingType().tileWidth()
-		&& worker.getTarget().getTilePosition().y >= worker.getBuildPosition().y
-		&& worker.getTarget().getTilePosition().y < worker.getBuildPosition().y + worker.getBuildingType().tileHeight())
+	if (worker.hasTarget() && worker.getTarget().getPosition().getDistance(worker.getPosition()) < 160 && (Util().rectangleIntersect(topLeft, botRight, worker.getTarget().getPosition()) || worker.getTarget().getPosition().getDistance(center) < 256.0)) {
 		Commands().attack(worker);
+	}
 
 	// 2) Cancel any buildings we don't need
 	else if ((BuildOrder().buildCount(worker.getBuildingType()) <= Broodwar->self()->visibleUnitCount(worker.getBuildingType()) || !Buildings().isBuildable(worker.getBuildingType(), worker.getBuildPosition()))) {
@@ -238,9 +234,7 @@ void WorkerManager::build(UnitInfo& worker)
 
 	// 3) Move to build if we have the resources
 	else if (shouldMoveToBuild()) {
-		worker.circleRed();
 		worker.setDestination(center);
-		Broodwar->drawTextMap(worker.getPosition(), "%s", worker.unit()->getOrder().c_str());
 
 		if (worker.getPosition().getDistance(center) > 256.0) {
 			if (worker.unit()->getOrderTargetPosition() != center)
@@ -284,7 +278,7 @@ void WorkerManager::gather(UnitInfo& worker)
 		if (closeToResource(worker) && worker.getResource().unit() && worker.getResource().unit()->exists()) {
 			Path emptyPath;
 			worker.unit()->gather(worker.getResource().unit());
-			worker.setTargetPath(emptyPath);
+			worker.setPath(emptyPath);
 			return;
 		}
 
@@ -293,13 +287,13 @@ void WorkerManager::gather(UnitInfo& worker)
 		if (worker.getLastTile() != worker.getTilePosition() && resourceCentroid.isValid()) {
 			Path newPath;
 			newPath.createUnitPath(mapBWEB, mapBWEM, worker.getPosition(), resourceCentroid);
-			worker.setTargetPath(newPath);
+			worker.setPath(newPath);
 		}
 
-		Display().displayPath(worker, worker.getTargetPath().getTiles());
+		Display().displayPath(worker.getPath().getTiles());
 
 		// 3) If no threat on path, mine it
-		if (!Util().accurateThreatOnPath(worker, worker.getTargetPath())) {
+		if (!Util().accurateThreatOnPath(worker, worker.getPath())) {
 			if (worker.getResource().unit() && worker.getResource().unit()->exists())
 				worker.unit()->gather(worker.getResource().unit());
 			else
