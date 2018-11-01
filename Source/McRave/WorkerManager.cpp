@@ -11,8 +11,10 @@ void WorkerManager::updateWorkers()
 {
 	for (auto &w : Units().getMyUnits()) {
 		auto &worker = w.second;
-		if (worker.getRole() == Role::Working)
+		if (worker.getRole() == Role::Working) {
+			updateAssignment(worker);
 			updateDecision(worker);
+		}
 	}
 }
 
@@ -35,31 +37,18 @@ void WorkerManager::updateDecision(UnitInfo& worker)
 		}
 	}
 
-	// Assign a resource
-	if (shouldAssign(worker))
-		assign(worker);
-
-	// Choose a command
-	if (shouldReturnCargo(worker))
-		returnCargo(worker);
-	else if (shouldClearPath(worker))
-		clearPath(worker);
-	else if (shouldBuild(worker))
-		build(worker);
-	else if (shouldGather(worker))
-		gather(worker);
+	// Iterate commands and choose one
+	// TODO: Add above as "ride" and "antistuck" or something
+	for (auto cmd : commands) {
+		if ((this->*cmd)(worker))
+			break;
+	}
 }
 
 
 bool WorkerManager::shouldAssign(UnitInfo& worker)
 {
-	// Worker has no resource, we need gas, we need minerals, workers resource is threatened
-	if (!worker.hasResource()
-		|| needGas()
-		|| (worker.hasResource() && !worker.getResource().getType().isMineralField() && gasWorkers > BuildOrder().gasWorkerLimit())
-		|| (worker.hasResource() && !closeToResource(worker) && Util().accurateThreatOnPath(worker, worker.getPath()) && Grids().getEGroundThreat(worker.getWalkPosition()) == 0.0)
-		|| (worker.hasResource() && closeToResource(worker) && Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0))
-		return true;
+
 	return false;
 }
 
@@ -72,9 +61,6 @@ bool WorkerManager::shouldBuild(UnitInfo& worker)
 
 bool WorkerManager::shouldClearPath(UnitInfo& worker)
 {
-	if (Broodwar->getFrameCount() < 10000)
-		return false;
-
 	for (auto &b : Resources().getMyBoulders()) {
 		ResourceInfo &boulder = b.second;
 		if (!boulder.unit() || !boulder.unit()->exists())
@@ -107,12 +93,21 @@ bool WorkerManager::shouldReturnCargo(UnitInfo& worker)
 	return false;
 }
 
-void WorkerManager::assign(UnitInfo& worker)
+void WorkerManager::updateAssignment(UnitInfo& worker)
 {
 	ResourceInfo* bestResource = nullptr;
 	auto injured = (worker.unit()->getHitPoints() + worker.unit()->getShields() < worker.getType().maxHitPoints() + worker.getType().maxShields());
 	auto threatened = (worker.hasResource() && Util().accurateThreatOnPath(worker, worker.getPath()));
 	auto distBest = (injured || threatened) ? 0.0 : DBL_MAX;
+	auto needNewAssignment = false;
+
+	// Worker has no resource, we need gas, we need minerals, workers resource is threatened
+	if (!worker.hasResource()
+		|| needGas()
+		|| (worker.hasResource() && !worker.getResource().getType().isMineralField() && gasWorkers > BuildOrder().gasWorkerLimit())
+		|| (worker.hasResource() && !closeToResource(worker) && Util().accurateThreatOnPath(worker, worker.getPath()) && Grids().getEGroundThreat(worker.getWalkPosition()) == 0.0)
+		|| (worker.hasResource() && closeToResource(worker) && Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0))
+		needNewAssignment = true;
 
 	const auto resourceReady = [&](ResourceInfo& resource, int i) {
 		if (!resource.unit()
@@ -202,7 +197,7 @@ void WorkerManager::assign(UnitInfo& worker)
 	}
 }
 
-void WorkerManager::build(UnitInfo& worker)
+bool WorkerManager::build(UnitInfo& worker)
 {
 	Position center = Position(worker.getBuildPosition()) + Position(worker.getBuildingType().tileWidth() * 16, worker.getBuildingType().tileHeight() * 16);
 	Position topLeft = Position(worker.getBuildPosition());
@@ -223,6 +218,7 @@ void WorkerManager::build(UnitInfo& worker)
 	// 1) Attack any enemies inside the build area
 	if (worker.hasTarget() && worker.getTarget().getPosition().getDistance(worker.getPosition()) < 160 && (Util().rectangleIntersect(topLeft, botRight, worker.getTarget().getPosition()) || worker.getTarget().getPosition().getDistance(center) < 256.0)) {
 		Commands().attack(worker);
+		return true;
 	}
 
 	// 2) Cancel any buildings we don't need
@@ -230,6 +226,7 @@ void WorkerManager::build(UnitInfo& worker)
 		worker.setBuildingType(UnitTypes::None);
 		worker.setBuildPosition(TilePositions::Invalid);
 		worker.unit()->stop();
+		return true;
 	}
 
 	// 3) Move to build if we have the resources
@@ -242,10 +239,12 @@ void WorkerManager::build(UnitInfo& worker)
 		}
 		else if (worker.unit()->getOrder() != Orders::PlaceBuilding || worker.unit()->isIdle())
 			worker.unit()->build(worker.getBuildingType(), worker.getBuildPosition());
+		return true;
 	}
+	return false;
 }
 
-void WorkerManager::clearPath(UnitInfo& worker)
+bool WorkerManager::clearPath(UnitInfo& worker)
 {
 	for (auto &b : Resources().getMyBoulders()) {
 		ResourceInfo &boulder = b.second;
@@ -257,12 +256,13 @@ void WorkerManager::clearPath(UnitInfo& worker)
 		if (!worker.unit()->isGatheringMinerals()) {
 			if (worker.unit()->getOrderTargetPosition() != b.second.getPosition())
 				worker.unit()->gather(b.first);
-			return;
+			return true;
 		}
 	}
+	return false;
 }
 
-void WorkerManager::gather(UnitInfo& worker)
+bool WorkerManager::gather(UnitInfo& worker)
 {
 	// Mine the closest mineral field
 	const auto mineRandom =[&]() {
@@ -298,19 +298,22 @@ void WorkerManager::gather(UnitInfo& worker)
 				worker.unit()->gather(worker.getResource().unit());
 			else
 				worker.unit()->move(worker.getResource().getPosition());
-			return;
+			return true;
 		}
 
 		// 4) If we are under a threat, try to get away from it
-		if (Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0)
+		if (Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0) {
 			Commands().kite(worker);
+			return true;
+		}
 	}
 
 	// Mine something else while waiting
 	mineRandom();
+	return false;
 }
 
-void WorkerManager::returnCargo(UnitInfo& worker)
+bool WorkerManager::returnCargo(UnitInfo& worker)
 {
 	auto checkPath = (worker.hasResource() && worker.getPosition().getDistance(worker.getResource().getPosition()) > 320.0) || (!worker.hasResource() && !Terrain().isInAllyTerritory(worker.getTilePosition()));
 	if (checkPath) {

@@ -10,16 +10,21 @@ namespace McRave
 {
 	class WorkerManager
 	{
+		
 		int deadScoutFrame = 0;
 		int minWorkers = 0, gasWorkers = 0;
 
 		bool closeToResource(UnitInfo&);
 		bool needGas();		
+
+		typedef bool (WorkerManager::*Command)(UnitInfo&);
+		vector<Command> commands { &WorkerManager::ride, &WorkerManager::returnCargo, &WorkerManager::clearPath, &WorkerManager::build, &WorkerManager::gather };
 	public:		
 
 		void onFrame();
 		void updateWorkers();
-		void updateDecision(UnitInfo&);		
+		void updateDecision(UnitInfo&);	
+		void updateAssignment(UnitInfo&);
 		
 		bool shouldAssign(UnitInfo&);
 		bool shouldBuild(UnitInfo&);
@@ -27,11 +32,11 @@ namespace McRave
 		bool shouldGather(UnitInfo&);
 		bool shouldReturnCargo(UnitInfo&);
 
-		void assign(UnitInfo&);
-		void build(UnitInfo&);
-		void clearPath(UnitInfo&);
-		void gather(UnitInfo&);
-		void returnCargo(UnitInfo&);
+		bool ride(UnitInfo&);
+		bool returnCargo(UnitInfo&);
+		bool build(UnitInfo&);
+		bool clearPath(UnitInfo&);
+		bool gather(UnitInfo&);
 
 		void removeUnit(Unit);
 	};
