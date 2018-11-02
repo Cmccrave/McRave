@@ -20,13 +20,6 @@ void WorkerManager::updateWorkers()
 
 void WorkerManager::updateDecision(UnitInfo& worker)
 {
-	// Workers that have a transport coming to pick them up should not do anything other than returning cargo
-	if (worker.hasTransport() && !worker.unit()->isCarryingMinerals() && !worker.unit()->isCarryingGas()) {
-		if (worker.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
-			worker.unit()->move(worker.getTransport().getPosition());
-		return;
-	}
-
 	// If worker is potentially stuck, try to find a manner pylon
 	if (worker.framesHoldingResource() >= 100 || worker.framesHoldingResource() <= -200) {
 		auto pylon = Util().getClosestUnit(worker.getPosition(), Broodwar->enemy(), UnitTypes::Protoss_Pylon);
@@ -41,56 +34,8 @@ void WorkerManager::updateDecision(UnitInfo& worker)
 	// TODO: Add above as "ride" and "antistuck" or something
 	for (auto cmd : commands) {
 		if ((this->*cmd)(worker))
-			break;
+			break;		
 	}
-}
-
-
-bool WorkerManager::shouldAssign(UnitInfo& worker)
-{
-
-	return false;
-}
-
-bool WorkerManager::shouldBuild(UnitInfo& worker)
-{
-	if (worker.getBuildingType().isValid() && worker.getBuildPosition().isValid())
-		return true;
-	return false;
-}
-
-bool WorkerManager::shouldClearPath(UnitInfo& worker)
-{
-	for (auto &b : Resources().getMyBoulders()) {
-		ResourceInfo &boulder = b.second;
-		if (!boulder.unit() || !boulder.unit()->exists())
-			continue;
-		if (worker.getPosition().getDistance(boulder.getPosition()) < 480.0)
-			return true;
-	}
-	return false;
-}
-
-bool WorkerManager::shouldGather(UnitInfo& worker)
-{
-	if (worker.hasResource()) {
-		if (mapBWEM.GetArea(worker.getTilePosition()) != mapBWEM.GetArea(worker.getResource().getTilePosition()))
-			return true;
-		if ((worker.unit()->isGatheringMinerals() || worker.unit()->isGatheringGas()) && worker.unit()->getTarget() != worker.getResource().unit() && worker.getResource().getResourceState() == ResourceState::Mineable)
-			return true;
-	}
-	if (worker.unit()->isIdle() || worker.unit()->getLastCommand().getType() != UnitCommandTypes::Gather)
-		return true;
-	return false;
-}
-
-bool WorkerManager::shouldReturnCargo(UnitInfo& worker)
-{
-	// Check if we cant reach our main while building
-	auto cantReturn = !worker.getBuildPosition().isValid() || (worker.getBuildPosition().isValid() && mapBWEM.GetArea(worker.getBuildPosition()) && mapBWEM.GetArea(worker.getBuildPosition())->AccessibleFrom(mapBWEB.getMainArea()));
-	if (worker.unit()->isCarryingGas() || worker.unit()->isCarryingMinerals())
-		return true;
-	return false;
 }
 
 void WorkerManager::updateAssignment(UnitInfo& worker)
@@ -108,6 +53,10 @@ void WorkerManager::updateAssignment(UnitInfo& worker)
 		|| (worker.hasResource() && !closeToResource(worker) && Util().accurateThreatOnPath(worker, worker.getPath()) && Grids().getEGroundThreat(worker.getWalkPosition()) == 0.0)
 		|| (worker.hasResource() && closeToResource(worker) && Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0))
 		needNewAssignment = true;
+
+	// HACK: Just return if we dont need an assignment, should make this better
+	if (!needNewAssignment)
+		return;
 
 	const auto resourceReady = [&](ResourceInfo& resource, int i) {
 		if (!resource.unit()
@@ -197,11 +146,26 @@ void WorkerManager::updateAssignment(UnitInfo& worker)
 	}
 }
 
+
+bool WorkerManager::ride(UnitInfo& worker)
+{
+	// Workers that have a transport coming to pick them up should not do anything other than returning cargo
+	if (worker.hasTransport() && !worker.unit()->isCarryingMinerals() && !worker.unit()->isCarryingGas()) {
+		if (worker.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
+			worker.unit()->move(worker.getTransport().getPosition());
+		return true;
+	}
+	return false;
+}
+
 bool WorkerManager::build(UnitInfo& worker)
 {
 	Position center = Position(worker.getBuildPosition()) + Position(worker.getBuildingType().tileWidth() * 16, worker.getBuildingType().tileHeight() * 16);
 	Position topLeft = Position(worker.getBuildPosition());
 	Position botRight = topLeft + Position(worker.getBuildingType().tileWidth() * 32, worker.getBuildingType().tileHeight() * 32);
+
+	if (!worker.getBuildingType().isValid() || !worker.getBuildPosition().isValid())
+		return false;
 
 	const auto shouldMoveToBuild = [&]() {
 		auto mineralIncome = (minWorkers - 1) * 0.045;
@@ -264,6 +228,10 @@ bool WorkerManager::clearPath(UnitInfo& worker)
 
 bool WorkerManager::gather(UnitInfo& worker)
 {
+	auto resourceExists = worker.hasResource() && worker.getResource().unit() && worker.getResource().unit()->exists();
+	if (worker.unit()->isCarryingGas() || worker.unit()->isCarryingMinerals())
+		return false;
+	
 	// Mine the closest mineral field
 	const auto mineRandom =[&]() {
 		auto closest = worker.unit()->getClosestUnit(Filter::IsMineralField);
@@ -271,15 +239,24 @@ bool WorkerManager::gather(UnitInfo& worker)
 			worker.unit()->gather(closest);
 	};
 
+	// Check if we need to re-issue a gather command
+	const auto shouldIssueGather =[&]() {
+		if (worker.hasResource() && worker.getResource().unit()->exists() && (worker.unit()->isGatheringMinerals() || worker.unit()->isGatheringGas() || worker.unit()->isIdle()) && worker.unit()->getTarget() != worker.getResource().unit())
+			return true;
+		if (!worker.hasResource() && (worker.unit()->isIdle() || worker.unit()->getLastCommand().getType() != UnitCommandTypes::Gather))
+			return true;
+		return false;
+	};
+
 	// If the resource is close and mineable
 	if (worker.hasResource() && worker.getResource().getResourceState() == ResourceState::Mineable) {
 
 		// 1) If it's close or same area, mine it		
-		if (closeToResource(worker) && worker.getResource().unit() && worker.getResource().unit()->exists()) {
+		if (closeToResource(worker) && shouldIssueGather()) {
 			Path emptyPath;
 			worker.unit()->gather(worker.getResource().unit());
 			worker.setPath(emptyPath);
-			return;
+			return true;
 		}
 
 		// 2) If it's far, generate a path
@@ -294,9 +271,9 @@ bool WorkerManager::gather(UnitInfo& worker)
 
 		// 3) If no threat on path, mine it
 		if (!Util().accurateThreatOnPath(worker, worker.getPath())) {
-			if (worker.getResource().unit() && worker.getResource().unit()->exists())
+			if (shouldIssueGather())
 				worker.unit()->gather(worker.getResource().unit());
-			else
+			else if (!resourceExists)
 				worker.unit()->move(worker.getResource().getPosition());
 			return true;
 		}
@@ -319,9 +296,14 @@ bool WorkerManager::returnCargo(UnitInfo& worker)
 	if (checkPath) {
 		// TODO: Create a path to the closest station and check if it's safe
 	}
-	if (worker.unit()->getOrder() != Orders::ReturnMinerals && worker.unit()->getOrder() != Orders::ReturnGas && worker.unit()->getLastCommand().getType() != UnitCommandTypes::Return_Cargo)
-		worker.unit()->returnCargo();
+	if (worker.unit()->isCarryingGas() || worker.unit()->isCarryingMinerals()) {
+		if (worker.unit()->getOrder() != Orders::ReturnMinerals && worker.unit()->getOrder() != Orders::ReturnGas && worker.unit()->getLastCommand().getType() != UnitCommandTypes::Return_Cargo)
+			worker.unit()->returnCargo();
+		return true;
+	}
+	return false;
 }
+
 
 
 bool WorkerManager::needGas() {

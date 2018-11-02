@@ -25,12 +25,6 @@ namespace McRave
 		void updateWorkers();
 		void updateDecision(UnitInfo&);	
 		void updateAssignment(UnitInfo&);
-		
-		bool shouldAssign(UnitInfo&);
-		bool shouldBuild(UnitInfo&);
-		bool shouldClearPath(UnitInfo&);
-		bool shouldGather(UnitInfo&);
-		bool shouldReturnCargo(UnitInfo&);
 
 		bool ride(UnitInfo&);
 		bool returnCargo(UnitInfo&);

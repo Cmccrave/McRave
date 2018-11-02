@@ -37,7 +37,7 @@ namespace McRave
 						building.unit()->buildAddon(unit);
 						continue;
 					}
-					if (unit.isWorker() && Broodwar->self()->completedUnitCount(unit) < 75 && (isAffordable(unit) || unit == UnitTypes::Terran_SCV) && (!Resources().isGasSaturated() || !Resources().isMinSaturated())) {
+					if (unit.isWorker() && Broodwar->self()->completedUnitCount(unit) < 75 && isAffordable(unit) && (!Resources().isGasSaturated() || !Resources().isMinSaturated())) {
 						building.unit()->train(unit);
 						building.setRemainingTrainFrame(unit.buildTime());
 					}
@@ -185,8 +185,8 @@ namespace McRave
 	{
 		auto mineralReserve = int(!BuildOrder().isTechUnit(unit)) * reservedMineral;
 		auto gasReserve = int(!BuildOrder().isTechUnit(unit)) * reservedGas;
-		auto mineralAffordable = (Broodwar->self()->minerals() > unit.mineralPrice() + Buildings().getQueuedMineral() + mineralReserve) || unit.mineralPrice() == 0;
-		auto gasAffordable = (Broodwar->self()->gas() > unit.gasPrice() + Buildings().getQueuedGas() + gasReserve) || unit.gasPrice() == 0;
+		auto mineralAffordable = (Broodwar->self()->minerals() >= unit.mineralPrice() + Buildings().getQueuedMineral() + mineralReserve) || unit.mineralPrice() == 0;
+		auto gasAffordable = (Broodwar->self()->gas() >= unit.gasPrice() + Buildings().getQueuedGas() + gasReserve) || unit.gasPrice() == 0;
 
 		return mineralAffordable && gasAffordable;
 	}

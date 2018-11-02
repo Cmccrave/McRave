@@ -39,7 +39,7 @@ void McRaveModule::onStart()
 	Broodwar->enableFlag(Flag::UserInput);
 	Broodwar->setCommandOptimizationLevel(0);
 	Broodwar->setLatCom(true);
-	Broodwar->setLocalSpeed(0);
+	//Broodwar->setLocalSpeed(0);
 	Terrain().onStart();
 	Players().onStart();
 	mapBWEB.onStart();
