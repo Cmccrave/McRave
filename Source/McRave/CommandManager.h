@@ -32,7 +32,7 @@ namespace McRave
 
 		void updateUnits(), updateDecision(UnitInfo&), updateEnemyCommands();
 
-		
+
 		bool shouldAttack(UnitInfo&);
 		bool shouldKite(UnitInfo&);
 		bool shouldApproach(UnitInfo&);
@@ -42,6 +42,10 @@ namespace McRave
 		bool shouldEscort(UnitInfo&);
 
 		bool isLastCommand(UnitInfo&, UnitCommandType, Position);
+
+
+		typedef bool (CommandManager::*Command)(UnitInfo&);
+		vector<Command> commands{ &CommandManager::misc, &CommandManager::attack, &CommandManager::approach, &CommandManager::kite, &CommandManager::escort, &CommandManager::hunt, &CommandManager::defend, };
 	public:
 		void onFrame();
 		vector <CommandType>& getMyCommands() { return myCommands; }
@@ -54,22 +58,21 @@ namespace McRave
 		bool isInDanger(UnitInfo&);
 		bool isInDanger(Position);
 
-		void move(UnitInfo&);
-		void approach(UnitInfo&);
-		void defend(UnitInfo&);
-		void kite(UnitInfo&);
-		void attack(UnitInfo&);
-		void safeMove(UnitInfo&);
-		void hunt(UnitInfo&);
-		void escort(UnitInfo&);
+		bool misc(UnitInfo&);
+		bool move(UnitInfo&);
+		bool approach(UnitInfo&);
+		bool defend(UnitInfo&);
+		bool kite(UnitInfo&);
+		bool attack(UnitInfo&);
+		bool safeMove(UnitInfo&);
+		bool hunt(UnitInfo&);
+		bool escort(UnitInfo&);
 
-		/// Adds a command
+		// Adds a UnitType or TechType command at a Position
 		template<class T>
 		void addCommand(Unit unit, Position here, T type, bool enemy = false) {
-			if (enemy)
-				enemyCommands.push_back(CommandType(unit, here, type));
-			else
-				myCommands.push_back(CommandType(unit, here, type));
+			auto &commands = enemy ? enemyCommands : myCommands;
+			commands.push_back(CommandType(unit, here, type));
 		}
 	};
 }

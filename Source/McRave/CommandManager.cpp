@@ -83,7 +83,7 @@ namespace McRave
 			if (unit.hasTarget() && unit.unit()->getGroundWeaponCooldown() <= 0 && unit.getTarget().unit()->exists())
 				attack(unit);
 			else
-				kite(unit);
+				approach(unit);
 		}
 
 		// If this unit should use a special ability that requires a command
@@ -230,7 +230,7 @@ namespace McRave
 
 
 
-	void CommandManager::move(UnitInfo& unit)
+	bool CommandManager::move(UnitInfo& unit)
 	{
 		unit.circleYellow();
 
@@ -285,7 +285,7 @@ namespace McRave
 		}
 	}
 
-	void CommandManager::defend(UnitInfo& unit)
+	bool CommandManager::defend(UnitInfo& unit)
 	{
 		unit.circleBlack();
 
@@ -348,7 +348,7 @@ namespace McRave
 		}
 	}
 
-	void CommandManager::kite(UnitInfo& unit)
+	bool CommandManager::kite(UnitInfo& unit)
 	{
 		unit.circleRed();
 
@@ -410,7 +410,7 @@ namespace McRave
 		}
 	}
 
-	void CommandManager::attack(UnitInfo& unit)
+	bool CommandManager::attack(UnitInfo& unit)
 	{
 		unit.circleGreen();
 		bool newOrder = Broodwar->getFrameCount() - unit.unit()->getLastCommandFrame() > Broodwar->getRemainingLatencyFrames();
@@ -441,14 +441,14 @@ namespace McRave
 
 	}
 
-	void CommandManager::approach(UnitInfo& unit)
+	bool CommandManager::approach(UnitInfo& unit)
 	{
 		unit.circleBlue();
 		if (unit.hasTarget() && unit.getTarget().getPosition().isValid() && !isLastCommand(unit, UnitCommandTypes::Move, unit.getTarget().getPosition()))
 			unit.unit()->move(unit.getTarget().getPosition());
 	}
 
-	void CommandManager::safeMove(UnitInfo& unit)
+	bool CommandManager::safeMove(UnitInfo& unit)
 	{
 		// Low threat, low distance		
 		auto start = unit.getWalkPosition();
@@ -483,7 +483,7 @@ namespace McRave
 			unit.unit()->move(bestPos);
 	}
 
-	void CommandManager::hunt(UnitInfo& unit)
+	bool CommandManager::hunt(UnitInfo& unit)
 	{
 		// If unit has no destination, give target as a destination
 		if (!unit.getDestination().isValid()) {
@@ -551,7 +551,7 @@ namespace McRave
 		}
 	}
 
-	void CommandManager::escort(UnitInfo& unit)
+	bool CommandManager::escort(UnitInfo& unit)
 	{
 		// Low distance, attack if possible
 		auto start = unit.getWalkPosition();
