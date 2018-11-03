@@ -36,7 +36,7 @@ namespace McRave
 		bool shouldAttack(UnitInfo&);
 		bool shouldKite(UnitInfo&);
 		bool shouldApproach(UnitInfo&);
-		bool shouldUseSpecial(UnitInfo&);
+		
 		bool shouldDefend(UnitInfo&);
 		bool shouldHunt(UnitInfo&);
 		bool shouldEscort(UnitInfo&);
@@ -45,7 +45,7 @@ namespace McRave
 
 
 		typedef bool (CommandManager::*Command)(UnitInfo&);
-		vector<Command> commands{ &CommandManager::misc, &CommandManager::attack, &CommandManager::approach, &CommandManager::kite, &CommandManager::escort, &CommandManager::hunt, &CommandManager::defend, };
+		vector<Command> commands{ &CommandManager::misc, &CommandManager::special, &CommandManager::attack, &CommandManager::approach, &CommandManager::kite, &CommandManager::escort, &CommandManager::hunt, &CommandManager::defend, };
 	public:
 		void onFrame();
 		vector <CommandType>& getMyCommands() { return myCommands; }
@@ -67,6 +67,7 @@ namespace McRave
 		bool safeMove(UnitInfo&);
 		bool hunt(UnitInfo&);
 		bool escort(UnitInfo&);
+		bool special(UnitInfo&);
 
 		// Adds a UnitType or TechType command at a Position
 		template<class T>

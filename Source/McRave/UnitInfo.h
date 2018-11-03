@@ -58,7 +58,7 @@ namespace McRave
 		void updateUnit();
 		void createDummy(UnitType);
 		double getDistance(UnitInfo unit) { return position.getDistance(unit.getPosition()); }
-
+		
 		// Roles
 		McRave::Role getRole() { return role; }
 		void setRole(McRave::Role newRole) { role = newRole; }

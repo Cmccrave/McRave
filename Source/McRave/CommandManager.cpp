@@ -73,162 +73,88 @@ namespace McRave
 			|| (unit.getType() != UnitTypes::Protoss_Carrier && attackCooldown)																// If the unit is not ready to perform an action after an attack (certain units have minimum frames after an attack before they can receive a new command)
 			|| latencyCooldown)
 			return;
+		
+		for (auto cmd : commands) {
+			if ((this->*cmd)(unit))
+				break;
+		}
+	}
 
+	bool CommandManager::misc(UnitInfo& unit)
+	{
 		// Unstick a unit
-		if (unit.isStuck() && unit.unit()->isMoving())
+		if (unit.isStuck() && unit.unit()->isMoving()) {
 			unit.unit()->stop();
+			return true;
+		}
 
 		// Units targeted by splash need to move away from the army
+		// TODO: Maybe move this to their respective functions
 		else if (Units().getSplashTargets().find(unit.unit()) != Units().getSplashTargets().end()) {
 			if (unit.hasTarget() && unit.unit()->getGroundWeaponCooldown() <= 0 && unit.getTarget().unit()->exists())
 				attack(unit);
 			else
 				approach(unit);
-		}
-
-		// If this unit should use a special ability that requires a command
-		else if (shouldUseSpecial(unit))
-			return;
-
-		// If this unit should engage
-		else if (unit.getLocalState() == LocalState::Engaging) {			
-			if (shouldAttack(unit))
-				attack(unit);
-			else if (shouldApproach(unit))
-				approach(unit);
-			else if (shouldKite(unit))
-				kite(unit);
-		}
-
-		// If this unit should retreat
-		else if (unit.getLocalState() == LocalState::Retreating) {
-			if (shouldDefend(unit))
-				defend(unit);
-			else if (unit.getType().isFlyer() && unit.getDestination().isValid())	// should escort - temp not using
-				escort(unit);
-			else if (shouldHunt(unit))
-				hunt(unit);
-			else
-				kite(unit);
-		}
-		else
-			move(unit);
-	}
-
-	bool CommandManager::shouldAttack(UnitInfo& unit)
-	{
-		// If no target target or a Lurker
-		if (!unit.hasTarget()
-			|| !unit.getTarget().unit()->exists()
-			|| unit.getType() == UnitTypes::Zerg_Lurker
-			|| !unit.getTarget().unit()->exists())
-			return false;
-
-		// Carrier attack command issuing
-		if (unit.getType() == UnitTypes::Protoss_Carrier) {
-			for (auto &i : unit.unit()->getInterceptors()) {
-				if (!i || !i->isCompleted())
-					continue;
-				UnitInfo &interceptor = Units().getMyUnits()[i];
-				if (Broodwar->getFrameCount() - interceptor.getLastAttackFrame() > 100)
-					return true;
-			}
-			return false;
-		}
-
-		// If attack on cooldown
-		if ((!unit.getTarget().getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames())
-			|| (unit.getTarget().getType().isFlyer() && unit.unit()->getAirWeaponCooldown() < Broodwar->getRemainingLatencyFrames())
-			|| unit.getType() == UnitTypes::Terran_Medic)
 			return true;
-		return false;
-	}
-
-	bool CommandManager::shouldKite(UnitInfo& unit)
-	{
-		// If attack not on cooldown
-		if (unit.hasTarget()) {
-			if ((!unit.getTarget().getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames())
-				|| (unit.getTarget().getType().isFlyer() && unit.unit()->getAirWeaponCooldown() < Broodwar->getRemainingLatencyFrames())
-				|| unit.getType() == UnitTypes::Terran_Medic)
-				return false;
-		}
-
-		// Mutas and Carriers
-		if (unit.getType() == UnitTypes::Protoss_Carrier
-			|| unit.getType() == UnitTypes::Zerg_Mutalisk)
-			return true;
-
-		// Corsairs or Zealots at a wall
-		else if (unit.getType() == UnitTypes::Protoss_Corsair
-			|| (unit.getType() == UnitTypes::Protoss_Zealot && Terrain().getNaturalWall() && Position(Terrain().getNaturalWall()->getDoor()).getDistance(unit.getPosition()) < 96.0))
-			return false;
-
-		if (unit.hasTarget()) {
-
-			auto widths = unit.getTarget().getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
-			auto allyRange = widths + (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
-			auto enemyRange = widths + (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
-
-			// Within defending distance or attacking a building
-			if ((unit.getPosition().getDistance(Terrain().getDefendPosition()) < 128.0 && allyRange <= 64.0 && Strategy().defendChoke())
-				|| (unit.getTarget().getType().isBuilding()))
-				return false;
-
-			if (unit.getType() == UnitTypes::Protoss_Reaver																				// Reavers always kite
-				|| (unit.getType() == UnitTypes::Terran_Vulture)																		// Vultures always kite
-				|| (unit.getType() == UnitTypes::Zerg_Mutalisk)																			// Mutas always kite
-				|| (unit.getType() == UnitTypes::Protoss_Carrier)
-				|| (allyRange >= 32.0 && unit.unit()->isUnderAttack() && allyRange >= enemyRange)										// Ranged unit under attack by unit with lower range
-				|| (unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine && !unit.getTarget().isBurrowed())
-				|| ((enemyRange <= allyRange && unit.unit()->getDistance(unit.getTarget().getPosition()) <= allyRange - enemyRange)))	// Ranged unit fighting lower range unit and not at max range
-				return true;
 		}
 		return false;
 	}
 
-	bool CommandManager::shouldApproach(UnitInfo& unit)
+	bool CommandManager::attack(UnitInfo& unit)
 	{
-		// If attack not on cooldown
-		if (unit.hasTarget()) {
-			if ((!unit.getTarget().getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames())
-				|| (unit.getTarget().getType().isFlyer() && unit.unit()->getAirWeaponCooldown() < Broodwar->getRemainingLatencyFrames())
-				|| unit.getType() == UnitTypes::Terran_Medic)
-				return false;
+		unit.circleGreen();
+		auto newOrder = Broodwar->getFrameCount() - unit.unit()->getLastCommandFrame() > Broodwar->getRemainingLatencyFrames();
+		auto canAttack = (unit.hasTarget() && unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() : unit.unit()->getGroundWeaponCooldown()) < Broodwar->getRemainingLatencyFrames();
+		auto shouldAttack = unit.getLocalState() == LocalState::Engaging;
+
+		// If unit can't attack
+		if (!unit.hasTarget() || !canAttack || !shouldAttack)
+			return false;
+
+		// HACK: Flyers don't want to decel when out of range, so we move to the target then attack when in range
+		if (unit.getType().isFlyer() && !Util().unitInRange(unit)) {
+			unit.unit()->move(unit.getTarget().getPosition());
+			return true;
 		}
 
+		// DT hold position vs spider mines
+		else if (unit.getType() == UnitTypes::Protoss_Dark_Templar && unit.hasTarget() && unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.getTarget().hasTarget() && unit.getTarget().getTarget().unit() == unit.unit() && !unit.getTarget().isBurrowed()) {
+			if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Hold_Position)
+				unit.unit()->holdPosition();
+			return true;
+		}
+
+		// Medic's just attack move
+		else if (unit.getType() == UnitTypes::Terran_Medic) {
+			if (!isLastCommand(unit, UnitCommandTypes::Attack_Move, unit.getTarget().getPosition()))
+				unit.unit()->attack(unit.getTarget().getPosition());
+			return true;
+		}
+
+		// If unit is currently not attacking his assigned target, or last command isn't attack
+		else if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Attack_Unit || unit.unit()->getLastCommand().getTarget() != unit.getTarget().unit()) {
+			unit.unit()->attack(unit.getTarget().unit());
+			return true;
+		}
+
+		// If unit can receive a new order and current order is wrong, re-issue
+		else if (newOrder && unit.unit()->getOrderTarget() != unit.getTarget().unit()) {
+			unit.unit()->attack(unit.getTarget().unit());
+			return true;
+		}
+		return (canAttack && Util().unitInRange(unit));
+	}
+
+	bool CommandManager::approach(UnitInfo& unit)
+	{
 		// No target, Carrier or Muta
-		if (!unit.hasTarget()
-			|| unit.getType() == UnitTypes::Protoss_Carrier
-			|| unit.getType() == UnitTypes::Zerg_Mutalisk)
+		if (!unit.hasTarget() || unit.getType() == UnitTypes::Protoss_Carrier || unit.getType() == UnitTypes::Zerg_Mutalisk)
 			return false;
 
-		// Dominant fight, lower range, Lurker or non Scourge targets
-		if ((unit.getSimValue() >= 10.0 && unit.getType() != UnitTypes::Protoss_Reaver && (!unit.getTarget().getType().isWorker() || unit.getGroundRange() <= 32))
-			|| (unit.getGroundRange() < 32 && unit.getTarget().getType().isWorker())
-			|| unit.getType() == UnitTypes::Zerg_Lurker
-			|| (unit.getGroundRange() < unit.getTarget().getGroundRange() && !unit.getTarget().getType().isBuilding() && Grids().getMobility(WalkPosition(unit.getEngagePosition())) > 0)																					// Approach slower units with higher range
-			|| (unit.getType() != UnitTypes::Terran_Battlecruiser && unit.getType() != UnitTypes::Zerg_Guardian && unit.getType().isFlyer() && unit.getTarget().getType() != UnitTypes::Zerg_Scourge))																												// Small flying units approach other flying units except scourge
-			return true;
-		return false;
+		unit.circleBlue();
+		if (unit.hasTarget() && unit.getTarget().getPosition().isValid() && !isLastCommand(unit, UnitCommandTypes::Move, unit.getTarget().getPosition()))
+			unit.unit()->move(unit.getTarget().getPosition());
 	}
-
-	bool CommandManager::shouldDefend(UnitInfo& unit)
-	{		
-		bool closeToDefend = Terrain().getDefendPosition().getDistance(unit.getPosition()) < 320.0 || Terrain().isInAllyTerritory(unit.getTilePosition()) || Terrain().isInAllyTerritory((TilePosition)unit.getDestination()) || (!unit.getType().isFlyer() && !unit.hasTransport() && !mapBWEM.GetArea(unit.getTilePosition()));
-		if (closeToDefend)
-			return true;
-		return false;
-	}
-
-	bool CommandManager::shouldHunt(UnitInfo& unit)
-	{
-		if (unit.getType().isFlyer() || unit.getType() == UnitTypes::Protoss_Dark_Templar)
-			return true;
-		return false;
-	}
-
-
 
 	bool CommandManager::move(UnitInfo& unit)
 	{
@@ -409,44 +335,8 @@ namespace McRave
 			Broodwar->drawLineMap(unit.getPosition(), posBest, Colors::Red);
 		}
 	}
-
-	bool CommandManager::attack(UnitInfo& unit)
-	{
-		unit.circleGreen();
-		bool newOrder = Broodwar->getFrameCount() - unit.unit()->getLastCommandFrame() > Broodwar->getRemainingLatencyFrames();
-
-		// HACK: Flyers don't want to decel when out of range, so we move to the target then attack when in range
-		if (unit.getType().isFlyer() && !Util().unitInRange(unit))
-			unit.unit()->move(unit.getTarget().getPosition());
-
-		// DT hold position vs spider mines
-		else if (unit.getType() == UnitTypes::Protoss_Dark_Templar && unit.hasTarget() && unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.getTarget().hasTarget() && unit.getTarget().getTarget().unit() == unit.unit() && !unit.getTarget().isBurrowed()) {
-			if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Hold_Position)
-				unit.unit()->holdPosition();
-		}
-
-		// Medic's just attack move
-		else if (unit.getType() == UnitTypes::Terran_Medic) {
-			if (!isLastCommand(unit, UnitCommandTypes::Attack_Move, unit.getTarget().getPosition()))
-				unit.unit()->attack(unit.getTarget().getPosition());
-		}
-
-		// If unit is currently not attacking his assigned target, or last command isn't attack
-		else if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Attack_Unit || unit.unit()->getLastCommand().getTarget() != unit.getTarget().unit())
-			unit.unit()->attack(unit.getTarget().unit());
-
-		// If unit can receive a new order and current order is wrong, re-issue
-		else if (newOrder && unit.unit()->getOrderTarget() != unit.getTarget().unit())
-			unit.unit()->attack(unit.getTarget().unit());
-
-	}
-
-	bool CommandManager::approach(UnitInfo& unit)
-	{
-		unit.circleBlue();
-		if (unit.hasTarget() && unit.getTarget().getPosition().isValid() && !isLastCommand(unit, UnitCommandTypes::Move, unit.getTarget().getPosition()))
-			unit.unit()->move(unit.getTarget().getPosition());
-	}
+	
+	
 
 	bool CommandManager::safeMove(UnitInfo& unit)
 	{
@@ -698,5 +588,81 @@ namespace McRave
 	bool CommandManager::isInDanger(UnitInfo& unit)
 	{
 		return isInDanger(unit.getPosition());
+	}
+
+
+
+	bool CommandManager::shouldAttack(UnitInfo& unit)
+	{
+	}
+
+	bool CommandManager::shouldKite(UnitInfo& unit)
+	{
+		// If attack not on cooldown
+		if (unit.hasTarget()) {
+			if ((!unit.getTarget().getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames())
+				|| (unit.getTarget().getType().isFlyer() && unit.unit()->getAirWeaponCooldown() < Broodwar->getRemainingLatencyFrames())
+				|| unit.getType() == UnitTypes::Terran_Medic)
+				return false;
+		}
+
+		// Mutas and Carriers
+		if (unit.getType() == UnitTypes::Protoss_Carrier
+			|| unit.getType() == UnitTypes::Zerg_Mutalisk)
+			return true;
+
+		// Corsairs or Zealots at a wall
+		else if (unit.getType() == UnitTypes::Protoss_Corsair
+			|| (unit.getType() == UnitTypes::Protoss_Zealot && Terrain().getNaturalWall() && Position(Terrain().getNaturalWall()->getDoor()).getDistance(unit.getPosition()) < 96.0))
+			return false;
+
+		if (unit.hasTarget()) {
+
+			auto widths = unit.getTarget().getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
+			auto allyRange = widths + (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
+			auto enemyRange = widths + (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
+
+			// Within defending distance or attacking a building
+			if ((unit.getPosition().getDistance(Terrain().getDefendPosition()) < 128.0 && allyRange <= 64.0 && Strategy().defendChoke())
+				|| (unit.getTarget().getType().isBuilding()))
+				return false;
+
+			if (unit.getType() == UnitTypes::Protoss_Reaver																				// Reavers always kite
+				|| (unit.getType() == UnitTypes::Terran_Vulture)																		// Vultures always kite
+				|| (unit.getType() == UnitTypes::Zerg_Mutalisk)																			// Mutas always kite
+				|| (unit.getType() == UnitTypes::Protoss_Carrier)
+				|| (allyRange >= 32.0 && unit.unit()->isUnderAttack() && allyRange >= enemyRange)										// Ranged unit under attack by unit with lower range
+				|| (unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine && !unit.getTarget().isBurrowed())
+				|| ((enemyRange <= allyRange && unit.unit()->getDistance(unit.getTarget().getPosition()) <= allyRange - enemyRange)))	// Ranged unit fighting lower range unit and not at max range
+				return true;
+		}
+		return false;
+	}
+
+	bool CommandManager::shouldApproach(UnitInfo& unit)
+	{
+		// Dominant fight, lower range, Lurker or non Scourge targets
+		if ((unit.getSimValue() >= 10.0 && unit.getType() != UnitTypes::Protoss_Reaver && (!unit.getTarget().getType().isWorker() || unit.getGroundRange() <= 32))
+			|| (unit.getGroundRange() < 32 && unit.getTarget().getType().isWorker())
+			|| unit.getType() == UnitTypes::Zerg_Lurker
+			|| (unit.getGroundRange() < unit.getTarget().getGroundRange() && !unit.getTarget().getType().isBuilding() && Grids().getMobility(WalkPosition(unit.getEngagePosition())) > 0)																					// Approach slower units with higher range
+			|| (unit.getType() != UnitTypes::Terran_Battlecruiser && unit.getType() != UnitTypes::Zerg_Guardian && unit.getType().isFlyer() && unit.getTarget().getType() != UnitTypes::Zerg_Scourge))																												// Small flying units approach other flying units except scourge
+			return true;
+		return false;
+	}
+
+	bool CommandManager::shouldDefend(UnitInfo& unit)
+	{
+		bool closeToDefend = Terrain().getDefendPosition().getDistance(unit.getPosition()) < 320.0 || Terrain().isInAllyTerritory(unit.getTilePosition()) || Terrain().isInAllyTerritory((TilePosition)unit.getDestination()) || (!unit.getType().isFlyer() && !unit.hasTransport() && !mapBWEM.GetArea(unit.getTilePosition()));
+		if (closeToDefend)
+			return true;
+		return false;
+	}
+
+	bool CommandManager::shouldHunt(UnitInfo& unit)
+	{
+		if (unit.getType().isFlyer() || unit.getType() == UnitTypes::Protoss_Dark_Templar)
+			return true;
+		return false;
 	}
 }

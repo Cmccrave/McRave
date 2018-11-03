@@ -1,6 +1,6 @@
 #include "McRave.h"
 
-bool CommandManager::shouldUseSpecial(UnitInfo& unit)
+bool CommandManager::special(UnitInfo& unit)
 {
 	Position p(unit.getEngagePosition());
 
