@@ -179,4 +179,42 @@ namespace McRave
 		airDamage				= Math::airDamage(*this);
 		speed 					= Math::speed(*this);
 	}
+
+	bool UnitInfo::command(UnitCommandType command, variant<Position, UnitInfo*> whereWhat)
+	{
+		auto where = whereWhat.index() == 0 ? get<Position>(whereWhat) : Positions::Invalid;
+		auto what = whereWhat.index() == 1 ? get<UnitInfo*>(whereWhat) : nullptr;
+
+		// Check if thhis is a new order
+		const auto newOrder = [&]() {
+			auto canIssue = Broodwar->getFrameCount() - thisUnit->getLastCommandFrame() > Broodwar->getRemainingLatencyFrames();
+			auto newOrderPosition = !what && thisUnit->getOrderTargetPosition() != where;
+			auto newOrderTarget = what && thisUnit->getOrderTarget() != what->unit();
+			return canIssue && (newOrderPosition || newOrderTarget);
+		};
+
+		// Check if this is a new command
+		const auto newCommand = [&]() {
+			auto newCommandPosition = !what && (thisUnit->getLastCommand().getType() != command || thisUnit->getLastCommand().getTargetPosition() != where);
+			auto newCommandTarget = what && (thisUnit->getLastCommand().getType() != command || thisUnit->getLastCommand().getTarget() != what->unit());
+			return newCommandPosition || newCommandTarget;
+		};
+
+		// If this is an attack command, we need a cooldown ready
+		auto canAttack = what && what->getType().isFlyer() ? thisUnit->getAirWeaponCooldown() : thisUnit->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames();
+
+		// If this is a new order or new command than what we're requesting, we can issue it
+		if (newOrder() || newCommand()) {
+			if (what) {
+				if (command == UnitCommandTypes::Attack_Unit && canAttack)
+					thisUnit->attack(what->unit());
+				else if (command == UnitCommandTypes::Right_Click_Unit)
+					thisUnit->rightClick(what->unit());
+			}
+			else if (command == UnitCommandTypes::Move)
+				thisUnit->move(where);
+			return true;
+		}
+		return false;
+	}
 }

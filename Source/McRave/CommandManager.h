@@ -32,9 +32,6 @@ namespace McRave
 
 		void updateUnits(), updateDecision(UnitInfo&), updateEnemyCommands();
 		
-		bool isLastCommand(UnitInfo&, UnitCommandType, Position);
-
-
 		typedef bool (CommandManager::*Command)(UnitInfo&);
 		vector<Command> commands{ &CommandManager::misc, &CommandManager::special, &CommandManager::attack, &CommandManager::approach, &CommandManager::kite, &CommandManager::escort, &CommandManager::hunt, &CommandManager::defend, };
 	public:
