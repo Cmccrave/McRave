@@ -150,7 +150,7 @@ bool StationManager::stationNetworkExists(const Station * start, const Station *
 	return false;
 }
 
-Path& StationManager::pathStationToStation(const Station * start, const Station * finish)
+Path* StationManager::pathStationToStation(const Station * start, const Station * finish)
 {
 	for (auto &s : stationNetwork) {
 		auto s1 = s.first;
@@ -161,9 +161,8 @@ Path& StationManager::pathStationToStation(const Station * start, const Station 
 			auto s2 = pair.first;
 			auto &path = pair.second;
 			if ((s1 == start && s2 == finish) || (s1 == finish && s2 == start))
-				return path;
+				return &path;
 		}
-	}
-	// Return an empty path
-	return Path();
+	}	
+	return nullptr;
 }

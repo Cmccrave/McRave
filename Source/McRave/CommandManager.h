@@ -31,16 +31,7 @@ namespace McRave
 		vector <CommandType> enemyCommands;
 
 		void updateUnits(), updateDecision(UnitInfo&), updateEnemyCommands();
-
-
-		bool shouldAttack(UnitInfo&);
-		bool shouldKite(UnitInfo&);
-		bool shouldApproach(UnitInfo&);
 		
-		bool shouldDefend(UnitInfo&);
-		bool shouldHunt(UnitInfo&);
-		bool shouldEscort(UnitInfo&);
-
 		bool isLastCommand(UnitInfo&, UnitCommandType, Position);
 
 

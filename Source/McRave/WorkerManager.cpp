@@ -61,9 +61,10 @@ void WorkerManager::updateAssignment(UnitInfo& worker)
 	if (threatened) {
 		for (auto &s : Stations().getMyStations()) {
 			auto station = s.second;
+			auto closePath = Stations().pathStationToStation(closest, station);
 			Path path;
-			if (closest && worker.getPosition().getDistance(closest->ResourceCentroid()) < 320.0)
-				path = Stations().pathStationToStation(closest, station);
+			if (closest && worker.getPosition().getDistance(closest->ResourceCentroid()) < 320.0 && closePath)
+				path = *closePath;
 			else
 				path.createUnitPath(mapBWEB, mapBWEM, worker.getPosition(), station->ResourceCentroid());
 

@@ -146,14 +146,32 @@ namespace McRave
 	}
 
 	bool CommandManager::approach(UnitInfo& unit)
-	{
-		// No target, Carrier or Muta
-		if (!unit.hasTarget() || unit.getType() == UnitTypes::Protoss_Carrier || unit.getType() == UnitTypes::Zerg_Mutalisk)
-			return false;
+	{		
+		const auto canApproach = [&]() {
+			
+			// No target, Carrier or Muta
+			if (!unit.hasTarget() || unit.getType() == UnitTypes::Protoss_Carrier || unit.getType() == UnitTypes::Zerg_Mutalisk)
+				return false;
 
-		unit.circleBlue();
-		if (unit.hasTarget() && unit.getTarget().getPosition().isValid() && !isLastCommand(unit, UnitCommandTypes::Move, unit.getTarget().getPosition()))
-			unit.unit()->move(unit.getTarget().getPosition());
+			// Dominant fight, lower range, Lurker or non Scourge targets
+			if ((unit.getSimValue() >= 10.0 && unit.getType() != UnitTypes::Protoss_Reaver && (!unit.getTarget().getType().isWorker() || unit.getGroundRange() <= 32))
+				|| (unit.getGroundRange() < 32 && unit.getTarget().getType().isWorker())
+				|| unit.getType() == UnitTypes::Zerg_Lurker
+				|| (unit.getGroundRange() < unit.getTarget().getGroundRange() && !unit.getTarget().getType().isBuilding() && Grids().getMobility(WalkPosition(unit.getEngagePosition())) > 0)																					// Approach slower units with higher range
+				|| (unit.getType() != UnitTypes::Terran_Battlecruiser && unit.getType() != UnitTypes::Zerg_Guardian && unit.getType().isFlyer() && unit.getTarget().getType() != UnitTypes::Zerg_Scourge))																												// Small flying units approach other flying units except scourge
+				return true;
+			return false;
+		};
+
+		
+		if (canApproach() && unit.getTarget().getPosition().isValid()) {
+			if (!isLastCommand(unit, UnitCommandTypes::Move, unit.getTarget().getPosition()))
+				unit.unit()->move(unit.getTarget().getPosition());
+
+			unit.circleBlue();
+			return true;
+		}
+		return false;
 	}
 
 	bool CommandManager::move(UnitInfo& unit)
@@ -202,7 +220,7 @@ namespace McRave
 					if (start.isValid() && !Broodwar->isExplored(start) && !Commands().overlapsCommands(unit.unit(), unit.getType(), Position(start), 32)) {
 						unit.unit()->move(Position(start));
 						Commands().addCommand(unit.unit(), Position(start), unit.getType());
-						return;
+						return true;
 					}
 				}
 				// Catch in case no valid movement positions
@@ -214,6 +232,9 @@ namespace McRave
 	bool CommandManager::defend(UnitInfo& unit)
 	{
 		unit.circleBlack();
+		bool closeToDefend = Terrain().getDefendPosition().getDistance(unit.getPosition()) < 320.0 || Terrain().isInAllyTerritory(unit.getTilePosition()) || Terrain().isInAllyTerritory((TilePosition)unit.getDestination()) || (!unit.getType().isFlyer() && !unit.hasTransport() && !mapBWEM.GetArea(unit.getTilePosition()));
+		if (!closeToDefend)
+			return false;
 
 		// HACK: Hardcoded cannon surround, testing
 		if (unit.getType().isWorker() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) > 0) {
@@ -237,7 +258,7 @@ namespace McRave
 
 					if (walkBest.isValid() && unit.unit()->getLastCommand().getTargetPosition() != Position(walkBest))
 						unit.unit()->move(Position(walkBest));
-					return;
+					return true;
 				}
 			}
 		}
@@ -257,6 +278,7 @@ namespace McRave
 			if (bestPosition.isValid() && (bestPosition != unit.getPosition() || unit.unit()->getLastCommand().getType() == UnitCommandTypes::None)) {
 				if (unit.unit()->getLastCommand().getTargetPosition() != bestPosition || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
 					unit.unit()->move(bestPosition);
+				return true;
 			}
 		}
 
@@ -268,29 +290,59 @@ namespace McRave
 				else
 					addCommand(unit.unit(), bestPosition, UnitTypes::None);
 				unit.setDestination(bestPosition);
+				return true;
 			}
 
 			Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Purple);
 		}
+		return false;
 	}
 
 	bool CommandManager::kite(UnitInfo& unit)
 	{
 		unit.circleRed();
+		const auto canKite = [&]() {
+			// Units that never kite based on their target
+			if (unit.hasTarget() && unit.getLocalState() == LocalState::Engaging) {
+				auto allyRange = (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
+				auto enemyRange = (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
 
-		// If unit has a transport, move to it or load into it
+				if (unit.getType() == UnitTypes::Protoss_Corsair
+					|| (unit.getTarget().getType().isBuilding() && !unit.getType().isFlyer()))
+					return false;
+
+				if (unit.getType() == UnitTypes::Protoss_Reaver
+					|| (unit.getType() == UnitTypes::Terran_Vulture)
+					|| (unit.getType() == UnitTypes::Zerg_Mutalisk)
+					|| (unit.getType() == UnitTypes::Protoss_Carrier)
+					|| (allyRange >= 32.0 && unit.unit()->isUnderAttack() && allyRange >= enemyRange)
+					|| (unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine && !unit.getTarget().isBurrowed())
+					|| ((enemyRange <= allyRange && unit.unit()->getDistance(unit.getTarget().getPosition()) <= allyRange - enemyRange)))
+					return true;
+				return false;
+			}
+			return true;
+		};
+
+		// Check if a unit with a transport should load into it
 		if (unit.hasTransport() && unit.getTransport().unit()->exists()) {
-			if (unit.getType() == UnitTypes::Protoss_Reaver && unit.unit()->getScarabCount() != MAX_SCARAB)
+			if (unit.getType() == UnitTypes::Protoss_Reaver && unit.unit()->getScarabCount() != MAX_SCARAB) {
 				unit.unit()->rightClick(unit.getTransport().unit());
-			else if (unit.getType() == UnitTypes::Protoss_High_Templar && unit.getEnergy() < 75)
+				return true;
+			}
+			else if (unit.getType() == UnitTypes::Protoss_High_Templar && unit.getEnergy() < 75) {
 				unit.unit()->rightClick(unit.getTransport().unit());
+				return true;
+			}
 		}
 
-		// Workers use mineral fields to help with drilling
-		else if (unit.hasResource() && unit.getResource().unit()->exists() && Terrain().isInAllyTerritory(unit.getTilePosition()) && Grids().getEGroundThreat(WalkPosition(unit.getResource().getPosition())) == 0.0)
+		// Check if a worker should mineral walk
+		else if (unit.hasResource() && unit.getResource().unit()->exists() && Terrain().isInAllyTerritory(unit.getTilePosition()) && Grids().getEGroundThreat(WalkPosition(unit.getResource().getPosition())) == 0.0) {
 			unit.unit()->gather(unit.getResource().unit());
+			return true;
+		}
 
-		else {
+		else if (canKite()) {
 			auto start = unit.getWalkPosition();
 			auto best = 0.0;
 			auto posBest = Positions::Invalid;
@@ -330,10 +382,13 @@ namespace McRave
 				}
 			}
 
-			if (!isLastCommand(unit, UnitCommandTypes::Move, posBest))
+			if (!isLastCommand(unit, UnitCommandTypes::Move, posBest)) {
 				unit.unit()->move(posBest);
+				return true;
+			}
 			Broodwar->drawLineMap(unit.getPosition(), posBest, Colors::Red);
 		}
+		return false;
 	}
 	
 	
@@ -375,6 +430,12 @@ namespace McRave
 
 	bool CommandManager::hunt(UnitInfo& unit)
 	{
+		if (!unit.getType().isFlyer() && unit.getType() != UnitTypes::Protoss_Dark_Templar)
+			return false;
+
+		// Not doing this
+		return false;
+
 		// If unit has no destination, give target as a destination
 		if (!unit.getDestination().isValid()) {
 			if (unit.hasTarget())
@@ -425,24 +486,31 @@ namespace McRave
 		}
 
 		if (unit.hasTarget() && Util().getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT && Util().unitInRange(unit)) {
-			if (shouldAttack(unit))
+			if (true)
 				attack(unit);
 			else
 				approach(unit);
+			return true;
 		}
 		else if (bestPos != unit.getDestination()) {
 			Broodwar->drawLineMap(unit.getPosition(), bestPos, Colors::Grey);
 			if (!isLastCommand(unit, UnitCommandTypes::Move, bestPos))
 				unit.unit()->move(bestPos);
+			return true;
 		}
 		else {
 			Broodwar->drawLineMap(unit.getPosition(), bestPos, Colors::Grey);
 			kite(unit);
+			return true;
 		}
+		return false;
 	}
 
 	bool CommandManager::escort(UnitInfo& unit)
 	{
+		// Not doing this atm
+		return false;
+
 		// Low distance, attack if possible
 		auto start = unit.getWalkPosition();
 		auto best = 0.0;
@@ -473,6 +541,7 @@ namespace McRave
 
 		if (!isLastCommand(unit, UnitCommandTypes::Move, bestPos))
 			unit.unit()->move(bestPos);
+		return true;
 	}
 
 
@@ -588,81 +657,5 @@ namespace McRave
 	bool CommandManager::isInDanger(UnitInfo& unit)
 	{
 		return isInDanger(unit.getPosition());
-	}
-
-
-
-	bool CommandManager::shouldAttack(UnitInfo& unit)
-	{
-	}
-
-	bool CommandManager::shouldKite(UnitInfo& unit)
-	{
-		// If attack not on cooldown
-		if (unit.hasTarget()) {
-			if ((!unit.getTarget().getType().isFlyer() && unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames())
-				|| (unit.getTarget().getType().isFlyer() && unit.unit()->getAirWeaponCooldown() < Broodwar->getRemainingLatencyFrames())
-				|| unit.getType() == UnitTypes::Terran_Medic)
-				return false;
-		}
-
-		// Mutas and Carriers
-		if (unit.getType() == UnitTypes::Protoss_Carrier
-			|| unit.getType() == UnitTypes::Zerg_Mutalisk)
-			return true;
-
-		// Corsairs or Zealots at a wall
-		else if (unit.getType() == UnitTypes::Protoss_Corsair
-			|| (unit.getType() == UnitTypes::Protoss_Zealot && Terrain().getNaturalWall() && Position(Terrain().getNaturalWall()->getDoor()).getDistance(unit.getPosition()) < 96.0))
-			return false;
-
-		if (unit.hasTarget()) {
-
-			auto widths = unit.getTarget().getType().tileWidth() * 16.0 + unit.getType().tileWidth() * 16.0;
-			auto allyRange = widths + (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
-			auto enemyRange = widths + (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
-
-			// Within defending distance or attacking a building
-			if ((unit.getPosition().getDistance(Terrain().getDefendPosition()) < 128.0 && allyRange <= 64.0 && Strategy().defendChoke())
-				|| (unit.getTarget().getType().isBuilding()))
-				return false;
-
-			if (unit.getType() == UnitTypes::Protoss_Reaver																				// Reavers always kite
-				|| (unit.getType() == UnitTypes::Terran_Vulture)																		// Vultures always kite
-				|| (unit.getType() == UnitTypes::Zerg_Mutalisk)																			// Mutas always kite
-				|| (unit.getType() == UnitTypes::Protoss_Carrier)
-				|| (allyRange >= 32.0 && unit.unit()->isUnderAttack() && allyRange >= enemyRange)										// Ranged unit under attack by unit with lower range
-				|| (unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine && !unit.getTarget().isBurrowed())
-				|| ((enemyRange <= allyRange && unit.unit()->getDistance(unit.getTarget().getPosition()) <= allyRange - enemyRange)))	// Ranged unit fighting lower range unit and not at max range
-				return true;
-		}
-		return false;
-	}
-
-	bool CommandManager::shouldApproach(UnitInfo& unit)
-	{
-		// Dominant fight, lower range, Lurker or non Scourge targets
-		if ((unit.getSimValue() >= 10.0 && unit.getType() != UnitTypes::Protoss_Reaver && (!unit.getTarget().getType().isWorker() || unit.getGroundRange() <= 32))
-			|| (unit.getGroundRange() < 32 && unit.getTarget().getType().isWorker())
-			|| unit.getType() == UnitTypes::Zerg_Lurker
-			|| (unit.getGroundRange() < unit.getTarget().getGroundRange() && !unit.getTarget().getType().isBuilding() && Grids().getMobility(WalkPosition(unit.getEngagePosition())) > 0)																					// Approach slower units with higher range
-			|| (unit.getType() != UnitTypes::Terran_Battlecruiser && unit.getType() != UnitTypes::Zerg_Guardian && unit.getType().isFlyer() && unit.getTarget().getType() != UnitTypes::Zerg_Scourge))																												// Small flying units approach other flying units except scourge
-			return true;
-		return false;
-	}
-
-	bool CommandManager::shouldDefend(UnitInfo& unit)
-	{
-		bool closeToDefend = Terrain().getDefendPosition().getDistance(unit.getPosition()) < 320.0 || Terrain().isInAllyTerritory(unit.getTilePosition()) || Terrain().isInAllyTerritory((TilePosition)unit.getDestination()) || (!unit.getType().isFlyer() && !unit.hasTransport() && !mapBWEM.GetArea(unit.getTilePosition()));
-		if (closeToDefend)
-			return true;
-		return false;
-	}
-
-	bool CommandManager::shouldHunt(UnitInfo& unit)
-	{
-		if (unit.getType().isFlyer() || unit.getType() == UnitTypes::Protoss_Dark_Templar)
-			return true;
-		return false;
 	}
 }

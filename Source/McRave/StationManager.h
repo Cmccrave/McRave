@@ -23,7 +23,7 @@ namespace McRave
 		void removeStation(Unit);
 		bool needDefenses(const Station);		
 		bool stationNetworkExists(const Station *, const Station *);
-		Path& pathStationToStation(const Station *, const Station *);
+		Path* pathStationToStation(const Station *, const Station *);
 	};
 }
 
