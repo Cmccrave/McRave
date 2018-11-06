@@ -76,9 +76,26 @@ namespace McRave
 			|| latencyCooldown)
 			return;
 
+		// vector<Command> commands{ &CommandManager::misc, &CommandManager::special, &CommandManager::attack, &CommandManager::approach, &CommandManager::kite, &CommandManager::escort, &CommandManager::hunt, &CommandManager::defend, };
+		map<int, string> commandNames{
+			make_pair(0, "Misc"),
+			make_pair(1, "Special"),
+			make_pair(2, "Attack"),
+			make_pair(3, "Approach"),
+			make_pair(4, "Kite"),
+			make_pair(5, "Escort"),
+			make_pair(6, "Hunt"),
+			make_pair(7, "Defend"),
+			make_pair(8, "Move")
+		};
+
+		int i = 0;
 		for (auto cmd : commands) {
-			if ((this->*cmd)(unit))
+			if ((this->*cmd)(unit)) {
+				Broodwar->drawTextMap(unit.getPosition(), "%s", commandNames[i].c_str());
 				break;
+			}
+			i++;
 		}
 	}
 
@@ -117,15 +134,18 @@ namespace McRave
 
 	bool CommandManager::attack(UnitInfo& unit)
 	{
-		unit.circleGreen();
 		auto shouldAttack = unit.getLocalState() == LocalState::Engaging;
 		variant<Position, UnitInfo*> whereWhat;
 
 		// If unit should be attacking
 		if (shouldAttack && unit.hasTarget()) {
-			whereWhat = &unit.getTarget();
-			unit.command(UnitCommandTypes::Attack_Unit, whereWhat);
-			return true;
+			auto canAttack = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() : unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames();
+
+			if (canAttack) {
+				whereWhat = &unit.getTarget();
+				unit.command(UnitCommandTypes::Attack_Unit, whereWhat);
+				return true;
+			}
 		}
 		return false;
 	}
@@ -155,7 +175,6 @@ namespace McRave
 		if (shouldApproach && canApproach() && unit.getTarget().getPosition().isValid()) {
 			whereWhat = unit.getTarget().getPosition();
 			unit.command(UnitCommandTypes::Move, whereWhat);
-			unit.circleBlue();
 			return true;
 		}
 		return false;
@@ -163,7 +182,6 @@ namespace McRave
 
 	bool CommandManager::move(UnitInfo& unit)
 	{
-		unit.circleYellow();
 		variant<Position, UnitInfo*> whereWhat;
 
 		// TODO: Concave at destination
@@ -227,9 +245,8 @@ namespace McRave
 
 	bool CommandManager::defend(UnitInfo& unit)
 	{
-		unit.circleBlack();
 		bool closeToDefend = Terrain().getDefendPosition().getDistance(unit.getPosition()) < 320.0 || Terrain().isInAllyTerritory(unit.getTilePosition()) || Terrain().isInAllyTerritory((TilePosition)unit.getDestination()) || (!unit.getType().isFlyer() && !unit.hasTransport() && !mapBWEM.GetArea(unit.getTilePosition()));
-		if (!closeToDefend)
+		if (!closeToDefend || unit.getLocalState() != LocalState::Retreating)
 			return false;
 
 		// Probe Cannon surround
@@ -293,7 +310,6 @@ namespace McRave
 	bool CommandManager::kite(UnitInfo& unit)
 	{
 		variant<Position, UnitInfo*> whereWhat;
-		unit.circleRed();
 		const auto canKite = [&]() {
 			// Units that never kite based on their target
 			if (unit.hasTarget() && unit.getLocalState() == LocalState::Engaging) {
@@ -314,7 +330,7 @@ namespace McRave
 					return true;
 				return false;
 			}
-			return true;
+			return unit.getLocalState() == LocalState::Retreating && unit.getPosition().getDistance(unit.getSimPosition()) <= SIM_RADIUS;
 		};
 
 		// Check if a unit with a transport should load into it
@@ -431,11 +447,8 @@ namespace McRave
 
 	bool CommandManager::hunt(UnitInfo& unit)
 	{
-		if (!unit.getType().isFlyer() && unit.getType() != UnitTypes::Protoss_Dark_Templar)
+		if (!unit.getType().isWorker() && !unit.getType().isFlyer() && unit.getType() != UnitTypes::Protoss_Dark_Templar)
 			return false;
-
-		// Not doing this
-		return false;
 
 		// If unit has no destination, give target as a destination
 		if (!unit.getDestination().isValid()) {

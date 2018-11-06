@@ -39,7 +39,7 @@ void UnitManager::updateUnits()
 	splashTargets.clear();
 	enemyComposition.clear();
 	myTypes.clear();
-
+	
 	double currentSim = 0.0;
 
 	// PvZ
@@ -440,8 +440,12 @@ void UnitManager::updateRole(UnitInfo& unit)
 	if (mapBWEB.getNaturalChoke() && BuildOrder().shouldScout() && Units().getMyRoleCount(Role::Scouting) < 1) {
 		auto type = Broodwar->self()->getRace().getWorker();
 		auto scout = Util().getClosestUnit(Position(mapBWEB.getNaturalChoke()->Center()), Broodwar->self(), type);
-		if (scout == &unit)
+		if (scout == &unit) {
 			scout->setRole(Role::Scouting);
+			scout->setResource(nullptr);
+			scout->setBuildingType(UnitTypes::None);
+			scout->setBuildPosition(TilePositions::Invalid);
+		}
 	}
 
 	// Check if a worker morphed into a building

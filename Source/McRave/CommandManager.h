@@ -33,7 +33,7 @@ namespace McRave
 		void updateUnits(), updateDecision(UnitInfo&), updateEnemyCommands();
 		
 		typedef bool (CommandManager::*Command)(UnitInfo&);
-		vector<Command> commands{ &CommandManager::misc, &CommandManager::special, &CommandManager::attack, &CommandManager::approach, &CommandManager::kite, &CommandManager::escort, &CommandManager::hunt, &CommandManager::defend, };
+		vector<Command> commands{ &CommandManager::misc, &CommandManager::special, &CommandManager::attack, &CommandManager::approach, &CommandManager::kite, &CommandManager::escort, &CommandManager::hunt, &CommandManager::defend, &CommandManager::move };
 	public:
 		void onFrame();
 		vector <CommandType>& getMyCommands() { return myCommands; }

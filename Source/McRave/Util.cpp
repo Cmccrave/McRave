@@ -292,7 +292,7 @@ UnitInfo * UtilManager::getClosestBuilder(Position here)
 	for (auto &u : units) {
 		UnitInfo &unit = u.second;
 
-		if (!unit.unit() || !unit.getType().isWorker() || unit.getBuildPosition().isValid() || (unit.hasResource() && !unit.getResource().getType().isMineralField()))
+		if (!unit.unit() || unit.getRole() != Role::Working || unit.getBuildPosition().isValid() || (unit.hasResource() && !unit.getResource().getType().isMineralField()))
 			continue;
 
 		double dist = here.getDistance(unit.getPosition());

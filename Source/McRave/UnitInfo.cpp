@@ -66,6 +66,7 @@ namespace McRave
 		walkPosition = WalkPositions::Invalid;
 		lastWalk = WalkPositions::Invalid;
 		tilePosition = TilePositions::Invalid;
+		buildPosition = TilePositions::Invalid;
 		lastTile = TilePositions::Invalid;
 	}
 
@@ -198,15 +199,12 @@ namespace McRave
 			auto newCommandPosition = !what && (thisUnit->getLastCommand().getType() != command || thisUnit->getLastCommand().getTargetPosition() != where);
 			auto newCommandTarget = what && (thisUnit->getLastCommand().getType() != command || thisUnit->getLastCommand().getTarget() != what->unit());
 			return newCommandPosition || newCommandTarget;
-		};
-
-		// If this is an attack command, we need a cooldown ready
-		auto canAttack = what && what->getType().isFlyer() ? thisUnit->getAirWeaponCooldown() : thisUnit->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames();
+		};		
 
 		// If this is a new order or new command than what we're requesting, we can issue it
 		if (newOrder() || newCommand()) {
 			if (what) {
-				if (command == UnitCommandTypes::Attack_Unit && canAttack)
+				if (command == UnitCommandTypes::Attack_Unit)
 					thisUnit->attack(what->unit());
 				else if (command == UnitCommandTypes::Right_Click_Unit)
 					thisUnit->rightClick(what->unit());

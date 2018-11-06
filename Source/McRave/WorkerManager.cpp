@@ -134,10 +134,24 @@ void WorkerManager::updateAssignment(UnitInfo& worker)
 
 void WorkerManager::updateDecision(UnitInfo& worker)
 {
+	//vector<Command> commands{ &WorkerManager::misc, &WorkerManager::transport, &WorkerManager::returnCargo, &WorkerManager::clearPath, &WorkerManager::build, &WorkerManager::gather };
+	map<int, string> commandNames{ 
+		make_pair(0, "Misc"),
+		make_pair(1, "Transport"),
+		make_pair(2, "ReturnCargo"),
+		make_pair(3, "ClearPath"),
+		make_pair(4, "Build"),
+		make_pair(5, "Gather")
+	};
+
 	// Iterate commands, if one is executed then don't try to execute other commands
+	int i = 0;
 	for (auto cmd : commands) {
-		if ((this->*cmd)(worker))
+		if ((this->*cmd)(worker)) {			
+			Broodwar->drawTextMap(worker.getPosition(), "%s", commandNames[i].c_str());
 			break;
+		}			
+		i++;
 	}
 }
 
@@ -173,7 +187,7 @@ bool WorkerManager::build(UnitInfo& worker)
 	Position center = Position(worker.getBuildPosition()) + Position(worker.getBuildingType().tileWidth() * 16, worker.getBuildingType().tileHeight() * 16);
 	Position topLeft = Position(worker.getBuildPosition());
 	Position botRight = topLeft + Position(worker.getBuildingType().tileWidth() * 32, worker.getBuildingType().tileHeight() * 32);
-
+	
 	// Can't execute build if we have no building
 	if (!worker.getBuildingType().isValid() || !worker.getBuildPosition().isValid())
 		return false;
