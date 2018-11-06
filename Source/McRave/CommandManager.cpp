@@ -1,6 +1,4 @@
 #include "McRave.h"
-#include <variant>
-#include <utility>
 
 namespace McRave
 {
@@ -135,15 +133,13 @@ namespace McRave
 	bool CommandManager::attack(UnitInfo& unit)
 	{
 		auto shouldAttack = unit.getLocalState() == LocalState::Engaging;
-		variant<Position, UnitInfo*> whereWhat;
 
 		// If unit should be attacking
 		if (shouldAttack && unit.hasTarget()) {
 			auto canAttack = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() : unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames();
 
-			if (canAttack) {
-				whereWhat = &unit.getTarget();
-				unit.command(UnitCommandTypes::Attack_Unit, whereWhat);
+			if (canAttack) {				
+				unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
 				return true;
 			}
 		}
@@ -153,7 +149,6 @@ namespace McRave
 	bool CommandManager::approach(UnitInfo& unit)
 	{
 		auto shouldApproach = unit.getLocalState() == LocalState::Engaging;
-		variant<Position, UnitInfo*> whereWhat;
 
 		const auto canApproach = [&]() {
 
@@ -173,8 +168,7 @@ namespace McRave
 
 
 		if (shouldApproach && canApproach() && unit.getTarget().getPosition().isValid()) {
-			whereWhat = unit.getTarget().getPosition();
-			unit.command(UnitCommandTypes::Move, whereWhat);
+			unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition());
 			return true;
 		}
 		return false;
@@ -182,8 +176,6 @@ namespace McRave
 
 	bool CommandManager::move(UnitInfo& unit)
 	{
-		variant<Position, UnitInfo*> whereWhat;
-
 		// TODO: Concave at destination
 		if (unit.getDestination().isValid()) {
 			if (!Terrain().isInEnemyTerritory((TilePosition)unit.getDestination())) {
@@ -202,42 +194,36 @@ namespace McRave
 
 		// If unit has a transport, move to it or load into it
 		else if (unit.hasTransport() && unit.getTransport().unit()->exists()) {
-			whereWhat = &unit.getTransport();
-			unit.command(UnitCommandTypes::Right_Click_Unit, whereWhat);
+			unit.command(UnitCommandTypes::Right_Click_Unit, &unit.getTransport());
 			return true;
 		}
 
 		// If target doesn't exist, move towards it
 		else if (unit.hasTarget() && unit.getTarget().getPosition().isValid() && Grids().getMobility(WalkPosition(unit.getEngagePosition())) > 0 && (unit.getPosition().getDistance(unit.getTarget().getPosition()) < 320.0 || unit.getType().isFlyer())) {
-			whereWhat = unit.getTarget().getPosition();
-			unit.command(UnitCommandTypes::Move, whereWhat);
+			unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition());
 			return true;
 		}
 
 		else if (Terrain().getAttackPosition().isValid()) {
-			whereWhat = Terrain().getAttackPosition();
-			unit.command(UnitCommandTypes::Move, whereWhat);
+			unit.command(UnitCommandTypes::Move, Terrain().getAttackPosition());
 			return true;
 		}
 
 		// If no target and no enemy bases, move to a base location (random if we have found the enemy once already)
 		else if (unit.unit()->isIdle()) {
 			if (Terrain().getEnemyStartingPosition().isValid()) {
-				whereWhat = Terrain().randomBasePosition();
-				unit.command(UnitCommandTypes::Move, whereWhat);
+				unit.command(UnitCommandTypes::Move, Terrain().randomBasePosition());
 				return true;
 			}
 			else {
 				for (auto &start : Broodwar->getStartLocations()) {
 					if (start.isValid() && !Broodwar->isExplored(start) && !Commands().overlapsCommands(unit.unit(), unit.getType(), Position(start), 32)) {
-						whereWhat = Position(start);
-						unit.command(UnitCommandTypes::Move, whereWhat);
+						unit.command(UnitCommandTypes::Move, Position(start));
 						return true;
 					}
 				}
 				// Catch in case no valid movement positions
-				whereWhat = Position(Terrain().closestUnexploredStart());
-				unit.command(UnitCommandTypes::Move, whereWhat);
+				unit.command(UnitCommandTypes::Move, Position(Terrain().closestUnexploredStart()));
 				return true;
 			}
 		}
@@ -309,7 +295,6 @@ namespace McRave
 
 	bool CommandManager::kite(UnitInfo& unit)
 	{
-		variant<Position, UnitInfo*> whereWhat;
 		const auto canKite = [&]() {
 			// Units that never kite based on their target
 			if (unit.hasTarget() && unit.getLocalState() == LocalState::Engaging) {
@@ -336,13 +321,11 @@ namespace McRave
 		// Check if a unit with a transport should load into it
 		if (unit.hasTransport() && unit.getTransport().unit()->exists()) {
 			if (unit.getType() == UnitTypes::Protoss_Reaver && unit.unit()->getScarabCount() != MAX_SCARAB) {
-				whereWhat = &unit.getTransport();
-				unit.command(UnitCommandTypes::Right_Click_Unit, whereWhat);
+				unit.command(UnitCommandTypes::Right_Click_Unit, &unit.getTransport());
 				return true;
 			}
 			else if (unit.getType() == UnitTypes::Protoss_High_Templar && unit.getEnergy() < 75) {
-				whereWhat = &unit.getTransport();
-				unit.command(UnitCommandTypes::Right_Click_Unit, whereWhat);
+				unit.command(UnitCommandTypes::Right_Click_Unit, &unit.getTransport());
 				return true;
 			}
 		}
@@ -365,7 +348,7 @@ namespace McRave
 
 					if (!w.isValid()
 						|| p.getDistance(unit.getPosition()) < 32.0
-						|| Commands().isInDanger(p)
+						|| Commands().isInDanger(unit, p)
 						|| Grids().getCollision(w) > 0
 						|| Grids().getESplash(w) > 0
 						|| Buildings().overlapsQueuedBuilding(unit.getType(), unit.getTilePosition()))
@@ -394,16 +377,13 @@ namespace McRave
 			}
 
 			if (bestPos.isValid()) {
-				whereWhat = bestPos;
-				unit.command(UnitCommandTypes::Move, whereWhat);
+				unit.command(UnitCommandTypes::Move, bestPos);
 				return true;
 			}
 			Broodwar->drawLineMap(unit.getPosition(), bestPos, Colors::Red);
 		}
 		return false;
 	}
-
-
 
 	bool CommandManager::safeMove(UnitInfo& unit)
 	{
@@ -412,7 +392,6 @@ namespace McRave
 		auto best = 0.0;
 		auto bestPos = unit.getDestination();
 		UnitInfo* enemy = Util().getClosestThreat(unit);
-		variant<Position, UnitInfo*> whereWhat;
 
 		if (enemy) {
 			for (int x = start.x - 12; x < start.x + 16; x++) {
@@ -422,7 +401,7 @@ namespace McRave
 
 					if (!w.isValid()
 						|| !Util().isWalkable(start, w, unit.getType())
-						|| isInDanger(p))
+						|| isInDanger(unit, p))
 						continue;
 
 					double threat = Util().getHighestThreat(w, unit);
@@ -438,8 +417,7 @@ namespace McRave
 		}
 
 		if (bestPos.isValid()) {
-			whereWhat = bestPos;
-			unit.command(UnitCommandTypes::Move, whereWhat);
+			unit.command(UnitCommandTypes::Move, bestPos);
 			return true;
 		}
 		return false;
@@ -462,7 +440,6 @@ namespace McRave
 		auto start = unit.getWalkPosition();
 		auto best = 0.0;
 		auto bestPos = unit.getDestination();
-		variant<Position, UnitInfo*> whereWhat;
 
 		// Some testing stuff
 		auto radius = 12 + int(unit.getSpeed());
@@ -483,7 +460,7 @@ namespace McRave
 					|| !Util().isWalkable(start, w, unit.getType())
 					|| p.getDistance(unit.getPosition()) < 64.0
 					|| distToP > radius * 8
-					|| isInDanger(p))
+					|| isInDanger(unit, p))
 					continue;
 
 				double threat = Util().getHighestThreat(w, unit);
@@ -491,7 +468,7 @@ namespace McRave
 				double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(w))));
 				double grouping = exp((unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)) : 0.0));
 
-				double score = grouping * visited / (threat * distance);
+				double score = grouping * visited / distance;
 
 				if (score >= best && threat == MIN_THREAT) {
 					best = score;
@@ -509,8 +486,7 @@ namespace McRave
 		}
 		else if (bestPos.isValid() && bestPos != unit.getDestination()) {
 			Broodwar->drawLineMap(unit.getPosition(), bestPos, Colors::Grey);
-			whereWhat = bestPos;
-			unit.command(UnitCommandTypes::Move, whereWhat);
+			unit.command(UnitCommandTypes::Move, bestPos);
 			return true;
 		}
 		else {
@@ -524,7 +500,6 @@ namespace McRave
 	{
 		// Not doing this atm
 		return false;
-		variant<Position, UnitInfo*> whereWhat;
 
 		// Low distance, attack if possible
 		auto start = unit.getWalkPosition();
@@ -555,8 +530,7 @@ namespace McRave
 		}
 
 		if (bestPos.isValid()) {
-			whereWhat = bestPos;
-			unit.command(UnitCommandTypes::Move, whereWhat);
+			unit.command(UnitCommandTypes::Move, bestPos);
 			return true;
 		}
 		return false;
@@ -623,25 +597,47 @@ namespace McRave
 		}
 		return false;
 	}
-
-	bool CommandManager::isInDanger(Position here)
+	
+	bool CommandManager::isInDanger(UnitInfo& unit, Position here)
 	{
+		auto halfWidth = ceil(unit.getType().width() / 2);
+		auto halfHeight = ceil(unit.getType().height() / 2);
+
+		auto uTopLeft = here + Position(-halfWidth, -halfHeight);
+		auto uTopRight = here + Position(halfWidth, -halfHeight);
+		auto uBotLeft = here + Position(-halfWidth, halfHeight);
+		auto uBotRight = here + Position(halfWidth, halfHeight);
+
+		if (here == Positions::Invalid)
+			here = unit.getPosition();
+
+		const auto checkCorners = [&](Position cTopLeft, Position cBotRight) {
+			if (Util().rectangleIntersect(cTopLeft, cBotRight, uTopLeft)
+				|| Util().rectangleIntersect(cTopLeft, cBotRight, uTopRight)
+				|| Util().rectangleIntersect(cTopLeft, cBotRight, uBotLeft)
+				|| Util().rectangleIntersect(cTopLeft, cBotRight, uBotRight))
+				return true;
+			return false;
+		};
+
 		// Check that we're not in danger of Storm, DWEB, EMP
 		for (auto &command : myCommands) {
 			if (command.tech == TechTypes::Psionic_Storm
 				|| command.tech == TechTypes::Disruption_Web
 				|| command.tech == TechTypes::EMP_Shockwave) {
-				auto topLeft = command.pos - Position(48, 48);
-				auto botRight = command.pos + Position(48, 48);
+				auto cTopLeft = command.pos - Position(48, 48);
+				auto cBotRight = command.pos + Position(48, 48);
 
-				return Util().rectangleIntersect(topLeft, botRight, here);
+				if (checkCorners(cTopLeft, cBotRight))
+					return true;
 			}
 
 			if (command.tech == TechTypes::Nuclear_Strike && here.getDistance(command.pos) <= 640) {
-				auto topLeft = command.pos - Position(320, 320);
-				auto botRight = command.pos + Position(320, 320);
+				auto cTopLeft = command.pos - Position(320, 320);
+				auto cBotRight = command.pos + Position(320, 320);
 
-				return Util().rectangleIntersect(topLeft, botRight, here);
+				if (checkCorners(cTopLeft, cBotRight))
+					return true;
 			}
 		}
 
@@ -649,23 +645,20 @@ namespace McRave
 			if (command.tech == TechTypes::Psionic_Storm
 				|| command.tech == TechTypes::Disruption_Web
 				|| command.tech == TechTypes::EMP_Shockwave) {
-				auto topLeft = command.pos - Position(48, 48);
-				auto botRight = command.pos + Position(48, 48);
+				auto cTopLeft = command.pos - Position(48, 48);
+				auto cBotRight = command.pos + Position(48, 48);
 
-				return Util().rectangleIntersect(topLeft, botRight, here);
+				if (checkCorners(cTopLeft, cBotRight))
+					return true;
 			}
 			if (command.tech == TechTypes::Nuclear_Strike && here.getDistance(command.pos) <= 640) {
-				auto topLeft = command.pos - Position(320, 320);
-				auto botRight = command.pos + Position(320, 320);
+				auto cTopLeft = command.pos - Position(320, 320);
+				auto cBotRight = command.pos + Position(320, 320);
 
-				return Util().rectangleIntersect(topLeft, botRight, here);
+				if (checkCorners(cTopLeft, cBotRight))
+					return true;
 			}
 		}
 		return false;
-	}
-
-	bool CommandManager::isInDanger(UnitInfo& unit)
-	{
-		return isInDanger(unit.getPosition());
 	}
 }

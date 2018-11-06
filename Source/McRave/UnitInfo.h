@@ -3,7 +3,6 @@
 #include "..\BWEB\BWEB.h"
 #include "McRave.h"
 #include "UnitMath.h"
-#include <variant>
 
 using namespace BWAPI;
 using namespace std;
@@ -61,7 +60,8 @@ namespace McRave
 		double getDistance(UnitInfo unit) { return position.getDistance(unit.getPosition()); }
 
 		// Use a command
-		bool command(UnitCommandType, variant<Position, UnitInfo*> whereWhat);
+		bool command(UnitCommandType, Position);
+		bool command(UnitCommandType, UnitInfo*);
 		
 		// Roles
 		McRave::Role getRole() { return role; }

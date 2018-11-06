@@ -181,38 +181,52 @@ namespace McRave
 		speed 					= Math::speed(*this);
 	}
 
-	bool UnitInfo::command(UnitCommandType command, variant<Position, UnitInfo*> whereWhat)
+	bool UnitInfo::command(UnitCommandType command, Position here)
 	{
-		auto where = whereWhat.index() == 0 ? get<Position>(whereWhat) : Positions::Invalid;
-		auto what = whereWhat.index() == 1 ? get<UnitInfo*>(whereWhat) : nullptr;
-
-		// Check if thhis is a new order
+		// Check if this is a new order
 		const auto newOrder = [&]() {
 			auto canIssue = Broodwar->getFrameCount() - thisUnit->getLastCommandFrame() > Broodwar->getRemainingLatencyFrames();
-			auto newOrderPosition = !what && thisUnit->getOrderTargetPosition() != where;
-			auto newOrderTarget = what && thisUnit->getOrderTarget() != what->unit();
-			return canIssue && (newOrderPosition || newOrderTarget);
+			auto newOrderPosition = thisUnit->getOrderTargetPosition() != here;
+			return canIssue && newOrderPosition;
 		};
 
 		// Check if this is a new command
 		const auto newCommand = [&]() {
-			auto newCommandPosition = !what && (thisUnit->getLastCommand().getType() != command || thisUnit->getLastCommand().getTargetPosition() != where);
-			auto newCommandTarget = what && (thisUnit->getLastCommand().getType() != command || thisUnit->getLastCommand().getTarget() != what->unit());
-			return newCommandPosition || newCommandTarget;
+			auto newCommandPosition = (thisUnit->getLastCommand().getType() != command || thisUnit->getLastCommand().getTargetPosition() != here);
+			return newCommandPosition;
 		};		
 
 		// If this is a new order or new command than what we're requesting, we can issue it
 		if (newOrder() || newCommand()) {
-			if (what) {
-				if (command == UnitCommandTypes::Attack_Unit)
-					thisUnit->attack(what->unit());
-				else if (command == UnitCommandTypes::Right_Click_Unit)
-					thisUnit->rightClick(what->unit());
-			}
-			else if (command == UnitCommandTypes::Move)
-				thisUnit->move(where);
+			if (command == UnitCommandTypes::Move)
+				thisUnit->move(here);
 			return true;
 		}
 		return false;
+	}
+
+	bool UnitInfo::command(UnitCommandType command, UnitInfo* targetUnit)
+	{
+		// Check if this is a new order
+		const auto newOrder = [&]() {
+			auto canIssue = Broodwar->getFrameCount() - thisUnit->getLastCommandFrame() > Broodwar->getRemainingLatencyFrames();
+			auto newOrderTarget = thisUnit->getOrderTarget() != targetUnit->unit();
+			return canIssue && newOrderTarget;
+		};
+
+		// Check if this is a new command
+		const auto newCommand = [&]() {
+			auto newCommandTarget = (thisUnit->getLastCommand().getType() != command || thisUnit->getLastCommand().getTarget() != targetUnit->unit());
+			return newCommandTarget;
+		};
+
+		// If this is a new order or new command than what we're requesting, we can issue it
+		if (newOrder() || newCommand()) {
+			if (command == UnitCommandTypes::Attack_Unit)
+				thisUnit->attack(targetUnit->unit());
+			else if (command == UnitCommandTypes::Right_Click_Unit)
+				thisUnit->rightClick(targetUnit->unit());
+			return true;
+		}
 	}
 }

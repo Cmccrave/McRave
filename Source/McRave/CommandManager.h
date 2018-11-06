@@ -43,8 +43,7 @@ namespace McRave
 		bool overlapsAllyDetection(Position);
 		bool overlapsEnemyDetection(Position);
 
-		bool isInDanger(UnitInfo&);
-		bool isInDanger(Position);
+		bool isInDanger(UnitInfo&, Position here = Positions::Invalid);
 
 		bool misc(UnitInfo&);
 		bool move(UnitInfo&);

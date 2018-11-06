@@ -8,10 +8,7 @@
 
 // *** Bugs ***
 // Neo Moon Glaive natural choke picking BWEB
-// High temp shouldn't reserve?
 // Send zealots to attack expos instead of goons
-// Probes getting stuck trying to build - not sure
-// Probes sometimes don't build - re-issue order
 // SafeMove gets workers stuck on bridges
 // getConcavePosition and isWalkable are expensive on CPU
 
@@ -22,15 +19,12 @@
 
 // *** Coding ***
 // Move 4gate vs Z to 2 gate category
-// Commandedthisframe addition?
 // Use Player pointer instead of BWAPI::Player pointer in UnitInfo, gives advantage of knowing upgrades/tech that are available always
-// Worker path 
+// Make isInDanger use UnitSize as baseline
 
 // *** SSCAIT2018 Goals ***
-// Unit Movement: kiting/defending
 // Unit formations
-// Goal management
-// Build detection
+// Build detection improvements
 // Observer building timings
 // Worker mineral walking
 
