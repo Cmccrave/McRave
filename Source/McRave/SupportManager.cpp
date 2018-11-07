@@ -63,7 +63,7 @@ namespace McRave {
 						// If not valid, too close, in danger or overlaps existing commands
 						if (!w.isValid()
 							|| p.getDistance(unit.getPosition()) <= 64
-							|| Commands().isInDanger(p)
+							|| Commands().isInDanger(unit, p)
 							|| Commands().overlapsCommands(unit.unit(), unit.getType(), p, 96))
 							continue;
 

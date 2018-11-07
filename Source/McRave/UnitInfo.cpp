@@ -183,6 +183,13 @@ namespace McRave
 
 	bool UnitInfo::command(UnitCommandType command, Position here)
 	{
+		// Check if we need to wait a few frames before issuing a command due to stop frames or latency frames
+		bool attackCooldown = Broodwar->getFrameCount() - lastAttackFrame <= minStopFrame - Broodwar->getLatencyFrames();
+		bool latencyCooldown =	Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;
+
+		if (attackCooldown || latencyCooldown)
+			return false;
+
 		// Check if this is a new order
 		const auto newOrder = [&]() {
 			auto canIssue = Broodwar->getFrameCount() - thisUnit->getLastCommandFrame() > Broodwar->getRemainingLatencyFrames();
@@ -207,6 +214,13 @@ namespace McRave
 
 	bool UnitInfo::command(UnitCommandType command, UnitInfo* targetUnit)
 	{
+		// Check if we need to wait a few frames before issuing a command due to stop frames or latency frames
+		bool attackCooldown = Broodwar->getFrameCount() - lastAttackFrame <= minStopFrame - Broodwar->getLatencyFrames();
+		bool latencyCooldown =	Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;
+
+		if (attackCooldown || latencyCooldown)
+			return false;
+
 		// Check if this is a new order
 		const auto newOrder = [&]() {
 			auto canIssue = Broodwar->getFrameCount() - thisUnit->getLastCommandFrame() > Broodwar->getRemainingLatencyFrames();
@@ -228,5 +242,6 @@ namespace McRave
 				thisUnit->rightClick(targetUnit->unit());
 			return true;
 		}
+		return false;
 	}
 }

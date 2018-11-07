@@ -64,17 +64,11 @@ namespace McRave
 
 	void CommandManager::updateDecision(UnitInfo& unit)
 	{
-		bool attackCooldown = Broodwar->getFrameCount() - unit.getLastAttackFrame() <= unit.getMinStopFrame() - Broodwar->getLatencyFrames();
-		bool latencyCooldown =	Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;
-
-		if (!unit.unit() || !unit.unit()->exists()																							// Prevent crashes	
-			|| unit.getType() == UnitTypes::Protoss_Interceptor																				// Interceptors don't need commands
-			|| unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted()		// If the unit is locked down, maelstrommed, stassised, or not completed	
-			|| (unit.getType() != UnitTypes::Protoss_Carrier && attackCooldown)																// If the unit is not ready to perform an action after an attack (certain units have minimum frames after an attack before they can receive a new command)
-			|| latencyCooldown)
+		if (!unit.unit() || !unit.unit()->exists()																							// Prevent crashes			
+			|| unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())	// If the unit is locked down, maelstrommed, stassised, or not completed
 			return;
 
-		// vector<Command> commands{ &CommandManager::misc, &CommandManager::special, &CommandManager::attack, &CommandManager::approach, &CommandManager::kite, &CommandManager::escort, &CommandManager::hunt, &CommandManager::defend, };
+		// Convert our commands to strings to display what the unit is doing for debugging
 		map<int, string> commandNames{
 			make_pair(0, "Misc"),
 			make_pair(1, "Special"),
@@ -87,10 +81,12 @@ namespace McRave
 			make_pair(8, "Move")
 		};
 
+		//int fontSize = BWAPI::Text::Size::Default;
 		int i = 0;
+		int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
 		for (auto cmd : commands) {
 			if ((this->*cmd)(unit)) {
-				Broodwar->drawTextMap(unit.getPosition(), "%s", commandNames[i].c_str());
+				Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", Text::White, commandNames[i].c_str());
 				break;
 			}
 			i++;
@@ -138,7 +134,7 @@ namespace McRave
 		if (shouldAttack && unit.hasTarget()) {
 			auto canAttack = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() : unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames();
 
-			if (canAttack) {				
+			if (canAttack) {
 				unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
 				return true;
 			}
@@ -227,6 +223,7 @@ namespace McRave
 				return true;
 			}
 		}
+		return false;
 	}
 
 	bool CommandManager::defend(UnitInfo& unit)
@@ -597,11 +594,11 @@ namespace McRave
 		}
 		return false;
 	}
-	
+
 	bool CommandManager::isInDanger(UnitInfo& unit, Position here)
 	{
-		auto halfWidth = ceil(unit.getType().width() / 2);
-		auto halfHeight = ceil(unit.getType().height() / 2);
+		int halfWidth = int(ceil(unit.getType().width() / 2));
+		int halfHeight = int(ceil(unit.getType().height() / 2));
 
 		auto uTopLeft = here + Position(-halfWidth, -halfHeight);
 		auto uTopRight = here + Position(halfWidth, -halfHeight);

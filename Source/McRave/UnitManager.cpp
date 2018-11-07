@@ -81,12 +81,6 @@ void UnitManager::updateUnits()
 		// If unit is visible, update it
 		if (unit.unit()->exists()) {
 			unit.updateUnit();
-			if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine) {
-				Broodwar->drawTextMap(unit.getPosition(), "%s", unit.unit()->getOrder().c_str());
-
-				if (unit.unit()->getOrderTarget())
-					Broodwar->drawLineMap(unit.getPosition(), unit.unit()->getOrderTarget()->getPosition(), Colors::Red);
-			}
 
 			if (unit.hasTarget() && (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Protoss_Scarab))
 				splashTargets.insert(unit.getTarget().unit());
@@ -328,8 +322,6 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 	//	unit.setSimState(SimState::HighWin);
 	//if (unit.getSimValue() < minThreshold / 2.0)
 	//	unit.setSimState(SimState::HighLoss);
-
-	Display().displaySim(unit, unit.getSimValue());
 }
 
 void UnitManager::updateLocalState(UnitInfo& unit)

@@ -134,7 +134,7 @@ void WorkerManager::updateAssignment(UnitInfo& worker)
 
 void WorkerManager::updateDecision(UnitInfo& worker)
 {
-	//vector<Command> commands{ &WorkerManager::misc, &WorkerManager::transport, &WorkerManager::returnCargo, &WorkerManager::clearPath, &WorkerManager::build, &WorkerManager::gather };
+	// Convert our commands to strings to display what the unit is doing for debugging
 	map<int, string> commandNames{ 
 		make_pair(0, "Misc"),
 		make_pair(1, "Transport"),
@@ -146,9 +146,10 @@ void WorkerManager::updateDecision(UnitInfo& worker)
 
 	// Iterate commands, if one is executed then don't try to execute other commands
 	int i = 0;
+	int width = worker.getType().width() / 2;
 	for (auto cmd : commands) {
 		if ((this->*cmd)(worker)) {			
-			Broodwar->drawTextMap(worker.getPosition(), "%s", commandNames[i].c_str());
+			Broodwar->drawTextMap(worker.getPosition() + Position(width, 0), "%c%s", Text::White, commandNames[i].c_str());
 			break;
 		}			
 		i++;

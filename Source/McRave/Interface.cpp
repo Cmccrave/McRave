@@ -110,12 +110,19 @@ namespace McRave
 			}
 
 			if (orders) {
+				int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
 				if (unit.unit() && unit.unit()->exists())
-					Broodwar->drawTextMap(unit.getPosition(), "%c%s", unit.getPlayer()->getTextColor(), unit.unit()->getOrder().c_str());
+					Broodwar->drawTextMap(unit.getPosition() + Position(width,-8), "%c%s", unit.getPlayer()->getTextColor(), unit.unit()->getOrder().c_str());
 			}
 
 			if (local) {
 				Broodwar->drawTextMap(unit.getPosition(), "%c%s", unit.getPlayer()->getTextColor(), unit.getLocalState());
+			}
+
+			if (sim) {
+				int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
+				auto color = unit.getLocalState() == LocalState::Engaging ? textColor : Text::Grey;
+				Broodwar->drawTextMap(unit.getPosition() + Position(width, 8), "%c%.2f", color, unit.getSimValue());
 			}
 		}
 	}
@@ -139,7 +146,7 @@ namespace McRave
 
 			if (orders) {
 				if (unit.unit() && unit.unit()->exists())
-					Broodwar->drawTextMap(unit.getPosition(), "%c%s", unit.getPlayer()->getColor(), unit.unit()->getOrder().c_str());
+					Broodwar->drawTextMap(unit.getPosition(), "%c%s", unit.getPlayer()->getTextColor(), unit.unit()->getOrder().c_str());
 			}
 		}
 	}
@@ -175,14 +182,5 @@ namespace McRave
 				next = tile;
 			}
 		}
-	}
-
-	void InterfaceManager::displaySim(UnitInfo& unit, double simValue)
-	{
-		if (!sim || simValue == DBL_MAX)
-			return;
-
-		auto color = unit.getLocalState() == LocalState::Engaging ? textColor : Text::Grey;
-		Broodwar->drawTextMap(unit.getPosition() + Position(-9, 16), "%c%.2f", color, simValue);
 	}
 }

@@ -24,7 +24,7 @@ namespace McRave
 		bool sim = true;
 		bool paths = true;
 		bool strengths = false;
-		bool orders = false;
+		bool orders = true;
 		bool local = false;
 		bool resources = false;
 		bool timers = true;
@@ -35,7 +35,6 @@ namespace McRave
 	public:
 		void onFrame(), startClock(), performanceTest(string), onSendText(string);		
 		void displayPath(vector<TilePosition>);
-		void displaySim(UnitInfo&, double);
 	};
 }
 
