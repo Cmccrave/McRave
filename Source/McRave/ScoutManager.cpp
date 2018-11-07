@@ -3,14 +3,69 @@
 void ScoutManager::onFrame()
 {
 	Display().startClock();
+	updateScoutTargets();
 	updateScouts();
 	Display().performanceTest(__FUNCTION__);
 }
 
+void ScoutManager::updateScoutTargets()
+{
+	scoutTargets.clear();
+
+	// If enemy start is valid and explored, add a target to the most recent one to scout
+	if (Terrain().foundEnemy()) {
+		for (auto &s : Stations().getEnemyStations()) {
+			auto &station = *s.second;
+			TilePosition tile(station.BWEMBase()->Center());
+			if (tile.isValid())
+				scoutTargets.insert(Position(tile));
+		}
+		if (Players().vZ() && Stations().getEnemyStations().size() == 1 && Strategy().getEnemyBuild() != "Unknown")
+			scoutTargets.insert((Position)Terrain().getEnemyExpand());
+	}
+
+	// If we know where it is but it isn't explored
+	else if (Terrain().getEnemyStartingTilePosition().isValid())
+		scoutTargets.insert(Terrain().getEnemyStartingPosition());
+
+	// If we have no idea where the enemy is
+	else if (!Terrain().getEnemyStartingTilePosition().isValid()) {
+		double best = DBL_MAX;
+		Position pos = Positions::Invalid;
+		int basesExplored = 0;
+		for (auto &tile : mapBWEM.StartingLocations()) {
+			Position center = Position(tile) + Position(64, 48);
+			double dist = center.getDistance(mapBWEB.getMainPosition());
+			if (Broodwar->isExplored(tile))
+				basesExplored++;
+
+			if (!Broodwar->isExplored(tile))
+				scoutTargets.insert(center);
+		}
+
+		// If we have scouted 2 bases (including our own), scout the middle for a proxy if it's walkable
+		if (basesExplored == 2 && !Broodwar->isExplored((TilePosition)mapBWEM.Center()) && mapBWEB.getGroundDistance(mapBWEB.getMainPosition(), mapBWEM.Center()) != DBL_MAX)
+			scoutTargets.insert(mapBWEM.Center());
+	}
+
+	// If it's a 2gate, scout for an expansion if we found the gates
+	if (Strategy().getEnemyBuild() == "P2Gate") {
+		if (Units().getEnemyCount(UnitTypes::Protoss_Gateway) >= 2)
+			scoutTargets.insert((Position)Terrain().getEnemyExpand());
+		else if (Units().getEnemyCount(UnitTypes::Protoss_Pylon) == 0 || Strategy().enemyProxy())
+			scoutTargets.insert(mapBWEM.Center());
+	}
+
+	// If it's a cannon rush, scout the main
+	if (Strategy().getEnemyBuild() == "PCannonRush")
+		scoutTargets.insert(mapBWEB.getMainPosition());
+}
+
 void ScoutManager::updateScouts()
 {
+	// TODO: Use scout counts to correctly assign more scouts
 	scoutAssignments.clear();
-	scoutCount = 1;	
+	scoutCount = 1;
 
 	// If we have seen an enemy Probe before we've scouted the enemy, follow it
 	if (Units().getEnemyCount(UnitTypes::Protoss_Probe) == 1) {
@@ -34,18 +89,18 @@ void ScoutManager::updateScouts()
 	for (auto &u : Units().getMyUnits()) {
 		auto &unit = u.second;
 		if (unit.getRole() == Role::Scouting) {
-			scout(unit);
-			Broodwar->drawCircleMap(unit.getPosition(), 8, Colors::Purple, true);
+			updateAssingment(unit);
+			updateDecision(unit);
 		}
 	}
 }
 
-void ScoutManager::scout(UnitInfo& unit)
+void ScoutManager::updateAssingment(UnitInfo& unit)
 {
 	auto start = unit.getWalkPosition();
 	auto distBest = DBL_MAX;
 	auto posBest = unit.getDestination();
-	
+
 	if (!BuildOrder().firstReady() || Strategy().getEnemyBuild() == "Unknown") {
 
 		// If it's a proxy (maybe cannon rush), try to find the unit to kill
@@ -120,4 +175,40 @@ void ScoutManager::scout(UnitInfo& unit)
 		if (posBest.isValid() && unit.unit()->getOrderTargetPosition() != posBest)
 			unit.unit()->move(posBest);
 	}
+}
+
+void ScoutManager::updateDecision(UnitInfo& unit)
+{
+	// Convert our commands to strings to display what the unit is doing for debugging
+	map<int, string> commandNames{
+		make_pair(0, "Search"),
+		make_pair(1, "Scout"),
+		make_pair(2, "Hide"),
+		make_pair(3, "Harass"),
+	};
+
+	int i = 0;
+	int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
+	for (auto cmd : commands) {
+		if ((this->*cmd)(unit)) {
+			Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", Text::White, commandNames[i].c_str());
+			break;
+		}
+		i++;
+	}
+}
+
+bool ScoutManager::search(UnitInfo& unit)
+{
+	// Aggresive - Need information
+}
+
+bool ScoutManager::scout(UnitInfo& unit)
+{
+	// Default
+}
+
+bool ScoutManager::hide(UnitInfo& unit)
+{
+	// Passive - Need to wait
 }

@@ -10,12 +10,22 @@ namespace McRave
 	class ScoutManager
 	{
 		void updateScouts();
+		void updateScoutTargets();
+		void updateAssingment(UnitInfo&);
+		void updateDecision(UnitInfo&);
 
-		void scout(UnitInfo&);
+		bool search(UnitInfo&);
+		bool scout(UnitInfo&);
+		bool hide(UnitInfo&);
+		bool harass(UnitInfo&);
 
+		set<Position> scoutTargets;
 		set<Position> scoutAssignments;
 		int scoutCount;
 		bool proxyCheck = false;
+
+		typedef bool (ScoutManager::*Command)(UnitInfo&);
+		vector<Command> commands{ &ScoutManager::search, &ScoutManager::scout, &ScoutManager::hide, &ScoutManager::harass };
 	public:
 		void onFrame();	
 	};

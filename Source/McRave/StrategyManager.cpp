@@ -317,7 +317,6 @@ void StrategyManager::updateEnemyBuild()
 				if (unit.getType() == UnitTypes::Protoss_Nexus) {
 					if (!Terrain().isStartingBase(unit.getTilePosition()) && Units().getEnemyCount(UnitTypes::Protoss_Gateway) >= 2) {
 						enemyBuild = "P2GateExpand";
-						scoutTargets.insert((Position)Terrain().getEnemyNatural());
 					}
 				}
 
@@ -325,7 +324,6 @@ void StrategyManager::updateEnemyBuild()
 				if (unit.getType() == UnitTypes::Protoss_Gateway || unit.getType() == UnitTypes::Protoss_Pylon) {
 					if (Terrain().isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(mapBWEM.Center()) < 1280.0 || (mapBWEB.getNaturalChoke() && unit.getPosition().getDistance((Position)mapBWEB.getNaturalChoke()->Center()) < 480.0)) {
 						proxy = true;
-						scoutTargets.insert(unit.getPosition());
 
 						if (Units().getEnemyCount(UnitTypes::Protoss_Gateway) >= 2)
 							enemyBuild = "P2Gate";
@@ -390,7 +388,6 @@ void StrategyManager::updateEnemyBuild()
 					if (Terrain().isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(mapBWEM.Center()) < 1280.0 || (mapBWEB.getNaturalChoke() && unit.getPosition().getDistance((Position)mapBWEB.getNaturalChoke()->Center()) < 320)) {
 						enemyBuild = "TBBS";
 						proxy = true;
-						scoutTargets.insert(unit.getPosition());
 					}
 					else if (Units().getEnemyCount(UnitTypes::Terran_Academy) >= 1 && Units().getEnemyCount(UnitTypes::Terran_Engineering_Bay) >= 1)
 						enemyBuild = "TSparks";
@@ -405,11 +402,6 @@ void StrategyManager::updateEnemyBuild()
 					enemyFE = true;
 			}
 
-			if (Broodwar->getFrameCount() - enemyFrame > 200 && Terrain().getEnemyStartingPosition().isValid() && Broodwar->isExplored((TilePosition)Terrain().getEnemyStartingPosition()) && Units().getEnemyCount(UnitTypes::Terran_Barracks) == 0)
-				scoutTargets.insert(mapBWEM.Center());
-			else
-				scoutTargets.erase(mapBWEM.Center());
-
 			if (Units().getSupply() < 60 && ((Units().getEnemyCount(UnitTypes::Terran_Barracks) >= 2 && Units().getEnemyCount(UnitTypes::Terran_Refinery) == 0) || (Units().getEnemyCount(UnitTypes::Terran_Marine) > 5 && Units().getEnemyCount(UnitTypes::Terran_Bunker) <= 0 && Broodwar->getFrameCount() < 6000)))
 				enemyBuild = "TBBS";
 			if (Units().getEnemyCount(UnitTypes::Terran_Factory) >= 3)
@@ -421,55 +413,7 @@ void StrategyManager::updateEnemyBuild()
 
 void StrategyManager::updateScoutTargets()
 {	
-	scoutTargets.clear();
 
-	// If enemy start is valid and explored, add a target to the most recent one to scout
-	if (Terrain().foundEnemy()) {	
-		for (auto &s : Stations().getEnemyStations()) {
-			auto &station = *s.second;
-			TilePosition tile(station.BWEMBase()->Center());
-			if (tile.isValid())
-				scoutTargets.insert(Position(tile));
-		}
-		if (Players().vZ() && Stations().getEnemyStations().size() == 1 && Strategy().getEnemyBuild() != "Unknown")
-			scoutTargets.insert((Position)Terrain().getEnemyExpand());
-	}
-
-	// If we know where it is but it isn't explored
-	else if (Terrain().getEnemyStartingTilePosition().isValid())
-		scoutTargets.insert(Terrain().getEnemyStartingPosition());
-
-	// If we have no idea where the enemy is
-	else if (!Terrain().getEnemyStartingTilePosition().isValid()) {
-		double best = DBL_MAX;
-		Position pos = Positions::Invalid;
-		int basesExplored = 0;
-		for (auto &tile : mapBWEM.StartingLocations()) {
-			Position center = Position(tile) + Position(64, 48);
-			double dist = center.getDistance(mapBWEB.getMainPosition());
-			if (Broodwar->isExplored(tile))
-				basesExplored++;
-
-			if (!Broodwar->isExplored(tile))
-				scoutTargets.insert(center);
-		}
-
-		// If we have scouted 2 bases (including our own), scout the middle for a proxy if it's walkable
-		if (basesExplored == 2 && !Broodwar->isExplored((TilePosition)mapBWEM.Center()) && mapBWEB.getGroundDistance(mapBWEB.getMainPosition(), mapBWEM.Center()) != DBL_MAX)
-			scoutTargets.insert(mapBWEM.Center());
-	}
-
-	// If it's a 2gate, scout for an expansion if we found the gates
-	if (enemyBuild == "P2Gate") {
-		if (Units().getEnemyCount(UnitTypes::Protoss_Gateway) >= 2)
-			scoutTargets.insert((Position)Terrain().getEnemyExpand());
-		else if (Units().getEnemyCount(UnitTypes::Protoss_Pylon) == 0 || proxy)
-			scoutTargets.insert(mapBWEM.Center());
-	}
-
-	// If it's a cannon rush, scout the main
-	if (enemyBuild == "PCannonRush")
-		scoutTargets.insert(mapBWEB.getMainPosition());
 }
 
 void StrategyManager::updateBullets()

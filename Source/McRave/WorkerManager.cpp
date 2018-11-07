@@ -277,7 +277,7 @@ bool WorkerManager::gather(UnitInfo& worker)
 	if (worker.unit()->isCarryingGas() || worker.unit()->isCarryingMinerals())
 		return false;
 
-	// If the resource is close and mineable
+	// If worker has a resource and it's mineable
 	if (worker.hasResource() && worker.getResource().getResourceState() == ResourceState::Mineable) {
 
 		// 1) If it's close or same area, mine it		

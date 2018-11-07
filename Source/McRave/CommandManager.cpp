@@ -81,7 +81,6 @@ namespace McRave
 			make_pair(8, "Move")
 		};
 
-		//int fontSize = BWAPI::Text::Size::Default;
 		int i = 0;
 		int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
 		for (auto cmd : commands) {
