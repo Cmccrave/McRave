@@ -169,7 +169,7 @@ double UtilManager::getHighestThreat(WalkPosition here, UnitInfo& unit)
 			WalkPosition w(x, y);
 			if (!w.isValid())
 				continue;
-			
+
 			auto grd = Grids().getEGroundThreat(w);
 			auto air = Grids().getEAirThreat(w);
 			auto current = unit.getType().isFlyer() ? air : grd;
@@ -309,6 +309,40 @@ int UtilManager::chokeWidth(const BWEM::ChokePoint * choke)
 	if (!choke)
 		return 0;
 	return int(choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2))) * 8;
+}
+
+void UtilManager::lineOfbestFit(const BWEM::ChokePoint * choke)
+{
+	auto sumX = 0.0, sumY = 0.0;
+	auto sumXY = 0.0, sumX2 = 0.0;
+	for (auto geo : choke->Geometry()) {
+		Position p = Position(geo) + Position(4, 4);
+		sumX += p.x;
+		sumY += p.y;
+		sumXY += p.x * p.y;
+		sumX2 += p.x * p.x;
+	}
+	double xMean = sumX / choke->Geometry().size();
+	double yMean = sumY / choke->Geometry().size();
+	double denominator = sumX2 - sumX * xMean;
+
+	double slope = (sumXY - sumX * yMean) / denominator;
+	double yInt = yMean - slope * xMean;
+
+	// y = mx + b
+	// solve for x and y
+
+	// end 1
+	int x1 = Position(choke->Pos(choke->end1)).x;
+	int y1 = int(ceil(x1 * slope)) + yInt;
+	Position p1 = Position(x1, y1);
+
+	// end 2
+	int x2 = Position(choke->Pos(choke->end2)).x;
+	int y2 = int(ceil(x2 * slope)) + yInt;
+	Position p2 = Position(x2, y2);
+
+	Broodwar->drawLineMap(p1, p2, Colors::Red);
 }
 
 Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area, Position here)

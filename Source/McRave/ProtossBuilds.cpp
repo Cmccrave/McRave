@@ -661,12 +661,12 @@ namespace McRave
 		// Openers
 		if (currentOpener == "1Gate") {
 			itemQueue[Protoss_Nexus] =				Item(1 + (s >= 42));
-			itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
+			itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
 			itemQueue[Protoss_Gateway] =			Item((s >= 20) + (vis(Protoss_Nexus) >= 2) + (s >= 76));
 		}
 		else if (currentOpener == "2Gate") {
 			itemQueue[Protoss_Nexus] =				Item(1 + (s >= 42));
-			itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
+			itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
 			itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 36) + (s >= 76));
 		}
 

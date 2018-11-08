@@ -17,7 +17,9 @@ namespace McRave
 		UnitInfo * getClosestBuilder(Position);
 
 		int chokeWidth(const BWEM::ChokePoint *);
+		void lineOfbestFit(const BWEM::ChokePoint *);
 		const BWEM::ChokePoint * getClosestChokepoint(Position);
+
 		double getHighestThreat(WalkPosition, UnitInfo&);
 
 		bool unitInRange(UnitInfo& unit);		
@@ -42,7 +44,7 @@ namespace McRave
 		}
 		bool isWalkable(WalkPosition start, WalkPosition finish, UnitType);
 		
-		Position getConcavePosition(UnitInfo&, BWEM::Area const * area = nullptr, Position here = Positions::Invalid);
+		Position getConcavePosition(UnitInfo&, BWEM::Area const * area = nullptr, Position here = Positions::Invalid);		
 	};
 }
 

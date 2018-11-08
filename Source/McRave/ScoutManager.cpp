@@ -63,6 +63,23 @@ void ScoutManager::updateScoutTargets()
 
 void ScoutManager::updateScouts()
 {
+	// If we have too many scouts
+	// TODO: Add removal
+	for (auto &u : Units().getMyUnits()) {
+		auto &unit = u.second;
+		if (unit.getRole() == Role::Scouting) {
+			updateAssignment(unit);
+			updateDecision(unit);
+		}
+	}
+}
+
+void ScoutManager::updateAssignment(UnitInfo& unit)
+{
+	auto start = unit.getWalkPosition();
+	auto distBest = DBL_MAX;
+	auto posBest = unit.getDestination();
+
 	// TODO: Use scout counts to correctly assign more scouts
 	scoutAssignments.clear();
 	scoutCount = 1;
@@ -82,24 +99,6 @@ void ScoutManager::updateScouts()
 		scoutCount = 0;
 	if (Strategy().getEnemyBuild() == "Z5Pool" && Units().getEnemyCount(UnitTypes::Zerg_Zergling) >= 5)
 		scoutCount = 0;
-
-	// If we have too many scouts
-	// TODO: Add removal
-
-	for (auto &u : Units().getMyUnits()) {
-		auto &unit = u.second;
-		if (unit.getRole() == Role::Scouting) {
-			updateAssingment(unit);
-			updateDecision(unit);
-		}
-	}
-}
-
-void ScoutManager::updateAssingment(UnitInfo& unit)
-{
-	auto start = unit.getWalkPosition();
-	auto distBest = DBL_MAX;
-	auto posBest = unit.getDestination();
 
 	if (!BuildOrder().firstReady() || Strategy().getEnemyBuild() == "Unknown") {
 
@@ -133,8 +132,8 @@ void ScoutManager::updateAssingment(UnitInfo& unit)
 		}
 
 		// If we have scout targets, find the closest target
-		else if (!Strategy().getScoutTargets().empty()) {
-			for (auto &target : Strategy().getScoutTargets()) {
+		else if (!scoutTargets.empty()) {
+			for (auto &target : scoutTargets) {
 				double dist = target.getDistance(unit.getPosition());
 				double time = 1.0 + (double(Grids().lastVisibleFrame((TilePosition)target)));
 				double timeDiff = Broodwar->getFrameCount() - time;
@@ -154,7 +153,7 @@ void ScoutManager::updateAssingment(UnitInfo& unit)
 		if (!unit.getDestination().isValid())
 			unit.setDestination(Terrain().getEnemyStartingPosition());
 
-		if (unit.getDestination().isValid())
+		if (unit.getDestination().isValid()) 
 			Commands().hunt(unit);
 
 		Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Green);
@@ -201,14 +200,22 @@ void ScoutManager::updateDecision(UnitInfo& unit)
 bool ScoutManager::search(UnitInfo& unit)
 {
 	// Aggresive - Need information
+	return false;
 }
 
 bool ScoutManager::scout(UnitInfo& unit)
 {
 	// Default
+	return false;
 }
 
 bool ScoutManager::hide(UnitInfo& unit)
 {
 	// Passive - Need to wait
+	return false;
+}
+
+bool ScoutManager::harass(UnitInfo& unit)
+{
+	return false;
 }

@@ -130,7 +130,7 @@ namespace McRave
 		auto shouldAttack = unit.getLocalState() == LocalState::Engaging;
 
 		// If unit should be attacking
-		if (shouldAttack && unit.hasTarget()) {
+		if (shouldAttack && unit.hasTarget() && unit.getTarget().unit()->exists()) {
 			auto canAttack = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() : unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames();
 
 			if (canAttack) {
@@ -171,7 +171,9 @@ namespace McRave
 
 	bool CommandManager::move(UnitInfo& unit)
 	{
-		// TODO: Concave at destination
+		if (unit.hasTarget() && Util().unitInRange(unit))
+			return false;
+
 		if (unit.getDestination().isValid()) {
 			if (!Terrain().isInEnemyTerritory((TilePosition)unit.getDestination())) {
 				Position bestPosition = Util().getConcavePosition(unit, mapBWEM.GetArea(TilePosition(unit.getDestination())));

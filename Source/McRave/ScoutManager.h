@@ -11,7 +11,7 @@ namespace McRave
 	{
 		void updateScouts();
 		void updateScoutTargets();
-		void updateAssingment(UnitInfo&);
+		void updateAssignment(UnitInfo&);
 		void updateDecision(UnitInfo&);
 
 		bool search(UnitInfo&);

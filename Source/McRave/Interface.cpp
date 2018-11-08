@@ -116,13 +116,12 @@ namespace McRave
 			}
 
 			if (local) {
-				Broodwar->drawTextMap(unit.getPosition(), "%c%s", unit.getPlayer()->getTextColor(), unit.getLocalState());
+				Broodwar->drawTextMap(unit.getPosition(), "%c%s", textColor, unit.getLocalState());
 			}
 
 			if (sim) {
 				int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
-				auto color = unit.getLocalState() == LocalState::Engaging ? textColor : Text::Grey;
-				Broodwar->drawTextMap(unit.getPosition() + Position(width, 8), "%c%.2f", color, unit.getSimValue());
+				Broodwar->drawTextMap(unit.getPosition() + Position(width, 8), "%c%.2f", Text::White, unit.getSimValue());
 			}
 		}
 	}

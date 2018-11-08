@@ -257,19 +257,27 @@ void TerrainManager::updateConcavePositions()
 {
 	for (auto tile : chokePositions) {
 		Broodwar->drawCircleMap(Position(tile), 8, Colors::Blue);
-		
+
 	}
+
+
 
 	if (!chokePositions.empty() || Broodwar->getFrameCount() < 100 || defendPosition == mineralHold)
 		return;
-	
-	// Off for now
-	if (false) {
+
+	// Off for now - testing on
+	if (true) {
 		// Draw a line perpendicular to the choke, draw until it is out of the area
 		// Trying natural area
 		auto choke = defendNatural ? mapBWEB.getNaturalChoke() : mapBWEB.getMainChoke();
-		auto center = defendPosition;
+		auto center = Position(choke->Center());
 		auto area = defendNatural ? mapBWEB.getNaturalArea() : mapBWEB.getMainArea();
+
+		Util().lineOfbestFit(choke);
+
+		for (auto geo : choke->Geometry()) {
+			Broodwar->drawBoxMap(Position(geo), Position(geo) + Position(9, 9), Colors::Black);
+		}
 
 		// First two points
 		Position n1 = Position(choke->Pos(choke->end1));
@@ -277,13 +285,14 @@ void TerrainManager::updateConcavePositions()
 		Broodwar->drawLineMap(n1, n2, Colors::Orange);
 
 		// Differences
-		auto dx1 = n2.x - n1.x;
-		auto dy1 = n2.y - n1.y;
-		auto dx2 = n1.x - n2.x;
-		auto dy2 = n1.y - n2.y;
-		auto lengthTiles = max(1.0, n1.getDistance(n2));
-		Position direction1 = Position(32 * -dy1 / (int)lengthTiles, 32 * dx1 / (int)lengthTiles);
-		Position direction2 = Position(32 * -dy2 / (int)lengthTiles, 32 * dx2 / (int)lengthTiles);
+		auto lengthTiles = max(1.0, n1.getDistance(n2) / 32.0);
+		auto dx1 = int((n2.x - n1.x) / lengthTiles);
+		auto dy1 = int((n2.y - n1.y) / lengthTiles);
+		auto dx2 = int((n1.x - n2.x) / lengthTiles);
+		auto dy2 = int((n1.y - n2.y) / lengthTiles);
+
+		Position direction1 = Position(-dy1, dx1);
+		Position direction2 = Position(-dy2, dx2);
 
 		// Perpendicular line
 		Position trueDirection = mapBWEB.getGroundDistance(center + direction1, mapBWEB.getMainPosition()) < mapBWEB.getGroundDistance(center + direction2, mapBWEB.getMainPosition()) ? direction1 : direction2;
@@ -292,49 +301,49 @@ void TerrainManager::updateConcavePositions()
 		Broodwar->drawLineMap(n3, center, Colors::Green);
 
 		Position slope = mapBWEB.getGroundDistance(direction1, mapBWEB.getMainPosition()) < mapBWEB.getGroundDistance(direction2, mapBWEB.getMainPosition()) ? Position(dx1, dy1) : Position(dx2, dy2);
-		auto goonLengths = int(n1.getDistance(n2) / 48.0);
-		auto zealotLengths = int(n1.getDistance(n2) / 32.0);
+		auto goonLengths = int(n1.getDistance(n2) / 32.0);
+		auto zealotLengths = int(n1.getDistance(n2) / 22.0);
 
-		// Create 2 lines for Zealots
-		for (int i = 0; i < 3; i++) {
-			auto offset = i;
-			Position dn1 = defendPosition + (trueDirection * offset);
-			auto start1 = dn1 + (slope / zealotLengths);
-			auto start2 = dn1 - (slope / zealotLengths);
+		//// Create 2 lines for Zealots
+		//for (int i = 0; i < 3; i++) {
+		//	auto offset = i;
+		//	Position dn1 = defendPosition + (trueDirection * offset);
+		//	auto start1 = dn1 + (slope / zealotLengths);
+		//	auto start2 = dn1 - (slope / zealotLengths);
 
-			if (dn1.isValid() && Util().isWalkable(WalkPosition(dn1), WalkPosition(dn1), UnitTypes::Protoss_Zealot) && ((!mapBWEM.GetArea(TilePosition(dn1)) && Util().isWalkable(dn1)) || mapBWEM.GetArea(TilePosition(dn1)) == area))
-				chokePositions.push_back(dn1);			
+		//	if (dn1.isValid() && Util().isWalkable(WalkPosition(dn1), WalkPosition(dn1), UnitTypes::Protoss_Zealot) && Util().isWalkable(dn1))
+		//		chokePositions.push_back(dn1);			
 
-			while (start1.isValid() && Util().isWalkable(WalkPosition(start1), WalkPosition(start1), UnitTypes::Protoss_Zealot) && ((!mapBWEM.GetArea(TilePosition(start1)) && Util().isWalkable(start1)) || mapBWEM.GetArea(TilePosition(start1)) == area)) {
-				chokePositions.push_back(start1);
-				start1 += (slope / zealotLengths);
-			}
-			while (start2.isValid() && Util().isWalkable(WalkPosition(start2), WalkPosition(start2), UnitTypes::Protoss_Zealot) && ((!mapBWEM.GetArea(TilePosition(start2)) && Util().isWalkable(start2)) || mapBWEM.GetArea(TilePosition(start2)) == area)) {
-				chokePositions.push_back(start2);
-				start2 -= (slope / zealotLengths);
-			}
-		}
+		//	while (start1.isValid() && Util().isWalkable(WalkPosition(start1), WalkPosition(start1), UnitTypes::Protoss_Zealot)) {
+		//		chokePositions.push_back(start1);
+		//		start1 += (slope / zealotLengths);
+		//	}
+		//	while (start2.isValid() && Util().isWalkable(WalkPosition(start2), WalkPosition(start2), UnitTypes::Protoss_Zealot)) {
+		//		chokePositions.push_back(start2);
+		//		start2 -= (slope / zealotLengths);
+		//	}
+		//}
 
-		// Create 3 lines for Dragoons/Reavers
-		for (int i = 0; i < 3; i++) {
-			auto offset = i + 4;
-			Position dn1 = defendPosition + (trueDirection * offset);
-			auto start1 = dn1 + (slope / goonLengths);
-			auto start2 = dn1 - (slope / goonLengths);
-			chokePositions.push_back(dn1);
+		//// Create 3 lines for Dragoons/Reavers
+		//for (int i = 0; i < 3; i++) {
+		//	auto offset = i + 4;
+		//	Position dn1 = defendPosition + (trueDirection * offset);
+		//	auto start1 = dn1 + (slope / goonLengths);
+		//	auto start2 = dn1 - (slope / goonLengths);
+		//	chokePositions.push_back(dn1);
 
-			if (dn1.isValid() && Util().isWalkable(WalkPosition(dn1), WalkPosition(dn1), UnitTypes::Protoss_Zealot) && ((!mapBWEM.GetArea(TilePosition(dn1)) && Util().isWalkable(dn1)) || mapBWEM.GetArea(TilePosition(dn1)) == area))
-				chokePositions.push_back(dn1);
+		//	if (dn1.isValid() && Util().isWalkable(WalkPosition(dn1), WalkPosition(dn1), UnitTypes::Protoss_Dragoon))
+		//		chokePositions.push_back(dn1);
 
-			while (start1.isValid() && Util().isWalkable(WalkPosition(start1), WalkPosition(start1), UnitTypes::Protoss_Dragoon) && (mapBWEM.GetArea(TilePosition(start1)) && mapBWEM.GetArea(TilePosition(start1)) == area)) {
-				chokePositions.push_back(start1);
-				start1 += (slope / goonLengths);
-			}
-			while (start2.isValid() && Util().isWalkable(WalkPosition(start2), WalkPosition(start2), UnitTypes::Protoss_Dragoon) && (mapBWEM.GetArea(TilePosition(start2)) && mapBWEM.GetArea(TilePosition(start2)) == area)) {
-				chokePositions.push_back(start2);
-				start2 -= (slope / goonLengths);
-			}
-		}
+		//	while (start1.isValid() && Util().isWalkable(WalkPosition(start1), WalkPosition(start1), UnitTypes::Protoss_Dragoon)) {
+		//		chokePositions.push_back(start1);
+		//		start1 += (slope / goonLengths);
+		//	}
+		//	while (start2.isValid() && Util().isWalkable(WalkPosition(start2), WalkPosition(start2), UnitTypes::Protoss_Dragoon)) {
+		//		chokePositions.push_back(start2);
+		//		start2 -= (slope / goonLengths);
+		//	}
+		//}
 	}
 	else {
 		// Setup parameters
@@ -378,7 +387,7 @@ void TerrainManager::updateConcavePositions()
 					chokePositions.push_back(Position(w));
 			}
 		}
-	}	
+	}
 }
 
 void TerrainManager::updateAreas()

@@ -74,9 +74,7 @@ namespace McRave
 
 		double getUnitScore(UnitType);
 		map <UnitType, double>& getUnitScores() { return unitScore; }
-		UnitType getHighestUnitScore();
-
-		set<Position> getScoutTargets() { return scoutTargets; }
+		UnitType getHighestUnitScore();		
 	};
 }
 
