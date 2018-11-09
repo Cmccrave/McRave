@@ -202,6 +202,8 @@ namespace BWEB
 		void findBlocks(BWAPI::Player);
 		void findBlocks(BWAPI::Race);
 		void findBlocks();		
+
+		static pair<Position, Position> lineOfBestFit(BWEM::ChokePoint const *);
 	};
 
 	class Path {
@@ -224,5 +226,6 @@ namespace BWEB
 	namespace Utils
 	{
 		static int tilesWithinArea(BWEM::Area const *, TilePosition here, int width = 1, int height = 1);
+		
 	}
 }

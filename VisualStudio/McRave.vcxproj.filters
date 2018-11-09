@@ -7,9 +7,6 @@
     <ClCompile Include="..\Source\BWEB\BWEB.cpp">
       <Filter>BWEB</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\BWEB\BWEBUtil.cpp">
-      <Filter>BWEB</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\BWEB\Station.cpp">
       <Filter>BWEB</Filter>
     </ClCompile>
@@ -174,6 +171,9 @@
     </ClCompile>
     <ClCompile Include="..\Source\McRave\SupportManager.cpp">
       <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\BWEB\BWEBUtil.cpp">
+      <Filter>BWEB</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

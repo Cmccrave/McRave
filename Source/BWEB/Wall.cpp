@@ -254,8 +254,9 @@ namespace BWEB
 		};
 
 		// Choke angle
-		auto p1 = wall.getChokePoint()->Pos(wall.getChokePoint()->end1);
-		auto p2 = wall.getChokePoint()->Pos(wall.getChokePoint()->end2);
+		auto line = lineOfBestFit(wall.getChokePoint());
+		auto p1 = line.first;
+		auto p2 = line.second;
 		double dy = abs(double(p1.y - p2.y));
 		double dx = abs(double(p1.x - p2.x));
 		auto angle1 = dx > 0.0 ? atan(dy / dx) * 180.0 / 3.14 : 90.0;
@@ -537,8 +538,9 @@ namespace BWEB
 	void Map::initializePathPoints(Wall& wall)
 	{
 		auto choke = wall.getChokePoint();
-		Position n1 = Position(choke->Pos(choke->end1));
-		Position n2 = Position(choke->Pos(choke->end2));
+		auto line = lineOfBestFit(wall.getChokePoint());
+		Position n1 = line.first;
+		Position n2 = line.second;
 		auto dx1 = n2.x - n1.x;
 		auto dy1 = n2.y - n1.y;
 		auto dx2 = n1.x - n2.x;

@@ -272,16 +272,15 @@ void TerrainManager::updateConcavePositions()
 		auto choke = defendNatural ? mapBWEB.getNaturalChoke() : mapBWEB.getMainChoke();
 		auto center = Position(choke->Center());
 		auto area = defendNatural ? mapBWEB.getNaturalArea() : mapBWEB.getMainArea();
-
-		Util().lineOfbestFit(choke);
+		auto line = mapBWEB.lineOfBestFit(choke);
 
 		for (auto geo : choke->Geometry()) {
 			Broodwar->drawBoxMap(Position(geo), Position(geo) + Position(9, 9), Colors::Black);
 		}
 
 		// First two points
-		Position n1 = Position(choke->Pos(choke->end1));
-		Position n2 = Position(choke->Pos(choke->end2));
+		Position n1 = line.first;
+		Position n2 = line.second;
 		Broodwar->drawLineMap(n1, n2, Colors::Orange);
 
 		// Differences
