@@ -265,84 +265,24 @@ void TerrainManager::updateConcavePositions()
 	if (!chokePositions.empty() || Broodwar->getFrameCount() < 100 || defendPosition == mineralHold)
 		return;
 
-	// Off for now - testing on
+	// Testing formations
 	if (true) {
-		// Draw a line perpendicular to the choke, draw until it is out of the area
-		// Trying natural area
 		auto choke = defendNatural ? mapBWEB.getNaturalChoke() : mapBWEB.getMainChoke();
-		auto center = Position(choke->Center());
-		auto area = defendNatural ? mapBWEB.getNaturalArea() : mapBWEB.getMainArea();
-		auto line = mapBWEB.lineOfBestFit(choke);
+		auto line = Util().lineOfBestFit(choke);
+
+		auto x1 = (Position(choke->Center()) + Position(4,4)).x;
+		auto y1 = line.y(x1);
+
+		// Testing finding a point a set distance away
+		auto testx = int(19.0 * cos(atan(line.slope))) + x1;
+		auto testy = int(19.0 * sin(atan(line.slope))) + y1;
+
+		Broodwar->drawCircleMap(Position(testx, testy), 8, Colors::Green);
+
 
 		for (auto geo : choke->Geometry()) {
 			Broodwar->drawBoxMap(Position(geo), Position(geo) + Position(9, 9), Colors::Black);
 		}
-
-		// First two points
-		Position n1 = line.first;
-		Position n2 = line.second;
-		Broodwar->drawLineMap(n1, n2, Colors::Orange);
-
-		// Differences
-		auto lengthTiles = max(1.0, n1.getDistance(n2) / 32.0);
-		auto dx1 = int((n2.x - n1.x) / lengthTiles);
-		auto dy1 = int((n2.y - n1.y) / lengthTiles);
-		auto dx2 = int((n1.x - n2.x) / lengthTiles);
-		auto dy2 = int((n1.y - n2.y) / lengthTiles);
-
-		Position direction1 = Position(-dy1, dx1);
-		Position direction2 = Position(-dy2, dx2);
-
-		// Perpendicular line
-		Position trueDirection = mapBWEB.getGroundDistance(center + direction1, mapBWEB.getMainPosition()) < mapBWEB.getGroundDistance(center + direction2, mapBWEB.getMainPosition()) ? direction1 : direction2;
-		Position n3 = Position(trueDirection.x * 2, trueDirection.y * 2) + defendPosition;
-
-		Broodwar->drawLineMap(n3, center, Colors::Green);
-
-		Position slope = mapBWEB.getGroundDistance(direction1, mapBWEB.getMainPosition()) < mapBWEB.getGroundDistance(direction2, mapBWEB.getMainPosition()) ? Position(dx1, dy1) : Position(dx2, dy2);
-		auto goonLengths = int(n1.getDistance(n2) / 32.0);
-		auto zealotLengths = int(n1.getDistance(n2) / 22.0);
-
-		//// Create 2 lines for Zealots
-		//for (int i = 0; i < 3; i++) {
-		//	auto offset = i;
-		//	Position dn1 = defendPosition + (trueDirection * offset);
-		//	auto start1 = dn1 + (slope / zealotLengths);
-		//	auto start2 = dn1 - (slope / zealotLengths);
-
-		//	if (dn1.isValid() && Util().isWalkable(WalkPosition(dn1), WalkPosition(dn1), UnitTypes::Protoss_Zealot) && Util().isWalkable(dn1))
-		//		chokePositions.push_back(dn1);			
-
-		//	while (start1.isValid() && Util().isWalkable(WalkPosition(start1), WalkPosition(start1), UnitTypes::Protoss_Zealot)) {
-		//		chokePositions.push_back(start1);
-		//		start1 += (slope / zealotLengths);
-		//	}
-		//	while (start2.isValid() && Util().isWalkable(WalkPosition(start2), WalkPosition(start2), UnitTypes::Protoss_Zealot)) {
-		//		chokePositions.push_back(start2);
-		//		start2 -= (slope / zealotLengths);
-		//	}
-		//}
-
-		//// Create 3 lines for Dragoons/Reavers
-		//for (int i = 0; i < 3; i++) {
-		//	auto offset = i + 4;
-		//	Position dn1 = defendPosition + (trueDirection * offset);
-		//	auto start1 = dn1 + (slope / goonLengths);
-		//	auto start2 = dn1 - (slope / goonLengths);
-		//	chokePositions.push_back(dn1);
-
-		//	if (dn1.isValid() && Util().isWalkable(WalkPosition(dn1), WalkPosition(dn1), UnitTypes::Protoss_Dragoon))
-		//		chokePositions.push_back(dn1);
-
-		//	while (start1.isValid() && Util().isWalkable(WalkPosition(start1), WalkPosition(start1), UnitTypes::Protoss_Dragoon)) {
-		//		chokePositions.push_back(start1);
-		//		start1 += (slope / goonLengths);
-		//	}
-		//	while (start2.isValid() && Util().isWalkable(WalkPosition(start2), WalkPosition(start2), UnitTypes::Protoss_Dragoon)) {
-		//		chokePositions.push_back(start2);
-		//		start2 -= (slope / goonLengths);
-		//	}
-		//}
 	}
 	else {
 		// Setup parameters

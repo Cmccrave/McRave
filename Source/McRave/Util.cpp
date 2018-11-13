@@ -203,8 +203,6 @@ bool UtilManager::rectangleIntersect(Position topLeft, Position botRight, Positi
 	return false;
 }
 
-
-
 const BWEM::ChokePoint * UtilManager::getClosestChokepoint(Position here)
 {
 	double distBest = DBL_MAX;
@@ -309,6 +307,28 @@ int UtilManager::chokeWidth(const BWEM::ChokePoint * choke)
 	if (!choke)
 		return 0;
 	return int(choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2))) * 8;
+}
+
+Line UtilManager::lineOfBestFit(const BWEM::ChokePoint * choke)
+{	
+	auto sumX = 0.0, sumY = 0.0;
+	auto sumXY = 0.0, sumX2 = 0.0;
+	for (auto geo : choke->Geometry()) {
+		Position p = Position(geo) + Position(4, 4);
+		sumX += p.x;
+		sumY += p.y;
+		sumXY += p.x * p.y;
+		sumX2 += p.x * p.x;
+	}
+	double xMean = sumX / choke->Geometry().size();
+	double yMean = sumY / choke->Geometry().size();
+	double denominator = sumX2 - sumX * xMean;
+
+	double slope = (sumXY - sumX * yMean) / denominator;
+	double yInt = yMean - slope * xMean;
+	Line newLine(yInt, slope);
+
+	return newLine;
 }
 
 Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area, Position here)

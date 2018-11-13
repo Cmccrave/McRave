@@ -7,6 +7,15 @@ using namespace std;
 
 namespace McRave
 {
+	struct Line {
+		double yInt;
+		double slope;
+		int y(int x) { return int((slope * double(x)) + yInt); }
+		Line(double y, double s) {
+			yInt = y, slope = s;
+		}
+	};
+
 	class UtilManager
 	{
 	public:
@@ -17,12 +26,11 @@ namespace McRave
 		UnitInfo * getClosestBuilder(Position);
 
 		int chokeWidth(const BWEM::ChokePoint *);
-		void lineOfbestFit(const BWEM::ChokePoint *);
 		const BWEM::ChokePoint * getClosestChokepoint(Position);
 
 		double getHighestThreat(WalkPosition, UnitInfo&);
 
-		bool unitInRange(UnitInfo& unit);		
+		bool unitInRange(UnitInfo& unit);
 		bool reactivePullWorker(UnitInfo& unit);
 		bool proactivePullWorker(UnitInfo& unit);
 		bool pullRepairWorker(UnitInfo& unit);
@@ -43,8 +51,11 @@ namespace McRave
 			return true;
 		}
 		bool isWalkable(WalkPosition start, WalkPosition finish, UnitType);
-		
-		Position getConcavePosition(UnitInfo&, BWEM::Area const * area = nullptr, Position here = Positions::Invalid);		
+
+		// Create a line of best fit for a chokepoint
+		Line lineOfBestFit(const BWEM::ChokePoint *);
+
+		Position getConcavePosition(UnitInfo&, BWEM::Area const * area = nullptr, Position here = Positions::Invalid);
 	};
 }
 
