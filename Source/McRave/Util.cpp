@@ -24,6 +24,9 @@ bool UtilManager::isWalkable(WalkPosition start, WalkPosition end, UnitType unit
 			WalkPosition w(x, y);
 			if (!w.isValid())
 				return false;
+
+			//Broodwar->drawBoxMap(Position(w), Position(w) + Position(9, 9), Colors::Red);
+
 			if (!unitType.isFlyer()) {
 				if (overlapsUnit(x, y) && Grids().getMobility(w) > 0)
 					continue;
@@ -328,6 +331,25 @@ Line UtilManager::lineOfBestFit(const BWEM::ChokePoint * choke)
 	double yInt = yMean - slope * xMean;
 	Line newLine(yInt, slope);
 
+	return newLine;
+}
+
+Line UtilManager::parallelLine(Line line1, double distance)
+{
+	double inverseSlope = (-1.0 / line1.slope);
+	double x0 = 0.0;
+	double y0 = line1.y(x0);
+	double sq = sqrt(1.0 / (1.0 + pow(inverseSlope, 2.0)));
+
+	double x = x0 + (distance * sq);
+	double y = y0 + (distance * sq * inverseSlope);
+	
+	double yInt2 = y - (line1.slope * x);
+
+	Broodwar << yInt2 << endl;
+	Broodwar << line1.yInt << endl;
+	
+	Line newLine(yInt2, line1.slope);
 	return newLine;
 }
 

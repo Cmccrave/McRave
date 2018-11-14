@@ -10,7 +10,7 @@ namespace McRave
 	struct Line {
 		double yInt;
 		double slope;
-		int y(int x) { return int((slope * double(x)) + yInt); }
+		double y(int x) { return (slope * double(x)) + yInt; }
 		Line(double y, double s) {
 			yInt = y, slope = s;
 		}
@@ -54,6 +54,7 @@ namespace McRave
 
 		// Create a line of best fit for a chokepoint
 		Line lineOfBestFit(const BWEM::ChokePoint *);
+		Line parallelLine(Line, double);
 
 		Position getConcavePosition(UnitInfo&, BWEM::Area const * area = nullptr, Position here = Positions::Invalid);
 	};

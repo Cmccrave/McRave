@@ -260,25 +260,65 @@ void TerrainManager::updateConcavePositions()
 
 	}
 
-
-
 	if (!chokePositions.empty() || Broodwar->getFrameCount() < 100 || defendPosition == mineralHold)
 		return;
 
-	// Testing formations
+	// Testing formations - broken as fuck at the moment
 	if (true) {
 		auto choke = defendNatural ? mapBWEB.getNaturalChoke() : mapBWEB.getMainChoke();
+		auto width = Util().chokeWidth(choke);
+
+		// 1) Get line of best fit
 		auto line = Util().lineOfBestFit(choke);
+		auto x1 = (Position(choke->Center()) + Position(4, 4)).x;
+		auto y1 = int(line.y(x1));
 
-		auto x1 = (Position(choke->Center()) + Position(4,4)).x;
-		auto y1 = line.y(x1);
+		// 2) Make a second parallel line
+		auto line2 = Util().parallelLine(line, 32.0);
+		auto x2 = (Position(choke->Center()) + Position(4, 4)).x;
+		auto y2 = int(line2.y(x2));
+		
+		// 3) Get starting point on left side of choke
+		auto xStart = 4 + (choke->Pos(choke->end1).x <= choke->Pos(choke->end2).x ? Position(choke->Pos(choke->end1)).x : Position(choke->Pos(choke->end2)).x);
+		
+		// 4) Increment y if no more placements, increment x by 1 if not walkable or by unit width if walkable
+		for (int i = 0; i < 2; i++) {
 
-		// Testing finding a point a set distance away
-		auto testx = int(19.0 * cos(atan(line.slope))) + x1;
-		auto testy = int(19.0 * sin(atan(line.slope))) + y1;
+			int yStart = int(line.y(xStart));
+			auto posStart = Position(xStart, yStart);			
+			WalkPosition w(posStart);			
 
-		Broodwar->drawCircleMap(Position(testx, testy), 8, Colors::Green);
+			while (posStart.getDistance(Position(choke->Center())) < width) {				
+				WalkPosition w(posStart);
+				//Broodwar->drawCircleMap(posStart, 4, Colors::Green);
+				if (Util().isWalkable(w, w, UnitTypes::Protoss_Zealot)) {
+					xStart+=16;
+					Broodwar->drawCircleMap(posStart, 4, Colors::Green);
+				}
+				else
+					xStart+=1;
 
+				yStart = int(line.y(xStart));
+				posStart = Position(xStart, yStart);
+			}
+
+			// Test
+			yStart = line2.y(xStart);
+			posStart = Position(xStart, yStart);
+			while (posStart.getDistance(Position(choke->Center())) < 4 * width) {
+				WalkPosition w(posStart);
+				//Broodwar->drawCircleMap(posStart, 4, Colors::Green);
+				if (Util().isWalkable(w, w, UnitTypes::Protoss_Zealot)) {
+					xStart+=16;
+					Broodwar->drawCircleMap(posStart, 4, Colors::Blue);
+				}
+				else
+					xStart+=1;
+
+				yStart = int(line.y(xStart));
+				posStart = Position(xStart, yStart);
+			}
+		}
 
 		for (auto geo : choke->Geometry()) {
 			Broodwar->drawBoxMap(Position(geo), Position(geo) + Position(9, 9), Colors::Black);
