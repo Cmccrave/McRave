@@ -2,10 +2,10 @@
 
 bool UtilManager::isWalkable(WalkPosition start, WalkPosition end, UnitType unitType)
 {
-	int walkWidth = (int)ceil(unitType.width() / 8.0) + 1;
-	int walkHeight = (int)ceil(unitType.height() / 8.0) + 1;
+	int walkWidth = (int)(unitType.width() / 8.0) + 1;
+	int walkHeight = (int)(unitType.height() / 8.0) + 1;
 	int halfW = walkWidth / 2;
-	int halfH = walkHeight / 2;
+	int halfH = walkHeight / 2;	
 
 	if (unitType.isFlyer()) {
 		halfW += 2;
@@ -30,7 +30,7 @@ bool UtilManager::isWalkable(WalkPosition start, WalkPosition end, UnitType unit
 			if (!unitType.isFlyer()) {
 				if (overlapsUnit(x, y) && Grids().getMobility(w) > 0)
 					continue;
-				if (Grids().getMobility(w) <= 0 || Grids().getCollision(w) > 0)
+				if (!mapBWEM.GetMiniTile(w).Walkable() || Grids().getCollision(w) > 0)
 					return false;
 			}
 		}
@@ -345,9 +345,6 @@ Line UtilManager::parallelLine(Line line1, double distance)
 	double y = y0 + (distance * sq * inverseSlope);
 	
 	double yInt2 = y - (line1.slope * x);
-
-	Broodwar << yInt2 << endl;
-	Broodwar << line1.yInt << endl;
 	
 	Line newLine(yInt2, line1.slope);
 	return newLine;

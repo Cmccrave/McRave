@@ -69,8 +69,9 @@ namespace McRave
 				if (distanceHome[x][y] >= 1500 && distanceHome[x][y] != DBL_MAX)
 					Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Yellow);*/
 
-				if (collision[x][y] > 0.0)
-					Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Blue);
+				if (!mapBWEM.GetMiniTile(w).Walkable())
+					Broodwar->drawBoxMap(Position(w), Position(w) + Position(9, 9), Colors::Blue);
+
 				//if (distanceHome[x][y] <= 0)
 				//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Blue);
 				//if (collision[x][y] > 0)

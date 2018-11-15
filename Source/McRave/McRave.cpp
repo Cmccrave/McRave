@@ -20,6 +20,7 @@
 // Move 4gate vs Z to 2 gate category
 // Use Player pointer instead of BWAPI::Player pointer in UnitInfo, gives advantage of knowing upgrades/tech that are available always
 // DT Hunt use detection and ground threat combined
+// Mobility grid is broken as fuck
 
 // *** SSCAIT2018 Goals ***
 // Unit formations
