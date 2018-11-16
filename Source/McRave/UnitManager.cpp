@@ -305,23 +305,11 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 		}
 	}
 
-	//// If below limits
-	//if (belowGrdLimits && (!unit.getType().isFlyer() || sync))
-	//	unit.setSimState(SimState::Loss);
-	//if (belowAirLimits && (unit.getType().isFlyer() || sync))
-	//	unit.setSimState(SimState::Loss);
-
 	// If above/below thresholds, it's a sim win/loss
 	if (unit.getSimValue() >= maxThreshold)
 		unit.setSimState(SimState::Win);
 	if (unit.getSimValue() <= minThreshold)
 		unit.setSimState(SimState::Loss);
-
-	// If drastically above/below, it's a high win/loss
-	//if (unit.getSimValue() > maxThreshold * 2.0)
-	//	unit.setSimState(SimState::HighWin);
-	//if (unit.getSimValue() < minThreshold / 2.0)
-	//	unit.setSimState(SimState::HighLoss);
 }
 
 void UnitManager::updateLocalState(UnitInfo& unit)

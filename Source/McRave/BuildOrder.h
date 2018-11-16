@@ -118,7 +118,7 @@ namespace McRave
 		void PZealotDrop();
 
 		void P1GateCore();
-		//void P2Gate();
+		void P2Gate();
 		void PFFE();
 		void P21Nexus();
 		void P12Nexus();

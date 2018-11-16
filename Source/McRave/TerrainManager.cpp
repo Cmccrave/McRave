@@ -256,7 +256,7 @@ void TerrainManager::findDefendPosition()
 void TerrainManager::updateConcavePositions()
 {
 	for (auto tile : chokePositions) {
-		Broodwar->drawCircleMap(Position(tile), 8, Colors::Blue);
+		//Broodwar->drawCircleMap(Position(tile), 8, Colors::Blue);
 
 	}
 

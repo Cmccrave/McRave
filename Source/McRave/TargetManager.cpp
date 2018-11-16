@@ -210,7 +210,7 @@ namespace McRave
 				&& mapBWEB.getUsedTiles().find(unit.getTarget().getTilePosition()) == mapBWEB.getUsedTiles().end()			// Doesn't overlap buildings
 				&& !unit.getType().isFlyer() && !unit.getTarget().getType().isFlyer()										// Doesn't include flyers
 				&& unit.getPosition().getDistance(unit.getTarget().getPosition()) < SIM_RADIUS								// Isn't too far from engaging
-				&& mapBWEB.getGroundDistance(unit.getPosition(), unit.getTarget().getPosition()) < SIM_RADIUS				// TEMP: Check ground distance too
+				&& mapBWEB.getGroundDistance(unit.getPosition(), unit.getTarget().getPosition()) < SIM_RADIUS				// Check ground distance too
 				&& mapBWEB.isWalkable(unit.getTilePosition()) && mapBWEB.isWalkable(unit.getTarget().getTilePosition()))	// Walkable tiles
 				return true;
 			return false;
@@ -228,7 +228,7 @@ namespace McRave
 		}
 
 		// Set distance as estimate when targeting a building/flying unit or far away
-		if (unit.getTarget().getType().isBuilding() || unit.getTarget().getType().isFlyer() || unit.getPosition().getDistance(unit.getTarget().getPosition()) >= 800.0 || unit.getTilePosition() == unit.getTarget().getTilePosition()) {
+		if (unit.getTarget().getType().isBuilding() || unit.getTarget().getType().isFlyer() || unit.getPosition().getDistance(unit.getTarget().getPosition()) >= SIM_RADIUS || unit.getTilePosition() == unit.getTarget().getTilePosition()) {
 			unit.setEngDist(unit.getPosition().getDistance(unit.getEngagePosition()));
 			unit.setPath(BWEB::Path());
 			return;

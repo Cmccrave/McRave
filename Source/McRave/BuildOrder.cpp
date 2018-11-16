@@ -51,12 +51,6 @@ namespace McRave
 			return;
 		}
 
-		// Testing Reavers
-		currentBuild = "P21Nexus";
-		currentOpener = "1Gate";
-		currentTransition = "DoubleExpand";
-		return;
-
 		// File extension including our race initial;
 		const string dash = "-";
 		const string noStats = " 0 0 ";
@@ -74,8 +68,8 @@ namespace McRave
 			myBuilds["P1GateCore"].transitions ={ "3GateRobo", "Reaver", "Corsair", "4Gate", "DT" };
 
 			// 2Gate
-			//myBuilds["P2Gate"].openers ={ "Proxy", "Natural", "Main" };
-			//myBuilds["P2Gate"].transitions ={ "ZealotRush", "DT", "Reaver", "Expand", "DoubleExpand" };
+			myBuilds["P2Gate"].openers ={ "Proxy", "Natural", "Main" };
+			myBuilds["P2Gate"].transitions ={ "ZealotRush", "DT", "Reaver", "Expand", "DoubleExpand" };
 
 			// FFE
 			myBuilds["PFFE"].openers ={ "Gate", "Nexus", "Forge" };

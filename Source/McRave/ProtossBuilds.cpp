@@ -203,45 +203,7 @@ namespace McRave
 
 	void BuildOrderManager::P2GateDragoon()
 	{
-		wallNat =			true;
-		firstUpgrade =		UpgradeTypes::Singularity_Charge;
-		firstTech =			TechTypes::None;
-		scout =				vis(Protoss_Cybernetics_Core) > 0;
-		getOpening =		s < 100;
-		gasLimit =			INT_MAX;
 
-		zealotLimit =		0;
-		dragoonLimit =		INT_MAX;
-
-		if (Strategy().enemyFastExpand() || enemyBuild() == "TSiegeExpand") {
-			getOpening =		s < 70;
-			currentTransition =	"DT";
-
-			if (techList.find(Protoss_Dark_Templar) == techList.end())
-				techUnit = UnitTypes::Protoss_Dark_Templar;
-
-			itemQueue[Protoss_Nexus] =				Item(1);
-			itemQueue[Protoss_Pylon] =				Item((s >= 14), (s >= 16));
-			itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 30));
-			itemQueue[Protoss_Assimilator] =		Item(s >= 22);
-			itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
-		}
-		else if (enemyBuild() == "TBBS") {
-			gasLimit =			0;
-			fastExpand =		false;
-			Reaction2GateDefensive();
-		}
-		else {
-			getOpening =		s < 100;
-			currentTransition =	"Expansion";
-
-			itemQueue[Protoss_Nexus] =				Item(1 + (s >= 50));
-			itemQueue[Protoss_Pylon] =				Item((s >= 14), (s >= 16));
-			itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 28));
-			itemQueue[Protoss_Assimilator] =		Item(s >= 22);
-			itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
-
-		}
 	}
 
 	void BuildOrderManager::PProxy6()
@@ -282,105 +244,7 @@ namespace McRave
 
 	void BuildOrderManager::P2GateExpand()
 	{
-		wallNat =			true;
-		fastExpand =		true;
-		firstUpgrade =		Players().vZ() ? UpgradeTypes::Protoss_Ground_Weapons : UpgradeTypes::Singularity_Charge;
-		firstTech =			TechTypes::None;
-		getOpening =		s < 80;
-		gasLimit =			INT_MAX;
-
-		zealotLimit =		INT_MAX;
-		dragoonLimit =		Players().vP() ? INT_MAX : 0;
-
-		// 9/10 Gates on 3Player+ maps
-		if (Broodwar->getStartLocations().size() >= 3) {
-			scout =									vis(Protoss_Gateway) >= 1;
-			itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
-			itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0) + (s >= 20), (s >= 18) + (s >= 20));
-		}
-		// 9/9 Gates
-		else {
-			scout =									vis(Protoss_Gateway) >= 2;
-			itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
-			itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
-		}
-
-		// Versus Zerg
-		if (Players().vZ()) {
-			if (Units().getEnemyCount(UnitTypes::Zerg_Sunken_Colony) >= 2) {
-				currentTransition =	"Expansion";
-
-				itemQueue[Protoss_Assimilator] =		Item(s >= 76);
-				itemQueue[Protoss_Nexus] =				Item(1 + (s >= 42));
-				itemQueue[Protoss_Forge] =				Item(s >= 62);
-				itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 70);
-				itemQueue[Protoss_Photon_Cannon] =		Item(2 * (com(Protoss_Forge) > 0));
-			}
-			else if (enemyBuild() == "Z9Pool") {
-				currentTransition =	"Defensive";
-
-				itemQueue[Protoss_Forge] =				Item(1);
-				itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 70);
-				itemQueue[Protoss_Photon_Cannon] =		Item(2 * (com(Protoss_Forge) > 0));
-			}
-			else if (enemyBuild() == "Z5Pool") {
-				getOpening =		s < 120;
-				currentTransition =	"Panic";
-
-				itemQueue[Protoss_Nexus] =				Item(1);
-				itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 24) + (s >= 62) + (s >= 70));
-				itemQueue[Protoss_Assimilator] =		Item(s >= 64);
-				itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 66);
-				gasLimit = 1;
-			}
-			else {
-				currentTransition =	"Default";
-				zealotLimit	=		5;
-
-				itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
-				itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 24), (s >= 20) + (s >= 24));
-				itemQueue[Protoss_Assimilator] =		Item(s >= 58);
-				itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 60);
-				itemQueue[Protoss_Forge] =				Item(s >= 70);
-				itemQueue[Protoss_Nexus] =				Item(1 + (s >= 56));
-				itemQueue[Protoss_Photon_Cannon] =		Item(2 * (com(Protoss_Forge) > 0));
-			}
-		}
-
-		// Versus Protoss
-		else {
-
-			//rush = com(Protoss_Nexus) != 2;
-
-			if (!Strategy().enemyFastExpand() && (enemyBuild() == "P4Gate" || Units().getEnemyCount(Protoss_Gateway) >= 2 || Units().getEnemyCount(UnitTypes::Protoss_Dragoon) >= 2)) {
-				currentTransition =	"Defensive";
-				playPassive =		com(Protoss_Gateway) < 5;
-				zealotLimit	=		INT_MAX;
-
-				itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
-				itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 24) + (s >= 50), (s >= 20) + (s >= 24) + (s >= 50));
-				itemQueue[Protoss_Assimilator] =		Item(s >= 64);
-				itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 66);
-				itemQueue[Protoss_Forge] =				Item(1);
-				itemQueue[Protoss_Photon_Cannon] =		Item(6 * (com(Protoss_Forge) > 0));
-				itemQueue[Protoss_Nexus] =				Item(1 + (s >= 56));
-			}
-			else if (enemyBuild() == "P2Gate") {
-				Reaction2GateDefensive();
-			}
-			else {
-				currentTransition =	"Default";
-				zealotLimit	=		5;
-
-				itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
-				itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 24), (s >= 20) + (s >= 24));
-				itemQueue[Protoss_Assimilator] =		Item(s >= 58);
-				itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 60);
-				itemQueue[Protoss_Forge] =				Item(s >= 70);
-				itemQueue[Protoss_Nexus] =				Item(1 + (s >= 56));
-				itemQueue[Protoss_Photon_Cannon] =		Item(2 * (com(Protoss_Forge) > 0));
-			}
-		}
+		
 	}
 		
 	void BuildOrderManager::P3Nexus()
@@ -426,7 +290,168 @@ namespace McRave
 
 
 
+	void BuildOrderManager::P2Gate()
+	{
+		if (currentOpener == "Proxy") {
+			proxy =				true;
 
+			itemQueue[Protoss_Pylon] =					Item((s >= 12), (s >= 16));
+			itemQueue[Protoss_Gateway] =				Item((vis(Protoss_Pylon) > 0) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
+		}
+		else if (currentOpener == "Natural") {
+			wallNat =			true;
+
+			if (Players().vT()) {
+				itemQueue[Protoss_Pylon] =				Item((s >= 14), (s >= 16));
+				itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 30));
+			}
+			else {
+				// 9/10 Gates on 3Player+ maps
+				if (Broodwar->getStartLocations().size() >= 3) {
+					scout =									vis(Protoss_Gateway) >= 1;
+					itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
+					itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0) + (s >= 20), (s >= 18) + (s >= 20));
+				}
+				// 9/9 Gates
+				else {
+					scout =									vis(Protoss_Gateway) >= 2;
+					itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
+					itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
+				}
+			}
+		}
+		else if (currentOpener == "Main") {
+
+			// 10/12 Gates on 3Player+ maps
+			if (Broodwar->getStartLocations().size() >= 3) {
+				scout =									vis(Protoss_Gateway) >= 1;
+				itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
+				itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 24));
+			}
+			// 9/10 Gates
+			else {
+				scout =									vis(Protoss_Gateway) >= 2;
+				itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
+				itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0) + (s >= 20));
+			}
+		}
+
+		if (Players().vT()) {
+			firstUpgrade =		UpgradeTypes::Singularity_Charge;
+			firstTech =			TechTypes::None;
+			scout =				vis(Protoss_Cybernetics_Core) > 0;
+			getOpening =		s < 100;
+			gasLimit =			INT_MAX;
+
+			zealotLimit =		0;
+			dragoonLimit =		INT_MAX;
+
+			if (Strategy().enemyFastExpand() || enemyBuild() == "TSiegeExpand") {
+				getOpening =		s < 70;
+				currentTransition =	"DT";
+
+				if (techList.find(Protoss_Dark_Templar) == techList.end())
+					techUnit = UnitTypes::Protoss_Dark_Templar;
+
+				itemQueue[Protoss_Nexus] =				Item(1);				
+				itemQueue[Protoss_Assimilator] =		Item(s >= 22);
+				itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
+			}
+			else if (enemyBuild() == "TBBS") {
+				gasLimit =			0;
+				fastExpand =		false;
+				Reaction2GateDefensive();
+			}
+			else {
+				getOpening =		s < 100;
+				currentTransition =	"Expansion";
+
+				itemQueue[Protoss_Nexus] =				Item(1 + (s >= 50));
+				itemQueue[Protoss_Assimilator] =		Item(s >= 22);
+				itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
+
+			}
+		}
+		else
+		{
+			wallNat =			true;
+			firstUpgrade =		Players().vZ() ? UpgradeTypes::Protoss_Ground_Weapons : UpgradeTypes::Singularity_Charge;
+			firstTech =			TechTypes::None;
+			getOpening =		s < 80;
+			gasLimit =			INT_MAX;
+			zealotLimit =		INT_MAX;
+			dragoonLimit =		Players().vP() ? INT_MAX : 0;
+
+			// Versus Zerg
+			if (Players().vZ()) {
+
+				if (Units().getEnemyCount(UnitTypes::Zerg_Sunken_Colony) >= 2) {
+					currentTransition =	"Expansion";
+
+					itemQueue[Protoss_Assimilator] =		Item(s >= 76);
+					itemQueue[Protoss_Nexus] =				Item(1 + (s >= 42));
+					itemQueue[Protoss_Forge] =				Item(s >= 62);
+					itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 70);
+					itemQueue[Protoss_Photon_Cannon] =		Item(2 * (com(Protoss_Forge) > 0));
+				}
+				else if (enemyBuild() == "Z9Pool") {
+					currentTransition =	"Defensive";
+
+					itemQueue[Protoss_Forge] =				Item(1);
+					itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 70);
+					itemQueue[Protoss_Photon_Cannon] =		Item(2 * (com(Protoss_Forge) > 0));
+				}
+				else if (enemyBuild() == "Z5Pool") {
+					getOpening =		s < 120;
+					currentTransition =	"Panic";
+
+					itemQueue[Protoss_Nexus] =				Item(1);
+					itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 24) + (s >= 62) + (s >= 70));
+					itemQueue[Protoss_Assimilator] =		Item(s >= 64);
+					itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 66);
+					gasLimit = 1;
+				}
+				else {
+					currentTransition =	"Default";
+					zealotLimit	=		5;
+
+					itemQueue[Protoss_Assimilator] =		Item(s >= 58);
+					itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 60);
+					itemQueue[Protoss_Forge] =				Item(s >= 70);
+					itemQueue[Protoss_Nexus] =				Item(1 + (s >= 56));
+					itemQueue[Protoss_Photon_Cannon] =		Item(2 * (com(Protoss_Forge) > 0));
+				}
+			}
+
+			// Versus Protoss
+			else {				
+				if (!Strategy().enemyFastExpand() && (enemyBuild() == "P4Gate" || Units().getEnemyCount(Protoss_Gateway) >= 2 || Units().getEnemyCount(UnitTypes::Protoss_Dragoon) >= 2)) {
+					currentTransition =	"Defensive";
+					playPassive =		com(Protoss_Gateway) < 5;
+					zealotLimit	=		INT_MAX;
+			
+					itemQueue[Protoss_Assimilator] =		Item(s >= 64);
+					itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 66);
+					itemQueue[Protoss_Forge] =				Item(1);
+					itemQueue[Protoss_Photon_Cannon] =		Item(6 * (com(Protoss_Forge) > 0));
+					itemQueue[Protoss_Nexus] =				Item(1 + (s >= 56));
+				}
+				else if (enemyBuild() == "P2Gate") {
+					Reaction2GateDefensive();
+				}
+				else {
+					currentTransition =	"Default";
+					zealotLimit	=		5;
+
+					itemQueue[Protoss_Assimilator] =		Item(s >= 58);
+					itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 60);
+					itemQueue[Protoss_Forge] =				Item(s >= 70);
+					itemQueue[Protoss_Nexus] =				Item(1 + (s >= 56));
+					itemQueue[Protoss_Photon_Cannon] =		Item(2 * (com(Protoss_Forge) > 0));
+				}
+			}
+		}
+	}
 
 	void BuildOrderManager::P1GateCore()
 	{
