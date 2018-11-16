@@ -59,18 +59,20 @@ void WorkerManager::updateAssignment(UnitInfo& worker)
 
 	// 1) If threatened, find safe stations to move to on the Station network or generate a new path
 	if (threatened) {
-		for (auto &s : Stations().getMyStations()) {
-			auto station = s.second;
-			auto closePath = Stations().pathStationToStation(closest, station);
-			Path path;
-			if (closest && worker.getPosition().getDistance(closest->ResourceCentroid()) < 320.0 && closePath)
-				path = *closePath;
-			else
-				path.createUnitPath(mapBWEB, mapBWEM, worker.getPosition(), station->ResourceCentroid());
 
-			// Store station if it's safe
-			if (!Util().accurateThreatOnPath(worker, path))
-				safeStations.push_back(station);
+		// Find a path on the station network
+		if (worker.getPosition().getDistance(closest->ResourceCentroid()) < 320.0) {
+			for (auto &s : Stations().getMyStations()) {
+				auto station = s.second;
+				auto closePath = Stations().pathStationToStation(closest, station);
+				Path path;
+				if (closest  && closePath)
+					path = *closePath;
+
+				// Store station if it's safe
+				if (!Util().accurateThreatOnPath(worker, path))
+					safeStations.push_back(station);
+			}
 		}
 	}
 
@@ -279,18 +281,16 @@ bool WorkerManager::gather(UnitInfo& worker)
 
 	// If worker has a resource and it's mineable
 	if (worker.hasResource() && worker.getResource().getResourceState() == ResourceState::Mineable) {
+		auto resourceCentroid = worker.getResource().getStation() ? worker.getResource().getStation()->ResourceCentroid() : Positions::Invalid;
 
-		// 1) If it's close or same area, mine it		
-		if (closeToResource(worker) && shouldIssueGather()) {
+		// 1) If it's close or same area, don't need a path		
+		if (closeToResource(worker)) {
 			Path emptyPath;
-			worker.unit()->gather(worker.getResource().unit());
 			worker.setPath(emptyPath);
-			return true;
 		}
 
-		// 2) If it's far, generate a path
-		auto resourceCentroid = worker.getResource().getStation() ? worker.getResource().getStation()->ResourceCentroid() : Positions::Invalid;
-		if (worker.getLastTile() != worker.getTilePosition() && resourceCentroid.isValid()) {
+		// 2) If it's far, generate a path		
+		else if (worker.getLastTile() != worker.getTilePosition() && resourceCentroid.isValid()) {
 			Path newPath;
 			newPath.createUnitPath(mapBWEB, mapBWEM, worker.getPosition(), resourceCentroid);
 			worker.setPath(newPath);
@@ -308,7 +308,7 @@ bool WorkerManager::gather(UnitInfo& worker)
 		}
 
 		// 4) If we are under a threat, try to get away from it
-		if (Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0) {
+		else if (Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0) {
 			Commands().kite(worker);
 			return true;
 		}
@@ -339,7 +339,7 @@ bool WorkerManager::returnCargo(UnitInfo& worker)
 
 bool WorkerManager::closeToResource(UnitInfo& worker)
 {
-	auto close = worker.getResource().getPosition().getDistance(worker.getPosition()) < 128.0;
+	auto close = worker.getResource().getPosition().getDistance(worker.getPosition()) <= 320.0;
 	auto sameArea = mapBWEM.GetArea(worker.getTilePosition()) == mapBWEM.GetArea(worker.getResource().getTilePosition());
 	return close || sameArea;
 }
