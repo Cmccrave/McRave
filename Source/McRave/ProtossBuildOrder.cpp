@@ -8,6 +8,7 @@ namespace McRave
 		if (currentBuild == "PFFE") PFFE();
 		if (currentBuild == "P12Nexus") P12Nexus();
 		if (currentBuild == "P21Nexus") P21Nexus();
+		if (currentBuild == "P2Gate") P2Gate();
 
 
 		if (currentBuild == "PScoutMemes") PScoutMemes();

@@ -107,23 +107,13 @@ namespace McRave
 		void terranOpener(), terranTech(), terranSituational(), terranUnlocks(), terranIslandPlay();
 		void zergOpener(), zergTech(), zergSituational(), zergUnlocks(), zergIslandPlay();
 
-		void PScoutMemes(), PDWEBMemes(), PArbiterMemes(), PShuttleMemes();	// Gimmick builds	
-
-
-		void PProxy99();								// 2Gate Proxy - "http://liquipedia.net/starcraft/2_Gateway_(vs._Zerg)"		
-		void PProxy6();
-		void P2GateExpand();							// 2Gate Expand			
-		void P2GateDragoon();							// 2 Gate Dragoon - "http://liquipedia.net/starcraft/10/15_Gates_(vs._Terran)"		
-		void P3Nexus();									// Triple Nexus
-		void PZealotDrop();
+		void PScoutMemes(), PDWEBMemes(), PArbiterMemes(), PShuttleMemes();	// Gimmick builds		   		
 
 		void P1GateCore();
 		void P2Gate();
 		void PFFE();
 		void P21Nexus();
 		void P12Nexus();
-
-
 
 		void Reaction2GateDefensive();
 		void Reaction2GateAggresive();

@@ -140,18 +140,21 @@ namespace McRave
 		if (currentOpener == "Forge") {
 			itemQueue[Protoss_Nexus] =				Item(1 + (s >= 28));
 			itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
+			itemQueue[Protoss_Assimilator] =		Item((vis(Protoss_Gateway) >= 1) + (vis(Protoss_Stargate) >= 1));
 			itemQueue[Protoss_Gateway] =			Item((s >= 32) + (s >= 46));
 			itemQueue[Protoss_Forge] =				Item(s >= 20);
 		}
 		else if (currentOpener == "Nexus") {
 			itemQueue[Protoss_Nexus] =				Item(1 + (s >= 24));
 			itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
+			itemQueue[Protoss_Assimilator] =		Item((vis(Protoss_Gateway) >= 1) + (vis(Protoss_Stargate) >= 1));
 			itemQueue[Protoss_Gateway] =			Item(vis(Protoss_Forge) > 0);
-			itemQueue[Protoss_Forge] =				Item(vis(Protoss_Nexus) >= 2);
+			itemQueue[Protoss_Forge] =				Item(vis(Protoss_Nexus) >= 2);			
 		}
 		else if (currentOpener == "Gate") {
 			itemQueue[Protoss_Nexus] =				Item(1 + (s >= 42));
 			itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 24), (s >= 16) + (s >= 24));
+			itemQueue[Protoss_Assimilator] =		Item((s >= 50) + (s >= 64));
 			itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 46));
 			itemQueue[Protoss_Forge] =				Item(s >= 60);
 		}
@@ -174,8 +177,6 @@ namespace McRave
 			itemQueue[Protoss_Assimilator] =		Item((s >= 38) + (s >= 60));
 			itemQueue[Protoss_Cybernetics_Core] =	Item((s >= 42));
 		}
-
-		// Muta bust, get Corsairs and Cannon defensively
 		else if (currentTransition == "DoubleStargate") {			
 			firstUpgrade =		UpgradeTypes::Protoss_Air_Weapons;
 			firstTech =			TechTypes::None;
@@ -190,106 +191,14 @@ namespace McRave
 			currentTransition =	"NeoBisu";
 			firstUpgrade =		UpgradeTypes::Protoss_Air_Weapons;
 						
-			itemQueue[Protoss_Photon_Cannon] =		Item(cannonCount);
-			itemQueue[Protoss_Assimilator] =		Item((vis(Protoss_Gateway) >= 1) + (vis(Protoss_Stargate) >= 1));
+			itemQueue[Protoss_Photon_Cannon] =		Item(cannonCount);			
 			itemQueue[Protoss_Cybernetics_Core] =	Item(vis(Protoss_Zealot) >= 1);
 			itemQueue[Protoss_Citadel_of_Adun] =	Item(vis(Protoss_Assimilator) >= 2);
 			itemQueue[Protoss_Stargate] =			Item(com(Protoss_Cybernetics_Core) >= 1);
 			itemQueue[Protoss_Templar_Archives] =	Item(Broodwar->self()->isUpgrading(UpgradeTypes::Leg_Enhancements) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements));
 		}
 	}
-
-
-
-	void BuildOrderManager::P2GateDragoon()
-	{
-
-	}
-
-	void BuildOrderManager::PProxy6()
-	{
-		proxy =				true;
-		firstUpgrade =		UpgradeTypes::None;
-		firstTech =			TechTypes::None;
-		getOpening =		s < 30;
-		scout =				vis(Protoss_Gateway) >= 1;
-		currentTransition =	"Default";
-		rush =				true;
-
-		zealotLimit =		INT_MAX;
-		dragoonLimit =		INT_MAX;
-
-		itemQueue[Protoss_Nexus] =					Item(1);
-		itemQueue[Protoss_Pylon] =					Item((s >= 10), (s >= 12));
-		itemQueue[Protoss_Gateway] =				Item(vis(Protoss_Pylon) > 0);
-	}
-
-	void BuildOrderManager::PProxy99()
-	{
-		proxy =				vis(Protoss_Gateway) < 2;
-		firstUpgrade =		UpgradeTypes::None;
-		firstTech =			TechTypes::None;
-		getOpening =		s < 50;
-		scout =				vis(Protoss_Gateway) >= 2;
-		gasLimit =			INT_MAX;
-		currentTransition =	"Default";
-		rush =				true;
-
-		zealotLimit =		INT_MAX;
-		dragoonLimit =		INT_MAX;
-
-		itemQueue[Protoss_Pylon] =					Item((s >= 12), (s >= 16));
-		itemQueue[Protoss_Gateway] =				Item((vis(Protoss_Pylon) > 0) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
-	}
-
-	void BuildOrderManager::P2GateExpand()
-	{
-		
-	}
-		
-	void BuildOrderManager::P3Nexus()
-	{
-		fastExpand =		true;
-		wallNat =			true;
-		playPassive =		!firstReady();
-		firstUpgrade =		UpgradeTypes::Singularity_Charge;
-		firstTech =			TechTypes::None;
-		getOpening =		s < 120;
-		scout =				vis(Protoss_Cybernetics_Core) > 0;
-		gasLimit =			2 + (s >= 60);
-		currentTransition =	"Default";
-
-		itemQueue[Protoss_Nexus] =				Item(1 + (s >= 24) + (s >= 30));
-		itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 48), (s >= 16) + (s >= 48));
-		itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Cybernetics_Core) > 0) + (vis(Protoss_Nexus) > 1) + (s >= 70) + (s >= 80));
-		itemQueue[Protoss_Assimilator] =		Item(s >= 28);
-		itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 30);
-	}
-
-	void BuildOrderManager::PZealotDrop()
-	{
-		firstUpgrade =		UpgradeTypes::Gravitic_Drive;
-		firstTech =			TechTypes::None;
-		getOpening =		s < 60;
-		scout =				0;
-		gasLimit =			INT_MAX;
-		hideTech =			true;
-		currentTransition =	"Island";
-
-
-		if (techList.find(Protoss_Shuttle) == techList.end())
-			techUnit =			UnitTypes::Protoss_Shuttle;
-
-		itemQueue[Protoss_Nexus] =				Item(1);
-		itemQueue[Protoss_Pylon] =				Item((s >= 14), (s >= 16));
-		itemQueue[Protoss_Gateway] =			Item((s >= 20) + (vis(Protoss_Robotics_Facility) > 0));
-		itemQueue[Protoss_Assimilator] =		Item(s >= 24);
-		itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
-		itemQueue[Protoss_Robotics_Facility] =	Item(com(Protoss_Cybernetics_Core) > 0);
-	}
-
-
-
+	   	 
 	void BuildOrderManager::P2Gate()
 	{
 		if (currentOpener == "Proxy") {
@@ -542,6 +451,7 @@ namespace McRave
 			firstTech =			TechTypes::None;
 			dragoonLimit =		0;
 			zealotLimit	=		INT_MAX;
+			playPassive =		true;
 
 			if (techList.find(Protoss_Corsair) == techList.end())
 				techUnit = Protoss_Corsair;
@@ -735,3 +645,93 @@ namespace McRave
 		}
 	}
 }
+
+
+
+
+//void BuildOrderManager::P2GateDragoon()
+//{
+//
+//}
+//
+//void BuildOrderManager::PProxy6()
+//{
+//	proxy =				true;
+//	firstUpgrade =		UpgradeTypes::None;
+//	firstTech =			TechTypes::None;
+//	getOpening =		s < 30;
+//	scout =				vis(Protoss_Gateway) >= 1;
+//	currentTransition =	"Default";
+//	rush =				true;
+//
+//	zealotLimit =		INT_MAX;
+//	dragoonLimit =		INT_MAX;
+//
+//	itemQueue[Protoss_Nexus] =					Item(1);
+//	itemQueue[Protoss_Pylon] =					Item((s >= 10), (s >= 12));
+//	itemQueue[Protoss_Gateway] =				Item(vis(Protoss_Pylon) > 0);
+//}
+//
+//void BuildOrderManager::PProxy99()
+//{
+//	proxy =				vis(Protoss_Gateway) < 2;
+//	firstUpgrade =		UpgradeTypes::None;
+//	firstTech =			TechTypes::None;
+//	getOpening =		s < 50;
+//	scout =				vis(Protoss_Gateway) >= 2;
+//	gasLimit =			INT_MAX;
+//	currentTransition =	"Default";
+//	rush =				true;
+//
+//	zealotLimit =		INT_MAX;
+//	dragoonLimit =		INT_MAX;
+//
+//	itemQueue[Protoss_Pylon] =					Item((s >= 12), (s >= 16));
+//	itemQueue[Protoss_Gateway] =				Item((vis(Protoss_Pylon) > 0) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
+//}
+//
+//void BuildOrderManager::P2GateExpand()
+//{
+//
+//}
+//
+//void BuildOrderManager::P3Nexus()
+//{
+//	fastExpand =		true;
+//	wallNat =			true;
+//	playPassive =		!firstReady();
+//	firstUpgrade =		UpgradeTypes::Singularity_Charge;
+//	firstTech =			TechTypes::None;
+//	getOpening =		s < 120;
+//	scout =				vis(Protoss_Cybernetics_Core) > 0;
+//	gasLimit =			2 + (s >= 60);
+//	currentTransition =	"Default";
+//
+//	itemQueue[Protoss_Nexus] =				Item(1 + (s >= 24) + (s >= 30));
+//	itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 48), (s >= 16) + (s >= 48));
+//	itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Cybernetics_Core) > 0) + (vis(Protoss_Nexus) > 1) + (s >= 70) + (s >= 80));
+//	itemQueue[Protoss_Assimilator] =		Item(s >= 28);
+//	itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 30);
+//}
+//
+//void BuildOrderManager::PZealotDrop()
+//{
+//	firstUpgrade =		UpgradeTypes::Gravitic_Drive;
+//	firstTech =			TechTypes::None;
+//	getOpening =		s < 60;
+//	scout =				0;
+//	gasLimit =			INT_MAX;
+//	hideTech =			true;
+//	currentTransition =	"Island";
+//
+//
+//	if (techList.find(Protoss_Shuttle) == techList.end())
+//		techUnit =			UnitTypes::Protoss_Shuttle;
+//
+//	itemQueue[Protoss_Nexus] =				Item(1);
+//	itemQueue[Protoss_Pylon] =				Item((s >= 14), (s >= 16));
+//	itemQueue[Protoss_Gateway] =			Item((s >= 20) + (vis(Protoss_Robotics_Facility) > 0));
+//	itemQueue[Protoss_Assimilator] =		Item(s >= 24);
+//	itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
+//	itemQueue[Protoss_Robotics_Facility] =	Item(com(Protoss_Cybernetics_Core) > 0);
+//}

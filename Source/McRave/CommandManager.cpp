@@ -100,12 +100,6 @@ namespace McRave
 			return true;
 		}
 
-		// Flyers don't want to decel when out of range, so we move to the target then attack when in range
-		else if (unit.getType().isFlyer() && unit.hasTarget() && !Util().unitInRange(unit)) {
-			unit.unit()->move(unit.getTarget().getPosition());
-			return true;
-		}
-
 		// DT hold position vs spider mines
 		else if (unit.getType() == UnitTypes::Protoss_Dark_Templar && unit.hasTarget() && unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.getTarget().hasTarget() && unit.getTarget().getTarget().unit() == unit.unit() && !unit.getTarget().isBurrowed()) {
 			if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Hold_Position)
@@ -131,10 +125,15 @@ namespace McRave
 
 		// If unit should be attacking
 		if (shouldAttack && unit.hasTarget() && unit.getTarget().unit()->exists()) {
-			auto canAttack = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() : unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames();
+			auto canAttack = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() < Broodwar->getRemainingLatencyFrames() : unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames();
 
 			if (canAttack) {
-				unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
+
+				// Flyers don't want to decel when out of range, so we move to the target then attack when in range
+				if (unit.getType().isFlyer() && unit.hasTarget() && !Util().unitInRange(unit))
+					unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition());
+				else
+					unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());				
 				return true;
 			}
 		}
@@ -142,7 +141,8 @@ namespace McRave
 	}
 
 	bool CommandManager::approach(UnitInfo& unit)
-	{
+	{		
+		auto airHarasser = unit.getType() == UnitTypes::Protoss_Corsair || unit.getType() == UnitTypes::Zerg_Mutalisk || unit.getType() == UnitTypes::Terran_Wraith;
 		auto shouldApproach = unit.getLocalState() == LocalState::Engaging;
 
 		const auto canApproach = [&]() {
@@ -160,7 +160,6 @@ namespace McRave
 				return true;
 			return false;
 		};
-
 
 		if (shouldApproach && canApproach() && unit.getTarget().getPosition().isValid()) {
 			unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition());
@@ -293,13 +292,15 @@ namespace McRave
 
 	bool CommandManager::kite(UnitInfo& unit)
 	{
+		auto airHarasser = unit.getType() == UnitTypes::Protoss_Corsair || unit.getType() == UnitTypes::Zerg_Mutalisk || unit.getType() == UnitTypes::Terran_Wraith;
+
 		const auto canKite = [&]() {
 			// Units that never kite based on their target
 			if (unit.hasTarget() && unit.getLocalState() == LocalState::Engaging) {
 				auto allyRange = (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
 				auto enemyRange = (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
 
-				if (unit.getType() == UnitTypes::Protoss_Corsair
+				if (airHarasser
 					|| (unit.getTarget().getType().isBuilding() && !unit.getType().isFlyer()))
 					return false;
 
@@ -441,12 +442,20 @@ namespace McRave
 
 		// Some testing stuff
 		auto radius = 12 + int(unit.getSpeed());
-		auto height = int(unit.getType().height() / 8.0);
-		auto width = int(unit.getType().width() / 8.0);
+		auto unitHeight = int(unit.getType().height() / 8.0);
+		auto unitWidth = int(unit.getType().width() / 8.0);
 		auto currentDist = (unit.getType().isFlyer() ? unit.getPosition().getDistance(unit.getDestination()) : mapBWEB.getGroundDistance(unit.getPosition(), unit.getDestination()));
 
-		for (int x = start.x - radius; x < start.x + radius + width; x++) {
-			for (int y = start.y - radius; y < start.y + radius + height; y++) {
+		// We want to limit air units to not touch edges of the map when hunting if possible
+		auto mapWidth = Broodwar->mapWidth() * 4;
+		auto mapHeight = Broodwar->mapHeight() * 4;
+		auto left = max(start.x - radius, 12);
+		auto right = min(start.x + radius + unitWidth, mapWidth - 12);
+		auto top = max(start.y - radius, 12);
+		auto bot = min(start.y + radius + unitHeight, mapHeight - 12);
+
+		for (int x = left; x < right; x++) {
+			for (int y = top; y < bot; y++) {
 				WalkPosition w(x, y);
 				Position p = Position(w) + Position(4, 4);
 				TilePosition t(w);
@@ -454,11 +463,10 @@ namespace McRave
 				double grdDist = mapBWEB.getGroundDistance(p, unit.getDestination());
 				double airDist = p.getDistance(unit.getDestination());
 
-				if (!w.isValid()
-					|| !Util().isWalkable(start, w, unit.getType())
-					|| p.getDistance(unit.getPosition()) < 64.0
+				if (p.getDistance(unit.getPosition()) < 64.0
 					|| distToP > radius * 8
-					|| isInDanger(unit, p))
+					|| isInDanger(unit, p)
+					|| !Util().isWalkable(start, w, unit.getType()))
 					continue;
 
 				double threat = Util().getHighestThreat(w, unit);

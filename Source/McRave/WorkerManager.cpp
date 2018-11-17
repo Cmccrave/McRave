@@ -339,7 +339,7 @@ bool WorkerManager::returnCargo(UnitInfo& worker)
 
 bool WorkerManager::closeToResource(UnitInfo& worker)
 {
-	auto close = worker.getResource().getPosition().getDistance(worker.getPosition()) <= 320.0;
+	auto close = mapBWEB.getGroundDistance(worker.getResource().getPosition(), worker.getPosition()) <= 320.0;
 	auto sameArea = mapBWEM.GetArea(worker.getTilePosition()) == mapBWEM.GetArea(worker.getResource().getTilePosition());
 	return close || sameArea;
 }

@@ -112,7 +112,7 @@ namespace McRave
 			if (orders) {
 				int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
 				if (unit.unit() && unit.unit()->exists())
-					Broodwar->drawTextMap(unit.getPosition() + Position(width,-8), "%c%s", unit.getPlayer()->getTextColor(), unit.unit()->getOrder().c_str());
+					Broodwar->drawTextMap(unit.getPosition() + Position(width,-8), "%c%s", textColor, unit.unit()->getOrder().c_str());
 			}
 
 			if (local) {
