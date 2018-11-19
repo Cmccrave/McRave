@@ -68,6 +68,20 @@ namespace McRave
 			|| unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())	// If the unit is locked down, maelstrommed, stassised, or not completed
 			return;
 
+		// Radius for checking tiles
+		auto start = unit.getWalkPosition();
+		auto radius = 12 + int(unit.getSpeed());
+		auto unitHeight = int(unit.getType().height() / 8.0);
+		auto unitWidth = int(unit.getType().width() / 8.0);
+		auto mapWidth = Broodwar->mapWidth() * 4;
+		auto mapHeight = Broodwar->mapHeight() * 4;
+
+		// Contained within the command class to be accesible in all commands
+		left = max(start.x - radius, 12);
+		right = min(start.x + radius + unitWidth, mapWidth - 12);
+		top = max(start.y - radius, 12);
+		bot = min(start.y + radius + unitHeight, mapHeight - 12);
+
 		// Convert our commands to strings to display what the unit is doing for debugging
 		map<int, string> commandNames{
 			make_pair(0, "Misc"),
@@ -75,10 +89,11 @@ namespace McRave
 			make_pair(2, "Attack"),
 			make_pair(3, "Approach"),
 			make_pair(4, "Kite"),
-			make_pair(5, "Escort"),
+			make_pair(5, "Defend"),
 			make_pair(6, "Hunt"),
-			make_pair(7, "Defend"),
-			make_pair(8, "Move")
+			make_pair(7, "Escort"),
+			make_pair(8, "Retreat"),
+			make_pair(9, "Move")
 		};
 
 		int i = 0;
@@ -107,6 +122,18 @@ namespace McRave
 			return true;
 		}
 
+		// If unit has a transport, load into it if we need to
+		else if (unit.hasTransport() && unit.getTransport().unit()->exists()) {
+			if (unit.getType() == UnitTypes::Protoss_Reaver && (unit.unit()->getScarabCount() != MAX_SCARAB || unit.getLocalState() == LocalState::Retreating)) {
+				unit.command(UnitCommandTypes::Right_Click_Unit, &unit.getTransport());
+				return true;
+			}
+			else if (unit.getType() == UnitTypes::Protoss_High_Templar && (unit.getEnergy() < 75 || unit.getLocalState() == LocalState::Retreating)) {
+				unit.command(UnitCommandTypes::Right_Click_Unit, &unit.getTransport());
+				return true;
+			}
+		}
+
 		// Units targeted by splash need to move away from the army
 		// TODO: Maybe move this to their respective functions
 		else if (Units().getSplashTargets().find(unit.unit()) != Units().getSplashTargets().end()) {
@@ -133,7 +160,7 @@ namespace McRave
 				if (unit.getType().isFlyer() && unit.hasTarget() && !Util().unitInRange(unit))
 					unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition());
 				else
-					unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());				
+					unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
 				return true;
 			}
 		}
@@ -141,7 +168,7 @@ namespace McRave
 	}
 
 	bool CommandManager::approach(UnitInfo& unit)
-	{		
+	{
 		auto airHarasser = unit.getType() == UnitTypes::Protoss_Corsair || unit.getType() == UnitTypes::Zerg_Mutalisk || unit.getType() == UnitTypes::Terran_Wraith;
 		auto shouldApproach = unit.getLocalState() == LocalState::Engaging;
 
@@ -171,6 +198,9 @@ namespace McRave
 	bool CommandManager::move(UnitInfo& unit)
 	{
 		if (unit.hasTarget() && Util().unitInRange(unit))
+			return false;
+
+		if (unit.getLocalState() == LocalState::Retreating)
 			return false;
 
 		if (unit.getDestination().isValid()) {
@@ -222,6 +252,77 @@ namespace McRave
 				unit.command(UnitCommandTypes::Move, Position(Terrain().closestUnexploredStart()));
 				return true;
 			}
+		}
+		return false;
+	}
+
+	bool CommandManager::kite(UnitInfo& unit)
+	{
+		auto airHarasser = unit.getType() == UnitTypes::Protoss_Corsair || unit.getType() == UnitTypes::Zerg_Mutalisk || unit.getType() == UnitTypes::Terran_Wraith;
+		auto best = 0.0;
+		auto bestPos = Positions::Invalid;
+
+
+		const auto canKite = [&]() {
+			// Units that never kite based on their target
+			if (unit.hasTarget() && unit.getLocalState() == LocalState::Engaging) {
+				auto allyRange = (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
+				auto enemyRange = (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
+
+				if (airHarasser
+					|| (unit.getTarget().getType().isBuilding() && !unit.getType().isFlyer()))
+					return false;
+
+				if (unit.getType() == UnitTypes::Protoss_Reaver
+					|| (unit.getType() == UnitTypes::Terran_Vulture)
+					|| (unit.getType() == UnitTypes::Zerg_Mutalisk)
+					|| (unit.getType() == UnitTypes::Protoss_Carrier)
+					|| (allyRange >= 32.0 && unit.unit()->isUnderAttack() && allyRange >= enemyRange)
+					|| (unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine && !unit.getTarget().isBurrowed())
+					|| ((enemyRange <= allyRange && unit.unit()->getDistance(unit.getTarget().getPosition()) <= allyRange - enemyRange)))
+					return true;
+			}
+			return false;
+		};
+
+		// TODO: Do we need this? Check if a worker should mineral walk
+		if (unit.hasResource() && unit.getResource().unit()->exists() && Terrain().isInAllyTerritory(unit.getTilePosition()) && Grids().getEGroundThreat(WalkPosition(unit.getResource().getPosition())) == 0.0) {
+			unit.unit()->gather(unit.getResource().unit());
+			return true;
+		}
+
+		else if (canKite()) {
+			for (int x = left; x < right; x++) {
+				for (int y = top; y < bot; y++) {
+					WalkPosition w(x, y);
+					Position p = Position(w) + Position(4, 4);
+
+					// TODO: Make this a bit more readable
+					double distance;
+					if (!Strategy().defendChoke() && unit.getType() == UnitTypes::Protoss_Zealot && unit.hasTarget() && Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()))
+						distance = p.getDistance(Terrain().getMineralHoldPosition());
+					else if (unit.hasTarget() && (Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()) || Terrain().isInAllyTerritory(unit.getTilePosition())))
+						distance = 1.0 / (32.0 + p.getDistance(unit.getTarget().getPosition()));
+					else
+						distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(mapBWEB.getMainPosition()) : Grids().getDistanceHome(w);
+
+					double threat = Util().getHighestThreat(w, unit);
+					double grouping = 1.0 + (unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)) : 0.0);
+					double score = grouping / (threat * distance);
+
+					// If position is valid and better score than current, set as current best
+					if (score > best && viablePosition(unit, w)) {
+						bestPos = p;
+						best = score;
+					}
+				}
+			}
+
+			if (bestPos.isValid()) {
+				unit.command(UnitCommandTypes::Move, bestPos);
+				return true;
+			}
+			Broodwar->drawLineMap(unit.getPosition(), bestPos, Colors::Red);
 		}
 		return false;
 	}
@@ -290,144 +391,12 @@ namespace McRave
 		return false;
 	}
 
-	bool CommandManager::kite(UnitInfo& unit)
-	{
-		auto airHarasser = unit.getType() == UnitTypes::Protoss_Corsair || unit.getType() == UnitTypes::Zerg_Mutalisk || unit.getType() == UnitTypes::Terran_Wraith;
-
-		const auto canKite = [&]() {
-			// Units that never kite based on their target
-			if (unit.hasTarget() && unit.getLocalState() == LocalState::Engaging) {
-				auto allyRange = (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
-				auto enemyRange = (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
-
-				if (airHarasser
-					|| (unit.getTarget().getType().isBuilding() && !unit.getType().isFlyer()))
-					return false;
-
-				if (unit.getType() == UnitTypes::Protoss_Reaver
-					|| (unit.getType() == UnitTypes::Terran_Vulture)
-					|| (unit.getType() == UnitTypes::Zerg_Mutalisk)
-					|| (unit.getType() == UnitTypes::Protoss_Carrier)
-					|| (allyRange >= 32.0 && unit.unit()->isUnderAttack() && allyRange >= enemyRange)
-					|| (unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine && !unit.getTarget().isBurrowed())
-					|| ((enemyRange <= allyRange && unit.unit()->getDistance(unit.getTarget().getPosition()) <= allyRange - enemyRange)))
-					return true;
-				return false;
-			}
-			return unit.getLocalState() == LocalState::Retreating && unit.getPosition().getDistance(unit.getSimPosition()) <= SIM_RADIUS;
-		};
-
-		// Check if a unit with a transport should load into it
-		if (unit.hasTransport() && unit.getTransport().unit()->exists()) {
-			if (unit.getType() == UnitTypes::Protoss_Reaver && unit.unit()->getScarabCount() != MAX_SCARAB) {
-				unit.command(UnitCommandTypes::Right_Click_Unit, &unit.getTransport());
-				return true;
-			}
-			else if (unit.getType() == UnitTypes::Protoss_High_Templar && unit.getEnergy() < 75) {
-				unit.command(UnitCommandTypes::Right_Click_Unit, &unit.getTransport());
-				return true;
-			}
-		}
-
-		// TODO: Do we need this? Check if a worker should mineral walk
-		else if (unit.hasResource() && unit.getResource().unit()->exists() && Terrain().isInAllyTerritory(unit.getTilePosition()) && Grids().getEGroundThreat(WalkPosition(unit.getResource().getPosition())) == 0.0) {
-			unit.unit()->gather(unit.getResource().unit());
-			return true;
-		}
-
-		else if (canKite()) {
-			auto start = unit.getWalkPosition();
-			auto best = 0.0;
-			auto bestPos = Positions::Invalid;
-
-			for (int x = start.x - 6; x < start.x + 10; x++) {
-				for (int y = start.y - 6; y < start.y + 10; y++) {
-					WalkPosition w(x, y);
-					Position p = Position(w) + Position(4, 4);
-
-					if (!w.isValid()
-						|| p.getDistance(unit.getPosition()) < 32.0
-						|| Commands().isInDanger(unit, p)
-						|| Grids().getCollision(w) > 0
-						|| Grids().getESplash(w) > 0
-						|| Buildings().overlapsQueuedBuilding(unit.getType(), unit.getTilePosition()))
-						continue;
-
-					double distance;
-					if (!Strategy().defendChoke() && unit.getType() == UnitTypes::Protoss_Zealot && unit.hasTarget() && Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()))
-						distance = p.getDistance(Terrain().getMineralHoldPosition());
-					else if (unit.hasTarget() && (Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()) || Terrain().isInAllyTerritory(unit.getTilePosition())))
-						distance = 1.0 / (32.0 + p.getDistance(unit.getTarget().getPosition()));
-					else
-						distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(mapBWEB.getMainPosition()) : Grids().getDistanceHome(w);
-
-					double mobility = 1.0; // HACK: Test ignoring mobility
-
-					double threat = Util().getHighestThreat(w, unit);
-					double grouping = 1.0 + (unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)) : 0.0);
-					double score = grouping / (threat * distance);
-
-					// If position is valid and better score than current, set as current best
-					if (score > best && Util().isWalkable(start, w, unit.getType())) {
-						bestPos = p;
-						best = score;
-					}
-				}
-			}
-
-			if (bestPos.isValid()) {
-				unit.command(UnitCommandTypes::Move, bestPos);
-				return true;
-			}
-			Broodwar->drawLineMap(unit.getPosition(), bestPos, Colors::Red);
-		}
-		return false;
-	}
-
-	bool CommandManager::safeMove(UnitInfo& unit)
-	{
-		// Low threat, low distance		
-		auto start = unit.getWalkPosition();
-		auto best = 0.0;
-		auto bestPos = unit.getDestination();
-		UnitInfo* enemy = Util().getClosestThreat(unit);
-
-		if (enemy) {
-			for (int x = start.x - 12; x < start.x + 16; x++) {
-				for (int y = start.y - 12; y < start.y + 16; y++) {
-					WalkPosition w(x, y);
-					Position p = Position(w) + Position(4, 4);
-
-					if (!w.isValid()
-						|| !Util().isWalkable(start, w, unit.getType())
-						|| isInDanger(unit, p))
-						continue;
-
-					double threat = Util().getHighestThreat(w, unit);
-					double distance = 1.0 + (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : mapBWEB.getGroundDistance(p, unit.getDestination()));
-
-					double score = 1.0 / (threat * distance);
-					if (score >= best) {
-						best = score;
-						bestPos = Position(w);
-					}
-				}
-			}
-		}
-
-		if (bestPos.isValid()) {
-			unit.command(UnitCommandTypes::Move, bestPos);
-			return true;
-		}
-		return false;
-	}
-
 	bool CommandManager::hunt(UnitInfo& unit)
 	{
 		if (!unit.getType().isWorker() && !unit.getType().isFlyer() && unit.getType() != UnitTypes::Protoss_Dark_Templar)
 			return false;
 
-		// If unit has no destination, give target as a destination
+		// HACK: If unit has no destination, give target as a destination
 		if (!unit.getDestination().isValid()) {
 			if (unit.hasTarget())
 				unit.setDestination(unit.getTarget().getPosition());
@@ -435,48 +404,22 @@ namespace McRave
 				unit.setDestination(Terrain().getAttackPosition());
 		}
 
-		// No threat, low visibility, low distance, attack if possible
-		auto start = unit.getWalkPosition();
 		auto best = 0.0;
 		auto bestPos = unit.getDestination();
-
-		// Some testing stuff
-		auto radius = 12 + int(unit.getSpeed());
-		auto unitHeight = int(unit.getType().height() / 8.0);
-		auto unitWidth = int(unit.getType().width() / 8.0);
-		auto currentDist = (unit.getType().isFlyer() ? unit.getPosition().getDistance(unit.getDestination()) : mapBWEB.getGroundDistance(unit.getPosition(), unit.getDestination()));
-
-		// We want to limit air units to not touch edges of the map when hunting if possible
-		auto mapWidth = Broodwar->mapWidth() * 4;
-		auto mapHeight = Broodwar->mapHeight() * 4;
-		auto left = max(start.x - radius, 12);
-		auto right = min(start.x + radius + unitWidth, mapWidth - 12);
-		auto top = max(start.y - radius, 12);
-		auto bot = min(start.y + radius + unitHeight, mapHeight - 12);
-
 		for (int x = left; x < right; x++) {
 			for (int y = top; y < bot; y++) {
 				WalkPosition w(x, y);
 				Position p = Position(w) + Position(4, 4);
-				TilePosition t(w);
-				double distToP = unit.getType().isFlyer() ? unit.getPosition().getDistance(p) : mapBWEB.getGroundDistance(p, unit.getPosition());
-				double grdDist = mapBWEB.getGroundDistance(p, unit.getDestination());
-				double airDist = p.getDistance(unit.getDestination());
-
-				if (p.getDistance(unit.getPosition()) < 64.0
-					|| distToP > radius * 8
-					|| isInDanger(unit, p)
-					|| !Util().isWalkable(start, w, unit.getType()))
-					continue;
-
 				double threat = Util().getHighestThreat(w, unit);
-				double distance = (unit.getType().isFlyer() ? airDist : grdDist);
+				double distance = (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : mapBWEB.getGroundDistance(p, unit.getDestination()));
 				double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(w))));
 				double grouping = exp((unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)) : 0.0));
-
 				double score = grouping * visited / distance;
 
-				if (score >= best && threat == MIN_THREAT) {
+
+				// TODO: DT if no detection then threat = min threat
+
+				if (score >= best && threat == MIN_THREAT && viablePosition(unit, w)) {
 					best = score;
 					bestPos = Position(w);
 				}
@@ -484,10 +427,7 @@ namespace McRave
 		}
 
 		if (unit.hasTarget() && Util().getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT && Util().unitInRange(unit)) {
-			if (true)
-				attack(unit);
-			else
-				approach(unit);
+			attack(unit);
 			return true;
 		}
 		else if (bestPos.isValid() && bestPos != unit.getDestination()) {
@@ -495,8 +435,38 @@ namespace McRave
 			unit.command(UnitCommandTypes::Move, bestPos);
 			return true;
 		}
-		else {
-			kite(unit);
+		return false;
+	}
+
+	bool CommandManager::retreat(UnitInfo& unit)
+	{
+		auto shouldRetreat = unit.getLocalState() == LocalState::Retreating;
+		if (!shouldRetreat)
+			return false;
+
+		auto best = 0.0;
+		auto bestPos = Positions::Invalid;
+
+		for (int x = left; x < right; x++) {
+			for (int y = top; y < bot; y++) {
+				WalkPosition w(x, y);
+				Position p = Position(w) + Position(4, 4);
+
+				double distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(mapBWEB.getMainPosition()) : Grids().getDistanceHome(w);
+				double threat = Util().getHighestThreat(w, unit);
+				double grouping = 1.0 + (unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)) : 0.0);
+				double score = grouping / (threat * distance);
+
+				// If position is valid and better score than current, set as current best
+				if (score > best && viablePosition(unit, w)) {
+					bestPos = p;
+					best = score;
+				}
+			}
+		}
+
+		if (bestPos.isValid()) {
+			unit.command(UnitCommandTypes::Move, bestPos);
 			return true;
 		}
 		return false;
@@ -666,5 +636,22 @@ namespace McRave
 			}
 		}
 		return false;
+	}
+
+	bool CommandManager::viablePosition(UnitInfo& unit, WalkPosition here)
+	{
+		Position p = Position(here) + Position(4, 4);
+
+		// If not a flyer and position blocks a building, has collision or a splash threat
+		if (!unit.getType().isFlyer() &&
+			(Buildings().overlapsQueuedBuilding(unit.getType(), unit.getTilePosition()) || Grids().getCollision(here) > 0 || Grids().getESplash(here) > 0))
+			return false;
+
+		// If too close of a command, is in danger or isn't walkable
+		if (p.getDistance(unit.getPosition()) < 32.0
+			|| Commands().isInDanger(unit, p)
+			|| !Util().isWalkable(unit.getWalkPosition(), here, unit.getType()))
+			return false;
+		return true;
 	}
 }

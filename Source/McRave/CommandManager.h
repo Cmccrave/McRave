@@ -31,9 +31,12 @@ namespace McRave
 		vector <CommandType> enemyCommands;
 
 		void updateUnits(), updateDecision(UnitInfo&), updateEnemyCommands();
-		
+		int left, right, top, bot;
+
+		bool viablePosition(UnitInfo&, WalkPosition);
+
 		typedef bool (CommandManager::*Command)(UnitInfo&);
-		vector<Command> commands{ &CommandManager::misc, &CommandManager::special, &CommandManager::attack, &CommandManager::approach, &CommandManager::kite, &CommandManager::escort, &CommandManager::hunt, &CommandManager::defend, &CommandManager::move };
+		vector<Command> commands{ &CommandManager::misc, &CommandManager::special, &CommandManager::attack, &CommandManager::approach, &CommandManager::kite, &CommandManager::defend, &CommandManager::hunt, &CommandManager::escort, &CommandManager::retreat, &CommandManager::move };
 	public:
 		void onFrame();
 		vector <CommandType>& getMyCommands() { return myCommands; }
@@ -51,10 +54,10 @@ namespace McRave
 		bool defend(UnitInfo&);
 		bool kite(UnitInfo&);
 		bool attack(UnitInfo&);
-		bool safeMove(UnitInfo&);
 		bool hunt(UnitInfo&);
 		bool escort(UnitInfo&);
 		bool special(UnitInfo&);
+		bool retreat(UnitInfo&);
 
 		// Adds a UnitType or TechType command at a Position
 		template<class T>

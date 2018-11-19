@@ -285,17 +285,23 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 	double attackAirAsAir = enemyLocalAirStrength > 0.0 ? allyLocalAirStrength / enemyLocalAirStrength : 10.0;
 	double attackAirAsGround = enemyLocalGroundStrength > 0.0 ? allyLocalAirStrength / enemyLocalGroundStrength : 10.0;
 	double attackGroundAsAir = enemyLocalAirStrength > 0.0 ? allyLocalGroundStrength / enemyLocalAirStrength : 10.0;
-	double attackGroundasGround = enemyLocalGroundStrength > 0.0 ? allyLocalGroundStrength / enemyLocalGroundStrength : 10.0;
-	double simValue = 0.0;
+	double attackGroundasGround = enemyLocalGroundStrength > 0.0 ? allyLocalGroundStrength / enemyLocalGroundStrength : 10.0;	
 
-	// If unit has a target, decide on its simValue based on whether we are syncing or not
-	if (unit.hasTarget()) {
+	// If unit is a flyer and no air threat
+	if (unit.getType().isFlyer() && enemyLocalAirStrength == 0.0)
+		unit.setSimValue(10.0);
+
+	// If unit is not a flyer and no ground threat
+	else if (!unit.getType().isFlyer() && enemyLocalGroundStrength == 0.0)
+		unit.setSimValue(10.0);
+
+	// If unit has a target, determine what sim value to use
+	else if (unit.hasTarget()) {
 		if (sync) {
-			Broodwar->drawCircleMap(unit.getPosition(), 5, Colors::Black, true);
 			if (unit.getType().isFlyer())
-				unit.setSimValue(min(attackAirAsAir, attackAirAsGround));
+				unit.setSimValue(min(attackAirAsAir, attackGroundAsAir));
 			else
-				unit.setSimValue(min(attackGroundAsAir, attackGroundasGround));
+				unit.setSimValue(min(attackAirAsGround, attackGroundasGround));
 		}
 		else {
 			if (unit.getType().isFlyer())
@@ -306,10 +312,14 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 	}
 
 	// If above/below thresholds, it's a sim win/loss
-	if (unit.getSimValue() >= maxThreshold)
+	if (unit.getSimValue() >= maxThreshold) {
 		unit.setSimState(SimState::Win);
-	if (unit.getSimValue() <= minThreshold)
+		unit.circleGreen();
+	}
+	else if (unit.getSimValue() <= minThreshold) {
 		unit.setSimState(SimState::Loss);
+		unit.circleRed();
+	}
 }
 
 void UnitManager::updateLocalState(UnitInfo& unit)
@@ -357,6 +367,8 @@ void UnitManager::updateLocalState(UnitInfo& unit)
 			else
 				unit.setLocalState(LocalState::Retreating);
 		}
+		else
+			unit.setLocalState(LocalState::None);
 	}
 }
 

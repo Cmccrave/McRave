@@ -132,7 +132,7 @@ namespace McRave
 
 				if (l == 0)
 					val = DBL_MAX;
-				
+
 				switch (dashCnt) {
 
 					// Builds
@@ -203,7 +203,7 @@ namespace McRave
 		}
 
 		// TODO: If the build is possible based on this map (we have wall/island requirements)
-		if (isBuildPossible(bestBuild) && isBuildAllowed(Broodwar->enemy()->getRace(), bestBuild)) {
+		if (isBuildPossible(bestBuild, bestOpener) && isBuildAllowed(Broodwar->enemy()->getRace(), bestBuild)) {
 			currentBuild = bestBuild;
 			currentOpener = bestOpener;
 			currentTransition = bestTransition;
@@ -213,13 +213,13 @@ namespace McRave
 
 	}
 
-	bool BuildOrderManager::isBuildPossible(string build)
+	bool BuildOrderManager::isBuildPossible(string build, string opener)
 	{
 		using namespace UnitTypes;
 		vector<UnitType> buildings, defenses;
 
-		if (Broodwar->self()->getRace() == Races::Protoss) {			
-			if (build == "P2Gate") {
+		if (Broodwar->self()->getRace() == Races::Protoss) {
+			if (build == "P2Gate" && opener == "Natural") {
 				buildings ={ Protoss_Gateway, Protoss_Gateway, Protoss_Pylon };
 				defenses.insert(defenses.end(), 6, Protoss_Photon_Cannon);
 			}
@@ -279,7 +279,7 @@ namespace McRave
 	}
 
 	bool BuildOrderManager::isOpenerAllowed(Race enemy, string build, string opener)
-	{		
+	{
 		// Ban certain openers from certain race matchups
 		auto p = enemy == Races::Protoss;
 		auto z = enemy == Races::Zerg;

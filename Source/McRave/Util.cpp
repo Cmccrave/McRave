@@ -338,7 +338,7 @@ Line UtilManager::parallelLine(Line line1, double distance)
 {
 	double inverseSlope = (-1.0 / line1.slope);
 	double x0 = 0.0;
-	double y0 = line1.y(x0);
+	double y0 = line1.y(int(x0));
 	double sq = sqrt(1.0 / (1.0 + pow(inverseSlope, 2.0)));
 
 	double x = x0 + (distance * sq);

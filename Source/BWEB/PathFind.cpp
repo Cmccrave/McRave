@@ -46,7 +46,7 @@ namespace BWEB
 		TilePosition target(t);
 		auto maxDist = source.getDistance(target);
 
-		if (source == target)
+		if (source == target || source == TilePosition(0,0) || target == TilePosition(0, 0))
 			return;
 
 		TilePosition parentGrid[256][256];

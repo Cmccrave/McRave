@@ -39,7 +39,7 @@ namespace McRave
 		bool isBuildAllowed(Race, string);
 		bool isTransitionAllowed(Race, string, string);
 		bool isOpenerAllowed(Race, string, string);
-		bool isBuildPossible(string);
+		bool isBuildPossible(string, string);
 
 		map <UnitType, Item> itemQueue;
 		bool getOpening = true, getTech, bioBuild, wallNat, wallMain, scout, productionSat, techSat;

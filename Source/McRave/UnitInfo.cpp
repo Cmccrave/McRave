@@ -53,10 +53,12 @@ namespace McRave
 		target = nullptr;
 		resource = nullptr;
 		role = Role::None;
-		tState = TransportState::None;
-		lState = LocalState::None;
-		gState = GlobalState::None;
-		sState = SimState::None;
+
+		// Default to retreating
+		tState = TransportState::Retreating;
+		lState = LocalState::Retreating;
+		gState = GlobalState::Retreating;
+		sState = SimState::Loss;
 
 		position = Positions::Invalid;
 		engagePosition = Positions::Invalid;

@@ -238,6 +238,10 @@ bool WorkerManager::build(UnitInfo& worker)
 
 bool WorkerManager::clearPath(UnitInfo& worker)
 {
+	auto resourceDepot = Broodwar->self()->getRace().getResourceDepot();
+	if (Units().getMyTypeCount(resourceDepot) < 2)
+		return false;
+
 	// Find boulders to clear
 	for (auto &b : Resources().getMyBoulders()) {
 		ResourceInfo &boulder = b.second;
@@ -248,9 +252,9 @@ bool WorkerManager::clearPath(UnitInfo& worker)
 
 		if (!worker.unit()->isGatheringMinerals()) {
 			if (worker.unit()->getOrderTargetPosition() != b.second.getPosition())
-				worker.unit()->gather(b.first);
-			return true;
+				worker.unit()->gather(b.first);			
 		}
+		return true;
 	}
 	return false;
 }

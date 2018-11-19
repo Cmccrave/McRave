@@ -106,6 +106,8 @@ namespace McRave
 			// Remove any stations on a canceled hatchery
 			if (unit->getType() == UnitTypes::Zerg_Drone)
 				Stations().removeStation(unit);
+			else
+				storeUnit(unit);
 		}
 
 		// Refinery that morphed as an enemy
