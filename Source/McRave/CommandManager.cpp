@@ -75,12 +75,13 @@ namespace McRave
 		auto unitWidth = int(unit.getType().width() / 8.0);
 		auto mapWidth = Broodwar->mapWidth() * 4;
 		auto mapHeight = Broodwar->mapHeight() * 4;
+		auto offset = unit.getType().isFlyer() ? 12 : 0;
 
 		// Contained within the command class to be accesible in all commands
-		left = max(start.x - radius, 12);
-		right = min(start.x + radius + unitWidth, mapWidth - 12);
-		top = max(start.y - radius, 12);
-		bot = min(start.y + radius + unitHeight, mapHeight - 12);
+		left = max(start.x - radius, offset);
+		right = min(start.x + radius + unitWidth, mapWidth - offset);
+		top = max(start.y - radius, offset);
+		bot = min(start.y + radius + unitHeight, mapHeight - offset);
 
 		// Convert our commands to strings to display what the unit is doing for debugging
 		map<int, string> commandNames{
@@ -258,12 +259,9 @@ namespace McRave
 
 	bool CommandManager::kite(UnitInfo& unit)
 	{
-		auto airHarasser = unit.getType() == UnitTypes::Protoss_Corsair || unit.getType() == UnitTypes::Zerg_Mutalisk || unit.getType() == UnitTypes::Terran_Wraith;
-		auto best = 0.0;
-		auto bestPos = Positions::Invalid;
+		const auto shouldKite = [&]() {
+			auto airHarasser = unit.getType() == UnitTypes::Protoss_Corsair || unit.getType() == UnitTypes::Zerg_Mutalisk || unit.getType() == UnitTypes::Terran_Wraith;
 
-
-		const auto canKite = [&]() {
 			// Units that never kite based on their target
 			if (unit.hasTarget() && unit.getLocalState() == LocalState::Engaging) {
 				auto allyRange = (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
@@ -285,44 +283,31 @@ namespace McRave
 			return false;
 		};
 
-		// TODO: Do we need this? Check if a worker should mineral walk
-		if (unit.hasResource() && unit.getResource().unit()->exists() && Terrain().isInAllyTerritory(unit.getTilePosition()) && Grids().getEGroundThreat(WalkPosition(unit.getResource().getPosition())) == 0.0) {
-			unit.unit()->gather(unit.getResource().unit());
+		// TODO: Make this a bit more readable
+		function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
+			Position p = Position(w) + Position(4, 4);
+			double distance;
+			if (!Strategy().defendChoke() && unit.getType() == UnitTypes::Protoss_Zealot && unit.hasTarget() && Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()))
+				distance = p.getDistance(Terrain().getMineralHoldPosition());
+			else if (unit.hasTarget() && (Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()) || Terrain().isInAllyTerritory(unit.getTilePosition())))
+				distance = 1.0 / (32.0 + p.getDistance(unit.getTarget().getPosition()));
+			else
+				distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(mapBWEB.getMainPosition()) : Grids().getDistanceHome(w);
+
+			double threat = Util().getHighestThreat(w, unit);
+			double grouping = 1.0 + (unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)) : 0.0);
+			double score = grouping / (threat * distance);
+			return score;
+		};
+
+		if (!shouldKite())
+			return false;
+
+		// If we found a valid position, move to it
+		auto bestPosition = findViablePosition(unit, scoreFunction);
+		if (bestPosition.isValid()) {
+			unit.command(UnitCommandTypes::Move, bestPosition);
 			return true;
-		}
-
-		else if (canKite()) {
-			for (int x = left; x < right; x++) {
-				for (int y = top; y < bot; y++) {
-					WalkPosition w(x, y);
-					Position p = Position(w) + Position(4, 4);
-
-					// TODO: Make this a bit more readable
-					double distance;
-					if (!Strategy().defendChoke() && unit.getType() == UnitTypes::Protoss_Zealot && unit.hasTarget() && Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()))
-						distance = p.getDistance(Terrain().getMineralHoldPosition());
-					else if (unit.hasTarget() && (Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()) || Terrain().isInAllyTerritory(unit.getTilePosition())))
-						distance = 1.0 / (32.0 + p.getDistance(unit.getTarget().getPosition()));
-					else
-						distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(mapBWEB.getMainPosition()) : Grids().getDistanceHome(w);
-
-					double threat = Util().getHighestThreat(w, unit);
-					double grouping = 1.0 + (unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)) : 0.0);
-					double score = grouping / (threat * distance);
-
-					// If position is valid and better score than current, set as current best
-					if (score > best && viablePosition(unit, w)) {
-						bestPos = p;
-						best = score;
-					}
-				}
-			}
-
-			if (bestPos.isValid()) {
-				unit.command(UnitCommandTypes::Move, bestPos);
-				return true;
-			}
-			Broodwar->drawLineMap(unit.getPosition(), bestPos, Colors::Red);
 		}
 		return false;
 	}
@@ -393,7 +378,19 @@ namespace McRave
 
 	bool CommandManager::hunt(UnitInfo& unit)
 	{
-		if (!unit.getType().isWorker() && !unit.getType().isFlyer() && unit.getType() != UnitTypes::Protoss_Dark_Templar)
+		function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
+			Position p = Position(w) + Position(4, 4);
+			double threat = Util().getHighestThreat(w, unit);
+			double distance = (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : mapBWEB.getGroundDistance(p, unit.getDestination()));
+			double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(w))));
+			double grouping = exp((unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)) : 0.0));
+			double score = grouping * visited / distance;
+			return score;
+		};
+
+		// Hunting is only valid with workers, flyers or dark templars
+		auto shouldHunt = unit.getType().isWorker() || !unit.getType().isFlyer() || unit.getType() == UnitTypes::Protoss_Dark_Templar;
+		if (!shouldHunt)
 			return false;
 
 		// HACK: If unit has no destination, give target as a destination
@@ -404,35 +401,18 @@ namespace McRave
 				unit.setDestination(Terrain().getAttackPosition());
 		}
 
-		auto best = 0.0;
-		auto bestPos = unit.getDestination();
-		for (int x = left; x < right; x++) {
-			for (int y = top; y < bot; y++) {
-				WalkPosition w(x, y);
-				Position p = Position(w) + Position(4, 4);
-				double threat = Util().getHighestThreat(w, unit);
-				double distance = (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : mapBWEB.getGroundDistance(p, unit.getDestination()));
-				double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(w))));
-				double grouping = exp((unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)) : 0.0));
-				double score = grouping * visited / distance;
+		// If we found a valid position
+		auto bestPosition = findViablePosition(unit, scoreFunction);
 
-
-				// TODO: DT if no detection then threat = min threat
-
-				if (score >= best && threat == MIN_THREAT && viablePosition(unit, w)) {
-					best = score;
-					bestPos = Position(w);
-				}
-			}
-		}
-
+		// Check if we can get free attacks
 		if (unit.hasTarget() && Util().getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT && Util().unitInRange(unit)) {
 			attack(unit);
 			return true;
 		}
-		else if (bestPos.isValid() && bestPos != unit.getDestination()) {
-			Broodwar->drawLineMap(unit.getPosition(), bestPos, Colors::Grey);
-			unit.command(UnitCommandTypes::Move, bestPos);
+		// Move to the position
+		else if (bestPosition.isValid()) {
+			Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Grey);
+			unit.command(UnitCommandTypes::Move, bestPosition);
 			return true;
 		}
 		return false;
@@ -440,33 +420,25 @@ namespace McRave
 
 	bool CommandManager::retreat(UnitInfo& unit)
 	{
+		// Low distance, low threat, high clustering
+		function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
+			Position p = Position(w) + Position(4, 4);
+			double distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(mapBWEB.getMainPosition()) : Grids().getDistanceHome(w);
+			double threat = Util().getHighestThreat(w, unit);
+			double grouping = 1.0 + (unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)) : 0.0);
+			double score = grouping / (threat * distance);
+			return score;
+		};
+
+		// Retreating is only valid when local state is retreating
 		auto shouldRetreat = unit.getLocalState() == LocalState::Retreating;
 		if (!shouldRetreat)
 			return false;
 
-		auto best = 0.0;
-		auto bestPos = Positions::Invalid;
-
-		for (int x = left; x < right; x++) {
-			for (int y = top; y < bot; y++) {
-				WalkPosition w(x, y);
-				Position p = Position(w) + Position(4, 4);
-
-				double distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(mapBWEB.getMainPosition()) : Grids().getDistanceHome(w);
-				double threat = Util().getHighestThreat(w, unit);
-				double grouping = 1.0 + (unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)) : 0.0);
-				double score = grouping / (threat * distance);
-
-				// If position is valid and better score than current, set as current best
-				if (score > best && viablePosition(unit, w)) {
-					bestPos = p;
-					best = score;
-				}
-			}
-		}
-
-		if (bestPos.isValid()) {
-			unit.command(UnitCommandTypes::Move, bestPos);
+		// If we found a valid position, move to it
+		auto bestPosition = findViablePosition(unit, scoreFunction);
+		if (bestPosition.isValid()) {
+			unit.command(UnitCommandTypes::Move, bestPosition);
 			return true;
 		}
 		return false;
@@ -474,39 +446,24 @@ namespace McRave
 
 	bool CommandManager::escort(UnitInfo& unit)
 	{
-		// Not doing this atm
-		return false;
+		// Low distance, low threat
+		function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
+			Position p = Position(w) + Position(4, 4);
+			double threat = Util().getHighestThreat(w, unit);
+			double distance = 1.0 + (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : mapBWEB.getGroundDistance(p, unit.getDestination()));
+			double score = 1.0 / (threat * distance);
+			return score;
+		};
 
-		// Low distance, attack if possible
-		auto start = unit.getWalkPosition();
-		auto best = 0.0;
-		auto bestPos = unit.getDestination();
+		// Escorting
+		auto shouldEscort = false;
+		if (!shouldEscort)
+			return false;
 
-		Broodwar->drawTextMap(unit.getPosition(), "Escort");
-		for (int x = start.x - 12; x < start.x + 16; x++) {
-			for (int y = start.y - 12; y < start.y + 16; y++) {
-				WalkPosition w(x, y);
-				Position p = Position(w) + Position(4, 4);
-				TilePosition t(w);
-
-				if (!w.isValid()
-					|| !Util().isWalkable(start, w, unit.getType())
-					|| p.getDistance(unit.getPosition()) <= 32.0)
-					continue;
-
-				double threat = Util().getHighestThreat(w, unit);
-				double distance = 1.0 + (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : mapBWEB.getGroundDistance(p, unit.getDestination()));
-
-				double score = 1.0 / (threat * distance);
-				if (score >= best && threat < 2.0) {
-					best = score;
-					bestPos = Position(w);
-				}
-			}
-		}
-
-		if (bestPos.isValid()) {
-			unit.command(UnitCommandTypes::Move, bestPos);
+		// If we found a valid position, move to it
+		auto bestPosition = findViablePosition(unit, scoreFunction);
+		if (bestPosition.isValid()) {
+			unit.command(UnitCommandTypes::Move, bestPosition);
 			return true;
 		}
 		return false;
@@ -638,20 +595,37 @@ namespace McRave
 		return false;
 	}
 
-	bool CommandManager::viablePosition(UnitInfo& unit, WalkPosition here)
+	Position CommandManager::findViablePosition(UnitInfo& unit, function<double(WalkPosition)> score)
 	{
-		Position p = Position(here) + Position(4, 4);
+		const auto viablePosition = [&](WalkPosition here) {
+			Position p = Position(here) + Position(4, 4);
 
-		// If not a flyer and position blocks a building, has collision or a splash threat
-		if (!unit.getType().isFlyer() &&
-			(Buildings().overlapsQueuedBuilding(unit.getType(), unit.getTilePosition()) || Grids().getCollision(here) > 0 || Grids().getESplash(here) > 0))
-			return false;
+			// If not a flyer and position blocks a building, has collision or a splash threat
+			if (!unit.getType().isFlyer() &&
+				(Buildings().overlapsQueuedBuilding(unit.getType(), unit.getTilePosition()) || Grids().getCollision(here) > 0 || Grids().getESplash(here) > 0))
+				return false;
 
-		// If too close of a command, is in danger or isn't walkable
-		if (p.getDistance(unit.getPosition()) < 32.0
-			|| Commands().isInDanger(unit, p)
-			|| !Util().isWalkable(unit.getWalkPosition(), here, unit.getType()))
-			return false;
-		return true;
+			// If too close of a command, is in danger or isn't walkable
+			if (p.getDistance(unit.getPosition()) < 32.0
+				|| Commands().isInDanger(unit, p)
+				|| !Util().isWalkable(unit.getWalkPosition(), here, unit.getType()))
+				return false;
+			return true;
+		};
+
+		auto bestPosition = Positions::Invalid;
+		auto best = 0.0;
+		for (int x = left; x < right; x++) {
+			for (int y = top; y < bot; y++) {
+				WalkPosition w(x, y);
+				Position p = Position(w) + Position(4, 4);
+				auto current = score(w);
+				if (current > best && viablePosition(w)) {
+					bestPosition = p;
+					best = current;
+				}
+			}
+		}
+		return bestPosition;
 	}
 }

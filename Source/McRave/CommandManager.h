@@ -33,7 +33,7 @@ namespace McRave
 		void updateUnits(), updateDecision(UnitInfo&), updateEnemyCommands();
 		int left, right, top, bot;
 
-		bool viablePosition(UnitInfo&, WalkPosition);
+		Position findViablePosition(UnitInfo&, function<double(WalkPosition)>);
 
 		typedef bool (CommandManager::*Command)(UnitInfo&);
 		vector<Command> commands{ &CommandManager::misc, &CommandManager::special, &CommandManager::attack, &CommandManager::approach, &CommandManager::kite, &CommandManager::defend, &CommandManager::hunt, &CommandManager::escort, &CommandManager::retreat, &CommandManager::move };
