@@ -126,11 +126,13 @@ namespace McRave
 			if (unit.unit()->exists() && (unit.unit()->isStasised() || unit.unit()->isMaelstrommed()))
 				continue;
 
+			auto longRangeUnit = unit.getGroundRange() >= 224.0;
+
 			if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Protoss_Scarab) {
 				if (unit.hasTarget() && unit.getTarget().unit() && unit.getTarget().unit()->exists())
 					addSplash(unit);
 			}
-			else {
+			else if (unit.unit()->exists() || longRangeUnit) {
 				addToGrids(unit);
 			}
 		}
@@ -310,8 +312,8 @@ namespace McRave
 		auto walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : (int)ceil(unit.getType().height() / 8.0) + 1;
 
 		// Reach: range + size + speed for 1 second
-		auto grdReach = int(unit.getGroundRange() + (speed * 24.0) + (pixelSize / 2));
-		auto airReach = int(unit.getAirRange() + (speed * 24.0) + (pixelSize / 2));
+		auto grdReach = int(unit.getGroundRange() + (speed * 32.0) + (pixelSize / 2));
+		auto airReach = int(unit.getAirRange() + (speed * 32.0) + (pixelSize / 2));
 
 		// HACK: Make workers range smaller
 		if (unit.getType().isWorker()) {

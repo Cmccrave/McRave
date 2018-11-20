@@ -31,7 +31,6 @@ namespace McRave
 		vector <CommandType> enemyCommands;
 
 		void updateUnits(), updateDecision(UnitInfo&), updateEnemyCommands();
-		int left, right, top, bot;
 
 		Position findViablePosition(UnitInfo&, function<double(WalkPosition)>);
 

@@ -68,21 +68,6 @@ namespace McRave
 			|| unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())	// If the unit is locked down, maelstrommed, stassised, or not completed
 			return;
 
-		// Radius for checking tiles
-		auto start = unit.getWalkPosition();
-		auto radius = 12 + int(unit.getSpeed());
-		auto unitHeight = int(unit.getType().height() / 8.0);
-		auto unitWidth = int(unit.getType().width() / 8.0);
-		auto mapWidth = Broodwar->mapWidth() * 4;
-		auto mapHeight = Broodwar->mapHeight() * 4;
-		auto offset = unit.getType().isFlyer() ? 12 : 0;
-
-		// Contained within the command class to be accesible in all commands
-		left = max(start.x - radius, offset);
-		right = min(start.x + radius + unitWidth, mapWidth - offset);
-		top = max(start.y - radius, offset);
-		bot = min(start.y + radius + unitHeight, mapHeight - offset);
-
 		// Convert our commands to strings to display what the unit is doing for debugging
 		map<int, string> commandNames{
 			make_pair(0, "Misc"),
@@ -385,11 +370,13 @@ namespace McRave
 			double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(w))));
 			double grouping = exp((unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)) : 0.0));
 			double score = grouping * visited / distance;
-			return score;
+			if (threat == MIN_THREAT)
+				return score;
+			return 0.0;
 		};
 
 		// Hunting is only valid with workers, flyers or dark templars
-		auto shouldHunt = unit.getType().isWorker() || !unit.getType().isFlyer() || unit.getType() == UnitTypes::Protoss_Dark_Templar;
+		auto shouldHunt = unit.getType().isWorker() || unit.getType().isFlyer() || unit.getType() == UnitTypes::Protoss_Dark_Templar;
 		if (!shouldHunt)
 			return false;
 
@@ -410,7 +397,7 @@ namespace McRave
 			return true;
 		}
 		// Move to the position
-		else if (bestPosition.isValid()) {
+		else if (bestPosition.isValid() && bestPosition != unit.getDestination()) {
 			Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Grey);
 			unit.command(UnitCommandTypes::Move, bestPosition);
 			return true;
@@ -597,6 +584,21 @@ namespace McRave
 
 	Position CommandManager::findViablePosition(UnitInfo& unit, function<double(WalkPosition)> score)
 	{
+		// Radius for checking tiles
+		auto start = unit.getWalkPosition();
+		auto radius = 12 + int(unit.getSpeed());
+		auto unitHeight = int(unit.getType().height() / 8.0);
+		auto unitWidth = int(unit.getType().width() / 8.0);
+		auto mapWidth = Broodwar->mapWidth() * 4;
+		auto mapHeight = Broodwar->mapHeight() * 4;
+		auto offset = unit.getType().isFlyer() ? 12 : 0;
+
+		// Boundaries
+		auto left = max(start.x - radius, offset);
+		auto right = min(start.x + radius + unitWidth, mapWidth - offset);
+		auto top = max(start.y - radius, offset);
+		auto bot = min(start.y + radius + unitHeight, mapHeight - offset);
+
 		const auto viablePosition = [&](WalkPosition here) {
 			Position p = Position(here) + Position(4, 4);
 

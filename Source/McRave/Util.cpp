@@ -167,7 +167,12 @@ double UtilManager::getHighestThreat(WalkPosition here, UnitInfo& unit)
 	auto dx = int(ceil(t.width() / 16.0));		// Half walk resolution width
 	auto dy = int(ceil(t.height() / 16.0));		// Half walk resolution height
 
-	for (int x = here.x - dx; x < here.x + dx; x++) {
+
+	WalkPosition center = here + WalkPosition(dx, dy);
+	auto grid = unit.getType().isFlyer() ? Grids().getEAirThreat(center) : Grids().getEGroundThreat(center);
+	return max(grid, MIN_THREAT);
+
+	/*for (int x = here.x - dx; x < here.x + dx; x++) {
 		for (int y = here.y - dy; y < here.y + dy; y++) {
 			WalkPosition w(x, y);
 			if (!w.isValid())
@@ -179,7 +184,7 @@ double UtilManager::getHighestThreat(WalkPosition here, UnitInfo& unit)
 			highest = (current > highest) ? current : highest;
 		}
 	}
-	return highest;
+	return highest;*/
 }
 
 bool UtilManager::accurateThreatOnPath(UnitInfo& unit, Path& path)
