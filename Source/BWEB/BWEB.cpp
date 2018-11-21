@@ -1,19 +1,8 @@
 #include "BWEB.h"
-
-// Authors Notes
-// TODO:
-// Creep estimations
-// Pylon power grid for building placer
-// Dynamic block addition (insert UnitTypes, get block)
-//	- May not be added for a while
+#include "Block.h"
 
 namespace BWEB
 {
-	Map::Map(BWEM::Map& map)
-		: mapBWEM(map)
-	{
-	}
-
 	void Map::onStart()
 	{
 		findNeutrals();
@@ -393,14 +382,5 @@ namespace BWEB
 			for (auto y = t.y; y < t.y + h; y++)
 				overlapGrid[x][y] = 1;			
 		}
-	}
-
-	Map* Map::BWEBInstance = nullptr;
-
-	Map & Map::Instance()
-	{
-		if (!BWEBInstance)
-			BWEBInstance = new Map(BWEM::Map::Instance());
-		return *BWEBInstance;
 	}
 }

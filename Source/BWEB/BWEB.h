@@ -13,33 +13,22 @@ namespace BWEB
 	using namespace BWAPI;
 	using namespace std;
 
-	class Block;
+	namespace Blocks {
+		class Block;
+	}
+
 	class Wall;
 	class Station;
-	class Map
+	namespace Map
 	{
-	private:
 		
 		vector<Station> stations;
-		vector<Wall> walls;
-		vector<Block> blocks;
+		vector<Wall> walls;		
 
 		TilePosition testTile;
 		vector<TilePosition> chokeTiles;
 		
-		// Blocks
-		// TODO: Add this function. This would be used to create a block that makes room for a specific type (possibly better generation than floodfill)
-		// void createBlock(BWAPI::Race, UnitType, BWEM::Area const *, TilePosition);
-		void insertBlock(BWAPI::Race, TilePosition, int, int);
-		void findStartBlock();
-		void findStartBlock(BWAPI::Player);
-		void findStartBlock(BWAPI::Race);
-		bool canAddBlock(TilePosition, int, int);
-
-		void insertStartBlock(TilePosition, bool, bool);
-		void insertStartBlock(BWAPI::Player, TilePosition, bool, bool);
-		void insertStartBlock(BWAPI::Race, TilePosition, bool, bool);
-		map<const BWEM::Area *, int> typePerArea;
+		
 
 		// Walls
 		bool isWallTight(Wall&, UnitType, TilePosition);
@@ -88,13 +77,9 @@ namespace BWEB
 		set<TilePosition> stationDefenses(TilePosition, bool, bool);
 
 		// General
-		static Map* BWEBInstance;
 		int testGrid[256][256];
 
-	public:
-		Map(BWEM::Map& map);
 		void draw(), onStart(), onUnitDiscover(Unit), onUnitDestroy(Unit), onUnitMorph(Unit);
-		static Map &Instance();
 		int overlapGrid[256][256] = {};
 		int usedGrid[256][256] ={};
 
@@ -132,46 +117,45 @@ namespace BWEB
 		Station* getStation(BWEM::Area const* area);
 
 		/// <summary> Returns the BWEM::Area of the natural expansion </summary>
-		const BWEM::Area * getNaturalArea() const { return naturalArea; }
+		const BWEM::Area * getNaturalArea() { return naturalArea; }
 
 		/// <summary> Returns the BWEM::Area of the main </summary>
-		const BWEM::Area * getMainArea() const { return mainArea; }
+		const BWEM::Area * getMainArea() { return mainArea; }
 
 		/// <summary> Returns the BWEM::Chokepoint of the natural </summary>
-		const BWEM::ChokePoint * getNaturalChoke() const { return naturalChoke; }
+		const BWEM::ChokePoint * getNaturalChoke() { return naturalChoke; }
 
 		/// <summary> Returns the BWEM::Chokepoint of the main </summary>
-		const BWEM::ChokePoint * getMainChoke() const { return mainChoke; }
+		const BWEM::ChokePoint * getMainChoke() { return mainChoke; }
 
 		/// <summary> Returns a vector containing every BWEB::Wall. </summary>
-		vector<Wall> getWalls() const { return walls; }
+		vector<Wall> getWalls() { return walls; }
 
-		/// <summary> Returns a vector containing every BWEB::Block </summary>
-		vector<Block> Blocks() const { return blocks; }
+
 
 		/// <summary> Returns a vector containing every BWEB::Station </summary>
-		vector<Station> Stations() const { return stations; }
+		vector<Station> Stations() { return stations; }
 
 		/// <summary> Returns the closest BWEB::Station to the given TilePosition. </summary>
-		const Station * getClosestStation(TilePosition) const;
+		const Station * getClosestStation(TilePosition);
 
 		/// <summary> Returns the closest BWEB::Wall to the given TilePosition. </summary>
-		const Wall* getClosestWall(TilePosition) const;
+		const Wall* getClosestWall(TilePosition);
 
 		/// <summary> Returns the closest BWEB::Block to the given TilePosition. </summary>
-		const Block* getClosestBlock(TilePosition) const;
+		const Blocks::Block* getClosestBlock(TilePosition);
 
 		/// Returns the TilePosition of the natural expansion
-		TilePosition getNaturalTile() const { return naturalTile; }
+		TilePosition getNaturalTile() { return naturalTile; }
 
 		/// Returns the Position of the natural expansion
-		Position getNaturalPosition() const { return naturalPosition; }
+		Position getNaturalPosition() { return naturalPosition; }
 
 		/// Returns the TilePosition of the main
-		TilePosition getMainTile() const { return mainTile; }
+		TilePosition getMainTile() { return mainTile; }
 
 		/// Returns the Position of the main
-		Position getMainPosition() const { return mainPosition; }
+		Position getMainPosition() { return mainPosition; }
 
 		/// Returns the set of used TilePositions
 		set<TilePosition>& getUsedTiles() { return usedTiles; }
@@ -194,14 +178,9 @@ namespace BWEB
 		/// <param name="tight"> (Optional) Decides whether this addition to the BWEB::Wall intends to be walled around a specific UnitType. Defaults to none. </param>
 		void addToWall(UnitType type, Wall& wall, UnitType tight = UnitTypes::None);
 
-		/// <summary> Erases any blocks at the specified TilePosition. </summary>
-		/// <param name="here"> The TilePosition that you want to delete any BWEB::Block that exists here. </param>
-		void eraseBlock(TilePosition here);
 
-		/// <summary> Initializes the building of every BWEB::Block on the map, call it only once per game. </summary>
-		void findBlocks(BWAPI::Player);
-		void findBlocks(BWAPI::Race);
-		void findBlocks();		
+
+		
 
 		static pair<Position, Position> lineOfBestFit(BWEM::ChokePoint const *);
 	};
@@ -213,10 +192,10 @@ namespace BWEB
 		Path();
 		vector<TilePosition>& getTiles() { return tiles; }
 		double getDistance() { return dist; }
-		void createUnitPath(BWEB::Map&, BWEM::Map&, const Position, const Position);
-		void createWallPath(BWEB::Map&, BWEM::Map&, const Position, const Position, bool);
+		void createUnitPath(BWEM::Map&, const Position, const Position);
+		void createWallPath(BWEM::Map&, const Position, const Position, bool);
 
-		void createPath(BWEB::Map&, BWEM::Map&, const Position, const Position, function <bool(const TilePosition)>, vector<TilePosition>);
+		void createPath(BWEM::Map&, const Position, const Position, function <bool(const TilePosition)>, vector<TilePosition>);
 	};
 
 	// This namespace contains functions which could be used for backward compatibility
