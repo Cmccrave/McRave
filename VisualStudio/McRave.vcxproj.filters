@@ -172,9 +172,6 @@
     <ClCompile Include="..\Source\McRave\SupportManager.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\BWEB\BWEBUtil.cpp">
-      <Filter>BWEB</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">

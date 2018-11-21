@@ -5,14 +5,11 @@ using namespace std;
 using namespace BWAPI;
 using namespace BWEB::Map;
 
-namespace BWEB
+namespace BWEB::Blocks
 {
-	namespace Blocks 
-	{
-		namespace {
-			vector<Block> allBlocks;
-			map<const BWEM::Area *, int> typePerArea;
-		}
+	namespace {
+		vector<Block> allBlocks;
+		map<const BWEM::Area *, int> typePerArea;
 
 		void findStartBlock()
 		{
@@ -126,63 +123,6 @@ namespace BWEB
 				}
 			}
 			insertBlock(race, tileBest, 5, 2);
-		}
-
-		void findBlocks()
-		{
-			findBlocks(Broodwar->self());
-		}
-		void findBlocks(Player player)
-		{
-			findBlocks(player->getRace());
-		}
-		void findBlocks(Race race)
-		{
-			findStartBlock(race);
-			vector<int> heights, widths;
-			multimap<double, TilePosition> tilesByPathDist;
-
-			// Calculate distance for each tile to our natural choke, we want to place bigger blocks closer to the chokes
-			for (int x = 0; x < Broodwar->mapWidth(); x++) {
-				for (int y = 0; y < Broodwar->mapHeight(); y++) {
-					TilePosition t(x, y);
-					Position p(t);
-					if (t.isValid() && Broodwar->isBuildable(t)) {
-						double dist = naturalChoke ? p.getDistance(Position(naturalChoke->Center())) : p.getDistance(mainPosition);
-						tilesByPathDist.insert(make_pair(dist, t));
-					}
-				}
-			}
-
-			// Setup block sizes per race
-			if (race == Races::Protoss) {
-				heights.insert(heights.end(), { 2, 4, 5, 6, 8 });
-				widths.insert(widths.end(), { 4, 5, 8, 10, 18 });
-			}
-			else if (race == Races::Terran) {
-				heights.insert(heights.end(), { 2, 4, 5, 6 });
-				widths.insert(widths.end(), { 3, 6, 10 });
-			}
-			else if (race == Races::Zerg) {
-				heights.insert(heights.end(), { 2, 4, 5 });
-				widths.insert(widths.end(), { 2, 3, 8 });
-			}
-
-			// Iterate every tile
-			for (int i = 20; i > 0; i--) {
-				for (int j = 20; j > 0; j--) {
-
-					if (find(heights.begin(), heights.end(), j) == heights.end() || find(widths.begin(), widths.end(), i) == widths.end())
-						continue;
-
-					for (auto &t : tilesByPathDist) {
-						TilePosition tile(t.second);
-						if (canAddBlock(tile, i, j)) {
-							insertBlock(race, tile, i, j);
-						}
-					}
-				}
-			}
 		}
 
 		bool canAddBlock(const TilePosition here, const int width, const int height)
@@ -429,37 +369,93 @@ namespace BWEB
 				allBlocks.push_back(newBlock);
 			}
 		}
+	}
 
-		void eraseBlock(const TilePosition here)
-		{
-			for (auto it = allBlocks.begin(); it != allBlocks.end(); ++it) {
-				auto&  block = *it;
-				if (here.x >= block.Location().x && here.x < block.Location().x + block.width() && here.y >= block.Location().y && here.y < block.Location().y + block.height()) {
-					allBlocks.erase(it);
-					return;
+	void eraseBlock(const TilePosition here)
+	{
+		for (auto it = allBlocks.begin(); it != allBlocks.end(); ++it) {
+			auto&  block = *it;
+			if (here.x >= block.Location().x && here.x < block.Location().x + block.width() && here.y >= block.Location().y && here.y < block.Location().y + block.height()) {
+				allBlocks.erase(it);
+				return;
+			}
+		}
+	}
+
+	void findBlocks()
+	{
+		findBlocks(Broodwar->self());
+	}
+	void findBlocks(Player player)
+	{
+		findBlocks(player->getRace());
+	}
+	void findBlocks(Race race)
+	{
+		findStartBlock(race);
+		vector<int> heights, widths;
+		multimap<double, TilePosition> tilesByPathDist;
+
+		// Calculate distance for each tile to our natural choke, we want to place bigger blocks closer to the chokes
+		for (int x = 0; x < Broodwar->mapWidth(); x++) {
+			for (int y = 0; y < Broodwar->mapHeight(); y++) {
+				TilePosition t(x, y);
+				Position p(t);
+				if (t.isValid() && Broodwar->isBuildable(t)) {
+					double dist = naturalChoke ? p.getDistance(Position(naturalChoke->Center())) : p.getDistance(mainPosition);
+					tilesByPathDist.insert(make_pair(dist, t));
 				}
 			}
 		}
 
-		const Block* getClosestBlock(TilePosition here)
-		{
-			double distBest = DBL_MAX;
-			const Block* bestBlock = nullptr;
-			for (auto &block : allBlocks) {
-				const auto tile = block.Location() + TilePosition(block.width() / 2, block.height() / 2);
-				const auto dist = here.getDistance(tile);
+		// Setup block sizes per race
+		if (race == Races::Protoss) {
+			heights.insert(heights.end(), { 2, 4, 5, 6, 8 });
+			widths.insert(widths.end(), { 4, 5, 8, 10, 18 });
+		}
+		else if (race == Races::Terran) {
+			heights.insert(heights.end(), { 2, 4, 5, 6 });
+			widths.insert(widths.end(), { 3, 6, 10 });
+		}
+		else if (race == Races::Zerg) {
+			heights.insert(heights.end(), { 2, 4, 5 });
+			widths.insert(widths.end(), { 2, 3, 8 });
+		}
 
-				if (dist < distBest) {
-					distBest = dist;
-					bestBlock = &block;
+		// Iterate every tile
+		for (int i = 20; i > 0; i--) {
+			for (int j = 20; j > 0; j--) {
+
+				if (find(heights.begin(), heights.end(), j) == heights.end() || find(widths.begin(), widths.end(), i) == widths.end())
+					continue;
+
+				for (auto &t : tilesByPathDist) {
+					TilePosition tile(t.second);
+					if (canAddBlock(tile, i, j)) {
+						insertBlock(race, tile, i, j);
+					}
 				}
 			}
-			return bestBlock;
 		}
+	}
 
-		Block::Block(const int width, const int height, const TilePosition tile)
-		{
-			w = width, h = height, t = tile;
+	vector<Block> getBlocks() {
+		return allBlocks;
+	}
+
+	const Block* getClosestBlock(TilePosition here)
+	{
+		double distBest = DBL_MAX;
+		const Block* bestBlock = nullptr;
+		for (auto &block : allBlocks) {
+			const auto tile = block.Location() + TilePosition(block.width() / 2, block.height() / 2);
+			const auto dist = here.getDistance(tile);
+
+			if (dist < distBest) {
+				distBest = dist;
+				bestBlock = &block;
+			}
 		}
+		return bestBlock;
 	}
 }

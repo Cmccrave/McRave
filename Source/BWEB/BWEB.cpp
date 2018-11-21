@@ -1,9 +1,12 @@
 #include "BWEB.h"
 #include "Block.h"
 
-namespace BWEB
+using namespace std;
+using namespace BWAPI;
+
+namespace BWEB::Map
 {
-	void Map::onStart()
+	void onStart()
 	{
 		findNeutrals();
 		findMain();
@@ -13,7 +16,7 @@ namespace BWEB
 		findStations();
 	}
 
-	void Map::onUnitDiscover(const Unit unit)
+	void onUnitDiscover(const Unit unit)
 	{
 		if (!unit
 			|| !unit->getType().isBuilding()
@@ -53,12 +56,12 @@ namespace BWEB
 		}
 	}
 
-	void Map::onUnitMorph(const Unit unit)
+	void onUnitMorph(const Unit unit)
 	{
 		onUnitDiscover(unit);
 	}
 
-	void Map::onUnitDestroy(const Unit unit)
+	void onUnitDestroy(const Unit unit)
 	{
 		if (!unit
 			|| !unit->getType().isBuilding()
@@ -97,14 +100,14 @@ namespace BWEB
 		}
 	}
 
-	void Map::findMain()
+	void findMain()
 	{
 		mainTile = Broodwar->self()->getStartLocation();
 		mainPosition = static_cast<Position>(mainTile) + Position(64, 48);
 		mainArea = mapBWEM.GetArea(mainTile);
 	}
 
-	void Map::findNatural()
+	void findNatural()
 	{
 		auto distBest = DBL_MAX;
 		for (auto &area : mapBWEM.Areas()) {
@@ -128,7 +131,7 @@ namespace BWEB
 		}
 	}
 
-	void Map::findMainChoke()
+	void findMainChoke()
 	{
 		// Add all main chokes to a set
 		set<BWEM::ChokePoint const *> mainChokes;
@@ -160,7 +163,7 @@ namespace BWEB
 		}
 	}
 
-	void Map::findNaturalChoke()
+	void findNaturalChoke()
 	{
 		// Exception for maps with a natural behind the main such as Crossing Fields
 		if (getGroundDistance(mainPosition, mapBWEM.Center()) < getGroundDistance(naturalPosition, mapBWEM.Center())) {
@@ -209,7 +212,7 @@ namespace BWEB
 		}
 	}
 
-	void Map::findNeutrals()
+	void findNeutrals()
 	{
 		// Add overlap for neutrals
 		for (auto &unit : Broodwar->neutral()->getUnits()) {
@@ -218,7 +221,7 @@ namespace BWEB
 		}
 	}
 
-	void Map::draw()
+	void draw()
 	{
 		for (auto &choke : mainArea->ChokePoints()) {
 			const auto dist = getGroundDistance(Position(choke->Center()), mainPosition);
@@ -308,7 +311,7 @@ namespace BWEB
 		auto tileBest = TilePositions::Invalid;
 
 		// Search through each block to find the closest block and valid position
-		for (auto &block : blocks) {
+		for (auto &block : Blocks::getBlocks()) {
 			set<TilePosition> placements;
 			if (type.tileWidth() == 4) placements = block.LargeTiles();
 			else if (type.tileWidth() == 3) placements = block.MediumTiles();
@@ -348,7 +351,87 @@ namespace BWEB
 		return tileBest;
 	}
 
-	bool Map::isPlaceable(UnitType type, const TilePosition location)
+	bool overlapsAnything(const TilePosition here, const int width, const int height, bool ignoreBlocks)
+	{
+		for (auto x = here.x; x < here.x + width; x++) {
+			for (auto y = here.y; y < here.y + height; y++) {
+				TilePosition t(x, y);
+				if (!t.isValid())
+					continue;
+				if (Map::overlapGrid[x][y] > 0)
+					return true;
+			}
+		}
+		return false;
+	}
+
+	bool isWalkable(const TilePosition here)
+	{
+		int cnt = 0;
+		const auto start = WalkPosition(here);
+		for (auto x = start.x; x < start.x + 4; x++) {
+			for (auto y = start.y; y < start.y + 4; y++) {
+				if (!WalkPosition(x, y).isValid())
+					return false;
+				if (!Broodwar->isWalkable(WalkPosition(x, y)))
+					cnt++;
+			}
+		}
+		return cnt <= 1;
+	}
+
+	int tilesWithinArea(BWEM::Area const * area, const TilePosition here, const int width, const int height)
+	{
+		auto cnt = 0;
+		for (auto x = here.x; x < here.x + width; x++) {
+			for (auto y = here.y; y < here.y + height; y++) {
+				TilePosition t(x, y);
+				if (!t.isValid())
+					return false;
+
+				// Make an assumption that if it's on a chokepoint geometry, it belongs to the area provided
+				if (Map::mapBWEM.GetArea(t) == area /*|| !mapBWEM.GetArea(t)*/)
+					cnt++;
+			}
+		}
+		return cnt;
+	}
+
+	pair<Position, Position> lineOfBestFit(const BWEM::ChokePoint * choke)
+	{
+		auto sumX = 0.0, sumY = 0.0;
+		auto sumXY = 0.0, sumX2 = 0.0;
+		for (auto geo : choke->Geometry()) {
+			Position p = Position(geo) + Position(4, 4);
+			sumX += p.x;
+			sumY += p.y;
+			sumXY += p.x * p.y;
+			sumX2 += p.x * p.x;
+		}
+		double xMean = sumX / choke->Geometry().size();
+		double yMean = sumY / choke->Geometry().size();
+		double denominator = sumX2 - sumX * xMean;
+
+		double slope = (sumXY - sumX * yMean) / denominator;
+		double yInt = yMean - slope * xMean;
+
+		// y = mx + b
+		// solve for x and y
+
+		// end 1
+		int x1 = Position(choke->Pos(choke->end1)).x;
+		int y1 = int(ceil(x1 * slope)) + int(yInt);
+		Position p1 = Position(x1, y1);
+
+		// end 2
+		int x2 = Position(choke->Pos(choke->end2)).x;
+		int y2 = int(ceil(x2 * slope)) + int(yInt);
+		Position p2 = Position(x2, y2);
+
+		return make_pair(p1, p2);
+	}
+
+	bool isPlaceable(UnitType type, const TilePosition location)
 	{
 		// Placeable is valid if buildable and not overlapping neutrals
 		// Note: Must check neutrals due to the terrain below them technically being buildable
@@ -366,8 +449,8 @@ namespace BWEB
 				TilePosition tile(x, y);
 				if (!tile.isValid()
 					|| !Broodwar->isBuildable(tile)
-					|| usedTiles.find(tile) != usedTiles.end()
-					|| reserveGrid[x][y] > 0
+					|| Map::usedTiles.find(tile) != Map::usedTiles.end()
+					|| Map::reserveGrid[x][y] > 0
 					|| (type.isResourceDepot() && !Broodwar->canBuildHere(tile, type)))
 					return false;
 			}
@@ -376,11 +459,11 @@ namespace BWEB
 		return true;
 	}
 
-	void Map::addOverlap(const TilePosition t, const int w, const int h)
+	void addOverlap(const TilePosition t, const int w, const int h)
 	{
 		for (auto x = t.x; x < t.x + w; x++) {
 			for (auto y = t.y; y < t.y + h; y++)
-				overlapGrid[x][y] = 1;			
+				Map::overlapGrid[x][y] = 1;
 		}
 	}
 }

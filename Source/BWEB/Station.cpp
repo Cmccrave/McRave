@@ -1,7 +1,15 @@
 #include "Station.h"
+#include "BWEB.h"
 
-namespace BWEB
+using namespace std;
+using namespace BWAPI;
+
+namespace BWEB::Stations
 {
+	namespace {
+		std::vector<Station> stations;
+
+	}
 	Station::Station(const Position newResourceCenter, const set<TilePosition>& newDefenses, const BWEM::Base* newBase)
 	{
 		resourceCentroid = newResourceCenter;
@@ -9,7 +17,7 @@ namespace BWEB
 		base = newBase;
 	}
 
-	void Map::findStations()
+	void findStations()
 	{
 		const auto addResourceOverlap = [&](Position genCenter) {
 			TilePosition start(genCenter);
@@ -19,7 +27,7 @@ namespace BWEB
 					if (!t.isValid())
 						continue;
 					if (t.getDistance(start) <= 4)
-						addOverlap(t, 1, 1);
+						Map::addOverlap(t, 1, 1);
 				}
 			}
 		};
@@ -64,15 +72,15 @@ namespace BWEB
 		}
 	}
 
-	set<TilePosition> Map::stationDefenses(const TilePosition here, const bool mirrorHorizontal, const bool mirrorVertical)
+	set<TilePosition> stationDefenses(const TilePosition here, const bool mirrorHorizontal, const bool mirrorVertical)
 	{
 		return stationDefenses(Broodwar->self(), here, mirrorHorizontal, mirrorVertical);
 	}
-	set<TilePosition> Map::stationDefenses(BWAPI::Player player, const TilePosition here, const bool mirrorHorizontal, const bool mirrorVertical)
+	set<TilePosition> stationDefenses(BWAPI::Player player, const TilePosition here, const bool mirrorHorizontal, const bool mirrorVertical)
 	{
 		return stationDefenses(player->getRace(), here, mirrorHorizontal, mirrorVertical);
 	}
-	set<TilePosition> Map::stationDefenses(BWAPI::Race race, const TilePosition here, const bool mirrorHorizontal, const bool mirrorVertical)
+	set<TilePosition> stationDefenses(BWAPI::Race race, const TilePosition here, const bool mirrorHorizontal, const bool mirrorVertical)
 	{
 		set<TilePosition> defenses;
 
@@ -185,7 +193,7 @@ namespace BWEB
 		return defenses;
 	}
 
-	const Station * Map::getClosestStation(TilePosition here) const
+	const Station * getClosestStation(TilePosition here)
 	{
 		auto distBest = DBL_MAX;
 		const Station* bestStation = nullptr;
