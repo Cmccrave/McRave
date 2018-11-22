@@ -4,9 +4,6 @@
     <ClCompile Include="..\Source\BWEB\Block.cpp">
       <Filter>BWEB</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\BWEB\BWEB.cpp">
-      <Filter>BWEB</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\BWEB\Station.cpp">
       <Filter>BWEB</Filter>
     </ClCompile>
@@ -172,12 +169,12 @@
     <ClCompile Include="..\Source\McRave\SupportManager.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\BWEB\BWEB.cpp">
+      <Filter>BWEB</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">
-      <Filter>BWEB</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\BWEB\BWEB.h">
       <Filter>BWEB</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\BWEB\Station.h">
@@ -320,6 +317,12 @@
     </ClInclude>
     <ClInclude Include="..\Source\McRave\SupportManager.h">
       <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEB\PathFind.h">
+      <Filter>BWEB</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\BWEB\BWEB.h">
+      <Filter>BWEB</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

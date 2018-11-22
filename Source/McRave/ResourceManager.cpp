@@ -80,10 +80,10 @@ void ResourceManager::storeResource(Unit resource)
 
 	// If we are not on an inital frame, a geyser was just created and we need to see if we own it
 	if (Broodwar->getFrameCount() > 0) {
-		auto newStation = mapBWEB.getClosestStation(resource->getTilePosition());
+		auto newStation = BWEB::Stations::getClosestStation(resource->getTilePosition());
 
 		if (newStation) {
-			for (auto &s : Stations().getMyStations()) {
+			for (auto &s : MyStations().getMyStations()) {
 				auto &station = *s.second;
 				if (station.BWEMBase() == newStation->BWEMBase()) {
 					r.setResourceState(ResourceState::Mineable);

@@ -86,7 +86,7 @@ namespace McRave
 
 		// BWEB
 		if (bweb) {
-			mapBWEB.draw();
+			BWEB::Map::draw();
 		}
 	}
 

@@ -1,5 +1,8 @@
 #include "BWEB.h"
 #include "Block.h"
+#include "Station.h"
+#include "Wall.h"
+#include "PathFind.h"
 
 using namespace std;
 using namespace BWAPI;
@@ -13,7 +16,7 @@ namespace BWEB::Map
 		findNatural();
 		findMainChoke();
 		findNaturalChoke();
-		findStations();
+		Stations::findStations();
 	}
 
 	void onUnitDiscover(const Unit unit)
@@ -44,7 +47,7 @@ namespace BWEB::Map
 			|| type == UnitTypes::Zerg_Spore_Colony
 			|| type == UnitTypes::Terran_Missile_Turret) {
 
-			for (auto &station : stations) {
+			for (auto &station : Stations::getStations()) {
 				int defCnt = station.getDefenseCount();
 				for (auto &defense : station.DefenseLocations()) {
 					if (unit->getTilePosition() == defense) {
@@ -88,7 +91,7 @@ namespace BWEB::Map
 			|| type == UnitTypes::Zerg_Spore_Colony
 			|| type == UnitTypes::Terran_Missile_Turret) {
 			
-			for (auto &station : stations) {
+			for (auto &station : Stations::getStations()) {
 				int defCnt = station.getDefenseCount();
 				for (auto &defense : station.DefenseLocations()) {
 					if (unit->getTilePosition() == defense) {
@@ -229,7 +232,7 @@ namespace BWEB::Map
 		}
 
 		// Draw Blocks 
-		for (auto &block : blocks) {
+		for (auto &block : Blocks::getBlocks()) {
 			for (auto &tile : block.SmallTiles())
 				Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), Broodwar->self()->getColor());
 			for (auto &tile : block.MediumTiles())
@@ -239,14 +242,14 @@ namespace BWEB::Map
 		}
 
 		// Draw Stations
-		for (auto &station : stations) {
+		for (auto &station : Stations::getStations()) {
 			for (auto &tile : station.DefenseLocations())
 				Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), Broodwar->self()->getColor());
 			Broodwar->drawBoxMap(Position(station.BWEMBase()->Location()), Position(station.BWEMBase()->Location()) + Position(129, 97), Broodwar->self()->getColor());
 		}
 
 		// Draw Walls
-		for (auto &wall : walls) {
+		for (auto &wall : Walls::getWalls()) {
 			for (auto &tile : wall.smallTiles())
 				Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), Broodwar->self()->getColor());
 			for (auto &tile : wall.mediumTiles())
@@ -264,13 +267,6 @@ namespace BWEB::Map
 			Broodwar->drawLineMap(Position(p1), Position(p2), Colors::Green);
 		}
 
-		Broodwar->drawCircleMap(Position(testTile), 8, Broodwar->self()->getColor(), true);
-
-		Broodwar->drawTextMap(Position(endTile), "EndTile");
-		Broodwar->drawTextMap(Position(startTile), "StartTile");
-		Broodwar->drawTextMap(Position(initialEnd), "InitialEnd");
-		Broodwar->drawTextMap(Position(initialStart), "InitialStart");
-
 		// Draw Reserve Path and some grids
 		for (int x = 0; x < Broodwar->mapWidth(); x++) {
 			for (int y = 0; y < Broodwar->mapHeight(); y++) {
@@ -285,7 +281,7 @@ namespace BWEB::Map
 	}
 
 	template <class T>
-	double Map::getGroundDistance(T s, T e)
+	double getGroundDistance(T s, T e)
 	{
 		Position start(s), end(e);
 		auto dist = 0.0;
@@ -332,7 +328,7 @@ namespace BWEB::Map
 		auto tileBest = TilePositions::Invalid;
 
 		// Search through each wall to find the closest valid TilePosition
-		for (auto &wall : walls) {
+		for (auto &wall : Walls::getWalls()) {
 			for (auto &tile : wall.getDefenses()) {
 				const auto dist = tile.getDistance(searchCenter);
 				if (dist < distBest && isPlaceable(type, tile))
@@ -341,7 +337,7 @@ namespace BWEB::Map
 		}
 
 		// Search through each station to find the closest valid TilePosition
-		for (auto &station : stations) {
+		for (auto &station : Stations::getStations()) {
 			for (auto &tile : station.DefenseLocations()) {
 				const auto dist = tile.getDistance(searchCenter);
 				if (dist < distBest && isPlaceable(type, tile))

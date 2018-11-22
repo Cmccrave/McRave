@@ -10,15 +10,15 @@ void StationManager::onFrame()
 void StationManager::onStart()
 {
 	// Add paths to our station network
-	for (auto &s1 : mapBWEB.Stations()) {
-		for (auto &s2 : mapBWEB.Stations()) {
-			const Station * ptrs1 = &s1;
-			const Station * ptrs2 = &s2;
+	for (auto &s1 : BWEB::Stations::getStations()) {
+		for (auto &s2 : BWEB::Stations::getStations()) {
+			auto ptrs1 = &s1;
+			auto ptrs2 = &s2;
 			if (stationNetworkExists(ptrs1, ptrs2) || ptrs1 == ptrs2)
 				continue;
 
-			Path newPath;
-			newPath.createUnitPath(mapBWEB, mapBWEM, ptrs1->ResourceCentroid(), ptrs2->ResourceCentroid());
+			BWEB::PathFinding::Path newPath;
+			newPath.createUnitPath(mapBWEM, ptrs1->ResourceCentroid(), ptrs2->ResourceCentroid());
 			stationNetwork[ptrs1][ptrs2] = newPath;
 		}
 	}
@@ -50,7 +50,7 @@ Position StationManager::getClosestEnemyStation(Position here)
 
 void StationManager::storeStation(Unit unit)
 {
-	auto newStation = mapBWEB.getClosestStation(unit->getTilePosition());
+	auto newStation = BWEB::Stations::getClosestStation(unit->getTilePosition());
 	if (!newStation
 		|| !unit->getType().isResourceDepot()
 		|| unit->getTilePosition() != newStation->BWEMBase()->Location())
@@ -89,7 +89,7 @@ void StationManager::storeStation(Unit unit)
 
 void StationManager::removeStation(Unit unit)
 {
-	const Station * station = mapBWEB.getClosestStation(unit->getTilePosition());
+	auto station = BWEB::Stations::getClosestStation(unit->getTilePosition());
 	if (!station || !unit->getType().isResourceDepot())
 		return;
 
@@ -113,12 +113,12 @@ void StationManager::removeStation(Unit unit)
 	}
 }
 
-bool StationManager::needDefenses(const Station station)
+bool StationManager::needDefenses(const BWEB::Stations::Station station)
 {
 	auto centroid = TilePosition(station.ResourceCentroid());
 	auto defenseCount = station.getDefenseCount();
-	auto main = station.BWEMBase()->Location() == mapBWEB.getMainTile();
-	auto nat = station.BWEMBase()->Location() == mapBWEB.getNaturalTile();
+	auto main = station.BWEMBase()->Location() == BWEB::Map::getMainTile();
+	auto nat = station.BWEMBase()->Location() == BWEB::Map::getNaturalTile();
 
 	if (!Pylons().hasPower(centroid, UnitTypes::Protoss_Photon_Cannon))
 		return false;
@@ -134,7 +134,7 @@ bool StationManager::needDefenses(const Station station)
 	return false;
 }
 
-bool StationManager::stationNetworkExists(const Station * start, const Station * finish)
+bool StationManager::stationNetworkExists(const BWEB::Stations::Station * start, const BWEB::Stations::Station * finish)
 {
 	for (auto &s : stationNetwork) {
 		auto s1 = s.first;
@@ -150,7 +150,7 @@ bool StationManager::stationNetworkExists(const Station * start, const Station *
 	return false;
 }
 
-Path* StationManager::pathStationToStation(const Station * start, const Station * finish)
+BWEB::PathFinding::Path* StationManager::pathStationToStation(const BWEB::Stations::Station * start, const BWEB::Stations::Station * finish)
 {
 	for (auto &s : stationNetwork) {
 		auto s1 = s.first;

@@ -1,5 +1,6 @@
 #include "Wall.h"
 #include "BWEB.h"
+#include "PathFind.h"
 
 using namespace std;
 using namespace BWAPI;
@@ -27,13 +28,26 @@ namespace BWEB::Walls
 		double currentPathSize{};
 
 		// Information that is passed in
-		BWEM::Map& mapBWEM;
 		UnitType tight;
 		bool reservePath{};
 		bool requireTight;
 		int chokeWidth;
 		Position wallBase;
 		vector<TilePosition> chokeTiles;
+
+		UnitType overlapsCurrentWall(const TilePosition here, const int width = 0, const int height = 0)
+		{
+			for (auto x = here.x; x < here.x + width; x++) {
+				for (auto y = here.y; y < here.y + height; y++) {
+					for (auto &placement : currentWall) {
+						const auto tile = placement.first;
+						if (x >= tile.x && x < tile.x + placement.second.tileWidth() && y >= tile.y && y < tile.y + placement.second.tileHeight())
+							return placement.second;
+					}
+				}
+			}
+			return UnitTypes::None;
+		}
 		
 		bool iteratePieces(Wall& wall)
 		{
@@ -201,21 +215,7 @@ namespace BWEB::Walls
 				recursiveCheck(start);
 			} while (next_permutation(wall.getRawBuildings().begin(), find(wall.getRawBuildings().begin(), wall.getRawBuildings().end(), UnitTypes::Protoss_Pylon)));
 			return !bestWall.empty();
-		}
-
-		UnitType overlapsCurrentWall(const TilePosition here, const int width = 0, const int height = 0)
-		{
-			for (auto x = here.x; x < here.x + width; x++) {
-				for (auto y = here.y; y < here.y + height; y++) {
-					for (auto &placement : currentWall) {
-						const auto tile = placement.first;
-						if (x >= tile.x && x < tile.x + placement.second.tileWidth() && y >= tile.y && y < tile.y + placement.second.tileHeight())
-							return placement.second;
-					}
-				}
-			}
-			return UnitTypes::None;
-		}
+		}		
 
 		bool isPoweringWall(Wall& wall, const TilePosition here)
 		{
@@ -389,7 +389,7 @@ namespace BWEB::Walls
 						if (overlapsCurrentWall(t) != UnitTypes::None || !Map::isWalkable(t))
 							continue;
 
-						if (mapBWEM.GetArea(t) == wall.getArea() && dist < distBest) {
+						if (Map::mapBWEM.GetArea(t) == wall.getArea() && dist < distBest) {
 							startTile = t;
 							distBest = dist;
 						}
@@ -406,7 +406,7 @@ namespace BWEB::Walls
 						if (overlapsCurrentWall(t) != UnitTypes::None || !Map::isWalkable(t))
 							continue;
 
-						if (mapBWEM.GetArea(t) && dist > distBest) {
+						if (Map::mapBWEM.GetArea(t) && dist > distBest) {
 							endTile = t;
 							distBest = dist;
 						}
@@ -427,7 +427,7 @@ namespace BWEB::Walls
 			auto dy2 = n1.y - n2.y;
 			Position direction1 = Position(-dy1 / 2, dx1 / 2) + Position(choke->Center());
 			Position direction2 = Position(-dy2 / 2, dx2 / 2) + Position(choke->Center());
-			Position trueDirection = direction1.getDistance(mapBWEM.Center()) < direction2.getDistance(mapBWEM.Center()) ? direction1 : direction2;
+			Position trueDirection = direction1.getDistance(Map::mapBWEM.Center()) < direction2.getDistance(Map::mapBWEM.Center()) ? direction1 : direction2;
 
 			if (choke == Map::naturalChoke) {
 				initialStart = TilePosition(Map::mainChoke->Center());
@@ -454,7 +454,7 @@ namespace BWEB::Walls
 			Position endCenter = Position(endTile) + Position(16, 16);
 
 			// Get a new path
-			Path newPath;
+			BWEB::PathFinding::Path newPath;
 			newPath.createWallPath(Map::mapBWEM, startCenter, endCenter, ignoreOverlap);
 			currentHole = TilePositions::None;
 			currentPath = newPath.getTiles();
@@ -530,17 +530,7 @@ namespace BWEB::Walls
 			Map::addOverlap(tileBest, 2, 2);
 		}
 	}
-
-	void Wall::insertSegment(const BWAPI::TilePosition here, BWAPI::UnitType building)
-	{
-		if (building.tileWidth() >= 4)
-			large.insert(here);
-		else if (building.tileWidth() >= 3)
-			medium.insert(here);
-		else
-			small.insert(here);
-	}
-	
+		
 	void createWall(vector<UnitType>& buildings, const BWEM::Area * area, const BWEM::ChokePoint * choke, const UnitType t, const vector<UnitType>& defenses, const bool rp, const bool rt)
 	{
 		if (!area) {

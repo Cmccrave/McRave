@@ -13,28 +13,27 @@ namespace BWEB::Walls
 		const BWEM::Area * area;
 		const BWEM::ChokePoint * choke;
 
-		vector<BWAPI::UnitType> rawBuildings, rawDefenses;
+		std::vector<BWAPI::UnitType> rawBuildings, rawDefenses;
 		
 	public:
-		Wall(const BWEM::Area * a, const BWEM::ChokePoint * c, vector<BWAPI::UnitType> b, vector<BWAPI::UnitType> d)
+		Wall(const BWEM::Area * a, const BWEM::ChokePoint * c, std::vector<BWAPI::UnitType> b, std::vector<BWAPI::UnitType> d)
 		{
 			area = a;
 			choke = c;
-			door = TilePositions::Invalid;
+			door = BWAPI::TilePositions::Invalid;
 			rawBuildings = b;
 			rawDefenses = d;
 		}
 
 		void insertDefense(BWAPI::TilePosition here) { defenses.insert(here); }
 		void setWallDoor(BWAPI::TilePosition here) { door = here; }
-		void insertSegment(BWAPI::TilePosition, BWAPI::UnitType);
 		void setCentroid(BWAPI::Position here) { centroid = here; }
 
 		const BWEM::ChokePoint * getChokePoint() const { return choke; }
 		const BWEM::Area * getArea() const { return area; }
 		
 		/// <summary> Returns the defense locations associated with this Wall. </summary>
-		set<BWAPI::TilePosition> getDefenses() const { return defenses; }
+		std::set<BWAPI::TilePosition> getDefenses() const { return defenses; }
 
 		/// <summary> Returns the TilePosition belonging to the position where a melee unit should stand to fill the gap of the wall. </summary>
 		BWAPI::TilePosition getDoor() const { return door; }
@@ -43,23 +42,32 @@ namespace BWEB::Walls
 		BWAPI::Position getCentroid() const { return centroid; }
 
 		/// <summary> Returns the TilePosition belonging to large UnitType buildings. </summary>
-		set<BWAPI::TilePosition> largeTiles() const { return large; }
+		std::set<BWAPI::TilePosition> largeTiles() const { return large; }
 
 		/// <summary> Returns the TilePosition belonging to medium UnitType buildings. </summary>
-		set<BWAPI::TilePosition> mediumTiles() const { return medium; }
+		std::set<BWAPI::TilePosition> mediumTiles() const { return medium; }
 
 		/// <summary> Returns the TilePosition belonging to small UnitType buildings. </summary>
-		set<BWAPI::TilePosition> smallTiles() const { return small; }
+		std::set<BWAPI::TilePosition> smallTiles() const { return small; }
 
 		/// <summary> Returns the raw vector of the buildings passed in. </summary>
-		vector<BWAPI::UnitType>& getRawBuildings() { return rawBuildings; }
+		std::vector<BWAPI::UnitType>& getRawBuildings() { return rawBuildings; }
 
 		/// <summary> Returns the raw vector of the defenses passed in. </summary>
-		vector<BWAPI::UnitType>& getRawDefenses() { return rawDefenses; }
+		std::vector<BWAPI::UnitType>& getRawDefenses() { return rawDefenses; }
+
+		void insertSegment(BWAPI::TilePosition here, BWAPI::UnitType building) {
+			if (building.tileWidth() >= 4)
+				large.insert(here);
+			else if (building.tileWidth() >= 3)
+				medium.insert(here);
+			else
+				small.insert(here);
+		}
 	};	
 
 	/// <summary> Returns a vector containing every BWEB::Wall. </summary>
-	vector<Wall> getWalls();
+	std::vector<Wall> getWalls();
 
 	/// <summary> <para> Returns a pointer to a BWEB::Wall if it has been created in the given BWEM::Area and BWEM::ChokePoint. </para>
 	/// <para> Note: If you only pass a BWEM::Area or a BWEM::ChokePoint (not both), it will imply and pick a BWEB::Wall that exists within that Area or blocks that BWEM::ChokePoint. </para></summary>

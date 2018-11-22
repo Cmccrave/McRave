@@ -14,13 +14,13 @@ void ScoutManager::updateScoutTargets()
 
 	// If enemy start is valid and explored, add a target to the most recent one to scout
 	if (Terrain().foundEnemy()) {
-		for (auto &s : Stations().getEnemyStations()) {
+		for (auto &s : MyStations().getEnemyStations()) {
 			auto &station = *s.second;
 			TilePosition tile(station.BWEMBase()->Center());
 			if (tile.isValid())
 				scoutTargets.insert(Position(tile));
 		}
-		if (Players().vZ() && Stations().getEnemyStations().size() == 1 && Strategy().getEnemyBuild() != "Unknown")
+		if (Players().vZ() && MyStations().getEnemyStations().size() == 1 && Strategy().getEnemyBuild() != "Unknown")
 			scoutTargets.insert((Position)Terrain().getEnemyExpand());
 	}
 
@@ -35,7 +35,7 @@ void ScoutManager::updateScoutTargets()
 		int basesExplored = 0;
 		for (auto &tile : mapBWEM.StartingLocations()) {
 			Position center = Position(tile) + Position(64, 48);
-			double dist = center.getDistance(mapBWEB.getMainPosition());
+			double dist = center.getDistance(BWEB::Map::getMainPosition());
 			if (Broodwar->isExplored(tile))
 				basesExplored++;
 
@@ -44,7 +44,7 @@ void ScoutManager::updateScoutTargets()
 		}
 
 		// If we have scouted 2 bases (including our own), scout the middle for a proxy if it's walkable
-		if (basesExplored == 2 && !Broodwar->isExplored((TilePosition)mapBWEM.Center()) && mapBWEB.getGroundDistance(mapBWEB.getMainPosition(), mapBWEM.Center()) != DBL_MAX)
+		if (basesExplored == 2 && !Broodwar->isExplored((TilePosition)mapBWEM.Center()) && BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), mapBWEM.Center()) != DBL_MAX)
 			scoutTargets.insert(mapBWEM.Center());
 	}
 
@@ -58,7 +58,7 @@ void ScoutManager::updateScoutTargets()
 
 	// If it's a cannon rush, scout the main
 	if (Strategy().getEnemyBuild() == "PCannonRush")
-		scoutTargets.insert(mapBWEB.getMainPosition());
+		scoutTargets.insert(BWEB::Map::getMainPosition());
 }
 
 void ScoutManager::updateScouts()
@@ -86,8 +86,8 @@ void ScoutManager::updateAssignment(UnitInfo& unit)
 
 	// If we have seen an enemy Probe before we've scouted the enemy, follow it
 	if (Units().getEnemyCount(UnitTypes::Protoss_Probe) == 1) {
-		auto w = Util().getClosestUnit(mapBWEB.getMainPosition(), Broodwar->enemy(), UnitTypes::Protoss_Probe);
-		proxyCheck = (w && !Terrain().getEnemyStartingPosition().isValid() && w->getPosition().getDistance(mapBWEB.getMainPosition()) < 640.0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1);
+		auto w = Util().getClosestUnit(BWEB::Map::getMainPosition(), Broodwar->enemy(), UnitTypes::Protoss_Probe);
+		proxyCheck = (w && !Terrain().getEnemyStartingPosition().isValid() && w->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1);
 	}
 
 	// If we know a proxy possibly exists, we need a second scout
@@ -103,12 +103,12 @@ void ScoutManager::updateAssignment(UnitInfo& unit)
 	if (!BuildOrder().firstReady() || Strategy().getEnemyBuild() == "Unknown") {
 
 		// If it's a proxy (maybe cannon rush), try to find the unit to kill
-		if ((Strategy().enemyProxy() || proxyCheck) && scoutCount > 1 && scoutAssignments.find(mapBWEB.getMainPosition()) == scoutAssignments.end()) {
+		if ((Strategy().enemyProxy() || proxyCheck) && scoutCount > 1 && scoutAssignments.find(BWEB::Map::getMainPosition()) == scoutAssignments.end()) {
 
 			UnitInfo* enemyunit = Util().getClosestUnit(unit.getPosition(), Broodwar->enemy(), UnitTypes::Protoss_Probe);
-			scoutAssignments.insert(mapBWEB.getMainPosition());
+			scoutAssignments.insert(BWEB::Map::getMainPosition());
 
-			if (enemyunit && enemyunit->getPosition().isValid() && enemyunit->getPosition().getDistance(mapBWEB.getMainPosition()) < 640.0) {
+			if (enemyunit && enemyunit->getPosition().isValid() && enemyunit->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0) {
 				if (enemyunit->unit() && enemyunit->unit()->exists()) {
 					unit.unit()->attack(enemyunit->unit());
 					return;
@@ -128,7 +128,7 @@ void ScoutManager::updateAssignment(UnitInfo& unit)
 				}
 			}
 			else
-				unit.setDestination(mapBWEB.getMainPosition());
+				unit.setDestination(BWEB::Map::getMainPosition());
 		}
 
 		// If we have scout targets, find the closest target

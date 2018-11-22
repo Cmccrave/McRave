@@ -36,11 +36,11 @@ void McRaveModule::onStart()
 	Broodwar->setLocalSpeed(0);
 	Terrain().onStart();
 	Players().onStart();
-	mapBWEB.onStart();
-	Stations().onStart();
+	BWEB::Map::onStart();
+	MyStations().onStart();
 	Grids().onStart();
 	BuildOrder().onStart();
-	mapBWEB.findBlocks();
+	BWEB::Blocks::findBlocks();
 	Broodwar->sendText("glhf");
 }
 
@@ -56,7 +56,7 @@ void McRaveModule::onFrame()
 	Resources().onFrame();
 	Strategy().onFrame();
 	BuildOrder().onFrame();
-	Stations().onFrame();
+	MyStations().onFrame();
 
 	// Update unit information and grids based on the information
 	Units().onFrame();

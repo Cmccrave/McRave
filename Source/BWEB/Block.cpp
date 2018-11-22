@@ -11,120 +11,6 @@ namespace BWEB::Blocks
 		vector<Block> allBlocks;
 		map<const BWEM::Area *, int> typePerArea;
 
-		void findStartBlock()
-		{
-			findStartBlock(Broodwar->self());
-		}
-		void findStartBlock(Player player)
-		{
-			findStartBlock(player->getRace());
-		}
-		void findStartBlock(Race race)
-		{
-			bool v;
-			auto h = (v = false);
-
-			TilePosition tileBest = TilePositions::Invalid;
-			auto distBest = DBL_MAX;
-			auto start = (mainTile + (mainChoke ? (TilePosition)mainChoke->Center() : mainTile)) / 2;
-
-			for (auto x = start.x - 6; x <= start.x + 10; x++) {
-				for (auto y = start.y - 6; y <= start.y + 10; y++) {
-					TilePosition tile(x, y);
-
-					if (!tile.isValid() || mapBWEM.GetArea(tile) != mainArea)
-						continue;
-
-					auto blockCenter = Position(tile) + Position(128, 80);
-					const auto dist = blockCenter.getDistance(mainPosition) + log(blockCenter.getDistance((Position)mainChoke->Center()));
-					if (dist < distBest && ((race == Races::Protoss && canAddBlock(tile, 8, 5)) || (race == Races::Terran && canAddBlock(tile, 6, 5)) || (race == Races::Zerg && canAddBlock(tile, 8, 5)))) {
-						tileBest = tile;
-						distBest = dist;
-
-						h = (blockCenter.x < mainPosition.x);
-						v = (blockCenter.y < mainPosition.y);
-					}
-				}
-			}
-
-			// HACK: Fix for transistor, check natural area too
-			if (mainChoke == naturalChoke) {
-				for (auto x = naturalTile.x - 9; x <= naturalTile.x + 6; x++) {
-					for (auto y = naturalTile.y - 6; y <= naturalTile.y + 5; y++) {
-						TilePosition tile(x, y);
-
-						if (!tile.isValid())
-							continue;
-
-						auto blockCenter = Position(tile) + Position(128, 80);
-						const auto dist = blockCenter.getDistance(mainPosition) + blockCenter.getDistance(Position(mainChoke->Center()));
-						if (dist < distBest && ((race == Races::Protoss && canAddBlock(tile, 8, 5)) || (race == Races::Terran && canAddBlock(tile, 6, 5)))) {
-							tileBest = tile;
-							distBest = dist;
-
-							h = (blockCenter.x < mainPosition.x);
-							v = (blockCenter.y < mainPosition.y);
-						}
-					}
-				}
-			}
-
-			// HACK: Fix for plasma, if we don't have a valid one, rotate and try a less efficient vertical one
-			if (!tileBest.isValid()) {
-				for (auto x = mainTile.x - 16; x <= mainTile.x + 20; x++) {
-					for (auto y = mainTile.y - 16; y <= mainTile.y + 20; y++) {
-						TilePosition tile(x, y);
-
-						if (!tile.isValid() || mapBWEM.GetArea(tile) != mainArea)
-							continue;
-
-						auto blockCenter = Position(tile) + Position(80, 128);
-						const auto dist = blockCenter.getDistance(mainPosition);
-						if (dist < distBest && race == Races::Protoss && canAddBlock(tile, 5, 8)) {
-							tileBest = tile;
-							distBest = dist;
-						}
-					}
-				}
-				if (tileBest.isValid()) {
-					Block newBlock(5, 8, tileBest);
-					addOverlap(tileBest, 5, 8);
-					newBlock.insertLarge(tileBest);
-					newBlock.insertLarge(tileBest + TilePosition(0, 5));
-					newBlock.insertSmall(tileBest + TilePosition(0, 3));
-					newBlock.insertMedium(tileBest + TilePosition(2, 3));
-					allBlocks.push_back(newBlock);
-				}
-			}
-
-			else if (tileBest.isValid())
-				insertStartBlock(race, tileBest, h, v);
-
-
-			// HACK: Added a block that allows a good shield battery placement
-			start = (TilePosition)mainChoke->Center();
-			distBest = DBL_MAX;
-			for (auto x = start.x - 12; x <= start.x + 16; x++) {
-				for (auto y = start.y - 12; y <= start.y + 16; y++) {
-					TilePosition tile(x, y);
-
-					if (!tile.isValid() || mapBWEM.GetArea(tile) != mainArea)
-						continue;
-
-					auto blockCenter = Position(tile) + Position(80, 32);
-					const auto dist = (blockCenter.getDistance((Position)mainChoke->Center()));
-					if (dist < distBest && canAddBlock(tile, 5, 2)) {
-						tileBest = tile;
-						distBest = dist;
-
-						h = (blockCenter.x < mainPosition.x);
-						v = (blockCenter.y < mainPosition.y);
-					}
-				}
-			}
-			insertBlock(race, tileBest, 5, 2);
-		}
-
 		bool canAddBlock(const TilePosition here, const int width, const int height)
 		{
 			// Check if a block of specified size would overlap any bases, resources or other blocks
@@ -296,16 +182,6 @@ namespace BWEB::Blocks
 			addOverlap(here, width, height);
 		}
 
-		void insertStartBlock(const TilePosition here, const bool mirrorHorizontal, const bool mirrorVertical)
-		{
-			insertStartBlock(Broodwar->self(), here, mirrorHorizontal, mirrorVertical);
-		}
-
-		void insertStartBlock(Player player, const TilePosition here, const bool mirrorHorizontal, const bool mirrorVertical)
-		{
-			insertStartBlock(player->getRace(), here, mirrorHorizontal, mirrorVertical);
-		}
-
 		void insertStartBlock(Race race, const TilePosition here, const bool h, const bool v)
 		{
 			const auto &offset = [&](int x, int y) {
@@ -368,6 +244,128 @@ namespace BWEB::Blocks
 				newBlock.insertMedium(offset(3, 3));
 				allBlocks.push_back(newBlock);
 			}
+		}
+		void insertStartBlock(Player player, const TilePosition here, const bool mirrorHorizontal, const bool mirrorVertical)
+		{
+			insertStartBlock(player->getRace(), here, mirrorHorizontal, mirrorVertical);
+		}
+		void insertStartBlock(const TilePosition here, const bool mirrorHorizontal, const bool mirrorVertical)
+		{
+			insertStartBlock(Broodwar->self(), here, mirrorHorizontal, mirrorVertical);
+		}
+
+		void findStartBlock(Race race)
+		{
+			bool v;
+			auto h = (v = false);
+
+			TilePosition tileBest = TilePositions::Invalid;
+			auto distBest = DBL_MAX;
+			auto start = (mainTile + (mainChoke ? (TilePosition)mainChoke->Center() : mainTile)) / 2;
+
+			for (auto x = start.x - 6; x <= start.x + 10; x++) {
+				for (auto y = start.y - 6; y <= start.y + 10; y++) {
+					TilePosition tile(x, y);
+
+					if (!tile.isValid() || mapBWEM.GetArea(tile) != mainArea)
+						continue;
+
+					auto blockCenter = Position(tile) + Position(128, 80);
+					const auto dist = blockCenter.getDistance(mainPosition) + log(blockCenter.getDistance((Position)mainChoke->Center()));
+					if (dist < distBest && ((race == Races::Protoss && canAddBlock(tile, 8, 5)) || (race == Races::Terran && canAddBlock(tile, 6, 5)) || (race == Races::Zerg && canAddBlock(tile, 8, 5)))) {
+						tileBest = tile;
+						distBest = dist;
+
+						h = (blockCenter.x < mainPosition.x);
+						v = (blockCenter.y < mainPosition.y);
+					}
+				}
+			}
+
+			// HACK: Fix for transistor, check natural area too
+			if (mainChoke == naturalChoke) {
+				for (auto x = naturalTile.x - 9; x <= naturalTile.x + 6; x++) {
+					for (auto y = naturalTile.y - 6; y <= naturalTile.y + 5; y++) {
+						TilePosition tile(x, y);
+
+						if (!tile.isValid())
+							continue;
+
+						auto blockCenter = Position(tile) + Position(128, 80);
+						const auto dist = blockCenter.getDistance(mainPosition) + blockCenter.getDistance(Position(mainChoke->Center()));
+						if (dist < distBest && ((race == Races::Protoss && canAddBlock(tile, 8, 5)) || (race == Races::Terran && canAddBlock(tile, 6, 5)))) {
+							tileBest = tile;
+							distBest = dist;
+
+							h = (blockCenter.x < mainPosition.x);
+							v = (blockCenter.y < mainPosition.y);
+						}
+					}
+				}
+			}
+
+			// HACK: Fix for plasma, if we don't have a valid one, rotate and try a less efficient vertical one
+			if (!tileBest.isValid()) {
+				for (auto x = mainTile.x - 16; x <= mainTile.x + 20; x++) {
+					for (auto y = mainTile.y - 16; y <= mainTile.y + 20; y++) {
+						TilePosition tile(x, y);
+
+						if (!tile.isValid() || mapBWEM.GetArea(tile) != mainArea)
+							continue;
+
+						auto blockCenter = Position(tile) + Position(80, 128);
+						const auto dist = blockCenter.getDistance(mainPosition);
+						if (dist < distBest && race == Races::Protoss && canAddBlock(tile, 5, 8)) {
+							tileBest = tile;
+							distBest = dist;
+						}
+					}
+				}
+				if (tileBest.isValid()) {
+					Block newBlock(5, 8, tileBest);
+					addOverlap(tileBest, 5, 8);
+					newBlock.insertLarge(tileBest);
+					newBlock.insertLarge(tileBest + TilePosition(0, 5));
+					newBlock.insertSmall(tileBest + TilePosition(0, 3));
+					newBlock.insertMedium(tileBest + TilePosition(2, 3));
+					allBlocks.push_back(newBlock);
+				}
+			}
+
+			else if (tileBest.isValid())
+				insertStartBlock(race, tileBest, h, v);
+
+
+			// HACK: Added a block that allows a good shield battery placement
+			start = (TilePosition)mainChoke->Center();
+			distBest = DBL_MAX;
+			for (auto x = start.x - 12; x <= start.x + 16; x++) {
+				for (auto y = start.y - 12; y <= start.y + 16; y++) {
+					TilePosition tile(x, y);
+
+					if (!tile.isValid() || mapBWEM.GetArea(tile) != mainArea)
+						continue;
+
+					auto blockCenter = Position(tile) + Position(80, 32);
+					const auto dist = (blockCenter.getDistance((Position)mainChoke->Center()));
+					if (dist < distBest && canAddBlock(tile, 5, 2)) {
+						tileBest = tile;
+						distBest = dist;
+
+						h = (blockCenter.x < mainPosition.x);
+						v = (blockCenter.y < mainPosition.y);
+					}
+				}
+			}
+			insertBlock(race, tileBest, 5, 2);
+		}
+		void findStartBlock(Player player)
+		{
+			findStartBlock(player->getRace());
+		}
+		void findStartBlock()
+		{
+			findStartBlock(Broodwar->self());
 		}
 	}
 

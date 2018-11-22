@@ -201,7 +201,7 @@ namespace McRave
 
 
 				// Island
-				if ((mapBWEM.GetArea(w) && mapBWEM.GetArea(w)->AccessibleNeighbours().size() == 0) || !mapBWEB.isWalkable((TilePosition)w))
+				if ((mapBWEM.GetArea(w) && mapBWEM.GetArea(w)->AccessibleNeighbours().size() == 0) || !BWEB::Map::isWalkable((TilePosition)w))
 					mobility[x][y] = -1;
 
 				// Setup what is possible to check ground distances on
@@ -234,7 +234,7 @@ namespace McRave
 
 	void GridManager::updateDistance()
 	{
-		WalkPosition source(mapBWEB.getMainPosition());
+		WalkPosition source(BWEB::Map::getMainPosition());
 		vector<WalkPosition> direction{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 },{ -1,-1 },{ -1, 1 },{ 1, -1 },{ 1, 1 } };
 		double root2 = sqrt(2.0);
 
@@ -253,7 +253,7 @@ namespace McRave
 
 				if (next.isValid() && tile.isValid()) {
 					// If next has a distance assigned or isn't walkable
-					if (distanceHome[next.x][next.y] != 0.0 || !mapBWEB.isWalkable((TilePosition)next))
+					if (distanceHome[next.x][next.y] != 0.0 || !BWEB::Map::isWalkable((TilePosition)next))
 						continue;
 
 					// Add distance and add to queue

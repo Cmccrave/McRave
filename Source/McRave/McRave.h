@@ -51,7 +51,6 @@ namespace McRave
 namespace
 {
 	auto &mapBWEM = BWEM::Map::Instance();
-	auto &mapBWEB = BWEB::Map::Instance();
 }
 
 // Include standard libraries that are needed
@@ -95,7 +94,7 @@ namespace McRave
 	inline PylonManager& Pylons() { return PylonSingleton::Instance(); }
 	inline ResourceManager& Resources() { return ResourceSingleton::Instance(); }
 	inline ScoutManager& Scouts() { return ScoutSingleton::Instance(); }
-	inline StationManager& Stations() { return StationSingleton::Instance(); }
+	inline StationManager& MyStations() { return StationSingleton::Instance(); }
 	inline StrategyManager& Strategy() { return StrategySingleton::Instance(); }
 	inline TargetManager& Targets() { return TargetSingleton::Instance(); }
 	inline TerrainManager& Terrain() { return TerrainSingleton::Instance(); }

@@ -12,10 +12,10 @@ namespace McRave
 	void GoalManager::updateProtossGoals()
 	{
 		// Defend my expansions
-		for (auto &s : Stations().getMyStations()) {
+		for (auto &s : MyStations().getMyStations()) {
 			auto station = *s.second;
 
-			if (station.BWEMBase()->Location() != mapBWEB.getNaturalTile() && station.BWEMBase()->Location() != mapBWEB.getMainTile() && station.getDefenseCount() == 0)
+			if (station.BWEMBase()->Location() != BWEB::Map::getNaturalTile() && station.BWEMBase()->Location() != BWEB::Map::getMainTile() && station.getDefenseCount() == 0)
 				assignClosestToGoal(station.BWEMBase()->Center(), vector<UnitType> {UnitTypes::Protoss_Dragoon, 4});
 		}
 
@@ -24,7 +24,7 @@ namespace McRave
 		if (Players().vP() || Players().vT()) {
 			auto distBest = 0.0;
 			auto posBest = Positions::Invalid;
-			for (auto &s : Stations().getEnemyStations()) {
+			for (auto &s : MyStations().getEnemyStations()) {
 				auto station = *s.second;
 				auto pos = station.BWEMBase()->Center();
 				auto dist = pos.getDistance(Terrain().getEnemyStartingPosition());
@@ -57,7 +57,7 @@ namespace McRave
 
 		// Deny enemy expansions
 		// PvT
-		if (Players().vT() && Stations().getMyStations().size() >= 3 && Stations().getMyStations().size() > Stations().getEnemyStations().size() && Terrain().getEnemyExpand().isValid() && Units().getSupply() >= 200)
+		if (Players().vT() && MyStations().getMyStations().size() >= 3 && MyStations().getMyStations().size() > MyStations().getEnemyStations().size() && Terrain().getEnemyExpand().isValid() && Units().getSupply() >= 200)
 			assignClosestToGoal((Position)Terrain().getEnemyExpand(), vector<UnitType> { UnitTypes::Protoss_Dragoon, 4 });
 	}
 
@@ -69,10 +69,10 @@ namespace McRave
 	void GoalManager::updateZergGoals()
 	{
 		// Send lurkers to expansions when turtling
-		if (Broodwar->self()->getRace() == Races::Zerg && !Stations().getMyStations().empty()) {
-			auto lurkerPerBase = Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Lurker) / Stations().getMyStations().size();
+		if (Broodwar->self()->getRace() == Races::Zerg && !MyStations().getMyStations().empty()) {
+			auto lurkerPerBase = Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Lurker) / MyStations().getMyStations().size();
 
-			for (auto &base : Stations().getMyStations()) {
+			for (auto &base : MyStations().getMyStations()) {
 				auto station = *base.second;
 				assignClosestToGoal(station.ResourceCentroid(), vector<UnitType> { UnitTypes::Zerg_Lurker, UnitTypes::Zerg_Lurker, UnitTypes::Zerg_Lurker, UnitTypes::Zerg_Lurker });
 			}

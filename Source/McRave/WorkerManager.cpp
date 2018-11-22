@@ -25,8 +25,8 @@ void WorkerManager::updateAssignment(UnitInfo& worker)
 	auto threatened = (worker.hasResource() && Util().accurateThreatOnPath(worker, worker.getPath()));
 	auto distBest = (injured || threatened) ? 0.0 : DBL_MAX;
 	auto needNewAssignment = false;
-	vector<const Station *> safeStations;
-	const Station * closest = mapBWEB.getClosestStation(worker.getTilePosition());
+	vector<const BWEB::Stations::Station *> safeStations;
+	auto closest = BWEB::Stations::getClosestStation(worker.getTilePosition());
 
 	const auto resourceReady = [&](ResourceInfo& resource, int i) {
 		if (!resource.unit()
@@ -62,10 +62,10 @@ void WorkerManager::updateAssignment(UnitInfo& worker)
 
 		// Find a path on the station network
 		if (worker.getPosition().getDistance(closest->ResourceCentroid()) < 320.0) {
-			for (auto &s : Stations().getMyStations()) {
+			for (auto &s : MyStations().getMyStations()) {
 				auto station = s.second;
-				auto closePath = Stations().pathStationToStation(closest, station);
-				Path path;
+				auto closePath = MyStations().pathStationToStation(closest, station);
+				BWEB::PathFinding::Path path;
 				if (closest  && closePath)
 					path = *closePath;
 
@@ -128,7 +128,7 @@ void WorkerManager::updateAssignment(UnitInfo& worker)
 		bestResource->setGathererCount(bestResource->getGathererCount() + 1);
 		bestResource->getType().isMineralField() ? minWorkers++ : gasWorkers++;
 
-		Path emptyPath;
+		BWEB::PathFinding::Path emptyPath;
 		worker.setResource(bestResource);
 		worker.setPath(emptyPath);
 	}
@@ -199,7 +199,7 @@ bool WorkerManager::build(UnitInfo& worker)
 		auto mineralIncome = (minWorkers - 1) * 0.045;
 		auto gasIncome = (gasWorkers - 1) * 0.07;
 		auto speed = worker.getType().topSpeed();
-		auto dist = mapBWEB.getGroundDistance(worker.getPosition(), center);
+		auto dist = BWEB::Map::getGroundDistance(worker.getPosition(), center);
 		auto time = (dist / speed) + 50.0;
 		auto enoughGas = worker.getBuildingType().gasPrice() > 0 ? Broodwar->self()->gas() + int(gasIncome * time) >= worker.getBuildingType().gasPrice() : true;
 		auto enoughMins = worker.getBuildingType().mineralPrice() > 0 ? Broodwar->self()->minerals() + int(mineralIncome * time) >= worker.getBuildingType().mineralPrice() : true;
@@ -289,14 +289,14 @@ bool WorkerManager::gather(UnitInfo& worker)
 
 		// 1) If it's close or same area, don't need a path		
 		if (closeToResource(worker)) {
-			Path emptyPath;
+			BWEB::PathFinding::Path emptyPath;
 			worker.setPath(emptyPath);
 		}
 
 		// 2) If it's far, generate a path		
 		else if (worker.getLastTile() != worker.getTilePosition() && resourceCentroid.isValid()) {
-			Path newPath;
-			newPath.createUnitPath(mapBWEB, mapBWEM, worker.getPosition(), resourceCentroid);
+			BWEB::PathFinding::Path newPath;
+			newPath.createUnitPath(mapBWEM, worker.getPosition(), resourceCentroid);
 			worker.setPath(newPath);
 		}
 
@@ -343,7 +343,7 @@ bool WorkerManager::returnCargo(UnitInfo& worker)
 
 bool WorkerManager::closeToResource(UnitInfo& worker)
 {
-	auto close = mapBWEB.getGroundDistance(worker.getResource().getPosition(), worker.getPosition()) <= 320.0;
+	auto close = BWEB::Map::getGroundDistance(worker.getResource().getPosition(), worker.getPosition()) <= 320.0;
 	auto sameArea = mapBWEM.GetArea(worker.getTilePosition()) == mapBWEM.GetArea(worker.getResource().getTilePosition());
 	return close || sameArea;
 }

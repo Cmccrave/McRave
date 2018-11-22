@@ -36,7 +36,6 @@ namespace BWEB::Blocks
 		void insertLarge(const BWAPI::TilePosition here) { large.insert(here); }
 	};
 
-
 	/// <summary> Initializes the building of every BWEB::Block on the map, call it only once per game. </summary>
 	void findBlocks(BWAPI::Player);
 	void findBlocks(BWAPI::Race);

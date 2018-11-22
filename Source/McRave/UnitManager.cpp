@@ -71,8 +71,8 @@ void UnitManager::updateUnits()
 					if (!t.isValid())
 						continue;
 
-					mapBWEB.getUsedTiles().erase(t);
-					mapBWEB.usedGrid[x][y] = 0;
+					BWEB::Map::getUsedTiles().erase(t);
+					BWEB::Map::usedGrid[x][y] = 0;
 				}
 			}
 			continue;
@@ -429,9 +429,9 @@ void UnitManager::updateRole(UnitInfo& unit)
 	}
 
 	// Check if we should scout - TODO: scout count from scout manager
-	if (mapBWEB.getNaturalChoke() && BuildOrder().shouldScout() && Units().getMyRoleCount(Role::Scouting) < 1) {
+	if (BWEB::Map::getNaturalChoke() && BuildOrder().shouldScout() && Units().getMyRoleCount(Role::Scouting) < 1) {
 		auto type = Broodwar->self()->getRace().getWorker();
-		auto scout = Util().getClosestUnit(Position(mapBWEB.getNaturalChoke()->Center()), Broodwar->self(), type);
+		auto scout = Util().getClosestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), Broodwar->self(), type);
 		if (scout == &unit) {
 			scout->setRole(Role::Scouting);
 			scout->setResource(nullptr);

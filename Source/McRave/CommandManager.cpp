@@ -277,7 +277,7 @@ namespace McRave
 			else if (unit.hasTarget() && (Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()) || Terrain().isInAllyTerritory(unit.getTilePosition())))
 				distance = 1.0 / (32.0 + p.getDistance(unit.getTarget().getPosition()));
 			else
-				distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(mapBWEB.getMainPosition()) : Grids().getDistanceHome(w);
+				distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids().getDistanceHome(w);
 
 			double threat = Util().getHighestThreat(w, unit);
 			double grouping = 1.0 + (unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)) : 0.0);
@@ -329,10 +329,10 @@ namespace McRave
 		// HACK: Flyers defend above a base
 		// TODO: Choose a base instead of closest to enemy, sometimes fly over a base I dont own
 		if (unit.getType().isFlyer()) {
-			if (Terrain().getEnemyStartingPosition().isValid() && mapBWEB.getMainPosition().getDistance(Terrain().getEnemyStartingPosition()) < mapBWEB.getNaturalPosition().getDistance(Terrain().getEnemyStartingPosition()))
-				unit.unit()->move(mapBWEB.getMainPosition());
+			if (Terrain().getEnemyStartingPosition().isValid() && BWEB::Map::getMainPosition().getDistance(Terrain().getEnemyStartingPosition()) < BWEB::Map::getNaturalPosition().getDistance(Terrain().getEnemyStartingPosition()))
+				unit.unit()->move(BWEB::Map::getMainPosition());
 			else
-				unit.unit()->move(mapBWEB.getNaturalPosition());
+				unit.unit()->move(BWEB::Map::getNaturalPosition());
 		}
 
 		else if (unit.getDestination().isValid()) {
@@ -366,7 +366,7 @@ namespace McRave
 		function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
 			Position p = Position(w) + Position(4, 4);
 			double threat = Util().getHighestThreat(w, unit);
-			double distance = (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : mapBWEB.getGroundDistance(p, unit.getDestination()));
+			double distance = (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination()));
 			double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(w))));
 			double grouping = exp((unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)) : 0.0));
 			double score = grouping * visited / distance;
@@ -410,7 +410,7 @@ namespace McRave
 		// Low distance, low threat, high clustering
 		function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
 			Position p = Position(w) + Position(4, 4);
-			double distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(mapBWEB.getMainPosition()) : Grids().getDistanceHome(w);
+			double distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids().getDistanceHome(w);
 			double threat = Util().getHighestThreat(w, unit);
 			double grouping = 1.0 + (unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)) : 0.0);
 			double score = grouping / (threat * distance);
@@ -437,7 +437,7 @@ namespace McRave
 		function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
 			Position p = Position(w) + Position(4, 4);
 			double threat = Util().getHighestThreat(w, unit);
-			double distance = 1.0 + (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : mapBWEB.getGroundDistance(p, unit.getDestination()));
+			double distance = 1.0 + (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination()));
 			double score = 1.0 / (threat * distance);
 			return score;
 		};

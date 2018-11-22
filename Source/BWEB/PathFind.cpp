@@ -1,10 +1,13 @@
+#include "PathFind.h"
 #include "BWEB.h"
 
+using namespace std;
+using namespace BWAPI;
 using namespace std::placeholders;
 
-namespace BWEB
-{
-	void Path::createWallPath(BWEB::Map& mapBWEB, BWEM::Map& mapBWEM, const Position s, const Position t, bool ignoreOverlap)
+namespace BWEB::PathFinding
+{	
+	void Path::createWallPath(BWEM::Map& mapBWEM, const Position s, const Position t, bool ignoreOverlap)
 	{
 		TilePosition target(t);
 		TilePosition source(s);
@@ -13,17 +16,17 @@ namespace BWEB
 
 		const auto collision = [&](const TilePosition tile) {
 			return !tile.isValid()
-				|| (!ignoreOverlap && mapBWEB.overlapGrid[tile.x][tile.y] > 0)
-				|| !mapBWEB.isWalkable(tile)
-				|| mapBWEB.usedGrid[tile.x][tile.y] > 0
-				|| mapBWEB.overlapsCurrentWall(tile) != UnitTypes::None
+				|| (!ignoreOverlap && Map::overlapGrid[tile.x][tile.y] > 0)
+				|| !Map::isWalkable(tile)
+				|| Map::usedGrid[tile.x][tile.y] > 0
+				|| Map::overlapsCurrentWall(tile) != UnitTypes::None
 				|| tile.getDistance(target) > maxDist * 1.2;
 		};
 
-		createPath(mapBWEB, mapBWEM, s, t, collision, direction);
+		createPath(mapBWEM, s, t, collision, direction);
 	}
 
-	void Path::createUnitPath(BWEB::Map& mapBWEB, BWEM::Map& mapBWEM, const Position s, const Position t)
+	void Path::createUnitPath(BWEM::Map& mapBWEM, const Position s, const Position t)
 	{
 		TilePosition target(t);
 		TilePosition source(s);
@@ -32,15 +35,15 @@ namespace BWEB
 
 		const auto collision = [&](const TilePosition tile) {
 			return !tile.isValid()
-				|| !mapBWEB.isWalkable(tile)
-				|| (mapBWEB.usedGrid[tile.x][tile.y] > 0)
+				|| !Map::isWalkable(tile)
+				|| (Map::usedGrid[tile.x][tile.y] > 0)
 				|| tile.getDistance(target) > maxDist * 1.2;
 		};
 
-		createPath(mapBWEB, mapBWEM, s, t, collision, direction);
+		createPath(mapBWEM, s, t, collision, direction);
 	}
-	
-	void Path::createPath(BWEB::Map& mapBWEB, BWEM::Map& mapBWEM, const Position s, const Position t, function <bool(const TilePosition)> collision, vector<TilePosition> direction)
+
+	void Path::createPath(BWEM::Map& mapBWEM, const Position s, const Position t, function <bool(const TilePosition)> collision, vector<TilePosition> direction)
 	{
 		TilePosition source(s);
 		TilePosition target(t);
@@ -104,12 +107,5 @@ namespace BWEB
 				}
 			}
 		}
-
-	}
-
-	Path::Path()
-	{
-		tiles ={};
-		dist = 0.0;
 	}
 }
