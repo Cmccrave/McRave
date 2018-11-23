@@ -22,7 +22,7 @@ namespace BWEB::Map
 
 	void addOverlap(BWAPI::TilePosition, int, int);
 
-	bool isOverlaping(BWAPI::TilePosition here, int width = 1, int height = 1, bool ignoreBlocks = false);
+	bool isOverlapping(BWAPI::TilePosition here, int width = 1, int height = 1, bool ignoreBlocks = false);
 
 	void addReserve(BWAPI::TilePosition, int, int);
 

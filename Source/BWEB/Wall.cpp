@@ -141,7 +141,7 @@ namespace BWEB::Walls
 
 				if ((currentType == UnitTypes::Protoss_Pylon && !isPoweringWall(wall, t))
 					|| overlapsCurrentWall(t, currentType.tileWidth(), currentType.tileHeight()) != UnitTypes::None
-					|| Map::isOverlaping(t, currentType.tileWidth(), currentType.tileHeight(), true)
+					|| Map::isOverlapping(t, currentType.tileWidth(), currentType.tileHeight(), true)
 					|| !Map::isPlaceable(currentType, t)
 					|| Map::tilesWithinArea(wall.getArea(), t, currentType.tileWidth(), currentType.tileHeight()) <= 2)
 					return false;
@@ -304,7 +304,7 @@ namespace BWEB::Walls
 					return true;
 
 				// If the tile is touching some resources
-				if (Map::isOverlaping(t))
+				if (Map::isOverlapping(t))
 					return true;
 
 				// If we don't care about walling tight and the tile isn't walkable
@@ -381,7 +381,7 @@ namespace BWEB::Walls
 			startTile = initialStart;
 			endTile = initialEnd;
 
-			if (!Map::isWalkable(initialStart) || overlapsCurrentWall(initialStart) != UnitTypes::None || Map::isOverlaping(endTile) != 0) {
+			if (!Map::isWalkable(initialStart) || overlapsCurrentWall(initialStart) != UnitTypes::None || Map::isOverlapping(endTile) != 0) {
 				for (auto x = initialStart.x - 2; x < initialStart.x + 2; x++) {
 					for (auto y = initialStart.y - 2; y < initialStart.y + 2; y++) {
 						TilePosition t(x, y);
@@ -398,7 +398,7 @@ namespace BWEB::Walls
 			}
 
 			distBest = 0.0;
-			if (!Map::isWalkable(initialEnd) || overlapsCurrentWall(initialEnd) != UnitTypes::None || Map::isOverlaping(endTile) != 0) {
+			if (!Map::isWalkable(initialEnd) || overlapsCurrentWall(initialEnd) != UnitTypes::None || Map::isOverlapping(endTile) != 0) {
 				for (auto x = initialEnd.x - 4; x < initialEnd.x + 4; x++) {
 					for (auto y = initialEnd.y - 4; y < initialEnd.y + 4; y++) {
 						TilePosition t(x, y);
@@ -510,7 +510,7 @@ namespace BWEB::Walls
 				const auto center = (Position(t) + Position(32, 32));
 
 				if (!t.isValid()
-					|| Map::isOverlaping(t, building.tileWidth(), building.tileHeight())
+					|| Map::isOverlapping(t, building.tileWidth(), building.tileHeight())
 					|| !Map::isPlaceable(building, t)
 					|| Map::tilesWithinArea(wall.getArea(), t, 2, 2) == 0
 					|| (building == UnitTypes::Protoss_Photon_Cannon && (center.getDistance((Position)wall.getChokePoint()->Center()) < furthest || center.getDistance(doorCenter) < 96.0)))

@@ -16,7 +16,7 @@ namespace BWEB::PathFinding
 
 		const auto collision = [&](const TilePosition tile) {
 			return !tile.isValid()
-				|| (!ignoreOverlap && Map::isOverlaping(tile))
+				|| (!ignoreOverlap && Map::isOverlapping(tile))
 				|| !Map::isWalkable(tile)
 				|| Map::isUsed(tile)
 				//|| Map::overlapsCurrentWall(tile) != UnitTypes::None

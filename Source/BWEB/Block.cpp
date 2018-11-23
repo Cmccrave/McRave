@@ -17,7 +17,7 @@ namespace BWEB::Blocks
 			for (auto x = here.x - 1; x < here.x + width + 1; x++) {
 				for (auto y = here.y - 1; y < here.y + height + 1; y++) {
 					TilePosition t(x, y);
-					if (!t.isValid() || !mapBWEM.GetTile(t).Buildable() || Map::isOverlaping(t) || Map::isReserved(t))
+					if (!t.isValid() || !mapBWEM.GetTile(t).Buildable() || Map::isOverlapping(t) || Map::isReserved(t))
 						return false;
 				}
 			}

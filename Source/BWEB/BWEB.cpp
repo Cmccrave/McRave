@@ -362,7 +362,7 @@ namespace BWEB::Map
 		return tileBest;
 	}
 
-	bool isOverlaping(const TilePosition here, const int width, const int height, bool ignoreBlocks)
+	bool isOverlapping(const TilePosition here, const int width, const int height, bool ignoreBlocks)
 	{
 		for (auto x = here.x; x < here.x + width; x++) {
 			for (auto y = here.y; y < here.y + height; y++) {
