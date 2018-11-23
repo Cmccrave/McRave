@@ -9,6 +9,21 @@ using namespace BWAPI;
 
 namespace BWEB::Map
 {
+	namespace {
+		Position mainPosition, naturalPosition;
+		TilePosition mainTile, naturalTile;
+		const BWEM::Area * naturalArea{};
+		const BWEM::Area * mainArea{};
+		const BWEM::ChokePoint * naturalChoke{};
+		const BWEM::ChokePoint * mainChoke{};
+		std::set<BWAPI::TilePosition> usedTiles;	
+		
+		int testGrid[256][256];
+		int reserveGrid[256][256] ={};
+		int overlapGrid[256][256] ={};
+		int usedGrid[256][256] ={};
+	}
+
 	void onStart()
 	{
 		findNeutrals();
@@ -347,7 +362,7 @@ namespace BWEB::Map
 		return tileBest;
 	}
 
-	bool overlapsAnything(const TilePosition here, const int width, const int height, bool ignoreBlocks)
+	bool isOverlaping(const TilePosition here, const int width, const int height, bool ignoreBlocks)
 	{
 		for (auto x = here.x; x < here.x + width; x++) {
 			for (auto y = here.y; y < here.y + height; y++) {
@@ -355,6 +370,34 @@ namespace BWEB::Map
 				if (!t.isValid())
 					continue;
 				if (Map::overlapGrid[x][y] > 0)
+					return true;
+			}
+		}
+		return false;
+	}
+
+	bool isReserved(const TilePosition here, const int width, const int height)
+	{
+		for (auto x = here.x; x < here.x + width; x++) {
+			for (auto y = here.y; y < here.y + height; y++) {
+				TilePosition t(x, y);
+				if (!t.isValid())
+					continue;
+				if (Map::reserveGrid[x][y] > 0)
+					return true;
+			}
+		}
+		return false;
+	}
+
+	bool isUsed(const TilePosition here, const int width, const int height)
+	{
+		for (auto x = here.x; x < here.x + width; x++) {
+			for (auto y = here.y; y < here.y + height; y++) {
+				TilePosition t(x, y);
+				if (!t.isValid())
+					continue;
+				if (Map::usedGrid[x][y] > 0)
 					return true;
 			}
 		}
@@ -459,7 +502,50 @@ namespace BWEB::Map
 	{
 		for (auto x = t.x; x < t.x + w; x++) {
 			for (auto y = t.y; y < t.y + h; y++)
-				Map::overlapGrid[x][y] = 1;
+				overlapGrid[x][y] = 1;
 		}
 	}
+
+	void removeOverlap(const TilePosition t, const int w, const int h)
+	{
+		for (auto x = t.x; x < t.x + w; x++) {
+			for (auto y = t.y; y < t.y + h; y++)
+				overlapGrid[x][y] = 0;
+		}
+	}
+
+	void addReserve(const TilePosition t, const int w, const int h)
+	{
+		for (auto x = t.x; x < t.x + w; x++) {
+			for (auto y = t.y; y < t.y + h; y++)
+				reserveGrid[x][y] = 1;
+		}
+	}
+
+	/// <summary> Returns the BWEM::Area of the natural expansion </summary>
+	const BWEM::Area * getNaturalArea() { return naturalArea; }
+
+	/// <summary> Returns the BWEM::Area of the main </summary>
+	const BWEM::Area * getMainArea() { return mainArea; }
+
+	/// <summary> Returns the BWEM::Chokepoint of the natural </summary>
+	const BWEM::ChokePoint * getNaturalChoke() { return naturalChoke; }
+
+	/// <summary> Returns the BWEM::Chokepoint of the main </summary>
+	const BWEM::ChokePoint * getMainChoke() { return mainChoke; }
+
+	/// Returns the TilePosition of the natural expansion
+	TilePosition getNaturalTile() { return naturalTile; }
+
+	/// Returns the Position of the natural expansion
+	Position getNaturalPosition() { return naturalPosition; }
+
+	/// Returns the TilePosition of the main
+	TilePosition getMainTile() { return mainTile; }
+
+	/// Returns the Position of the main
+	Position getMainPosition() { return mainPosition; }
+
+	/// Returns the set of used TilePositions
+	set<TilePosition>& getUsedTiles() { return usedTiles; }
 }

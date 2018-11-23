@@ -30,7 +30,7 @@ namespace BWEB::Stations
 				offset(-2, -2),
 				offset(2, -2),
 				offset(-2, 1) });
-			if (here != Map::mainTile && here != Map::naturalTile)
+			if (here != Map::getMainTile() && here != Map::getNaturalTile())
 				defenses.insert({
 				offset(4, -1),
 				offset(4, 1),
@@ -50,7 +50,7 @@ namespace BWEB::Stations
 				offset(0, -2),
 				offset(4, 1) });
 
-				if (here != Map::mainTile && here != Map::naturalTile)
+				if (here != Map::getMainTile() && here != Map::getNaturalTile())
 					defenses.insert({
 					offset(-2, -1),
 					offset(-2, 1),
@@ -66,7 +66,7 @@ namespace BWEB::Stations
 				offset(-2, 0),
 				offset(2, 3) });
 
-			if (here != Map::mainTile && here != Map::naturalTile)
+			if (here != Map::getMainTile() && here != Map::getNaturalTile())
 				defenses.insert({
 				offset(0, -2),
 				offset(2, -2),
@@ -86,7 +86,7 @@ namespace BWEB::Stations
 				offset(0, 3),
 				offset(4, 3) });
 
-				if (here != Map::mainTile && here != Map::naturalTile)
+				if (here != Map::getMainTile() && here != Map::getNaturalTile())
 					defenses.insert({
 					offset(-2, 2),
 					offset(-2, 0),

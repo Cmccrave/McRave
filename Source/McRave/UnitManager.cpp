@@ -72,7 +72,7 @@ void UnitManager::updateUnits()
 						continue;
 
 					BWEB::Map::getUsedTiles().erase(t);
-					BWEB::Map::usedGrid[x][y] = 0;
+					BWEB::Map::removeOverlap(t,1,1);
 				}
 			}
 			continue;

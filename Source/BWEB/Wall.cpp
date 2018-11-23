@@ -141,7 +141,7 @@ namespace BWEB::Walls
 
 				if ((currentType == UnitTypes::Protoss_Pylon && !isPoweringWall(wall, t))
 					|| overlapsCurrentWall(t, currentType.tileWidth(), currentType.tileHeight()) != UnitTypes::None
-					|| Map::overlapsAnything(t, currentType.tileWidth(), currentType.tileHeight(), true)
+					|| Map::isOverlaping(t, currentType.tileWidth(), currentType.tileHeight(), true)
 					|| !Map::isPlaceable(currentType, t)
 					|| Map::tilesWithinArea(wall.getArea(), t, currentType.tileWidth(), currentType.tileHeight()) <= 2)
 					return false;
@@ -304,7 +304,7 @@ namespace BWEB::Walls
 					return true;
 
 				// If the tile is touching some resources
-				if (Map::overlapsAnything(t))
+				if (Map::isOverlaping(t))
 					return true;
 
 				// If we don't care about walling tight and the tile isn't walkable
@@ -381,7 +381,7 @@ namespace BWEB::Walls
 			startTile = initialStart;
 			endTile = initialEnd;
 
-			if (!Map::isWalkable(initialStart) || overlapsCurrentWall(initialStart) != UnitTypes::None || Map::overlapGrid[startTile.x][startTile.y] != 0) {
+			if (!Map::isWalkable(initialStart) || overlapsCurrentWall(initialStart) != UnitTypes::None || Map::isOverlaping(endTile) != 0) {
 				for (auto x = initialStart.x - 2; x < initialStart.x + 2; x++) {
 					for (auto y = initialStart.y - 2; y < initialStart.y + 2; y++) {
 						TilePosition t(x, y);
@@ -398,7 +398,7 @@ namespace BWEB::Walls
 			}
 
 			distBest = 0.0;
-			if (!Map::isWalkable(initialEnd) || overlapsCurrentWall(initialEnd) != UnitTypes::None || Map::overlapGrid[endTile.x][endTile.y] != 0) {
+			if (!Map::isWalkable(initialEnd) || overlapsCurrentWall(initialEnd) != UnitTypes::None || Map::isOverlaping(endTile) != 0) {
 				for (auto x = initialEnd.x - 4; x < initialEnd.x + 4; x++) {
 					for (auto y = initialEnd.y - 4; y < initialEnd.y + 4; y++) {
 						TilePosition t(x, y);
@@ -429,13 +429,13 @@ namespace BWEB::Walls
 			Position direction2 = Position(-dy2 / 2, dx2 / 2) + Position(choke->Center());
 			Position trueDirection = direction1.getDistance(Map::mapBWEM.Center()) < direction2.getDistance(Map::mapBWEM.Center()) ? direction1 : direction2;
 
-			if (choke == Map::naturalChoke) {
-				initialStart = TilePosition(Map::mainChoke->Center());
+			if (choke == Map::getNaturalChoke()) {
+				initialStart = TilePosition(Map::getMainChoke()->Center());
 				initialEnd = (TilePosition)trueDirection;
 			}
-			else if (choke == Map::mainChoke) {
-				initialStart = (Map::mainTile + TilePosition(Map::mainChoke->Center())) / 2;
-				initialEnd = (TilePosition)Map::naturalChoke->Center();
+			else if (choke == Map::getMainChoke()) {
+				initialStart = (Map::getMainTile() + TilePosition(Map::getMainChoke()->Center())) / 2;
+				initialEnd = (TilePosition)Map::getNaturalChoke()->Center();
 			}
 			else {
 				initialStart = TilePosition(wall.getArea()->Top());
@@ -510,7 +510,7 @@ namespace BWEB::Walls
 				const auto center = (Position(t) + Position(32, 32));
 
 				if (!t.isValid()
-					|| Map::overlapsAnything(t, building.tileWidth(), building.tileHeight())
+					|| Map::isOverlaping(t, building.tileWidth(), building.tileHeight())
 					|| !Map::isPlaceable(building, t)
 					|| Map::tilesWithinArea(wall.getArea(), t, 2, 2) == 0
 					|| (building == UnitTypes::Protoss_Photon_Cannon && (center.getDistance((Position)wall.getChokePoint()->Center()) < furthest || center.getDistance(doorCenter) < 96.0)))
@@ -593,7 +593,7 @@ namespace BWEB::Walls
 		const auto addReservePath = [&] {
 			if (reservePath) {
 				for (auto &tile : currentPath)
-					Map::reserveGrid[tile.x][tile.y] = 1;
+					Map::addReserve(tile, 1, 1);
 			}
 		};
 
