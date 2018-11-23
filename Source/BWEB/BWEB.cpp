@@ -295,6 +295,20 @@ namespace BWEB::Map
 		}
 	}
 
+	UnitType overlapsCurrentWall(map<TilePosition, UnitType>& tiles, const TilePosition here, const int width, const int height)
+	{
+		for (auto x = here.x; x < here.x + width; x++) {
+			for (auto y = here.y; y < here.y + height; y++) {
+				for (auto &placement : tiles) {
+					const auto tile = placement.first;
+					if (x >= tile.x && x < tile.x + placement.second.tileWidth() && y >= tile.y && y < tile.y + placement.second.tileHeight())
+						return placement.second;
+				}
+			}
+		}
+		return UnitTypes::None;
+	}
+
 	template <class T>
 	double getGroundDistance(T s, T e)
 	{
@@ -521,31 +535,14 @@ namespace BWEB::Map
 				reserveGrid[x][y] = 1;
 		}
 	}
-
-	/// <summary> Returns the BWEM::Area of the natural expansion </summary>
+	
 	const BWEM::Area * getNaturalArea() { return naturalArea; }
-
-	/// <summary> Returns the BWEM::Area of the main </summary>
 	const BWEM::Area * getMainArea() { return mainArea; }
-
-	/// <summary> Returns the BWEM::Chokepoint of the natural </summary>
 	const BWEM::ChokePoint * getNaturalChoke() { return naturalChoke; }
-
-	/// <summary> Returns the BWEM::Chokepoint of the main </summary>
 	const BWEM::ChokePoint * getMainChoke() { return mainChoke; }
-
-	/// Returns the TilePosition of the natural expansion
 	TilePosition getNaturalTile() { return naturalTile; }
-
-	/// Returns the Position of the natural expansion
 	Position getNaturalPosition() { return naturalPosition; }
-
-	/// Returns the TilePosition of the main
 	TilePosition getMainTile() { return mainTile; }
-
-	/// Returns the Position of the main
 	Position getMainPosition() { return mainPosition; }
-
-	/// Returns the set of used TilePositions
 	set<TilePosition>& getUsedTiles() { return usedTiles; }
 }

@@ -7,7 +7,7 @@ using namespace std::placeholders;
 
 namespace BWEB::PathFinding
 {	
-	void Path::createWallPath(BWEM::Map& mapBWEM, const Position s, const Position t, bool ignoreOverlap)
+	void Path::createWallPath(BWEM::Map& mapBWEM, map<TilePosition, UnitType>& currentWall, const Position s, const Position t, bool ignoreOverlap)
 	{
 		TilePosition target(t);
 		TilePosition source(s);
@@ -19,7 +19,7 @@ namespace BWEB::PathFinding
 				|| (!ignoreOverlap && Map::isOverlapping(tile))
 				|| !Map::isWalkable(tile)
 				|| Map::isUsed(tile)
-				//|| Map::overlapsCurrentWall(tile) != UnitTypes::None
+				|| Map::overlapsCurrentWall(currentWall, tile) != UnitTypes::None
 				|| tile.getDistance(target) > maxDist * 1.2;
 		};
 

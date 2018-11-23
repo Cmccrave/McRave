@@ -3,7 +3,7 @@
 #include <BWAPI.h>
 #include <bwem.h>
 
-namespace BWEB::PathFinding 
+namespace BWEB::PathFinding
 {
 	class Path {
 		std::vector<BWAPI::TilePosition> tiles;
@@ -18,7 +18,7 @@ namespace BWEB::PathFinding
 		std::vector<BWAPI::TilePosition>& getTiles() { return tiles; }
 		double getDistance() { return dist; }
 		void createUnitPath(BWEM::Map&, const BWAPI::Position, const BWAPI::Position);
-		void createWallPath(BWEM::Map&, const BWAPI::Position, const BWAPI::Position, bool);
+		void createWallPath(BWEM::Map&, std::map<BWAPI::TilePosition, BWAPI::UnitType>&, const BWAPI::Position, const BWAPI::Position, bool);
 
 		void createPath(BWEM::Map&, const BWAPI::Position, const BWAPI::Position, std::function <bool(const BWAPI::TilePosition)>, std::vector<BWAPI::TilePosition>);
 	};
