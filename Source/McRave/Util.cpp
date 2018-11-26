@@ -2,10 +2,12 @@
 
 bool UtilManager::isWalkable(WalkPosition start, WalkPosition end, UnitType unitType)
 {
-	int walkWidth = (int)(unitType.width() / 8.0) + 1;
-	int walkHeight = (int)(unitType.height() / 8.0) + 1;
-	int halfW = walkWidth / 2;
-	int halfH = walkHeight / 2;	
+	int walkWidth = int(ceil(unitType.width() / 8.0));
+	int walkHeight = int(ceil(unitType.height() / 8.0));
+
+	// Round up
+	int halfW = (walkWidth + 1) / 2;
+	int halfH = (walkHeight + 1) / 2;
 
 	if (unitType.isFlyer()) {
 		halfW += 2;
@@ -15,7 +17,7 @@ bool UtilManager::isWalkable(WalkPosition start, WalkPosition end, UnitType unit
 	// If WalkPosition shared with WalkPositions under unit, ignore it
 	auto const overlapsUnit = [&](const int x, const int y) {
 		if (x >= start.x && x < start.x + walkWidth && y >= start.y && y < start.y + walkHeight)
-			return true;
+			return true;		
 		return false;
 	};
 
@@ -116,7 +118,7 @@ bool UtilManager::reactivePullWorker(UnitInfo& unit)
 			return false;
 	}
 
-	const BWEB::Station * station = mapBWEB.getClosestStation(unit.getTilePosition());
+	auto station = BWEB::Stations::getClosestStation(unit.getTilePosition());
 	if (station && station->ResourceCentroid().getDistance(unit.getPosition()) < 160.0) {
 		if (Terrain().isInAllyTerritory(unit.getTilePosition()) && Grids().getEGroundThreat(unit.getWalkPosition()) > 0.0 && Broodwar->getFrameCount() < 10000)
 			return true;
@@ -187,7 +189,7 @@ double UtilManager::getHighestThreat(WalkPosition here, UnitInfo& unit)
 	return highest;*/
 }
 
-bool UtilManager::accurateThreatOnPath(UnitInfo& unit, Path& path)
+bool UtilManager::accurateThreatOnPath(UnitInfo& unit, BWEB::PathFinding::Path& path)
 {
 	if (path.getTiles().empty())
 		return false;
@@ -371,14 +373,14 @@ Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area
 	const auto getConcaveCenter = [&]() {
 		if (here.isValid())
 			center = (WalkPosition)here;
-		else if (area == mapBWEB.getNaturalArea() && mapBWEB.getNaturalChoke())
-			center = mapBWEB.getNaturalChoke()->Center();
-		else if (area == mapBWEB.getMainArea() && mapBWEB.getMainChoke())
-			center = mapBWEB.getMainChoke()->Center();
+		else if (area == BWEB::Map::getNaturalArea() && BWEB::Map::getNaturalChoke())
+			center = BWEB::Map::getNaturalChoke()->Center();
+		else if (area == BWEB::Map::getMainArea() && BWEB::Map::getMainChoke())
+			center = BWEB::Map::getMainChoke()->Center();
 
 		else if (area) {
 			for (auto &c : area->ChokePoints()) {
-				double dist = mapBWEB.getGroundDistance(Position(c->Center()), Terrain().getEnemyStartingPosition());
+				double dist = BWEB::Map::getGroundDistance(Position(c->Center()), Terrain().getEnemyStartingPosition());
 				if (dist < distBest) {
 					distBest = dist;
 					center = c->Center();
@@ -391,7 +393,7 @@ Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area
 		TilePosition t(w);
 		Position p = Position(w) + Position(4, 4);
 
-		double dist = p.getDistance(Position(center)) * log(p.getDistance(mapBWEB.getMainPosition()));
+		double dist = p.getDistance(Position(center)) * log(p.getDistance(BWEB::Map::getMainPosition()));
 
 		if (!w.isValid()
 			|| !Util().isWalkable(unit.getWalkPosition(), w, unit.getType())
@@ -400,7 +402,7 @@ Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area
 			|| Buildings().overlapsQueuedBuilding(unit.getType(), t)
 			|| dist > distBest
 			|| Commands().overlapsCommands(unit.unit(), UnitTypes::None, p, 8)
-			|| (unit.getType() == UnitTypes::Protoss_Reaver && Terrain().isDefendNatural() && mapBWEM.GetArea(w) != mapBWEB.getNaturalArea()))
+			|| (unit.getType() == UnitTypes::Protoss_Reaver && Terrain().isDefendNatural() && mapBWEM.GetArea(w) != BWEB::Map::getNaturalArea()))
 			return false;
 
 		bestPosition = p;

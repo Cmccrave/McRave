@@ -25,8 +25,8 @@ namespace McRave
 
 		set<Base const*> allBases;
 
-		Wall* mainWall = nullptr;
-		Wall* naturalWall = nullptr;
+		BWEB::Walls::Wall* mainWall = nullptr;
+		BWEB::Walls::Wall* naturalWall = nullptr;
 		void findEnemyStartingPosition(), findEnemyNatural(), findEnemyNextExpand(), findDefendPosition(), findAttackPosition();
 		void updateConcavePositions(), updateAreas();
 
@@ -52,8 +52,8 @@ namespace McRave
 
 		bool foundEnemy() { return enemyStartingPosition.isValid() && Broodwar->isExplored(TilePosition(enemyStartingPosition)); }
 
-		const Wall* getMainWall() { return mainWall; }
-		const Wall* getNaturalWall() { return naturalWall; }
+		const BWEB::Walls::Wall* getMainWall() { return mainWall; }
+		const BWEB::Walls::Wall* getNaturalWall() { return naturalWall; }
 
 		Position getMineralHoldPosition() { return mineralHold; }
 		Position getBackMineralHoldPosition() { return backMineralHold; }

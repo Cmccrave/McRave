@@ -52,9 +52,9 @@ namespace McRave
 		fastExpand = true;
 		scout = vis(Terran_Barracks) > 0;
 
-		if (mapBWEB.getWall(mapBWEB.getNaturalArea()))
+		if (BWEB::Walls::getWall(BWEB::Map::getNaturalArea()))
 			wallNat = true;
-		else if (mapBWEB.getWall(mapBWEB.getMainArea()))
+		else if (BWEB::Walls::getWall(BWEB::Map::getMainArea()))
 			wallMain = true;
 
 		itemQueue[Terran_Supply_Depot] =		Item((s >= 16) + (s >= 26), (s >= 18) + (s >= 26));
@@ -75,9 +75,9 @@ namespace McRave
 		scout = vis(Terran_Barracks) > 0;
 		gasLimit = 1 + (vis(Terran_Command_Center) > 1);
 
-		if (mapBWEB.getWall(mapBWEB.getNaturalArea()))
+		if (BWEB::Walls::getWall(BWEB::Map::getNaturalArea()))
 			wallNat = true;
-		else if (mapBWEB.getWall(mapBWEB.getMainArea()))
+		else if (BWEB::Walls::getWall(BWEB::Map::getMainArea()))
 			wallMain = true;
 
 		itemQueue[Terran_Supply_Depot] =		Item((s >= 16) + (s >= 26), (s >= 18) + (s >= 26));
@@ -158,7 +158,7 @@ namespace McRave
 		techList.insert(Terran_Battlecruiser);
 		unlockedType.insert(Terran_Battlecruiser);
 
-		if (mapBWEB.getWall(mapBWEB.getNaturalArea()))
+		if (BWEB::Walls::getWall(BWEB::Map::getNaturalArea()))
 			wallNat = true;
 
 		itemQueue[Terran_Supply_Depot] =		Item((s >= 16) + (s >= 32), (s >= 18) + (s >= 32));

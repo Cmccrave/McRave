@@ -139,10 +139,10 @@ namespace McRave
 			if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Forge) >= 1 && ((Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) >= 3 + (Players().getNumberTerran() > 0 || Players().getNumberProtoss() > 0)) || (Terrain().isIslandMap() && Players().getNumberZerg() > 0))) {
 				itemQueue[UnitTypes::Protoss_Photon_Cannon] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon));
 
-				for (auto &station : Stations().getMyStations()) {
+				for (auto &station : MyStations().getMyStations()) {
 					auto &s = *station.second;
 
-					if (Stations().needDefenses(s))
+					if (MyStations().needDefenses(s))
 						itemQueue[UnitTypes::Protoss_Photon_Cannon] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) + 1);
 				}
 			}

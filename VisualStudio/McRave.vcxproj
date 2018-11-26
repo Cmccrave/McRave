@@ -22,7 +22,6 @@
     <ClCompile Include="..\Source\BWEB\PathFind.cpp" />
     <ClCompile Include="..\Source\BWEB\Block.cpp" />
     <ClCompile Include="..\Source\BWEB\BWEB.cpp" />
-    <ClCompile Include="..\Source\BWEB\BWEBUtil.cpp" />
     <ClCompile Include="..\Source\BWEB\Station.cpp" />
     <ClCompile Include="..\Source\BWEB\Wall.cpp" />
     <ClCompile Include="..\Source\BWEM\area.cpp" />
@@ -81,6 +80,7 @@
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h" />
     <ClInclude Include="..\Source\BWEB\BWEB.h" />
+    <ClInclude Include="..\Source\BWEB\PathFind.h" />
     <ClInclude Include="..\Source\BWEB\Station.h" />
     <ClInclude Include="..\Source\BWEB\Wall.h" />
     <ClInclude Include="..\Source\BWEM\area.h" />

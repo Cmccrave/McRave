@@ -6,7 +6,7 @@ namespace McRave
 {
 	void UnitManager::onUnitDiscover(Unit unit)
 	{
-		mapBWEB.onUnitDiscover(unit);
+		BWEB::Map::onUnitDiscover(unit);
 
 		if (unit->getPlayer()->isEnemy(Broodwar->self()))
 			storeUnit(unit);
@@ -34,7 +34,7 @@ namespace McRave
 		if (unit->getType().isResourceContainer())
 			Resources().storeResource(unit);
 		if (unit->getType().isResourceDepot())
-			Stations().storeStation(unit);
+			MyStations().storeStation(unit);
 	}
 
 	void UnitManager::onUnitDestroy(Unit unit)
@@ -42,7 +42,7 @@ namespace McRave
 		if (Terrain().isIslandMap() && neutrals.find(unit) != neutrals.end())
 			neutrals.erase(unit);
 
-		mapBWEB.onUnitDestroy(unit);
+		BWEB::Map::onUnitDestroy(unit);
 
 		// My unit
 		if (unit->getPlayer() == Broodwar->self()) {
@@ -71,12 +71,12 @@ namespace McRave
 
 		// Station
 		if (unit->getType().isResourceDepot())
-			Stations().removeStation(unit);
+			MyStations().removeStation(unit);
 	}
 
 	void UnitManager::onUnitMorph(Unit unit)
 	{
-		mapBWEB.onUnitMorph(unit);
+		BWEB::Map::onUnitMorph(unit);
 
 		// My unit
 		if (unit->getPlayer() == Broodwar->self()) {
@@ -105,7 +105,7 @@ namespace McRave
 
 			// Remove any stations on a canceled hatchery
 			if (unit->getType() == UnitTypes::Zerg_Drone)
-				Stations().removeStation(unit);
+				MyStations().removeStation(unit);
 			else
 				storeUnit(unit);
 		}
@@ -133,7 +133,7 @@ namespace McRave
 		if (unit->getPlayer() == Broodwar->self())
 			storeUnit(unit);
 		if (unit->getType().isResourceDepot())
-			Stations().storeStation(unit);
+			MyStations().storeStation(unit);
 		if (unit->getType().isResourceContainer())
 			Resources().storeResource(unit);
 	}

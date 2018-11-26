@@ -10,7 +10,7 @@
 #define LOW_SHIELD_PERCENT_LIMIT 0.2
 #define LOW_MECH_PERCENT_LIMIT 0.2
 #define MIN_THREAT 0.01
-#define SIM_RADIUS 640.0
+#define SIM_RADIUS 500.0
 
 #define MAX_SCARAB 5 + (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Reaver_Capacity) * 5)
 #define MAX_INTERCEPTOR 4 + (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Carrier_Capacity) * 4)
@@ -51,7 +51,6 @@ namespace McRave
 namespace
 {
 	auto &mapBWEM = BWEM::Map::Instance();
-	auto &mapBWEB = BWEB::Map::Instance();
 }
 
 // Include standard libraries that are needed
@@ -95,7 +94,7 @@ namespace McRave
 	inline PylonManager& Pylons() { return PylonSingleton::Instance(); }
 	inline ResourceManager& Resources() { return ResourceSingleton::Instance(); }
 	inline ScoutManager& Scouts() { return ScoutSingleton::Instance(); }
-	inline StationManager& Stations() { return StationSingleton::Instance(); }
+	inline StationManager& MyStations() { return StationSingleton::Instance(); }
 	inline StrategyManager& Strategy() { return StrategySingleton::Instance(); }
 	inline TargetManager& Targets() { return TargetSingleton::Instance(); }
 	inline TerrainManager& Terrain() { return TerrainSingleton::Instance(); }

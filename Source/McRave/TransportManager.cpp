@@ -33,8 +33,8 @@ void TransportManager::updateCargo(UnitInfo& transport)
 
 		return false;
 
-		auto buildDist = unit.getBuildingType().isValid() ? mapBWEB.getGroundDistance((Position)unit.getBuildPosition(), (Position)unit.getTilePosition()) : 0.0;
-		auto resourceDist = unit.hasResource() ? mapBWEB.getGroundDistance(unit.getPosition(), unit.getResource().getPosition()) : 0.0;
+		auto buildDist = unit.getBuildingType().isValid() ? BWEB::Map::getGroundDistance((Position)unit.getBuildPosition(), (Position)unit.getTilePosition()) : 0.0;
+		auto resourceDist = unit.hasResource() ? BWEB::Map::getGroundDistance(unit.getPosition(), unit.getResource().getPosition()) : 0.0;
 
 		if ((unit.getBuildPosition().isValid() && buildDist == DBL_MAX) || (unit.getBuildingType().isResourceDepot() && Terrain().isIslandMap()))
 			return true;
@@ -48,7 +48,7 @@ void TransportManager::updateCargo(UnitInfo& transport)
 		if (cargoSize + unit.getType().spaceRequired() > 8 || unit.hasTransport())
 			return false;
 
-		auto targetDist = mapBWEB.getGroundDistance(unit.getPosition(), unit.getEngagePosition());
+		auto targetDist = BWEB::Map::getGroundDistance(unit.getPosition(), unit.getEngagePosition());
 
 		if (unit.getType() == UnitTypes::Protoss_Reaver || unit.getType() == UnitTypes::Protoss_High_Templar)
 			return true;
@@ -80,7 +80,7 @@ void TransportManager::updateCargo(UnitInfo& transport)
 void TransportManager::updateDecision(UnitInfo& transport)
 {
 	// TODO: Broke transports for islands, fix later
-	transport.setDestination(mapBWEB.getMainPosition());
+	transport.setDestination(BWEB::Map::getMainPosition());
 	transport.setTransportState(TransportState::None);
 
 	UnitInfo * closestCargo = nullptr;
@@ -114,7 +114,7 @@ void TransportManager::updateDecision(UnitInfo& transport)
 	// Check if this unit is ready to unload
 	const auto readyToUnload = [&](UnitInfo& cargo) {
 		auto reaver = cargo.getType() == UnitTypes::Protoss_Reaver;
-		auto targetDist = reaver && cargo.hasTarget() ? mapBWEB.getGroundDistance(cargo.getPosition(), cargo.getTarget().getPosition()) - 256.0 : cargo.getPosition().getDistance(cargo.getEngagePosition());
+		auto targetDist = reaver && cargo.hasTarget() ? BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getTarget().getPosition()) - 256.0 : cargo.getPosition().getDistance(cargo.getEngagePosition());
 		if (targetDist <= 128.0)
 			return true;
 		return false;
@@ -126,7 +126,7 @@ void TransportManager::updateDecision(UnitInfo& transport)
 		auto reaver = cargo.getType() == UnitTypes::Protoss_Reaver;
 		auto ht = cargo.getType() == UnitTypes::Protoss_High_Templar;
 		auto threat = Grids().getEGroundThreat(cargo.getWalkPosition()) > 0.0;
-		auto targetDist = reaver && cargo.hasTarget() ? mapBWEB.getGroundDistance(cargo.getPosition(), cargo.getTarget().getPosition()) - 256.0 : cargo.getPosition().getDistance(cargo.getEngagePosition());
+		auto targetDist = reaver && cargo.hasTarget() ? BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getTarget().getPosition()) - 256.0 : cargo.getPosition().getDistance(cargo.getEngagePosition());
 		
 		if (transport.getPosition().getDistance(cargo.getPosition()) <= 160.0 || &cargo == closestCargo) {
 			if (!cargo.hasTarget() || cargo.getLocalState() == LocalState::Retreating || (targetDist > 128.0 || (ht && cargo.unit()->getEnergy() < 75) || (reaver && attackCooldown && threat))) {
@@ -194,7 +194,7 @@ void TransportManager::updateDecision(UnitInfo& transport)
 
 		// Dont attack until we're ready
 		else if (cargo.getGlobalState() == GlobalState::Retreating)
-			transport.setDestination(mapBWEB.getNaturalPosition());
+			transport.setDestination(BWEB::Map::getNaturalPosition());
 	}
 
 	//for (auto &w : transport.getAssignedWorkers()) {
@@ -235,12 +235,12 @@ void TransportManager::updateDecision(UnitInfo& transport)
 	//	}
 	//}
 
-	//if (transport.getDestination() == mapBWEB.getMainPosition() && Terrain().isIslandMap()) {
+	//if (transport.getDestination() == BWEB::Map::getMainPosition() && Terrain().isIslandMap()) {
 	//	double distBest = DBL_MAX;
 	//	Position posBest = Positions::None;
 	//	for (auto &tile : mapBWEM.StartingLocations()) {
 	//		Position center = Position(tile) + Position(64, 48);
-	//		double dist = center.getDistance(mapBWEB.getMainPosition());
+	//		double dist = center.getDistance(BWEB::Map::getMainPosition());
 
 	//		if (!Broodwar->isExplored(tile) && dist < distBest) {
 	//			distBest = dist;
@@ -259,7 +259,7 @@ void TransportManager::updateMovement(UnitInfo& transport)
 
 	// Check if the destination can be used for ground distance
 	auto dropTarget = transport.getDestination();
-	if (!Util().isWalkable(dropTarget) || mapBWEB.getGroundDistance(transport.getPosition(), dropTarget) == DBL_MAX) {
+	if (!Util().isWalkable(dropTarget) || BWEB::Map::getGroundDistance(transport.getPosition(), dropTarget) == DBL_MAX) {
 		auto distBest = DBL_MAX;
 		for (auto &cargo : transport.getAssignedCargo()) {
 			if (cargo->hasTarget()) {
@@ -318,7 +318,7 @@ void TransportManager::updateMovement(UnitInfo& transport)
 		//		}
 
 		//		auto closeHome = transport.getPosition().getDistance(Terrain().getDefendPosition()) < 640.0;
-		//		auto distDrop = mapBWEB.getGroundDistance(dropTarget, p);
+		//		auto distDrop = BWEB::Map::getGroundDistance(dropTarget, p);
 		//		auto distAway = p.getDistance(enemy->getPosition());
 
 

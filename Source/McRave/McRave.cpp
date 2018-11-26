@@ -7,7 +7,6 @@
 #include "McRave.h"
 
 // *** Bugs ***
-// Neo Moon Glaive natural choke picking BWEB
 // Send zealots to attack expos instead of goons
 // SafeMove gets workers stuck on bridges
 // getConcavePosition and isWalkable are expensive on CPU
@@ -20,7 +19,6 @@
 // Move 4gate vs Z to 2 gate category
 // Use Player pointer instead of BWAPI::Player pointer in UnitInfo, gives advantage of knowing upgrades/tech that are available always
 // DT Hunt use detection and ground threat combined
-// Mobility grid is broken as fuck
 
 // *** SSCAIT2018 Goals ***
 // Unit formations
@@ -36,11 +34,11 @@ void McRaveModule::onStart()
 	Broodwar->setLocalSpeed(0);
 	Terrain().onStart();
 	Players().onStart();
-	mapBWEB.onStart();
-	Stations().onStart();
+	BWEB::Map::onStart();
+	MyStations().onStart();
 	Grids().onStart();
 	BuildOrder().onStart();
-	mapBWEB.findBlocks();
+	BWEB::Blocks::findBlocks();
 	Broodwar->sendText("glhf");
 }
 
@@ -56,7 +54,7 @@ void McRaveModule::onFrame()
 	Resources().onFrame();
 	Strategy().onFrame();
 	BuildOrder().onFrame();
-	Stations().onFrame();
+	MyStations().onFrame();
 
 	// Update unit information and grids based on the information
 	Units().onFrame();

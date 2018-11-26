@@ -34,7 +34,7 @@ namespace McRave
 		bool reactivePullWorker(UnitInfo& unit);
 		bool proactivePullWorker(UnitInfo& unit);
 		bool pullRepairWorker(UnitInfo& unit);
-		bool accurateThreatOnPath(UnitInfo&, Path&);
+		bool accurateThreatOnPath(UnitInfo&, BWEB::PathFinding::Path&);
 		bool rectangleIntersect(Position, Position, Position);
 
 		// Walkability checks

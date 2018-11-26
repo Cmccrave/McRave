@@ -188,7 +188,7 @@ void StrategyManager::updateEnemyBuild()
 		if (player.getRace() == Races::Zerg) {
 
 			// 5 Hatch build detection
-			if (Stations().getEnemyStations().size() >= 3 || (Units().getEnemyCount(UnitTypes::Zerg_Hatchery) + Units().getEnemyCount(UnitTypes::Zerg_Lair) >= 4 && Units().getEnemyCount(UnitTypes::Zerg_Drone) >= 14))
+			if (MyStations().getEnemyStations().size() >= 3 || (Units().getEnemyCount(UnitTypes::Zerg_Hatchery) + Units().getEnemyCount(UnitTypes::Zerg_Lair) >= 4 && Units().getEnemyCount(UnitTypes::Zerg_Drone) >= 14))
 				enemyBuild = "Z5Hatch";
 
 			// Zergling frame
@@ -281,7 +281,7 @@ void StrategyManager::updateEnemyBuild()
 				if (Terrain().isInAllyTerritory(unit.getTilePosition()) || (inboundScoutFrame > 0 && inboundScoutFrame - Broodwar->getFrameCount() < 64))
 					enemyScout = true;
 				if (unit.getType().isWorker() && inboundScoutFrame == 0) {
-					auto dist = unit.getPosition().getDistance(mapBWEB.getMainPosition());
+					auto dist = unit.getPosition().getDistance(BWEB::Map::getMainPosition());
 					inboundScoutFrame = Broodwar->getFrameCount() + int(dist / unit.getType().topSpeed());
 				}
 
@@ -322,7 +322,7 @@ void StrategyManager::updateEnemyBuild()
 
 				// Proxy Builds
 				if (unit.getType() == UnitTypes::Protoss_Gateway || unit.getType() == UnitTypes::Protoss_Pylon) {
-					if (Terrain().isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(mapBWEM.Center()) < 1280.0 || (mapBWEB.getNaturalChoke() && unit.getPosition().getDistance((Position)mapBWEB.getNaturalChoke()->Center()) < 480.0)) {
+					if (Terrain().isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(mapBWEM.Center()) < 1280.0 || (BWEB::Map::getNaturalChoke() && unit.getPosition().getDistance((Position)BWEB::Map::getNaturalChoke()->Center()) < 480.0)) {
 						proxy = true;
 
 						if (Units().getEnemyCount(UnitTypes::Protoss_Gateway) >= 2)
@@ -385,7 +385,7 @@ void StrategyManager::updateEnemyBuild()
 				// Barracks Builds
 				if (unit.getType() == UnitTypes::Terran_Barracks) {
 
-					if (Terrain().isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(mapBWEM.Center()) < 1280.0 || (mapBWEB.getNaturalChoke() && unit.getPosition().getDistance((Position)mapBWEB.getNaturalChoke()->Center()) < 320)) {
+					if (Terrain().isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(mapBWEM.Center()) < 1280.0 || (BWEB::Map::getNaturalChoke() && unit.getPosition().getDistance((Position)BWEB::Map::getNaturalChoke()->Center()) < 320)) {
 						enemyBuild = "TBBS";
 						proxy = true;
 					}
@@ -716,8 +716,8 @@ void StrategyManager::updateMadMixScore()
 					enemyDPS = 0.775;
 
 				double overallMatchup = enemyDPS > 0.0 ? (myDPS, myDPS / enemyDPS) : myDPS;
-				double distTotal = Terrain().getEnemyStartingPosition().isValid() ? mapBWEB.getMainPosition().getDistance(Terrain().getEnemyStartingPosition()) : 1.0;
-				double distUnit = Terrain().getEnemyStartingPosition().isValid() ? unit.getPosition().getDistance(mapBWEB.getMainPosition()) / distTotal : 1.0;
+				double distTotal = Terrain().getEnemyStartingPosition().isValid() ? BWEB::Map::getMainPosition().getDistance(Terrain().getEnemyStartingPosition()) : 1.0;
+				double distUnit = Terrain().getEnemyStartingPosition().isValid() ? unit.getPosition().getDistance(BWEB::Map::getMainPosition()) / distTotal : 1.0;
 
 				if (distUnit == 0.0)
 					distUnit = 0.1;

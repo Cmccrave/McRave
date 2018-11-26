@@ -6,10 +6,6 @@
 using namespace BWAPI;
 using namespace std;
 
-namespace BWEB {
-	class Station;
-}
-
 namespace McRave
 {
 	class ResourceInfo
@@ -20,7 +16,7 @@ namespace McRave
 		UnitType type;
 		Position position;
 		TilePosition tilePosition;
-		const BWEB::Station * station;
+		const BWEB::Stations::Station * station;
 		ResourceState rState;
 	public:
 		ResourceInfo();
@@ -28,8 +24,8 @@ namespace McRave
 		void updateResource();
 
 		bool hasStation()									{ return station != nullptr; }
-		const BWEB::Station * getStation()					{ return station; }
-		void setStation(const BWEB::Station* newStation)	{ station = newStation; }
+		const BWEB::Stations::Station * getStation()					{ return station; }
+		void setStation(const BWEB::Stations::Station* newStation)	{ station = newStation; }
 
 		int getGathererCount()								{ return gathererCount; };
 		int getRemainingResources()							{ return remainingResources; }
