@@ -308,8 +308,8 @@ namespace McRave
 
 		// Pixel and walk sizes
 		auto pixelSize = unit.getType().isBuilding() ? unit.getType().tileWidth() * 32 : max(unit.getType().width(), unit.getType().height());
-		auto walkWidth = unit.getType().isBuilding() ? unit.getType().tileWidth() * 4 : (int)ceil(unit.getType().width() / 8.0) + 1;
-		auto walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : (int)ceil(unit.getType().height() / 8.0) + 1;
+		auto walkWidth = unit.getType().isBuilding() ? unit.getType().tileWidth() * 4 : (int)ceil(unit.getType().width() / 8.0);
+		auto walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : (int)ceil(unit.getType().height() / 8.0);
 
 		// Reach: range + size + speed for 1 second
 		auto grdReach = int(unit.getGroundRange() + (speed * 32.0) + (pixelSize / 2));

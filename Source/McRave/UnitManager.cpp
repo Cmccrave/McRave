@@ -48,7 +48,7 @@ void UnitManager::updateUnits()
 
 	// PvT
 	if (Players().vT())
-		minThreshold = 0.5; maxThreshold = 1.5;
+		minThreshold = 0.50; maxThreshold = 1.00;
 
 	// PvP
 	if (Players().vP())
@@ -167,6 +167,7 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 	// Testing
 	auto belowGrdLimits = false;
 	auto belowAirLimits = false;
+	auto unitSimRatio = max(0.0, simulationTime - (unit.getEngDist() / unitSpeed));
 
 	// If we have excessive resources, ignore our simulation and engage
 	if (!ignoreSim && Broodwar->self()->minerals() >= 2000 && Broodwar->self()->gas() >= 2000 && Units().getSupply() >= 380)
@@ -274,10 +275,11 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 		allyLocalGroundStrength += ally.getVisibleGroundStrength() * simRatio;
 		allyLocalAirStrength += ally.getVisibleAirStrength() * simRatio;
 
-		if (simRatio > 0.0) {
-			if (ally.getType().isFlyer() && ally.getSimValue() < maxThreshold && ally.getSimValue() != 0.0)
+		// If this unit is closer than the sim unit, it can override decisions
+		if (simRatio > unitSimRatio) {
+			if (ally.getType().isFlyer() && ally.getSimValue() < minThreshold && ally.getSimValue() != 0.0)
 				belowAirLimits = true;
-			if (!ally.getType().isFlyer() && ally.getSimValue() < maxThreshold && ally.getSimValue() != 0.0)
+			if (!ally.getType().isFlyer() && ally.getSimValue() < minThreshold && ally.getSimValue() != 0.0)
 				belowGrdLimits = true;
 		}
 	}
@@ -285,7 +287,7 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 	double attackAirAsAir = enemyLocalAirStrength > 0.0 ? allyLocalAirStrength / enemyLocalAirStrength : 10.0;
 	double attackAirAsGround = enemyLocalGroundStrength > 0.0 ? allyLocalAirStrength / enemyLocalGroundStrength : 10.0;
 	double attackGroundAsAir = enemyLocalAirStrength > 0.0 ? allyLocalGroundStrength / enemyLocalAirStrength : 10.0;
-	double attackGroundasGround = enemyLocalGroundStrength > 0.0 ? allyLocalGroundStrength / enemyLocalGroundStrength : 10.0;	
+	double attackGroundasGround = enemyLocalGroundStrength > 0.0 ? allyLocalGroundStrength / enemyLocalGroundStrength : 10.0;
 
 	// If unit is a flyer and no air threat
 	if (unit.getType().isFlyer() && enemyLocalAirStrength == 0.0)
@@ -311,12 +313,14 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 		}
 	}
 
+	auto belowLimits = unit.getType().isFlyer() ? (belowAirLimits || (sync && belowGrdLimits)) : (belowGrdLimits || (sync && belowAirLimits));
+
 	// If above/below thresholds, it's a sim win/loss
-	if (unit.getSimValue() >= maxThreshold) {
+	if (unit.getSimValue() >= maxThreshold && !belowLimits) {
 		unit.setSimState(SimState::Win);
 		unit.circleGreen();
 	}
-	else if (unit.getSimValue() <= minThreshold) {
+	else if (unit.getSimValue() <= minThreshold || belowLimits) {
 		unit.setSimState(SimState::Loss);
 		unit.circleRed();
 	}
@@ -329,15 +333,18 @@ void UnitManager::updateLocalState(UnitInfo& unit)
 		auto fightingAtHome = ((Terrain().isInAllyTerritory(unit.getTilePosition()) && Util().unitInRange(unit)) || Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()));
 		auto invisTarget = unit.getTarget().unit() && (unit.getTarget().unit()->isCloaked() || unit.getTarget().isBurrowed()) && !unit.getTarget().unit()->isDetected();
 
+		// Testing
+		if (Commands().isInDanger(unit, unit.getEngagePosition()))
+			unit.setLocalState(LocalState::Retreating);
+
 		// Force engaging
-		if (!invisTarget && (Units().isThreatening(unit.getTarget())
+		else if (!invisTarget && (Units().isThreatening(unit.getTarget())
 			|| (fightingAtHome && (!unit.getType().isFlyer() || !unit.getTarget().getType().isFlyer()) && (Strategy().defendChoke() || unit.getGroundRange() > 64.0))))
 			unit.setLocalState(LocalState::Engaging);
 
 		// Force retreating
 		else if ((unit.getType().isMechanical() && unit.getPercentTotal() < LOW_MECH_PERCENT_LIMIT)
 			|| (unit.getType() == UnitTypes::Protoss_High_Templar && unit.getEnergy() < 75)
-			|| Commands().isInDanger(unit)
 			|| Grids().getESplash(unit.getWalkPosition()) > 0
 			|| (invisTarget && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= unit.getTarget().getGroundRange() + 100.0)
 			|| (invisTarget && !isThreatening(unit) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) == 0)
@@ -354,8 +361,7 @@ void UnitManager::updateLocalState(UnitInfo& unit)
 				|| (unit.getType() == UnitTypes::Terran_Medic && unit.unit()->getEnergy() <= TechTypes::Healing.energyCost())
 				|| (unit.getType() == UnitTypes::Zerg_Mutalisk && Grids().getEAirThreat((WalkPosition)unit.getEngagePosition()) > 0.0 && unit.getHealth() <= 30)
 				|| (unit.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && Broodwar->getFrameCount() < 8000)
-				|| (unit.getType() == UnitTypes::Terran_SCV && Broodwar->getFrameCount() > 12000)
-				|| unit.getSimState() == SimState::Loss)
+				|| (unit.getType() == UnitTypes::Terran_SCV && Broodwar->getFrameCount() > 12000))
 				unit.setLocalState(LocalState::Retreating);
 
 			// Engage

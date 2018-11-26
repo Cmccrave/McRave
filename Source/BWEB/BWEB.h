@@ -7,26 +7,40 @@
 #include "Station.h"
 #include "Wall.h"
 
+// TODO:
+// Separate initializing stations
+// Remove external use of overlapsCurrentWall
+
 namespace BWEB::Map
 {
-	inline BWEM::Map& mapBWEM = BWEM::Map::Instance();
+	/// <summary> Global access of BWEM for BWEB. </summary>
+	inline BWEM::Map& mapBWEM = BWEM::Map::Instance();	
 
-	void findMain(), findMainChoke(), findNatural(), findNaturalChoke(), findNeutrals();
-	void draw(), onStart(), onUnitDiscover(BWAPI::Unit), onUnitDestroy(BWAPI::Unit), onUnitMorph(BWAPI::Unit);
+	/// <summary> Draws all BWEB::Walls, BWEB::Stations, BWEB::Blocks and BWEB::Paths when called. Call this every frame if you need debugging information. </summary>
+	void draw();
 
-	/// This is just put here so pathfinding can use it for now
-	BWAPI::UnitType overlapsCurrentWall(std::map<BWAPI::TilePosition, BWAPI::UnitType>& tiles, const BWAPI::TilePosition here, const int width = 0, const int height = 0);
+	/// <summary> Called on game start to initialize the BWEB::Map and BWEB::Stations. </summary>
+	void onStart(), onUnitDiscover(BWAPI::Unit), onUnitDestroy(BWAPI::Unit), onUnitMorph(BWAPI::Unit);
 
-	void removeOverlap(BWAPI::TilePosition, int, int);
+	/// <summary> Returns true if a BWAPI::TilePosition overlaps our current wall. This is mostly here for internal usage temporarily. </summary>
+	BWAPI::UnitType overlapsCurrentWall(std::map<BWAPI::TilePosition, BWAPI::UnitType>& currentWall, const BWAPI::TilePosition here, const int width = 1, const int height = 1);
 
-	void addOverlap(BWAPI::TilePosition, int, int);
+	/// <summary> Removes a section of BWAPI::TilePositions from the BWEB overlap grid. </summary>
+	void removeOverlap(BWAPI::TilePosition tile, int width, int height);
 
+	/// <summary> Add a section of BWAPI::TilePositions to the BWEB overlap grid. </summary>
+	void addOverlap(BWAPI::TilePosition, int width, int height);
+
+	/// <summary> Returns true if a section of BWAPI::TilePositions are within BWEBs overlap grid. </summary>
 	bool isOverlapping(BWAPI::TilePosition here, int width = 1, int height = 1, bool ignoreBlocks = false);
 
+	/// <summary> Add a section of BWAPI::TilePositions to the BWEB reserve grid. </summary>
 	void addReserve(BWAPI::TilePosition, int, int);
 
+	/// <summary> Returns true if a section of BWAPI::TilePositions are within BWEBs reserve grid. </summary>
 	bool isReserved(BWAPI::TilePosition here, int width = 1, int height = 1);
 
+	/// <summary> Returns true if a section of BWAPI::TilePositions are within BWEBs used grid. </summary>
 	bool isUsed(BWAPI::TilePosition here, int width = 1, int height = 1);
 
 	/// <summary> Returns true if a BWAPI::TilePosition is fully walkable. </summary>

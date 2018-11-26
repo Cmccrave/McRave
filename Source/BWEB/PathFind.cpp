@@ -16,11 +16,11 @@ namespace BWEB::PathFinding
 
 		const auto collision = [&](const TilePosition tile) {
 			return !tile.isValid()
+				|| tile.getDistance(target) > maxDist * 1.2
 				|| (!ignoreOverlap && Map::isOverlapping(tile))
 				|| !Map::isWalkable(tile)
-				|| Map::isUsed(tile)
-				|| Map::overlapsCurrentWall(currentWall, tile) != UnitTypes::None
-				|| tile.getDistance(target) > maxDist * 1.2;
+				|| Map::isUsed(tile)				
+				|| Map::overlapsCurrentWall(currentWall, tile) != UnitTypes::None;
 		};
 
 		createPath(mapBWEM, s, t, collision, direction);
@@ -35,9 +35,9 @@ namespace BWEB::PathFinding
 
 		const auto collision = [&](const TilePosition tile) {
 			return !tile.isValid()
-				|| !Map::isWalkable(tile)
+				|| tile.getDistance(target) > maxDist * 1.2
 				|| Map::isUsed(tile)
-				|| tile.getDistance(target) > maxDist * 1.2;
+				|| !Map::isWalkable(tile);							
 		};
 
 		createPath(mapBWEM, s, t, collision, direction);

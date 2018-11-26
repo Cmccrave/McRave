@@ -16,12 +16,133 @@ namespace BWEB::Map
 		const BWEM::Area * mainArea{};
 		const BWEM::ChokePoint * naturalChoke{};
 		const BWEM::ChokePoint * mainChoke{};
-		std::set<BWAPI::TilePosition> usedTiles;	
-		
+		std::set<BWAPI::TilePosition> usedTiles;
+
 		int testGrid[256][256];
 		int reserveGrid[256][256] ={};
 		int overlapGrid[256][256] ={};
 		int usedGrid[256][256] ={};
+
+		void findMain()
+		{
+			mainTile = Broodwar->self()->getStartLocation();
+			mainPosition = static_cast<Position>(mainTile) + Position(64, 48);
+			mainArea = mapBWEM.GetArea(mainTile);
+		}
+
+		void findNatural()
+		{
+			auto distBest = DBL_MAX;
+			for (auto &area : mapBWEM.Areas()) {
+				for (auto &base : area.Bases()) {
+
+					// Must have gas, be accesible and at least 5 mineral patches
+					if (base.Starting()
+						|| base.Geysers().empty()
+						|| area.AccessibleNeighbours().empty()
+						|| base.Minerals().size() < 5)
+						continue;
+
+					const auto dist = getGroundDistance(base.Center(), mainPosition);
+					if (dist < distBest) {
+						distBest = dist;
+						naturalArea = base.GetArea();
+						naturalTile = base.Location();
+						naturalPosition = static_cast<Position>(naturalTile) + Position(64, 48);
+					}
+				}
+			}
+		}
+
+		void findMainChoke()
+		{
+			// Add all main chokes to a set
+			set<BWEM::ChokePoint const *> mainChokes;
+			for (auto &choke : mainArea->ChokePoints()) {
+				mainChokes.insert(choke);
+			}
+
+			// Find a chokepoint that belongs to main and natural
+			auto distBest = DBL_MAX;
+			if (naturalArea) {
+				for (auto &choke : naturalArea->ChokePoints()) {
+					const auto dist = getGroundDistance(Position(choke->Center()), mainPosition);
+					if (mainChokes.find(choke) != mainChokes.end() && dist < distBest) {
+						mainChoke = choke;
+						distBest = dist;
+					}
+				}
+			}
+
+			// If we didn't find a main choke that belongs to main and natural, find another one
+			if (!mainChoke) {
+				for (auto &choke : mapBWEM.GetPath(mainPosition, naturalPosition)) {
+					const auto width = choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2));
+					if (width < distBest) {
+						mainChoke = choke;
+						distBest = width;
+					}
+				}
+			}
+		}
+
+		void findNaturalChoke()
+		{
+			// Exception for maps with a natural behind the main such as Crossing Fields
+			if (getGroundDistance(mainPosition, mapBWEM.Center()) < getGroundDistance(naturalPosition, mapBWEM.Center())) {
+				naturalChoke = mainChoke;
+				return;
+			}
+
+			set<BWEM::ChokePoint const *> nonChokes;
+			for (auto &choke : mapBWEM.GetPath(mainPosition, naturalPosition))
+				nonChokes.insert(choke);
+
+			// Find area that shares the choke we need to defend
+			auto distBest = DBL_MAX;
+			const BWEM::Area* second = nullptr;
+			if (naturalArea) {
+				for (auto &area : naturalArea->AccessibleNeighbours()) {
+					auto center = area->Top();
+					const auto dist = Position(center).getDistance(mapBWEM.Center());
+
+					bool wrongArea = false;
+					for (auto &choke : area->ChokePoints()) {
+						if ((!choke->Blocked() && choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2)) <= 2) || nonChokes.find(choke) != nonChokes.end()) {
+							wrongArea = true;
+						}
+					}
+					if (wrongArea)
+						continue;
+
+					if (center.isValid() && dist < distBest)
+						second = area, distBest = dist;
+				}
+
+				// Find second choke based on the connected area
+				distBest = DBL_MAX;
+				for (auto &choke : naturalArea->ChokePoints()) {
+					if (choke->Center() == mainChoke->Center()
+						|| choke->Blocked()
+						|| choke->Geometry().size() <= 3
+						|| (choke->GetAreas().first != second && choke->GetAreas().second != second))
+						continue;
+
+					const auto dist = Position(choke->Center()).getDistance(Position(Broodwar->self()->getStartLocation()));
+					if (dist < distBest)
+						naturalChoke = choke, distBest = dist;
+				}
+			}
+		}
+
+		void findNeutrals()
+		{
+			// Add overlap for neutrals
+			for (auto &unit : Broodwar->neutral()->getUnits()) {
+				if (unit && unit->exists() && unit->getType().topSpeed() == 0.0)
+					addOverlap(unit->getTilePosition(), unit->getType().tileWidth(), unit->getType().tileHeight());
+			}
+		}
 	}
 
 	void onStart()
@@ -105,7 +226,7 @@ namespace BWEB::Map
 			|| type == UnitTypes::Zerg_Sunken_Colony
 			|| type == UnitTypes::Zerg_Spore_Colony
 			|| type == UnitTypes::Terran_Missile_Turret) {
-			
+
 			for (auto &station : Stations::getStations()) {
 				int defCnt = station.getDefenseCount();
 				for (auto &defense : station.DefenseLocations()) {
@@ -115,127 +236,6 @@ namespace BWEB::Map
 					}
 				}
 			}
-		}
-	}
-
-	void findMain()
-	{
-		mainTile = Broodwar->self()->getStartLocation();
-		mainPosition = static_cast<Position>(mainTile) + Position(64, 48);
-		mainArea = mapBWEM.GetArea(mainTile);
-	}
-
-	void findNatural()
-	{
-		auto distBest = DBL_MAX;
-		for (auto &area : mapBWEM.Areas()) {
-			for (auto &base : area.Bases()) {
-
-				// Must have gas, be accesible and at least 5 mineral patches
-				if (base.Starting()
-					|| base.Geysers().empty()
-					|| area.AccessibleNeighbours().empty()
-					|| base.Minerals().size() < 5)
-					continue;
-
-				const auto dist = getGroundDistance(base.Center(), mainPosition);
-				if (dist < distBest) {
-					distBest = dist;
-					naturalArea = base.GetArea();
-					naturalTile = base.Location();
-					naturalPosition = static_cast<Position>(naturalTile) + Position(64, 48);
-				}
-			}
-		}
-	}
-
-	void findMainChoke()
-	{
-		// Add all main chokes to a set
-		set<BWEM::ChokePoint const *> mainChokes;
-		for (auto &choke : mainArea->ChokePoints()) {
-			mainChokes.insert(choke);
-		}
-
-		// Find a chokepoint that belongs to main and natural
-		auto distBest = DBL_MAX;
-		if (naturalArea) {
-			for (auto &choke : naturalArea->ChokePoints()) {
-				const auto dist = getGroundDistance(Position(choke->Center()), mainPosition);
-				if (mainChokes.find(choke) != mainChokes.end() && dist < distBest) {
-					mainChoke = choke;
-					distBest = dist;
-				}
-			}
-		}
-
-		// If we didn't find a main choke that belongs to main and natural, find another one
-		if (!mainChoke) {
-			for (auto &choke : mapBWEM.GetPath(mainPosition, naturalPosition)) {
-				const auto width = choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2));
-				if (width < distBest) {
-					mainChoke = choke;
-					distBest = width;
-				}
-			}
-		}
-	}
-
-	void findNaturalChoke()
-	{
-		// Exception for maps with a natural behind the main such as Crossing Fields
-		if (getGroundDistance(mainPosition, mapBWEM.Center()) < getGroundDistance(naturalPosition, mapBWEM.Center())) {
-			naturalChoke = mainChoke;
-			return;
-		}
-
-		set<BWEM::ChokePoint const *> nonChokes;
-		for (auto &choke : mapBWEM.GetPath(mainPosition, naturalPosition))
-			nonChokes.insert(choke);
-
-		// Find area that shares the choke we need to defend
-		auto distBest = DBL_MAX;
-		const BWEM::Area* second = nullptr;
-		if (naturalArea) {
-			for (auto &area : naturalArea->AccessibleNeighbours()) {
-				auto center = area->Top();
-				const auto dist = Position(center).getDistance(mapBWEM.Center());
-
-				bool wrongArea = false;
-				for (auto &choke : area->ChokePoints()) {
-					if ((!choke->Blocked() && choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2)) <= 2) || nonChokes.find(choke) != nonChokes.end()) {
-						wrongArea = true;
-					}
-				}
-				if (wrongArea)
-					continue;
-
-				if (center.isValid() && dist < distBest)
-					second = area, distBest = dist;
-			}
-
-			// Find second choke based on the connected area
-			distBest = DBL_MAX;
-			for (auto &choke : naturalArea->ChokePoints()) {
-				if (choke->Center() == mainChoke->Center()
-					|| choke->Blocked()
-					|| choke->Geometry().size() <= 3
-					|| (choke->GetAreas().first != second && choke->GetAreas().second != second))
-					continue;
-
-				const auto dist = Position(choke->Center()).getDistance(Position(Broodwar->self()->getStartLocation()));
-				if (dist < distBest)
-					naturalChoke = choke, distBest = dist;
-			}
-		}
-	}
-
-	void findNeutrals()
-	{
-		// Add overlap for neutrals
-		for (auto &unit : Broodwar->neutral()->getUnits()) {
-			if (unit && unit->exists() && unit->getType().topSpeed() == 0.0)
-				addOverlap(unit->getTilePosition(), unit->getType().tileWidth(), unit->getType().tileHeight());
 		}
 	}
 
@@ -290,16 +290,17 @@ namespace BWEB::Map
 					Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Black, false);
 				if (testGrid[x][y] >= 1)
 					Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Red, false);
-
 			}
 		}
+
+		BWEB::Walls::draw();
 	}
 
-	UnitType overlapsCurrentWall(map<TilePosition, UnitType>& tiles, const TilePosition here, const int width, const int height)
+	UnitType overlapsCurrentWall(map<TilePosition, UnitType>& currentWall, const TilePosition here, const int width, const int height)
 	{
 		for (auto x = here.x; x < here.x + width; x++) {
 			for (auto y = here.y; y < here.y + height; y++) {
-				for (auto &placement : tiles) {
+				for (auto &placement : currentWall) {
 					const auto tile = placement.first;
 					if (x >= tile.x && x < tile.x + placement.second.tileWidth() && y >= tile.y && y < tile.y + placement.second.tileHeight())
 						return placement.second;
@@ -535,7 +536,7 @@ namespace BWEB::Map
 				reserveGrid[x][y] = 1;
 		}
 	}
-	
+
 	const BWEM::Area * getNaturalArea() { return naturalArea; }
 	const BWEM::Area * getMainArea() { return mainArea; }
 	const BWEM::ChokePoint * getNaturalChoke() { return naturalChoke; }

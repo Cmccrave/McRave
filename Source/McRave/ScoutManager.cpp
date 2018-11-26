@@ -153,8 +153,14 @@ void ScoutManager::updateAssignment(UnitInfo& unit)
 		if (!unit.getDestination().isValid())
 			unit.setDestination(Terrain().getEnemyStartingPosition());
 
-		if (unit.getDestination().isValid()) 
-			Commands().hunt(unit);
+		if (unit.getDestination().isValid()) {
+			if (Terrain().foundEnemy()) {
+				if (Commands().hunt(unit)) {}
+				else if (Commands().kite(unit)) {}
+			}
+			else
+				unit.unit()->move(unit.getDestination());
+		}
 
 		Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Green);
 	}

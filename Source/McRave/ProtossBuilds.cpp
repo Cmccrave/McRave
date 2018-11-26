@@ -202,7 +202,7 @@ namespace McRave
 	void BuildOrderManager::P2Gate()
 	{
 		if (currentOpener == "Proxy") {
-			proxy =				true;
+			proxy =				vis(Protoss_Gateway) < 2;
 
 			itemQueue[Protoss_Pylon] =					Item((s >= 12), (s >= 16));
 			itemQueue[Protoss_Gateway] =				Item((vis(Protoss_Pylon) > 0) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
@@ -451,7 +451,7 @@ namespace McRave
 			firstTech =			TechTypes::None;
 			dragoonLimit =		0;
 			zealotLimit	=		INT_MAX;
-			playPassive =		true;
+			playPassive =		com(Protoss_Stargate) == 0;
 
 			if (techList.find(Protoss_Corsair) == techList.end())
 				techUnit = Protoss_Corsair;
@@ -608,6 +608,9 @@ namespace McRave
 		// Transitions
 		if (currentTransition == "DoubleExpand") {
 			getOpening =		s < 100;
+			
+			if (s >= 100 && techList.find(Protoss_High_Templar) == techList.end())
+				techUnit = Protoss_High_Templar;
 
 			itemQueue[Protoss_Nexus] =				Item(1 + (s >= 42) + (s >= 70));
 			itemQueue[Protoss_Assimilator] =		Item(s >= 24);

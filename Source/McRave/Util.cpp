@@ -2,10 +2,12 @@
 
 bool UtilManager::isWalkable(WalkPosition start, WalkPosition end, UnitType unitType)
 {
-	int walkWidth = (int)(unitType.width() / 8.0) + 1;
-	int walkHeight = (int)(unitType.height() / 8.0) + 1;
-	int halfW = walkWidth / 2;
-	int halfH = walkHeight / 2;	
+	int walkWidth = int(ceil(unitType.width() / 8.0));
+	int walkHeight = int(ceil(unitType.height() / 8.0));
+
+	// Round up
+	int halfW = (walkWidth + 1) / 2;
+	int halfH = (walkHeight + 1) / 2;
 
 	if (unitType.isFlyer()) {
 		halfW += 2;
@@ -15,7 +17,7 @@ bool UtilManager::isWalkable(WalkPosition start, WalkPosition end, UnitType unit
 	// If WalkPosition shared with WalkPositions under unit, ignore it
 	auto const overlapsUnit = [&](const int x, const int y) {
 		if (x >= start.x && x < start.x + walkWidth && y >= start.y && y < start.y + walkHeight)
-			return true;
+			return true;		
 		return false;
 	};
 

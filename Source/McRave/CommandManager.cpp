@@ -134,10 +134,10 @@ namespace McRave
 
 	bool CommandManager::attack(UnitInfo& unit)
 	{
-		auto shouldAttack = unit.getLocalState() == LocalState::Engaging;
+		auto shouldAttack = unit.hasTarget() && unit.getTarget().unit()->exists() && unit.getLocalState() == LocalState::Engaging;
 
 		// If unit should be attacking
-		if (shouldAttack && unit.hasTarget() && unit.getTarget().unit()->exists()) {
+		if (shouldAttack) {
 			auto canAttack = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() < Broodwar->getRemainingLatencyFrames() : unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames();
 
 			if (canAttack) {
@@ -183,6 +183,15 @@ namespace McRave
 
 	bool CommandManager::move(UnitInfo& unit)
 	{
+		function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
+			Position p = Position(w) + Position(4, 4);
+			double distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
+			double threat = Util().getHighestThreat(w, unit);
+			double grouping = 1.0 + (unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)) : 0.0);
+			double score = grouping / (threat * distance);
+			return score;
+		};
+
 		if (unit.hasTarget() && Util().unitInRange(unit))
 			return false;
 
@@ -212,33 +221,38 @@ namespace McRave
 
 		// If target doesn't exist, move towards it
 		else if (unit.hasTarget() && unit.getTarget().getPosition().isValid() && Grids().getMobility(WalkPosition(unit.getEngagePosition())) > 0 && (unit.getPosition().getDistance(unit.getTarget().getPosition()) < 320.0 || unit.getType().isFlyer())) {
-			unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition());
-			return true;
+			unit.setDestination(unit.getTarget().getPosition());
 		}
 
 		else if (Terrain().getAttackPosition().isValid()) {
-			unit.command(UnitCommandTypes::Move, Terrain().getAttackPosition());
-			return true;
+			unit.setDestination(Terrain().getAttackPosition());
 		}
 
 		// If no target and no enemy bases, move to a base location (random if we have found the enemy once already)
 		else if (unit.unit()->isIdle()) {
 			if (Terrain().getEnemyStartingPosition().isValid()) {
-				unit.command(UnitCommandTypes::Move, Terrain().randomBasePosition());
-				return true;
+				unit.setDestination(Terrain().randomBasePosition());
 			}
 			else {
 				for (auto &start : Broodwar->getStartLocations()) {
 					if (start.isValid() && !Broodwar->isExplored(start) && !Commands().overlapsCommands(unit.unit(), unit.getType(), Position(start), 32)) {
-						unit.command(UnitCommandTypes::Move, Position(start));
-						return true;
+						unit.setDestination(Position(start));
 					}
 				}
-				// Catch in case no valid movement positions
-				unit.command(UnitCommandTypes::Move, Position(Terrain().closestUnexploredStart()));
+			}
+		}
+
+		Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Purple);
+
+		if (unit.getDestination().isValid()) {
+			auto bestPosition = findViablePosition(unit, scoreFunction);
+			if (bestPosition.isValid()) {
+				Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Green);
+				unit.command(UnitCommandTypes::Move, bestPosition);
 				return true;
 			}
 		}
+
 		return false;
 	}
 
@@ -285,7 +299,7 @@ namespace McRave
 			return score;
 		};
 
-		if (!shouldKite())
+		if (!shouldKite() && !unit.getType().isWorker())
 			return false;
 
 		// If we found a valid position, move to it
@@ -390,6 +404,7 @@ namespace McRave
 
 		// If we found a valid position
 		auto bestPosition = findViablePosition(unit, scoreFunction);
+		//unit.circleBlue();
 
 		// Check if we can get free attacks
 		if (unit.hasTarget() && Util().getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT && Util().unitInRange(unit)) {
@@ -418,13 +433,15 @@ namespace McRave
 		};
 
 		// Retreating is only valid when local state is retreating
-		auto shouldRetreat = unit.getLocalState() == LocalState::Retreating;
+		auto shouldRetreat = unit.getLocalState() == LocalState::Retreating || unit.getRole() == Role::Scouting;
 		if (!shouldRetreat)
 			return false;
 
 		// If we found a valid position, move to it
 		auto bestPosition = findViablePosition(unit, scoreFunction);
+		unit.circleBlack();
 		if (bestPosition.isValid()) {
+			Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Red);
 			unit.command(UnitCommandTypes::Move, bestPosition);
 			return true;
 		}
@@ -523,13 +540,13 @@ namespace McRave
 		int halfWidth = int(ceil(unit.getType().width() / 2));
 		int halfHeight = int(ceil(unit.getType().height() / 2));
 
+		if (here == Positions::Invalid)
+			here = unit.getPosition();
+
 		auto uTopLeft = here + Position(-halfWidth, -halfHeight);
 		auto uTopRight = here + Position(halfWidth, -halfHeight);
 		auto uBotLeft = here + Position(-halfWidth, halfHeight);
 		auto uBotRight = here + Position(halfWidth, halfHeight);
-
-		if (here == Positions::Invalid)
-			here = unit.getPosition();
 
 		const auto checkCorners = [&](Position cTopLeft, Position cBotRight) {
 			if (Util().rectangleIntersect(cTopLeft, cBotRight, uTopLeft)
@@ -547,7 +564,7 @@ namespace McRave
 				|| command.tech == TechTypes::EMP_Shockwave) {
 				auto cTopLeft = command.pos - Position(48, 48);
 				auto cBotRight = command.pos + Position(48, 48);
-
+				
 				if (checkCorners(cTopLeft, cBotRight))
 					return true;
 			}
@@ -586,7 +603,7 @@ namespace McRave
 	{
 		// Radius for checking tiles
 		auto start = unit.getWalkPosition();
-		auto radius = 12 + int(unit.getSpeed());
+		auto radius = 4 + int(unit.getSpeed());
 		auto unitHeight = int(unit.getType().height() / 8.0);
 		auto unitWidth = int(unit.getType().width() / 8.0);
 		auto mapWidth = Broodwar->mapWidth() * 4;
@@ -604,11 +621,11 @@ namespace McRave
 
 			// If not a flyer and position blocks a building, has collision or a splash threat
 			if (!unit.getType().isFlyer() &&
-				(Buildings().overlapsQueuedBuilding(unit.getType(), unit.getTilePosition()) || Grids().getCollision(here) > 0 || Grids().getESplash(here) > 0))
+				(Buildings().overlapsQueuedBuilding(unit.getType(), unit.getTilePosition()) || Grids().getESplash(here) > 0))
 				return false;
 
 			// If too close of a command, is in danger or isn't walkable
-			if (p.getDistance(unit.getPosition()) < 32.0
+			if (p.getDistance(unit.getPosition()) > radius * 8
 				|| Commands().isInDanger(unit, p)
 				|| !Util().isWalkable(unit.getWalkPosition(), here, unit.getType()))
 				return false;
@@ -621,6 +638,10 @@ namespace McRave
 			for (int y = top; y < bot; y++) {
 				WalkPosition w(x, y);
 				Position p = Position(w) + Position(4, 4);
+
+				//if (viablePosition(w))
+					//Broodwar->drawBoxMap(Position(w), Position(w) + Position(9, 9), Colors::Black);
+
 				auto current = score(w);
 				if (current > best && viablePosition(w)) {
 					bestPosition = p;

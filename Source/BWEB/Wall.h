@@ -95,4 +95,6 @@ namespace BWEB::Walls
 	/// <param name="area"> The BWEB::Wall you want to add to. </param>
 	/// <param name="tight"> (Optional) Decides whether this addition to the BWEB::Wall intends to be walled around a specific UnitType. Defaults to none. </param>
 	void addToWall(BWAPI::UnitType type, Wall& wall, BWAPI::UnitType tight = BWAPI::UnitTypes::None);
+
+	void draw();
 }

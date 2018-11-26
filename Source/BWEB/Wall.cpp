@@ -429,7 +429,7 @@ namespace BWEB::Walls
 			}
 
 			startTile = initialStart;
-			endTile = initialEnd;
+			endTile = initialEnd;			
 		}
 
 		void findCurrentHole(Wall& wall, bool ignoreOverlap)
@@ -456,8 +456,10 @@ namespace BWEB::Walls
 				for (auto &tile : currentPath) {
 					double closestGeo = DBL_MAX;
 					for (auto &geo : wall.getChokePoint()->Geometry()) {
-						if (Map::overlapsCurrentWall(currentWall, tile) == UnitTypes::None && TilePosition(geo) == tile && tile.getDistance(startTile) < closestGeo)
-							currentHole = tile, closestGeo = tile.getDistance(startTile);
+						if (TilePosition(geo) == tile && tile.getDistance(startTile) < closestGeo && Map::overlapsCurrentWall(currentWall, tile) == UnitTypes::None) {
+							currentHole = tile;
+							closestGeo = tile.getDistance(startTile);
+						}
 					}
 				}
 				currentPathSize = newPath.getDistance();
@@ -675,5 +677,27 @@ namespace BWEB::Walls
 				return &wall;
 		}
 		return nullptr;
+	}
+
+	void draw()
+	{
+		Broodwar->drawTextMap(Position(endTile), "%d", Position(endTile));
+		Broodwar->drawTextMap(Position(startTile), "%d", Position(startTile));
+
+		/*map<TilePosition, UnitType> test;
+		BWEB::PathFinding::Path newPath;
+		newPath.createWallPath(Map::mapBWEM, test, Position(startTile), Position(endTile), false);
+
+		for (auto &tile : newPath.getTiles()) {
+			Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(33, 33), Colors::Red);
+		}*/
+
+		//for (int x = 0; x < Broodwar->mapWidth(); x++) {
+		//	for (int y = 0; y < Broodwar->mapHeight(); y++) {
+		//		TilePosition tile(x, y);
+		//		if (Map::isOverlapping(tile))
+		//			Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(33, 33), Colors::Red);
+		//	}
+		//}
 	}
 }
