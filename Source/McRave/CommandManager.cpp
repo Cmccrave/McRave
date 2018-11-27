@@ -187,7 +187,7 @@ namespace McRave
 			Position p = Position(w) + Position(4, 4);
 			double distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
 			double threat = Util().getHighestThreat(w, unit);
-			double grouping = 1.0 + (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / Grids().getAGroundCluster(w));
+			double grouping = (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / log(1.0 + Grids().getAGroundCluster(w)));
 			double score = grouping / (threat * distance);
 			return score;
 		};
@@ -245,12 +245,14 @@ namespace McRave
 		Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Purple);
 
 		if (unit.getDestination().isValid()) {
-			auto bestPosition = findViablePosition(unit, scoreFunction);
+			/*auto bestPosition = findViablePosition(unit, scoreFunction);
 			if (bestPosition.isValid()) {
 				Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Green);
 				unit.command(UnitCommandTypes::Move, bestPosition);
 				return true;
-			}
+			}*/
+			unit.command(UnitCommandTypes::Move, unit.getDestination());
+			return true;
 		}
 
 		return false;
@@ -294,7 +296,7 @@ namespace McRave
 				distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids().getDistanceHome(w);
 
 			double threat = Util().getHighestThreat(w, unit);
-			double grouping = 1.0 + (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / Grids().getAGroundCluster(w));
+			double grouping = (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / log(1.0 + Grids().getAGroundCluster(w)));
 			double score = grouping / (threat * distance);
 			return score;
 		};
@@ -382,7 +384,7 @@ namespace McRave
 			double threat = Util().getHighestThreat(w, unit);
 			double distance = (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination()));
 			double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(w))));
-			double grouping = exp((unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / Grids().getAGroundCluster(w)));
+			double grouping = (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / log(1.0 + Grids().getAGroundCluster(w)));
 			double score = grouping * visited / distance;
 			if (threat == MIN_THREAT || (unit.unit()->isCloaked() && !overlapsEnemyDetection(p)))
 				return score;
@@ -426,7 +428,7 @@ namespace McRave
 			Position p = Position(w) + Position(4, 4);
 			double distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids().getDistanceHome(w);
 			double threat = Util().getHighestThreat(w, unit);
-			double grouping = 1.0 + (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / Grids().getAGroundCluster(w));
+			double grouping = (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / log(1.0 + Grids().getAGroundCluster(w)));
 			double score = grouping / (threat * distance);
 			return score;
 		};

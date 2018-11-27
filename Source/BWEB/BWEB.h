@@ -75,6 +75,9 @@ namespace BWEB::Map
 	/// <param name="end"> The second Position. </param>
 	double getGroundDistance(T start, T end);
 
+	/// Testing this function
+	double distanceNextChoke(BWAPI::Position start, BWAPI::Position end);
+
 	/// <summary> Returns the BWEM::Area of the natural expansion. </summary>
 	const BWEM::Area * getNaturalArea();
 

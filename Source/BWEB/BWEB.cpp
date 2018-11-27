@@ -331,6 +331,20 @@ namespace BWEB::Map
 		return dist += start.getDistance(end);
 	}
 
+	double distanceNextChoke(Position start, Position end)
+	{
+		if (!start.isValid() || !end.isValid())
+			return DBL_MAX;
+
+		auto bwemPath = mapBWEM.GetPath(start, end);
+		auto source = bwemPath.front();
+
+
+		BWEB::PathFinding::Path newPath;
+		newPath.createUnitPath(mapBWEM, start, (Position)source->Center());
+		return newPath.getDistance();
+	}
+
 	TilePosition Map::getBuildPosition(UnitType type, const TilePosition searchCenter)
 	{
 		auto distBest = DBL_MAX;
