@@ -187,7 +187,7 @@ namespace McRave
 			Position p = Position(w) + Position(4, 4);
 			double distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
 			double threat = Util().getHighestThreat(w, unit);
-			double grouping = 1.0 + (unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)) : 0.0);
+			double grouping = 1.0 + (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / Grids().getAGroundCluster(w));
 			double score = grouping / (threat * distance);
 			return score;
 		};
@@ -294,7 +294,7 @@ namespace McRave
 				distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids().getDistanceHome(w);
 
 			double threat = Util().getHighestThreat(w, unit);
-			double grouping = 1.0 + (unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)) : 0.0);
+			double grouping = 1.0 + (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / Grids().getAGroundCluster(w));
 			double score = grouping / (threat * distance);
 			return score;
 		};
@@ -382,9 +382,9 @@ namespace McRave
 			double threat = Util().getHighestThreat(w, unit);
 			double distance = (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination()));
 			double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(w))));
-			double grouping = exp((unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)) : 0.0));
+			double grouping = exp((unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / Grids().getAGroundCluster(w)));
 			double score = grouping * visited / distance;
-			if (threat == MIN_THREAT)
+			if (threat == MIN_THREAT || (unit.unit()->isCloaked() && !overlapsEnemyDetection(p)))
 				return score;
 			return 0.0;
 		};
@@ -404,10 +404,9 @@ namespace McRave
 
 		// If we found a valid position
 		auto bestPosition = findViablePosition(unit, scoreFunction);
-		//unit.circleBlue();
 
 		// Check if we can get free attacks
-		if (unit.hasTarget() && Util().getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT && Util().unitInRange(unit)) {
+		if (unit.hasTarget() && unit.getPercentShield() >= LOW_SHIELD_PERCENT_LIMIT && Util().getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT && Util().unitInRange(unit)) {
 			attack(unit);
 			return true;
 		}
@@ -427,7 +426,7 @@ namespace McRave
 			Position p = Position(w) + Position(4, 4);
 			double distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids().getDistanceHome(w);
 			double threat = Util().getHighestThreat(w, unit);
-			double grouping = 1.0 + (unit.getType().isFlyer() ? double(Grids().getAAirCluster(w)) : 0.0);
+			double grouping = 1.0 + (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / Grids().getAGroundCluster(w));
 			double score = grouping / (threat * distance);
 			return score;
 		};

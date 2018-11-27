@@ -20,8 +20,8 @@ namespace McRave
 			// Zealot: Don't attack non threatening workers in our territory
 			if ((unit.getType() == UnitTypes::Protoss_Zealot && target.getType().isWorker() && !Units().isThreatening(target) && Terrain().isInAllyTerritory(target.getTilePosition()))
 
-				// If target is an egg or larva
-				|| (target.getType() == UnitTypes::Zerg_Egg || target.getType() == UnitTypes::Zerg_Larva || target.getType() == UnitTypes::Protoss_Scarab)
+				// If target is an egg, larva, scarab or spell
+				|| (target.getType() == UnitTypes::Zerg_Egg || target.getType() == UnitTypes::Zerg_Larva || target.getType() == UnitTypes::Protoss_Scarab || target.getType().isSpell())
 
 				// If unit can't attack and unit is not a detector
 				|| (!unit.getType().isDetector() && unit.getType() != UnitTypes::Terran_Comsat_Station && !unitCanAttack)
