@@ -1,3 +1,5 @@
+#include <BWAPI.h>
+
 #ifndef JUMP_POINT_SEARCH_H
 #define JUMP_POINT_SEARCH_H
 
@@ -156,7 +158,7 @@ namespace JPS {
 		inline bool isValid() const { return x != unsigned(-1); }
 	};
 
-	typedef std::vector<TilePosition> PathVector;
+	typedef std::vector<BWAPI::TilePosition> PathVector;
 
 	// ctor function to keep Position a real POD struct.
 	inline static Position Pos(unsigned x, unsigned y)

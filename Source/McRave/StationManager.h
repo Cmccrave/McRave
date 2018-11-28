@@ -20,7 +20,7 @@ namespace McRave
 		void onStart();
 		void storeStation(Unit);
 		void removeStation(Unit);
-		bool needDefenses(const BWEB::Stations::Station);
+		bool needDefenses(const BWEB::Stations::Station&);
 		bool stationNetworkExists(const BWEB::Stations::Station *, const BWEB::Stations::Station *);
 		BWEB::PathFinding::Path* pathStationToStation(const BWEB::Stations::Station *, const BWEB::Stations::Station *);
 	};

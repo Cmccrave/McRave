@@ -187,7 +187,7 @@ namespace McRave
 			Position p = Position(w) + Position(4, 4);
 			double distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
 			double threat = Util().getHighestThreat(w, unit);
-			double grouping = (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / log(1.0 + Grids().getAGroundCluster(w)));
+			double grouping = (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / log(10.0 + Grids().getAGroundCluster(w)));
 			double score = grouping / (threat * distance);
 			return score;
 		};
@@ -245,12 +245,24 @@ namespace McRave
 		Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Purple);
 
 		if (unit.getDestination().isValid()) {
-			/*auto bestPosition = findViablePosition(unit, scoreFunction);
-			if (bestPosition.isValid()) {
-				Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Green);
-				unit.command(UnitCommandTypes::Move, bestPosition);
-				return true;
-			}*/
+
+			if (unit.getPosition().getDistance(unit.getSimPosition()) < SIM_RADIUS) {
+				auto bestPosition = findViablePosition(unit, scoreFunction);
+				if (bestPosition.isValid()) {
+
+					// Draw a path from this unit and from best position to determine if this position is closer or not
+					BWEB::PathFinding::Path unitPath;
+					BWEB::PathFinding::Path bPath;
+
+					unitPath.createUnitPath(mapBWEM, unit.getPosition(), unit.getDestination());
+					bPath.createUnitPath(mapBWEM, bestPosition, unit.getDestination());
+
+					if (bPath.getDistance() < unitPath.getDistance()) {
+						unit.command(UnitCommandTypes::Move, bestPosition);
+						return true;
+					}
+				}
+			}
 			unit.command(UnitCommandTypes::Move, unit.getDestination());
 			return true;
 		}
@@ -296,7 +308,7 @@ namespace McRave
 				distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids().getDistanceHome(w);
 
 			double threat = Util().getHighestThreat(w, unit);
-			double grouping = (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / log(1.0 + Grids().getAGroundCluster(w)));
+			double grouping = (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / log(10.0 + Grids().getAGroundCluster(w)));
 			double score = grouping / (threat * distance);
 			return score;
 		};
@@ -428,7 +440,7 @@ namespace McRave
 			Position p = Position(w) + Position(4, 4);
 			double distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids().getDistanceHome(w);
 			double threat = Util().getHighestThreat(w, unit);
-			double grouping = (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / log(1.0 + Grids().getAGroundCluster(w)));
+			double grouping = (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / log(10.0 + Grids().getAGroundCluster(w)));
 			double score = grouping / (threat * distance);
 			return score;
 		};

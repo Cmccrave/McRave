@@ -583,7 +583,7 @@ namespace McRave
 		scout =				Broodwar->getStartLocations().size() == 4 ? vis(Protoss_Pylon) > 0 : vis(Protoss_Pylon) > 0;
 
 		// Pull 1 probe when researching goon range, add 1 after we have a Nexus, then add 3 when 2 gas
-		gasLimit =			2 + (!goonRange()) + (2 * (vis(Protoss_Nexus) >= 2)) + (3 * (com(Protoss_Assimilator) >= 2));
+		gasLimit =			2 + (!goonRange()) + (2 * (com(Protoss_Nexus) >= 2)) + (3 * (com(Protoss_Assimilator) >= 2));
 		zealotLimit =		0;
 		dragoonLimit =		INT_MAX;
 
@@ -592,6 +592,8 @@ namespace McRave
 			currentTransition =	"DoubleExpand";
 		else if (Strategy().enemyRush())
 			currentTransition = "Defensive";
+		else if (Units().getEnemyCount(Terran_Vulture) > Units().getMyTypeCount(Protoss_Dragoon) && Broodwar->getFrameCount() < 8000)
+			playPassive = true;
 
 		// Openers
 		if (currentOpener == "1Gate") {

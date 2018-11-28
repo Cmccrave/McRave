@@ -113,7 +113,7 @@ void StationManager::removeStation(Unit unit)
 	}
 }
 
-bool StationManager::needDefenses(const BWEB::Stations::Station station)
+bool StationManager::needDefenses(const BWEB::Stations::Station& station)
 {
 	auto centroid = TilePosition(station.ResourceCentroid());
 	auto defenseCount = station.getDefenseCount();
