@@ -1,5 +1,6 @@
 #include "PathFind.h"
 #include "BWEB.h"
+#include "JPS.h"
 
 using namespace std;
 using namespace BWAPI;
@@ -7,6 +8,17 @@ using namespace std::placeholders;
 
 namespace BWEB::PathFinding
 {	
+	namespace {
+		struct JPSGrid {
+			inline bool operator()(unsigned x, unsigned y) const
+			{
+				if (x < width && y < height && !Map::isUsed(TilePosition(x,y)) && Map::isWalkable(TilePosition(x,y)))
+					return true;				
+			}
+			unsigned width, height;
+		};
+	}
+
 	void Path::createWallPath(BWEM::Map& mapBWEM, map<TilePosition, UnitType>& currentWall, const Position s, const Position t, bool ignoreOverlap)
 	{
 		TilePosition target(t);
@@ -30,17 +42,27 @@ namespace BWEB::PathFinding
 	{
 		TilePosition target(t);
 		TilePosition source(s);
-		auto maxDist = source.getDistance(target);
-		vector<TilePosition> direction{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 },{ -1,-1 },{ -1, 1 },{ 1, -1 },{ 1, 1 } };
+		//auto maxDist = source.getDistance(target);
+		//vector<TilePosition> direction{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 },{ -1,-1 },{ -1, 1 },{ 1, -1 },{ 1, 1 } };
 
-		const auto collision = [&](const TilePosition tile) {
+
+
+		const auto collision = [&](unsigned int x, unsigned int y) {
+			TilePosition tile(x, y);
 			return !tile.isValid()
-				|| tile.getDistance(target) > maxDist * 1.2
+				//|| tile.getDistance(target) > maxDist * 1.2
 				|| Map::isUsed(tile)
 				|| !Map::isWalkable(tile);							
 		};
 
-		createPath(mapBWEM, s, t, collision, direction);
+		//createPath(mapBWEM, s, t, collision, direction);
+
+		vector<TilePosition> newJPSPath;
+		JPSGrid newGrid;
+
+		if (JPS::findPath(newJPSPath, newGrid, source.x, source.y, target.x, target.y)) {
+
+		}			
 	}
 
 	void Path::createPath(BWEM::Map& mapBWEM, const Position s, const Position t, function <bool(const TilePosition)> collision, vector<TilePosition> direction)
