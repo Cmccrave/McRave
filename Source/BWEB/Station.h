@@ -33,7 +33,7 @@ namespace BWEB::Stations
 	void findStations();
 
 	/// <summary> Returns a vector containing every BWEB::Station </summary>
-	std::vector<Station> getStations();
+	std::vector<Station>& getStations();
 
 	/// <summary> Returns the closest BWEB::Station to the given TilePosition. </summary>
 	const Station * getClosestStation(BWAPI::TilePosition);
