@@ -242,10 +242,10 @@ void TerrainManager::findDefendPosition()
 	else
 		defendPosition = Position(BWEB::Map::getMainChoke()->Center());
 
-	// If enemy proxy, defend natural choke
+	// If enemy non 2 gate proxy, defend natural choke
 	if (Strategy().enemyProxy() && Strategy().getEnemyBuild() != "P2Gate" && BWEB::Map::getNaturalChoke()) {
-		//defendPosition = Position(BWEB::Map::getNaturalChoke()->Center());
-		//allyTerritory.insert(BWEB::Map::getNaturalArea());
+		defendPosition = Position(BWEB::Map::getNaturalChoke()->Center());
+		allyTerritory.insert(BWEB::Map::getNaturalArea());
 	}
 
 	// If this isn't the same as the last position, make new concave positions

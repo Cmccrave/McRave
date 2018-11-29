@@ -65,6 +65,7 @@ namespace McRave
 	void CommandManager::updateDecision(UnitInfo& unit)
 	{
 		if (!unit.unit() || !unit.unit()->exists()																							// Prevent crashes			
+			|| unit.unit()->isLoaded()
 			|| unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())	// If the unit is locked down, maelstrommed, stassised, or not completed
 			return;
 
@@ -110,11 +111,11 @@ namespace McRave
 
 		// If unit has a transport, load into it if we need to
 		else if (unit.hasTransport() && unit.getTransport().unit()->exists()) {
-			if (unit.getType() == UnitTypes::Protoss_Reaver && (unit.unit()->getScarabCount() != MAX_SCARAB || unit.getLocalState() == LocalState::Retreating)) {
+			if (unit.getType() == UnitTypes::Protoss_Reaver && unit.unit()->isTraining() && unit.unit()->getScarabCount() != MAX_SCARAB) {
 				unit.command(UnitCommandTypes::Right_Click_Unit, &unit.getTransport());
 				return true;
 			}
-			else if (unit.getType() == UnitTypes::Protoss_High_Templar && (unit.getEnergy() < 75 || unit.getLocalState() == LocalState::Retreating)) {
+			else if (unit.getType() == UnitTypes::Protoss_High_Templar && unit.getEnergy() < 75) {
 				unit.command(UnitCommandTypes::Right_Click_Unit, &unit.getTransport());
 				return true;
 			}
@@ -396,7 +397,7 @@ namespace McRave
 			double threat = Util().getHighestThreat(w, unit);
 			double distance = (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination()));
 			double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(w))));
-			double grouping = (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / log(1.0 + Grids().getAGroundCluster(w)));
+			double grouping = (unit.getType().isFlyer() ? 1.0 + Grids().getAAirCluster(w) : 1.0 / log(10.0 + Grids().getAGroundCluster(w)));
 			double score = grouping * visited / distance;
 			if (threat == MIN_THREAT || (unit.unit()->isCloaked() && !overlapsEnemyDetection(p)))
 				return score;
@@ -418,6 +419,9 @@ namespace McRave
 
 		// If we found a valid position
 		auto bestPosition = findViablePosition(unit, scoreFunction);
+		unit.circleBlue();
+		Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Blue);
+		Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Blue);
 
 		// Check if we can get free attacks
 		if (unit.hasTarget() && unit.getPercentShield() >= LOW_SHIELD_PERCENT_LIMIT && Util().getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT && Util().unitInRange(unit)) {
@@ -616,7 +620,7 @@ namespace McRave
 	{
 		// Radius for checking tiles
 		auto start = unit.getWalkPosition();
-		auto radius = 4 + int(unit.getSpeed());
+		auto radius = 4 + int(unit.getSpeed()) + (8 * (int)unit.getType().isFlyer());
 		auto unitHeight = int(unit.getType().height() / 8.0);
 		auto unitWidth = int(unit.getType().width() / 8.0);
 		auto mapWidth = Broodwar->mapWidth() * 4;
@@ -652,8 +656,8 @@ namespace McRave
 				WalkPosition w(x, y);
 				Position p = Position(w) + Position(4, 4);
 
-				//if (viablePosition(w))
-					//Broodwar->drawBoxMap(Position(w), Position(w) + Position(9, 9), Colors::Black);
+				if (viablePosition(w))
+					Broodwar->drawBoxMap(Position(w), Position(w) + Position(9, 9), Colors::Black);
 
 				auto current = score(w);
 				if (current > best && viablePosition(w)) {

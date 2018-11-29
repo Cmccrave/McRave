@@ -318,11 +318,9 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 	// If above/below thresholds, it's a sim win/loss
 	if (unit.getSimValue() >= maxThreshold && !belowLimits) {
 		unit.setSimState(SimState::Win);
-		unit.circleGreen();
 	}
 	else if (unit.getSimValue() <= minThreshold || belowLimits) {
 		unit.setSimState(SimState::Loss);
-		unit.circleRed();
 	}
 }
 

@@ -195,6 +195,9 @@ void TransportManager::updateDecision(UnitInfo& transport)
 		// Dont attack until we're ready
 		else if (cargo.getGlobalState() == GlobalState::Retreating)
 			transport.setDestination(BWEB::Map::getNaturalPosition());
+
+		// TEMP
+		transport.setDestination(cargo.getEngagePosition());
 	}
 
 	//for (auto &w : transport.getAssignedWorkers()) {
@@ -276,7 +279,6 @@ void TransportManager::updateMovement(UnitInfo& transport)
 	auto bestPos = Positions::Invalid;
 	auto start = transport.getWalkPosition();
 	auto best = 0.0;
-
 	Commands().hunt(transport);
 	return;
 

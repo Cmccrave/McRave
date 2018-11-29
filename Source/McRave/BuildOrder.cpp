@@ -385,7 +385,7 @@ namespace McRave
 			if (Players().getNumberProtoss() > 0) {
 				currentBuild = "P1GateCore";
 				currentOpener = "1Zealot";
-				currentTransition = "1GateRobo";
+				currentTransition = "Reaver";
 			}
 			else if (Players().getNumberZerg() > 0) {
 				currentBuild = "P1GateCore";

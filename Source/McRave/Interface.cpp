@@ -95,6 +95,9 @@ namespace McRave
 		for (auto &u : Units().getMyUnits()) {
 			UnitInfo &unit = u.second;
 
+			if (unit.unit()->isLoaded())
+				continue;
+
 			if (targets) {
 				if (unit.hasResource())
 					Broodwar->drawLineMap(unit.getResource().getPosition(), unit.getPosition(), unit.getPlayer()->getColor());
