@@ -121,6 +121,10 @@ bool CommandManager::special(UnitInfo& unit)
 	// High Templars
 	else if (unit.getType() == UnitTypes::Protoss_High_Templar) {
 
+		// TEST - Check if the order of the HT is storming to add as a command
+		if (unit.unit()->getOrder() == Orders::CastPsionicStorm)
+			addCommand(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm);
+
 		// If close to target and can cast a storm
 		if (unit.hasTarget() && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= 400 && !Commands().overlapsCommands(unit.unit(), TechTypes::Psionic_Storm, unit.getTarget().getPosition(), 96) && unit.unit()->getEnergy() >= 75 && (Grids().getEGroundCluster(unit.getTarget().getWalkPosition()) + Grids().getEAirCluster(unit.getTarget().getWalkPosition())) >= STORM_LIMIT) {
 			unit.unit()->useTech(TechTypes::Psionic_Storm, unit.getTarget().unit());
@@ -144,7 +148,6 @@ bool CommandManager::special(UnitInfo& unit)
 					if (wantArchons || friendLowEnergyThreat) {
 						if (templar->unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp && unit.unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp)
 							unit.unit()->useTech(TechTypes::Archon_Warp, templar->unit());
-						Broodwar->drawTextMap(unit.getPosition(), "WARPING");
 						return true;
 					}
 				}

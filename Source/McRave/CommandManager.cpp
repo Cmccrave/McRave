@@ -123,11 +123,13 @@ namespace McRave
 
 		// Units targeted by splash need to move away from the army
 		// TODO: Maybe move this to their respective functions
-		else if (Units().getSplashTargets().find(unit.unit()) != Units().getSplashTargets().end()) {
-			if (unit.hasTarget() && unit.unit()->getGroundWeaponCooldown() <= 0 && unit.getTarget().unit()->exists())
-				attack(unit);
+		else if (unit.hasTarget() && Units().getSplashTargets().find(unit.unit()) != Units().getSplashTargets().end()) {
+			if (unit.hasTransport())
+				unit.command(UnitCommandTypes::Right_Click_Unit, &unit.getTransport());			
+			else if (unit.hasTarget() && unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames() && unit.getTarget().unit()->exists())
+				unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
 			else
-				approach(unit);
+				unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition());
 			return true;
 		}
 		return false;
@@ -328,7 +330,8 @@ namespace McRave
 
 	bool CommandManager::defend(UnitInfo& unit)
 	{
-		bool closeToDefend = Terrain().getDefendPosition().getDistance(unit.getPosition()) < 320.0 || Terrain().isInAllyTerritory(unit.getTilePosition()) || Terrain().isInAllyTerritory((TilePosition)unit.getDestination()) || (!unit.getType().isFlyer() && !unit.hasTransport() && !mapBWEM.GetArea(unit.getTilePosition()));
+		bool defendingExpansion = unit.getDestination().isValid() && !Terrain().isInEnemyTerritory((TilePosition)unit.getDestination());
+		bool closeToDefend = Terrain().getDefendPosition().getDistance(unit.getPosition()) < 320.0 || Terrain().isInAllyTerritory(unit.getTilePosition()) || defendingExpansion || (!unit.getType().isFlyer() && !unit.hasTransport() && !mapBWEM.GetArea(unit.getTilePosition()));
 		if (!closeToDefend || unit.getLocalState() != LocalState::Retreating)
 			return false;
 
@@ -420,8 +423,6 @@ namespace McRave
 		// If we found a valid position
 		auto bestPosition = findViablePosition(unit, scoreFunction);
 		unit.circleBlue();
-		Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Blue);
-		Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Blue);
 
 		// Check if we can get free attacks
 		if (unit.hasTarget() && unit.getPercentShield() >= LOW_SHIELD_PERCENT_LIMIT && Util().getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT && Util().unitInRange(unit)) {
@@ -493,11 +494,21 @@ namespace McRave
 
 	bool CommandManager::overlapsCommands(Unit unit, TechType tech, Position here, int radius)
 	{
+		auto checkTopLeft = here + Position(-radius / 2, -radius / 2);
+		auto checkTopRight = here + Position(radius / 2, -radius / 2);
+		auto checkBotLeft = here + Position(-radius / 2, radius / 2);
+		auto checkBotRight = here + Position(radius / 2, radius / 2);
+
 		// TechType checks use a rectangular check
 		for (auto &command : myCommands) {
 			auto topLeft = command.pos - Position(radius, radius);
 			auto botRight = command.pos + Position(radius, radius);
-			if (command.unit != unit && command.tech == tech && Util().rectangleIntersect(topLeft, botRight, here))
+
+			if (command.unit != unit && command.tech == tech &&
+				(Util().rectangleIntersect(topLeft, botRight, checkTopLeft)
+					|| Util().rectangleIntersect(topLeft, botRight, checkTopRight)
+					|| Util().rectangleIntersect(topLeft, botRight, checkBotLeft)
+					|| Util().rectangleIntersect(topLeft, botRight, checkBotRight)))
 				return true;
 		}
 		return false;
@@ -581,7 +592,7 @@ namespace McRave
 				|| command.tech == TechTypes::EMP_Shockwave) {
 				auto cTopLeft = command.pos - Position(48, 48);
 				auto cBotRight = command.pos + Position(48, 48);
-				
+
 				if (checkCorners(cTopLeft, cBotRight))
 					return true;
 			}
@@ -655,9 +666,6 @@ namespace McRave
 			for (int y = top; y < bot; y++) {
 				WalkPosition w(x, y);
 				Position p = Position(w) + Position(4, 4);
-
-				if (viablePosition(w))
-					Broodwar->drawBoxMap(Position(w), Position(w) + Position(9, 9), Colors::Black);
 
 				auto current = score(w);
 				if (current > best && viablePosition(w)) {

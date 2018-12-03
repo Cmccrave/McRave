@@ -77,7 +77,7 @@ namespace McRave {
 		double getPriority(UnitInfo& unit)
 		{
 			if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Terran_Science_Vessel)
-				return 4.0;
+				return 5.0;
 			if ((unit.unit()->isRepairing() || unit.unit()->isConstructing()) && Units().isThreatening(unit))
 				return 100.0;
 			if (Broodwar->getFrameCount() < 6000 && Strategy().enemyProxy() && unit.getType() == UnitTypes::Protoss_Pylon)
@@ -140,6 +140,7 @@ namespace McRave {
 			if (unit.getType() == UnitTypes::Terran_Bunker) return 15.0;
 			else if (unit.getType() == UnitTypes::Protoss_Reaver) return 60.0;
 			else if (unit.getType() == UnitTypes::Protoss_High_Templar) return 224.0;
+			else if (unit.getType() == UnitTypes::Zerg_Infested_Terran) return 500.0;
 			else if (unit.getType() == UnitTypes::Zerg_Zergling && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Adrenal_Glands)) return 6.0;
 			else if (unit.getType() == UnitTypes::Terran_Marine && unit.getPlayer()->hasResearched(TechTypes::Stim_Packs)) return 7.5;
 			return unit.getType().groundWeapon().damageCooldown();
@@ -149,8 +150,7 @@ namespace McRave {
 		{
 			if (unit.getType() == UnitTypes::Terran_Bunker) return 15.0;
 			else if (unit.getType() == UnitTypes::Protoss_High_Templar) return 224.0;
-			else if (unit.getType() == UnitTypes::Zerg_Scourge) return 110.0;
-			else if (unit.getType() == UnitTypes::Zerg_Infested_Terran) return 500.0;
+			else if (unit.getType() == UnitTypes::Zerg_Scourge) return 110.0;			
 			else if (unit.getType() == UnitTypes::Terran_Marine && unit.getPlayer()->hasResearched(TechTypes::Stim_Packs)) return 7.5;
 			return unit.getType().airWeapon().damageCooldown();
 		}

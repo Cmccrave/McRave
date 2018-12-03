@@ -25,7 +25,7 @@ namespace McRave
 
 		int beingAttackedCount;
 
-		bool burrowed;
+		bool burrowed, flying;
 		bool commandedThisFrame;
 
 		Unit thisUnit;
@@ -180,6 +180,7 @@ namespace McRave
 		void circleBlack()								{ Broodwar->drawCircleMap(position, unitType.width(), Colors::Black); }
 
 		bool isBurrowed()								{ return burrowed; }
+		bool isFlying()									{ return flying; }
 		Position getSimPosition()						{ return simPosition; }
 		Unit unit()										{ return thisUnit; }		
 		UnitType getType()								{ return unitType; }

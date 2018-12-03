@@ -55,10 +55,10 @@ namespace McRave
 		role = Role::None;
 
 		// Default to retreating
-		tState = TransportState::Retreating;
-		lState = LocalState::Retreating;
-		gState = GlobalState::Retreating;
-		sState = SimState::Loss;
+		tState = TransportState::None;
+		lState = LocalState::None;
+		gState = GlobalState::None;
+		sState = SimState::None;
 
 		position = Positions::Invalid;
 		engagePosition = Positions::Invalid;
@@ -107,7 +107,8 @@ namespace McRave
 		airDamage				= Math::airDamage(*this);
 		speed 					= Math::speed(*this);
 		minStopFrame			= Math::getMinStopFrame(t);
-		burrowed				= (thisUnit->isBurrowed() || thisUnit->getOrder() == Orders::Burrowing || thisUnit->getOrder() == Orders::VultureMine);
+		burrowed				= thisUnit->isBurrowed() || thisUnit->getOrder() == Orders::Burrowing || thisUnit->getOrder() == Orders::VultureMine;
+		flying					= thisUnit->isFlying() || thisUnit->getType().isFlyer() || thisUnit->getOrder() == Orders::LiftingOff || thisUnit->getOrder() == Orders::BuildingLiftOff;
 
 		// Update McRave stats
 		visibleGroundStrength	= Math::getVisibleGroundStrength(*this);

@@ -115,7 +115,7 @@ namespace McRave
 				best = DBL_MAX;
 				bestType = unit;
 			}
-			else if (unit == BuildOrder().getTechUnit() && isCreateable(building.unit(), unit) && isSuitable(unit) && Broodwar->self()->visibleUnitCount(unit) == 0) {
+			else if (unit == BuildOrder().getTechUnit() && isCreateable(building.unit(), unit) && isSuitable(unit) && Broodwar->self()->visibleUnitCount(unit) == 0 && isAffordable(unit)) {
 				best = DBL_MAX;
 				bestType = unit;
 			}
@@ -123,7 +123,7 @@ namespace McRave
 				best = DBL_MAX;
 				bestType = unit;
 			}
-			else if (value >= best && isCreateable(building.unit(), unit) && isSuitable(unit) && (isAffordable(bestType) || BuildOrder().getTechUnit() == bestType || BuildOrder().getTechList().find(bestType) != BuildOrder().getTechList().end())) {
+			else if (value >= best && isCreateable(building.unit(), unit) && isSuitable(unit) && isAffordable(bestType)) {
 				best = value;
 				bestType = unit;
 			}

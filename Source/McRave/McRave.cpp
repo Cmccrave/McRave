@@ -7,20 +7,18 @@
 #include "McRave.h"
 
 // *** Bugs ***
-// Send zealots to attack expos instead of goons
+// Send zealots to attack T/Z expos instead of goons
 // getConcavePosition and isWalkable are expensive on CPU
 
 // *** Coding ***
 // Move 4gate vs Z to 2 gate category
 // Use Player pointer instead of BWAPI::Player pointer in UnitInfo, gives advantage of knowing upgrades/tech that are available always
-// Melee trying to attack flying buildings
 // Floating units removing mine positions
 
 // *** SSCAIT2018 Goals ***
 // Unit formations
 // Build detection improvements
 // Observer building timings
-// Worker mineral walking
 
 void McRaveModule::onStart()
 {

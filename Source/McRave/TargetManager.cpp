@@ -17,6 +17,11 @@ namespace McRave
 
 		const auto shouldTarget = [&](UnitInfo& target, bool unitCanAttack, bool targetCanAttack) {
 
+			bool targetMatters = (target.getAirDamage() > 0.0 && Units().getGlobalAllyAirStrength() > 0.0)
+								|| (target.getGroundDamage() > 0.0 && Units().getGlobalAllyGroundStrength() > 0.0)
+								|| (target.getType().isDetector() && Units().getMyTypeCount(UnitTypes::Protoss_Dark_Templar) > 0)
+								|| (target.getAirDamage() == 0.0 && target.getGroundDamage() == 0.0);
+
 			// Zealot: Don't attack non threatening workers in our territory
 			if ((unit.getType() == UnitTypes::Protoss_Zealot && target.getType().isWorker() && !Units().isThreatening(target) && Terrain().isInAllyTerritory(target.getTilePosition()))
 
@@ -40,6 +45,9 @@ namespace McRave
 
 				// TODO: Remove this and improve command checks - If target is under DWEB and my unit is melee 
 				|| (!target.getType().isFlyer() && target.unit()->isUnderDisruptionWeb() && unit.getGroundRange() <= 64)
+
+				// Don't attack units that don't matter
+				|| !targetMatters
 
 				// DT: Don't attack Vultures
 				|| (unit.getType() == UnitTypes::Protoss_Dark_Templar && target.getType() == UnitTypes::Terran_Vulture)
@@ -111,6 +119,10 @@ namespace McRave
 
 			bool targetCanAttack = ((unit.getType().isFlyer() && target.getAirDamage() > 0.0) || (!unit.getType().isFlyer() && target.getGroundDamage() > 0.0) || (!unit.getType().isFlyer() && target.getType() == UnitTypes::Terran_Vulture_Spider_Mine));
 			bool unitCanAttack = ((target.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!target.getType().isFlyer() && unit.getGroundDamage() > 0.0) || (unit.getType() == UnitTypes::Protoss_Carrier));
+
+			// HACK: Check for a flying building
+			if (target.unit()->exists() && target.unit()->isFlying() && unit.getAirDamage() <= 0.0)
+				unitCanAttack = false;
 
 			double allyRange = target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
 			double airDist = unit.getPosition().getDistance(target.getPosition());

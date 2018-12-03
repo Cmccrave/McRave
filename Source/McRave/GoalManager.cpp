@@ -88,8 +88,10 @@ namespace McRave
 		for (auto &u : Units().getMyUnits()) {
 			UnitInfo &unit = u.second;
 
-			if (find(types.begin(), types.end(), unit.getType()) != types.end())
-				unitByDist[unit.getPosition().getDistance(here)] = &u.second;
+			if (find(types.begin(), types.end(), unit.getType()) != types.end()) {
+				double dist = unit.getType().isFlyer() ? unit.getPosition().getDistance(here) : BWEB::Map::getGroundDistance(unit.getPosition(), here);
+				unitByDist[dist] = &u.second;
+			}
 		}
 		
 		// Count how many of each type we want
@@ -100,6 +102,7 @@ namespace McRave
 		for (auto &u : unitByDist) {
 			UnitInfo* unit = u.second;
 			if (unitByType[unit->getType()] > 0 && !unit->getDestination().isValid()) {
+				Broodwar->drawLineMap(unit->getPosition(), here, Colors::Red);
 				unit->setDestination(here);
 				unitByType[unit->getType()] --;
 			}

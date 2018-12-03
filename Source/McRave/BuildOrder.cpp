@@ -6,11 +6,12 @@ namespace McRave
 	void BuildOrderManager::onEnd(bool isWinner)
 	{
 		// File extension including our race initial;
+		const auto mapLearning = false;
 		const string dash = "-";
 		const string noStats = " 0 0 ";
-		const string myRace{ *Broodwar->self()->getRace().c_str() };
-		const string enemyRace{ *Broodwar->enemy()->getRace().c_str() };
-		const string extension = myRace + "v" + enemyRace + " " + Broodwar->enemy()->getName() + " " + Broodwar->mapFileName() + ".txt";
+		const string myRaceChar{ *Broodwar->self()->getRace().c_str() };
+		const string enemyRaceChar{ *Broodwar->enemy()->getRace().c_str() };
+		const string extension = mapLearning ? myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + Broodwar->mapFileName() + ".txt" : myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName();
 
 		// Write into the write directory 3 tokens at a time (4 if we detect a dash)
 		ofstream config("bwapi-data/write/" + extension);
@@ -52,11 +53,12 @@ namespace McRave
 		}
 
 		// File extension including our race initial;
+		const auto mapLearning = false;
 		const string dash = "-";
 		const string noStats = " 0 0 ";
 		const string myRaceChar{ *Broodwar->self()->getRace().c_str() };
 		const string enemyRaceChar{ *Broodwar->enemy()->getRace().c_str() };
-		const string extension = myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + Broodwar->mapFileName() + ".txt";
+		const string extension = mapLearning ? myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + Broodwar->mapFileName() + ".txt" : myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName();
 
 		// Tokens
 		string buffer, token;

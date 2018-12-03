@@ -39,8 +39,6 @@ void UnitManager::updateUnits()
 	splashTargets.clear();
 	enemyComposition.clear();
 	myTypes.clear();
-	
-	double currentSim = 0.0;
 
 	// PvZ
 	if (Broodwar->self()->getRace() == Races::Zerg)
@@ -63,8 +61,12 @@ void UnitManager::updateUnits()
 		if (!unit.unit())
 			continue;
 
-		if (unit.unit()->exists() && unit.unit()->isFlying() && unit.getType().isBuilding() && unit.getLastTile().isValid()) {
+		unit.circleOrange();
+		
+		// If this is a flying building that we haven't recognized as being a flyer, remove overlap tiles
+		auto flyingBuilding = unit.unit()->exists() && !unit.isFlying() && (unit.unit()->getOrder() == Orders::LiftingOff || unit.unit()->getOrder() == Orders::BuildingLiftOff || unit.unit()->isFlying());
 
+		if (flyingBuilding && unit.getLastTile().isValid()) {
 			for (int x = unit.getLastTile().x; x < unit.getLastTile().x + unit.getType().tileWidth(); x++) {
 				for (int y = unit.getLastTile().y; y < unit.getLastTile().y + unit.getType().tileHeight(); y++) {
 					TilePosition t(x, y);
@@ -72,10 +74,9 @@ void UnitManager::updateUnits()
 						continue;
 
 					BWEB::Map::getUsedTiles().erase(t);
-					BWEB::Map::removeOverlap(t,1,1);
+					BWEB::Map::removeOverlap(t, 1, 1);
 				}
 			}
-			continue;
 		}
 
 		// If unit is visible, update it
@@ -189,7 +190,7 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 			continue;
 
 		// Distance parameters
-		//auto tempPosition = (enemy.unit()->exists() && enemy.unit()->getOrder() == Orders::AttackUnit) ? enemy.unit()->getOrderTargetPosition() : enemy.getPosition();
+		auto deadzone = double(enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode) * 64.0;
 		auto widths = (double)enemy.getType().tileWidth() * 16.0 + (double)unit.getType().tileWidth() * 16.0;
 		auto enemyRange = (unit.getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange());
 		auto airDist = enemy.getPosition().getDistance(unit.getPosition());
@@ -210,8 +211,16 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 
 		// If enemy can't move, it must be in range of our engage position to be added
 		else if (enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths <= 0.0) {
-			enemyToEngage = max(0.0, distance / unitSpeed);
-			simRatio = max(0.0, simulationTime - enemyToEngage);
+			if (deadzone > 0.0) {
+				enemyToEngage = max(0.0, distance / unitSpeed);
+
+				auto fudge = (enemyRange - deadzone) / unitSpeed;
+				simRatio = max(0.0, fudge - enemyToEngage);
+			}
+			else {
+				enemyToEngage = max(0.0, distance / unitSpeed);
+				simRatio = max(0.0, simulationTime - enemyToEngage);
+			}
 		}
 		else
 			continue;
@@ -345,7 +354,7 @@ void UnitManager::updateLocalState(UnitInfo& unit)
 			|| (unit.getType() == UnitTypes::Protoss_High_Templar && unit.getEnergy() < 75)
 			|| Grids().getESplash(unit.getWalkPosition()) > 0
 			|| (invisTarget && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= unit.getTarget().getGroundRange() + 100.0)
-			|| (invisTarget && !isThreatening(unit) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) == 0)
+			//|| (invisTarget && !isThreatening(unit) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) == 0)
 			|| unit.getGlobalState() == GlobalState::Retreating)
 			unit.setLocalState(LocalState::Retreating);
 
@@ -353,7 +362,7 @@ void UnitManager::updateLocalState(UnitInfo& unit)
 		else if (unit.getPosition().getDistance(unit.getSimPosition()) <= SIM_RADIUS) {
 
 			// Retreat
-			if ((unit.getType() == UnitTypes::Protoss_Zealot && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) == 0 && !BuildOrder().isProxy() && unit.getTarget().getType() == UnitTypes::Terran_Vulture && Grids().getMobility(unit.getTarget().getWalkPosition()) > 6 && Grids().getCollision(unit.getTarget().getWalkPosition()) < 2)
+			if ((unit.getType() == UnitTypes::Protoss_Zealot && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) == 0 && !BuildOrder().isProxy() && unit.getTarget().getType() == UnitTypes::Terran_Vulture && Grids().getMobility(unit.getTarget().getWalkPosition()) > 6 && Grids().getCollision(unit.getTarget().getWalkPosition()) < 4)
 				|| ((unit.getType() == UnitTypes::Protoss_Scout || unit.getType() == UnitTypes::Protoss_Corsair) && unit.getTarget().getType() == UnitTypes::Zerg_Overlord && Grids().getEAirThreat((WalkPosition)unit.getEngagePosition()) * 5.0 > (double)unit.getShields())
 				|| (unit.getType() == UnitTypes::Protoss_Corsair && unit.getTarget().getType() == UnitTypes::Zerg_Scourge && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Corsair) < 6)
 				|| (unit.getType() == UnitTypes::Terran_Medic && unit.unit()->getEnergy() <= TechTypes::Healing.energyCost())
@@ -363,7 +372,7 @@ void UnitManager::updateLocalState(UnitInfo& unit)
 				unit.setLocalState(LocalState::Retreating);
 
 			// Engage
-			else if (((unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && unit.getPosition().getDistance(unit.getTarget().getPosition()) < 96.0)
+			else if (((unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && (unit.getPosition().getDistance(unit.getTarget().getPosition()) < 96.0 || Util().unitInRange(unit)))
 				|| ((unit.unit()->isCloaked() || unit.isBurrowed()) && !Commands().overlapsEnemyDetection(unit.getEngagePosition()))
 				|| (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && Util().unitInRange(unit))
 				|| (unit.getSimState() == SimState::Win && unit.getGlobalState() == GlobalState::Engaging))
