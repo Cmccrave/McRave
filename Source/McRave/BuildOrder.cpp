@@ -305,12 +305,19 @@ namespace McRave
 					return z;
 			}
 
-			if (build == "PFFE")
-				return true;
-			if (build == "P12Nexus")
-				return true;
-			if (build == "P21Nexus")
-				return true;
+			if (build == "PFFE") {
+				if (opener == "Gate" || opener == "Nexus" || opener == "Forge")
+					return z;
+			}
+
+			if (build == "P12Nexus") {
+				if (opener == "Dragoon" || opener == "Zealot")
+					return p || t;
+			}
+			if (build == "P21Nexus") {
+				if (opener == "1Gate" || opener == "2Gate")
+					return t;
+			}
 		}
 		return false;
 	}
@@ -350,18 +357,23 @@ namespace McRave
 					return true;
 			}
 
-			if (build == "PFFE")
+			if (build == "PFFE") {
+				if (transition == "NeoBisu" || transition == "2Stargate" || transition == "StormRush")
+					return z;
+			}
 				return z;
 
 			if (build == "P12Nexus") {
-				if (transition == "DoubleExpand" || transition == "Carriers")
+				if (transition == "DoubleExpand" || transition == "ReaverCarrier")
 					return t;
-				if (transition == "5Gate")
+				if (transition == "Standard")
 					return t || p;
 			}
 
-			if (build == "P21Nexus")
-				return t;
+			if (build == "P21Nexus") {
+				if (transition == "DoubleExpand" || transition == "Carrier" || transition == "Standard")
+					return t;
+			}
 		}
 		return false;
 	}

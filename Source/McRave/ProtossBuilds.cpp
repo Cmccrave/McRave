@@ -18,23 +18,17 @@ using namespace UnitTypes;
 
 namespace McRave
 {
-	static int vis(UnitType t) {
-		return Broodwar->self()->visibleUnitCount(t);
-	}
-	static int com(UnitType t) {
-		return Broodwar->self()->completedUnitCount(t);
-	}
-	static string enemyBuild() {
-		return Strategy().getEnemyBuild();
-	}
+	namespace {
+		static int vis(UnitType t) {
+			return Broodwar->self()->visibleUnitCount(t);
+		}
+		static int com(UnitType t) {
+			return Broodwar->self()->completedUnitCount(t);
+		}
 
-
-	// TODO: When player upgrades are added, make this a variable instead
-	static bool goonRange() {
-		return Broodwar->self()->isUpgrading(UpgradeTypes::Singularity_Charge) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge);
-	}
-	static bool addgates() {
-		goonRange() && Broodwar->self()->minerals() >= 100;
+		string enemyBuild =	Strategy().getEnemyBuild();
+		bool goonRange = Broodwar->self()->isUpgrading(UpgradeTypes::Singularity_Charge) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge);		
+		bool addgates = goonRange && Broodwar->self()->minerals() >= 100;		
 	}
 
 	void BuildOrderManager::Reaction2GateAggresive() {
@@ -62,7 +56,7 @@ namespace McRave
 		playPassive =		com(Protoss_Dragoon) >= 2 && com(Protoss_Gateway) < 6 && com(Protoss_Reaver) < 2 && com(Protoss_Dark_Templar) < 2;
 		//currentTransition =	"3GateGoon";
 
-		bool addGates = goonRange() && Broodwar->self()->minerals() >= 100;
+		bool addGates = goonRange && Broodwar->self()->minerals() >= 100;
 
 		itemQueue[Protoss_Nexus] =					Item(1);
 		itemQueue[Protoss_Pylon] =					Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
@@ -117,23 +111,23 @@ namespace McRave
 			techUnit = Protoss_Corsair;
 
 		// TODO: If scout died, go to 2 cannons, if next scout dies, go 3 cannons		
-		if (enemyBuild() == "Z2HatchHydra")
+		if (enemyBuild == "Z2HatchHydra")
 			cannonCount = 5;
-		else if (enemyBuild() == "Z3HatchHydra")
+		else if (enemyBuild == "Z3HatchHydra")
 			cannonCount = 4;
-		else if (enemyBuild() == "Z2HatchMuta")
+		else if (enemyBuild == "Z2HatchMuta")
 			cannonCount = 7;
-		else if (enemyBuild() == "Z3HatchMuta")
+		else if (enemyBuild == "Z3HatchMuta")
 			cannonCount = 8;
 
 		// Reactions
-		if ((enemyBuild() == "Unknown" && !Terrain().getEnemyStartingPosition().isValid()) || enemyBuild() == "Z9Pool")
+		if ((enemyBuild == "Unknown" && !Terrain().getEnemyStartingPosition().isValid()) || enemyBuild == "Z9Pool")
 			false;// currentTransition = "Defensive";
-		else if (enemyBuild() == "Z5Pool")
+		else if (enemyBuild == "Z5Pool")
 			currentTransition =	"Defensive";
-		else if (enemyBuild() == "Z2HatchHydra" || enemyBuild() == "Z3HatchHydra")
+		else if (enemyBuild == "Z2HatchHydra" || enemyBuild == "Z3HatchHydra")
 			currentTransition =	"StormRush";
-		else if (enemyBuild() == "Z2HatchMuta" || enemyBuild() == "Z3HatchMuta")
+		else if (enemyBuild == "Z2HatchMuta" || enemyBuild == "Z3HatchMuta")
 			currentTransition =	"DoubleStargate";
 
 		// Openers
@@ -255,7 +249,7 @@ namespace McRave
 			zealotLimit =		0;
 			dragoonLimit =		INT_MAX;
 
-			if (Strategy().enemyFastExpand() || enemyBuild() == "TSiegeExpand") {
+			if (Strategy().enemyFastExpand() || enemyBuild == "TSiegeExpand") {
 				getOpening =		s < 70;
 				currentTransition =	"DT";
 
@@ -266,7 +260,7 @@ namespace McRave
 				itemQueue[Protoss_Assimilator] =		Item(s >= 22);
 				itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
 			}
-			else if (enemyBuild() == "TBBS") {
+			else if (enemyBuild == "TBBS") {
 				gasLimit =			0;
 				fastExpand =		false;
 				Reaction2GateDefensive();
@@ -303,14 +297,14 @@ namespace McRave
 					itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 70);
 					itemQueue[Protoss_Photon_Cannon] =		Item(2 * (com(Protoss_Forge) > 0));
 				}
-				else if (enemyBuild() == "Z9Pool") {
+				else if (enemyBuild == "Z9Pool") {
 					currentTransition =	"Defensive";
 
 					itemQueue[Protoss_Forge] =				Item(1);
 					itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 70);
 					itemQueue[Protoss_Photon_Cannon] =		Item(2 * (com(Protoss_Forge) > 0));
 				}
-				else if (enemyBuild() == "Z5Pool") {
+				else if (enemyBuild == "Z5Pool") {
 					getOpening =		s < 120;
 					currentTransition =	"Panic";
 
@@ -334,7 +328,7 @@ namespace McRave
 
 			// Versus Protoss
 			else {
-				if (!Strategy().enemyFastExpand() && (enemyBuild() == "P4Gate" || Units().getEnemyCount(Protoss_Gateway) >= 2 || Units().getEnemyCount(UnitTypes::Protoss_Dragoon) >= 2)) {
+				if (!Strategy().enemyFastExpand() && (enemyBuild == "P4Gate" || Units().getEnemyCount(Protoss_Gateway) >= 2 || Units().getEnemyCount(UnitTypes::Protoss_Dragoon) >= 2)) {
 					currentTransition =	"Defensive";
 					playPassive =		com(Protoss_Gateway) < 5;
 					zealotLimit	=		INT_MAX;
@@ -345,7 +339,7 @@ namespace McRave
 					itemQueue[Protoss_Photon_Cannon] =		Item(6 * (com(Protoss_Forge) > 0));
 					itemQueue[Protoss_Nexus] =				Item(1 + (s >= 56));
 				}
-				else if (enemyBuild() == "P2Gate") {
+				else if (enemyBuild == "P2Gate") {
 					Reaction2GateDefensive();
 				}
 				else {
@@ -371,7 +365,7 @@ namespace McRave
 		scout =				Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
 		gasLimit =			INT_MAX;
 
-		bool addGates = goonRange() && Broodwar->self()->minerals() >= 100;
+		bool addGates = goonRange && Broodwar->self()->minerals() >= 100;
 		bool addGas = Broodwar->getStartLocations().size() >= 3 ? (s >= 22) : (s >= 24);
 
 		// Openers
@@ -511,7 +505,7 @@ namespace McRave
 		gasLimit =			2 + (s >= 60);
 
 		// Pull 1 probe when researching goon range, add 1 after we have a Nexus, then add 3 when 2 gas
-		gasLimit =			2 + (!goonRange()) + (2 * (vis(Protoss_Nexus) >= 2)) + (3 * (com(Protoss_Assimilator) >= 2));
+		gasLimit =			2 + (!goonRange) + (2 * (vis(Protoss_Nexus) >= 2)) + (3 * (com(Protoss_Assimilator) >= 2));
 		zealotLimit =		0;
 		dragoonLimit =		INT_MAX;
 
@@ -590,12 +584,12 @@ namespace McRave
 		scout =				Broodwar->getStartLocations().size() == 4 ? vis(Protoss_Pylon) > 0 : vis(Protoss_Pylon) > 0;
 
 		// Pull 1 probe when researching goon range, add 1 after we have a Nexus, then add 3 when 2 gas
-		gasLimit =			2 + (!goonRange()) + (2 * (com(Protoss_Nexus) >= 2)) + (3 * (com(Protoss_Assimilator) >= 2));
+		gasLimit =			2 + (!goonRange) + (2 * (com(Protoss_Nexus) >= 2)) + (3 * (com(Protoss_Assimilator) >= 2));
 		zealotLimit =		0;
 		dragoonLimit =		vis(Protoss_Nexus) >= 2 ? INT_MAX : 1;
 
 		// Reactions
-		if (Strategy().enemyFastExpand() || enemyBuild() == "TSiegeExpand")
+		if (Strategy().enemyFastExpand() || enemyBuild == "TSiegeExpand")
 			currentTransition =	"DoubleExpand";
 		else if (Strategy().enemyRush())
 			currentTransition = "Defensive";
