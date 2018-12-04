@@ -41,16 +41,22 @@ void UnitManager::updateUnits()
 	myTypes.clear();
 
 	// PvZ
-	if (Players().vZ())
-		minThreshold = 0.75, maxThreshold = 1.25;
+	if (Players().vZ()) {
+		minThreshold = 0.75;
+		maxThreshold = 1.25;
+	}
 
 	// PvT
-	if (Players().vT())
-		minThreshold = 0.25; maxThreshold = 0.75;
+	if (Players().vT()) {
+		minThreshold = 0.25;
+		maxThreshold = 0.75;
+	}
 
 	// PvP
-	if (Players().vP())
-		minThreshold = 0.75, maxThreshold = 1.25;
+	if (Players().vP()) {
+		minThreshold = 0.75;
+		maxThreshold = 1.25;
+	}
 
 	if (BuildOrder().isRush())
 		minThreshold = 0.0, maxThreshold = 0.75;

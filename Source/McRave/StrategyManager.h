@@ -33,6 +33,7 @@ namespace McRave
 		set <Bullet> myBullets;
 		map <UnitType, double> unitPerformance;
 		bool goonRange = false;			
+		bool vultureSpeed = false;
 		bool shouldHoldChoke();
 		bool shouldHideTech();
 		bool shouldGetDetection();

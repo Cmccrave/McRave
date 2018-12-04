@@ -397,6 +397,12 @@ void StrategyManager::updateEnemyBuild()
 					}
 				}
 
+				// Factory Research
+				if (unit.getType() == UnitTypes::Terran_Machine_Shop) {
+					if (unit.unit()->exists() && unit.unit()->isUpgrading())
+						vultureSpeed = true;
+				}
+
 				// FE Detection
 				if (unit.getType().isResourceDepot() && !Terrain().isStartingBase(unit.getTilePosition()))
 					enemyFE = true;
@@ -404,7 +410,7 @@ void StrategyManager::updateEnemyBuild()
 
 			if (Units().getSupply() < 60 && ((Units().getEnemyCount(UnitTypes::Terran_Barracks) >= 2 && Units().getEnemyCount(UnitTypes::Terran_Refinery) == 0) || (Units().getEnemyCount(UnitTypes::Terran_Marine) > 5 && Units().getEnemyCount(UnitTypes::Terran_Bunker) <= 0 && Broodwar->getFrameCount() < 6000)))
 				enemyBuild = "TBBS";
-			if (Units().getEnemyCount(UnitTypes::Terran_Factory) >= 3)
+			if (Units().getEnemyCount(UnitTypes::Terran_Factory) >= 2 && vultureSpeed)
 				enemyBuild = "T3Fact";
 
 		}
