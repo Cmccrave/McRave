@@ -219,10 +219,9 @@ namespace McRave
 
 			if (!unit.hasTransport()																						// If unit has no transport				
 				&& unit.getTilePosition().isValid() && unit.getTarget().getTilePosition().isValid()							// If both units have valid tiles
-				&& BWEB::Map::getUsedTiles().find(unit.getTarget().getTilePosition()) == BWEB::Map::getUsedTiles().end()			// Doesn't overlap buildings
+				&& !BWEB::Map::isUsed(unit.getTarget().getTilePosition())													// Doesn't overlap buildings
 				&& !unit.getType().isFlyer() && !unit.getTarget().getType().isFlyer()										// Doesn't include flyers
 				&& unit.getPosition().getDistance(unit.getTarget().getPosition()) < SIM_RADIUS								// Isn't too far from engaging
-				&& BWEB::Map::getGroundDistance(unit.getPosition(), unit.getTarget().getPosition()) < SIM_RADIUS				// Check ground distance too
 				&& BWEB::Map::isWalkable(unit.getTilePosition()) && BWEB::Map::isWalkable(unit.getTarget().getTilePosition()))	// Walkable tiles
 				return true;
 			return false;

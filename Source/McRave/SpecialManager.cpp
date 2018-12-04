@@ -122,7 +122,7 @@ bool CommandManager::special(UnitInfo& unit)
 	else if (unit.getType() == UnitTypes::Protoss_High_Templar) {
 
 		// TEST - Check if the order of the HT is storming to add as a command
-		if (unit.unit()->getOrder() == Orders::CastPsionicStorm)
+		if (unit.unit()->getOrder() == Orders::CastPsionicStorm && unit.hasTarget())
 			addCommand(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm);
 
 		// If close to target and can cast a storm

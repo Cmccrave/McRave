@@ -41,7 +41,7 @@ void UnitManager::updateUnits()
 	myTypes.clear();
 
 	// PvZ
-	if (Broodwar->self()->getRace() == Races::Zerg)
+	if (Players().vZ())
 		minThreshold = 0.75, maxThreshold = 1.25;
 
 	// PvT
@@ -331,6 +331,11 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 	else if (unit.getSimValue() <= minThreshold || belowLimits) {
 		unit.setSimState(SimState::Loss);
 	}
+
+	if (unit.getSimState() == SimState::Loss)
+		unit.circleRed();
+	else if (unit.getSimState() == SimState::Win)
+		unit.circleBlue();
 }
 
 void UnitManager::updateLocalState(UnitInfo& unit)
@@ -353,8 +358,7 @@ void UnitManager::updateLocalState(UnitInfo& unit)
 		else if ((unit.getType().isMechanical() && unit.getPercentTotal() < LOW_MECH_PERCENT_LIMIT)
 			|| (unit.getType() == UnitTypes::Protoss_High_Templar && unit.getEnergy() < 75)
 			|| Grids().getESplash(unit.getWalkPosition()) > 0
-			|| (invisTarget && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= unit.getTarget().getGroundRange() + 100.0)
-			//|| (invisTarget && !isThreatening(unit) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) == 0)
+			|| (invisTarget && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= unit.getTarget().getGroundRange() + 100.0)			
 			|| unit.getGlobalState() == GlobalState::Retreating)
 			unit.setLocalState(LocalState::Retreating);
 
@@ -368,7 +372,8 @@ void UnitManager::updateLocalState(UnitInfo& unit)
 				|| (unit.getType() == UnitTypes::Terran_Medic && unit.unit()->getEnergy() <= TechTypes::Healing.energyCost())
 				|| (unit.getType() == UnitTypes::Zerg_Mutalisk && Grids().getEAirThreat((WalkPosition)unit.getEngagePosition()) > 0.0 && unit.getHealth() <= 30)
 				|| (unit.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && Broodwar->getFrameCount() < 8000)
-				|| (unit.getType() == UnitTypes::Terran_SCV && Broodwar->getFrameCount() > 12000))
+				|| (unit.getType() == UnitTypes::Terran_SCV && Broodwar->getFrameCount() > 12000)
+				|| (invisTarget && !isThreatening(unit) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) == 0))
 				unit.setLocalState(LocalState::Retreating);
 
 			// Engage

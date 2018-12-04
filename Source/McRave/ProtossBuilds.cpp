@@ -27,8 +27,12 @@ namespace McRave
 		}
 
 		string enemyBuild =	Strategy().getEnemyBuild();
-		bool goonRange = Broodwar->self()->isUpgrading(UpgradeTypes::Singularity_Charge) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge);		
-		bool addgates = goonRange && Broodwar->self()->minerals() >= 100;		
+		bool goonRange() {
+			return Broodwar->self()->isUpgrading(UpgradeTypes::Singularity_Charge) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge);
+		}
+		bool addGates() {
+			return goonRange() && Broodwar->self()->minerals() >= 100;
+		}
 	}
 
 	void BuildOrderManager::Reaction2GateAggresive() {
@@ -55,12 +59,10 @@ namespace McRave
 		rush =				com(Protoss_Dragoon) < 2 && vis(Protoss_Assimilator) > 0;
 		playPassive =		com(Protoss_Dragoon) >= 2 && com(Protoss_Gateway) < 6 && com(Protoss_Reaver) < 2 && com(Protoss_Dark_Templar) < 2;
 		//currentTransition =	"3GateGoon";
-
-		bool addGates = goonRange && Broodwar->self()->minerals() >= 100;
-
+		
 		itemQueue[Protoss_Nexus] =					Item(1);
 		itemQueue[Protoss_Pylon] =					Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
-		itemQueue[Protoss_Gateway] =				Item((s >= 20) + (s >= 24) + (addGates));
+		itemQueue[Protoss_Gateway] =				Item((s >= 20) + (s >= 24) + (addGates()));
 		itemQueue[Protoss_Assimilator] =			Item(s >= 44);
 		itemQueue[Protoss_Cybernetics_Core] =		Item(s >= 52);
 	}
@@ -239,7 +241,13 @@ namespace McRave
 			}
 		}
 
-		if (Players().vT()) {
+
+		if (currentTransition == "ZealotRush") {
+			zealotLimit = INT_MAX;
+			getOpening = s < 80;
+		}
+
+		else if (Players().vT()) {
 			firstUpgrade =		UpgradeTypes::Singularity_Charge;
 			firstTech =			TechTypes::None;
 			scout =				vis(Protoss_Cybernetics_Core) > 0;
@@ -249,30 +257,49 @@ namespace McRave
 			zealotLimit =		0;
 			dragoonLimit =		INT_MAX;
 
-			if (Strategy().enemyFastExpand() || enemyBuild == "TSiegeExpand") {
-				getOpening =		s < 70;
-				currentTransition =	"DT";
+			if (Strategy().enemyFastExpand() || enemyBuild == "TSiegeExpand")
+				currentTransition = "DT";
+			else if (enemyBuild == "TBBS")
+				currentTransition = "Defensive";
 
-				if (techList.find(Protoss_Dark_Templar) == techList.end())
+			if (currentTransition == "DT") {
+				getOpening =		s < 70;
+
+				if (com(Protoss_Dragoon) >= 3 && techList.find(Protoss_Dark_Templar) == techList.end())
 					techUnit = UnitTypes::Protoss_Dark_Templar;
 
 				itemQueue[Protoss_Nexus] =				Item(1);
 				itemQueue[Protoss_Assimilator] =		Item(s >= 22);
 				itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
 			}
-			else if (enemyBuild == "TBBS") {
+			else if (currentTransition == "Reaver") {
+				getOpening =		s < 70;
+
+				if (com(Protoss_Dragoon) >= 3 && techList.find(Protoss_Reaver) == techList.end())
+					techUnit = UnitTypes::Protoss_Reaver;
+
+				itemQueue[Protoss_Nexus] =				Item(1);
+				itemQueue[Protoss_Assimilator] =		Item(s >= 22);
+				itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
+			}
+			else if (currentTransition == "Defensive") {
 				gasLimit =			0;
 				fastExpand =		false;
 				Reaction2GateDefensive();
 			}
-			else {
+			else if (currentTransition == "Expansion"){
 				getOpening =		s < 100;
-				currentTransition =	"Expansion";
 
 				itemQueue[Protoss_Nexus] =				Item(1 + (s >= 50));
 				itemQueue[Protoss_Assimilator] =		Item(s >= 22);
 				itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
+			}
+			else if (currentTransition == "DoubleExpand") {
+				getOpening =		s < 120;
 
+				itemQueue[Protoss_Nexus] =				Item(1 + (s >= 50) + (s >= 50));
+				itemQueue[Protoss_Assimilator] =		Item(s >= 22);
+				itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
 			}
 		}
 		else
@@ -364,8 +391,7 @@ namespace McRave
 		firstTech =			TechTypes::None;
 		scout =				Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
 		gasLimit =			INT_MAX;
-
-		bool addGates = goonRange && Broodwar->self()->minerals() >= 100;
+				
 		bool addGas = Broodwar->getStartLocations().size() >= 3 ? (s >= 22) : (s >= 24);
 
 		// Openers
@@ -383,7 +409,7 @@ namespace McRave
 
 			itemQueue[Protoss_Nexus] =				Item(1);
 			itemQueue[Protoss_Pylon] =				Item((s >= 14), (s >= 16));
-			itemQueue[Protoss_Gateway] =			Item((s >= 20) + (2 * addGates));
+			itemQueue[Protoss_Gateway] =			Item((s >= 20) + (2 * addGates()));
 			itemQueue[Protoss_Assimilator] =		Item((addGas || Strategy().enemyScouted()));
 			itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 34);
 		}
@@ -392,7 +418,7 @@ namespace McRave
 
 			itemQueue[Protoss_Nexus] =				Item(1);
 			itemQueue[Protoss_Pylon] =				Item((s >= 14), (s >= 16));
-			itemQueue[Protoss_Gateway] =			Item((s >= 20) + (2 * addGates));
+			itemQueue[Protoss_Gateway] =			Item((s >= 20) + (2 * addGates()));
 			itemQueue[Protoss_Assimilator] =		Item((addGas || Strategy().enemyScouted()));
 			itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 40);
 		}
@@ -403,7 +429,7 @@ namespace McRave
 			dragoonLimit = INT_MAX;
 
 			itemQueue[Protoss_Robotics_Facility] =	Item(s >= 52);
-			itemQueue[Protoss_Gateway] =			Item((s >= 20) + (2 * addGates));
+			itemQueue[Protoss_Gateway] =			Item((s >= 20) + (2 * addGates()));
 
 			// TODO: Decide whether to reaver or obs here, reaver for now
 			if (vis(Protoss_Robotics_Facility) > 0 && techList.find(Protoss_Reaver) == techList.end())
@@ -474,6 +500,13 @@ namespace McRave
 				itemQueue[Protoss_Assimilator] =		Item(s >= 44);
 				itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 50);
 			}
+			else if (Players().vT()) {
+				getOpening = s < 80;
+
+				itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 30) + (2 * (s >= 62)));
+				itemQueue[Protoss_Assimilator] =		Item(s >= 22);
+				itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
+			}
 			else {
 				getOpening = s < 140;
 
@@ -502,10 +535,9 @@ namespace McRave
 		firstUpgrade =		UpgradeTypes::Singularity_Charge;
 		firstTech =			TechTypes::None;
 		scout =				vis(Protoss_Cybernetics_Core) >= 1;
-		gasLimit =			2 + (s >= 60);
 
 		// Pull 1 probe when researching goon range, add 1 after we have a Nexus, then add 3 when 2 gas
-		gasLimit =			2 + (!goonRange) + (2 * (vis(Protoss_Nexus) >= 2)) + (3 * (com(Protoss_Assimilator) >= 2));
+		gasLimit =			goonRange() && com(Protoss_Nexus) < 2 ? 2 : INT_MAX;
 		zealotLimit =		0;
 		dragoonLimit =		INT_MAX;
 
@@ -549,14 +581,14 @@ namespace McRave
 			itemQueue[Protoss_Assimilator] =		Item(s >= 26);
 		}
 		else if (currentTransition == "DoubleExpand") {
-			getOpening =		s < 120;
+			getOpening =		s < 140;
 
 			itemQueue[Protoss_Nexus] =				Item(1 + (s >= 24) + (com(Protoss_Cybernetics_Core) > 0));
 			itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Cybernetics_Core) > 0) + (s >= 26) + (s >= 70) + (s >= 80));
 			itemQueue[Protoss_Assimilator] =		Item(s >= 28);
 		}
 		else if (currentTransition == "Standard") {
-			getOpening =		s < 120;			
+			getOpening =		s < 80;			
 		}
 		else if (currentTransition == "ReaverCarrier") {
 			getOpening =		s < 120;
@@ -584,7 +616,7 @@ namespace McRave
 		scout =				Broodwar->getStartLocations().size() == 4 ? vis(Protoss_Pylon) > 0 : vis(Protoss_Pylon) > 0;
 
 		// Pull 1 probe when researching goon range, add 1 after we have a Nexus, then add 3 when 2 gas
-		gasLimit =			2 + (!goonRange) + (2 * (com(Protoss_Nexus) >= 2)) + (3 * (com(Protoss_Assimilator) >= 2));
+		gasLimit =			goonRange() && com(Protoss_Nexus) < 2 ? 2 : INT_MAX;
 		zealotLimit =		0;
 		dragoonLimit =		vis(Protoss_Nexus) >= 2 ? INT_MAX : 1;
 
@@ -611,7 +643,7 @@ namespace McRave
 
 		// Transitions
 		if (currentTransition == "DoubleExpand") {
-			getOpening =		s < 100;
+			getOpening =		s < 140;
 			playPassive =		com(Protoss_Nexus) < 3;
 
 			if (s >= 140 && techList.find(Protoss_High_Templar) == techList.end())

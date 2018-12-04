@@ -288,7 +288,7 @@ namespace BWEB::Map
 				TilePosition t(x, y);
 				if (reserveGrid[x][y] >= 1)
 					Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Black, false);
-				if (testGrid[x][y] >= 1)
+				if (usedGrid[x][y] >= 1)
 					Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Red, false);
 			}
 		}

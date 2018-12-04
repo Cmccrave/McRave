@@ -12,7 +12,7 @@ namespace BWEB::PathFinding
 		struct JPSGrid {
 			inline bool operator()(unsigned x, unsigned y) const
 			{
-				if (x < width && y < height && TilePosition(x,y).getDistance(target) < maxDist && !Map::isUsed(TilePosition(x, y)) && Map::isWalkable(TilePosition(x, y)))
+				if (x < width && y < height && !Map::isUsed(TilePosition(x, y)) && Map::isWalkable(TilePosition(x, y)))
 					return true;
 				return false;
 			}
@@ -46,17 +46,17 @@ namespace BWEB::PathFinding
 		TilePosition target(t);
 		TilePosition source(s);
 		vector<TilePosition> newJPSPath;
-		Path newPath;
 		JPSGrid newGrid;
 		newGrid.maxDist = source.getDistance(target);
 		newGrid.target = target;
-
+	
 		if (JPS::findPath(newJPSPath, newGrid, source.x, source.y, target.x, target.y)) {
-			tiles = newJPSPath;
 			Position current = s;
-			for (auto &t : tiles) {
+			for (auto &t : newJPSPath) {
 				dist += Position(t).getDistance(current);
 				current = Position(t);
+				tiles.push_back(t);
+				Broodwar->drawLineMap(Position(current), Position(t), Colors::Green);
 			}
 		}
 	}

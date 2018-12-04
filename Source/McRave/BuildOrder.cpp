@@ -87,13 +87,13 @@ namespace McRave
 		}
 
 		// Winrate tracking
-		auto bestBuildWR = 0.0;
+		auto bestBuildWR = -0.01;
 		string bestBuild = "";
 
-		auto bestOpenerWR = 0.0;
+		auto bestOpenerWR = -0.01;
 		string bestOpener = "";
 
-		auto bestTransitionWR = 0.0;
+		auto bestTransitionWR = -0.01;
 		string bestTransition = "";
 
 		const auto parseLearningFile = [&](ifstream &file) {
@@ -143,10 +143,10 @@ namespace McRave
 						bestBuild = token;
 						bestBuildWR = val;
 
-						bestOpenerWR = 0.0;
+						bestOpenerWR = -0.01;
 						bestOpener = "";
 
-						bestTransitionWR = 0.0;
+						bestTransitionWR = -0.01;
 						bestTransition = "";
 					}
 					break;
@@ -156,6 +156,9 @@ namespace McRave
 					if (val > bestOpenerWR && isOpenerAllowed(enemyRace, bestBuild, token)) {
 						bestOpener = token;
 						bestOpenerWR = val;
+
+						bestTransitionWR = -0.01;
+						bestTransition = "";
 					}
 					break;
 

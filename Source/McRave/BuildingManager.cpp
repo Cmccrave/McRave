@@ -636,7 +636,7 @@ namespace McRave
 		TilePosition tileBest = TilePositions::Invalid;
 
 		// Fast expands must be as close to home and have a gas geyser
-		if (MyStations().getMyStations().size() == 1)
+		if (MyStations().getMyStations().size() == 1 && isBuildable(baseType, BWEB::Map::getNaturalTile()) && isQueueable(baseType, BWEB::Map::getNaturalTile()))
 			tileBest = BWEB::Map::getNaturalTile();
 
 		// Other expansions must be as close to home but as far away from the opponent
