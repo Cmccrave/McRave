@@ -48,8 +48,8 @@ void UnitManager::updateUnits()
 
 	// PvT
 	if (Players().vT()) {
-		minThreshold = 0.25;
-		maxThreshold = 0.75;
+		minThreshold = 0.5;
+		maxThreshold = 1.0;
 	}
 
 	// PvP

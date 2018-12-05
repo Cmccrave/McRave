@@ -16,9 +16,14 @@ namespace McRave
 		// Write into the write directory 3 tokens at a time (4 if we detect a dash)
 		ofstream config("bwapi-data/write/" + extension);
 		string token;
+		bool correctBuild = false;
+		bool correctOpener = false;
+		bool correctTransition = false;
 
 		const auto shouldIncrement = [&](string name) {
-			return name == currentBuild || name == currentTransition || name == currentOpener;
+			if (name == currentBuild || name == currentTransition || name == currentOpener)
+				return true;			
+			return false;
 		};
 
 		int totalWins, totalLoses;
@@ -364,7 +369,6 @@ namespace McRave
 				if (transition == "NeoBisu" || transition == "2Stargate" || transition == "StormRush")
 					return z;
 			}
-				return z;
 
 			if (build == "P12Nexus") {
 				if (transition == "DoubleExpand" || transition == "ReaverCarrier")

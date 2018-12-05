@@ -17,6 +17,7 @@
 // If an enemy floats a CC to an expansion, we don't consider it "taken"
 	// - Should we check all stations for being taken? How? UsedGrid? If so, we need to verify that buildings that land have used tiles
 // Pylon walls
+// Issue where incrementing transitions/openers with the same name
 
 // *** SSCAIT2018 Goals ***
 // Unit formations

@@ -11,16 +11,15 @@ namespace McRave
 
 	void GoalManager::updateProtossGoals()
 	{
-		map<UnitType, int> dragoons ={ { UnitTypes::Protoss_Dragoon, 4 } };
-		map<UnitType, int> corsairs ={ { UnitTypes::Protoss_Corsair, 4 } };
-		map<UnitType, int> zealots ={ { UnitTypes::Protoss_Zealot, 4 } };
+		map<UnitType, int> unitTypes;
 
 		// Defend my expansions
 		for (auto &s : MyStations().getMyStations()) {
 			auto station = *s.second;
 
-			if (station.BWEMBase()->Location() != BWEB::Map::getNaturalTile() && station.BWEMBase()->Location() != BWEB::Map::getMainTile() && station.getDefenseCount() == 0)
-				assignClosestToGoal(station.BWEMBase()->Center(), dragoons);
+			if (station.BWEMBase()->Location() != BWEB::Map::getNaturalTile() && station.BWEMBase()->Location() != BWEB::Map::getMainTile() && station.getDefenseCount() == 0) {
+				assignClosestToGoal(station.BWEMBase()->Center(), UnitTypes::Protoss_Dragoon, 4);
+			}
 		}
 
 		// Attack enemy expansions with a small force
@@ -38,9 +37,9 @@ namespace McRave
 				}
 			}
 			if (Players().vP())
-				assignClosestToGoal(posBest, dragoons);
+				assignClosestToGoal(posBest, UnitTypes::Protoss_Dragoon, 4);
 			else
-				assignClosestToGoal(posBest, zealots);
+				assignClosestToGoal(posBest, UnitTypes::Protoss_Zealot, 4);
 		}
 
 		// Secure our own future expansion position
@@ -50,9 +49,9 @@ namespace McRave
 			UnitType building = Broodwar->self()->getRace().getResourceDepot();
 			if (BuildOrder().buildCount(building) > Broodwar->self()->visibleUnitCount(building)) {
 				if (Players().vZ())
-					assignClosestToGoal(nextExpand, zealots);
+					assignClosestToGoal(nextExpand, UnitTypes::Protoss_Zealot, 4);
 				else
-					assignClosestToGoal(nextExpand, dragoons);
+					assignClosestToGoal(nextExpand, UnitTypes::Protoss_Dragoon, 4);
 			}
 		}
 
@@ -62,14 +61,14 @@ namespace McRave
 			for (auto &u : Units().getMyUnits()) {
 				auto &unit = u.second;
 				if (unit.getRole() == Role::Transporting)
-					assignClosestToGoal(unit.getPosition(), corsairs);
+					assignClosestToGoal(unit.getPosition(), UnitTypes::Protoss_Corsair, 4);
 			}
 		}
 
 		// Deny enemy expansions
 		// PvT
 		if (Players().vT() && MyStations().getMyStations().size() >= 3 && MyStations().getMyStations().size() > MyStations().getEnemyStations().size() && Terrain().getEnemyExpand().isValid() && Units().getSupply() >= 200)
-			assignClosestToGoal((Position)Terrain().getEnemyExpand(), dragoons);
+			assignClosestToGoal((Position)Terrain().getEnemyExpand(), UnitTypes::Protoss_Dragoon, 4);
 	}
 
 	void GoalManager::updateTerranGoals()
@@ -78,8 +77,7 @@ namespace McRave
 	}
 
 	void GoalManager::updateZergGoals()
-	{		
-		map<UnitType, int> _4Lurkers ={ { UnitTypes::Zerg_Lurker, 4 } };
+	{	
 
 		// Send lurkers to expansions when turtling		
 		if (Broodwar->self()->getRace() == Races::Zerg && !MyStations().getMyStations().empty()) {
@@ -87,12 +85,12 @@ namespace McRave
 
 			for (auto &base : MyStations().getMyStations()) {
 				auto station = *base.second;
-				assignClosestToGoal(station.ResourceCentroid(), _4Lurkers);
+				assignClosestToGoal(station.ResourceCentroid(), UnitTypes::Zerg_Lurker, 4);
 			}
 		}
 	}
 
-	void GoalManager::assignClosestToGoal(Position here, map<UnitType, int>& types)
+	void GoalManager::assignClosestToGoal(Position here, UnitType type, int count)
 	{
 		map<double, UnitInfo*> unitByDist;
 		map<UnitType, int> unitByType;
@@ -101,7 +99,7 @@ namespace McRave
 		for (auto &u : Units().getMyUnits()) {
 			UnitInfo &unit = u.second;
 
-			if (find(types.begin(), types.end(), unit.getType()) != types.end()) {
+			if (unit.getType() == type) {
 				double dist = unit.getType().isFlyer() ? unit.getPosition().getDistance(here) : BWEB::Map::getGroundDistance(unit.getPosition(), here);
 				unitByDist[dist] = &u.second;
 			}
@@ -110,10 +108,10 @@ namespace McRave
 		// Iterate through closest units
 		for (auto &u : unitByDist) {
 			UnitInfo* unit = u.second;
-			if (types[unit->getType()] > 0 && !unit->getDestination().isValid()) {
+			if (count > 0 && !unit->getDestination().isValid()) {
 				Broodwar->drawLineMap(unit->getPosition(), here, Colors::Red);
 				unit->setDestination(here);
-				types[unit->getType()] --;
+				count --;
 			}
 		}
 	}
