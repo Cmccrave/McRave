@@ -13,7 +13,8 @@ namespace McRave
 		void updateProtossGoals();
 		void updateTerranGoals();
 		void updateZergGoals();
-		void assignClosestToGoal(Position, UnitType, int);
+		void assignNumberToGoal(Position, UnitType, int);
+		void assignPercentToGoal(Position, UnitType, double);
 	public:
 		void onFrame();
 	};

@@ -18,7 +18,7 @@ namespace McRave
 			auto station = *s.second;
 
 			if (station.BWEMBase()->Location() != BWEB::Map::getNaturalTile() && station.BWEMBase()->Location() != BWEB::Map::getMainTile() && station.getDefenseCount() == 0) {
-				assignClosestToGoal(station.BWEMBase()->Center(), UnitTypes::Protoss_Dragoon, 4);
+				assignPercentToGoal(station.BWEMBase()->Center(), UnitTypes::Protoss_Dragoon, 0.15);
 			}
 		}
 
@@ -37,9 +37,9 @@ namespace McRave
 				}
 			}
 			if (Players().vP())
-				assignClosestToGoal(posBest, UnitTypes::Protoss_Dragoon, 4);
+				assignPercentToGoal(posBest, UnitTypes::Protoss_Dragoon, 0.15);
 			else
-				assignClosestToGoal(posBest, UnitTypes::Protoss_Zealot, 4);
+				assignPercentToGoal(posBest, UnitTypes::Protoss_Zealot, 0.15);
 		}
 
 		// Secure our own future expansion position
@@ -49,9 +49,11 @@ namespace McRave
 			UnitType building = Broodwar->self()->getRace().getResourceDepot();
 			if (BuildOrder().buildCount(building) > Broodwar->self()->visibleUnitCount(building)) {
 				if (Players().vZ())
-					assignClosestToGoal(nextExpand, UnitTypes::Protoss_Zealot, 4);
-				else
-					assignClosestToGoal(nextExpand, UnitTypes::Protoss_Dragoon, 4);
+					assignPercentToGoal(nextExpand, UnitTypes::Protoss_Zealot, 0.15);
+				else {
+					assignPercentToGoal(nextExpand, UnitTypes::Protoss_Dragoon, 0.25);
+					assignPercentToGoal(nextExpand, UnitTypes::Protoss_Zealot, 0.25);
+				}
 			}
 		}
 
@@ -61,14 +63,14 @@ namespace McRave
 			for (auto &u : Units().getMyUnits()) {
 				auto &unit = u.second;
 				if (unit.getRole() == Role::Transporting)
-					assignClosestToGoal(unit.getPosition(), UnitTypes::Protoss_Corsair, 4);
+					assignPercentToGoal(unit.getPosition(), UnitTypes::Protoss_Corsair, 0.25);
 			}
 		}
 
 		// Deny enemy expansions
 		// PvT
-		if (Players().vT() && MyStations().getMyStations().size() >= 3 && MyStations().getMyStations().size() > MyStations().getEnemyStations().size() && Terrain().getEnemyExpand().isValid() && Units().getSupply() >= 200)
-			assignClosestToGoal((Position)Terrain().getEnemyExpand(), UnitTypes::Protoss_Dragoon, 4);
+		if (Players().vT() && MyStations().getEnemyStations().size() >= 2 && Terrain().getEnemyExpand().isValid())
+			assignPercentToGoal((Position)Terrain().getEnemyExpand(), UnitTypes::Protoss_Dragoon, 0.15);
 	}
 
 	void GoalManager::updateTerranGoals()
@@ -85,12 +87,12 @@ namespace McRave
 
 			for (auto &base : MyStations().getMyStations()) {
 				auto station = *base.second;
-				assignClosestToGoal(station.ResourceCentroid(), UnitTypes::Zerg_Lurker, 4);
+				assignPercentToGoal(station.ResourceCentroid(), UnitTypes::Zerg_Lurker, 0.25);
 			}
 		}
 	}
 
-	void GoalManager::assignClosestToGoal(Position here, UnitType type, int count)
+	void GoalManager::assignNumberToGoal(Position here, UnitType type, int count)
 	{
 		map<double, UnitInfo*> unitByDist;
 		map<UnitType, int> unitByType;
@@ -114,5 +116,11 @@ namespace McRave
 				count --;
 			}
 		}
+	}
+
+	void GoalManager::assignPercentToGoal(Position here, UnitType type, double percent)
+	{
+		int count = int(percent * double(Units().getMyTypeCount(UnitTypes::Protoss_Dragoon)));
+		assignNumberToGoal(here, type, count);
 	}
 }

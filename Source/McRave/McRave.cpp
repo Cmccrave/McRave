@@ -6,10 +6,6 @@
 #include "Header.h"
 #include "McRave.h"
 
-// *** Bugs ***
-// Send zealots to attack T/Z expos instead of goons
-// getConcavePosition and isWalkable are expensive on CPU
-
 // *** Coding ***
 // Move 4gate vs Z to 2 gate category
 // Use Player pointer instead of BWAPI::Player pointer in UnitInfo, gives advantage of knowing upgrades/tech that are available always
@@ -17,7 +13,7 @@
 // If an enemy floats a CC to an expansion, we don't consider it "taken"
 	// - Should we check all stations for being taken? How? UsedGrid? If so, we need to verify that buildings that land have used tiles
 // Pylon walls
-// Issue where incrementing transitions/openers with the same name
+// JPS timeout if path unreachable
 
 // *** SSCAIT2018 Goals ***
 // Unit formations

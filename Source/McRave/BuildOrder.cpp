@@ -18,11 +18,29 @@ namespace McRave
 		string token;
 		bool correctBuild = false;
 		bool correctOpener = false;
-		bool correctTransition = false;
 
 		const auto shouldIncrement = [&](string name) {
-			if (name == currentBuild || name == currentTransition || name == currentOpener)
-				return true;			
+
+			// Check if we're looking at the correct build to prevent incrementing an opener for a different build
+			if (correctBuild) {
+
+				// Check if we're looking at the correct opener to prevent incrementing a transition for a different build
+				if (correctOpener) {
+					if (name == currentTransition) {
+						correctBuild = false;
+						correctOpener = false;
+						return true;
+					}					
+				}
+				if (name == currentOpener) {
+					correctOpener = true;
+					return true;
+				}
+			}
+			if (name == currentBuild) {
+				correctBuild = true;
+				return true;
+			}		
 			return false;
 		};
 
@@ -31,6 +49,7 @@ namespace McRave
 		isWinner ? totalWins++ : totalLoses++;
 		config << totalWins << " " << totalLoses << endl;
 
+		// For each token, check if we should increment the wins or losses then shove it into the config file
 		while (ss >> token) {
 			if (token == dash) {
 				int w, l;

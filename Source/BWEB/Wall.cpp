@@ -648,6 +648,22 @@ namespace BWEB::Walls
 			walls.push_back(wall);
 		}
 	}
+
+	void createFFE()
+	{
+		vector<UnitType> buildings ={ UnitTypes::Protoss_Forge, UnitTypes::Protoss_Gateway, UnitTypes::Protoss_Pylon };
+		vector<UnitType> defenses(6, UnitTypes::Protoss_Photon_Cannon);
+
+		createWall(buildings, Map::getNaturalArea(), Map::getNaturalChoke(), UnitTypes::Zerg_Zergling, defenses, true, false);
+	}
+
+	void createZSimCity()
+	{
+		vector<UnitType> buildings ={ UnitTypes::Zerg_Hatchery, UnitTypes::Zerg_Evolution_Chamber, UnitTypes::Zerg_Evolution_Chamber };
+		vector<UnitType> defenses(6, UnitTypes::Zerg_Sunken_Colony);
+
+		createWall(buildings, Map::getNaturalArea(), Map::getNaturalChoke(), UnitTypes::None, defenses, true, false);
+	}
 	
 	const Wall * getClosestWall(TilePosition here)
 	{
@@ -683,21 +699,5 @@ namespace BWEB::Walls
 	{
 		Broodwar->drawTextMap(Position(endTile), "%d", Position(endTile));
 		Broodwar->drawTextMap(Position(startTile), "%d", Position(startTile));
-
-		/*map<TilePosition, UnitType> test;
-		BWEB::PathFinding::Path newPath;
-		newPath.createWallPath(Map::mapBWEM, test, Position(startTile), Position(endTile), false);
-
-		for (auto &tile : newPath.getTiles()) {
-			Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(33, 33), Colors::Red);
-		}*/
-
-		//for (int x = 0; x < Broodwar->mapWidth(); x++) {
-		//	for (int y = 0; y < Broodwar->mapHeight(); y++) {
-		//		TilePosition tile(x, y);
-		//		if (Map::isOverlapping(tile))
-		//			Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(33, 33), Colors::Red);
-		//	}
-		//}
 	}
 }

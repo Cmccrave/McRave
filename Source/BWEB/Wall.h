@@ -96,5 +96,13 @@ namespace BWEB::Walls
 	/// <param name="tight"> (Optional) Decides whether this addition to the BWEB::Wall intends to be walled around a specific UnitType. Defaults to none. </param>
 	void addToWall(BWAPI::UnitType type, Wall& wall, BWAPI::UnitType tight = BWAPI::UnitTypes::None);
 
+	/// <summary><para> Creates a Forge Fast Expand BWEB::Wall at the natural. </para>
+	/// <para> Places 1 Forge, 1 Gateway, 1 Pylon and 6 Cannons. </para></summary>
+	void createFFE();
+
+	/// <summary><para> Creates a "Sim City" of Zerg buildings at the natural. </para>
+	/// <para> Places 6 Sunkens, 2 Evolution Chambers and 1 Hatchery. </para>
+	void createZSimCity(); 
+	
 	void draw();
 }
