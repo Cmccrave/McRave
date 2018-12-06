@@ -190,7 +190,7 @@ namespace McRave
 			Position p = Position(w) + Position(4, 4);
 			double distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
 			double threat = Util().getHighestThreat(w, unit);
-			double grouping = (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / log(10.0 + Grids().getAGroundCluster(w)));
+			double grouping = (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / log(Grids().getAGroundCluster(w)));
 			double score = grouping / (threat * distance);
 			return score;
 		};

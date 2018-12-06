@@ -12,7 +12,8 @@ namespace BWEB::PathFinding
 		struct JPSGrid {
 			inline bool operator()(unsigned x, unsigned y) const
 			{
-				if (x < width && y < height && !Map::isUsed(TilePosition(x, y)) && Map::isWalkable(TilePosition(x, y)))
+				TilePosition t(x, y);
+				if (x < width && y < height && t.getDistance(target) <= maxDist * 1.25 && !Map::isUsed(t) && Map::isWalkable(t))
 					return true;
 				return false;
 			}
@@ -20,6 +21,7 @@ namespace BWEB::PathFinding
 			double maxDist;
 			TilePosition target;
 		};
+		map<const BWEM::Area *, int> notReachableThisFrame;
 	}
 
 	void Path::createWallPath(BWEM::Map& mapBWEM, map<TilePosition, UnitType>& currentWall, const Position s, const Position t, bool ignoreOverlap)
@@ -45,6 +47,11 @@ namespace BWEB::PathFinding
 	{
 		TilePosition target(t);
 		TilePosition source(s);
+
+		auto checkReachable = notReachableThisFrame[mapBWEM.GetArea(target)];
+		if (checkReachable >= Broodwar->getFrameCount())
+			return;
+
 		vector<TilePosition> newJPSPath;
 		JPSGrid newGrid;
 		newGrid.maxDist = source.getDistance(target);
@@ -59,6 +66,8 @@ namespace BWEB::PathFinding
 				Broodwar->drawLineMap(Position(current), Position(t), Colors::Green);
 			}
 		}
+		else
+			notReachableThisFrame[mapBWEM.GetArea(target)] = Broodwar->getFrameCount();
 	}
 
 	void Path::createPath(BWEM::Map& mapBWEM, const Position s, const Position t, function <bool(const TilePosition)> collision, vector<TilePosition> direction)

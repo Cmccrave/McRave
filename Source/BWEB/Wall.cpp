@@ -27,7 +27,6 @@ namespace BWEB::Walls
 		map<TilePosition, UnitType> currentWall;
 		double currentPathSize{};
 
-		// Information that is passed in
 		UnitType tight;
 		bool reservePath{};
 		bool requireTight;
@@ -92,6 +91,11 @@ namespace BWEB::Walls
 				findCurrentHole(wall, !reservePath);
 				Position chokeCenter(wall.getChokePoint()->Center());
 				double dist = 1.0;
+				auto pylonWallOnly = true;
+				for (auto type : wall.getRawBuildings()) {
+					if (type != UnitTypes::Protoss_Pylon)
+						pylonWallOnly = false;
+				}
 
 				// For walls that require a reserved path, we must have a hole
 				if (reservePath && currentHole == TilePositions::None)
@@ -105,7 +109,7 @@ namespace BWEB::Walls
 					auto center = Position(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
 					auto chokeDist = Position(closestChokeTile(center)).getDistance(center);
 
-					if (type == UnitTypes::Protoss_Pylon)
+					if (!pylonWallOnly && type == UnitTypes::Protoss_Pylon)
 						dist += 1.0 / exp(chokeDist);
 					else
 						dist += chokeDist;
@@ -206,8 +210,12 @@ namespace BWEB::Walls
 		bool isPoweringWall(Wall& wall, const TilePosition here)
 		{
 			for (auto &piece : currentWall) {
-				const auto tile(piece.first);
-				auto type(piece.second);
+				const auto tile = piece.first;
+				const auto type = piece.second;
+
+				if (type == UnitTypes::Protoss_Pylon)
+					continue;
+
 				if (type.tileWidth() == 4) {
 					auto powersThis = false;
 					if (tile.y - here.y == -5 || tile.y - here.y == 4) {

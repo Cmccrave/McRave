@@ -48,8 +48,8 @@ void UnitManager::updateUnits()
 
 	// PvT
 	if (Players().vT()) {
-		minThreshold = 0.5;
-		maxThreshold = 1.0;
+		minThreshold = 0.25;
+		maxThreshold = 0.75;
 	}
 
 	// PvP
@@ -67,8 +67,6 @@ void UnitManager::updateUnits()
 		if (!unit.unit())
 			continue;
 
-		unit.circleOrange();
-		
 		// If this is a flying building that we haven't recognized as being a flyer, remove overlap tiles
 		auto flyingBuilding = unit.unit()->exists() && !unit.isFlying() && (unit.unit()->getOrder() == Orders::LiftingOff || unit.unit()->getOrder() == Orders::BuildingLiftOff || unit.unit()->isFlying());
 
@@ -91,9 +89,6 @@ void UnitManager::updateUnits()
 
 			if (unit.hasTarget() && (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Protoss_Scarab))
 				splashTargets.insert(unit.getTarget().unit());
-
-			if (isThreatening(unit))
-				unit.circleRed();
 		}
 
 		// Must see a 3x3 grid of Tiles to set a unit to invalid position
@@ -204,6 +199,9 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 		// True distance
 		auto distance = airDist - enemyRange - widths;
 
+		if (deadzone > 0.0)
+			distance += deadzone;
+
 		// Sim values
 		auto enemyToEngage = 0.0;
 		auto simRatio = 0.0;
@@ -217,16 +215,8 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 
 		// If enemy can't move, it must be in range of our engage position to be added
 		else if (enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths <= 0.0) {
-			if (deadzone > 0.0) {
-				enemyToEngage = max(0.0, distance / unitSpeed);
-
-				auto fudge = (enemyRange - deadzone) / unitSpeed;
-				simRatio = max(0.0, fudge - enemyToEngage);
-			}
-			else {
-				enemyToEngage = max(0.0, distance / unitSpeed);
-				simRatio = max(0.0, simulationTime - enemyToEngage);
-			}
+			enemyToEngage = max(0.0, distance / unitSpeed);
+			simRatio = max(0.0, simulationTime - enemyToEngage);
 		}
 		else
 			continue;
@@ -364,7 +354,7 @@ void UnitManager::updateLocalState(UnitInfo& unit)
 		else if ((unit.getType().isMechanical() && unit.getPercentTotal() < LOW_MECH_PERCENT_LIMIT)
 			|| (unit.getType() == UnitTypes::Protoss_High_Templar && unit.getEnergy() < 75)
 			|| Grids().getESplash(unit.getWalkPosition()) > 0
-			|| (invisTarget && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= unit.getTarget().getGroundRange() + 100.0)			
+			|| (invisTarget && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= unit.getTarget().getGroundRange() + 100.0)
 			|| unit.getGlobalState() == GlobalState::Retreating)
 			unit.setLocalState(LocalState::Retreating);
 

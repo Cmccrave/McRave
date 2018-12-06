@@ -535,6 +535,7 @@ namespace McRave
 		firstUpgrade =		UpgradeTypes::Singularity_Charge;
 		firstTech =			TechTypes::None;
 		scout =				vis(Protoss_Cybernetics_Core) >= 1;
+		wallNat =			com(Protoss_Nexus) >= 2 ? true : false;
 
 		// Pull 1 probe when researching goon range, add 1 after we have a Nexus, then add 3 when 2 gas
 		gasLimit =			goonRange() && com(Protoss_Nexus) < 2 ? 2 : INT_MAX;
@@ -614,6 +615,7 @@ namespace McRave
 		firstUpgrade =		UpgradeTypes::Singularity_Charge;
 		firstTech =			TechTypes::None;
 		scout =				Broodwar->getStartLocations().size() == 4 ? vis(Protoss_Pylon) > 0 : vis(Protoss_Pylon) > 0;
+		wallNat =			com(Protoss_Nexus) >= 2 ? true : false;
 
 		// Pull 1 probe when researching goon range, add 1 after we have a Nexus, then add 3 when 2 gas
 		gasLimit =			goonRange() && com(Protoss_Nexus) < 2 ? 2 : INT_MAX;

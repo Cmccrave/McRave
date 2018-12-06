@@ -256,6 +256,9 @@ namespace McRave
 				buildings ={ Protoss_Gateway, Protoss_Forge, Protoss_Pylon };
 				defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
 			}
+			else if (build == "P21Nexus" || build == "P12Nexus") {
+				buildings ={ Protoss_Pylon, Protoss_Pylon };
+			}
 			else
 				return true;
 		}

@@ -43,7 +43,7 @@ namespace McRave
 		}
 
 		// Secure our own future expansion position
-		// PvT
+		// PvT / PvZ / PvP
 		Position nextExpand(Buildings().getCurrentExpansion());
 		if (nextExpand.isValid()) {
 			UnitType building = Broodwar->self()->getRace().getResourceDepot();
@@ -52,7 +52,6 @@ namespace McRave
 					assignPercentToGoal(nextExpand, UnitTypes::Protoss_Zealot, 0.15);
 				else {
 					assignPercentToGoal(nextExpand, UnitTypes::Protoss_Dragoon, 0.25);
-					assignPercentToGoal(nextExpand, UnitTypes::Protoss_Zealot, 0.25);
 				}
 			}
 		}
@@ -69,7 +68,7 @@ namespace McRave
 
 		// Deny enemy expansions
 		// PvT
-		if (Players().vT() && MyStations().getEnemyStations().size() >= 2 && Terrain().getEnemyExpand().isValid())
+		if (Players().vT() && MyStations().getMyStations().size() >= 3 && Terrain().getEnemyExpand().isValid())
 			assignPercentToGoal((Position)Terrain().getEnemyExpand(), UnitTypes::Protoss_Dragoon, 0.15);
 	}
 

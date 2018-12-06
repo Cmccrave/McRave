@@ -398,7 +398,7 @@ Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area
 		if (!w.isValid()
 			|| !Util().isWalkable(unit.getWalkPosition(), w, unit.getType())
 			|| (here != Terrain().getDefendPosition() && area && mapBWEM.GetArea(t) != area)
-			|| (unit.getGroundRange() > 32.0 && p.getDistance(Position(center)) < min)
+			|| (p.getDistance(Position(center)) < min)
 			|| Buildings().overlapsQueuedBuilding(unit.getType(), t)
 			|| dist > distBest
 			|| Commands().overlapsCommands(unit.unit(), UnitTypes::None, p, 8)
