@@ -257,7 +257,8 @@ namespace McRave
 				defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
 			}
 			else if (build == "P21Nexus" || build == "P12Nexus") {
-				buildings ={ Protoss_Pylon, Protoss_Pylon };
+				int count = 2;// Util().chokeWidth(BWEB::Map::getNaturalChoke()) / 64;
+				buildings.insert(buildings.end(), count, Protoss_Pylon);
 			}
 			else
 				return true;
@@ -363,22 +364,22 @@ namespace McRave
 		if (Broodwar->self()->getRace() == Races::Protoss) {
 			if (build == "P1GateCore") {
 				if (transition == "DT")
-					return t;
+					return t || z;
 				if (transition == "3GateRobo")
 					return p;
 				if (transition == "Corsair")
 					return z;
 				if (transition == "Reaver")
-					return p || t;
+					return p /*|| t*/;
 				if (transition == "4Gate")
 					return true;
 			}
 
 			if (build == "P2Gate") {
 				if (transition == "DT")
-					return p;
-				if (transition == "Reaver")
 					return p || t;
+				if (transition == "Reaver")
+					return p /*|| t*/;
 				if (transition == "Expand")
 					return p || z;
 				if (transition == "DoubleExpand")
@@ -393,7 +394,7 @@ namespace McRave
 			}
 
 			if (build == "P12Nexus") {
-				if (transition == "DoubleExpand" || transition == "ReaverCarrier")
+				if (transition == "DoubleExpand"/* || transition == "ReaverCarrier"*/)
 					return t;
 				if (transition == "Standard")
 					return t || p;
@@ -433,12 +434,13 @@ namespace McRave
 			else if (Players().getNumberZerg() > 0) {
 				currentBuild = "P1GateCore";
 				currentOpener = "2Zealot";
-				currentTransition = "Corsair";
+				currentTransition = "DT";
 			}
 			else if (Players().getNumberTerran() > 0) {
 				currentBuild = "P21Nexus";
 				currentOpener = "1Gate";
 				currentTransition = "Standard";
+				isBuildPossible(currentBuild, currentOpener);
 			}
 			else if (Players().getNumberRandom() > 0) {
 				currentBuild = "P2Gate";

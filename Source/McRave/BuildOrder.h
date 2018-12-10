@@ -44,8 +44,11 @@ namespace McRave
 		map <UnitType, Item> itemQueue;
 		bool getOpening = true, getTech, bioBuild, wallNat, wallMain, scout, productionSat, techSat;
 		bool fastExpand, proxy, hideTech, playPassive, rush;
-		UpgradeType firstUpgrade;
-		TechType firstTech;
+
+		UpgradeType firstUpgrade = UpgradeTypes::None;
+		TechType firstTech = TechTypes::None;
+		UnitType firstUnit = UnitTypes::None;
+
 		UnitType techUnit;
 		UnitType productionUnit;
 		set <UnitType> techList, unlockedType;
@@ -66,6 +69,8 @@ namespace McRave
 		void checkNewTech();
 		void checkAllTech();
 		void checkExoticTech();
+
+		void checkOpener();
 
 	public:
 		bool shouldAddProduction(), shouldAddGas(), techComplete();

@@ -41,19 +41,25 @@ void UnitManager::updateUnits()
 	myTypes.clear();
 
 	// PvZ
-	if (Players().vZ()) {
-		minThreshold = 0.75;
-		maxThreshold = 1.25;
-	}
+	if (Broodwar->self()->getRace() == Races::Protoss) {
+		if (Players().vZ()) {
+			minThreshold = 0.75;
+			maxThreshold = 1.25;
+		}
 
-	// PvT
-	if (Players().vT()) {
-		minThreshold = 0.25;
-		maxThreshold = 0.75;
-	}
+		// PvT
+		if (Players().vT()) {
+			minThreshold = 0.25;
+			maxThreshold = 0.75;
+		}
 
-	// PvP
-	if (Players().vP()) {
+		// PvP
+		if (Players().vP()) {
+			minThreshold = 0.75;
+			maxThreshold = 1.25;
+		}
+	}
+	else {
 		minThreshold = 0.75;
 		maxThreshold = 1.25;
 	}
@@ -179,6 +185,10 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 
 	if (ignoreSim || (Terrain().isIslandMap() && !unit.getType().isFlyer())) {
 		unit.setSimState(SimState::Win);
+		return;
+	}
+	if (!unit.hasTarget()) {
+		unit.setSimState(SimState::None);
 		return;
 	}
 
@@ -381,8 +391,12 @@ void UnitManager::updateLocalState(UnitInfo& unit)
 			else
 				unit.setLocalState(LocalState::Retreating);
 		}
-		else
-			unit.setLocalState(LocalState::None);
+	}
+	else if (unit.getGlobalState() == GlobalState::Retreating) {
+		unit.setLocalState(LocalState::Retreating);
+	}
+	else {
+		unit.setLocalState(LocalState::None);
 	}
 }
 
@@ -481,8 +495,20 @@ bool UnitManager::isThreatening(UnitInfo& unit)
 	if ((unit.isBurrowed() || (unit.unit() && unit.unit()->exists() && unit.unit()->isCloaked())) && !Commands().overlapsAllyDetection(unit.getPosition()))
 		return false;
 
-	if (unit.unit() && unit.unit()->exists() && unit.getType().isWorker() && !unit.unit()->isAttacking() && unit.unit()->getOrder() != Orders::AttackUnit && unit.unit()->getOrder() != Orders::PlaceBuilding && !unit.unit()->isConstructing())
-		return false;
+	auto exists = unit.unit() && unit.unit()->exists();
+
+	// If it's a worker who is attacking or constructing close to us
+	if (exists) {
+		auto building = unit.unit()->isConstructing() || unit.unit()->getOrder() == Orders::ConstructingBuilding || unit.unit()->getOrder() == Orders::PlaceBuilding;
+		auto attacking = unit.unit()->isAttacking() || unit.unit()->getOrder() == Orders::AttackUnit;
+		auto close = Terrain().isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(Terrain().getDefendPosition()) < 320.0;
+
+		if (unit.getType().isWorker() && (building || attacking) && close)
+			return true;
+	}
+
+	//if (unit.unit() && unit.unit()->exists() && unit.getType().isWorker() && !unit.unit()->isAttacking() && unit.unit()->getOrder() != Orders::AttackUnit && unit.unit()->getOrder() != Orders::ConstructingBuilding && !unit.unit()->isConstructing())
+	//	return false;
 
 	// If unit is hitting a building
 	if (unit.hasAttackedRecently() && Terrain().isInAllyTerritory(unit.getTilePosition()) && unit.unit()->exists() && unit.hasTarget() && unit.getTarget().getType().isBuilding())

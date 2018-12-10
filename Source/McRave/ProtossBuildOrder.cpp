@@ -29,6 +29,9 @@ namespace McRave
 			if (Strategy().needDetection() || (!Terrain().isIslandMap() && Players().vP() && techList.find(UnitTypes::Protoss_Observer) == techList.end() && !techList.empty()))
 				techUnit = UnitTypes::Protoss_Observer;
 
+			else if (currentTransition == "DoubleExpand" && techList.find(UnitTypes::Protoss_High_Templar) == techList.end())
+				techUnit = UnitTypes::Protoss_High_Templar;
+
 			// HACK: Make carriers on Blue Storm
 			else if (Broodwar->mapFileName().find("BlueStorm") != string::npos && techList.find(UnitTypes::Protoss_Carrier) == techList.end() && Players().vT())
 				techUnit = UnitTypes::Protoss_Carrier;
@@ -63,7 +66,7 @@ namespace McRave
 
 	void BuildOrderManager::protossSituational()
 	{
-		auto skipFirstTech = (currentBuild == "P4Gate" || (Strategy().enemyGasSteal() && !Terrain().isNarrowNatural()));
+		auto skipFirstTech = (currentBuild == "P4Gate" || currentTransition == "DoubleExpand" || (Strategy().enemyGasSteal() && !Terrain().isNarrowNatural()));
 
 		// Metrics for when to Expand/Add Production/Add Tech
 		satVal = Players().vT() ? 2 : 3;
@@ -95,9 +98,11 @@ namespace McRave
 		if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > int(fastExpand)) {
 			int providers = buildCount(UnitTypes::Protoss_Pylon) > 0 ? 14 : 16;
 			int count = min(22, Units().getSupply() / providers);
+			int offset = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) - 1;
+			int total = count - offset;
 
-			if (buildCount(UnitTypes::Protoss_Pylon) < count)
-				itemQueue[UnitTypes::Protoss_Pylon] = Item(count);
+			if (buildCount(UnitTypes::Protoss_Pylon) < total)
+				itemQueue[UnitTypes::Protoss_Pylon] = Item(total);
 
 			if (!getOpening && !Buildings().hasPoweredPositions() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 10)
 				itemQueue[UnitTypes::Protoss_Pylon] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) + 1);
@@ -153,19 +158,15 @@ namespace McRave
 	void BuildOrderManager::protossUnlocks()
 	{
 		// Leg upgrade check
-		auto isUpgradingLegs = Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements)
-			|| Broodwar->self()->isUpgrading(UpgradeTypes::Leg_Enhancements)
-			|| (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) > 0 && firstReady());
+		auto zealotLegs = Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) > 0
+			|| (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) > 0 && Units().getSupply() >= 200);
 
 		// Check if we should always make Zealots
-		if ((Players().vZ() && (!Terrain().isIslandMap() || Broodwar->getFrameCount() > 10000))
-			|| (Terrain().isIslandMap() && currentBuild != "P1GateCorsair")
-			|| (zealotLimit > Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot))
+		if ((zealotLimit > Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot))
 			|| Strategy().enemyProxy()
 			|| Strategy().enemyRush()
-			|| isUpgradingLegs
-			|| (techUnit == UnitTypes::Protoss_Dark_Templar && Players().vP())
-			|| (Broodwar->mapFileName().find("BlueStorm") != string::npos && techList.find(UnitTypes::Protoss_Zealot) == techList.end())) {
+			|| zealotLegs
+			|| (techUnit == UnitTypes::Protoss_Dark_Templar && Players().vP())) {
 			unlockedType.insert(UnitTypes::Protoss_Zealot);
 		}
 		else
@@ -176,10 +177,9 @@ namespace McRave
 			dragoonLimit = 0;
 
 		// Check if we should always make Dragoons
-		if (!Terrain().isIslandMap() && Broodwar->mapFileName().find("BlueStorm") == string::npos &&
-			((Players().vZ() && Broodwar->getFrameCount() > 20000)
+		if ((Players().vZ() && Broodwar->getFrameCount() > 20000)
 				|| Units().getEnemyCount(UnitTypes::Zerg_Lurker) > 0
-				|| dragoonLimit > Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon)))
+				|| dragoonLimit > Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon))
 			unlockedType.insert(UnitTypes::Protoss_Dragoon);
 		else
 			unlockedType.erase(UnitTypes::Protoss_Dragoon);

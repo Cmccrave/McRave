@@ -64,7 +64,7 @@ bool UtilManager::proactivePullWorker(UnitInfo& unit)
 		int completedDefenders = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Photon_Cannon) + Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot);
 		int visibleDefenders = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot);
 
-		if (unit.getType() == UnitTypes::Protoss_Probe && unit.getShields() < 20)
+		if (unit.getType() == UnitTypes::Protoss_Probe && (unit.getShields() < 20 || (unit.hasResource() && unit.getResource().getType().isRefinery())))
 			return false;
 
 		if (BuildOrder().isHideTech() && completedDefenders == 1 && Units().getMyUnits().size() == 1)
@@ -110,7 +110,7 @@ bool UtilManager::proactivePullWorker(UnitInfo& unit)
 
 bool UtilManager::reactivePullWorker(UnitInfo& unit)
 {
-	if (Units().getEnemyCount(UnitTypes::Terran_Vulture) > 0)
+	if (Units().getEnemyCount(UnitTypes::Terran_Vulture) > 2)
 		return false;
 
 	if (unit.getType() == UnitTypes::Protoss_Probe) {
@@ -361,7 +361,7 @@ Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area
 {
 	// Setup parameters
 	int min = int(unit.getGroundRange());
-	double distBest = DBL_MAX;
+	double distBest = 0.0;
 	WalkPosition center = WalkPositions::None;
 	Position bestPosition = Positions::None;
 
@@ -393,15 +393,17 @@ Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area
 		TilePosition t(w);
 		Position p = Position(w) + Position(4, 4);
 
-		double dist = p.getDistance(Position(center)) * log(p.getDistance(BWEB::Map::getMainPosition()));
+		double dist = p.getDistance(BWEB::Map::getMainPosition());
 
 		if (!w.isValid()
 			|| !Util().isWalkable(unit.getWalkPosition(), w, unit.getType())
 			|| (here != Terrain().getDefendPosition() && area && mapBWEM.GetArea(t) != area)
-			|| (p.getDistance(Position(center)) < min)
+			//|| Util().getHighestThreat(w, unit) > MIN_THREAT
+			//|| (p.getDistance(Position(center)) < min)
 			|| Buildings().overlapsQueuedBuilding(unit.getType(), t)
-			|| dist > distBest
+			|| dist < distBest
 			|| Commands().overlapsCommands(unit.unit(), UnitTypes::None, p, 8)
+			|| Commands().isInDanger(unit, p)
 			|| (unit.getType() == UnitTypes::Protoss_Reaver && Terrain().isDefendNatural() && mapBWEM.GetArea(w) != BWEB::Map::getNaturalArea()))
 			return false;
 
@@ -416,7 +418,8 @@ Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area
 	// If this is the defending position, grab from a vector we already made
 	// TODO: generate a vector for every choke and store as a map<Choke, vector<Position>>?
 	if (here == Terrain().getDefendPosition()) {
-		for (auto &position : Terrain().getChokePositions()) {
+		auto &positions = unit.getGroundRange() < 64.0 ? Terrain().getMeleeChokePositions() : Terrain().getRangedChokePositions();
+		for (auto &position : positions) {
 			checkbest(WalkPosition(position));
 		}
 	}

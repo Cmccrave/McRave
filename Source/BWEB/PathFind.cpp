@@ -61,13 +61,15 @@ namespace BWEB::PathFinding
 			Position current = s;
 			for (auto &t : newJPSPath) {
 				dist += Position(t).getDistance(current);
-				current = Position(t);
-				tiles.push_back(t);
 				Broodwar->drawLineMap(Position(current), Position(t), Colors::Green);
+				current = Position(t);
+				tiles.push_back(t);				
 			}
 		}
-		else
+		else {
+			dist = DBL_MAX;
 			notReachableThisFrame[mapBWEM.GetArea(target)] = Broodwar->getFrameCount();
+		}
 	}
 
 	void Path::createPath(BWEM::Map& mapBWEM, const Position s, const Position t, function <bool(const TilePosition)> collision, vector<TilePosition> direction)

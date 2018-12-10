@@ -177,7 +177,7 @@ bool StrategyManager::checkEnemyProxy()
 
 void StrategyManager::updateEnemyBuild()
 {
-	if (Players().getPlayers().size() > 1 || (Broodwar->getFrameCount() - enemyFrame > 2000 && enemyFrame != 0 && enemyBuild != "Unknown") || confidentEnemyBuild)
+	if (Players().getPlayers().size() > 1 || (Broodwar->getFrameCount() - enemyFrame > 2000 && enemyFrame != 0 && enemyBuild != "Unknown"))
 		return;
 
 	if (enemyFrame == 0 && enemyBuild != "Unknown")
@@ -337,8 +337,10 @@ void StrategyManager::updateEnemyBuild()
 
 					if (Units().getEnemyCount(UnitTypes::Protoss_Robotics_Facility) >= 1 && Units().getEnemyCount(UnitTypes::Protoss_Gateway) <= 1)
 						enemyBuild = "P1GateRobo";
-					else if (Units().getEnemyCount(UnitTypes::Protoss_Gateway) >= 4)
+					else if (Units().getEnemyCount(UnitTypes::Protoss_Gateway) >= 4) {
 						enemyBuild = "P4Gate";
+						pressure = true;
+					}
 					else if (Units().getEnemyCount(UnitTypes::Protoss_Citadel_of_Adun) >= 1 || Units().getEnemyCount(UnitTypes::Protoss_Templar_Archives) >= 1 || (!goonRange && Units().getEnemyCount(UnitTypes::Protoss_Dragoon) < 2 && Units().getSupply() > 80))
 						enemyBuild = "P1GateDT";
 					else
@@ -389,8 +391,10 @@ void StrategyManager::updateEnemyBuild()
 						enemyBuild = "TBBS";
 						proxy = true;
 					}
-					else if (Units().getEnemyCount(UnitTypes::Terran_Academy) >= 1 && Units().getEnemyCount(UnitTypes::Terran_Engineering_Bay) >= 1)
+					else if (Units().getEnemyCount(UnitTypes::Terran_Academy) >= 1 && Units().getEnemyCount(UnitTypes::Terran_Engineering_Bay) >= 1) {
 						enemyBuild = "TSparks";
+						pressure = true;
+					}
 					else {
 						enemyBuild = "Unknown";
 						proxy = false;
@@ -410,9 +414,10 @@ void StrategyManager::updateEnemyBuild()
 
 			if (Units().getSupply() < 60 && ((Units().getEnemyCount(UnitTypes::Terran_Barracks) >= 2 && Units().getEnemyCount(UnitTypes::Terran_Refinery) == 0) || (Units().getEnemyCount(UnitTypes::Terran_Marine) > 5 && Units().getEnemyCount(UnitTypes::Terran_Bunker) <= 0 && Broodwar->getFrameCount() < 6000)))
 				enemyBuild = "TBBS";
-			if (Units().getEnemyCount(UnitTypes::Terran_Factory) >= 2 && vultureSpeed)
+			if ((Units().getEnemyCount(UnitTypes::Terran_Vulture_Spider_Mine) > 0 && Broodwar->getFrameCount() < 9000) || (Units().getEnemyCount(UnitTypes::Terran_Factory) >= 2 && vultureSpeed)) {
 				enemyBuild = "T3Fact";
-
+				pressure = true;
+			}
 		}
 	}
 }

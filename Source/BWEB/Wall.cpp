@@ -17,7 +17,7 @@ namespace BWEB::Walls
 
 		TilePosition initialStart, initialEnd;
 		void initializePathPoints(Wall&);
-		void checkPathPoints(Wall&);		
+		void checkPathPoints(Wall&);
 
 		double bestWallScore = 0.0;
 		TilePosition currentHole, startTile, endTile;
@@ -33,11 +33,13 @@ namespace BWEB::Walls
 		int chokeWidth;
 		Position wallBase;
 		vector<TilePosition> chokeTiles;
-		
+		int test = 0;
+
 		bool iteratePieces(Wall& wall)
 		{
 			TilePosition start(wall.getChokePoint()->Center());
-			bool movedStart = false;
+			auto movedStart = false;
+			auto multiplePylons = false;
 
 			const auto closestChokeTile = [&](Position here) {
 				double best = DBL_MAX;
@@ -89,30 +91,19 @@ namespace BWEB::Walls
 
 				// Find current hole, not including overlap
 				findCurrentHole(wall, !reservePath);
-				Position chokeCenter(wall.getChokePoint()->Center());
-				double dist = 1.0;
-				auto pylonWallOnly = true;
-				for (auto type : wall.getRawBuildings()) {
-					if (type != UnitTypes::Protoss_Pylon)
-						pylonWallOnly = false;
-				}
-
-				// For walls that require a reserved path, we must have a hole
 				if (reservePath && currentHole == TilePositions::None)
 					return;
 				if (!reservePath && currentHole != TilePositions::None)
 					return;
 
+				double dist = 1.0;
 				for (auto &piece : currentWall) {
 					auto tile = piece.first;
 					auto type = piece.second;
 					auto center = Position(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
 					auto chokeDist = Position(closestChokeTile(center)).getDistance(center);
 
-					if (!pylonWallOnly && type == UnitTypes::Protoss_Pylon)
-						dist += 1.0 / exp(chokeDist);
-					else
-						dist += chokeDist;
+					dist += (!multiplePylons && type == UnitTypes::Protoss_Pylon) ? 1.0 / exp(chokeDist) : exp(chokeDist);
 				}
 
 				// Score wall based on path sizes and distances
@@ -146,20 +137,32 @@ namespace BWEB::Walls
 			double dx = abs(double(p1.x - p2.x));
 			auto angle1 = dx > 0.0 ? atan(dy / dx) * 180.0 / 3.14 : 90.0;
 
+			// Check if we are placing more Pylons to figure out how to calculate placement
+			auto count = 0;
+			for (auto type : wall.getRawBuildings()) {
+				if (type == UnitTypes::Protoss_Pylon)
+					count = 1;
+			}
+			multiplePylons = count > 1;
+						
+
 			function<void(TilePosition)> recursiveCheck;
 			recursiveCheck = [&](TilePosition start) -> void {
+				int radius = 10;
 				UnitType type = *typeIterator;
-				for (auto x = start.x - 10; x < start.x + 10; x++) {
-					for (auto y = start.y - 10; y < start.y + 10; y++) {
+
+				for (auto x = start.x - radius; x < start.x + radius; x++) {
+					for (auto y = start.y - radius; y < start.y + radius; y++) {
 						const TilePosition t(x, y);
 						auto center = Position(t) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
 
-						if (!t.isValid())
+						if (!t.isValid() || (multiplePylons && center.getDistance((Position)wall.getChokePoint()->Center()) > 48.0))
 							continue;
 
 						// We want to ensure the buildings are being placed at the correct angle compared to the chokepoint, within some tolerance
 						double angle2 = 0.0;
-						if (currentWall.size() == 1 && type.getRace() == Races::Protoss && !movedStart) {
+						auto badAngle = false;
+						if ((multiplePylons || type != UnitTypes::Protoss_Pylon) && !movedStart) {
 							for (auto piece : currentWall) {
 								auto tileB = piece.first;
 								auto typeB = piece.second;
@@ -168,14 +171,16 @@ namespace BWEB::Walls
 								double dx = abs(double(centerB.x - center.x));
 
 								angle2 = dx > 0.0 ? atan(dy / dx) * 180.0 / 3.14 : 90.0;
+								if (abs(abs(angle1) - abs(angle2)) > 15.0)
+									badAngle = true;
 							}
 
-							if (abs(abs(angle1) - abs(angle2)) > 15.0)
+							if (badAngle)
 								continue;
 						}
 
 						// If the piece is fine to place
-						if (testPiece(wall, t) && (isWallTight(wall, type, t) || type == UnitTypes::Protoss_Pylon)) {
+						if (testPiece(wall, t) && (isWallTight(wall, type, t) || (!multiplePylons && type == UnitTypes::Protoss_Pylon))) {
 
 							// 1) Store the current type, increase the iterator
 							currentWall[t] = type;
@@ -205,7 +210,7 @@ namespace BWEB::Walls
 				recursiveCheck(start);
 			} while (next_permutation(wall.getRawBuildings().begin(), find(wall.getRawBuildings().begin(), wall.getRawBuildings().end(), UnitTypes::Protoss_Pylon)));
 			return !bestWall.empty();
-		}		
+		}
 
 		bool isPoweringWall(Wall& wall, const TilePosition here)
 		{
@@ -271,7 +276,7 @@ namespace BWEB::Walls
 
 			// Some testing parameters
 			auto firstBuilding = currentWall.size() == 0;
-			auto lastBuilding = currentWall.size() == 2;
+			auto lastBuilding = currentWall.size() == (wall.getRawBuildings().size() - 1);
 			auto terrainTight = false;
 			auto parentTight = false;
 
@@ -421,7 +426,7 @@ namespace BWEB::Walls
 			auto dy2 = n1.y - n2.y;
 			Position direction1 = Position(-dy1 / 2, dx1 / 2) + Position(choke->Center());
 			Position direction2 = Position(-dy2 / 2, dx2 / 2) + Position(choke->Center());
-			Position trueDirection = direction1.getDistance(Map::mapBWEM.Center()) < direction2.getDistance(Map::mapBWEM.Center()) ? direction1 : direction2;
+			Position trueDirection = Map::mapBWEM.GetArea((TilePosition)direction1) == wall.getArea() ? direction2 : direction1;
 
 			if (choke == Map::getNaturalChoke()) {
 				initialStart = TilePosition(Map::getMainChoke()->Center());
@@ -437,7 +442,7 @@ namespace BWEB::Walls
 			}
 
 			startTile = initialStart;
-			endTile = initialEnd;			
+			endTile = initialEnd;
 		}
 
 		void findCurrentHole(Wall& wall, bool ignoreOverlap)
@@ -526,7 +531,7 @@ namespace BWEB::Walls
 			Map::addOverlap(tileBest, 2, 2);
 		}
 	}
-		
+
 	void createWall(vector<UnitType>& buildings, const BWEM::Area * area, const BWEM::ChokePoint * choke, const UnitType t, const vector<UnitType>& defenses, const bool rp, const bool rt)
 	{
 		if (!area) {
@@ -672,7 +677,7 @@ namespace BWEB::Walls
 
 		createWall(buildings, Map::getNaturalArea(), Map::getNaturalChoke(), UnitTypes::None, defenses, true, false);
 	}
-	
+
 	const Wall * getClosestWall(TilePosition here)
 	{
 		double distBest = DBL_MAX;

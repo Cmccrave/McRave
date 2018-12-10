@@ -49,6 +49,9 @@ namespace McRave
 				// Don't attack units that don't matter
 				|| !targetMatters
 
+				// Reavers vs T only shoot workers
+				|| (unit.getType() == UnitTypes::Protoss_Reaver && Players().vT() && !target.getType().isWorker())
+
 				// DT: Don't attack Vultures
 				|| (unit.getType() == UnitTypes::Protoss_Dark_Templar && target.getType() == UnitTypes::Terran_Vulture)
 

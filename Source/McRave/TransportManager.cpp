@@ -279,6 +279,8 @@ void TransportManager::updateMovement(UnitInfo& transport)
 	auto bestPos = Positions::Invalid;
 	auto start = transport.getWalkPosition();
 	auto best = 0.0;
+
+	Broodwar->drawLineMap(transport.getPosition(), transport.getDestination(), Colors::Yellow);
 	Commands().hunt(transport);
 	return;
 

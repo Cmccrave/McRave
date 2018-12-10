@@ -70,7 +70,7 @@ void WorkerManager::updateAssignment(UnitInfo& worker)
 					path = *closePath;
 
 				// Store station if it's safe
-				if (!Util().accurateThreatOnPath(worker, path))
+				if (!Util().accurateThreatOnPath(worker, path) || worker.getPosition().getDistance(station->ResourceCentroid()) < 128.0)
 					safeStations.push_back(station);
 			}
 		}
@@ -239,7 +239,7 @@ bool WorkerManager::build(UnitInfo& worker)
 bool WorkerManager::clearPath(UnitInfo& worker)
 {
 	auto resourceDepot = Broodwar->self()->getRace().getResourceDepot();
-	if (Units().getMyTypeCount(resourceDepot) < 2)
+	if (Units().getMyTypeCount(resourceDepot) < 2 || (BuildOrder().buildCount(resourceDepot) == Units().getMyTypeCount(resourceDepot) && BuildOrder().isOpener()))
 		return false;
 
 	// Find boulders to clear
@@ -272,7 +272,7 @@ bool WorkerManager::gather(UnitInfo& worker)
 
 	// Check if we need to re-issue a gather command
 	const auto shouldIssueGather =[&]() {
-		if (worker.hasResource() && worker.getResource().unit()->exists() && (worker.unit()->isGatheringMinerals() || worker.unit()->isGatheringGas() || worker.unit()->isIdle()) && worker.unit()->getTarget() != worker.getResource().unit())
+		if (worker.hasResource() && worker.getResource().unit()->exists() && (worker.unit()->isGatheringMinerals() || worker.unit()->isGatheringGas() || worker.unit()->isIdle() || worker.unit()->getLastCommand().getType() != UnitCommandTypes::Gather) && worker.unit()->getTarget() != worker.getResource().unit())
 			return true;
 		if (!worker.hasResource() && (worker.unit()->isIdle() || worker.unit()->getLastCommand().getType() != UnitCommandTypes::Gather))
 			return true;
@@ -314,6 +314,7 @@ bool WorkerManager::gather(UnitInfo& worker)
 		// 4) If we are under a threat, try to get away from it
 		else if (Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0) {
 			Commands().kite(worker);
+			worker.circlePurple();
 			return true;
 		}
 	}

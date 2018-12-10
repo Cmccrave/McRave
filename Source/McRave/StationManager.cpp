@@ -125,7 +125,7 @@ bool StationManager::needDefenses(const BWEB::Stations::Station& station)
 
 	if ((nat || main) && !Terrain().isIslandMap() && defenseCount <= 0)
 		return true;
-	else if (defenseCount <= 1)
+	else if (defenseCount <= 0)
 		return true;
 	else if ((Players().getPlayers().size() > 1 || Players().vZ()) && !main && !nat && defenseCount < int(station.DefenseLocations().size()))
 		return true;

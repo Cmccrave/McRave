@@ -22,6 +22,7 @@ namespace BWEB::Map
 		int reserveGrid[256][256] ={};
 		int overlapGrid[256][256] ={};
 		int usedGrid[256][256] ={};
+		bool walkGrid[256][256] ={};
 
 		void findMain()
 		{
@@ -153,6 +154,22 @@ namespace BWEB::Map
 		findMainChoke();
 		findNaturalChoke();
 		Stations::findStations();
+
+		// Test
+		for (int x = 0; x < Broodwar->mapWidth(); x++) {
+			for (int y = 0; y < Broodwar->mapHeight(); y++) {
+				
+				auto walkable = true;
+				for (int dx = x*4; dx < (x*4) + 4; dx++) {
+					for (int dy = y*4; dy < (y*4) + 4; dy++) {
+						if (WalkPosition(dx,dy).isValid() && !Broodwar->isWalkable(WalkPosition(dx, dy)))
+							walkable = false;
+					}
+				}
+
+				walkGrid[x][y] = walkable;
+			}
+		}
 	}
 
 	void onUnitDiscover(const Unit unit)
@@ -435,17 +452,7 @@ namespace BWEB::Map
 
 	bool isWalkable(const TilePosition here)
 	{
-		int cnt = 0;
-		const auto start = WalkPosition(here);
-		for (auto x = start.x; x < start.x + 4; x++) {
-			for (auto y = start.y; y < start.y + 4; y++) {
-				if (!WalkPosition(x, y).isValid())
-					return false;
-				if (!Broodwar->isWalkable(WalkPosition(x, y)))
-					cnt++;
-			}
-		}
-		return cnt <= 1;
+		return walkGrid[here.x][here.y];
 	}
 
 	int tilesWithinArea(BWEM::Area const * area, const TilePosition here, const int width, const int height)

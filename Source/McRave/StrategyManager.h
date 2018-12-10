@@ -19,6 +19,7 @@ namespace McRave
 		bool proxy = false;
 		bool gasSteal = false;
 		bool enemyScout = false;
+		bool pressure = false;
 		string enemyBuild = "Unknown";
 		int poolFrame, lingFrame;
 		int enemyGas;
@@ -26,8 +27,6 @@ namespace McRave
 
 		int inboundScoutFrame;
 		int inboundLingFrame;
-
-		bool confidentEnemyBuild = false;
 
 		// Testing stuff
 		set <Bullet> myBullets;
@@ -53,6 +52,7 @@ namespace McRave
 		bool enemyGasSteal() { return gasSteal; }
 		bool enemyScouted() { return enemyScout; }
 		bool enemyBust() { return enemyBuild.find("Hydra") != string::npos; }
+		bool enemyPressure() { return pressure; }
 		int getPoolFrame() { return poolFrame; }
 			
 

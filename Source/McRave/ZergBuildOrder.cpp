@@ -56,7 +56,7 @@ void BuildOrderManager::zergSituational()
 		gasLimit = INT_MAX;
 
 		if (shouldAddGas())
-			itemQueue[UnitTypes::Zerg_Extractor] = Item(Resources().getGasCount());
+			itemQueue[UnitTypes::Zerg_Extractor] = Item(Resources().getGasCount());		
 
 		if (Units().getSupply() >= 100)
 			itemQueue[UnitTypes::Zerg_Evolution_Chamber] = Item(2);

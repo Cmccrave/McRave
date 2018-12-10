@@ -249,107 +249,89 @@ void TerrainManager::findDefendPosition()
 	}
 
 	// If this isn't the same as the last position, make new concave positions
-	if (defendPosition != oldDefendPosition)
-		chokePositions.clear();
+	if (defendPosition != oldDefendPosition) {
+		meleeChokePositions.clear();
+		rangedChokePositions.clear();
+	}
 }
 
 void TerrainManager::updateConcavePositions()
 {
-	for (auto tile : chokePositions) {
-		//Broodwar->drawCircleMap(Position(tile), 8, Colors::Blue);
-
+	for (auto tile : meleeChokePositions) {
+		Broodwar->drawCircleMap(Position(tile), 8, Colors::Blue);
+	}
+	for (auto tile : rangedChokePositions) {
+		Broodwar->drawCircleMap(Position(tile), 8, Colors::Blue);
 	}
 
-	if (!chokePositions.empty() || Broodwar->getFrameCount() < 100 || defendPosition == mineralHold)
+	if (!meleeChokePositions.empty() || !rangedChokePositions.empty() || Broodwar->getFrameCount() < 100 || defendPosition == mineralHold)
 		return;
 
-	const auto addPlacements =[&](Line line, BWEM::ChokePoint const * choke, double gap) {
+	auto area = defendNatural ? BWEB::Map::getNaturalArea() : BWEB::Map::getMainArea();
+	auto choke = defendNatural ? BWEB::Map::getNaturalChoke() : BWEB::Map::getMainChoke();
+	auto width = Util().chokeWidth(choke);
+	auto line = Util().lineOfBestFit(choke);
+	auto center = (defendNatural && naturalWall) ? Position(naturalWall->getDoor()) : Position(choke->Center());
+	auto perpSlope = -1.0 / line.slope;
+	Position test1, test2;
 
-		auto xStart = 4 + (choke->Pos(choke->end1).x <= choke->Pos(choke->end2).x ? Position(choke->Pos(choke->end1)).x : Position(choke->Pos(choke->end2)).x);
+	const auto addPlacements =[&](Line line, BWEM::ChokePoint const * choke, double gap, vector<Position>& thisVector) {
+
+		auto xStart = Position(choke->Center()).x - max(128, Util().chokeWidth(choke));
 		int yStart = int(line.y(xStart));
 		bool firstPlaced = false;
 		auto current = Position(xStart, yStart);
 		Position last = Positions::Invalid;
 
 		// Doesn't work for vertical lines because we increment by 1
-		while (current.isValid() && (mapBWEM.GetMiniTile(WalkPosition(current)).Walkable() || !firstPlaced)) {
+		while (current.isValid() && xStart < Position(choke->Center()).x + max(128, Util().chokeWidth(choke))) {
 			WalkPosition w(current);
 
-			if (last.getDistance(current) > gap && mapBWEM.GetMiniTile(w).Walkable()) {
-				Broodwar->drawCircleMap(current, 4, Colors::Green);
+			if (last.getDistance(current) > gap && mapBWEM.GetMiniTile(w).Walkable() && mapBWEM.GetArea(w) == area && current.getDistance(Position(choke->Center())) < 320.0) {
+				thisVector.push_back(Position(w));
 				last = current;
 				firstPlaced = true;
 			}
-			//Broodwar->drawCircleMap(current, 1, Colors::Red, true);
 
 			xStart += 1;
 			yStart = int(line.y(xStart));
 			current = Position(xStart, yStart);
 		}
-		return;
 	};
 
-
-	// Testing formations - broken as fuck at the moment
-	if (false) {
-		auto choke = defendNatural ? BWEB::Map::getNaturalChoke() : BWEB::Map::getMainChoke();
-		auto width = Util().chokeWidth(choke);
-
-		// 1) Get line of best fit
-		auto line = Util().lineOfBestFit(choke);
-
-		// 2) Make 2 parallel lines
-		auto line2 = Util().parallelLine(line, 16.0);
-		auto line3 = Util().parallelLine(line, -16.0);
-
-		// 3) Add placements
-		addPlacements(line, choke, 19.0);
-		addPlacements(line2, choke, 19.0);
-		addPlacements(line3, choke, 19.0);
+	if (perpSlope == 0) {
+		test1.x = center.x + 64;
+		test1.y = center.y;
+		test2.x = center.x - 64;
+		test2.y = center.y;
 	}
+
+	else if (perpSlope == DBL_MAX) {
+		test1.x = center.x;
+		test1.y = center.y + 64;
+		test2.x = center.x;
+		test2.y = center.y - 64;
+	}
+
 	else {
-		// Setup parameters
-		int min = 0;
-		int max = 480;
-		double distBest = DBL_MAX;
-		WalkPosition center = WalkPosition(defendPosition);
-		Position bestPosition = Positions::None;
-
-		const auto tooClose =[&](Position p) {
-			for (auto position : chokePositions) {
-				if (position.getDistance(p) < 32.0)
-					return true;
-			}
-			return false;
-		};
-
-		const auto checkValid = [&](WalkPosition w) {
-			TilePosition t(w);
-			Position p = Position(w) + Position(4, 4);
-
-			double dist = p.getDistance(Position(center)) / log(p.getDistance(BWEB::Map::getMainPosition()));
-
-			if (!w.isValid()
-				|| !Util().isWalkable(w, w, UnitTypes::Protoss_Dragoon)
-				|| p.getDistance(Position(center)) < min
-				|| p.getDistance(Position(center)) > max
-				|| tooClose(p)
-				|| (!isInAllyTerritory(t))
-				|| p.getDistance(mineralHold) < 128.0
-				|| BWEB::Map::getGroundDistance(p, BWEB::Map::getMainPosition()) > BWEB::Map::getGroundDistance(Position(center), BWEB::Map::getMainPosition()))
-				return false;
-			return true;
-		};
-
-		// Find a position around the center that is suitable
-		for (int x = center.x - 40; x <= center.x + 40; x++) {
-			for (int y = center.y - 40; y <= center.y + 40; y++) {
-				WalkPosition w(x, y);
-				if (checkValid(w))
-					chokePositions.push_back(Position(w));
-			}
-		}
+		auto dx = (64.0 / sqrt(1 + pow(perpSlope, 2.0)));
+		auto dy = perpSlope * dx;
+		test1.x = center.x + int(dx);
+		test1.y = center.y + int(dy);
+		test2.x = center.x - int(dx);
+		test2.y = center.y - int(dy);
 	}
+
+	Broodwar->drawLineMap(center, test1, Colors::Red);
+	Broodwar->drawLineMap(center, test2, Colors::Green);
+	
+	auto sign = mapBWEM.GetArea((WalkPosition)test1) == area ? 1.0 : -1.0;
+	auto zealot = Util().parallelLine(line, sign * 16.0);
+	auto dragoon = Util().parallelLine(line, sign * 128.0);
+
+	addPlacements(line, choke, 19.0, meleeChokePositions);
+	addPlacements(zealot, choke, 19.0, meleeChokePositions);
+	addPlacements(dragoon, choke, 32.0, rangedChokePositions);
 }
 
 void TerrainManager::updateAreas()
@@ -421,7 +403,7 @@ bool TerrainManager::findNaturalWall(vector<UnitType>& types, const vector<UnitT
 		else if (Players().vZ())
 			wallTight = UnitTypes::Zerg_Zergling;
 		else
-			wallTight = UnitTypes::None;
+			wallTight = UnitTypes::Terran_Vulture;
 
 		// Create a wall
 		BWEB::Walls::createWall(types, BWEB::Map::getNaturalArea(), BWEB::Map::getNaturalChoke(), wallTight, defenses, reservePath);

@@ -77,10 +77,12 @@ namespace McRave {
 		double getPriority(UnitInfo& unit)
 		{
 			if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Terran_Science_Vessel)
-				return 5.0;
+				return 3.0;
 			if ((unit.unit()->isRepairing() || unit.unit()->isConstructing()) && Units().isThreatening(unit))
 				return 100.0;
 			if (Broodwar->getFrameCount() < 6000 && Strategy().enemyProxy() && unit.getType() == UnitTypes::Protoss_Pylon)
+				return -5.0;
+			if (unit.unit()->isBeingConstructed() && unit.getType() == UnitTypes::Terran_Bunker && Terrain().isInAllyTerritory(unit.getTilePosition()))
 				return -5.0;
 
 			if (unit.getTilePosition().isValid()) {

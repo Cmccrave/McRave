@@ -45,6 +45,9 @@ namespace McRave
 				if (enemyOrder == Orders::CastPsionicStorm)
 					Commands().addCommand(unit.unit(), enemyTarget, TechTypes::Psionic_Storm, true);
 			}
+
+			if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine)
+				Commands().addCommand(unit.unit(), unit.getPosition(), TechTypes::Spider_Mines, true);
 		}
 
 		// Store nuke dots
@@ -125,7 +128,7 @@ namespace McRave
 		// TODO: Maybe move this to their respective functions
 		else if (unit.hasTarget() && Units().getSplashTargets().find(unit.unit()) != Units().getSplashTargets().end()) {
 			if (unit.hasTransport())
-				unit.command(UnitCommandTypes::Right_Click_Unit, &unit.getTransport());			
+				unit.command(UnitCommandTypes::Right_Click_Unit, &unit.getTransport());
 			else if (unit.hasTarget() && unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames() && unit.getTarget().unit()->exists())
 				unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
 			else
@@ -146,7 +149,7 @@ namespace McRave
 			if (canAttack) {
 
 				// Flyers don't want to decel when out of range, so we move to the target then attack when in range
-				if (unit.getType().isFlyer() && unit.hasTarget() && !Util().unitInRange(unit))
+				if ((unit.getType().isFlyer() || unit.getType().isWorker()) && unit.hasTarget() && !Util().unitInRange(unit))
 					unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition());
 				else
 					unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
@@ -165,6 +168,10 @@ namespace McRave
 
 			// No target, Carrier or Muta
 			if (!unit.hasTarget() || unit.getType() == UnitTypes::Protoss_Carrier || unit.getType() == UnitTypes::Zerg_Mutalisk)
+				return false;
+
+			// HACK: Don't want Dragoons to approach early on
+			if (unit.getType() == UnitTypes::Protoss_Dragoon && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0)
 				return false;
 
 			// Dominant fight, lower range, Lurker or non Scourge targets
@@ -190,7 +197,7 @@ namespace McRave
 			Position p = Position(w) + Position(4, 4);
 			double distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
 			double threat = Util().getHighestThreat(w, unit);
-			double grouping = (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / log(Grids().getAGroundCluster(w)));
+			double grouping = (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / max(1.0, (Grids().getAGroundCluster(w) - unit.getPriority())));
 			double score = grouping / (threat * distance);
 			return score;
 		};
@@ -244,28 +251,25 @@ namespace McRave
 				}
 			}
 		}
-
-		Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Purple);
-
+		
 		if (unit.getDestination().isValid()) {
+			
+			auto bestPosition = findViablePosition(unit, scoreFunction);
+			if (bestPosition.isValid()) {
 
-			if (unit.getPosition().getDistance(unit.getSimPosition()) < SIM_RADIUS) {
-				auto bestPosition = findViablePosition(unit, scoreFunction);
-				if (bestPosition.isValid()) {
+				// Draw a path from this unit and from best position to determine if this position is closer or not
+				BWEB::PathFinding::Path unitPath;
+				BWEB::PathFinding::Path bPath;
 
-					// Draw a path from this unit and from best position to determine if this position is closer or not
-					BWEB::PathFinding::Path unitPath;
-					BWEB::PathFinding::Path bPath;
+				unitPath.createUnitPath(mapBWEM, unit.getPosition(), unit.getDestination());
+				bPath.createUnitPath(mapBWEM, bestPosition, unit.getDestination());
 
-					unitPath.createUnitPath(mapBWEM, unit.getPosition(), unit.getDestination());
-					bPath.createUnitPath(mapBWEM, bestPosition, unit.getDestination());
-
-					if (bPath.getDistance() < unitPath.getDistance()) {
-						unit.command(UnitCommandTypes::Move, bestPosition);
-						return true;
-					}
+				if (bPath.getDistance() < unitPath.getDistance()) {
+					unit.command(UnitCommandTypes::Move, bestPosition);
+					return true;
 				}
 			}
+
 			unit.command(UnitCommandTypes::Move, unit.getDestination());
 			return true;
 		}
@@ -275,19 +279,16 @@ namespace McRave
 
 	bool CommandManager::kite(UnitInfo& unit)
 	{
-		const auto shouldKite = [&]() {
-			auto airHarasser = unit.getType() == UnitTypes::Protoss_Corsair || unit.getType() == UnitTypes::Zerg_Mutalisk || unit.getType() == UnitTypes::Terran_Wraith;
-
-			// Units that never kite based on their target
+		const auto shouldKite = [&]() {			
 			if (unit.hasTarget() && unit.getLocalState() == LocalState::Engaging) {
 				auto allyRange = (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
 				auto enemyRange = (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
 
-				if (airHarasser
-					|| (unit.getTarget().getType().isBuilding() && !unit.getType().isFlyer()))
+				if (unit.getTarget().getType().isBuilding() && !unit.getType().isFlyer())
 					return false;
 
 				if (unit.getType() == UnitTypes::Protoss_Reaver
+					|| (Strategy().enemyPressure() && allyRange >= 64.0) // HACK: We should check to see if a mine is near our target instead
 					|| (unit.getType() == UnitTypes::Terran_Vulture)
 					|| (unit.getType() == UnitTypes::Zerg_Mutalisk)
 					|| (unit.getType() == UnitTypes::Protoss_Carrier)
@@ -311,7 +312,7 @@ namespace McRave
 				distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids().getDistanceHome(w);
 
 			double threat = Util().getHighestThreat(w, unit);
-			double grouping = (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / log(10.0 + Grids().getAGroundCluster(w)));
+			double grouping = (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / max(1.0, (Grids().getAGroundCluster(w) - unit.getPriority())));
 			double score = grouping / (threat * distance);
 			return score;
 		};
@@ -331,8 +332,10 @@ namespace McRave
 	bool CommandManager::defend(UnitInfo& unit)
 	{
 		bool defendingExpansion = unit.getDestination().isValid() && !Terrain().isInEnemyTerritory((TilePosition)unit.getDestination());
-		bool closeToDefend = Terrain().getDefendPosition().getDistance(unit.getPosition()) < 320.0 || Terrain().isInAllyTerritory(unit.getTilePosition()) || defendingExpansion || (!unit.getType().isFlyer() && !unit.hasTransport() && !mapBWEM.GetArea(unit.getTilePosition()));
-		if (!closeToDefend || unit.getLocalState() != LocalState::Retreating)
+		bool closeToDefend = Terrain().getDefendPosition().getDistance(unit.getPosition()) < 640.0 || Terrain().isInAllyTerritory(unit.getTilePosition()) || defendingExpansion || (!unit.getType().isFlyer() && !unit.hasTransport() && !mapBWEM.GetArea(unit.getTilePosition()));
+		//bool unsafe = !BuildOrder().isOpener() && Grids().getEGroundThreat((WalkPosition)Terrain().getDefendPosition()) > 0.0;
+		
+		if (!closeToDefend || unit.getGlobalState() != GlobalState::Retreating /*|| unsafe*/)
 			return false;
 
 		// Probe Cannon surround
@@ -380,15 +383,14 @@ namespace McRave
 		else {
 			Position bestPosition = Util().getConcavePosition(unit, nullptr, Terrain().getDefendPosition());
 			if (bestPosition.isValid()) {
-				if (unit.getPosition().getDistance(bestPosition) > 16.0)
-					unit.unit()->move(bestPosition);
+				Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Purple);
+				if (unit.getPosition().getDistance(bestPosition) > 4.0)
+					unit.command(UnitCommandTypes::Move, bestPosition);
 				else
 					addCommand(unit.unit(), bestPosition, UnitTypes::None);
 				unit.setDestination(bestPosition);
 				return true;
-			}
-
-			Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Purple);
+			}			
 		}
 		return false;
 	}
@@ -400,7 +402,7 @@ namespace McRave
 			double threat = Util().getHighestThreat(w, unit);
 			double distance = (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination()));
 			double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(w))));
-			double grouping = (unit.getType().isFlyer() ? 1.0 + Grids().getAAirCluster(w) : 1.0 / log(10.0 + Grids().getAGroundCluster(w)));
+			double grouping = (unit.getType().isFlyer() ? max(0.1, Grids().getAAirCluster(w)) : 1.0 / max(1.0, (Grids().getAGroundCluster(w) - unit.getPriority())));
 			double score = grouping * visited / distance;
 			if (threat == MIN_THREAT || (unit.unit()->isCloaked() && !overlapsEnemyDetection(p)))
 				return score;
@@ -408,7 +410,7 @@ namespace McRave
 		};
 
 		// Hunting is only valid with workers, flyers or dark templars
-		auto shouldHunt = unit.getType().isWorker() || unit.getType().isFlyer() || unit.getType() == UnitTypes::Protoss_Dark_Templar;
+		auto shouldHunt = unit.getType().isWorker() || unit.getType().isFlyer() /*|| unit.getType() == UnitTypes::Protoss_Dark_Templar*/;
 		if (!shouldHunt)
 			return false;
 
@@ -422,7 +424,6 @@ namespace McRave
 
 		// If we found a valid position
 		auto bestPosition = findViablePosition(unit, scoreFunction);
-		unit.circleBlue();
 
 		// Check if we can get free attacks
 		if (unit.hasTarget() && unit.getPercentShield() >= LOW_SHIELD_PERCENT_LIMIT && Util().getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT && Util().unitInRange(unit)) {
@@ -445,7 +446,7 @@ namespace McRave
 			Position p = Position(w) + Position(4, 4);
 			double distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids().getDistanceHome(w);
 			double threat = Util().getHighestThreat(w, unit);
-			double grouping = (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / log(10.0 + Grids().getAGroundCluster(w)));
+			double grouping = (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / max(1.0, (Grids().getAGroundCluster(w) - unit.getPriority())));
 			double score = grouping / (threat * distance);
 			return score;
 		};
@@ -589,7 +590,8 @@ namespace McRave
 		for (auto &command : myCommands) {
 			if (command.tech == TechTypes::Psionic_Storm
 				|| command.tech == TechTypes::Disruption_Web
-				|| command.tech == TechTypes::EMP_Shockwave) {
+				|| command.tech == TechTypes::EMP_Shockwave
+				|| command.tech == TechTypes::Spider_Mines) {
 				auto cTopLeft = command.pos - Position(48, 48);
 				auto cBotRight = command.pos + Position(48, 48);
 
@@ -609,7 +611,8 @@ namespace McRave
 		for (auto &command : enemyCommands) {
 			if (command.tech == TechTypes::Psionic_Storm
 				|| command.tech == TechTypes::Disruption_Web
-				|| command.tech == TechTypes::EMP_Shockwave) {
+				|| command.tech == TechTypes::EMP_Shockwave
+				|| command.tech == TechTypes::Spider_Mines) {
 				auto cTopLeft = command.pos - Position(48, 48);
 				auto cBotRight = command.pos + Position(48, 48);
 

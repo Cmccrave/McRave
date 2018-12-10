@@ -21,7 +21,8 @@ namespace McRave
 		Position attackPosition, defendPosition;
 		TilePosition enemyNatural = TilePositions::Invalid;
 		TilePosition enemyExpand = TilePositions::Invalid;
-		vector<Position> chokePositions;
+		vector<Position> meleeChokePositions;
+		vector<Position> rangedChokePositions;
 
 		set<Base const*> allBases;
 
@@ -78,7 +79,8 @@ namespace McRave
 		Position getAttackPosition() { return attackPosition; }
 		Position getDefendPosition() { return defendPosition; }
 
-		vector<Position> getChokePositions() { return chokePositions; }
+		vector<Position> getMeleeChokePositions() { return meleeChokePositions; }
+		vector<Position> getRangedChokePositions() { return rangedChokePositions; }
 	};
 }
 

@@ -310,7 +310,7 @@ namespace McRave
 
 		// If we are fast expanding
 		auto isWallPiece = building == UnitTypes::Protoss_Forge || building == UnitTypes::Protoss_Gateway || building == UnitTypes::Protoss_Pylon || building == UnitTypes::Terran_Barracks || building == UnitTypes::Terran_Supply_Depot;
-		if (BWEB::Map::getNaturalChoke() && isWallPiece && !Strategy().enemyBust() && (BuildOrder().isOpener() || Broodwar->self()->getRace() == Races::Zerg) && (BuildOrder().isWallNat() || BuildOrder().isWallMain())) {
+		if (BWEB::Map::getNaturalChoke() && isWallPiece && !Strategy().enemyBust() && (BuildOrder().isWallNat() || BuildOrder().isWallMain())) {
 			here = findWallLocation(building, Position(BWEB::Map::getNaturalChoke()->Center()));
 			if (here.isValid() && isBuildable(building, here))
 				return here;
