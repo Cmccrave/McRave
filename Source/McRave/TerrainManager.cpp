@@ -100,7 +100,7 @@ void TerrainManager::findEnemyNextExpand()
 		// Shuttle check for island bases, check enemy owned bases
 		if (!station.BWEMBase()->GetArea()->AccessibleFrom(BWEB::Map::getMainArea()) && Units().getEnemyCount(shuttle) <= 0)
 			continue;
-		if (BWEB::Map::getUsedTiles().find(station.BWEMBase()->Location()) != BWEB::Map::getUsedTiles().end())
+		if (BWEB::Map::isUsed(station.BWEMBase()->Location()))
 			continue;
 		if (Terrain().getEnemyStartingTilePosition() == station.BWEMBase()->Location())
 			continue;
@@ -275,38 +275,16 @@ void TerrainManager::updateConcavePositions()
 	auto perpSlope = -1.0 / line.slope;
 	Position test1, test2;
 
-	const auto addPlacements =[&](Line line, BWEM::ChokePoint const * choke, double gap, vector<Position>& thisVector) {
 
-		auto xStart = Position(choke->Center()).x - max(128, Util().chokeWidth(choke));
-		int yStart = int(line.y(xStart));
-		bool firstPlaced = false;
-		auto current = Position(xStart, yStart);
-		Position last = Positions::Invalid;
 
-		// Doesn't work for vertical lines because we increment by 1
-		while (current.isValid() && xStart < Position(choke->Center()).x + max(128, Util().chokeWidth(choke))) {
-			WalkPosition w(current);
-
-			if (last.getDistance(current) > gap && mapBWEM.GetMiniTile(w).Walkable() && mapBWEM.GetArea(w) == area && current.getDistance(Position(choke->Center())) < 320.0) {
-				thisVector.push_back(Position(w));
-				last = current;
-				firstPlaced = true;
-			}
-
-			xStart += 1;
-			yStart = int(line.y(xStart));
-			current = Position(xStart, yStart);
-		}
-	};
-
-	if (perpSlope == 0) {
+	if (abs(perpSlope) == DBL_MAX) {
 		test1.x = center.x + 64;
 		test1.y = center.y;
 		test2.x = center.x - 64;
 		test2.y = center.y;
 	}
 
-	else if (perpSlope == DBL_MAX) {
+	else if (perpSlope == 0.0) {
 		test1.x = center.x;
 		test1.y = center.y + 64;
 		test2.x = center.x;
@@ -326,12 +304,54 @@ void TerrainManager::updateConcavePositions()
 	Broodwar->drawLineMap(center, test2, Colors::Green);
 	
 	auto sign = mapBWEM.GetArea((WalkPosition)test1) == area ? 1.0 : -1.0;
-	auto zealot = Util().parallelLine(line, sign * 16.0);
-	auto dragoon = Util().parallelLine(line, sign * 128.0);
+	auto melee = Util().parallelLine(line, sign * 16.0);
+	auto ranged1 = Util().parallelLine(line, sign * 128.0);
+	auto ranged2 = Util().parallelLine(line, sign * 192.0);
 
-	addPlacements(line, choke, 19.0, meleeChokePositions);
-	addPlacements(zealot, choke, 19.0, meleeChokePositions);
-	addPlacements(dragoon, choke, 32.0, rangedChokePositions);
+	const auto addPlacements =[&](Line line, double gap, vector<Position>& thisVector) {		
+		if (abs(line.slope) != DBL_MAX) {
+			auto xStart = Position(choke->Center()).x - max(128, Util().chokeWidth(choke));
+			int yStart = int(line.y(xStart));
+			auto current = Position(xStart, yStart);
+			Position last = Positions::Invalid;
+
+			while (current.isValid() && xStart < Position(choke->Center()).x + max(128, Util().chokeWidth(choke))) {
+				WalkPosition w(current);
+
+				if (last.getDistance(current) > gap && mapBWEM.GetMiniTile(w).Walkable() && mapBWEM.GetArea(w) == area && current.getDistance(Position(choke->Center())) < 320.0) {
+					thisVector.push_back(Position(w));
+					last = current;
+				}
+
+				xStart += 1;
+				yStart = int(line.y(xStart));
+				current = Position(xStart, yStart);
+			}
+		}
+		else {
+			auto xStart = Position(choke->Center()).x;
+			int yStart = int(line.y(xStart));
+			auto current = Position(xStart, yStart);
+			Position last = Positions::Invalid;
+
+			while (current.isValid() && xStart < Position(choke->Center()).x + max(128, Util().chokeWidth(choke))) {
+				WalkPosition w(current);
+
+				if (last.getDistance(current) > gap && mapBWEM.GetMiniTile(w).Walkable() && mapBWEM.GetArea(w) == area && current.getDistance(Position(choke->Center())) < 320.0) {
+					thisVector.push_back(Position(w));
+					last = current;
+				}
+
+				yStart += 1;
+				current = Position(xStart, yStart);
+			}
+		}
+	};
+
+	addPlacements(line, 19.0, meleeChokePositions);
+	addPlacements(melee, 19.0, meleeChokePositions);
+	addPlacements(ranged1, 32.0, rangedChokePositions);
+	addPlacements(ranged2, 32.0, rangedChokePositions);
 }
 
 void TerrainManager::updateAreas()

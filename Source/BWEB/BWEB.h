@@ -31,6 +31,9 @@ namespace BWEB::Map
 	/// <summary> Add a section of BWAPI::TilePositions to the BWEB overlap grid. </summary>
 	void addOverlap(BWAPI::TilePosition, int width, int height);
 
+	/// <summary> Removes a section of BWAPI::TilePositions from the BWEB used grid. </summary>
+	void removeUsed(BWAPI::TilePosition tile, int width, int height);
+
 	/// <summary> Returns true if a section of BWAPI::TilePositions are within BWEBs overlap grid. </summary>
 	bool isOverlapping(BWAPI::TilePosition here, int width = 1, int height = 1, bool ignoreBlocks = false);
 
@@ -101,9 +104,6 @@ namespace BWEB::Map
 
 	/// Returns the BWAPI::Position of the main.
 	BWAPI::Position getMainPosition();
-
-	/// Returns the set of used BWAPI::TilePositions.
-	std::set<BWAPI::TilePosition>& getUsedTiles();
 
 	/// Returns two BWAPI::Positions representing a line of best fit for a given BWEM::Chokepoint.
 	std::pair<BWAPI::Position, BWAPI::Position> lineOfBestFit(BWEM::ChokePoint const *);

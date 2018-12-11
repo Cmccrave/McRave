@@ -37,23 +37,17 @@ namespace McRave
 		int collision[1024][1024] ={};
 		double distanceHome[1024][1024] ={};
 
-		Position armyCenter;
 		void saveReset(WalkPosition);
 		void updateDistance(), updateMobility(), updateAlly(), updateEnemy(), updateNeutral(), updateVisibility(), reset(), draw();
 
 		void addToGrids(UnitInfo&);
-
-		void addThreat(UnitInfo&);
-		void addCluster(UnitInfo&);
 		void addSplash(UnitInfo&);
-		void addCollision(UnitInfo&);
 	public:
 
 		// Update functions
 		void onFrame(), onStart();
 
 		void updateAllyMovement(Unit, WalkPosition);
-		Position getArmyCenter() { return armyCenter; }
 
 		double getAGroundCluster(WalkPosition here) { return aGroundCluster[here.x][here.y]; }
 		double getAAirCluster(WalkPosition here) { return aAirCluster[here.x][here.y]; }

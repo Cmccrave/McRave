@@ -12,8 +12,7 @@
 // Floating units removing mine positions
 // If an enemy floats a CC to an expansion, we don't consider it "taken"
 	// - Should we check all stations for being taken? How? UsedGrid? If so, we need to verify that buildings that land have used tiles
-// Pylon walls
-// JPS timeout if path unreachable
+// Vertical lines ain't working - need this fixed
 
 // *** SSCAIT2018 Goals ***
 // Unit formations

@@ -141,7 +141,7 @@ namespace BWEB::Walls
 			auto count = 0;
 			for (auto type : wall.getRawBuildings()) {
 				if (type == UnitTypes::Protoss_Pylon)
-					count = 1;
+					count++;
 			}
 			multiplePylons = count > 1;
 						
@@ -156,7 +156,7 @@ namespace BWEB::Walls
 						const TilePosition t(x, y);
 						auto center = Position(t) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
 
-						if (!t.isValid() || (multiplePylons && center.getDistance((Position)wall.getChokePoint()->Center()) > 48.0))
+						if (!t.isValid() || (multiplePylons && center.getDistance(closestChokeTile(center)) > 128.0))
 							continue;
 
 						// We want to ensure the buildings are being placed at the correct angle compared to the chokepoint, within some tolerance

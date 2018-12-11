@@ -311,7 +311,7 @@ namespace McRave
 		// If we are fast expanding
 		auto isWallPiece = building == UnitTypes::Protoss_Forge || building == UnitTypes::Protoss_Gateway || building == UnitTypes::Protoss_Pylon || building == UnitTypes::Terran_Barracks || building == UnitTypes::Terran_Supply_Depot;
 		if (BWEB::Map::getNaturalChoke() && isWallPiece && !Strategy().enemyBust() && (BuildOrder().isWallNat() || BuildOrder().isWallMain())) {
-			here = findWallLocation(building, Position(BWEB::Map::getNaturalChoke()->Center()));
+			here = findWallLocation(building, BWEB::Map::getMainPosition());
 			if (here.isValid() && isBuildable(building, here))
 				return here;
 		}
@@ -373,14 +373,14 @@ namespace McRave
 
 				if (building.getRace() == Races::Zerg && building.requiresCreep() && !Broodwar->hasCreep(t))
 					return false;
-				if (BWEB::Map::getUsedTiles().find(TilePosition(x, y)) != BWEB::Map::getUsedTiles().end())
+				if (BWEB::Map::isUsed(t))
 					return false;
 			}
 		}
 
 		// Addon room check
 		if (building.canBuildAddon()) {
-			if (BWEB::Map::getUsedTiles().find(TilePosition(here) + TilePosition(4, 1)) != BWEB::Map::getUsedTiles().end())
+			if (BWEB::Map::isUsed(TilePosition(here) + TilePosition(4, 1)))
 				return false;
 		}
 
@@ -532,7 +532,7 @@ namespace McRave
 
 				// If we have no powered spots, can't build a solo spot
 				for (auto &small : block.SmallTiles()) {
-					if (BWEB::Map::getUsedTiles().find(small) != BWEB::Map::getUsedTiles().end()
+					if (BWEB::Map::isUsed(small)
 						|| (!Terrain().isInAllyTerritory(small) && !BuildOrder().isProxy() && !Terrain().isIslandMap()))
 						solo = false;
 				}

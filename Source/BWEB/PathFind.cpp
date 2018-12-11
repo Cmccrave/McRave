@@ -61,7 +61,6 @@ namespace BWEB::PathFinding
 			Position current = s;
 			for (auto &t : newJPSPath) {
 				dist += Position(t).getDistance(current);
-				Broodwar->drawLineMap(Position(current), Position(t), Colors::Green);
 				current = Position(t);
 				tiles.push_back(t);				
 			}

@@ -29,7 +29,6 @@ namespace McRave
 		set<Unit> splashTargets;
 
 		double immThreat, proxThreat;
-		double avgGrdSim = 1.0, avgAirSim = 1.0;
 		bool ignoreSim;
 
 		double globalAllyGroundStrength, globalEnemyGroundStrength;
@@ -38,6 +37,7 @@ namespace McRave
 		double minThreshold, maxThreshold;
 		int supply;
 		int repWorkers;
+		Position armyCenter;
 
 		void updateUnitSizes();
 		void updateUnits();
@@ -47,6 +47,7 @@ namespace McRave
 		void updateRole(UnitInfo&);
 	public:
 		int getRepairWorkers() { return repWorkers; }
+		Position getArmyCenter() { return armyCenter; }
 
 		set<Unit>& getSplashTargets() { return splashTargets; }
 

@@ -83,8 +83,7 @@ void UnitManager::updateUnits()
 					if (!t.isValid())
 						continue;
 
-					BWEB::Map::getUsedTiles().erase(t);
-					BWEB::Map::removeOverlap(t, 1, 1);
+					BWEB::Map::removeUsed(t, 1, 1);
 				}
 			}
 		}
@@ -114,7 +113,6 @@ void UnitManager::updateUnits()
 			}
 		}
 
-
 		// If unit has a valid type, update enemy composition tracking
 		if (unit.getType().isValid())
 			enemyComposition[unit.getType()] += 1;
@@ -126,13 +124,17 @@ void UnitManager::updateUnits()
 		// If a unit is threatening our position
 		if (isThreatening(unit) && (unit.getType().groundWeapon().damageAmount() > 0 || unit.getType() == UnitTypes::Terran_Bunker)) {
 			if (unit.getType().isBuilding())
-				immThreat += max(1.5, unit.getVisibleGroundStrength());
+				immThreat += 1.50;
 			else
 				immThreat += unit.getVisibleGroundStrength();
 		}
+
+		if (isThreatening(unit))
+			unit.circleRed();
 	}
 
 	// Update myUnits
+	double centerCluster = 0.0;
 	for (auto &u : myUnits) {
 		auto &unit = u.second;
 		if (!unit.unit())
@@ -145,6 +147,12 @@ void UnitManager::updateUnits()
 			updateLocalSimulation(unit);
 			updateGlobalState(unit);
 			updateLocalState(unit);
+
+			double g = Grids().getAGroundCluster(unit.getWalkPosition()) + Grids().getAAirCluster(unit.getWalkPosition());
+			if (g > centerCluster) {
+				centerCluster = g;
+				armyCenter = unit.getPosition();
+			}
 		}
 
 		auto type = unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType() : unit.getType();
@@ -185,10 +193,12 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 
 	if (ignoreSim || (Terrain().isIslandMap() && !unit.getType().isFlyer())) {
 		unit.setSimState(SimState::Win);
+		unit.setSimValue(10.0);
 		return;
 	}
 	if (!unit.hasTarget()) {
 		unit.setSimState(SimState::None);
+		unit.setSimValue(0.0);
 		return;
 	}
 
@@ -337,11 +347,6 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 	else if (unit.getSimValue() <= minThreshold || belowLimits) {
 		unit.setSimState(SimState::Loss);
 	}
-
-	if (unit.getSimState() == SimState::Loss)
-		unit.circleRed();
-	else if (unit.getSimState() == SimState::Win)
-		unit.circleBlue();
 }
 
 void UnitManager::updateLocalState(UnitInfo& unit)
@@ -349,7 +354,7 @@ void UnitManager::updateLocalState(UnitInfo& unit)
 	if (unit.hasTarget()) {
 
 		auto fightingAtHome = ((Terrain().isInAllyTerritory(unit.getTilePosition()) && Util().unitInRange(unit)) || Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()));
-		auto invisTarget = unit.getTarget().unit() && (unit.getTarget().unit()->isCloaked() || unit.getTarget().isBurrowed()) && !unit.getTarget().unit()->isDetected();
+		auto invisTarget = unit.getTarget().unit()->exists() && (unit.getTarget().unit()->isCloaked() || unit.getTarget().isBurrowed()) && !unit.getTarget().unit()->isDetected();
 
 		// Testing
 		if (Commands().isInDanger(unit, unit.getEngagePosition()))

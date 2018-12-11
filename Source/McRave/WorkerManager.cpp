@@ -225,8 +225,10 @@ bool WorkerManager::build(UnitInfo& worker)
 	else if (shouldMoveToBuild()) {
 		worker.setDestination(center);
 
-		if (worker.getPosition().getDistance(center) > 256.0) {
-			if (worker.unit()->getOrderTargetPosition() != center)
+		if (worker.getPosition().getDistance(center) > 128.0) {
+			if (worker.getBuildingType().isResourceDepot())
+				Commands().move(worker);
+			else if (worker.unit()->getOrderTargetPosition() != center)
 				worker.unit()->move(center);
 		}
 		else if (worker.unit()->getOrder() != Orders::PlaceBuilding || worker.unit()->isIdle())
@@ -313,6 +315,7 @@ bool WorkerManager::gather(UnitInfo& worker)
 
 		// 4) If we are under a threat, try to get away from it
 		else if (Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0) {
+			worker.circleRed();
 			Commands().kite(worker);
 			worker.circlePurple();
 			return true;

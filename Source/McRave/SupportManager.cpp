@@ -18,10 +18,10 @@ namespace McRave {
 		void updateDecision(UnitInfo& unit)
 		{
 			auto scoreBest = 0.0;
-			auto posBest = Grids().getArmyCenter();
+			auto posBest = Units().getArmyCenter();
 			auto start = unit.getWalkPosition();
 			auto building = Broodwar->self()->getRace().getResourceDepot();
-			auto destination = Grids().getArmyCenter();
+			auto destination = Units().getArmyCenter();
 
 			// HACK: Spells dont move
 			if (unit.getType() == UnitTypes::Spell_Scanner_Sweep) {
@@ -33,7 +33,7 @@ namespace McRave {
 			if (unit.getType().isDetector() && unit.hasTarget() && unit.getTarget().getPosition().isValid()) {
 				UnitInfo * closest = Util().getClosestUnit(unit, unit.getPlayer());
 
-				if (closest && (closest->getGroundDamage() > 0.0 || closest->getAirDamage() > 0.0) && closest->getPosition().getDistance(unit.getTarget().getPosition()) < 256.0)
+				if (closest && (closest->getGroundDamage() > 0.0 || closest->getAirDamage() > 0.0) && closest->getPosition().getDistance(unit.getTarget().getPosition()) < SIM_RADIUS)
 					destination = unit.getTarget().getPosition();
 			}
 

@@ -47,7 +47,7 @@ namespace McRave
 			}
 
 			if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine)
-				Commands().addCommand(unit.unit(), unit.getPosition(), TechTypes::Spider_Mines, true);
+				Commands().addCommand(unit.unit(), unit.getPosition(), TechTypes::Spider_Mines, true);			
 		}
 
 		// Store nuke dots
@@ -202,51 +202,53 @@ namespace McRave
 			return score;
 		};
 
-		if (unit.hasTarget() && Util().unitInRange(unit))
-			return false;
+		if (unit.getRole() == Role::Fighting) {
+			if (unit.hasTarget() && Util().unitInRange(unit))
+				return false;
 
-		if (unit.getLocalState() == LocalState::Retreating)
-			return false;
+			if (unit.getLocalState() == LocalState::Retreating)
+				return false;
 
-		if (unit.getDestination().isValid()) {
-			if (!Terrain().isInEnemyTerritory((TilePosition)unit.getDestination())) {
-				Position bestPosition = Util().getConcavePosition(unit, mapBWEM.GetArea(TilePosition(unit.getDestination())));
+			if (unit.getDestination().isValid()) {
+				if (!Terrain().isInEnemyTerritory((TilePosition)unit.getDestination())) {
+					Position bestPosition = Util().getConcavePosition(unit, mapBWEM.GetArea(TilePosition(unit.getDestination())));
 
-				if (bestPosition.isValid() && (bestPosition != unit.getPosition() || unit.unit()->getLastCommand().getType() == UnitCommandTypes::None)) {
-					if (unit.unit()->getLastCommand().getTargetPosition() != Position(bestPosition) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
-						unit.unit()->move(Position(bestPosition));
+					if (bestPosition.isValid() && (bestPosition != unit.getPosition() || unit.unit()->getLastCommand().getType() == UnitCommandTypes::None)) {
+						if (unit.unit()->getLastCommand().getTargetPosition() != Position(bestPosition) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
+							unit.unit()->move(Position(bestPosition));
+					}
 				}
+				else if (unit.unit()->getLastCommand().getTargetPosition() != Position(unit.getDestination()) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
+					unit.unit()->move(unit.getDestination());
+
+				return true;
 			}
-			else if (unit.unit()->getLastCommand().getTargetPosition() != Position(unit.getDestination()) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
-				unit.unit()->move(unit.getDestination());
 
-			return true;
-		}
-
-		// If unit has a transport, move to it or load into it
-		else if (unit.hasTransport() && unit.getTransport().unit()->exists()) {
-			unit.command(UnitCommandTypes::Right_Click_Unit, &unit.getTransport());
-			return true;
-		}
-
-		// If target doesn't exist, move towards it
-		else if (unit.hasTarget() && unit.getTarget().getPosition().isValid() && Grids().getMobility(WalkPosition(unit.getEngagePosition())) > 0 && (unit.getPosition().getDistance(unit.getTarget().getPosition()) < SIM_RADIUS || unit.getType().isFlyer())) {
-			unit.setDestination(unit.getTarget().getPosition());
-		}
-
-		else if (Terrain().getAttackPosition().isValid()) {
-			unit.setDestination(Terrain().getAttackPosition());
-		}
-
-		// If no target and no enemy bases, move to a base location (random if we have found the enemy once already)
-		else if (unit.unit()->isIdle()) {
-			if (Terrain().getEnemyStartingPosition().isValid()) {
-				unit.setDestination(Terrain().randomBasePosition());
+			// If unit has a transport, move to it or load into it
+			else if (unit.hasTransport() && unit.getTransport().unit()->exists()) {
+				unit.command(UnitCommandTypes::Right_Click_Unit, &unit.getTransport());
+				return true;
 			}
-			else {
-				for (auto &start : Broodwar->getStartLocations()) {
-					if (start.isValid() && !Broodwar->isExplored(start) && !Commands().overlapsCommands(unit.unit(), unit.getType(), Position(start), 32)) {
-						unit.setDestination(Position(start));
+
+			// If target doesn't exist, move towards it
+			else if (unit.hasTarget() && unit.getTarget().getPosition().isValid() && Grids().getMobility(WalkPosition(unit.getEngagePosition())) > 0 && (unit.getPosition().getDistance(unit.getTarget().getPosition()) < SIM_RADIUS || unit.getType().isFlyer())) {
+				unit.setDestination(unit.getTarget().getPosition());
+			}
+
+			else if (Terrain().getAttackPosition().isValid()) {
+				unit.setDestination(Terrain().getAttackPosition());
+			}
+
+			// If no target and no enemy bases, move to a base location (random if we have found the enemy once already)
+			else if (unit.unit()->isIdle()) {
+				if (Terrain().getEnemyStartingPosition().isValid()) {
+					unit.setDestination(Terrain().randomBasePosition());
+				}
+				else {
+					for (auto &start : Broodwar->getStartLocations()) {
+						if (start.isValid() && !Broodwar->isExplored(start) && !Commands().overlapsCommands(unit.unit(), unit.getType(), Position(start), 32)) {
+							unit.setDestination(Position(start));
+						}
 					}
 				}
 			}
@@ -263,6 +265,8 @@ namespace McRave
 
 				unitPath.createUnitPath(mapBWEM, unit.getPosition(), unit.getDestination());
 				bPath.createUnitPath(mapBWEM, bestPosition, unit.getDestination());
+
+				Display().displayPath(unitPath.getTiles());
 
 				if (bPath.getDistance() < unitPath.getDistance()) {
 					unit.command(UnitCommandTypes::Move, bestPosition);
@@ -333,9 +337,8 @@ namespace McRave
 	{
 		bool defendingExpansion = unit.getDestination().isValid() && !Terrain().isInEnemyTerritory((TilePosition)unit.getDestination());
 		bool closeToDefend = Terrain().getDefendPosition().getDistance(unit.getPosition()) < 640.0 || Terrain().isInAllyTerritory(unit.getTilePosition()) || defendingExpansion || (!unit.getType().isFlyer() && !unit.hasTransport() && !mapBWEM.GetArea(unit.getTilePosition()));
-		//bool unsafe = !BuildOrder().isOpener() && Grids().getEGroundThreat((WalkPosition)Terrain().getDefendPosition()) > 0.0;
 		
-		if (!closeToDefend || unit.getGlobalState() != GlobalState::Retreating /*|| unsafe*/)
+		if (!closeToDefend || unit.getGlobalState() != GlobalState::Retreating)
 			return false;
 
 		// Probe Cannon surround
@@ -381,7 +384,12 @@ namespace McRave
 		}
 
 		else {
-			Position bestPosition = Util().getConcavePosition(unit, nullptr, Terrain().getDefendPosition());
+			Position bestPosition;
+			if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon) == 0 && Players().vT())
+				bestPosition = Util().getConcavePosition(unit, nullptr, BWEB::Map::getMainPosition());
+			else
+				bestPosition = Util().getConcavePosition(unit, nullptr, Terrain().getDefendPosition());
+
 			if (bestPosition.isValid()) {
 				Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Purple);
 				if (unit.getPosition().getDistance(bestPosition) > 4.0)
@@ -617,7 +625,7 @@ namespace McRave
 				auto cBotRight = command.pos + Position(48, 48);
 
 				if (checkCorners(cTopLeft, cBotRight))
-					return true;
+					return true;				
 			}
 			if (command.tech == TechTypes::Nuclear_Strike && here.getDistance(command.pos) <= 640) {
 				auto cTopLeft = command.pos - Position(320, 320);

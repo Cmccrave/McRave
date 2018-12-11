@@ -179,6 +179,7 @@ namespace McRave
 		void circlePurple()								{ Broodwar->drawCircleMap(position, unitType.width(), Colors::Purple); }
 		void circleBlack()								{ Broodwar->drawCircleMap(position, unitType.width(), Colors::Black); }
 
+		bool isHovering()								{ return unitType.isWorker() || unitType == UnitTypes::Protoss_Archon || unitType == UnitTypes::Protoss_Dark_Archon || unitType == UnitTypes::Terran_Vulture; }
 		bool isBurrowed()								{ return burrowed; }
 		bool isFlying()									{ return flying; }
 		Position getSimPosition()						{ return simPosition; }

@@ -23,7 +23,7 @@ namespace McRave
 								|| (target.getAirDamage() == 0.0 && target.getGroundDamage() == 0.0);
 
 			// Zealot: Don't attack non threatening workers in our territory
-			if ((unit.getType() == UnitTypes::Protoss_Zealot && target.getType().isWorker() && !Units().isThreatening(target) && Terrain().isInAllyTerritory(target.getTilePosition()))
+			if ((unit.getType() == UnitTypes::Protoss_Zealot && target.getType().isWorker() && !Units().isThreatening(target))
 
 				// If target is an egg, larva, scarab or spell
 				|| (target.getType() == UnitTypes::Zerg_Egg || target.getType() == UnitTypes::Zerg_Larva || target.getType() == UnitTypes::Protoss_Scarab || target.getType().isSpell())
@@ -49,7 +49,7 @@ namespace McRave
 				// Don't attack units that don't matter
 				|| !targetMatters
 
-				// Reavers vs T only shoot workers
+				// Testing Reavers vs T only shoot workers
 				|| (unit.getType() == UnitTypes::Protoss_Reaver && Players().vT() && !target.getType().isWorker())
 
 				// DT: Don't attack Vultures

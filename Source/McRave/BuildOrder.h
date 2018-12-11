@@ -40,6 +40,7 @@ namespace McRave
 		bool isTransitionAllowed(Race, string, string);
 		bool isOpenerAllowed(Race, string, string);
 		bool isBuildPossible(string, string);
+		bool cutWorkers = false; // TODO: Use unlocking
 
 		map <UnitType, Item> itemQueue;
 		bool getOpening = true, getTech, bioBuild, wallNat, wallMain, scout, productionSat, techSat;
@@ -89,6 +90,7 @@ namespace McRave
 
 		int buildCount(UnitType);
 		int gasWorkerLimit() { return gasLimit; }
+		bool isWorkerCut() { return cutWorkers; }
 
 		bool isUnitUnlocked(UnitType unit) { return unlockedType.find(unit) != unlockedType.end(); }
 		bool isTechUnit(UnitType unit) { return techList.find(unit) != techList.end(); }

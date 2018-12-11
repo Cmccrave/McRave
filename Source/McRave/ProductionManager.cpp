@@ -13,12 +13,12 @@ namespace McRave
 	void ProductionManager::updateProduction()
 	{
 		for (auto &b : Units().getMyUnits()) {
-			auto &building = b.second;
+			auto &building = b.second;			
 			
 			if (!building.unit() || building.getRole() != Role::Producing || (!building.unit()->isCompleted() && !building.getType().isResourceDepot() && building.getType().getRace() != Races::Zerg) || Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0)
 				continue;
 
-			bool latencyIdle = building.getRemainingTrainFrames() < Broodwar->getRemainingLatencyFrames() || building.unit()->isIdle();		
+			bool latencyIdle = building.getRemainingTrainFrames() < Broodwar->getLatencyFrames();
 
 			if (latencyIdle && !building.getType().isResourceDepot()) {
 				idleProduction.erase(building.unit());
@@ -74,10 +74,6 @@ namespace McRave
 						best = value;
 						typeBest = type.first;
 					}
-
-/*					if (BuildOrder().isUnitUnlocked(type.first) && isCreateable(building.unit(), type.first) && (isAffordable(type.first) || type.first == Strategy().getHighestUnitScore()) && isSuitable(type.first)) {
-						Broodwar << unit.c_str() << "   " << value << endl;
-					}	*/				
 				}
 				
 				if (typeBest != UnitTypes::None) {					
@@ -96,6 +92,7 @@ namespace McRave
 
 	void ProductionManager::produce(UnitInfo& building)
 	{
+		int offset = 16;
 		double best = 0.0;
 		UnitType bestType = UnitTypes::None;
 		for (auto &unit : building.getType().buildsWhat()) {
@@ -136,6 +133,7 @@ namespace McRave
 				building.unit()->train(bestType);
 				building.setRemainingTrainFrame(bestType.buildTime());
 				idleProduction.erase(building.unit());
+				return; // Only produce 1 unit per frame to prevent overspending
 			}
 
 			if (bestType == UnitTypes::Protoss_Dark_Templar && !isAffordable(UnitTypes::Protoss_Dark_Templar) && Players().vP() && Broodwar->self()->minerals() > 300)
@@ -187,8 +185,9 @@ namespace McRave
 		auto gasReserve = int(!BuildOrder().isTechUnit(unit)) * reservedGas;
 		auto mineralAffordable = (Broodwar->self()->minerals() >= unit.mineralPrice() + Buildings().getQueuedMineral() + mineralReserve) || unit.mineralPrice() == 0;
 		auto gasAffordable = (Broodwar->self()->gas() >= unit.gasPrice() + Buildings().getQueuedGas() + gasReserve) || unit.gasPrice() == 0;
+		auto supplyAffordable = Units().getSupply() + unit.supplyRequired() <= Broodwar->self()->supplyTotal();
 
-		return mineralAffordable && gasAffordable;
+		return mineralAffordable && gasAffordable && supplyAffordable;
 	}
 
 	bool ProductionManager::isAffordable(TechType tech)

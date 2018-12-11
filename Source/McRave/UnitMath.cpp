@@ -83,7 +83,7 @@ namespace McRave {
 			if (Broodwar->getFrameCount() < 6000 && Strategy().enemyProxy() && unit.getType() == UnitTypes::Protoss_Pylon)
 				return -5.0;
 			if (unit.unit()->isBeingConstructed() && unit.getType() == UnitTypes::Terran_Bunker && Terrain().isInAllyTerritory(unit.getTilePosition()))
-				return -5.0;
+				return -100.0;
 
 			if (unit.getTilePosition().isValid()) {
 				const auto area = mapBWEM.GetArea(unit.getTilePosition());

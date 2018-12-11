@@ -16,7 +16,6 @@ namespace BWEB::Map
 		const BWEM::Area * mainArea{};
 		const BWEM::ChokePoint * naturalChoke{};
 		const BWEM::ChokePoint * mainChoke{};
-		std::set<BWAPI::TilePosition> usedTiles;
 
 		int testGrid[256][256];
 		int reserveGrid[256][256] ={};
@@ -189,7 +188,6 @@ namespace BWEB::Map
 				TilePosition t(x, y);
 				if (!t.isValid())
 					continue;
-				usedTiles.insert(t);
 				usedGrid[x][y] = 1;
 			}
 		}
@@ -233,7 +231,6 @@ namespace BWEB::Map
 				TilePosition t(x, y);
 				if (!t.isValid())
 					continue;
-				usedTiles.erase(t);
 				usedGrid[x][y] = 0;
 			}
 		}
@@ -476,6 +473,7 @@ namespace BWEB::Map
 	{
 		auto sumX = 0.0, sumY = 0.0;
 		auto sumXY = 0.0, sumX2 = 0.0;
+		Position p1, p2;
 		for (auto geo : choke->Geometry()) {
 			Position p = Position(geo) + Position(4, 4);
 			sumX += p.x;
@@ -490,18 +488,22 @@ namespace BWEB::Map
 		double slope = (sumXY - sumX * yMean) / denominator;
 		double yInt = yMean - slope * xMean;
 
-		// y = mx + b
-		// solve for x and y
+		// Tuning for vertical line
+		if (denominator / choke->Geometry().size() < 150.0) {
+			slope = DBL_MAX;
+			yInt = 0;
+			p1 = Position(choke->Pos(choke->end1));
+			p2 =  Position(choke->Pos(choke->end2));
+		}
+		else {
+			int x1 = Position(choke->Pos(choke->end1)).x;
+			int y1 = int(ceil(x1 * slope)) + int(yInt);
+			p1 = Position(x1, y1);
 
-		// end 1
-		int x1 = Position(choke->Pos(choke->end1)).x;
-		int y1 = int(ceil(x1 * slope)) + int(yInt);
-		Position p1 = Position(x1, y1);
-
-		// end 2
-		int x2 = Position(choke->Pos(choke->end2)).x;
-		int y2 = int(ceil(x2 * slope)) + int(yInt);
-		Position p2 = Position(x2, y2);
+			int x2 = Position(choke->Pos(choke->end2)).x;
+			int y2 = int(ceil(x2 * slope)) + int(yInt);
+			p2 = Position(x2, y2);
+		}
 
 		return make_pair(p1, p2);
 	}
@@ -524,7 +526,7 @@ namespace BWEB::Map
 				TilePosition tile(x, y);
 				if (!tile.isValid()
 					|| !Broodwar->isBuildable(tile)
-					|| Map::usedTiles.find(tile) != Map::usedTiles.end()
+					|| Map::usedGrid[x][y] > 0
 					|| Map::reserveGrid[x][y] > 0
 					|| (type.isResourceDepot() && !Broodwar->canBuildHere(tile, type)))
 					return false;
@@ -550,6 +552,14 @@ namespace BWEB::Map
 		}
 	}
 
+	void removeUsed(const TilePosition t, const int w, const int h)
+	{
+		for (auto x = t.x; x < t.x + w; x++) {
+			for (auto y = t.y; y < t.y + h; y++)
+				usedGrid[x][y] = 0;
+		}
+	}
+
 	void addReserve(const TilePosition t, const int w, const int h)
 	{
 		for (auto x = t.x; x < t.x + w; x++) {
@@ -566,5 +576,4 @@ namespace BWEB::Map
 	Position getNaturalPosition() { return naturalPosition; }
 	TilePosition getMainTile() { return mainTile; }
 	Position getMainPosition() { return mainPosition; }
-	set<TilePosition>& getUsedTiles() { return usedTiles; }
 }

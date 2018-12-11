@@ -21,17 +21,10 @@ namespace McRave
 	void GridManager::reset()
 	{
 		Display().startClock();
-		armyCenter = Positions::None;
 		double best = 0.0;
 		for (auto &w : resetVector) {
 			int x = w.x;
 			int y = w.y;
-
-			double current = (aAirCluster[x][y] + aGroundCluster[x][y]);
-			if (current > best) {
-				best = current;
-				armyCenter = Position(w);
-			}
 
 			aGroundCluster[x][y] = 0;
 			aAirCluster[x][y] = 0;
@@ -348,7 +341,7 @@ namespace McRave
 
 				WalkPosition w(x, y);
 				auto p = Position(w) + Position(4, 4);
-				auto dist = p.getDistance(unit.getPosition());
+				auto dist = p.getApproxDistance(unit.getPosition());
 
 				// Collision
 				if (!unit.getType().isFlyer() && Util().rectangleIntersect(topLeft, botRight, p)) {

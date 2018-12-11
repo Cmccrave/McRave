@@ -558,10 +558,11 @@ namespace McRave
 		// 12 Nexus - "http://liquipedia.net/starcraft/12_Nexus"
 		fastExpand =		true;
 		playPassive =		Strategy().enemyPressure() ? vis(Protoss_Dragoon) < 12 : !firstReady();
-		firstUpgrade =		UpgradeTypes::Singularity_Charge;
+		firstUpgrade =		vis(Protoss_Dragoon) >= 2 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
 		firstTech =			TechTypes::None;
 		scout =				vis(Protoss_Cybernetics_Core) >= 1;
 		wallNat =			vis(Protoss_Nexus) >= 2 ? true : false;
+		cutWorkers =		Production().hasIdleProduction() && com(Protoss_Cybernetics_Core) > 0;
 
 		// Pull 1 probe when researching goon range, add 1 after we have a Nexus, then add 3 when 2 gas
 		gasLimit =			INT_MAX;
@@ -573,7 +574,7 @@ namespace McRave
 			currentTransition =	"Island"; // TODO: Island stuff		
 		else if (Strategy().enemyFastExpand() || Strategy().getEnemyBuild() == "TSiegeExpand")
 			currentTransition =	"DoubleExpand";
-		else
+		else if (Strategy().enemyPressure())
 			currentTransition = "Standard";
 
 		// Openers
@@ -611,11 +612,10 @@ namespace McRave
 			getOpening =		s < 140;
 
 			itemQueue[Protoss_Nexus] =				Item(1 + (s >= 24) + (com(Protoss_Cybernetics_Core) > 0));
-			itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Cybernetics_Core) > 0) + (s >= 26) + (s >= 70) + (s >= 80));
 			itemQueue[Protoss_Assimilator] =		Item(s >= 28);
 		}
 		else if (currentTransition == "Standard") {
-			getOpening =		s < 80;			
+			getOpening =		s < 90;			
 		}
 		else if (currentTransition == "ReaverCarrier") {
 			getOpening =		s < 120;
@@ -627,10 +627,6 @@ namespace McRave
 
 			itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 1) + (vis(Protoss_Nexus) > 1) + (s >= 70) + (s >= 80));
 		}
-
-		// TODO: Move this hack
-		if (Broodwar->mapFileName().find("BlueStorm") != string::npos)
-			firstUpgrade = UpgradeTypes::Carrier_Capacity;
 	}
 
 	void BuildOrderManager::P21Nexus()
@@ -653,9 +649,8 @@ namespace McRave
 			currentTransition =	"DoubleExpand";
 		else if (s < 80 && Strategy().enemyRush())
 			currentTransition = "Defensive";
-
-		if (Units().getEnemyCount(Terran_Vulture) > Units().getMyTypeCount(Protoss_Dragoon) && Units().getMyTypeCount(Protoss_Dragoon) < 8)
-			playPassive = true;
+		else if (Strategy().enemyPressure())
+			currentTransition = "Standard";
 
 		// Openers
 		if (currentOpener == "1Gate") {
