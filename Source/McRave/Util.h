@@ -57,6 +57,9 @@ namespace McRave
 		Line parallelLine(Line, double);
 
 		Position getConcavePosition(UnitInfo&, BWEM::Area const * area = nullptr, Position here = Positions::Invalid);
+
+		Position clipPosition(Position, Position);
+		Position clipToMap(Position);
 	};
 }
 

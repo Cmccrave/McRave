@@ -321,7 +321,7 @@ int UtilManager::chokeWidth(const BWEM::ChokePoint * choke)
 }
 
 Line UtilManager::lineOfBestFit(const BWEM::ChokePoint * choke)
-{	
+{
 	auto sumX = 0.0, sumY = 0.0;
 	auto sumXY = 0.0, sumX2 = 0.0;
 	for (auto geo : choke->Geometry()) {
@@ -358,9 +358,9 @@ Line UtilManager::parallelLine(Line line1, double distance)
 
 	double x = x0 + (distance * sq);
 	double y = y0 + (distance * sq * inverseSlope);
-	
+
 	double yInt2 = y - (line1.slope * x);
-	
+
 	Line newLine(yInt2, line1.slope);
 	return newLine;
 }
@@ -372,7 +372,7 @@ Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area
 	double distBest = DBL_MAX;
 	WalkPosition center = WalkPositions::None;
 	Position bestPosition = Positions::None;
-	
+
 	// Finds which position we are forming the concave at
 	const auto getConcaveCenter = [&]() {
 		if (here.isValid())
@@ -400,11 +400,11 @@ Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area
 		double dist = p.getDistance(here);
 
 		if (!w.isValid()
-			|| (here != Terrain().getDefendPosition() && area && mapBWEM.GetArea(t) != area)	
+			|| (here != Terrain().getDefendPosition() && area && mapBWEM.GetArea(t) != area)
 			|| (unit.getType() == UnitTypes::Protoss_Reaver && Terrain().isDefendNatural() && mapBWEM.GetArea(w) != BWEB::Map::getNaturalArea())
 			|| dist > distBest
 			|| Commands().overlapsCommands(unit.unit(), UnitTypes::None, p, 8)
-			|| Commands().isInDanger(unit, p)			
+			|| Commands().isInDanger(unit, p)
 			|| !Util().isWalkable(unit.getWalkPosition(), w, unit.getType())
 			|| Buildings().overlapsQueuedBuilding(unit.getType(), t))
 			return false;
@@ -436,4 +436,48 @@ Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area
 		}
 	}
 	return bestPosition;
+}
+
+Position UtilManager::clipPosition(Position source, Position target)
+{
+	if (target.isValid())
+		return;
+
+	auto sqDist = source.getApproxDistance(target);
+	auto clip = clipToMap(target);
+	auto dx = clip.x - target.x;
+	auto dy = clip.y - target.y;
+
+	if (abs(dx) < abs(dy)) {
+		int y = (int)sqrt(sqDist - dx * dx);
+		target.x = clip.x;
+		if (source.y - y < 0) {
+			target.y = source.y + y;
+		}
+		else if (source.y + y >= Broodwar->mapHeight() * 32) {
+			target.y = source.y - y;
+		}
+		else {
+			target.y = (target.y >= source.y) ? source.y + y : source.y - y;
+		}
+	}
+	else {
+		int x = (int)sqrt(sqDist - dy * dy);
+		target.y = clip.y;
+
+		if (source.x - x < 0)
+			target.x = source.x + x;		
+		else if (source.x + x >= Broodwar->mapWidth() * 32)
+			target.x = source.x - x;		
+		else 
+			target.x = (target.x >= source.x) ? source.x + x : source.x - x;		
+	}
+	return target;
+}
+
+Position UtilManager::clipToMap(Position source)
+{
+	source.x = clamp(source.x, 0, Broodwar->mapWidth());
+	source.y = clamp(source.y, 0, Broodwar->mapHeight());
+	return source;
 }

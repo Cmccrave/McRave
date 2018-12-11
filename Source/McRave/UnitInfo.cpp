@@ -17,7 +17,7 @@ namespace McRave
 		maxGroundStrength = 0.0;
 		maxAirStrength = 0.0;
 		priority = 0.0;
-		
+
 		percentHealth = 0.0;
 		percentShield = 0.0;
 		percentTotal = 0.0;
@@ -41,7 +41,7 @@ namespace McRave
 		energy = 0;
 
 		killCount = 0;
-		
+
 
 		burrowed = false;
 
@@ -204,7 +204,18 @@ namespace McRave
 		const auto newCommand = [&]() {
 			auto newCommandPosition = (thisUnit->getLastCommand().getType() != command || thisUnit->getLastCommand().getTargetPosition() != here);
 			return newCommandPosition;
-		};		
+		};
+
+
+		// Check if we should overshoot for halting distance
+		if (command == UnitCommandTypes::Move) {
+			double distance = position.getDistance(here);
+			double distExtra = max(distance, unitType.haltDistance() / 256.0);
+			if (here.getDistance(position) < distExtra) {
+				here = position + (position - here) * int(distExtra / distance);
+				here = Util().clipPosition(position, here);
+			}
+		}
 
 		// If this is a new order or new command than what we're requesting, we can issue it
 		if (newOrder() || newCommand()) {
