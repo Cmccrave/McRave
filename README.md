@@ -15,10 +15,11 @@ McRave is a simple AI that can play all 3 races to an extent, but is best at Pro
 - Nathan Roth (Antiga/Iruian) for providing expert analysis of replays and being a strategic advisor.
 - Dan Gant (PurpleWave) for help with learning C++ and good coding practice.
 - John J (jaj22) for help with learning C++ and Broodwar engine mechanics.
-- Hannes Bredberg for helping with optimization of my code and learning more advanced C++ features.
+- Hannes Bredberg (N00byEdge) for helping with optimization of my code and learning more advanced C++ features.
 
 For any questions, email christianmccrave@gmail.com , McRave was started January 3rd 2017 and is developed in C++ using Visual Studio Express 2017, BWAPI 4.2.0, BWEM 1.4.1 and BWEB 1.09.
 
 https://sites.google.com/view/mcrave/
 
 **Copyright 2018 Christian McCrave, all rights reserved.**
+Copyright exception: Fco. Javier Sacido for use in ChimeraBot
