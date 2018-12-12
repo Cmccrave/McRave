@@ -441,7 +441,7 @@ Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area
 Position UtilManager::clipPosition(Position source, Position target)
 {
 	if (target.isValid())
-		return;
+		return target;
 
 	auto sqDist = source.getApproxDistance(target);
 	auto clip = clipToMap(target);

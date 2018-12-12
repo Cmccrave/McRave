@@ -206,13 +206,12 @@ namespace McRave
 			return newCommandPosition;
 		};
 
-
 		// Check if we should overshoot for halting distance
 		if (command == UnitCommandTypes::Move) {
 			double distance = position.getDistance(here);
-			double distExtra = max(distance, unitType.haltDistance() / 256.0);
+			double distExtra = max(distance, double(unitType.haltDistance()) / 256.0);
 			if (here.getDistance(position) < distExtra) {
-				here = position + (position - here) * int(distExtra / distance);
+				here = position - (position - here) * (distExtra / distance);
 				here = Util().clipPosition(position, here);
 			}
 		}

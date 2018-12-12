@@ -47,7 +47,7 @@ namespace McRave
 			}
 
 			if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine)
-				Commands().addCommand(unit.unit(), unit.getPosition(), TechTypes::Spider_Mines, true);			
+				Commands().addCommand(unit.unit(), unit.getPosition(), TechTypes::Spider_Mines, true);
 		}
 
 		// Store nuke dots
@@ -253,9 +253,9 @@ namespace McRave
 				}
 			}
 		}
-		
+
 		if (unit.getDestination().isValid()) {
-			
+
 			auto bestPosition = findViablePosition(unit, scoreFunction);
 			if (bestPosition.isValid()) {
 
@@ -283,7 +283,7 @@ namespace McRave
 
 	bool CommandManager::kite(UnitInfo& unit)
 	{
-		const auto shouldKite = [&]() {			
+		const auto shouldKite = [&]() {
 			if (unit.hasTarget() && unit.getLocalState() == LocalState::Engaging) {
 				auto allyRange = (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
 				auto enemyRange = (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
@@ -337,7 +337,7 @@ namespace McRave
 	{
 		bool defendingExpansion = unit.getDestination().isValid() && !Terrain().isInEnemyTerritory((TilePosition)unit.getDestination());
 		bool closeToDefend = Terrain().getDefendPosition().getDistance(unit.getPosition()) < 640.0 || Terrain().isInAllyTerritory(unit.getTilePosition()) || defendingExpansion || (!unit.getType().isFlyer() && !unit.hasTransport() && !mapBWEM.GetArea(unit.getTilePosition()));
-		
+
 		if (!closeToDefend || unit.getGlobalState() != GlobalState::Retreating)
 			return false;
 
@@ -398,7 +398,7 @@ namespace McRave
 					addCommand(unit.unit(), bestPosition, UnitTypes::None);
 				unit.setDestination(bestPosition);
 				return true;
-			}			
+			}
 		}
 		return false;
 	}
@@ -406,14 +406,21 @@ namespace McRave
 	bool CommandManager::hunt(UnitInfo& unit)
 	{
 		function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
+
 			Position p = Position(w) + Position(4, 4);
+			for (auto &u : unit.getAssignedCargo()) {
+				if (!u->unit()->isLoaded() && u->getPosition().getDistance(p) > 32.0)
+					return 0.0;
+			}
+			
 			double threat = Util().getHighestThreat(w, unit);
 			double distance = (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination()));
 			double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(w))));
 			double grouping = (unit.getType().isFlyer() ? max(0.1, Grids().getAAirCluster(w)) : 1.0 / max(1.0, (Grids().getAGroundCluster(w) - unit.getPriority())));
 			double score = grouping * visited / distance;
+						
 			if (threat == MIN_THREAT || (unit.unit()->isCloaked() && !overlapsEnemyDetection(p)))
-				return score;
+				return score;			
 			return 0.0;
 		};
 
@@ -625,7 +632,7 @@ namespace McRave
 				auto cBotRight = command.pos + Position(48, 48);
 
 				if (checkCorners(cTopLeft, cBotRight))
-					return true;				
+					return true;
 			}
 			if (command.tech == TechTypes::Nuclear_Strike && here.getDistance(command.pos) <= 640) {
 				auto cTopLeft = command.pos - Position(320, 320);

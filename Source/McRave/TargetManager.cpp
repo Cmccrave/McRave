@@ -50,7 +50,7 @@ namespace McRave
 				|| !targetMatters
 
 				// Testing Reavers vs T only shoot workers
-				|| (unit.getType() == UnitTypes::Protoss_Reaver && Players().vT() && !target.getType().isWorker())
+				//|| (unit.getType() == UnitTypes::Protoss_Reaver && Players().vT() && !target.getType().isWorker())
 
 				// DT: Don't attack Vultures
 				|| (unit.getType() == UnitTypes::Protoss_Dark_Templar && target.getType() == UnitTypes::Terran_Vulture)
@@ -185,10 +185,10 @@ namespace McRave
 			return;
 		}
 
-		auto distance = unit.getDistance(unit.getTarget());
-		auto range = unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
-		auto leftover = distance - range;
-		Position direction = (unit.getPosition() - unit.getTarget().getPosition()) * int(leftover / distance);
+		int distance = (int)unit.getDistance(unit.getTarget());
+		int range = unit.getTarget().getType().isFlyer() ? (int)unit.getAirRange() : (int)unit.getGroundRange();
+		int leftover = distance - range;
+		Position direction = (unit.getPosition() - unit.getTarget().getPosition()) * leftover / distance;
 
 		if (distance > range)
 			unit.setEngagePosition(unit.getPosition() - direction);

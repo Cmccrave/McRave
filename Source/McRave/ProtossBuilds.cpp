@@ -68,7 +68,6 @@ namespace McRave
 	}
 
 	void BuildOrderManager::Reaction2GateDefensive() {
-		//currentTransition =	"2GateD";
 		gasLimit =			3 * (com(Protoss_Cybernetics_Core) && s >= 50);
 		getOpening =		vis(Protoss_Dark_Templar) == 0;
 		playPassive	=		vis(Protoss_Dark_Templar) == 0;
@@ -399,6 +398,9 @@ namespace McRave
 				
 		bool addGas = Broodwar->getStartLocations().size() >= 3 ? (s >= 22) : (s >= 24);
 
+		if (enemyBuild == "P2Gate")
+			currentTransition = "Defensive";
+
 		// Openers
 		if (currentOpener == "0Zealot") {
 			zealotLimit = 1;
@@ -463,8 +465,6 @@ namespace McRave
 				itemQueue[Protoss_Assimilator] =			Item((addGas || Strategy().enemyScouted()));
 				itemQueue[Protoss_Robotics_Facility] =		Item(s >= 52);
 			}
-
-
 
 			// TODO: Decide whether to reaver or obs here, reaver for now
 			if (vis(Protoss_Robotics_Facility) > 0 && techList.find(Protoss_Reaver) == techList.end())
@@ -551,6 +551,8 @@ namespace McRave
 				itemQueue[Protoss_Templar_Archives] =	Item(vis(Protoss_Gateway) >= 2);
 			}
 		}
+		else if (currentTransition == "Defensive")
+			Reaction2GateDefensive();
 	}
 
 	void BuildOrderManager::P12Nexus()
