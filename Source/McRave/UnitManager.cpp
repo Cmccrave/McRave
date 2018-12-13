@@ -94,6 +94,9 @@ void UnitManager::updateUnits()
 
 			if (unit.hasTarget() && (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Protoss_Scarab))
 				splashTargets.insert(unit.getTarget().unit());
+
+			if (unit.getType().isBuilding() && !unit.isFlying() && unit.unit()->exists() && !BWEB::Map::isUsed(unit.getTilePosition()))
+				BWEB::Map::addUsed(unit.getTilePosition(), unit.getType().tileWidth(), unit.getType().tileHeight());
 		}
 
 		// Must see a 3x3 grid of Tiles to set a unit to invalid position
@@ -261,13 +264,13 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 		// Setup distance values
 		auto dist = ally.getEngDist();
 		auto widths = (double)ally.getType().tileWidth() * 16.0 + (double)ally.getTarget().getType().tileWidth() * 16.0;
-		auto speed = (ally.hasTransport()) ? ally.getTransport().getType().topSpeed() * 24.0 : (24.0 * ally.getSpeed());
+		auto speed = (ally.hasTransport()) ? ally.getTransport().getSpeed() * 24.0 : (24.0 * ally.getSpeed());
 
 		// Setup true distance
 		auto distance = max(0.0, dist - widths);
 
 		// HACK: Bunch of hardcoded stuff
-		if (ally.getPosition().getDistance(unit.getEngagePosition()) / speed > simulationTime)
+		if (ally.getPosition().getDistance(unit.getTarget().getPosition()) / speed > simulationTime)
 			continue;
 		if ((ally.getType() == UnitTypes::Protoss_Scout || ally.getType() == UnitTypes::Protoss_Corsair) && ally.getShields() < 30)
 			continue;

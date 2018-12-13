@@ -560,6 +560,14 @@ namespace BWEB::Map
 		}
 	}
 
+	void addUsed(const TilePosition t, const int w, const int h)
+	{
+		for (auto x = t.x; x < t.x + w; x++) {
+			for (auto y = t.y; y < t.y + h; y++)
+				usedGrid[x][y] = 1;
+		}
+	}
+
 	void addReserve(const TilePosition t, const int w, const int h)
 	{
 		for (auto x = t.x; x < t.x + w; x++) {

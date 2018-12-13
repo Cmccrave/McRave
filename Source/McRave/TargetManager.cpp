@@ -265,6 +265,7 @@ namespace McRave
 
 		// Otherwise approximate and double
 		else {
+			unit.circlePurple();
 			auto dist = 2.0 * unit.getPosition().getDistance(unit.getEngagePosition());
 			unit.setEngDist(dist);
 		}

@@ -28,11 +28,14 @@ namespace BWEB::Map
 	/// <summary> Removes a section of BWAPI::TilePositions from the BWEB overlap grid. </summary>
 	void removeOverlap(BWAPI::TilePosition tile, int width, int height);
 
-	/// <summary> Add a section of BWAPI::TilePositions to the BWEB overlap grid. </summary>
+	/// <summary> Adds a section of BWAPI::TilePositions to the BWEB overlap grid. </summary>
 	void addOverlap(BWAPI::TilePosition, int width, int height);
 
 	/// <summary> Removes a section of BWAPI::TilePositions from the BWEB used grid. </summary>
 	void removeUsed(BWAPI::TilePosition tile, int width, int height);
+
+	/// <summary> Adds a section of BWAPI::TilePositions to the BWEB used grid. </summary>
+	void addUsed(BWAPI::TilePosition tile, int width, int height);
 
 	/// <summary> Returns true if a section of BWAPI::TilePositions are within BWEBs overlap grid. </summary>
 	bool isOverlapping(BWAPI::TilePosition here, int width = 1, int height = 1, bool ignoreBlocks = false);
