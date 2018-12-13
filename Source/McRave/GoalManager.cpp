@@ -72,7 +72,7 @@ namespace McRave
 			if (Players().vT() || Players().vP())
 				assignPercentToGoal((Position)Terrain().getEnemyExpand(), UnitTypes::Protoss_Dragoon, 0.15);
 			else
-				assignPercentToGoal((Position)Terrain().getEnemyExpand(), UnitTypes::Protoss_Dark_Templar, 0.05);
+				assignNumberToGoal((Position)Terrain().getEnemyExpand(), UnitTypes::Protoss_Dark_Templar, 1);
 		}
 	}
 
@@ -122,7 +122,7 @@ namespace McRave
 
 	void GoalManager::assignPercentToGoal(Position here, UnitType type, double percent)
 	{
-		int count = int(percent * double(Units().getMyTypeCount(UnitTypes::Protoss_Dragoon)));
+		int count = int(percent * double(Units().getMyTypeCount(type)));
 		assignNumberToGoal(here, type, count);
 	}
 }
