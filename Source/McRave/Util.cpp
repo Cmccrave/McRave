@@ -368,6 +368,7 @@ Line UtilManager::parallelLine(Line line1, double distance)
 Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area, Position here)
 {
 	// Setup parameters	
+	int min = unit.getGroundRange();
 	double distBest = DBL_MAX;
 	WalkPosition center = WalkPositions::None;
 	Position bestPosition = Positions::None;
@@ -398,7 +399,8 @@ Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area
 		double dist = p.getDistance((Position)center);
 
 		if (!w.isValid()
-			|| here != Terrain().getDefendPosition() && area && mapBWEM.GetArea(t) != area
+			|| (here != Terrain().getDefendPosition() && area && mapBWEM.GetArea(t) != area)
+			|| (here != Terrain().getDefendPosition() && dist < min)
 			|| unit.getType() == UnitTypes::Protoss_Reaver && Terrain().isDefendNatural() && mapBWEM.GetArea(w) != BWEB::Map::getNaturalArea()
 			|| dist > distBest
 			|| Commands().overlapsCommands(unit.unit(), UnitTypes::None, p, 8)

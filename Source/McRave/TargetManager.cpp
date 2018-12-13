@@ -19,7 +19,7 @@ namespace McRave
 
 			bool targetMatters = (target.getAirDamage() > 0.0 && Units().getGlobalAllyAirStrength() > 0.0)
 								|| (target.getGroundDamage() > 0.0 && Units().getGlobalAllyGroundStrength() > 0.0)
-								|| (target.getType().isDetector() && Units().getMyTypeCount(UnitTypes::Protoss_Dark_Templar) > 0)
+								|| (target.getType().isDetector() && (Units().getMyTypeCount(UnitTypes::Protoss_Dark_Templar) > 0 || Units().getMyTypeCount(UnitTypes::Protoss_Observer) > 0))
 								|| (target.getAirDamage() == 0.0 && target.getGroundDamage() == 0.0);
 
 			// Zealot: Don't attack non threatening workers in our territory
