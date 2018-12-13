@@ -137,7 +137,7 @@ bool CommandManager::special(UnitInfo& unit)
 			auto lowEnergyThreat = unit.getEnergy() < TechTypes::Psionic_Storm.energyCost() && Grids().getEGroundThreat(unit.getWalkPosition()) > 0.0;
 			auto wantArchons = Strategy().getUnitScore(UnitTypes::Protoss_Archon) > Strategy().getUnitScore(UnitTypes::Protoss_High_Templar);
 
-			if (lowEnergyThreat || wantArchons) {
+			if (!Players().vT() && (lowEnergyThreat || wantArchons)) {
 
 				// Try to find a friendly templar who is low energy and is threatened
 				UnitInfo* templar = Util().getClosestUnit(unit, unit.getPlayer(), UnitTypes::Protoss_High_Templar);
