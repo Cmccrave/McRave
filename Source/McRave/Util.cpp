@@ -322,31 +322,52 @@ int UtilManager::chokeWidth(const BWEM::ChokePoint * choke)
 
 Line UtilManager::lineOfBestFit(const BWEM::ChokePoint * choke)
 {
-	auto sumX = 0.0, sumY = 0.0;
-	auto sumXY = 0.0, sumX2 = 0.0;
+	int minX= INT_MAX, maxX = INT_MIN, minY = INT_MAX, maxY = INT_MIN;
+	double sumX = 0, sumY = 0;
+	double sumXY = 0, sumX2 = 0, sumY2 = 0;
 	for (auto geo : choke->Geometry()) {
-		Position p = Position(geo) + Position(4, 4);
+		if (geo.x < minX) minX = geo.x;
+		if (geo.y < minY) minY = geo.y;
+		if (geo.x > maxX) maxX = geo.x;
+		if (geo.y > maxY) maxY = geo.y;
+
+		BWAPI::Position p = BWAPI::Position(geo) + BWAPI::Position(4, 4);
 		sumX += p.x;
 		sumY += p.y;
 		sumXY += p.x * p.y;
 		sumX2 += p.x * p.x;
-		Broodwar->drawBoxMap(Position(geo), Position(geo) + Position(9, 9), Colors::Black);
+		sumY2 += p.y * p.y;
+		BWAPI::Broodwar->drawBoxMap(BWAPI::Position(geo), BWAPI::Position(geo) + BWAPI::Position(9, 9), BWAPI::Colors::Black);
 	}
 	double xMean = sumX / choke->Geometry().size();
 	double yMean = sumY / choke->Geometry().size();
-	double denominator = sumX2 - (sumX * xMean);
-
-	double slope = (sumXY - sumX * yMean) / denominator;
-	double yInt = yMean - slope * xMean;
-
-	//// Tuning for vertical line
-	//if (denominator / choke->Geometry().size() < 150.0) {
-	//	slope = DBL_MAX;
-	//	yInt = 0;
-	//}
-
-	Line newLine(yInt, slope);
-	return newLine;
+	double denominator, slope, yInt;
+	if ((maxY - minY) > (maxX - minX))
+	{
+		denominator = (sumXY - sumY * xMean);
+		// handle vertical line error
+		if (std::fabs(denominator) < 1.0) {
+			slope = 0;
+			yInt = xMean;
+		}
+		else {
+			slope = (sumY2 - sumY * yMean) / denominator;
+			yInt = xMean - slope * yMean;
+		}
+	}
+	else {
+		denominator = sumX2 - sumX * xMean;
+		// handle vertical line error
+		if (std::fabs(denominator) < 1.0) {
+			slope = DBL_MAX;
+			yInt = 0;
+		}
+		else {
+			slope = (sumXY - sumX * yMean) / denominator;
+			yInt = yMean - slope * xMean;
+		}
+	}
+	return Line(yInt, slope);
 }
 
 Line UtilManager::parallelLine(Line line1, double distance)
