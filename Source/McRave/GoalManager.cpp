@@ -68,8 +68,12 @@ namespace McRave
 
 		// Deny enemy expansions
 		// PvT
-		if (Players().vT() && MyStations().getMyStations().size() >= 3 && Terrain().getEnemyExpand().isValid())
-			assignPercentToGoal((Position)Terrain().getEnemyExpand(), UnitTypes::Protoss_Dragoon, 0.15);
+		if (MyStations().getMyStations().size() >= 3 && Terrain().getEnemyExpand().isValid()) {
+			if (Players().vT() || Players().vP())
+				assignPercentToGoal((Position)Terrain().getEnemyExpand(), UnitTypes::Protoss_Dragoon, 0.15);
+			else
+				assignPercentToGoal((Position)Terrain().getEnemyExpand(), UnitTypes::Protoss_Dark_Templar, 0.05);
+		}
 	}
 
 	void GoalManager::updateTerranGoals()

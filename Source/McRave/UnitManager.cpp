@@ -43,8 +43,8 @@ void UnitManager::updateUnits()
 	// PvZ
 	if (Broodwar->self()->getRace() == Races::Protoss) {
 		if (Players().vZ()) {
-			minThreshold = 0.75;
-			maxThreshold = 1.25;
+			minThreshold = 0.50;
+			maxThreshold = 1.00;
 		}
 
 		// PvT

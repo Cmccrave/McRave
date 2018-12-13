@@ -54,9 +54,10 @@ namespace McRave
 
 			if (info.hasResource())
 				info.getResource().setGathererCount(info.getResource().getGathererCount() - 1);
+			if (info.getRole() != Role::None)
+				myRoles[info.getRole()]--;
 
 			myUnits.erase(unit);
-
 		}
 
 		// Enemy unit
