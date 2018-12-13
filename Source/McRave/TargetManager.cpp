@@ -23,7 +23,7 @@ namespace McRave
 								|| (target.getAirDamage() == 0.0 && target.getGroundDamage() == 0.0);
 
 			// Zealot: Don't attack non threatening workers in our territory
-			if ((unit.getType() == UnitTypes::Protoss_Zealot && target.getType().isWorker() && !Units().isThreatening(target))
+			if ((unit.getType() == UnitTypes::Protoss_Zealot && target.getType().isWorker() && !Units().isThreatening(target) && Terrain().isInAllyTerritory(target.getTilePosition()))
 
 				// If target is an egg, larva, scarab or spell
 				|| (target.getType() == UnitTypes::Zerg_Egg || target.getType() == UnitTypes::Zerg_Larva || target.getType() == UnitTypes::Protoss_Scarab || target.getType().isSpell())
