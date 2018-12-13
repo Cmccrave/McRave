@@ -50,9 +50,9 @@ void ScoutManager::updateScoutTargets()
 
 	// If it's a 2gate, scout for an expansion if we found the gates
 	if (Strategy().getEnemyBuild() == "P2Gate") {
-		if (Units().getEnemyCount(UnitTypes::Protoss_Gateway) >= 2)
+/*		if (Units().getEnemyCount(UnitTypes::Protoss_Gateway) >= 2)
 			scoutTargets.insert((Position)Terrain().getEnemyExpand());
-		else if (Units().getEnemyCount(UnitTypes::Protoss_Pylon) == 0 || Strategy().enemyProxy())
+		else*/ if (Units().getEnemyCount(UnitTypes::Protoss_Pylon) == 0 || Strategy().enemyProxy())
 			scoutTargets.insert(mapBWEM.Center());
 	}
 
@@ -89,6 +89,9 @@ void ScoutManager::updateAssignment(UnitInfo& unit)
 		auto w = Util().getClosestUnit(BWEB::Map::getMainPosition(), Broodwar->enemy(), UnitTypes::Protoss_Probe);
 		proxyCheck = (w && !Terrain().getEnemyStartingPosition().isValid() && w->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1);
 	}
+
+	// Temp we don't do 2 scouts for some reason atm
+	proxyCheck = false;
 
 	// If we know a proxy possibly exists, we need a second scout
 	auto foundProxyGates = Strategy().enemyProxy() && Strategy().getEnemyBuild() == "P2Gate" && Units().getEnemyCount(UnitTypes::Protoss_Gateway) > 0;
@@ -154,15 +157,14 @@ void ScoutManager::updateAssignment(UnitInfo& unit)
 			unit.setDestination(Terrain().getEnemyStartingPosition());
 
 		if (unit.getDestination().isValid()) {
-			if (Terrain().foundEnemy()) {
+			UnitInfo* enemy = Util().getClosestThreat(unit);
+			if (enemy && enemy->getPosition().getDistance(unit.getPosition()) < 320.0) {
 				if (Commands().hunt(unit)) {}
 				else if (Commands().kite(unit)) {}
 			}
 			else
-				unit.unit()->move(unit.getDestination());
+				unit.command(UnitCommandTypes::Move, unit.getDestination());
 		}
-
-		Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Green);
 	}
 	else
 	{

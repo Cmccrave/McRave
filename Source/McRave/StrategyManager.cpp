@@ -152,7 +152,7 @@ bool StrategyManager::shouldGetDetection()
 
 	// Ghosts/Vultures
 	if (Units().getEnemyCount(UnitTypes::Terran_Ghost) >= 1 || Units().getEnemyCount(UnitTypes::Terran_Vulture) >= 6)
-		return true;	
+		return true;
 
 	// Lurkers
 	if (Units().getEnemyCount(UnitTypes::Zerg_Lurker) >= 1 || (Units().getEnemyCount(UnitTypes::Zerg_Lair) >= 1 && Units().getEnemyCount(UnitTypes::Zerg_Hydralisk_Den) >= 1 && Units().getEnemyCount(UnitTypes::Zerg_Hatchery) <= 0))
@@ -236,7 +236,7 @@ void StrategyManager::updateEnemyBuild()
 							enemyBuild = "Z3HatchHydra";
 						else if (Units().getEnemyCount(UnitTypes::Zerg_Hatchery) == 2)
 							enemyBuild = "Z2HatchHydra";
-						else if(Units().getEnemyCount(UnitTypes::Zerg_Hatchery) == 1)
+						else if (Units().getEnemyCount(UnitTypes::Zerg_Hatchery) == 1)
 							enemyBuild = "Z1HatchHydra";
 						else if (Units().getEnemyCount(UnitTypes::Zerg_Lair) + Units().getEnemyCount(UnitTypes::Zerg_Hatchery) == 2)
 							enemyBuild = "Z2HatchLurker";
@@ -267,13 +267,15 @@ void StrategyManager::updateEnemyBuild()
 		if (player.getRace() == Races::Protoss) {
 
 			// Detect missing buildings as a potential 2Gate
-			if (Terrain().getEnemyStartingPosition().isValid() && Broodwar->isExplored((TilePosition)Terrain().getEnemyStartingPosition()) && Units().getEnemyCount(UnitTypes::Protoss_Gateway) == 0 && Units().getEnemyCount(UnitTypes::Protoss_Forge) == 0 && Units().getEnemyCount(UnitTypes::Protoss_Assimilator) == 0 && Units().getEnemyCount(UnitTypes::Protoss_Nexus) == 1 && Units().getEnemyCount(UnitTypes::Protoss_Photon_Cannon) == 0) {
-				enemyBuild = "P2Gate";
+			if (Terrain().getEnemyStartingPosition().isValid() && Broodwar->getFrameCount() > 3000 && Broodwar->isExplored((TilePosition)Terrain().getEnemyStartingPosition()) && Units().getEnemyCount(UnitTypes::Protoss_Gateway) == 0 && Units().getEnemyCount(UnitTypes::Protoss_Forge) == 0 && Units().getEnemyCount(UnitTypes::Protoss_Assimilator) == 0 && Units().getEnemyCount(UnitTypes::Protoss_Nexus) == 1 && Units().getEnemyCount(UnitTypes::Protoss_Photon_Cannon) == 0) {
+				
+				// Check 2 corners scouted
+				auto topLeft = TilePosition(Util().clipToMap(Terrain().getEnemyStartingPosition() - Position(160, 160)));				
+				auto botRight = TilePosition(Util().clipToMap(Terrain().getEnemyStartingPosition() + Position(160, 160) + Position(128, 96)));
+				if ((topLeft.isValid() && Grids().lastVisibleFrame(topLeft) > 0) || (botRight.isValid() && Grids().lastVisibleFrame(botRight) > 0))
+					enemyBuild = "P2Gate";
 				//confidentEnemyBuild = true;
 			}
-			else if (enemyBuild == "P2Gate")
-				enemyBuild = "Unknown";
-			
 
 			for (auto &u : Units().getEnemyUnits()) {
 				UnitInfo &unit = u.second;
@@ -352,7 +354,7 @@ void StrategyManager::updateEnemyBuild()
 						enemyBuild = "P2Gate";
 					else if (enemyBuild == "P2Gate")
 						enemyBuild = "Unknown";
-				}				
+				}
 
 				// Temp test for 4Gate
 				//if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) >= 3 && Broodwar->getFrameCount() < 12000 && Units().getSupply() >= 40 && Units().getEnemyCount(UnitTypes::Protoss_Dragoon) >= Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon))
@@ -410,6 +412,8 @@ void StrategyManager::updateEnemyBuild()
 				// FE Detection
 				if (unit.getType().isResourceDepot() && !Terrain().isStartingBase(unit.getTilePosition()))
 					enemyFE = true;
+				if (unit.getType() == UnitTypes::Terran_Bunker && unit.getPosition().getDistance(Terrain().getEnemyStartingPosition()) < unit.getPosition().getDistance(Terrain().getPlayerStartingPosition()))
+					enemyFE = true;
 			}
 
 			if (Units().getSupply() < 60 && ((Units().getEnemyCount(UnitTypes::Terran_Barracks) >= 2 && Units().getEnemyCount(UnitTypes::Terran_Refinery) == 0) || (Units().getEnemyCount(UnitTypes::Terran_Marine) > 5 && Units().getEnemyCount(UnitTypes::Terran_Bunker) <= 0 && Broodwar->getFrameCount() < 6000)))
@@ -423,7 +427,7 @@ void StrategyManager::updateEnemyBuild()
 }
 
 void StrategyManager::updateScoutTargets()
-{	
+{
 
 }
 
@@ -700,7 +704,7 @@ void StrategyManager::updateMadMixScore()
 			allUnits.push_back(Zerg_Devourer);
 		}
 	}
-	
+
 	for (auto &u : Units().getEnemyUnits()) {
 		auto &unit = u.second;
 		auto type = unit.getType();

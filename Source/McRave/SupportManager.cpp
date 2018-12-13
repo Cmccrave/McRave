@@ -73,9 +73,9 @@ namespace McRave {
 
 						// Try to keep the unit alive if it's low or cloaked inside detection
 						if (unit.getPercentShield() <= LOW_SHIELD_PERCENT_LIMIT && threat > 0.0)
-							continue;
+							continue;/*
 						if (unit.unit()->isCloaked() && Commands().overlapsEnemyDetection(p) && threat > 0.0)
-							continue;
+							continue;*/
 
 						// Score this move
 						auto score = 1.0 / (threat * cluster * dist);
@@ -89,7 +89,6 @@ namespace McRave {
 
 			// Move and update commands
 			if (posBest.isValid()) {
-				Broodwar->drawLineMap(unit.getPosition(), posBest, Colors::Green);
 				unit.setEngagePosition(posBest);
 				unit.unit()->move(posBest);
 				Commands().addCommand(unit.unit(), posBest, unit.getType());

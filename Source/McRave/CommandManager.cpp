@@ -212,7 +212,6 @@ namespace McRave
 			if (unit.getDestination().isValid()) {
 				if (!Terrain().isInEnemyTerritory((TilePosition)unit.getDestination())) {
 					Position bestPosition = Util().getConcavePosition(unit, mapBWEM.GetArea(TilePosition(unit.getDestination())));
-
 					if (bestPosition.isValid() && (bestPosition != unit.getPosition() || unit.unit()->getLastCommand().getType() == UnitCommandTypes::None)) {
 						if (unit.unit()->getLastCommand().getTargetPosition() != Position(bestPosition) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
 							unit.unit()->move(Position(bestPosition));
@@ -256,7 +255,7 @@ namespace McRave
 
 		if (unit.getDestination().isValid()) {
 
-			auto bestPosition = findViablePosition(unit, scoreFunction);
+			auto bestPosition = unit.getDestination();// findViablePosition(unit, scoreFunction);
 			if (bestPosition.isValid()) {
 
 				// Draw a path from this unit and from best position to determine if this position is closer or not
@@ -316,7 +315,7 @@ namespace McRave
 				distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids().getDistanceHome(w);
 
 			double threat = Util().getHighestThreat(w, unit);
-			double grouping = (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / max(1.0, (Grids().getAGroundCluster(w) - unit.getPriority())));
+			double grouping = 1.0;// (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / max(1.0, (Grids().getAGroundCluster(w) - unit.getPriority())));
 			double score = grouping / (threat * distance);
 			return score;
 		};
@@ -338,7 +337,7 @@ namespace McRave
 		bool defendingExpansion = unit.getDestination().isValid() && !Terrain().isInEnemyTerritory((TilePosition)unit.getDestination());
 		bool closeToDefend = Terrain().getDefendPosition().getDistance(unit.getPosition()) < 640.0 || Terrain().isInAllyTerritory(unit.getTilePosition()) || defendingExpansion || (!unit.getType().isFlyer() && !unit.hasTransport() && !mapBWEM.GetArea(unit.getTilePosition()));
 
-		if (!closeToDefend || unit.getGlobalState() != GlobalState::Retreating)
+		if (!closeToDefend || unit.getGlobalState() != GlobalState::Retreating || unit.getGlobalState() == GlobalState::Engaging)
 			return false;
 
 		// Probe Cannon surround
@@ -391,7 +390,6 @@ namespace McRave
 				bestPosition = Util().getConcavePosition(unit, nullptr, Terrain().getDefendPosition());
 
 			if (bestPosition.isValid()) {
-				Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Purple);
 				if (unit.getPosition().getDistance(bestPosition) > 4.0)
 					unit.command(UnitCommandTypes::Move, bestPosition);
 				else
@@ -447,7 +445,6 @@ namespace McRave
 		}
 		// Move to the position
 		else if (bestPosition.isValid() && bestPosition != unit.getDestination()) {
-			Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Grey);
 			unit.command(UnitCommandTypes::Move, bestPosition);
 			return true;
 		}
@@ -461,7 +458,7 @@ namespace McRave
 			Position p = Position(w) + Position(4, 4);
 			double distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids().getDistanceHome(w);
 			double threat = Util().getHighestThreat(w, unit);
-			double grouping = (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / max(1.0, (Grids().getAGroundCluster(w) - unit.getPriority())));
+			double grouping = 1.0;//(unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / max(1.0, (Grids().getAGroundCluster(w) - unit.getPriority())));
 			double score = grouping / (threat * distance);
 			return score;
 		};
@@ -473,9 +470,7 @@ namespace McRave
 
 		// If we found a valid position, move to it
 		auto bestPosition = findViablePosition(unit, scoreFunction);
-		unit.circleBlack();
 		if (bestPosition.isValid()) {
-			Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Red);
 			unit.command(UnitCommandTypes::Move, bestPosition);
 			return true;
 		}

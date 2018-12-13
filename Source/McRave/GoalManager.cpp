@@ -110,7 +110,6 @@ namespace McRave
 		for (auto &u : unitByDist) {
 			UnitInfo* unit = u.second;
 			if (count > 0 && !unit->getDestination().isValid()) {
-				Broodwar->drawLineMap(unit->getPosition(), here, Colors::Red);
 				unit->setDestination(here);
 				count --;
 			}

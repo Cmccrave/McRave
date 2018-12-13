@@ -339,11 +339,11 @@ Line UtilManager::lineOfBestFit(const BWEM::ChokePoint * choke)
 	double slope = (sumXY - sumX * yMean) / denominator;
 	double yInt = yMean - slope * xMean;
 
-	// Tuning for vertical line
-	if (denominator / choke->Geometry().size() < 150.0) {
-		slope = DBL_MAX;
-		yInt = 0;
-	}
+	//// Tuning for vertical line
+	//if (denominator / choke->Geometry().size() < 150.0) {
+	//	slope = DBL_MAX;
+	//	yInt = 0;
+	//}
 
 	Line newLine(yInt, slope);
 	return newLine;
@@ -367,8 +367,7 @@ Line UtilManager::parallelLine(Line line1, double distance)
 
 Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area, Position here)
 {
-	// Setup parameters
-	int min = int(unit.getGroundRange());
+	// Setup parameters	
 	double distBest = DBL_MAX;
 	WalkPosition center = WalkPositions::None;
 	Position bestPosition = Positions::None;
@@ -396,12 +395,11 @@ Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area
 	const auto checkbest = [&](WalkPosition w) {
 		TilePosition t(w);
 		Position p = Position(w) + Position(4, 4);
-
-		double dist = p.getDistance(here);
+		double dist = p.getDistance((Position)center);
 
 		if (!w.isValid()
-			|| (here != Terrain().getDefendPosition() && area && mapBWEM.GetArea(t) != area)
-			|| (unit.getType() == UnitTypes::Protoss_Reaver && Terrain().isDefendNatural() && mapBWEM.GetArea(w) != BWEB::Map::getNaturalArea())
+			|| here != Terrain().getDefendPosition() && area && mapBWEM.GetArea(t) != area
+			|| unit.getType() == UnitTypes::Protoss_Reaver && Terrain().isDefendNatural() && mapBWEM.GetArea(w) != BWEB::Map::getNaturalArea()
 			|| dist > distBest
 			|| Commands().overlapsCommands(unit.unit(), UnitTypes::None, p, 8)
 			|| Commands().isInDanger(unit, p)
@@ -416,9 +414,9 @@ Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area
 
 	// Find the center
 	getConcaveCenter();
+	distBest = DBL_MAX;
 
 	// If this is the defending position, grab from a vector we already made
-	// TODO: generate a vector for every choke and store as a map<Choke, vector<Position>>?
 	if (here == Terrain().getDefendPosition()) {
 		auto &positions = unit.getGroundRange() < 64.0 ? Terrain().getMeleeChokePositions() : Terrain().getRangedChokePositions();
 		for (auto &position : positions) {
@@ -466,11 +464,11 @@ Position UtilManager::clipPosition(Position source, Position target)
 		target.y = clip.y;
 
 		if (source.x - x < 0)
-			target.x = source.x + x;		
+			target.x = source.x + x;
 		else if (source.x + x >= Broodwar->mapWidth() * 32)
-			target.x = source.x - x;		
-		else 
-			target.x = (target.x >= source.x) ? source.x + x : source.x - x;		
+			target.x = source.x - x;
+		else
+			target.x = (target.x >= source.x) ? source.x + x : source.x - x;
 	}
 	return target;
 }

@@ -199,7 +199,7 @@ bool WorkerManager::build(UnitInfo& worker)
 		auto mineralIncome = (minWorkers - 1) * 0.045;
 		auto gasIncome = (gasWorkers - 1) * 0.07;
 		auto speed = worker.getType().topSpeed();
-		auto dist = BWEB::Map::getGroundDistance(worker.getPosition(), center);
+		auto dist = mapBWEM.GetArea(worker.getTilePosition()) ? BWEB::Map::getGroundDistance(worker.getPosition(), center) : worker.getPosition().getDistance(Position(worker.getBuildPosition()));
 		auto time = (dist / speed) + 50.0;
 		auto enoughGas = worker.getBuildingType().gasPrice() > 0 ? Broodwar->self()->gas() + int(gasIncome * time) >= worker.getBuildingType().gasPrice() : true;
 		auto enoughMins = worker.getBuildingType().mineralPrice() > 0 ? Broodwar->self()->minerals() + int(mineralIncome * time) >= worker.getBuildingType().mineralPrice() : true;
@@ -315,9 +315,7 @@ bool WorkerManager::gather(UnitInfo& worker)
 
 		// 4) If we are under a threat, try to get away from it
 		else if (Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0) {
-			worker.circleRed();
 			Commands().kite(worker);
-			worker.circlePurple();
 			return true;
 		}
 	}

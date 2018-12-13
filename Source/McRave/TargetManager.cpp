@@ -263,9 +263,9 @@ namespace McRave
 			unit.setEngDist(max(0.0, unit.getPath().getDistance() - range));
 		}
 
-		// Otherwise approximate
+		// Otherwise approximate and double
 		else {
-			auto dist = unit.getPosition().getDistance(unit.getEngagePosition());
+			auto dist = 2.0 * unit.getPosition().getDistance(unit.getEngagePosition());
 			unit.setEngDist(dist);
 		}
 

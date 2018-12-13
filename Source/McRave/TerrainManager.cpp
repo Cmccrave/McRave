@@ -257,12 +257,12 @@ void TerrainManager::findDefendPosition()
 
 void TerrainManager::updateConcavePositions()
 {
-	for (auto tile : meleeChokePositions) {
-		Broodwar->drawCircleMap(Position(tile), 8, Colors::Blue);
-	}
-	for (auto tile : rangedChokePositions) {
-		Broodwar->drawCircleMap(Position(tile), 8, Colors::Blue);
-	}
+	//for (auto tile : meleeChokePositions) {
+	//	Broodwar->drawCircleMap(Position(tile), 8, Colors::Blue);
+	//}
+	//for (auto tile : rangedChokePositions) {
+	//	Broodwar->drawCircleMap(Position(tile), 8, Colors::Blue);
+	//}
 
 	if (!meleeChokePositions.empty() || !rangedChokePositions.empty() || Broodwar->getFrameCount() < 100 || defendPosition == mineralHold)
 		return;
@@ -275,7 +275,11 @@ void TerrainManager::updateConcavePositions()
 	auto perpSlope = -1.0 / line.slope;
 	Position test1, test2;
 
+	int testX1 = Position(choke->Center()).x - 32;
+	int testY1 = line.y(testX1);
 
+	int testX2 = Position(choke->Center()).x + 32;
+	int testY2 = line.y(testX2);
 
 	if (abs(perpSlope) == DBL_MAX) {
 		test1.x = center.x + 64;
@@ -292,21 +296,21 @@ void TerrainManager::updateConcavePositions()
 	}
 
 	else {
-		auto dx = (64.0 / sqrt(1 + pow(perpSlope, 2.0)));
+		auto dx = (128.0 / sqrt(1.0 + pow(perpSlope, 2.0)));
 		auto dy = perpSlope * dx;
 		test1.x = center.x + int(dx);
 		test1.y = center.y + int(dy);
 		test2.x = center.x - int(dx);
 		test2.y = center.y - int(dy);
 	}
-
-	Broodwar->drawLineMap(center, test1, Colors::Red);
-	Broodwar->drawLineMap(center, test2, Colors::Green);
 	
 	auto sign = mapBWEM.GetArea((WalkPosition)test1) == area ? 1.0 : -1.0;
-	auto melee = Util().parallelLine(line, sign * 16.0);
+	auto melee1 = Util().parallelLine(line, sign * 16.0);
+	auto melee2 = Util().parallelLine(line, sign * 32.0);
+	auto melee3 = Util().parallelLine(line, sign * 48.0);
 	auto ranged1 = Util().parallelLine(line, sign * 128.0);
 	auto ranged2 = Util().parallelLine(line, sign * 192.0);
+	auto ranged3 = Util().parallelLine(line, sign * 256.0);
 
 	const auto addPlacements =[&](Line line, double gap, vector<Position>& thisVector) {		
 		if (abs(line.slope) != DBL_MAX) {
@@ -318,7 +322,7 @@ void TerrainManager::updateConcavePositions()
 			while (current.isValid() && xStart < Position(choke->Center()).x + max(128, Util().chokeWidth(choke))) {
 				WalkPosition w(current);
 
-				if (last.getDistance(current) > gap && mapBWEM.GetMiniTile(w).Walkable() && mapBWEM.GetArea(w) == area && current.getDistance(Position(choke->Center())) < 320.0) {
+				if (last.getDistance(current) > gap && mapBWEM.GetMiniTile(w).Walkable() && mapBWEM.GetArea(w) == area && current.getDistance(Position(choke->Center())) < SIM_RADIUS) {
 					thisVector.push_back(Position(w));
 					last = current;
 				}
@@ -349,9 +353,12 @@ void TerrainManager::updateConcavePositions()
 	};
 
 	addPlacements(line, 19.0, meleeChokePositions);
-	addPlacements(melee, 19.0, meleeChokePositions);
+	addPlacements(melee1, 19.0, meleeChokePositions);
+	addPlacements(melee2, 19.0, meleeChokePositions);
+	addPlacements(melee3, 19.0, meleeChokePositions);
 	addPlacements(ranged1, 32.0, rangedChokePositions);
 	addPlacements(ranged2, 32.0, rangedChokePositions);
+	addPlacements(ranged3, 32.0, rangedChokePositions);
 }
 
 void TerrainManager::updateAreas()

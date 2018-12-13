@@ -55,8 +55,8 @@ void UnitManager::updateUnits()
 
 		// PvP
 		if (Players().vP()) {
-			minThreshold = 0.75;
-			maxThreshold = 1.25;
+			minThreshold = 0.50;
+			maxThreshold = 1.00;
 		}
 	}
 	else {
@@ -128,9 +128,6 @@ void UnitManager::updateUnits()
 			else
 				immThreat += unit.getVisibleGroundStrength();
 		}
-
-		if (isThreatening(unit))
-			unit.circleRed();
 	}
 
 	// Update myUnits
@@ -357,7 +354,7 @@ void UnitManager::updateLocalState(UnitInfo& unit)
 		auto invisTarget = unit.getTarget().unit()->exists() && (unit.getTarget().unit()->isCloaked() || unit.getTarget().isBurrowed()) && !unit.getTarget().unit()->isDetected();
 
 		// Testing
-		if (Commands().isInDanger(unit, unit.getEngagePosition()))
+		if (Commands().isInDanger(unit, unit.getPosition()) || (Commands().isInDanger(unit, unit.getEngagePosition()) && unit.getPosition().getDistance(unit.getEngagePosition()) < SIM_RADIUS))
 			unit.setLocalState(LocalState::Retreating);
 
 		// Force engaging

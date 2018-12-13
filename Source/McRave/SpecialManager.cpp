@@ -177,7 +177,6 @@ bool CommandManager::special(UnitInfo& unit)
 			if (!unit.unit()->isBurrowed() && unit.getPosition().getDistance(unit.getDestination()) < 64.0) {
 				if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Burrow)
 					unit.unit()->burrow();
-				Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Green);
 				return true;
 			}
 		}

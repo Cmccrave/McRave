@@ -343,6 +343,9 @@ namespace McRave
 		if (Players().vP() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) < (2 + int(Strategy().getEnemyBuild() == "P4Gate")))
 			needShuttles = false;
 
+		// No shuttles
+		needShuttles = false;
+
 		switch (unit)
 		{
 			// Gateway Units

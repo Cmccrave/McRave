@@ -11,7 +11,7 @@ namespace McRave
 		const string noStats = " 0 0 ";
 		const string myRaceChar{ *Broodwar->self()->getRace().c_str() };
 		const string enemyRaceChar{ *Broodwar->enemy()->getRace().c_str() };
-		const string extension = mapLearning ? myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + Broodwar->mapFileName() + ".txt" : myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName();
+		const string extension = mapLearning ? myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + Broodwar->mapFileName() + ".txt" : myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + ".txt";
 
 		// Write into the write directory 3 tokens at a time (4 if we detect a dash)
 		ofstream config("bwapi-data/write/" + extension);
@@ -82,7 +82,7 @@ namespace McRave
 		const string noStats = " 0 0 ";
 		const string myRaceChar{ *Broodwar->self()->getRace().c_str() };
 		const string enemyRaceChar{ *Broodwar->enemy()->getRace().c_str() };
-		const string extension = mapLearning ? myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + Broodwar->mapFileName() + ".txt" : myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName();
+		const string extension = mapLearning ? myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + Broodwar->mapFileName() + ".txt" : myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + ".txt";
 
 		// Tokens
 		string buffer, token;
@@ -288,7 +288,7 @@ namespace McRave
 	{
 		if (Broodwar->self()->getRace() == Races::Protoss) {
 			if (enemy == Races::Protoss)
-				return build == "P1GateCore" || build == "P2Gate" || build == "P12Nexus";
+				return build == "P1GateCore" || build == "P2Gate" /*|| build == "P12Nexus"*/;
 			if (enemy == Races::Terran)
 				return build == "P1GateCore" || build == "P2Gate" || build == "P12Nexus" || build == "P21Nexus";
 			if (enemy == Races::Zerg)
@@ -321,8 +321,8 @@ namespace McRave
 
 		if (Broodwar->self()->getRace() == Races::Protoss) {
 			if (build == "P1GateCore") {
-				if (opener == "0Zealot")
-					return t;
+				//if (opener == "0Zealot")
+				//	return t;
 				if (opener == "1Zealot")
 					return true;
 				if (opener == "2Zealot")
@@ -330,7 +330,7 @@ namespace McRave
 			}
 
 			if (build == "P2Gate") {
-				if (opener == "Proxy" || opener == "Natural")
+				if (/*opener == "Proxy" || */opener == "Natural")
 					return true;
 				if (opener == "Main")
 					return z;
@@ -343,7 +343,7 @@ namespace McRave
 
 			if (build == "P12Nexus") {
 				if (opener == "Dragoon" || opener == "Zealot")
-					return p || t;
+					return /*p ||*/ t;
 			}
 			if (build == "P21Nexus") {
 				if (opener == "1Gate" || opener == "2Gate")
@@ -384,8 +384,8 @@ namespace McRave
 					return p || z;
 				if (transition == "DoubleExpand")
 					return t;
-				if (transition == "ZealotRush")
-					return true;
+				//if (transition == "ZealotRush")
+				//	return true;
 			}
 
 			if (build == "PFFE") {
@@ -419,7 +419,7 @@ namespace McRave
 		if (techUnit == UnitTypes::Protoss_Dark_Templar)
 			return (Broodwar->self()->completedUnitCount(techUnit) >= 2);
 		if (techUnit == UnitTypes::Protoss_Reaver)
-			return (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Shuttle) >= 1) || (Broodwar->self()->completedUnitCount(techUnit) > 0 && Terrain().isNarrowNatural());
+			return Broodwar->self()->completedUnitCount(techUnit) > 0; //return (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Shuttle) >= 1) || (Broodwar->self()->completedUnitCount(techUnit) > 0 && Terrain().isNarrowNatural());
 		return (Broodwar->self()->visibleUnitCount(techUnit) > 0);
 	}
 
