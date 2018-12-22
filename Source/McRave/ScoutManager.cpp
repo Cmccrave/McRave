@@ -103,7 +103,7 @@ void ScoutManager::updateAssignment(UnitInfo& unit)
 	if (Strategy().getEnemyBuild() == "Z5Pool" && Units().getEnemyCount(UnitTypes::Zerg_Zergling) >= 5)
 		scoutCount = 0;
 
-	if (!BuildOrder().firstReady() || Strategy().getEnemyBuild() == "Unknown") {
+	if (!BuildOrder().firstReady() || !Terrain().getEnemyStartingPosition().isValid()) {
 
 		// If it's a proxy (maybe cannon rush), try to find the unit to kill
 		if ((Strategy().enemyProxy() || proxyCheck) && scoutCount > 1 && scoutAssignments.find(BWEB::Map::getMainPosition()) == scoutAssignments.end()) {

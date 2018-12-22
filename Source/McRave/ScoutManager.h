@@ -28,6 +28,7 @@ namespace McRave
 		vector<Command> commands{ &ScoutManager::search, &ScoutManager::scout, &ScoutManager::hide, &ScoutManager::harass };
 	public:
 		void onFrame();	
+		int getScoutCount() { return scoutCount; }
 	};
 }
 

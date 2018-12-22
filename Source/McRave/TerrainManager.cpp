@@ -303,14 +303,23 @@ void TerrainManager::updateConcavePositions()
 		test2.x = center.x - int(dx);
 		test2.y = center.y - int(dy);
 	}
-	
-	auto sign = mapBWEM.GetArea((WalkPosition)test1) == area ? 1.0 : -1.0;
-	auto melee1 = Util().parallelLine(line, sign * 16.0);
-	auto melee2 = Util().parallelLine(line, sign * 32.0);
-	auto melee3 = Util().parallelLine(line, sign * 48.0);
-	auto ranged1 = Util().parallelLine(line, sign * 128.0);
-	auto ranged2 = Util().parallelLine(line, sign * 192.0);
-	auto ranged3 = Util().parallelLine(line, sign * 256.0);
+
+	//Broodwar->drawLineMap(center, test1, Colors::Red);
+	//Broodwar->drawLineMap(center, test2, Colors::Green);
+
+	auto melee1 = Util().parallelLine(line, 16.0);
+	auto melee2 = Util().parallelLine(line, 32.0);
+	auto melee3 = Util().parallelLine(line, 48.0);
+	auto ranged1 = Util().parallelLine(line, 128.0);
+	auto ranged2 = Util().parallelLine(line, 192.0);
+	auto ranged3 = Util().parallelLine(line, 256.0);
+
+	auto melee4 = Util().parallelLine(line, -16.0);
+	auto melee5 = Util().parallelLine(line, -32.0);
+	auto melee6 = Util().parallelLine(line, -48.0);
+	auto ranged4 = Util().parallelLine(line, -128.0);
+	auto ranged5 = Util().parallelLine(line, -192.0);
+	auto ranged6 = Util().parallelLine(line, -256.0);
 
 	const auto addPlacements =[&](Line line, double gap, vector<Position>& thisVector) {		
 		if (abs(line.slope) != DBL_MAX) {

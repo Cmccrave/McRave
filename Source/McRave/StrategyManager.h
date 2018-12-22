@@ -10,12 +10,12 @@ namespace McRave
 	class StrategyManager
 	{
 		map <UnitType, double> unitScore;
-		bool allyFastExpand = false;
+
 		bool enemyFE = false;
 		bool invis = false;
 		bool rush = false;
 		bool holdChoke = false;
-		bool hideTech = false;
+
 		bool proxy = false;
 		bool gasSteal = false;
 		bool enemyScout = false;
@@ -28,19 +28,22 @@ namespace McRave
 		int inboundScoutFrame;
 		int inboundLingFrame;
 
-		// Testing stuff
-		set <Bullet> myBullets;
-		map <UnitType, double> unitPerformance;
 		bool goonRange = false;			
 		bool vultureSpeed = false;
-		bool shouldHoldChoke();
-		bool shouldHideTech();
-		bool shouldGetDetection();
 
-		bool checkEnemyRush();
-		bool checkEnemyProxy();
+		void checkNeedDetection();
+		void checkEnemyPressure();
+		void checkEnemyProxy();
+		void checkEnemyRush();
+		void checkHoldChoke();
 
-		set<Position> scoutTargets;
+		void updateScoring();
+		void updateSituationalBehaviour();
+		void updateEnemyBuild();
+		void updateMadMixScore();
+		void updateProtossUnitScore(UnitType, int);
+		void updateTerranUnitScore(UnitType, int);
+		//void updateZergUnitScore(UnitType, int);
 
 	public:
 		string getEnemyBuild() { return enemyBuild; }
@@ -55,24 +58,7 @@ namespace McRave
 		bool enemyPressure() { return pressure; }
 		int getPoolFrame() { return poolFrame; }
 			
-
-		// Updating
 		void onFrame();
-		void updateBullets();
-		void updateScoring();
-		void protossStrategy();
-		void terranStrategy();
-		void zergStrategy();
-		void updateSituationalBehaviour();
-		void updateEnemyBuild();
-		void updateScoutTargets();
-
-		void updateMadMixScore();
-
-		void updateProtossUnitScore(UnitType, int);
-		void updateTerranUnitScore(UnitType, int);
-		void updateZergUnitScore(UnitType, int);
-
 		double getUnitScore(UnitType);
 		map <UnitType, double>& getUnitScores() { return unitScore; }
 		UnitType getHighestUnitScore();		

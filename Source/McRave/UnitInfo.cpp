@@ -4,10 +4,6 @@
 #include "TargetManager.h"
 #include "UnitMath.h"
 
-// DEAR GOD PLEASE FUCKING REMOVE THIS WHY DID I DO THIS
-#define Targets TargetSingleton::Instance()
-#define Units UnitSingleton::Instance()
-
 namespace McRave
 {
 	UnitInfo::UnitInfo()
@@ -143,27 +139,27 @@ namespace McRave
 
 	void UnitInfo::updateTarget()
 	{
-		// Update my targets
+		// Update my TargetSingleton::Instance()
 		if (player && player == Broodwar->self()) {
 			if (unitType == UnitTypes::Terran_Vulture_Spider_Mine) {
 				auto mineTarget = unit()->getOrderTarget();
 
-				if (Units.getEnemyUnits().find(mineTarget) != Units.getEnemyUnits().end())
-					target = mineTarget != nullptr ? &Units.getEnemyUnits()[mineTarget] : nullptr;
+				if (UnitSingleton::Instance().getEnemyUnits().find(mineTarget) != UnitSingleton::Instance().getEnemyUnits().end())
+					target = mineTarget != nullptr ? &UnitSingleton::Instance().getEnemyUnits()[mineTarget] : nullptr;
 				else
 					target = nullptr;
 			}
 			else
-				Targets.getTarget(*this);
+				TargetSingleton::Instance().getTarget(*this);
 		}
 
-		// Assume enemy targets
+		// Assume enemy TargetSingleton::Instance()
 		else if (player && player->isEnemy(Broodwar->self())) {
 
-			if (unitType == UnitTypes::Terran_Vulture_Spider_Mine && Units.getMyUnits().find(thisUnit->getOrderTarget()) != Units.getMyUnits().end())
-				target = &Units.getMyUnits()[thisUnit->getOrderTarget()];
-			else if (unitType != UnitTypes::Terran_Vulture_Spider_Mine && thisUnit->getOrderTarget() && Units.getMyUnits().find(thisUnit->getOrderTarget()) != Units.getMyUnits().end())
-				target = &Units.getMyUnits()[thisUnit->getOrderTarget()];
+			if (unitType == UnitTypes::Terran_Vulture_Spider_Mine && UnitSingleton::Instance().getMyUnits().find(thisUnit->getOrderTarget()) != UnitSingleton::Instance().getMyUnits().end())
+				target = &UnitSingleton::Instance().getMyUnits()[thisUnit->getOrderTarget()];
+			else if (unitType != UnitTypes::Terran_Vulture_Spider_Mine && thisUnit->getOrderTarget() && UnitSingleton::Instance().getMyUnits().find(thisUnit->getOrderTarget()) != UnitSingleton::Instance().getMyUnits().end())
+				target = &UnitSingleton::Instance().getMyUnits()[thisUnit->getOrderTarget()];
 			else
 				target = nullptr;
 		}

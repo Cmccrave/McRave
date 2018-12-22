@@ -1,178 +1,70 @@
 #include "McRave.h"
 
-// Information from Jays blog
-//4 pool	2630
-//5 pool	2750
-//6 pool	2920
-//7 pool cutting drones	2990
-//7 pool going to 9 drones	3120
-//8 pool	3160
-//9 pool	3230
+using namespace UnitTypes;
 
 void StrategyManager::onFrame()
 {
-	Display().startClock();
 	updateSituationalBehaviour();
 	updateEnemyBuild();
-	updateBullets();
 	updateScoring();
-	updateScoutTargets();
-	Display().performanceTest(__FUNCTION__);
 }
 
 void StrategyManager::updateSituationalBehaviour()
 {
-	// Reset unit score for toss
-	if (Broodwar->self()->getRace() == Races::Protoss) {
-		for (auto &unit : unitScore)
-			unit.second = 0;
-	}
-
-	// Get strategy based on race
-	if (Broodwar->self()->getRace() == Races::Protoss)
-		protossStrategy();
-	else if (Broodwar->self()->getRace() == Races::Terran)
-		terranStrategy();
-	else if (Broodwar->self()->getRace() == Races::Zerg)
-		zergStrategy();
+	checkNeedDetection();
+	checkEnemyPressure();
+	checkEnemyProxy();
+	checkEnemyRush();
+	checkHoldChoke();
 }
 
-void StrategyManager::protossStrategy()
+void StrategyManager::checkEnemyRush()
 {
-	// Check if it's early enough to run specific strategies
-	if (BuildOrder().isOpener()) {
-		rush = checkEnemyRush();
-		hideTech = shouldHideTech();
-		holdChoke = shouldHoldChoke();
-		proxy = checkEnemyProxy();
-	}
-	else {
-		rush = false;
-		holdChoke = true;
-		enemyFE = false;
-		proxy = false;
-	}
-
-	if (Units().getEnemyCount(UnitTypes::Terran_Command_Center) >= 2 || Units().getEnemyCount(UnitTypes::Zerg_Hatchery) >= 3 || (Units().getEnemyCount(UnitTypes::Zerg_Hatchery) >= 2 && Units().getEnemyCount(UnitTypes::Zerg_Lair) >= 1) || Units().getEnemyCount(UnitTypes::Protoss_Nexus) >= 2)
-		enemyFE = true;
-
-	invis = shouldGetDetection();
+	// Rush builds are immediately aggresive builds
+	rush = Units().getSupply() < 80 && (enemyBuild == "TBBS" || enemyBuild == "P2Gate" || enemyBuild == "Z5Pool");
 }
 
-void StrategyManager::terranStrategy()
+void StrategyManager::checkEnemyPressure()
 {
-	// Check if it's early enough to run specific strategies
-	if (BuildOrder().isOpener()) {
-		rush = checkEnemyRush();
-		hideTech = shouldHideTech();
-		holdChoke = shouldHoldChoke();
-	}
-	else {
-		rush = false;
-		holdChoke = true;
-		allyFastExpand = false;
-		enemyFE = false;
-	}
-
-	invis = shouldGetDetection();
+	// Pressure builds are delayed aggresive builds
+	pressure = (enemyBuild == "P4Gate" || enemyBuild == "Z9Pool" || enemyBuild == "TSparks");
 }
 
-void StrategyManager::zergStrategy()
+void StrategyManager::checkHoldChoke()
 {
-	// Check if it's early enough to run specific strategies
-	if (BuildOrder().isOpener()) {
-		rush = checkEnemyRush();
-		hideTech = shouldHoldChoke();
-		holdChoke = true;
-	}
-	else {
-		rush = false;
-		holdChoke = true;
-		allyFastExpand = false;
-		enemyFE = false;
-	}
-}
-
-bool StrategyManager::checkEnemyRush()
-{
-	if (Units().getSupply() > 80)
-		return false;
-
-	if (enemyBuild == "TBBS"
-		|| enemyBuild == "P2Gate"
-		|| enemyBuild == "Z5Pool"
-		|| enemyBuild == "Z9Pool")
-		return true;
-	return false;
-}
-
-bool StrategyManager::shouldHoldChoke()
-{
-	if (BuildOrder().isFastExpand())
-		return true;
-
-	if (Broodwar->self()->getRace() == Races::Zerg)
-		return (rush && Units().getSupply() >= 36);
-
-	if (Units().getGlobalEnemyGroundStrength() > Units().getGlobalAllyGroundStrength())
-		return false;
-
-	if (BuildOrder().isWallNat()
-		|| hideTech
+	holdChoke = BuildOrder().isFastExpand()
+		|| Units().getGlobalAllyGroundStrength() > Units().getGlobalEnemyGroundStrength()
+		|| BuildOrder().isWallNat()
+		|| BuildOrder().isHideTech()
 		|| Units().getSupply() > 60
-		|| Players().vT())
-		return true;
-	return false;
+		|| Players().vT();
 }
 
-bool StrategyManager::shouldHideTech()
-{
-	if (BuildOrder().getCurrentBuild() == "PDTExpand" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Templar_Archives) == 0)
-		return true;
-	return false;
-}
-
-bool StrategyManager::shouldGetDetection()
+void StrategyManager::checkNeedDetection()
 {
 	if (Broodwar->self()->getRace() == Races::Protoss) {
-		if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) > 0)
-			return false;
+		if (Broodwar->self()->completedUnitCount(Protoss_Observer) > 0)
+			invis = false;
 	}
 	else if (Broodwar->self()->getRace() == Races::Terran) {
-		if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Comsat_Station) > 0)
-			return false;
-
-		if (Broodwar->self()->getRace() == Races::Terran && (Units().getEnemyCount(UnitTypes::Zerg_Hydralisk) > 0 || Units().getEnemyCount(UnitTypes::Zerg_Hydralisk_Den) > 0))
-			return true;
+		if (Broodwar->self()->completedUnitCount(Terran_Comsat_Station) > 0)
+			invis = false;
+		else if (Units().getEnemyCount(Zerg_Hydralisk) > 0 || Units().getEnemyCount(Zerg_Hydralisk_Den) > 0)
+			invis = true;
 	}
 
-	// DTs
-	if (Units().getEnemyCount(UnitTypes::Protoss_Dark_Templar) >= 1 || Units().getEnemyCount(UnitTypes::Protoss_Citadel_of_Adun) >= 1 || Units().getEnemyCount(UnitTypes::Protoss_Templar_Archives) >= 1)
-		return true;
-
-	// Ghosts/Vultures
-	if (Units().getEnemyCount(UnitTypes::Terran_Ghost) >= 1 || Units().getEnemyCount(UnitTypes::Terran_Vulture) >= 6)
-		return true;
-
-	// Lurkers
-	if (Units().getEnemyCount(UnitTypes::Zerg_Lurker) >= 1 || (Units().getEnemyCount(UnitTypes::Zerg_Lair) >= 1 && Units().getEnemyCount(UnitTypes::Zerg_Hydralisk_Den) >= 1 && Units().getEnemyCount(UnitTypes::Zerg_Hatchery) <= 0))
-		return true;
-
-	if (enemyBuild == "Z1HatchLurker" || enemyBuild == "Z2HatchLurker" || enemyBuild == "P1GateDT")
-		return true;
-
-	return false;
+	// DTs, Vultures, Lurkers
+	invis = (Units().getEnemyCount(Protoss_Dark_Templar) >= 1 || Units().getEnemyCount(Protoss_Citadel_of_Adun) >= 1 || Units().getEnemyCount(Protoss_Templar_Archives) >= 1)
+		|| (enemyBuild == "P1GateDT")
+		|| (Units().getEnemyCount(Terran_Ghost) >= 1 || Units().getEnemyCount(Terran_Vulture) >= 6)
+		|| (Units().getEnemyCount(Zerg_Lurker) >= 1 || (Units().getEnemyCount(Zerg_Lair) >= 1 && Units().getEnemyCount(Zerg_Hydralisk_Den) >= 1 && Units().getEnemyCount(Zerg_Hatchery) <= 0))
+		|| (enemyBuild == "Z1HatchLurker" || enemyBuild == "Z2HatchLurker" || enemyBuild == "P1GateDT");
 }
 
-bool StrategyManager::checkEnemyProxy()
+void StrategyManager::checkEnemyProxy()
 {
-	if (Units().getSupply() > 60)
-		return false;
-	else if (enemyBuild == "PCannonRush" || enemyBuild == "TBunkerRush")
-		return true;
-	else if (proxy)
-		return true;
-	return false;
+	// Proxy builds are built closer to me than the enemy
+	proxy = Units().getSupply() < 80 && (enemyBuild == "PCannonRush" || enemyBuild == "TBunkerRush");
 }
 
 void StrategyManager::updateEnemyBuild()
@@ -188,11 +80,11 @@ void StrategyManager::updateEnemyBuild()
 		if (player.getRace() == Races::Zerg) {
 
 			// 5 Hatch build detection
-			if (MyStations().getEnemyStations().size() >= 3 || (Units().getEnemyCount(UnitTypes::Zerg_Hatchery) + Units().getEnemyCount(UnitTypes::Zerg_Lair) >= 4 && Units().getEnemyCount(UnitTypes::Zerg_Drone) >= 14))
+			if (MyStations().getEnemyStations().size() >= 3 || (Units().getEnemyCount(Zerg_Hatchery) + Units().getEnemyCount(Zerg_Lair) >= 4 && Units().getEnemyCount(Zerg_Drone) >= 14))
 				enemyBuild = "Z5Hatch";
 
 			// Zergling frame
-			if (lingFrame == 0 && Units().getEnemyCount(UnitTypes::Zerg_Zergling) >= 6) {
+			if (lingFrame == 0 && Units().getEnemyCount(Zerg_Zergling) >= 6) {
 				lingFrame = Broodwar->getFrameCount();
 				if (!Terrain().getEnemyStartingPosition().isValid())
 					rush = true;
@@ -210,19 +102,19 @@ void StrategyManager::updateEnemyBuild()
 				}
 
 				// Zergling build detection and pool timing
-				if (unit.getType() == UnitTypes::Zerg_Spawning_Pool) {
+				if (unit.getType() == Zerg_Spawning_Pool) {
 
 					if (poolFrame == 0 && unit.unit()->exists())
 						poolFrame = Broodwar->getFrameCount() + int(double(unit.getType().buildTime()) * (double(unit.getType().maxHitPoints() - unit.unit()->getHitPoints()) / double(unit.getType().maxHitPoints())));
 
-					if (poolFrame > 0 && Units().getEnemyCount(UnitTypes::Zerg_Spire) == 0 && Units().getEnemyCount(UnitTypes::Zerg_Hydralisk_Den) == 0 && Units().getEnemyCount(UnitTypes::Zerg_Lair) == 0) {
+					if (poolFrame > 0 && Units().getEnemyCount(Zerg_Spire) == 0 && Units().getEnemyCount(Zerg_Hydralisk_Den) == 0 && Units().getEnemyCount(Zerg_Lair) == 0) {
 						if (enemyGas <= 0 && ((poolFrame < 2500 && poolFrame > 0) || (lingFrame < 3000 && lingFrame > 0)))
 							enemyBuild = "Z5Pool";
-						else if (Units().getEnemyCount(UnitTypes::Zerg_Hatchery) == 1 && enemyGas < 148 && enemyGas >= 50 && Units().getEnemyCount(UnitTypes::Zerg_Zergling) >= 8)
+						else if (Units().getEnemyCount(Zerg_Hatchery) == 1 && enemyGas < 148 && enemyGas >= 50 && Units().getEnemyCount(Zerg_Zergling) >= 8)
 							enemyBuild = "Z9Pool";
-						else if (Units().getEnemyCount(UnitTypes::Zerg_Hatchery) >= 1 && Units().getEnemyCount(UnitTypes::Zerg_Drone) <= 11 && Units().getEnemyCount(UnitTypes::Zerg_Zergling) >= 8)
+						else if (Units().getEnemyCount(Zerg_Hatchery) >= 1 && Units().getEnemyCount(Zerg_Drone) <= 11 && Units().getEnemyCount(Zerg_Zergling) >= 8)
 							enemyBuild = "Z9Pool";
-						else if (Units().getEnemyCount(UnitTypes::Zerg_Hatchery) == 3 && enemyGas < 148 && enemyGas >= 100)
+						else if (Units().getEnemyCount(Zerg_Hatchery) == 3 && enemyGas < 148 && enemyGas >= 100)
 							enemyBuild = "Z3HatchLing";
 						else
 							enemyBuild = "Unknown";
@@ -230,19 +122,19 @@ void StrategyManager::updateEnemyBuild()
 				}
 
 				// Hydralisk/Lurker build detection
-				else if (unit.getType() == UnitTypes::Zerg_Hydralisk_Den) {
-					if (Units().getEnemyCount(UnitTypes::Zerg_Spire) == 0) {
-						if (Units().getEnemyCount(UnitTypes::Zerg_Hatchery) == 3)
+				else if (unit.getType() == Zerg_Hydralisk_Den) {
+					if (Units().getEnemyCount(Zerg_Spire) == 0) {
+						if (Units().getEnemyCount(Zerg_Hatchery) == 3)
 							enemyBuild = "Z3HatchHydra";
-						else if (Units().getEnemyCount(UnitTypes::Zerg_Hatchery) == 2)
+						else if (Units().getEnemyCount(Zerg_Hatchery) == 2)
 							enemyBuild = "Z2HatchHydra";
-						else if (Units().getEnemyCount(UnitTypes::Zerg_Hatchery) == 1)
+						else if (Units().getEnemyCount(Zerg_Hatchery) == 1)
 							enemyBuild = "Z1HatchHydra";
-						else if (Units().getEnemyCount(UnitTypes::Zerg_Lair) + Units().getEnemyCount(UnitTypes::Zerg_Hatchery) == 2)
+						else if (Units().getEnemyCount(Zerg_Lair) + Units().getEnemyCount(Zerg_Hatchery) == 2)
 							enemyBuild = "Z2HatchLurker";
-						else if (Units().getEnemyCount(UnitTypes::Zerg_Lair) == 1 && Units().getEnemyCount(UnitTypes::Zerg_Hatchery) == 0)
+						else if (Units().getEnemyCount(Zerg_Lair) == 1 && Units().getEnemyCount(Zerg_Hatchery) == 0)
 							enemyBuild = "Z1HatchLurker";
-						else if (Units().getEnemyCount(UnitTypes::Zerg_Hatchery) >= 4)
+						else if (Units().getEnemyCount(Zerg_Hatchery) >= 4)
 							enemyBuild = "Z5Hatch";
 					}
 					else
@@ -250,14 +142,14 @@ void StrategyManager::updateEnemyBuild()
 				}
 
 				// Mutalisk build detection
-				else if (unit.getType() == UnitTypes::Zerg_Spire || unit.getType() == UnitTypes::Zerg_Lair) {
-					if (Units().getEnemyCount(UnitTypes::Zerg_Hydralisk_Den) == 0) {
-						if (Units().getEnemyCount(UnitTypes::Zerg_Lair) + Units().getEnemyCount(UnitTypes::Zerg_Hatchery) == 3 && Units().getEnemyCount(UnitTypes::Zerg_Drone) < 14)
+				else if (unit.getType() == Zerg_Spire || unit.getType() == Zerg_Lair) {
+					if (Units().getEnemyCount(Zerg_Hydralisk_Den) == 0) {
+						if (Units().getEnemyCount(Zerg_Lair) + Units().getEnemyCount(Zerg_Hatchery) == 3 && Units().getEnemyCount(Zerg_Drone) < 14)
 							enemyBuild = "Z3HatchMuta";
-						else if (Units().getEnemyCount(UnitTypes::Zerg_Lair) + Units().getEnemyCount(UnitTypes::Zerg_Hatchery) == 2)
+						else if (Units().getEnemyCount(Zerg_Lair) + Units().getEnemyCount(Zerg_Hatchery) == 2)
 							enemyBuild = "Z2HatchMuta";
 					}
-					else if (Units().getEnemyCount(UnitTypes::Zerg_Hatchery) >= 4)
+					else if (Units().getEnemyCount(Zerg_Hatchery) >= 4)
 						enemyBuild = "Z5Hatch";
 					else
 						enemyBuild = "Unknown";
@@ -267,14 +159,13 @@ void StrategyManager::updateEnemyBuild()
 		if (player.getRace() == Races::Protoss) {
 
 			// Detect missing buildings as a potential 2Gate
-			if (Terrain().getEnemyStartingPosition().isValid() && Broodwar->getFrameCount() > 3000 && Broodwar->isExplored((TilePosition)Terrain().getEnemyStartingPosition()) && Units().getEnemyCount(UnitTypes::Protoss_Gateway) == 0 && Units().getEnemyCount(UnitTypes::Protoss_Forge) == 0 && Units().getEnemyCount(UnitTypes::Protoss_Assimilator) == 0 && Units().getEnemyCount(UnitTypes::Protoss_Nexus) == 1 && Units().getEnemyCount(UnitTypes::Protoss_Photon_Cannon) == 0) {
-				
+			if (Terrain().getEnemyStartingPosition().isValid() && Broodwar->getFrameCount() > 3000 && Broodwar->isExplored((TilePosition)Terrain().getEnemyStartingPosition()) && Units().getEnemyCount(Protoss_Gateway) == 0 && Units().getEnemyCount(Protoss_Forge) == 0 && Units().getEnemyCount(Protoss_Assimilator) == 0 && Units().getEnemyCount(Protoss_Nexus) == 1 && Units().getEnemyCount(Protoss_Photon_Cannon) == 0 && Units().getEnemyCount(Protoss_Pylon) == 0) {
+
 				// Check 2 corners scouted
-				auto topLeft = TilePosition(Util().clipToMap(Terrain().getEnemyStartingPosition() - Position(160, 160)));				
+				auto topLeft = TilePosition(Util().clipToMap(Terrain().getEnemyStartingPosition() - Position(160, 160)));
 				auto botRight = TilePosition(Util().clipToMap(Terrain().getEnemyStartingPosition() + Position(160, 160) + Position(128, 96)));
 				if ((topLeft.isValid() && Grids().lastVisibleFrame(topLeft) > 0) || (botRight.isValid() && Grids().lastVisibleFrame(botRight) > 0))
 					enemyBuild = "P2Gate";
-				//confidentEnemyBuild = true;
 			}
 
 			for (auto &u : Units().getEnemyUnits()) {
@@ -296,19 +187,15 @@ void StrategyManager::updateEnemyBuild()
 				}
 
 				// PCannonRush
-				if (unit.getType() == UnitTypes::Protoss_Forge) {
-					if (unit.getPosition().getDistance(Terrain().getEnemyStartingPosition()) < 320.0 && Units().getEnemyCount(UnitTypes::Protoss_Gateway) == 0) {
+				if (unit.getType() == Protoss_Forge) {
+					if (unit.getPosition().getDistance(Terrain().getEnemyStartingPosition()) < 320.0 && Units().getEnemyCount(Protoss_Gateway) == 0)
 						enemyBuild = "PCannonRush";
-						proxy = true;
-					}
-					else if (enemyBuild == "PCannonRush") {
+					else if (enemyBuild == "PCannonRush")
 						enemyBuild = "Unknown";
-						proxy = false;
-					}
 				}
 
 				// PFFE
-				if (unit.getType() == UnitTypes::Protoss_Photon_Cannon && Units().getEnemyCount(UnitTypes::Protoss_Robotics_Facility) == 0) {
+				if (unit.getType() == Protoss_Photon_Cannon && Units().getEnemyCount(Protoss_Robotics_Facility) == 0) {
 					if (unit.getPosition().getDistance((Position)Terrain().getEnemyNatural()) < 320.0)
 						enemyBuild = "PFFE";
 					else if (enemyBuild == "PFFE")
@@ -316,58 +203,54 @@ void StrategyManager::updateEnemyBuild()
 				}
 
 				// P2GateExpand
-				if (unit.getType() == UnitTypes::Protoss_Nexus) {
-					if (!Terrain().isStartingBase(unit.getTilePosition()) && Units().getEnemyCount(UnitTypes::Protoss_Gateway) >= 2) {
+				if (unit.getType() == Protoss_Nexus) {
+					if (!Terrain().isStartingBase(unit.getTilePosition()) && Units().getEnemyCount(Protoss_Gateway) >= 2)
 						enemyBuild = "P2GateExpand";
-					}
 				}
 
 				// Proxy Builds
-				if (unit.getType() == UnitTypes::Protoss_Gateway || unit.getType() == UnitTypes::Protoss_Pylon) {
+				if (unit.getType() == Protoss_Gateway || unit.getType() == Protoss_Pylon) {
 					if (Terrain().isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(mapBWEM.Center()) < 1280.0 || (BWEB::Map::getNaturalChoke() && unit.getPosition().getDistance((Position)BWEB::Map::getNaturalChoke()->Center()) < 480.0)) {
 						proxy = true;
 
-						if (Units().getEnemyCount(UnitTypes::Protoss_Gateway) >= 2)
+						if (Units().getEnemyCount(Protoss_Gateway) >= 2)
 							enemyBuild = "P2Gate";
 					}
 				}
 
 				// P1GateCore
-				if (unit.getType() == UnitTypes::Protoss_Cybernetics_Core) {
+				if (unit.getType() == Protoss_Cybernetics_Core) {
 					if (unit.unit()->isUpgrading())
 						goonRange = true;
 
-					if (Units().getEnemyCount(UnitTypes::Protoss_Robotics_Facility) >= 1 && Units().getEnemyCount(UnitTypes::Protoss_Gateway) <= 1)
+					if (Units().getEnemyCount(Protoss_Robotics_Facility) >= 1 && Units().getEnemyCount(Protoss_Gateway) <= 1)
 						enemyBuild = "P1GateRobo";
-					else if (Units().getEnemyCount(UnitTypes::Protoss_Gateway) >= 4) {
+					else if (Units().getEnemyCount(Protoss_Gateway) >= 4)
 						enemyBuild = "P4Gate";
-						pressure = true;
-					}
-					else if (Units().getEnemyCount(UnitTypes::Protoss_Citadel_of_Adun) >= 1 || Units().getEnemyCount(UnitTypes::Protoss_Templar_Archives) >= 1 || (!goonRange && Units().getEnemyCount(UnitTypes::Protoss_Dragoon) < 2 && Units().getSupply() > 80))
+					else if (Units().getEnemyCount(Protoss_Citadel_of_Adun) >= 1 || Units().getEnemyCount(Protoss_Templar_Archives) >= 1 || (!goonRange && Units().getEnemyCount(Protoss_Dragoon) < 2 && Units().getSupply() > 80))
 						enemyBuild = "P1GateDT";
 					else
 						enemyBuild = "Unknown";
 				}
 
-				if (unit.getType() == UnitTypes::Protoss_Gateway) {
-					if (Units().getEnemyCount(UnitTypes::Protoss_Gateway) >= 2 && Units().getEnemyCount(UnitTypes::Protoss_Nexus) <= 1 && Units().getEnemyCount(UnitTypes::Protoss_Assimilator) <= 0 && Units().getEnemyCount(UnitTypes::Protoss_Cybernetics_Core) <= 0 && Units().getEnemyCount(UnitTypes::Protoss_Dragoon) <= 0)
+				if (unit.getType() == Protoss_Gateway) {
+					if (Units().getEnemyCount(Protoss_Gateway) >= 2 && Units().getEnemyCount(Protoss_Nexus) <= 1 && Units().getEnemyCount(Protoss_Assimilator) <= 0 && Units().getEnemyCount(Protoss_Cybernetics_Core) <= 0 && Units().getEnemyCount(Protoss_Dragoon) <= 0)
 						enemyBuild = "P2Gate";
 					else if (enemyBuild == "P2Gate")
 						enemyBuild = "Unknown";
 				}
 
-				// Temp test for 4Gate
-				//if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) >= 3 && Broodwar->getFrameCount() < 12000 && Units().getSupply() >= 40 && Units().getEnemyCount(UnitTypes::Protoss_Dragoon) >= Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon))
-					//enemyBuild = "P4Gate";
+				// Pressure checking
+				if (Broodwar->self()->visibleUnitCount(Protoss_Gateway) >= 3)
+					pressure = true;
 
 				// Proxy Detection
-				if (unit.getType() == UnitTypes::Protoss_Pylon && unit.getPosition().getDistance(Terrain().getPlayerStartingPosition()) < 960.0)
+				if (unit.getType() == Protoss_Pylon && unit.getPosition().getDistance(Terrain().getPlayerStartingPosition()) < 960.0)
 					proxy = true;
 
 				// FE Detection
-				if (unit.getType().isResourceDepot() && !Terrain().isStartingBase(unit.getTilePosition())) {
-					enemyFE = true;
-				}
+				if (unit.getType().isResourceDepot() && !Terrain().isStartingBase(unit.getTilePosition()))
+					enemyFE = true;				
 			}
 		}
 		if (player.getRace() == Races::Terran) {
@@ -383,28 +266,22 @@ void StrategyManager::updateEnemyBuild()
 				}
 
 				// TSiegeExpand
-				if ((unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode && Units().getEnemyCount(UnitTypes::Terran_Vulture) == 0) || (unit.getType().isResourceDepot() && !Terrain().isStartingBase(unit.getTilePosition()) && Units().getEnemyCount(UnitTypes::Terran_Machine_Shop) > 0))
+				if ((unit.getType() == Terran_Siege_Tank_Siege_Mode && Units().getEnemyCount(Terran_Vulture) == 0) || (unit.getType().isResourceDepot() && !Terrain().isStartingBase(unit.getTilePosition()) && Units().getEnemyCount(Terran_Machine_Shop) > 0))
 					enemyBuild = "TSiegeExpand";
 
 				// Barracks Builds
-				if (unit.getType() == UnitTypes::Terran_Barracks) {
+				if (unit.getType() == Terran_Barracks) {
 
-					if (Terrain().isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(mapBWEM.Center()) < 1280.0 || (BWEB::Map::getNaturalChoke() && unit.getPosition().getDistance((Position)BWEB::Map::getNaturalChoke()->Center()) < 320)) {
+					if (Terrain().isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(mapBWEM.Center()) < 1280.0 || (BWEB::Map::getNaturalChoke() && unit.getPosition().getDistance((Position)BWEB::Map::getNaturalChoke()->Center()) < 320))
 						enemyBuild = "TBBS";
-						proxy = true;
-					}
-					else if (Units().getEnemyCount(UnitTypes::Terran_Academy) >= 1 && Units().getEnemyCount(UnitTypes::Terran_Engineering_Bay) >= 1) {
+					else if (Units().getEnemyCount(Terran_Academy) >= 1 && Units().getEnemyCount(Terran_Engineering_Bay) >= 1)
 						enemyBuild = "TSparks";
-						pressure = true;
-					}
-					else {
+					else 
 						enemyBuild = "Unknown";
-						proxy = false;
-					}
 				}
 
 				// Factory Research
-				if (unit.getType() == UnitTypes::Terran_Machine_Shop) {
+				if (unit.getType() == Terran_Machine_Shop) {
 					if (unit.unit()->exists() && unit.unit()->isUpgrading())
 						vultureSpeed = true;
 				}
@@ -412,13 +289,13 @@ void StrategyManager::updateEnemyBuild()
 				// FE Detection
 				if (unit.getType().isResourceDepot() && !Terrain().isStartingBase(unit.getTilePosition()))
 					enemyFE = true;
-				if (unit.getType() == UnitTypes::Terran_Bunker && unit.getPosition().getDistance(Terrain().getEnemyStartingPosition()) < unit.getPosition().getDistance(Terrain().getPlayerStartingPosition()))
+				if (unit.getType() == Terran_Bunker && unit.getPosition().getDistance(Terrain().getEnemyStartingPosition()) < unit.getPosition().getDistance(Terrain().getPlayerStartingPosition()))
 					enemyFE = true;
 			}
 
-			if (Units().getSupply() < 60 && ((Units().getEnemyCount(UnitTypes::Terran_Barracks) >= 2 && Units().getEnemyCount(UnitTypes::Terran_Refinery) == 0) || (Units().getEnemyCount(UnitTypes::Terran_Marine) > 5 && Units().getEnemyCount(UnitTypes::Terran_Bunker) <= 0 && Broodwar->getFrameCount() < 6000)))
+			if (Units().getSupply() < 60 && ((Units().getEnemyCount(Terran_Barracks) >= 2 && Units().getEnemyCount(Terran_Refinery) == 0) || (Units().getEnemyCount(Terran_Marine) > 5 && Units().getEnemyCount(Terran_Bunker) <= 0 && Broodwar->getFrameCount() < 6000)))
 				enemyBuild = "TBBS";
-			if ((Units().getEnemyCount(UnitTypes::Terran_Vulture_Spider_Mine) > 0 && Broodwar->getFrameCount() < 9000) || (Units().getEnemyCount(UnitTypes::Terran_Factory) >= 2 && vultureSpeed)) {
+			if ((Units().getEnemyCount(Terran_Vulture_Spider_Mine) > 0 && Broodwar->getFrameCount() < 9000) || (Units().getEnemyCount(Terran_Factory) >= 2 && vultureSpeed)) {
 				enemyBuild = "T3Fact";
 				pressure = true;
 			}
@@ -426,18 +303,14 @@ void StrategyManager::updateEnemyBuild()
 	}
 }
 
-void StrategyManager::updateScoutTargets()
-{
-
-}
-
-void StrategyManager::updateBullets()
-{
-
-}
-
 void StrategyManager::updateScoring()
 {
+	// Reset unit score for toss
+	if (Broodwar->self()->getRace() == Races::Protoss) {
+		for (auto &unit : unitScore)
+			unit.second = 0;
+	}
+
 	// Unit score based off enemy composition	
 	for (auto &t : Units().getEnemyComposition()) {
 		if (t.first.isBuilding())
@@ -453,7 +326,7 @@ void StrategyManager::updateScoring()
 		updateMadMixScore();
 
 	if (Broodwar->self()->getRace() == Races::Terran)
-		unitScore[UnitTypes::Terran_Medic] = unitScore[UnitTypes::Terran_Marine];
+		unitScore[Terran_Medic] = unitScore[Terran_Marine];
 
 	if (Broodwar->self()->getRace() == Races::Protoss) {
 
@@ -461,16 +334,16 @@ void StrategyManager::updateScoring()
 			t.second = log(t.second);
 		}
 
-		unitScore[UnitTypes::Protoss_Shuttle] = getUnitScore(UnitTypes::Protoss_Reaver);
+		unitScore[Protoss_Shuttle] = getUnitScore(Protoss_Reaver);
 
 		if (Broodwar->mapFileName().find("BlueStorm") != string::npos)
-			unitScore[UnitTypes::Protoss_Carrier] = unitScore[UnitTypes::Protoss_Arbiter];
+			unitScore[Protoss_Carrier] = unitScore[Protoss_Arbiter];
 
-		if (Players().vP() && Broodwar->getFrameCount() >= 20000 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) > 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Templar_Archives) > 0) {
-			unitScore[UnitTypes::Protoss_Zealot] = unitScore[UnitTypes::Protoss_Dragoon];
-			unitScore[UnitTypes::Protoss_Archon] = unitScore[UnitTypes::Protoss_Dragoon];
-			unitScore[UnitTypes::Protoss_High_Templar] += unitScore[UnitTypes::Protoss_Dragoon];
-			unitScore[UnitTypes::Protoss_Dragoon] = 0.0;
+		if (Players().vP() && Broodwar->getFrameCount() >= 20000 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) > 0 && Broodwar->self()->completedUnitCount(Protoss_Templar_Archives) > 0) {
+			unitScore[Protoss_Zealot] = unitScore[Protoss_Dragoon];
+			unitScore[Protoss_Archon] = unitScore[Protoss_Dragoon];
+			unitScore[Protoss_High_Templar] += unitScore[Protoss_Dragoon];
+			unitScore[Protoss_Dragoon] = 0.0;
 		}
 	}
 }
@@ -486,21 +359,20 @@ double StrategyManager::getUnitScore(UnitType unit)
 UnitType StrategyManager::getHighestUnitScore()
 {
 	double best = 0.0;
-	UnitType bestType = UnitTypes::None;
+	UnitType bestType = None;
 	for (auto &unit : unitScore) {
 		if (BuildOrder().isUnitUnlocked(unit.first) && unit.second > best) {
 			best = unit.second, bestType = unit.first;
 		}
 	}
 
-	if (bestType == UnitTypes::None && Broodwar->self()->getRace() == Races::Zerg)
-		return UnitTypes::Zerg_Drone;
+	if (bestType == None && Broodwar->self()->getRace() == Races::Zerg)
+		return Zerg_Drone;
 	return bestType;
 }
 
 void StrategyManager::updateProtossUnitScore(UnitType unit, int cnt)
 {
-	using namespace UnitTypes;
 	double size = double(cnt) * double(unit.supplyRequired());
 
 	auto const vis = [&](UnitType t) {
@@ -666,10 +538,10 @@ void StrategyManager::updateTerranUnitScore(UnitType unit, int count)
 	//	dummy.setSpeed(Util().speed(dummy));
 
 	//	double dps = unit.isFlyer() ? Util().airDPS(dummy) : Util().groundDPS(dummy);
-	//	if (t == UnitTypes::Terran_Medic)
+	//	if (t == Terran_Medic)
 	//		dps = 0.775;
 
-	//	if (t == UnitTypes::Terran_Dropship)
+	//	if (t == Terran_Dropship)
 	//		unitScore[t] = 10.0;
 
 	//	else if (unitScore[t] <= 0.0)
@@ -727,7 +599,7 @@ void StrategyManager::updateMadMixScore()
 				double myDPS = type.isFlyer() ? Math::airDPS(dummy) : Math::groundDPS(dummy);
 				double enemyDPS = t.isFlyer() ? Math::airDPS(unit) : Math::groundDPS(unit);
 
-				if (unit.getType() == UnitTypes::Terran_Medic)
+				if (unit.getType() == Terran_Medic)
 					enemyDPS = 0.775;
 
 				double overallMatchup = enemyDPS > 0.0 ? (myDPS, myDPS / enemyDPS) : myDPS;

@@ -445,7 +445,7 @@ namespace McRave
 			else if (Players().getNumberRandom() > 0) {
 				currentBuild = "P2Gate";
 				currentOpener = "Main";
-				currentTransition = "2GateReaver";
+				currentTransition = "Reaver";
 			}
 		}
 		if (Broodwar->self()->getRace() == Races::Terran)
@@ -586,6 +586,10 @@ namespace McRave
 			getTech = false;
 			techList.insert(techUnit);
 			unlockedType.insert(techUnit);
+		}
+		if (firstUnit != UnitTypes::None) {
+			techList.insert(firstUnit);
+			unlockedType.insert(firstUnit);
 		}
 
 		// Multi-unlock

@@ -74,10 +74,6 @@ namespace McRave
 		baseVal = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus);
 		techVal = techList.size() + skipFirstTech + Players().vT();
 
-		// HACK: Don't count obs as a tech unit
-		if (techList.find(UnitTypes::Protoss_Observer) != techList.end())
-			techVal--;
-
 		// HACK: Against FFE just add a Nexus
 		if (Strategy().getEnemyBuild() == "PFFE" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1)
 			itemQueue[UnitTypes::Protoss_Nexus] = Item(2);

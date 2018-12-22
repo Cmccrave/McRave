@@ -42,8 +42,18 @@ namespace McRave
 				assignPercentToGoal(posBest, UnitTypes::Protoss_Zealot, 0.15);
 		}
 
+		// Send a DT everywhere late game
+		// PvE
+		if (MyStations().getMyStations().size() >= 4) {
+			for (auto &s : MyStations().getEnemyStations()) {
+				auto station = *s.second;
+				auto pos = station.BWEMBase()->Center();
+				assignNumberToGoal(pos, UnitTypes::Protoss_Dark_Templar, 1);
+			}
+		}
+
 		// Secure our own future expansion position
-		// PvT / PvZ / PvP
+		// PvE
 		Position nextExpand(Buildings().getCurrentExpansion());
 		if (nextExpand.isValid()) {
 			UnitType building = Broodwar->self()->getRace().getResourceDepot();
@@ -83,7 +93,6 @@ namespace McRave
 
 	void GoalManager::updateZergGoals()
 	{	
-
 		// Send lurkers to expansions when turtling		
 		if (Broodwar->self()->getRace() == Races::Zerg && !MyStations().getMyStations().empty()) {
 			auto lurkerPerBase = Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Lurker) / MyStations().getMyStations().size();			

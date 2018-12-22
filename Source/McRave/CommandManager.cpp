@@ -337,7 +337,7 @@ namespace McRave
 		bool defendingExpansion = unit.getDestination().isValid() && !Terrain().isInEnemyTerritory((TilePosition)unit.getDestination());
 		bool closeToDefend = Terrain().getDefendPosition().getDistance(unit.getPosition()) < 640.0 || Terrain().isInAllyTerritory(unit.getTilePosition()) || defendingExpansion || (!unit.getType().isFlyer() && !unit.hasTransport() && !mapBWEM.GetArea(unit.getTilePosition()));
 
-		if (!closeToDefend || unit.getGlobalState() != GlobalState::Retreating || unit.getGlobalState() == GlobalState::Engaging)
+		if (!closeToDefend || unit.getLocalState() != LocalState::Retreating)
 			return false;
 
 		// Probe Cannon surround
@@ -372,18 +372,8 @@ namespace McRave
 				unit.unit()->move(BWEB::Map::getNaturalPosition());
 		}
 
-		else if (unit.getDestination().isValid()) {
-			Position bestPosition = Util().getConcavePosition(unit, mapBWEM.GetArea(TilePosition(unit.getDestination())));
-
-			if (bestPosition.isValid() && (bestPosition != unit.getPosition() || unit.unit()->getLastCommand().getType() == UnitCommandTypes::None)) {
-				if (unit.unit()->getLastCommand().getTargetPosition() != bestPosition || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
-					unit.unit()->move(bestPosition);
-				return true;
-			}
-		}
-
 		else {
-			Position bestPosition;
+			Position bestPosition = Positions::Invalid;
 			if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon) == 0 && Players().vT())
 				bestPosition = Util().getConcavePosition(unit, nullptr, BWEB::Map::getMainPosition());
 			else

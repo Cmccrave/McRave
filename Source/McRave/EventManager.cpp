@@ -56,6 +56,8 @@ namespace McRave
 				info.getResource().setGathererCount(info.getResource().getGathererCount() - 1);
 			if (info.getRole() != Role::None)
 				myRoles[info.getRole()]--;
+			if (info.getRole() == Role::Scouting)
+				scoutDeadFrame = Broodwar->getFrameCount();
 
 			myUnits.erase(unit);
 		}

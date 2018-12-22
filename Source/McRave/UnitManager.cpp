@@ -43,8 +43,8 @@ void UnitManager::updateUnits()
 	// PvZ
 	if (Broodwar->self()->getRace() == Races::Protoss) {
 		if (Players().vZ()) {
-			minThreshold = 0.50;
-			maxThreshold = 1.00;
+			minThreshold = 0.25;
+			maxThreshold = 0.75;
 		}
 
 		// PvT
@@ -55,8 +55,8 @@ void UnitManager::updateUnits()
 
 		// PvP
 		if (Players().vP()) {
-			minThreshold = 0.50;
-			maxThreshold = 1.00;
+			minThreshold = 0.25;
+			maxThreshold = 0.75;
 		}
 	}
 	else {
@@ -70,8 +70,6 @@ void UnitManager::updateUnits()
 	// Update Enemy Units
 	for (auto &u : enemyUnits) {
 		UnitInfo &unit = u.second;
-		if (!unit.unit())
-			continue;
 
 		// If this is a flying building that we haven't recognized as being a flyer, remove overlap tiles
 		auto flyingBuilding = unit.unit()->exists() && !unit.isFlying() && (unit.unit()->getOrder() == Orders::LiftingOff || unit.unit()->getOrder() == Orders::BuildingLiftOff || unit.unit()->isFlying());
@@ -137,8 +135,6 @@ void UnitManager::updateUnits()
 	double centerCluster = 0.0;
 	for (auto &u : myUnits) {
 		auto &unit = u.second;
-		if (!unit.unit())
-			continue;
 
 		unit.updateUnit();
 		updateRole(unit);
@@ -280,7 +276,7 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
 			continue;
 		if (ally.getType() == UnitTypes::Zerg_Mutalisk && Grids().getEAirThreat((WalkPosition)ally.getEngagePosition()) * 5.0 > ally.getHealth() && ally.getHealth() <= 30)
 			continue;
-
+			   
 		auto allyToEngage = max(0.0, (distance / speed));
 		auto simRatio = max(0.0, simulationTime - allyToEngage);
 
@@ -396,6 +392,12 @@ void UnitManager::updateLocalState(UnitInfo& unit)
 			else
 				unit.setLocalState(LocalState::Retreating);
 		}
+		else if (unit.getGlobalState() == GlobalState::Retreating) {
+			unit.setLocalState(LocalState::Retreating);
+		}
+		else {
+			unit.setLocalState(LocalState::None);
+		}
 	}
 	else if (unit.getGlobalState() == GlobalState::Retreating) {
 		unit.setLocalState(LocalState::Retreating);
@@ -462,11 +464,15 @@ void UnitManager::updateRole(UnitInfo& unit)
 	}
 
 	// Check if we should scout - TODO: scout count from scout manager
-	if (BWEB::Map::getNaturalChoke() && BuildOrder().shouldScout() && Units().getMyRoleCount(Role::Scouting) < 1) {
+	if (BWEB::Map::getNaturalChoke() && BuildOrder().shouldScout() && Units().getMyRoleCount(Role::Scouting) < 1 && Broodwar->getFrameCount() - scoutDeadFrame > 500) {
 		auto type = Broodwar->self()->getRace().getWorker();
 		auto scout = Util().getClosestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), Broodwar->self(), type);
 		if (scout == &unit) {
-			scout->setRole(Role::Scouting);
+
+			if (scout->hasResource())
+				scout->getResource().setGathererCount(scout->getResource().getGathererCount() - 1);
+
+			scout->setRole(Role::Scouting);			
 			scout->setResource(nullptr);
 			scout->setBuildingType(UnitTypes::None);
 			scout->setBuildPosition(TilePositions::Invalid);
@@ -512,15 +518,12 @@ bool UnitManager::isThreatening(UnitInfo& unit)
 			return true;
 	}
 
-	//if (unit.unit() && unit.unit()->exists() && unit.getType().isWorker() && !unit.unit()->isAttacking() && unit.unit()->getOrder() != Orders::AttackUnit && unit.unit()->getOrder() != Orders::ConstructingBuilding && !unit.unit()->isConstructing())
-	//	return false;
-
 	// If unit is hitting a building
 	if (unit.hasAttackedRecently() && Terrain().isInAllyTerritory(unit.getTilePosition()) && unit.unit()->exists() && unit.hasTarget() && unit.getTarget().getType().isBuilding())
 		return true;
 
 	// If unit is near our main mineral gathering - TODO: Why do I still use this
-	if (unit.getPosition().getDistance(Terrain().getMineralHoldPosition()) <= 320.0 || (unit.getPosition().getDistance(Terrain().getDefendPosition()) <= unit.getGroundRange()))
+	if ((!unit.getType().isWorker() && unit.getPosition().getDistance(Terrain().getMineralHoldPosition()) <= 320.0) || (unit.getPosition().getDistance(Terrain().getDefendPosition()) <= unit.getGroundRange()))
 		return true;
 
 	// If unit is near a battery

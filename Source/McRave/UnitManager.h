@@ -37,6 +37,7 @@ namespace McRave
 		double minThreshold, maxThreshold;
 		int supply;
 		int repWorkers;
+		int scoutDeadFrame = 0;
 		Position armyCenter;
 
 		void updateUnitSizes();

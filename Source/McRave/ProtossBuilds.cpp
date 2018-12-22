@@ -73,6 +73,7 @@ namespace McRave
 		playPassive	=		vis(Protoss_Dark_Templar) == 0;
 		firstUpgrade =		UpgradeTypes::None;
 		firstTech =			TechTypes::None;
+		fastExpand =		false;
 
 		zealotLimit =		INT_MAX;
 		dragoonLimit =		(vis(Protoss_Templar_Archives) > 0 || Players().vT()) ? INT_MAX : 0;
@@ -198,6 +199,7 @@ namespace McRave
 
 	void BuildOrderManager::P2Gate()
 	{
+		// Openers
 		if (currentOpener == "Proxy") {
 			proxy =				vis(Protoss_Gateway) < 2;
 
@@ -212,13 +214,11 @@ namespace McRave
 				itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 30));
 			}
 			else {
-				// 9/10 Gates on 3Player+ maps
 				if (Broodwar->getStartLocations().size() >= 3) {
 					scout =									vis(Protoss_Gateway) >= 1;
 					itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
 					itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0) + (s >= 20), (s >= 18) + (s >= 20));
 				}
-				// 9/9 Gates
 				else {
 					scout =									vis(Protoss_Gateway) >= 2;
 					itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
@@ -227,14 +227,11 @@ namespace McRave
 			}
 		}
 		else if (currentOpener == "Main") {
-
-			// 10/12 Gates on 3Player+ maps
 			if (Broodwar->getStartLocations().size() >= 3) {
 				scout =									vis(Protoss_Gateway) >= 1;
 				itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
 				itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 24));
 			}
-			// 9/10 Gates
 			else {
 				scout =									vis(Protoss_Gateway) >= 2;
 				itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
@@ -242,32 +239,29 @@ namespace McRave
 			}
 		}
 
+		// Transitions
+		if (Strategy().enemyRush())
+			currentTransition = "Panic";
+		if (Strategy().enemyPressure())
+			currentTransition = "Defensive";
+		if (Players().vT() && Strategy().enemyFastExpand())
+			currentTransition = "DT";
+		if (Units().getEnemyCount(UnitTypes::Zerg_Sunken_Colony) >= 2)
+			currentTransition = "Expand";
 
-		if (currentTransition == "ZealotRush") {
-			zealotLimit = INT_MAX;
-			getOpening = s < 80;
-		}
-
-		else if (Players().vT()) {
+		// Builds
+		if (Players().vT()) {
 			firstUpgrade =		UpgradeTypes::Singularity_Charge;
 			firstTech =			TechTypes::None;
 			scout =				vis(Protoss_Cybernetics_Core) > 0;
 			getOpening =		s < 100;
 			gasLimit =			INT_MAX;
-
 			zealotLimit =		0;
 			dragoonLimit =		INT_MAX;
 
-			if (Strategy().enemyFastExpand() || enemyBuild() == "TSiegeExpand")
-				currentTransition = "DT";
-			else if (enemyBuild() == "TBBS")
-				currentTransition = "Defensive";
-
 			if (currentTransition == "DT") {
 				getOpening =		s < 70;
-
-				if (com(Protoss_Dragoon) >= 3 && techList.find(Protoss_Dark_Templar) == techList.end())
-					techUnit = UnitTypes::Protoss_Dark_Templar;
+				firstUnit =			com(Protoss_Dragoon) >= 3 ? Protoss_Dark_Templar : UnitTypes::None;
 
 				itemQueue[Protoss_Nexus] =				Item(1);
 				itemQueue[Protoss_Assimilator] =		Item(s >= 22);
@@ -275,20 +269,13 @@ namespace McRave
 			}
 			else if (currentTransition == "Reaver") {
 				getOpening =		s < 70;
-
-				if (com(Protoss_Dragoon) >= 3 && techList.find(Protoss_Reaver) == techList.end())
-					techUnit = UnitTypes::Protoss_Reaver;
+				firstUnit =			com(Protoss_Dragoon) >= 3 ? Protoss_Reaver : UnitTypes::None;
 
 				itemQueue[Protoss_Nexus] =				Item(1);
 				itemQueue[Protoss_Assimilator] =		Item(s >= 22);
 				itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
 			}
-			else if (currentTransition == "Defensive") {
-				gasLimit =			0;
-				fastExpand =		false;
-				Reaction2GateDefensive();
-			}
-			else if (currentTransition == "Expansion") {
+			else if (currentTransition == "Expand") {
 				getOpening =		s < 100;
 
 				itemQueue[Protoss_Nexus] =				Item(1 + (s >= 50));
@@ -302,55 +289,50 @@ namespace McRave
 				itemQueue[Protoss_Assimilator] =		Item(s >= 22);
 				itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
 			}
-			else {
-				itemQueue[Protoss_Nexus] =				Item(1 + (s >= 50));
-				itemQueue[Protoss_Assimilator] =		Item(s >= 22);
-				itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
-			}
+			else if (currentTransition == "Defensive")
+				Reaction2GateDefensive();
+
 		}
 		else
 		{
-			wallNat =			true;
 			firstUpgrade =		Players().vZ() ? UpgradeTypes::Protoss_Ground_Weapons : UpgradeTypes::Singularity_Charge;
 			firstTech =			TechTypes::None;
 			getOpening =		s < 80;
 			gasLimit =			INT_MAX;
-			zealotLimit =		INT_MAX;
+			zealotLimit =		Players().vP() ? 3 : INT_MAX;
 			dragoonLimit =		Players().vP() ? INT_MAX : 0;
 
 			// Versus Zerg
 			if (Players().vZ()) {
 
-				if (Units().getEnemyCount(UnitTypes::Zerg_Sunken_Colony) >= 2) {
-					currentTransition =	"Expansion";
-
+				if (currentTransition == "Expand") {
 					itemQueue[Protoss_Assimilator] =		Item(s >= 76);
 					itemQueue[Protoss_Nexus] =				Item(1 + (s >= 42));
 					itemQueue[Protoss_Forge] =				Item(s >= 62);
 					itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 70);
 					itemQueue[Protoss_Photon_Cannon] =		Item(2 * (com(Protoss_Forge) > 0));
 				}
-				else if (enemyBuild() == "Z9Pool") {
-					currentTransition =	"Defensive";
-
+				else if (currentTransition == "Defensive") {
 					itemQueue[Protoss_Forge] =				Item(1);
 					itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 70);
 					itemQueue[Protoss_Photon_Cannon] =		Item(2 * (com(Protoss_Forge) > 0));
 				}
-				else if (enemyBuild() == "Z5Pool") {
-					getOpening =		s < 120;
-					currentTransition =	"Panic";
-
+				else if (currentTransition == "Panic") {
 					itemQueue[Protoss_Nexus] =				Item(1);
 					itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 24) + (s >= 62) + (s >= 70));
 					itemQueue[Protoss_Assimilator] =		Item(s >= 64);
 					itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 66);
 					gasLimit = 1;
 				}
-				else {
-					currentTransition =	"Default";
-					zealotLimit	=		5;
+				else if (currentTransition == "Reaver") {
+					getOpening =		s < 70;
+					firstUnit =			com(Protoss_Zealot) >= 5 ? Protoss_Reaver : UnitTypes::None;
 
+					itemQueue[Protoss_Nexus] =				Item(1);
+					itemQueue[Protoss_Assimilator] =		Item(s >= 22);
+					itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
+				}
+				else if (currentTransition == "Standard") {
 					itemQueue[Protoss_Assimilator] =		Item(s >= 58);
 					itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 60);
 					itemQueue[Protoss_Forge] =				Item(s >= 70);
@@ -361,10 +343,10 @@ namespace McRave
 
 			// Versus Protoss
 			else {
-				if (!Strategy().enemyFastExpand() && (enemyBuild() == "P4Gate" || Units().getEnemyCount(Protoss_Gateway) >= 2 || Units().getEnemyCount(UnitTypes::Protoss_Dragoon) >= 2)) {
-					currentTransition =	"Defensive";
+				if (currentTransition == "Defensive") {
 					playPassive =		com(Protoss_Gateway) < 5;
 					zealotLimit	=		INT_MAX;
+					firstUnit =			Protoss_Dark_Templar;
 
 					itemQueue[Protoss_Assimilator] =		Item(s >= 64);
 					itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 66);
@@ -372,11 +354,7 @@ namespace McRave
 					itemQueue[Protoss_Photon_Cannon] =		Item(6 * (com(Protoss_Forge) > 0));
 					itemQueue[Protoss_Nexus] =				Item(1 + (s >= 56));
 				}
-				else if (enemyBuild() == "P2Gate") {
-					Reaction2GateDefensive();
-				}
-				else {
-					currentTransition =	"Default";
+				else if (currentTransition == "Standard") {
 					zealotLimit	=		5;
 
 					itemQueue[Protoss_Assimilator] =		Item(s >= 58);
@@ -385,6 +363,16 @@ namespace McRave
 					itemQueue[Protoss_Nexus] =				Item(1 + (s >= 56));
 					itemQueue[Protoss_Photon_Cannon] =		Item(2 * (com(Protoss_Forge) > 0));
 				}
+				else if (currentTransition == "Reaver") {
+					getOpening =		s < 70;
+					firstUnit =			com(Protoss_Dragoon) >= 2 ? Protoss_Reaver : UnitTypes::None;
+
+					itemQueue[Protoss_Nexus] =				Item(1);
+					itemQueue[Protoss_Assimilator] =		Item(s >= 22);
+					itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
+				}
+				else if (currentTransition == "Panic")
+					Reaction2GateDefensive();
 			}
 		}
 	}
@@ -400,7 +388,7 @@ namespace McRave
 
 		bool addGas = Broodwar->getStartLocations().size() >= 3 ? (s >= 22) : (s >= 24);
 
-		if (enemyBuild() == "P2Gate")
+		if (Strategy().enemyRush())
 			currentTransition = "Defensive";
 
 		// Openers
@@ -457,7 +445,7 @@ namespace McRave
 
 			if (Players().vP()) {
 				playPassive =		!Strategy().enemyFastExpand() && (com(Protoss_Reaver) < 2/* || com(Protoss_Shuttle) < 1*/);
-				getOpening =		s < 70;
+				getOpening =		Strategy().enemyPressure() ? vis(Protoss_Reaver) < 3 : s < 70;
 				zealotLimit =		(com(Protoss_Robotics_Facility) >= 1) ? 6 : zealotLimit;
 
 				itemQueue[Protoss_Gateway] =				Item((s >= 20) + (s >= 60) + (s >= 62));

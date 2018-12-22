@@ -126,7 +126,7 @@ bool UtilManager::reactivePullWorker(UnitInfo& unit)
 	}
 
 	// If we have no combat units and there is a threat
-	if (Units().getImmThreat() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense()) {
+	if (Units().getImmThreat() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense() && Broodwar->getFrameCount() < 10000) {
 		if (Broodwar->self()->getRace() == Races::Protoss) {
 			if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) == 0)
 				return true;
@@ -337,7 +337,7 @@ Line UtilManager::lineOfBestFit(const BWEM::ChokePoint * choke)
 		sumXY += p.x * p.y;
 		sumX2 += p.x * p.x;
 		sumY2 += p.y * p.y;
-		BWAPI::Broodwar->drawBoxMap(BWAPI::Position(geo), BWAPI::Position(geo) + BWAPI::Position(9, 9), BWAPI::Colors::Black);
+		//BWAPI::Broodwar->drawBoxMap(BWAPI::Position(geo), BWAPI::Position(geo) + BWAPI::Position(9, 9), BWAPI::Colors::Black);
 	}
 	double xMean = sumX / choke->Geometry().size();
 	double yMean = sumY / choke->Geometry().size();
@@ -412,7 +412,7 @@ Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area
 				}
 			}
 		}
-	};
+	};	
 
 	const auto checkbest = [&](WalkPosition w) {
 		TilePosition t(w);
@@ -440,8 +440,8 @@ Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area
 	distBest = DBL_MAX;
 
 	// If this is the defending position, grab from a vector we already made
-	if (here == Terrain().getDefendPosition()) {
-		auto &positions = unit.getGroundRange() < 64.0 ? Terrain().getMeleeChokePositions() : Terrain().getRangedChokePositions();
+	auto &positions = (unit.getGroundRange() < 64.0 && (!Terrain().isDefendNatural() || Players().vZ())) ? Terrain().getMeleeChokePositions() : Terrain().getRangedChokePositions();
+	if (here == Terrain().getDefendPosition() && !positions.empty()) {		
 		for (auto &position : positions) {
 			checkbest(WalkPosition(position));
 		}
