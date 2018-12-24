@@ -27,23 +27,24 @@ void McRaveModule::onStart()
 	BWEB::Map::onStart();
 	MyStations().onStart();
 	Grids().onStart();
-	BuildOrder().onStart();
+	BuildOrder::onStart();
 	BWEB::Blocks::findBlocks();
 	Broodwar->sendText("glhf");
 }
 
 void McRaveModule::onEnd(bool isWinner)
 {
-	BuildOrder().onEnd(isWinner);
+	BuildOrder::onEnd(isWinner);
 }
 
 void McRaveModule::onFrame()
 {
 	// Update relevant map information and strategy
+	Players().onFrame();
 	Terrain().onFrame();
 	Resources().onFrame();
 	Strategy().onFrame();
-	BuildOrder().onFrame();
+	BuildOrder::onFrame();
 	MyStations().onFrame();
 
 	// Update unit information and grids based on the information
@@ -53,11 +54,11 @@ void McRaveModule::onFrame()
 	// Update commands
 	Goals().onFrame();
 	Support::onFrame();
-	Commands().onFrame();
+	Command::onFrame();
 	Workers().onFrame();
 	Scouts().onFrame();
 	Transport().onFrame();
-	Buildings().onFrame();
+	Buildings::onFrame();
 	Production().onFrame();	
 
 	// Display information from this frame
@@ -80,7 +81,7 @@ void McRaveModule::onPlayerLeft(Player player)
 
 void McRaveModule::onNukeDetect(Position target)
 {
-	Commands().addCommand(nullptr, target, TechTypes::Nuclear_Strike);
+	Command::addCommand(nullptr, target, TechTypes::Nuclear_Strike);
 }
 
 void McRaveModule::onUnitDiscover(Unit unit)

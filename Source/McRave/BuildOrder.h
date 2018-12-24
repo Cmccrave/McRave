@@ -1,12 +1,9 @@
 #pragma once
 #include <BWAPI.h>
-#include "Singleton.h"
 #include <sstream>
+#include <set>
 
-using namespace BWAPI;
-using namespace std;
-
-namespace McRave
+namespace McRave::BuildOrder
 {
 	class Item
 	{
@@ -18,133 +15,119 @@ namespace McRave
 			actualCount = actual, reserveCount = (reserve == -1 ? actual : reserve);
 		}
 
+		//Item(int c1, int c2 = 0, int c3 = 0, int c4 = 0, int c5 = 0, int c6 = 0, int c7 = 0) {
+		//	int s = Units().getSupply() / 2;
+		//	reserveCount = (s >= c1) + (s >= c2) + (s >= c3) + (s >= c4) + (s >= c5) + (s >= c6) + (s >= c7);
+		//}
+
 		int const getReserveCount() { return reserveCount; }
 		int const getActualCount() { return actualCount; }
 	};
 
 	struct Build {
-		vector <string> transitions;
-		vector <string> openers;
+		std::vector <std::string> transitions;
+		std::vector <std::string> openers;
 	};
 
-	class BuildOrderManager
+	// Need a namespace to share variables among the various files used
+	namespace All {
+		inline map <UnitType, Item> itemQueue;
+		inline bool getOpening = true;
+		inline bool getTech = false;
+		inline bool wallNat = false;
+		inline bool wallMain = false;
+		inline bool scout = false;
+		inline bool productionSat = false;
+		inline bool techSat = false;
+		inline bool fastExpand = false;
+		inline bool proxy = false;
+		inline bool hideTech = false;
+		inline bool playPassive = false;
+		inline bool rush = false;
+		inline bool cutWorkers = false; // TODO: Use unlocking
+
+		inline int satVal, prodVal, techVal, baseVal;
+		inline int gasLimit = INT_MAX;
+		inline int zealotLimit = INT_MAX;
+		inline int dragoonLimit = INT_MAX;
+		inline int lingLimit = INT_MAX;
+		inline int droneLimit = INT_MAX;
+
+		inline map <string, Build> myBuilds;
+		inline stringstream ss;
+		inline string currentBuild = "";
+		inline string currentOpener = "";
+		inline string currentTransition = "";
+
+		inline BWAPI::UpgradeType firstUpgrade = BWAPI::UpgradeTypes::None;
+		inline BWAPI::TechType firstTech = BWAPI::TechTypes::None;
+		inline BWAPI::UnitType firstUnit = BWAPI::UnitTypes::None;
+		inline BWAPI::UnitType techUnit;
+		inline BWAPI::UnitType productionUnit;
+		inline std::set <BWAPI::UnitType> techList;
+		inline std::set <BWAPI::UnitType> unlockedType;
+		inline std::vector <std::string> buildNames;
+	}
+
+	namespace Protoss
 	{
-		// Testing new build stuff
-		map <string, Build> myBuilds;
-		stringstream ss;
-		string currentBuild = "";
-		string currentOpener = "";
-		string currentTransition = "";
-		void getDefaultBuild();
-		bool isBuildAllowed(Race, string);
-		bool isTransitionAllowed(Race, string, string);
-		bool isOpenerAllowed(Race, string, string);
-		bool isBuildPossible(string, string);
-		bool cutWorkers = false; // TODO: Use unlocking
-
-		map <UnitType, Item> itemQueue;
-		bool getOpening = true, getTech, bioBuild, wallNat, wallMain, scout, productionSat, techSat;
-		bool fastExpand, proxy, hideTech, playPassive, rush;
-
-		UpgradeType firstUpgrade = UpgradeTypes::None;
-		TechType firstTech = TechTypes::None;
-		UnitType firstUnit = UnitTypes::None;
-
-		UnitType techUnit;
-		UnitType productionUnit;
-		set <UnitType> techList, unlockedType;
-		vector <string> buildNames;
-
-
-		int satVal, prodVal, techVal, baseVal;
-		int gasLimit = INT_MAX;
-		int zealotLimit = INT_MAX;
-		int dragoonLimit = INT_MAX;
-		int lingLimit = INT_MAX;
-		int droneLimit = INT_MAX;
-
-
-		void updateBuild();
-
-		void getNewTech();
-		void checkNewTech();
-		void checkAllTech();
-		void checkExoticTech();
-
-		void checkOpener();
-
-	public:
-		bool shouldAddProduction(), shouldAddGas(), techComplete();
-		bool shouldExpand();
-		map<UnitType, Item>& getItemQueue() { return itemQueue; }
-
-		UnitType getTechUnit() { return techUnit; }
-		string getCurrentBuild() { return currentBuild; }
-		string getCurrentOpener() { return currentOpener; }
-		string getCurrentTransition() { return currentTransition; }
-
-		UpgradeType getFirstUpgrade() { return firstUpgrade; }
-		TechType getFirstTech() { return firstTech; }
-		set <UnitType>& getTechList() { return techList; }
-		set <UnitType>& getUnlockedList() { return unlockedType; }
-
-		int buildCount(UnitType);
-		int gasWorkerLimit() { return gasLimit; }
-		bool isWorkerCut() { return cutWorkers; }
-
-		bool isUnitUnlocked(UnitType unit) { return unlockedType.find(unit) != unlockedType.end(); }
-		bool isTechUnit(UnitType unit) { return techList.find(unit) != techList.end(); }
-
-
-		bool isOpener() { return getOpening; }
-		bool isBioBuild() { return bioBuild; }
-		bool isFastExpand() { return fastExpand; }
-		bool shouldScout() { return scout; }
-		bool isWallNat() { return wallNat; }
-		bool isWallMain() { return wallMain; }
-		bool isProxy() { return proxy; }
-		bool isHideTech() { return hideTech; }
-		bool isPlayPassive() { return playPassive; }
-		bool isRush() { return rush; }
-
-		bool firstReady();
-
-		void onEnd(bool), onStart(), onFrame();
-		void protossOpener(), protossTech(), protossSituational(), protossUnlocks(), protossIslandPlay();
-		void terranOpener(), terranTech(), terranSituational(), terranUnlocks(), terranIslandPlay();
-		void zergOpener(), zergTech(), zergSituational(), zergUnlocks(), zergIslandPlay();
-
-		void PScoutMemes(), PDWEBMemes(), PArbiterMemes(), PShuttleMemes();	// Gimmick builds		   		
+		void opener();
+		void tech();
+		void situational();
+		void unlocks();
+		void island();
 
 		void P1GateCore();
-		void P2Gate();
 		void PFFE();
-		void P21Nexus();
 		void P12Nexus();
+		void P21Nexus();
+		void P2Gate();
+	}
+	
+	void getDefaultBuild();
+	int buildCount(UnitType);
+	bool firstReady();
 
-		void Reaction2GateDefensive();
-		void Reaction2GateAggresive();
-		void Reaction2Gate();
+	bool isBuildAllowed(BWAPI::Race, std::string);
+	bool isTransitionAllowed(BWAPI::Race, std::string, std::string);
+	bool isOpenerAllowed(BWAPI::Race, std::string, std::string);
+	bool isBuildPossible(std::string, std::string);
 
-		void T2Fact();
-		void TSparks();
-		void T2PortWraith();
-		void T1RaxFE();
-		void TNukeMemes();
-		void TBCMemes();
-		void T2RaxFE();
-		void T1FactFE();
+	void updateBuild();
+	void getNewTech();
+	void checkNewTech();
+	void checkAllTech();
+	void checkExoticTech();
+	bool shouldAddProduction();
+	bool shouldAddGas();	
+	bool shouldExpand();
+	bool techComplete();
 
-		void Z2HatchMuta();
-		void Z3HatchLing();
-		void Z4Pool();
-		void Z9Pool();
-		void Z2HatchHydra();
-		void Z3HatchBeforePool();
-		void ZLurkerTurtle();
-		void Z9PoolSpire();
-	};
-
+	std::map<BWAPI::UnitType, Item>& getItemQueue();
+	BWAPI::UnitType getTechUnit();
+	BWAPI::UnitType getFirstUnit();
+	BWAPI::UpgradeType getFirstUpgrade();
+	BWAPI::TechType getFirstTech();
+	std::set <BWAPI::UnitType>& getTechList();
+	std::set <BWAPI::UnitType>& getUnlockedList();
+	int gasWorkerLimit();
+	bool isWorkerCut();
+	bool isUnitUnlocked(BWAPI::UnitType unit);
+	bool isTechUnit(BWAPI::UnitType unit);
+	bool isOpener();
+	bool isFastExpand();
+	bool shouldScout();
+	bool isWallNat();
+	bool isWallMain();
+	bool isProxy();
+	bool isHideTech();
+	bool isPlayPassive();
+	bool isRush();
+	std::string getCurrentBuild();
+	std::string getCurrentOpener();
+	std::string getCurrentTransition();
+	
+	void onEnd(bool);
+	void onStart();
+	void onFrame();
 }
-
-typedef Singleton<McRave::BuildOrderManager> BuildOrderSingleton;

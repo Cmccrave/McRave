@@ -59,7 +59,7 @@ namespace McRave
 				|| (unit.getType().isFlyer() && target.getType() == UnitTypes::Protoss_Interceptor)
 
 				// Zealot: Rushing Zealots only attack workers
-				|| (unit.getType() == UnitTypes::Protoss_Zealot && BuildOrder().isRush() && !target.getType().isWorker() && Broodwar->getFrameCount() < 10000)
+				|| (unit.getType() == UnitTypes::Protoss_Zealot && BuildOrder::isRush() && !target.getType().isWorker() && Broodwar->getFrameCount() < 10000)
 
 				// Don't attack enemy spider mines with more than 2 units
 				|| (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.getUnitsAttacking() >= 2))
@@ -145,32 +145,6 @@ namespace McRave
 				checkBest(target, thisUnit, health, distance);
 		}
 
-		//for (auto &n : Units().getNeutralUnits()) {
-		//	UnitInfo &neutral = n.second;
-		//	if (!neutral.unit())
-		//		continue;
-
-		//	double health = 1.0 + (0.15 / unit.getPercentTotal());
-		//	double airDist = unit.getPosition().getDistance(neutral.getPosition());
-		//	double widths = unit.getType().tileWidth() * 16.0 + neutral.getType().tileWidth() * 16.0;
-		//	double distance = widths + airDist;
-		//	double thisUnit = 0.0;
-		//	bool unitCanAttack = ((neutral.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!neutral.getType().isFlyer() && unit.getGroundDamage() > 0.0));
-
-		//	if (!unitCanAttack)
-		//		continue;
-
-		//	if (unit.hasTransport() && neutral.getType().isBuilding())
-		//		continue;
-
-		//	thisUnit = neutral.getPriority() / distance;
-
-		//	// If this neutral is more important to target, set as current target
-		//	if (thisUnit > highest) {
-		//		highest = thisUnit;
-		//		bestTarget = &neutral;
-		//	}
-		//}
 		unit.setTarget(bestTarget);
 
 		// If unit is close, increment it

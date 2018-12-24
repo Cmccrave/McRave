@@ -39,42 +39,12 @@ namespace McRave
 
 	void UnitManager::onUnitDestroy(Unit unit)
 	{
-		if (Terrain().isIslandMap() && neutrals.find(unit) != neutrals.end())
-			neutrals.erase(unit);
-
-		BWEB::Map::onUnitDestroy(unit);
-
-		// My unit
-		if (unit->getPlayer() == Broodwar->self()) {
-			auto &info = myUnits[unit];
-
-			supply -= unit->getType().supplyRequired();
-
-			Transport().removeUnit(unit);
-
-			if (info.hasResource())
-				info.getResource().setGathererCount(info.getResource().getGathererCount() - 1);
-			if (info.getRole() != Role::None)
-				myRoles[info.getRole()]--;
-			if (info.getRole() == Role::Scouting)
-				scoutDeadFrame = Broodwar->getFrameCount();
-
-			myUnits.erase(unit);
-		}
-
-		// Enemy unit
-		else if (unit->getPlayer() == Broodwar->enemy())
-			enemyUnits.erase(unit);
-		else if (unit->getPlayer()->isAlly(Broodwar->self()))
-			allyUnits.erase(unit);
-
-		// Resource
 		if (unit->getType().isResourceContainer())
 			Resources().removeResource(unit);
-
-		// Station
-		if (unit->getType().isResourceDepot())
+		else if (unit->getType().isResourceDepot())
 			MyStations().removeStation(unit);
+		else
+			Units().removeUnit(unit);
 	}
 
 	void UnitManager::onUnitMorph(Unit unit)

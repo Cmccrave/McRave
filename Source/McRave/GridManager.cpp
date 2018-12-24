@@ -51,29 +51,7 @@ namespace McRave
 			for (int y = 0; y <= Broodwar->mapHeight() * 4; y++) {
 				WalkPosition w(x, y);
 
-				/*if (distanceHome[x][y] <= 0)
-					Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Black);
-				if (distanceHome[x][y] > 0 && distanceHome[x][y] <= 600)
-					Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Purple);
-				if (distanceHome[x][y] > 600 && distanceHome[x][y] <= 1000)
-					Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Blue);
-				if (distanceHome[x][y] > 1000 && distanceHome[x][y] < 1500)
-					Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Green);
-				if (distanceHome[x][y] >= 1500 && distanceHome[x][y] != DBL_MAX)
-					Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Yellow);*/
-
-				if (!mapBWEM.GetMiniTile(w).Walkable())
-					Broodwar->drawBoxMap(Position(w), Position(w) + Position(9, 9), Colors::Blue);
-
-				//if (distanceHome[x][y] <= 0)
-				//	Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Blue);
-				//if (collision[x][y] > 0)
-					//Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Blue);
-			//if (eGroundCluster[x][y] + eAirCluster[x][y] > HIGH_TEMPLAR_LIMIT)
-			//	Broodwar->drawCircleMap(Position(w) + Position(4, 4), 2, Colors::Red);
-
-
-				if (eSplash[x][y] > 0)
+				if (eGroundThreat[x][y] > 0)
 					Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Blue);
 			}
 		}
@@ -125,7 +103,7 @@ namespace McRave
 				if (unit.hasTarget() && unit.getTarget().unit() && unit.getTarget().unit()->exists())
 					addSplash(unit);
 			}
-			else if (unit.unit()->exists() || longRangeUnit) {
+			else {
 				addToGrids(unit);
 			}
 		}
@@ -156,7 +134,7 @@ namespace McRave
 			}
 
 			if (u->getType() == UnitTypes::Spell_Disruption_Web)
-				Commands().addCommand(u, u->getPosition(), TechTypes::Disruption_Web);
+				Command::addCommand(u, u->getPosition(), TechTypes::Disruption_Web);
 		}
 	}
 
@@ -292,28 +270,14 @@ namespace McRave
 	void GridManager::addToGrids(UnitInfo& unit)
 	{
 		if ((unit.getType().isWorker() && unit.getPlayer() != Broodwar->self() && (!unit.unit()->exists() || Broodwar->getFrameCount() > 10000 || unit.unit()->isConstructing() || (Terrain().isInAllyTerritory(unit.getTilePosition()) && (Broodwar->getFrameCount() - unit.getLastAttackFrame() > 500))))
-			|| unit.getType() == UnitTypes::Protoss_Interceptor)
+			|| unit.getType() == UnitTypes::Protoss_Interceptor
+			|| unit.getType() == UnitTypes::Terran_Medic)
 			return;
-
-		// Max range and speed
-		auto maxRange = int(max({ unit.getGroundRange(), unit.getAirRange(), 32.0 }) / 8.0);
-		auto speed = int(max(unit.getSpeed(), 1.0));
-
+		
 		// Pixel and walk sizes
-		auto pixelSize = unit.getType().isBuilding() ? unit.getType().tileWidth() * 32 : max(unit.getType().width(), unit.getType().height());
 		auto walkWidth = unit.getType().isBuilding() ? unit.getType().tileWidth() * 4 : (int)ceil(unit.getType().width() / 8.0);
 		auto walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : (int)ceil(unit.getType().height() / 8.0);
-
-		// Reach: range + size + speed for 1 second
-		auto grdReach = int(unit.getGroundRange() + (speed * 32.0) + (pixelSize / 2));
-		auto airReach = int(unit.getAirRange() + (speed * 32.0) + (pixelSize / 2));
-
-		// HACK: Make workers range smaller
-		if (unit.getType().isWorker()) {
-			grdReach = int(grdReach / 1.5);
-			airReach = int(airReach / 1.5);
-		}
-
+		
 		// Choose threat grid
 		auto grdGrid = unit.getPlayer() == Broodwar->self() ? nullptr : eGroundThreat;
 		auto airGrid = unit.getPlayer() == Broodwar->self() ? nullptr : eAirThreat;
@@ -325,7 +289,7 @@ namespace McRave
 
 
 		// Limit checks so we don't have to check validity
-		int radius = 1 + (max(grdReach, airReach)) / 8;
+		auto radius = 1 + int(max(unit.getGroundReach(), unit.getAirReach())) / 8;
 		auto left = max(0, unit.getWalkPosition().x - radius);
 		auto right = min(1024, unit.getWalkPosition().x + walkWidth + radius);
 		auto top = max(0, unit.getWalkPosition().y - radius);
@@ -333,7 +297,7 @@ namespace McRave
 
 		// Pixel rectangle
 		auto topLeft = Position(unit.getWalkPosition());
-		auto botRight = topLeft + Position(8 * walkWidth, 8 * walkHeight);
+		auto botRight = topLeft + Position(unit.getType().width(), unit.getType().height());
 
 		// Iterate tiles and add to grid
 		for (int x = left; x < right; x++) {
@@ -341,7 +305,7 @@ namespace McRave
 
 				WalkPosition w(x, y);
 				auto p = Position(w) + Position(4, 4);
-				auto dist = p.getApproxDistance(unit.getPosition());
+				auto dist = double(p.getApproxDistance(unit.getPosition()));
 
 				// Collision
 				if (!unit.getType().isFlyer() && Util().rectangleIntersect(topLeft, botRight, p)) {
@@ -350,12 +314,12 @@ namespace McRave
 				}
 
 				// Threat
-				if (grdGrid && dist <= grdReach) {
-					grdGrid[x][y] += (unit.getVisibleGroundStrength());
+				if (grdGrid && dist <= unit.getGroundReach()) {
+					grdGrid[x][y] += (unit.getVisibleGroundStrength()) / dist;
 					saveReset(w);
 				}
-				if (airGrid && dist <= airReach) {
-					airGrid[x][y] += (unit.getVisibleAirStrength());
+				if (airGrid && dist <= unit.getAirReach()) {
+					airGrid[x][y] += (unit.getVisibleAirStrength()) / dist;
 					saveReset(w);
 				}
 

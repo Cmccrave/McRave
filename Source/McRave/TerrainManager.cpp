@@ -172,7 +172,7 @@ void TerrainManager::findDefendPosition()
 	reverseRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) < Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
 	flatRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) == Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
 	narrowNatural = BWEB::Map::getNaturalChoke() ? int(BWEB::Map::getNaturalChoke()->Pos(BWEB::Map::getNaturalChoke()->end1).getDistance(BWEB::Map::getNaturalChoke()->Pos(BWEB::Map::getNaturalChoke()->end2)) / 4) <= 2 : false;
-	defendNatural = BWEB::Map::getNaturalChoke() ? BuildOrder().buildCount(baseType) > 1 || Broodwar->self()->visibleUnitCount(baseType) > 1 || defendPosition == Position(BWEB::Map::getNaturalChoke()->Center()) || reverseRamp : false;
+	defendNatural = BWEB::Map::getNaturalChoke() ? BuildOrder::buildCount(baseType) > 1 || Broodwar->self()->visibleUnitCount(baseType) > 1 || defendPosition == Position(BWEB::Map::getNaturalChoke()->Center()) || reverseRamp : false;
 
 	if (islandMap) {
 		defendPosition = BWEB::Map::getMainPosition();
@@ -180,7 +180,7 @@ void TerrainManager::findDefendPosition()
 	}
 
 	// Defend our main choke if we're hiding tech
-	if (BuildOrder().isHideTech() && BWEB::Map::getMainChoke() && Broodwar->self()->visibleUnitCount(baseType) == 1) {
+	if (BuildOrder::isHideTech() && BWEB::Map::getMainChoke() && Broodwar->self()->visibleUnitCount(baseType) == 1) {
 		defendPosition = (Position)BWEB::Map::getMainChoke()->Center();
 		return;
 	}
@@ -257,12 +257,12 @@ void TerrainManager::findDefendPosition()
 
 void TerrainManager::updateConcavePositions()
 {
-	//for (auto tile : meleeChokePositions) {
-	//	Broodwar->drawCircleMap(Position(tile), 8, Colors::Blue);
-	//}
-	//for (auto tile : rangedChokePositions) {
-	//	Broodwar->drawCircleMap(Position(tile), 8, Colors::Blue);
-	//}
+	for (auto tile : meleeChokePositions) {
+		Broodwar->drawCircleMap(Position(tile), 8, Colors::Blue);
+	}
+	for (auto tile : rangedChokePositions) {
+		Broodwar->drawCircleMap(Position(tile), 8, Colors::Blue);
+	}
 
 	if (!meleeChokePositions.empty() || !rangedChokePositions.empty() || Broodwar->getFrameCount() < 100 || defendPosition == mineralHold)
 		return;
@@ -304,8 +304,8 @@ void TerrainManager::updateConcavePositions()
 		test2.y = center.y - int(dy);
 	}
 
-	//Broodwar->drawLineMap(center, test1, Colors::Red);
-	//Broodwar->drawLineMap(center, test2, Colors::Green);
+	Broodwar->drawLineMap(center, test1, Colors::Red);
+	Broodwar->drawLineMap(center, test2, Colors::Green);
 
 	auto melee1 = Util().parallelLine(line, 16.0);
 	auto melee2 = Util().parallelLine(line, 32.0);
@@ -384,7 +384,7 @@ void TerrainManager::updateAreas()
 		}
 
 		UnitType baseType = Broodwar->self()->getRace().getResourceDepot();
-		if ((BuildOrder().buildCount(baseType) >= 2 || BuildOrder().isWallNat()) && BWEB::Map::getNaturalArea())
+		if ((BuildOrder::buildCount(baseType) >= 2 || BuildOrder::isWallNat()) && BWEB::Map::getNaturalArea())
 			allyTerritory.insert(BWEB::Map::getNaturalArea());
 
 		// HACK: Add to my territory if chokes are shared

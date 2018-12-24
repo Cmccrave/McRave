@@ -54,10 +54,10 @@ namespace McRave
 
 		// Secure our own future expansion position
 		// PvE
-		Position nextExpand(Buildings().getCurrentExpansion());
+		Position nextExpand(Buildings::getCurrentExpansion());
 		if (nextExpand.isValid()) {
 			UnitType building = Broodwar->self()->getRace().getResourceDepot();
-			if (BuildOrder().buildCount(building) > Broodwar->self()->visibleUnitCount(building)) {
+			if (BuildOrder::buildCount(building) > Broodwar->self()->visibleUnitCount(building)) {
 				if (Players().vZ())
 					assignPercentToGoal(nextExpand, UnitTypes::Protoss_Zealot, 0.15);
 				else {

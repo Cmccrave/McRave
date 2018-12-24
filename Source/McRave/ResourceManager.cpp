@@ -56,7 +56,7 @@ void ResourceManager::updateInformation(ResourceInfo& resource)
 	// Update saturation
 	if (resource.getType().isMineralField() && minSat && resource.getGathererCount() < 2 && resource.getResourceState() != ResourceState::None)
 		minSat = false;
-	else if (resource.getType() == geyserType && resource.unit()->isCompleted() && resource.getResourceState() != ResourceState::None && ((BuildOrder().isOpener() && resource.getGathererCount() < min(3, BuildOrder().gasWorkerLimit())) || (!BuildOrder().isOpener() && resource.getGathererCount() < 3)))
+	else if (resource.getType() == geyserType && resource.unit()->isCompleted() && resource.getResourceState() != ResourceState::None && ((BuildOrder::isOpener() && resource.getGathererCount() < min(3, BuildOrder::gasWorkerLimit())) || (!BuildOrder::isOpener() && resource.getGathererCount() < 3)))
 		gasSat = false;
 	
 	if (!resource.getType().isMineralField() && resource.getResourceState() == ResourceState::Mineable)

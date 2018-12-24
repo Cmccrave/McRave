@@ -9,29 +9,24 @@ namespace McRave
 			PlayerInfo &p = thePlayers[player];
 
 			p.setAlive(true);
-			p.setRace(player->getRace());
+			p.setStartRace(player->getRace());
+			p.setCurrentRace(player->getRace());
 			p.setPlayer(player);
-
-			if (player->getRace() == Races::Zerg)
-				eZerg++;			
-			else if (player->getRace() == Races::Protoss)
-				eProtoss++;			
-			else if (player->getRace() == Races::Terran)
-				eTerran++;			
-			else
-				eRandom++;
-		
+			raceCount[p.getCurrentRace()]++;
 		}
 	}
 
 	void PlayerManager::onFrame()
 	{
 		for (auto &player : thePlayers)
-			update(player.second);		
+			update(player.second);
 	}
 
 	void PlayerManager::update(PlayerInfo& player)
 	{
+		// Clear race count and recount
+		raceCount.clear();
+
 		// Store any upgrades this player has
 		for (auto &upgrade : UpgradeTypes::allUpgradeTypes()) {
 			if (player.player()->getUpgradeLevel(upgrade) > 0)
@@ -42,6 +37,12 @@ namespace McRave
 		for (auto &tech : TechTypes::allTechTypes()) {
 			if (player.player()->hasResearched(tech))
 				player.storeTech(tech);
+		}
+
+		// Add up the number of each race
+		if (player.isAlive()) {
+			player.setCurrentRace(player.player()->getRace());
+			raceCount[player.getCurrentRace()]++;
 		}
 	}
 }

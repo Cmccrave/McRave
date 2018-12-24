@@ -1,9 +1,15 @@
 #include "McRave.h"
+#include "BuildOrder.h"
 #include <fstream>
 
-namespace McRave
+using namespace std;
+using namespace BWAPI;
+using namespace UnitTypes;
+using namespace McRave::BuildOrder::All;
+
+namespace McRave::BuildOrder
 {
-	void BuildOrderManager::onEnd(bool isWinner)
+	void onEnd(bool isWinner)
 	{
 		// File extension including our race initial;
 		const auto mapLearning = false;
@@ -69,7 +75,7 @@ namespace McRave
 		}
 	}
 
-	void BuildOrderManager::onStart()
+	void onStart()
 	{
 		if (!Broodwar->enemy()) {
 			getDefaultBuild();
@@ -242,9 +248,8 @@ namespace McRave
 
 	}
 
-	bool BuildOrderManager::isBuildPossible(string build, string opener)
+	bool isBuildPossible(string build, string opener)
 	{
-		using namespace UnitTypes;
 		vector<UnitType> buildings, defenses;
 
 		if (Broodwar->self()->getRace() == Races::Protoss) {
@@ -284,15 +289,22 @@ namespace McRave
 		return false;
 	}
 
-	bool BuildOrderManager::isBuildAllowed(Race enemy, string build)
+	bool isBuildAllowed(Race enemy, string build)
 	{
+		auto p = enemy == Races::Protoss;
+		auto z = enemy == Races::Zerg;
+		auto t = enemy == Races::Terran;
+		auto r = enemy == Races::Unknown || Races::Random;
+
 		if (Broodwar->self()->getRace() == Races::Protoss) {
-			if (enemy == Races::Protoss)
-				return build == "P1GateCore" || build == "P2Gate" /*|| build == "P12Nexus"*/;
-			if (enemy == Races::Terran)
-				return build == "P1GateCore" || build == "P2Gate" || build == "P12Nexus" || build == "P21Nexus";
-			if (enemy == Races::Zerg)
-				return build == "P1GateCore" || build == "P2Gate" || build == "PFFE";
+			if (build == "P1GateCore")
+				return true;
+			if (build == "P2Gate")
+				return true;
+			if (build == "P12Nexus" || build == "P21Nexus")
+				return t;
+			if (build == "PFFE")
+				return z;
 		}
 
 		if (Broodwar->self()->getRace() == Races::Terran) {
@@ -311,7 +323,7 @@ namespace McRave
 		return false;
 	}
 
-	bool BuildOrderManager::isOpenerAllowed(Race enemy, string build, string opener)
+	bool isOpenerAllowed(Race enemy, string build, string opener)
 	{
 		// Ban certain openers from certain race matchups
 		auto p = enemy == Races::Protoss;
@@ -321,19 +333,19 @@ namespace McRave
 
 		if (Broodwar->self()->getRace() == Races::Protoss) {
 			if (build == "P1GateCore") {
-				//if (opener == "0Zealot")
-				//	return t;
+				if (opener == "0Zealot")
+					return t;
 				if (opener == "1Zealot")
 					return true;
 				if (opener == "2Zealot")
-					return p || t;
+					return p || z || r;
 			}
 
 			if (build == "P2Gate") {
 				if (/*opener == "Proxy" || */opener == "Natural")
 					return true;
 				if (opener == "Main")
-					return z;
+					return z || r;
 			}
 
 			if (build == "PFFE") {
@@ -353,7 +365,7 @@ namespace McRave
 		return false;
 	}
 
-	bool BuildOrderManager::isTransitionAllowed(Race enemy, string build, string transition)
+	bool isTransitionAllowed(Race enemy, string build, string transition)
 	{
 		// Ban certain transitions from certain race matchups
 		auto p = enemy == Races::Protoss;
@@ -366,11 +378,11 @@ namespace McRave
 				if (transition == "DT")
 					return t || z;
 				if (transition == "3GateRobo")
-					return p;
+					return p || r;
 				if (transition == "Corsair")
 					return z;
 				if (transition == "Reaver")
-					return p /*|| t*/;
+					return p /*|| t*/ || r;
 				if (transition == "4Gate")
 					return true;
 			}
@@ -379,7 +391,7 @@ namespace McRave
 				if (transition == "DT")
 					return p || t;
 				if (transition == "Reaver")
-					return p /*|| t*/;
+					return p /*|| t*/ || r;
 				if (transition == "Expand")
 					return p || z;
 				if (transition == "DoubleExpand")
@@ -408,7 +420,7 @@ namespace McRave
 		return false;
 	}
 
-	bool BuildOrderManager::techComplete()
+	bool techComplete()
 	{
 		if (techUnit == UnitTypes::Protoss_Scout || techUnit == UnitTypes::Protoss_Corsair || techUnit == UnitTypes::Protoss_Observer || techUnit == UnitTypes::Terran_Science_Vessel)
 			return (Broodwar->self()->completedUnitCount(techUnit) > 0);
@@ -423,7 +435,7 @@ namespace McRave
 		return (Broodwar->self()->visibleUnitCount(techUnit) > 0);
 	}
 
-	void BuildOrderManager::getDefaultBuild()
+	void getDefaultBuild()
 	{
 		if (Broodwar->self()->getRace() == Races::Protoss) {
 			if (Players().getNumberProtoss() > 0) {
@@ -436,7 +448,7 @@ namespace McRave
 				currentOpener = "2Zealot";
 				currentTransition = "DT";
 			}
-			else if (Players().getNumberTerran() > 0) {
+			else if (Players().getNumberTerran() > 0) {               
 				currentBuild = "P21Nexus";
 				currentOpener = "1Gate";
 				currentTransition = "Standard";
@@ -459,35 +471,35 @@ namespace McRave
 		return;
 	}
 
-	void BuildOrderManager::onFrame()
+	void onFrame()
 	{
 		Display().startClock();
 		updateBuild();
 		Display().performanceTest(__FUNCTION__);
 	}
 
-	void BuildOrderManager::updateBuild()
+	void updateBuild()
 	{
 		if (Broodwar->self()->getRace() == Races::Protoss) {
-			protossOpener();
-			protossTech();
-			protossSituational();
-			protossUnlocks();
+			Protoss::opener();
+			Protoss::tech();
+			Protoss::situational();
+			Protoss::unlocks();
 		}
-		if (Broodwar->self()->getRace() == Races::Terran) {
-			terranOpener();
-			terranTech();
-			terranSituational();
-		}
-		if (Broodwar->self()->getRace() == Races::Zerg) {
-			zergOpener();
-			zergTech();
-			zergSituational();
-			zergUnlocks();
-		}
+		//if (Broodwar->self()->getRace() == Races::Terran) {
+		//	terranOpener();
+		//	terranTech();
+		//	terranSituational();
+		//}
+		//if (Broodwar->self()->getRace() == Races::Zerg) {
+		//	zergOpener();
+		//	zergTech();
+		//	zergSituational();
+		//	zergUnlocks();
+		//}
 	}
 
-	bool BuildOrderManager::shouldExpand()
+	bool shouldExpand()
 	{
 		UnitType baseType = Broodwar->self()->getRace().getResourceDepot();
 
@@ -502,30 +514,30 @@ namespace McRave
 				return true;
 		}
 		else if (Broodwar->self()->getRace() == Races::Zerg) {
-			if (Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() >= 300 && !getOpening)
+			if (Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings::getQueuedMineral() >= 300 && !getOpening)
 				return true;
 		}
 		return false;
 	}
 
-	bool BuildOrderManager::shouldAddProduction()
+	bool shouldAddProduction()
 	{
 		if (Broodwar->self()->getRace() == Races::Zerg) {
-			if (Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Larva) <= 1 && Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() >= 200 && !getOpening)
+			if (Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Larva) <= 1 && Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings::getQueuedMineral() >= 200 && !getOpening)
 				return true;
 		}
 		else {
-			if ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 150) || (!productionSat && Resources().isMinSaturated()))
+			if ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings::getQueuedMineral() > 150) || (!productionSat && Resources().isMinSaturated()))
 				return true;
 		}
 		return false;
 	}
 
-	bool BuildOrderManager::shouldAddGas()
+	bool shouldAddGas()
 	{
 		auto workerCount = Broodwar->self()->completedUnitCount(Broodwar->self()->getRace().getWorker());
 		if (Broodwar->self()->getRace() == Races::Zerg) {
-			if (Resources().isGasSaturated() && Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings().getQueuedMineral() > 500)
+			if (Resources().isGasSaturated() && Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings::getQueuedMineral() > 500)
 				return true;
 		}
 
@@ -541,14 +553,14 @@ namespace McRave
 		return false;
 	}
 
-	int BuildOrderManager::buildCount(UnitType unit)
+	int buildCount(UnitType unit)
 	{
 		if (itemQueue.find(unit) != itemQueue.end())
 			return itemQueue[unit].getActualCount();
 		return 0;
 	}
 
-	bool BuildOrderManager::firstReady()
+	bool firstReady()
 	{
 		if (firstTech != TechTypes::None && Broodwar->self()->hasResearched(firstTech))
 			return true;
@@ -559,7 +571,7 @@ namespace McRave
 		return false;
 	}
 
-	void BuildOrderManager::getNewTech()
+	void getNewTech()
 	{
 		if (!getTech)
 			return;
@@ -579,7 +591,7 @@ namespace McRave
 		}
 	}
 
-	void BuildOrderManager::checkNewTech()
+	void checkNewTech()
 	{
 		// No longer need to choose a tech
 		if (techUnit != UnitTypes::None) {
@@ -617,7 +629,7 @@ namespace McRave
 		}
 	}
 
-	void BuildOrderManager::checkAllTech()
+	void checkAllTech()
 	{
 		bool moreToAdd;
 		set<UnitType> toCheck;
@@ -680,7 +692,7 @@ namespace McRave
 		}
 	}
 
-	void BuildOrderManager::checkExoticTech()
+	void checkExoticTech()
 	{
 		// Corsair/Scout upgrades
 		if ((techList.find(UnitTypes::Protoss_Scout) != techList.end() && currentBuild != "PDTExpand") || (techList.find(UnitTypes::Protoss_Corsair) != techList.end() && Units().getSupply() >= 300))
@@ -697,4 +709,28 @@ namespace McRave
 			itemQueue[UnitTypes::Zerg_Lair] = Item(Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Queens_Nest) < 1);
 		}
 	}
+
+	map<BWAPI::UnitType, Item>& getItemQueue() { return itemQueue; }
+	UnitType getTechUnit() { return techUnit; }
+	UnitType getFirstUnit() { return firstUnit; }
+	UpgradeType getFirstUpgrade() { return firstUpgrade; }
+	TechType getFirstTech() { return firstTech; }
+	set <UnitType>& getTechList() { return  techList; }
+	set <UnitType>& getUnlockedList() { return  unlockedType; }
+	int gasWorkerLimit() { return gasLimit; }
+	bool isWorkerCut() { return cutWorkers; }
+	bool isUnitUnlocked(UnitType unit) { return unlockedType.find(unit) != unlockedType.end(); }
+	bool isTechUnit(UnitType unit) { return techList.find(unit) != techList.end(); }
+	bool isOpener() { return getOpening; }
+	bool isFastExpand() { return fastExpand; }
+	bool shouldScout() { return scout; }
+	bool isWallNat() { return wallNat; }
+	bool isWallMain() { return wallMain; }
+	bool isProxy() { return proxy; }
+	bool isHideTech() { return hideTech; }
+	bool isPlayPassive() { return playPassive; }
+	bool isRush() { return rush; }
+	string getCurrentBuild() { return currentBuild; }
+	string getCurrentOpener() { return currentOpener; }
+	string getCurrentTransition() { return currentTransition; }
 }

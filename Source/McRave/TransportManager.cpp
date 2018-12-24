@@ -314,7 +314,7 @@ void TransportManager::updateMovement(UnitInfo& transport)
 	if (bestPos.isValid())
 		transport.command(UnitCommandTypes::Move, bestPos);
 	else
-		Commands().move(transport);
+		Command::move(transport);
 }
 
 void TransportManager::removeUnit(Unit unit)

@@ -6,67 +6,7 @@
 
 namespace McRave
 {
-	UnitInfo::UnitInfo()
-	{
-		visibleGroundStrength = 0.0;
-		visibleAirStrength = 0.0;
-		maxGroundStrength = 0.0;
-		maxAirStrength = 0.0;
-		priority = 0.0;
-
-		percentHealth = 0.0;
-		percentShield = 0.0;
-		percentTotal = 0.0;
-		groundRange = 0.0;
-		airRange = 0.0;
-		groundDamage = 0.0;
-		airDamage = 0.0;
-		speed = 0.0;
-		engageDist = 0.0;
-		simValue = 0.0;
-		simBonus = 1.0;
-
-		lastAttackFrame = 0;
-		lastVisibleFrame = 0;
-		lastMoveFrame = 0;
-		resourceHeldFrames = 0;
-		remainingTrainFrame = 0;
-		shields = 0;
-		health = 0;
-		minStopFrame = 0;
-		energy = 0;
-
-		killCount = 0;
-
-
-		burrowed = false;
-
-		thisUnit = nullptr;
-		transport = nullptr;
-		unitType = UnitTypes::None;
-		buildingType = UnitTypes::None;
-		player = nullptr;
-		target = nullptr;
-		resource = nullptr;
-		role = Role::None;
-
-		// Default to retreating
-		tState = TransportState::None;
-		lState = LocalState::None;
-		gState = GlobalState::None;
-		sState = SimState::None;
-
-		position = Positions::Invalid;
-		engagePosition = Positions::Invalid;
-		destination = Positions::Invalid;
-		simPosition = Positions::Invalid;
-		lastPos = Positions::Invalid;
-		walkPosition = WalkPositions::Invalid;
-		lastWalk = WalkPositions::Invalid;
-		tilePosition = TilePositions::Invalid;
-		buildPosition = TilePositions::Invalid;
-		lastTile = TilePositions::Invalid;
-	}
+	UnitInfo::UnitInfo() {}
 
 	void UnitInfo::setLastPositions()
 	{
@@ -98,8 +38,10 @@ namespace McRave
 		percentShield			= t.maxShields() > 0 ? double(shields) / double(t.maxShields()) : 1.0;
 		percentTotal			= t.maxHitPoints() + t.maxShields() > 0 ? double(health + shields) / double(t.maxHitPoints() + t.maxShields()) : 1.0;
 		groundRange				= Math::groundRange(*this);
-		airRange				= Math::airRange(*this);
 		groundDamage			= Math::groundDamage(*this);
+		groundReach				= groundRange + (speed * 32.0) + double(unitType.width() / 2);
+		airRange				= Math::airRange(*this);		
+		airReach				= airRange + (speed * 32.0) + double(unitType.width() / 2);
 		airDamage				= Math::airDamage(*this);
 		speed 					= Math::speed(*this);
 		minStopFrame			= Math::getMinStopFrame(t);
@@ -139,7 +81,7 @@ namespace McRave
 
 	void UnitInfo::updateTarget()
 	{
-		// Update my TargetSingleton::Instance()
+		// Update my target
 		if (player && player == Broodwar->self()) {
 			if (unitType == UnitTypes::Terran_Vulture_Spider_Mine) {
 				auto mineTarget = unit()->getOrderTarget();
@@ -153,16 +95,17 @@ namespace McRave
 				TargetSingleton::Instance().getTarget(*this);
 		}
 
-		// Assume enemy TargetSingleton::Instance()
+		// Assume enemy target
 		else if (player && player->isEnemy(Broodwar->self())) {
-
-			if (unitType == UnitTypes::Terran_Vulture_Spider_Mine && UnitSingleton::Instance().getMyUnits().find(thisUnit->getOrderTarget()) != UnitSingleton::Instance().getMyUnits().end())
-				target = &UnitSingleton::Instance().getMyUnits()[thisUnit->getOrderTarget()];
-			else if (unitType != UnitTypes::Terran_Vulture_Spider_Mine && thisUnit->getOrderTarget() && UnitSingleton::Instance().getMyUnits().find(thisUnit->getOrderTarget()) != UnitSingleton::Instance().getMyUnits().end())
+			if (UnitSingleton::Instance().getMyUnits().find(thisUnit->getOrderTarget()) != UnitSingleton::Instance().getMyUnits().end())
 				target = &UnitSingleton::Instance().getMyUnits()[thisUnit->getOrderTarget()];
 			else
 				target = nullptr;
 		}
+
+		// Otherwise no target
+		else
+			target = nullptr;
 	}
 
 	void UnitInfo::updateStuckCheck() {

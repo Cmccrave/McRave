@@ -32,10 +32,10 @@ void StrategyManager::checkEnemyPressure()
 
 void StrategyManager::checkHoldChoke()
 {
-	holdChoke = BuildOrder().isFastExpand()
+	holdChoke = BuildOrder::isFastExpand()
 		|| Units().getGlobalAllyGroundStrength() > Units().getGlobalEnemyGroundStrength()
-		|| BuildOrder().isWallNat()
-		|| BuildOrder().isHideTech()
+		|| BuildOrder::isWallNat()
+		|| BuildOrder::isHideTech()
 		|| Units().getSupply() > 60
 		|| Players().vT();
 }
@@ -77,7 +77,8 @@ void StrategyManager::updateEnemyBuild()
 
 	for (auto &p : Players().getPlayers()) {
 		PlayerInfo &player = p.second;
-		if (player.getRace() == Races::Zerg) {
+
+		if (player.getCurrentRace() == Races::Zerg) {
 
 			// 5 Hatch build detection
 			if (MyStations().getEnemyStations().size() >= 3 || (Units().getEnemyCount(Zerg_Hatchery) + Units().getEnemyCount(Zerg_Lair) >= 4 && Units().getEnemyCount(Zerg_Drone) >= 14))
@@ -156,16 +157,28 @@ void StrategyManager::updateEnemyBuild()
 				}
 			}
 		}
-		if (player.getRace() == Races::Protoss) {
+		if (player.getCurrentRace() == Races::Protoss) {
+
+			auto noGates = Units().getEnemyCount(Protoss_Gateway) == 0;
+			auto noGas = Units().getEnemyCount(Protoss_Assimilator) == 0;
+			auto noExpand = Units().getEnemyCount(Protoss_Nexus) <= 1;
 
 			// Detect missing buildings as a potential 2Gate
-			if (Terrain().getEnemyStartingPosition().isValid() && Broodwar->getFrameCount() > 3000 && Broodwar->isExplored((TilePosition)Terrain().getEnemyStartingPosition()) && Units().getEnemyCount(Protoss_Gateway) == 0 && Units().getEnemyCount(Protoss_Forge) == 0 && Units().getEnemyCount(Protoss_Assimilator) == 0 && Units().getEnemyCount(Protoss_Nexus) == 1 && Units().getEnemyCount(Protoss_Photon_Cannon) == 0 && Units().getEnemyCount(Protoss_Pylon) == 0) {
+			if (Terrain().getEnemyStartingPosition().isValid() && Broodwar->getFrameCount() > 3000 && Broodwar->isExplored((TilePosition)Terrain().getEnemyStartingPosition())) {
 
 				// Check 2 corners scouted
 				auto topLeft = TilePosition(Util().clipToMap(Terrain().getEnemyStartingPosition() - Position(160, 160)));
 				auto botRight = TilePosition(Util().clipToMap(Terrain().getEnemyStartingPosition() + Position(160, 160) + Position(128, 96)));
-				if ((topLeft.isValid() && Grids().lastVisibleFrame(topLeft) > 0) || (botRight.isValid() && Grids().lastVisibleFrame(botRight) > 0))
+				auto maybeProxy = noGates && noGas && noExpand;
+
+				Broodwar->drawTextScreen(0, 100, "%d  %d  %d", noGates, noGas, noExpand);
+
+				if (maybeProxy && ((topLeft.isValid() && Grids().lastVisibleFrame(topLeft) > 0) || (botRight.isValid() && Grids().lastVisibleFrame(botRight) > 0)))
 					enemyBuild = "P2Gate";
+				else if (Units().getEnemyCount(Protoss_Gateway) >= 2 && Units().getEnemyCount(Protoss_Nexus) <= 1 && Units().getEnemyCount(Protoss_Assimilator) <= 0 && Units().getEnemyCount(Protoss_Cybernetics_Core) <= 0 && Units().getEnemyCount(Protoss_Dragoon) <= 0)
+					enemyBuild = "P2Gate";
+				else if (enemyBuild == "P2Gate")
+					enemyBuild = "Unknown";
 			}
 
 			for (auto &u : Units().getEnemyUnits()) {
@@ -229,15 +242,6 @@ void StrategyManager::updateEnemyBuild()
 						enemyBuild = "P4Gate";
 					else if (Units().getEnemyCount(Protoss_Citadel_of_Adun) >= 1 || Units().getEnemyCount(Protoss_Templar_Archives) >= 1 || (!goonRange && Units().getEnemyCount(Protoss_Dragoon) < 2 && Units().getSupply() > 80))
 						enemyBuild = "P1GateDT";
-					else
-						enemyBuild = "Unknown";
-				}
-
-				if (unit.getType() == Protoss_Gateway) {
-					if (Units().getEnemyCount(Protoss_Gateway) >= 2 && Units().getEnemyCount(Protoss_Nexus) <= 1 && Units().getEnemyCount(Protoss_Assimilator) <= 0 && Units().getEnemyCount(Protoss_Cybernetics_Core) <= 0 && Units().getEnemyCount(Protoss_Dragoon) <= 0)
-						enemyBuild = "P2Gate";
-					else if (enemyBuild == "P2Gate")
-						enemyBuild = "Unknown";
 				}
 
 				// Pressure checking
@@ -250,10 +254,10 @@ void StrategyManager::updateEnemyBuild()
 
 				// FE Detection
 				if (unit.getType().isResourceDepot() && !Terrain().isStartingBase(unit.getTilePosition()))
-					enemyFE = true;				
+					enemyFE = true;
 			}
 		}
-		if (player.getRace() == Races::Terran) {
+		if (player.getCurrentRace() == Races::Terran) {
 			for (auto &u : Units().getEnemyUnits()) {
 				UnitInfo &unit = u.second;
 
@@ -276,7 +280,7 @@ void StrategyManager::updateEnemyBuild()
 						enemyBuild = "TBBS";
 					else if (Units().getEnemyCount(Terran_Academy) >= 1 && Units().getEnemyCount(Terran_Engineering_Bay) >= 1)
 						enemyBuild = "TSparks";
-					else 
+					else
 						enemyBuild = "Unknown";
 				}
 
@@ -292,6 +296,10 @@ void StrategyManager::updateEnemyBuild()
 				if (unit.getType() == Terran_Bunker && unit.getPosition().getDistance(Terrain().getEnemyStartingPosition()) < unit.getPosition().getDistance(Terrain().getPlayerStartingPosition()))
 					enemyFE = true;
 			}
+
+			// Shallow two
+			if (Broodwar->self()->getRace() == Races::Protoss && Units().getEnemyCount(UnitTypes::Terran_Medic) >= 2)
+				enemyBuild = "ShallowTwo";
 
 			if (Units().getSupply() < 60 && ((Units().getEnemyCount(Terran_Barracks) >= 2 && Units().getEnemyCount(Terran_Refinery) == 0) || (Units().getEnemyCount(Terran_Marine) > 5 && Units().getEnemyCount(Terran_Bunker) <= 0 && Broodwar->getFrameCount() < 6000)))
 				enemyBuild = "TBBS";
@@ -361,7 +369,7 @@ UnitType StrategyManager::getHighestUnitScore()
 	double best = 0.0;
 	UnitType bestType = None;
 	for (auto &unit : unitScore) {
-		if (BuildOrder().isUnitUnlocked(unit.first) && unit.second > best) {
+		if (BuildOrder::isUnitUnlocked(unit.first) && unit.second > best) {
 			best = unit.second, bestType = unit.first;
 		}
 	}
@@ -523,11 +531,11 @@ void StrategyManager::updateProtossUnitScore(UnitType unit, int cnt)
 void StrategyManager::updateTerranUnitScore(UnitType unit, int count)
 {
 	//for (auto &t : unitScore)
-	//	if (!BuildOrder().isUnitUnlocked(t.first))
+	//	if (!BuildOrder::isUnitUnlocked(t.first))
 	//		t.second = 0.0;
 
 
-	//for (auto &t : BuildOrder().getUnlockedList()) {
+	//for (auto &t : BuildOrder::getUnlockedList()) {
 	//	UnitInfo dummy;
 	//	dummy.setType(t);
 	//	dummy.setPlayer(Broodwar->self());

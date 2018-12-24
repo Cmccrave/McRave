@@ -5,7 +5,8 @@ namespace McRave
 	PlayerInfo::PlayerInfo()
 	{
 		thisPlayer = nullptr;
-		race = Races::None;
+		currentRace = Races::None;
+		startRace = Races::None;
 		alive = true;
 	}
 

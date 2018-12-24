@@ -10,14 +10,15 @@ namespace McRave
 	class PlayerInfo
 	{
 		Player thisPlayer;
-		Race race;
+		Race startRace, currentRace;
 		bool alive;
 		TilePosition startLocation;
 		set <UpgradeType> playerUpgrades;
 		set <TechType> playerTechs;
 	public:
 		PlayerInfo();
-		Race getRace() { return race; }
+		Race getCurrentRace() { return currentRace; }
+		Race getStartRace() { return startRace; }		
 		bool isAlive() { return alive; }
 		bool isEnemy() { return thisPlayer->isEnemy(Broodwar->self()); }
 		bool isAlly() { return thisPlayer->isAlly(Broodwar->self()); }
@@ -29,7 +30,8 @@ namespace McRave
 		void storeUpgrade(UpgradeType upgrade) { playerUpgrades.insert(upgrade); }
 		void storeTech(TechType tech) { playerTechs.insert(tech); }
 
-		void setRace(Race newRace) { race = newRace; }
+		void setCurrentRace(Race newRace) { currentRace = newRace; }
+		void setStartRace(Race newRace) { startRace = newRace; }
 		void setAlive(bool newState) { alive = newState; }
 		void setPlayer(Player newPlayer) { thisPlayer = newPlayer; }
 

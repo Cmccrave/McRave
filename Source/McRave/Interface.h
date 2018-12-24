@@ -14,10 +14,6 @@ namespace McRave
 		int screenOffset = 0;
 		map <string, double> myTest;
 
-		map<int, Unit> dings;
-
-		int color, textColor;
-
 		bool targets = false;
 		bool builds = true;
 		bool bweb = false;

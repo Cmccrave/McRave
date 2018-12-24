@@ -23,6 +23,9 @@ using namespace BWEB;
 
 namespace McRave
 {
+	class UnitInfo;
+	class ResourceInfo;
+
 	enum class Role {
 		None, Working, Fighting, Transporting, Scouting, Producing, Defending, Supporting
 	};
@@ -83,9 +86,6 @@ namespace
 // Namespace to access all managers globally
 namespace McRave
 {
-	inline BuildingManager& Buildings() { return BuildingSingleton::Instance(); }
-	inline BuildOrderManager& BuildOrder() { return BuildOrderSingleton::Instance(); }
-	inline CommandManager& Commands() { return CommandSingleton::Instance(); }
 	inline GoalManager& Goals() { return GoalSingleton::Instance(); }
 	inline GridManager& Grids() { return GridSingleton::Instance(); }
 	inline InterfaceManager& Display() { return InterfaceSingleton::Instance(); }

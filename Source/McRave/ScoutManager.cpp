@@ -98,12 +98,12 @@ void ScoutManager::updateAssignment(UnitInfo& unit)
 	if (((Strategy().enemyProxy() && Strategy().getEnemyBuild() != "P2Gate") || proxyCheck || foundProxyGates) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1)
 		scoutCount++;
 
-	if (BuildOrder().isRush() && Broodwar->self()->getRace() == Races::Zerg && Terrain().getEnemyStartingPosition().isValid())
+	if (BuildOrder::isRush() && Broodwar->self()->getRace() == Races::Zerg && Terrain().getEnemyStartingPosition().isValid())
 		scoutCount = 0;
 	if (Strategy().getEnemyBuild() == "Z5Pool" && Units().getEnemyCount(UnitTypes::Zerg_Zergling) >= 5)
 		scoutCount = 0;
 
-	if (!BuildOrder().firstReady() || !Terrain().getEnemyStartingPosition().isValid()) {
+	if (!BuildOrder::firstReady() || !Terrain().getEnemyStartingPosition().isValid()) {
 
 		// If it's a proxy (maybe cannon rush), try to find the unit to kill
 		if ((Strategy().enemyProxy() || proxyCheck) && scoutCount > 1 && scoutAssignments.find(BWEB::Map::getMainPosition()) == scoutAssignments.end()) {
@@ -159,8 +159,8 @@ void ScoutManager::updateAssignment(UnitInfo& unit)
 		if (unit.getDestination().isValid()) {
 			UnitInfo* enemy = Util().getClosestThreat(unit);
 			if (enemy && enemy->getPosition().getDistance(unit.getPosition()) < 320.0) {
-				if (Commands().hunt(unit)) {}
-				else if (Commands().kite(unit)) {}
+				if (Command::hunt(unit)) {}
+				else if (Command::kite(unit)) {}
 			}
 			else
 				unit.command(UnitCommandTypes::Move, unit.getDestination());

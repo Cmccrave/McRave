@@ -40,7 +40,7 @@ void WorkerManager::updateAssignment(UnitInfo& worker)
 	};
 
 	const auto needGas = [&]() {
-		if (!Resources().isGasSaturated() && ((gasWorkers < BuildOrder().gasWorkerLimit() && BuildOrder().isOpener()) || !BuildOrder().isOpener() || Resources().isMinSaturated()))
+		if (!Resources().isGasSaturated() && ((gasWorkers < BuildOrder::gasWorkerLimit() && BuildOrder::isOpener()) || !BuildOrder::isOpener() || Resources().isMinSaturated()))
 			return true;
 		return false;
 	};
@@ -48,7 +48,7 @@ void WorkerManager::updateAssignment(UnitInfo& worker)
 	// Worker has no resource, we need gas, we need minerals, workers resource is threatened
 	if (!worker.hasResource()
 		|| needGas()
-		|| (worker.hasResource() && !worker.getResource().getType().isMineralField() && gasWorkers > BuildOrder().gasWorkerLimit())
+		|| (worker.hasResource() && !worker.getResource().getType().isMineralField() && gasWorkers > BuildOrder::gasWorkerLimit())
 		|| (worker.hasResource() && !closeToResource(worker) && Util().accurateThreatOnPath(worker, worker.getPath()) && Grids().getEGroundThreat(worker.getWalkPosition()) == 0.0)
 		|| (worker.hasResource() && closeToResource(worker) && Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0))
 		needNewAssignment = true;
@@ -209,12 +209,12 @@ bool WorkerManager::build(UnitInfo& worker)
 
 	// 1) Attack any enemies inside the build area
 	if (worker.hasTarget() && worker.getTarget().getPosition().getDistance(worker.getPosition()) < 160 && (Util().rectangleIntersect(topLeft, botRight, worker.getTarget().getPosition()) || worker.getTarget().getPosition().getDistance(center) < 256.0)) {
-		Commands().attack(worker);
+		Command::attack(worker);
 		return true;
 	}
 
 	// 2) Cancel any buildings we don't need
-	else if ((BuildOrder().buildCount(worker.getBuildingType()) <= Broodwar->self()->visibleUnitCount(worker.getBuildingType()) || !Buildings().isBuildable(worker.getBuildingType(), worker.getBuildPosition()))) {
+	else if ((BuildOrder::buildCount(worker.getBuildingType()) <= Broodwar->self()->visibleUnitCount(worker.getBuildingType()) || !Buildings::isBuildable(worker.getBuildingType(), worker.getBuildPosition()))) {
 		worker.setBuildingType(UnitTypes::None);
 		worker.setBuildPosition(TilePositions::Invalid);
 		worker.unit()->stop();
@@ -227,7 +227,7 @@ bool WorkerManager::build(UnitInfo& worker)
 
 		if (worker.getPosition().getDistance(center) > 128.0) {
 			if (worker.getBuildingType().isResourceDepot())
-				Commands().move(worker);
+				Command::move(worker);
 			else if (worker.unit()->getOrderTargetPosition() != center)
 				worker.unit()->move(center);
 		}
@@ -241,7 +241,7 @@ bool WorkerManager::build(UnitInfo& worker)
 bool WorkerManager::clearPath(UnitInfo& worker)
 {
 	auto resourceDepot = Broodwar->self()->getRace().getResourceDepot();
-	if (Units().getMyTypeCount(resourceDepot) < 2 || (BuildOrder().buildCount(resourceDepot) == Units().getMyTypeCount(resourceDepot) && BuildOrder().isOpener()))
+	if (Units().getMyTypeCount(resourceDepot) < 2 || (BuildOrder::buildCount(resourceDepot) == Units().getMyTypeCount(resourceDepot) && BuildOrder::isOpener()))
 		return false;
 
 	// Find boulders to clear
@@ -315,7 +315,7 @@ bool WorkerManager::gather(UnitInfo& worker)
 
 		// 4) If we are under a threat, try to get away from it
 		else if (Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0) {
-			Commands().kite(worker);
+			Command::kite(worker);
 			return true;
 		}
 	}

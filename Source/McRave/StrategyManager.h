@@ -37,6 +37,10 @@ namespace McRave
 		void checkEnemyRush();
 		void checkHoldChoke();
 
+		void checkEnemyZBuild();
+		void checkEnemyTBuild();
+		void checkEnemyPBuild();
+
 		void updateScoring();
 		void updateSituationalBehaviour();
 		void updateEnemyBuild();

@@ -89,6 +89,7 @@ namespace McRave
 		void onUnitComplete(Unit);
 
 		void storeUnit(Unit);
+		void removeUnit(Unit);
 	};
 }
 

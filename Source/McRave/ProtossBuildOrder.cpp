@@ -1,8 +1,10 @@
 #include "McRave.h"
 
-namespace McRave
+using namespace McRave::BuildOrder::All;
+
+namespace McRave::BuildOrder::Protoss
 {
-	void BuildOrderManager::protossOpener()
+	void opener()
 	{
 		if (currentBuild == "P1GateCore") P1GateCore();
 		if (currentBuild == "PFFE") PFFE();
@@ -11,13 +13,13 @@ namespace McRave
 		if (currentBuild == "P2Gate") P2Gate();
 
 
-		if (currentBuild == "PScoutMemes") PScoutMemes();
-		if (currentBuild == "PDWEBMemes") PDWEBMemes();
-		if (currentBuild == "PArbiterMemes") PArbiterMemes();
-		if (currentBuild == "PShuttleMemes") PShuttleMemes();
+		//if (currentBuild == "PScoutMemes") PScoutMemes();
+		//if (currentBuild == "PDWEBMemes") PDWEBMemes();
+		//if (currentBuild == "PArbiterMemes") PArbiterMemes();
+		//if (currentBuild == "PShuttleMemes") PShuttleMemes();
 	}
 
-	void BuildOrderManager::protossTech()
+	void tech()
 	{
 		if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Cybernetics_Core) == 0)
 			return;
@@ -64,7 +66,7 @@ namespace McRave
 		checkExoticTech();
 	}
 
-	void BuildOrderManager::protossSituational()
+	void situational()
 	{
 		auto skipFirstTech = (currentBuild == "P4Gate" || currentTransition == "DoubleExpand" || (Strategy().enemyGasSteal() && !Terrain().isNarrowNatural()));
 
@@ -100,7 +102,7 @@ namespace McRave
 			if (buildCount(UnitTypes::Protoss_Pylon) < total)
 				itemQueue[UnitTypes::Protoss_Pylon] = Item(total);
 
-			if (!getOpening && !Buildings().hasPoweredPositions() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 10)
+			if (!getOpening && !Buildings::hasPoweredPositions() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 10)
 				itemQueue[UnitTypes::Protoss_Pylon] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) + 1);
 		}
 
@@ -114,12 +116,8 @@ namespace McRave
 
 			// Adding production
 			if (shouldAddProduction()) {
-				if (Terrain().isIslandMap())
-					protossIslandPlay();				
-				else {
-					int gateCount = min(Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) + 1);
-					itemQueue[UnitTypes::Protoss_Gateway] = Item(gateCount);
-				}
+				int gateCount = min(Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) + 1);
+				itemQueue[UnitTypes::Protoss_Gateway] = Item(gateCount);
 			}
 
 			// Adding gas
@@ -151,7 +149,7 @@ namespace McRave
 		return;
 	}
 
-	void BuildOrderManager::protossUnlocks()
+	void unlocks()
 	{
 		// Leg upgrade check
 		auto zealotLegs = Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) > 0
@@ -174,14 +172,14 @@ namespace McRave
 
 		// Check if we should always make Dragoons
 		if ((Players().vZ() && Broodwar->getFrameCount() > 20000)
-				|| Units().getEnemyCount(UnitTypes::Zerg_Lurker) > 0
-				|| dragoonLimit > Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon))
+			|| Units().getEnemyCount(UnitTypes::Zerg_Lurker) > 0
+			|| dragoonLimit > Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon))
 			unlockedType.insert(UnitTypes::Protoss_Dragoon);
 		else
 			unlockedType.erase(UnitTypes::Protoss_Dragoon);
 	}
 
-	void BuildOrderManager::protossIslandPlay()
+	void island()
 	{
 		if (shouldAddProduction()) {
 
@@ -191,7 +189,7 @@ namespace McRave
 				int roboCount = min(nexusCount - 2, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Robotics_Facility) + 1);
 				int stargateCount = min(nexusCount, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Stargate) + 1);
 
-				if (Broodwar->self()->gas() - Production().getReservedGas() - Buildings().getQueuedGas() > 150) {
+				if (Broodwar->self()->gas() - Production().getReservedGas() - Buildings::getQueuedGas() > 150) {
 					itemQueue[UnitTypes::Protoss_Stargate] = Item(stargateCount);
 					itemQueue[UnitTypes::Protoss_Robotics_Facility] = Item(roboCount);
 					itemQueue[UnitTypes::Protoss_Robotics_Support_Bay] = Item(1);
@@ -204,7 +202,7 @@ namespace McRave
 				int nexusCount = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
 				int gateCount = min(Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) + 1);
 
-				if (Broodwar->self()->gas() - Production().getReservedGas() - Buildings().getQueuedGas() > 200) {
+				if (Broodwar->self()->gas() - Production().getReservedGas() - Buildings::getQueuedGas() > 200) {
 					itemQueue[UnitTypes::Protoss_Robotics_Support_Bay] = Item(1);
 					if (techList.find(UnitTypes::Protoss_Scout) != techList.end() || techList.find(UnitTypes::Protoss_Carrier) != techList.end())
 						itemQueue[UnitTypes::Protoss_Stargate] = Item(nexusCount);
@@ -217,7 +215,7 @@ namespace McRave
 			else {
 				int nexusCount = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
 				int stargateCount = min(nexusCount + 1, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Stargate) + 1);
-				if (Broodwar->self()->gas() - Production().getReservedGas() - Buildings().getQueuedGas() > 150) {
+				if (Broodwar->self()->gas() - Production().getReservedGas() - Buildings::getQueuedGas() > 150) {
 					itemQueue[UnitTypes::Protoss_Stargate] = Item(stargateCount);
 					itemQueue[UnitTypes::Protoss_Robotics_Facility] = Item(min(1, stargateCount - 2));
 					itemQueue[UnitTypes::Protoss_Robotics_Support_Bay] = Item(1);

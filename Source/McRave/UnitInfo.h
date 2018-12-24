@@ -3,49 +3,77 @@
 #include "..\BWEB\BWEB.h"
 #include "McRave.h"
 #include "UnitMath.h"
+#include "PlayerInfo.h"
+#include "ResourceInfo.h"
 
 using namespace BWAPI;
 using namespace std;
 
 namespace McRave
 {
-	class ResourceInfo;
-
 	class UnitInfo {
-		double percentHealth, percentShield, percentTotal, groundRange, airRange, groundDamage, airDamage, speed;						// StarCraft stats
-		double visibleGroundStrength, visibleAirStrength, maxGroundStrength, maxAirStrength, priority;		// McRave stats
-		double engageDist;
-		double simValue, simBonus;
-		int lastAttackFrame, lastVisibleFrame, shields, health, minStopFrame;
-		int killCount, frameCreated;
-		int lastMoveFrame;
-		int resourceHeldFrames;
-		int remainingTrainFrame;
-		int energy;
+		double visibleGroundStrength = 0.0;
+		double visibleAirStrength = 0.0;
+		double maxGroundStrength = 0.0;
+		double maxAirStrength = 0.0;
+		double priority = 0.0;
+		double percentHealth = 0.0;
+		double percentShield = 0.0;
+		double percentTotal = 0.0;
+		double groundRange = 0.0;
+		double groundReach = 0.0;
+		double groundDamage = 0.0;
+		double airRange = 0.0;		
+		double airReach = 0.0;
+		double airDamage = 0.0;
+		double speed = 0.0;
+		double engageDist = 0.0;
+		double simValue = 0.0;
+		double simBonus = 1.0;
 
-		int beingAttackedCount;
+		int lastAttackFrame = 0;
+		int lastVisibleFrame = 0;
+		int lastMoveFrame = 0;
+		int resourceHeldFrames = 0;
+		int remainingTrainFrame = 0;
+		int frameCreated = 0;
+		int shields = 0;
+		int health = 0;
+		int minStopFrame = 0;
+		int energy = 0;
+		int killCount = 0;
+		int beingAttackedCount = 0;
 
-		bool burrowed, flying;
-		bool commandedThisFrame;
+		bool burrowed = false;
+		bool flying = false;
 
-		Unit thisUnit;
-		UnitType unitType, buildingType;
-		Player player;
+		Player player = nullptr;
+		Unit thisUnit = nullptr;
+		UnitInfo * transport = nullptr;		
+		UnitInfo * target = nullptr;
+		ResourceInfo * resource = nullptr;
 
-		Role role;
-		TransportState tState;
-		GlobalState gState;
-		LocalState lState;
-		SimState sState;
+		set<UnitInfo*> assignedCargo ={};
 
-		UnitInfo* target;
-		UnitInfo* transport;
-		ResourceInfo* resource;
-		set<UnitInfo*> assignedCargo;
+		TransportState tState = TransportState::None;
+		LocalState lState = LocalState::None;
+		GlobalState gState = GlobalState::None;
+		SimState sState = SimState::None;
+		Role role = Role::None;
 
-		Position position, engagePosition, destination, simPosition, lastPos;
-		WalkPosition walkPosition, lastWalk;
-		TilePosition tilePosition, buildPosition, lastTile;
+		UnitType unitType = UnitTypes::None;
+		UnitType buildingType = UnitTypes::None;
+
+		Position position = Positions::Invalid;
+		Position engagePosition = Positions::Invalid;
+		Position destination = Positions::Invalid;
+		Position simPosition = Positions::Invalid;
+		Position lastPos = Positions::Invalid;
+		WalkPosition walkPosition = WalkPositions::Invalid;
+		WalkPosition lastWalk = WalkPositions::Invalid;
+		TilePosition tilePosition = TilePositions::Invalid;
+		TilePosition buildPosition = TilePositions::Invalid;
+		TilePosition lastTile = TilePositions::Invalid;
 
 		BWEB::PathFinding::Path path;
 		BWEB::PathFinding::Path resourcePath;
@@ -150,9 +178,11 @@ namespace McRave
 		double getMaxGroundStrength()		{ return maxGroundStrength; }			// Returns the units max ground strength		
 		double getVisibleAirStrength()		{ return visibleAirStrength; }			// Returns the units visible air strength		
 		double getMaxAirStrength()			{ return maxAirStrength; }				// Returns the units max air strength
-		double getGroundRange()				{ return groundRange; }					// Returns the units ground range including upgrades		
-		double getAirRange()				{ return airRange; }					// Returns the units air range including upgrades				
-		double getGroundDamage()			{ return groundDamage; }				// Returns the units ground damage (not including most upgrades)		
+		double getGroundRange()				{ return groundRange; }					// Returns the units ground range including upgrades
+		double getGroundReach()				{ return groundReach; }
+		double getGroundDamage()			{ return groundDamage; }				// Returns the units ground damage (not including most upgrades)	
+		double getAirRange()				{ return airRange; }					// Returns the units air range including upgrades	
+		double getAirReach()				{ return airReach; }
 		double getAirDamage()				{ return airDamage; }					// Returns the units air damage (not including most upgrades)		
 		double getSpeed()					{ return speed; }						// Returns the units movement speed in pixels per frame including upgrades	
 		int getShields()					{ return shields; }

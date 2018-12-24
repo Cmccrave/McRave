@@ -33,7 +33,7 @@ namespace McRave
 			// CC/Nexus
 			else if (building.getType().isResourceDepot() && latencyIdle) {
 				for (auto &unit : building.getType().buildsWhat()) {
-					if (unit.isAddon() && !building.unit()->getAddon() && BuildOrder().getItemQueue().find(unit) != BuildOrder().getItemQueue().end() && BuildOrder().getItemQueue().at(unit).getActualCount() > Broodwar->self()->visibleUnitCount(unit)) {
+					if (unit.isAddon() && !building.unit()->getAddon() && BuildOrder::getItemQueue().find(unit) != BuildOrder::getItemQueue().end() && BuildOrder::getItemQueue().at(unit).getActualCount() > Broodwar->self()->visibleUnitCount(unit)) {
 						building.unit()->buildAddon(unit);
 						continue;
 					}
@@ -52,8 +52,7 @@ namespace McRave
 
 	void ProductionManager::MadMix(UnitInfo& building)
 	{
-		auto needOverlords = Units().getMyTypeCount(UnitTypes::Zerg_Overlord) <= min(22, (int)floor((Units().getSupply() / max(14, 16 - Units().getMyTypeCount(UnitTypes::Zerg_Overlord)))));	
-		
+		auto needOverlords = Units().getMyTypeCount(UnitTypes::Zerg_Overlord) <= min(22, (int)floor((Units().getSupply() / max(14, 16 - Units().getMyTypeCount(UnitTypes::Zerg_Overlord)))));		
 
 		for (auto &larva : building.unit()->getLarva()) {
 
@@ -65,12 +64,12 @@ namespace McRave
 
 				for (auto &type : Strategy().getUnitScores()) {
 					UnitType unit = type.first;
-					double mineral = unit.mineralPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->minerals() - reservedMineral - Buildings().getQueuedMineral()) / (double)unit.mineralPrice())) : 1.0;
-					double gas = unit.gasPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->gas() - reservedGas - Buildings().getQueuedGas()) / (double)unit.gasPrice())) : 1.0;
+					double mineral = unit.mineralPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->minerals() - reservedMineral - Buildings::getQueuedMineral()) / (double)unit.mineralPrice())) : 1.0;
+					double gas = unit.gasPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->gas() - reservedGas - Buildings::getQueuedGas()) / (double)unit.gasPrice())) : 1.0;
 					double score = max(0.01, Strategy().getUnitScore(unit));
 					double value = score * mineral * gas;
 					
-					if (BuildOrder().isUnitUnlocked(type.first) && value > best && isCreateable(building.unit(), type.first) && (isAffordable(type.first) || type.first == Strategy().getHighestUnitScore()) && isSuitable(type.first)) {
+					if (BuildOrder::isUnitUnlocked(type.first) && value > best && isCreateable(building.unit(), type.first) && (isAffordable(type.first) || type.first == Strategy().getHighestUnitScore()) && isSuitable(type.first)) {
 						best = value;
 						typeBest = type.first;
 					}
@@ -81,7 +80,7 @@ namespace McRave
 						larva->morph(typeBest);
 						return;	// Only produce 1 unit per frame to allow for scores to be re-calculated
 					}
-					else if (BuildOrder().isTechUnit(typeBest)){
+					else if (BuildOrder::isTechUnit(typeBest)){
 						idleProduction[building.unit()] = typeBest;
 					}
 				}
@@ -97,22 +96,22 @@ namespace McRave
 		UnitType bestType = UnitTypes::None;
 		for (auto &unit : building.getType().buildsWhat()) {
 
-			double mineral = unit.mineralPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->minerals() - reservedMineral - Buildings().getQueuedMineral()) / (double)unit.mineralPrice())) : 1.0;
-			double gas = unit.gasPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->gas() - reservedGas - Buildings().getQueuedGas()) / (double)unit.gasPrice())) : 1.0;
+			double mineral = unit.mineralPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->minerals() - reservedMineral - Buildings::getQueuedMineral()) / (double)unit.mineralPrice())) : 1.0;
+			double gas = unit.gasPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->gas() - reservedGas - Buildings::getQueuedGas()) / (double)unit.gasPrice())) : 1.0;
 			double score = max(0.01, Strategy().getUnitScore(unit));
 			double value = score * mineral * gas;
 			
-			if (unit.isAddon() && BuildOrder().getItemQueue().find(unit) != BuildOrder().getItemQueue().end() && BuildOrder().getItemQueue().at(unit).getActualCount() > Broodwar->self()->visibleUnitCount(unit)) {
+			if (unit.isAddon() && BuildOrder::getItemQueue().find(unit) != BuildOrder::getItemQueue().end() && BuildOrder::getItemQueue().at(unit).getActualCount() > Broodwar->self()->visibleUnitCount(unit)) {
 				building.unit()->buildAddon(unit);
 				break;
 			}
 
 			// If we teched to DTs, try to create as many as possible
-			if (unit == UnitTypes::Protoss_Dark_Templar && BuildOrder().getTechList().size() == 1 && isCreateable(building.unit(), unit) && isSuitable(unit)) {
+			if (unit == UnitTypes::Protoss_Dark_Templar && BuildOrder::getTechList().size() == 1 && isCreateable(building.unit(), unit) && isSuitable(unit)) {
 				best = DBL_MAX;
 				bestType = unit;
 			}
-			else if (unit == BuildOrder().getTechUnit() && isCreateable(building.unit(), unit) && isSuitable(unit) && Broodwar->self()->visibleUnitCount(unit) == 0 && isAffordable(unit)) {
+			else if (unit == BuildOrder::getTechUnit() && isCreateable(building.unit(), unit) && isSuitable(unit) && Broodwar->self()->visibleUnitCount(unit) == 0 && isAffordable(unit)) {
 				best = DBL_MAX;
 				bestType = unit;
 			}
@@ -140,7 +139,7 @@ namespace McRave
 				bestType = UnitTypes::Protoss_Zealot;
 
 			// Else if this is a tech unit, add it to idle production
-			else if (BuildOrder().getTechUnit() == bestType || BuildOrder().getTechList().find(bestType) != BuildOrder().getTechList().end()) {
+			else if (BuildOrder::getTechUnit() == bestType || BuildOrder::getTechList().find(bestType) != BuildOrder::getTechList().end()) {
 				if (Units().getSupply() < 380)
 					idleFrame = Broodwar->getFrameCount();
 
@@ -181,10 +180,10 @@ namespace McRave
 
 	bool ProductionManager::isAffordable(UnitType unit)
 	{
-		auto mineralReserve = int(!BuildOrder().isTechUnit(unit)) * reservedMineral;
-		auto gasReserve = int(!BuildOrder().isTechUnit(unit)) * reservedGas;
-		auto mineralAffordable = (Broodwar->self()->minerals() >= unit.mineralPrice() + Buildings().getQueuedMineral() + mineralReserve) || unit.mineralPrice() == 0;
-		auto gasAffordable = (Broodwar->self()->gas() >= unit.gasPrice() + Buildings().getQueuedGas() + gasReserve) || unit.gasPrice() == 0;
+		auto mineralReserve = int(!BuildOrder::isTechUnit(unit)) * reservedMineral;
+		auto gasReserve = int(!BuildOrder::isTechUnit(unit)) * reservedGas;
+		auto mineralAffordable = (Broodwar->self()->minerals() >= unit.mineralPrice() + Buildings::getQueuedMineral() + mineralReserve) || unit.mineralPrice() == 0;
+		auto gasAffordable = (Broodwar->self()->gas() >= unit.gasPrice() + Buildings::getQueuedGas() + gasReserve) || unit.gasPrice() == 0;
 		auto supplyAffordable = Units().getSupply() + unit.supplyRequired() <= Broodwar->self()->supplyTotal();
 
 		return mineralAffordable && gasAffordable && supplyAffordable;
@@ -202,7 +201,7 @@ namespace McRave
 
 	bool ProductionManager::isCreateable(Unit building, UnitType unit)
 	{
-		if (!BuildOrder().isUnitUnlocked(unit))
+		if (!BuildOrder::isUnitUnlocked(unit))
 			return false;
 
 		switch (unit)
@@ -286,7 +285,7 @@ namespace McRave
 
 	bool ProductionManager::isCreateable(UpgradeType upgrade)
 	{
-		if (upgrade == BuildOrder().getFirstUpgrade() && Broodwar->self()->getUpgradeLevel(upgrade) == 0 && !Broodwar->self()->isUpgrading(upgrade))
+		if (upgrade == BuildOrder::getFirstUpgrade() && Broodwar->self()->getUpgradeLevel(upgrade) == 0 && !Broodwar->self()->isUpgrading(upgrade))
 			return true;
 
 		// Some hardcoded ones
@@ -294,7 +293,7 @@ namespace McRave
 			return Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Hive);
 
 		for (auto &unit : upgrade.whatUses()) {		
-			if (BuildOrder().isUnitUnlocked(unit) && Broodwar->self()->getUpgradeLevel(upgrade) != upgrade.maxRepeats() && !Broodwar->self()->isUpgrading(upgrade))
+			if (BuildOrder::isUnitUnlocked(unit) && Broodwar->self()->getUpgradeLevel(upgrade) != upgrade.maxRepeats() && !Broodwar->self()->isUpgrading(upgrade))
 				return true;
 		}
 		return false;
@@ -302,11 +301,11 @@ namespace McRave
 
 	bool ProductionManager::isCreateable(TechType tech)
 	{
-		if (tech == BuildOrder().getFirstTech() && !Broodwar->self()->hasResearched(tech) && !Broodwar->self()->isResearching(tech))
+		if (tech == BuildOrder::getFirstTech() && !Broodwar->self()->hasResearched(tech) && !Broodwar->self()->isResearching(tech))
 			return true;
 
 		for (auto &unit : tech.whatUses()) {
-			if (BuildOrder().isUnitUnlocked(unit) && !Broodwar->self()->hasResearched(tech) && !Broodwar->self()->isResearching(tech))
+			if (BuildOrder::isUnitUnlocked(unit) && !Broodwar->self()->hasResearched(tech) && !Broodwar->self()->isResearching(tech))
 				return true;
 		}
 		return false;
@@ -384,9 +383,9 @@ namespace McRave
 		case Terran_Medic:
 			return Broodwar->self()->completedUnitCount(unit) * 4 < Broodwar->self()->completedUnitCount(Terran_Marine);
 		case Terran_Ghost:
-			return BuildOrder().getCurrentBuild() == "TNukeMemes";
+			return BuildOrder::getCurrentBuild() == "TNukeMemes";
 		case Terran_Nuclear_Missile:
-			return BuildOrder().getCurrentBuild() == "TNukeMemes";
+			return BuildOrder::getCurrentBuild() == "TNukeMemes";
 
 			// Factory Units
 		case Terran_Vulture:
@@ -398,9 +397,9 @@ namespace McRave
 
 			// Starport Units
 		case Terran_Wraith:
-			return BuildOrder().getCurrentBuild() == "T2PortWraith";
+			return BuildOrder::getCurrentBuild() == "T2PortWraith";
 		case Terran_Valkyrie:
-			return BuildOrder().getCurrentBuild() == "T2PortWraith";
+			return BuildOrder::getCurrentBuild() == "T2PortWraith";
 		case Terran_Battlecruiser:
 			return true;
 		case Terran_Science_Vessel:
@@ -416,22 +415,22 @@ namespace McRave
 		using namespace UpgradeTypes;
 
 		// Allow first upgrade
-		if (upgrade == BuildOrder().getFirstUpgrade() && !BuildOrder().firstReady())
+		if (upgrade == BuildOrder::getFirstUpgrade() && !BuildOrder::firstReady())
 			return true;
 
 		// If this is a specific unit upgrade, check if it's unlocked
 		if (upgrade.whatUses().size() == 1) {
 			for (auto &unit : upgrade.whatUses()) {
-				if (!BuildOrder().isUnitUnlocked(unit))
+				if (!BuildOrder::isUnitUnlocked(unit))
 					return false;
 			}
 		}
 
 		// If this isn't the first tech/upgrade and we don't have our first tech/upgrade
-		if (upgrade != BuildOrder().getFirstUpgrade()) {
-			if (BuildOrder().getFirstUpgrade() != UpgradeTypes::None && Broodwar->self()->getUpgradeLevel(BuildOrder().getFirstUpgrade()) <= 0 && !Broodwar->self()->isUpgrading(BuildOrder().getFirstUpgrade()))
+		if (upgrade != BuildOrder::getFirstUpgrade()) {
+			if (BuildOrder::getFirstUpgrade() != UpgradeTypes::None && Broodwar->self()->getUpgradeLevel(BuildOrder::getFirstUpgrade()) <= 0 && !Broodwar->self()->isUpgrading(BuildOrder::getFirstUpgrade()))
 				return false;
-			if (BuildOrder().getFirstTech() != TechTypes::None && !Broodwar->self()->hasResearched(BuildOrder().getFirstTech()) && !Broodwar->self()->isResearching(BuildOrder().getFirstTech()))
+			if (BuildOrder::getFirstTech() != TechTypes::None && !Broodwar->self()->hasResearched(BuildOrder::getFirstTech()) && !Broodwar->self()->isResearching(BuildOrder::getFirstTech()))
 				return false;
 		}
 
@@ -497,7 +496,7 @@ namespace McRave
 			case U_238_Shells:
 				return Broodwar->self()->hasResearched(TechTypes::Stim_Packs);
 			case Terran_Infantry_Weapons:
-				return (BuildOrder().isBioBuild());
+				return true;// (BuildOrder::isBioBuild());
 			case Terran_Infantry_Armor:
 				return (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Terran_Infantry_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Terran_Infantry_Armor) || Broodwar->self()->isUpgrading(UpgradeTypes::Terran_Infantry_Weapons));
 
@@ -551,22 +550,22 @@ namespace McRave
 		using namespace TechTypes;
 
 		// Allow first upgrade
-		if (tech == BuildOrder().getFirstTech() && !BuildOrder().firstReady())
+		if (tech == BuildOrder::getFirstTech() && !BuildOrder::firstReady())
 			return true;
 
 		// If this is a specific unit tech, check if it's unlocked
 		if (tech.whatUses().size() == 1) {
 			for (auto &unit : tech.whatUses()) {
-				if (!BuildOrder().isUnitUnlocked(unit))
+				if (!BuildOrder::isUnitUnlocked(unit))
 					return false;
 			}
 		}
 
 		// If this isn't the first tech/upgrade and we don't have our first tech/upgrade
-		if (tech != BuildOrder().getFirstTech()) {
-			if (BuildOrder().getFirstUpgrade() != UpgradeTypes::None && Broodwar->self()->getUpgradeLevel(BuildOrder().getFirstUpgrade()) <= 0 && !Broodwar->self()->isUpgrading(BuildOrder().getFirstUpgrade()))
+		if (tech != BuildOrder::getFirstTech()) {
+			if (BuildOrder::getFirstUpgrade() != UpgradeTypes::None && Broodwar->self()->getUpgradeLevel(BuildOrder::getFirstUpgrade()) <= 0 && !Broodwar->self()->isUpgrading(BuildOrder::getFirstUpgrade()))
 				return false;
-			if (BuildOrder().getFirstTech() != TechTypes::None && !Broodwar->self()->hasResearched(BuildOrder().getFirstTech()) && !Broodwar->self()->isResearching(BuildOrder().getFirstTech()))
+			if (BuildOrder::getFirstTech() != TechTypes::None && !Broodwar->self()->hasResearched(BuildOrder::getFirstTech()) && !Broodwar->self()->isResearching(BuildOrder::getFirstTech()))
 				return false;
 		}
 
@@ -586,7 +585,7 @@ namespace McRave
 		else if (Broodwar->self()->getRace() == Races::Terran) {
 			switch (tech) {
 			case Stim_Packs:
-				return BuildOrder().isBioBuild();
+				return true;// BuildOrder::isBioBuild();
 			case Spider_Mines:
 				return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Ion_Thrusters) > 0 || Broodwar->self()->isUpgrading(UpgradeTypes::Ion_Thrusters);
 			case Tank_Siege_Mode:

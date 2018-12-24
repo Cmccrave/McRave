@@ -62,10 +62,10 @@ bool UtilManager::proactivePullWorker(UnitInfo& unit)
 		if (unit.getType() == UnitTypes::Protoss_Probe && (unit.getShields() < 20 || (unit.hasResource() && unit.getResource().getType().isRefinery())))
 			return false;
 
-		if (BuildOrder().isHideTech() && completedDefenders == 1 && Units().getMyUnits().size() == 1)
+		if (BuildOrder::isHideTech() && completedDefenders == 1 && Units().getMyUnits().size() == 1)
 			return true;
 
-		if (BuildOrder().getCurrentBuild() == "PFFE") {
+		if (BuildOrder::getCurrentBuild() == "PFFE") {
 			if (Units().getEnemyCount(UnitTypes::Zerg_Zergling) >= 5) {
 				if (Strategy().getEnemyBuild() == "Z5Pool" && Units().getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
 					return true;
@@ -83,15 +83,15 @@ bool UtilManager::proactivePullWorker(UnitInfo& unit)
 					return true;
 			}
 		}
-		else if (BuildOrder().getCurrentBuild() == "P2GateExpand") {
+		else if (BuildOrder::getCurrentBuild() == "P2GateExpand") {
 			if (Strategy().getEnemyBuild() == "Z5Pool" && Units().getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 2)
 				return true;
 			if (Strategy().getEnemyBuild() == "Z9Pool" && Units().getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 3)
 				return true;
 		}
 	}
-	else if (Broodwar->self()->getRace() == Races::Terran && BuildOrder().isWallNat()) {
-		if (Strategy().enemyRush() && BuildOrder().isFastExpand() && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) < 1)
+	else if (Broodwar->self()->getRace() == Races::Terran && BuildOrder::isWallNat()) {
+		if (Strategy().enemyRush() && BuildOrder::isFastExpand() && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) < 1)
 			return true;
 	}
 	else if (Broodwar->self()->getRace() == Races::Zerg)
@@ -155,7 +155,7 @@ bool UtilManager::pullRepairWorker(UnitInfo& unit)
 			+ Broodwar->self()->completedUnitCount(UnitTypes::Terran_Valkyrie);
 
 		//if ((mechUnits > 0 && Units().getRepairWorkers() < Units().getSupply() / 30)
-		//	|| (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) > 0 && BuildOrder().isFastExpand() && Units().getRepairWorkers() < 2))
+		//	|| (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) > 0 && BuildOrder::isFastExpand() && Units().getRepairWorkers() < 2))
 		//	return true;
 	}
 	return false;
@@ -424,10 +424,10 @@ Position UtilManager::getConcavePosition(UnitInfo& unit, BWEM::Area const * area
 			|| (here != Terrain().getDefendPosition() && dist < min)
 			|| unit.getType() == UnitTypes::Protoss_Reaver && Terrain().isDefendNatural() && mapBWEM.GetArea(w) != BWEB::Map::getNaturalArea()
 			|| dist > distBest
-			|| Commands().overlapsCommands(unit.unit(), UnitTypes::None, p, 8)
-			|| Commands().isInDanger(unit, p)
+			|| Command::overlapsCommands(unit.unit(), UnitTypes::None, p, 8)
+			|| Command::isInDanger(unit, p)
 			|| !Util().isWalkable(unit.getWalkPosition(), w, unit.getType())
-			|| Buildings().overlapsQueuedBuilding(unit.getType(), t))
+			|| Buildings::overlapsQueuedBuilding(unit.getType(), t))
 			return false;
 
 		bestPosition = p;

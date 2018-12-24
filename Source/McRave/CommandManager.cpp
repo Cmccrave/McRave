@@ -1,103 +1,91 @@
-#include "McRave.h"
+#include "CommandManager.h"
 
-namespace McRave
+namespace McRave::Command
 {
-	void CommandManager::onFrame()
-	{
-		Display().startClock();
-		updateEnemyCommands();
-		updateUnits();
-		Display().performanceTest(__FUNCTION__);
-	}
+	namespace {			   
+		void updateEnemyCommands()
+		{
+			// Clear cache
+			enemyCommands.clear();
 
-	void CommandManager::updateEnemyCommands()
-	{
-		// Clear cache
-		enemyCommands.clear();
+			// Store bullets as enemy units if they can affect us too
+			for (auto &b : Broodwar->getBullets()) {
+				if (b && b->exists()) {
+					if (b->getType() == BulletTypes::Psionic_Storm)
+						addCommand(nullptr, b->getPosition(), TechTypes::Psionic_Storm, true);
 
-		// Store bullets as enemy units if they can affect us too
-		for (auto &b : Broodwar->getBullets()) {
-			if (b && b->exists()) {
-				if (b->getType() == BulletTypes::Psionic_Storm)
-					addCommand(nullptr, b->getPosition(), TechTypes::Psionic_Storm, true);
-
-				if (b->getType() == BulletTypes::EMP_Missile)
-					addCommand(nullptr, b->getTargetPosition(), TechTypes::EMP_Shockwave, true);
-			}
-		}
-
-		// Store enemy detection and assume casting orders
-		for (auto &u : Units().getEnemyUnits()) {
-			UnitInfo& unit = u.second;
-
-			if (!unit.unit() || (unit.unit()->exists() && (unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())))
-				continue;
-
-			if (unit.getType().isDetector())
-				Commands().addCommand(unit.unit(), unit.getPosition(), unit.getType(), true);
-
-			if (unit.unit()->exists()) {
-				Order enemyOrder = unit.unit()->getOrder();
-				Position enemyTarget = unit.unit()->getOrderTargetPosition();
-
-				if (enemyOrder == Orders::CastEMPShockwave)
-					Commands().addCommand(unit.unit(), enemyTarget, TechTypes::EMP_Shockwave, true);
-				if (enemyOrder == Orders::CastPsionicStorm)
-					Commands().addCommand(unit.unit(), enemyTarget, TechTypes::Psionic_Storm, true);
+					if (b->getType() == BulletTypes::EMP_Missile)
+						addCommand(nullptr, b->getTargetPosition(), TechTypes::EMP_Shockwave, true);
+				}
 			}
 
-			if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine)
-				Commands().addCommand(unit.unit(), unit.getPosition(), TechTypes::Spider_Mines, true);
-		}
+			// Store enemy detection and assume casting orders
+			for (auto &u : Units().getEnemyUnits()) {
+				UnitInfo& unit = u.second;
 
-		// Store nuke dots
-		for (auto &dot : Broodwar->getNukeDots())
-			Commands().addCommand(nullptr, dot, TechTypes::Nuclear_Strike, true);
-	}
+				if (!unit.unit() || (unit.unit()->exists() && (unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())))
+					continue;
 
-	void CommandManager::updateUnits()
-	{
-		myCommands.clear();
-		for (auto &u : Units().getMyUnits()) {
-			auto &unit = u.second;
-			if (unit.getRole() == Role::Fighting)
-				updateDecision(unit);
-		}
-	}
+				if (unit.getType().isDetector())
+					addCommand(unit.unit(), unit.getPosition(), unit.getType(), true);
 
-	void CommandManager::updateDecision(UnitInfo& unit)
-	{
-		if (!unit.unit() || !unit.unit()->exists()																							// Prevent crashes			
-			|| unit.unit()->isLoaded()
-			|| unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())	// If the unit is locked down, maelstrommed, stassised, or not completed
-			return;
+				if (unit.unit()->exists()) {
+					Order enemyOrder = unit.unit()->getOrder();
+					Position enemyTarget = unit.unit()->getOrderTargetPosition();
 
-		// Convert our commands to strings to display what the unit is doing for debugging
-		map<int, string> commandNames{
-			make_pair(0, "Misc"),
-			make_pair(1, "Special"),
-			make_pair(2, "Attack"),
-			make_pair(3, "Approach"),
-			make_pair(4, "Kite"),
-			make_pair(5, "Defend"),
-			make_pair(6, "Hunt"),
-			make_pair(7, "Escort"),
-			make_pair(8, "Retreat"),
-			make_pair(9, "Move")
-		};
+					if (enemyOrder == Orders::CastEMPShockwave)
+						addCommand(unit.unit(), enemyTarget, TechTypes::EMP_Shockwave, true);
+					if (enemyOrder == Orders::CastPsionicStorm)
+						addCommand(unit.unit(), enemyTarget, TechTypes::Psionic_Storm, true);
+				}
 
-		int i = 0;
-		int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
-		for (auto cmd : commands) {
-			if ((this->*cmd)(unit)) {
-				Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", Text::White, commandNames[i].c_str());
-				break;
+				if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine)
+					addCommand(unit.unit(), unit.getPosition(), TechTypes::Spider_Mines, true);
 			}
-			i++;
+
+			// Store nuke dots
+			for (auto &dot : Broodwar->getNukeDots())
+				addCommand(nullptr, dot, TechTypes::Nuclear_Strike, true);
+		}
+
+		void updateDecision(UnitInfo& unit)
+		{
+			if (!unit.unit() || !unit.unit()->exists()																							// Prevent crashes			
+				|| unit.unit()->isLoaded()
+				|| unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())	// If the unit is locked down, maelstrommed, stassised, or not completed
+				return;
+
+			// Convert our commands to strings to display what the unit is doing for debugging
+			map<int, string> commandNames{
+				make_pair(0, "Misc"),
+				make_pair(1, "Special"),
+				make_pair(2, "Attack"),
+				make_pair(3, "Approach"),
+				make_pair(4, "Kite"),
+				make_pair(5, "Defend"),
+				make_pair(6, "Hunt"),
+				make_pair(7, "Escort"),
+				make_pair(8, "Retreat"),
+				make_pair(9, "Move")
+			};
+
+			int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
+			int i = iterateCommands(commands, unit);
+			Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", Text::White, commandNames[i].c_str());
+		}
+
+		void updateUnits()
+		{
+			myCommands.clear();
+			for (auto &u : Units().getMyUnits()) {
+				auto &unit = u.second;
+				if (unit.getRole() == Role::Fighting)
+					updateDecision(unit);
+			}
 		}
 	}
 
-	bool CommandManager::misc(UnitInfo& unit)
+	bool misc(UnitInfo& unit)
 	{
 		// Unstick a unit
 		if (unit.isStuck() && unit.unit()->isMoving()) {
@@ -138,7 +126,7 @@ namespace McRave
 		return false;
 	}
 
-	bool CommandManager::attack(UnitInfo& unit)
+	bool attack(UnitInfo& unit)
 	{
 		auto shouldAttack = unit.hasTarget() && unit.getTarget().unit()->exists() && unit.getLocalState() == LocalState::Engaging;
 
@@ -159,7 +147,7 @@ namespace McRave
 		return false;
 	}
 
-	bool CommandManager::approach(UnitInfo& unit)
+	bool approach(UnitInfo& unit)
 	{
 		auto airHarasser = unit.getType() == UnitTypes::Protoss_Corsair || unit.getType() == UnitTypes::Zerg_Mutalisk || unit.getType() == UnitTypes::Terran_Wraith;
 		auto shouldApproach = unit.getLocalState() == LocalState::Engaging;
@@ -167,7 +155,7 @@ namespace McRave
 		const auto canApproach = [&]() {
 
 			// No target, Carrier or Muta
-			if (!unit.hasTarget() || unit.getType() == UnitTypes::Protoss_Carrier || unit.getType() == UnitTypes::Zerg_Mutalisk)
+			if (!unit.hasTarget() || !unit.getTarget().unit()->exists() || unit.getType() == UnitTypes::Protoss_Carrier || unit.getType() == UnitTypes::Zerg_Mutalisk)
 				return false;
 
 			// HACK: Don't want Dragoons to approach early on
@@ -191,7 +179,7 @@ namespace McRave
 		return false;
 	}
 
-	bool CommandManager::move(UnitInfo& unit)
+	bool move(UnitInfo& unit)
 	{
 		function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
 			Position p = Position(w) + Position(4, 4);
@@ -245,7 +233,7 @@ namespace McRave
 				}
 				else {
 					for (auto &start : Broodwar->getStartLocations()) {
-						if (start.isValid() && !Broodwar->isExplored(start) && !Commands().overlapsCommands(unit.unit(), unit.getType(), Position(start), 32)) {
+						if (start.isValid() && !Broodwar->isExplored(start) && !overlapsCommands(unit.unit(), unit.getType(), Position(start), 32)) {
 							unit.setDestination(Position(start));
 						}
 					}
@@ -280,7 +268,7 @@ namespace McRave
 		return false;
 	}
 
-	bool CommandManager::kite(UnitInfo& unit)
+	bool kite(UnitInfo& unit)
 	{
 		const auto shouldKite = [&]() {
 			if (unit.hasTarget() && unit.getLocalState() == LocalState::Engaging) {
@@ -332,7 +320,7 @@ namespace McRave
 		return false;
 	}
 
-	bool CommandManager::defend(UnitInfo& unit)
+	bool defend(UnitInfo& unit)
 	{
 		bool defendingExpansion = unit.getDestination().isValid() && !Terrain().isInEnemyTerritory((TilePosition)unit.getDestination());
 		bool closeToDefend = Terrain().getDefendPosition().getDistance(unit.getPosition()) < 640.0 || Terrain().isInAllyTerritory(unit.getTilePosition()) || defendingExpansion || (!unit.getType().isFlyer() && !unit.hasTransport() && !mapBWEM.GetArea(unit.getTilePosition()));
@@ -391,7 +379,7 @@ namespace McRave
 		return false;
 	}
 
-	bool CommandManager::hunt(UnitInfo& unit)
+	bool hunt(UnitInfo& unit)
 	{
 		function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
 
@@ -429,7 +417,7 @@ namespace McRave
 		auto bestPosition = findViablePosition(unit, scoreFunction);
 
 		// Check if we can get free attacks
-		if (unit.hasTarget() && unit.getPercentShield() >= LOW_SHIELD_PERCENT_LIMIT && Util().getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT && Util().unitInRange(unit)) {
+		if (unit.hasTarget() && Util().getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT && Util().unitInRange(unit)) {
 			attack(unit);
 			return true;
 		}
@@ -441,7 +429,7 @@ namespace McRave
 		return false;
 	}
 
-	bool CommandManager::retreat(UnitInfo& unit)
+	bool retreat(UnitInfo& unit)
 	{
 		// Low distance, low threat, high clustering
 		function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
@@ -449,7 +437,7 @@ namespace McRave
 			double distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids().getDistanceHome(w);
 			double threat = Util().getHighestThreat(w, unit);
 			double grouping = 1.0;//(unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / max(1.0, (Grids().getAGroundCluster(w) - unit.getPriority())));
-			double score = grouping / (threat * distance);
+			double score = grouping / (threat * exp(distance));
 			return score;
 		};
 
@@ -467,7 +455,7 @@ namespace McRave
 		return false;
 	}
 
-	bool CommandManager::escort(UnitInfo& unit)
+	bool escort(UnitInfo& unit)
 	{
 		// Low distance, low threat
 		function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
@@ -491,9 +479,8 @@ namespace McRave
 		}
 		return false;
 	}
-
-
-	bool CommandManager::overlapsCommands(Unit unit, TechType tech, Position here, int radius)
+	
+	bool overlapsCommands(Unit unit, TechType tech, Position here, int radius)
 	{
 		auto checkTopLeft = here + Position(-radius / 2, -radius / 2);
 		auto checkTopRight = here + Position(radius / 2, -radius / 2);
@@ -515,7 +502,7 @@ namespace McRave
 		return false;
 	}
 
-	bool CommandManager::overlapsCommands(Unit unit, UnitType type, Position here, int radius)
+	bool overlapsCommands(Unit unit, UnitType type, Position here, int radius)
 	{
 		// UnitType checks use a radial check
 		for (auto &command : myCommands) {
@@ -525,7 +512,7 @@ namespace McRave
 		return false;
 	}
 
-	bool CommandManager::overlapsAllyDetection(Position here)
+	bool overlapsAllyDetection(Position here)
 	{
 		// Detection checks use a radial check
 		for (auto &command : myCommands) {
@@ -543,7 +530,7 @@ namespace McRave
 		return false;
 	}
 
-	bool CommandManager::overlapsEnemyDetection(Position here)
+	bool overlapsEnemyDetection(Position here)
 	{
 		// Detection checks use a radial check
 		for (auto &command : enemyCommands) {
@@ -564,7 +551,7 @@ namespace McRave
 		return false;
 	}
 
-	bool CommandManager::isInDanger(UnitInfo& unit, Position here)
+	bool isInDanger(UnitInfo& unit, Position here)
 	{
 		int halfWidth = int(ceil(unit.getType().width() / 2));
 		int halfHeight = int(ceil(unit.getType().height() / 2));
@@ -630,7 +617,7 @@ namespace McRave
 		return false;
 	}
 
-	Position CommandManager::findViablePosition(UnitInfo& unit, function<double(WalkPosition)> score)
+	Position findViablePosition(UnitInfo& unit, function<double(WalkPosition)> score)
 	{
 		// Radius for checking tiles
 		auto start = unit.getWalkPosition();
@@ -652,12 +639,13 @@ namespace McRave
 
 			// If not a flyer and position blocks a building, has collision or a splash threat
 			if (!unit.getType().isFlyer() &&
-				(Buildings().overlapsQueuedBuilding(unit.getType(), unit.getTilePosition()) || Grids().getESplash(here) > 0))
+				(Buildings::overlapsQueuedBuilding(unit.getType(), unit.getTilePosition()) || Grids().getESplash(here) > 0))
 				return false;
 
 			// If too close of a command, is in danger or isn't walkable
 			if (p.getDistance(unit.getPosition()) > radius * 8
-				|| Commands().isInDanger(unit, p)
+				|| !Broodwar->isWalkable(here)
+				|| isInDanger(unit, p)				
 				|| !Util().isWalkable(unit.getWalkPosition(), here, unit.getType()))
 				return false;
 			return true;
@@ -679,4 +667,15 @@ namespace McRave
 		}
 		return bestPosition;
 	}
+
+	void onFrame()
+	{
+		Display().startClock();
+		updateEnemyCommands();
+		updateUnits();
+		Display().performanceTest(__FUNCTION__);
+	}
+
+	vector <CommandType>& getMyCommands() { return myCommands; }
+	vector <CommandType>& getEnemyCommands() { return enemyCommands; }
 }

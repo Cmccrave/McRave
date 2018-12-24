@@ -27,13 +27,9 @@ namespace McRave
 
 	void InterfaceManager::drawInformation()
 	{
-		// HACK: BWAPIs orange text doesn't point to the right color
-		if (Broodwar->self()->getColor() == 156)
-			color = 156, textColor = 17;
-		else {
-			color = Broodwar->self()->getColor();
-			textColor = Broodwar->self()->getTextColor();
-		}
+		// BWAPIs orange text doesn't point to the right color so this will be see occasionally
+		int color = Broodwar->self()->getColor();
+		int textColor = color == 156 ? 17 : Broodwar->self()->getTextColor();
 
 		// Reset the screenOffset for the performance tests
 		screenOffset = 0;
@@ -42,11 +38,9 @@ namespace McRave
 		//Broodwar->drawTextScreen(Broodwar->getMousePosition() - Position(0, 16), "%d", mapBWEM.GetMiniTile(mouse).Altitude());
 
 		// Builds
-		if (builds) {		
-			if (BuildOrder().getCurrentOpener() != "")
-				Broodwar->drawTextScreen(432, 16, "%c%s: %c%s %s", Text::White, BuildOrder().getCurrentBuild().c_str(), Text::Grey, BuildOrder().getCurrentOpener().c_str(), BuildOrder().getCurrentTransition().c_str());
-			else
-				Broodwar->drawTextScreen(432, 16, "%c%s vs %s", Text::White, BuildOrder().getCurrentBuild().c_str(), Strategy().getEnemyBuild().c_str());			
+		if (builds) {
+			Broodwar->drawTextScreen(432, 16, "%c%s: %c%s %s", Text::White, BuildOrder::getCurrentBuild().c_str(), Text::Grey, BuildOrder::getCurrentOpener().c_str(), BuildOrder::getCurrentTransition().c_str());
+			Broodwar->drawTextScreen(432, 28, "%cvs %c%s", Text::White, Text::Grey, Strategy().getEnemyBuild().c_str());
 		}
 
 		// Scores
@@ -65,10 +59,10 @@ namespace McRave
 			int time = Broodwar->getFrameCount() / 24;
 			int seconds = time % 60;
 			int minute = time / 60;
-			Broodwar->drawTextScreen(432, 28, "%c%d", Text::Grey, Broodwar->getFrameCount());
-			Broodwar->drawTextScreen(482, 28, "%c%d:%02d", Text::Grey, minute, seconds);
+			Broodwar->drawTextScreen(432, 40, "%c%d", Text::Grey, Broodwar->getFrameCount());
+			Broodwar->drawTextScreen(482, 40, "%c%d:%02d", Text::Grey, minute, seconds);
 		}
-		
+
 		// Resource
 		if (resources) {
 			for (auto &r : Resources().getMyMinerals()) {
@@ -95,14 +89,17 @@ namespace McRave
 		for (auto &u : Units().getMyUnits()) {
 			UnitInfo &unit = u.second;
 
+			int color = unit.getPlayer()->getColor();
+			int textColor = color == 156 ? 17 : unit.getPlayer()->getTextColor();
+
 			if (unit.unit()->isLoaded())
 				continue;
 
 			if (targets) {
 				if (unit.hasResource())
-					Broodwar->drawLineMap(unit.getResource().getPosition(), unit.getPosition(), unit.getPlayer()->getColor());
+					Broodwar->drawLineMap(unit.getResource().getPosition(), unit.getPosition(), color);
 				else if (unit.hasTarget())
-					Broodwar->drawLineMap(unit.getTarget().getPosition(), unit.getPosition(), unit.getPlayer()->getColor());				
+					Broodwar->drawLineMap(unit.getTarget().getPosition(), unit.getPosition(), color);
 			}
 
 			if (strengths) {
@@ -115,7 +112,7 @@ namespace McRave
 			if (orders) {
 				int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
 				if (unit.unit() && unit.unit()->exists())
-					Broodwar->drawTextMap(unit.getPosition() + Position(width,-8), "%c%s", textColor, unit.unit()->getOrder().c_str());
+					Broodwar->drawTextMap(unit.getPosition() + Position(width, -8), "%c%s", textColor, unit.unit()->getOrder().c_str());
 			}
 
 			if (local) {
@@ -134,9 +131,12 @@ namespace McRave
 		for (auto &u : Units().getEnemyUnits()) {
 			UnitInfo &unit = u.second;
 
+			int color = unit.getPlayer()->getColor();
+			int textColor = color == 156 ? 17 : unit.getPlayer()->getTextColor();
+
 			if (targets) {
 				if (unit.hasTarget())
-					Broodwar->drawLineMap(unit.getTarget().getPosition(), unit.getPosition(), unit.getPlayer()->getColor());
+					Broodwar->drawLineMap(unit.getTarget().getPosition(), unit.getPosition(), color);
 			}
 
 			if (strengths) {
@@ -148,7 +148,7 @@ namespace McRave
 
 			if (orders) {
 				if (unit.unit() && unit.unit()->exists())
-					Broodwar->drawTextMap(unit.getPosition(), "%c%s", unit.getPlayer()->getTextColor(), unit.unit()->getOrder().c_str());
+					Broodwar->drawTextMap(unit.getPosition(), "%c%s", textColor, unit.unit()->getOrder().c_str());
 			}
 		}
 	}
@@ -171,6 +171,7 @@ namespace McRave
 
 	void InterfaceManager::displayPath(vector<TilePosition> path)
 	{
+		int color = Broodwar->self()->getColor();
 		if (paths && !path.empty()) {
 			TilePosition next = TilePositions::Invalid;
 			for (auto &tile : path) {
