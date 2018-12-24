@@ -22,7 +22,7 @@ void WorkerManager::updateAssignment(UnitInfo& worker)
 {
 	ResourceInfo* bestResource = nullptr;
 	auto injured = (worker.unit()->getHitPoints() + worker.unit()->getShields() < worker.getType().maxHitPoints() + worker.getType().maxShields());
-	auto threatened = (worker.hasResource() && Util().accurateThreatOnPath(worker, worker.getPath()));
+	auto threatened = (worker.hasResource() && Util::accurateThreatOnPath(worker, worker.getPath()));
 	auto distBest = (injured || threatened) ? 0.0 : DBL_MAX;
 	auto needNewAssignment = false;
 	vector<const BWEB::Stations::Station *> safeStations;
@@ -49,7 +49,7 @@ void WorkerManager::updateAssignment(UnitInfo& worker)
 	if (!worker.hasResource()
 		|| needGas()
 		|| (worker.hasResource() && !worker.getResource().getType().isMineralField() && gasWorkers > BuildOrder::gasWorkerLimit())
-		|| (worker.hasResource() && !closeToResource(worker) && Util().accurateThreatOnPath(worker, worker.getPath()) && Grids().getEGroundThreat(worker.getWalkPosition()) == 0.0)
+		|| (worker.hasResource() && !closeToResource(worker) && Util::accurateThreatOnPath(worker, worker.getPath()) && Grids().getEGroundThreat(worker.getWalkPosition()) == 0.0)
 		|| (worker.hasResource() && closeToResource(worker) && Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0))
 		needNewAssignment = true;
 
@@ -70,7 +70,7 @@ void WorkerManager::updateAssignment(UnitInfo& worker)
 					path = *closePath;
 
 				// Store station if it's safe
-				if (!Util().accurateThreatOnPath(worker, path) || worker.getPosition().getDistance(station->ResourceCentroid()) < 128.0)
+				if (!Util::accurateThreatOnPath(worker, path) || worker.getPosition().getDistance(station->ResourceCentroid()) < 128.0)
 					safeStations.push_back(station);
 			}
 		}
@@ -164,7 +164,7 @@ bool WorkerManager::misc(UnitInfo& worker)
 	// If worker is potentially stuck, try to find a manner pylon
 	// TODO: Use workers target? Check if it's actually targeting pylon?
 	if (worker.framesHoldingResource() >= 100 || worker.framesHoldingResource() <= -200) {
-		auto pylon = Util().getClosestUnit(worker.getPosition(), Broodwar->enemy(), UnitTypes::Protoss_Pylon);
+		auto pylon = Util::getClosestUnit(worker.getPosition(), Broodwar->enemy(), UnitTypes::Protoss_Pylon);
 		if (pylon && pylon->unit() && pylon->unit()->exists()) {
 			if (worker.unit()->getLastCommand().getTarget() != pylon->unit())
 				worker.unit()->attack(pylon->unit());
@@ -208,7 +208,7 @@ bool WorkerManager::build(UnitInfo& worker)
 	};
 
 	// 1) Attack any enemies inside the build area
-	if (worker.hasTarget() && worker.getTarget().getPosition().getDistance(worker.getPosition()) < 160 && (Util().rectangleIntersect(topLeft, botRight, worker.getTarget().getPosition()) || worker.getTarget().getPosition().getDistance(center) < 256.0)) {
+	if (worker.hasTarget() && worker.getTarget().getPosition().getDistance(worker.getPosition()) < 160 && (Util::rectangleIntersect(topLeft, botRight, worker.getTarget().getPosition()) || worker.getTarget().getPosition().getDistance(center) < 256.0)) {
 		Command::attack(worker);
 		return true;
 	}
@@ -305,7 +305,7 @@ bool WorkerManager::gather(UnitInfo& worker)
 		Display().displayPath(worker.getPath().getTiles());
 
 		// 3) If no threat on path, mine it
-		if (!Util().accurateThreatOnPath(worker, worker.getPath())) {
+		if (!Util::accurateThreatOnPath(worker, worker.getPath())) {
 			if (shouldIssueGather())
 				worker.unit()->gather(worker.getResource().unit());
 			else if (!resourceExists)

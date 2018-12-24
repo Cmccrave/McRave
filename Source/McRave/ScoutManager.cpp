@@ -86,7 +86,7 @@ void ScoutManager::updateAssignment(UnitInfo& unit)
 
 	// If we have seen an enemy Probe before we've scouted the enemy, follow it
 	if (Units().getEnemyCount(UnitTypes::Protoss_Probe) == 1) {
-		auto w = Util().getClosestUnit(BWEB::Map::getMainPosition(), Broodwar->enemy(), UnitTypes::Protoss_Probe);
+		auto w = Util::getClosestUnit(BWEB::Map::getMainPosition(), Broodwar->enemy(), UnitTypes::Protoss_Probe);
 		proxyCheck = (w && !Terrain().getEnemyStartingPosition().isValid() && w->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1);
 	}
 
@@ -108,7 +108,7 @@ void ScoutManager::updateAssignment(UnitInfo& unit)
 		// If it's a proxy (maybe cannon rush), try to find the unit to kill
 		if ((Strategy().enemyProxy() || proxyCheck) && scoutCount > 1 && scoutAssignments.find(BWEB::Map::getMainPosition()) == scoutAssignments.end()) {
 
-			UnitInfo* enemyunit = Util().getClosestUnit(unit.getPosition(), Broodwar->enemy(), UnitTypes::Protoss_Probe);
+			UnitInfo* enemyunit = Util::getClosestUnit(unit.getPosition(), Broodwar->enemy(), UnitTypes::Protoss_Probe);
 			scoutAssignments.insert(BWEB::Map::getMainPosition());
 
 			if (enemyunit && enemyunit->getPosition().isValid() && enemyunit->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0) {
@@ -120,7 +120,7 @@ void ScoutManager::updateAssignment(UnitInfo& unit)
 					unit.setDestination(enemyunit->getPosition());
 			}
 			else if (Strategy().getEnemyBuild() == "P2Gate") {
-				UnitInfo* enemyPylon = Util().getClosestUnit(unit.getPosition(), Broodwar->enemy(), UnitTypes::Protoss_Pylon);
+				UnitInfo* enemyPylon = Util::getClosestUnit(unit.getPosition(), Broodwar->enemy(), UnitTypes::Protoss_Pylon);
 				if (enemyPylon && !Terrain().isInEnemyTerritory(enemyPylon->getTilePosition())) {
 					if (enemyPylon->unit() && enemyPylon->unit()->exists()) {
 						unit.unit()->attack(enemyPylon->unit());
@@ -157,7 +157,7 @@ void ScoutManager::updateAssignment(UnitInfo& unit)
 			unit.setDestination(Terrain().getEnemyStartingPosition());
 
 		if (unit.getDestination().isValid()) {
-			UnitInfo* enemy = Util().getClosestThreat(unit);
+			UnitInfo* enemy = Util::getClosestThreat(unit);
 			if (enemy && enemy->getPosition().getDistance(unit.getPosition()) < 320.0) {
 				if (Command::hunt(unit)) {}
 				else if (Command::kite(unit)) {}

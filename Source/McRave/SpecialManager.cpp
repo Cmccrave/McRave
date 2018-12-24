@@ -48,14 +48,14 @@ namespace McRave::Command
 
 		// SCV
 		else if (unit.getType() == UnitTypes::Terran_SCV) {
-			//UnitInfo* mech = Util().getClosestUnit(unit, Filter::IsMechanical && Filter::HP_Percent < 100);
+			//UnitInfo* mech = Util::getClosestUnit(unit, Filter::IsMechanical && Filter::HP_Percent < 100);
 			//if (!Strategy().enemyRush() && mech && mech->unit() && unit.getPosition().getDistance(mech->getPosition()) <= 320 && Grids().getMobility(mech->getWalkPosition()) > 0) {
 			//	if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != mech->unit())
 			//		unit.unit()->repair(mech->unit());
 			//	return true;
 			//}
 
-			//UnitInfo* building = Util().getClosestUnit(unit, Filter::GetPlayer == Broodwar->self() && Filter::IsCompleted && Filter::HP_Percent < 100);
+			//UnitInfo* building = Util::getClosestUnit(unit, Filter::GetPlayer == Broodwar->self() && Filter::IsCompleted && Filter::HP_Percent < 100);
 			//if (building && building->unit() && (!Strategy().enemyRush() || building->getType() == UnitTypes::Terran_Bunker)) {
 			//	if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != building->unit())
 			//		unit.unit()->repair(building->unit());
@@ -143,7 +143,7 @@ namespace McRave::Command
 				if (!Players().vT() && (lowEnergyThreat || wantArchons)) {
 
 					// Try to find a friendly templar who is low energy and is threatened
-					UnitInfo* templar = Util().getClosestUnit(unit, unit.getPlayer(), UnitTypes::Protoss_High_Templar);
+					UnitInfo* templar = Util::getClosestUnit(unit, unit.getPlayer(), UnitTypes::Protoss_High_Templar);
 					if (templar) {
 
 						// Warp together if wasn't last command
@@ -211,7 +211,7 @@ namespace McRave::Command
 
 		// General: Shield Battery Use
 		if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Shield_Battery) > 0 && (unit.unit()->getGroundWeaponCooldown() > Broodwar->getRemainingLatencyFrames() || unit.unit()->getAirWeaponCooldown() > Broodwar->getRemainingLatencyFrames()) && unit.getType().maxShields() > 0 && (unit.unit()->getShields() <= 10 || (unit.unit()->getShields() < unit.getType().maxShields() && unit.unit()->getOrderTarget() && unit.unit()->getOrderTarget()->exists() && unit.unit()->getOrderTarget()->getType() == UnitTypes::Protoss_Shield_Battery && unit.unit()->getOrderTarget()->getEnergy() >= 10))) {
-			UnitInfo* battery = Util().getClosestUnit(unit.getPosition(), unit.getPlayer(), UnitTypes::Protoss_Shield_Battery);
+			UnitInfo* battery = Util::getClosestUnit(unit.getPosition(), unit.getPlayer(), UnitTypes::Protoss_Shield_Battery);
 			if (battery && battery->unit()->isCompleted() && battery->getEnergy() > 10 && ((unit.getType().isFlyer() && (!unit.hasTarget() || (unit.getTarget().getPosition().getDistance(unit.getPosition()) >= 320))) || unit.unit()->getDistance(battery->getPosition()) < 320)) {
 				if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Right_Click_Unit || unit.unit()->getLastCommand().getTarget() != battery->unit())
 					unit.unit()->rightClick(battery->unit());
@@ -221,7 +221,7 @@ namespace McRave::Command
 
 		// General: Bunker Loading/Unloading
 		//if (unit.getType() == UnitTypes::Terran_Marine && unit.getGlobalStrategy() == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) > 0) {
-		//	//UnitInfo* bunker = Util().getClosestAllyBuilding(unit, Filter::GetType == UnitTypes::Terran_Bunker && Filter::SpaceRemaining > 0);
+		//	//UnitInfo* bunker = Util::getClosestAllyBuilding(unit, Filter::GetType == UnitTypes::Terran_Bunker && Filter::SpaceRemaining > 0);
 		//	//if (bunker && bunker->unit() && unit.hasTarget()) {
 		//	//	if (unit.getTarget().unit()->exists() && unit.getTarget().getPosition().getDistance(unit.getPosition()) <= 320) {
 		//	//		unit.unit()->rightClick(bunker->unit());
@@ -234,7 +234,7 @@ namespace McRave::Command
 
 		// Science Vessels
 		if (unit.getType() == UnitTypes::Terran_Science_Vessel && unit.unit()->getEnergy() >= TechTypes::Defensive_Matrix) {
-			//UnitInfo* ally = Util().getClosestAllyUnit(unit, Filter::IsUnderAttack);
+			//UnitInfo* ally = Util::getClosestAllyUnit(unit, Filter::IsUnderAttack);
 			//if (ally && ally->getPosition().getDistance(unit.getPosition()) < 640)
 			//	unit.unit()->useTech(TechTypes::Defensive_Matrix, ally->unit());
 			return true;

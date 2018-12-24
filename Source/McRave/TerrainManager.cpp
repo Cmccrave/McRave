@@ -269,8 +269,8 @@ void TerrainManager::updateConcavePositions()
 
 	auto area = defendNatural ? BWEB::Map::getNaturalArea() : BWEB::Map::getMainArea();
 	auto choke = defendNatural ? BWEB::Map::getNaturalChoke() : BWEB::Map::getMainChoke();
-	auto width = Util().chokeWidth(choke);
-	auto line = Util().lineOfBestFit(choke);
+	auto width = Util::chokeWidth(choke);
+	auto line = Util::lineOfBestFit(choke);
 	auto center = (defendNatural && naturalWall) ? Position(naturalWall->getDoor()) : Position(choke->Center());
 	auto perpSlope = -1.0 / line.slope;
 	Position test1, test2;
@@ -307,28 +307,28 @@ void TerrainManager::updateConcavePositions()
 	Broodwar->drawLineMap(center, test1, Colors::Red);
 	Broodwar->drawLineMap(center, test2, Colors::Green);
 
-	auto melee1 = Util().parallelLine(line, 16.0);
-	auto melee2 = Util().parallelLine(line, 32.0);
-	auto melee3 = Util().parallelLine(line, 48.0);
-	auto ranged1 = Util().parallelLine(line, 128.0);
-	auto ranged2 = Util().parallelLine(line, 192.0);
-	auto ranged3 = Util().parallelLine(line, 256.0);
+	auto melee1 = Util::parallelLine(line, 16.0);
+	auto melee2 = Util::parallelLine(line, 32.0);
+	auto melee3 = Util::parallelLine(line, 48.0);
+	auto ranged1 = Util::parallelLine(line, 128.0);
+	auto ranged2 = Util::parallelLine(line, 192.0);
+	auto ranged3 = Util::parallelLine(line, 256.0);
 
-	auto melee4 = Util().parallelLine(line, -16.0);
-	auto melee5 = Util().parallelLine(line, -32.0);
-	auto melee6 = Util().parallelLine(line, -48.0);
-	auto ranged4 = Util().parallelLine(line, -128.0);
-	auto ranged5 = Util().parallelLine(line, -192.0);
-	auto ranged6 = Util().parallelLine(line, -256.0);
+	auto melee4 = Util::parallelLine(line, -16.0);
+	auto melee5 = Util::parallelLine(line, -32.0);
+	auto melee6 = Util::parallelLine(line, -48.0);
+	auto ranged4 = Util::parallelLine(line, -128.0);
+	auto ranged5 = Util::parallelLine(line, -192.0);
+	auto ranged6 = Util::parallelLine(line, -256.0);
 
 	const auto addPlacements =[&](Line line, double gap, vector<Position>& thisVector) {		
 		if (abs(line.slope) != DBL_MAX) {
-			auto xStart = Position(choke->Center()).x - max(128, Util().chokeWidth(choke));
+			auto xStart = Position(choke->Center()).x - max(128, Util::chokeWidth(choke));
 			int yStart = int(line.y(xStart));
 			auto current = Position(xStart, yStart);
 			Position last = Positions::Invalid;
 
-			while (current.isValid() && xStart < Position(choke->Center()).x + max(128, Util().chokeWidth(choke))) {
+			while (current.isValid() && xStart < Position(choke->Center()).x + max(128, Util::chokeWidth(choke))) {
 				WalkPosition w(current);
 
 				if (last.getDistance(current) > gap && mapBWEM.GetMiniTile(w).Walkable() && mapBWEM.GetArea(w) == area && current.getDistance(Position(choke->Center())) < SIM_RADIUS) {
@@ -347,7 +347,7 @@ void TerrainManager::updateConcavePositions()
 			auto current = Position(xStart, yStart);
 			Position last = Positions::Invalid;
 
-			while (current.isValid() && xStart < Position(choke->Center()).x + max(128, Util().chokeWidth(choke))) {
+			while (current.isValid() && xStart < Position(choke->Center()).x + max(128, Util::chokeWidth(choke))) {
 				WalkPosition w(current);
 
 				if (last.getDistance(current) > gap && mapBWEM.GetMiniTile(w).Walkable() && mapBWEM.GetArea(w) == area && current.getDistance(Position(choke->Center())) < 320.0) {

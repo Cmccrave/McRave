@@ -137,7 +137,7 @@ namespace McRave::Command
 			if (canAttack) {
 
 				// Flyers don't want to decel when out of range, so we move to the target then attack when in range
-				if ((unit.getType().isFlyer() || unit.getType().isWorker()) && unit.hasTarget() && !Util().unitInRange(unit))
+				if ((unit.getType().isFlyer() || unit.getType().isWorker()) && unit.hasTarget() && !Util::unitInRange(unit))
 					unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition());
 				else
 					unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
@@ -184,14 +184,14 @@ namespace McRave::Command
 		function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
 			Position p = Position(w) + Position(4, 4);
 			double distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
-			double threat = Util().getHighestThreat(w, unit);
+			double threat = Util::getHighestThreat(w, unit);
 			double grouping = (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / max(1.0, (Grids().getAGroundCluster(w) - unit.getPriority())));
 			double score = grouping / (threat * distance);
 			return score;
 		};
 
 		if (unit.getRole() == Role::Fighting) {
-			if (unit.hasTarget() && Util().unitInRange(unit))
+			if (unit.hasTarget() && Util::unitInRange(unit))
 				return false;
 
 			if (unit.getLocalState() == LocalState::Retreating)
@@ -199,7 +199,7 @@ namespace McRave::Command
 
 			if (unit.getDestination().isValid()) {
 				if (!Terrain().isInEnemyTerritory((TilePosition)unit.getDestination())) {
-					Position bestPosition = Util().getConcavePosition(unit, mapBWEM.GetArea(TilePosition(unit.getDestination())));
+					Position bestPosition = Util::getConcavePosition(unit, mapBWEM.GetArea(TilePosition(unit.getDestination())));
 					if (bestPosition.isValid() && (bestPosition != unit.getPosition() || unit.unit()->getLastCommand().getType() == UnitCommandTypes::None)) {
 						if (unit.unit()->getLastCommand().getTargetPosition() != Position(bestPosition) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
 							unit.unit()->move(Position(bestPosition));
@@ -302,7 +302,7 @@ namespace McRave::Command
 			else
 				distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids().getDistanceHome(w);
 
-			double threat = Util().getHighestThreat(w, unit);
+			double threat = Util::getHighestThreat(w, unit);
 			double grouping = 1.0;// (unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / max(1.0, (Grids().getAGroundCluster(w) - unit.getPriority())));
 			double score = grouping / (threat * distance);
 			return score;
@@ -330,7 +330,7 @@ namespace McRave::Command
 
 		// Probe Cannon surround
 		if (unit.getType().isWorker() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) > 0) {
-			auto cannon = Util().getClosestUnit(mapBWEM.Center(), Broodwar->self(), UnitTypes::Protoss_Photon_Cannon);
+			auto cannon = Util::getClosestUnit(mapBWEM.Center(), Broodwar->self(), UnitTypes::Protoss_Photon_Cannon);
 			auto distBest = DBL_MAX;
 			auto walkBest = WalkPositions::Invalid;
 			auto start = cannon->getWalkPosition();
@@ -338,7 +338,7 @@ namespace McRave::Command
 				for (int y = start.y - 2; y < start.y + 10; y++) {
 					WalkPosition w(x, y);
 					double dist = Position(w).getDistance(mapBWEM.Center());
-					if (dist < distBest && Util().isWalkable(unit.getWalkPosition(), w, unit.getType())) {
+					if (dist < distBest && Util::isWalkable(unit.getWalkPosition(), w, unit.getType())) {
 						distBest = dist;
 						walkBest = w;
 					}
@@ -363,9 +363,9 @@ namespace McRave::Command
 		else {
 			Position bestPosition = Positions::Invalid;
 			if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon) == 0 && Players().vT())
-				bestPosition = Util().getConcavePosition(unit, nullptr, BWEB::Map::getMainPosition());
+				bestPosition = Util::getConcavePosition(unit, nullptr, BWEB::Map::getMainPosition());
 			else
-				bestPosition = Util().getConcavePosition(unit, nullptr, Terrain().getDefendPosition());
+				bestPosition = Util::getConcavePosition(unit, nullptr, Terrain().getDefendPosition());
 
 			if (bestPosition.isValid()) {
 				if (unit.getPosition().getDistance(bestPosition) > 4.0)
@@ -389,7 +389,7 @@ namespace McRave::Command
 					return 0.0;
 			}
 			
-			double threat = Util().getHighestThreat(w, unit);
+			double threat = Util::getHighestThreat(w, unit);
 			double distance = (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination()));
 			double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(w))));
 			double grouping = (unit.getType().isFlyer() ? max(0.1, Grids().getAAirCluster(w)) : 1.0 / max(1.0, (Grids().getAGroundCluster(w) - unit.getPriority())));
@@ -417,7 +417,7 @@ namespace McRave::Command
 		auto bestPosition = findViablePosition(unit, scoreFunction);
 
 		// Check if we can get free attacks
-		if (unit.hasTarget() && Util().getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT && Util().unitInRange(unit)) {
+		if (unit.hasTarget() && Util::getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT && Util::unitInRange(unit)) {
 			attack(unit);
 			return true;
 		}
@@ -435,7 +435,7 @@ namespace McRave::Command
 		function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
 			Position p = Position(w) + Position(4, 4);
 			double distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids().getDistanceHome(w);
-			double threat = Util().getHighestThreat(w, unit);
+			double threat = Util::getHighestThreat(w, unit);
 			double grouping = 1.0;//(unit.getType().isFlyer() ? Grids().getAAirCluster(w) : 1.0 / max(1.0, (Grids().getAGroundCluster(w) - unit.getPriority())));
 			double score = grouping / (threat * exp(distance));
 			return score;
@@ -460,7 +460,7 @@ namespace McRave::Command
 		// Low distance, low threat
 		function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
 			Position p = Position(w) + Position(4, 4);
-			double threat = Util().getHighestThreat(w, unit);
+			double threat = Util::getHighestThreat(w, unit);
 			double distance = 1.0 + (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination()));
 			double score = 1.0 / (threat * distance);
 			return score;
@@ -493,10 +493,10 @@ namespace McRave::Command
 			auto botRight = command.pos + Position(radius, radius);
 
 			if (command.unit != unit && command.tech == tech &&
-				(Util().rectangleIntersect(topLeft, botRight, checkTopLeft)
-					|| Util().rectangleIntersect(topLeft, botRight, checkTopRight)
-					|| Util().rectangleIntersect(topLeft, botRight, checkBotLeft)
-					|| Util().rectangleIntersect(topLeft, botRight, checkBotRight)))
+				(Util::rectangleIntersect(topLeft, botRight, checkTopLeft)
+					|| Util::rectangleIntersect(topLeft, botRight, checkTopRight)
+					|| Util::rectangleIntersect(topLeft, botRight, checkBotLeft)
+					|| Util::rectangleIntersect(topLeft, botRight, checkBotRight)))
 				return true;
 		}
 		return false;
@@ -565,10 +565,10 @@ namespace McRave::Command
 		auto uBotRight = here + Position(halfWidth, halfHeight);
 
 		const auto checkCorners = [&](Position cTopLeft, Position cBotRight) {
-			if (Util().rectangleIntersect(cTopLeft, cBotRight, uTopLeft)
-				|| Util().rectangleIntersect(cTopLeft, cBotRight, uTopRight)
-				|| Util().rectangleIntersect(cTopLeft, cBotRight, uBotLeft)
-				|| Util().rectangleIntersect(cTopLeft, cBotRight, uBotRight))
+			if (Util::rectangleIntersect(cTopLeft, cBotRight, uTopLeft)
+				|| Util::rectangleIntersect(cTopLeft, cBotRight, uTopRight)
+				|| Util::rectangleIntersect(cTopLeft, cBotRight, uBotLeft)
+				|| Util::rectangleIntersect(cTopLeft, cBotRight, uBotRight))
 				return true;
 			return false;
 		};
@@ -646,7 +646,7 @@ namespace McRave::Command
 			if (p.getDistance(unit.getPosition()) > radius * 8
 				|| !Broodwar->isWalkable(here)
 				|| isInDanger(unit, p)				
-				|| !Util().isWalkable(unit.getWalkPosition(), here, unit.getType()))
+				|| !Util::isWalkable(unit.getWalkPosition(), here, unit.getType()))
 				return false;
 			return true;
 		};

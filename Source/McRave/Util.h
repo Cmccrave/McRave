@@ -5,62 +5,55 @@
 using namespace BWAPI;
 using namespace std;
 
-namespace McRave
+namespace McRave::Util
 {
-	struct Line {
-		double yInt;
-		double slope;
-		double y(int x) { return (slope * double(x)) + yInt; }
-		Line(double y, double s) {
-			yInt = y, slope = s;
-		}
-	};
+    struct Line {
+        double yInt;
+        double slope;
+        double y(int x) { return (slope * double(x)) + yInt; }
+        Line(double y, double s) {
+            yInt = y, slope = s;
+        }
+    };
 
-	class UtilManager
-	{
-	public:
+    UnitInfo * getClosestUnit(Position, Player, UnitType t = UnitTypes::None);
+    UnitInfo * getClosestUnit(UnitInfo&, Player, UnitType t = UnitTypes::None);
+    UnitInfo * getClosestThreat(UnitInfo&);
+    UnitInfo * getClosestBuilder(Position);
 
-		UnitInfo * getClosestUnit(Position, Player, UnitType t = UnitTypes::None);
-		UnitInfo * getClosestUnit(UnitInfo&, Player, UnitType t = UnitTypes::None);
-		UnitInfo * getClosestThreat(UnitInfo&);
-		UnitInfo * getClosestBuilder(Position);
+    int chokeWidth(const BWEM::ChokePoint *);
+    const BWEM::ChokePoint * getClosestChokepoint(Position);
 
-		int chokeWidth(const BWEM::ChokePoint *);
-		const BWEM::ChokePoint * getClosestChokepoint(Position);
+    double getHighestThreat(WalkPosition, UnitInfo&);
 
-		double getHighestThreat(WalkPosition, UnitInfo&);
+    bool unitInRange(UnitInfo& unit);
+    bool reactivePullWorker(UnitInfo& unit);
+    bool proactivePullWorker(UnitInfo& unit);
+    bool pullRepairWorker(UnitInfo& unit);
+    bool accurateThreatOnPath(UnitInfo&, BWEB::PathFinding::Path&);
+    bool rectangleIntersect(Position, Position, Position);
 
-		bool unitInRange(UnitInfo& unit);
-		bool reactivePullWorker(UnitInfo& unit);
-		bool proactivePullWorker(UnitInfo& unit);
-		bool pullRepairWorker(UnitInfo& unit);
-		bool accurateThreatOnPath(UnitInfo&, BWEB::PathFinding::Path&);
-		bool rectangleIntersect(Position, Position, Position);
+    // Walkability checks
+    template<class T>
+    bool isWalkable(T here)
+    {
+        auto start = WalkPosition(here);
+        for (int x = start.x; x < start.x + 4; x++) {
+            for (int y = start.y; y < start.y + 4; y++) {
+                if (Grids().getMobility(WalkPosition(x, y)) == -1)
+                    return false;
+            }
+        }
+        return true;
+    }
+    bool isWalkable(WalkPosition start, WalkPosition finish, UnitType);
 
-		// Walkability checks
-		template<class T>
-		bool isWalkable(T here)
-		{
-			auto start = WalkPosition(here);
-			for (int x = start.x; x < start.x + 4; x++) {
-				for (int y = start.y; y < start.y + 4; y++) {
-					if (Grids().getMobility(WalkPosition(x, y)) == -1)
-						return false;
-				}
-			}
-			return true;
-		}
-		bool isWalkable(WalkPosition start, WalkPosition finish, UnitType);
+    // Create a line of best fit for a chokepoint
+    Line lineOfBestFit(const BWEM::ChokePoint *);
+    Line parallelLine(Line, double);
 
-		// Create a line of best fit for a chokepoint
-		Line lineOfBestFit(const BWEM::ChokePoint *);
-		Line parallelLine(Line, double);
+    Position getConcavePosition(UnitInfo&, BWEM::Area const * area = nullptr, Position here = Positions::Invalid);
 
-		Position getConcavePosition(UnitInfo&, BWEM::Area const * area = nullptr, Position here = Positions::Invalid);
-
-		Position clipPosition(Position, Position);
-		Position clipToMap(Position);
-	};
+    Position clipPosition(Position, Position);
+    Position clipToMap(Position);
 }
-
-typedef Singleton<McRave::UtilManager> UtilSingleton;

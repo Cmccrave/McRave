@@ -101,7 +101,7 @@ void TransportManager::updateDecision(UnitInfo& transport)
 		auto ht = cargo.getType() == UnitTypes::Protoss_High_Templar;
 
 		// TESTING THIS:
-		if (Util().getHighestThreat(transport.getWalkPosition(), transport) < 1.0)
+		if (Util::getHighestThreat(transport.getWalkPosition(), transport) < 1.0)
 			return true;
 
 		if (cargo.getLocalState() == LocalState::Retreating || transport.unit()->isUnderAttack() || (cargo.getShields() == 0 && cargo.getSimValue() < 1.2))
@@ -259,13 +259,13 @@ void TransportManager::updateMovement(UnitInfo& transport)
 {
 	// Check if the destination can be used for ground distance
 	auto dropTarget = transport.getDestination();
-	if (!Util().isWalkable(dropTarget) || BWEB::Map::getGroundDistance(transport.getPosition(), dropTarget) == DBL_MAX) {
+	if (!Util::isWalkable(dropTarget) || BWEB::Map::getGroundDistance(transport.getPosition(), dropTarget) == DBL_MAX) {
 		auto distBest = DBL_MAX;
 		for (auto &cargo : transport.getAssignedCargo()) {
 			if (cargo->hasTarget()) {
 				auto cargoTarget = cargo->getTarget().getPosition();
 				auto dist = cargoTarget.getDistance(transport.getPosition());
-				if (Util().isWalkable(cargoTarget) && dist < distBest) {
+				if (Util::isWalkable(cargoTarget) && dist < distBest) {
 					dropTarget = cargoTarget;
 					distBest = dist;
 				}
@@ -284,7 +284,7 @@ void TransportManager::updateMovement(UnitInfo& transport)
 			TilePosition t(p);
 
 			if (!w.isValid()
-				|| (transport.getTransportState() == TransportState::Engaging && !Util().isWalkable(start, w, UnitTypes::Protoss_Reaver && p.getDistance(transport.getDestination()) < 64.0))
+				|| (transport.getTransportState() == TransportState::Engaging && !Util::isWalkable(start, w, UnitTypes::Protoss_Reaver && p.getDistance(transport.getDestination()) < 64.0))
 				|| (transport.getTransportState() == TransportState::Engaging && Broodwar->getGroundHeight(TilePosition(w)) != Broodwar->getGroundHeight(TilePosition(dropTarget)) && p.getDistance(transport.getDestination()) < 64.0))
 				continue;
 
@@ -299,7 +299,7 @@ void TransportManager::updateMovement(UnitInfo& transport)
 					continue;
 			}
 
-			double threat = (transport.getPercentShield() > LOW_SHIELD_PERCENT_LIMIT && transport.getTransportState() == TransportState::Engaging) ? 1.0 : Util().getHighestThreat(w, transport);
+			double threat = (transport.getPercentShield() > LOW_SHIELD_PERCENT_LIMIT && transport.getTransportState() == TransportState::Engaging) ? 1.0 : Util::getHighestThreat(w, transport);
 			double distance = (transport.getType().isFlyer() ? p.getDistance(transport.getDestination()) : BWEB::Map::getGroundDistance(p, transport.getDestination()));
 			double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(w))));
 			double score = visited / (threat * distance);

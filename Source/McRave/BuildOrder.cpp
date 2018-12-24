@@ -262,7 +262,7 @@ namespace McRave::BuildOrder
 				defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
 			}
 			else if (build == "P21Nexus" || build == "P12Nexus") {
-				int count = Util().chokeWidth(BWEB::Map::getNaturalChoke()) / 64;
+				int count = Util::chokeWidth(BWEB::Map::getNaturalChoke()) / 64;
 				buildings.insert(buildings.end(), count, Protoss_Pylon);
 			}
 			else

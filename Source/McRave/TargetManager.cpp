@@ -148,7 +148,7 @@ namespace McRave
 		unit.setTarget(bestTarget);
 
 		// If unit is close, increment it
-		if (bestTarget && Util().unitInRange(unit))
+		if (bestTarget && Util::unitInRange(unit))
 			bestTarget->incrementBeingAttackedCount();
 	}
 
@@ -175,7 +175,7 @@ namespace McRave
 			auto chokeWidth = 0;
 
 			for (auto choke : mapBWEM.GetPath(unit.getPosition(), unit.getEngagePosition())) {
-				chokeWidth = Util().chokeWidth(choke);
+				chokeWidth = Util::chokeWidth(choke);
 
 				if (unitWidth > 0.0 && unitWidth <= 5.0) {
 					auto squeeze = max(1, chokeWidth / unitWidth); /// How many of this unit can fit through at once

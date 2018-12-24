@@ -167,8 +167,8 @@ void StrategyManager::updateEnemyBuild()
 			if (Terrain().getEnemyStartingPosition().isValid() && Broodwar->getFrameCount() > 3000 && Broodwar->isExplored((TilePosition)Terrain().getEnemyStartingPosition())) {
 
 				// Check 2 corners scouted
-				auto topLeft = TilePosition(Util().clipToMap(Terrain().getEnemyStartingPosition() - Position(160, 160)));
-				auto botRight = TilePosition(Util().clipToMap(Terrain().getEnemyStartingPosition() + Position(160, 160) + Position(128, 96)));
+				auto topLeft = TilePosition(Util::clipToMap(Terrain().getEnemyStartingPosition() - Position(160, 160)));
+				auto botRight = TilePosition(Util::clipToMap(Terrain().getEnemyStartingPosition() + Position(160, 160) + Position(128, 96)));
 				auto maybeProxy = noGates && noGas && noExpand;
 
 				Broodwar->drawTextScreen(0, 100, "%d  %d  %d", noGates, noGas, noExpand);
@@ -539,13 +539,13 @@ void StrategyManager::updateTerranUnitScore(UnitType unit, int count)
 	//	UnitInfo dummy;
 	//	dummy.setType(t);
 	//	dummy.setPlayer(Broodwar->self());
-	//	dummy.setGroundRange(Util().groundRange(dummy));
-	//	dummy.setAirRange(Util().airRange(dummy));
-	//	dummy.setGroundDamage(Util().groundDamage(dummy));
-	//	dummy.setAirDamage(Util().airDamage(dummy));
-	//	dummy.setSpeed(Util().speed(dummy));
+	//	dummy.setGroundRange(Util::groundRange(dummy));
+	//	dummy.setAirRange(Util::airRange(dummy));
+	//	dummy.setGroundDamage(Util::groundDamage(dummy));
+	//	dummy.setAirDamage(Util::airDamage(dummy));
+	//	dummy.setSpeed(Util::speed(dummy));
 
-	//	double dps = unit.isFlyer() ? Util().airDPS(dummy) : Util().groundDPS(dummy);
+	//	double dps = unit.isFlyer() ? Util::airDPS(dummy) : Util::groundDPS(dummy);
 	//	if (t == Terran_Medic)
 	//		dps = 0.775;
 

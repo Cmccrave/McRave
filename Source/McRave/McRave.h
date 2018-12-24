@@ -100,7 +100,6 @@ namespace McRave
 	inline TerrainManager& Terrain() { return TerrainSingleton::Instance(); }
 	inline TransportManager& Transport() { return TransportSingleton::Instance(); }
 	inline UnitManager& Units() { return UnitSingleton::Instance(); }
-	inline UtilManager& Util() { return UtilSingleton::Instance(); }
 	inline WorkerManager& Workers() { return WorkerSingleton::Instance(); }
 }
 using namespace McRave;

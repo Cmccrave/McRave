@@ -151,7 +151,7 @@ namespace McRave
 			double distExtra = max(distance, double(unitType.haltDistance()) / 256.0);
 			if (here.getDistance(position) < distExtra) {
 				here = position - (position - here) * (distExtra / distance);
-				here = Util().clipPosition(position, here);
+				here = Util::clipPosition(position, here);
 			}
 		}
 

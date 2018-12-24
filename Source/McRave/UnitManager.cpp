@@ -349,7 +349,7 @@ void UnitManager::updateLocalState(UnitInfo& unit)
 {
 	if (unit.hasTarget()) {
 
-		auto fightingAtHome = ((Terrain().isInAllyTerritory(unit.getTilePosition()) && Util().unitInRange(unit)) || Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()));
+		auto fightingAtHome = ((Terrain().isInAllyTerritory(unit.getTilePosition()) && Util::unitInRange(unit)) || Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()));
 		auto invisTarget = unit.getTarget().unit()->exists() && (unit.getTarget().unit()->isCloaked() || unit.getTarget().isBurrowed()) && !unit.getTarget().unit()->isDetected();
 
 		// Testing
@@ -384,9 +384,9 @@ void UnitManager::updateLocalState(UnitInfo& unit)
 				unit.setLocalState(LocalState::Retreating);
 
 			// Engage
-			else if (((unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && (unit.getPosition().getDistance(unit.getTarget().getPosition()) < 96.0 || Util().unitInRange(unit)))
+			else if (((unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && (unit.getPosition().getDistance(unit.getTarget().getPosition()) < 96.0 || Util::unitInRange(unit)))
 				|| ((unit.unit()->isCloaked() || unit.isBurrowed()) && !Command::overlapsEnemyDetection(unit.getEngagePosition()))
-				|| (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && Util().unitInRange(unit))
+				|| (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && Util::unitInRange(unit))
 				|| (unit.getSimState() == SimState::Win && unit.getGlobalState() == GlobalState::Engaging))
 				unit.setLocalState(LocalState::Engaging);
 			else
@@ -449,9 +449,9 @@ void UnitManager::updateRole(UnitInfo& unit)
 
 	// Check if workers should fight or work
 	if (unit.getType().isWorker()) {
-		if (unit.getRole() == Role::Working && (Util().reactivePullWorker(unit) || Util().proactivePullWorker(unit) || Util().pullRepairWorker(unit)))
+		if (unit.getRole() == Role::Working && (Util::reactivePullWorker(unit) || Util::proactivePullWorker(unit) || Util::pullRepairWorker(unit)))
 			unit.setRole(Role::Fighting);
-		else if (unit.getRole() == Role::Fighting && !Util().reactivePullWorker(unit) && !Util().proactivePullWorker(unit) && !Util().pullRepairWorker(unit))
+		else if (unit.getRole() == Role::Fighting && !Util::reactivePullWorker(unit) && !Util::proactivePullWorker(unit) && !Util::pullRepairWorker(unit))
 			unit.setRole(Role::Working);
 	}
 
@@ -466,7 +466,7 @@ void UnitManager::updateRole(UnitInfo& unit)
 	// Check if we should scout - TODO: scout count from scout manager
 	if (BWEB::Map::getNaturalChoke() && BuildOrder::shouldScout() && Units().getMyRoleCount(Role::Scouting) < 1 && Broodwar->getFrameCount() - scoutDeadFrame > 500) {
 		auto type = Broodwar->self()->getRace().getWorker();
-		auto scout = Util().getClosestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), Broodwar->self(), type);
+		auto scout = Util::getClosestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), Broodwar->self(), type);
 		if (scout == &unit) {
 
 			if (scout->hasResource())
@@ -555,7 +555,7 @@ bool UnitManager::isThreatening(UnitInfo& unit)
 		if (atHome && Strategy().defendChoke())
 			return true;
 		if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Shield_Battery) > 0) {
-			auto battery = Util().getClosestUnit(unit.getPosition(), Broodwar->self(), UnitTypes::Protoss_Shield_Battery);
+			auto battery = Util::getClosestUnit(unit.getPosition(), Broodwar->self(), UnitTypes::Protoss_Shield_Battery);
 			if (battery && unit.getPosition().getDistance(battery->getPosition()) <= 128.0)
 				return true;
 		}

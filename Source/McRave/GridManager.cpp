@@ -308,7 +308,7 @@ namespace McRave
 				auto dist = double(p.getApproxDistance(unit.getPosition()));
 
 				// Collision
-				if (!unit.getType().isFlyer() && Util().rectangleIntersect(topLeft, botRight, p)) {
+				if (!unit.getType().isFlyer() && Util::rectangleIntersect(topLeft, botRight, p)) {
 					collision[x][y] += 1;
 					saveReset(w);
 				}

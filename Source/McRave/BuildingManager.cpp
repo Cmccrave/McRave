@@ -435,7 +435,7 @@ namespace McRave::Buildings
 
 			// Terran building needs new scv
 			else if (building.getType().getRace() == Races::Terran && !building.unit()->isCompleted() && !building.unit()->getBuildUnit()) {
-				auto builder = Util().getClosestBuilder(building.getPosition());
+				auto builder = Util::getClosestBuilder(building.getPosition());
 				if (builder)
 					builder->unit()->rightClick(building.unit());
 			}
@@ -589,7 +589,7 @@ namespace McRave::Buildings
 				// 4) Queue building if our actual count is higher than our visible count
 				if (i.getActualCount() > queuedCount + Broodwar->self()->visibleUnitCount(building) + offset) {
 					auto here = getBuildLocation(building);
-					auto builder = Util().getClosestBuilder(Position(here));
+					auto builder = Util::getClosestBuilder(Position(here));
 
 					if (here.isValid() && builder) {
 						builder->setBuildingType(building);
@@ -657,7 +657,7 @@ namespace McRave::Buildings
 	bool overlapsQueuedBuilding(UnitType type, TilePosition here)
 	{
 		// HACK: We want to really make sure a unit doesn't block a building, so fudge it by a full tile
-		int safetyOffset = !type.isBuilding();
+		int safetyOffset = int(!type.isBuilding());
 
 		// Check if there's a building queued there already
 		for (auto &queued : buildingsQueued) {
@@ -670,7 +670,7 @@ namespace McRave::Buildings
 					auto topLeft = Position(tile.x * 32, tile.y * 32);
 					auto botRight = Position(tile.x * 32 + building.tileWidth(), tile.y * 32 + building.tileHeight());
 
-					if (Util().rectangleIntersect(topLeft, botRight, Position(t)))
+					if (Util::rectangleIntersect(topLeft, botRight, Position(t)))
 						return true;
 				}
 			}
