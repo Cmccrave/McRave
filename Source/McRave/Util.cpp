@@ -8,7 +8,7 @@ namespace McRave::Util
         auto walkWidth = unitType.isBuilding() ? unitType.tileWidth() * 4 : (int)ceil(unitType.width() / 8.0);
         auto walkHeight = unitType.isBuilding() ? unitType.tileHeight() * 4 : (int)ceil(unitType.height() / 8.0);
         auto topLeft = Position(start);
-        auto botRight = topLeft + Position(unitType.width(), unitType.height());
+        auto botRight = topLeft + Position(walkWidth * 8, walkHeight * 8);
 
         // Round up
         int halfW = (walkWidth + 1) / 2;
@@ -27,9 +27,9 @@ namespace McRave::Util
                     return false;
 
                 if (!unitType.isFlyer()) {
-                    if (rectangleIntersect(topLeft, botRight, p))
+                    if (Broodwar->isWalkable(w) && rectangleIntersect(topLeft, botRight, p))
                         continue;
-                    if (Broodwar->isWalkable(w) || Grids().getCollision(w) > 0)
+                    else if (!Broodwar->isWalkable(w) || Grids().getCollision(w) > 0)
                         return false;
                 }
             }
@@ -43,7 +43,7 @@ namespace McRave::Util
             return false;
 
         double widths = unit.getTarget().getType().width() + unit.getType().width();
-        double allyRange = (widths / 2) + (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
+        double allyRange = (widths / 2) + (unit.getTarget().getType().isFlyer() ? unit.getAirReach() : unit.getGroundReach());
 
         // HACK: Reavers have a weird ground distance range, try to reduce the amount of times Reavers try to engage
         // TODO: Add a Reaver ground dist check
@@ -355,7 +355,7 @@ namespace McRave::Util
             }
             else {
                 slope = (sumY2 - sumY * yMean) / denominator;
-                yInt = xMean - slope * yMean;
+                yInt = yMean - slope * xMean;
             }
         }
         else {
@@ -373,16 +373,14 @@ namespace McRave::Util
         return Line(yInt, slope);
     }
 
-    Line parallelLine(Line line1, double distance)
+    Line parallelLine(Line line1, int x0, double distance)
     {
         double inverseSlope = (-1.0 / line1.slope);
-        double x0 = 0.0;
         double y0 = line1.y(int(x0));
         double sq = sqrt(1.0 / (1.0 + pow(inverseSlope, 2.0)));
 
-        double x = x0 + (distance * sq);
-        double y = y0 + (distance * sq * inverseSlope);
-
+        int x = x0 + int(distance * sq);
+        int y = y0 + int(distance * sq * inverseSlope);
         double yInt2 = y - (line1.slope * x);
 
         Line newLine(yInt2, line1.slope);
@@ -392,10 +390,10 @@ namespace McRave::Util
     Position getConcavePosition(UnitInfo& unit, BWEM::Area const * area, Position here)
     {
         // Setup parameters	
-        int min = unit.getGroundRange();
-        double distBest = DBL_MAX;
-        WalkPosition center = WalkPositions::None;
-        Position bestPosition = Positions::None;
+        auto min = unit.getGroundRange();
+        auto distBest = DBL_MAX;
+        auto center = WalkPositions::None;
+        auto bestPosition = Positions::None;
 
         // Finds which position we are forming the concave at
         const auto getConcaveCenter = [&]() {

@@ -8,132 +8,138 @@ using namespace std::placeholders;
 
 namespace BWEB::PathFinding
 {
-	namespace {
-		struct JPSGrid {
-			inline bool operator()(unsigned x, unsigned y) const
-			{
-				TilePosition t(x, y);
-				if (x < width && y < height && t.getDistance(target) <= maxDist * 1.25 && !Map::isUsed(t) && Map::isWalkable(t))
-					return true;
-				return false;
-			}
-			unsigned width = Broodwar->mapWidth(), height = Broodwar->mapHeight();
-			double maxDist;
-			TilePosition target;
-		};
-		map<const BWEM::Area *, int> notReachableThisFrame;
-	}
+    namespace {
+        struct JPSGrid {
+            inline bool operator()(unsigned x, unsigned y) const
+            {
+                TilePosition t(x, y);
+                if (x < width && y < height /*&& t.getDistance(target) <= maxDist * 2.0*/ && !Map::isUsed(t) && Map::isWalkable(t))
+                    return true;
+                return false;
+            }
+            unsigned width = Broodwar->mapWidth(), height = Broodwar->mapHeight();
+            double maxDist;
+            TilePosition target;
+        };
+        map<const BWEM::Area *, int> notReachableThisFrame;
+    }
 
-	void Path::createWallPath(BWEM::Map& mapBWEM, map<TilePosition, UnitType>& currentWall, const Position s, const Position t, bool ignoreOverlap)
-	{
-		TilePosition target(t);
-		TilePosition source(s);
-		auto maxDist = source.getDistance(target);
-		vector<TilePosition> direction{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 } };
+    void Path::createWallPath(BWEM::Map& mapBWEM, map<TilePosition, UnitType>& currentWall, const Position s, const Position t, bool ignoreOverlap)
+    {
+        TilePosition target(t);
+        TilePosition source(s);
+        auto maxDist = source.getDistance(target);
+        vector<TilePosition> direction{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 } };
 
-		const auto collision = [&](const TilePosition tile) {
-			return !tile.isValid()
-				|| tile.getDistance(target) > maxDist * 1.2
-				|| (!ignoreOverlap && Map::isOverlapping(tile))
-				|| !Map::isWalkable(tile)
-				|| Map::isUsed(tile)
-				|| Map::overlapsCurrentWall(currentWall, tile) != UnitTypes::None;
-		};
+        const auto collision = [&](const TilePosition tile) {
+            return !tile.isValid()
+                || tile.getDistance(target) > maxDist * 1.2
+                || (!ignoreOverlap && Map::isOverlapping(tile))
+                || !Map::isWalkable(tile)
+                || Map::isUsed(tile)
+                || Map::overlapsCurrentWall(currentWall, tile) != UnitTypes::None;
+        };
 
-		createPath(mapBWEM, s, t, collision, direction);
-	}
+        createPath(mapBWEM, s, t, collision, direction);
+    }
 
-	void Path::createUnitPath(BWEM::Map& mapBWEM, const Position s, const Position t)
-	{
-		TilePosition target(t);
-		TilePosition source(s);
+    void Path::createUnitPath(BWEM::Map& mapBWEM, const Position s, const Position t)
+    {
+        TilePosition target(t);
+        TilePosition source(s);
 
-		auto checkReachable = notReachableThisFrame[mapBWEM.GetArea(target)];
-		if (checkReachable >= Broodwar->getFrameCount())
-			return;
+        auto checkReachable = notReachableThisFrame[mapBWEM.GetArea(target)];
+        if (checkReachable >= Broodwar->getFrameCount()) {
+            reachable = false;
+            dist = DBL_MAX;
+            return;
+        }
 
-		vector<TilePosition> newJPSPath;
-		JPSGrid newGrid;
-		newGrid.maxDist = source.getDistance(target);
-		newGrid.target = target;
-	
-		if (JPS::findPath(newJPSPath, newGrid, source.x, source.y, target.x, target.y)) {
-			Position current = s;
-			for (auto &t : newJPSPath) {
-				dist += Position(t).getDistance(current);
-				current = Position(t);
-				tiles.push_back(t);				
-			}
-		}
-		else {
-			dist = DBL_MAX;
-			notReachableThisFrame[mapBWEM.GetArea(target)] = Broodwar->getFrameCount();
-		}
-	}
+        vector<TilePosition> newJPSPath;
+        JPSGrid newGrid;
+        newGrid.maxDist = source.getDistance(target);
+        newGrid.target = target;
 
-	void Path::createPath(BWEM::Map& mapBWEM, const Position s, const Position t, function <bool(const TilePosition)> collision, vector<TilePosition> direction)
-	{
-		TilePosition source(s);
-		TilePosition target(t);
-		auto maxDist = source.getDistance(target);
+        if (JPS::findPath(newJPSPath, newGrid, source.x, source.y, target.x, target.y)) {
+            Position current = s;
+            for (auto &t : newJPSPath) {
+                dist += Position(t).getDistance(current);
+                current = Position(t);
+                tiles.push_back(t);
+            }
+            reachable = true;
+        }
+        else {
+            Broodwar->drawLineMap(s, t, Colors::Red);
+            dist = DBL_MAX;
+            notReachableThisFrame[mapBWEM.GetArea(target)] = Broodwar->getFrameCount();
+            reachable = false;
+        }
+    }
 
-		if (source == target || source == TilePosition(0, 0) || target == TilePosition(0, 0))
-			return;
+    void Path::createPath(BWEM::Map& mapBWEM, const Position s, const Position t, function <bool(const TilePosition)> collision, vector<TilePosition> direction)
+    {
+        TilePosition source(s);
+        TilePosition target(t);
+        auto maxDist = source.getDistance(target);
 
-		TilePosition parentGrid[256][256];
+        if (source == target || source == TilePosition(0, 0) || target == TilePosition(0, 0))
+            return;
 
-		// This function requires that parentGrid has been filled in for a path from source to target
-		const auto createPath = [&]() {
-			tiles.push_back(target);
-			TilePosition check = parentGrid[target.x][target.y];
-			dist += Position(target).getDistance(Position(check));
+        TilePosition parentGrid[256][256];
 
-			do {
-				tiles.push_back(check);
-				TilePosition prev = check;
-				check = parentGrid[check.x][check.y];
-				dist += Position(prev).getDistance(Position(check));
-			} while (check != source);
+        // This function requires that parentGrid has been filled in for a path from source to target
+        const auto createPath = [&]() {
+            tiles.push_back(target);
+            TilePosition check = parentGrid[target.x][target.y];
+            dist += Position(target).getDistance(Position(check));
 
-			// HACK: Try to make it more accurate to positions instead of tiles
-			auto correctionSource = Position(*(tiles.end() - 1));
-			auto correctionTarget = Position(*(tiles.begin() + 1));
-			dist += s.getDistance(correctionSource);
-			dist += t.getDistance(correctionTarget);
-			dist -= 64.0;
-		};
+            do {
+                tiles.push_back(check);
+                TilePosition prev = check;
+                check = parentGrid[check.x][check.y];
+                dist += Position(prev).getDistance(Position(check));
+            } while (check != source);
 
-		queue<TilePosition> nodeQueue;
-		nodeQueue.emplace(source);
-		parentGrid[source.x][source.y] = source;
+            // HACK: Try to make it more accurate to positions instead of tiles
+            auto correctionSource = Position(*(tiles.end() - 1));
+            auto correctionTarget = Position(*(tiles.begin() + 1));
+            dist += s.getDistance(correctionSource);
+            dist += t.getDistance(correctionTarget);
+            dist -= 64.0;
+        };
 
-		// While not empty, pop off top the closest TilePosition to target
-		while (!nodeQueue.empty()) {
-			auto const tile = nodeQueue.front();
-			nodeQueue.pop();
+        queue<TilePosition> nodeQueue;
+        nodeQueue.emplace(source);
+        parentGrid[source.x][source.y] = source;
 
-			for (auto const &d : direction) {
-				auto const next = tile + d;
+        // While not empty, pop off top the closest TilePosition to target
+        while (!nodeQueue.empty()) {
+            auto const tile = nodeQueue.front();
+            nodeQueue.pop();
 
-				if (next.isValid()) {
-					// If next has parent or is a collision, continue
-					if (parentGrid[next.x][next.y] != TilePosition(0, 0) || collision(next))
-						continue;
+            for (auto const &d : direction) {
+                auto const next = tile + d;
 
-					// Check diagonal collisions where necessary
-					if ((d.x == 1 || d.x == -1) && (d.y == 1 || d.y == -1) && (collision(tile + TilePosition(d.x, 0)) || collision(tile + TilePosition(0, d.y))))
-						continue;
+                if (next.isValid()) {
+                    // If next has parent or is a collision, continue
+                    if (parentGrid[next.x][next.y] != TilePosition(0, 0) || collision(next))
+                        continue;
 
-					// Set parent here
-					parentGrid[next.x][next.y] = tile;
+                    // Check diagonal collisions where necessary
+                    if ((d.x == 1 || d.x == -1) && (d.y == 1 || d.y == -1) && (collision(tile + TilePosition(d.x, 0)) || collision(tile + TilePosition(0, d.y))))
+                        continue;
 
-					// If at target, return path
-					if (next == target)
-						createPath();
+                    // Set parent here
+                    parentGrid[next.x][next.y] = tile;
 
-					nodeQueue.emplace(next);
-				}
-			}
-		}
-	}
+                    // If at target, return path
+                    if (next == target)
+                        createPath();
+
+                    nodeQueue.emplace(next);
+                }
+            }
+        }
+    }
 }

@@ -10,15 +10,15 @@ using namespace std;
 
 namespace McRave
 {
-	class PylonManager
-	{
-		map<TilePosition, int> smallMediumLocations, largeLocations;
-		set<Unit> myPylons;
-		void updatePower(Unit);
-	public:
-		void storePylon(Unit);		
-		bool hasPower(TilePosition, UnitType);
-	};
+    class PylonManager
+    {
+        map<TilePosition, int> smallMediumLocations, largeLocations;
+        set<Unit> myPylons;
+        void updatePower(Unit);
+    public:
+        void storePylon(Unit);
+        bool hasPower(TilePosition, UnitType);
+    };
 }
 
 typedef Singleton<McRave::PylonManager> PylonSingleton;

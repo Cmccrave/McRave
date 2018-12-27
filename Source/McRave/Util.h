@@ -7,15 +7,6 @@ using namespace std;
 
 namespace McRave::Util
 {
-    struct Line {
-        double yInt;
-        double slope;
-        double y(int x) { return (slope * double(x)) + yInt; }
-        Line(double y, double s) {
-            yInt = y, slope = s;
-        }
-    };
-
     UnitInfo * getClosestUnit(Position, Player, UnitType t = UnitTypes::None);
     UnitInfo * getClosestUnit(UnitInfo&, Player, UnitType t = UnitTypes::None);
     UnitInfo * getClosestThreat(UnitInfo&);
@@ -50,7 +41,7 @@ namespace McRave::Util
 
     // Create a line of best fit for a chokepoint
     Line lineOfBestFit(const BWEM::ChokePoint *);
-    Line parallelLine(Line, double);
+    Line parallelLine(Line, int, double);
 
     Position getConcavePosition(UnitInfo&, BWEM::Area const * area = nullptr, Position here = Positions::Invalid);
 

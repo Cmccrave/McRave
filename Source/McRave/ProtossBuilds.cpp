@@ -83,7 +83,7 @@ namespace McRave::BuildOrder::Protoss {
     }
 
     void Reaction2GateDefensive() {
-        gasLimit =			3 * (com(Protoss_Cybernetics_Core) && s >= 50);
+        gasLimit =			(com(Protoss_Cybernetics_Core) && s >= 50) ? INT_MAX : 0;
         getOpening =		vis(Protoss_Dark_Templar) == 0;
         playPassive	=		Players().vZ() ? vis(Protoss_Corsair) == 0 : vis(Protoss_Dark_Templar) == 0;
         firstUpgrade =		UpgradeTypes::None;
@@ -414,7 +414,7 @@ namespace McRave::BuildOrder::Protoss {
 
         // Openers
         if (currentOpener == "0Zealot") {
-            zealotLimit = 1;
+            zealotLimit = 0;
 
             itemQueue[Protoss_Nexus] =				Item(1);
             itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
@@ -451,7 +451,7 @@ namespace McRave::BuildOrder::Protoss {
 
             // Decide whether to Reaver first or Obs first
             if (com(Protoss_Robotics_Facility) > 0) {
-                if (vis(Protoss_Observer) == 0 && (Units().getEnemyCount(UnitTypes::Protoss_Dragoon) <= 2 || enemyBuild() == "P1GateDT")) {
+                if (vis(Protoss_Observer) == 0 && Players().vP() && (Units().getEnemyCount(UnitTypes::Protoss_Dragoon) <= 2 || enemyBuild() == "P1GateDT")) {
                     if (techList.find(Protoss_Observer) == techList.end())
                         techUnit = Protoss_Observer;
                 }
@@ -466,7 +466,7 @@ namespace McRave::BuildOrder::Protoss {
 
             if (Players().vP()) {
                 playPassive =		!Strategy().enemyFastExpand() && (com(Protoss_Reaver) < 2/* || com(Protoss_Shuttle) < 1*/);
-                getOpening =		Strategy().enemyPressure() ? vis(Protoss_Reaver) < 3 : s < 70;
+                getOpening =		(Players().vP() && Strategy().enemyPressure()) ? vis(Protoss_Reaver) < 3 : s < 70;
                 zealotLimit =		(com(Protoss_Robotics_Facility) >= 1) ? 6 : zealotLimit;
 
                 itemQueue[Protoss_Gateway] =				Item((s >= 20) + (s >= 60) + (s >= 62));
@@ -485,7 +485,7 @@ namespace McRave::BuildOrder::Protoss {
 
             // Decide whether to Reaver first or Obs first
             if (com(Protoss_Robotics_Facility) > 0) {
-                if (vis(Protoss_Observer) == 0 && (Units().getEnemyCount(UnitTypes::Protoss_Dragoon) <= 2 || enemyBuild() == "P1GateDT")) {
+                if (vis(Protoss_Observer) == 0 && Players().vP() && (Units().getEnemyCount(UnitTypes::Protoss_Dragoon) <= 2 || enemyBuild() == "P1GateDT")) {
                     if (techList.find(Protoss_Observer) == techList.end())
                         techUnit = Protoss_Observer;
                 }
@@ -591,8 +591,7 @@ namespace McRave::BuildOrder::Protoss {
         wallNat =			vis(Protoss_Nexus) >= 2 ? true : false;
         cutWorkers =		Production().hasIdleProduction() && com(Protoss_Cybernetics_Core) > 0;
 
-        // Pull 1 probe when researching goon range, add 1 after we have a Nexus, then add 3 when 2 gas
-        gasLimit =			INT_MAX;
+        gasLimit =			goonRange() && com(Protoss_Nexus) < 2 ? 2 : INT_MAX;
         zealotLimit =		0;
         dragoonLimit =		INT_MAX;
 
@@ -601,7 +600,7 @@ namespace McRave::BuildOrder::Protoss {
             currentTransition =	"Island"; // TODO: Island stuff		
         else if (Strategy().enemyFastExpand() || enemyBuild() == "TSiegeExpand")
             currentTransition =	"DoubleExpand";
-        else if (Strategy().enemyPressure())
+        else if (!Strategy().enemyFastExpand() && currentTransition == "DoubleExpand")
             currentTransition = "Standard";
 
         // Openers
@@ -676,7 +675,7 @@ namespace McRave::BuildOrder::Protoss {
             currentTransition =	"DoubleExpand";
         else if (s < 80 && Strategy().enemyRush())
             currentTransition = "Defensive";
-        else if (Strategy().enemyPressure())
+        else if (!Strategy().enemyFastExpand() && currentTransition == "DoubleExpand")
             currentTransition = "Standard";
 
         // Openers

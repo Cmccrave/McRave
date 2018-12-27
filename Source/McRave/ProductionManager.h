@@ -7,32 +7,32 @@ using namespace std;
 
 namespace McRave
 {
-	class ProductionManager
-	{
-		map <Unit, UnitType> idleProduction;
-		map <Unit, TechType> idleTech;
-		map <Unit, UpgradeType> idleUpgrade;
-		int reservedMineral, reservedGas;
-		int idleFrame = 0;
+    class ProductionManager
+    {
+        map <Unit, UnitType> idleProduction;
+        map <Unit, TechType> idleTech;
+        map <Unit, UpgradeType> idleUpgrade;
+        int reservedMineral, reservedGas;
+        int idleFrame = 0;
 
-		bool isAffordable(UnitType), isAffordable(UpgradeType), isAffordable(TechType);
-		bool isCreateable(Unit, UnitType), isCreateable(UpgradeType), isCreateable(TechType);
-		bool isSuitable(UnitType), isSuitable(UpgradeType), isSuitable(TechType);
-		void updateProduction(), updateReservedResources();
+        bool isAffordable(UnitType), isAffordable(UpgradeType), isAffordable(TechType);
+        bool isCreateable(Unit, UnitType), isCreateable(UpgradeType), isCreateable(TechType);
+        bool isSuitable(UnitType), isSuitable(UpgradeType), isSuitable(TechType);
+        void updateProduction(), updateReservedResources();
 
-		void produce(UnitInfo&);
-		void research(UnitInfo&);
-		void upgrade(UnitInfo&);
-		void addon(UnitInfo&);
+        void produce(UnitInfo&);
+        void research(UnitInfo&);
+        void upgrade(UnitInfo&);
+        void addon(UnitInfo&);
 
-		void MadMix(UnitInfo&);
-	public:
-		int getReservedMineral() { return reservedMineral; }
-		int getReservedGas() { return reservedGas; }
-		bool hasIdleProduction() { return Broodwar->getFrameCount() == idleFrame; }
+        void MadMix(UnitInfo&);
+    public:
+        int getReservedMineral() { return reservedMineral; }
+        int getReservedGas() { return reservedGas; }
+        bool hasIdleProduction() { return Broodwar->getFrameCount() == idleFrame; }
 
-		void onFrame();
-	};
+        void onFrame();
+    };
 }
 
 typedef Singleton<McRave::ProductionManager> ProductionSingleton;

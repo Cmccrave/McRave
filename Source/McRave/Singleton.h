@@ -4,17 +4,17 @@ template<class T>
 class Singleton
 {
 public:
-	static T& Instance()
-	{
-		static T instance;
-		return instance;
-	}
+    static T& Instance()
+    {
+        static T instance;
+        return instance;
+    }
 
 protected:
-	Singleton();
-	~Singleton();
+    Singleton();
+    ~Singleton();
 
 private:
-	Singleton(const Singleton&);
-	Singleton& operator=(const Singleton&);
+    Singleton(const Singleton&);
+    Singleton& operator=(const Singleton&);
 };

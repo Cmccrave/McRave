@@ -6,30 +6,30 @@ using namespace BWAPI;
 using namespace std;
 
 namespace McRave
-{	
-	class ScoutManager
-	{
-		void updateScouts();
-		void updateScoutTargets();
-		void updateAssignment(UnitInfo&);
-		void updateDecision(UnitInfo&);
+{
+    class ScoutManager
+    {
+        void updateScouts();
+        void updateScoutTargets();
+        void updateAssignment(UnitInfo&);
+        void updateDecision(UnitInfo&);
 
-		bool search(UnitInfo&);
-		bool scout(UnitInfo&);
-		bool hide(UnitInfo&);
-		bool harass(UnitInfo&);
+        bool search(UnitInfo&);
+        bool scout(UnitInfo&);
+        bool hide(UnitInfo&);
+        bool harass(UnitInfo&);
 
-		set<Position> scoutTargets;
-		set<Position> scoutAssignments;
-		int scoutCount;
-		bool proxyCheck = false;
+        set<Position> scoutTargets;
+        set<Position> scoutAssignments;
+        int scoutCount;
+        bool proxyCheck = false;
 
-		typedef bool (ScoutManager::*Command)(UnitInfo&);
-		vector<Command> commands{ &ScoutManager::search, &ScoutManager::scout, &ScoutManager::hide, &ScoutManager::harass };
-	public:
-		void onFrame();	
-		int getScoutCount() { return scoutCount; }
-	};
+        typedef bool (ScoutManager::*Command)(UnitInfo&);
+        vector<Command> commands{ &ScoutManager::search, &ScoutManager::scout, &ScoutManager::hide, &ScoutManager::harass };
+    public:
+        void onFrame();
+        int getScoutCount() { return scoutCount; }
+    };
 }
 
 typedef Singleton<McRave::ScoutManager> ScoutSingleton;

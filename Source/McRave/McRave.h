@@ -23,37 +23,46 @@ using namespace BWEB;
 
 namespace McRave
 {
-	class UnitInfo;
-	class ResourceInfo;
+    class UnitInfo;
+    class ResourceInfo;
 
-	enum class Role {
-		None, Working, Fighting, Transporting, Scouting, Producing, Defending, Supporting
-	};
+    struct Line {
+        double yInt;
+        double slope;
+        double y(int x) { return (slope * double(x)) + yInt; }
+        Line(double y, double s) {
+            yInt = y, slope = s;
+        }
+    };
 
-	enum class TransportState {
-		None, Loading, Unloading, Monitoring, Engaging, Retreating
-	};
+    enum class Role {
+        None, Working, Fighting, Transporting, Scouting, Producing, Defending, Supporting
+    };
 
-	enum class ResourceState {
-		None, Assignable, Mineable
-	};
+    enum class TransportState {
+        None, Loading, Unloading, Monitoring, Engaging, Retreating
+    };
 
-	enum class GlobalState {
-		None, Engaging, Retreating
-	};
+    enum class ResourceState {
+        None, Assignable, Mineable
+    };
 
-	enum class LocalState {
-		None, Engaging, Retreating
-	};
+    enum class GlobalState {
+        None, Engaging, Retreating
+    };
 
-	enum class SimState {
-		None, Win, Loss, HighWin, HighLoss
-	};
+    enum class LocalState {
+        None, Engaging, Retreating
+    };
+
+    enum class SimState {
+        None, Win, Loss, HighWin, HighLoss
+    };
 }
 
 namespace
 {
-	auto &mapBWEM = BWEM::Map::Instance();
+    auto &mapBWEM = BWEM::Map::Instance();
 }
 
 // Include standard libraries that are needed
@@ -86,20 +95,20 @@ namespace
 // Namespace to access all managers globally
 namespace McRave
 {
-	inline GoalManager& Goals() { return GoalSingleton::Instance(); }
-	inline GridManager& Grids() { return GridSingleton::Instance(); }
-	inline InterfaceManager& Display() { return InterfaceSingleton::Instance(); }
-	inline PlayerManager& Players() { return PlayerSingleton::Instance(); }
-	inline ProductionManager& Production() { return ProductionSingleton::Instance(); }
-	inline PylonManager& Pylons() { return PylonSingleton::Instance(); }
-	inline ResourceManager& Resources() { return ResourceSingleton::Instance(); }
-	inline ScoutManager& Scouts() { return ScoutSingleton::Instance(); }
-	inline StationManager& MyStations() { return StationSingleton::Instance(); }
-	inline StrategyManager& Strategy() { return StrategySingleton::Instance(); }
-	inline TargetManager& Targets() { return TargetSingleton::Instance(); }
-	inline TerrainManager& Terrain() { return TerrainSingleton::Instance(); }
-	inline TransportManager& Transport() { return TransportSingleton::Instance(); }
-	inline UnitManager& Units() { return UnitSingleton::Instance(); }
-	inline WorkerManager& Workers() { return WorkerSingleton::Instance(); }
+    inline GoalManager& Goals() { return GoalSingleton::Instance(); }
+    inline GridManager& Grids() { return GridSingleton::Instance(); }
+    inline InterfaceManager& Display() { return InterfaceSingleton::Instance(); }
+    inline PlayerManager& Players() { return PlayerSingleton::Instance(); }
+    inline ProductionManager& Production() { return ProductionSingleton::Instance(); }
+    inline PylonManager& Pylons() { return PylonSingleton::Instance(); }
+    inline ResourceManager& Resources() { return ResourceSingleton::Instance(); }
+    inline ScoutManager& Scouts() { return ScoutSingleton::Instance(); }
+    inline StationManager& MyStations() { return StationSingleton::Instance(); }
+    inline StrategyManager& Strategy() { return StrategySingleton::Instance(); }
+    inline TargetManager& Targets() { return TargetSingleton::Instance(); }
+    inline TerrainManager& Terrain() { return TerrainSingleton::Instance(); }
+    inline TransportManager& Transport() { return TransportSingleton::Instance(); }
+    inline UnitManager& Units() { return UnitSingleton::Instance(); }
+    inline WorkerManager& Workers() { return WorkerSingleton::Instance(); }
 }
 using namespace McRave;
