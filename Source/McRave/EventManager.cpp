@@ -28,11 +28,11 @@ namespace McRave
                 storeUnit(unit);
 
             if (unit->getType() == UnitTypes::Protoss_Pylon)
-                Pylons().storePylon(unit);
+                Pylons::storePylon(unit);
         }
 
         if (unit->getType().isResourceContainer())
-            Resources().storeResource(unit);
+            Resources::storeResource(unit);
         if (unit->getType().isResourceDepot())
             MyStations().storeStation(unit);
     }
@@ -40,7 +40,7 @@ namespace McRave
     void UnitManager::onUnitDestroy(Unit unit)
     {
         if (unit->getType().isResourceContainer())
-            Resources().removeResource(unit);
+            Resources::removeResource(unit);
         else if (unit->getType().isResourceDepot())
             MyStations().removeStation(unit);
         else
@@ -85,7 +85,7 @@ namespace McRave
 
         // Refinery that morphed as an enemy
         else if (unit->getType().isResourceContainer())
-            Resources().storeResource(unit);
+            Resources::storeResource(unit);
     }
 
     void UnitManager::onUnitRenegade(Unit unit)
@@ -108,6 +108,6 @@ namespace McRave
         if (unit->getType().isResourceDepot())
             MyStations().storeStation(unit);
         if (unit->getType().isResourceContainer())
-            Resources().storeResource(unit);
+            Resources::storeResource(unit);
     }
 }

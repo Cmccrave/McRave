@@ -37,7 +37,7 @@ void StrategyManager::checkHoldChoke()
         || BuildOrder::isWallNat()
         || BuildOrder::isHideTech()
         || Units().getSupply() > 60
-        || Players().vT();
+        || Players::vT();
 }
 
 void StrategyManager::checkNeedDetection()
@@ -69,13 +69,13 @@ void StrategyManager::checkEnemyProxy()
 
 void StrategyManager::updateEnemyBuild()
 {
-    if (Players().getPlayers().size() > 1 || (Broodwar->getFrameCount() - enemyFrame > 2000 && enemyFrame != 0 && enemyBuild != "Unknown"))
+    if (Players::getPlayers::size() > 1 || (Broodwar->getFrameCount() - enemyFrame > 2000 && enemyFrame != 0 && enemyBuild != "Unknown"))
         return;
 
     if (enemyFrame == 0 && enemyBuild != "Unknown")
         enemyFrame = Broodwar->getFrameCount();
 
-    for (auto &p : Players().getPlayers()) {
+    for (auto &p : Players::getPlayers::) {
         PlayerInfo &player = p.second;
 
         if (player.getCurrentRace() == Races::Zerg) {
@@ -173,7 +173,7 @@ void StrategyManager::updateEnemyBuild()
 
                 Broodwar->drawTextScreen(0, 100, "%d  %d  %d", noGates, noGas, noExpand);
 
-                if (maybeProxy && ((topLeft.isValid() && Grids().lastVisibleFrame(topLeft) > 0) || (botRight.isValid() && Grids().lastVisibleFrame(botRight) > 0)))
+                if (maybeProxy && ((topLeft.isValid() && Grids::lastVisibleFrame(topLeft) > 0) || (botRight.isValid() && Grids::lastVisibleFrame(botRight) > 0)))
                     enemyBuild = "P2Gate";
                 else if (Units().getEnemyCount(Protoss_Gateway) >= 2 && Units().getEnemyCount(Protoss_Nexus) <= 1 && Units().getEnemyCount(Protoss_Assimilator) <= 0 && Units().getEnemyCount(Protoss_Cybernetics_Core) <= 0 && Units().getEnemyCount(Protoss_Dragoon) <= 0)
                     enemyBuild = "P2Gate";
@@ -345,7 +345,7 @@ void StrategyManager::updateScoring()
         if (Broodwar->mapFileName().find("BlueStorm") != string::npos)
             unitScore[Protoss_Carrier] = unitScore[Protoss_Arbiter];
 
-        if (Players().vP() && Broodwar->getFrameCount() >= 20000 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) > 0 && Broodwar->self()->completedUnitCount(Protoss_Templar_Archives) > 0) {
+        if (Players::vP() && Broodwar->getFrameCount() >= 20000 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) > 0 && Broodwar->self()->completedUnitCount(Protoss_Templar_Archives) > 0) {
             unitScore[Protoss_Zealot] = unitScore[Protoss_Dragoon];
             unitScore[Protoss_Archon] = unitScore[Protoss_Dragoon];
             unitScore[Protoss_High_Templar] += unitScore[Protoss_Dragoon];

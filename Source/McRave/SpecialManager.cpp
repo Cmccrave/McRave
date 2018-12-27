@@ -29,7 +29,7 @@ namespace McRave::Command
             if (!unit.unit()->isCloaked() && unit.unit()->getEnergy() >= 50 && unit.getPosition().getDistance(unit.getEngagePosition()) < 320 && !Command::overlapsEnemyDetection(p))
                 unit.unit()->useTech(TechTypes::Personnel_Cloaking);
 
-            if (Buildings::getNukesAvailable() > 0 && unit.hasTarget() && unit.getTarget().getWalkPosition().isValid() && unit.unit()->isCloaked() && Grids().getEAirCluster(unit.getTarget().getWalkPosition()) + Grids().getEGroundCluster(unit.getTarget().getWalkPosition()) > 5.0 && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= 320 && unit.getPosition().getDistance(unit.getTarget().getPosition()) > 200) {
+            if (Buildings::getNukesAvailable() > 0 && unit.hasTarget() && unit.getTarget().getWalkPosition().isValid() && unit.unit()->isCloaked() && Grids::getEAirCluster(unit.getTarget().getWalkPosition()) + Grids::getEGroundCluster(unit.getTarget().getWalkPosition()) > 5.0 && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= 320 && unit.getPosition().getDistance(unit.getTarget().getPosition()) > 200) {
                 if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Use_Tech_Unit || unit.unit()->getLastCommand().getTarget() != unit.getTarget().unit()) {
                     unit.unit()->useTech(TechTypes::Nuclear_Strike, unit.getTarget().unit());
                     addCommand(unit.unit(), unit.getTarget().getPosition(), TechTypes::Nuclear_Strike);
@@ -49,7 +49,7 @@ namespace McRave::Command
         // SCV
         else if (unit.getType() == UnitTypes::Terran_SCV) {
             //UnitInfo* mech = Util::getClosestUnit(unit, Filter::IsMechanical && Filter::HP_Percent < 100);
-            //if (!Strategy().enemyRush() && mech && mech->unit() && unit.getPosition().getDistance(mech->getPosition()) <= 320 && Grids().getMobility(mech->getWalkPosition()) > 0) {
+            //if (!Strategy().enemyRush() && mech && mech->unit() && unit.getPosition().getDistance(mech->getPosition()) <= 320 && Grids::getMobility(mech->getWalkPosition()) > 0) {
             //	if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != mech->unit())
             //		unit.unit()->repair(mech->unit());
             //	return true;
@@ -129,7 +129,7 @@ namespace McRave::Command
                 addCommand(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm);
 
             // If close to target and can cast a storm
-            if (unit.hasTarget() && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= 400 && !Command::overlapsCommands(unit.unit(), TechTypes::Psionic_Storm, unit.getTarget().getPosition(), 96) && unit.unit()->getEnergy() >= 75 && (Grids().getEGroundCluster(unit.getTarget().getWalkPosition()) + Grids().getEAirCluster(unit.getTarget().getWalkPosition())) >= STORM_LIMIT) {
+            if (unit.hasTarget() && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= 400 && !Command::overlapsCommands(unit.unit(), TechTypes::Psionic_Storm, unit.getTarget().getPosition(), 96) && unit.unit()->getEnergy() >= 75 && (Grids::getEGroundCluster(unit.getTarget().getWalkPosition()) + Grids::getEAirCluster(unit.getTarget().getWalkPosition())) >= STORM_LIMIT) {
                 unit.unit()->useTech(TechTypes::Psionic_Storm, unit.getTarget().unit());
                 addCommand(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm);
                 return true;
@@ -137,17 +137,17 @@ namespace McRave::Command
 
             // If unit has low energy and is threatened or we want more archons
             else {
-                auto lowEnergyThreat = unit.getEnergy() < TechTypes::Psionic_Storm.energyCost() && Grids().getEGroundThreat(unit.getWalkPosition()) > 0.0;
+                auto lowEnergyThreat = unit.getEnergy() < TechTypes::Psionic_Storm.energyCost() && Grids::getEGroundThreat(unit.getWalkPosition()) > 0.0;
                 auto wantArchons = Strategy().getUnitScore(UnitTypes::Protoss_Archon) > Strategy().getUnitScore(UnitTypes::Protoss_High_Templar);
 
-                if (!Players().vT() && (lowEnergyThreat || wantArchons)) {
+                if (!Players::vT() && (lowEnergyThreat || wantArchons)) {
 
                     // Try to find a friendly templar who is low energy and is threatened
                     UnitInfo* templar = Util::getClosestUnit(unit, unit.getPlayer(), UnitTypes::Protoss_High_Templar);
                     if (templar) {
 
                         // Warp together if wasn't last command
-                        auto friendLowEnergyThreat = templar->getEnergy() < TechTypes::Psionic_Storm.energyCost() && Grids().getEGroundThreat(templar->getWalkPosition()) > 0.0;
+                        auto friendLowEnergyThreat = templar->getEnergy() < TechTypes::Psionic_Storm.energyCost() && Grids::getEGroundThreat(templar->getWalkPosition()) > 0.0;
                         if (wantArchons || friendLowEnergyThreat) {
                             if (templar->unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp && unit.unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp)
                                 unit.unit()->useTech(TechTypes::Archon_Warp, templar->unit());

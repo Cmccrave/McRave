@@ -118,7 +118,7 @@ void TerrainManager::findEnemyNextExpand()
         double distance;
         if (!station.BWEMBase()->GetArea()->AccessibleFrom(BWEB::Map::getMainArea()))
             distance = log(station.BWEMBase()->Center().getDistance(Terrain().getEnemyStartingPosition()));
-        else if (!Players().vT())
+        else if (!Players::vT())
             distance = BWEB::Map::getGroundDistance(Terrain().getEnemyStartingPosition(), station.BWEMBase()->Center()) / (BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), station.BWEMBase()->Center()));
         else
             distance = BWEB::Map::getGroundDistance(Terrain().getEnemyStartingPosition(), station.BWEMBase()->Center());
@@ -149,7 +149,7 @@ void TerrainManager::findAttackPosition()
 
         for (auto &station : MyStations().getEnemyStations()) {
             auto &s = *station.second;
-            double dist = Players().vP() ? 1.0 / enemyStartingPosition.getDistance(s.BWEMBase()->Center()) : enemyStartingPosition.getDistance(s.BWEMBase()->Center());
+            double dist = Players::vP() ? 1.0 / enemyStartingPosition.getDistance(s.BWEMBase()->Center()) : enemyStartingPosition.getDistance(s.BWEMBase()->Center());
             if (dist >= distBest) {
                 distBest = dist;
                 posBest = s.BWEMBase()->Center();
@@ -450,9 +450,9 @@ bool TerrainManager::findNaturalWall(vector<UnitType>& types, const vector<UnitT
         UnitType wallTight;
         bool reservePath = Broodwar->self()->getRace() != Races::Terran;
 
-        if (Broodwar->self()->getRace() == Races::Terran && Players().vP())
+        if (Broodwar->self()->getRace() == Races::Terran && Players::vP())
             wallTight = UnitTypes::Protoss_Zealot;
-        else if (Players().vZ())
+        else if (Players::vZ())
             wallTight = UnitTypes::Zerg_Zergling;
         else
             wallTight = UnitTypes::Terran_Vulture;

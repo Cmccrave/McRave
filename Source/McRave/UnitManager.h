@@ -42,7 +42,7 @@ namespace McRave
 
         void updateUnitSizes();
         void updateUnits();
-        void updateLocalSimulation(UnitInfo&);
+        void updateSimulation(UnitInfo&);
         void updateLocalState(UnitInfo&);
         void updateGlobalState(UnitInfo&);
         void updateRole(UnitInfo&);

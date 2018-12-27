@@ -76,9 +76,6 @@
     <ClCompile Include="..\Source\McRave\GridManager.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\Interface.cpp">
-      <Filter>McRave</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\McRave.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
@@ -172,6 +169,9 @@
     <ClCompile Include="..\Source\BWEB\BWEB.cpp">
       <Filter>BWEB</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\McRave\Visuals.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">
@@ -249,9 +249,6 @@
     <ClInclude Include="..\Source\McRave\Header.h">
       <Filter>McRave</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\Interface.h">
-      <Filter>McRave</Filter>
-    </ClInclude>
     <ClInclude Include="..\Source\McRave\McRave.h">
       <Filter>McRave</Filter>
     </ClInclude>
@@ -326,6 +323,9 @@
     </ClInclude>
     <ClInclude Include="..\Source\BWEB\JPS.h">
       <Filter>BWEB</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Visuals.h">
+      <Filter>McRave</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -29,7 +29,7 @@ namespace McRave::Util
                 if (!unitType.isFlyer()) {
                     if (Broodwar->isWalkable(w) && rectangleIntersect(topLeft, botRight, p))
                         continue;
-                    else if (!Broodwar->isWalkable(w) || Grids().getCollision(w) > 0)
+                    else if (!Broodwar->isWalkable(w) || Grids::getCollision(w) > 0)
                         return false;
                 }
             }
@@ -117,13 +117,13 @@ namespace McRave::Util
         }
 
         if (unit.hasResource()) {
-            if (unit.getPosition().getDistance(unit.getResource().getPosition()) < 64.0 && Grids().getEGroundThreat(unit.getWalkPosition()) > 0.0 && Broodwar->getFrameCount() < 10000)
+            if (unit.getPosition().getDistance(unit.getResource().getPosition()) < 64.0 && Grids::getEGroundThreat(unit.getWalkPosition()) > 0.0 && Broodwar->getFrameCount() < 10000)
                 return true;
         }
         else {
             auto station = BWEB::Stations::getClosestStation(unit.getTilePosition());
             if (station && station->ResourceCentroid().getDistance(unit.getPosition()) < 160.0) {
-                if (Terrain().isInAllyTerritory(unit.getTilePosition()) && Grids().getEGroundThreat(unit.getWalkPosition()) > 0.0 && Broodwar->getFrameCount() < 10000)
+                if (Terrain().isInAllyTerritory(unit.getTilePosition()) && Grids::getEGroundThreat(unit.getWalkPosition()) > 0.0 && Broodwar->getFrameCount() < 10000)
                     return true;
             }
         }
@@ -176,7 +176,7 @@ namespace McRave::Util
         WalkPosition center = here + WalkPosition(dx, dy);
         // Testing a performance increase for ground units instead
         if (!unit.getType().isFlyer()) {
-            auto grid = Grids().getEGroundThreat(center);
+            auto grid = Grids::getEGroundThreat(center);
             return max(grid, MIN_THREAT);
         }
 
@@ -186,7 +186,7 @@ namespace McRave::Util
                 if (!w.isValid())
                     continue;
 
-                auto current = unit.getType().isFlyer() ? Grids().getEAirThreat(w) : Grids().getEGroundThreat(w);
+                auto current = unit.getType().isFlyer() ? Grids::getEAirThreat(w) : Grids::getEGroundThreat(w);
                 highest = (current > highest) ? current : highest;
             }
         }
@@ -200,7 +200,7 @@ namespace McRave::Util
 
         for (auto &tile : path.getTiles()) {
             auto w = WalkPosition(tile);
-            auto threat = unit.getType().isFlyer() ? Grids().getEAirThreat(w) > 0.0 : Grids().getEGroundThreat(w) > 0.0;
+            auto threat = unit.getType().isFlyer() ? Grids::getEAirThreat(w) > 0.0 : Grids::getEGroundThreat(w) > 0.0;
             if (threat)
                 return true;
         }
@@ -428,7 +428,7 @@ namespace McRave::Util
                 || Command::overlapsCommands(unit.unit(), UnitTypes::None, p, 8)
                 || Command::isInDanger(unit, p)
                 || !isWalkable(unit.getWalkPosition(), w, unit.getType())
-                || Buildings::overlapsQueuedBuilding(unit.getType(), t))
+                || Buildings::overlapsQueue(unit.getType(), t))
                 return false;
 
             bestPosition = p;
@@ -441,7 +441,7 @@ namespace McRave::Util
         distBest = DBL_MAX;
 
         // If this is the defending position, grab from a vector we already made
-        auto &positions = (unit.getGroundRange() < 64.0 && (!Terrain().isDefendNatural() || Players().vZ())) ? Terrain().getMeleeChokePositions() : Terrain().getRangedChokePositions();
+        auto &positions = (unit.getGroundRange() < 64.0 && (!Terrain().isDefendNatural() || Players::vZ())) ? Terrain().getMeleeChokePositions() : Terrain().getRangedChokePositions();
         if (here == Terrain().getDefendPosition() && !positions.empty()) {
             for (auto &position : positions) {
                 checkbest(WalkPosition(position));

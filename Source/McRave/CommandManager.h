@@ -2,24 +2,23 @@
 #include "McRave.h"
 #include <BWAPI.h>
 
-struct CommandType
-{
-    UnitType type = UnitTypes::None;
-    TechType tech = TechTypes::None;
-    Position pos = Positions::None;
-    Unit unit = nullptr;
-    int frame = 0;
-
-    CommandType(Unit u, Position p, TechType t) { unit = u, pos = p, tech = t, frame = Broodwar->getFrameCount(); }
-    CommandType(Unit u, Position p, UnitType t) { unit = u, pos = p, type = t, frame = Broodwar->getFrameCount(); }
-
-    friend bool operator< (const CommandType &left, const CommandType &right) {
-        return left.frame < right.frame;
-    }
-};
-
-
 namespace McRave::Command {
+    struct CommandType
+    {
+        UnitType type = UnitTypes::None;
+        TechType tech = TechTypes::None;
+        Position pos = Positions::None;
+        Unit unit = nullptr;
+        int frame = 0;
+
+        CommandType(Unit u, Position p, TechType t) { unit = u, pos = p, tech = t, frame = Broodwar->getFrameCount(); }
+        CommandType(Unit u, Position p, UnitType t) { unit = u, pos = p, type = t, frame = Broodwar->getFrameCount(); }
+
+        friend bool operator< (const CommandType &left, const CommandType &right) {
+            return left.frame < right.frame;
+        }
+    };
+
     Position findViablePosition(UnitInfo&, function<double(WalkPosition)>);
     void onFrame();
     bool overlapsCommands(Unit, TechType, Position, int);

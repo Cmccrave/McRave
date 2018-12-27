@@ -91,7 +91,7 @@ namespace McRave::Buildings
 
             // Refineries are only built on my own gas resources
             if (building.isRefinery()) {
-                for (auto &g : Resources().getMyGas()) {
+                for (auto &g : Resources::getMyGas()) {
                     ResourceInfo &gas = g.second;
                     double dist = gas.getPosition().getDistance(here);
 
@@ -251,7 +251,7 @@ namespace McRave::Buildings
                         double distance;
                         if (!area.AccessibleFrom(BWEB::Map::getMainArea()))
                             distance = log(base.Center().getDistance(BWEB::Map::getMainPosition()));
-                        else if (Players().getPlayers().size() > 1 || !Terrain().getEnemyStartingPosition().isValid())
+                        else if (Players::getPlayers().size() > 1 || !Terrain().getEnemyStartingPosition().isValid())
                             distance = BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), base.Center());
                         else
                             distance = BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), base.Center()) / (BWEB::Map::getGroundDistance(Terrain().getEnemyStartingPosition(), base.Center()));
@@ -277,7 +277,7 @@ namespace McRave::Buildings
                 TilePosition sum(0, 0);
                 TilePosition center;
                 for (auto &defense : Terrain().getNaturalWall()->getDefenses()) {
-                    if (!Pylons().hasPower(defense, UnitTypes::Protoss_Photon_Cannon)) {
+                    if (!Pylons::hasPower(defense, UnitTypes::Protoss_Photon_Cannon)) {
                         sum += defense;
                         cnt++;
                     }
@@ -357,7 +357,7 @@ namespace McRave::Buildings
             // If this is a defensive building
             if (building == UnitTypes::Protoss_Photon_Cannon || building == UnitTypes::Zerg_Creep_Colony || building == UnitTypes::Terran_Missile_Turret) {
 
-                if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Forge) >= 1 && ((Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) >= 3 + (Players().getNumberTerran() > 0 || Players().getNumberProtoss() > 0)) || (Terrain().isIslandMap() && Players().getNumberZerg() > 0))) {
+                if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Forge) >= 1 && ((Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) >= 3 + (Players::getNumberTerran() > 0 || Players::getNumberProtoss() > 0)) || (Terrain().isIslandMap() && Players::getNumberZerg() > 0))) {
                     for (auto &station : MyStations().getMyStations()) {
                         auto &s = *station.second;
 
@@ -615,7 +615,7 @@ namespace McRave::Buildings
     {
         // Refinery only on Geysers
         if (building.isRefinery()) {
-            for (auto &g : Resources().getMyGas()) {
+            for (auto &g : Resources::getMyGas()) {
                 ResourceInfo &gas = g.second;
 
                 if (here == gas.getTilePosition() && gas.getResourceState() != ResourceState::None && gas.getType() != building)
@@ -645,7 +645,7 @@ namespace McRave::Buildings
         }
 
         // Psi/Creep check
-        if (building.requiresPsi() && !Pylons().hasPower(here, building))
+        if (building.requiresPsi() && !Pylons::hasPower(here, building))
             return false;
 
         //// HACK: Had to find a way to let hatcheries be prevented from being queued by a BWEB block too close to resources
@@ -654,7 +654,7 @@ namespace McRave::Buildings
         return true;
     }
 
-    bool overlapsQueuedBuilding(UnitType type, TilePosition here)
+    bool overlapsQueue(UnitType type, TilePosition here)
     {
         // HACK: We want to really make sure a unit doesn't block a building, so fudge it by a full tile
         int safetyOffset = int(!type.isBuilding());

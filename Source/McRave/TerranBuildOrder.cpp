@@ -216,7 +216,7 @@
 //	{
 //		// Refinery logic
 //		if (shouldAddGas())
-//			itemQueue[UnitTypes::Terran_Refinery] = Item(Resources().getGasCount());
+//			itemQueue[UnitTypes::Terran_Refinery] = Item(Resources::getGasCount());
 //
 //		// Armory logic TODO
 //		if (!isBioBuild())
@@ -237,19 +237,19 @@
 //			itemQueue[UnitTypes::Terran_Engineering_Bay] = Item(1 + (bioBuild));
 //
 //		// Barracks logic
-//		if (bioUnlocked && shouldAddProduction())
+//		if (bioUnlocked && shouldAddProduction::)
 //			itemQueue[UnitTypes::Terran_Barracks] = Item(min(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Barracks) + 1));
 //
 //		// Factory logic
-//		if (mechUnlocked && shouldAddProduction())
+//		if (mechUnlocked && shouldAddProduction::)
 //			itemQueue[UnitTypes::Terran_Factory] = Item(min(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) * 2, Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Factory) + 1));
 //
 //		// Starport logic
-//		if (airUnlocked && shouldAddProduction())
+//		if (airUnlocked && shouldAddProduction::)
 //			itemQueue[UnitTypes::Terran_Starport] = Item(min(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) * 2, Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Starport) + 1));
 //
 //		// Missle Turret logic
-//		if (Players().getNumberZerg() > 0 && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Engineering_Bay) > 0)
+//		if (Players::getNumberZerg() > 0 && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Engineering_Bay) > 0)
 //			itemQueue[UnitTypes::Terran_Missile_Turret] = Item(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) * 2);
 //	}
 //}

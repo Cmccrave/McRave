@@ -2,9 +2,9 @@
 
 void TransportManager::onFrame()
 {
-    Display().startClock();
+     Visuals::startPerfTest();
     updateTransports();
-    Display().performanceTest(__FUNCTION__);
+    Visuals::endPerfTest(__FUNCTION__);
 }
 
 void TransportManager::updateTransports()
@@ -125,7 +125,7 @@ void TransportManager::updateDecision(UnitInfo& transport)
         auto attackCooldown = (Broodwar->getFrameCount() - cargo.getLastAttackFrame() <= 60 - Broodwar->getRemainingLatencyFrames());
         auto reaver = cargo.getType() == UnitTypes::Protoss_Reaver;
         auto ht = cargo.getType() == UnitTypes::Protoss_High_Templar;
-        auto threat = Grids().getEGroundThreat(cargo.getWalkPosition()) > 0.0;
+        auto threat = Grids::getEGroundThreat(cargo.getWalkPosition()) > 0.0;
         auto targetDist = reaver && cargo.hasTarget() ? BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getTarget().getPosition()) - 256.0 : cargo.getPosition().getDistance(cargo.getEngagePosition());
 
         if (transport.getPosition().getDistance(cargo.getPosition()) <= 160.0 || &cargo == closestCargo) {
@@ -301,7 +301,7 @@ void TransportManager::updateMovement(UnitInfo& transport)
 
             double threat = (transport.getPercentShield() > LOW_SHIELD_PERCENT_LIMIT && transport.getTransportState() == TransportState::Engaging) ? 1.0 : Util::getHighestThreat(w, transport);
             double distance = (transport.getType().isFlyer() ? p.getDistance(transport.getDestination()) : BWEB::Map::getGroundDistance(p, transport.getDestination()));
-            double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(w))));
+            double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids::lastVisitedFrame(w))));
             double score = visited / (threat * distance);
 
             if (score > best) {

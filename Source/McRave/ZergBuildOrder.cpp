@@ -25,7 +25,7 @@
 //void BuildOrderManager::zergSituational()
 //{
 //	// Adding hatcheries when needed
-//	if (shouldExpand() || shouldAddProduction())
+//	if (shouldExpand() || shouldAddProduction::)
 //		itemQueue[UnitTypes::Zerg_Hatchery] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Hatchery) + Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Lair) + Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Hive) + 1);
 //
 //	if (Strategy().enemyFastExpand() && !rush)
@@ -56,7 +56,7 @@
 //		gasLimit = INT_MAX;
 //
 //		if (shouldAddGas())
-//			itemQueue[UnitTypes::Zerg_Extractor] = Item(Resources().getGasCount());		
+//			itemQueue[UnitTypes::Zerg_Extractor] = Item(Resources::getGasCount());		
 //
 //		if (Units().getSupply() >= 100)
 //			itemQueue[UnitTypes::Zerg_Evolution_Chamber] = Item(2);

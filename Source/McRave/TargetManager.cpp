@@ -51,7 +51,7 @@ namespace McRave
                 || !targetMatters
 
                 // Testing Reavers vs T only shoot workers
-                //|| (unit.getType() == UnitTypes::Protoss_Reaver && Players().vT() && !target.getType().isWorker())
+                //|| (unit.getType() == UnitTypes::Protoss_Reaver && Players::vT() && !target.getType().isWorker())
 
                 // DT: Don't attack Vultures
                 || (unit.getType() == UnitTypes::Protoss_Dark_Templar && target.getType() == UnitTypes::Terran_Vulture)
@@ -82,8 +82,8 @@ namespace McRave
             else if (unit.getType() == UnitTypes::Protoss_High_Templar || unit.getType() == UnitTypes::Protoss_Arbiter) {
                 if (!target.getType().isBuilding() && target.getType() != UnitTypes::Terran_Vulture_Spider_Mine) {
 
-                    double eGrid = Grids().getEGroundCluster(target.getWalkPosition()) + Grids().getEAirCluster(target.getWalkPosition());
-                    double aGrid = Grids().getAGroundCluster(target.getWalkPosition()) + Grids().getAAirCluster(target.getWalkPosition());
+                    double eGrid = Grids::getEGroundCluster(target.getWalkPosition()) + Grids::getEAirCluster(target.getWalkPosition());
+                    double aGrid = Grids::getAGroundCluster(target.getWalkPosition()) + Grids::getAAirCluster(target.getWalkPosition());
                     double score = eGrid;
 
                     if (eGrid > aGrid)
@@ -229,7 +229,7 @@ namespace McRave
             newPath.createUnitPath(mapBWEM, unit.getPosition(), unit.getTarget().getPosition());
             unit.setPath(newPath);
         }
-        Display().displayPath(unit.getPath().getTiles());
+        Visuals::displayPath(unit.getPath().getTiles());
 
         // Measure distance minus range
         if (canCreatePath) {

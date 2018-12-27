@@ -85,15 +85,15 @@ namespace McRave::BuildOrder::Protoss {
     void Reaction2GateDefensive() {
         gasLimit =			(com(Protoss_Cybernetics_Core) && s >= 50) ? INT_MAX : 0;
         getOpening =		vis(Protoss_Dark_Templar) == 0;
-        playPassive	=		Players().vZ() ? vis(Protoss_Corsair) == 0 : vis(Protoss_Dark_Templar) == 0;
+        playPassive	=		Players::vZ() ? vis(Protoss_Corsair) == 0 : vis(Protoss_Dark_Templar) == 0;
         firstUpgrade =		UpgradeTypes::None;
         firstTech =			TechTypes::None;
         fastExpand =		false;
 
         zealotLimit =		INT_MAX;
-        dragoonLimit =		(vis(Protoss_Templar_Archives) > 0 || Players().vT()) ? INT_MAX : 0;
+        dragoonLimit =		(vis(Protoss_Templar_Archives) > 0 || Players::vT()) ? INT_MAX : 0;
 
-        if (Players().vZ()) {
+        if (Players::vZ()) {
             if (com(Protoss_Cybernetics_Core) > 0 && techList.find(Protoss_Corsair) == techList.end() && s >= 80)
                 techUnit = Protoss_Corsair;
         }
@@ -219,7 +219,7 @@ namespace McRave::BuildOrder::Protoss {
         else if (currentOpener == "Natural") {
             wallNat = true;
 
-            if (Players().vT()) {
+            if (Players::vT()) {
                 itemQueue[Protoss_Pylon] =				Item((s >= 14), (s >= 16));
                 itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 30));
             }
@@ -252,13 +252,13 @@ namespace McRave::BuildOrder::Protoss {
             currentTransition = "Panic";
         if (Strategy().enemyPressure())
             currentTransition = "Defensive";
-        if (Players().vT() && Strategy().enemyFastExpand())
+        if (Players::vT() && Strategy().enemyFastExpand())
             currentTransition = "DT";
         if (Units().getEnemyCount(UnitTypes::Zerg_Sunken_Colony) >= 2)
             currentTransition = "Expand";
 
         // Builds
-        if (Players().vT()) {
+        if (Players::vT()) {
             // https://liquipedia.net/starcraft/10/15_Gates_(vs._Terran)
             defaultPvT();
 
@@ -298,7 +298,7 @@ namespace McRave::BuildOrder::Protoss {
         else
         {
             // Versus Zerg
-            if (Players().vZ()) {
+            if (Players::vZ()) {
                 defaultPvZ();
 
                 if (currentTransition == "Expand") {
@@ -347,7 +347,7 @@ namespace McRave::BuildOrder::Protoss {
             }
 
             // Versus Protoss
-            else if (Players().vP()) {
+            else if (Players::vP()) {
 
                 defaultPvP();
                 zealotLimit =		5;
@@ -451,7 +451,7 @@ namespace McRave::BuildOrder::Protoss {
 
             // Decide whether to Reaver first or Obs first
             if (com(Protoss_Robotics_Facility) > 0) {
-                if (vis(Protoss_Observer) == 0 && Players().vP() && (Units().getEnemyCount(UnitTypes::Protoss_Dragoon) <= 2 || enemyBuild() == "P1GateDT")) {
+                if (vis(Protoss_Observer) == 0 && Players::vP() && (Units().getEnemyCount(UnitTypes::Protoss_Dragoon) <= 2 || enemyBuild() == "P1GateDT")) {
                     if (techList.find(Protoss_Observer) == techList.end())
                         techUnit = Protoss_Observer;
                 }
@@ -464,9 +464,9 @@ namespace McRave::BuildOrder::Protoss {
             getOpening =		s < 60;
             dragoonLimit =		INT_MAX;
 
-            if (Players().vP()) {
+            if (Players::vP()) {
                 playPassive =		!Strategy().enemyFastExpand() && (com(Protoss_Reaver) < 2/* || com(Protoss_Shuttle) < 1*/);
-                getOpening =		(Players().vP() && Strategy().enemyPressure()) ? vis(Protoss_Reaver) < 3 : s < 70;
+                getOpening =		(Players::vP() && Strategy().enemyPressure()) ? vis(Protoss_Reaver) < 3 : s < 70;
                 zealotLimit =		(com(Protoss_Robotics_Facility) >= 1) ? 6 : zealotLimit;
 
                 itemQueue[Protoss_Gateway] =				Item((s >= 20) + (s >= 60) + (s >= 62));
@@ -485,7 +485,7 @@ namespace McRave::BuildOrder::Protoss {
 
             // Decide whether to Reaver first or Obs first
             if (com(Protoss_Robotics_Facility) > 0) {
-                if (vis(Protoss_Observer) == 0 && Players().vP() && (Units().getEnemyCount(UnitTypes::Protoss_Dragoon) <= 2 || enemyBuild() == "P1GateDT")) {
+                if (vis(Protoss_Observer) == 0 && Players::vP() && (Units().getEnemyCount(UnitTypes::Protoss_Dragoon) <= 2 || enemyBuild() == "P1GateDT")) {
                     if (techList.find(Protoss_Observer) == techList.end())
                         techUnit = Protoss_Observer;
                 }
@@ -521,14 +521,14 @@ namespace McRave::BuildOrder::Protoss {
         }
         else if (currentTransition == "4Gate") {
             // https://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)
-            if (Players().vZ()) {
+            if (Players::vZ()) {
                 getOpening = s < 120;
 
                 itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 24) + (s >= 62) + (s >= 70));
                 itemQueue[Protoss_Assimilator] =		Item(s >= 44);
                 itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 50);
             }
-            else if (Players().vT()) {
+            else if (Players::vT()) {
                 getOpening = s < 80;
 
                 itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 30) + (2 * (s >= 62)));
@@ -544,7 +544,7 @@ namespace McRave::BuildOrder::Protoss {
             }
         }
         else if (currentTransition == "DT") {
-            if (Players().vT()) {
+            if (Players::vT()) {
                 // https://liquipedia.net/starcraft/DT_Fast_Expand_(vs._Terran)
                 firstUpgrade =		UpgradeTypes::Khaydarin_Core;
                 getOpening =		s < 60;
@@ -554,7 +554,7 @@ namespace McRave::BuildOrder::Protoss {
                 itemQueue[Protoss_Citadel_of_Adun] =	Item(s >= 36);
                 itemQueue[Protoss_Templar_Archives] =	Item(s >= 48);
             }
-            else if (Players().vZ()) {
+            else if (Players::vZ()) {
                 // Experimental build from Best
                 firstUpgrade =		UpgradeTypes::None;
                 firstTech =			TechTypes::Psionic_Storm;
@@ -573,7 +573,7 @@ namespace McRave::BuildOrder::Protoss {
                 itemQueue[Protoss_Citadel_of_Adun] =	Item(s >= 34);
                 itemQueue[Protoss_Templar_Archives] =	Item(vis(Protoss_Gateway) >= 2);
             }
-            //else if (Players().vP())
+            //else if (Players::vP())
                 // https://liquipedia.net/starcraft/2_Gate_DT_(vs._Protoss) -- is actually 1 Gate
         }
         else if (currentTransition == "Defensive")
@@ -589,7 +589,7 @@ namespace McRave::BuildOrder::Protoss {
         firstTech =			TechTypes::None;
         scout =				vis(Protoss_Cybernetics_Core) >= 1;
         wallNat =			vis(Protoss_Nexus) >= 2 ? true : false;
-        cutWorkers =		Production().hasIdleProduction() && com(Protoss_Cybernetics_Core) > 0;
+        cutWorkers =		Production::hasIdleProduction() && com(Protoss_Cybernetics_Core) > 0;
 
         gasLimit =			goonRange() && com(Protoss_Nexus) < 2 ? 2 : INT_MAX;
         zealotLimit =		0;

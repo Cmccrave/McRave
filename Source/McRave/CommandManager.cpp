@@ -92,7 +92,7 @@ namespace McRave::Command
                 auto unit = *u.second;
 
                 Position bestPosition = Positions::Invalid;
-                if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon) == 0 && Players().vT())
+                if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon) == 0 && Players::vT())
                     bestPosition = Util::getConcavePosition(unit, nullptr, BWEB::Map::getMainPosition());
                 else
                     bestPosition = Util::getConcavePosition(unit, nullptr, Terrain().getDefendPosition());
@@ -192,7 +192,7 @@ namespace McRave::Command
             if ((unit.getSimValue() >= 10.0 && unit.getType() != UnitTypes::Protoss_Reaver && (!unit.getTarget().getType().isWorker() || unit.getGroundRange() <= 32))
                 || (unit.getGroundRange() < 32 && unit.getTarget().getType().isWorker())
                 || unit.getType() == UnitTypes::Zerg_Lurker
-                || (unit.getGroundRange() < unit.getTarget().getGroundRange() && !unit.getTarget().getType().isBuilding() && Grids().getMobility(WalkPosition(unit.getEngagePosition())) > 0)																					// Approach slower units with higher range
+                || (unit.getGroundRange() < unit.getTarget().getGroundRange() && !unit.getTarget().getType().isBuilding() && Grids::getMobility(WalkPosition(unit.getEngagePosition())) > 0)																					// Approach slower units with higher range
                 || (unit.getType() != UnitTypes::Terran_Battlecruiser && unit.getType() != UnitTypes::Zerg_Guardian && unit.getType().isFlyer() && unit.getTarget().getType() != UnitTypes::Zerg_Scourge))																												// Small flying units approach other flying units except scourge
                 return true;
             return false;
@@ -211,7 +211,7 @@ namespace McRave::Command
             Position p = Position(w) + Position(4, 4);
             double distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
             double threat = Util::getHighestThreat(w, unit);
-            double grouping = unit.getType().isFlyer() ? max(0.1, Grids().getAAirCluster(w)) : max(0.1, log(2.0 + Grids().getAGroundCluster(w) - unit.getPriority()));
+            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : max(0.1, log(2.0 + Grids::getAGroundCluster(w) - unit.getPriority()));
             double score = 1.0 / (threat * distance * grouping);
             return score;
         };
@@ -244,7 +244,7 @@ namespace McRave::Command
             }
 
             // If target doesn't exist, move towards it
-            else if (unit.hasTarget() && unit.getTarget().getPosition().isValid() && Grids().getMobility(WalkPosition(unit.getEngagePosition())) > 0 && (unit.getPosition().getDistance(unit.getTarget().getPosition()) < SIM_RADIUS || unit.getType().isFlyer())) {
+            else if (unit.hasTarget() && unit.getTarget().getPosition().isValid() && Grids::getMobility(WalkPosition(unit.getEngagePosition())) > 0 && (unit.getPosition().getDistance(unit.getTarget().getPosition()) < SIM_RADIUS || unit.getType().isFlyer())) {
                 unit.setDestination(unit.getTarget().getPosition());
             }
 
@@ -279,7 +279,7 @@ namespace McRave::Command
                 unitPath.createUnitPath(mapBWEM, unit.getPosition(), unit.getDestination());
                 bPath.createUnitPath(mapBWEM, bestPosition, unit.getDestination());
 
-                Display().displayPath(unitPath.getTiles());
+                Visuals::displayPath(unitPath.getTiles());
 
                 if (bPath.getDistance() < unitPath.getDistance()) {
                     unit.command(UnitCommandTypes::Move, bestPosition);
@@ -325,7 +325,7 @@ namespace McRave::Command
             Position p = Position(w) + Position(4, 4);
             double distance = unit.hasTarget() ? 1.0 / (p.getDistance(unit.getTarget().getPosition())) : p.getDistance(BWEB::Map::getMainPosition());
             double threat = Util::getHighestThreat(w, unit);
-            double grouping = unit.getType().isFlyer() ? max(0.1, Grids().getAAirCluster(w)) : max(0.1, log(2.0 + Grids().getAGroundCluster(w) - unit.getPriority()));
+            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : max(0.1, log(2.0 + Grids::getAGroundCluster(w) - unit.getPriority()));
             double score = 1.0 / (threat * distance * grouping);
             return score;
         };
@@ -383,7 +383,7 @@ namespace McRave::Command
         }
 
         else {
-            defendingUnitsByDist[Grids().getDistanceHome(unit.getWalkPosition())] = &unit;
+            defendingUnitsByDist[Grids::getDistanceHome(unit.getWalkPosition())] = &unit;
             return true;
         }
         return false;
@@ -401,8 +401,8 @@ namespace McRave::Command
 
             double threat = Util::getHighestThreat(w, unit);
             double distance = (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination()));
-            double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids().lastVisitedFrame(w))));
-            double grouping = (unit.getType().isFlyer() ? max(0.1, Grids().getAAirCluster(w)) : 1.0 / max(1.0, (Grids().getAGroundCluster(w) - unit.getPriority())));
+            double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids::lastVisitedFrame(w))));
+            double grouping = (unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0 / max(1.0, (Grids::getAGroundCluster(w) - unit.getPriority())));
             double score = grouping * visited / distance;
 
             if (threat == MIN_THREAT || (unit.unit()->isCloaked() && !overlapsEnemyDetection(p)))
@@ -444,9 +444,9 @@ namespace McRave::Command
         // Low distance, low threat, high clustering
         function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
             Position p = Position(w) + Position(4, 4);
-            double distance = ((unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids().getDistanceHome(w));
+            double distance = ((unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids::getDistanceHome(w));
             double threat = Util::getHighestThreat(w, unit);
-            double grouping = unit.getType().isFlyer() ? max(0.1, Grids().getAAirCluster(w)) : max(0.1, log(2.0 + Grids().getAGroundCluster(w) - unit.getPriority()));
+            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : max(0.1, log(2.0 + Grids::getAGroundCluster(w) - unit.getPriority()));
             double score = 1.0 / (threat * distance * grouping);
             return score;
         };
@@ -649,7 +649,7 @@ namespace McRave::Command
 
             // If not a flyer and position blocks a building, has collision or a splash threat
             if (!unit.getType().isFlyer() &&
-                (Buildings::overlapsQueuedBuilding(unit.getType(), unit.getTilePosition()) || Grids().getESplash(here) > 0))
+                (Buildings::overlapsQueue(unit.getType(), unit.getTilePosition()) || Grids::getESplash(here) > 0))
                 return false;
 
             // If too close of a command, is in danger or isn't walkable
@@ -680,10 +680,10 @@ namespace McRave::Command
 
     void onFrame()
     {
-        Display().startClock();
+        Visuals::startPerfTest();
         updateEnemyCommands();
         updateUnits();
-        Display().performanceTest(__FUNCTION__);
+        Visuals::endPerfTest(__FUNCTION__);
     }
 
     vector <CommandType>& getMyCommands() { return myCommands; }

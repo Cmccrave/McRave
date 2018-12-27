@@ -2,10 +2,10 @@
 
 void UnitManager::onFrame()
 {
-    Display().startClock();
+     Visuals::startPerfTest();
     updateUnitSizes();
     updateUnits();
-    Display().performanceTest(__FUNCTION__);
+    Visuals::endPerfTest(__FUNCTION__);
 }
 
 void UnitManager::updateUnitSizes()
@@ -42,19 +42,19 @@ void UnitManager::updateUnits()
 
     // PvZ
     if (Broodwar->self()->getRace() == Races::Protoss) {
-        if (Players().vZ()) {
+        if (Players::vZ()) {
             minThreshold = 0.25;
             maxThreshold = 0.75;
         }
 
         // PvT
-        if (Players().vT()) {
+        if (Players::vT()) {
             minThreshold = 0.25;
             maxThreshold = 0.75;
         }
 
         // PvP
-        if (Players().vP()) {
+        if (Players::vP()) {
             minThreshold = 0.25;
             maxThreshold = 0.75;
         }
@@ -98,7 +98,7 @@ void UnitManager::updateUnits()
         }
 
         // Must see a 3x3 grid of Tiles to set a unit to invalid position
-        if (!unit.unit()->exists() && (!unit.isBurrowed() || Command::overlapsAllyDetection(unit.getPosition()) || Grids().getAGroundCluster(unit.getWalkPosition()) > 0) && unit.getPosition().isValid()) {
+        if (!unit.unit()->exists() && (!unit.isBurrowed() || Command::overlapsAllyDetection(unit.getPosition()) || Grids::getAGroundCluster(unit.getWalkPosition()) > 0) && unit.getPosition().isValid()) {
             bool move = true;
             for (int x = unit.getTilePosition().x - 1; x < unit.getTilePosition().x + 1; x++) {
                 for (int y = unit.getTilePosition().y - 1; y < unit.getTilePosition().y + 1; y++) {
@@ -140,11 +140,11 @@ void UnitManager::updateUnits()
         updateRole(unit);
 
         if (unit.getRole() == Role::Fighting) {
-            updateLocalSimulation(unit);
+            updateSimulation(unit);
             updateGlobalState(unit);
             updateLocalState(unit);
 
-            double g = Grids().getAGroundCluster(unit.getWalkPosition()) + Grids().getAAirCluster(unit.getWalkPosition());
+            double g = Grids::getAGroundCluster(unit.getWalkPosition()) + Grids::getAAirCluster(unit.getWalkPosition());
             if (g > centerCluster) {
                 centerCluster = g;
                 armyCenter = unit.getPosition();
@@ -166,7 +166,7 @@ void UnitManager::updateUnits()
     }
 }
 
-void UnitManager::updateLocalSimulation(UnitInfo& unit)
+void UnitManager::updateSimulation(UnitInfo& unit)
 {
     auto enemyLocalGroundStrength = 0.0, allyLocalGroundStrength = 0.0;
     auto enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;
@@ -321,7 +321,7 @@ void UnitManager::updateLocalSimulation(UnitInfo& unit)
                 continue;
             if (ally.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && Broodwar->getFrameCount() < 8000)
                 continue;
-            if (ally.getType() == UnitTypes::Zerg_Mutalisk && Grids().getEAirThreat((WalkPosition)ally.getEngagePosition()) * 5.0 > ally.getHealth() && ally.getHealth() <= 30)
+            if (ally.getType() == UnitTypes::Zerg_Mutalisk && Grids::getEAirThreat((WalkPosition)ally.getEngagePosition()) * 5.0 > ally.getHealth() && ally.getHealth() <= 30)
                 continue;
 
             // Situations where an ally should be treated as stronger than it actually is
@@ -404,7 +404,7 @@ void UnitManager::updateLocalState(UnitInfo& unit)
         auto fightingAtHome = ((Terrain().isInAllyTerritory(unit.getTilePosition()) && Util::unitInRange(unit)) || Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()));
         auto invisTarget = unit.getTarget().unit()->exists() && (unit.getTarget().unit()->isCloaked() || unit.getTarget().isBurrowed()) && !unit.getTarget().unit()->isDetected();
         auto enemyReach = unit.getType().isFlyer() ? unit.getTarget().getAirReach() : unit.getTarget().getGroundReach();
-        auto enemyThreat = unit.getType().isFlyer() ? Grids().getEAirThreat(unit.getEngagePosition()) : Grids().getEGroundThreat(unit.getEngagePosition());
+        auto enemyThreat = unit.getType().isFlyer() ? Grids::getEAirThreat(unit.getEngagePosition()) : Grids::getEGroundThreat(unit.getEngagePosition());
 
         // Testing
         if (Command::isInDanger(unit, unit.getPosition()) || (Command::isInDanger(unit, unit.getEngagePosition()) && unit.getPosition().getDistance(unit.getEngagePosition()) < SIM_RADIUS))
@@ -418,7 +418,7 @@ void UnitManager::updateLocalState(UnitInfo& unit)
         // Force retreating
         else if ((unit.getType().isMechanical() && unit.getPercentTotal() < LOW_MECH_PERCENT_LIMIT)
             || (unit.getType() == UnitTypes::Protoss_High_Templar && unit.getEnergy() < 75)
-            || Grids().getESplash(unit.getWalkPosition()) > 0
+            || Grids::getESplash(unit.getWalkPosition()) > 0
             || (invisTarget && (unit.getPosition().getDistance(unit.getTarget().getPosition()) <= enemyReach || enemyThreat))
             || unit.getGlobalState() == GlobalState::Retreating)
             unit.setLocalState(LocalState::Retreating);
@@ -427,11 +427,11 @@ void UnitManager::updateLocalState(UnitInfo& unit)
         else if (unit.getPosition().getDistance(unit.getSimPosition()) <= SIM_RADIUS) {
 
             // Retreat
-            if ((unit.getType() == UnitTypes::Protoss_Zealot && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) == 0 && !BuildOrder::isProxy() && unit.getTarget().getType() == UnitTypes::Terran_Vulture && Grids().getMobility(unit.getTarget().getWalkPosition()) > 6 && Grids().getCollision(unit.getTarget().getWalkPosition()) < 4)
-                || ((unit.getType() == UnitTypes::Protoss_Scout || unit.getType() == UnitTypes::Protoss_Corsair) && unit.getTarget().getType() == UnitTypes::Zerg_Overlord && Grids().getEAirThreat((WalkPosition)unit.getEngagePosition()) * 5.0 > (double)unit.getShields())
+            if ((unit.getType() == UnitTypes::Protoss_Zealot && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) == 0 && !BuildOrder::isProxy() && unit.getTarget().getType() == UnitTypes::Terran_Vulture && Grids::getMobility(unit.getTarget().getWalkPosition()) > 6 && Grids::getCollision(unit.getTarget().getWalkPosition()) < 4)
+                || ((unit.getType() == UnitTypes::Protoss_Scout || unit.getType() == UnitTypes::Protoss_Corsair) && unit.getTarget().getType() == UnitTypes::Zerg_Overlord && Grids::getEAirThreat((WalkPosition)unit.getEngagePosition()) * 5.0 > (double)unit.getShields())
                 || (unit.getType() == UnitTypes::Protoss_Corsair && unit.getTarget().getType() == UnitTypes::Zerg_Scourge && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Corsair) < 6)
                 || (unit.getType() == UnitTypes::Terran_Medic && unit.unit()->getEnergy() <= TechTypes::Healing.energyCost())
-                || (unit.getType() == UnitTypes::Zerg_Mutalisk && Grids().getEAirThreat((WalkPosition)unit.getEngagePosition()) > 0.0 && unit.getHealth() <= 30)
+                || (unit.getType() == UnitTypes::Zerg_Mutalisk && Grids::getEAirThreat((WalkPosition)unit.getEngagePosition()) > 0.0 && unit.getHealth() <= 30)
                 || (unit.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && Broodwar->getFrameCount() < 8000)
                 || (unit.getType() == UnitTypes::Terran_SCV && Broodwar->getFrameCount() > 12000)
                 || (invisTarget && !isThreatening(unit) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) == 0))
@@ -469,7 +469,7 @@ void UnitManager::updateGlobalState(UnitInfo& unit)
             || BuildOrder::isRush())
             unit.setGlobalState(GlobalState::Engaging);
 
-        else if ((Strategy().enemyRush() && !Players().vT())
+        else if ((Strategy().enemyRush() && !Players::vT())
             || (!Strategy().enemyRush() && BuildOrder::isHideTech() && BuildOrder::isOpener())
             || unit.getType().isWorker()
             || (Broodwar->getFrameCount() < 15000 && BuildOrder::isPlayPassive())
@@ -576,7 +576,7 @@ bool UnitManager::isThreatening(UnitInfo& unit)
     //	- Manner pylon
 
     if (unit.getType().isBuilding()) {
-        if (Buildings::overlapsQueuedBuilding(unit.getType(), unit.getTilePosition()))
+        if (Buildings::overlapsQueue(unit.getType(), unit.getTilePosition()))
             return true;
         if ((close || atHome) && (unit.getAirDamage() > 0.0 || unit.getGroundDamage() > 0.0))
             return true;

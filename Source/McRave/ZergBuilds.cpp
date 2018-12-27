@@ -35,13 +35,13 @@
 //			itemQueue[Zerg_Extractor]				= Item((vis(Zerg_Hatchery) >= 3 && (s >= 30)));
 //			itemQueue[Zerg_Hatchery]				= Item(1 + (s >= 24) + (s >= 26));
 //		}
-//		else if (Players().vP()) {
+//		else if (Players::vP()) {
 //			itemQueue[Zerg_Hatchery]				= Item(1 + (s >= 24) + (com(Zerg_Lair) >= 1) + (com(Zerg_Hatchery) >= 3));
 //			itemQueue[Zerg_Spawning_Pool]			= Item((vis(Zerg_Hatchery) >= 2 && s >= 22));
 //			itemQueue[Zerg_Extractor]				= Item((vis(Zerg_Spawning_Pool) >= 1 && s >= 24) + (vis(Zerg_Lair)));
 //			itemQueue[Zerg_Lair]					= Item(Broodwar->self()->gas() > 90);
 //		}
-//		else if (Players().vT()) {
+//		else if (Players::vT()) {
 //			firstUpgrade	= vis(Zerg_Lair) > 0 ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
 //
 //			itemQueue[Zerg_Hatchery]				= Item(1 + (s >= 24) + (com(Zerg_Lair) >= 1) + (com(Zerg_Hatchery) >= 3));

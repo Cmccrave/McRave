@@ -315,7 +315,7 @@ namespace McRave::BuildOrder
         }
 
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            if (Players().vZ())
+            if (Players::vZ())
                 return build == "Z9PoolSpire";
             else
                 return build == "Z2HatchMuta";
@@ -440,23 +440,23 @@ namespace McRave::BuildOrder
     void getDefaultBuild()
     {
         if (Broodwar->self()->getRace() == Races::Protoss) {
-            if (Players().getNumberProtoss() > 0) {
+            if (Players::getNumberProtoss() > 0) {
                 currentBuild = "P1GateCore";
                 currentOpener = "1Zealot";
                 currentTransition = "Reaver";
             }
-            else if (Players().getNumberZerg() > 0) {
+            else if (Players::getNumberZerg() > 0) {
                 currentBuild = "P1GateCore";
                 currentOpener = "2Zealot";
                 currentTransition = "DT";
             }
-            else if (Players().getNumberTerran() > 0) {
+            else if (Players::getNumberTerran() > 0) {
                 currentBuild = "P21Nexus";
                 currentOpener = "1Gate";
                 currentTransition = "Standard";
                 isBuildPossible(currentBuild, currentOpener);
             }
-            else if (Players().getNumberRandom() > 0) {
+            else if (Players::getNumberRandom() > 0) {
                 currentBuild = "P2Gate";
                 currentOpener = "Main";
                 currentTransition = "Reaver";
@@ -465,7 +465,7 @@ namespace McRave::BuildOrder
         if (Broodwar->self()->getRace() == Races::Terran)
             currentBuild = "TSparks";
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            if (Players().getNumberZerg() > 0)
+            if (Players::getNumberZerg() > 0)
                 currentBuild = "Z9PoolSpire";
             else
                 currentBuild = "Z2HatchMuta";
@@ -475,9 +475,9 @@ namespace McRave::BuildOrder
 
     void onFrame()
     {
-        Display().startClock();
+         Visuals::startPerfTest();
         updateBuild();
-        Display().performanceTest(__FUNCTION__);
+        Visuals::endPerfTest(__FUNCTION__);
     }
 
     void updateBuild()
@@ -508,7 +508,7 @@ namespace McRave::BuildOrder
         if (Broodwar->self()->getRace() == Races::Protoss) {
             if (Broodwar->self()->minerals() > 500 + (100 * Broodwar->self()->completedUnitCount(baseType)))
                 return true;
-            else if (techUnit == UnitTypes::None && !Production().hasIdleProduction() && Resources().isMinSaturated() && techSat && productionSat)
+            else if (techUnit == UnitTypes::None && !Production::hasIdleProduction() && Resources::isMinSaturated() && techSat && productionSat)
                 return true;
         }
         else if (Broodwar->self()->getRace() == Races::Terran) {
@@ -516,7 +516,7 @@ namespace McRave::BuildOrder
                 return true;
         }
         else if (Broodwar->self()->getRace() == Races::Zerg) {
-            if (Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings::getQueuedMineral() >= 300 && !getOpening)
+            if (Broodwar->self()->minerals() - Production::getReservedMineral() - Buildings::getQueuedMineral() >= 300 && !getOpening)
                 return true;
         }
         return false;
@@ -525,11 +525,11 @@ namespace McRave::BuildOrder
     bool shouldAddProduction()
     {
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            if (Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Larva) <= 1 && Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings::getQueuedMineral() >= 200 && !getOpening)
+            if (Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Larva) <= 1 && Broodwar->self()->minerals() - Production::getReservedMineral() - Buildings::getQueuedMineral() >= 200 && !getOpening)
                 return true;
         }
         else {
-            if ((Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings::getQueuedMineral() > 150) || (!productionSat && Resources().isMinSaturated()))
+            if ((Broodwar->self()->minerals() - Production::getReservedMineral() - Buildings::getQueuedMineral() > 150) || (!productionSat && Resources::isMinSaturated()))
                 return true;
         }
         return false;
@@ -539,14 +539,14 @@ namespace McRave::BuildOrder
     {
         auto workerCount = Broodwar->self()->completedUnitCount(Broodwar->self()->getRace().getWorker());
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            if (Resources().isGasSaturated() && Broodwar->self()->minerals() - Production().getReservedMineral() - Buildings::getQueuedMineral() > 500)
+            if (Resources::isGasSaturated() && Broodwar->self()->minerals() - Production::getReservedMineral() - Buildings::getQueuedMineral() > 500)
                 return true;
         }
 
         else if (Broodwar->self()->getRace() == Races::Protoss) {
-            if (Players().vP())
+            if (Players::vP())
                 return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Assimilator) != 1 || workerCount >= 32 || Broodwar->self()->minerals() > 600;
-            else if (Players().vT() || Players().vZ())
+            else if (Players::vT() || Players::vZ())
                 return true;
         }
 

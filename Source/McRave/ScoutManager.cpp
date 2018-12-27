@@ -2,10 +2,10 @@
 
 void ScoutManager::onFrame()
 {
-    Display().startClock();
+    Visuals::startPerfTest();
     updateScoutTargets();
     updateScouts();
-    Display().performanceTest(__FUNCTION__);
+    Visuals::endPerfTest(__FUNCTION__);
 }
 
 void ScoutManager::updateScoutTargets()
@@ -20,7 +20,7 @@ void ScoutManager::updateScoutTargets()
             if (tile.isValid())
                 scoutTargets.insert(Position(tile));
         }
-        if (Players().vZ() && MyStations().getEnemyStations().size() == 1 && Strategy().getEnemyBuild() != "Unknown")
+        if (Players::vZ() && MyStations().getEnemyStations().size() == 1 && Strategy().getEnemyBuild() != "Unknown")
             scoutTargets.insert((Position)Terrain().getEnemyExpand());
     }
 
@@ -53,7 +53,7 @@ void ScoutManager::updateScoutTargets()
         /*		if (Units().getEnemyCount(UnitTypes::Protoss_Gateway) >= 2)
                     scoutTargets.insert((Position)Terrain().getEnemyExpand());
                 else*/ if (Units().getEnemyCount(UnitTypes::Protoss_Pylon) == 0 || Strategy().enemyProxy())
-    scoutTargets.insert(mapBWEM.Center());
+                    scoutTargets.insert(mapBWEM.Center());
     }
 
     // If it's a cannon rush, scout the main
@@ -140,7 +140,7 @@ void ScoutManager::updateAssignment(UnitInfo& unit)
         else if (!scoutTargets.empty()) {
             for (auto &target : scoutTargets) {
                 double dist = target.getDistance(unit.getPosition());
-                double time = 1.0 + (double(Grids().lastVisibleFrame((TilePosition)target)));
+                double time = 1.0 + (double(Grids::lastVisibleFrame((TilePosition)target)));
                 double timeDiff = Broodwar->getFrameCount() - time;
 
                 if (time < distBest && timeDiff > 500 && scoutAssignments.find(target) == scoutAssignments.end()) {
@@ -176,7 +176,7 @@ void ScoutManager::updateAssignment(UnitInfo& unit)
                 if (area.AccessibleNeighbours().size() == 0 || Terrain().isInEnemyTerritory(base.Location()) || Terrain().isInAllyTerritory(base.Location()))
                     continue;
 
-                int time = Grids().lastVisibleFrame(base.Location());
+                int time = Grids::lastVisibleFrame(base.Location());
                 if (time < best)
                     best = time, posBest = Position(base.Location());
             }

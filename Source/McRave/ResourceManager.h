@@ -1,39 +1,19 @@
 #pragma once
 #include <BWAPI.h>
-#include "Singleton.h"
 #include "ResourceInfo.h"
 
-using namespace BWAPI;
-using namespace std;
-
-namespace McRave
+namespace McRave::Resources
 {
-    class ResourceManager
-    {
-        map <Unit, ResourceInfo> myMinerals;
-        map <Unit, ResourceInfo> myGas;
-        map <Unit, ResourceInfo> myBoulders;
-        bool minSat, gasSat;
-        int gasCount;
-        int incomeMineral, incomeGas;
+    int getGasCount();
+    int getIncomeMineral();
+    int getIncomeGas();
+    bool isMinSaturated();
+    bool isGasSaturated();
+    map <Unit, ResourceInfo>& getMyMinerals();
+    map <Unit, ResourceInfo>& getMyGas();
+    map <Unit, ResourceInfo>& getMyBoulders();
 
-        void updateResources();
-        void updateIncome(ResourceInfo&);
-        void updateInformation(ResourceInfo&);
-    public:
-        int getGasCount() { return gasCount; }
-        int getIncomeMineral() { return incomeMineral; }
-        int getIncomeGas() { return incomeGas; }
-        bool isMinSaturated() { return minSat; }
-        bool isGasSaturated() { return gasSat; }
-        map <Unit, ResourceInfo>& getMyMinerals() { return myMinerals; }
-        map <Unit, ResourceInfo>& getMyGas() { return myGas; }
-        map <Unit, ResourceInfo>& getMyBoulders() { return myBoulders; }
-
-        void onFrame();
-        void storeResource(Unit);
-        void removeResource(Unit);
-    };
+    void onFrame();
+    void storeResource(Unit);
+    void removeResource(Unit);
 }
-
-typedef Singleton<McRave::ResourceManager> ResourceSingleton;

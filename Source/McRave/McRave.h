@@ -76,7 +76,6 @@ namespace
 #include "CommandManager.h"
 #include "GoalManager.h"
 #include "GridManager.h"
-#include "Interface.h"
 #include "StationManager.h"
 #include "WorkerManager.h"
 #include "PlayerManager.h"
@@ -91,17 +90,11 @@ namespace
 #include "TransportManager.h"
 #include "UnitManager.h"
 #include "Util.h"
+#include "Visuals.h"
 
 // Namespace to access all managers globally
 namespace McRave
 {
-    inline GoalManager& Goals() { return GoalSingleton::Instance(); }
-    inline GridManager& Grids() { return GridSingleton::Instance(); }
-    inline InterfaceManager& Display() { return InterfaceSingleton::Instance(); }
-    inline PlayerManager& Players() { return PlayerSingleton::Instance(); }
-    inline ProductionManager& Production() { return ProductionSingleton::Instance(); }
-    inline PylonManager& Pylons() { return PylonSingleton::Instance(); }
-    inline ResourceManager& Resources() { return ResourceSingleton::Instance(); }
     inline ScoutManager& Scouts() { return ScoutSingleton::Instance(); }
     inline StationManager& MyStations() { return StationSingleton::Instance(); }
     inline StrategyManager& Strategy() { return StrategySingleton::Instance(); }

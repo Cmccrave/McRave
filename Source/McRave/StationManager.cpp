@@ -2,9 +2,9 @@
 
 void StationManager::onFrame()
 {
-    Display().startClock();
+     Visuals::startPerfTest();
     updateStations();
-    Display().performanceTest(__FUNCTION__);
+    Visuals::endPerfTest(__FUNCTION__);
 }
 
 void StationManager::onStart()
@@ -30,7 +30,7 @@ void StationManager::updateStations()
     for (auto &s1 : stationNetwork) {
         auto connectedPair = s1.second;
         for (auto &path : connectedPair) {
-            Display().displayPath(path.second.getTiles());
+            Visuals::displayPath(path.second.getTiles());
         }
     }
 }
@@ -61,7 +61,7 @@ void StationManager::storeStation(Unit unit)
     ResourceState state = unit->isCompleted() ? ResourceState::Mineable : ResourceState::Assignable;
     if (unit->getPlayer() == Broodwar->self()) {
         for (auto &mineral : newStation->BWEMBase()->Minerals()) {
-            auto &resource = Resources().getMyMinerals()[mineral->Unit()];
+            auto &resource = Resources::getMyMinerals()[mineral->Unit()];
             resource.setResourceState(state);
 
             // HACK: Added this to fix some weird gas steal stuff
@@ -69,7 +69,7 @@ void StationManager::storeStation(Unit unit)
                 resource.setStation(newStation);
         }
         for (auto &gas : newStation->BWEMBase()->Geysers()) {
-            auto &resource = Resources().getMyGas()[gas->Unit()];
+            auto &resource = Resources::getMyGas()[gas->Unit()];
             resource.setResourceState(state);
 
             // HACK: Added this to fix some weird gas steal stuff
@@ -96,9 +96,9 @@ void StationManager::removeStation(Unit unit)
     // 1) Change resource state to not mineable
     if (unit->getPlayer() == Broodwar->self()) {
         for (auto &mineral : station->BWEMBase()->Minerals())
-            Resources().getMyMinerals()[mineral->Unit()].setResourceState(ResourceState::None);
+            Resources::getMyMinerals()[mineral->Unit()].setResourceState(ResourceState::None);
         for (auto &gas : station->BWEMBase()->Geysers())
-            Resources().getMyGas()[gas->Unit()].setResourceState(ResourceState::None);
+            Resources::getMyGas()[gas->Unit()].setResourceState(ResourceState::None);
         myStations.erase(unit);
     }
     else
@@ -120,14 +120,14 @@ bool StationManager::needDefenses(const BWEB::Stations::Station& station)
     auto main = station.BWEMBase()->Location() == BWEB::Map::getMainTile();
     auto nat = station.BWEMBase()->Location() == BWEB::Map::getNaturalTile();
 
-    if (!Pylons().hasPower(centroid, UnitTypes::Protoss_Photon_Cannon))
+    if (!Pylons::hasPower(centroid, UnitTypes::Protoss_Photon_Cannon))
         return false;
 
     if ((nat || main) && !Terrain().isIslandMap() && defenseCount <= 0)
         return true;
     else if (defenseCount <= 0)
         return true;
-    else if ((Players().getPlayers().size() > 1 || Players().vZ()) && !main && !nat && defenseCount < int(station.DefenseLocations().size()))
+    else if ((Players::getPlayers::size() > 1 || Players::vZ()) && !main && !nat && defenseCount < int(station.DefenseLocations().size()))
         return true;
     else if (station.getDefenseCount() < 1 && (Units().getGlobalEnemyAirStrength() > 0.0 || Strategy().getEnemyBuild() == "Z2HatchMuta" || Strategy().getEnemyBuild() == "Z3HatchMuta"))
         return true;

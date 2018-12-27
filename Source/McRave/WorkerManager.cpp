@@ -2,9 +2,9 @@
 
 void WorkerManager::onFrame()
 {
-    Display().startClock();
+     Visuals::startPerfTest();
     updateWorkers();
-    Display().performanceTest(__FUNCTION__);
+    Visuals::endPerfTest(__FUNCTION__);
 }
 
 void WorkerManager::updateWorkers()
@@ -34,13 +34,13 @@ void WorkerManager::updateAssignment(UnitInfo& worker)
             || (resource.unit()->exists() && !resource.unit()->isCompleted())
             || (resource.getGathererCount() >= i + int(injured || threatened))
             || resource.getResourceState() == ResourceState::None
-            || ((!Resources().isMinSaturated() || !Resources().isGasSaturated()) && Grids().getEGroundThreat(WalkPosition(resource.getPosition())) > 0.0))
+            || ((!Resources::isMinSaturated() || !Resources::isGasSaturated()) && Grids::getEGroundThreat(WalkPosition(resource.getPosition())) > 0.0))
             return false;
         return true;
     };
 
     const auto needGas = [&]() {
-        if (!Resources().isGasSaturated() && ((gasWorkers < BuildOrder::gasWorkerLimit() && BuildOrder::isOpener()) || !BuildOrder::isOpener() || Resources().isMinSaturated()))
+        if (!Resources::isGasSaturated() && ((gasWorkers < BuildOrder::gasWorkerLimit() && BuildOrder::isOpener()) || !BuildOrder::isOpener() || Resources::isMinSaturated()))
             return true;
         return false;
     };
@@ -49,8 +49,8 @@ void WorkerManager::updateAssignment(UnitInfo& worker)
     if (!worker.hasResource()
         || needGas()
         || (worker.hasResource() && !worker.getResource().getType().isMineralField() && gasWorkers > BuildOrder::gasWorkerLimit())
-        || (worker.hasResource() && !closeToResource(worker) && Util::accurateThreatOnPath(worker, worker.getPath()) && Grids().getEGroundThreat(worker.getWalkPosition()) == 0.0)
-        || (worker.hasResource() && closeToResource(worker) && Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0))
+        || (worker.hasResource() && !closeToResource(worker) && Util::accurateThreatOnPath(worker, worker.getPath()) && Grids::getEGroundThreat(worker.getWalkPosition()) == 0.0)
+        || (worker.hasResource() && closeToResource(worker) && Grids::getEGroundThreat(worker.getWalkPosition()) > 0.0))
         needNewAssignment = true;
 
     // HACK: Just return if we dont need an assignment, should make this better
@@ -78,7 +78,7 @@ void WorkerManager::updateAssignment(UnitInfo& worker)
 
     // 2) Check if we need gas workers
     if (needGas()) {
-        for (auto &r : Resources().getMyGas()) {
+        for (auto &r : Resources::getMyGas()) {
             auto &resource = r.second;
             if (!resourceReady(resource, 3))
                 continue;
@@ -96,7 +96,7 @@ void WorkerManager::updateAssignment(UnitInfo& worker)
     // 3) Check if we need mineral workers
     else {
         for (int i = 1; i <= 2; i++) {
-            for (auto &r : Resources().getMyMinerals()) {
+            for (auto &r : Resources::getMyMinerals()) {
                 auto &resource = r.second;
                 if (!resourceReady(resource, i))
                     continue;
@@ -245,7 +245,7 @@ bool WorkerManager::clearPath(UnitInfo& worker)
         return false;
 
     // Find boulders to clear
-    for (auto &b : Resources().getMyBoulders()) {
+    for (auto &b : Resources::getMyBoulders()) {
         ResourceInfo &boulder = b.second;
         if (!boulder.unit() || !boulder.unit()->exists())
             continue;
@@ -302,7 +302,7 @@ bool WorkerManager::gather(UnitInfo& worker)
             worker.setPath(newPath);
         }
 
-        Display().displayPath(worker.getPath().getTiles());
+        Visuals::displayPath(worker.getPath().getTiles());
 
         // 3) If no threat on path, mine it
         if (!Util::accurateThreatOnPath(worker, worker.getPath())) {
@@ -314,7 +314,7 @@ bool WorkerManager::gather(UnitInfo& worker)
         }
 
         // 4) If we are under a threat, try to get away from it
-        else if (Grids().getEGroundThreat(worker.getWalkPosition()) > 0.0) {
+        else if (Grids::getEGroundThreat(worker.getWalkPosition()) > 0.0) {
             Command::kite(worker);
             return true;
         }

@@ -1,81 +1,34 @@
 #pragma once
 #include <BWAPI.h>
-#include "Singleton.h"
 
-using namespace BWAPI;
-using namespace std;
-
-#pragma warning(disable : 4351)
-
-namespace McRave
+namespace McRave::Grids
 {
-    class BaseInfo;
-    class GridManager
-    {
-        bool resetGrid[1024][1024] ={};
-        int timeGrid[1024][1024] ={};
-        int visibleGrid[256][256] ={};
-        int visitedGrid[1024][1024] ={};
-        vector<WalkPosition> resetVector;
+    void onFrame();
+    void onStart();
 
-        int currentFrame = 0;
+    float getAGroundCluster(WalkPosition here);
+    float getAGroundCluster(Position here);
 
-        // Ally Grid
-        double parentDistance[1024][1024];
-        double aGroundCluster[1024][1024] ={};
-        double aAirCluster[1024][1024] ={};
+    float getAAirCluster(WalkPosition here);
+    float getAAirCluster(Position here);
 
-        // Enemy Grid
-        double eGroundThreat[1024][1024] ={};
-        double eAirThreat[1024][1024] ={};
-        double eGroundCluster[1024][1024] ={};
-        double eAirCluster[1024][1024] ={};
-        int eSplash[1024][1024] ={};
+    float getEGroundThreat(WalkPosition here);
+    float getEGroundThreat(Position here);
 
-        // Mobility Grid
-        int mobility[1024][1024] ={};
-        int collision[1024][1024] ={};
-        double distanceHome[1024][1024] ={};
+    float getEAirThreat(WalkPosition here);
+    float getEAirThreat(Position here);
 
-        void saveReset(WalkPosition);
-        void updateDistance(), updateMobility(), updateAlly(), updateEnemy(), updateNeutral(), updateVisibility(), reset(), draw();
+    float getEGroundCluster(WalkPosition here);
+    float getEGroundCluster(Position here);
+    float getEAirCluster(WalkPosition here);
+    float getEAirCluster(Position here);
 
-        void addToGrids(UnitInfo&);
-        void addSplash(UnitInfo&);
-    public:
+    int getCollision(WalkPosition here);
+    int getESplash(WalkPosition here);
 
-        // Update functions
-        void onFrame(), onStart();
+    int getMobility(WalkPosition here);
+    double getDistanceHome(WalkPosition here);
 
-        void updateAllyMovement(Unit, WalkPosition);
-
-        double getAGroundCluster(WalkPosition here) { return aGroundCluster[here.x][here.y]; }
-        double getAGroundCluster(Position here) { return getAGroundCluster(WalkPosition(here)); }
-
-        double getAAirCluster(WalkPosition here) { return aAirCluster[here.x][here.y]; }
-        double getAAirCluster(Position here) { return getAAirCluster(WalkPosition(here)); }
-
-        double getEGroundThreat(WalkPosition here) { return eGroundThreat[here.x][here.y]; }
-        double getEGroundThreat(Position here) { return getEGroundThreat(WalkPosition(here)); }
-
-        double getEAirThreat(WalkPosition here) { return eAirThreat[here.x][here.y]; }
-        double getEAirThreat(Position here) { return getEAirThreat(WalkPosition(here)); }
-
-        double getEGroundCluster(WalkPosition here) { return eGroundCluster[here.x][here.y]; }
-        double getEGroundCluster(Position here) { return getEGroundCluster(WalkPosition(here)); }
-        double getEAirCluster(WalkPosition here) { return eAirCluster[here.x][here.y]; }
-        double getEAirCluster(Position here) { return getEAirCluster(WalkPosition(here)); }
-
-        int getCollision(WalkPosition here) { return collision[here.x][here.y]; }
-        int getESplash(WalkPosition here) { return eSplash[here.x][here.y]; }
-
-        int getMobility(WalkPosition here) { return mobility[here.x][here.y]; }
-        double getDistanceHome(WalkPosition here) { return distanceHome[here.x][here.y]; }
-
-        int lastVisibleFrame(TilePosition t) { return visibleGrid[t.x][t.y]; }
-        int lastVisitedFrame(WalkPosition w) { return visitedGrid[w.x][w.y]; }
-    };
-
+    int lastVisibleFrame(TilePosition t);
+    int lastVisitedFrame(WalkPosition w);
 }
-
-typedef Singleton<McRave::GridManager> GridSingleton;

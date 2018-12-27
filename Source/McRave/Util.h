@@ -31,7 +31,7 @@ namespace McRave::Util
         auto start = WalkPosition(here);
         for (int x = start.x; x < start.x + 4; x++) {
             for (int y = start.y; y < start.y + 4; y++) {
-                if (Grids().getMobility(WalkPosition(x, y)) == -1)
+                if (Grids::getMobility(WalkPosition(x, y)) == -1)
                     return false;
             }
         }

@@ -6,7 +6,7 @@ namespace McRave::Buildings
     void onFrame();
     bool isBuildable(BWAPI::UnitType, BWAPI::TilePosition);
     bool isQueueable(BWAPI::UnitType, BWAPI::TilePosition);
-    bool overlapsQueuedBuilding(BWAPI::UnitType, BWAPI::TilePosition);
+    bool overlapsQueue(BWAPI::UnitType, BWAPI::TilePosition);
     bool hasPoweredPositions();
     int getQueuedMineral();
     int getQueuedGas();

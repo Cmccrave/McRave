@@ -25,10 +25,10 @@ void McRaveModule::onStart()
     Broodwar->setLatCom(true);
     Broodwar->setLocalSpeed(0);
     Terrain().onStart();
-    Players().onStart();
+    Players::onStart();
     BWEB::Map::onStart();
     MyStations().onStart();
-    Grids().onStart();
+    Grids::onStart();
     BuildOrder::onStart();
     BWEB::Blocks::findBlocks();
     Broodwar->sendText("glhf");
@@ -42,34 +42,34 @@ void McRaveModule::onEnd(bool isWinner)
 void McRaveModule::onFrame()
 {
     // Update relevant map information and strategy
-    Players().onFrame();
+    Players::onFrame();
     Terrain().onFrame();
-    Resources().onFrame();
+    Resources::onFrame();
     Strategy().onFrame();
     BuildOrder::onFrame();
     MyStations().onFrame();
 
     // Update unit information and grids based on the information
     Units().onFrame();
-    Grids().onFrame();
+    Grids::onFrame();
 
     // Update commands
-    Goals().onFrame();
+    Goals::onFrame();
     Support::onFrame();
     Command::onFrame();
     Workers().onFrame();
     Scouts().onFrame();
     Transport().onFrame();
     Buildings::onFrame();
-    Production().onFrame();
+    Production::onFrame();
 
     // Display information from this frame
-    Display().onFrame();
+    Visuals::onFrame();
 }
 
 void McRaveModule::onSendText(string text)
 {
-    Display().onSendText(text);
+    Visuals::onSendText(text);
 }
 
 void McRaveModule::onReceiveText(Player player, string text)

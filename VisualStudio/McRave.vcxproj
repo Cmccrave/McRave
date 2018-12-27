@@ -48,7 +48,7 @@
     <ClCompile Include="..\Source\McRave\EventManager.cpp" />
     <ClCompile Include="..\Source\McRave\GoalManager.cpp" />
     <ClCompile Include="..\Source\McRave\GridManager.cpp" />
-    <ClCompile Include="..\Source\McRave\Interface.cpp" />
+    <ClCompile Include="..\Source\McRave\Visuals.cpp" />
     <ClCompile Include="..\Source\McRave\McRave.cpp" />
     <ClCompile Include="..\Source\McRave\PlayerInfo.cpp" />
     <ClCompile Include="..\Source\McRave\PlayerManager.cpp" />
@@ -108,7 +108,7 @@
     <ClInclude Include="..\Source\McRave\GoalManager.h" />
     <ClInclude Include="..\Source\McRave\GridManager.h" />
     <ClInclude Include="..\Source\McRave\Header.h" />
-    <ClInclude Include="..\Source\McRave\Interface.h" />
+    <ClInclude Include="..\Source\McRave\Visuals.h" />
     <ClInclude Include="..\Source\McRave\McRave.h" />
     <ClInclude Include="..\Source\McRave\PlayerInfo.h" />
     <ClInclude Include="..\Source\McRave\PlayerManager.h" />
