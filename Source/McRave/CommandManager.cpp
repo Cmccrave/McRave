@@ -72,6 +72,7 @@ namespace McRave::Command
                 make_pair(9, "Move")
             };
 
+            // Iterate commands, if one is executed then don't try to execute other commands
             int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
             int i = Util::iterateCommands(commands, unit);
             Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", Text::White, commandNames[i].c_str());

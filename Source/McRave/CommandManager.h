@@ -1,5 +1,4 @@
 #pragma once
-#include "McRave.h"
 #include <BWAPI.h>
 
 namespace McRave::Command {

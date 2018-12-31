@@ -1,6 +1,5 @@
 #pragma once
 #include <BWAPI.h>
-#include "UnitInfo.h"
 #include <set>
 
 namespace McRave::Units

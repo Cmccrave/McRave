@@ -61,7 +61,7 @@ void McRaveModule::onFrame()
     Goals::onFrame();
     Support::onFrame();
     Command::onFrame();
-    Workers().onFrame();
+    Workers::onFrame();
     Scouts::onFrame();
     Transport().onFrame();
     Buildings::onFrame();

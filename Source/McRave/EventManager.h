@@ -4,7 +4,7 @@
 
 namespace McRave::Events
 {
-    inline void onUnitDiscover(Unit unit)
+    inline void onUnitDiscover(BWAPI::Unit unit)
     {
         BWEB::Map::onUnitDiscover(unit);
 
@@ -15,7 +15,7 @@ namespace McRave::Events
             Units::storeUnit(unit);
     }
 
-    inline void onUnitCreate(Unit unit)
+    inline void onUnitCreate(BWAPI::Unit unit)
     {
         if (unit->getPlayer() == Broodwar->self()) {
 
@@ -31,7 +31,7 @@ namespace McRave::Events
             MyStations().storeStation(unit);
     }
 
-    inline void onUnitDestroy(Unit unit)
+    inline void onUnitDestroy(BWAPI::Unit unit)
     {
         if (unit->getType().isResourceContainer())
             Resources::removeResource(unit);
@@ -41,7 +41,7 @@ namespace McRave::Events
             Units::removeUnit(unit);
     }
 
-    inline void onUnitMorph(Unit unit)
+    inline void onUnitMorph(BWAPI::Unit unit)
     {
         BWEB::Map::onUnitMorph(unit);
 
@@ -82,7 +82,7 @@ namespace McRave::Events
             Resources::storeResource(unit);
     }
 
-    inline void onUnitRenegade(Unit unit)
+    inline void onUnitRenegade(BWAPI::Unit unit)
     {
         // TODO: Refinery is added in onUnitDiscover for enemy units (keep resource unit the same)
         // Destroy the unit otherwise
@@ -93,7 +93,7 @@ namespace McRave::Events
             onUnitComplete(unit);
     }
 
-    inline void onUnitComplete(Unit unit)
+    inline void onUnitComplete(BWAPI::Unit unit)
     {
         if (unit->getPlayer() == Broodwar->self())
             Units::storeUnit(unit);
