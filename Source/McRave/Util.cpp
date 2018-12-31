@@ -217,6 +217,16 @@ namespace McRave::Util
         return false;
     }
 
+    bool rectangleIntersect(Position topLeft, Position botRight, int x, int y)
+    {
+        if (x >= topLeft.x
+            && x < botRight.x
+            && y >= topLeft.y
+            && y < botRight.y)
+            return true;
+        return false;
+    }
+
     const BWEM::ChokePoint * getClosestChokepoint(Position here)
     {
         double distBest = DBL_MAX;

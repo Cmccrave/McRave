@@ -23,6 +23,7 @@ namespace McRave::Util
     bool pullRepairWorker(UnitInfo& unit);
     bool accurateThreatOnPath(UnitInfo&, BWEB::PathFinding::Path&);
     bool rectangleIntersect(Position, Position, Position);
+    bool rectangleIntersect(Position, Position, int, int);
 
     // Walkability checks
     template<class T>
@@ -37,6 +38,16 @@ namespace McRave::Util
         }
         return true;
     }
+
+    // Iterates all commands possible
+    template<typename T, int idx = 0>
+    int iterateCommands(T const &tpl, UnitInfo& unit) {
+        if constexpr (idx < std::tuple_size<T>::value)
+            if (!std::get<idx>(tpl)(unit))
+                return iterateCommands<T, idx + 1>(tpl, unit);
+        return idx;
+    }
+
     bool isWalkable(WalkPosition start, WalkPosition finish, UnitType);
 
     // Create a line of best fit for a chokepoint

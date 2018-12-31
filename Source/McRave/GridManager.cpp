@@ -12,15 +12,15 @@ namespace McRave::Grids
         int currentFrame = 0;
 
         // Ally Grid
-        double parentDistance[1024][1024];
-        double aGroundCluster[1024][1024] ={};
-        double aAirCluster[1024][1024] ={};
+        float parentDistance[1024][1024];
+        float aGroundCluster[1024][1024] ={};
+        float aAirCluster[1024][1024] ={};
 
         // Enemy Grid
-        double eGroundThreat[1024][1024] ={};
-        double eAirThreat[1024][1024] ={};
-        double eGroundCluster[1024][1024] ={};
-        double eAirCluster[1024][1024] ={};
+        float eGroundThreat[1024][1024] ={};
+        float eAirThreat[1024][1024] ={};
+        float eGroundCluster[1024][1024] ={};
+        float eAirCluster[1024][1024] ={};
         int eSplash[1024][1024] ={};
 
         // Mobility Grid
@@ -28,22 +28,25 @@ namespace McRave::Grids
         int collision[1024][1024] ={};
         double distanceHome[1024][1024] ={};
 
-        void saveReset(WalkPosition here)
+
+        int fasterDistGrids(int x1, int y1, int x2, int y2) {
+            unsigned int min = abs((int)(x1 - x2));
+            unsigned int max = abs((int)(y1 - y2));
+            if (max < min)
+                std::swap(min, max);
+
+            if (min < (max >> 2))
+                return max;
+
+            unsigned int minCalc = (3 * min) >> 3;
+            return (minCalc >> 5) + minCalc + max - (max >> 4) - (max >> 6);
+        }
+
+        void saveReset(int x, int y)
         {
-            int x = here.x, y = here.y;
-            if (!resetGrid[x][y]) {
-                resetVector.push_back(here);
-                resetGrid[x][y] = 1;
+            if (!std::exchange(resetGrid[x][y], 1)) {
+                resetVector.emplace_back(x,y);
             }
-
-            // Test later to see if branchless is faster
-            /*WalkPosition parr[]{ here };
-            resetVector.insert(resetVector.end(), std::begin(parr), std::begin(parr) + (1 - std::exchange(resetGrid[x][y], 1)));*/
-
-            // Or exchange once
-            /*if (!std::exchange(resetGrid[x][y], 1)) {
-                resetVector.push_back(here);
-            }*/
         }
 
         void addSplash(UnitInfo& unit)
@@ -62,7 +65,7 @@ namespace McRave::Grids
                     if (!w.isValid())
                         continue;
 
-                    saveReset(w);
+                    saveReset(x, y);
                     eSplash[x][y] += (target.getDistance(p) <= 96);
                 }
             }
@@ -99,35 +102,35 @@ namespace McRave::Grids
             // Pixel rectangle
             auto topLeft = Position(unit.getWalkPosition());
             auto botRight = topLeft + Position(walkWidth * 8, walkHeight * 8);
+            int x1 = unit.getPosition().x;
+            int y1 = unit.getPosition().y;
 
             // Iterate tiles and add to grid
             for (int x = left; x < right; x++) {
                 for (int y = top; y < bottom; y++) {
 
-                    WalkPosition w(x, y);
-                    auto p = Position(w) + Position(4, 4);
-                    auto dist = double(p.getApproxDistance(unit.getPosition()));
+                    auto dist = fasterDistGrids(x1, y1, (x * 8) + 4, (y * 8) + 4);
 
                     // Collision
-                    if (!unit.getType().isFlyer() && Util::rectangleIntersect(topLeft, botRight, p)) {
+                    if (!unit.getType().isFlyer() && Util::rectangleIntersect(topLeft, botRight, x, y)) {
                         collision[x][y] += 1;
-                        saveReset(w);
+                        saveReset(x,y);
                     }
 
                     // Threat
                     if (grdGrid && dist <= unit.getGroundReach()) {
                         grdGrid[x][y] += float(unit.getVisibleGroundStrength());
-                        saveReset(w);
+                        saveReset(x, y);
                     }
                     if (airGrid && dist <= unit.getAirReach()) {
                         airGrid[x][y] += float(unit.getVisibleAirStrength());
-                        saveReset(w);
+                        saveReset(x, y);
                     }
 
                     // Cluster
                     if (clusterGrid && dist < 96.0 && (unit.getPlayer() != Broodwar->self() || unit.getRole() == Role::Fighting)) {
-                        clusterGrid[x][y] += unit.getPriority();
-                        saveReset(w);
+                        clusterGrid[x][y] += float(unit.getPriority());
+                        saveReset(x, y);
                     }
                 }
             }
@@ -153,7 +156,7 @@ namespace McRave::Grids
                 resetGrid[x][y] = 0;
             }
             resetVector.clear();
-            Visuals::endPerfTest(__FUNCTION__);
+            Visuals::endPerfTest("Grid:Reset");
         }
 
         void updateAlly()
@@ -181,24 +184,13 @@ namespace McRave::Grids
                 else if (!unit.unit()->isLoaded())
                     addToGrids(unit);
             }
-            Visuals::endPerfTest(__FUNCTION__);
+            Visuals::endPerfTest("Grid:Self");
         }
 
         void updateEnemy()
         {
             Visuals::startPerfTest();
-
-            // Test later to see if sorting by y helps
-            /*vector<UnitInfo*> yUnits;
-            yUnits.reserve(Units().getEnemyUnits().size());
-            for (auto &u : Units().getEnemyUnits())
-                yUnits.push_back(&u.second);
-            
-            sort(yUnits, yUnits, [](auto a, auto b) {return a->getPosition().y < b->getPosition().y; });*/
-
-
             for (auto &u : Units().getEnemyUnits()) {
-
                 UnitInfo &unit = u.second;
                 if (unit.unit()->exists() && (unit.unit()->isStasised() || unit.unit()->isMaelstrommed()))
                     continue;
@@ -213,7 +205,7 @@ namespace McRave::Grids
                     addToGrids(unit);
                 }
             }
-            Visuals::endPerfTest(__FUNCTION__);
+            Visuals::endPerfTest("Grid:Enemy");
         }
 
         void updateNeutral()
@@ -230,12 +222,11 @@ namespace McRave::Grids
                 for (int x = start.x; x < start.x + width; x++) {
                     for (int y = start.y; y < start.y + height; y++) {
 
-                        WalkPosition w(x, y);
                         if (!WalkPosition(x, y).isValid())
                             continue;
 
                         collision[x][y] = 1;
-                        saveReset(w);
+                        saveReset(x, y);
                     }
                 }
 

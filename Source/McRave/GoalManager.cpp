@@ -3,6 +3,38 @@
 namespace McRave::Goals 
 {
     namespace {
+
+        void assignNumberToGoal(Position here, UnitType type, int count)
+        {
+            map<double, UnitInfo*> unitByDist;
+            map<UnitType, int> unitByType;
+
+            // Store units by distance if they have a matching type
+            for (auto &u : Units().getMyUnits()) {
+                UnitInfo &unit = u.second;
+
+                if (unit.getType() == type) {
+                    double dist = unit.getType().isFlyer() ? unit.getPosition().getDistance(here) : BWEB::Map::getGroundDistance(unit.getPosition(), here);
+                    unitByDist[dist] = &u.second;
+                }
+            }
+
+            // Iterate through closest units
+            for (auto &u : unitByDist) {
+                UnitInfo* unit = u.second;
+                if (count > 0 && !unit->getDestination().isValid()) {
+                    unit->setDestination(here);
+                    count--;
+                }
+            }
+        }
+
+        void assignPercentToGoal(Position here, UnitType type, double percent)
+        {
+            int count = int(percent * double(Units().getMyTypeCount(type)));
+            assignNumberToGoal(here, type, count);
+        }
+
         void updateProtossGoals()
         {
             map<UnitType, int> unitTypes;
@@ -96,37 +128,6 @@ namespace McRave::Goals
                     assignPercentToGoal(station.ResourceCentroid(), UnitTypes::Zerg_Lurker, 0.25);
                 }
             }
-        }
-
-        void assignNumberToGoal(Position here, UnitType type, int count)
-        {
-            map<double, UnitInfo*> unitByDist;
-            map<UnitType, int> unitByType;
-
-            // Store units by distance if they have a matching type
-            for (auto &u : Units().getMyUnits()) {
-                UnitInfo &unit = u.second;
-
-                if (unit.getType() == type) {
-                    double dist = unit.getType().isFlyer() ? unit.getPosition().getDistance(here) : BWEB::Map::getGroundDistance(unit.getPosition(), here);
-                    unitByDist[dist] = &u.second;
-                }
-            }
-
-            // Iterate through closest units
-            for (auto &u : unitByDist) {
-                UnitInfo* unit = u.second;
-                if (count > 0 && !unit->getDestination().isValid()) {
-                    unit->setDestination(here);
-                    count--;
-                }
-            }
-        }
-
-        void assignPercentToGoal(Position here, UnitType type, double percent)
-        {
-            int count = int(percent * double(Units().getMyTypeCount(type)));
-            assignNumberToGoal(here, type, count);
         }
     }
 

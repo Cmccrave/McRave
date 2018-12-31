@@ -165,7 +165,7 @@ namespace McRave::Visuals
         double dur = std::chrono::duration <double, std::milli>(std::chrono::high_resolution_clock::now() - start).count();
         myTest[function] = myTest[function] * 0.99 + dur * 0.01;
         if (myTest[function] > 0.2) {
-            Broodwar->drawTextScreen(180, screenOffset, "%c%s", Text::White, function);
+            Broodwar->drawTextScreen(180, screenOffset, "%c%s", Text::White, function.c_str());
             Broodwar->drawTextScreen(372, screenOffset, "%c%.2f ms", Text::White, myTest[function]);
             screenOffset += 10;
         }

@@ -19,9 +19,23 @@ namespace McRave
         const BWEB::Stations::Station * station;
         ResourceState rState;
     public:
-        ResourceInfo();
+        ResourceInfo() {
+            station = nullptr;
+            thisUnit = nullptr;
+            gathererCount = 0;
+            remainingResources = 0;
+            rState = ResourceState::None;
+            type = UnitTypes::None;
+            position = Positions::None;
+            tilePosition = TilePositions::None;
+        }
 
-        void updateResource();
+        void updateResource() {
+            type				= thisUnit->getType();
+            remainingResources	= thisUnit->getResources();
+            position			= thisUnit->getPosition();
+            tilePosition		= thisUnit->getTilePosition();
+        }
 
         bool hasStation() { return station != nullptr; }
         const BWEB::Stations::Station * getStation() { return station; }
@@ -43,22 +57,4 @@ namespace McRave
         void setPosition(Position newPosition) { position = newPosition; }
         void setTilePosition(TilePosition newTilePosition) { tilePosition = newTilePosition; }
     };
-
-    ResourceInfo::ResourceInfo() {
-        station = nullptr;
-        thisUnit = nullptr;
-        gathererCount = 0;
-        remainingResources = 0;
-        rState = ResourceState::None;
-        type = UnitTypes::None;
-        position = Positions::None;
-        tilePosition = TilePositions::None;
-    }
-
-    void ResourceInfo::updateResource() {
-        type				= thisUnit->getType();
-        remainingResources	= thisUnit->getResources();
-        position			= thisUnit->getPosition();
-        tilePosition		= thisUnit->getTilePosition();
-    }
 }

@@ -16,7 +16,13 @@ namespace McRave
         set <UpgradeType> playerUpgrades;
         set <TechType> playerTechs;
     public:
-        PlayerInfo();
+        PlayerInfo() {
+            thisPlayer = nullptr;
+            currentRace = Races::None;
+            startRace = Races::None;
+            alive = true;
+        }
+
         Race getCurrentRace() { return currentRace; }
         Race getStartRace() { return startRace; }
         bool isAlive() { return alive; }
@@ -35,29 +41,15 @@ namespace McRave
         void setAlive(bool newState) { alive = newState; }
         void setPlayer(Player newPlayer) { thisPlayer = newPlayer; }
 
-        bool hasUpgrade(UpgradeType);
-        bool hasTech(TechType);
+        bool hasUpgrade(UpgradeType upgrade) {
+            if (playerUpgrades.find(upgrade) != playerUpgrades.end())
+                return true;
+            return false;
+        }
+        bool hasTech(TechType tech) {
+            if (playerTechs.find(tech) != playerTechs.end())
+                return true;
+            return false;
+        }
     };
-
-    PlayerInfo::PlayerInfo()
-    {
-        thisPlayer = nullptr;
-        currentRace = Races::None;
-        startRace = Races::None;
-        alive = true;
-    }
-
-    bool PlayerInfo::hasTech(TechType tech)
-    {
-        if (playerTechs.find(tech) != playerTechs.end())
-            return true;
-        return false;
-    }
-
-    bool PlayerInfo::hasUpgrade(UpgradeType upgrade)
-    {
-        if (playerUpgrades.find(upgrade) != playerUpgrades.end())
-            return true;
-        return false;
-    }
 }

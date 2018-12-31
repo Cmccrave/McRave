@@ -2,9 +2,9 @@
 
 void StationManager::onFrame()
 {
-     Visuals::startPerfTest();
+    Visuals::startPerfTest();
     updateStations();
-    Visuals::endPerfTest(__FUNCTION__);
+    Visuals::endPerfTest("Stations");
 }
 
 void StationManager::onStart()
@@ -127,7 +127,7 @@ bool StationManager::needDefenses(const BWEB::Stations::Station& station)
         return true;
     else if (defenseCount <= 0)
         return true;
-    else if ((Players::getPlayers::size() > 1 || Players::vZ()) && !main && !nat && defenseCount < int(station.DefenseLocations().size()))
+    else if ((Players::getPlayers().size() > 1 || Players::vZ()) && !main && !nat && defenseCount < int(station.DefenseLocations().size()))
         return true;
     else if (station.getDefenseCount() < 1 && (Units().getGlobalEnemyAirStrength() > 0.0 || Strategy().getEnemyBuild() == "Z2HatchMuta" || Strategy().getEnemyBuild() == "Z3HatchMuta"))
         return true;

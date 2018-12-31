@@ -2,9 +2,9 @@
 
 void TransportManager::onFrame()
 {
-     Visuals::startPerfTest();
+    Visuals::startPerfTest();
     updateTransports();
-    Visuals::endPerfTest(__FUNCTION__);
+    Visuals::endPerfTest("Transports");
 }
 
 void TransportManager::updateTransports()

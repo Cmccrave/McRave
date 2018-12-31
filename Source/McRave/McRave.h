@@ -9,7 +9,7 @@
 #define STASIS_LIMIT 8.0
 #define LOW_SHIELD_PERCENT_LIMIT 0.2
 #define LOW_MECH_PERCENT_LIMIT 0.2
-#define MIN_THREAT 0.01
+#define MIN_THREAT 0.01f
 #define SIM_RADIUS 640.0
 
 #define MAX_SCARAB 5 + (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Reaver_Capacity) * 5)
@@ -95,7 +95,6 @@ namespace
 // Namespace to access all managers globally
 namespace McRave
 {
-    inline ScoutManager& Scouts() { return ScoutSingleton::Instance(); }
     inline StationManager& MyStations() { return StationSingleton::Instance(); }
     inline StrategyManager& Strategy() { return StrategySingleton::Instance(); }
     inline TargetManager& Targets() { return TargetSingleton::Instance(); }

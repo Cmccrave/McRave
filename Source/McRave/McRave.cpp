@@ -8,7 +8,6 @@
 
 // *** Notes ***
 // Move 4gate vs Z to 2 gate category
-// 2Gate at Natural vs T needs a core placement
 // Scout spam sacrifice is a problem
 // Use Player pointer instead of BWAPI::Player pointer in UnitInfo, gives advantage of knowing upgrades/tech that are available always
 // Floating units removing mine positions
@@ -17,6 +16,9 @@
 
 // Adjust close check for isThreatening
 // Forced observers will cause defensive 2 gate reaction to bug, need to ensure that we can break out of builds
+
+// *** Ideas ***
+// Monitor for overkilling units by hp - (2*nextDmgSource) <= 0 (double damage source to account for a potential miss?)
 
 void McRaveModule::onStart()
 {
@@ -58,7 +60,7 @@ void McRaveModule::onFrame()
     Support::onFrame();
     Command::onFrame();
     Workers().onFrame();
-    Scouts().onFrame();
+    Scouts::onFrame();
     Transport().onFrame();
     Buildings::onFrame();
     Production::onFrame();

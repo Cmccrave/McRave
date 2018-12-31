@@ -3,7 +3,6 @@
 namespace McRave::Command
 {
     namespace {
-
         map<double, UnitInfo*> defendingUnitsByDist;
 
         void updateEnemyCommands()
@@ -51,6 +50,7 @@ namespace McRave::Command
                 addCommand(nullptr, dot, TechTypes::Nuclear_Strike, true);
         }
 
+        constexpr tuple commands{ misc, special, attack, approach, kite, defend, hunt, escort, retreat, move };
         void updateDecision(UnitInfo& unit)
         {
             if (!unit.unit() || !unit.unit()->exists()																							// Prevent crashes			
@@ -73,7 +73,7 @@ namespace McRave::Command
             };
 
             int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
-            int i = iterateCommands(commands, unit);
+            int i = Util::iterateCommands(commands, unit);
             Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", Text::White, commandNames[i].c_str());
         }
 
@@ -84,6 +84,9 @@ namespace McRave::Command
 
             for (auto &u : Units().getMyUnits()) {
                 auto &unit = u.second;
+                if (unit.getType() == UnitTypes::Protoss_Interceptor || unit.getType() == UnitTypes::Protoss_Scarab)
+                    continue;
+
                 if (unit.getRole() == Role::Fighting)
                     updateDecision(unit);
             }
@@ -149,14 +152,27 @@ namespace McRave::Command
 
     bool attack(UnitInfo& unit)
     {
-        auto shouldAttack = unit.hasTarget() && unit.getTarget().unit()->exists() && unit.getLocalState() == LocalState::Engaging;
-
-        // If unit should be attacking
-        if (shouldAttack) {
+        if (unit.hasTarget()) {
+            auto shouldAttack = unit.hasTarget() && unit.getTarget().unit()->exists() && unit.getLocalState() == LocalState::Engaging;
             auto canAttack = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() < Broodwar->getRemainingLatencyFrames() : unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames();
 
-            if (canAttack) {
+            // Special Case: Carriers
+            if (shouldAttack && unit.getType() == UnitTypes::Protoss_Carrier) {
+                auto leashRange = 320;
+                for (auto &interceptor : unit.unit()->getInterceptors()) {
+                    if (interceptor->getOrder() == Orders::InterceptorReturn) {
+                        unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
+                        return true;
+                    }
+                }
+                if (unit.getPosition().getApproxDistance(unit.getTarget().getPosition()) < leashRange) {
+                    unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
+                    return true;
+                }
+            }
 
+            // If unit should be attacking
+            if (shouldAttack && canAttack) {
                 // Flyers don't want to decel when out of range, so we move to the target then attack when in range
                 if ((unit.getType().isFlyer() || unit.getType().isWorker()) && unit.hasTarget() && !Util::unitInRange(unit))
                     unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition());
@@ -170,13 +186,14 @@ namespace McRave::Command
 
     bool approach(UnitInfo& unit)
     {
-        auto airHarasser = unit.getType() == UnitTypes::Protoss_Corsair || unit.getType() == UnitTypes::Zerg_Mutalisk || unit.getType() == UnitTypes::Terran_Wraith;
+        auto airHarasser = unit.getType() == UnitTypes::Protoss_Corsair || unit.getType() == UnitTypes::Zerg_Mutalisk || unit.getType() == UnitTypes::Zerg_Devourer || unit.getType() == UnitTypes::Terran_Wraith;
+        auto capitalShip = unit.getType() == UnitTypes::Protoss_Carrier || unit.getType() == UnitTypes::Terran_Battlecruiser || unit.getType() == UnitTypes::Zerg_Guardian;
         auto shouldApproach = unit.getLocalState() == LocalState::Engaging;
 
         const auto canApproach = [&]() {
 
-            // No target, Carrier or Muta
-            if (!unit.hasTarget() || !unit.getTarget().unit()->exists() || unit.getType() == UnitTypes::Protoss_Carrier || unit.getType() == UnitTypes::Zerg_Mutalisk)
+            // No target or a capital ship
+            if (!unit.hasTarget() || !unit.getTarget().unit()->exists() || capitalShip)
                 return false;
 
             auto canAttack = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() < Broodwar->getRemainingLatencyFrames() : unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames();
@@ -189,11 +206,9 @@ namespace McRave::Command
                 return false;
 
             // Dominant fight, lower range, Lurker or non Scourge targets
-            if ((unit.getSimValue() >= 10.0 && unit.getType() != UnitTypes::Protoss_Reaver && (!unit.getTarget().getType().isWorker() || unit.getGroundRange() <= 32))
-                || (unit.getGroundRange() < 32 && unit.getTarget().getType().isWorker())
-                || unit.getType() == UnitTypes::Zerg_Lurker
-                || (unit.getGroundRange() < unit.getTarget().getGroundRange() && !unit.getTarget().getType().isBuilding() && Grids::getMobility(WalkPosition(unit.getEngagePosition())) > 0)																					// Approach slower units with higher range
-                || (unit.getType() != UnitTypes::Terran_Battlecruiser && unit.getType() != UnitTypes::Zerg_Guardian && unit.getType().isFlyer() && unit.getTarget().getType() != UnitTypes::Zerg_Scourge))																												// Small flying units approach other flying units except scourge
+            if ((unit.getSimValue() >= 10.0 && unit.getType() != UnitTypes::Protoss_Reaver && !unit.getTarget().getType().isWorker())
+                || (unit.getGroundRange() < unit.getTarget().getGroundRange() && !unit.getTarget().getType().isBuilding())
+                || (airHarasser && unit.getTarget().getType() != UnitTypes::Zerg_Scourge))
                 return true;
             return false;
         };
@@ -211,7 +226,7 @@ namespace McRave::Command
             Position p = Position(w) + Position(4, 4);
             double distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
             double threat = Util::getHighestThreat(w, unit);
-            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : max(0.1, log(2.0 + Grids::getAGroundCluster(w) - unit.getPriority()));
+            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : max(0.1, log(10.0 + Grids::getAGroundCluster(w) - unit.getPriority()));
             double score = 1.0 / (threat * distance * grouping);
             return score;
         };
@@ -302,6 +317,18 @@ namespace McRave::Command
                 auto enemyRange = (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
                 auto canAttack = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() < Broodwar->getRemainingLatencyFrames() : unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames();
 
+                // Special Case: Carriers
+                if (unit.getType() == UnitTypes::Protoss_Carrier) {
+                    auto leashRange = 320;
+                    for (auto &interceptor : unit.unit()->getInterceptors()) {
+                        if (interceptor->getOrder() != Orders::InterceptorAttack)
+                            return false;
+                    }
+                    if (unit.getPosition().getApproxDistance(unit.getTarget().getPosition()) >= leashRange)
+                        return false;
+                    return true;
+                }
+
                 if (canAttack)
                     return false;
 
@@ -309,7 +336,7 @@ namespace McRave::Command
                     return false;
 
                 if (unit.getType() == UnitTypes::Protoss_Reaver
-                    || (Strategy().enemyPressure() && allyRange >= 64.0) // HACK: We should check to see if a mine is near our target instead
+                    || (Strategy().enemyPressure() && allyRange >= 64.0) // HACK: Added this for 3fact aggresion, we should check to see if a mine is near our target instead
                     || (unit.getType() == UnitTypes::Terran_Vulture)
                     || (unit.getType() == UnitTypes::Zerg_Mutalisk)
                     || (unit.getType() == UnitTypes::Protoss_Carrier)
@@ -325,7 +352,7 @@ namespace McRave::Command
             Position p = Position(w) + Position(4, 4);
             double distance = unit.hasTarget() ? 1.0 / (p.getDistance(unit.getTarget().getPosition())) : p.getDistance(BWEB::Map::getMainPosition());
             double threat = Util::getHighestThreat(w, unit);
-            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : max(0.1, log(2.0 + Grids::getAGroundCluster(w) - unit.getPriority()));
+            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : max(0.1, log(10.0 + Grids::getAGroundCluster(w) - unit.getPriority()));
             double score = 1.0 / (threat * distance * grouping);
             return score;
         };
@@ -402,7 +429,7 @@ namespace McRave::Command
             double threat = Util::getHighestThreat(w, unit);
             double distance = (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination()));
             double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids::lastVisitedFrame(w))));
-            double grouping = (unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0 / max(1.0, (Grids::getAGroundCluster(w) - unit.getPriority())));
+            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : max(0.1, log(10.0 + Grids::getAGroundCluster(w) - unit.getPriority()));
             double score = grouping * visited / distance;
 
             if (threat == MIN_THREAT || (unit.unit()->isCloaked() && !overlapsEnemyDetection(p)))
@@ -446,7 +473,7 @@ namespace McRave::Command
             Position p = Position(w) + Position(4, 4);
             double distance = ((unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids::getDistanceHome(w));
             double threat = Util::getHighestThreat(w, unit);
-            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : max(0.1, log(2.0 + Grids::getAGroundCluster(w) - unit.getPriority()));
+            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : max(0.1, log(10.0 + Grids::getAGroundCluster(w) - unit.getPriority()));
             double score = 1.0 / (threat * distance * grouping);
             return score;
         };
@@ -644,9 +671,7 @@ namespace McRave::Command
         auto top = max(start.y - radius, offset);
         auto bot = min(start.y + radius + unitHeight, mapHeight - offset);
 
-        const auto viablePosition = [&](WalkPosition here) {
-            Position p = Position(here) + Position(4, 4);
-
+        const auto viablePosition = [&](WalkPosition here, Position p) {
             // If not a flyer and position blocks a building, has collision or a splash threat
             if (!unit.getType().isFlyer() &&
                 (Buildings::overlapsQueue(unit.getType(), unit.getTilePosition()) || Grids::getESplash(here) > 0))
@@ -665,11 +690,11 @@ namespace McRave::Command
         auto best = 0.0;
         for (int x = left; x < right; x++) {
             for (int y = top; y < bot; y++) {
-                WalkPosition w(x, y);
-                Position p = Position(w) + Position(4, 4);
+                auto w = WalkPosition(x, y);
+                auto p = Position((x * 8) + 4, (y * 8) + 4);
 
                 auto current = score(w);
-                if (current > best && viablePosition(w)) {
+                if (current > best && viablePosition(w, p)) {
                     bestPosition = p;
                     best = current;
                 }
@@ -683,7 +708,7 @@ namespace McRave::Command
         Visuals::startPerfTest();
         updateEnemyCommands();
         updateUnits();
-        Visuals::endPerfTest(__FUNCTION__);
+        Visuals::endPerfTest("Commands");
     }
 
     vector <CommandType>& getMyCommands() { return myCommands; }

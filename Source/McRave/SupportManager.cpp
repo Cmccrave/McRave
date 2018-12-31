@@ -67,7 +67,7 @@ namespace McRave::Support {
                         continue;
 
                     auto threat = Util::getHighestThreat(w, unit);
-                    auto cluster = 1.0 + Grids::getAGroundCluster(w) + Grids::getAAirCluster(w);
+                    auto cluster = 1.0;// +Grids::getAGroundCluster(w) + Grids::getAAirCluster(w);
                     auto dist = 1.0 + p.getDistance(destination);
 
                     // Try to keep the unit alive if it's low or cloaked inside detection
@@ -76,7 +76,7 @@ namespace McRave::Support {
                     if (unit.unit()->isCloaked() && Commands().overlapsEnemyDetection(p) && threat > 0.0)
                         continue;*/
 
-                        // Score this move
+                    // Score this move
                     auto score = 1.0 / (threat * cluster * dist);
                     if (score > scoreBest) {
                         scoreBest = score;

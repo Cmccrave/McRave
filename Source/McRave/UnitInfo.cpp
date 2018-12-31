@@ -75,6 +75,7 @@ namespace McRave
         // Remaining train frame
         remainingTrainFrame = max(0, remainingTrainFrame - 1);
 
+        target = nullptr;
         this->updateTarget();
         this->updateStuckCheck();
     }
@@ -126,8 +127,8 @@ namespace McRave
     bool UnitInfo::command(UnitCommandType command, Position here)
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames or latency frames
-        bool attackCooldown = Broodwar->getFrameCount() - lastAttackFrame <= minStopFrame - Broodwar->getLatencyFrames();
-        bool latencyCooldown =	Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;
+        bool attackCooldown = Broodwar->getFrameCount() - lastAttackFrame <= minStopFrame - Broodwar->getRemainingLatencyFrames();
+        bool latencyCooldown =	Broodwar->getFrameCount() % Broodwar->getRemainingLatencyFrames() != 0;
         //Broodwar->drawLineMap(position, here, player->getColor());
 
         if (attackCooldown || latencyCooldown)
@@ -168,8 +169,8 @@ namespace McRave
     bool UnitInfo::command(UnitCommandType command, UnitInfo* targetUnit)
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames or latency frames
-        bool attackCooldown = Broodwar->getFrameCount() - lastAttackFrame <= minStopFrame - Broodwar->getLatencyFrames();
-        bool latencyCooldown =	Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;
+        bool attackCooldown = Broodwar->getFrameCount() - lastAttackFrame <= minStopFrame - Broodwar->getRemainingLatencyFrames();
+        bool latencyCooldown =	Broodwar->getFrameCount() % Broodwar->getRemainingLatencyFrames() != 0;
         // Broodwar->drawLineMap(position, targetUnit->getPosition(), player->getColor());
 
         if (attackCooldown || latencyCooldown)

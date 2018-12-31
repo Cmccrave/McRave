@@ -45,6 +45,7 @@ namespace McRave::BuildOrder
         inline bool playPassive = false;
         inline bool rush = false;
         inline bool cutWorkers = false; // TODO: Use unlocking
+        inline bool lockedTransition = false;
 
         inline int satVal, prodVal, techVal, baseVal;
         inline int gasLimit = INT_MAX;
@@ -79,8 +80,8 @@ namespace McRave::BuildOrder
 
         void P1GateCore();
         void PFFE();
-        void P12Nexus();
-        void P21Nexus();
+        void PNexusGate();
+        void PGateNexus();
         void P2Gate();
     }
 

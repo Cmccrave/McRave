@@ -82,6 +82,15 @@ namespace McRave::BuildOrder
             return;
         }
 
+        bool testing = true;
+        if (testing) {
+            currentBuild = "NexusGate";
+            currentOpener = "1Gate";
+            currentTransition = "Carrier";
+            isBuildPossible(currentBuild, currentOpener);
+            return;
+        }
+
         // File extension including our race initial;
         const auto mapLearning = false;
         const string dash = "-";
@@ -96,24 +105,24 @@ namespace McRave::BuildOrder
         // Protoss builds, openers and transitions
         if (Broodwar->self()->getRace() == Races::Protoss) {
             // 1GateCore
-            myBuilds["P1GateCore"].openers ={ "0Zealot", "1Zealot", "2Zealot" };
-            myBuilds["P1GateCore"].transitions ={ "3GateRobo", "Reaver", "Corsair", "4Gate", "DT" };
+            myBuilds["1GateCore"].openers ={ "0Zealot", "1Zealot", "2Zealot" };
+            myBuilds["1GateCore"].transitions ={ "3GateRobo", "Reaver", "Corsair", "4Gate", "DT" };
 
             // 2Gate
-            myBuilds["P2Gate"].openers ={ "Proxy", "Natural", "Main" };
-            myBuilds["P2Gate"].transitions ={ "ZealotRush", "DT", "Reaver", "Expand", "DoubleExpand" };
+            myBuilds["2Gate"].openers ={ "Proxy", "Natural", "Main" };
+            myBuilds["2Gate"].transitions ={ "ZealotRush", "DT", "Reaver", "Expand", "DoubleExpand" };
 
             // FFE
-            myBuilds["PFFE"].openers ={ "Gate", "Nexus", "Forge" };
-            myBuilds["PFFE"].transitions ={ "NeoBisu", "2Stargate", "StormRush" };
+            myBuilds["FFE"].openers ={ "Gate", "Nexus", "Forge" };
+            myBuilds["FFE"].transitions ={ "NeoBisu", "2Stargate", "StormRush" };
 
             // 12 Nexus
-            myBuilds["P12Nexus"].openers ={ "Dragoon", "Zealot" };
-            myBuilds["P12Nexus"].transitions ={ "Standard", "DoubleExpand", "ReaverCarrier" };
+            myBuilds["NexusGate"].openers ={ "Dragoon", "Zealot" };
+            myBuilds["NexusGate"].transitions ={ "Standard", "DoubleExpand", "ReaverCarrier" };
 
             // 21 Nexus
-            myBuilds["P21Nexus"].openers ={ "1Gate", "2Gate" };
-            myBuilds["P21Nexus"].transitions ={ "Standard", "DoubleExpand", "Carrier" };
+            myBuilds["GateNexus"].openers ={ "1Gate", "2Gate" };
+            myBuilds["GateNexus"].transitions ={ "Standard", "DoubleExpand", "Carrier" };
         }
 
         // Winrate tracking
@@ -253,15 +262,15 @@ namespace McRave::BuildOrder
         vector<UnitType> buildings, defenses;
 
         if (Broodwar->self()->getRace() == Races::Protoss) {
-            if (build == "P2Gate" && opener == "Natural") {
+            if (build == "2Gate" && opener == "Natural") {
                 buildings ={ Protoss_Gateway, Protoss_Gateway, Protoss_Pylon };
                 defenses.insert(defenses.end(), 6, Protoss_Photon_Cannon);
             }
-            else if (build == "PFFE" || build.find("Meme") != string::npos) {
+            else if (build == "FFE" || build.find("Meme") != string::npos) {
                 buildings ={ Protoss_Gateway, Protoss_Forge, Protoss_Pylon };
                 defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
             }
-            else if (build == "P21Nexus" || build == "P12Nexus") {
+            else if (build == "GateNexus" || build == "NexusGate") {
                 int count = Util::chokeWidth(BWEB::Map::getNaturalChoke()) / 64;
                 buildings.insert(buildings.end(), count, Protoss_Pylon);
             }
@@ -278,7 +287,7 @@ namespace McRave::BuildOrder
             return true; // no walls for now
         }
 
-        if (build == "T2Fact" || build == "TSparks") {
+        if (build == "2Fact" || build == "Sparks") {
             if (Terrain().findMainWall(buildings, defenses))
                 return true;
         }
@@ -297,18 +306,18 @@ namespace McRave::BuildOrder
         auto r = enemy == Races::Unknown || Races::Random;
 
         if (Broodwar->self()->getRace() == Races::Protoss) {
-            if (build == "P1GateCore")
+            if (build == "1GateCore")
                 return true;
-            if (build == "P2Gate")
+            if (build == "2Gate")
                 return true;
-            if (build == "P12Nexus" || build == "P21Nexus")
+            if (build == "NexusGate" || build == "GateNexus")
                 return t;
-            if (build == "PFFE")
+            if (build == "FFE")
                 return z;
         }
 
         if (Broodwar->self()->getRace() == Races::Terran) {
-            if (build == "T2PortWraith")
+            if (build == "2PortWraith")
                 return true;
             else
                 return false;
@@ -316,9 +325,9 @@ namespace McRave::BuildOrder
 
         if (Broodwar->self()->getRace() == Races::Zerg) {
             if (Players::vZ())
-                return build == "Z9PoolSpire";
+                return build == "9PoolSpire";
             else
-                return build == "Z2HatchMuta";
+                return build == "2HatchMuta";
         }
         return false;
     }
@@ -332,7 +341,7 @@ namespace McRave::BuildOrder
         auto r = enemy == Races::Unknown || Races::Random;
 
         if (Broodwar->self()->getRace() == Races::Protoss) {
-            if (build == "P1GateCore") {
+            if (build == "1GateCore") {
                 if (opener == "0Zealot")
                     return t;
                 if (opener == "1Zealot")
@@ -341,7 +350,7 @@ namespace McRave::BuildOrder
                     return p || z || r;
             }
 
-            if (build == "P2Gate") {
+            if (build == "2Gate") {
                 if (opener == "Proxy")
                     return false;
                 if (opener == "Natural")
@@ -350,16 +359,16 @@ namespace McRave::BuildOrder
                     return true;
             }
 
-            if (build == "PFFE") {
+            if (build == "FFE") {
                 if (opener == "Gate" || opener == "Nexus" || opener == "Forge")
                     return z;
             }
 
-            if (build == "P12Nexus") {
+            if (build == "NexusGate") {
                 if (opener == "Dragoon" || opener == "Zealot")
                     return /*p ||*/ t;
             }
-            if (build == "P21Nexus") {
+            if (build == "GateNexus") {
                 if (opener == "1Gate" || opener == "2Gate")
                     return t;
             }
@@ -376,7 +385,7 @@ namespace McRave::BuildOrder
         auto r = enemy == Races::Unknown || Races::Random;
 
         if (Broodwar->self()->getRace() == Races::Protoss) {
-            if (build == "P1GateCore") {
+            if (build == "1GateCore") {
                 if (transition == "DT")
                     return t || z;
                 if (transition == "3GateRobo")
@@ -407,14 +416,14 @@ namespace McRave::BuildOrder
                     return z;
             }
 
-            if (build == "P12Nexus") {
+            if (build == "NexusGate") {
                 if (transition == "DoubleExpand"/* || transition == "ReaverCarrier"*/)
                     return t;
                 if (transition == "Standard")
                     return t || p;
             }
 
-            if (build == "P21Nexus") {
+            if (build == "GateNexus") {
                 if (transition == "DoubleExpand" || transition == "Carrier" || transition == "Standard")
                     return t;
             }
@@ -441,43 +450,43 @@ namespace McRave::BuildOrder
     {
         if (Broodwar->self()->getRace() == Races::Protoss) {
             if (Players::getNumberProtoss() > 0) {
-                currentBuild = "P1GateCore";
+                currentBuild = "1GateCore";
                 currentOpener = "1Zealot";
                 currentTransition = "Reaver";
             }
             else if (Players::getNumberZerg() > 0) {
-                currentBuild = "P1GateCore";
+                currentBuild = "1GateCore";
                 currentOpener = "2Zealot";
                 currentTransition = "DT";
             }
             else if (Players::getNumberTerran() > 0) {
-                currentBuild = "P21Nexus";
+                currentBuild = "GateNexus";
                 currentOpener = "1Gate";
                 currentTransition = "Standard";
                 isBuildPossible(currentBuild, currentOpener);
             }
             else if (Players::getNumberRandom() > 0) {
-                currentBuild = "P2Gate";
+                currentBuild = "2Gate";
                 currentOpener = "Main";
                 currentTransition = "Reaver";
             }
         }
         if (Broodwar->self()->getRace() == Races::Terran)
-            currentBuild = "TSparks";
+            currentBuild = "Sparks";
         if (Broodwar->self()->getRace() == Races::Zerg) {
             if (Players::getNumberZerg() > 0)
-                currentBuild = "Z9PoolSpire";
+                currentBuild = "9PoolSpire";
             else
-                currentBuild = "Z2HatchMuta";
+                currentBuild = "2HatchMuta";
         }
         return;
     }
 
     void onFrame()
     {
-         Visuals::startPerfTest();
+        Visuals::startPerfTest();
         updateBuild();
-        Visuals::endPerfTest(__FUNCTION__);
+        Visuals::endPerfTest("BuildOrder");
     }
 
     void updateBuild()

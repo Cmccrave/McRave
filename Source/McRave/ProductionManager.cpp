@@ -555,10 +555,10 @@ namespace McRave::Production
             for (auto &b : Units().getMyUnits()) {
                 auto &building = b.second;
 
-                if (!building.unit() || building.getRole() != Role::Producing || (!building.unit()->isCompleted() && !building.getType().isResourceDepot() && building.getType().getRace() != Races::Zerg) || Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0)
+                if (!building.unit() || building.getRole() != Role::Producing || (!building.unit()->isCompleted() && !building.getType().isResourceDepot() && building.getType().getRace() != Races::Zerg) || Broodwar->getFrameCount() % Broodwar->getRemainingLatencyFrames() != 0)
                     continue;
 
-                bool latencyIdle = building.getRemainingTrainFrames() < Broodwar->getLatencyFrames();
+                bool latencyIdle = building.getRemainingTrainFrames() < Broodwar->getRemainingLatencyFrames();
 
                 if (latencyIdle && !building.getType().isResourceDepot()) {
                     idleProduction.erase(building.unit());
@@ -592,7 +592,7 @@ namespace McRave::Production
         Visuals::startPerfTest();
         updateReservedResources();
         updateProduction();
-        Visuals::endPerfTest(__FUNCTION__);
+        Visuals::endPerfTest("Production");
     }
 
     int getReservedMineral() { return reservedMineral; }

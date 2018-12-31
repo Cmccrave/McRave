@@ -41,7 +41,6 @@ namespace McRave::Command {
     namespace {
         inline vector <CommandType> myCommands;
         inline vector <CommandType> enemyCommands;
-        inline constexpr tuple commands{ misc, special, attack, approach, kite, defend, hunt, escort, retreat, move };
     }
 
     // Adds a UnitType or TechType command at a Position
@@ -49,14 +48,5 @@ namespace McRave::Command {
     void addCommand(Unit unit, Position here, T type, bool enemy = false) {
         auto &commands = enemy ? enemyCommands : myCommands;
         commands.push_back(CommandType(unit, here, type));
-    }
-
-    // Iterates all commands possible
-    template<typename T, int idx = 0>
-    int iterateCommands(T const &tpl, UnitInfo& unit) {
-        if constexpr (idx < std::tuple_size<T>::value)
-            if (!std::get<idx>(tpl)(unit))
-                return iterateCommands<T, idx + 1>(tpl, unit);
-        return idx;
-    }
+    }    
 }

@@ -69,13 +69,13 @@ void StrategyManager::checkEnemyProxy()
 
 void StrategyManager::updateEnemyBuild()
 {
-    if (Players::getPlayers::size() > 1 || (Broodwar->getFrameCount() - enemyFrame > 2000 && enemyFrame != 0 && enemyBuild != "Unknown"))
+    if (Players::getPlayers().size() > 1 || (Broodwar->getFrameCount() - enemyFrame > 2000 && enemyFrame != 0 && enemyBuild != "Unknown"))
         return;
 
     if (enemyFrame == 0 && enemyBuild != "Unknown")
         enemyFrame = Broodwar->getFrameCount();
 
-    for (auto &p : Players::getPlayers::) {
+    for (auto &p : Players::getPlayers()) {
         PlayerInfo &player = p.second;
 
         if (player.getCurrentRace() == Races::Zerg) {
@@ -231,7 +231,7 @@ void StrategyManager::updateEnemyBuild()
                     }
                 }
 
-                // P1GateCore
+                // 1GateCore
                 if (unit.getType() == Protoss_Cybernetics_Core) {
                     if (unit.unit()->isUpgrading())
                         goonRange = true;
@@ -275,11 +275,8 @@ void StrategyManager::updateEnemyBuild()
 
                 // Barracks Builds
                 if (unit.getType() == Terran_Barracks) {
-
                     if (Terrain().isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(mapBWEM.Center()) < 1280.0 || (BWEB::Map::getNaturalChoke() && unit.getPosition().getDistance((Position)BWEB::Map::getNaturalChoke()->Center()) < 320))
                         enemyBuild = "TBBS";
-                    else if (Units().getEnemyCount(Terran_Academy) >= 1 && Units().getEnemyCount(Terran_Engineering_Bay) >= 1)
-                        enemyBuild = "TSparks";
                     else
                         enemyBuild = "Unknown";
                 }
@@ -301,7 +298,15 @@ void StrategyManager::updateEnemyBuild()
             if (Broodwar->self()->getRace() == Races::Protoss && Units().getEnemyCount(UnitTypes::Terran_Medic) >= 2)
                 enemyBuild = "ShallowTwo";
 
-            if (Units().getSupply() < 60 && ((Units().getEnemyCount(Terran_Barracks) >= 2 && Units().getEnemyCount(Terran_Refinery) == 0) || (Units().getEnemyCount(Terran_Marine) > 5 && Units().getEnemyCount(Terran_Bunker) <= 0 && Broodwar->getFrameCount() < 6000)))
+            // Sparks
+            if (Broodwar->self()->getRace() == Races::Zerg && Units().getEnemyCount(Terran_Academy) >= 1 && Units().getEnemyCount(Terran_Engineering_Bay) >= 1)
+                enemyBuild = "TSparks";
+
+            // Joyo
+            if (Broodwar->getFrameCount() < 9000 && Broodwar->self()->getRace() == Races::Protoss && !enemyFE && (Units().getEnemyCount(UnitTypes::Terran_Machine_Shop) >= 2 || (Units().getEnemyCount(Terran_Marine) >= 4 && Units().getEnemyCount(Terran_Siege_Tank_Tank_Mode) >= 3)))
+                enemyBuild = "TJoyo";
+
+            if ((Units().getEnemyCount(Terran_Barracks) >= 2 && Units().getEnemyCount(Terran_Refinery) == 0) || (Units().getEnemyCount(Terran_Marine) > 5 && Units().getEnemyCount(Terran_Bunker) <= 0 && Broodwar->getFrameCount() < 6000))
                 enemyBuild = "TBBS";
             if ((Units().getEnemyCount(Terran_Vulture_Spider_Mine) > 0 && Broodwar->getFrameCount() < 9000) || (Units().getEnemyCount(Terran_Factory) >= 2 && vultureSpeed))
                 enemyBuild = "T3Fact";

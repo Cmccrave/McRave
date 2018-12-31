@@ -9,6 +9,34 @@ namespace McRave::Resources {
         int gasCount;
         int incomeMineral, incomeGas;
 
+        void updateIncome(ResourceInfo& resource)
+        {
+            // Estimate income
+            auto cnt = resource.getGathererCount();
+            if (resource.getType().isMineralField())
+                incomeMineral += cnt == 1 ? 65 : 126;
+            else
+                incomeGas += resource.getRemainingResources() ? 103 * cnt : 26 * cnt;
+        }
+
+        void updateInformation(ResourceInfo& resource)
+        {
+            // If unit exists, update BW information
+            if (resource.unit()->exists())
+                resource.updateResource();
+
+            UnitType geyserType = Broodwar->self()->getRace().getRefinery();
+
+            // Update saturation
+            if (resource.getType().isMineralField() && minSat && resource.getGathererCount() < 2 && resource.getResourceState() != ResourceState::None)
+                minSat = false;
+            else if (resource.getType() == geyserType && resource.unit()->isCompleted() && resource.getResourceState() != ResourceState::None && ((BuildOrder::isOpener() && resource.getGathererCount() < min(3, BuildOrder::gasWorkerLimit())) || (!BuildOrder::isOpener() && resource.getGathererCount() < 3)))
+                gasSat = false;
+
+            if (!resource.getType().isMineralField() && resource.getResourceState() == ResourceState::Mineable)
+                gasCount++;
+        }
+
         void updateResources()
         {
             // Assume saturation, will be changed to false if any resource isn't saturated
@@ -46,41 +74,13 @@ namespace McRave::Resources {
                 }
             }
         }
-
-        void updateIncome(ResourceInfo& resource)
-        {
-            // Estimate income
-            auto cnt = resource.getGathererCount();
-            if (resource.getType().isMineralField())
-                incomeMineral += cnt == 1 ? 65 : 126;
-            else
-                incomeGas += resource.getRemainingResources() ? 103 * cnt : 26 * cnt;
-        }
-
-        void updateInformation(ResourceInfo& resource)
-        {
-            // If unit exists, update BW information
-            if (resource.unit()->exists())
-                resource.updateResource();
-
-            UnitType geyserType = Broodwar->self()->getRace().getRefinery();
-
-            // Update saturation
-            if (resource.getType().isMineralField() && minSat && resource.getGathererCount() < 2 && resource.getResourceState() != ResourceState::None)
-                minSat = false;
-            else if (resource.getType() == geyserType && resource.unit()->isCompleted() && resource.getResourceState() != ResourceState::None && ((BuildOrder::isOpener() && resource.getGathererCount() < min(3, BuildOrder::gasWorkerLimit())) || (!BuildOrder::isOpener() && resource.getGathererCount() < 3)))
-                gasSat = false;
-
-            if (!resource.getType().isMineralField() && resource.getResourceState() == ResourceState::Mineable)
-                gasCount++;
-        }
     }
 
     void onFrame()
     {
         Visuals::startPerfTest();
         updateResources();
-        Visuals::endPerfTest(__FUNCTION__);
+        Visuals::endPerfTest("Resources");
     }    
 
     void storeResource(Unit resource)

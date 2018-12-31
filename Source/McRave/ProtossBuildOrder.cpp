@@ -6,17 +6,16 @@ namespace McRave::BuildOrder::Protoss
 {
     void opener()
     {
-        if (currentBuild == "P1GateCore") P1GateCore();
-        if (currentBuild == "PFFE") PFFE();
-        if (currentBuild == "P12Nexus") P12Nexus();
-        if (currentBuild == "P21Nexus") P21Nexus();
-        if (currentBuild == "P2Gate") P2Gate();
-
-
-        //if (currentBuild == "PScoutMemes") PScoutMemes();
-        //if (currentBuild == "PDWEBMemes") PDWEBMemes();
-        //if (currentBuild == "PArbiterMemes") PArbiterMemes();
-        //if (currentBuild == "PShuttleMemes") PShuttleMemes();
+        if (currentBuild == "1GateCore")
+            P1GateCore();
+        else if (currentBuild == "FFE")
+            PFFE();
+        else if (currentBuild == "NexusGate")
+            PNexusGate();
+        else if (currentBuild == "GateNexus")
+            PGateNexus();
+        else if (currentBuild == "2Gate")
+            P2Gate();
     }
 
     void tech()
@@ -33,30 +32,8 @@ namespace McRave::BuildOrder::Protoss
 
             else if (currentTransition == "DoubleExpand" && techList.find(UnitTypes::Protoss_High_Templar) == techList.end())
                 techUnit = UnitTypes::Protoss_High_Templar;
-
-            // HACK: Make carriers on Blue Storm
-            else if (Broodwar->mapFileName().find("BlueStorm") != string::npos && techList.find(UnitTypes::Protoss_Carrier) == techList.end() && Players::vT())
-                techUnit = UnitTypes::Protoss_Carrier;
-
-            // HACK: Just double adds tech units on island maps
-            else if (techUnit == UnitTypes::None && currentBuild == "P12Nexus" && Terrain().isIslandMap() && techList.size() <= 2) {
-                techList.insert(UnitTypes::Protoss_Shuttle);
-                unlockedType.insert(UnitTypes::Protoss_Shuttle);
-
-                if (Players::vT())
-                    techUnit = UnitTypes::Protoss_Carrier;
-                else if (Players::vZ())
-                    techUnit = UnitTypes::Protoss_Corsair;
-                else if (Players::vP())
-                    techUnit = UnitTypes::Protoss_Carrier;
-            }
-
-            else if (Strategy().getEnemyBuild() == "P4Gate" && currentBuild != "P4Gate" && techList.find(UnitTypes::Protoss_Dark_Templar) == techList.end() && !Strategy().enemyGasSteal())
+            else if (Strategy().getEnemyBuild() == "P4Gate" && techList.find(UnitTypes::Protoss_Dark_Templar) == techList.end() && !Strategy().enemyGasSteal())
                 techUnit = UnitTypes::Protoss_Dark_Templar;
-            else if (Terrain().isIslandMap() && techUnit == UnitTypes::None && currentBuild == "P1GateCorsair" && techList.find(UnitTypes::Protoss_Shuttle) == techList.end())
-                techUnit = UnitTypes::Protoss_Shuttle;
-            else if (techUnit == UnitTypes::None && currentBuild == "PZealotDrop" && techList.find(UnitTypes::Protoss_Scout) == techList.end() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Shuttle) > 0)
-                techUnit = UnitTypes::Protoss_Scout;
             else if (techUnit == UnitTypes::None)
                 getNewTech();
         }
@@ -68,7 +45,7 @@ namespace McRave::BuildOrder::Protoss
 
     void situational()
     {
-        auto skipFirstTech = (currentBuild == "P4Gate" || currentTransition == "DoubleExpand" || (Strategy().enemyGasSteal() && !Terrain().isNarrowNatural()));
+        auto skipFirstTech = (/*currentBuild == "P4Gate" ||*/ currentTransition == "DoubleExpand" || (Strategy().enemyGasSteal() && !Terrain().isNarrowNatural()));
 
         // Metrics for when to Expand/Add Production/Add Tech
         satVal = Players::vT() ? 2 : 3;
@@ -77,7 +54,7 @@ namespace McRave::BuildOrder::Protoss
         techVal = techList.size() + skipFirstTech + Players::vT();
 
         // HACK: Against FFE just add a Nexus
-        if (Strategy().getEnemyBuild() == "PFFE" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1)
+        if (Strategy().getEnemyBuild() == "FFE" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1)
             itemQueue[UnitTypes::Protoss_Nexus] = Item(2);
 
         // Saturation
@@ -185,7 +162,7 @@ namespace McRave::BuildOrder::Protoss
 
     void island()
     {
-        if (shouldAddProduction::) {
+        if (shouldAddProduction()) {
 
             // PvZ island
             if (Players::vZ()) {

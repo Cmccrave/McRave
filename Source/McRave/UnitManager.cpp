@@ -2,10 +2,10 @@
 
 void UnitManager::onFrame()
 {
-     Visuals::startPerfTest();
+    Visuals::startPerfTest();
     updateUnitSizes();
     updateUnits();
-    Visuals::endPerfTest(__FUNCTION__);
+    Visuals::endPerfTest("Units");
 }
 
 void UnitManager::updateUnitSizes()
@@ -86,6 +86,9 @@ void UnitManager::updateUnits()
             }
         }
 
+        if (isThreatening(unit))
+            unit.circleRed();
+
         // If unit is visible, update it
         if (unit.unit()->exists()) {
             unit.updateUnit();
@@ -98,7 +101,7 @@ void UnitManager::updateUnits()
         }
 
         // Must see a 3x3 grid of Tiles to set a unit to invalid position
-        if (!unit.unit()->exists() && (!unit.isBurrowed() || Command::overlapsAllyDetection(unit.getPosition()) || Grids::getAGroundCluster(unit.getWalkPosition()) > 0) && unit.getPosition().isValid()) {
+        if (!unit.unit()->exists() && (!unit.isBurrowed() || Command::overlapsAllyDetection(unit.getPosition()) || (unit.getWalkPosition().isValid() && Grids::getAGroundCluster(unit.getWalkPosition()) > 0)) && unit.getPosition().isValid()) {
             bool move = true;
             for (int x = unit.getTilePosition().x - 1; x < unit.getTilePosition().x + 1; x++) {
                 for (int y = unit.getTilePosition().y - 1; y < unit.getTilePosition().y + 1; y++) {
@@ -204,7 +207,7 @@ void UnitManager::updateSimulation(UnitInfo& unit)
             return false;
         if (source.getPlayer() != Broodwar->self() && (!unit.hasTarget() || unit.getTarget().getType().isFlyer() || !unit.getTarget().getPosition().isValid()))
             return false;
-        if (source.getType().isFlyer() || !source.getPosition().isValid() || (source.unit()->exists() && source.unit()->isLoaded()))
+        if (source.getType().isFlyer() || unit.getType().isFlyer() || !source.getPosition().isValid() || source.unit()->isLoaded() || unit.unit()->isLoaded())
             return false;
         if (!mapBWEM.GetArea(source.getTilePosition()))
             return false;
@@ -438,7 +441,7 @@ void UnitManager::updateLocalState(UnitInfo& unit)
                 unit.setLocalState(LocalState::Retreating);
 
             // Engage
-            else if (((unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && (unit.getPosition().getDistance(unit.getTarget().getPosition()) < 96.0 || Util::unitInRange(unit)))
+            else if ((Broodwar->getFrameCount() > 10000 && (unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && (unit.getPosition().getDistance(unit.getTarget().getPosition()) < 96.0 || Util::unitInRange(unit)))
                 || ((unit.unit()->isCloaked() || unit.isBurrowed()) && !Command::overlapsEnemyDetection(unit.getEngagePosition()))
                 || (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && Util::unitInRange(unit))
                 || (unit.getSimState() == SimState::Win && unit.getGlobalState() == GlobalState::Engaging))

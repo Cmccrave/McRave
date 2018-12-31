@@ -2,9 +2,9 @@
 
 void WorkerManager::onFrame()
 {
-     Visuals::startPerfTest();
+    Visuals::startPerfTest();
     updateWorkers();
-    Visuals::endPerfTest(__FUNCTION__);
+    Visuals::endPerfTest("Workers");
 }
 
 void WorkerManager::updateWorkers()
@@ -288,6 +288,7 @@ bool WorkerManager::gather(UnitInfo& worker)
     // If worker has a resource and it's mineable
     if (worker.hasResource() && worker.getResource().getResourceState() == ResourceState::Mineable) {
         auto resourceCentroid = worker.getResource().getStation() ? worker.getResource().getStation()->ResourceCentroid() : Positions::Invalid;
+        worker.setDestination(resourceCentroid);
 
         // 1) If it's close or same area, don't need a path		
         if (closeToResource(worker)) {
@@ -309,7 +310,7 @@ bool WorkerManager::gather(UnitInfo& worker)
             if (shouldIssueGather())
                 worker.unit()->gather(worker.getResource().unit());
             else if (!resourceExists)
-                worker.unit()->move(worker.getResource().getPosition());
+                Command::move(worker);            
             return true;
         }
 
