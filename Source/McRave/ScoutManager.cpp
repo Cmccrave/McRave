@@ -72,9 +72,9 @@ namespace McRave::Scouts {
 
             // If it's a 2gate, scout for an expansion if we found the gates
             if (Strategy().getEnemyBuild() == "P2Gate") {
-                /*		if (Units().getEnemyCount(UnitTypes::Protoss_Gateway) >= 2)
+                /*		if (Units::getEnemyCount(UnitTypes::Protoss_Gateway) >= 2)
                             scoutTargets.insert((Position)Terrain().getEnemyExpand());
-                        else*/ if (Units().getEnemyCount(UnitTypes::Protoss_Pylon) == 0 || Strategy().enemyProxy())
+                        else*/ if (Units::getEnemyCount(UnitTypes::Protoss_Pylon) == 0 || Strategy().enemyProxy())
     scoutTargets.insert(mapBWEM.Center());
             }
 
@@ -94,7 +94,7 @@ namespace McRave::Scouts {
             scoutCount = 1;
 
             // If we have seen an enemy Probe before we've scouted the enemy, follow it
-            if (Units().getEnemyCount(UnitTypes::Protoss_Probe) == 1) {
+            if (Units::getEnemyCount(UnitTypes::Protoss_Probe) == 1) {
                 auto w = Util::getClosestUnit(BWEB::Map::getMainPosition(), Broodwar->enemy(), UnitTypes::Protoss_Probe);
                 proxyCheck = (w && !Terrain().getEnemyStartingPosition().isValid() && w->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1);
             }
@@ -103,13 +103,13 @@ namespace McRave::Scouts {
             proxyCheck = false;
 
             // If we know a proxy possibly exists, we need a second scout
-            auto foundProxyGates = Strategy().enemyProxy() && Strategy().getEnemyBuild() == "P2Gate" && Units().getEnemyCount(UnitTypes::Protoss_Gateway) > 0;
+            auto foundProxyGates = Strategy().enemyProxy() && Strategy().getEnemyBuild() == "P2Gate" && Units::getEnemyCount(UnitTypes::Protoss_Gateway) > 0;
             if (((Strategy().enemyProxy() && Strategy().getEnemyBuild() != "P2Gate") || proxyCheck || foundProxyGates) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1)
                 scoutCount++;
 
             if (BuildOrder::isRush() && Broodwar->self()->getRace() == Races::Zerg && Terrain().getEnemyStartingPosition().isValid())
                 scoutCount = 0;
-            if (Strategy().getEnemyBuild() == "Z5Pool" && Units().getEnemyCount(UnitTypes::Zerg_Zergling) >= 5)
+            if (Strategy().getEnemyBuild() == "Z5Pool" && Units::getEnemyCount(UnitTypes::Zerg_Zergling) >= 5)
                 scoutCount = 0;
             if (Strategy().enemyPressure() && BuildOrder::isPlayPassive())
                 scoutCount = 0;
@@ -215,7 +215,7 @@ namespace McRave::Scouts {
         {
             // If we have too many scouts
             // TODO: Add removal
-            for (auto &u : Units().getMyUnits()) {
+            for (auto &u : Units::getMyUnits()) {
                 auto &unit = u.second;
                 if (unit.getRole() == Role::Scouting) {
                     updateAssignment(unit);

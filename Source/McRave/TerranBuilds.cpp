@@ -1,6 +1,6 @@
 //#include "McRave.h"
 //using namespace UnitTypes;
-//#define s Units().getSupply()
+//#define s Units::getSupply()
 //
 //namespace McRave 
 //{

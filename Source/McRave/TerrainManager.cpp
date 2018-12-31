@@ -47,7 +47,7 @@ void TerrainManager::findEnemyStartingPosition()
         return;
 
     // Find closest enemy building
-    for (auto &u : Units().getEnemyUnits()) {
+    for (auto &u : Units::getEnemyUnits()) {
         UnitInfo &unit = u.second;
         double distBest = 1280.0;
         TilePosition tileBest = TilePositions::Invalid;
@@ -98,7 +98,7 @@ void TerrainManager::findEnemyNextExpand()
         UnitType shuttle = Broodwar->self()->getRace().getTransport();
 
         // Shuttle check for island bases, check enemy owned bases
-        if (!station.BWEMBase()->GetArea()->AccessibleFrom(BWEB::Map::getMainArea()) && Units().getEnemyCount(shuttle) <= 0)
+        if (!station.BWEMBase()->GetArea()->AccessibleFrom(BWEB::Map::getMainArea()) && Units::getEnemyCount(shuttle) <= 0)
             continue;
         if (BWEB::Map::isUsed(station.BWEMBase()->Location()))
             continue;

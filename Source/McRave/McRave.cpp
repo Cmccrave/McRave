@@ -5,6 +5,7 @@
 
 #include "Header.h"
 #include "McRave.h"
+#include "EventManager.h"
 
 // *** Notes ***
 // Move 4gate vs Z to 2 gate category
@@ -19,6 +20,7 @@
 
 // *** Ideas ***
 // Monitor for overkilling units by hp - (2*nextDmgSource) <= 0 (double damage source to account for a potential miss?)
+// UnitInfo add a TargetsFriendly
 
 void McRaveModule::onStart()
 {
@@ -52,7 +54,7 @@ void McRaveModule::onFrame()
     MyStations().onFrame();
 
     // Update unit information and grids based on the information
-    Units().onFrame();
+    Units::onFrame();
     Grids::onFrame();
 
     // Update commands
@@ -90,7 +92,7 @@ void McRaveModule::onNukeDetect(Position target)
 
 void McRaveModule::onUnitDiscover(Unit unit)
 {
-    Units().onUnitDiscover(unit);
+    Events::onUnitDiscover(unit);
 }
 
 void McRaveModule::onUnitEvade(Unit unit)
@@ -107,22 +109,22 @@ void McRaveModule::onUnitHide(Unit unit)
 
 void McRaveModule::onUnitCreate(Unit unit)
 {
-    Units().onUnitCreate(unit);
+    Events::onUnitCreate(unit);
 }
 
 void McRaveModule::onUnitDestroy(Unit unit)
 {
-    Units().onUnitDestroy(unit);
+    Events::onUnitDestroy(unit);
 }
 
 void McRaveModule::onUnitMorph(Unit unit)
 {
-    Units().onUnitMorph(unit);
+    Events::onUnitMorph(unit);
 }
 
 void McRaveModule::onUnitRenegade(Unit unit)
 {
-    Units().onUnitRenegade(unit);
+    Events::onUnitRenegade(unit);
 }
 
 void McRaveModule::onSaveGame(string gameName)
@@ -131,5 +133,5 @@ void McRaveModule::onSaveGame(string gameName)
 
 void McRaveModule::onUnitComplete(Unit unit)
 {
-    Units().onUnitComplete(unit);
+    Events::onUnitComplete(unit);
 }

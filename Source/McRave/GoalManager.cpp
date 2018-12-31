@@ -10,7 +10,7 @@ namespace McRave::Goals
             map<UnitType, int> unitByType;
 
             // Store units by distance if they have a matching type
-            for (auto &u : Units().getMyUnits()) {
+            for (auto &u : Units::getMyUnits()) {
                 UnitInfo &unit = u.second;
 
                 if (unit.getType() == type) {
@@ -31,7 +31,7 @@ namespace McRave::Goals
 
         void assignPercentToGoal(Position here, UnitType type, double percent)
         {
-            int count = int(percent * double(Units().getMyTypeCount(type)));
+            int count = int(percent * double(Units::getMyTypeCount(type)));
             assignNumberToGoal(here, type, count);
         }
 
@@ -94,8 +94,8 @@ namespace McRave::Goals
 
             // Escort shuttles
             // PvZ
-            if (Players::vZ() && Units().getGlobalEnemyAirStrength() > 0.0) {
-                for (auto &u : Units().getMyUnits()) {
+            if (Players::vZ() && Units::getGlobalEnemyAirStrength() > 0.0) {
+                for (auto &u : Units::getMyUnits()) {
                     auto &unit = u.second;
                     if (unit.getRole() == Role::Transporting)
                         assignPercentToGoal(unit.getPosition(), UnitTypes::Protoss_Corsair, 0.25);

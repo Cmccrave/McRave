@@ -22,7 +22,7 @@ namespace McRave::Command
             }
 
             // Store enemy detection and assume casting orders
-            for (auto &u : Units().getEnemyUnits()) {
+            for (auto &u : Units::getEnemyUnits()) {
                 UnitInfo& unit = u.second;
 
                 if (!unit.unit() || (unit.unit()->exists() && (unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())))
@@ -82,7 +82,7 @@ namespace McRave::Command
             myCommands.clear();
             defendingUnitsByDist.clear();
 
-            for (auto &u : Units().getMyUnits()) {
+            for (auto &u : Units::getMyUnits()) {
                 auto &unit = u.second;
                 if (unit.getType() == UnitTypes::Protoss_Interceptor || unit.getType() == UnitTypes::Protoss_Scarab)
                     continue;
@@ -138,7 +138,7 @@ namespace McRave::Command
 
         // Units targeted by splash need to move away from the army
         // TODO: Maybe move this to their respective functions
-        else if (unit.hasTarget() && Units().getSplashTargets().find(unit.unit()) != Units().getSplashTargets().end()) {
+        else if (unit.hasTarget() && Units::getSplashTargets().find(unit.unit()) != Units::getSplashTargets().end()) {
             if (unit.hasTransport())
                 unit.command(UnitCommandTypes::Right_Click_Unit, &unit.getTransport());
             else if (unit.hasTarget() && unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames() && unit.getTarget().unit()->exists())

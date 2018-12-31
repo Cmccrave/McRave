@@ -70,9 +70,6 @@
     <ClCompile Include="..\Source\McRave\Dll.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\EventManager.cpp">
-      <Filter>McRave</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\GridManager.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
@@ -325,6 +322,9 @@
       <Filter>BWEB</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\McRave\Visuals.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\EventManager.h">
       <Filter>McRave</Filter>
     </ClInclude>
   </ItemGroup>

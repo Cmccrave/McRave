@@ -2,31 +2,25 @@
 
 // Information from: https://docs.google.com/document/d/1p7Rw4v56blhf5bzhSnFVfgrKviyrapDFHh9J4FNUXM0
 
-namespace McRave
+namespace McRave::Events
 {
-    void UnitManager::onUnitDiscover(Unit unit)
+    inline void onUnitDiscover(Unit unit)
     {
         BWEB::Map::onUnitDiscover(unit);
 
         if (unit->getPlayer()->isEnemy(Broodwar->self()))
-            storeUnit(unit);
+            Units::storeUnit(unit);
 
         if (Terrain().isIslandMap() && unit->getPlayer() == Broodwar->neutral() && !unit->getType().isResourceContainer() && unit->getType().isBuilding())
-            storeUnit(unit);
+            Units::storeUnit(unit);
     }
 
-    void UnitManager::onUnitCreate(Unit unit)
+    inline void onUnitCreate(Unit unit)
     {
         if (unit->getPlayer() == Broodwar->self()) {
 
-            // Store supply if it costs supply
-            if (unit->getType().supplyRequired() > 0)
-                supply += unit->getType().supplyRequired();
-
-            // Store buildings so grids are updated
             if (unit->getType().isBuilding())
-                storeUnit(unit);
-
+                Units::storeUnit(unit);
             if (unit->getType() == UnitTypes::Protoss_Pylon)
                 Pylons::storePylon(unit);
         }
@@ -37,17 +31,17 @@ namespace McRave
             MyStations().storeStation(unit);
     }
 
-    void UnitManager::onUnitDestroy(Unit unit)
+    inline void onUnitDestroy(Unit unit)
     {
         if (unit->getType().isResourceContainer())
             Resources::removeResource(unit);
         else if (unit->getType().isResourceDepot())
             MyStations().removeStation(unit);
         else
-            Units().removeUnit(unit);
+            Units::removeUnit(unit);
     }
 
-    void UnitManager::onUnitMorph(Unit unit)
+    inline void onUnitMorph(Unit unit)
     {
         BWEB::Map::onUnitMorph(unit);
 
@@ -55,22 +49,22 @@ namespace McRave
         if (unit->getPlayer() == Broodwar->self()) {
             auto isEgg = unit->getType() == UnitTypes::Zerg_Egg || unit->getType() == UnitTypes::Zerg_Lurker_Egg;
 
-            // Zerg morphing
-            if (unit->getType().getRace() == Races::Zerg) {
+            //// Zerg morphing
+            //if (unit->getType().getRace() == Races::Zerg) {
 
-                if (isEgg) {
-                    supply -= unit->getType().supplyRequired();
-                    supply += unit->getBuildType().supplyRequired();
-                }
-                if (unit->getType().isBuilding())
-                    supply -= 2;
+            //    if (isEgg) {
+            //        supply -= unit->getType().supplyRequired();
+            //        supply += unit->getBuildType().supplyRequired();
+            //    }
+            //    if (unit->getType().isBuilding())
+            //        supply -= 2;
 
-                auto &info = myUnits[unit];
-                if (info.hasResource())
-                    info.getResource().setGathererCount(info.getResource().getGathererCount() - 1);
+            //    auto &info = myUnits[unit];
+            //    if (info.hasResource())
+            //        info.getResource().setGathererCount(info.getResource().getGathererCount() - 1);
 
-                storeUnit(unit);
-            }
+            //    storeUnit(unit);
+            //}
         }
 
         // Enemy unit
@@ -80,7 +74,7 @@ namespace McRave
             if (unit->getType() == UnitTypes::Zerg_Drone)
                 MyStations().removeStation(unit);
             else
-                storeUnit(unit);
+                Units::storeUnit(unit);
         }
 
         // Refinery that morphed as an enemy
@@ -88,23 +82,21 @@ namespace McRave
             Resources::storeResource(unit);
     }
 
-    void UnitManager::onUnitRenegade(Unit unit)
+    inline void onUnitRenegade(Unit unit)
     {
         // TODO: Refinery is added in onUnitDiscover for enemy units (keep resource unit the same)
         // Destroy the unit otherwise
-        if (!unit->getType().isRefinery()) {
-            enemyUnits.erase(unit);
-            myUnits.erase(unit);
-        }
+        if (!unit->getType().isRefinery())
+            Units::removeUnit(unit);        
 
         if (unit->getPlayer() == Broodwar->self())
             onUnitComplete(unit);
     }
 
-    void UnitManager::onUnitComplete(Unit unit)
+    inline void onUnitComplete(Unit unit)
     {
         if (unit->getPlayer() == Broodwar->self())
-            storeUnit(unit);
+            Units::storeUnit(unit);
         if (unit->getType().isResourceDepot())
             MyStations().storeStation(unit);
         if (unit->getType().isResourceContainer())

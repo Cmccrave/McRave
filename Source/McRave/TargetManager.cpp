@@ -13,18 +13,18 @@ namespace McRave
     {
         UnitInfo* bestTarget = nullptr;
         double closest = DBL_MAX, highest = 0.0;
-        auto &unitList = unit.getType() == UnitTypes::Terran_Medic ? Units().getMyUnits() : Units().getEnemyUnits();
+        auto &unitList = unit.getType() == UnitTypes::Terran_Medic ? Units::getMyUnits() : Units::getEnemyUnits();
 
         const auto shouldTarget = [&](UnitInfo& target, bool unitCanAttack, bool targetCanAttack) {
 
-            bool targetMatters = (target.getAirDamage() > 0.0 && Units().getGlobalAllyAirStrength() > 0.0)
-                || (target.getGroundDamage() > 0.0 && Units().getGlobalAllyGroundStrength() > 0.0)
-                || (target.getType().isDetector() && (Units().getMyTypeCount(UnitTypes::Protoss_Dark_Templar) > 0 || Units().getMyTypeCount(UnitTypes::Protoss_Observer) > 0))
+            bool targetMatters = (target.getAirDamage() > 0.0 && Units::getGlobalAllyAirStrength() > 0.0)
+                || (target.getGroundDamage() > 0.0 && Units::getGlobalAllyGroundStrength() > 0.0)
+                || (target.getType().isDetector() && (Units::getMyTypeCount(UnitTypes::Protoss_Dark_Templar) > 0 || Units::getMyTypeCount(UnitTypes::Protoss_Observer) > 0))
                 || (target.getAirDamage() == 0.0 && target.getGroundDamage() == 0.0)
                 || (target.getType().isWorker());
 
             // Zealot: Don't attack non threatening workers in our territory
-            if ((unit.getType() == UnitTypes::Protoss_Zealot && target.getType().isWorker() && !Units().isThreatening(target) && Terrain().isInAllyTerritory(target.getTilePosition()))
+            if ((unit.getType() == UnitTypes::Protoss_Zealot && target.getType().isWorker() && !Units::isThreatening(target) && Terrain().isInAllyTerritory(target.getTilePosition()))
 
                 // If target is an egg, larva, scarab or spell
                 || (target.getType() == UnitTypes::Zerg_Egg || target.getType() == UnitTypes::Zerg_Larva || target.getType() == UnitTypes::Protoss_Scarab || target.getType().isSpell())
@@ -118,7 +118,7 @@ namespace McRave
             if (!target.unit()
                 || !target.getWalkPosition().isValid()
                 || !unit.getWalkPosition().isValid()
-                || (target.getType().isBuilding() && !Units().isThreatening(target) && target.getGroundDamage() == 0.0 && Terrain().isInAllyTerritory(target.getTilePosition()) && Broodwar->getFrameCount() < 10000))
+                || (target.getType().isBuilding() && !Units::isThreatening(target) && target.getGroundDamage() == 0.0 && Terrain().isInAllyTerritory(target.getTilePosition()) && Broodwar->getFrameCount() < 10000))
                 continue;
 
             bool targetCanAttack = ((unit.getType().isFlyer() && target.getAirDamage() > 0.0) || (!unit.getType().isFlyer() && target.getGroundDamage() > 0.0) || (!unit.getType().isFlyer() && target.getType() == UnitTypes::Terran_Vulture_Spider_Mine));
@@ -171,7 +171,7 @@ namespace McRave
             unit.setEngagePosition(unit.getPosition());
 
         // See if we pass any narrow chokes while trying to fight
-        if (unit.getEngagePosition().isValid() && !unit.getType().isFlyer() && !unit.hasTransport() && Units().getSupply() >= 80 && mapBWEM.GetArea(unit.getTilePosition()) && mapBWEM.GetArea((TilePosition)unit.getEngagePosition())) {
+        if (unit.getEngagePosition().isValid() && !unit.getType().isFlyer() && !unit.hasTransport() && Units::getSupply() >= 80 && mapBWEM.GetArea(unit.getTilePosition()) && mapBWEM.GetArea((TilePosition)unit.getEngagePosition())) {
             auto unitWidth = min(unit.getType().width(), unit.getType().height());
             auto chokeWidth = 0;
 

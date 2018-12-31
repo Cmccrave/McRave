@@ -15,7 +15,7 @@ namespace McRave::Production
             auto gasReserve = int(!BuildOrder::isTechUnit(unit)) * reservedGas;
             auto mineralAffordable = (Broodwar->self()->minerals() >= unit.mineralPrice() + Buildings::getQueuedMineral() + mineralReserve) || unit.mineralPrice() == 0;
             auto gasAffordable = (Broodwar->self()->gas() >= unit.gasPrice() + Buildings::getQueuedGas() + gasReserve) || unit.gasPrice() == 0;
-            auto supplyAffordable = Units().getSupply() + unit.supplyRequired() <= Broodwar->self()->supplyTotal();
+            auto supplyAffordable = Units::getSupply() + unit.supplyRequired() <= Broodwar->self()->supplyTotal();
 
             return mineralAffordable && gasAffordable && supplyAffordable;
         }
@@ -194,7 +194,7 @@ namespace McRave::Production
             case Protoss_Reaver:
                 return needReavers;
             case Protoss_Observer:
-                return Broodwar->self()->visibleUnitCount(unit) < 1 + (Units().getSupply() / 100);
+                return Broodwar->self()->visibleUnitCount(unit) < 1 + (Units::getSupply() / 100);
 
                 // Stargate Units
             case Protoss_Corsair:
@@ -304,7 +304,7 @@ namespace McRave::Production
 
                     // Ground unit upgrades
                 case Protoss_Ground_Weapons:
-                    return !Terrain().isIslandMap() && (Units().getSupply() > 120 || Players::getNumberZerg() > 0);
+                    return !Terrain().isIslandMap() && (Units::getSupply() > 120 || Players::getNumberZerg() > 0);
                 case Protoss_Ground_Armor:
                     return !Terrain().isIslandMap() && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Armor) || Broodwar->self()->isUpgrading(UpgradeTypes::Protoss_Ground_Weapons));
                 case Protoss_Plasma_Shields:
@@ -332,11 +332,11 @@ namespace McRave::Production
                     return (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Terran_Infantry_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Terran_Infantry_Armor) || Broodwar->self()->isUpgrading(UpgradeTypes::Terran_Infantry_Weapons));
 
                 case Terran_Vehicle_Weapons:
-                    return (Units().getGlobalAllyGroundStrength() > 20.0);
+                    return (Units::getGlobalAllyGroundStrength() > 20.0);
                 case Terran_Vehicle_Plating:
                     return (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Terran_Vehicle_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Terran_Vehicle_Plating) || Broodwar->self()->isUpgrading(UpgradeTypes::Terran_Vehicle_Weapons));
                 case Terran_Ship_Weapons:
-                    return (Units().getGlobalAllyAirStrength() > 20.0);
+                    return (Units::getGlobalAllyAirStrength() > 20.0);
                 case Terran_Ship_Plating:
                     return (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Terran_Ship_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Terran_Ship_Plating) || Broodwar->self()->isUpgrading(UpgradeTypes::Terran_Ship_Weapons));
                 }
@@ -352,7 +352,7 @@ namespace McRave::Production
                 case Muscular_Augments:
                     return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Grooved_Spines);
                 case Pneumatized_Carapace:
-                    return (Units().getSupply() > 160);
+                    return (Units::getSupply() > 160);
                 case Anabolic_Synthesis:
                     return true;
                 case Adrenal_Glands:
@@ -360,17 +360,17 @@ namespace McRave::Production
 
                     // Ground unit upgrades
                 case Zerg_Melee_Attacks:
-                    return (Units().getSupply() > 120);
+                    return (Units::getSupply() > 120);
                 case Zerg_Missile_Attacks:
                     return false;
                 case Zerg_Carapace:
-                    return (Units().getSupply() > 120);
+                    return (Units::getSupply() > 120);
 
                     // Air unit upgrades
                 case Zerg_Flyer_Attacks:
-                    return (Units().getSupply() > 120);
+                    return (Units::getSupply() > 120);
                 case Zerg_Flyer_Carapace:
-                    return (Units().getSupply() > 120);
+                    return (Units::getSupply() > 120);
                 }
             }
             return false;
@@ -490,7 +490,7 @@ namespace McRave::Production
 
                 // Else if this is a tech unit, add it to idle production
                 else if (BuildOrder::getTechUnit() == bestType || BuildOrder::getTechList().find(bestType) != BuildOrder::getTechList().end()) {
-                    if (Units().getSupply() < 380)
+                    if (Units::getSupply() < 380)
                         idleFrame = Broodwar->getFrameCount();
 
                     idleProduction[building.unit()] = bestType;
@@ -552,7 +552,7 @@ namespace McRave::Production
 
         void updateProduction()
         {
-            for (auto &b : Units().getMyUnits()) {
+            for (auto &b : Units::getMyUnits()) {
                 auto &building = b.second;
 
                 if (!building.unit() || building.getRole() != Role::Producing || (!building.unit()->isCompleted() && !building.getType().isResourceDepot() && building.getType().getRace() != Races::Zerg) || Broodwar->getFrameCount() % Broodwar->getRemainingLatencyFrames() != 0)
@@ -599,7 +599,7 @@ namespace McRave::Production
     int getReservedGas() { return reservedGas; }
     bool hasIdleProduction() { return Broodwar->getFrameCount() == idleFrame; }
     
-    //auto needOverlords = Units().getMyTypeCount(UnitTypes::Zerg_Overlord) <= min(22, (int)floor((Units().getSupply() / max(14, 16 - Units().getMyTypeCount(UnitTypes::Zerg_Overlord)))));
+    //auto needOverlords = Units::getMyTypeCount(UnitTypes::Zerg_Overlord) <= min(22, (int)floor((Units::getSupply() / max(14, 16 - Units::getMyTypeCount(UnitTypes::Zerg_Overlord)))));
 
     //for (auto &larva : building.unit()->getLarva()) {
 

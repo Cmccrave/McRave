@@ -452,14 +452,14 @@ namespace McRave::Buildings
                     || (Terrain().getMainWall() && building.getPosition().getDistance(Terrain().getMainWall()->getCentroid()) < 256.0);
 
                 if (wallCheck && !building.unit()->isFlying()) {
-                    if (Units().getSupply() > 120 || BuildOrder::firstReady()) {
+                    if (Units::getSupply() > 120 || BuildOrder::firstReady()) {
                         building.unit()->lift();
                         BWEB::Map::onUnitDestroy(building.unit());
                     }
                 }
 
                 // Find landing location as production building
-                else if ((Units().getSupply() > 120 || BuildOrder::firstReady()) && building.unit()->isFlying()) {
+                else if ((Units::getSupply() > 120 || BuildOrder::firstReady()) && building.unit()->isFlying()) {
                     auto here = findProdLocation(building.getType(), BWEB::Map::getMainPosition());
                     auto center = (Position)here + Position(building.getType().tileWidth() * 16, building.getType().tileHeight() * 16);
 
@@ -530,7 +530,7 @@ namespace McRave::Buildings
             }
 
             // Update all my buildings
-            for (auto &b : Units().getMyUnits()) {
+            for (auto &b : Units::getMyUnits()) {
                 auto &building = b.second;
                 updateCommands(building);
             }
@@ -543,7 +543,7 @@ namespace McRave::Buildings
             buildingsQueued.clear();
 
             // 1) Add up how many buildings we have assigned to workers
-            for (auto &u : Units().getMyUnits()) {
+            for (auto &u : Units::getMyUnits()) {
                 auto &unit = u.second;
 
                 if (unit.getBuildingType().isValid() && unit.getBuildPosition().isValid())

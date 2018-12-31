@@ -9,7 +9,7 @@ void TransportManager::onFrame()
 
 void TransportManager::updateTransports()
 {
-    for (auto &u : Units().getMyUnits()) {
+    for (auto &u : Units::getMyUnits()) {
         auto &unit = u.second;
 
         if (unit.getRole() == Role::Transporting) {
@@ -59,7 +59,7 @@ void TransportManager::updateCargo(UnitInfo& transport)
 
     // Update cargo information
     if (cargoSize < 8) {
-        for (auto &u : Units().getMyUnits()) {
+        for (auto &u : Units::getMyUnits()) {
             auto &unit = u.second;
 
             if (unit.getRole() == Role::Fighting && readyToAssignUnit(unit)) {
@@ -319,7 +319,7 @@ void TransportManager::updateMovement(UnitInfo& transport)
 
 void TransportManager::removeUnit(Unit unit)
 {
-    for (auto &t : Units().getMyUnits()) {
+    for (auto &t : Units::getMyUnits()) {
         auto &transport = t.second;
 
         for (auto &cargo : transport.getAssignedCargo()) {

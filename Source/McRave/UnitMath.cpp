@@ -74,7 +74,7 @@ namespace McRave::Math
     {
         if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Terran_Science_Vessel)
             return 3.0;
-        if ((unit.unit()->isRepairing() || unit.unit()->isConstructing()) && Units().isThreatening(unit))
+        if ((unit.unit()->isRepairing() || unit.unit()->isConstructing()) && Units::isThreatening(unit))
             return 100.0;
         if (Broodwar->getFrameCount() < 6000 && Strategy().enemyProxy() && unit.getType() == UnitTypes::Protoss_Pylon)
             return -5.0;
@@ -167,7 +167,7 @@ namespace McRave::Math
     double effectiveness(UnitInfo& unit)
     {
         auto effectiveness = 1.0;
-        auto sizes = unit.getPlayer() == Broodwar->self() ? Units().getEnemySizes() : Units().getAllySizes();
+        auto sizes = unit.getPlayer() == Broodwar->self() ? Units::getEnemySizes() : Units::getAllySizes();
 
         auto large = sizes[UnitSizeTypes::Large];
         auto medium = sizes[UnitSizeTypes::Medium];

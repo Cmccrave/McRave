@@ -80,7 +80,7 @@ namespace McRave::Visuals
 
         void drawAllyInfo()
         {
-            for (auto &u : Units().getMyUnits()) {
+            for (auto &u : Units::getMyUnits()) {
                 UnitInfo &unit = u.second;
 
                 int color = unit.getPlayer()->getColor();
@@ -127,7 +127,7 @@ namespace McRave::Visuals
 
         void drawEnemyInfo()
         {
-            for (auto &u : Units().getEnemyUnits()) {
+            for (auto &u : Units::getEnemyUnits()) {
                 UnitInfo &unit = u.second;
 
                 int color = unit.getPlayer()->getColor();

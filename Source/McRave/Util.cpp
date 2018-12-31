@@ -65,31 +65,31 @@ namespace McRave::Util
             if (unit.getType() == UnitTypes::Protoss_Probe && (unit.getShields() < 20 || (unit.hasResource() && unit.getResource().getType().isRefinery())))
                 return false;
 
-            if (BuildOrder::isHideTech() && completedDefenders == 1 && Units().getMyUnits().size() == 1)
+            if (BuildOrder::isHideTech() && completedDefenders == 1 && Units::getMyUnits().size() == 1)
                 return true;
 
             if (BuildOrder::getCurrentBuild() == "PFFE") {
-                if (Units().getEnemyCount(UnitTypes::Zerg_Zergling) >= 5) {
-                    if (Strategy().getEnemyBuild() == "Z5Pool" && Units().getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
+                if (Units::getEnemyCount(UnitTypes::Zerg_Zergling) >= 5) {
+                    if (Strategy().getEnemyBuild() == "Z5Pool" && Units::getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
                         return true;
-                    if (Strategy().getEnemyBuild() == "Z9Pool" && Units().getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 5 && visibleDefenders >= 2)
+                    if (Strategy().getEnemyBuild() == "Z9Pool" && Units::getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 5 && visibleDefenders >= 2)
                         return true;
-                    if (!Terrain().getEnemyStartingPosition().isValid() && Strategy().getEnemyBuild() == "Unknown" && Units().getGlobalAllyGroundStrength() < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
+                    if (!Terrain().getEnemyStartingPosition().isValid() && Strategy().getEnemyBuild() == "Unknown" && Units::getGlobalAllyGroundStrength() < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
                         return true;
-                    if (Units().getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
+                    if (Units::getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
                         return true;
                 }
                 else {
-                    if (Strategy().getEnemyBuild() == "Z5Pool" && Units().getGlobalAllyGroundStrength() < 1.00 && completedDefenders < 2 && visibleDefenders >= 2)
+                    if (Strategy().getEnemyBuild() == "Z5Pool" && Units::getGlobalAllyGroundStrength() < 1.00 && completedDefenders < 2 && visibleDefenders >= 2)
                         return true;
-                    if (!Terrain().getEnemyStartingPosition().isValid() && Strategy().getEnemyBuild() == "Unknown" && Units().getGlobalAllyGroundStrength() < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
+                    if (!Terrain().getEnemyStartingPosition().isValid() && Strategy().getEnemyBuild() == "Unknown" && Units::getGlobalAllyGroundStrength() < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
                         return true;
                 }
             }
             else if (BuildOrder::getCurrentBuild() == "P2GateExpand") {
-                if (Strategy().getEnemyBuild() == "Z5Pool" && Units().getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 2)
+                if (Strategy().getEnemyBuild() == "Z5Pool" && Units::getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 2)
                     return true;
-                if (Strategy().getEnemyBuild() == "Z9Pool" && Units().getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 3)
+                if (Strategy().getEnemyBuild() == "Z9Pool" && Units::getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 3)
                     return true;
             }
         }
@@ -100,7 +100,7 @@ namespace McRave::Util
         else if (Broodwar->self()->getRace() == Races::Zerg)
             return false;
 
-        if (Strategy().enemyProxy() && Strategy().getEnemyBuild() != "P2Gate" && Units().getImmThreat() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense())
+        if (Strategy().enemyProxy() && Strategy().getEnemyBuild() != "P2Gate" && Units::getImmThreat() > Units::getGlobalAllyGroundStrength() + Units::getAllyDefense())
             return true;
 
         return false;
@@ -108,7 +108,7 @@ namespace McRave::Util
 
     bool reactivePullWorker(UnitInfo& unit)
     {
-        if (Units().getEnemyCount(UnitTypes::Terran_Vulture) > 2)
+        if (Units::getEnemyCount(UnitTypes::Terran_Vulture) > 2)
             return false;
 
         if (unit.getType() == UnitTypes::Protoss_Probe) {
@@ -129,7 +129,7 @@ namespace McRave::Util
         }
 
         // If we have no combat units and there is a threat
-        if (Units().getImmThreat() > Units().getGlobalAllyGroundStrength() + Units().getAllyDefense() && Broodwar->getFrameCount() < 10000) {
+        if (Units::getImmThreat() > Units::getGlobalAllyGroundStrength() + Units::getAllyDefense() && Broodwar->getFrameCount() < 10000) {
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) == 0)
                     return true;
@@ -157,8 +157,8 @@ namespace McRave::Util
                 + Broodwar->self()->completedUnitCount(UnitTypes::Terran_Battlecruiser)
                 + Broodwar->self()->completedUnitCount(UnitTypes::Terran_Valkyrie);
 
-            //if ((mechUnits > 0 && Units().getRepairWorkers() < Units().getSupply() / 30)
-            //	|| (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) > 0 && BuildOrder::isFastExpand() && Units().getRepairWorkers() < 2))
+            //if ((mechUnits > 0 && Units::getRepairWorkers() < Units::getSupply() / 30)
+            //	|| (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) > 0 && BuildOrder::isFastExpand() && Units::getRepairWorkers() < 2))
             //	return true;
         }
         return false;
@@ -246,7 +246,7 @@ namespace McRave::Util
     UnitInfo * getClosestUnit(Position here, Player p, UnitType t) {
         double distBest = DBL_MAX;
         UnitInfo* best = nullptr;
-        auto &units = (p == Broodwar->self()) ? Units().getMyUnits() : Units().getEnemyUnits();
+        auto &units = (p == Broodwar->self()) ? Units::getMyUnits() : Units::getEnemyUnits();
 
         for (auto &u : units) {
             UnitInfo &unit = u.second;
@@ -266,7 +266,7 @@ namespace McRave::Util
     UnitInfo * getClosestUnit(UnitInfo& source, Player p, UnitType t) {
         double distBest = DBL_MAX;
         UnitInfo* best = nullptr;
-        auto &units = (p == Broodwar->self()) ? Units().getMyUnits() : Units().getEnemyUnits();
+        auto &units = (p == Broodwar->self()) ? Units::getMyUnits() : Units::getEnemyUnits();
 
         for (auto &u : units) {
             UnitInfo &unit = u.second;
@@ -287,7 +287,7 @@ namespace McRave::Util
     {
         double distBest = DBL_MAX;
         UnitInfo* best = nullptr;
-        auto &units = (unit.getPlayer() == Broodwar->self()) ? Units().getEnemyUnits() : Units().getMyUnits();
+        auto &units = (unit.getPlayer() == Broodwar->self()) ? Units::getEnemyUnits() : Units::getMyUnits();
 
         for (auto &t : units) {
             UnitInfo &threat = t.second;
@@ -309,7 +309,7 @@ namespace McRave::Util
     {
         double distBest = DBL_MAX;
         UnitInfo* best = nullptr;
-        auto &units = Units().getMyUnits();
+        auto &units = Units::getMyUnits();
 
         for (auto &u : units) {
             UnitInfo &unit = u.second;

@@ -105,7 +105,7 @@ namespace McRave::Command
             auto posBest = Positions::Invalid;
 
             // Find an enemy that is attacking and is slow
-            for (auto &e : Units().getEnemyUnits()) {
+            for (auto &e : Units::getEnemyUnits()) {
                 auto &enemy = e.second;
                 auto dist = enemy.getPosition().getDistance(unit.getPosition());
 

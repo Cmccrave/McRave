@@ -16,7 +16,7 @@ namespace McRave::BuildOrder
         }
 
         //Item(int c1, int c2 = 0, int c3 = 0, int c4 = 0, int c5 = 0, int c6 = 0, int c7 = 0) {
-        //	int s = Units().getSupply() / 2;
+        //	int s = Units::getSupply() / 2;
         //	reserveCount = (s >= c1) + (s >= c2) + (s >= c3) + (s >= c4) + (s >= c5) + (s >= c6) + (s >= c7);
         //}
 

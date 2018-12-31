@@ -162,7 +162,7 @@ namespace McRave::Grids
         void updateAlly()
         {
             Visuals::startPerfTest();
-            for (auto &u : Units().getMyUnits()) {
+            for (auto &u : Units::getMyUnits()) {
                 UnitInfo &unit = u.second;
 
                 // Add a visited grid for rough guideline of what we've seen by this unit recently
@@ -190,7 +190,7 @@ namespace McRave::Grids
         void updateEnemy()
         {
             Visuals::startPerfTest();
-            for (auto &u : Units().getEnemyUnits()) {
+            for (auto &u : Units::getEnemyUnits()) {
                 UnitInfo &unit = u.second;
                 if (unit.unit()->exists() && (unit.unit()->isStasised() || unit.unit()->isMaelstrommed()))
                     continue;

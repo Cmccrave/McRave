@@ -85,7 +85,7 @@
 //			}
 //		}
 //
-//		int s = Units().getSupply();
+//		int s = Units::getSupply();
 //		if (canAdd) {
 //			itemQueue[check] = Item(1);
 //		}
@@ -200,7 +200,7 @@
 //	// Supply Depot logic
 //	if (Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Supply_Depot) > (int)fastExpand)
 //	{
-//		int count = min(22, (int)floor((Units().getSupply() / max(15, (16 - Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Supply_Depot) - Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Command_Center))))));
+//		int count = min(22, (int)floor((Units::getSupply() / max(15, (16 - Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Supply_Depot) - Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Command_Center))))));
 //		itemQueue[UnitTypes::Terran_Supply_Depot] = Item(count);
 //	}
 //
@@ -220,7 +220,7 @@
 //
 //		// Armory logic TODO
 //		if (!isBioBuild())
-//			itemQueue[UnitTypes::Terran_Armory] = Item((Units().getSupply() > 160) + (Units().getSupply() > 200));
+//			itemQueue[UnitTypes::Terran_Armory] = Item((Units::getSupply() > 160) + (Units::getSupply() > 200));
 //
 //		// Academy logic
 //		if (Strategy().needDetection())
@@ -233,7 +233,7 @@
 //			itemQueue[UnitTypes::Terran_Physics_Lab] = Item(1);
 //
 //		// Engineering Bay logic
-//		if (Units().getSupply() > 200)
+//		if (Units::getSupply() > 200)
 //			itemQueue[UnitTypes::Terran_Engineering_Bay] = Item(1 + (bioBuild));
 //
 //		// Barracks logic

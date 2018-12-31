@@ -3,7 +3,7 @@
 
 using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
-#define s Units().getSupply()
+#define s Units::getSupply()
 
 namespace McRave::BuildOrder::Protoss {
     namespace {
@@ -115,7 +115,7 @@ namespace McRave::BuildOrder::Protoss {
         defaultPvZ();
 
         auto min100 = Broodwar->self()->minerals() >= 100;
-        auto cannonCount = int(com(Protoss_Forge) > 0) + (Units().getEnemyCount(Zerg_Zergling) >= 6) + (Units().getEnemyCount(Zerg_Zergling) >= 12) + (Units().getEnemyCount(Zerg_Zergling) >= 24);
+        auto cannonCount = int(com(Protoss_Forge) > 0) + (Units::getEnemyCount(Zerg_Zergling) >= 6) + (Units::getEnemyCount(Zerg_Zergling) >= 12) + (Units::getEnemyCount(Zerg_Zergling) >= 24);
 
         // TODO: If scout died, go to 2 cannons, if next scout dies, go 3 cannons		
         if (enemyBuild() == "Z2HatchHydra")
@@ -249,7 +249,7 @@ namespace McRave::BuildOrder::Protoss {
             currentTransition = "Defensive";
         if (Players::vT() && Strategy().enemyFastExpand())
             currentTransition = "DT";
-        if (Units().getEnemyCount(UnitTypes::Zerg_Sunken_Colony) >= 2)
+        if (Units::getEnemyCount(UnitTypes::Zerg_Sunken_Colony) >= 2)
             currentTransition = "Expand";
 
         // Builds
@@ -446,7 +446,7 @@ namespace McRave::BuildOrder::Protoss {
 
             // Decide whether to Reaver first or Obs first
             if (com(Protoss_Robotics_Facility) > 0) {
-                if (vis(Protoss_Observer) == 0 && Players::vP() && (Units().getEnemyCount(UnitTypes::Protoss_Dragoon) <= 2 || enemyBuild() == "P1GateDT")) {
+                if (vis(Protoss_Observer) == 0 && Players::vP() && (Units::getEnemyCount(UnitTypes::Protoss_Dragoon) <= 2 || enemyBuild() == "P1GateDT")) {
                     if (techList.find(Protoss_Observer) == techList.end())
                         techUnit = Protoss_Observer;
                 }
@@ -480,7 +480,7 @@ namespace McRave::BuildOrder::Protoss {
 
             // Decide whether to Reaver first or Obs first
             if (com(Protoss_Robotics_Facility) > 0) {
-                if (vis(Protoss_Observer) == 0 && Players::vP() && (Units().getEnemyCount(UnitTypes::Protoss_Dragoon) <= 2 || enemyBuild() == "P1GateDT")) {
+                if (vis(Protoss_Observer) == 0 && Players::vP() && (Units::getEnemyCount(UnitTypes::Protoss_Dragoon) <= 2 || enemyBuild() == "P1GateDT")) {
                     if (techList.find(Protoss_Observer) == techList.end())
                         techUnit = Protoss_Observer;
                 }
@@ -579,7 +579,7 @@ namespace McRave::BuildOrder::Protoss {
     {
         // 12 Nexus - "http://liquipedia.net/starcraft/12_Nexus"
         fastExpand =		true;
-        playPassive =		Units().getEnemyCount(Terran_Siege_Tank_Tank_Mode) == 0 && Units().getEnemyCount(Terran_Siege_Tank_Siege_Mode) == 0 && Strategy().enemyPressure() ? vis(Protoss_Dragoon) < 12 : !firstReady();
+        playPassive =		Units::getEnemyCount(Terran_Siege_Tank_Tank_Mode) == 0 && Units::getEnemyCount(Terran_Siege_Tank_Siege_Mode) == 0 && Strategy().enemyPressure() ? vis(Protoss_Dragoon) < 12 : !firstReady();
         firstUpgrade =		vis(Protoss_Dragoon) >= 2 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
         firstTech =			TechTypes::None;
         scout =				vis(Protoss_Cybernetics_Core) >= 1;
@@ -674,7 +674,7 @@ namespace McRave::BuildOrder::Protoss {
             else if ((!Strategy().enemyFastExpand() && Terrain().foundEnemy() && currentTransition == "DoubleExpand") || Strategy().enemyPressure())
                 currentTransition = "Standard";
 
-            if (Units().getEnemyCount(Terran_Factory) >= 2)
+            if (Units::getEnemyCount(Terran_Factory) >= 2)
                 currentOpener = "2Gate";
         }
 

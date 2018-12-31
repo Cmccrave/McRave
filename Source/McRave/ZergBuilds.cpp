@@ -1,5 +1,5 @@
 //#include "McRave.h"
-//#define s Units().getSupply()
+//#define s Units::getSupply()
 //using namespace UnitTypes;
 //
 //namespace McRave
@@ -54,7 +54,7 @@
 //		if (com(Zerg_Lair) > 0 && techList.find(Zerg_Mutalisk) == techList.end())
 //			techUnit = Zerg_Mutalisk;
 //
-//		int sunken = Units().getEnemyCount(UnitTypes::Protoss_Zealot) / 4;
+//		int sunken = Units::getEnemyCount(UnitTypes::Protoss_Zealot) / 4;
 //		itemQueue[Zerg_Creep_Colony] = Item(sunken);
 //	}
 //

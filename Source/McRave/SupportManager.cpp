@@ -7,7 +7,7 @@ namespace McRave::Support {
 
     void onFrame()
     {
-        for (auto &u : Units().getMyUnits()) {
+        for (auto &u : Units::getMyUnits()) {
             auto &unit = u.second;
             if (unit.getRole() == Role::Supporting)
                 updateDecision(unit);
@@ -17,10 +17,10 @@ namespace McRave::Support {
     void updateDecision(UnitInfo& unit)
     {
         auto scoreBest = 0.0;
-        auto posBest = Units().getArmyCenter();
+        auto posBest = Units::getArmyCenter();
         auto start = unit.getWalkPosition();
         auto building = Broodwar->self()->getRace().getResourceDepot();
-        auto destination = Units().getArmyCenter();
+        auto destination = Units::getArmyCenter();
 
         // HACK: Spells dont move
         if (unit.getType() == UnitTypes::Spell_Scanner_Sweep) {

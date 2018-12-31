@@ -624,7 +624,7 @@ namespace McRave::BuildOrder
             unlockedType.insert(UnitTypes::Protoss_Shuttle);
             techList.insert(UnitTypes::Protoss_Shuttle);
         }
-        else if (techUnit == UnitTypes::Zerg_Mutalisk && Units().getGlobalEnemyAirStrength() > 0.0) {
+        else if (techUnit == UnitTypes::Zerg_Mutalisk && Units::getGlobalEnemyAirStrength() > 0.0) {
             techList.insert(UnitTypes::Zerg_Scourge);
             unlockedType.insert(UnitTypes::Zerg_Scourge);
         }
@@ -687,7 +687,7 @@ namespace McRave::BuildOrder
                 itemQueue[UnitTypes::Zerg_Lair] = Item(1);
 
             // Add extra production - TODO: move to shouldAddProduction
-            int s = Units().getSupply();
+            int s = Units::getSupply();
             if (canAdd && buildCount(check) <= 1) {
                 if (check == UnitTypes::Protoss_Stargate) {
                     if ((s >= 150 && techList.find(UnitTypes::Protoss_Corsair) != techList.end())
@@ -706,7 +706,7 @@ namespace McRave::BuildOrder
     void checkExoticTech()
     {
         // Corsair/Scout upgrades
-        if ((techList.find(UnitTypes::Protoss_Scout) != techList.end() && currentBuild != "PDTExpand") || (techList.find(UnitTypes::Protoss_Corsair) != techList.end() && Units().getSupply() >= 300))
+        if ((techList.find(UnitTypes::Protoss_Scout) != techList.end() && currentBuild != "PDTExpand") || (techList.find(UnitTypes::Protoss_Corsair) != techList.end() && Units::getSupply() >= 300))
             itemQueue[UnitTypes::Protoss_Fleet_Beacon] = Item(1);
 
         // HACK: Bluestorm carrier hack
@@ -714,7 +714,7 @@ namespace McRave::BuildOrder
             itemQueue[UnitTypes::Protoss_Stargate] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus));
 
         // Hive upgrades
-        if (Broodwar->self()->getRace() == Races::Zerg && Units().getSupply() >= 200) {
+        if (Broodwar->self()->getRace() == Races::Zerg && Units::getSupply() >= 200) {
             itemQueue[UnitTypes::Zerg_Queens_Nest] = Item(1);
             itemQueue[UnitTypes::Zerg_Hive] = Item(Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Queens_Nest) >= 1);
             itemQueue[UnitTypes::Zerg_Lair] = Item(Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Queens_Nest) < 1);

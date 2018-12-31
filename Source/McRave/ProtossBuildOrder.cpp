@@ -76,7 +76,7 @@ namespace McRave::BuildOrder::Protoss
         // Pylon logic
         if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > int(fastExpand)) {
             int providers = buildCount(UnitTypes::Protoss_Pylon) > 0 ? 14 : 16;
-            int count = min(22, Units().getSupply() / providers);
+            int count = min(22, Units::getSupply() / providers);
             int offset = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) - 1;
             int total = count - offset;
 
@@ -134,7 +134,7 @@ namespace McRave::BuildOrder::Protoss
     {
         // Leg upgrade check
         auto zealotLegs = Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) > 0
-            || (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) > 0 && Units().getSupply() >= 200);
+            || (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) > 0 && Units::getSupply() >= 200);
 
         // Check if we should always make Zealots
         if ((zealotLimit > Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot))
@@ -153,7 +153,7 @@ namespace McRave::BuildOrder::Protoss
 
         // Check if we should always make Dragoons
         if ((Players::vZ() && Broodwar->getFrameCount() > 20000)
-            || Units().getEnemyCount(UnitTypes::Zerg_Lurker) > 0
+            || Units::getEnemyCount(UnitTypes::Zerg_Lurker) > 0
             || dragoonLimit > Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon))
             unlockedType.insert(UnitTypes::Protoss_Dragoon);
         else

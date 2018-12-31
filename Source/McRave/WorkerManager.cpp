@@ -9,7 +9,7 @@ void WorkerManager::onFrame()
 
 void WorkerManager::updateWorkers()
 {
-    for (auto &w : Units().getMyUnits()) {
+    for (auto &w : Units::getMyUnits()) {
         auto &worker = w.second;
         if (worker.getRole() == Role::Working) {
             updateAssignment(worker);
@@ -241,7 +241,7 @@ bool WorkerManager::build(UnitInfo& worker)
 bool WorkerManager::clearPath(UnitInfo& worker)
 {
     auto resourceDepot = Broodwar->self()->getRace().getResourceDepot();
-    if (Units().getMyTypeCount(resourceDepot) < 2 || (BuildOrder::buildCount(resourceDepot) == Units().getMyTypeCount(resourceDepot) && BuildOrder::isOpener()))
+    if (Units::getMyTypeCount(resourceDepot) < 2 || (BuildOrder::buildCount(resourceDepot) == Units::getMyTypeCount(resourceDepot) && BuildOrder::isOpener()))
         return false;
 
     // Find boulders to clear

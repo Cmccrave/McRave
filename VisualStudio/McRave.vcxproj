@@ -45,7 +45,7 @@
     <ClCompile Include="..\Source\McRave\BuildOrder.cpp" />
     <ClCompile Include="..\Source\McRave\CommandManager.cpp" />
     <ClCompile Include="..\Source\McRave\Dll.cpp" />
-    <ClCompile Include="..\Source\McRave\EventManager.cpp" />
+    <ClInclude Include="..\Source\McRave\EventManager.h" />
     <ClCompile Include="..\Source\McRave\GoalManager.cpp" />
     <ClCompile Include="..\Source\McRave\GridManager.cpp" />
     <ClCompile Include="..\Source\McRave\Visuals.cpp" />
