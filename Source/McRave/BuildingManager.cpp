@@ -1,10 +1,13 @@
 #include "McRave.h"
 #include "UnitInfo.h"
 
-namespace McRave::Buildings
-{
-    namespace
-    {
+using namespace BWAPI;
+using namespace std;
+
+namespace McRave::Buildings {
+
+    namespace {
+
         int queuedMineral, queuedGas, nukesAvailable;
         int poweredSmall, poweredMedium, poweredLarge;
         int lairsMorphing, hivesMorphing;
@@ -66,7 +69,7 @@ namespace McRave::Buildings
 
             const auto checkBest = [&](Position blockCenter, set<TilePosition>& placements) {
                 // Against rushes, hide our buildings away from our ramp unless defensive structure
-                if ((Strategy().enemyRush() && Strategy().getEnemyBuild() != "P2Gate" && building != UnitTypes::Protoss_Shield_Battery && building != UnitTypes::Protoss_Photon_Cannon)) {
+                if ((Strategy::enemyRush() && Strategy::getEnemyBuild() != "P2Gate" && building != UnitTypes::Protoss_Shield_Battery && building != UnitTypes::Protoss_Photon_Cannon)) {
                     distBest = 0.0;
                     double dist = blockCenter.getDistance((Position)BWEB::Map::getMainChoke()->Center());
                     if (dist > distBest) {
@@ -127,7 +130,7 @@ namespace McRave::Buildings
                     }
 
                     // HACK: 2nd pylon by choke if we're facing a 2 gate
-                    if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) == 1 && Strategy().getEnemyBuild() == "P2Gate")
+                    if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) == 1 && Strategy::getEnemyBuild() == "P2Gate")
                         power = true;
 
                     if (!power || !solo)
@@ -272,7 +275,7 @@ namespace McRave::Buildings
             auto here = TilePositions::Invalid;
 
             // HACK: Versus busts, add an extra pylon to the defenses
-            if (building == UnitTypes::Protoss_Pylon && (Strategy().getEnemyBuild() == "Z2HatchHydra" || Strategy().getEnemyBuild() == "Z3HatchHydra") && Terrain().getNaturalWall()) {
+            if (building == UnitTypes::Protoss_Pylon && (Strategy::getEnemyBuild() == "Z2HatchHydra" || Strategy::getEnemyBuild() == "Z3HatchHydra") && Terrain().getNaturalWall()) {
                 int cnt = 0;
                 TilePosition sum(0, 0);
                 TilePosition center;
@@ -380,7 +383,7 @@ namespace McRave::Buildings
 
             // If we are fast expanding
             auto isWallPiece = building == UnitTypes::Protoss_Forge || building == UnitTypes::Protoss_Gateway || building == UnitTypes::Protoss_Pylon || building == UnitTypes::Terran_Barracks || building == UnitTypes::Terran_Supply_Depot;
-            if (BWEB::Map::getNaturalChoke() && isWallPiece && !Strategy().enemyBust() && (BuildOrder::isWallNat() || BuildOrder::isWallMain())) {
+            if (BWEB::Map::getNaturalChoke() && isWallPiece && !Strategy::enemyBust() && (BuildOrder::isWallNat() || BuildOrder::isWallMain())) {
                 here = findWallLocation(building, BWEB::Map::getMainPosition());
                 if (here.isValid() && isBuildable(building, here))
                     return here;

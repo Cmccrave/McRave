@@ -589,7 +589,7 @@ namespace McRave::BuildOrder
 
         // Otherwise, choose a tech based on highest unit score
         double highest = 0.0;
-        for (auto &tech : Strategy().getUnitScores()) {
+        for (auto &tech : Strategy::getUnitScores()) {
             if (tech.first == UnitTypes::Protoss_Dragoon
                 || tech.first == UnitTypes::Protoss_Zealot
                 || tech.first == UnitTypes::Protoss_Shuttle)

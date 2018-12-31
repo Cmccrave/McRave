@@ -1,7 +1,10 @@
 #include "UnitInfo.h"
 
-namespace McRave::Math
-{
+using namespace BWAPI;
+using namespace std;
+
+namespace McRave::Math {
+
     double getMaxGroundStrength(UnitInfo& unit)
     {
         // HACK: Some hardcoded values
@@ -76,7 +79,7 @@ namespace McRave::Math
             return 3.0;
         if ((unit.unit()->isRepairing() || unit.unit()->isConstructing()) && Units::isThreatening(unit))
             return 100.0;
-        if (Broodwar->getFrameCount() < 6000 && Strategy().enemyProxy() && unit.getType() == UnitTypes::Protoss_Pylon)
+        if (Broodwar->getFrameCount() < 6000 && Strategy::enemyProxy() && unit.getType() == UnitTypes::Protoss_Pylon)
             return -5.0;
         if (unit.unit()->isBeingConstructed() && unit.getType() == UnitTypes::Terran_Bunker && Terrain().isInAllyTerritory(unit.getTilePosition()))
             return -100.0;

@@ -76,9 +76,6 @@
     <ClCompile Include="..\Source\McRave\McRave.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\PlayerInfo.cpp">
-      <Filter>McRave</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\PlayerManager.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
@@ -92,9 +89,6 @@
       <Filter>McRave</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\McRave\PylonManager.cpp">
-      <Filter>McRave</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\ResourceInfo.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\McRave\ResourceManager.cpp">

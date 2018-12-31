@@ -22,6 +22,9 @@
 // Monitor for overkilling units by hp - (2*nextDmgSource) <= 0 (double damage source to account for a potential miss?)
 // UnitInfo add a TargetsFriendly
 
+using namespace BWAPI;
+using namespace std;
+
 void McRaveModule::onStart()
 {
     Broodwar->enableFlag(Flag::UserInput);
@@ -49,7 +52,7 @@ void McRaveModule::onFrame()
     Players::onFrame();
     Terrain().onFrame();
     Resources::onFrame();
-    Strategy().onFrame();
+    Strategy::onFrame();
     BuildOrder::onFrame();
     MyStations().onFrame();
 

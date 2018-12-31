@@ -3,19 +3,17 @@
 #include "BWEB.h"
 #include "McRave.h"
 
-using namespace BWAPI;
-using namespace std;
-
 namespace McRave
 {
     class ResourceInfo
     {
     private:
-        int gathererCount, remainingResources;
-        Unit thisUnit;
-        UnitType type;
-        Position position;
-        TilePosition tilePosition;
+        int gathererCount;
+        int remainingResources;
+        BWAPI::Unit thisUnit;
+        BWAPI::UnitType type;
+        BWAPI::Position position;
+        BWAPI::TilePosition tilePosition;
         const BWEB::Stations::Station * station;
         ResourceState rState;
     public:
@@ -25,9 +23,9 @@ namespace McRave
             gathererCount = 0;
             remainingResources = 0;
             rState = ResourceState::None;
-            type = UnitTypes::None;
-            position = Positions::None;
-            tilePosition = TilePositions::None;
+            type = BWAPI::UnitTypes::None;
+            position = BWAPI::Positions::None;
+            tilePosition = BWAPI::TilePositions::None;
         }
 
         void updateResource() {
@@ -44,17 +42,17 @@ namespace McRave
         int getGathererCount() { return gathererCount; };
         int getRemainingResources() { return remainingResources; }
         ResourceState getResourceState() { return rState; }
-        Unit unit() { return thisUnit; }
-        UnitType getType() { return type; }
-        Position getPosition() { return position; }
-        TilePosition getTilePosition() { return tilePosition; }
+        BWAPI::Unit unit() { return thisUnit; }
+        BWAPI::UnitType getType() { return type; }
+        BWAPI::Position getPosition() { return position; }
+        BWAPI::TilePosition getTilePosition() { return tilePosition; }
 
         void setGathererCount(int newInt) { gathererCount = newInt; }
         void setRemainingResources(int newInt) { remainingResources = newInt; }
         void setResourceState(ResourceState newState) { rState = newState; }
-        void setUnit(Unit newUnit) { thisUnit = newUnit; }
-        void setType(UnitType newType) { type = newType; }
-        void setPosition(Position newPosition) { position = newPosition; }
-        void setTilePosition(TilePosition newTilePosition) { tilePosition = newTilePosition; }
+        void setUnit(BWAPI::Unit newUnit) { thisUnit = newUnit; }
+        void setType(BWAPI::UnitType newType) { type = newType; }
+        void setPosition(BWAPI::Position newPosition) { position = newPosition; }
+        void setTilePosition(BWAPI::TilePosition newTilePosition) { tilePosition = newTilePosition; }
     };
 }

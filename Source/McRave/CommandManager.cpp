@@ -1,5 +1,8 @@
 #include "CommandManager.h"
 
+using namespace BWAPI;
+using namespace std;
+
 namespace McRave::Command
 {
     namespace {
@@ -337,7 +340,7 @@ namespace McRave::Command
                     return false;
 
                 if (unit.getType() == UnitTypes::Protoss_Reaver
-                    || (Strategy().enemyPressure() && allyRange >= 64.0) // HACK: Added this for 3fact aggresion, we should check to see if a mine is near our target instead
+                    || (Strategy::enemyPressure() && allyRange >= 64.0) // HACK: Added this for 3fact aggresion, we should check to see if a mine is near our target instead
                     || (unit.getType() == UnitTypes::Terran_Vulture)
                     || (unit.getType() == UnitTypes::Zerg_Mutalisk)
                     || (unit.getType() == UnitTypes::Protoss_Carrier)

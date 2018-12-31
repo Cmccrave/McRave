@@ -9,11 +9,11 @@ namespace McRave::Resources
     int getIncomeGas();
     bool isMinSaturated();
     bool isGasSaturated();
-    map <Unit, ResourceInfo>& getMyMinerals();
-    map <Unit, ResourceInfo>& getMyGas();
-    map <Unit, ResourceInfo>& getMyBoulders();
+    std::map <BWAPI::Unit, ResourceInfo>& getMyMinerals();
+    std::map <BWAPI::Unit, ResourceInfo>& getMyGas();
+    std::map <BWAPI::Unit, ResourceInfo>& getMyBoulders();
 
     void onFrame();
-    void storeResource(Unit);
-    void removeResource(Unit);
+    void storeResource(BWAPI::Unit);
+    void removeResource(BWAPI::Unit);
 }

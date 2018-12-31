@@ -2,16 +2,16 @@
 #include <BWAPI.h>
 #include <set>
 
-namespace McRave::Units
-{
-    Position getArmyCenter();
-    set<Unit>& getSplashTargets();
-    map<Unit, UnitInfo>& getMyUnits();
-    map<Unit, UnitInfo>& getEnemyUnits();
-    map<Unit, UnitInfo>& getNeutralUnits();
-    map<UnitSizeType, int>& getAllySizes();
-    map<UnitSizeType, int>& getEnemySizes();
-    map<UnitType, int>& getenemyTypes();
+namespace McRave::Units {
+
+    BWAPI::Position getArmyCenter();
+    std::set<BWAPI::Unit>& getSplashTargets();
+    std::map<BWAPI::Unit, UnitInfo>& getMyUnits();
+    std::map<BWAPI::Unit, UnitInfo>& getEnemyUnits();
+    std::map<BWAPI::Unit, UnitInfo>& getNeutralUnits();
+    std::map<BWAPI::UnitSizeType, int>& getAllySizes();
+    std::map<BWAPI::UnitSizeType, int>& getEnemySizes();
+    std::map<BWAPI::UnitType, int>& getenemyTypes();
     double getImmThreat();
     double getProxThreat();
     double getGlobalAllyGroundStrength();
@@ -21,11 +21,11 @@ namespace McRave::Units
     double getAllyDefense();
     int getSupply();
     int getMyRoleCount(Role role);
-    int getMyTypeCount(UnitType type);
+    int getMyTypeCount(BWAPI::UnitType type);
     bool isThreatening(UnitInfo&);
-    int getEnemyCount(UnitType);
+    int getEnemyCount(BWAPI::UnitType);
 
     void onFrame();
-    void storeUnit(Unit);
-    void removeUnit(Unit);
+    void storeUnit(BWAPI::Unit);
+    void removeUnit(BWAPI::Unit);
 }

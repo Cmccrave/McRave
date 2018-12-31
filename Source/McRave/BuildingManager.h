@@ -1,8 +1,8 @@
 #pragma once
 #include "McRave.h"
 
-namespace McRave::Buildings
-{
+namespace McRave::Buildings {
+
     void onFrame();
     bool isBuildable(BWAPI::UnitType, BWAPI::TilePosition);
     bool isQueueable(BWAPI::UnitType, BWAPI::TilePosition);

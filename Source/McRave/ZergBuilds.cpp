@@ -15,7 +15,7 @@
 //		return Broodwar->self()->isUpgrading(UpgradeTypes::Metabolic_Boost) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Metabolic_Boost);
 //	}
 //
-//	static string enemyBuild = Strategy().getEnemyBuild();
+//	static string enemyBuild = Strategy::getEnemyBuild();
 //
 //	void BuildOrderManager::Z2HatchMuta()
 //	{

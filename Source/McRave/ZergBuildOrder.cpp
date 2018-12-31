@@ -28,7 +28,7 @@
 //	if (shouldExpand() || shouldAddProduction::)
 //		itemQueue[UnitTypes::Zerg_Hatchery] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Hatchery) + Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Lair) + Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Hive) + 1);
 //
-//	if (Strategy().enemyFastExpand() && !rush)
+//	if (Strategy::enemyFastExpand() && !rush)
 //		itemQueue[UnitTypes::Zerg_Hatchery] = Item(min(3, Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Hatchery) + Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Lair) + Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Hive) + 1));
 //
 //	// When to tech

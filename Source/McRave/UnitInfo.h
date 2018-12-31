@@ -3,11 +3,6 @@
 #include "..\BWEB\BWEB.h"
 #include "McRave.h"
 #include "UnitMath.h"
-#include "PlayerInfo.h"
-#include "ResourceInfo.h"
-
-using namespace BWAPI;
-using namespace std;
 
 namespace McRave
 {
@@ -47,13 +42,13 @@ namespace McRave
         bool burrowed = false;
         bool flying = false;
 
-        Player player = nullptr;
-        Unit thisUnit = nullptr;
+        BWAPI::Player player = nullptr;
+        BWAPI::Unit thisUnit = nullptr;
         UnitInfo * transport = nullptr;
         UnitInfo * target = nullptr;
         ResourceInfo * resource = nullptr;
 
-        set<UnitInfo*> assignedCargo ={};
+        std::set<UnitInfo*> assignedCargo ={};
 
         TransportState tState = TransportState::None;
         LocalState lState = LocalState::None;
@@ -61,19 +56,19 @@ namespace McRave
         SimState sState = SimState::None;
         Role role = Role::None;
 
-        UnitType unitType = UnitTypes::None;
-        UnitType buildingType = UnitTypes::None;
+        BWAPI::UnitType unitType = UnitTypes::None;
+        BWAPI::UnitType buildingType = UnitTypes::None;
 
-        Position position = Positions::Invalid;
-        Position engagePosition = Positions::Invalid;
-        Position destination = Positions::Invalid;
-        Position simPosition = Positions::Invalid;
-        Position lastPos = Positions::Invalid;
-        WalkPosition walkPosition = WalkPositions::Invalid;
-        WalkPosition lastWalk = WalkPositions::Invalid;
-        TilePosition tilePosition = TilePositions::Invalid;
-        TilePosition buildPosition = TilePositions::Invalid;
-        TilePosition lastTile = TilePositions::Invalid;
+        BWAPI::Position position = Positions::Invalid;
+        BWAPI::Position engagePosition = Positions::Invalid;
+        BWAPI::Position destination = Positions::Invalid;
+        BWAPI::Position simPosition = Positions::Invalid;
+        BWAPI::Position lastPos = Positions::Invalid;
+        BWAPI::WalkPosition walkPosition = WalkPositions::Invalid;
+        BWAPI::WalkPosition lastWalk = WalkPositions::Invalid;
+        BWAPI::TilePosition tilePosition = TilePositions::Invalid;
+        BWAPI::TilePosition buildPosition = TilePositions::Invalid;
+        BWAPI::TilePosition lastTile = TilePositions::Invalid;
 
         BWEB::PathFinding::Path path;
         BWEB::PathFinding::Path resourcePath;
@@ -88,8 +83,8 @@ namespace McRave
         double getDistance(UnitInfo unit) { return position.getDistance(unit.getPosition()); }
 
         // Use a command
-        bool command(UnitCommandType, Position);
-        bool command(UnitCommandType, UnitInfo*);
+        bool command(BWAPI::UnitCommandType, BWAPI::Position);
+        bool command(BWAPI::UnitCommandType, UnitInfo*);
 
         // Roles
         McRave::Role getRole() { return role; }

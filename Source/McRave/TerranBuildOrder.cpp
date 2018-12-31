@@ -27,7 +27,7 @@
 //	if (getTech) {
 //		if (techUnit == UnitTypes::None) {
 //			double highest = 0.0;
-//			for (auto &tech : Strategy().getUnitScores()) {
+//			for (auto &tech : Strategy::getUnitScores()) {
 //				if (tech.second > highest) {
 //					highest = tech.second;
 //					techUnit = tech.first;
@@ -109,7 +109,7 @@
 //
 //	if (techComplete())
 //		techUnit = UnitTypes::None; // If we have our tech unit, set to none	
-//	if (Strategy().needDetection() || (!getOpening && !getTech && !techSat /*&& productionSat*/ && techUnit == UnitTypes::None))
+//	if (Strategy::needDetection() || (!getOpening && !getTech && !techSat /*&& productionSat*/ && techUnit == UnitTypes::None))
 //		getTech = true; // If production is saturated and none are idle or we need detection, choose a tech
 //
 //	// Unlocked type logic
@@ -209,7 +209,7 @@
 //		itemQueue[UnitTypes::Terran_Command_Center] = Item(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) + 1);
 //
 //	// Bunker logic
-//	if (Strategy().enemyRush() && !wallMain)
+//	if (Strategy::enemyRush() && !wallMain)
 //		itemQueue[UnitTypes::Terran_Bunker] = Item(1);
 //
 //	if (!getOpening)
@@ -223,7 +223,7 @@
 //			itemQueue[UnitTypes::Terran_Armory] = Item((Units::getSupply() > 160) + (Units::getSupply() > 200));
 //
 //		// Academy logic
-//		if (Strategy().needDetection())
+//		if (Strategy::needDetection())
 //		{
 //			itemQueue[UnitTypes::Terran_Academy] = Item(1);
 //			itemQueue[UnitTypes::Terran_Comsat_Station] = Item(2);

@@ -1,47 +1,41 @@
-#include "UnitInfo.h"
 
-// Testing using anonymous namespaces for some functions
+namespace McRave::Math {
 
-namespace McRave {
+    double getMaxGroundStrength(UnitInfo& unit);
 
-    namespace Math {
+    double getVisibleGroundStrength(UnitInfo& unit);
 
-        double getMaxGroundStrength(UnitInfo& unit);
+    double getMaxAirStrength(UnitInfo& unit);
 
-        double getVisibleGroundStrength(UnitInfo& unit);
+    double getVisibleAirStrength(UnitInfo& unit);
 
-        double getMaxAirStrength(UnitInfo& unit);
+    double getPriority(UnitInfo& unit);
 
-        double getVisibleAirStrength(UnitInfo& unit);
+    double groundDPS(UnitInfo& unit);
 
-        double getPriority(UnitInfo& unit);
+    double airDPS(UnitInfo& unit);
 
-        double groundDPS(UnitInfo& unit);
+    double gWeaponCooldown(UnitInfo& unit);
 
-        double airDPS(UnitInfo& unit);
+    double aWeaponCooldown(UnitInfo& unit);
 
-        double gWeaponCooldown(UnitInfo& unit);
+    double splashModifier(UnitInfo& unit);
 
-        double aWeaponCooldown(UnitInfo& unit);
+    double effectiveness(UnitInfo& unit);
 
-        double splashModifier(UnitInfo& unit);
+    double survivability(UnitInfo& unit);
 
-        double effectiveness(UnitInfo& unit);
+    double groundRange(UnitInfo& unit);
 
-        double survivability(UnitInfo& unit);
+    double airRange(UnitInfo& unit);
 
-        double groundRange(UnitInfo& unit);
+    double groundDamage(UnitInfo& unit);
 
-        double airRange(UnitInfo& unit);
+    double airDamage(UnitInfo& unit);
 
-        double groundDamage(UnitInfo& unit);
+    double speed(UnitInfo& unit);
 
-        double airDamage(UnitInfo& unit);
+    int getMinStopFrame(BWAPI::UnitType unitType);
 
-        double speed(UnitInfo& unit);
-
-        int getMinStopFrame(UnitType unitType);
-
-        WalkPosition getWalkPosition(Unit unit);
-    }
+    BWAPI::WalkPosition getWalkPosition(BWAPI::Unit unit);
 }

@@ -1,12 +1,16 @@
 #include "McRave.h"
 #include "BuildOrder.h"
 
+using namespace BWAPI;
+using namespace std;
 using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
 #define s Units::getSupply()
 
 namespace McRave::BuildOrder::Protoss {
+
     namespace {
+
         static int vis(UnitType t) {
             return Broodwar->self()->visibleUnitCount(t);
         }
@@ -14,7 +18,7 @@ namespace McRave::BuildOrder::Protoss {
             return Broodwar->self()->completedUnitCount(t);
         }
 
-        string enemyBuild() { return Strategy().getEnemyBuild(); }
+        string enemyBuild() { return Strategy::getEnemyBuild(); }
         bool goonRange() {
             return Broodwar->self()->isUpgrading(UpgradeTypes::Singularity_Charge) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge);
         }
@@ -243,11 +247,11 @@ namespace McRave::BuildOrder::Protoss {
         }
 
         // Transitions
-        if (Strategy().enemyRush())
+        if (Strategy::enemyRush())
             currentTransition = "Panic";
-        if (Strategy().enemyPressure())
+        if (Strategy::enemyPressure())
             currentTransition = "Defensive";
-        if (Players::vT() && Strategy().enemyFastExpand())
+        if (Players::vT() && Strategy::enemyFastExpand())
             currentTransition = "DT";
         if (Units::getEnemyCount(UnitTypes::Zerg_Sunken_Colony) >= 2)
             currentTransition = "Expand";
@@ -323,7 +327,7 @@ namespace McRave::BuildOrder::Protoss {
                 }
                 else if (currentTransition == "Reaver") {
                     getOpening =		s < 80;
-                    firstUnit =			com(Protoss_Robotics_Facility) >= 1 ? (Strategy().needDetection() ? Protoss_Observer : Protoss_Reaver) : UnitTypes::None;
+                    firstUnit =			com(Protoss_Robotics_Facility) >= 1 ? (Strategy::needDetection() ? Protoss_Observer : Protoss_Reaver) : UnitTypes::None;
 
                     itemQueue[Protoss_Nexus] =				Item(1);
                     itemQueue[Protoss_Assimilator] =		Item(s >= 22);
@@ -380,7 +384,7 @@ namespace McRave::BuildOrder::Protoss {
                 else if (currentTransition == "Reaver") {
                     // https://liquipedia.net/starcraft/2_Gate_Reaver_(vs._Protoss)
                     getOpening =		s < 70;
-                    firstUnit =			com(Protoss_Robotics_Facility) >= 1 ? (Strategy().needDetection() ? Protoss_Observer : Protoss_Reaver) : UnitTypes::None;
+                    firstUnit =			com(Protoss_Robotics_Facility) >= 1 ? (Strategy::needDetection() ? Protoss_Observer : Protoss_Reaver) : UnitTypes::None;
 
                     itemQueue[Protoss_Nexus] =				Item(1);
                     itemQueue[Protoss_Assimilator] =		Item(s >= 44);
@@ -404,7 +408,7 @@ namespace McRave::BuildOrder::Protoss {
 
         bool addGas = Broodwar->getStartLocations().size() >= 3 ? (s >= 22) : (s >= 24);
 
-        if (Strategy().enemyRush())
+        if (Strategy::enemyRush())
             currentTransition = "Defensive";
 
         // Openers
@@ -414,7 +418,7 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Nexus] =				Item(1);
             itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
             itemQueue[Protoss_Gateway] =			Item(s >= 20);
-            itemQueue[Protoss_Assimilator] =		Item((addGas || Strategy().enemyScouted()));
+            itemQueue[Protoss_Assimilator] =		Item((addGas || Strategy::enemyScouted()));
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
         }
         else if (currentOpener == "1Zealot") {
@@ -423,7 +427,7 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Nexus] =				Item(1);
             itemQueue[Protoss_Pylon] =				Item((s >= 14), (s >= 16));
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (2 * addGates()));
-            itemQueue[Protoss_Assimilator] =		Item((addGas || Strategy().enemyScouted()));
+            itemQueue[Protoss_Assimilator] =		Item((addGas || Strategy::enemyScouted()));
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 34);
         }
         else if (currentOpener == "2Zealot") {
@@ -432,7 +436,7 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Nexus] =				Item(1);
             itemQueue[Protoss_Pylon] =				Item((s >= 14), (s >= 16));
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (2 * addGates()));
-            itemQueue[Protoss_Assimilator] =		Item((addGas || Strategy().enemyScouted()));
+            itemQueue[Protoss_Assimilator] =		Item((addGas || Strategy::enemyScouted()));
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 40);
         }
 
@@ -460,12 +464,12 @@ namespace McRave::BuildOrder::Protoss {
             dragoonLimit =		INT_MAX;
 
             if (Players::vP()) {
-                playPassive =		!Strategy().enemyFastExpand() && (com(Protoss_Reaver) < 2/* || com(Protoss_Shuttle) < 1*/);
-                getOpening =		(Players::vP() && Strategy().enemyPressure()) ? vis(Protoss_Reaver) < 3 : s < 70;
+                playPassive =		!Strategy::enemyFastExpand() && (com(Protoss_Reaver) < 2/* || com(Protoss_Shuttle) < 1*/);
+                getOpening =		(Players::vP() && Strategy::enemyPressure()) ? vis(Protoss_Reaver) < 3 : s < 70;
                 zealotLimit =		(com(Protoss_Robotics_Facility) >= 1) ? 6 : zealotLimit;
 
                 itemQueue[Protoss_Gateway] =				Item((s >= 20) + (s >= 60) + (s >= 62));
-                itemQueue[Protoss_Assimilator] =			Item((addGas || Strategy().enemyScouted()));
+                itemQueue[Protoss_Assimilator] =			Item((addGas || Strategy::enemyScouted()));
                 itemQueue[Protoss_Robotics_Facility] =		Item(s >= 52);
             }
             else {
@@ -474,7 +478,7 @@ namespace McRave::BuildOrder::Protoss {
 
                 itemQueue[Protoss_Nexus] =					Item(1 + (s >= 74));
                 itemQueue[Protoss_Gateway] =				Item((s >= 20) + (s >= 60) + (s >= 62));
-                itemQueue[Protoss_Assimilator] =			Item((addGas || Strategy().enemyScouted()));
+                itemQueue[Protoss_Assimilator] =			Item((addGas || Strategy::enemyScouted()));
                 itemQueue[Protoss_Robotics_Facility] =		Item(s >= 52);
             }
 
@@ -499,7 +503,7 @@ namespace McRave::BuildOrder::Protoss {
             if (techList.find(Protoss_Corsair) == techList.end())
                 techUnit = Protoss_Corsair;
 
-            if (Strategy().enemyRush()) {
+            if (Strategy::enemyRush()) {
                 itemQueue[Protoss_Gateway] =			Item((s >= 18) * 2);
                 itemQueue[Protoss_Forge] =				Item(com(Protoss_Stargate) >= 1);
                 itemQueue[Protoss_Assimilator] =		Item(s >= 54);
@@ -579,7 +583,7 @@ namespace McRave::BuildOrder::Protoss {
     {
         // 12 Nexus - "http://liquipedia.net/starcraft/12_Nexus"
         fastExpand =		true;
-        playPassive =		Units::getEnemyCount(Terran_Siege_Tank_Tank_Mode) == 0 && Units::getEnemyCount(Terran_Siege_Tank_Siege_Mode) == 0 && Strategy().enemyPressure() ? vis(Protoss_Dragoon) < 12 : !firstReady();
+        playPassive =		Units::getEnemyCount(Terran_Siege_Tank_Tank_Mode) == 0 && Units::getEnemyCount(Terran_Siege_Tank_Siege_Mode) == 0 && Strategy::enemyPressure() ? vis(Protoss_Dragoon) < 12 : !firstReady();
         firstUpgrade =		vis(Protoss_Dragoon) >= 2 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
         firstTech =			TechTypes::None;
         scout =				vis(Protoss_Cybernetics_Core) >= 1;
@@ -593,9 +597,9 @@ namespace McRave::BuildOrder::Protoss {
         // Reactions
         if (Terrain().isIslandMap())
             currentTransition =	"Island"; // TODO: Island stuff		
-        else if (Strategy().enemyFastExpand() || enemyBuild() == "TSiegeExpand")
+        else if (Strategy::enemyFastExpand() || enemyBuild() == "TSiegeExpand")
             currentTransition =	"DoubleExpand";
-        else if (!Strategy().enemyFastExpand() && currentTransition == "DoubleExpand")
+        else if (!Strategy::enemyFastExpand() && currentTransition == "DoubleExpand")
             currentTransition = "Standard";
 
         // Openers
@@ -654,7 +658,7 @@ namespace McRave::BuildOrder::Protoss {
     {
         // 21 Nexus - "http://liquipedia.net/starcraft/21_Nexus"
         fastExpand =		true;
-        playPassive =		Strategy().enemyPressure() ? vis(Protoss_Observer) == 0 : !firstReady();
+        playPassive =		Strategy::enemyPressure() ? vis(Protoss_Observer) == 0 : !firstReady();
         firstUpgrade =		UpgradeTypes::Singularity_Charge;
         firstTech =			TechTypes::None;
         scout =				Broodwar->getStartLocations().size() == 4 ? vis(Protoss_Pylon) > 0 : vis(Protoss_Pylon) > 0;
@@ -667,11 +671,11 @@ namespace McRave::BuildOrder::Protoss {
 
         // Reactions
         if (!lockedTransition) {
-            if (s < 100 && (Strategy().enemyFastExpand() || enemyBuild() == "TSiegeExpand"))
+            if (s < 100 && (Strategy::enemyFastExpand() || enemyBuild() == "TSiegeExpand"))
                 currentTransition =	"DoubleExpand";
-            else if (s < 80 && Strategy().enemyRush())
+            else if (s < 80 && Strategy::enemyRush())
                 currentTransition = "Defensive";
-            else if ((!Strategy().enemyFastExpand() && Terrain().foundEnemy() && currentTransition == "DoubleExpand") || Strategy().enemyPressure())
+            else if ((!Strategy::enemyFastExpand() && Terrain().foundEnemy() && currentTransition == "DoubleExpand") || Strategy::enemyPressure())
                 currentTransition = "Standard";
 
             if (Units::getEnemyCount(Terran_Factory) >= 2)

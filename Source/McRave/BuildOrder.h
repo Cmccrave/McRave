@@ -3,8 +3,7 @@
 #include <sstream>
 #include <set>
 
-namespace McRave::BuildOrder
-{
+namespace McRave::BuildOrder {
     class Item
     {
         int actualCount, reserveCount;
@@ -31,7 +30,7 @@ namespace McRave::BuildOrder
 
     // Need a namespace to share variables among the various files used
     namespace All {
-        inline map <UnitType, Item> itemQueue;
+        inline std::map <BWAPI::UnitType, Item> itemQueue;
         inline bool getOpening = true;
         inline bool getTech = false;
         inline bool wallNat = false;
@@ -54,11 +53,11 @@ namespace McRave::BuildOrder
         inline int lingLimit = INT_MAX;
         inline int droneLimit = INT_MAX;
 
-        inline map <string, Build> myBuilds;
-        inline stringstream ss;
-        inline string currentBuild = "";
-        inline string currentOpener = "";
-        inline string currentTransition = "";
+        inline std::map <std::string, Build> myBuilds;
+        inline std::stringstream ss;
+        inline std::string currentBuild = "";
+        inline std::string currentOpener = "";
+        inline std::string currentTransition = "";
 
         inline BWAPI::UpgradeType firstUpgrade = BWAPI::UpgradeTypes::None;
         inline BWAPI::TechType firstTech = BWAPI::TechTypes::None;

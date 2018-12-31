@@ -1,5 +1,8 @@
 #include "McRave.h"
 
+using namespace BWAPI;
+using namespace std;
+
 namespace McRave::Units {
 
     namespace {
@@ -287,7 +290,7 @@ namespace McRave::Units {
 
                 // Force engaging
                 else if (!invisTarget && (isThreatening(unit.getTarget())
-                    || (fightingAtHome && (!unit.getType().isFlyer() || !unit.getTarget().getType().isFlyer()) && (Strategy().defendChoke() || unit.getGroundRange() > 64.0))))
+                    || (fightingAtHome && (!unit.getType().isFlyer() || !unit.getTarget().getType().isFlyer()) && (Strategy::defendChoke() || unit.getGroundRange() > 64.0))))
                     unit.setLocalState(LocalState::Engaging);
 
                 // Force retreating
@@ -339,13 +342,13 @@ namespace McRave::Units {
         void updateGlobalState(UnitInfo& unit)
         {
             if (Broodwar->self()->getRace() == Races::Protoss) {
-                if ((!BuildOrder::isFastExpand() && Strategy().enemyFastExpand())
-                    || (Strategy().enemyProxy() && !Strategy().enemyRush())
+                if ((!BuildOrder::isFastExpand() && Strategy::enemyFastExpand())
+                    || (Strategy::enemyProxy() && !Strategy::enemyRush())
                     || BuildOrder::isRush())
                     unit.setGlobalState(GlobalState::Engaging);
 
-                else if ((Strategy().enemyRush() && !Players::vT())
-                    || (!Strategy().enemyRush() && BuildOrder::isHideTech() && BuildOrder::isOpener())
+                else if ((Strategy::enemyRush() && !Players::vT())
+                    || (!Strategy::enemyRush() && BuildOrder::isHideTech() && BuildOrder::isOpener())
                     || unit.getType().isWorker()
                     || (Broodwar->getFrameCount() < 15000 && BuildOrder::isPlayPassive())
                     || (unit.getType() == UnitTypes::Protoss_Corsair && !BuildOrder::firstReady() && globalEnemyAirStrength > 0.0))
@@ -622,7 +625,7 @@ namespace McRave::Units {
                 return true;
             if (close)
                 return true;
-            if (atHome && Strategy().defendChoke())
+            if (atHome && Strategy::defendChoke())
                 return true;
         }
 
@@ -633,7 +636,7 @@ namespace McRave::Units {
         else {
             if (close)
                 return true;
-            if (atHome && Strategy().defendChoke())
+            if (atHome && Strategy::defendChoke())
                 return true;
             if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Shield_Battery) > 0) {
                 auto battery = Util::getClosestUnit(unit.getPosition(), Broodwar->self(), UnitTypes::Protoss_Shield_Battery);

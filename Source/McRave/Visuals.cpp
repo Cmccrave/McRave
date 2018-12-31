@@ -1,5 +1,8 @@
 #include "McRave.h"
 
+using namespace BWAPI;
+using namespace std;
+
 namespace McRave::Visuals
 {
     namespace {
@@ -34,13 +37,13 @@ namespace McRave::Visuals
             // Builds
             if (builds) {
                 Broodwar->drawTextScreen(432, 16, "%c%s: %c%s %s", Text::White, BuildOrder::getCurrentBuild().c_str(), Text::Grey, BuildOrder::getCurrentOpener().c_str(), BuildOrder::getCurrentTransition().c_str());
-                Broodwar->drawTextScreen(432, 28, "%cvs %c%s", Text::White, Text::Grey, Strategy().getEnemyBuild().c_str());
+                Broodwar->drawTextScreen(432, 28, "%cvs %c%s", Text::White, Text::Grey, Strategy::getEnemyBuild().c_str());
             }
 
             // Scores
             if (scores) {
                 int offset = 0;
-                for (auto &unit : Strategy().getUnitScores()) {
+                for (auto &unit : Strategy::getUnitScores()) {
                     if (unit.first.isValid() && unit.second > 0.0) {
                         Broodwar->drawTextScreen(0, offset, "%c%s: %c%.2f", textColor, unit.first.c_str(), Text::White, unit.second);
                         offset += 10;

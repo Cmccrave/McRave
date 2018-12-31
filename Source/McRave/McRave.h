@@ -12,19 +12,18 @@
 #define MIN_THREAT 0.01f
 #define SIM_RADIUS 640.0
 
-#define MAX_SCARAB 5 + (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Reaver_Capacity) * 5)
-#define MAX_INTERCEPTOR 4 + (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Carrier_Capacity) * 4)
+#define MAX_SCARAB 5 + (BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Reaver_Capacity) * 5)
+#define MAX_INTERCEPTOR 4 + (BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Carrier_Capacity) * 4)
 
 // Namespaces
-using namespace BWAPI;
 using namespace BWEM;
-using namespace std;
 using namespace BWEB;
 
 namespace McRave
 {
     class UnitInfo;
     class ResourceInfo;
+    class PlayerInfo;
 
     struct Line {
         double yInt;
@@ -96,9 +95,6 @@ namespace
 namespace McRave
 {
     inline StationManager& MyStations() { return StationSingleton::Instance(); }
-    inline StrategyManager& Strategy() { return StrategySingleton::Instance(); }
-    inline TargetManager& Targets() { return TargetSingleton::Instance(); }
     inline TerrainManager& Terrain() { return TerrainSingleton::Instance(); }
     inline TransportManager& Transport() { return TransportSingleton::Instance(); }
 }
-using namespace McRave;

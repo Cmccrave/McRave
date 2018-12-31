@@ -11,7 +11,7 @@
 //		return Broodwar->self()->completedUnitCount(t);
 //	}
 //
-//	static string enemyBuild = Strategy().getEnemyBuild();
+//	static string enemyBuild = Strategy::getEnemyBuild();
 //	void BuildOrderManager::T2Fact()
 //	{
 //		firstUpgrade = UpgradeTypes::Ion_Thrusters;

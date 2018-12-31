@@ -1,11 +1,13 @@
 #include "McRave.h"
 
+using namespace BWAPI;
+using namespace std;
+
 namespace McRave::Workers {
     namespace {
         int minWorkers = 0;
         int gasWorkers = 0;
-        bool closeToResource(UnitInfo&);
-        constexpr tuple commands{ misc, transport, returnCargo, clearPath, build, gather };
+        bool closeToResource(UnitInfo&);        
 
         bool closeToResource(UnitInfo& worker)
         {
@@ -314,6 +316,7 @@ namespace McRave::Workers {
             }
         }
 
+        constexpr tuple commands{ misc, transport, returnCargo, clearPath, build, gather };
         void updateDecision(UnitInfo& worker)
         {
             // Convert our commands to strings to display what the unit is doing for debugging

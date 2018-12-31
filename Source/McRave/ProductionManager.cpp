@@ -1,7 +1,10 @@
 #include "McRave.h"
 
-namespace McRave::Production
-{
+using namespace BWAPI;
+using namespace std;
+
+namespace McRave::Production {
+
     namespace {
         map <Unit, UnitType> idleProduction;
         map <Unit, TechType> idleTech;
@@ -160,7 +163,7 @@ namespace McRave::Production
             bool needShuttles = false;
 
             // Determine whether we want reavers or shuttles;
-            if (!Strategy().needDetection()) {
+            if (!Strategy::needDetection()) {
                 if ((Terrain().isIslandMap() && Broodwar->self()->visibleUnitCount(unit) < 2 * Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus))
                     || (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) > (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle) * 2))
                     || (Broodwar->mapFileName().find("Great Barrier") != string::npos && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle) < 1))
@@ -170,7 +173,7 @@ namespace McRave::Production
             }
 
             // HACK: Want x reavers before a shuttle
-            if (Players::vP() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) < (2 + int(Strategy().getEnemyBuild() == "P4Gate")))
+            if (Players::vP() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) < (2 + int(Strategy::getEnemyBuild() == "P4Gate")))
                 needShuttles = false;
 
             //// No shuttles
@@ -323,7 +326,7 @@ namespace McRave::Production
                 case Ion_Thrusters:
                     return true;
                 case Charon_Boosters:
-                    return Strategy().getUnitScore(UnitTypes::Terran_Goliath) > 1.00;
+                    return Strategy::getUnitScore(UnitTypes::Terran_Goliath) > 1.00;
                 case U_238_Shells:
                     return Broodwar->self()->hasResearched(TechTypes::Stim_Packs);
                 case Terran_Infantry_Weapons:
@@ -448,7 +451,7 @@ namespace McRave::Production
 
                 double mineral = unit.mineralPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->minerals() - reservedMineral - Buildings::getQueuedMineral()) / (double)unit.mineralPrice())) : 1.0;
                 double gas = unit.gasPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->gas() - reservedGas - Buildings::getQueuedGas()) / (double)unit.gasPrice())) : 1.0;
-                double score = max(0.01, Strategy().getUnitScore(unit));
+                double score = max(0.01, Strategy::getUnitScore(unit));
                 double value = score * mineral * gas;
 
                 if (unit.isAddon() && BuildOrder::getItemQueue().find(unit) != BuildOrder::getItemQueue().end() && BuildOrder::getItemQueue().at(unit).getActualCount() > Broodwar->self()->visibleUnitCount(unit)) {
@@ -609,14 +612,14 @@ namespace McRave::Production
     //        double best = 0.0;
     //        UnitType typeBest;
 
-    //        for (auto &type : Strategy().getUnitScores()) {
+    //        for (auto &type : Strategy::getUnitScores()) {
     //            UnitType unit = type.first;
     //            double mineral = unit.mineralPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->minerals() - reservedMineral - Buildings::getQueuedMineral()) / (double)unit.mineralPrice())) : 1.0;
     //            double gas = unit.gasPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->gas() - reservedGas - Buildings::getQueuedGas()) / (double)unit.gasPrice())) : 1.0;
-    //            double score = max(0.01, Strategy().getUnitScore(unit));
+    //            double score = max(0.01, Strategy::getUnitScore(unit));
     //            double value = score * mineral * gas;
 
-    //            if (BuildOrder::isUnitUnlocked(type.first) && value > best && isCreateable(building.unit(), type.first) && (isAffordable(type.first) || type.first == Strategy().getHighestUnitScore()) && isSuitable(type.first)) {
+    //            if (BuildOrder::isUnitUnlocked(type.first) && value > best && isCreateable(building.unit(), type.first) && (isAffordable(type.first) || type.first == Strategy::getHighestUnitScore()) && isSuitable(type.first)) {
     //                best = value;
     //                typeBest = type.first;
     //            }

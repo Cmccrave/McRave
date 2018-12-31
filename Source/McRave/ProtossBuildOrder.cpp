@@ -1,5 +1,7 @@
 #include "McRave.h"
 
+using namespace BWAPI;
+using namespace std;
 using namespace McRave::BuildOrder::All;
 
 namespace McRave::BuildOrder::Protoss
@@ -27,12 +29,12 @@ namespace McRave::BuildOrder::Protoss
         if (getTech) {
 
             // If we need observers
-            if (Strategy().needDetection() || (!Terrain().isIslandMap() && Players::vP() && techList.find(UnitTypes::Protoss_Observer) == techList.end() && !techList.empty()))
+            if (Strategy::needDetection() || (!Terrain().isIslandMap() && Players::vP() && techList.find(UnitTypes::Protoss_Observer) == techList.end() && !techList.empty()))
                 techUnit = UnitTypes::Protoss_Observer;
 
             else if (currentTransition == "DoubleExpand" && techList.find(UnitTypes::Protoss_High_Templar) == techList.end())
                 techUnit = UnitTypes::Protoss_High_Templar;
-            else if (Strategy().getEnemyBuild() == "P4Gate" && techList.find(UnitTypes::Protoss_Dark_Templar) == techList.end() && !Strategy().enemyGasSteal())
+            else if (Strategy::getEnemyBuild() == "P4Gate" && techList.find(UnitTypes::Protoss_Dark_Templar) == techList.end() && !Strategy::enemyGasSteal())
                 techUnit = UnitTypes::Protoss_Dark_Templar;
             else if (techUnit == UnitTypes::None)
                 getNewTech();
@@ -45,7 +47,7 @@ namespace McRave::BuildOrder::Protoss
 
     void situational()
     {
-        auto skipFirstTech = (/*currentBuild == "P4Gate" ||*/ currentTransition == "DoubleExpand" || (Strategy().enemyGasSteal() && !Terrain().isNarrowNatural()));
+        auto skipFirstTech = (/*currentBuild == "P4Gate" ||*/ currentTransition == "DoubleExpand" || (Strategy::enemyGasSteal() && !Terrain().isNarrowNatural()));
 
         // Metrics for when to Expand/Add Production/Add Tech
         satVal = Players::vT() ? 2 : 3;
@@ -54,7 +56,7 @@ namespace McRave::BuildOrder::Protoss
         techVal = techList.size() + skipFirstTech + Players::vT();
 
         // HACK: Against FFE just add a Nexus
-        if (Strategy().getEnemyBuild() == "FFE" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1)
+        if (Strategy::getEnemyBuild() == "FFE" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1)
             itemQueue[UnitTypes::Protoss_Nexus] = Item(2);
 
         // Saturation
@@ -68,7 +70,7 @@ namespace McRave::BuildOrder::Protoss
         // If production is saturated and none are idle or we need detection, choose a tech
         if (Terrain().isIslandMap() || (!getOpening && !getTech && !techSat && !Production::hasIdleProduction()))
             getTech = true;
-        if (Strategy().needDetection()) {
+        if (Strategy::needDetection()) {
             techList.insert(UnitTypes::Protoss_Observer);
             unlockedType.insert(UnitTypes::Protoss_Observer);
         }
@@ -138,8 +140,8 @@ namespace McRave::BuildOrder::Protoss
 
         // Check if we should always make Zealots
         if ((zealotLimit > Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot))
-            || Strategy().enemyProxy()
-            || Strategy().enemyRush()
+            || Strategy::enemyProxy()
+            || Strategy::enemyRush()
             || zealotLegs
             || (techUnit == UnitTypes::Protoss_Dark_Templar && Players::vP())) {
             unlockedType.insert(UnitTypes::Protoss_Zealot);

@@ -1,7 +1,12 @@
 #include "McRave.h"
 
+using namespace BWAPI;
+using namespace std;
+
 namespace McRave::Scouts {
+
     namespace {
+
         set<Position> scoutTargets;
         set<Position> scoutAssignments;
         int scoutCount;
@@ -42,7 +47,7 @@ namespace McRave::Scouts {
                     if (tile.isValid())
                         scoutTargets.insert(Position(tile));
                 }
-                if (Players::vZ() && MyStations().getEnemyStations().size() == 1 && Strategy().getEnemyBuild() != "Unknown")
+                if (Players::vZ() && MyStations().getEnemyStations().size() == 1 && Strategy::getEnemyBuild() != "Unknown")
                     scoutTargets.insert((Position)Terrain().getEnemyExpand());
             }
 
@@ -71,15 +76,15 @@ namespace McRave::Scouts {
             }
 
             // If it's a 2gate, scout for an expansion if we found the gates
-            if (Strategy().getEnemyBuild() == "P2Gate") {
+            if (Strategy::getEnemyBuild() == "P2Gate") {
                 /*		if (Units::getEnemyCount(UnitTypes::Protoss_Gateway) >= 2)
                             scoutTargets.insert((Position)Terrain().getEnemyExpand());
-                        else*/ if (Units::getEnemyCount(UnitTypes::Protoss_Pylon) == 0 || Strategy().enemyProxy())
+                        else*/ if (Units::getEnemyCount(UnitTypes::Protoss_Pylon) == 0 || Strategy::enemyProxy())
     scoutTargets.insert(mapBWEM.Center());
             }
 
             // If it's a cannon rush, scout the main
-            if (Strategy().getEnemyBuild() == "PCannonRush")
+            if (Strategy::getEnemyBuild() == "PCannonRush")
                 scoutTargets.insert(BWEB::Map::getMainPosition());
         }
 
@@ -103,21 +108,21 @@ namespace McRave::Scouts {
             proxyCheck = false;
 
             // If we know a proxy possibly exists, we need a second scout
-            auto foundProxyGates = Strategy().enemyProxy() && Strategy().getEnemyBuild() == "P2Gate" && Units::getEnemyCount(UnitTypes::Protoss_Gateway) > 0;
-            if (((Strategy().enemyProxy() && Strategy().getEnemyBuild() != "P2Gate") || proxyCheck || foundProxyGates) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1)
+            auto foundProxyGates = Strategy::enemyProxy() && Strategy::getEnemyBuild() == "P2Gate" && Units::getEnemyCount(UnitTypes::Protoss_Gateway) > 0;
+            if (((Strategy::enemyProxy() && Strategy::getEnemyBuild() != "P2Gate") || proxyCheck || foundProxyGates) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1)
                 scoutCount++;
 
             if (BuildOrder::isRush() && Broodwar->self()->getRace() == Races::Zerg && Terrain().getEnemyStartingPosition().isValid())
                 scoutCount = 0;
-            if (Strategy().getEnemyBuild() == "Z5Pool" && Units::getEnemyCount(UnitTypes::Zerg_Zergling) >= 5)
+            if (Strategy::getEnemyBuild() == "Z5Pool" && Units::getEnemyCount(UnitTypes::Zerg_Zergling) >= 5)
                 scoutCount = 0;
-            if (Strategy().enemyPressure() && BuildOrder::isPlayPassive())
+            if (Strategy::enemyPressure() && BuildOrder::isPlayPassive())
                 scoutCount = 0;
 
             if (!BuildOrder::firstReady() || BuildOrder::isOpener() || !Terrain().getEnemyStartingPosition().isValid()) {
 
                 // If it's a proxy (maybe cannon rush), try to find the unit to kill
-                if ((Strategy().enemyProxy() || proxyCheck) && scoutCount > 1 && scoutAssignments.find(BWEB::Map::getMainPosition()) == scoutAssignments.end()) {
+                if ((Strategy::enemyProxy() || proxyCheck) && scoutCount > 1 && scoutAssignments.find(BWEB::Map::getMainPosition()) == scoutAssignments.end()) {
 
                     UnitInfo* enemyunit = Util::getClosestUnit(unit.getPosition(), Broodwar->enemy(), UnitTypes::Protoss_Probe);
                     scoutAssignments.insert(BWEB::Map::getMainPosition());
@@ -130,7 +135,7 @@ namespace McRave::Scouts {
                         else
                             unit.setDestination(enemyunit->getPosition());
                     }
-                    else if (Strategy().getEnemyBuild() == "P2Gate") {
+                    else if (Strategy::getEnemyBuild() == "P2Gate") {
                         UnitInfo* enemyPylon = Util::getClosestUnit(unit.getPosition(), Broodwar->enemy(), UnitTypes::Protoss_Pylon);
                         if (enemyPylon && !Terrain().isInEnemyTerritory(enemyPylon->getTilePosition())) {
                             if (enemyPylon->unit() && enemyPylon->unit()->exists()) {

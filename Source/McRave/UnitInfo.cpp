@@ -93,7 +93,7 @@ namespace McRave
                     target = nullptr;
             }
             else
-                TargetSingleton::Instance().getTarget(*this);
+                Targets::getTarget(*this);
         }
 
         // Assume enemy target
@@ -124,7 +124,7 @@ namespace McRave
         speed 					= Math::speed(*this);
     }
 
-    bool UnitInfo::command(UnitCommandType command, Position here)
+    bool UnitInfo::command(BWAPI::UnitCommandType command, BWAPI::Position here)
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames or latency frames
         bool attackCooldown = Broodwar->getFrameCount() - lastAttackFrame <= minStopFrame - Broodwar->getRemainingLatencyFrames();
@@ -166,7 +166,7 @@ namespace McRave
         return false;
     }
 
-    bool UnitInfo::command(UnitCommandType command, UnitInfo* targetUnit)
+    bool UnitInfo::command(BWAPI::UnitCommandType command, UnitInfo* targetUnit)
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames or latency frames
         bool attackCooldown = Broodwar->getFrameCount() - lastAttackFrame <= minStopFrame - Broodwar->getRemainingLatencyFrames();

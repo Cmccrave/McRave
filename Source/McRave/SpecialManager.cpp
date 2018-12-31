@@ -1,6 +1,9 @@
 #include "McRave.h"
 #include "CommandManager.h"
 
+using namespace BWAPI;
+using namespace std;
+
 namespace McRave::Command
 {
     bool special(UnitInfo& unit)
@@ -49,14 +52,14 @@ namespace McRave::Command
         // SCV
         else if (unit.getType() == UnitTypes::Terran_SCV) {
             //UnitInfo* mech = Util::getClosestUnit(unit, Filter::IsMechanical && Filter::HP_Percent < 100);
-            //if (!Strategy().enemyRush() && mech && mech->unit() && unit.getPosition().getDistance(mech->getPosition()) <= 320 && Grids::getMobility(mech->getWalkPosition()) > 0) {
+            //if (!Strategy::enemyRush() && mech && mech->unit() && unit.getPosition().getDistance(mech->getPosition()) <= 320 && Grids::getMobility(mech->getWalkPosition()) > 0) {
             //	if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != mech->unit())
             //		unit.unit()->repair(mech->unit());
             //	return true;
             //}
 
             //UnitInfo* building = Util::getClosestUnit(unit, Filter::GetPlayer == Broodwar->self() && Filter::IsCompleted && Filter::HP_Percent < 100);
-            //if (building && building->unit() && (!Strategy().enemyRush() || building->getType() == UnitTypes::Terran_Bunker)) {
+            //if (building && building->unit() && (!Strategy::enemyRush() || building->getType() == UnitTypes::Terran_Bunker)) {
             //	if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != building->unit())
             //		unit.unit()->repair(building->unit());
             //	return true;
@@ -138,7 +141,7 @@ namespace McRave::Command
             // If unit has low energy and is threatened or we want more archons
             else {
                 auto lowEnergyThreat = unit.getEnergy() < TechTypes::Psionic_Storm.energyCost() && Grids::getEGroundThreat(unit.getWalkPosition()) > 0.0;
-                auto wantArchons = Strategy().getUnitScore(UnitTypes::Protoss_Archon) > Strategy().getUnitScore(UnitTypes::Protoss_High_Templar);
+                auto wantArchons = Strategy::getUnitScore(UnitTypes::Protoss_Archon) > Strategy::getUnitScore(UnitTypes::Protoss_High_Templar);
 
                 if (!Players::vT() && (lowEnergyThreat || wantArchons)) {
 
@@ -167,7 +170,7 @@ namespace McRave::Command
 
         // Hydralisks
         else if (unit.getType() == UnitTypes::Zerg_Hydralisk && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect)) {
-            if (Strategy().getUnitScore(UnitTypes::Zerg_Lurker) > Strategy().getUnitScore(UnitTypes::Zerg_Hydralisk) && canAffordMorph(UnitTypes::Zerg_Lurker) && unit.getPosition().getDistance(unit.getSimPosition()) > 640.0) {
+            if (Strategy::getUnitScore(UnitTypes::Zerg_Lurker) > Strategy::getUnitScore(UnitTypes::Zerg_Hydralisk) && canAffordMorph(UnitTypes::Zerg_Lurker) && unit.getPosition().getDistance(unit.getSimPosition()) > 640.0) {
                 if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Morph)
                     unit.unit()->morph(UnitTypes::Zerg_Lurker);
                 return true;
@@ -197,12 +200,12 @@ namespace McRave::Command
 
         // Mutalisks
         else if (unit.getType() == UnitTypes::Zerg_Mutalisk && Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Greater_Spire) > 0) {
-            if (Strategy().getUnitScore(UnitTypes::Zerg_Devourer) > Strategy().getUnitScore(UnitTypes::Zerg_Mutalisk) && canAffordMorph(UnitTypes::Zerg_Devourer) && unit.getPosition().getDistance(unit.getSimPosition()) > 640.0) {
+            if (Strategy::getUnitScore(UnitTypes::Zerg_Devourer) > Strategy::getUnitScore(UnitTypes::Zerg_Mutalisk) && canAffordMorph(UnitTypes::Zerg_Devourer) && unit.getPosition().getDistance(unit.getSimPosition()) > 640.0) {
                 if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Morph)
                     unit.unit()->morph(UnitTypes::Zerg_Devourer);
                 return true;
             }
-            else if (Strategy().getUnitScore(UnitTypes::Zerg_Guardian) > Strategy().getUnitScore(UnitTypes::Zerg_Mutalisk) && canAffordMorph(UnitTypes::Zerg_Guardian) && unit.getPosition().getDistance(unit.getSimPosition()) > 640.0) {
+            else if (Strategy::getUnitScore(UnitTypes::Zerg_Guardian) > Strategy::getUnitScore(UnitTypes::Zerg_Mutalisk) && canAffordMorph(UnitTypes::Zerg_Guardian) && unit.getPosition().getDistance(unit.getSimPosition()) > 640.0) {
                 if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Morph)
                     unit.unit()->morph(UnitTypes::Zerg_Guardian);
                 return true;

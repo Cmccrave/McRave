@@ -6,29 +6,29 @@ namespace McRave::Grids
     void onFrame();
     void onStart();
 
-    float getAGroundCluster(WalkPosition here);
-    float getAGroundCluster(Position here);
+    float getAGroundCluster(BWAPI::WalkPosition here);
+    float getAGroundCluster(BWAPI::Position here);
 
-    float getAAirCluster(WalkPosition here);
-    float getAAirCluster(Position here);
+    float getAAirCluster(BWAPI::WalkPosition here);
+    float getAAirCluster(BWAPI::Position here);
 
-    float getEGroundThreat(WalkPosition here);
-    float getEGroundThreat(Position here);
+    float getEGroundThreat(BWAPI::WalkPosition here);
+    float getEGroundThreat(BWAPI::Position here);
 
-    float getEAirThreat(WalkPosition here);
-    float getEAirThreat(Position here);
+    float getEAirThreat(BWAPI::WalkPosition here);
+    float getEAirThreat(BWAPI::Position here);
 
-    float getEGroundCluster(WalkPosition here);
-    float getEGroundCluster(Position here);
-    float getEAirCluster(WalkPosition here);
-    float getEAirCluster(Position here);
+    float getEGroundCluster(BWAPI::WalkPosition here);
+    float getEGroundCluster(BWAPI::Position here);
+    float getEAirCluster(BWAPI::WalkPosition here);
+    float getEAirCluster(BWAPI::Position here);
 
-    int getCollision(WalkPosition here);
-    int getESplash(WalkPosition here);
+    int getCollision(BWAPI::WalkPosition here);
+    int getESplash(BWAPI::WalkPosition here);
 
-    int getMobility(WalkPosition here);
-    double getDistanceHome(WalkPosition here);
+    int getMobility(BWAPI::WalkPosition here);
+    double getDistanceHome(BWAPI::WalkPosition here);
 
-    int lastVisibleFrame(TilePosition t);
-    int lastVisitedFrame(WalkPosition w);
+    int lastVisibleFrame(BWAPI::TilePosition t);
+    int lastVisitedFrame(BWAPI::WalkPosition w);
 }

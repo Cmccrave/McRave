@@ -1,5 +1,8 @@
 #include "McRave.h"
 
+using namespace BWAPI;
+using namespace std;
+
 namespace McRave::Util
 {
     bool isWalkable(WalkPosition start, WalkPosition end, UnitType unitType)
@@ -70,37 +73,37 @@ namespace McRave::Util
 
             if (BuildOrder::getCurrentBuild() == "PFFE") {
                 if (Units::getEnemyCount(UnitTypes::Zerg_Zergling) >= 5) {
-                    if (Strategy().getEnemyBuild() == "Z5Pool" && Units::getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
+                    if (Strategy::getEnemyBuild() == "Z5Pool" && Units::getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
                         return true;
-                    if (Strategy().getEnemyBuild() == "Z9Pool" && Units::getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 5 && visibleDefenders >= 2)
+                    if (Strategy::getEnemyBuild() == "Z9Pool" && Units::getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 5 && visibleDefenders >= 2)
                         return true;
-                    if (!Terrain().getEnemyStartingPosition().isValid() && Strategy().getEnemyBuild() == "Unknown" && Units::getGlobalAllyGroundStrength() < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
+                    if (!Terrain().getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && Units::getGlobalAllyGroundStrength() < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
                         return true;
                     if (Units::getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
                         return true;
                 }
                 else {
-                    if (Strategy().getEnemyBuild() == "Z5Pool" && Units::getGlobalAllyGroundStrength() < 1.00 && completedDefenders < 2 && visibleDefenders >= 2)
+                    if (Strategy::getEnemyBuild() == "Z5Pool" && Units::getGlobalAllyGroundStrength() < 1.00 && completedDefenders < 2 && visibleDefenders >= 2)
                         return true;
-                    if (!Terrain().getEnemyStartingPosition().isValid() && Strategy().getEnemyBuild() == "Unknown" && Units::getGlobalAllyGroundStrength() < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
+                    if (!Terrain().getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && Units::getGlobalAllyGroundStrength() < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
                         return true;
                 }
             }
             else if (BuildOrder::getCurrentBuild() == "P2GateExpand") {
-                if (Strategy().getEnemyBuild() == "Z5Pool" && Units::getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 2)
+                if (Strategy::getEnemyBuild() == "Z5Pool" && Units::getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 2)
                     return true;
-                if (Strategy().getEnemyBuild() == "Z9Pool" && Units::getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 3)
+                if (Strategy::getEnemyBuild() == "Z9Pool" && Units::getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 3)
                     return true;
             }
         }
         else if (Broodwar->self()->getRace() == Races::Terran && BuildOrder::isWallNat()) {
-            if (Strategy().enemyRush() && BuildOrder::isFastExpand() && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) < 1)
+            if (Strategy::enemyRush() && BuildOrder::isFastExpand() && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) < 1)
                 return true;
         }
         else if (Broodwar->self()->getRace() == Races::Zerg)
             return false;
 
-        if (Strategy().enemyProxy() && Strategy().getEnemyBuild() != "P2Gate" && Units::getImmThreat() > Units::getGlobalAllyGroundStrength() + Units::getAllyDefense())
+        if (Strategy::enemyProxy() && Strategy::getEnemyBuild() != "P2Gate" && Units::getImmThreat() > Units::getGlobalAllyGroundStrength() + Units::getAllyDefense())
             return true;
 
         return false;

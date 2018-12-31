@@ -1,7 +1,12 @@
 #include "McRave.h"
 
+using namespace BWAPI;
+using namespace std;
+
 namespace McRave::Resources {
+
     namespace {
+
         map <Unit, ResourceInfo> myMinerals;
         map <Unit, ResourceInfo> myGas;
         map <Unit, ResourceInfo> myBoulders;
