@@ -26,7 +26,7 @@ namespace McRave::Buildings {
                 return TilePositions::Invalid;
 
             const auto natOrMain = [&]() {
-                if (Terrain().getPlayerStartingTilePosition() == station->BWEMBase()->Location() || BWEB::Map::getNaturalTile() == station->BWEMBase()->Location())
+                if (Terrain::getPlayerStartingTilePosition() == station->BWEMBase()->Location() || BWEB::Map::getNaturalTile() == station->BWEMBase()->Location())
                     return true;
                 return false;
             };
@@ -74,7 +74,7 @@ namespace McRave::Buildings {
                     double dist = blockCenter.getDistance((Position)BWEB::Map::getMainChoke()->Center());
                     if (dist > distBest) {
                         for (auto tile : placements) {
-                            if (isQueueable(building, tile) && isBuildable(building, tile) && Terrain().isInAllyTerritory(tile))
+                            if (isQueueable(building, tile) && isBuildable(building, tile) && Terrain::isInAllyTerritory(tile))
                                 distBest = dist, tileBest = tile;
                         }
                     }
@@ -125,7 +125,7 @@ namespace McRave::Buildings {
                     // If we have no powered spots, can't build a solo spot
                     for (auto &small : block.SmallTiles()) {
                         if (BWEB::Map::isUsed(small)
-                            || (!Terrain().isInAllyTerritory(small) && !BuildOrder::isProxy() && !Terrain().isIslandMap()))
+                            || (!Terrain::isInAllyTerritory(small) && !BuildOrder::isProxy() && !Terrain::isIslandMap()))
                             solo = false;
                     }
 
@@ -156,7 +156,7 @@ namespace McRave::Buildings {
 
                     if (block.LargeTiles().size() == 0 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) == 0)
                         continue;
-                    if (!Terrain().isInAllyTerritory(block.Location()))
+                    if (!Terrain::isInAllyTerritory(block.Location()))
                         continue;
 
                     if (!BuildOrder::isOpener() && !hasPoweredPositions() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 10 && (poweredLarge > 0 || poweredMedium > 0)) {
@@ -194,9 +194,9 @@ namespace McRave::Buildings {
             // Protoss and Terran only wall at main/natural for now
             else {
                 if (BuildOrder::isWallMain())
-                    wall = Terrain().getMainWall();
+                    wall = Terrain::getMainWall();
                 else if (BuildOrder::isWallNat())
-                    wall = Terrain().getNaturalWall();
+                    wall = Terrain::getNaturalWall();
             }
 
             if (!wall)
@@ -228,7 +228,7 @@ namespace McRave::Buildings {
             TilePosition tileBest = TilePositions::Invalid;
 
             // Fast expands must be as close to home and have a gas geyser
-            if (MyStations().getMyStations().size() == 1 && isBuildable(baseType, BWEB::Map::getNaturalTile()) && isQueueable(baseType, BWEB::Map::getNaturalTile()))
+            if (Stations::getMyStations().size() == 1 && isBuildable(baseType, BWEB::Map::getNaturalTile()) && isQueueable(baseType, BWEB::Map::getNaturalTile()))
                 tileBest = BWEB::Map::getNaturalTile();
 
             // Other expansions must be as close to home but as far away from the opponent
@@ -238,7 +238,7 @@ namespace McRave::Buildings {
                         UnitType shuttle = Broodwar->self()->getRace().getTransport();
 
                         // Shuttle check for island bases, check enemy owned bases
-                        if ((!area.AccessibleFrom(BWEB::Map::getMainArea()) && Broodwar->self()->visibleUnitCount(shuttle) <= 0) || Terrain().isInEnemyTerritory(base.Location()))
+                        if ((!area.AccessibleFrom(BWEB::Map::getMainArea()) && Broodwar->self()->visibleUnitCount(shuttle) <= 0) || Terrain::isInEnemyTerritory(base.Location()))
                             continue;
 
                         // Get value of the expansion
@@ -247,17 +247,17 @@ namespace McRave::Buildings {
                             value += double(mineral->Amount());
                         for (auto &gas : base.Geysers())
                             value += double(gas->Amount());
-                        if (base.Geysers().size() == 0 && !Terrain().isIslandMap())
+                        if (base.Geysers().size() == 0 && !Terrain::isIslandMap())
                             value = value / 2.5;
 
                         // Get distance of the expansion
                         double distance;
                         if (!area.AccessibleFrom(BWEB::Map::getMainArea()))
                             distance = log(base.Center().getDistance(BWEB::Map::getMainPosition()));
-                        else if (Players::getPlayers().size() > 1 || !Terrain().getEnemyStartingPosition().isValid())
+                        else if (Players::getPlayers().size() > 1 || !Terrain::getEnemyStartingPosition().isValid())
                             distance = BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), base.Center());
                         else
-                            distance = BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), base.Center()) / (BWEB::Map::getGroundDistance(Terrain().getEnemyStartingPosition(), base.Center()));
+                            distance = BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), base.Center()) / (BWEB::Map::getGroundDistance(Terrain::getEnemyStartingPosition(), base.Center()));
 
                         if (isBuildable(baseType, base.Location()) && isQueueable(baseType, base.Location()) && value / distance > best) {
                             best = value / distance;
@@ -275,11 +275,11 @@ namespace McRave::Buildings {
             auto here = TilePositions::Invalid;
 
             // HACK: Versus busts, add an extra pylon to the defenses
-            if (building == UnitTypes::Protoss_Pylon && (Strategy::getEnemyBuild() == "Z2HatchHydra" || Strategy::getEnemyBuild() == "Z3HatchHydra") && Terrain().getNaturalWall()) {
+            if (building == UnitTypes::Protoss_Pylon && (Strategy::getEnemyBuild() == "Z2HatchHydra" || Strategy::getEnemyBuild() == "Z3HatchHydra") && Terrain::getNaturalWall()) {
                 int cnt = 0;
                 TilePosition sum(0, 0);
                 TilePosition center;
-                for (auto &defense : Terrain().getNaturalWall()->getDefenses()) {
+                for (auto &defense : Terrain::getNaturalWall()->getDefenses()) {
                     if (!Pylons::hasPower(defense, UnitTypes::Protoss_Photon_Cannon)) {
                         sum += defense;
                         cnt++;
@@ -292,7 +292,7 @@ namespace McRave::Buildings {
                     double distBest = DBL_MAX;
 
                     // Find unique closest tile to center of defenses
-                    for (auto &tile : Terrain().getNaturalWall()->getDefenses()) {
+                    for (auto &tile : Terrain::getNaturalWall()->getDefenses()) {
                         Position defenseCenter = Position(tile) + Position(32, 32);
                         double dist = defenseCenter.getDistance(c);
                         if (dist < distBest)
@@ -306,7 +306,7 @@ namespace McRave::Buildings {
 
             // HACK: choose a wall position as Zerg because fuck it
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                for (auto &area : Terrain().getAllyTerritory()) {
+                for (auto &area : Terrain::getAllyTerritory()) {
                     auto wall = BWEB::Walls::getWall(area);
                     if (wall) {
                         here = findWallLocation(building, wall->getCentroid());
@@ -327,7 +327,7 @@ namespace McRave::Buildings {
                         return here;
                 }
                 if (Broodwar->self()->getRace() == Races::Zerg) {
-                    int test = MyStations().getMyStations().size();
+                    int test = Stations::getMyStations().size();
 
                     if (test > Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Hatchery))
                         here = findProdLocation(building, BWEB::Map::getMainPosition());
@@ -341,8 +341,8 @@ namespace McRave::Buildings {
             }
 
             // If this is a Pylon, check if any Nexus needs a Pylon
-            if (building == UnitTypes::Protoss_Pylon && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Pylon) >= (4 - (2 * Terrain().isIslandMap())) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Forge) >= 1) {
-                for (auto &station : MyStations().getMyStations()) {
+            if (building == UnitTypes::Protoss_Pylon && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Pylon) >= (4 - (2 * Terrain::isIslandMap())) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Forge) >= 1) {
+                for (auto &station : Stations::getMyStations()) {
                     auto &s = *station.second;
                     here = findDefLocation(building, Position(s.ResourceCentroid()));
                     if (here.isValid() && isBuildable(building, here) && isQueueable(building, here))
@@ -351,7 +351,7 @@ namespace McRave::Buildings {
             }
 
             // Second pylon place near our main choke
-            if (building == UnitTypes::Protoss_Pylon && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) == 1 && !Terrain().isIslandMap()) {
+            if (building == UnitTypes::Protoss_Pylon && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) == 1 && !Terrain::isIslandMap()) {
                 here = findProdLocation(building, (Position)BWEB::Map::getMainChoke()->Center());
                 if (here.isValid() && isBuildable(building, here) && isQueueable(building, here))
                     return here;
@@ -360,11 +360,11 @@ namespace McRave::Buildings {
             // If this is a defensive building
             if (building == UnitTypes::Protoss_Photon_Cannon || building == UnitTypes::Zerg_Creep_Colony || building == UnitTypes::Terran_Missile_Turret) {
 
-                if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Forge) >= 1 && ((Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) >= 3 + (Players::getNumberTerran() > 0 || Players::getNumberProtoss() > 0)) || (Terrain().isIslandMap() && Players::getNumberZerg() > 0))) {
-                    for (auto &station : MyStations().getMyStations()) {
+                if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Forge) >= 1 && ((Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) >= 3 + (Players::getNumberTerran() > 0 || Players::getNumberProtoss() > 0)) || (Terrain::isIslandMap() && Players::getNumberZerg() > 0))) {
+                    for (auto &station : Stations::getMyStations()) {
                         auto &s = *station.second;
 
-                        if (MyStations().needDefenses(s))
+                        if (Stations::needDefenses(s))
                             here = findDefLocation(building, Position(s.ResourceCentroid()));
 
                         if (here.isValid())
@@ -372,8 +372,8 @@ namespace McRave::Buildings {
                     }
                 }
 
-                else if (!here.isValid() && Terrain().getNaturalWall()) // Assumes we want to put it at the natural wall
-                    here = findDefLocation(building, Terrain().getNaturalWall()->getCentroid());
+                else if (!here.isValid() && Terrain::getNaturalWall()) // Assumes we want to put it at the natural wall
+                    here = findDefLocation(building, Terrain::getNaturalWall()->getCentroid());
 
                 else if (building == UnitTypes::Zerg_Creep_Colony)
                     here = findDefLocation(building, BWEB::Map::getNaturalPosition());
@@ -451,8 +451,8 @@ namespace McRave::Buildings {
             if (building.getType() == UnitTypes::Terran_Barracks) {
 
                 // Wall lift
-                bool wallCheck = (Terrain().getNaturalWall() && building.getPosition().getDistance(Terrain().getNaturalWall()->getCentroid()) < 256.0)
-                    || (Terrain().getMainWall() && building.getPosition().getDistance(Terrain().getMainWall()->getCentroid()) < 256.0);
+                bool wallCheck = (Terrain::getNaturalWall() && building.getPosition().getDistance(Terrain::getNaturalWall()->getCentroid()) < 256.0)
+                    || (Terrain::getMainWall() && building.getPosition().getDistance(Terrain::getMainWall()->getCentroid()) < 256.0);
 
                 if (wallCheck && !building.unit()->isFlying()) {
                     if (Units::getSupply() > 120 || BuildOrder::firstReady()) {
@@ -515,7 +515,7 @@ namespace McRave::Buildings {
 
             // Add up how many powered available spots we have		
             for (auto &block : BWEB::Blocks::getBlocks()) {
-                if (!Terrain().isInAllyTerritory(block.Location()))
+                if (!Terrain::isInAllyTerritory(block.Location()))
                     continue;
 
                 for (auto &tile : block.SmallTiles()) {

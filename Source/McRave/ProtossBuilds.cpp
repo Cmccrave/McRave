@@ -132,7 +132,7 @@ namespace McRave::BuildOrder::Protoss {
             cannonCount = 8;
 
         // Reactions
-        if ((enemyBuild() == "Unknown" && !Terrain().getEnemyStartingPosition().isValid()) || enemyBuild() == "Z9Pool")
+        if ((enemyBuild() == "Unknown" && !Terrain::getEnemyStartingPosition().isValid()) || enemyBuild() == "Z9Pool")
             false;// currentTransition = "Defensive";
         else if (enemyBuild() == "Z5Pool")
             currentTransition =	"Defensive";
@@ -247,7 +247,7 @@ namespace McRave::BuildOrder::Protoss {
         }
 
         // Transitions
-        if (Strategy::enemyRush())
+        if (!Players::vT() && Strategy::enemyRush())
             currentTransition = "Panic";
         if (Strategy::enemyPressure())
             currentTransition = "Defensive";
@@ -595,7 +595,7 @@ namespace McRave::BuildOrder::Protoss {
         dragoonLimit =		INT_MAX;
 
         // Reactions
-        if (Terrain().isIslandMap())
+        if (Terrain::isIslandMap())
             currentTransition =	"Island"; // TODO: Island stuff		
         else if (Strategy::enemyFastExpand() || enemyBuild() == "TSiegeExpand")
             currentTransition =	"DoubleExpand";
@@ -656,7 +656,9 @@ namespace McRave::BuildOrder::Protoss {
 
     void PGateNexus()
     {
-        // 21 Nexus - "http://liquipedia.net/starcraft/21_Nexus"
+        // 1 Gate - "http://liquipedia.net/starcraft/21_Nexus"
+        // 2 Gate - "https://liquipedia.net/starcraft/2_Gate_Range_Expand"      
+
         fastExpand =		true;
         playPassive =		Strategy::enemyPressure() ? vis(Protoss_Observer) == 0 : !firstReady();
         firstUpgrade =		UpgradeTypes::Singularity_Charge;
@@ -671,15 +673,23 @@ namespace McRave::BuildOrder::Protoss {
 
         // Reactions
         if (!lockedTransition) {
+
+            // Change Transition
             if (s < 100 && (Strategy::enemyFastExpand() || enemyBuild() == "TSiegeExpand"))
                 currentTransition =	"DoubleExpand";
-            else if (s < 80 && Strategy::enemyRush())
-                currentTransition = "Defensive";
-            else if ((!Strategy::enemyFastExpand() && Terrain().foundEnemy() && currentTransition == "DoubleExpand") || Strategy::enemyPressure())
+            else if ((!Strategy::enemyFastExpand() && Terrain::foundEnemy() && currentTransition == "DoubleExpand") || Strategy::enemyPressure())
                 currentTransition = "Standard";
 
+            // Change Opener
             if (Units::getEnemyCount(Terran_Factory) >= 2)
                 currentOpener = "2Gate";
+
+            // Change Build
+            if (s < 42 && Strategy::enemyRush()) {
+                currentBuild = "2Gate";
+                currentOpener = "Main";
+                currentTransition = "DT";
+            }
         }
 
         // Openers
@@ -689,7 +699,7 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (vis(Protoss_Nexus) >= 2) + (s >= 76));
         }
         else if (currentOpener == "2Gate") {
-            itemQueue[Protoss_Nexus] =				Item(1 + (s >= 42));
+            itemQueue[Protoss_Nexus] =				Item(1 + (s >= 40));
             itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 36) + (s >= 76));
         }
@@ -704,8 +714,7 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Assimilator] =		Item((s >= 24) + (s >= 48));
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
         }
-        else if (currentTransition == "Defensive") {
-            gasLimit =			1;
+        /*else if (currentTransition == "Defensive") {
             fastExpand =		false;
             getOpening =		s < 80;
             zealotLimit =		INT_MAX;
@@ -716,7 +725,7 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Assimilator] =		Item((s >= 40));
             itemQueue[Protoss_Shield_Battery] =		Item(s >= 48);
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 60);
-        }
+        }*/
         else if (currentTransition == "Standard") {
             getOpening =		s < 80;
             firstUnit =         com(Protoss_Nexus) >= 2 ? Protoss_Observer : UnitTypes::None;

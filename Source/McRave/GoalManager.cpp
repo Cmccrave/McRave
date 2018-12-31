@@ -3,8 +3,8 @@
 using namespace BWAPI;
 using namespace std;
 
-namespace McRave::Goals 
-{
+namespace McRave::Goals {
+
     namespace {
 
         void assignNumberToGoal(Position here, UnitType type, int count)
@@ -43,7 +43,7 @@ namespace McRave::Goals
             map<UnitType, int> unitTypes;
 
             // Defend my expansions
-            for (auto &s : MyStations().getMyStations()) {
+            for (auto &s : Stations::getMyStations()) {
                 auto station = *s.second;
 
                 if (station.BWEMBase()->Location() != BWEB::Map::getNaturalTile() && station.BWEMBase()->Location() != BWEB::Map::getMainTile() && station.getDefenseCount() == 0) {
@@ -56,10 +56,10 @@ namespace McRave::Goals
             if (Players::vP() || Players::vT()) {
                 auto distBest = 0.0;
                 auto posBest = Positions::Invalid;
-                for (auto &s : MyStations().getEnemyStations()) {
+                for (auto &s : Stations::getEnemyStations()) {
                     auto station = *s.second;
                     auto pos = station.BWEMBase()->Center();
-                    auto dist = BWEB::Map::getGroundDistance(pos, Terrain().getEnemyStartingPosition());
+                    auto dist = BWEB::Map::getGroundDistance(pos, Terrain::getEnemyStartingPosition());
                     if (dist > distBest) {
                         distBest = dist;
                         posBest = pos;
@@ -73,8 +73,8 @@ namespace McRave::Goals
 
             // Send a DT everywhere late game
             // PvE
-            if (MyStations().getMyStations().size() >= 4) {
-                for (auto &s : MyStations().getEnemyStations()) {
+            if (Stations::getMyStations().size() >= 4) {
+                for (auto &s : Stations::getEnemyStations()) {
                     auto station = *s.second;
                     auto pos = station.BWEMBase()->Center();
                     assignNumberToGoal(pos, UnitTypes::Protoss_Dark_Templar, 1);
@@ -107,11 +107,11 @@ namespace McRave::Goals
 
             // Deny enemy expansions
             // PvT
-            if (MyStations().getMyStations().size() >= 3 && Terrain().getEnemyExpand().isValid()) {
+            if (Stations::getMyStations().size() >= 3 && Terrain::getEnemyExpand().isValid()) {
                 if (Players::vT() || Players::vP())
-                    assignPercentToGoal((Position)Terrain().getEnemyExpand(), UnitTypes::Protoss_Dragoon, 0.15);
+                    assignPercentToGoal((Position)Terrain::getEnemyExpand(), UnitTypes::Protoss_Dragoon, 0.15);
                 else
-                    assignNumberToGoal((Position)Terrain().getEnemyExpand(), UnitTypes::Protoss_Dark_Templar, 1);
+                    assignNumberToGoal((Position)Terrain::getEnemyExpand(), UnitTypes::Protoss_Dark_Templar, 1);
             }
         }
 
@@ -123,10 +123,10 @@ namespace McRave::Goals
         void updateZergGoals()
         {
             // Send lurkers to expansions when turtling		
-            if (Broodwar->self()->getRace() == Races::Zerg && !MyStations().getMyStations().empty()) {
-                auto lurkerPerBase = Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Lurker) / MyStations().getMyStations().size();
+            if (Broodwar->self()->getRace() == Races::Zerg && !Stations::getMyStations().empty()) {
+                auto lurkerPerBase = Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Lurker) / Stations::getMyStations().size();
 
-                for (auto &base : MyStations().getMyStations()) {
+                for (auto &base : Stations::getMyStations()) {
                     auto station = *base.second;
                     assignPercentToGoal(station.ResourceCentroid(), UnitTypes::Zerg_Lurker, 0.25);
                 }

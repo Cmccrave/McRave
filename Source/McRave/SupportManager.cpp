@@ -37,8 +37,8 @@ namespace McRave::Support {
         }
 
         // TODO: Overlord scouting, need to use something different to spread overlords
-        if (!Terrain().getEnemyStartingPosition().isValid())
-            posBest = Terrain().closestUnexploredStart();
+        if (!Terrain::getEnemyStartingPosition().isValid())
+            posBest = Terrain::closestUnexploredStart();
 
         // Check if any expansions need detection on them
         else if (unit.getType().isDetector() && Broodwar->self()->completedUnitCount(unit.getType()) >= 1 && BuildOrder::buildCount(building) > Broodwar->self()->visibleUnitCount(building) && !Command::overlapsCommands(unit.unit(), unit.getType(), (Position)Buildings::getCurrentExpansion(), 320))

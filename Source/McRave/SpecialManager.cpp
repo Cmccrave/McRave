@@ -1,5 +1,4 @@
 #include "McRave.h"
-#include "CommandManager.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -70,7 +69,7 @@ namespace McRave::Command
         else if (unit.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) {
             if (unit.getPosition().getDistance(unit.getEngagePosition()) < 32.0 && unit.getLocalState() == LocalState::Engaging)
                 unit.unit()->siege();
-            if (unit.getGlobalState() == GlobalState::Retreating && unit.getPosition().getDistance(Terrain().getDefendPosition()) < 320)
+            if (unit.getGlobalState() == GlobalState::Retreating && unit.getPosition().getDistance(Terrain::getDefendPosition()) < 320)
                 unit.unit()->siege();
         }
         else if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode) {

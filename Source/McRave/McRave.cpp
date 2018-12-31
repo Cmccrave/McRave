@@ -17,6 +17,7 @@
 
 // Adjust close check for isThreatening
 // Forced observers will cause defensive 2 gate reaction to bug, need to ensure that we can break out of builds
+// Carrier tech -> reduce gate count of addProduction by stargate count, how many stargate do we want?
 
 // *** Ideas ***
 // Monitor for overkilling units by hp - (2*nextDmgSource) <= 0 (double damage source to account for a potential miss?)
@@ -31,10 +32,10 @@ void McRaveModule::onStart()
     Broodwar->setCommandOptimizationLevel(0);
     Broodwar->setLatCom(true);
     Broodwar->setLocalSpeed(0);
-    Terrain().onStart();
+    Terrain::onStart();
     Players::onStart();
     BWEB::Map::onStart();
-    MyStations().onStart();
+    Stations::onStart();
     Grids::onStart();
     BuildOrder::onStart();
     BWEB::Blocks::findBlocks();
@@ -50,11 +51,11 @@ void McRaveModule::onFrame()
 {
     // Update relevant map information and strategy
     Players::onFrame();
-    Terrain().onFrame();
+    Terrain::onFrame();
     Resources::onFrame();
     Strategy::onFrame();
     BuildOrder::onFrame();
-    MyStations().onFrame();
+    Stations::onFrame();
 
     // Update unit information and grids based on the information
     Units::onFrame();
@@ -66,7 +67,7 @@ void McRaveModule::onFrame()
     Command::onFrame();
     Workers::onFrame();
     Scouts::onFrame();
-    Transport().onFrame();
+    Transports::onFrame();
     Buildings::onFrame();
     Production::onFrame();
 

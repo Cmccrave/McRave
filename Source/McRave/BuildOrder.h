@@ -85,7 +85,7 @@ namespace McRave::BuildOrder {
     }
 
     void getDefaultBuild();
-    int buildCount(UnitType);
+    int buildCount(BWAPI::UnitType);
     bool firstReady();
 
     bool isBuildAllowed(BWAPI::Race, std::string);

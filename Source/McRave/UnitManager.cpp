@@ -21,7 +21,7 @@ namespace McRave::Units {
         double globalAllyAirStrength, globalEnemyAirStrength;
         double allyDefense;
         double minThreshold, maxThreshold;
-        int supply;
+        int supply = 4;
         int scoutDeadFrame = 0;
         bool ignoreSim;
         Position armyCenter;
@@ -64,7 +64,7 @@ namespace McRave::Units {
                 if (ignoreSim && Broodwar->self()->minerals() <= 500 || Broodwar->self()->gas() <= 500 || supply <= 240)
                     ignoreSim = false;
 
-                if (ignoreSim || (Terrain().isIslandMap() && !unit.getType().isFlyer())) {
+                if (ignoreSim || (Terrain::isIslandMap() && !unit.getType().isFlyer())) {
                     unit.setSimState(SimState::Win);
                     unit.setSimValue(10.0);
                     return true;
@@ -279,7 +279,7 @@ namespace McRave::Units {
         {
             if (unit.hasTarget()) {
 
-                auto fightingAtHome = ((Terrain().isInAllyTerritory(unit.getTilePosition()) && Util::unitInRange(unit)) || Terrain().isInAllyTerritory(unit.getTarget().getTilePosition()));
+                auto fightingAtHome = ((Terrain::isInAllyTerritory(unit.getTilePosition()) && Util::unitInRange(unit)) || Terrain::isInAllyTerritory(unit.getTarget().getTilePosition()));
                 auto invisTarget = unit.getTarget().unit()->exists() && (unit.getTarget().unit()->isCloaked() || unit.getTarget().isBurrowed()) && !unit.getTarget().unit()->isDetected();
                 auto enemyReach = unit.getType().isFlyer() ? unit.getTarget().getAirReach() : unit.getTarget().getGroundReach();
                 auto enemyThreat = unit.getType().isFlyer() ? Grids::getEAirThreat(unit.getEngagePosition()) : Grids::getEGroundThreat(unit.getEngagePosition());
@@ -591,12 +591,12 @@ namespace McRave::Units {
             return false;
 
         // Define "close" - TODO: define better
-        auto close = unit.getPosition().getDistance(Terrain().getDefendPosition()) < unit.getGroundReach() || unit.getPosition().getDistance(Terrain().getDefendPosition()) < unit.getAirReach();
-        auto atHome = Terrain().isInAllyTerritory(unit.getTilePosition());
-        auto manner = unit.getPosition().getDistance(Terrain().getMineralHoldPosition()) < 256.0;
+        auto close = unit.getPosition().getDistance(Terrain::getDefendPosition()) < unit.getGroundReach() || unit.getPosition().getDistance(Terrain::getDefendPosition()) < unit.getAirReach();
+        auto atHome = Terrain::isInAllyTerritory(unit.getTilePosition());
+        auto manner = unit.getPosition().getDistance(Terrain::getMineralHoldPosition()) < 256.0;
         auto exists = unit.unit() && unit.unit()->exists();
         auto attacked = exists && unit.hasAttackedRecently() && unit.hasTarget() && unit.getTarget().getType().isBuilding();
-        auto buildingClose = exists && (unit.getPosition().getDistance(Terrain().getDefendPosition()) < 320.0 || close) && (unit.unit()->isConstructing() || unit.unit()->getOrder() == Orders::ConstructingBuilding || unit.unit()->getOrder() == Orders::PlaceBuilding);
+        auto buildingClose = exists && (unit.getPosition().getDistance(Terrain::getDefendPosition()) < 320.0 || close) && (unit.unit()->isConstructing() || unit.unit()->getOrder() == Orders::ConstructingBuilding || unit.unit()->getOrder() == Orders::PlaceBuilding);
 
         // Situations where a unit should be attacked:
         // 1) Building
@@ -662,8 +662,10 @@ namespace McRave::Units {
         info.updateUnit();
         
         // TODO: Supply track enemy?
-        if (unit->getPlayer() == Broodwar->self() && unit->getType().supplyRequired() > 0)
+        if (unit->getPlayer() == Broodwar->self() && !unit->isCompleted() && unit->getType().supplyRequired() > 0)
             supply += unit->getType().supplyRequired();
+        if (unit->getType() == UnitTypes::Protoss_Pylon)
+            Pylons::storePylon(unit);
     }
 
     void removeUnit(Unit unit)
@@ -681,7 +683,7 @@ namespace McRave::Units {
             if (info.getRole() == Role::Scouting)
                 scoutDeadFrame = Broodwar->getFrameCount();
 
-            Transport().removeUnit(unit);
+            Transports::removeUnit(unit);
             myUnits.erase(unit);
         }
         else if (enemyUnits.find(unit) != enemyUnits.end())
@@ -691,7 +693,7 @@ namespace McRave::Units {
         else if (neutrals.find(unit) != neutrals.end())
             neutrals.erase(unit);
     }
-        
+            
     Position getArmyCenter() { return armyCenter; }
     set<Unit>& getSplashTargets() { return splashTargets; }
     map<Unit, UnitInfo>& getMyUnits() { return myUnits; }

@@ -40,23 +40,23 @@ namespace McRave::Scouts {
             scoutTargets.clear();
 
             // If enemy start is valid and explored, add a target to the most recent one to scout
-            if (Terrain().foundEnemy()) {
-                for (auto &s : MyStations().getEnemyStations()) {
+            if (Terrain::foundEnemy()) {
+                for (auto &s : Stations::getEnemyStations()) {
                     auto &station = *s.second;
                     TilePosition tile(station.BWEMBase()->Center());
                     if (tile.isValid())
                         scoutTargets.insert(Position(tile));
                 }
-                if (Players::vZ() && MyStations().getEnemyStations().size() == 1 && Strategy::getEnemyBuild() != "Unknown")
-                    scoutTargets.insert((Position)Terrain().getEnemyExpand());
+                if (Players::vZ() && Stations::getEnemyStations().size() == 1 && Strategy::getEnemyBuild() != "Unknown")
+                    scoutTargets.insert((Position)Terrain::getEnemyExpand());
             }
 
             // If we know where it is but it isn't explored
-            else if (Terrain().getEnemyStartingTilePosition().isValid())
-                scoutTargets.insert(Terrain().getEnemyStartingPosition());
+            else if (Terrain::getEnemyStartingTilePosition().isValid())
+                scoutTargets.insert(Terrain::getEnemyStartingPosition());
 
             // If we have no idea where the enemy is
-            else if (!Terrain().getEnemyStartingTilePosition().isValid()) {
+            else if (!Terrain::getEnemyStartingTilePosition().isValid()) {
                 double best = DBL_MAX;
                 Position pos = Positions::Invalid;
                 int basesExplored = 0;
@@ -78,7 +78,7 @@ namespace McRave::Scouts {
             // If it's a 2gate, scout for an expansion if we found the gates
             if (Strategy::getEnemyBuild() == "P2Gate") {
                 /*		if (Units::getEnemyCount(UnitTypes::Protoss_Gateway) >= 2)
-                            scoutTargets.insert((Position)Terrain().getEnemyExpand());
+                            scoutTargets.insert((Position)Terrain::getEnemyExpand());
                         else*/ if (Units::getEnemyCount(UnitTypes::Protoss_Pylon) == 0 || Strategy::enemyProxy())
     scoutTargets.insert(mapBWEM.Center());
             }
@@ -101,7 +101,7 @@ namespace McRave::Scouts {
             // If we have seen an enemy Probe before we've scouted the enemy, follow it
             if (Units::getEnemyCount(UnitTypes::Protoss_Probe) == 1) {
                 auto w = Util::getClosestUnit(BWEB::Map::getMainPosition(), Broodwar->enemy(), UnitTypes::Protoss_Probe);
-                proxyCheck = (w && !Terrain().getEnemyStartingPosition().isValid() && w->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1);
+                proxyCheck = (w && !Terrain::getEnemyStartingPosition().isValid() && w->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1);
             }
 
             // Temp we don't do 2 scouts for some reason atm
@@ -112,14 +112,14 @@ namespace McRave::Scouts {
             if (((Strategy::enemyProxy() && Strategy::getEnemyBuild() != "P2Gate") || proxyCheck || foundProxyGates) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1)
                 scoutCount++;
 
-            if (BuildOrder::isRush() && Broodwar->self()->getRace() == Races::Zerg && Terrain().getEnemyStartingPosition().isValid())
+            if (BuildOrder::isRush() && Broodwar->self()->getRace() == Races::Zerg && Terrain::getEnemyStartingPosition().isValid())
                 scoutCount = 0;
             if (Strategy::getEnemyBuild() == "Z5Pool" && Units::getEnemyCount(UnitTypes::Zerg_Zergling) >= 5)
                 scoutCount = 0;
             if (Strategy::enemyPressure() && BuildOrder::isPlayPassive())
                 scoutCount = 0;
 
-            if (!BuildOrder::firstReady() || BuildOrder::isOpener() || !Terrain().getEnemyStartingPosition().isValid()) {
+            if (!BuildOrder::firstReady() || BuildOrder::isOpener() || !Terrain::getEnemyStartingPosition().isValid()) {
 
                 // If it's a proxy (maybe cannon rush), try to find the unit to kill
                 if ((Strategy::enemyProxy() || proxyCheck) && scoutCount > 1 && scoutAssignments.find(BWEB::Map::getMainPosition()) == scoutAssignments.end()) {
@@ -137,7 +137,7 @@ namespace McRave::Scouts {
                     }
                     else if (Strategy::getEnemyBuild() == "P2Gate") {
                         UnitInfo* enemyPylon = Util::getClosestUnit(unit.getPosition(), Broodwar->enemy(), UnitTypes::Protoss_Pylon);
-                        if (enemyPylon && !Terrain().isInEnemyTerritory(enemyPylon->getTilePosition())) {
+                        if (enemyPylon && !Terrain::isInEnemyTerritory(enemyPylon->getTilePosition())) {
                             if (enemyPylon->unit() && enemyPylon->unit()->exists()) {
                                 unit.unit()->attack(enemyPylon->unit());
                                 return;
@@ -170,7 +170,7 @@ namespace McRave::Scouts {
 
                 // TEMP
                 if (!unit.getDestination().isValid())
-                    unit.setDestination(Terrain().getEnemyStartingPosition());
+                    unit.setDestination(Terrain::getEnemyStartingPosition());
 
                 if (unit.getDestination().isValid()) {
                     UnitInfo* enemy = Util::getClosestThreat(unit);
@@ -187,7 +187,7 @@ namespace McRave::Scouts {
                 int best = INT_MAX;
                 for (auto &area : mapBWEM.Areas()) {
                     for (auto &base : area.Bases()) {
-                        if (area.AccessibleNeighbours().size() == 0 || Terrain().isInEnemyTerritory(base.Location()) || Terrain().isInAllyTerritory(base.Location()))
+                        if (area.AccessibleNeighbours().size() == 0 || Terrain::isInEnemyTerritory(base.Location()) || Terrain::isInAllyTerritory(base.Location()))
                             continue;
 
                         int time = Grids::lastVisibleFrame(base.Location());

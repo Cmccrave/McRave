@@ -81,12 +81,12 @@ namespace McRave::Math {
             return 100.0;
         if (Broodwar->getFrameCount() < 6000 && Strategy::enemyProxy() && unit.getType() == UnitTypes::Protoss_Pylon)
             return -5.0;
-        if (unit.unit()->isBeingConstructed() && unit.getType() == UnitTypes::Terran_Bunker && Terrain().isInAllyTerritory(unit.getTilePosition()))
+        if (unit.unit()->isBeingConstructed() && unit.getType() == UnitTypes::Terran_Bunker && Terrain::isInAllyTerritory(unit.getTilePosition()))
             return -100.0;
 
         if (unit.getTilePosition().isValid()) {
             const auto area = mapBWEM.GetArea(unit.getTilePosition());
-            if (area && Terrain().isInAllyTerritory(unit.getTilePosition())) {
+            if (area && Terrain::isInAllyTerritory(unit.getTilePosition())) {
                 for (auto &gas : area->Geysers()) {
                     if (gas->TopLeft().getDistance(unit.getTilePosition()) < 2 && !unit.unit()->isInvincible())
                         return 100.0;

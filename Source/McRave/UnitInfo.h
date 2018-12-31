@@ -4,8 +4,8 @@
 #include "McRave.h"
 #include "UnitMath.h"
 
-namespace McRave
-{
+namespace McRave {
+
     class UnitInfo {
         double visibleGroundStrength = 0.0;
         double visibleAirStrength = 0.0;

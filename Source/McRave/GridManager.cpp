@@ -76,7 +76,7 @@ namespace McRave::Grids
 
         void addToGrids(UnitInfo& unit)
         {
-            if ((unit.getType().isWorker() && unit.getPlayer() != Broodwar->self() && (!unit.unit()->exists() || Broodwar->getFrameCount() > 10000 || unit.unit()->isConstructing() || (Terrain().isInAllyTerritory(unit.getTilePosition()) && (Broodwar->getFrameCount() - unit.getLastAttackFrame() > 500))))
+            if ((unit.getType().isWorker() && unit.getPlayer() != Broodwar->self() && (!unit.unit()->exists() || Broodwar->getFrameCount() > 10000 || unit.unit()->isConstructing() || (Terrain::isInAllyTerritory(unit.getTilePosition()) && (Broodwar->getFrameCount() - unit.getLastAttackFrame() > 500))))
                 || unit.getType() == UnitTypes::Protoss_Interceptor
                 || unit.getType() == UnitTypes::Terran_Medic)
                 return;
@@ -303,7 +303,7 @@ namespace McRave::Grids
         {
             WalkPosition source(BWEB::Map::getMainPosition());
             vector<WalkPosition> direction{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 },{ -1,-1 },{ -1, 1 },{ 1, -1 },{ 1, 1 } };
-            double root2 = sqrt(2.0);
+            float root2 = float(sqrt(2.0));
 
             std::queue<BWAPI::WalkPosition> nodeQueue;
             nodeQueue.emplace(source);

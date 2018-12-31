@@ -261,9 +261,6 @@
     <ClInclude Include="..\Source\McRave\ResourceManager.h">
       <Filter>McRave</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\Singleton.h">
-      <Filter>McRave</Filter>
-    </ClInclude>
     <ClInclude Include="..\Source\McRave\StationManager.h">
       <Filter>McRave</Filter>
     </ClInclude>

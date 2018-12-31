@@ -164,11 +164,11 @@ namespace McRave::Production {
 
             // Determine whether we want reavers or shuttles;
             if (!Strategy::needDetection()) {
-                if ((Terrain().isIslandMap() && Broodwar->self()->visibleUnitCount(unit) < 2 * Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus))
+                if ((Terrain::isIslandMap() && Broodwar->self()->visibleUnitCount(unit) < 2 * Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus))
                     || (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) > (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle) * 2))
                     || (Broodwar->mapFileName().find("Great Barrier") != string::npos && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle) < 1))
                     needShuttles = true;
-                if (!Terrain().isIslandMap() || (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) <= (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle) * 2)))
+                if (!Terrain::isIslandMap() || (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) <= (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle) * 2)))
                     needReavers = true;
             }
 
@@ -201,7 +201,7 @@ namespace McRave::Production {
 
                 // Stargate Units
             case Protoss_Corsair:
-                return Broodwar->self()->visibleUnitCount(unit) < (10 + (Terrain().isIslandMap() * 10));
+                return Broodwar->self()->visibleUnitCount(unit) < (10 + (Terrain::isIslandMap() * 10));
             case Protoss_Scout:
                 return true;
             case Protoss_Carrier:
@@ -307,9 +307,9 @@ namespace McRave::Production {
 
                     // Ground unit upgrades
                 case Protoss_Ground_Weapons:
-                    return !Terrain().isIslandMap() && (Units::getSupply() > 120 || Players::getNumberZerg() > 0);
+                    return !Terrain::isIslandMap() && (Units::getSupply() > 120 || Players::getNumberZerg() > 0);
                 case Protoss_Ground_Armor:
-                    return !Terrain().isIslandMap() && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Armor) || Broodwar->self()->isUpgrading(UpgradeTypes::Protoss_Ground_Weapons));
+                    return !Terrain::isIslandMap() && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Armor) || Broodwar->self()->isUpgrading(UpgradeTypes::Protoss_Ground_Weapons));
                 case Protoss_Plasma_Shields:
                     return (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) >= 2 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Armor) >= 2);
 

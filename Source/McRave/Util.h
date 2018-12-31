@@ -1,8 +1,8 @@
 #pragma once
 #include <BWAPI.h>
 
-namespace McRave::Util
-{
+namespace McRave::Util {
+
     UnitInfo * getClosestUnit(Position, Player, UnitType t = UnitTypes::None);
     UnitInfo * getClosestUnit(UnitInfo&, Player, UnitType t = UnitTypes::None);
     UnitInfo * getClosestThreat(UnitInfo&);

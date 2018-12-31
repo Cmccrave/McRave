@@ -84,7 +84,7 @@ namespace McRave::BuildOrder
 
         bool testing = true;
         if (testing) {
-            currentBuild = "NexusGate";
+            currentBuild = "GateNexus";
             currentOpener = "1Gate";
             currentTransition = "Carrier";
             isBuildPossible(currentBuild, currentOpener);
@@ -288,11 +288,11 @@ namespace McRave::BuildOrder
         }
 
         if (build == "2Fact" || build == "Sparks") {
-            if (Terrain().findMainWall(buildings, defenses))
+            if (Terrain::findMainWall(buildings, defenses))
                 return true;
         }
         else {
-            if (Terrain().findNaturalWall(buildings, defenses))
+            if (Terrain::findNaturalWall(buildings, defenses))
                 return true;
         }
         return false;
@@ -442,7 +442,7 @@ namespace McRave::BuildOrder
         if (techUnit == UnitTypes::Protoss_Dark_Templar)
             return (Broodwar->self()->completedUnitCount(techUnit) >= 2);
         if (techUnit == UnitTypes::Protoss_Reaver)
-            return Broodwar->self()->completedUnitCount(techUnit) > 0; //return (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Shuttle) >= 1) || (Broodwar->self()->completedUnitCount(techUnit) > 0 && Terrain().isNarrowNatural());
+            return Broodwar->self()->completedUnitCount(techUnit) > 0; //return (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Shuttle) >= 1) || (Broodwar->self()->completedUnitCount(techUnit) > 0 && Terrain::isNarrowNatural());
         return (Broodwar->self()->visibleUnitCount(techUnit) > 0);
     }
 

@@ -4,7 +4,9 @@ using namespace BWAPI;
 using namespace std;
 
 namespace McRave::Workers {
+
     namespace {
+
         int minWorkers = 0;
         int gasWorkers = 0;
         bool closeToResource(UnitInfo&);        
@@ -189,7 +191,7 @@ namespace McRave::Workers {
             if (!worker.unit()->isCarryingGas() && !worker.unit()->isCarryingMinerals())
                 return false;
 
-            auto checkPath = (worker.hasResource() && worker.getPosition().getDistance(worker.getResource().getPosition()) > 320.0) || (!worker.hasResource() && !Terrain().isInAllyTerritory(worker.getTilePosition()));
+            auto checkPath = (worker.hasResource() && worker.getPosition().getDistance(worker.getResource().getPosition()) > 320.0) || (!worker.hasResource() && !Terrain::isInAllyTerritory(worker.getTilePosition()));
             if (checkPath) {
                 // TODO: Create a path to the closest station and check if it's safe
             }
@@ -244,9 +246,9 @@ namespace McRave::Workers {
 
                 // Find a path on the station network
                 if (worker.getPosition().getDistance(closest->ResourceCentroid()) < 320.0) {
-                    for (auto &s : MyStations().getMyStations()) {
+                    for (auto &s : Stations::getMyStations()) {
                         auto station = s.second;
-                        auto closePath = MyStations().pathStationToStation(closest, station);
+                        auto closePath = Stations::pathStationToStation(closest, station);
                         BWEB::PathFinding::Path path;
                         if (closest  && closePath)
                             path = *closePath;

@@ -11,24 +11,18 @@ namespace McRave::Events
         if (unit->getPlayer()->isEnemy(Broodwar->self()))
             Units::storeUnit(unit);
 
-        if (Terrain().isIslandMap() && unit->getPlayer() == Broodwar->neutral() && !unit->getType().isResourceContainer() && unit->getType().isBuilding())
+        if (Terrain::isIslandMap() && unit->getPlayer() == Broodwar->neutral() && !unit->getType().isResourceContainer() && unit->getType().isBuilding())
             Units::storeUnit(unit);
     }
 
     inline void onUnitCreate(BWAPI::Unit unit)
     {
-        if (unit->getPlayer() == Broodwar->self()) {
-
-            if (unit->getType().isBuilding())
-                Units::storeUnit(unit);
-            if (unit->getType() == UnitTypes::Protoss_Pylon)
-                Pylons::storePylon(unit);
-        }
-
+        if (unit->getPlayer() == Broodwar->self())
+            Units::storeUnit(unit);
         if (unit->getType().isResourceContainer())
             Resources::storeResource(unit);
         if (unit->getType().isResourceDepot())
-            MyStations().storeStation(unit);
+            Stations::storeStation(unit);
     }
 
     inline void onUnitDestroy(BWAPI::Unit unit)
@@ -36,7 +30,7 @@ namespace McRave::Events
         if (unit->getType().isResourceContainer())
             Resources::removeResource(unit);
         else if (unit->getType().isResourceDepot())
-            MyStations().removeStation(unit);
+            Stations::removeStation(unit);
         else
             Units::removeUnit(unit);
     }
@@ -72,7 +66,7 @@ namespace McRave::Events
 
             // Remove any stations on a canceled hatchery
             if (unit->getType() == UnitTypes::Zerg_Drone)
-                MyStations().removeStation(unit);
+                Stations::removeStation(unit);
             else
                 Units::storeUnit(unit);
         }
@@ -82,24 +76,24 @@ namespace McRave::Events
             Resources::storeResource(unit);
     }
 
-    inline void onUnitRenegade(BWAPI::Unit unit)
-    {
-        // TODO: Refinery is added in onUnitDiscover for enemy units (keep resource unit the same)
-        // Destroy the unit otherwise
-        if (!unit->getType().isRefinery())
-            Units::removeUnit(unit);        
-
-        if (unit->getPlayer() == Broodwar->self())
-            onUnitComplete(unit);
-    }
-
     inline void onUnitComplete(BWAPI::Unit unit)
     {
         if (unit->getPlayer() == Broodwar->self())
             Units::storeUnit(unit);
         if (unit->getType().isResourceDepot())
-            MyStations().storeStation(unit);
+            Stations::storeStation(unit);
         if (unit->getType().isResourceContainer())
             Resources::storeResource(unit);
+    }
+
+    inline void onUnitRenegade(BWAPI::Unit unit)
+    {
+        // TODO: Refinery is added in onUnitDiscover for enemy units (keep resource unit the same)
+        // Destroy the unit otherwise
+        if (!unit->getType().isRefinery())
+            Units::removeUnit(unit);
+
+        if (unit->getPlayer() == Broodwar->self())
+            onUnitComplete(unit);
     }
 }

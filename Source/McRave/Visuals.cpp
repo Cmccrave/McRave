@@ -1,10 +1,11 @@
 #include "McRave.h"
+#include <chrono>
 
 using namespace BWAPI;
 using namespace std;
 
-namespace McRave::Visuals
-{
+namespace McRave::Visuals {
+
     namespace {
         chrono::steady_clock::time_point start;
         int screenOffset = 0;

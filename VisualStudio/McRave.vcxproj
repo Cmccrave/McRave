@@ -115,7 +115,6 @@
     <ClInclude Include="..\Source\McRave\ResourceInfo.h" />
     <ClInclude Include="..\Source\McRave\ResourceManager.h" />
     <ClInclude Include="..\Source\McRave\ScoutManager.h" />
-    <ClInclude Include="..\Source\McRave\Singleton.h" />
     <ClInclude Include="..\Source\McRave\StationManager.h" />
     <ClInclude Include="..\Source\McRave\StrategyManager.h" />
     <ClInclude Include="..\Source\McRave\SupportManager.h" />

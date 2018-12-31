@@ -98,7 +98,7 @@ namespace McRave::Resources {
             auto newStation = BWEB::Stations::getClosestStation(resource->getTilePosition());
 
             if (newStation) {
-                for (auto &s : MyStations().getMyStations()) {
+                for (auto &s : Stations::getMyStations()) {
                     auto &station = *s.second;
                     if (station.BWEMBase() == newStation->BWEMBase()) {
                         r.setResourceState(ResourceState::Mineable);

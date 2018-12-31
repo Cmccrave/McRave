@@ -29,7 +29,7 @@
 //		lingLimit = vis(Zerg_Lair) == 1 ? 0 : vis(Zerg_Spawning_Pool) * 6;
 //		droneLimit = 14;
 //
-//		if (Terrain().isIslandMap()) {
+//		if (Terrain::isIslandMap()) {
 //			firstUpgrade = UpgradeTypes::Zerg_Flyer_Attacks;
 //			itemQueue[Zerg_Spawning_Pool]			= Item(vis(Zerg_Hatchery) >= 2);
 //			itemQueue[Zerg_Extractor]				= Item((vis(Zerg_Hatchery) >= 3 && (s >= 30)));

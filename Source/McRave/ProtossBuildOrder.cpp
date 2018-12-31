@@ -29,7 +29,7 @@ namespace McRave::BuildOrder::Protoss
         if (getTech) {
 
             // If we need observers
-            if (Strategy::needDetection() || (!Terrain().isIslandMap() && Players::vP() && techList.find(UnitTypes::Protoss_Observer) == techList.end() && !techList.empty()))
+            if (Strategy::needDetection() || (!Terrain::isIslandMap() && Players::vP() && techList.find(UnitTypes::Protoss_Observer) == techList.end() && !techList.empty()))
                 techUnit = UnitTypes::Protoss_Observer;
 
             else if (currentTransition == "DoubleExpand" && techList.find(UnitTypes::Protoss_High_Templar) == techList.end())
@@ -47,7 +47,7 @@ namespace McRave::BuildOrder::Protoss
 
     void situational()
     {
-        auto skipFirstTech = (/*currentBuild == "P4Gate" ||*/ currentTransition == "DoubleExpand" || (Strategy::enemyGasSteal() && !Terrain().isNarrowNatural()));
+        auto skipFirstTech = (/*currentBuild == "P4Gate" ||*/ currentTransition == "DoubleExpand" || (Strategy::enemyGasSteal() && !Terrain::isNarrowNatural()));
 
         // Metrics for when to Expand/Add Production/Add Tech
         satVal = Players::vT() ? 2 : 3;
@@ -68,7 +68,7 @@ namespace McRave::BuildOrder::Protoss
             techUnit = UnitTypes::None;
 
         // If production is saturated and none are idle or we need detection, choose a tech
-        if (Terrain().isIslandMap() || (!getOpening && !getTech && !techSat && !Production::hasIdleProduction()))
+        if (Terrain::isIslandMap() || (!getOpening && !getTech && !techSat && !Production::hasIdleProduction()))
             getTech = true;
         if (Strategy::needDetection()) {
             techList.insert(UnitTypes::Protoss_Observer);
@@ -109,8 +109,8 @@ namespace McRave::BuildOrder::Protoss
 
             // Adding upgrade buildings
             if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Assimilator) >= 4) {
-                itemQueue[UnitTypes::Protoss_Cybernetics_Core] = Item(1 + (int)Terrain().isIslandMap());
-                itemQueue[UnitTypes::Protoss_Forge] = Item(2 - (int)Terrain().isIslandMap());
+                itemQueue[UnitTypes::Protoss_Cybernetics_Core] = Item(1 + (int)Terrain::isIslandMap());
+                itemQueue[UnitTypes::Protoss_Forge] = Item(2 - (int)Terrain::isIslandMap());
             }
 
             // Ensure we build a core outside our opening book
@@ -118,13 +118,13 @@ namespace McRave::BuildOrder::Protoss
                 itemQueue[UnitTypes::Protoss_Cybernetics_Core] = Item(1);
 
             // Defensive Cannons
-            if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Forge) >= 1 && ((Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) >= 3 + (Players::getNumberTerran() > 0 || Players::getNumberProtoss() > 0)) || (Terrain().isIslandMap() && Players::getNumberZerg() > 0))) {
+            if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Forge) >= 1 && ((Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) >= 3 + (Players::getNumberTerran() > 0 || Players::getNumberProtoss() > 0)) || (Terrain::isIslandMap() && Players::getNumberZerg() > 0))) {
                 itemQueue[UnitTypes::Protoss_Photon_Cannon] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon));
 
-                for (auto &station : MyStations().getMyStations()) {
+                for (auto &station : Stations::getMyStations()) {
                     auto &s = *station.second;
 
-                    if (MyStations().needDefenses(s))
+                    if (Stations::needDefenses(s))
                         itemQueue[UnitTypes::Protoss_Photon_Cannon] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) + 1);
                 }
             }

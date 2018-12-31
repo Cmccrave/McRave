@@ -2,6 +2,7 @@
 #include <BWAPI.h>
 
 namespace McRave::Command {
+
     struct CommandType
     {
         BWAPI::UnitType type =  BWAPI::UnitTypes::None;
@@ -18,13 +19,13 @@ namespace McRave::Command {
         }
     };
 
-    BWAPI::Position findViablePosition(UnitInfo&, function<double(BWAPI::WalkPosition)>);
+    BWAPI::Position findViablePosition(UnitInfo&, std::function<double(BWAPI::WalkPosition)>);
     void onFrame();
     bool overlapsCommands(BWAPI::Unit, BWAPI::TechType, BWAPI::Position, int);
     bool overlapsCommands(BWAPI::Unit, BWAPI::UnitType, BWAPI::Position, int);
-    bool overlapsAllyDetection(Position);
-    bool overlapsEnemyDetection(Position);
-    bool isInDanger(UnitInfo&, BWAPI::Position here = Positions::Invalid);
+    bool overlapsAllyDetection(BWAPI::Position);
+    bool overlapsEnemyDetection(BWAPI::Position);
+    bool isInDanger(UnitInfo&, BWAPI::Position here = BWAPI::Positions::Invalid);
 
     bool misc(UnitInfo&);
     bool move(UnitInfo&);

@@ -1,7 +1,5 @@
 #pragma once
-// Include API files
 #include <BWAPI.h>
-#include "Singleton.h"
 #include "..\BWEM\bwem.h"
 #include "..\BWEB\BWEB.h"
 
@@ -11,13 +9,8 @@
 #define LOW_MECH_PERCENT_LIMIT 0.2
 #define MIN_THREAT 0.01f
 #define SIM_RADIUS 640.0
-
 #define MAX_SCARAB 5 + (BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Reaver_Capacity) * 5)
 #define MAX_INTERCEPTOR 4 + (BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Carrier_Capacity) * 4)
-
-// Namespaces
-using namespace BWEM;
-using namespace BWEB;
 
 namespace McRave
 {
@@ -64,12 +57,10 @@ namespace
     auto &mapBWEM = BWEM::Map::Instance();
 }
 
-// Include standard libraries that are needed
-#include <set>
-#include <ctime>
-#include <chrono>
+// Namespaces
+using namespace BWEM;
+using namespace McRave;
 
-// Include other source files
 #include "BuildingManager.h"
 #include "BuildOrder.h"
 #include "CommandManager.h"
@@ -88,13 +79,6 @@ namespace
 #include "TerrainManager.h"
 #include "TransportManager.h"
 #include "UnitManager.h"
+#include "UnitInfo.h"
 #include "Util.h"
 #include "Visuals.h"
-
-// Namespace to access all managers globally
-namespace McRave
-{
-    inline StationManager& MyStations() { return StationSingleton::Instance(); }
-    inline TerrainManager& Terrain() { return TerrainSingleton::Instance(); }
-    inline TransportManager& Transport() { return TransportSingleton::Instance(); }
-}

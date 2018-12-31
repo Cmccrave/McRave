@@ -29,16 +29,7 @@ namespace McRave::Strategy {
 
         bool goonRange = false;
         bool vultureSpeed = false;
-
-        void updateSituationalBehaviour()
-        {
-            checkNeedDetection();
-            checkEnemyPressure();
-            checkEnemyProxy();
-            checkEnemyRush();
-            checkHoldChoke();
-        }
-
+               
         void checkEnemyRush()
         {
             // Rush builds are immediately aggresive builds
@@ -102,13 +93,13 @@ namespace McRave::Strategy {
                 if (player.getCurrentRace() == Races::Zerg) {
 
                     // 5 Hatch build detection
-                    if (MyStations().getEnemyStations().size() >= 3 || (Units::getEnemyCount(Zerg_Hatchery) + Units::getEnemyCount(Zerg_Lair) >= 4 && Units::getEnemyCount(Zerg_Drone) >= 14))
+                    if (Stations::getEnemyStations().size() >= 3 || (Units::getEnemyCount(Zerg_Hatchery) + Units::getEnemyCount(Zerg_Lair) >= 4 && Units::getEnemyCount(Zerg_Drone) >= 14))
                         enemyBuild = "Z5Hatch";
 
                     // Zergling frame
                     if (lingFrame == 0 && Units::getEnemyCount(Zerg_Zergling) >= 6) {
                         lingFrame = Broodwar->getFrameCount();
-                        if (!Terrain().getEnemyStartingPosition().isValid())
+                        if (!Terrain::getEnemyStartingPosition().isValid())
                             rush = true;
                     }
 
@@ -117,7 +108,7 @@ namespace McRave::Strategy {
 
                         // Monitor gas intake or gas steal
                         if (unit.getType().isRefinery() && unit.unit()->exists()) {
-                            if (Terrain().isInAllyTerritory(unit.getTilePosition()))
+                            if (Terrain::isInAllyTerritory(unit.getTilePosition()))
                                 gasSteal = true;
                             else
                                 enemyGas = unit.unit()->getInitialResources() - unit.unit()->getResources();
@@ -185,11 +176,11 @@ namespace McRave::Strategy {
                     auto noExpand = Units::getEnemyCount(Protoss_Nexus) <= 1;
 
                     // Detect missing buildings as a potential 2Gate
-                    if (Terrain().getEnemyStartingPosition().isValid() && Broodwar->getFrameCount() > 3000 && Broodwar->isExplored((TilePosition)Terrain().getEnemyStartingPosition())) {
+                    if (Terrain::getEnemyStartingPosition().isValid() && Broodwar->getFrameCount() > 3000 && Broodwar->isExplored((TilePosition)Terrain::getEnemyStartingPosition())) {
 
                         // Check 2 corners scouted
-                        auto topLeft = TilePosition(Util::clipToMap(Terrain().getEnemyStartingPosition() - Position(160, 160)));
-                        auto botRight = TilePosition(Util::clipToMap(Terrain().getEnemyStartingPosition() + Position(160, 160) + Position(128, 96)));
+                        auto topLeft = TilePosition(Util::clipToMap(Terrain::getEnemyStartingPosition() - Position(160, 160)));
+                        auto botRight = TilePosition(Util::clipToMap(Terrain::getEnemyStartingPosition() + Position(160, 160) + Position(128, 96)));
                         auto maybeProxy = noGates && noGas && noExpand;
 
                         Broodwar->drawTextScreen(0, 100, "%d  %d  %d", noGates, noGas, noExpand);
@@ -205,7 +196,7 @@ namespace McRave::Strategy {
                     for (auto &u : Units::getEnemyUnits()) {
                         UnitInfo &unit = u.second;
 
-                        if (Terrain().isInAllyTerritory(unit.getTilePosition()) || (inboundScoutFrame > 0 && inboundScoutFrame - Broodwar->getFrameCount() < 64))
+                        if (Terrain::isInAllyTerritory(unit.getTilePosition()) || (inboundScoutFrame > 0 && inboundScoutFrame - Broodwar->getFrameCount() < 64))
                             enemyScout = true;
                         if (unit.getType().isWorker() && inboundScoutFrame == 0) {
                             auto dist = unit.getPosition().getDistance(BWEB::Map::getMainPosition());
@@ -214,7 +205,7 @@ namespace McRave::Strategy {
 
                         // Monitor gas intake or gas steal
                         if (unit.getType().isRefinery() && unit.unit()->exists()) {
-                            if (Terrain().isInAllyTerritory(unit.getTilePosition()))
+                            if (Terrain::isInAllyTerritory(unit.getTilePosition()))
                                 gasSteal = true;
                             else
                                 enemyGas = unit.unit()->getInitialResources() - unit.unit()->getResources();
@@ -222,7 +213,7 @@ namespace McRave::Strategy {
 
                         // PCannonRush
                         if (unit.getType() == Protoss_Forge) {
-                            if (unit.getPosition().getDistance(Terrain().getEnemyStartingPosition()) < 320.0 && Units::getEnemyCount(Protoss_Gateway) == 0)
+                            if (unit.getPosition().getDistance(Terrain::getEnemyStartingPosition()) < 320.0 && Units::getEnemyCount(Protoss_Gateway) == 0)
                                 enemyBuild = "PCannonRush";
                             else if (enemyBuild == "PCannonRush")
                                 enemyBuild = "Unknown";
@@ -230,7 +221,7 @@ namespace McRave::Strategy {
 
                         // PFFE
                         if (unit.getType() == Protoss_Photon_Cannon && Units::getEnemyCount(Protoss_Robotics_Facility) == 0) {
-                            if (unit.getPosition().getDistance((Position)Terrain().getEnemyNatural()) < 320.0)
+                            if (unit.getPosition().getDistance((Position)Terrain::getEnemyNatural()) < 320.0)
                                 enemyBuild = "PFFE";
                             else if (enemyBuild == "PFFE")
                                 enemyBuild = "Unknown";
@@ -238,13 +229,13 @@ namespace McRave::Strategy {
 
                         // P2GateExpand
                         if (unit.getType() == Protoss_Nexus) {
-                            if (!Terrain().isStartingBase(unit.getTilePosition()) && Units::getEnemyCount(Protoss_Gateway) >= 2)
+                            if (!Terrain::isStartingBase(unit.getTilePosition()) && Units::getEnemyCount(Protoss_Gateway) >= 2)
                                 enemyBuild = "P2GateExpand";
                         }
 
                         // Proxy Builds
                         if (unit.getType() == Protoss_Gateway || unit.getType() == Protoss_Pylon) {
-                            if (Terrain().isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(mapBWEM.Center()) < 1280.0 || (BWEB::Map::getNaturalChoke() && unit.getPosition().getDistance((Position)BWEB::Map::getNaturalChoke()->Center()) < 480.0)) {
+                            if (Terrain::isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(mapBWEM.Center()) < 1280.0 || (BWEB::Map::getNaturalChoke() && unit.getPosition().getDistance((Position)BWEB::Map::getNaturalChoke()->Center()) < 480.0)) {
                                 proxy = true;
 
                                 if (Units::getEnemyCount(Protoss_Gateway) >= 2)
@@ -270,11 +261,11 @@ namespace McRave::Strategy {
                             pressure = true;
 
                         // Proxy Detection
-                        if (unit.getType() == Protoss_Pylon && unit.getPosition().getDistance(Terrain().getPlayerStartingPosition()) < 960.0)
+                        if (unit.getType() == Protoss_Pylon && unit.getPosition().getDistance(Terrain::getPlayerStartingPosition()) < 960.0)
                             proxy = true;
 
                         // FE Detection
-                        if (unit.getType().isResourceDepot() && !Terrain().isStartingBase(unit.getTilePosition()))
+                        if (unit.getType().isResourceDepot() && !Terrain::isStartingBase(unit.getTilePosition()))
                             enemyFE = true;
                     }
                 }
@@ -284,19 +275,19 @@ namespace McRave::Strategy {
 
                         // Monitor gas intake or gas steal
                         if (unit.getType().isRefinery() && unit.unit()->exists()) {
-                            if (Terrain().isInAllyTerritory(unit.getTilePosition()))
+                            if (Terrain::isInAllyTerritory(unit.getTilePosition()))
                                 gasSteal = true;
                             else
                                 enemyGas = unit.unit()->getInitialResources() - unit.unit()->getResources();
                         }
 
                         // TSiegeExpand
-                        if ((unit.getType() == Terran_Siege_Tank_Siege_Mode && Units::getEnemyCount(Terran_Vulture) == 0) || (unit.getType().isResourceDepot() && !Terrain().isStartingBase(unit.getTilePosition()) && Units::getEnemyCount(Terran_Machine_Shop) > 0))
+                        if ((unit.getType() == Terran_Siege_Tank_Siege_Mode && Units::getEnemyCount(Terran_Vulture) == 0) || (unit.getType().isResourceDepot() && !Terrain::isStartingBase(unit.getTilePosition()) && Units::getEnemyCount(Terran_Machine_Shop) > 0))
                             enemyBuild = "TSiegeExpand";
 
                         // Barracks Builds
                         if (unit.getType() == Terran_Barracks) {
-                            if (Terrain().isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(mapBWEM.Center()) < 1280.0 || (BWEB::Map::getNaturalChoke() && unit.getPosition().getDistance((Position)BWEB::Map::getNaturalChoke()->Center()) < 320))
+                            if (Terrain::isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(mapBWEM.Center()) < 1280.0 || (BWEB::Map::getNaturalChoke() && unit.getPosition().getDistance((Position)BWEB::Map::getNaturalChoke()->Center()) < 320))
                                 enemyBuild = "TBBS";
                             else
                                 enemyBuild = "Unknown";
@@ -309,9 +300,9 @@ namespace McRave::Strategy {
                         }
 
                         // FE Detection
-                        if (unit.getType().isResourceDepot() && !Terrain().isStartingBase(unit.getTilePosition()))
+                        if (unit.getType().isResourceDepot() && !Terrain::isStartingBase(unit.getTilePosition()))
                             enemyFE = true;
-                        if (unit.getType() == Terran_Bunker && unit.getPosition().getDistance(Terrain().getEnemyStartingPosition()) < unit.getPosition().getDistance(Terrain().getPlayerStartingPosition()))
+                        if (unit.getType() == Terran_Bunker && unit.getPosition().getDistance(Terrain::getEnemyStartingPosition()) < unit.getPosition().getDistance(Terrain::getPlayerStartingPosition()))
                             enemyFE = true;
                     }
 
@@ -331,51 +322,6 @@ namespace McRave::Strategy {
                         enemyBuild = "TBBS";
                     if ((Units::getEnemyCount(Terran_Vulture_Spider_Mine) > 0 && Broodwar->getFrameCount() < 9000) || (Units::getEnemyCount(Terran_Factory) >= 2 && vultureSpeed))
                         enemyBuild = "T3Fact";
-                }
-            }
-        }
-
-        void updateScoring()
-        {
-            // Reset unit score for toss
-            if (Broodwar->self()->getRace() == Races::Protoss) {
-                for (auto &unit : unitScore)
-                    unit.second = 0;
-            }
-
-            // Unit score based off enemy composition	
-            for (auto &t : Units::getenemyTypes()) {
-                if (t.first.isBuilding())
-                    continue;
-
-                // For each type, add a score to production based on the unit count divided by our current unit count
-                if (Broodwar->self()->getRace() == Races::Protoss)
-                    updateProtossUnitScore(t.first, t.second);
-            }
-
-            bool MadMix = Broodwar->self()->getRace() != Races::Protoss;
-            if (MadMix)
-                updateMadMixScore();
-
-            if (Broodwar->self()->getRace() == Races::Terran)
-                unitScore[Terran_Medic] = unitScore[Terran_Marine];
-
-            if (Broodwar->self()->getRace() == Races::Protoss) {
-
-                for (auto &t : unitScore) {
-                    t.second = log(t.second);
-                }
-
-                unitScore[Protoss_Shuttle] = getUnitScore(Protoss_Reaver);
-
-                if (Broodwar->mapFileName().find("BlueStorm") != string::npos)
-                    unitScore[Protoss_Carrier] = unitScore[Protoss_Arbiter];
-
-                if (Players::vP() && Broodwar->getFrameCount() >= 20000 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) > 0 && Broodwar->self()->completedUnitCount(Protoss_Templar_Archives) > 0) {
-                    unitScore[Protoss_Zealot] = unitScore[Protoss_Dragoon];
-                    unitScore[Protoss_Archon] = unitScore[Protoss_Dragoon];
-                    unitScore[Protoss_High_Templar] += unitScore[Protoss_Dragoon];
-                    unitScore[Protoss_Dragoon] = 0.0;
                 }
             }
         }
@@ -513,11 +459,11 @@ namespace McRave::Strategy {
                 unitScore[Protoss_High_Templar]			+= (size * 1.00) / vis(Protoss_High_Templar);
                 break;
             case Enum::Protoss_Scout:
-                if (Terrain().isIslandMap())
+                if (Terrain::isIslandMap())
                     unitScore[Protoss_Scout]				+= (size * 1.00) / vis(Protoss_Scout);
                 break;
             case Enum::Protoss_Carrier:
-                if (Terrain().isIslandMap())
+                if (Terrain::isIslandMap())
                     unitScore[Protoss_Scout]				+= (size * 1.00) / vis(Protoss_Scout);
                 break;
             case Enum::Protoss_Arbiter:
@@ -612,8 +558,8 @@ namespace McRave::Strategy {
                             enemyDPS = 0.775;
 
                         double overallMatchup = enemyDPS > 0.0 ? (myDPS, myDPS / enemyDPS) : myDPS;
-                        double distTotal = Terrain().getEnemyStartingPosition().isValid() ? BWEB::Map::getMainPosition().getDistance(Terrain().getEnemyStartingPosition()) : 1.0;
-                        double distUnit = Terrain().getEnemyStartingPosition().isValid() ? unit.getPosition().getDistance(BWEB::Map::getMainPosition()) / distTotal : 1.0;
+                        double distTotal = Terrain::getEnemyStartingPosition().isValid() ? BWEB::Map::getMainPosition().getDistance(Terrain::getEnemyStartingPosition()) : 1.0;
+                        double distUnit = Terrain::getEnemyStartingPosition().isValid() ? unit.getPosition().getDistance(BWEB::Map::getMainPosition()) / distTotal : 1.0;
 
                         if (distUnit == 0.0)
                             distUnit = 0.1;
@@ -630,6 +576,60 @@ namespace McRave::Strategy {
 
             for (auto &u : allUnits)
                 unitScore[u] = max(0.1, unitScore[u]);
+        }
+
+        void updateScoring()
+        {
+            // Reset unit score for toss
+            if (Broodwar->self()->getRace() == Races::Protoss) {
+                for (auto &unit : unitScore)
+                    unit.second = 0;
+            }
+
+            // Unit score based off enemy composition	
+            for (auto &t : Units::getenemyTypes()) {
+                if (t.first.isBuilding())
+                    continue;
+
+                // For each type, add a score to production based on the unit count divided by our current unit count
+                if (Broodwar->self()->getRace() == Races::Protoss)
+                    updateProtossUnitScore(t.first, t.second);
+            }
+
+            bool MadMix = Broodwar->self()->getRace() != Races::Protoss;
+            if (MadMix)
+                updateMadMixScore();
+
+            if (Broodwar->self()->getRace() == Races::Terran)
+                unitScore[Terran_Medic] = unitScore[Terran_Marine];
+
+            if (Broodwar->self()->getRace() == Races::Protoss) {
+
+                for (auto &t : unitScore) {
+                    t.second = log(t.second);
+                }
+
+                unitScore[Protoss_Shuttle] = getUnitScore(Protoss_Reaver);
+
+                if (Broodwar->mapFileName().find("BlueStorm") != string::npos)
+                    unitScore[Protoss_Carrier] = unitScore[Protoss_Arbiter];
+
+                if (Players::vP() && Broodwar->getFrameCount() >= 20000 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) > 0 && Broodwar->self()->completedUnitCount(Protoss_Templar_Archives) > 0) {
+                    unitScore[Protoss_Zealot] = unitScore[Protoss_Dragoon];
+                    unitScore[Protoss_Archon] = unitScore[Protoss_Dragoon];
+                    unitScore[Protoss_High_Templar] += unitScore[Protoss_Dragoon];
+                    unitScore[Protoss_Dragoon] = 0.0;
+                }
+            }
+        }
+               
+        void updateSituationalBehaviour()
+        {
+            checkNeedDetection();
+            checkEnemyPressure();
+            checkEnemyProxy();
+            checkEnemyRush();
+            checkHoldChoke();
         }
     }
 

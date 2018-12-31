@@ -1,8 +1,8 @@
 #pragma once
 #include <BWAPI.h>
 
-namespace McRave::Visuals
-{
+namespace McRave::Visuals {
+
     void onFrame();
     void startPerfTest();
     void endPerfTest(std::string);

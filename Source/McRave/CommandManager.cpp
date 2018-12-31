@@ -1,11 +1,12 @@
-#include "CommandManager.h"
+#include "McRave.h"
 
 using namespace BWAPI;
 using namespace std;
 
-namespace McRave::Command
-{
+namespace McRave::Command {
+
     namespace {
+
         map<double, UnitInfo*> defendingUnitsByDist;
 
         void updateEnemyCommands()
@@ -102,7 +103,7 @@ namespace McRave::Command
                 if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon) == 0 && Players::vT())
                     bestPosition = Util::getConcavePosition(unit, nullptr, BWEB::Map::getMainPosition());
                 else
-                    bestPosition = Util::getConcavePosition(unit, nullptr, Terrain().getDefendPosition());
+                    bestPosition = Util::getConcavePosition(unit, nullptr, Terrain::getDefendPosition());
 
                 if (bestPosition.isValid()) {
                     addCommand(unit.unit(), bestPosition, UnitTypes::None);
@@ -228,7 +229,7 @@ namespace McRave::Command
     {
         function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
             Position p = Position(w) + Position(4, 4);
-            double distance = (unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
+            double distance = (unit.getType().isFlyer() || Terrain::isIslandMap()) ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
             double threat = Util::getHighestThreat(w, unit);
             double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : max(0.1, log(10.0 + Grids::getAGroundCluster(w) - unit.getPriority()));
             double score = 1.0 / (threat * distance * grouping);
@@ -243,7 +244,7 @@ namespace McRave::Command
                 return false;
 
             if (unit.getDestination().isValid()) {
-                if (!Terrain().isInEnemyTerritory((TilePosition)unit.getDestination())) {
+                if (!Terrain::isInEnemyTerritory((TilePosition)unit.getDestination())) {
                     Position bestPosition = Util::getConcavePosition(unit, mapBWEM.GetArea(TilePosition(unit.getDestination())));
                     if (bestPosition.isValid() && (bestPosition != unit.getPosition() || unit.unit()->getLastCommand().getType() == UnitCommandTypes::None)) {
                         if (unit.unit()->getLastCommand().getTargetPosition() != Position(bestPosition) || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
@@ -267,14 +268,14 @@ namespace McRave::Command
                 unit.setDestination(unit.getTarget().getPosition());
             }
 
-            else if (Terrain().getAttackPosition().isValid()) {
-                unit.setDestination(Terrain().getAttackPosition());
+            else if (Terrain::getAttackPosition().isValid()) {
+                unit.setDestination(Terrain::getAttackPosition());
             }
 
             // If no target and no enemy bases, move to a base location (random if we have found the enemy once already)
             else if (unit.unit()->isIdle()) {
-                if (Terrain().getEnemyStartingPosition().isValid()) {
-                    unit.setDestination(Terrain().randomBasePosition());
+                if (Terrain::getEnemyStartingPosition().isValid()) {
+                    unit.setDestination(Terrain::randomBasePosition());
                 }
                 else {
                     for (auto &start : Broodwar->getStartLocations()) {
@@ -375,8 +376,8 @@ namespace McRave::Command
 
     bool defend(UnitInfo& unit)
     {
-        bool defendingExpansion = unit.getDestination().isValid() && !Terrain().isInEnemyTerritory((TilePosition)unit.getDestination());
-        bool closeToDefend = Terrain().getDefendPosition().getDistance(unit.getPosition()) < 640.0 || Terrain().isInAllyTerritory(unit.getTilePosition());
+        bool defendingExpansion = unit.getDestination().isValid() && !Terrain::isInEnemyTerritory((TilePosition)unit.getDestination());
+        bool closeToDefend = Terrain::getDefendPosition().getDistance(unit.getPosition()) < 640.0 || Terrain::isInAllyTerritory(unit.getTilePosition());
 
         if (!closeToDefend || unit.getLocalState() != LocalState::Retreating)
             return false;
@@ -407,7 +408,7 @@ namespace McRave::Command
         // HACK: Flyers defend above a base
         // TODO: Choose a base instead of closest to enemy, sometimes fly over a base I dont own
         if (unit.getType().isFlyer()) {
-            if (Terrain().getEnemyStartingPosition().isValid() && BWEB::Map::getMainPosition().getDistance(Terrain().getEnemyStartingPosition()) < BWEB::Map::getNaturalPosition().getDistance(Terrain().getEnemyStartingPosition()))
+            if (Terrain::getEnemyStartingPosition().isValid() && BWEB::Map::getMainPosition().getDistance(Terrain::getEnemyStartingPosition()) < BWEB::Map::getNaturalPosition().getDistance(Terrain::getEnemyStartingPosition()))
                 unit.command(UnitCommandTypes::Move, BWEB::Map::getMainPosition());
             else
                 unit.command(UnitCommandTypes::Move, BWEB::Map::getNaturalPosition());
@@ -450,8 +451,8 @@ namespace McRave::Command
         if (!unit.getDestination().isValid()) {
             if (unit.hasTarget())
                 unit.setDestination(unit.getTarget().getPosition());
-            else if (Terrain().getAttackPosition().isValid())
-                unit.setDestination(Terrain().getAttackPosition());
+            else if (Terrain::getAttackPosition().isValid())
+                unit.setDestination(Terrain::getAttackPosition());
         }
 
         // If we found a valid position
@@ -475,7 +476,7 @@ namespace McRave::Command
         // Low distance, low threat, high clustering
         function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
             Position p = Position(w) + Position(4, 4);
-            double distance = ((unit.getType().isFlyer() || Terrain().isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids::getDistanceHome(w));
+            double distance = ((unit.getType().isFlyer() || Terrain::isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids::getDistanceHome(w));
             double threat = Util::getHighestThreat(w, unit);
             double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : max(0.1, log(10.0 + Grids::getAGroundCluster(w) - unit.getPriority()));
             double score = 1.0 / (threat * distance * grouping);

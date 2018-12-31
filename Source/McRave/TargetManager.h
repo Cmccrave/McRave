@@ -1,7 +1,7 @@
 #pragma once
 #include <BWAPI.h>
 
-namespace McRave::Targets
-{
+namespace McRave::Targets {
+
     void getTarget(UnitInfo&);
 }

@@ -19,7 +19,7 @@ namespace McRave::Targets{
                     || (target.getType().isWorker());
 
                 // Zealot: Don't attack non threatening workers in our territory
-                if ((unit.getType() == UnitTypes::Protoss_Zealot && target.getType().isWorker() && !Units::isThreatening(target) && Terrain().isInAllyTerritory(target.getTilePosition()))
+                if ((unit.getType() == UnitTypes::Protoss_Zealot && target.getType().isWorker() && !Units::isThreatening(target) && Terrain::isInAllyTerritory(target.getTilePosition()))
 
                     // If target is an egg, larva, scarab or spell
                     || (target.getType() == UnitTypes::Zerg_Egg || target.getType() == UnitTypes::Zerg_Larva || target.getType() == UnitTypes::Protoss_Scarab || target.getType().isSpell())
@@ -113,7 +113,7 @@ namespace McRave::Targets{
                 if (!target.unit()
                     || !target.getWalkPosition().isValid()
                     || !unit.getWalkPosition().isValid()
-                    || (target.getType().isBuilding() && !Units::isThreatening(target) && target.getGroundDamage() == 0.0 && Terrain().isInAllyTerritory(target.getTilePosition()) && Broodwar->getFrameCount() < 10000))
+                    || (target.getType().isBuilding() && !Units::isThreatening(target) && target.getGroundDamage() == 0.0 && Terrain::isInAllyTerritory(target.getTilePosition()) && Broodwar->getFrameCount() < 10000))
                     continue;
 
                 bool targetCanAttack = ((unit.getType().isFlyer() && target.getAirDamage() > 0.0) || (!unit.getType().isFlyer() && target.getGroundDamage() > 0.0) || (!unit.getType().isFlyer() && target.getType() == UnitTypes::Terran_Vulture_Spider_Mine));

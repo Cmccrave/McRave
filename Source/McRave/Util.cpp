@@ -3,8 +3,8 @@
 using namespace BWAPI;
 using namespace std;
 
-namespace McRave::Util
-{
+namespace McRave::Util {
+
     bool isWalkable(WalkPosition start, WalkPosition end, UnitType unitType)
     {
         // Pixel rectangle
@@ -77,7 +77,7 @@ namespace McRave::Util
                         return true;
                     if (Strategy::getEnemyBuild() == "Z9Pool" && Units::getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 5 && visibleDefenders >= 2)
                         return true;
-                    if (!Terrain().getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && Units::getGlobalAllyGroundStrength() < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
+                    if (!Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && Units::getGlobalAllyGroundStrength() < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
                         return true;
                     if (Units::getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
                         return true;
@@ -85,7 +85,7 @@ namespace McRave::Util
                 else {
                     if (Strategy::getEnemyBuild() == "Z5Pool" && Units::getGlobalAllyGroundStrength() < 1.00 && completedDefenders < 2 && visibleDefenders >= 2)
                         return true;
-                    if (!Terrain().getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && Units::getGlobalAllyGroundStrength() < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
+                    if (!Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && Units::getGlobalAllyGroundStrength() < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
                         return true;
                 }
             }
@@ -126,7 +126,7 @@ namespace McRave::Util
         else {
             auto station = BWEB::Stations::getClosestStation(unit.getTilePosition());
             if (station && station->ResourceCentroid().getDistance(unit.getPosition()) < 160.0) {
-                if (Terrain().isInAllyTerritory(unit.getTilePosition()) && Grids::getEGroundThreat(unit.getWalkPosition()) > 0.0 && Broodwar->getFrameCount() < 10000)
+                if (Terrain::isInAllyTerritory(unit.getTilePosition()) && Grids::getEGroundThreat(unit.getWalkPosition()) > 0.0 && Broodwar->getFrameCount() < 10000)
                     return true;
             }
         }
@@ -419,7 +419,7 @@ namespace McRave::Util
 
             else if (area) {
                 for (auto &c : area->ChokePoints()) {
-                    double dist = BWEB::Map::getGroundDistance(Position(c->Center()), Terrain().getEnemyStartingPosition());
+                    double dist = BWEB::Map::getGroundDistance(Position(c->Center()), Terrain::getEnemyStartingPosition());
                     if (dist < distBest) {
                         distBest = dist;
                         center = c->Center();
@@ -434,9 +434,9 @@ namespace McRave::Util
             double dist = p.getDistance((Position)center);
 
             if (!w.isValid()
-                || (here != Terrain().getDefendPosition() && area && mapBWEM.GetArea(t) != area)
-                || (here != Terrain().getDefendPosition() && dist < min)
-                || unit.getType() == UnitTypes::Protoss_Reaver && Terrain().isDefendNatural() && mapBWEM.GetArea(w) != BWEB::Map::getNaturalArea()
+                || (here != Terrain::getDefendPosition() && area && mapBWEM.GetArea(t) != area)
+                || (here != Terrain::getDefendPosition() && dist < min)
+                || unit.getType() == UnitTypes::Protoss_Reaver && Terrain::isDefendNatural() && mapBWEM.GetArea(w) != BWEB::Map::getNaturalArea()
                 || dist > distBest
                 || Command::overlapsCommands(unit.unit(), UnitTypes::None, p, 8)
                 || Command::isInDanger(unit, p)
@@ -454,8 +454,8 @@ namespace McRave::Util
         distBest = DBL_MAX;
 
         // If this is the defending position, grab from a vector we already made
-        auto &positions = (unit.getGroundRange() < 64.0 && (!Terrain().isDefendNatural() || Players::vZ())) ? Terrain().getMeleeChokePositions() : Terrain().getRangedChokePositions();
-        if (here == Terrain().getDefendPosition() && !positions.empty()) {
+        auto &positions = (unit.getGroundRange() < 64.0 && (!Terrain::isDefendNatural() || Players::vZ())) ? Terrain::getMeleeChokePositions() : Terrain::getRangedChokePositions();
+        if (here == Terrain::getDefendPosition() && !positions.empty()) {
             for (auto &position : positions) {
                 checkbest(WalkPosition(position));
             }
