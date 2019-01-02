@@ -5,10 +5,10 @@
 //namespace McRave
 //{
 //	static int vis(UnitType t) {
-//		return Broodwar->self()->visibleUnitCount(t);
+//		return vis(t);
 //	}
 //	static int com(UnitType t) {
-//		return Broodwar->self()->completedUnitCount(t);
+//		return com(t);
 //	}
 //
 //	static bool lingSpeed() {

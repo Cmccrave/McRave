@@ -56,7 +56,6 @@ namespace McRave
         priority				= Math::getPriority(*this);
         lastAttackFrame			= (t != UnitTypes::Protoss_Reaver && (thisUnit->isStartingAttack() || thisUnit->isRepairing())) ? Broodwar->getFrameCount() : lastAttackFrame;
         killCount				= unit()->getKillCount();
-        simBonus				= 1.0;
         beingAttackedCount		= 0;
 
         // Reset states

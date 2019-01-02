@@ -14,7 +14,7 @@ namespace McRave::Math {
     double getPriority(UnitInfo& unit);
 
     double groundDPS(UnitInfo& unit);
-
+    
     double airDPS(UnitInfo& unit);
 
     double gWeaponCooldown(UnitInfo& unit);

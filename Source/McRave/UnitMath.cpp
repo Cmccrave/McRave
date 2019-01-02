@@ -270,8 +270,10 @@ namespace McRave::Math {
 
     WalkPosition getWalkPosition(Unit unit)
     {
+        auto walkWidth = unit->getType().isBuilding() ? unit->getType().tileWidth() * 4 : (int)ceil(unit->getType().width() / 8.0);
+        auto walkHeight = unit->getType().isBuilding() ? unit->getType().tileHeight() * 4 : (int)ceil(unit->getType().height() / 8.0);
         if (!unit->getType().isBuilding())
-            return WalkPosition(Position(unit->getLeft(), unit->getTop()));
+            return WalkPosition(unit->getPosition()) - WalkPosition(walkWidth / 2, walkHeight / 2);
         else
             return WalkPosition(unit->getTilePosition());
         return WalkPositions::None;

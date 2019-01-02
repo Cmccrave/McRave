@@ -50,6 +50,13 @@ namespace McRave
     enum class SimState {
         None, Win, Loss, HighWin, HighLoss
     };
+
+    static int vis(BWAPI::UnitType t) {
+        return BWAPI::Broodwar->self()->visibleUnitCount(t);
+    }
+    static int com(BWAPI::UnitType t) {
+        return BWAPI::Broodwar->self()->completedUnitCount(t);
+    }
 }
 
 namespace
@@ -58,7 +65,6 @@ namespace
 }
 
 // Namespaces
-using namespace BWEM;
 using namespace McRave;
 
 #include "BuildingManager.h"

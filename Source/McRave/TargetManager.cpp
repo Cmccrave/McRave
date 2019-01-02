@@ -164,24 +164,6 @@ namespace McRave::Targets{
                 unit.setEngagePosition(unit.getPosition() - direction);
             else
                 unit.setEngagePosition(unit.getPosition());
-
-            // See if we pass any narrow chokes while trying to fight
-            if (unit.getEngagePosition().isValid() && !unit.getType().isFlyer() && !unit.hasTransport() && Units::getSupply() >= 80 && mapBWEM.GetArea(unit.getTilePosition()) && mapBWEM.GetArea((TilePosition)unit.getEngagePosition())) {
-                auto unitWidth = min(unit.getType().width(), unit.getType().height());
-                auto chokeWidth = 0;
-
-                for (auto choke : mapBWEM.GetPath(unit.getPosition(), unit.getEngagePosition())) {
-                    chokeWidth = Util::chokeWidth(choke);
-
-                    if (unitWidth > 0.0 && unitWidth <= 5.0) {
-                        auto squeeze = max(1, chokeWidth / unitWidth); /// How many of this unit can fit through at once
-                        auto ratio = 1.0 - (max(1.0, double(squeeze)) / 10.0);
-
-                        if (ratio <= 1.0 && ratio > 0.0)
-                            unit.setSimBonus(ratio);
-                    }
-                }
-            }
         }
 
         void getPathToTarget(UnitInfo& unit)

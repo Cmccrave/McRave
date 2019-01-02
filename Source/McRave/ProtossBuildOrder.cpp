@@ -2,6 +2,7 @@
 
 using namespace BWAPI;
 using namespace std;
+using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
 
 namespace McRave::BuildOrder::Protoss
@@ -22,21 +23,21 @@ namespace McRave::BuildOrder::Protoss
 
     void tech()
     {
-        if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Cybernetics_Core) == 0)
+        if (com(Protoss_Cybernetics_Core) == 0)
             return;
 
         // Some hardcoded techs based on needing detection or specific build orders
         if (getTech) {
 
             // If we need observers
-            if (Strategy::needDetection() || (!Terrain::isIslandMap() && Players::vP() && techList.find(UnitTypes::Protoss_Observer) == techList.end() && !techList.empty()))
-                techUnit = UnitTypes::Protoss_Observer;
+            if (Strategy::needDetection() || (!Terrain::isIslandMap() && Players::vP() && techList.find(Protoss_Observer) == techList.end() && !techList.empty()))
+                techUnit = Protoss_Observer;
 
-            else if (currentTransition == "DoubleExpand" && techList.find(UnitTypes::Protoss_High_Templar) == techList.end())
-                techUnit = UnitTypes::Protoss_High_Templar;
-            else if (Strategy::getEnemyBuild() == "P4Gate" && techList.find(UnitTypes::Protoss_Dark_Templar) == techList.end() && !Strategy::enemyGasSteal())
-                techUnit = UnitTypes::Protoss_Dark_Templar;
-            else if (techUnit == UnitTypes::None)
+            else if (currentTransition == "DoubleExpand" && techList.find(Protoss_High_Templar) == techList.end())
+                techUnit = Protoss_High_Templar;
+            else if (Strategy::getEnemyBuild() == "P4Gate" && techList.find(Protoss_Dark_Templar) == techList.end() && !Strategy::enemyGasSteal())
+                techUnit = Protoss_Dark_Templar;
+            else if (techUnit == None)
                 getNewTech();
         }
 
@@ -51,13 +52,13 @@ namespace McRave::BuildOrder::Protoss
 
         // Metrics for when to Expand/Add Production/Add Tech
         satVal = Players::vT() ? 2 : 3;
-        prodVal = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) + (satVal * skipFirstTech);
-        baseVal = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus);
+        prodVal = com(Protoss_Gateway) + (satVal * skipFirstTech);
+        baseVal = com(Protoss_Nexus);
         techVal = techList.size() + skipFirstTech + Players::vT();
 
         // HACK: Against FFE just add a Nexus
-        if (Strategy::getEnemyBuild() == "FFE" && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) == 1)
-            itemQueue[UnitTypes::Protoss_Nexus] = Item(2);
+        if (Strategy::getEnemyBuild() == "FFE" && vis(Protoss_Nexus) == 1)
+            itemQueue[Protoss_Nexus] = Item(2);
 
         // Saturation
         productionSat = (prodVal >= satVal * baseVal);
@@ -65,28 +66,28 @@ namespace McRave::BuildOrder::Protoss
 
         // If we have our tech unit, set to none
         if (techComplete())
-            techUnit = UnitTypes::None;
+            techUnit = None;
 
         // If production is saturated and none are idle or we need detection, choose a tech
         if (Terrain::isIslandMap() || (!getOpening && !getTech && !techSat && !Production::hasIdleProduction()))
             getTech = true;
         if (Strategy::needDetection()) {
-            techList.insert(UnitTypes::Protoss_Observer);
-            unlockedType.insert(UnitTypes::Protoss_Observer);
+            techList.insert(Protoss_Observer);
+            unlockedType.insert(Protoss_Observer);
         }
 
         // Pylon logic
-        if (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > int(fastExpand)) {
-            int providers = buildCount(UnitTypes::Protoss_Pylon) > 0 ? 14 : 16;
+        if (vis(Protoss_Pylon) > int(fastExpand)) {
+            int providers = buildCount(Protoss_Pylon) > 0 ? 14 : 16;
             int count = min(22, Units::getSupply() / providers);
-            int offset = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) - 1;
+            int offset = com(Protoss_Nexus) - 1;
             int total = count - offset;
 
-            if (buildCount(UnitTypes::Protoss_Pylon) < total)
-                itemQueue[UnitTypes::Protoss_Pylon] = Item(total);
+            if (buildCount(Protoss_Pylon) < total)
+                itemQueue[Protoss_Pylon] = Item(total);
 
-            if (!getOpening && !Buildings::hasPoweredPositions() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 10)
-                itemQueue[UnitTypes::Protoss_Pylon] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) + 1);
+            if (!getOpening && !Buildings::hasPoweredPositions() && vis(Protoss_Pylon) > 10)
+                itemQueue[Protoss_Pylon] = Item(vis(Protoss_Pylon) + 1);
         }
 
         // If we're not in our opener
@@ -95,37 +96,37 @@ namespace McRave::BuildOrder::Protoss
 
             // Adding bases
             if (shouldExpand())
-                itemQueue[UnitTypes::Protoss_Nexus] = Item(Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) + 1);
+                itemQueue[Protoss_Nexus] = Item(com(Protoss_Nexus) + 1);
 
             // Adding production
-            if (shouldAddProduction()) {
-                int gateCount = min(Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) + 1);
-                itemQueue[UnitTypes::Protoss_Gateway] = Item(gateCount);
+            if (shouldAddProduction()) {                
+                int gateCount = min(com(Protoss_Nexus) * 3, vis(Protoss_Gateway) + 1) - (int(isUnitUnlocked(Protoss_Carrier)) * 2);
+                itemQueue[Protoss_Gateway] = Item(gateCount);
             }
 
             // Adding gas
             if (shouldAddGas())
-                itemQueue[UnitTypes::Protoss_Assimilator] = Item(Resources::getGasCount());
+                itemQueue[Protoss_Assimilator] = Item(Resources::getGasCount());
 
             // Adding upgrade buildings
-            if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Assimilator) >= 4) {
-                itemQueue[UnitTypes::Protoss_Cybernetics_Core] = Item(1 + (int)Terrain::isIslandMap());
-                itemQueue[UnitTypes::Protoss_Forge] = Item(2 - (int)Terrain::isIslandMap());
+            if (com(Protoss_Assimilator) >= 4) {
+                itemQueue[Protoss_Cybernetics_Core] = Item(1 + (int)Terrain::isIslandMap());
+                itemQueue[Protoss_Forge] = Item(2 - (int)Terrain::isIslandMap());
             }
 
             // Ensure we build a core outside our opening book
-            if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Gateway) >= 2)
-                itemQueue[UnitTypes::Protoss_Cybernetics_Core] = Item(1);
+            if (com(Protoss_Gateway) >= 2)
+                itemQueue[Protoss_Cybernetics_Core] = Item(1);
 
             // Defensive Cannons
-            if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Forge) >= 1 && ((Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) >= 3 + (Players::getNumberTerran() > 0 || Players::getNumberProtoss() > 0)) || (Terrain::isIslandMap() && Players::getNumberZerg() > 0))) {
-                itemQueue[UnitTypes::Protoss_Photon_Cannon] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon));
+            if (com(Protoss_Forge) >= 1 && ((vis(Protoss_Nexus) >= 3 + (Players::getNumberTerran() > 0 || Players::getNumberProtoss() > 0)) || (Terrain::isIslandMap() && Players::getNumberZerg() > 0))) {
+                itemQueue[Protoss_Photon_Cannon] = Item(vis(Protoss_Photon_Cannon));
 
                 for (auto &station : Stations::getMyStations()) {
                     auto &s = *station.second;
 
                     if (Stations::needDefenses(s))
-                        itemQueue[UnitTypes::Protoss_Photon_Cannon] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) + 1);
+                        itemQueue[Protoss_Photon_Cannon] = Item(vis(Protoss_Photon_Cannon) + 1);
                 }
             }
         }
@@ -136,30 +137,30 @@ namespace McRave::BuildOrder::Protoss
     {
         // Leg upgrade check
         auto zealotLegs = Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) > 0
-            || (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) > 0 && Units::getSupply() >= 200);
+            || (com(Protoss_Citadel_of_Adun) > 0 && Units::getSupply() >= 200);
 
         // Check if we should always make Zealots
-        if ((zealotLimit > Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot))
+        if ((zealotLimit > vis(Protoss_Zealot))
             || Strategy::enemyProxy()
             || Strategy::enemyRush()
             || zealotLegs
-            || (techUnit == UnitTypes::Protoss_Dark_Templar && Players::vP())) {
-            unlockedType.insert(UnitTypes::Protoss_Zealot);
+            || (techUnit == Protoss_Dark_Templar && Players::vP())) {
+            unlockedType.insert(Protoss_Zealot);
         }
         else
-            unlockedType.erase(UnitTypes::Protoss_Zealot);
+            unlockedType.erase(Protoss_Zealot);
 
         // TEST
-        if (!techComplete() && techUnit == UnitTypes::Protoss_Dark_Templar && techList.size() == 1 && Players::vP() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Citadel_of_Adun) == 1)
+        if (!techComplete() && techUnit == Protoss_Dark_Templar && techList.size() == 1 && Players::vP() && com(Protoss_Citadel_of_Adun) == 1)
             dragoonLimit = 0;
 
         // Check if we should always make Dragoons
         if ((Players::vZ() && Broodwar->getFrameCount() > 20000)
-            || Units::getEnemyCount(UnitTypes::Zerg_Lurker) > 0
-            || dragoonLimit > Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon))
-            unlockedType.insert(UnitTypes::Protoss_Dragoon);
+            || Units::getEnemyCount(Zerg_Lurker) > 0
+            || dragoonLimit > vis(Protoss_Dragoon))
+            unlockedType.insert(Protoss_Dragoon);
         else
-            unlockedType.erase(UnitTypes::Protoss_Dragoon);
+            unlockedType.erase(Protoss_Dragoon);
     }
 
     void island()
@@ -168,42 +169,42 @@ namespace McRave::BuildOrder::Protoss
 
             // PvZ island
             if (Players::vZ()) {
-                int nexusCount = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
-                int roboCount = min(nexusCount - 2, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Robotics_Facility) + 1);
-                int stargateCount = min(nexusCount, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Stargate) + 1);
+                int nexusCount = vis(Protoss_Nexus);
+                int roboCount = min(nexusCount - 2, vis(Protoss_Robotics_Facility) + 1);
+                int stargateCount = min(nexusCount, vis(Protoss_Stargate) + 1);
 
                 if (Broodwar->self()->gas() - Production::getReservedGas() - Buildings::getQueuedGas() > 150) {
-                    itemQueue[UnitTypes::Protoss_Stargate] = Item(stargateCount);
-                    itemQueue[UnitTypes::Protoss_Robotics_Facility] = Item(roboCount);
-                    itemQueue[UnitTypes::Protoss_Robotics_Support_Bay] = Item(1);
+                    itemQueue[Protoss_Stargate] = Item(stargateCount);
+                    itemQueue[Protoss_Robotics_Facility] = Item(roboCount);
+                    itemQueue[Protoss_Robotics_Support_Bay] = Item(1);
                 }
-                itemQueue[UnitTypes::Protoss_Gateway] = Item(nexusCount);
+                itemQueue[Protoss_Gateway] = Item(nexusCount);
             }
 
             // PvP island
             else if (Players::vP()) {
-                int nexusCount = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
-                int gateCount = min(Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Gateway) + 1);
+                int nexusCount = vis(Protoss_Nexus);
+                int gateCount = min(com(Protoss_Nexus) * 3, vis(Protoss_Gateway) + 1);
 
                 if (Broodwar->self()->gas() - Production::getReservedGas() - Buildings::getQueuedGas() > 200) {
-                    itemQueue[UnitTypes::Protoss_Robotics_Support_Bay] = Item(1);
-                    if (techList.find(UnitTypes::Protoss_Scout) != techList.end() || techList.find(UnitTypes::Protoss_Carrier) != techList.end())
-                        itemQueue[UnitTypes::Protoss_Stargate] = Item(nexusCount);
+                    itemQueue[Protoss_Robotics_Support_Bay] = Item(1);
+                    if (techList.find(Protoss_Scout) != techList.end() || techList.find(Protoss_Carrier) != techList.end())
+                        itemQueue[Protoss_Stargate] = Item(nexusCount);
                 }
 
-                itemQueue[UnitTypes::Protoss_Gateway] = Item(gateCount);
+                itemQueue[Protoss_Gateway] = Item(gateCount);
             }
 
             // PvT island
             else {
-                int nexusCount = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus);
-                int stargateCount = min(nexusCount + 1, Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Stargate) + 1);
+                int nexusCount = vis(Protoss_Nexus);
+                int stargateCount = min(nexusCount + 1, vis(Protoss_Stargate) + 1);
                 if (Broodwar->self()->gas() - Production::getReservedGas() - Buildings::getQueuedGas() > 150) {
-                    itemQueue[UnitTypes::Protoss_Stargate] = Item(stargateCount);
-                    itemQueue[UnitTypes::Protoss_Robotics_Facility] = Item(min(1, stargateCount - 2));
-                    itemQueue[UnitTypes::Protoss_Robotics_Support_Bay] = Item(1);
+                    itemQueue[Protoss_Stargate] = Item(stargateCount);
+                    itemQueue[Protoss_Robotics_Facility] = Item(min(1, stargateCount - 2));
+                    itemQueue[Protoss_Robotics_Support_Bay] = Item(1);
                 }
-                itemQueue[UnitTypes::Protoss_Gateway] = Item(nexusCount);
+                itemQueue[Protoss_Gateway] = Item(nexusCount);
             }
         }
     }

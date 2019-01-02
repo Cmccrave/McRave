@@ -18,6 +18,9 @@
 // Adjust close check for isThreatening
 // Forced observers will cause defensive 2 gate reaction to bug, need to ensure that we can break out of builds
 // Carrier tech -> reduce gate count of addProduction by stargate count, how many stargate do we want?
+// Offset for supply at start of game, can we calculate instead of hardcode at 10?
+// Bunker in enemy main detected as FE
+// Fix not letting uncompleted Probes being assigned tasks - no roles to incomplete units fixes this completely
 
 // *** Ideas ***
 // Monitor for overkilling units by hp - (2*nextDmgSource) <= 0 (double damage source to account for a potential miss?)

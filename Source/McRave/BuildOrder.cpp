@@ -433,16 +433,16 @@ namespace McRave::BuildOrder
 
     bool techComplete()
     {
-        if (techUnit == UnitTypes::Protoss_Scout || techUnit == UnitTypes::Protoss_Corsair || techUnit == UnitTypes::Protoss_Observer || techUnit == UnitTypes::Terran_Science_Vessel)
+        if (techUnit == Protoss_Scout || techUnit == Protoss_Corsair || techUnit == Protoss_Observer || techUnit == Terran_Science_Vessel)
             return (Broodwar->self()->completedUnitCount(techUnit) > 0);
-        if (techUnit == UnitTypes::Protoss_High_Templar)
+        if (techUnit == Protoss_High_Templar)
             return (Broodwar->self()->hasResearched(TechTypes::Psionic_Storm));
-        if (techUnit == UnitTypes::Protoss_Arbiter)
+        if (techUnit == Protoss_Arbiter)
             return (Broodwar->self()->visibleUnitCount(techUnit) > 0);
-        if (techUnit == UnitTypes::Protoss_Dark_Templar)
+        if (techUnit == Protoss_Dark_Templar)
             return (Broodwar->self()->completedUnitCount(techUnit) >= 2);
-        if (techUnit == UnitTypes::Protoss_Reaver)
-            return Broodwar->self()->completedUnitCount(techUnit) > 0; //return (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Shuttle) >= 1) || (Broodwar->self()->completedUnitCount(techUnit) > 0 && Terrain::isNarrowNatural());
+        if (techUnit == Protoss_Reaver)
+            return Broodwar->self()->completedUnitCount(techUnit) > 0; //return (Broodwar->self()->completedUnitCount(Protoss_Shuttle) >= 1) || (Broodwar->self()->completedUnitCount(techUnit) > 0 && Terrain::isNarrowNatural());
         return (Broodwar->self()->visibleUnitCount(techUnit) > 0);
     }
 
@@ -517,7 +517,7 @@ namespace McRave::BuildOrder
         if (Broodwar->self()->getRace() == Races::Protoss) {
             if (Broodwar->self()->minerals() > 500 + (100 * Broodwar->self()->completedUnitCount(baseType)))
                 return true;
-            else if (techUnit == UnitTypes::None && !Production::hasIdleProduction() && Resources::isMinSaturated() && techSat && productionSat)
+            else if (techUnit == None && !Production::hasIdleProduction() && Resources::isMinSaturated() && techSat && productionSat)
                 return true;
         }
         else if (Broodwar->self()->getRace() == Races::Terran) {
@@ -534,7 +534,7 @@ namespace McRave::BuildOrder
     bool shouldAddProduction()
     {
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            if (Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Larva) <= 1 && Broodwar->self()->minerals() - Production::getReservedMineral() - Buildings::getQueuedMineral() >= 200 && !getOpening)
+            if (Broodwar->self()->visibleUnitCount(Zerg_Larva) <= 1 && Broodwar->self()->minerals() - Production::getReservedMineral() - Buildings::getQueuedMineral() >= 200 && !getOpening)
                 return true;
         }
         else {
@@ -554,7 +554,7 @@ namespace McRave::BuildOrder
 
         else if (Broodwar->self()->getRace() == Races::Protoss) {
             if (Players::vP())
-                return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Assimilator) != 1 || workerCount >= 32 || Broodwar->self()->minerals() > 600;
+                return Broodwar->self()->visibleUnitCount(Protoss_Assimilator) != 1 || workerCount >= 32 || Broodwar->self()->minerals() > 600;
             else if (Players::vT() || Players::vZ())
                 return true;
         }
@@ -590,9 +590,9 @@ namespace McRave::BuildOrder
         // Otherwise, choose a tech based on highest unit score
         double highest = 0.0;
         for (auto &tech : Strategy::getUnitScores()) {
-            if (tech.first == UnitTypes::Protoss_Dragoon
-                || tech.first == UnitTypes::Protoss_Zealot
-                || tech.first == UnitTypes::Protoss_Shuttle)
+            if (tech.first == Protoss_Dragoon
+                || tech.first == Protoss_Zealot
+                || tech.first == Protoss_Shuttle)
                 continue;
 
             if (tech.second > highest) {
@@ -605,38 +605,38 @@ namespace McRave::BuildOrder
     void checkNewTech()
     {
         // No longer need to choose a tech
-        if (techUnit != UnitTypes::None) {
+        if (techUnit != None) {
             getTech = false;
             techList.insert(techUnit);
             unlockedType.insert(techUnit);
         }
-        if (firstUnit != UnitTypes::None) {
+        if (firstUnit != None) {
             techList.insert(firstUnit);
             unlockedType.insert(firstUnit);
         }
 
         // Multi-unlock
-        if (techUnit == UnitTypes::Protoss_Arbiter || techUnit == UnitTypes::Protoss_High_Templar) {
-            unlockedType.insert(UnitTypes::Protoss_Dark_Templar);
-            techList.insert(UnitTypes::Protoss_Dark_Templar);
+        if (techUnit == Protoss_Arbiter || techUnit == Protoss_High_Templar) {
+            unlockedType.insert(Protoss_Dark_Templar);
+            techList.insert(Protoss_Dark_Templar);
         }
-        else if (techUnit == UnitTypes::Protoss_Reaver) {
-            unlockedType.insert(UnitTypes::Protoss_Shuttle);
-            techList.insert(UnitTypes::Protoss_Shuttle);
+        else if (techUnit == Protoss_Reaver) {
+            unlockedType.insert(Protoss_Shuttle);
+            techList.insert(Protoss_Shuttle);
         }
-        else if (techUnit == UnitTypes::Zerg_Mutalisk && Units::getGlobalEnemyAirStrength() > 0.0) {
-            techList.insert(UnitTypes::Zerg_Scourge);
-            unlockedType.insert(UnitTypes::Zerg_Scourge);
+        else if (techUnit == Zerg_Mutalisk && Units::getGlobalEnemyAirStrength() > 0.0) {
+            techList.insert(Zerg_Scourge);
+            unlockedType.insert(Zerg_Scourge);
         }
-        else if (techUnit == UnitTypes::Zerg_Lurker) {
-            techList.insert(UnitTypes::Zerg_Hydralisk);
-            unlockedType.insert(UnitTypes::Zerg_Hydralisk);
+        else if (techUnit == Zerg_Lurker) {
+            techList.insert(Zerg_Hydralisk);
+            unlockedType.insert(Zerg_Hydralisk);
         }
 
         // HACK: If we have a Reaver add Obs to the tech
-        if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Reaver) >= 3) {
-            techList.insert(UnitTypes::Protoss_Observer);
-            unlockedType.insert(UnitTypes::Protoss_Observer);
+        if (Broodwar->self()->completedUnitCount(Protoss_Reaver) >= 3) {
+            techList.insert(Protoss_Observer);
+            unlockedType.insert(Protoss_Observer);
         }
     }
 
@@ -683,20 +683,21 @@ namespace McRave::BuildOrder
             }
 
             // HACK: Our check doesn't look for required buildings for tech needed for Lurkers
-            if (check == UnitTypes::Zerg_Lurker)
-                itemQueue[UnitTypes::Zerg_Lair] = Item(1);
+            if (check == Zerg_Lurker)
+                itemQueue[Zerg_Lair] = Item(1);
 
             // Add extra production - TODO: move to shouldAddProduction
             int s = Units::getSupply();
             if (canAdd && buildCount(check) <= 1) {
-                if (check == UnitTypes::Protoss_Stargate) {
-                    if ((s >= 150 && techList.find(UnitTypes::Protoss_Corsair) != techList.end())
-                        || (s >= 300 && techList.find(UnitTypes::Protoss_Arbiter) != techList.end()))
+                if (check == Protoss_Stargate) {
+                    if ((s >= 150 && techList.find(Protoss_Corsair) != techList.end())
+                        || (s >= 300 && techList.find(Protoss_Arbiter) != techList.end())
+                        || (s >= 100 && techList.find(Protoss_Carrier) != techList.end()))
                         itemQueue[check] = Item(2);
                     else
                         itemQueue[check] = Item(1);
                 }
-                else if (check != UnitTypes::Protoss_Gateway)
+                else if (check != Protoss_Gateway)
                     itemQueue[check] = Item(1);
 
             }
@@ -706,18 +707,18 @@ namespace McRave::BuildOrder
     void checkExoticTech()
     {
         // Corsair/Scout upgrades
-        if ((techList.find(UnitTypes::Protoss_Scout) != techList.end() && currentBuild != "PDTExpand") || (techList.find(UnitTypes::Protoss_Corsair) != techList.end() && Units::getSupply() >= 300))
-            itemQueue[UnitTypes::Protoss_Fleet_Beacon] = Item(1);
+        if ((techList.find(Protoss_Scout) != techList.end() && currentBuild != "PDTExpand") || (techList.find(Protoss_Corsair) != techList.end() && Units::getSupply() >= 300))
+            itemQueue[Protoss_Fleet_Beacon] = Item(1);
 
         // HACK: Bluestorm carrier hack
-        if (Broodwar->mapFileName().find("BlueStorm") != string::npos && techList.find(UnitTypes::Protoss_Carrier) != techList.end())
-            itemQueue[UnitTypes::Protoss_Stargate] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus));
+        if (Broodwar->mapFileName().find("BlueStorm") != string::npos && techList.find(Protoss_Carrier) != techList.end())
+            itemQueue[Protoss_Stargate] = Item(Broodwar->self()->visibleUnitCount(Protoss_Nexus));
 
         // Hive upgrades
         if (Broodwar->self()->getRace() == Races::Zerg && Units::getSupply() >= 200) {
-            itemQueue[UnitTypes::Zerg_Queens_Nest] = Item(1);
-            itemQueue[UnitTypes::Zerg_Hive] = Item(Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Queens_Nest) >= 1);
-            itemQueue[UnitTypes::Zerg_Lair] = Item(Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Queens_Nest) < 1);
+            itemQueue[Zerg_Queens_Nest] = Item(1);
+            itemQueue[Zerg_Hive] = Item(Broodwar->self()->completedUnitCount(Zerg_Queens_Nest) >= 1);
+            itemQueue[Zerg_Lair] = Item(Broodwar->self()->completedUnitCount(Zerg_Queens_Nest) < 1);
         }
     }
 

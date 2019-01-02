@@ -4,10 +4,10 @@
 //
 //namespace McRave {
 //	static int vis(UnitType t) {
-//		return Broodwar->self()->visibleUnitCount(t);
+//		return vis(t);
 //	}
 //	static int com(UnitType t) {
-//		return Broodwar->self()->completedUnitCount(t);
+//		return com(t);
 //	}
 //
 //	static string enemyBuild = Strategy::getEnemyBuild();
@@ -36,7 +36,7 @@
 //		itemQueue[Protoss_Fleet_Beacon] =		Item((vis(Protoss_Scout) > 0));
 //
 //		if (vis(Protoss_Stargate) >= 2)
-//			itemQueue[UnitTypes::Protoss_Shield_Battery] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus));
+//			itemQueue[UnitTypes::Protoss_Shield_Battery] = Item(vis(UnitTypes::Protoss_Nexus));
 //	}
 //
 //	void BuildOrderManager::PDWEBMemes()
@@ -63,7 +63,7 @@
 //		itemQueue[Protoss_Fleet_Beacon] =		Item((vis(Protoss_Corsair) > 0));
 //
 //		if (vis(Protoss_Stargate) >= 2)
-//			itemQueue[UnitTypes::Protoss_Shield_Battery] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus));
+//			itemQueue[UnitTypes::Protoss_Shield_Battery] = Item(vis(UnitTypes::Protoss_Nexus));
 //	}
 //
 //	void BuildOrderManager::PArbiterMemes()
@@ -89,7 +89,7 @@
 //		itemQueue[Protoss_Stargate] =			Item(2 * (com(Protoss_Cybernetics_Core)));
 //
 //		if (vis(Protoss_Stargate) >= 2)
-//			itemQueue[UnitTypes::Protoss_Shield_Battery] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus));
+//			itemQueue[UnitTypes::Protoss_Shield_Battery] = Item(vis(UnitTypes::Protoss_Nexus));
 //	}
 //
 //	void BuildOrderManager::PShuttleMemes()

@@ -59,7 +59,7 @@
 //		for (auto &check : toCheck) {
 //			for (auto &pair : check.requiredUnits()) {
 //				UnitType type(pair.first);
-//				if (Broodwar->self()->completedUnitCount(type) == 0 && toCheck.find(type) == toCheck.end()) {
+//				if (com(type) == 0 && toCheck.find(type) == toCheck.end()) {
 //					toCheck.insert(type);
 //					moreToAdd = true;
 //				}
@@ -80,7 +80,7 @@
 //		bool canAdd = true;
 //		for (auto &pair : check.requiredUnits()) {
 //			UnitType type(pair.first);
-//			if (type.isBuilding() && Broodwar->self()->completedUnitCount(type) == 0) {
+//			if (type.isBuilding() && com(type) == 0) {
 //				canAdd = false;
 //			}
 //		}
@@ -100,8 +100,8 @@
 //	bioUnlocked = mechUnlocked = airUnlocked = false;
 //
 //	satVal = 2;
-//	prodVal = Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Barracks) + Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Factory) + Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Starport);
-//	baseVal = Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Command_Center);
+//	prodVal = vis(UnitTypes::Terran_Barracks) + vis(UnitTypes::Terran_Factory) + vis(UnitTypes::Terran_Starport);
+//	baseVal = vis(UnitTypes::Terran_Command_Center);
 //
 //	techVal = techList.size();
 //	productionSat = (prodVal >= satVal * baseVal);
@@ -116,7 +116,7 @@
 //	if (currentBuild == "TSparks")
 //	{
 //		bioUnlocked = true;
-//		productionSat = (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Barracks) >= min(12, (3 * Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Command_Center))));
+//		productionSat = (com(UnitTypes::Terran_Barracks) >= min(12, (3 * vis(UnitTypes::Terran_Command_Center))));
 //		unlockedType.insert(UnitTypes::Terran_Marine);
 //		unlockedType.insert(UnitTypes::Terran_Medic);
 //	}
@@ -130,25 +130,25 @@
 //		techList.insert(UnitTypes::Terran_Wraith);
 //		techList.insert(UnitTypes::Terran_Valkyrie);
 //
-//		if (!getOpening || Broodwar->self()->completedUnitCount(UnitTypes::Terran_Marine) >= 4)
+//		if (!getOpening || com(UnitTypes::Terran_Marine) >= 4)
 //			unlockedType.erase(UnitTypes::Terran_Marine);
 //		else
 //			unlockedType.insert(UnitTypes::Terran_Marine);
 //
 //		// Machine Shop
-//		if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= 1)
-//			itemQueue[UnitTypes::Terran_Machine_Shop] = Item(max(1, Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) - (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center))));
+//		if (com(UnitTypes::Terran_Factory) >= 1)
+//			itemQueue[UnitTypes::Terran_Machine_Shop] = Item(max(1, com(UnitTypes::Terran_Factory) - (com(UnitTypes::Terran_Command_Center))));
 //
 //		// Control Tower
-//		if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Starport) >= 1)
-//			itemQueue[UnitTypes::Terran_Control_Tower] = Item(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Starport));
+//		if (com(UnitTypes::Terran_Starport) >= 1)
+//			itemQueue[UnitTypes::Terran_Control_Tower] = Item(com(UnitTypes::Terran_Starport));
 //	}
 //	else if (currentBuild == "T1RaxFE" || currentBuild == "T2RaxFE")
 //	{
 //		bioUnlocked = true;
 //		unlockedType.insert(UnitTypes::Terran_Marine);
 //		unlockedType.insert(UnitTypes::Terran_Medic);
-//		productionSat = (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Barracks) >= min(12, (3 * Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Command_Center))));
+//		productionSat = (com(UnitTypes::Terran_Barracks) >= min(12, (3 * vis(UnitTypes::Terran_Command_Center))));
 //	}
 //
 //	else if (currentBuild == "TNukeMemes")
@@ -160,15 +160,15 @@
 //		techList.insert(UnitTypes::Terran_Ghost);
 //		techList.insert(UnitTypes::Terran_Nuclear_Missile);
 //
-//		if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Covert_Ops) > 0)
-//			itemQueue[UnitTypes::Terran_Nuclear_Silo] = Item(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center));
+//		if (com(UnitTypes::Terran_Covert_Ops) > 0)
+//			itemQueue[UnitTypes::Terran_Nuclear_Silo] = Item(com(UnitTypes::Terran_Command_Center));
 //	}
 //	else if (currentBuild == "TBCMemes") {
 //		unlockedType.insert(UnitTypes::Terran_Siege_Tank_Tank_Mode);
 //		unlockedType.insert(UnitTypes::Terran_Vulture);
 //		unlockedType.insert(UnitTypes::Terran_Goliath);
 //
-//		if (!getOpening || Broodwar->self()->completedUnitCount(UnitTypes::Terran_Marine) >= 10)
+//		if (!getOpening || com(UnitTypes::Terran_Marine) >= 10)
 //			unlockedType.erase(UnitTypes::Terran_Marine);
 //		else
 //			unlockedType.insert(UnitTypes::Terran_Marine);
@@ -178,35 +178,35 @@
 //	else
 //	{
 //		mechUnlocked = true;
-//		productionSat = (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= min(12, (2 * Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Command_Center))));
+//		productionSat = (com(UnitTypes::Terran_Factory) >= min(12, (2 * vis(UnitTypes::Terran_Command_Center))));
 //		unlockedType.insert(UnitTypes::Terran_Goliath);
 //		unlockedType.insert(UnitTypes::Terran_Vulture);
 //		unlockedType.insert(UnitTypes::Terran_Siege_Tank_Tank_Mode);
 //
-//		if (!getOpening || Broodwar->self()->completedUnitCount(UnitTypes::Terran_Marine) >= 4)
+//		if (!getOpening || com(UnitTypes::Terran_Marine) >= 4)
 //			unlockedType.erase(UnitTypes::Terran_Marine);
 //		else
 //			unlockedType.insert(UnitTypes::Terran_Marine);
 //	}
 //
 //	// Control Tower
-//	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Starport) >= 1)
-//		itemQueue[UnitTypes::Terran_Control_Tower] = Item(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Starport));
+//	if (com(UnitTypes::Terran_Starport) >= 1)
+//		itemQueue[UnitTypes::Terran_Control_Tower] = Item(com(UnitTypes::Terran_Starport));
 //
 //	// Machine Shop
-//	if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) >= 1)
-//		itemQueue[UnitTypes::Terran_Machine_Shop] = Item(max(0, Broodwar->self()->completedUnitCount(UnitTypes::Terran_Factory) - (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center))));
+//	if (com(UnitTypes::Terran_Factory) >= 1)
+//		itemQueue[UnitTypes::Terran_Machine_Shop] = Item(max(0, com(UnitTypes::Terran_Factory) - (com(UnitTypes::Terran_Command_Center))));
 //
 //	// Supply Depot logic
-//	if (Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Supply_Depot) > (int)fastExpand)
+//	if (vis(UnitTypes::Terran_Supply_Depot) > (int)fastExpand)
 //	{
-//		int count = min(22, (int)floor((Units::getSupply() / max(15, (16 - Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Supply_Depot) - Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Command_Center))))));
+//		int count = min(22, (int)floor((Units::getSupply() / max(15, (16 - vis(UnitTypes::Terran_Supply_Depot) - vis(UnitTypes::Terran_Command_Center))))));
 //		itemQueue[UnitTypes::Terran_Supply_Depot] = Item(count);
 //	}
 //
 //	// Expansion logic
 //	if (shouldExpand())
-//		itemQueue[UnitTypes::Terran_Command_Center] = Item(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) + 1);
+//		itemQueue[UnitTypes::Terran_Command_Center] = Item(com(UnitTypes::Terran_Command_Center) + 1);
 //
 //	// Bunker logic
 //	if (Strategy::enemyRush() && !wallMain)
@@ -229,7 +229,7 @@
 //			itemQueue[UnitTypes::Terran_Comsat_Station] = Item(2);
 //		}
 //
-//		if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Science_Facility) > 0)
+//		if (com(UnitTypes::Terran_Science_Facility) > 0)
 //			itemQueue[UnitTypes::Terran_Physics_Lab] = Item(1);
 //
 //		// Engineering Bay logic
@@ -238,18 +238,18 @@
 //
 //		// Barracks logic
 //		if (bioUnlocked && shouldAddProduction::)
-//			itemQueue[UnitTypes::Terran_Barracks] = Item(min(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) * 3, Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Barracks) + 1));
+//			itemQueue[UnitTypes::Terran_Barracks] = Item(min(com(UnitTypes::Terran_Command_Center) * 3, vis(UnitTypes::Terran_Barracks) + 1));
 //
 //		// Factory logic
 //		if (mechUnlocked && shouldAddProduction::)
-//			itemQueue[UnitTypes::Terran_Factory] = Item(min(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) * 2, Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Factory) + 1));
+//			itemQueue[UnitTypes::Terran_Factory] = Item(min(com(UnitTypes::Terran_Command_Center) * 2, vis(UnitTypes::Terran_Factory) + 1));
 //
 //		// Starport logic
 //		if (airUnlocked && shouldAddProduction::)
-//			itemQueue[UnitTypes::Terran_Starport] = Item(min(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) * 2, Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Starport) + 1));
+//			itemQueue[UnitTypes::Terran_Starport] = Item(min(com(UnitTypes::Terran_Command_Center) * 2, vis(UnitTypes::Terran_Starport) + 1));
 //
 //		// Missle Turret logic
-//		if (Players::getNumberZerg() > 0 && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Engineering_Bay) > 0)
-//			itemQueue[UnitTypes::Terran_Missile_Turret] = Item(Broodwar->self()->completedUnitCount(UnitTypes::Terran_Command_Center) * 2);
+//		if (Players::getNumberZerg() > 0 && com(UnitTypes::Terran_Engineering_Bay) > 0)
+//			itemQueue[UnitTypes::Terran_Missile_Turret] = Item(com(UnitTypes::Terran_Command_Center) * 2);
 //	}
 //}

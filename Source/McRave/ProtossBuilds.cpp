@@ -10,18 +10,13 @@ using namespace McRave::BuildOrder::All;
 namespace McRave::BuildOrder::Protoss {
 
     namespace {
-
-        static int vis(UnitType t) {
-            return Broodwar->self()->visibleUnitCount(t);
-        }
-        static int com(UnitType t) {
-            return Broodwar->self()->completedUnitCount(t);
-        }
-
+               
         string enemyBuild() { return Strategy::getEnemyBuild(); }
+
         bool goonRange() {
             return Broodwar->self()->isUpgrading(UpgradeTypes::Singularity_Charge) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge);
         }
+
         bool addGates() {
             return goonRange() && Broodwar->self()->minerals() >= 100;
         }
@@ -260,6 +255,7 @@ namespace McRave::BuildOrder::Protoss {
         if (Players::vT()) {
             // https://liquipedia.net/starcraft/10/15_Gates_(vs._Terran)
             defaultPvT();
+            playPassive = false;
 
             if (currentTransition == "DT") {
                 getOpening =		s < 70;
@@ -675,7 +671,7 @@ namespace McRave::BuildOrder::Protoss {
         if (!lockedTransition) {
 
             // Change Transition
-            if (s < 100 && (Strategy::enemyFastExpand() || enemyBuild() == "TSiegeExpand"))
+            if (Strategy::enemyFastExpand() || enemyBuild() == "TSiegeExpand")
                 currentTransition =	"DoubleExpand";
             else if ((!Strategy::enemyFastExpand() && Terrain::foundEnemy() && currentTransition == "DoubleExpand") || Strategy::enemyPressure())
                 currentTransition = "Standard";
@@ -709,23 +705,12 @@ namespace McRave::BuildOrder::Protoss {
             getOpening =		s < 140;
             playPassive =		com(Protoss_Nexus) < 3;
             lockedTransition =  vis(Protoss_Nexus) >= 3;
+            gasLimit =          s >= 80 ? INT_MAX : 3;
 
             itemQueue[Protoss_Nexus] =				Item(1 + (s >= 42) + (s >= 70));
-            itemQueue[Protoss_Assimilator] =		Item((s >= 24) + (s >= 48));
+            itemQueue[Protoss_Assimilator] =		Item((s >= 24) + (s >= 80));
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
         }
-        /*else if (currentTransition == "Defensive") {
-            fastExpand =		false;
-            getOpening =		s < 80;
-            zealotLimit =		INT_MAX;
-            lockedTransition =  vis(Protoss_Gateway) >= 2;
-
-            itemQueue[Protoss_Nexus] =				Item(1);
-            itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 24) + (s >= 72));
-            itemQueue[Protoss_Assimilator] =		Item((s >= 40));
-            itemQueue[Protoss_Shield_Battery] =		Item(s >= 48);
-            itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 60);
-        }*/
         else if (currentTransition == "Standard") {
             getOpening =		s < 80;
             firstUnit =         com(Protoss_Nexus) >= 2 ? Protoss_Observer : UnitTypes::None;
@@ -735,7 +720,7 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
         }
         else if (currentTransition == "Carrier") {
-            getOpening =		s < 160;
+            getOpening =		s < 80;
             firstUnit =         com(Protoss_Nexus) >= 2 ? Protoss_Carrier : UnitTypes::None;
             lockedTransition =  com(Protoss_Nexus) >= 2;
 

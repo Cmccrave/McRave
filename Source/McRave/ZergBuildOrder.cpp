@@ -26,13 +26,13 @@
 //{
 //	// Adding hatcheries when needed
 //	if (shouldExpand() || shouldAddProduction::)
-//		itemQueue[UnitTypes::Zerg_Hatchery] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Hatchery) + Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Lair) + Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Hive) + 1);
+//		itemQueue[UnitTypes::Zerg_Hatchery] = Item(vis(UnitTypes::Zerg_Hatchery) + vis(UnitTypes::Zerg_Lair) + vis(UnitTypes::Zerg_Hive) + 1);
 //
 //	if (Strategy::enemyFastExpand() && !rush)
-//		itemQueue[UnitTypes::Zerg_Hatchery] = Item(min(3, Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Hatchery) + Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Lair) + Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Hive) + 1));
+//		itemQueue[UnitTypes::Zerg_Hatchery] = Item(min(3, vis(UnitTypes::Zerg_Hatchery) + vis(UnitTypes::Zerg_Lair) + vis(UnitTypes::Zerg_Hive) + 1));
 //
 //	// When to tech
-//	if (Broodwar->getFrameCount() > 5000 && Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Hatchery) > (1 + (int)techList.size()) * 2)
+//	if (Broodwar->getFrameCount() > 5000 && vis(UnitTypes::Zerg_Hatchery) > (1 + (int)techList.size()) * 2)
 //		getTech = true;
 //	if (techComplete())
 //		techUnit = UnitTypes::None;
@@ -43,10 +43,10 @@
 //	
 //	// Hack
 //	if (currentBuild == "ZLurkerTurtle") {
-//		if (Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Zergling) >= 6)
+//		if (vis(UnitTypes::Zerg_Zergling) >= 6)
 //			unlockedType.erase(UnitTypes::Zerg_Zergling);
-//		if (Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Lurker) >= 1)
-//			itemQueue[UnitTypes::Zerg_Creep_Colony] = Item(Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Lurker));
+//		if (vis(UnitTypes::Zerg_Lurker) >= 1)
+//			itemQueue[UnitTypes::Zerg_Creep_Colony] = Item(vis(UnitTypes::Zerg_Lurker));
 //	}
 //
 //	unlockedType.insert(UnitTypes::Zerg_Drone);

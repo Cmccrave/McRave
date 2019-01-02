@@ -393,7 +393,7 @@ namespace McRave::Util {
         double sq = sqrt(1.0 / (1.0 + pow(inverseSlope, 2.0)));
 
         int x = x0 + int(distance * sq);
-        int y = y0 + int(distance * sq * inverseSlope);
+        int y = int(y0 + distance * sq * inverseSlope);
         double yInt2 = y - (line1.slope * x);
 
         Line newLine(yInt2, line1.slope);

@@ -21,7 +21,7 @@ namespace McRave::Units {
         double globalAllyAirStrength, globalEnemyAirStrength;
         double allyDefense;
         double minThreshold, maxThreshold;
-        int supply = 4;
+        int supply = 10;
         int scoutDeadFrame = 0;
         bool ignoreSim;
         Position armyCenter;
@@ -54,8 +54,8 @@ namespace McRave::Units {
             auto sync = false;
             auto belowGrdLimits = false;
             auto belowAirLimits = false;
-            map<const ChokePoint *, double> enemySqueezeFactor;
-            map<const ChokePoint *, double> selfSqueezeFactor;
+            map<const BWEM::ChokePoint *, double> enemySqueezeFactor;
+            map<const BWEM::ChokePoint *, double> selfSqueezeFactor;
 
             const auto shouldIgnoreSim = [&]() {
                 // If we have excessive resources, ignore our simulation and engage
@@ -135,7 +135,7 @@ namespace McRave::Units {
                     if (!addToSim(enemy))
                         continue;
 
-                    auto deadzone = enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode ? 64.0 : 0.0;
+                    auto deadzone = 0.0;// enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode ? 64.0 : 0.0; -- Removed because it made siege tanks too weak
                     auto widths = double(enemy.getType().width() + unit.getType().width()) / 2.0;
                     auto enemyRange = (unit.getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange());
                     auto engDist = enemy.getPosition().getDistance(unit.getPosition()) - enemyRange;
@@ -177,7 +177,7 @@ namespace McRave::Units {
                     if (!addToSim(ally))
                         continue;
 
-                    auto deadzone = ally.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode ? 64.0 : 0.0;
+                    auto deadzone = 0.0;// enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode ? 64.0 : 0.0; -- Removed because it made siege tanks too weak
                     auto engDist = ally.getEngDist();
                     auto widths = double(ally.getType().width() + ally.getTarget().getType().width()) / 2.0;
                     auto allyRange = (unit.getTarget().getType().isFlyer() ? ally.getAirRange() : ally.getGroundRange());

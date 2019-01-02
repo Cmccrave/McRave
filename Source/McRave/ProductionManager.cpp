@@ -2,6 +2,7 @@
 
 using namespace BWAPI;
 using namespace std;
+using namespace UnitTypes;
 
 namespace McRave::Production {
 
@@ -164,16 +165,16 @@ namespace McRave::Production {
 
             // Determine whether we want reavers or shuttles;
             if (!Strategy::needDetection()) {
-                if ((Terrain::isIslandMap() && Broodwar->self()->visibleUnitCount(unit) < 2 * Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus))
-                    || (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) > (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle) * 2))
-                    || (Broodwar->mapFileName().find("Great Barrier") != string::npos && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle) < 1))
+                if ((Terrain::isIslandMap() && vis(unit) < 2 * vis(UnitTypes::Protoss_Nexus))
+                    || (vis(UnitTypes::Protoss_Reaver) > (vis(UnitTypes::Protoss_Shuttle) * 2))
+                    || (Broodwar->mapFileName().find("Great Barrier") != string::npos && vis(UnitTypes::Protoss_Shuttle) < 1))
                     needShuttles = true;
-                if (!Terrain::isIslandMap() || (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) <= (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle) * 2)))
+                if (!Terrain::isIslandMap() || (vis(UnitTypes::Protoss_Reaver) <= (vis(UnitTypes::Protoss_Shuttle) * 2)))
                     needReavers = true;
             }
 
             // HACK: Want x reavers before a shuttle
-            if (Players::vP() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Reaver) < (2 + int(Strategy::getEnemyBuild() == "P4Gate")))
+            if (Players::vP() && vis(UnitTypes::Protoss_Reaver) < (2 + int(Strategy::getEnemyBuild() == "P4Gate")))
                 needShuttles = false;
 
             //// No shuttles
@@ -187,9 +188,9 @@ namespace McRave::Production {
             case Protoss_Dragoon:
                 return true;
             case Protoss_Dark_Templar:
-                return Broodwar->self()->visibleUnitCount(unit) < 4;
+                return vis(unit) < 4;
             case Protoss_High_Templar:
-                return Broodwar->self()->visibleUnitCount(unit) < 10 && (Broodwar->self()->hasResearched(TechTypes::Psionic_Storm) || Broodwar->self()->isResearching(TechTypes::Psionic_Storm));
+                return vis(unit) < 10 && (Broodwar->self()->hasResearched(TechTypes::Psionic_Storm) || Broodwar->self()->isResearching(TechTypes::Psionic_Storm));
 
                 // Robo Units
             case Protoss_Shuttle:
@@ -197,17 +198,17 @@ namespace McRave::Production {
             case Protoss_Reaver:
                 return needReavers;
             case Protoss_Observer:
-                return Broodwar->self()->visibleUnitCount(unit) < 1 + (Units::getSupply() / 100);
+                return vis(unit) < 1 + (Units::getSupply() / 100);
 
                 // Stargate Units
             case Protoss_Corsair:
-                return Broodwar->self()->visibleUnitCount(unit) < (10 + (Terrain::isIslandMap() * 10));
+                return vis(unit) < (10 + (Terrain::isIslandMap() * 10));
             case Protoss_Scout:
                 return true;
             case Protoss_Carrier:
                 return true;
             case Protoss_Arbiter:
-                return (Broodwar->self()->visibleUnitCount(unit) < 10 && (Broodwar->self()->isUpgrading(UpgradeTypes::Khaydarin_Core) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Khaydarin_Core)));
+                return (vis(unit) < 10 && (Broodwar->self()->isUpgrading(UpgradeTypes::Khaydarin_Core) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Khaydarin_Core)));
 
                 // Barracks Units
             case Terran_Marine:
@@ -237,9 +238,9 @@ namespace McRave::Production {
             case Terran_Battlecruiser:
                 return true;
             case Terran_Science_Vessel:
-                return Broodwar->self()->visibleUnitCount(unit) < 6;
+                return vis(unit) < 6;
             case Terran_Dropship:
-                return Broodwar->self()->visibleUnitCount(unit) <= 0;
+                return vis(unit) <= 0;
             }
             return false;
         }
@@ -273,13 +274,13 @@ namespace McRave::Production {
                 switch (upgrade) {
                     // Energy upgrades
                 case Khaydarin_Amulet:
-                    return (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Assimilator) >= 4 && Broodwar->self()->hasResearched(TechTypes::Psionic_Storm) && Broodwar->self()->gas() >= 750);
+                    return (vis(UnitTypes::Protoss_Assimilator) >= 4 && Broodwar->self()->hasResearched(TechTypes::Psionic_Storm) && Broodwar->self()->gas() >= 750);
                 case Khaydarin_Core:
                     return true;
 
                     // Range upgrades
                 case Singularity_Charge:
-                    return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Dragoon) >= 1;
+                    return vis(UnitTypes::Protoss_Dragoon) >= 1;
 
                     // Sight upgrades
                 case Apial_Sensors:
@@ -289,7 +290,7 @@ namespace McRave::Production {
 
                     // Capacity upgrades
                 case Carrier_Capacity:
-                    return true;
+                    return vis(Protoss_Carrier) >= 2;
                 case Reaver_Capacity:
                     return (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
                 case Scarab_Damage:
@@ -297,27 +298,27 @@ namespace McRave::Production {
 
                     // Speed upgrades
                 case Gravitic_Drive:
-                    return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Shuttle) > 0;
+                    return vis(UnitTypes::Protoss_Shuttle) > 0;
                 case Gravitic_Thrusters:
-                    return Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Scout) > 0;
+                    return vis(UnitTypes::Protoss_Scout) > 0;
                 case Gravitic_Boosters:
                     return (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
                 case Leg_Enhancements:
-                    return (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Nexus) >= 2);
+                    return (vis(UnitTypes::Protoss_Nexus) >= 2);
 
                     // Ground unit upgrades
                 case Protoss_Ground_Weapons:
                     return !Terrain::isIslandMap() && (Units::getSupply() > 120 || Players::getNumberZerg() > 0);
                 case Protoss_Ground_Armor:
-                    return !Terrain::isIslandMap() && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Armor) || Broodwar->self()->isUpgrading(UpgradeTypes::Protoss_Ground_Weapons));
+                    return !Terrain::isIslandMap() && (Broodwar->self()->getUpgradeLevel(Protoss_Ground_Weapons) > Broodwar->self()->getUpgradeLevel(Protoss_Ground_Armor) || Broodwar->self()->isUpgrading(Protoss_Ground_Weapons));
                 case Protoss_Plasma_Shields:
-                    return (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) >= 2 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Armor) >= 2);
+                    return (Broodwar->self()->getUpgradeLevel(Protoss_Ground_Weapons) >= 2 && Broodwar->self()->getUpgradeLevel(Protoss_Ground_Armor) >= 2);
 
                     // Air unit upgrades
                 case Protoss_Air_Weapons:
-                    return (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Corsair) > 0 || Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Scout) > 0);
+                    return (vis(UnitTypes::Protoss_Corsair) > 0 || vis(UnitTypes::Protoss_Scout) > 0 || (vis(Protoss_Stargate) > 0 && Players::vT()));
                 case Protoss_Air_Armor:
-                    return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Air_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Air_Armor);
+                    return Broodwar->self()->getUpgradeLevel(Protoss_Air_Weapons) > Broodwar->self()->getUpgradeLevel(Protoss_Air_Armor);
                 }
             }
 
@@ -332,16 +333,16 @@ namespace McRave::Production {
                 case Terran_Infantry_Weapons:
                     return true;// (BuildOrder::isBioBuild());
                 case Terran_Infantry_Armor:
-                    return (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Terran_Infantry_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Terran_Infantry_Armor) || Broodwar->self()->isUpgrading(UpgradeTypes::Terran_Infantry_Weapons));
+                    return (Broodwar->self()->getUpgradeLevel(Terran_Infantry_Weapons) > Broodwar->self()->getUpgradeLevel(Terran_Infantry_Armor) || Broodwar->self()->isUpgrading(Terran_Infantry_Weapons));
 
                 case Terran_Vehicle_Weapons:
                     return (Units::getGlobalAllyGroundStrength() > 20.0);
                 case Terran_Vehicle_Plating:
-                    return (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Terran_Vehicle_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Terran_Vehicle_Plating) || Broodwar->self()->isUpgrading(UpgradeTypes::Terran_Vehicle_Weapons));
+                    return (Broodwar->self()->getUpgradeLevel(Terran_Vehicle_Weapons) > Broodwar->self()->getUpgradeLevel(Terran_Vehicle_Plating) || Broodwar->self()->isUpgrading(Terran_Vehicle_Weapons));
                 case Terran_Ship_Weapons:
                     return (Units::getGlobalAllyAirStrength() > 20.0);
                 case Terran_Ship_Plating:
-                    return (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Terran_Ship_Weapons) > Broodwar->self()->getUpgradeLevel(UpgradeTypes::Terran_Ship_Plating) || Broodwar->self()->isUpgrading(UpgradeTypes::Terran_Ship_Weapons));
+                    return (Broodwar->self()->getUpgradeLevel(Terran_Ship_Weapons) > Broodwar->self()->getUpgradeLevel(Terran_Ship_Plating) || Broodwar->self()->isUpgrading(Terran_Ship_Weapons));
                 }
             }
 
@@ -353,7 +354,7 @@ namespace McRave::Production {
                 case Grooved_Spines:
                     return true;
                 case Muscular_Augments:
-                    return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Grooved_Spines);
+                    return Broodwar->self()->getUpgradeLevel(Grooved_Spines);
                 case Pneumatized_Carapace:
                     return (Units::getSupply() > 160);
                 case Anabolic_Synthesis:
@@ -412,7 +413,7 @@ namespace McRave::Production {
                 case Recall:
                     return (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
                 case Disruption_Web:
-                    return (Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Corsair) >= 10);
+                    return (vis(UnitTypes::Protoss_Corsair) >= 10);
                 }
             }
 
@@ -423,13 +424,13 @@ namespace McRave::Production {
                 case Spider_Mines:
                     return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Ion_Thrusters) > 0 || Broodwar->self()->isUpgrading(UpgradeTypes::Ion_Thrusters);
                 case Tank_Siege_Mode:
-                    return Broodwar->self()->hasResearched(TechTypes::Spider_Mines) || Broodwar->self()->isResearching(TechTypes::Spider_Mines) || Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Siege_Tank_Tank_Mode) > 0;
+                    return Broodwar->self()->hasResearched(TechTypes::Spider_Mines) || Broodwar->self()->isResearching(TechTypes::Spider_Mines) || vis(UnitTypes::Terran_Siege_Tank_Tank_Mode) > 0;
                 case Cloaking_Field:
-                    return Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Wraith) >= 2;
+                    return vis(UnitTypes::Terran_Wraith) >= 2;
                 case Yamato_Gun:
-                    return Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Battlecruiser) >= 0;
+                    return vis(UnitTypes::Terran_Battlecruiser) >= 0;
                 case Personnel_Cloaking:
-                    return Broodwar->self()->visibleUnitCount(UnitTypes::Terran_Ghost) >= 2;
+                    return vis(UnitTypes::Terran_Ghost) >= 2;
                 }
             }
 
@@ -454,7 +455,7 @@ namespace McRave::Production {
                 double score = max(0.01, Strategy::getUnitScore(unit));
                 double value = score * mineral * gas;
 
-                if (unit.isAddon() && BuildOrder::getItemQueue().find(unit) != BuildOrder::getItemQueue().end() && BuildOrder::getItemQueue().at(unit).getActualCount() > Broodwar->self()->visibleUnitCount(unit)) {
+                if (unit.isAddon() && BuildOrder::getItemQueue().find(unit) != BuildOrder::getItemQueue().end() && BuildOrder::getItemQueue().at(unit).getActualCount() > vis(unit)) {
                     building.unit()->buildAddon(unit);
                     break;
                 }
@@ -464,11 +465,11 @@ namespace McRave::Production {
                     best = DBL_MAX;
                     bestType = unit;
                 }
-                else if (unit == BuildOrder::getTechUnit() && isCreateable(building.unit(), unit) && isSuitable(unit) && Broodwar->self()->visibleUnitCount(unit) == 0 && isAffordable(unit)) {
+                else if (unit == BuildOrder::getTechUnit() && isCreateable(building.unit(), unit) && isSuitable(unit) && vis(unit) == 0 && isAffordable(unit)) {
                     best = DBL_MAX;
                     bestType = unit;
                 }
-                else if (unit == UnitTypes::Protoss_Observer && isCreateable(building.unit(), unit) && isSuitable(unit) && Broodwar->self()->visibleUnitCount(unit) < Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus)) {
+                else if (unit == UnitTypes::Protoss_Observer && isCreateable(building.unit(), unit) && isSuitable(unit) && vis(unit) < Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus)) {
                     best = DBL_MAX;
                     bestType = unit;
                 }
@@ -576,7 +577,7 @@ namespace McRave::Production {
                 // CC/Nexus
                 else if (building.getType().isResourceDepot() && latencyIdle) {
                     for (auto &unit : building.getType().buildsWhat()) {
-                        if (unit.isAddon() && !building.unit()->getAddon() && BuildOrder::getItemQueue().find(unit) != BuildOrder::getItemQueue().end() && BuildOrder::getItemQueue().at(unit).getActualCount() > Broodwar->self()->visibleUnitCount(unit)) {
+                        if (unit.isAddon() && !building.unit()->getAddon() && BuildOrder::getItemQueue().find(unit) != BuildOrder::getItemQueue().end() && BuildOrder::getItemQueue().at(unit).getActualCount() > vis(unit)) {
                             building.unit()->buildAddon(unit);
                             continue;
                         }

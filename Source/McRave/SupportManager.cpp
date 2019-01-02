@@ -41,7 +41,7 @@ namespace McRave::Support {
             posBest = Terrain::closestUnexploredStart();
 
         // Check if any expansions need detection on them
-        else if (unit.getType().isDetector() && Broodwar->self()->completedUnitCount(unit.getType()) >= 1 && BuildOrder::buildCount(building) > Broodwar->self()->visibleUnitCount(building) && !Command::overlapsCommands(unit.unit(), unit.getType(), (Position)Buildings::getCurrentExpansion(), 320))
+        else if (unit.getType().isDetector() && com(unit.getType()) >= 1 && BuildOrder::buildCount(building) > vis(building) && !Command::overlapsCommands(unit.unit(), unit.getType(), (Position)Buildings::getCurrentExpansion(), 320))
             posBest = Position(Buildings::getCurrentExpansion());
 
         // Arbiters cast stasis on a target		

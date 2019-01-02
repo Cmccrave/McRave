@@ -1,5 +1,4 @@
 #include "McRave.h"
-#include "UnitInfo.h"
 
 using namespace BWAPI;
 using namespace std;

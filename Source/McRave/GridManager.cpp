@@ -115,7 +115,7 @@ namespace McRave::Grids
                     auto dist = fasterDistGrids(x1, y1, (x * 8) + 4, (y * 8) + 4);
 
                     // Collision
-                    if (!unit.getType().isFlyer() && Util::rectangleIntersect(topLeft, botRight, x, y)) {
+                    if (!unit.getType().isFlyer() && Util::rectangleIntersect(topLeft, botRight, x*8, y*8)) {
                         collision[x][y] += 1;
                         saveReset(x,y);
                     }
@@ -256,9 +256,7 @@ namespace McRave::Grids
                 for (int y = 0; y <= Broodwar->mapHeight() * 4; y++) {
                     WalkPosition w(x, y);
 
-                    if (distanceHome[x][y] == DBL_MAX)
-                        Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Black);
-                    if (distanceHome[x][y] == 0)
+                    if (collision[x][y] == 0)
                         Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Blue);
                 }
             }

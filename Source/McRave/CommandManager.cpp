@@ -165,19 +165,20 @@ namespace McRave::Command {
             if (shouldAttack && unit.getType() == UnitTypes::Protoss_Carrier) {
                 auto leashRange = 320;
                 for (auto &interceptor : unit.unit()->getInterceptors()) {
-                    if (interceptor->getOrder() == Orders::InterceptorReturn) {
+                    if (interceptor->getOrder() == Orders::InterceptorReturn && interceptor->isCompleted()) {
                         unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
                         return true;
                     }
                 }
-                if (unit.getPosition().getApproxDistance(unit.getTarget().getPosition()) < leashRange) {
+                if (unit.getPosition().getApproxDistance(unit.getTarget().getPosition()) >= leashRange) {
                     unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
+                    unit.circleBlue();
                     return true;
                 }
             }
 
             // If unit should be attacking
-            if (shouldAttack && canAttack) {
+            else if (shouldAttack && canAttack) {
                 // Flyers don't want to decel when out of range, so we move to the target then attack when in range
                 if ((unit.getType().isFlyer() || unit.getType().isWorker()) && unit.hasTarget() && !Util::unitInRange(unit))
                     unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition());
@@ -326,7 +327,7 @@ namespace McRave::Command {
                 if (unit.getType() == UnitTypes::Protoss_Carrier) {
                     auto leashRange = 320;
                     for (auto &interceptor : unit.unit()->getInterceptors()) {
-                        if (interceptor->getOrder() != Orders::InterceptorAttack)
+                        if (interceptor->getOrder() != Orders::InterceptorAttack && interceptor->isCompleted())
                             return false;
                     }
                     if (unit.getPosition().getApproxDistance(unit.getTarget().getPosition()) >= leashRange)
@@ -664,17 +665,127 @@ namespace McRave::Command {
         // Radius for checking tiles
         auto start = unit.getWalkPosition();
         auto radius = 8 + int(unit.getSpeed()) + (8 * (int)unit.getType().isFlyer());
-        auto unitHeight = int(unit.getType().height() / 8.0);
-        auto unitWidth = int(unit.getType().width() / 8.0);
+        auto walkHeight = int(unit.getType().height() / 8.0);
+        auto walkWidth = int(unit.getType().width() / 8.0);
         auto mapWidth = Broodwar->mapWidth() * 4;
         auto mapHeight = Broodwar->mapHeight() * 4;
-        auto offset = unit.getType().isFlyer() ? 12 : 0;
+        auto offset = unit.getType().isFlyer() ? 12 : 0; // offset for flyers to try not to get stuck on map edges
+        auto center = WalkPosition(unit.getPosition());
 
         // Boundaries
         auto left = max(start.x - radius, offset);
-        auto right = min(start.x + radius + unitWidth, mapWidth - offset);
+        auto right = min(start.x + radius + walkWidth, mapWidth - offset);
         auto top = max(start.y - radius, offset);
-        auto bot = min(start.y + radius + unitHeight, mapHeight - offset);
+        auto bot = min(start.y + radius + walkHeight, mapHeight - offset);
+
+
+        // Check what directions are okay
+        //auto topY = start.y - 1;
+        //if (topY > 0 && topY < mapHeight) {
+        //    topOk = true;
+        //    for (int x = start.x - 1; x <= start.x + walkWidth; x++) {
+        //        Position p = Position(WalkPosition(x, topY));
+        //        Broodwar->drawBoxMap(p, p + Position(8, 8), Colors::Black);
+        //        if (Grids::getCollision(WalkPosition(x, topY)) > 0 || !Broodwar->isWalkable(WalkPosition(x, topY)))
+        //            topOk = false;
+        //    }
+        //}
+        //auto botY = start.y + walkHeight;
+        //if (botY > 0 && botY < mapHeight) {
+        //    botOk = true;
+        //    for (int x = start.x - 1; x <= start.x + walkWidth; x++) {
+        //        Position p = Position(WalkPosition(x, botY));
+        //        Broodwar->drawBoxMap(p, p + Position(8, 8), Colors::Black);
+        //        if (Grids::getCollision(WalkPosition(x, botY)) > 0 || !Broodwar->isWalkable(WalkPosition(x, botY)))
+        //            botOk = false;
+        //    }
+        //}
+        //auto leftX = start.x - 1;
+        //if (leftX > 0 && leftX < mapWidth) {
+        //    leftOk = true;
+        //    for (int y = start.y - 1; y <= start.y + walkHeight; y++) {
+        //        Position p = Position(WalkPosition(leftX, y));
+        //        Broodwar->drawBoxMap(p, p + Position(8, 8), Colors::Black);
+        //        if (Grids::getCollision(WalkPosition(leftX, y)) > 0 || !Broodwar->isWalkable(WalkPosition(leftX, y)))
+        //            leftOk = false;
+        //    }
+        //}
+        //auto rightX = start.x + walkWidth;
+        //if (rightX > 0 && rightX < mapWidth) {
+        //    rightOk = true;
+        //    for (int y = start.y - 1; y <= start.y + walkHeight; y++) {
+        //        Position p = Position(WalkPosition(rightX, y));
+        //        Broodwar->drawBoxMap(p, p + Position(8, 8), Colors::Black);
+        //        if (Grids::getCollision(WalkPosition(rightX, y)) > 0 || !Broodwar->isWalkable(WalkPosition(rightX, y)))
+        //            leftOk = false;
+        //    }
+        //}
+
+        auto topWalkPosition = center - WalkPosition(0, walkHeight);
+        auto topOk = Grids::getCollision(topWalkPosition) == 0 && Broodwar->isWalkable(topWalkPosition);
+
+        auto botWalkPosition = center + WalkPosition(0, walkHeight);
+        auto botOk = Grids::getCollision(botWalkPosition) == 0 && Broodwar->isWalkable(botWalkPosition);
+
+        auto leftWalkPosition = center - WalkPosition(walkWidth, 0);
+        auto leftOk = Grids::getCollision(leftWalkPosition) == 0 && Broodwar->isWalkable(leftWalkPosition);
+
+        auto rightWalkPosition = center + WalkPosition(walkWidth, 0);
+        auto rightOk = Grids::getCollision(rightWalkPosition) == 0 && Broodwar->isWalkable(rightWalkPosition);
+
+
+        auto topLeftWalkPosition = center - WalkPosition(walkWidth, walkHeight);
+        auto topLeftOk = Grids::getCollision(topLeftWalkPosition) == 0 && Broodwar->isWalkable(topLeftWalkPosition);
+
+        auto topRightWalkPosition = center + WalkPosition(walkWidth, -walkHeight);
+        auto topRightOk = Grids::getCollision(topRightWalkPosition) == 0 && Broodwar->isWalkable(topRightWalkPosition);
+
+        auto botLeftWalkPosition = center - WalkPosition(walkWidth, -walkHeight);
+        auto botLeftOk = Grids::getCollision(botLeftWalkPosition) == 0 && Broodwar->isWalkable(botLeftWalkPosition);
+
+        auto botRightWalkPosition = center + WalkPosition(walkWidth, walkHeight);
+        auto botRightOk = Grids::getCollision(botRightWalkPosition) == 0 && Broodwar->isWalkable(botRightWalkPosition);
+
+
+        Broodwar->drawCircleMap(Position(topWalkPosition), 4, topOk ? Colors::Green : Colors::Red);
+        Broodwar->drawCircleMap(Position(botWalkPosition), 4, botOk ? Colors::Green : Colors::Red);
+        Broodwar->drawCircleMap(Position(leftWalkPosition), 4, leftOk ? Colors::Green : Colors::Red);
+        Broodwar->drawCircleMap(Position(rightWalkPosition), 4, rightOk ? Colors::Green : Colors::Red);
+
+        Broodwar->drawCircleMap(Position(topLeftWalkPosition), 4, topLeftOk ? Colors::Green : Colors::Red);
+        Broodwar->drawCircleMap(Position(topRightWalkPosition), 4, topRightOk ? Colors::Green : Colors::Red);
+        Broodwar->drawCircleMap(Position(botLeftWalkPosition), 4, botLeftOk ? Colors::Green : Colors::Red);
+        Broodwar->drawCircleMap(Position(botRightWalkPosition), 4, botRightOk ? Colors::Green : Colors::Red);
+
+        const auto directionsOkay = [&](WalkPosition here) {
+            auto yDiff = start.y - here.y;
+            auto xDiff = start.x - here.x;
+
+            // If this Position is a move horizontally
+            if (abs(xDiff) > walkWidth) {
+
+                // If this Position is a move vertically
+                if (abs(yDiff) > walkHeight) {
+
+                    if (xDiff > 0 && yDiff > 0 && !topLeftOk)
+                        return false;
+                    if (xDiff < 0 && yDiff > 0 && !topRightOk)
+                        return false;
+                    if (xDiff > 0 && yDiff < 0 && !botLeftOk)
+                        return false;
+                    if (xDiff < 0 && yDiff < 0 && !botRightOk)
+                        return false;
+                }
+                else if (xDiff > 0 && !leftOk)
+                    return false;
+                else if (xDiff < 0 && !rightOk)
+                    return false;
+            }
+            else if (yDiff > 0 && !topOk)
+                return false;
+            else if (yDiff < 0 && !botOk)
+                return false;
+        };
 
         const auto viablePosition = [&](WalkPosition here, Position p) {
             // If not a flyer and position blocks a building, has collision or a splash threat
@@ -698,8 +809,11 @@ namespace McRave::Command {
                 auto w = WalkPosition(x, y);
                 auto p = Position((x * 8) + 4, (y * 8) + 4);
 
+                //if (directionsOkay(w))
+                    //Broodwar->drawBoxMap(p, p + Position(8, 8), Colors::Black);
+
                 auto current = score(w);
-                if (current > best && viablePosition(w, p)) {
+                if (current > best && directionsOkay(w) && viablePosition(w, p)) {
                     bestPosition = p;
                     best = current;
                 }

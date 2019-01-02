@@ -24,7 +24,6 @@ namespace McRave {
         double speed = 0.0;
         double engageDist = 0.0;
         double simValue = 0.0;
-        double simBonus = 1.0;
 
         int lastAttackFrame = 0;
         int lastVisibleFrame = 0;
@@ -77,125 +76,52 @@ namespace McRave {
     public:
         UnitInfo();
 
-        // General use
-        void updateUnit();
-        void createDummy(UnitType);
-        double getDistance(UnitInfo unit) { return position.getDistance(unit.getPosition()); }
-
-        // Use a command
-        bool command(BWAPI::UnitCommandType, BWAPI::Position);
-        bool command(BWAPI::UnitCommandType, UnitInfo*);
-
-        // Roles
-        McRave::Role getRole() { return role; }
-        void setRole(McRave::Role newRole) { role = newRole; }
-
-        // Simulation
-        void setSimValue(double newValue) { simValue = newValue; }
-        double getSimValue() { return simValue; }
-
-        // Assigned Target
-        bool hasTarget() { return target != nullptr; }
-        UnitInfo &getTarget() { return *target; }
-        void setTarget(UnitInfo * unit) { target = unit; }
-
-        // Assigned Transport
-        bool hasTransport() { return transport != nullptr; }
-        UnitInfo &getTransport() { return *transport; }
-        void setTransport(UnitInfo * unit) { transport = unit; }
-
-        // Assigned Resource
-        bool hasResource() { return resource != nullptr; }
-        ResourceInfo &getResource() { return *resource; }
-        void setResource(ResourceInfo * unit) { resource = unit; }
-
-        // Assigned Cargo
         set<UnitInfo*>& getAssignedCargo() { return assignedCargo; }
-
-        // States
         TransportState getTransportState() { return tState; }
-        void setTransportState(TransportState newState) { tState = newState; }
         SimState getSimState() { return sState; }
-        void setSimState(SimState newState) { sState = newState; }
         GlobalState getGlobalState() { return gState; }
-        void setGlobalState(GlobalState newState) { gState = newState; }
         LocalState getLocalState() { return lState; }
-        void setLocalState(LocalState newState) { lState = newState; }
 
-        // Holding resource
-        int framesHoldingResource() { return resourceHeldFrames; }
-
-        // How many units are targeting this unit
-        int getUnitsAttacking() { return beingAttackedCount; }
-        void incrementBeingAttackedCount() { beingAttackedCount++; }
-
-        // Engagement distances
-        double getEngDist() { return engageDist; }
-        void setEngDist(double newValue) { engageDist = newValue; }
-
-        // Last positions
-        Position getLastPosition() { return lastPos; }
-        WalkPosition getLastWalk() { return lastWalk; }
-        TilePosition getLastTile() { return lastTile; }
-        bool sameTile() { return lastTile == tilePosition; }
-        void setLastPositions();
-
-        // Target path
-        void setPath(BWEB::PathFinding::Path& newPath) { path = newPath; }
-        BWEB::PathFinding::Path& getPath() { return path; }
         bool samePath() {
             return (path.getTiles().front() == target->getTilePosition() && path.getTiles().back() == tilePosition);
         }
-
-        // Attack frame
         bool hasAttackedRecently() {
             return (Broodwar->getFrameCount() - lastAttackFrame < 50);
         }
-
-        // Training frame
-        void setRemainingTrainFrame(int newFrame) { remainingTrainFrame = newFrame; }
-        int getRemainingTrainFrames() { return remainingTrainFrame; }
-
-        // Stuck
         bool isStuck() {
             return (Broodwar->getFrameCount() - lastMoveFrame > 50);
         }
 
-        // Creation frame
-        void setCreationFrame() { frameCreated = Broodwar->getFrameCount(); }
-        int getFrameCreated() { return frameCreated; }
-
-        // Starcraft Stats
-        double getPercentHealth() { return percentHealth; }				// Returns the units health percentage
+        double getPercentHealth() { return percentHealth; }
         double getPercentShield() { return percentShield; }
         double getPercentTotal() { return percentTotal; }
-        double getVisibleGroundStrength() { return visibleGroundStrength; }		// Returns the units visible ground strength		
-        double getMaxGroundStrength() { return maxGroundStrength; }			// Returns the units max ground strength		
-        double getVisibleAirStrength() { return visibleAirStrength; }			// Returns the units visible air strength		
-        double getMaxAirStrength() { return maxAirStrength; }				// Returns the units max air strength
-        double getGroundRange() { return groundRange; }					// Returns the units ground range including upgrades
+        double getVisibleGroundStrength() { return visibleGroundStrength; }
+        double getMaxGroundStrength() { return maxGroundStrength; }
+        double getVisibleAirStrength() { return visibleAirStrength; }
+        double getMaxAirStrength() { return maxAirStrength; }
+        double getGroundRange() { return groundRange; }
         double getGroundReach() { return groundReach; }
-        double getGroundDamage() { return groundDamage; }				// Returns the units ground damage (not including most upgrades)	
-        double getAirRange() { return airRange; }					// Returns the units air range including upgrades	
+        double getGroundDamage() { return groundDamage; }
+        double getAirRange() { return airRange; }
         double getAirReach() { return airReach; }
-        double getAirDamage() { return airDamage; }					// Returns the units air damage (not including most upgrades)		
-        double getSpeed() { return speed; }						// Returns the units movement speed in pixels per frame including upgrades	
+        double getAirDamage() { return airDamage; }
+        double getSpeed() { return speed; }
+        double getPriority() { return priority; }
+        double getEngDist() { return engageDist; }
+        double getSimValue() { return simValue; }
+        double getDistance(UnitInfo unit) { return position.getDistance(unit.getPosition()); }
         int getShields() { return shields; }
         int getHealth() { return health; }
-        int getLastAttackFrame() { return lastAttackFrame; }				// Returns the frame on which isStartingAttack was last true		
-        int getMinStopFrame() { return minStopFrame; }				// Returns the minimum number of frames that the unit needs after a shot before another command can be issued		
-        int getLastVisibleFrame() { return lastVisibleFrame; }			// Returns the last frame since this unit was visible
+        int getLastAttackFrame() { return lastAttackFrame; }
+        int getMinStopFrame() { return minStopFrame; }
+        int getLastVisibleFrame() { return lastVisibleFrame; }
         int getEnergy() { return energy; }
-
-        // McRave Stats
-        double getPriority() { return priority; }					// Returns the units priority for targeting purposes based on strength (not including value)		
-        double getSimBonus() { return simBonus; }
-
-        // Kill count
+        int getFrameCreated() { return frameCreated; }
+        int getRemainingTrainFrames() { return remainingTrainFrame; }
         int getKillCount() { return killCount; }
-        void setKillCount(int newValue) { killCount = newValue; }
+        int getUnitsAttacking() { return beingAttackedCount; }
+        int framesHoldingResource() { return resourceHeldFrames; }
 
-        // Debug circles
         void circleRed() { Broodwar->drawCircleMap(position, unitType.width(), Colors::Red); }
         void circleOrange() { Broodwar->drawCircleMap(position, unitType.width(), Colors::Orange); }
         void circleYellow() { Broodwar->drawCircleMap(position, unitType.width(), Colors::Yellow); }
@@ -207,7 +133,19 @@ namespace McRave {
         bool isHovering() { return unitType.isWorker() || unitType == UnitTypes::Protoss_Archon || unitType == UnitTypes::Protoss_Dark_Archon || unitType == UnitTypes::Terran_Vulture; }
         bool isBurrowed() { return burrowed; }
         bool isFlying() { return flying; }
-        Position getSimPosition() { return simPosition; }
+        bool sameTile() { return lastTile == tilePosition; }
+
+        bool hasResource() { return resource != nullptr; }
+        bool hasTransport() { return transport != nullptr; }
+        bool hasTarget() { return target != nullptr; }
+        bool command(BWAPI::UnitCommandType, BWAPI::Position);
+        bool command(BWAPI::UnitCommandType, UnitInfo*);
+
+        ResourceInfo &getResource() { return *resource; }
+        UnitInfo &getTransport() { return *transport; }
+        UnitInfo &getTarget() { return *target; }
+        McRave::Role getRole() { return role; }
+
         Unit unit() { return thisUnit; }
         UnitType getType() { return unitType; }
         UnitType getBuildingType() { return buildingType; }
@@ -216,12 +154,36 @@ namespace McRave {
         Position getPosition() { return position; }
         Position getEngagePosition() { return engagePosition; }
         Position getDestination() { return destination; }
+        Position getLastPosition() { return lastPos; }
+        Position getSimPosition() { return simPosition; }
         WalkPosition getWalkPosition() { return walkPosition; }
+        WalkPosition getLastWalk() { return lastWalk; }
         TilePosition getTilePosition() { return tilePosition; }
         TilePosition getBuildPosition() { return buildPosition; }
+        TilePosition getLastTile() { return lastTile; }
 
-        void setSimBonus(double newValue) { simBonus = newValue; }
+        BWEB::PathFinding::Path& getPath() { return path; }
+
+        void updateUnit();
+        void createDummy(UnitType);
+
+        void setEngDist(double newValue) { engageDist = newValue; }
+        void setSimValue(double newValue) { simValue = newValue; }
+
         void setLastAttackFrame(int newValue) { lastAttackFrame = newValue; }
+        void setRemainingTrainFrame(int newFrame) { remainingTrainFrame = newFrame; }
+        void setCreationFrame() { frameCreated = Broodwar->getFrameCount(); }
+        void setKillCount(int newValue) { killCount = newValue; }
+
+        void setTransportState(TransportState newState) { tState = newState; }
+        void setSimState(SimState newState) { sState = newState; }
+        void setGlobalState(GlobalState newState) { gState = newState; }
+        void setLocalState(LocalState newState) { lState = newState; }
+
+        void setResource(ResourceInfo * unit) { resource = unit; }
+        void setTransport(UnitInfo * unit) { transport = unit; }
+        void setTarget(UnitInfo * unit) { target = unit; }
+        void setRole(McRave::Role newRole) { role = newRole; }
 
         void setUnit(Unit newUnit) { thisUnit = newUnit; }
         void setType(UnitType newType) { unitType = newType; }
@@ -235,5 +197,9 @@ namespace McRave {
         void setWalkPosition(WalkPosition newPosition) { walkPosition = newPosition; }
         void setTilePosition(TilePosition newPosition) { tilePosition = newPosition; }
         void setBuildPosition(TilePosition newPosition) { buildPosition = newPosition; }
+
+        void setPath(BWEB::PathFinding::Path& newPath) { path = newPath; }
+        void setLastPositions();
+        void incrementBeingAttackedCount() { beingAttackedCount++; }
     };
 }
