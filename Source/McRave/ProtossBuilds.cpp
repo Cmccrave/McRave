@@ -202,54 +202,51 @@ namespace McRave::BuildOrder::Protoss {
     void P2Gate()
     {
         zealotLimit = 3;
+        proxy = currentOpener == "Proxy";
+        wallNat = currentOpener == "Natural";
+        scout = Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
 
         // Openers
         if (currentOpener == "Proxy") {
-            proxy =				vis(Protoss_Gateway) < 2;
-
             itemQueue[Protoss_Pylon] =					Item((s >= 12), (s >= 16));
             itemQueue[Protoss_Gateway] =				Item((vis(Protoss_Pylon) > 0) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
         }
         else if (currentOpener == "Natural") {
-            wallNat = true;
-
             if (Players::vT()) {
                 itemQueue[Protoss_Pylon] =				Item((s >= 14), (s >= 16));
                 itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 30));
             }
             else if (Broodwar->getStartLocations().size() >= 3) {
-                scout =									vis(Protoss_Gateway) >= 1;
                 itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
                 itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0) + (s >= 20), (s >= 18) + (s >= 20));
             }
             else {
-                scout =									vis(Protoss_Gateway) >= 2;
                 itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
                 itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
             }
         }
         else if (currentOpener == "Main") {
             if (Broodwar->getStartLocations().size() >= 3) {
-                scout =									vis(Protoss_Gateway) >= 1;
                 itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
                 itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 24));
             }
             else {
-                scout =									vis(Protoss_Gateway) >= 2;
                 itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
                 itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0) + (s >= 20));
             }
         }
 
         // Transitions
-        if (!Players::vT() && Strategy::enemyRush())
-            currentTransition = "Panic";
-        if (Strategy::enemyPressure())
-            currentTransition = "Defensive";
-        if (Players::vT() && Strategy::enemyFastExpand())
-            currentTransition = "DT";
-        if (Units::getEnemyCount(UnitTypes::Zerg_Sunken_Colony) >= 2)
-            currentTransition = "Expand";
+        if (!lockedTransition) {
+            if (!Players::vT() && Strategy::enemyRush())
+                currentTransition = "Panic";
+            else if (Strategy::enemyPressure())
+                currentTransition = "Defensive";
+            else if (Players::vT() && Strategy::enemyFastExpand())
+                currentTransition = "DT";
+            else if (Units::getEnemyCount(UnitTypes::Zerg_Sunken_Colony) >= 2)
+                currentTransition = "Expand";
+        }
 
         // Builds
         if (Players::vT()) {
