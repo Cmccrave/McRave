@@ -303,25 +303,11 @@ namespace BWEB::Map
                 if (reserveGrid[x][y] >= 1)
                     Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Black, false);
                 if (usedGrid[x][y] >= 1)
-                    Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Red, false);
+                    Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Brown, false);
             }
         }
 
         BWEB::Walls::draw();
-    }
-
-    UnitType overlapsCurrentWall(map<TilePosition, UnitType>& currentWall, const TilePosition here, const int width, const int height)
-    {
-        for (auto x = here.x; x < here.x + width; x++) {
-            for (auto y = here.y; y < here.y + height; y++) {
-                for (auto &placement : currentWall) {
-                    const auto tile = placement.first;
-                    if (x >= tile.x && x < tile.x + placement.second.tileWidth() && y >= tile.y && y < tile.y + placement.second.tileHeight())
-                        return placement.second;
-                }
-            }
-        }
-        return UnitTypes::None;
     }
 
     template <class T>

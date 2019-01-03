@@ -9,7 +9,7 @@ using namespace std::placeholders;
 namespace BWEB::PathFinding
 {
     namespace {
-        struct JPSGrid {
+        struct UnitCollision {
             inline bool operator()(unsigned x, unsigned y) const
             {
                 TilePosition t(x, y);
@@ -21,11 +21,47 @@ namespace BWEB::PathFinding
             double maxDist;
             TilePosition target;
         };
+
+        struct WallCollision {
+            inline bool operator()(unsigned x, unsigned y) const
+            {
+                TilePosition t(x, y);
+                if (x < width && y < height && Walls::overlapsCurrentWall(t) == UnitTypes::None && !Map::isUsed(t) && Map::isWalkable(t))
+                    return true;
+                return false;
+            }
+            map<TilePosition, UnitType> currentWall;
+            unsigned width = Broodwar->mapWidth(), height = Broodwar->mapHeight();
+            bool ignoreOverlap;
+        };
+
         map<const BWEM::Area *, int> notReachableThisFrame;
     }
 
     void Path::createWallPath(BWEM::Map& mapBWEM, map<TilePosition, UnitType>& currentWall, const Position s, const Position t, bool ignoreOverlap)
     {
+        //TilePosition target(t);
+        //TilePosition source(s);
+
+        //vector<TilePosition> newJPSPath;
+        //WallCollision collision;
+        //collision.currentWall = currentWall;
+        //collision.ignoreOverlap = ignoreOverlap;
+
+        //if (JPS::findPath(newJPSPath, collision, source.x, source.y, target.x, target.y)) {
+        //    Position current = s;
+        //    for (auto &t : newJPSPath) {
+        //        dist += Position(t).getDistance(current);
+        //        current = Position(t);
+        //        tiles.push_back(t);
+        //    }
+        //    reachable = true;
+        //}
+        //else {
+        //    dist = DBL_MAX;
+        //    reachable = false;
+        //}
+
         TilePosition target(t);
         TilePosition source(s);
         auto maxDist = source.getDistance(target);
@@ -37,7 +73,7 @@ namespace BWEB::PathFinding
                 || (!ignoreOverlap && Map::isOverlapping(tile))
                 || !Map::isWalkable(tile)
                 || Map::isUsed(tile)
-                || Map::overlapsCurrentWall(currentWall, tile) != UnitTypes::None;
+                || Walls::overlapsCurrentWall(tile) != UnitTypes::None;
         };
 
         createPath(mapBWEM, s, t, collision, direction);
@@ -56,11 +92,11 @@ namespace BWEB::PathFinding
         }
 
         vector<TilePosition> newJPSPath;
-        JPSGrid newGrid;
-        newGrid.maxDist = source.getDistance(target);
-        newGrid.target = target;
+        UnitCollision collision;
+        collision.maxDist = source.getDistance(target);
+        collision.target = target;
 
-        if (JPS::findPath(newJPSPath, newGrid, source.x, source.y, target.x, target.y)) {
+        if (JPS::findPath(newJPSPath, collision, source.x, source.y, target.x, target.y)) {
             Position current = s;
             for (auto &t : newJPSPath) {
                 dist += Position(t).getDistance(current);

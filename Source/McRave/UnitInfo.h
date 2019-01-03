@@ -91,6 +91,9 @@ namespace McRave {
         bool isStuck() {
             return (Broodwar->getFrameCount() - lastMoveFrame > 50);
         }
+        bool targetsFriendly() {
+            return unitType == UnitTypes::Terran_Medic || unitType == UnitTypes::Terran_Science_Vessel || unitType == UnitTypes::Zerg_Defiler;
+        }
 
         double getPercentHealth() { return percentHealth; }
         double getPercentShield() { return percentShield; }

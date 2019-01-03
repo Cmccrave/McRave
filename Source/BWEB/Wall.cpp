@@ -121,7 +121,7 @@ namespace BWEB::Walls
                 auto tile = closestChokeTile(c);
 
                 if ((currentType == UnitTypes::Protoss_Pylon && !isPoweringWall(wall, t))
-                    || Map::overlapsCurrentWall(currentWall, t, currentType.tileWidth(), currentType.tileHeight()) != UnitTypes::None
+                    || overlapsCurrentWall(t, currentType.tileWidth(), currentType.tileHeight()) != UnitTypes::None
                     || Map::isOverlapping(t, currentType.tileWidth(), currentType.tileHeight(), true)
                     || !Map::isPlaceable(currentType, t)
                     || Map::tilesWithinArea(wall.getArea(), t, currentType.tileWidth(), currentType.tileHeight()) <= 2)
@@ -317,7 +317,7 @@ namespace BWEB::Walls
                 for (auto x = start.x; x < start.x + length; x++) {
                     WalkPosition w(x, start.y);
                     TilePosition t(w);
-                    auto parent = Map::overlapsCurrentWall(currentWall, t);
+                    auto parent = overlapsCurrentWall(t);
                     auto parentTightCheck = parent != UnitTypes::None ? fDiff(building, parent) < tightnessFactor : false;
 
                     // Check if it's tight with the terrain
@@ -335,7 +335,7 @@ namespace BWEB::Walls
                 for (auto y = start.y; y < start.y + length; y++) {
                     WalkPosition w(start.x, y);
                     TilePosition t(w);
-                    auto parent = Map::overlapsCurrentWall(currentWall, t);
+                    auto parent = overlapsCurrentWall(t);
                     auto parentTightCheck = parent != UnitTypes::None ? fDiff(building, parent) < tightnessFactor : false;
 
                     // Check if it's tight with the terrain
@@ -380,12 +380,12 @@ namespace BWEB::Walls
             startTile = initialStart;
             endTile = initialEnd;
 
-            if (!Map::isWalkable(initialStart) || Map::overlapsCurrentWall(currentWall, initialStart) != UnitTypes::None || Map::isOverlapping(endTile) != 0) {
+            if (!Map::isWalkable(initialStart) || overlapsCurrentWall(initialStart) != UnitTypes::None || Map::isOverlapping(endTile) != 0) {
                 for (auto x = initialStart.x - 2; x < initialStart.x + 2; x++) {
                     for (auto y = initialStart.y - 2; y < initialStart.y + 2; y++) {
                         TilePosition t(x, y);
                         const auto dist = t.getDistance(endTile);
-                        if (Map::overlapsCurrentWall(currentWall, t) != UnitTypes::None || !Map::isWalkable(t))
+                        if (overlapsCurrentWall(t) != UnitTypes::None || !Map::isWalkable(t))
                             continue;
 
                         if (Map::mapBWEM.GetArea(t) == wall.getArea() && dist < distBest) {
@@ -397,12 +397,12 @@ namespace BWEB::Walls
             }
 
             distBest = 0.0;
-            if (!Map::isWalkable(initialEnd) || Map::overlapsCurrentWall(currentWall, initialEnd) != UnitTypes::None || Map::isOverlapping(endTile) != 0) {
+            if (!Map::isWalkable(initialEnd) || overlapsCurrentWall(initialEnd) != UnitTypes::None || Map::isOverlapping(endTile) != 0) {
                 for (auto x = initialEnd.x - 4; x < initialEnd.x + 4; x++) {
                     for (auto y = initialEnd.y - 4; y < initialEnd.y + 4; y++) {
                         TilePosition t(x, y);
                         const auto dist = t.getDistance(startTile);
-                        if (Map::overlapsCurrentWall(currentWall, t) != UnitTypes::None || !Map::isWalkable(t))
+                        if (overlapsCurrentWall(t) != UnitTypes::None || !Map::isWalkable(t))
                             continue;
 
                         if (Map::mapBWEM.GetArea(t) && dist > distBest) {
@@ -469,7 +469,7 @@ namespace BWEB::Walls
                 for (auto &tile : currentPath) {
                     double closestGeo = DBL_MAX;
                     for (auto &geo : wall.getChokePoint()->Geometry()) {
-                        if (TilePosition(geo) == tile && tile.getDistance(startTile) < closestGeo && Map::overlapsCurrentWall(currentWall, tile) == UnitTypes::None) {
+                        if (TilePosition(geo) == tile && tile.getDistance(startTile) < closestGeo && overlapsCurrentWall(tile) == UnitTypes::None) {
                             currentHole = tile;
                             closestGeo = tile.getDistance(startTile);
                         }
@@ -478,6 +478,20 @@ namespace BWEB::Walls
                 currentPathSize = newPath.getDistance();
             }
         }
+    }
+
+    UnitType overlapsCurrentWall(const TilePosition here, const int width, const int height)
+    {
+        for (auto x = here.x; x < here.x + width; x++) {
+            for (auto y = here.y; y < here.y + height; y++) {
+                for (auto &placement : currentWall) {
+                    const auto tile = placement.first;
+                    if (x >= tile.x && x < tile.x + placement.second.tileWidth() && y >= tile.y && y < tile.y + placement.second.tileHeight())
+                        return placement.second;
+                }
+            }
+        }
+        return UnitTypes::None;
     }
 
     void addToWall(UnitType building, Wall& wall, UnitType tight)
@@ -713,4 +727,5 @@ namespace BWEB::Walls
         Broodwar->drawTextMap(Position(endTile), "%d", Position(endTile));
         Broodwar->drawTextMap(Position(startTile), "%d", Position(startTile));
     }
+
 }

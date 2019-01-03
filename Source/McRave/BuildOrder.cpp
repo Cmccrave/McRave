@@ -84,9 +84,9 @@ namespace McRave::BuildOrder
 
         bool testing = true;
         if (testing) {
-            currentBuild = "GateNexus";
-            currentOpener = "1Gate";
-            currentTransition = "Carrier";
+            currentBuild = "FFE";
+            currentOpener = "Gate";
+            currentTransition = "NeoBisu";
             isBuildPossible(currentBuild, currentOpener);
             return;
         }
@@ -610,7 +610,7 @@ namespace McRave::BuildOrder
             techList.insert(techUnit);
             unlockedType.insert(techUnit);
         }
-        if (firstUnit != None) {
+        if (firstUnit != None && com(Protoss_Cybernetics_Core) > 0) {
             techList.insert(firstUnit);
             unlockedType.insert(firstUnit);
         }

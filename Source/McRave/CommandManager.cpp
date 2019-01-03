@@ -721,29 +721,29 @@ namespace McRave::Command {
         //    }
         //}
 
-        auto topWalkPosition = center - WalkPosition(0, walkHeight);
+        auto topWalkPosition = center - WalkPosition(0, walkHeight * 2);
         auto topOk = Grids::getCollision(topWalkPosition) == 0 && Broodwar->isWalkable(topWalkPosition);
 
-        auto botWalkPosition = center + WalkPosition(0, walkHeight);
+        auto botWalkPosition = center + WalkPosition(0, walkHeight * 2);
         auto botOk = Grids::getCollision(botWalkPosition) == 0 && Broodwar->isWalkable(botWalkPosition);
 
-        auto leftWalkPosition = center - WalkPosition(walkWidth, 0);
+        auto leftWalkPosition = center - WalkPosition(walkWidth * 2, 0);
         auto leftOk = Grids::getCollision(leftWalkPosition) == 0 && Broodwar->isWalkable(leftWalkPosition);
 
-        auto rightWalkPosition = center + WalkPosition(walkWidth, 0);
+        auto rightWalkPosition = center + WalkPosition(walkWidth * 2, 0);
         auto rightOk = Grids::getCollision(rightWalkPosition) == 0 && Broodwar->isWalkable(rightWalkPosition);
 
 
-        auto topLeftWalkPosition = center - WalkPosition(walkWidth, walkHeight);
+        auto topLeftWalkPosition = center - WalkPosition(walkWidth * 2, walkHeight * 2);
         auto topLeftOk = Grids::getCollision(topLeftWalkPosition) == 0 && Broodwar->isWalkable(topLeftWalkPosition);
 
-        auto topRightWalkPosition = center + WalkPosition(walkWidth, -walkHeight);
+        auto topRightWalkPosition = center + WalkPosition(walkWidth * 2, -walkHeight * 2);
         auto topRightOk = Grids::getCollision(topRightWalkPosition) == 0 && Broodwar->isWalkable(topRightWalkPosition);
 
-        auto botLeftWalkPosition = center - WalkPosition(walkWidth, -walkHeight);
+        auto botLeftWalkPosition = center - WalkPosition(walkWidth * 2, -walkHeight * 2);
         auto botLeftOk = Grids::getCollision(botLeftWalkPosition) == 0 && Broodwar->isWalkable(botLeftWalkPosition);
 
-        auto botRightWalkPosition = center + WalkPosition(walkWidth, walkHeight);
+        auto botRightWalkPosition = center + WalkPosition(walkWidth * 2, walkHeight * 2);
         auto botRightOk = Grids::getCollision(botRightWalkPosition) == 0 && Broodwar->isWalkable(botRightWalkPosition);
 
 
@@ -766,7 +766,6 @@ namespace McRave::Command {
 
                 // If this Position is a move vertically
                 if (abs(yDiff) > walkHeight) {
-
                     if (xDiff > 0 && yDiff > 0 && !topLeftOk)
                         return false;
                     if (xDiff < 0 && yDiff > 0 && !topRightOk)
@@ -809,8 +808,8 @@ namespace McRave::Command {
                 auto w = WalkPosition(x, y);
                 auto p = Position((x * 8) + 4, (y * 8) + 4);
 
-                //if (directionsOkay(w))
-                    //Broodwar->drawBoxMap(p, p + Position(8, 8), Colors::Black);
+                if (directionsOkay(w))
+                    Broodwar->drawBoxMap(p, p + Position(8, 8), Colors::Black);
 
                 auto current = score(w);
                 if (current > best && directionsOkay(w) && viablePosition(w, p)) {

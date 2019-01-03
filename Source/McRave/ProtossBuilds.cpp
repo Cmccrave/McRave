@@ -127,14 +127,16 @@ namespace McRave::BuildOrder::Protoss {
             cannonCount = 8;
 
         // Reactions
-        if ((enemyBuild() == "Unknown" && !Terrain::getEnemyStartingPosition().isValid()) || enemyBuild() == "Z9Pool")
-            false;// currentTransition = "Defensive";
-        else if (enemyBuild() == "Z5Pool")
-            currentTransition =	"Defensive";
-        else if (enemyBuild() == "Z2HatchHydra" || enemyBuild() == "Z3HatchHydra")
-            currentTransition =	"StormRush";
-        else if (enemyBuild() == "Z2HatchMuta" || enemyBuild() == "Z3HatchMuta")
-            currentTransition =	"DoubleStargate";
+        if (!lockedTransition) {
+            if ((enemyBuild() == "Unknown" && !Terrain::getEnemyStartingPosition().isValid()) || enemyBuild() == "Z9Pool")
+                false;// currentTransition = "Defensive";
+            else if (enemyBuild() == "Z5Pool")
+                currentTransition =	"Defensive";
+            else if (enemyBuild() == "Z2HatchHydra" || enemyBuild() == "Z3HatchHydra")
+                currentTransition =	"StormRush";
+            else if (enemyBuild() == "Z2HatchMuta" || enemyBuild() == "Z3HatchMuta")
+                currentTransition =	"DoubleStargate";
+        }
 
         // Openers
         if (currentOpener == "Forge") {
@@ -170,19 +172,24 @@ namespace McRave::BuildOrder::Protoss {
             firstUpgrade =		UpgradeTypes::None;
             firstTech =			TechTypes::Psionic_Storm;
             firstUnit =         Protoss_High_Templar;
+            lockedTransition =  com(Protoss_Cybernetics_Core) > 0;
 
             itemQueue[Protoss_Photon_Cannon] =		Item(cannonCount);
             itemQueue[Protoss_Assimilator] =		Item((s >= 38) + (s >= 60));
             itemQueue[Protoss_Cybernetics_Core] =	Item((s >= 42));
+            itemQueue[Protoss_Stargate] =           Item(0);
         }
         else if (currentTransition == "DoubleStargate") {
             firstUpgrade =		UpgradeTypes::Protoss_Air_Weapons;
             firstTech =			TechTypes::None;
             firstUnit =         Protoss_Corsair;
+            lockedTransition =  vis(Protoss_Stargate) >= 2;
 
             itemQueue[Protoss_Photon_Cannon] =		Item(cannonCount);
             itemQueue[Protoss_Assimilator] =		Item((s >= 38) + (s >= 60));
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 40);
+            itemQueue[Protoss_Citadel_of_Adun] =	Item(0);
+            itemQueue[Protoss_Templar_Archives] =	Item(0);
             itemQueue[Protoss_Stargate] =			Item((vis(Protoss_Corsair) > 0) + (vis(Protoss_Cybernetics_Core) > 0));
         }
         else {

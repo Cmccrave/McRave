@@ -22,9 +22,6 @@ namespace BWEB::Map
     /// <summary> Called on game start to initialize the BWEB::Map and BWEB::Stations. </summary>
     void onStart(), onUnitDiscover(BWAPI::Unit), onUnitDestroy(BWAPI::Unit), onUnitMorph(BWAPI::Unit);
 
-    /// <summary> Returns true if a BWAPI::TilePosition overlaps our current wall. This is mostly here for internal usage temporarily. </summary>
-    BWAPI::UnitType overlapsCurrentWall(std::map<BWAPI::TilePosition, BWAPI::UnitType>& currentWall, const BWAPI::TilePosition here, const int width = 1, const int height = 1);
-
     /// <summary> Removes a section of BWAPI::TilePositions from the BWEB overlap grid. </summary>
     void removeOverlap(BWAPI::TilePosition tile, int width, int height);
 

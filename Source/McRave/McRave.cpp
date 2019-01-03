@@ -21,10 +21,16 @@
 // Offset for supply at start of game, can we calculate instead of hardcode at 10?
 // Bunker in enemy main detected as FE
 // Fix not letting uncompleted Probes being assigned tasks - no roles to incomplete units fixes this completely
+// Need to fix how the directional check of viable position iterating works
+// BWEB Destination walls not working
+
+// *** Parallel Lines ***
+// Destination 12 o clock spawn issues making parallel lines (offset by +y about 64 pixels?)
+// Neo Moon 5 o clock not making parallel lines at all (no debug drawings either)
+// La Mancha top left
 
 // *** Ideas ***
 // Monitor for overkilling units by hp - (2*nextDmgSource) <= 0 (double damage source to account for a potential miss?)
-// UnitInfo add a TargetsFriendly
 
 using namespace BWAPI;
 using namespace std;

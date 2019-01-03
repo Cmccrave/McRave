@@ -46,6 +46,11 @@ namespace McRave::Units {
 
         void updateSimulation(UnitInfo& unit)
         {
+            /*
+            Modified version of Horizon.
+            Need to test deadzones and squeeze factors still.
+            */
+
             auto enemyLocalGroundStrength = 0.0, allyLocalGroundStrength = 0.0;
             auto enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;
             auto unitToEngage = max(0.0, unit.getEngDist() / (24.0 * unit.getSpeed()));
@@ -135,7 +140,7 @@ namespace McRave::Units {
                     if (!addToSim(enemy))
                         continue;
 
-                    auto deadzone = 0.0;// enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode ? 64.0 : 0.0; -- Removed because it made siege tanks too weak
+                    auto deadzone = (enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode && unit.getTarget().getPosition().getDistance(enemy.getPosition()) < 64.0) ? 64.0 : 0.0;
                     auto widths = double(enemy.getType().width() + unit.getType().width()) / 2.0;
                     auto enemyRange = (unit.getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange());
                     auto engDist = enemy.getPosition().getDistance(unit.getPosition()) - enemyRange;
@@ -177,7 +182,7 @@ namespace McRave::Units {
                     if (!addToSim(ally))
                         continue;
 
-                    auto deadzone = 0.0;// enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode ? 64.0 : 0.0; -- Removed because it made siege tanks too weak
+                    auto deadzone = (ally.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode && unit.getTarget().getPosition().getDistance(ally.getPosition()) < 64.0) ? 64.0 : 0.0;
                     auto engDist = ally.getEngDist();
                     auto widths = double(ally.getType().width() + ally.getTarget().getType().width()) / 2.0;
                     auto allyRange = (unit.getTarget().getType().isFlyer() ? ally.getAirRange() : ally.getGroundRange());
@@ -362,6 +367,12 @@ namespace McRave::Units {
 
         void updateRole(UnitInfo& unit)
         {
+            // Don't assign a role to uncompleted units
+            if (!unit.unit()->isCompleted()) {
+                unit.setRole(Role::None);
+                return;
+            }
+
             // Store old role to update counters after
             auto oldRole = unit.getRole();
 
