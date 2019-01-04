@@ -74,8 +74,13 @@ namespace McRave::Units {
                     unit.setSimValue(10.0);
                     return true;
                 }
-                if (!unit.hasTarget()) {
+                else if (!unit.hasTarget()) {
                     unit.setSimState(SimState::None);
+                    unit.setSimValue(0.0);
+                    return true;
+                }
+                else if (unit.getEngDist() == DBL_MAX) {
+                    unit.setSimState(SimState::Loss);
                     unit.setSimValue(0.0);
                     return true;
                 }

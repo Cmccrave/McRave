@@ -94,6 +94,15 @@ namespace McRave {
         bool targetsFriendly() {
             return unitType == UnitTypes::Terran_Medic || unitType == UnitTypes::Terran_Science_Vessel || unitType == UnitTypes::Zerg_Defiler;
         }
+        bool isSuicidal(){
+            return unitType == UnitTypes::Terran_Vulture_Spider_Mine || unitType == UnitTypes::Zerg_Scourge || unitType == UnitTypes::Zerg_Infested_Terran;
+        }
+        bool isLightAir() {
+            return unitType == UnitTypes::Protoss_Corsair || unitType == UnitTypes::Zerg_Mutalisk  || unitType == UnitTypes::Terran_Wraith;
+        }
+        bool isCapitalShip() {
+            return unitType == UnitTypes::Protoss_Carrier || unitType == UnitTypes::Terran_Battlecruiser || unitType == UnitTypes::Zerg_Guardian;
+        }
 
         double getPercentHealth() { return percentHealth; }
         double getPercentShield() { return percentShield; }

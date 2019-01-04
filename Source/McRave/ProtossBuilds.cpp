@@ -408,13 +408,18 @@ namespace McRave::BuildOrder::Protoss {
 
         bool addGas = Broodwar->getStartLocations().size() >= 3 ? (s >= 22) : (s >= 24);
 
-        if (Strategy::enemyRush())
-            currentTransition = "Defensive";
+        if (!lockedTransition) {
+            if (Strategy::enemyRush())
+                currentTransition = "Defensive";
+            else if (Players::vT() && Strategy::enemyFastExpand())
+                currentTransition = "DT";
+        }
+
 
         // Openers
         if (currentOpener == "0Zealot") {
             zealotLimit = 0;
-
+            
             itemQueue[Protoss_Nexus] =				Item(1);
             itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
             itemQueue[Protoss_Gateway] =			Item(s >= 20);
@@ -464,9 +469,9 @@ namespace McRave::BuildOrder::Protoss {
             dragoonLimit =		INT_MAX;
 
             if (Players::vP()) {
-                playPassive =		!Strategy::enemyFastExpand() && (com(Protoss_Reaver) < 2/* || com(Protoss_Shuttle) < 1*/);
+                playPassive =		!Strategy::enemyFastExpand() && com(Protoss_Reaver) < 2;
                 getOpening =		(Players::vP() && Strategy::enemyPressure()) ? vis(Protoss_Reaver) < 3 : s < 70;
-                zealotLimit =		(com(Protoss_Robotics_Facility) >= 1) ? 6 : zealotLimit;
+                zealotLimit =		com(Protoss_Robotics_Facility) >= 1 ? 6 : zealotLimit;
 
                 itemQueue[Protoss_Gateway] =				Item((s >= 20) + (s >= 60) + (s >= 62));
                 itemQueue[Protoss_Assimilator] =			Item((addGas || Strategy::enemyScouted()));

@@ -192,34 +192,33 @@ namespace McRave::Command {
 
     bool approach(UnitInfo& unit)
     {
-        auto airHarasser = unit.getType() == UnitTypes::Protoss_Corsair || unit.getType() == UnitTypes::Zerg_Mutalisk || unit.getType() == UnitTypes::Zerg_Devourer || unit.getType() == UnitTypes::Terran_Wraith;
-        auto capitalShip = unit.getType() == UnitTypes::Protoss_Carrier || unit.getType() == UnitTypes::Terran_Battlecruiser || unit.getType() == UnitTypes::Zerg_Guardian;
-        auto shouldApproach = unit.getLocalState() == LocalState::Engaging;
-
         const auto canApproach = [&]() {
-
-            // No target or a capital ship
-            if (!unit.hasTarget() || !unit.getTarget().unit()->exists() || capitalShip)
-                return false;
-
             auto canAttack = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() < Broodwar->getRemainingLatencyFrames() : unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames();
-
-            if (canAttack)
+            if (unit.getSpeed() <= 0.0 || canAttack)
                 return false;
+            return true;
+        };
 
-            // HACK: Don't want Dragoons to approach early on
+        const auto shouldApproach = [&]() {
+            auto allyRange = (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
+            auto enemyRange = (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
+
+            if (unit.isCapitalShip() || unit.getTarget().isSuicidal())
+                return false;
             if (unit.getType() == UnitTypes::Protoss_Dragoon && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0)
                 return false;
 
-            // Dominant fight, lower range, Lurker or non Scourge targets
-            if ((unit.getSimValue() >= 10.0 && unit.getType() != UnitTypes::Protoss_Reaver && !unit.getTarget().getType().isWorker())
-                || (unit.getGroundRange() < unit.getTarget().getGroundRange() && !unit.getTarget().getType().isBuilding())
-                || (airHarasser && unit.getTarget().getType() != UnitTypes::Zerg_Scourge))
+            if ((unit.getSimValue() >= 10.0 && !unit.getTarget().getType().isWorker())
+                || (allyRange < enemyRange && !unit.getTarget().getType().isBuilding())
+                || unit.isLightAir())
                 return true;
             return false;
         };
 
-        if (shouldApproach && canApproach() && unit.getTarget().getPosition().isValid()) {
+        if (unit.getLocalState() != LocalState::Engaging || !unit.hasTarget() || !shouldApproach() || !canApproach())
+            return false;
+
+        if (unit.getTarget().getPosition().isValid()) {
             unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition());
             return true;
         }
@@ -232,7 +231,7 @@ namespace McRave::Command {
             Position p = Position(w) + Position(4, 4);
             double distance = (unit.getType().isFlyer() || Terrain::isIslandMap()) ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
             double threat = Util::getHighestThreat(w, unit);
-            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : max(0.1, log(10.0 + Grids::getAGroundCluster(w) - unit.getPriority()));
+            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0;
             double score = 1.0 / (threat * distance * grouping);
             return score;
         };
@@ -317,53 +316,54 @@ namespace McRave::Command {
 
     bool kite(UnitInfo& unit)
     {
-        const auto shouldKite = [&]() {
-            if (unit.hasTarget() && unit.getLocalState() == LocalState::Engaging) {
-                auto allyRange = (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
-                auto enemyRange = (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
-                auto canAttack = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() < Broodwar->getRemainingLatencyFrames() : unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames();
-
-                // Special Case: Carriers
-                if (unit.getType() == UnitTypes::Protoss_Carrier) {
-                    auto leashRange = 320;
-                    for (auto &interceptor : unit.unit()->getInterceptors()) {
-                        if (interceptor->getOrder() != Orders::InterceptorAttack && interceptor->isCompleted())
-                            return false;
-                    }
-                    if (unit.getPosition().getApproxDistance(unit.getTarget().getPosition()) >= leashRange)
-                        return false;
-                    return true;
-                }
-
-                if (canAttack)
-                    return false;
-
-                if (unit.getTarget().getType().isBuilding() && !unit.getType().isFlyer())
-                    return false;
-
-                if (unit.getType() == UnitTypes::Protoss_Reaver
-                    || (Strategy::enemyPressure() && allyRange >= 64.0) // HACK: Added this for 3fact aggresion, we should check to see if a mine is near our target instead
-                    || (unit.getType() == UnitTypes::Terran_Vulture)
-                    || (unit.getType() == UnitTypes::Zerg_Mutalisk)
-                    || (unit.getType() == UnitTypes::Protoss_Carrier)
-                    || (allyRange >= 32.0 && unit.unit()->isUnderAttack() && allyRange >= enemyRange)
-                    || (unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine && !unit.getTarget().isBurrowed())
-                    || ((enemyRange <= allyRange && unit.unit()->getDistance(unit.getTarget().getPosition()) <= allyRange - enemyRange)))
-                    return true;
-            }
-            return false;
-        };
-
         function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
             Position p = Position(w) + Position(4, 4);
             double distance = unit.hasTarget() ? 1.0 / (p.getDistance(unit.getTarget().getPosition())) : p.getDistance(BWEB::Map::getMainPosition());
             double threat = Util::getHighestThreat(w, unit);
-            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : max(0.1, log(10.0 + Grids::getAGroundCluster(w) - unit.getPriority()));
+            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0;
             double score = 1.0 / (threat * distance * grouping);
             return score;
         };
 
-        if (!shouldKite() && !unit.getType().isWorker())
+        const auto canKite = [&]() {
+            auto canAttack = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() < Broodwar->getRemainingLatencyFrames() : unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames();
+            if (unit.getSpeed() <= 0.0 || canAttack)
+                return false;
+            return true;
+        };
+
+        const auto shouldKite = [&]() {
+            auto allyRange = (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
+            auto enemyRange = (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
+
+            // Special Case: Carriers
+            if (unit.getType() == UnitTypes::Protoss_Carrier) {
+                auto leashRange = 320;
+                for (auto &interceptor : unit.unit()->getInterceptors()) {
+                    if (interceptor->getOrder() != Orders::InterceptorAttack && interceptor->isCompleted())
+                        return false;
+                }
+                if (unit.getPosition().getApproxDistance(unit.getTarget().getPosition()) >= leashRange)
+                    return false;
+                return true;
+            }
+
+            if (unit.getTarget().getType().isBuilding() && !unit.getType().isFlyer())
+                return false;
+
+            if (unit.getType() == UnitTypes::Protoss_Reaver
+                //|| (Strategy::enemyPressure() && allyRange >= 64.0) // HACK: Added this for 3fact aggresion, we should check to see if a mine is near our target instead
+                || (unit.getType() == UnitTypes::Terran_Vulture)
+                || (unit.getType() == UnitTypes::Zerg_Mutalisk)
+                || (unit.getType() == UnitTypes::Protoss_Carrier)
+                || (allyRange >= 32.0 && unit.unit()->isUnderAttack() && allyRange >= enemyRange)
+                || (unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine)
+                || ((enemyRange <= allyRange && unit.unit()->getDistance(unit.getTarget().getPosition()) <= allyRange - enemyRange)))
+                return true;
+            return false;
+        };
+
+        if (unit.getLocalState() != LocalState::Engaging || !unit.hasTarget() || !shouldKite() || !canKite())
             return false;
 
         // If we found a valid position, move to it
@@ -435,7 +435,7 @@ namespace McRave::Command {
             double threat = Util::getHighestThreat(w, unit);
             double distance = (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination()));
             double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids::lastVisitedFrame(w))));
-            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : max(0.1, log(10.0 + Grids::getAGroundCluster(w) - unit.getPriority()));
+            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0;
             double score = grouping * visited / distance;
 
             if (threat == MIN_THREAT || (unit.unit()->isCloaked() && !overlapsEnemyDetection(p)))
@@ -479,7 +479,7 @@ namespace McRave::Command {
             Position p = Position(w) + Position(4, 4);
             double distance = ((unit.getType().isFlyer() || Terrain::isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids::getDistanceHome(w));
             double threat = Util::getHighestThreat(w, unit);
-            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : max(0.1, log(10.0 + Grids::getAGroundCluster(w) - unit.getPriority()));
+            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0;
             double score = 1.0 / (threat * distance * grouping);
             return score;
         };

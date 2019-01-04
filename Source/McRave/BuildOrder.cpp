@@ -82,7 +82,7 @@ namespace McRave::BuildOrder
             return;
         }
 
-        bool testing = true;
+        bool testing = false;
         if (testing) {
             currentBuild = "FFE";
             currentOpener = "Gate";

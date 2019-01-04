@@ -218,7 +218,7 @@ namespace McRave::Targets{
                 else if (!unit.getPath().isReachable()) {
                     auto dist = DBL_MAX;
                     unit.setEngDist(dist);
-                    Broodwar->drawLineMap(unit.getPosition(), unit.getTarget().getPosition(), Colors::Red);
+                    unit.circleRed();
                 }
             }
             // Otherwise approximate and double
