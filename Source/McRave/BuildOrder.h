@@ -69,8 +69,8 @@ namespace McRave::BuildOrder {
         inline std::vector <std::string> buildNames;
     }
 
-    namespace Protoss
-    {
+    namespace Protoss {
+
         void opener();
         void tech();
         void situational();
@@ -82,6 +82,19 @@ namespace McRave::BuildOrder {
         void PNexusGate();
         void PGateNexus();
         void P2Gate();
+    }
+
+    namespace Zerg {
+
+        void opener();
+        void tech();
+        void situational();
+        void unlocks();
+        void island();
+
+        void PoolHatch();
+        void HatchPool();
+        void PoolLair();
     }
 
     void getDefaultBuild();

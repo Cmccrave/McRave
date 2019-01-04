@@ -77,6 +77,7 @@ using namespace McRave;
 #include "PlayerManager.h"
 #include "ProductionManager.h"
 #include "PylonManager.h"
+#include "ResourceInfo.h"
 #include "ResourceManager.h"
 #include "ScoutManager.h"
 #include "StrategyManager.h"

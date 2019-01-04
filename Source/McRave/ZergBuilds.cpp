@@ -1,8 +1,12 @@
 //#include "McRave.h"
 //#define s Units::getSupply()
-//using namespace UnitTypes;
 //
-//namespace McRave
+//using namespace std;
+//using namespace BWAPI;
+//using namespace UnitTypes;
+//using namespace McRave::BuildOrder::All;
+//
+//namespace McRave::BuildOrder::Zerg
 //{
 //	static int vis(UnitType t) {
 //		return vis(t);
@@ -17,7 +21,7 @@
 //
 //	static string enemyBuild = Strategy::getEnemyBuild();
 //
-//	void BuildOrderManager::Z2HatchMuta()
+//	void Z2HatchMuta()
 //	{
 //		getOpening		= s < 70;
 //		fastExpand		= true;
@@ -58,7 +62,7 @@
 //		itemQueue[Zerg_Creep_Colony] = Item(sunken);
 //	}
 //
-//	void BuildOrderManager::Z3HatchLing()
+//	void Z3HatchLing()
 //	{
 //		getOpening		= s < 40;
 //		fastExpand		= true;
@@ -74,7 +78,7 @@
 //		itemQueue[Zerg_Extractor]				= Item(vis(Zerg_Hatchery) >= 3);
 //	}
 //
-//	void BuildOrderManager::Z4Pool()
+//	void Z4Pool()
 //	{
 //		getOpening		= s < 30;
 //		fastExpand		= false;
@@ -89,7 +93,7 @@
 //		itemQueue[Zerg_Spawning_Pool]			= Item(Broodwar->self()->minerals() > 176, s >= 8);
 //	}
 //
-//	void BuildOrderManager::Z9Pool()
+//	void Z9Pool()
 //	{
 //		getOpening		= s < 26;
 //		fastExpand		= true;
@@ -105,7 +109,7 @@
 //		itemQueue[Zerg_Extractor]				= Item(vis(Zerg_Spawning_Pool) >= 1);
 //	}
 //
-//	void BuildOrderManager::Z2HatchHydra()
+//	void Z2HatchHydra()
 //	{
 //		getOpening		= s < 40;
 //		fastExpand		= true;
@@ -124,7 +128,7 @@
 //			techUnit = Zerg_Hydralisk;
 //	}
 //
-//	void BuildOrderManager::Z3HatchBeforePool()
+//	void Z3HatchBeforePool()
 //	{
 //		getOpening		= s < 40;
 //		fastExpand		= true;
@@ -139,7 +143,7 @@
 //		itemQueue[Zerg_Extractor]				= Item(vis(Zerg_Spawning_Pool) >= 1);
 //	}
 //
-//	void BuildOrderManager::ZLurkerTurtle()
+//	void ZLurkerTurtle()
 //	{
 //		getOpening		= s < 60;
 //		fastExpand		= true;
@@ -161,7 +165,7 @@
 //		itemQueue[Zerg_Creep_Colony]			= Item(3 * (com(Zerg_Hatchery) >= 2));
 //	}
 //
-//	void BuildOrderManager::Z9PoolSpire()
+//	void Z9PoolSpire()
 //	{
 //		getOpening		= s < 70;
 //		gasLimit		= INT_MAX;

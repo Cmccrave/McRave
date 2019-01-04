@@ -125,6 +125,18 @@ namespace McRave::BuildOrder
             myBuilds["GateNexus"].transitions ={ "Standard", "DoubleExpand", "Carrier" };
         }
 
+        if (Broodwar->self()->getRace() == Races::Zerg) {
+
+            myBuilds["PoolHatch"].openers ={ "9Pool", "12Pool", "13Pool" };
+            myBuilds["PoolHatch"].transitions={ "2HatchMuta", "2HatchHydra" };
+
+            myBuilds["HatchPool"].openers ={ "9Hatch" , "10Hatch", "12Hatch" };
+            myBuilds["HatchPool"].transitions={ "2HatchMuta", "2HatchHydra" };
+
+            myBuilds["PoolLair"].openers ={ "9Pool" };
+            myBuilds["PoolLair"].transitions={ "1HatchMuta", "1HatchLurker" };
+        }
+
         // Winrate tracking
         auto bestBuildWR = -0.01;
         string bestBuild = "";
@@ -316,17 +328,11 @@ namespace McRave::BuildOrder
         }
 
         if (Broodwar->self()->getRace() == Races::Terran) {
-            if (build == "2PortWraith")
-                return true;
-            else
-                return false;
+            return true; // For now, test all builds to make sure they work!
         }
 
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            if (Players::vZ())
-                return build == "9PoolSpire";
-            else
-                return build == "2HatchMuta";
+            return true; // For now, test all builds to make sure they work!
         }
         return false;
     }
@@ -371,6 +377,12 @@ namespace McRave::BuildOrder
                 if (opener == "1Gate" || opener == "2Gate")
                     return t;
             }
+        }
+
+        if (Broodwar->self()->getRace() == Races::Zerg) {
+            // Does this work? Seems messy, need a Util::find(T) ? Temporary for now anyways
+            if (find(myBuilds[build].openers.begin(), myBuilds[build].openers.end(), opener) != myBuilds[build].openers.end())
+                return true;
         }
         return false;
     }
@@ -428,6 +440,12 @@ namespace McRave::BuildOrder
                 if (transition == "DoubleExpand" || transition == "Carrier" || transition == "Standard")
                     return t;
             }
+        }
+
+        if (Broodwar->self()->getRace() == Races::Zerg) {
+            // Does this work? Seems messy, need a Util::find(T) ? Temporary for now anyways
+            if (find(myBuilds[build].transitions.begin(), myBuilds[build].transitions.end(), transition) != myBuilds[build].transitions.end())
+                return true;
         }
         return false;
     }
