@@ -38,7 +38,7 @@ namespace BWEB::PathFinding
         map<const BWEM::Area *, int> notReachableThisFrame;
     }
 
-    void Path::createWallPath(BWEM::Map& mapBWEM, map<TilePosition, UnitType>& currentWall, const Position s, const Position t, bool ignoreOverlap)
+    void Path::createWallPath(map<TilePosition, UnitType>& currentWall, const Position s, const Position t, bool ignoreOverlap)
     {
         //TilePosition target(t);
         //TilePosition source(s);
@@ -76,15 +76,15 @@ namespace BWEB::PathFinding
                 || Walls::overlapsCurrentWall(tile) != UnitTypes::None;
         };
 
-        createPath(mapBWEM, s, t, collision, direction);
+        createPath(s, t, collision, direction);
     }
 
-    void Path::createUnitPath(BWEM::Map& mapBWEM, const Position s, const Position t)
+    void Path::createUnitPath(const Position s, const Position t)
     {
         TilePosition target(t);
         TilePosition source(s);
 
-        auto checkReachable = notReachableThisFrame[mapBWEM.GetArea(target)];
+        auto checkReachable = notReachableThisFrame[Map::mapBWEM.GetArea(target)];
         if (checkReachable >= Broodwar->getFrameCount()) {
             reachable = false;
             dist = DBL_MAX;
@@ -108,12 +108,12 @@ namespace BWEB::PathFinding
         else {
             Broodwar->drawLineMap(s, t, Colors::Red);
             dist = DBL_MAX;
-            notReachableThisFrame[mapBWEM.GetArea(target)] = Broodwar->getFrameCount();
+            notReachableThisFrame[Map::mapBWEM.GetArea(target)] = Broodwar->getFrameCount();
             reachable = false;
         }
     }
 
-    void Path::createPath(BWEM::Map& mapBWEM, const Position s, const Position t, function <bool(const TilePosition)> collision, vector<TilePosition> direction)
+    void Path::createPath(const Position s, const Position t, function <bool(const TilePosition)> collision, vector<TilePosition> direction)
     {
         TilePosition source(s);
         TilePosition target(t);

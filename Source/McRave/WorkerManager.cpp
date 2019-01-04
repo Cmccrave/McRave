@@ -158,7 +158,7 @@ namespace McRave::Workers {
                 // 2) If it's far, generate a path
                 else if (worker.getLastTile() != worker.getTilePosition() && resourceCentroid.isValid()) {
                     BWEB::PathFinding::Path newPath;
-                    newPath.createUnitPath(mapBWEM, worker.getPosition(), resourceCentroid);
+                    newPath.createUnitPath(worker.getPosition(), resourceCentroid);
                     worker.setPath(newPath);
                 }
 

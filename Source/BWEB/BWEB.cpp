@@ -341,7 +341,7 @@ namespace BWEB::Map
 
 
         BWEB::PathFinding::Path newPath;
-        newPath.createUnitPath(mapBWEM, start, (Position)source->Center());
+        newPath.createUnitPath(start, (Position)source->Center());
         return newPath.getDistance();
     }
 

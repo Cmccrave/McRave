@@ -39,7 +39,7 @@ namespace McRave::Stations {
                     continue;
 
                 BWEB::PathFinding::Path newPath;
-                newPath.createUnitPath(mapBWEM, ptrs1->ResourceCentroid(), ptrs2->ResourceCentroid());
+                newPath.createUnitPath(ptrs1->ResourceCentroid(), ptrs2->ResourceCentroid());
                 stationNetwork[ptrs1][ptrs2] = newPath;
             }
         }

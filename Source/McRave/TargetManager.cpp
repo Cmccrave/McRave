@@ -203,7 +203,7 @@ namespace McRave::Targets{
             // If should create path, grab one from BWEB
             if (shouldCreatePath && canCreatePath) {
                 BWEB::PathFinding::Path newPath;
-                newPath.createUnitPath(mapBWEM, unit.getPosition(), unit.getTarget().getPosition());
+                newPath.createUnitPath(unit.getPosition(), unit.getTarget().getPosition());
                 unit.setPath(newPath);
             }
             Visuals::displayPath(unit.getPath().getTiles());

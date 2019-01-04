@@ -20,9 +20,9 @@ namespace BWEB::PathFinding
         std::vector<BWAPI::TilePosition>& getTiles() { return tiles; }
         double getDistance() { return dist; }
         bool isReachable() { return reachable; }
-        void createUnitPath(BWEM::Map&, const BWAPI::Position, const BWAPI::Position);
-        void createWallPath(BWEM::Map&, std::map<BWAPI::TilePosition, BWAPI::UnitType>&, const BWAPI::Position, const BWAPI::Position, bool);
+        void createUnitPath(const BWAPI::Position, const BWAPI::Position);
+        void createWallPath(std::map<BWAPI::TilePosition, BWAPI::UnitType>&, const BWAPI::Position, const BWAPI::Position, bool);
 
-        void createPath(BWEM::Map&, const BWAPI::Position, const BWAPI::Position, std::function <bool(const BWAPI::TilePosition)>, std::vector<BWAPI::TilePosition>);
+        void createPath(const BWAPI::Position, const BWAPI::Position, std::function <bool(const BWAPI::TilePosition)>, std::vector<BWAPI::TilePosition>);
     };
 }

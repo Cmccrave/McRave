@@ -296,8 +296,8 @@ namespace McRave::Command {
                 BWEB::PathFinding::Path unitPath;
                 BWEB::PathFinding::Path bPath;
 
-                unitPath.createUnitPath(mapBWEM, unit.getPosition(), unit.getDestination());
-                bPath.createUnitPath(mapBWEM, bestPosition, unit.getDestination());
+                unitPath.createUnitPath(unit.getPosition(), unit.getDestination());
+                bPath.createUnitPath(bestPosition, unit.getDestination());
 
                 Visuals::displayPath(unitPath.getTiles());
 
