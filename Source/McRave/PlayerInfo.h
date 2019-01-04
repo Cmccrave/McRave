@@ -15,17 +15,17 @@ namespace McRave
     public:
         PlayerInfo() {
             thisPlayer = nullptr;
-            currentRace = Races::None;
-            startRace = Races::None;
+            currentRace = BWAPI::Races::None;
+            startRace = BWAPI::Races::None;
             alive = true;
         }
 
         BWAPI::Race getCurrentRace() { return currentRace; }
         BWAPI::Race getStartRace() { return startRace; }
         bool isAlive() { return alive; }
-        bool isEnemy() { return thisPlayer->isEnemy(Broodwar->self()); }
-        bool isAlly() { return thisPlayer->isAlly(Broodwar->self()); }
-        bool isSelf() { return thisPlayer == Broodwar->self(); }
+        bool isEnemy() { return thisPlayer->isEnemy(BWAPI::Broodwar->self()); }
+        bool isAlly() { return thisPlayer->isAlly(BWAPI::Broodwar->self()); }
+        bool isSelf() { return thisPlayer == BWAPI::Broodwar->self(); }
         BWAPI::TilePosition getStartingLocation() { return startLocation; }
 
         BWAPI::Player player() { return thisPlayer; }

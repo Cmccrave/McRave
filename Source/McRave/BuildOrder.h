@@ -101,11 +101,6 @@ namespace McRave::BuildOrder {
     int buildCount(BWAPI::UnitType);
     bool firstReady();
 
-    bool isBuildAllowed(BWAPI::Race, std::string);
-    bool isTransitionAllowed(BWAPI::Race, std::string, std::string);
-    bool isOpenerAllowed(BWAPI::Race, std::string, std::string);
-    bool isBuildPossible(std::string, std::string);
-
     void getNewTech();
     void checkNewTech();
     void checkAllTech();

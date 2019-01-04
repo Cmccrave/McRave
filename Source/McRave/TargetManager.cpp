@@ -1,5 +1,8 @@
 #include "McRave.h"
 
+using namespace std;
+using namespace BWAPI;
+
 namespace McRave::Targets{
 
     namespace {

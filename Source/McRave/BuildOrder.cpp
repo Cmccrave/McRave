@@ -9,6 +9,211 @@ using namespace McRave::BuildOrder::All;
 
 namespace McRave::BuildOrder
 {
+    namespace {
+        void updateBuild()
+        {
+            // TODO: Check if we own a <race> unit - have a build order allowed PER race for FFA weirdness and maybe mind control shenanigans
+            if (Broodwar->self()->getRace() == Races::Protoss) {
+                Protoss::opener();
+                Protoss::tech();
+                Protoss::situational();
+                Protoss::unlocks();
+            }
+            //if (Broodwar->self()->getRace() == Races::Terran) {
+            //	terranOpener();
+            //	terranTech();
+            //	terranSituational();
+            //}
+            //if (Broodwar->self()->getRace() == Races::Zerg) {
+            //	zergOpener();
+            //	zergTech();
+            //	zergSituational();
+            //	zergUnlocks();
+            //}
+        }
+
+        bool isBuildPossible(string build, string opener)
+        {
+            vector<UnitType> buildings, defenses;
+
+            if (Broodwar->self()->getRace() == Races::Protoss) {
+                if (build == "2Gate" && opener == "Natural") {
+                    buildings ={ Protoss_Gateway, Protoss_Gateway, Protoss_Pylon };
+                    defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
+                }
+                else if (build == "FFE" || build.find("Meme") != string::npos) {
+                    buildings ={ Protoss_Gateway, Protoss_Forge, Protoss_Pylon };
+                    defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
+                }
+                else if (build == "GateNexus" || build == "NexusGate") {
+                    int count = Util::chokeWidth(BWEB::Map::getNaturalChoke()) / 64;
+                    buildings.insert(buildings.end(), count, Protoss_Pylon);
+                }
+                else
+                    return true;
+            }
+
+            if (Broodwar->self()->getRace() == Races::Terran)
+                buildings ={ Terran_Barracks, Terran_Supply_Depot, Terran_Supply_Depot };
+
+            if (Broodwar->self()->getRace() == Races::Zerg) {
+                buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber };
+                defenses.insert(defenses.end(), 3, Zerg_Sunken_Colony);
+            }
+
+            if (build == "2Fact" || build == "Sparks") {
+                if (Terrain::findMainWall(buildings, defenses))
+                    return true;
+            }
+            else {
+                if (Terrain::findNaturalWall(buildings, defenses))
+                    return true;
+            }
+            return false;
+        }
+
+        bool isBuildAllowed(Race enemy, string build)
+        {
+            auto p = enemy == Races::Protoss;
+            auto z = enemy == Races::Zerg;
+            auto t = enemy == Races::Terran;
+            auto r = enemy == Races::Unknown || Races::Random;
+
+            if (Broodwar->self()->getRace() == Races::Protoss) {
+                if (build == "1GateCore")
+                    return true;
+                if (build == "2Gate")
+                    return true;
+                if (build == "NexusGate" || build == "GateNexus")
+                    return t;
+                if (build == "FFE")
+                    return z;
+            }
+
+            if (Broodwar->self()->getRace() == Races::Terran) {
+                return true; // For now, test all builds to make sure they work!
+            }
+
+            if (Broodwar->self()->getRace() == Races::Zerg) {
+                return true; // For now, test all builds to make sure they work!
+            }
+            return false;
+        }
+
+        bool isOpenerAllowed(Race enemy, string build, string opener)
+        {
+            // Ban certain openers from certain race matchups
+            auto p = enemy == Races::Protoss;
+            auto z = enemy == Races::Zerg;
+            auto t = enemy == Races::Terran;
+            auto r = enemy == Races::Unknown || Races::Random;
+
+            if (Broodwar->self()->getRace() == Races::Protoss) {
+                if (build == "1GateCore") {
+                    if (opener == "0Zealot")
+                        return t;
+                    if (opener == "1Zealot")
+                        return true;
+                    if (opener == "2Zealot")
+                        return p || z || r;
+                }
+
+                if (build == "2Gate") {
+                    if (opener == "Proxy")
+                        return false;
+                    if (opener == "Natural")
+                        return z || p;
+                    if (opener == "Main")
+                        return true;
+                }
+
+                if (build == "FFE") {
+                    if (opener == "Gate" || opener == "Nexus" || opener == "Forge")
+                        return z;
+                }
+
+                if (build == "NexusGate") {
+                    if (opener == "Dragoon" || opener == "Zealot")
+                        return /*p ||*/ t;
+                }
+                if (build == "GateNexus") {
+                    if (opener == "1Gate" || opener == "2Gate")
+                        return t;
+                }
+            }
+
+            if (Broodwar->self()->getRace() == Races::Zerg) {
+                // Does this work? Seems messy, need a Util::find(T) ? Temporary for now anyways
+                if (find(myBuilds[build].openers.begin(), myBuilds[build].openers.end(), opener) != myBuilds[build].openers.end())
+                    return true;
+            }
+            return false;
+        }
+
+        bool isTransitionAllowed(Race enemy, string build, string transition)
+        {
+            // Ban certain transitions from certain race matchups
+            auto p = enemy == Races::Protoss;
+            auto z = enemy == Races::Zerg;
+            auto t = enemy == Races::Terran;
+            auto r = enemy == Races::Unknown || Races::Random;
+
+            if (Broodwar->self()->getRace() == Races::Protoss) {
+                if (build == "1GateCore") {
+                    if (transition == "DT")
+                        return t || z;
+                    if (transition == "3GateRobo")
+                        return p || r;
+                    if (transition == "Corsair")
+                        return z;
+                    if (transition == "Reaver")
+                        return p /*|| t*/ || r;
+                    if (transition == "4Gate")
+                        return p || t;
+                }
+
+                if (build == "P2Gate") {
+                    if (transition == "DT")
+                        return p || t;
+                    if (transition == "Reaver")
+                        return p /*|| t*/ || r;
+                    if (transition == "Expand")
+                        return p || z;
+                    if (transition == "DoubleExpand")
+                        return t;
+                    if (transition == "4Gate")
+                        return z;
+                    //if (transition == "ZealotRush")
+                    //	return true;
+                }
+
+                if (build == "PFFE") {
+                    if (transition == "NeoBisu" || transition == "2Stargate" || transition == "StormRush")
+                        return z;
+                }
+
+                if (build == "NexusGate") {
+                    if (transition == "DoubleExpand"/* || transition == "ReaverCarrier"*/)
+                        return t;
+                    if (transition == "Standard")
+                        return t || p;
+                }
+
+                if (build == "GateNexus") {
+                    if (transition == "DoubleExpand" || transition == "Carrier" || transition == "Standard")
+                        return t;
+                }
+            }
+
+            if (Broodwar->self()->getRace() == Races::Zerg) {
+                // Does this work? Seems messy, need a Util::find(T) ? Temporary for now anyways
+                if (find(myBuilds[build].transitions.begin(), myBuilds[build].transitions.end(), transition) != myBuilds[build].transitions.end())
+                    return true;
+            }
+            return false;
+        }
+    }
+
     void onEnd(bool isWinner)
     {
         // File extension including our race initial;
@@ -267,188 +472,7 @@ namespace McRave::BuildOrder
         else
             getDefaultBuild();
 
-    }
-
-    bool isBuildPossible(string build, string opener)
-    {
-        vector<UnitType> buildings, defenses;
-
-        if (Broodwar->self()->getRace() == Races::Protoss) {
-            if (build == "2Gate" && opener == "Natural") {
-                buildings ={ Protoss_Gateway, Protoss_Gateway, Protoss_Pylon };
-                defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
-            }
-            else if (build == "FFE" || build.find("Meme") != string::npos) {
-                buildings ={ Protoss_Gateway, Protoss_Forge, Protoss_Pylon };
-                defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
-            }
-            else if (build == "GateNexus" || build == "NexusGate") {
-                int count = Util::chokeWidth(BWEB::Map::getNaturalChoke()) / 64;
-                buildings.insert(buildings.end(), count, Protoss_Pylon);
-            }
-            else
-                return true;
-        }
-
-        if (Broodwar->self()->getRace() == Races::Terran)
-            buildings ={ Terran_Barracks, Terran_Supply_Depot, Terran_Supply_Depot };
-
-        if (Broodwar->self()->getRace() == Races::Zerg) {
-            buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber };
-            defenses.insert(defenses.end(), 3, Zerg_Sunken_Colony);
-        }
-
-        if (build == "2Fact" || build == "Sparks") {
-            if (Terrain::findMainWall(buildings, defenses))
-                return true;
-        }
-        else {
-            if (Terrain::findNaturalWall(buildings, defenses))
-                return true;
-        }
-        return false;
-    }
-
-    bool isBuildAllowed(Race enemy, string build)
-    {
-        auto p = enemy == Races::Protoss;
-        auto z = enemy == Races::Zerg;
-        auto t = enemy == Races::Terran;
-        auto r = enemy == Races::Unknown || Races::Random;
-
-        if (Broodwar->self()->getRace() == Races::Protoss) {
-            if (build == "1GateCore")
-                return true;
-            if (build == "2Gate")
-                return true;
-            if (build == "NexusGate" || build == "GateNexus")
-                return t;
-            if (build == "FFE")
-                return z;
-        }
-
-        if (Broodwar->self()->getRace() == Races::Terran) {
-            return true; // For now, test all builds to make sure they work!
-        }
-
-        if (Broodwar->self()->getRace() == Races::Zerg) {
-            return true; // For now, test all builds to make sure they work!
-        }
-        return false;
-    }
-
-    bool isOpenerAllowed(Race enemy, string build, string opener)
-    {
-        // Ban certain openers from certain race matchups
-        auto p = enemy == Races::Protoss;
-        auto z = enemy == Races::Zerg;
-        auto t = enemy == Races::Terran;
-        auto r = enemy == Races::Unknown || Races::Random;
-
-        if (Broodwar->self()->getRace() == Races::Protoss) {
-            if (build == "1GateCore") {
-                if (opener == "0Zealot")
-                    return t;
-                if (opener == "1Zealot")
-                    return true;
-                if (opener == "2Zealot")
-                    return p || z || r;
-            }
-
-            if (build == "2Gate") {
-                if (opener == "Proxy")
-                    return false;
-                if (opener == "Natural")
-                    return z || p;
-                if (opener == "Main")
-                    return true;
-            }
-
-            if (build == "FFE") {
-                if (opener == "Gate" || opener == "Nexus" || opener == "Forge")
-                    return z;
-            }
-
-            if (build == "NexusGate") {
-                if (opener == "Dragoon" || opener == "Zealot")
-                    return /*p ||*/ t;
-            }
-            if (build == "GateNexus") {
-                if (opener == "1Gate" || opener == "2Gate")
-                    return t;
-            }
-        }
-
-        if (Broodwar->self()->getRace() == Races::Zerg) {
-            // Does this work? Seems messy, need a Util::find(T) ? Temporary for now anyways
-            if (find(myBuilds[build].openers.begin(), myBuilds[build].openers.end(), opener) != myBuilds[build].openers.end())
-                return true;
-        }
-        return false;
-    }
-
-    bool isTransitionAllowed(Race enemy, string build, string transition)
-    {
-        // Ban certain transitions from certain race matchups
-        auto p = enemy == Races::Protoss;
-        auto z = enemy == Races::Zerg;
-        auto t = enemy == Races::Terran;
-        auto r = enemy == Races::Unknown || Races::Random;
-
-        if (Broodwar->self()->getRace() == Races::Protoss) {
-            if (build == "1GateCore") {
-                if (transition == "DT")
-                    return t || z;
-                if (transition == "3GateRobo")
-                    return p || r;
-                if (transition == "Corsair")
-                    return z;
-                if (transition == "Reaver")
-                    return p /*|| t*/ || r;
-                if (transition == "4Gate")
-                    return p || t;
-            }
-
-            if (build == "P2Gate") {
-                if (transition == "DT")
-                    return p || t;
-                if (transition == "Reaver")
-                    return p /*|| t*/ || r;
-                if (transition == "Expand")
-                    return p || z;
-                if (transition == "DoubleExpand")
-                    return t;
-                if (transition == "4Gate")
-                    return z;
-                //if (transition == "ZealotRush")
-                //	return true;
-            }
-
-            if (build == "PFFE") {
-                if (transition == "NeoBisu" || transition == "2Stargate" || transition == "StormRush")
-                    return z;
-            }
-
-            if (build == "NexusGate") {
-                if (transition == "DoubleExpand"/* || transition == "ReaverCarrier"*/)
-                    return t;
-                if (transition == "Standard")
-                    return t || p;
-            }
-
-            if (build == "GateNexus") {
-                if (transition == "DoubleExpand" || transition == "Carrier" || transition == "Standard")
-                    return t;
-            }
-        }
-
-        if (Broodwar->self()->getRace() == Races::Zerg) {
-            // Does this work? Seems messy, need a Util::find(T) ? Temporary for now anyways
-            if (find(myBuilds[build].transitions.begin(), myBuilds[build].transitions.end(), transition) != myBuilds[build].transitions.end())
-                return true;
-        }
-        return false;
-    }
+    }    
 
     bool techComplete()
     {
@@ -506,28 +530,6 @@ namespace McRave::BuildOrder
         Visuals::startPerfTest();
         updateBuild();
         Visuals::endPerfTest("BuildOrder");
-    }
-
-    void updateBuild()
-    {
-        // TODO: Check if we own a <race> unit - have a build order allowed PER race for FFA weirdness and maybe mind control shenanigans
-        if (Broodwar->self()->getRace() == Races::Protoss) {
-            Protoss::opener();
-            Protoss::tech();
-            Protoss::situational();
-            Protoss::unlocks();
-        }
-        //if (Broodwar->self()->getRace() == Races::Terran) {
-        //	terranOpener();
-        //	terranTech();
-        //	terranSituational();
-        //}
-        //if (Broodwar->self()->getRace() == Races::Zerg) {
-        //	zergOpener();
-        //	zergTech();
-        //	zergSituational();
-        //	zergUnlocks();
-        //}
     }
 
     bool shouldExpand()

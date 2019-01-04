@@ -86,6 +86,7 @@ using namespace McRave;
 #include "TerrainManager.h"
 #include "TransportManager.h"
 #include "UnitManager.h"
+#include "UnitMath.h"
 #include "UnitInfo.h"
 #include "Util.h"
 #include "Visuals.h"

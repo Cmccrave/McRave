@@ -1,8 +1,7 @@
-#include "UnitInfo.h"
-#include "Util.h"
-#include "UnitManager.h"
-#include "TargetManager.h"
-#include "UnitMath.h"
+#include "McRave.h"
+
+using namespace std;
+using namespace BWAPI;
 
 namespace McRave
 {

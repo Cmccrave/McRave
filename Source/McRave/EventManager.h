@@ -9,16 +9,16 @@ namespace McRave::Events
     {
         BWEB::Map::onUnitDiscover(unit);
 
-        if (unit->getPlayer()->isEnemy(Broodwar->self()))
+        if (unit->getPlayer()->isEnemy(BWAPI::Broodwar->self()))
             Units::storeUnit(unit);
 
-        if (Terrain::isIslandMap() && unit->getPlayer() == Broodwar->neutral() && !unit->getType().isResourceContainer() && unit->getType().isBuilding())
+        if (Terrain::isIslandMap() && unit->getPlayer() == BWAPI::Broodwar->neutral() && !unit->getType().isResourceContainer() && unit->getType().isBuilding())
             Units::storeUnit(unit);
     }
 
     inline void onUnitCreate(BWAPI::Unit unit)
     {
-        if (unit->getPlayer() == Broodwar->self())
+        if (unit->getPlayer() == BWAPI::Broodwar->self())
             Units::storeUnit(unit);
         if (unit->getType().isResourceContainer())
             Resources::storeResource(unit);
@@ -41,8 +41,8 @@ namespace McRave::Events
         BWEB::Map::onUnitMorph(unit);
 
         // My unit
-        if (unit->getPlayer() == Broodwar->self()) {
-            auto isEgg = unit->getType() == UnitTypes::Zerg_Egg || unit->getType() == UnitTypes::Zerg_Lurker_Egg;
+        if (unit->getPlayer() == BWAPI::Broodwar->self()) {
+            auto isEgg = unit->getType() == BWAPI::UnitTypes::Zerg_Egg || unit->getType() == BWAPI::UnitTypes::Zerg_Lurker_Egg;
 
             //// Zerg morphing
             //if (unit->getType().getRace() == Races::Zerg) {
@@ -63,10 +63,10 @@ namespace McRave::Events
         }
 
         // Enemy unit
-        else if (unit->getPlayer()->isEnemy(Broodwar->self())) {
+        else if (unit->getPlayer()->isEnemy(BWAPI::Broodwar->self())) {
 
             // Remove any stations on a canceled hatchery
-            if (unit->getType() == UnitTypes::Zerg_Drone)
+            if (unit->getType() == BWAPI::UnitTypes::Zerg_Drone)
                 Stations::removeStation(unit);
             else
                 Units::storeUnit(unit);
@@ -79,7 +79,7 @@ namespace McRave::Events
 
     inline void onUnitComplete(BWAPI::Unit unit)
     {
-        if (unit->getPlayer() == Broodwar->self())
+        if (unit->getPlayer() == BWAPI::Broodwar->self())
             Units::storeUnit(unit);
         if (unit->getType().isResourceDepot())
             Stations::storeStation(unit);
@@ -94,7 +94,7 @@ namespace McRave::Events
         if (!unit->getType().isRefinery())
             Units::removeUnit(unit);
 
-        if (unit->getPlayer() == Broodwar->self())
+        if (unit->getPlayer() == BWAPI::Broodwar->self())
             onUnitComplete(unit);
     }
 }

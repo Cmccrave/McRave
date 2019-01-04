@@ -53,19 +53,19 @@ namespace McRave {
         SimState sState = SimState::None;
         Role role = Role::None;
 
-        BWAPI::UnitType unitType = UnitTypes::None;
-        BWAPI::UnitType buildingType = UnitTypes::None;
+        BWAPI::UnitType unitType = BWAPI::UnitTypes::None;
+        BWAPI::UnitType buildingType = BWAPI::UnitTypes::None;
 
-        BWAPI::Position position = Positions::Invalid;
-        BWAPI::Position engagePosition = Positions::Invalid;
-        BWAPI::Position destination = Positions::Invalid;
-        BWAPI::Position simPosition = Positions::Invalid;
-        BWAPI::Position lastPos = Positions::Invalid;
-        BWAPI::WalkPosition walkPosition = WalkPositions::Invalid;
-        BWAPI::WalkPosition lastWalk = WalkPositions::Invalid;
-        BWAPI::TilePosition tilePosition = TilePositions::Invalid;
-        BWAPI::TilePosition buildPosition = TilePositions::Invalid;
-        BWAPI::TilePosition lastTile = TilePositions::Invalid;
+        BWAPI::Position position = BWAPI::Positions::Invalid;
+        BWAPI::Position engagePosition = BWAPI::Positions::Invalid;
+        BWAPI::Position destination = BWAPI::Positions::Invalid;
+        BWAPI::Position simPosition = BWAPI::Positions::Invalid;
+        BWAPI::Position lastPos = BWAPI::Positions::Invalid;
+        BWAPI::WalkPosition walkPosition = BWAPI::WalkPositions::Invalid;
+        BWAPI::WalkPosition lastWalk = BWAPI::WalkPositions::Invalid;
+        BWAPI::TilePosition tilePosition = BWAPI::TilePositions::Invalid;
+        BWAPI::TilePosition buildPosition = BWAPI::TilePositions::Invalid;
+        BWAPI::TilePosition lastTile = BWAPI::TilePositions::Invalid;
 
         BWEB::PathFinding::Path path;
         BWEB::PathFinding::Path resourcePath;
@@ -74,7 +74,7 @@ namespace McRave {
     public:
         UnitInfo();
 
-        set<UnitInfo*>& getAssignedCargo() { return assignedCargo; }
+        std::set<UnitInfo*>& getAssignedCargo() { return assignedCargo; }
         TransportState getTransportState() { return tState; }
         SimState getSimState() { return sState; }
         GlobalState getGlobalState() { return gState; }
@@ -84,22 +84,25 @@ namespace McRave {
             return (path.getTiles().front() == target->getTilePosition() && path.getTiles().back() == tilePosition);
         }
         bool hasAttackedRecently() {
-            return (Broodwar->getFrameCount() - lastAttackFrame < 50);
+            return (BWAPI::Broodwar->getFrameCount() - lastAttackFrame < 50);
         }
         bool isStuck() {
-            return (Broodwar->getFrameCount() - lastMoveFrame > 50);
+            return (BWAPI::Broodwar->getFrameCount() - lastMoveFrame > 50);
         }
         bool targetsFriendly() {
-            return unitType == UnitTypes::Terran_Medic || unitType == UnitTypes::Terran_Science_Vessel || unitType == UnitTypes::Zerg_Defiler;
+            return unitType == BWAPI::UnitTypes::Terran_Medic || unitType == BWAPI::UnitTypes::Terran_Science_Vessel || unitType == BWAPI::UnitTypes::Zerg_Defiler;
         }
         bool isSuicidal(){
-            return unitType == UnitTypes::Terran_Vulture_Spider_Mine || unitType == UnitTypes::Zerg_Scourge || unitType == UnitTypes::Zerg_Infested_Terran;
+            return unitType == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine || unitType == BWAPI::UnitTypes::Zerg_Scourge || unitType == BWAPI::UnitTypes::Zerg_Infested_Terran;
         }
         bool isLightAir() {
-            return unitType == UnitTypes::Protoss_Corsair || unitType == UnitTypes::Zerg_Mutalisk  || unitType == UnitTypes::Terran_Wraith;
+            return unitType == BWAPI::UnitTypes::Protoss_Corsair || unitType == BWAPI::UnitTypes::Zerg_Mutalisk  || unitType == BWAPI::UnitTypes::Terran_Wraith;
         }
         bool isCapitalShip() {
-            return unitType == UnitTypes::Protoss_Carrier || unitType == UnitTypes::Terran_Battlecruiser || unitType == UnitTypes::Zerg_Guardian;
+            return unitType == BWAPI::UnitTypes::Protoss_Carrier || unitType == BWAPI::UnitTypes::Terran_Battlecruiser || unitType == BWAPI::UnitTypes::Zerg_Guardian;
+        }
+        bool isHovering() { 
+            return unitType.isWorker() || unitType == BWAPI::UnitTypes::Protoss_Archon || unitType == BWAPI::UnitTypes::Protoss_Dark_Archon || unitType == BWAPI::UnitTypes::Terran_Vulture;
         }
 
         double getPercentHealth() { return percentHealth; }
@@ -132,15 +135,15 @@ namespace McRave {
         int getUnitsAttacking() { return beingAttackedCount; }
         int framesHoldingResource() { return resourceHeldFrames; }
 
-        void circleRed() { Broodwar->drawCircleMap(position, unitType.width(), Colors::Red); }
-        void circleOrange() { Broodwar->drawCircleMap(position, unitType.width(), Colors::Orange); }
-        void circleYellow() { Broodwar->drawCircleMap(position, unitType.width(), Colors::Yellow); }
-        void circleGreen() { Broodwar->drawCircleMap(position, unitType.width(), Colors::Green); }
-        void circleBlue() { Broodwar->drawCircleMap(position, unitType.width(), Colors::Blue); }
-        void circlePurple() { Broodwar->drawCircleMap(position, unitType.width(), Colors::Purple); }
-        void circleBlack() { Broodwar->drawCircleMap(position, unitType.width(), Colors::Black); }
+        void circleRed() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Red); }
+        void circleOrange() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Orange); }
+        void circleYellow() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Yellow); }
+        void circleGreen() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Green); }
+        void circleBlue() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Blue); }
+        void circlePurple() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Purple); }
+        void circleBlack() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Black); }
 
-        bool isHovering() { return unitType.isWorker() || unitType == UnitTypes::Protoss_Archon || unitType == UnitTypes::Protoss_Dark_Archon || unitType == UnitTypes::Terran_Vulture; }
+       
         bool isBurrowed() { return burrowed; }
         bool isFlying() { return flying; }
         bool sameTile() { return lastTile == tilePosition; }
@@ -156,33 +159,33 @@ namespace McRave {
         UnitInfo &getTarget() { return *target; }
         McRave::Role getRole() { return role; }
 
-        Unit unit() { return thisUnit; }
-        UnitType getType() { return unitType; }
-        UnitType getBuildingType() { return buildingType; }
-        Player getPlayer() { return player; }
+        BWAPI::Unit unit() { return thisUnit; }
+        BWAPI::UnitType getType() { return unitType; }
+        BWAPI::UnitType getBuildingType() { return buildingType; }
+        BWAPI::Player getPlayer() { return player; }
 
-        Position getPosition() { return position; }
-        Position getEngagePosition() { return engagePosition; }
-        Position getDestination() { return destination; }
-        Position getLastPosition() { return lastPos; }
-        Position getSimPosition() { return simPosition; }
-        WalkPosition getWalkPosition() { return walkPosition; }
-        WalkPosition getLastWalk() { return lastWalk; }
-        TilePosition getTilePosition() { return tilePosition; }
-        TilePosition getBuildPosition() { return buildPosition; }
-        TilePosition getLastTile() { return lastTile; }
+        BWAPI::Position getPosition() { return position; }
+        BWAPI::Position getEngagePosition() { return engagePosition; }
+        BWAPI::Position getDestination() { return destination; }
+        BWAPI::Position getLastPosition() { return lastPos; }
+        BWAPI::Position getSimPosition() { return simPosition; }
+        BWAPI::WalkPosition getWalkPosition() { return walkPosition; }
+        BWAPI::WalkPosition getLastWalk() { return lastWalk; }
+        BWAPI::TilePosition getTilePosition() { return tilePosition; }
+        BWAPI::TilePosition getBuildPosition() { return buildPosition; }
+        BWAPI::TilePosition getLastTile() { return lastTile; }
 
         BWEB::PathFinding::Path& getPath() { return path; }
 
         void updateUnit();
-        void createDummy(UnitType);
+        void createDummy(BWAPI::UnitType);
 
         void setEngDist(double newValue) { engageDist = newValue; }
         void setSimValue(double newValue) { simValue = newValue; }
 
         void setLastAttackFrame(int newValue) { lastAttackFrame = newValue; }
         void setRemainingTrainFrame(int newFrame) { remainingTrainFrame = newFrame; }
-        void setCreationFrame() { frameCreated = Broodwar->getFrameCount(); }
+        void setCreationFrame() { frameCreated = BWAPI::Broodwar->getFrameCount(); }
         void setKillCount(int newValue) { killCount = newValue; }
 
         void setTransportState(TransportState newState) { tState = newState; }
@@ -193,20 +196,20 @@ namespace McRave {
         void setResource(ResourceInfo * unit) { resource = unit; }
         void setTransport(UnitInfo * unit) { transport = unit; }
         void setTarget(UnitInfo * unit) { target = unit; }
-        void setRole(McRave::Role newRole) { role = newRole; }
+        void setRole(Role newRole) { role = newRole; }
 
-        void setUnit(Unit newUnit) { thisUnit = newUnit; }
-        void setType(UnitType newType) { unitType = newType; }
-        void setBuildingType(UnitType newType) { buildingType = newType; }
-        void setPlayer(Player newPlayer) { player = newPlayer; }
+        void setUnit(BWAPI::Unit newUnit) { thisUnit = newUnit; }
+        void setType(BWAPI::UnitType newType) { unitType = newType; }
+        void setBuildingType(BWAPI::UnitType newType) { buildingType = newType; }
+        void setPlayer(BWAPI::Player newPlayer) { player = newPlayer; }
 
-        void setSimPosition(Position newPosition) { simPosition = newPosition; }
-        void setPosition(Position newPosition) { position = newPosition; }
-        void setEngagePosition(Position newPosition) { engagePosition = newPosition; }
-        void setDestination(Position newPosition) { destination = newPosition; }
-        void setWalkPosition(WalkPosition newPosition) { walkPosition = newPosition; }
-        void setTilePosition(TilePosition newPosition) { tilePosition = newPosition; }
-        void setBuildPosition(TilePosition newPosition) { buildPosition = newPosition; }
+        void setSimPosition(BWAPI::Position newPosition) { simPosition = newPosition; }
+        void setPosition(BWAPI::Position newPosition) { position = newPosition; }
+        void setEngagePosition(BWAPI::Position newPosition) { engagePosition = newPosition; }
+        void setDestination(BWAPI::Position newPosition) { destination = newPosition; }
+        void setWalkPosition(BWAPI::WalkPosition newPosition) { walkPosition = newPosition; }
+        void setTilePosition(BWAPI::TilePosition newPosition) { tilePosition = newPosition; }
+        void setBuildPosition(BWAPI::TilePosition newPosition) { buildPosition = newPosition; }
 
         void setPath(BWEB::PathFinding::Path& newPath) { path = newPath; }
         void setLastPositions();
