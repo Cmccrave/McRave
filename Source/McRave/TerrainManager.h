@@ -1,8 +1,8 @@
 #pragma once
 #include <BWAPI.h>
 
-namespace McRave::Terrain
-{
+namespace McRave::Terrain {
+
     void onStart();
     void onFrame();
 

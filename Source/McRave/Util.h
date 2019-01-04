@@ -3,32 +3,32 @@
 
 namespace McRave::Util {
 
-    UnitInfo * getClosestUnit(Position, Player, UnitType t = UnitTypes::None);
-    UnitInfo * getClosestUnit(UnitInfo&, Player, UnitType t = UnitTypes::None);
+    UnitInfo * getClosestUnit(BWAPI::Position, BWAPI::Player, BWAPI::UnitType t = BWAPI::UnitTypes::None);
+    UnitInfo * getClosestUnit(UnitInfo&, BWAPI::Player, BWAPI::UnitType t = BWAPI::UnitTypes::None);
     UnitInfo * getClosestThreat(UnitInfo&);
-    UnitInfo * getClosestBuilder(Position);
+    UnitInfo * getClosestBuilder(BWAPI::Position);
 
     int chokeWidth(const BWEM::ChokePoint *);
-    const BWEM::ChokePoint * getClosestChokepoint(Position);
+    const BWEM::ChokePoint * getClosestChokepoint(BWAPI::Position);
 
-    double getHighestThreat(WalkPosition, UnitInfo&);
+    double getHighestThreat(BWAPI::WalkPosition, UnitInfo&);
 
     bool unitInRange(UnitInfo& unit);
     bool reactivePullWorker(UnitInfo& unit);
     bool proactivePullWorker(UnitInfo& unit);
     bool pullRepairWorker(UnitInfo& unit);
     bool accurateThreatOnPath(UnitInfo&, BWEB::PathFinding::Path&);
-    bool rectangleIntersect(Position, Position, Position);
-    bool rectangleIntersect(Position, Position, int, int);
+    bool rectangleIntersect(BWAPI::Position, BWAPI::Position, BWAPI::Position);
+    bool rectangleIntersect(BWAPI::Position, BWAPI::Position, int, int);
 
     // Walkability checks
     template<class T>
     bool isWalkable(T here)
     {
-        auto start = WalkPosition(here);
+        auto start = BWAPI::WalkPosition(here);
         for (int x = start.x; x < start.x + 4; x++) {
             for (int y = start.y; y < start.y + 4; y++) {
-                if (Grids::getMobility(WalkPosition(x, y)) == -1)
+                if (Grids::getMobility(BWAPI::WalkPosition(x, y)) == -1)
                     return false;
             }
         }
@@ -44,14 +44,14 @@ namespace McRave::Util {
         return idx;
     }
 
-    bool isWalkable(WalkPosition start, WalkPosition finish, UnitType);
+    bool isWalkable(BWAPI::WalkPosition start, BWAPI::WalkPosition finish, BWAPI::UnitType);
 
     // Create a line of best fit for a chokepoint
     Line lineOfBestFit(const BWEM::ChokePoint *);
     Line parallelLine(Line, int, double);
 
-    Position getConcavePosition(UnitInfo&, BWEM::Area const * area = nullptr, Position here = Positions::Invalid);
+    BWAPI::Position getConcavePosition(UnitInfo&, BWEM::Area const * area = nullptr, BWAPI::Position here = BWAPI::Positions::Invalid);
 
-    Position clipPosition(Position, Position);
-    Position clipToMap(Position);
+    BWAPI::Position clipPosition(BWAPI::Position, BWAPI::Position);
+    BWAPI::Position clipToMap(BWAPI::Position);
 }

@@ -1,8 +1,8 @@
 #pragma once
 #include <BWAPI.h>
 
-namespace McRave::Transports
-{    
+namespace McRave::Transports {
+
     void onFrame();
     void removeUnit(BWAPI::Unit);
 }

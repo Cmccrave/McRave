@@ -1,8 +1,6 @@
 #pragma once
 #include <BWAPI.h>
-#include "..\BWEB\BWEB.h"
-#include "McRave.h"
-#include "UnitMath.h"
+#include "BWEB.h"
 
 namespace McRave {
 

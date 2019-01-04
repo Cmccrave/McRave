@@ -1,6 +1,5 @@
 #pragma once
 #include <BWAPI.h>
-#include "ResourceInfo.h"
 
 namespace McRave::Resources
 {

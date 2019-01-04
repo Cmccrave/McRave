@@ -1,3 +1,4 @@
+#pragma once
 #include "McRave.h"
 
 // Information from: https://docs.google.com/document/d/1p7Rw4v56blhf5bzhSnFVfgrKviyrapDFHh9J4FNUXM0

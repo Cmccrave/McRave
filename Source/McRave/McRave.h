@@ -1,7 +1,7 @@
 #pragma once
 #include <BWAPI.h>
-#include "..\BWEM\bwem.h"
-#include "..\BWEB\BWEB.h"
+#include "bwem.h"
+#include "BWEB.h"
 
 #define STORM_LIMIT 5.0
 #define STASIS_LIMIT 8.0

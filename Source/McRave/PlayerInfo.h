@@ -2,19 +2,16 @@
 #include <BWAPI.h>
 #include <set>
 
-using namespace BWAPI;
-using namespace std;
-
 namespace McRave
 {
     class PlayerInfo
     {
-        Player thisPlayer;
-        Race startRace, currentRace;
+        BWAPI::Player thisPlayer;
+        BWAPI::Race startRace, currentRace;
         bool alive;
-        TilePosition startLocation;
-        set <UpgradeType> playerUpgrades;
-        set <TechType> playerTechs;
+        BWAPI::TilePosition startLocation;
+        std::set <BWAPI::UpgradeType> playerUpgrades;
+        std::set <BWAPI::TechType> playerTechs;
     public:
         PlayerInfo() {
             thisPlayer = nullptr;
@@ -23,30 +20,30 @@ namespace McRave
             alive = true;
         }
 
-        Race getCurrentRace() { return currentRace; }
-        Race getStartRace() { return startRace; }
+        BWAPI::Race getCurrentRace() { return currentRace; }
+        BWAPI::Race getStartRace() { return startRace; }
         bool isAlive() { return alive; }
         bool isEnemy() { return thisPlayer->isEnemy(Broodwar->self()); }
         bool isAlly() { return thisPlayer->isAlly(Broodwar->self()); }
         bool isSelf() { return thisPlayer == Broodwar->self(); }
-        TilePosition getStartingLocation() { return startLocation; }
+        BWAPI::TilePosition getStartingLocation() { return startLocation; }
 
-        Player player() { return thisPlayer; }
+        BWAPI::Player player() { return thisPlayer; }
 
-        void storeUpgrade(UpgradeType upgrade) { playerUpgrades.insert(upgrade); }
-        void storeTech(TechType tech) { playerTechs.insert(tech); }
+        void storeUpgrade(BWAPI::UpgradeType upgrade) { playerUpgrades.insert(upgrade); }
+        void storeTech(BWAPI::TechType tech) { playerTechs.insert(tech); }
 
-        void setCurrentRace(Race newRace) { currentRace = newRace; }
-        void setStartRace(Race newRace) { startRace = newRace; }
+        void setCurrentRace(BWAPI::Race newRace) { currentRace = newRace; }
+        void setStartRace(BWAPI::Race newRace) { startRace = newRace; }
         void setAlive(bool newState) { alive = newState; }
-        void setPlayer(Player newPlayer) { thisPlayer = newPlayer; }
+        void setPlayer(BWAPI::Player newPlayer) { thisPlayer = newPlayer; }
 
-        bool hasUpgrade(UpgradeType upgrade) {
+        bool hasUpgrade(BWAPI::UpgradeType upgrade) {
             if (playerUpgrades.find(upgrade) != playerUpgrades.end())
                 return true;
             return false;
         }
-        bool hasTech(TechType tech) {
+        bool hasTech(BWAPI::TechType tech) {
             if (playerTechs.find(tech) != playerTechs.end())
                 return true;
             return false;
