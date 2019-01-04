@@ -93,7 +93,6 @@ namespace McRave::BuildOrder {
     bool isOpenerAllowed(BWAPI::Race, std::string, std::string);
     bool isBuildPossible(std::string, std::string);
 
-    void updateBuild();
     void getNewTech();
     void checkNewTech();
     void checkAllTech();

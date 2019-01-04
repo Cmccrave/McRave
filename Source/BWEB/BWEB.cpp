@@ -152,7 +152,6 @@ namespace BWEB::Map
         findNatural();
         findMainChoke();
         findNaturalChoke();
-        Stations::findStations();
 
         // Test
         for (int x = 0; x < Broodwar->mapWidth(); x++) {
@@ -262,11 +261,11 @@ namespace BWEB::Map
 
         // Draw Blocks 
         for (auto &block : Blocks::getBlocks()) {
-            for (auto &tile : block.SmallTiles())
+            for (auto &tile : block.getSmallTiles())
                 Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), Broodwar->self()->getColor());
-            for (auto &tile : block.MediumTiles())
+            for (auto &tile : block.getMediumTiles())
                 Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(97, 65), Broodwar->self()->getColor());
-            for (auto &tile : block.LargeTiles())
+            for (auto &tile : block.getLargeTiles())
                 Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(129, 97), Broodwar->self()->getColor());
         }
 
@@ -353,9 +352,9 @@ namespace BWEB::Map
         // Search through each block to find the closest block and valid position
         for (auto &block : Blocks::getBlocks()) {
             set<TilePosition> placements;
-            if (type.tileWidth() == 4) placements = block.LargeTiles();
-            else if (type.tileWidth() == 3) placements = block.MediumTiles();
-            else placements = block.SmallTiles();
+            if (type.tileWidth() == 4) placements = block.getLargeTiles();
+            else if (type.tileWidth() == 3) placements = block.getMediumTiles();
+            else placements = block.getSmallTiles();
 
             for (auto &tile : placements) {
                 const auto dist = tile.getDistance(searchCenter);

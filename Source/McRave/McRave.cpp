@@ -8,21 +8,17 @@
 #include "EventManager.h"
 
 // *** Notes ***
-// Move 4gate vs Z to 2 gate category
 // Scout spam sacrifice is a problem
 // Use Player pointer instead of BWAPI::Player pointer in UnitInfo, gives advantage of knowing upgrades/tech that are available always
 // Floating units removing mine positions
 // If an enemy floats a CC to an expansion, we don't consider it "taken"
     // - Should we check all stations for being taken? How? UsedGrid? If so, we need to verify that buildings that land have used tiles
 
-// Adjust close check for isThreatening
-// Forced observers will cause defensive 2 gate reaction to bug, need to ensure that we can break out of builds
-// Carrier tech -> reduce gate count of addProduction by stargate count, how many stargate do we want?
 // Offset for supply at start of game, can we calculate instead of hardcode at 10?
 // Bunker in enemy main detected as FE
-// Fix not letting uncompleted Probes being assigned tasks - no roles to incomplete units fixes this completely
 // Need to fix how the directional check of viable position iterating works
 // BWEB Destination walls not working
+// Proxy builds?
 
 // *** Parallel Lines ***
 // Destination 12 o clock spawn issues making parallel lines (offset by +y about 64 pixels?)
@@ -47,6 +43,7 @@ void McRaveModule::onStart()
     Stations::onStart();
     Grids::onStart();
     BuildOrder::onStart();
+    BWEB::Stations::findStations();
     BWEB::Blocks::findBlocks();
     Broodwar->sendText("glhf");
 }
@@ -54,6 +51,7 @@ void McRaveModule::onStart()
 void McRaveModule::onEnd(bool isWinner)
 {
     BuildOrder::onEnd(isWinner);
+    Broodwar->sendText("ggwp");
 }
 
 void McRaveModule::onFrame()
@@ -94,8 +92,7 @@ void McRaveModule::onReceiveText(Player player, string text)
 }
 
 void McRaveModule::onPlayerLeft(Player player)
-{
-    Broodwar->sendText("ggwp");
+{    
 }
 
 void McRaveModule::onNukeDetect(Position target)

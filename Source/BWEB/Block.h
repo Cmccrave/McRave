@@ -9,7 +9,7 @@ namespace BWEB::Blocks
     {
         int w, h;
         BWAPI::TilePosition t;
-        std::set <BWAPI::TilePosition> small, medium, large;
+        std::set <BWAPI::TilePosition> smallTiles, mediumTiles, largeTiles;
     public:
         Block() : w(0), h(0) {};
         Block(const int width, const int height, const BWAPI::TilePosition tile) {
@@ -19,21 +19,21 @@ namespace BWEB::Blocks
         int width() const { return w; }
         int height() const { return h; }
 
-        // Returns the top left tile position of this block
-        BWAPI::TilePosition Location() const { return t; }
+        /// Returns the top left tile position of this block
+        BWAPI::TilePosition getTilePosition() const { return t; }
 
-        // Returns the const set of tilepositions that belong to 2x2 (small) buildings
-        std::set<BWAPI::TilePosition> SmallTiles() const { return small; }
+        /// Returns the const set of tilepositions that belong to 2x2 (small) buildings
+        std::set<BWAPI::TilePosition> getSmallTiles() const { return smallTiles; }
 
-        // Returns the const set of tilepositions that belong to 3x2 (medium) buildings
-        std::set<BWAPI::TilePosition> MediumTiles() const { return medium; }
+        /// Returns the const set of tilepositions that belong to 3x2 (medium) buildings
+        std::set<BWAPI::TilePosition> getMediumTiles() const { return mediumTiles; }
 
-        // Returns the const set of tilepositions that belong to 4x3 (large) buildings
-        std::set<BWAPI::TilePosition> LargeTiles() const { return large; }
+        /// Returns the const set of tilepositions that belong to 4x3 (large) buildings
+        std::set<BWAPI::TilePosition> getLargeTiles() const { return largeTiles; }
 
-        void insertSmall(const BWAPI::TilePosition here) { small.insert(here); }
-        void insertMedium(const BWAPI::TilePosition here) { medium.insert(here); }
-        void insertLarge(const BWAPI::TilePosition here) { large.insert(here); }
+        void insertSmall(const BWAPI::TilePosition here) { smallTiles.insert(here); }
+        void insertMedium(const BWAPI::TilePosition here) { mediumTiles.insert(here); }
+        void insertLarge(const BWAPI::TilePosition here) { largeTiles.insert(here); }
     };
 
     /// <summary> Initializes the building of every BWEB::Block on the map, call it only once per game. </summary>

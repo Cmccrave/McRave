@@ -139,20 +139,20 @@ namespace McRave::Math {
     double gWeaponCooldown(UnitInfo& unit)
     {
         if (unit.getType() == UnitTypes::Terran_Bunker) return 15.0;
-        else if (unit.getType() == UnitTypes::Protoss_Reaver) return 60.0;
-        else if (unit.getType() == UnitTypes::Protoss_High_Templar) return 224.0;
-        else if (unit.getType() == UnitTypes::Zerg_Infested_Terran) return 500.0;
-        else if (unit.getType() == UnitTypes::Zerg_Zergling && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Adrenal_Glands)) return 6.0;
-        else if (unit.getType() == UnitTypes::Terran_Marine && unit.getPlayer()->hasResearched(TechTypes::Stim_Packs)) return 7.5;
+        if (unit.getType() == UnitTypes::Protoss_Reaver) return 60.0;
+        if (unit.getType() == UnitTypes::Protoss_High_Templar) return 224.0;
+        if (unit.getType() == UnitTypes::Zerg_Infested_Terran) return 500.0;
+        if (unit.getType() == UnitTypes::Zerg_Zergling && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Adrenal_Glands)) return 6.0;
+        if (unit.getType() == UnitTypes::Terran_Marine && unit.getPlayer()->hasResearched(TechTypes::Stim_Packs)) return 7.5;
         return unit.getType().groundWeapon().damageCooldown();
     }
 
     double aWeaponCooldown(UnitInfo& unit)
     {
         if (unit.getType() == UnitTypes::Terran_Bunker) return 15.0;
-        else if (unit.getType() == UnitTypes::Protoss_High_Templar) return 224.0;
-        else if (unit.getType() == UnitTypes::Zerg_Scourge) return 110.0;
-        else if (unit.getType() == UnitTypes::Terran_Marine && unit.getPlayer()->hasResearched(TechTypes::Stim_Packs)) return 7.5;
+        if (unit.getType() == UnitTypes::Protoss_High_Templar) return 224.0;
+        if (unit.getType() == UnitTypes::Zerg_Scourge) return 110.0;
+        if (unit.getType() == UnitTypes::Terran_Marine && unit.getPlayer()->hasResearched(TechTypes::Stim_Packs)) return 7.5;
         return unit.getType().airWeapon().damageCooldown();
     }
 
@@ -169,9 +169,7 @@ namespace McRave::Math {
 
     double effectiveness(UnitInfo& unit)
     {
-        auto effectiveness = 1.0;
         auto sizes = unit.getPlayer() == Broodwar->self() ? Units::getEnemySizes() : Units::getAllySizes();
-
         auto large = sizes[UnitSizeTypes::Large];
         auto medium = sizes[UnitSizeTypes::Medium];
         auto small = sizes[UnitSizeTypes::Small];
@@ -179,11 +177,11 @@ namespace McRave::Math {
 
         if (total > 0.0) {
             if (unit.getType().groundWeapon().damageType() == DamageTypes::Explosive)
-                effectiveness = ((large*1.0) + (medium*0.75) + (small*0.5)) / total;
+                return ((large*1.0) + (medium*0.75) + (small*0.5)) / total;
             else if (unit.getType().groundWeapon().damageType() == DamageTypes::Concussive)
-                effectiveness = ((large*0.25) + (medium*0.5) + (small*1.0)) / total;
+                return ((large*0.25) + (medium*0.5) + (small*1.0)) / total;
         }
-        return effectiveness;
+        return 1.0;
     }
 
     double survivability(UnitInfo& unit)
@@ -264,7 +262,7 @@ namespace McRave::Math {
     int getMinStopFrame(UnitType unitType)
     {
         if (unitType == UnitTypes::Protoss_Dragoon)	return 9;
-        else if (unitType == UnitTypes::Zerg_Devourer) return 11;
+        if (unitType == UnitTypes::Zerg_Devourer) return 11;
         return 0;
     }
 

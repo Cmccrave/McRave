@@ -110,7 +110,7 @@ namespace McRave::BuildOrder
 
             // 2Gate
             myBuilds["2Gate"].openers ={ "Proxy", "Natural", "Main" };
-            myBuilds["2Gate"].transitions ={ "ZealotRush", "DT", "Reaver", "Expand", "DoubleExpand" };
+            myBuilds["2Gate"].transitions ={ "ZealotRush", "DT", "Reaver", "Expand", "DoubleExpand", "4Gate" };
 
             // FFE
             myBuilds["FFE"].openers ={ "Gate", "Nexus", "Forge" };
@@ -264,7 +264,7 @@ namespace McRave::BuildOrder
         if (Broodwar->self()->getRace() == Races::Protoss) {
             if (build == "2Gate" && opener == "Natural") {
                 buildings ={ Protoss_Gateway, Protoss_Gateway, Protoss_Pylon };
-                defenses.insert(defenses.end(), 6, Protoss_Photon_Cannon);
+                defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
             }
             else if (build == "FFE" || build.find("Meme") != string::npos) {
                 buildings ={ Protoss_Gateway, Protoss_Forge, Protoss_Pylon };
@@ -284,7 +284,6 @@ namespace McRave::BuildOrder
         if (Broodwar->self()->getRace() == Races::Zerg) {
             buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber };
             defenses.insert(defenses.end(), 3, Zerg_Sunken_Colony);
-            return true; // no walls for now
         }
 
         if (build == "2Fact" || build == "Sparks") {
@@ -395,7 +394,7 @@ namespace McRave::BuildOrder
                 if (transition == "Reaver")
                     return p /*|| t*/ || r;
                 if (transition == "4Gate")
-                    return true;
+                    return p || t;
             }
 
             if (build == "P2Gate") {
@@ -407,6 +406,8 @@ namespace McRave::BuildOrder
                     return p || z;
                 if (transition == "DoubleExpand")
                     return t;
+                if (transition == "4Gate")
+                    return z;
                 //if (transition == "ZealotRush")
                 //	return true;
             }
@@ -491,6 +492,7 @@ namespace McRave::BuildOrder
 
     void updateBuild()
     {
+        // TODO: Check if we own a <race> unit - have a build order allowed PER race for FFA weirdness and maybe mind control shenanigans
         if (Broodwar->self()->getRace() == Races::Protoss) {
             Protoss::opener();
             Protoss::tech();
@@ -721,7 +723,7 @@ namespace McRave::BuildOrder
             itemQueue[Zerg_Lair] = Item(Broodwar->self()->completedUnitCount(Zerg_Queens_Nest) < 1);
         }
     }
-
+    
     map<BWAPI::UnitType, Item>& getItemQueue() { return itemQueue; }
     UnitType getTechUnit() { return techUnit; }
     UnitType getFirstUnit() { return firstUnit; }

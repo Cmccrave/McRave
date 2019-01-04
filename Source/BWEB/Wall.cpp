@@ -454,7 +454,7 @@ namespace BWEB::Walls
 
             // Get a new path
             BWEB::PathFinding::Path newPath;
-            newPath.createWallPath(Map::mapBWEM, currentWall, startCenter, endCenter, ignoreOverlap);
+            newPath.createWallPath(currentWall, startCenter, endCenter, ignoreOverlap);
             currentHole = TilePositions::None;
             currentPath = newPath.getTiles();
 
@@ -690,6 +690,18 @@ namespace BWEB::Walls
         vector<UnitType> defenses(6, UnitTypes::Zerg_Sunken_Colony);
 
         createWall(buildings, Map::getNaturalArea(), Map::getNaturalChoke(), UnitTypes::None, defenses, true, false);
+    }
+
+    void createTWall()
+    {
+        vector<UnitType> buildings ={ UnitTypes::Terran_Supply_Depot, UnitTypes::Terran_Supply_Depot, UnitTypes::Terran_Barracks };
+        vector<UnitType> defenses;
+        UnitType type = UnitTypes::None;
+
+        if (Broodwar->enemy())
+            type = Broodwar->enemy()->getRace() == Races::Zerg ? UnitTypes::Zerg_Zergling : UnitTypes::Protoss_Zealot;
+
+        createWall(buildings, Map::getMainArea(), Map::getMainChoke(), UnitTypes::Zerg_Zergling, defenses, false, true);
     }
 
     const Wall * getClosestWall(TilePosition here)

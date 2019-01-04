@@ -373,7 +373,7 @@ namespace BWEB::Blocks
     {
         for (auto it = allBlocks.begin(); it != allBlocks.end(); ++it) {
             auto&  block = *it;
-            if (here.x >= block.Location().x && here.x < block.Location().x + block.width() && here.y >= block.Location().y && here.y < block.Location().y + block.height()) {
+            if (here.x >= block.getTilePosition().x && here.x < block.getTilePosition().x + block.width() && here.y >= block.getTilePosition().y && here.y < block.getTilePosition().y + block.height()) {
                 allBlocks.erase(it);
                 return;
             }
@@ -446,7 +446,7 @@ namespace BWEB::Blocks
         double distBest = DBL_MAX;
         const Block* bestBlock = nullptr;
         for (auto &block : allBlocks) {
-            const auto tile = block.Location() + TilePosition(block.width() / 2, block.height() / 2);
+            const auto tile = block.getTilePosition() + TilePosition(block.width() / 2, block.height() / 2);
             const auto dist = here.getDistance(tile);
 
             if (dist < distBest) {

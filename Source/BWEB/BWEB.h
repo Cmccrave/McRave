@@ -8,7 +8,6 @@
 #include "Wall.h"
 
 // TODO:
-// Separate initializing stations
 // Remove external use of overlapsCurrentWall
 
 namespace BWEB::Map
@@ -19,8 +18,17 @@ namespace BWEB::Map
     /// <summary> Draws all BWEB::Walls, BWEB::Stations, BWEB::Blocks and BWEB::Paths when called. Call this every frame if you need debugging information. </summary>
     void draw();
 
-    /// <summary> Called on game start to initialize the BWEB::Map and BWEB::Stations. </summary>
-    void onStart(), onUnitDiscover(BWAPI::Unit), onUnitDestroy(BWAPI::Unit), onUnitMorph(BWAPI::Unit);
+    /// <summary> Called on game start to initialize the BWEB::Map. </summary>
+    void onStart();
+
+    /// <summary> Stores used tiles if it is a building. Increments defense counters for any stations where the placed building is a static defense unit. </summary>
+    void onUnitDiscover(BWAPI::Unit);
+
+    /// <summary> Removes used tiles if it is a building. Decrements defense counters for any stations where the destroyed building is a static defense unit. </summary>
+    void onUnitDestroy(BWAPI::Unit);
+
+    /// <summary> Calls BWEB::onUnitDiscover. </summary>
+    void onUnitMorph(BWAPI::Unit);
 
     /// <summary> Removes a section of BWAPI::TilePositions from the BWEB overlap grid. </summary>
     void removeOverlap(BWAPI::TilePosition tile, int width, int height);

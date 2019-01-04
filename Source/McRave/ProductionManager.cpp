@@ -7,6 +7,7 @@ using namespace UnitTypes;
 namespace McRave::Production {
 
     namespace {
+        // TODO: Template these 3? Hold the min/gas value only?
         map <Unit, UnitType> idleProduction;
         map <Unit, TechType> idleTech;
         map <Unit, UpgradeType> idleUpgrade;
@@ -120,12 +121,13 @@ namespace McRave::Production {
 
         bool isCreateable(UpgradeType upgrade)
         {
+            // First upgrade check
             if (upgrade == BuildOrder::getFirstUpgrade() && Broodwar->self()->getUpgradeLevel(upgrade) == 0 && !Broodwar->self()->isUpgrading(upgrade))
                 return true;
 
-            // Some hardcoded ones
+            // Upgrades that require a building
             if (upgrade == UpgradeTypes::Adrenal_Glands)
-                return Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Hive);
+                return Broodwar->self()->completedUnitCount(Zerg_Hive);
 
             for (auto &unit : upgrade.whatUses()) {
                 if (BuildOrder::isUnitUnlocked(unit) && Broodwar->self()->getUpgradeLevel(upgrade) != upgrade.maxRepeats() && !Broodwar->self()->isUpgrading(upgrade))
@@ -136,8 +138,13 @@ namespace McRave::Production {
 
         bool isCreateable(TechType tech)
         {
+            // First tech check
             if (tech == BuildOrder::getFirstTech() && !Broodwar->self()->hasResearched(tech) && !Broodwar->self()->isResearching(tech))
                 return true;
+
+            // Tech that require a building
+            if (tech == TechTypes::Lurker_Aspect)
+                return Broodwar->self()->completedUnitCount(Zerg_Lair);
 
             for (auto &unit : tech.whatUses()) {
                 if (BuildOrder::isUnitUnlocked(unit) && !Broodwar->self()->hasResearched(tech) && !Broodwar->self()->isResearching(tech))
@@ -148,8 +155,6 @@ namespace McRave::Production {
 
         bool isSuitable(UnitType unit)
         {
-            using namespace UnitTypes;
-
             if (unit.isWorker()) {
                 if (Broodwar->self()->completedUnitCount(unit) < 90 && (!Resources::isMinSaturated() || !Resources::isGasSaturated()))
                     return true;
@@ -176,9 +181,6 @@ namespace McRave::Production {
             // HACK: Want x reavers before a shuttle
             if (Players::vP() && vis(UnitTypes::Protoss_Reaver) < (2 + int(Strategy::getEnemyBuild() == "P4Gate")))
                 needShuttles = false;
-
-            //// No shuttles
-            //needShuttles = false;
 
             switch (unit)
             {
@@ -261,7 +263,7 @@ namespace McRave::Production {
                 }
             }
 
-            // If this isn't the first tech/upgrade and we don't have our first tech/upgrade
+            // If this isn't the first upgrade and we don't have our first tech/upgrade
             if (upgrade != BuildOrder::getFirstUpgrade()) {
                 if (BuildOrder::getFirstUpgrade() != UpgradeTypes::None && Broodwar->self()->getUpgradeLevel(BuildOrder::getFirstUpgrade()) <= 0 && !Broodwar->self()->isUpgrading(BuildOrder::getFirstUpgrade()))
                     return false;
@@ -384,7 +386,7 @@ namespace McRave::Production {
         {
             using namespace TechTypes;
 
-            // Allow first upgrade
+            // Allow first tech
             if (tech == BuildOrder::getFirstTech() && !BuildOrder::firstReady())
                 return true;
 
@@ -396,7 +398,7 @@ namespace McRave::Production {
                 }
             }
 
-            // If this isn't the first tech/upgrade and we don't have our first tech/upgrade
+            // If this isn't the first tech and we don't have our first tech/upgrade
             if (tech != BuildOrder::getFirstTech()) {
                 if (BuildOrder::getFirstUpgrade() != UpgradeTypes::None && Broodwar->self()->getUpgradeLevel(BuildOrder::getFirstUpgrade()) <= 0 && !Broodwar->self()->isUpgrading(BuildOrder::getFirstUpgrade()))
                     return false;
@@ -443,6 +445,14 @@ namespace McRave::Production {
             return false;
         }
 
+        void addon(UnitInfo& building)
+        {
+            for (auto &unit : building.getType().buildsWhat()) {
+                if (unit.isAddon() && BuildOrder::buildCount(unit) > vis(unit))
+                    building.unit()->buildAddon(unit);
+            }
+        }
+
         void produce(UnitInfo& building)
         {
             int offset = 16;
@@ -454,12 +464,7 @@ namespace McRave::Production {
                 double gas = unit.gasPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->gas() - reservedGas - Buildings::getQueuedGas()) / (double)unit.gasPrice())) : 1.0;
                 double score = max(0.01, Strategy::getUnitScore(unit));
                 double value = score * mineral * gas;
-
-                if (unit.isAddon() && BuildOrder::getItemQueue().find(unit) != BuildOrder::getItemQueue().end() && BuildOrder::getItemQueue().at(unit).getActualCount() > vis(unit)) {
-                    building.unit()->buildAddon(unit);
-                    break;
-                }
-
+                
                 // If we teched to DTs, try to create as many as possible
                 if (unit == UnitTypes::Protoss_Dark_Templar && BuildOrder::getTechList().size() == 1 && isCreateable(building.unit(), unit) && isSuitable(unit)) {
                     best = DBL_MAX;
@@ -535,7 +540,8 @@ namespace McRave::Production {
         void updateReservedResources()
         {
             // Reserved minerals for idle buildings, tech and upgrades
-            reservedMineral = 0, reservedGas = 0;
+            reservedMineral = 0;
+            reservedGas = 0;
 
             for (auto &b : idleProduction) {
                 reservedMineral += b.second.mineralPrice();
@@ -559,25 +565,27 @@ namespace McRave::Production {
             for (auto &b : Units::getMyUnits()) {
                 auto &building = b.second;
 
-                if (!building.unit() || building.getRole() != Role::Producing || (!building.unit()->isCompleted() && !building.getType().isResourceDepot() && building.getType().getRace() != Races::Zerg) || Broodwar->getFrameCount() % Broodwar->getRemainingLatencyFrames() != 0)
+                if (!building.unit()
+                    || building.getRole() != Role::Producing
+                    || Broodwar->getFrameCount() % Broodwar->getRemainingLatencyFrames() != 0
+                    || building.getRemainingTrainFrames() < Broodwar->getRemainingLatencyFrames())
                     continue;
 
-                bool latencyIdle = building.getRemainingTrainFrames() < Broodwar->getRemainingLatencyFrames();
-
-                if (latencyIdle && !building.getType().isResourceDepot()) {
+                // TODO: Combine into one - iterate all commands and return when true
+                if (!building.getType().isResourceDepot()) {
                     idleProduction.erase(building.unit());
                     idleUpgrade.erase(building.unit());
                     idleTech.erase(building.unit());
 
+                    addon(building);
                     produce(building);
                     research(building);
                     upgrade(building);
                 }
 
-                // CC/Nexus
-                else if (building.getType().isResourceDepot() && latencyIdle) {
+                else {
                     for (auto &unit : building.getType().buildsWhat()) {
-                        if (unit.isAddon() && !building.unit()->getAddon() && BuildOrder::getItemQueue().find(unit) != BuildOrder::getItemQueue().end() && BuildOrder::getItemQueue().at(unit).getActualCount() > vis(unit)) {
+                        if (unit.isAddon() && !building.unit()->getAddon() && BuildOrder::buildCount(unit) > vis(unit)) {
                             building.unit()->buildAddon(unit);
                             continue;
                         }
@@ -586,7 +594,7 @@ namespace McRave::Production {
                             building.setRemainingTrainFrame(unit.buildTime());
                         }
                     }
-                };
+                }
             }
         }
     }
@@ -602,7 +610,7 @@ namespace McRave::Production {
     int getReservedMineral() { return reservedMineral; }
     int getReservedGas() { return reservedGas; }
     bool hasIdleProduction() { return Broodwar->getFrameCount() == idleFrame; }
-    
+
     //auto needOverlords = Units::getMyTypeCount(UnitTypes::Zerg_Overlord) <= min(22, (int)floor((Units::getSupply() / max(14, 16 - Units::getMyTypeCount(UnitTypes::Zerg_Overlord)))));
 
     //for (auto &larva : building.unit()->getLarva()) {

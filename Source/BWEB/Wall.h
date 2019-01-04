@@ -104,6 +104,10 @@ namespace BWEB::Walls
     /// <para> Places 6 Sunkens, 2 Evolution Chambers and 1 Hatchery. </para>
     void createZSimCity();
 
+    /// <summary><para> Creates a full wall of Terran buildings at the main choke. </para>
+    /// <para> Places 2 Depots and 1 Barracks. </para>
+    void createTWall();
+
     /// <summary> Returns true if a BWAPI::TilePosition overlaps our current wall. This is ONLY here for internal usage temporarily. </summary>
     BWAPI::UnitType overlapsCurrentWall(const BWAPI::TilePosition here, const int width = 1, const int height = 1);
 

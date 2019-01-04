@@ -8,8 +8,7 @@ namespace McRave::Workers {
     namespace {
 
         int minWorkers = 0;
-        int gasWorkers = 0;
-        bool closeToResource(UnitInfo&);        
+        int gasWorkers = 0; 
 
         bool closeToResource(UnitInfo& worker)
         {

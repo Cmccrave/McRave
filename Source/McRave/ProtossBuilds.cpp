@@ -299,7 +299,7 @@ namespace McRave::BuildOrder::Protoss {
             // Versus Zerg
             if (Players::vZ()) {
                 defaultPvZ();
-
+                            
                 if (currentTransition == "Expand") {
                     getOpening =		s < 100;
 
@@ -325,23 +325,31 @@ namespace McRave::BuildOrder::Protoss {
                     itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 66);
                     gasLimit = 1;
                 }
-                else if (currentTransition == "Reaver") {
-                    getOpening =		s < 80;
-                    firstUnit =			com(Protoss_Robotics_Facility) >= 1 ? (Strategy::needDetection() ? Protoss_Observer : Protoss_Reaver) : UnitTypes::None;
+                //else if (currentTransition == "Reaver") {
+                //    getOpening =		s < 80;
+                //    firstUnit =			com(Protoss_Robotics_Facility) >= 1 ? (Strategy::needDetection() ? Protoss_Observer : Protoss_Reaver) : UnitTypes::None;
 
-                    itemQueue[Protoss_Nexus] =				Item(1);
-                    itemQueue[Protoss_Assimilator] =		Item(s >= 22);
-                    itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
-                    itemQueue[Protoss_Robotics_Facility] =	Item(com(Protoss_Zealot) >= 5);
-                }
-                else if (currentTransition == "Standard") {
-                    getOpening =		s < 80;
+                //    itemQueue[Protoss_Nexus] =				Item(1);
+                //    itemQueue[Protoss_Assimilator] =		Item(s >= 22);
+                //    itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
+                //    itemQueue[Protoss_Robotics_Facility] =	Item(com(Protoss_Zealot) >= 5);
+                //}
+                //else if (currentTransition == "Standard") {
+                //    getOpening =		s < 80;
 
-                    itemQueue[Protoss_Assimilator] =		Item(s >= 58);
-                    itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 60);
-                    itemQueue[Protoss_Forge] =				Item(s >= 70);
-                    itemQueue[Protoss_Nexus] =				Item(1 + (s >= 56));
-                    itemQueue[Protoss_Photon_Cannon] =		Item(2 * (com(Protoss_Forge) > 0));
+                //    itemQueue[Protoss_Assimilator] =		Item(s >= 58);
+                //    itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 60);
+                //    itemQueue[Protoss_Forge] =				Item(s >= 70);
+                //    itemQueue[Protoss_Nexus] =				Item(1 + (s >= 56));
+                //    itemQueue[Protoss_Photon_Cannon] =		Item(2 * (com(Protoss_Forge) > 0));
+                //}
+                else if (currentTransition == "4Gate") {
+                    // https://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)
+                    getOpening = s < 120;
+
+                    itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 24) + (s >= 62) + (s >= 70));
+                    itemQueue[Protoss_Assimilator] =		Item(s >= 44);
+                    itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 50);
                 }
             }
 
@@ -525,14 +533,7 @@ namespace McRave::BuildOrder::Protoss {
         }
         else if (currentTransition == "4Gate") {
             // https://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)
-            if (Players::vZ()) {
-                getOpening = s < 120;
-
-                itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 24) + (s >= 62) + (s >= 70));
-                itemQueue[Protoss_Assimilator] =		Item(s >= 44);
-                itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 50);
-            }
-            else if (Players::vT()) {
+            if (Players::vT()) {
                 getOpening = s < 80;
 
                 itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 30) + (2 * (s >= 62)));

@@ -108,21 +108,21 @@ namespace McRave::Buildings {
             // Arrange what set we need to check
             set<TilePosition> placements;
             for (auto &block : BWEB::Blocks::getBlocks()) {
-                Position blockCenter = Position(block.Location()) + Position(block.width() * 16, block.height() * 16);
+                Position blockCenter = Position(block.getTilePosition()) + Position(block.width() * 16, block.height() * 16);
 
                 if (Broodwar->self()->getRace() == Races::Protoss && building == UnitTypes::Protoss_Pylon) {
                     bool power = true;
                     bool solo = true;
 
-                    if ((block.LargeTiles().empty() && poweredLarge == 0) || (block.MediumTiles().empty() && poweredMedium == 0 && !BuildOrder::isProxy()))
+                    if ((block.getLargeTiles().empty() && poweredLarge == 0) || (block.getMediumTiles().empty() && poweredMedium == 0 && !BuildOrder::isProxy()))
                         power = false;
-                    if (poweredLarge > poweredMedium && block.MediumTiles().empty())
+                    if (poweredLarge > poweredMedium && block.getMediumTiles().empty())
                         power = false;
-                    if (poweredMedium >= poweredLarge && block.LargeTiles().empty())
+                    if (poweredMedium >= poweredLarge && block.getLargeTiles().empty())
                         power = false;
 
                     // If we have no powered spots, can't build a solo spot
-                    for (auto &small : block.SmallTiles()) {
+                    for (auto &small : block.getSmallTiles()) {
                         if (BWEB::Map::isUsed(small)
                             || (!Terrain::isInAllyTerritory(small) && !BuildOrder::isProxy() && !Terrain::isIslandMap()))
                             solo = false;
@@ -138,11 +138,11 @@ namespace McRave::Buildings {
 
                 // Setup placements
                 if (building.tileWidth() == 4)
-                    placements = block.LargeTiles();
+                    placements = block.getLargeTiles();
                 else if (building.tileWidth() == 3)
-                    placements = block.MediumTiles();
+                    placements = block.getMediumTiles();
                 else
-                    placements = block.SmallTiles();
+                    placements = block.getSmallTiles();
 
                 checkBest(blockCenter, placements);
             }
@@ -151,21 +151,21 @@ namespace McRave::Buildings {
             if (!tileBest.isValid() && Broodwar->self()->getRace() == Races::Protoss && building == UnitTypes::Protoss_Pylon) {
                 distBest = DBL_MAX;
                 for (auto &block : BWEB::Blocks::getBlocks()) {
-                    Position blockCenter = Position(block.Location()) + Position(block.width() * 16, block.height() * 16);
+                    Position blockCenter = Position(block.getTilePosition()) + Position(block.width() * 16, block.height() * 16);
 
-                    if (block.LargeTiles().size() == 0 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) == 0)
+                    if (block.getLargeTiles().size() == 0 && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) == 0)
                         continue;
-                    if (!Terrain::isInAllyTerritory(block.Location()))
+                    if (!Terrain::isInAllyTerritory(block.getTilePosition()))
                         continue;
 
                     if (!BuildOrder::isOpener() && !hasPoweredPositions() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) > 10 && (poweredLarge > 0 || poweredMedium > 0)) {
-                        if (poweredLarge == 0 && block.LargeTiles().size() == 0)
+                        if (poweredLarge == 0 && block.getLargeTiles().size() == 0)
                             continue;
-                        if (poweredMedium == 0 && block.MediumTiles().size() == 0)
+                        if (poweredMedium == 0 && block.getMediumTiles().size() == 0)
                             continue;
                     }
 
-                    placements = block.SmallTiles();
+                    placements = block.getSmallTiles();
                     checkBest(blockCenter, placements);
                 }
             }
@@ -514,18 +514,18 @@ namespace McRave::Buildings {
 
             // Add up how many powered available spots we have		
             for (auto &block : BWEB::Blocks::getBlocks()) {
-                if (!Terrain::isInAllyTerritory(block.Location()))
+                if (!Terrain::isInAllyTerritory(block.getTilePosition()))
                     continue;
 
-                for (auto &tile : block.SmallTiles()) {
+                for (auto &tile : block.getSmallTiles()) {
                     if (isBuildable(UnitTypes::Protoss_Photon_Cannon, tile) && isQueueable(UnitTypes::Protoss_Photon_Cannon, tile))
                         poweredSmall++;
                 }
-                for (auto &tile : block.MediumTiles()) {
+                for (auto &tile : block.getMediumTiles()) {
                     if (isBuildable(UnitTypes::Protoss_Forge, tile) && isQueueable(UnitTypes::Protoss_Forge, tile))
                         poweredMedium++;
                 }
-                for (auto &tile : block.LargeTiles()) {
+                for (auto &tile : block.getLargeTiles()) {
                     if (isBuildable(UnitTypes::Protoss_Gateway, tile) && isQueueable(UnitTypes::Protoss_Gateway, tile))
                         poweredLarge++;
                 }
