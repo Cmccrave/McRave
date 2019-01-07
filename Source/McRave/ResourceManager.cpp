@@ -90,7 +90,7 @@ namespace McRave::Resources {
 
     void storeResource(Unit resource)
     {
-        auto &r = (resource->getInitialResources() > 0 ? (resource->getType().isMineralField() ? myMinerals[resource] : myGas[resource]) : myBoulders[resource]);
+        auto &r = (resource->getResources() > 0 ? (resource->getType().isMineralField() ? myMinerals[resource] : myGas[resource]) : myBoulders[resource]);
         r.setUnit(resource);
 
         // If we are not on an inital frame, a geyser was just created and we need to see if we own it

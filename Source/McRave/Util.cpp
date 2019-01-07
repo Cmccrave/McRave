@@ -317,7 +317,7 @@ namespace McRave::Util {
         for (auto &u : units) {
             UnitInfo &unit = u.second;
 
-            if (!unit.unit() || unit.getRole() != Role::Working || unit.getBuildPosition().isValid() || (unit.hasResource() && !unit.getResource().getType().isMineralField()))
+            if (!unit.unit() || unit.getRole() != Role::Worker || unit.getBuildPosition().isValid() || (unit.hasResource() && !unit.getResource().getType().isMineralField()))
                 continue;
 
             double dist = here.getDistance(unit.getPosition());

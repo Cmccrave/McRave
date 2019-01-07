@@ -17,12 +17,12 @@ namespace McRave::Targets{
 
                 bool targetMatters = (target.getAirDamage() > 0.0 && Units::getGlobalAllyAirStrength() > 0.0)
                     || (target.getGroundDamage() > 0.0 && Units::getGlobalAllyGroundStrength() > 0.0)
-                    || (target.getType().isDetector() && (Units::getMyTypeCount(UnitTypes::Protoss_Dark_Templar) > 0 || Units::getMyTypeCount(UnitTypes::Protoss_Observer) > 0))
+                    || (target.getType().isDetector() && (Units::getMyVisible(UnitTypes::Protoss_Dark_Templar) > 0 || Units::getMyVisible(UnitTypes::Protoss_Observer) > 0))
                     || (target.getAirDamage() == 0.0 && target.getGroundDamage() == 0.0)
                     || (target.getType().isWorker());
 
                 // Zealot: Don't attack non threatening workers in our territory
-                if ((unit.getType() == UnitTypes::Protoss_Zealot && target.getType().isWorker() && !Units::isThreatening(target) && Terrain::isInAllyTerritory(target.getTilePosition()))
+                if ((unit.getType() == UnitTypes::Protoss_Zealot && target.getType().isWorker() && !target.isThreatening() && Terrain::isInAllyTerritory(target.getTilePosition()))
 
                     // If target is an egg, larva, scarab or spell
                     || (target.getType() == UnitTypes::Zerg_Egg || target.getType() == UnitTypes::Zerg_Larva || target.getType() == UnitTypes::Protoss_Scarab || target.getType().isSpell())
@@ -116,7 +116,7 @@ namespace McRave::Targets{
                 if (!target.unit()
                     || !target.getWalkPosition().isValid()
                     || !unit.getWalkPosition().isValid()
-                    || (target.getType().isBuilding() && !Units::isThreatening(target) && target.getGroundDamage() == 0.0 && Terrain::isInAllyTerritory(target.getTilePosition()) && Broodwar->getFrameCount() < 10000))
+                    || (target.getType().isBuilding() && !target.isThreatening() && target.getGroundDamage() == 0.0 && Terrain::isInAllyTerritory(target.getTilePosition()) && Broodwar->getFrameCount() < 10000))
                     continue;
 
                 bool targetCanAttack = ((unit.getType().isFlyer() && target.getAirDamage() > 0.0) || (!unit.getType().isFlyer() && target.getGroundDamage() > 0.0) || (!unit.getType().isFlyer() && target.getType() == UnitTypes::Terran_Vulture_Spider_Mine));
@@ -172,7 +172,7 @@ namespace McRave::Targets{
         void getPathToTarget(UnitInfo& unit)
         {
             // Don't want a path if we're not fighting - waste of CPU
-            if (unit.getRole() != Role::Fighting)
+            if (unit.getRole() != Role::Combat)
                 return;
 
             // If no target, no distance/path available
@@ -219,9 +219,12 @@ namespace McRave::Targets{
                 }
                 // If unreachable
                 else if (!unit.getPath().isReachable()) {
-                    auto dist = DBL_MAX;
+                    // HACK: Estimate until we can fix our pathing
+                    auto dist = unit.getPosition().getDistance(unit.getEngagePosition());
                     unit.setEngDist(dist);
-                    unit.circleRed();
+                    //auto dist = DBL_MAX;
+                    //unit.setEngDist(dist);
+                    //unit.circleRed();
                 }
             }
             // Otherwise approximate and double

@@ -83,14 +83,17 @@ namespace McRave::Workers {
             else if (shouldMoveToBuild()) {
                 worker.setDestination(center);
 
-                if (worker.getPosition().getDistance(center) > 128.0) {
+                if (worker.getPosition().getDistance(center) > 256.0) {
                     if (worker.getBuildingType().isResourceDepot())
                         Command::move(worker);
                     else if (worker.unit()->getOrderTargetPosition() != center)
                         Command::move(worker); // worker.unit()->move(center);
                 }
-                else if (worker.unit()->getOrder() != Orders::PlaceBuilding || worker.unit()->isIdle())
+                else if (worker.unit()->getOrder() != Orders::PlaceBuilding || worker.unit()->isIdle()) {
                     worker.unit()->build(worker.getBuildingType(), worker.getBuildPosition());
+                    worker.circleBlack();
+                    Broodwar->drawTextMap(worker.getPosition(), "%s", worker.getBuildingType().c_str());
+                }
                 return true;
             }
             return false;
@@ -99,11 +102,14 @@ namespace McRave::Workers {
         bool clearPath(UnitInfo& worker)
         {
             auto resourceDepot = Broodwar->self()->getRace().getResourceDepot();
-            if (Units::getMyTypeCount(resourceDepot) < 2 || (BuildOrder::buildCount(resourceDepot) == Units::getMyTypeCount(resourceDepot) && BuildOrder::isOpener()))
+            if (Units::getMyVisible(resourceDepot) < 2 || (BuildOrder::buildCount(resourceDepot) == Units::getMyVisible(resourceDepot) && BuildOrder::isOpener()))
                 return false;
 
             // Find boulders to clear
             for (auto &b : Resources::getMyBoulders()) {
+                
+                Broodwar->drawCircleMap(b.second.getPosition(), 4, Colors::Red, true);
+
                 ResourceInfo &boulder = b.second;
                 if (!boulder.unit() || !boulder.unit()->exists())
                     continue;
@@ -113,8 +119,8 @@ namespace McRave::Workers {
                 if (!worker.unit()->isGatheringMinerals()) {
                     if (worker.unit()->getOrderTargetPosition() != b.second.getPosition())
                         worker.unit()->gather(b.first);
-                }
-                return true;
+                    return true;
+                }               
             }
             return false;
         }
@@ -168,7 +174,7 @@ namespace McRave::Workers {
                     if (shouldIssueGather())
                         worker.unit()->gather(worker.getResource().unit());
                     else if (!resourceExists)
-                        Command::move(worker);
+                        worker.unit()->move(worker.getResource().getPosition()); // Command::move(worker);
                     return true;
                 }
 
@@ -340,7 +346,7 @@ namespace McRave::Workers {
         {
             for (auto &w : Units::getMyUnits()) {
                 auto &worker = w.second;
-                if (worker.getRole() == Role::Working) {
+                if (worker.getRole() == Role::Worker) {
                     updateAssignment(worker);
                     updateDecision(worker);
                 }

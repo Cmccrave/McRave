@@ -11,6 +11,7 @@ namespace McRave::Production {
         map <Unit, UnitType> idleProduction;
         map <Unit, TechType> idleTech;
         map <Unit, UpgradeType> idleUpgrade;
+        map <UnitType, int> trainedThisFrame;
         int reservedMineral, reservedGas;
         int idleFrame = 0;
 
@@ -121,6 +122,10 @@ namespace McRave::Production {
 
         bool isCreateable(UpgradeType upgrade)
         {
+            auto geyserType = Broodwar->self()->getRace().getRefinery();
+            if (upgrade.gasPrice() > 0 && com(geyserType) == 0)
+                return false;
+
             // First upgrade check
             if (upgrade == BuildOrder::getFirstUpgrade() && Broodwar->self()->getUpgradeLevel(upgrade) == 0 && !Broodwar->self()->isUpgrading(upgrade))
                 return true;
@@ -358,7 +363,7 @@ namespace McRave::Production {
                 case Muscular_Augments:
                     return Broodwar->self()->getUpgradeLevel(Grooved_Spines);
                 case Pneumatized_Carapace:
-                    return (Units::getSupply() > 160);
+                    return !BuildOrder::isOpener();
                 case Anabolic_Synthesis:
                     return true;
                 case Adrenal_Glands:
@@ -457,14 +462,20 @@ namespace McRave::Production {
         {
             int offset = 16;
             double best = 0.0;
-            UnitType bestType = UnitTypes::None;
-            for (auto &unit : building.getType().buildsWhat()) {
+            UnitType bestType = UnitTypes::None; 
+                        
+            if (building.getType() == UnitTypes::Zerg_Larva && BuildOrder::buildCount(Zerg_Overlord) > vis(Zerg_Overlord) + trainedThisFrame[Zerg_Overlord]) {
+                building.unit()->morph(Zerg_Overlord);
+                trainedThisFrame[Zerg_Overlord]++;
+                return;
+            }
 
+            for (auto &unit : building.getType().buildsWhat()) {
                 double mineral = unit.mineralPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->minerals() - reservedMineral - Buildings::getQueuedMineral()) / (double)unit.mineralPrice())) : 1.0;
                 double gas = unit.gasPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->gas() - reservedGas - Buildings::getQueuedGas()) / (double)unit.gasPrice())) : 1.0;
                 double score = max(0.01, Strategy::getUnitScore(unit));
                 double value = score * mineral * gas;
-                
+
                 // If we teched to DTs, try to create as many as possible
                 if (unit == UnitTypes::Protoss_Dark_Templar && BuildOrder::getTechList().size() == 1 && isCreateable(building.unit(), unit) && isSuitable(unit)) {
                     best = DBL_MAX;
@@ -562,17 +573,20 @@ namespace McRave::Production {
 
         void updateProduction()
         {
+            trainedThisFrame.clear();
+
             for (auto &b : Units::getMyUnits()) {
                 auto &building = b.second;
 
                 if (!building.unit()
-                    || building.getRole() != Role::Producing
+                    || building.getRole() != Role::Production
+                    || !building.unit()->isCompleted()
                     || Broodwar->getFrameCount() % Broodwar->getRemainingLatencyFrames() != 0
-                    || building.getRemainingTrainFrames() < Broodwar->getRemainingLatencyFrames())
+                    || building.getRemainingTrainFrames() >= Broodwar->getRemainingLatencyFrames())
                     continue;
-
+                
                 // TODO: Combine into one - iterate all commands and return when true
-                if (!building.getType().isResourceDepot()) {
+                if (!building.getType().isResourceDepot() || building.getType() == UnitTypes::Zerg_Hatchery) {
                     idleProduction.erase(building.unit());
                     idleUpgrade.erase(building.unit());
                     idleTech.erase(building.unit());
@@ -610,39 +624,4 @@ namespace McRave::Production {
     int getReservedMineral() { return reservedMineral; }
     int getReservedGas() { return reservedGas; }
     bool hasIdleProduction() { return Broodwar->getFrameCount() == idleFrame; }
-
-    //auto needOverlords = Units::getMyTypeCount(UnitTypes::Zerg_Overlord) <= min(22, (int)floor((Units::getSupply() / max(14, 16 - Units::getMyTypeCount(UnitTypes::Zerg_Overlord)))));
-
-    //for (auto &larva : building.unit()->getLarva()) {
-
-    //    if (needOverlords)
-    //        larva->morph(UnitTypes::Zerg_Overlord);
-    //    else {
-    //        double best = 0.0;
-    //        UnitType typeBest;
-
-    //        for (auto &type : Strategy::getUnitScores()) {
-    //            UnitType unit = type.first;
-    //            double mineral = unit.mineralPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->minerals() - reservedMineral - Buildings::getQueuedMineral()) / (double)unit.mineralPrice())) : 1.0;
-    //            double gas = unit.gasPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->gas() - reservedGas - Buildings::getQueuedGas()) / (double)unit.gasPrice())) : 1.0;
-    //            double score = max(0.01, Strategy::getUnitScore(unit));
-    //            double value = score * mineral * gas;
-
-    //            if (BuildOrder::isUnitUnlocked(type.first) && value > best && isCreateable(building.unit(), type.first) && (isAffordable(type.first) || type.first == Strategy::getHighestUnitScore()) && isSuitable(type.first)) {
-    //                best = value;
-    //                typeBest = type.first;
-    //            }
-    //        }
-
-    //        if (typeBest != UnitTypes::None) {
-    //            if (isAffordable(typeBest)) {
-    //                larva->morph(typeBest);
-    //                return;	// Only produce 1 unit per frame to allow for scores to be re-calculated
-    //            }
-    //            else if (BuildOrder::isTechUnit(typeBest)) {
-    //                idleProduction[building.unit()] = typeBest;
-    //            }
-    //        }
-    //    }
-    //}
 }

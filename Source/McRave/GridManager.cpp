@@ -131,7 +131,7 @@ namespace McRave::Grids
                     }
 
                     // Cluster
-                    if (clusterGrid && dist < 96.0 && (unit.getPlayer() != Broodwar->self() || unit.getRole() == Role::Fighting)) {
+                    if (clusterGrid && dist < 96.0 && (unit.getPlayer() != Broodwar->self() || unit.getRole() == Role::Combat)) {
                         clusterGrid[x][y] += float(unit.getPriority());
                         saveReset(x, y);
                     }

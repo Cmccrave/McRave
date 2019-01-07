@@ -48,13 +48,13 @@ namespace McRave::Transports {
                 for (auto &u : Units::getMyUnits()) {
                     auto &unit = u.second;
 
-                    if (unit.getRole() == Role::Fighting && readyToAssignUnit(unit)) {
+                    if (unit.getRole() == Role::Combat && readyToAssignUnit(unit)) {
                         unit.setTransport(&transport);
                         transport.getAssignedCargo().insert(&unit);
                         cargoSize += unit.getType().spaceRequired();
                     }
 
-                    if (unit.getRole() == Role::Working && readyToAssignWorker(unit)) {
+                    if (unit.getRole() == Role::Worker && readyToAssignWorker(unit)) {
                         unit.setTransport(&transport);
                         transport.getAssignedCargo().insert(&unit);
                         cargoSize += unit.getType().spaceRequired();
@@ -308,7 +308,7 @@ namespace McRave::Transports {
             for (auto &u : Units::getMyUnits()) {
                 auto &unit = u.second;
 
-                if (unit.getRole() == Role::Transporting) {
+                if (unit.getRole() == Role::Transport) {
                     updateCargo(unit);
                     updateDecision(unit);
                     updateMovement(unit);

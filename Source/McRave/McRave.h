@@ -28,7 +28,7 @@ namespace McRave
     };
 
     enum class Role {
-        None, Working, Fighting, Transporting, Scouting, Producing, Defending, Supporting
+        None, Worker, Combat, Transport, Scout, Production, Defender, Support
     };
 
     enum class TransportState {
@@ -50,26 +50,13 @@ namespace McRave
     enum class SimState {
         None, Win, Loss, HighWin, HighLoss
     };
-
-    static int vis(BWAPI::UnitType t) {
-        return BWAPI::Broodwar->self()->visibleUnitCount(t);
-    }
-    static int com(BWAPI::UnitType t) {
-        return BWAPI::Broodwar->self()->completedUnitCount(t);
-    }
 }
 
-namespace
-{
-    auto &mapBWEM = BWEM::Map::Instance();
-}
-
-// Namespaces
-using namespace McRave;
-
+#include "Horizon.h"
 #include "BuildingManager.h"
 #include "BuildOrder.h"
 #include "CommandManager.h"
+#include "CombatManager.h"
 #include "GoalManager.h"
 #include "GridManager.h"
 #include "StationManager.h"
@@ -90,3 +77,20 @@ using namespace McRave;
 #include "UnitInfo.h"
 #include "Util.h"
 #include "Visuals.h"
+
+namespace
+{
+    auto &mapBWEM = BWEM::Map::Instance();
+}
+
+namespace McRave {
+    static int vis(BWAPI::UnitType t) {
+        return Units::getMyVisible(t);
+    }
+    static int com(BWAPI::UnitType t) {
+        return Units::getMyComplete(t);
+    }
+}
+
+// Namespaces
+using namespace McRave;

@@ -24,12 +24,12 @@ namespace McRave::BuildOrder
             //	terranTech();
             //	terranSituational();
             //}
-            //if (Broodwar->self()->getRace() == Races::Zerg) {
-            //	zergOpener();
-            //	zergTech();
-            //	zergSituational();
-            //	zergUnlocks();
-            //}
+            if (Broodwar->self()->getRace() == Races::Zerg) {
+                Zerg::opener();
+                Zerg::tech();
+                Zerg::situational();
+                Zerg::unlocks();
+            }
         }
 
         bool isBuildPossible(string build, string opener)
@@ -59,6 +59,7 @@ namespace McRave::BuildOrder
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber };
                 defenses.insert(defenses.end(), 3, Zerg_Sunken_Colony);
+                return true; // No walls
             }
 
             if (build == "2Fact" || build == "Sparks") {
@@ -90,12 +91,15 @@ namespace McRave::BuildOrder
                     return z;
             }
 
-            if (Broodwar->self()->getRace() == Races::Terran) {
+            if (Broodwar->self()->getRace() == Races::Terran && build != "") {
                 return true; // For now, test all builds to make sure they work!
             }
 
-            if (Broodwar->self()->getRace() == Races::Zerg) {
-                return true; // For now, test all builds to make sure they work!
+            if (Broodwar->self()->getRace() == Races::Zerg && build != "") {
+                if (build == "PoolLair")
+                    return z;
+                if (build == "HatchPool")
+                    return t || p;
             }
             return false;
         }
@@ -143,9 +147,12 @@ namespace McRave::BuildOrder
             }
 
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                // Does this work? Seems messy, need a Util::find(T) ? Temporary for now anyways
-                if (find(myBuilds[build].openers.begin(), myBuilds[build].openers.end(), opener) != myBuilds[build].openers.end())
-                    return true;
+                if (build == "PoolLair")
+                    if (opener == "9Pool")
+                        return z;
+                if (build == "HatchPool")
+                    if (opener == "12Hatch")
+                        return t || p;
             }
             return false;
         }
@@ -172,7 +179,7 @@ namespace McRave::BuildOrder
                         return p || t;
                 }
 
-                if (build == "P2Gate") {
+                if (build == "2Gate") {
                     if (transition == "DT")
                         return p || t;
                     if (transition == "Reaver")
@@ -206,9 +213,12 @@ namespace McRave::BuildOrder
             }
 
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                // Does this work? Seems messy, need a Util::find(T) ? Temporary for now anyways
-                if (find(myBuilds[build].transitions.begin(), myBuilds[build].transitions.end(), transition) != myBuilds[build].transitions.end())
-                    return true;
+                if (build == "PoolLair")
+                    if (transition == "1HatchMuta")
+                        return z;
+                if (build == "HatchPool")
+                    if (transition == "2HatchMuta")
+                        return t || p;
             }
             return false;
         }
@@ -289,11 +299,19 @@ namespace McRave::BuildOrder
 
         bool testing = false;
         if (testing) {
-            currentBuild = "FFE";
-            currentOpener = "Gate";
-            currentTransition = "NeoBisu";
-            isBuildPossible(currentBuild, currentOpener);
-            return;
+            if (Broodwar->self()->getRace() == Races::Protoss) {
+                currentBuild = "FFE";
+                currentOpener = "Gate";
+                currentTransition = "NeoBisu";
+                isBuildPossible(currentBuild, currentOpener);
+                return;
+            }
+            if (Broodwar->self()->getRace() == Races::Zerg) {
+                currentBuild = "HatchPool";
+                currentOpener = "12Hatch";
+                currentTransition = "2HatchMuta";
+                return;
+            }
         }
 
         // File extension including our race initial;
@@ -309,23 +327,19 @@ namespace McRave::BuildOrder
 
         // Protoss builds, openers and transitions
         if (Broodwar->self()->getRace() == Races::Protoss) {
-            // 1GateCore
+
             myBuilds["1GateCore"].openers ={ "0Zealot", "1Zealot", "2Zealot" };
             myBuilds["1GateCore"].transitions ={ "3GateRobo", "Reaver", "Corsair", "4Gate", "DT" };
 
-            // 2Gate
             myBuilds["2Gate"].openers ={ "Proxy", "Natural", "Main" };
             myBuilds["2Gate"].transitions ={ "ZealotRush", "DT", "Reaver", "Expand", "DoubleExpand", "4Gate" };
 
-            // FFE
             myBuilds["FFE"].openers ={ "Gate", "Nexus", "Forge" };
             myBuilds["FFE"].transitions ={ "NeoBisu", "2Stargate", "StormRush" };
 
-            // 12 Nexus
             myBuilds["NexusGate"].openers ={ "Dragoon", "Zealot" };
             myBuilds["NexusGate"].transitions ={ "Standard", "DoubleExpand", "ReaverCarrier" };
 
-            // 21 Nexus
             myBuilds["GateNexus"].openers ={ "1Gate", "2Gate" };
             myBuilds["GateNexus"].transitions ={ "Standard", "DoubleExpand", "Carrier" };
         }
@@ -472,7 +486,7 @@ namespace McRave::BuildOrder
         else
             getDefaultBuild();
 
-    }    
+    }
 
     bool techComplete()
     {
@@ -514,13 +528,17 @@ namespace McRave::BuildOrder
                 currentTransition = "Reaver";
             }
         }
-        if (Broodwar->self()->getRace() == Races::Terran)
-            currentBuild = "Sparks";
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            if (Players::getNumberZerg() > 0)
-                currentBuild = "9PoolSpire";
-            else
-                currentBuild = "2HatchMuta";
+            if (Players::getNumberZerg() > 0) {
+                currentBuild = "PoolLair";
+                currentOpener = "9Pool";
+                currentTransition = "1HatchMuta";
+            }
+            else {
+                currentBuild = "HatchPool";
+                currentOpener = "12Hatch";
+                currentTransition = "2HatchMuta";
+            }
         }
         return;
     }
@@ -570,7 +588,9 @@ namespace McRave::BuildOrder
     {
         auto workerCount = Broodwar->self()->completedUnitCount(Broodwar->self()->getRace().getWorker());
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            if (Resources::isGasSaturated() && Broodwar->self()->minerals() - Production::getReservedMineral() - Buildings::getQueuedMineral() > 500)
+            if (Resources::isGasSaturated() && Broodwar->self()->minerals() - Production::getReservedMineral() - Buildings::getQueuedMineral() > 300)
+                return true;
+            if (vis(Zerg_Extractor) == 0)
                 return true;
         }
 
@@ -626,13 +646,16 @@ namespace McRave::BuildOrder
 
     void checkNewTech()
     {
+        auto canGetTech = (Broodwar->self()->getRace() == Races::Protoss && com(Protoss_Cybernetics_Core) > 0)
+            || (Broodwar->self()->getRace() == Races::Zerg && com(Zerg_Spawning_Pool) > 0);
+
         // No longer need to choose a tech
         if (techUnit != None) {
             getTech = false;
             techList.insert(techUnit);
             unlockedType.insert(techUnit);
         }
-        if (firstUnit != None && com(Protoss_Cybernetics_Core) > 0) {
+        if (firstUnit != None && canGetTech) {
             techList.insert(firstUnit);
             unlockedType.insert(firstUnit);
         }
@@ -743,7 +766,7 @@ namespace McRave::BuildOrder
             itemQueue[Zerg_Lair] = Item(Broodwar->self()->completedUnitCount(Zerg_Queens_Nest) < 1);
         }
     }
-    
+
     map<BWAPI::UnitType, Item>& getItemQueue() { return itemQueue; }
     UnitType getTechUnit() { return techUnit; }
     UnitType getFirstUnit() { return firstUnit; }
@@ -764,6 +787,7 @@ namespace McRave::BuildOrder
     bool isHideTech() { return hideTech; }
     bool isPlayPassive() { return playPassive; }
     bool isRush() { return rush; }
+    bool isGasTrick() { return gasTrick; }
     string getCurrentBuild() { return currentBuild; }
     string getCurrentOpener() { return currentOpener; }
     string getCurrentTransition() { return currentTransition; }

@@ -10,7 +10,7 @@ namespace McRave::Scouts {
         set<Position> scoutTargets;
         set<Position> scoutAssignments;
         int scoutCount;
-        bool proxyCheck = false;        
+        bool proxyCheck = false;
 
         bool search(UnitInfo& unit)
         {
@@ -80,7 +80,7 @@ namespace McRave::Scouts {
                 /*		if (Units::getEnemyCount(UnitTypes::Protoss_Gateway) >= 2)
                             scoutTargets.insert((Position)Terrain::getEnemyExpand());
                         else*/ if (Units::getEnemyCount(UnitTypes::Protoss_Pylon) == 0 || Strategy::enemyProxy())
-    scoutTargets.insert(mapBWEM.Center());
+                            scoutTargets.insert(mapBWEM.Center());
             }
 
             // If it's a cannon rush, scout the main
@@ -112,7 +112,7 @@ namespace McRave::Scouts {
             if (((Strategy::enemyProxy() && Strategy::getEnemyBuild() != "P2Gate") || proxyCheck || foundProxyGates) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1)
                 scoutCount++;
 
-            if (BuildOrder::isRush() && Broodwar->self()->getRace() == Races::Zerg && Terrain::getEnemyStartingPosition().isValid())
+            if (Broodwar->self()->getRace() == Races::Zerg && Terrain::getEnemyStartingPosition().isValid())
                 scoutCount = 0;
             if (Strategy::getEnemyBuild() == "Z5Pool" && Units::getEnemyCount(UnitTypes::Zerg_Zergling) >= 5)
                 scoutCount = 0;
@@ -222,14 +222,14 @@ namespace McRave::Scouts {
             // TODO: Add removal
             for (auto &u : Units::getMyUnits()) {
                 auto &unit = u.second;
-                if (unit.getRole() == Role::Scouting) {
+                if (unit.getRole() == Role::Scout) {
                     updateAssignment(unit);
                     updateDecision(unit);
                 }
             }
         }
 
-        
+
     }
 
     void onFrame()

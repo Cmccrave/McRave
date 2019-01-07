@@ -10,7 +10,7 @@ namespace McRave::Units {
     std::map<BWAPI::Unit, UnitInfo>& getNeutralUnits();
     std::map<BWAPI::UnitSizeType, int>& getAllySizes();
     std::map<BWAPI::UnitSizeType, int>& getEnemySizes();
-    std::map<BWAPI::UnitType, int>& getenemyTypes();
+    std::map<BWAPI::UnitType, int>& getEnemyTypes();
     double getImmThreat();
     double getProxThreat();
     double getGlobalAllyGroundStrength();
@@ -19,12 +19,13 @@ namespace McRave::Units {
     double getGlobalEnemyAirStrength();
     double getAllyDefense();
     int getSupply();
-    int getMyRoleCount(Role role);
-    int getMyTypeCount(BWAPI::UnitType type);
-    bool isThreatening(UnitInfo&);
+    int getMyRoleCount(Role);
+    int getMyVisible(BWAPI::UnitType);
+    int getMyComplete(BWAPI::UnitType);
     int getEnemyCount(BWAPI::UnitType);
 
     void onFrame();
     void storeUnit(BWAPI::Unit);
     void removeUnit(BWAPI::Unit);
+    void morphUnit(BWAPI::Unit);
 }

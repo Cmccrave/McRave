@@ -34,7 +34,7 @@ namespace McRave::Goals {
 
         void assignPercentToGoal(Position here, UnitType type, double percent)
         {
-            int count = int(percent * double(Units::getMyTypeCount(type)));
+            int count = int(percent * double(Units::getMyVisible(type)));
             assignNumberToGoal(here, type, count);
         }
 
@@ -100,7 +100,7 @@ namespace McRave::Goals {
             if (Players::vZ() && Units::getGlobalEnemyAirStrength() > 0.0) {
                 for (auto &u : Units::getMyUnits()) {
                     auto &unit = u.second;
-                    if (unit.getRole() == Role::Transporting)
+                    if (unit.getRole() == Role::Transport)
                         assignPercentToGoal(unit.getPosition(), UnitTypes::Protoss_Corsair, 0.25);
                 }
             }

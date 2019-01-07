@@ -28,12 +28,12 @@ namespace McRave::Events
 
     inline void onUnitDestroy(BWAPI::Unit unit)
     {
-        if (unit->getType().isResourceContainer())
-            Resources::removeResource(unit);
-        else if (unit->getType().isResourceDepot())
-            Stations::removeStation(unit);
-        else
-            Units::removeUnit(unit);
+        BWEB::Map::onUnitDestroy(unit);
+        Resources::removeResource(unit);
+        Units::removeUnit(unit);
+
+        if (unit->getType().isResourceDepot())
+            Stations::removeStation(unit);        
     }
 
     inline void onUnitMorph(BWAPI::Unit unit)
@@ -41,31 +41,13 @@ namespace McRave::Events
         BWEB::Map::onUnitMorph(unit);
 
         // My unit
-        if (unit->getPlayer() == BWAPI::Broodwar->self()) {
-            auto isEgg = unit->getType() == BWAPI::UnitTypes::Zerg_Egg || unit->getType() == BWAPI::UnitTypes::Zerg_Lurker_Egg;
-
-            //// Zerg morphing
-            //if (unit->getType().getRace() == Races::Zerg) {
-
-            //    if (isEgg) {
-            //        supply -= unit->getType().supplyRequired();
-            //        supply += unit->getBuildType().supplyRequired();
-            //    }
-            //    if (unit->getType().isBuilding())
-            //        supply -= 2;
-
-            //    auto &info = myUnits[unit];
-            //    if (info.hasResource())
-            //        info.getResource().setGathererCount(info.getResource().getGathererCount() - 1);
-
-            //    storeUnit(unit);
-            //}
-        }
+        if (unit->getPlayer() == BWAPI::Broodwar->self())  
+            Units::morphUnit(unit);        
 
         // Enemy unit
         else if (unit->getPlayer()->isEnemy(BWAPI::Broodwar->self())) {
 
-            // Remove any stations on a canceled hatchery
+            // Remove any stations on a canceled hatchery (because the ingame AI does this LUL)
             if (unit->getType() == BWAPI::UnitTypes::Zerg_Drone)
                 Stations::removeStation(unit);
             else

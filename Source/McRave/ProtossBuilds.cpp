@@ -423,7 +423,6 @@ namespace McRave::BuildOrder::Protoss {
                 currentTransition = "DT";
         }
 
-
         // Openers
         if (currentOpener == "0Zealot") {
             zealotLimit = 0;

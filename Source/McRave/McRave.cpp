@@ -66,6 +66,7 @@ void McRaveModule::onFrame()
 
     // Update unit information and grids based on the information
     Units::onFrame();
+    Combat::onFrame();
     Grids::onFrame();
 
     // Update commands

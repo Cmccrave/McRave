@@ -1,83 +1,94 @@
-//#include "McRave.h"
-//
-//void BuildOrderManager::zergOpener()
-//{
-//	if (getOpening)	{
-//		if (currentBuild == "Z2HatchMuta") Z2HatchMuta();
-//		if (currentBuild == "Z3HatchLing") Z3HatchLing();
-//		if (currentBuild == "Z4Pool") Z4Pool();
-//		if (currentBuild == "Z9Pool") Z9Pool();
-//		if (currentBuild == "Z2HatchHydra") Z2HatchHydra();
-//		if (currentBuild == "Z3HatchBeforePool") Z3HatchBeforePool();
-//		if (currentBuild == "ZLurkerTurtle") ZLurkerTurtle();
-//		if (currentBuild == "Z9PoolSpire") Z9PoolSpire();
-//	}
-//}
-//
-//void BuildOrderManager::zergTech()
-//{
-//	getNewTech();
-//	checkNewTech();
-//	checkAllTech();
-//	checkExoticTech();
-//}
-//
-//void BuildOrderManager::zergSituational()
-//{
-//	// Adding hatcheries when needed
-//	if (shouldExpand() || shouldAddProduction::)
-//		itemQueue[UnitTypes::Zerg_Hatchery] = Item(vis(UnitTypes::Zerg_Hatchery) + vis(UnitTypes::Zerg_Lair) + vis(UnitTypes::Zerg_Hive) + 1);
-//
-//	if (Strategy::enemyFastExpand() && !rush)
-//		itemQueue[UnitTypes::Zerg_Hatchery] = Item(min(3, vis(UnitTypes::Zerg_Hatchery) + vis(UnitTypes::Zerg_Lair) + vis(UnitTypes::Zerg_Hive) + 1));
-//
-//	// When to tech
-//	if (Broodwar->getFrameCount() > 5000 && vis(UnitTypes::Zerg_Hatchery) > (1 + (int)techList.size()) * 2)
-//		getTech = true;
-//	if (techComplete())
-//		techUnit = UnitTypes::None;
-//
-//	//// When to add colonies
-//	//if (Units::getGlobalEnemyGroundStrength() > Units::getGlobalAllyGroundStrength() + Units::getAllyDefense() && Units::getSupply() >= 40)
-//	//	itemQueue[UnitTypes::Zerg_Creep_Colony] = Item(min(6, max(2, Units::getSupply() / 20)));
-//	
-//	// Hack
-//	if (currentBuild == "ZLurkerTurtle") {
-//		if (vis(UnitTypes::Zerg_Zergling) >= 6)
-//			unlockedType.erase(UnitTypes::Zerg_Zergling);
-//		if (vis(UnitTypes::Zerg_Lurker) >= 1)
-//			itemQueue[UnitTypes::Zerg_Creep_Colony] = Item(vis(UnitTypes::Zerg_Lurker));
-//	}
-//
-//	unlockedType.insert(UnitTypes::Zerg_Drone);
-//	unlockedType.insert(UnitTypes::Zerg_Overlord);
-//
-//	if (!getOpening) {
-//		gasLimit = INT_MAX;
-//
-//		if (shouldAddGas())
-//			itemQueue[UnitTypes::Zerg_Extractor] = Item(Resources::getGasCount());		
-//
-//		if (Units::getSupply() >= 100)
-//			itemQueue[UnitTypes::Zerg_Evolution_Chamber] = Item(2);
-//	}
-//}
-//
-//void BuildOrderManager::zergUnlocks()
-//{
-//	if (getOpening) {
-//		if (droneLimit > Units::getMyTypeCount(UnitTypes::Zerg_Drone))
-//			unlockedType.insert(UnitTypes::Zerg_Drone);
-//		else
-//			unlockedType.erase(UnitTypes::Zerg_Drone);
-//
-//		if (lingLimit > Units::getMyTypeCount(UnitTypes::Zerg_Zergling))
-//			unlockedType.insert(UnitTypes::Zerg_Zergling);
-//		else
-//			unlockedType.erase(UnitTypes::Zerg_Zergling);
-//	}
-//	else {
-//		unlockedType.insert(UnitTypes::Zerg_Drone);
-//		unlockedType.insert(UnitTypes::Zerg_Zergling);
-//	}
-//}
+#include "McRave.h"
+
+using namespace BWAPI;
+using namespace std;
+using namespace UnitTypes;
+using namespace McRave::BuildOrder::All;
+
+namespace McRave::BuildOrder::Zerg {
+
+    void opener()
+    {
+        if (currentBuild == "HatchPool")
+            HatchPool();
+        else if (currentBuild == "PoolHatch")
+            PoolHatch();
+        else if (currentBuild == "PoolLair")
+            PoolLair();
+    }
+
+    void tech()
+    {
+        getNewTech();
+        checkNewTech();
+        checkAllTech();
+        checkExoticTech();
+    }
+
+    void situational()
+    {
+        // Adding hatcheries when needed
+        if (shouldExpand() || shouldAddProduction())
+            itemQueue[Zerg_Hatchery] = Item(vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive) + 1);
+
+        if (Strategy::enemyFastExpand() && !rush)
+            itemQueue[Zerg_Hatchery] = Item(min(3, vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive) + 1));
+
+        // Gas Trick
+        if (gasTrick) {            
+            if (Units::getSupply() == 18 && vis(Zerg_Drone) == 9) {
+                if (Broodwar->self()->minerals() >= 80)
+                    itemQueue[Zerg_Extractor] = Item(1);
+                if (vis(Zerg_Extractor) > 0)
+                    itemQueue[Zerg_Extractor] = Item(0);
+            }           
+        }        
+
+        // When to tech
+        if (Broodwar->getFrameCount() > 5000 && vis(Zerg_Hatchery) > (1 + (int)techList.size()) * 2)
+            getTech = true;
+        if (techComplete())
+            techUnit = UnitTypes::None;
+
+        // Overlord
+        if (!bookSupply) {
+            int providers = vis(Zerg_Overlord) > 0 ? 14 : 16;
+            int count = 1 + min(22, Units::getSupply() / providers);
+            if (vis(Zerg_Overlord) >= 3)
+                itemQueue[Zerg_Overlord] = Item(count);
+        }
+
+        unlockedType.insert(Zerg_Drone);
+        unlockedType.insert(Zerg_Overlord);
+
+        if (!getOpening) {
+            gasLimit = INT_MAX;
+            int gasCount = min(vis(Zerg_Extractor) + 1, Resources::getGasCount());
+
+            if (shouldAddGas())
+                itemQueue[Zerg_Extractor] = Item(gasCount);
+
+            if (Units::getSupply() >= 100)
+                itemQueue[Zerg_Evolution_Chamber] = Item(2);
+        }
+    }
+
+    void unlocks()
+    {
+        if (getOpening) {
+            if (droneLimit > vis(Zerg_Drone))
+                unlockedType.insert(Zerg_Drone);
+            else
+                unlockedType.erase(Zerg_Drone);
+
+            if (lingLimit > vis(Zerg_Zergling))
+                unlockedType.insert(Zerg_Zergling);
+            else
+                unlockedType.erase(Zerg_Zergling);
+        }
+        else {
+            unlockedType.insert(Zerg_Drone);
+            unlockedType.insert(Zerg_Zergling);
+        }
+    }
+}

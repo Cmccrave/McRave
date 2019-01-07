@@ -45,6 +45,8 @@ namespace McRave::BuildOrder {
         inline bool rush = false;
         inline bool cutWorkers = false; // TODO: Use unlocking
         inline bool lockedTransition = false;
+        inline bool gasTrick = false;
+        inline bool bookSupply = false;
 
         inline int satVal, prodVal, techVal, baseVal;
         inline int gasLimit = INT_MAX;
@@ -130,6 +132,7 @@ namespace McRave::BuildOrder {
     bool isHideTech();
     bool isPlayPassive();
     bool isRush();
+    bool isGasTrick();
     std::string getCurrentBuild();
     std::string getCurrentOpener();
     std::string getCurrentTransition();

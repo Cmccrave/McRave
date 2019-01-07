@@ -143,7 +143,7 @@ namespace McRave {
         void circlePurple() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Purple); }
         void circleBlack() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Black); }
 
-       
+        bool isThreatening();
         bool isBurrowed() { return burrowed; }
         bool isFlying() { return flying; }
         bool sameTile() { return lastTile == tilePosition; }
@@ -157,7 +157,7 @@ namespace McRave {
         ResourceInfo &getResource() { return *resource; }
         UnitInfo &getTransport() { return *transport; }
         UnitInfo &getTarget() { return *target; }
-        McRave::Role getRole() { return role; }
+        Role getRole() { return role; }
 
         BWAPI::Unit unit() { return thisUnit; }
         BWAPI::UnitType getType() { return unitType; }

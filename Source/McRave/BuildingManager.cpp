@@ -481,6 +481,12 @@ namespace McRave::Buildings {
                     Command::addCommand(building.unit(), building.getTarget().getPosition(), TechTypes::Scanner_Sweep);
                 }
             }
+
+            // HACK: Cancelling Refinerys for our gas trick
+            if (BuildOrder::isGasTrick() && building.getType().isRefinery() && !building.unit()->isCompleted() && BuildOrder::buildCount(building.getType()) < vis(building.getType())) {
+                building.unit()->cancelMorph();
+                BWEB::Map::removeUsed(building.getTilePosition(), 4, 2);
+            }
         }
 
         void updateBuildings()
@@ -561,7 +567,7 @@ namespace McRave::Buildings {
                 auto morphed = !building.whatBuilds().first.isWorker(); //building == UnitTypes::Zerg_Lair || building == UnitTypes::Zerg_Hive || building == UnitTypes::Zerg_Greater_Spire || building == UnitTypes::Zerg_Sunken_Colony || building == UnitTypes::Zerg_Spore_Colony;
                 auto addon = building.isAddon();
 
-                if (addon || morphed)
+                if (addon || morphed || !building.isBuilding())
                     continue;
 
                 // If the building morphed from another building type, add the visible amount of child type to the parent type
@@ -642,7 +648,7 @@ namespace McRave::Buildings {
 
         // Addon room check
         if (building.canBuildAddon()) {
-            if (BWEB::Map::isUsed(TilePosition(here) + TilePosition(4, 1)))
+            if (BWEB::Map::isUsed(here + TilePosition(4, 1)))
                 return false;
         }
 
@@ -650,9 +656,15 @@ namespace McRave::Buildings {
         if (building.requiresPsi() && !Pylons::hasPower(here, building))
             return false;
 
-        //// HACK: Had to find a way to let hatcheries be prevented from being queued by a BWEB block too close to resources
-        //if (building == UnitTypes::Zerg_Hatchery && !Broodwar->canBuildHere(here, building))
-        //	return false;
+        if (building == UnitTypes::Zerg_Hatchery) {
+            auto check = Util::getClosestUnit(Position(here), Broodwar->self(), UnitTypes::Zerg_Drone);
+            if (check) {
+                if (!Broodwar->canBuildHere(here, building, check->unit()))
+                    return false;
+            }
+            else
+                return false;
+        }
         return true;
     }
 

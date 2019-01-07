@@ -163,6 +163,12 @@
     <ClCompile Include="..\Source\McRave\Visuals.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\McRave\CombatManager.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Horizon\Horizon.cpp">
+      <Filter>Horizon</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">
@@ -318,6 +324,12 @@
     <ClInclude Include="..\Source\McRave\EventManager.h">
       <Filter>McRave</Filter>
     </ClInclude>
+    <ClInclude Include="..\Source\McRave\CombatManager.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Horizon\Horizon.h">
+      <Filter>Horizon</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="BWEM">
@@ -331,6 +343,9 @@
     </Filter>
     <Filter Include="BWEM\BaseFinder">
       <UniqueIdentifier>{0e1ecd94-9211-4cea-8f45-228b7ee6c529}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Horizon">
+      <UniqueIdentifier>{b749054e-38eb-471e-a297-86a0e85b6d3e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

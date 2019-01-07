@@ -29,7 +29,7 @@ namespace McRave::Strategy {
 
         bool goonRange = false;
         bool vultureSpeed = false;
-               
+
         void checkEnemyRush()
         {
             // Rush builds are immediately aggresive builds
@@ -587,13 +587,14 @@ namespace McRave::Strategy {
             }
 
             // Unit score based off enemy composition	
-            for (auto &t : Units::getenemyTypes()) {
-                if (t.first.isBuilding())
+            for (auto &u : Units::getEnemyUnits()) {
+                auto &unit = u.second;
+                if (unit.getType().isBuilding())
                     continue;
 
                 // For each type, add a score to production based on the unit count divided by our current unit count
                 if (Broodwar->self()->getRace() == Races::Protoss)
-                    updateProtossUnitScore(t.first, t.second);
+                    updateProtossUnitScore(unit.getType(), 1);
             }
 
             bool MadMix = Broodwar->self()->getRace() != Races::Protoss;
@@ -605,14 +606,10 @@ namespace McRave::Strategy {
 
             if (Broodwar->self()->getRace() == Races::Protoss) {
 
-                for (auto &t : unitScore) {
+                for (auto &t : unitScore)
                     t.second = log(t.second);
-                }
 
                 unitScore[Protoss_Shuttle] = getUnitScore(Protoss_Reaver);
-
-                if (Broodwar->mapFileName().find("BlueStorm") != string::npos)
-                    unitScore[Protoss_Carrier] = unitScore[Protoss_Arbiter];
 
                 if (Players::vP() && Broodwar->getFrameCount() >= 20000 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) > 0 && Broodwar->self()->completedUnitCount(Protoss_Templar_Archives) > 0) {
                     unitScore[Protoss_Zealot] = unitScore[Protoss_Dragoon];
@@ -622,7 +619,7 @@ namespace McRave::Strategy {
                 }
             }
         }
-               
+
         void updateSituationalBehaviour()
         {
             checkNeedDetection();

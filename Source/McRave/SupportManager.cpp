@@ -9,7 +9,7 @@ namespace McRave::Support {
     {
         for (auto &u : Units::getMyUnits()) {
             auto &unit = u.second;
-            if (unit.getRole() == Role::Supporting)
+            if (unit.getRole() == Role::Support)
                 updateDecision(unit);
         }
     }
