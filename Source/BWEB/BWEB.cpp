@@ -1,8 +1,4 @@
 #include "BWEB.h"
-#include "Block.h"
-#include "Station.h"
-#include "Wall.h"
-#include "PathFind.h"
 
 using namespace std;
 using namespace BWAPI;
@@ -254,10 +250,8 @@ namespace BWEB::Map
 
     void draw()
     {
-        for (auto &choke : mainArea->ChokePoints()) {
-            const auto dist = getGroundDistance(Position(choke->Center()), mainPosition);
-            Broodwar->drawTextMap((Position)choke->Center() + Position(0, 16), "%.2f", dist);
-        }
+        Broodwar->drawCircleMap((Position)mainChoke->Center(), 4, Colors::Red, true);
+        Broodwar->drawCircleMap((Position)naturalChoke->Center(), 4, Colors::Green, true);
 
         // Draw Blocks 
         for (auto &block : Blocks::getBlocks()) {
@@ -299,8 +293,8 @@ namespace BWEB::Map
         for (int x = 0; x < Broodwar->mapWidth(); x++) {
             for (int y = 0; y < Broodwar->mapHeight(); y++) {
                 TilePosition t(x, y);
-                if (reserveGrid[x][y] >= 1)
-                    Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Black, false);
+                //if (overlapGrid[x][y] >= 1)
+                    //Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Black, false);
                 if (usedGrid[x][y] >= 1)
                     Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Brown, false);
             }

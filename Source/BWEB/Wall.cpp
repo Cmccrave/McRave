@@ -1,6 +1,4 @@
-#include "Wall.h"
 #include "BWEB.h"
-#include "PathFind.h"
 
 using namespace std;
 using namespace BWAPI;

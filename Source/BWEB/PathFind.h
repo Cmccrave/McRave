@@ -1,7 +1,5 @@
 #pragma once
-#include <set>
 #include <BWAPI.h>
-#include <bwem.h>
 
 namespace BWEB::PathFinding
 {

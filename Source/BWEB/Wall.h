@@ -10,14 +10,11 @@ namespace BWEB::Walls
         BWAPI::TilePosition door;
         BWAPI::Position centroid;
         std::set<BWAPI::TilePosition> defenses, small, medium, large;
+        std::vector<BWAPI::UnitType> rawBuildings, rawDefenses;
         const BWEM::Area * area;
         const BWEM::ChokePoint * choke;
-
-        std::vector<BWAPI::UnitType> rawBuildings, rawDefenses;
-
     public:
-        Wall(const BWEM::Area * a, const BWEM::ChokePoint * c, std::vector<BWAPI::UnitType> b, std::vector<BWAPI::UnitType> d)
-        {
+        Wall(const BWEM::Area * a, const BWEM::ChokePoint * c, std::vector<BWAPI::UnitType> b, std::vector<BWAPI::UnitType> d) {
             area = a;
             choke = c;
             door = BWAPI::TilePositions::Invalid;

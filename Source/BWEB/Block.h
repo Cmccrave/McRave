@@ -1,19 +1,63 @@
 #pragma once
 #include <set>
 #include <BWAPI.h>
-#include <bwem.h>
 
 namespace BWEB::Blocks
 {
+    enum class Piece {
+        Small, Medium, Large, Addon, Row
+    };
+
     class Block
     {
-        int w, h;
+        int w = 0, h = 0;
         BWAPI::TilePosition t;
         std::set <BWAPI::TilePosition> smallTiles, mediumTiles, largeTiles;
     public:
         Block() : w(0), h(0) {};
-        Block(const int width, const int height, const BWAPI::TilePosition tile) {
-            w = width, h = height, t = tile;
+        Block(const BWAPI::TilePosition tile, std::vector<Piece> pieces) {
+            t = tile;
+            BWAPI::TilePosition here = tile;
+            int rowHeight = 0;
+            int rowWidth = 0;
+
+            for (auto &p : pieces) {
+                if (p == Piece::Small) {
+                    smallTiles.insert(here);
+                    here += BWAPI::TilePosition(2, 0);
+                    rowWidth += 2;
+                    rowHeight = std::max(rowHeight, 2);
+                }
+                if (p == Piece::Medium) {
+                    mediumTiles.insert(here);
+                    here += BWAPI::TilePosition(3, 0);
+                    rowWidth += 3;
+                    rowHeight = std::max(rowHeight, 2);
+                }
+                if (p == Piece::Large) {
+                    largeTiles.insert(here);
+                    here += BWAPI::TilePosition(4, 0);
+                    rowWidth += 4;
+                    rowHeight = std::max(rowHeight, 3);
+                }
+                if (p == Piece::Addon) {
+                    smallTiles.insert(here + BWAPI::TilePosition(0, 1));
+                    here += BWAPI::TilePosition(2, 0);
+                    rowWidth += 2;
+                    rowHeight = std::max(rowHeight, 2);
+                }
+                if (p == Piece::Row) {                    
+                    w = std::max(w, rowWidth);
+                    h += rowHeight;
+                    rowWidth = 0;
+                    rowHeight = 0;
+                    here = tile + BWAPI::TilePosition(0, h);
+                }
+            }
+
+            // In case there is no row piece
+            w = std::max(w, rowWidth);
+            h += rowHeight;
         }
 
         int width() const { return w; }
@@ -37,8 +81,6 @@ namespace BWEB::Blocks
     };
 
     /// <summary> Initializes the building of every BWEB::Block on the map, call it only once per game. </summary>
-    void findBlocks(BWAPI::Player);
-    void findBlocks(BWAPI::Race);
     void findBlocks();
 
     /// <summary> Erases any blocks at the specified TilePosition. </summary>

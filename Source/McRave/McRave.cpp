@@ -19,6 +19,7 @@
 // Need to fix how the directional check of viable position iterating works
 // BWEB Destination walls not working
 // Proxy builds?
+// BWEB Blocks broken on Andromeda
 
 // *** Parallel Lines ***
 // Destination 12 o clock spawn issues making parallel lines (offset by +y about 64 pixels?)
