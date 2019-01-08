@@ -83,6 +83,8 @@ namespace
     auto &mapBWEM = BWEM::Map::Instance();
 }
 
+// Has to be after the includes to prevent compiler error
+// TODO: Fix includes and move this up with the States
 namespace McRave {
     static int vis(BWAPI::UnitType t) {
         return Units::getMyVisible(t);
@@ -91,6 +93,3 @@ namespace McRave {
         return Units::getMyComplete(t);
     }
 }
-
-// Namespaces
-using namespace McRave;

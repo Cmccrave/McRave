@@ -4,7 +4,6 @@
 
 using namespace std;
 using namespace BWAPI;
-using namespace std::placeholders;
 
 namespace BWEB::PathFinding
 {
@@ -13,13 +12,11 @@ namespace BWEB::PathFinding
             inline bool operator()(unsigned x, unsigned y) const
             {
                 TilePosition t(x, y);
-                if (x < width && y < height /*&& t.getDistance(target) <= maxDist * 2.0*/ && !Map::isUsed(t) && Map::isWalkable(t))
+                if (x < width && y < height && !Map::isUsed(t) && Map::isWalkable(t))
                     return true;
                 return false;
             }
             unsigned width = Broodwar->mapWidth(), height = Broodwar->mapHeight();
-            double maxDist;
-            TilePosition target;
         };
 
         struct WallCollision {
@@ -93,8 +90,6 @@ namespace BWEB::PathFinding
 
         vector<TilePosition> newJPSPath;
         UnitCollision collision;
-        collision.maxDist = source.getDistance(target);
-        collision.target = target;
 
         if (JPS::findPath(newJPSPath, collision, source.x, source.y, target.x, target.y)) {
             Position current = s;

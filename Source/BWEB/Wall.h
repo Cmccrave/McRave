@@ -108,5 +108,6 @@ namespace BWEB::Walls
     /// <summary> Returns true if a BWAPI::TilePosition overlaps our current wall. This is ONLY here for internal usage temporarily. </summary>
     BWAPI::UnitType overlapsCurrentWall(const BWAPI::TilePosition here, const int width = 1, const int height = 1);
 
+    /// <summary> Draws all BWEB Walls. </summary>
     void draw();
 }

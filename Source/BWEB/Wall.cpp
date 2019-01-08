@@ -734,8 +734,23 @@ namespace BWEB::Walls
 
     void draw()
     {
-        Broodwar->drawTextMap(Position(endTile), "%d", Position(endTile));
-        Broodwar->drawTextMap(Position(startTile), "%d", Position(startTile));
+        for (auto &wall : Walls::getWalls()) {
+            for (auto &tile : wall.smallTiles())
+                Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), Broodwar->self()->getColor());
+            for (auto &tile : wall.mediumTiles())
+                Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(97, 65), Broodwar->self()->getColor());
+            for (auto &tile : wall.largeTiles())
+                Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(129, 97), Broodwar->self()->getColor());
+            for (auto &tile : wall.getDefenses())
+                Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), Broodwar->self()->getColor());
+            Broodwar->drawBoxMap(Position(wall.getDoor()), Position(wall.getDoor()) + Position(33, 33), Broodwar->self()->getColor(), true);
+            Broodwar->drawCircleMap(Position(wall.getCentroid()) + Position(16, 16), 8, Broodwar->self()->getColor(), true);
+
+            auto p1 = wall.getChokePoint()->Pos(wall.getChokePoint()->end1);
+            auto p2 = wall.getChokePoint()->Pos(wall.getChokePoint()->end2);
+
+            Broodwar->drawLineMap(Position(p1), Position(p2), Colors::Green);
+        }
     }
 
 }

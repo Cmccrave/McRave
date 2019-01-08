@@ -35,6 +35,9 @@ namespace BWEB::Stations
     /// <summary> Initializes the building of every BWEB::Station on the map, call it only once per game. </summary>
     void findStations();
 
+    /// <summary> Draws all BWEB Stations. </summary>
+    void draw();
+
     /// <summary> Returns a vector containing every BWEB::Station </summary>
     std::vector<Station>& getStations();
 

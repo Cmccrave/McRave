@@ -14,12 +14,11 @@
 // If an enemy floats a CC to an expansion, we don't consider it "taken"
     // - Should we check all stations for being taken? How? UsedGrid? If so, we need to verify that buildings that land have used tiles
 
-// Offset for supply at start of game, can we calculate instead of hardcode at 10?
 // Bunker in enemy main detected as FE
 // Need to fix how the directional check of viable position iterating works
 // BWEB Destination walls not working
-// Proxy builds?
-// BWEB Blocks broken on Andromeda
+// Proxy builds? BWEB proxy block?
+// Proxy 2 gate reaction 
 
 // *** Parallel Lines ***
 // Destination 12 o clock spawn issues making parallel lines (offset by +y about 64 pixels?)
@@ -28,9 +27,11 @@
 
 // *** Ideas ***
 // Monitor for overkilling units by hp - (2*nextDmgSource) <= 0 (double damage source to account for a potential miss?)
+// Walkable grid cached, only check collision at corners + center when looking for walkable positions for a unit
 
 using namespace BWAPI;
 using namespace std;
+using namespace McRave;
 
 void McRaveModule::onStart()
 {

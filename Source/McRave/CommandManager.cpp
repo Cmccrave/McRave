@@ -664,7 +664,7 @@ namespace McRave::Command {
     {
         // Radius for checking tiles
         auto start = unit.getWalkPosition();
-        auto radius = 8 + int(unit.getSpeed()) + (8 * (int)unit.getType().isFlyer());
+        auto radius = 8 + int(unit.getSpeed());
         auto walkHeight = int(unit.getType().height() / 8.0);
         auto walkWidth = int(unit.getType().width() / 8.0);
         auto mapWidth = Broodwar->mapWidth() * 4;

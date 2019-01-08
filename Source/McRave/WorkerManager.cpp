@@ -8,11 +8,11 @@ namespace McRave::Workers {
     namespace {
 
         int minWorkers = 0;
-        int gasWorkers = 0; 
+        int gasWorkers = 0;
 
         bool closeToResource(UnitInfo& worker)
         {
-            auto close = BWEB::Map::getGroundDistance(worker.getResource().getPosition(), worker.getPosition()) <= 320.0;
+            auto close = BWEB::Map::getGroundDistance(worker.getResource().getPosition(), worker.getPosition()) <= 128.0;
             auto sameArea = mapBWEM.GetArea(worker.getTilePosition()) == mapBWEM.GetArea(worker.getResource().getTilePosition());
             return close || sameArea;
         }
@@ -81,9 +81,12 @@ namespace McRave::Workers {
 
             // 3) Move to build if we have the resources
             else if (shouldMoveToBuild()) {
+
+                // TODO: Generate a path and check for threat
+
                 worker.setDestination(center);
 
-                if (worker.getPosition().getDistance(center) > 256.0) {
+                if (worker.getPosition().getDistance(center) > 32.0 + (96.0 * (double)worker.getBuildingType().isRefinery())) {
                     if (worker.getBuildingType().isResourceDepot())
                         Command::move(worker);
                     else if (worker.unit()->getOrderTargetPosition() != center)
@@ -102,25 +105,22 @@ namespace McRave::Workers {
         bool clearPath(UnitInfo& worker)
         {
             auto resourceDepot = Broodwar->self()->getRace().getResourceDepot();
-            if (Units::getMyVisible(resourceDepot) < 2 || (BuildOrder::buildCount(resourceDepot) == Units::getMyVisible(resourceDepot) && BuildOrder::isOpener()))
+            if (Units::getMyVisible(resourceDepot) < 2
+                || (BuildOrder::buildCount(resourceDepot) == Units::getMyVisible(resourceDepot) && BuildOrder::isOpener())
+                || worker.unit()->isCarryingMinerals()
+                || worker.unit()->isCarryingGas())
                 return false;
 
             // Find boulders to clear
             for (auto &b : Resources::getMyBoulders()) {
-                
-                Broodwar->drawCircleMap(b.second.getPosition(), 4, Colors::Red, true);
-
                 ResourceInfo &boulder = b.second;
                 if (!boulder.unit() || !boulder.unit()->exists())
                     continue;
-                if (worker.getPosition().getDistance(boulder.getPosition()) >= 480.0)
-                    continue;
-
-                if (!worker.unit()->isGatheringMinerals()) {
-                    if (worker.unit()->getOrderTargetPosition() != b.second.getPosition())
-                        worker.unit()->gather(b.first);
+                if (worker.getPosition().getDistance(boulder.getPosition()) <= 320.0) {
+                    if (worker.unit()->getOrderTarget() != boulder.unit())
+                        worker.unit()->gather(boulder.unit());
                     return true;
-                }               
+                }
             }
             return false;
         }
@@ -154,7 +154,7 @@ namespace McRave::Workers {
                 auto resourceCentroid = worker.getResource().getStation() ? worker.getResource().getStation()->ResourceCentroid() : Positions::Invalid;
                 worker.setDestination(resourceCentroid);
 
-                // 1) If it's close or same area, don't need a path		
+                // 1) If it's close or same area, don't need a path, set to empty	
                 if (closeToResource(worker)) {
                     BWEB::PathFinding::Path emptyPath;
                     worker.setPath(emptyPath);
@@ -174,7 +174,7 @@ namespace McRave::Workers {
                     if (shouldIssueGather())
                         worker.unit()->gather(worker.getResource().unit());
                     else if (!resourceExists)
-                        worker.unit()->move(worker.getResource().getPosition()); // Command::move(worker);
+                        Command::move(worker);
                     return true;
                 }
 

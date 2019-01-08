@@ -55,7 +55,7 @@ namespace BWEB::Blocks
                     // Shrink block to fit on more maps easily and tighter (-2,-2)
                     if (dist < distBest && ((race == Races::Protoss && canAddBlock(tile, 8, 5, true))
                         || (race == Races::Terran && canAddBlock(tile, 6, 5, true))
-                        || (race == Races::Zerg && canAddBlock(tile + TilePosition(1, 1), 8, 5, true)))) {
+                        || (race == Races::Zerg && canAddBlock(tile, 8, 5, true)))) {
                         tileBest = tile;
                         distBest = dist;
 
@@ -216,6 +216,18 @@ namespace BWEB::Blocks
                     }
                 }
             }
+        }
+    }
+
+    void draw()
+    {
+        for (auto &block : allBlocks) {
+            for (auto &tile : block.getSmallTiles())
+                Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), Broodwar->self()->getColor());
+            for (auto &tile : block.getMediumTiles())
+                Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(97, 65), Broodwar->self()->getColor());
+            for (auto &tile : block.getLargeTiles())
+                Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(129, 97), Broodwar->self()->getColor());
         }
     }
 

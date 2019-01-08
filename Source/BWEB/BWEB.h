@@ -1,5 +1,4 @@
 #pragma once
-#include <set>
 #include <BWAPI.h>
 #include <bwem.h>
 #include "Block.h"
@@ -15,7 +14,7 @@ namespace BWEB::Map
     /// <summary> Global access of BWEM for BWEB. </summary>
     inline BWEM::Map& mapBWEM = BWEM::Map::Instance();
 
-    /// <summary> Draws all BWEB::Walls, BWEB::Stations, BWEB::Blocks and BWEB::Paths when called. Call this every frame if you need debugging information. </summary>
+    /// <summary> Draws all BWEB::Walls, BWEB::Stations, and BWEB::Blocks when called. Call this every frame if you need debugging information. </summary>
     void draw();
 
     /// <summary> Called on game start to initialize the BWEB::Map. </summary>

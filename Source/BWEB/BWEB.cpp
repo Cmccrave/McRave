@@ -6,14 +6,16 @@ using namespace BWAPI;
 namespace BWEB::Map
 {
     namespace {
-        Position mainPosition, naturalPosition;
-        TilePosition mainTile, naturalTile;
-        const BWEM::Area * naturalArea{};
-        const BWEM::Area * mainArea{};
-        const BWEM::ChokePoint * naturalChoke{};
-        const BWEM::ChokePoint * mainChoke{};
+        Position mainPosition = Positions::Invalid;
+        Position naturalPosition = Positions::Invalid;
+        TilePosition mainTile = TilePositions::Invalid;
+        TilePosition naturalTile = TilePositions::Invalid;
+        const BWEM::Area * naturalArea = nullptr;
+        const BWEM::Area * mainArea = nullptr;
+        const BWEM::ChokePoint * naturalChoke = nullptr;
+        const BWEM::ChokePoint * mainChoke = nullptr;
 
-        int testGrid[256][256];
+        int testGrid[256][256] ={};
         int reserveGrid[256][256] ={};
         int overlapGrid[256][256] ={};
         int usedGrid[256][256] ={};
@@ -22,7 +24,7 @@ namespace BWEB::Map
         void findMain()
         {
             mainTile = Broodwar->self()->getStartLocation();
-            mainPosition = static_cast<Position>(mainTile) + Position(64, 48);
+            mainPosition = Position(mainTile) + Position(64, 48);
             mainArea = mapBWEM.GetArea(mainTile);
         }
 
@@ -54,16 +56,15 @@ namespace BWEB::Map
         {
             // Add all main chokes to a set
             set<BWEM::ChokePoint const *> mainChokes;
-            for (auto &choke : mainArea->ChokePoints()) {
+            for (auto &choke : mainArea->ChokePoints())
                 mainChokes.insert(choke);
-            }
-
+            
             // Find a chokepoint that belongs to main and natural
             auto distBest = DBL_MAX;
             if (naturalArea) {
                 for (auto &choke : naturalArea->ChokePoints()) {
                     const auto dist = getGroundDistance(Position(choke->Center()), mainPosition);
-                    if (mainChokes.find(choke) != mainChokes.end() && dist < distBest) {
+                    if (dist < distBest && mainChokes.find(choke) != mainChokes.end()) {
                         mainChoke = choke;
                         distBest = dist;
                     }
@@ -250,45 +251,10 @@ namespace BWEB::Map
 
     void draw()
     {
+        // Debugging stuff
         Broodwar->drawCircleMap((Position)mainChoke->Center(), 4, Colors::Red, true);
         Broodwar->drawCircleMap((Position)naturalChoke->Center(), 4, Colors::Green, true);
-
-        // Draw Blocks 
-        for (auto &block : Blocks::getBlocks()) {
-            for (auto &tile : block.getSmallTiles())
-                Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), Broodwar->self()->getColor());
-            for (auto &tile : block.getMediumTiles())
-                Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(97, 65), Broodwar->self()->getColor());
-            for (auto &tile : block.getLargeTiles())
-                Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(129, 97), Broodwar->self()->getColor());
-        }
-
-        // Draw Stations
-        for (auto &station : Stations::getStations()) {
-            for (auto &tile : station.DefenseLocations())
-                Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), Broodwar->self()->getColor());
-            Broodwar->drawBoxMap(Position(station.BWEMBase()->Location()), Position(station.BWEMBase()->Location()) + Position(129, 97), Broodwar->self()->getColor());
-        }
-
-        // Draw Walls
-        for (auto &wall : Walls::getWalls()) {
-            for (auto &tile : wall.smallTiles())
-                Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), Broodwar->self()->getColor());
-            for (auto &tile : wall.mediumTiles())
-                Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(97, 65), Broodwar->self()->getColor());
-            for (auto &tile : wall.largeTiles())
-                Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(129, 97), Broodwar->self()->getColor());
-            for (auto &tile : wall.getDefenses())
-                Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), Broodwar->self()->getColor());
-            Broodwar->drawBoxMap(Position(wall.getDoor()), Position(wall.getDoor()) + Position(33, 33), Broodwar->self()->getColor(), true);
-            Broodwar->drawCircleMap(Position(wall.getCentroid()) + Position(16, 16), 8, Broodwar->self()->getColor(), true);
-
-            auto p1 = wall.getChokePoint()->Pos(wall.getChokePoint()->end1);
-            auto p2 = wall.getChokePoint()->Pos(wall.getChokePoint()->end2);
-
-            Broodwar->drawLineMap(Position(p1), Position(p2), Colors::Green);
-        }
-
+        
         // Draw Reserve Path and some grids
         for (int x = 0; x < Broodwar->mapWidth(); x++) {
             for (int y = 0; y < Broodwar->mapHeight(); y++) {
@@ -300,7 +266,9 @@ namespace BWEB::Map
             }
         }
 
-        BWEB::Walls::draw();
+        Walls::draw();
+        Blocks::draw();
+        Stations::draw();
     }
 
     template <class T>

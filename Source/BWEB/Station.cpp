@@ -192,6 +192,15 @@ namespace BWEB::Stations
         }
     }
 
+    void draw()
+    {
+        for (auto &station : Stations::getStations()) {
+            for (auto &tile : station.DefenseLocations())
+                Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), Broodwar->self()->getColor());
+            Broodwar->drawBoxMap(Position(station.BWEMBase()->Location()), Position(station.BWEMBase()->Location()) + Position(129, 97), Broodwar->self()->getColor());
+        }
+    }
+
     const Station * getClosestStation(TilePosition here)
     {
         auto distBest = DBL_MAX;

@@ -83,6 +83,9 @@ namespace BWEB::Blocks
     /// <summary> Initializes the building of every BWEB::Block on the map, call it only once per game. </summary>
     void findBlocks();
 
+    /// <summary> Draws all BWEB Blocks. </summary>
+    void draw();
+
     /// <summary> Erases any blocks at the specified TilePosition. </summary>
     /// <param name="here"> The TilePosition that you want to delete any BWEB::Block that exists here. </param>
     void eraseBlock(BWAPI::TilePosition here);
