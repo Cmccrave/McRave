@@ -437,7 +437,10 @@ namespace McRave::Buildings {
 
             // Terran building needs new scv
             else if (building.getType().getRace() == Races::Terran && !building.unit()->isCompleted() && !building.unit()->getBuildUnit()) {
-                auto builder = Util::getClosestBuilder(building.getPosition());
+                auto builder = Util::getClosestUnit(building.getPosition(), PlayerState::Self, [&](auto &u) {
+                    return u.getType().isWorker() && u.getBuildingType() == UnitTypes::None;
+                });
+
                 if (builder)
                     builder->unit()->rightClick(building.unit());
             }
@@ -597,7 +600,10 @@ namespace McRave::Buildings {
                 // 4) Queue building if our actual count is higher than our visible count
                 if (i.getActualCount() > queuedCount + Broodwar->self()->visibleUnitCount(building) + offset) {
                     auto here = getBuildLocation(building);
-                    auto builder = Util::getClosestBuilder(Position(here));
+
+                    auto builder = Util::getClosestUnit(Position(here), PlayerState::Self, [&](auto &u) {
+                        return u.getType().isWorker() && u.getBuildingType() == UnitTypes::None;
+                    });
 
                     if (here.isValid() && builder) {
                         builder->setBuildingType(building);
@@ -657,9 +663,11 @@ namespace McRave::Buildings {
             return false;
 
         if (building == UnitTypes::Zerg_Hatchery) {
-            auto check = Util::getClosestUnit(Position(here), Broodwar->self(), UnitTypes::Zerg_Drone);
-            if (check) {
-                if (!Broodwar->canBuildHere(here, building, check->unit()))
+            auto builder = Util::getClosestUnit((Position)here, PlayerState::Self, [&](auto &u) {
+                return u.getType().isWorker();
+            });
+            if (builder) {
+                if (!Broodwar->canBuildHere(here, building, builder->unit()))
                     return false;
             }
             else

@@ -12,26 +12,54 @@ namespace McRave::Scouts {
         int scoutCount;
         bool proxyCheck = false;
 
+        bool harass(UnitInfo& unit)
+        {
+            auto enemy = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
+                return u.getType().isWorker();
+            });
+
+            if (enemy && enemy->unit()->exists()) {
+                if (enemy->unit()->getOrder() != Orders::AttackUnit)
+                    unit.command(UnitCommandTypes::Attack_Unit, enemy);
+            }
+            return false;
+        }
+
         bool search(UnitInfo& unit)
         {
-            // Aggresive - Need information
-            return false;
+            function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
+
+                // Manual conversion until BWAPI::Point is fixed
+                auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
+                double threat = Util::getHighestThreat(w, unit);
+                double distance = BWEB::Map::getGroundDistance(p, unit.getDestination());
+                double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids::lastVisitedFrame(w))));
+                double score = visited / (distance * threat);
+                return score;
+            };
+
+            auto enemy = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
+                return u.getGroundDamage() > 0.0;
+            });
+
+            auto bestPosition = unit.getDestination();
+            if (enemy && (enemy->unit()->exists() || enemy->getPosition().getDistance(unit.getPosition()) < enemy->getGroundReach()))
+                bestPosition = Command::findViablePosition(unit, scoreFunction);
+            unit.command(UnitCommandTypes::Move, bestPosition);
+            return true;
         }
 
         bool scout(UnitInfo& unit)
         {
-            // Default
+
+
+
             return false;
         }
 
         bool hide(UnitInfo& unit)
         {
             // Passive - Need to wait
-            return false;
-        }
-
-        bool harass(UnitInfo& unit)
-        {
             return false;
         }
 
@@ -100,7 +128,9 @@ namespace McRave::Scouts {
 
             // If we have seen an enemy Probe before we've scouted the enemy, follow it
             if (Units::getEnemyCount(UnitTypes::Protoss_Probe) == 1) {
-                auto w = Util::getClosestUnit(BWEB::Map::getMainPosition(), Broodwar->enemy(), UnitTypes::Protoss_Probe);
+                auto w = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                    return u.getType() == UnitTypes::Protoss_Probe;
+                });
                 proxyCheck = (w && !Terrain::getEnemyStartingPosition().isValid() && w->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1);
             }
 
@@ -124,27 +154,31 @@ namespace McRave::Scouts {
                 // If it's a proxy (maybe cannon rush), try to find the unit to kill
                 if ((Strategy::enemyProxy() || proxyCheck) && scoutCount > 1 && scoutAssignments.find(BWEB::Map::getMainPosition()) == scoutAssignments.end()) {
 
-                    UnitInfo* enemyunit = Util::getClosestUnit(unit.getPosition(), Broodwar->enemy(), UnitTypes::Protoss_Probe);
+                    auto enemy = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
+                        return u.getType().isWorker();
+                    });
+                    auto pylon = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
+                        return u.getType() == UnitTypes::Protoss_Pylon;
+                    });
+
                     scoutAssignments.insert(BWEB::Map::getMainPosition());
 
-                    if (enemyunit && enemyunit->getPosition().isValid() && enemyunit->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0) {
-                        if (enemyunit->unit() && enemyunit->unit()->exists()) {
-                            unit.unit()->attack(enemyunit->unit());
+                    if (enemy && enemy->getPosition().isValid() && enemy->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0) {
+                        if (enemy->unit() && enemy->unit()->exists()) {
+                            unit.unit()->attack(enemy->unit());
                             return;
                         }
                         else
-                            unit.setDestination(enemyunit->getPosition());
+                            unit.setDestination(enemy->getPosition());
                     }
-                    else if (Strategy::getEnemyBuild() == "P2Gate") {
-                        UnitInfo* enemyPylon = Util::getClosestUnit(unit.getPosition(), Broodwar->enemy(), UnitTypes::Protoss_Pylon);
-                        if (enemyPylon && !Terrain::isInEnemyTerritory(enemyPylon->getTilePosition())) {
-                            if (enemyPylon->unit() && enemyPylon->unit()->exists()) {
-                                unit.unit()->attack(enemyPylon->unit());
-                                return;
-                            }
-                            else
-                                unit.unit()->move(enemyPylon->getPosition());
+                    else if (pylon && !Terrain::isInEnemyTerritory(pylon->getTilePosition())) {
+
+                        if (pylon->unit() && pylon->unit()->exists()) {
+                            unit.unit()->attack(pylon->unit());
+                            return;
                         }
+                        else
+                            unit.setDestination(pylon->getPosition());
                     }
                     else
                         unit.setDestination(BWEB::Map::getMainPosition());
@@ -171,16 +205,6 @@ namespace McRave::Scouts {
                 // TEMP
                 if (!unit.getDestination().isValid())
                     unit.setDestination(Terrain::getEnemyStartingPosition());
-
-                if (unit.getDestination().isValid()) {
-                    UnitInfo* enemy = Util::getClosestThreat(unit);
-                    if (enemy && (enemy->unit()->exists() || enemy->getPosition().getDistance(unit.getPosition()) < enemy->getGroundReach())) {
-                        if (Command::hunt(unit)) {}
-                        else if (Command::kite(unit)) {}
-                    }
-                    else
-                        unit.command(UnitCommandTypes::Move, unit.getDestination());
-                }
             }
             else
             {
@@ -205,10 +229,10 @@ namespace McRave::Scouts {
         {
             // Convert our commands to strings to display what the unit is doing for debugging
             map<int, string> commandNames{
-                make_pair(0, "Search"),
+                make_pair(0, "Harass"),
                 make_pair(1, "Scout"),
                 make_pair(2, "Hide"),
-                make_pair(3, "Harass"),
+                make_pair(3, "Search"),
             };
 
             int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;

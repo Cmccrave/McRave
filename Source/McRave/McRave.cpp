@@ -28,6 +28,7 @@
 // Monitor for overkilling units by hp - (2*nextDmgSource) <= 0 (double damage source to account for a potential miss?)
 // Walkable grid cached, only check collision at corners + center when looking for walkable positions for a unit
 // Use Player pointer instead of BWAPI::Player pointer in UnitInfo, gives advantage of knowing upgrades/tech that are available always
+// Use player filters to grab unit set in getClosestUnit template
 
 using namespace BWAPI;
 using namespace std;

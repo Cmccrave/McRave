@@ -5,7 +5,10 @@ using namespace std;
 
 namespace McRave::Combat {
 
-    namespace {      
+    namespace {
+
+        constexpr tuple engageCommmands{ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::hunt, Command::move };
+        constexpr tuple retreatCommands{ Command::misc, Command::special, Command::defend, Command::retreat };
 
         void updateLocalState(UnitInfo& unit)
         {
@@ -91,6 +94,34 @@ namespace McRave::Combat {
             else
                 unit.setGlobalState(GlobalState::Engaging);
         }
+
+        void updateDecision(UnitInfo& unit)
+        {
+            if (!unit.unit() || !unit.unit()->exists()																							// Prevent crashes			
+                || unit.unit()->isLoaded()
+                || unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())	// If the unit is locked down, maelstrommed, stassised, or not completed
+                return;
+
+            // Convert our commands to strings to display what the unit is doing for debugging
+            map<int, string> commandNames{
+                make_pair(0, "Misc"),
+                make_pair(1, "Special"),
+                make_pair(2, "Attack"),
+                make_pair(3, "Approach"),
+                make_pair(4, "Kite"),
+                make_pair(5, "Defend"),
+                make_pair(6, "Hunt"),
+                make_pair(7, "Escort"),
+                make_pair(8, "Retreat"),
+                make_pair(9, "Move")
+            };            
+
+            // Iterate commands, if one is executed then don't try to execute other commands
+            auto commands = unit.getLocalState() == LocalState::Engaging ? engageCommmands : retreatCommands;
+            int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
+            int i = Util::iterateCommands(commands, unit);
+            Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", Text::White, commandNames[i].c_str());
+        }
     }
 
     void onFrame() {
@@ -100,7 +131,8 @@ namespace McRave::Combat {
             if (unit.getRole() == Role::Combat) {
                 Horizon::simulate(unit);
                 updateGlobalState(unit);
-                updateLocalState(unit);                
+                updateLocalState(unit);
+                updateDecision(unit);
             }
         }
     }

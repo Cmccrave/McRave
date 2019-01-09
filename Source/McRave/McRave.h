@@ -50,6 +50,10 @@ namespace McRave
     enum class SimState {
         None, Win, Loss, HighWin, HighLoss
     };
+
+    enum class PlayerState {
+        None, Self, Ally, Enemy
+    };
 }
 
 #include "Horizon.h"

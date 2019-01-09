@@ -53,48 +53,11 @@ namespace McRave::Command {
             for (auto &dot : Broodwar->getNukeDots())
                 addCommand(nullptr, dot, TechTypes::Nuclear_Strike, true);
         }
-
-        constexpr tuple commands{ misc, special, attack, approach, kite, defend, hunt, escort, retreat, move };
-        void updateDecision(UnitInfo& unit)
-        {
-            if (!unit.unit() || !unit.unit()->exists()																							// Prevent crashes			
-                || unit.unit()->isLoaded()
-                || unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())	// If the unit is locked down, maelstrommed, stassised, or not completed
-                return;
-
-            // Convert our commands to strings to display what the unit is doing for debugging
-            map<int, string> commandNames{
-                make_pair(0, "Misc"),
-                make_pair(1, "Special"),
-                make_pair(2, "Attack"),
-                make_pair(3, "Approach"),
-                make_pair(4, "Kite"),
-                make_pair(5, "Defend"),
-                make_pair(6, "Hunt"),
-                make_pair(7, "Escort"),
-                make_pair(8, "Retreat"),
-                make_pair(9, "Move")
-            };
-
-            // Iterate commands, if one is executed then don't try to execute other commands
-            int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
-            int i = Util::iterateCommands(commands, unit);
-            Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", Text::White, commandNames[i].c_str());
-        }
-
+             
         void updateUnits()
         {
             myCommands.clear();
             defendingUnitsByDist.clear();
-
-            for (auto &u : Units::getMyUnits()) {
-                auto &unit = u.second;
-                if (unit.getType() == UnitTypes::Protoss_Interceptor || unit.getType() == UnitTypes::Protoss_Scarab)
-                    continue;
-
-                if (unit.getRole() == Role::Combat)
-                    updateDecision(unit);
-            }
 
             for (auto &u : defendingUnitsByDist) {
                 auto unit = *u.second;
@@ -234,7 +197,8 @@ namespace McRave::Command {
     bool move(UnitInfo& unit)
     {
         function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
-            Position p = Position(w) + Position(4, 4);
+            // Manual conversion until BWAPI::Point is fixed
+            auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
             double distance = (unit.getType().isFlyer() || Terrain::isIslandMap()) ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
             double threat = Util::getHighestThreat(w, unit);
             double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0;
@@ -323,7 +287,8 @@ namespace McRave::Command {
     bool kite(UnitInfo& unit)
     {
         function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
-            Position p = Position(w) + Position(4, 4);
+            // Manual conversion until BWAPI::Point is fixed
+            auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
             double distance = unit.hasTarget() ? 1.0 / (p.getDistance(unit.getTarget().getPosition())) : p.getDistance(BWEB::Map::getMainPosition());
             double threat = Util::getHighestThreat(w, unit);
             double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0;
@@ -391,7 +356,10 @@ namespace McRave::Command {
 
         // Probe Cannon surround
         if (unit.getType().isWorker() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) > 0) {
-            auto cannon = Util::getClosestUnit(mapBWEM.Center(), Broodwar->self(), UnitTypes::Protoss_Photon_Cannon);
+            auto cannon = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Self, [&](auto &u) {
+                return u.getType() == UnitTypes::Protoss_Photon_Cannon;
+            });
+
             auto distBest = DBL_MAX;
             auto walkBest = WalkPositions::Invalid;
             auto start = cannon->getWalkPosition();
@@ -432,7 +400,10 @@ namespace McRave::Command {
     {
         function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
 
-            Position p = Position(w) + Position(4, 4);
+            // Manual conversion until BWAPI::Point is fixed
+            auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
+
+            // Check if this is too far from transports - TODO: Move to transports
             for (auto &u : unit.getAssignedCargo()) {
                 if (!u->unit()->isLoaded() && u->getPosition().getDistance(p) > 32.0)
                     return 0.0;
@@ -482,7 +453,8 @@ namespace McRave::Command {
     {
         // Low distance, low threat, high clustering
         function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
-            Position p = Position(w) + Position(4, 4);
+            // Manual conversion until BWAPI::Point is fixed
+            auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
             double distance = ((unit.getType().isFlyer() || Terrain::isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids::getDistanceHome(w));
             double threat = Util::getHighestThreat(w, unit);
             double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0;
@@ -508,7 +480,8 @@ namespace McRave::Command {
     {
         // Low distance, low threat
         function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
-            Position p = Position(w) + Position(4, 4);
+            // Manual conversion until BWAPI::Point is fixed
+            auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
             double threat = Util::getHighestThreat(w, unit);
             double distance = 1.0 + (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination()));
             double score = 1.0 / (threat * distance);

@@ -3,10 +3,29 @@
 
 namespace McRave::Util {
 
-    UnitInfo * getClosestUnit(BWAPI::Position, BWAPI::Player, BWAPI::UnitType t = BWAPI::UnitTypes::None);
-    UnitInfo * getClosestUnit(UnitInfo&, BWAPI::Player, BWAPI::UnitType t = BWAPI::UnitTypes::None);
-    UnitInfo * getClosestThreat(UnitInfo&);
-    UnitInfo * getClosestBuilder(BWAPI::Position);
+    //UnitInfo * getClosestUnit(BWAPI::Position, BWAPI::Player, BWAPI::UnitType t = BWAPI::UnitTypes::None);
+    //UnitInfo * getClosestUnit(UnitInfo&, BWAPI::Player, BWAPI::UnitType t = BWAPI::UnitTypes::None);
+    //UnitInfo * getClosestThreat(UnitInfo&);
+    //UnitInfo * getClosestBuilder(BWAPI::Position);
+
+    template<typename F>
+    UnitInfo * getClosestUnit(BWAPI::Position here, PlayerState player, F &&pred) {
+        double distBest = DBL_MAX;
+        UnitInfo* best = nullptr;
+        auto &units = (player == PlayerState::Self) ? Units::getMyUnits() : Units::getEnemyUnits();
+
+        for (auto &[bwu, unit] : units) {
+            if (!bwu || bwu->exists() || !pred(unit))
+                continue;
+
+            double dist = here.getDistance(unit.getPosition());
+            if (dist < distBest) {
+                best = &unit;
+                distBest = dist;
+            }
+        }
+        return best;
+    }
 
     int chokeWidth(const BWEM::ChokePoint *);
     const BWEM::ChokePoint * getClosestChokepoint(BWAPI::Position);

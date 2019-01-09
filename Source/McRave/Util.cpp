@@ -246,88 +246,88 @@ namespace McRave::Util {
         return closest;
     }
 
-    UnitInfo * getClosestUnit(Position here, Player p, UnitType t) {
-        double distBest = DBL_MAX;
-        UnitInfo* best = nullptr;
-        auto &units = (p == Broodwar->self()) ? Units::getMyUnits() : Units::getEnemyUnits();
+    //UnitInfo * getClosestUnit(Position here, Player p, UnitType t) {
+    //    double distBest = DBL_MAX;
+    //    UnitInfo* best = nullptr;
+    //    auto &units = (p == Broodwar->self()) ? Units::getMyUnits() : Units::getEnemyUnits();
 
-        for (auto &u : units) {
-            UnitInfo &unit = u.second;
+    //    for (auto &u : units) {
+    //        UnitInfo &unit = u.second;
 
-            if (!unit.unit() || (t != UnitTypes::None && unit.getType() != t))
-                continue;
+    //        if (!unit.unit() || (t != UnitTypes::None && unit.getType() != t))
+    //            continue;
 
-            double dist = here.getDistance(unit.getPosition());
-            if (dist < distBest) {
-                best = &unit;
-                distBest = dist;
-            }
-        }
-        return best;
-    }
+    //        double dist = here.getDistance(unit.getPosition());
+    //        if (dist < distBest) {
+    //            best = &unit;
+    //            distBest = dist;
+    //        }
+    //    }
+    //    return best;
+    //}
 
-    UnitInfo * getClosestUnit(UnitInfo& source, Player p, UnitType t) {
-        double distBest = DBL_MAX;
-        UnitInfo* best = nullptr;
-        auto &units = (p == Broodwar->self()) ? Units::getMyUnits() : Units::getEnemyUnits();
+    //UnitInfo * getClosestUnit(UnitInfo& source, Player p, UnitType t) {
+    //    double distBest = DBL_MAX;
+    //    UnitInfo* best = nullptr;
+    //    auto &units = (p == Broodwar->self()) ? Units::getMyUnits() : Units::getEnemyUnits();
 
-        for (auto &u : units) {
-            UnitInfo &unit = u.second;
+    //    for (auto &u : units) {
+    //        UnitInfo &unit = u.second;
 
-            if (!unit.unit() || source.unit() == unit.unit() || (t != UnitTypes::None && unit.getType() != t))
-                continue;
+    //        if (!unit.unit() || source.unit() == unit.unit() || (t != UnitTypes::None && unit.getType() != t))
+    //            continue;
 
-            double dist = source.getPosition().getDistance(unit.getPosition());
-            if (dist < distBest) {
-                best = &unit;
-                distBest = dist;
-            }
-        }
-        return best;
-    }
+    //        double dist = source.getPosition().getDistance(unit.getPosition());
+    //        if (dist < distBest) {
+    //            best = &unit;
+    //            distBest = dist;
+    //        }
+    //    }
+    //    return best;
+    //}
 
-    UnitInfo * getClosestThreat(UnitInfo& unit)
-    {
-        double distBest = DBL_MAX;
-        UnitInfo* best = nullptr;
-        auto &units = (unit.getPlayer() == Broodwar->self()) ? Units::getEnemyUnits() : Units::getMyUnits();
+    //UnitInfo * getClosestThreat(UnitInfo& unit)
+    //{
+    //    double distBest = DBL_MAX;
+    //    UnitInfo* best = nullptr;
+    //    auto &units = (unit.getPlayer() == Broodwar->self()) ? Units::getEnemyUnits() : Units::getMyUnits();
 
-        for (auto &t : units) {
-            UnitInfo &threat = t.second;
-            auto canAttack = unit.getType().isFlyer() ? threat.getAirDamage() > 0.0 : threat.getGroundDamage() > 0.0;
+    //    for (auto &t : units) {
+    //        UnitInfo &threat = t.second;
+    //        auto canAttack = unit.getType().isFlyer() ? threat.getAirDamage() > 0.0 : threat.getGroundDamage() > 0.0;
 
-            if (!threat.unit() || !canAttack)
-                continue;
+    //        if (!threat.unit() || !canAttack)
+    //            continue;
 
-            double dist = threat.getPosition().getDistance(unit.getPosition());
-            if (dist < distBest) {
-                best = &threat;
-                distBest = dist;
-            }
-        }
-        return best;
-    }
+    //        double dist = threat.getPosition().getDistance(unit.getPosition());
+    //        if (dist < distBest) {
+    //            best = &threat;
+    //            distBest = dist;
+    //        }
+    //    }
+    //    return best;
+    //}
 
-    UnitInfo * getClosestBuilder(Position here)
-    {
-        double distBest = DBL_MAX;
-        UnitInfo* best = nullptr;
-        auto &units = Units::getMyUnits();
+    //UnitInfo * getClosestBuilder(Position here)
+    //{
+    //    double distBest = DBL_MAX;
+    //    UnitInfo* best = nullptr;
+    //    auto &units = Units::getMyUnits();
 
-        for (auto &u : units) {
-            UnitInfo &unit = u.second;
+    //    for (auto &u : units) {
+    //        UnitInfo &unit = u.second;
 
-            if (!unit.unit() || unit.getRole() != Role::Worker || unit.getBuildPosition().isValid() || (unit.hasResource() && !unit.getResource().getType().isMineralField()))
-                continue;
+    //        if (!unit.unit() || unit.getRole() != Role::Worker || unit.getBuildPosition().isValid() || (unit.hasResource() && !unit.getResource().getType().isMineralField()))
+    //            continue;
 
-            double dist = here.getDistance(unit.getPosition());
-            if (dist < distBest) {
-                best = &unit;
-                distBest = dist;
-            }
-        }
-        return best;
-    }
+    //        double dist = here.getDistance(unit.getPosition());
+    //        if (dist < distBest) {
+    //            best = &unit;
+    //            distBest = dist;
+    //        }
+    //    }
+    //    return best;
+    //}
 
     int chokeWidth(const BWEM::ChokePoint * choke)
     {

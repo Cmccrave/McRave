@@ -145,16 +145,14 @@ namespace McRave::Command
                 if (!Players::vT() && (lowEnergyThreat || wantArchons)) {
 
                     // Try to find a friendly templar who is low energy and is threatened
-                    UnitInfo* templar = Util::getClosestUnit(unit, unit.getPlayer(), UnitTypes::Protoss_High_Templar);
-                    if (templar) {
+                    auto templar = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+                        return u.getType() == UnitTypes::Protoss_High_Templar && (wantArchons || (u.getEnergy() < 75 && Grids::getEGroundThreat(templar->getWalkPosition()) > 0.0));
+                    });
 
-                        // Warp together if wasn't last command
-                        auto friendLowEnergyThreat = templar->getEnergy() < TechTypes::Psionic_Storm.energyCost() && Grids::getEGroundThreat(templar->getWalkPosition()) > 0.0;
-                        if (wantArchons || friendLowEnergyThreat) {
-                            if (templar->unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp && unit.unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp)
-                                unit.unit()->useTech(TechTypes::Archon_Warp, templar->unit());
-                            return true;
-                        }
+                    if (templar) {
+                        if (templar->unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp && unit.unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp)
+                            unit.unit()->useTech(TechTypes::Archon_Warp, templar->unit());
+                        return true;
                     }
                 }
             }
@@ -213,8 +211,11 @@ namespace McRave::Command
 
         // General: Shield Battery Use
         if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Shield_Battery) > 0 && (unit.unit()->getGroundWeaponCooldown() > Broodwar->getRemainingLatencyFrames() || unit.unit()->getAirWeaponCooldown() > Broodwar->getRemainingLatencyFrames()) && unit.getType().maxShields() > 0 && (unit.unit()->getShields() <= 10 || (unit.unit()->getShields() < unit.getType().maxShields() && unit.unit()->getOrderTarget() && unit.unit()->getOrderTarget()->exists() && unit.unit()->getOrderTarget()->getType() == UnitTypes::Protoss_Shield_Battery && unit.unit()->getOrderTarget()->getEnergy() >= 10))) {
-            UnitInfo* battery = Util::getClosestUnit(unit.getPosition(), unit.getPlayer(), UnitTypes::Protoss_Shield_Battery);
-            if (battery && battery->unit()->isCompleted() && battery->getEnergy() > 10 && ((unit.getType().isFlyer() && (!unit.hasTarget() || (unit.getTarget().getPosition().getDistance(unit.getPosition()) >= 320))) || unit.unit()->getDistance(battery->getPosition()) < 320)) {
+            auto battery = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+                return u.getType() == UnitTypes::Protoss_Shield_Battery && u.unit()->isCompleted() && u.getEnergy() > 10;
+            });
+
+            if (battery && ((unit.getType().isFlyer() && (!unit.hasTarget() || (unit.getTarget().getPosition().getDistance(unit.getPosition()) >= 320))) || unit.unit()->getDistance(battery->getPosition()) < 320)) {
                 if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Right_Click_Unit || unit.unit()->getLastCommand().getTarget() != battery->unit())
                     unit.unit()->rightClick(battery->unit());
                 return true;

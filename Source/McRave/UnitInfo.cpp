@@ -252,7 +252,9 @@ namespace McRave
             if (atHome && Strategy::defendChoke())
                 return true;
             if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Shield_Battery) > 0) {
-                auto battery = Util::getClosestUnit(position, Broodwar->self(), UnitTypes::Protoss_Shield_Battery);
+                auto battery = Util::getClosestUnit(position, PlayerState::Self, [&](auto &u) {
+                    return u.getType() == UnitTypes::Protoss_Shield_Battery && u.unit()->isCompleted();
+                });
                 if (battery && position.getDistance(battery->getPosition()) <= 128.0)
                     return true;
             }
