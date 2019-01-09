@@ -402,13 +402,13 @@ namespace McRave::Strategy {
                 unitScore[Protoss_Dragoon]				+= (size * 0.25) / vis(Protoss_Dragoon);
                 unitScore[Protoss_High_Templar]			+= (size * 0.80) / vis(Protoss_High_Templar);
                 unitScore[Protoss_Dark_Templar]			+= (size * 0.20) / vis(Protoss_Dark_Templar);
-                unitScore[Protoss_Reaver]				+= (size * 0.30) / vis(Protoss_Observer);
+                unitScore[Protoss_Reaver]				+= (size * 0.30) / vis(Protoss_Reaver);
                 break;
             case Enum::Zerg_Lurker:
                 unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
                 unitScore[Protoss_High_Templar]			+= (size * 0.70) / vis(Protoss_High_Templar);
                 unitScore[Protoss_Observer]				+= (size * 1.00) / vis(Protoss_Observer);
-                unitScore[Protoss_Reaver]				+= (size * 0.30) / vis(Protoss_Observer);
+                unitScore[Protoss_Reaver]				+= (size * 0.30) / vis(Protoss_Reaver);
                 break;
             case Enum::Zerg_Ultralisk:
                 unitScore[Protoss_Zealot]				+= (size * 0.25) / vis(Protoss_Zealot);
