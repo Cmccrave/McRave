@@ -205,12 +205,18 @@ namespace McRave::Command {
 
             if (unit.isCapitalShip() || unit.getTarget().isSuicidal())
                 return false;
+
+            if (unit.isLightAir()) {
+                if (unit.getTarget().getType().isFlyer() || unit.getTarget().getAirRange() == 0.0)
+                    return true;
+                return false;
+            }
+
             if (unit.getType() == UnitTypes::Protoss_Dragoon && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0)
                 return false;
 
             if ((unit.getSimValue() >= 10.0 && !unit.getTarget().getType().isWorker())
-                || (allyRange < enemyRange && !unit.getTarget().getType().isBuilding())
-                || (unit.isLightAir() && unit.getTarget().isFlying()))
+                || (allyRange < enemyRange && !unit.getTarget().getType().isBuilding()))
                 return true;
             return false;
         };
@@ -232,7 +238,7 @@ namespace McRave::Command {
             double distance = (unit.getType().isFlyer() || Terrain::isIslandMap()) ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
             double threat = Util::getHighestThreat(w, unit);
             double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0;
-            double score = 1.0 / (threat * distance * grouping);
+            double score = grouping / (threat * distance);
             return score;
         };
 
@@ -321,7 +327,7 @@ namespace McRave::Command {
             double distance = unit.hasTarget() ? 1.0 / (p.getDistance(unit.getTarget().getPosition())) : p.getDistance(BWEB::Map::getMainPosition());
             double threat = Util::getHighestThreat(w, unit);
             double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0;
-            double score = 1.0 / (threat * distance * grouping);
+            double score = grouping / (threat * distance);
             return score;
         };
 
@@ -480,7 +486,7 @@ namespace McRave::Command {
             double distance = ((unit.getType().isFlyer() || Terrain::isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids::getDistanceHome(w));
             double threat = Util::getHighestThreat(w, unit);
             double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0;
-            double score = 1.0 / (threat * distance * grouping);
+            double score = grouping / (threat * distance);
             return score;
         };
 

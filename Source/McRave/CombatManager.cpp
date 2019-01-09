@@ -99,8 +99,8 @@ namespace McRave::Combat {
 
             if (unit.getRole() == Role::Combat) {
                 Horizon::simulate(unit);
-                updateLocalState(unit);
                 updateGlobalState(unit);
+                updateLocalState(unit);                
             }
         }
     }

@@ -116,9 +116,11 @@ namespace McRave::Workers {
                 ResourceInfo &boulder = b.second;
                 if (!boulder.unit() || !boulder.unit()->exists())
                     continue;
-                if (worker.getPosition().getDistance(boulder.getPosition()) <= 320.0) {
-                    if (worker.unit()->getOrderTarget() != boulder.unit())
+                if ((worker.getPosition().getDistance(boulder.getPosition()) <= 320.0 && boulder.getGathererCount() == 0) || (worker.unit()->isGatheringMinerals() && worker.unit()->getOrderTarget() == boulder.unit())) {
+                    if (worker.unit()->getOrderTarget() != boulder.unit()) {
                         worker.unit()->gather(boulder.unit());
+                        boulder.setGathererCount(1);
+                    }
                     return true;
                 }
             }

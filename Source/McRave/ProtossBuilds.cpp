@@ -428,8 +428,8 @@ namespace McRave::BuildOrder::Protoss {
             zealotLimit = 0;
             
             itemQueue[Protoss_Nexus] =				Item(1);
-            itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
-            itemQueue[Protoss_Gateway] =			Item(s >= 20);
+            itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
+            itemQueue[Protoss_Gateway] =			Item((s >= 20) + (2 * addGates()));
             itemQueue[Protoss_Assimilator] =		Item((addGas || Strategy::enemyScouted()));
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
         }
@@ -437,7 +437,7 @@ namespace McRave::BuildOrder::Protoss {
             zealotLimit = 1;
 
             itemQueue[Protoss_Nexus] =				Item(1);
-            itemQueue[Protoss_Pylon] =				Item((s >= 14), (s >= 16));
+            itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (2 * addGates()));
             itemQueue[Protoss_Assimilator] =		Item((addGas || Strategy::enemyScouted()));
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 34);
@@ -446,7 +446,7 @@ namespace McRave::BuildOrder::Protoss {
             zealotLimit = 2;
 
             itemQueue[Protoss_Nexus] =				Item(1);
-            itemQueue[Protoss_Pylon] =				Item((s >= 14), (s >= 16));
+            itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (2 * addGates()));
             itemQueue[Protoss_Assimilator] =		Item((addGas || Strategy::enemyScouted()));
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 40);

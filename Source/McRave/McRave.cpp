@@ -9,16 +9,15 @@
 
 // *** Notes ***
 // Scout spam sacrifice is a problem
-// Use Player pointer instead of BWAPI::Player pointer in UnitInfo, gives advantage of knowing upgrades/tech that are available always
 // Floating units removing mine positions
-// If an enemy floats a CC to an expansion, we don't consider it "taken"
-    // - Should we check all stations for being taken? How? UsedGrid? If so, we need to verify that buildings that land have used tiles
-
+// If an enemy floats a CC to an expansion, we don't consider it "taken" (Should we check all stations for being taken? How? UsedGrid? If so, we need to verify that buildings that land have used tiles?)
 // Bunker in enemy main detected as FE
 // Need to fix how the directional check of viable position iterating works
 // BWEB Destination walls not working
 // Proxy builds? BWEB proxy block?
 // Proxy 2 gate reaction 
+// Drone scoring based on my strength vs enemy strength
+// Zerg macro hatchery fixes
 
 // *** Parallel Lines ***
 // Destination 12 o clock spawn issues making parallel lines (offset by +y about 64 pixels?)
@@ -28,6 +27,7 @@
 // *** Ideas ***
 // Monitor for overkilling units by hp - (2*nextDmgSource) <= 0 (double damage source to account for a potential miss?)
 // Walkable grid cached, only check collision at corners + center when looking for walkable positions for a unit
+// Use Player pointer instead of BWAPI::Player pointer in UnitInfo, gives advantage of knowing upgrades/tech that are available always
 
 using namespace BWAPI;
 using namespace std;

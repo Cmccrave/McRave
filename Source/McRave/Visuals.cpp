@@ -22,6 +22,7 @@ namespace McRave::Visuals {
         bool resources = false;
         bool timers = true;
         bool scores = true;
+        bool roles = false;
 
         void drawInformation()
         {
@@ -122,7 +123,7 @@ namespace McRave::Visuals {
                     Broodwar->drawTextMap(unit.getPosition() + Position(width, 8), "%c%.2f", Text::White, unit.getSimValue());
                 }
 
-                if (true) {
+                if (roles) {
                     int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
                     Broodwar->drawTextMap(unit.getPosition() + Position(width, 16), "%c%d", Text::White, unit.getRole());
                 }
@@ -192,6 +193,7 @@ namespace McRave::Visuals {
         else if (text == "/local")			local = !local;
         else if (text == "/resources")		resources = !resources;
         else if (text == "/timers")			timers = !timers;
+        else if (text == "/roles")          roles = !roles;
         else								Broodwar->sendText("%s", text.c_str());
         return;
     }

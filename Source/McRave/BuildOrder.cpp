@@ -574,7 +574,7 @@ namespace McRave::BuildOrder
     bool shouldAddProduction()
     {
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            if (Broodwar->self()->visibleUnitCount(Zerg_Larva) <= 1 && Broodwar->self()->minerals() - Production::getReservedMineral() - Buildings::getQueuedMineral() >= 200 && !getOpening)
+            if (Broodwar->self()->minerals() - Production::getReservedMineral() - Buildings::getQueuedMineral() > 300 && !getOpening)
                 return true;
         }
         else {

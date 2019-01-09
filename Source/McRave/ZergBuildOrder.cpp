@@ -30,9 +30,9 @@ namespace McRave::BuildOrder::Zerg {
         // Adding hatcheries when needed
         if (shouldExpand() || shouldAddProduction())
             itemQueue[Zerg_Hatchery] = Item(vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive) + 1);
-
+/*
         if (Strategy::enemyFastExpand() && !rush)
-            itemQueue[Zerg_Hatchery] = Item(min(3, vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive) + 1));
+            itemQueue[Zerg_Hatchery] = Item(min(3, vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive) + 1));*/
 
         // Gas Trick
         if (gasTrick) {            
