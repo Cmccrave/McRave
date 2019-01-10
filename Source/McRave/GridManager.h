@@ -24,9 +24,13 @@ namespace McRave::Grids
     float getEAirCluster(BWAPI::Position here);
 
     int getCollision(BWAPI::WalkPosition here);
+
+
     int getESplash(BWAPI::WalkPosition here);
 
     int getMobility(BWAPI::WalkPosition here);
+    int getMobility(BWAPI::Position here);
+
     double getDistanceHome(BWAPI::WalkPosition here);
 
     int lastVisibleFrame(BWAPI::TilePosition t);

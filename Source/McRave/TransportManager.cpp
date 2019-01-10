@@ -90,9 +90,9 @@ namespace McRave::Transports {
                 if (Util::getHighestThreat(transport.getWalkPosition(), transport) < 1.0)
                     return true;
 
-                if (cargo.getLocalState() == LocalState::Retreating || transport.unit()->isUnderAttack() || (cargo.getShields() == 0 && cargo.getSimValue() < 1.2))
+                if (cargo.getLocalState() == LocalState::Retreat || transport.unit()->isUnderAttack() || (cargo.getShields() == 0 && cargo.getSimValue() < 1.2))
                     return false;
-                if (cargo.getLocalState() == LocalState::Engaging && ((reaver && !attackCooldown) || (ht && cargo.getEnergy() >= 75)))
+                if (cargo.getLocalState() == LocalState::Attack && ((reaver && !attackCooldown) || (ht && cargo.getEnergy() >= 75)))
                     return true;
                 return false;
             };
@@ -115,7 +115,7 @@ namespace McRave::Transports {
                 auto targetDist = reaver && cargo.hasTarget() ? BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getTarget().getPosition()) - 256.0 : cargo.getPosition().getDistance(cargo.getEngagePosition());
 
                 if (transport.getPosition().getDistance(cargo.getPosition()) <= 160.0 || &cargo == closestCargo) {
-                    if (!cargo.hasTarget() || cargo.getLocalState() == LocalState::Retreating || (targetDist > 128.0 || (ht && cargo.unit()->getEnergy() < 75) || (reaver && attackCooldown && threat))) {
+                    if (!cargo.hasTarget() || cargo.getLocalState() == LocalState::Retreat || (targetDist > 128.0 || (ht && cargo.unit()->getEnergy() < 75) || (reaver && attackCooldown && threat))) {
                         return true;
                     }
                 }

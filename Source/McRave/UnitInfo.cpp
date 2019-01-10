@@ -9,21 +9,22 @@ namespace McRave
 
     void UnitInfo::setLastPositions()
     {
-        lastPos = this->getPosition();
-        lastTile = this->getTilePosition();
-        lastWalk =  this->getWalkPosition();
+        lastPos = position;
+        lastTile = tilePosition;
+        lastWalk =  walkPosition;
     }
 
     void UnitInfo::updateUnit()
     {
-        auto t = this->unit()->getType();
-        auto p = this->unit()->getPlayer();
+        auto t = thisUnit->getType();
+        auto p = thisUnit->getPlayer();
 
-        this->setLastPositions();
+        setLastPositions();
 
         // Update unit positions		
         position				= thisUnit->getPosition();
-        destination				= Positions::None;
+        destination				= Positions::Invalid;
+        goal                    = Positions::Invalid;
         tilePosition			= unit()->getTilePosition();
         walkPosition			= Math::getWalkPosition(thisUnit);
 
@@ -33,9 +34,9 @@ namespace McRave
         health					= thisUnit->getHitPoints();
         shields					= thisUnit->getShields();
         energy					= thisUnit->getEnergy();
-        percentHealth			= t.maxHitPoints() > 0 ? double(health) / double(t.maxHitPoints()) : 1.0;
-        percentShield			= t.maxShields() > 0 ? double(shields) / double(t.maxShields()) : 1.0;
-        percentTotal			= t.maxHitPoints() + t.maxShields() > 0 ? double(health + shields) / double(t.maxHitPoints() + t.maxShields()) : 1.0;
+        percentHealth			= t.maxHitPoints() > 0 ? double(health) / double(t.maxHitPoints()) : 0.0;
+        percentShield			= t.maxShields() > 0 ? double(shields) / double(t.maxShields()) : 0.0;
+        percentTotal			= t.maxHitPoints() + t.maxShields() > 0 ? double(health + shields) / double(t.maxHitPoints() + t.maxShields()) : 0.0;
         groundRange				= Math::groundRange(*this);
         groundDamage			= Math::groundDamage(*this);
         groundReach				= groundRange + (speed * 32.0) + double(unitType.width() / 2) + 32.0;
@@ -74,8 +75,8 @@ namespace McRave
         remainingTrainFrame = max(0, remainingTrainFrame - 1);
 
         target = nullptr;
-        this->updateTarget();
-        this->updateStuckCheck();
+        updateTarget();
+        updateStuckCheck();
     }
 
     void UnitInfo::updateTarget()
@@ -127,7 +128,6 @@ namespace McRave
         // Check if we need to wait a few frames before issuing a command due to stop frames or latency frames
         bool attackCooldown = Broodwar->getFrameCount() - lastAttackFrame <= minStopFrame - Broodwar->getRemainingLatencyFrames();
         bool latencyCooldown =	Broodwar->getFrameCount() % Broodwar->getRemainingLatencyFrames() != 0;
-        //Broodwar->drawLineMap(position, here, player->getColor());
 
         if (attackCooldown || latencyCooldown)
             return false;
@@ -169,7 +169,6 @@ namespace McRave
         // Check if we need to wait a few frames before issuing a command due to stop frames or latency frames
         bool attackCooldown = Broodwar->getFrameCount() - lastAttackFrame <= minStopFrame - Broodwar->getRemainingLatencyFrames();
         bool latencyCooldown =	Broodwar->getFrameCount() % Broodwar->getRemainingLatencyFrames() != 0;
-        // Broodwar->drawLineMap(position, targetUnit->getPosition(), player->getColor());
 
         if (attackCooldown || latencyCooldown)
             return false;
@@ -209,7 +208,7 @@ namespace McRave
         auto manner = position.getDistance(Terrain::getMineralHoldPosition()) < 256.0;
         auto exists = thisUnit && thisUnit->exists();
         auto attacked = exists && hasAttackedRecently() && target && target->getType().isBuilding();
-        auto buildingClose = exists && (position.getDistance(Terrain::getDefendPosition()) < 320.0 || close) && (thisUnit->isConstructing() || thisUnit->getOrder() == Orders::ConstructingBuilding || thisUnit->getOrder() == Orders::PlaceBuilding);
+        auto constructingClose = exists && (position.getDistance(Terrain::getDefendPosition()) < 320.0 || close) && (thisUnit->isConstructing() || thisUnit->getOrder() == Orders::ConstructingBuilding || thisUnit->getOrder() == Orders::PlaceBuilding);
 
         // Situations where a unit should be attacked:
         // 1) Building
@@ -221,9 +220,7 @@ namespace McRave
         if (unitType.isBuilding()) {
             if (Buildings::overlapsQueue(unitType, tilePosition))
                 return true;
-            if ((close || atHome) && (airDamage > 0.0 || groundDamage > 0.0))
-                return true;
-            if ((close || atHome) && unitType == UnitTypes::Protoss_Shield_Battery)
+            if ((close || atHome) && (airDamage > 0.0 || groundDamage > 0.0 || unitType == UnitTypes::Protoss_Shield_Battery))
                 return true;
             if (manner)
                 return true;
@@ -234,7 +231,7 @@ namespace McRave
         // - In my territory
 
         else if (unitType.isWorker()) {
-            if (buildingClose)
+            if (constructingClose)
                 return true;
             if (close)
                 return true;

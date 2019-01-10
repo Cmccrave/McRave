@@ -25,8 +25,8 @@ namespace McRave::Goals {
             // Iterate through closest units
             for (auto &u : unitByDist) {
                 UnitInfo* unit = u.second;
-                if (count > 0 && !unit->getDestination().isValid()) {
-                    unit->setDestination(here);
+                if (count > 0 && !unit->getGoal().isValid()) {
+                    unit->setGoal(here);
                     count--;
                 }
             }

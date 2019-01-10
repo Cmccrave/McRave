@@ -17,7 +17,7 @@ namespace McRave
     class UnitInfo;
     class ResourceInfo;
     class PlayerInfo;
-
+    
     struct Line {
         double yInt;
         double slope;
@@ -44,7 +44,7 @@ namespace McRave
     };
 
     enum class LocalState {
-        None, Engaging, Retreating
+        None, Attack, Retreat
     };
 
     enum class SimState {

@@ -51,7 +51,7 @@ namespace McRave {
         LocalState lState = LocalState::None;
         GlobalState gState = GlobalState::None;
         SimState sState = SimState::None;
-        Role role = Role::None;
+        Role role = Role::None;        
 
         BWAPI::UnitType unitType = BWAPI::UnitTypes::None;
         BWAPI::UnitType buildingType = BWAPI::UnitTypes::None;
@@ -61,6 +61,7 @@ namespace McRave {
         BWAPI::Position destination = BWAPI::Positions::Invalid;
         BWAPI::Position simPosition = BWAPI::Positions::Invalid;
         BWAPI::Position lastPos = BWAPI::Positions::Invalid;
+        BWAPI::Position goal = BWAPI::Positions::Invalid;
         BWAPI::WalkPosition walkPosition = BWAPI::WalkPositions::Invalid;
         BWAPI::WalkPosition lastWalk = BWAPI::WalkPositions::Invalid;
         BWAPI::TilePosition tilePosition = BWAPI::TilePositions::Invalid;
@@ -169,6 +170,7 @@ namespace McRave {
         BWAPI::Position getDestination() { return destination; }
         BWAPI::Position getLastPosition() { return lastPos; }
         BWAPI::Position getSimPosition() { return simPosition; }
+        BWAPI::Position getGoal() { return goal; }
         BWAPI::WalkPosition getWalkPosition() { return walkPosition; }
         BWAPI::WalkPosition getLastWalk() { return lastWalk; }
         BWAPI::TilePosition getTilePosition() { return tilePosition; }
@@ -207,6 +209,7 @@ namespace McRave {
         void setPosition(BWAPI::Position newPosition) { position = newPosition; }
         void setEngagePosition(BWAPI::Position newPosition) { engagePosition = newPosition; }
         void setDestination(BWAPI::Position newPosition) { destination = newPosition; }
+        void setGoal(BWAPI::Position newPosition) { goal = newPosition; }
         void setWalkPosition(BWAPI::WalkPosition newPosition) { walkPosition = newPosition; }
         void setTilePosition(BWAPI::TilePosition newPosition) { tilePosition = newPosition; }
         void setBuildPosition(BWAPI::TilePosition newPosition) { buildPosition = newPosition; }

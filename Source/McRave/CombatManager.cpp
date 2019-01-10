@@ -7,7 +7,7 @@ namespace McRave::Combat {
 
     namespace {
 
-        constexpr tuple commands{ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::defend, Command::hunt, Command::escort, Command::retreat, Command::move };       
+        constexpr tuple commands{ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::defend, Command::hunt, Command::escort, Command::retreat, Command::move };
 
         void updateLocalState(UnitInfo& unit)
         {
@@ -20,12 +20,12 @@ namespace McRave::Combat {
 
                 // Testing
                 if (Command::isInDanger(unit, unit.getPosition()) || (Command::isInDanger(unit, unit.getEngagePosition()) && unit.getPosition().getDistance(unit.getEngagePosition()) < SIM_RADIUS))
-                    unit.setLocalState(LocalState::Retreating);
+                    unit.setLocalState(LocalState::Retreat);
 
                 // Force engaging
                 else if (!invisTarget && (unit.getTarget().isThreatening()
                     || (fightingAtHome && (!unit.getType().isFlyer() || !unit.getTarget().getType().isFlyer()) && (Strategy::defendChoke() || unit.getGroundRange() > 64.0))))
-                    unit.setLocalState(LocalState::Engaging);
+                    unit.setLocalState(LocalState::Attack);
 
                 // Force retreating
                 else if ((unit.getType().isMechanical() && unit.getPercentTotal() < LOW_MECH_PERCENT_LIMIT)
@@ -33,7 +33,7 @@ namespace McRave::Combat {
                     || Grids::getESplash(unit.getWalkPosition()) > 0
                     || (invisTarget && (unit.getPosition().getDistance(unit.getTarget().getPosition()) <= enemyReach || enemyThreat))
                     || unit.getGlobalState() == GlobalState::Retreating)
-                    unit.setLocalState(LocalState::Retreating);
+                    unit.setLocalState(LocalState::Retreat);
 
                 // Close enough to make a decision
                 else if (unit.getPosition().getDistance(unit.getSimPosition()) <= SIM_RADIUS) {
@@ -47,26 +47,26 @@ namespace McRave::Combat {
                         || (unit.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && Broodwar->getFrameCount() < 8000)
                         || (unit.getType() == UnitTypes::Terran_SCV && Broodwar->getFrameCount() > 12000)
                         || (invisTarget && !unit.getTarget().isThreatening() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) == 0))
-                        unit.setLocalState(LocalState::Retreating);
+                        unit.setLocalState(LocalState::Retreat);
 
                     // Engage
                     else if ((Broodwar->getFrameCount() > 10000 && (unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && (unit.getPosition().getDistance(unit.getTarget().getPosition()) < 96.0 || Util::unitInRange(unit)))
                         || ((unit.unit()->isCloaked() || unit.isBurrowed()) && !Command::overlapsEnemyDetection(unit.getEngagePosition()))
                         || (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && Util::unitInRange(unit))
                         || (unit.getSimState() == SimState::Win && unit.getGlobalState() == GlobalState::Engaging))
-                        unit.setLocalState(LocalState::Engaging);
+                        unit.setLocalState(LocalState::Attack);
                     else
-                        unit.setLocalState(LocalState::Retreating);
+                        unit.setLocalState(LocalState::Retreat);
                 }
                 else if (unit.getGlobalState() == GlobalState::Retreating) {
-                    unit.setLocalState(LocalState::Retreating);
+                    unit.setLocalState(LocalState::Retreat);
                 }
                 else {
                     unit.setLocalState(LocalState::None);
                 }
             }
             else if (unit.getGlobalState() == GlobalState::Retreating) {
-                unit.setLocalState(LocalState::Retreating);
+                unit.setLocalState(LocalState::Retreat);
             }
             else {
                 unit.setLocalState(LocalState::None);
@@ -93,7 +93,49 @@ namespace McRave::Combat {
             else
                 unit.setGlobalState(GlobalState::Engaging);
         }
-        
+
+        void updateDestination(UnitInfo& unit)
+        {
+            auto moveToTarget = unit.hasTarget() && (unit.getPosition().getDistance(unit.getTarget().getPosition()) <= SIM_RADIUS || unit.getType().isFlyer());
+
+            // If unit has a goal
+            if (unit.getGoal().isValid()) {
+
+                // Find a concave if not in enemy territory
+                if (!Terrain::isInEnemyTerritory((TilePosition)unit.getDestination())) {
+                    Position bestPosition = Util::getConcavePosition(unit, mapBWEM.GetArea(TilePosition(unit.getDestination())));
+                    if (bestPosition.isValid() && (bestPosition != unit.getPosition() || unit.unit()->getLastCommand().getType() == UnitCommandTypes::None))
+                        unit.setDestination(bestPosition);
+                }
+
+                // Set as destination if it is
+                else if (unit.unit()->getLastCommand().getTargetPosition() != unit.getDestination() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
+                    unit.setDestination(unit.getGoal());
+            }
+
+            // If target is close, set as destination
+            else if (moveToTarget && unit.getTarget().getPosition().isValid() && Grids::getMobility(unit.getEngagePosition()) > 0)
+                unit.setDestination(unit.getTarget().getPosition());
+
+            else if (Terrain::getAttackPosition().isValid())
+                unit.setDestination(Terrain::getAttackPosition());
+
+            // TODO: Check if a scout is moving here too
+            // If no target and no enemy bases, move to a base location (random if we have found the enemy once already)
+            else if (unit.unit()->isIdle()) {
+                if (Terrain::getEnemyStartingPosition().isValid()) {
+                    unit.setDestination(Terrain::randomBasePosition());
+                }
+                else {
+                    for (auto &start : Broodwar->getStartLocations()) {
+                        if (start.isValid() && !Broodwar->isExplored(start) && !Command::overlapsCommands(unit.unit(), unit.getType(), Position(start), 32)) {
+                            unit.setDestination(Position(start));
+                        }
+                    }
+                }
+            }
+        }
+
         void updateDecision(UnitInfo& unit)
         {
             if (!unit.unit() || !unit.unit()->exists()																							// Prevent crashes			
@@ -113,7 +155,7 @@ namespace McRave::Combat {
                 make_pair(7, "Escort"),
                 make_pair(8, "Retreat"),
                 make_pair(9, "Move")
-            };            
+            };
 
             // Iterate commands, if one is executed then don't try to execute other commands
             int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
@@ -130,6 +172,7 @@ namespace McRave::Combat {
                 Horizon::simulate(unit);
                 updateGlobalState(unit);
                 updateLocalState(unit);
+                updateDestination(unit);
                 updateDecision(unit);
             }
         }

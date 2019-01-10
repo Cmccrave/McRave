@@ -18,6 +18,8 @@
 // Proxy 2 gate reaction 
 // Drone scoring based on my strength vs enemy strength
 // Zerg macro hatchery fixes
+// Check Muta micro to ensure we are overshooting movement to not decel near targets
+// Unit Interface get distance is edge to point, lots of mistakes!
 
 // *** Parallel Lines ***
 // Destination 12 o clock spawn issues making parallel lines (offset by +y about 64 pixels?)

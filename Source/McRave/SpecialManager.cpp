@@ -67,13 +67,13 @@ namespace McRave::Command
 
         // Siege Tanks
         else if (unit.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) {
-            if (unit.getPosition().getDistance(unit.getEngagePosition()) < 32.0 && unit.getLocalState() == LocalState::Engaging)
+            if (unit.getPosition().getDistance(unit.getEngagePosition()) < 32.0 && unit.getLocalState() == LocalState::Attack)
                 unit.unit()->siege();
             if (unit.getGlobalState() == GlobalState::Retreating && unit.getPosition().getDistance(Terrain::getDefendPosition()) < 320)
                 unit.unit()->siege();
         }
         else if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode) {
-            if (unit.getPosition().getDistance(unit.getEngagePosition()) > 128.0 || unit.getLocalState() == LocalState::Retreating) {
+            if (unit.getPosition().getDistance(unit.getEngagePosition()) > 128.0 || unit.getLocalState() == LocalState::Retreat) {
                 if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Unsiege)
                     unit.unit()->unsiege();
                 return true;

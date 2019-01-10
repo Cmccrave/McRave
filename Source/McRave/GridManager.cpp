@@ -374,6 +374,8 @@ namespace McRave::Grids
     int getESplash(WalkPosition here) { return eSplash[here.x][here.y]; }
 
     int getMobility(WalkPosition here) { return mobility[here.x][here.y]; }
+    int getMobility(Position here) { return getMobility(WalkPosition(here)); }
+
     double getDistanceHome(WalkPosition here) { return distanceHome[here.x][here.y]; }
 
     int lastVisibleFrame(TilePosition t) { return visibleGrid[t.x][t.y]; }
