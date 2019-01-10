@@ -600,7 +600,7 @@ namespace McRave::Buildings {
                 // 4) Queue building if our actual count is higher than our visible count
                 if (i.getActualCount() > queuedCount + Broodwar->self()->visibleUnitCount(building) + offset) {
                     auto here = getBuildLocation(building);
-
+                    
                     auto builder = Util::getClosestUnit(Position(here), PlayerState::Self, [&](auto &u) {
                         return u.getType().isWorker() && u.getBuildingType() == UnitTypes::None;
                     });

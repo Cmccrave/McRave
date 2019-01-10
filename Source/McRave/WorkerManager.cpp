@@ -22,7 +22,9 @@ namespace McRave::Workers {
             // If worker is potentially stuck, try to find a manner pylon
             // TODO: Use workers target? Check if it's actually targeting pylon?
             if (worker.framesHoldingResource() >= 100 || worker.framesHoldingResource() <= -200) {
-                auto pylon = Util::getClosestUnit(worker.getPosition(), Broodwar->enemy(), UnitTypes::Protoss_Pylon);
+                auto pylon = Util::getClosestUnit(worker.getPosition(), PlayerState::Enemy, [&](auto &u) {
+                    return u.getType() == UnitTypes::Protoss_Pylon;
+                });
                 if (pylon && pylon->unit() && pylon->unit()->exists()) {
                     if (worker.unit()->getLastCommand().getTarget() != pylon->unit())
                         worker.unit()->attack(pylon->unit());

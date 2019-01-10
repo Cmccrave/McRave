@@ -11,58 +11,7 @@ namespace McRave::Scouts {
         set<Position> scoutAssignments;
         int scoutCount;
         bool proxyCheck = false;
-
-        bool harass(UnitInfo& unit)
-        {
-            auto enemy = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
-                return u.getType().isWorker();
-            });
-
-            if (enemy && enemy->unit()->exists()) {
-                if (enemy->unit()->getOrder() != Orders::AttackUnit)
-                    unit.command(UnitCommandTypes::Attack_Unit, enemy);
-            }
-            return false;
-        }
-
-        bool search(UnitInfo& unit)
-        {
-            function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
-
-                // Manual conversion until BWAPI::Point is fixed
-                auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
-                double threat = Util::getHighestThreat(w, unit);
-                double distance = BWEB::Map::getGroundDistance(p, unit.getDestination());
-                double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids::lastVisitedFrame(w))));
-                double score = visited / (distance * threat);
-                return score;
-            };
-
-            auto enemy = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
-                return u.getGroundDamage() > 0.0;
-            });
-
-            auto bestPosition = unit.getDestination();
-            if (enemy && (enemy->unit()->exists() || enemy->getPosition().getDistance(unit.getPosition()) < enemy->getGroundReach()))
-                bestPosition = Command::findViablePosition(unit, scoreFunction);
-            unit.command(UnitCommandTypes::Move, bestPosition);
-            return true;
-        }
-
-        bool scout(UnitInfo& unit)
-        {
-
-
-
-            return false;
-        }
-
-        bool hide(UnitInfo& unit)
-        {
-            // Passive - Need to wait
-            return false;
-        }
-
+               
         void updateScoutTargets()
         {
             scoutTargets.clear();
@@ -224,15 +173,15 @@ namespace McRave::Scouts {
             }
         }
 
-        constexpr tuple commands{ search, scout, hide, harass };
+        constexpr tuple commands{ Command::attack, Command::kite, Command::hunt, Command::move };
         void updateDecision(UnitInfo& unit)
         {
             // Convert our commands to strings to display what the unit is doing for debugging
             map<int, string> commandNames{
-                make_pair(0, "Harass"),
-                make_pair(1, "Scout"),
-                make_pair(2, "Hide"),
-                make_pair(3, "Search"),
+                make_pair(0, "Attack"),
+                make_pair(1, "Kite"),
+                make_pair(2, "Hunt"),
+                make_pair(3, "Move"),
             };
 
             int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
@@ -242,8 +191,6 @@ namespace McRave::Scouts {
 
         void updateScouts()
         {
-            // If we have too many scouts
-            // TODO: Add removal
             for (auto &u : Units::getMyUnits()) {
                 auto &unit = u.second;
                 if (unit.getRole() == Role::Scout) {
@@ -252,8 +199,6 @@ namespace McRave::Scouts {
                 }
             }
         }
-
-
     }
 
     void onFrame()

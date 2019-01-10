@@ -87,7 +87,10 @@ namespace McRave::Units {
             // Check if we should scout - TODO: scout count from scout manager
             if (BWEB::Map::getNaturalChoke() && BuildOrder::shouldScout() && getMyRoleCount(Role::Scout) < 1 && Broodwar->getFrameCount() - scoutDeadFrame > 500) {
                 auto type = Broodwar->self()->getRace().getWorker();
-                auto scout = Util::getClosestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), Broodwar->self(), type);
+                auto scout = Util::getClosestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
+                    return u.getType().isWorker();
+                });
+
                 if (scout == &unit) {
 
                     if (unit.hasResource())

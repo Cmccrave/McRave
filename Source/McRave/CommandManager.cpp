@@ -53,7 +53,7 @@ namespace McRave::Command {
             for (auto &dot : Broodwar->getNukeDots())
                 addCommand(nullptr, dot, TechTypes::Nuclear_Strike, true);
         }
-             
+
         void updateUnits()
         {
             myCommands.clear();
@@ -120,42 +120,58 @@ namespace McRave::Command {
 
     bool attack(UnitInfo& unit)
     {
-        if (unit.hasTarget()) {
-            auto shouldAttack = unit.hasTarget() && unit.getTarget().unit()->exists() && unit.getLocalState() == LocalState::Engaging;
-            auto canAttack = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() < Broodwar->getRemainingLatencyFrames() : unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames();
+        // If we have no target or it doesn't exist, we can't attack
+        if (!unit.hasTarget() || !unit.getTarget().unit()->exists())
+            return false;
 
-            // Special Case: Carriers
-            if (shouldAttack && unit.getType() == UnitTypes::Protoss_Carrier) {
-                auto leashRange = 320;
-                for (auto &interceptor : unit.unit()->getInterceptors()) {
-                    if (interceptor->getOrder() == Orders::InterceptorReturn && interceptor->isCompleted()) {
-                        unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
-                        return true;
-                    }
-                }
-                if (unit.getPosition().getApproxDistance(unit.getTarget().getPosition()) >= leashRange) {
+        const auto canAttack = [&]() {
+            auto cooldown = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() : unit.unit()->getGroundWeaponCooldown();
+            return cooldown < Broodwar->getRemainingLatencyFrames();
+        };
+
+        const auto shouldAttack = [&]() {            
+            if (unit.getRole() == Role::Combat)
+                return unit.getLocalState() == LocalState::Engaging;
+
+            if (unit.getRole() == Role::Scout)
+                return Grids::getEGroundThreat(unit.getEngagePosition()) <= 0.0;
+        };
+
+        // Special Case: Carriers
+        if (shouldAttack() && unit.getType() == UnitTypes::Protoss_Carrier) {
+            auto leashRange = 320;
+            for (auto &interceptor : unit.unit()->getInterceptors()) {
+                if (interceptor->getOrder() == Orders::InterceptorReturn && interceptor->isCompleted()) {
                     unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
-                    unit.circleBlue();
                     return true;
                 }
             }
-
-            // If unit should be attacking
-            else if (shouldAttack && canAttack) {
-                // Flyers don't want to decel when out of range, so we move to the target then attack when in range
-                if ((unit.getType().isFlyer() || unit.getType().isWorker()) && unit.hasTarget() && !Util::unitInRange(unit))
-                    unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition());
-                else
-                    unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
+            if (unit.getPosition().getApproxDistance(unit.getTarget().getPosition()) >= leashRange) {
+                unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
+                unit.circleBlue();
                 return true;
             }
+        }
+
+        // If unit should be attacking
+        else if (shouldAttack() && canAttack()) {
+            // Flyers don't want to decel when out of range, so we move to the target then attack when in range
+            if ((unit.getType().isFlyer() || unit.getType().isWorker()) && unit.hasTarget() && !Util::unitInRange(unit))
+                unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition());
+            else
+                unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
+            return true;
         }
         return false;
     }
 
     bool approach(UnitInfo& unit)
     {
-        const auto canApproach = [&]() {
+        // If we don't have a target or the targets position is invalid, we can't approach
+        if (!unit.hasTarget() || !unit.getTarget().getPosition().isValid())
+            return false;
+
+        const auto canApproach = [&]() {            
             auto canAttack = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() < Broodwar->getRemainingLatencyFrames() : unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames();
             if (unit.getSpeed() <= 0.0 || canAttack)
                 return false;
@@ -184,7 +200,7 @@ namespace McRave::Command {
             return false;
         };
 
-        if (unit.getLocalState() != LocalState::Engaging || !unit.hasTarget() || !shouldApproach() || !canApproach())
+        if (unit.getLocalState() != LocalState::Engaging || !shouldApproach() || !canApproach())
             return false;
 
         if (unit.getTarget().getPosition().isValid()) {

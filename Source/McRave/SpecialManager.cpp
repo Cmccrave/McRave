@@ -146,7 +146,7 @@ namespace McRave::Command
 
                     // Try to find a friendly templar who is low energy and is threatened
                     auto templar = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                        return u.getType() == UnitTypes::Protoss_High_Templar && (wantArchons || (u.getEnergy() < 75 && Grids::getEGroundThreat(templar->getWalkPosition()) > 0.0));
+                        return u.getType() == UnitTypes::Protoss_High_Templar && (wantArchons || (u.getEnergy() < 75 && Grids::getEGroundThreat(u.getWalkPosition()) > 0.0));
                     });
 
                     if (templar) {

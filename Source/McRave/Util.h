@@ -14,8 +14,10 @@ namespace McRave::Util {
         UnitInfo* best = nullptr;
         auto &units = (player == PlayerState::Self) ? Units::getMyUnits() : Units::getEnemyUnits();
 
-        for (auto &[bwu, unit] : units) {
-            if (!bwu || bwu->exists() || !pred(unit))
+        for (auto &u : units) {
+            auto &unit = u.second;
+
+            if (!unit.unit() || !pred(unit))
                 continue;
 
             double dist = here.getDistance(unit.getPosition());

@@ -7,8 +7,7 @@ namespace McRave::Combat {
 
     namespace {
 
-        constexpr tuple engageCommmands{ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::hunt, Command::move };
-        constexpr tuple retreatCommands{ Command::misc, Command::special, Command::defend, Command::retreat };
+        constexpr tuple commands{ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::defend, Command::hunt, Command::escort, Command::retreat, Command::move };       
 
         void updateLocalState(UnitInfo& unit)
         {
@@ -94,7 +93,7 @@ namespace McRave::Combat {
             else
                 unit.setGlobalState(GlobalState::Engaging);
         }
-
+        
         void updateDecision(UnitInfo& unit)
         {
             if (!unit.unit() || !unit.unit()->exists()																							// Prevent crashes			
@@ -117,7 +116,6 @@ namespace McRave::Combat {
             };            
 
             // Iterate commands, if one is executed then don't try to execute other commands
-            auto commands = unit.getLocalState() == LocalState::Engaging ? engageCommmands : retreatCommands;
             int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
             int i = Util::iterateCommands(commands, unit);
             Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", Text::White, commandNames[i].c_str());
