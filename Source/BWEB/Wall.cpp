@@ -33,6 +33,14 @@ namespace BWEB::Walls
         vector<TilePosition> chokeTiles;
         int test = 0;
 
+        // Temporary functions because BWAPI::Point conversions are slow
+        Position tileToPosition(TilePosition t) {
+            return Position{ t.x * 32, t.y * 32 };
+        }
+        Position walkToPosition(WalkPosition w) {
+            return Position{ w.x * 8, w.y * 8 };
+        }
+
         bool iteratePieces(Wall& wall)
         {
             TilePosition start(wall.getChokePoint()->Center());

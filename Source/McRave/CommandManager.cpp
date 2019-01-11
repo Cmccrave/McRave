@@ -109,8 +109,13 @@ namespace McRave::Command {
 
         // Should the unit execute an attack command
         const auto shouldAttack = [&]() {
-            if (unit.getRole() == Role::Combat)
+            if (unit.getRole() == Role::Combat) {
+
+                // Check if we can get free attacks
+                if (Util::getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT && Util::unitInRange(unit))
+                    return true;                
                 return unit.getLocalState() == LocalState::Attack;
+            }
 
             if (unit.getRole() == Role::Scout)
                 return Grids::getEGroundThreat(unit.getEngagePosition()) <= 0.0;
@@ -415,31 +420,28 @@ namespace McRave::Command {
             return 0.0;
         };
 
-        // Hunting is only valid with workers, flyers or dark templars
-        auto shouldHunt = unit.getType().isWorker() || unit.getType().isFlyer() /*|| unit.getType() == UnitTypes::Protoss_Dark_Templar*/;
-        if (!shouldHunt)
+        const auto canHunt = [&]() {
+            if (unit.getDestination().isValid() && unit.getSpeed() > 0.0)
+                return true;
             return false;
+        };
 
-        // HACK: If unit has no destination, give target as a destination
-        if (!unit.getDestination().isValid()) {
-            if (unit.hasTarget())
-                unit.setDestination(unit.getTarget().getPosition());
-            else if (Terrain::getAttackPosition().isValid())
-                unit.setDestination(Terrain::getAttackPosition());
-        }
-
-        // If we found a valid position
-        auto bestPosition = findViablePosition(unit, scoreFunction);
-
-        // Check if we can get free attacks
-        if (unit.hasTarget() && Util::getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT && Util::unitInRange(unit)) {
-            attack(unit);
-            return true;
-        }
-        // Move to the position
-        else if (bestPosition.isValid() && bestPosition != unit.getDestination()) {
-            unit.command(UnitCommandTypes::Move, bestPosition);
-            return true;
+        const auto shouldHunt = [&]() {
+            if (unit.getRole() == Role::Combat) {
+                if (unit.getType().isWorker() || unit.isLightAir())
+                    return true;
+            }
+            if (unit.getRole() == Role::Transport || unit.getRole() == Role::Scout)
+                return true;
+            return false;
+        };
+        
+        if (shouldHunt() && canHunt()) {
+            auto bestPosition = findViablePosition(unit, scoreFunction);
+            if (bestPosition.isValid() && bestPosition != unit.getDestination()) {
+                unit.command(UnitCommandTypes::Move, bestPosition);
+                return true;
+            }
         }
         return false;
     }
@@ -457,16 +459,27 @@ namespace McRave::Command {
             return score;
         };
 
-        // Retreating is only valid when local state is retreating
-        auto shouldRetreat = unit.getLocalState() == LocalState::Retreat || unit.getRole() == Role::Scout;
-        if (!shouldRetreat)
-            return false;
+        const auto canRetreat = [&]() {
+            if (unit.getSpeed() > 0.0)
+                return true;
+        };
 
-        // If we found a valid position, move to it
-        auto bestPosition = findViablePosition(unit, scoreFunction);
-        if (bestPosition.isValid()) {
-            unit.command(UnitCommandTypes::Move, bestPosition);
-            return true;
+        const auto shouldRetreat = [&]() {
+            if (unit.getRole() == Role::Combat) {
+                if (unit.getLocalState() == LocalState::Retreat)
+                    return true;
+            }
+            if (unit.getRole() == Role::Scout || unit.getRole() == Role::Transport)
+                return true;
+            return false;
+        };
+
+        if (canRetreat() && shouldRetreat()) {
+            auto bestPosition = findViablePosition(unit, scoreFunction);
+            if (bestPosition.isValid()) {
+                unit.command(UnitCommandTypes::Move, bestPosition);
+                return true;
+            }
         }
         return false;
     }
