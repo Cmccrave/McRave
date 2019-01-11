@@ -147,9 +147,9 @@ namespace McRave
 
         // Check if we should overshoot for halting distance
         if (command == UnitCommandTypes::Move) {
-            auto distance = 1 + position.getApproxDistance(here);
+            auto distance = position.getApproxDistance(here);
             auto distExtra = max(distance, unitType.haltDistance() / 256);
-            if (here.getDistance(position) < distExtra) {
+            if (distance > 0  && here.getDistance(position) < distExtra) {
                 here = position - (position - here) * (distExtra / distance);
                 here = Util::clipPosition(position, here);
             }

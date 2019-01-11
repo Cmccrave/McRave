@@ -58,8 +58,7 @@ namespace McRave::BuildOrder
 
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber };
-                defenses.insert(defenses.end(), 3, Zerg_Sunken_Colony);
-                return true; // No walls
+                defenses.insert(defenses.end(), 6, Zerg_Sunken_Colony);
             }
 
             if (build == "2Fact" || build == "Sparks") {
@@ -312,6 +311,10 @@ namespace McRave::BuildOrder
                 currentTransition = "2HatchMuta";
                 return;
             }
+            if (Broodwar->self()->getRace() == Races::Terran) {
+                isBuildPossible("Test", "Test");
+                return;
+            }
         }
 
         // File extension including our race initial;
@@ -539,6 +542,7 @@ namespace McRave::BuildOrder
                 currentOpener = "12Hatch";
                 currentTransition = "2HatchMuta";
             }
+            isBuildPossible(currentBuild, currentOpener);
         }
         return;
     }

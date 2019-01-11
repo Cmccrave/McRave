@@ -62,14 +62,14 @@ namespace McRave::Combat {
                     unit.setLocalState(LocalState::Retreat);
                 }
                 else {
-                    unit.setLocalState(LocalState::None);
+                    unit.setLocalState(LocalState::Attack);
                 }
             }
             else if (unit.getGlobalState() == GlobalState::Retreating) {
                 unit.setLocalState(LocalState::Retreat);
             }
             else {
-                unit.setLocalState(LocalState::None);
+                unit.setLocalState(LocalState::Attack);
             }
         }
 

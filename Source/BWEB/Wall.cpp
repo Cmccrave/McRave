@@ -26,7 +26,7 @@ namespace BWEB::Walls
         double currentPathSize{};
 
         UnitType tight;
-        bool reservePath{};
+        bool reservePath;
         bool requireTight;
         int chokeWidth;
         Position wallBase;
@@ -143,7 +143,6 @@ namespace BWEB::Walls
             }
             multiplePylons = count > 1;
 
-
             function<void(TilePosition)> recursiveCheck;
             recursiveCheck = [&](TilePosition start) -> void {
                 int radius = 10;
@@ -169,7 +168,7 @@ namespace BWEB::Walls
                                 double dx = abs(double(centerB.x - center.x));
 
                                 angle2 = dx > 0.0 ? atan(dy / dx) * 180.0 / 3.14 : 90.0;
-                                if (abs(abs(angle1) - abs(angle2)) > 15.0)
+                                if (abs(abs(angle1) - abs(angle2)) > 30.0)
                                     badAngle = true;
                             }
 
@@ -544,21 +543,37 @@ namespace BWEB::Walls
         }
     }
 
-    void createWall(vector<UnitType>& buildings, const BWEM::Area * area, const BWEM::ChokePoint * choke, const UnitType t, const vector<UnitType>& defenses, const bool rp, const bool rt)
+    Wall * createWall(vector<UnitType>& buildings, const BWEM::Area * area, const BWEM::ChokePoint * choke, const UnitType t, const vector<UnitType>& defenses, const bool rp, const bool rt)
     {
+        // Reset our last calculations
+        bestWallScore = 0.0;
+        currentHole = TilePositions::None;
+        startTile = TilePositions::None;
+        endTile = TilePositions::None;
+        currentPath.clear();
+        bestWall.clear();
+        currentWall.clear();
+
         if (!area) {
-            Broodwar << "BWEB: Can't initialize a wall without a valid BWEM::Area" << endl;
-            return;
+            Broodwar << "BWEB: Can't create a wall without a valid BWEM::Area" << endl;
+            return nullptr;
         }
 
         if (!choke) {
-            Broodwar << "BWEB: Can't initialize a wall without a valid BWEM::Chokepoint" << endl;
-            return;
+            Broodwar << "BWEB: Can't create a wall without a valid BWEM::Chokepoint" << endl;
+            return nullptr;
         }
 
         if (buildings.empty()) {
-            Broodwar << "BWEB: Can't initialize a wall with an empty vector of UnitTypes." << endl;
-            return;
+            Broodwar << "BWEB: Can't create a wall with an empty vector of UnitTypes." << endl;
+            return nullptr;
+        }
+
+        for (auto &wall : walls) {
+            if (wall.getArea() == area && wall.getChokePoint() == choke) {
+                Broodwar << "BWEB: Can't create a Wall where one already exists." << endl;
+                return &wall;
+            }
         }
 
         // Create a new wall object
@@ -629,21 +644,17 @@ namespace BWEB::Walls
                 addToWall(building, wall, tight);
         };
 
-        // HACK: reset these values so I can make multiple walls easily
-        bestWallScore = 0.0;
-        currentHole = TilePositions::None;
-        startTile = TilePositions::None;
-        endTile = TilePositions::None;
-        currentPath.clear();
-        bestWall.clear();
-        currentWall.clear();
-
-        double distBest = DBL_MAX;
-        for (auto &base : wall.getArea()->Bases()) {
-            double dist = base.Center().getDistance((Position)choke->Center());
-            if (dist < distBest)
-                distBest = dist, wallBase = Position(base.Location()) + Position(64, 48);
-        }
+        // Finds the closest base to where we are making the wall
+        const auto findClosestBase = [&]() {
+            double distBest = DBL_MAX;
+            for (auto &base : wall.getArea()->Bases()) {
+                double dist = base.Center().getDistance((Position)choke->Center());
+                if (dist < distBest) {
+                    distBest = dist;
+                    wallBase = Position(base.Location()) + Position(64, 48);
+                }
+            }
+        };
 
         chokeWidth = int(choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2)) / 4);
         chokeWidth = max(6, chokeWidth);
@@ -661,9 +672,6 @@ namespace BWEB::Walls
             currentWall = bestWall;
             findCurrentHole(wall, false);
 
-            if (requireTight && currentHole.isValid())
-                Broodwar << "BWEB: Unable to find a tight wall at the given location. Placed best one possible." << endl;
-
             addReservePath();
             addCentroid();
             addDoor();
@@ -671,7 +679,9 @@ namespace BWEB::Walls
 
             // Push wall into the vector
             walls.push_back(wall);
+            return &walls.back();
         }
+        return nullptr;
     }
 
     void createFFE()
@@ -734,7 +744,7 @@ namespace BWEB::Walls
 
     void draw()
     {
-        for (auto &wall : Walls::getWalls()) {
+        for (auto &wall : walls) {
             for (auto &tile : wall.smallTiles())
                 Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), Broodwar->self()->getColor());
             for (auto &tile : wall.mediumTiles())

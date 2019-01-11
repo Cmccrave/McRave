@@ -35,8 +35,16 @@ namespace BWEB::Blocks
         void findStartBlock()
         {
             auto race = Broodwar->self()->getRace();
+            vector<Piece> pieces;
             bool v;
             auto h = (v = false);
+
+            if (race == Races::Zerg)
+                pieces ={ Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small };
+            else if (race == Races::Terran)
+                pieces ={ Piece::Large, Piece::Addon, Piece::Row, Piece::Medium, Piece::Medium };
+            else if (race == Races::Protoss)
+                pieces ={ Piece::Medium, Piece::Medium, Piece::Small, Piece::Row, Piece::Large, Piece::Large };
 
             TilePosition tileBest = TilePositions::Invalid;
             auto distBest = DBL_MAX;
@@ -55,7 +63,7 @@ namespace BWEB::Blocks
                     // Shrink block to fit on more maps easily and tighter (-2,-2)
                     if (dist < distBest && ((race == Races::Protoss && canAddBlock(tile, 8, 5, true))
                         || (race == Races::Terran && canAddBlock(tile, 6, 5, true))
-                        || (race == Races::Zerg && canAddBlock(tile, 8, 5, true)))) {
+                        || (race == Races::Zerg && canAddBlock(tile, 5, 4, true)))) {
                         tileBest = tile;
                         distBest = dist;
 
@@ -104,14 +112,14 @@ namespace BWEB::Blocks
                         }
                     }
                 }
-                if (tileBest.isValid()) 
+                if (tileBest.isValid())
                     insertBlock(tileBest, { Piece::Large, Piece::Row, Piece::Small, Piece::Medium, Piece::Row, Piece::Large });
-                
+
             }
 
             // TODO: Add mirroring
             else if (tileBest.isValid())
-                insertBlock(tileBest, { Piece::Medium, Piece::Medium, Piece::Small, Piece::Row, Piece::Large, Piece::Large });
+                insertBlock(tileBest, pieces);
 
 
             // HACK: Added a block that allows a good shield battery placement

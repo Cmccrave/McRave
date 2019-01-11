@@ -27,6 +27,7 @@ namespace McRave::BuildOrder::Zerg {
         firstUpgrade =  UpgradeTypes::Metabolic_Boost;
         firstTech =     TechTypes::None;
         scout =         s >= 22;
+        wallNat =       vis(Zerg_Hatchery) >= 2;
 
         droneLimit =    vis(Zerg_Lair) >= 1 ? 22 : 12;
         lingLimit =     8;
@@ -63,6 +64,7 @@ namespace McRave::BuildOrder::Zerg {
                 itemQueue[Zerg_Overlord] =              Item(1 + (s >= 18) + (s >= 32) + (2 * (s >= 50)));
                 itemQueue[Zerg_Lair] =					Item(Broodwar->self()->gas() > 90);
                 itemQueue[Zerg_Spire] =                 Item(com(Zerg_Lair) >= 1);
+                itemQueue[Zerg_Creep_Colony] =          Item((vis(Zerg_Spire) >= 1) * 2 + (com(Zerg_Spire) >= 1) * 2);
             }
         }        
     }
@@ -74,13 +76,14 @@ namespace McRave::BuildOrder::Zerg {
 
     void PoolLair()
     {
-        getOpening		= s < 70;
-        gasLimit		= INT_MAX;
-        firstUpgrade	= UpgradeTypes::Metabolic_Boost;
-        firstTech		= TechTypes::None;
-        scout			= false;
-        droneLimit		= 10;
-        lingLimit		= 12;
+        getOpening =    s < 70;
+        gasLimit =      INT_MAX;
+        firstUpgrade =  UpgradeTypes::Metabolic_Boost;
+        firstTech =     TechTypes::None;
+        scout =         false;
+        droneLimit =    10;
+        lingLimit =     12;
+        wallNat =       vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive) >= 2;
 
         auto gas100 = Broodwar->self()->gas() >= 100;
 

@@ -218,8 +218,8 @@ namespace McRave::Command {
 
         auto shouldMove = [&]() {
             if (unit.getRole() == Role::Combat) {
-                if (unit.getLocalState() == LocalState::Retreat)
-                    return false;
+                if (unit.getLocalState() == LocalState::Attack)
+                    return true;
             }
             if (unit.getRole() == Role::Scout || unit.getRole() == Role::Worker || unit.getRole() == Role::Transport)
                 return true;
@@ -289,7 +289,7 @@ namespace McRave::Command {
         const auto shouldKite = [&]() {
             auto allyRange = (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
             auto enemyRange = (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
-            
+
             if (unit.getRole() == Role::Combat) {
 
                 if (unit.getTarget().getType().isBuilding() && !unit.getType().isFlyer())

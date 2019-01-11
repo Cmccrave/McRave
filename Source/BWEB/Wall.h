@@ -85,7 +85,7 @@ namespace BWEB::Walls
     /// <param name="defenses"> A Vector of UnitTypes that you want the BWEB::Wall to have defenses consisting of. </param>
     /// <param name="reservePath"> Optional parameter to ensure that a path of TilePositions is reserved and not built on. </param>
     /// <param name="requireTight"> Optional parameter to ensure that the Wall must be walltight. </param>
-    void createWall(std::vector<BWAPI::UnitType>& buildings, const BWEM::Area * area, const BWEM::ChokePoint * choke, BWAPI::UnitType tight = BWAPI::UnitTypes::None, const std::vector<BWAPI::UnitType>& defenses ={}, bool reservePath = false, bool requireTight = false);
+    Wall * createWall(std::vector<BWAPI::UnitType>& buildings, const BWEM::Area * area, const BWEM::ChokePoint * choke, BWAPI::UnitType tight = BWAPI::UnitTypes::None, const std::vector<BWAPI::UnitType>& defenses ={}, bool reservePath = false, bool requireTight = false);
 
     /// <summary> Adds a UnitType to a currently existing BWEB::Wall. </summary>
     /// <param name="type"> The UnitType you want to place at the BWEB::Wall. </param>

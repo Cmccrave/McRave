@@ -273,8 +273,8 @@ namespace McRave::Buildings {
         {
             auto here = TilePositions::Invalid;
 
-            // HACK: Versus busts, add an extra pylon to the defenses
-            if (building == UnitTypes::Protoss_Pylon && (Strategy::getEnemyBuild() == "Z2HatchHydra" || Strategy::getEnemyBuild() == "Z3HatchHydra") && Terrain::getNaturalWall()) {
+            // Versus busts, add an extra pylon to the defenses
+            if (building == UnitTypes::Protoss_Pylon && Strategy::enemyBust() && Terrain::getNaturalWall()) {
                 int cnt = 0;
                 TilePosition sum(0, 0);
                 TilePosition center;
@@ -303,19 +303,19 @@ namespace McRave::Buildings {
                     return here;
             }
 
-            // HACK: choose a wall position as Zerg because fuck it
-            if (Broodwar->self()->getRace() == Races::Zerg) {
-                for (auto &area : Terrain::getAllyTerritory()) {
-                    auto wall = BWEB::Walls::getWall(area);
-                    if (wall) {
-                        here = findWallLocation(building, wall->getCentroid());
-                        if (here.isValid()) {
-                            Broodwar << "Valid spot found" << endl;
-                            return here;
-                        }
-                    }
-                }
-            }
+            //// HACK: choose a wall position as Zerg because fuck it
+            //if (Broodwar->self()->getRace() == Races::Zerg) {
+            //    for (auto &area : Terrain::getAllyTerritory()) {
+            //        auto wall = BWEB::Walls::getWall(area);
+            //        if (wall) {
+            //            here = findWallLocation(building, wall->getCentroid());
+            //            if (here.isValid()) {
+            //                Broodwar << "Valid spot found" << endl;
+            //                return here;
+            //            }
+            //        }
+            //    }
+            //}
 
             // If this is a Resource Depot, Zerg can place it as a production building or expansion, Protoss and Terran only expand
             if (building.isResourceDepot()) {
@@ -326,9 +326,7 @@ namespace McRave::Buildings {
                         return here;
                 }
                 if (Broodwar->self()->getRace() == Races::Zerg) {
-                    int test = Stations::getMyStations().size();
-
-                    if (test > Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Hatchery))
+                    if (int(Stations::getMyStations().size()) > Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Hatchery))
                         here = findProdLocation(building, BWEB::Map::getMainPosition());
                     else
                         here = findExpoLocation();
@@ -381,8 +379,9 @@ namespace McRave::Buildings {
             }
 
             // If we are fast expanding
-            auto isWallPiece = building == UnitTypes::Protoss_Forge || building == UnitTypes::Protoss_Gateway || building == UnitTypes::Protoss_Pylon || building == UnitTypes::Terran_Barracks || building == UnitTypes::Terran_Supply_Depot;
+            auto isWallPiece = building == UnitTypes::Protoss_Forge || building == UnitTypes::Protoss_Gateway || building == UnitTypes::Protoss_Pylon || building == UnitTypes::Terran_Barracks || building == UnitTypes::Terran_Supply_Depot || building == UnitTypes::Zerg_Evolution_Chamber || building == UnitTypes::Zerg_Hatchery || building == UnitTypes::Zerg_Creep_Colony;
             if (BWEB::Map::getNaturalChoke() && isWallPiece && !Strategy::enemyBust() && (BuildOrder::isWallNat() || BuildOrder::isWallMain())) {
+                Broodwar << "yeah" << endl;
                 here = findWallLocation(building, BWEB::Map::getMainPosition());
                 if (here.isValid() && isBuildable(building, here))
                     return here;
@@ -602,7 +601,7 @@ namespace McRave::Buildings {
                     auto here = getBuildLocation(building);
                     
                     auto builder = Util::getClosestUnit(Position(here), PlayerState::Self, [&](auto &u) {
-                        return u.getType().isWorker() && u.getBuildingType() == UnitTypes::None;
+                        return u.getRole() == Role::Worker && u.getBuildingType() == UnitTypes::None;
                     });
 
                     if (here.isValid() && builder) {

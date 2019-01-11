@@ -22,6 +22,7 @@ namespace McRave::Terrain {
         set<Base const*> allBases;
         BWEB::Walls::Wall* mainWall = nullptr;
         BWEB::Walls::Wall* naturalWall = nullptr;
+        UnitType tightType = UnitTypes::None;
 
         bool islandMap;
         bool reverseRamp;
@@ -419,6 +420,14 @@ namespace McRave::Terrain {
             for (auto &base : area.Bases())
                 allBases.insert(&base);
         }
+
+        // Figure out what we need to be tight against
+        if (Broodwar->self()->getRace() == Races::Terran && Players::vP())
+            tightType = UnitTypes::Protoss_Zealot;
+        else if (Players::vZ())
+            tightType = UnitTypes::Zerg_Zergling;
+        else
+            tightType = UnitTypes::None;
     }
 
     void onFrame()
@@ -436,7 +445,8 @@ namespace McRave::Terrain {
     bool findNaturalWall(vector<UnitType>& types, const vector<UnitType>& defenses)
     {
         // Hack: Make a bunch of walls as Zerg for testing - disabled atm
-        if (Broodwar->self()->getRace() == Races::Zerg) {
+        bool testing = false;
+        if (testing && Broodwar->self()->getRace() == Races::Zerg) {
             for (auto &area : mapBWEM.Areas()) {
 
                 // Only make walls at gas bases that aren't starting bases
@@ -466,25 +476,13 @@ namespace McRave::Terrain {
         }
 
         else {
-            if (naturalWall)
-                return true;
 
             UnitType wallTight;
-            bool reservePath = Broodwar->self()->getRace() != Races::Terran;
-
-            if (Broodwar->self()->getRace() == Races::Terran && Players::vP())
-                wallTight = UnitTypes::Protoss_Zealot;
-            else if (Players::vZ())
-                wallTight = UnitTypes::Zerg_Zergling;
-            else
-                wallTight = UnitTypes::Terran_Vulture;
-
-            // Create a wall
-            BWEB::Walls::createWall(types, BWEB::Map::getNaturalArea(), BWEB::Map::getNaturalChoke(), wallTight, defenses, reservePath);
-            naturalWall = BWEB::Walls::getWall(BWEB::Map::getNaturalArea());
-
-            if (naturalWall)
-                return true;
+            auto reservePath = Broodwar->self()->getRace() != Races::Terran;
+            auto choke = BWEB::Map::getNaturalChoke();
+            auto area = BWEB::Map::getNaturalArea();
+            naturalWall = BWEB::Walls::createWall(types, area, choke, tightType, defenses, reservePath);
+            return naturalWall != nullptr;
         }
         return false;
     }

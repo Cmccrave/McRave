@@ -42,13 +42,14 @@ void McRaveModule::onStart()
     Broodwar->setCommandOptimizationLevel(0);
     Broodwar->setLatCom(true);
     Broodwar->setLocalSpeed(0);
-    Terrain::onStart();
     Players::onStart();
+    Terrain::onStart();
     BWEB::Map::onStart();
+    BWEB::Stations::findStations();
+
     Stations::onStart();
     Grids::onStart();
     BuildOrder::onStart();
-    BWEB::Stations::findStations();
     BWEB::Blocks::findBlocks();
     Broodwar->sendText("glhf");
 }
@@ -98,7 +99,7 @@ void McRaveModule::onReceiveText(Player player, string text)
 }
 
 void McRaveModule::onPlayerLeft(Player player)
-{    
+{
 }
 
 void McRaveModule::onNukeDetect(Position target)
