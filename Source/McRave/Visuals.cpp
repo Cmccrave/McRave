@@ -110,17 +110,32 @@ namespace McRave::Visuals {
 
                 if (orders) {
                     int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
-                    if (unit.unit() && unit.unit()->exists())
-                        Broodwar->drawTextMap(unit.getPosition() + Position(width, -8), "%c%s", textColor, unit.unit()->getOrder().c_str());
+                    if (unit.getRole() == Role::Production && (unit.getType() == UnitTypes::Zerg_Egg || (unit.unit()->isTraining() && !unit.unit()->getTrainingQueue().empty()))) {
+                        auto trainType = unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType().c_str() : unit.unit()->getTrainingQueue().front().c_str();
+                        auto trainOrder =  unit.getType() == UnitTypes::Zerg_Egg ? "Morphing" : "Training";
+                        Broodwar->drawTextMap(unit.getPosition() + Position(width, -8), "%c%s", textColor, trainOrder);
+                        Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", textColor, trainType);
+                    }
+                    else if (unit.unit() && unit.unit()->exists() && unit.unit()->isCompleted()) {
+                        if (unit.unit()->getOrder() != Orders::Nothing)
+                            Broodwar->drawTextMap(unit.getPosition() + Position(width, -8), "%c%s", textColor, unit.unit()->getOrder().c_str());
+                        if (unit.unit()->isUpgrading())
+                            Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", textColor, unit.unit()->getUpgrade().c_str());
+                        else if (unit.unit()->isResearching())
+                            Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", textColor, unit.unit()->getTech().c_str());
+                    }
                 }
 
                 if (local) {
-                    Broodwar->drawTextMap(unit.getPosition(), "%c%s", textColor, unit.getLocalState());
+                    if (unit.getRole() == Role::Combat)
+                        Broodwar->drawTextMap(unit.getPosition(), "%c%s", textColor, unit.getLocalState());
                 }
 
                 if (sim) {
-                    int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
-                    Broodwar->drawTextMap(unit.getPosition() + Position(width, 8), "%c%.2f", Text::White, unit.getSimValue());
+                    if (unit.getRole() == Role::Combat) {
+                        int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
+                        Broodwar->drawTextMap(unit.getPosition() + Position(width, 8), "%c%.2f", Text::White, unit.getSimValue());
+                    }
                 }
 
                 if (roles) {
@@ -169,9 +184,9 @@ namespace McRave::Visuals {
     {
         double dur = std::chrono::duration <double, std::milli>(std::chrono::high_resolution_clock::now() - start).count();
         myTest[function] = myTest[function] * 0.99 + dur * 0.01;
-        if (myTest[function] > 0.2) {
+        if (myTest[function] > 0.0) {
             Broodwar->drawTextScreen(180, screenOffset, "%c%s", Text::White, function.c_str());
-            Broodwar->drawTextScreen(372, screenOffset, "%c%.2f ms", Text::White, myTest[function]);
+            Broodwar->drawTextScreen(372, screenOffset, "%c%.5f ms", Text::White, myTest[function]);
             screenOffset += 10;
         }
     }

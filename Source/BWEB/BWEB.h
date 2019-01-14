@@ -114,4 +114,25 @@ namespace BWEB::Map
 
     /// Returns two BWAPI::Positions representing a line of best fit for a given BWEM::Chokepoint.
     std::pair<BWAPI::Position, BWAPI::Position> lineOfBestFit(BWEM::ChokePoint const *);
+    
+    inline BWAPI::Position pConvert(BWAPI::TilePosition t) {
+        return BWAPI::Position{ t.x * 32, t.y * 32 };
+    }
+    inline BWAPI::Position pConvert(BWAPI::WalkPosition t) {
+        return BWAPI::Position{ t.x * 8, t.y * 8 };
+    }
+
+    inline BWAPI::WalkPosition wConvert(BWAPI::TilePosition t) {
+        return BWAPI::WalkPosition{ t.x * 4, t.y * 4 };
+    }
+    inline BWAPI::WalkPosition wConvert(BWAPI::Position t) {
+        return BWAPI::WalkPosition{ t.x / 8, t.y / 8 };
+    }
+
+    inline BWAPI::TilePosition tConvert(BWAPI::WalkPosition t) {
+        return BWAPI::TilePosition{ t.x / 4, t.y / 4 };
+    }
+    inline BWAPI::TilePosition tConvert(BWAPI::Position t) {
+        return BWAPI::TilePosition{ t.x / 32, t.y / 32 };
+    }
 }

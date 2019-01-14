@@ -46,7 +46,7 @@ namespace McRave::Units {
         void updateRole(UnitInfo& unit)
         {
             // Don't assign a role to uncompleted units
-            if (!unit.unit()->isCompleted() && !unit.getType().isBuilding()) {
+            if (!unit.unit()->isCompleted() && !unit.getType().isBuilding() && unit.getType() != UnitTypes::Zerg_Egg) {
                 unit.setRole(Role::None);
                 return;
             }
@@ -58,7 +58,7 @@ namespace McRave::Units {
             if (unit.getRole() == Role::None) {
                 if (unit.getType().isWorker())
                     unit.setRole(Role::Worker);
-                else if ((unit.getType().isBuilding() && unit.getGroundDamage() == 0.0 && unit.getAirDamage() == 0.0) || unit.getType() == UnitTypes::Zerg_Larva)
+                else if ((unit.getType().isBuilding() && unit.getGroundDamage() == 0.0 && unit.getAirDamage() == 0.0) || unit.getType() == UnitTypes::Zerg_Larva || unit.getType() == UnitTypes::Zerg_Egg)
                     unit.setRole(Role::Production);
                 else if (unit.getType().isBuilding() && unit.getGroundDamage() != 0.0 && unit.getAirDamage() != 0.0)
                     unit.setRole(Role::Defender);
@@ -160,9 +160,6 @@ namespace McRave::Units {
                     }
                 }
 
-                if (unit.isThreatening())
-                    unit.circleRed();
-
                 // If unit is visible, update it
                 if (unit.unit()->exists()) {
                     unit.updateUnit();
@@ -206,6 +203,8 @@ namespace McRave::Units {
                     else
                         immThreat += unit.getVisibleGroundStrength();
                 }
+                if (unit.isThreatening())
+                    unit.circleRed();
             }
 
             // Update myUnits
@@ -279,6 +278,12 @@ namespace McRave::Units {
         BWEB::Map::onUnitDestroy(unit);
 
         for (auto &u : myUnits) {
+            auto &info = u.second;
+            if (info.hasTarget() && info.getTarget().unit() == unit)
+                info.setTarget(nullptr);
+        }
+
+        for (auto &u : enemyUnits) {
             auto &info = u.second;
             if (info.hasTarget() && info.getTarget().unit() == unit)
                 info.setTarget(nullptr);

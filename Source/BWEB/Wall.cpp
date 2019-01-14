@@ -32,18 +32,10 @@ namespace BWEB::Walls
         Position wallBase;
         vector<TilePosition> chokeTiles;
         int test = 0;
-
-        // Temporary functions because BWAPI::Point conversions are slow
-        Position tileToPosition(TilePosition t) {
-            return Position{ t.x * 32, t.y * 32 };
-        }
-        Position walkToPosition(WalkPosition w) {
-            return Position{ w.x * 8, w.y * 8 };
-        }
-
+        
         bool iteratePieces(Wall& wall)
         {
-            TilePosition start(wall.getChokePoint()->Center());
+            TilePosition start = Map::tConvert(wall.getChokePoint()->Center());
             auto movedStart = false;
             auto multiplePylons = false;
 
@@ -51,7 +43,7 @@ namespace BWEB::Walls
                 double best = DBL_MAX;
                 Position posBest;
                 for (auto &tile : chokeTiles) {
-                    Position p = Position(tile) + Position(16, 16);
+                    Position p = Map::pConvert(tile) + Position(16, 16);
                     if (p.getDistance(here) < best) {
                         posBest = p;
                         best = p.getDistance(here);
@@ -70,7 +62,9 @@ namespace BWEB::Walls
                             if (!t.isValid())
                                 continue;
 
-                            double dist = Position(t).getDistance((Position)wall.getArea()->Top());
+                            Position p = Map::pConvert(t);
+                            Position top = Map::pConvert(wall.getArea()->Top());
+                            double dist = p.getDistance(top);
 
                             if (dist < distBest) {
                                 distBest = dist;
@@ -103,11 +97,11 @@ namespace BWEB::Walls
                     return;
 
                 double dist = 1.0;
-                for (auto &piece : currentWall) {
+                for (auto &piece : currentWall) {                   
                     auto tile = piece.first;
                     auto type = piece.second;
-                    auto center = Position(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
-                    auto chokeDist = Position(closestChokeTile(center)).getDistance(center);
+                    auto center = Map::pConvert(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
+                    auto chokeDist = closestChokeTile(center).getDistance(center);
 
                     dist += (!multiplePylons && type == UnitTypes::Protoss_Pylon) ? 1.0 / exp(chokeDist) : exp(chokeDist);
                 }
@@ -123,7 +117,7 @@ namespace BWEB::Walls
 
             const auto testPiece = [&](Wall& wall, TilePosition t) {
                 UnitType currentType = *typeIterator;
-                Position c = Position(t) + Position(currentType.tileSize());
+                Position c = Map::pConvert(t) + Map::pConvert(currentType.tileSize());
                 auto tile = closestChokeTile(c);
 
                 if ((currentType == UnitTypes::Protoss_Pylon && !isPoweringWall(wall, t))
@@ -159,7 +153,7 @@ namespace BWEB::Walls
                 for (auto x = start.x - radius; x < start.x + radius; x++) {
                     for (auto y = start.y - radius; y < start.y + radius; y++) {
                         const TilePosition t(x, y);
-                        auto center = Position(t) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
+                        auto center = Map::pConvert(t) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
 
                         if (!t.isValid() || (multiplePylons && center.getDistance(closestChokeTile(center)) > 128.0))
                             continue;
@@ -171,7 +165,7 @@ namespace BWEB::Walls
                             for (auto piece : currentWall) {
                                 auto tileB = piece.first;
                                 auto typeB = piece.second;
-                                auto centerB = Position(tileB) + Position(typeB.tileWidth() * 16, typeB.tileHeight() * 16);
+                                auto centerB = Map::pConvert(tileB) + Position(typeB.tileWidth() * 16, typeB.tileHeight() * 16);
                                 double dy = abs(double(centerB.y - center.y));
                                 double dx = abs(double(centerB.x - center.x));
 
@@ -274,10 +268,10 @@ namespace BWEB::Walls
             const auto checkDown =  (building.tileHeight() * 16) - building.dimensionDown() - 1 < vertTight;
 
             // HACK: I don't have a great method for buildings that can check multiple tiles for Terrain tight, hardcoded a few as shown below
-            const auto right = WalkPosition(here) + WalkPosition(width, 0) + WalkPosition(building == UnitTypes::Terran_Barracks, 0);
-            const auto left = WalkPosition(here) - WalkPosition(1, 0);
-            const auto up = WalkPosition(here) - WalkPosition(0, 1);
-            const auto down = WalkPosition(here) + WalkPosition(0, height) + WalkPosition(0, building == UnitTypes::Protoss_Gateway || building == UnitTypes::Terran_Supply_Depot);
+            const auto right = Map::wConvert(here) + WalkPosition(width, 0) + WalkPosition(building == UnitTypes::Terran_Barracks, 0);
+            const auto left =  Map::wConvert(here) - WalkPosition(1, 0);
+            const auto up =  Map::wConvert(here) - WalkPosition(0, 1);
+            const auto down =  Map::wConvert(here) + WalkPosition(0, height) + WalkPosition(0, building == UnitTypes::Protoss_Gateway || building == UnitTypes::Terran_Supply_Depot);
 
             // Some testing parameters
             auto firstBuilding = currentWall.size() == 0;
@@ -301,7 +295,7 @@ namespace BWEB::Walls
 
             // Function to check if it's terrain tight here
             const auto terrainTightCheck = [&](WalkPosition w, bool check) {
-                TilePosition t(w);
+                TilePosition t = Map::tConvert(w);
 
                 // If the walkposition is invalid or unwalkable
                 if (tight != UnitTypes::None && check && (!w.isValid() || !Broodwar->isWalkable(w)))
@@ -321,7 +315,7 @@ namespace BWEB::Walls
             const auto checkVerticalSide = [&](WalkPosition start, int length, bool check, function <int(UnitType, UnitType)> fDiff, int tightnessFactor) {
                 for (auto x = start.x; x < start.x + length; x++) {
                     WalkPosition w(x, start.y);
-                    TilePosition t(w);
+                    TilePosition t = Map::tConvert(w);
                     auto parent = overlapsCurrentWall(t);
                     auto parentTightCheck = parent != UnitTypes::None ? fDiff(building, parent) < tightnessFactor : false;
 
@@ -339,7 +333,7 @@ namespace BWEB::Walls
             const auto checkHorizontalSide = [&](WalkPosition start, int length, bool check, function <int(UnitType, UnitType)> fDiff, int tightnessFactor) {
                 for (auto y = start.y; y < start.y + length; y++) {
                     WalkPosition w(start.x, y);
-                    TilePosition t(w);
+                    TilePosition t = Map::tConvert(w);
                     auto parent = overlapsCurrentWall(t);
                     auto parentTightCheck = parent != UnitTypes::None ? fDiff(building, parent) < tightnessFactor : false;
 
@@ -429,21 +423,21 @@ namespace BWEB::Walls
             auto dy1 = n2.y - n1.y;
             auto dx2 = n1.x - n2.x;
             auto dy2 = n1.y - n2.y;
-            Position direction1 = Position(-dy1 / 2, dx1 / 2) + Position(choke->Center());
-            Position direction2 = Position(-dy2 / 2, dx2 / 2) + Position(choke->Center());
-            Position trueDirection = Map::mapBWEM.GetArea((TilePosition)direction1) == wall.getArea() ? direction2 : direction1;
+            Position direction1 = Position(-dy1 / 2, dx1 / 2) + Map::pConvert(choke->Center());
+            Position direction2 = Position(-dy2 / 2, dx2 / 2) + Map::pConvert(choke->Center());
+            Position trueDirection = Map::mapBWEM.GetArea(Map::tConvert(direction1)) == wall.getArea() ? direction2 : direction1;
 
             if (choke == Map::getNaturalChoke()) {
-                initialStart = TilePosition(Map::getMainChoke()->Center());
-                initialEnd = (TilePosition)trueDirection;
+                initialStart = Map::tConvert(Map::getMainChoke()->Center());
+                initialEnd = Map::tConvert(trueDirection);
             }
             else if (choke == Map::getMainChoke()) {
-                initialStart = (Map::getMainTile() + TilePosition(Map::getMainChoke()->Center())) / 2;
-                initialEnd = (TilePosition)Map::getNaturalChoke()->Center();
+                initialStart = (Map::getMainTile() + Map::tConvert(Map::getMainChoke()->Center())) / 2;
+                initialEnd = Map::tConvert(Map::getNaturalChoke()->Center());
             }
             else {
-                initialStart = TilePosition(wall.getArea()->Top());
-                initialEnd = (TilePosition)trueDirection;
+                initialStart = Map::tConvert(wall.getArea()->Top());
+                initialEnd = Map::tConvert(trueDirection);
             }
 
             startTile = initialStart;
@@ -454,8 +448,8 @@ namespace BWEB::Walls
         {
             // Check that the path points are possible to reach
             checkPathPoints(wall);
-            Position startCenter = Position(startTile) + Position(16, 16);
-            Position endCenter = Position(endTile) + Position(16, 16);
+            Position startCenter = Map::pConvert(startTile) + Position(16, 16);
+            Position endCenter = Map::pConvert(endTile) + Position(16, 16);
 
             // Get a new path
             BWEB::PathFinding::Path newPath;
@@ -474,7 +468,7 @@ namespace BWEB::Walls
                 for (auto &tile : currentPath) {
                     double closestGeo = DBL_MAX;
                     for (auto &geo : wall.getChokePoint()->Geometry()) {
-                        if (TilePosition(geo) == tile && tile.getDistance(startTile) < closestGeo && overlapsCurrentWall(tile) == UnitTypes::None) {
+                        if (Map::tConvert(geo) == tile && tile.getDistance(startTile) < closestGeo && overlapsCurrentWall(tile) == UnitTypes::None) {
                             currentHole = tile;
                             closestGeo = tile.getDistance(startTile);
                         }
@@ -503,22 +497,22 @@ namespace BWEB::Walls
     {
         auto distance = DBL_MAX;
         auto tileBest = TilePositions::Invalid;
-        auto start = TilePosition(wall.getCentroid());
-        auto centroidDist = wall.getCentroid().getDistance(Position(endTile));
-        auto end = Position(endTile);
-        auto doorCenter = Position(wall.getDoor()) + Position(16, 16);
+        auto start = Map::tConvert(wall.getCentroid());
+        auto centroidDist = wall.getCentroid().getDistance(Map::pConvert(endTile));
+        auto end = Map::pConvert(endTile);
+        auto doorCenter = Map::pConvert(wall.getDoor()) + Position(16, 16);
 
         auto furthest = 0.0;
         // Find the furthest non pylon building to the chokepoint
         for (auto &tile : wall.largeTiles()) {
-            Position p = Position(tile) + Position(64, 48);
-            auto dist = p.getDistance((Position)wall.getChokePoint()->Center());
+            Position p = Map::pConvert(tile) + Position(64, 48);
+            auto dist = p.getDistance(Map::pConvert(wall.getChokePoint()->Center()));
             if (dist > furthest)
                 furthest = dist;
         }
         for (auto &tile : wall.mediumTiles()) {
-            Position p = Position(tile) + Position(48, 32);
-            auto dist = p.getDistance((Position)wall.getChokePoint()->Center());
+            Position p = Map::pConvert(tile) + Position(48, 32);
+            auto dist = p.getDistance(Map::pConvert(wall.getChokePoint()->Center()));
             if (dist > furthest)
                 furthest = dist;
         }
@@ -527,13 +521,13 @@ namespace BWEB::Walls
         for (auto x = start.x - 8; x <= start.x + 8; x++) {
             for (auto y = start.y - 8; y <= start.y + 8; y++) {
                 const TilePosition t(x, y);
-                const auto center = (Position(t) + Position(32, 32));
+                const auto center = Map::pConvert(t) + Position(32, 32);
 
                 if (!t.isValid()
                     || Map::isOverlapping(t, building.tileWidth(), building.tileHeight())
                     || !Map::isPlaceable(building, t)
                     || Map::tilesWithinArea(wall.getArea(), t, 2, 2) == 0
-                    || (building == UnitTypes::Protoss_Photon_Cannon && (center.getDistance((Position)wall.getChokePoint()->Center()) < furthest || center.getDistance(doorCenter) < 96.0)))
+                    || (building == UnitTypes::Protoss_Photon_Cannon && (center.getDistance(Map::pConvert(wall.getChokePoint()->Center())) < furthest || center.getDistance(doorCenter) < 96.0)))
                     continue;
 
                 const auto dist = center.getDistance(doorCenter);
@@ -594,7 +588,7 @@ namespace BWEB::Walls
 
         // Create a line of tiles that make up the geometry of the choke		
         for (auto &walk : wall.getChokePoint()->Geometry()) {
-            TilePosition t(walk);
+            TilePosition t = Map::tConvert(walk);
             if (Broodwar->isBuildable(t))
                 chokeTiles.push_back(t);
         }
@@ -615,7 +609,7 @@ namespace BWEB::Walls
             // If the line of tiles we made is empty, assign closest path tile to closest to wall centroid
             if (chokeTiles.empty()) {
                 for (auto pathTile : currentPath) {
-                    Position p(pathTile);
+                    Position p = Map::pConvert(pathTile);
                     double dist = wall.getCentroid().getDistance(p);
                     if (dist < distBest) {
                         distBest = dist;
@@ -639,7 +633,7 @@ namespace BWEB::Walls
             int sizeWall = currentWall.size();
             for (auto &piece : currentWall) {
                 if (piece.second != UnitTypes::Protoss_Pylon)
-                    centroid += static_cast<Position>(piece.first) + static_cast<Position>(piece.second.tileSize()) / 2;
+                    centroid += Map::pConvert(piece.first) + Map::pConvert(piece.second.tileSize()) / 2;
                 else
                     sizeWall--;
             }
@@ -656,10 +650,10 @@ namespace BWEB::Walls
         const auto findClosestBase = [&]() {
             double distBest = DBL_MAX;
             for (auto &base : wall.getArea()->Bases()) {
-                double dist = base.Center().getDistance((Position)choke->Center());
+                double dist = base.Center().getDistance(Map::pConvert(choke->Center()));
                 if (dist < distBest) {
                     distBest = dist;
-                    wallBase = Position(base.Location()) + Position(64, 48);
+                    wallBase = Map::pConvert(base.Location()) + Position(64, 48);
                 }
             }
         };

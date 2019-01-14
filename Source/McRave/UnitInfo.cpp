@@ -88,8 +88,6 @@ namespace McRave
 
                 if (Units::getEnemyUnits().find(mineTarget) != Units::getEnemyUnits().end())
                     target = mineTarget != nullptr ? &Units::getEnemyUnits()[mineTarget] : nullptr;
-                else
-                    target = nullptr;
             }
             else
                 Targets::getTarget(*this);
@@ -99,13 +97,7 @@ namespace McRave
         else if (player && player->isEnemy(Broodwar->self())) {
             if (Units::getMyUnits().find(thisUnit->getOrderTarget()) != Units::getMyUnits().end())
                 target = &Units::getMyUnits()[thisUnit->getOrderTarget()];
-            else
-                target = nullptr;
         }
-
-        // Otherwise no target
-        else
-            target = nullptr;
     }
 
     void UnitInfo::updateStuckCheck() {
@@ -125,11 +117,10 @@ namespace McRave
 
     bool UnitInfo::command(BWAPI::UnitCommandType command, BWAPI::Position here)
     {
-        // Check if we need to wait a few frames before issuing a command due to stop frames or latency frames
+        // Check if we need to wait a few frames before issuing a command due to stop frames
         bool attackCooldown = Broodwar->getFrameCount() - lastAttackFrame <= minStopFrame - Broodwar->getRemainingLatencyFrames();
-        bool latencyCooldown =	Broodwar->getFrameCount() % Broodwar->getRemainingLatencyFrames() != 0;
 
-        if (attackCooldown || latencyCooldown)
+        if (attackCooldown)
             return false;
 
         // Check if this is a new order
@@ -166,11 +157,10 @@ namespace McRave
 
     bool UnitInfo::command(BWAPI::UnitCommandType command, UnitInfo* targetUnit)
     {
-        // Check if we need to wait a few frames before issuing a command due to stop frames or latency frames
+        // Check if we need to wait a few frames before issuing a command due to stop frames
         bool attackCooldown = Broodwar->getFrameCount() - lastAttackFrame <= minStopFrame - Broodwar->getRemainingLatencyFrames();
-        bool latencyCooldown =	Broodwar->getFrameCount() % Broodwar->getRemainingLatencyFrames() != 0;
 
-        if (attackCooldown || latencyCooldown)
+        if (attackCooldown)
             return false;
 
         // Check if this is a new order

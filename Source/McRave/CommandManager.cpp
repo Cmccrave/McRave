@@ -119,6 +119,7 @@ namespace McRave::Command {
 
             if (unit.getRole() == Role::Scout)
                 return Grids::getEGroundThreat(unit.getEngagePosition()) <= 0.0;
+            return false;
         };
 
         // Special Case: Carriers
@@ -462,6 +463,7 @@ namespace McRave::Command {
         const auto canRetreat = [&]() {
             if (unit.getSpeed() > 0.0)
                 return true;
+            return false;
         };
 
         const auto shouldRetreat = [&]() {

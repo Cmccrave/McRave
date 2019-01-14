@@ -59,8 +59,8 @@ namespace BWEB::PathFinding
         //    reachable = false;
         //}
 
-        TilePosition target(t);
-        TilePosition source(s);
+        TilePosition target = Map::tConvert(t);
+        TilePosition source = Map::tConvert(s);
         auto maxDist = source.getDistance(target);
         vector<TilePosition> direction{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 } };
 
@@ -78,8 +78,8 @@ namespace BWEB::PathFinding
 
     void Path::createUnitPath(const Position s, const Position t)
     {
-        TilePosition target(t);
-        TilePosition source(s);
+        TilePosition target = Map::tConvert(t);
+        TilePosition source = Map::tConvert(s);
 
         auto checkReachable = notReachableThisFrame[Map::mapBWEM.GetArea(target)];
         if (checkReachable >= Broodwar->getFrameCount()) {
@@ -94,8 +94,8 @@ namespace BWEB::PathFinding
         if (JPS::findPath(newJPSPath, collision, source.x, source.y, target.x, target.y)) {
             Position current = s;
             for (auto &t : newJPSPath) {
-                dist += Position(t).getDistance(current);
-                current = Position(t);
+                dist += Map::pConvert(t).getDistance(current);
+                current = Map::pConvert(t);
                 tiles.push_back(t);
             }
             reachable = true;
@@ -110,8 +110,8 @@ namespace BWEB::PathFinding
 
     void Path::createPath(const Position s, const Position t, function <bool(const TilePosition)> collision, vector<TilePosition> direction)
     {
-        TilePosition source(s);
-        TilePosition target(t);
+        TilePosition source = Map::tConvert(s);
+        TilePosition target = Map::tConvert(t);
         auto maxDist = source.getDistance(target);
 
         if (source == target || source == TilePosition(0, 0) || target == TilePosition(0, 0))
@@ -123,18 +123,18 @@ namespace BWEB::PathFinding
         const auto createPath = [&]() {
             tiles.push_back(target);
             TilePosition check = parentGrid[target.x][target.y];
-            dist += Position(target).getDistance(Position(check));
+            dist += Map::pConvert(target).getDistance(Map::pConvert(check));
 
             do {
                 tiles.push_back(check);
                 TilePosition prev = check;
                 check = parentGrid[check.x][check.y];
-                dist += Position(prev).getDistance(Position(check));
+                dist += Map::pConvert(prev).getDistance(Map::pConvert(check));
             } while (check != source);
 
             // HACK: Try to make it more accurate to positions instead of tiles
-            auto correctionSource = Position(*(tiles.end() - 1));
-            auto correctionTarget = Position(*(tiles.begin() + 1));
+            auto correctionSource = Map::pConvert(*(tiles.end() - 1));
+            auto correctionTarget = Map::pConvert(*(tiles.begin() + 1));
             dist += s.getDistance(correctionSource);
             dist += t.getDistance(correctionTarget);
             dist -= 64.0;

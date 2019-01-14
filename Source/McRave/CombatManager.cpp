@@ -50,7 +50,7 @@ namespace McRave::Combat {
                         unit.setLocalState(LocalState::Retreat);
 
                     // Engage
-                    else if ((Broodwar->getFrameCount() > 10000 && (unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && (unit.getPosition().getDistance(unit.getTarget().getPosition()) < 96.0 || Util::unitInRange(unit)))
+                    else if ((Broodwar->getFrameCount() > 10000 && !unit.getType().isFlyer() && (unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && (unit.getPosition().getDistance(unit.getTarget().getPosition()) < 96.0 || Util::unitInRange(unit)))
                         || ((unit.unit()->isCloaked() || unit.isBurrowed()) && !Command::overlapsEnemyDetection(unit.getEngagePosition()))
                         || (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && Util::unitInRange(unit))
                         || (unit.getSimState() == SimState::Win && unit.getGlobalState() == GlobalState::Engaging))

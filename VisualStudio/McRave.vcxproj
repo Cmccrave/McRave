@@ -200,7 +200,7 @@
     <TargetName>$(ProjectName)T</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>..\..\..\include;..\Source\BWEB;..\Source\BWEM;$(IncludePath)</IncludePath>
+    <IncludePath>..\Source\Horizon;..\..\..\include;..\Source\BWEB;..\Source\BWEM;$(IncludePath)</IncludePath>
     <LibraryPath>..\..\..\lib;$(LibraryPath)</LibraryPath>
     <OutDir>..\..\..\..\StarCraft McRave\bwapi-data\AI\</OutDir>
     <TargetName>$(ProjectName)d</TargetName>

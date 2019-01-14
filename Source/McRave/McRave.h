@@ -17,7 +17,7 @@ namespace McRave
     class UnitInfo;
     class ResourceInfo;
     class PlayerInfo;
-    
+
     struct Line {
         double yInt;
         double slope;

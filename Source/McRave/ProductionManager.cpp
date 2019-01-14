@@ -462,11 +462,16 @@ namespace McRave::Production {
         {
             int offset = 16;
             double best = 0.0;
-            UnitType bestType = UnitTypes::None; 
-                        
+            UnitType bestType = UnitTypes::None;
+
             if (building.getType() == UnitTypes::Zerg_Larva && BuildOrder::buildCount(Zerg_Overlord) > vis(Zerg_Overlord) + trainedThisFrame[Zerg_Overlord]) {
                 building.unit()->morph(Zerg_Overlord);
                 trainedThisFrame[Zerg_Overlord]++;
+                return;
+            }
+
+            if (building.getType() == UnitTypes::Zerg_Larva && Buildings::overlapsQueue(UnitTypes::Zerg_Larva, building.getTilePosition())) {
+                building.unit()->stop();
                 return;
             }
 
@@ -581,12 +586,11 @@ namespace McRave::Production {
                 if (!building.unit()
                     || building.getRole() != Role::Production
                     || !building.unit()->isCompleted()
-                    || Broodwar->getFrameCount() % Broodwar->getRemainingLatencyFrames() != 0
                     || building.getRemainingTrainFrames() >= Broodwar->getRemainingLatencyFrames())
                     continue;
-                
+
                 // TODO: Combine into one - iterate all commands and return when true
-                if (!building.getType().isResourceDepot() || building.getType() == UnitTypes::Zerg_Hatchery) {
+                if (!building.getType().isResourceDepot() || building.getType().getRace() == Races::Zerg) {
                     idleProduction.erase(building.unit());
                     idleUpgrade.erase(building.unit());
                     idleTech.erase(building.unit());
