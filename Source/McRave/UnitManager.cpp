@@ -20,7 +20,7 @@ namespace McRave::Units {
         double immThreat, proxThreat;
         double globalAllyGroundStrength, globalEnemyGroundStrength;
         double globalAllyAirStrength, globalEnemyAirStrength;
-        double allyDefense;
+        double allyDefense, enemyDefense;
         int supply = 8;
         int scoutDeadFrame = 0;
         Position armyCenter;
@@ -135,6 +135,7 @@ namespace McRave::Units {
             immThreat = 0.0;
             proxThreat = 0.0;
             allyDefense = 0.0;
+            enemyDefense = 0.0;
             splashTargets.clear();
             enemyTypes.clear();
             myVisibleTypes.clear();
@@ -193,8 +194,10 @@ namespace McRave::Units {
                     enemyTypes[unit.getType()] += 1;
 
                 // If unit is not a worker or building, add it to global strength	
-                if (!unit.getType().isWorker())
+                if (!unit.getType().isWorker() && !unit.getType().isBuilding())
                     unit.getType().isFlyer() ? globalEnemyAirStrength += unit.getVisibleAirStrength() : globalEnemyGroundStrength += unit.getVisibleGroundStrength();
+                else if (unit.getType().isBuilding())
+                    enemyDefense += unit.getVisibleGroundStrength();
 
                 // If a unit is threatening our position
                 if (unit.isThreatening() && (unit.getType().groundWeapon().damageAmount() > 0 || unit.getType() == UnitTypes::Terran_Bunker)) {
@@ -237,6 +240,8 @@ namespace McRave::Units {
                 // If unit is not a building and deals damage, add it to global strength	
                 if (!unit.getType().isBuilding())
                     unit.getType().isFlyer() ? globalAllyAirStrength += unit.getVisibleAirStrength() : globalAllyGroundStrength += unit.getVisibleGroundStrength();
+                else
+                    allyDefense += unit.getVisibleGroundStrength();
             }
 
             for (auto &u : neutrals) {
@@ -339,11 +344,12 @@ namespace McRave::Units {
     map<UnitType, int>& getEnemyTypes() { return enemyTypes; }
     double getImmThreat() { return immThreat; }
     double getProxThreat() { return proxThreat; }
-    double getGlobalAllyGroundStrength() { return globalAllyGroundStrength; }
+    double myGroundStrength() { return globalAllyGroundStrength; }
     double getGlobalEnemyGroundStrength() { return globalEnemyGroundStrength; }
-    double getGlobalAllyAirStrength() { return globalAllyAirStrength; }
+    double myAirStrength() { return globalAllyAirStrength; }
     double getGlobalEnemyAirStrength() { return globalEnemyAirStrength; }
     double getAllyDefense() { return allyDefense; }
+    double getEnemyDefense() { return enemyDefense; }
     int getSupply() { return supply; }
     int getMyRoleCount(Role role) { return myRoles[role]; }
     int getMyVisible(UnitType type) { return myVisibleTypes[type]; }

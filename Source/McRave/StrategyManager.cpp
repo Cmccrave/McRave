@@ -45,7 +45,7 @@ namespace McRave::Strategy {
         void checkHoldChoke()
         {
             holdChoke = BuildOrder::isFastExpand()
-                || Units::getGlobalAllyGroundStrength() > Units::getGlobalEnemyGroundStrength()
+                || Units::myGroundStrength() > Units::getGlobalEnemyGroundStrength()
                 || BuildOrder::isWallNat()
                 || BuildOrder::isHideTech()
                 || Units::getSupply() > 60
@@ -519,7 +519,7 @@ namespace McRave::Strategy {
             else if (Broodwar->self()->getRace() == Races::Terran)
                 allUnits.insert(allUnits.end(), { Terran_Marine, Terran_Medic, Terran_Vulture, Terran_Siege_Tank_Tank_Mode, Terran_Goliath, Terran_Wraith, Terran_Dropship, Terran_Science_Vessel, Terran_Valkyrie });
             else if (Broodwar->self()->getRace() == Races::Zerg)
-                allUnits.insert(allUnits.end(), { Zerg_Drone, Zerg_Zergling, Zerg_Hydralisk, Zerg_Lurker, Zerg_Mutalisk, Zerg_Scourge });
+                allUnits.insert(allUnits.end(), { /*Zerg_Drone,*/ Zerg_Zergling, Zerg_Hydralisk, Zerg_Lurker, Zerg_Mutalisk, Zerg_Scourge });
 
             // TODO: tier 1,2,3 vectors
             if (Broodwar->getFrameCount() > 20000) {
@@ -534,45 +534,41 @@ namespace McRave::Strategy {
                 }
             }
 
+            if (Broodwar->self()->getRace() == Races::Zerg) {
+                unitScore[Zerg_Drone] = (Units::myGroundStrength() + Units::getAllyDefense()) / (Units::getGlobalEnemyGroundStrength() - Units::getEnemyDefense());
+            }
+
             for (auto &u : Units::getEnemyUnits()) {
                 auto &unit = u.second;
                 auto type = unit.getType();
 
-                if (Broodwar->self()->getRace() == Races::Zerg && type.isWorker()) {
-                    UnitType t = Zerg_Drone;
+                for (auto &t : allUnits) {
+
+                    UnitInfo dummy;
+                    dummy.createDummy(t);
+
+                    if (!unit.getPosition().isValid() || type.isBuilding() || type.isSpell())
+                        continue;
+
+                    double myDPS = type.isFlyer() ? Math::airDPS(dummy) : Math::groundDPS(dummy);
+                    double enemyDPS = t.isFlyer() ? Math::airDPS(unit) : Math::groundDPS(unit);
+
+                    if (unit.getType() == Terran_Medic)
+                        enemyDPS = 0.775;
+
+                    double overallMatchup = enemyDPS > 0.0 ? (myDPS, myDPS / enemyDPS) : myDPS;
+                    double distTotal = Terrain::getEnemyStartingPosition().isValid() ? BWEB::Map::getMainPosition().getDistance(Terrain::getEnemyStartingPosition()) : 1.0;
+                    double distUnit = Terrain::getEnemyStartingPosition().isValid() ? unit.getPosition().getDistance(BWEB::Map::getMainPosition()) / distTotal : 1.0;
+
+                    if (distUnit == 0.0)
+                        distUnit = 0.1;
+
                     double vis = max(1.0, (double(Broodwar->self()->visibleUnitCount(t))));
-                    int s = t.supplyRequired();
-                    unitScore[t] = (5.0 / max(1.0, vis));
-                }
-                else {
-                    for (auto &t : allUnits) {
 
-                        UnitInfo dummy;
-                        dummy.createDummy(t);
-
-                        if (!unit.getPosition().isValid() || type.isBuilding() || type.isSpell())
-                            continue;
-
-                        double myDPS = type.isFlyer() ? Math::airDPS(dummy) : Math::groundDPS(dummy);
-                        double enemyDPS = t.isFlyer() ? Math::airDPS(unit) : Math::groundDPS(unit);
-
-                        if (unit.getType() == Terran_Medic)
-                            enemyDPS = 0.775;
-
-                        double overallMatchup = enemyDPS > 0.0 ? (myDPS, myDPS / enemyDPS) : myDPS;
-                        double distTotal = Terrain::getEnemyStartingPosition().isValid() ? BWEB::Map::getMainPosition().getDistance(Terrain::getEnemyStartingPosition()) : 1.0;
-                        double distUnit = Terrain::getEnemyStartingPosition().isValid() ? unit.getPosition().getDistance(BWEB::Map::getMainPosition()) / distTotal : 1.0;
-
-                        if (distUnit == 0.0)
-                            distUnit = 0.1;
-
-                        double vis = max(1.0, (double(Broodwar->self()->visibleUnitCount(t))));
-
-                        if (unitScore[t] <= 0.0)
-                            unitScore[t] += (overallMatchup / max(1.0, vis * distUnit));
-                        else
-                            unitScore[t] = (unitScore[t] * (999.0 / 1000.0)) + (overallMatchup / (1000.0 * vis * distUnit));
-                    }
+                    if (unitScore[t] <= 0.0)
+                        unitScore[t] += (overallMatchup / max(1.0, vis * distUnit));
+                    else
+                        unitScore[t] = (unitScore[t] * (999.0 / 1000.0)) + (overallMatchup / (1000.0 * vis * distUnit));
                 }
             }
 

@@ -367,6 +367,7 @@ namespace McRave::Grids
 
     float getEGroundCluster(WalkPosition here) { return eGroundCluster[here.x][here.y]; }
     float getEGroundCluster(Position here) { return getEGroundCluster(WalkPosition(here)); }
+
     float getEAirCluster(WalkPosition here) { return eAirCluster[here.x][here.y]; }
     float getEAirCluster(Position here) { return getEAirCluster(WalkPosition(here)); }
 
@@ -377,6 +378,7 @@ namespace McRave::Grids
     int getMobility(Position here) { return getMobility(WalkPosition(here)); }
 
     double getDistanceHome(WalkPosition here) { return distanceHome[here.x][here.y]; }
+    double getDistanceHome(Position here) { return getDistanceHome(WalkPosition(here)); }
 
     int lastVisibleFrame(TilePosition t) { return visibleGrid[t.x][t.y]; }
     int lastVisitedFrame(WalkPosition w) { return visitedGrid[w.x][w.y]; }

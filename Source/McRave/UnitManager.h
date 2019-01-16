@@ -13,11 +13,12 @@ namespace McRave::Units {
     std::map<BWAPI::UnitType, int>& getEnemyTypes();
     double getImmThreat();
     double getProxThreat();
-    double getGlobalAllyGroundStrength();
+    double myGroundStrength();
     double getGlobalEnemyGroundStrength();
-    double getGlobalAllyAirStrength();
+    double myAirStrength();
     double getGlobalEnemyAirStrength();
     double getAllyDefense();
+    double getEnemyDefense();
     int getSupply();
     int getMyRoleCount(Role);
     int getMyVisible(BWAPI::UnitType);

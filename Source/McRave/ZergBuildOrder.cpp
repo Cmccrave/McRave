@@ -30,25 +30,29 @@ namespace McRave::BuildOrder::Zerg {
         // Adding hatcheries when needed
         if (shouldExpand() || shouldAddProduction())
             itemQueue[Zerg_Hatchery] = Item(vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive) + 1);
-/*
-        if (Strategy::enemyFastExpand() && !rush)
-            itemQueue[Zerg_Hatchery] = Item(min(3, vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive) + 1));*/
 
         // Gas Trick
-        if (gasTrick) {            
+        if (gasTrick) {
             if (Units::getSupply() == 18 && vis(Zerg_Drone) == 9) {
                 if (Broodwar->self()->minerals() >= 80)
                     itemQueue[Zerg_Extractor] = Item(1);
                 if (vis(Zerg_Extractor) > 0)
                     itemQueue[Zerg_Extractor] = Item(0);
-            }           
-        }        
+            }
+        }
 
         // When to tech
         if (Broodwar->getFrameCount() > 5000 && vis(Zerg_Hatchery) > (1 + (int)techList.size()) * 2)
             getTech = true;
         if (techComplete())
             techUnit = UnitTypes::None;
+
+        // Adding Sunkens/Spores
+        auto sunkenCount = int(Units::getGlobalEnemyGroundStrength() / (Units::getAllyDefense() + Units::myGroundStrength()));
+        auto sporeCount = int(Units::getGlobalEnemyAirStrength() / (Units::getAllyDefense() + Units::myAirStrength()));
+
+
+        itemQueue[Zerg_Creep_Colony] =          Item(sunkenCount);
 
         // Overlord
         if (!bookSupply) {

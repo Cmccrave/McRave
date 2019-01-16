@@ -71,28 +71,28 @@ namespace McRave::Util {
             if (BuildOrder::isHideTech() && completedDefenders == 1 && Units::getMyUnits().size() == 1)
                 return true;
 
-            if (BuildOrder::getCurrentBuild() == "PFFE") {
+            if (BuildOrder::getCurrentBuild() == "FFE") {
                 if (Units::getEnemyCount(UnitTypes::Zerg_Zergling) >= 5) {
-                    if (Strategy::getEnemyBuild() == "Z5Pool" && Units::getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
+                    if (Strategy::getEnemyBuild() == "5Pool" && Units::myGroundStrength() < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
                         return true;
-                    if (Strategy::getEnemyBuild() == "Z9Pool" && Units::getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 5 && visibleDefenders >= 2)
+                    if (Strategy::getEnemyBuild() == "9Pool" && Units::myGroundStrength() < 4.00 && completedDefenders < 5 && visibleDefenders >= 2)
                         return true;
-                    if (!Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && Units::getGlobalAllyGroundStrength() < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
+                    if (!Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && Units::myGroundStrength() < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
                         return true;
-                    if (Units::getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
+                    if (Units::myGroundStrength() < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
                         return true;
                 }
                 else {
-                    if (Strategy::getEnemyBuild() == "Z5Pool" && Units::getGlobalAllyGroundStrength() < 1.00 && completedDefenders < 2 && visibleDefenders >= 2)
+                    if (Strategy::getEnemyBuild() == "5Pool" && Units::myGroundStrength() < 1.00 && completedDefenders < 2 && visibleDefenders >= 2)
                         return true;
-                    if (!Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && Units::getGlobalAllyGroundStrength() < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
+                    if (!Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && Units::myGroundStrength() < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
                         return true;
                 }
             }
-            else if (BuildOrder::getCurrentBuild() == "P2GateExpand") {
-                if (Strategy::getEnemyBuild() == "Z5Pool" && Units::getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 2)
+            else if (BuildOrder::getCurrentBuild() == "2Gate") {
+                if (Strategy::getEnemyBuild() == "5Pool" && Units::myGroundStrength() < 4.00 && completedDefenders < 2)
                     return true;
-                if (Strategy::getEnemyBuild() == "Z9Pool" && Units::getGlobalAllyGroundStrength() < 4.00 && completedDefenders < 3)
+                if (Strategy::getEnemyBuild() == "9Pool" && Units::myGroundStrength() < 4.00 && completedDefenders < 3)
                     return true;
             }
         }
@@ -103,7 +103,7 @@ namespace McRave::Util {
         else if (Broodwar->self()->getRace() == Races::Zerg)
             return false;
 
-        if (Strategy::enemyProxy() && Strategy::getEnemyBuild() != "P2Gate" && Units::getImmThreat() > Units::getGlobalAllyGroundStrength() + Units::getAllyDefense())
+        if (Strategy::enemyProxy() && Strategy::getEnemyBuild() != "2Gate" && Units::getImmThreat() > Units::myGroundStrength() + Units::getAllyDefense())
             return true;
 
         return false;
@@ -132,7 +132,7 @@ namespace McRave::Util {
         }
 
         // If we have no combat units and there is a threat
-        if (Units::getImmThreat() > Units::getGlobalAllyGroundStrength() + Units::getAllyDefense() && Broodwar->getFrameCount() < 10000) {
+        if (Units::getImmThreat() > Units::myGroundStrength() + Units::getAllyDefense() && Broodwar->getFrameCount() < 10000) {
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) == 0)
                     return true;

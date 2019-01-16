@@ -33,7 +33,8 @@ namespace McRave::BuildOrder::Zerg {
         lingLimit =     8;
 
         bool transitionReady = false;
-
+        
+        
         // Check if locked opener
         if (currentOpener == "10Hatch") {
             gasTrick =      vis(Zerg_Hatchery) == 1;
@@ -64,9 +65,8 @@ namespace McRave::BuildOrder::Zerg {
                 itemQueue[Zerg_Overlord] =              Item(1 + (s >= 18) + (s >= 32) + (2 * (s >= 50)));
                 itemQueue[Zerg_Lair] =					Item(Broodwar->self()->gas() > 90);
                 itemQueue[Zerg_Spire] =                 Item(com(Zerg_Lair) >= 1);
-                itemQueue[Zerg_Creep_Colony] =          Item((vis(Zerg_Spire) >= 1) * 2 + (com(Zerg_Spire) >= 1) * 2);
             }
-        }        
+        }
     }
 
     void PoolHatch()

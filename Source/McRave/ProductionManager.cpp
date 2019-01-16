@@ -343,11 +343,11 @@ namespace McRave::Production {
                     return (Broodwar->self()->getUpgradeLevel(Terran_Infantry_Weapons) > Broodwar->self()->getUpgradeLevel(Terran_Infantry_Armor) || Broodwar->self()->isUpgrading(Terran_Infantry_Weapons));
 
                 case Terran_Vehicle_Weapons:
-                    return (Units::getGlobalAllyGroundStrength() > 20.0);
+                    return (Units::myGroundStrength() > 20.0);
                 case Terran_Vehicle_Plating:
                     return (Broodwar->self()->getUpgradeLevel(Terran_Vehicle_Weapons) > Broodwar->self()->getUpgradeLevel(Terran_Vehicle_Plating) || Broodwar->self()->isUpgrading(Terran_Vehicle_Weapons));
                 case Terran_Ship_Weapons:
-                    return (Units::getGlobalAllyAirStrength() > 20.0);
+                    return (Units::myAirStrength() > 20.0);
                 case Terran_Ship_Plating:
                     return (Broodwar->self()->getUpgradeLevel(Terran_Ship_Weapons) > Broodwar->self()->getUpgradeLevel(Terran_Ship_Plating) || Broodwar->self()->isUpgrading(Terran_Ship_Weapons));
                 }

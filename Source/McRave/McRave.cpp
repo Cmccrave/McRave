@@ -16,7 +16,7 @@
 // BWEB Destination walls not working
 // Proxy builds? BWEB proxy block?
 // Proxy 2 gate reaction 
-// Drone scoring based on my strength vs enemy strength
+// Drone scoring based on my strength + defense vs enemy strength - defense
 // Zerg macro hatchery fixes
 // Check Muta micro to ensure we are overshooting movement to not decel near targets
 // Unit Interface get distance is edge to point, lots of mistakes!
