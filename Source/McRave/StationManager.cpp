@@ -4,7 +4,7 @@ using namespace BWAPI;
 using namespace std;
 
 namespace McRave::Stations {
-    
+
     namespace {
         map <Unit, const BWEB::Stations::Station *> myStations, enemyStations;
         map<const BWEB::Stations::Station *, std::map<const BWEB::Stations::Station *, BWEB::PathFinding::Path>> stationNetwork;
@@ -99,20 +99,16 @@ namespace McRave::Stations {
 
     void removeStation(Unit unit)
     {
-        auto station = BWEB::Stations::getClosestStation(unit->getTilePosition());
-        if (!station || !unit->getType().isResourceDepot())
-            return;
+        auto &list = unit->getPlayer() == Broodwar->self() ? myStations : enemyStations;
+        auto &station = list[unit];
+        auto state = ResourceState::None;
 
-        // 1) Change resource state to not mineable
-        if (unit->getPlayer() == Broodwar->self()) {
-            for (auto &mineral : station->BWEMBase()->Minerals())
-                Resources::getMyMinerals()[mineral->Unit()].setResourceState(ResourceState::None);
-            for (auto &gas : station->BWEMBase()->Geysers())
-                Resources::getMyGas()[gas->Unit()].setResourceState(ResourceState::None);
-            myStations.erase(unit);
-        }
-        else
-            enemyStations.erase(unit);
+        // 1) Change resource state of resources connected to not mineable
+        for (auto &mineral : station->BWEMBase()->Minerals())
+            Resources::getMyMinerals()[mineral->Unit()].setResourceState(ResourceState::None);
+        for (auto &gas : station->BWEMBase()->Geysers())
+            Resources::getMyGas()[gas->Unit()].setResourceState(ResourceState::None);
+        list.erase(unit);
 
         // 2) Remove any territory it was in
         if (unit->getTilePosition().isValid() && mapBWEM.GetArea(unit->getTilePosition())) {
@@ -139,7 +135,7 @@ namespace McRave::Stations {
             return true;
         else if ((Players::getPlayers().size() > 1 || Players::vZ()) && !main && !nat && defenseCount < int(station.DefenseLocations().size()))
             return true;
-        else if (station.getDefenseCount() < 1 && (Units::getGlobalEnemyAirStrength() > 0.0 || Strategy::getEnemyBuild() == "Z2HatchMuta" || Strategy::getEnemyBuild() == "Z3HatchMuta"))
+        else if (station.getDefenseCount() < 1 && (Players::getStrength(PlayerState::Enemy).airToGround > 0.0 || Strategy::getEnemyBuild() == "Z2HatchMuta" || Strategy::getEnemyBuild() == "Z3HatchMuta"))
             return true;
         return false;
     }

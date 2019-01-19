@@ -120,8 +120,8 @@ namespace McRave::Resources {
             myGas.erase(resource);
 
         // Any workers that targeted that resource now have no target
-        for (auto &u : Units::getMyUnits()) {
-            UnitInfo& unit = u.second;
+        for (auto &u : Units::getUnits(PlayerState::Self)) {
+            UnitInfo &unit = *u;
             if (unit.hasResource() && unit.getResource().unit() == resource)
                 unit.setResource(nullptr);
         }

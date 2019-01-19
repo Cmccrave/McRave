@@ -2,23 +2,15 @@
 #include <BWAPI.h>
 
 namespace McRave::Units {
-
-    BWAPI::Position getArmyCenter();
+    
+    std::set<UnitInfo*> getUnits(PlayerState);
     std::set<BWAPI::Unit>& getSplashTargets();
-    std::map<BWAPI::Unit, UnitInfo>& getMyUnits();
-    std::map<BWAPI::Unit, UnitInfo>& getEnemyUnits();
-    std::map<BWAPI::Unit, UnitInfo>& getNeutralUnits();
     std::map<BWAPI::UnitSizeType, int>& getAllySizes();
     std::map<BWAPI::UnitSizeType, int>& getEnemySizes();
     std::map<BWAPI::UnitType, int>& getEnemyTypes();
     double getImmThreat();
     double getProxThreat();
-    double myGroundStrength();
-    double getGlobalEnemyGroundStrength();
-    double myAirStrength();
-    double getGlobalEnemyAirStrength();
-    double getAllyDefense();
-    double getEnemyDefense();
+    
     int getSupply();
     int getMyRoleCount(Role);
     int getMyVisible(BWAPI::UnitType);

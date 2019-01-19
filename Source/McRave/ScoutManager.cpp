@@ -191,8 +191,8 @@ namespace McRave::Scouts {
 
         void updateScouts()
         {
-            for (auto &u : Units::getMyUnits()) {
-                auto &unit = u.second;
+            for (auto &u : Units::getUnits(PlayerState::Self)) {
+                UnitInfo &unit = *u;
                 if (unit.getRole() == Role::Scout) {
                     updateAssignment(unit);
                     updateDecision(unit);

@@ -1,4 +1,5 @@
 #include "McRave.h"
+#include "EventManager.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -6,10 +7,11 @@ using namespace std;
 namespace McRave::Units {
 
     namespace {
-        map <Unit, UnitInfo> enemyUnits;
-        map <Unit, UnitInfo> myUnits;
-        map <Unit, UnitInfo> allyUnits;
-        map <Unit, UnitInfo> neutrals;
+
+        set <UnitInfo*> enemyUnits;
+        set <UnitInfo*> myUnits;
+        set <UnitInfo*> neutralUnits;
+        set <UnitInfo*> allyUnits;
         map <UnitSizeType, int> allySizes;
         map <UnitSizeType, int> enemySizes;
         map <UnitType, int> enemyTypes;
@@ -18,28 +20,181 @@ namespace McRave::Units {
         map <Role, int> myRoles;
         set<Unit> splashTargets;
         double immThreat, proxThreat;
-        double globalAllyGroundStrength, globalEnemyGroundStrength;
-        double globalAllyAirStrength, globalEnemyAirStrength;
-        double allyDefense, enemyDefense;
+        double myGroundStrength, myAirStrength;
+        double enemyGroundStrength, enemyAirStrength;
+        double myGroundDefense, myAirDefense;
+        double enemyGroundDefense, enemyAirDefense;
         int supply = 8;
         int scoutDeadFrame = 0;
-        Position armyCenter;
+
+        void resetValues()
+        {
+            immThreat = 0.0;
+            proxThreat = 0.0;
+            splashTargets.clear();
+            enemyTypes.clear();
+            myVisibleTypes.clear();
+            myCompleteTypes.clear();
+            supply = 0;
+
+            enemyUnits.clear();
+            myUnits.clear();
+            neutralUnits.clear();
+            allyUnits.clear();
+        }
+
+        void updateEnemies()
+        {
+            // Enemy
+            for (auto &p : Players::getPlayers()) {
+                PlayerInfo &player = p.second;
+                if (!player.isEnemy())
+                    continue;
+
+                for (auto &u : player.getUnits()) {
+                    UnitInfo &unit = u.second;
+                    enemyUnits.insert(&unit);
+
+                    // If this is a flying building that we haven't recognized as being a flyer, remove overlap tiles
+                    auto flyingBuilding = unit.unit()->exists() && !unit.isFlying() && (unit.unit()->getOrder() == Orders::LiftingOff || unit.unit()->getOrder() == Orders::BuildingLiftOff || unit.unit()->isFlying());
+                    if (flyingBuilding && unit.getLastTile().isValid())
+                        Events::customOnUnitLift(unit);
+
+                    // If unit is visible, update it
+                    if (unit.unit()->exists()) {
+                        unit.updateUnit();
+
+                        // TODO: Move to a UnitInfo flag
+                        if (unit.hasTarget() && (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Protoss_Scarab))
+                            splashTargets.insert(unit.getTarget().unit());
+
+                        if (unit.getType().isBuilding() && !unit.isFlying() && !BWEB::Map::isUsed(unit.getTilePosition()))
+                            Events::customOnUnitLand(unit);
+                    }
+
+                    // Must see a 3x3 grid of Tiles to set a unit to invalid position
+                    if (!unit.unit()->exists() && (!unit.isBurrowed() || Command::overlapsAllyDetection(unit.getPosition()) || (unit.getWalkPosition().isValid() && Grids::getAGroundCluster(unit.getWalkPosition()) > 0)))
+                        Events::customOnUnitDisappear(unit);
+
+                    // If unit has a valid type, update enemy composition tracking
+                    if (unit.getType().isValid())
+                        enemyTypes[unit.getType()] += 1;
+
+                    // If unit is not a worker or building, add it to global strength
+                    if (!unit.getType().isWorker()) {
+                        if (!unit.getType().isBuilding()) {
+                            enemyGroundStrength += unit.getVisibleGroundStrength();
+                            enemyAirStrength += unit.getVisibleAirStrength();
+                        }
+                        else {
+                            enemyGroundDefense += unit.getVisibleGroundStrength();
+                            enemyAirDefense += unit.getVisibleAirStrength();
+                        }
+                    }
+
+                    // If a unit is threatening our position
+                    if (unit.isThreatening() && (unit.getType().groundWeapon().damageAmount() > 0 || unit.getType() == UnitTypes::Terran_Bunker)) {
+                        if (unit.getType().isBuilding())
+                            immThreat += 1.50;
+                        else
+                            immThreat += unit.getVisibleGroundStrength();
+                    }
+                    if (unit.isThreatening())
+                        unit.circleRed();
+                }
+            }
+        }
+
+        void updateAllies()
+        {
+
+        }
+
+        void updateSelf()
+        {
+            // Mine
+            for (auto &p : Players::getPlayers()) {
+                PlayerInfo &player = p.second;
+                if (!player.isSelf())
+                    continue;
+
+                for (auto &u : player.getUnits()) {
+                    UnitInfo &unit = u.second;
+                    myUnits.insert(&unit);
+
+                    unit.updateUnit();
+                    updateRole(unit);
+
+                    auto type = unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType() : unit.getType();
+                    if (unit.unit()->isCompleted()) {
+                        myCompleteTypes[type] ++;
+                        myVisibleTypes[type] ++;
+                    }
+                    else {
+                        myVisibleTypes[type] ++;
+                    }
+
+                    supply += type.supplyRequired();
+
+                    // If unit is not a building and deals damage, add it to global strength	
+                    if (!unit.getType().isBuilding()) {
+                        myGroundStrength += unit.getVisibleGroundStrength();
+                        myAirStrength += unit.getVisibleAirStrength();
+                    }
+                    else {
+                        myGroundDefense += unit.getVisibleGroundStrength();
+                        myAirDefense += unit.getVisibleAirStrength();
+                    }
+                }
+            }
+        }
+
+        void updateNeutrals()
+        {
+            // Neutrals
+            for (auto &p : Players::getPlayers()) {
+                PlayerInfo &player = p.second;
+                if (!player.isNeutral())
+                    continue;
+
+                for (auto &u : player.getUnits()) {
+                    UnitInfo &unit = u.second;
+                    neutralUnits.insert(&unit);
+
+                    if (!unit.unit() || !unit.unit()->exists())
+                        continue;
+                }
+            }
+        }
 
         void updateUnitSizes()
         {
             allySizes.clear();
             enemySizes.clear();
 
-            for (auto &u : myUnits) {
-                auto &unit = u.second;
-                if (unit.getRole() == Role::Combat)
-                    allySizes[unit.getType().size()]++;
+            for (auto &p : Players::getPlayers()) {
+                PlayerInfo &player = p.second;
+                if (!player.isSelf())
+                    continue;
+
+                for (auto &u : player.getUnits()) {
+                    UnitInfo &unit = u.second;
+                    if (unit.getRole() == Role::Combat)
+                        allySizes[unit.getType().size()]++;
+                }
             }
 
-            for (auto &u : enemyUnits) {
-                auto &unit = u.second;
-                if (!unit.getType().isBuilding() && !unit.getType().isWorker())
-                    enemySizes[unit.getType().size()]++;
+            for (auto &p : Players::getPlayers()) {
+                PlayerInfo &player = p.second;
+                if (!player.isEnemy())
+                    continue;
+
+                for (auto &u : player.getUnits()) {
+                    UnitInfo &unit = u.second;
+                    if (!unit.getType().isBuilding() && !unit.getType().isWorker())
+                        enemySizes[unit.getType().size()]++;
+
+                }
             }
         }
 
@@ -127,139 +282,22 @@ namespace McRave::Units {
 
         void updateUnits()
         {
-            // Reset calculations and caches
-            globalEnemyGroundStrength = 0.0;
-            globalEnemyAirStrength = 0.0;
-            globalAllyGroundStrength = 0.0;
-            globalAllyAirStrength = 0.0;
-            immThreat = 0.0;
-            proxThreat = 0.0;
-            allyDefense = 0.0;
-            enemyDefense = 0.0;
-            splashTargets.clear();
-            enemyTypes.clear();
-            myVisibleTypes.clear();
-            myCompleteTypes.clear();
-            supply = 0;
-
-            // Update Enemy Units
-            for (auto &u : enemyUnits) {
-                UnitInfo &unit = u.second;
-
-                // If this is a flying building that we haven't recognized as being a flyer, remove overlap tiles
-                auto flyingBuilding = unit.unit()->exists() && !unit.isFlying() && (unit.unit()->getOrder() == Orders::LiftingOff || unit.unit()->getOrder() == Orders::BuildingLiftOff || unit.unit()->isFlying());
-
-                if (flyingBuilding && unit.getLastTile().isValid()) {
-                    for (int x = unit.getLastTile().x; x < unit.getLastTile().x + unit.getType().tileWidth(); x++) {
-                        for (int y = unit.getLastTile().y; y < unit.getLastTile().y + unit.getType().tileHeight(); y++) {
-                            TilePosition t(x, y);
-                            if (!t.isValid())
-                                continue;
-
-                            BWEB::Map::removeUsed(t, 1, 1);
-                        }
-                    }
-                }
-
-                // If unit is visible, update it
-                if (unit.unit()->exists()) {
-                    unit.updateUnit();
-
-                    if (unit.hasTarget() && (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Protoss_Scarab))
-                        splashTargets.insert(unit.getTarget().unit());
-
-                    if (unit.getType().isBuilding() && !unit.isFlying() && unit.unit()->exists() && !BWEB::Map::isUsed(unit.getTilePosition()))
-                        BWEB::Map::addUsed(unit.getTilePosition(), unit.getType().tileWidth(), unit.getType().tileHeight());
-                }
-
-                // Must see a 3x3 grid of Tiles to set a unit to invalid position
-                if (!unit.unit()->exists() && (!unit.isBurrowed() || Command::overlapsAllyDetection(unit.getPosition()) || (unit.getWalkPosition().isValid() && Grids::getAGroundCluster(unit.getWalkPosition()) > 0)) && unit.getPosition().isValid()) {
-                    bool move = true;
-                    for (int x = unit.getTilePosition().x - 1; x < unit.getTilePosition().x + 1; x++) {
-                        for (int y = unit.getTilePosition().y - 1; y < unit.getTilePosition().y + 1; y++) {
-                            TilePosition t(x, y);
-                            if (t.isValid() && !Broodwar->isVisible(t))
-                                move = false;
-                        }
-                    }
-                    if (move) {
-                        unit.setPosition(Positions::Invalid);
-                        unit.setTilePosition(TilePositions::Invalid);
-                        unit.setWalkPosition(WalkPositions::Invalid);
-                    }
-                }
-
-                // If unit has a valid type, update enemy composition tracking
-                if (unit.getType().isValid())
-                    enemyTypes[unit.getType()] += 1;
-
-                // If unit is not a worker or building, add it to global strength	
-                if (!unit.getType().isWorker() && !unit.getType().isBuilding())
-                    unit.getType().isFlyer() ? globalEnemyAirStrength += unit.getVisibleAirStrength() : globalEnemyGroundStrength += unit.getVisibleGroundStrength();
-                else if (unit.getType().isBuilding())
-                    enemyDefense += unit.getVisibleGroundStrength();
-
-                // If a unit is threatening our position
-                if (unit.isThreatening() && (unit.getType().groundWeapon().damageAmount() > 0 || unit.getType() == UnitTypes::Terran_Bunker)) {
-                    if (unit.getType().isBuilding())
-                        immThreat += 1.50;
-                    else
-                        immThreat += unit.getVisibleGroundStrength();
-                }
-                if (unit.isThreatening())
-                    unit.circleRed();
-            }
-
-            // Update myUnits
-            double centerCluster = 0.0;
-            for (auto &u : myUnits) {
-                auto &unit = u.second;
-
-                unit.updateUnit();
-                updateRole(unit);
-
-                if (unit.getRole() == Role::Combat) {
-                    double g = Grids::getAGroundCluster(unit.getWalkPosition()) + Grids::getAAirCluster(unit.getWalkPosition());
-                    if (g > centerCluster) {
-                        centerCluster = g;
-                        armyCenter = unit.getPosition();
-                    }
-                }
-
-                auto type = unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType() : unit.getType();
-                if (unit.unit()->isCompleted()) {
-                    myCompleteTypes[type] ++;
-                    myVisibleTypes[type] ++;
-                }
-                else {
-                    myVisibleTypes[type] ++;
-                }
-
-                supply += type.supplyRequired();
-
-                // If unit is not a building and deals damage, add it to global strength	
-                if (!unit.getType().isBuilding())
-                    unit.getType().isFlyer() ? globalAllyAirStrength += unit.getVisibleAirStrength() : globalAllyGroundStrength += unit.getVisibleGroundStrength();
-                else
-                    allyDefense += unit.getVisibleGroundStrength();
-            }
-
-            for (auto &u : neutrals) {
-                auto &unit = u.second;
-                if (!unit.unit() || !unit.unit()->exists())
-                    continue;
-            }
+            updateEnemies();
+            updateAllies();
+            updateNeutrals();
+            updateSelf();
         }
     }
 
     void onFrame()
     {
         Visuals::startPerfTest();
+        resetValues();
         updateUnitSizes();
         updateUnits();
         Visuals::endPerfTest("Units");
     }
-       
+
     int getEnemyCount(UnitType t)
     {
         map<UnitType, int>::iterator itr = enemyTypes.find(t);
@@ -270,7 +308,9 @@ namespace McRave::Units {
 
     void storeUnit(Unit unit)
     {
-        auto &info = unit->getPlayer() == Broodwar->self() ? myUnits[unit] : (unit->getPlayer() == Broodwar->enemy() ? enemyUnits[unit] : allyUnits[unit]);
+        auto &player = Players::getPlayers()[unit->getPlayer()];
+        auto &info = player.getUnits()[unit];
+
         info.setUnit(unit);
         info.updateUnit();
 
@@ -281,22 +321,10 @@ namespace McRave::Units {
     void removeUnit(Unit unit)
     {
         BWEB::Map::onUnitDestroy(unit);
+        auto &player = Players::getPlayers()[unit->getPlayer()];
+        auto &info = player.getUnits()[unit];
 
-        for (auto &u : myUnits) {
-            auto &info = u.second;
-            if (info.hasTarget() && info.getTarget().unit() == unit)
-                info.setTarget(nullptr);
-        }
-
-        for (auto &u : enemyUnits) {
-            auto &info = u.second;
-            if (info.hasTarget() && info.getTarget().unit() == unit)
-                info.setTarget(nullptr);
-        }
-
-        if (myUnits.find(unit) != myUnits.end()) {
-            auto &info = myUnits[unit];
-
+        if (player.isSelf()) {
             if (info.hasResource())
                 info.getResource().setGathererCount(info.getResource().getGathererCount() - 1);
             if (info.getRole() != Role::None)
@@ -305,20 +333,18 @@ namespace McRave::Units {
                 scoutDeadFrame = Broodwar->getFrameCount();
 
             Transports::removeUnit(unit);
-            myUnits.erase(unit);
         }
-        else if (enemyUnits.find(unit) != enemyUnits.end())
-            enemyUnits.erase(unit);
-        else if (allyUnits.find(unit) != allyUnits.end())
-            allyUnits.erase(unit);
-        else if (neutrals.find(unit) != neutrals.end())
-            neutrals.erase(unit);
+        info.setTarget(nullptr);
+
+        player.getUnits().erase(unit);
     }
 
     void morphUnit(Unit unit)
     {
-        if (myUnits.find(unit) != myUnits.end()) {
-            auto &info = myUnits[unit];
+        auto &player = Players::getPlayers()[unit->getPlayer()];
+        auto &info = player.getUnits()[unit];
+
+        if (player.isSelf()) {
             info.setUnit(unit);
             info.updateUnit();
 
@@ -333,23 +359,29 @@ namespace McRave::Units {
             info.setTarget(nullptr);
         }
     }
+    
+    set<UnitInfo*> getUnits(PlayerState state)
+    {
+        switch (state) {
 
-    Position getArmyCenter() { return armyCenter; }
+        case PlayerState::Ally:
+            return allyUnits;
+        case PlayerState::Enemy:
+            return enemyUnits;
+        case PlayerState::Neutral:
+            return neutralUnits;
+        case PlayerState::Self:
+            return myUnits;
+        }
+        return set<UnitInfo*>{};
+    }
+
     set<Unit>& getSplashTargets() { return splashTargets; }
-    map<Unit, UnitInfo>& getMyUnits() { return myUnits; }
-    map<Unit, UnitInfo>& getEnemyUnits() { return enemyUnits; }
-    map<Unit, UnitInfo>& getNeutralUnits() { return neutrals; }
     map<UnitSizeType, int>& getAllySizes() { return allySizes; }
     map<UnitSizeType, int>& getEnemySizes() { return enemySizes; }
     map<UnitType, int>& getEnemyTypes() { return enemyTypes; }
     double getImmThreat() { return immThreat; }
     double getProxThreat() { return proxThreat; }
-    double myGroundStrength() { return globalAllyGroundStrength; }
-    double getGlobalEnemyGroundStrength() { return globalEnemyGroundStrength; }
-    double myAirStrength() { return globalAllyAirStrength; }
-    double getGlobalEnemyAirStrength() { return globalEnemyAirStrength; }
-    double getAllyDefense() { return allyDefense; }
-    double getEnemyDefense() { return enemyDefense; }
     int getSupply() { return supply; }
     int getMyRoleCount(Role role) { return myRoles[role]; }
     int getMyVisible(UnitType type) { return myVisibleTypes[type]; }

@@ -6,8 +6,19 @@ using namespace std;
 namespace McRave::Combat {
 
     namespace {
-
+        multimap<double, Position> combatClusters;
         constexpr tuple commands{ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::defend, Command::hunt, Command::escort, Command::retreat, Command::move };
+
+        void updateClusters(UnitInfo& unit)
+        {
+            if (unit.getType() == UnitTypes::Protoss_High_Templar
+                || unit.getType() == UnitTypes::Zerg_Defiler
+                || unit.getType() == UnitTypes::Protoss_Dark_Archon)
+                return;
+
+            double strength = Grids::getAGroundCluster(unit.getWalkPosition()) + Grids::getAAirCluster(unit.getWalkPosition());
+            combatClusters.emplace(strength, unit.getPosition());
+        }
 
         void updateLocalState(UnitInfo& unit)
         {
@@ -32,7 +43,7 @@ namespace McRave::Combat {
                     || (unit.getType() == UnitTypes::Protoss_High_Templar && unit.getEnergy() < 75)
                     || Grids::getESplash(unit.getWalkPosition()) > 0
                     || (invisTarget && (unit.getPosition().getDistance(unit.getTarget().getPosition()) <= enemyReach || enemyThreat))
-                    || unit.getGlobalState() == GlobalState::Retreating)
+                    || unit.getGlobalState() == GlobalState::Retreat)
                     unit.setLocalState(LocalState::Retreat);
 
                 // Close enough to make a decision
@@ -53,19 +64,19 @@ namespace McRave::Combat {
                     else if ((Broodwar->getFrameCount() > 10000 && !unit.getType().isFlyer() && (unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && (unit.getPosition().getDistance(unit.getTarget().getPosition()) < 96.0 || Util::unitInRange(unit)))
                         || ((unit.unit()->isCloaked() || unit.isBurrowed()) && !Command::overlapsEnemyDetection(unit.getEngagePosition()))
                         || (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && Util::unitInRange(unit))
-                        || (unit.getSimState() == SimState::Win && unit.getGlobalState() == GlobalState::Engaging))
+                        || (unit.getSimState() == SimState::Win && unit.getGlobalState() == GlobalState::Attack))
                         unit.setLocalState(LocalState::Attack);
                     else
                         unit.setLocalState(LocalState::Retreat);
                 }
-                else if (unit.getGlobalState() == GlobalState::Retreating) {
+                else if (unit.getGlobalState() == GlobalState::Attack) {
                     unit.setLocalState(LocalState::Retreat);
                 }
                 else {
                     unit.setLocalState(LocalState::Attack);
                 }
             }
-            else if (unit.getGlobalState() == GlobalState::Retreating) {
+            else if (unit.getGlobalState() == GlobalState::Attack) {
                 unit.setLocalState(LocalState::Retreat);
             }
             else {
@@ -79,19 +90,19 @@ namespace McRave::Combat {
                 if ((!BuildOrder::isFastExpand() && Strategy::enemyFastExpand())
                     || (Strategy::enemyProxy() && !Strategy::enemyRush())
                     || BuildOrder::isRush())
-                    unit.setGlobalState(GlobalState::Engaging);
+                    unit.setGlobalState(GlobalState::Attack);
 
                 else if ((Strategy::enemyRush() && !Players::vT())
                     || (!Strategy::enemyRush() && BuildOrder::isHideTech() && BuildOrder::isOpener())
                     || unit.getType().isWorker()
                     || (Broodwar->getFrameCount() < 15000 && BuildOrder::isPlayPassive())
-                    || (unit.getType() == UnitTypes::Protoss_Corsair && !BuildOrder::firstReady() && Units::getGlobalEnemyAirStrength() > 0.0))
-                    unit.setGlobalState(GlobalState::Retreating);
+                    || (unit.getType() == UnitTypes::Protoss_Corsair && !BuildOrder::firstReady() && Players::getStrength(PlayerState::Enemy).airToAir > 0.0))
+                    unit.setGlobalState(GlobalState::Retreat);
                 else
-                    unit.setGlobalState(GlobalState::Engaging);
+                    unit.setGlobalState(GlobalState::Attack);
             }
             else
-                unit.setGlobalState(GlobalState::Engaging);
+                unit.setGlobalState(GlobalState::Attack);
         }
 
         void updateDestination(UnitInfo& unit)
@@ -165,11 +176,14 @@ namespace McRave::Combat {
     }
 
     void onFrame() {
-        for (auto &u : Units::getMyUnits()) {
-            auto &unit = u.second;
+
+        for (auto &u : Units::getUnits(PlayerState::Self)) {
+            auto &unit = *u;
 
             if (unit.getRole() == Role::Combat) {
                 Horizon::simulate(unit);
+
+                updateClusters(unit);
                 updateGlobalState(unit);
                 updateLocalState(unit);
                 updateDestination(unit);
@@ -177,4 +191,6 @@ namespace McRave::Combat {
             }
         }
     }
+
+    multimap<double, Position>& getCombatClusters() { return combatClusters; }
 }

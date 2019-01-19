@@ -540,9 +540,9 @@ namespace McRave::Buildings {
             }
 
             // Update all my buildings
-            for (auto &b : Units::getMyUnits()) {
-                auto &building = b.second;
-                updateCommands(building);
+            for (auto &u : Units::getUnits(PlayerState::Self)) {
+                auto &unit = *u;
+                updateCommands(unit);
             }
         }
 
@@ -553,8 +553,8 @@ namespace McRave::Buildings {
             buildingsQueued.clear();
 
             // 1) Add up how many buildings we have assigned to workers
-            for (auto &u : Units::getMyUnits()) {
-                auto &unit = u.second;
+            for (auto &u : Units::getUnits(PlayerState::Self)) {
+                auto &unit = *u;
 
                 if (unit.getBuildingType().isValid() && unit.getBuildPosition().isValid())
                     buildingsQueued[unit.getBuildPosition()] = unit.getBuildingType();

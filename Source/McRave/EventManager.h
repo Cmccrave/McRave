@@ -33,7 +33,7 @@ namespace McRave::Events
         Units::removeUnit(unit);
 
         if (unit->getType().isResourceDepot())
-            Stations::removeStation(unit);        
+            Stations::removeStation(unit);
     }
 
     inline void onUnitMorph(BWAPI::Unit unit)
@@ -41,8 +41,8 @@ namespace McRave::Events
         BWEB::Map::onUnitMorph(unit);
 
         // My unit
-        if (unit->getPlayer() == BWAPI::Broodwar->self())  
-            Units::morphUnit(unit);        
+        if (unit->getPlayer() == BWAPI::Broodwar->self())
+            Units::morphUnit(unit);
 
         // Enemy unit
         else if (unit->getPlayer()->isEnemy(BWAPI::Broodwar->self())) {
@@ -78,5 +78,46 @@ namespace McRave::Events
 
         if (unit->getPlayer() == BWAPI::Broodwar->self())
             onUnitComplete(unit);
+    }
+
+    inline void customOnUnitLift(UnitInfo& unit)
+    {
+        for (int x = unit.getLastTile().x; x < unit.getLastTile().x + unit.getType().tileWidth(); x++) {
+            for (int y = unit.getLastTile().y; y < unit.getLastTile().y + unit.getType().tileHeight(); y++) {
+                TilePosition t(x, y);
+                if (!t.isValid())
+                    continue;
+
+                BWEB::Map::removeUsed(t, 1, 1);
+            }
+        }
+
+        if (unit.getType().isResourceDepot())
+            Stations::removeStation(unit.unit());
+    }
+
+    inline void customOnUnitLand(UnitInfo& unit)
+    {
+        BWEB::Map::addUsed(unit.getTilePosition(), unit.getType().tileWidth(), unit.getType().tileHeight());
+
+        if (unit.getType().isResourceDepot())
+            Stations::storeStation(unit.unit());
+    }
+
+    inline void customOnUnitDisappear(UnitInfo& unit)
+    {
+        bool move = true;
+        for (int x = unit.getTilePosition().x - 1; x < unit.getTilePosition().x + 1; x++) {
+            for (int y = unit.getTilePosition().y - 1; y < unit.getTilePosition().y + 1; y++) {
+                TilePosition t(x, y);
+                if (t.isValid() && !Broodwar->isVisible(t))
+                    move = false;
+            }
+        }
+        if (move) {
+            unit.setPosition(Positions::Invalid);
+            unit.setTilePosition(TilePositions::Invalid);
+            unit.setWalkPosition(WalkPositions::Invalid);
+        }
     }
 }

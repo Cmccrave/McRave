@@ -107,8 +107,8 @@ namespace McRave::Command
             auto posBest = Positions::Invalid;
 
             // Find an enemy that is attacking and is slow
-            for (auto &e : Units::getEnemyUnits()) {
-                auto &enemy = e.second;
+            for (auto &u : Units::getUnits(PlayerState::Enemy)) {
+                UnitInfo &enemy = *u;
                 auto dist = enemy.getPosition().getDistance(unit.getPosition());
 
                 if (dist < distBest && dist < 256.0 && !overlapsCommands(unit.unit(), TechTypes::Disruption_Web, enemy.getPosition(), 96) && enemy.unit()->isAttacking() && enemy.getSpeed() <= UnitTypes::Protoss_Reaver.topSpeed()) {

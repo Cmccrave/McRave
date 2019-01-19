@@ -31,16 +31,21 @@ namespace McRave
         None, Worker, Combat, Transport, Scout, Production, Defender, Support
     };
 
+    // Maybe use this?
+    enum class CombatType {
+        None, AirToAir, GroundToGround, AirToGround, GroundToAir
+    };
+
     enum class TransportState {
         None, Loading, Unloading, Monitoring, Engaging, Retreating
     };
 
     enum class ResourceState {
-        None, Assignable, Mineable
+        None, Assignable, Mineable, Stealable
     };
 
     enum class GlobalState {
-        None, Engaging, Retreating
+        None, Attack, Retreat
     };
 
     enum class LocalState {
@@ -52,7 +57,7 @@ namespace McRave
     };
 
     enum class PlayerState {
-        None, Self, Ally, Enemy
+        None, Self, Ally, Enemy, Neutral
     };
 }
 

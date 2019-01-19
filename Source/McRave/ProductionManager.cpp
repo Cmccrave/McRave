@@ -343,11 +343,11 @@ namespace McRave::Production {
                     return (Broodwar->self()->getUpgradeLevel(Terran_Infantry_Weapons) > Broodwar->self()->getUpgradeLevel(Terran_Infantry_Armor) || Broodwar->self()->isUpgrading(Terran_Infantry_Weapons));
 
                 case Terran_Vehicle_Weapons:
-                    return (Units::myGroundStrength() > 20.0);
+                    return (Players::getStrength(PlayerState::Self).groundToGround > 20.0);
                 case Terran_Vehicle_Plating:
                     return (Broodwar->self()->getUpgradeLevel(Terran_Vehicle_Weapons) > Broodwar->self()->getUpgradeLevel(Terran_Vehicle_Plating) || Broodwar->self()->isUpgrading(Terran_Vehicle_Weapons));
                 case Terran_Ship_Weapons:
-                    return (Units::myAirStrength() > 20.0);
+                    return (Players::getStrength(PlayerState::Self).airToAir > 20.0);
                 case Terran_Ship_Plating:
                     return (Broodwar->self()->getUpgradeLevel(Terran_Ship_Weapons) > Broodwar->self()->getUpgradeLevel(Terran_Ship_Plating) || Broodwar->self()->isUpgrading(Terran_Ship_Weapons));
                 }
@@ -580,8 +580,8 @@ namespace McRave::Production {
         {
             trainedThisFrame.clear();
 
-            for (auto &b : Units::getMyUnits()) {
-                auto &building = b.second;
+            for (auto &u : Units::getUnits(PlayerState::Self)) {
+                UnitInfo &building = *u;
 
                 if (!building.unit()
                     || building.getRole() != Role::Production

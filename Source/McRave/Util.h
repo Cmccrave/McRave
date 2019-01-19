@@ -3,11 +3,6 @@
 
 namespace McRave::Util {
 
-    //UnitInfo * getClosestUnit(BWAPI::Position, BWAPI::Player, BWAPI::UnitType t = BWAPI::UnitTypes::None);
-    //UnitInfo * getClosestUnit(UnitInfo&, BWAPI::Player, BWAPI::UnitType t = BWAPI::UnitTypes::None);
-    //UnitInfo * getClosestThreat(UnitInfo&);
-    //UnitInfo * getClosestBuilder(BWAPI::Position);
-
     template<typename F>
     UnitInfo * getClosestUnit(BWAPI::Position here, PlayerState player, F &&pred) {
         double distBest = DBL_MAX;
@@ -27,6 +22,11 @@ namespace McRave::Util {
             }
         }
         return best;
+    }
+
+    template<typename T, typename E>
+    constexpr auto contains(T const &cont, E &&e) {
+        return std::find(cont.begin(), cont.end(), std::forward<E>(e)) != cont.end();
     }
 
     int chokeWidth(const BWEM::ChokePoint *);

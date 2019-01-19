@@ -48,11 +48,11 @@ namespace McRave::BuildOrder::Zerg {
             techUnit = UnitTypes::None;
 
         // Adding Sunkens/Spores
-        auto sunkenCount = int(Units::getGlobalEnemyGroundStrength() / (Units::getAllyDefense() + Units::myGroundStrength()));
-        auto sporeCount = int(Units::getGlobalEnemyAirStrength() / (Units::getAllyDefense() + Units::myAirStrength()));
-
-
-        itemQueue[Zerg_Creep_Colony] =          Item(sunkenCount);
+        auto myStrength = Players::getStrength(PlayerState::Self);
+        auto enemyStrength = Players::getStrength(PlayerState::Enemy);
+        auto sunkenCount = int(enemyStrength.groundToGround / (myStrength.groundDefense + myStrength.groundToGround));
+        auto sporeCount = int((enemyStrength.airToAir + enemyStrength.airToGround)) / (myStrength.airDefense + myStrength.groundToAir + myStrength.airToAir);
+        itemQueue[Zerg_Creep_Colony] = Item(sunkenCount);
 
         // Overlord
         if (!bookSupply) {

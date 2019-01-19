@@ -348,8 +348,8 @@ namespace McRave::Workers {
 
         void updateWorkers()
         {
-            for (auto &w : Units::getMyUnits()) {
-                auto &worker = w.second;
+            for (auto &u : Units::getUnits(PlayerState::Self)) {
+                UnitInfo &worker = *u;
                 if (worker.getRole() == Role::Worker) {
                     updateAssignment(worker);
                     updateDecision(worker);

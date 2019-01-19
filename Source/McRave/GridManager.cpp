@@ -165,8 +165,8 @@ namespace McRave::Grids
         void updateAlly()
         {
             Visuals::startPerfTest();
-            for (auto &u : Units::getMyUnits()) {
-                UnitInfo &unit = u.second;
+            for (auto &u : Units::getUnits(PlayerState::Self)) {
+                UnitInfo &unit = *u;
 
                 // Add a visited grid for rough guideline of what we've seen by this unit recently
                 auto start = unit.getWalkPosition();
@@ -193,8 +193,8 @@ namespace McRave::Grids
         void updateEnemy()
         {
             Visuals::startPerfTest();
-            for (auto &u : Units::getEnemyUnits()) {
-                UnitInfo &unit = u.second;
+            for (auto &u : Units::getUnits(PlayerState::Enemy)) {
+                UnitInfo &unit = *u;
                 if (unit.unit()->exists() && (unit.unit()->isStasised() || unit.unit()->isMaelstrommed()))
                     continue;
 

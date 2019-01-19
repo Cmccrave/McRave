@@ -97,9 +97,9 @@ namespace McRave::Goals {
 
             // Escort shuttles
             // PvZ
-            if (Players::vZ() && Units::getGlobalEnemyAirStrength() > 0.0) {
-                for (auto &u : Units::getMyUnits()) {
-                    auto &unit = u.second;
+            if (Players::vZ() && Players::getStrength(PlayerState::Enemy).airToAir > 0.0) {
+                for (auto &u : Units::getUnits(PlayerState::Self)) {
+                    UnitInfo &unit = *u;
                     if (unit.getRole() == Role::Transport)
                         assignPercentToGoal(unit.getPosition(), UnitTypes::Protoss_Corsair, 0.25);
                 }

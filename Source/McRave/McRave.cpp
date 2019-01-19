@@ -7,11 +7,9 @@
 #include "McRave.h"
 #include "EventManager.h"
 
-// *** Notes ***
+// *** TODO ***
 // Scout spam sacrifice is a problem
 // Floating units removing mine positions
-// If an enemy floats a CC to an expansion, we don't consider it "taken" (Should we check all stations for being taken? How? UsedGrid? If so, we need to verify that buildings that land have used tiles?)
-// Bunker in enemy main detected as FE
 // Need to fix how the directional check of viable position iterating works
 // BWEB Destination walls not working
 // Proxy builds? BWEB proxy block?
@@ -20,6 +18,15 @@
 // Zerg macro hatchery fixes
 // Check Muta micro to ensure we are overshooting movement to not decel near targets
 // Unit Interface get distance is edge to point, lots of mistakes!
+
+// *** TOTEST ***
+// All units are stored in PlayerInfo objects
+// If an enemy floats a CC to an expansion, we don't consider it "taken"
+    /// Added a customOnUnitLand in EventManager.h which should take care of this
+    // Test lifting buildings
+    // Lift in fog / visible
+    // Land in fog / visible
+// Each PlayerInfo has a TotalStrength, test all values
 
 // *** Parallel Lines ***
 // Destination 12 o clock spawn issues making parallel lines (offset by +y about 64 pixels?)
@@ -31,6 +38,7 @@
 // Walkable grid cached, only check collision at corners + center when looking for walkable positions for a unit
 // Use Player pointer instead of BWAPI::Player pointer in UnitInfo, gives advantage of knowing upgrades/tech that are available always
 // Use player filters to grab unit set in getClosestUnit template
+// PlayerInfo stores all units for each player - big restructure
 
 using namespace BWAPI;
 using namespace std;

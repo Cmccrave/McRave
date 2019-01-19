@@ -15,8 +15,8 @@ namespace McRave::Targets{
 
             const auto shouldTarget = [&](UnitInfo& target, bool unitCanAttack, bool targetCanAttack) {
 
-                bool targetMatters = (target.getAirDamage() > 0.0 && Units::myAirStrength() > 0.0)
-                    || (target.getGroundDamage() > 0.0 && Units::myGroundStrength() > 0.0)
+                bool targetMatters = (target.getAirDamage() > 0.0 && Units::getMAS() > 0.0)
+                    || (target.getGroundDamage() > 0.0 && Units::getMGS() > 0.0)
                     || (target.getType().isDetector() && (Units::getMyVisible(UnitTypes::Protoss_Dark_Templar) > 0 || Units::getMyVisible(UnitTypes::Protoss_Observer) > 0))
                     || (target.getAirDamage() == 0.0 && target.getGroundDamage() == 0.0)
                     || (target.getType().isWorker());
