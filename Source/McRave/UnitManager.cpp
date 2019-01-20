@@ -43,6 +43,88 @@ namespace McRave::Units {
             allyUnits.clear();
         }
 
+        void updateRole(UnitInfo& unit)
+        {
+            // Don't assign a role to uncompleted units
+            if (!unit.unit()->isCompleted() && !unit.getType().isBuilding() && unit.getType() != UnitTypes::Zerg_Egg) {
+                unit.setRole(Role::None);
+                return;
+            }
+
+            // Store old role to update counters after
+            auto oldRole = unit.getRole();
+
+            // Update default role
+            if (unit.getRole() == Role::None) {
+                if (unit.getType().isWorker())
+                    unit.setRole(Role::Worker);
+                else if ((unit.getType().isBuilding() && unit.getGroundDamage() == 0.0 && unit.getAirDamage() == 0.0) || unit.getType() == UnitTypes::Zerg_Larva || unit.getType() == UnitTypes::Zerg_Egg)
+                    unit.setRole(Role::Production);
+                else if (unit.getType().isBuilding() && unit.getGroundDamage() != 0.0 && unit.getAirDamage() != 0.0)
+                    unit.setRole(Role::Defender);
+                else if (unit.getType().spaceProvided() > 0)
+                    unit.setRole(Role::Transport);
+                else
+                    unit.setRole(Role::Combat);
+            }
+
+            // Check if workers should fight or work
+            if (unit.getType().isWorker()) {
+                if (unit.getRole() == Role::Worker && (Util::reactivePullWorker(unit) || Util::proactivePullWorker(unit) || Util::pullRepairWorker(unit)))
+                    unit.setRole(Role::Combat);
+                else if (unit.getRole() == Role::Combat && !Util::reactivePullWorker(unit) && !Util::proactivePullWorker(unit) && !Util::pullRepairWorker(unit))
+                    unit.setRole(Role::Worker);
+            }
+
+            // Check if an overlord should scout or support
+            if (unit.getType() == UnitTypes::Zerg_Overlord) {
+                if (unit.getRole() == Role::None || getMyRoleCount(Role::Scout) < getMyRoleCount(Role::Support) + 1)
+                    unit.setRole(Role::Scout);
+                else if (getMyRoleCount(Role::Support) < getMyRoleCount(Role::Scout) + 1)
+                    unit.setRole(Role::Support);
+            }
+
+            // Check if we should scout - TODO: scout count from scout manager
+            if (BWEB::Map::getNaturalChoke() && BuildOrder::shouldScout() && getMyRoleCount(Role::Scout) < 1 && Broodwar->getFrameCount() - scoutDeadFrame > 500) {
+                auto type = Broodwar->self()->getRace().getWorker();
+                auto scout = Util::getClosestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
+                    return u.getType().isWorker();
+                });
+
+                if (scout == &unit) {
+
+                    if (unit.hasResource())
+                        unit.getResource().setGathererCount(scout->getResource().getGathererCount() - 1);
+
+                    unit.setRole(Role::Scout);
+                    unit.setResource(nullptr);
+                    unit.setBuildingType(UnitTypes::None);
+                    unit.setBuildPosition(TilePositions::Invalid);
+                }
+            }
+
+            // Check if a worker morphed into a building
+            if (unit.getRole() == Role::Worker && unit.getType().isBuilding()) {
+                if (unit.getType().isBuilding() && unit.getGroundDamage() == 0.0 && unit.getAirDamage() == 0.0)
+                    unit.setRole(Role::Production);
+                else
+                    unit.setRole(Role::Combat);
+            }
+
+            // Detectors and Support roles
+            if ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == UnitTypes::Protoss_Arbiter)
+                unit.setRole(Role::Support);
+
+            // Increment new role counter, decrement old role counter
+            auto newRole = unit.getRole();
+            if (oldRole != newRole) {
+                if (oldRole != Role::None)
+                    myRoles[oldRole] --;
+                if (newRole != Role::None)
+                    myRoles[newRole] ++;
+            }
+        }
+
         void updateEnemies()
         {
             // Enemy
@@ -197,89 +279,7 @@ namespace McRave::Units {
                 }
             }
         }
-
-        void updateRole(UnitInfo& unit)
-        {
-            // Don't assign a role to uncompleted units
-            if (!unit.unit()->isCompleted() && !unit.getType().isBuilding() && unit.getType() != UnitTypes::Zerg_Egg) {
-                unit.setRole(Role::None);
-                return;
-            }
-
-            // Store old role to update counters after
-            auto oldRole = unit.getRole();
-
-            // Update default role
-            if (unit.getRole() == Role::None) {
-                if (unit.getType().isWorker())
-                    unit.setRole(Role::Worker);
-                else if ((unit.getType().isBuilding() && unit.getGroundDamage() == 0.0 && unit.getAirDamage() == 0.0) || unit.getType() == UnitTypes::Zerg_Larva || unit.getType() == UnitTypes::Zerg_Egg)
-                    unit.setRole(Role::Production);
-                else if (unit.getType().isBuilding() && unit.getGroundDamage() != 0.0 && unit.getAirDamage() != 0.0)
-                    unit.setRole(Role::Defender);
-                else if (unit.getType().spaceProvided() > 0)
-                    unit.setRole(Role::Transport);
-                else
-                    unit.setRole(Role::Combat);
-            }
-
-            // Check if workers should fight or work
-            if (unit.getType().isWorker()) {
-                if (unit.getRole() == Role::Worker && (Util::reactivePullWorker(unit) || Util::proactivePullWorker(unit) || Util::pullRepairWorker(unit)))
-                    unit.setRole(Role::Combat);
-                else if (unit.getRole() == Role::Combat && !Util::reactivePullWorker(unit) && !Util::proactivePullWorker(unit) && !Util::pullRepairWorker(unit))
-                    unit.setRole(Role::Worker);
-            }
-
-            // Check if an overlord should scout or support
-            if (unit.getType() == UnitTypes::Zerg_Overlord) {
-                if (unit.getRole() == Role::None || getMyRoleCount(Role::Scout) < getMyRoleCount(Role::Support) + 1)
-                    unit.setRole(Role::Scout);
-                else if (getMyRoleCount(Role::Support) < getMyRoleCount(Role::Scout) + 1)
-                    unit.setRole(Role::Support);
-            }
-
-            // Check if we should scout - TODO: scout count from scout manager
-            if (BWEB::Map::getNaturalChoke() && BuildOrder::shouldScout() && getMyRoleCount(Role::Scout) < 1 && Broodwar->getFrameCount() - scoutDeadFrame > 500) {
-                auto type = Broodwar->self()->getRace().getWorker();
-                auto scout = Util::getClosestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
-                    return u.getType().isWorker();
-                });
-
-                if (scout == &unit) {
-
-                    if (unit.hasResource())
-                        unit.getResource().setGathererCount(scout->getResource().getGathererCount() - 1);
-
-                    unit.setRole(Role::Scout);
-                    unit.setResource(nullptr);
-                    unit.setBuildingType(UnitTypes::None);
-                    unit.setBuildPosition(TilePositions::Invalid);
-                }
-            }
-
-            // Check if a worker morphed into a building
-            if (unit.getRole() == Role::Worker && unit.getType().isBuilding()) {
-                if (unit.getType().isBuilding() && unit.getGroundDamage() == 0.0 && unit.getAirDamage() == 0.0)
-                    unit.setRole(Role::Production);
-                else
-                    unit.setRole(Role::Combat);
-            }
-
-            // Detectors and Support roles
-            if ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == UnitTypes::Protoss_Arbiter)
-                unit.setRole(Role::Support);
-
-            // Increment new role counter, decrement old role counter
-            auto newRole = unit.getRole();
-            if (oldRole != newRole) {
-                if (oldRole != Role::None)
-                    myRoles[oldRole] --;
-                if (newRole != Role::None)
-                    myRoles[newRole] ++;
-            }
-        }
-
+        
         void updateUnits()
         {
             updateEnemies();
@@ -313,6 +313,8 @@ namespace McRave::Units {
 
         info.setUnit(unit);
         info.updateUnit();
+
+        Broodwar << "yes" << endl;
 
         if (unit->getPlayer() == Broodwar->self() && unit->getType() == UnitTypes::Protoss_Pylon)
             Pylons::storePylon(unit);
@@ -360,7 +362,7 @@ namespace McRave::Units {
         }
     }
     
-    set<UnitInfo*> getUnits(PlayerState state)
+    set<UnitInfo*>& getUnits(PlayerState state)
     {
         switch (state) {
 

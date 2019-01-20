@@ -23,7 +23,7 @@ namespace McRave::Players
     };
 
     TotalStrength getStrength(PlayerState);
-    TotalStrength getStrength(PlayerInfo);
+    TotalStrength getStrength(PlayerInfo&);
 
     void onStart();
     void onFrame();
@@ -38,6 +38,4 @@ namespace McRave::Players
     bool vZ();
     
     int getSupply(PlayerInfo&);
-
-    double strengthCompare(CombatType);
 }

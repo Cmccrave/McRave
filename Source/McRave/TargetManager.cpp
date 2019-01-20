@@ -11,12 +11,12 @@ namespace McRave::Targets{
         {
             UnitInfo* bestTarget = nullptr;
             double closest = DBL_MAX, highest = 0.0;
-            auto &unitList = unit.getType() == UnitTypes::Terran_Medic ? Units::getMyUnits() : Units::getEnemyUnits();
+            auto &unitList = unit.targetsFriendly() ? Units::getUnits(PlayerState::Self) : Units::getUnits(PlayerState::Enemy);
 
             const auto shouldTarget = [&](UnitInfo& target, bool unitCanAttack, bool targetCanAttack) {
 
-                bool targetMatters = (target.getAirDamage() > 0.0 && Units::getMAS() > 0.0)
-                    || (target.getGroundDamage() > 0.0 && Units::getMGS() > 0.0)
+                bool targetMatters = (target.getAirDamage() > 0.0 && Players::getStrength(PlayerState::Self).airToAir + Players::getStrength(PlayerState::Self).airToGround > 0.0)
+                    || (target.getGroundDamage() > 0.0 && Players::getStrength(PlayerState::Self).groundToGround + Players::getStrength(PlayerState::Self).groundToAir > 0.0)
                     || (target.getType().isDetector() && (Units::getMyVisible(UnitTypes::Protoss_Dark_Templar) > 0 || Units::getMyVisible(UnitTypes::Protoss_Observer) > 0))
                     || (target.getAirDamage() == 0.0 && target.getGroundDamage() == 0.0)
                     || (target.getType().isWorker());
@@ -110,7 +110,7 @@ namespace McRave::Targets{
             };
 
             for (auto &t : unitList) {
-                UnitInfo &target = t.second;
+                UnitInfo &target = *t;
 
                 // Valid check;
                 if (!target.unit()

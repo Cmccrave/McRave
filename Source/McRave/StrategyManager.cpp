@@ -25,13 +25,23 @@ namespace McRave::Strategy {
         int enemyFrame;
 
         int inboundScoutFrame;
-        int inboundLingFrame;
 
         bool goonRange = false;
         bool vultureSpeed = false;
 
+        int frameArrivesWhen(UnitInfo& unit) {
+            return Broodwar->getFrameCount() + (unit.getPosition().getDistance(Terrain::getDefendPosition()) / unit.getSpeed());
+        }
+
+        int frameCompletesWhen(UnitInfo& unit) {
+            return Broodwar->getFrameCount() + (unit.getPercentHealth() * unit.getType().buildTime());
+        }
+
         void enemyZergBuilds(PlayerInfo& player)
         {
+            auto hatchNum = Units::getEnemyCount(Zerg_Hatchery);
+            auto poolNum = Units::getEnemyCount(Zerg_Spawning_Pool);
+
             // 5 Hatch build detection
             if (Stations::getEnemyStations().size() >= 3 || (Units::getEnemyCount(Zerg_Hatchery) + Units::getEnemyCount(Zerg_Lair) >= 4 && Units::getEnemyCount(Zerg_Drone) >= 14))
                 enemyBuild = "Z5Hatch";
@@ -115,6 +125,26 @@ namespace McRave::Strategy {
             auto enemyStart = Terrain::getEnemyStartingPosition();
             auto enemyNat = Position(Terrain::getEnemyNatural());
 
+            // Shallow two
+            if (Broodwar->self()->getRace() == Races::Protoss && Units::getEnemyCount(UnitTypes::Terran_Medic) >= 2)
+                enemyBuild = "ShallowTwo";
+
+            // Sparks
+            if (Broodwar->self()->getRace() == Races::Zerg && Units::getEnemyCount(Terran_Academy) >= 1 && Units::getEnemyCount(Terran_Engineering_Bay) >= 1)
+                enemyBuild = "Sparks";
+
+            // Joyo
+            if (Broodwar->getFrameCount() < 9000 && Broodwar->self()->getRace() == Races::Protoss && !enemyFE && (Units::getEnemyCount(UnitTypes::Terran_Machine_Shop) >= 2 || (Units::getEnemyCount(Terran_Marine) >= 4 && Units::getEnemyCount(Terran_Siege_Tank_Tank_Mode) >= 3)))
+                enemyBuild = "Joyo";
+
+            // BBS
+            if ((Units::getEnemyCount(Terran_Barracks) >= 2 && Units::getEnemyCount(Terran_Refinery) == 0) || (Units::getEnemyCount(Terran_Marine) > 5 && Units::getEnemyCount(Terran_Bunker) <= 0 && Broodwar->getFrameCount() < 6000))
+                enemyBuild = "BBS";
+
+            // 
+            if ((Units::getEnemyCount(Terran_Vulture_Spider_Mine) > 0 && Broodwar->getFrameCount() < 9000) || (Units::getEnemyCount(Terran_Factory) >= 2 && vultureSpeed))
+                enemyBuild = "3Fact";
+
             for (auto &u : player.getUnits()) {
                 UnitInfo &unit = u.second;
 
@@ -128,12 +158,12 @@ namespace McRave::Strategy {
 
                 // TSiegeExpand
                 if ((unit.getType() == Terran_Siege_Tank_Siege_Mode && Units::getEnemyCount(Terran_Vulture) == 0) || (unit.getType().isResourceDepot() && !Terrain::isStartingBase(unit.getTilePosition()) && Units::getEnemyCount(Terran_Machine_Shop) > 0))
-                    enemyBuild = "TSiegeExpand";
+                    enemyBuild = "SiegeExpand";
 
                 // Barracks Builds
                 if (unit.getType() == Terran_Barracks) {
                     if (Terrain::isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(mapBWEM.Center()) < 1280.0 || (BWEB::Map::getNaturalChoke() && unit.getPosition().getDistance((Position)BWEB::Map::getNaturalChoke()->Center()) < 320))
-                        enemyBuild = "TBBS";
+                        enemyBuild = "BBS";
                     else
                         enemyBuild = "Unknown";
                 }
@@ -150,24 +180,6 @@ namespace McRave::Strategy {
                 if (unit.getType() == Terran_Bunker && unit.getPosition().getDistance(enemyStart) < unit.getPosition().getDistance(Terrain::getPlayerStartingPosition()) && unit.getPosition().getDistance(enemyNat) < 320.0)
                     enemyFE = true;
             }
-
-            // Shallow two
-            if (Broodwar->self()->getRace() == Races::Protoss && Units::getEnemyCount(UnitTypes::Terran_Medic) >= 2)
-                enemyBuild = "ShallowTwo";
-
-            // Sparks
-            if (Broodwar->self()->getRace() == Races::Zerg && Units::getEnemyCount(Terran_Academy) >= 1 && Units::getEnemyCount(Terran_Engineering_Bay) >= 1)
-                enemyBuild = "TSparks";
-
-            // Joyo
-            if (Broodwar->getFrameCount() < 9000 && Broodwar->self()->getRace() == Races::Protoss && !enemyFE && (Units::getEnemyCount(UnitTypes::Terran_Machine_Shop) >= 2 || (Units::getEnemyCount(Terran_Marine) >= 4 && Units::getEnemyCount(Terran_Siege_Tank_Tank_Mode) >= 3)))
-                enemyBuild = "TJoyo";
-
-            if ((Units::getEnemyCount(Terran_Barracks) >= 2 && Units::getEnemyCount(Terran_Refinery) == 0) || (Units::getEnemyCount(Terran_Marine) > 5 && Units::getEnemyCount(Terran_Bunker) <= 0 && Broodwar->getFrameCount() < 6000))
-                enemyBuild = "TBBS";
-            if ((Units::getEnemyCount(Terran_Vulture_Spider_Mine) > 0 && Broodwar->getFrameCount() < 9000) || (Units::getEnemyCount(Terran_Factory) >= 2 && vultureSpeed))
-                enemyBuild = "T3Fact";
-
         }
 
         void enemyProtossBuilds(PlayerInfo& player)

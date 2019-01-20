@@ -45,8 +45,8 @@ namespace McRave::Transports {
 
             // Update cargo information
             if (cargoSize < 8) {
-                for (auto &u : Units::getMyUnits()) {
-                    auto &unit = u.second;
+                for (auto &u : Units::getUnits(PlayerState::Self)) {
+                    UnitInfo &unit = *u;
 
                     if (unit.getRole() == Role::Combat && readyToAssignUnit(unit)) {
                         unit.setTransport(&transport);
@@ -178,7 +178,7 @@ namespace McRave::Transports {
                 }
 
                 // Dont attack until we're ready
-                else if (cargo.getGlobalState() == GlobalState::Retreating)
+                else if (cargo.getGlobalState() == GlobalState::Retreat)
                     transport.setDestination(BWEB::Map::getNaturalPosition());
             }
 
@@ -305,8 +305,8 @@ namespace McRave::Transports {
 
         void updateTransports()
         {
-            for (auto &u : Units::getMyUnits()) {
-                auto &unit = u.second;
+            for (auto &u : Units::getUnits(PlayerState::Self)) {
+                UnitInfo &unit = *u;
 
                 if (unit.getRole() == Role::Transport) {
                     updateCargo(unit);
@@ -326,8 +326,8 @@ namespace McRave::Transports {
     
     void removeUnit(Unit unit)
     {
-        for (auto &t : Units::getMyUnits()) {
-            auto &transport = t.second;
+        for (auto &t : Units::getUnits(PlayerState::Self)) {
+            UnitInfo &transport = *t;
 
             for (auto &cargo : transport.getAssignedCargo()) {
 

@@ -105,8 +105,8 @@ namespace McRave::Horizon {
 
         const auto simTerrain = [&]() {
             // For every ground unit, add a squeeze factor for navigating chokes
-            for (auto &e : Units::getEnemyUnits()) {
-                UnitInfo &enemy = e.second;
+            for (auto &e : Units::getUnits(PlayerState::Enemy)) {
+                UnitInfo &enemy = *e;
                 if (applySqueezeFactor(enemy)) {
                     auto path = mapBWEM.GetPath(enemy.getPosition(), unit.getPosition());
                     for (auto &choke : path) {
@@ -115,8 +115,8 @@ namespace McRave::Horizon {
                     }
                 }
             }
-            for (auto &a : Units::getMyUnits()) {
-                UnitInfo &ally = a.second;
+            for (auto &a : Units::getUnits(PlayerState::Self)) {
+                UnitInfo &ally = *a;
                 if (applySqueezeFactor(ally)) {
                     auto path = mapBWEM.GetPath(ally.getPosition(), ally.getTarget().getPosition());
                     for (auto &choke : path) {
@@ -134,8 +134,8 @@ namespace McRave::Horizon {
         };
 
         const auto simEnemies = [&]() {
-            for (auto &e : Units::getEnemyUnits()) {
-                auto &enemy = e.second;
+            for (auto &e : Units::getUnits(PlayerState::Enemy)) {
+                UnitInfo &enemy = *e;
                 if (!addToSim(enemy))
                     continue;
 
@@ -176,8 +176,8 @@ namespace McRave::Horizon {
         };
 
         const auto simMyUnits = [&]() {
-            for (auto &a : Units::getMyUnits()) {
-                auto &ally = a.second;
+            for (auto &a : Units::getUnits(PlayerState::Self)) {
+                UnitInfo &ally = *a;
                 if (!addToSim(ally))
                     continue;
 

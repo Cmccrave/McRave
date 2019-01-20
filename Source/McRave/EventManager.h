@@ -84,7 +84,7 @@ namespace McRave::Events
     {
         for (int x = unit.getLastTile().x; x < unit.getLastTile().x + unit.getType().tileWidth(); x++) {
             for (int y = unit.getLastTile().y; y < unit.getLastTile().y + unit.getType().tileHeight(); y++) {
-                TilePosition t(x, y);
+                BWAPI::TilePosition t(x, y);
                 if (!t.isValid())
                     continue;
 
@@ -109,15 +109,15 @@ namespace McRave::Events
         bool move = true;
         for (int x = unit.getTilePosition().x - 1; x < unit.getTilePosition().x + 1; x++) {
             for (int y = unit.getTilePosition().y - 1; y < unit.getTilePosition().y + 1; y++) {
-                TilePosition t(x, y);
-                if (t.isValid() && !Broodwar->isVisible(t))
+                BWAPI::TilePosition t(x, y);
+                if (t.isValid() && !BWAPI::Broodwar->isVisible(t))
                     move = false;
             }
         }
         if (move) {
-            unit.setPosition(Positions::Invalid);
-            unit.setTilePosition(TilePositions::Invalid);
-            unit.setWalkPosition(WalkPositions::Invalid);
+            unit.setPosition(BWAPI::Positions::Invalid);
+            unit.setTilePosition(BWAPI::TilePositions::Invalid);
+            unit.setWalkPosition(BWAPI::WalkPositions::Invalid);
         }
     }
 }

@@ -17,8 +17,6 @@ namespace McRave
         std::string build;
 
         bool alive;
-        double airToAir, airToGround, groundToAir, groundToGround;
-        double groundStrength;
         int supply;
     public:
         PlayerInfo() {
@@ -29,15 +27,15 @@ namespace McRave
             pState = PlayerState::None;
             build = "Unknown";
 
-            airToAir = 0.0;
-            airToGround = 0.0;
-            groundToAir = 0.0;
-            groundToGround = 0.0;
             supply = 0;
         }
 
-        bool operator== (PlayerInfo& comparePlayer) {
-            return thisPlayer = comparePlayer.thisPlayer;
+        bool operator== (PlayerInfo const& p) const {
+            return thisPlayer == p.player();
+        }
+
+        bool operator< (PlayerInfo const& p) const {
+            return thisPlayer < p.player();
         }
 
         void update()
@@ -59,7 +57,7 @@ namespace McRave
                 pState = PlayerState::Enemy;
             else if (thisPlayer->isAlly(BWAPI::Broodwar->self()))
                 pState = PlayerState::Ally;
-            else if (thisPlayer == Broodwar->self())
+            else if (thisPlayer == BWAPI::Broodwar->self())
                 pState = PlayerState::Self;
             else
                 pState = PlayerState::None;
@@ -70,7 +68,7 @@ namespace McRave
         BWAPI::TilePosition getStartingLocation() { return startLocation; }
         BWAPI::Race getCurrentRace() { return currentRace; }
         BWAPI::Race getStartRace() { return startRace; }
-        BWAPI::Player player() { return thisPlayer; }
+        BWAPI::Player player() const { return thisPlayer; }
         PlayerState getPlayerState() { return pState; }
         std::map <BWAPI::Unit, UnitInfo>& getUnits() { return units; }
         std::string getBuild() { return build; }

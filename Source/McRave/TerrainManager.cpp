@@ -36,8 +36,8 @@ namespace McRave::Terrain {
                 return;
 
             // Find closest enemy building
-            for (auto &u : Units::getEnemyUnits()) {
-                UnitInfo &unit = u.second;
+            for (auto &u : Units::getUnits(PlayerState::Enemy)) {
+                UnitInfo &unit = *u;
                 double distBest = 1280.0;
                 TilePosition tileBest = TilePositions::Invalid;
                 if (!unit.getType().isBuilding() || !unit.getTilePosition().isValid())

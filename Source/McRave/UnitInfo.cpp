@@ -86,8 +86,8 @@ namespace McRave
             if (unitType == UnitTypes::Terran_Vulture_Spider_Mine) {
                 auto mineTarget = unit()->getOrderTarget();
 
-                if (Units::getEnemyUnits().find(mineTarget) != Units::getEnemyUnits().end())
-                    target = mineTarget != nullptr ? &Units::getEnemyUnits()[mineTarget] : nullptr;
+                //if (Units::getUnits(PlayerState::Enemy).find(mineTarget) != Units::getUnits(PlayerState::Enemy).end())
+                //    target = mineTarget != nullptr ? &Units::getEnemyUnits()[mineTarget] : nullptr;
             }
             else
                 Targets::getTarget(*this);
@@ -95,8 +95,8 @@ namespace McRave
 
         // Assume enemy target
         else if (player && player->isEnemy(Broodwar->self())) {
-            if (Units::getMyUnits().find(thisUnit->getOrderTarget()) != Units::getMyUnits().end())
-                target = &Units::getMyUnits()[thisUnit->getOrderTarget()];
+            //if (Units::getMyUnits().find(thisUnit->getOrderTarget()) != Units::getMyUnits().end())
+            //    target = &Units::getMyUnits()[thisUnit->getOrderTarget()];
         }
     }
 

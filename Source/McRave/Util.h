@@ -7,10 +7,10 @@ namespace McRave::Util {
     UnitInfo * getClosestUnit(BWAPI::Position here, PlayerState player, F &&pred) {
         double distBest = DBL_MAX;
         UnitInfo* best = nullptr;
-        auto &units = (player == PlayerState::Self) ? Units::getMyUnits() : Units::getEnemyUnits();
+        auto &units = Units::getUnits(player);
 
         for (auto &u : units) {
-            auto &unit = u.second;
+            auto &unit = *u;
 
             if (!unit.unit() || !pred(unit))
                 continue;

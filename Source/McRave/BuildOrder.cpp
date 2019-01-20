@@ -673,7 +673,7 @@ namespace McRave::BuildOrder
             unlockedType.insert(Protoss_Shuttle);
             techList.insert(Protoss_Shuttle);
         }
-        else if (techUnit == Zerg_Mutalisk && Units::getEAS() > 0.0) {
+        else if (techUnit == Zerg_Mutalisk && Players::getStrength(PlayerState::Enemy).airToAir > 0.0) {
             techList.insert(Zerg_Scourge);
             unlockedType.insert(Zerg_Scourge);
         }

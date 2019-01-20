@@ -13,12 +13,12 @@ namespace McRave::Goals {
             map<UnitType, int> unitByType;
 
             // Store units by distance if they have a matching type
-            for (auto &u : Units::getMyUnits()) {
-                UnitInfo &unit = u.second;
+            for (auto &u : Units::getUnits(PlayerState::Self)) {
+                UnitInfo &unit = *u;
 
                 if (unit.getType() == type) {
                     double dist = unit.getType().isFlyer() ? unit.getPosition().getDistance(here) : BWEB::Map::getGroundDistance(unit.getPosition(), here);
-                    unitByDist[dist] = &u.second;
+                    unitByDist[dist] = u;
                 }
             }
 

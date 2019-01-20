@@ -217,5 +217,13 @@ namespace McRave {
         void setPath(BWEB::PathFinding::Path& newPath) { path = newPath; }
         void setLastPositions();
         void incrementBeingAttackedCount() { beingAttackedCount++; }
+
+        bool operator== (UnitInfo& p) {
+            return thisUnit == p.unit();
+        }
+
+        bool operator< (UnitInfo& p) {
+            return thisUnit < p.unit();
+        }
     };
 }

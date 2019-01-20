@@ -25,8 +25,8 @@ namespace McRave::Command {
             }
 
             // Store enemy detection and assume casting orders
-            for (auto &u : Units::getEnemyUnits()) {
-                UnitInfo& unit = u.second;
+            for (auto &u : Units::getUnits(PlayerState::Enemy)) {
+                UnitInfo& unit = *u;
 
                 if (!unit.unit() || (unit.unit()->exists() && (unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())))
                     continue;

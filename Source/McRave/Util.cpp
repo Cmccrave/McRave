@@ -61,6 +61,7 @@ namespace McRave::Util {
 
     bool proactivePullWorker(UnitInfo& unit)
     {
+        auto myStrength = Players::getStrength(PlayerState::Self);
         if (Broodwar->self()->getRace() == Races::Protoss) {
             int completedDefenders = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Photon_Cannon) + Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot);
             int visibleDefenders = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot);
@@ -68,31 +69,31 @@ namespace McRave::Util {
             if (unit.getType() == UnitTypes::Protoss_Probe && (unit.getShields() < 20 || (unit.hasResource() && unit.getResource().getType().isRefinery())))
                 return false;
 
-            if (BuildOrder::isHideTech() && completedDefenders == 1 && Units::getMyUnits().size() == 1)
+            if (BuildOrder::isHideTech() && completedDefenders == 1 && Units::getMyRoleCount(Role::Combat) == 1)
                 return true;
 
             if (BuildOrder::getCurrentBuild() == "FFE") {
                 if (Units::getEnemyCount(UnitTypes::Zerg_Zergling) >= 5) {
-                    if (Strategy::getEnemyBuild() == "5Pool" && Units::getMGS() < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
+                    if (Strategy::getEnemyBuild() == "5Pool" && myStrength.groundToGround < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
                         return true;
-                    if (Strategy::getEnemyBuild() == "9Pool" && Units::getMGS() < 4.00 && completedDefenders < 5 && visibleDefenders >= 2)
+                    if (Strategy::getEnemyBuild() == "9Pool" && myStrength.groundToGround < 4.00 && completedDefenders < 5 && visibleDefenders >= 2)
                         return true;
-                    if (!Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && Units::getMGS() < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
+                    if (!Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && myStrength.groundToGround < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
                         return true;
-                    if (Units::getMGS() < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
+                    if (myStrength.groundToGround < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
                         return true;
                 }
                 else {
-                    if (Strategy::getEnemyBuild() == "5Pool" && Units::getMGS() < 1.00 && completedDefenders < 2 && visibleDefenders >= 2)
+                    if (Strategy::getEnemyBuild() == "5Pool" && myStrength.groundToGround < 1.00 && completedDefenders < 2 && visibleDefenders >= 2)
                         return true;
-                    if (!Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && Units::getMGS() < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
+                    if (!Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && myStrength.groundToGround < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
                         return true;
                 }
             }
             else if (BuildOrder::getCurrentBuild() == "2Gate") {
-                if (Strategy::getEnemyBuild() == "5Pool" && Units::getMGS() < 4.00 && completedDefenders < 2)
+                if (Strategy::getEnemyBuild() == "5Pool" && myStrength.groundToGround < 4.00 && completedDefenders < 2)
                     return true;
-                if (Strategy::getEnemyBuild() == "9Pool" && Units::getMGS() < 4.00 && completedDefenders < 3)
+                if (Strategy::getEnemyBuild() == "9Pool" && myStrength.groundToGround < 4.00 && completedDefenders < 3)
                     return true;
             }
         }
@@ -103,7 +104,7 @@ namespace McRave::Util {
         else if (Broodwar->self()->getRace() == Races::Zerg)
             return false;
 
-        if (Strategy::enemyProxy() && Strategy::getEnemyBuild() != "2Gate" && Units::getImmThreat() > Units::getMGS() + Units::getAllyDefense())
+        if (Strategy::enemyProxy() && Strategy::getEnemyBuild() != "2Gate" && Units::getImmThreat() > myStrength.groundToGround + myStrength.groundDefense)
             return true;
 
         return false;
@@ -111,6 +112,7 @@ namespace McRave::Util {
 
     bool reactivePullWorker(UnitInfo& unit)
     {
+        auto myStrength = Players::getStrength(PlayerState::Self);
         if (Units::getEnemyCount(UnitTypes::Terran_Vulture) > 2)
             return false;
 
@@ -132,7 +134,7 @@ namespace McRave::Util {
         }
 
         // If we have no combat units and there is a threat
-        if (Units::getImmThreat() > Units::getMGS() + Units::getAllyDefense() && Broodwar->getFrameCount() < 10000) {
+        if (Units::getImmThreat() > myStrength.groundToGround + myStrength.groundDefense && Broodwar->getFrameCount() < 10000) {
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) == 0)
                     return true;

@@ -18,6 +18,7 @@
 // Zerg macro hatchery fixes
 // Check Muta micro to ensure we are overshooting movement to not decel near targets
 // Unit Interface get distance is edge to point, lots of mistakes!
+// Re-add mine targets
 
 // *** TOTEST ***
 // All units are stored in PlayerInfo objects
@@ -70,8 +71,7 @@ void McRaveModule::onEnd(bool isWinner)
 
 void McRaveModule::onFrame()
 {
-    // Update relevant map information and strategy
-    Players::onFrame();
+    // Update relevant map information and strategy    
     Terrain::onFrame();
     Resources::onFrame();
     Strategy::onFrame();
@@ -79,6 +79,7 @@ void McRaveModule::onFrame()
     Stations::onFrame();
 
     // Update unit information and grids based on the information
+    Players::onFrame();
     Units::onFrame();
     Combat::onFrame();
     Grids::onFrame();
@@ -158,5 +159,6 @@ void McRaveModule::onSaveGame(string gameName)
 
 void McRaveModule::onUnitComplete(Unit unit)
 {
+    Broodwar << "McRave" << endl;
     Events::onUnitComplete(unit);
 }

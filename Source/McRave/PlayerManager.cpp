@@ -8,7 +8,7 @@ namespace McRave::Players
     namespace {
         map <Player, PlayerInfo> thePlayers;
         map <Race, int> raceCount;
-        map <PlayerInfo&, TotalStrength> playerStrengths;
+        map <PlayerInfo, TotalStrength> playerStrengths;
 
         void update(PlayerInfo& player)
         {
@@ -79,6 +79,7 @@ namespace McRave::Players
             if (player == comparePlayer)
                 return playerStrengths[player];
         }
+        return TotalStrength();
     }
 
     map <Player, PlayerInfo>& getPlayers() { return thePlayers; }
