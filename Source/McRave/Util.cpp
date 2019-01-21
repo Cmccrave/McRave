@@ -69,8 +69,8 @@ namespace McRave::Util {
             if (unit.getType() == UnitTypes::Protoss_Probe && (unit.getShields() < 20 || (unit.hasResource() && unit.getResource().getType().isRefinery())))
                 return false;
 
-            if (BuildOrder::isHideTech() && completedDefenders == 1 && Units::getMyRoleCount(Role::Combat) == 1)
-                return true;
+            if (BuildOrder::isHideTech() && Units::getMyRoleCount(Role::Combat) == 1 + int(unit.getRole() == Role::Combat))
+                return true;            
 
             if (BuildOrder::getCurrentBuild() == "FFE") {
                 if (Units::getEnemyCount(UnitTypes::Zerg_Zergling) >= 5) {
@@ -134,7 +134,7 @@ namespace McRave::Util {
         }
 
         // If we have no combat units and there is a threat
-        if (Units::getImmThreat() > myStrength.groundToGround + myStrength.groundDefense && Broodwar->getFrameCount() < 10000) {
+        if (Units::getImmThreat() > (myStrength.groundToGround + myStrength.groundDefense) && Broodwar->getFrameCount() < 10000) {
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) == 0)
                     return true;
@@ -357,7 +357,7 @@ namespace McRave::Util {
                 || (here != Terrain::getDefendPosition() && dist < min)
                 || unit.getType() == UnitTypes::Protoss_Reaver && Terrain::isDefendNatural() && mapBWEM.GetArea(w) != BWEB::Map::getNaturalArea()
                 || dist > distBest
-                || Command::overlapsCommands(unit.unit(), UnitTypes::None, p, 8)
+                || Command::overlapsActions(unit.unit(), UnitTypes::None, p, 8)
                 || Command::isInDanger(unit, p)
                 || !isWalkable(unit.getWalkPosition(), w, unit.getType())
                 || Buildings::overlapsQueue(unit.getType(), t))

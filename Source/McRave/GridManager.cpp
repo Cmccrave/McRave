@@ -159,7 +159,7 @@ namespace McRave::Grids
                 resetGrid[x][y] = 0;
             }
             resetVector.clear();
-            Visuals::endPerfTest("Grid:Reset");
+            Visuals::endPerfTest("Grid Reset");
         }
 
         void updateAlly()
@@ -187,7 +187,7 @@ namespace McRave::Grids
                 else if (!unit.unit()->isLoaded())
                     addToGrids(unit);
             }
-            Visuals::endPerfTest("Grid:Self");
+            Visuals::endPerfTest("Grid Self");
         }
 
         void updateEnemy()
@@ -208,7 +208,7 @@ namespace McRave::Grids
                     addToGrids(unit);
                 }
             }
-            Visuals::endPerfTest("Grid:Enemy");
+            Visuals::endPerfTest("Grid Enemy");
         }
 
         void updateNeutral()
@@ -234,7 +234,7 @@ namespace McRave::Grids
                 }
 
                 if (u->getType() == UnitTypes::Spell_Disruption_Web)
-                    Command::addCommand(u, u->getPosition(), TechTypes::Disruption_Web);
+                    Command::addAction(u, u->getPosition(), TechTypes::Disruption_Web);
             }
         }
 

@@ -70,17 +70,17 @@ namespace McRave::Combat {
                         unit.setLocalState(LocalState::Retreat);
                 }
                 else if (unit.getGlobalState() == GlobalState::Attack) {
-                    unit.setLocalState(LocalState::Retreat);
+                    unit.setLocalState(LocalState::Attack);
                 }
                 else {
-                    unit.setLocalState(LocalState::Attack);
+                    unit.setLocalState(LocalState::Retreat);
                 }
             }
             else if (unit.getGlobalState() == GlobalState::Attack) {
-                unit.setLocalState(LocalState::Retreat);
+                unit.setLocalState(LocalState::Attack);
             }
             else {
-                unit.setLocalState(LocalState::Attack);
+                unit.setLocalState(LocalState::Retreat);
             }
         }
 
@@ -139,7 +139,7 @@ namespace McRave::Combat {
                 }
                 else {
                     for (auto &start : Broodwar->getStartLocations()) {
-                        if (start.isValid() && !Broodwar->isExplored(start) && !Command::overlapsCommands(unit.unit(), unit.getType(), Position(start), 32)) {
+                        if (start.isValid() && !Broodwar->isExplored(start) && !Command::overlapsActions(unit.unit(), unit.getType(), Position(start), 32)) {
                             unit.setDestination(Position(start));
                         }
                     }

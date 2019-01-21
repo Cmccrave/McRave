@@ -99,7 +99,16 @@ namespace McRave::Stations {
 
     void removeStation(Unit unit)
     {
+        auto newStation = BWEB::Stations::getClosestStation(unit->getTilePosition());
+        if (!newStation
+            || !unit->getType().isResourceDepot()
+            || unit->getTilePosition() != newStation->BWEMBase()->Location())
+            return;
+
         auto &list = unit->getPlayer() == Broodwar->self() ? myStations : enemyStations;
+        if (list.find(unit) == list.end())
+            return;
+
         auto &station = list[unit];
         auto state = ResourceState::None;
 

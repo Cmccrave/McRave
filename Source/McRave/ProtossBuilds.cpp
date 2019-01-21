@@ -372,7 +372,7 @@ namespace McRave::BuildOrder::Protoss {
                 }
                 else if (currentTransition == "DT") {
                     // https://liquipedia.net/starcraft/2_Gateway_Dark_Templar_(vs._Protoss)
-                    hideTech =			currentOpener == "Main";
+                    hideTech =			currentOpener == "Main" && com(Protoss_Dark_Templar) < 1;
                     getOpening =		s < 70;
                     firstUnit =			vis(Protoss_Zealot) >= 3 ? Protoss_Dark_Templar : UnitTypes::None;
 
@@ -485,7 +485,7 @@ namespace McRave::BuildOrder::Protoss {
                 itemQueue[Protoss_Robotics_Facility] =		Item(s >= 52);
             }
             else {
-                hideTech =			true;
+                hideTech =			com(Protoss_Reaver) == 0;
                 getOpening =		(com(Protoss_Reaver) < 1);
 
                 itemQueue[Protoss_Nexus] =					Item(1 + (s >= 74));
@@ -552,7 +552,7 @@ namespace McRave::BuildOrder::Protoss {
                 // https://liquipedia.net/starcraft/DT_Fast_Expand_(vs._Terran)
                 firstUpgrade =		UpgradeTypes::Khaydarin_Core;
                 getOpening =		s < 60;
-                hideTech =			true;
+                hideTech =			com(Protoss_Dark_Templar) < 1;
                 dragoonLimit =		INT_MAX;
 
                 itemQueue[Protoss_Citadel_of_Adun] =	Item(s >= 36);

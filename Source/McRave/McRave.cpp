@@ -19,9 +19,9 @@
 // Check Muta micro to ensure we are overshooting movement to not decel near targets
 // Unit Interface get distance is edge to point, lots of mistakes!
 // Re-add mine targets
+// Re-add defending at chokes
 
 // *** TOTEST ***
-// All units are stored in PlayerInfo objects
 // If an enemy floats a CC to an expansion, we don't consider it "taken"
     /// Added a customOnUnitLand in EventManager.h which should take care of this
     // Test lifting buildings
@@ -39,7 +39,6 @@
 // Walkable grid cached, only check collision at corners + center when looking for walkable positions for a unit
 // Use Player pointer instead of BWAPI::Player pointer in UnitInfo, gives advantage of knowing upgrades/tech that are available always
 // Use player filters to grab unit set in getClosestUnit template
-// PlayerInfo stores all units for each player - big restructure
 
 using namespace BWAPI;
 using namespace std;
@@ -113,7 +112,7 @@ void McRaveModule::onPlayerLeft(Player player)
 
 void McRaveModule::onNukeDetect(Position target)
 {
-    Command::addCommand(nullptr, target, TechTypes::Nuclear_Strike);
+    Command::addAction(nullptr, target, TechTypes::Nuclear_Strike);
 }
 
 void McRaveModule::onUnitDiscover(Unit unit)
@@ -159,6 +158,5 @@ void McRaveModule::onSaveGame(string gameName)
 
 void McRaveModule::onUnitComplete(Unit unit)
 {
-    Broodwar << "McRave" << endl;
     Events::onUnitComplete(unit);
 }

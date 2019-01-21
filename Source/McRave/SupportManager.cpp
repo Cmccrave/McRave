@@ -24,7 +24,7 @@ namespace McRave::Support {
 
         // HACK: Spells dont move
         if (unit.getType() == UnitTypes::Spell_Scanner_Sweep) {
-            Command::addCommand(unit.unit(), unit.getPosition(), UnitTypes::Spell_Scanner_Sweep);
+            Command::addAction(unit.unit(), unit.getPosition(), UnitTypes::Spell_Scanner_Sweep);
             return;
         }
 
@@ -43,14 +43,14 @@ namespace McRave::Support {
             posBest = Terrain::closestUnexploredStart();
 
         // Check if any expansions need detection on them
-        else if (unit.getType().isDetector() && com(unit.getType()) >= 1 && BuildOrder::buildCount(building) > vis(building) && !Command::overlapsCommands(unit.unit(), unit.getType(), (Position)Buildings::getCurrentExpansion(), 320))
+        else if (unit.getType().isDetector() && com(unit.getType()) >= 1 && BuildOrder::buildCount(building) > vis(building) && !Command::overlapsActions(unit.unit(), unit.getType(), (Position)Buildings::getCurrentExpansion(), 320))
             posBest = Position(Buildings::getCurrentExpansion());
 
         // Arbiters cast stasis on a target		
-        else if (unit.getType() == UnitTypes::Protoss_Arbiter && unit.hasTarget() && unit.getDistance(unit.getTarget()) < SIM_RADIUS && unit.getTarget().unit()->exists() && unit.unit()->getEnergy() >= TechTypes::Stasis_Field.energyCost() && !Command::overlapsCommands(unit.unit(), TechTypes::Psionic_Storm, unit.getTarget().getPosition(), 96)) {
+        else if (unit.getType() == UnitTypes::Protoss_Arbiter && unit.hasTarget() && unit.getDistance(unit.getTarget()) < SIM_RADIUS && unit.getTarget().unit()->exists() && unit.unit()->getEnergy() >= TechTypes::Stasis_Field.energyCost() && !Command::overlapsActions(unit.unit(), TechTypes::Psionic_Storm, unit.getTarget().getPosition(), 96)) {
             if ((Grids::getEGroundCluster(unit.getTarget().getWalkPosition()) + Grids::getEAirCluster(unit.getTarget().getWalkPosition())) > STASIS_LIMIT) {
                 unit.unit()->useTech(TechTypes::Stasis_Field, unit.getTarget().unit());
-                Command::addCommand(unit.unit(), unit.getTarget().getPosition(), TechTypes::Stasis_Field);
+                Command::addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Stasis_Field);
                 return;
             }
         }
@@ -65,7 +65,7 @@ namespace McRave::Support {
                     if (!w.isValid()
                         || p.getDistance(unit.getPosition()) <= 64
                         || Command::isInDanger(unit, p)
-                        || Command::overlapsCommands(unit.unit(), unit.getType(), p, 96))
+                        || Command::overlapsActions(unit.unit(), unit.getType(), p, 96))
                         continue;
 
                     auto threat = Util::getHighestThreat(w, unit);
@@ -92,7 +92,7 @@ namespace McRave::Support {
         if (posBest.isValid()) {
             unit.setEngagePosition(posBest);
             unit.unit()->move(posBest);
-            Command::addCommand(unit.unit(), posBest, unit.getType());
+            Command::addAction(unit.unit(), posBest, unit.getType());
         }
     }
 }

@@ -20,10 +20,6 @@ namespace McRave::Units {
         map <Role, int> myRoles;
         set<Unit> splashTargets;
         double immThreat, proxThreat;
-        double myGroundStrength, myAirStrength;
-        double enemyGroundStrength, enemyAirStrength;
-        double myGroundDefense, myAirDefense;
-        double enemyGroundDefense, enemyAirDefense;
         int supply = 8;
         int scoutDeadFrame = 0;
 
@@ -162,18 +158,6 @@ namespace McRave::Units {
                     if (unit.getType().isValid())
                         enemyTypes[unit.getType()] += 1;
 
-                    // If unit is not a worker or building, add it to global strength
-                    if (!unit.getType().isWorker()) {
-                        if (!unit.getType().isBuilding()) {
-                            enemyGroundStrength += unit.getVisibleGroundStrength();
-                            enemyAirStrength += unit.getVisibleAirStrength();
-                        }
-                        else {
-                            enemyGroundDefense += unit.getVisibleGroundStrength();
-                            enemyAirDefense += unit.getVisibleAirStrength();
-                        }
-                    }
-
                     // If a unit is threatening our position
                     if (unit.isThreatening() && (unit.getType().groundWeapon().damageAmount() > 0 || unit.getType() == UnitTypes::Terran_Bunker)) {
                         if (unit.getType().isBuilding())
@@ -194,7 +178,6 @@ namespace McRave::Units {
 
         void updateSelf()
         {
-            // Mine
             for (auto &p : Players::getPlayers()) {
                 PlayerInfo &player = p.second;
                 if (!player.isSelf())
@@ -217,16 +200,6 @@ namespace McRave::Units {
                     }
 
                     supply += type.supplyRequired();
-
-                    // If unit is not a building and deals damage, add it to global strength	
-                    if (!unit.getType().isBuilding()) {
-                        myGroundStrength += unit.getVisibleGroundStrength();
-                        myAirStrength += unit.getVisibleAirStrength();
-                    }
-                    else {
-                        myGroundDefense += unit.getVisibleGroundStrength();
-                        myAirDefense += unit.getVisibleAirStrength();
-                    }
                 }
             }
         }
@@ -313,8 +286,6 @@ namespace McRave::Units {
 
         info.setUnit(unit);
         info.updateUnit();
-
-        Broodwar << "yes" << endl;
 
         if (unit->getPlayer() == Broodwar->self() && unit->getType() == UnitTypes::Protoss_Pylon)
             Pylons::storePylon(unit);

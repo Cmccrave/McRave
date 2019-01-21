@@ -10,17 +10,17 @@ namespace McRave::Command {
         void updateCommands()
         {
             // Clear cache
-            myCommands.clear();
-            enemyCommands.clear();
+            myActions.clear();
+            enemyActions.clear();
 
             // Store bullets as enemy units if they can affect us too
             for (auto &b : Broodwar->getBullets()) {
                 if (b && b->exists()) {
                     if (b->getType() == BulletTypes::Psionic_Storm)
-                        addCommand(nullptr, b->getPosition(), TechTypes::Psionic_Storm, true);
+                        addAction(nullptr, b->getPosition(), TechTypes::Psionic_Storm, true);
 
                     if (b->getType() == BulletTypes::EMP_Missile)
-                        addCommand(nullptr, b->getTargetPosition(), TechTypes::EMP_Shockwave, true);
+                        addAction(nullptr, b->getTargetPosition(), TechTypes::EMP_Shockwave, true);
                 }
             }
 
@@ -32,25 +32,25 @@ namespace McRave::Command {
                     continue;
 
                 if (unit.getType().isDetector())
-                    addCommand(unit.unit(), unit.getPosition(), unit.getType(), true);
+                    addAction(unit.unit(), unit.getPosition(), unit.getType(), true);
 
                 if (unit.unit()->exists()) {
                     Order enemyOrder = unit.unit()->getOrder();
                     Position enemyTarget = unit.unit()->getOrderTargetPosition();
 
                     if (enemyOrder == Orders::CastEMPShockwave)
-                        addCommand(unit.unit(), enemyTarget, TechTypes::EMP_Shockwave, true);
+                        addAction(unit.unit(), enemyTarget, TechTypes::EMP_Shockwave, true);
                     if (enemyOrder == Orders::CastPsionicStorm)
-                        addCommand(unit.unit(), enemyTarget, TechTypes::Psionic_Storm, true);
+                        addAction(unit.unit(), enemyTarget, TechTypes::Psionic_Storm, true);
                 }
 
                 if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine)
-                    addCommand(unit.unit(), unit.getPosition(), TechTypes::Spider_Mines, true);
+                    addAction(unit.unit(), unit.getPosition(), TechTypes::Spider_Mines, true);
             }
 
             // Store nuke dots
             for (auto &dot : Broodwar->getNukeDots())
-                addCommand(nullptr, dot, TechTypes::Nuclear_Strike, true);
+                addAction(nullptr, dot, TechTypes::Nuclear_Strike, true);
         }
     }
 
@@ -394,6 +394,10 @@ namespace McRave::Command {
             else
                 unit.command(UnitCommandTypes::Move, BWEB::Map::getNaturalPosition());
         }
+        else {
+            unit.command(UnitCommandTypes::Move, BWEB::Map::getMainPosition());
+            return true;
+        }
         return false;
     }
 
@@ -429,7 +433,7 @@ namespace McRave::Command {
 
         const auto shouldHunt = [&]() {
             if (unit.getRole() == Role::Combat) {
-                if (unit.getType().isWorker() || unit.isLightAir())
+                if (unit.isLightAir())
                     return true;
             }
             if (unit.getRole() == Role::Transport || unit.getRole() == Role::Scout)
@@ -512,7 +516,7 @@ namespace McRave::Command {
         return false;
     }
 
-    bool overlapsCommands(Unit unit, TechType tech, Position here, int radius)
+    bool overlapsActions(Unit unit, TechType tech, Position here, int radius)
     {
         auto checkTopLeft = here + Position(-radius / 2, -radius / 2);
         auto checkTopRight = here + Position(radius / 2, -radius / 2);
@@ -520,7 +524,7 @@ namespace McRave::Command {
         auto checkBotRight = here + Position(radius / 2, radius / 2);
 
         // TechType checks use a rectangular check
-        for (auto &command : myCommands) {
+        for (auto &command : myActions) {
             auto topLeft = command.pos - Position(radius, radius);
             auto botRight = command.pos + Position(radius, radius);
 
@@ -534,10 +538,10 @@ namespace McRave::Command {
         return false;
     }
 
-    bool overlapsCommands(Unit unit, UnitType type, Position here, int radius)
+    bool overlapsActions(Unit unit, UnitType type, Position here, int radius)
     {
         // UnitType checks use a radial check
-        for (auto &command : myCommands) {
+        for (auto &command : myActions) {
             if (command.unit != unit && command.type == type && command.pos.getDistance(here) <= radius * 2)
                 return true;
         }
@@ -547,7 +551,7 @@ namespace McRave::Command {
     bool overlapsAllyDetection(Position here)
     {
         // Detection checks use a radial check
-        for (auto &command : myCommands) {
+        for (auto &command : myActions) {
             if (command.type == UnitTypes::Spell_Scanner_Sweep) {
                 double range = 420.0;
                 if (command.pos.getDistance(here) < range)
@@ -565,7 +569,7 @@ namespace McRave::Command {
     bool overlapsEnemyDetection(Position here)
     {
         // Detection checks use a radial check
-        for (auto &command : enemyCommands) {
+        for (auto &command : enemyActions) {
             if (command.type == UnitTypes::Spell_Scanner_Sweep) {
                 double range = 420.0;
                 double ff = 32;
@@ -606,7 +610,7 @@ namespace McRave::Command {
         };
 
         // Check that we're not in danger of Storm, DWEB, EMP
-        for (auto &command : myCommands) {
+        for (auto &command : myActions) {
             if (command.tech == TechTypes::Psionic_Storm
                 || command.tech == TechTypes::Disruption_Web
                 || command.tech == TechTypes::EMP_Shockwave
@@ -627,7 +631,7 @@ namespace McRave::Command {
             }
         }
 
-        for (auto &command : enemyCommands) {
+        for (auto &command : enemyActions) {
             if (command.tech == TechTypes::Psionic_Storm
                 || command.tech == TechTypes::Disruption_Web
                 || command.tech == TechTypes::EMP_Shockwave
@@ -821,6 +825,6 @@ namespace McRave::Command {
         Visuals::endPerfTest("Commands");
     }
 
-    vector <CommandType>& getMyCommands() { return myCommands; }
-    vector <CommandType>& getEnemyCommands() { return enemyCommands; }
+    vector <Action>& getMyActions() { return myActions; }
+    vector <Action>& getEnemyActions() { return enemyActions; }
 }

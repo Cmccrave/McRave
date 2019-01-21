@@ -21,7 +21,7 @@ namespace McRave::Command
                 if ((unit.unit()->getLastCommand().getType() != UnitCommandTypes::Use_Tech || unit.unit()->getLastCommand().getTarget() != unit.getTarget().unit()))
                     unit.unit()->useTech(TechTypes::Yamato_Gun, unit.getTarget().unit());
 
-                addCommand(unit.unit(), unit.getTarget().getPosition(), TechTypes::Yamato_Gun);
+                addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Yamato_Gun);
                 return true;
             }
         }
@@ -34,12 +34,12 @@ namespace McRave::Command
             if (Buildings::getNukesAvailable() > 0 && unit.hasTarget() && unit.getTarget().getWalkPosition().isValid() && unit.unit()->isCloaked() && Grids::getEAirCluster(unit.getTarget().getWalkPosition()) + Grids::getEGroundCluster(unit.getTarget().getWalkPosition()) > 5.0 && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= 320 && unit.getPosition().getDistance(unit.getTarget().getPosition()) > 200) {
                 if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Use_Tech_Unit || unit.unit()->getLastCommand().getTarget() != unit.getTarget().unit()) {
                     unit.unit()->useTech(TechTypes::Nuclear_Strike, unit.getTarget().unit());
-                    addCommand(unit.unit(), unit.getTarget().getPosition(), TechTypes::Nuclear_Strike);
+                    addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Nuclear_Strike);
                     return true;
                 }
             }
             if (unit.unit()->getOrder() == Orders::NukePaint || unit.unit()->getOrder() == Orders::NukeTrack || unit.unit()->getOrder() == Orders::CastNuclearStrike) {
-                addCommand(unit.unit(), unit.unit()->getOrderTargetPosition(), TechTypes::Nuclear_Strike);
+                addAction(unit.unit(), unit.unit()->getOrderTargetPosition(), TechTypes::Nuclear_Strike);
                 return true;
             }
         }
@@ -111,13 +111,13 @@ namespace McRave::Command
                 UnitInfo &enemy = *u;
                 auto dist = enemy.getPosition().getDistance(unit.getPosition());
 
-                if (dist < distBest && dist < 256.0 && !overlapsCommands(unit.unit(), TechTypes::Disruption_Web, enemy.getPosition(), 96) && enemy.unit()->isAttacking() && enemy.getSpeed() <= UnitTypes::Protoss_Reaver.topSpeed()) {
+                if (dist < distBest && dist < 256.0 && !overlapsActions(unit.unit(), TechTypes::Disruption_Web, enemy.getPosition(), 96) && enemy.unit()->isAttacking() && enemy.getSpeed() <= UnitTypes::Protoss_Reaver.topSpeed()) {
                     distBest = dist;
                     posBest = enemy.getPosition();
                 }
             }
             if (posBest.isValid()) {
-                addCommand(unit.unit(), posBest, TechTypes::Disruption_Web);
+                addAction(unit.unit(), posBest, TechTypes::Disruption_Web);
                 unit.unit()->useTech(TechTypes::Disruption_Web, posBest);
                 return true;
             }
@@ -128,12 +128,12 @@ namespace McRave::Command
 
             // TEST - Check if the order of the HT is storming to add as a command
             if (unit.unit()->getOrder() == Orders::CastPsionicStorm && unit.hasTarget())
-                addCommand(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm);
+                addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm);
 
             // If close to target and can cast a storm
-            if (unit.hasTarget() && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= 400 && !Command::overlapsCommands(unit.unit(), TechTypes::Psionic_Storm, unit.getTarget().getPosition(), 96) && unit.unit()->getEnergy() >= 75 && (Grids::getEGroundCluster(unit.getTarget().getWalkPosition()) + Grids::getEAirCluster(unit.getTarget().getWalkPosition())) >= STORM_LIMIT) {
+            if (unit.hasTarget() && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= 400 && !Command::overlapsActions(unit.unit(), TechTypes::Psionic_Storm, unit.getTarget().getPosition(), 96) && unit.unit()->getEnergy() >= 75 && (Grids::getEGroundCluster(unit.getTarget().getWalkPosition()) + Grids::getEAirCluster(unit.getTarget().getWalkPosition())) >= STORM_LIMIT) {
                 unit.unit()->useTech(TechTypes::Psionic_Storm, unit.getTarget().unit());
-                addCommand(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm);
+                addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm);
                 return true;
             }
 

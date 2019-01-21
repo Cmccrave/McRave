@@ -53,13 +53,13 @@ namespace McRave
             }
 
             // Set current allied status
-            if (thisPlayer->isEnemy(BWAPI::Broodwar->self()))
+            if (thisPlayer->getID() == BWAPI::Broodwar->self()->getID())
+                pState = PlayerState::Self;
+            else if (thisPlayer->isEnemy(BWAPI::Broodwar->self()))
                 pState = PlayerState::Enemy;
             else if (thisPlayer->isAlly(BWAPI::Broodwar->self()))
                 pState = PlayerState::Ally;
-            else if (thisPlayer == BWAPI::Broodwar->self())
-                pState = PlayerState::Self;
-            else
+            else 
                 pState = PlayerState::None;
 
             currentRace = alive ? thisPlayer->getRace() : BWAPI::Races::None;

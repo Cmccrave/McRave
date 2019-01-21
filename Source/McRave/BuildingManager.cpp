@@ -381,7 +381,6 @@ namespace McRave::Buildings {
             // If we are fast expanding
             auto isWallPiece = building == UnitTypes::Protoss_Forge || building == UnitTypes::Protoss_Gateway || building == UnitTypes::Protoss_Pylon || building == UnitTypes::Terran_Barracks || building == UnitTypes::Terran_Supply_Depot || building == UnitTypes::Zerg_Evolution_Chamber || building == UnitTypes::Zerg_Hatchery || building == UnitTypes::Zerg_Creep_Colony;
             if (BWEB::Map::getNaturalChoke() && isWallPiece && !Strategy::enemyBust() && (BuildOrder::isWallNat() || BuildOrder::isWallMain())) {
-                Broodwar << "yeah" << endl;
                 here = findWallLocation(building, BWEB::Map::getMainPosition());
                 if (here.isValid() && isBuildable(building, here))
                     return here;
@@ -480,7 +479,7 @@ namespace McRave::Buildings {
             if (building.getType() == UnitTypes::Terran_Comsat_Station) {
                 if (building.hasTarget() && building.getTarget().unit()->exists() && !Command::overlapsAllyDetection(building.getTarget().getPosition())) {
                     building.unit()->useTech(TechTypes::Scanner_Sweep, building.getTarget().getPosition());
-                    Command::addCommand(building.unit(), building.getTarget().getPosition(), TechTypes::Scanner_Sweep);
+                    Command::addAction(building.unit(), building.getTarget().getPosition(), TechTypes::Scanner_Sweep);
                 }
             }
 

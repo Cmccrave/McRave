@@ -12,12 +12,8 @@ namespace McRave::Players
 
         void update(PlayerInfo& player)
         {
-            // Clear race count and recount
-            raceCount.clear();
-            player.update();
-            playerStrengths.clear();
-
             // Add up the number of each race - HACK: Don't add self for now
+            player.update();
             if (!player.isSelf())
                 raceCount[player.getCurrentRace()]++;
 
@@ -40,25 +36,34 @@ namespace McRave::Players
                     strengths.groundToGround += unit.getVisibleGroundStrength();
                 }
             }
+            
+            if (player.player() == Broodwar->self()) {
+                Broodwar->drawTextScreen(0, 100, "%2f", strengths.groundToGround);
+                Broodwar->drawTextScreen(0, 116, "%2f", strengths.groundToAir);
+                Broodwar->drawTextScreen(0, 132, "%2f", strengths.groundDefense);
+            }
         }
     }
 
     void onStart()
     {
-        // Store all enemy players
-        for (auto &player : Broodwar->getPlayers()) {
+        // Store all players
+        for (auto player : Broodwar->getPlayers()) {
             PlayerInfo &p = thePlayers[player];
-
+            p.setPlayer(player);
             p.setAlive(true);
             p.setStartRace(player->getRace());
-            p.setCurrentRace(player->getRace());
-            p.setPlayer(player);
+            p.setCurrentRace(player->getRace());            
             raceCount[p.getCurrentRace()]++;
         }
     }
 
     void onFrame()
-    {
+    {        
+        // Clear race count and recount
+        raceCount.clear();
+        playerStrengths.clear();
+
         for (auto &[_, player] : thePlayers)
             update(player);
     }
