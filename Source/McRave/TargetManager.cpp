@@ -12,14 +12,22 @@ namespace McRave::Targets{
             UnitInfo* bestTarget = nullptr;
             double closest = DBL_MAX, highest = 0.0;
             auto &unitList = unit.targetsFriendly() ? Units::getUnits(PlayerState::Self) : Units::getUnits(PlayerState::Enemy);
+            auto enemyStrength = Players::getStrength(PlayerState::Enemy);
+            auto myStrength = Players::getStrength(PlayerState::Self);
 
             const auto shouldTarget = [&](UnitInfo& target, bool unitCanAttack, bool targetCanAttack) {
 
-                bool targetMatters = (target.getAirDamage() > 0.0 && Players::getStrength(PlayerState::Self).airToAir + Players::getStrength(PlayerState::Self).airToGround > 0.0)
-                    || (target.getGroundDamage() > 0.0 && Players::getStrength(PlayerState::Self).groundToGround + Players::getStrength(PlayerState::Self).groundToAir > 0.0)
+                bool enemyHasGround = enemyStrength.groundToAir > 0.0 || enemyStrength.groundToGround > 0.0;
+                bool enemyHasAir = enemyStrength.airToGround > 0.0 || enemyStrength.airToAir > 0.0;
+                bool selfHasGround = myStrength.groundToAir > 0.0 || myStrength.groundToGround > 0.0;
+                bool selfHasAir = myStrength.airToGround > 0.0 || myStrength.airToAir > 0.0;
+
+                bool targetMatters = (target.getAirDamage() > 0.0 && selfHasAir)
+                    || (target.getGroundDamage() > 0.0 && selfHasGround)
                     || (target.getType().isDetector() && (Units::getMyVisible(UnitTypes::Protoss_Dark_Templar) > 0 || Units::getMyVisible(UnitTypes::Protoss_Observer) > 0))
                     || (target.getAirDamage() == 0.0 && target.getGroundDamage() == 0.0)
-                    || (target.getType().isWorker());
+                    || (target.getType().isWorker())
+                    || (!enemyHasGround && !enemyHasAir);
 
                 // Zealot: Don't attack non threatening workers in our territory
                 if ((unit.getType() == UnitTypes::Protoss_Zealot && target.getType().isWorker() && !target.isThreatening() && Terrain::isInAllyTerritory(target.getTilePosition()))

@@ -20,6 +20,7 @@ namespace McRave::Players
             // Add up the total strength for this player
             auto &strengths = playerStrengths[player];
             for (auto &[_, unit] : player.getUnits()) {
+                unit.setTarget(nullptr); // HACK: Just in case our target was killed and we don't get an update in UnitManager
                 if (unit.getType().isWorker())
                     continue;
 
@@ -36,7 +37,7 @@ namespace McRave::Players
                     strengths.groundToGround += unit.getVisibleGroundStrength();
                 }
             }
-            
+
             if (player.player() == Broodwar->self()) {
                 Broodwar->drawTextScreen(0, 100, "%2f", strengths.groundToGround);
                 Broodwar->drawTextScreen(0, 116, "%2f", strengths.groundToAir);
@@ -53,13 +54,13 @@ namespace McRave::Players
             p.setPlayer(player);
             p.setAlive(true);
             p.setStartRace(player->getRace());
-            p.setCurrentRace(player->getRace());            
+            p.setCurrentRace(player->getRace());
             raceCount[p.getCurrentRace()]++;
         }
     }
 
     void onFrame()
-    {        
+    {
         // Clear race count and recount
         raceCount.clear();
         playerStrengths.clear();

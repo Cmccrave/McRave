@@ -353,8 +353,8 @@ namespace McRave::Util {
             double dist = p.getDistance((Position)center);
 
             if (!w.isValid()
-                || (here != Terrain::getDefendPosition() && area && mapBWEM.GetArea(t) != area)
-                || (here != Terrain::getDefendPosition() && dist < min)
+                || (/*here != Terrain::getDefendPosition() &&*/ area && mapBWEM.GetArea(t) != area)
+                || (/*here != Terrain::getDefendPosition() &&*/ dist < min)
                 || unit.getType() == UnitTypes::Protoss_Reaver && Terrain::isDefendNatural() && mapBWEM.GetArea(w) != BWEB::Map::getNaturalArea()
                 || dist > distBest
                 || Command::overlapsActions(unit.unit(), UnitTypes::None, p, 8)

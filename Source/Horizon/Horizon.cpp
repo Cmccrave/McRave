@@ -18,24 +18,27 @@ namespace McRave::Horizon {
 
         double minThreshold, maxThreshold;
 
-        // PvZ
+
         if (Broodwar->self()->getRace() == Races::Protoss) {
-            if (Players::vZ()) {
-                minThreshold = 0.25;
-                maxThreshold = 0.75;
-            }
+            minThreshold = 0.5;
+            maxThreshold = 0.75;
+            // PvZ
+            //if (Players::vZ()) {
+            //    minThreshold = 0.25;
+            //    maxThreshold = 0.75;
+            //}
 
-            // PvT
-            if (Players::vT()) {
-                minThreshold = 0.25;
-                maxThreshold = 0.75;
-            }
+            //// PvT
+            //if (Players::vT()) {
+            //    minThreshold = 0.25;
+            //    maxThreshold = 0.75;
+            //}
 
-            // PvP
-            if (Players::vP()) {
-                minThreshold = 0.25;
-                maxThreshold = 0.75;
-            }
+            //// PvP
+            //if (Players::vP()) {
+            //    minThreshold = 0.25;
+            //    maxThreshold = 0.75;
+            //}
         }
         else {
             minThreshold = 0.75;
@@ -86,7 +89,9 @@ namespace McRave::Horizon {
                 return false;
             if (source.getPlayer() != Broodwar->self() && (!unit.hasTarget() || unit.getTarget().getType().isFlyer() || !unit.getTarget().getPosition().isValid()))
                 return false;
-            if (source.getType().isFlyer() || unit.getType().isFlyer() || !source.getPosition().isValid() || source.unit()->isLoaded() || unit.unit()->isLoaded())
+            if (unit.getType().isFlyer() || source.getType().isFlyer() || !source.getPosition().isValid() || source.unit()->isLoaded() || unit.unit()->isLoaded())
+                return false;
+            if (source.hasTarget() && !source.getTarget().getPosition().isValid())
                 return false;
             if (!mapBWEM.GetArea(source.getTilePosition()))
                 return false;

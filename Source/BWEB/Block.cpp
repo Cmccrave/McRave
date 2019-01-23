@@ -50,8 +50,8 @@ namespace BWEB::Blocks
             auto distBest = DBL_MAX;
             auto start = (Map::getMainTile() + (Map::getMainChoke() ? (TilePosition)Map::getMainChoke()->Center() : Map::getMainTile())) / 2;
 
-            for (auto x = start.x - 6; x <= start.x + 10; x++) {
-                for (auto y = start.y - 6; y <= start.y + 10; y++) {
+            for (auto x = start.x - 10; x <= start.x + 6; x++) {
+                for (auto y = start.y - 10; y <= start.y + 6; y++) {
                     TilePosition tile(x, y);
 
                     if (!tile.isValid() || mapBWEM.GetArea(tile) != Map::getMainArea())
@@ -60,7 +60,6 @@ namespace BWEB::Blocks
                     auto blockCenter = Position(tile) + Position(128, 80);
                     const auto dist = blockCenter.getDistance(Map::getMainPosition()) + log(blockCenter.getDistance((Position)Map::getMainChoke()->Center()));
 
-                    // Shrink block to fit on more maps easily and tighter (-2,-2)
                     if (dist < distBest && ((race == Races::Protoss && canAddBlock(tile, 8, 5, true))
                         || (race == Races::Terran && canAddBlock(tile, 6, 5, true))
                         || (race == Races::Zerg && canAddBlock(tile, 5, 4, true)))) {

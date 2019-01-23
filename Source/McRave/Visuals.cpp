@@ -60,6 +60,20 @@ namespace McRave::Visuals {
                 int minute = time / 60;
                 Broodwar->drawTextScreen(432, 40, "%c%d", Text::Grey, Broodwar->getFrameCount());
                 Broodwar->drawTextScreen(482, 40, "%c%d:%02d", Text::Grey, minute, seconds);
+
+                multimap<double, string> sortMap;
+                for (auto test : myTest) {
+                    sortMap.emplace(test.second, test.first);
+                }
+
+                for (auto itr = sortMap.rbegin(); itr != sortMap.rend(); itr++) {
+                    auto test = *itr;
+                    if (test.first > 0.25) {
+                        Broodwar->drawTextScreen(280, screenOffset, "%c%s", Text::White, test.second.c_str());
+                        Broodwar->drawTextScreen(372, screenOffset, "%c%.5f ms", Text::White, test.first);
+                        screenOffset += 10;
+                    }
+                }
             }
 
             // Resource
@@ -184,11 +198,6 @@ namespace McRave::Visuals {
     {
         double dur = std::chrono::duration <double, std::milli>(std::chrono::high_resolution_clock::now() - start).count();
         myTest[function] = myTest[function] * 0.99 + dur * 0.01;
-        if (myTest[function] > 0.0) {
-            Broodwar->drawTextScreen(180, screenOffset, "%c%s", Text::White, function.c_str());
-            Broodwar->drawTextScreen(372, screenOffset, "%c%.5f ms", Text::White, myTest[function]);
-            screenOffset += 10;
-        }
     }
 
     void startPerfTest()

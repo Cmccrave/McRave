@@ -188,6 +188,9 @@ namespace BWEB::Stations
                 stations.push_back(newStation);
                 Map::addOverlap(base.Location(), 4, 3);
                 addResourceOverlap(genCenter);
+
+                if (Broodwar->self()->getRace() == Races::Zerg)
+                    Map::addOverlap(base.Location(), 5, 4);
             }
         }
     }

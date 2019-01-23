@@ -171,6 +171,7 @@ namespace McRave::Terrain {
             // Defend our main choke if we're hiding tech
             if (BuildOrder::isHideTech() && BWEB::Map::getMainChoke() && Broodwar->self()->visibleUnitCount(baseType) == 1) {
                 defendPosition = (Position)BWEB::Map::getMainChoke()->Center();
+                defendNatural = false;
                 return;
             }
 
@@ -240,6 +241,7 @@ namespace McRave::Terrain {
 
         void updateConcavePositions()
         {
+            return; // disabled this shit for now
             for (auto tile : meleeChokePositions) {
                 Broodwar->drawCircleMap(Position(tile), 8, Colors::Blue);
             }
@@ -441,7 +443,7 @@ namespace McRave::Terrain {
         updateConcavePositions();
         updateAreas();
     }
-     
+
     bool findNaturalWall(vector<UnitType>& types, const vector<UnitType>& defenses)
     {
         // Hack: Make a bunch of walls as Zerg for testing - disabled atm

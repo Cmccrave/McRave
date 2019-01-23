@@ -73,11 +73,11 @@ namespace McRave::Units {
             }
 
             // Check if an overlord should scout or support
-            if (unit.getType() == UnitTypes::Zerg_Overlord) {
+            if (unit.getType() == UnitTypes::Zerg_Overlord) {/*
                 if (unit.getRole() == Role::None || getMyRoleCount(Role::Scout) < getMyRoleCount(Role::Support) + 1)
                     unit.setRole(Role::Scout);
-                else if (getMyRoleCount(Role::Support) < getMyRoleCount(Role::Scout) + 1)
-                    unit.setRole(Role::Support);
+                else if (getMyRoleCount(Role::Support) < getMyRoleCount(Role::Scout) + 1)*/
+                unit.setRole(Role::Support);
             }
 
             // Check if we should scout - TODO: scout count from scout manager
@@ -252,7 +252,7 @@ namespace McRave::Units {
                 }
             }
         }
-        
+
         void updateUnits()
         {
             updateEnemies();
@@ -296,6 +296,14 @@ namespace McRave::Units {
         BWEB::Map::onUnitDestroy(unit);
         auto &player = Players::getPlayers()[unit->getPlayer()];
         auto &info = player.getUnits()[unit];
+        auto &list = player.isSelf() ? enemyUnits : myUnits; // Grab the opposite list to remove anything targeting this
+
+        for (auto &[_,p] : Players::getPlayers()) {
+            for (auto &[_, u] : p.getUnits()) {
+                if (u.hasTarget() && u.getTarget().unit() == unit)
+                    u.setTarget(nullptr);
+            }
+        }
 
         if (player.isSelf()) {
             if (info.hasResource())
@@ -307,7 +315,6 @@ namespace McRave::Units {
 
             Transports::removeUnit(unit);
         }
-        info.setTarget(nullptr);
 
         player.getUnits().erase(unit);
     }
@@ -332,7 +339,7 @@ namespace McRave::Units {
             info.setTarget(nullptr);
         }
     }
-    
+
     set<UnitInfo*>& getUnits(PlayerState state)
     {
         switch (state) {

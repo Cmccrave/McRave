@@ -224,6 +224,8 @@ namespace McRave::Command {
 
         auto shouldMove = [&]() {
             if (unit.getRole() == Role::Combat) {
+                if (unit.getPosition().getDistance(unit.getDestination()) < SIM_RADIUS)
+                    return false;
                 if (unit.getLocalState() == LocalState::Attack)
                     return true;
             }
@@ -395,7 +397,9 @@ namespace McRave::Command {
                 unit.command(UnitCommandTypes::Move, BWEB::Map::getNaturalPosition());
         }
         else {
-            unit.command(UnitCommandTypes::Move, BWEB::Map::getMainPosition());
+            auto defendArea = Terrain::isDefendNatural() ? BWEB::Map::getNaturalArea() : BWEB::Map::getMainArea();
+            auto bestPosition = Util::getConcavePosition(unit, defendArea, Terrain::getDefendPosition());
+            unit.command(UnitCommandTypes::Move, bestPosition);
             return true;
         }
         return false;
@@ -460,7 +464,7 @@ namespace McRave::Command {
             double distance = ((unit.getType().isFlyer() || Terrain::isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids::getDistanceHome(w));
             double threat = Util::getHighestThreat(w, unit);
             double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0;
-            double score = grouping / (threat * distance);
+            double score = 1.0 / (threat * distance);
             return score;
         };
 
