@@ -25,7 +25,7 @@ namespace McRave::Workers {
                 auto pylon = Util::getClosestUnit(worker.getPosition(), PlayerState::Enemy, [&](auto &u) {
                     return u.getType() == UnitTypes::Protoss_Pylon;
                 });
-                if (pylon && pylon->unit() && pylon->unit()->exists()) {
+                if (pylon && pylon->unit() && pylon->unit()->exists() && pylon->getPosition().getDistance(worker.getPosition()) < 128.0) {
                     if (worker.unit()->getLastCommand().getTarget() != pylon->unit())
                         worker.unit()->attack(pylon->unit());
                     return true;

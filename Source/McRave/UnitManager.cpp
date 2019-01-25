@@ -296,12 +296,35 @@ namespace McRave::Units {
         BWEB::Map::onUnitDestroy(unit);
         auto &player = Players::getPlayers()[unit->getPlayer()];
         auto &info = player.getUnits()[unit];
-        auto &list = player.isSelf() ? enemyUnits : myUnits; // Grab the opposite list to remove anything targeting this
 
-        for (auto &[_,p] : Players::getPlayers()) {
+        // This is shit, I need to refresh unit pointers at the start of every frame instead
+        for (auto &[_, p] : Players::getPlayers()) {
             for (auto &[_, u] : p.getUnits()) {
                 if (u.hasTarget() && u.getTarget().unit() == unit)
                     u.setTarget(nullptr);
+                if (u.hasResource() && u.getResource().unit() == unit)
+                    u.setResource(nullptr);
+            }
+        }
+
+        for (auto &u : myUnits) {
+            if (u->hasTarget() && u->getTarget().unit() == unit)
+                u->setTarget(nullptr);
+            if (u->hasResource() && u->getResource().unit() == unit)
+                u->setResource(nullptr);
+            if (u->unit() == unit) {
+                myUnits.erase(u);
+                break;
+            }
+        }
+        for (auto &u : enemyUnits) {
+            if (u->hasTarget() && u->getTarget().unit() == unit)
+                u->setTarget(nullptr);
+            if (u->hasResource() && u->getResource().unit() == unit)
+                u->setResource(nullptr);
+            if (u->unit() == unit) {
+                enemyUnits.erase(u);
+                break;
             }
         }
 
