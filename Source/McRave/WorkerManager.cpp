@@ -365,7 +365,8 @@ namespace McRave::Workers {
         Visuals::endPerfTest("Workers");
     }
 
-    void removeUnit(Unit unit)
+    void removeUnit(UnitInfo& unit)
     {
+        unit.getResource().getType().isRefinery() ? gasWorkers-- : minWorkers--;
     }
 }

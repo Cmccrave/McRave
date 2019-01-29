@@ -66,8 +66,10 @@ namespace McRave::Units {
 
             // Check if workers should fight or work
             if (unit.getType().isWorker()) {
-                if (unit.getRole() == Role::Worker && (Util::reactivePullWorker(unit) || Util::proactivePullWorker(unit) || Util::pullRepairWorker(unit)))
+                if (unit.getRole() == Role::Worker && (Util::reactivePullWorker(unit) || Util::proactivePullWorker(unit) || Util::pullRepairWorker(unit))) {
                     unit.setRole(Role::Combat);
+                    Players::addStrength(unit);
+                }
                 else if (unit.getRole() == Role::Combat && !Util::reactivePullWorker(unit) && !Util::proactivePullWorker(unit) && !Util::pullRepairWorker(unit))
                     unit.setRole(Role::Worker);
             }
@@ -81,7 +83,7 @@ namespace McRave::Units {
             }
 
             // Check if we should scout - TODO: scout count from scout manager
-            if (BWEB::Map::getNaturalChoke() && BuildOrder::shouldScout() && getMyRoleCount(Role::Scout) < 1 && Broodwar->getFrameCount() - scoutDeadFrame > 500) {
+            if (BWEB::Map::getNaturalChoke() && BuildOrder::shouldScout() && getMyRoleCount(Role::Scout) < Scouts::getScoutCount() && Broodwar->getFrameCount() - scoutDeadFrame > 500) {
                 auto type = Broodwar->self()->getRace().getWorker();
                 auto scout = Util::getClosestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
                     return u.getType().isWorker();
@@ -297,40 +299,11 @@ namespace McRave::Units {
         auto &player = Players::getPlayers()[unit->getPlayer()];
         auto &info = player.getUnits()[unit];
 
-        // This is shit, I need to refresh unit pointers at the start of every frame instead
-        for (auto &[_, p] : Players::getPlayers()) {
-            for (auto &[_, u] : p.getUnits()) {
-                if (u.hasTarget() && u.getTarget().unit() == unit)
-                    u.setTarget(nullptr);
-                if (u.hasResource() && u.getResource().unit() == unit)
-                    u.setResource(nullptr);
-            }
-        }
-
-        for (auto &u : myUnits) {
-            if (u->hasTarget() && u->getTarget().unit() == unit)
-                u->setTarget(nullptr);
-            if (u->hasResource() && u->getResource().unit() == unit)
-                u->setResource(nullptr);
-            if (u->unit() == unit) {
-                myUnits.erase(u);
-                break;
-            }
-        }
-        for (auto &u : enemyUnits) {
-            if (u->hasTarget() && u->getTarget().unit() == unit)
-                u->setTarget(nullptr);
-            if (u->hasResource() && u->getResource().unit() == unit)
-                u->setResource(nullptr);
-            if (u->unit() == unit) {
-                enemyUnits.erase(u);
-                break;
-            }
-        }
-
         if (player.isSelf()) {
-            if (info.hasResource())
+            if (info.hasResource()) {
+                Workers::removeUnit(info);
                 info.getResource().setGathererCount(info.getResource().getGathererCount() - 1);
+            }
             if (info.getRole() != Role::None)
                 myRoles[info.getRole()]--;
             if (info.getRole() == Role::Scout)
@@ -353,6 +326,7 @@ namespace McRave::Units {
 
             // Remove all assignments
             if (info.hasResource()) {
+                Workers::removeUnit(info);
                 info.getResource().setGathererCount(info.getResource().getGathererCount() - 1);
                 info.setResource(nullptr);
             }

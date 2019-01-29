@@ -501,6 +501,7 @@ namespace BWEB::Walls
         auto centroidDist = wall.getCentroid().getDistance(Map::pConvert(endTile));
         auto end = Map::pConvert(endTile);
         auto doorCenter = Map::pConvert(wall.getDoor()) + Position(16, 16);
+        auto isDefense = building == UnitTypes::Protoss_Photon_Cannon || building == UnitTypes::Terran_Missile_Turret || building == UnitTypes::Terran_Bunker || building == UnitTypes::Zerg_Creep_Colony || building == UnitTypes::Zerg_Sunken_Colony || building == UnitTypes::Zerg_Creep_Colony;
 
         auto furthest = 0.0;
         // Find the furthest non pylon building to the chokepoint
@@ -527,7 +528,7 @@ namespace BWEB::Walls
                     || Map::isOverlapping(t, building.tileWidth(), building.tileHeight())
                     || !Map::isPlaceable(building, t)
                     || Map::tilesWithinArea(wall.getArea(), t, 2, 2) == 0
-                    || (building == UnitTypes::Protoss_Photon_Cannon && (center.getDistance(Map::pConvert(wall.getChokePoint()->Center())) < furthest || center.getDistance(doorCenter) < 96.0)))
+                    || (isDefense && (center.getDistance(Map::pConvert(wall.getChokePoint()->Center())) < furthest || center.getDistance(doorCenter) < 96.0)))
                     continue;
 
                 const auto dist = center.getDistance(doorCenter);

@@ -89,7 +89,7 @@ namespace McRave::Command {
             else if (unit.hasTarget() && unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames() && unit.getTarget().unit()->exists())
                 unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
             else
-                unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition());
+                unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition(), true);
             return true;
         }
         return false;
@@ -141,8 +141,10 @@ namespace McRave::Command {
         // If unit should and can be attacking
         else if (shouldAttack() && canAttack()) {
             // Flyers don't want to decel when out of range, so we move to the target then attack when in range
-            if ((unit.getType().isFlyer() || unit.getType().isWorker()) && unit.hasTarget() && !Util::unitInRange(unit))
-                unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition());
+            if ((unit.getType().isFlyer() || unit.getType().isWorker()) && unit.hasTarget() && !Util::unitInRange(unit)) {
+                unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition(), true);
+                unit.circleGreen();
+            }
             else
                 unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
             return true;
@@ -198,7 +200,7 @@ namespace McRave::Command {
         };
 
         if (shouldApproach() && canApproach()) {
-            unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition());
+            unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition(), false);
             return true;
         }
         return false;
@@ -259,13 +261,13 @@ namespace McRave::Command {
 
                 // If it is closer, move to it
                 if (bPath.getDistance() < unitPath.getDistance()) {
-                    unit.command(UnitCommandTypes::Move, bestPosition);
+                    unit.command(UnitCommandTypes::Move, bestPosition, true);
                     return true;
                 }
             }
 
             // If it wasn't closer or didn't find one, move to our destination
-            unit.command(UnitCommandTypes::Move, unit.getDestination());
+            unit.command(UnitCommandTypes::Move, unit.getDestination(), false);
             return true;
         }
         return false;
@@ -344,11 +346,17 @@ namespace McRave::Command {
 
         if (shouldKite() && canKite()) {
 
-            // If we found a valid position, move to it
-            auto bestPosition = findViablePosition(unit, scoreFunction);
-            if (bestPosition.isValid()) {
-                unit.command(UnitCommandTypes::Move, bestPosition);
+            if (unit.hasResource()) {
+                unit.unit()->gather(unit.getResource().unit());
                 return true;
+            }
+            else {
+                // If we found a valid position, move to it
+                auto bestPosition = findViablePosition(unit, scoreFunction);
+                if (bestPosition.isValid()) {
+                    unit.command(UnitCommandTypes::Move, bestPosition, true);
+                    return true;
+                }
             }
         }
         return false;
@@ -383,7 +391,7 @@ namespace McRave::Command {
             }
 
             if (walkBest.isValid() && unit.unit()->getLastCommand().getTargetPosition() != Position(walkBest)) {
-                unit.command(UnitCommandTypes::Move, Position(walkBest));
+                unit.command(UnitCommandTypes::Move, Position(walkBest), false);
                 return true;
             }
         }
@@ -392,14 +400,26 @@ namespace McRave::Command {
         // TODO: Choose a base instead of closest to enemy, sometimes fly over a base I dont own
         if (unit.getType().isFlyer()) {
             if (Terrain::getEnemyStartingPosition().isValid() && BWEB::Map::getMainPosition().getDistance(Terrain::getEnemyStartingPosition()) < BWEB::Map::getNaturalPosition().getDistance(Terrain::getEnemyStartingPosition()))
-                unit.command(UnitCommandTypes::Move, BWEB::Map::getMainPosition());
+                unit.command(UnitCommandTypes::Move, BWEB::Map::getMainPosition(), true);
             else
-                unit.command(UnitCommandTypes::Move, BWEB::Map::getNaturalPosition());
+                unit.command(UnitCommandTypes::Move, BWEB::Map::getNaturalPosition(), true);
         }
-        else {
+        else {            
+            auto radius = 0.0;
+            auto unitsHigherRange = 0.0;
+
+            if (Broodwar->self()->getRace() == Races::Protoss)
+                unitsHigherRange = unit.getType() == UnitTypes::Protoss_Zealot ? com(UnitTypes::Protoss_Zealot) : com(UnitTypes::Protoss_Zealot) + com(UnitTypes::Protoss_Dragoon);
+            else if (Broodwar->self()->getRace() == Races::Terran)
+                unitsHigherRange = unit.getType() == UnitTypes::Terran_Medic ? com(UnitTypes::Terran_Medic) : com(UnitTypes::Terran_Medic) + com(UnitTypes::Terran_Marine);
+            else if (Broodwar->self()->getRace() == Races::Zerg)
+                unitsHigherRange = unit.getType() == UnitTypes::Zerg_Zergling ? com(UnitTypes::Zerg_Zergling) : com(UnitTypes::Zerg_Zergling) + com(UnitTypes::Zerg_Hydralisk);
+            
+            radius = (unitsHigherRange * unit.getType().width() / 2) + unit.getGroundRange();
             auto defendArea = Terrain::isDefendNatural() ? BWEB::Map::getNaturalArea() : BWEB::Map::getMainArea();
-            auto bestPosition = Util::getConcavePosition(unit, defendArea, Terrain::getDefendPosition());
-            unit.command(UnitCommandTypes::Move, bestPosition);
+            auto bestPosition = Util::getConcavePosition(unit, radius, defendArea, Terrain::getDefendPosition());
+            unit.command(UnitCommandTypes::Move, bestPosition, false);
+            addAction(unit.unit(), bestPosition, unit.getType());
             return true;
         }
         return false;
@@ -448,7 +468,7 @@ namespace McRave::Command {
         if (shouldHunt() && canHunt()) {
             auto bestPosition = findViablePosition(unit, scoreFunction);
             if (bestPosition.isValid() && bestPosition != unit.getDestination()) {
-                unit.command(UnitCommandTypes::Move, bestPosition);
+                unit.command(UnitCommandTypes::Move, bestPosition, true);
                 return true;
             }
         }
@@ -464,7 +484,7 @@ namespace McRave::Command {
             double distance = ((unit.getType().isFlyer() || Terrain::isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids::getDistanceHome(w));
             double threat = Util::getHighestThreat(w, unit);
             double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0;
-            double score = 1.0 / (threat * distance);
+            double score = grouping / (threat * distance);
             return score;
         };
 
@@ -487,7 +507,7 @@ namespace McRave::Command {
         if (canRetreat() && shouldRetreat()) {
             auto bestPosition = findViablePosition(unit, scoreFunction);
             if (bestPosition.isValid()) {
-                unit.command(UnitCommandTypes::Move, bestPosition);
+                unit.command(UnitCommandTypes::Move, bestPosition, true);
                 return true;
             }
         }
@@ -514,7 +534,7 @@ namespace McRave::Command {
         // If we found a valid position, move to it
         auto bestPosition = findViablePosition(unit, scoreFunction);
         if (bestPosition.isValid()) {
-            unit.command(UnitCommandTypes::Move, bestPosition);
+            unit.command(UnitCommandTypes::Move, bestPosition, true);
             return true;
         }
         return false;
@@ -795,7 +815,7 @@ namespace McRave::Command {
 
             // If too close of a command, is in danger or isn't walkable
             if (p.getDistance(unit.getPosition()) > radius * 8
-                || !Broodwar->isWalkable(here)
+                || (!unit.getType().isFlyer() && !Broodwar->isWalkable(here))
                 || isInDanger(unit, p)
                 || !Util::isWalkable(unit.getWalkPosition(), here, unit.getType()))
                 return false;
@@ -804,13 +824,13 @@ namespace McRave::Command {
 
         auto bestPosition = Positions::Invalid;
         auto best = 0.0;
-        for (int x = left; x < right; x++) {
-            for (int y = top; y < bot; y++) {
+        for (int x = left; x <= right; x++) {
+            for (int y = top; y <= bot; y++) {
                 auto w = WalkPosition(x, y);
                 auto p = Position((x * 8) + 4, (y * 8) + 4);
-
-                //if (directionsOkay(w))
-                    //Broodwar->drawBoxMap(p, p + Position(8, 8), Colors::Black);
+/*
+                if (directionsOkay(w))
+                    Broodwar->drawBoxMap(p, p + Position(8, 8), Colors::Black);*/
 
                 auto current = score(w);
                 if (current > best && directionsOkay(w) && viablePosition(w, p)) {

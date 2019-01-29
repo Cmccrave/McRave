@@ -169,6 +169,15 @@
     <ClCompile Include="..\Source\Horizon\Horizon.cpp">
       <Filter>Horizon</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\McRave\PvZ.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\PvP.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\PvT.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">

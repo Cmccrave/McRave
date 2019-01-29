@@ -27,6 +27,9 @@ namespace McRave::BuildOrder::Zerg {
 
     void situational()
     {
+        auto baseVal = vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive);
+        auto techVal = int(techList.size()) + 1;
+
         // Adding hatcheries when needed
         if (shouldExpand() || shouldAddProduction())
             itemQueue[Zerg_Hatchery] = Item(vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive) + 1);
@@ -42,17 +45,24 @@ namespace McRave::BuildOrder::Zerg {
         }
 
         // When to tech
-        if (Broodwar->getFrameCount() > 5000 && vis(Zerg_Hatchery) > (1 + (int)techList.size()) * 2)
+        if (!getOpening && baseVal > techVal)
             getTech = true;
         if (techComplete())
             techUnit = UnitTypes::None;
 
         // Adding Sunkens/Spores
-        auto myStrength = Players::getStrength(PlayerState::Self);
-        auto enemyStrength = Players::getStrength(PlayerState::Enemy);
-        auto sunkenCount = int(enemyStrength.groundToGround / (myStrength.groundDefense + myStrength.groundToGround));
-        auto sporeCount = int((enemyStrength.airToAir + enemyStrength.airToGround)) / (myStrength.airDefense + myStrength.groundToAir + myStrength.airToAir);
-        itemQueue[Zerg_Creep_Colony] = Item(sunkenCount);
+        if (vis(Zerg_Drone) >= 8) {/*
+            auto myStrength = Players::getStrength(PlayerState::Self);
+            auto enemyStrength = Players::getStrength(PlayerState::Enemy);
+            auto sunkenCount = int(enemyStrength.groundToGround / (myStrength.groundDefense + myStrength.groundToGround));
+            auto sporeCount = int((enemyStrength.airToAir + enemyStrength.airToGround)) / (myStrength.airDefense + myStrength.groundToAir + myStrength.airToAir);*/
+            auto sunkenCount = 0;
+            if (Players::vP())
+                sunkenCount = int(1 + Units::getEnemyCount(Protoss_Zealot) + Units::getEnemyCount(Protoss_Dragoon)) / 2;
+            else if (Players::vT())
+                sunkenCount = int(Units::getEnemyCount(Terran_Vulture) > 0) ? 2 : 0;
+            itemQueue[Zerg_Creep_Colony] = Item(sunkenCount);
+        }
 
         // Overlord
         if (!bookSupply) {

@@ -8,18 +8,12 @@ namespace McRave::Events
     inline void onUnitDiscover(BWAPI::Unit unit)
     {
         BWEB::Map::onUnitDiscover(unit);
-
-        if (unit->getPlayer()->isEnemy(BWAPI::Broodwar->self()))
-            Units::storeUnit(unit);
-
-        if (Terrain::isIslandMap() && unit->getPlayer() == BWAPI::Broodwar->neutral() && !unit->getType().isResourceContainer() && unit->getType().isBuilding())
-            Units::storeUnit(unit);
+        Units::storeUnit(unit);
     }
 
     inline void onUnitCreate(BWAPI::Unit unit)
     {
-        if (unit->getPlayer() == BWAPI::Broodwar->self())
-            Units::storeUnit(unit);
+        Units::storeUnit(unit);
         if (unit->getType().isResourceContainer())
             Resources::storeResource(unit);
         if (unit->getType().isResourceDepot())

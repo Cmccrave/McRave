@@ -7,6 +7,7 @@
 #define STASIS_LIMIT 8.0
 #define LOW_SHIELD_PERCENT_LIMIT 0.2
 #define LOW_MECH_PERCENT_LIMIT 0.2
+#define LOW_BIO_PERCENT_LIMIT 0.3
 #define MIN_THREAT 0.01f
 #define SIM_RADIUS 640.0
 #define MAX_SCARAB 5 + (BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Reaver_Capacity) * 5)
@@ -101,4 +102,10 @@ namespace McRave {
     static int com(BWAPI::UnitType t) {
         return Units::getMyComplete(t);
     }
+    //static int mins() {
+    //    return Broodwar->self()->minerals();
+    //}
+    //static int gas() {
+    //    return Broodwar->self()->gas();
+    //}
 }

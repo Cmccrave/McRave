@@ -23,25 +23,7 @@ namespace McRave::Players
                 unit.setTarget(nullptr); // HACK: Just in case our target was killed and we don't get an update in UnitManager
                 if (unit.getType().isWorker() && unit.getRole() != Role::Combat)
                     continue;
-
-                if (unit.getType().isBuilding()) {
-                    strengths.airDefense += unit.getVisibleAirStrength();
-                    strengths.groundDefense += unit.getVisibleGroundStrength();
-                }
-                else if (unit.getType().isFlyer()) {
-                    strengths.airToAir += unit.getVisibleAirStrength();
-                    strengths.airToGround += unit.getVisibleGroundStrength();
-                }
-                else {
-                    strengths.groundToAir += unit.getVisibleAirStrength();
-                    strengths.groundToGround += unit.getVisibleGroundStrength();
-                }
-            }
-
-            if (player.player() == Broodwar->self()) {
-                Broodwar->drawTextScreen(0, 100, "%2f", strengths.groundToGround);
-                Broodwar->drawTextScreen(0, 116, "%2f", strengths.groundToAir);
-                Broodwar->drawTextScreen(0, 132, "%2f", strengths.groundDefense);
+                addStrength(unit);
             }
         }
     }
@@ -50,12 +32,15 @@ namespace McRave::Players
     {
         // Store all players
         for (auto player : Broodwar->getPlayers()) {
+            auto race = player->isNeutral() ? Races::None : player->getRace(); // BWAPI returns Zerg for neutral race
+
             PlayerInfo &p = thePlayers[player];
             p.setPlayer(player);
-            p.setAlive(true);
-            p.setStartRace(player->getRace());
-            p.setCurrentRace(player->getRace());
-            raceCount[p.getCurrentRace()]++;
+            p.setStartRace(race);
+            p.update();
+           
+            if (!p.isSelf())
+                raceCount[p.getCurrentRace()]++;
         }
     }
 
@@ -88,12 +73,35 @@ namespace McRave::Players
         return TotalStrength();
     }
 
+    void addStrength(UnitInfo& unit)
+    {
+        // TODO: When UnitInfo stores PlayerInfo, fix this
+        auto &pInfo = thePlayers[unit.getPlayer()];
+        auto &strengths = playerStrengths[pInfo];
+        for (auto &[p, player] : thePlayers) {
+            if (p == unit.getPlayer()) {
+                if (unit.getType().isBuilding()) {
+                    strengths.airDefense += unit.getVisibleAirStrength();
+                    strengths.groundDefense += unit.getVisibleGroundStrength();
+                }
+                else if (unit.getType().isFlyer()) {
+                    strengths.airToAir += unit.getVisibleAirStrength();
+                    strengths.airToGround += unit.getVisibleGroundStrength();
+                }
+                else {
+                    strengths.groundToAir += unit.getVisibleAirStrength();
+                    strengths.groundToGround += unit.getVisibleGroundStrength();
+                }
+            }
+        }
+    }
+
     map <Player, PlayerInfo>& getPlayers() { return thePlayers; }
     int getNumberZerg() { return raceCount[Races::Zerg]; }
     int getNumberProtoss() { return raceCount[Races::Protoss]; }
     int getNumberTerran() { return raceCount[Races::Terran]; }
     int getNumberRandom() { return raceCount[Races::Unknown]; }
-    bool vP() { return (thePlayers.size() == 2 && raceCount[Races::Protoss] > 0); }
-    bool vT() { return (thePlayers.size() == 2 && raceCount[Races::Terran] > 0); }
-    bool vZ() { return (thePlayers.size() == 2 && raceCount[Races::Zerg] > 0); }
+    bool vP() { return (thePlayers.size() == 3 && raceCount[Races::Protoss] > 0); }
+    bool vT() { return (thePlayers.size() == 3 && raceCount[Races::Terran] > 0); }
+    bool vZ() { return (thePlayers.size() == 3 && raceCount[Races::Zerg] > 0); }
 }

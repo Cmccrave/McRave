@@ -39,9 +39,9 @@ namespace McRave
         percentTotal			= t.maxHitPoints() + t.maxShields() > 0 ? double(health + shields) / double(t.maxHitPoints() + t.maxShields()) : 0.0;
         groundRange				= Math::groundRange(*this);
         groundDamage			= Math::groundDamage(*this);
-        groundReach				= groundRange + (speed * 32.0) + double(unitType.width() / 2) + 32.0;
+        groundReach				= groundRange + (speed * 32.0) + double(unitType.width() / 2) + 64.0;
         airRange				= Math::airRange(*this);
-        airReach				= airRange + (speed * 32.0) + double(unitType.width() / 2) + 32.0;
+        airReach				= airRange + (speed * 32.0) + double(unitType.width() / 2) + 64.0;
         airDamage				= Math::airDamage(*this);
         speed 					= Math::speed(*this);
         minStopFrame			= Math::getMinStopFrame(t);
@@ -84,10 +84,12 @@ namespace McRave
         // Update my target
         if (player && player == Broodwar->self()) {
             if (unitType == UnitTypes::Terran_Vulture_Spider_Mine) {
-                auto mineTarget = unit()->getOrderTarget();
-
-                //if (Units::getUnits(PlayerState::Enemy).find(mineTarget) != Units::getUnits(PlayerState::Enemy).end())
-                //    target = mineTarget != nullptr ? &Units::getEnemyUnits()[mineTarget] : nullptr;
+                auto possibleTarget = thisUnit->getOrderTarget();
+                if (possibleTarget) {
+                    auto &list = Players::getPlayers()[possibleTarget->getPlayer()];
+                    if (list.getUnits().find(thisUnit->getOrderTarget()) != list.getUnits().end())
+                        target = &list.getUnits()[thisUnit->getOrderTarget()];
+                }
             }
             else
                 Targets::getTarget(*this);
@@ -95,8 +97,12 @@ namespace McRave
 
         // Assume enemy target
         else if (player && player->isEnemy(Broodwar->self())) {
-            //if (Units::getMyUnits().find(thisUnit->getOrderTarget()) != Units::getMyUnits().end())
-            //    target = &Units::getMyUnits()[thisUnit->getOrderTarget()];
+            auto possibleTarget = thisUnit->getOrderTarget();
+            if (possibleTarget) {
+                auto &list = Players::getPlayers()[possibleTarget->getPlayer()];
+                if (list.getUnits().find(thisUnit->getOrderTarget()) != list.getUnits().end())
+                    target = &list.getUnits()[thisUnit->getOrderTarget()];
+            }
         }
     }
 
@@ -115,7 +121,7 @@ namespace McRave
         speed 					= Math::speed(*this);
     }
 
-    bool UnitInfo::command(BWAPI::UnitCommandType command, BWAPI::Position here)
+    bool UnitInfo::command(BWAPI::UnitCommandType command, BWAPI::Position here, bool overshoot)
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames
         bool attackCooldown = Broodwar->getFrameCount() - lastAttackFrame <= minStopFrame - Broodwar->getRemainingLatencyFrames();
@@ -137,14 +143,16 @@ namespace McRave
         };
 
         // Check if we should overshoot for halting distance
-        if (command == UnitCommandTypes::Move) {
+        if (overshoot) {
             auto distance = position.getApproxDistance(here);
             auto distExtra = max(distance, unitType.haltDistance() / 256);
-            if (distance > 0  && here.getDistance(position) < distExtra) {
+            if (distance > 0 && here.getDistance(position) < distExtra) {
                 here = position - (position - here) * (distExtra / distance);
                 here = Util::clipPosition(position, here);
             }
         }
+
+        Broodwar->drawLineMap(position, here, Colors::Green);
 
         // If this is a new order or new command than what we're requesting, we can issue it
         if (newOrder() || newCommand()) {
@@ -193,12 +201,13 @@ namespace McRave
             return false;
 
         // Define "close" - TODO: define better
-        auto close = position.getDistance(Terrain::getDefendPosition()) < groundReach || position.getDistance(Terrain::getDefendPosition()) < airReach;
+        auto close = position.getDistance(Terrain::getDefendPosition()) < groundRange || position.getDistance(Terrain::getDefendPosition()) < airRange;
         auto atHome = Terrain::isInAllyTerritory(tilePosition);
         auto manner = position.getDistance(Terrain::getMineralHoldPosition()) < 256.0;
         auto exists = thisUnit && thisUnit->exists();
-        auto attacked = exists && hasAttackedRecently() && target && target->getType().isBuilding();
+        auto attacked = exists && hasAttackedRecently() && target && (target->getType().isBuilding() || target->getType().isWorker());
         auto constructingClose = exists && (position.getDistance(Terrain::getDefendPosition()) < 320.0 || close) && (thisUnit->isConstructing() || thisUnit->getOrder() == Orders::ConstructingBuilding || thisUnit->getOrder() == Orders::PlaceBuilding);
+        auto inRange = Terrain::inRangeOfWall(*this);
 
         // Situations where a unit should be attacked:
         // 1) Building
@@ -223,7 +232,7 @@ namespace McRave
         else if (unitType.isWorker()) {
             if (constructingClose)
                 return true;
-            if (close)
+            if (close || attacked)
                 return true;
             if (atHome && Strategy::defendChoke())
                 return true;
@@ -234,7 +243,7 @@ namespace McRave
         // - Near my shield battery
 
         else {
-            if (close)
+            if (close || attacked || inRange)
                 return true;
             if (atHome && Strategy::defendChoke())
                 return true;

@@ -50,6 +50,10 @@ namespace BWEB::Blocks
             auto distBest = DBL_MAX;
             auto start = (Map::getMainTile() + (Map::getMainChoke() ? (TilePosition)Map::getMainChoke()->Center() : Map::getMainTile())) / 2;
 
+            if (race == Races::Zerg) {
+                start = Map::getMainTile();
+            }
+
             for (auto x = start.x - 10; x <= start.x + 6; x++) {
                 for (auto y = start.y - 10; y <= start.y + 6; y++) {
                     TilePosition tile(x, y);

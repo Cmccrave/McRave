@@ -156,22 +156,17 @@ namespace McRave::Terrain {
 
         void findDefendPosition()
         {
+            Broodwar->drawCircleMap(defendPosition, 10, Colors::Brown);
+
             UnitType baseType = Broodwar->self()->getRace().getResourceDepot();
             Position oldDefendPosition = defendPosition;
             reverseRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) < Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
             flatRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) == Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
             narrowNatural = BWEB::Map::getNaturalChoke() ? int(BWEB::Map::getNaturalChoke()->Pos(BWEB::Map::getNaturalChoke()->end1).getDistance(BWEB::Map::getNaturalChoke()->Pos(BWEB::Map::getNaturalChoke()->end2)) / 4) <= 2 : false;
-            defendNatural = BWEB::Map::getNaturalChoke() ? BuildOrder::buildCount(baseType) > 1 || Broodwar->self()->visibleUnitCount(baseType) > 1 || defendPosition == Position(BWEB::Map::getNaturalChoke()->Center()) || reverseRamp : false;
+            defendNatural = BWEB::Map::getNaturalChoke() ? BuildOrder::buildCount(baseType) > 1 || Broodwar->self()->visibleUnitCount(baseType) > 1 || defendPosition == Position(BWEB::Map::getNaturalChoke()->Center()) || (reverseRamp && !Players::vZ()) : false;
 
             if (islandMap) {
                 defendPosition = BWEB::Map::getMainPosition();
-                return;
-            }
-
-            // Defend our main choke if we're hiding tech
-            if (BuildOrder::isHideTech() && BWEB::Map::getMainChoke() && Broodwar->self()->visibleUnitCount(baseType) == 1) {
-                defendPosition = (Position)BWEB::Map::getMainChoke()->Center();
-                defendNatural = false;
                 return;
             }
 
@@ -192,8 +187,20 @@ namespace McRave::Terrain {
                 }
             }
 
+            // If enemy is rushing we want to defend our mineral line until we can stabilize
+            if (Strategy::enemyRush() && !Strategy::defendChoke() && !BuildOrder::isFastExpand()) {
+                defendPosition = mineralHold;
+                defendNatural = false;
+            }
+
+            // Defend our main choke if we're hiding tech
+            else if (BuildOrder::isHideTech() && BWEB::Map::getMainChoke() && Broodwar->self()->visibleUnitCount(baseType) == 1) {
+                defendPosition = (Position)BWEB::Map::getMainChoke()->Center();
+                defendNatural = false;
+            }
+
             // Natural defending
-            if (naturalWall) {
+            else if (naturalWall) {
                 Position door(naturalWall->getDoor());
                 defendPosition = door.isValid() ? door : naturalWall->getCentroid();
                 allyTerritory.insert(BWEB::Map::getNaturalArea());
@@ -442,6 +449,33 @@ namespace McRave::Terrain {
 
         updateConcavePositions();
         updateAreas();
+    }
+
+    bool inRangeOfWall(UnitInfo& unit)
+    {
+        if (naturalWall) {
+            for (auto &piece : naturalWall->getDefenses()) {
+                auto center = Position(piece) + Position(32, 32);
+                if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 32)
+                    return true;
+            }
+            for (auto &piece : naturalWall->smallTiles()) {
+                auto center = Position(piece) + Position(32, 32);
+                if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 32)
+                    return true;
+            }
+            for (auto &piece : naturalWall->mediumTiles()) {
+                auto center = Position(piece) + Position(48, 32);
+                if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 48)
+                    return true;
+            }
+            for (auto &piece : naturalWall->largeTiles()) {
+                auto center = Position(piece) + Position(64, 48);
+                if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 64)
+                    return true;
+            }
+        }
+        return false;
     }
 
     bool findNaturalWall(vector<UnitType>& types, const vector<UnitType>& defenses)

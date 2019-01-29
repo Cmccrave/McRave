@@ -6,6 +6,7 @@ namespace McRave::Terrain {
     void onStart();
     void onFrame();
 
+    bool inRangeOfWall(UnitInfo&);
     bool findNaturalWall(std::vector<BWAPI::UnitType>&, const std::vector<BWAPI::UnitType>& defenses ={});
     bool findMainWall(std::vector<BWAPI::UnitType>&, const std::vector<BWAPI::UnitType>& defenses ={});
     bool isInAllyTerritory(BWAPI::TilePosition);
@@ -13,7 +14,7 @@ namespace McRave::Terrain {
     bool isStartingBase(BWAPI::TilePosition);
     BWAPI::Position closestUnexploredStart();
     BWAPI::Position randomBasePosition();
-
+       
     bool isIslandMap();
     bool isReverseRamp();
     bool isFlatRamp();

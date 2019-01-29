@@ -152,7 +152,7 @@ namespace McRave {
         bool hasResource() { return resource != nullptr; }
         bool hasTransport() { return transport != nullptr; }
         bool hasTarget() { return target != nullptr; }
-        bool command(BWAPI::UnitCommandType, BWAPI::Position);
+        bool command(BWAPI::UnitCommandType, BWAPI::Position, bool);
         bool command(BWAPI::UnitCommandType, UnitInfo*);
 
         ResourceInfo &getResource() { return *resource; }

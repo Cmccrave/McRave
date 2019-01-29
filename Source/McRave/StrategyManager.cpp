@@ -30,11 +30,11 @@ namespace McRave::Strategy {
         bool vultureSpeed = false;
 
         int frameArrivesWhen(UnitInfo& unit) {
-            return Broodwar->getFrameCount() + (unit.getPosition().getDistance(Terrain::getDefendPosition()) / unit.getSpeed());
+            return Broodwar->getFrameCount() + int(unit.getPosition().getDistance(Terrain::getDefendPosition()) / unit.getSpeed());
         }
 
         int frameCompletesWhen(UnitInfo& unit) {
-            return Broodwar->getFrameCount() + (unit.getPercentHealth() * unit.getType().buildTime());
+            return Broodwar->getFrameCount() + int(unit.getPercentHealth() * unit.getType().buildTime());
         }
 
         void enemyZergBuilds(PlayerInfo& player)
@@ -44,13 +44,15 @@ namespace McRave::Strategy {
 
             // 5 Hatch build detection
             if (Stations::getEnemyStations().size() >= 3 || (Units::getEnemyCount(Zerg_Hatchery) + Units::getEnemyCount(Zerg_Lair) >= 4 && Units::getEnemyCount(Zerg_Drone) >= 14))
-                enemyBuild = "Z5Hatch";
+                enemyBuild = "5Hatch";
 
             // Zergling frame
-            if (lingFrame == 0 && Units::getEnemyCount(Zerg_Zergling) >= 6) {
+            if (lingFrame == 0 && Units::getEnemyCount(Zerg_Zergling) >= 1) {
                 lingFrame = Broodwar->getFrameCount();
-                if (!Terrain::getEnemyStartingPosition().isValid())
+                if (!Terrain::getEnemyStartingPosition().isValid()) {
                     rush = true;
+                    enemyBuild = "4Pool";
+                }
             }
 
             for (auto &u : player.getUnits()) {
@@ -72,13 +74,13 @@ namespace McRave::Strategy {
 
                     if (poolFrame > 0 && Units::getEnemyCount(Zerg_Spire) == 0 && Units::getEnemyCount(Zerg_Hydralisk_Den) == 0 && Units::getEnemyCount(Zerg_Lair) == 0) {
                         if (enemyGas <= 0 && ((poolFrame < 2500 && poolFrame > 0) || (lingFrame < 3000 && lingFrame > 0)))
-                            enemyBuild = "Z5Pool";
+                            enemyBuild = "5Pool";
                         else if (Units::getEnemyCount(Zerg_Hatchery) == 1 && enemyGas < 148 && enemyGas >= 50 && Units::getEnemyCount(Zerg_Zergling) >= 8)
-                            enemyBuild = "Z9Pool";
+                            enemyBuild = "9Pool";
                         else if (Units::getEnemyCount(Zerg_Hatchery) >= 1 && Units::getEnemyCount(Zerg_Drone) <= 11 && Units::getEnemyCount(Zerg_Zergling) >= 8)
-                            enemyBuild = "Z9Pool";
+                            enemyBuild = "9Pool";
                         else if (Units::getEnemyCount(Zerg_Hatchery) == 3 && enemyGas < 148 && enemyGas >= 100)
-                            enemyBuild = "Z3HatchLing";
+                            enemyBuild = "3HatchLing";
                         else
                             enemyBuild = "Unknown";
                     }
@@ -88,17 +90,17 @@ namespace McRave::Strategy {
                 else if (unit.getType() == Zerg_Hydralisk_Den) {
                     if (Units::getEnemyCount(Zerg_Spire) == 0) {
                         if (Units::getEnemyCount(Zerg_Hatchery) == 3)
-                            enemyBuild = "Z3HatchHydra";
+                            enemyBuild = "3HatchHydra";
                         else if (Units::getEnemyCount(Zerg_Hatchery) == 2)
-                            enemyBuild = "Z2HatchHydra";
+                            enemyBuild = "2HatchHydra";
                         else if (Units::getEnemyCount(Zerg_Hatchery) == 1)
-                            enemyBuild = "Z1HatchHydra";
+                            enemyBuild = "1HatchHydra";
                         else if (Units::getEnemyCount(Zerg_Lair) + Units::getEnemyCount(Zerg_Hatchery) == 2)
-                            enemyBuild = "Z2HatchLurker";
+                            enemyBuild = "2HatchLurker";
                         else if (Units::getEnemyCount(Zerg_Lair) == 1 && Units::getEnemyCount(Zerg_Hatchery) == 0)
-                            enemyBuild = "Z1HatchLurker";
+                            enemyBuild = "1HatchLurker";
                         else if (Units::getEnemyCount(Zerg_Hatchery) >= 4)
-                            enemyBuild = "Z5Hatch";
+                            enemyBuild = "5Hatch";
                     }
                     else
                         enemyBuild = "Unknown";
@@ -108,12 +110,12 @@ namespace McRave::Strategy {
                 else if (unit.getType() == Zerg_Spire || unit.getType() == Zerg_Lair) {
                     if (Units::getEnemyCount(Zerg_Hydralisk_Den) == 0) {
                         if (Units::getEnemyCount(Zerg_Lair) + Units::getEnemyCount(Zerg_Hatchery) == 3 && Units::getEnemyCount(Zerg_Drone) < 14)
-                            enemyBuild = "Z3HatchMuta";
+                            enemyBuild = "3HatchMuta";
                         else if (Units::getEnemyCount(Zerg_Lair) + Units::getEnemyCount(Zerg_Hatchery) == 2)
-                            enemyBuild = "Z2HatchMuta";
+                            enemyBuild = "2HatchMuta";
                     }
                     else if (Units::getEnemyCount(Zerg_Hatchery) >= 4)
-                        enemyBuild = "Z5Hatch";
+                        enemyBuild = "5Hatch";
                     else
                         enemyBuild = "Unknown";
                 }
@@ -199,9 +201,9 @@ namespace McRave::Strategy {
                 Broodwar->drawTextScreen(0, 100, "%d  %d  %d", noGates, noGas, noExpand);
 
                 if (maybeProxy && ((topLeft.isValid() && Grids::lastVisibleFrame(topLeft) > 0) || (botRight.isValid() && Grids::lastVisibleFrame(botRight) > 0)))
-                    enemyBuild = "P2Gate";
+                    enemyBuild = "2Gate";
                 else if (Units::getEnemyCount(Protoss_Gateway) >= 2 && Units::getEnemyCount(Protoss_Nexus) <= 1 && Units::getEnemyCount(Protoss_Assimilator) <= 0 && Units::getEnemyCount(Protoss_Cybernetics_Core) <= 0 && Units::getEnemyCount(Protoss_Dragoon) <= 0)
-                    enemyBuild = "P2Gate";
+                    enemyBuild = "2Gate";
                 else if (enemyBuild == "P2Gate")
                     enemyBuild = "Unknown";
             }
@@ -227,15 +229,15 @@ namespace McRave::Strategy {
                 // PCannonRush
                 if (unit.getType() == Protoss_Forge) {
                     if (unit.getPosition().getDistance(Terrain::getEnemyStartingPosition()) < 320.0 && Units::getEnemyCount(Protoss_Gateway) == 0)
-                        enemyBuild = "PCannonRush";
-                    else if (enemyBuild == "PCannonRush")
+                        enemyBuild = "CannonRush";
+                    else if (enemyBuild == "CannonRush")
                         enemyBuild = "Unknown";
                 }
 
                 // PFFE
                 if (unit.getType() == Protoss_Photon_Cannon && Units::getEnemyCount(Protoss_Robotics_Facility) == 0) {
                     if (unit.getPosition().getDistance((Position)Terrain::getEnemyNatural()) < 320.0)
-                        enemyBuild = "PFFE";
+                        enemyBuild = "FFE";
                     else if (enemyBuild == "PFFE")
                         enemyBuild = "Unknown";
                 }
@@ -243,7 +245,7 @@ namespace McRave::Strategy {
                 // P2GateExpand
                 if (unit.getType() == Protoss_Nexus) {
                     if (!Terrain::isStartingBase(unit.getTilePosition()) && Units::getEnemyCount(Protoss_Gateway) >= 2)
-                        enemyBuild = "P2GateExpand";
+                        enemyBuild = "2GateExpand";
                 }
 
                 // Proxy Builds
@@ -262,11 +264,11 @@ namespace McRave::Strategy {
                         goonRange = true;
 
                     if (Units::getEnemyCount(Protoss_Robotics_Facility) >= 1 && Units::getEnemyCount(Protoss_Gateway) <= 1)
-                        enemyBuild = "P1GateRobo";
+                        enemyBuild = "1GateRobo";
                     else if (Units::getEnemyCount(Protoss_Gateway) >= 4)
-                        enemyBuild = "P4Gate";
+                        enemyBuild = "4Gate";
                     else if (Units::getEnemyCount(Protoss_Citadel_of_Adun) >= 1 || Units::getEnemyCount(Protoss_Templar_Archives) >= 1 || (!goonRange && Units::getEnemyCount(Protoss_Dragoon) < 2 && Units::getSupply() > 80))
-                        enemyBuild = "P1GateDT";
+                        enemyBuild = "1GateDT";
                 }
 
                 // Pressure checking
@@ -287,21 +289,21 @@ namespace McRave::Strategy {
         void checkEnemyRush()
         {
             // Rush builds are immediately aggresive builds
-            rush = Units::getSupply() < 80 && (enemyBuild == "TBBS" || enemyBuild == "P2Gate" || enemyBuild == "Z5Pool");
+            rush = Units::getSupply() < 80 && (enemyBuild == "BBS" || enemyBuild == "2Gate" || enemyBuild == "5Pool" || enemyBuild == "4Pool");
         }
 
         void checkEnemyPressure()
         {
             // Pressure builds are delayed aggresive builds
-            pressure = (enemyBuild == "P4Gate" || enemyBuild == "Z9Pool" || enemyBuild == "TSparks" || enemyBuild == "T3Fact");
+            pressure = (enemyBuild == "4Gate" || enemyBuild == "9Pool" || enemyBuild == "Sparks" || enemyBuild == "2Fact");
         }
 
         void checkHoldChoke()
         {
             holdChoke = BuildOrder::isFastExpand()
-                || Players::getStrength(PlayerState::Ally).groundToGround > Players::getStrength(PlayerState::Enemy).groundToGround
+                //|| Players::getStrength(PlayerState::Ally).groundToGround > Players::getStrength(PlayerState::Enemy).groundToGround
                 || BuildOrder::isWallNat()
-                || BuildOrder::isHideTech()
+                || (BuildOrder::isHideTech() && !rush)
                 || Units::getSupply() > 60
                 || Players::vT();
         }
@@ -321,21 +323,21 @@ namespace McRave::Strategy {
 
             // DTs, Vultures, Lurkers
             invis = (Units::getEnemyCount(Protoss_Dark_Templar) >= 1 || Units::getEnemyCount(Protoss_Citadel_of_Adun) >= 1 || Units::getEnemyCount(Protoss_Templar_Archives) >= 1)
-                || (enemyBuild == "P1GateDT")
+                || (enemyBuild == "1GateDT")
                 || (Units::getEnemyCount(Terran_Ghost) >= 1 || Units::getEnemyCount(Terran_Vulture) >= 4)
                 || (Units::getEnemyCount(Zerg_Lurker) >= 1 || (Units::getEnemyCount(Zerg_Lair) >= 1 && Units::getEnemyCount(Zerg_Hydralisk_Den) >= 1 && Units::getEnemyCount(Zerg_Hatchery) <= 0))
-                || (enemyBuild == "Z1HatchLurker" || enemyBuild == "Z2HatchLurker" || enemyBuild == "P1GateDT");
+                || (enemyBuild == "1HatchLurker" || enemyBuild == "2HatchLurker" || enemyBuild == "1GateDT");
         }
 
         void checkEnemyProxy()
         {
             // Proxy builds are built closer to me than the enemy
-            proxy = Units::getSupply() < 80 && (enemyBuild == "PCannonRush" || enemyBuild == "TBunkerRush");
+            proxy = Units::getSupply() < 80 && (enemyBuild == "CannonRush" || enemyBuild == "BunkerRush");
         }
 
         void updateEnemyBuild()
         {
-            if (Players::getPlayers().size() > 1 || (Broodwar->getFrameCount() - enemyFrame > 2000 && enemyFrame != 0 && enemyBuild != "Unknown"))
+            if (Broodwar->getFrameCount() - enemyFrame > 2000 && enemyFrame != 0 && enemyBuild != "Unknown")
                 return;
 
             if (enemyFrame == 0 && enemyBuild != "Unknown")
@@ -344,15 +346,17 @@ namespace McRave::Strategy {
             for (auto &p : Players::getPlayers()) {
                 PlayerInfo &player = p.second;
 
-                if (player.getCurrentRace() == Races::Zerg)
-                    enemyZergBuilds(player);
-                else if (player.getCurrentRace() == Races::Protoss)
-                    enemyProtossBuilds(player);
-                else if (player.getCurrentRace() == Races::Terran)
-                    enemyTerranBuilds(player);
+                if (!player.isSelf()) {
+                    if (player.getCurrentRace() == Races::Zerg)
+                        enemyZergBuilds(player);
+                    else if (player.getCurrentRace() == Races::Protoss)
+                        enemyProtossBuilds(player);
+                    else if (player.getCurrentRace() == Races::Terran)
+                        enemyTerranBuilds(player);
 
-                // HACK: Not needed for now anyways
-                player.setBuild(enemyBuild);
+                    // HACK: Not needed for now anyways
+                    player.setBuild(enemyBuild);
+                }
             }
         }
 
@@ -572,18 +576,18 @@ namespace McRave::Strategy {
 
             for (auto &u : Units::getUnits(PlayerState::Enemy)) {
                 UnitInfo &unit = *u;
-                auto type = unit.getType();
+                auto enemyType = unit.getType();
 
-                for (auto &t : allUnits) {
+                for (auto &myType : allUnits) {
 
                     UnitInfo dummy;
-                    dummy.createDummy(t);
+                    dummy.createDummy(myType);
 
-                    if (!unit.getPosition().isValid() || type.isBuilding() || type.isSpell())
+                    if (!unit.getPosition().isValid() || myType.isBuilding() || myType.isSpell())
                         continue;
 
-                    double myDPS = type.isFlyer() ? Math::airDPS(dummy) : Math::groundDPS(dummy);
-                    double enemyDPS = t.isFlyer() ? Math::airDPS(unit) : Math::groundDPS(unit);
+                    double myDPS = enemyType.isFlyer() ? Math::airDPS(dummy) : Math::groundDPS(dummy);
+                    double enemyDPS = myType.isFlyer() ? Math::airDPS(unit) : Math::groundDPS(unit);
 
                     if (unit.getType() == Terran_Medic)
                         enemyDPS = 0.775;
@@ -594,18 +598,17 @@ namespace McRave::Strategy {
 
                     if (distUnit == 0.0)
                         distUnit = 0.1;
+                    if (myType == UnitTypes::Zerg_Zergling)
+                        myDPS /= 2;
 
-                    double vis = max(1.0, (double(Broodwar->self()->visibleUnitCount(t))));
+                    double visible = max(1.0, (double(vis(myType))));
 
-                    if (unitScore[t] <= 0.0)
-                        unitScore[t] += (overallMatchup / max(1.0, vis * distUnit));
+                    if (unitScore[myType] <= 0.0)
+                        unitScore[myType] += (overallMatchup / max(1.0, visible * distUnit));
                     else
-                        unitScore[t] = (unitScore[t] * (999.0 / 1000.0)) + (overallMatchup / (1000.0 * vis * distUnit));
+                        unitScore[myType] = (unitScore[myType] * (999.0 / 1000.0)) + (overallMatchup / (1000.0 * visible * distUnit));
                 }
             }
-
-            for (auto &u : allUnits)
-                unitScore[u] = max(0.1, unitScore[u]);
         }
 
         void updateScoring()

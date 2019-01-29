@@ -179,24 +179,10 @@ namespace McRave::Buildings {
             const BWEB::Walls::Wall* wall = nullptr;
             set<TilePosition> placements;
 
-            // Zerg can place at any wall close to this position
-            if (Broodwar->self()->getRace() == Races::Zerg) {
-                for (auto &w : BWEB::Walls::getWalls()) {
-                    auto dist = w.getCentroid().getDistance(here);
-                    if (dist < distBest) {
-                        wall = &w;
-                        distBest = dist;
-                    }
-                }
-            }
-
-            // Protoss and Terran only wall at main/natural for now
-            else {
-                if (BuildOrder::isWallMain())
-                    wall = Terrain::getMainWall();
-                else if (BuildOrder::isWallNat())
-                    wall = Terrain::getNaturalWall();
-            }
+            if (BuildOrder::isWallMain())
+                wall = Terrain::getMainWall();
+            else if (BuildOrder::isWallNat() || Broodwar->self()->getRace() == Races::Zerg)
+                wall = Terrain::getNaturalWall();
 
             if (!wall)
                 return tileBest;
@@ -303,38 +289,25 @@ namespace McRave::Buildings {
                     return here;
             }
 
-            //// HACK: choose a wall position as Zerg because fuck it
-            //if (Broodwar->self()->getRace() == Races::Zerg) {
-            //    for (auto &area : Terrain::getAllyTerritory()) {
-            //        auto wall = BWEB::Walls::getWall(area);
-            //        if (wall) {
-            //            here = findWallLocation(building, wall->getCentroid());
-            //            if (here.isValid()) {
-            //                Broodwar << "Valid spot found" << endl;
-            //                return here;
-            //            }
-            //        }
-            //    }
-            //}
-
             // If this is a Resource Depot, Zerg can place it as a production building or expansion, Protoss and Terran only expand
             if (building.isResourceDepot()) {
-                if (Broodwar->self()->getRace() == Races::Zerg && BWEB::Map::getNaturalChoke() && BuildOrder::isOpener() && BuildOrder::isWallNat() && Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Hatchery) >= 2) {
-                    here = findWallLocation(building, Position(BWEB::Map::getNaturalChoke()->Center()));
-
-                    if (here.isValid() && isBuildable(building, here) && isQueueable(building, here))
-                        return here;
-                }
                 if (Broodwar->self()->getRace() == Races::Zerg) {
-                    if (int(Stations::getMyStations().size()) > Broodwar->self()->visibleUnitCount(UnitTypes::Zerg_Hatchery))
-                        here = findProdLocation(building, BWEB::Map::getMainPosition());
-                    else
-                        here = findExpoLocation();
+                    auto hatchCount = vis(UnitTypes::Zerg_Hatchery) + vis(UnitTypes::Zerg_Lair) + vis(UnitTypes::Zerg_Hive);
+                    if (BWEB::Map::getNaturalChoke() && hatchCount >= 2) {
+                        here = findWallLocation(building, Position(BWEB::Map::getNaturalChoke()->Center()));
+                        if (here.isValid() && isBuildable(building, here) && isQueueable(building, here))
+                            return here;
+                    }
+
+                    // Expand on 1 hatch, 3 hatch, 5 hatch.. etc                    
+                    auto expand = (1 + hatchCount) / 2 <= int(Stations::getMyStations().size());
+                    here = expand ? findExpoLocation() : findProdLocation(building, BWEB::Map::getMainPosition());
                 }
                 else
                     here = findExpoLocation();
 
-                return here;
+                if (here.isValid() && isBuildable(building, here) && isQueueable(building, here))
+                    return here;
             }
 
             // If this is a Pylon, check if any Nexus needs a Pylon
@@ -347,8 +320,8 @@ namespace McRave::Buildings {
                 }
             }
 
-            // Second pylon place near our main choke
-            if (building == UnitTypes::Protoss_Pylon && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) == 1 && !Terrain::isIslandMap()) {
+            // Place a Pylon near our main choke when ready
+            if (building == UnitTypes::Protoss_Pylon && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Pylon) == 1 + int(Players::vZ()) && !Terrain::isIslandMap()) {
                 here = findProdLocation(building, (Position)BWEB::Map::getMainChoke()->Center());
                 if (here.isValid() && isBuildable(building, here) && isQueueable(building, here))
                     return here;
@@ -483,10 +456,15 @@ namespace McRave::Buildings {
                 }
             }
 
-            // HACK: Cancelling Refinerys for our gas trick
+            // Cancelling Refinerys for our gas trick
             if (BuildOrder::isGasTrick() && building.getType().isRefinery() && !building.unit()->isCompleted() && BuildOrder::buildCount(building.getType()) < vis(building.getType())) {
                 building.unit()->cancelMorph();
                 BWEB::Map::removeUsed(building.getTilePosition(), 4, 2);
+            }
+
+            // Cancelling buildings we don't want
+            if (building.getType().getRace() != Races::Zerg && BuildOrder::buildCount(building.getType()) < vis(building.getType())) {
+                building.unit()->cancelConstruction();
             }
         }
 
@@ -598,7 +576,7 @@ namespace McRave::Buildings {
                 // 4) Queue building if our actual count is higher than our visible count
                 if (i.getActualCount() > queuedCount + Broodwar->self()->visibleUnitCount(building) + offset) {
                     auto here = getBuildLocation(building);
-                    
+
                     auto builder = Util::getClosestUnit(Position(here), PlayerState::Self, [&](auto &u) {
                         return u.getRole() == Role::Worker && u.getBuildingType() == UnitTypes::None;
                     });

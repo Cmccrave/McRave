@@ -77,7 +77,7 @@ namespace McRave::BuildOrder
             auto p = enemy == Races::Protoss;
             auto z = enemy == Races::Zerg;
             auto t = enemy == Races::Terran;
-            auto r = enemy == Races::Unknown || Races::Random;
+            auto r = enemy == Races::Unknown || enemy == Races::Random;
 
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (build == "1GateCore")
@@ -109,7 +109,7 @@ namespace McRave::BuildOrder
             auto p = enemy == Races::Protoss;
             auto z = enemy == Races::Zerg;
             auto t = enemy == Races::Terran;
-            auto r = enemy == Races::Unknown || Races::Random;
+            auto r = enemy == Races::Unknown || enemy == Races::Random;
 
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (build == "1GateCore") {
@@ -162,7 +162,7 @@ namespace McRave::BuildOrder
             auto p = enemy == Races::Protoss;
             auto z = enemy == Races::Zerg;
             auto t = enemy == Races::Terran;
-            auto r = enemy == Races::Unknown || Races::Random;
+            auto r = enemy == Races::Unknown || enemy == Races::Random;
 
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (build == "1GateCore") {
@@ -509,30 +509,30 @@ namespace McRave::BuildOrder
     void getDefaultBuild()
     {
         if (Broodwar->self()->getRace() == Races::Protoss) {
-            if (Players::getNumberProtoss() > 0) {
+            if (Players::vP()) {
                 currentBuild = "1GateCore";
                 currentOpener = "1Zealot";
                 currentTransition = "Reaver";
             }
-            else if (Players::getNumberZerg() > 0) {
+            else if (Players::vZ()) {
                 currentBuild = "1GateCore";
                 currentOpener = "2Zealot";
-                currentTransition = "DT";
+                currentTransition = "Corsair";
             }
-            else if (Players::getNumberTerran() > 0) {
+            else if (Players::vT()) {
                 currentBuild = "GateNexus";
                 currentOpener = "1Gate";
                 currentTransition = "Standard";
                 isBuildPossible(currentBuild, currentOpener);
             }
-            else if (Players::getNumberRandom() > 0) {
+            else {
                 currentBuild = "2Gate";
                 currentOpener = "Main";
                 currentTransition = "Reaver";
             }
         }
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            if (Players::getNumberZerg() > 0) {
+            if (Players::vZ()) {
                 currentBuild = "PoolLair";
                 currentOpener = "9Pool";
                 currentTransition = "1HatchMuta";
@@ -578,7 +578,7 @@ namespace McRave::BuildOrder
     bool shouldAddProduction()
     {
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            if (Broodwar->self()->minerals() - Production::getReservedMineral() - Buildings::getQueuedMineral() > 300 && !getOpening)
+            if (Broodwar->self()->minerals() >= 200 && vis(Zerg_Larva) < 3 && !getOpening)
                 return true;
         }
         else {

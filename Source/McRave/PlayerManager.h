@@ -25,10 +25,13 @@ namespace McRave::Players
     TotalStrength getStrength(PlayerState);
     TotalStrength getStrength(PlayerInfo&);
 
+    void addStrength(UnitInfo&);
+
     void onStart();
     void onFrame();
 
-    std::map <BWAPI::Player, PlayerInfo>& getPlayers();   
+    std::map <BWAPI::Player, PlayerInfo>& getPlayers();
+
     int getNumberZerg();
     int getNumberProtoss();
     int getNumberTerran();

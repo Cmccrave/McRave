@@ -74,11 +74,18 @@ namespace McRave::BuildOrder {
         void unlocks();
         void island();
 
-        void P1GateCore();
-        void PFFE();
-        void PNexusGate();
-        void PGateNexus();
-        void P2Gate();
+        void PvP1GateCore();
+        void PvT1GateCore();
+        void PvZ1GateCore();
+
+        void PvZFFE();
+
+        void PvTNexusGate();
+        void PvTGateNexus();
+
+        void PvP2Gate();
+        void PvT2Gate();
+        void PvZ2Gate();        
     }
 
     namespace Zerg {

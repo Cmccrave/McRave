@@ -298,7 +298,7 @@ namespace McRave::Transports {
             }
 
             if (bestPos.isValid())
-                transport.command(UnitCommandTypes::Move, bestPos);
+                transport.command(UnitCommandTypes::Move, bestPos, true);
             else
                 Command::move(transport);
         }

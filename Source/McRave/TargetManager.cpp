@@ -23,7 +23,7 @@ namespace McRave::Targets{
                 bool selfHasAir = myStrength.airToGround > 0.0 || myStrength.airToAir > 0.0;
 
                 bool targetMatters = (target.getAirDamage() > 0.0 && selfHasAir)
-                    || (target.getGroundDamage() > 0.0 && selfHasGround)
+                    || (target.getGroundDamage() > 0.0/* && selfHasGround*/)
                     || (target.getType().isDetector() && (Units::getMyVisible(UnitTypes::Protoss_Dark_Templar) > 0 || Units::getMyVisible(UnitTypes::Protoss_Observer) > 0))
                     || (target.getAirDamage() == 0.0 && target.getGroundDamage() == 0.0)
                     || (target.getType().isWorker())
@@ -55,9 +55,6 @@ namespace McRave::Targets{
 
                     // Don't attack units that don't matter
                     || !targetMatters
-
-                    // Testing Reavers vs T only shoot workers
-                    //|| (unit.getType() == UnitTypes::Protoss_Reaver && Players::vT() && !target.getType().isWorker())
 
                     // DT: Don't attack Vultures
                     || (unit.getType() == UnitTypes::Protoss_Dark_Templar && target.getType() == UnitTypes::Terran_Vulture)
@@ -114,7 +111,6 @@ namespace McRave::Targets{
                     highest = thisUnit;
                     bestTarget = &target;
                 }
-                return;
             };
 
             for (auto &t : unitList) {
@@ -145,6 +141,11 @@ namespace McRave::Targets{
                 if ((unitCanAttack || targetCanAttack) && distance < closest) {
                     unit.setSimPosition(target.getPosition());
                     closest = distance;
+                }
+
+                if (unit.isLightAir() && !Stations::getMyStations().empty()) {
+                    auto myStation = Stations::getClosestStation(PlayerState::Self, unit.getPosition());
+                    distance = target.getPosition().getDistance(myStation);
                 }
 
                 // If should target, check if it's best

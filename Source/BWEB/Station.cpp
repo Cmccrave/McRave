@@ -190,7 +190,7 @@ namespace BWEB::Stations
                 addResourceOverlap(genCenter);
 
                 if (Broodwar->self()->getRace() == Races::Zerg)
-                    Map::addOverlap(base.Location(), 5, 4);
+                    Map::addOverlap(base.Location() - TilePosition(1,1), 6, 5);
             }
         }
     }

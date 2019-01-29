@@ -71,7 +71,7 @@ namespace McRave::Util {
     Line lineOfBestFit(const BWEM::ChokePoint *);
     Line parallelLine(Line, int, double);
 
-    BWAPI::Position getConcavePosition(UnitInfo&, BWEM::Area const * area = nullptr, BWAPI::Position here = BWAPI::Positions::Invalid);
+    BWAPI::Position getConcavePosition(UnitInfo&, int radius, BWEM::Area const * area = nullptr, BWAPI::Position here = BWAPI::Positions::Invalid);
 
     BWAPI::Position clipPosition(BWAPI::Position, BWAPI::Position);
     BWAPI::Position clipToMap(BWAPI::Position);

@@ -9,16 +9,30 @@ namespace McRave::BuildOrder::Protoss
 {
     void opener()
     {
-        if (currentBuild == "1GateCore")
-            P1GateCore();
-        else if (currentBuild == "FFE")
-            PFFE();
-        else if (currentBuild == "NexusGate")
-            PNexusGate();
-        else if (currentBuild == "GateNexus")
-            PGateNexus();
-        else if (currentBuild == "2Gate")
-            P2Gate();
+        if (Players::vT()) {
+            if (currentBuild == "1GateCore")
+                PvT1GateCore();
+            else if (currentBuild == "NexusGate")
+                PvTNexusGate();
+            else if (currentBuild == "GateNexus")
+                PvTGateNexus();
+            else if (currentBuild == "2Gate")
+                PvT2Gate();
+        }        
+        else if (Players::vZ()) {
+            if (currentBuild == "1GateCore")
+                PvZ1GateCore();
+            else if (currentBuild == "FFE")
+                PvZFFE();
+            else if (currentBuild == "2Gate")
+                PvZ2Gate();
+        }
+        else if(Players::vP()) {
+            if (currentBuild == "1GateCore")
+                PvP1GateCore();
+            else if (currentBuild == "2Gate")
+                PvP2Gate();
+        }
     }
 
     void tech()
@@ -97,6 +111,8 @@ namespace McRave::BuildOrder::Protoss
             // Adding bases
             if (shouldExpand())
                 itemQueue[Protoss_Nexus] = Item(com(Protoss_Nexus) + 1);
+            else
+                itemQueue[Protoss_Nexus] = Item(vis(Protoss_Nexus));
 
             // Adding production
             if (shouldAddProduction()) {                

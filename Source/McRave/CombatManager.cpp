@@ -40,6 +40,7 @@ namespace McRave::Combat {
 
                 // Force retreating
                 else if ((unit.getType().isMechanical() && unit.getPercentTotal() < LOW_MECH_PERCENT_LIMIT)
+                    || (unit.getType().getRace() == Races::Zerg && unit.getPercentTotal() < LOW_BIO_PERCENT_LIMIT)
                     || (unit.getType() == UnitTypes::Protoss_High_Templar && unit.getEnergy() < 75)
                     || Grids::getESplash(unit.getWalkPosition()) > 0
                     || (invisTarget && (unit.getPosition().getDistance(unit.getTarget().getPosition()) <= enemyReach || enemyThreat))
@@ -55,7 +56,7 @@ namespace McRave::Combat {
                         || (unit.getType() == UnitTypes::Protoss_Corsair && unit.getTarget().getType() == UnitTypes::Zerg_Scourge && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Corsair) < 6)
                         || (unit.getType() == UnitTypes::Terran_Medic && unit.unit()->getEnergy() <= TechTypes::Healing.energyCost())
                         || (unit.getType() == UnitTypes::Zerg_Mutalisk && Grids::getEAirThreat((WalkPosition)unit.getEngagePosition()) > 0.0 && unit.getHealth() <= 30)
-                        || (unit.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && Broodwar->getFrameCount() < 8000)
+                        || (unit.getType().maxShields() > 0 && unit.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && Broodwar->getFrameCount() < 8000)
                         || (unit.getType() == UnitTypes::Terran_SCV && Broodwar->getFrameCount() > 12000)
                         || (invisTarget && !unit.getTarget().isThreatening() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) == 0))
                         unit.setLocalState(LocalState::Retreat);
@@ -113,14 +114,14 @@ namespace McRave::Combat {
             if (unit.getGoal().isValid()) {
 
                 // Find a concave if not in enemy territory
-                if (!Terrain::isInEnemyTerritory((TilePosition)unit.getDestination())) {
-                    Position bestPosition = Util::getConcavePosition(unit, mapBWEM.GetArea(TilePosition(unit.getDestination())));
+                if (!Terrain::isInEnemyTerritory((TilePosition)unit.getGoal())) {
+                    Position bestPosition = Util::getConcavePosition(unit, unit.getGroundRange(), mapBWEM.GetArea(TilePosition(unit.getGoal())));
                     if (bestPosition.isValid() && (bestPosition != unit.getPosition() || unit.unit()->getLastCommand().getType() == UnitCommandTypes::None))
                         unit.setDestination(bestPosition);
                 }
 
                 // Set as destination if it is
-                else if (unit.unit()->getLastCommand().getTargetPosition() != unit.getDestination() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
+                else if (unit.unit()->getLastCommand().getTargetPosition() != unit.getGoal() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
                     unit.setDestination(unit.getGoal());
             }
 
@@ -176,7 +177,7 @@ namespace McRave::Combat {
     }
 
     void onFrame() {
-
+        Visuals::startPerfTest();
         for (auto &u : Units::getUnits(PlayerState::Self)) {
             auto &unit = *u;
 
@@ -190,6 +191,7 @@ namespace McRave::Combat {
                 updateDecision(unit);
             }
         }
+        Visuals::endPerfTest("Combat");
     }
 
     multimap<double, Position>& getCombatClusters() { return combatClusters; }

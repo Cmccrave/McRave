@@ -45,11 +45,12 @@ namespace McRave::Stations {
         }
     }
 
-    Position getClosestEnemyStation(Position here)
+    Position getClosestStation(PlayerState pState, Position here)
     {
+        auto &list = pState == PlayerState::Self ? myStations : enemyStations;
         double distBest = DBL_MAX;
         Position best;
-        for (auto &station : enemyStations) {
+        for (auto &station : list) {
             auto s = *station.second;
             double dist = here.getDistance(s.BWEMBase()->Center());
             if (dist < distBest)

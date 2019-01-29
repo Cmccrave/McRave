@@ -38,9 +38,15 @@ namespace McRave::Support {
                 destination = unit.getTarget().getPosition();
         }
 
+        else if (unit.getType() == UnitTypes::Zerg_Overlord) {
+            destination = Stations::getClosestStation(PlayerState::Self, unit.getPosition());
+            unit.circleBlack();
+        }
+
         // TODO: Overlord scouting, need to use something different to spread overlords
+        // Disabled
         if (!Terrain::getEnemyStartingPosition().isValid())
-            posBest = Terrain::closestUnexploredStart();
+            posBest = BWEB::Map::getMainPosition();//Terrain::closestUnexploredStart();
 
         // Check if any expansions need detection on them
         else if (unit.getType().isDetector() && com(unit.getType()) >= 1 && BuildOrder::buildCount(building) > vis(building) && !Command::overlapsActions(unit.unit(), unit.getType(), (Position)Buildings::getCurrentExpansion(), 320))
@@ -78,7 +84,7 @@ namespace McRave::Support {
                     if (unit.unit()->isCloaked() && Commands().overlapsEnemyDetection(p) && threat > 0.0)
                         continue;*/
 
-                    // Score this move
+                        // Score this move
                     auto score = 1.0 / (threat * cluster * dist);
                     if (score > scoreBest) {
                         scoreBest = score;

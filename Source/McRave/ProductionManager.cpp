@@ -522,6 +522,10 @@ namespace McRave::Production {
                     reservedMineral += bestType.mineralPrice();
                     reservedGas += bestType.gasPrice();
                 }
+
+                // Else store a zero value idle
+                else
+                    idleProduction[building.unit()] = UnitTypes::None;
             }
         }
 

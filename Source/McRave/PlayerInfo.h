@@ -62,7 +62,8 @@ namespace McRave
             else 
                 pState = PlayerState::None;
 
-            currentRace = alive ? thisPlayer->getRace() : BWAPI::Races::None;
+            auto race = thisPlayer->isNeutral() || !alive ? BWAPI::Races::None : thisPlayer->getRace(); // BWAPI returns Zerg for neutral race
+            currentRace = race;
         }
 
         BWAPI::TilePosition getStartingLocation() { return startLocation; }

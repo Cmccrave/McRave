@@ -4,5 +4,5 @@
 namespace McRave::Workers {
 
     void onFrame();
-    void removeUnit(BWAPI::Unit);
+    void removeUnit(UnitInfo&);
 }

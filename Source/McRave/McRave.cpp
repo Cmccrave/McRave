@@ -13,13 +13,11 @@
 // Need to fix how the directional check of viable position iterating works
 // BWEB Destination walls not working
 // Proxy builds? BWEB proxy block?
-// Proxy 2 gate reaction 
 // Drone scoring based on my strength + defense vs enemy strength - defense
 // Zerg macro hatchery fixes
 // Check Muta micro to ensure we are overshooting movement to not decel near targets
 // Unit Interface get distance is edge to point, lots of mistakes!
 // Re-add mine targets
-// Re-add defending at chokes
 
 // *** TOTEST ***
 // If an enemy floats a CC to an expansion, we don't consider it "taken"
@@ -27,7 +25,6 @@
     // Test lifting buildings
     // Lift in fog / visible
     // Land in fog / visible
-// Each PlayerInfo has a TotalStrength, test all values
 
 // *** Parallel Lines ***
 // Destination 12 o clock spawn issues making parallel lines (offset by +y about 64 pixels?)
@@ -70,22 +67,22 @@ void McRaveModule::onEnd(bool isWinner)
 
 void McRaveModule::onFrame()
 {
+    // Update unit information and grids based on the information
+    Players::onFrame();
+    Units::onFrame();
+    Grids::onFrame();
+
     // Update relevant map information and strategy    
     Terrain::onFrame();
     Resources::onFrame();
     Strategy::onFrame();
     BuildOrder::onFrame();
-    Stations::onFrame();
-
-    // Update unit information and grids based on the information
-    Players::onFrame();
-    Units::onFrame();
-    Combat::onFrame();
-    Grids::onFrame();
+    Stations::onFrame();        
 
     // Update commands
     Goals::onFrame();
     Support::onFrame();
+    Combat::onFrame();
     Command::onFrame();
     Workers::onFrame();
     Scouts::onFrame();

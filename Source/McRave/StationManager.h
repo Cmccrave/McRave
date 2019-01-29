@@ -5,7 +5,7 @@ namespace McRave::Stations
 {
     std::map <BWAPI::Unit, const BWEB::Stations::Station *>& getMyStations();
     std::map <BWAPI::Unit, const BWEB::Stations::Station *>& getEnemyStations();
-    BWAPI::Position getClosestEnemyStation(BWAPI::Position);
+    BWAPI::Position getClosestStation(PlayerState, BWAPI::Position);
 
     void onFrame();
     void onStart();

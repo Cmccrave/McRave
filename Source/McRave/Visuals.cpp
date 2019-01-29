@@ -111,7 +111,7 @@ namespace McRave::Visuals {
                 if (targets) {
                     if (unit.hasResource())
                         Broodwar->drawLineMap(unit.getResource().getPosition(), unit.getPosition(), color);
-                    else if (unit.hasTarget())
+                    if (unit.hasTarget())
                         Broodwar->drawLineMap(unit.getTarget().getPosition(), unit.getPosition(), color);
                 }
 
@@ -209,7 +209,7 @@ namespace McRave::Visuals {
     {
         if (text == "/targets")				targets = !targets;
         else if (text == "/sim")			sim = !sim;
-        else if (text == "/strength")		strengths = !strengths;
+        else if (text == "/strengths")		strengths = !strengths;
         else if (text == "/builds")			builds = !builds;
         else if (text == "/bweb")			bweb = !bweb;
         else if (text == "/paths")			paths = !paths;

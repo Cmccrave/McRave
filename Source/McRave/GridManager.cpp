@@ -7,12 +7,9 @@ namespace McRave::Grids
 {
     namespace {
         bool resetGrid[1024][1024] ={};
-        int timeGrid[1024][1024] ={};
         int visibleGrid[256][256] ={};
         int visitedGrid[1024][1024] ={};
         vector<WalkPosition> resetVector;
-
-        int currentFrame = 0;
 
         // Ally Grid
         float parentDistance[1024][1024];
@@ -30,7 +27,6 @@ namespace McRave::Grids
         int mobility[1024][1024] ={};
         int collision[1024][1024] ={};
         double distanceHome[1024][1024] ={};
-
 
         int fasterDistGrids(int x1, int y1, int x2, int y2) {
             unsigned int min = abs((int)(x1 - x2));
@@ -256,7 +252,7 @@ namespace McRave::Grids
                 for (int y = 0; y <= Broodwar->mapHeight() * 4; y++) {
                     WalkPosition w(x, y);
 
-                    if (collision[x][y] == 0)
+                    if (eGroundThreat[x][y] > 0)
                         Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Blue);
                 }
             }

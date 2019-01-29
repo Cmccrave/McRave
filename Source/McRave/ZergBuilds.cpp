@@ -21,19 +21,26 @@ namespace McRave::BuildOrder::Zerg {
 
     void HatchPool()
     {
-        getOpening =    s < 80;
+        getOpening =    s < 90;
         fastExpand =    true;
-        gasLimit =      INT_MAX;
+        gasLimit =      vis(Zerg_Lair) || Broodwar->self()->isUpgrading(UpgradeTypes::Metabolic_Boost) ? 3 : 2;
         firstUpgrade =  UpgradeTypes::Metabolic_Boost;
         firstTech =     TechTypes::None;
         scout =         s >= 22;
         wallNat =       vis(Zerg_Hatchery) >= 2;
 
         droneLimit =    vis(Zerg_Lair) >= 1 ? 22 : 12;
-        lingLimit =     8;
+        lingLimit =     INT_MAX;
 
         bool transitionReady = false;
         
+        // Reactions
+        if (s < 50) {
+            if (vis(Zerg_Sunken_Colony) >= 2)
+                gasLimit--;
+            if (vis(Zerg_Sunken_Colony) >= 4)
+                gasLimit--;
+        }
         
         // Check if locked opener
         if (currentOpener == "10Hatch") {
@@ -84,6 +91,7 @@ namespace McRave::BuildOrder::Zerg {
         droneLimit =    10;
         lingLimit =     12;
         wallNat =       vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive) >= 2;
+        playPassive =   com(Zerg_Mutalisk) == 0;
 
         auto gas100 = Broodwar->self()->gas() >= 100;
 

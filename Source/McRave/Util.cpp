@@ -62,6 +62,7 @@ namespace McRave::Util {
     bool proactivePullWorker(UnitInfo& unit)
     {
         auto myStrength = Players::getStrength(PlayerState::Self);
+
         if (Broodwar->self()->getRace() == Races::Protoss) {
             int completedDefenders = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Photon_Cannon) + Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot);
             int visibleDefenders = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot);
@@ -70,27 +71,21 @@ namespace McRave::Util {
                 return false;
 
             if (BuildOrder::isHideTech() && Units::getMyRoleCount(Role::Combat) == 1 + int(unit.getRole() == Role::Combat))
-                return true;            
+                return true;
 
             if (BuildOrder::getCurrentBuild() == "FFE") {
-                if (Units::getEnemyCount(UnitTypes::Zerg_Zergling) >= 5) {
-                    if (Strategy::getEnemyBuild() == "5Pool" && myStrength.groundToGround < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
-                        return true;
-                    if (Strategy::getEnemyBuild() == "9Pool" && myStrength.groundToGround < 4.00 && completedDefenders < 5 && visibleDefenders >= 2)
-                        return true;
-                    if (!Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && myStrength.groundToGround < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
-                        return true;
-                    if (myStrength.groundToGround < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
-                        return true;
-                }
-                else {
-                    if (Strategy::getEnemyBuild() == "5Pool" && myStrength.groundToGround < 1.00 && completedDefenders < 2 && visibleDefenders >= 2)
-                        return true;
-                    if (!Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && myStrength.groundToGround < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
-                        return true;
-                }
+                if (Strategy::enemyRush() && myStrength.groundToGround < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
+                    return true;
+                if (Strategy::enemyRush() && myStrength.groundToGround < 1.00 && completedDefenders < 2 && visibleDefenders >= 2)
+                    return true;
+                if (Strategy::enemyPressure() && myStrength.groundToGround < 4.00 && completedDefenders < 5 && visibleDefenders >= 2)
+                    return true;
+                if (!Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && myStrength.groundToGround < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
+                    return true;
+                if (myStrength.groundToGround < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
+                    return true;
             }
-            else if (BuildOrder::getCurrentBuild() == "2Gate") {
+            else if (BuildOrder::getCurrentBuild() == "2Gate" && BuildOrder::getCurrentOpener() == "Natural") {
                 if (Strategy::getEnemyBuild() == "5Pool" && myStrength.groundToGround < 4.00 && completedDefenders < 2)
                     return true;
                 if (Strategy::getEnemyBuild() == "9Pool" && myStrength.groundToGround < 4.00 && completedDefenders < 3)
@@ -113,6 +108,8 @@ namespace McRave::Util {
     bool reactivePullWorker(UnitInfo& unit)
     {
         auto myStrength = Players::getStrength(PlayerState::Self);
+        auto closestStation = Stations::getClosestStation(PlayerState::Self, unit.getPosition());
+
         if (Units::getEnemyCount(UnitTypes::Terran_Vulture) > 2)
             return false;
 
@@ -121,17 +118,8 @@ namespace McRave::Util {
                 return false;
         }
 
-        if (unit.hasResource()) {
-            if (unit.getPosition().getDistance(unit.getResource().getPosition()) < 64.0 && Grids::getEGroundThreat(unit.getWalkPosition()) > 0.0 && Broodwar->getFrameCount() < 10000)
-                return true;
-        }
-        else {
-            auto station = BWEB::Stations::getClosestStation(unit.getTilePosition());
-            if (station && station->ResourceCentroid().getDistance(unit.getPosition()) < 160.0) {
-                if (Terrain::isInAllyTerritory(unit.getTilePosition()) && Grids::getEGroundThreat(unit.getWalkPosition()) > 0.0 && Broodwar->getFrameCount() < 10000)
-                    return true;
-            }
-        }
+        if (unit.getPosition().getDistance(closestStation) < 160.0 && Grids::getEGroundThreat(unit.getWalkPosition()) > 0.0 && Broodwar->getFrameCount() < 10000)
+            return true;
 
         // If we have no combat units and there is a threat
         if (Units::getImmThreat() > (myStrength.groundToGround + myStrength.groundDefense) && Broodwar->getFrameCount() < 10000) {
@@ -172,30 +160,35 @@ namespace McRave::Util {
 
     double getHighestThreat(WalkPosition here, UnitInfo& unit)
     {
-        // Determine highest threat possible here
-        auto t = unit.getType();
-        auto highest = MIN_THREAT;
-        auto dx = int(ceil(t.width() / 16.0));		// Half walk resolution width
-        auto dy = int(ceil(t.height() / 16.0));		// Half walk resolution height
+        auto threat = max(MIN_THREAT, unit.getType().isFlyer() ? Grids::getEAirThreat(here) : Grids::getEGroundThreat(here));
+        return threat;
 
-        WalkPosition center = here + WalkPosition(dx, dy);
-        // Testing a performance increase for ground units instead
-        if (!unit.getType().isFlyer()) {
-            auto grid = Grids::getEGroundThreat(center);
-            return max(grid, MIN_THREAT);
-        }
+        // Disable for now
 
-        for (int x = here.x - dx; x < here.x + dx; x++) {
-            for (int y = here.y - dy; y < here.y + dy; y++) {
-                WalkPosition w(x, y);
-                if (!w.isValid())
-                    continue;
+        //// Determine highest threat possible here
+        //auto t = unit.getType();
+        //auto highest = MIN_THREAT;
+        //auto dx = int(ceil(t.width() / 16.0));		// Half walk resolution width
+        //auto dy = int(ceil(t.height() / 16.0));		// Half walk resolution height
 
-                auto current = unit.getType().isFlyer() ? Grids::getEAirThreat(w) : Grids::getEGroundThreat(w);
-                highest = (current > highest) ? current : highest;
-            }
-        }
-        return highest;
+        //WalkPosition center = here + WalkPosition(dx, dy);
+        //// Testing a performance increase for ground units instead
+        //if (!unit.getType().isFlyer()) {
+        //    auto grid = Grids::getEGroundThreat(center);
+        //    return max(grid, MIN_THREAT);
+        //}
+
+        //for (int x = here.x - dx; x < here.x + dx; x++) {
+        //    for (int y = here.y - dy; y < here.y + dy; y++) {
+        //        WalkPosition w(x, y);
+        //        if (!w.isValid())
+        //            continue;
+
+        //        auto current = unit.getType().isFlyer() ? Grids::getEAirThreat(w) : Grids::getEGroundThreat(w);
+        //        highest = (current > highest) ? current : highest;
+        //    }
+        //}
+        //return highest;
     }
 
     bool accurateThreatOnPath(UnitInfo& unit, BWEB::PathFinding::Path& path)
@@ -247,7 +240,7 @@ namespace McRave::Util {
         }
         return closest;
     }
-        
+
     int chokeWidth(const BWEM::ChokePoint * choke)
     {
         if (!choke)
@@ -319,10 +312,10 @@ namespace McRave::Util {
         return newLine;
     }
 
-    Position getConcavePosition(UnitInfo& unit, BWEM::Area const * area, Position here)
+    Position getConcavePosition(UnitInfo& unit, int radius, BWEM::Area const * area, Position here)
     {
         // Setup parameters	
-        auto min = unit.getGroundRange();
+        auto min = radius;
         auto distBest = DBL_MAX;
         auto center = WalkPositions::None;
         auto bestPosition = Positions::None;
@@ -353,11 +346,11 @@ namespace McRave::Util {
             double dist = p.getDistance((Position)center);
 
             if (!w.isValid()
-                || (/*here != Terrain::getDefendPosition() &&*/ area && mapBWEM.GetArea(t) != area)
-                || (/*here != Terrain::getDefendPosition() &&*/ dist < min)
+                || area && mapBWEM.GetArea(t) != area
+                || dist < min
                 || unit.getType() == UnitTypes::Protoss_Reaver && Terrain::isDefendNatural() && mapBWEM.GetArea(w) != BWEB::Map::getNaturalArea()
                 || dist > distBest
-                || Command::overlapsActions(unit.unit(), UnitTypes::None, p, 8)
+                || Command::overlapsActions(unit.unit(), unit.getType(), p, 8)
                 || Command::isInDanger(unit, p)
                 || !isWalkable(unit.getWalkPosition(), w, unit.getType())
                 || Buildings::overlapsQueue(unit.getType(), t))

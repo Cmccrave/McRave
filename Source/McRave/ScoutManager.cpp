@@ -12,6 +12,36 @@ namespace McRave::Scouts {
         int scoutCount;
         bool proxyCheck = false;
                
+        void misc()
+        {
+            // TODO: Use scout counts to correctly assign more scouts
+            scoutAssignments.clear();
+            scoutCount = 1;
+
+            // If we have seen an enemy Probe before we've scouted the enemy, follow it
+            if (Units::getEnemyCount(UnitTypes::Protoss_Probe) == 1) {
+                auto w = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                    return u.getType() == UnitTypes::Protoss_Probe;
+                });
+                proxyCheck = (w && !Terrain::getEnemyStartingPosition().isValid() && w->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1);
+            }
+
+            // Temp we don't do 2 scouts for some reason atm
+            proxyCheck = false;
+
+            // If we know a proxy possibly exists, we need a second scout
+            auto foundProxyGates = Strategy::enemyProxy() && Strategy::getEnemyBuild() == "P2Gate" && Units::getEnemyCount(UnitTypes::Protoss_Gateway) > 0;
+            if (((Strategy::enemyProxy() && Strategy::getEnemyBuild() != "P2Gate") || proxyCheck || foundProxyGates) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1)
+                scoutCount++;
+
+            if (Broodwar->self()->getRace() == Races::Zerg && Terrain::getEnemyStartingPosition().isValid())
+                scoutCount = 0;
+            if (Strategy::getEnemyBuild() == "Z5Pool" && Units::getEnemyCount(UnitTypes::Zerg_Zergling) >= 5)
+                scoutCount = 0;
+            if (Strategy::enemyPressure() && BuildOrder::isPlayPassive())
+                scoutCount = 0;
+        }
+
         void updateScoutTargets()
         {
             scoutTargets.clear();
@@ -69,34 +99,7 @@ namespace McRave::Scouts {
         {
             auto start = unit.getWalkPosition();
             auto distBest = DBL_MAX;
-            auto posBest = unit.getDestination();
-
-            // TODO: Use scout counts to correctly assign more scouts
-            scoutAssignments.clear();
-            scoutCount = 1;
-
-            // If we have seen an enemy Probe before we've scouted the enemy, follow it
-            if (Units::getEnemyCount(UnitTypes::Protoss_Probe) == 1) {
-                auto w = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return u.getType() == UnitTypes::Protoss_Probe;
-                });
-                proxyCheck = (w && !Terrain::getEnemyStartingPosition().isValid() && w->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1);
-            }
-
-            // Temp we don't do 2 scouts for some reason atm
-            proxyCheck = false;
-
-            // If we know a proxy possibly exists, we need a second scout
-            auto foundProxyGates = Strategy::enemyProxy() && Strategy::getEnemyBuild() == "P2Gate" && Units::getEnemyCount(UnitTypes::Protoss_Gateway) > 0;
-            if (((Strategy::enemyProxy() && Strategy::getEnemyBuild() != "P2Gate") || proxyCheck || foundProxyGates) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1)
-                scoutCount++;
-
-            if (Broodwar->self()->getRace() == Races::Zerg && Terrain::getEnemyStartingPosition().isValid())
-                scoutCount = 0;
-            if (Strategy::getEnemyBuild() == "Z5Pool" && Units::getEnemyCount(UnitTypes::Zerg_Zergling) >= 5)
-                scoutCount = 0;
-            if (Strategy::enemyPressure() && BuildOrder::isPlayPassive())
-                scoutCount = 0;
+            auto posBest = unit.getDestination();       
 
             if (!BuildOrder::firstReady() || BuildOrder::isOpener() || !Terrain::getEnemyStartingPosition().isValid()) {
 
@@ -191,6 +194,8 @@ namespace McRave::Scouts {
 
         void updateScouts()
         {
+            misc();
+
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &unit = *u;
                 if (unit.getRole() == Role::Scout) {

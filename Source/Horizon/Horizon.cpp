@@ -16,34 +16,8 @@ namespace McRave::Horizon {
         Need to test deadzones and squeeze factors still.
         */
 
-        double minThreshold, maxThreshold;
-
-
-        if (Broodwar->self()->getRace() == Races::Protoss) {
-            minThreshold = 0.5;
-            maxThreshold = 0.75;
-            // PvZ
-            //if (Players::vZ()) {
-            //    minThreshold = 0.25;
-            //    maxThreshold = 0.75;
-            //}
-
-            //// PvT
-            //if (Players::vT()) {
-            //    minThreshold = 0.25;
-            //    maxThreshold = 0.75;
-            //}
-
-            //// PvP
-            //if (Players::vP()) {
-            //    minThreshold = 0.25;
-            //    maxThreshold = 0.75;
-            //}
-        }
-        else {
-            minThreshold = 0.75;
-            maxThreshold = 1.25;
-        }
+        double minThreshold = 0.50;
+        double maxThreshold = 0.75;
 
         if (BuildOrder::isRush())
             minThreshold = 0.0, maxThreshold = 0.75;
@@ -85,6 +59,8 @@ namespace McRave::Horizon {
         };
 
         const auto applySqueezeFactor = [&](UnitInfo& source) {
+            return false; // Too slow atm
+
             if (source.getPlayer() == Broodwar->self() && (!source.hasTarget() || source.getTarget().getType().isFlyer() || !source.getTarget().getPosition().isValid()))
                 return false;
             if (source.getPlayer() != Broodwar->self() && (!unit.hasTarget() || unit.getTarget().getType().isFlyer() || !unit.getTarget().getPosition().isValid()))
@@ -154,7 +130,7 @@ namespace McRave::Horizon {
                 auto simRatio =  simulationTime - (distance / speed);
 
                 // If the unit doesn't affect this simulation
-                if (simRatio <= 0.0 || (enemy.getSpeed() <= 0.0 && enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths <= 64.0))
+                if (simRatio <= 0.0 || (enemy.getSpeed() <= 0.0 && enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths > 64.0))
                     continue;
 
                 // Situations where an enemy should be treated as stronger than it actually is
@@ -196,7 +172,7 @@ namespace McRave::Horizon {
                 auto simRatio = simulationTime - (distance / speed);
 
                 // If the unit doesn't affect this simulation
-                if (simRatio <= 0.0 || (ally.getSpeed() <= 0.0 && ally.getPosition().getDistance(unit.getTarget().getPosition()) - allyRange - widths <= 64.0))
+                if (simRatio <= 0.0 || (ally.getSpeed() <= 0.0 && ally.getPosition().getDistance(unit.getTarget().getPosition()) - allyRange - widths > 64.0))
                     continue;
 
                 // HACK: Bunch of hardcoded stuff
@@ -206,9 +182,9 @@ namespace McRave::Horizon {
                     continue;
                 if (ally.getType() == UnitTypes::Terran_Wraith && ally.getHealth() <= 100)
                     continue;
-                if (ally.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && Broodwar->getFrameCount() < 8000)
+                if (ally.getType().maxShields() > 0 && ally.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && Broodwar->getFrameCount() < 8000)
                     continue;
-                if (ally.getType() == UnitTypes::Zerg_Mutalisk && Grids::getEAirThreat((WalkPosition)ally.getEngagePosition()) * 5.0 > ally.getHealth() && ally.getHealth() <= 30)
+                if (ally.getType() == UnitTypes::Zerg_Mutalisk && Grids::getEAirThreat((WalkPosition)ally.getEngagePosition()) > 0.0 && ally.getHealth() <= 30)
                     continue;
 
                 // Situations where an ally should be treated as stronger than it actually is
@@ -239,7 +215,7 @@ namespace McRave::Horizon {
         };
 
         if (!shouldIgnoreSim()) {
-            simTerrain();
+            //simTerrain();
             simEnemies();
             simMyUnits();
         }
