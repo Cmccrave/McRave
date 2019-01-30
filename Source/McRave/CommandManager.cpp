@@ -113,7 +113,7 @@ namespace McRave::Command {
 
                 // Check if we can get free attacks
                 if (Util::getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT && Util::unitInRange(unit))
-                    return true;                
+                    return true;
                 return unit.getLocalState() == LocalState::Attack;
             }
 
@@ -383,7 +383,7 @@ namespace McRave::Command {
                 for (int y = start.y - 2; y < start.y + 10; y++) {
                     WalkPosition w(x, y);
                     double dist = Position(w).getDistance(mapBWEM.Center());
-                    if (dist < distBest && Util::isWalkable(unit.getWalkPosition(), w, unit.getType())) {
+                    if (dist < distBest && Util::isWalkable(unit, w)) {
                         distBest = dist;
                         walkBest = w;
                     }
@@ -404,18 +404,20 @@ namespace McRave::Command {
             else
                 unit.command(UnitCommandTypes::Move, BWEB::Map::getNaturalPosition(), true);
         }
-        else {            
-            auto radius = 0.0;
-            auto unitsHigherRange = 0.0;
+        else {
+            // Estimate a melee arc
+            auto meleeArc = (int)com(UnitTypes::Protoss_Zealot) * (UnitTypes::Protoss_Zealot.width() / 2)
+                            + com(UnitTypes::Zerg_Zergling) * (UnitTypes::Zerg_Zergling.width() / 2)
+                            + com(UnitTypes::Terran_Medic) * (UnitTypes::Terran_Medic.width() / 2)
+                            + 32.0;
 
-            if (Broodwar->self()->getRace() == Races::Protoss)
-                unitsHigherRange = unit.getType() == UnitTypes::Protoss_Zealot ? com(UnitTypes::Protoss_Zealot) : com(UnitTypes::Protoss_Zealot) + com(UnitTypes::Protoss_Dragoon);
-            else if (Broodwar->self()->getRace() == Races::Terran)
-                unitsHigherRange = unit.getType() == UnitTypes::Terran_Medic ? com(UnitTypes::Terran_Medic) : com(UnitTypes::Terran_Medic) + com(UnitTypes::Terran_Marine);
-            else if (Broodwar->self()->getRace() == Races::Zerg)
-                unitsHigherRange = unit.getType() == UnitTypes::Zerg_Zergling ? com(UnitTypes::Zerg_Zergling) : com(UnitTypes::Zerg_Zergling) + com(UnitTypes::Zerg_Hydralisk);
-            
-            radius = (unitsHigherRange * unit.getType().width() / 2) + unit.getGroundRange();
+            // Estimate a ranged arc
+            auto rangedArc = (int)min(meleeArc + 32.0, com(UnitTypes::Protoss_Dragoon) * (UnitTypes::Protoss_Dragoon.width() / 2)
+                                                    + com(UnitTypes::Zerg_Hydralisk) * (UnitTypes::Zerg_Hydralisk.width() / 2)
+                                                    + com(UnitTypes::Terran_Marine) * (UnitTypes::Terran_Marine.width() / 2)
+                                                    + 192.0);
+
+            auto radius = unit.getGroundRange() > 32.0 ? rangedArc : meleeArc;
             auto defendArea = Terrain::isDefendNatural() ? BWEB::Map::getNaturalArea() : BWEB::Map::getMainArea();
             auto bestPosition = Util::getConcavePosition(unit, radius, defendArea, Terrain::getDefendPosition());
             unit.command(UnitCommandTypes::Move, bestPosition, false);
@@ -464,7 +466,7 @@ namespace McRave::Command {
                 return true;
             return false;
         };
-        
+
         if (shouldHunt() && canHunt()) {
             auto bestPosition = findViablePosition(unit, scoreFunction);
             if (bestPosition.isValid() && bestPosition != unit.getDestination()) {
@@ -817,7 +819,7 @@ namespace McRave::Command {
             if (p.getDistance(unit.getPosition()) > radius * 8
                 || (!unit.getType().isFlyer() && !Broodwar->isWalkable(here))
                 || isInDanger(unit, p)
-                || !Util::isWalkable(unit.getWalkPosition(), here, unit.getType()))
+                || !Util::isWalkable(unit, here))
                 return false;
             return true;
         };
@@ -828,9 +830,9 @@ namespace McRave::Command {
             for (int y = top; y <= bot; y++) {
                 auto w = WalkPosition(x, y);
                 auto p = Position((x * 8) + 4, (y * 8) + 4);
-/*
-                if (directionsOkay(w))
-                    Broodwar->drawBoxMap(p, p + Position(8, 8), Colors::Black);*/
+                /*
+                                if (directionsOkay(w))
+                                    Broodwar->drawBoxMap(p, p + Position(8, 8), Colors::Black);*/
 
                 auto current = score(w);
                 if (current > best && directionsOkay(w) && viablePosition(w, p)) {

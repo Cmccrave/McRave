@@ -322,7 +322,7 @@ namespace McRave::Workers {
                 bestResource->getType().isMineralField() ? minWorkers++ : gasWorkers++;
 
                 BWEB::PathFinding::Path emptyPath;
-                worker.setResource(bestResource);
+                worker.setResource(*bestResource);
                 worker.setPath(emptyPath);
             }
         }

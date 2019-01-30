@@ -41,9 +41,9 @@ namespace McRave {
 
         BWAPI::Player player = nullptr;
         BWAPI::Unit thisUnit = nullptr;
-        UnitInfo * transport = nullptr;
-        UnitInfo * target = nullptr;
-        ResourceInfo * resource = nullptr;
+        std::shared_ptr<UnitInfo> transport = nullptr;
+        std::shared_ptr<UnitInfo> target = nullptr;
+        std::shared_ptr<ResourceInfo> resource = nullptr;
 
         std::set<UnitInfo*> assignedCargo ={};
 
@@ -195,9 +195,9 @@ namespace McRave {
         void setGlobalState(GlobalState newState) { gState = newState; }
         void setLocalState(LocalState newState) { lState = newState; }
 
-        void setResource(ResourceInfo * unit) { resource = unit; }
-        void setTransport(UnitInfo * unit) { transport = unit; }
-        void setTarget(UnitInfo * unit) { target = unit; }
+        void setResource(ResourceInfo& unit) { resource = std::make_shared<ResourceInfo>(unit); }
+        void setTransport(UnitInfo& unit) { transport = std::make_shared<UnitInfo>(unit); }
+        void setTarget(UnitInfo& unit) { target = std::make_shared<UnitInfo>(unit); }
         void setRole(Role newRole) { role = newRole; }
 
         void setUnit(BWAPI::Unit newUnit) { thisUnit = newUnit; }

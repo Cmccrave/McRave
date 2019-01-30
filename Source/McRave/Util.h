@@ -65,7 +65,7 @@ namespace McRave::Util {
         return idx;
     }
 
-    bool isWalkable(BWAPI::WalkPosition start, BWAPI::WalkPosition finish, BWAPI::UnitType);
+    bool isWalkable(UnitInfo&, BWAPI::WalkPosition);
 
     // Create a line of best fit for a chokepoint
     Line lineOfBestFit(const BWEM::ChokePoint *);

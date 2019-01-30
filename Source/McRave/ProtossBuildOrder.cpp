@@ -110,9 +110,7 @@ namespace McRave::BuildOrder::Protoss
 
             // Adding bases
             if (shouldExpand())
-                itemQueue[Protoss_Nexus] = Item(com(Protoss_Nexus) + 1);
-            else
-                itemQueue[Protoss_Nexus] = Item(vis(Protoss_Nexus));
+                itemQueue[Protoss_Nexus] = Item(vis(Protoss_Nexus) + 1);
 
             // Adding production
             if (shouldAddProduction()) {                

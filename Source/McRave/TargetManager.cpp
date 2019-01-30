@@ -153,7 +153,8 @@ namespace McRave::Targets{
                     checkBest(target, thisUnit, health, distance);
             }
 
-            unit.setTarget(bestTarget);
+            if (bestTarget)
+                unit.setTarget(*bestTarget);
 
             // If unit is close, increment it
             if (bestTarget && Util::unitInRange(unit))

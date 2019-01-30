@@ -462,10 +462,11 @@ namespace McRave::Buildings {
                 BWEB::Map::removeUsed(building.getTilePosition(), 4, 2);
             }
 
-            // Cancelling buildings we don't want
-            if (building.getType().getRace() != Races::Zerg && BuildOrder::buildCount(building.getType()) < vis(building.getType())) {
-                building.unit()->cancelConstruction();
-            }
+            // Disabled, too buggy
+            //// Cancelling buildings we don't want
+            //if (building.getType().getRace() != Races::Zerg && BuildOrder::buildCount(building.getType()) < vis(building.getType())) {
+            //    building.unit()->cancelConstruction();
+            //}
         }
 
         void updateBuildings()
@@ -665,9 +666,11 @@ namespace McRave::Buildings {
             for (int x = here.x - safetyOffset; x < here.x + safetyOffset; x++) {
                 for (int y = here.y - safetyOffset; y < here.y + safetyOffset; y++) {
                     TilePosition t(x, y);
-                    auto topLeft = Position(tile.x * 32, tile.y * 32);
-                    auto botRight = Position(tile.x * 32 + building.tileWidth(), tile.y * 32 + building.tileHeight());
-
+                    auto tx = tile.x * 32;
+                    auto ty = tile.y * 32;
+                    auto topLeft = Position(tx, ty);
+                    auto botRight = Position(tx + building.tileWidth() * 32, ty + building.tileHeight() * 32);
+                    
                     if (Util::rectangleIntersect(topLeft, botRight, Position(t)))
                         return true;
                 }

@@ -49,13 +49,13 @@ namespace McRave::Transports {
                     UnitInfo &unit = *u;
 
                     if (unit.getRole() == Role::Combat && readyToAssignUnit(unit)) {
-                        unit.setTransport(&transport);
+                        unit.setTransport(transport);
                         transport.getAssignedCargo().insert(&unit);
                         cargoSize += unit.getType().spaceRequired();
                     }
 
                     if (unit.getRole() == Role::Worker && readyToAssignWorker(unit)) {
-                        unit.setTransport(&transport);
+                        unit.setTransport(transport);
                         transport.getAssignedCargo().insert(&unit);
                         cargoSize += unit.getType().spaceRequired();
                     }
@@ -270,7 +270,7 @@ namespace McRave::Transports {
                     TilePosition t(p);
 
                     if (!w.isValid()
-                        || (transport.getTransportState() == TransportState::Engaging && !Util::isWalkable(start, w, UnitTypes::Protoss_Reaver && p.getDistance(transport.getDestination()) < 64.0))
+                        //|| (transport.getTransportState() == TransportState::Engaging && !Util::isWalkable(start, w, UnitTypes::Protoss_Reaver && p.getDistance(transport.getDestination()) < 64.0)) disabled
                         || (transport.getTransportState() == TransportState::Engaging && Broodwar->getGroundHeight(TilePosition(w)) != Broodwar->getGroundHeight(TilePosition(dropTarget)) && p.getDistance(transport.getDestination()) < 64.0))
                         continue;
 
@@ -337,9 +337,9 @@ namespace McRave::Transports {
                     return;
                 }
 
-                // Set transport as nullptr if the transport died
-                if (cargo->hasTransport() && cargo->getTransport().unit() == unit)
-                    cargo->setTransport(nullptr);
+                //// Set transport as nullptr if the transport died
+                //if (cargo->hasTransport() && cargo->getTransport().unit() == unit)
+                //    cargo->setTransport(nullptr);
             }
         }
     }

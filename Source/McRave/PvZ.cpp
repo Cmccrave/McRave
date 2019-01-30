@@ -281,20 +281,11 @@ namespace McRave::BuildOrder::Protoss {
             if (techList.find(Protoss_Corsair) == techList.end())
                 techUnit = Protoss_Corsair;
 
-            if (Strategy::enemyRush()) {
-                itemQueue[Protoss_Gateway] =			Item((s >= 18) * 2);
-                itemQueue[Protoss_Forge] =				Item(com(Protoss_Stargate) >= 1);
-                itemQueue[Protoss_Assimilator] =		Item(s >= 54);
-                itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 50);
-                itemQueue[Protoss_Stargate] =			Item(com(Protoss_Cybernetics_Core) > 0);
-            }
-            else {
-                itemQueue[Protoss_Gateway] =			Item((s >= 18) + vis(Protoss_Stargate) > 0);
-                itemQueue[Protoss_Forge] =				Item(vis(Protoss_Gateway) >= 2);
-                itemQueue[Protoss_Assimilator] =		Item(s >= 40);
-                itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 36);
-                itemQueue[Protoss_Stargate] =			Item(com(Protoss_Cybernetics_Core) > 0);
-            }
+            itemQueue[Protoss_Gateway] =			Item((s >= 18) + vis(Protoss_Stargate) > 0);
+            itemQueue[Protoss_Forge] =				Item(vis(Protoss_Gateway) >= 2);
+            itemQueue[Protoss_Assimilator] =		Item(s >= 40);
+            itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 36);
+            itemQueue[Protoss_Stargate] =			Item(com(Protoss_Cybernetics_Core) > 0);
         }
         else if (currentTransition == "DT") {
 

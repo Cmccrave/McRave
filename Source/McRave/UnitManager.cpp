@@ -95,7 +95,7 @@ namespace McRave::Units {
                         unit.getResource().setGathererCount(scout->getResource().getGathererCount() - 1);
 
                     unit.setRole(Role::Scout);
-                    unit.setResource(nullptr);
+                    //unit.setResource(nullptr);
                     unit.setBuildingType(UnitTypes::None);
                     unit.setBuildPosition(TilePositions::Invalid);
                 }
@@ -328,12 +328,12 @@ namespace McRave::Units {
             if (info.hasResource()) {
                 Workers::removeUnit(info);
                 info.getResource().setGathererCount(info.getResource().getGathererCount() - 1);
-                info.setResource(nullptr);
+                //info.setResource(nullptr);
             }
 
             info.setBuildingType(UnitTypes::None);
             info.setBuildPosition(TilePositions::Invalid);
-            info.setTarget(nullptr);
+            //info.setTarget(nullptr);
         }
     }
 

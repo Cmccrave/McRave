@@ -87,8 +87,8 @@ namespace McRave
                 auto possibleTarget = thisUnit->getOrderTarget();
                 if (possibleTarget) {
                     auto &list = Players::getPlayers()[possibleTarget->getPlayer()];
-                    if (list.getUnits().find(thisUnit->getOrderTarget()) != list.getUnits().end())
-                        target = &list.getUnits()[thisUnit->getOrderTarget()];
+                    //if (list.getUnits().find(thisUnit->getOrderTarget()) != list.getUnits().end())
+                        //target = list.getUnits()[thisUnit->getOrderTarget()];
                 }
             }
             else
@@ -100,8 +100,8 @@ namespace McRave
             auto possibleTarget = thisUnit->getOrderTarget();
             if (possibleTarget) {
                 auto &list = Players::getPlayers()[possibleTarget->getPlayer()];
-                if (list.getUnits().find(thisUnit->getOrderTarget()) != list.getUnits().end())
-                    target = &list.getUnits()[thisUnit->getOrderTarget()];
+                //if (list.getUnits().find(thisUnit->getOrderTarget()) != list.getUnits().end())
+                    //target = list.getUnits()[thisUnit->getOrderTarget()];
             }
         }
     }
@@ -151,8 +151,6 @@ namespace McRave
                 here = Util::clipPosition(position, here);
             }
         }
-
-        Broodwar->drawLineMap(position, here, Colors::Green);
 
         // If this is a new order or new command than what we're requesting, we can issue it
         if (newOrder() || newCommand()) {

@@ -245,139 +245,7 @@ namespace McRave::Terrain {
                 rangedChokePositions.clear();
             }
         }
-
-        void updateConcavePositions()
-        {
-            return; // disabled this shit for now
-            for (auto tile : meleeChokePositions) {
-                Broodwar->drawCircleMap(Position(tile), 8, Colors::Blue);
-            }
-            for (auto tile : rangedChokePositions) {
-                Broodwar->drawCircleMap(Position(tile), 8, Colors::Blue);
-            }
-
-            if (!meleeChokePositions.empty() || !rangedChokePositions.empty() || Broodwar->getFrameCount() < 100 || defendPosition == mineralHold)
-                return;
-
-            auto area = defendNatural ? BWEB::Map::getNaturalArea() : BWEB::Map::getMainArea();
-            auto choke = defendNatural ? BWEB::Map::getNaturalChoke() : BWEB::Map::getMainChoke();
-            auto width = Util::chokeWidth(choke);
-            auto line = Util::lineOfBestFit(choke);
-            auto center = (defendNatural && naturalWall) ? Position(naturalWall->getDoor()) : Position(choke->Center());
-            auto perpSlope = -1.0 / line.slope;
-            Position test1, test2;
-
-            int testX1 = Position(choke->Center()).x - 32;
-            int testY1 = int(line.y(testX1));
-
-            int testX2 = Position(choke->Center()).x + 32;
-            int testY2 = int(line.y(testX2));
-
-            if (abs(perpSlope) == DBL_MAX) {
-                test1.x = center.x + 64;
-                test1.y = center.y;
-                test2.x = center.x - 64;
-                test2.y = center.y;
-            }
-
-            else if (perpSlope == 0.0) {
-                test1.x = center.x;
-                test1.y = center.y + 64;
-                test2.x = center.x;
-                test2.y = center.y - 64;
-            }
-
-            else {
-                auto dx = (128.0 / sqrt(1.0 + pow(perpSlope, 2.0)));
-                auto dy = perpSlope * dx;
-                test1.x = center.x + int(dx);
-                test1.y = center.y + int(dy);
-                test2.x = center.x - int(dx);
-                test2.y = center.y - int(dy);
-            }
-
-            Broodwar->drawLineMap(center, test1, Colors::Red);
-            Broodwar->drawLineMap(center, test2, Colors::Green);
-
-            auto melee1 = Util::parallelLine(line, center.x, 12.0);
-            //auto melee2 = Util::parallelLine(line, center.x, 30.0);
-            auto melee3 = Util::parallelLine(line, center.x, 48.0);
-            auto ranged1 = Util::parallelLine(line, center.x, 128.0);
-            auto ranged2 = Util::parallelLine(line, center.x, 192.0);
-            auto ranged3 = Util::parallelLine(line, center.x, 256.0);
-
-            auto melee4 = Util::parallelLine(line, center.x, -12.0);
-            //auto melee5 = Util::parallelLine(line, center.x, -30.0);
-            auto melee6 = Util::parallelLine(line, center.x, -48.0);
-            auto ranged4 = Util::parallelLine(line, center.x, -128.0);
-            auto ranged5 = Util::parallelLine(line, center.x, -192.0);
-            auto ranged6 = Util::parallelLine(line, center.x, -256.0);
-
-            const auto addPlacements =[&](Line line, double gap, vector<Position>& thisVector, UnitType t) {
-                if (abs(line.slope) != DBL_MAX) {
-                    auto xStart = Position(choke->Center()).x - max(128, Util::chokeWidth(choke));
-                    int yStart = int(line.y(xStart));
-                    auto current = Position(xStart, yStart);
-                    Position last = current;
-                    gap += 8.0;
-
-                    while (current.isValid() && xStart < Position(choke->Center()).x + max(128, Util::chokeWidth(choke))) {
-                        WalkPosition w(current);
-
-                        Broodwar->drawCircleMap(current, 2, Colors::Red);
-
-                        if (last.getDistance(current) > gap && Util::isWalkable(w, w, t) && mapBWEM.GetArea(w) == area && current.getDistance(Position(choke->Center())) < SIM_RADIUS) {
-                            thisVector.push_back(current);
-                            last = current;
-                        }
-
-                        xStart += 1;
-                        yStart = int(line.y(xStart));
-                        current = Position(xStart, yStart);
-                    }
-                }
-                else {
-                    auto xStart = Position(choke->Center()).x;
-                    int yStart = int(line.y(xStart));
-                    auto current = Position(xStart, yStart);
-                    Position last = Positions::Invalid;
-
-                    // Broodwar->drawCircleMap(current, 2, Colors::Red);
-
-                    while (current.isValid() && xStart < Position(choke->Center()).x + max(128, Util::chokeWidth(choke))) {
-                        WalkPosition w(current);
-
-                        if (last.getDistance(current) > gap && Util::isWalkable(w, w, t) && mapBWEM.GetArea(w) == area && current.getDistance(Position(choke->Center())) < 320.0) {
-                            thisVector.push_back(Position(w));
-                            last = current;
-                        }
-
-                        yStart += 1;
-                        current = Position(xStart, yStart);
-                    }
-                }
-            };
-
-            if (isInAllyTerritory(TilePosition(test1))) {
-                //addPlacements(line, 19.0, meleeChokePositions);
-                addPlacements(melee1, 19.0, meleeChokePositions, UnitTypes::Protoss_Zealot);
-                //addPlacements(melee2, 19.0, meleeChokePositions, UnitTypes::Protoss_Zealot);
-                addPlacements(melee3, 19.0, meleeChokePositions, UnitTypes::Protoss_Zealot);
-                addPlacements(ranged1, 32.0, rangedChokePositions, UnitTypes::Protoss_Zealot);
-                addPlacements(ranged2, 32.0, rangedChokePositions, UnitTypes::Protoss_Zealot);
-                addPlacements(ranged3, 32.0, rangedChokePositions, UnitTypes::Protoss_Zealot);
-            }
-            else {
-                //addPlacements(line, 19.0, meleeChokePositions);
-                addPlacements(melee4, 19.0, meleeChokePositions, UnitTypes::Protoss_Dragoon);
-                //addPlacements(melee5, 19.0, meleeChokePositions, UnitTypes::Protoss_Dragoon);
-                addPlacements(melee6, 19.0, meleeChokePositions, UnitTypes::Protoss_Dragoon);
-                addPlacements(ranged4, 32.0, rangedChokePositions, UnitTypes::Protoss_Dragoon);
-                addPlacements(ranged5, 32.0, rangedChokePositions, UnitTypes::Protoss_Dragoon);
-                addPlacements(ranged6, 32.0, rangedChokePositions, UnitTypes::Protoss_Dragoon);
-            }
-        }
-
+               
         void updateAreas()
         {
             // Squish areas
@@ -447,7 +315,6 @@ namespace McRave::Terrain {
         findAttackPosition();
         findDefendPosition();
 
-        updateConcavePositions();
         updateAreas();
     }
 

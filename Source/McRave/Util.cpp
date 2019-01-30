@@ -5,34 +5,36 @@ using namespace std;
 
 namespace McRave::Util {
 
-    bool isWalkable(WalkPosition start, WalkPosition end, UnitType unitType)
+    bool isWalkable(UnitInfo& unit, WalkPosition here)
     {
         // Pixel rectangle
-        auto walkWidth = unitType.isBuilding() ? unitType.tileWidth() * 4 : (int)ceil(unitType.width() / 8.0);
-        auto walkHeight = unitType.isBuilding() ? unitType.tileHeight() * 4 : (int)ceil(unitType.height() / 8.0);
-        auto topLeft = Position(start);
+        auto walkWidth = unit.getType().isBuilding() ? unit.getType().tileWidth() * 4 : (int)ceil(unit.getType().width() / 8.0);
+        auto walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : (int)ceil(unit.getType().height() / 8.0);
+        auto topLeft = Position(unit.getWalkPosition());
         auto botRight = topLeft + Position(walkWidth * 8, walkHeight * 8);
 
         // Round up
         int halfW = (walkWidth + 1) / 2;
         int halfH = (walkHeight + 1) / 2;
 
-        if (unitType.isFlyer()) {
-            halfW += 2;
-            halfH += 2;
-        }
+        if (unit.getType().isFlyer())
+            return true;
 
-        for (int x = end.x - halfW; x < end.x + halfW; x++) {
-            for (int y = end.y - halfH; y < end.y + halfH; y++) {
+        auto collision = Grids::getCollision(here);
+        if (collision > 0 && collision != unit.unit()->getID())
+            return false;
+
+        for (int x = here.x - halfW; x < here.x + halfW; x++) {
+            for (int y = here.y - halfH; y < here.y + halfH; y++) {
                 WalkPosition w(x, y);
                 Position p = Position(w) + Position(4, 4);
                 if (!w.isValid())
                     return false;
 
-                if (!unitType.isFlyer()) {
-                    if (Broodwar->isWalkable(w) && rectangleIntersect(topLeft, botRight, p))
+                if (!unit.getType().isFlyer()) {
+                    if (rectangleIntersect(topLeft, botRight, p))
                         continue;
-                    else if (!Broodwar->isWalkable(w) || Grids::getCollision(w) > 0)
+                    else if (!Broodwar->isWalkable(w))
                         return false;
                 }
             }
@@ -352,7 +354,7 @@ namespace McRave::Util {
                 || dist > distBest
                 || Command::overlapsActions(unit.unit(), unit.getType(), p, 8)
                 || Command::isInDanger(unit, p)
-                || !isWalkable(unit.getWalkPosition(), w, unit.getType())
+                || !isWalkable(unit, w)
                 || Buildings::overlapsQueue(unit.getType(), t))
                 return false;
 

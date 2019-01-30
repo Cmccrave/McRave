@@ -86,7 +86,7 @@ namespace McRave::Resources {
         Visuals::startPerfTest();
         updateResources();
         Visuals::endPerfTest("Resources");
-    }    
+    }
 
     void storeResource(Unit resource)
     {
@@ -119,12 +119,12 @@ namespace McRave::Resources {
         else if (myGas.find(resource) != myGas.end())
             myGas.erase(resource);
 
-        // Any workers that targeted that resource now have no target
-        for (auto &u : Units::getUnits(PlayerState::Self)) {
-            UnitInfo &unit = *u;
-            if (unit.hasResource() && unit.getResource().unit() == resource)
-                unit.setResource(nullptr);
-        }
+        //// Any workers that targeted that resource now have no target
+        //for (auto &u : Units::getUnits(PlayerState::Self)) {
+        //    UnitInfo &unit = *u;
+        //    if (unit.hasResource() && unit.getResource().unit() == resource)
+        //        unit.setResource(nullptr);
+        //}
     }
 
     int getGasCount() { return gasCount; }
