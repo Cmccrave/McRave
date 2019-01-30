@@ -45,7 +45,7 @@ namespace McRave {
         std::shared_ptr<UnitInfo> target = nullptr;
         std::shared_ptr<ResourceInfo> resource = nullptr;
 
-        std::set<UnitInfo*> assignedCargo ={};
+        std::set<std::shared_ptr<UnitInfo>> assignedCargo ={};
 
         TransportState tState = TransportState::None;
         LocalState lState = LocalState::None;
@@ -75,7 +75,7 @@ namespace McRave {
     public:
         UnitInfo();
 
-        std::set<UnitInfo*>& getAssignedCargo() { return assignedCargo; }
+        std::set<std::shared_ptr<UnitInfo>>& getAssignedCargo() { return assignedCargo; }
         TransportState getTransportState() { return tState; }
         SimState getSimState() { return sState; }
         GlobalState getGlobalState() { return gState; }

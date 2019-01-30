@@ -8,7 +8,7 @@ namespace McRave
     {
         std::set <BWAPI::UpgradeType> playerUpgrades;
         std::set <BWAPI::TechType> playerTechs;
-        std::map <BWAPI::Unit, UnitInfo> units;
+        std::set <std::shared_ptr<UnitInfo>> units;
 
         BWAPI::Player thisPlayer;
         BWAPI::Race startRace, currentRace;
@@ -71,7 +71,7 @@ namespace McRave
         BWAPI::Race getStartRace() { return startRace; }
         BWAPI::Player player() const { return thisPlayer; }
         PlayerState getPlayerState() { return pState; }
-        std::map <BWAPI::Unit, UnitInfo>& getUnits() { return units; }
+        std::set <std::shared_ptr<UnitInfo>>& getUnits() { return units; }
         std::string getBuild() { return build; }
 
         bool isAlive() { return alive; }

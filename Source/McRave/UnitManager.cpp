@@ -132,7 +132,7 @@ namespace McRave::Units {
                     continue;
 
                 for (auto &u : player.getUnits()) {
-                    UnitInfo &unit = u.second;
+                    UnitInfo &unit = *u;
                     enemyUnits.insert(&unit);
 
                     // If this is a flying building that we haven't recognized as being a flyer, remove overlap tiles
@@ -186,7 +186,7 @@ namespace McRave::Units {
                     continue;
 
                 for (auto &u : player.getUnits()) {
-                    UnitInfo &unit = u.second;
+                    UnitInfo &unit = *u;
                     myUnits.insert(&unit);
 
                     unit.updateUnit();
@@ -215,7 +215,7 @@ namespace McRave::Units {
                     continue;
 
                 for (auto &u : player.getUnits()) {
-                    UnitInfo &unit = u.second;
+                    UnitInfo &unit = *u;
                     neutralUnits.insert(&unit);
 
                     if (!unit.unit() || !unit.unit()->exists())
@@ -235,7 +235,7 @@ namespace McRave::Units {
                     continue;
 
                 for (auto &u : player.getUnits()) {
-                    UnitInfo &unit = u.second;
+                    UnitInfo &unit = *u;
                     if (unit.getRole() == Role::Combat)
                         allySizes[unit.getType().size()]++;
                 }
@@ -247,7 +247,7 @@ namespace McRave::Units {
                     continue;
 
                 for (auto &u : player.getUnits()) {
-                    UnitInfo &unit = u.second;
+                    UnitInfo &unit = *u;
                     if (!unit.getType().isBuilding() && !unit.getType().isWorker())
                         enemySizes[unit.getType().size()]++;
 
@@ -284,10 +284,11 @@ namespace McRave::Units {
     void storeUnit(Unit unit)
     {
         auto &player = Players::getPlayers()[unit->getPlayer()];
-        auto &info = player.getUnits()[unit];
+        auto info = std::make_shared<UnitInfo>();
 
-        info.setUnit(unit);
-        info.updateUnit();
+        info->setUnit(unit);
+        info->updateUnit();
+        player.getUnits().insert(info);
 
         if (unit->getPlayer() == Broodwar->self() && unit->getType() == UnitTypes::Protoss_Pylon)
             Pylons::storePylon(unit);
@@ -297,7 +298,12 @@ namespace McRave::Units {
     {
         BWEB::Map::onUnitDestroy(unit);
         auto &player = Players::getPlayers()[unit->getPlayer()];
-        auto &info = player.getUnits()[unit];
+        // auto info = 
+
+        // Find the unit
+        for (auto &p : player.getUnits()) {
+
+        }
 
         if (player.isSelf()) {
             if (info.hasResource()) {
