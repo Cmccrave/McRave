@@ -94,7 +94,7 @@ namespace McRave::Buildings {
             // Refineries are only built on my own gas resources
             if (building.isRefinery()) {
                 for (auto &g : Resources::getMyGas()) {
-                    ResourceInfo &gas = g.second;
+                    ResourceInfo &gas = *g;
                     double dist = gas.getPosition().getDistance(here);
 
                     if (isQueueable(building, gas.getTilePosition()) && isBuildable(building, gas.getTilePosition()) && gas.getResourceState() != ResourceState::None && dist < distBest) {
@@ -607,7 +607,7 @@ namespace McRave::Buildings {
         // Refinery only on Geysers
         if (building.isRefinery()) {
             for (auto &g : Resources::getMyGas()) {
-                ResourceInfo &gas = g.second;
+                ResourceInfo &gas = *g;
 
                 if (here == gas.getTilePosition() && gas.getResourceState() != ResourceState::None && gas.getType() != building)
                     return true;

@@ -6,14 +6,16 @@ using namespace std;
 namespace McRave::Transports {
 
     namespace {
-        void updateCargo(UnitInfo& transport)
+        void updateCargo(const shared_ptr<UnitInfo>& t)
         {
+            auto &transport = *t;
             auto cargoSize = 0;
             for (auto &u : transport.getAssignedCargo())
                 cargoSize += u->getType().spaceRequired();
 
             // Check if we are ready to assign this worker to a transport
-            const auto readyToAssignWorker = [&](UnitInfo& unit) {
+            const auto readyToAssignWorker = [&](const shared_ptr<UnitInfo>& u) {
+                auto &unit = *u;
                 if (cargoSize + unit.getType().spaceRequired() > 8 || unit.hasTransport())
                     return false;
 
@@ -30,7 +32,8 @@ namespace McRave::Transports {
             };
 
             // Check if we are ready to assign this unit to a transport
-            const auto readyToAssignUnit = [&](UnitInfo& unit) {
+            const auto readyToAssignUnit = [&](const shared_ptr<UnitInfo>& u) {
+                auto &unit = *u;
                 if (cargoSize + unit.getType().spaceRequired() > 8 || unit.hasTransport())
                     return false;
 
@@ -46,25 +49,27 @@ namespace McRave::Transports {
             // Update cargo information
             if (cargoSize < 8) {
                 for (auto &u : Units::getUnits(PlayerState::Self)) {
-                    UnitInfo &unit = *u;
+                    auto &unit = *u;
 
-                    if (unit.getRole() == Role::Combat && readyToAssignUnit(unit)) {
-                        unit.setTransport(transport);
-                        transport.getAssignedCargo().insert(&unit);
+                    if (unit.getRole() == Role::Combat && readyToAssignUnit(u)) {
+                        unit.setTransport(t);
+                        transport.getAssignedCargo().insert(u);
                         cargoSize += unit.getType().spaceRequired();
                     }
 
-                    if (unit.getRole() == Role::Worker && readyToAssignWorker(unit)) {
-                        unit.setTransport(transport);
-                        transport.getAssignedCargo().insert(&unit);
+                    if (unit.getRole() == Role::Worker && readyToAssignWorker(u)) {
+                        unit.setTransport(t);
+                        transport.getAssignedCargo().insert(u);
                         cargoSize += unit.getType().spaceRequired();
                     }
                 }
             }
         }
 
-        void updateDecision(UnitInfo& transport)
+        void updateDecision(const shared_ptr<UnitInfo>& t)
         {
+            auto &transport = *t;
+
             // TODO: Broke transports for islands, fix later
             transport.setDestination(BWEB::Map::getMainPosition());
             transport.setTransportState(TransportState::None);
@@ -75,7 +80,7 @@ namespace McRave::Transports {
                 auto dist = c->getDistance(transport);
                 if (dist < distBest) {
                     distBest = dist;
-                    closestCargo = c;
+                    //closestCargo = c;
                 }
             }
 
@@ -241,8 +246,10 @@ namespace McRave::Transports {
             //}
         }
 
-        void updateMovement(UnitInfo& transport)
+        void updateMovement(const shared_ptr<UnitInfo>& t)
         {
+            auto &transport = *t;
+
             // Check if the destination can be used for ground distance
             auto dropTarget = transport.getDestination();
             if (!Util::isWalkable(dropTarget) || BWEB::Map::getGroundDistance(transport.getPosition(), dropTarget) == DBL_MAX) {
@@ -300,18 +307,18 @@ namespace McRave::Transports {
             if (bestPos.isValid())
                 transport.command(UnitCommandTypes::Move, bestPos, true);
             else
-                Command::move(transport);
+                Command::move(t);
         }
 
         void updateTransports()
         {
             for (auto &u : Units::getUnits(PlayerState::Self)) {
-                UnitInfo &unit = *u;
+                auto &unit = *u;
 
                 if (unit.getRole() == Role::Transport) {
-                    updateCargo(unit);
-                    updateDecision(unit);
-                    updateMovement(unit);
+                    updateCargo(u);
+                    updateDecision(u);
+                    updateMovement(u);
                 }
             }
         }
@@ -323,24 +330,13 @@ namespace McRave::Transports {
         updateTransports();
         Visuals::endPerfTest("Transports");
     }
-    
-    void removeUnit(Unit unit)
+
+    void removeUnit(const shared_ptr<UnitInfo>& unit)
     {
-        for (auto &t : Units::getUnits(PlayerState::Self)) {
-            UnitInfo &transport = *t;
+        if (unit->hasTransport())
+            unit->getTransport().getAssignedCargo().erase(unit);
 
-            for (auto &cargo : transport.getAssignedCargo()) {
-
-                // Remove cargo if cargo died
-                if (cargo->unit() == unit) {
-                    transport.getAssignedCargo().erase(cargo);
-                    return;
-                }
-
-                //// Set transport as nullptr if the transport died
-                //if (cargo->hasTransport() && cargo->getTransport().unit() == unit)
-                //    cargo->setTransport(nullptr);
-            }
-        }
+        for (auto &cargo : unit->getAssignedCargo())
+            cargo->setTransport(nullptr);
     }
 }

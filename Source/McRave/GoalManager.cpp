@@ -9,7 +9,7 @@ namespace McRave::Goals {
 
         void assignNumberToGoal(Position here, UnitType type, int count)
         {
-            map<double, UnitInfo*> unitByDist;
+            map<double, shared_ptr<UnitInfo>> unitByDist;
             map<UnitType, int> unitByType;
 
             // Store units by distance if they have a matching type
@@ -24,9 +24,9 @@ namespace McRave::Goals {
 
             // Iterate through closest units
             for (auto &u : unitByDist) {
-                UnitInfo* unit = u.second;
-                if (count > 0 && !unit->getGoal().isValid()) {
-                    unit->setGoal(here);
+                UnitInfo &unit = *u.second;
+                if (count > 0 && !unit.getGoal().isValid()) {
+                    unit.setGoal(here);
                     count--;
                 }
             }

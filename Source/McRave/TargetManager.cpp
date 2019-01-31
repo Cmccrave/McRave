@@ -9,7 +9,7 @@ namespace McRave::Targets{
 
         void getBestTarget(UnitInfo& unit)
         {
-            UnitInfo* bestTarget = nullptr;
+            shared_ptr<UnitInfo> bestTarget = nullptr;
             double closest = DBL_MAX, highest = 0.0;
             auto &unitList = unit.targetsFriendly() ? Units::getUnits(PlayerState::Self) : Units::getUnits(PlayerState::Enemy);
             auto enemyStrength = Players::getStrength(PlayerState::Enemy);
@@ -71,8 +71,9 @@ namespace McRave::Targets{
                 return true;
             };
 
-            const auto checkBest = [&](UnitInfo& target, double thisUnit, double health, double distance) {
+            const auto checkBest = [&](const shared_ptr<UnitInfo>& t, double thisUnit, double health, double distance) {
 
+                auto target = *t;
                 auto priority = (target.getType().isBuilding() && target.getGroundDamage() == 0.0 && target.getAirDamage() == 0.0) ? target.getPriority() / 2.0 : target.getPriority();
 
                 // Detector targeting
@@ -109,13 +110,13 @@ namespace McRave::Targets{
                 // If this target is more important to target, set as current target
                 if (thisUnit > highest) {
                     highest = thisUnit;
-                    bestTarget = &target;
+                    bestTarget = t;
                 }
             };
 
             for (auto &t : unitList) {
                 UnitInfo &target = *t;
-
+                
                 // Valid check;
                 if (!target.unit()
                     || !target.getWalkPosition().isValid()
@@ -150,11 +151,10 @@ namespace McRave::Targets{
 
                 // If should target, check if it's best
                 if (shouldTarget(target, unitCanAttack, targetCanAttack))
-                    checkBest(target, thisUnit, health, distance);
+                    checkBest(t, thisUnit, health, distance);
             }
-
-            if (bestTarget)
-                unit.setTarget(*bestTarget);
+           
+            unit.setTarget(bestTarget);
 
             // If unit is close, increment it
             if (bestTarget && Util::unitInRange(unit))

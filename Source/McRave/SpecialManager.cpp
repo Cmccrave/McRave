@@ -5,8 +5,9 @@ using namespace std;
 
 namespace McRave::Command
 {
-    bool special(UnitInfo& unit)
+    bool special(const std::shared_ptr<UnitInfo>& u)
     {
+        auto &unit = *u;
         Position p(unit.getEngagePosition());
 
         auto canAffordMorph = [&](UnitType type) {

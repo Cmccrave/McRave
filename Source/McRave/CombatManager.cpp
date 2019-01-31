@@ -9,8 +9,9 @@ namespace McRave::Combat {
         multimap<double, Position> combatClusters;
         constexpr tuple commands{ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::defend, Command::hunt, Command::escort, Command::retreat, Command::move };
 
-        void updateClusters(UnitInfo& unit)
+        void updateClusters(const shared_ptr<UnitInfo>& u)
         {
+            auto &unit = *u;
             if (unit.getType() == UnitTypes::Protoss_High_Templar
                 || unit.getType() == UnitTypes::Zerg_Defiler
                 || unit.getType() == UnitTypes::Protoss_Dark_Archon)
@@ -20,8 +21,9 @@ namespace McRave::Combat {
             combatClusters.emplace(strength, unit.getPosition());
         }
 
-        void updateLocalState(UnitInfo& unit)
+        void updateLocalState(const shared_ptr<UnitInfo>& u)
         {
+            auto &unit = *u;
             if (unit.hasTarget()) {
 
                 auto fightingAtHome = ((Terrain::isInAllyTerritory(unit.getTilePosition()) && Util::unitInRange(unit)) || Terrain::isInAllyTerritory(unit.getTarget().getTilePosition()));
@@ -85,8 +87,9 @@ namespace McRave::Combat {
             }
         }
 
-        void updateGlobalState(UnitInfo& unit)
+        void updateGlobalState(const shared_ptr<UnitInfo>& u)
         {
+            auto &unit = *u;
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if ((!BuildOrder::isFastExpand() && Strategy::enemyFastExpand())
                     || (Strategy::enemyProxy() && !Strategy::enemyRush())
@@ -106,8 +109,9 @@ namespace McRave::Combat {
                 unit.setGlobalState(GlobalState::Attack);
         }
 
-        void updateDestination(UnitInfo& unit)
+        void updateDestination(const shared_ptr<UnitInfo>& u)
         {
+            auto &unit = *u;
             auto moveToTarget = unit.hasTarget() && (unit.getPosition().getDistance(unit.getTarget().getPosition()) <= SIM_RADIUS || unit.getType().isFlyer());
 
             // If unit has a goal
@@ -148,8 +152,9 @@ namespace McRave::Combat {
             }
         }
 
-        void updateDecision(UnitInfo& unit)
+        void updateDecision(const shared_ptr<UnitInfo>& u)
         {
+            auto &unit = *u;
             if (!unit.unit() || !unit.unit()->exists()																							// Prevent crashes			
                 || unit.unit()->isLoaded()
                 || unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())	// If the unit is locked down, maelstrommed, stassised, or not completed
@@ -171,7 +176,7 @@ namespace McRave::Combat {
 
             // Iterate commands, if one is executed then don't try to execute other commands
             int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
-            int i = Util::iterateCommands(commands, unit);
+            int i = Util::iterateCommands(commands, u);
             Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", Text::White, commandNames[i].c_str());
         }
     }
@@ -180,15 +185,14 @@ namespace McRave::Combat {
         Visuals::startPerfTest();
         for (auto &u : Units::getUnits(PlayerState::Self)) {
             auto &unit = *u;
-
             if (unit.getRole() == Role::Combat) {
-                Horizon::simulate(unit);
+                Horizon::simulate(u);
 
-                updateClusters(unit);
-                updateGlobalState(unit);
-                updateLocalState(unit);
-                updateDestination(unit);
-                updateDecision(unit);
+                updateClusters(u);
+                updateGlobalState(u);
+                updateLocalState(u);
+                updateDestination(u);
+                updateDecision(u);
             }
         }
         Visuals::endPerfTest("Combat");

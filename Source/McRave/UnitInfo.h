@@ -45,7 +45,7 @@ namespace McRave {
         std::shared_ptr<UnitInfo> target = nullptr;
         std::shared_ptr<ResourceInfo> resource = nullptr;
 
-        std::set<std::shared_ptr<UnitInfo>> assignedCargo ={};
+        std::set<std::shared_ptr<UnitInfo>> assignedCargo;
 
         TransportState tState = TransportState::None;
         LocalState lState = LocalState::None;
@@ -153,7 +153,7 @@ namespace McRave {
         bool hasTransport() { return transport != nullptr; }
         bool hasTarget() { return target != nullptr; }
         bool command(BWAPI::UnitCommandType, BWAPI::Position, bool);
-        bool command(BWAPI::UnitCommandType, UnitInfo*);
+        bool command(BWAPI::UnitCommandType, UnitInfo&);
 
         ResourceInfo &getResource() { return *resource; }
         UnitInfo &getTransport() { return *transport; }
@@ -195,9 +195,9 @@ namespace McRave {
         void setGlobalState(GlobalState newState) { gState = newState; }
         void setLocalState(LocalState newState) { lState = newState; }
 
-        void setResource(ResourceInfo& unit) { resource = std::make_shared<ResourceInfo>(unit); }
-        void setTransport(UnitInfo& unit) { transport = std::make_shared<UnitInfo>(unit); }
-        void setTarget(UnitInfo& unit) { target = std::make_shared<UnitInfo>(unit); }
+        void setResource(const std::shared_ptr<ResourceInfo>& unit) { resource = unit; }
+        void setTransport(const std::shared_ptr<UnitInfo>& unit) { transport = unit; }
+        void setTarget(const std::shared_ptr<UnitInfo>& unit) { target = unit; }
         void setRole(Role newRole) { role = newRole; }
 
         void setUnit(BWAPI::Unit newUnit) { thisUnit = newUnit; }

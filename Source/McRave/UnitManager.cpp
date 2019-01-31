@@ -8,10 +8,10 @@ namespace McRave::Units {
 
     namespace {
 
-        set <UnitInfo*> enemyUnits;
-        set <UnitInfo*> myUnits;
-        set <UnitInfo*> neutralUnits;
-        set <UnitInfo*> allyUnits;
+        set<shared_ptr<UnitInfo>> enemyUnits;
+        set<shared_ptr<UnitInfo>> myUnits;
+        set<shared_ptr<UnitInfo>> neutralUnits;
+        set<shared_ptr<UnitInfo>> allyUnits;
         map <UnitSizeType, int> allySizes;
         map <UnitSizeType, int> enemySizes;
         map <UnitType, int> enemyTypes;
@@ -39,8 +39,10 @@ namespace McRave::Units {
             allyUnits.clear();
         }
 
-        void updateRole(UnitInfo& unit)
+        void updateRole(const shared_ptr<UnitInfo>& u)
         {
+            auto &unit = *u;
+
             // Don't assign a role to uncompleted units
             if (!unit.unit()->isCompleted() && !unit.getType().isBuilding() && unit.getType() != UnitTypes::Zerg_Egg) {
                 unit.setRole(Role::None);
@@ -89,13 +91,8 @@ namespace McRave::Units {
                     return u.getType().isWorker();
                 });
 
-                if (scout == &unit) {
-
-                    if (unit.hasResource())
-                        unit.getResource().setGathererCount(scout->getResource().getGathererCount() - 1);
-
+                if (scout == u) {
                     unit.setRole(Role::Scout);
-                    //unit.setResource(nullptr);
                     unit.setBuildingType(UnitTypes::None);
                     unit.setBuildPosition(TilePositions::Invalid);
                 }
@@ -133,7 +130,7 @@ namespace McRave::Units {
 
                 for (auto &u : player.getUnits()) {
                     UnitInfo &unit = *u;
-                    enemyUnits.insert(&unit);
+                    enemyUnits.insert(u);
 
                     // If this is a flying building that we haven't recognized as being a flyer, remove overlap tiles
                     auto flyingBuilding = unit.unit()->exists() && !unit.isFlying() && (unit.unit()->getOrder() == Orders::LiftingOff || unit.unit()->getOrder() == Orders::BuildingLiftOff || unit.unit()->isFlying());
@@ -187,10 +184,10 @@ namespace McRave::Units {
 
                 for (auto &u : player.getUnits()) {
                     UnitInfo &unit = *u;
-                    myUnits.insert(&unit);
+                    myUnits.insert(u);
 
                     unit.updateUnit();
-                    updateRole(unit);
+                    updateRole(u);
 
                     auto type = unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType() : unit.getType();
                     if (unit.unit()->isCompleted()) {
@@ -216,7 +213,7 @@ namespace McRave::Units {
 
                 for (auto &u : player.getUnits()) {
                     UnitInfo &unit = *u;
-                    neutralUnits.insert(&unit);
+                    neutralUnits.insert(u);
 
                     if (!unit.unit() || !unit.unit()->exists())
                         continue;
@@ -262,7 +259,7 @@ namespace McRave::Units {
             updateNeutrals();
             updateSelf();
         }
-    }
+    }        
 
     void onFrame()
     {
@@ -273,22 +270,23 @@ namespace McRave::Units {
         Visuals::endPerfTest("Units");
     }
 
-    int getEnemyCount(UnitType t)
-    {
-        map<UnitType, int>::iterator itr = enemyTypes.find(t);
-        if (itr != enemyTypes.end())
-            return itr->second;
-        return 0;
-    }
-
     void storeUnit(Unit unit)
     {
         auto &player = Players::getPlayers()[unit->getPlayer()];
-        auto info = std::make_shared<UnitInfo>();
+        auto info = UnitInfo();
 
-        info->setUnit(unit);
-        info->updateUnit();
-        player.getUnits().insert(info);
+        for (auto &p : Players::getPlayers()) {
+            for (auto &u : p.second.getUnits()) {
+                if (u->unit() == unit) {
+                    info = *u;
+                    return;
+                }
+            }
+        }
+
+        info.setUnit(unit);
+        info.updateUnit();
+        player.getUnits().insert(make_shared<UnitInfo>(info));
 
         if (unit->getPlayer() == Broodwar->self() && unit->getType() == UnitTypes::Protoss_Pylon)
             Pylons::storePylon(unit);
@@ -297,53 +295,100 @@ namespace McRave::Units {
     void removeUnit(Unit unit)
     {
         BWEB::Map::onUnitDestroy(unit);
-        auto &player = Players::getPlayers()[unit->getPlayer()];
-        // auto info = 
 
         // Find the unit
-        for (auto &p : player.getUnits()) {
+        for (auto &p : Players::getPlayers()) {
+            for (auto &u : p.second.getUnits()) {
+                if (u->unit() == unit) {
 
-        }
+                    if (u->hasTransport())
+                        u->getTransport().getAssignedCargo().erase(u);
 
-        if (player.isSelf()) {
-            if (info.hasResource()) {
-                Workers::removeUnit(info);
-                info.getResource().setGathererCount(info.getResource().getGathererCount() - 1);
+                    p.second.getUnits().erase(u);
+                    return;
+                }
             }
-            if (info.getRole() != Role::None)
-                myRoles[info.getRole()]--;
-            if (info.getRole() == Role::Scout)
-                scoutDeadFrame = Broodwar->getFrameCount();
-
-            Transports::removeUnit(unit);
         }
-
-        player.getUnits().erase(unit);
     }
 
     void morphUnit(Unit unit)
     {
         auto &player = Players::getPlayers()[unit->getPlayer()];
-        auto &info = player.getUnits()[unit];
 
-        if (player.isSelf()) {
-            info.setUnit(unit);
-            info.updateUnit();
+        // HACK: Changing players is kind of annoying, so we just remove and re-store
+        if (unit->getType().isRefinery()) {
+            removeUnit(unit);
+            storeUnit(unit);
+        }
 
-            // Remove all assignments
-            if (info.hasResource()) {
+        if (unit->getType() == UnitTypes::Zerg_Hatchery)
+            Stations::storeStation(unit);        
+
+        auto &info = Units::getUnit(unit);
+        if (info) {
+            if (info->hasResource())
                 Workers::removeUnit(info);
-                info.getResource().setGathererCount(info.getResource().getGathererCount() - 1);
-                //info.setResource(nullptr);
-            }
 
-            info.setBuildingType(UnitTypes::None);
-            info.setBuildPosition(TilePositions::Invalid);
-            //info.setTarget(nullptr);
+            if (info->hasTarget())
+                info->setTarget(nullptr);            
+
+            info->setBuildingType(UnitTypes::None);
+            info->setBuildPosition(TilePositions::Invalid);
         }
     }
+    
+    int getEnemyCount(UnitType t)
+    {
+        map<UnitType, int>::iterator itr = enemyTypes.find(t);
+        if (itr != enemyTypes.end())
+            return itr->second;
+        return 0;
+    }
 
-    set<UnitInfo*>& getUnits(PlayerState state)
+    int getNumberMelee()
+    {
+        return com(UnitTypes::Protoss_Zealot) + com(UnitTypes::Protoss_Dark_Templar)
+            + com(UnitTypes::Terran_Medic) + com(UnitTypes::Terran_Firebat)
+            + com(UnitTypes::Zerg_Zergling);
+    }
+
+    int getNumberRanged()
+    {
+        return com(UnitTypes::Protoss_Dragoon) + com(UnitTypes::Protoss_Reaver) + com(UnitTypes::Protoss_High_Templar)
+            + com(UnitTypes::Terran_Marine) + com(UnitTypes::Terran_Vulture) + com(UnitTypes::Terran_Siege_Tank_Tank_Mode) + com(UnitTypes::Terran_Siege_Tank_Siege_Mode) + com(UnitTypes::Terran_Goliath)
+            + com(UnitTypes::Zerg_Hydralisk) + com(UnitTypes::Zerg_Lurker) + com(UnitTypes::Zerg_Defiler);
+    }
+
+    const shared_ptr<UnitInfo> getUnit(Unit unit)
+    {
+        if (unit->getPlayer() == Broodwar->self()) {
+            for (auto &u : myUnits) {
+                if (u->unit() == unit)
+                    return u;
+            }
+        }
+        else if (unit->getPlayer()->isEnemy(Broodwar->self())) {
+            for (auto &u : enemyUnits) {
+                if (u->unit() == unit)
+                    return u;
+            }
+        }
+        else if (unit->getPlayer()->isAlly(Broodwar->self())) {
+            for (auto &u : allyUnits) {
+                if (u->unit() == unit)
+                    return u;
+            }
+        }
+        else if (unit->getPlayer()->isNeutral()) {
+            for (auto &u : neutralUnits) {
+                if (u->unit() == unit)
+                    return u;
+            }
+        }
+        return nullptr;
+    }
+
+    set<shared_ptr<UnitInfo>>& getUnits(PlayerState state)
     {
         switch (state) {
 
@@ -356,9 +401,9 @@ namespace McRave::Units {
         case PlayerState::Self:
             return myUnits;
         }
-        return set<UnitInfo*>{};
+        return set<shared_ptr<UnitInfo>>{};
     }
-
+       
     set<Unit>& getSplashTargets() { return splashTargets; }
     map<UnitSizeType, int>& getAllySizes() { return allySizes; }
     map<UnitSizeType, int>& getEnemySizes() { return enemySizes; }

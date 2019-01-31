@@ -95,8 +95,9 @@ namespace McRave::Scouts {
                 scoutTargets.insert(BWEB::Map::getMainPosition());
         }
 
-        void updateAssignment(UnitInfo& unit)
+        void updateAssignment(const shared_ptr<UnitInfo>& u)
         {
+            auto &unit = *u;
             auto start = unit.getWalkPosition();
             auto distBest = DBL_MAX;
             auto posBest = unit.getDestination();       
@@ -177,8 +178,9 @@ namespace McRave::Scouts {
         }
 
         constexpr tuple commands{ Command::attack, Command::kite, Command::hunt, Command::move };
-        void updateDecision(UnitInfo& unit)
+        void updateDecision(const shared_ptr<UnitInfo>& u)
         {
+            auto &unit = *u;
             // Convert our commands to strings to display what the unit is doing for debugging
             map<int, string> commandNames{
                 make_pair(0, "Attack"),
@@ -188,7 +190,7 @@ namespace McRave::Scouts {
             };
 
             int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
-            int i = Util::iterateCommands(commands, unit);
+            int i = Util::iterateCommands(commands, u);
             Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", Text::White, commandNames[i].c_str());
         }
 
@@ -196,11 +198,16 @@ namespace McRave::Scouts {
         {
             misc();
 
-            for (auto &u : Units::getUnits(PlayerState::Self)) {
-                UnitInfo &unit = *u;
-                if (unit.getRole() == Role::Scout) {
-                    updateAssignment(unit);
-                    updateDecision(unit);
+            for (auto &p : Players::getPlayers()) {
+                if (!p.second.isSelf())
+                    continue;
+
+                for (auto &u : p.second.getUnits()) {
+                    const shared_ptr<UnitInfo> &unit = u;
+                    if (unit->getRole() == Role::Scout) {
+                        updateAssignment(unit);
+                        updateDecision(unit);
+                    }
                 }
             }
         }

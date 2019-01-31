@@ -165,7 +165,7 @@ namespace McRave::BuildOrder::Protoss {
 
             itemQueue[Protoss_Nexus] =					Item(1 + (s >= 74));
             itemQueue[Protoss_Gateway] =				Item((s >= 20) + (s >= 60) + (s >= 62));
-            itemQueue[Protoss_Assimilator] =			Item((addGas || Strategy::enemyScouted()));
+            itemQueue[Protoss_Assimilator] =			Item((addGas() || Strategy::enemyScouted()));
             itemQueue[Protoss_Robotics_Facility] =		Item(s >= 52);
 
             // Decide whether to Reaver first or Obs first

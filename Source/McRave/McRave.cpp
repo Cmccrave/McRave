@@ -13,16 +13,15 @@
 // Need to fix how the directional check of viable position iterating works
 // BWEB Destination walls not working
 // Proxy builds? BWEB proxy block?
-// Drone scoring based on my strength + defense vs enemy strength - defense
 // Zerg macro hatchery fixes
-// Check Muta micro to ensure we are overshooting movement to not decel near targets
 // Unit Interface get distance is edge to point, lots of mistakes!
 // Re-add mine targets
-// Fix transports
+// Lurkers bug out defend commands and move commands
+// Resources that die in fog not being removed
 
 // *** TOTEST ***
 // If an enemy floats a CC to an expansion, we don't consider it "taken"
-    /// Added a customOnUnitLand in EventManager.h which should take care of this
+    // Added a customOnUnitLand in EventManager.h which should take care of this
     // Test lifting buildings
     // Lift in fog / visible
     // Land in fog / visible

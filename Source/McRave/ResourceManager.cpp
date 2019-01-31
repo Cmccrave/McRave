@@ -7,16 +7,16 @@ namespace McRave::Resources {
 
     namespace {
 
-        map <Unit, ResourceInfo> myMinerals;
-        map <Unit, ResourceInfo> myGas;
-        map <Unit, ResourceInfo> myBoulders;
+        set<shared_ptr<ResourceInfo>> myMinerals;
+        set<shared_ptr<ResourceInfo>> myGas;
+        set<shared_ptr<ResourceInfo>> myBoulders;
         bool minSat, gasSat;
         int gasCount;
         int incomeMineral, incomeGas;
 
-        void updateIncome(ResourceInfo& resource)
+        void updateIncome(const shared_ptr<ResourceInfo>& r)
         {
-            // Estimate income
+            auto &resource = *r;
             auto cnt = resource.getGathererCount();
             if (resource.getType().isMineralField())
                 incomeMineral += cnt == 1 ? 65 : 126;
@@ -24,9 +24,9 @@ namespace McRave::Resources {
                 incomeGas += resource.getRemainingResources() ? 103 * cnt : 26 * cnt;
         }
 
-        void updateInformation(ResourceInfo& resource)
+        void updateInformation(const shared_ptr<ResourceInfo>& r)
         {
-            // If unit exists, update BW information
+            auto &resource = *r;
             if (resource.unit()->exists())
                 resource.updateResource();
 
@@ -49,26 +49,20 @@ namespace McRave::Resources {
             incomeMineral = 0, incomeGas = 0;
             gasCount = 0;
 
-            const auto update = [&](ResourceInfo& resource) {
-                if (!resource.unit())
-                    return;
-                updateInformation(resource);
-                updateIncome(resource);
+            const auto update = [&](const shared_ptr<ResourceInfo>& r) {
+                updateInformation(r);
+                updateIncome(r);
             };
 
-            for (auto &m : myBoulders) {
-                ResourceInfo& resource = m.second;
-                update(resource);
-            }
+            for (auto &r : myBoulders)
+                update(r);            
 
-            for (auto &m : myMinerals) {
-                ResourceInfo& resource = m.second;
-                update(resource);
-            }
+            for (auto &r : myMinerals)
+                update(r);            
 
-            for (auto &g : myGas) {
-                ResourceInfo& resource = g.second;
-                update(resource);
+            for (auto &r : myGas) {
+                auto &resource = *r;
+                update(r);
 
                 // If resource is blocked from usage
                 if (resource.getTilePosition().isValid()) {
@@ -90,8 +84,15 @@ namespace McRave::Resources {
 
     void storeResource(Unit resource)
     {
-        auto &r = (resource->getResources() > 0 ? (resource->getType().isMineralField() ? myMinerals[resource] : myGas[resource]) : myBoulders[resource]);
-        r.setUnit(resource);
+        auto info = ResourceInfo();
+        auto &list = (resource->getResources() > 0 ? (resource->getType().isMineralField() ? myMinerals : myGas) : myBoulders);
+
+        for (auto &u : list) {
+            if (u->unit() == resource)
+                return;
+        }
+
+        info.setUnit(resource);
 
         // If we are not on an inital frame, a geyser was just created and we need to see if we own it
         if (Broodwar->getFrameCount() > 0) {
@@ -101,30 +102,49 @@ namespace McRave::Resources {
                 for (auto &s : Stations::getMyStations()) {
                     auto &station = *s.second;
                     if (station.BWEMBase() == newStation->BWEMBase()) {
-                        r.setResourceState(ResourceState::Mineable);
+                        info.setResourceState(ResourceState::Mineable);
                         break;
                     }
                 }
             }
         }
+        list.insert(make_shared<ResourceInfo>(info));
     }
 
-    void removeResource(Unit resource)
+    void removeResource(Unit unit)
     {
-        // Remove dead resources
-        if (myMinerals.find(resource) != myMinerals.end())
-            myMinerals.erase(resource);
-        else if (myBoulders.find(resource) != myBoulders.end())
-            myBoulders.erase(resource);
-        else if (myGas.find(resource) != myGas.end())
-            myGas.erase(resource);
+        auto &resource = getResource(unit);
 
-        //// Any workers that targeted that resource now have no target
-        //for (auto &u : Units::getUnits(PlayerState::Self)) {
-        //    UnitInfo &unit = *u;
-        //    if (unit.hasResource() && unit.getResource().unit() == resource)
-        //        unit.setResource(nullptr);
-        //}
+        if (resource) {
+            // Remove assignments
+            for (auto &u : resource->targetedByWhat())
+                u->setResource(nullptr);
+
+            // Remove dead resources
+            if (myMinerals.find(resource) != myMinerals.end())
+                myMinerals.erase(resource);
+            else if (myBoulders.find(resource) != myBoulders.end())
+                myBoulders.erase(resource);
+            else if (myGas.find(resource) != myGas.end())
+                myGas.erase(resource);
+        }
+    }
+
+    const shared_ptr<ResourceInfo> getResource(BWAPI::Unit unit)
+    {
+        for (auto &m : myMinerals) {
+            if (m->unit() == unit)
+                return m;
+        }
+        for (auto &b : myBoulders) {
+            if (b->unit() == unit)
+                return b;
+        }
+        for (auto &g : myGas) {
+            if (g->unit() == unit)
+                return g;
+        }
+        return nullptr;
     }
 
     int getGasCount() { return gasCount; }
@@ -132,7 +152,7 @@ namespace McRave::Resources {
     int getIncomeGas() { return incomeGas; }
     bool isMinSaturated() { return minSat; }
     bool isGasSaturated() { return gasSat; }
-    map <Unit, ResourceInfo>& getMyMinerals() { return myMinerals; }
-    map <Unit, ResourceInfo>& getMyGas() { return myGas; }
-    map <Unit, ResourceInfo>& getMyBoulders() { return myBoulders; }
+    set<shared_ptr<ResourceInfo>>& getMyMinerals() { return myMinerals; }
+    set<shared_ptr<ResourceInfo>>& getMyGas() { return myGas; }
+    set<shared_ptr<ResourceInfo>>& getMyBoulders() { return myBoulders; }
 }

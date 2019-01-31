@@ -210,7 +210,7 @@ namespace McRave::BuildOrder::Protoss {
             lockedTransition =  vis(Protoss_Robotics_Facility) > 0;
             getOpening =		s < 60;
             dragoonLimit =		INT_MAX;
-
+            
             playPassive =		!Strategy::enemyFastExpand() && com(Protoss_Reaver) < 2;
             getOpening =		Strategy::enemyPressure() ? vis(Protoss_Reaver) < 3 : s < 70;
             zealotLimit =		com(Protoss_Robotics_Facility) >= 1 ? 6 : zealotLimit;

@@ -3,7 +3,8 @@
 
 namespace McRave::Units {
     
-    std::set<UnitInfo*>& getUnits(PlayerState);
+    const std::shared_ptr<UnitInfo> getUnit(BWAPI::Unit);
+    std::set<std::shared_ptr<UnitInfo>>& getUnits(PlayerState);
     std::set<BWAPI::Unit>& getSplashTargets();
     std::map<BWAPI::UnitSizeType, int>& getAllySizes();
     std::map<BWAPI::UnitSizeType, int>& getEnemySizes();
@@ -16,6 +17,8 @@ namespace McRave::Units {
     int getMyVisible(BWAPI::UnitType);
     int getMyComplete(BWAPI::UnitType);
     int getEnemyCount(BWAPI::UnitType);
+    int getNumberMelee();
+    int getNumberRanged();
 
     void onFrame();
     void storeUnit(BWAPI::Unit);

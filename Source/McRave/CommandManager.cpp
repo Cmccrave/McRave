@@ -54,8 +54,9 @@ namespace McRave::Command {
         }
     }
 
-    bool misc(UnitInfo& unit)
+    bool misc(const shared_ptr<UnitInfo>& u)
     {
+        auto &unit = *u;
         // Unstick a unit
         if (unit.isStuck() && unit.unit()->isMoving()) {
             unit.unit()->stop();
@@ -72,11 +73,11 @@ namespace McRave::Command {
         // If unit has a transport, load into it if we need to
         else if (unit.hasTransport() && unit.getTransport().unit()->exists()) {
             if (unit.getType() == UnitTypes::Protoss_Reaver && unit.unit()->isTraining() && unit.unit()->getScarabCount() != MAX_SCARAB) {
-                unit.command(UnitCommandTypes::Right_Click_Unit, &unit.getTransport());
+                unit.command(UnitCommandTypes::Right_Click_Unit, unit.getTransport());
                 return true;
             }
             else if (unit.getType() == UnitTypes::Protoss_High_Templar && unit.getEnergy() < 75) {
-                unit.command(UnitCommandTypes::Right_Click_Unit, &unit.getTransport());
+                unit.command(UnitCommandTypes::Right_Click_Unit, unit.getTransport());
                 return true;
             }
         }
@@ -85,9 +86,9 @@ namespace McRave::Command {
         // TODO: Maybe move this to their respective functions
         else if (unit.hasTarget() && Units::getSplashTargets().find(unit.unit()) != Units::getSplashTargets().end()) {
             if (unit.hasTransport())
-                unit.command(UnitCommandTypes::Right_Click_Unit, &unit.getTransport());
+                unit.command(UnitCommandTypes::Right_Click_Unit, unit.getTransport());
             else if (unit.hasTarget() && unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames() && unit.getTarget().unit()->exists())
-                unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
+                unit.command(UnitCommandTypes::Attack_Unit, unit.getTarget());
             else
                 unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition(), true);
             return true;
@@ -95,14 +96,18 @@ namespace McRave::Command {
         return false;
     }
 
-    bool attack(UnitInfo& unit)
+    bool attack(const shared_ptr<UnitInfo>& u)
     {
+        auto &unit = *u;
         // If we have no target or it doesn't exist, we can't attack
         if (!unit.hasTarget() || !unit.getTarget().unit()->exists())
             return false;
 
         // Can the unit execute an attack command
         const auto canAttack = [&]() {
+            if (unit.getType() == UnitTypes::Zerg_Lurker && !unit.isBurrowed())
+                return false;
+
             auto cooldown = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() : unit.unit()->getGroundWeaponCooldown();
             return cooldown < Broodwar->getRemainingLatencyFrames();
         };
@@ -127,12 +132,12 @@ namespace McRave::Command {
             auto leashRange = 320;
             for (auto &interceptor : unit.unit()->getInterceptors()) {
                 if (interceptor->getOrder() == Orders::InterceptorReturn && interceptor->isCompleted()) {
-                    unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
+                    unit.command(UnitCommandTypes::Attack_Unit, unit.getTarget());
                     return true;
                 }
             }
             if (unit.getPosition().getApproxDistance(unit.getTarget().getPosition()) >= leashRange) {
-                unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
+                unit.command(UnitCommandTypes::Attack_Unit, unit.getTarget());
                 unit.circleBlue();
                 return true;
             }
@@ -146,14 +151,15 @@ namespace McRave::Command {
                 unit.circleGreen();
             }
             else
-                unit.command(UnitCommandTypes::Attack_Unit, &unit.getTarget());
+                unit.command(UnitCommandTypes::Attack_Unit, unit.getTarget());
             return true;
         }
         return false;
     }
 
-    bool approach(UnitInfo& unit)
+    bool approach(const shared_ptr<UnitInfo>& u)
     {
+        auto &unit = *u;
         // If we don't have a target or the targets position is invalid, we can't approach it
         if (!unit.hasTarget() || !unit.getTarget().getPosition().isValid())
             return false;
@@ -206,8 +212,9 @@ namespace McRave::Command {
         return false;
     }
 
-    bool move(UnitInfo& unit)
+    bool move(const shared_ptr<UnitInfo>& u)
     {
+        auto &unit = *u;
         function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
             // Manual conversion until BWAPI::Point is fixed
             auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
@@ -226,7 +233,7 @@ namespace McRave::Command {
 
         auto shouldMove = [&]() {
             if (unit.getRole() == Role::Combat) {
-                if (unit.getPosition().getDistance(unit.getDestination()) < SIM_RADIUS)
+                if (Util::unitInRange(unit) && unit.getType() != UnitTypes::Zerg_Lurker)
                     return false;
                 if (unit.getLocalState() == LocalState::Attack)
                     return true;
@@ -238,7 +245,7 @@ namespace McRave::Command {
 
         // 1) If unit has a transport, move to it or load into it
         if (unit.hasTransport() && unit.getTransport().unit()->exists()) {
-            unit.command(UnitCommandTypes::Right_Click_Unit, &unit.getTransport());
+            unit.command(UnitCommandTypes::Right_Click_Unit, unit.getTransport());
             return true;
         }
 
@@ -273,8 +280,9 @@ namespace McRave::Command {
         return false;
     }
 
-    bool kite(UnitInfo& unit)
+    bool kite(const shared_ptr<UnitInfo>& u)
     {
+        auto &unit = *u;
         // If we don't have a target, we can't kite it
         if (!unit.hasTarget())
             return false;
@@ -362,8 +370,9 @@ namespace McRave::Command {
         return false;
     }
 
-    bool defend(UnitInfo& unit)
+    bool defend(const shared_ptr<UnitInfo>& u)
     {
+        auto &unit = *u;
         bool defendingExpansion = unit.getDestination().isValid() && !Terrain::isInEnemyTerritory((TilePosition)unit.getDestination());
         bool closeToDefend = Terrain::getDefendPosition().getDistance(unit.getPosition()) < 640.0 || Terrain::isInAllyTerritory(unit.getTilePosition());
 
@@ -405,19 +414,16 @@ namespace McRave::Command {
                 unit.command(UnitCommandTypes::Move, BWEB::Map::getNaturalPosition(), true);
         }
         else {
-            // Estimate a melee arc
-            auto meleeArc = (int)com(UnitTypes::Protoss_Zealot) * (UnitTypes::Protoss_Zealot.width() / 2)
-                            + com(UnitTypes::Zerg_Zergling) * (UnitTypes::Zerg_Zergling.width() / 2)
-                            + com(UnitTypes::Terran_Medic) * (UnitTypes::Terran_Medic.width() / 2)
-                            + 32.0;
+            // Estimate a melee radius
+            auto meleeRadius = Terrain::isDefendNatural() && Terrain::getNaturalWall() ? 32 : min(160, Units::getNumberMelee() * 16);
 
-            // Estimate a ranged arc
-            auto rangedArc = (int)min(meleeArc + 32.0, com(UnitTypes::Protoss_Dragoon) * (UnitTypes::Protoss_Dragoon.width() / 2)
-                                                    + com(UnitTypes::Zerg_Hydralisk) * (UnitTypes::Zerg_Hydralisk.width() / 2)
-                                                    + com(UnitTypes::Terran_Marine) * (UnitTypes::Terran_Marine.width() / 2)
-                                                    + 192.0);
+            // Estimate a ranged radius
+                // At least: behind the melee arc or at least this units range
+                // At most: the number of ranged units we have * half a tile + this units ground range
+            auto rangedRadius = min(max(meleeRadius + 32, (int)unit.getGroundRange()), (Units::getNumberRanged() * 16) + (int)unit.getGroundRange());
 
-            auto radius = unit.getGroundRange() > 32.0 ? rangedArc : meleeArc;
+            // Find a concave position at the desired radius
+            auto radius = unit.getGroundRange() > 32.0 ? rangedRadius : meleeRadius;
             auto defendArea = Terrain::isDefendNatural() ? BWEB::Map::getNaturalArea() : BWEB::Map::getMainArea();
             auto bestPosition = Util::getConcavePosition(unit, radius, defendArea, Terrain::getDefendPosition());
             unit.command(UnitCommandTypes::Move, bestPosition, false);
@@ -427,8 +433,9 @@ namespace McRave::Command {
         return false;
     }
 
-    bool hunt(UnitInfo& unit)
+    bool hunt(const shared_ptr<UnitInfo>& u)
     {
+        auto &unit = *u;
         function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
 
             // Manual conversion until BWAPI::Point is fixed
@@ -477,8 +484,9 @@ namespace McRave::Command {
         return false;
     }
 
-    bool retreat(UnitInfo& unit)
+    bool retreat(const shared_ptr<UnitInfo>& u)
     {
+        auto &unit = *u;
         // Low distance, low threat, high clustering
         function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
             // Manual conversion until BWAPI::Point is fixed
@@ -516,8 +524,9 @@ namespace McRave::Command {
         return false;
     }
 
-    bool escort(UnitInfo& unit)
+    bool escort(const shared_ptr<UnitInfo>& u)
     {
+        auto &unit = *u;
         // Low distance, low threat
         function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
             // Manual conversion until BWAPI::Point is fixed

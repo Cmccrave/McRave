@@ -4,5 +4,5 @@
 namespace McRave::Workers {
 
     void onFrame();
-    void removeUnit(UnitInfo&);
+    void removeUnit(const std::shared_ptr<UnitInfo>&);
 }

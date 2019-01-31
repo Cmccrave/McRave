@@ -56,7 +56,7 @@ namespace McRave::Strategy {
             }
 
             for (auto &u : player.getUnits()) {
-                UnitInfo &unit = u.second;
+                UnitInfo &unit =*u;
 
                 // Monitor gas intake or gas steal
                 if (unit.getType().isRefinery() && unit.unit()->exists()) {
@@ -148,7 +148,7 @@ namespace McRave::Strategy {
                 enemyBuild = "3Fact";
 
             for (auto &u : player.getUnits()) {
-                UnitInfo &unit = u.second;
+                UnitInfo &unit = *u;
 
                 // Monitor gas intake or gas steal
                 if (unit.getType().isRefinery() && unit.unit()->exists()) {
@@ -209,7 +209,7 @@ namespace McRave::Strategy {
             }
 
             for (auto &u : player.getUnits()) {
-                UnitInfo &unit = u.second;
+                UnitInfo &unit = *u;
 
                 if (Terrain::isInAllyTerritory(unit.getTilePosition()) || (inboundScoutFrame > 0 && inboundScoutFrame - Broodwar->getFrameCount() < 64))
                     enemyScout = true;

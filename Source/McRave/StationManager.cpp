@@ -72,20 +72,34 @@ namespace McRave::Stations {
         ResourceState state = unit->isCompleted() ? ResourceState::Mineable : ResourceState::Assignable;
         if (unit->getPlayer() == Broodwar->self()) {
             for (auto &mineral : newStation->BWEMBase()->Minerals()) {
-                auto &resource = Resources::getMyMinerals()[mineral->Unit()];
-                resource.setResourceState(state);
 
-                // HACK: Added this to fix some weird gas steal stuff
-                if (state == ResourceState::Mineable)
-                    resource.setStation(newStation);
+                if (Broodwar->getFrameCount() == 0)
+                    Resources::storeResource(mineral->Unit());
+
+                const auto resource = Resources::getResource(mineral->Unit());
+
+                if (resource) {
+                    resource->setResourceState(state);
+
+                    // HACK: Added this to fix some weird gas steal stuff
+                    if (state == ResourceState::Mineable)
+                        resource->setStation(newStation);
+                }
             }
             for (auto &gas : newStation->BWEMBase()->Geysers()) {
-                auto &resource = Resources::getMyGas()[gas->Unit()];
-                resource.setResourceState(state);
 
-                // HACK: Added this to fix some weird gas steal stuff
-                if (state == ResourceState::Mineable)
-                    resource.setStation(newStation);
+                if (Broodwar->getFrameCount() == 0)
+                    Resources::storeResource(gas->Unit());
+
+                const auto resource = Resources::getResource(gas->Unit());
+
+                if (resource) {
+                    resource->setResourceState(state);
+
+                    // HACK: Added this to fix some weird gas steal stuff
+                    if (state == ResourceState::Mineable)
+                        resource->setStation(newStation);
+                }
             }
         }
 
@@ -114,10 +128,16 @@ namespace McRave::Stations {
         auto state = ResourceState::None;
 
         // 1) Change resource state of resources connected to not mineable
-        for (auto &mineral : station->BWEMBase()->Minerals())
-            Resources::getMyMinerals()[mineral->Unit()].setResourceState(ResourceState::None);
-        for (auto &gas : station->BWEMBase()->Geysers())
-            Resources::getMyGas()[gas->Unit()].setResourceState(ResourceState::None);
+        for (auto &mineral : station->BWEMBase()->Minerals()) {
+            const auto resource = Resources::getResource(mineral->Unit());
+            if (resource)
+                resource->setResourceState(state);            
+        }
+        for (auto &gas : station->BWEMBase()->Geysers()) {
+            const auto resource = Resources::getResource(gas->Unit());
+            if (resource)
+                resource->setResourceState(state);
+        }
         list.erase(unit);
 
         // 2) Remove any territory it was in

@@ -23,11 +23,12 @@ namespace McRave::Events
     inline void onUnitDestroy(BWAPI::Unit unit)
     {
         BWEB::Map::onUnitDestroy(unit);
-        Resources::removeResource(unit);
         Units::removeUnit(unit);
 
         if (unit->getType().isResourceDepot())
             Stations::removeStation(unit);
+        if (unit->getType().isResourceContainer())
+            Resources::removeResource(unit);
     }
 
     inline void onUnitMorph(BWAPI::Unit unit)
@@ -45,7 +46,7 @@ namespace McRave::Events
             if (unit->getType() == BWAPI::UnitTypes::Zerg_Drone)
                 Stations::removeStation(unit);
             else
-                Units::storeUnit(unit);
+                Units::morphUnit(unit);
         }
 
         // Refinery that morphed as an enemy
@@ -65,13 +66,11 @@ namespace McRave::Events
 
     inline void onUnitRenegade(BWAPI::Unit unit)
     {
-        // TODO: Refinery is added in onUnitDiscover for enemy units (keep resource unit the same)
-        // Destroy the unit otherwise
-        if (!unit->getType().isRefinery())
+        // HACK: Changing players is kind of annoying, so we just remove and re-store
+        if (!unit->getType().isRefinery()) {
             Units::removeUnit(unit);
-
-        if (unit->getPlayer() == BWAPI::Broodwar->self())
-            onUnitComplete(unit);
+            Units::storeUnit(unit);
+        }
     }
 
     inline void customOnUnitLift(UnitInfo& unit)

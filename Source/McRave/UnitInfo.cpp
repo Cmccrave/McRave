@@ -84,12 +84,8 @@ namespace McRave
         // Update my target
         if (player && player == Broodwar->self()) {
             if (unitType == UnitTypes::Terran_Vulture_Spider_Mine) {
-                auto possibleTarget = thisUnit->getOrderTarget();
-                if (possibleTarget) {
-                    auto &list = Players::getPlayers()[possibleTarget->getPlayer()];
-                    //if (list.getUnits().find(thisUnit->getOrderTarget()) != list.getUnits().end())
-                        //target = list.getUnits()[thisUnit->getOrderTarget()];
-                }
+                if (thisUnit->getOrderTarget())
+                    target = Units::getUnit(thisUnit->getOrderTarget());
             }
             else
                 Targets::getTarget(*this);
@@ -97,12 +93,8 @@ namespace McRave
 
         // Assume enemy target
         else if (player && player->isEnemy(Broodwar->self())) {
-            auto possibleTarget = thisUnit->getOrderTarget();
-            if (possibleTarget) {
-                auto &list = Players::getPlayers()[possibleTarget->getPlayer()];
-                //if (list.getUnits().find(thisUnit->getOrderTarget()) != list.getUnits().end())
-                    //target = list.getUnits()[thisUnit->getOrderTarget()];
-            }
+            if (thisUnit->getOrderTarget())
+                target = Units::getUnit(thisUnit->getOrderTarget());
         }
     }
 
@@ -161,7 +153,7 @@ namespace McRave
         return false;
     }
 
-    bool UnitInfo::command(BWAPI::UnitCommandType command, UnitInfo* targetUnit)
+    bool UnitInfo::command(BWAPI::UnitCommandType command, UnitInfo& targetUnit)
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames
         bool attackCooldown = Broodwar->getFrameCount() - lastAttackFrame <= minStopFrame - Broodwar->getRemainingLatencyFrames();
@@ -172,22 +164,22 @@ namespace McRave
         // Check if this is a new order
         const auto newOrder = [&]() {
             auto canIssue = Broodwar->getFrameCount() - thisUnit->getLastCommandFrame() > Broodwar->getRemainingLatencyFrames();
-            auto newOrderTarget = thisUnit->getOrderTarget() != targetUnit->unit();
+            auto newOrderTarget = thisUnit->getOrderTarget() != targetUnit.unit();
             return canIssue && newOrderTarget;
         };
 
         // Check if this is a new command
         const auto newCommand = [&]() {
-            auto newCommandTarget = (thisUnit->getLastCommand().getType() != command || thisUnit->getLastCommand().getTarget() != targetUnit->unit());
+            auto newCommandTarget = (thisUnit->getLastCommand().getType() != command || thisUnit->getLastCommand().getTarget() != targetUnit.unit());
             return newCommandTarget;
         };
 
         // If this is a new order or new command than what we're requesting, we can issue it
         if (newOrder() || newCommand()) {
             if (command == UnitCommandTypes::Attack_Unit)
-                thisUnit->attack(targetUnit->unit());
+                thisUnit->attack(targetUnit.unit());
             else if (command == UnitCommandTypes::Right_Click_Unit)
-                thisUnit->rightClick(targetUnit->unit());
+                thisUnit->rightClick(targetUnit.unit());
             return true;
         }
         return false;

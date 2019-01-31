@@ -7,7 +7,6 @@ namespace McRave
     class ResourceInfo
     {
     private:
-        int gathererCount;
         int remainingResources;
         BWAPI::Unit thisUnit;
         BWAPI::UnitType type;
@@ -15,11 +14,11 @@ namespace McRave
         BWAPI::TilePosition tilePosition;
         const BWEB::Stations::Station * station;
         ResourceState rState;
+        std::set<std::shared_ptr<UnitInfo>> targetedBy;
     public:
         ResourceInfo() {
             station = nullptr;
             thisUnit = nullptr;
-            gathererCount = 0;
             remainingResources = 0;
             rState = ResourceState::None;
             type = BWAPI::UnitTypes::None;
@@ -38,7 +37,7 @@ namespace McRave
         const BWEB::Stations::Station * getStation() { return station; }
         void setStation(const BWEB::Stations::Station* newStation) { station = newStation; }
 
-        int getGathererCount() { return gathererCount; };
+        int getGathererCount() { return int(targetedBy.size()); }
         int getRemainingResources() { return remainingResources; }
         ResourceState getResourceState() { return rState; }
         BWAPI::Unit unit() { return thisUnit; }
@@ -46,12 +45,23 @@ namespace McRave
         BWAPI::Position getPosition() { return position; }
         BWAPI::TilePosition getTilePosition() { return tilePosition; }
 
-        void setGathererCount(int newInt) { gathererCount = newInt; }
+        void addTargetedBy(const std::shared_ptr<UnitInfo>& unit) { targetedBy.insert(unit); }
+        void removeTargetedBy(const std::shared_ptr<UnitInfo>& unit) { targetedBy.erase(unit); }
+        std::set<std::shared_ptr<UnitInfo>>& targetedByWhat() { return targetedBy; }
+
         void setRemainingResources(int newInt) { remainingResources = newInt; }
         void setResourceState(ResourceState newState) { rState = newState; }
         void setUnit(BWAPI::Unit newUnit) { thisUnit = newUnit; }
         void setType(BWAPI::UnitType newType) { type = newType; }
         void setPosition(BWAPI::Position newPosition) { position = newPosition; }
         void setTilePosition(BWAPI::TilePosition newTilePosition) { tilePosition = newTilePosition; }
+
+        bool operator== (ResourceInfo& p) {
+            return thisUnit == p.unit();
+        }
+
+        bool operator< (ResourceInfo& p) {
+            return thisUnit < p.unit();
+        }
     };
 }

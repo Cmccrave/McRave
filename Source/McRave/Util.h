@@ -4,9 +4,9 @@
 namespace McRave::Util {
 
     template<typename F>
-    UnitInfo * getClosestUnit(BWAPI::Position here, PlayerState player, F &&pred) {
+    std::shared_ptr<UnitInfo> getClosestUnit(BWAPI::Position here, PlayerState player, F &&pred) {
         double distBest = DBL_MAX;
-        UnitInfo* best = nullptr;
+        std::shared_ptr<UnitInfo> best = nullptr;
         auto &units = Units::getUnits(player);
 
         for (auto &u : units) {
@@ -17,7 +17,7 @@ namespace McRave::Util {
 
             double dist = here.getDistance(unit.getPosition());
             if (dist < distBest) {
-                best = &unit;
+                best = u;
                 distBest = dist;
             }
         }
@@ -58,7 +58,7 @@ namespace McRave::Util {
 
     // Iterates all commands possible
     template<typename T, int idx = 0>
-    int iterateCommands(T const &tpl, UnitInfo& unit) {
+    int iterateCommands(T const &tpl, const std::shared_ptr<UnitInfo>& unit) {
         if constexpr (idx < std::tuple_size<T>::value)
             if (!std::get<idx>(tpl)(unit))
                 return iterateCommands<T, idx + 1>(tpl, unit);
