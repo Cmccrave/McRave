@@ -87,7 +87,7 @@ namespace McRave::Command {
         else if (unit.hasTarget() && Units::getSplashTargets().find(unit.unit()) != Units::getSplashTargets().end()) {
             if (unit.hasTransport())
                 unit.command(UnitCommandTypes::Right_Click_Unit, unit.getTransport());
-            else if (unit.hasTarget() && unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames() && unit.getTarget().unit()->exists())
+            else if (unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames() && unit.getTarget().unit()->exists())
                 unit.command(UnitCommandTypes::Attack_Unit, unit.getTarget());
             else
                 unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition(), true);

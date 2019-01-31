@@ -51,19 +51,25 @@ namespace McRave::Command
 
         // SCV
         else if (unit.getType() == UnitTypes::Terran_SCV) {
-            //UnitInfo* mech = Util::getClosestUnit(unit, Filter::IsMechanical && Filter::HP_Percent < 100);
-            //if (!Strategy::enemyRush() && mech && mech->unit() && unit.getPosition().getDistance(mech->getPosition()) <= 320 && Grids::getMobility(mech->getWalkPosition()) > 0) {
-            //	if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != mech->unit())
-            //		unit.unit()->repair(mech->unit());
-            //	return true;
-            //}
+            auto mech = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+                return (u.getType().isMechanical() && u.getPercentHealth() < 1.0);
+            });
 
-            //UnitInfo* building = Util::getClosestUnit(unit, Filter::GetPlayer == Broodwar->self() && Filter::IsCompleted && Filter::HP_Percent < 100);
-            //if (building && building->unit() && (!Strategy::enemyRush() || building->getType() == UnitTypes::Terran_Bunker)) {
-            //	if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != building->unit())
-            //		unit.unit()->repair(building->unit());
-            //	return true;
-            //}
+            if (!Strategy::enemyRush() && mech && mech->unit() && unit.getPosition().getDistance(mech->getPosition()) <= 320 && Grids::getMobility(mech->getWalkPosition()) > 0) {
+            	if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != mech->unit())
+            		unit.unit()->repair(mech->unit());
+            	return true;
+            }
+
+            auto building = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+                return u.getPercentHealth() < 0.35 || (u.getType() == UnitTypes::Terran_Bunker && u.getPercentHealth() < 1.0);
+            });
+
+            if (building && building->unit() && (!Strategy::enemyRush() || building->getType() == UnitTypes::Terran_Bunker)) {
+            	if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != building->unit())
+            		unit.unit()->repair(building->unit());
+            	return true;
+            }
         }
 
         // Siege Tanks
@@ -224,23 +230,29 @@ namespace McRave::Command
         }
 
         // General: Bunker Loading/Unloading
-        //if (unit.getType() == UnitTypes::Terran_Marine && unit.getGlobalStrategy() == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) > 0) {
-        //	//UnitInfo* bunker = Util::getClosestAllyBuilding(unit, Filter::GetType == UnitTypes::Terran_Bunker && Filter::SpaceRemaining > 0);
-        //	//if (bunker && bunker->unit() && unit.hasTarget()) {
-        //	//	if (unit.getTarget().unit()->exists() && unit.getTarget().getPosition().getDistance(unit.getPosition()) <= 320) {
-        //	//		unit.unit()->rightClick(bunker->unit());
-        //	//		return true;
-        //	//	}
-        //	//	if (unit.unit()->isLoaded() && unit.getTarget().getPosition().getDistance(unit.getPosition()) > 320)
-        //	//		bunker->unit()->unloadAll();
-        //	//}
-        //}
+        if (unit.getType() == UnitTypes::Terran_Marine && unit.getGlobalState() == GlobalState::Retreat && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) > 0) {
+
+            auto bunker = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+                return (u.getType() == UnitTypes::Terran_Bunker && u.unit()->getSpaceRemaining() > 0);
+            });
+            
+        	if (bunker && bunker->unit() && unit.hasTarget()) {
+        		if (unit.getTarget().unit()->exists() && unit.getTarget().getPosition().getDistance(unit.getPosition()) <= 320) {
+        			unit.unit()->rightClick(bunker->unit());
+        			return true;
+        		}
+        		if (unit.unit()->isLoaded() && unit.getTarget().getPosition().getDistance(unit.getPosition()) > 320)
+        			bunker->unit()->unloadAll();
+        	}
+        }
 
         // Science Vessels
         if (unit.getType() == UnitTypes::Terran_Science_Vessel && unit.unit()->getEnergy() >= TechTypes::Defensive_Matrix) {
-            //UnitInfo* ally = Util::getClosestAllyUnit(unit, Filter::IsUnderAttack);
-            //if (ally && ally->getPosition().getDistance(unit.getPosition()) < 640)
-            //	unit.unit()->useTech(TechTypes::Defensive_Matrix, ally->unit());
+            auto ally = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+                return (u.unit()->isUnderAttack());
+            });
+            if (ally && ally->getPosition().getDistance(unit.getPosition()) < 640)
+            	unit.unit()->useTech(TechTypes::Defensive_Matrix, ally->unit());
             return true;
         }
 

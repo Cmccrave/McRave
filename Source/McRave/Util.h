@@ -4,7 +4,7 @@
 namespace McRave::Util {
 
     template<typename F>
-    std::shared_ptr<UnitInfo> getClosestUnit(BWAPI::Position here, PlayerState player, F &&pred) {
+    const std::shared_ptr<UnitInfo> getClosestUnit(BWAPI::Position here, PlayerState player, F &&pred) {
         double distBest = DBL_MAX;
         std::shared_ptr<UnitInfo> best = nullptr;
         auto &units = Units::getUnits(player);

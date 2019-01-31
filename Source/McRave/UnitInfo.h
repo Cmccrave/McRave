@@ -41,9 +41,9 @@ namespace McRave {
 
         BWAPI::Player player = nullptr;
         BWAPI::Unit thisUnit = nullptr;
-        std::shared_ptr<UnitInfo> transport = nullptr;
-        std::shared_ptr<UnitInfo> target = nullptr;
-        std::shared_ptr<ResourceInfo> resource = nullptr;
+        std::weak_ptr<UnitInfo> transport;
+        std::weak_ptr<UnitInfo> target;
+        std::weak_ptr<ResourceInfo> resource;
 
         std::set<std::shared_ptr<UnitInfo>> assignedCargo;
 
@@ -82,7 +82,8 @@ namespace McRave {
         LocalState getLocalState() { return lState; }
 
         bool samePath() {
-            return (path.getTiles().front() == target->getTilePosition() && path.getTiles().back() == tilePosition);
+            if (auto sp = target.lock())
+                return (path.getTiles().front() == sp->getTilePosition() && path.getTiles().back() == tilePosition);
         }
         bool hasAttackedRecently() {
             return (BWAPI::Broodwar->getFrameCount() - lastAttackFrame < 50);
@@ -149,15 +150,15 @@ namespace McRave {
         bool isFlying() { return flying; }
         bool sameTile() { return lastTile == tilePosition; }
 
-        bool hasResource() { return resource != nullptr; }
-        bool hasTransport() { return transport != nullptr; }
-        bool hasTarget() { return target != nullptr; }
+        bool hasResource() { return !resource.expired(); }
+        bool hasTransport() { return !transport.expired(); }
+        bool hasTarget() { return !target.expired(); }
         bool command(BWAPI::UnitCommandType, BWAPI::Position, bool);
         bool command(BWAPI::UnitCommandType, UnitInfo&);
 
-        ResourceInfo &getResource() { return *resource; }
-        UnitInfo &getTransport() { return *transport; }
-        UnitInfo &getTarget() { return *target; }
+        ResourceInfo &getResource() { return *resource.lock(); }
+        UnitInfo &getTransport() { return *transport.lock(); }
+        UnitInfo &getTarget() { return *target.lock(); }
         Role getRole() { return role; }
 
         BWAPI::Unit unit() { return thisUnit; }

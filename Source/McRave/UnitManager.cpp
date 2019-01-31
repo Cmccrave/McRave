@@ -12,12 +12,12 @@ namespace McRave::Units {
         set<shared_ptr<UnitInfo>> myUnits;
         set<shared_ptr<UnitInfo>> neutralUnits;
         set<shared_ptr<UnitInfo>> allyUnits;
-        map <UnitSizeType, int> allySizes;
-        map <UnitSizeType, int> enemySizes;
-        map <UnitType, int> enemyTypes;
-        map <UnitType, int> myVisibleTypes;
-        map <UnitType, int> myCompleteTypes;
-        map <Role, int> myRoles;
+        map<UnitSizeType, int> allySizes;
+        map<UnitSizeType, int> enemySizes;
+        map<UnitType, int> enemyTypes;
+        map<UnitType, int> myVisibleTypes;
+        map<UnitType, int> myCompleteTypes;
+        map<Role, int> myRoles;
         set<Unit> splashTargets;
         double immThreat, proxThreat;
         int supply = 8;
@@ -259,7 +259,7 @@ namespace McRave::Units {
             updateNeutrals();
             updateSelf();
         }
-    }        
+    }
 
     void onFrame()
     {
@@ -322,7 +322,7 @@ namespace McRave::Units {
         }
 
         if (unit->getType() == UnitTypes::Zerg_Hatchery)
-            Stations::storeStation(unit);        
+            Stations::storeStation(unit);
 
         auto &info = Units::getUnit(unit);
         if (info) {
@@ -330,13 +330,13 @@ namespace McRave::Units {
                 Workers::removeUnit(info);
 
             if (info->hasTarget())
-                info->setTarget(nullptr);            
+                info->setTarget(nullptr);
 
             info->setBuildingType(UnitTypes::None);
             info->setBuildPosition(TilePositions::Invalid);
         }
     }
-    
+
     int getEnemyCount(UnitType t)
     {
         map<UnitType, int>::iterator itr = enemyTypes.find(t);
@@ -403,7 +403,7 @@ namespace McRave::Units {
         }
         return set<shared_ptr<UnitInfo>>{};
     }
-       
+
     set<Unit>& getSplashTargets() { return splashTargets; }
     map<UnitSizeType, int>& getAllySizes() { return allySizes; }
     map<UnitSizeType, int>& getEnemySizes() { return enemySizes; }

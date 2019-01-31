@@ -74,18 +74,19 @@ namespace McRave::Transports {
             transport.setDestination(BWEB::Map::getMainPosition());
             transport.setTransportState(TransportState::None);
 
-            UnitInfo * closestCargo = nullptr;
+            shared_ptr<UnitInfo> closestCargo = nullptr;
             auto distBest = DBL_MAX;
             for (auto &c : transport.getAssignedCargo()) {
                 auto dist = c->getDistance(transport);
                 if (dist < distBest) {
                     distBest = dist;
-                    //closestCargo = c;
+                    closestCargo = c;
                 }
             }
 
             // Check if this unit is ready to fight
-            const auto readyToFight = [&](UnitInfo& cargo) {
+            const auto readyToFight = [&](const shared_ptr<UnitInfo>& c) {
+                auto &cargo = *c;
                 auto attackCooldown = (Broodwar->getFrameCount() - cargo.getLastAttackFrame() <= 60 - Broodwar->getRemainingLatencyFrames());
 
                 auto reaver = cargo.getType() == UnitTypes::Protoss_Reaver;
@@ -103,7 +104,8 @@ namespace McRave::Transports {
             };
 
             // Check if this unit is ready to unload
-            const auto readyToUnload = [&](UnitInfo& cargo) {
+            const auto readyToUnload = [&](const shared_ptr<UnitInfo>& c) {
+                auto &cargo = *c;
                 auto reaver = cargo.getType() == UnitTypes::Protoss_Reaver;
                 auto targetDist = cargo.getPosition().getDistance(cargo.getEngagePosition());
                 if (targetDist <= 64.0)
@@ -112,14 +114,15 @@ namespace McRave::Transports {
             };
 
             // Check if this unit is ready to be picked up
-            const auto readyToPickup = [&](UnitInfo& cargo) {
+            const auto readyToPickup = [&](const shared_ptr<UnitInfo>& c) {
+                auto &cargo = *c;
                 auto attackCooldown = (Broodwar->getFrameCount() - cargo.getLastAttackFrame() <= 60 - Broodwar->getRemainingLatencyFrames());
                 auto reaver = cargo.getType() == UnitTypes::Protoss_Reaver;
                 auto ht = cargo.getType() == UnitTypes::Protoss_High_Templar;
                 auto threat = Grids::getEGroundThreat(cargo.getWalkPosition()) > 0.0;
                 auto targetDist = reaver && cargo.hasTarget() ? BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getTarget().getPosition()) - 256.0 : cargo.getPosition().getDistance(cargo.getEngagePosition());
 
-                if (transport.getPosition().getDistance(cargo.getPosition()) <= 160.0 || &cargo == closestCargo) {
+                if (transport.getPosition().getDistance(cargo.getPosition()) <= 160.0 || c == closestCargo) {
                     if (!cargo.hasTarget() || cargo.getLocalState() == LocalState::Retreat || (targetDist > 128.0 || (ht && cargo.unit()->getEnergy() < 75) || (reaver && attackCooldown && threat))) {
                         return true;
                     }
@@ -128,20 +131,23 @@ namespace McRave::Transports {
             };
 
             // Check if this worker is ready to mine
-            const auto readyToMine = [&](UnitInfo& worker) {
+            const auto readyToMine = [&](const shared_ptr<UnitInfo>& w) {
+                auto &worker = *w;
                 if (Terrain::isIslandMap() && worker.hasResource() && worker.getResource().getTilePosition().isValid() && mapBWEM.GetArea(transport.getTilePosition()) == mapBWEM.GetArea(worker.getResource().getTilePosition()))
                     return true;
                 return false;
             };
 
             // Check if this worker is ready to build
-            const auto readyToBuild = [&](UnitInfo& worker) {
+            const auto readyToBuild = [&](const shared_ptr<UnitInfo>& w) {
+                auto &worker = *w;
                 if (Terrain::isIslandMap() && worker.getBuildPosition().isValid() && mapBWEM.GetArea(worker.getTilePosition()) == mapBWEM.GetArea(worker.getBuildPosition()))
                     return true;
                 return false;
             };
 
-            const auto pickupPosition = [&](UnitInfo& cargo) {
+            const auto pickupPosition = [&](const shared_ptr<UnitInfo>& c) {
+                auto &cargo = *c;
                 double distance = transport.getPosition().getDistance(cargo.getPosition());
                 Position direction = (transport.getPosition() - cargo.getPosition()) * 64 / (int)distance;
                 return cargo.getPosition() - direction;
@@ -156,9 +162,9 @@ namespace McRave::Transports {
                 if (!cargo.unit()->isLoaded()) {
 
                     // If it's requesting a pickup, set load state to 1	
-                    if (readyToPickup(cargo)) {
+                    if (readyToPickup(c)) {
                         transport.setTransportState(TransportState::Loading);
-                        transport.setDestination(pickupPosition(cargo));
+                        transport.setDestination(pickupPosition(c));
                         cargo.unit()->rightClick(transport.unit());
                         return;
                     }
@@ -172,10 +178,10 @@ namespace McRave::Transports {
                 else if (cargo.unit()->isLoaded() && cargo.hasTarget() && cargo.getEngagePosition().isValid()) {
                     transport.setDestination(cargo.getEngagePosition());
 
-                    if (readyToFight(cargo)) {
+                    if (readyToFight(c)) {
                         transport.setTransportState(TransportState::Engaging);
 
-                        if (readyToUnload(cargo))
+                        if (readyToUnload(c))
                             transport.unit()->unload(cargo.unit());
                     }
                     else
