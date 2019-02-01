@@ -60,8 +60,6 @@
     <ClCompile Include="..\Source\McRave\PlayerManager.cpp" />
     <ClCompile Include="..\Source\McRave\ProductionManager.cpp" />
     <ClCompile Include="..\Source\McRave\ProtossBuildOrder.cpp" />
-    <ClCompile Include="..\Source\McRave\ProtossBuilds.cpp" />
-    <ClCompile Include="..\Source\McRave\ProtossMemes.cpp" />
     <ClCompile Include="..\Source\McRave\PylonManager.cpp" />
     <ClCompile Include="..\Source\McRave\ResourceManager.cpp" />
     <ClCompile Include="..\Source\McRave\ScoutManager.cpp" />

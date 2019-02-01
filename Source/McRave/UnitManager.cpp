@@ -359,28 +359,10 @@ namespace McRave::Units {
             + com(UnitTypes::Zerg_Hydralisk) + com(UnitTypes::Zerg_Lurker) + com(UnitTypes::Zerg_Defiler);
     }
 
-    const shared_ptr<UnitInfo> getUnit(Unit unit)
+    shared_ptr<UnitInfo> getUnit(Unit unit)
     {
-        if (unit->getPlayer() == Broodwar->self()) {
-            for (auto &u : myUnits) {
-                if (u->unit() == unit)
-                    return u;
-            }
-        }
-        else if (unit->getPlayer()->isEnemy(Broodwar->self())) {
-            for (auto &u : enemyUnits) {
-                if (u->unit() == unit)
-                    return u;
-            }
-        }
-        else if (unit->getPlayer()->isAlly(Broodwar->self())) {
-            for (auto &u : allyUnits) {
-                if (u->unit() == unit)
-                    return u;
-            }
-        }
-        else if (unit->getPlayer()->isNeutral()) {
-            for (auto &u : neutralUnits) {
+        for (auto &[_,player] : Players::getPlayers()) {
+            for (auto &u : player.getUnits()) {
                 if (u->unit() == unit)
                     return u;
             }

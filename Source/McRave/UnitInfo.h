@@ -41,9 +41,9 @@ namespace McRave {
 
         BWAPI::Player player = nullptr;
         BWAPI::Unit thisUnit = nullptr;
-        std::weak_ptr<UnitInfo> transport;
-        std::weak_ptr<UnitInfo> target;
-        std::weak_ptr<ResourceInfo> resource;
+        std::shared_ptr<UnitInfo> transport;
+        std::shared_ptr<UnitInfo> target;
+        std::shared_ptr<ResourceInfo> resource;
 
         std::set<std::shared_ptr<UnitInfo>> assignedCargo;
 
@@ -51,7 +51,7 @@ namespace McRave {
         LocalState lState = LocalState::None;
         GlobalState gState = GlobalState::None;
         SimState sState = SimState::None;
-        Role role = Role::None;        
+        Role role = Role::None;
 
         BWAPI::UnitType unitType = BWAPI::UnitTypes::None;
         BWAPI::UnitType buildingType = BWAPI::UnitTypes::None;
@@ -82,8 +82,7 @@ namespace McRave {
         LocalState getLocalState() { return lState; }
 
         bool samePath() {
-            if (auto sp = target.lock())
-                return (path.getTiles().front() == sp->getTilePosition() && path.getTiles().back() == tilePosition);
+            return (path.getTiles().front() == target->getTilePosition() && path.getTiles().back() == tilePosition);
         }
         bool hasAttackedRecently() {
             return (BWAPI::Broodwar->getFrameCount() - lastAttackFrame < 50);
@@ -94,16 +93,16 @@ namespace McRave {
         bool targetsFriendly() {
             return unitType == BWAPI::UnitTypes::Terran_Medic || unitType == BWAPI::UnitTypes::Terran_Science_Vessel || unitType == BWAPI::UnitTypes::Zerg_Defiler;
         }
-        bool isSuicidal(){
+        bool isSuicidal() {
             return unitType == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine || unitType == BWAPI::UnitTypes::Zerg_Scourge || unitType == BWAPI::UnitTypes::Zerg_Infested_Terran;
         }
         bool isLightAir() {
-            return unitType == BWAPI::UnitTypes::Protoss_Corsair || unitType == BWAPI::UnitTypes::Zerg_Mutalisk  || unitType == BWAPI::UnitTypes::Terran_Wraith;
+            return unitType == BWAPI::UnitTypes::Protoss_Corsair || unitType == BWAPI::UnitTypes::Zerg_Mutalisk || unitType == BWAPI::UnitTypes::Terran_Wraith;
         }
         bool isCapitalShip() {
             return unitType == BWAPI::UnitTypes::Protoss_Carrier || unitType == BWAPI::UnitTypes::Terran_Battlecruiser || unitType == BWAPI::UnitTypes::Zerg_Guardian;
         }
-        bool isHovering() { 
+        bool isHovering() {
             return unitType.isWorker() || unitType == BWAPI::UnitTypes::Protoss_Archon || unitType == BWAPI::UnitTypes::Protoss_Dark_Archon || unitType == BWAPI::UnitTypes::Terran_Vulture;
         }
 
@@ -150,15 +149,15 @@ namespace McRave {
         bool isFlying() { return flying; }
         bool sameTile() { return lastTile == tilePosition; }
 
-        bool hasResource() { return !resource.expired(); }
-        bool hasTransport() { return !transport.expired(); }
-        bool hasTarget() { return !target.expired(); }
+        bool hasResource() { return resource != nullptr; }
+        bool hasTransport() { return transport != nullptr; }
+        bool hasTarget() { return target != nullptr; }
         bool command(BWAPI::UnitCommandType, BWAPI::Position, bool);
         bool command(BWAPI::UnitCommandType, UnitInfo&);
 
-        ResourceInfo &getResource() { return *resource.lock(); }
-        UnitInfo &getTransport() { return *transport.lock(); }
-        UnitInfo &getTarget() { return *target.lock(); }
+        ResourceInfo &getResource() { return *resource; }
+        UnitInfo &getTransport() { return *transport; }
+        UnitInfo &getTarget() { return *target; }
         Role getRole() { return role; }
 
         BWAPI::Unit unit() { return thisUnit; }

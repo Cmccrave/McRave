@@ -37,7 +37,7 @@ namespace McRave::BuildOrder::Protoss {
 
     void PvZ2GateDefensive() {
         gasLimit =			(com(Protoss_Cybernetics_Core) && s >= 50) ? INT_MAX : 0;
-        getOpening =		vis(Protoss_Dark_Templar) == 0;
+        getOpening =		vis(Protoss_Corsair) == 0;
         playPassive	=		vis(Protoss_Corsair) == 0;
         firstUpgrade =		UpgradeTypes::None;
         firstTech =			TechTypes::None;

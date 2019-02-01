@@ -92,9 +92,11 @@ namespace McRave
         }
 
         // Assume enemy target
-        else if (player && player->isEnemy(Broodwar->self())) {
+        else if (player && player->isEnemy(Broodwar->self())) {            
             if (thisUnit->getOrderTarget())
-                target = Units::getUnit(thisUnit->getOrderTarget());
+                target = Units::getUnit(thisUnit->getOrderTarget());            
+            else
+                target = nullptr;
         }
     }
 
@@ -191,7 +193,7 @@ namespace McRave
             return false;
 
         // Define "close" - TODO: define better
-        auto close = position.getDistance(Terrain::getDefendPosition()) < groundRange || position.getDistance(Terrain::getDefendPosition()) < airRange;
+        auto close = position.getDistance(Terrain::getDefendPosition()) < groundReach || position.getDistance(Terrain::getDefendPosition()) < airReach;
         auto atHome = Terrain::isInAllyTerritory(tilePosition);
         auto manner = position.getDistance(Terrain::getMineralHoldPosition()) < 256.0;
         auto exists = thisUnit && thisUnit->exists();

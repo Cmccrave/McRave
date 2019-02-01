@@ -85,9 +85,6 @@
     <ClCompile Include="..\Source\McRave\ProtossBuildOrder.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\ProtossBuilds.cpp">
-      <Filter>McRave</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\PylonManager.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
@@ -140,9 +137,6 @@
       <Filter>BWEB</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\McRave\SpecialManager.cpp">
-      <Filter>McRave</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\ProtossMemes.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\McRave\GoalManager.cpp">

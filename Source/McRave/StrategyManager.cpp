@@ -49,10 +49,6 @@ namespace McRave::Strategy {
             // Zergling frame
             if (lingFrame == 0 && Units::getEnemyCount(Zerg_Zergling) >= 1) {
                 lingFrame = Broodwar->getFrameCount();
-                if (!Terrain::getEnemyStartingPosition().isValid()) {
-                    rush = true;
-                    enemyBuild = "4Pool";
-                }
             }
 
             for (auto &u : player.getUnits()) {
@@ -66,7 +62,14 @@ namespace McRave::Strategy {
                         enemyGas = unit.unit()->getInitialResources() - unit.unit()->getResources();
                 }
 
+
                 // Zergling build detection and pool timing
+                if (unit.getType() == UnitTypes::Zerg_Zergling) {
+                    if (frameArrivesWhen(unit) < 4200) {
+                        rush = true;
+                        enemyBuild = "4Pool";
+                    }
+                }
                 if (unit.getType() == Zerg_Spawning_Pool) {
 
                     if (poolFrame == 0 && unit.unit()->exists())
@@ -74,7 +77,7 @@ namespace McRave::Strategy {
 
                     if (poolFrame > 0 && Units::getEnemyCount(Zerg_Spire) == 0 && Units::getEnemyCount(Zerg_Hydralisk_Den) == 0 && Units::getEnemyCount(Zerg_Lair) == 0) {
                         if (enemyGas <= 0 && ((poolFrame < 2500 && poolFrame > 0) || (lingFrame < 3000 && lingFrame > 0)))
-                            enemyBuild = "5Pool";
+                            enemyBuild = "4Pool";
                         else if (Units::getEnemyCount(Zerg_Hatchery) == 1 && enemyGas < 148 && enemyGas >= 50 && Units::getEnemyCount(Zerg_Zergling) >= 8)
                             enemyBuild = "9Pool";
                         else if (Units::getEnemyCount(Zerg_Hatchery) >= 1 && Units::getEnemyCount(Zerg_Drone) <= 11 && Units::getEnemyCount(Zerg_Zergling) >= 8)
