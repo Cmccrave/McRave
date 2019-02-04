@@ -34,7 +34,8 @@ namespace McRave::Goals {
 
         void assignPercentToGoal(Position here, UnitType type, double percent)
         {
-            int count = int(percent * double(Units::getMyVisible(type)));
+            // Cap at 4
+            int count = min(4, int(percent * double(Units::getMyVisible(type))));
             assignNumberToGoal(here, type, count);
         }
 
@@ -46,8 +47,8 @@ namespace McRave::Goals {
             for (auto &s : Stations::getMyStations()) {
                 auto station = *s.second;
 
-                if (station.BWEMBase()->Location() != BWEB::Map::getNaturalTile() && station.BWEMBase()->Location() != BWEB::Map::getMainTile() && station.getDefenseCount() == 0) {
-                    assignPercentToGoal(station.BWEMBase()->Center(), UnitTypes::Protoss_Dragoon, 0.15);
+                if (station.getBWEMBase()->Location() != BWEB::Map::getNaturalTile() && station.getBWEMBase()->Location() != BWEB::Map::getMainTile() && station.getDefenseCount() == 0) {
+                    assignPercentToGoal(station.getBWEMBase()->Center(), UnitTypes::Protoss_Dragoon, 0.15);
                 }
             }
 
@@ -58,7 +59,7 @@ namespace McRave::Goals {
                 auto posBest = Positions::Invalid;
                 for (auto &s : Stations::getEnemyStations()) {
                     auto station = *s.second;
-                    auto pos = station.BWEMBase()->Center();
+                    auto pos = station.getBWEMBase()->Center();
                     auto dist = BWEB::Map::getGroundDistance(pos, Terrain::getEnemyStartingPosition());
                     if (dist > distBest) {
                         distBest = dist;
@@ -76,7 +77,7 @@ namespace McRave::Goals {
             if (Stations::getMyStations().size() >= 4) {
                 for (auto &s : Stations::getEnemyStations()) {
                     auto station = *s.second;
-                    auto pos = station.BWEMBase()->Center();
+                    auto pos = station.getBWEMBase()->Center();
                     assignNumberToGoal(pos, UnitTypes::Protoss_Dark_Templar, 1);
                 }
             }
@@ -128,7 +129,7 @@ namespace McRave::Goals {
 
                 for (auto &base : Stations::getMyStations()) {
                     auto station = *base.second;
-                    assignPercentToGoal(station.ResourceCentroid(), UnitTypes::Zerg_Lurker, 0.25);
+                    assignPercentToGoal(station.getResourceCentroid(), UnitTypes::Zerg_Lurker, 0.25);
                 }
             }
         }

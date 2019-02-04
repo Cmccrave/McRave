@@ -196,7 +196,7 @@ namespace BWEB::Map
 
             for (auto &station : Stations::getStations()) {
                 int defCnt = station.getDefenseCount();
-                for (auto &defense : station.DefenseLocations()) {
+                for (auto &defense : station.getDefenseLocations()) {
                     if (unit->getTilePosition() == defense) {
                         station.setDefenseCount(defCnt + 1);
                         return;
@@ -239,7 +239,7 @@ namespace BWEB::Map
 
             for (auto &station : Stations::getStations()) {
                 int defCnt = station.getDefenseCount();
-                for (auto &defense : station.DefenseLocations()) {
+                for (auto &defense : station.getDefenseLocations()) {
                     if (unit->getTilePosition() == defense) {
                         station.setDefenseCount(defCnt - 1);
                         return;
@@ -343,7 +343,7 @@ namespace BWEB::Map
 
         // Search through each station to find the closest valid TilePosition
         for (auto &station : Stations::getStations()) {
-            for (auto &tile : station.DefenseLocations()) {
+            for (auto &tile : station.getDefenseLocations()) {
                 const auto dist = tile.getDistance(searchCenter);
                 if (dist < distBest && isPlaceable(type, tile))
                     distBest = dist, tileBest = tile;

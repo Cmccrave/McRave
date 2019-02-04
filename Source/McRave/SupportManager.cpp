@@ -22,6 +22,18 @@ namespace McRave::Support {
         auto building = Broodwar->self()->getRace().getResourceDepot();
         auto destination = Positions::Invalid;// Units::getArmyCenter();
 
+        auto highestCluster = 0.0;
+        for (auto itr = Combat::getCombatClusters().rbegin(); itr != Combat::getCombatClusters().rend(); itr++) {
+            auto currentCluster = (*itr).first;
+            auto currentPos = (*itr).second;
+            if (currentCluster > highestCluster && !Command::overlapsActions(unit.unit(), unit.getType(), currentPos, 64)) {
+                highestCluster = currentCluster;
+                destination = currentPos;
+            }
+        }
+
+        Broodwar->drawLineMap(unit.getPosition(), destination, Colors::Green);
+
         // HACK: Spells dont move
         if (unit.getType() == UnitTypes::Spell_Scanner_Sweep) {
             Command::addAction(unit.unit(), unit.getPosition(), UnitTypes::Spell_Scanner_Sweep);

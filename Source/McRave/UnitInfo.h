@@ -26,6 +26,7 @@ namespace McRave {
         int lastAttackFrame = 0;
         int lastVisibleFrame = 0;
         int lastMoveFrame = 0;
+        int lastThreateningFrame = 0;
         int resourceHeldFrames = 0;
         int remainingTrainFrame = 0;
         int frameCreated = 0;
@@ -145,6 +146,8 @@ namespace McRave {
         void circleBlack() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Black); }
 
         bool isThreatening();
+        bool isHidden();
+
         bool isBurrowed() { return burrowed; }
         bool isFlying() { return flying; }
         bool sameTile() { return lastTile == tilePosition; }

@@ -78,7 +78,7 @@ namespace McRave::Math {
         if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Terran_Science_Vessel)
             return 3.0;
         if ((unit.unit()->isRepairing() || unit.unit()->isConstructing()) && unit.isThreatening())
-            return 100.0;
+            return 10.0;
         if (Broodwar->getFrameCount() < 6000 && Strategy::enemyProxy() && unit.getType() == UnitTypes::Protoss_Pylon)
             return -5.0;
         if (unit.unit()->isBeingConstructed() && unit.getType() == UnitTypes::Terran_Bunker && Terrain::isInAllyTerritory(unit.getTilePosition()))

@@ -143,11 +143,11 @@ namespace McRave::Targets{
                     unit.setSimPosition(target.getPosition());
                     closest = distance;
                 }
-
+/*
                 if (unit.isLightAir() && !Stations::getMyStations().empty()) {
                     auto myStation = Stations::getClosestStation(PlayerState::Self, unit.getPosition());
                     distance = target.getPosition().getDistance(myStation);
-                }
+                }*/
 
                 // If should target, check if it's best
                 if (shouldTarget(target, unitCanAttack, targetCanAttack))

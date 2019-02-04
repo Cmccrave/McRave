@@ -87,36 +87,36 @@ namespace McRave::Terrain {
                 UnitType shuttle = Broodwar->self()->getRace().getTransport();
 
                 // Shuttle check for island bases, check enemy owned bases
-                if (!station.BWEMBase()->GetArea()->AccessibleFrom(BWEB::Map::getMainArea()) && Units::getEnemyCount(shuttle) <= 0)
+                if (!station.getBWEMBase()->GetArea()->AccessibleFrom(BWEB::Map::getMainArea()) && Units::getEnemyCount(shuttle) <= 0)
                     continue;
-                if (BWEB::Map::isUsed(station.BWEMBase()->Location()))
+                if (BWEB::Map::isUsed(station.getBWEMBase()->Location()))
                     continue;
-                if (enemyStartingTilePosition == station.BWEMBase()->Location())
+                if (enemyStartingTilePosition == station.getBWEMBase()->Location())
                     continue;
 
                 // Get value of the expansion
                 double value = 0.0;
-                for (auto &mineral : station.BWEMBase()->Minerals())
+                for (auto &mineral : station.getBWEMBase()->Minerals())
                     value += double(mineral->Amount());
-                for (auto &gas : station.BWEMBase()->Geysers())
+                for (auto &gas : station.getBWEMBase()->Geysers())
                     value += double(gas->Amount());
-                if (station.BWEMBase()->Geysers().size() == 0)
+                if (station.getBWEMBase()->Geysers().size() == 0)
                     value = value / 10.0;
 
                 // Get distance of the expansion
                 double distance;
-                if (!station.BWEMBase()->GetArea()->AccessibleFrom(BWEB::Map::getMainArea()))
-                    distance = log(station.BWEMBase()->Center().getDistance(enemyStartingPosition));
+                if (!station.getBWEMBase()->GetArea()->AccessibleFrom(BWEB::Map::getMainArea()))
+                    distance = log(station.getBWEMBase()->Center().getDistance(enemyStartingPosition));
                 else if (!Players::vT())
-                    distance = BWEB::Map::getGroundDistance(enemyStartingPosition, station.BWEMBase()->Center()) / (BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), station.BWEMBase()->Center()));
+                    distance = BWEB::Map::getGroundDistance(enemyStartingPosition, station.getBWEMBase()->Center()) / (BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), station.getBWEMBase()->Center()));
                 else
-                    distance = BWEB::Map::getGroundDistance(enemyStartingPosition, station.BWEMBase()->Center());
+                    distance = BWEB::Map::getGroundDistance(enemyStartingPosition, station.getBWEMBase()->Center());
 
                 double score = value / distance;
 
                 if (score > best) {
                     best = score;
-                    enemyExpand = (TilePosition)station.BWEMBase()->Center();
+                    enemyExpand = (TilePosition)station.getBWEMBase()->Center();
                 }
             }
         }
@@ -138,10 +138,10 @@ namespace McRave::Terrain {
 
                 for (auto &station : Stations::getEnemyStations()) {
                     auto &s = *station.second;
-                    double dist = Players::vP() ? 1.0 / enemyStartingPosition.getDistance(s.BWEMBase()->Center()) : enemyStartingPosition.getDistance(s.BWEMBase()->Center());
+                    double dist = Players::vP() ? 1.0 / enemyStartingPosition.getDistance(s.getBWEMBase()->Center()) : enemyStartingPosition.getDistance(s.getBWEMBase()->Center());
                     if (dist >= distBest) {
                         distBest = dist;
-                        posBest = s.BWEMBase()->Center();
+                        posBest = s.getBWEMBase()->Center();
                     }
                 }
                 attackPosition = posBest;
@@ -176,14 +176,14 @@ namespace McRave::Terrain {
                 auto &s = *station.second;
                 double dist;
                 if (enemyStartingPosition.isValid())
-                    dist = BWEB::Map::getGroundDistance(enemyStartingPosition, Position(s.ResourceCentroid()));
+                    dist = BWEB::Map::getGroundDistance(enemyStartingPosition, Position(s.getResourceCentroid()));
                 else
-                    dist = mapBWEM.Center().getDistance(Position(s.ResourceCentroid()));
+                    dist = mapBWEM.Center().getDistance(Position(s.getResourceCentroid()));
 
                 if (dist < distBest) {
                     distBest = dist;
-                    mineralHold = (Position(s.ResourceCentroid()) + s.BWEMBase()->Center()) / 2;
-                    backMineralHold = (Position(s.ResourceCentroid()) - Position(s.BWEMBase()->Center())) + Position(s.ResourceCentroid());
+                    mineralHold = (Position(s.getResourceCentroid()) + s.getBWEMBase()->Center()) / 2;
+                    backMineralHold = (Position(s.getResourceCentroid()) - Position(s.getBWEMBase()->Center())) + Position(s.getResourceCentroid());
                 }
             }
 
@@ -326,17 +326,17 @@ namespace McRave::Terrain {
                 if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 32)
                     return true;
             }
-            for (auto &piece : naturalWall->smallTiles()) {
+            for (auto &piece : naturalWall->getSmallTiles()) {
                 auto center = Position(piece) + Position(32, 32);
                 if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 32)
                     return true;
             }
-            for (auto &piece : naturalWall->mediumTiles()) {
+            for (auto &piece : naturalWall->getMediumTiles()) {
                 auto center = Position(piece) + Position(48, 32);
                 if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 48)
                     return true;
             }
-            for (auto &piece : naturalWall->largeTiles()) {
+            for (auto &piece : naturalWall->getLargeTiles()) {
                 auto center = Position(piece) + Position(64, 48);
                 if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 64)
                     return true;

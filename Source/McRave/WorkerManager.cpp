@@ -127,7 +127,7 @@ namespace McRave::Workers {
                 if ((worker.getPosition().getDistance(boulder.getPosition()) <= 320.0 && boulder.getGathererCount() == 0) || (worker.unit()->isGatheringMinerals() && worker.unit()->getOrderTarget() == boulder.unit())) {
                     if (worker.unit()->getOrderTarget() != boulder.unit()) {
                         worker.unit()->gather(boulder.unit());
-                        worker.setResource(b);
+                        //worker.setResource(b);
                     }
                     return true;
                 }
@@ -162,7 +162,7 @@ namespace McRave::Workers {
 
             // If worker has a resource and it's mineable
             if (worker.hasResource() && worker.getResource().getResourceState() == ResourceState::Mineable) {
-                auto resourceCentroid = worker.getResource().getStation() ? worker.getResource().getStation()->ResourceCentroid() : Positions::Invalid;
+                auto resourceCentroid = worker.getResource().getStation() ? worker.getResource().getStation()->getResourceCentroid() : Positions::Invalid;
                 worker.setDestination(resourceCentroid);
 
                 // 1) If it's close or same area, don't need a path, set to empty	
@@ -263,7 +263,7 @@ namespace McRave::Workers {
             if (threatened) {
 
                 // Find a path on the station network
-                if (worker.getPosition().getDistance(closest->ResourceCentroid()) < 320.0) {
+                if (worker.getPosition().getDistance(closest->getResourceCentroid()) < 320.0) {
                     for (auto &s : Stations::getMyStations()) {
                         auto station = s.second;
                         auto closePath = Stations::pathStationToStation(closest, station);
@@ -272,7 +272,7 @@ namespace McRave::Workers {
                             path = *closePath;
 
                         // Store station if it's safe
-                        if (!Util::accurateThreatOnPath(worker, path) || worker.getPosition().getDistance(station->ResourceCentroid()) < 128.0)
+                        if (!Util::accurateThreatOnPath(worker, path) || worker.getPosition().getDistance(station->getResourceCentroid()) < 128.0)
                             safeStations.push_back(station);
                     }
                 }

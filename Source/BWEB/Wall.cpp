@@ -505,13 +505,13 @@ namespace BWEB::Walls
 
         auto furthest = 0.0;
         // Find the furthest non pylon building to the chokepoint
-        for (auto &tile : wall.largeTiles()) {
+        for (auto &tile : wall.getLargeTiles()) {
             Position p = Map::pConvert(tile) + Position(64, 48);
             auto dist = p.getDistance(Map::pConvert(wall.getChokePoint()->Center()));
             if (dist > furthest)
                 furthest = dist;
         }
-        for (auto &tile : wall.mediumTiles()) {
+        for (auto &tile : wall.getMediumTiles()) {
             Position p = Map::pConvert(tile) + Position(48, 32);
             auto dist = p.getDistance(Map::pConvert(wall.getChokePoint()->Center()));
             if (dist > furthest)
@@ -748,11 +748,11 @@ namespace BWEB::Walls
     void draw()
     {
         for (auto &wall : walls) {
-            for (auto &tile : wall.smallTiles())
+            for (auto &tile : wall.getSmallTiles())
                 Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), Broodwar->self()->getColor());
-            for (auto &tile : wall.mediumTiles())
+            for (auto &tile : wall.getMediumTiles())
                 Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(97, 65), Broodwar->self()->getColor());
-            for (auto &tile : wall.largeTiles())
+            for (auto &tile : wall.getLargeTiles())
                 Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(129, 97), Broodwar->self()->getColor());
             for (auto &tile : wall.getDefenses())
                 Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), Broodwar->self()->getColor());

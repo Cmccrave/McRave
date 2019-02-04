@@ -184,7 +184,7 @@ namespace McRave::Production {
             }
 
             // HACK: Want x reavers before a shuttle
-            if (Players::vP() && vis(UnitTypes::Protoss_Reaver) < (2 + int(Strategy::getEnemyBuild() == "P4Gate")))
+            if (Players::vP() && vis(UnitTypes::Protoss_Reaver) < (2 + int(Strategy::getEnemyBuild() == "4Gate")))
                 needShuttles = false;
 
             switch (unit)

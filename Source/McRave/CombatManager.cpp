@@ -45,7 +45,7 @@ namespace McRave::Combat {
                     || (unit.getType().getRace() == Races::Zerg && unit.getPercentTotal() < LOW_BIO_PERCENT_LIMIT)
                     || (unit.getType() == UnitTypes::Protoss_High_Templar && unit.getEnergy() < 75)
                     || Grids::getESplash(unit.getWalkPosition()) > 0
-                    || (invisTarget && (unit.getPosition().getDistance(unit.getTarget().getPosition()) <= enemyReach || enemyThreat))
+                    || (invisTarget && (unit.getPosition().getDistance(unit.getTarget().getPosition()) <= enemyReach || enemyThreat > 0))
                     || unit.getGlobalState() == GlobalState::Retreat)
                     unit.setLocalState(LocalState::Retreat);
 
@@ -183,6 +183,7 @@ namespace McRave::Combat {
 
     void onFrame() {
         Visuals::startPerfTest();
+        combatClusters.clear();
         for (auto &u : Units::getUnits(PlayerState::Self)) {
             auto &unit = *u;
             if (unit.getRole() == Role::Combat) {

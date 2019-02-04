@@ -193,7 +193,7 @@ namespace McRave::BuildOrder
                     //	return true;
                 }
 
-                if (build == "PFFE") {
+                if (build == "FFE") {
                     if (transition == "NeoBisu" || transition == "2Stargate" || transition == "StormRush")
                         return z;
                 }
@@ -756,7 +756,7 @@ namespace McRave::BuildOrder
     void checkExoticTech()
     {
         // Corsair/Scout upgrades
-        if ((techList.find(Protoss_Scout) != techList.end() && currentBuild != "PDTExpand") || (techList.find(Protoss_Corsair) != techList.end() && Units::getSupply() >= 300))
+        if ((techList.find(Protoss_Scout) != techList.end() || techList.find(Protoss_Corsair) != techList.end()) && Units::getSupply() >= 300)
             itemQueue[Protoss_Fleet_Beacon] = Item(1);
 
         // HACK: Bluestorm carrier hack

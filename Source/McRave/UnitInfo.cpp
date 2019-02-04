@@ -193,7 +193,7 @@ namespace McRave
             return false;
 
         // Define "close" - TODO: define better
-        auto close = position.getDistance(Terrain::getDefendPosition()) < groundReach || position.getDistance(Terrain::getDefendPosition()) < airReach;
+        auto close = position.getDistance(Terrain::getDefendPosition()) < groundReach / 2 || position.getDistance(Terrain::getDefendPosition()) < airReach / 2;
         auto atHome = Terrain::isInAllyTerritory(tilePosition);
         auto manner = position.getDistance(Terrain::getMineralHoldPosition()) < 256.0;
         auto exists = thisUnit && thisUnit->exists();
@@ -201,52 +201,51 @@ namespace McRave
         auto constructingClose = exists && (position.getDistance(Terrain::getDefendPosition()) < 320.0 || close) && (thisUnit->isConstructing() || thisUnit->getOrder() == Orders::ConstructingBuilding || thisUnit->getOrder() == Orders::PlaceBuilding);
         auto inRange = Terrain::inRangeOfWall(*this);
 
-        // Situations where a unit should be attacked:
-        // 1) Building
-        //	- Blocking any of my building spots or expansions
-        //	- Has damage and is "close" or "atHome"
-        //	- Shield battery and is "close" or "atHome"
-        //	- Manner pylon
-
-        if (unitType.isBuilding()) {
-            if (Buildings::overlapsQueue(unitType, tilePosition))
-                return true;
-            if ((close || atHome) && (airDamage > 0.0 || groundDamage > 0.0 || unitType == UnitTypes::Protoss_Shield_Battery))
-                return true;
-            if (manner)
-                return true;
-        }
-
-        // 2) Worker
-        // - SCV building or repairing something "close"
-        // - In my territory
-
-        else if (unitType.isWorker()) {
-            if (constructingClose)
-                return true;
-            if (close || attacked)
-                return true;
-            if (atHome && Strategy::defendChoke())
-                return true;
-        }
-
-        // 3) Unit
-        // - "close"
-        // - Near my shield battery
-
-        else {
-            if (close || attacked || inRange)
-                return true;
-            if (atHome && Strategy::defendChoke())
-                return true;
-            if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Shield_Battery) > 0) {
-                auto battery = Util::getClosestUnit(position, PlayerState::Self, [&](auto &u) {
-                    return u.getType() == UnitTypes::Protoss_Shield_Battery && u.unit()->isCompleted();
-                });
-                if (battery && position.getDistance(battery->getPosition()) <= 128.0)
+        const auto threatening = [&] {
+            // Building: blocking any buildings, is close or at home and can attack or is a battery, is a manner building
+            if (unitType.isBuilding()) {
+                if (Buildings::overlapsQueue(unitType, tilePosition))
+                    return true;
+                if ((close || atHome) && (airDamage > 0.0 || groundDamage > 0.0 || unitType == UnitTypes::Protoss_Shield_Battery))
+                    return true;
+                if (manner)
                     return true;
             }
+            // Worker: constructing close, has attacked and close
+            else if (unitType.isWorker()) {
+                if (constructingClose)
+                    return true;
+                if (close || attacked)
+                    return true;
+                if (atHome && Strategy::defendChoke())
+                    return true;
+            }
+            // Unit: close, close to shield battery, in territory while defending choke
+            else {
+                if (close || attacked || inRange)
+                    return true;
+                if (atHome && Strategy::defendChoke())
+                    return true;
+                if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Shield_Battery) > 0) {
+                    auto battery = Util::getClosestUnit(position, PlayerState::Self, [&](auto &u) {
+                        return u.getType() == UnitTypes::Protoss_Shield_Battery && u.unit()->isCompleted();
+                    });
+                    if (battery && position.getDistance(battery->getPosition()) <= 128.0)
+                        return true;
+                }
+            }
+            return false;
+        };
+
+        if (threatening()) {
+            lastThreateningFrame = Broodwar->getFrameCount();
+            return true;
         }
-        return false;
+        return Broodwar->getFrameCount() - lastThreateningFrame < 50;
+    }
+
+    bool UnitInfo::isHidden()
+    {
+        return thisUnit->exists() && (burrowed || thisUnit->isCloaked()) && !thisUnit->isDetected();
     }
 }

@@ -30,13 +30,13 @@ namespace McRave::Scouts {
             proxyCheck = false;
 
             // If we know a proxy possibly exists, we need a second scout
-            auto foundProxyGates = Strategy::enemyProxy() && Strategy::getEnemyBuild() == "P2Gate" && Units::getEnemyCount(UnitTypes::Protoss_Gateway) > 0;
-            if (((Strategy::enemyProxy() && Strategy::getEnemyBuild() != "P2Gate") || proxyCheck || foundProxyGates) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1)
+            auto foundProxyGates = Strategy::enemyProxy() && Strategy::getEnemyBuild() == "2Gate" && Units::getEnemyCount(UnitTypes::Protoss_Gateway) > 0;
+            if (((Strategy::enemyProxy() && Strategy::getEnemyBuild() != "2Gate") || proxyCheck || foundProxyGates) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1)
                 scoutCount++;
 
             if (Broodwar->self()->getRace() == Races::Zerg && Terrain::getEnemyStartingPosition().isValid())
                 scoutCount = 0;
-            if (Strategy::getEnemyBuild() == "Z5Pool" && Units::getEnemyCount(UnitTypes::Zerg_Zergling) >= 5)
+            if (Strategy::getEnemyBuild() == "4Pool")
                 scoutCount = 0;
             if (Strategy::enemyPressure() && BuildOrder::isPlayPassive())
                 scoutCount = 0;
@@ -50,7 +50,7 @@ namespace McRave::Scouts {
             if (Terrain::foundEnemy()) {
                 for (auto &s : Stations::getEnemyStations()) {
                     auto &station = *s.second;
-                    TilePosition tile(station.BWEMBase()->Center());
+                    TilePosition tile(station.getBWEMBase()->Center());
                     if (tile.isValid())
                         scoutTargets.insert(Position(tile));
                 }
@@ -83,7 +83,7 @@ namespace McRave::Scouts {
             }
 
             // If it's a 2gate, scout for an expansion if we found the gates
-            if (Strategy::getEnemyBuild() == "P2Gate") {
+            if (Strategy::getEnemyBuild() == "2Gate") {
                 /*		if (Units::getEnemyCount(UnitTypes::Protoss_Gateway) >= 2)
                             scoutTargets.insert((Position)Terrain::getEnemyExpand());
                         else*/ if (Units::getEnemyCount(UnitTypes::Protoss_Pylon) == 0 || Strategy::enemyProxy())
@@ -91,7 +91,7 @@ namespace McRave::Scouts {
             }
 
             // If it's a cannon rush, scout the main
-            if (Strategy::getEnemyBuild() == "PCannonRush")
+            if (Strategy::getEnemyBuild() == "CannonRush")
                 scoutTargets.insert(BWEB::Map::getMainPosition());
         }
 

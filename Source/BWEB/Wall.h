@@ -39,13 +39,13 @@ namespace BWEB::Walls
         BWAPI::Position getCentroid() const { return centroid; }
 
         /// <summary> Returns the TilePosition belonging to large UnitType buildings. </summary>
-        std::set<BWAPI::TilePosition> largeTiles() const { return large; }
+        std::set<BWAPI::TilePosition> getLargeTiles() const { return large; }
 
         /// <summary> Returns the TilePosition belonging to medium UnitType buildings. </summary>
-        std::set<BWAPI::TilePosition> mediumTiles() const { return medium; }
+        std::set<BWAPI::TilePosition> getMediumTiles() const { return medium; }
 
         /// <summary> Returns the TilePosition belonging to small UnitType buildings. </summary>
-        std::set<BWAPI::TilePosition> smallTiles() const { return small; }
+        std::set<BWAPI::TilePosition> getSmallTiles() const { return small; }
 
         /// <summary> Returns the raw vector of the buildings passed in. </summary>
         std::vector<BWAPI::UnitType>& getRawBuildings() { return rawBuildings; }

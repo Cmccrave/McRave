@@ -101,7 +101,7 @@ namespace McRave::Resources {
             if (newStation) {
                 for (auto &s : Stations::getMyStations()) {
                     auto &station = *s.second;
-                    if (station.BWEMBase() == newStation->BWEMBase()) {
+                    if (station.getBWEMBase() == newStation->getBWEMBase()) {
                         info.setResourceState(ResourceState::Mineable);
                         break;
                     }

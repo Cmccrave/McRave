@@ -84,11 +84,9 @@ namespace McRave::Util {
                     return true;
                 if (!Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && myStrength.groundToGround < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
                     return true;
-                if (myStrength.groundToGround < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
-                    return true;
             }
             else if (BuildOrder::getCurrentBuild() == "2Gate" && BuildOrder::getCurrentOpener() == "Natural") {
-                if (Strategy::getEnemyBuild() == "5Pool" && myStrength.groundToGround < 4.00 && completedDefenders < 2)
+                if (Strategy::getEnemyBuild() == "4Pool" && myStrength.groundToGround < 4.00 && completedDefenders < 2)
                     return true;
                 if (Strategy::getEnemyBuild() == "9Pool" && myStrength.groundToGround < 4.00 && completedDefenders < 3)
                     return true;
@@ -120,14 +118,15 @@ namespace McRave::Util {
                 return false;
         }
 
-        if (unit.getPosition().getDistance(closestStation) < 160.0 && Grids::getEGroundThreat(unit.getWalkPosition()) > 0.0 && Broodwar->getFrameCount() < 10000)
-            return true;
+        if (unit.hasTarget()) {
+            if (unit.getTarget().getPosition().getDistance(closestStation) < unit.getTarget().getGroundReach() && Grids::getEGroundThreat(unit.getWalkPosition()) > 0.0 && Broodwar->getFrameCount() < 10000)
+                return true;
+        }
 
         // If we have no combat units and there is a threat
-        if (Units::getImmThreat() > (myStrength.groundToGround + myStrength.groundDefense) && Broodwar->getFrameCount() < 10000) {
+        if (Units::getImmThreat() > (myStrength.groundToGround + myStrength.groundDefense) + unit.getVisibleGroundStrength() && Broodwar->getFrameCount() < 10000) {
             if (Broodwar->self()->getRace() == Races::Protoss) {
-                if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Dragoon) == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) == 0)
-                    return true;
+                return true;
             }
             else if (Broodwar->self()->getRace() == Races::Zerg) {
                 if (Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Zergling) == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Mutalisk) == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Hydralisk) == 0)

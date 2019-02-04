@@ -233,8 +233,8 @@ namespace McRave::Command {
 
         auto shouldMove = [&]() {
             if (unit.getRole() == Role::Combat) {
-                if (Util::unitInRange(unit) && unit.getType() != UnitTypes::Zerg_Lurker)
-                    return false;
+                //if (Util::unitInRange(unit) && !unit.getTarget().isHidden() && unit.getType() != UnitTypes::Zerg_Lurker)
+                //    return false;
                 if (unit.getLocalState() == LocalState::Attack)
                     return true;
             }
@@ -261,7 +261,7 @@ namespace McRave::Command {
             if (!unitPath.getTiles().empty() && unitPath.isReachable()) {
                 for (auto &tile : unitPath.getTiles()) {
                     Position p = Position(tile) + Position(16, 16);
-                    if (p.getDistance(unit.getPosition()) >= 160.0) {
+                    if (p.getDistance(unit.getPosition()) >= 256.0) {
                         unit.command(UnitCommandTypes::Move, p, true);
                         Broodwar->drawLineMap(unit.getPosition(), p, Colors::Green);
                         return true;

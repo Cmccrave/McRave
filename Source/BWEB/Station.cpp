@@ -198,9 +198,9 @@ namespace BWEB::Stations
     void draw()
     {
         for (auto &station : Stations::getStations()) {
-            for (auto &tile : station.DefenseLocations())
+            for (auto &tile : station.getDefenseLocations())
                 Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), Broodwar->self()->getColor());
-            Broodwar->drawBoxMap(Position(station.BWEMBase()->Location()), Position(station.BWEMBase()->Location()) + Position(129, 97), Broodwar->self()->getColor());
+            Broodwar->drawBoxMap(Position(station.getBWEMBase()->Location()), Position(station.getBWEMBase()->Location()) + Position(129, 97), Broodwar->self()->getColor());
         }
     }
 
@@ -209,7 +209,7 @@ namespace BWEB::Stations
         auto distBest = DBL_MAX;
         const Station* bestStation = nullptr;
         for (auto &station : stations) {
-            const auto dist = here.getDistance(station.BWEMBase()->Location());
+            const auto dist = here.getDistance(station.getBWEMBase()->Location());
 
             if (dist < distBest) {
                 distBest = dist;

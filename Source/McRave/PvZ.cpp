@@ -38,7 +38,7 @@ namespace McRave::BuildOrder::Protoss {
     void PvZ2GateDefensive() {
         gasLimit =			(com(Protoss_Cybernetics_Core) && s >= 50) ? INT_MAX : 0;
         getOpening =		vis(Protoss_Corsair) == 0;
-        playPassive	=		vis(Protoss_Corsair) == 0;
+        playPassive	=		s < 60;
         firstUpgrade =		UpgradeTypes::None;
         firstTech =			TechTypes::None;
         fastExpand =		false;
@@ -52,9 +52,8 @@ namespace McRave::BuildOrder::Protoss {
 
         itemQueue[Protoss_Nexus] =					Item(1);
         itemQueue[Protoss_Pylon] =					Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
-        itemQueue[Protoss_Gateway] =				Item((s >= 20) + (s >= 24) + (s >= 66));
+        itemQueue[Protoss_Gateway] =				Item((s >= 20) + (vis(Protoss_Zealot) > 0) + (s >= 66));
         itemQueue[Protoss_Assimilator] =			Item(s >= 40);
-        itemQueue[Protoss_Shield_Battery] =			Item(vis(Protoss_Zealot) >= 2 && vis(Protoss_Pylon) >= 2);
         itemQueue[Protoss_Cybernetics_Core] =		Item(s >= 58);
     }
 
@@ -164,7 +163,7 @@ namespace McRave::BuildOrder::Protoss {
         wallNat = currentOpener == "Natural";
         scout = Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
 
-        // Openers - Proxy / Natural / Main
+        // Openers
         if (currentOpener == "Proxy") {
             itemQueue[Protoss_Pylon] =					Item((s >= 12), (s >= 16));
             itemQueue[Protoss_Gateway] =				Item((vis(Protoss_Pylon) > 0) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
@@ -192,19 +191,23 @@ namespace McRave::BuildOrder::Protoss {
 
         // Transitions
         if (!lockedTransition) {
-            if (!Players::vT() && Strategy::enemyRush())
+
+            // Change Transition
+            if (Strategy::enemyRush())
                 currentTransition = "Panic";
             else if (Strategy::enemyPressure() && currentOpener == "Natural")
                 currentTransition = "Defensive";
-            else if (Players::vT() && Strategy::enemyFastExpand())
-                currentTransition = "DT";
             else if (Units::getEnemyCount(UnitTypes::Zerg_Sunken_Colony) >= 2)
                 currentTransition = "Expand";
+
+            // Change Opener
+
+            // Change Build
         }
 
         // Builds
         if (currentTransition == "Expand") {
-            getOpening =		s < 100;
+            getOpening =		s < 80;
 
             itemQueue[Protoss_Assimilator] =		Item(s >= 76);
             itemQueue[Protoss_Nexus] =				Item(1 + (s >= 42));
@@ -230,6 +233,8 @@ namespace McRave::BuildOrder::Protoss {
         }
         else if (currentTransition == "4Gate") {
             // https://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)
+            lockedTransition = true;
+            dragoonLimit = INT_MAX;
             getOpening = s < 120;
 
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 24) + (s >= 62) + (s >= 70));
@@ -242,14 +247,8 @@ namespace McRave::BuildOrder::Protoss {
     {
         scout =				Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
         gasLimit =			INT_MAX;
-
-        // Reactions
-        if (!lockedTransition) {
-            if (Strategy::enemyRush())
-                currentTransition = "Defensive";
-        }
-
-        // Openers - 1Zealot / 2Zealot
+               
+        // Openers
         if (currentOpener == "1Zealot") {
             zealotLimit = 1;
 
@@ -269,7 +268,13 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 40);
         }
 
-        // Transitions - Corsair / DT
+        // Transitions
+        if (!lockedTransition) {
+            if (Strategy::enemyRush())
+                currentTransition = "Defensive";
+        }
+
+        // Builds
         if (currentTransition == "Corsair") {
             getOpening =		s < 60;
             firstUpgrade =		UpgradeTypes::Protoss_Air_Weapons;
@@ -277,9 +282,7 @@ namespace McRave::BuildOrder::Protoss {
             dragoonLimit =		0;
             zealotLimit	=		INT_MAX;
             playPassive =		com(Protoss_Stargate) == 0;
-
-            if (techList.find(Protoss_Corsair) == techList.end())
-                techUnit = Protoss_Corsair;
+            firstUnit =         Protoss_Corsair;
 
             itemQueue[Protoss_Gateway] =			Item((s >= 18) + vis(Protoss_Stargate) > 0);
             itemQueue[Protoss_Forge] =				Item(vis(Protoss_Gateway) >= 2);
@@ -288,7 +291,6 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Stargate] =			Item(com(Protoss_Cybernetics_Core) > 0);
         }
         else if (currentTransition == "DT") {
-
             // Experimental build from Best
             firstUpgrade =		UpgradeTypes::None;
             firstTech =			TechTypes::Psionic_Storm;

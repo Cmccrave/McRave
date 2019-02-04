@@ -49,7 +49,7 @@ namespace McRave::BuildOrder::Protoss
 
             else if (currentTransition == "DoubleExpand" && techList.find(Protoss_High_Templar) == techList.end())
                 techUnit = Protoss_High_Templar;
-            else if (Strategy::getEnemyBuild() == "P4Gate" && techList.find(Protoss_Dark_Templar) == techList.end() && !Strategy::enemyGasSteal())
+            else if (Strategy::getEnemyBuild() == "4Gate" && techList.find(Protoss_Dark_Templar) == techList.end() && !Strategy::enemyGasSteal())
                 techUnit = Protoss_Dark_Templar;
             else if (techUnit == None)
                 getNewTech();
@@ -62,7 +62,7 @@ namespace McRave::BuildOrder::Protoss
 
     void situational()
     {
-        auto skipFirstTech = (/*currentBuild == "P4Gate" ||*/ currentTransition == "DoubleExpand" || (Strategy::enemyGasSteal() && !Terrain::isNarrowNatural()));
+        auto skipFirstTech = (currentTransition == "4Gate" || currentTransition == "DoubleExpand" || (Strategy::enemyGasSteal() && !Terrain::isNarrowNatural()));
 
         // Metrics for when to Expand/Add Production/Add Tech
         satVal = Players::vT() ? 2 : 3;
@@ -89,6 +89,10 @@ namespace McRave::BuildOrder::Protoss
             techList.insert(Protoss_Observer);
             unlockedType.insert(Protoss_Observer);
         }
+
+        // If we don't want an assimilator, set gas count to 0
+        if (itemQueue[Protoss_Assimilator].getActualCount() == 0)
+            gasLimit = 0;
 
         // Pylon logic
         if (vis(Protoss_Pylon) > int(fastExpand)) {

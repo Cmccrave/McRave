@@ -70,6 +70,7 @@ namespace McRave::Strategy {
                         enemyBuild = "4Pool";
                     }
                 }
+
                 if (unit.getType() == Zerg_Spawning_Pool) {
 
                     if (poolFrame == 0 && unit.unit()->exists())
@@ -84,8 +85,6 @@ namespace McRave::Strategy {
                             enemyBuild = "9Pool";
                         else if (Units::getEnemyCount(Zerg_Hatchery) == 3 && enemyGas < 148 && enemyGas >= 100)
                             enemyBuild = "3HatchLing";
-                        else
-                            enemyBuild = "Unknown";
                     }
                 }
 
@@ -146,9 +145,9 @@ namespace McRave::Strategy {
             if ((Units::getEnemyCount(Terran_Barracks) >= 2 && Units::getEnemyCount(Terran_Refinery) == 0) || (Units::getEnemyCount(Terran_Marine) > 5 && Units::getEnemyCount(Terran_Bunker) <= 0 && Broodwar->getFrameCount() < 6000))
                 enemyBuild = "BBS";
 
-            // 
+            // 2Fact
             if ((Units::getEnemyCount(Terran_Vulture_Spider_Mine) > 0 && Broodwar->getFrameCount() < 9000) || (Units::getEnemyCount(Terran_Factory) >= 2 && vultureSpeed))
-                enemyBuild = "3Fact";
+                enemyBuild = "2Fact";
 
             for (auto &u : player.getUnits()) {
                 UnitInfo &unit = *u;
@@ -169,7 +168,7 @@ namespace McRave::Strategy {
                 if (unit.getType() == Terran_Barracks) {
                     if (Terrain::isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(mapBWEM.Center()) < 1280.0 || (BWEB::Map::getNaturalChoke() && unit.getPosition().getDistance((Position)BWEB::Map::getNaturalChoke()->Center()) < 320))
                         enemyBuild = "BBS";
-                    else
+                    else if (enemyBuild == "BBS")
                         enemyBuild = "Unknown";
                 }
 
@@ -207,7 +206,7 @@ namespace McRave::Strategy {
                     enemyBuild = "2Gate";
                 else if (Units::getEnemyCount(Protoss_Gateway) >= 2 && Units::getEnemyCount(Protoss_Nexus) <= 1 && Units::getEnemyCount(Protoss_Assimilator) <= 0 && Units::getEnemyCount(Protoss_Cybernetics_Core) <= 0 && Units::getEnemyCount(Protoss_Dragoon) <= 0)
                     enemyBuild = "2Gate";
-                else if (enemyBuild == "P2Gate")
+                else if (enemyBuild == "2Gate")
                     enemyBuild = "Unknown";
             }
 
@@ -241,7 +240,7 @@ namespace McRave::Strategy {
                 if (unit.getType() == Protoss_Photon_Cannon && Units::getEnemyCount(Protoss_Robotics_Facility) == 0) {
                     if (unit.getPosition().getDistance((Position)Terrain::getEnemyNatural()) < 320.0)
                         enemyBuild = "FFE";
-                    else if (enemyBuild == "PFFE")
+                    else if (enemyBuild == "FFE")
                         enemyBuild = "Unknown";
                 }
 
@@ -257,7 +256,7 @@ namespace McRave::Strategy {
                         proxy = true;
 
                         if (Units::getEnemyCount(Protoss_Gateway) >= 2)
-                            enemyBuild = "P2Gate";
+                            enemyBuild = "2Gate";
                     }
                 }
 

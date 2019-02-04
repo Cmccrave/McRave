@@ -39,7 +39,7 @@ namespace McRave::Stations {
                     continue;
 
                 BWEB::PathFinding::Path newPath;
-                newPath.createUnitPath(ptrs1->ResourceCentroid(), ptrs2->ResourceCentroid());
+                newPath.createUnitPath(ptrs1->getResourceCentroid(), ptrs2->getResourceCentroid());
                 stationNetwork[ptrs1][ptrs2] = newPath;
             }
         }
@@ -52,9 +52,9 @@ namespace McRave::Stations {
         Position best;
         for (auto &station : list) {
             auto s = *station.second;
-            double dist = here.getDistance(s.BWEMBase()->Center());
+            double dist = here.getDistance(s.getBWEMBase()->Center());
             if (dist < distBest)
-                best = s.BWEMBase()->Center(), distBest = dist;
+                best = s.getBWEMBase()->Center(), distBest = dist;
         }
         return best;
     }
@@ -64,14 +64,14 @@ namespace McRave::Stations {
         auto newStation = BWEB::Stations::getClosestStation(unit->getTilePosition());
         if (!newStation
             || !unit->getType().isResourceDepot()
-            || unit->getTilePosition() != newStation->BWEMBase()->Location())
+            || unit->getTilePosition() != newStation->getBWEMBase()->Location())
             return;
 
         // 1) Change the resource states and store station
         unit->getPlayer() == Broodwar->self() ? myStations.emplace(unit, newStation) : enemyStations.emplace(unit, newStation);
         ResourceState state = unit->isCompleted() ? ResourceState::Mineable : ResourceState::Assignable;
         if (unit->getPlayer() == Broodwar->self()) {
-            for (auto &mineral : newStation->BWEMBase()->Minerals()) {
+            for (auto &mineral : newStation->getBWEMBase()->Minerals()) {
 
                 if (Broodwar->getFrameCount() == 0)
                     Resources::storeResource(mineral->Unit());
@@ -86,7 +86,7 @@ namespace McRave::Stations {
                         resource->setStation(newStation);
                 }
             }
-            for (auto &gas : newStation->BWEMBase()->Geysers()) {
+            for (auto &gas : newStation->getBWEMBase()->Geysers()) {
 
                 if (Broodwar->getFrameCount() == 0)
                     Resources::storeResource(gas->Unit());
@@ -115,9 +115,7 @@ namespace McRave::Stations {
     void removeStation(Unit unit)
     {
         auto newStation = BWEB::Stations::getClosestStation(unit->getTilePosition());
-        if (!newStation
-            || !unit->getType().isResourceDepot()
-            || unit->getTilePosition() != newStation->BWEMBase()->Location())
+        if (!newStation)
             return;
 
         auto &list = unit->getPlayer() == Broodwar->self() ? myStations : enemyStations;
@@ -128,12 +126,12 @@ namespace McRave::Stations {
         auto state = ResourceState::None;
 
         // 1) Change resource state of resources connected to not mineable
-        for (auto &mineral : station->BWEMBase()->Minerals()) {
+        for (auto &mineral : station->getBWEMBase()->Minerals()) {
             const auto resource = Resources::getResource(mineral->Unit());
             if (resource)
                 resource->setResourceState(state);            
         }
-        for (auto &gas : station->BWEMBase()->Geysers()) {
+        for (auto &gas : station->getBWEMBase()->Geysers()) {
             const auto resource = Resources::getResource(gas->Unit());
             if (resource)
                 resource->setResourceState(state);
@@ -151,10 +149,10 @@ namespace McRave::Stations {
 
     bool needDefenses(const BWEB::Stations::Station& station)
     {
-        auto centroid = TilePosition(station.ResourceCentroid());
+        auto centroid = TilePosition(station.getResourceCentroid());
         auto defenseCount = station.getDefenseCount();
-        auto main = station.BWEMBase()->Location() == BWEB::Map::getMainTile();
-        auto nat = station.BWEMBase()->Location() == BWEB::Map::getNaturalTile();
+        auto main = station.getBWEMBase()->Location() == BWEB::Map::getMainTile();
+        auto nat = station.getBWEMBase()->Location() == BWEB::Map::getNaturalTile();
 
         if (!Pylons::hasPower(centroid, UnitTypes::Protoss_Photon_Cannon))
             return false;
@@ -163,7 +161,7 @@ namespace McRave::Stations {
             return true;
         else if (defenseCount <= 0)
             return true;
-        else if ((Players::getPlayers().size() > 1 || Players::vZ()) && !main && !nat && defenseCount < int(station.DefenseLocations().size()))
+        else if ((Players::getPlayers().size() > 1 || Players::vZ()) && !main && !nat && defenseCount < int(station.getDefenseLocations().size()))
             return true;
         else if (station.getDefenseCount() < 1 && (Players::getStrength(PlayerState::Enemy).airToGround > 0.0 || Strategy::getEnemyBuild() == "Z2HatchMuta" || Strategy::getEnemyBuild() == "Z3HatchMuta"))
             return true;

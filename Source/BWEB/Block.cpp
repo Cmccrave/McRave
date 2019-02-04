@@ -50,9 +50,8 @@ namespace BWEB::Blocks
             auto distBest = DBL_MAX;
             auto start = (Map::getMainTile() + (Map::getMainChoke() ? (TilePosition)Map::getMainChoke()->Center() : Map::getMainTile())) / 2;
 
-            if (race == Races::Zerg) {
+            if (race == Races::Zerg)
                 start = Map::getMainTile();
-            }
 
             for (auto x = start.x - 10; x <= start.x + 6; x++) {
                 for (auto y = start.y - 10; y <= start.y + 6; y++) {
@@ -195,6 +194,7 @@ namespace BWEB::Blocks
     {
         findStartBlock();
         multimap<double, TilePosition> tilesByPathDist;
+        map<Piece, int> mainPieces;
 
         // Calculate distance for each tile to our natural choke, we want to place bigger blocks closer to the chokes
         for (int y = 0; y < Broodwar->mapHeight(); y++) {
@@ -207,7 +207,7 @@ namespace BWEB::Blocks
                 }
             }
         }
-
+        
         // Iterate every tile
         for (int i = 20; i > 0; i--) {
             for (int j = 20; j > 0; j--) {
@@ -217,13 +217,22 @@ namespace BWEB::Blocks
                     continue;
 
                 auto hasMedium = find(pieces.begin(), pieces.end(), Piece::Medium) != pieces.end();
+                auto hasLarge = find(pieces.begin(), pieces.end(), Piece::Large) != pieces.end();
+
                 for (auto &t : tilesByPathDist) {
                     TilePosition tile(t.second);
                     if (hasMedium && mapBWEM.GetArea(tile) != getMainArea())
                         continue;
 
+                    if (hasLarge && mapBWEM.GetArea(tile) == getMainArea() && mainPieces[Piece::Large] >= 8 && mainPieces[Piece::Medium] < 10)
+                        continue;                        
+
                     if (canAddBlock(tile, i, j)) {
                         insertBlock(tile, pieces);
+                        if (mapBWEM.GetArea(tile) == getMainArea()) {
+                            for (auto &piece : pieces)
+                                mainPieces[piece]++;                           
+                        }
                     }
                 }
             }

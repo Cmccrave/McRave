@@ -71,6 +71,8 @@ namespace McRave::Units {
                 if (unit.getRole() == Role::Worker && (Util::reactivePullWorker(unit) || Util::proactivePullWorker(unit) || Util::pullRepairWorker(unit))) {
                     unit.setRole(Role::Combat);
                     Players::addStrength(unit);
+                    unit.setBuildingType(UnitTypes::None);
+                    unit.setBuildPosition(TilePositions::Invalid);
                 }
                 else if (unit.getRole() == Role::Combat && !Util::reactivePullWorker(unit) && !Util::proactivePullWorker(unit) && !Util::pullRepairWorker(unit))
                     unit.setRole(Role::Worker);
@@ -303,6 +305,8 @@ namespace McRave::Units {
 
                     if (u->hasTransport())
                         u->getTransport().getAssignedCargo().erase(u);
+                    if (u->hasResource())
+                        Workers::removeUnit(u);
 
                     p.second.getUnits().erase(u);
                     return;
