@@ -65,7 +65,7 @@ namespace McRave::BuildOrder::Protoss {
         wallNat = currentOpener == "Natural";
         scout = Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
 
-        // Openers - Proxy / Natural / Main
+        // Openers
         if (currentOpener == "Proxy") {
             itemQueue[Protoss_Pylon] =					Item((s >= 12), (s >= 16));
             itemQueue[Protoss_Gateway] =				Item((vis(Protoss_Pylon) > 0) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
@@ -91,17 +91,23 @@ namespace McRave::BuildOrder::Protoss {
             }
         }
 
-        // Reactions - Expand
+        // Reactions
         if (!lockedTransition) {
+
+            // Change Transition
             if (Strategy::enemyRush())
                 currentTransition = "Panic";
             else if (Strategy::enemyPressure() && currentOpener == "Natural")
                 currentTransition = "Defensive";
             else if (Units::getEnemyCount(UnitTypes::Zerg_Sunken_Colony) >= 2)
                 currentTransition = "Expand";
+
+            // Change Opener
+
+            // Change Build
         }
 
-        // Transitions - DT / Standard / Reaver
+        // Transitions
         if (currentTransition == "DT") {
             // https://liquipedia.net/starcraft/2_Gateway_Dark_Templar_(vs._Protoss)
             lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
@@ -162,13 +168,8 @@ namespace McRave::BuildOrder::Protoss {
         firstTech =			TechTypes::None;
         scout =				Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
         gasLimit =			INT_MAX;
-
-        if (!lockedTransition) {
-            if (Strategy::enemyRush())
-                currentTransition = "Defensive";
-        }
-
-        // Openers - 1Zealot / 2Zealot
+               
+        // Openers
         if (currentOpener == "1Zealot") {
             zealotLimit = 1;
 
@@ -188,7 +189,19 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 40);
         }
 
-        // Transitions - 3GateRobo / Reaver / 4Gate / DT
+        // Reactions
+        if (!lockedTransition) {
+
+            // Change Transition
+            if (Strategy::enemyRush())
+                currentTransition = "Defensive";
+
+            // Change Opener
+
+            // Change Build
+        }
+
+        // Transitions
         if (currentTransition == "3GateRobo") {
             lockedTransition =  vis(Protoss_Robotics_Facility) > 0;
             getOpening =        s < 80;
