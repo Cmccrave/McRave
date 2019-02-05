@@ -20,7 +20,7 @@ namespace McRave::Units {
         map<Role, int> myRoles;
         set<Unit> splashTargets;
         double immThreat, proxThreat;
-        int supply = 8;
+        int supply = 0;
         int scoutDeadFrame = 0;
 
         void resetValues()
@@ -86,11 +86,11 @@ namespace McRave::Units {
                 unit.setRole(Role::Support);
             }
 
-            // Check if we should scout - TODO: scout count from scout manager
+            // Check if this unit should scout
             if (BWEB::Map::getNaturalChoke() && BuildOrder::shouldScout() && getMyRoleCount(Role::Scout) < Scouts::getScoutCount() && Broodwar->getFrameCount() - scoutDeadFrame > 500) {
                 auto type = Broodwar->self()->getRace().getWorker();
                 auto scout = Util::getClosestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
-                    return u.getType().isWorker();
+                    return u.getRole() == Role::Worker && u.getBuildingType() == UnitTypes::None;
                 });
 
                 if (scout == u) {

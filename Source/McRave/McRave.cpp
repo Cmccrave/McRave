@@ -19,6 +19,9 @@
 // Test vs BBS
 // 2Gate - opener for GateNexus gets incremented/decremented by 2Gate build and vice versa
 // 2Gate at natural shouldn't transition into defensive version, need a different branch
+// Cannon rush issues
+// Possible to get units stuck between tech buildings
+// Checking if a gateway is queuable/buildable causes it to be unassigned?
 
 // *** TOTEST ***
 // If an enemy floats a CC to an expansion, we don't consider it "taken"

@@ -260,12 +260,23 @@ namespace McRave::Grids
 
         void updateMobility()
         {
+            const auto lingWalkable = [&](WalkPosition here) {
+                for (int x = here.x; x < here.x + 1; x++) {
+                    for (int y = here.y; y < here.y + 1; y++) {
+                        WalkPosition w(x, y);
+                        if (!w.isValid() || !Broodwar->isWalkable(w))
+                            return false;
+                    }
+                }
+                return true;
+            };
+
             for (int x = 0; x <= Broodwar->mapWidth() * 4; x++) {
                 for (int y = 0; y <= Broodwar->mapHeight() * 4; y++) {
 
                     WalkPosition w(x, y);
                     if (!w.isValid()
-                        || !mapBWEM.GetMiniTile(w).Walkable())
+                        || !lingWalkable(w))
                         continue;
 
                     for (int i = -12; i < 12; i++) {
@@ -295,6 +306,17 @@ namespace McRave::Grids
 
         void updateDistance()
         {
+            const auto lingWalkable = [&](WalkPosition here) {
+                for (int x = here.x; x < here.x + 1; x++) {
+                    for (int y = here.y; y < here.y + 1; y++) {
+                        WalkPosition w(x, y);
+                        if (!w.isValid() || !Broodwar->isWalkable(w))
+                            return false;
+                    }
+                }
+                return true;
+            };
+
             WalkPosition source(BWEB::Map::getMainPosition());
             vector<WalkPosition> direction{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 },{ -1,-1 },{ -1, 1 },{ 1, -1 },{ 1, 1 } };
             float root2 = float(sqrt(2.0));
@@ -320,7 +342,7 @@ namespace McRave::Grids
 
                     if (next.isValid() && tile.isValid()) {
                         // If next has a distance assigned or isn't walkable
-                        if (distanceHome[next.x][next.y] != DBL_MAX || !Broodwar->isWalkable(next))
+                        if (distanceHome[next.x][next.y] != DBL_MAX || !lingWalkable(next))
                             continue;
 
                         // Add distance and add to queue

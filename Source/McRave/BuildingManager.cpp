@@ -68,7 +68,8 @@ namespace McRave::Buildings {
             TilePosition tileBest = TilePositions::Invalid;
             double distBest = DBL_MAX;
 
-            const auto checkBest = [&](Position blockCenter, set<TilePosition>& placements) {
+            // TODO: Rename this or use the anonymous namespace one above
+            const auto checkBestLocal = [&](Position blockCenter, set<TilePosition>& placements) {
                 // Against rushes, hide our buildings away from our ramp unless defensive structure
                 if ((Strategy::enemyRush() && Strategy::getEnemyBuild() != "2Gate" && building != Protoss_Shield_Battery && building != Protoss_Photon_Cannon)) {
                     distBest = 0.0;
@@ -134,6 +135,10 @@ namespace McRave::Buildings {
                     if (Broodwar->self()->visibleUnitCount(Protoss_Pylon) == 1 && Strategy::getEnemyBuild() == "2Gate")
                         power = true;
 
+                    // Don't let a Stargate get placed below any medium pieces, risks getting units stuck
+                    if (building == Protoss_Stargate && !block.getMediumTiles().empty())
+                        continue;
+
                     if (!power || !solo)
                         continue;
                 }
@@ -146,7 +151,7 @@ namespace McRave::Buildings {
                 else
                     placements = block.getSmallTiles();
 
-                checkBest(blockCenter, placements);
+                checkBestLocal(blockCenter, placements);
             }
 
             // Make sure we always place a pylon
@@ -168,7 +173,7 @@ namespace McRave::Buildings {
                     }
 
                     placements = block.getSmallTiles();
-                    checkBest(blockCenter, placements);
+                    checkBestLocal(blockCenter, placements);
                 }
             }
             return tileBest;
@@ -392,12 +397,13 @@ namespace McRave::Buildings {
         TilePosition findProxyLocation(UnitType building)
         {
             // TODO: Improve proxy location (add a BWEB block)
-            auto here = TilePositions::Invalid;
-            here = closestProdLocation(building, mapBWEM.Center());
+            return closestProdLocation(building, mapBWEM.Center());
         }
 
         TilePosition getBuildLocation(UnitType building)
         {
+            auto placement = TilePositions::Invalid;
+
             auto isDefensiveBuilding = building == Protoss_Photon_Cannon
                 || building == Protoss_Shield_Battery
                 || building == Zerg_Creep_Colony
@@ -418,23 +424,26 @@ namespace McRave::Buildings {
 
             auto canProxy = BuildOrder::isOpener() && BuildOrder::isProxy();
 
-
-            // General placement of Resource Depots and Pylons
-            if (building.isResourceDepot())
-                return findResourceDepotLocation();
-            if (building == Protoss_Pylon)
-                return findPylonLocation();
-
-            // More specific placements
+            // Specific placements
             if (isDefensiveBuilding)
                 return findDefenseLocation(building);
-            if (isWallPiece && canWall && !Strategy::enemyBust())
-                return findWallLocation(building);
-            if (canProxy)
-                return findProxyLocation(building);
+
+            if (!placement.isValid() && isWallPiece && canWall && (!Strategy::enemyBust() || !BuildOrder::isOpener()))
+                placement = findWallLocation(building);
+            if (!placement.isValid() && canProxy)
+                placement = findProxyLocation(building);
+
+            // General placements
+            if (!placement.isValid() && building.isResourceDepot())
+                placement = findResourceDepotLocation();
+            if (!placement.isValid() && building == Protoss_Pylon)
+                placement = findPylonLocation();
 
             // Default to finding a production location
-            return closestProdLocation(building, BWEB::Map::getMainPosition());
+            if (!placement.isValid())
+                placement = closestProdLocation(building, BWEB::Map::getMainPosition());
+
+            return placement;
         }
 
         void updateCommands(UnitInfo& building)

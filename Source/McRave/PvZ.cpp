@@ -32,6 +32,7 @@ namespace McRave::BuildOrder::Protoss {
             gasLimit =			INT_MAX;
             zealotLimit =		INT_MAX;
             dragoonLimit =		0;
+            wallNat =           wallNat || vis(Protoss_Nexus) >= 2;
         }
     }
 
@@ -208,11 +209,12 @@ namespace McRave::BuildOrder::Protoss {
         // Builds
         if (currentTransition == "Expand") {
             getOpening =		s < 80;
+            wallNat =           currentOpener == "Natural" ? true : s >= 40;
 
             itemQueue[Protoss_Assimilator] =		Item(s >= 76);
             itemQueue[Protoss_Nexus] =				Item(1 + (s >= 42));
             itemQueue[Protoss_Forge] =				Item(s >= 62);
-            itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 70);
+            itemQueue[Protoss_Cybernetics_Core] =	Item(vis(Protoss_Photon_Cannon) >= 2);
             itemQueue[Protoss_Photon_Cannon] =		Item(2 * (com(Protoss_Forge) > 0));
         }
         else if (currentTransition == "Defensive") {
@@ -233,9 +235,11 @@ namespace McRave::BuildOrder::Protoss {
         }
         else if (currentTransition == "4Gate") {
             // https://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)
-            lockedTransition = true;
-            dragoonLimit = INT_MAX;
-            getOpening = s < 120;
+            firstUpgrade =      UpgradeTypes::Singularity_Charge;
+            lockedTransition =  true;
+            dragoonLimit =      INT_MAX;
+            getOpening =        s < 120;
+            wallNat =           currentOpener == "Natural" ? true : s >= 120;
 
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 24) + (s >= 62) + (s >= 70));
             itemQueue[Protoss_Assimilator] =		Item(s >= 44);
@@ -282,7 +286,7 @@ namespace McRave::BuildOrder::Protoss {
             dragoonLimit =		0;
             zealotLimit	=		INT_MAX;
             playPassive =		com(Protoss_Stargate) == 0;
-            firstUnit =         Protoss_Corsair;
+            firstUnit =         Protoss_Corsair;            
 
             itemQueue[Protoss_Gateway] =			Item((s >= 18) + vis(Protoss_Stargate) > 0);
             itemQueue[Protoss_Forge] =				Item(vis(Protoss_Gateway) >= 2);

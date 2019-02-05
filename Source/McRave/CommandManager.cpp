@@ -233,8 +233,8 @@ namespace McRave::Command {
 
         auto shouldMove = [&]() {
             if (unit.getRole() == Role::Combat) {
-                //if (Util::unitInRange(unit) && !unit.getTarget().isHidden() && unit.getType() != UnitTypes::Zerg_Lurker)
-                //    return false;
+                if (Util::unitInRange(unit) && !unit.getTarget().isHidden() && unit.getType() != UnitTypes::Zerg_Lurker)
+                    return false;
                 if (unit.getLocalState() == LocalState::Attack)
                     return true;
             }
@@ -263,18 +263,17 @@ namespace McRave::Command {
                     Position p = Position(tile) + Position(16, 16);
                     if (p.getDistance(unit.getPosition()) >= 256.0) {
                         unit.command(UnitCommandTypes::Move, p, true);
-                        Broodwar->drawLineMap(unit.getPosition(), p, Colors::Green);
                         return true;
                     }
                 }               
             }
 
-            //// Find the best position to move to
-            //auto bestPosition = findViablePosition(unit, scoreFunction);
-            //if (bestPosition.isValid()) {
-            //    unit.command(UnitCommandTypes::Move, bestPosition, true);
-            //    return true;
-            //}
+            // Find the best position to move to
+            auto bestPosition = findViablePosition(unit, scoreFunction);
+            if (bestPosition.isValid()) {
+                unit.command(UnitCommandTypes::Move, bestPosition, true);
+                return true;
+            }
 
             // If it wasn't closer or didn't find one, move to our destination
             unit.command(UnitCommandTypes::Move, unit.getDestination(), false);
@@ -497,7 +496,7 @@ namespace McRave::Command {
         function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
             // Manual conversion until BWAPI::Point is fixed
             auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
-            double distance = ((unit.getType().isFlyer() || Terrain::isIslandMap()) ? p.getDistance(BWEB::Map::getMainPosition()) : Grids::getDistanceHome(w));
+            double distance = ((unit.getType().isFlyer() || Terrain::isIslandMap()) ? log(p.getDistance(BWEB::Map::getMainPosition())) : Grids::getDistanceHome(w));
             double threat = Util::getHighestThreat(w, unit);
             double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0;
             double score = grouping / (threat * distance);

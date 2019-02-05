@@ -26,9 +26,6 @@ namespace McRave::Scouts {
                 proxyCheck = (w && !Terrain::getEnemyStartingPosition().isValid() && w->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1);
             }
 
-            // Temp we don't do 2 scouts for some reason atm
-            proxyCheck = false;
-
             // If we know a proxy possibly exists, we need a second scout
             auto foundProxyGates = Strategy::enemyProxy() && Strategy::getEnemyBuild() == "2Gate" && Units::getEnemyCount(UnitTypes::Protoss_Gateway) > 0;
             if (((Strategy::enemyProxy() && Strategy::getEnemyBuild() != "2Gate") || proxyCheck || foundProxyGates) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1)

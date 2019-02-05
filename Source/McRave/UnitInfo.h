@@ -225,6 +225,10 @@ namespace McRave {
             return thisUnit == p.unit();
         }
 
+        bool operator!= (UnitInfo& p) {
+            return thisUnit != p.unit();
+        }
+
         bool operator< (UnitInfo& p) {
             return thisUnit < p.unit();
         }

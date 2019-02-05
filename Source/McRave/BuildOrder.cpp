@@ -35,22 +35,22 @@ namespace McRave::BuildOrder
         bool isBuildPossible(string build, string opener)
         {
             vector<UnitType> buildings, defenses;
+            auto wallOptional = false;
 
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (build == "2Gate" && opener == "Natural") {
                     buildings ={ Protoss_Gateway, Protoss_Gateway, Protoss_Pylon };
                     defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
                 }
-                else if (build == "FFE" || build.find("Meme") != string::npos) {
-                    buildings ={ Protoss_Gateway, Protoss_Forge, Protoss_Pylon };
-                    defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
-                }
                 else if (build == "GateNexus" || build == "NexusGate") {
                     int count = Util::chokeWidth(BWEB::Map::getNaturalChoke()) / 64;
                     buildings.insert(buildings.end(), count, Protoss_Pylon);
                 }
-                else
-                    return true;
+                else {
+                    buildings ={ Protoss_Gateway, Protoss_Forge, Protoss_Pylon };
+                    defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
+                    wallOptional = true;
+                }
             }
 
             if (Broodwar->self()->getRace() == Races::Terran)
@@ -62,11 +62,11 @@ namespace McRave::BuildOrder
             }
 
             if (build == "2Fact" || build == "Sparks") {
-                if (Terrain::findMainWall(buildings, defenses))
+                if (Terrain::findMainWall(buildings, defenses) || wallOptional)
                     return true;
             }
             else {
-                if (Terrain::findNaturalWall(buildings, defenses))
+                if (Terrain::findNaturalWall(buildings, defenses) || wallOptional)
                     return true;
             }
             return false;
