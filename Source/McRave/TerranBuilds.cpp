@@ -1,32 +1,32 @@
-//#include "McRave.h"
-//using namespace UnitTypes;
-//#define s Units::getSupply()
-//
-//namespace McRave 
-//{
-//	static int vis(UnitType t) {
-//		return vis(t);
-//	}
-//	static int com(UnitType t) {
-//		return com(t);
-//	}
-//
-//	static string enemyBuild = Strategy::getEnemyBuild();
-//	void BuildOrderManager::T2Fact()
-//	{
-//		firstUpgrade = UpgradeTypes::Ion_Thrusters;
-//		firstTech = TechTypes::None;
-//		getOpening = s < 70;
-//		scout = vis(Terran_Barracks) > 0;
-//		wallMain = true;
-//		gasLimit = 3;
-//
-//		itemQueue[Terran_Supply_Depot] =		Item(s >= 18);
-//		itemQueue[Terran_Barracks] =			Item(s >= 20);
-//		itemQueue[Terran_Refinery] =			Item(s >= 24);
-//		itemQueue[Terran_Factory] =				Item((s >= 30) + (s >= 36) + (s >= 46));
-//	}
-//
+#include "McRave.h"
+#include "BuildOrder.h"
+
+using namespace BWAPI;
+using namespace std;
+using namespace UnitTypes;
+using namespace McRave::BuildOrder::All;
+#define s Units::getSupply()
+
+namespace McRave::BuildOrder::Terran
+{
+    static string enemyBuild = Strategy::getEnemyBuild();
+
+    void RaxFact()
+    {
+        firstUpgrade = UpgradeTypes::Ion_Thrusters;
+        firstTech = TechTypes::None;
+        getOpening = s < 70;
+        scout = vis(Terran_Barracks) > 0;
+        wallMain = true;
+        gasLimit = INT_MAX;
+
+        itemQueue[Terran_Supply_Depot] =		Item(s >= 18);
+        itemQueue[Terran_Barracks] =			Item(s >= 20);
+        itemQueue[Terran_Refinery] =			Item(s >= 24);
+        itemQueue[Terran_Factory] =				Item((s >= 30) + (s >= 36) + (s >= 46));
+    }
+}
+
 //	void BuildOrderManager::TSparks()
 //	{
 //		firstUpgrade = UpgradeTypes::Terran_Infantry_Weapons;

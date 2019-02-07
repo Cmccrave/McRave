@@ -131,7 +131,7 @@ namespace McRave::Horizon {
                 auto simRatio =  simulationTime - (distance / speed);
 
                 // If the unit doesn't affect this simulation
-                if (simRatio <= 0.0 || (enemy.getSpeed() <= 0.0 && enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths > 64.0))
+                if (simRatio <= 0.0 || (enemy.getSpeed() <= 0.0 && enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths > 64.0))                    
                     continue;
 
                 // Situations where an enemy should be treated as stronger than it actually is

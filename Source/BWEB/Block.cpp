@@ -221,7 +221,7 @@ namespace BWEB::Blocks
 
                 for (auto &t : tilesByPathDist) {
                     TilePosition tile(t.second);
-                    if (hasMedium && mapBWEM.GetArea(tile) != getMainArea())
+                    if (hasMedium && mapBWEM.GetArea(tile) != getMainArea() && Broodwar->self()->getRace() == Races::Protoss)
                         continue;
 
                     if (hasLarge && mapBWEM.GetArea(tile) == getMainArea() && mainPieces[Piece::Large] >= 8 && mainPieces[Piece::Medium] < 10)

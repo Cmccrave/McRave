@@ -101,7 +101,6 @@ namespace BWEB::PathFinding
             reachable = true;
         }
         else {
-            Broodwar->drawLineMap(s, t, Colors::Red);
             dist = DBL_MAX;
             notReachableThisFrame[Map::mapBWEM.GetArea(target)] = Broodwar->getFrameCount();
             reachable = false;

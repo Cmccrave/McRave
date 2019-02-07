@@ -24,10 +24,14 @@ namespace McRave::Combat {
         void updateLocalState(const shared_ptr<UnitInfo>& u)
         {
             auto &unit = *u;
+            auto destinationThreat = 0.0;
+            if (unit.getDestination().isValid())
+                destinationThreat = unit.getType().isFlyer() ? Grids::getEAirThreat(unit.getDestination()) : Grids::getEGroundThreat(unit.getDestination());
+
             if (unit.hasTarget()) {
 
                 auto fightingAtHome = ((Terrain::isInAllyTerritory(unit.getTilePosition()) && Util::unitInRange(unit)) || Terrain::isInAllyTerritory(unit.getTarget().getTilePosition()));
-                auto invisTarget = unit.getTarget().unit()->exists() && (unit.getTarget().unit()->isCloaked() || unit.getTarget().isBurrowed()) && !unit.getTarget().unit()->isDetected();
+                auto invisTarget = unit.getTarget().isHidden();
                 auto enemyReach = unit.getType().isFlyer() ? unit.getTarget().getAirReach() : unit.getTarget().getGroundReach();
                 auto enemyThreat = unit.getType().isFlyer() ? Grids::getEAirThreat(unit.getEngagePosition()) : Grids::getEGroundThreat(unit.getEngagePosition());
 
@@ -41,13 +45,14 @@ namespace McRave::Combat {
                     unit.setLocalState(LocalState::Attack);
 
                 // Force retreating
-                else if ((unit.getType().isMechanical() && unit.getPercentTotal() < LOW_MECH_PERCENT_LIMIT)
-                    || (unit.getType().getRace() == Races::Zerg && unit.getPercentTotal() < LOW_BIO_PERCENT_LIMIT)
+                else if (/*(unit.getType().isMechanical() && unit.getPercentTotal() < LOW_MECH_PERCENT_LIMIT)
+                    || */(unit.getType().getRace() == Races::Zerg && unit.getPercentTotal() < LOW_BIO_PERCENT_LIMIT)
                     || (unit.getType() == UnitTypes::Protoss_High_Templar && unit.getEnergy() < 75)
                     || Grids::getESplash(unit.getWalkPosition()) > 0
-                    || (invisTarget && (unit.getPosition().getDistance(unit.getTarget().getPosition()) <= enemyReach || enemyThreat > 0))
+                    || (invisTarget && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= enemyReach)
                     || unit.getGlobalState() == GlobalState::Retreat)
                     unit.setLocalState(LocalState::Retreat);
+                
 
                 // Close enough to make a decision
                 else if (unit.getPosition().getDistance(unit.getSimPosition()) <= SIM_RADIUS) {
@@ -60,7 +65,7 @@ namespace McRave::Combat {
                         || (unit.getType() == UnitTypes::Zerg_Mutalisk && Grids::getEAirThreat((WalkPosition)unit.getEngagePosition()) > 0.0 && unit.getHealth() <= 30)
                         || (unit.getType().maxShields() > 0 && unit.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && Broodwar->getFrameCount() < 8000)
                         || (unit.getType() == UnitTypes::Terran_SCV && Broodwar->getFrameCount() > 12000)
-                        || (invisTarget && !unit.getTarget().isThreatening() && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observer) == 0))
+                        || (invisTarget && !unit.getTarget().isThreatening() && Strategy::needDetection()))
                         unit.setLocalState(LocalState::Retreat);
 
                     // Engage
@@ -79,12 +84,10 @@ namespace McRave::Combat {
                     unit.setLocalState(LocalState::Retreat);
                 }
             }
-            else if (unit.getGlobalState() == GlobalState::Attack) {
+            else if (unit.getGlobalState() == GlobalState::Attack && destinationThreat == 0.0)
                 unit.setLocalState(LocalState::Attack);
-            }
-            else {
+            else
                 unit.setLocalState(LocalState::Retreat);
-            }
         }
 
         void updateGlobalState(const shared_ptr<UnitInfo>& u)
@@ -105,8 +108,14 @@ namespace McRave::Combat {
                 else
                     unit.setGlobalState(GlobalState::Attack);
             }
-            else
+            else if (Broodwar->self()->getRace() == Races::Zerg)
                 unit.setGlobalState(GlobalState::Attack);
+            else if (Broodwar->self()->getRace() == Races::Terran) {
+                if (BuildOrder::isPlayPassive() || !BuildOrder::firstReady())
+                    unit.setGlobalState(GlobalState::Retreat);
+                else
+                    unit.setGlobalState(GlobalState::Attack);
+            }
         }
 
         void updateDestination(const shared_ptr<UnitInfo>& u)
@@ -136,12 +145,23 @@ namespace McRave::Combat {
             else if (Terrain::getAttackPosition().isValid())
                 unit.setDestination(Terrain::getAttackPosition());
 
+            else if (unit.isLightAir() && Stations::getEnemyStations().size() > 0) {
+                auto best = INT_MAX;
+                for (auto &station : Stations::getEnemyStations()) {
+                    auto tile = station.second->getBWEMBase()->Location();
+                    auto current = Grids::lastVisibleFrame(tile);
+                    if (current < best) {
+                        best = current;
+                        unit.setDestination(Position(tile));
+                    }
+                }
+            }
+
             // TODO: Check if a scout is moving here too
             // If no target and no enemy bases, move to a base location (random if we have found the enemy once already)
             else if (unit.unit()->isIdle()) {
-                if (Terrain::getEnemyStartingPosition().isValid()) {
+                if (Terrain::getEnemyStartingPosition().isValid())
                     unit.setDestination(Terrain::randomBasePosition());
-                }
                 else {
                     for (auto &start : Broodwar->getStartLocations()) {
                         if (start.isValid() && !Broodwar->isExplored(start) && !Command::overlapsActions(unit.unit(), unit.getType(), Position(start), 32)) {
@@ -190,9 +210,9 @@ namespace McRave::Combat {
                 Horizon::simulate(u);
 
                 updateClusters(u);
+                updateDestination(u);
                 updateGlobalState(u);
                 updateLocalState(u);
-                updateDestination(u);
                 updateDecision(u);
             }
         }

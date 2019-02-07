@@ -252,7 +252,7 @@ namespace McRave::Grids
                 for (int y = 0; y <= Broodwar->mapHeight() * 4; y++) {
                     WalkPosition w(x, y);
 
-                    if (eGroundThreat[x][y] > 0)
+                    if (eAirThreat[x][y] > 0)
                         Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Blue);
                 }
             }

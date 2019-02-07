@@ -99,11 +99,8 @@ namespace McRave::Workers {
                     //else if (worker.unit()->getOrderTargetPosition() != center)
                     //    Command::move(w);
                 }
-                else if (worker.unit()->getOrder() != Orders::PlaceBuilding || worker.unit()->isIdle()) {
-                    worker.unit()->build(worker.getBuildingType(), worker.getBuildPosition());
-                    worker.circleBlack();
-                    Broodwar->drawTextMap(worker.getPosition(), "%s", worker.getBuildingType().c_str());
-                }
+                else if (worker.unit()->getOrder() != Orders::PlaceBuilding || worker.unit()->isIdle())
+                    worker.unit()->build(worker.getBuildingType(), worker.getBuildPosition());                
                 return true;
             }
             return false;

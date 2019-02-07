@@ -117,6 +117,10 @@ namespace McRave::Util {
             if (unit.getShields() < 8)
                 return false;
         }
+        if (unit.getType() == UnitTypes::Terran_SCV) {
+            if (unit.getHealth() < 10)
+                return false;
+        }
 
         if (unit.hasTarget()) {
             if (unit.getTarget().getPosition().getDistance(closestStation) < unit.getTarget().getGroundReach() && Grids::getEGroundThreat(unit.getWalkPosition()) > 0.0 && Broodwar->getFrameCount() < 10000)
@@ -142,6 +146,7 @@ namespace McRave::Util {
 
     bool pullRepairWorker(UnitInfo& unit)
     {
+        return false; // Disabled
         if (Broodwar->self()->getRace() == Races::Terran) {
             int mechUnits = Broodwar->self()->completedUnitCount(UnitTypes::Terran_Vulture)
                 + Broodwar->self()->completedUnitCount(UnitTypes::Terran_Siege_Tank_Siege_Mode)

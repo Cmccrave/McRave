@@ -31,8 +31,8 @@ namespace McRave
         // Update unit stats
         unitType				= t;
         player					= p;
-        health					= thisUnit->getHitPoints();
-        shields					= thisUnit->getShields();
+        health					= thisUnit->getHitPoints() > 0 ? thisUnit->getHitPoints() : health;
+        shields					= thisUnit->getShields() > 0 ? thisUnit->getShields() : shields;
         energy					= thisUnit->getEnergy();
         percentHealth			= t.maxHitPoints() > 0 ? double(health) / double(t.maxHitPoints()) : 0.0;
         percentShield			= t.maxShields() > 0 ? double(shields) / double(t.maxShields()) : 0.0;
@@ -246,6 +246,6 @@ namespace McRave
 
     bool UnitInfo::isHidden()
     {
-        return thisUnit->exists() && (burrowed || thisUnit->isCloaked()) && !thisUnit->isDetected();
+        return (burrowed || (thisUnit->exists() && thisUnit->isCloaked())) && !thisUnit->isDetected();
     }
 }

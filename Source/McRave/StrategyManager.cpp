@@ -77,9 +77,7 @@ namespace McRave::Strategy {
                         poolFrame = Broodwar->getFrameCount() + int(double(unit.getType().buildTime()) * (double(unit.getType().maxHitPoints() - unit.unit()->getHitPoints()) / double(unit.getType().maxHitPoints())));
 
                     if (poolFrame > 0 && Units::getEnemyCount(Zerg_Spire) == 0 && Units::getEnemyCount(Zerg_Hydralisk_Den) == 0 && Units::getEnemyCount(Zerg_Lair) == 0) {
-                        if (enemyGas <= 0 && ((poolFrame < 2500 && poolFrame > 0) || (lingFrame < 3000 && lingFrame > 0)))
-                            enemyBuild = "4Pool";
-                        else if (Units::getEnemyCount(Zerg_Hatchery) == 1 && enemyGas < 148 && enemyGas >= 50 && Units::getEnemyCount(Zerg_Zergling) >= 8)
+                        if (Units::getEnemyCount(Zerg_Hatchery) == 1 && enemyGas < 148 && enemyGas >= 50 && Units::getEnemyCount(Zerg_Zergling) >= 8)
                             enemyBuild = "9Pool";
                         else if (Units::getEnemyCount(Zerg_Hatchery) >= 1 && Units::getEnemyCount(Zerg_Drone) <= 11 && Units::getEnemyCount(Zerg_Zergling) >= 8)
                             enemyBuild = "9Pool";

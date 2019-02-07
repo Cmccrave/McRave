@@ -88,10 +88,12 @@ namespace McRave::Command
         }
 
         // Vultures
-        else if (unit.getType() == UnitTypes::Terran_Vulture && Broodwar->self()->hasResearched(TechTypes::Spider_Mines) && unit.unit()->getSpiderMineCount() > 0 && unit.getPosition().getDistance(unit.getSimPosition()) <= 400 && Broodwar->getUnitsInRadius(unit.getPosition(), 4, Filter::GetType == UnitTypes::Terran_Vulture_Spider_Mine).size() <= 0) {
-            if (unit.unit()->getLastCommand().getTechType() != TechTypes::Spider_Mines || unit.unit()->getLastCommand().getTargetPosition().getDistance(unit.getPosition()) > 8)
-                unit.unit()->useTech(TechTypes::Spider_Mines, unit.getPosition());
-            return true;
+        else if (unit.getType() == UnitTypes::Terran_Vulture) {
+            if (Broodwar->self()->hasResearched(TechTypes::Spider_Mines) && unit.unit()->getSpiderMineCount() > 0 && unit.getPosition().getDistance(unit.getSimPosition()) <= 400 && Broodwar->getUnitsInRadius(unit.getPosition(), 128, Filter::GetType == UnitTypes::Terran_Vulture_Spider_Mine).size() <= 3) {
+                if (unit.unit()->getLastCommand().getTechType() != TechTypes::Spider_Mines || unit.unit()->getLastCommand().getTargetPosition().getDistance(unit.getPosition()) > 8)
+                    unit.unit()->useTech(TechTypes::Spider_Mines, unit.getPosition());
+                return true;
+            }
         }
 
         // Wraiths	

@@ -22,6 +22,7 @@
 // Cannon rush issues
 // Possible to get units stuck between tech buildings
 // Checking if a gateway is queuable/buildable causes it to be unassigned?
+// Andromeda concaves area dont match, so line up weird
 
 // *** TOTEST ***
 // If an enemy floats a CC to an expansion, we don't consider it "taken"

@@ -73,19 +73,28 @@ namespace McRave::BuildOrder {
         void situational();
         void unlocks();
         void island();
-
+                
         void PvP1GateCore();
+        void PvP2Gate();
+        
+        void PvTGateNexus();
+        void PvTNexusGate();
         void PvT1GateCore();
-        void PvZ1GateCore();
+        void PvT2Gate();
 
         void PvZFFE();
+        void PvZ1GateCore();
+        void PvZ2Gate();      
+    }
 
-        void PvTNexusGate();
-        void PvTGateNexus();
+    namespace Terran {
+        void opener();
+        void tech();
+        void situational();
+        void unlocks();
+        //void island();
 
-        void PvP2Gate();
-        void PvT2Gate();
-        void PvZ2Gate();        
+        void RaxFact();
     }
 
     namespace Zerg {
@@ -94,7 +103,7 @@ namespace McRave::BuildOrder {
         void tech();
         void situational();
         void unlocks();
-        void island();
+        //void island();
 
         void PoolHatch();
         void HatchPool();

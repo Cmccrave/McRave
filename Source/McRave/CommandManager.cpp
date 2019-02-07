@@ -26,7 +26,7 @@ namespace McRave::Command {
 
             // Store enemy detection and assume casting orders
             for (auto &u : Units::getUnits(PlayerState::Enemy)) {
-                UnitInfo& unit = *u;
+                UnitInfo &unit = *u;
 
                 if (!unit.unit() || (unit.unit()->exists() && (unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())))
                     continue;
@@ -219,7 +219,7 @@ namespace McRave::Command {
             // Manual conversion until BWAPI::Point is fixed
             auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
             double distance = (unit.getType().isFlyer() || Terrain::isIslandMap()) ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
-            double threat = Util::getHighestThreat(w, unit);
+            double threat = exp(Util::getHighestThreat(w, unit));
             double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0;
             double score = grouping / (threat * distance);
             return score;
@@ -269,10 +269,12 @@ namespace McRave::Command {
             }
 
             // Find the best position to move to
-            auto bestPosition = findViablePosition(unit, scoreFunction);
-            if (bestPosition.isValid()) {
-                unit.command(UnitCommandTypes::Move, bestPosition, true);
-                return true;
+            if (unit.getType().isFlyer()) {
+                auto bestPosition = findViablePosition(unit, scoreFunction);
+                if (bestPosition.isValid()) {
+                    unit.command(UnitCommandTypes::Move, bestPosition, true);
+                    return true;
+                }
             }
 
             // If it wasn't closer or didn't find one, move to our destination

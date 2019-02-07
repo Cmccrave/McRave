@@ -57,7 +57,7 @@ namespace McRave::Support {
 
         // TODO: Overlord scouting, need to use something different to spread overlords
         // Disabled
-        if (!Terrain::getEnemyStartingPosition().isValid())
+        if (unit.getType() == UnitTypes::Zerg_Overlord && !Terrain::getEnemyStartingPosition().isValid())
             posBest = BWEB::Map::getMainPosition();//Terrain::closestUnexploredStart();
 
         // Check if any expansions need detection on them
@@ -87,17 +87,17 @@ namespace McRave::Support {
                         continue;
 
                     auto threat = Util::getHighestThreat(w, unit);
-                    auto cluster = 1.0;// +Grids::getAGroundCluster(w) + Grids::getAAirCluster(w);
-                    auto dist = 1.0 + p.getDistance(destination);
-
+                    auto dist = unit.hasTarget() ? (p.getDistance(destination)) + p.getDistance(unit.getTarget().getPosition()) : (p.getDistance(destination));
+                    
                     // Try to keep the unit alive if it's low or cloaked inside detection
-                    if (unit.getPercentShield() <= LOW_SHIELD_PERCENT_LIMIT && threat > 0.0)
+                    if (unit.getPercentShield() <= LOW_SHIELD_PERCENT_LIMIT && threat > 0.0 && Command::overlapsEnemyDetection(p))
                         continue;/*
                     if (unit.unit()->isCloaked() && Commands().overlapsEnemyDetection(p) && threat > 0.0)
                         continue;*/
 
-                        // Score this move
-                    auto score = 1.0 / (threat * cluster * dist);
+                    // Score this move
+                    auto score = 1.0 / (threat * dist);
+
                     if (score > scoreBest) {
                         scoreBest = score;
                         posBest = p;

@@ -32,7 +32,7 @@ namespace McRave::BuildOrder::Protoss {
             gasLimit =			INT_MAX;
             zealotLimit =		INT_MAX;
             dragoonLimit =		0;
-            wallNat =           wallNat || vis(Protoss_Nexus) >= 2;
+            wallNat =           vis(Protoss_Nexus) >= 2;
         }
     }
 
@@ -60,9 +60,9 @@ namespace McRave::BuildOrder::Protoss {
 
     void PvZFFE()
     {
-        fastExpand = true;
-        wallNat = true;
         defaultPvZ();
+        fastExpand = true;
+        wallNat = true;        
 
         auto min100 = Broodwar->self()->minerals() >= 100;
         auto cannonCount = int(com(Protoss_Forge) > 0) + (Units::getEnemyCount(Zerg_Zergling) >= 6) + (Units::getEnemyCount(Zerg_Zergling) >= 12) + (Units::getEnemyCount(Zerg_Zergling) >= 24);
@@ -148,6 +148,7 @@ namespace McRave::BuildOrder::Protoss {
             currentTransition =	"NeoBisu";
             firstUpgrade =		UpgradeTypes::Protoss_Air_Weapons;
             firstUnit =         Protoss_Corsair;
+            lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
 
             itemQueue[Protoss_Photon_Cannon] =		Item(cannonCount);
             itemQueue[Protoss_Cybernetics_Core] =	Item(vis(Protoss_Zealot) >= 1);
@@ -210,6 +211,7 @@ namespace McRave::BuildOrder::Protoss {
         if (currentTransition == "Expand") {
             getOpening =		s < 80;
             wallNat =           currentOpener == "Natural" ? true : s >= 40;
+            lockedTransition =  vis(Protoss_Nexus) >= 2;
 
             itemQueue[Protoss_Assimilator] =		Item(s >= 76);
             itemQueue[Protoss_Nexus] =				Item(1 + (s >= 42));
@@ -249,12 +251,13 @@ namespace McRave::BuildOrder::Protoss {
 
     void PvZ1GateCore()
     {
+        defaultPvZ();
         scout =				Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
         gasLimit =			INT_MAX;
                
         // Openers
         if (currentOpener == "1Zealot") {
-            zealotLimit = 1;
+            zealotLimit = vis(Protoss_Cybernetics_Core) ? INT_MAX : 1;
 
             itemQueue[Protoss_Nexus] =				Item(1);
             itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
@@ -263,7 +266,7 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 34);
         }
         else if (currentOpener == "2Zealot") {
-            zealotLimit = 2;
+            zealotLimit = vis(Protoss_Cybernetics_Core) ? INT_MAX : 2;
 
             itemQueue[Protoss_Nexus] =				Item(1);
             itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
@@ -280,18 +283,15 @@ namespace McRave::BuildOrder::Protoss {
 
         // Builds
         if (currentTransition == "Corsair") {
-            getOpening =		s < 60;
+            getOpening =		s < 70;
             firstUpgrade =		UpgradeTypes::Protoss_Air_Weapons;
             firstTech =			TechTypes::None;
             dragoonLimit =		0;
-            zealotLimit	=		INT_MAX;
             playPassive =		com(Protoss_Stargate) == 0;
-            firstUnit =         Protoss_Corsair;            
+            firstUnit =         Protoss_Corsair;    
+            lockedTransition =  vis(Protoss_Stargate) > 0;
 
-            itemQueue[Protoss_Gateway] =			Item((s >= 18) + vis(Protoss_Stargate) > 0);
-            itemQueue[Protoss_Forge] =				Item(vis(Protoss_Gateway) >= 2);
-            itemQueue[Protoss_Assimilator] =		Item(s >= 40);
-            itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 36);
+            itemQueue[Protoss_Gateway] =			Item((s >= 20) + vis(Protoss_Corsair) > 0);
             itemQueue[Protoss_Stargate] =			Item(com(Protoss_Cybernetics_Core) > 0);
         }
         else if (currentTransition == "DT") {
@@ -302,6 +302,7 @@ namespace McRave::BuildOrder::Protoss {
             hideTech =			com(Protoss_Dark_Templar) < 1;
             dragoonLimit =		1;
             zealotLimit =		vis(Protoss_Dark_Templar) >= 2 ? INT_MAX : 2;
+            lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
 
             if (techList.find(Protoss_Dark_Templar) == techList.end())
                 techUnit =			Protoss_Dark_Templar;

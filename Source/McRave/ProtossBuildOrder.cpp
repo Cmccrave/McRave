@@ -131,6 +131,8 @@ namespace McRave::BuildOrder::Protoss
                 itemQueue[Protoss_Cybernetics_Core] = Item(1 + (int)Terrain::isIslandMap());
                 itemQueue[Protoss_Forge] = Item(2 - (int)Terrain::isIslandMap());
             }
+            if (com(Protoss_Nexus) >= 2 && Players::vZ())
+                itemQueue[Protoss_Forge] = Item(1);
 
             // Ensure we build a core outside our opening book
             if (com(Protoss_Gateway) >= 2)

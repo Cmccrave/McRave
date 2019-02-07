@@ -19,11 +19,11 @@ namespace McRave::BuildOrder
                 Protoss::situational();
                 Protoss::unlocks();
             }
-            //if (Broodwar->self()->getRace() == Races::Terran) {
-            //	terranOpener();
-            //	terranTech();
-            //	terranSituational();
-            //}
+            if (Broodwar->self()->getRace() == Races::Terran) {
+            	Terran::opener();
+            	Terran::tech();
+            	Terran::situational();
+            }
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 Zerg::opener();
                 Zerg::tech();
@@ -61,7 +61,7 @@ namespace McRave::BuildOrder
                 defenses.insert(defenses.end(), 6, Zerg_Sunken_Colony);
             }
 
-            if (build == "2Fact" || build == "Sparks") {
+            if (Broodwar->self()->getRace() == Races::Terran) {
                 if (Terrain::findMainWall(buildings, defenses) || wallOptional)
                     return true;
             }
@@ -238,6 +238,7 @@ namespace McRave::BuildOrder
         string token;
         bool correctBuild = false;
         bool correctOpener = false;
+        bool correctTransition = false;
 
         const auto shouldIncrement = [&](string name) {
 
@@ -246,18 +247,17 @@ namespace McRave::BuildOrder
 
                 // Check if we're looking at the correct opener to prevent incrementing a transition for a different build
                 if (correctOpener) {
-                    if (name == currentTransition) {
-                        correctBuild = false;
-                        correctOpener = false;
+
+                    // Check if we're looking for a transition string
+                    if (!correctTransition && name == currentTransition)
                         return true;
-                    }
                 }
-                if (name == currentOpener) {
+                if (!correctOpener && name == currentOpener) {
                     correctOpener = true;
                     return true;
                 }
             }
-            if (name == currentBuild) {
+            if (!correctBuild && name == currentBuild) {
                 correctBuild = true;
                 return true;
             }
@@ -299,9 +299,9 @@ namespace McRave::BuildOrder
         bool testing = false;
         if (testing) {
             if (Broodwar->self()->getRace() == Races::Protoss) {
-                currentBuild = "FFE";
-                currentOpener = "Gate";
-                currentTransition = "NeoBisu";
+                currentBuild = "1GateCore";
+                currentOpener = "2Zealot";
+                currentTransition = "Corsair";
                 isBuildPossible(currentBuild, currentOpener);
                 return;
             }
@@ -309,10 +309,6 @@ namespace McRave::BuildOrder
                 currentBuild = "HatchPool";
                 currentOpener = "12Hatch";
                 currentTransition = "2HatchMuta";
-                return;
-            }
-            if (Broodwar->self()->getRace() == Races::Terran) {
-                isBuildPossible("Test", "Test");
                 return;
             }
         }
@@ -357,6 +353,20 @@ namespace McRave::BuildOrder
 
             myBuilds["PoolLair"].openers ={ "9Pool" };
             myBuilds["PoolLair"].transitions={ "1HatchMuta", "1HatchLurker" };
+        }
+
+        if (Broodwar->self()->getRace() == Races::Terran) {
+            currentBuild = "RaxFact";
+            currentOpener = "10Rax";
+            currentTransition = "2FactVulture";
+            isBuildPossible(currentBuild, currentOpener);
+            return;// Don't know what to do yet
+
+/*
+            myBuilds["RaxFact"].openers ={ "8Rax", "10Rax", "12Rax" };
+            myBuilds["RaxFact"].transitions ={ "Joyo", "2FactVulture", "1FactExpand", "2PortWraith" };
+
+            myBuilds["2Rax"].openers = { "}*/
         }
 
         // Winrate tracking
