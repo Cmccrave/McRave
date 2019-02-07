@@ -39,6 +39,10 @@ namespace BWEB::Blocks
             bool v;
             auto h = (v = false);
 
+            const auto creepOnCorners = [&](TilePosition here, int width, int height) {
+                return Broodwar->hasCreep(here) && Broodwar->hasCreep(here + TilePosition(width, 0)) && Broodwar->hasCreep(here + TilePosition(0, height)) && Broodwar->hasCreep(here + TilePosition(width, height));
+            };
+
             if (race == Races::Zerg)
                 pieces ={ Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small };
             else if (race == Races::Terran)
@@ -57,15 +61,16 @@ namespace BWEB::Blocks
                 for (auto y = start.y - 10; y <= start.y + 6; y++) {
                     TilePosition tile(x, y);
 
-                    if (!tile.isValid() || mapBWEM.GetArea(tile) != Map::getMainArea())
+                    if (!tile.isValid()
+                        || mapBWEM.GetArea(tile) != Map::getMainArea())
                         continue;
 
-                    auto blockCenter = Position(tile) + Position(128, 80);
+                    const auto blockCenter = Position(tile) + Position(128, 80);
                     const auto dist = blockCenter.getDistance(Map::getMainPosition()) + log(blockCenter.getDistance((Position)Map::getMainChoke()->Center()));
 
                     if (dist < distBest && ((race == Races::Protoss && canAddBlock(tile, 8, 5, true))
                         || (race == Races::Terran && canAddBlock(tile, 6, 5, true))
-                        || (race == Races::Zerg && canAddBlock(tile, 5, 4, true)))) {
+                        || (race == Races::Zerg && creepOnCorners(tile, 5, 4) && canAddBlock(tile, 5, 4, true)))) {
                         tileBest = tile;
                         distBest = dist;
 

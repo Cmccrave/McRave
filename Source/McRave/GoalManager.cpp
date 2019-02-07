@@ -123,15 +123,15 @@ namespace McRave::Goals {
 
         void updateZergGoals()
         {
-            // Send lurkers to expansions when turtling		
-            if (Broodwar->self()->getRace() == Races::Zerg && !Stations::getMyStations().empty()) {
-                auto lurkerPerBase = Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Lurker) / Stations::getMyStations().size();
+            //// Send lurkers to expansions when turtling		
+            //if (Broodwar->self()->getRace() == Races::Zerg && !Stations::getMyStations().empty()) {
+            //    auto lurkerPerBase = Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Lurker) / Stations::getMyStations().size();
 
-                for (auto &base : Stations::getMyStations()) {
-                    auto station = *base.second;
-                    assignPercentToGoal(station.getResourceCentroid(), UnitTypes::Zerg_Lurker, 0.25);
-                }
-            }
+            //    for (auto &base : Stations::getMyStations()) {
+            //        auto station = *base.second;
+            //        assignPercentToGoal(station.getResourceCentroid(), UnitTypes::Zerg_Lurker, 0.25);
+            //    }
+            //}
         }
     }
 

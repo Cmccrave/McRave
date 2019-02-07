@@ -32,8 +32,6 @@ namespace McRave::Support {
             }
         }
 
-        Broodwar->drawLineMap(unit.getPosition(), destination, Colors::Green);
-
         // HACK: Spells dont move
         if (unit.getType() == UnitTypes::Spell_Scanner_Sweep) {
             Command::addAction(unit.unit(), unit.getPosition(), UnitTypes::Spell_Scanner_Sweep);
@@ -50,10 +48,8 @@ namespace McRave::Support {
                 destination = unit.getTarget().getPosition();
         }
 
-        else if (unit.getType() == UnitTypes::Zerg_Overlord) {
-            destination = Stations::getClosestStation(PlayerState::Self, unit.getPosition());
-            unit.circleBlack();
-        }
+        else if (unit.getType() == UnitTypes::Zerg_Overlord)
+            destination = Stations::getClosestStation(PlayerState::Self, unit.getPosition());        
 
         // TODO: Overlord scouting, need to use something different to spread overlords
         // Disabled
