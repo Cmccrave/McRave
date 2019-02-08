@@ -18,20 +18,20 @@ namespace McRave::BuildOrder::Protoss
                 PvTGateNexus();
             else if (currentBuild == "2Gate")
                 PvT2Gate();
-        }        
-        else if (Players::vZ()) {
+        }
+        else if (Players::vP()) {
+            if (currentBuild == "1GateCore")
+                PvP1GateCore();
+            else if (currentBuild == "2Gate")
+                PvP2Gate();
+        }
+        else if (Players::vZ() || Players::getNumberRandom() > 0) {
             if (currentBuild == "1GateCore")
                 PvZ1GateCore();
             else if (currentBuild == "FFE")
                 PvZFFE();
             else if (currentBuild == "2Gate")
                 PvZ2Gate();
-        }
-        else if(Players::vP()) {
-            if (currentBuild == "1GateCore")
-                PvP1GateCore();
-            else if (currentBuild == "2Gate")
-                PvP2Gate();
         }
     }
 
@@ -91,7 +91,7 @@ namespace McRave::BuildOrder::Protoss
         }
 
         // If we don't want an assimilator, set gas count to 0
-        if (itemQueue[Protoss_Assimilator].getActualCount() == 0)
+        if (buildCount(Protoss_Assimilator) == 0)
             gasLimit = 0;
 
         // Pylon logic
@@ -117,7 +117,7 @@ namespace McRave::BuildOrder::Protoss
                 itemQueue[Protoss_Nexus] = Item(vis(Protoss_Nexus) + 1);
 
             // Adding production
-            if (shouldAddProduction()) {                
+            if (shouldAddProduction()) {
                 int gateCount = min(com(Protoss_Nexus) * 3, vis(Protoss_Gateway) + 1) - (int(isUnitUnlocked(Protoss_Carrier)) * 2);
                 itemQueue[Protoss_Gateway] = Item(gateCount);
             }
@@ -170,7 +170,7 @@ namespace McRave::BuildOrder::Protoss
         else
             unlockedType.erase(Protoss_Zealot);
 
-        // TEST
+        // IDK: If we are DT rushing, no Dragoons allowed?
         if (!techComplete() && techUnit == Protoss_Dark_Templar && techList.size() == 1 && Players::vP() && com(Protoss_Citadel_of_Adun) == 1)
             dragoonLimit = 0;
 
@@ -185,6 +185,7 @@ namespace McRave::BuildOrder::Protoss
 
     void island()
     {
+        // DISABLED: Islands not being played until other bugs are fixed
         if (shouldAddProduction()) {
 
             // PvZ island

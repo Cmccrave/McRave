@@ -29,6 +29,28 @@ namespace McRave::Util {
         return std::find(cont.begin(), cont.end(), std::forward<E>(e)) != cont.end();
     }
 
+    // Checks if any Position is walkable
+    template<class T>
+    bool isWalkable(T here) {
+        auto start = BWAPI::WalkPosition(here);
+        for (int x = start.x; x < start.x + 4; x++) {
+            for (int y = start.y; y < start.y + 4; y++) {
+                if (Grids::getMobility(BWAPI::WalkPosition(x, y)) == -1)
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    // Iterates commands and returns when one is chosen
+    template<typename T, int idx = 0>
+    int iterateCommands(T const &tpl, const std::shared_ptr<UnitInfo>& unit) {
+        if constexpr (idx < std::tuple_size<T>::value)
+            if (!std::get<idx>(tpl)(unit))
+                return iterateCommands<T, idx + 1>(tpl, unit);
+        return idx;
+    }
+
     int chokeWidth(const BWEM::ChokePoint *);
     const BWEM::ChokePoint * getClosestChokepoint(BWAPI::Position);
 
@@ -42,28 +64,7 @@ namespace McRave::Util {
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, BWAPI::Position);
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, int, int);
 
-    // Walkability checks
-    template<class T>
-    bool isWalkable(T here)
-    {
-        auto start = BWAPI::WalkPosition(here);
-        for (int x = start.x; x < start.x + 4; x++) {
-            for (int y = start.y; y < start.y + 4; y++) {
-                if (Grids::getMobility(BWAPI::WalkPosition(x, y)) == -1)
-                    return false;
-            }
-        }
-        return true;
-    }
-
-    // Iterates all commands possible
-    template<typename T, int idx = 0>
-    int iterateCommands(T const &tpl, const std::shared_ptr<UnitInfo>& unit) {
-        if constexpr (idx < std::tuple_size<T>::value)
-            if (!std::get<idx>(tpl)(unit))
-                return iterateCommands<T, idx + 1>(tpl, unit);
-        return idx;
-    }
+   
 
     bool isWalkable(UnitInfo&, BWAPI::WalkPosition);
 

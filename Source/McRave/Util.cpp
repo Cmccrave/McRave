@@ -320,75 +320,54 @@ namespace McRave::Util {
 
     Position getConcavePosition(UnitInfo& unit, int radius, BWEM::Area const * area, Position here)
     {
-        // Setup parameters	
-        auto min = radius;
-        auto distBest = DBL_MAX;
         auto center = WalkPositions::None;
-        auto bestPosition = Positions::None;
+        auto distBest = DBL_MAX;
+        auto posBest = Positions::None;
 
         // Finds which position we are forming the concave at
-        const auto getConcaveCenter = [&]() {
-            if (here.isValid())
-                center = (WalkPosition)here;
-            else if (area == BWEB::Map::getNaturalArea() && BWEB::Map::getNaturalChoke())
-                center = BWEB::Map::getNaturalChoke()->Center();
-            else if (area == BWEB::Map::getMainArea() && BWEB::Map::getMainChoke())
-                center = BWEB::Map::getMainChoke()->Center();
-
-            else if (area) {
-                for (auto &c : area->ChokePoints()) {
-                    double dist = BWEB::Map::getGroundDistance(Position(c->Center()), Terrain::getEnemyStartingPosition());
-                    if (dist < distBest) {
-                        distBest = dist;
-                        center = c->Center();
-                    }
+        if (here.isValid())
+            center = (WalkPosition)here;
+        else if (area == BWEB::Map::getNaturalArea() && BWEB::Map::getNaturalChoke())
+            center = BWEB::Map::getNaturalChoke()->Center();
+        else if (area == BWEB::Map::getMainArea() && BWEB::Map::getMainChoke())
+            center = BWEB::Map::getMainChoke()->Center();
+        else if (area) {
+            auto distEnemyBest = DBL_MAX;
+            for (auto &c : area->ChokePoints()) {
+                double dist = BWEB::Map::getGroundDistance(Position(c->Center()), Terrain::getEnemyStartingPosition());
+                if (dist < distEnemyBest) {
+                    distEnemyBest = dist;
+                    center = c->Center();
                 }
             }
-        };
+        }
 
         const auto checkbest = [&](WalkPosition w) {
-            TilePosition t(w);
-            Position p = Position(w) + Position(4, 4);
-            double dist = p.getDistance((Position)center);
+            auto p = Position(w) + Position(4, 4);
+            auto dist = p.getDistance(Position(center));
 
             if (!w.isValid()
-                || area && mapBWEM.GetArea(t) != area
-                || dist < min
-                || unit.getType() == UnitTypes::Protoss_Reaver && Terrain::isDefendNatural() && mapBWEM.GetArea(w) != BWEB::Map::getNaturalArea()
+                || area && mapBWEM.GetArea(w) != area
+                || dist < radius
                 || dist > distBest
                 || Command::overlapsActions(unit.unit(), unit.getType(), p, 8)
                 || Command::isInDanger(unit, p)
                 || !isWalkable(unit, w)
-                || Buildings::overlapsQueue(unit.getType(), t))
-                return false;
+                || Buildings::overlapsQueue(unit.getType(), TilePosition(w)))
+                return;
 
-            bestPosition = p;
+            posBest = p;
             distBest = dist;
-            return true;
         };
 
-        // Find the center
-        getConcaveCenter();
-        distBest = DBL_MAX;
-
-        // If this is the defending position, grab from a vector we already made
-        auto &positions = (unit.getGroundRange() < 64.0 && (!Terrain::isDefendNatural() || Players::vZ())) ? Terrain::getMeleeChokePositions() : Terrain::getRangedChokePositions();
-        if (here == Terrain::getDefendPosition() && !positions.empty()) {
-            for (auto &position : positions) {
-                checkbest(WalkPosition(position));
-            }
-        }
-
         // Find a position around the center that is suitable
-        else {
-            for (int x = center.x - 40; x <= center.x + 40; x++) {
-                for (int y = center.y - 40; y <= center.y + 40; y++) {
-                    WalkPosition w(x, y);
-                    checkbest(w);
-                }
+        for (int x = center.x - 40; x <= center.x + 40; x++) {
+            for (int y = center.y - 40; y <= center.y + 40; y++) {
+                WalkPosition w(x, y);
+                checkbest(w);
             }
         }
-        return bestPosition;
+        return posBest;
     }
 
     Position clipPosition(Position source, Position target)
