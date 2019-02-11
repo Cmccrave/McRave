@@ -316,6 +316,9 @@ namespace McRave::Terrain {
         findDefendPosition();
 
         updateAreas();
+
+        auto test = BWEB::Map::lineOfBestFit(BWEB::Map::getNaturalChoke());
+        Broodwar->drawLineMap(test.first, test.second, Colors::Green);
     }
 
     bool inRangeOfWall(UnitInfo& unit)

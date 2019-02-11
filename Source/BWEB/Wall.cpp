@@ -117,8 +117,6 @@ namespace BWEB::Walls
 
             const auto testPiece = [&](Wall& wall, TilePosition t) {
                 UnitType currentType = *typeIterator;
-                Position c = Map::pConvert(t) + Map::pConvert(currentType.tileSize());
-                auto tile = closestChokeTile(c);
 
                 if ((currentType == UnitTypes::Protoss_Pylon && !isPoweringWall(wall, t))
                     || overlapsCurrentWall(t, currentType.tileWidth(), currentType.tileHeight()) != UnitTypes::None
@@ -147,7 +145,7 @@ namespace BWEB::Walls
 
             function<void(TilePosition)> recursiveCheck;
             recursiveCheck = [&](TilePosition start) -> void {
-                int radius = 10;
+                int radius = 6;
                 UnitType type = *typeIterator;
 
                 for (auto x = start.x - radius; x < start.x + radius; x++) {
@@ -176,6 +174,13 @@ namespace BWEB::Walls
 
                             if (badAngle)
                                 continue;
+                        }
+
+                        if (typeIterator == wall.getRawBuildings().end() - 1) {
+                            if (!testPiece(wall, t))
+                                Broodwar << "Test" << endl;
+                            if (!isWallTight(wall, type, t))
+                                Broodwar << "Tight" << endl;
                         }
 
                         // If the piece is fine to place
@@ -327,7 +332,6 @@ namespace BWEB::Walls
                     if (!parentTight && parentTightCheck)
                         parentTight = true;
                 }
-                return;
             };
 
             const auto checkHorizontalSide = [&](WalkPosition start, int length, bool check, function <int(UnitType, UnitType)> fDiff, int tightnessFactor) {
@@ -345,7 +349,6 @@ namespace BWEB::Walls
                     if (!parentTight && parentTightCheck)
                         parentTight = true;
                 }
-                return;
             };
 
             /* What this does:

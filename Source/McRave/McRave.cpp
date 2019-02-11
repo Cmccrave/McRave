@@ -23,6 +23,8 @@
 // Possible to get units stuck between tech buildings
 // Checking if a gateway is queuable/buildable causes it to be unassigned?
 // Andromeda concaves area dont match, so line up weird
+// Units stop doing anything sometimes
+// Circuit Breaker top left, no FFE wall?
 
 // *** TOTEST ***
 // If an enemy floats a CC to an expansion, we don't consider it "taken"

@@ -296,12 +296,12 @@ namespace McRave::BuildOrder
             return;
         }
 
-        bool testing = false;
+        bool testing = true;
         if (testing) {
             if (Broodwar->self()->getRace() == Races::Protoss) {
-                currentBuild = "1GateCore";
-                currentOpener = "2Zealot";
-                currentTransition = "Corsair";
+                currentBuild = "FFE";
+                currentOpener = "Forge";
+                currentTransition = "NeoBisu";
                 isBuildPossible(currentBuild, currentOpener);
                 return;
             }

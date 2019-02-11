@@ -471,7 +471,7 @@ namespace McRave::Command {
 
         const auto shouldHunt = [&]() {
             if (unit.getRole() == Role::Combat) {
-                if (unit.isLightAir())
+                if (unit.isLightAir() && Players::getStrength(PlayerState::Enemy).airToAir <= 0.0)
                     return true;
             }
             if (unit.getRole() == Role::Transport)

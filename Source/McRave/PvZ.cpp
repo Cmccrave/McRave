@@ -62,7 +62,8 @@ namespace McRave::BuildOrder::Protoss {
     {
         defaultPvZ();
         fastExpand = true;
-        wallNat = true;        
+        wallNat = true;
+        scout = vis(Protoss_Pylon) > 0;
 
         auto min100 = Broodwar->self()->minerals() >= 100;
         auto cannonCount = int(com(Protoss_Forge) > 0) + (Units::getEnemyCount(Zerg_Zergling) >= 6) + (Units::getEnemyCount(Zerg_Zergling) >= 12) + (Units::getEnemyCount(Zerg_Zergling) >= 24);
@@ -254,7 +255,7 @@ namespace McRave::BuildOrder::Protoss {
         defaultPvZ();
         scout =				Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
         gasLimit =			INT_MAX;
-               
+
         // Openers
         if (currentOpener == "1Zealot") {
             zealotLimit = vis(Protoss_Cybernetics_Core) ? INT_MAX : 1;
@@ -288,7 +289,7 @@ namespace McRave::BuildOrder::Protoss {
             firstTech =			TechTypes::None;
             dragoonLimit =		0;
             playPassive =		com(Protoss_Stargate) == 0;
-            firstUnit =         Protoss_Corsair;    
+            firstUnit =         Protoss_Corsair;
             lockedTransition =  vis(Protoss_Stargate) > 0;
 
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + vis(Protoss_Corsair) > 0);
