@@ -23,7 +23,7 @@ namespace BWEB::Walls
         vector<UnitType>::iterator typeIterator;
         map<TilePosition, UnitType> bestWall;
         map<TilePosition, UnitType> currentWall;
-        double currentPathSize{};
+        double currentPathSize;
 
         UnitType tight;
         bool reservePath;
@@ -31,13 +31,34 @@ namespace BWEB::Walls
         int chokeWidth;
         Position wallBase;
         vector<TilePosition> chokeTiles;
-        int test = 0;
-        
+        Position test;
+
+        int failedPlacement = 0;
+        int failedAngle = 0;
+        int failedPath = 0;
+        int failedTight = 0;
+
         bool iteratePieces(Wall& wall)
         {
             TilePosition start = Map::tConvert(wall.getChokePoint()->Center());
             auto movedStart = false;
             auto multiplePylons = false;
+
+            // Choke angle
+            auto line = Map::lineOfBestFit(wall.getChokePoint());
+            auto p1 = line.first;
+            auto p2 = line.second;
+            double dy = abs(double(p1.y - p2.y));
+            double dx = abs(double(p1.x - p2.x));
+            auto angle1 = dx > 0.0 ? atan(dy / dx) * 180.0 / 3.14 : 90.0;
+
+            // Check if we are placing more Pylons to figure out how to calculate placement
+            auto count = 0;
+            for (auto type : wall.getRawBuildings()) {
+                if (type == UnitTypes::Protoss_Pylon)
+                    count++;
+            }
+            multiplePylons = count > 1;
 
             const auto closestChokeTile = [&](Position here) {
                 double best = DBL_MAX;
@@ -91,13 +112,13 @@ namespace BWEB::Walls
 
                 // Find current hole, not including overlap
                 findCurrentHole(wall, !reservePath);
-                if (reservePath && currentHole == TilePositions::None)
+                if ((reservePath && currentHole == TilePositions::None) || (!reservePath && currentHole != TilePositions::None)) {
+                    failedPath++;
                     return;
-                if (!reservePath && currentHole != TilePositions::None)
-                    return;
+                }
 
                 double dist = 1.0;
-                for (auto &piece : currentWall) {                   
+                for (auto &piece : currentWall) {
                     auto tile = piece.first;
                     auto type = piece.second;
                     auto center = Map::pConvert(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
@@ -115,33 +136,37 @@ namespace BWEB::Walls
                 }
             };
 
-            const auto testPiece = [&](Wall& wall, TilePosition t) {
+            const auto goodPlacement = [&](TilePosition t) {
                 UnitType currentType = *typeIterator;
 
                 if ((currentType == UnitTypes::Protoss_Pylon && !isPoweringWall(wall, t))
                     || overlapsCurrentWall(t, currentType.tileWidth(), currentType.tileHeight()) != UnitTypes::None
                     || Map::isOverlapping(t, currentType.tileWidth(), currentType.tileHeight(), true)
                     || !Map::isPlaceable(currentType, t)
-                    || Map::tilesWithinArea(wall.getArea(), t, currentType.tileWidth(), currentType.tileHeight()) <= 2)
+                    || Map::tilesWithinArea(wall.getArea(), t, currentType.tileWidth(), currentType.tileHeight()) <= 0)
                     return false;
                 return true;
             };
 
-            // Choke angle
-            auto line = Map::lineOfBestFit(wall.getChokePoint());
-            auto p1 = line.first;
-            auto p2 = line.second;
-            double dy = abs(double(p1.y - p2.y));
-            double dx = abs(double(p1.x - p2.x));
-            auto angle1 = dx > 0.0 ? atan(dy / dx) * 180.0 / 3.14 : 90.0;
+            const auto goodAngle = [&](Position center, UnitType type) {
+                // We want to ensure the buildings are being placed at the correct angle compared to the chokepoint, within some tolerance
+                double angle2 = 0.0;
+                auto badAngle = false;
+                if ((multiplePylons || type != UnitTypes::Protoss_Pylon) && !movedStart) {
+                    for (auto piece : currentWall) {
+                        auto tileB = piece.first;
+                        auto typeB = piece.second;
+                        auto centerB = Map::pConvert(tileB) + Position(typeB.tileWidth() * 16, typeB.tileHeight() * 16);
+                        double dy = abs(double(centerB.y - center.y));
+                        double dx = abs(double(centerB.x - center.x));
 
-            // Check if we are placing more Pylons to figure out how to calculate placement
-            auto count = 0;
-            for (auto type : wall.getRawBuildings()) {
-                if (type == UnitTypes::Protoss_Pylon)
-                    count++;
-            }
-            multiplePylons = count > 1;
+                        angle2 = dx > 0.0 ? atan(dy / dx) * 180.0 / 3.14 : 90.0;
+                        if (abs(abs(angle1) - abs(angle2)) > 30.0)
+                            badAngle = true;
+                    }
+                }
+                return true;
+            };
 
             function<void(TilePosition)> recursiveCheck;
             recursiveCheck = [&](TilePosition start) -> void {
@@ -150,57 +175,43 @@ namespace BWEB::Walls
 
                 for (auto x = start.x - radius; x < start.x + radius; x++) {
                     for (auto y = start.y - radius; y < start.y + radius; y++) {
-                        const TilePosition t(x, y);
-                        auto center = Map::pConvert(t) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
+                        const TilePosition tile(x, y);
+                        auto center = Map::pConvert(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
 
-                        if (!t.isValid() || (multiplePylons && center.getDistance(closestChokeTile(center)) > 128.0))
+                        if (!tile.isValid() || (multiplePylons && center.getDistance(closestChokeTile(center)) > 128.0))
                             continue;
 
-                        // We want to ensure the buildings are being placed at the correct angle compared to the chokepoint, within some tolerance
-                        double angle2 = 0.0;
-                        auto badAngle = false;
-                        if ((multiplePylons || type != UnitTypes::Protoss_Pylon) && !movedStart) {
-                            for (auto piece : currentWall) {
-                                auto tileB = piece.first;
-                                auto typeB = piece.second;
-                                auto centerB = Map::pConvert(tileB) + Position(typeB.tileWidth() * 16, typeB.tileHeight() * 16);
-                                double dy = abs(double(centerB.y - center.y));
-                                double dx = abs(double(centerB.x - center.x));
-
-                                angle2 = dx > 0.0 ? atan(dy / dx) * 180.0 / 3.14 : 90.0;
-                                if (abs(abs(angle1) - abs(angle2)) > 30.0)
-                                    badAngle = true;
-                            }
-
-                            if (badAngle)
-                                continue;
+                        if (!goodAngle(center, type)) {
+                            failedAngle++;
+                            continue;
                         }
 
-                        if (typeIterator == wall.getRawBuildings().end() - 1) {
-                            if (!testPiece(wall, t))
-                                Broodwar << "Test" << endl;
-                            if (!isWallTight(wall, type, t))
-                                Broodwar << "Tight" << endl;
+                        if (!goodPlacement(tile)) {
+                            failedPlacement++;
+                            continue;
+                        }
+
+                        if (!isWallTight(wall, type, tile) && (multiplePylons || type != UnitTypes::Protoss_Pylon)) {
+                            failedTight++;
+                            continue;
                         }
 
                         // If the piece is fine to place
-                        if (testPiece(wall, t) && (isWallTight(wall, type, t) || (!multiplePylons && type == UnitTypes::Protoss_Pylon))) {
+                        // 1) Store the current type, increase the iterator
+                        currentWall[tile] = type;
+                        typeIterator++;
 
-                            // 1) Store the current type, increase the iterator
-                            currentWall[t] = type;
-                            typeIterator++;
+                        // 2) If at the end, score the wall, else, go another layer deeper
+                        if (typeIterator == wall.getRawBuildings().end())
+                            scoreWall();
+                        else
+                            recursiveCheck(start);
 
-                            // 2) If at the end, score the wall, else, go another layer deeper
-                            if (typeIterator == wall.getRawBuildings().end())
-                                scoreWall();
-                            else
-                                recursiveCheck(start);
+                        // 3) Erase this current placement and repeat
+                        if (typeIterator != wall.getRawBuildings().begin())
+                            typeIterator--;
+                        currentWall.erase(tile);
 
-                            // 3) Erase this current placement and repeat
-                            if (typeIterator != wall.getRawBuildings().begin())
-                                typeIterator--;
-                            currentWall.erase(t);
-                        }
                     }
                 }
             };
@@ -213,6 +224,13 @@ namespace BWEB::Walls
                 typeIterator = wall.getRawBuildings().begin();
                 recursiveCheck(start);
             } while (next_permutation(wall.getRawBuildings().begin(), find(wall.getRawBuildings().begin(), wall.getRawBuildings().end(), UnitTypes::Protoss_Pylon)));
+
+            test = Position(endTile);
+            //Broodwar << "Angle: " << failedAngle << endl;
+            //Broodwar << "Placement: " << failedPlacement << endl;
+            //Broodwar << "Tight: " << failedTight << endl;
+            //Broodwar << "Path: " << failedPath << endl;
+
             return !bestWall.empty();
         }
 
@@ -419,16 +437,17 @@ namespace BWEB::Walls
         void initializePathPoints(Wall& wall)
         {
             auto choke = wall.getChokePoint();
-            auto line = Map::lineOfBestFit(wall.getChokePoint());
-            Position n1 = line.first;
-            Position n2 = line.second;
-            auto dx1 = n2.x - n1.x;
-            auto dy1 = n2.y - n1.y;
-            auto dx2 = n1.x - n2.x;
-            auto dy2 = n1.y - n2.y;
-            Position direction1 = Position(-dy1 / 2, dx1 / 2) + Map::pConvert(choke->Center());
-            Position direction2 = Position(-dy2 / 2, dx2 / 2) + Map::pConvert(choke->Center());
-            Position trueDirection = Map::mapBWEM.GetArea(Map::tConvert(direction1)) == wall.getArea() ? direction2 : direction1;
+            auto line = Map::lineOfBestFit(choke);
+            auto n1 = line.first;
+            auto n2 = line.second;
+            auto dist = n1.getDistance(n2);
+            auto dx1 = int((n2.x - n1.x) * 96.0 / dist);
+            auto dy1 = int((n2.y - n1.y) * 96.0 / dist);
+            auto dx2 = int((n1.x - n2.x) * 96.0 / dist);
+            auto dy2 = int((n1.y - n2.y) * 96.0 / dist);
+            auto direction1 = Position(-dy1, dx1) + Map::pConvert(choke->Center());
+            auto direction2 = Position(-dy2, dx2) + Map::pConvert(choke->Center());
+            auto trueDirection = !direction1.isValid() || Map::mapBWEM.GetArea(Map::tConvert(direction1)) == wall.getArea() ? direction2 : direction1;
 
             if (choke == Map::getNaturalChoke()) {
                 initialStart = Map::tConvert(Map::getMainChoke()->Center());
@@ -767,6 +786,7 @@ namespace BWEB::Walls
 
             Broodwar->drawLineMap(Position(p1), Position(p2), Colors::Green);
         }
+        Broodwar->drawCircleMap(test, 6, Colors::Red, true);
     }
 
 }

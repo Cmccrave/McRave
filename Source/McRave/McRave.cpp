@@ -20,11 +20,9 @@
 // 2Gate - opener for GateNexus gets incremented/decremented by 2Gate build and vice versa
 // 2Gate at natural shouldn't transition into defensive version, need a different branch
 // Cannon rush issues
-// Possible to get units stuck between tech buildings
 // Checking if a gateway is queuable/buildable causes it to be unassigned?
 // Andromeda concaves area dont match, so line up weird
 // Units stop doing anything sometimes
-// Circuit Breaker top left, no FFE wall?
 
 // *** TOTEST ***
 // If an enemy floats a CC to an expansion, we don't consider it "taken"
@@ -32,11 +30,6 @@
     // Test lifting buildings
     // Lift in fog / visible
     // Land in fog / visible
-
-// *** Parallel Lines ***
-// Destination 12 o clock spawn issues making parallel lines (offset by +y about 64 pixels?)
-// Neo Moon 5 o clock not making parallel lines at all (no debug drawings either)
-// La Mancha top left
 
 // *** Ideas ***
 // Monitor for overkilling units by hp - (2*nextDmgSource) <= 0 (double damage source to account for a potential miss?)

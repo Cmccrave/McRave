@@ -575,7 +575,7 @@ namespace McRave::Buildings {
                 auto &unit = *u;
 
                 if (unit.getBuildingType().isValid() && unit.getBuildPosition().isValid())
-                    buildingsQueued[unit.getBuildPosition()] = unit.getBuildingType();
+                    buildingsQueued[unit.getBuildPosition()] = unit.getBuildingType();                
             }
 
             // 2) Add up how many more buildings of each type we need

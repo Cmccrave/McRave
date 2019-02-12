@@ -17,11 +17,11 @@ namespace McRave::Horizon {
         Need to test deadzones and squeeze factors still.
         */
 
-        double minThreshold = 0.50;
-        double maxThreshold = 0.75;
+        double minThreshold = 0.40;
+        double maxThreshold = 0.80;
 
         if (BuildOrder::isRush())
-            minThreshold = 0.0, maxThreshold = 0.75;
+            minThreshold = 0.0, maxThreshold = 0.80;
 
         auto enemyLocalGroundStrength = 0.0, allyLocalGroundStrength = 0.0;
         auto enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;

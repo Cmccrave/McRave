@@ -113,7 +113,7 @@ namespace McRave::BuildOrder::Protoss {
             lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
             getOpening =		s < 70;
 
-            hideTech =			currentOpener == "Main" && com(Protoss_Dark_Templar) < 1;           
+            hideTech =			currentOpener == "Main" && com(Protoss_Zealot) < 2;           
             firstUnit =			vis(Protoss_Zealot) >= 3 ? Protoss_Dark_Templar : UnitTypes::None;
 
             itemQueue[Protoss_Nexus] =				Item(1);
