@@ -570,6 +570,19 @@ namespace McRave::Buildings {
             queuedGas = 0;
             buildingsQueued.clear();
 
+            const auto shouldQueue = [&](UnitInfo& worker, TilePosition tile, UnitType type) {
+                auto center = Position(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
+                auto mineralIncome = (Workers::getMineralWorkers() - 1) * 0.045;
+                auto gasIncome = (Workers::getGasWorkers() - 1) * 0.07;
+                auto speed = worker.getSpeed();
+                auto dist = mapBWEM.GetArea(worker.getTilePosition()) ? BWEB::Map::getGroundDistance(worker.getPosition(), center) : worker.getPosition().getDistance(Position(worker.getBuildPosition()));
+                auto time = (dist / speed) + 50.0;
+                auto enoughGas = worker.getBuildingType().gasPrice() > 0 ? Broodwar->self()->gas() + int(gasIncome * time) >= worker.getBuildingType().gasPrice() : true;
+                auto enoughMins = worker.getBuildingType().mineralPrice() > 0 ? Broodwar->self()->minerals() + int(mineralIncome * time) >= worker.getBuildingType().mineralPrice() : true;
+
+                return enoughGas && enoughMins;
+            };
+
             // 1) Add up how many buildings we have assigned to workers
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
@@ -622,7 +635,7 @@ namespace McRave::Buildings {
                         return u.getRole() == Role::Worker && (!u.hasResource() || u.getResource().getType().isMineralField()) && u.getBuildingType() == None;
                     });
 
-                    if (here.isValid() && builder) {
+                    if (here.isValid() && builder && shouldQueue(*builder, here, building)) {
                         builder->setBuildingType(building);
                         builder->setBuildPosition(here);
                         buildingsQueued[here] = building;

@@ -296,7 +296,7 @@ namespace McRave::BuildOrder
             return;
         }
 
-        bool testing = true;
+        bool testing = false;
         if (testing) {
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 currentBuild = "FFE";

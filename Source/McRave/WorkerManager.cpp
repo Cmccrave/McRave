@@ -59,18 +59,6 @@ namespace McRave::Workers {
             if (!worker.getBuildingType().isValid() || !worker.getBuildPosition().isValid())
                 return false;
 
-            const auto shouldMoveToBuild = [&]() {
-                auto mineralIncome = (minWorkers - 1) * 0.045;
-                auto gasIncome = (gasWorkers - 1) * 0.07;
-                auto speed = worker.getType().topSpeed();
-                auto dist = mapBWEM.GetArea(worker.getTilePosition()) ? BWEB::Map::getGroundDistance(worker.getPosition(), center) : worker.getPosition().getDistance(Position(worker.getBuildPosition()));
-                auto time = (dist / speed) + 50.0;
-                auto enoughGas = worker.getBuildingType().gasPrice() > 0 ? Broodwar->self()->gas() + int(gasIncome * time) >= worker.getBuildingType().gasPrice() : true;
-                auto enoughMins = worker.getBuildingType().mineralPrice() > 0 ? Broodwar->self()->minerals() + int(mineralIncome * time) >= worker.getBuildingType().mineralPrice() : true;
-
-                return enoughGas && enoughMins;
-            };
-
             // 1) Attack any enemies inside the build area
             if (worker.hasTarget() && worker.getTarget().getPosition().getDistance(worker.getPosition()) < 160 && (Util::rectangleIntersect(topLeft, botRight, worker.getTarget().getPosition()) || worker.getTarget().getPosition().getDistance(center) < 256.0)) {
                 Command::attack(w);
@@ -85,11 +73,10 @@ namespace McRave::Workers {
                 return true;
             }
 
-            // 3) Move to build if we have the resources
-            else if (shouldMoveToBuild()) {
+            // 3) Move to build
+            else {
 
                 // TODO: Generate a path and check for threat
-
                 worker.setDestination(center);
 
                 if (worker.getPosition().getDistance(center) > 32.0 + (96.0 * (double)worker.getBuildingType().isRefinery())) {
@@ -384,4 +371,7 @@ namespace McRave::Workers {
         unit.getResource().removeTargetedBy(u);
         unit.setResource(nullptr);
     }
+
+    int getMineralWorkers() { return minWorkers; }
+    int getGasWorkers() { return gasWorkers; }
 }

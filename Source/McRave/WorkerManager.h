@@ -5,4 +5,7 @@ namespace McRave::Workers {
 
     void onFrame();
     void removeUnit(const std::shared_ptr<UnitInfo>&);
+
+    int getMineralWorkers();
+    int getGasWorkers();
 }

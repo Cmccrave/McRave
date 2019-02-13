@@ -269,6 +269,11 @@ namespace McRave::BuildOrder::Protoss {
             // Change Transition
             if (Strategy::enemyRush())
                 currentTransition = "Defensive";
+
+            // Change Build
+            if (Strategy::enemyPressure()) {
+
+            }
         }
 
         // Openers
