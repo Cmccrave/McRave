@@ -139,8 +139,17 @@ namespace McRave::Combat {
             }
 
             // If target is close, set as destination
-            else if (moveToTarget && unit.getTarget().getPosition().isValid() && Grids::getMobility(unit.getEngagePosition()) > 0)
-                unit.setDestination(unit.getTarget().getPosition());
+            else if (moveToTarget && unit.getTarget().getPosition().isValid() && Grids::getMobility(unit.getEngagePosition()) > 0) {
+                auto timeToEngage = (unit.getEngDist() / unit.getSpeed());
+
+                if (unit.getTarget().unit()->exists()) {
+                    Position targetDestination = unit.getTarget().getPosition() + Position(int(unit.getTarget().unit()->getVelocityX() * timeToEngage), int(unit.getTarget().unit()->getVelocityY() * timeToEngage));
+                    targetDestination = Util::clipToMap(targetDestination);
+                    unit.setDestination(targetDestination);
+                }
+                else
+                    unit.setDestination(unit.getTarget().getPosition());
+            }
 
             else if (Terrain::getAttackPosition().isValid())
                 unit.setDestination(Terrain::getAttackPosition());

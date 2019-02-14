@@ -116,8 +116,11 @@ namespace McRave::Command {
         const auto shouldAttack = [&]() {
             if (unit.getRole() == Role::Combat) {
 
+                if (!Util::unitInRange(unit))
+                    return false;
+
                 // Check if we can get free attacks
-                if (Util::getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT && Util::unitInRange(unit))
+                if (Util::getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT/* && Util::unitInRange(unit)*/)
                     return true;
                 return unit.getLocalState() == LocalState::Attack;
             }

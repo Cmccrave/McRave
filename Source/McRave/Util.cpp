@@ -48,7 +48,7 @@ namespace McRave::Util {
             return false;
 
         double widths = unit.getTarget().getType().width() + unit.getType().width();
-        double allyRange = (widths / 2) + (unit.getTarget().getType().isFlyer() ? unit.getAirReach() : unit.getGroundReach());
+        double allyRange = (widths / 2) + (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
 
         // HACK: Reavers have a weird ground distance range, try to reduce the amount of times Reavers try to engage
         // TODO: Add a Reaver ground dist check
@@ -318,7 +318,7 @@ namespace McRave::Util {
         return newLine;
     }
 
-    Position getConcavePosition(UnitInfo& unit, int radius, BWEM::Area const * area, Position here)
+    Position getConcavePosition(UnitInfo& unit, double radius, BWEM::Area const * area, Position here)
     {
         auto center = WalkPositions::None;
         auto distBest = DBL_MAX;
@@ -409,8 +409,8 @@ namespace McRave::Util {
 
     Position clipToMap(Position source)
     {
-        source.x = clamp(source.x, 0, Broodwar->mapWidth());
-        source.y = clamp(source.y, 0, Broodwar->mapHeight());
+        source.x = clamp(source.x, 0, Broodwar->mapWidth() * 32);
+        source.y = clamp(source.y, 0, Broodwar->mapHeight() * 32);
         return source;
     }
 }

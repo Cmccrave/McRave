@@ -308,7 +308,8 @@ namespace McRave::BuildOrder
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 currentBuild = "HatchPool";
                 currentOpener = "12Hatch";
-                currentTransition = "2HatchMuta";
+                currentTransition = "3HatchLing";
+                isBuildPossible(currentBuild, currentOpener);
                 return;
             }
         }
@@ -349,7 +350,7 @@ namespace McRave::BuildOrder
             myBuilds["PoolHatch"].transitions={ "2HatchMuta", "2HatchHydra" };
 
             myBuilds["HatchPool"].openers ={ "9Hatch" , "10Hatch", "12Hatch" };
-            myBuilds["HatchPool"].transitions={ "2HatchMuta", "2HatchHydra" };
+            myBuilds["HatchPool"].transitions={ "3HatchLing", "2HatchMuta", "2HatchHydra" };
 
             myBuilds["PoolLair"].openers ={ "9Pool" };
             myBuilds["PoolLair"].transitions={ "1HatchMuta", "1HatchLurker" };

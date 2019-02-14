@@ -29,8 +29,8 @@ namespace McRave::Targets{
                     || (target.getType().isWorker())
                     || (!enemyHasGround && !enemyHasAir);
 
-                // Zealot: Don't attack non threatening workers in our territory
-                if ((unit.getType() == UnitTypes::Protoss_Zealot && target.getType().isWorker() && !target.isThreatening() && Terrain::isInAllyTerritory(target.getTilePosition()))
+                // Melee: Don't attack non threatening workers in our territory
+                if ((unit.getGroundRange() <= 32.0 && target.getType().isWorker() && !target.isThreatening() && Terrain::isInAllyTerritory(target.getTilePosition()) && !target.hasAttackedRecently() && !Terrain::isInEnemyTerritory(target.getTilePosition()))
 
                     // If target is an egg, larva, scarab or spell
                     || (target.getType() == UnitTypes::Zerg_Egg || target.getType() == UnitTypes::Zerg_Larva || target.getType() == UnitTypes::Protoss_Scarab || target.getType().isSpell())
@@ -55,6 +55,9 @@ namespace McRave::Targets{
 
                     // Don't attack units that don't matter
                     || !targetMatters
+
+                    // Testing some ling stuff, don't attack Vultures
+                    || (unit.getType() == UnitTypes::Zerg_Zergling && target.getType() == UnitTypes::Terran_Vulture /*&& target.getSpeed() > unit.getSpeed()*/)
 
                     // DT: Don't attack Vultures
                     || (unit.getType() == UnitTypes::Protoss_Dark_Templar && target.getType() == UnitTypes::Terran_Vulture)

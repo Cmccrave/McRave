@@ -118,14 +118,14 @@ namespace McRave
     bool UnitInfo::command(BWAPI::UnitCommandType command, BWAPI::Position here, bool overshoot)
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames
-        bool attackCooldown = Broodwar->getFrameCount() - lastAttackFrame <= minStopFrame - Broodwar->getRemainingLatencyFrames();
+        bool attackCooldown = Broodwar->getFrameCount() - lastAttackFrame <= minStopFrame - Broodwar->getLatencyFrames();
 
         if (attackCooldown)
             return false;
 
         // Check if this is a new order
         const auto newOrder = [&]() {
-            auto canIssue = Broodwar->getFrameCount() - thisUnit->getLastCommandFrame() > Broodwar->getRemainingLatencyFrames();
+            auto canIssue = Broodwar->getFrameCount() - thisUnit->getLastCommandFrame() > Broodwar->getLatencyFrames();
             auto newOrderPosition = thisUnit->getOrderTargetPosition() != here;
             return canIssue && newOrderPosition;
         };
@@ -158,14 +158,14 @@ namespace McRave
     bool UnitInfo::command(BWAPI::UnitCommandType command, UnitInfo& targetUnit)
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames
-        bool attackCooldown = Broodwar->getFrameCount() - lastAttackFrame <= minStopFrame - Broodwar->getRemainingLatencyFrames();
+        bool attackCooldown = Broodwar->getFrameCount() - lastAttackFrame <= minStopFrame - Broodwar->getLatencyFrames();
 
         if (attackCooldown)
             return false;
 
         // Check if this is a new order
         const auto newOrder = [&]() {
-            auto canIssue = Broodwar->getFrameCount() - thisUnit->getLastCommandFrame() > Broodwar->getRemainingLatencyFrames();
+            auto canIssue = Broodwar->getFrameCount() - thisUnit->getLastCommandFrame() > Broodwar->getLatencyFrames();
             auto newOrderTarget = thisUnit->getOrderTarget() != targetUnit.unit();
             return canIssue && newOrderTarget;
         };
@@ -216,8 +216,6 @@ namespace McRave
                 if (constructingClose)
                     return true;
                 if (close || attacked)
-                    return true;
-                if (atHome && Strategy::defendChoke())
                     return true;
             }
             // Unit: close, close to shield battery, in territory while defending choke

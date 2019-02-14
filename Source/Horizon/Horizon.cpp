@@ -20,8 +20,10 @@ namespace McRave::Horizon {
         double minThreshold = 0.40;
         double maxThreshold = 0.80;
 
-        if (BuildOrder::isRush())
-            minThreshold = 0.0, maxThreshold = 0.80;
+        if (BuildOrder::isRush()) {
+            minThreshold = 0.00;
+            maxThreshold = 0.60;
+        }
 
         auto enemyLocalGroundStrength = 0.0, allyLocalGroundStrength = 0.0;
         auto enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;
@@ -216,7 +218,7 @@ namespace McRave::Horizon {
         };
 
         if (!shouldIgnoreSim()) {
-            simTerrain();
+            //simTerrain();
             simEnemies();
             simMyUnits();
         }
@@ -255,10 +257,10 @@ namespace McRave::Horizon {
         auto belowLimits = unit.getType().isFlyer() ? (belowAirLimits || (sync && belowGrdLimits)) : (belowGrdLimits || (sync && belowAirLimits));
 
         // If above/below thresholds, it's a sim win/loss
-        if (unit.getSimValue() >= maxThreshold /*&& !belowLimits*/) {
+        if (unit.getSimValue() >= maxThreshold && !belowLimits) {
             unit.setSimState(SimState::Win);
         }
-        else if (unit.getSimValue() <= minThreshold /*|| belowLimits*/ || (unit.getSimState() == SimState::None && unit.getSimValue() < maxThreshold)) {
+        else if (unit.getSimValue() <= minThreshold || belowLimits || (unit.getSimState() == SimState::None && unit.getSimValue() < maxThreshold)) {
             unit.setSimState(SimState::Loss);
         }
     }

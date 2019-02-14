@@ -73,6 +73,19 @@ namespace McRave::BuildOrder::Zerg {
                 itemQueue[Zerg_Lair] =					Item(Broodwar->self()->gas() > 90);
                 itemQueue[Zerg_Spire] =                 Item(com(Zerg_Lair) >= 1);
             }
+
+            if (currentTransition == "3HatchLing") {
+                getOpening =    s < 60;
+                droneLimit =    13;
+                gasLimit =      lingSpeed() ? 0 : 3;
+                lingLimit =     INT_MAX;
+                bookSupply =    vis(Zerg_Overlord) < 3;
+                rush =          true;
+
+                itemQueue[Zerg_Hatchery] =              Item(2 + (s >= 26));
+                itemQueue[Zerg_Extractor] =             Item(vis(Zerg_Hatchery) >= 3);
+                itemQueue[Zerg_Overlord] =              Item(1 + (s >= 18) + (s >= 26));
+            }
         }
     }
 

@@ -86,7 +86,7 @@ namespace McRave::Workers {
                     //else if (worker.unit()->getOrderTargetPosition() != center)
                     //    Command::move(w);
                 }
-                else if (worker.unit()->getOrder() != Orders::PlaceBuilding || worker.unit()->isIdle())
+                else if (worker.unit()->getOrder() != Orders::PlaceBuilding || worker.unit()->getLastCommand().getType() != UnitCommandTypes::Build)
                     worker.unit()->build(worker.getBuildingType(), worker.getBuildPosition());                
                 return true;
             }
