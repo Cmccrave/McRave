@@ -343,11 +343,12 @@ namespace McRave::Util {
         }
 
         const auto checkbest = [&](WalkPosition w) {
+            auto t = TilePosition(w);
             auto p = Position(w) + Position(4, 4);
             auto dist = p.getDistance(Position(center));
 
             if (!w.isValid()
-                || area && mapBWEM.GetArea(w) != area
+                || (!Terrain::isInAllyTerritory(t) && area && mapBWEM.GetArea(w) != area)
                 || dist < radius
                 || dist > distBest
                 || Command::overlapsActions(unit.unit(), unit.getType(), p, 8)

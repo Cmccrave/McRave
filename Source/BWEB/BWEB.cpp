@@ -259,10 +259,8 @@ namespace BWEB::Map
         for (int x = 0; x < Broodwar->mapWidth(); x++) {
             for (int y = 0; y < Broodwar->mapHeight(); y++) {
                 TilePosition t(x, y);
-                //if (overlapGrid[x][y] >= 1)
-                    //Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Black, false);
-                if (overlapGrid[x][y] >= 1)
-                    Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Brown, false);
+                if (reserveGrid[x][y] >= 1)
+                    Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Black, false);
             }
         }
 

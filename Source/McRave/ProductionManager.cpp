@@ -590,7 +590,7 @@ namespace McRave::Production {
                 if (!building.unit()
                     || building.getRole() != Role::Production
                     || !building.unit()->isCompleted()
-                    || building.getRemainingTrainFrames() >= Broodwar->getRemainingLatencyFrames())
+                    || building.getRemainingTrainFrames() >= Broodwar->getLatencyFrames())
                     continue;
 
                 // TODO: Combine into one - iterate all commands and return when true

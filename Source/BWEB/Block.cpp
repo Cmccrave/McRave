@@ -130,6 +130,7 @@ namespace BWEB::Blocks
 
 
             // HACK: Added a block that allows a good shield battery placement
+            tileBest = TilePositions::Invalid;
             start = (TilePosition)Map::getMainChoke()->Center();
             distBest = DBL_MAX;
             for (auto x = start.x - 12; x <= start.x + 16; x++) {
@@ -150,7 +151,8 @@ namespace BWEB::Blocks
                     }
                 }
             }
-            insertBlock(tileBest, { Piece::Small, Piece::Medium });
+            if (tileBest.isValid())
+                insertBlock(tileBest, { Piece::Small, Piece::Medium });
         }
 
         vector<Piece> whatPieces(int width, int height)

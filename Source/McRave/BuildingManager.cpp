@@ -135,13 +135,13 @@ namespace McRave::Buildings {
                     if (Broodwar->self()->visibleUnitCount(Protoss_Pylon) == 1 && Strategy::getEnemyBuild() == "2Gate")
                         power = true;
 
-                    // Don't let a Stargate get placed below any medium pieces, risks getting units stuck
-                    if (building == Protoss_Stargate && !block.getMediumTiles().empty())
-                        continue;
-
                     if (!power || !solo)
                         continue;
                 }
+
+                // Don't let a Stargate get placed below any medium pieces, risks getting units stuck
+                if (building == Protoss_Stargate && !block.getMediumTiles().empty())
+                    continue;
 
                 // Setup placements
                 if (building.tileWidth() == 4)
@@ -440,7 +440,7 @@ namespace McRave::Buildings {
                 placement = findPylonLocation();
 
             // Default to finding a production location
-            if (!placement.isValid())
+            if (!placement.isValid() && !building.isResourceDepot())
                 placement = closestProdLocation(building, BWEB::Map::getMainPosition());
 
             return placement;
@@ -570,25 +570,12 @@ namespace McRave::Buildings {
             queuedGas = 0;
             buildingsQueued.clear();
 
-            const auto shouldQueue = [&](UnitInfo& worker, TilePosition tile, UnitType type) {
-                auto center = Position(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
-                auto mineralIncome = (Workers::getMineralWorkers() - 1) * 0.045;
-                auto gasIncome = (Workers::getGasWorkers() - 1) * 0.07;
-                auto speed = worker.getSpeed();
-                auto dist = mapBWEM.GetArea(worker.getTilePosition()) ? BWEB::Map::getGroundDistance(worker.getPosition(), center) : worker.getPosition().getDistance(Position(worker.getBuildPosition()));
-                auto time = (dist / speed) + 50.0;
-                auto enoughGas = worker.getBuildingType().gasPrice() > 0 ? Broodwar->self()->gas() + int(gasIncome * time) >= worker.getBuildingType().gasPrice() : true;
-                auto enoughMins = worker.getBuildingType().mineralPrice() > 0 ? Broodwar->self()->minerals() + int(mineralIncome * time) >= worker.getBuildingType().mineralPrice() : true;
-
-                return enoughGas && enoughMins;
-            };
-
             // 1) Add up how many buildings we have assigned to workers
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
 
                 if (unit.getBuildingType().isValid() && unit.getBuildPosition().isValid())
-                    buildingsQueued[unit.getBuildPosition()] = unit.getBuildingType();                
+                    buildingsQueued[unit.getBuildPosition()] = unit.getBuildingType();
             }
 
             // 2) Add up how many more buildings of each type we need
@@ -635,7 +622,7 @@ namespace McRave::Buildings {
                         return u.getRole() == Role::Worker && (!u.hasResource() || u.getResource().getType().isMineralField()) && u.getBuildingType() == None;
                     });
 
-                    if (here.isValid() && builder && shouldQueue(*builder, here, building)) {
+                    if (here.isValid() && builder && Workers::shouldMoveToBuild(*builder, here, building)) {
                         builder->setBuildingType(building);
                         builder->setBuildPosition(here);
                         buildingsQueued[here] = building;

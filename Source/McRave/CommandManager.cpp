@@ -87,7 +87,7 @@ namespace McRave::Command {
         else if (unit.hasTarget() && Units::getSplashTargets().find(unit.unit()) != Units::getSplashTargets().end()) {
             if (unit.hasTransport())
                 unit.command(UnitCommandTypes::Right_Click_Unit, unit.getTransport());
-            else if (unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames() && unit.getTarget().unit()->exists())
+            else if (unit.unit()->getGroundWeaponCooldown() < Broodwar->getLatencyFrames() && unit.getTarget().unit()->exists())
                 unit.command(UnitCommandTypes::Attack_Unit, unit.getTarget());
             else
                 unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition(), true);
@@ -109,7 +109,7 @@ namespace McRave::Command {
                 return false;
 
             auto cooldown = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() : unit.unit()->getGroundWeaponCooldown();
-            return cooldown < Broodwar->getRemainingLatencyFrames();
+            return cooldown < Broodwar->getLatencyFrames();
         };
 
         // Should the unit execute an attack command
@@ -169,7 +169,7 @@ namespace McRave::Command {
 
         // Can the unit approach its target
         const auto canApproach = [&]() {
-            auto canAttack = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() < Broodwar->getRemainingLatencyFrames() : unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames();
+            auto canAttack = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() < Broodwar->getLatencyFrames() : unit.unit()->getGroundWeaponCooldown() < Broodwar->getLatencyFrames();
             if (unit.getSpeed() <= 0.0 || canAttack)
                 return false;
             return true;
@@ -223,7 +223,7 @@ namespace McRave::Command {
             auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
             double distance = (unit.getType().isFlyer() || Terrain::isIslandMap()) ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
             double threat = exp(Util::getHighestThreat(w, unit));
-            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0;
+            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0 + log(1.0 / Grids::getAGroundCluster(w));
             double score = grouping / (threat * distance);
             return score;
         };
@@ -299,13 +299,13 @@ namespace McRave::Command {
             auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
             double distance = unit.hasTarget() ? 1.0 / (p.getDistance(unit.getTarget().getPosition())) : p.getDistance(BWEB::Map::getMainPosition());
             double threat = Util::getHighestThreat(w, unit);
-            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0;
+            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0 + log(1.0 / Grids::getAGroundCluster(w));
             double score = grouping / (threat * distance);
             return score;
         };
 
         const auto canKite = [&]() {
-            auto canAttack = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() < Broodwar->getRemainingLatencyFrames() : unit.unit()->getGroundWeaponCooldown() < Broodwar->getRemainingLatencyFrames();
+            auto canAttack = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() < Broodwar->getLatencyFrames() : unit.unit()->getGroundWeaponCooldown() < Broodwar->getLatencyFrames();
             if (unit.getSpeed() <= 0.0 || canAttack)
                 return false;
             return true;
@@ -503,7 +503,7 @@ namespace McRave::Command {
             auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
             double distance = ((unit.getType().isFlyer() || Terrain::isIslandMap()) ? log(p.getDistance(BWEB::Map::getMainPosition())) : Grids::getDistanceHome(w));
             double threat = Util::getHighestThreat(w, unit);
-            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0;
+            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0 + log(1.0 / Grids::getAGroundCluster(w));
             double score = grouping / (threat * distance);
             return score;
         };

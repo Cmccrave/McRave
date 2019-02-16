@@ -357,20 +357,31 @@ namespace McRave::Workers {
         }
     }
 
-    void onFrame()
-    {
+    void onFrame() {
         Visuals::startPerfTest();
         updateWorkers();
         Visuals::endPerfTest("Workers");
     }
 
-    void removeUnit(const shared_ptr<UnitInfo>& u)
-    {
+    void removeUnit(const shared_ptr<UnitInfo>& u) {
         auto &unit = *u;
         unit.getResource().getType().isRefinery() ? gasWorkers-- : minWorkers--;
         unit.getResource().removeTargetedBy(u);
         unit.setResource(nullptr);
     }
+
+    bool shouldMoveToBuild(UnitInfo& worker, TilePosition tile, UnitType type) {
+        auto center = Position(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
+        auto mineralIncome = (Workers::getMineralWorkers() - 1) * 0.045;
+        auto gasIncome = (Workers::getGasWorkers() - 1) * 0.07;
+        auto speed = worker.getSpeed();
+        auto dist = mapBWEM.GetArea(worker.getTilePosition()) ? BWEB::Map::getGroundDistance(worker.getPosition(), center) : worker.getPosition().getDistance(Position(worker.getBuildPosition()));
+        auto time = (dist / speed) + 50.0;
+        auto enoughGas = worker.getBuildingType().gasPrice() > 0 ? Broodwar->self()->gas() + int(gasIncome * time) >= worker.getBuildingType().gasPrice() : true;
+        auto enoughMins = worker.getBuildingType().mineralPrice() > 0 ? Broodwar->self()->minerals() + int(mineralIncome * time) >= worker.getBuildingType().mineralPrice() : true;
+
+        return enoughGas && enoughMins;
+    };
 
     int getMineralWorkers() { return minWorkers; }
     int getGasWorkers() { return gasWorkers; }

@@ -87,7 +87,7 @@ namespace McRave::Transports {
             // Check if this unit is ready to fight
             const auto readyToFight = [&](const shared_ptr<UnitInfo>& c) {
                 auto &cargo = *c;
-                auto attackCooldown = (Broodwar->getFrameCount() - cargo.getLastAttackFrame() <= 60 - Broodwar->getRemainingLatencyFrames());
+                auto attackCooldown = (Broodwar->getFrameCount() - cargo.getLastAttackFrame() <= 60 - Broodwar->getLatencyFrames());
 
                 auto reaver = cargo.getType() == UnitTypes::Protoss_Reaver;
                 auto ht = cargo.getType() == UnitTypes::Protoss_High_Templar;
@@ -116,7 +116,7 @@ namespace McRave::Transports {
             // Check if this unit is ready to be picked up
             const auto readyToPickup = [&](const shared_ptr<UnitInfo>& c) {
                 auto &cargo = *c;
-                auto attackCooldown = (Broodwar->getFrameCount() - cargo.getLastAttackFrame() <= 60 - Broodwar->getRemainingLatencyFrames());
+                auto attackCooldown = (Broodwar->getFrameCount() - cargo.getLastAttackFrame() <= 60 - Broodwar->getLatencyFrames());
                 auto reaver = cargo.getType() == UnitTypes::Protoss_Reaver;
                 auto ht = cargo.getType() == UnitTypes::Protoss_High_Templar;
                 auto threat = Grids::getEGroundThreat(cargo.getWalkPosition()) > 0.0;
