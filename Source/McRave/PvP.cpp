@@ -108,8 +108,6 @@ namespace McRave::BuildOrder::Protoss {
                 currentTransition = "DT";
             else if (Strategy::enemyPressure() && currentOpener == "Natural")
                 currentTransition = "Defensive";
-            else if (com(Protoss_Zealot) >= 4 && Units::getEnemyCount(Protoss_Zealot) > 4)
-                currentTransition = "Reaver";
 
             // Change Opener
 
@@ -119,7 +117,7 @@ namespace McRave::BuildOrder::Protoss {
         // Transitions
         if (currentTransition == "DT") {
             // https://liquipedia.net/starcraft/2_Gateway_Dark_Templar_(vs._Protoss)
-            if (Strategy::enemyRush())
+            if (Strategy::getEnemyBuild() == "2Gate")
                 PvP2GateDefensive();
             else {
                 lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
@@ -293,8 +291,12 @@ namespace McRave::BuildOrder::Protoss {
             desiredDetection =  UnitTypes::Protoss_Forge;
 
             // HACK
-            if (Strategy::enemyRush())
+            if (Strategy::enemyRush()) {
+                auto enemyMoreZealots = com(Protoss_Zealot) <= Units::getEnemyCount(Protoss_Zealot);
                 zealotLimit = INT_MAX;
+                vis(Protoss_Dragoon) >= 2 ? 3 : 1;
+                itemQueue[Protoss_Shield_Battery] =			Item(enemyMoreZealots && vis(Protoss_Zealot) >= 2 && vis(Protoss_Pylon) >= 2);
+            }
 
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 54) + (2 * (s >= 62)));
             itemQueue[Protoss_Assimilator] =		Item(s >= 32);

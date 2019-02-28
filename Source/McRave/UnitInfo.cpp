@@ -194,8 +194,10 @@ namespace McRave
         if ((burrowed || (thisUnit && thisUnit->exists() && thisUnit->isCloaked())) && !Command::overlapsAllyDetection(position) || Stations::getMyStations().size() > 2)
             return false;
 
+        auto temp = groundRange > 32.0 ? groundReach / 2 : groundReach / 5;
+
         // Define "close" - TODO: define better
-        auto close = position.getDistance(Terrain::getDefendPosition()) < groundReach / 2;
+        auto close = position.getDistance(Terrain::getDefendPosition()) < temp;
         auto atHome = Terrain::isInAllyTerritory(tilePosition);
         auto manner = position.getDistance(Terrain::getMineralHoldPosition()) < 256.0;
         auto exists = thisUnit && thisUnit->exists();
