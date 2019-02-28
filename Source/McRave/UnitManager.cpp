@@ -88,9 +88,8 @@ namespace McRave::Units {
             }
 
             // Check if this unit should scout
-            if (BWEB::Map::getNaturalChoke() && BuildOrder::shouldScout() && getMyRoleCount(Role::Scout) < Scouts::getScoutCount() && Broodwar->getFrameCount() - scoutDeadFrame > 500) {
-                auto type = Broodwar->self()->getRace().getWorker();
-                auto scout = Util::getClosestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
+            if (BWEB::Map::getNaturalChoke() && BuildOrder::shouldScout() && getMyRoleCount(Role::Scout) < Scouts::getScoutCount() && Broodwar->getFrameCount() - scoutDeadFrame > 240) {
+                auto scout = Util::getClosestUnitGround(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
                     return u.getRole() == Role::Worker && u.getBuildingType() == UnitTypes::None && !u.unit()->isCarryingMinerals() && !u.unit()->isCarryingGas();
                 });
 
@@ -101,8 +100,7 @@ namespace McRave::Units {
                 }
             }
             else if (getMyRoleCount(Role::Scout) > Scouts::getScoutCount()) {
-                auto here = Terrain::getEnemyStartingPosition().isValid() ? Terrain::getEnemyStartingPosition() : BWEB::Map::getNaturalPosition();
-                auto scout = Util::getClosestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
+                auto scout = Util::getClosestUnitGround(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
                     return u.getRole() == Role::Scout;
                 });
                 

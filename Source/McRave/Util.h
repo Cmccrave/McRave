@@ -25,6 +25,27 @@ namespace McRave::Util {
     }
 
     template<typename F>
+    const std::shared_ptr<UnitInfo> getFurthestUnit(BWAPI::Position here, PlayerState player, F &&pred) {
+        auto distBest = 0.0;
+        auto &units = Units::getUnits(player);
+        std::shared_ptr<UnitInfo> best = nullptr;
+
+        for (auto &u : units) {
+            auto &unit = *u;
+
+            if (!unit.unit() || !pred(unit))
+                continue;
+
+            double dist = here.getDistance(unit.getPosition());
+            if (dist > distBest) {
+                best = u;
+                distBest = dist;
+            }
+        }
+        return best;
+    }
+
+    template<typename F>
     const std::shared_ptr<UnitInfo> getClosestUnitGround(BWAPI::Position here, PlayerState player, F &&pred) {
         auto distBest = DBL_MAX;
         auto &units = Units::getUnits(player);
