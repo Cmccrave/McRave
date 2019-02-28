@@ -195,7 +195,7 @@ namespace McRave
             return false;
 
         // Define "close" - TODO: define better
-        auto close = (groundRange > 32.0 || Terrain::isDefendNatural()) && position.getDistance(Terrain::getDefendPosition()) < groundReach / 2;
+        auto close = position.getDistance(Terrain::getDefendPosition()) < groundReach / 2;
         auto atHome = Terrain::isInAllyTerritory(tilePosition);
         auto manner = position.getDistance(Terrain::getMineralHoldPosition()) < 256.0;
         auto exists = thisUnit && thisUnit->exists();

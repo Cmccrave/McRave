@@ -307,7 +307,7 @@ namespace McRave::Strategy {
         void checkEnemyRush()
         {
             // Rush builds are immediately aggresive builds
-            rush = Units::getSupply() < 80 && (enemyBuild == "BBS" || enemyBuild == "2Gate" || enemyBuild == "5Pool" || enemyBuild == "4Pool");
+            rush = Units::getSupply() < 90 && (enemyBuild == "BBS" || enemyBuild == "2Gate" || enemyBuild == "5Pool" || enemyBuild == "4Pool");
         }
 
         void checkEnemyPressure()

@@ -125,7 +125,7 @@ namespace McRave::BuildOrder
                     if (opener == "Proxy")
                         return false;
                     if (opener == "Natural")
-                        return z || p;
+                        return z /*|| p*/;
                     if (opener == "Main")
                         return true;
                 }

@@ -43,7 +43,7 @@ namespace McRave::BuildOrder::Protoss {
 
     void PvP2GateDefensive() {
 
-        auto enemyMoreZealots = com(Protoss_Zealot) < Units::getEnemyCount(Protoss_Zealot);
+        auto enemyMoreZealots = com(Protoss_Zealot) <= Units::getEnemyCount(Protoss_Zealot);
 
         gasLimit =			(com(Protoss_Cybernetics_Core) && s >= 36) ? INT_MAX : 0;
         getOpening =		com(Protoss_Dark_Templar) <= 2 && s < 80;
@@ -119,18 +119,22 @@ namespace McRave::BuildOrder::Protoss {
         // Transitions
         if (currentTransition == "DT") {
             // https://liquipedia.net/starcraft/2_Gateway_Dark_Templar_(vs._Protoss)
-            lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
-            getOpening =		com(Protoss_Dark_Templar) <= 2 && s < 80;
-            firstUpgrade =      UpgradeTypes::None;
-            zealotLimit =       INT_MAX;
+            if (Strategy::enemyRush())
+                PvP2GateDefensive();
+            else {
+                lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
+                getOpening =		s < 80;
+                firstUpgrade =      UpgradeTypes::None;
+                zealotLimit =       INT_MAX;
 
-            hideTech =			currentOpener == "Main" && com(Protoss_Zealot) < 2;
-            firstUnit =			Protoss_Dark_Templar;
-            desiredDetection =  UnitTypes::Protoss_Forge;
+                hideTech =			currentOpener == "Main" && com(Protoss_Zealot) < 2;
+                firstUnit =			Protoss_Dark_Templar;
+                desiredDetection =  UnitTypes::Protoss_Forge;
 
-            itemQueue[Protoss_Nexus] =				Item(1);
-            itemQueue[Protoss_Assimilator] =		Item(s >= 44);
-            itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 56);
+                itemQueue[Protoss_Nexus] =				Item(1);
+                itemQueue[Protoss_Assimilator] =		Item(s >= 44);
+                itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 56);
+            }
         }
         else if (currentTransition == "Expand") {
             // https://liquipedia.net/starcraft/2_Gate_(vs._Protoss)#10.2F12_Gateway_Expand
@@ -202,7 +206,7 @@ namespace McRave::BuildOrder::Protoss {
 
         // Openers
         if (currentOpener == "1Zealot") {
-            zealotLimit = vis(Protoss_Cybernetics_Core) > 0 ? Units::getEnemyCount(UnitTypes::Protoss_Zealot) : 1;
+            zealotLimit = vis(Protoss_Cybernetics_Core) > 0 ? max(2, Units::getEnemyCount(UnitTypes::Protoss_Zealot)) : 1;
 
             itemQueue[Protoss_Nexus] =				Item(1);
             itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
@@ -284,9 +288,13 @@ namespace McRave::BuildOrder::Protoss {
             getOpening =        s < 140 && Broodwar->getFrameCount() < 10000;
             playPassive =       !firstReady();
 
-            gasLimit =          Strategy::enemyRush() ? 1 : 3;
+            gasLimit =          INT_MAX;
             zealotLimit =       vis(Protoss_Cybernetics_Core) > 0 ? 2 : 1;
             desiredDetection =  UnitTypes::Protoss_Forge;
+
+            // HACK
+            if (Strategy::enemyRush())
+                zealotLimit = INT_MAX;
 
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 54) + (2 * (s >= 62)));
             itemQueue[Protoss_Assimilator] =		Item(s >= 32);
