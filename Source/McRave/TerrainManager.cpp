@@ -159,7 +159,7 @@ namespace McRave::Terrain {
             reverseRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) < Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
             flatRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) == Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
             narrowNatural = BWEB::Map::getNaturalChoke() ? int(BWEB::Map::getNaturalChoke()->Pos(BWEB::Map::getNaturalChoke()->end1).getDistance(BWEB::Map::getNaturalChoke()->Pos(BWEB::Map::getNaturalChoke()->end2)) / 4) <= 2 : false;
-            defendNatural = BWEB::Map::getNaturalChoke() ? BuildOrder::buildCount(baseType) > 1 || vis(baseType) > 1 || defendPosition == Position(BWEB::Map::getNaturalChoke()->Center()) || (reverseRamp && !Players::vZ() && !Strategy::enemyRush()) : false;
+            defendNatural = BWEB::Map::getNaturalChoke() ? BuildOrder::buildCount(baseType) > 1 || vis(baseType) > 1 || defendPosition == Position(BWEB::Map::getNaturalChoke()->Center()) || (reverseRamp && !Players::vZ() && Units::getSupply() > 100) : false;
 
             if (islandMap) {
                 defendPosition = BWEB::Map::getMainPosition();
