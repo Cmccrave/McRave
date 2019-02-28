@@ -8,27 +8,28 @@ namespace McRave::Scouts {
     namespace {
 
         set<Position> scoutTargets;
-        set<Position> scoutAssignments;
         int scoutCount;
         bool proxyCheck = false;
-               
+        UnitType proxyType = UnitTypes::None;
+        Position proxyPosition = Positions::Invalid;
+
         void misc()
         {
-            // TODO: Use scout counts to correctly assign more scouts
-            scoutAssignments.clear();
             scoutCount = 1;
 
             // If we have seen an enemy Probe before we've scouted the enemy, follow it
-            if (Units::getEnemyCount(UnitTypes::Protoss_Probe) == 1) {
+            if (Units::getEnemyCount(UnitTypes::Protoss_Probe) == 1 && Units::getEnemyCount(UnitTypes::Protoss_Zealot) == 0) {
                 auto w = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
                     return u.getType() == UnitTypes::Protoss_Probe;
                 });
                 proxyCheck = (w && !Terrain::getEnemyStartingPosition().isValid() && w->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1);
             }
+            else
+                proxyCheck = false;
 
             // If we know a proxy possibly exists, we need a second scout
             auto foundProxyGates = Strategy::enemyProxy() && Strategy::getEnemyBuild() == "2Gate" && Units::getEnemyCount(UnitTypes::Protoss_Gateway) > 0;
-            if (((Strategy::enemyProxy() && Strategy::getEnemyBuild() != "2Gate") || proxyCheck || foundProxyGates) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1)
+            if ((Strategy::enemyProxy() || proxyCheck || foundProxyGates) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1)
                 scoutCount++;
 
             if (Broodwar->self()->getRace() == Races::Zerg && Terrain::getEnemyStartingPosition().isValid())
@@ -74,17 +75,27 @@ namespace McRave::Scouts {
                         scoutTargets.insert(center);
                 }
 
-                // If we have scouted 2 bases (including our own), scout the middle for a proxy if it's walkable
-                if (basesExplored == 2 && !Broodwar->isExplored((TilePosition)mapBWEM.Center()) && BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), mapBWEM.Center()) != DBL_MAX)
+                // Scout the middle for a proxy if it's walkable
+                if (basesExplored == 1 && !Players::vZ() && !Broodwar->isExplored((TilePosition)mapBWEM.Center()) && BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), mapBWEM.Center()) != DBL_MAX)
                     scoutTargets.insert(mapBWEM.Center());
             }
 
-            // If it's a 2gate, scout for an expansion if we found the gates
-            if (Strategy::getEnemyBuild() == "2Gate") {
-                /*		if (Units::getEnemyCount(UnitTypes::Protoss_Gateway) >= 2)
-                            scoutTargets.insert((Position)Terrain::getEnemyExpand());
-                        else*/ if (Units::getEnemyCount(UnitTypes::Protoss_Pylon) == 0 || Strategy::enemyProxy())
-                            scoutTargets.insert(mapBWEM.Center());
+            // If it's a proxy, scout for the proxy building
+            if (Strategy::enemyProxy()) {
+                auto proxyType = Players::vP() ? UnitTypes::Protoss_Pylon : UnitTypes::Terran_Barracks;
+                if (Units::getEnemyCount(proxyType) == 0) {
+                    scoutTargets.insert(mapBWEM.Center());
+                    proxyPosition = mapBWEM.Center();
+                }
+                else {
+                    auto proxyBuilding = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Enemy, [&](auto &u) {
+                        return u.getType() == proxyType;
+                    });
+                    if (proxyBuilding) {
+                        scoutTargets.insert(proxyBuilding->getPosition());
+                        proxyPosition = proxyBuilding->getPosition();
+                    }
+                }
             }
 
             // If it's a cannon rush, scout the main
@@ -97,41 +108,78 @@ namespace McRave::Scouts {
             auto &unit = *u;
             auto start = unit.getWalkPosition();
             auto distBest = DBL_MAX;
-            auto posBest = unit.getDestination();       
+            auto posBest = unit.getDestination();
+
+            const auto isClosestScout = [&](Position here) {
+                auto closestScout = Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &u) {
+                    return u.getRole() == Role::Scout;
+                });
+                return u == closestScout;
+            };
 
             if (!BuildOrder::firstReady() || BuildOrder::isOpener() || !Terrain::getEnemyStartingPosition().isValid()) {
 
-                // If it's a proxy (maybe cannon rush), try to find the unit to kill
-                if ((Strategy::enemyProxy() || proxyCheck) && scoutCount > 1 && scoutAssignments.find(BWEB::Map::getMainPosition()) == scoutAssignments.end()) {
-
-                    auto enemy = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
-                        return u.getType().isWorker();
-                    });
-                    auto pylon = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
+                // If it's a main or natural proxy
+                if (Strategy::enemyProxy() && Strategy::getEnemyBuild() == "2Gate") {
+                    auto enemyPylon = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
                         return u.getType() == UnitTypes::Protoss_Pylon;
                     });
 
-                    scoutAssignments.insert(BWEB::Map::getMainPosition());
-
-                    if (enemy && enemy->getPosition().isValid() && enemy->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0) {
-                        if (enemy->unit() && enemy->unit()->exists()) {
-                            unit.unit()->attack(enemy->unit());
+                    if (enemyPylon && enemyPylon->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0) {
+                        if (enemyPylon->unit() && enemyPylon->unit()->exists()) {
+                            unit.unit()->attack(enemyPylon->unit());
                             return;
                         }
                         else
-                            unit.setDestination(enemy->getPosition());
+                            unit.setDestination(enemyPylon->getPosition());
+                        return;
                     }
-                    else if (pylon && !Terrain::isInEnemyTerritory(pylon->getTilePosition())) {
+                }
 
-                        if (pylon->unit() && pylon->unit()->exists()) {
-                            unit.unit()->attack(pylon->unit());
-                            return;
+                // If it's a center of map proxy
+                if (isClosestScout(proxyPosition)) {
+
+                    // If it's a proxy (maybe cannon rush), try to find the unit to kill
+                    if (Strategy::enemyProxy() || proxyCheck) {
+
+                        if (Units::getEnemyCount(UnitTypes::Terran_Barracks) > 0)
+                            proxyType = UnitTypes::Terran_Barracks;
+                        else if (Units::getEnemyCount(UnitTypes::Protoss_Pylon) > 0)
+                            proxyType = UnitTypes::Protoss_Pylon;
+                        else if (Units::getEnemyCount(UnitTypes::Protoss_Gateway) > 0)
+                            proxyType = UnitTypes::Protoss_Gateway;
+
+                        auto enemyWorker = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
+                            return u.getType().isWorker();
+                        });
+                        auto enemyStructure = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
+                            return u.getType() == proxyType;
+                        });
+
+                        auto enemyWorkerClose = enemyWorker && enemyWorker->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0;
+                        auto enemyWorkerConstructing = enemyWorker && enemyStructure && enemyWorker->getPosition().getDistance(enemyStructure->getPosition()) < 128.0;
+                        auto enemyStructureProxy = enemyStructure && !Terrain::isInEnemyTerritory(enemyStructure->getTilePosition());
+
+                        // Priority on killing a worker if it's possible
+                        if (Strategy::getEnemyBuild() != "2Gate" && (enemyWorkerClose || enemyWorkerConstructing)) {
+                            if (enemyWorker->unit() && enemyWorker->unit()->exists()) {
+                                unit.unit()->attack(enemyWorker->unit());
+                                return;
+                            }
+                            else
+                                unit.setDestination(enemyWorker->getPosition());
+                        }
+                        else if (enemyStructureProxy) {
+                            if (enemyStructure->unit() && enemyStructure->unit()->exists()) {
+                                unit.unit()->attack(enemyStructure->unit());
+                                return;
+                            }
+                            else
+                                unit.setDestination(enemyStructure->getPosition());
                         }
                         else
-                            unit.setDestination(pylon->getPosition());
+                            unit.setDestination(BWEB::Map::getMainPosition());
                     }
-                    else
-                        unit.setDestination(BWEB::Map::getMainPosition());
                 }
 
                 // If we have scout targets, find the closest target
@@ -141,21 +189,20 @@ namespace McRave::Scouts {
                         double time = 1.0 + (double(Grids::lastVisibleFrame((TilePosition)target)));
                         double timeDiff = Broodwar->getFrameCount() - time;
 
-                        if (time < distBest && timeDiff > 500 && scoutAssignments.find(target) == scoutAssignments.end()) {
+                        if (time < distBest && timeDiff > 500) {
                             distBest = time;
                             posBest = target;
                         }
                     }
-                    if (posBest.isValid()) {
+                    if (posBest.isValid())
                         unit.setDestination(posBest);
-                        scoutAssignments.insert(posBest);
-                    }
                 }
 
-                // TEMP
+                // HACK: Make sure we always do something
                 if (!unit.getDestination().isValid())
                     unit.setDestination(Terrain::getEnemyStartingPosition());
-            }
+            }          
+
             else
             {
                 int best = INT_MAX;
@@ -170,7 +217,7 @@ namespace McRave::Scouts {
                     }
                 }
                 if (posBest.isValid() && unit.unit()->getOrderTargetPosition() != posBest)
-                    unit.unit()->move(posBest);
+                    unit.setDestination(posBest);
             }
         }
 

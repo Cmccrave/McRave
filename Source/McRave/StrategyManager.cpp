@@ -34,7 +34,7 @@ namespace McRave::Strategy {
         }
 
         int frameCompletesWhen(UnitInfo& unit) {
-            return Broodwar->getFrameCount() + int(unit.getPercentHealth() * unit.getType().buildTime());
+            return Broodwar->getFrameCount() + int((1 - unit.getPercentHealth()) * unit.getType().buildTime());
         }
 
         void enemyZergBuilds(PlayerInfo& player)
@@ -45,11 +45,6 @@ namespace McRave::Strategy {
             // 5 Hatch build detection
             if (Stations::getEnemyStations().size() >= 3 || (Units::getEnemyCount(Zerg_Hatchery) + Units::getEnemyCount(Zerg_Lair) >= 4 && Units::getEnemyCount(Zerg_Drone) >= 14))
                 enemyBuild = "5Hatch";
-
-            // Zergling frame
-            if (lingFrame == 0 && Units::getEnemyCount(Zerg_Zergling) >= 1) {
-                lingFrame = Broodwar->getFrameCount();
-            }
 
             for (auto &u : player.getUnits()) {
                 UnitInfo &unit =*u;
@@ -62,24 +57,36 @@ namespace McRave::Strategy {
                         enemyGas = unit.unit()->getInitialResources() - unit.unit()->getResources();
                 }
 
-
                 // Zergling build detection and pool timing
                 if (unit.getType() == UnitTypes::Zerg_Zergling) {
-                    if (frameArrivesWhen(unit) < 4200) {
-                        rush = true;
-                        enemyBuild = "4Pool";
+
+                    // If this is our first time seeing a Zergling or it arrives earlier than we expected before
+                    if (lingFrame == 0 || frameArrivesWhen(unit) < lingFrame) {
+                        lingFrame = frameArrivesWhen(unit);
+                        if (enemyBuild == "Unknown") {
+                            if (lingFrame < 4200)
+                                enemyBuild = "4Pool";
+                            else if (lingFrame < 4800)
+                                enemyBuild = "9Pool";
+                        }
                     }
                 }
 
                 if (unit.getType() == Zerg_Spawning_Pool) {
 
-                    if (poolFrame == 0 && unit.unit()->exists())
-                        poolFrame = Broodwar->getFrameCount() + int(double(unit.getType().buildTime()) * (double(unit.getType().maxHitPoints() - unit.unit()->getHitPoints()) / double(unit.getType().maxHitPoints())));
+                    // If this is our first time seeing a Spawning Pool, see how soon it completes
+                    if (poolFrame == 0) {
+                        poolFrame = frameCompletesWhen(unit);
+                        if (enemyBuild == "Unknown") {
+                            if (poolFrame <= 2400)
+                                enemyBuild = "4Pool";
+                            else if (poolFrame <= 3000)
+                                enemyBuild = "9Pool";
+                        }
+                    }
 
-                    if (poolFrame > 0 && Units::getEnemyCount(Zerg_Spire) == 0 && Units::getEnemyCount(Zerg_Hydralisk_Den) == 0 && Units::getEnemyCount(Zerg_Lair) == 0) {
+                    if (Units::getEnemyCount(Zerg_Spire) == 0 && Units::getEnemyCount(Zerg_Hydralisk_Den) == 0 && Units::getEnemyCount(Zerg_Lair) == 0) {
                         if (Units::getEnemyCount(Zerg_Hatchery) == 1 && enemyGas < 148 && enemyGas >= 50 && Units::getEnemyCount(Zerg_Zergling) >= 8)
-                            enemyBuild = "9Pool";
-                        else if (Units::getEnemyCount(Zerg_Hatchery) >= 1 && Units::getEnemyCount(Zerg_Drone) <= 11 && Units::getEnemyCount(Zerg_Zergling) >= 8)
                             enemyBuild = "9Pool";
                         else if (Units::getEnemyCount(Zerg_Hatchery) == 3 && enemyGas < 148 && enemyGas >= 100)
                             enemyBuild = "3HatchLing";
@@ -196,16 +203,21 @@ namespace McRave::Strategy {
                 // Check 2 corners scouted
                 auto topLeft = TilePosition(Util::clipToMap(Terrain::getEnemyStartingPosition() - Position(160, 160)));
                 auto botRight = TilePosition(Util::clipToMap(Terrain::getEnemyStartingPosition() + Position(160, 160) + Position(128, 96)));
-                auto maybeProxy = noGates && noGas && noExpand;
+                auto fullScout = Grids::lastVisibleFrame(topLeft) > 0 && Grids::lastVisibleFrame(botRight) > 0;
+                auto maybeProxy = noGates && noExpand;
 
-                Broodwar->drawTextScreen(0, 100, "%d  %d  %d", noGates, noGas, noExpand);
-
-                if (maybeProxy && ((topLeft.isValid() && Grids::lastVisibleFrame(topLeft) > 0) || (botRight.isValid() && Grids::lastVisibleFrame(botRight) > 0)))
-                    enemyBuild = "2Gate";
-                else if (Units::getEnemyCount(Protoss_Gateway) >= 2 && Units::getEnemyCount(Protoss_Nexus) <= 1 && Units::getEnemyCount(Protoss_Assimilator) <= 0 && Units::getEnemyCount(Protoss_Cybernetics_Core) <= 0 && Units::getEnemyCount(Protoss_Dragoon) <= 0)
-                    enemyBuild = "2Gate";
-                else if (enemyBuild == "2Gate")
-                    enemyBuild = "Unknown";
+                if (fullScout) {
+                    if (maybeProxy) {
+                        enemyBuild = "2Gate";
+                        proxy = true;
+                    }
+                    else if (Units::getEnemyCount(Protoss_Gateway) >= 2 && Units::getEnemyCount(Protoss_Nexus) <= 1 && Units::getEnemyCount(Protoss_Cybernetics_Core) <= 0 && Units::getEnemyCount(Protoss_Dragoon) <= 0)
+                        enemyBuild = "2Gate";
+                    else if (enemyBuild == "2Gate") {
+                        enemyBuild = "Unknown";
+                        proxy = false;
+                    }
+                }
             }
 
             for (auto &u : player.getUnits()) {
@@ -242,7 +254,13 @@ namespace McRave::Strategy {
                         enemyBuild = "Unknown";
                 }
 
-                // P2GateExpand
+                // 2 Gate proxy estimation
+                if (Broodwar->getFrameCount() < 5000 && unit.getType() == UnitTypes::Protoss_Zealot && Units::getEnemyCount(UnitTypes::Protoss_Zealot) >= 2 && unit.getPosition().getDistance(Terrain::getDefendPosition()) < 640.0) {
+                    enemyBuild = "2Gate";
+                    proxy = true;
+                }
+
+                // 2 Gate Expand
                 if (unit.getType() == Protoss_Nexus) {
                     if (!Terrain::isStartingBase(unit.getTilePosition()) && Units::getEnemyCount(Protoss_Gateway) >= 2)
                         enemyBuild = "2GateExpand";
@@ -267,7 +285,7 @@ namespace McRave::Strategy {
                         enemyBuild = "1GateRobo";
                     else if (Units::getEnemyCount(Protoss_Gateway) >= 4)
                         enemyBuild = "4Gate";
-                    else if (Units::getEnemyCount(Protoss_Citadel_of_Adun) >= 1 || Units::getEnemyCount(Protoss_Templar_Archives) >= 1 || (!goonRange && Units::getEnemyCount(Protoss_Dragoon) < 2 && Units::getSupply() > 80))
+                    else if ((Units::getEnemyCount(Protoss_Citadel_of_Adun) >= 1 && Units::getEnemyCount(Protoss_Zealot) > 0) || Units::getEnemyCount(Protoss_Templar_Archives) >= 1 || (enemyBuild == "Unknown" && !goonRange && Units::getEnemyCount(Protoss_Dragoon) < 2 && Units::getSupply() > 80))
                         enemyBuild = "1GateDT";
                 }
 
@@ -300,16 +318,28 @@ namespace McRave::Strategy {
 
         void checkHoldChoke()
         {
-            holdChoke = BuildOrder::isFastExpand()
-                //|| Players::getStrength(PlayerState::Ally).groundToGround > Players::getStrength(PlayerState::Enemy).groundToGround
-                || BuildOrder::isWallNat()
-                || (BuildOrder::isHideTech() && !rush)
-                || Units::getSupply() > 60
-                || Players::vT();
+            if (!holdChoke && Units::getImmThreat() > 0.0)
+                holdChoke = false;
+            else {
+                holdChoke = BuildOrder::isFastExpand()
+                    || vis(Protoss_Dragoon) > 0
+                    || com(Protoss_Shield_Battery) > 0
+                    || BuildOrder::isWallNat()
+                    || (BuildOrder::isHideTech() && !rush)
+                    || Units::getSupply() > 60
+                    || Players::vT();
+            }
         }
 
         void checkNeedDetection()
         {
+            // DTs, Vultures, Lurkers
+            invis = (Units::getEnemyCount(Protoss_Dark_Templar) >= 1 || (Units::getEnemyCount(Protoss_Citadel_of_Adun) >= 1 && Units::getEnemyCount(Protoss_Zealot) > 0) || Units::getEnemyCount(Protoss_Templar_Archives) >= 1)
+                || (enemyBuild == "1GateDT")
+                || (Units::getEnemyCount(Terran_Ghost) >= 1 || Units::getEnemyCount(Terran_Vulture) >= 4)
+                || (Units::getEnemyCount(Zerg_Lurker) >= 1 || (Units::getEnemyCount(Zerg_Lair) >= 1 && Units::getEnemyCount(Zerg_Hydralisk_Den) >= 1 && Units::getEnemyCount(Zerg_Hatchery) <= 0))
+                || (enemyBuild == "1HatchLurker" || enemyBuild == "2HatchLurker" || enemyBuild == "1GateDT");
+
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (Broodwar->self()->completedUnitCount(Protoss_Observer) > 0)
                     invis = false;
@@ -320,19 +350,13 @@ namespace McRave::Strategy {
                 else if (Units::getEnemyCount(Zerg_Hydralisk) > 0 || Units::getEnemyCount(Zerg_Hydralisk_Den) > 0)
                     invis = true;
             }
-
-            // DTs, Vultures, Lurkers
-            invis = (Units::getEnemyCount(Protoss_Dark_Templar) >= 1 || Units::getEnemyCount(Protoss_Citadel_of_Adun) >= 1 || Units::getEnemyCount(Protoss_Templar_Archives) >= 1)
-                || (enemyBuild == "1GateDT")
-                || (Units::getEnemyCount(Terran_Ghost) >= 1 || Units::getEnemyCount(Terran_Vulture) >= 4)
-                || (Units::getEnemyCount(Zerg_Lurker) >= 1 || (Units::getEnemyCount(Zerg_Lair) >= 1 && Units::getEnemyCount(Zerg_Hydralisk_Den) >= 1 && Units::getEnemyCount(Zerg_Hatchery) <= 0))
-                || (enemyBuild == "1HatchLurker" || enemyBuild == "2HatchLurker" || enemyBuild == "1GateDT");
         }
 
         void checkEnemyProxy()
         {
             // Proxy builds are built closer to me than the enemy
-            proxy = Units::getSupply() < 80 && (enemyBuild == "CannonRush" || enemyBuild == "BunkerRush");
+            proxy = proxy
+                || (Units::getSupply() < 80 && (enemyBuild == "CannonRush" || enemyBuild == "BunkerRush"));
         }
 
         void updateEnemyBuild()
@@ -648,7 +672,6 @@ namespace McRave::Strategy {
                     unitScore[Protoss_Zealot] = unitScore[Protoss_Dragoon];
                     unitScore[Protoss_Archon] = unitScore[Protoss_Dragoon];
                     unitScore[Protoss_High_Templar] += unitScore[Protoss_Dragoon];
-                    unitScore[Protoss_Dragoon] = 0.0;
                 }
             }
         }
@@ -703,6 +726,6 @@ namespace McRave::Strategy {
     bool enemyScouted() { return enemyScout; }
     bool enemyBust() { return enemyBuild.find("Hydra") != string::npos; }
     bool enemyPressure() { return pressure; }
-    int getPoolFrame() { return poolFrame; }
+    int enemyArrivalFrame() { return lingFrame; }
     map <UnitType, double>& getUnitScores() { return unitScore; }
 }

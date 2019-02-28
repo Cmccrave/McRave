@@ -52,6 +52,18 @@ namespace McRave::Command {
             for (auto &dot : Broodwar->getNukeDots())
                 addAction(nullptr, dot, TechTypes::Nuclear_Strike, true);
         }
+
+        double defaultGrouping(UnitInfo& unit, WalkPosition w) {
+            return unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0 + log(1000.0 / (100.0 + Grids::getAGroundCluster(w)));
+        }
+
+        double defaultVisited(UnitInfo& unit, WalkPosition w) {
+            return log(min(500.0, max(100.0, double(Broodwar->getFrameCount() - Grids::lastVisitedFrame(w)))));
+        }
+
+        double defaultMobility(UnitInfo& unit, WalkPosition w) {
+            return unit.getType().isFlyer() ? 1.0 : log(100.0 + double(Grids::getMobility(w)));
+        }
     }
 
     bool misc(const shared_ptr<UnitInfo>& u)
@@ -72,7 +84,7 @@ namespace McRave::Command {
 
         // If unit has a transport, load into it if we need to
         else if (unit.hasTransport() && unit.getTransport().unit()->exists()) {
-            if (unit.getType() == UnitTypes::Protoss_Reaver && unit.unit()->isTraining() && unit.unit()->getScarabCount() != MAX_SCARAB) {
+            if (unit.getType() == UnitTypes::Protoss_Reaver && !unit.canStartAttack()) {
                 unit.command(UnitCommandTypes::Right_Click_Unit, unit.getTransport());
                 return true;
             }
@@ -87,7 +99,7 @@ namespace McRave::Command {
         else if (unit.hasTarget() && Units::getSplashTargets().find(unit.unit()) != Units::getSplashTargets().end()) {
             if (unit.hasTransport())
                 unit.command(UnitCommandTypes::Right_Click_Unit, unit.getTransport());
-            else if (unit.unit()->getGroundWeaponCooldown() < Broodwar->getLatencyFrames() && unit.getTarget().unit()->exists())
+            else if (unit.canStartAttack() && unit.getTarget().unit()->exists())
                 unit.command(UnitCommandTypes::Attack_Unit, unit.getTarget());
             else
                 unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition(), true);
@@ -105,11 +117,27 @@ namespace McRave::Command {
 
         // Can the unit execute an attack command
         const auto canAttack = [&]() {
+
+            // Special Case: Carriers
+            if (unit.getType() == UnitTypes::Protoss_Carrier) {
+                auto leashRange = 320;
+                for (auto &interceptor : unit.unit()->getInterceptors()) {
+                    if (interceptor->getOrder() == Orders::InterceptorReturn && interceptor->isCompleted()) {
+                        unit.command(UnitCommandTypes::Attack_Unit, unit.getTarget());
+                        return true;
+                    }
+                }
+                if (unit.getPosition().getApproxDistance(unit.getTarget().getPosition()) >= leashRange) {
+                    unit.command(UnitCommandTypes::Attack_Unit, unit.getTarget());
+                    unit.circleBlue();
+                    return true;
+                }
+                return false;
+            }
+
             if (unit.getType() == UnitTypes::Zerg_Lurker && !unit.isBurrowed())
                 return false;
-
-            auto cooldown = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() : unit.unit()->getGroundWeaponCooldown();
-            return cooldown < Broodwar->getLatencyFrames();
+            return unit.canStartAttack() && unit.getTarget().unit()->exists();
         };
 
         // Should the unit execute an attack command
@@ -120,34 +148,18 @@ namespace McRave::Command {
                     return false;
 
                 // Check if we can get free attacks
-                if (Util::getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT/* && Util::unitInRange(unit)*/)
+                if (Util::getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT)
                     return true;
                 return unit.getLocalState() == LocalState::Attack;
             }
 
             if (unit.getRole() == Role::Scout)
-                return Grids::getEGroundThreat(unit.getEngagePosition()) <= 0.0;
+                return unit.getTarget().getType().isWorker() && Grids::getEGroundThreat(unit.getEngagePosition()) <= 0.0;
             return false;
         };
 
-        // Special Case: Carriers
-        if (shouldAttack() && unit.getType() == UnitTypes::Protoss_Carrier) {
-            auto leashRange = 320;
-            for (auto &interceptor : unit.unit()->getInterceptors()) {
-                if (interceptor->getOrder() == Orders::InterceptorReturn && interceptor->isCompleted()) {
-                    unit.command(UnitCommandTypes::Attack_Unit, unit.getTarget());
-                    return true;
-                }
-            }
-            if (unit.getPosition().getApproxDistance(unit.getTarget().getPosition()) >= leashRange) {
-                unit.command(UnitCommandTypes::Attack_Unit, unit.getTarget());
-                unit.circleBlue();
-                return true;
-            }
-        }
-
         // If unit should and can be attacking
-        else if (shouldAttack() && canAttack()) {
+        if (shouldAttack() && canAttack()) {
             // Flyers don't want to decel when out of range, so we move to the target then attack when in range
             if ((unit.getType().isFlyer() || unit.getType().isWorker()) && unit.hasTarget() && !Util::unitInRange(unit)) {
                 unit.command(UnitCommandTypes::Move, unit.getTarget().getPosition(), true);
@@ -169,8 +181,7 @@ namespace McRave::Command {
 
         // Can the unit approach its target
         const auto canApproach = [&]() {
-            auto canAttack = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() < Broodwar->getLatencyFrames() : unit.unit()->getGroundWeaponCooldown() < Broodwar->getLatencyFrames();
-            if (unit.getSpeed() <= 0.0 || canAttack)
+            if (unit.getSpeed() <= 0.0 || unit.canStartAttack())
                 return false;
             return true;
         };
@@ -182,9 +193,16 @@ namespace McRave::Command {
 
             if (unit.getRole() == Role::Combat) {
 
+                auto intercept = Util::getInterceptPosition(unit);
+                auto interceptDistance = intercept.getDistance(unit.getPosition());
+
                 // Capital ships want to stay at max range due to their slow nature
                 if (unit.isCapitalShip() || unit.getTarget().isSuicidal())
                     return false;
+
+                // Approach units that are moving away from us
+                if (interceptDistance > unit.getPosition().getDistance(unit.getTarget().getPosition()))
+                    return true;
 
                 // Light air wants to approach air targets or anything that cant attack air
                 if (unit.isLightAir()) {
@@ -222,9 +240,9 @@ namespace McRave::Command {
             // Manual conversion until BWAPI::Point is fixed
             auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
             double distance = (unit.getType().isFlyer() || Terrain::isIslandMap()) ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
-            double threat = exp(Util::getHighestThreat(w, unit));
-            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0 + log(1.0 / Grids::getAGroundCluster(w));
-            double score = grouping / (threat * distance);
+            double grouping = defaultGrouping(unit, w);
+            double mobility = defaultMobility(unit, w);
+            double score = grouping * mobility / distance;
             return score;
         };
 
@@ -247,9 +265,20 @@ namespace McRave::Command {
         };
 
         // 1) If unit has a transport, move to it or load into it
-        if (unit.hasTransport() && unit.getTransport().unit()->exists()) {
+        if (unit.hasTransport() && unit.getTransport().unit()->exists() && unit.getPosition().getDistance(unit.getEngagePosition()) > 64.0) {
             unit.command(UnitCommandTypes::Right_Click_Unit, unit.getTransport());
             return true;
+        }
+
+        // HACK: Drilling with workers. Should add some sort of getClosestResource or fix how PlayerState::Neutral units are stored (we don't store resources in them)
+        if (unit.getType().isWorker() && unit.getRole() == Role::Combat) {
+            auto closestMineral = Broodwar->getClosestUnit(unit.getTarget().getPosition(), Filter::IsMineralField, 256);
+
+            if (closestMineral && closestMineral->exists()) {
+                Broodwar->drawLineMap(unit.getPosition(), closestMineral->getPosition(), Colors::Green);
+                unit.unit()->gather(closestMineral);
+                return true;
+            }
         }
 
         // 2) If unit can move and should move
@@ -268,7 +297,7 @@ namespace McRave::Command {
                         unit.command(UnitCommandTypes::Move, p, true);
                         return true;
                     }
-                }               
+                }
             }
 
             // Find the best position to move to
@@ -299,14 +328,30 @@ namespace McRave::Command {
             auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
             double distance = unit.hasTarget() ? 1.0 / (p.getDistance(unit.getTarget().getPosition())) : p.getDistance(BWEB::Map::getMainPosition());
             double threat = Util::getHighestThreat(w, unit);
-            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0 + log(1.0 / Grids::getAGroundCluster(w));
-            double score = grouping / (threat * distance);
+            double grouping = defaultGrouping(unit, w);
+            double mobility = defaultMobility(unit, w);
+            double score = mobility * grouping / (threat * distance);
             return score;
         };
 
         const auto canKite = [&]() {
-            auto canAttack = unit.getTarget().getType().isFlyer() ? unit.unit()->getAirWeaponCooldown() < Broodwar->getLatencyFrames() : unit.unit()->getGroundWeaponCooldown() < Broodwar->getLatencyFrames();
-            if (unit.getSpeed() <= 0.0 || canAttack)
+
+            if (unit.getRole() == Role::Worker)
+                return true;
+
+            // Special Case: Carriers
+            if (unit.getType() == UnitTypes::Protoss_Carrier) {
+                auto leashRange = 320;
+                for (auto &interceptor : unit.unit()->getInterceptors()) {
+                    if (interceptor->getOrder() != Orders::InterceptorAttack && interceptor->isCompleted())
+                        return false;
+                }
+                if (unit.getPosition().getApproxDistance(unit.getTarget().getPosition()) >= leashRange)
+                    return false;
+                return true;
+            }
+
+            if (unit.getSpeed() <= 0.0 || unit.canStartAttack())
                 return false;
             return true;
         };
@@ -315,8 +360,18 @@ namespace McRave::Command {
             auto allyRange = (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
             auto enemyRange = (unit.getType().isFlyer() ? unit.getTarget().getAirRange() : unit.getTarget().getGroundRange());
 
-            if (unit.getRole() == Role::Combat) {
+            if (unit.getRole() == Role::Worker)
+                return true;
 
+            if (unit.getRole() == Role::Combat) {
+                auto intercept = Util::getInterceptPosition(unit);
+                auto interceptDistance = intercept.getDistance(unit.getPosition());
+
+                // Don't kite units that are moving away from us
+                if (interceptDistance > unit.getPosition().getDistance(unit.getTarget().getPosition()))
+                    return false;
+
+                // Don't kite buildings unless we're a flying unit
                 if (unit.getTarget().getType().isBuilding() && !unit.getType().isFlyer())
                     return false;
 
@@ -337,7 +392,7 @@ namespace McRave::Command {
 
                 if (unit.getType() == UnitTypes::Protoss_Reaver
                     || unit.getType() == UnitTypes::Terran_Vulture
-                    || (unit.unit()->isUnderAttack() && allyRange >= enemyRange)
+                    || allyRange >= enemyRange
                     || unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine)
                     return true;
             }
@@ -348,30 +403,24 @@ namespace McRave::Command {
             return false;
         };
 
-        // Special Case: Carriers
-        if (unit.getType() == UnitTypes::Protoss_Carrier) {
-            auto leashRange = 320;
-            for (auto &interceptor : unit.unit()->getInterceptors()) {
-                if (interceptor->getOrder() != Orders::InterceptorAttack && interceptor->isCompleted())
-                    return false;
-            }
-            if (unit.getPosition().getApproxDistance(unit.getTarget().getPosition()) >= leashRange)
-                return false;
-        }
-
         if (shouldKite() && canKite()) {
 
-            if (unit.hasResource()) {
-                unit.unit()->gather(unit.getResource().unit());
-                return true;
-            }
-            else {
-                // If we found a valid position, move to it
-                auto bestPosition = findViablePosition(unit, scoreFunction);
-                if (bestPosition.isValid()) {
-                    unit.command(UnitCommandTypes::Move, bestPosition, true);
+            // HACK: Drilling with workers. Should add some sort of getClosestResource or fix how PlayerState::Neutral units are stored (we don't store resources in them)
+            if (unit.getType().isWorker() && unit.getRole() == Role::Combat) {
+                auto closestMineral = Broodwar->getClosestUnit(unit.getTarget().getPosition(), Filter::IsMineralField, 256);
+
+                if (closestMineral && closestMineral->exists()) {
+                    Broodwar->drawLineMap(unit.getPosition(), closestMineral->getPosition(), Colors::Green);
+                    unit.unit()->gather(closestMineral);
                     return true;
                 }
+            }
+
+            // If we found a valid position, move to it
+            auto bestPosition = findViablePosition(unit, scoreFunction);
+            if (bestPosition.isValid()) {
+                unit.command(UnitCommandTypes::Move, bestPosition, true);
+                return true;
             }
         }
         return false;
@@ -383,7 +432,7 @@ namespace McRave::Command {
         bool defendingExpansion = unit.getDestination().isValid() && !Terrain::isInEnemyTerritory((TilePosition)unit.getDestination());
         bool closeToDefend = Terrain::getDefendPosition().getDistance(unit.getPosition()) < 640.0 || Terrain::isInAllyTerritory(unit.getTilePosition());
 
-        if (!closeToDefend || unit.getLocalState() != LocalState::Retreat)
+        if (!closeToDefend || unit.getLocalState() == LocalState::Attack)
             return false;
 
         // Probe Cannon surround
@@ -422,12 +471,12 @@ namespace McRave::Command {
         }
         else {
             // Estimate a melee radius
-            auto meleeRadius = Terrain::isDefendNatural() && Terrain::getNaturalWall() ? 32 : min(160, Units::getNumberMelee() * 16);
+            auto meleeRadius = Terrain::isDefendNatural() && Terrain::getNaturalWall() && Units::getSupply() >= 40 && Players::vZ() ? 32 : min(160, Units::getNumberMelee() * 16);
 
             // Estimate a ranged radius
                 // At least: behind the melee arc or at least this units range
                 // At most: the number of ranged units we have * half a tile + this units ground range
-            auto rangedRadius = min(max(meleeRadius + 32, (int)unit.getGroundRange()), (Units::getNumberRanged() * 16) + (int)unit.getGroundRange());
+            auto rangedRadius = min(max(meleeRadius + 32, (int)unit.getGroundRange()) - 64, (Units::getNumberRanged() * 16) + (int)unit.getGroundRange() - 64);
 
             // Find a concave position at the desired radius
             auto radius = unit.getGroundRange() > 32.0 ? rangedRadius : meleeRadius;
@@ -445,7 +494,7 @@ namespace McRave::Command {
         auto &unit = *u;
         function <double(WalkPosition)> scoreFunction = [&](WalkPosition w) -> double {
 
-            // Manual conversion until BWAPI::Point is fixed
+            // Manual conversion until BWAPI::Point is fixed 
             auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
 
             // Check if this is too far from transports - TODO: Move to transports
@@ -455,13 +504,15 @@ namespace McRave::Command {
             }
 
             double threat = Util::getHighestThreat(w, unit);
-            double distance = (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination()));
-            double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids::lastVisitedFrame(w))));
-            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0;
-            double score = grouping * visited / distance;
+            double distance = (unit.getType().isFlyer() ? exp(p.getDistance(unit.getDestination())) : BWEB::Map::getGroundDistance(p, unit.getDestination()));
+            double visited = defaultVisited(unit, w);
+            double grouping = defaultGrouping(unit, w);
+            double mobility = defaultMobility(unit, w);
+            double score = mobility * grouping * visited / (exp(threat) * distance);
 
             if (threat == MIN_THREAT
-                || (unit.unit()->isCloaked() && !overlapsEnemyDetection(p)))
+                || (unit.unit()->isCloaked() && !overlapsEnemyDetection(p))
+                || unit.getRole() == Role::Scout)
                 return score;
             return 0.0;
         };
@@ -474,12 +525,13 @@ namespace McRave::Command {
 
         const auto shouldHunt = [&]() {
             if (unit.getRole() == Role::Combat) {
-                if (unit.isLightAir() && Players::getStrength(PlayerState::Enemy).airToAir <= 0.0)
+                if (unit.getLocalState() == LocalState::Retreat && unit.isLightAir() && Players::getStrength(PlayerState::Enemy).airToAir <= 0.0)
                     return true;
             }
             if (unit.getRole() == Role::Transport)
                 return true;
-            if (unit.getRole() == Role::Scout && Terrain::getEnemyStartingPosition().isValid())
+            // HACK: If they have at least one type we have seen a unit
+            if (unit.getRole() == Role::Scout && (Terrain::getEnemyStartingPosition().isValid() || Players::getStrength(PlayerState::Enemy).groundToGround > 0.0))
                 return true;
             return false;
         };
@@ -503,8 +555,9 @@ namespace McRave::Command {
             auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
             double distance = ((unit.getType().isFlyer() || Terrain::isIslandMap()) ? log(p.getDistance(BWEB::Map::getMainPosition())) : Grids::getDistanceHome(w));
             double threat = Util::getHighestThreat(w, unit);
-            double grouping = unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0 + log(1.0 / Grids::getAGroundCluster(w));
-            double score = grouping / (threat * distance);
+            double grouping = defaultGrouping(unit, w);
+            double mobility = defaultMobility(unit, w);
+            double score = grouping * mobility / (threat * distance);
             return score;
         };
 
@@ -570,8 +623,20 @@ namespace McRave::Command {
 
         // TechType checks use a rectangular check
         for (auto &command : myActions) {
-            auto topLeft = command.pos - Position(radius, radius);
-            auto botRight = command.pos + Position(radius, radius);
+            auto topLeft = command.pos - Position(radius / 2, radius / 2);
+            auto botRight = command.pos + Position(radius / 2, radius / 2);
+
+            if (command.unit != unit && command.tech == tech &&
+                (Util::rectangleIntersect(topLeft, botRight, checkTopLeft)
+                    || Util::rectangleIntersect(topLeft, botRight, checkTopRight)
+                    || Util::rectangleIntersect(topLeft, botRight, checkBotLeft)
+                    || Util::rectangleIntersect(topLeft, botRight, checkBotRight)))
+                return true;
+        }
+        // TechType checks use a rectangular check
+        for (auto &command : enemyActions) {
+            auto topLeft = command.pos - Position(radius / 2, radius / 2);
+            auto botRight = command.pos + Position(radius / 2, radius / 2);
 
             if (command.unit != unit && command.tech == tech &&
                 (Util::rectangleIntersect(topLeft, botRight, checkTopLeft)
@@ -702,7 +767,7 @@ namespace McRave::Command {
     {
         // Radius for checking tiles
         auto start = unit.getWalkPosition();
-        auto radius = 8;
+        auto radius = 16 * (1 + int(unit.getType().isFlyer()));
         auto walkHeight = int(unit.getType().height() / 8.0);
         auto walkWidth = int(unit.getType().width() / 8.0);
         auto mapWidth = Broodwar->mapWidth() * 4;
@@ -714,7 +779,7 @@ namespace McRave::Command {
         auto right = min(start.x + radius + walkWidth, mapWidth - offset);
         auto top = max(start.y - radius, offset);
         auto bot = min(start.y + radius + walkHeight, mapHeight - offset);
-        
+
         const auto viablePosition = [&](WalkPosition here, Position p) {
             // If not a flyer and position blocks a building, has collision or a splash threat
             if (!unit.getType().isFlyer() &&

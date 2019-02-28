@@ -21,7 +21,6 @@ namespace McRave::Players
             auto &strengths = playerStrengths[player];
             for (auto &u : player.getUnits()) {
                 auto &unit = *u;
-                //unit.setTarget(nullptr); // HACK: Just in case our target was killed and we don't get an update in UnitManager
                 if (unit.getType().isWorker() && unit.getRole() != Role::Combat)
                     continue;
                 addStrength(unit);

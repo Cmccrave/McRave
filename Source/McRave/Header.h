@@ -1,12 +1,9 @@
 #pragma once
 #include <BWAPI.h>
 
-// Remember not to use "Broodwar" in any global class constructor!
-
 class McRaveModule : public BWAPI::AIModule
 {
 public:
-    // Virtual functions for callbacks, leave these as they are.
     virtual void onStart();
     virtual void onEnd(bool isWinner);
     virtual void onFrame();

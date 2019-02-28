@@ -117,8 +117,9 @@ namespace McRave
 
     bool UnitInfo::command(BWAPI::UnitCommandType command, BWAPI::Position here, bool overshoot)
     {
-        // Check if we need to wait a few frames before issuing a command due to stop frames
-        bool attackCooldown = Broodwar->getFrameCount() - lastAttackFrame <= minStopFrame - Broodwar->getLatencyFrames();
+		// Check if we need to wait a few frames before issuing a command due to stop frames
+		int frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
+		bool attackCooldown = frameSinceAttack <= minStopFrame - Broodwar->getRemainingLatencyFrames();
 
         if (attackCooldown)
             return false;
@@ -158,7 +159,8 @@ namespace McRave
     bool UnitInfo::command(BWAPI::UnitCommandType command, UnitInfo& targetUnit)
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames
-        bool attackCooldown = Broodwar->getFrameCount() - lastAttackFrame <= minStopFrame - Broodwar->getLatencyFrames();
+		int frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
+        bool attackCooldown = frameSinceAttack <= minStopFrame - Broodwar->getRemainingLatencyFrames();
 
         if (attackCooldown)
             return false;
@@ -189,17 +191,21 @@ namespace McRave
 
     bool UnitInfo::isThreatening()
     {
-        if ((burrowed || (thisUnit && thisUnit->exists() && thisUnit->isCloaked())) && !Command::overlapsAllyDetection(position))
+        if ((burrowed || (thisUnit && thisUnit->exists() && thisUnit->isCloaked())) && !Command::overlapsAllyDetection(position) || Stations::getMyStations().size() > 2)
             return false;
 
         // Define "close" - TODO: define better
-        auto close = position.getDistance(Terrain::getDefendPosition()) < groundReach / 2 || position.getDistance(Terrain::getDefendPosition()) < airReach / 2;
+        auto close = (groundRange > 32.0 || Terrain::isDefendNatural()) && position.getDistance(Terrain::getDefendPosition()) < groundReach / 2;
         auto atHome = Terrain::isInAllyTerritory(tilePosition);
         auto manner = position.getDistance(Terrain::getMineralHoldPosition()) < 256.0;
         auto exists = thisUnit && thisUnit->exists();
         auto attacked = exists && hasAttackedRecently() && target && (target->getType().isBuilding() || target->getType().isWorker());
         auto constructingClose = exists && (position.getDistance(Terrain::getDefendPosition()) < 320.0 || close) && (thisUnit->isConstructing() || thisUnit->getOrder() == Orders::ConstructingBuilding || thisUnit->getOrder() == Orders::PlaceBuilding);
-        auto inRange = Terrain::inRangeOfWall(*this);
+        auto inRangePieces = Terrain::inRangeOfWallPieces(*this);
+        auto inRangeDefenses = Terrain::inRangeOfWallDefenses(*this);
+
+		if (attacked)
+			circlePurple();
 
         const auto threatening = [&] {
             // Building: blocking any buildings, is close or at home and can attack or is a battery, is a manner building
@@ -220,15 +226,17 @@ namespace McRave
             }
             // Unit: close, close to shield battery, in territory while defending choke
             else {
-                if (close || attacked || inRange)
+                if (close || attacked || inRangeDefenses)
+                    return true;
+                if (attacked && inRangePieces)
                     return true;
                 if (atHome && Strategy::defendChoke())
                     return true;
-                if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Shield_Battery) > 0) {
+                if (com(UnitTypes::Protoss_Shield_Battery) > 0) {
                     auto battery = Util::getClosestUnit(position, PlayerState::Self, [&](auto &u) {
                         return u.getType() == UnitTypes::Protoss_Shield_Battery && u.unit()->isCompleted();
                     });
-                    if (battery && position.getDistance(battery->getPosition()) <= 128.0)
+                    if (battery && position.getDistance(battery->getPosition()) <= 128.0 && Terrain::isInAllyTerritory(tilePosition))
                         return true;
                 }
             }
@@ -246,4 +254,20 @@ namespace McRave
     {
         return (burrowed || (thisUnit->exists() && thisUnit->isCloaked())) && !thisUnit->isDetected();
     }
+
+	bool UnitInfo::canStartAttack()
+	{
+		if (!target)
+			return false;
+
+		auto cooldown = target->getType().isFlyer() ? thisUnit->getAirWeaponCooldown() : thisUnit->getGroundWeaponCooldown();
+
+        if (unitType == UnitTypes::Protoss_Reaver)
+            cooldown = lastAttackFrame - Broodwar->getFrameCount() + 60;
+
+		auto targetExists = target->unit()->exists();
+		auto cooldownReady =  cooldown < Broodwar->getLatencyFrames();
+		auto cooldownWillBeReady = cooldown < engageDist / (transport ? transport->getSpeed() : speed);
+		return (cooldownReady || cooldownWillBeReady);
+	}
 }

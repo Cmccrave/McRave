@@ -6,6 +6,11 @@ using namespace std;
 namespace McRave::Transports {
 
     namespace {
+
+        double defaultVisited(UnitInfo& unit, WalkPosition w) {
+            return log(min(500.0, max(100.0, double(Broodwar->getFrameCount() - Grids::lastVisitedFrame(w)))));
+        }
+
         void updateCargo(const shared_ptr<UnitInfo>& t)
         {
             auto &transport = *t;
@@ -87,7 +92,6 @@ namespace McRave::Transports {
             // Check if this unit is ready to fight
             const auto readyToFight = [&](const shared_ptr<UnitInfo>& c) {
                 auto &cargo = *c;
-                auto attackCooldown = (Broodwar->getFrameCount() - cargo.getLastAttackFrame() <= 60 - Broodwar->getLatencyFrames());
 
                 auto reaver = cargo.getType() == UnitTypes::Protoss_Reaver;
                 auto ht = cargo.getType() == UnitTypes::Protoss_High_Templar;
@@ -96,9 +100,9 @@ namespace McRave::Transports {
                 if (Util::getHighestThreat(transport.getWalkPosition(), transport) < 1.0)
                     return true;
 
-                if (cargo.getLocalState() == LocalState::Retreat || transport.unit()->isUnderAttack() || (cargo.getShields() == 0 && cargo.getSimValue() < 1.2))
+                if (cargo.getLocalState() == LocalState::Retreat || transport.unit()->isUnderAttack() || cargo.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT)
                     return false;
-                if (cargo.getLocalState() == LocalState::Attack && ((reaver && !attackCooldown) || (ht && cargo.getEnergy() >= 75)))
+                if (cargo.getLocalState() == LocalState::Attack && ((reaver && cargo.canStartAttack()) || (ht && cargo.getEnergy() >= 75)))
                     return true;
                 return false;
             };
@@ -108,7 +112,7 @@ namespace McRave::Transports {
                 auto &cargo = *c;
                 auto reaver = cargo.getType() == UnitTypes::Protoss_Reaver;
                 auto targetDist = cargo.getPosition().getDistance(cargo.getEngagePosition());
-                if (targetDist <= 64.0)
+                if (targetDist <= 64.0 && cargo.canStartAttack())
                     return true;
                 return false;
             };
@@ -291,7 +295,7 @@ namespace McRave::Transports {
                     if (transport.getTransportState() == TransportState::Monitoring) {
                         bool proximity = true;
                         for (auto &u : transport.getAssignedCargo()) {
-                            if (!u->unit()->isLoaded() && u->getPosition().getDistance(p) > 32.0)
+                            if (!u->unit()->isLoaded() && u->getPosition().getDistance(p) > 64.0)
                                 proximity = false;
                         }
                         if (!proximity)
@@ -299,8 +303,8 @@ namespace McRave::Transports {
                     }
 
                     double threat = (transport.getPercentShield() > LOW_SHIELD_PERCENT_LIMIT && transport.getTransportState() == TransportState::Engaging) ? 1.0 : Util::getHighestThreat(w, transport);
-                    double distance = (transport.getType().isFlyer() ? p.getDistance(transport.getDestination()) : BWEB::Map::getGroundDistance(p, transport.getDestination()));
-                    double visited = log(min(500.0, double(Broodwar->getFrameCount() - Grids::lastVisitedFrame(w))));
+                    double distance = p.getDistance(transport.getDestination());
+                    double visited = defaultVisited(transport, w);
                     double score = visited / (threat * distance);
 
                     if (score > best) {
@@ -311,7 +315,7 @@ namespace McRave::Transports {
             }
 
             if (bestPos.isValid())
-                transport.command(UnitCommandTypes::Move, bestPos, true);
+                transport.command(UnitCommandTypes::Move, bestPos, true);            
             else
                 Command::move(t);
         }

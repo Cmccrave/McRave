@@ -17,14 +17,8 @@ namespace McRave::Horizon {
         Need to test deadzones and squeeze factors still.
         */
 
-        double minThreshold = 0.40;
-        double maxThreshold = 0.80;
-
-        if (BuildOrder::isRush()) {
-            minThreshold = 0.00;
-            maxThreshold = 0.60;
-        }
-
+        auto minThreshold = 0.60;
+        auto maxThreshold = 0.80;
         auto enemyLocalGroundStrength = 0.0, allyLocalGroundStrength = 0.0;
         auto enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;
         auto unitToEngage = max(0.0, unit.getEngDist() / (24.0 * unit.getSpeed()));
@@ -92,7 +86,8 @@ namespace McRave::Horizon {
             for (auto &e : Units::getUnits(PlayerState::Enemy)) {
                 UnitInfo &enemy = *e;
                 if (applySqueezeFactor(enemy)) {
-                    auto path = mapBWEM.GetPath(enemy.getPosition(), unit.getPosition());
+                    auto path = enemy.sameTile() ? enemy.getQuickPath() : mapBWEM.GetPath(enemy.getPosition(), unit.getPosition());
+                    enemy.setQuickPath(path);
                     for (auto &choke : path) {
                         if (enemy.getGroundReach() < enemy.getPosition().getDistance(Position(choke->Center())))
                             enemySqueezeFactor[choke]+= double(enemy.getType().width());
@@ -102,7 +97,8 @@ namespace McRave::Horizon {
             for (auto &a : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &ally = *a;
                 if (applySqueezeFactor(ally)) {
-                    auto path = mapBWEM.GetPath(ally.getPosition(), ally.getTarget().getPosition());
+                    auto path = ally.sameTile() ? ally.getQuickPath() : mapBWEM.GetPath(ally.getPosition(), ally.getTarget().getPosition());
+                    ally.setQuickPath(path);
                     for (auto &choke : path) {
                         if (ally.getGroundReach() < ally.getPosition().getDistance(Position(choke->Center())))
                             selfSqueezeFactor[choke]+= double(ally.getType().width());
@@ -133,7 +129,7 @@ namespace McRave::Horizon {
                 auto simRatio =  simulationTime - (distance / speed);
 
                 // If the unit doesn't affect this simulation
-                if (simRatio <= 0.0 || (enemy.getSpeed() <= 0.0 && enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths > 64.0))                    
+                if (simRatio <= 0.0 || (enemy.getSpeed() <= 0.0 && distance > enemyRange))
                     continue;
 
                 // Situations where an enemy should be treated as stronger than it actually is
@@ -187,6 +183,8 @@ namespace McRave::Horizon {
                     continue;
                 if (ally.getType().maxShields() > 0 && ally.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && Broodwar->getFrameCount() < 8000)
                     continue;
+                if (ally.getType().getRace() == Races::Zerg && ally.getPercentTotal() < LOW_BIO_PERCENT_LIMIT)
+                    continue;
                 if (ally.getType() == UnitTypes::Zerg_Mutalisk && Grids::getEAirThreat((WalkPosition)ally.getEngagePosition()) > 0.0 && ally.getHealth() <= 30)
                     continue;
 
@@ -217,13 +215,12 @@ namespace McRave::Horizon {
             }
         };
 
-        if (!shouldIgnoreSim()) {
-            //simTerrain();
-            simEnemies();
-            simMyUnits();
-        }
-        else
+        if (shouldIgnoreSim())
             return;
+
+        simTerrain();
+        simEnemies();
+        simMyUnits();
 
         double attackAirAsAir = enemyLocalAirStrength > 0.0 ? allyLocalAirStrength / enemyLocalAirStrength : 10.0;
         double attackAirAsGround = enemyLocalGroundStrength > 0.0 ? allyLocalAirStrength / enemyLocalGroundStrength : 10.0;
@@ -260,7 +257,7 @@ namespace McRave::Horizon {
         if (unit.getSimValue() >= maxThreshold && !belowLimits) {
             unit.setSimState(SimState::Win);
         }
-        else if (unit.getSimValue() <= minThreshold || belowLimits || (unit.getSimState() == SimState::None && unit.getSimValue() < maxThreshold)) {
+        else if (unit.getSimValue() <= minThreshold || belowLimits || (unit.getEngDist() > SIM_RADIUS - 64.0 && unit.getSimValue() < maxThreshold)) {
             unit.setSimState(SimState::Loss);
         }
     }

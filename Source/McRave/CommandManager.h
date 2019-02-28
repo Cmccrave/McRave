@@ -39,15 +39,14 @@ namespace McRave::Command {
     bool special(const std::shared_ptr<UnitInfo>&);
     bool retreat(const std::shared_ptr<UnitInfo>&);
 
-    namespace {
-        inline std::vector <Action> myActions;
-        inline std::vector <Action> enemyActions;
-    }
+    inline std::vector <Action> myActions;
+    inline std::vector <Action> enemyActions;
 
     // Adds a UnitType or TechType command at a Position
     template<class T>
     void addAction(BWAPI::Unit unit, BWAPI::Position here, T type, bool enemy = false) {
         auto &commands = enemy ? enemyActions : myActions;
-        commands.push_back(Action(unit, here, type));
-    }    
+        auto test = Action(unit, here, type);
+        commands.push_back(test);
+    }
 }

@@ -68,7 +68,7 @@ namespace McRave::Units {
 
             // Check if workers should fight or work
             if (unit.getType().isWorker()) {
-                if (unit.getRole() == Role::Worker && (Util::reactivePullWorker(unit) || Util::proactivePullWorker(unit) || Util::pullRepairWorker(unit))) {
+                if (unit.getRole() == Role::Worker && !unit.unit()->isCarryingMinerals() && !unit.unit()->isCarryingGas() && (Util::reactivePullWorker(unit) || Util::proactivePullWorker(unit) || Util::pullRepairWorker(unit))) {
                     unit.setRole(Role::Combat);
                     Players::addStrength(unit);
                     unit.setBuildingType(UnitTypes::None);
@@ -79,18 +79,19 @@ namespace McRave::Units {
             }
 
             // Check if an overlord should scout or support
-            if (unit.getType() == UnitTypes::Zerg_Overlord) {/*
-                if (unit.getRole() == Role::None || getMyRoleCount(Role::Scout) < getMyRoleCount(Role::Support) + 1)
+            if (unit.getType() == UnitTypes::Zerg_Overlord) {
+                if (!Terrain::foundEnemy())
                     unit.setRole(Role::Scout);
-                else if (getMyRoleCount(Role::Support) < getMyRoleCount(Role::Scout) + 1)*/
-                unit.setRole(Role::Support);
+                else
+					unit.setRole(Role::Support);
+				return;
             }
 
             // Check if this unit should scout
             if (BWEB::Map::getNaturalChoke() && BuildOrder::shouldScout() && getMyRoleCount(Role::Scout) < Scouts::getScoutCount() && Broodwar->getFrameCount() - scoutDeadFrame > 500) {
                 auto type = Broodwar->self()->getRace().getWorker();
                 auto scout = Util::getClosestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
-                    return u.getRole() == Role::Worker && u.getBuildingType() == UnitTypes::None;
+                    return u.getRole() == Role::Worker && u.getBuildingType() == UnitTypes::None && !u.unit()->isCarryingMinerals() && !u.unit()->isCarryingGas();
                 });
 
                 if (scout == u) {
@@ -98,6 +99,15 @@ namespace McRave::Units {
                     unit.setBuildingType(UnitTypes::None);
                     unit.setBuildPosition(TilePositions::Invalid);
                 }
+            }
+            else if (getMyRoleCount(Role::Scout) > Scouts::getScoutCount()) {
+                auto here = Terrain::getEnemyStartingPosition().isValid() ? Terrain::getEnemyStartingPosition() : BWEB::Map::getNaturalPosition();
+                auto scout = Util::getClosestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
+                    return u.getRole() == Role::Scout;
+                });
+                
+                if (scout == u)
+                    unit.setRole(Role::Worker);
             }
 
             // Check if a worker morphed into a building
@@ -286,6 +296,16 @@ namespace McRave::Units {
             }
         }
 
+        if (unit->getType().isBuilding() && unit->getPlayer() == Broodwar->self()) {
+            auto closestWorker = Util::getClosestUnit(unit->getPosition(), PlayerState::Self, [&](auto &u) {
+                return u.getRole() == Role::Worker && u.getBuildPosition() == unit->getTilePosition();
+            });
+            if (closestWorker) {
+                closestWorker->setBuildingType(UnitTypes::None);
+                closestWorker->setBuildPosition(TilePositions::Invalid);
+            }
+        }
+
         info.setUnit(unit);
         info.updateUnit();
         player.getUnits().insert(make_shared<UnitInfo>(info));
@@ -351,9 +371,22 @@ namespace McRave::Units {
 
     int getNumberMelee()
     {
-        return com(UnitTypes::Protoss_Zealot) + com(UnitTypes::Protoss_Dark_Templar)
+        auto total = 0;
+
+        // Check for combat workers
+        if (Broodwar->getFrameCount() < 10000) {
+            for (auto &u : Units::getUnits(PlayerState::Self)) {
+                auto &unit = *u;
+                if (unit.getRole() == Role::Combat && unit.getType().isWorker())
+                    total++;                
+            }
+        }
+
+        total += com(UnitTypes::Protoss_Zealot) + com(UnitTypes::Protoss_Dark_Templar)
             + com(UnitTypes::Terran_Medic) + com(UnitTypes::Terran_Firebat)
             + com(UnitTypes::Zerg_Zergling);
+
+        return total;
     }
 
     int getNumberRanged()

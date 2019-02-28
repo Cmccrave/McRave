@@ -8,4 +8,8 @@ namespace McRave::Visuals {
     void endPerfTest(std::string);
     void onSendText(std::string);
     void displayPath(std::vector<BWAPI::TilePosition>);
+
+
+    void drawDebugText(std::string, double);
+    void drawDebugText(std::string, int);
 };

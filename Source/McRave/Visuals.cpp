@@ -144,7 +144,7 @@ namespace McRave::Visuals {
 
                 if (local) {
                     if (unit.getRole() == Role::Combat)
-                        Broodwar->drawTextMap(unit.getPosition(), "%c%s", textColor, unit.getLocalState());
+                        Broodwar->drawTextMap(unit.getPosition(), "%c%d", textColor, unit.getLocalState());
                 }
 
                 if (sim) {
@@ -240,5 +240,15 @@ namespace McRave::Visuals {
                 next = tile;
             }
         }
+    }
+
+    void drawDebugText(std::string s, double d) {
+        Broodwar->drawTextScreen(Position(0, 50 + screenOffset), "%s: %.2f", s.c_str(), d);
+        screenOffset += 10;
+    }
+
+    void drawDebugText(std::string s, int i) {
+        Broodwar->drawTextScreen(Position(0, 50 + screenOffset), "%s: %d", s.c_str(), i);
+        screenOffset += 10;
     }
 }

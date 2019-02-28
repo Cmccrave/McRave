@@ -36,12 +36,14 @@ namespace McRave::BuildOrder {
         inline bool fastExpand = false;
         inline bool proxy = false;
         inline bool hideTech = false;
+        inline bool delayFirstTech = false;
         inline bool playPassive = false;
         inline bool rush = false;
         inline bool cutWorkers = false; // TODO: Use unlocking
         inline bool lockedTransition = false;
         inline bool gasTrick = false;
         inline bool bookSupply = false;
+        inline bool transitionReady = false;
 
         inline int satVal, prodVal, techVal, baseVal;
         inline int gasLimit = INT_MAX;
@@ -61,6 +63,7 @@ namespace McRave::BuildOrder {
         inline BWAPI::UnitType firstUnit = BWAPI::UnitTypes::None;
         inline BWAPI::UnitType techUnit;
         inline BWAPI::UnitType productionUnit;
+        inline BWAPI::UnitType desiredDetection = BWAPI::UnitTypes::None;
         inline std::set <BWAPI::UnitType> techList;
         inline std::set <BWAPI::UnitType> unlockedType;
         inline std::vector <std::string> buildNames;

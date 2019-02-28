@@ -26,6 +26,15 @@ namespace McRave::BuildOrder::Protoss {
         }
 
         void defaultPvZ() {
+            hideTech =          false;
+            playPassive =       false;
+            fastExpand =        false;
+            wallNat =           false;
+            wallMain =          false;
+
+            desiredDetection =  UnitTypes::Protoss_Observer;
+            firstUnit =         UnitTypes::None;
+
             firstUpgrade =		UpgradeTypes::Protoss_Ground_Weapons;
             firstTech =			TechTypes::None;
             scout =				vis(Protoss_Pylon) > 0;
@@ -63,7 +72,6 @@ namespace McRave::BuildOrder::Protoss {
         defaultPvZ();
         fastExpand = true;
         wallNat = true;
-        scout = vis(Protoss_Pylon) > 0;
 
         auto min100 = Broodwar->self()->minerals() >= 100;
         auto cannonCount = int(com(Protoss_Forge) > 0) + (Units::getEnemyCount(Zerg_Zergling) >= 6) + (Units::getEnemyCount(Zerg_Zergling) >= 12) + (Units::getEnemyCount(Zerg_Zergling) >= 24);
@@ -77,15 +85,19 @@ namespace McRave::BuildOrder::Protoss {
             cannonCount = 7;
         else if (enemyBuild() == "3HatchMuta")
             cannonCount = 8;
-        
+
         // Only queue one at a time to prevent idle probes
         cannonCount = min(vis(Protoss_Photon_Cannon) + 1, cannonCount);
 
         // Reactions
         if (!lockedTransition) {
 
+            // Change Opener
+            if (enemyBuild() == "4Pool" && currentOpener != "Forge")
+                currentOpener = "Panic";
+
             // Change Transition
-            if (enemyBuild() == "5Pool" || enemyBuild() == "4Pool")
+            if (enemyBuild() == "4Pool")
                 currentTransition =	"Defensive";
             else if (enemyBuild() == "2HatchHydra" || enemyBuild() == "3HatchHydra")
                 currentTransition =	"StormRush";
@@ -97,74 +109,97 @@ namespace McRave::BuildOrder::Protoss {
         if (currentOpener == "Forge") {
             itemQueue[Protoss_Nexus] =				Item(1 + (s >= 28));
             itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
-            itemQueue[Protoss_Assimilator] =		Item((vis(Protoss_Gateway) >= 1) + (vis(Protoss_Stargate) >= 1));
+            itemQueue[Protoss_Assimilator] =		Item(com(Protoss_Forge) > 0 && vis(Protoss_Gateway) > 0);
             itemQueue[Protoss_Gateway] =			Item((s >= 32) + (s >= 46));
             itemQueue[Protoss_Forge] =				Item(s >= 20);
+
+            scout = vis(Protoss_Pylon) > 0;
+            transitionReady = vis(Protoss_Gateway) >= 2;
         }
         else if (currentOpener == "Nexus") {
             itemQueue[Protoss_Nexus] =				Item(1 + (s >= 24));
             itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
-            itemQueue[Protoss_Assimilator] =		Item((vis(Protoss_Gateway) >= 1) + (vis(Protoss_Stargate) >= 1));
+            itemQueue[Protoss_Assimilator] =		Item(vis(Protoss_Gateway) >= 1);
             itemQueue[Protoss_Gateway] =			Item(vis(Protoss_Forge) > 0);
             itemQueue[Protoss_Forge] =				Item(vis(Protoss_Nexus) >= 2);
+
+            scout = vis(Protoss_Pylon) > 0;
+            transitionReady = vis(Protoss_Gateway) >= 2;
         }
         else if (currentOpener == "Gate") {
             itemQueue[Protoss_Nexus] =				Item(1 + (s >= 42));
-            itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 24), (s >= 16) + (s >= 24));
-            itemQueue[Protoss_Assimilator] =		Item((s >= 50) + (s >= 64));
-            itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 46));
-            itemQueue[Protoss_Forge] =				Item(s >= 60);
+            itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
+            itemQueue[Protoss_Gateway] =			Item(vis(Protoss_Pylon) > 0);
+
+            scout = vis(Protoss_Gateway) > 0;
+            transitionReady = vis(Protoss_Nexus) >= 2;
+        }
+        else if (currentOpener == "Panic") {
+            cutWorkers =                            vis(Protoss_Pylon) == 1 && vis(Protoss_Probe) >= 13;
+
+            itemQueue[Protoss_Nexus] =				Item(1);
+            itemQueue[Protoss_Pylon] =				Item(1 + (Units::getEnemyCount(Zerg_Zergling) < 6 && s >= 30));
+            itemQueue[Protoss_Shield_Battery] =     Item(vis(Protoss_Gateway) > 0, com(Protoss_Gateway) > 0);
+            itemQueue[Protoss_Gateway] =			Item(0);
+
+            transitionReady = vis(Protoss_Pylon) >= 2;
         }
 
         // If we want Cannons but have no Forge
-        if (cannonCount > 0 && com(Protoss_Forge) == 0) {
-            cannonCount = 0;
-            itemQueue[Protoss_Forge] = Item(1);
+        if (cannonCount > 0 && currentOpener != "Panic") {
+            if (com(Protoss_Forge) == 0) {
+                cannonCount = 0;
+                itemQueue[Protoss_Forge] = Item(1);
+            }
+            itemQueue[Protoss_Photon_Cannon] =	Item(cannonCount);
         }
 
         // Transitions
-        if (currentTransition == "StormRush") {
-            getOpening =		s < 100;
-            lockedTransition =  com(Protoss_Cybernetics_Core) > 0;
+        if (transitionReady) {
+            if (currentTransition == "StormRush") {
+                getOpening =		s < 100;
+                lockedTransition =  com(Protoss_Cybernetics_Core) > 0;
 
-            firstUpgrade =		UpgradeTypes::None;
-            firstTech =			TechTypes::Psionic_Storm;
-            firstUnit =         Protoss_High_Templar;
+                firstUpgrade =		UpgradeTypes::None;
+                firstTech =			TechTypes::Psionic_Storm;
+                firstUnit =         Protoss_High_Templar;
 
-            itemQueue[Protoss_Photon_Cannon] =		Item(cannonCount);
-            itemQueue[Protoss_Assimilator] =		Item((s >= 38) + (s >= 60));
-            itemQueue[Protoss_Cybernetics_Core] =	Item((s >= 42));
-            itemQueue[Protoss_Stargate] =           Item(0);
-        }
-        else if (currentTransition == "DoubleStargate") {
-            getOpening =		s < 100;
-            lockedTransition =  vis(Protoss_Stargate) >= 2;
+                itemQueue[Protoss_Photon_Cannon] =		Item(cannonCount);
+                itemQueue[Protoss_Assimilator] =		Item((s >= 38) + (s >= 60));
+                itemQueue[Protoss_Cybernetics_Core] =	Item((s >= 42));
+                itemQueue[Protoss_Stargate] =           Item(0);
+            }
+            else if (currentTransition == "DoubleStargate") {
+                getOpening =		s < 100;
+                lockedTransition =  vis(Protoss_Stargate) >= 2;
 
-            firstUpgrade =		UpgradeTypes::Protoss_Air_Weapons;
-            firstTech =			TechTypes::None;
-            firstUnit =         Protoss_Corsair;
+                firstUpgrade =		UpgradeTypes::Protoss_Air_Weapons;
+                firstTech =			TechTypes::None;
+                firstUnit =         Protoss_Corsair;
 
-            itemQueue[Protoss_Photon_Cannon] =		Item(cannonCount);
-            itemQueue[Protoss_Assimilator] =		Item((s >= 38) + (s >= 60));
-            itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 40);
-            itemQueue[Protoss_Citadel_of_Adun] =	Item(0);
-            itemQueue[Protoss_Templar_Archives] =	Item(0);
-            itemQueue[Protoss_Stargate] =			Item((vis(Protoss_Corsair) > 0) + (vis(Protoss_Cybernetics_Core) > 0));
-        }
-        else {
-            getOpening =		s < 100;
-            lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
+                itemQueue[Protoss_Photon_Cannon] =		Item(cannonCount);
+                itemQueue[Protoss_Assimilator] =		Item((s >= 38) + (s >= 60));
+                itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 40);
+                itemQueue[Protoss_Citadel_of_Adun] =	Item(0);
+                itemQueue[Protoss_Templar_Archives] =	Item(0);
+                itemQueue[Protoss_Stargate] =			Item((vis(Protoss_Corsair) > 0) + (vis(Protoss_Cybernetics_Core) > 0));
+            }
+            else {
+                getOpening =		s < 100;
+                lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
 
-            currentTransition =	"NeoBisu";
-            firstUpgrade =		UpgradeTypes::Protoss_Air_Weapons;
-            firstTech =         TechTypes::None;
-            firstUnit =         Protoss_Corsair;
+                currentTransition =	"NeoBisu";
+                firstUpgrade =		UpgradeTypes::Protoss_Air_Weapons;
+                firstTech =         TechTypes::None;
+                firstUnit =         Protoss_Corsair;
 
-            itemQueue[Protoss_Photon_Cannon] =		Item(cannonCount);
-            itemQueue[Protoss_Cybernetics_Core] =	Item(vis(Protoss_Zealot) >= 1);
-            itemQueue[Protoss_Citadel_of_Adun] =	Item(vis(Protoss_Assimilator) >= 2);
-            itemQueue[Protoss_Stargate] =			Item(com(Protoss_Cybernetics_Core) >= 1);
-            itemQueue[Protoss_Templar_Archives] =	Item(Broodwar->self()->isUpgrading(UpgradeTypes::Leg_Enhancements) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements));
+                itemQueue[Protoss_Photon_Cannon] =		Item(cannonCount);
+                itemQueue[Protoss_Assimilator] =		Item((s >= 34) + (s >= 60));
+                itemQueue[Protoss_Cybernetics_Core] =	Item(vis(Protoss_Zealot) >= 1);
+                itemQueue[Protoss_Citadel_of_Adun] =	Item(vis(Protoss_Assimilator) >= 2);
+                itemQueue[Protoss_Stargate] =			Item(com(Protoss_Cybernetics_Core) >= 1);
+                itemQueue[Protoss_Templar_Archives] =	Item(Broodwar->self()->isUpgrading(UpgradeTypes::Leg_Enhancements) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements));
+            }
         }
     }
 
@@ -215,10 +250,10 @@ namespace McRave::BuildOrder::Protoss {
 
         // Builds
         if (currentTransition == "Expand") {
-            getOpening =		s < 80;           
+            getOpening =		s < 80;
             lockedTransition =  vis(Protoss_Nexus) >= 2;
 
-            wallNat =           currentOpener == "Natural" ? true : s >= 40;
+            wallNat =           currentOpener == "Natural" ? true : vis(Protoss_Nexus) >= 2;
 
             itemQueue[Protoss_Assimilator] =		Item(s >= 76);
             itemQueue[Protoss_Nexus] =				Item(1 + (s >= 42));
@@ -235,6 +270,7 @@ namespace McRave::BuildOrder::Protoss {
         }
         else if (currentTransition == "Panic") {
             getOpening =		s < 80;
+            wallNat =           currentOpener == "Natural";
 
             itemQueue[Protoss_Nexus] =				Item(1);
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 24) + (s >= 62) + (s >= 70));
@@ -247,8 +283,8 @@ namespace McRave::BuildOrder::Protoss {
             getOpening =        s < 120;
             lockedTransition =  true;
 
-            firstUpgrade =      UpgradeTypes::Singularity_Charge;            
-            dragoonLimit =      INT_MAX;           
+            firstUpgrade =      UpgradeTypes::Singularity_Charge;
+            dragoonLimit =      INT_MAX;
             wallNat =           currentOpener == "Natural" ? true : s >= 120;
 
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 24) + (s >= 62) + (s >= 70));
@@ -265,14 +301,16 @@ namespace McRave::BuildOrder::Protoss {
 
         // Reactions
         if (!lockedTransition) {
-            
+
             // Change Transition
             if (Strategy::enemyRush())
                 currentTransition = "Defensive";
 
             // Change Build
             if (Strategy::enemyPressure()) {
-
+                currentBuild = "2Gate";
+                currentOpener = "Main";
+                currentTransition = "4Gate";
             }
         }
 
@@ -320,9 +358,9 @@ namespace McRave::BuildOrder::Protoss {
             lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
 
             if (techList.find(Protoss_Dark_Templar) == techList.end())
-                techUnit =			Protoss_Dark_Templar;
+                firstUnit =			Protoss_Dark_Templar;
             if (com(Protoss_Dark_Templar) >= 2 && techList.find(Protoss_High_Templar) == techList.end())
-                techUnit =			Protoss_High_Templar;
+                firstUnit =			Protoss_High_Templar;
 
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 42));
             itemQueue[Protoss_Cybernetics_Core] =	Item(com(Protoss_Gateway) > 0);

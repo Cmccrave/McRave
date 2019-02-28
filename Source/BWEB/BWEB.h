@@ -6,9 +6,6 @@
 #include "Station.h"
 #include "Wall.h"
 
-// TODO:
-// Remove external use of overlapsCurrentWall
-
 namespace BWEB::Map
 {
     /// <summary> Global access of BWEM for BWEB. </summary>

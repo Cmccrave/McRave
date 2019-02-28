@@ -71,6 +71,8 @@ namespace McRave {
 
         BWEB::PathFinding::Path path;
         BWEB::PathFinding::Path resourcePath;
+        BWEM::CPPath quickPath;
+        
         void updateTarget();
         void updateStuckCheck();
     public:
@@ -147,6 +149,7 @@ namespace McRave {
 
         bool isThreatening();
         bool isHidden();
+		bool canStartAttack();
 
         bool isBurrowed() { return burrowed; }
         bool isFlying() { return flying; }
@@ -181,6 +184,7 @@ namespace McRave {
         BWAPI::TilePosition getLastTile() { return lastTile; }
 
         BWEB::PathFinding::Path& getPath() { return path; }
+        BWEM::CPPath& getQuickPath() { return quickPath; }
 
         void updateUnit();
         void createDummy(BWAPI::UnitType);
@@ -218,6 +222,8 @@ namespace McRave {
         void setBuildPosition(BWAPI::TilePosition newPosition) { buildPosition = newPosition; }
 
         void setPath(BWEB::PathFinding::Path& newPath) { path = newPath; }
+        void setQuickPath(BWEM::CPPath newPath) { quickPath = newPath; }
+
         void setLastPositions();
         void incrementBeingAttackedCount() { beingAttackedCount++; }
 

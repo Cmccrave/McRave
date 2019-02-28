@@ -161,7 +161,7 @@ namespace McRave::Stations {
             return true;
         else if (defenseCount <= 0)
             return true;
-        else if ((Players::getPlayers().size() > 1 || Players::vZ()) && !main && !nat && defenseCount < int(station.getDefenseLocations().size()))
+        else if ((Players::getPlayers().size() > 3 || Players::vZ()) && !main && !nat && defenseCount < int(station.getDefenseLocations().size()))
             return true;
         else if (station.getDefenseCount() < 1 && (Players::getStrength(PlayerState::Enemy).airToGround > 0.0 || Strategy::getEnemyBuild() == "Z2HatchMuta" || Strategy::getEnemyBuild() == "Z3HatchMuta"))
             return true;

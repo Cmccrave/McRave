@@ -167,7 +167,7 @@ namespace McRave::BuildOrder
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (build == "1GateCore") {
                     if (transition == "DT")
-                        return t || z;
+                        return p || t || z;
                     if (transition == "3GateRobo")
                         return p || r;
                     if (transition == "Corsair")
@@ -180,7 +180,7 @@ namespace McRave::BuildOrder
 
                 if (build == "2Gate") {
                     if (transition == "DT")
-                        return p || t;
+                        return /*p ||*/t;
                     if (transition == "Reaver")
                         return p /*|| t*/ || r;
                     if (transition == "Expand")
@@ -215,9 +215,14 @@ namespace McRave::BuildOrder
                 if (build == "PoolLair")
                     if (transition == "1HatchMuta")
                         return z;
-                if (build == "HatchPool")
-                    if (transition == "2HatchMuta")
-                        return t || p;
+				if (build == "HatchPool") {
+					if (transition == "2HatchMuta")
+						return t || p;
+					if (transition == "2HatchHydra")
+						return p;
+					if (transition == "3HatchLing")
+						return t;
+				}
             }
             return false;
         }
@@ -299,9 +304,9 @@ namespace McRave::BuildOrder
         bool testing = false;
         if (testing) {
             if (Broodwar->self()->getRace() == Races::Protoss) {
-                currentBuild = "FFE";
-                currentOpener = "Forge";
-                currentTransition = "NeoBisu";
+                currentBuild = "2Gate";
+                currentOpener = "Natural";
+                currentTransition = "DT";
                 isBuildPossible(currentBuild, currentOpener);
                 return;
             }
@@ -570,17 +575,17 @@ namespace McRave::BuildOrder
         UnitType baseType = Broodwar->self()->getRace().getResourceDepot();
 
         if (Broodwar->self()->getRace() == Races::Protoss) {
-            if (Broodwar->self()->minerals() > 500 + (100 * Broodwar->self()->completedUnitCount(baseType)))
+            if (Broodwar->self()->minerals() > 400 + (50 * com(baseType)))
                 return true;
             else if (techUnit == None && !Production::hasIdleProduction() && Resources::isMinSaturated() && techSat && productionSat)
                 return true;
         }
         else if (Broodwar->self()->getRace() == Races::Terran) {
-            if (Broodwar->self()->minerals() > 400 + (100 * Broodwar->self()->completedUnitCount(baseType)))
+            if (Broodwar->self()->minerals() > 400 + (100 * com(baseType)))
                 return true;
         }
         else if (Broodwar->self()->getRace() == Races::Zerg) {
-            if (Broodwar->self()->minerals() - Production::getReservedMineral() - Buildings::getQueuedMineral() >= 300 && !getOpening)
+            if (Broodwar->self()->minerals() - Production::getReservedMineral() - Buildings::getQueuedMineral() >= 300)
                 return true;
         }
         return false;
@@ -589,11 +594,11 @@ namespace McRave::BuildOrder
     bool shouldAddProduction()
     {
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            if (Broodwar->self()->minerals() >= 200 && vis(Zerg_Larva) < 3 && !getOpening)
+            if (Broodwar->self()->minerals() >= 300 && vis(Zerg_Larva) < 3)
                 return true;
         }
         else {
-            if ((Broodwar->self()->minerals() - Production::getReservedMineral() - Buildings::getQueuedMineral() > 150) || (!productionSat && Resources::isMinSaturated()))
+            if (!productionSat && Resources::isMinSaturated() && (!Production::hasIdleProduction() || Units::getSupply() >= 300 || Broodwar->self()->minerals() > 600))
                 return true;
         }
         return false;
@@ -644,7 +649,7 @@ namespace McRave::BuildOrder
         if (!getTech)
             return;
 
-        // Otherwise, choose a tech based on highest unit score
+        // Choose a tech based on highest unit score
         double highest = 0.0;
         for (auto &tech : Strategy::getUnitScores()) {
             if (tech.first == Protoss_Dragoon
@@ -664,15 +669,17 @@ namespace McRave::BuildOrder
         auto canGetTech = (Broodwar->self()->getRace() == Races::Protoss && com(Protoss_Cybernetics_Core) > 0)
             || (Broodwar->self()->getRace() == Races::Zerg && com(Zerg_Spawning_Pool) > 0);
 
+        const auto alreadyUnlocked = [&](UnitType type) {
+            if (unlockedType.find(type) != unlockedType.end() && techList.find(type) != techList.end())
+                return true;
+            return false;
+        };
+
         // No longer need to choose a tech
         if (techUnit != None) {
             getTech = false;
             techList.insert(techUnit);
             unlockedType.insert(techUnit);
-        }
-        if (firstUnit != None && canGetTech) {
-            techList.insert(firstUnit);
-            unlockedType.insert(firstUnit);
         }
 
         // Multi-unlock

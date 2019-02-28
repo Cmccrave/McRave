@@ -75,7 +75,7 @@ namespace McRave::Math {
 
     double getPriority(UnitInfo& unit)
     {
-        if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Terran_Science_Vessel)
+        if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Terran_Science_Vessel || unit.getType() == UnitTypes::Protoss_Arbiter)
             return 3.0;
         if ((unit.unit()->isRepairing() || unit.unit()->isConstructing()) && unit.isThreatening())
             return 10.0;

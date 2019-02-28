@@ -3,14 +3,17 @@
 using namespace std;
 using namespace BWAPI;
 
-namespace McRave::Targets{
+namespace McRave::Targets {
 
     namespace {
 
         void getBestTarget(UnitInfo& unit)
         {
             shared_ptr<UnitInfo> bestTarget = nullptr;
-            double closest = DBL_MAX, highest = 0.0;
+            double closest = DBL_MAX;
+            double bestScore = 0.0;
+            double bestDistance = DBL_MAX;
+
             auto &unitList = unit.targetsFriendly() ? Units::getUnits(PlayerState::Self) : Units::getUnits(PlayerState::Enemy);
             auto enemyStrength = Players::getStrength(PlayerState::Enemy);
             auto myStrength = Players::getStrength(PlayerState::Self);
@@ -20,17 +23,17 @@ namespace McRave::Targets{
                 bool enemyHasGround = enemyStrength.groundToAir > 0.0 || enemyStrength.groundToGround > 0.0;
                 bool enemyHasAir = enemyStrength.airToGround > 0.0 || enemyStrength.airToAir > 0.0;
                 bool selfHasGround = myStrength.groundToAir > 0.0 || myStrength.groundToGround > 0.0;
-                bool selfHasAir = myStrength.airToGround > 0.0 || myStrength.airToAir > 0.0;
+                bool selfHasAir = myStrength.airToGround > 0.0 || myStrength.airToAir > 0.0 || com(UnitTypes::Protoss_Shuttle) > 0;
 
                 bool targetMatters = (target.getAirDamage() > 0.0 && selfHasAir)
                     || (target.getGroundDamage() > 0.0/* && selfHasGround*/)
                     || (target.getType().isDetector() && (Units::getMyVisible(UnitTypes::Protoss_Dark_Templar) > 0 || Units::getMyVisible(UnitTypes::Protoss_Observer) > 0))
-                    || (target.getAirDamage() == 0.0 && target.getGroundDamage() == 0.0)
+                    || (target.getAirDamage() == 0.0 && target.getGroundDamage() == 0.0 && !unit.hasTransport())
                     || (target.getType().isWorker())
                     || (!enemyHasGround && !enemyHasAir);
 
                 // Melee: Don't attack non threatening workers in our territory
-                if ((unit.getGroundRange() <= 32.0 && target.getType().isWorker() && !target.isThreatening() && Terrain::isInAllyTerritory(target.getTilePosition()) && !target.hasAttackedRecently() && !Terrain::isInEnemyTerritory(target.getTilePosition()))
+                if ((unit.getGroundRange() <= 32.0 && target.getType().isWorker() && !target.isThreatening() && (Units::getSupply() < 60 || unit.getUnitsAttacking() > 0) && Terrain::isInAllyTerritory(target.getTilePosition()) && !target.hasAttackedRecently() && !Terrain::isInEnemyTerritory(target.getTilePosition()))
 
                     // If target is an egg, larva, scarab or spell
                     || (target.getType() == UnitTypes::Zerg_Egg || target.getType() == UnitTypes::Zerg_Larva || target.getType() == UnitTypes::Protoss_Scarab || target.getType().isSpell())
@@ -40,9 +43,6 @@ namespace McRave::Targets{
 
                     // If target is stasised
                     || (target.unit()->exists() && target.unit()->isStasised())
-
-                    // Mutalisk: Don't attack useless buildings
-                    || (target.getType().isBuilding() && target.getAirDamage() == 0.0 && target.getGroundDamage() == 0.0 && unit.getType() == UnitTypes::Zerg_Mutalisk)
 
                     // Zealot: Don't attack mines without +2
                     || (target.getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.getType() == UnitTypes::Protoss_Zealot && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) < 2)
@@ -74,52 +74,53 @@ namespace McRave::Targets{
                 return true;
             };
 
-            const auto checkBest = [&](const shared_ptr<UnitInfo>& t, double thisUnit, double health, double distance) {
+            const auto checkBest = [&](const shared_ptr<UnitInfo>& t, double thisUnit, double health, double reachDistance, double actualDistance) {
 
+                auto clusterTarget = unit.getType() == UnitTypes::Protoss_High_Templar || unit.getType() == UnitTypes::Protoss_Arbiter;
                 auto target = *t;
-                auto priority = (target.getType().isBuilding() && target.getGroundDamage() == 0.0 && target.getAirDamage() == 0.0) ? target.getPriority() / 2.0 : target.getPriority();
+                auto priority = (target.getType().isBuilding() && target.getGroundDamage() == 0.0 && target.getAirDamage() == 0.0) ? target.getPriority() / 10.0 : target.getPriority();
 
                 // Detector targeting
                 if ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == UnitTypes::Terran_Comsat_Station) {
                     if (target.isBurrowed() || target.unit()->isCloaked())
-                        thisUnit = (priority * health) / distance;
+                        thisUnit = (priority * health) / reachDistance;
                 }
 
                 // Cluster targeting for AoE units
-                else if (unit.getType() == UnitTypes::Protoss_High_Templar || unit.getType() == UnitTypes::Protoss_Arbiter) {
+                else if (clusterTarget) {
                     if (!target.getType().isBuilding() && target.getType() != UnitTypes::Terran_Vulture_Spider_Mine) {
 
                         double eGrid = Grids::getEGroundCluster(target.getWalkPosition()) + Grids::getEAirCluster(target.getWalkPosition());
                         double aGrid = Grids::getAGroundCluster(target.getWalkPosition()) + Grids::getAAirCluster(target.getWalkPosition());
-                        double score = eGrid;
+                        double score = eGrid / exp(aGrid);
 
-                        if (eGrid > aGrid)
-                            thisUnit = (priority * score) / distance;
+                        thisUnit = (priority * score) / reachDistance;
                     }
                 }
 
                 // Proximity targeting
                 else if (unit.getType() == UnitTypes::Protoss_Reaver) {
                     if (target.getType().isBuilding() && target.getGroundDamage() == 0.0 && target.getAirDamage() == 0.0)
-                        thisUnit = 0.1 / distance;
+                        thisUnit = 0.1 / reachDistance;
                     else
-                        thisUnit = health / distance;
+                        thisUnit = health / reachDistance;
                 }
 
                 // Priority targeting
                 else
-                    thisUnit = (priority * health) / distance;
+                    thisUnit = (priority * health) / reachDistance;
 
                 // If this target is more important to target, set as current target
-                if (thisUnit > highest) {
-                    highest = thisUnit;
+                if (thisUnit > bestScore || (thisUnit == bestScore && !clusterTarget && actualDistance < bestDistance)) {
+                    bestScore = thisUnit;
                     bestTarget = t;
+                    bestDistance = actualDistance;
                 }
             };
 
             for (auto &t : unitList) {
                 UnitInfo &target = *t;
-                
+
                 // Valid check;
                 if (!target.unit()
                     || !target.getWalkPosition().isValid()
@@ -130,33 +131,30 @@ namespace McRave::Targets{
                 bool targetCanAttack = ((unit.getType().isFlyer() && target.getAirDamage() > 0.0) || (!unit.getType().isFlyer() && target.getGroundDamage() > 0.0) || (!unit.getType().isFlyer() && target.getType() == UnitTypes::Terran_Vulture_Spider_Mine));
                 bool unitCanAttack = ((target.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!target.getType().isFlyer() && unit.getGroundDamage() > 0.0) || (unit.getType() == UnitTypes::Protoss_Carrier));
 
+
                 // HACK: Check for a flying building
                 if (target.unit()->exists() && target.unit()->isFlying() && unit.getAirDamage() <= 0.0)
                     unitCanAttack = false;
 
-                double allyRange = target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
-                double airDist = unit.getPosition().getDistance(target.getPosition());
+                double reach = target.getType().isFlyer() ? unit.getAirReach() / 2.0 : unit.getGroundReach() / 2.0;
+                double dist = unit.getPosition().getDistance(target.getPosition());
                 double widths = unit.getType().tileWidth() * 16.0 + target.getType().tileWidth() * 16.0;
-                double distance = widths + max(allyRange, airDist);
-                double health = targetCanAttack ? 1.0 + (0.2*(1.0 - unit.getPercentTotal())) : 1.0;
+                double reachDistance = max(1.0, dist - reach - widths);
+                double actualDistance = dist - widths;
+                double health = targetCanAttack ? 1.0 + (0.5*(1.0 - unit.getPercentTotal())) : 1.0;
                 double thisUnit = 0.0;
 
                 // Set sim position
-                if ((unitCanAttack || targetCanAttack) && distance < closest) {
+                if ((unitCanAttack || targetCanAttack) && actualDistance < closest) {
                     unit.setSimPosition(target.getPosition());
-                    closest = distance;
+                    closest = actualDistance;
                 }
-/*
-                if (unit.isLightAir() && !Stations::getMyStations().empty()) {
-                    auto myStation = Stations::getClosestStation(PlayerState::Self, unit.getPosition());
-                    distance = target.getPosition().getDistance(myStation);
-                }*/
 
                 // If should target, check if it's best
                 if (shouldTarget(target, unitCanAttack, targetCanAttack))
-                    checkBest(t, thisUnit, health, distance);
+                    checkBest(t, thisUnit, health, reachDistance, actualDistance);
             }
-           
+
             unit.setTarget(bestTarget);
 
             // If unit is close, increment it

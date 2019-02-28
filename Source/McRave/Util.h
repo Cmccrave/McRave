@@ -5,9 +5,9 @@ namespace McRave::Util {
 
     template<typename F>
     const std::shared_ptr<UnitInfo> getClosestUnit(BWAPI::Position here, PlayerState player, F &&pred) {
-        double distBest = DBL_MAX;
-        std::shared_ptr<UnitInfo> best = nullptr;
+        auto distBest = DBL_MAX;
         auto &units = Units::getUnits(player);
+        std::shared_ptr<UnitInfo> best = nullptr;
 
         for (auto &u : units) {
             auto &unit = *u;
@@ -16,6 +16,27 @@ namespace McRave::Util {
                 continue;
 
             double dist = here.getDistance(unit.getPosition());
+            if (dist < distBest) {
+                best = u;
+                distBest = dist;
+            }
+        }
+        return best;
+    }
+
+    template<typename F>
+    const std::shared_ptr<UnitInfo> getClosestUnitGround(BWAPI::Position here, PlayerState player, F &&pred) {
+        auto distBest = DBL_MAX;
+        auto &units = Units::getUnits(player);
+        std::shared_ptr<UnitInfo> best = nullptr;
+
+        for (auto &u : units) {
+            auto &unit = *u;
+
+            if (!unit.unit() || !pred(unit))
+                continue;
+
+            double dist = BWEB::Map::getGroundDistance(here, unit.getPosition());
             if (dist < distBest) {
                 best = u;
                 distBest = dist;
@@ -73,7 +94,7 @@ namespace McRave::Util {
     Line parallelLine(Line, int, double);
 
     BWAPI::Position getConcavePosition(UnitInfo&, double radius, BWEM::Area const * area = nullptr, BWAPI::Position here = BWAPI::Positions::Invalid);
-
+	BWAPI::Position getInterceptPosition(UnitInfo&);
     BWAPI::Position clipPosition(BWAPI::Position, BWAPI::Position);
     BWAPI::Position clipToMap(BWAPI::Position);
 }

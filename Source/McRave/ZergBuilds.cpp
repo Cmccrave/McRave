@@ -31,11 +31,9 @@ namespace McRave::BuildOrder::Zerg {
 
         droneLimit =    vis(Zerg_Lair) >= 1 ? 22 : 12;
         lingLimit =     INT_MAX;
-
-        bool transitionReady = false;
-        
+                
         // Reactions
-        if (s < 50) {
+        if (s < 30) {
             if (vis(Zerg_Sunken_Colony) >= 2)
                 gasLimit--;
             if (vis(Zerg_Sunken_Colony) >= 4)
@@ -74,9 +72,9 @@ namespace McRave::BuildOrder::Zerg {
                 itemQueue[Zerg_Spire] =                 Item(com(Zerg_Lair) >= 1);
             }
 
-            if (currentTransition == "3HatchLing") {
-                getOpening =    s < 60;
-                droneLimit =    13;
+            else if (currentTransition == "3HatchLing") {
+                getOpening =    s < 60 && Broodwar->getFrameCount() < 12000;
+                droneLimit =    11;
                 gasLimit =      lingSpeed() ? 0 : 3;
                 lingLimit =     INT_MAX;
                 bookSupply =    vis(Zerg_Overlord) < 3;
@@ -86,6 +84,18 @@ namespace McRave::BuildOrder::Zerg {
                 itemQueue[Zerg_Extractor] =             Item(vis(Zerg_Hatchery) >= 3);
                 itemQueue[Zerg_Overlord] =              Item(1 + (s >= 18) + (s >= 26));
             }
+
+			else if (currentTransition == "2HatchHydra") {
+				getOpening =    s < 60;
+				lingLimit =		6;
+				droneLimit =	14;
+				firstUpgrade =	UpgradeTypes::Grooved_Spines;
+				firstUnit =		Zerg_Hydralisk;
+
+				itemQueue[Zerg_Extractor] =				Item(1);
+				itemQueue[Zerg_Hydralisk_Den] =			Item(Broodwar->self()->gas() >= 50);
+				itemQueue[Zerg_Overlord] =              Item(1 + (s >= 18) + (s >= 32));
+			}
         }
     }
 

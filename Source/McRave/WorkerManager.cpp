@@ -60,8 +60,9 @@ namespace McRave::Workers {
                 return false;
 
             // 1) Attack any enemies inside the build area
-            if (worker.hasTarget() && worker.getTarget().getPosition().getDistance(worker.getPosition()) < 160 && (Util::rectangleIntersect(topLeft, botRight, worker.getTarget().getPosition()) || worker.getTarget().getPosition().getDistance(center) < 256.0)) {
-                Command::attack(w);
+            if (worker.hasTarget() && Util::rectangleIntersect(topLeft, botRight, worker.getTarget().getPosition())) {
+				if (Command::attack(w)) {}
+				else if (Command::move(w)) {}
                 return true;
             }
 
@@ -74,7 +75,7 @@ namespace McRave::Workers {
             }
 
             // 3) Move to build
-            else {
+            else if (shouldMoveToBuild(worker, worker.getBuildPosition(), worker.getBuildingType())) {
 
                 // TODO: Generate a path and check for threat
                 worker.setDestination(center);
@@ -164,18 +165,19 @@ namespace McRave::Workers {
 
                 Visuals::displayPath(worker.getPath().getTiles());
 
-                // 3) If no threat on path, mine it
-                if (!Util::accurateThreatOnPath(worker, worker.getPath())) {
+				// 3) If we are under a threat, try to get away from the threat
+				//if (worker.getPath().getTiles().empty() && Grids::getEGroundThreat(worker.getWalkPosition()) > 0.0) {
+					//Command::kite(w);
+                    //worker.circleOrange();
+					//return true;
+				//}
+
+                // 4) If no threat on path, mine it
+                /*else*/ if (!Util::accurateThreatOnPath(worker, worker.getPath())) {
                     if (shouldIssueGather())
                         worker.unit()->gather(worker.getResource().unit());
                     else if (!resourceExists)
                         Command::move(w);
-                    return true;
-                }
-
-                // 4) If we are under a threat, try to get away from it
-                else if (Grids::getEGroundThreat(worker.getWalkPosition()) > 0.0) {
-                    Command::kite(w);
                     return true;
                 }
             }

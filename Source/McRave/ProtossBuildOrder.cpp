@@ -44,16 +44,17 @@ namespace McRave::BuildOrder::Protoss
         if (getTech) {
 
             // If we need observers
-            if (Strategy::needDetection() || (!Terrain::isIslandMap() && Players::vP() && techList.find(Protoss_Observer) == techList.end() && !techList.empty()))
+            if (Strategy::needDetection() || (Players::vP() && techList.find(Protoss_Observer) == techList.end() && !techList.empty()))
                 techUnit = Protoss_Observer;
-
-            else if (currentTransition == "DoubleExpand" && techList.find(Protoss_High_Templar) == techList.end())
+            else if (currentTransition == "DoubleExpand" && !isTechUnit(Protoss_High_Templar))
                 techUnit = Protoss_High_Templar;
-            else if (Strategy::getEnemyBuild() == "4Gate" && techList.find(Protoss_Dark_Templar) == techList.end() && !Strategy::enemyGasSteal())
+            else if (Strategy::getEnemyBuild() == "4Gate" && !isTechUnit(Protoss_Dark_Templar) && !Strategy::enemyGasSteal())
                 techUnit = Protoss_Dark_Templar;
             else if (techUnit == None)
                 getNewTech();
         }
+        else if (firstUnit != None && !isTechUnit(firstUnit))
+            techUnit = firstUnit;
 
         checkNewTech();
         checkAllTech();
@@ -62,7 +63,7 @@ namespace McRave::BuildOrder::Protoss
 
     void situational()
     {
-        auto skipFirstTech = (currentTransition == "4Gate" || currentTransition == "DoubleExpand" || (Strategy::enemyGasSteal() && !Terrain::isNarrowNatural()));
+        auto skipFirstTech = int(currentTransition == "4Gate" || (Strategy::enemyGasSteal() && !Terrain::isNarrowNatural()));
 
         // Metrics for when to Expand/Add Production/Add Tech
         satVal = Players::vT() ? 2 : 3;
@@ -76,18 +77,21 @@ namespace McRave::BuildOrder::Protoss
 
         // Saturation
         productionSat = (prodVal >= satVal * baseVal);
-        techSat = (techVal >= baseVal);
+        techSat = (techVal >= baseVal) && (!delayFirstTech || productionSat);
 
         // If we have our tech unit, set to none
         if (techComplete())
             techUnit = None;
 
         // If production is saturated and none are idle or we need detection, choose a tech
-        if (Terrain::isIslandMap() || (!getOpening && !getTech && !techSat && !Production::hasIdleProduction()))
-            getTech = true;
-        if (Strategy::needDetection()) {
-            techList.insert(Protoss_Observer);
-            unlockedType.insert(Protoss_Observer);
+        if (Terrain::isIslandMap() || (!getOpening && !getTech && !techSat) || Strategy::needDetection()) {
+            if (desiredDetection == Protoss_Observer || !Strategy::needDetection())
+                getTech = true;
+            else {
+                wallNat = vis(Protoss_Forge) > 0;
+                itemQueue[Protoss_Forge] = Item(1);
+                itemQueue[Protoss_Photon_Cannon] = Item(com(Protoss_Forge) * 2);
+            }
         }
 
         // If we don't want an assimilator, set gas count to 0
@@ -112,9 +116,16 @@ namespace McRave::BuildOrder::Protoss
         if (!getOpening) {
             gasLimit = INT_MAX;
 
+            if (Units::getEnemyCount(Protoss_Observer) > 0 && isTechUnit(Protoss_Dark_Templar)) {
+                techList.erase(Protoss_Dark_Templar);
+                unlockedType.erase(Protoss_Dark_Templar);
+                techList.insert(Protoss_High_Templar);
+                unlockedType.insert(Protoss_High_Templar);
+            }
+
             // Adding bases
             if (shouldExpand())
-                itemQueue[Protoss_Nexus] = Item(vis(Protoss_Nexus) + 1);
+                itemQueue[Protoss_Nexus] = Item(com(Protoss_Nexus) + 1);
 
             // Adding production
             if (shouldAddProduction()) {
@@ -161,18 +172,11 @@ namespace McRave::BuildOrder::Protoss
 
         // Check if we should always make Zealots
         if ((zealotLimit > vis(Protoss_Zealot))
-            || Strategy::enemyProxy()
-            || Strategy::enemyRush()
             || zealotLegs
-            || (techUnit == Protoss_Dark_Templar && Players::vP())) {
+            || (techUnit == Protoss_Dark_Templar && Players::vP()))
             unlockedType.insert(Protoss_Zealot);
-        }
         else
             unlockedType.erase(Protoss_Zealot);
-
-        // IDK: If we are DT rushing, no Dragoons allowed?
-        if (!techComplete() && techUnit == Protoss_Dark_Templar && techList.size() == 1 && Players::vP() && com(Protoss_Citadel_of_Adun) == 1)
-            dragoonLimit = 0;
 
         // Check if we should always make Dragoons
         if ((Players::vZ() && Broodwar->getFrameCount() > 20000)

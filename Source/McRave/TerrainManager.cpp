@@ -123,12 +123,8 @@ namespace McRave::Terrain {
 
         void findAttackPosition()
         {
-            // HACK: Hitchhiker has issues pathing to enemy expansions, just attack the main for now
-            if (Broodwar->mapFileName().find("Hitchhiker") != string::npos)
-                attackPosition = enemyStartingPosition;
-
             // Attack possible enemy expansion location
-            else if (enemyExpand.isValid() && !Broodwar->isExplored(enemyExpand) && !Broodwar->isExplored(enemyExpand + TilePosition(4, 3)))
+            if (enemyExpand.isValid() && !Broodwar->isExplored(enemyExpand) && !Broodwar->isExplored(enemyExpand + TilePosition(4, 3)))
                 attackPosition = (Position)enemyExpand;
 
             // Attack furthest enemy station
@@ -163,7 +159,7 @@ namespace McRave::Terrain {
             reverseRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) < Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
             flatRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) == Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
             narrowNatural = BWEB::Map::getNaturalChoke() ? int(BWEB::Map::getNaturalChoke()->Pos(BWEB::Map::getNaturalChoke()->end1).getDistance(BWEB::Map::getNaturalChoke()->Pos(BWEB::Map::getNaturalChoke()->end2)) / 4) <= 2 : false;
-            defendNatural = BWEB::Map::getNaturalChoke() ? BuildOrder::buildCount(baseType) > 1 || Broodwar->self()->visibleUnitCount(baseType) > 1 || defendPosition == Position(BWEB::Map::getNaturalChoke()->Center()) || (reverseRamp && !Players::vZ()) : false;
+            defendNatural = BWEB::Map::getNaturalChoke() ? BuildOrder::buildCount(baseType) > 1 || vis(baseType) > 1 || defendPosition == Position(BWEB::Map::getNaturalChoke()->Center()) || (reverseRamp && !Players::vZ() && !Strategy::enemyRush()) : false;
 
             if (islandMap) {
                 defendPosition = BWEB::Map::getMainPosition();
@@ -188,7 +184,7 @@ namespace McRave::Terrain {
             }
 
             // If enemy is rushing we want to defend our mineral line until we can stabilize
-            if (Strategy::enemyRush() && !Strategy::defendChoke() && !BuildOrder::isFastExpand()) {
+            if ((Strategy::enemyRush() || Strategy::enemyProxy()) && !Strategy::defendChoke() && !BuildOrder::isWallNat()) {
                 defendPosition = mineralHold;
                 defendNatural = false;
             }
@@ -244,8 +240,12 @@ namespace McRave::Terrain {
                 meleeChokePositions.clear();
                 rangedChokePositions.clear();
             }
+
+            // If we aren't defending the natural, remove the area in case we added it
+            if (!defendNatural)
+                allyTerritory.erase(BWEB::Map::getNaturalArea());
         }
-               
+
         void updateAreas()
         {
             // Squish areas
@@ -316,33 +316,45 @@ namespace McRave::Terrain {
         findDefendPosition();
 
         updateAreas();
-
-        auto test = BWEB::Map::lineOfBestFit(BWEB::Map::getNaturalChoke());
-        Broodwar->drawLineMap(test.first, test.second, Colors::Green);
     }
 
-    bool inRangeOfWall(UnitInfo& unit)
+    bool inRangeOfWallPieces(UnitInfo& unit)
+    {
+        if (naturalWall) {
+            for (auto &piece : naturalWall->getSmallTiles()) {
+                if (BWEB::Map::isUsed(piece)) {
+                    auto center = Position(piece) + Position(32, 32);
+                    if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 32)
+                        return true;
+                }
+            }
+            for (auto &piece : naturalWall->getMediumTiles()) {
+                if (BWEB::Map::isUsed(piece)) {
+                    auto center = Position(piece) + Position(48, 32);
+                    if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 48)
+                        return true;
+                }
+            }
+            for (auto &piece : naturalWall->getLargeTiles()) {
+                if (BWEB::Map::isUsed(piece)) {
+                    auto center = Position(piece) + Position(64, 48);
+                    if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 64)
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    bool inRangeOfWallDefenses(UnitInfo& unit)
     {
         if (naturalWall) {
             for (auto &piece : naturalWall->getDefenses()) {
-                auto center = Position(piece) + Position(32, 32);
-                if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 32)
-                    return true;
-            }
-            for (auto &piece : naturalWall->getSmallTiles()) {
-                auto center = Position(piece) + Position(32, 32);
-                if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 32)
-                    return true;
-            }
-            for (auto &piece : naturalWall->getMediumTiles()) {
-                auto center = Position(piece) + Position(48, 32);
-                if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 48)
-                    return true;
-            }
-            for (auto &piece : naturalWall->getLargeTiles()) {
-                auto center = Position(piece) + Position(64, 48);
-                if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 64)
-                    return true;
+                if (BWEB::Map::isUsed(piece)) {
+                    auto center = Position(piece) + Position(32, 32);
+                    if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 32)
+                        return true;
+                }
             }
         }
         return false;

@@ -26,6 +26,15 @@ namespace McRave::BuildOrder::Protoss {
         }
 
         void defaultPvT() {
+            hideTech =          false;
+            playPassive =       false;
+            fastExpand =        false;
+            wallNat =           false;
+            wallMain =          false;
+
+            desiredDetection =  UnitTypes::Protoss_Observer;
+            firstUnit =         UnitTypes::None;
+
             firstUpgrade =		UpgradeTypes::Singularity_Charge;
             firstTech =			TechTypes::None;
             scout =				vis(Protoss_Cybernetics_Core) > 0;
@@ -279,9 +288,9 @@ namespace McRave::BuildOrder::Protoss {
             lockedTransition =  vis(Protoss_Robotics_Facility) > 0;
 
             if (techList.find(Protoss_Reaver) != techList.end())
-                techUnit = Protoss_Reaver;
+                firstUnit = Protoss_Reaver;
             if (com(Protoss_Reaver) && techList.find(Protoss_Carrier) != techList.end())
-                techUnit = Protoss_Carrier;
+                firstUnit = Protoss_Carrier;
 
             itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 1) + (vis(Protoss_Nexus) > 1) + (s >= 70) + (s >= 80));
         }
@@ -315,9 +324,7 @@ namespace McRave::BuildOrder::Protoss {
             else if ((!Strategy::enemyFastExpand() && Terrain::foundEnemy() && currentTransition == "DoubleExpand") || Strategy::enemyPressure())
                 currentTransition = "Standard";
 
-            // Change Opener
-            if (Units::getEnemyCount(Terran_Factory) >= 2)
-                currentOpener = "2Gate";
+			// Change Opener
 
             // Change Build
             if (s < 42 && Strategy::enemyRush()) {
@@ -362,6 +369,7 @@ namespace McRave::BuildOrder::Protoss {
             getOpening =		s < 80;
             firstUnit =         com(Protoss_Nexus) >= 2 ? Protoss_Carrier : UnitTypes::None;
             lockedTransition =  com(Protoss_Nexus) >= 2;
+			gasLimit =			INT_MAX;
 
             itemQueue[Protoss_Assimilator] =		Item((s >= 24) + (s >= 50));
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);

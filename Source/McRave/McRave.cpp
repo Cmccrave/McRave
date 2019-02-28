@@ -10,20 +10,16 @@
 // *** TODO ***
 // Floating units removing mine positions
 // BWEB Destination walls not working
-// Proxy builds? BWEB proxy block?
-// Zerg macro hatchery fixes
-// Unit Interface get distance is edge to point, lots of mistakes!
+// Unit Interface get distance is edge to point
 // Corsairs shouldn't engage inside ally territory
 // Cannons in main/nat mineral line vs mutas
 // Tests busts vs FFE
 // Test vs BBS
-// 2Gate - opener for GateNexus gets incremented/decremented by 2Gate build and vice versa
-// 2Gate at natural shouldn't transition into defensive version, need a different branch
 // Cannon rush issues
-// Checking if a gateway is queuable/buildable causes it to be unassigned?
-// Andromeda concaves area dont match, so line up weird
-// Units stop doing anything sometimes
-// Units stuttering
+
+
+// Scout targets
+// - Check for Nexus when we see no gateways in PvP (find timing for this and check after this time based on last visible frame on our grid)
 
 // *** TOTEST ***
 // If an enemy floats a CC to an expansion, we don't consider it "taken"

@@ -29,11 +29,7 @@ namespace McRave::BuildOrder::Zerg {
     {
         auto baseVal = vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive);
         auto techVal = int(techList.size()) + 1;
-
-        // Adding hatcheries when needed
-        if (shouldExpand() || shouldAddProduction())
-            itemQueue[Zerg_Hatchery] = Item(vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive) + 1);
-
+			   
         // Gas Trick
         if (gasTrick) {
             if (Units::getSupply() == 18 && vis(Zerg_Drone) == 9) {
@@ -51,11 +47,7 @@ namespace McRave::BuildOrder::Zerg {
             techUnit = UnitTypes::None;
 
         // Adding Sunkens/Spores
-        if (vis(Zerg_Drone) >= 8) {/*
-            auto myStrength = Players::getStrength(PlayerState::Self);
-            auto enemyStrength = Players::getStrength(PlayerState::Enemy);
-            auto sunkenCount = int(enemyStrength.groundToGround / (myStrength.groundDefense + myStrength.groundToGround));
-            auto sporeCount = int((enemyStrength.airToAir + enemyStrength.airToGround)) / (myStrength.airDefense + myStrength.groundToAir + myStrength.airToAir);*/
+        if (vis(Zerg_Drone) >= 8) {
             auto sunkenCount = 0;
             if (Players::vP())
                 sunkenCount = int(1 + Units::getEnemyCount(Protoss_Zealot) + Units::getEnemyCount(Protoss_Dragoon)) / 2;
@@ -78,6 +70,10 @@ namespace McRave::BuildOrder::Zerg {
         if (!getOpening) {
             gasLimit = INT_MAX;
             int gasCount = min(vis(Zerg_Extractor) + 1, Resources::getGasCount());
+
+			// Adding hatcheries when needed
+			if (shouldExpand() || shouldAddProduction())
+				itemQueue[Zerg_Hatchery] = Item(vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive) + 1);
 
             if (shouldAddGas())
                 itemQueue[Zerg_Extractor] = Item(gasCount);

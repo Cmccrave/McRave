@@ -50,12 +50,7 @@ namespace McRave::Util {
         double widths = unit.getTarget().getType().width() + unit.getType().width();
         double allyRange = (widths / 2) + (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
 
-        // HACK: Reavers have a weird ground distance range, try to reduce the amount of times Reavers try to engage
-        // TODO: Add a Reaver ground dist check
-        if (unit.getType() == UnitTypes::Protoss_Reaver)
-            allyRange -= 96.0;
-
-        if (unit.getPosition().getDistance(unit.getTarget().getPosition()) <= allyRange)
+        if (unit.getPosition().getDistance(unit.getTarget().getPosition()) <= allyRange + 32.0)
             return true;
         return false;
     }
@@ -63,20 +58,30 @@ namespace McRave::Util {
 
     bool proactivePullWorker(UnitInfo& unit)
     {
+        auto combatCount = Units::getMyRoleCount(Role::Combat) - int(unit.getRole() == Role::Combat);
         auto myStrength = Players::getStrength(PlayerState::Self);
+        myStrength.groundToGround -= unit.getVisibleGroundStrength();
+
+        // HACK: This sucks
+        auto alreadyCombatWorker = unit.getRole() == Role::Combat ? 1 : 0;
+
+        auto arriveAtDefense = Broodwar->getFrameCount() + (unit.getPosition().getDistance(Terrain::getDefendPosition()) / unit.getSpeed());
 
         if (Broodwar->self()->getRace() == Races::Protoss) {
             int completedDefenders = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Photon_Cannon) + Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot);
             int visibleDefenders = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot);
 
-            if (unit.getType() == UnitTypes::Protoss_Probe && (unit.getShields() < 20 || (unit.hasResource() && unit.getResource().getType().isRefinery())))
+            if (unit.getType() == UnitTypes::Protoss_Probe && (unit.getShields() < 0 || (unit.hasResource() && unit.getResource().getType().isRefinery())))
                 return false;
 
-            if (BuildOrder::isHideTech() && Units::getMyRoleCount(Role::Combat) == 1 + int(unit.getRole() == Role::Combat))
+            if (BuildOrder::isHideTech() && combatCount == 2)
                 return true;
 
             if (BuildOrder::getCurrentBuild() == "FFE") {
-                if (Strategy::enemyRush() && myStrength.groundToGround < 4.00 && completedDefenders < 2 && visibleDefenders >= 1)
+                if (arriveAtDefense < Strategy::enemyArrivalFrame() - 50)
+                    return false;
+
+                if (Strategy::enemyRush() && combatCount < max(2, Units::getEnemyCount(UnitTypes::Zerg_Zergling)) && visibleDefenders >= 1)
                     return true;
                 if (Strategy::enemyRush() && myStrength.groundToGround < 1.00 && completedDefenders < 2 && visibleDefenders >= 2)
                     return true;
@@ -89,6 +94,13 @@ namespace McRave::Util {
                 if (Strategy::getEnemyBuild() == "4Pool" && myStrength.groundToGround < 4.00 && completedDefenders < 2)
                     return true;
                 if (Strategy::getEnemyBuild() == "9Pool" && myStrength.groundToGround < 4.00 && completedDefenders < 3)
+                    return true;
+            }
+            else if (BuildOrder::getCurrentBuild() == "1GateCore" && Strategy::getEnemyBuild() == "2Gate" && BuildOrder::getCurrentTransition() != "Defensive" && Strategy::defendChoke()) {
+                return false;
+
+                // Disabled for now - come back to it
+                if (combatCount < 4)
                     return true;
             }
         }
@@ -110,6 +122,9 @@ namespace McRave::Util {
         auto myStrength = Players::getStrength(PlayerState::Self);
         auto closestStation = Stations::getClosestStation(PlayerState::Self, unit.getPosition());
 
+        // HACK: This sucks
+        auto hackyOffset = unit.getRole() == Role::Combat ? myStrength.groundToGround - unit.getVisibleGroundStrength() : myStrength.groundToGround;
+
         if (Units::getEnemyCount(UnitTypes::Terran_Vulture) > 2)
             return false;
 
@@ -128,19 +143,8 @@ namespace McRave::Util {
         }
 
         // If we have no combat units and there is a threat
-        if (Units::getImmThreat() > (myStrength.groundToGround + myStrength.groundDefense) + unit.getVisibleGroundStrength() && Broodwar->getFrameCount() < 10000) {
-            if (Broodwar->self()->getRace() == Races::Protoss) {
-                return true;
-            }
-            else if (Broodwar->self()->getRace() == Races::Zerg) {
-                if (Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Zergling) == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Mutalisk) == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Hydralisk) == 0)
-                    return true;
-            }
-            else if (Broodwar->self()->getRace() == Races::Terran) {
-                if (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Marine) == 0 && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Vulture) == 0)
-                    return true;
-            }
-        }
+        if (Units::getImmThreat() > hackyOffset + myStrength.groundDefense && Broodwar->getFrameCount() < 10000)
+            return true;
         return false;
     }
 
@@ -369,6 +373,14 @@ namespace McRave::Util {
             }
         }
         return posBest;
+    }
+
+    Position getInterceptPosition(UnitInfo& unit)
+    {
+        auto timeToEngage = (unit.getEngDist() / unit.getSpeed()) - 24.0;
+        auto targetDestination = unit.getTarget().getPosition() + Position(int(unit.getTarget().unit()->getVelocityX() * timeToEngage), int(unit.getTarget().unit()->getVelocityY() * timeToEngage));
+        targetDestination = Util::clipToMap(targetDestination);
+        return targetDestination;
     }
 
     Position clipPosition(Position source, Position target)

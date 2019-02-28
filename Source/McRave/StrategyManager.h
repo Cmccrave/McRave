@@ -13,7 +13,7 @@ namespace McRave::Strategy {
     bool enemyScouted();
     bool enemyBust();
     bool enemyPressure();
-    int getPoolFrame();
+    int enemyArrivalFrame();
     std::map <BWAPI::UnitType, double>& getUnitScores();
 
     void onFrame();

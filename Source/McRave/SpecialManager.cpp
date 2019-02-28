@@ -74,13 +74,13 @@ namespace McRave::Command
 
         // Siege Tanks
         else if (unit.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) {
-            if (unit.getPosition().getDistance(unit.getEngagePosition()) < 32.0 && unit.getLocalState() == LocalState::Attack)
+            if (unit.hasTarget() && unit.getPosition().getDistance(unit.getTarget().getPosition()) < 384.0 && unit.getLocalState() == LocalState::Attack)
                 unit.unit()->siege();
             if (unit.getGlobalState() == GlobalState::Retreat && unit.getPosition().getDistance(Terrain::getDefendPosition()) < 320)
                 unit.unit()->siege();
         }
         else if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode) {
-            if (unit.getPosition().getDistance(unit.getEngagePosition()) > 128.0 || unit.getLocalState() == LocalState::Retreat) {
+            if (unit.hasTarget() && unit.getPosition().getDistance(unit.getTarget().getPosition()) > 128.0 || unit.getLocalState() == LocalState::Retreat) {
                 if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Unsiege)
                     unit.unit()->unsiege();
                 return true;
@@ -155,7 +155,7 @@ namespace McRave::Command
 
                     // Try to find a friendly templar who is low energy and is threatened
                     auto templar = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                        return u != unit && u.getType() == UnitTypes::Protoss_High_Templar && (wantArchons || (u.getEnergy() < 75 && Grids::getEGroundThreat(u.getWalkPosition()) > 0.0));
+                        return u != unit && u.getType() == UnitTypes::Protoss_High_Templar && u.unit()->isCompleted() && (wantArchons || (u.getEnergy() < 75 && Grids::getEGroundThreat(u.getWalkPosition()) > 0.0));
                     });
 
                     if (templar) {
@@ -169,7 +169,7 @@ namespace McRave::Command
         }
 
         // Reavers
-        else if (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && unit.unit()->getScarabCount() < MAX_SCARAB && !unit.unit()->isTraining()) {
+        else if (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && unit.unit()->getScarabCount() < MAX_SCARAB && Broodwar->self()->minerals() >= 25) {
             unit.unit()->train(UnitTypes::Protoss_Scarab);
             unit.setLastAttackFrame(Broodwar->getFrameCount());	/// Use this to fudge whether a Reaver has actually shot when using shuttles due to cooldown reset
             return false;
@@ -186,8 +186,8 @@ namespace McRave::Command
 
         // Lurkers
         else if (unit.getType() == UnitTypes::Zerg_Lurker) {
-            if (unit.getDestination().isValid()) {
-                if (!unit.unit()->isBurrowed() && unit.getPosition().getDistance(unit.getDestination()) < 64.0) {
+            if (unit.getDestination().isValid() && unit.getPosition().getDistance(unit.getDestination()) < 64.0) {
+                if (!unit.unit()->isBurrowed()) {
                     if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Burrow)
                         unit.unit()->burrow();
                     return true;
