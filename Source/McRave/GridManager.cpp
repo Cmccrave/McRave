@@ -245,19 +245,6 @@ namespace McRave::Grids
             }
         }
 
-        void draw()
-        {
-            return;// Remove this to draw stuff
-            for (int x = 0; x <= Broodwar->mapWidth() * 4; x++) {
-                for (int y = 0; y <= Broodwar->mapHeight() * 4; y++) {
-                    WalkPosition w(x, y);
-
-                    if (eAirThreat[x][y] > 0)
-                        Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::Blue);                    
-                }
-            }
-        }
-
         void updateMobility()
         {
             const auto lingWalkable = [&](WalkPosition here) {
@@ -288,11 +275,11 @@ namespace McRave::Grids
                         }
                     }
 
-                    mobility[x][y] = min(10, int(floor(mobility[x][y] / 56)));
+                    mobility[x][y] = min(10, max(1, int(floor(mobility[x][y] / 56))));
 
 
                     // Island
-                    if ((mapBWEM.GetArea(w) && mapBWEM.GetArea(w)->AccessibleNeighbours().size() == 0) || !BWEB::Map::isWalkable((TilePosition)w))
+                    if (mapBWEM.GetArea(w) && mapBWEM.GetArea(w)->AccessibleNeighbours().size() == 0)
                         mobility[x][y] = -1;
 
                     // Setup what is possible to check ground distances on
@@ -362,7 +349,6 @@ namespace McRave::Grids
         updateEnemy();
         updateNeutral();
         updateVisibility();
-        draw();
     }
 
     void onStart()

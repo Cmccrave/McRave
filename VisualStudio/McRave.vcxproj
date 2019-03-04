@@ -52,6 +52,7 @@
     <ClInclude Include="..\Source\McRave\EventManager.h" />
     <ClCompile Include="..\Source\McRave\GoalManager.cpp" />
     <ClCompile Include="..\Source\McRave\GridManager.cpp" />
+    <ClCompile Include="..\Source\McRave\LearningManager.cpp" />
     <ClCompile Include="..\Source\McRave\PvP.cpp" />
     <ClCompile Include="..\Source\McRave\PvT.cpp" />
     <ClCompile Include="..\Source\McRave\PvZ.cpp" />
@@ -111,6 +112,7 @@
     <ClInclude Include="..\Source\McRave\GoalManager.h" />
     <ClInclude Include="..\Source\McRave\GridManager.h" />
     <ClInclude Include="..\Source\McRave\Header.h" />
+    <ClInclude Include="..\Source\McRave\LearningManager.h" />
     <ClInclude Include="..\Source\McRave\Visuals.h" />
     <ClInclude Include="..\Source\McRave\McRave.h" />
     <ClInclude Include="..\Source\McRave\PlayerInfo.h" />

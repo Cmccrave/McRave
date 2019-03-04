@@ -130,6 +130,7 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Nexus] =				Item(1 + (s >= 42));
             itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
             itemQueue[Protoss_Gateway] =			Item(vis(Protoss_Pylon) > 0);
+            itemQueue[Protoss_Forge] =				Item(s >= 60);
 
             scout = vis(Protoss_Gateway) > 0;
             transitionReady = vis(Protoss_Nexus) >= 2;

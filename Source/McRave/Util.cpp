@@ -7,6 +7,13 @@ namespace McRave::Util {
 
     bool isWalkable(UnitInfo& unit, WalkPosition here)
     {
+        // HACK: Testing
+        if (!unit.getType().isFlyer() && Grids::getMobility(here) > 0 && Grids::getCollision(here) == 0)
+            return true;
+        if (unit.getType().isFlyer())
+            return true;
+
+
         // Pixel rectangle
         auto walkWidth = unit.getType().isBuilding() ? unit.getType().tileWidth() * 4 : (int)ceil(unit.getType().width() / 8.0);
         auto walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : (int)ceil(unit.getType().height() / 8.0);
@@ -16,9 +23,6 @@ namespace McRave::Util {
         // Round up
         int halfW = (walkWidth + 1) / 2;
         int halfH = (walkHeight + 1) / 2;
-
-        if (unit.getType().isFlyer())
-            return true;
 
         auto collision = Grids::getCollision(here);
         if (collision > 0 && collision != unit.unit()->getID())
@@ -377,7 +381,7 @@ namespace McRave::Util {
 
     Position getInterceptPosition(UnitInfo& unit)
     {
-        auto timeToEngage = (unit.getEngDist() / unit.getSpeed()) - 24.0;
+        auto timeToEngage = max(0.0, (unit.getEngDist() / unit.getSpeed()) - 24.0);
         auto targetDestination = unit.getTarget().getPosition() + Position(int(unit.getTarget().unit()->getVelocityX() * timeToEngage), int(unit.getTarget().unit()->getVelocityY() * timeToEngage));
         targetDestination = Util::clipToMap(targetDestination);
         return targetDestination;

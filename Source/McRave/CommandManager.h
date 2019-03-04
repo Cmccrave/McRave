@@ -19,7 +19,7 @@ namespace McRave::Command {
         }
     };
 
-    BWAPI::Position findViablePosition(UnitInfo&, std::function<double(BWAPI::WalkPosition)>);
+    //BWAPI::Position findViablePosition(UnitInfo&, std::function<double(BWAPI::WalkPosition)>);
     void onFrame();
     bool overlapsActions(BWAPI::Unit, BWAPI::TechType, BWAPI::Position, int);
     bool overlapsActions(BWAPI::Unit, BWAPI::UnitType, BWAPI::Position, int);
@@ -38,6 +38,7 @@ namespace McRave::Command {
     bool escort(const std::shared_ptr<UnitInfo>&);
     bool special(const std::shared_ptr<UnitInfo>&);
     bool retreat(const std::shared_ptr<UnitInfo>&);
+    bool transport(const std::shared_ptr<UnitInfo>&);
 
     inline std::vector <Action> myActions;
     inline std::vector <Action> enemyActions;

@@ -169,7 +169,7 @@ namespace McRave::Command
         }
 
         // Reavers
-        else if (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && unit.unit()->getScarabCount() < MAX_SCARAB && Broodwar->self()->minerals() >= 25) {
+        else if (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && unit.unit()->getScarabCount() < MAX_SCARAB && (Broodwar->self()->minerals() >= 25 || unit.unit()->getGroundWeaponCooldown() >= 60)) {
             unit.unit()->train(UnitTypes::Protoss_Scarab);
             unit.setLastAttackFrame(Broodwar->getFrameCount());	/// Use this to fudge whether a Reaver has actually shot when using shuttles due to cooldown reset
             return false;

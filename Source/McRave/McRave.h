@@ -3,8 +3,8 @@
 #include "bwem.h"
 #include "BWEB.h"
 
-#define STORM_LIMIT 5.0
-#define STASIS_LIMIT 8.0
+#define STORM_LIMIT 10.0
+#define STASIS_LIMIT 20.0
 #define LOW_SHIELD_PERCENT_LIMIT 0.2
 #define LOW_MECH_PERCENT_LIMIT 0.2
 #define LOW_BIO_PERCENT_LIMIT 0.3
@@ -71,6 +71,7 @@ namespace McRave
 #include "GridManager.h"
 #include "StationManager.h"
 #include "WorkerManager.h"
+#include "LearningManager.h"
 #include "PlayerManager.h"
 #include "ProductionManager.h"
 #include "PylonManager.h"

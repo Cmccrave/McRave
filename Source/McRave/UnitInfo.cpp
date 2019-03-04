@@ -56,7 +56,6 @@ namespace McRave
         priority				= Math::getPriority(*this);
         lastAttackFrame			= (t != UnitTypes::Protoss_Reaver && (thisUnit->isStartingAttack() || thisUnit->isRepairing())) ? Broodwar->getFrameCount() : lastAttackFrame;
         killCount				= unit()->getKillCount();
-        beingAttackedCount		= 0;
 
         // Reset states
         lState					= LocalState::None;
@@ -93,8 +92,13 @@ namespace McRave
 
         // Assume enemy target
         else if (player && player->isEnemy(Broodwar->self())) {            
-            if (thisUnit->getOrderTarget())
-                target = Units::getUnit(thisUnit->getOrderTarget());            
+            if (thisUnit->getOrderTarget()) {
+                auto &targetInfo = Units::getUnit(thisUnit->getOrderTarget());
+                if (targetInfo) {
+                    target = targetInfo;
+                    targetInfo->getTargetedBy().insert(make_shared<UnitInfo>(*this));
+                }
+            }
             else
                 target = nullptr;
         }

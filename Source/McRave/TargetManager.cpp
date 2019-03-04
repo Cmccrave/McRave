@@ -33,7 +33,7 @@ namespace McRave::Targets {
                     || (!enemyHasGround && !enemyHasAir);
 
                 // Melee: Don't attack non threatening workers in our territory
-                if ((unit.getGroundRange() <= 32.0 && target.getType().isWorker() && !target.isThreatening() && (Units::getSupply() < 60 || unit.getUnitsAttacking() > 0) && Terrain::isInAllyTerritory(target.getTilePosition()) && !target.hasAttackedRecently() && !Terrain::isInEnemyTerritory(target.getTilePosition()))
+                if ((unit.getGroundRange() <= 32.0 && target.getType().isWorker() && !target.isThreatening() && (Units::getSupply() < 60 || int(unit.getTargetedBy().size()) > 0) && Terrain::isInAllyTerritory(target.getTilePosition()) && !target.hasAttackedRecently() && !Terrain::isInEnemyTerritory(target.getTilePosition()))
 
                     // If target is an egg, larva, scarab or spell
                     || (target.getType() == UnitTypes::Zerg_Egg || target.getType() == UnitTypes::Zerg_Larva || target.getType() == UnitTypes::Protoss_Scarab || target.getType().isSpell())
@@ -69,7 +69,7 @@ namespace McRave::Targets {
                     || (unit.getType() == UnitTypes::Protoss_Zealot && BuildOrder::isRush() && !target.getType().isWorker() && Broodwar->getFrameCount() < 10000)
 
                     // Don't attack enemy spider mines with more than 2 units
-                    || (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.getUnitsAttacking() >= 2))
+                    || (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine && int(unit.getTargetedBy().size()) >= 2))
                     return false;
                 return true;
             };
@@ -159,7 +159,7 @@ namespace McRave::Targets {
 
             // If unit is close, increment it
             if (bestTarget && Util::unitInRange(unit))
-                bestTarget->incrementBeingAttackedCount();
+                bestTarget->getTargetedBy().insert(make_shared<UnitInfo>(unit));
         }
 
         void getEngagePosition(UnitInfo& unit)
@@ -233,9 +233,6 @@ namespace McRave::Targets {
                     // HACK: Estimate until we can fix our pathing
                     auto dist = unit.getPosition().getDistance(unit.getEngagePosition());
                     unit.setEngDist(dist);
-                    //auto dist = DBL_MAX;
-                    //unit.setEngDist(dist);
-                    //unit.circleRed();
                 }
             }
             // Otherwise approximate and double

@@ -8,8 +8,8 @@ namespace McRave::Terrain {
 
     bool inRangeOfWallPieces(UnitInfo&);
     bool inRangeOfWallDefenses(UnitInfo&);
-    bool findNaturalWall(std::vector<BWAPI::UnitType>&, const std::vector<BWAPI::UnitType>& defenses ={});
-    bool findMainWall(std::vector<BWAPI::UnitType>&, const std::vector<BWAPI::UnitType>& defenses ={});
+    bool findNaturalWall(std::vector<BWAPI::UnitType>&, const std::vector<BWAPI::UnitType>& defenses ={}, bool tight = false);
+    bool findMainWall(std::vector<BWAPI::UnitType>&, const std::vector<BWAPI::UnitType>& defenses ={}, bool tight = false);
     bool isInAllyTerritory(BWAPI::TilePosition);
     bool isInEnemyTerritory(BWAPI::TilePosition);
     bool isStartingBase(BWAPI::TilePosition);

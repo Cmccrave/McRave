@@ -12,14 +12,19 @@
 // BWEB Destination walls not working
 // Unit Interface get distance is edge to point
 // Corsairs shouldn't engage inside ally territory
-// Cannons in main/nat mineral line vs mutas
 // Tests busts vs FFE
 // Test vs BBS
 // Cannon rush issues
-
+// Reavers aren't picked up if we cant afford scarabs
+// Production freeze, possibly unit score below 0?
+// Find a better balance for storm and stasis limits
+// Check storming burrowed lurkers
+// On Roadkill there's a skeleton that blocks a defense spot, why is this considered buildable?
+// Prevent HT walking into enemies when storm isn't suitable
 
 // Scout targets
 // - Check for Nexus when we see no gateways in PvP (find timing for this and check after this time based on last visible frame on our grid)
+// - Check for 3rd against Z when we see 2 hatchery and no gas
 
 // *** TOTEST ***
 // If an enemy floats a CC to an expansion, we don't consider it "taken"
@@ -30,7 +35,6 @@
 
 // *** Ideas ***
 // Monitor for overkilling units by hp - (2*nextDmgSource) <= 0 (double damage source to account for a potential miss?)
-// Walkable grid cached, only check collision at corners + center when looking for walkable positions for a unit
 // Use Player pointer instead of BWAPI::Player pointer in UnitInfo, gives advantage of knowing upgrades/tech that are available always
 // Use player filters to grab unit set in getClosestUnit template
 // Add panic reactions for auto-loss builds (gate first at natural vs 4pool for example)
@@ -44,22 +48,24 @@ void McRaveModule::onStart()
     Broodwar->enableFlag(Flag::UserInput);
     Broodwar->setCommandOptimizationLevel(0);
     Broodwar->setLatCom(true);
-    Broodwar->setLocalSpeed(0);
     Players::onStart();
     Terrain::onStart();
     BWEB::Map::onStart();
     BWEB::Stations::findStations();
 
+    if (Broodwar->getGameType() != BWAPI::GameTypes::Use_Map_Settings)
+        Broodwar->setLocalSpeed(0);
+
     Stations::onStart();
     Grids::onStart();
-    BuildOrder::onStart();
+    Learning::onStart();
     BWEB::Blocks::findBlocks();
     Broodwar->sendText("glhf");
 }
 
 void McRaveModule::onEnd(bool isWinner)
 {
-    BuildOrder::onEnd(isWinner);
+    Learning::onEnd(isWinner);
     Broodwar->sendText("ggwp");
 }
 

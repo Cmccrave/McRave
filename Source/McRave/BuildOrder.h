@@ -18,11 +18,6 @@ namespace McRave::BuildOrder {
         int const getActualCount() { return actualCount; }
     };
 
-    struct Build {
-        std::vector <std::string> transitions;
-        std::vector <std::string> openers;
-    };
-
     // Need a namespace to share variables among the various files used
     namespace All {
         inline std::map <BWAPI::UnitType, Item> itemQueue;
@@ -52,8 +47,6 @@ namespace McRave::BuildOrder {
         inline int lingLimit = INT_MAX;
         inline int droneLimit = INT_MAX;
 
-        inline std::map <std::string, Build> myBuilds;
-        inline std::stringstream ss;
         inline std::string currentBuild = "";
         inline std::string currentOpener = "";
         inline std::string currentTransition = "";
@@ -65,8 +58,7 @@ namespace McRave::BuildOrder {
         inline BWAPI::UnitType productionUnit;
         inline BWAPI::UnitType desiredDetection = BWAPI::UnitTypes::None;
         inline std::set <BWAPI::UnitType> techList;
-        inline std::set <BWAPI::UnitType> unlockedType;
-        inline std::vector <std::string> buildNames;
+        inline std::set <BWAPI::UnitType> unlockedType;        
     }
 
     namespace Protoss {
@@ -113,10 +105,10 @@ namespace McRave::BuildOrder {
         void PoolLair();
     }
 
-    void getDefaultBuild();
     int buildCount(BWAPI::UnitType);
     bool firstReady();
 
+    void onFrame();
     void getNewTech();
     void checkNewTech();
     void checkAllTech();
@@ -151,7 +143,9 @@ namespace McRave::BuildOrder {
     std::string getCurrentOpener();
     std::string getCurrentTransition();
 
-    void onEnd(bool);
-    void onStart();
-    void onFrame();
+    void setCurrentBuild(std::string);
+    void setCurrentOpener(std::string);
+    void setCurrentTransition(std::string);
+
+
 }

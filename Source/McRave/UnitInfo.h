@@ -35,7 +35,6 @@ namespace McRave {
         int minStopFrame = 0;
         int energy = 0;
         int killCount = 0;
-        int beingAttackedCount = 0;
 
         bool burrowed = false;
         bool flying = false;
@@ -47,6 +46,7 @@ namespace McRave {
         std::shared_ptr<ResourceInfo> resource;
 
         std::set<std::shared_ptr<UnitInfo>> assignedCargo;
+        std::set<std::shared_ptr<UnitInfo>> targetedBy;
 
         TransportState tState = TransportState::None;
         LocalState lState = LocalState::None;
@@ -79,6 +79,7 @@ namespace McRave {
         UnitInfo();
 
         std::set<std::shared_ptr<UnitInfo>>& getAssignedCargo() { return assignedCargo; }
+        std::set<std::shared_ptr<UnitInfo>>& getTargetedBy() { return targetedBy; }
         TransportState getTransportState() { return tState; }
         SimState getSimState() { return sState; }
         GlobalState getGlobalState() { return gState; }
@@ -136,7 +137,6 @@ namespace McRave {
         int getFrameCreated() { return frameCreated; }
         int getRemainingTrainFrames() { return remainingTrainFrame; }
         int getKillCount() { return killCount; }
-        int getUnitsAttacking() { return beingAttackedCount; }
         int framesHoldingResource() { return resourceHeldFrames; }
 
         void circleRed() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Red); }
@@ -225,7 +225,6 @@ namespace McRave {
         void setQuickPath(BWEM::CPPath newPath) { quickPath = newPath; }
 
         void setLastPositions();
-        void incrementBeingAttackedCount() { beingAttackedCount++; }
 
         bool operator== (UnitInfo& p) {
             return thisUnit == p.unit();

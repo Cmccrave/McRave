@@ -32,7 +32,6 @@ namespace McRave::Buildings {
             auto wall = BWEB::Walls::getClosestWall(TilePosition(here));
             auto natOrMain = Terrain::getPlayerStartingTilePosition() == station->getBWEMBase()->Location() || BWEB::Map::getNaturalTile() == station->getBWEMBase()->Location();
 
-
             // Check closest stataion to see if one of their defense locations is best
             if (station) {
                 for (auto &defense : station->getDefenseLocations()) {
@@ -355,8 +354,8 @@ namespace McRave::Buildings {
         {
             auto here = TilePositions::Invalid;
             auto needStationDefenses = Players::getStrength(PlayerState::Enemy).airToGround > 0.0
-                || Strategy::getEnemyBuild() == "Z2HatchMuta"
-                || Strategy::getEnemyBuild() == "Z3HatchMuta"
+                || Strategy::getEnemyBuild() == "2HatchMuta"
+                || Strategy::getEnemyBuild() == "3HatchMuta"
                 || Strategy::needDetection()
                 || (Broodwar->self()->visibleUnitCount(Protoss_Nexus) >= 3 + (Players::getNumberTerran() > 0 || Players::getNumberProtoss() > 0))
                 || (Terrain::isIslandMap() && Players::getNumberZerg() > 0);

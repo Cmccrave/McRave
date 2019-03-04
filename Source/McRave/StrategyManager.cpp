@@ -577,7 +577,7 @@ namespace McRave::Strategy {
             else if (Broodwar->self()->getRace() == Races::Terran)
                 allUnits.insert(allUnits.end(), { Terran_Marine, Terran_Medic, Terran_Vulture, Terran_Siege_Tank_Tank_Mode, Terran_Goliath, Terran_Wraith, Terran_Dropship, Terran_Science_Vessel, Terran_Valkyrie });
             else if (Broodwar->self()->getRace() == Races::Zerg)
-                allUnits.insert(allUnits.end(), { /*Zerg_Drone,*/ Zerg_Zergling, Zerg_Hydralisk, Zerg_Lurker, Zerg_Mutalisk, Zerg_Scourge });
+                allUnits.insert(allUnits.end(), { Zerg_Zergling, Zerg_Hydralisk, Zerg_Lurker, Zerg_Mutalisk, Zerg_Scourge });
 
             // TODO: tier 1,2,3 vectors
             if (Broodwar->getFrameCount() > 20000) {
@@ -596,6 +596,9 @@ namespace McRave::Strategy {
                 auto myStrength = Players::getStrength(PlayerState::Self);
                 auto enemyStrength = Players::getStrength(PlayerState::Enemy);
                 unitScore[Zerg_Drone] = (myStrength.groundToGround + myStrength.groundDefense) / (enemyStrength.groundToGround - enemyStrength.groundDefense);
+
+                if (Units::getMyRoleCount(Role::Worker) > Units::getMyRoleCount(Role::Combat) && !BuildOrder::isOpener())
+                    unitScore[Zerg_Drone] = 0.0;
             }
 
             for (auto &u : Units::getUnits(PlayerState::Enemy)) {

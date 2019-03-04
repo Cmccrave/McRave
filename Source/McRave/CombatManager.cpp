@@ -6,6 +6,7 @@ using namespace std;
 namespace McRave::Combat {
 
 	namespace {
+
 		multimap<double, Position> combatClusters;
 		constexpr tuple commands{ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::defend, Command::hunt, Command::escort, Command::retreat, Command::move };
 

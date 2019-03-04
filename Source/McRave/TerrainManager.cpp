@@ -360,7 +360,7 @@ namespace McRave::Terrain {
         return false;
     }
 
-    bool findNaturalWall(vector<UnitType>& types, const vector<UnitType>& defenses)
+    bool findNaturalWall(vector<UnitType>& types, const vector<UnitType>& defenses, bool tight)
     {
         // Hack: Make a bunch of walls as Zerg for testing - disabled atm
         bool testing = false;
@@ -399,26 +399,26 @@ namespace McRave::Terrain {
             auto reservePath = Broodwar->self()->getRace() != Races::Terran;
             auto choke = BWEB::Map::getNaturalChoke();
             auto area = BWEB::Map::getNaturalArea();
-            naturalWall = BWEB::Walls::createWall(types, area, choke, tightType, defenses, reservePath);
+            naturalWall = BWEB::Walls::createWall(types, area, choke, tightType, defenses, reservePath, tight);
             return naturalWall != nullptr;
         }
         return false;
     }
 
-    bool findMainWall(vector<UnitType>& types, const vector<UnitType>& defenses)
+    bool findMainWall(vector<UnitType>& types, const vector<UnitType>& defenses, bool tight)
     {
         if (BWEB::Walls::getWall(BWEB::Map::getMainArea(), BWEB::Map::getMainChoke()) || BWEB::Walls::getWall(BWEB::Map::getNaturalArea(), BWEB::Map::getMainChoke()))
             return true;
         UnitType wallTight = Broodwar->enemy()->getRace() == Races::Protoss ? UnitTypes::Protoss_Zealot : UnitTypes::Zerg_Zergling;
 
-        BWEB::Walls::createWall(types, BWEB::Map::getMainArea(), BWEB::Map::getMainChoke(), wallTight, defenses, false, true);
+        BWEB::Walls::createWall(types, BWEB::Map::getMainArea(), BWEB::Map::getMainChoke(), wallTight, defenses, false, tight);
         BWEB::Walls::Wall * wallB = BWEB::Walls::getWall(BWEB::Map::getMainArea(), BWEB::Map::getMainChoke());
         if (wallB) {
             mainWall = wallB;
             return true;
         }
 
-        BWEB::Walls::createWall(types, BWEB::Map::getNaturalArea(), BWEB::Map::getMainChoke(), wallTight, defenses, false, true);
+        BWEB::Walls::createWall(types, BWEB::Map::getNaturalArea(), BWEB::Map::getMainChoke(), wallTight, defenses, false, tight);
         BWEB::Walls::Wall * wallA = BWEB::Walls::getWall(BWEB::Map::getNaturalArea(), BWEB::Map::getMainChoke());
         if (wallA) {
             mainWall = wallA;

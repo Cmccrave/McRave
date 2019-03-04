@@ -172,6 +172,9 @@
     <ClCompile Include="..\Source\McRave\PvT.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\McRave\LearningManager.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">
@@ -332,6 +335,9 @@
     </ClInclude>
     <ClInclude Include="..\Source\Horizon\Horizon.h">
       <Filter>Horizon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\LearningManager.h">
+      <Filter>McRave</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

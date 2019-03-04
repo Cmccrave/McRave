@@ -24,6 +24,8 @@ namespace McRave::Visuals {
         bool scores = true;
         bool roles = false;
 
+        int gridSelection = 0;
+
         void drawInformation()
         {
             // BWAPIs orange text doesn't point to the right color so this will be see occasionally
@@ -96,6 +98,62 @@ namespace McRave::Visuals {
             // BWEB
             if (bweb) {
                 BWEB::Map::draw();
+            }
+
+
+            if (gridSelection != 0) {
+                for (int x = 0; x <= Broodwar->mapWidth() * 4; x++) {
+                    for (int y = 0; y <= Broodwar->mapHeight() * 4; y++) {
+                        WalkPosition w(x, y);
+
+                        // If "draw mobility"
+                        if (gridSelection == 1) {
+                            auto gridColor = Colors::Black;
+                            switch (Grids::getMobility(w)) {
+                            case 1:
+                                color = Colors::White;
+                                break;
+                            case 2:
+                                color = Colors::Grey;
+                                break;
+                            case 3:
+                                color = Colors::Red;
+                                break;
+                            case 4:
+                                color = Colors::Orange;
+                                break;
+                            case 5:
+                                color = Colors::Yellow;
+                                break;
+                            case 6:
+                                color = Colors::Green;
+                                break;
+                            case 7:
+                                color = Colors::Cyan;
+                                break;
+                            case 8:
+                                color = Colors::Blue;
+                                break;
+                            case 9:
+                                color = Colors::Purple;
+                                break;
+                            case 10:
+                                color = Colors::Brown;
+                                break;
+                            }
+                            Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, gridColor);
+                        }
+
+                        if (gridSelection == 2) {
+                            if (Grids::getEAirThreat(w) > 0.0)
+                                Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::White);
+                        }
+                        if (gridSelection == 3) {
+                            if (Grids::getEGroundThreat(w) > 0.0)
+                                Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::White);
+                        }
+                    }
+                }
             }
         }
 
@@ -220,6 +278,12 @@ namespace McRave::Visuals {
         else if (text == "/resources")		resources = !resources;
         else if (text == "/timers")			timers = !timers;
         else if (text == "/roles")          roles = !roles;
+
+        else if (text == "/grids -o")        gridSelection = 0;
+        else if (text == "/grids -m")        gridSelection = 1;
+        else if (text == "/grids -a")        gridSelection = 2;
+        else if (text == "/grids -g")        gridSelection = 3;
+
         else								Broodwar->sendText("%s", text.c_str());
         return;
     }

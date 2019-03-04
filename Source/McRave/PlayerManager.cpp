@@ -24,6 +24,8 @@ namespace McRave::Players
                 if (unit.getType().isWorker() && unit.getRole() != Role::Combat)
                     continue;
                 addStrength(unit);
+                unit.getTargetedBy().clear();
+                unit.setTarget(nullptr);
             }
         }
     }
