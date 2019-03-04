@@ -176,8 +176,9 @@ namespace McRave::Production {
             // Determine whether we want reavers or shuttles;
             if (!Strategy::needDetection()) {
                 if ((Terrain::isIslandMap() && vis(unit) < 2 * vis(UnitTypes::Protoss_Nexus))
-                    || (vis(UnitTypes::Protoss_Reaver) > (vis(UnitTypes::Protoss_Shuttle) * 2))
-                    || (Players::vP() && vis(UnitTypes::Protoss_Shuttle) == 0) && com(UnitTypes::Protoss_Observatory) == 0)
+                    || vis(UnitTypes::Protoss_Reaver) > (vis(UnitTypes::Protoss_Shuttle) * 2)
+                    || vis(Protoss_High_Templar) > vis(Protoss_Shuttle) * 4
+                    || (Players::vP() && vis(UnitTypes::Protoss_Shuttle) == 0 && com(UnitTypes::Protoss_Observatory) == 0))
                     needShuttles = true;
                 if (!Terrain::isIslandMap() || (vis(UnitTypes::Protoss_Reaver) <= (vis(UnitTypes::Protoss_Shuttle) * 2)))
                     needReavers = true;
