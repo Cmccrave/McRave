@@ -161,7 +161,6 @@ namespace McRave::BuildOrder::Protoss
                 }
             }
         }
-        return;
     }
 
     void unlocks()

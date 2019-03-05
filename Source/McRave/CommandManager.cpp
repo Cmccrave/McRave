@@ -332,7 +332,7 @@ namespace McRave::Command {
         }
 
         // HACK: Drilling with workers. Should add some sort of getClosestResource or fix how PlayerState::Neutral units are stored (we don't store resources in them)
-        if (unit.getType().isWorker() && unit.getRole() == Role::Combat) {
+        if (unit.getType().isWorker() && unit.getRole() == Role::Combat && unit.hasTarget()) {
             auto closestMineral = Broodwar->getClosestUnit(unit.getTarget().getPosition(), Filter::IsMineralField, 256);
 
             if (closestMineral && closestMineral->exists()) {

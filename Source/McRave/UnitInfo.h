@@ -89,6 +89,7 @@ namespace McRave {
             return (path.getTiles().front() == target->getTilePosition() && path.getTiles().back() == tilePosition);
         }
         bool hasAttackedRecently() {
+            BWAPI::Broodwar->drawTextMap(position, "%d", lastAttackFrame);
             return (BWAPI::Broodwar->getFrameCount() - lastAttackFrame < 50);
         }
         bool isStuck() {

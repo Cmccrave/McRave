@@ -142,6 +142,7 @@ namespace McRave::Util {
         }
 
         if (unit.hasTarget()) {
+            unit.circleBlack();
             if (unit.getTarget().hasAttackedRecently() && unit.getTarget().getPosition().getDistance(closestStation) < unit.getTarget().getGroundReach() && Grids::getEGroundThreat(unit.getWalkPosition()) > 0.0 && Broodwar->getFrameCount() < 10000)
                 return true;
         }

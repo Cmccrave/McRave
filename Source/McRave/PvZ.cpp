@@ -139,7 +139,7 @@ namespace McRave::BuildOrder::Protoss {
             cutWorkers =                            vis(Protoss_Pylon) == 1 && vis(Protoss_Probe) >= 13;
 
             itemQueue[Protoss_Nexus] =				Item(1);
-            itemQueue[Protoss_Pylon] =				Item(1 + (Units::getEnemyCount(Zerg_Zergling) < 6 && s >= 30));
+            itemQueue[Protoss_Pylon] =				Item(1 + (Units::getEnemyCount(Zerg_Zergling) < 6 || s >= 32));
             itemQueue[Protoss_Shield_Battery] =     Item(vis(Protoss_Gateway) > 0, com(Protoss_Gateway) > 0);
             itemQueue[Protoss_Gateway] =			Item(0);
 

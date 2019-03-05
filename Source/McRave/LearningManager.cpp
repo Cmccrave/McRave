@@ -27,6 +27,7 @@ namespace McRave::Learning {
                     defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
                 }
                 else if (build == "GateNexus" || build == "NexusGate") {
+                    Broodwar << "Yes" << endl;
                     int count = Util::chokeWidth(BWEB::Map::getNaturalChoke()) / 64;
                     buildings.insert(buildings.end(), count, Protoss_Pylon);
                 }
@@ -513,8 +514,7 @@ namespace McRave::Learning {
             }
         }
 
-        // TODO: If the build is possible based on this map (we have wall/island requirements)
-        if (isBuildPossible(bestBuild, bestOpener) && isBuildAllowed(Broodwar->enemy()->getRace(), bestBuild)) {
+        if (bestBuild != "" && bestOpener != "" && bestTransition != "" && isBuildPossible(bestBuild, bestOpener) && isBuildAllowed(Broodwar->enemy()->getRace(), bestBuild)) {
             BuildOrder::setCurrentBuild(bestBuild);
             BuildOrder::setCurrentOpener(bestOpener);
             BuildOrder::setCurrentTransition(bestTransition);

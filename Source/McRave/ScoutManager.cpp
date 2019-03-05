@@ -137,7 +137,7 @@ namespace McRave::Scouts {
                 }
 
                 // If it's a center of map proxy
-                if (isClosestScout(proxyPosition)) {
+                if (proxyPosition.isValid() && isClosestScout(proxyPosition)) {
 
                     // If it's a proxy (maybe cannon rush), try to find the unit to kill
                     if (Strategy::enemyProxy() || proxyCheck) {

@@ -218,7 +218,7 @@ namespace McRave::Horizon {
         if (shouldIgnoreSim())
             return;
 
-        simTerrain();
+        //simTerrain();
         simEnemies();
         simMyUnits();
 
@@ -251,7 +251,7 @@ namespace McRave::Horizon {
             }
         }
 
-        auto belowLimits = unit.getType().isFlyer() ? (belowAirLimits || (sync && belowGrdLimits)) : (belowGrdLimits || (sync && belowAirLimits));
+        auto belowLimits = false;// unit.getType().isFlyer() ? (belowAirLimits || (sync && belowGrdLimits)) : (belowGrdLimits || (sync && belowAirLimits));
 
         // If above/below thresholds, it's a sim win/loss
         if (unit.getSimValue() >= maxThreshold && !belowLimits) {

@@ -136,7 +136,7 @@ namespace McRave::Targets {
                 if (target.unit()->exists() && target.unit()->isFlying() && unit.getAirDamage() <= 0.0)
                     unitCanAttack = false;
 
-                double reach = target.getType().isFlyer() ? unit.getAirReach() / 2.0 : unit.getGroundReach() / 2.0;
+                double reach = target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
                 double dist = unit.getPosition().getDistance(target.getPosition());
                 double widths = unit.getType().tileWidth() * 16.0 + target.getType().tileWidth() * 16.0;
                 double reachDistance = max(1.0, dist - reach - widths);

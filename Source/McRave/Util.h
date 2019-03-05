@@ -47,7 +47,7 @@ namespace McRave::Util {
 
     template<typename F>
     const std::shared_ptr<UnitInfo> getClosestUnitGround(BWAPI::Position here, PlayerState player, F &&pred) {
-        auto distBest = DBL_MAX;
+        auto distBest = 0.0;
         auto &units = Units::getUnits(player);
         std::shared_ptr<UnitInfo> best = nullptr;
 
@@ -58,7 +58,7 @@ namespace McRave::Util {
                 continue;
 
             double dist = BWEB::Map::getGroundDistance(here, unit.getPosition());
-            if (dist < distBest) {
+            if (dist > distBest) {
                 best = u;
                 distBest = dist;
             }

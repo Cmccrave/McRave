@@ -50,6 +50,14 @@ namespace McRave::BuildOrder
         Visuals::startPerfTest();
         updateBuild();
         Visuals::endPerfTest("BuildOrder");
+
+
+        for (auto &type : techList) {
+            for (auto &unlock : unlockedType) {
+                if (unlock == type)
+                    Visuals::drawDebugText(type.c_str(), 1);
+            }
+        }
     }
 
     bool shouldExpand()

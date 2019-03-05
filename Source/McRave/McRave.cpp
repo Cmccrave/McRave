@@ -19,8 +19,11 @@
 // Production freeze, possibly unit score below 0?
 // Find a better balance for storm and stasis limits
 // Check storming burrowed lurkers
-// On Roadkill there's a skeleton that blocks a defense spot, why is this considered buildable?
+// On Roadkill there's a skeleton that blocks a defense spot, why is this considered buildable? BWAPI bug potentially
 // Prevent HT walking into enemies when storm isn't suitable
+// Tech is late
+// Sometimes not making cannons at stations
+// XIMP Probe technically doesn't "start attacking" so it's never a threat, wtf
 
 // Scout targets
 // - Check for Nexus when we see no gateways in PvP (find timing for this and check after this time based on last visible frame on our grid)

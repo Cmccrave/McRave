@@ -72,12 +72,23 @@ namespace BWEB::Map
             }
 
             // If we didn't find a main choke that belongs to main and natural, find another one
-            if (!mainChoke) {
+            if (!mainChoke && mainPosition.isValid() && naturalPosition.isValid()) {
                 for (auto &choke : mapBWEM.GetPath(mainPosition, naturalPosition)) {
                     const auto width = choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2));
                     if (width < distBest) {
                         mainChoke = choke;
                         distBest = width;
+                    }
+                }
+            }
+            
+            // If we still don't have a main choke, grab the closest chokepoint to our start
+            if (!mainChoke) {
+                for (auto &choke : mainArea->ChokePoints()) {
+                    const auto dist = Position(choke->Center()).getDistance(mainPosition);
+                    if (dist < distBest) {
+                        mainChoke = choke;
+                        distBest = dist;
                     }
                 }
             }
@@ -493,6 +504,7 @@ namespace BWEB::Map
                 TilePosition tile(x, y);
                 if (!tile.isValid()
                     || !Broodwar->isBuildable(tile)
+                    || !Broodwar->isWalkable(WalkPosition(tile))
                     || Map::usedGrid[x][y] > 0
                     || Map::reserveGrid[x][y] > 0
                     || (type.isResourceDepot() && !Broodwar->canBuildHere(tile, type)))

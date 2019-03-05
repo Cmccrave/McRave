@@ -72,7 +72,7 @@ namespace McRave::Grids
 
         void addToGrids(UnitInfo& unit)
         {
-            if ((unit.getType().isWorker() && unit.getPlayer() != Broodwar->self() && (!unit.unit()->exists() || Broodwar->getFrameCount() > 10000 || unit.unit()->isConstructing() || (Terrain::isInAllyTerritory(unit.getTilePosition()) && (Broodwar->getFrameCount() - unit.getLastAttackFrame() > 500))))
+            if ((unit.getType().isWorker() && unit.getPlayer() != Broodwar->self() && (!unit.unit()->exists() || Broodwar->getFrameCount() > 10000 || unit.unit()->isConstructing() || (Terrain::isInAllyTerritory(unit.getTilePosition()) && !unit.hasAttackedRecently())))
                 || unit.getType() == UnitTypes::Protoss_Interceptor
                 || unit.getType() == UnitTypes::Terran_Medic)
                 return;

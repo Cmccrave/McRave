@@ -238,7 +238,7 @@ namespace McRave::Strategy {
                         enemyGas = unit.unit()->getInitialResources() - unit.unit()->getResources();
                 }
 
-                // PCannonRush
+                // CannonRush
                 if (unit.getType() == Protoss_Forge) {
                     if (unit.getPosition().getDistance(Terrain::getEnemyStartingPosition()) < 320.0 && Units::getEnemyCount(Protoss_Gateway) == 0)
                         enemyBuild = "CannonRush";
@@ -246,12 +246,16 @@ namespace McRave::Strategy {
                         enemyBuild = "Unknown";
                 }
 
-                // PFFE
+                // FFE
                 if (unit.getType() == Protoss_Photon_Cannon && Units::getEnemyCount(Protoss_Robotics_Facility) == 0) {
-                    if (unit.getPosition().getDistance((Position)Terrain::getEnemyNatural()) < 320.0)
+                    if (unit.getPosition().getDistance((Position)Terrain::getEnemyNatural()) < 320.0) {
                         enemyBuild = "FFE";
-                    else if (enemyBuild == "FFE")
+                        enemyFE = true;
+                    }
+                    else if (enemyBuild == "FFE") {
                         enemyBuild = "Unknown";
+                        enemyFE = false;
+                    }
                 }
 
                 // 2 Gate proxy estimation
@@ -520,11 +524,11 @@ namespace McRave::Strategy {
                 break;
             case Enum::Protoss_Scout:
                 if (Terrain::isIslandMap())
-                    unitScore[Protoss_Scout]				+= (size * 1.00) / vis(Protoss_Scout);
+                    unitScore[Protoss_Scout]			+= (size * 1.00) / vis(Protoss_Scout);
                 break;
             case Enum::Protoss_Carrier:
-                if (Terrain::isIslandMap())
-                    unitScore[Protoss_Scout]				+= (size * 1.00) / vis(Protoss_Scout);
+                unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
+                unitScore[Protoss_Scout]			    += (size * 1.00) / vis(Protoss_Scout);
                 break;
             case Enum::Protoss_Arbiter:
                 unitScore[Protoss_High_Templar]			+= (size * 1.00) / vis(Protoss_High_Templar);
