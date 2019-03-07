@@ -72,8 +72,8 @@ namespace McRave::BuildOrder::Protoss
         techVal = techList.size() + skipFirstTech + Players::vT();
 
         // HACK: Against FFE just add a Nexus
-        if (Strategy::getEnemyBuild() == "FFE" && vis(Protoss_Nexus) == 1)
-            itemQueue[Protoss_Nexus] = Item(2);
+        //if (Strategy::getEnemyBuild() == "FFE" && vis(Protoss_Nexus) == 1)
+            //itemQueue[Protoss_Nexus] = Item(2);
 
         // Saturation
         productionSat = (prodVal >= satVal * baseVal);

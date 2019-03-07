@@ -328,6 +328,13 @@ namespace McRave::Buildings {
                     return here;
             }
 
+            // Check if we need powered spaces
+            if (poweredLarge == 0 || poweredMedium == 0) {
+                here = closestProdLocation(Protoss_Pylon, BWEB::Map::getMainPosition());
+                if (here.isValid() && isBuildable(Protoss_Pylon, here) && isQueueable(Protoss_Pylon, here))
+                    return here;
+            }
+
             // Check if any Nexus needs a Pylon for defense placement
             if (Broodwar->self()->completedUnitCount(Protoss_Pylon) >= 4) {
                 for (auto &s : Stations::getMyStations()) {

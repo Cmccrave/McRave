@@ -20,7 +20,7 @@ namespace McRave::Strategy {
         bool enemyScout = false;
         bool pressure = false;
         string enemyBuild = "Unknown";
-        int poolFrame, lingFrame;
+        int poolFrame, rushFrame;
         int enemyGas;
         int enemyFrame;
 
@@ -61,12 +61,12 @@ namespace McRave::Strategy {
                 if (unit.getType() == UnitTypes::Zerg_Zergling) {
 
                     // If this is our first time seeing a Zergling or it arrives earlier than we expected before
-                    if (lingFrame == 0 || frameArrivesWhen(unit) < lingFrame) {
-                        lingFrame = frameArrivesWhen(unit);
+                    if (rushFrame == 0 || frameArrivesWhen(unit) < rushFrame) {
+                        rushFrame = frameArrivesWhen(unit);
                         if (enemyBuild == "Unknown") {
-                            if (lingFrame < 4200)
+                            if (rushFrame < 4200)
                                 enemyBuild = "4Pool";
-                            else if (lingFrame < 4800)
+                            else if (rushFrame < 4800)
                                 enemyBuild = "9Pool";
                         }
                     }
@@ -165,6 +165,15 @@ namespace McRave::Strategy {
                         enemyGas = unit.unit()->getInitialResources() - unit.unit()->getResources();
                 }
 
+                // Marine timing
+                if (unit.getType() == Terran_Marine) {
+                    if (rushFrame == 0 || frameArrivesWhen(unit) < rushFrame) {
+                        rushFrame = frameArrivesWhen(unit);
+                        if (rushFrame < 3900)
+                            enemyBuild = "BBS";
+                    }
+                }
+
                 // TSiegeExpand
                 if ((unit.getType() == Terran_Siege_Tank_Siege_Mode && Units::getEnemyCount(Terran_Vulture) == 0) || (unit.getType().isResourceDepot() && !Terrain::isStartingBase(unit.getTilePosition()) && Units::getEnemyCount(Terran_Machine_Shop) > 0))
                     enemyBuild = "SiegeExpand";
@@ -173,8 +182,6 @@ namespace McRave::Strategy {
                 if (unit.getType() == Terran_Barracks) {
                     if (Terrain::isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(mapBWEM.Center()) < 1280.0 || (BWEB::Map::getNaturalChoke() && unit.getPosition().getDistance((Position)BWEB::Map::getNaturalChoke()->Center()) < 320))
                         enemyBuild = "BBS";
-                    else if (enemyBuild == "BBS")
-                        enemyBuild = "Unknown";
                 }
 
                 // Factory Research
@@ -195,7 +202,7 @@ namespace McRave::Strategy {
         {
             auto noGates = Units::getEnemyCount(Protoss_Gateway) == 0;
             auto noGas = Units::getEnemyCount(Protoss_Assimilator) == 0;
-            auto noExpand = Units::getEnemyCount(Protoss_Nexus) <= 1;
+            auto noExpand = Units::getEnemyCount(Protoss_Nexus) <= 1 && Units::getEnemyCount(Protoss_Forge) <= 0;
 
             // Detect missing buildings as a potential 2Gate
             if (Terrain::getEnemyStartingPosition().isValid() && Broodwar->getFrameCount() > 3000 && Broodwar->isExplored((TilePosition)Terrain::getEnemyStartingPosition())) {
@@ -528,7 +535,9 @@ namespace McRave::Strategy {
                 break;
             case Enum::Protoss_Carrier:
                 unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
-                unitScore[Protoss_Scout]			    += (size * 1.00) / vis(Protoss_Scout);
+
+                if (Terrain::isIslandMap())
+                    unitScore[Protoss_Scout]			+= (size * 1.00) / vis(Protoss_Scout);
                 break;
             case Enum::Protoss_Arbiter:
                 unitScore[Protoss_High_Templar]			+= (size * 1.00) / vis(Protoss_High_Templar);
@@ -733,6 +742,6 @@ namespace McRave::Strategy {
     bool enemyScouted() { return enemyScout; }
     bool enemyBust() { return enemyBuild.find("Hydra") != string::npos; }
     bool enemyPressure() { return pressure; }
-    int enemyArrivalFrame() { return lingFrame; }
+    int enemyArrivalFrame() { return rushFrame; }
     map <UnitType, double>& getUnitScores() { return unitScore; }
 }

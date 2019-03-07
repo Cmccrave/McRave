@@ -17,7 +17,7 @@ namespace McRave::Horizon {
         Need to test deadzones and squeeze factors still.
         */
 
-        auto minThreshold = 0.60;
+        auto minThreshold = 0.50;
         auto maxThreshold = 0.80;
         auto enemyLocalGroundStrength = 0.0, allyLocalGroundStrength = 0.0;
         auto enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;
@@ -29,6 +29,20 @@ namespace McRave::Horizon {
         auto belowAirLimits = false;
         map<const BWEM::ChokePoint *, double> enemySqueezeFactor;
         map<const BWEM::ChokePoint *, double> selfSqueezeFactor;
+
+        // Figure out whether it's likely the unit will move horizontally or vertically to its target
+        const auto straightEngagePosition =[&](UnitInfo& u) {
+            auto dx = unit.getPosition().x - unit.getEngagePosition().x;
+            auto dy = unit.getPosition().y - unit.getEngagePosition().y;
+
+            if (abs(dx) < abs(dy))
+                return unit.getEngagePosition() + Position(dx, 0);
+            if (abs(dx) > abs(dy))
+                return unit.getEngagePosition() + Position(0, dy);
+            return Positions::Invalid;
+        };
+
+        auto unitStraightEngage = straightEngagePosition(unit);
 
         const auto shouldIgnoreSim = [&]() {
             // If we have excessive resources, ignore our simulation and engage
@@ -72,6 +86,8 @@ namespace McRave::Horizon {
         };
 
         const auto addToSim = [&](UnitInfo& u) {
+            if (u.getVisibleAirStrength() <= 0.0 && u.getVisibleGroundStrength() <= 0.0)
+                return false;
             if (u.getPlayer() == Broodwar->self() && !u.hasTarget())
                 return false;
             if (!u.unit() || u.getType().isWorker() || (u.unit() && u.unit()->exists() && (u.unit()->isStasised() || u.unit()->isMorphing())))
@@ -122,14 +138,20 @@ namespace McRave::Horizon {
                 auto deadzone = (enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode && unit.getTarget().getPosition().getDistance(enemy.getPosition()) < 64.0) ? 64.0 : 0.0;
                 auto widths = double(enemy.getType().width() + unit.getType().width()) / 2.0;
                 auto enemyRange = (unit.getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange());
-                auto engDist = enemy.getPosition().getDistance(unit.getPosition()) - enemyRange;
-                auto distance = engDist - widths + deadzone;
 
+                // If enemy is stationary, it must be in range of the engage position on a diagonal or straight line
+                if (enemy.getSpeed() <= 0.0) {
+                    auto diEngageDistance = enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths + deadzone;
+                    auto stEngageDistance = unitStraightEngage.getDistance(enemy.getPosition()) - enemyRange - widths + deadzone;
+                    if (diEngageDistance > 64.0 && stEngageDistance > 64.0)
+                        continue;                    
+                }
+
+                auto distance = enemy.getPosition().getDistance(unit.getPosition()) - enemyRange - widths + deadzone;
                 auto speed = enemy.getSpeed() > 0.0 ? 24.0 * enemy.getSpeed() : 24.0 * unit.getSpeed();
                 auto simRatio =  simulationTime - (distance / speed);
 
-                // If the unit doesn't affect this simulation
-                if (simRatio <= 0.0 || (enemy.getSpeed() <= 0.0 && distance > enemyRange))
+                if (simRatio <= 0.0)
                     continue;
 
                 // Situations where an enemy should be treated as stronger than it actually is
@@ -141,6 +163,7 @@ namespace McRave::Horizon {
                     simRatio = simRatio * (1.0 + min(1.0, (double(Broodwar->getFrameCount() - enemy.getLastVisibleFrame()) / 1000.0)));
 
                 // Check if we need to squeeze these units through a choke
+                // Disabled atm while Terrain analysis is simulated better
                 if (applySqueezeFactor(enemy)) {
                     auto path = mapBWEM.GetPath(enemy.getPosition(), unit.getPosition());
                     for (auto &choke : path) {
@@ -159,7 +182,7 @@ namespace McRave::Horizon {
             for (auto &a : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &ally = *a;
                 if (!addToSim(ally))
-                    continue;
+                    continue;                
 
                 auto deadzone = (ally.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode && unit.getTarget().getPosition().getDistance(ally.getPosition()) < 64.0) ? 64.0 : 0.0;
                 auto engDist = ally.getEngDist();
@@ -197,6 +220,7 @@ namespace McRave::Horizon {
                 if (!sync && simRatio > 0.0 && ((unit.getType().isFlyer() && !ally.getType().isFlyer()) || (!unit.getType().isFlyer() && ally.getType().isFlyer())))
                     sync = true;
 
+                // Disabled atm while Terrain analysis is simulated better
                 if (applySqueezeFactor(ally)) {
                     auto path = mapBWEM.GetPath(ally.getPosition(), ally.getTarget().getPosition());
                     for (auto &choke : path) {
@@ -257,7 +281,7 @@ namespace McRave::Horizon {
         if (unit.getSimValue() >= maxThreshold && !belowLimits) {
             unit.setSimState(SimState::Win);
         }
-        else if (unit.getSimValue() <= minThreshold || belowLimits || (unit.getEngDist() > SIM_RADIUS - 64.0 && unit.getSimValue() < maxThreshold)) {
+        else if (unit.getSimValue() <= minThreshold || belowLimits || (unit.getSimState() == SimState::None && unit.getSimValue() < maxThreshold)) {
             unit.setSimState(SimState::Loss);
         }
     }

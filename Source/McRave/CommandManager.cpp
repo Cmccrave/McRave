@@ -214,8 +214,11 @@ namespace McRave::Command {
                 return unit.getLocalState() == LocalState::Attack;
             }
 
-            if (unit.getRole() == Role::Scout)
-                return int(unit.getTargetedBy().size()) == 0;
+            if (unit.getRole() == Role::Scout) {
+                auto attackers = int(unit.getTargetedBy().size());
+                if (attackers == 0 || (attackers == 1 && unit.getTarget().hasTarget() && unit.getTarget().getTarget() == unit && unit.getPercentTotal() > unit.getTarget().getPercentTotal()))
+                    return true;
+            }
             return false;
         };
 
@@ -698,6 +701,8 @@ namespace McRave::Command {
             return score;
         };
 
+        Broodwar->drawTextMap(unit.getPosition() - Position(0, 32), "%d", int(unit.getTransportState()));
+        
         auto bestPosition = findViablePosition(unit, scoreFunction);
         if (bestPosition.isValid() && bestPosition != unit.getDestination()) {
             unit.command(UnitCommandTypes::Move, bestPosition, true);

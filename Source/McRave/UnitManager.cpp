@@ -76,6 +76,13 @@ namespace McRave::Units {
                 }
                 else if (unit.getRole() == Role::Combat && !Util::reactivePullWorker(unit) && !Util::proactivePullWorker(unit) && !Util::pullRepairWorker(unit))
                     unit.setRole(Role::Worker);
+
+                if (Util::reactivePullWorker(unit))
+                    unit.circleBlack();
+                if (Util::proactivePullWorker(unit))
+                    unit.circleBlue();
+                if (Util::pullRepairWorker(unit))
+                    unit.circleGreen();
             }
 
             // Check if an overlord should scout or support

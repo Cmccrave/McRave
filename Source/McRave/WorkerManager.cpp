@@ -238,7 +238,8 @@ namespace McRave::Workers {
                 || needGas()
                 || (worker.hasResource() && !worker.getResource().getType().isMineralField() && gasWorkers > BuildOrder::gasWorkerLimit())
                 || (worker.hasResource() && !closeToResource(w) && Util::accurateThreatOnPath(worker, worker.getPath()) && Grids::getEGroundThreat(worker.getWalkPosition()) == 0.0)
-                || (worker.hasResource() && closeToResource(w) && Grids::getEGroundThreat(worker.getWalkPosition()) > 0.0))
+                || (worker.hasResource() && closeToResource(w) && Grids::getEGroundThreat(worker.getWalkPosition()) > 0.0)
+                || (worker.hasResource() && !injured && !threatened && worker.getResource().getGathererCount() >= 3 + int(worker.getResource().getType().isRefinery())))
                 needNewAssignment = true;
 
             // HACK: Just return if we dont need an assignment, should make this better

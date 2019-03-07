@@ -23,7 +23,8 @@
 // Prevent HT walking into enemies when storm isn't suitable
 // Tech is late
 // Sometimes not making cannons at stations
-// XIMP Probe technically doesn't "start attacking" so it's never a threat, wtf
+// Add pathing to attack enemy buildings so our sim actually works
+// Adjust priority for targeting carriers
 
 // Scout targets
 // - Check for Nexus when we see no gateways in PvP (find timing for this and check after this time based on last visible frame on our grid)
@@ -40,7 +41,9 @@
 // Monitor for overkilling units by hp - (2*nextDmgSource) <= 0 (double damage source to account for a potential miss?)
 // Use Player pointer instead of BWAPI::Player pointer in UnitInfo, gives advantage of knowing upgrades/tech that are available always
 // Use player filters to grab unit set in getClosestUnit template
-// Add panic reactions for auto-loss builds (gate first at natural vs 4pool for example)
+// Add panic reactions for auto-loss builds
+// - Gate FE vs 4pool
+// - Nexus first vs 6rax/BBS
 
 using namespace BWAPI;
 using namespace std;

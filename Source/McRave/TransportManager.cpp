@@ -21,51 +21,51 @@ namespace McRave::Transports {
                 cargoSize += u->getType().spaceRequired();
 
             // Check if we are ready to assign this worker to a transport
-            const auto readyToAssignWorker = [&](const shared_ptr<UnitInfo>& u) {
-                auto &unit = *u;
-                if (cargoSize + unit.getType().spaceRequired() > 8 || unit.hasTransport())
+            const auto readyToAssignWorker = [&](const shared_ptr<UnitInfo>& c) {
+                auto &cargo = *u;
+                if (cargoSize + cargo.getType().spaceRequired() > 8 || cargo.hasTransport())
                     return false;
 
                 return false;
 
-                auto buildDist = unit.getBuildingType().isValid() ? BWEB::Map::getGroundDistance((Position)unit.getBuildPosition(), (Position)unit.getTilePosition()) : 0.0;
-                auto resourceDist = unit.hasResource() ? BWEB::Map::getGroundDistance(unit.getPosition(), unit.getResource().getPosition()) : 0.0;
+                auto buildDist = cargo.getBuildingType().isValid() ? BWEB::Map::getGroundDistance((Position)cargo.getBuildPosition(), (Position)cargo.getTilePosition()) : 0.0;
+                auto resourceDist = cargo.hasResource() ? BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getResource().getPosition()) : 0.0;
 
-                if ((unit.getBuildPosition().isValid() && buildDist == DBL_MAX) || (unit.getBuildingType().isResourceDepot() && Terrain::isIslandMap()))
+                if ((cargo.getBuildPosition().isValid() && buildDist == DBL_MAX) || (cargo.getBuildingType().isResourceDepot() && Terrain::isIslandMap()))
                     return true;
-                if (unit.hasResource() && resourceDist == DBL_MAX)
+                if (cargo.hasResource() && resourceDist == DBL_MAX)
                     return true;
                 return false;
             };
 
             // Check if we are ready to assign this unit to a transport
-            const auto readyToAssignUnit = [&](const shared_ptr<UnitInfo>& u) {
-                auto &unit = *u;
-                if (cargoSize + unit.getType().spaceRequired() > 8 || unit.hasTransport())
+            const auto readyToAssignUnit = [&](const shared_ptr<UnitInfo>& c) {
+                auto &cargo = *c;
+                if (cargoSize + cargo.getType().spaceRequired() > 8 || cargo.hasTransport())
                     return false;
 
-                auto targetDist = BWEB::Map::getGroundDistance(unit.getPosition(), unit.getEngagePosition());
+                auto targetDist = BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getEngagePosition());
 
-                if (unit.getType() == UnitTypes::Protoss_Reaver || unit.getType() == UnitTypes::Protoss_High_Templar)
+                if (cargo.getType() == UnitTypes::Protoss_Reaver || cargo.getType() == UnitTypes::Protoss_High_Templar)
                     return true;
-                if (Terrain::isIslandMap() && !unit.getType().isFlyer() && targetDist > 640.0)
+                if (Terrain::isIslandMap() && !cargo.getType().isFlyer() && targetDist > 640.0)
                     return true;
                 return false;
             };
 
             // Update cargo information
             if (cargoSize < 8) {
-                for (auto &u : Units::getUnits(PlayerState::Self)) {
-                    auto &unit = *u;
+                for (auto &c : Units::getUnits(PlayerState::Self)) {
+                    auto &cargo = *c;
 
-                    if (unit.getRole() == Role::Combat && readyToAssignUnit(u)) {
-                        unit.setTransport(u);
-                        unit.getAssignedCargo().insert(u);
+                    if (cargo.getRole() == Role::Combat && readyToAssignUnit(c)) {
+                        cargo.setTransport(u);
+                        unit.getAssignedCargo().insert(c);
                         cargoSize += unit.getType().spaceRequired();
                     }
 
-                    if (unit.getRole() == Role::Worker && readyToAssignWorker(u)) {
-                        unit.setTransport(u);
+                    if (cargo.getRole() == Role::Worker && readyToAssignWorker(c)) {
+                        cargo.setTransport(u);
                         unit.getAssignedCargo().insert(u);
                         cargoSize += unit.getType().spaceRequired();
                     }
@@ -159,7 +159,7 @@ namespace McRave::Transports {
                 return cargo.getPosition() - direction;
             };
 
-            // Check if we should be loading/unloading any cargo	
+            // Check if we should be loading/unloading any cargo
             bool shouldMonitor = false;
             for (auto &c : unit.getAssignedCargo()) {
                 auto &cargo = *c;
@@ -200,81 +200,27 @@ namespace McRave::Transports {
 
             if (shouldMonitor)
                 unit.setTransportState(TransportState::Monitoring);
-
-            //for (auto &w : unit.getAssignedWorkers()) {
-            //	bool miner = false;
-            //	bool builder = false;
-
-            //	if (!w || !w->unit())
-            //		continue;
-
-            //	auto &worker = *w;
-            //	builder = worker.getBuildPosition().isValid();
-            //	miner = !worker.getBuildPosition().isValid() && worker.hasResource();
-
-            //	if (worker.unit()->exists() && !worker.unit()->isLoaded() && !worker.unit()->isCarryingMinerals() && !worker.unit()->isCarryingGas()) {
-            //		if ((miner && readyToMine(worker)) || (builder && readyToBuild(worker))) {
-            //			unit.removeWorker(&worker);
-            //			worker.setTransport(nullptr);
-            //			return;
-            //		}
-            //		else if (unit.unit()->getLoadedUnits().empty() || unit.getPosition().getDistance(worker.getPosition()) < 320.0) {
-            //			unit.setLoading(true);
-            //			unit.unit()->load(worker.unit());
-            //			return;
-            //		}
-            //	}
-            //	else {
-            //		double airDist = DBL_MAX;
-            //		double grdDist = DBL_MAX;
-
-            //		if (worker.getBuildPosition().isValid())
-            //			unit.setDestination((Position)worker.getBuildPosition());
-
-            //		else if (worker.hasResource())
-            //			unit.setDestination(worker.getResource().getPosition());
-
-            //		if ((miner && readyToMine(worker)) || (builder && readyToBuild(worker)))
-            //			unit.unit()->unload(worker.unit());
-            //	}
-            //}
-
-            //if (unit.getDestination() == BWEB::Map::getMainPosition() && Terrain::isIslandMap()) {
-            //	double distBest = DBL_MAX;
-            //	Position posBest = Positions::None;
-            //	for (auto &tile : mapBWEM.StartingLocations()) {
-            //		Position center = Position(tile) + Position(64, 48);
-            //		double dist = center.getDistance(BWEB::Map::getMainPosition());
-
-            //		if (!Broodwar->isExplored(tile) && dist < distBest) {
-            //			distBest = dist;
-            //			posBest = center;
-            //		}
-            //	}
-            //	if (posBest.isValid()) {
-            //		unit.setDestination(posBest);
-            //	}
-            //}
         }
 
         void updateDestination(const shared_ptr<UnitInfo>& u)
         {
             auto &unit = *u;
 
+            // Disabled - this didn't do anything in AIST version
             // Check if the destination can be used for ground distance
-            if (!Util::isWalkable(unit.getDestination()) || BWEB::Map::getGroundDistance(unit.getPosition(), unit.getDestination()) == DBL_MAX) {
-                auto distBest = DBL_MAX;
-                for (auto &cargo : unit.getAssignedCargo()) {
-                    if (cargo->hasTarget()) {
-                        auto cargoTarget = cargo->getTarget().getPosition();
-                        auto dist = cargoTarget.getDistance(unit.getPosition());
-                        if (Util::isWalkable(cargoTarget) && dist < distBest) {
-                            unit.setDestination(cargoTarget);
-                            distBest = dist;
-                        }
-                    }
-                }
-            }
+            //if (!Util::isWalkable(unit.getDestination())) {
+            //    auto distBest = DBL_MAX;
+            //    for (auto &cargo : unit.getAssignedCargo()) {
+            //        if (cargo->hasTarget()) {
+            //            auto cargoTarget = cargo->getTarget().getPosition();
+            //            auto dist = cargoTarget.getDistance(unit.getPosition());
+            //            if (Util::isWalkable(cargoTarget) && dist < distBest) {
+            //                unit.setDestination(cargoTarget);
+            //                distBest = dist;
+            //            }
+            //        }
+            //    }
+            //}
         }
 
         void updateDecision(const shared_ptr<UnitInfo>& u)

@@ -91,6 +91,8 @@ namespace McRave::BuildOrder::Protoss {
             // Change Transition
             if (Strategy::enemyFastExpand())
                 currentTransition = "DT";
+            else if (Strategy::enemyRush())
+                currentTransition = "Defensive";
 
             // Change Opener
 
@@ -132,6 +134,8 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Assimilator] =		Item(s >= 22);
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
         }
+        else if (currentTransition == "Defensive")
+            PvT2GateDefensive();
     }
 
     void PvT1GateCore()

@@ -108,6 +108,8 @@ namespace McRave::BuildOrder::Protoss {
                 currentTransition = "DT";
             else if (Strategy::enemyPressure() && currentOpener == "Natural")
                 currentTransition = "Defensive";
+            else if (Strategy::getEnemyBuild() == "FFE")
+                currentTransition = "Expand";
 
             // Change Opener
 
@@ -233,7 +235,9 @@ namespace McRave::BuildOrder::Protoss {
                 else
                     currentTransition = "4Gate";
             }
-            else if (enemyBuild() == "P1GateDT")
+            else if (enemyBuild() == "1GateDT")
+                currentTransition = "3GateRobo";
+            else if (enemyBuild() == "FFE")
                 currentTransition = "3GateRobo";
 
             // Change Opener

@@ -25,6 +25,14 @@ namespace McRave::Targets {
                 bool selfHasGround = myStrength.groundToAir > 0.0 || myStrength.groundToGround > 0.0;
                 bool selfHasAir = myStrength.airToGround > 0.0 || myStrength.airToAir > 0.0 || com(UnitTypes::Protoss_Shuttle) > 0;
 
+                //// Don't target interceptors if we can easily attack carriers
+                // TODO: When carrier priority is better re-add this
+                //if (!unit.getType().isFlyer() && target.getType() == UnitTypes::Protoss_Interceptor && target.unit()->getCarrier()) {
+                //    auto carrier = Units::getUnit(target.unit()->getCarrier());
+                //    if (carrier && BWEB::Map::getGroundDistance(target.getPosition(), unit.getPosition()) < unit.getAirReach())
+                //        return false;
+                //}
+
                 bool targetMatters = (target.getAirDamage() > 0.0 && selfHasAir)
                     || (target.getGroundDamage() > 0.0/* && selfHasGround*/)
                     || (target.getType().isDetector() && (Units::getMyVisible(UnitTypes::Protoss_Dark_Templar) > 0 || Units::getMyVisible(UnitTypes::Protoss_Observer) > 0))
@@ -34,6 +42,12 @@ namespace McRave::Targets {
 
                 // Melee: Don't attack non threatening workers in our territory
                 if ((unit.getGroundRange() <= 32.0 && target.getType().isWorker() && !target.isThreatening() && (Units::getSupply() < 60 || int(unit.getTargetedBy().size()) > 0) && Terrain::isInAllyTerritory(target.getTilePosition()) && !target.hasAttackedRecently() && !Terrain::isInEnemyTerritory(target.getTilePosition()))
+                    
+                    // Scout roles should only target non buildings
+                    || (unit.getRole() == Role::Scout && target.getType().isBuilding())
+
+                    // Don't try to attack flyers that we can't reach
+                    || (target.getType().isFlyer() && Grids::getMobility(target.getPosition()) == 0 && !unit.getType().isFlyer() && !target.unit()->exists())
 
                     // If target is an egg, larva, scarab or spell
                     || (target.getType() == UnitTypes::Zerg_Egg || target.getType() == UnitTypes::Zerg_Larva || target.getType() == UnitTypes::Protoss_Scarab || target.getType().isSpell())
@@ -78,7 +92,7 @@ namespace McRave::Targets {
 
                 auto clusterTarget = unit.getType() == UnitTypes::Protoss_High_Templar || unit.getType() == UnitTypes::Protoss_Arbiter;
                 auto target = *t;
-                auto priority = (target.getType().isBuilding() && target.getGroundDamage() == 0.0 && target.getAirDamage() == 0.0) ? target.getPriority() / 10.0 : target.getPriority();
+                auto priority = (target.getType().isBuilding() && target.getGroundDamage() == 0.0 && target.getAirDamage() == 0.0) ? target.getPriority() / 50.0 : target.getPriority();
 
                 // Detector targeting
                 if ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == UnitTypes::Terran_Comsat_Station) {
@@ -182,7 +196,7 @@ namespace McRave::Targets {
 
         void getPathToTarget(UnitInfo& unit)
         {
-            // Don't want a path if we're not fighting - waste of CPU
+            // Don't want a path if we're not fighting
             if (unit.getRole() != Role::Combat)
                 return;
 

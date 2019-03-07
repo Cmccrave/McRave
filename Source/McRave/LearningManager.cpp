@@ -26,16 +26,16 @@ namespace McRave::Learning {
                     buildings ={ Protoss_Gateway, Protoss_Gateway, Protoss_Pylon };
                     defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
                 }
-                else if (build == "GateNexus" || build == "NexusGate") {
-                    Broodwar << "Yes" << endl;
-                    int count = Util::chokeWidth(BWEB::Map::getNaturalChoke()) / 64;
-                    buildings.insert(buildings.end(), count, Protoss_Pylon);
-                }
-                else {
+                else if (build == "FFE") {
                     tight = true;
                     buildings ={ Protoss_Gateway, Protoss_Forge, Protoss_Pylon };
                     defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
                     wallOptional = true;
+                }
+                else {
+                    int count = Util::chokeWidth(BWEB::Map::getNaturalChoke()) / 64;
+                    buildings.insert(buildings.end(), count, Protoss_Pylon);
+                    defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
                 }
             }
 

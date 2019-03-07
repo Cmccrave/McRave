@@ -73,18 +73,9 @@ namespace McRave
         // Remaining train frame
         remainingTrainFrame = max(0, remainingTrainFrame - 1);
 
-        // HACK: BWAPI for some reason doesn't like isStartingAttack or isAttackFrame???
+        // BWAPI won't reveal isStartingAttack when hold position is executed
         if (player != Broodwar->self()) {
-
-            // These both do nothing
-            /*if (thisUnit->isAttackFrame()) {
-                lastAttackFrame = Broodwar->getFrameCount();
-                circleBlue();
-            }
-            if (thisUnit->getOrder() == Orders::AttackUnit)
-                circleOrange();*/
-
-            if (Util::unitInRange(*this) && thisUnit->getOrder() == Orders::AttackUnit)
+            if (thisUnit->getGroundWeaponCooldown() > 0 || thisUnit->getAirWeaponCooldown() > 0)
                 lastAttackFrame = Broodwar->getFrameCount();
         }
 
@@ -220,7 +211,7 @@ namespace McRave
         auto atHome = Terrain::isInAllyTerritory(tilePosition);
         auto manner = position.getDistance(Terrain::getMineralHoldPosition()) < 256.0;
         auto exists = thisUnit && thisUnit->exists();
-        auto attacked = exists && hasAttackedRecently() && target && (target->getType().isBuilding() || target->getType().isWorker());
+        auto attacked = exists && hasAttackedRecently() && target && (target->getType().isBuilding() || target->getType().isWorker()) && (close || atHome);
         auto constructingClose = exists && (position.getDistance(Terrain::getDefendPosition()) < 320.0 || close) && (thisUnit->isConstructing() || thisUnit->getOrder() == Orders::ConstructingBuilding || thisUnit->getOrder() == Orders::PlaceBuilding);
         auto inRangePieces = Terrain::inRangeOfWallPieces(*this);
         auto inRangeDefenses = Terrain::inRangeOfWallDefenses(*this);

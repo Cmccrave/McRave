@@ -52,7 +52,7 @@ namespace McRave::Util {
             return false;
 
         double widths = unit.getTarget().getType().width() + unit.getType().width();
-        double allyRange = (widths / 2) + (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
+        double allyRange = widths + (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
 
         if (unit.getPosition().getDistance(unit.getTarget().getPosition()) <= allyRange + 32.0)
             return true;
@@ -78,7 +78,7 @@ namespace McRave::Util {
             if (unit.getType() == UnitTypes::Protoss_Probe && (unit.getShields() < 0 || (unit.hasResource() && unit.getResource().getType().isRefinery())))
                 return false;
 
-            if (BuildOrder::isHideTech() && combatCount == 2)
+            if (BuildOrder::isHideTech() && combatCount < 2 && completedDefenders > 0)
                 return true;
 
             if (BuildOrder::getCurrentBuild() == "FFE") {
@@ -101,9 +101,8 @@ namespace McRave::Util {
                     return true;
             }
             else if (BuildOrder::getCurrentBuild() == "1GateCore" && Strategy::getEnemyBuild() == "2Gate" && BuildOrder::getCurrentTransition() != "Defensive" && Strategy::defendChoke()) {
-                return false;
-
                 // Disabled for now - come back to it
+                return false;
                 if (combatCount < 4)
                     return true;
             }
@@ -142,7 +141,6 @@ namespace McRave::Util {
         }
 
         if (unit.hasTarget()) {
-            unit.circleBlack();
             if (unit.getTarget().hasAttackedRecently() && unit.getTarget().getPosition().getDistance(closestStation) < unit.getTarget().getGroundReach() && Grids::getEGroundThreat(unit.getWalkPosition()) > 0.0 && Broodwar->getFrameCount() < 10000)
                 return true;
         }
