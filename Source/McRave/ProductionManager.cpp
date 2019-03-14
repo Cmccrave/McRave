@@ -330,23 +330,23 @@ namespace McRave::Production {
             else if (Broodwar->self()->getRace() == Races::Terran) {
                 switch (upgrade) {
 
-					// Speed upgrades
+                    // Speed upgrades
                 case Ion_Thrusters:
                     return true;
 
-					// Range upgrades
+                    // Range upgrades
                 case Charon_Boosters:
                     return Strategy::getUnitScore(UnitTypes::Terran_Goliath) > 1.00;
                 case U_238_Shells:
                     return Broodwar->self()->hasResearched(TechTypes::Stim_Packs);
 
-					// Bio upgrades
+                    // Bio upgrades
                 case Terran_Infantry_Weapons:
                     return true;// (BuildOrder::isBioBuild());
                 case Terran_Infantry_Armor:
                     return (Broodwar->self()->getUpgradeLevel(Terran_Infantry_Weapons) > Broodwar->self()->getUpgradeLevel(Terran_Infantry_Armor) || Broodwar->self()->isUpgrading(Terran_Infantry_Weapons));
 
-					// Mech upgrades
+                    // Mech upgrades
                 case Terran_Vehicle_Weapons:
                     return (Players::getStrength(PlayerState::Self).groundToGround > 20.0);
                 case Terran_Vehicle_Plating:
@@ -362,23 +362,23 @@ namespace McRave::Production {
                 switch (upgrade)
                 {
 
-					// Speed upgrades
+                    // Speed upgrades
                 case Metabolic_Boost:
                     return true;
-				case Muscular_Augments:
-					return Broodwar->self()->getUpgradeLevel(Grooved_Spines);
-				case Pneumatized_Carapace:
-					return !BuildOrder::isOpener();
-				case Anabolic_Synthesis:
-					return true;
+                case Muscular_Augments:
+                    return Broodwar->self()->getUpgradeLevel(Grooved_Spines);
+                case Pneumatized_Carapace:
+                    return !BuildOrder::isOpener();
+                case Anabolic_Synthesis:
+                    return true;
 
-					// Range upgrades
+                    // Range upgrades
                 case Grooved_Spines:
                     return true;
 
-					// Other upgrades
-				case Chitinous_Plating:
-					return true;
+                    // Other upgrades
+                case Chitinous_Plating:
+                    return true;
                 case Adrenal_Glands:
                     return true;
 
@@ -477,6 +477,15 @@ namespace McRave::Production {
             double best = 0.0;
             UnitType bestType = UnitTypes::None;
 
+            const auto scoreUnit = [&](UnitType type) {
+                double mineralCost = type.mineralPrice() == 0 ? 1.0 : Broodwar->self()->minerals() - type.mineralPrice() - (!BuildOrder::isTechUnit(type) * reservedMineral) - Buildings::getQueuedMineral();
+                double gasCost = type.gasPrice() == 0 ? 1.0 : Broodwar->self()->gas() - type.gasPrice() - (!BuildOrder::isTechUnit(type) * reservedGas) - Buildings::getQueuedGas();
+
+                double resourceScore = Util::boundBetween(0.1, gasCost * mineralCost, 10.0);
+                double strategyScore = Util::boundBetween(0.0, Strategy::getUnitScore(type), 10.0);
+                return resourceScore * strategyScore;
+            };
+
             if (building.getType() == UnitTypes::Zerg_Larva && BuildOrder::buildCount(Zerg_Overlord) > vis(Zerg_Overlord) + trainedThisFrame[Zerg_Overlord]) {
                 building.unit()->morph(Zerg_Overlord);
                 trainedThisFrame[Zerg_Overlord]++;
@@ -488,28 +497,25 @@ namespace McRave::Production {
                 return;
             }
 
-            for (auto &unit : building.getType().buildsWhat()) {
-                double mineral = unit.mineralPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->minerals() - reservedMineral - Buildings::getQueuedMineral()) / (double)unit.mineralPrice())) : 1.0;
-                double gas = unit.gasPrice() > 0 ? max(0.0, min(1.0, double(Broodwar->self()->gas() - reservedGas - Buildings::getQueuedGas()) / (double)unit.gasPrice())) : 1.0;
-                double score = max(0.01, Strategy::getUnitScore(unit));
-                double value = score * mineral * gas;
+            for (auto &type : building.getType().buildsWhat()) {
+                double value = scoreUnit(type);
 
                 // If we teched to DTs, try to create as many as possible
-                if (unit == UnitTypes::Protoss_Dark_Templar && BuildOrder::getTechList().size() == 1 && isCreateable(building.unit(), unit) && isSuitable(unit)) {
+                if (type == UnitTypes::Protoss_Dark_Templar && BuildOrder::getTechList().size() == 1 && isCreateable(building.unit(), type) && isSuitable(type)) {
                     best = DBL_MAX;
-                    bestType = unit;
+                    bestType = type;
                 }
-                else if (unit == BuildOrder::getTechUnit() && isCreateable(building.unit(), unit) && isSuitable(unit) && vis(unit) == 0 && isAffordable(unit)) {
+                else if (type == BuildOrder::getTechUnit() && isCreateable(building.unit(), type) && isSuitable(type) && vis(type) == 0 && isAffordable(type)) {
                     best = DBL_MAX;
-                    bestType = unit;
+                    bestType = type;
                 }
-                else if (unit == UnitTypes::Protoss_Observer && isCreateable(building.unit(), unit) && isSuitable(unit) && vis(unit) < Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus)) {
+                else if (type == UnitTypes::Protoss_Observer && isCreateable(building.unit(), type) && isSuitable(type) && vis(type) < Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus)) {
                     best = DBL_MAX;
-                    bestType = unit;
+                    bestType = type;
                 }
-                else if (value >= best && isCreateable(building.unit(), unit) && isSuitable(unit) && (isAffordable(bestType) || Broodwar->getFrameCount() < 8000)) {
+                else if (value >= best && isCreateable(building.unit(), type) && isSuitable(type) && (isAffordable(bestType) || Broodwar->getFrameCount() < 8000)) {
                     best = value;
-                    bestType = unit;
+                    bestType = type;
                 }
             }
 
@@ -523,6 +529,7 @@ namespace McRave::Production {
                     return; // Only produce 1 unit per frame to prevent overspending
                 }
 
+                // HACK: Make zealots if we cant afford a DT, is this needed?
                 if (bestType == UnitTypes::Protoss_Dark_Templar && !isAffordable(UnitTypes::Protoss_Dark_Templar) && Players::vP() && Broodwar->self()->minerals() > 300)
                     bestType = UnitTypes::Protoss_Zealot;
 
@@ -644,5 +651,5 @@ namespace McRave::Production {
 
     int getReservedMineral() { return reservedMineral; }
     int getReservedGas() { return reservedGas; }
-    bool hasIdleProduction() { return Broodwar->getFrameCount() == idleFrame; }
+    bool hasIdleProduction() { return int(idleProduction.size()) > 0; }
 }

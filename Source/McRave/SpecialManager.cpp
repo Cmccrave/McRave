@@ -51,7 +51,7 @@ namespace McRave::Command
 
         // SCV
         else if (unit.getType() == UnitTypes::Terran_SCV) {
-            auto mech = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+            auto &mech = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                 return (u.getType().isMechanical() && u.getPercentHealth() < 1.0);
             });
 
@@ -61,7 +61,7 @@ namespace McRave::Command
             	return true;
             }
 
-            auto building = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+            auto &building = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                 return u.getPercentHealth() < 0.35 || (u.getType() == UnitTypes::Terran_Bunker && u.getPercentHealth() < 1.0);
             });
 
@@ -154,7 +154,7 @@ namespace McRave::Command
                 if (!Players::vT() && (lowEnergyThreat || wantArchons)) {
 
                     // Try to find a friendly templar who is low energy and is threatened
-                    auto templar = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+                    auto &templar = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                         return u != unit && u.getType() == UnitTypes::Protoss_High_Templar && u.unit()->isCompleted() && (wantArchons || (u.getEnergy() < 75 && Grids::getEGroundThreat(u.getWalkPosition()) > 0.0));
                     });
 
@@ -221,7 +221,7 @@ namespace McRave::Command
 
         // General: Shield Battery Use
         if (Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Shield_Battery) > 0 && (unit.unit()->getGroundWeaponCooldown() > Broodwar->getLatencyFrames() || unit.unit()->getAirWeaponCooldown() > Broodwar->getLatencyFrames()) && unit.getType().maxShields() > 0 && (unit.unit()->getShields() <= 10 || (unit.unit()->getShields() < unit.getType().maxShields() && unit.unit()->getOrderTarget() && unit.unit()->getOrderTarget()->exists() && unit.unit()->getOrderTarget()->getType() == UnitTypes::Protoss_Shield_Battery && unit.unit()->getOrderTarget()->getEnergy() >= 10))) {
-            auto battery = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+            auto &battery = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                 return u.getType() == UnitTypes::Protoss_Shield_Battery && u.unit()->isCompleted() && u.getEnergy() > 10;
             });
 
@@ -235,7 +235,7 @@ namespace McRave::Command
         // General: Bunker Loading/Unloading
         if (unit.getType() == UnitTypes::Terran_Marine && unit.getGlobalState() == GlobalState::Retreat && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) > 0) {
 
-            auto bunker = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+            auto &bunker = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                 return (u.getType() == UnitTypes::Terran_Bunker && u.unit()->getSpaceRemaining() > 0);
             });
             
@@ -251,7 +251,7 @@ namespace McRave::Command
 
         // Science Vessels
         if (unit.getType() == UnitTypes::Terran_Science_Vessel && unit.unit()->getEnergy() >= TechTypes::Defensive_Matrix) {
-            auto ally = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+            auto &ally = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                 return (u.unit()->isUnderAttack());
             });
             if (ally && ally->getPosition().getDistance(unit.getPosition()) < 640)

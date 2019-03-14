@@ -96,7 +96,7 @@ namespace McRave::BuildOrder::Protoss {
             }
             else {
                 itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
-                itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0) + (s >= 20));
+                itemQueue[Protoss_Gateway] =			Item((s >= 18) + (s >= 20));
             }
         }
 
@@ -140,6 +140,7 @@ namespace McRave::BuildOrder::Protoss {
             // https://liquipedia.net/starcraft/2_Gate_(vs._Protoss)#10.2F12_Gateway_Expand
             lockedTransition =  vis(Protoss_Nexus) >= 2;
             getOpening =		s < 100;
+            zealotLimit =       INT_MAX;
 
             delayFirstTech =    true;
             wallNat =           currentOpener == "Natural" || s >= 56;
@@ -148,7 +149,7 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Assimilator] =		Item(s >= 58);
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 60);
             itemQueue[Protoss_Forge] =				Item(s >= 70);
-            itemQueue[Protoss_Nexus] =				Item(1 + (s >= 56));
+            itemQueue[Protoss_Nexus] =				Item(1 + (s >= 50));
 
             auto cannonCount = int(1 + Units::getEnemyCount(Protoss_Zealot) + Units::getEnemyCount(Protoss_Dragoon)) / 2;
             itemQueue[Protoss_Photon_Cannon] =		Item(com(Protoss_Forge) > 0 ? cannonCount : 0);
@@ -210,6 +211,7 @@ namespace McRave::BuildOrder::Protoss {
 
             itemQueue[Protoss_Nexus] =				Item(1);
             itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
+            itemQueue[Protoss_Gateway] =			Item(s >= 20);
             itemQueue[Protoss_Assimilator] =		Item(s >= 24);
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 34);
         }
@@ -218,6 +220,7 @@ namespace McRave::BuildOrder::Protoss {
 
             itemQueue[Protoss_Nexus] =				Item(1);
             itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
+            itemQueue[Protoss_Gateway] =			Item(s >= 20);
             itemQueue[Protoss_Assimilator] =		Item(s >= 24);
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 40);
         }
@@ -252,17 +255,10 @@ namespace McRave::BuildOrder::Protoss {
             playPassive =		!Strategy::enemyFastExpand() && com(Protoss_Reaver) == 0;
         
             desiredDetection =  UnitTypes::Protoss_Forge;
+            firstUnit =         (Units::getEnemyCount(UnitTypes::Protoss_Dragoon) <= 2 || enemyBuild() == "1GateDT") ? Protoss_Observer : Protoss_Reaver;
 
             itemQueue[Protoss_Robotics_Facility] =	Item(s >= 52);
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (2 * (s >= 58)));
-
-            // Decide whether to Reaver first or Obs first
-            if (com(Protoss_Robotics_Facility) > 0) {
-                if (vis(Protoss_Observer) == 0 && (Units::getEnemyCount(UnitTypes::Protoss_Dragoon) <= 2 || enemyBuild() == "1GateDT"))
-                    firstUnit = Protoss_Observer;
-                else
-                    firstUnit = Protoss_Reaver;
-            }
         }
         else if (currentTransition == "Reaver") {
             // http://liquipedia.net/starcraft/1_Gate_Reaver
@@ -272,21 +268,14 @@ namespace McRave::BuildOrder::Protoss {
 
             dragoonLimit =		INT_MAX;
             zealotLimit =		com(Protoss_Robotics_Facility) >= 1 ? 6 : zealotLimit;
+            firstUnit =         (Units::getEnemyCount(UnitTypes::Protoss_Dragoon) <= 2 || enemyBuild() == "1GateDT") ? Protoss_Observer : Protoss_Reaver;
 
             itemQueue[Protoss_Gateway] =				Item((s >= 20) + (s >= 50) + (s >= 62));
             itemQueue[Protoss_Robotics_Facility] =		Item(s >= 70);
-
-            // Decide whether to Reaver first or Obs first
-            if (com(Protoss_Robotics_Facility) > 0) {
-                if (vis(Protoss_Observer) == 0 && (Units::getEnemyCount(UnitTypes::Protoss_Dragoon) <= 2 || enemyBuild() == "1GateDT"))
-                    firstUnit = Protoss_Observer;
-                else
-                    firstUnit = Protoss_Reaver;
-            }
         }
         else if (currentTransition == "4Gate") {
             // https://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)
-            lockedTransition =  vis(Protoss_Gateway) >= 4;
+            lockedTransition =  s > 24;
             getOpening =        s < 140 && Broodwar->getFrameCount() < 10000;
             playPassive =       !firstReady();
 
@@ -310,7 +299,7 @@ namespace McRave::BuildOrder::Protoss {
             // https://liquipedia.net/starcraft/2_Gate_DT_(vs._Protoss) -- is actually 1 Gate
             lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
             getOpening =        s < 80;
-            playPassive =       com(Protoss_Dark_Templar) <= 2;
+            playPassive =       com(Protoss_Dark_Templar) <= 0;
 
             firstUpgrade =      UpgradeTypes::None;
             hideTech =          true;

@@ -47,7 +47,7 @@ namespace McRave::Util {
 
     template<typename F>
     const std::shared_ptr<UnitInfo> getClosestUnitGround(BWAPI::Position here, PlayerState player, F &&pred) {
-        auto distBest = 0.0;
+        auto distBest = DBL_MAX;
         auto &units = Units::getUnits(player);
         std::shared_ptr<UnitInfo> best = nullptr;
 
@@ -58,7 +58,7 @@ namespace McRave::Util {
                 continue;
 
             double dist = BWEB::Map::getGroundDistance(here, unit.getPosition());
-            if (dist > distBest) {
+            if (dist < distBest) {
                 best = u;
                 distBest = dist;
             }
@@ -69,6 +69,11 @@ namespace McRave::Util {
     template<typename T, typename E>
     constexpr auto contains(T const &cont, E &&e) {
         return std::find(cont.begin(), cont.end(), std::forward<E>(e)) != cont.end();
+    }
+
+    template<typename T>
+    T boundBetween(T low, T compare, T high) {
+        return std::max(low, std::min(high, compare));
     }
 
     // Checks if any Position is walkable
@@ -118,4 +123,7 @@ namespace McRave::Util {
 	BWAPI::Position getInterceptPosition(UnitInfo&);
     BWAPI::Position clipPosition(BWAPI::Position, BWAPI::Position);
     BWAPI::Position clipToMap(BWAPI::Position);
+
+
+    
 }

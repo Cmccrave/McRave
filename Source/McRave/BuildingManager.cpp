@@ -485,7 +485,7 @@ namespace McRave::Buildings {
 
             // Terran building needs new scv
             else if (building.getType().getRace() == Races::Terran && !building.unit()->isCompleted() && !building.unit()->getBuildUnit()) {
-                auto builder = Util::getClosestUnit(building.getPosition(), PlayerState::Self, [&](auto &u) {
+                auto &builder = Util::getClosestUnit(building.getPosition(), PlayerState::Self, [&](auto &u) {
                     return u.getType().isWorker() && u.getBuildingType() == None;
                 });
 
@@ -594,9 +594,7 @@ namespace McRave::Buildings {
             }
 
             // 2) Add up how many more buildings of each type we need
-            for (auto &i : BuildOrder::getItemQueue()) {
-                UnitType building = i.first;
-                BuildOrder::Item item = i.second;
+            for (auto &[building, item] : BuildOrder::getItemQueue()) {
                 int queuedCount = 0;
 
                 auto morphed = !building.whatBuilds().first.isWorker();
@@ -616,8 +614,7 @@ namespace McRave::Buildings {
                     morphOffset = Broodwar->self()->visibleUnitCount(Zerg_Hive);
 
                 // 3) Reserve building if our reserve count is higher than our visible count
-                for (auto &queued : buildingsQueued) {
-                    auto queuedType = queued.second;
+                for (auto &[_, queuedType] : buildingsQueued) {
                     if (queuedType == building) {
                         queuedCount++;
 
@@ -633,7 +630,7 @@ namespace McRave::Buildings {
                 if (item.getActualCount() > queuedCount + Broodwar->self()->visibleUnitCount(building) + morphOffset) {
                     auto here = getBuildLocation(building);
 
-                    auto builder = Util::getClosestUnit(Position(here), PlayerState::Self, [&](auto &u) {
+                    auto &builder = Util::getClosestUnit(Position(here), PlayerState::Self, [&](auto &u) {
                         return u.getRole() == Role::Worker && (!u.hasResource() || u.getResource().getType().isMineralField()) && u.getBuildingType() == None;
                     });
 
@@ -695,7 +692,7 @@ namespace McRave::Buildings {
             return false;
 
         if (building == Zerg_Hatchery) {
-            auto builder = Util::getClosestUnit((Position)here, PlayerState::Self, [&](auto &u) {
+            auto &builder = Util::getClosestUnit((Position)here, PlayerState::Self, [&](auto &u) {
                 return u.getType().isWorker();
             });
             if (builder) {

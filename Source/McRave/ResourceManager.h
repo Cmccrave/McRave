@@ -16,5 +16,5 @@ namespace McRave::Resources
     void storeResource(BWAPI::Unit);
     void removeResource(BWAPI::Unit);
 
-    const std::shared_ptr<ResourceInfo> getResource(BWAPI::Unit);
+    const std::shared_ptr<ResourceInfo>& getResource(BWAPI::Unit);
 }

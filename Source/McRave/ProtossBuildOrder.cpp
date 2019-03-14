@@ -40,8 +40,11 @@ namespace McRave::BuildOrder::Protoss
         if (com(Protoss_Cybernetics_Core) == 0)
             return;
 
+        if (firstUnit != None && !isTechUnit(firstUnit))
+            techUnit = firstUnit;
+
         // Some hardcoded techs based on needing detection or specific build orders
-        if (getTech) {
+        else if (getTech) {
 
             // If we need observers
             if (Strategy::needDetection() || (Players::vP() && techList.find(Protoss_Observer) == techList.end() && !techList.empty()))
@@ -53,8 +56,6 @@ namespace McRave::BuildOrder::Protoss
             else if (techUnit == None)
                 getNewTech();
         }
-        else if (firstUnit != None && !isTechUnit(firstUnit))
-            techUnit = firstUnit;
 
         checkNewTech();
         checkAllTech();
@@ -71,9 +72,15 @@ namespace McRave::BuildOrder::Protoss
         baseVal = com(Protoss_Nexus);
         techVal = techList.size() + skipFirstTech + Players::vT();
 
-        // HACK: Against FFE just add a Nexus
-        //if (Strategy::getEnemyBuild() == "FFE" && vis(Protoss_Nexus) == 1)
-            //itemQueue[Protoss_Nexus] = Item(2);
+        // Against FFE add a Nexus for every 2 cannons we see
+        if (Strategy::getEnemyBuild() == "FFE" && getOpening) {
+            auto cannonCount = Units::getEnemyCount(Protoss_Photon_Cannon);
+
+            if (cannonCount <= 2)
+                itemQueue[Protoss_Nexus] = Item(2);
+            else
+                itemQueue[Protoss_Nexus] = Item(3);
+        }
 
         // Saturation
         productionSat = (prodVal >= satVal * baseVal);

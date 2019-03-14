@@ -21,6 +21,7 @@ namespace McRave::Learning {
             auto wallOptional = false;
             auto tight = false;
 
+            // Protoss wall unit types
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (build == "2Gate" && opener == "Natural") {
                     buildings ={ Protoss_Gateway, Protoss_Gateway, Protoss_Pylon };
@@ -30,19 +31,21 @@ namespace McRave::Learning {
                     tight = true;
                     buildings ={ Protoss_Gateway, Protoss_Forge, Protoss_Pylon };
                     defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
-                    wallOptional = true;
                 }
                 else {
-                    int count = Util::chokeWidth(BWEB::Map::getNaturalChoke()) / 64;
+                    int count = max(2, (Util::chokeWidth(BWEB::Map::getNaturalChoke()) / 64) - 1);
                     buildings.insert(buildings.end(), count, Protoss_Pylon);
                     defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
                 }
             }
 
+            // Terran wall unit types
             if (Broodwar->self()->getRace() == Races::Terran) {
                 buildings ={ Terran_Barracks, Terran_Supply_Depot, Terran_Supply_Depot };
                 tight = true;
             }
+
+            // Zerg wall unit types
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber };
                 defenses.insert(defenses.end(), 6, Zerg_Sunken_Colony);
@@ -229,7 +232,6 @@ namespace McRave::Learning {
                     BuildOrder::setCurrentBuild("GateNexus");
                     BuildOrder::setCurrentOpener("1Gate");
                     BuildOrder::setCurrentTransition("Standard");
-                    isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                 }
                 else {
                     BuildOrder::setCurrentBuild("2Gate");
@@ -247,10 +249,11 @@ namespace McRave::Learning {
                     BuildOrder::setCurrentBuild("HatchPool");
                     BuildOrder::setCurrentOpener("12Hatch");
                     BuildOrder::setCurrentTransition("2HatchMuta");
-                }
-                isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
+                }                
             }
-            return;
+
+            // Add walls
+            isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
         }
     }
 
@@ -323,8 +326,8 @@ namespace McRave::Learning {
         if (testing) {
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 BuildOrder::setCurrentBuild("2Gate");
-                BuildOrder::setCurrentOpener("Natural");
-                BuildOrder::setCurrentTransition("DT");
+                BuildOrder::setCurrentOpener("Main");
+                BuildOrder::setCurrentTransition("Expand");
                 isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                 return;
             }

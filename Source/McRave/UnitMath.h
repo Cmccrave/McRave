@@ -13,6 +13,8 @@ namespace McRave::Math {
 
     double getPriority(UnitInfo& unit);
 
+    double relativeCost(UnitInfo& unit);
+
     double groundDPS(UnitInfo& unit);
     
     double airDPS(UnitInfo& unit);

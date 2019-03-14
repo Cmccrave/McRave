@@ -8,5 +8,6 @@ namespace McRave::Workers {
 
     int getMineralWorkers();
     int getGasWorkers();
+    int getBoulderWorkers();
     bool shouldMoveToBuild(UnitInfo&, BWAPI::TilePosition, BWAPI::UnitType);
 }

@@ -19,10 +19,10 @@ namespace McRave::Scouts {
 
             // If we have seen an enemy Probe before we've scouted the enemy, follow it
             if (Units::getEnemyCount(UnitTypes::Protoss_Probe) == 1 && Units::getEnemyCount(UnitTypes::Protoss_Zealot) == 0) {
-                auto w = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                auto &enemyProbe = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
                     return u.getType() == UnitTypes::Protoss_Probe;
                 });
-                proxyCheck = (w && !Terrain::getEnemyStartingPosition().isValid() && w->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0 && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1);
+                proxyCheck = (enemyProbe && !Terrain::getEnemyStartingPosition().isValid() && enemyProbe->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0);
             }
             else
                 proxyCheck = false;
@@ -44,6 +44,11 @@ namespace McRave::Scouts {
         {
             scoutTargets.clear();
 
+            const auto addTarget = [&](Position here) {
+                if (here.isValid())
+                    scoutTargets.insert(here);
+            };
+
             // If enemy start is valid and explored, add a target to the most recent one to scout
             if (Terrain::foundEnemy()) {
                 for (auto &s : Stations::getEnemyStations()) {
@@ -52,7 +57,14 @@ namespace McRave::Scouts {
                     if (tile.isValid())
                         scoutTargets.insert(Position(tile));
                 }
-                if (Players::vZ() && Stations::getEnemyStations().size() == 1 && Strategy::getEnemyBuild() != "Unknown")
+
+                // Add extra co-ordinates for better exploring
+                addTarget(Terrain::getEnemyStartingPosition() + Position(0, -320));
+                addTarget(Terrain::getEnemyStartingPosition() + Position(0, 320));
+                addTarget(Terrain::getEnemyStartingPosition() + Position(-320, 0));
+                addTarget(Terrain::getEnemyStartingPosition() + Position(320, 0));
+
+                if (Players::vZ() && Stations::getEnemyStations().size() == 1)
                     scoutTargets.insert((Position)Terrain::getEnemyExpand());
             }
 
@@ -88,7 +100,7 @@ namespace McRave::Scouts {
                     proxyPosition = mapBWEM.Center();
                 }
                 else {
-                    auto proxyBuilding = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Enemy, [&](auto &u) {
+                    auto &proxyBuilding = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Enemy, [&](auto &u) {
                         return u.getType() == proxyType;
                     });
                     if (proxyBuilding) {
@@ -101,6 +113,9 @@ namespace McRave::Scouts {
             // If it's a cannon rush, scout the main
             if (Strategy::getEnemyBuild() == "CannonRush")
                 scoutTargets.insert(BWEB::Map::getMainPosition());
+
+            //for (auto &target : scoutTargets)
+               // Broodwar->drawCircleMap(target, 4, Colors::Black, true);
         }
 
         void updateAssignment(const shared_ptr<UnitInfo>& u)
@@ -111,7 +126,7 @@ namespace McRave::Scouts {
             auto posBest = unit.getDestination();
 
             const auto isClosestScout = [&](Position here) {
-                auto closestScout = Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &u) {
+                auto &closestScout = Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &u) {
                     return u.getRole() == Role::Scout;
                 });
                 return u == closestScout;
@@ -121,7 +136,7 @@ namespace McRave::Scouts {
 
                 // If it's a main or natural proxy
                 if (Strategy::enemyProxy() && Strategy::getEnemyBuild() == "2Gate") {
-                    auto enemyPylon = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
+                    auto &enemyPylon = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
                         return u.getType() == UnitTypes::Protoss_Pylon;
                     });
 
@@ -137,10 +152,10 @@ namespace McRave::Scouts {
                 }
 
                 // If it's a center of map proxy
-                if (proxyPosition.isValid() && isClosestScout(proxyPosition)) {
+                if ((proxyPosition.isValid() && isClosestScout(proxyPosition)) || proxyCheck) {
 
                     // If it's a proxy (maybe cannon rush), try to find the unit to kill
-                    if (Strategy::enemyProxy() || proxyCheck) {
+                    if (Strategy::enemyProxy()) {
 
                         if (Units::getEnemyCount(UnitTypes::Terran_Barracks) > 0)
                             proxyType = UnitTypes::Terran_Barracks;
@@ -149,10 +164,10 @@ namespace McRave::Scouts {
                         else if (Units::getEnemyCount(UnitTypes::Protoss_Gateway) > 0)
                             proxyType = UnitTypes::Protoss_Gateway;
 
-                        auto enemyWorker = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
+                        auto &enemyWorker = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
                             return u.getType().isWorker();
                         });
-                        auto enemyStructure = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
+                        auto &enemyStructure = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
                             return u.getType() == proxyType;
                         });
 

@@ -40,7 +40,7 @@ namespace McRave::Support {
 
         // Detectors want to stay close to their target
         if (unit.getType().isDetector() && unit.hasTarget() && unit.getTarget().getPosition().isValid()) {
-            auto closest = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+            auto &closest = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                 return true;
             });
 

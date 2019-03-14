@@ -18,7 +18,7 @@ namespace McRave::BuildOrder::Protoss {
         }
 
         bool addGates() {
-            return goonRange() && Broodwar->self()->minerals() >= 100;
+            return goonRange() && Broodwar->self()->minerals() >= 150 && vis(Protoss_Dragoon) > 0;
         }
 
         bool addGas() {
@@ -39,7 +39,7 @@ namespace McRave::BuildOrder::Protoss {
             firstTech =			TechTypes::None;
             scout =				vis(Protoss_Cybernetics_Core) > 0;
             gasLimit =			INT_MAX;
-            zealotLimit =		0;
+            zealotLimit =		Units::getImmThreat() > 0 ? 1 : 0;
             dragoonLimit =		INT_MAX;
         }
     }

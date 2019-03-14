@@ -215,9 +215,11 @@ namespace McRave::Command {
             }
 
             if (unit.getRole() == Role::Scout) {
-                auto attackers = int(unit.getTargetedBy().size());
-                if (attackers == 0 || (attackers == 1 && unit.getTarget().hasTarget() && unit.getTarget().getTarget() == unit && unit.getPercentTotal() > unit.getTarget().getPercentTotal()))
-                    return true;
+                if (Terrain::getEnemyStartingPosition().isValid()) {
+                    auto attackers = int(unit.getTargetedBy().size());
+                    if (attackers == 0 || (attackers == 1 && unit.getTarget().hasTarget() && unit.getTarget().getTarget() == unit && unit.getPercentTotal() > unit.getTarget().getPercentTotal()))
+                        return true;
+                }
             }
             return false;
         };
@@ -318,7 +320,7 @@ namespace McRave::Command {
 
         auto shouldMove = [&]() {
             if (unit.getRole() == Role::Combat) {
-                if (Util::unitInRange(unit) && !unit.getTarget().isHidden() && unit.getType() != UnitTypes::Zerg_Lurker)
+                if (unit.hasTarget() && Util::unitInRange(unit) && !unit.getTarget().isHidden() && unit.getType() != UnitTypes::Zerg_Lurker)
                     return false;
                 if (unit.getLocalState() == LocalState::Attack)
                     return true;
@@ -336,10 +338,9 @@ namespace McRave::Command {
 
         // HACK: Drilling with workers. Should add some sort of getClosestResource or fix how PlayerState::Neutral units are stored (we don't store resources in them)
         if (unit.getType().isWorker() && unit.getRole() == Role::Combat && unit.hasTarget()) {
-            auto closestMineral = Broodwar->getClosestUnit(unit.getTarget().getPosition(), Filter::IsMineralField, 256);
+            auto closestMineral = Broodwar->getClosestUnit(unit.getTarget().getPosition(), Filter::IsMineralField, 32);
 
             if (closestMineral && closestMineral->exists()) {
-                Broodwar->drawLineMap(unit.getPosition(), closestMineral->getPosition(), Colors::Green);
                 unit.unit()->gather(closestMineral);
                 return true;
             }
@@ -436,7 +437,7 @@ namespace McRave::Command {
                     return false;
 
                 // Don't kite buildings unless we're a flying unit
-                if (unit.getTarget().getType().isBuilding() && !unit.getType().isFlyer())
+                if (unit.getTarget().getType().isBuilding() && !unit.getType().isFlyer() && unit.isHealthy() && !unit.unit()->isUnderAttack())
                     return false;
 
                 // Capital ships want to stay at max range due to their slow nature
@@ -471,10 +472,9 @@ namespace McRave::Command {
 
             // HACK: Drilling with workers. Should add some sort of getClosestResource or fix how PlayerState::Neutral units are stored (we don't store resources in them)
             if (unit.getType().isWorker() && unit.getRole() == Role::Combat) {
-                auto closestMineral = Broodwar->getClosestUnit(unit.getTarget().getPosition(), Filter::IsMineralField, 256);
+                auto closestMineral = Broodwar->getClosestUnit(unit.getTarget().getPosition(), Filter::IsMineralField, 32);
 
                 if (closestMineral && closestMineral->exists()) {
-                    Broodwar->drawLineMap(unit.getPosition(), closestMineral->getPosition(), Colors::Green);
                     unit.unit()->gather(closestMineral);
                     return true;
                 }
@@ -500,8 +500,8 @@ namespace McRave::Command {
             return false;
 
         // Probe Cannon surround
-        if (unit.getType().isWorker() && Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) > 0) {
-            auto cannon = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Self, [&](auto &u) {
+        if (unit.getType().isWorker() && vis(UnitTypes::Protoss_Photon_Cannon) > 0) {
+            auto &cannon = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Self, [&](auto &u) {
                 return u.getType() == UnitTypes::Protoss_Photon_Cannon;
             });
 
@@ -701,7 +701,7 @@ namespace McRave::Command {
             return score;
         };
 
-        Broodwar->drawTextMap(unit.getPosition() - Position(0, 32), "%d", int(unit.getTransportState()));
+       // Broodwar->drawTextMap(unit.getPosition() - Position(0, 32), "%d", int(unit.getTransportState()));
         
         auto bestPosition = findViablePosition(unit, scoreFunction);
         if (bestPosition.isValid() && bestPosition != unit.getDestination()) {

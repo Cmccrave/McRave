@@ -9,22 +9,29 @@
 
 // *** TODO ***
 // Floating units removing mine positions
-// BWEB Destination walls not working
-// Unit Interface get distance is edge to point
+// BWEB Destination walls not working - only north one
+// BWAPI::Unit getDistance is edge to point
 // Corsairs shouldn't engage inside ally territory
-// Tests busts vs FFE
 // Test vs BBS
-// Cannon rush issues
 // Reavers aren't picked up if we cant afford scarabs
-// Production freeze, possibly unit score below 0?
-// Find a better balance for storm and stasis limits
 // Check storming burrowed lurkers
-// On Roadkill there's a skeleton that blocks a defense spot, why is this considered buildable? BWAPI bug potentially
 // Prevent HT walking into enemies when storm isn't suitable
-// Tech is late
-// Sometimes not making cannons at stations
 // Add pathing to attack enemy buildings so our sim actually works
-// Adjust priority for targeting carriers
+// Artosis pylon detection
+// Re-power buildings
+// Burrowed units that aren't threatening cause defending units to eat free hits because they're targeting it
+
+// Need a target based isThreatening
+// Examples:
+// - Melee shouldn't engage ranged on ramps, back up instead
+// - Engage when in range of defenses for FFE
+
+// Current BASIL Losses:
+// Add logic to detect a large worker pull early on - Stone/PurpleSpirit
+// Better kiting near edge of maps - Andrey/Velicro/Wuli etc
+// Better scouting of never visited tiles to check for builds - Tyr DT rush
+// Worker drilling - 4pools
+// Gas steal transition - Zur/Locutus
 
 // Scout targets
 // - Check for Nexus when we see no gateways in PvP (find timing for this and check after this time based on last visible frame on our grid)

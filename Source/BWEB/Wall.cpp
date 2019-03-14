@@ -653,13 +653,21 @@ namespace BWEB::Walls
         // Set the walls centroid
         const auto addCentroid = [&] {
             Position centroid;
-            int sizeWall = currentWall.size();
+            int sizeWall = int(currentWall.size());
             for (auto &piece : currentWall) {
                 if (piece.second != UnitTypes::Protoss_Pylon)
                     centroid += Map::pConvert(piece.first) + Map::pConvert(piece.second.tileSize()) / 2;
                 else
                     sizeWall--;
             }
+
+            // Set a centroid if it's only a pylon wall
+            if (sizeWall == 0) {
+                sizeWall = currentWall.size();
+                for (auto &piece : currentWall)
+                    centroid += Map::pConvert(piece.first) + Map::pConvert(piece.second.tileSize()) / 2;
+            }
+
             wall.setCentroid(centroid / sizeWall);
         };
 

@@ -9,7 +9,6 @@ namespace McRave::Targets {
 
         void getBestTarget(UnitInfo& unit)
         {
-            shared_ptr<UnitInfo> bestTarget = nullptr;
             double closest = DBL_MAX;
             double bestScore = 0.0;
             double bestDistance = DBL_MAX;
@@ -91,8 +90,8 @@ namespace McRave::Targets {
             const auto checkBest = [&](const shared_ptr<UnitInfo>& t, double thisUnit, double health, double reachDistance, double actualDistance) {
 
                 auto clusterTarget = unit.getType() == UnitTypes::Protoss_High_Templar || unit.getType() == UnitTypes::Protoss_Arbiter;
-                auto target = *t;
-                auto priority = (target.getType().isBuilding() && target.getGroundDamage() == 0.0 && target.getAirDamage() == 0.0) ? target.getPriority() / 50.0 : target.getPriority();
+                auto &target = *t;
+                auto priority = /*(target.getType().isBuilding() && target.getGroundDamage() == 0.0 && target.getAirDamage() == 0.0) ? target.getPriority() / 50.0 : */target.getPriority();
 
                 // Detector targeting
                 if ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == UnitTypes::Terran_Comsat_Station) {
@@ -127,7 +126,7 @@ namespace McRave::Targets {
                 // If this target is more important to target, set as current target
                 if (thisUnit > bestScore || (thisUnit == bestScore && !clusterTarget && actualDistance < bestDistance)) {
                     bestScore = thisUnit;
-                    bestTarget = t;
+                    unit.setTarget(t);
                     bestDistance = actualDistance;
                 }
             };
@@ -153,8 +152,8 @@ namespace McRave::Targets {
                 double reach = target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
                 double dist = unit.getPosition().getDistance(target.getPosition());
                 double widths = unit.getType().tileWidth() * 16.0 + target.getType().tileWidth() * 16.0;
-                double reachDistance = max(1.0, dist - reach - widths);
-                double actualDistance = dist - widths;
+                double reachDistance = (max(32.0, dist - reach - widths));
+                double actualDistance = max(32.0, dist - widths);
                 double health = targetCanAttack ? 1.0 + (0.5*(1.0 - unit.getPercentTotal())) : 1.0;
                 double thisUnit = 0.0;
 
@@ -169,11 +168,9 @@ namespace McRave::Targets {
                     checkBest(t, thisUnit, health, reachDistance, actualDistance);
             }
 
-            unit.setTarget(bestTarget);
-
             // If unit is close, increment it
-            if (bestTarget && Util::unitInRange(unit))
-                bestTarget->getTargetedBy().insert(make_shared<UnitInfo>(unit));
+            if (unit.hasTarget() && Util::unitInRange(unit))
+               unit.getTarget().getTargetedBy().insert(make_shared<UnitInfo>(unit));
         }
 
         void getEngagePosition(UnitInfo& unit)

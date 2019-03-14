@@ -152,7 +152,7 @@ namespace McRave::Terrain {
 
         void findDefendPosition()
         {
-            Broodwar->drawCircleMap(defendPosition, 10, Colors::Brown);
+            //Broodwar->drawCircleMap(defendPosition, 10, Colors::Brown);
 
             UnitType baseType = Broodwar->self()->getRace().getResourceDepot();
             Position oldDefendPosition = defendPosition;

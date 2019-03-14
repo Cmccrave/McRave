@@ -113,9 +113,9 @@ namespace McRave::Util {
         }
         else if (Broodwar->self()->getRace() == Races::Zerg)
             return false;
-
+/*
         if (Strategy::enemyProxy() && Strategy::getEnemyBuild() != "2Gate" && Units::getImmThreat() > myStrength.groundToGround + myStrength.groundDefense)
-            return true;
+            return true;*/
 
         return false;
     }

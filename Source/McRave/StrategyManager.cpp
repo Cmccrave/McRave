@@ -301,7 +301,7 @@ namespace McRave::Strategy {
                 }
 
                 // Pressure checking
-                if (Broodwar->self()->visibleUnitCount(Protoss_Gateway) >= 3)
+                if (Units::getEnemyCount(Protoss_Gateway) >= 3)
                     pressure = true;
 
                 // Proxy Detection
@@ -535,9 +535,7 @@ namespace McRave::Strategy {
                 break;
             case Enum::Protoss_Carrier:
                 unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
-
-                if (Terrain::isIslandMap())
-                    unitScore[Protoss_Scout]			+= (size * 1.00) / vis(Protoss_Scout);
+                unitScore[Protoss_Scout]			    += (size * 1.00) / vis(Protoss_Scout);
                 break;
             case Enum::Protoss_Arbiter:
                 unitScore[Protoss_High_Templar]			+= (size * 1.00) / vis(Protoss_High_Templar);

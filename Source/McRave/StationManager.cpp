@@ -76,7 +76,7 @@ namespace McRave::Stations {
                 if (Broodwar->getFrameCount() == 0)
                     Resources::storeResource(mineral->Unit());
 
-                const auto resource = Resources::getResource(mineral->Unit());
+                const auto &resource = Resources::getResource(mineral->Unit());
 
                 if (resource) {
                     resource->setResourceState(state);
@@ -91,7 +91,7 @@ namespace McRave::Stations {
                 if (Broodwar->getFrameCount() == 0)
                     Resources::storeResource(gas->Unit());
 
-                const auto resource = Resources::getResource(gas->Unit());
+                const auto &resource = Resources::getResource(gas->Unit());
 
                 if (resource) {
                     resource->setResourceState(state);
@@ -127,12 +127,12 @@ namespace McRave::Stations {
 
         // 1) Change resource state of resources connected to not mineable
         for (auto &mineral : station->getBWEMBase()->Minerals()) {
-            const auto resource = Resources::getResource(mineral->Unit());
+            const auto &resource = Resources::getResource(mineral->Unit());
             if (resource)
                 resource->setResourceState(state);            
         }
         for (auto &gas : station->getBWEMBase()->Geysers()) {
-            const auto resource = Resources::getResource(gas->Unit());
+            const auto &resource = Resources::getResource(gas->Unit());
             if (resource)
                 resource->setResourceState(state);
         }
@@ -149,12 +149,12 @@ namespace McRave::Stations {
 
     bool needDefenses(const BWEB::Stations::Station& station)
     {
-        auto centroid = TilePosition(station.getResourceCentroid());
+        auto center = TilePosition(station.getBWEMBase()->Center());
         auto defenseCount = station.getDefenseCount();
         auto main = station.getBWEMBase()->Location() == BWEB::Map::getMainTile();
         auto nat = station.getBWEMBase()->Location() == BWEB::Map::getNaturalTile();
 
-        if (!Pylons::hasPower(centroid, UnitTypes::Protoss_Photon_Cannon))
+        if (!Pylons::hasPower(center, UnitTypes::Protoss_Photon_Cannon))
             return false;
 
         if ((nat || main) && !Terrain::isIslandMap() && defenseCount <= 0)

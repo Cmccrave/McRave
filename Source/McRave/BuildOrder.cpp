@@ -50,14 +50,6 @@ namespace McRave::BuildOrder
         Visuals::startPerfTest();
         updateBuild();
         Visuals::endPerfTest("BuildOrder");
-
-
-        for (auto &type : techList) {
-            for (auto &unlock : unlockedType) {
-                if (unlock == type)
-                    Visuals::drawDebugText(type.c_str(), 1);
-            }
-        }
     }
 
     bool shouldExpand()
@@ -88,7 +80,7 @@ namespace McRave::BuildOrder
                 return true;
         }
         else {
-            if (!productionSat && Resources::isMinSaturated() && (!Production::hasIdleProduction() || Units::getSupply() >= 300 || Broodwar->self()->minerals() > 600))
+            if (!productionSat && (!Production::hasIdleProduction() || Units::getSupply() >= 300 || Broodwar->self()->minerals() > 600))
                 return true;
         }
         return false;

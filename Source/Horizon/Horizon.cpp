@@ -144,10 +144,10 @@ namespace McRave::Horizon {
                     auto diEngageDistance = enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths + deadzone;
                     auto stEngageDistance = unitStraightEngage.getDistance(enemy.getPosition()) - enemyRange - widths + deadzone;
                     if (diEngageDistance > 64.0 && stEngageDistance > 64.0)
-                        continue;                    
+                        continue;
                 }
 
-                auto distance = enemy.getPosition().getDistance(unit.getPosition()) - enemyRange - widths + deadzone;
+                auto distance = max(0.0, enemy.getPosition().getDistance(unit.getPosition()) - enemyRange - widths + deadzone);
                 auto speed = enemy.getSpeed() > 0.0 ? 24.0 * enemy.getSpeed() : 24.0 * unit.getSpeed();
                 auto simRatio =  simulationTime - (distance / speed);
 
@@ -159,8 +159,6 @@ namespace McRave::Horizon {
                     simRatio = simRatio * 2.0;
                 if (!enemy.getType().isFlyer() && Broodwar->getGroundHeight(enemy.getTilePosition()) > Broodwar->getGroundHeight(TilePosition(unit.getEngagePosition())))
                     simRatio = simRatio * 2.0;
-                if (enemy.getLastVisibleFrame() < Broodwar->getFrameCount())
-                    simRatio = simRatio * (1.0 + min(1.0, (double(Broodwar->getFrameCount() - enemy.getLastVisibleFrame()) / 1000.0)));
 
                 // Check if we need to squeeze these units through a choke
                 // Disabled atm while Terrain analysis is simulated better
@@ -182,7 +180,7 @@ namespace McRave::Horizon {
             for (auto &a : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &ally = *a;
                 if (!addToSim(ally))
-                    continue;                
+                    continue;
 
                 auto deadzone = (ally.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode && unit.getTarget().getPosition().getDistance(ally.getPosition()) < 64.0) ? 64.0 : 0.0;
                 auto engDist = ally.getEngDist();
@@ -275,7 +273,7 @@ namespace McRave::Horizon {
             }
         }
 
-        auto belowLimits = false;// unit.getType().isFlyer() ? (belowAirLimits || (sync && belowGrdLimits)) : (belowGrdLimits || (sync && belowAirLimits));
+        auto belowLimits = unit.getType().isFlyer() ? (belowAirLimits || (sync && belowGrdLimits)) : (belowGrdLimits || (sync && belowAirLimits));
 
         // If above/below thresholds, it's a sim win/loss
         if (unit.getSimValue() >= maxThreshold && !belowLimits) {

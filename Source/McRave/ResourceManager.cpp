@@ -130,7 +130,7 @@ namespace McRave::Resources {
         }
     }
 
-    const shared_ptr<ResourceInfo> getResource(BWAPI::Unit unit)
+    const shared_ptr<ResourceInfo>& getResource(BWAPI::Unit unit)
     {
         for (auto &m : myMinerals) {
             if (m->unit() == unit)

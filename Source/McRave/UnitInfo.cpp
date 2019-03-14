@@ -216,15 +216,12 @@ namespace McRave
         auto inRangePieces = Terrain::inRangeOfWallPieces(*this);
         auto inRangeDefenses = Terrain::inRangeOfWallDefenses(*this);
 
-		if (attacked)
-			circlePurple();
-
         const auto threatening = [&] {
             // Building: blocking any buildings, is close or at home and can attack or is a battery, is a manner building
             if (unitType.isBuilding()) {
                 if (Buildings::overlapsQueue(unitType, tilePosition))
                     return true;
-                if ((close || atHome) && (airDamage > 0.0 || groundDamage > 0.0 || unitType == UnitTypes::Protoss_Shield_Battery))
+                if ((close || atHome) && (airDamage > 0.0 || groundDamage > 0.0 || unitType == UnitTypes::Protoss_Shield_Battery || unitType.isRefinery()))
                     return true;
                 if (manner)
                     return true;
@@ -238,14 +235,22 @@ namespace McRave
             }
             // Unit: close, close to shield battery, in territory while defending choke
             else {
-                if (close || attacked || inRangeDefenses)
-                    return true;
+                if (Terrain::isDefendNatural()) {
+                    if (BuildOrder::isWallNat() && inRangeDefenses)
+                        return true;
+                    if (!BuildOrder::isWallNat() && (close || attacked))
+                        return true;
+                }
+                else {
+                    if (close || attacked)
+                        return true;
+                }
                 if (attacked && inRangePieces)
                     return true;
                 if (atHome && Strategy::defendChoke())
                     return true;
                 if (com(UnitTypes::Protoss_Shield_Battery) > 0) {
-                    auto battery = Util::getClosestUnit(position, PlayerState::Self, [&](auto &u) {
+                    auto &battery = Util::getClosestUnit(position, PlayerState::Self, [&](auto &u) {
                         return u.getType() == UnitTypes::Protoss_Shield_Battery && u.unit()->isCompleted();
                     });
                     if (battery && position.getDistance(battery->getPosition()) <= 128.0 && Terrain::isInAllyTerritory(tilePosition))

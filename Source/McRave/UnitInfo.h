@@ -41,9 +41,9 @@ namespace McRave {
 
         BWAPI::Player player = nullptr;
         BWAPI::Unit thisUnit = nullptr;
-        std::shared_ptr<UnitInfo> transport;
-        std::shared_ptr<UnitInfo> target;
-        std::shared_ptr<ResourceInfo> resource;
+        std::shared_ptr<UnitInfo> transport = nullptr;
+        std::shared_ptr<UnitInfo> target = nullptr;
+        std::shared_ptr<ResourceInfo> resource = nullptr;
 
         std::set<std::shared_ptr<UnitInfo>> assignedCargo;
         std::set<std::shared_ptr<UnitInfo>> targetedBy;
@@ -108,6 +108,9 @@ namespace McRave {
         }
         bool isHovering() {
             return unitType.isWorker() || unitType == BWAPI::UnitTypes::Protoss_Archon || unitType == BWAPI::UnitTypes::Protoss_Dark_Archon || unitType == BWAPI::UnitTypes::Terran_Vulture;
+        }
+        bool isHealthy() {
+            return (unitType.maxShields() > 0 && percentShield > LOW_SHIELD_PERCENT_LIMIT) || (unitType.isMechanical() && percentHealth > LOW_MECH_PERCENT_LIMIT);
         }
 
         double getPercentHealth() { return percentHealth; }

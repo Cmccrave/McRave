@@ -90,13 +90,13 @@ namespace McRave::Units {
                 if (!Terrain::foundEnemy())
                     unit.setRole(Role::Scout);
                 else
-					unit.setRole(Role::Support);
-				return;
+                    unit.setRole(Role::Support);
+                return;
             }
 
             // Check if this unit should scout
             if (BWEB::Map::getNaturalChoke() && BuildOrder::shouldScout() && getMyRoleCount(Role::Scout) < Scouts::getScoutCount() && Broodwar->getFrameCount() - scoutDeadFrame > 240) {
-                auto scout = Util::getClosestUnitGround(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
+                auto &scout = Util::getClosestUnitGround(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
                     return u.getRole() == Role::Worker && u.getBuildingType() == UnitTypes::None && !u.unit()->isCarryingMinerals() && !u.unit()->isCarryingGas();
                 });
 
@@ -104,13 +104,16 @@ namespace McRave::Units {
                     unit.setRole(Role::Scout);
                     unit.setBuildingType(UnitTypes::None);
                     unit.setBuildPosition(TilePositions::Invalid);
+
+                    if (u->hasResource())
+                        Workers::removeUnit(u);
                 }
             }
             else if (getMyRoleCount(Role::Scout) > Scouts::getScoutCount()) {
-                auto scout = Util::getClosestUnitGround(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
+                auto &scout = Util::getClosestUnitGround(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
                     return u.getRole() == Role::Scout;
                 });
-                
+
                 if (scout == u)
                     unit.setRole(Role::Worker);
             }
@@ -302,7 +305,7 @@ namespace McRave::Units {
         }
 
         if (unit->getType().isBuilding() && unit->getPlayer() == Broodwar->self()) {
-            auto closestWorker = Util::getClosestUnit(unit->getPosition(), PlayerState::Self, [&](auto &u) {
+            auto &closestWorker = Util::getClosestUnit(unit->getPosition(), PlayerState::Self, [&](auto &u) {
                 return u.getRole() == Role::Worker && u.getBuildPosition() == unit->getTilePosition();
             });
             if (closestWorker) {
@@ -332,6 +335,8 @@ namespace McRave::Units {
                         u->getTransport().getAssignedCargo().erase(u);
                     if (u->hasResource())
                         Workers::removeUnit(u);
+                    if (u->getRole() != Role::None)
+                        myRoles[u->getRole()]--;
 
                     p.second.getUnits().erase(u);
                     return;
@@ -383,7 +388,7 @@ namespace McRave::Units {
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
                 if (unit.getRole() == Role::Combat && unit.getType().isWorker())
-                    total++;                
+                    total++;
             }
         }
 
@@ -403,7 +408,7 @@ namespace McRave::Units {
 
     shared_ptr<UnitInfo> getUnit(Unit unit)
     {
-        for (auto &[_,player] : Players::getPlayers()) {
+        for (auto &[_, player] : Players::getPlayers()) {
             for (auto &u : player.getUnits()) {
                 if (u->unit() == unit)
                     return u;

@@ -42,13 +42,16 @@ namespace McRave::Goals {
         void updateProtossGoals()
         {
             map<UnitType, int> unitTypes;
+            auto enemyStrength = Players::getStrength(PlayerState::Enemy);
 
             // Defend my expansions
-            for (auto &s : Stations::getMyStations()) {
-                auto station = *s.second;
+            if (enemyStrength.groundToGround > 0) {
+                for (auto &s : Stations::getMyStations()) {
+                    auto station = *s.second;
 
-                if (station.getBWEMBase()->Location() != BWEB::Map::getNaturalTile() && station.getBWEMBase()->Location() != BWEB::Map::getMainTile() && station.getDefenseCount() == 0) {
-                    assignPercentToGoal(station.getBWEMBase()->Center(), UnitTypes::Protoss_Dragoon, 0.15);
+                    if (station.getBWEMBase()->Location() != BWEB::Map::getNaturalTile() && station.getBWEMBase()->Location() != BWEB::Map::getMainTile() && station.getDefenseCount() == 0) {
+                        assignPercentToGoal(station.getBWEMBase()->Center(), UnitTypes::Protoss_Dragoon, 0.15);
+                    }
                 }
             }
 

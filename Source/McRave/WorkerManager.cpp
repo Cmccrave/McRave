@@ -9,6 +9,7 @@ namespace McRave::Workers {
 
         int minWorkers = 0;
         int gasWorkers = 0;
+        int boulderWorkers = 0;
 
         bool closeToResource(const shared_ptr<UnitInfo>& w)
         {
@@ -24,7 +25,7 @@ namespace McRave::Workers {
             // If worker is potentially stuck, try to find a manner pylon
             // TODO: Use workers target? Check if it's actually targeting pylon?
             if (worker.framesHoldingResource() >= 100 || worker.framesHoldingResource() <= -200) {
-                auto pylon = Util::getClosestUnit(worker.getPosition(), PlayerState::Enemy, [&](auto &u) {
+                auto &pylon = Util::getClosestUnit(worker.getPosition(), PlayerState::Enemy, [&](auto &u) {
                     return u.getType() == UnitTypes::Protoss_Pylon;
                 });
                 if (pylon && pylon->unit() && pylon->unit()->exists() && pylon->getPosition().getDistance(worker.getPosition()) < 128.0) {
@@ -81,7 +82,12 @@ namespace McRave::Workers {
                 worker.setDestination(center);
 
                 if (worker.getPosition().getDistance(center) > 32.0 + (96.0 * (double)worker.getBuildingType().isRefinery())) {
-                    worker.unit()->move(center);
+                    BWEB::PathFinding::Path newPath;
+                    newPath.createUnitPath(worker.getPosition(), center);
+                    worker.setPath(newPath);
+                    Command::move(w);
+
+                    //worker.unit()->move(center);
                     //if (worker.getBuildingType().isResourceDepot())
                     //    Command::move(w);
                     //else if (worker.unit()->getOrderTargetPosition() != center)
@@ -101,7 +107,8 @@ namespace McRave::Workers {
             if (Units::getMyVisible(resourceDepot) < 2
                 || (BuildOrder::buildCount(resourceDepot) == Units::getMyVisible(resourceDepot) && BuildOrder::isOpener())
                 || worker.unit()->isCarryingMinerals()
-                || worker.unit()->isCarryingGas())
+                || worker.unit()->isCarryingGas()
+                || boulderWorkers != 0)
                 return false;
 
             // Find boulders to clear
@@ -110,10 +117,9 @@ namespace McRave::Workers {
                 if (!boulder.unit() || !boulder.unit()->exists())
                     continue;
                 if ((worker.getPosition().getDistance(boulder.getPosition()) <= 320.0 && boulder.getGathererCount() == 0) || (worker.unit()->isGatheringMinerals() && worker.unit()->getOrderTarget() == boulder.unit())) {
-                    if (worker.unit()->getOrderTarget() != boulder.unit()) {
+                    if (worker.unit()->getOrderTarget() != boulder.unit())
                         worker.unit()->gather(boulder.unit());
-                        //worker.setResource(b);
-                    }
+                    boulderWorkers = 1;
                     return true;
                 }
             }
@@ -208,7 +214,6 @@ namespace McRave::Workers {
         void updateAssignment(const shared_ptr<UnitInfo> w)
         {
             auto &worker = *w;
-            shared_ptr<ResourceInfo> bestResource = nullptr;
             auto injured = (worker.unit()->getHitPoints() + worker.unit()->getShields() < worker.getType().maxHitPoints() + worker.getType().maxShields());
             auto threatened = (worker.hasResource() && Util::accurateThreatOnPath(worker, worker.getPath()));
             auto distBest = (injured || threatened) ? 0.0 : DBL_MAX;
@@ -221,8 +226,7 @@ namespace McRave::Workers {
                     || resource.getType() == UnitTypes::Resource_Vespene_Geyser
                     || (resource.unit()->exists() && !resource.unit()->isCompleted())
                     || (resource.getGathererCount() >= i + int(injured || threatened))
-                    || resource.getResourceState() == ResourceState::None
-                    || ((!Resources::isMinSaturated() || !Resources::isGasSaturated()) && Grids::getEGroundThreat(WalkPosition(resource.getPosition())) > 0.0))
+                    || resource.getResourceState() == ResourceState::None)
                     return false;
                 return true;
             };
@@ -238,13 +242,17 @@ namespace McRave::Workers {
                 || needGas()
                 || (worker.hasResource() && !worker.getResource().getType().isMineralField() && gasWorkers > BuildOrder::gasWorkerLimit())
                 || (worker.hasResource() && !closeToResource(w) && Util::accurateThreatOnPath(worker, worker.getPath()) && Grids::getEGroundThreat(worker.getWalkPosition()) == 0.0)
-                || (worker.hasResource() && closeToResource(w) && Grids::getEGroundThreat(worker.getWalkPosition()) > 0.0)
+                || (worker.hasResource() && closeToResource(w) && int(worker.getTargetedBy().size()) > 0 && Grids::getEGroundThreat(worker.getWalkPosition()) > 0.0)
                 || (worker.hasResource() && !injured && !threatened && worker.getResource().getGathererCount() >= 3 + int(worker.getResource().getType().isRefinery())))
                 needNewAssignment = true;
 
             // HACK: Just return if we dont need an assignment, should make this better
             if (!needNewAssignment)
                 return;
+            else if (worker.hasResource()){
+                worker.getResource().targetedByWhat().erase(w);
+                worker.setResource(nullptr);
+            }
 
             // 1) If threatened, find safe stations to move to on the Station network or generate a new path
             if (threatened) {
@@ -276,7 +284,7 @@ namespace McRave::Workers {
 
                     auto dist = resource.getPosition().getDistance(worker.getPosition());
                     if ((dist < distBest && !injured) || (dist > distBest && injured)) {
-                        bestResource = r;
+                        worker.setResource(r);
                         distBest = dist;
                     }
                 }
@@ -294,18 +302,18 @@ namespace McRave::Workers {
 
                         double dist = resource.getPosition().getDistance(worker.getPosition());
                         if ((dist < distBest && !injured && !threatened) || (dist > distBest && (injured || threatened))) {
-                            bestResource = r;
+                            worker.setResource(r);
                             distBest = dist;
                         }
                     }
-                    if (bestResource)
+                    if (worker.hasResource())
                         break;
                 }
 
             }
 
             // 4) Assign resource
-            if (bestResource) {
+            if (worker.hasResource()) {
 
                 // Remove current assignment
                 if (worker.hasResource()) {
@@ -314,11 +322,10 @@ namespace McRave::Workers {
                 }
 
                 // Add next assignment
-                bestResource->getType().isMineralField() ? minWorkers++ : gasWorkers++;
+                worker.getResource().getType().isMineralField() ? minWorkers++ : gasWorkers++;
 
                 BWEB::PathFinding::Path emptyPath;
-                bestResource->addTargetedBy(w);
-                worker.setResource(bestResource);
+                worker.getResource().addTargetedBy(w);
                 worker.setPath(emptyPath);
             }
         }
@@ -362,6 +369,7 @@ namespace McRave::Workers {
 
     void onFrame() {
         Visuals::startPerfTest();
+        boulderWorkers = 0; // HACK: Need a better solution to limit boulder workers
         updateWorkers();
         Visuals::endPerfTest("Workers");
     }
@@ -388,4 +396,5 @@ namespace McRave::Workers {
 
     int getMineralWorkers() { return minWorkers; }
     int getGasWorkers() { return gasWorkers; }
+    int getBoulderWorkers() { return boulderWorkers; }
 }
