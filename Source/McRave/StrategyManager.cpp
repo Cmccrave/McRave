@@ -63,6 +63,7 @@ namespace McRave::Strategy {
                     // If this is our first time seeing a Zergling or it arrives earlier than we expected before
                     if (rushFrame == 0 || frameArrivesWhen(unit) < rushFrame) {
                         rushFrame = frameArrivesWhen(unit);
+                        Broodwar << rushFrame << endl;
                         if (enemyBuild == "Unknown") {
                             if (rushFrame < 4200)
                                 enemyBuild = "4Pool";
@@ -75,7 +76,7 @@ namespace McRave::Strategy {
                 if (unit.getType() == Zerg_Spawning_Pool) {
 
                     // If this is our first time seeing a Spawning Pool, see how soon it completes
-                    if (poolFrame == 0) {
+                    if (poolFrame == 0 && !unit.unit()->isCompleted()) {
                         poolFrame = frameCompletesWhen(unit);
                         if (enemyBuild == "Unknown") {
                             if (poolFrame <= 2400)
@@ -535,7 +536,9 @@ namespace McRave::Strategy {
                 break;
             case Enum::Protoss_Carrier:
                 unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
-                unitScore[Protoss_Scout]			    += (size * 1.00) / vis(Protoss_Scout);
+
+                if (Terrain::isIslandMap())
+                    unitScore[Protoss_Scout]			    += (size * 1.00) / vis(Protoss_Scout);
                 break;
             case Enum::Protoss_Arbiter:
                 unitScore[Protoss_High_Templar]			+= (size * 1.00) / vis(Protoss_High_Templar);

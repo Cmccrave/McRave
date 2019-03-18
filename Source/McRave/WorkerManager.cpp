@@ -86,12 +86,6 @@ namespace McRave::Workers {
                     newPath.createUnitPath(worker.getPosition(), center);
                     worker.setPath(newPath);
                     Command::move(w);
-
-                    //worker.unit()->move(center);
-                    //if (worker.getBuildingType().isResourceDepot())
-                    //    Command::move(w);
-                    //else if (worker.unit()->getOrderTargetPosition() != center)
-                    //    Command::move(w);
                 }
                 else if (worker.unit()->getOrder() != Orders::PlaceBuilding || worker.unit()->getLastCommand().getType() != UnitCommandTypes::Build)
                     worker.unit()->build(worker.getBuildingType(), worker.getBuildPosition());                
@@ -383,8 +377,8 @@ namespace McRave::Workers {
 
     bool shouldMoveToBuild(UnitInfo& worker, TilePosition tile, UnitType type) {
         auto center = Position(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
-        auto mineralIncome = (Workers::getMineralWorkers() - 1) * 0.045;
-        auto gasIncome = (Workers::getGasWorkers() - 1) * 0.07;
+        auto mineralIncome = max(0.0, double(Workers::getMineralWorkers() - 1) * 0.045);
+        auto gasIncome = max(0.0, double(Workers::getGasWorkers() - 1) * 0.07);
         auto speed = worker.getSpeed();
         auto dist = mapBWEM.GetArea(worker.getTilePosition()) ? BWEB::Map::getGroundDistance(worker.getPosition(), center) : worker.getPosition().getDistance(Position(worker.getBuildPosition()));
         auto time = (dist / speed) + 50.0;

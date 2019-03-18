@@ -17,9 +17,11 @@
 // Check storming burrowed lurkers
 // Prevent HT walking into enemies when storm isn't suitable
 // Add pathing to attack enemy buildings so our sim actually works
-// Artosis pylon detection
 // Re-power buildings
 // Burrowed units that aren't threatening cause defending units to eat free hits because they're targeting it
+// Add playerstate to actions
+// Add 3rd stargate on 3 base with carriers
+// Seeing an extractor trick causes a crash
 
 // Need a target based isThreatening
 // Examples:

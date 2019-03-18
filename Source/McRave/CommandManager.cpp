@@ -7,7 +7,7 @@ namespace McRave::Command {
 
     namespace {
 
-        void updateCommands()
+        void updateActions()
         {
             // Clear cache
             myActions.clear();
@@ -48,13 +48,21 @@ namespace McRave::Command {
                     addAction(unit.unit(), unit.getPosition(), TechTypes::Spider_Mines, true);
             }
 
+            // Store self detection
+            for (auto &u : Units::getUnits(PlayerState::Self)) {
+                UnitInfo &unit = *u;
+
+                if (unit.getType().isDetector())
+                    addAction(unit.unit(), unit.getPosition(), unit.getType(), false);
+            }
+
             // Store nuke dots
             for (auto &dot : Broodwar->getNukeDots())
                 addAction(nullptr, dot, TechTypes::Nuclear_Strike, true);
         }
 
         double defaultGrouping(UnitInfo& unit, WalkPosition w) {
-            return unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : 1.0 + log(1000.0 / (100.0 + Grids::getAGroundCluster(w)));
+            return unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : log(50.0 + Grids::getAGroundCluster(w));
         }
 
         double defaultVisited(UnitInfo& unit, WalkPosition w) {
@@ -308,7 +316,7 @@ namespace McRave::Command {
             double distance = (unit.getType().isFlyer() || Terrain::isIslandMap()) ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
             double grouping = defaultGrouping(unit, w);
             double mobility = defaultMobility(unit, w);
-            double score = grouping * mobility / distance;
+            double score = mobility / (distance * grouping);
             return score;
         };
 
@@ -395,7 +403,7 @@ namespace McRave::Command {
             double threat = Util::getHighestThreat(w, unit);
             double grouping = defaultGrouping(unit, w);
             double mobility = defaultMobility(unit, w);
-            double score = mobility * grouping / (threat * distance);
+            double score = mobility / (threat * distance * grouping);
             return score;
         };
 
@@ -437,7 +445,7 @@ namespace McRave::Command {
                     return false;
 
                 // Don't kite buildings unless we're a flying unit
-                if (unit.getTarget().getType().isBuilding() && !unit.getType().isFlyer() && unit.isHealthy() && !unit.unit()->isUnderAttack())
+                if (unit.getTarget().getType().isBuilding() && !unit.getType().isFlyer())
                     return false;
 
                 // Capital ships want to stay at max range due to their slow nature
@@ -478,6 +486,16 @@ namespace McRave::Command {
                     unit.unit()->gather(closestMineral);
                     return true;
                 }
+                if (unit.hasResource()) {
+                    unit.unit()->gather(unit.getResource().unit());
+                    return true;
+                }
+            }
+
+            // If we aren't defending the choke, we just want to move to our mineral hold position
+            if (!Strategy::defendChoke()) {
+                unit.command(UnitCommandTypes::Move, Terrain::getDefendPosition(), true);
+                return true;
             }
 
             // If we found a valid position, move to it
@@ -565,7 +583,7 @@ namespace McRave::Command {
             double visited = defaultVisited(unit, w);
             double grouping = defaultGrouping(unit, w);
             double mobility = defaultMobility(unit, w);
-            double score = mobility * grouping * visited / (exp(threat) * distance);
+            double score = mobility * visited / (exp(threat) * distance * grouping);
 
             if (threat == MIN_THREAT
                 || (unit.unit()->isCloaked() && !overlapsEnemyDetection(p))
@@ -610,11 +628,11 @@ namespace McRave::Command {
         const auto scoreFunction = [&](WalkPosition w) {
             // Manual conversion until BWAPI::Point is fixed
             auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
-            double distance = ((unit.getType().isFlyer() || Terrain::isIslandMap()) ? (p.getDistance(BWEB::Map::getMainPosition())) : Grids::getDistanceHome(w));
+            double distance = ((unit.getType().isFlyer() || Terrain::isIslandMap()) ? log(p.getDistance(BWEB::Map::getMainPosition())) : Grids::getDistanceHome(w));
             double threat = Util::getHighestThreat(w, unit);
             double grouping = defaultGrouping(unit, w);
             double mobility = defaultMobility(unit, w);
-            double score = grouping / (threat * distance);
+            double score = mobility / (threat * distance * grouping);
             return score;
         };
 
@@ -701,8 +719,8 @@ namespace McRave::Command {
             return score;
         };
 
-       // Broodwar->drawTextMap(unit.getPosition() - Position(0, 32), "%d", int(unit.getTransportState()));
-        
+        // Broodwar->drawTextMap(unit.getPosition() - Position(0, 32), "%d", int(unit.getTransportState()));
+
         auto bestPosition = findViablePosition(unit, scoreFunction);
         if (bestPosition.isValid() && bestPosition != unit.getDestination()) {
             unit.command(UnitCommandTypes::Move, bestPosition, true);
@@ -863,7 +881,7 @@ namespace McRave::Command {
     void onFrame()
     {
         Visuals::startPerfTest();
-        updateCommands();
+        updateActions();
         Visuals::endPerfTest("Commands");
     }
 

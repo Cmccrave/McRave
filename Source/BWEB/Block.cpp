@@ -36,19 +36,11 @@ namespace BWEB::Blocks
         {
             auto race = Broodwar->self()->getRace();
             vector<Piece> pieces;
-            bool v;
-            auto h = (v = false);
+            bool left, up;
 
             const auto creepOnCorners = [&](TilePosition here, int width, int height) {
                 return Broodwar->hasCreep(here) && Broodwar->hasCreep(here + TilePosition(width, 0)) && Broodwar->hasCreep(here + TilePosition(0, height)) && Broodwar->hasCreep(here + TilePosition(width, height));
             };
-
-            if (race == Races::Zerg)
-                pieces ={ Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small };
-            else if (race == Races::Terran)
-                pieces ={ Piece::Large, Piece::Addon, Piece::Row, Piece::Medium, Piece::Medium };
-            else if (race == Races::Protoss)
-                pieces ={ Piece::Medium, Piece::Medium, Piece::Small, Piece::Row, Piece::Large, Piece::Large };
 
             TilePosition tileBest = TilePositions::Invalid;
             auto distBest = DBL_MAX;
@@ -57,6 +49,7 @@ namespace BWEB::Blocks
             if (race == Races::Zerg)
                 start = Map::getMainTile();
 
+            // Try to find a block near our starting location
             for (auto x = start.x - 10; x <= start.x + 6; x++) {
                 for (auto y = start.y - 10; y <= start.y + 6; y++) {
                     TilePosition tile(x, y);
@@ -74,13 +67,13 @@ namespace BWEB::Blocks
                         tileBest = tile;
                         distBest = dist;
 
-                        h = (blockCenter.x < Map::getMainPosition().x);
-                        v = (blockCenter.y < Map::getMainPosition().y);
+                        left = (blockCenter.x < Map::getMainPosition().x);
+                        up = (blockCenter.y < Map::getMainPosition().y);
                     }
                 }
             }
 
-            // HACK: Fix for transistor, check natural area too
+            // If our main and natural choke are shared, try to find one in the natural area too
             if (Map::getMainChoke() == Map::getNaturalChoke()) {
                 for (auto x = Map::getNaturalTile().x - 9; x <= Map::getNaturalTile().x + 6; x++) {
                     for (auto y = Map::getNaturalTile().y - 6; y <= Map::getNaturalTile().y + 5; y++) {
@@ -95,14 +88,14 @@ namespace BWEB::Blocks
                             tileBest = tile;
                             distBest = dist;
 
-                            h = (blockCenter.x < Map::getMainPosition().x);
-                            v = (blockCenter.y < Map::getMainPosition().y);
+                            left = (blockCenter.x < Map::getMainPosition().x);
+                            up = (blockCenter.y < Map::getMainPosition().y);
                         }
                     }
                 }
             }
 
-            // HACK: Fix for plasma, if we don't have a valid one, rotate and try a less efficient vertical one
+            // If we don't have a valid one, rotate and try a less efficient vertical one
             if (!tileBest.isValid()) {
                 for (auto x = Map::getMainTile().x - 16; x <= Map::getMainTile().x + 20; x++) {
                     for (auto y = Map::getMainTile().y - 16; y <= Map::getMainTile().y + 20; y++) {
@@ -124,10 +117,31 @@ namespace BWEB::Blocks
 
             }
 
-            // TODO: Add mirroring
-            else if (tileBest.isValid())
-                insertBlock(tileBest, pieces);
+            // Mirror the block vertically/horizontally for better placement
+            else if (tileBest.isValid()) {
 
+                // TODO: Add T/Z mirroring
+                if (race == Races::Zerg)
+                    pieces ={ Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small };
+                else if (race == Races::Terran)
+                    pieces ={ Piece::Large, Piece::Addon, Piece::Row, Piece::Medium, Piece::Medium };
+                else if (race == Races::Protoss) {
+                    if (left) {
+                        if (up)
+                            pieces ={ Piece::Large, Piece::Large, Piece::Row, Piece::Medium, Piece::Medium, Piece::Small };                            
+                        else
+                            pieces ={ Piece::Medium, Piece::Medium, Piece::Small, Piece::Row, Piece::Large, Piece::Large };
+                    }
+                    else {
+                        if (up)
+                            pieces ={ Piece::Large, Piece::Large, Piece::Row, Piece::Small, Piece::Medium, Piece::Medium };
+                        else
+                            pieces ={ Piece::Small, Piece::Medium, Piece::Medium, Piece::Row, Piece::Large, Piece::Large };
+                    }
+                }
+
+                insertBlock(tileBest, pieces);
+            }
 
             // HACK: Added a block that allows a good shield battery placement
             tileBest = TilePositions::Invalid;
@@ -146,8 +160,8 @@ namespace BWEB::Blocks
                         tileBest = tile;
                         distBest = dist;
 
-                        h = (blockCenter.x < Map::getMainPosition().x);
-                        v = (blockCenter.y < Map::getMainPosition().y);
+                        left = (blockCenter.x < Map::getMainPosition().x);
+                        up = (blockCenter.y < Map::getMainPosition().y);
                     }
                 }
             }
@@ -214,7 +228,7 @@ namespace BWEB::Blocks
                 }
             }
         }
-        
+
         // Iterate every tile
         for (int i = 20; i > 0; i--) {
             for (int j = 20; j > 0; j--) {
@@ -232,13 +246,13 @@ namespace BWEB::Blocks
                         continue;
 
                     if (hasLarge && mapBWEM.GetArea(tile) == getMainArea() && mainPieces[Piece::Large] >= 8 && mainPieces[Piece::Medium] < 10)
-                        continue;                        
+                        continue;
 
                     if (canAddBlock(tile, i, j)) {
                         insertBlock(tile, pieces);
                         if (mapBWEM.GetArea(tile) == getMainArea()) {
                             for (auto &piece : pieces)
-                                mainPieces[piece]++;                           
+                                mainPieces[piece]++;
                         }
                     }
                 }

@@ -73,7 +73,7 @@ namespace McRave::BuildOrder::Protoss
         techVal = techList.size() + skipFirstTech + Players::vT();
 
         // Against FFE add a Nexus for every 2 cannons we see
-        if (Strategy::getEnemyBuild() == "FFE" && getOpening) {
+        if (Strategy::getEnemyBuild() == "FFE") {
             auto cannonCount = Units::getEnemyCount(Protoss_Photon_Cannon);
 
             if (cannonCount <= 2)
@@ -136,7 +136,7 @@ namespace McRave::BuildOrder::Protoss
 
             // Adding production
             if (shouldAddProduction()) {
-                int gateCount = min(com(Protoss_Nexus) * 3, vis(Protoss_Gateway) + 1) - (int(isUnitUnlocked(Protoss_Carrier)) * 2);
+                int gateCount = min(vis(Protoss_Nexus) * 3, vis(Protoss_Gateway) + 1) - (int(isUnitUnlocked(Protoss_Carrier)) * 2);
                 itemQueue[Protoss_Gateway] = Item(gateCount);
             }
 

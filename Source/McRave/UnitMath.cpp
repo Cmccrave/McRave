@@ -86,7 +86,7 @@ namespace McRave::Math {
 
         // Bunch of priority hacks
         if (unit.getType() == Terran_Vulture_Spider_Mine) {
-            if (unit.unit()->isVisible())
+            if (!unit.isBurrowed() || Command::overlapsAllyDetection(unit.getPosition()))
                 return 3.0;
             else
                 return 0.5;

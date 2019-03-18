@@ -73,8 +73,8 @@ namespace McRave
         // Remaining train frame
         remainingTrainFrame = max(0, remainingTrainFrame - 1);
 
-        // BWAPI won't reveal isStartingAttack when hold position is executed
-        if (player != Broodwar->self()) {
+        // BWAPI won't reveal isStartingAttack when hold position is executed if the unit can't use hold position, XIMP uses this on workers
+        if (player != Broodwar->self() && unitType.isWorker()) {
             if (thisUnit->getGroundWeaponCooldown() > 0 || thisUnit->getAirWeaponCooldown() > 0)
                 lastAttackFrame = Broodwar->getFrameCount();
         }
@@ -137,7 +137,7 @@ namespace McRave
         // Check if this is a new order
         const auto newOrder = [&]() {
             auto canIssue = Broodwar->getFrameCount() - thisUnit->getLastCommandFrame() > Broodwar->getLatencyFrames();
-            auto newOrderPosition = thisUnit->getOrderTargetPosition() != here;
+            auto newOrderPosition = thisUnit->getOrderTargetPosition().getDistance(here) > 32;
             return canIssue && newOrderPosition;
         };
 
@@ -204,7 +204,7 @@ namespace McRave
         if ((burrowed || (thisUnit && thisUnit->exists() && thisUnit->isCloaked())) && !Command::overlapsAllyDetection(position) || Stations::getMyStations().size() > 2)
             return false;
 
-        auto temp = groundRange > 32.0 ? groundReach / 2 : groundReach / 5;
+        auto temp = Terrain::isInAllyTerritory(tilePosition) || groundRange > 32.0 ? groundReach / 1.5 : groundReach / 5;
 
         // Define "close" - TODO: define better
         auto close = position.getDistance(Terrain::getDefendPosition()) < temp;

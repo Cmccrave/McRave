@@ -152,7 +152,7 @@ namespace McRave::Terrain {
 
         void findDefendPosition()
         {
-            //Broodwar->drawCircleMap(defendPosition, 10, Colors::Brown);
+            Broodwar->drawCircleMap(defendPosition, 10, Colors::Brown);
 
             UnitType baseType = Broodwar->self()->getRace().getResourceDepot();
             Position oldDefendPosition = defendPosition;
@@ -184,7 +184,7 @@ namespace McRave::Terrain {
             }
 
             // If enemy is rushing we want to defend our mineral line until we can stabilize
-            if ((Strategy::enemyRush() || Strategy::enemyProxy()) && !Strategy::defendChoke() && !BuildOrder::isWallNat()) {
+            if ((Strategy::enemyRush() || Strategy::enemyProxy() || Strategy::enemyPressure()) && !Strategy::defendChoke() && !BuildOrder::isWallNat()) {
                 defendPosition = mineralHold;
                 defendNatural = false;
             }

@@ -538,12 +538,11 @@ namespace McRave::Buildings {
                 building.unit()->cancelMorph();
                 BWEB::Map::removeUsed(building.getTilePosition(), 4, 2);
             }
-
-            // Disabled, too buggy
-            //// Cancelling buildings we don't want
-            //if (building.getType().getRace() != Races::Zerg && BuildOrder::buildCount(building.getType()) < vis(building.getType())) {
-            //    building.unit()->cancelConstruction();
-            //}
+                         
+            // Cancelling refineries we don't want
+            if (building.getType().isRefinery() && Strategy::enemyRush() && vis(building.getType()) == 1 && building.getType().getRace() != Races::Zerg && BuildOrder::buildCount(building.getType()) < vis(building.getType())) {
+                building.unit()->cancelConstruction();
+            }
         }
 
         void updateBuildings()

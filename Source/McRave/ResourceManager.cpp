@@ -55,10 +55,10 @@ namespace McRave::Resources {
             };
 
             for (auto &r : myBoulders)
-                update(r);            
+                update(r);
 
             for (auto &r : myMinerals)
-                update(r);            
+                update(r);
 
             for (auto &r : myGas) {
                 auto &resource = *r;
@@ -117,8 +117,10 @@ namespace McRave::Resources {
 
         if (resource) {
             // Remove assignments
-            for (auto &u : resource->targetedByWhat())
-                u->setResource(nullptr);
+            for (auto &u : resource->targetedByWhat()) {
+                if (u)
+                    u->setResource(nullptr);
+            }
 
             // Remove dead resources
             if (myMinerals.find(resource) != myMinerals.end())

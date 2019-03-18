@@ -360,7 +360,7 @@ namespace McRave::Learning {
             myBuilds["2Gate"].openers ={ "Proxy", "Natural", "Main" };
             myBuilds["2Gate"].transitions ={ "DT", "Robo", "Expand", "DoubleExpand", "4Gate" };
 
-            myBuilds["FFE"].openers ={ "Gate", "Nexus", "Forge" };
+            myBuilds["FFE"].openers ={ "Forge", "Gate", "Nexus" };
             myBuilds["FFE"].transitions ={ "NeoBisu", "2Stargate", "StormRush", "4GateArchon", "CorsairReaver" };
 
             myBuilds["NexusGate"].openers ={ "Dragoon", "Zealot" };

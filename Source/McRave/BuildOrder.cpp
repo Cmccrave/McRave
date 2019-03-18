@@ -259,10 +259,6 @@ namespace McRave::BuildOrder
         if ((techList.find(Protoss_Scout) != techList.end() || techList.find(Protoss_Corsair) != techList.end()) && Units::getSupply() >= 300)
             itemQueue[Protoss_Fleet_Beacon] = Item(1);
 
-        // HACK: Bluestorm carrier hack
-        if (Broodwar->mapFileName().find("BlueStorm") != string::npos && techList.find(Protoss_Carrier) != techList.end())
-            itemQueue[Protoss_Stargate] = Item(Broodwar->self()->visibleUnitCount(Protoss_Nexus));
-
         // Hive upgrades
         if (Broodwar->self()->getRace() == Races::Zerg && Units::getSupply() >= 200) {
             itemQueue[Zerg_Queens_Nest] = Item(1);

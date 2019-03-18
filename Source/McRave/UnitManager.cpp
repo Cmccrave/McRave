@@ -152,6 +152,8 @@ namespace McRave::Units {
                     UnitInfo &unit = *u;
                     enemyUnits.insert(u);
 
+                    Broodwar->drawTextMap(unit.getPosition(), "%.2f", unit.getPriority());
+
                     // If this is a flying building that we haven't recognized as being a flyer, remove overlap tiles
                     auto flyingBuilding = unit.unit()->exists() && !unit.isFlying() && (unit.unit()->getOrder() == Orders::LiftingOff || unit.unit()->getOrder() == Orders::BuildingLiftOff || unit.unit()->isFlying());
                     if (flyingBuilding && unit.getLastTile().isValid())

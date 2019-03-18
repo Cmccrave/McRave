@@ -583,21 +583,22 @@ namespace McRave::Production {
             reservedMineral = 0;
             reservedGas = 0;
 
-            for (auto &b : idleProduction) {
-                reservedMineral += b.second.mineralPrice();
-                reservedGas += b.second.gasPrice();
+            for (auto &[_,type] : idleProduction) {
+                if (BuildOrder::isTechUnit(type)) {
+                    reservedMineral += type.mineralPrice();
+                    reservedGas += type.gasPrice();
+                }
             }
 
-            for (auto &t : idleTech) {
-                reservedMineral += t.second.mineralPrice();
-                reservedGas += t.second.gasPrice();
+            for (auto &[_,tech] : idleTech) {
+                reservedMineral += tech.mineralPrice();
+                reservedGas += tech.gasPrice();
             }
 
-            for (auto &u : idleUpgrade) {
-                reservedMineral += u.second.mineralPrice();
-                reservedGas += u.second.gasPrice();
+            for (auto &[_,upgrade] : idleUpgrade) {
+                reservedMineral += upgrade.mineralPrice();
+                reservedGas += upgrade.gasPrice();
             }
-            return;
         }
 
         void updateProduction()

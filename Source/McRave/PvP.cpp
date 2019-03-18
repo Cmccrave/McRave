@@ -154,7 +154,7 @@ namespace McRave::BuildOrder::Protoss {
             auto cannonCount = int(1 + Units::getEnemyCount(Protoss_Zealot) + Units::getEnemyCount(Protoss_Dragoon)) / 2;
             itemQueue[Protoss_Photon_Cannon] =		Item(com(Protoss_Forge) > 0 ? cannonCount : 0);
         }
-        else if (currentTransition == "Reaver") {
+        else if (currentTransition == "Robo") {
             // https://liquipedia.net/starcraft/2_Gate_Reaver_(vs._Protoss)
             lockedTransition =  vis(Protoss_Robotics_Facility) > 0;
             getOpening =		s < 70;

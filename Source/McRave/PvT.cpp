@@ -109,7 +109,7 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Assimilator] =		Item(s >= 22);
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
         }
-        else if (currentTransition == "Reaver") {
+        else if (currentTransition == "Robo") {
             lockedTransition =  vis(Protoss_Robotics_Facility) > 0;
             getOpening =		s < 70;
             firstUnit =			com(Protoss_Dragoon) >= 3 ? Protoss_Reaver : UnitTypes::None;
@@ -182,7 +182,7 @@ namespace McRave::BuildOrder::Protoss {
         }
 
         // Transitions
-        if (currentTransition == "Reaver") {
+        if (currentTransition == "Robo") {
             // http://liquipedia.net/starcraft/1_Gate_Reaver
             getOpening =		s < 60;
             lockedTransition =  vis(Protoss_Robotics_Facility) > 0;
@@ -314,7 +314,6 @@ namespace McRave::BuildOrder::Protoss {
 
         // Pull 1 probe when researching goon range, add 1 after we have a Nexus, then add 3 when 2 gas
         gasLimit =			goonRange() && com(Protoss_Nexus) < 2 ? 2 : INT_MAX;
-        zealotLimit =		0;
 
         // Want to make only 1 goon before Nexus in case of weird supply count when expanding
         dragoonLimit =		vis(Protoss_Nexus) >= 2 ? INT_MAX : 1;
@@ -353,9 +352,9 @@ namespace McRave::BuildOrder::Protoss {
         // Transitions - DoubleExpand / Standard / Carrier
         if (currentTransition == "DoubleExpand") {
             getOpening =		s < 140;
-            playPassive =		com(Protoss_Nexus) < 3;
+            playPassive =		s < 100;
             lockedTransition =  vis(Protoss_Nexus) >= 3;
-            gasLimit =          s >= 80 ? INT_MAX : 3;
+            gasLimit =          s >= 120 ? INT_MAX : 3;
 
             itemQueue[Protoss_Nexus] =				Item(1 + (s >= 42) + (s >= 70));
             itemQueue[Protoss_Assimilator] =		Item((s >= 24) + (s >= 80));
@@ -364,9 +363,9 @@ namespace McRave::BuildOrder::Protoss {
         else if (currentTransition == "Standard") {
             getOpening =		s < 80;
             firstUnit =         com(Protoss_Nexus) >= 2 ? Protoss_Observer : UnitTypes::None;
-            lockedTransition =  com(Protoss_Nexus) >= 2;
+            lockedTransition =  false;
 
-            itemQueue[Protoss_Assimilator] =		Item((s >= 24) + (s >= 50));
+            itemQueue[Protoss_Assimilator] =		Item((s >= 24) + (s >= 80));
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
         }
         else if (currentTransition == "Carrier") {

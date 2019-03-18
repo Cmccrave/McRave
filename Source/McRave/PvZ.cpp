@@ -51,14 +51,11 @@ namespace McRave::BuildOrder::Protoss {
         playPassive	=		s < 60;
         firstUpgrade =		UpgradeTypes::None;
         firstTech =			TechTypes::None;
-        fastExpand =		false;
         cutWorkers =        Production::hasIdleProduction();
 
         zealotLimit =		INT_MAX;
         dragoonLimit =		(vis(Protoss_Templar_Archives) > 0 || Players::vT()) ? INT_MAX : 0;
-
-        if (com(Protoss_Cybernetics_Core) > 0 && techList.find(Protoss_Corsair) == techList.end() && s >= 60)
-            firstUnit = Protoss_Corsair;
+        firstUnit =         Protoss_Corsair;
 
         itemQueue[Protoss_Nexus] =					Item(1);
         itemQueue[Protoss_Pylon] =					Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
