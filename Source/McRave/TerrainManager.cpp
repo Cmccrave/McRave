@@ -20,8 +20,8 @@ namespace McRave::Terrain {
         vector<Position> meleeChokePositions;
         vector<Position> rangedChokePositions;
         set<Base const*> allBases;
-        BWEB::Walls::Wall* mainWall = nullptr;
-        BWEB::Walls::Wall* naturalWall = nullptr;
+        BWEB::Wall* mainWall = nullptr;
+        BWEB::Wall* naturalWall = nullptr;
         UnitType tightType = UnitTypes::None;
 
         bool islandMap;
@@ -412,14 +412,14 @@ namespace McRave::Terrain {
         UnitType wallTight = Broodwar->enemy()->getRace() == Races::Protoss ? UnitTypes::Protoss_Zealot : UnitTypes::Zerg_Zergling;
 
         BWEB::Walls::createWall(types, BWEB::Map::getMainArea(), BWEB::Map::getMainChoke(), wallTight, defenses, false, tight);
-        BWEB::Walls::Wall * wallB = BWEB::Walls::getWall(BWEB::Map::getMainArea(), BWEB::Map::getMainChoke());
+        BWEB::Wall * wallB = BWEB::Walls::getWall(BWEB::Map::getMainArea(), BWEB::Map::getMainChoke());
         if (wallB) {
             mainWall = wallB;
             return true;
         }
 
         BWEB::Walls::createWall(types, BWEB::Map::getNaturalArea(), BWEB::Map::getMainChoke(), wallTight, defenses, false, tight);
-        BWEB::Walls::Wall * wallA = BWEB::Walls::getWall(BWEB::Map::getNaturalArea(), BWEB::Map::getMainChoke());
+        BWEB::Wall * wallA = BWEB::Walls::getWall(BWEB::Map::getNaturalArea(), BWEB::Map::getMainChoke());
         if (wallA) {
             mainWall = wallA;
             return true;
@@ -501,6 +501,6 @@ namespace McRave::Terrain {
     set <const Area*>& getAllyTerritory() { return allyTerritory; }
     set <const Area*>& getEnemyTerritory() { return enemyTerritory; }
     set <Base const*>& getAllBases() { return allBases; }
-    const BWEB::Walls::Wall* getMainWall() { return mainWall; }
-    const BWEB::Walls::Wall* getNaturalWall() { return naturalWall; }
+    const BWEB::Wall* getMainWall() { return mainWall; }
+    const BWEB::Wall* getNaturalWall() { return naturalWall; }
 }

@@ -13,16 +13,16 @@ namespace McRave::Transports {
             return log(min(500.0, max(100.0, double(Broodwar->getFrameCount() - Grids::lastVisitedFrame(w)))));
         }
 
-        void updateCargo(const shared_ptr<UnitInfo>& u)
+        void updateCargo(UnitInfo& unit)
         {
-            auto &unit = *u;
             auto cargoSize = 0;
-            for (auto &u : unit.getAssignedCargo())
-                cargoSize += u->getType().spaceRequired();
+            for (auto &c : unit.getAssignedCargo()) {
+                if (auto &cargo = c.lock())
+                    cargoSize += cargo->getType().spaceRequired();
+            }
 
             // Check if we are ready to assign this worker to a transport
-            const auto readyToAssignWorker = [&](const shared_ptr<UnitInfo>& c) {
-                auto &cargo = *u;
+            const auto readyToAssignWorker = [&](UnitInfo& cargo) {
                 if (cargoSize + cargo.getType().spaceRequired() > 8 || cargo.hasTransport())
                     return false;
 
@@ -39,8 +39,7 @@ namespace McRave::Transports {
             };
 
             // Check if we are ready to assign this unit to a transport
-            const auto readyToAssignUnit = [&](const shared_ptr<UnitInfo>& c) {
-                auto &cargo = *c;
+            const auto readyToAssignUnit = [&](UnitInfo& cargo) {
                 if (cargoSize + cargo.getType().spaceRequired() > 8 || cargo.hasTransport())
                     return false;
 
@@ -58,43 +57,45 @@ namespace McRave::Transports {
                 for (auto &c : Units::getUnits(PlayerState::Self)) {
                     auto &cargo = *c;
 
-                    if (cargo.getRole() == Role::Combat && readyToAssignUnit(c)) {
-                        cargo.setTransport(u);
-                        unit.getAssignedCargo().insert(c);
+                    if (cargo.getRole() == Role::Combat && readyToAssignUnit(cargo)) {
+                        cargo.setTransport(&unit);
+                        unit.getAssignedCargo().push_back(c);
                         cargoSize += unit.getType().spaceRequired();
                     }
 
-                    if (cargo.getRole() == Role::Worker && readyToAssignWorker(c)) {
-                        cargo.setTransport(u);
-                        unit.getAssignedCargo().insert(u);
+                    if (cargo.getRole() == Role::Worker && readyToAssignWorker(cargo)) {
+                        cargo.setTransport(&unit);
+                        unit.getAssignedCargo().push_back(c);
                         cargoSize += unit.getType().spaceRequired();
                     }
                 }
             }
         }
 
-        void updateTransportState(const shared_ptr<UnitInfo>& u)
+        void updateTransportState(UnitInfo& unit)
         {
-            auto &unit = *u;
-
             // TODO: Broke transports for islands, fix later
             unit.setDestination(BWEB::Map::getMainPosition());
             unit.setTransportState(TransportState::None);
 
-            shared_ptr<UnitInfo> closestCargo = nullptr;
+            UnitInfo * closestCargo = nullptr;
             auto distBest = DBL_MAX;
             for (auto &c : unit.getAssignedCargo()) {
-                auto dist = c->getDistance(unit);
-                if (dist < distBest) {
-                    distBest = dist;
-                    closestCargo = c;
+                if (c.expired())
+                    continue;
+                auto &cargo = c.lock();
+
+                if (auto &cargo = c.lock()) {
+                    auto dist = cargo->getDistance(unit);
+                    if (dist < distBest) {
+                        distBest = dist;
+                        closestCargo = &*cargo;
+                    }
                 }
             }
 
             // Check if this unit is ready to fight
-            const auto readyToFight = [&](const shared_ptr<UnitInfo>& c) {
-                auto &cargo = *c;
-
+            const auto readyToFight = [&](UnitInfo& cargo) {
                 auto reaver = cargo.getType() == UnitTypes::Protoss_Reaver;
                 auto ht = cargo.getType() == UnitTypes::Protoss_High_Templar;
 
@@ -110,8 +111,7 @@ namespace McRave::Transports {
             };
 
             // Check if this unit is ready to unload
-            const auto readyToUnload = [&](const shared_ptr<UnitInfo>& c) {
-                auto &cargo = *c;
+            const auto readyToUnload = [&](UnitInfo& cargo) {
                 auto reaver = cargo.getType() == UnitTypes::Protoss_Reaver;
                 auto targetDist = cargo.getPosition().getDistance(cargo.getEngagePosition());
                 if (targetDist <= 64.0 && cargo.canStartAttack())
@@ -120,16 +120,15 @@ namespace McRave::Transports {
             };
 
             // Check if this unit is ready to be picked up
-            const auto readyToPickup = [&](const shared_ptr<UnitInfo>& c) {
-                auto &cargo = *c;
+            const auto readyToPickup = [&](UnitInfo& cargo) {
                 auto attackCooldown = (Broodwar->getFrameCount() - cargo.getLastAttackFrame() <= 60 - Broodwar->getLatencyFrames());
                 auto reaver = cargo.getType() == UnitTypes::Protoss_Reaver;
                 auto ht = cargo.getType() == UnitTypes::Protoss_High_Templar;
                 auto threat = Grids::getEGroundThreat(cargo.getWalkPosition()) > 0.0;
                 auto targetDist = reaver && cargo.hasTarget() ? BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getTarget().getPosition()) - 256.0 : cargo.getPosition().getDistance(cargo.getEngagePosition());
 
-                if (unit.getPosition().getDistance(cargo.getPosition()) <= 160.0 || c == closestCargo) {
-                    if (!cargo.hasTarget() || cargo.getLocalState() == LocalState::Retreat || (targetDist > 128.0 || (ht && cargo.unit()->getEnergy() < 75) || (reaver && attackCooldown && threat))) {
+                if (unit.getPosition().getDistance(cargo.getPosition()) <= 160.0 || &cargo == closestCargo) {
+                    if (!cargo.hasTarget() || cargo.getLocalState() == LocalState::Retreat || targetDist > 128.0 || (ht && cargo.unit()->getEnergy() < 75) || (reaver && attackCooldown && threat)) {
                         return true;
                     }
                 }
@@ -137,23 +136,20 @@ namespace McRave::Transports {
             };
 
             // Check if this worker is ready to mine
-            const auto readyToMine = [&](const shared_ptr<UnitInfo>& w) {
-                auto &worker = *w;
+            const auto readyToMine = [&](UnitInfo& worker) {
                 if (Terrain::isIslandMap() && worker.hasResource() && worker.getResource().getTilePosition().isValid() && mapBWEM.GetArea(unit.getTilePosition()) == mapBWEM.GetArea(worker.getResource().getTilePosition()))
                     return true;
                 return false;
             };
 
             // Check if this worker is ready to build
-            const auto readyToBuild = [&](const shared_ptr<UnitInfo>& w) {
-                auto &worker = *w;
+            const auto readyToBuild = [&](UnitInfo& worker) {
                 if (Terrain::isIslandMap() && worker.getBuildPosition().isValid() && mapBWEM.GetArea(worker.getTilePosition()) == mapBWEM.GetArea(worker.getBuildPosition()))
                     return true;
                 return false;
             };
 
-            const auto pickupPosition = [&](const shared_ptr<UnitInfo>& c) {
-                auto &cargo = *c;
+            const auto pickupPosition = [&](UnitInfo& cargo) {
                 double distance = unit.getPosition().getDistance(cargo.getPosition());
                 Position direction = (unit.getPosition() - cargo.getPosition()) * 64 / (int)distance;
                 return cargo.getPosition() - direction;
@@ -162,15 +158,17 @@ namespace McRave::Transports {
             // Check if we should be loading/unloading any cargo
             bool shouldMonitor = false;
             for (auto &c : unit.getAssignedCargo()) {
-                auto &cargo = *c;
+                if (!c.lock())
+                    continue;
+                auto &cargo = *(c.lock());
 
                 // If the cargo is not loaded
                 if (!cargo.unit()->isLoaded()) {
 
                     // If it's requesting a pickup, set load state to 1	
-                    if (readyToPickup(c)) {
+                    if (readyToPickup(cargo)) {
                         unit.setTransportState(TransportState::Loading);
-                        unit.setDestination(pickupPosition(c));
+                        unit.setDestination(pickupPosition(cargo));
                         return;
                     }
                     else {
@@ -183,10 +181,10 @@ namespace McRave::Transports {
                 else if (cargo.unit()->isLoaded() && cargo.hasTarget() && cargo.getEngagePosition().isValid()) {
                     unit.setDestination(cargo.getEngagePosition());
 
-                    if (readyToFight(c)) {
+                    if (readyToFight(cargo)) {
                         unit.setTransportState(TransportState::Engaging);
 
-                        if (readyToUnload(c))
+                        if (readyToUnload(cargo))
                             unit.unit()->unload(cargo.unit());
                     }
                     else
@@ -202,10 +200,8 @@ namespace McRave::Transports {
                 unit.setTransportState(TransportState::Monitoring);
         }
 
-        void updateDestination(const shared_ptr<UnitInfo>& u)
+        void updateDestination(UnitInfo& unit)
         {
-            auto &unit = *u;
-
             // Disabled - this didn't do anything in AIST version
             // Check if the destination can be used for ground distance
             //if (!Util::isWalkable(unit.getDestination())) {
@@ -223,9 +219,8 @@ namespace McRave::Transports {
             //}
         }
 
-        void updateDecision(const shared_ptr<UnitInfo>& u)
+        void updateDecision(UnitInfo& unit)
         {
-            auto &unit = *u;
             if (!unit.unit() || !unit.unit()->exists()																							// Prevent crashes
                 || unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())	// If the unit is locked down, maelstrommed, stassised, or not completed
                 return;
@@ -239,7 +234,7 @@ namespace McRave::Transports {
 
             // Iterate commands, if one is executed then don't try to execute other commands
             int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
-            int i = Util::iterateCommands(commands, u);
+            int i = Util::iterateCommands(commands, unit);
             Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", Text::White, commandNames[i].c_str());
         }
 
@@ -249,10 +244,10 @@ namespace McRave::Transports {
                 auto &unit = *u;
 
                 if (unit.getRole() == Role::Transport) {
-                    updateCargo(u);
-                    updateTransportState(u);
-                    updateDestination(u);
-                    updateDecision(u);
+                    updateCargo(unit);
+                    updateTransportState(unit);
+                    updateDestination(unit);
+                    updateDecision(unit);
                 }
             }
         }
@@ -265,12 +260,18 @@ namespace McRave::Transports {
         Visuals::endPerfTest("Transports");
     }
 
-    void removeUnit(const shared_ptr<UnitInfo>& unit)
+    void removeUnit(UnitInfo& unit)
     {
-        if (unit->hasTransport())
-            unit->getTransport().getAssignedCargo().erase(unit);
+        if (unit.hasTransport()) {
+            //for (auto &cargo : unit.getTransport().getAssignedCargo()) {
+            //    if (cargo.lock())
+            //        unit.getTransport().getAssignedCargo().erase(cargo);
+            //}
+        }
 
-        for (auto &cargo : unit->getAssignedCargo())
-            cargo->setTransport(nullptr);
+        for (auto &c : unit.getAssignedCargo()) {
+            if (auto &cargo = c.lock())
+                cargo->setTransport(nullptr);
+        }
     }
 }

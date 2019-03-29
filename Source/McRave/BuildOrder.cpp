@@ -96,12 +96,9 @@ namespace McRave::BuildOrder
                 return true;
         }
 
-        else if (Broodwar->self()->getRace() == Races::Protoss) {
-            if (Players::vP())
-                return Broodwar->self()->visibleUnitCount(Protoss_Assimilator) != 1 || workerCount >= 32 || Broodwar->self()->minerals() > 600;
-            else if (Players::vT() || Players::vZ())
-                return true;
-        }
+        else if (Broodwar->self()->getRace() == Races::Protoss)
+            return Broodwar->self()->visibleUnitCount(Protoss_Assimilator) != 1 || workerCount >= 28 || Broodwar->self()->minerals() > 600;
+
 
         else if (Broodwar->self()->getRace() == Races::Terran)
             return true;
@@ -267,21 +264,14 @@ namespace McRave::BuildOrder
         }
     }
 
-    void setCurrentBuild(string newBuild) {
+    void setLearnedBuild(string newBuild, string newOpener, string newTransition) {
         currentBuild = newBuild;
-    }
-
-    void setCurrentOpener(string newOpener) {
         currentOpener = newOpener;
-    }
-
-    void setCurrentTransition(string newTransition) {
         currentTransition = newTransition;
     }
 
     map<BWAPI::UnitType, Item>& getItemQueue() { return itemQueue; }
     UnitType getTechUnit() { return techUnit; }
-    UnitType getFirstUnit() { return firstUnit; }
     UpgradeType getFirstUpgrade() { return firstUpgrade; }
     TechType getFirstTech() { return firstTech; }
     set <UnitType>& getTechList() { return  techList; }

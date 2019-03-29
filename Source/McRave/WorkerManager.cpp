@@ -11,17 +11,15 @@ namespace McRave::Workers {
         int gasWorkers = 0;
         int boulderWorkers = 0;
 
-        bool closeToResource(const shared_ptr<UnitInfo>& w)
+        bool closeToResource(UnitInfo& worker)
         {
-            auto &worker = *w;
             auto close = BWEB::Map::getGroundDistance(worker.getResource().getPosition(), worker.getPosition()) <= 128.0;
             auto sameArea = mapBWEM.GetArea(worker.getTilePosition()) == mapBWEM.GetArea(worker.getResource().getTilePosition());
             return close || sameArea;
         }
 
-        bool misc(const shared_ptr<UnitInfo>& w)
+        bool misc(UnitInfo& worker)
         {
-            auto &worker = *w;
             // If worker is potentially stuck, try to find a manner pylon
             // TODO: Use workers target? Check if it's actually targeting pylon?
             if (worker.framesHoldingResource() >= 100 || worker.framesHoldingResource() <= -200) {
@@ -37,9 +35,8 @@ namespace McRave::Workers {
             return false;
         }
 
-        bool transport(const shared_ptr<UnitInfo>& w)
+        bool transport(UnitInfo& worker)
         {
-            auto &worker = *w;
             // Workers that have a transport coming to pick them up should not do anything other than returning cargo
             if (worker.hasTransport() && !worker.unit()->isCarryingMinerals() && !worker.unit()->isCarryingGas()) {
                 if (worker.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
@@ -49,9 +46,8 @@ namespace McRave::Workers {
             return false;
         }
 
-        bool build(const shared_ptr<UnitInfo>& w)
+        bool build(UnitInfo& worker)
         {
-            auto &worker = *w;
             Position center = Position(worker.getBuildPosition()) + Position(worker.getBuildingType().tileWidth() * 16, worker.getBuildingType().tileHeight() * 16);
             Position topLeft = Position(worker.getBuildPosition());
             Position botRight = topLeft + Position(worker.getBuildingType().tileWidth() * 32, worker.getBuildingType().tileHeight() * 32);
@@ -62,8 +58,8 @@ namespace McRave::Workers {
 
             // 1) Attack any enemies inside the build area
             if (worker.hasTarget() && Util::rectangleIntersect(topLeft, botRight, worker.getTarget().getPosition())) {
-				if (Command::attack(w)) {}
-				else if (Command::move(w)) {}
+                if (Command::attack(worker)) {}
+                else if (Command::move(worker)) {}
                 return true;
             }
 
@@ -85,21 +81,20 @@ namespace McRave::Workers {
                     BWEB::PathFinding::Path newPath;
                     newPath.createUnitPath(worker.getPosition(), center);
                     worker.setPath(newPath);
-                    Command::move(w);
+                    Command::move(worker);
                 }
                 else if (worker.unit()->getOrder() != Orders::PlaceBuilding || worker.unit()->getLastCommand().getType() != UnitCommandTypes::Build)
-                    worker.unit()->build(worker.getBuildingType(), worker.getBuildPosition());                
+                    worker.unit()->build(worker.getBuildingType(), worker.getBuildPosition());
                 return true;
             }
             return false;
         }
 
-        bool clearPath(const shared_ptr<UnitInfo>& w)
+        bool clearNeutral(UnitInfo& worker)
         {
-            auto &worker = *w;
             auto resourceDepot = Broodwar->self()->getRace().getResourceDepot();
-            if (Units::getMyVisible(resourceDepot) < 2
-                || (BuildOrder::buildCount(resourceDepot) == Units::getMyVisible(resourceDepot) && BuildOrder::isOpener())
+            if (vis(resourceDepot) < 2
+                || (BuildOrder::buildCount(resourceDepot) == vis(resourceDepot) && BuildOrder::isOpener())
                 || worker.unit()->isCarryingMinerals()
                 || worker.unit()->isCarryingGas()
                 || boulderWorkers != 0)
@@ -120,9 +115,8 @@ namespace McRave::Workers {
             return false;
         }
 
-        bool gather(const shared_ptr<UnitInfo>& w)
+        bool gather(UnitInfo& worker)
         {
-            auto &worker = *w;
             auto resourceExists = worker.hasResource() && worker.getResource().unit() && worker.getResource().unit()->exists();
 
             // Mine the closest mineral field
@@ -151,7 +145,7 @@ namespace McRave::Workers {
                 worker.setDestination(resourceCentroid);
 
                 // 1) If it's close or same area, don't need a path, set to empty	
-                if (closeToResource(w)) {
+                if (closeToResource(worker)) {
                     BWEB::PathFinding::Path emptyPath;
                     worker.setPath(emptyPath);
                 }
@@ -165,19 +159,19 @@ namespace McRave::Workers {
 
                 Visuals::displayPath(worker.getPath().getTiles());
 
-				// 3) If we are under a threat, try to get away from the threat
-				//if (worker.getPath().getTiles().empty() && Grids::getEGroundThreat(worker.getWalkPosition()) > 0.0) {
-					//Command::kite(w);
+                // 3) If we are under a threat, try to get away from the threat
+                //if (worker.getPath().getTiles().empty() && Grids::getEGroundThreat(worker.getWalkPosition()) > 0.0) {
+                    //Command::kite(w);
                     //worker.circleOrange();
-					//return true;
-				//}
+                    //return true;
+                //}
 
                 // 4) If no threat on path, mine it
                 /*else*/ if (!Util::accurateThreatOnPath(worker, worker.getPath())) {
                     if (shouldIssueGather())
                         worker.unit()->gather(worker.getResource().unit());
                     else if (!resourceExists)
-                        Command::move(w);
+                        Command::move(worker);
                     return true;
                 }
             }
@@ -187,9 +181,8 @@ namespace McRave::Workers {
             return false;
         }
 
-        bool returnCargo(const shared_ptr<UnitInfo>& w)
+        bool returnCargo(UnitInfo& worker)
         {
-            auto &worker = *w;
             // Can't return cargo if we aren't carrying a resource
             if (!worker.unit()->isCarryingGas() && !worker.unit()->isCarryingMinerals())
                 return false;
@@ -205,14 +198,13 @@ namespace McRave::Workers {
             return true;
         }
 
-        void updateAssignment(const shared_ptr<UnitInfo> w)
+        void updateAssignment(UnitInfo& worker)
         {
-            auto &worker = *w;
             auto injured = (worker.unit()->getHitPoints() + worker.unit()->getShields() < worker.getType().maxHitPoints() + worker.getType().maxShields());
             auto threatened = (worker.hasResource() && Util::accurateThreatOnPath(worker, worker.getPath()));
             auto distBest = (injured || threatened) ? 0.0 : DBL_MAX;
             auto needNewAssignment = false;
-            vector<const BWEB::Stations::Station *> safeStations;
+            vector<const BWEB::Station *> safeStations;
             auto closest = BWEB::Stations::getClosestStation(worker.getTilePosition());
 
             const auto resourceReady = [&](ResourceInfo& resource, int i) {
@@ -235,16 +227,16 @@ namespace McRave::Workers {
             if (!worker.hasResource()
                 || needGas()
                 || (worker.hasResource() && !worker.getResource().getType().isMineralField() && gasWorkers > BuildOrder::gasWorkerLimit())
-                || (worker.hasResource() && !closeToResource(w) && Util::accurateThreatOnPath(worker, worker.getPath()) && Grids::getEGroundThreat(worker.getWalkPosition()) == 0.0)
-                || (worker.hasResource() && closeToResource(w) && int(worker.getTargetedBy().size()) > 0 && Grids::getEGroundThreat(worker.getWalkPosition()) > 0.0)
+                || (worker.hasResource() && !closeToResource(worker) && Util::accurateThreatOnPath(worker, worker.getPath()) && Grids::getEGroundThreat(worker.getWalkPosition()) == 0.0)
+                || (worker.hasResource() && closeToResource(worker) && int(worker.getTargetedBy().size()) > 0 && Grids::getEGroundThreat(worker.getWalkPosition()) > 0.0)
                 || (worker.hasResource() && !injured && !threatened && worker.getResource().getGathererCount() >= 3 + int(worker.getResource().getType().isRefinery())))
                 needNewAssignment = true;
 
             // HACK: Just return if we dont need an assignment, should make this better
             if (!needNewAssignment)
                 return;
-            else if (worker.hasResource()){
-                worker.getResource().targetedByWhat().erase(w);
+            else if (worker.hasResource()) {
+                worker.getResource().removeTargetedBy(worker.weak_from_this());
                 worker.setResource(nullptr);
             }
 
@@ -276,9 +268,11 @@ namespace McRave::Workers {
                     if (threatened && !safeStations.empty() && (!resource.getStation() || find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end()))
                         continue;
 
+                    Broodwar->drawLineMap(worker.getPosition(), resource.getPosition(), Colors::Green);
+
                     auto dist = resource.getPosition().getDistance(worker.getPosition());
                     if ((dist < distBest && !injured) || (dist > distBest && injured)) {
-                        worker.setResource(r);
+                        worker.setResource(r.get());
                         distBest = dist;
                     }
                 }
@@ -288,15 +282,17 @@ namespace McRave::Workers {
             else {
                 for (int i = 1; i <= 2; i++) {
                     for (auto &r : Resources::getMyMinerals()) {
+
                         auto &resource = *r;
                         if (!resourceReady(resource, i))
                             continue;
+
                         if (threatened && !safeStations.empty() && (!resource.getStation() || find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end()))
                             continue;
 
                         double dist = resource.getPosition().getDistance(worker.getPosition());
                         if ((dist < distBest && !injured && !threatened) || (dist > distBest && (injured || threatened))) {
-                            worker.setResource(r);
+                            worker.setResource(r.get());
                             distBest = dist;
                         }
                     }
@@ -309,53 +305,42 @@ namespace McRave::Workers {
             // 4) Assign resource
             if (worker.hasResource()) {
 
-                // Remove current assignment
-                if (worker.hasResource()) {
-                    worker.getResource().getType().isMineralField() ? minWorkers-- : gasWorkers--;
-                    worker.getResource().removeTargetedBy(w);
-                }
-
                 // Add next assignment
                 worker.getResource().getType().isMineralField() ? minWorkers++ : gasWorkers++;
+                worker.getResource().addTargetedBy(worker.weak_from_this());
 
                 BWEB::PathFinding::Path emptyPath;
-                worker.getResource().addTargetedBy(w);
                 worker.setPath(emptyPath);
             }
         }
 
-        constexpr tuple commands{ misc, transport, returnCargo, clearPath, build, gather };
-        void updateDecision(const shared_ptr<UnitInfo>& w)
+        constexpr tuple commands{ misc, transport, returnCargo, clearNeutral, build, gather };
+        void updateDecision(UnitInfo& worker)
         {
-            auto &worker = *w;
             // Convert our commands to strings to display what the unit is doing for debugging
             map<int, string> commandNames{
                 make_pair(0, "Misc"),
                 make_pair(1, "Transport"),
                 make_pair(2, "ReturnCargo"),
-                make_pair(3, "ClearPath"),
+                make_pair(3, "clearNeutral"),
                 make_pair(4, "Build"),
                 make_pair(5, "Gather")
             };
 
             // Iterate commands, if one is executed then don't try to execute other commands
             int width = worker.getType().isBuilding() ? -16 : worker.getType().width() / 2;
-            int i = Util::iterateCommands(commands, w);
+            int i = Util::iterateCommands(commands, worker);
             Broodwar->drawTextMap(worker.getPosition() + Position(width, 0), "%c%s", Text::White, commandNames[i].c_str());
         }
 
         void updateWorkers()
         {
-            for (auto &p : Players::getPlayers()) {
-                if (!p.second.isSelf())
-                    continue;
-
-                for (auto &u : p.second.getUnits()) {
-                    const shared_ptr<UnitInfo> &unit = u;
-                    if (unit->getRole() == Role::Worker) {
-                        updateAssignment(unit);
-                        updateDecision(unit);
-                    }
+            // Sort units by distance to destination
+            for (auto &u : Units::getUnits(PlayerState::Self)) {
+                auto &unit = *u;
+                if (unit.getRole() == Role::Worker) {
+                    updateAssignment(unit);
+                    updateDecision(unit);
                 }
             }
         }
@@ -368,11 +353,20 @@ namespace McRave::Workers {
         Visuals::endPerfTest("Workers");
     }
 
-    void removeUnit(const shared_ptr<UnitInfo>& u) {
-        auto &unit = *u;
-        unit.getResource().getType().isRefinery() ? gasWorkers-- : minWorkers--;
-        unit.getResource().removeTargetedBy(u);
-        unit.setResource(nullptr);
+    void removeUnit(UnitInfo& worker) {
+        worker.getResource().getType().isRefinery() ? gasWorkers-- : minWorkers--;
+        worker.getResource().removeTargetedBy(worker.weak_from_this());
+
+        //if (worker.hasResource()) {
+        //    for (auto itr = worker.getResource().targetedByWhat().begin(); itr != worker.getResource().targetedByWhat().end(); itr++) {
+        //        if (!worker.weak_from_this().expired()) {
+        //            worker.getResource().targetedByWhat().erase(itr);
+        //            break;
+        //        }
+        //    }
+        //}
+
+        worker.setResource(nullptr);
     }
 
     bool shouldMoveToBuild(UnitInfo& worker, TilePosition tile, UnitType type) {

@@ -55,7 +55,6 @@ namespace McRave
         maxAirStrength			= Math::getMaxAirStrength(*this);
         priority				= Math::getPriority(*this);
         lastAttackFrame			= (t != UnitTypes::Protoss_Reaver && (thisUnit->isStartingAttack() || thisUnit->isRepairing())) ? Broodwar->getFrameCount() : lastAttackFrame;
-        killCount				= unit()->getKillCount();
 
         // Reset states
         lState					= LocalState::None;
@@ -79,7 +78,7 @@ namespace McRave
                 lastAttackFrame = Broodwar->getFrameCount();
         }
 
-        target = nullptr;
+        target = std::weak_ptr<UnitInfo>();
         updateTarget();
         updateStuckCheck();
     }
@@ -90,7 +89,7 @@ namespace McRave
         if (player && player == Broodwar->self()) {
             if (unitType == UnitTypes::Terran_Vulture_Spider_Mine) {
                 if (thisUnit->getOrderTarget())
-                    target = Units::getUnit(thisUnit->getOrderTarget());
+                    target = Units::getUnitInfo(thisUnit->getOrderTarget());
             }
             else
                 Targets::getTarget(*this);
@@ -99,14 +98,14 @@ namespace McRave
         // Assume enemy target
         else if (player && player->isEnemy(Broodwar->self())) {            
             if (thisUnit->getOrderTarget()) {
-                auto &targetInfo = Units::getUnit(thisUnit->getOrderTarget());
+                auto &targetInfo = Units::getUnitInfo(thisUnit->getOrderTarget());
                 if (targetInfo) {
                     target = targetInfo;
-                    targetInfo->getTargetedBy().insert(make_shared<UnitInfo>(*this));
+                    targetInfo->getTargetedBy().push_back(make_shared<UnitInfo>(*this));
                 }
             }
             else
-                target = nullptr;
+                target = std::weak_ptr<UnitInfo>();
         }
     }
 
@@ -153,7 +152,7 @@ namespace McRave
             auto distExtra = max(distance, unitType.haltDistance() / 256);
             if (distance > 0 && here.getDistance(position) < distExtra) {
                 here = position - (position - here) * (distExtra / distance);
-                here = Util::clipPosition(position, here);
+                here = Util::clipLine(position, here);
             }
         }
 
@@ -211,7 +210,7 @@ namespace McRave
         auto atHome = Terrain::isInAllyTerritory(tilePosition);
         auto manner = position.getDistance(Terrain::getMineralHoldPosition()) < 256.0;
         auto exists = thisUnit && thisUnit->exists();
-        auto attacked = exists && hasAttackedRecently() && target && (target->getType().isBuilding() || target->getType().isWorker()) && (close || atHome);
+        auto attacked = exists && hasAttackedRecently() && target.lock() && (target.lock()->getType().isBuilding() || target.lock()->getType().isWorker()) && (close || atHome);
         auto constructingClose = exists && (position.getDistance(Terrain::getDefendPosition()) < 320.0 || close) && (thisUnit->isConstructing() || thisUnit->getOrder() == Orders::ConstructingBuilding || thisUnit->getOrder() == Orders::PlaceBuilding);
         auto inRangePieces = Terrain::inRangeOfWallPieces(*this);
         auto inRangeDefenses = Terrain::inRangeOfWallDefenses(*this);
@@ -269,22 +268,23 @@ namespace McRave
 
     bool UnitInfo::isHidden()
     {
-        return (burrowed || (thisUnit->exists() && thisUnit->isCloaked())) && !thisUnit->isDetected();
+        auto detection = player->isEnemy(Broodwar->self()) ? Command::overlapsAllyDetection(position) : Command::overlapsEnemyDetection(position);
+        return (burrowed || (thisUnit->exists() && thisUnit->isCloaked())) && !detection;
     }
 
 	bool UnitInfo::canStartAttack()
 	{
-		if (!target)
+		if (!target.lock() || (groundDamage == 0 && airDamage == 0))
 			return false;
 
-		auto cooldown = target->getType().isFlyer() ? thisUnit->getAirWeaponCooldown() : thisUnit->getGroundWeaponCooldown();
+		auto cooldown = target.lock()->getType().isFlyer() ? thisUnit->getAirWeaponCooldown() : thisUnit->getGroundWeaponCooldown();
 
         if (unitType == UnitTypes::Protoss_Reaver)
             cooldown = lastAttackFrame - Broodwar->getFrameCount() + 60;
 
-		auto targetExists = target->unit()->exists();
+		auto targetExists = target.lock()->unit()->exists();
 		auto cooldownReady =  cooldown < Broodwar->getLatencyFrames();
-		auto cooldownWillBeReady = cooldown < engageDist / (transport ? transport->getSpeed() : speed);
-		return (cooldownReady || cooldownWillBeReady);
+		auto cooldownWillBeReady = cooldown < engageDist / (transport.lock() ? transport.lock()->getSpeed() : speed);
+		return cooldownReady || cooldownWillBeReady;
 	}
 }

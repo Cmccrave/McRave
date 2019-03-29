@@ -72,12 +72,6 @@ namespace McRave::Util {
     }
 
     template<typename T>
-    T boundBetween(T low, T compare, T high) {
-        return std::max(low, std::min(high, compare));
-    }
-
-    // Checks if any Position is walkable
-    template<class T>
     bool isWalkable(T here) {
         auto start = BWAPI::WalkPosition(here);
         for (int x = start.x; x < start.x + 4; x++) {
@@ -89,9 +83,8 @@ namespace McRave::Util {
         return true;
     }
 
-    // Iterates commands and returns when one is chosen
     template<typename T, int idx = 0>
-    int iterateCommands(T const &tpl, const std::shared_ptr<UnitInfo>& unit) {
+    int iterateCommands(T const &tpl, UnitInfo& unit) {
         if constexpr (idx < std::tuple_size<T>::value)
             if (!std::get<idx>(tpl)(unit))
                 return iterateCommands<T, idx + 1>(tpl, unit);
@@ -103,27 +96,20 @@ namespace McRave::Util {
 
     double getHighestThreat(BWAPI::WalkPosition, UnitInfo&);
 
-    bool unitInRange(UnitInfo& unit);
-    bool reactivePullWorker(UnitInfo& unit);
-    bool proactivePullWorker(UnitInfo& unit);
-    bool pullRepairWorker(UnitInfo& unit);
+    bool unitInRange(UnitInfo&);
+    bool reactivePullWorker(UnitInfo&);
+    bool proactivePullWorker(UnitInfo&);
+    bool pullRepairWorker(UnitInfo&);
     bool accurateThreatOnPath(UnitInfo&, BWEB::PathFinding::Path&);
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, BWAPI::Position);
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, int, int);
-
-   
-
     bool isWalkable(UnitInfo&, BWAPI::WalkPosition);
 
-    // Create a line of best fit for a chokepoint
     Line lineOfBestFit(const BWEM::ChokePoint *);
     Line parallelLine(Line, int, double);
 
-    BWAPI::Position getConcavePosition(UnitInfo&, double radius, BWEM::Area const * area = nullptr, BWAPI::Position here = BWAPI::Positions::Invalid);
-	BWAPI::Position getInterceptPosition(UnitInfo&);
-    BWAPI::Position clipPosition(BWAPI::Position, BWAPI::Position);
-    BWAPI::Position clipToMap(BWAPI::Position);
-
-
-    
+    BWAPI::Position getConcavePosition(UnitInfo&, double, BWEM::Area const * area = nullptr, BWAPI::Position here = BWAPI::Positions::Invalid);
+    BWAPI::Position getInterceptPosition(UnitInfo&);
+    BWAPI::Position clipLine(BWAPI::Position, BWAPI::Position);
+    BWAPI::Position clipPosition(BWAPI::Position);
 }

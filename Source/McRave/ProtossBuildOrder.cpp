@@ -46,8 +46,20 @@ namespace McRave::BuildOrder::Protoss
         // Some hardcoded techs based on needing detection or specific build orders
         else if (getTech) {
 
-            // If we need observers
-            if (Strategy::needDetection() || (Players::vP() && techList.find(Protoss_Observer) == techList.end() && !techList.empty()))
+            // If we need detection
+            if (Strategy::needDetection()) {
+                if (desiredDetection == Protoss_Observer)
+                    techUnit = Protoss_Observer;
+                else {
+                    techUnit = Protoss_Forge; // Does this work?
+                    wallNat = true;
+                    itemQueue[Protoss_Forge] = Item(1);
+                    itemQueue[Protoss_Photon_Cannon] = Item(com(Protoss_Forge) * 2);
+                }
+            }
+
+            // Various hardcoded tech choices
+            if (Players::vP() && techList.find(Protoss_Observer) == techList.end() && !techList.empty())
                 techUnit = Protoss_Observer;
             else if (currentTransition == "DoubleExpand" && !isTechUnit(Protoss_High_Templar))
                 techUnit = Protoss_High_Templar;
@@ -65,6 +77,9 @@ namespace McRave::BuildOrder::Protoss
     void situational()
     {
         auto skipFirstTech = int(currentTransition == "4Gate" || (Strategy::enemyGasSteal() && !Terrain::isNarrowNatural()));
+
+        // Set s for better build readability
+        s = Units::getSupply();
 
         // Metrics for when to Expand/Add Production/Add Tech
         satVal = Players::vT() ? 2 : 3;
@@ -91,15 +106,8 @@ namespace McRave::BuildOrder::Protoss
             techUnit = None;
 
         // If production is saturated and none are idle or we need detection, choose a tech
-        if (Terrain::isIslandMap() || (!getOpening && !getTech && !techSat) || Strategy::needDetection()) {
-            if (desiredDetection == Protoss_Observer || !Strategy::needDetection())
-                getTech = true;
-            else {
-                wallNat = vis(Protoss_Forge) > 0;
-                itemQueue[Protoss_Forge] = Item(1);
-                itemQueue[Protoss_Photon_Cannon] = Item(com(Protoss_Forge) * 2);
-            }
-        }
+        if (Terrain::isIslandMap() || (!getOpening && !getTech && !techSat) || Strategy::needDetection())
+            getTech = true;
 
         // If we don't want an assimilator, set gas count to 0
         if (buildCount(Protoss_Assimilator) == 0)
@@ -123,6 +131,7 @@ namespace McRave::BuildOrder::Protoss
         if (!getOpening) {
             gasLimit = INT_MAX;
 
+            // HACK: Stop building DTs when enemy has detection - move "dont produce DT" to production, add HT to tech at certain supply
             if (Units::getEnemyCount(Protoss_Observer) > 0 && isTechUnit(Protoss_Dark_Templar)) {
                 techList.erase(Protoss_Dark_Templar);
                 unlockedType.erase(Protoss_Dark_Templar);

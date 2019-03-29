@@ -37,6 +37,6 @@ namespace McRave::Terrain {
     std::set <const BWEM::Area*>& getAllyTerritory();
     std::set <const BWEM::Area*>& getEnemyTerritory();
     std::set <BWEM::Base const*>& getAllBases();
-    const BWEB::Walls::Wall* getMainWall();
-    const BWEB::Walls::Wall* getNaturalWall();
+    const BWEB::Wall* getMainWall();
+    const BWEB::Wall* getNaturalWall();
 }

@@ -46,6 +46,7 @@ namespace McRave::BuildOrder {
         inline int dragoonLimit = INT_MAX;
         inline int lingLimit = INT_MAX;
         inline int droneLimit = INT_MAX;
+        inline int s = 0;
 
         inline std::string currentBuild = "";
         inline std::string currentOpener = "";
@@ -58,7 +59,7 @@ namespace McRave::BuildOrder {
         inline BWAPI::UnitType productionUnit;
         inline BWAPI::UnitType desiredDetection = BWAPI::UnitTypes::None;
         inline std::set <BWAPI::UnitType> techList;
-        inline std::set <BWAPI::UnitType> unlockedType;        
+        inline std::set <BWAPI::UnitType> unlockedType;
     }
 
     namespace Protoss {
@@ -143,9 +144,5 @@ namespace McRave::BuildOrder {
     std::string getCurrentOpener();
     std::string getCurrentTransition();
 
-    void setCurrentBuild(std::string);
-    void setCurrentOpener(std::string);
-    void setCurrentTransition(std::string);
-
-
+    void setLearnedBuild(std::string, std::string, std::string);
 }

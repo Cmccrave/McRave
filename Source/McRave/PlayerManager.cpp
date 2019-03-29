@@ -106,4 +106,14 @@ namespace McRave::Players
     bool vP() { return (thePlayers.size() == 3 && raceCount[Races::Protoss] > 0); }
     bool vT() { return (thePlayers.size() == 3 && raceCount[Races::Terran] > 0); }
     bool vZ() { return (thePlayers.size() == 3 && raceCount[Races::Zerg] > 0); }
+
+    bool PvP() {
+        return vP() && Broodwar->self()->getRace() == Races::Protoss;
+    }
+    bool PvT() {
+        return vT() && Broodwar->self()->getRace() == Races::Protoss;
+    }
+    bool PvZ() {
+        return vZ() && Broodwar->self()->getRace() == Races::Protoss;
+    }
 }

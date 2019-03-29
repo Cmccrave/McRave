@@ -13,7 +13,6 @@ namespace McRave::Util {
         if (unit.getType().isFlyer())
             return true;
 
-
         // Pixel rectangle
         auto walkWidth = unit.getType().isBuilding() ? unit.getType().tileWidth() * 4 : (int)ceil(unit.getType().width() / 8.0);
         auto walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : (int)ceil(unit.getType().height() / 8.0);
@@ -62,12 +61,12 @@ namespace McRave::Util {
 
     bool proactivePullWorker(UnitInfo& unit)
     {
-        auto combatCount = Units::getMyRoleCount(Role::Combat) - int(unit.getRole() == Role::Combat);
+        auto combatCount = Units::getMyRoleCount(Role::Combat);
         auto myStrength = Players::getStrength(PlayerState::Self);
-        myStrength.groundToGround -= unit.getVisibleGroundStrength();
 
-        // HACK: This sucks
-        auto alreadyCombatWorker = unit.getRole() == Role::Combat ? 1 : 0;
+        // Subtract strength and count if this unit already is in combat role
+        myStrength.groundToGround -= unit.getVisibleGroundStrength();
+        combatCount -= int(unit.getRole() == Role::Combat);
 
         auto arriveAtDefense = Broodwar->getFrameCount() + (unit.getPosition().getDistance(Terrain::getDefendPosition()) / unit.getSpeed());
 
@@ -113,9 +112,9 @@ namespace McRave::Util {
         }
         else if (Broodwar->self()->getRace() == Races::Zerg)
             return false;
-/*
-        if (Strategy::enemyProxy() && Strategy::getEnemyBuild() != "2Gate" && Units::getImmThreat() > myStrength.groundToGround + myStrength.groundDefense)
-            return true;*/
+        /*
+                if (Strategy::enemyProxy() && Strategy::getEnemyBuild() != "2Gate" && Units::getImmThreat() > myStrength.groundToGround + myStrength.groundDefense)
+                    return true;*/
 
         return false;
     }
@@ -278,7 +277,6 @@ namespace McRave::Util {
             sumXY += p.x * p.y;
             sumX2 += p.x * p.x;
             sumY2 += p.y * p.y;
-            //BWAPI::Broodwar->drawBoxMap(BWAPI::Position(geo), BWAPI::Position(geo) + BWAPI::Position(9, 9), BWAPI::Colors::Black);
         }
         double xMean = sumX / choke->Geometry().size();
         double yMean = sumY / choke->Geometry().size();
@@ -382,32 +380,29 @@ namespace McRave::Util {
     {
         auto timeToEngage = max(0.0, (unit.getEngDist() / unit.getSpeed()) - 24.0);
         auto targetDestination = unit.getTarget().getPosition() + Position(int(unit.getTarget().unit()->getVelocityX() * timeToEngage), int(unit.getTarget().unit()->getVelocityY() * timeToEngage));
-        targetDestination = Util::clipToMap(targetDestination);
+        targetDestination = Util::clipPosition(targetDestination);
         return targetDestination;
     }
 
-    Position clipPosition(Position source, Position target)
+    Position clipLine(Position source, Position target)
     {
         if (target.isValid())
             return target;
 
         auto sqDist = source.getApproxDistance(target);
-        auto clip = clipToMap(target);
+        auto clip = clipPosition(target);
         auto dx = clip.x - target.x;
         auto dy = clip.y - target.y;
 
         if (abs(dx) < abs(dy)) {
             int y = (int)sqrt(sqDist - dx * dx);
             target.x = clip.x;
-            if (source.y - y < 0) {
+            if (source.y - y < 0)
                 target.y = source.y + y;
-            }
-            else if (source.y + y >= Broodwar->mapHeight() * 32) {
+            else if (source.y + y >= Broodwar->mapHeight() * 32)
                 target.y = source.y - y;
-            }
-            else {
+            else
                 target.y = (target.y >= source.y) ? source.y + y : source.y - y;
-            }
         }
         else {
             int x = (int)sqrt(sqDist - dy * dy);
@@ -423,7 +418,7 @@ namespace McRave::Util {
         return target;
     }
 
-    Position clipToMap(Position source)
+    Position clipPosition(Position source)
     {
         source.x = clamp(source.x, 0, Broodwar->mapWidth() * 32);
         source.y = clamp(source.y, 0, Broodwar->mapHeight() * 32);

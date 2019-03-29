@@ -5,7 +5,6 @@ using namespace BWAPI;
 using namespace std;
 using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
-#define s Units::getSupply()
 
 namespace McRave::BuildOrder::Protoss {
 
@@ -15,14 +14,6 @@ namespace McRave::BuildOrder::Protoss {
 
         bool goonRange() {
             return Broodwar->self()->isUpgrading(UpgradeTypes::Singularity_Charge) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge);
-        }
-
-        bool addGates() {
-            return goonRange() && Broodwar->self()->minerals() >= 150 && vis(Protoss_Dragoon) > 0;
-        }
-
-        bool addGas() {
-            return Broodwar->getStartLocations().size() >= 3 ? (s >= 22) : (s >= 24);
         }
 
         void defaultPvZ() {
@@ -259,12 +250,11 @@ namespace McRave::BuildOrder::Protoss {
 
         // Builds
         if (currentTransition == "Expand") {
-            getOpening =		s < 80;
+            getOpening =		s < 90;
             lockedTransition =  vis(Protoss_Nexus) >= 2;
 
             wallNat =           currentOpener == "Natural" ? true : vis(Protoss_Nexus) >= 2;
 
-            itemQueue[Protoss_Assimilator] =		Item(s >= 76);
             itemQueue[Protoss_Nexus] =				Item(1 + (s >= 42));
             itemQueue[Protoss_Forge] =				Item(s >= 62);
             itemQueue[Protoss_Cybernetics_Core] =	Item(vis(Protoss_Photon_Cannon) >= 2);
@@ -329,8 +319,8 @@ namespace McRave::BuildOrder::Protoss {
 
             itemQueue[Protoss_Nexus] =				Item(1);
             itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
-            itemQueue[Protoss_Gateway] =			Item((s >= 20) + (2 * addGates()));
-            itemQueue[Protoss_Assimilator] =		Item((addGas() || Strategy::enemyScouted()));
+            itemQueue[Protoss_Gateway] =			Item(s >= 20);
+            itemQueue[Protoss_Assimilator] =		Item(s >= 24);
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 34);
         }
         else if (currentOpener == "2Zealot") {
@@ -338,30 +328,17 @@ namespace McRave::BuildOrder::Protoss {
 
             itemQueue[Protoss_Nexus] =				Item(1);
             itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
-            itemQueue[Protoss_Gateway] =			Item((s >= 20) + (2 * addGates()));
-            itemQueue[Protoss_Assimilator] =		Item((addGas() || Strategy::enemyScouted()));
+            itemQueue[Protoss_Gateway] =			Item(s >= 20);
+            itemQueue[Protoss_Assimilator] =		Item(s >= 24);
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 40);
         }
 
         // Builds
-        if (currentTransition == "Corsair") {
-            getOpening =		s < 70;
-            firstUpgrade =		UpgradeTypes::Protoss_Air_Weapons;
-            firstTech =			TechTypes::None;
-            dragoonLimit =		0;
-            playPassive =		com(Protoss_Stargate) == 0;
-            firstUnit =         Protoss_Corsair;
-            lockedTransition =  vis(Protoss_Stargate) > 0;
-
-            itemQueue[Protoss_Gateway] =			Item((s >= 20) + vis(Protoss_Corsair) > 0);
-            itemQueue[Protoss_Stargate] =			Item(com(Protoss_Cybernetics_Core) > 0);
-        }
-        else if (currentTransition == "DT") {
+        if (currentTransition == "DT") {
             // Experimental build from Best
             firstUpgrade =		UpgradeTypes::None;
             firstTech =			TechTypes::Psionic_Storm;
             getOpening =		s < 70;
-            hideTech =			com(Protoss_Dark_Templar) < 1;
             dragoonLimit =		1;
             zealotLimit =		vis(Protoss_Dark_Templar) >= 2 ? INT_MAX : 2;
             lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
@@ -372,9 +349,20 @@ namespace McRave::BuildOrder::Protoss {
                 firstUnit =			Protoss_High_Templar;
 
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 42));
-            itemQueue[Protoss_Cybernetics_Core] =	Item(com(Protoss_Gateway) > 0);
             itemQueue[Protoss_Citadel_of_Adun] =	Item(s >= 34);
             itemQueue[Protoss_Templar_Archives] =	Item(vis(Protoss_Gateway) >= 2);
+        }
+        else if (currentTransition == "Robo") {
+            getOpening =		s < 70;
+            firstUpgrade =		UpgradeTypes::Protoss_Air_Weapons;
+            firstTech =			TechTypes::None;
+            dragoonLimit =		1;
+            playPassive =		com(Protoss_Stargate) == 0;
+            firstUnit =         Protoss_Corsair;
+            lockedTransition =  vis(Protoss_Stargate) > 0;
+
+            itemQueue[Protoss_Gateway] =			Item((s >= 20) + vis(Protoss_Corsair) > 0);
+            itemQueue[Protoss_Stargate] =			Item(com(Protoss_Cybernetics_Core) > 0);
         }
         else if (currentTransition == "Defensive")
             PvZ2GateDefensive();

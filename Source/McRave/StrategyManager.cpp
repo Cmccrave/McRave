@@ -29,14 +29,6 @@ namespace McRave::Strategy {
         bool goonRange = false;
         bool vultureSpeed = false;
 
-        int frameArrivesWhen(UnitInfo& unit) {
-            return Broodwar->getFrameCount() + int(unit.getPosition().getDistance(Terrain::getDefendPosition()) / unit.getSpeed());
-        }
-
-        int frameCompletesWhen(UnitInfo& unit) {
-            return Broodwar->getFrameCount() + int((1 - unit.getPercentHealth()) * unit.getType().buildTime());
-        }
-
         void enemyZergBuilds(PlayerInfo& player)
         {
             auto hatchNum = Units::getEnemyCount(Zerg_Hatchery);
@@ -61,9 +53,8 @@ namespace McRave::Strategy {
                 if (unit.getType() == UnitTypes::Zerg_Zergling) {
 
                     // If this is our first time seeing a Zergling or it arrives earlier than we expected before
-                    if (rushFrame == 0 || frameArrivesWhen(unit) < rushFrame) {
-                        rushFrame = frameArrivesWhen(unit);
-                        Broodwar << rushFrame << endl;
+                    if (rushFrame == 0 || unit.frameArrivesWhen() < rushFrame) {
+                        rushFrame = unit.frameArrivesWhen();
                         if (enemyBuild == "Unknown") {
                             if (rushFrame < 4200)
                                 enemyBuild = "4Pool";
@@ -75,15 +66,23 @@ namespace McRave::Strategy {
 
                 if (unit.getType() == Zerg_Spawning_Pool) {
 
-                    // If this is our first time seeing a Spawning Pool, see how soon it completes
+                    // If this is our first time seeing a Spawning Pool, see how soon it completes, if it's not completed
                     if (poolFrame == 0 && !unit.unit()->isCompleted()) {
-                        poolFrame = frameCompletesWhen(unit);
+                        poolFrame = unit.frameCompletesWhen();
                         if (enemyBuild == "Unknown") {
                             if (poolFrame <= 2400)
                                 enemyBuild = "4Pool";
                             else if (poolFrame <= 3000)
                                 enemyBuild = "9Pool";
                         }
+                    }
+
+                    // If it's already completed, see if we can determine the build based on drone count
+                    if (poolFrame == 0 && unit.unit()->isCompleted()) {
+                        if (Units::getEnemyCount(Zerg_Drone) <= 5)
+                            enemyBuild = "4Pool";
+                        else if (Units::getEnemyCount(Zerg_Drone) <= 9)
+                            enemyBuild = "9Pool";
                     }
 
                     if (Units::getEnemyCount(Zerg_Spire) == 0 && Units::getEnemyCount(Zerg_Hydralisk_Den) == 0 && Units::getEnemyCount(Zerg_Lair) == 0) {
@@ -168,8 +167,8 @@ namespace McRave::Strategy {
 
                 // Marine timing
                 if (unit.getType() == Terran_Marine) {
-                    if (rushFrame == 0 || frameArrivesWhen(unit) < rushFrame) {
-                        rushFrame = frameArrivesWhen(unit);
+                    if (rushFrame == 0 || unit.frameArrivesWhen() < rushFrame) {
+                        rushFrame = unit.frameArrivesWhen();
                         if (rushFrame < 3900)
                             enemyBuild = "BBS";
                     }
@@ -209,8 +208,8 @@ namespace McRave::Strategy {
             if (Terrain::getEnemyStartingPosition().isValid() && Broodwar->getFrameCount() > 3000 && Broodwar->isExplored((TilePosition)Terrain::getEnemyStartingPosition())) {
 
                 // Check 2 corners scouted
-                auto topLeft = TilePosition(Util::clipToMap(Terrain::getEnemyStartingPosition() - Position(160, 160)));
-                auto botRight = TilePosition(Util::clipToMap(Terrain::getEnemyStartingPosition() + Position(160, 160) + Position(128, 96)));
+                auto topLeft = TilePosition(Util::clipPosition(Terrain::getEnemyStartingPosition() - Position(160, 160)));
+                auto botRight = TilePosition(Util::clipPosition(Terrain::getEnemyStartingPosition() + Position(160, 160) + Position(128, 96)));
                 auto fullScout = Grids::lastVisibleFrame(topLeft) > 0 && Grids::lastVisibleFrame(botRight) > 0;
                 auto maybeProxy = noGates && noExpand;
 
@@ -231,12 +230,11 @@ namespace McRave::Strategy {
             for (auto &u : player.getUnits()) {
                 UnitInfo &unit = *u;
 
+                // Monitor the soonest the enemy will scout us
                 if (Terrain::isInAllyTerritory(unit.getTilePosition()) || (inboundScoutFrame > 0 && inboundScoutFrame - Broodwar->getFrameCount() < 64))
                     enemyScout = true;
-                if (unit.getType().isWorker() && inboundScoutFrame == 0) {
-                    auto dist = unit.getPosition().getDistance(BWEB::Map::getMainPosition());
-                    inboundScoutFrame = Broodwar->getFrameCount() + int(dist / unit.getType().topSpeed());
-                }
+                if (unit.getType().isWorker() && inboundScoutFrame == 0)
+                    inboundScoutFrame = unit.frameArrivesWhen();
 
                 // Monitor gas intake or gas steal
                 if (unit.getType().isRefinery() && unit.unit()->exists()) {

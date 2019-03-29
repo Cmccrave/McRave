@@ -8,11 +8,11 @@ namespace McRave::Combat {
     namespace {
 
         multimap<double, Position> combatClusters;
+        multimap<double, UnitInfo&> combatUnitsByDistance;
         constexpr tuple commands{ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::defend, Command::hunt, Command::escort, Command::retreat, Command::move };
 
-        void updateClusters(const shared_ptr<UnitInfo>& u)
+        void updateClusters(UnitInfo& unit)
         {
-            auto &unit = *u;
             if (unit.getType() == UnitTypes::Protoss_High_Templar
                 || unit.getType() == UnitTypes::Zerg_Defiler
                 || unit.getType() == UnitTypes::Protoss_Dark_Archon)
@@ -22,10 +22,8 @@ namespace McRave::Combat {
             combatClusters.emplace(strength, unit.getPosition());
         }
 
-        void updateLocalState(const shared_ptr<UnitInfo>& u)
+        void updateLocalState(UnitInfo& unit)
         {
-            auto &unit = *u;
-
             if (!unit.hasTarget()) {
                 if (unit.getGlobalState() == GlobalState::Attack)
                     unit.setLocalState(LocalState::Attack);
@@ -40,7 +38,7 @@ namespace McRave::Combat {
             auto enemyThreat = unit.getType().isFlyer() ? Grids::getEAirThreat(unit.getEngagePosition()) : Grids::getEGroundThreat(unit.getEngagePosition());
             auto destinationThreat = unit.getType().isFlyer() ? Grids::getEAirThreat(unit.getDestination()) : Grids::getEGroundThreat(unit.getDestination());
 
-            const auto dangerRetreat = [&]() {
+            const auto inDanger = [&]() {
                 if (Command::isInDanger(unit, unit.getPosition()) || (Command::isInDanger(unit, unit.getEngagePosition()) && unit.getPosition().getDistance(unit.getEngagePosition()) < SIM_RADIUS))
                     return true;
                 return false;
@@ -96,7 +94,7 @@ namespace McRave::Combat {
 
             if (unit.hasTarget()) {
 
-                if (dangerRetreat())
+                if (inDanger())
                     unit.setLocalState(LocalState::Retreat);
                 else if (forceEngage())
                     unit.setLocalState(LocalState::Attack);
@@ -119,9 +117,8 @@ namespace McRave::Combat {
             }
         }
 
-        void updateGlobalState(const shared_ptr<UnitInfo>& u)
+        void updateGlobalState(UnitInfo& unit)
         {
-            auto &unit = *u;
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if ((!BuildOrder::isFastExpand() && Strategy::enemyFastExpand())
                     || (Strategy::enemyProxy() && !Strategy::enemyRush())
@@ -147,9 +144,8 @@ namespace McRave::Combat {
             }
         }
 
-        void updateDestination(const shared_ptr<UnitInfo>& u)
+        void updateDestination(UnitInfo& unit)
         {
-            auto &unit = *u;
             auto moveToTarget = unit.hasTarget() && (unit.getPosition().getDistance(unit.getTarget().getPosition()) <= SIM_RADIUS || unit.getType().isFlyer() || Broodwar->getFrameCount() < 15000);
 
             // If target is close, set as destination
@@ -206,9 +202,8 @@ namespace McRave::Combat {
             }
         }
 
-        void updateDecision(const shared_ptr<UnitInfo>& u)
+        void updateDecision(UnitInfo& unit)
         {
-            auto &unit = *u;
             if (!unit.unit() || !unit.unit()->exists()																							// Prevent crashes			
                 || unit.unit()->isLoaded()
                 || unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())	// If the unit is locked down, maelstrommed, stassised, or not completed
@@ -230,26 +225,42 @@ namespace McRave::Combat {
 
             // Iterate commands, if one is executed then don't try to execute other commands
             int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
-            int i = Util::iterateCommands(commands, u);
+            int i = Util::iterateCommands(commands, unit);
             Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", Text::White, commandNames[i].c_str());
+        }
+
+        void updateUnits() {
+            combatClusters.clear();
+            combatUnitsByDistance.clear();
+
+            // Sort units by distance to destination
+            for (auto &u : Units::getUnits(PlayerState::Self)) {
+                auto &unit = *u;
+                if (unit.getRole() == Role::Combat) {
+                    updateDestination(unit);
+                    auto dist = unit.getPosition().getDistance(unit.getDestination());
+                    combatUnitsByDistance.emplace(dist, unit);
+                }
+            }
+
+            // Execute commands ordered by ascending distance
+            for (auto &u : combatUnitsByDistance) {
+                auto &unit = u.second;
+                if (unit.getRole() == Role::Combat) {
+                    Horizon::simulate(unit);
+
+                    updateClusters(unit);
+                    updateGlobalState(unit);
+                    updateLocalState(unit);
+                    updateDecision(unit);
+                }
+            }
         }
     }
 
     void onFrame() {
         Visuals::startPerfTest();
-        combatClusters.clear();
-        for (auto &u : Units::getUnits(PlayerState::Self)) {
-            auto &unit = *u;
-            if (unit.getRole() == Role::Combat) {
-                Horizon::simulate(u);
-
-                updateClusters(u);
-                updateDestination(u);
-                updateGlobalState(u);
-                updateLocalState(u);
-                updateDecision(u);
-            }
-        }
+        updateUnits();
         Visuals::endPerfTest("Combat");
     }
 

@@ -6,8 +6,8 @@ using namespace std;
 namespace McRave::Stations {
 
     namespace {
-        map <Unit, const BWEB::Stations::Station *> myStations, enemyStations;
-        map<const BWEB::Stations::Station *, std::map<const BWEB::Stations::Station *, BWEB::PathFinding::Path>> stationNetwork;
+        map <Unit, const BWEB::Station *> myStations, enemyStations;
+        map<const BWEB::Station *, std::map<const BWEB::Station *, BWEB::PathFinding::Path>> stationNetwork;
 
         void updateStations()
         {
@@ -76,7 +76,7 @@ namespace McRave::Stations {
                 if (Broodwar->getFrameCount() == 0)
                     Resources::storeResource(mineral->Unit());
 
-                const auto &resource = Resources::getResource(mineral->Unit());
+                auto resource = Resources::getResourceInfo(mineral->Unit());
 
                 if (resource) {
                     resource->setResourceState(state);
@@ -91,7 +91,7 @@ namespace McRave::Stations {
                 if (Broodwar->getFrameCount() == 0)
                     Resources::storeResource(gas->Unit());
 
-                const auto &resource = Resources::getResource(gas->Unit());
+                auto resource = Resources::getResourceInfo(gas->Unit());
 
                 if (resource) {
                     resource->setResourceState(state);
@@ -127,12 +127,12 @@ namespace McRave::Stations {
 
         // 1) Change resource state of resources connected to not mineable
         for (auto &mineral : station->getBWEMBase()->Minerals()) {
-            const auto &resource = Resources::getResource(mineral->Unit());
+            const auto &resource = Resources::getResourceInfo(mineral->Unit());
             if (resource)
                 resource->setResourceState(state);            
         }
         for (auto &gas : station->getBWEMBase()->Geysers()) {
-            const auto &resource = Resources::getResource(gas->Unit());
+            const auto &resource = Resources::getResourceInfo(gas->Unit());
             if (resource)
                 resource->setResourceState(state);
         }
@@ -147,7 +147,7 @@ namespace McRave::Stations {
         }
     }
 
-    bool needDefenses(const BWEB::Stations::Station& station)
+    bool needDefenses(const BWEB::Station& station)
     {
         auto center = TilePosition(station.getBWEMBase()->Center());
         auto defenseCount = station.getDefenseCount();
@@ -168,7 +168,7 @@ namespace McRave::Stations {
         return false;
     }
 
-    bool stationNetworkExists(const BWEB::Stations::Station * start, const BWEB::Stations::Station * finish)
+    bool stationNetworkExists(const BWEB::Station * start, const BWEB::Station * finish)
     {
         for (auto &s : stationNetwork) {
             auto s1 = s.first;
@@ -184,7 +184,7 @@ namespace McRave::Stations {
         return false;
     }
 
-    BWEB::PathFinding::Path* pathStationToStation(const BWEB::Stations::Station * start, const BWEB::Stations::Station * finish)
+    BWEB::PathFinding::Path* pathStationToStation(const BWEB::Station * start, const BWEB::Station * finish)
     {
         for (auto &s : stationNetwork) {
             auto s1 = s.first;
@@ -201,6 +201,6 @@ namespace McRave::Stations {
         return nullptr;
     }
 
-    map <BWAPI::Unit, const BWEB::Stations::Station *>& getMyStations() { return myStations; };
-    map <BWAPI::Unit, const BWEB::Stations::Station *>& getEnemyStations() { return enemyStations; }
+    map <BWAPI::Unit, const BWEB::Station *>& getMyStations() { return myStations; };
+    map <BWAPI::Unit, const BWEB::Station *>& getEnemyStations() { return enemyStations; }
 }

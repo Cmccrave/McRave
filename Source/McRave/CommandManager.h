@@ -27,18 +27,18 @@ namespace McRave::Command {
     bool overlapsEnemyDetection(BWAPI::Position);
     bool isInDanger(UnitInfo&, BWAPI::Position here = BWAPI::Positions::Invalid);
 
-    bool misc(const std::shared_ptr<UnitInfo>&);
-    bool move(const std::shared_ptr<UnitInfo>&);
-    bool approach(const std::shared_ptr<UnitInfo>&);
-    bool surround(const std::shared_ptr<UnitInfo>&);
-    bool defend(const std::shared_ptr<UnitInfo>&);
-    bool kite(const std::shared_ptr<UnitInfo>&);
-    bool attack(const std::shared_ptr<UnitInfo>&);
-    bool hunt(const std::shared_ptr<UnitInfo>&);
-    bool escort(const std::shared_ptr<UnitInfo>&);
-    bool special(const std::shared_ptr<UnitInfo>&);
-    bool retreat(const std::shared_ptr<UnitInfo>&);
-    bool transport(const std::shared_ptr<UnitInfo>&);
+    bool misc(UnitInfo& unit);
+    bool move(UnitInfo& unit);
+    bool approach(UnitInfo& unit);
+    bool surround(UnitInfo& unit);
+    bool defend(UnitInfo& unit);
+    bool kite(UnitInfo& unit);
+    bool attack(UnitInfo& unit);
+    bool hunt(UnitInfo& unit);
+    bool escort(UnitInfo& unit);
+    bool special(UnitInfo& unit);
+    bool retreat(UnitInfo& unit);
+    bool transport(UnitInfo& unit);
 
     inline std::vector <Action> myActions;
     inline std::vector <Action> enemyActions;

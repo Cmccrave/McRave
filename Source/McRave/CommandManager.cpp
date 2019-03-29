@@ -70,7 +70,7 @@ namespace McRave::Command {
         }
 
         double defaultMobility(UnitInfo& unit, WalkPosition w) {
-            return unit.getType().isFlyer() ? 1.0 : log(10.0 + double(Grids::getMobility(w)));
+            return unit.getType().isFlyer() ? 1.0 : log(100.0 + double(Grids::getMobility(w)));
         }
 
         Position findViablePosition(UnitInfo& unit, function<double(WalkPosition)> score)
@@ -135,9 +135,8 @@ namespace McRave::Command {
         }
     }
 
-    bool misc(const shared_ptr<UnitInfo>& u)
+    bool misc(UnitInfo& unit)
     {
-        auto &unit = *u;
         // Unstick a unit
         if (unit.isStuck() && unit.unit()->isMoving()) {
             unit.unit()->stop();
@@ -177,9 +176,8 @@ namespace McRave::Command {
         return false;
     }
 
-    bool attack(const shared_ptr<UnitInfo>& u)
+    bool attack(UnitInfo& unit)
     {
-        auto &unit = *u;
         // If we have no target or it doesn't exist, we can't attack
         if (!unit.hasTarget() || !unit.getTarget().unit()->exists())
             return false;
@@ -246,9 +244,8 @@ namespace McRave::Command {
         return false;
     }
 
-    bool approach(const shared_ptr<UnitInfo>& u)
+    bool approach(UnitInfo& unit)
     {
-        auto &unit = *u;
         // If we don't have a target or the targets position is invalid, we can't approach it
         if (!unit.hasTarget() || !unit.getTarget().getPosition().isValid())
             return false;
@@ -307,9 +304,8 @@ namespace McRave::Command {
         return false;
     }
 
-    bool move(const shared_ptr<UnitInfo>& u)
+    bool move(UnitInfo& unit)
     {
-        auto &unit = *u;
         const auto scoreFunction = [&](WalkPosition w) {
             // Manual conversion until BWAPI::Point is fixed
             auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
@@ -389,9 +385,8 @@ namespace McRave::Command {
         return false;
     }
 
-    bool kite(const shared_ptr<UnitInfo>& u)
+    bool kite(UnitInfo& unit)
     {
-        auto &unit = *u;
         // If we don't have a target, we can't kite it
         if (!unit.hasTarget())
             return false;
@@ -508,9 +503,8 @@ namespace McRave::Command {
         return false;
     }
 
-    bool defend(const shared_ptr<UnitInfo>& u)
+    bool defend(UnitInfo& unit)
     {
-        auto &unit = *u;
         bool defendingExpansion = unit.getDestination().isValid() && !Terrain::isInEnemyTerritory((TilePosition)unit.getDestination());
         bool closeToDefend = Terrain::getDefendPosition().getDistance(unit.getPosition()) < 640.0 || Terrain::isInAllyTerritory(unit.getTilePosition());
 
@@ -571,9 +565,8 @@ namespace McRave::Command {
         return false;
     }
 
-    bool hunt(const shared_ptr<UnitInfo>& u)
+    bool hunt(UnitInfo& unit)
     {
-        auto &unit = *u;
         const auto scoreFunction = [&](WalkPosition w) {
 
             // Manual conversion until BWAPI::Point is fixed 
@@ -600,7 +593,7 @@ namespace McRave::Command {
 
         const auto shouldHunt = [&]() {
             if (unit.getRole() == Role::Combat) {
-                if (unit.getLocalState() == LocalState::Retreat && unit.isLightAir() && Players::getStrength(PlayerState::Enemy).airToAir <= 0.0)
+                if (unit.isLightAir() && Players::getStrength(PlayerState::Enemy).airToAir <= 0.0)
                     return true;
             }
             if (unit.getRole() == Role::Transport)
@@ -621,9 +614,8 @@ namespace McRave::Command {
         return false;
     }
 
-    bool retreat(const shared_ptr<UnitInfo>& u)
+    bool retreat(UnitInfo& unit)
     {
-        auto &unit = *u;
         // Low distance, low threat, high clustering
         const auto scoreFunction = [&](WalkPosition w) {
             // Manual conversion until BWAPI::Point is fixed
@@ -662,10 +654,8 @@ namespace McRave::Command {
         return false;
     }
 
-    bool escort(const shared_ptr<UnitInfo>& u)
+    bool escort(UnitInfo& unit)
     {
-        auto &unit = *u;
-
         const auto scoreFunction = [&](WalkPosition w) {
             auto p = Position(w);
             double threat = Util::getHighestThreat(w, unit);
@@ -688,10 +678,8 @@ namespace McRave::Command {
         return false;
     }
 
-    bool transport(const shared_ptr<UnitInfo>& u)
+    bool transport(UnitInfo& unit)
     {
-        auto &unit = *u;
-
         const auto scoreFunction = [&](WalkPosition w) {
             auto p = Position(w);
 
@@ -704,8 +692,10 @@ namespace McRave::Command {
             if (unit.getTransportState() == TransportState::Monitoring) {
                 bool proximity = true;
                 for (auto &u : unit.getAssignedCargo()) {
-                    if (!u->unit()->isLoaded() && u->getPosition().getDistance(p) > 64.0)
-                        proximity = false;
+                    if (u.lock()) {
+                        if (!u.lock()->unit()->isLoaded() && u.lock()->getPosition().getDistance(p) > 64.0)
+                            proximity = false;
+                    }
                 }
                 if (!proximity)
                     return 0.0;

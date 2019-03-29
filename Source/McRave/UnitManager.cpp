@@ -95,27 +95,31 @@ namespace McRave::Units {
             }
 
             // Check if this unit should scout
-            if (BWEB::Map::getNaturalChoke() && BuildOrder::shouldScout() && getMyRoleCount(Role::Scout) < Scouts::getScoutCount() && Broodwar->getFrameCount() - scoutDeadFrame > 240) {
+            if (BWEB::Map::getNaturalChoke() && BuildOrder::shouldScout() && Units::getMyRoleCount(Role::Scout) < Scouts::getScoutCount() && Broodwar->getFrameCount() - scoutDeadFrame > 240) {
                 auto &scout = Util::getClosestUnitGround(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
                     return u.getRole() == Role::Worker && u.getBuildingType() == UnitTypes::None && !u.unit()->isCarryingMinerals() && !u.unit()->isCarryingGas();
                 });
 
-                if (scout == u) {
-                    unit.setRole(Role::Scout);
-                    unit.setBuildingType(UnitTypes::None);
-                    unit.setBuildPosition(TilePositions::Invalid);
+                if (scout) {
+                    scout->setRole(Role::Scout);
+                    scout->setBuildingType(UnitTypes::None);
+                    scout->setBuildPosition(TilePositions::Invalid);
 
-                    if (u->hasResource())
-                        Workers::removeUnit(u);
+                    if (scout->hasResource())
+                        Workers::removeUnit(*scout);
                 }
             }
-            else if (getMyRoleCount(Role::Scout) > Scouts::getScoutCount()) {
-                auto &scout = Util::getClosestUnitGround(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
+            else if (Units::getMyRoleCount(Role::Scout) > Scouts::getScoutCount()) {
+
+                // Look at scout targets and find the least useful scout, remove it
+                auto &target = Strategy::enemyProxy() || !Terrain::getEnemyStartingPosition().isValid() ? BWEB::Map::getMainPosition() : Terrain::getEnemyStartingPosition();
+                auto &scout = Util::getClosestUnitGround(target, PlayerState::Self, [&](auto &u) {
                     return u.getRole() == Role::Scout;
                 });
 
-                if (scout == u)
-                    unit.setRole(Role::Worker);
+                if (scout) {
+                    scout->setRole(Role::Worker);
+                }
             }
 
             // Check if a worker morphed into a building
@@ -152,7 +156,7 @@ namespace McRave::Units {
                     UnitInfo &unit = *u;
                     enemyUnits.insert(u);
 
-                    Broodwar->drawTextMap(unit.getPosition(), "%.2f", unit.getPriority());
+                    Broodwar->drawTextMap(unit.getPosition(), "%.3f", unit.getPriority());
 
                     // If this is a flying building that we haven't recognized as being a flyer, remove overlap tiles
                     auto flyingBuilding = unit.unit()->exists() && !unit.isFlying() && (unit.unit()->getOrder() == Orders::LiftingOff || unit.unit()->getOrder() == Orders::BuildingLiftOff || unit.unit()->isFlying());
@@ -329,18 +333,22 @@ namespace McRave::Units {
         BWEB::Map::onUnitDestroy(unit);
 
         // Find the unit
-        for (auto &p : Players::getPlayers()) {
-            for (auto &u : p.second.getUnits()) {
+        for (auto &[_,player] : Players::getPlayers()) {
+            for (auto &u : player.getUnits()) {
                 if (u->unit() == unit) {
 
+                    // Remove assignments and roles
                     if (u->hasTransport())
-                        u->getTransport().getAssignedCargo().erase(u);
+                        Transports::removeUnit(*u);
                     if (u->hasResource())
-                        Workers::removeUnit(u);
+                        Workers::removeUnit(*u);
                     if (u->getRole() != Role::None)
                         myRoles[u->getRole()]--;
+                    if (u->getRole() == Role::Scout)
+                        scoutDeadFrame = Broodwar->getFrameCount();
 
-                    p.second.getUnits().erase(u);
+                    // Invalidates iterator, must return
+                    player.getUnits().erase(u);
                     return;
                 }
             }
@@ -349,21 +357,21 @@ namespace McRave::Units {
 
     void morphUnit(Unit unit)
     {
-        auto &player = Players::getPlayers()[unit->getPlayer()];
-
         // HACK: Changing players is kind of annoying, so we just remove and re-store
         if (unit->getType().isRefinery()) {
             removeUnit(unit);
             storeUnit(unit);
         }
 
+        // Morphing into a Hatchery
         if (unit->getType() == UnitTypes::Zerg_Hatchery)
             Stations::storeStation(unit);
 
-        auto &info = Units::getUnit(unit);
+        // Grab the UnitInfo for this unit
+        auto &info = Units::getUnitInfo(unit);
         if (info) {
             if (info->hasResource())
-                Workers::removeUnit(info);
+                Workers::removeUnit(*info);
 
             if (info->hasTarget())
                 info->setTarget(nullptr);
@@ -375,7 +383,8 @@ namespace McRave::Units {
 
     int getEnemyCount(UnitType t)
     {
-        map<UnitType, int>::iterator itr = enemyTypes.find(t);
+        // Finds how many of a UnitType the enemy has
+        auto itr = enemyTypes.find(t);
         if (itr != enemyTypes.end())
             return itr->second;
         return 0;
@@ -408,7 +417,7 @@ namespace McRave::Units {
             + com(UnitTypes::Zerg_Hydralisk) + com(UnitTypes::Zerg_Lurker) + com(UnitTypes::Zerg_Defiler);
     }
 
-    shared_ptr<UnitInfo> getUnit(Unit unit)
+    const shared_ptr<UnitInfo> getUnitInfo(Unit unit)
     {
         for (auto &[_, player] : Players::getPlayers()) {
             for (auto &u : player.getUnits()) {

@@ -32,6 +32,14 @@ namespace McRave::Resources {
 
             UnitType geyserType = Broodwar->self()->getRace().getRefinery();
 
+            // If resource is blocked from usage
+            if (resource.getType().isRefinery() && resource.getTilePosition().isValid()) {
+                for (auto block = mapBWEM.GetTile(resource.getTilePosition()).GetNeutral(); block; block = block->NextStacked()) {
+                    if (block && block->Unit() && block->Unit()->exists() && block->Unit()->isInvincible() && !block->IsGeyser())
+                        resource.setResourceState(ResourceState::None);
+                }
+            }
+
             // Update saturation
             if (resource.getType().isMineralField() && minSat && resource.getGathererCount() < 2 && resource.getResourceState() != ResourceState::None)
                 minSat = false;
@@ -60,18 +68,8 @@ namespace McRave::Resources {
             for (auto &r : myMinerals)
                 update(r);
 
-            for (auto &r : myGas) {
-                auto &resource = *r;
+            for (auto &r : myGas)
                 update(r);
-
-                // If resource is blocked from usage
-                if (resource.getTilePosition().isValid()) {
-                    for (auto block = mapBWEM.GetTile(resource.getTilePosition()).GetNeutral(); block; block = block->NextStacked()) {
-                        if (block && block->Unit() && block->Unit()->exists() && block->Unit()->isInvincible() && !block->IsGeyser())
-                            resource.setResourceState(ResourceState::None);
-                    }
-                }
-            }
         }
     }
 
@@ -84,15 +82,14 @@ namespace McRave::Resources {
 
     void storeResource(Unit resource)
     {
-        auto info = ResourceInfo();
-        auto &list = (resource->getResources() > 0 ? (resource->getType().isMineralField() ? myMinerals : myGas) : myBoulders);
+        auto info = ResourceInfo(resource);
+        auto &resourceList = (resource->getResources() > 0 ? (resource->getType().isMineralField() ? myMinerals : myGas) : myBoulders);
 
-        for (auto &u : list) {
+        // Check if we already stored this resource
+        for (auto &u : resourceList) {
             if (u->unit() == resource)
                 return;
         }
-
-        info.setUnit(resource);
 
         // If we are not on an inital frame, a geyser was just created and we need to see if we own it
         if (Broodwar->getFrameCount() > 0) {
@@ -108,18 +105,20 @@ namespace McRave::Resources {
                 }
             }
         }
-        list.insert(make_shared<ResourceInfo>(info));
+        auto ptr = make_shared<ResourceInfo>(info);
+        resourceList.insert(make_shared<ResourceInfo>(info));
     }
 
     void removeResource(Unit unit)
     {
-        auto &resource = getResource(unit);
+        auto &resource = getResourceInfo(unit);
 
         if (resource) {
+
             // Remove assignments
             for (auto &u : resource->targetedByWhat()) {
-                if (u)
-                    u->setResource(nullptr);
+                if (!u.expired())
+                    u.lock()->setResource(nullptr);
             }
 
             // Remove dead resources
@@ -132,7 +131,7 @@ namespace McRave::Resources {
         }
     }
 
-    const shared_ptr<ResourceInfo>& getResource(BWAPI::Unit unit)
+    shared_ptr<ResourceInfo> getResourceInfo(BWAPI::Unit unit)
     {
         for (auto &m : myMinerals) {
             if (m->unit() == unit)

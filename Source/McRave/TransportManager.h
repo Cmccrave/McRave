@@ -4,5 +4,5 @@
 namespace McRave::Transports {
 
     void onFrame();
-    void removeUnit(const std::shared_ptr<UnitInfo>&);
+    void removeUnit(UnitInfo&);
 }

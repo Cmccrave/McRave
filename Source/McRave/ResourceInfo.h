@@ -4,7 +4,8 @@
 
 namespace McRave
 {
-    class ResourceInfo
+    class UnitInfo;
+    class ResourceInfo : public std::enable_shared_from_this<ResourceInfo>
     {
     private:
         int remainingResources;
@@ -12,13 +13,14 @@ namespace McRave
         BWAPI::UnitType type;
         BWAPI::Position position;
         BWAPI::TilePosition tilePosition;
-        const BWEB::Stations::Station * station;
+        const BWEB::Station * station;
         ResourceState rState;
-        std::set<std::shared_ptr<UnitInfo>> targetedBy;
+        std::vector<std::weak_ptr<UnitInfo>> targetedBy;
     public:
-        ResourceInfo() {
+        ResourceInfo(BWAPI::Unit newResource) {
+            thisUnit = newResource;
+
             station = nullptr;
-            thisUnit = nullptr;
             remainingResources = 0;
             rState = ResourceState::None;
             type = BWAPI::UnitTypes::None;
@@ -33,10 +35,23 @@ namespace McRave
             tilePosition		= thisUnit->getTilePosition();
         }
 
-        bool hasStation() { return station != nullptr; }
-        const BWEB::Stations::Station * getStation() { return station; }
-        void setStation(const BWEB::Stations::Station* newStation) { station = newStation; }
+        void addTargetedBy(std::weak_ptr<UnitInfo> unit) {
+            targetedBy.push_back(unit);
+        }
 
+        void removeTargetedBy(std::weak_ptr<UnitInfo> unit) {
+            for (auto itr = targetedBy.begin(); itr != targetedBy.end(); itr++) {
+                if ((itr)->lock() == unit.lock()) {
+                    targetedBy.erase(itr);
+                    break;
+                }
+            }
+        }
+
+        // 
+        bool hasStation() { return station != nullptr; }
+        const BWEB::Station * getStation() { return station; }
+        void setStation(const BWEB::Station* newStation) { station = newStation; }
         int getGathererCount() { return int(targetedBy.size()); }
         int getRemainingResources() { return remainingResources; }
         ResourceState getResourceState() { return rState; }
@@ -44,11 +59,9 @@ namespace McRave
         BWAPI::UnitType getType() { return type; }
         BWAPI::Position getPosition() { return position; }
         BWAPI::TilePosition getTilePosition() { return tilePosition; }
+        std::vector<std::weak_ptr<UnitInfo>>& targetedByWhat() { return targetedBy; }
 
-        void addTargetedBy(const std::shared_ptr<UnitInfo>& unit) { targetedBy.insert(unit); }
-        void removeTargetedBy(const std::shared_ptr<UnitInfo>& unit) { targetedBy.erase(unit); }
-        std::set<std::shared_ptr<UnitInfo>>& targetedByWhat() { return targetedBy; }
-
+        // 
         void setRemainingResources(int newInt) { remainingResources = newInt; }
         void setResourceState(ResourceState newState) { rState = newState; }
         void setUnit(BWAPI::Unit newUnit) { thisUnit = newUnit; }
@@ -56,6 +69,7 @@ namespace McRave
         void setPosition(BWAPI::Position newPosition) { position = newPosition; }
         void setTilePosition(BWAPI::TilePosition newTilePosition) { tilePosition = newTilePosition; }
 
+        // 
         bool operator== (ResourceInfo& p) {
             return thisUnit == p.unit();
         }

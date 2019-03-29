@@ -5,7 +5,6 @@ using namespace BWAPI;
 using namespace std;
 using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
-#define s Units::getSupply()
 
 namespace McRave::BuildOrder::Protoss {
 
@@ -17,10 +16,6 @@ namespace McRave::BuildOrder::Protoss {
             return Broodwar->self()->isUpgrading(UpgradeTypes::Singularity_Charge) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge);
         }
 
-        bool addGas() {
-            return Broodwar->getStartLocations().size() >= 3 ? (s >= 24) : (s >= 24);
-        }
-
         void defaultPvP() {
             hideTech =          false;
             playPassive =       false;
@@ -29,8 +24,8 @@ namespace McRave::BuildOrder::Protoss {
             wallMain =          false;
             delayFirstTech =    false;
 
-            desiredDetection =  UnitTypes::Protoss_Observer;
-            firstUnit =         UnitTypes::None;
+            desiredDetection =  Protoss_Observer;
+            firstUnit =         None;
 
             firstUpgrade =		UpgradeTypes::Singularity_Charge;
             firstTech =			TechTypes::None;
@@ -55,6 +50,7 @@ namespace McRave::BuildOrder::Protoss {
         zealotLimit =		INT_MAX;
         dragoonLimit =		vis(Protoss_Dark_Templar) > 0 ? INT_MAX : 0;
         firstUnit =         Protoss_Dark_Templar;
+        desiredDetection =  Protoss_Forge;
 
         itemQueue[Protoss_Nexus] =					Item(1);
         itemQueue[Protoss_Pylon] =					Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
@@ -129,7 +125,7 @@ namespace McRave::BuildOrder::Protoss {
 
                 hideTech =			currentOpener == "Main" && com(Protoss_Zealot) < 2;
                 firstUnit =			Protoss_Dark_Templar;
-                desiredDetection =  UnitTypes::Protoss_Forge;
+                desiredDetection =  Protoss_Forge;
 
                 itemQueue[Protoss_Nexus] =				Item(1);
                 itemQueue[Protoss_Assimilator] =		Item(s >= 44);
@@ -144,7 +140,7 @@ namespace McRave::BuildOrder::Protoss {
 
             delayFirstTech =    true;
             wallNat =           currentOpener == "Natural" || s >= 56;
-            desiredDetection =  UnitTypes::Protoss_Forge;
+            desiredDetection =  Protoss_Forge;
 
             itemQueue[Protoss_Assimilator] =		Item(s >= 58);
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 60);
@@ -159,7 +155,7 @@ namespace McRave::BuildOrder::Protoss {
             lockedTransition =  vis(Protoss_Robotics_Facility) > 0;
             getOpening =		s < 70;
 
-            desiredDetection =  UnitTypes::Protoss_Forge;
+            desiredDetection =  Protoss_Forge;
 
             itemQueue[Protoss_Nexus] =				Item(1);
             itemQueue[Protoss_Assimilator] =		Item(s >= 44);
@@ -168,7 +164,7 @@ namespace McRave::BuildOrder::Protoss {
 
             // Decide whether to Reaver first or Obs first
             if (com(Protoss_Robotics_Facility) > 0) {
-                if (vis(Protoss_Observer) == 0 && (Units::getEnemyCount(UnitTypes::Protoss_Dragoon) <= 2 || enemyBuild() == "1GateDT"))
+                if (vis(Protoss_Observer) == 0 && (Units::getEnemyCount(Protoss_Dragoon) <= 2 || enemyBuild() == "1GateDT"))
                     firstUnit = Protoss_Observer;
                 else
                     firstUnit = Protoss_Reaver;
@@ -182,7 +178,7 @@ namespace McRave::BuildOrder::Protoss {
             zealotLimit	=		INT_MAX;
             firstUnit =			Protoss_Dark_Templar;
             wallNat =           s >= 56 || currentOpener == "Natural";
-            desiredDetection =  UnitTypes::Protoss_Forge;
+            desiredDetection =  Protoss_Forge;
 
             itemQueue[Protoss_Assimilator] =        Item(s >= 64);
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 66);
@@ -204,10 +200,9 @@ namespace McRave::BuildOrder::Protoss {
         scout =				Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
         gasLimit =			INT_MAX;
 
-
         // Openers
         if (currentOpener == "1Zealot") {
-            zealotLimit = vis(Protoss_Cybernetics_Core) > 0 ? max(2, Units::getEnemyCount(UnitTypes::Protoss_Zealot)) : 1;
+            zealotLimit = vis(Protoss_Cybernetics_Core) > 0 ? max(2, Units::getEnemyCount(Protoss_Zealot)) : 1;
 
             itemQueue[Protoss_Nexus] =				Item(1);
             itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
@@ -216,7 +211,7 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 34);
         }
         else if (currentOpener == "2Zealot") {
-            zealotLimit = vis(Protoss_Cybernetics_Core) > 0 ? Units::getEnemyCount(UnitTypes::Protoss_Zealot) : 2;
+            zealotLimit = vis(Protoss_Cybernetics_Core) > 0 ? Units::getEnemyCount(Protoss_Zealot) : 2;
 
             itemQueue[Protoss_Nexus] =				Item(1);
             itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
@@ -253,14 +248,14 @@ namespace McRave::BuildOrder::Protoss {
             lockedTransition =  vis(Protoss_Robotics_Facility) > 0;
             getOpening =        s < 80;
             playPassive =		!Strategy::enemyFastExpand() && com(Protoss_Reaver) == 0;
-        
-            desiredDetection =  UnitTypes::Protoss_Forge;
-            firstUnit =         (Units::getEnemyCount(UnitTypes::Protoss_Dragoon) <= 2 || enemyBuild() == "1GateDT") ? Protoss_Observer : Protoss_Reaver;
+
+            desiredDetection =  Protoss_Forge;
+            firstUnit =         (Units::getEnemyCount(Protoss_Dragoon) <= 2 || enemyBuild() == "1GateDT") ? Protoss_Observer : Protoss_Reaver;
 
             itemQueue[Protoss_Robotics_Facility] =	Item(s >= 52);
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (2 * (s >= 58)));
         }
-        else if (currentTransition == "Reaver") {
+        else if (currentTransition == "Robo") {
             // http://liquipedia.net/starcraft/1_Gate_Reaver
             lockedTransition =  vis(Protoss_Robotics_Facility) > 0;
             getOpening =		Strategy::enemyPressure() ? vis(Protoss_Reaver) < 3 : s < 70;
@@ -268,7 +263,7 @@ namespace McRave::BuildOrder::Protoss {
 
             dragoonLimit =		INT_MAX;
             zealotLimit =		com(Protoss_Robotics_Facility) >= 1 ? 6 : zealotLimit;
-            firstUnit =         (Units::getEnemyCount(UnitTypes::Protoss_Dragoon) <= 2 || enemyBuild() == "1GateDT") ? Protoss_Observer : Protoss_Reaver;
+            firstUnit =         (Units::getEnemyCount(Protoss_Dragoon) <= 2 || enemyBuild() == "1GateDT") ? Protoss_Observer : Protoss_Reaver;
 
             itemQueue[Protoss_Gateway] =				Item((s >= 20) + (s >= 50) + (s >= 62));
             itemQueue[Protoss_Robotics_Facility] =		Item(s >= 70);
@@ -281,7 +276,7 @@ namespace McRave::BuildOrder::Protoss {
 
             gasLimit =          INT_MAX;
             zealotLimit =       vis(Protoss_Cybernetics_Core) > 0 ? 2 : 1;
-            desiredDetection =  UnitTypes::Protoss_Forge;
+            desiredDetection =  Protoss_Forge;
 
             // HACK
             if (Strategy::enemyRush()) {
@@ -304,13 +299,13 @@ namespace McRave::BuildOrder::Protoss {
             firstUpgrade =      UpgradeTypes::None;
             hideTech =          true;
             firstUnit =         Protoss_Dark_Templar;
-            desiredDetection =  UnitTypes::Protoss_Forge;
+            desiredDetection =  Protoss_Forge;
 
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (vis(Protoss_Templar_Archives) > 0));
         }
         else if (currentTransition == "Defensive") {
             lockedTransition = true;
-            desiredDetection =  UnitTypes::Protoss_Forge;
+            desiredDetection =  Protoss_Forge;
 
             PvP2GateDefensive();
         }

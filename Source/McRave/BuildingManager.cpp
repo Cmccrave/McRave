@@ -184,7 +184,7 @@ namespace McRave::Buildings {
         {
             auto tileBest = TilePositions::Invalid;
             auto distBest = DBL_MAX;
-            const BWEB::Walls::Wall* wall = nullptr;
+            const BWEB::Wall* wall = nullptr;
             set<TilePosition> placements;
 
             if (BuildOrder::isWallMain())

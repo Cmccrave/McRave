@@ -39,6 +39,10 @@ namespace McRave::Players
     bool vP();
     bool vT();
     bool vZ();
+
+    bool PvP();
+    bool PvZ();
+    bool PvT();
     
     int getSupply(PlayerInfo&);
 }

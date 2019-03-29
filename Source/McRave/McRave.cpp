@@ -21,7 +21,15 @@
 // Burrowed units that aren't threatening cause defending units to eat free hits because they're targeting it
 // Add playerstate to actions
 // Add 3rd stargate on 3 base with carriers
-// Seeing an extractor trick causes a crash
+// Add frame timeouts for allowable enemy build detection
+// Units love walking into burrowed units still
+// Re-add scout dead frame
+// Move command doesn't care about threat
+// Retreat command gets stuck at chokes
+
+// Upgrade/Research unlock list
+// When choosing a tech or creating a building, allow certain unlocks/research
+// Adjust Production to check for unlocks
 
 // Need a target based isThreatening
 // Examples:

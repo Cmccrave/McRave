@@ -27,7 +27,7 @@ namespace McRave::Learning {
                     buildings ={ Protoss_Gateway, Protoss_Gateway, Protoss_Pylon };
                     defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
                 }
-                else if (build == "FFE") {
+                else if (Players::vZ()) {
                     tight = true;
                     buildings ={ Protoss_Gateway, Protoss_Forge, Protoss_Pylon };
                     defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
@@ -36,6 +36,7 @@ namespace McRave::Learning {
                     int count = max(2, (Util::chokeWidth(BWEB::Map::getNaturalChoke()) / 64) - 1);
                     buildings.insert(buildings.end(), count, Protoss_Pylon);
                     defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
+                    wallOptional = true;
                 }
             }
 
@@ -160,9 +161,7 @@ namespace McRave::Learning {
                         return p || t || z;
                     if (transition == "3GateRobo")
                         return p || r;
-                    if (transition == "Corsair")
-                        return z;
-                    if (transition == "Reaver")
+                    if (transition == "Robo")
                         return p /*|| t*/ || r;
                     if (transition == "4Gate")
                         return p || t;
@@ -171,7 +170,7 @@ namespace McRave::Learning {
                 if (build == "2Gate") {
                     if (transition == "DT")
                         return /*p ||*/t;
-                    if (transition == "Reaver")
+                    if (transition == "Robo")
                         return p /*|| t*/ || r;
                     if (transition == "Expand")
                         return p || z;
@@ -217,39 +216,31 @@ namespace McRave::Learning {
 
         void getDefaultBuild()
         {
+            // HACK: Looking at more than 1 enemy potentially - lets us play FFA but doesn't help in team games, as we aren't looking at enemy count
+            if (Players::getPlayers().size() > 3) {
+                if (Players::getNumberZerg() > Players::getNumberProtoss() + Players::getNumberTerran())
+                    BuildOrder::setLearnedBuild("FFE", "Forge", "5GateGoon");
+                else if (Players::getNumberProtoss() > Players::getNumberZerg() + Players::getNumberTerran())
+                    BuildOrder::setLearnedBuild("1GateCore", "2Zealot", "Robo");
+                else if (Players::getNumberTerran() > Players::getNumberZerg() + Players::getNumberProtoss())
+                    BuildOrder::setLearnedBuild("1GateCore", "1Zealot", "Robo");
+            }
+
             if (Broodwar->self()->getRace() == Races::Protoss) {
-                if (Players::vP()) {
-                    BuildOrder::setCurrentBuild("1GateCore");
-                    BuildOrder::setCurrentOpener("1Zealot");
-                    BuildOrder::setCurrentTransition("Reaver");
-                }
-                else if (Players::vZ()) {
-                    BuildOrder::setCurrentBuild("1GateCore");
-                    BuildOrder::setCurrentOpener("2Zealot");
-                    BuildOrder::setCurrentTransition("Corsair");
-                }
-                else if (Players::vT()) {
-                    BuildOrder::setCurrentBuild("GateNexus");
-                    BuildOrder::setCurrentOpener("1Gate");
-                    BuildOrder::setCurrentTransition("Standard");
-                }
-                else {
-                    BuildOrder::setCurrentBuild("2Gate");
-                    BuildOrder::setCurrentOpener("Main");
-                    BuildOrder::setCurrentTransition("Reaver");
-                }
+                if (Players::vP())
+                    BuildOrder::setLearnedBuild("1GateCore", "1Zealot", "Robo");
+                else if (Players::vZ())
+                    BuildOrder::setLearnedBuild("FFE", "Forge", "NeoBisu");
+                else if (Players::vT())
+                    BuildOrder::setLearnedBuild("GateNexus", "1Gate", "Standard");
+                else
+                    BuildOrder::setLearnedBuild("2Gate", "Main", "Robo");
             }
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                if (Players::vZ()) {
-                    BuildOrder::setCurrentBuild("PoolLair");
-                    BuildOrder::setCurrentOpener("9Pool");
-                    BuildOrder::setCurrentTransition("1HatchMuta");
-                }
-                else {
-                    BuildOrder::setCurrentBuild("HatchPool");
-                    BuildOrder::setCurrentOpener("12Hatch");
-                    BuildOrder::setCurrentTransition("2HatchMuta");
-                }                
+                if (Players::vZ())
+                    BuildOrder::setLearnedBuild("PoolLair", "9Pool", "1HatchMuta");
+                else
+                    BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "2HatchMuta");
             }
 
             // Add walls
@@ -259,6 +250,9 @@ namespace McRave::Learning {
 
     void onEnd(bool isWinner)
     {
+        if (Players::getPlayers().size() > 3)
+            return;
+
         // File extension including our race initial;
         const auto mapLearning = false;
         const string dash = "-";
@@ -317,24 +311,20 @@ namespace McRave::Learning {
 
     void onStart()
     {
-        if (!Broodwar->enemy()) {
+        if (!Broodwar->enemy() || Players::getPlayers().size() > 3) {
             getDefaultBuild();
             return;
         }
 
-        bool testing = false;
+        bool testing = true;
         if (testing) {
             if (Broodwar->self()->getRace() == Races::Protoss) {
-                BuildOrder::setCurrentBuild("2Gate");
-                BuildOrder::setCurrentOpener("Main");
-                BuildOrder::setCurrentTransition("Expand");
+                BuildOrder::setLearnedBuild("2Gate", "Main", "Expand");
                 isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                 return;
             }
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                BuildOrder::setCurrentBuild("HatchPool");
-                BuildOrder::setCurrentOpener("12Hatch");
-                BuildOrder::setCurrentTransition("3HatchLing");
+                BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "3HatchLing");
                 isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                 return;
             }
@@ -355,13 +345,13 @@ namespace McRave::Learning {
         if (Broodwar->self()->getRace() == Races::Protoss) {
 
             myBuilds["1GateCore"].openers ={ "0Zealot", "1Zealot", "2Zealot" };
-            myBuilds["1GateCore"].transitions ={ "3GateRobo", "Robo", "Corsair", "4Gate", "DT" };
+            myBuilds["1GateCore"].transitions ={ "DT", "Robo", "4Gate", "3GateRobo" };
 
             myBuilds["2Gate"].openers ={ "Proxy", "Natural", "Main" };
-            myBuilds["2Gate"].transitions ={ "DT", "Robo", "Expand", "DoubleExpand", "4Gate" };
+            myBuilds["2Gate"].transitions ={ "DT", "Robo", "4Gate", "Expand", "DoubleExpand" };
 
             myBuilds["FFE"].openers ={ "Forge", "Gate", "Nexus" };
-            myBuilds["FFE"].transitions ={ "NeoBisu", "2Stargate", "StormRush", "4GateArchon", "CorsairReaver" };
+            myBuilds["FFE"].transitions ={ "NeoBisu", "2Stargate", "StormRush", "4GateArchon", "CorsairReaver", "5GateGoon" };
 
             myBuilds["NexusGate"].openers ={ "Dragoon", "Zealot" };
             myBuilds["NexusGate"].transitions ={ "Standard", "DoubleExpand", "ReaverCarrier" };
@@ -383,9 +373,7 @@ namespace McRave::Learning {
         }
 
         if (Broodwar->self()->getRace() == Races::Terran) {
-            BuildOrder::setCurrentBuild("RaxFact");
-            BuildOrder::setCurrentOpener("10Rax");
-            BuildOrder::setCurrentTransition("2FactVulture");
+            BuildOrder::setLearnedBuild("RaxFact", "10Rax", "2FactVulture");
             isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
             return;// Don't know what to do yet
 
@@ -517,11 +505,8 @@ namespace McRave::Learning {
             }
         }
 
-        if (bestBuild != "" && bestOpener != "" && bestTransition != "" && isBuildPossible(bestBuild, bestOpener) && isBuildAllowed(Broodwar->enemy()->getRace(), bestBuild)) {
-            BuildOrder::setCurrentBuild(bestBuild);
-            BuildOrder::setCurrentOpener(bestOpener);
-            BuildOrder::setCurrentTransition(bestTransition);
-        }
+        if (bestBuild != "" && bestOpener != "" && bestTransition != "" && isBuildPossible(bestBuild, bestOpener) && isBuildAllowed(Broodwar->enemy()->getRace(), bestBuild))
+            BuildOrder::setLearnedBuild(bestBuild, bestOpener, bestTransition);
         else
             getDefaultBuild();
     }

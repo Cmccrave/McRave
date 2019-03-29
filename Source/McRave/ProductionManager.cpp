@@ -481,8 +481,8 @@ namespace McRave::Production {
                 double mineralCost = type.mineralPrice() == 0 ? 1.0 : Broodwar->self()->minerals() - type.mineralPrice() - (!BuildOrder::isTechUnit(type) * reservedMineral) - Buildings::getQueuedMineral();
                 double gasCost = type.gasPrice() == 0 ? 1.0 : Broodwar->self()->gas() - type.gasPrice() - (!BuildOrder::isTechUnit(type) * reservedGas) - Buildings::getQueuedGas();
 
-                double resourceScore = Util::boundBetween(0.1, gasCost * mineralCost, 10.0);
-                double strategyScore = Util::boundBetween(0.0, Strategy::getUnitScore(type), 10.0);
+                double resourceScore = clamp(gasCost * mineralCost, 0.1, 10.0);
+                double strategyScore = clamp(Strategy::getUnitScore(type), 0.0, 10.0);
                 return resourceScore * strategyScore;
             };
 

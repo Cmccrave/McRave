@@ -20,7 +20,7 @@ namespace McRave::Math {
             double cnt = 0.0;
             for (auto &i : unit.unit()->getInterceptors()) {
                 if (i && !i->exists()) {
-                    auto &interceptor = Units::getUnit(i);
+                    auto &interceptor = Units::getUnitInfo(i);
                     if (interceptor)
                         cnt += interceptor->getMaxGroundStrength();
                 }
@@ -53,7 +53,7 @@ namespace McRave::Math {
             double cnt = 0.0;
             for (auto &i : unit.unit()->getInterceptors()) {
                 if (i && !i->exists()) {
-                    auto &interceptor = Units::getUnit(i);
+                    auto &interceptor = Units::getUnitInfo(i);
                     if (interceptor)
                         cnt += interceptor->getMaxAirStrength();
                 }
@@ -117,9 +117,9 @@ namespace McRave::Math {
         auto surv = survivability(unit) / maxSurv;
 
         //Broodwar->drawTextMap(unit.getPosition(), "%.2f, %.2f, %.2f", dps, cost, surv);
-        //Broodwar->drawTextMap(unit.getPosition(), "%.2f", Util::boundBetween(0.1, (dps * cost / surv), DBL_MAX));
+        //Broodwar->drawTextMap(unit.getPosition(), "%.2f", clamp((dps * cost / surv), 0.01, DBL_MAX));
 
-        return Util::boundBetween(0.1, (dps * cost / surv), DBL_MAX);
+        return clamp((dps * cost / surv), 0.1, DBL_MAX);
     }
 
     double relativeCost(UnitInfo& unit)

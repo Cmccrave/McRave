@@ -9,9 +9,8 @@ namespace McRave::Horizon {
         bool ignoreSim = false;
     }
 
-    void simulate(const shared_ptr<UnitInfo>& u)
+    void simulate(UnitInfo& unit)
     {
-        auto &unit = *u;
         /*
         Modified version of Horizon.
         Need to test deadzones and squeeze factors still.

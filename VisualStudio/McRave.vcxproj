@@ -189,6 +189,7 @@
     <IncludePath>..\Source\BWEB;..\Source\BWEM;..\Source\Horizon;..\Source\McRave;..\..\..\include;$(IncludePath)</IncludePath>
     <OutDir>..\..\..\..\StarCraft McRave\bwapi-data\AI\</OutDir>
     <LibraryPath>..\..\..\lib;$(LibraryPath)</LibraryPath>
+    <CodeAnalysisRuleSet>RuleSet1.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='McRaveZ|Win32'">
     <IncludePath>D:\BWAPI\include;D:\BWAPI\Module\McRaveDev\Source\BWEB;D:\BWAPI\Module\McRaveDev\Source\BWEM;$(IncludePath)</IncludePath>

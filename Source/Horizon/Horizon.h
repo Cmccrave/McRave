@@ -3,5 +3,5 @@
 
 namespace McRave::Horizon {
 
-    void simulate(const std::shared_ptr<UnitInfo>&);
+    void simulate(UnitInfo&);
 }

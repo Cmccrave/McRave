@@ -35,7 +35,7 @@ namespace McRave::Goals {
         void assignPercentToGoal(Position here, UnitType type, double percent)
         {
             // Cap at 4
-            int count = min(4, int(percent * double(Units::getMyVisible(type))));
+            int count = min(4, int(percent * double(vis(type))));
             assignNumberToGoal(here, type, count);
         }
 

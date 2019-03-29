@@ -24,17 +24,9 @@ namespace McRave::Targets {
                 bool selfHasGround = myStrength.groundToAir > 0.0 || myStrength.groundToGround > 0.0;
                 bool selfHasAir = myStrength.airToGround > 0.0 || myStrength.airToAir > 0.0 || com(UnitTypes::Protoss_Shuttle) > 0;
 
-                //// Don't target interceptors if we can easily attack carriers
-                // TODO: When carrier priority is better re-add this
-                //if (!unit.getType().isFlyer() && target.getType() == UnitTypes::Protoss_Interceptor && target.unit()->getCarrier()) {
-                //    auto carrier = Units::getUnit(target.unit()->getCarrier());
-                //    if (carrier && BWEB::Map::getGroundDistance(target.getPosition(), unit.getPosition()) < unit.getAirReach())
-                //        return false;
-                //}
-
                 bool targetMatters = (target.getAirDamage() > 0.0 && selfHasAir)
-                    || (target.getGroundDamage() > 0.0/* && selfHasGround*/)
-                    || (target.getType().isDetector() && (Units::getMyVisible(UnitTypes::Protoss_Dark_Templar) > 0 || Units::getMyVisible(UnitTypes::Protoss_Observer) > 0))
+                    || (target.getGroundDamage() > 0.0)
+                    || (target.getType().isDetector() && (vis(UnitTypes::Protoss_Dark_Templar) > 0 || vis(UnitTypes::Protoss_Observer) > 0))
                     || (target.getAirDamage() == 0.0 && target.getGroundDamage() == 0.0 && !unit.hasTransport())
                     || (target.getType().isWorker())
                     || (!enemyHasGround && !enemyHasAir);
@@ -63,14 +55,11 @@ namespace McRave::Targets {
                     // If target is invisible and can't attack this unit
                     || ((target.isBurrowed() || target.unit()->isCloaked()) && !target.unit()->isDetected() && !targetCanAttack && !unit.getType().isDetector())
 
-                    // TODO: Remove this and improve command checks - If target is under DWEB and my unit is melee 
-                    || (!target.getType().isFlyer() && target.unit()->isUnderDisruptionWeb() && unit.getGroundRange() <= 64)
-
                     // Don't attack units that don't matter
                     || !targetMatters
 
-                    // Testing some ling stuff, don't attack Vultures
-                    || (unit.getType() == UnitTypes::Zerg_Zergling && target.getType() == UnitTypes::Terran_Vulture /*&& target.getSpeed() > unit.getSpeed()*/)
+                    // TEST: some ling stuff, don't attack Vultures
+                    || (unit.getType() == UnitTypes::Zerg_Zergling && target.getType() == UnitTypes::Terran_Vulture)
 
                     // DT: Don't attack Vultures
                     || (unit.getType() == UnitTypes::Protoss_Dark_Templar && target.getType() == UnitTypes::Terran_Vulture)
@@ -87,10 +76,9 @@ namespace McRave::Targets {
                 return true;
             };
 
-            const auto checkBest = [&](const shared_ptr<UnitInfo>& t, double thisUnit, double health, double reachDistance, double actualDistance) {
+            const auto checkBest = [&](UnitInfo& target, double thisUnit, double health, double reachDistance, double actualDistance) {
 
                 auto clusterTarget = unit.getType() == UnitTypes::Protoss_High_Templar || unit.getType() == UnitTypes::Protoss_Arbiter;
-                auto &target = *t;
                 auto priority = /*(target.getType().isBuilding() && target.getGroundDamage() == 0.0 && target.getAirDamage() == 0.0) ? target.getPriority() / 50.0 : */target.getPriority();
 
                 // Detector targeting
@@ -126,7 +114,7 @@ namespace McRave::Targets {
                 // If this target is more important to target, set as current target
                 if (thisUnit > bestScore || (thisUnit == bestScore && !clusterTarget && actualDistance < bestDistance)) {
                     bestScore = thisUnit;
-                    unit.setTarget(t);
+                    unit.setTarget(&target);
                     bestDistance = actualDistance;
                 }
             };
@@ -152,7 +140,7 @@ namespace McRave::Targets {
                 double reach = target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
                 double dist = unit.getPosition().getDistance(target.getPosition());
                 double widths = unit.getType().tileWidth() * 16.0 + target.getType().tileWidth() * 16.0;
-                double reachDistance = (max(1.0, dist - reach - widths));
+                double reachDistance = dist / reach;// (max(1.0, dist - reach - widths));
                 double actualDistance = max(1.0, dist - widths);
                 double health = targetCanAttack ? 1.0 + (0.5*(1.0 - unit.getPercentTotal())) : 1.0;
                 double thisUnit = 0.0;
@@ -165,12 +153,12 @@ namespace McRave::Targets {
 
                 // If should target, check if it's best
                 if (shouldTarget(target, unitCanAttack, targetCanAttack))
-                    checkBest(t, thisUnit, health, reachDistance, actualDistance);
+                    checkBest(target, thisUnit, health, reachDistance, actualDistance);
             }
 
             // If unit is close, increment it
             if (unit.hasTarget() && Util::unitInRange(unit))
-               unit.getTarget().getTargetedBy().insert(make_shared<UnitInfo>(unit));
+               unit.getTarget().getTargetedBy().push_back(make_shared<UnitInfo>(unit));
         }
 
         void getEngagePosition(UnitInfo& unit)
