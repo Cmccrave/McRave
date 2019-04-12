@@ -13,6 +13,7 @@ namespace McRave::Buildings {
         int lairsMorphing, hivesMorphing;
 
         map <TilePosition, UnitType> buildingsQueued;
+        vector<BWEB::Block> unpoweredBlocks;
         TilePosition currentExpansion;
 
         void checkBest(UnitType building, TilePosition placement, Position desired, TilePosition& tileBest, double& distBest) {
@@ -68,30 +69,7 @@ namespace McRave::Buildings {
             double distBest = DBL_MAX;
 
             // TODO: Rename this or use the anonymous namespace one above
-            const auto checkBestLocal = [&](Position blockCenter, set<TilePosition>& placements) {
-                // Against rushes, hide our buildings away from our ramp unless defensive structure
-                if ((Strategy::enemyRush() && Strategy::getEnemyBuild() != "2Gate" && building != Protoss_Shield_Battery && building != Protoss_Photon_Cannon)) {
-                    distBest = 0.0;
-                    double dist = blockCenter.getDistance((Position)BWEB::Map::getMainChoke()->Center());
-                    if (dist > distBest) {
-                        for (auto tile : placements) {
-                            if (isQueueable(building, tile) && isBuildable(building, tile) && Terrain::isInAllyTerritory(tile))
-                                distBest = dist, tileBest = tile;
-                        }
-                    }
-                }
-
-                // Else, closest to here
-                else {
-                    for (auto tile : placements) {
-                        Position tileCenter = Position(tile) + Position(building.tileWidth() * 16, building.tileHeight() * 16);
-                        double dist = tileCenter.getDistance(here);
-                        if (dist < distBest && isQueueable(building, tile) && isBuildable(building, tile))
-                            distBest = dist, tileBest = tile;
-                    }
-                }
-                return tileBest.isValid();
-            };
+            // TODO: re-add this: Against rushes, hide our buildings away from our ramp unless defensive structure            
 
             // Refineries are only built on my own gas resources
             if (building.isRefinery()) {
@@ -152,7 +130,7 @@ namespace McRave::Buildings {
                 else
                     placements = block.getSmallTiles();
 
-                checkBestLocal(blockCenter, placements);
+                checkBest(blockCenter, placements);
             }
 
             // Make sure we always place a pylon if we need large/medium spots or need supply
@@ -174,7 +152,7 @@ namespace McRave::Buildings {
                     }
 
                     placements = block.getSmallTiles();
-                    checkBestLocal(blockCenter, placements);
+                    checkBest(blockCenter, placements);
                 }
             }
             return tileBest;
@@ -294,6 +272,11 @@ namespace McRave::Buildings {
                 here = closestWallLocation(Protoss_Pylon, BWEB::Map::getMainPosition());
                 if (here.isValid() && isBuildable(Protoss_Pylon, here))
                     return here;
+            }
+
+            // Check if any buildings lost power
+            if (!unpoweredBlocks.empty()) {
+                // Do something
             }
 
             // Check if we are being busted, add an extra pylon to the defenses
@@ -545,6 +528,16 @@ namespace McRave::Buildings {
             }
         }
 
+        void updateInformation(UnitInfo& building)
+        {
+            // If a building is unpowered, get a pylon placement ready
+            if (building.getType().requiresPsi() && !Pylons::hasPower(building.getTilePosition(), building.getType())) {
+                auto block = BWEB::Blocks::getClosestBlock(building.getTilePosition());
+                if (block)
+                    unpoweredBlocks.push_back(*block);
+            }
+        }
+
         void updateBuildings()
         {
             // Reset counters
@@ -574,6 +567,7 @@ namespace McRave::Buildings {
             // Update all my buildings
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
+                updateInformation(unit);
                 updateCommands(unit);
             }
         }

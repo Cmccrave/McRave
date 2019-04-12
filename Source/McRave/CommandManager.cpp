@@ -821,9 +821,6 @@ namespace McRave::Command {
         Visuals::endPerfTest("Commands");
     }
 
-    vector <Action>& getMyActions() { return myActions; }
-    vector <Action>& getEnemyActions() { return enemyActions; }
-
     vector <Action>& getActions(PlayerState player) {
         if (player == PlayerState::Enemy)
             return enemyActions;

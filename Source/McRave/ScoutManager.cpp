@@ -257,7 +257,7 @@ namespace McRave::Scouts {
                         if (area.AccessibleNeighbours().size() == 0
                             || Terrain::isInEnemyTerritory(base.Location())
                             || Terrain::isInAllyTerritory(base.Location())
-                            || Command::overlapsActions(unit.unit(), Position(base.Location()), UnitTypes::None, PlayerState::Self);
+                            || Command::overlapsActions(unit.unit(), Position(base.Location()), UnitTypes::None, PlayerState::Self))
                             continue;
 
                         int time = Grids::lastVisibleFrame(base.Location());
