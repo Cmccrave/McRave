@@ -149,18 +149,16 @@ namespace McRave::Scouts {
             }
         }
 
-        void updateAssignment(const shared_ptr<UnitInfo>& u)
+        void updateAssignment(UnitInfo& unit)
         {
-            auto &unit = *u;
             auto start = unit.getWalkPosition();
             auto distBest = DBL_MAX;
-            auto posBest = unit.getDestination();
 
             const auto isClosestAvailableScout = [&](Position here) {
                 auto &closestScout = Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &u) {
                     return u.getRole() == Role::Scout && !u.getDestination().isValid();
                 });
-                return u == closestScout;
+                return unit.weak_from_this == closestScout;
             };
 
             if (!BuildOrder::firstReady() || BuildOrder::isOpener() || !Terrain::getEnemyStartingPosition().isValid()) {
@@ -185,6 +183,7 @@ namespace McRave::Scouts {
                 // If it's a center of map proxy
                 if ((proxyPosition.isValid() && isClosestAvailableScout(proxyPosition)) || proxyCheck) {
 
+                    // Determine what proxy type to expect
                     if (Units::getEnemyCount(UnitTypes::Terran_Barracks) > 0)
                         proxyType = UnitTypes::Terran_Barracks;
                     else if (Units::getEnemyCount(UnitTypes::Protoss_Pylon) > 0)
@@ -192,6 +191,7 @@ namespace McRave::Scouts {
                     else if (Units::getEnemyCount(UnitTypes::Protoss_Gateway) > 0)
                         proxyType = UnitTypes::Protoss_Gateway;
 
+                    // Find the closet of the proxy type we expect
                     auto &enemyWorker = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
                         return u.getType().isWorker();
                     });
@@ -203,7 +203,7 @@ namespace McRave::Scouts {
                     auto enemyWorkerConstructing = enemyWorker && enemyStructure && enemyWorker->getPosition().getDistance(enemyStructure->getPosition()) < 128.0;
                     auto enemyStructureProxy = enemyStructure && !Terrain::isInEnemyTerritory(enemyStructure->getTilePosition());
 
-                    // Priority on killing a worker if it's possible
+                    // Attempt to kill the worker if we find it - TODO: Check if the Attack command takes care of this
                     if (Strategy::getEnemyBuild() != "2Gate" && (enemyWorkerClose || enemyWorkerConstructing)) {
                         if (enemyWorker->unit() && enemyWorker->unit()->exists()) {
                             unit.unit()->attack(enemyWorker->unit());
@@ -224,7 +224,7 @@ namespace McRave::Scouts {
                         unit.setDestination(BWEB::Map::getMainPosition());
                 }
 
-                // If we have scout targets, find the closest target
+                // If we have scout targets, find the closest scout target
                 else if (!scoutTargets.empty()) {
 
                     auto best = 0.0;
@@ -239,18 +239,12 @@ namespace McRave::Scouts {
 
                         if (score > best && timeDiff > 500) {
                             best = score;
-                            posBest = target;
+                            unit.setDestination(target);
                         }
-                    }
-
-                    // Erase any target we assign
-                    if (posBest.isValid()) {
-                        unit.setDestination(posBest);
-                        scoutTargets.erase(posBest);
                     }
                 }
 
-                // HACK: Make sure we always do something
+                // Make sure we always do something
                 if (!unit.getDestination().isValid())
                     unit.setDestination(Terrain::getEnemyStartingPosition());
             }
@@ -260,23 +254,25 @@ namespace McRave::Scouts {
                 int best = INT_MAX;
                 for (auto &area : mapBWEM.Areas()) {
                     for (auto &base : area.Bases()) {
-                        if (area.AccessibleNeighbours().size() == 0 || Terrain::isInEnemyTerritory(base.Location()) || Terrain::isInAllyTerritory(base.Location()))
+                        if (area.AccessibleNeighbours().size() == 0
+                            || Terrain::isInEnemyTerritory(base.Location())
+                            || Terrain::isInAllyTerritory(base.Location())
+                            || Command::overlapsActions(unit.unit(), Position(base.Location()), UnitTypes::None, PlayerState::Self);
                             continue;
 
                         int time = Grids::lastVisibleFrame(base.Location());
-                        if (time < best)
-                            best = time, posBest = Position(base.Location());
+                        if (time < best) {
+                            best = time;
+                            unit.setDestination(Position(base.Location()));
+                        }
                     }
                 }
-                if (posBest.isValid() && unit.unit()->getOrderTargetPosition() != posBest)
-                    unit.setDestination(posBest);
             }
         }
 
         constexpr tuple commands{ Command::attack, Command::kite, Command::hunt, Command::move };
-        void updateDecision(const shared_ptr<UnitInfo>& u)
+        void updateDecision(UnitInfo& unit)
         {
-            auto &unit = *u;
             // Convert our commands to strings to display what the unit is doing for debugging
             map<int, string> commandNames{
                 make_pair(0, "Attack"),
@@ -292,17 +288,11 @@ namespace McRave::Scouts {
 
         void updateScouts()
         {
-
-            for (auto &p : Players::getPlayers()) {
-                if (!p.second.isSelf())
-                    continue;
-
-                for (auto &u : p.second.getUnits()) {
-                    const shared_ptr<UnitInfo> &unit = u;
-                    if (unit->getRole() == Role::Scout) {
-                        updateAssignment(unit);
-                        updateDecision(unit);
-                    }
+            for (auto &u : Units::getUnits(PlayerState::Self)) {
+                auto &unit = *u;
+                if (unit.getRole() == Role::Scout) {
+                    updateAssignment(unit);
+                    updateDecision(unit);
                 }
             }
         }

@@ -254,26 +254,20 @@ namespace McRave::Units {
 
             for (auto &p : Players::getPlayers()) {
                 PlayerInfo &player = p.second;
-                if (!player.isSelf())
-                    continue;
-
-                for (auto &u : player.getUnits()) {
-                    UnitInfo &unit = *u;
-                    if (unit.getRole() == Role::Combat)
-                        allySizes[unit.getType().size()]++;
+                if (player.isSelf()) {
+                    for (auto &u : player.getUnits()) {
+                        UnitInfo &unit = *u;
+                        if (unit.getRole() == Role::Combat)
+                            allySizes[unit.getType().size()]++;
+                    }
                 }
-            }
+                if (player.isEnemy()) {
+                    for (auto &u : player.getUnits()) {
+                        UnitInfo &unit = *u;
+                        if (!unit.getType().isBuilding() && !unit.getType().isWorker())
+                            enemySizes[unit.getType().size()]++;
 
-            for (auto &p : Players::getPlayers()) {
-                PlayerInfo &player = p.second;
-                if (!player.isEnemy())
-                    continue;
-
-                for (auto &u : player.getUnits()) {
-                    UnitInfo &unit = *u;
-                    if (!unit.getType().isBuilding() && !unit.getType().isWorker())
-                        enemySizes[unit.getType().size()]++;
-
+                    }
                 }
             }
         }

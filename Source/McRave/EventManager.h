@@ -75,15 +75,7 @@ namespace McRave::Events
 
     inline void customOnUnitLift(UnitInfo& unit)
     {
-        for (int x = unit.getLastTile().x; x < unit.getLastTile().x + unit.getType().tileWidth(); x++) {
-            for (int y = unit.getLastTile().y; y < unit.getLastTile().y + unit.getType().tileHeight(); y++) {
-                BWAPI::TilePosition t(x, y);
-                if (!t.isValid())
-                    continue;
-
-                BWEB::Map::removeUsed(t, 1, 1);
-            }
-        }
+        BWEB::Map::removeUsed(unit.getTilePosition(), unit.getType().tileWidth(), unit.getType().tileHeight());
 
         if (unit.getType().isResourceDepot())
             Stations::removeStation(unit.unit());
