@@ -8,25 +8,15 @@
 #include "EventManager.h"
 
 // *** TODO ***
-// Floating units removing mine positions
-// BWEB Destination walls not working - only north one
-// BWAPI::Unit getDistance is edge to point
-// Corsairs shouldn't engage inside ally territory
+// BWEB Destination south walls not working
 // Test vs BBS
-// Reavers aren't picked up if we cant afford scarabs
-// Check storming burrowed lurkers
-// Prevent HT walking into enemies when storm isn't suitable
-// Add pathing to attack enemy buildings so our sim actually works
+// Prevent HT walking into enemies when storm isn't suitable (because it has ground damage > 0, it tries to use Attack)
 // Re-power buildings
-// Burrowed units that aren't threatening cause defending units to eat free hits because they're targeting it
 // Add playerstate to actions
 // Add 3rd stargate on 3 base with carriers
 // Add frame timeouts for allowable enemy build detection
-// Units love walking into burrowed units still
-// Re-add scout dead frame
-// Move command doesn't care about threat
-// Retreat command gets stuck at chokes
-
+// Units love walking into burrowed/invis units
+// Move command doesn't care about threat, probably should
 // Upgrade/Research unlock list
 // When choosing a tech or creating a building, allow certain unlocks/research
 // Adjust Production to check for unlocks
@@ -36,25 +26,12 @@
 // - Melee shouldn't engage ranged on ramps, back up instead
 // - Engage when in range of defenses for FFE
 
-// Current BASIL Losses:
-// Add logic to detect a large worker pull early on - Stone/PurpleSpirit
-// Better kiting near edge of maps - Andrey/Velicro/Wuli etc
-// Better scouting of never visited tiles to check for builds - Tyr DT rush
-// Worker drilling - 4pools
-// Gas steal transition - Zur/Locutus
-
 // Scout targets
 // - Check for Nexus when we see no gateways in PvP (find timing for this and check after this time based on last visible frame on our grid)
 // - Check for 3rd against Z when we see 2 hatchery and no gas
 
-// *** TOTEST ***
-// If an enemy floats a CC to an expansion, we don't consider it "taken"
-    // Added a customOnUnitLand in EventManager.h which should take care of this
-    // Test lifting buildings
-    // Lift in fog / visible
-    // Land in fog / visible
-
-// *** Ideas ***
+// *** Ideas/Small fixes ***
+// Floating units removing mine positions
 // Monitor for overkilling units by hp - (2*nextDmgSource) <= 0 (double damage source to account for a potential miss?)
 // Use Player pointer instead of BWAPI::Player pointer in UnitInfo, gives advantage of knowing upgrades/tech that are available always
 // Use player filters to grab unit set in getClosestUnit template

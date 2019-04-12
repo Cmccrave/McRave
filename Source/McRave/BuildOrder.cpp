@@ -80,7 +80,7 @@ namespace McRave::BuildOrder
                 return true;
         }
         else {
-            if (!productionSat && (!Production::hasIdleProduction() || Units::getSupply() >= 300 || Broodwar->self()->minerals() > 600))
+            if (!productionSat && Broodwar->self()->minerals() >= 150 && (!Production::hasIdleProduction() || Units::getSupply() >= 300 || Broodwar->self()->minerals() > 600))
                 return true;
         }
         return false;
@@ -167,6 +167,10 @@ namespace McRave::BuildOrder
             techList.insert(Protoss_Dark_Templar);
         }
         else if (techUnit == Protoss_Reaver) {
+            unlockedType.insert(Protoss_Shuttle);
+            techList.insert(Protoss_Shuttle);
+        }
+        else if (techUnit == Protoss_Observer) {
             unlockedType.insert(Protoss_Shuttle);
             techList.insert(Protoss_Shuttle);
         }

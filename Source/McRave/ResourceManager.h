@@ -3,6 +3,7 @@
 
 namespace McRave::Resources
 {
+    int getMinCount();
     int getGasCount();
     int getIncomeMineral();
     int getIncomeGas();

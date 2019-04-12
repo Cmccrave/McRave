@@ -3,8 +3,8 @@
 #include "bwem.h"
 #include "BWEB.h"
 
-#define STORM_LIMIT 10.0
-#define STASIS_LIMIT 20.0
+#define STORM_LIMIT 0.75
+#define STASIS_LIMIT 2.0
 #define LOW_SHIELD_PERCENT_LIMIT 0.2
 #define LOW_MECH_PERCENT_LIMIT 0.2
 #define LOW_BIO_PERCENT_LIMIT 0.3

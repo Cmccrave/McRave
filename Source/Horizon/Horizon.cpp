@@ -16,8 +16,8 @@ namespace McRave::Horizon {
         Need to test deadzones and squeeze factors still.
         */
 
-        auto minThreshold = 0.50;
-        auto maxThreshold = 0.80;
+        auto minThreshold = max(0.0, log(10000.0 / Broodwar->getFrameCount())) + 0.50;
+        auto maxThreshold = max(0.0, log(10000.0 / Broodwar->getFrameCount())) + 0.80;
         auto enemyLocalGroundStrength = 0.0, allyLocalGroundStrength = 0.0;
         auto enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;
         auto unitToEngage = max(0.0, unit.getEngDist() / (24.0 * unit.getSpeed()));

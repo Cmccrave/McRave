@@ -91,10 +91,14 @@ namespace McRave::BuildOrder::Protoss
         if (Strategy::getEnemyBuild() == "FFE") {
             auto cannonCount = Units::getEnemyCount(Protoss_Photon_Cannon);
 
-            if (cannonCount <= 2)
+            if (cannonCount <= 2) {
                 itemQueue[Protoss_Nexus] = Item(2);
-            else
+                gasLimit = !Resources::isMinSaturated() ? 2 : INT_MAX;
+            }
+            else {
                 itemQueue[Protoss_Nexus] = Item(3);
+                gasLimit = !Resources::isMinSaturated() ? 1 : INT_MAX;
+            }
         }
 
         // Saturation

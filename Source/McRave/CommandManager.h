@@ -30,7 +30,6 @@ namespace McRave::Command {
     bool misc(UnitInfo& unit);
     bool move(UnitInfo& unit);
     bool approach(UnitInfo& unit);
-    bool surround(UnitInfo& unit);
     bool defend(UnitInfo& unit);
     bool kite(UnitInfo& unit);
     bool attack(UnitInfo& unit);

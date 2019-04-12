@@ -18,7 +18,7 @@ namespace McRave::Scouts {
             scoutCount = 1;
 
             // If we have seen an enemy Probe before we've scouted the enemy, follow it
-            if (Units::getEnemyCount(UnitTypes::Protoss_Probe) == 1 && Units::getEnemyCount(UnitTypes::Protoss_Dragoon) == 0) {
+            if (Units::getEnemyCount(UnitTypes::Protoss_Probe) == 1 && Units::getEnemyCount(UnitTypes::Protoss_Zealot) == 0) {
                 auto &enemyProbe = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
                     return u.getType() == UnitTypes::Protoss_Probe;
                 });
@@ -59,7 +59,7 @@ namespace McRave::Scouts {
                 scoutCount = 0;
 
             if (Strategy::enemyPressure() && BuildOrder::isPlayPassive())
-                scoutCount = 0;            
+                scoutCount = 0;
         }
 
         void updateScoutTargets()
@@ -185,47 +185,43 @@ namespace McRave::Scouts {
                 // If it's a center of map proxy
                 if ((proxyPosition.isValid() && isClosestAvailableScout(proxyPosition)) || proxyCheck) {
 
-                    // If it's a proxy (maybe cannon rush), try to find the unit to kill
-                    if (Strategy::enemyProxy()) {
+                    if (Units::getEnemyCount(UnitTypes::Terran_Barracks) > 0)
+                        proxyType = UnitTypes::Terran_Barracks;
+                    else if (Units::getEnemyCount(UnitTypes::Protoss_Pylon) > 0)
+                        proxyType = UnitTypes::Protoss_Pylon;
+                    else if (Units::getEnemyCount(UnitTypes::Protoss_Gateway) > 0)
+                        proxyType = UnitTypes::Protoss_Gateway;
 
-                        if (Units::getEnemyCount(UnitTypes::Terran_Barracks) > 0)
-                            proxyType = UnitTypes::Terran_Barracks;
-                        else if (Units::getEnemyCount(UnitTypes::Protoss_Pylon) > 0)
-                            proxyType = UnitTypes::Protoss_Pylon;
-                        else if (Units::getEnemyCount(UnitTypes::Protoss_Gateway) > 0)
-                            proxyType = UnitTypes::Protoss_Gateway;
+                    auto &enemyWorker = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
+                        return u.getType().isWorker();
+                    });
+                    auto &enemyStructure = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
+                        return u.getType() == proxyType;
+                    });
 
-                        auto &enemyWorker = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
-                            return u.getType().isWorker();
-                        });
-                        auto &enemyStructure = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
-                            return u.getType() == proxyType;
-                        });
+                    auto enemyWorkerClose = enemyWorker && enemyWorker->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0;
+                    auto enemyWorkerConstructing = enemyWorker && enemyStructure && enemyWorker->getPosition().getDistance(enemyStructure->getPosition()) < 128.0;
+                    auto enemyStructureProxy = enemyStructure && !Terrain::isInEnemyTerritory(enemyStructure->getTilePosition());
 
-                        auto enemyWorkerClose = enemyWorker && enemyWorker->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0;
-                        auto enemyWorkerConstructing = enemyWorker && enemyStructure && enemyWorker->getPosition().getDistance(enemyStructure->getPosition()) < 128.0;
-                        auto enemyStructureProxy = enemyStructure && !Terrain::isInEnemyTerritory(enemyStructure->getTilePosition());
-
-                        // Priority on killing a worker if it's possible
-                        if (Strategy::getEnemyBuild() != "2Gate" && (enemyWorkerClose || enemyWorkerConstructing)) {
-                            if (enemyWorker->unit() && enemyWorker->unit()->exists()) {
-                                unit.unit()->attack(enemyWorker->unit());
-                                return;
-                            }
-                            else
-                                unit.setDestination(enemyWorker->getPosition());
-                        }
-                        else if (enemyStructureProxy) {
-                            if (enemyStructure->unit() && enemyStructure->unit()->exists()) {
-                                unit.unit()->attack(enemyStructure->unit());
-                                return;
-                            }
-                            else
-                                unit.setDestination(enemyStructure->getPosition());
+                    // Priority on killing a worker if it's possible
+                    if (Strategy::getEnemyBuild() != "2Gate" && (enemyWorkerClose || enemyWorkerConstructing)) {
+                        if (enemyWorker->unit() && enemyWorker->unit()->exists()) {
+                            unit.unit()->attack(enemyWorker->unit());
+                            return;
                         }
                         else
-                            unit.setDestination(BWEB::Map::getMainPosition());
+                            unit.setDestination(enemyWorker->getPosition());
                     }
+                    else if (enemyStructureProxy) {
+                        if (enemyStructure->unit() && enemyStructure->unit()->exists()) {
+                            unit.unit()->attack(enemyStructure->unit());
+                            return;
+                        }
+                        else
+                            unit.setDestination(enemyStructure->getPosition());
+                    }
+                    else
+                        unit.setDestination(BWEB::Map::getMainPosition());
                 }
 
                 // If we have scout targets, find the closest target

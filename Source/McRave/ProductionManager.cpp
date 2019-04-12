@@ -257,6 +257,10 @@ namespace McRave::Production {
             if (upgrade == BuildOrder::getFirstUpgrade() && !BuildOrder::firstReady())
                 return true;
 
+            // Don't upgrade anything in opener if nothing is chosen
+            if (BuildOrder::getFirstUpgrade() == UpgradeTypes::None && BuildOrder::isOpener())
+                return false;
+
             // If this is a specific unit upgrade, check if it's unlocked
             if (upgrade.whatUses().size() == 1) {
                 for (auto &unit : upgrade.whatUses()) {

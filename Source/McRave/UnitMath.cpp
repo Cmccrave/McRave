@@ -99,6 +99,8 @@ namespace McRave::Math {
             return 0.0;
         if (unit.unit()->isBeingConstructed() && unit.getType() == Terran_Bunker && Terrain::isInAllyTerritory(unit.getTilePosition()))
             return 0.0;
+        if (unit.getType() == Protoss_Carrier)
+            return 0.5;
 
         // HACK: Kill neutrals blocking geysers for Sparkle
         if (unit.getTilePosition().isValid()) {

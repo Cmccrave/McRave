@@ -282,7 +282,7 @@ namespace McRave::BuildOrder::Protoss {
             if (Strategy::enemyRush()) {
                 auto enemyMoreZealots = com(Protoss_Zealot) <= Units::getEnemyCount(Protoss_Zealot);
                 zealotLimit = INT_MAX;
-                gasLimit = vis(Protoss_Dragoon) >= 2 ? 3 : 1;
+                gasLimit = vis(Protoss_Dragoon) > 2 ? 3 : 1;
                 itemQueue[Protoss_Shield_Battery] =			Item(enemyMoreZealots && vis(Protoss_Zealot) >= 2 && vis(Protoss_Pylon) >= 2);
             }
 
@@ -293,7 +293,7 @@ namespace McRave::BuildOrder::Protoss {
         else if (currentTransition == "DT") {
             // https://liquipedia.net/starcraft/2_Gate_DT_(vs._Protoss) -- is actually 1 Gate
             lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
-            getOpening =        s < 80;
+            getOpening =        com(Protoss_Dark_Templar) <= 0;
             playPassive =       com(Protoss_Dark_Templar) <= 0;
 
             firstUpgrade =      UpgradeTypes::None;

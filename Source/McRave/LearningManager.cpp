@@ -11,9 +11,9 @@ using namespace McRave::BuildOrder::All;
 namespace McRave::Learning {
     namespace {
 
-        std::map <std::string, Build> myBuilds;
-        std::stringstream ss;
-        std::vector <std::string> buildNames;
+        map <string, Build> myBuilds;
+        stringstream ss;
+        vector <string> buildNames;
 
         bool isBuildPossible(string build, string opener)
         {
@@ -316,7 +316,7 @@ namespace McRave::Learning {
             return;
         }
 
-        bool testing = true;
+        bool testing = false;
         if (testing) {
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 BuildOrder::setLearnedBuild("2Gate", "Main", "Expand");

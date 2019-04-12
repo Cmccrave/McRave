@@ -44,6 +44,9 @@ namespace McRave::Combat {
                 return false;
             };
 
+            if (unit.getTarget().isHidden())
+                unit.getTarget().circleBlue();
+
             const auto forceRetreat = [&]() {
                 if (/*(unit.getType().isMechanical() && unit.getPercentTotal() < LOW_MECH_PERCENT_LIMIT)
                     || */(unit.getType().getRace() == Races::Zerg && unit.getPercentTotal() < LOW_BIO_PERCENT_LIMIT)

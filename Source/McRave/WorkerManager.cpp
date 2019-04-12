@@ -211,14 +211,14 @@ namespace McRave::Workers {
                 if (!resource.unit()
                     || resource.getType() == UnitTypes::Resource_Vespene_Geyser
                     || (resource.unit()->exists() && !resource.unit()->isCompleted())
-                    || (resource.getGathererCount() >= i + int(injured || threatened))
+                    || resource.getGathererCount() >= i
                     || resource.getResourceState() == ResourceState::None)
                     return false;
                 return true;
             };
 
             const auto needGas = [&]() {
-                if (!Resources::isGasSaturated() && ((gasWorkers < BuildOrder::gasWorkerLimit() && BuildOrder::isOpener()) || !BuildOrder::isOpener() || Resources::isMinSaturated()))
+                if (!Resources::isGasSaturated() && ((gasWorkers < BuildOrder::gasWorkerLimit() && BuildOrder::isOpener()) || !BuildOrder::isOpener() || minWorkers < Resources::getMinCount() * 2))
                     return true;
                 return false;
             };
@@ -226,16 +226,17 @@ namespace McRave::Workers {
             // Worker has no resource, we need gas, we need minerals, workers resource is threatened
             if (!worker.hasResource()
                 || needGas()
-                || (worker.hasResource() && !worker.getResource().getType().isMineralField() && gasWorkers > BuildOrder::gasWorkerLimit())
-                || (worker.hasResource() && !closeToResource(worker) && Util::accurateThreatOnPath(worker, worker.getPath()) && Grids::getEGroundThreat(worker.getWalkPosition()) == 0.0)
-                || (worker.hasResource() && closeToResource(worker) && int(worker.getTargetedBy().size()) > 0 && Grids::getEGroundThreat(worker.getWalkPosition()) > 0.0)
-                || (worker.hasResource() && !injured && !threatened && worker.getResource().getGathererCount() >= 3 + int(worker.getResource().getType().isRefinery())))
+                || (!worker.getResource().getType().isMineralField() && gasWorkers > BuildOrder::gasWorkerLimit() && minWorkers < Resources::getMinCount() * 2 && BuildOrder::isOpener())
+                || (!closeToResource(worker) && Util::accurateThreatOnPath(worker, worker.getPath()) && Grids::getEGroundThreat(worker.getWalkPosition()) == 0.0)
+                || (closeToResource(worker) && int(worker.getTargetedBy().size()) > 0 && Grids::getEGroundThreat(worker.getWalkPosition()) > 0.0 && !Resources::isMinSaturated())
+                || (!injured && !threatened && worker.getResource().getGathererCount() >= 3 + int(worker.getResource().getType().isRefinery())))
                 needNewAssignment = true;
 
             // HACK: Just return if we dont need an assignment, should make this better
             if (!needNewAssignment)
                 return;
             else if (worker.hasResource()) {
+                worker.getResource().getType().isMineralField() ? minWorkers-- : gasWorkers--;
                 worker.getResource().removeTargetedBy(worker.weak_from_this());
                 worker.setResource(nullptr);
             }
@@ -267,8 +268,6 @@ namespace McRave::Workers {
                         continue;
                     if (threatened && !safeStations.empty() && (!resource.getStation() || find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end()))
                         continue;
-
-                    Broodwar->drawLineMap(worker.getPosition(), resource.getPosition(), Colors::Green);
 
                     auto dist = resource.getPosition().getDistance(worker.getPosition());
                     if ((dist < distBest && !injured) || (dist > distBest && injured)) {
@@ -356,16 +355,6 @@ namespace McRave::Workers {
     void removeUnit(UnitInfo& worker) {
         worker.getResource().getType().isRefinery() ? gasWorkers-- : minWorkers--;
         worker.getResource().removeTargetedBy(worker.weak_from_this());
-
-        //if (worker.hasResource()) {
-        //    for (auto itr = worker.getResource().targetedByWhat().begin(); itr != worker.getResource().targetedByWhat().end(); itr++) {
-        //        if (!worker.weak_from_this().expired()) {
-        //            worker.getResource().targetedByWhat().erase(itr);
-        //            break;
-        //        }
-        //    }
-        //}
-
         worker.setResource(nullptr);
     }
 

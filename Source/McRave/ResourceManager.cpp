@@ -11,7 +11,7 @@ namespace McRave::Resources {
         set<shared_ptr<ResourceInfo>> myGas;
         set<shared_ptr<ResourceInfo>> myBoulders;
         bool minSat, gasSat;
-        int gasCount;
+        int minCount, gasCount;
         int incomeMineral, incomeGas;
 
         void updateIncome(const shared_ptr<ResourceInfo>& r)
@@ -46,8 +46,8 @@ namespace McRave::Resources {
             else if (resource.getType() == geyserType && resource.unit()->isCompleted() && resource.getResourceState() != ResourceState::None && ((BuildOrder::isOpener() && resource.getGathererCount() < min(3, BuildOrder::gasWorkerLimit())) || (!BuildOrder::isOpener() && resource.getGathererCount() < 3)))
                 gasSat = false;
 
-            if (!resource.getType().isMineralField() && resource.getResourceState() == ResourceState::Mineable)
-                gasCount++;
+            if (resource.getResourceState() == ResourceState::Mineable)
+                resource.getType().isMineralField() ? minCount++ : gasCount++;
         }
 
         void updateResources()
@@ -55,7 +55,7 @@ namespace McRave::Resources {
             // Assume saturation, will be changed to false if any resource isn't saturated
             minSat = true, gasSat = true;
             incomeMineral = 0, incomeGas = 0;
-            gasCount = 0;
+            minCount = 0, gasCount = 0;
 
             const auto update = [&](const shared_ptr<ResourceInfo>& r) {
                 updateInformation(r);
@@ -148,6 +148,7 @@ namespace McRave::Resources {
         return nullptr;
     }
 
+    int getMinCount() { return minCount; }
     int getGasCount() { return gasCount; }
     int getIncomeMineral() { return incomeMineral; }
     int getIncomeGas() { return incomeGas; }

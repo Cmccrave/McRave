@@ -141,7 +141,7 @@ namespace McRave::Targets {
                 double dist = unit.getPosition().getDistance(target.getPosition());
                 double widths = unit.getType().tileWidth() * 16.0 + target.getType().tileWidth() * 16.0;
                 double reachDistance = dist / reach;// (max(1.0, dist - reach - widths));
-                double actualDistance = max(1.0, dist - widths);
+                double actualDistance = !unit.getType().isFlyer() && target.getType().isFlyer() ? max(1.0, BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition()) - widths) : max(1.0, dist - widths);
                 double health = targetCanAttack ? 1.0 + (0.5*(1.0 - unit.getPercentTotal())) : 1.0;
                 double thisUnit = 0.0;
 

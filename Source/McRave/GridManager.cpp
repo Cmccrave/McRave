@@ -112,7 +112,7 @@ namespace McRave::Grids
 
                     // Collision
                     if (!unit.getType().isFlyer() && Util::rectangleIntersect(topLeft, botRight, x*8, y*8)) {
-                        collision[x][y] = unit.unit()->getID();
+                        collision[x][y] = 1;
                         saveReset(x,y);
                     }
 

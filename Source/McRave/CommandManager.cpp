@@ -179,7 +179,7 @@ namespace McRave::Command {
     bool attack(UnitInfo& unit)
     {
         // If we have no target or it doesn't exist, we can't attack
-        if (!unit.hasTarget() || !unit.getTarget().unit()->exists())
+        if (!unit.hasTarget() || !unit.getTarget().unit()->exists() || unit.getTarget().isHidden())
             return false;
 
         // Can the unit execute an attack command
@@ -216,7 +216,7 @@ namespace McRave::Command {
 
                 // Check if we can get free attacks
                 if (Util::getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT)
-                    return true;
+                    return true;                
                 return unit.getLocalState() == LocalState::Attack;
             }
 

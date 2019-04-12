@@ -208,8 +208,8 @@ namespace McRave::Strategy {
             if (Terrain::getEnemyStartingPosition().isValid() && Broodwar->getFrameCount() > 3000 && Broodwar->isExplored((TilePosition)Terrain::getEnemyStartingPosition())) {
 
                 // Check 2 corners scouted
-                auto topLeft = TilePosition(Util::clipPosition(Terrain::getEnemyStartingPosition() - Position(160, 160)));
-                auto botRight = TilePosition(Util::clipPosition(Terrain::getEnemyStartingPosition() + Position(160, 160) + Position(128, 96)));
+                auto topLeft = TilePosition(Util::clipPosition(Terrain::getEnemyStartingPosition() - Position(320, 320)));
+                auto botRight = TilePosition(Util::clipPosition(Terrain::getEnemyStartingPosition() + Position(320, 320) + Position(128, 96)));
                 auto fullScout = Grids::lastVisibleFrame(topLeft) > 0 && Grids::lastVisibleFrame(botRight) > 0;
                 auto maybeProxy = noGates && noExpand;
 
