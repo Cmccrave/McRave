@@ -129,6 +129,7 @@ namespace McRave
 		// Check if we need to wait a few frames before issuing a command due to stop frames
 		int frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
 		bool attackCooldown = frameSinceAttack <= minStopFrame - Broodwar->getRemainingLatencyFrames();
+        Command::addAction(thisUnit, here, unitType, PlayerState::Self);
 
         if (attackCooldown)
             return false;
@@ -170,6 +171,7 @@ namespace McRave
         // Check if we need to wait a few frames before issuing a command due to stop frames
 		int frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
         bool attackCooldown = frameSinceAttack <= minStopFrame - Broodwar->getRemainingLatencyFrames();
+        Command::addAction(thisUnit, targetUnit.getPosition(), unitType, PlayerState::Self);
 
         if (attackCooldown)
             return false;
@@ -200,7 +202,7 @@ namespace McRave
 
     bool UnitInfo::isThreatening()
     {
-        if ((burrowed || (thisUnit && thisUnit->exists() && thisUnit->isCloaked())) && !Command::overlapsAllyDetection(position) || Stations::getMyStations().size() > 2)
+        if ((burrowed || (thisUnit && thisUnit->exists() && thisUnit->isCloaked())) && !Command::overlapsDetection(thisUnit, position, PlayerState::Self) || Stations::getMyStations().size() > 2)
             return false;
 
         auto temp = Terrain::isInAllyTerritory(tilePosition) || groundRange > 32.0 ? groundReach / 1.5 : groundReach / 5;
@@ -268,7 +270,7 @@ namespace McRave
 
     bool UnitInfo::isHidden()
     {
-        auto detection = player->isEnemy(Broodwar->self()) ? Command::overlapsAllyDetection(position) : Command::overlapsEnemyDetection(position);
+        auto detection = player->isEnemy(Broodwar->self()) ? Command::overlapsDetection(thisUnit, position, PlayerState::Self) : Command::overlapsDetection(thisUnit, position, PlayerState::Enemy);
         return (burrowed || (thisUnit->exists() && thisUnit->isCloaked())) && !detection;
     }
 

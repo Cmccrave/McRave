@@ -176,7 +176,7 @@ namespace McRave::Units {
                     }
 
                     // Must see a 3x3 grid of Tiles to set a unit to invalid position
-                    if (!unit.unit()->exists() && (!unit.isBurrowed() || Command::overlapsAllyDetection(unit.getPosition()) || (unit.getWalkPosition().isValid() && Grids::getAGroundCluster(unit.getWalkPosition()) > 0)))
+                    if (!unit.unit()->exists() && (!unit.isBurrowed() || Command::overlapsDetection(unit.unit(), unit.getPosition(), PlayerState::Self) || (unit.getWalkPosition().isValid() && Grids::getAGroundCluster(unit.getWalkPosition()) > 0)))
                         Events::customOnUnitDisappear(unit);
 
                     // If unit has a valid type, update enemy composition tracking

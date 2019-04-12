@@ -21,25 +21,25 @@ namespace McRave::Command
                 if ((unit.unit()->getLastCommand().getType() != UnitCommandTypes::Use_Tech || unit.unit()->getLastCommand().getTarget() != unit.getTarget().unit()))
                     unit.unit()->useTech(TechTypes::Yamato_Gun, unit.getTarget().unit());
 
-                addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Yamato_Gun);
+                addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Yamato_Gun, PlayerState::Self);
                 return true;
             }
         }
 
         // Ghosts
         else if (unit.getType() == UnitTypes::Terran_Ghost) {
-            if (!unit.unit()->isCloaked() && unit.unit()->getEnergy() >= 50 && unit.getPosition().getDistance(unit.getEngagePosition()) < 320 && !Command::overlapsEnemyDetection(p))
+            if (!unit.unit()->isCloaked() && unit.unit()->getEnergy() >= 50 && unit.getPosition().getDistance(unit.getEngagePosition()) < 320 && !Command::overlapsDetection(unit.unit(), p, PlayerState::Enemy))
                 unit.unit()->useTech(TechTypes::Personnel_Cloaking);
 
             if (Buildings::getNukesAvailable() > 0 && unit.hasTarget() && unit.getTarget().getWalkPosition().isValid() && unit.unit()->isCloaked() && Grids::getEAirCluster(unit.getTarget().getWalkPosition()) + Grids::getEGroundCluster(unit.getTarget().getWalkPosition()) > 5.0 && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= 320 && unit.getPosition().getDistance(unit.getTarget().getPosition()) > 200) {
                 if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Use_Tech_Unit || unit.unit()->getLastCommand().getTarget() != unit.getTarget().unit()) {
                     unit.unit()->useTech(TechTypes::Nuclear_Strike, unit.getTarget().unit());
-                    addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Nuclear_Strike);
+                    addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Nuclear_Strike, PlayerState::Self);
                     return true;
                 }
             }
             if (unit.unit()->getOrder() == Orders::NukePaint || unit.unit()->getOrder() == Orders::NukeTrack || unit.unit()->getOrder() == Orders::CastNuclearStrike) {
-                addAction(unit.unit(), unit.unit()->getOrderTargetPosition(), TechTypes::Nuclear_Strike);
+                addAction(unit.unit(), unit.unit()->getOrderTargetPosition(), TechTypes::Nuclear_Strike, PlayerState::Self);
                 return true;
             }
         }
@@ -97,7 +97,7 @@ namespace McRave::Command
 
         // Wraiths	
         else if (unit.getType() == UnitTypes::Terran_Wraith) {
-            if (unit.getHealth() >= 120 && !unit.unit()->isCloaked() && unit.unit()->getEnergy() >= 50 && unit.getPosition().getDistance(unit.getEngagePosition()) < 320 && !Command::overlapsEnemyDetection(p))
+            if (unit.getHealth() >= 120 && !unit.unit()->isCloaked() && unit.unit()->getEnergy() >= 50 && unit.getPosition().getDistance(unit.getEngagePosition()) < 320 && !Command::overlapsDetection(unit.unit(), p, PlayerState::Enemy))
                 unit.unit()->useTech(TechTypes::Cloaking_Field);
             else if (unit.getHealth() <= 90 && unit.unit()->isCloaked())
                 unit.unit()->useTech(TechTypes::Cloaking_Field);
@@ -111,22 +111,13 @@ namespace McRave::Command
 
         // Corsairs
         else if (unit.getType() == UnitTypes::Protoss_Corsair && unit.unit()->getEnergy() >= TechTypes::Disruption_Web.energyCost() && Broodwar->self()->hasResearched(TechTypes::Disruption_Web)) {
-            auto distBest = DBL_MAX;
-            auto posBest = Positions::Invalid;
+            auto closestEnemy = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) {
+                return u.getPosition().getDistance(unit.getPosition()) < 256.0 && !overlapsActions(unit.unit(), u.getPosition(), TechTypes::Disruption_Web, PlayerState::Self, 96) && u.hasAttackedRecently() && u.getSpeed() <= UnitTypes::Protoss_Reaver.topSpeed();
+            });
 
-            // Find an enemy that is attacking and is slow
-            for (auto &u : Units::getUnits(PlayerState::Enemy)) {
-                UnitInfo &enemy = *u;
-                auto dist = enemy.getPosition().getDistance(unit.getPosition());
-
-                if (dist < distBest && dist < 256.0 && !overlapsActions(unit.unit(), TechTypes::Disruption_Web, enemy.getPosition(), 96) && enemy.unit()->isAttacking() && enemy.getSpeed() <= UnitTypes::Protoss_Reaver.topSpeed()) {
-                    distBest = dist;
-                    posBest = enemy.getPosition();
-                }
-            }
-            if (posBest.isValid()) {
-                addAction(unit.unit(), posBest, TechTypes::Disruption_Web);
-                unit.unit()->useTech(TechTypes::Disruption_Web, posBest);
+            if (closestEnemy) {
+                addAction(unit.unit(), closestEnemy->getPosition(), TechTypes::Disruption_Web, PlayerState::Self);
+                unit.unit()->useTech(TechTypes::Disruption_Web, closestEnemy->getPosition());
                 return true;
             }
         }
@@ -136,12 +127,12 @@ namespace McRave::Command
 
             // TEST - Check if the order of the HT is storming to add as a command
             if (unit.unit()->getOrder() == Orders::CastPsionicStorm && unit.hasTarget())
-                addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm);
+                addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self);
 
             // If close to target and can cast a storm
-            if (unit.hasTarget() && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= 400 && !Command::overlapsActions(unit.unit(), TechTypes::Psionic_Storm, unit.getTarget().getPosition(), 96) && unit.unit()->getEnergy() >= 75 && (Grids::getEGroundCluster(unit.getTarget().getWalkPosition()) + Grids::getEAirCluster(unit.getTarget().getWalkPosition())) >= STORM_LIMIT) {
+            if (unit.hasTarget() && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= 400 && !Command::overlapsActions(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self, 96) && unit.unit()->getEnergy() >= 75 && (Grids::getEGroundCluster(unit.getTarget().getWalkPosition()) + Grids::getEAirCluster(unit.getTarget().getWalkPosition())) >= STORM_LIMIT) {
                 unit.unit()->useTech(TechTypes::Psionic_Storm, unit.getTarget().unit());
-                addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm);
+                addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self);
                 return true;
             }
 

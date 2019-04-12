@@ -209,7 +209,7 @@ namespace McRave::Horizon {
                     continue;
 
                 // Situations where an ally should be treated as stronger than it actually is
-                if ((ally.unit()->isCloaked() || ally.unit()->isBurrowed()) && !Command::overlapsEnemyDetection(ally.getEngagePosition()))
+                if ((ally.unit()->isCloaked() || ally.unit()->isBurrowed()) && !Command::overlapsDetection(ally.unit(), ally.getEngagePosition(), PlayerState::Enemy))
                     simRatio = simRatio * 2.0;
                 if (!ally.getType().isFlyer() && Broodwar->getGroundHeight(TilePosition(ally.getEngagePosition())) > Broodwar->getGroundHeight(TilePosition(ally.getTarget().getPosition())))
                     simRatio = simRatio * 2.0;

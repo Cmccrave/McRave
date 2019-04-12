@@ -527,9 +527,9 @@ namespace McRave::Buildings {
 
             // Comsat scans - Move to special manager
             if (building.getType() == Terran_Comsat_Station) {
-                if (building.hasTarget() && building.getTarget().unit()->exists() && !Command::overlapsAllyDetection(building.getTarget().getPosition())) {
+                if (building.hasTarget() && building.getTarget().unit()->exists() && !Command::overlapsDetection(building.unit(), building.getTarget().getPosition(), PlayerState::Enemy)) {
                     building.unit()->useTech(TechTypes::Scanner_Sweep, building.getTarget().getPosition());
-                    Command::addAction(building.unit(), building.getTarget().getPosition(), TechTypes::Scanner_Sweep);
+                    Command::addAction(building.unit(), building.getTarget().getPosition(), TechTypes::Scanner_Sweep, PlayerState::Self);
                 }
             }
 

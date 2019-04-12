@@ -88,7 +88,7 @@ namespace McRave::Combat {
 
             const auto localEngage = [&]() {
                 if ((Broodwar->getFrameCount() > 10000 && !unit.getType().isFlyer() && (unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && (unit.getPosition().getDistance(unit.getTarget().getPosition()) < 96.0 || Util::unitInRange(unit)))
-                    || ((unit.unit()->isCloaked() || unit.isBurrowed()) && !Command::overlapsEnemyDetection(unit.getEngagePosition()))
+                    || ((unit.unit()->isCloaked() || unit.isBurrowed()) && !Command::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy))
                     || (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && Util::unitInRange(unit))
                     || (unit.getSimState() == SimState::Win && unit.getGlobalState() == GlobalState::Attack))
                     return true;
@@ -198,7 +198,7 @@ namespace McRave::Combat {
                     unit.setDestination(Terrain::randomBasePosition());
                 else {
                     for (auto &start : Broodwar->getStartLocations()) {
-                        if (start.isValid() && !Broodwar->isExplored(start) && !Command::overlapsActions(unit.unit(), unit.getType(), Position(start), 32))
+                        if (start.isValid() && !Broodwar->isExplored(start) && !Command::overlapsActions(unit.unit(), Position(start), unit.getType(), PlayerState::Self, 32))
                             unit.setDestination(Position(start));
                     }
                 }

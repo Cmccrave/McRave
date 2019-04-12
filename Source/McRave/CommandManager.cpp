@@ -13,18 +13,22 @@ namespace McRave::Command {
             myActions.clear();
             enemyActions.clear();
 
-            // Store bullets as enemy units if they can affect us too
+            // Check bullet based abilities, store as neutral PlayerState as it affects both sides
             for (auto &b : Broodwar->getBullets()) {
                 if (b && b->exists()) {
                     if (b->getType() == BulletTypes::Psionic_Storm)
-                        addAction(nullptr, b->getPosition(), TechTypes::Psionic_Storm, true);
+                        addAction(nullptr, b->getPosition(), TechTypes::Psionic_Storm, PlayerState::Neutral);
 
                     if (b->getType() == BulletTypes::EMP_Missile)
-                        addAction(nullptr, b->getTargetPosition(), TechTypes::EMP_Shockwave, true);
+                        addAction(nullptr, b->getTargetPosition(), TechTypes::EMP_Shockwave, PlayerState::Neutral);
                 }
             }
 
-            // Store enemy detection and assume casting orders
+            // Check nuke dots, store as neutral PlayerState as it affects both sides
+            for (auto &dot : Broodwar->getNukeDots())
+                addAction(nullptr, dot, TechTypes::Nuclear_Strike, PlayerState::Neutral);
+
+            // Check enemy Actions, store outgoing bullet based abilities as neutral PlayerState
             for (auto &u : Units::getUnits(PlayerState::Enemy)) {
                 UnitInfo &unit = *u;
 
@@ -32,33 +36,29 @@ namespace McRave::Command {
                     continue;
 
                 if (unit.getType().isDetector())
-                    addAction(unit.unit(), unit.getPosition(), unit.getType(), true);
+                    addAction(unit.unit(), unit.getPosition(), unit.getType(), PlayerState::Enemy);
 
                 if (unit.unit()->exists()) {
                     Order enemyOrder = unit.unit()->getOrder();
                     Position enemyTarget = unit.unit()->getOrderTargetPosition();
 
                     if (enemyOrder == Orders::CastEMPShockwave)
-                        addAction(unit.unit(), enemyTarget, TechTypes::EMP_Shockwave, true);
+                        addAction(unit.unit(), enemyTarget, TechTypes::EMP_Shockwave, PlayerState::Neutral);
                     if (enemyOrder == Orders::CastPsionicStorm)
-                        addAction(unit.unit(), enemyTarget, TechTypes::Psionic_Storm, true);
+                        addAction(unit.unit(), enemyTarget, TechTypes::Psionic_Storm, PlayerState::Neutral);
                 }
 
                 if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine)
-                    addAction(unit.unit(), unit.getPosition(), TechTypes::Spider_Mines, true);
+                    addAction(unit.unit(), unit.getPosition(), TechTypes::Spider_Mines, PlayerState::Enemy);
             }
 
-            // Store self detection
+            // Check my Actions
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &unit = *u;
 
                 if (unit.getType().isDetector())
-                    addAction(unit.unit(), unit.getPosition(), unit.getType(), false);
+                    addAction(unit.unit(), unit.getPosition(), unit.getType(), PlayerState::Self);
             }
-
-            // Store nuke dots
-            for (auto &dot : Broodwar->getNukeDots())
-                addAction(nullptr, dot, TechTypes::Nuclear_Strike, true);
         }
 
         double defaultGrouping(UnitInfo& unit, WalkPosition w) {
@@ -216,7 +216,7 @@ namespace McRave::Command {
 
                 // Check if we can get free attacks
                 if (Util::getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT)
-                    return true;                
+                    return true;
                 return unit.getLocalState() == LocalState::Attack;
             }
 
@@ -559,7 +559,6 @@ namespace McRave::Command {
             auto defendArea = Terrain::isDefendNatural() ? BWEB::Map::getNaturalArea() : BWEB::Map::getMainArea();
             auto bestPosition = Util::getConcavePosition(unit, radius, defendArea, Terrain::getDefendPosition());
             unit.command(UnitCommandTypes::Move, bestPosition, false);
-            addAction(unit.unit(), bestPosition, unit.getType());
             return true;
         }
         return false;
@@ -579,7 +578,7 @@ namespace McRave::Command {
             double score = mobility * visited / (exp(threat) * distance * grouping);
 
             if (threat == MIN_THREAT
-                || (unit.unit()->isCloaked() && !overlapsEnemyDetection(p))
+                || (unit.unit()->isCloaked() && !overlapsDetection(unit.unit(), p, PlayerState::Enemy))
                 || unit.getRole() == Role::Scout)
                 return score;
             return 0.0;
@@ -717,91 +716,8 @@ namespace McRave::Command {
             return true;
         }
         return false;
-    }
-
-    bool overlapsActions(Unit unit, TechType tech, Position here, int radius)
-    {
-        auto checkTopLeft = here + Position(-radius / 2, -radius / 2);
-        auto checkTopRight = here + Position(radius / 2, -radius / 2);
-        auto checkBotLeft = here + Position(-radius / 2, radius / 2);
-        auto checkBotRight = here + Position(radius / 2, radius / 2);
-
-        // TechType checks use a rectangular check
-        for (auto &command : myActions) {
-            auto topLeft = command.pos - Position(radius / 2, radius / 2);
-            auto botRight = command.pos + Position(radius / 2, radius / 2);
-
-            if (command.unit != unit && command.tech == tech &&
-                (Util::rectangleIntersect(topLeft, botRight, checkTopLeft)
-                    || Util::rectangleIntersect(topLeft, botRight, checkTopRight)
-                    || Util::rectangleIntersect(topLeft, botRight, checkBotLeft)
-                    || Util::rectangleIntersect(topLeft, botRight, checkBotRight)))
-                return true;
-        }
-        // TechType checks use a rectangular check
-        for (auto &command : enemyActions) {
-            auto topLeft = command.pos - Position(radius / 2, radius / 2);
-            auto botRight = command.pos + Position(radius / 2, radius / 2);
-
-            if (command.unit != unit && command.tech == tech &&
-                (Util::rectangleIntersect(topLeft, botRight, checkTopLeft)
-                    || Util::rectangleIntersect(topLeft, botRight, checkTopRight)
-                    || Util::rectangleIntersect(topLeft, botRight, checkBotLeft)
-                    || Util::rectangleIntersect(topLeft, botRight, checkBotRight)))
-                return true;
-        }
-        return false;
-    }
-
-    bool overlapsActions(Unit unit, UnitType type, Position here, int radius)
-    {
-        // UnitType checks use a radial check
-        for (auto &command : myActions) {
-            if (command.unit != unit && command.type == type && command.pos.getDistance(here) <= radius * 2)
-                return true;
-        }
-        return false;
-    }
-
-    bool overlapsAllyDetection(Position here)
-    {
-        // Detection checks use a radial check
-        for (auto &command : myActions) {
-            if (command.type == UnitTypes::Spell_Scanner_Sweep) {
-                double range = 420.0;
-                if (command.pos.getDistance(here) < range)
-                    return true;
-            }
-            else if (command.type.isDetector()) {
-                double range = command.type.isBuilding() ? 256.0 : 360.0;
-                if (command.pos.getDistance(here) < range)
-                    return true;
-            }
-        }
-        return false;
-    }
-
-    bool overlapsEnemyDetection(Position here)
-    {
-        // Detection checks use a radial check
-        for (auto &command : enemyActions) {
-            if (command.type == UnitTypes::Spell_Scanner_Sweep) {
-                double range = 420.0;
-                double ff = 32;
-                if (command.pos.getDistance(here) < range + ff)
-                    return true;
-            }
-
-            else if (command.type.isDetector()) {
-                double range = command.type.isBuilding() ? 256.0 : 360.0;
-                double ff = 32;
-                if (command.pos.getDistance(here) < range + ff)
-                    return true;
-            }
-        }
-        return false;
-    }
-
+    } 
+    
     bool isInDanger(UnitInfo& unit, Position here)
     {
         int halfWidth = int(ceil(unit.getType().width() / 2));
@@ -868,6 +784,36 @@ namespace McRave::Command {
         return false;
     }
 
+    bool overlapsDetection(Unit unit, Position here, PlayerState player) {
+        vector<Action>* actions;
+
+        if (player == PlayerState::Enemy)
+            actions = &enemyActions;
+        if (player == PlayerState::Self)
+            actions = &myActions;
+        if (player == PlayerState::Ally)
+            actions = &allyActions;
+        if (player == PlayerState::Neutral)
+            actions = &neutralActions;
+
+        if (!actions)
+            return false;
+
+        // Detection checks use a radial check
+        for (auto &action : *actions) {
+            if (action.type == UnitTypes::Spell_Scanner_Sweep) {
+                if (action.pos.getDistance(here) < 420.0)
+                    return true;
+            }
+            else if (action.type.isDetector()) {
+                double range = action.type.isBuilding() ? 256.0 : 360.0;
+                if (action.pos.getDistance(here) < range)
+                    return true;
+            }
+        }
+        return false;
+    }
+
     void onFrame()
     {
         Visuals::startPerfTest();
@@ -877,4 +823,13 @@ namespace McRave::Command {
 
     vector <Action>& getMyActions() { return myActions; }
     vector <Action>& getEnemyActions() { return enemyActions; }
+
+    vector <Action>& getActions(PlayerState player) {
+        if (player == PlayerState::Enemy)
+            return enemyActions;
+        if (player == PlayerState::Self)
+            return myActions;
+        if (player == PlayerState::Ally)
+            return allyActions;
+    }
 }

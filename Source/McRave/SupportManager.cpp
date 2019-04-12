@@ -26,7 +26,7 @@ namespace McRave::Support {
         for (auto itr = Combat::getCombatClusters().rbegin(); itr != Combat::getCombatClusters().rend(); itr++) {
             auto currentCluster = (*itr).first;
             auto currentPos = (*itr).second;
-            if (currentCluster > highestCluster && !Command::overlapsActions(unit.unit(), unit.getType(), currentPos, 64)) {
+            if (currentCluster > highestCluster && !Command::overlapsActions(unit.unit(), currentPos, unit.getType(), PlayerState::Self, 64)) {
                 highestCluster = currentCluster;
                 destination = currentPos;
             }
@@ -34,7 +34,7 @@ namespace McRave::Support {
 
         // HACK: Spells dont move
         if (unit.getType() == UnitTypes::Spell_Scanner_Sweep) {
-            Command::addAction(unit.unit(), unit.getPosition(), UnitTypes::Spell_Scanner_Sweep);
+            Command::addAction(unit.unit(), unit.getPosition(), UnitTypes::Spell_Scanner_Sweep, PlayerState::Self);
             return;
         }
 
@@ -56,15 +56,15 @@ namespace McRave::Support {
         if (unit.getType() == UnitTypes::Zerg_Overlord && !Terrain::getEnemyStartingPosition().isValid())
             posBest = BWEB::Map::getMainPosition();//Terrain::closestUnexploredStart();
 
-        // Check if any expansions need detection on them
-        else if (unit.getType().isDetector() && com(unit.getType()) >= 2 && BuildOrder::buildCount(building) > vis(building) && !Command::overlapsActions(unit.unit(), unit.getType(), (Position)Buildings::getCurrentExpansion(), 320))
+        // Check if any expansions need detection on them - currently only looks at next
+        else if (unit.getType().isDetector() && com(unit.getType()) >= 2 && BuildOrder::buildCount(building) > vis(building) && !Command::overlapsActions(unit.unit(), (Position)Buildings::getCurrentExpansion(), unit.getType(), PlayerState::Self, 320))
             posBest = Position(Buildings::getCurrentExpansion());
 
         // Arbiters cast stasis on a target		
-        else if (unit.getType() == UnitTypes::Protoss_Arbiter && unit.hasTarget() && unit.getDistance(unit.getTarget()) < SIM_RADIUS && unit.getTarget().unit()->exists() && unit.unit()->getEnergy() >= TechTypes::Stasis_Field.energyCost() && !Command::overlapsActions(unit.unit(), TechTypes::Psionic_Storm, unit.getTarget().getPosition(), 96)) {
+        else if (unit.getType() == UnitTypes::Protoss_Arbiter && unit.hasTarget() && unit.getDistance(unit.getTarget()) < SIM_RADIUS && unit.getTarget().unit()->exists() && unit.unit()->getEnergy() >= TechTypes::Stasis_Field.energyCost() && !Command::overlapsActions(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self, 96)) {
             if ((Grids::getEGroundCluster(unit.getTarget().getWalkPosition()) + Grids::getEAirCluster(unit.getTarget().getWalkPosition())) > STASIS_LIMIT) {
                 unit.unit()->useTech(TechTypes::Stasis_Field, unit.getTarget().unit());
-                Command::addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Stasis_Field);
+                Command::addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Stasis_Field, PlayerState::Self);
                 return;
             }
         }
@@ -79,7 +79,7 @@ namespace McRave::Support {
                     if (!w.isValid()
                         || p.getDistance(unit.getPosition()) <= 64
                         || Command::isInDanger(unit, p)
-                        || Command::overlapsActions(unit.unit(), unit.getType(), p, 96))
+                        || Command::overlapsActions(unit.unit(), p, unit.getType(), PlayerState::Self, 96))
                         continue;
 
                     auto threat = Util::getHighestThreat(w, unit);
@@ -87,9 +87,9 @@ namespace McRave::Support {
                     
                     // Try to keep the unit alive if it's cloaked inside detection
                     if (unit.unit()->isCloaked()) {
-                        if (!Command::overlapsEnemyDetection(p) || unit.getPercentShield() > 0.8)
+                        if (!Command::overlapsDetection(unit.unit(), p, PlayerState::Enemy) || unit.getPercentShield() > 0.8)
                             threat = threat / 2.0;
-                        if (unit.getPercentShield() <= LOW_SHIELD_PERCENT_LIMIT && threat > MIN_THREAT && Command::overlapsEnemyDetection(p))
+                        if (unit.getPercentShield() <= LOW_SHIELD_PERCENT_LIMIT && threat > MIN_THREAT && Command::overlapsDetection(unit.unit(), p, PlayerState::Enemy))
                             continue;
                     }
 
@@ -107,8 +107,7 @@ namespace McRave::Support {
         // Move and update commands
         if (posBest.isValid()) {
             unit.setEngagePosition(posBest);
-            unit.unit()->move(posBest);
-            Command::addAction(unit.unit(), posBest, unit.getType());
+            unit.command(UnitCommandTypes::Move, posBest, true);
         }
     }
 }

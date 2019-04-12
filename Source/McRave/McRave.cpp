@@ -12,12 +12,10 @@
 // Test vs BBS
 // Prevent HT walking into enemies when storm isn't suitable (because it has ground damage > 0, it tries to use Attack)
 // Re-power buildings
-// Add playerstate to actions
+// Template UnitInfo::command so we can add TechType usage to it
 // Add 3rd stargate on 3 base with carriers
 // Add frame timeouts for allowable enemy build detection
-// Units love walking into burrowed/invis units
 // Move command doesn't care about threat, probably should
-// Upgrade/Research unlock list
 // When choosing a tech or creating a building, allow certain unlocks/research
 // Adjust Production to check for unlocks
 
@@ -35,6 +33,7 @@
 // Monitor for overkilling units by hp - (2*nextDmgSource) <= 0 (double damage source to account for a potential miss?)
 // Use Player pointer instead of BWAPI::Player pointer in UnitInfo, gives advantage of knowing upgrades/tech that are available always
 // Use player filters to grab unit set in getClosestUnit template
+// Upgrade/Research unlock list
 // Add panic reactions for auto-loss builds
 // - Gate FE vs 4pool
 // - Nexus first vs 6rax/BBS
@@ -48,13 +47,14 @@ void McRaveModule::onStart()
     Broodwar->enableFlag(Flag::UserInput);
     Broodwar->setCommandOptimizationLevel(0);
     Broodwar->setLatCom(true);
+
+    if (Broodwar->getGameType() != BWAPI::GameTypes::Use_Map_Settings)
+        Broodwar->setLocalSpeed(0);
+
     Players::onStart();
     Terrain::onStart();
     BWEB::Map::onStart();
     BWEB::Stations::findStations();
-
-    if (Broodwar->getGameType() != BWAPI::GameTypes::Use_Map_Settings)
-        Broodwar->setLocalSpeed(0);
 
     Stations::onStart();
     Grids::onStart();
@@ -113,7 +113,7 @@ void McRaveModule::onPlayerLeft(Player player)
 
 void McRaveModule::onNukeDetect(Position target)
 {
-    Command::addAction(nullptr, target, TechTypes::Nuclear_Strike);
+    Command::addAction(nullptr, target, TechTypes::Nuclear_Strike, PlayerState::Neutral);
 }
 
 void McRaveModule::onUnitDiscover(Unit unit)

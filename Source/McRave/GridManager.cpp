@@ -230,7 +230,7 @@ namespace McRave::Grids
                 }
 
                 if (u->getType() == UnitTypes::Spell_Disruption_Web)
-                    Command::addAction(u, u->getPosition(), TechTypes::Disruption_Web);
+                    Command::addAction(u, u->getPosition(), TechTypes::Disruption_Web, PlayerState::Neutral);
             }
         }
 

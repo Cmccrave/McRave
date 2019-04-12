@@ -19,12 +19,8 @@ namespace McRave::Command {
         }
     };
 
-    //BWAPI::Position findViablePosition(UnitInfo&, std::function<double(BWAPI::WalkPosition)>);
     void onFrame();
-    bool overlapsActions(BWAPI::Unit, BWAPI::TechType, BWAPI::Position, int);
-    bool overlapsActions(BWAPI::Unit, BWAPI::UnitType, BWAPI::Position, int);
-    bool overlapsAllyDetection(BWAPI::Position);
-    bool overlapsEnemyDetection(BWAPI::Position);
+    bool overlapsDetection(BWAPI::Unit, BWAPI::Position, PlayerState);
     bool isInDanger(UnitInfo&, BWAPI::Position here = BWAPI::Positions::Invalid);
 
     bool misc(UnitInfo& unit);
@@ -41,12 +37,90 @@ namespace McRave::Command {
 
     inline std::vector <Action> myActions;
     inline std::vector <Action> enemyActions;
+    inline std::vector <Action> allyActions;
+    inline std::vector <Action> neutralActions;
 
-    // Adds a UnitType or TechType command at a Position
+    // Adds an Action at a Position
     template<class T>
-    void addAction(BWAPI::Unit unit, BWAPI::Position here, T type, bool enemy = false) {
-        auto &commands = enemy ? enemyActions : myActions;
-        auto test = Action(unit, here, type);
-        commands.push_back(test);
+    void addAction(BWAPI::Unit unit, BWAPI::Position here, T type, PlayerState player) {
+        if (player == PlayerState::Enemy)
+            enemyActions.push_back(Action(unit, here, type));
+        if (player == PlayerState::Self)
+            myActions.push_back(Action(unit, here, type));
+        if (player == PlayerState::Ally)
+            allyActions.push_back(Action(unit, here, type));
+        if (player == PlayerState::Neutral)
+            neutralActions.push_back(Action(unit, here, type));
+    }
+
+    // Check if a new Action would overlap an existing Action
+    template<class T>
+    bool overlapsActions(BWAPI::Unit unit, BWAPI::Position here, T type, PlayerState player, int distance = 0) {
+        std::vector<Action>* actions;
+
+        if (player == PlayerState::Enemy)
+            actions = &enemyActions;
+        if (player == PlayerState::Self)
+            actions = &myActions;
+        if (player == PlayerState::Ally)
+            actions = &allyActions;
+        if (player == PlayerState::Neutral)
+            actions = &neutralActions;
+
+        if (!actions)
+            return false;
+
+        if (std::is_same<BWAPI::UnitType, T>::value) {
+
+            // Check overlap in a circle with UnitType Actions
+            const auto circleOverlap = [&](Action& action) {
+                if (action.unit != unit && action.type == type && action.pos.getDistance(here) <= distance * 2)
+                    return true;
+                return false;
+            };
+
+            // Check outgoing UnitType Actions for this PlayerState
+            for (auto &action : *actions) {
+                if (circleOverlap(action))
+                    return true;
+            }
+        }
+        else {
+
+            // Bounding box of new Action
+            auto checkTopLeft = here + BWAPI::Position(-distance / 2, -distance / 2);
+            auto checkTopRight = here + BWAPI::Position(distance / 2, -distance / 2);
+            auto checkBotLeft = here + BWAPI::Position(-distance / 2, distance / 2);
+            auto checkBotRight = here + BWAPI::Position(distance / 2, distance / 2);
+
+            // Check overlap in a box with TechType actions
+            const auto boxOverlap = [&](Action& action) {
+
+                // Bounding box of current Action
+                auto topLeft = action.pos - BWAPI::Position(distance / 2, distance / 2);
+                auto botRight = action.pos + BWAPI::Position(distance / 2, distance / 2);
+
+                if (action.unit != unit && action.tech == type &&
+                    (Util::rectangleIntersect(topLeft, botRight, checkTopLeft)
+                        || Util::rectangleIntersect(topLeft, botRight, checkTopRight)
+                        || Util::rectangleIntersect(topLeft, botRight, checkBotLeft)
+                        || Util::rectangleIntersect(topLeft, botRight, checkBotRight)))
+                    return true;
+                return false;
+            };
+
+            // Check outgoing TechType Actions for this PlayerState
+            for (auto &action : *actions) {
+                if (boxOverlap(action))
+                    return true;
+            }
+
+            // Check outgoing TechType Actions for neutral PlayerState
+            for (auto &action : neutralActions) {
+                if (boxOverlap(action))
+                    return true;
+            }
+        }
+        return false;
     }
 }

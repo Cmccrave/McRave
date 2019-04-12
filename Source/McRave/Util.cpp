@@ -353,7 +353,7 @@ namespace McRave::Util {
                 || (!Terrain::isInAllyTerritory(t) && area && mapBWEM.GetArea(w) != area)
                 || dist < radius
                 || dist > distBest
-                || Command::overlapsActions(unit.unit(), unit.getType(), p, 8)
+                || Command::overlapsActions(unit.unit(), p, unit.getType(), PlayerState::Self, 8)
                 || Command::isInDanger(unit, p)
                 || !isWalkable(unit, w)
                 || Buildings::overlapsQueue(unit.getType(), TilePosition(w)))
