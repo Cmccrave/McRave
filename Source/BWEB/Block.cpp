@@ -14,6 +14,9 @@ namespace BWEB::Blocks
         {
             int offset = onlyBlock ? 0 : 1;
 
+            if (!TilePosition(here.x + width + 1, here.y + height + 1).isValid())
+                return false;
+
             // Check if a block of specified size would overlap any bases, resources or other blocks
             for (auto x = here.x - offset; x < here.x + width + offset; x++) {
                 for (auto y = here.y - offset; y < here.y + height + offset; y++) {

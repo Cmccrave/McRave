@@ -13,7 +13,7 @@ namespace BWEB {
         int defenseCount = 0;
 
     public:
-        Station::Station(const BWAPI::Position newResourceCenter, const std::set<BWAPI::TilePosition>& newDefenses, const BWEM::Base* newBase)
+        Station(const BWAPI::Position newResourceCenter, const std::set<BWAPI::TilePosition>& newDefenses, const BWEM::Base* newBase)
         {
             resourceCentroid = newResourceCenter;
             defenses = newDefenses;

@@ -8,7 +8,7 @@ namespace BWEB::PathFinding
         double dist;
         bool reachable;
     public:
-        Path::Path()
+        Path()
         {
             tiles ={};
             dist = 0.0;

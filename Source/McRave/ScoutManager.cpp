@@ -158,7 +158,7 @@ namespace McRave::Scouts {
                 auto &closestScout = Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &u) {
                     return u.getRole() == Role::Scout && !u.getDestination().isValid();
                 });
-                return unit.weak_from_this == closestScout;
+                return unit.shared_from_this() == closestScout;
             };
 
             if (!BuildOrder::firstReady() || BuildOrder::isOpener() || !Terrain::getEnemyStartingPosition().isValid()) {

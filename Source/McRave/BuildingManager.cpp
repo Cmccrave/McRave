@@ -130,7 +130,8 @@ namespace McRave::Buildings {
                 else
                     placements = block.getSmallTiles();
 
-                checkBest(blockCenter, placements);
+                for (auto &tile : placements)
+                    checkBest(building, tile, here, tileBest, distBest);                
             }
 
             // Make sure we always place a pylon if we need large/medium spots or need supply
@@ -152,7 +153,9 @@ namespace McRave::Buildings {
                     }
 
                     placements = block.getSmallTiles();
-                    checkBest(blockCenter, placements);
+
+                    for (auto &tile : placements)
+                        checkBest(building, tile, here, tileBest, distBest);
                 }
             }
             return tileBest;

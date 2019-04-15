@@ -166,14 +166,6 @@ namespace McRave::BuildOrder
             unlockedType.insert(Protoss_Dark_Templar);
             techList.insert(Protoss_Dark_Templar);
         }
-        else if (techUnit == Protoss_Reaver) {
-            unlockedType.insert(Protoss_Shuttle);
-            techList.insert(Protoss_Shuttle);
-        }
-        else if (techUnit == Protoss_Observer) {
-            unlockedType.insert(Protoss_Shuttle);
-            techList.insert(Protoss_Shuttle);
-        }
         else if (techUnit == Zerg_Mutalisk && Players::getStrength(PlayerState::Enemy).airToAir > 0.0) {
             techList.insert(Zerg_Scourge);
             unlockedType.insert(Zerg_Scourge);
@@ -183,10 +175,14 @@ namespace McRave::BuildOrder
             unlockedType.insert(Zerg_Hydralisk);
         }
 
-        // HACK: If we have a Reaver add Obs to the tech
-        if (Broodwar->self()->completedUnitCount(Protoss_Reaver) >= 3) {
+        // If we have some Reavers add Obs to the tech
+        if (com(Protoss_Reaver) >= 2) {
             techList.insert(Protoss_Observer);
             unlockedType.insert(Protoss_Observer);
+        }
+        if (com(Protoss_Robotics_Facility) > 0 && (isTechUnit(Protoss_Reaver) || isTechUnit(Protoss_High_Templar))) {
+            unlockedType.insert(Protoss_Shuttle);
+            techList.insert(Protoss_Shuttle);
         }
     }
 
