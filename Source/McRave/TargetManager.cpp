@@ -168,7 +168,7 @@ namespace McRave::Targets {
                 return;
             }
 
-            int distance = (int)unit.getDistance(unit.getTarget());
+            int distance = (int)unit.getPosition().getDistance(unit.getTarget().getPosition());
             int range = unit.getTarget().getType().isFlyer() ? (int)unit.getAirRange() : (int)unit.getGroundRange();
             int leftover = distance - range;
             Position direction = (unit.getPosition() - unit.getTarget().getPosition()) * leftover / distance;

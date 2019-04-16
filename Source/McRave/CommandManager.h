@@ -10,6 +10,8 @@ namespace McRave::Command {
         BWAPI::Position pos =  BWAPI::Positions::None;
         BWAPI::Unit unit = nullptr;
         int frame = 0;
+        std::weak_ptr<UnitInfo> source;
+        std::weak_ptr<UnitInfo> target;
 
         Action(BWAPI::Unit u, BWAPI::Position p, BWAPI::TechType t) { unit = u, pos = p, tech = t, frame = BWAPI::Broodwar->getFrameCount(); }
         Action(BWAPI::Unit u, BWAPI::Position p, BWAPI::UnitType t) { unit = u, pos = p, type = t, frame = BWAPI::Broodwar->getFrameCount(); }

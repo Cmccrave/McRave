@@ -716,8 +716,8 @@ namespace McRave::Command {
             return true;
         }
         return false;
-    } 
-    
+    }
+
     bool isInDanger(UnitInfo& unit, Position here)
     {
         int halfWidth = int(ceil(unit.getType().width() / 2));

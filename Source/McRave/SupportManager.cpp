@@ -61,7 +61,7 @@ namespace McRave::Support {
             posBest = Position(Buildings::getCurrentExpansion());
 
         // Arbiters cast stasis on a target		
-        else if (unit.getType() == UnitTypes::Protoss_Arbiter && unit.hasTarget() && unit.getDistance(unit.getTarget()) < SIM_RADIUS && unit.getTarget().unit()->exists() && unit.unit()->getEnergy() >= TechTypes::Stasis_Field.energyCost() && !Command::overlapsActions(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self, 96)) {
+        else if (unit.getType() == UnitTypes::Protoss_Arbiter && unit.hasTarget() && unit.getPosition().getDistance(unit.getTarget().getPosition()) < SIM_RADIUS && unit.getTarget().unit()->exists() && unit.unit()->getEnergy() >= TechTypes::Stasis_Field.energyCost() && !Command::overlapsActions(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self, 96)) {
             if ((Grids::getEGroundCluster(unit.getTarget().getWalkPosition()) + Grids::getEAirCluster(unit.getTarget().getWalkPosition())) > STASIS_LIMIT) {
                 unit.unit()->useTech(TechTypes::Stasis_Field, unit.getTarget().unit());
                 Command::addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Stasis_Field, PlayerState::Self);

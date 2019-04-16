@@ -12,7 +12,7 @@
 // Test vs BBS
 // Prevent HT walking into enemies when storm isn't suitable (because it has ground damage > 0, it tries to use Attack)
 // Re-power buildings
-// Template UnitInfo::command so we can add TechType usage to it
+// Change UnitInfo::Command to take an Action
 // Add 3rd stargate on 3 base with carriers
 // Add frame timeouts for allowable enemy build detection
 // Move command doesn't care about threat, probably should

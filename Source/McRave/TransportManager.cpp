@@ -86,7 +86,7 @@ namespace McRave::Transports {
                 auto &cargo = c.lock();
 
                 if (auto &cargo = c.lock()) {
-                    auto dist = cargo->getDistance(unit);
+                    auto dist = cargo->getPosition().getDistance(unit.getPosition());
                     if (dist < distBest) {
                         distBest = dist;
                         closestCargo = &*cargo;

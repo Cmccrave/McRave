@@ -70,27 +70,17 @@ namespace McRave {
         BWEB::PathFinding::Path path;
         BWEB::PathFinding::Path resourcePath;
         BWEM::CPPath quickPath;
-        
+
         void updateTarget();
         void updateStuckCheck();
     public:
         UnitInfo();
-        
-        // Cargo and Targets pointing to this
-        std::vector<std::weak_ptr<UnitInfo>>& getAssignedCargo() { return assignedCargo; }
-        std::vector<std::weak_ptr<UnitInfo>>& getTargetedBy() { return targetedBy; }
-
-        // States
-        TransportState getTransportState() { return tState; }
-        SimState getSimState() { return sState; }
-        GlobalState getGlobalState() { return gState; }
-        LocalState getLocalState() { return lState; }
 
         // Utility members
         bool samePath() {
             return (path.getTiles().front() == target.lock()->getTilePosition() && path.getTiles().back() == tilePosition);
         }
-        bool hasAttackedRecently() {            
+        bool hasAttackedRecently() {
             return (BWAPI::Broodwar->getFrameCount() - lastAttackFrame < 50);
         }
         bool isStuck() {
@@ -115,15 +105,39 @@ namespace McRave {
             return (unitType.maxShields() > 0 && percentShield > LOW_SHIELD_PERCENT_LIMIT)
                 || (unitType.isMechanical() && percentHealth > LOW_MECH_PERCENT_LIMIT);
         }
+        bool isHidden() {
+            auto detection = player->isEnemy(BWAPI::Broodwar->self()) ? Command::overlapsDetection(thisUnit, position, PlayerState::Self) : Command::overlapsDetection(thisUnit, position, PlayerState::Enemy);
+            return (burrowed || (thisUnit->exists() && thisUnit->isCloaked())) && !detection;
+        }
 
         int frameArrivesWhen() {
             return BWAPI::Broodwar->getFrameCount() + int(position.getDistance(Terrain::getDefendPosition()) / speed);
         }
-
         int frameCompletesWhen() {
             return BWAPI::Broodwar->getFrameCount() + int((1.0 - percentHealth) * double(unitType.buildTime()));
         }
 
+        bool isThreatening();
+        bool canStartAttack();
+        bool canStartCast(BWAPI::TechType);
+
+        bool isBurrowed() { return burrowed; }
+        bool isFlying() { return flying; }
+        bool sameTile() { return lastTile == tilePosition; }
+        bool hasResource() { return !resource.expired(); }
+        bool hasTransport() { return !transport.expired(); }
+        bool hasTarget() { return !target.expired(); }
+
+        // Commanding the unit to prevent order/command spam
+        bool command(BWAPI::UnitCommandType, BWAPI::Position, bool);
+        bool command(BWAPI::UnitCommandType, UnitInfo&);
+
+
+
+        void updateUnit();
+        void createDummy(BWAPI::UnitType);
+
+        // Debug
         void circleRed() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Red); }
         void circleOrange() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Orange); }
         void circleYellow() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Yellow); }
@@ -131,7 +145,38 @@ namespace McRave {
         void circleBlue() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Blue); }
         void circlePurple() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Purple); }
         void circleBlack() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Black); }
-               
+
+    #pragma region Getters
+        std::vector<std::weak_ptr<UnitInfo>>& getAssignedCargo() { return assignedCargo; }
+        std::vector<std::weak_ptr<UnitInfo>>& getTargetedBy() { return targetedBy; }
+
+        TransportState getTransportState() { return tState; }
+        SimState getSimState() { return sState; }
+        GlobalState getGlobalState() { return gState; }
+        LocalState getLocalState() { return lState; }
+
+        ResourceInfo &getResource() { return *resource.lock(); }
+        UnitInfo &getTransport() { return *transport.lock(); }
+        UnitInfo &getTarget() { return *target.lock(); }
+
+        Role getRole() { return role; }
+        BWAPI::Unit unit() { return thisUnit; }
+        BWAPI::UnitType getType() { return unitType; }
+        BWAPI::UnitType getBuildingType() { return buildingType; }
+        BWAPI::Player getPlayer() { return player; }
+        BWAPI::Position getPosition() { return position; }
+        BWAPI::Position getEngagePosition() { return engagePosition; }
+        BWAPI::Position getDestination() { return destination; }
+        BWAPI::Position getLastPosition() { return lastPos; }
+        BWAPI::Position getSimPosition() { return simPosition; }
+        BWAPI::Position getGoal() { return goal; }
+        BWAPI::WalkPosition getWalkPosition() { return walkPosition; }
+        BWAPI::WalkPosition getLastWalk() { return lastWalk; }
+        BWAPI::TilePosition getTilePosition() { return tilePosition; }
+        BWAPI::TilePosition getBuildPosition() { return buildPosition; }
+        BWAPI::TilePosition getLastTile() { return lastTile; }
+        BWEB::PathFinding::Path& getPath() { return path; }
+        BWEM::CPPath& getQuickPath() { return quickPath; }
         double getPercentHealth() { return percentHealth; }
         double getPercentShield() { return percentShield; }
         double getPercentTotal() { return percentTotal; }
@@ -149,7 +194,6 @@ namespace McRave {
         double getPriority() { return priority; }
         double getEngDist() { return engageDist; }
         double getSimValue() { return simValue; }
-        double getDistance(UnitInfo& unit) { return position.getDistance(unit.getPosition()); }
         int getShields() { return shields; }
         int getHealth() { return health; }
         int getLastAttackFrame() { return lastAttackFrame; }
@@ -158,77 +202,24 @@ namespace McRave {
         int getEnergy() { return energy; }
         int getRemainingTrainFrames() { return remainingTrainFrame; }
         int framesHoldingResource() { return resourceHeldFrames; }
+    #pragma endregion      
 
-        bool isThreatening();
-        bool isHidden();
-		bool canStartAttack();
-
-        bool isBurrowed() { return burrowed; }
-        bool isFlying() { return flying; }
-        bool sameTile() { return lastTile == tilePosition; }
-        bool hasResource() { return !resource.expired(); }
-        bool hasTransport() { return !transport.expired(); }
-        bool hasTarget() { return !target.expired(); }
-
-        // Commanding the unit to prevent order/command spam
-        bool command(BWAPI::UnitCommandType, BWAPI::Position, bool);
-        bool command(BWAPI::UnitCommandType, UnitInfo&);
-
-        ResourceInfo &getResource() { return *resource.lock(); }
-        UnitInfo &getTransport() { return *transport.lock(); }
-        UnitInfo &getTarget() { return *target.lock(); }
-        Role getRole() { return role; }
-
-        BWAPI::Unit unit() { return thisUnit; }
-        BWAPI::UnitType getType() { return unitType; }
-        BWAPI::UnitType getBuildingType() { return buildingType; }
-        BWAPI::Player getPlayer() { return player; }
-
-        BWAPI::Position getPosition() { return position; }
-        BWAPI::Position getEngagePosition() { return engagePosition; }
-        BWAPI::Position getDestination() { return destination; }
-        BWAPI::Position getLastPosition() { return lastPos; }
-        BWAPI::Position getSimPosition() { return simPosition; }
-        BWAPI::Position getGoal() { return goal; }
-        BWAPI::WalkPosition getWalkPosition() { return walkPosition; }
-        BWAPI::WalkPosition getLastWalk() { return lastWalk; }
-        BWAPI::TilePosition getTilePosition() { return tilePosition; }
-        BWAPI::TilePosition getBuildPosition() { return buildPosition; }
-        BWAPI::TilePosition getLastTile() { return lastTile; }
-
-        BWEB::PathFinding::Path& getPath() { return path; }
-        BWEM::CPPath& getQuickPath() { return quickPath; }
-
-        void updateUnit();
-        void createDummy(BWAPI::UnitType);
-
+    #pragma region Setters
         void setEngDist(double newValue) { engageDist = newValue; }
         void setSimValue(double newValue) { simValue = newValue; }
-
         void setLastAttackFrame(int newValue) { lastAttackFrame = newValue; }
         void setRemainingTrainFrame(int newFrame) { remainingTrainFrame = newFrame; }
-
         void setTransportState(TransportState newState) { tState = newState; }
         void setSimState(SimState newState) { sState = newState; }
         void setGlobalState(GlobalState newState) { gState = newState; }
         void setLocalState(LocalState newState) { lState = newState; }
-
-        void setResource(ResourceInfo* unit) {
-            unit ? resource = unit->weak_from_this() : resource.reset();
-        }
-        void setTransport(UnitInfo* unit) { 
-            unit ? transport = unit->weak_from_this() : transport.reset();
-        }
-        void setTarget(UnitInfo* unit) { 
-            unit ? target = unit->weak_from_this() : target.reset();
-        }
-
+        void setResource(ResourceInfo* unit) { unit ? resource = unit->weak_from_this() : resource.reset(); }
+        void setTransport(UnitInfo* unit) { unit ? transport = unit->weak_from_this() : transport.reset(); }
+        void setTarget(UnitInfo* unit) { unit ? target = unit->weak_from_this() : target.reset(); }
         void setRole(Role newRole) { role = newRole; }
-
         void setUnit(BWAPI::Unit newUnit) { thisUnit = newUnit; }
         void setType(BWAPI::UnitType newType) { unitType = newType; }
         void setBuildingType(BWAPI::UnitType newType) { buildingType = newType; }
-
         void setSimPosition(BWAPI::Position newPosition) { simPosition = newPosition; }
         void setPosition(BWAPI::Position newPosition) { position = newPosition; }
         void setEngagePosition(BWAPI::Position newPosition) { engagePosition = newPosition; }
@@ -237,12 +228,12 @@ namespace McRave {
         void setWalkPosition(BWAPI::WalkPosition newPosition) { walkPosition = newPosition; }
         void setTilePosition(BWAPI::TilePosition newPosition) { tilePosition = newPosition; }
         void setBuildPosition(BWAPI::TilePosition newPosition) { buildPosition = newPosition; }
-
         void setPath(BWEB::PathFinding::Path& newPath) { path = newPath; }
         void setQuickPath(BWEM::CPPath newPath) { quickPath = newPath; }
-
         void setLastPositions();
+    #pragma endregion
 
+    #pragma region Operators
         bool operator== (UnitInfo& p) {
             return thisUnit == p.unit();
         }
@@ -258,5 +249,6 @@ namespace McRave {
         bool operator< (std::weak_ptr<UnitInfo>(unit)) {
             return thisUnit < unit.lock()->unit();
         }
+    #pragma endregion
     };
 }

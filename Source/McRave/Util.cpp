@@ -200,6 +200,15 @@ namespace McRave::Util {
         //return highest;
     }
 
+    double getCastLimit(TechType tech)
+    {
+        if (tech == TechTypes::Psionic_Storm || tech == TechTypes::Maelstrom || tech == TechTypes::Plague || tech == TechTypes::Ensnare)
+            return 0.75;
+        if (tech == TechTypes::Stasis_Field)
+            return 2.0;
+        return 0.0;
+    }
+
     bool accurateThreatOnPath(UnitInfo& unit, BWEB::PathFinding::Path& path)
     {
         if (path.getTiles().empty())

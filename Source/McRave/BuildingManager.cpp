@@ -243,7 +243,7 @@ namespace McRave::Buildings {
             currentExpansion = tileBest;
             return tileBest;
         }
-
+        
         TilePosition findResourceDepotLocation()
         {
             auto here = TilePositions::Invalid;

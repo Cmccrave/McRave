@@ -96,7 +96,7 @@ namespace McRave
         }
 
         // Assume enemy target
-        else if (player && player->isEnemy(Broodwar->self())) {            
+        else if (player && player->isEnemy(Broodwar->self())) {
             if (thisUnit->getOrderTarget()) {
                 auto &targetInfo = Units::getUnitInfo(thisUnit->getOrderTarget());
                 if (targetInfo) {
@@ -126,9 +126,9 @@ namespace McRave
 
     bool UnitInfo::command(BWAPI::UnitCommandType command, BWAPI::Position here, bool overshoot)
     {
-		// Check if we need to wait a few frames before issuing a command due to stop frames
-		int frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
-		bool attackCooldown = frameSinceAttack <= minStopFrame - Broodwar->getRemainingLatencyFrames();
+        // Check if we need to wait a few frames before issuing a command due to stop frames
+        int frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
+        bool attackCooldown = frameSinceAttack <= minStopFrame - Broodwar->getRemainingLatencyFrames();
         Command::addAction(thisUnit, here, unitType, PlayerState::Self);
 
         if (attackCooldown)
@@ -169,7 +169,7 @@ namespace McRave
     bool UnitInfo::command(BWAPI::UnitCommandType command, UnitInfo& targetUnit)
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames
-		int frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
+        int frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
         bool attackCooldown = frameSinceAttack <= minStopFrame - Broodwar->getRemainingLatencyFrames();
         Command::addAction(thisUnit, targetUnit.getPosition(), unitType, PlayerState::Self);
 
@@ -267,26 +267,35 @@ namespace McRave
         }
         return Broodwar->getFrameCount() - lastThreateningFrame < 50;
     }
-
-    bool UnitInfo::isHidden()
+    
+    bool UnitInfo::canStartAttack()
     {
-        auto detection = player->isEnemy(Broodwar->self()) ? Command::overlapsDetection(thisUnit, position, PlayerState::Self) : Command::overlapsDetection(thisUnit, position, PlayerState::Enemy);
-        return (burrowed || (thisUnit->exists() && thisUnit->isCloaked())) && !detection;
-    }
+        if (!target.lock() || (groundDamage == 0 && airDamage == 0))
+            return false;
 
-	bool UnitInfo::canStartAttack()
-	{
-		if (!target.lock() || (groundDamage == 0 && airDamage == 0))
-			return false;
-
-		auto cooldown = target.lock()->getType().isFlyer() ? thisUnit->getAirWeaponCooldown() : thisUnit->getGroundWeaponCooldown();
+        auto cooldown = target.lock()->getType().isFlyer() ? thisUnit->getAirWeaponCooldown() : thisUnit->getGroundWeaponCooldown();
 
         if (unitType == UnitTypes::Protoss_Reaver)
             cooldown = lastAttackFrame - Broodwar->getFrameCount() + 60;
 
-		auto targetExists = target.lock()->unit()->exists();
-		auto cooldownReady =  cooldown < Broodwar->getLatencyFrames();
-		auto cooldownWillBeReady = cooldown < engageDist / (transport.lock() ? transport.lock()->getSpeed() : speed);
-		return cooldownReady || cooldownWillBeReady;
-	}
+        auto targetExists = target.lock()->unit()->exists();
+        auto cooldownReady =  cooldown < Broodwar->getLatencyFrames();
+        auto cooldownWillBeReady = cooldown < engageDist / (transport.lock() ? transport.lock()->getSpeed() : speed);
+        return cooldownReady || cooldownWillBeReady;
+    }
+
+    bool UnitInfo::canStartCast(BWAPI::TechType tech)
+    {
+        if (energy < tech.energyCost())
+            return false;
+
+        if (auto currentTarget = target.lock()) {
+            auto ground = Grids::getEGroundCluster(currentTarget->getPosition());
+            auto air = Grids::getEAirCluster(currentTarget->getPosition());
+
+            if (ground + air >= Util::getCastLimit(tech))
+                return true;
+        }
+        return false;
+    }
 }
