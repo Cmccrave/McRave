@@ -76,10 +76,8 @@ namespace McRave {
     public:
         UnitInfo();
 
-        // Utility members
-        bool samePath() {
-            return (path.getTiles().front() == target.lock()->getTilePosition() && path.getTiles().back() == tilePosition);
-        }
+        
+        
         bool hasAttackedRecently() {
             return (BWAPI::Broodwar->getFrameCount() - lastAttackFrame < 50);
         }
@@ -109,6 +107,18 @@ namespace McRave {
             auto detection = player->isEnemy(BWAPI::Broodwar->self()) ? Command::overlapsDetection(thisUnit, position, PlayerState::Self) : Command::overlapsDetection(thisUnit, position, PlayerState::Enemy);
             return (burrowed || (thisUnit->exists() && thisUnit->isCloaked())) && !detection;
         }
+        bool isBurrowed() { return burrowed; }
+        bool isFlying() { return flying; }
+
+        bool samePath() {
+            return (path.getTiles().front() == target.lock()->getTilePosition() && path.getTiles().back() == tilePosition);
+        }
+        bool sameTile() { return lastTile == tilePosition; }
+
+
+        bool hasResource() { return !resource.expired(); }
+        bool hasTransport() { return !transport.expired(); }
+        bool hasTarget() { return !target.expired(); }
 
         int frameArrivesWhen() {
             return BWAPI::Broodwar->getFrameCount() + int(position.getDistance(Terrain::getDefendPosition()) / speed);
@@ -121,12 +131,7 @@ namespace McRave {
         bool canStartAttack();
         bool canStartCast(BWAPI::TechType);
 
-        bool isBurrowed() { return burrowed; }
-        bool isFlying() { return flying; }
-        bool sameTile() { return lastTile == tilePosition; }
-        bool hasResource() { return !resource.expired(); }
-        bool hasTransport() { return !transport.expired(); }
-        bool hasTarget() { return !target.expired(); }
+
 
         // Commanding the unit to prevent order/command spam
         bool command(BWAPI::UnitCommandType, BWAPI::Position, bool);
@@ -134,10 +139,10 @@ namespace McRave {
 
 
 
-        void updateUnit();
+        void update();
         void createDummy(BWAPI::UnitType);
 
-        // Debug
+    #pragma region Drawing
         void circleRed() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Red); }
         void circleOrange() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Orange); }
         void circleYellow() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Yellow); }
@@ -145,6 +150,7 @@ namespace McRave {
         void circleBlue() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Blue); }
         void circlePurple() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Purple); }
         void circleBlack() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Black); }
+    #pragma endregion
 
     #pragma region Getters
         std::vector<std::weak_ptr<UnitInfo>>& getAssignedCargo() { return assignedCargo; }

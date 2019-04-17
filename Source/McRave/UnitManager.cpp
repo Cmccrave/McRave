@@ -165,7 +165,7 @@ namespace McRave::Units {
 
                     // If unit is visible, update it
                     if (unit.unit()->exists()) {
-                        unit.updateUnit();
+                        unit.update();
 
                         // TODO: Move to a UnitInfo flag
                         if (unit.hasTarget() && (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Protoss_Scarab))
@@ -212,7 +212,7 @@ namespace McRave::Units {
                     UnitInfo &unit = *u;
                     myUnits.insert(u);
 
-                    unit.updateUnit();
+                    unit.update();
                     updateRole(u);
 
                     auto type = unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType() : unit.getType();
@@ -315,7 +315,7 @@ namespace McRave::Units {
         }
 
         info.setUnit(unit);
-        info.updateUnit();
+        info.update();
         player.getUnits().insert(make_shared<UnitInfo>(info));
 
         if (unit->getPlayer() == Broodwar->self() && unit->getType() == UnitTypes::Protoss_Pylon)

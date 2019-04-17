@@ -14,7 +14,7 @@ namespace McRave
         lastWalk =  walkPosition;
     }
 
-    void UnitInfo::updateUnit()
+    void UnitInfo::update()
     {
         auto t = thisUnit->getType();
         auto p = thisUnit->getPlayer();
