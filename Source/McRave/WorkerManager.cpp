@@ -78,7 +78,7 @@ namespace McRave::Workers {
                 worker.setDestination(center);
 
                 if (worker.getPosition().getDistance(center) > 32.0 + (96.0 * (double)worker.getBuildingType().isRefinery())) {
-                    BWEB::PathFinding::Path newPath;
+                    BWEB::Path newPath;
                     newPath.createUnitPath(worker.getPosition(), center);
                     worker.setPath(newPath);
                     Command::move(worker);
@@ -146,13 +146,13 @@ namespace McRave::Workers {
 
                 // 1) If it's close or same area, don't need a path, set to empty	
                 if (closeToResource(worker)) {
-                    BWEB::PathFinding::Path emptyPath;
+                    BWEB::Path emptyPath;
                     worker.setPath(emptyPath);
                 }
 
                 // 2) If it's far, generate a path
                 else if (worker.getLastTile() != worker.getTilePosition() && resourceCentroid.isValid()) {
-                    BWEB::PathFinding::Path newPath;
+                    BWEB::Path newPath;
                     newPath.createUnitPath(worker.getPosition(), resourceCentroid);
                     worker.setPath(newPath);
                 }
@@ -249,7 +249,7 @@ namespace McRave::Workers {
                     for (auto &s : Stations::getMyStations()) {
                         auto station = s.second;
                         auto closePath = Stations::pathStationToStation(closest, station);
-                        BWEB::PathFinding::Path path;
+                        BWEB::Path path;
                         if (closest  && closePath)
                             path = *closePath;
 
@@ -308,7 +308,7 @@ namespace McRave::Workers {
                 worker.getResource().getType().isMineralField() ? minWorkers++ : gasWorkers++;
                 worker.getResource().addTargetedBy(worker.weak_from_this());
 
-                BWEB::PathFinding::Path emptyPath;
+                BWEB::Path emptyPath;
                 worker.setPath(emptyPath);
             }
         }

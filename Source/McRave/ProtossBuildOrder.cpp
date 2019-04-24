@@ -51,7 +51,7 @@ namespace McRave::BuildOrder::Protoss
                 if (desiredDetection == Protoss_Observer)
                     techUnit = Protoss_Observer;
                 else {
-                    techUnit = Protoss_Forge; // Does this work?
+                    techUnit = Protoss_Forge;
                     wallNat = true;
                     itemQueue[Protoss_Forge] = Item(1);
                     itemQueue[Protoss_Photon_Cannon] = Item(com(Protoss_Forge) * 2);

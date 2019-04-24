@@ -5,7 +5,7 @@
 using namespace std;
 using namespace BWAPI;
 
-namespace BWEB::PathFinding
+namespace BWEB
 {
     namespace {
         struct UnitCollision {
@@ -121,6 +121,7 @@ namespace BWEB::PathFinding
         // This function requires that parentGrid has been filled in for a path from source to target
         const auto createPath = [&]() {
             tiles.push_back(target);
+            reachable = true;
             TilePosition check = parentGrid[target.x][target.y];
             dist += Map::pConvert(target).getDistance(Map::pConvert(check));
 

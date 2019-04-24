@@ -13,5 +13,5 @@ namespace McRave::Stations
     void removeStation(BWAPI::Unit);
     bool needDefenses(const BWEB::Station&);
     bool stationNetworkExists(const BWEB::Station *, const BWEB::Station *);
-    BWEB::PathFinding::Path* pathStationToStation(const BWEB::Station *, const BWEB::Station *);
+    BWEB::Path* pathStationToStation(const BWEB::Station *, const BWEB::Station *);
 };

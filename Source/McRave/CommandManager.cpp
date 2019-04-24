@@ -354,7 +354,7 @@ namespace McRave::Command {
         if (canMove() && shouldMove()) {
 
             // Make a path
-            BWEB::PathFinding::Path unitPath;
+            BWEB::Path unitPath;
             unitPath.createUnitPath(unit.getPosition(), unit.getDestination());
             Visuals::displayPath(unitPath.getTiles());
 

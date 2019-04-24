@@ -418,12 +418,12 @@ namespace McRave::Terrain {
             return true;
         }
 
-        BWEB::Walls::createWall(types, BWEB::Map::getNaturalArea(), BWEB::Map::getMainChoke(), wallTight, defenses, false, tight);
-        BWEB::Wall * wallA = BWEB::Walls::getWall(BWEB::Map::getNaturalArea(), BWEB::Map::getMainChoke());
-        if (wallA) {
-            mainWall = wallA;
-            return true;
-        }
+        //BWEB::Walls::createWall(types, BWEB::Map::getNaturalArea(), BWEB::Map::getMainChoke(), wallTight, defenses, false, tight);
+        //BWEB::Wall * wallA = BWEB::Walls::getWall(BWEB::Map::getNaturalArea(), BWEB::Map::getMainChoke());
+        //if (wallA) {
+        //    mainWall = wallA;
+        //    return true;
+        //}
         return false;
     }
 

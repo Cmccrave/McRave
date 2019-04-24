@@ -33,6 +33,7 @@ namespace McRave::BuildOrder::Protoss {
             gasLimit =			INT_MAX;
             zealotLimit =		1;
             dragoonLimit =		INT_MAX;
+            wallNat =           vis(Protoss_Nexus) >= 2;
         }
     }
 
@@ -302,6 +303,8 @@ namespace McRave::BuildOrder::Protoss {
             desiredDetection =  Protoss_Forge;
 
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (vis(Protoss_Templar_Archives) > 0));
+            itemQueue[Protoss_Forge] =              Item(s >= 60);
+            itemQueue[Protoss_Photon_Cannon] =      Item(2 * (com(Protoss_Forge) > 0));
         }
         else if (currentTransition == "Defensive") {
             lockedTransition = true;

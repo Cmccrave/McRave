@@ -1,7 +1,7 @@
 #pragma once
 #include <BWAPI.h>
 
-namespace BWEB::PathFinding
+namespace BWEB
 {
     class Path {
         std::vector<BWAPI::TilePosition> tiles;

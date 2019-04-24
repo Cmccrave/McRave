@@ -310,7 +310,7 @@ namespace BWEB::Map
         auto source = bwemPath.front();
 
 
-        BWEB::PathFinding::Path newPath;
+        BWEB::Path newPath;
         newPath.createUnitPath(start, (Position)source->Center());
         return newPath.getDistance();
     }

@@ -7,7 +7,7 @@ namespace McRave::Stations {
 
     namespace {
         map <Unit, const BWEB::Station *> myStations, enemyStations;
-        map<const BWEB::Station *, std::map<const BWEB::Station *, BWEB::PathFinding::Path>> stationNetwork;
+        map<const BWEB::Station *, std::map<const BWEB::Station *, BWEB::Path>> stationNetwork;
 
         void updateStations()
         {
@@ -38,7 +38,7 @@ namespace McRave::Stations {
                 if (stationNetworkExists(ptrs1, ptrs2) || ptrs1 == ptrs2)
                     continue;
 
-                BWEB::PathFinding::Path newPath;
+                BWEB::Path newPath;
                 newPath.createUnitPath(ptrs1->getResourceCentroid(), ptrs2->getResourceCentroid());
                 stationNetwork[ptrs1][ptrs2] = newPath;
             }
@@ -184,7 +184,7 @@ namespace McRave::Stations {
         return false;
     }
 
-    BWEB::PathFinding::Path* pathStationToStation(const BWEB::Station * start, const BWEB::Station * finish)
+    BWEB::Path* pathStationToStation(const BWEB::Station * start, const BWEB::Station * finish)
     {
         for (auto &s : stationNetwork) {
             auto s1 = s.first;

@@ -101,7 +101,7 @@ namespace McRave::Util {
     bool reactivePullWorker(UnitInfo&);
     bool proactivePullWorker(UnitInfo&);
     bool pullRepairWorker(UnitInfo&);
-    bool accurateThreatOnPath(UnitInfo&, BWEB::PathFinding::Path&);
+    bool accurateThreatOnPath(UnitInfo&, BWEB::Path&);
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, BWAPI::Position);
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, int, int);
     bool isWalkable(UnitInfo&, BWAPI::WalkPosition);

@@ -67,8 +67,8 @@ namespace McRave {
         BWAPI::TilePosition buildPosition = BWAPI::TilePositions::Invalid;
         BWAPI::TilePosition lastTile = BWAPI::TilePositions::Invalid;
 
-        BWEB::PathFinding::Path path;
-        BWEB::PathFinding::Path resourcePath;
+        BWEB::Path path;
+        BWEB::Path resourcePath;
         BWEM::CPPath quickPath;
 
         void updateTarget();
@@ -181,7 +181,7 @@ namespace McRave {
         BWAPI::TilePosition getTilePosition() { return tilePosition; }
         BWAPI::TilePosition getBuildPosition() { return buildPosition; }
         BWAPI::TilePosition getLastTile() { return lastTile; }
-        BWEB::PathFinding::Path& getPath() { return path; }
+        BWEB::Path& getPath() { return path; }
         BWEM::CPPath& getQuickPath() { return quickPath; }
         double getPercentHealth() { return percentHealth; }
         double getPercentShield() { return percentShield; }
@@ -234,7 +234,7 @@ namespace McRave {
         void setWalkPosition(BWAPI::WalkPosition newPosition) { walkPosition = newPosition; }
         void setTilePosition(BWAPI::TilePosition newPosition) { tilePosition = newPosition; }
         void setBuildPosition(BWAPI::TilePosition newPosition) { buildPosition = newPosition; }
-        void setPath(BWEB::PathFinding::Path& newPath) { path = newPath; }
+        void setPath(BWEB::Path& newPath) { path = newPath; }
         void setQuickPath(BWEM::CPPath newPath) { quickPath = newPath; }
         void setLastPositions();
     #pragma endregion

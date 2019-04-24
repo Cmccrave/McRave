@@ -187,7 +187,7 @@ namespace McRave::Targets {
 
             // If no target, no distance/path available
             if (!unit.hasTarget()) {
-                BWEB::PathFinding::Path newPath;
+                BWEB::Path newPath;
                 unit.setEngDist(0.0);
                 unit.setPath(newPath);
                 return;
@@ -207,7 +207,7 @@ namespace McRave::Targets {
 
                                                                                                                                     // Set distance as estimate when targeting a building/flying unit or far away
             if (unit.getTarget().getType().isBuilding() || unit.getTarget().getType().isFlyer() || unit.getPosition().getDistance(unit.getTarget().getPosition()) >= SIM_RADIUS || unit.getTilePosition() == unit.getTarget().getTilePosition()) {
-                BWEB::PathFinding::Path newPath;
+                BWEB::Path newPath;
                 unit.setEngDist(unit.getPosition().getDistance(unit.getEngagePosition()));
                 unit.setPath(newPath);
                 return;
@@ -215,7 +215,7 @@ namespace McRave::Targets {
 
             // If should create path, grab one from BWEB
             if (shouldCreatePath && canCreatePath) {
-                BWEB::PathFinding::Path newPath;
+                BWEB::Path newPath;
                 newPath.createUnitPath(unit.getPosition(), unit.getTarget().getPosition());
                 unit.setPath(newPath);
             }
