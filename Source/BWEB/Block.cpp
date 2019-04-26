@@ -2,7 +2,6 @@
 
 using namespace std;
 using namespace BWAPI;
-using namespace BWEB::Map;
 
 namespace BWEB::Blocks
 {
@@ -12,7 +11,7 @@ namespace BWEB::Blocks
 
         bool canAddBlock(const TilePosition here, const int width, const int height, bool onlyBlock = false)
         {
-            int offset = onlyBlock ? 0 : 1;
+            const auto offset = onlyBlock ? 0 : 1;
 
             if (!TilePosition(here.x + width + 1, here.y + height + 1).isValid())
                 return false;
@@ -20,8 +19,8 @@ namespace BWEB::Blocks
             // Check if a block of specified size would overlap any bases, resources or other blocks
             for (auto x = here.x - offset; x < here.x + width + offset; x++) {
                 for (auto y = here.y - offset; y < here.y + height + offset; y++) {
-                    TilePosition t(x, y);
-                    if (!t.isValid() || !mapBWEM.GetTile(t).Buildable() || Map::isOverlapping(t) || Map::isReserved(t))
+                    const TilePosition t(x, y);
+                    if (!t.isValid() || !Map::mapBWEM.GetTile(t).Buildable() || Map::isOverlapping(t) || Map::isReserved(t))
                         return false;
                 }
             }
@@ -32,22 +31,22 @@ namespace BWEB::Blocks
         {
             Block newBlock(here, pieces);
             allBlocks.push_back(newBlock);
-            addOverlap(here, newBlock.width(), newBlock.height());
+            Map::addOverlap(here, newBlock.width(), newBlock.height());
         }
 
-        void findStartBlock()
+        void findMainStartBlock()
         {
-            auto race = Broodwar->self()->getRace();
+            const auto  race = Broodwar->self()->getRace();
             vector<Piece> pieces;
-            bool left, up;
+            bool blockFacesLeft, blockFacesUp;
 
             const auto creepOnCorners = [&](TilePosition here, int width, int height) {
                 return Broodwar->hasCreep(here) && Broodwar->hasCreep(here + TilePosition(width, 0)) && Broodwar->hasCreep(here + TilePosition(0, height)) && Broodwar->hasCreep(here + TilePosition(width, height));
             };
 
-            TilePosition tileBest = TilePositions::Invalid;
+            auto tileBest = TilePositions::Invalid;
             auto distBest = DBL_MAX;
-            auto start = (Map::getMainTile() + (Map::getMainChoke() ? (TilePosition)Map::getMainChoke()->Center() : Map::getMainTile())) / 2;
+            auto start = (Map::getMainTile() + (Map::getMainChoke() ? TilePosition(Map::getMainChoke()->Center()) : Map::getMainTile())) / 2;
 
             if (race == Races::Zerg)
                 start = Map::getMainTile();
@@ -55,10 +54,10 @@ namespace BWEB::Blocks
             // Try to find a block near our starting location
             for (auto x = start.x - 10; x <= start.x + 6; x++) {
                 for (auto y = start.y - 10; y <= start.y + 6; y++) {
-                    TilePosition tile(x, y);
+                    const TilePosition tile(x, y);
 
                     if (!tile.isValid()
-                        || mapBWEM.GetArea(tile) != Map::getMainArea())
+                        || Map::mapBWEM.GetArea(tile) != Map::getMainArea())
                         continue;
 
                     const auto blockCenter = Position(tile) + Position(128, 80);
@@ -70,8 +69,8 @@ namespace BWEB::Blocks
                         tileBest = tile;
                         distBest = dist;
 
-                        left = (blockCenter.x < Map::getMainPosition().x);
-                        up = (blockCenter.y < Map::getMainPosition().y);
+                        blockFacesLeft = (blockCenter.x < Map::getMainPosition().x);
+                        blockFacesUp = (blockCenter.y < Map::getMainPosition().y);
                     }
                 }
             }
@@ -80,19 +79,19 @@ namespace BWEB::Blocks
             if (Map::getMainChoke() == Map::getNaturalChoke()) {
                 for (auto x = Map::getNaturalTile().x - 9; x <= Map::getNaturalTile().x + 6; x++) {
                     for (auto y = Map::getNaturalTile().y - 6; y <= Map::getNaturalTile().y + 5; y++) {
-                        TilePosition tile(x, y);
+                        const TilePosition tile(x, y);
 
                         if (!tile.isValid())
                             continue;
 
-                        auto blockCenter = Position(tile) + Position(128, 80);
+                        const auto blockCenter = Position(tile) + Position(128, 80);
                         const auto dist = blockCenter.getDistance(Map::getMainPosition()) + blockCenter.getDistance(Position(Map::getMainChoke()->Center()));
                         if (dist < distBest && ((race == Races::Protoss && canAddBlock(tile, 8, 5)) || (race == Races::Terran && canAddBlock(tile, 6, 5)))) {
                             tileBest = tile;
                             distBest = dist;
 
-                            left = (blockCenter.x < Map::getMainPosition().x);
-                            up = (blockCenter.y < Map::getMainPosition().y);
+                            blockFacesLeft = (blockCenter.x < Map::getMainPosition().x);
+                            blockFacesUp = (blockCenter.y < Map::getMainPosition().y);
                         }
                     }
                 }
@@ -102,12 +101,12 @@ namespace BWEB::Blocks
             if (!tileBest.isValid()) {
                 for (auto x = Map::getMainTile().x - 16; x <= Map::getMainTile().x + 20; x++) {
                     for (auto y = Map::getMainTile().y - 16; y <= Map::getMainTile().y + 20; y++) {
-                        TilePosition tile(x, y);
+                        const TilePosition tile(x, y);
 
-                        if (!tile.isValid() || mapBWEM.GetArea(tile) != Map::getMainArea())
+                        if (!tile.isValid() || Map::mapBWEM.GetArea(tile) != Map::getMainArea())
                             continue;
 
-                        auto blockCenter = Position(tile) + Position(80, 128);
+                        const auto blockCenter = Position(tile) + Position(80, 128);
                         const auto dist = blockCenter.getDistance(Map::getMainPosition());
                         if (dist < distBest && race == Races::Protoss && canAddBlock(tile, 5, 8)) {
                             tileBest = tile;
@@ -129,14 +128,14 @@ namespace BWEB::Blocks
                 else if (race == Races::Terran)
                     pieces ={ Piece::Large, Piece::Addon, Piece::Row, Piece::Medium, Piece::Medium };
                 else if (race == Races::Protoss) {
-                    if (left) {
-                        if (up)
+                    if (blockFacesLeft) {
+                        if (blockFacesUp)
                             pieces ={ Piece::Large, Piece::Large, Piece::Row, Piece::Medium, Piece::Medium, Piece::Small };                            
                         else
                             pieces ={ Piece::Medium, Piece::Medium, Piece::Small, Piece::Row, Piece::Large, Piece::Large };
                     }
                     else {
-                        if (up)
+                        if (blockFacesUp)
                             pieces ={ Piece::Large, Piece::Large, Piece::Row, Piece::Small, Piece::Medium, Piece::Medium };
                         else
                             pieces ={ Piece::Small, Piece::Medium, Piece::Medium, Piece::Row, Piece::Large, Piece::Large };
@@ -145,31 +144,80 @@ namespace BWEB::Blocks
 
                 insertBlock(tileBest, pieces);
             }
+        }
 
-            // HACK: Added a block that allows a good shield battery placement
-            tileBest = TilePositions::Invalid;
-            start = (TilePosition)Map::getMainChoke()->Center();
-            distBest = DBL_MAX;
+        void findMainDefenseBlock()
+        {
+            // Added a block that allows a good shield battery placement or bunker placement
+            auto tileBest = TilePositions::Invalid;
+            auto start = TilePosition(Map::getMainChoke()->Center());
+            auto distBest = DBL_MAX;
             for (auto x = start.x - 12; x <= start.x + 16; x++) {
                 for (auto y = start.y - 12; y <= start.y + 16; y++) {
                     TilePosition tile(x, y);
 
-                    if (!tile.isValid() || mapBWEM.GetArea(tile) != Map::getMainArea())
+                    if (!tile.isValid() || Map::mapBWEM.GetArea(tile) != Map::getMainArea())
                         continue;
 
-                    auto blockCenter = Position(tile) + Position(80, 32);
+                    const auto blockCenter = Position(tile) + Position(80, 32);
                     const auto dist = (blockCenter.getDistance((Position)Map::getMainChoke()->Center()));
                     if (dist < distBest && canAddBlock(tile, 5, 2)) {
                         tileBest = tile;
                         distBest = dist;
-
-                        left = (blockCenter.x < Map::getMainPosition().x);
-                        up = (blockCenter.y < Map::getMainPosition().y);
                     }
                 }
             }
+
             if (tileBest.isValid())
                 insertBlock(tileBest, { Piece::Small, Piece::Medium });
+        }
+
+        void findProductionBlocks()
+        {
+            multimap<double, TilePosition> tilesByPathDist;
+            map<Piece, int> mainPieces;
+
+            // Calculate distance for each tile to our natural choke, we want to place bigger blocks closer to the chokes
+            for (int y = 0; y < Broodwar->mapHeight(); y++) {
+                for (int x = 0; x < Broodwar->mapWidth(); x++) {
+                    const TilePosition t(x, y);
+                    if (t.isValid() && Broodwar->isBuildable(t)) {
+                        const auto p = Position(x * 32, y * 32);
+                        const auto dist = Map::getNaturalChoke() ? p.getDistance(Position(Map::getNaturalChoke()->Center())) : p.getDistance(Map::getMainPosition());
+                        tilesByPathDist.insert(make_pair(dist, t));
+                    }
+                }
+            }
+
+            // Iterate every tile
+            for (int i = 20; i > 0; i--) {
+                for (int j = 20; j > 0; j--) {
+
+                    // Check if we have pieces to use
+                    const auto pieces = whatPieces(i, j);
+                    if (pieces.empty())
+                        continue;
+
+                    const auto hasMedium = find(pieces.begin(), pieces.end(), Piece::Medium) != pieces.end();
+                    const auto hasLarge = find(pieces.begin(), pieces.end(), Piece::Large) != pieces.end();
+
+                    for (auto &[_, tile] : tilesByPathDist) {
+
+                        if (hasMedium && Map::mapBWEM.GetArea(tile) != Map::getMainArea() && Broodwar->self()->getRace() == Races::Protoss)
+                            continue;
+                        if (hasLarge && Map::mapBWEM.GetArea(tile) == Map::getMainArea() && mainPieces[Piece::Large] >= 8 && mainPieces[Piece::Medium] < 10)
+                            continue;
+
+                        if (canAddBlock(tile, i, j)) {
+                            insertBlock(tile, pieces);
+                            if (Map::mapBWEM.GetArea(tile) == Map::getMainArea()) {
+                                for (auto &piece : pieces)
+                                    mainPieces[piece]++;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         vector<Piece> whatPieces(int width, int height)
@@ -205,7 +253,7 @@ namespace BWEB::Blocks
 
     void eraseBlock(const TilePosition here)
     {
-        for (auto it = allBlocks.begin(); it != allBlocks.end(); ++it) {
+        for (auto &it = allBlocks.begin(); it != allBlocks.end(); ++it) {
             auto &block = *it;
             if (here.x >= block.getTilePosition().x && here.x < block.getTilePosition().x + block.width() && here.y >= block.getTilePosition().y && here.y < block.getTilePosition().y + block.height()) {
                 allBlocks.erase(it);
@@ -216,51 +264,9 @@ namespace BWEB::Blocks
 
     void findBlocks()
     {
-        findStartBlock();
-        multimap<double, TilePosition> tilesByPathDist;
-        map<Piece, int> mainPieces;
-
-        // Calculate distance for each tile to our natural choke, we want to place bigger blocks closer to the chokes
-        for (int y = 0; y < Broodwar->mapHeight(); y++) {
-            for (int x = 0; x < Broodwar->mapWidth(); x++) {
-                TilePosition t(x, y);
-                if (t.isValid() && Broodwar->isBuildable(t)) {
-                    Position p = Position(x * 32, y * 32);
-                    double dist = Map::getNaturalChoke() ? p.getDistance(Position(Map::getNaturalChoke()->Center())) : p.getDistance(Map::getMainPosition());
-                    tilesByPathDist.insert(make_pair(dist, t));
-                }
-            }
-        }
-
-        // Iterate every tile
-        for (int i = 20; i > 0; i--) {
-            for (int j = 20; j > 0; j--) {
-
-                auto pieces = whatPieces(i, j);
-                if (pieces.empty())
-                    continue;
-
-                auto hasMedium = find(pieces.begin(), pieces.end(), Piece::Medium) != pieces.end();
-                auto hasLarge = find(pieces.begin(), pieces.end(), Piece::Large) != pieces.end();
-
-                for (auto &t : tilesByPathDist) {
-                    TilePosition tile(t.second);
-                    if (hasMedium && mapBWEM.GetArea(tile) != getMainArea() && Broodwar->self()->getRace() == Races::Protoss)
-                        continue;
-
-                    if (hasLarge && mapBWEM.GetArea(tile) == getMainArea() && mainPieces[Piece::Large] >= 8 && mainPieces[Piece::Medium] < 10)
-                        continue;
-
-                    if (canAddBlock(tile, i, j)) {
-                        insertBlock(tile, pieces);
-                        if (mapBWEM.GetArea(tile) == getMainArea()) {
-                            for (auto &piece : pieces)
-                                mainPieces[piece]++;
-                        }
-                    }
-                }
-            }
-        }
+        findMainStartBlock();
+        findMainDefenseBlock();
+        findProductionBlocks();
     }
 
     void draw()
@@ -279,10 +285,10 @@ namespace BWEB::Blocks
         return allBlocks;
     }
 
-    const Block* getClosestBlock(TilePosition here)
+    Block * getClosestBlock(TilePosition here)
     {
-        double distBest = DBL_MAX;
-        const Block* bestBlock = nullptr;
+        auto distBest = DBL_MAX;
+        Block * bestBlock = nullptr;
         for (auto &block : allBlocks) {
             const auto tile = block.getTilePosition() + TilePosition(block.width() / 2, block.height() / 2);
             const auto dist = here.getDistance(tile);

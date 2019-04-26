@@ -111,7 +111,15 @@ namespace BWEB::Map
 
     /// Returns two BWAPI::Positions representing a line of best fit for a given BWEM::Chokepoint.
     std::pair<BWAPI::Position, BWAPI::Position> lineOfBestFit(BWEM::ChokePoint const *);
-    
+
+    /// Returns the angle of a pair of BWAPI::Point
+    template <class T>
+    double getAngle(std::pair<T, T> p) {
+        auto dy = abs(double(p.first.y - p.second.y));
+        auto dx = abs(double(p.first.x - p.second.x));
+        return (dx > 0.0 ? atan(dy / dx) * 180.0 / 3.14 : 90.0);
+    }
+
     inline BWAPI::Position pConvert(BWAPI::TilePosition t) {
         return BWAPI::Position{ t.x * 32, t.y * 32 };
     }

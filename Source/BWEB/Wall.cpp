@@ -7,24 +7,14 @@ namespace BWEB::Walls
 {
     namespace {
         vector<Wall> walls;
-        TilePosition initialStart, initialEnd, startTile, endTile;
-
-        double bestWallScore = 0.0;
         vector<UnitType>::iterator typeIterator;
-        map<TilePosition, UnitType> bestWall;
-        map<TilePosition, UnitType> currentWall;
-
-        UnitType tight;
-        bool reservePath;
-        bool requireTight;
+        map<TilePosition, UnitType> currentWall, bestWall;
         set<TilePosition> chokeTiles;
         Position test;
-
-        int failedPlacement = 0;
-        int failedAngle = 0;
-        int failedPath = 0;
-        int failedTight = 0;
-        int failedSpawn = 0;
+        TilePosition initialStart, initialEnd, startTile, endTile;
+        UnitType tight;
+        double bestWallScore = 0.0;
+        bool openWall, requireTight;        
 
         void checkPathPoints(Wall& wall)
         {
@@ -111,55 +101,17 @@ namespace BWEB::Walls
             return newPath;
         }
 
-        bool isPoweringWall(Wall& wall, const TilePosition here)
+        bool goodTightness(Wall& wall, UnitType building, const TilePosition here)
         {
-            for (auto &piece : currentWall) {
-                const auto tile = piece.first;
-                const auto type = piece.second;
+            // If this is a powering pylon or we are making a pylon wall
+            if (building == UnitTypes::Protoss_Pylon || wall.isPylonWall())
+                return true;
 
-                if (type == UnitTypes::Protoss_Pylon)
-                    continue;
-
-                if (type.tileWidth() == 4) {
-                    auto powersThis = false;
-                    if (tile.y - here.y == -5 || tile.y - here.y == 4) {
-                        if (tile.x - here.x >= -4 && tile.x - here.x <= 1) powersThis = true;
-                    }
-                    if (tile.y - here.y == -4 || tile.y - here.y == 3) {
-                        if (tile.x - here.x >= -7 && tile.x - here.x <= 4) powersThis = true;
-                    }
-                    if (tile.y - here.y == -3 || tile.y - here.y == 2) {
-                        if (tile.x - here.x >= -8 && tile.x - here.x <= 5) powersThis = true;
-                    }
-                    if (tile.y - here.y >= -2 && tile.y - here.y <= 1) {
-                        if (tile.x - here.x >= -8 && tile.x - here.x <= 6) powersThis = true;
-                    }
-                    if (!powersThis) return false;
-                }
-                else {
-                    auto powersThis = false;
-                    if (tile.y - here.y == 4) {
-                        if (tile.x - here.x >= -3 && tile.x - here.x <= 2) powersThis = true;
-                    }
-                    if (tile.y - here.y == -4 || tile.y - here.y == 3) {
-                        if (tile.x - here.x >= -6 && tile.x - here.x <= 5) powersThis = true;
-                    }
-                    if (tile.y - here.y >= -3 && tile.y - here.y <= 2) {
-                        if (tile.x - here.x >= -7 && tile.x - here.x <= 6) powersThis = true;
-                    }
-                    if (!powersThis) return false;
-                }
-            }
-            return true;
-        }
-
-        bool isWallTight(Wall& wall, UnitType building, const TilePosition here)
-        {
             // Some constants
             const auto height = building.tileHeight() * 4;
             const auto width = building.tileWidth() * 4;
-            const auto vertTight = (tight == UnitTypes::None) ? 32 : tight.height();
-            const auto horizTight = (tight == UnitTypes::None) ? 32 : tight.width();
+            const auto vertTight = (tight == UnitTypes::None) ? 64 : tight.height();
+            const auto horizTight = (tight == UnitTypes::None) ? 64 : tight.width();
 
             // Checks each side of the building to see if it is valid for walling purposes
             const auto checkLeft = (building.tileWidth() * 16) - building.dimensionLeft() < horizTight;
@@ -180,20 +132,20 @@ namespace BWEB::Walls
             auto parentTight = false;
 
             // Functions for each dimension check
-            const auto fRight = [&](UnitType parent) {
+            const auto gapRight = [&](UnitType parent) {
                 return (parent.tileWidth() * 16 - parent.dimensionLeft()) + (building.tileWidth() * 16 - building.dimensionRight() - 1);
             };
-            const auto fLeft = [&](UnitType parent) {
+            const auto gapLeft = [&](UnitType parent) {
                 return (parent.tileWidth() * 16 - parent.dimensionRight() - 1) + (building.tileWidth() * 16 - building.dimensionLeft());
             };
-            const auto fUp = [&](UnitType parent) {
+            const auto gapUp = [&](UnitType parent) {
                 return (parent.tileHeight() * 16 - parent.dimensionDown() - 1) + (building.tileHeight() * 16 - building.dimensionUp());
             };
-            const auto fDown = [&](UnitType parent) {
+            const auto gapDown = [&](UnitType parent) {
                 return (parent.tileHeight() * 16 - parent.dimensionUp()) + (building.tileHeight() * 16 - building.dimensionDown() - 1);
             };
 
-            // Function to check if it's terrain tight here
+            // Check if the building is terrain tight when placed here
             const auto terrainTightCheck = [&](WalkPosition w, bool check) {
                 auto t = Map::tConvert(w);
 
@@ -211,7 +163,7 @@ namespace BWEB::Walls
                 return false;
             };
 
-            // Functions to iterate each WalkPosition of a side
+            // Iterate vertical tiles adjacent of this placement
             const auto checkVerticalSide = [&](WalkPosition start, int length, bool check, const auto fDiff, int tightnessFactor) {
                 for (auto x = start.x; x < start.x + length; x++) {
                     WalkPosition w(x, start.y);
@@ -229,6 +181,7 @@ namespace BWEB::Walls
                 }
             };
 
+            // Iterate horizontal tiles adjacent of this placement
             const auto checkHorizontalSide = [&](WalkPosition start, int length, bool check, const auto fDiff, int tightnessFactor) {
                 for (auto y = start.y; y < start.y + length; y++) {
                     WalkPosition w(start.x, y);
@@ -246,27 +199,25 @@ namespace BWEB::Walls
                 }
             };
 
-            /* What this does:
-            1) For each side, check if it's terrain tight
-            2) For each side, check if it's tight with any parent buildings beside it
-            3) If we want a tight wall, check that the final piece is terrain tight and parent tight*/
-            checkVerticalSide(up, width, checkUp, fUp, vertTight);
-            checkVerticalSide(down, width, checkDown, fDown, vertTight);
-            checkHorizontalSide(left, height, checkLeft, fLeft, horizTight);
-            checkHorizontalSide(right, height, checkRight, fRight, horizTight);
+            
+            // For each side, check if it's terrain tight or tight with any adjacent buildings
+            checkVerticalSide(up, width, checkUp, gapUp, vertTight);
+            checkVerticalSide(down, width, checkDown, gapDown, vertTight);
+            checkHorizontalSide(left, height, checkLeft, gapLeft, horizTight);
+            checkHorizontalSide(right, height, checkRight, gapRight, horizTight);
 
-            // If we don't want a reserve path, we need all buildings to be tight at the tightness resolution...
-            if (!reservePath) {
-                if (!lastBuilding && !firstBuilding)	// ...to the parent
+            // If we want a closed wall, we need all buildings to be tight at the tightness resolution...
+            if (!openWall) {
+                if (!lastBuilding && !firstBuilding)	// ...to the parent if not first building
                     return parentTight;
-                if (firstBuilding)						// ...to the terrain
+                if (firstBuilding)						// ...to the terrain if first building
                     return terrainTight;
-                if (lastBuilding)						// ...to the parent and terrain
+                if (lastBuilding)						// ...to the parent and terrain if last building
                     return (terrainTight && parentTight);
             }
 
-            // If we do want a reserve path, we need this building to be tight at tile resolution to a parent or terrain
-            else if (reservePath)
+            // If we want an open wall, we need this building to be tight at tile resolution to a parent or terrain
+            else if (openWall)
                 return (terrainTight || parentTight);
             return false;
         }
@@ -284,27 +235,14 @@ namespace BWEB::Walls
             return posBest;
         }
 
-        bool iteratePieces(Wall& wall)
+        bool findSuitableWall(Wall& wall)
         {
             auto start = Map::tConvert(wall.getChokePoint()->Center());
             auto movedStart = false;
-            auto multiplePylons = false;
 
             // Choke angle
             auto line = Map::lineOfBestFit(wall.getChokePoint());
-            auto p1 = line.first;
-            auto p2 = line.second;
-            auto dy = abs(double(p1.y - p2.y));
-            auto dx = abs(double(p1.x - p2.x));
-            auto angle1 = dx > 0.0 ? atan(dy / dx) * 180.0 / 3.14 : 90.0;
-
-            // Check if we are placing more Pylons to figure out how to calculate placement
-            auto count = 0;
-            for (auto type : wall.getRawBuildings()) {
-                if (type == UnitTypes::Protoss_Pylon)
-                    count++;
-            }
-            multiplePylons = count > 1;
+            auto angle1 = Map::getAngle(line);            
 
             // Sort all the pieces and iterate over them to find the best wall - by Hannes
             if (find(wall.getRawBuildings().begin(), wall.getRawBuildings().end(), UnitTypes::Protoss_Pylon) != wall.getRawBuildings().end()) {
@@ -340,14 +278,12 @@ namespace BWEB::Walls
             const auto scoreWall = [&] {
 
                 // Create a path searching for an opening
-                auto newPath = findOpeningInWall(wall, !reservePath);
+                auto newPath = findOpeningInWall(wall, !openWall);
                 auto currentHole = TilePositions::None;
 
-                // If we need an open wall and it's not reachable, or we require a closed wall and it is reachable
-                if ((reservePath && !newPath.isReachable()) || (!reservePath && newPath.isReachable())) {
-                    failedPath++;
-                    return;
-                }
+                // If we want an open wall and it's not reachable, or we want a closed wall and it is reachable
+                if ((openWall && !newPath.isReachable()) || (!openWall && newPath.isReachable()))
+                    return;                
 
                 // If we need an opening
                 for (auto &tile : newPath.getTiles()) {
@@ -360,58 +296,104 @@ namespace BWEB::Walls
                     }
                 }
 
+                // Find distance for each piece to the closest choke tile
                 auto dist = 1.0;
-                for (auto &piece : currentWall) {
-                    auto tile = piece.first;
-                    auto type = piece.second;
+                for (auto &[tile,type] : currentWall) {
                     auto center = Map::pConvert(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
                     auto chokeDist = closestChokeTile(center).getDistance(center);
 
-                    dist += (!multiplePylons && type == UnitTypes::Protoss_Pylon) ? 1.0 / exp(chokeDist) : exp(chokeDist);
+                    dist += (!wall.isPylonWall() && type == UnitTypes::Protoss_Pylon) ? 1.0 / exp(chokeDist) : exp(chokeDist);
                 }
 
                 // Score wall based on path sizes and distances
-                const auto score = !reservePath ? dist : currentHole.getDistance(startTile) * newPath.getDistance() / (dist);
-
+                const auto score = !openWall ? dist : currentHole.getDistance(startTile) * newPath.getDistance() / (dist);
                 if (score > bestWallScore) {
                     bestWall = currentWall;
                     bestWallScore = score;
                 }
             };
 
-            const auto goodPlacement = [&](TilePosition t) {
+            const auto goodPower = [&](TilePosition here) {
                 auto type = *typeIterator;
-                auto p = Map::pConvert(t);
 
-                if ((type == UnitTypes::Protoss_Pylon && !isPoweringWall(wall, t))
-                    || overlapsCurrentWall(t, type.tileWidth(), type.tileHeight()) != UnitTypes::None
-                    || Map::isOverlapping(t, type.tileWidth(), type.tileHeight(), true)
-                    || !Map::isPlaceable(type, t)
-                    || !Map::tilesWithinArea(wall.getArea(), t, type.tileWidth(), type.tileHeight()))
+                if (type != UnitTypes::Protoss_Pylon)
+                    return true;
+
+                // TODO: Create a generic BWEB function that takes 2 tiles and tells you if the 1st tile will power the 2nd tile
+                for (auto &[tile, type] : currentWall) {
+                    if (type == UnitTypes::Protoss_Pylon)
+                        continue;
+
+                    if (type.tileWidth() == 4) {
+                        auto powersThis = false;
+                        if (tile.y - here.y == -5 || tile.y - here.y == 4) {
+                            if (tile.x - here.x >= -4 && tile.x - here.x <= 1)
+                                powersThis = true;
+                        }
+                        if (tile.y - here.y == -4 || tile.y - here.y == 3) {
+                            if (tile.x - here.x >= -7 && tile.x - here.x <= 4)
+                                powersThis = true;
+                        }
+                        if (tile.y - here.y == -3 || tile.y - here.y == 2) {
+                            if (tile.x - here.x >= -8 && tile.x - here.x <= 5)
+                                powersThis = true;
+                        }
+                        if (tile.y - here.y >= -2 && tile.y - here.y <= 1) {
+                            if (tile.x - here.x >= -8 && tile.x - here.x <= 6)
+                                powersThis = true;
+                        }
+                        if (!powersThis)
+                            return false;
+                    }
+                    else {
+                        auto powersThis = false;
+                        if (tile.y - here.y == 4) {
+                            if (tile.x - here.x >= -3 && tile.x - here.x <= 2)
+                                powersThis = true;
+                        }
+                        if (tile.y - here.y == -4 || tile.y - here.y == 3) {
+                            if (tile.x - here.x >= -6 && tile.x - here.x <= 5)
+                                powersThis = true;
+                        }
+                        if (tile.y - here.y >= -3 && tile.y - here.y <= 2) {
+                            if (tile.x - here.x >= -7 && tile.x - here.x <= 6)
+                                powersThis = true;
+                        }
+                        if (!powersThis)
+                            return false;
+                    }
+                }
+                return true;
+            };
+
+            const auto goodPlacement = [&](TilePosition here) {
+                auto type = *typeIterator;
+                auto p = Map::pConvert(here);
+
+                if ((type == UnitTypes::Protoss_Pylon && !goodPower(here))
+                    || overlapsCurrentWall(here, type.tileWidth(), type.tileHeight()) != UnitTypes::None
+                    || Map::isOverlapping(here, type.tileWidth(), type.tileHeight(), true)
+                    || !Map::isPlaceable(type, here)
+                    || !Map::tilesWithinArea(wall.getArea(), here, type.tileWidth(), type.tileHeight()))
                     return false;
                 return true;
             };
 
-            const auto goodAngle = [&](Position center) {
-                // We want to ensure the buildings are being placed at the correct angle compared to the chokepoint, within some tolerance
-                auto angle2 = 0.0;
-                auto badAngle = false;
+            const auto goodAngle = [&](Position here) {
                 auto type = *typeIterator;
 
-                if (!reservePath)
+                // If we want a closed wall, we don't care the angle of the buildings
+                if (!openWall)
                     return true;
 
-                if ((multiplePylons || type != UnitTypes::Protoss_Pylon) && !movedStart) {
-                    for (auto piece : currentWall) {
-                        auto tileB = piece.first;
-                        auto typeB = piece.second;
-                        auto centerB = Map::pConvert(tileB) + Position(typeB.tileWidth() * 16, typeB.tileHeight() * 16);
-                        auto dy = abs(double(centerB.y - center.y));
-                        auto dx = abs(double(centerB.x - center.x));
+                // If this is a pylon or pylon wall, we don't care about angles as long as the start point wasn't moved
+                if ((wall.isPylonWall() || type != UnitTypes::Protoss_Pylon) && !movedStart) {
+                    for (auto &[tile,type] : currentWall) {
+                        auto centerB = Map::pConvert(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
+                        auto angle2 = Map::getAngle(make_pair(centerB,here));
 
-                        angle2 = dx > 0.0 ? atan(dy / dx) * 180.0 / 3.14 : 90.0;
                         if (abs(abs(angle1) - abs(angle2)) > 30.0)
-                            badAngle = true;
+                            return false;
                     }
                 }
                 return true;
@@ -430,7 +412,7 @@ namespace BWEB::Walls
                         return false;
                 }
 
-                for (auto[t, type] : currentWall) {
+                for (auto &[t, type] : currentWall) {
 
                     // If this type can't produce anything
                     if (!type.canProduce())
@@ -458,10 +440,10 @@ namespace BWEB::Walls
                         }
                     }
 
-                    //// Check if our units would spawn correctly
-                    //pathHome.createWallPath(currentWall, p, startCenter, false, false);
-                    //if (!pathHome.isReachable())
-                    //    return false;
+                    // Check if our units would spawn correctly
+                    pathHome.createWallPath(currentWall, p, startCenter, false, false);
+                    if (!pathHome.isReachable())
+                        return false;
                 }
                 return true;
             };
@@ -475,23 +457,14 @@ namespace BWEB::Walls
                         const TilePosition tile(x, y);
                         auto center = Map::pConvert(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
 
-                        if (!tile.isValid() || (multiplePylons && center.getDistance(closestChokeTile(center)) > 128.0))
+                        if (!tile.isValid() || (wall.isPylonWall() && center.getDistance(closestChokeTile(center)) > 128.0))
                             continue;
 
-                        if (!goodAngle(center)) {
-                            failedAngle++;
+                        if (!goodPower(tile)
+                            || !goodAngle(center)
+                            || !goodPlacement(tile)
+                            || !goodTightness(wall, type, tile))
                             continue;
-                        }
-
-                        if (!goodPlacement(tile)) {
-                            failedPlacement++;
-                            continue;
-                        }
-
-                        if (!isWallTight(wall, type, tile) && (multiplePylons || type != UnitTypes::Protoss_Pylon)) {
-                            failedTight++;
-                            continue;
-                        }
 
                         // 1) Store the current type, increase the iterator
                         currentWall[tile] = type;
@@ -500,10 +473,8 @@ namespace BWEB::Walls
                         // 2) If at the end
                         if (typeIterator == wall.getRawBuildings().end()) {
 
-                            // Check that units will spawn properly
-                            if (!goodSpawn())
-                                failedSpawn++;
-                            else
+                            // Check that units will spawn properly before scoring
+                            if (goodSpawn())
                                 scoreWall();
                         }
                         else
@@ -524,13 +495,6 @@ namespace BWEB::Walls
                 typeIterator = wall.getRawBuildings().begin();
                 recursiveCheck(start);
             } while (next_permutation(wall.getRawBuildings().begin(), find(wall.getRawBuildings().begin(), wall.getRawBuildings().end(), UnitTypes::Protoss_Pylon)));
-
-            Broodwar << "Angle: " << failedAngle << endl;
-            Broodwar << "Placement: " << failedPlacement << endl;
-            Broodwar << "Tight: " << failedTight << endl;
-            Broodwar << "Path: " << failedPath << endl;
-            Broodwar << "Spawn: " << failedSpawn << endl;
-
             return !bestWall.empty();
         }
     }
@@ -539,10 +503,9 @@ namespace BWEB::Walls
     {
         for (auto x = here.x; x < here.x + width; x++) {
             for (auto y = here.y; y < here.y + height; y++) {
-                for (auto &placement : currentWall) {
-                    const auto tile = placement.first;
-                    if (x >= tile.x && x < tile.x + placement.second.tileWidth() && y >= tile.y && y < tile.y + placement.second.tileHeight())
-                        return placement.second;
+                for (auto &[tile,type] : currentWall) {
+                    if (x >= tile.x && x < tile.x + type.tileWidth() && y >= tile.y && y < tile.y + type.tileHeight())
+                        return type;
                 }
             }
         }
@@ -556,11 +519,11 @@ namespace BWEB::Walls
         auto start = Map::tConvert(wall.getCentroid());
         auto centroidDist = wall.getCentroid().getDistance(Map::pConvert(endTile));
         auto end = Map::pConvert(endTile);
-        auto doorCenter = Map::pConvert(wall.getDoor()) + Position(16, 16);
+        auto doorCenter = Map::pConvert(wall.getOpening()) + Position(16, 16);
         auto isDefense = building == UnitTypes::Protoss_Photon_Cannon || building == UnitTypes::Terran_Missile_Turret || building == UnitTypes::Terran_Bunker || building == UnitTypes::Zerg_Creep_Colony || building == UnitTypes::Zerg_Sunken_Colony || building == UnitTypes::Zerg_Creep_Colony;
 
-        auto furthest = 0.0;
         // Find the furthest non pylon building to the chokepoint
+        auto furthest = 0.0;
         for (auto &tile : wall.getLargeTiles()) {
             Position p = Map::pConvert(tile) + Position(64, 48);
             auto dist = p.getDistance(Map::pConvert(wall.getChokePoint()->Center()));
@@ -604,7 +567,7 @@ namespace BWEB::Walls
         }
     }
 
-    Wall * createWall(vector<UnitType>& buildings, const BWEM::Area * area, const BWEM::ChokePoint * choke, const UnitType t, const vector<UnitType>& defenses, const bool rp, const bool rt)
+    Wall * createWall(vector<UnitType>& buildings, const BWEM::Area * area, const BWEM::ChokePoint * choke, const UnitType t, const vector<UnitType>& defenses, const bool ow, const bool rt)
     {
         // Reset our last calculations
         bestWallScore = 0.0;
@@ -640,7 +603,7 @@ namespace BWEB::Walls
 
         // I got sick of passing the parameters everywhere, sue me
         tight = t;
-        reservePath = rp;
+        openWall = ow;
         requireTight = rt;
 
         // Create a line of tiles that make up the geometry of the choke		
@@ -650,56 +613,57 @@ namespace BWEB::Walls
                 chokeTiles.insert(t);
         }
 
-        const auto addDoor = [&](Path& currentPath) {
-            // Check which tile is closest to each part on the path, set as door
-            auto distBest = DBL_MAX;
-            for (auto chokeTile : chokeTiles) {
-                for (auto pathTile : currentPath.getTiles()) {
-                    double dist = chokeTile.getDistance(pathTile);
-                    if (dist < distBest) {
-                        distBest = dist;
-                        wall.setWallDoor(chokeTile);
-                    }
-                }
-            }
+        const auto addOpening = [&] {
+            // Add a door if we want an open wall
+            if (openWall) {
 
-            // If the line of tiles we made is empty, assign closest path tile to closest to wall centroid
-            if (chokeTiles.empty()) {
-                for (auto pathTile : currentPath.getTiles()) {
-                    auto p = Map::pConvert(pathTile);
-                    auto dist = wall.getCentroid().getDistance(p);
-                    if (dist < distBest) {
-                        distBest = dist;
-                        wall.setWallDoor(pathTile);
-                    }
-                }
-            }
-        };
-
-        // Set the walls reserve path if needed
-        const auto addReservePath = [&](Path& currentPath) {
-            if (reservePath) {
+                // Set any tiles on the path as reserved so we don't build on them
+                auto currentPath = findOpeningInWall(wall, false);
                 for (auto &tile : currentPath.getTiles())
                     Map::addReserve(tile, 1, 1);
+
+                // Check which tile is closest to each part on the path, set as door
+                auto distBest = DBL_MAX;
+                for (auto chokeTile : chokeTiles) {
+                    for (auto pathTile : currentPath.getTiles()) {
+                        double dist = chokeTile.getDistance(pathTile);
+                        if (dist < distBest) {
+                            distBest = dist;
+                            wall.setOpening(chokeTile);
+                        }
+                    }
+                }
+
+                // If the line of tiles we made is empty, assign closest path tile to closest to wall centroid
+                if (chokeTiles.empty()) {
+                    for (auto pathTile : currentPath.getTiles()) {
+                        auto p = Map::pConvert(pathTile);
+                        auto dist = wall.getCentroid().getDistance(p);
+                        if (dist < distBest) {
+                            distBest = dist;
+                            wall.setOpening(pathTile);
+                        }
+                    }
+                }
             }
         };
 
         // Set the walls centroid
         const auto addCentroid = [&] {
             auto centroid = Position(0, 0);
-            auto sizeWall = int(currentWall.size());
-            for (auto &piece : currentWall) {
-                if (piece.second != UnitTypes::Protoss_Pylon)
-                    centroid += Map::pConvert(piece.first) + Map::pConvert(piece.second.tileSize()) / 2;
+            auto sizeWall = int(bestWall.size());
+            for (auto &[tile,type] : bestWall) {
+                if (type != UnitTypes::Protoss_Pylon)
+                    centroid += Map::pConvert(tile) + Map::pConvert(type.tileSize()) / 2;
                 else
                     sizeWall--;
             }
 
             // Set a centroid if it's only a pylon wall
             if (sizeWall == 0) {
-                sizeWall = currentWall.size();
-                for (auto &piece : currentWall)
-                    centroid += Map::pConvert(piece.first) + Map::pConvert(piece.second.tileSize()) / 2;
+                sizeWall = bestWall.size();
+                for (auto &[tile,type] : bestWall)
+                    centroid += Map::pConvert(tile) + Map::pConvert(type.tileSize()) / 2;
             }
             wall.setCentroid(centroid / sizeWall);
         };
@@ -713,19 +677,15 @@ namespace BWEB::Walls
         // Setup pathing parameters
         initializePathPoints(wall);
 
-        // Iterate pieces, try to find best location
-        if (iteratePieces(wall)) {
-            for (auto &placement : bestWall) {
-                wall.insertSegment(placement.first, placement.second);
-                Map::addOverlap(placement.first, placement.second.tileWidth(), placement.second.tileHeight());
+        // If we found a suitable wall, add remaining elements
+        if (findSuitableWall(wall)) {
+            for (auto &[tile,type] : bestWall) {
+                wall.insertSegment(tile, type);
+                Map::addOverlap(tile, type.tileWidth(), type.tileHeight());
             }
 
-            currentWall = bestWall;
-            auto currentPath = findOpeningInWall(wall, false);
-
-            addReservePath(currentPath);
             addCentroid();
-            addDoor(currentPath);
+            addOpening();
             addDefenses();
 
             // Push wall into the vector
@@ -805,7 +765,7 @@ namespace BWEB::Walls
                 Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(129, 97), Broodwar->self()->getColor());
             for (auto &tile : wall.getDefenses())
                 Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), Broodwar->self()->getColor());
-            Broodwar->drawBoxMap(Position(wall.getDoor()), Position(wall.getDoor()) + Position(33, 33), Broodwar->self()->getColor(), true);
+            Broodwar->drawBoxMap(Position(wall.getOpening()), Position(wall.getOpening()) + Position(33, 33), Broodwar->self()->getColor(), true);
             Broodwar->drawCircleMap(Position(wall.getCentroid()) + Position(16, 16), 8, Broodwar->self()->getColor(), true);
 
             auto p1 = wall.getChokePoint()->Pos(wall.getChokePoint()->end1);
