@@ -35,30 +35,8 @@ namespace BWEB
         map<const BWEM::Area *, int> notReachableThisFrame;
     }
 
-    void Path::createWallPath(map<TilePosition, UnitType>& currentWall, const Position s, const Position t, bool ignoreOverlap)
+    void Path::createWallPath(map<TilePosition, UnitType>& currentWall, const Position s, const Position t, bool ignoreOverlap, bool allowLifted)
     {
-        //TilePosition target(t);
-        //TilePosition source(s);
-
-        //vector<TilePosition> newJPSPath;
-        //WallCollision collision;
-        //collision.currentWall = currentWall;
-        //collision.ignoreOverlap = ignoreOverlap;
-
-        //if (JPS::findPath(newJPSPath, collision, source.x, source.y, target.x, target.y)) {
-        //    Position current = s;
-        //    for (auto &t : newJPSPath) {
-        //        dist += Position(t).getDistance(current);
-        //        current = Position(t);
-        //        tiles.push_back(t);
-        //    }
-        //    reachable = true;
-        //}
-        //else {
-        //    dist = DBL_MAX;
-        //    reachable = false;
-        //}
-
         TilePosition target = Map::tConvert(t);
         TilePosition source = Map::tConvert(s);
         auto maxDist = source.getDistance(target);
@@ -70,7 +48,7 @@ namespace BWEB
                 || (!ignoreOverlap && Map::isOverlapping(tile))
                 || !Map::isWalkable(tile)
                 || Map::isUsed(tile)
-                || Walls::overlapsCurrentWall(tile) != UnitTypes::None;
+                || (Walls::overlapsCurrentWall(tile) != UnitTypes::None && (!allowLifted || Walls::overlapsCurrentWall(tile) != UnitTypes::Terran_Barracks));
         };
 
         createPath(s, t, collision, direction);

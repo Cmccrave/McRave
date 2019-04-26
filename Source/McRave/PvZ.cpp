@@ -340,7 +340,6 @@ namespace McRave::BuildOrder::Protoss {
             firstTech =			TechTypes::Psionic_Storm;
             getOpening =		s < 70;
             dragoonLimit =		1;
-            zealotLimit =		vis(Protoss_Dark_Templar) >= 2 ? INT_MAX : 2;
             lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
 
             if (techList.find(Protoss_Dark_Templar) == techList.end())

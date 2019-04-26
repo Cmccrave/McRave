@@ -72,10 +72,10 @@ namespace BWEB {
         /// <para> Note: If you only pass a BWEM::Area or a BWEM::ChokePoint (not both), it will imply and pick a BWEB::Wall that exists within that Area or blocks that BWEM::ChokePoint. </para></summary>
         /// <param name="area"> The BWEM::Area that the BWEB::Wall resides in </param>
         /// <param name="choke"> The BWEM::Chokepoint that the BWEB::Wall blocks </param>
-        Wall* getWall(BWEM::Area const* area = nullptr, BWEM::ChokePoint const* choke = nullptr);
+        Wall * getWall(BWEM::Area const* area = nullptr, BWEM::ChokePoint const* choke = nullptr);
 
         /// <summary> Returns the closest BWEB::Wall to the given TilePosition. </summary>
-        const Wall* getClosestWall(BWAPI::TilePosition);
+        Wall * getClosestWall(BWAPI::TilePosition);
 
         /// <summary> <para> Given a vector of UnitTypes, an Area and a Chokepoint, finds an optimal wall placement, returns true if a valid BWEB::Wall was created. </para>
         /// <para> Note: Highly recommend that only Terran walls attempt to be walled tight, as most Protoss and Zerg wallins have gaps to allow your units through.</para>

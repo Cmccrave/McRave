@@ -18,6 +18,7 @@
 // Move command doesn't care about threat, probably should
 // When choosing a tech or creating a building, allow certain unlocks/research
 // Adjust Production to check for unlocks
+// HT reserving causes production stall
 
 // Need a target based isThreatening
 // Examples:
