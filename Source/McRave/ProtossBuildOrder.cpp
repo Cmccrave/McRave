@@ -76,16 +76,16 @@ namespace McRave::BuildOrder::Protoss
 
     void situational()
     {
-        auto skipFirstTech = int(currentTransition == "4Gate" || (Strategy::enemyGasSteal() && !Terrain::isNarrowNatural()));
+        auto skipFirstTech = int(currentTransition == "4Gate" || (Strategy::enemyGasSteal() && !Terrain::isNarrowNatural()) || Players::vT());
 
         // Set s for better build readability
         s = Units::getSupply();
 
         // Metrics for when to Expand/Add Production/Add Tech
         satVal = Players::vT() ? 2 : 3;
-        prodVal = com(Protoss_Gateway) + (satVal * skipFirstTech);
+        prodVal = com(Protoss_Gateway);
         baseVal = com(Protoss_Nexus);
-        techVal = techList.size() + skipFirstTech + Players::vT();
+        techVal = techList.size() + skipFirstTech;
 
         // Against FFE add a Nexus for every 2 cannons we see
         if (Strategy::getEnemyBuild() == "FFE") {

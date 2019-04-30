@@ -209,7 +209,7 @@ namespace McRave::Util {
         return 0.0;
     }
 
-    bool accurateThreatOnPath(UnitInfo& unit, BWEB::Path& path)
+    bool hasThreatOnPath(UnitInfo& unit, BWEB::Path& path)
     {
         if (path.getTiles().empty())
             return false;

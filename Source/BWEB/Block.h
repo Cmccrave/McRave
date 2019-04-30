@@ -96,6 +96,6 @@ namespace BWEB {
         std::vector<Block>& getBlocks();
 
         /// <summary> Returns the closest BWEB::Block to the given TilePosition. </summary>
-        const Block* getClosestBlock(BWAPI::TilePosition);
+        Block* getClosestBlock(BWAPI::TilePosition);
     }
 }

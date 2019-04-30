@@ -197,8 +197,8 @@ namespace McRave::Terrain {
 
             // Natural defending
             else if (naturalWall && BuildOrder::isWallNat()) {
-                Position door(naturalWall->getDoor());
-                defendPosition = door.isValid() ? door : naturalWall->getCentroid();
+                Position opening(naturalWall->getOpening());
+                defendPosition = opening.isValid() ? opening : naturalWall->getCentroid();
                 allyTerritory.insert(BWEB::Map::getNaturalArea());
                 defendNatural = true;
             }
@@ -229,8 +229,8 @@ namespace McRave::Terrain {
 
             // Main defending
             else if (mainWall && BuildOrder::isWallMain()) {
-                Position door(mainWall->getDoor());
-                defendPosition = door.isValid() ? door : mainWall->getCentroid();
+                Position opening(mainWall->getOpening());
+                defendPosition = opening.isValid() ? opening : mainWall->getCentroid();
             }
             else
                 defendPosition = Position(BWEB::Map::getMainChoke()->Center());

@@ -325,7 +325,7 @@ namespace McRave::Production {
 
                     // Air unit upgrades
                 case Protoss_Air_Weapons:
-                    return (vis(UnitTypes::Protoss_Corsair) > 0 || vis(UnitTypes::Protoss_Scout) > 0 || (vis(Protoss_Stargate) > 0 && Players::vT()));
+                    return (vis(UnitTypes::Protoss_Corsair) > 0 || vis(UnitTypes::Protoss_Scout) > 0 || (vis(Protoss_Stargate) > 0 && BuildOrder::isTechUnit(Protoss_Carrier) && Players::vT()));
                 case Protoss_Air_Armor:
                     return Broodwar->self()->getUpgradeLevel(Protoss_Air_Weapons) > Broodwar->self()->getUpgradeLevel(Protoss_Air_Armor);
                 }
@@ -486,7 +486,7 @@ namespace McRave::Production {
                 double gasCost = type.gasPrice() == 0 ? 1.0 : Broodwar->self()->gas() - type.gasPrice() - (!BuildOrder::isTechUnit(type) * reservedGas) - Buildings::getQueuedGas();
 
                 double resourceScore = clamp(gasCost * mineralCost, 0.1, 10.0);
-                double strategyScore = clamp(Strategy::getUnitScore(type), 0.0, 10.0);
+                double strategyScore = clamp(Strategy::getUnitScore(type), 0.1, 10.0);
                 return resourceScore * strategyScore;
             };
 

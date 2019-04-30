@@ -9,6 +9,36 @@ namespace BWEB::Blocks
         vector<Block> allBlocks;
         map<const BWEM::Area *, int> typePerArea;
 
+        vector<Piece> whichPieces(int width, int height)
+        {
+            vector<Piece> pieces;
+            if (height == 2) {
+                if (width == 5)
+                    pieces ={ Piece::Small, Piece::Medium };
+            }
+            else if (height == 4) {
+                if (width == 5)
+                    pieces ={ Piece::Small, Piece::Medium, Piece::Row, Piece::Small, Piece::Medium };
+            }
+            else if (height == 5) {
+                if (width == 4)
+                    pieces ={ Piece::Large, Piece::Row, Piece::Small, Piece::Small };
+            }
+            else if (height == 6) {
+                if (width == 10)
+                    pieces ={ Piece::Large, Piece::Addon, Piece::Large, Piece::Row, Piece::Large, Piece::Small, Piece::Large };
+                if (width == 18)
+                    pieces ={ Piece::Large, Piece::Large, Piece::Addon, Piece::Large, Piece::Large, Piece::Row, Piece::Large, Piece::Large, Piece::Small, Piece::Large, Piece::Large };
+            }
+            else if (height == 8) {
+                if (width == 8)
+                    pieces ={ Piece::Large, Piece::Large, Piece::Row, Piece::Small, Piece::Small, Piece::Small, Piece::Small, Piece::Row, Piece::Large, Piece::Large };
+                if (width == 5)
+                    pieces ={ Piece::Large, Piece::Row, Piece::Small, Piece::Medium, Piece::Row, Piece::Large };
+            }
+            return pieces;
+        }
+
         bool canAddBlock(const TilePosition here, const int width, const int height, bool onlyBlock = false)
         {
             const auto offset = onlyBlock ? 0 : 1;
@@ -194,7 +224,7 @@ namespace BWEB::Blocks
                 for (int j = 20; j > 0; j--) {
 
                     // Check if we have pieces to use
-                    const auto pieces = whatPieces(i, j);
+                    const auto pieces = whichPieces(i, j);
                     if (pieces.empty())
                         continue;
 
@@ -218,37 +248,7 @@ namespace BWEB::Blocks
                     }
                 }
             }
-        }
-
-        vector<Piece> whatPieces(int width, int height)
-        {
-            vector<Piece> pieces;
-            if (height == 2) {
-                if (width == 5)
-                    pieces ={ Piece::Small, Piece::Medium };
-            }
-            else if (height == 4) {
-                if (width == 5)
-                    pieces ={ Piece::Small, Piece::Medium, Piece::Row, Piece::Small, Piece::Medium };
-            }
-            else if (height == 5) {
-                if (width == 4)
-                    pieces ={ Piece::Large, Piece::Row, Piece::Small, Piece::Small };
-            }
-            else if (height == 6) {
-                if (width == 10)
-                    pieces ={ Piece::Large, Piece::Addon, Piece::Large, Piece::Row, Piece::Large, Piece::Small, Piece::Large };
-                if (width == 18)
-                    pieces ={ Piece::Large, Piece::Large, Piece::Addon, Piece::Large, Piece::Large, Piece::Row, Piece::Large, Piece::Large, Piece::Small, Piece::Large, Piece::Large };
-            }
-            else if (height == 8) {
-                if (width == 8)
-                    pieces ={ Piece::Large, Piece::Large, Piece::Row, Piece::Small, Piece::Small, Piece::Small, Piece::Small, Piece::Row, Piece::Large, Piece::Large };
-                if (width == 5)
-                    pieces ={ Piece::Large, Piece::Row, Piece::Small, Piece::Medium, Piece::Row, Piece::Large };
-            }
-            return pieces;
-        }
+        }        
     }
 
     void eraseBlock(const TilePosition here)

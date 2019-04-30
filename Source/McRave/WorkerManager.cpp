@@ -167,7 +167,7 @@ namespace McRave::Workers {
                 //}
 
                 // 4) If no threat on path, mine it
-                /*else*/ if (!Util::accurateThreatOnPath(worker, worker.getPath())) {
+                /*else*/ if (!Util::hasThreatOnPath(worker, worker.getPath())) {
                     if (shouldIssueGather())
                         worker.unit()->gather(worker.getResource().unit());
                     else if (!resourceExists)
@@ -201,7 +201,7 @@ namespace McRave::Workers {
         void updateAssignment(UnitInfo& worker)
         {
             auto injured = (worker.unit()->getHitPoints() + worker.unit()->getShields() < worker.getType().maxHitPoints() + worker.getType().maxShields());
-            auto threatened = (worker.hasResource() && Util::accurateThreatOnPath(worker, worker.getPath()));
+            auto threatened = (worker.hasResource() && !closeToResource(worker) && Util::hasThreatOnPath(worker, worker.getPath())) || (worker.hasResource() && closeToResource(worker) && int(worker.getTargetedBy().size()) > 0);
             auto distBest = (injured || threatened) ? 0.0 : DBL_MAX;
             auto needNewAssignment = false;
             vector<const BWEB::Station *> safeStations;
@@ -217,18 +217,14 @@ namespace McRave::Workers {
                 return true;
             };
 
-            const auto needGas = [&]() {
-                if (!Resources::isGasSaturated() && ((gasWorkers < BuildOrder::gasWorkerLimit() && BuildOrder::isOpener()) || !BuildOrder::isOpener() || minWorkers < Resources::getMinCount() * 2))
-                    return true;
-                return false;
-            };
+            const auto needGas = !Resources::isGasSaturated() && ((gasWorkers < BuildOrder::gasWorkerLimit() && BuildOrder::isOpener()) || !BuildOrder::isOpener());
+            const auto needMinerals = !Resources::isMinSaturated() && worker.hasResource() && !worker.getResource().getType().isMineralField() && gasWorkers > BuildOrder::gasWorkerLimit() && BuildOrder::isOpener();
 
             // Worker has no resource, we need gas, we need minerals, workers resource is threatened
             if (!worker.hasResource()
-                || needGas()
-                || (!worker.getResource().getType().isMineralField() && gasWorkers > BuildOrder::gasWorkerLimit() && minWorkers < Resources::getMinCount() * 2 && BuildOrder::isOpener())
-                || (!closeToResource(worker) && Util::accurateThreatOnPath(worker, worker.getPath()) && Grids::getEGroundThreat(worker.getWalkPosition()) == 0.0)
-                || (closeToResource(worker) && int(worker.getTargetedBy().size()) > 0 && Grids::getEGroundThreat(worker.getWalkPosition()) > 0.0 && !Resources::isMinSaturated())
+                || needGas
+                || needMinerals
+                || threatened
                 || (!injured && !threatened && worker.getResource().getGathererCount() >= 3 + int(worker.getResource().getType().isRefinery())))
                 needNewAssignment = true;
 
@@ -241,7 +237,7 @@ namespace McRave::Workers {
                 worker.setResource(nullptr);
             }
 
-            // 1) If threatened, find safe stations to move to on the Station network or generate a new path
+            // 1) If threatened, find safe stations to move to on the Station network or generate a new path            
             if (threatened) {
 
                 // Find a path on the station network
@@ -250,18 +246,18 @@ namespace McRave::Workers {
                         auto station = s.second;
                         auto closePath = Stations::pathStationToStation(closest, station);
                         BWEB::Path path;
-                        if (closest  && closePath)
+                        if (closest && closePath)
                             path = *closePath;
 
                         // Store station if it's safe
-                        if (!Util::accurateThreatOnPath(worker, path) || worker.getPosition().getDistance(station->getResourceCentroid()) < 128.0)
+                        if (!Util::hasThreatOnPath(worker, path) || worker.getPosition().getDistance(station->getResourceCentroid()) < 128.0)
                             safeStations.push_back(station);
                     }
                 }
             }
 
             // 2) Check if we need gas workers
-            if (needGas()) {
+            if (needGas) {
                 for (auto &r : Resources::getMyGas()) {
                     auto &resource = *r;
                     if (!resourceReady(resource, 3))
@@ -310,6 +306,9 @@ namespace McRave::Workers {
 
                 BWEB::Path emptyPath;
                 worker.setPath(emptyPath);
+
+                // HACK: Update saturation checks
+                Resources::onFrame();
             }
         }
 

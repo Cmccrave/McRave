@@ -327,7 +327,7 @@ namespace McRave::BuildOrder::Protoss {
             getOpening =		s < 140;
             playPassive =		s < 100;
             lockedTransition =  vis(Protoss_Nexus) >= 3;
-            gasLimit =          s >= 120 ? INT_MAX : 3;
+            gasLimit =          s >= 120 ? INT_MAX : gasLimit;
 
             itemQueue[Protoss_Nexus] =				Item(1 + (s >= 42) + (s >= 70));
             itemQueue[Protoss_Assimilator] =		Item((s >= 24) + (s >= 80));

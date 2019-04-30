@@ -21,8 +21,8 @@ namespace BWEB {
             opening = BWAPI::TilePositions::Invalid;
             rawBuildings = b;
             rawDefenses = d;
-
-            pylonWall = find(rawBuildings.begin(), rawBuildings.end(), BWAPI::UnitTypes::Protoss_Pylon) != rawBuildings.end();
+        
+            pylonWall = find(rawBuildings.begin(), rawBuildings.end(), BWAPI::UnitTypes::Protoss_Gateway) == rawBuildings.end();
         }
 
         void insertDefense(BWAPI::TilePosition here) { defenses.insert(here); }

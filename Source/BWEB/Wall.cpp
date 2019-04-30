@@ -14,7 +14,14 @@ namespace BWEB::Walls
         TilePosition initialStart, initialEnd, startTile, endTile;
         UnitType tight;
         double bestWallScore = 0.0;
-        bool openWall, requireTight;        
+        bool openWall, requireTight;
+
+        int failedPlacement = 0;
+        int failedAngle = 0;
+        int failedPath = 0;
+        int failedTight = 0;
+        int failedSpawn = 0;
+        int failedPower = 0;
 
         void checkPathPoints(Wall& wall)
         {
@@ -199,7 +206,7 @@ namespace BWEB::Walls
                 }
             };
 
-            
+
             // For each side, check if it's terrain tight or tight with any adjacent buildings
             checkVerticalSide(up, width, checkUp, gapUp, vertTight);
             checkVerticalSide(down, width, checkDown, gapDown, vertTight);
@@ -242,7 +249,7 @@ namespace BWEB::Walls
 
             // Choke angle
             auto line = Map::lineOfBestFit(wall.getChokePoint());
-            auto angle1 = Map::getAngle(line);            
+            auto angle1 = Map::getAngle(line);
 
             // Sort all the pieces and iterate over them to find the best wall - by Hannes
             if (find(wall.getRawBuildings().begin(), wall.getRawBuildings().end(), UnitTypes::Protoss_Pylon) != wall.getRawBuildings().end()) {
@@ -283,7 +290,7 @@ namespace BWEB::Walls
 
                 // If we want an open wall and it's not reachable, or we want a closed wall and it is reachable
                 if ((openWall && !newPath.isReachable()) || (!openWall && newPath.isReachable()))
-                    return;                
+                    return;
 
                 // If we need an opening
                 for (auto &tile : newPath.getTiles()) {
@@ -298,7 +305,7 @@ namespace BWEB::Walls
 
                 // Find distance for each piece to the closest choke tile
                 auto dist = 1.0;
-                for (auto &[tile,type] : currentWall) {
+                for (auto &[tile, type] : currentWall) {
                     auto center = Map::pConvert(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
                     auto chokeDist = closestChokeTile(center).getDistance(center);
 
@@ -314,9 +321,9 @@ namespace BWEB::Walls
             };
 
             const auto goodPower = [&](TilePosition here) {
-                auto type = *typeIterator;
+                auto t = *typeIterator;
 
-                if (type != UnitTypes::Protoss_Pylon)
+                if (t != UnitTypes::Protoss_Pylon)
                     return true;
 
                 // TODO: Create a generic BWEB function that takes 2 tiles and tells you if the 1st tile will power the 2nd tile
@@ -388,9 +395,9 @@ namespace BWEB::Walls
 
                 // If this is a pylon or pylon wall, we don't care about angles as long as the start point wasn't moved
                 if ((wall.isPylonWall() || type != UnitTypes::Protoss_Pylon) && !movedStart) {
-                    for (auto &[tile,type] : currentWall) {
+                    for (auto &[tile, type] : currentWall) {
                         auto centerB = Map::pConvert(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
-                        auto angle2 = Map::getAngle(make_pair(centerB,here));
+                        auto angle2 = Map::getAngle(make_pair(centerB, here));
 
                         if (abs(abs(angle1) - abs(angle2)) > 30.0)
                             return false;
@@ -440,10 +447,10 @@ namespace BWEB::Walls
                         }
                     }
 
-                    // Check if our units would spawn correctly
-                    pathHome.createWallPath(currentWall, p, startCenter, false, false);
-                    if (!pathHome.isReachable())
-                        return false;
+                    //// Check if our units would spawn correctly
+                    //pathHome.createWallPath(currentWall, p, startCenter, false, false);
+                    //if (!pathHome.isReachable())
+                    //    return false;
                 }
                 return true;
             };
@@ -460,11 +467,22 @@ namespace BWEB::Walls
                         if (!tile.isValid() || (wall.isPylonWall() && center.getDistance(closestChokeTile(center)) > 128.0))
                             continue;
 
-                        if (!goodPower(tile)
-                            || !goodAngle(center)
-                            || !goodPlacement(tile)
-                            || !goodTightness(wall, type, tile))
+                        if (!goodPower(tile)) {
+                            failedPower++;
                             continue;
+                        }
+                        if (!goodAngle(center)) {
+                            failedAngle++;
+                            continue;
+                        }
+                        if (!goodPlacement(tile)) {
+                            failedPlacement++;
+                            continue;
+                        }
+                        if (!goodTightness(wall, type, tile)) {
+                            failedTight++;
+                            continue;
+                        }
 
                         // 1) Store the current type, increase the iterator
                         currentWall[tile] = type;
@@ -476,6 +494,8 @@ namespace BWEB::Walls
                             // Check that units will spawn properly before scoring
                             if (goodSpawn())
                                 scoreWall();
+                            else
+                                failedSpawn++;
                         }
                         else
                             recursiveCheck(start);
@@ -495,6 +515,13 @@ namespace BWEB::Walls
                 typeIterator = wall.getRawBuildings().begin();
                 recursiveCheck(start);
             } while (next_permutation(wall.getRawBuildings().begin(), find(wall.getRawBuildings().begin(), wall.getRawBuildings().end(), UnitTypes::Protoss_Pylon)));
+
+            Broodwar << "Angle: " << failedAngle << endl;
+            Broodwar << "Placement: " << failedPlacement << endl;
+            Broodwar << "Tight: " << failedTight << endl;
+            Broodwar << "Path: " << failedPath << endl;
+            Broodwar << "Spawn: " << failedSpawn << endl;
+
             return !bestWall.empty();
         }
     }
@@ -503,7 +530,7 @@ namespace BWEB::Walls
     {
         for (auto x = here.x; x < here.x + width; x++) {
             for (auto y = here.y; y < here.y + height; y++) {
-                for (auto &[tile,type] : currentWall) {
+                for (auto &[tile, type] : currentWall) {
                     if (x >= tile.x && x < tile.x + type.tileWidth() && y >= tile.y && y < tile.y + type.tileHeight())
                         return type;
                 }
@@ -652,7 +679,7 @@ namespace BWEB::Walls
         const auto addCentroid = [&] {
             auto centroid = Position(0, 0);
             auto sizeWall = int(bestWall.size());
-            for (auto &[tile,type] : bestWall) {
+            for (auto &[tile, type] : bestWall) {
                 if (type != UnitTypes::Protoss_Pylon)
                     centroid += Map::pConvert(tile) + Map::pConvert(type.tileSize()) / 2;
                 else
@@ -662,7 +689,7 @@ namespace BWEB::Walls
             // Set a centroid if it's only a pylon wall
             if (sizeWall == 0) {
                 sizeWall = bestWall.size();
-                for (auto &[tile,type] : bestWall)
+                for (auto &[tile, type] : bestWall)
                     centroid += Map::pConvert(tile) + Map::pConvert(type.tileSize()) / 2;
             }
             wall.setCentroid(centroid / sizeWall);
@@ -679,7 +706,7 @@ namespace BWEB::Walls
 
         // If we found a suitable wall, add remaining elements
         if (findSuitableWall(wall)) {
-            for (auto &[tile,type] : bestWall) {
+            for (auto &[tile, type] : bestWall) {
                 wall.insertSegment(tile, type);
                 Map::addOverlap(tile, type.tileWidth(), type.tileHeight());
             }
