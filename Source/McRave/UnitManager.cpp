@@ -171,7 +171,7 @@ namespace McRave::Units {
                         if (unit.hasTarget() && (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Protoss_Scarab))
                             splashTargets.insert(unit.getTarget().unit());
 
-                        if (unit.getType().isBuilding() && !unit.isFlying() && !BWEB::Map::isUsed(unit.getTilePosition()))
+                        if (unit.getType().isBuilding() && !unit.isFlying() && BWEB::Map::isUsed(unit.getTilePosition()) == UnitTypes::None)
                             Events::customOnUnitLand(unit);
                     }
 

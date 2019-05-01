@@ -199,8 +199,8 @@ namespace McRave::Targets {
             const auto canCreatePath =
                 (!unit.hasTransport()																							    // If unit has no transport				
                     && unit.getTilePosition().isValid() && unit.getTarget().getTilePosition().isValid()								// If both units have valid tiles
-                    && !BWEB::Map::isUsed(unit.getTarget().getTilePosition())														// Doesn't overlap buildings
-                    && !BWEB::Map::isUsed(unit.getTilePosition())
+                    && BWEB::Map::isUsed(unit.getTarget().getTilePosition()) == UnitTypes::None										// Doesn't overlap buildings
+                    && BWEB::Map::isUsed(unit.getTilePosition()) == UnitTypes::None
                     && !unit.getType().isFlyer() && !unit.getTarget().getType().isFlyer()											// Doesn't include flyers
                     && unit.getPosition().getDistance(unit.getTarget().getPosition()) < SIM_RADIUS									// Isn't too far from engaging
                     && BWEB::Map::isWalkable(unit.getTilePosition()) && BWEB::Map::isWalkable(unit.getTarget().getTilePosition()));	// Walkable tiles  

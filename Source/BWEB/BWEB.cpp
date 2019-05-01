@@ -18,7 +18,7 @@ namespace BWEB::Map
         int testGrid[256][256] ={};
         int reserveGrid[256][256] ={};
         int overlapGrid[256][256] ={};
-        int usedGrid[256][256] ={};
+        UnitType usedGrid[256][256] ={};
         bool walkGrid[256][256] ={};
 
         void findMain()
@@ -195,7 +195,7 @@ namespace BWEB::Map
                 TilePosition t(x, y);
                 if (!t.isValid())
                     continue;
-                usedGrid[x][y] = 1;
+                usedGrid[x][y] = type;
             }
         }
 
@@ -238,7 +238,7 @@ namespace BWEB::Map
                 TilePosition t(x, y);
                 if (!t.isValid())
                     continue;
-                usedGrid[x][y] = 0;
+                usedGrid[x][y] = UnitTypes::None;
             }
         }
 
@@ -391,18 +391,18 @@ namespace BWEB::Map
         return false;
     }
 
-    bool isUsed(const TilePosition here, const int width, const int height)
+    UnitType isUsed(const TilePosition here, const int width, const int height)
     {
         for (auto x = here.x; x < here.x + width; x++) {
             for (auto y = here.y; y < here.y + height; y++) {
                 TilePosition t(x, y);
                 if (!t.isValid())
                     continue;
-                if (Map::usedGrid[x][y] > 0)
-                    return true;
+                if (Map::usedGrid[x][y] != UnitTypes::None)
+                    return Map::usedGrid[x][y];
             }
         }
-        return false;
+        return UnitTypes::None;
     }
 
     bool isWalkable(const TilePosition here)
@@ -507,7 +507,7 @@ namespace BWEB::Map
                 if (!tile.isValid()
                     || !Broodwar->isBuildable(tile)
                     || !Broodwar->isWalkable(WalkPosition(tile))
-                    || Map::usedGrid[x][y] > 0
+                    || Map::usedGrid[x][y] != UnitTypes::None
                     || Map::reserveGrid[x][y] > 0
                     || (type.isResourceDepot() && !Broodwar->canBuildHere(tile, type)))
                     return false;
@@ -537,15 +537,15 @@ namespace BWEB::Map
     {
         for (auto x = t.x; x < t.x + w; x++) {
             for (auto y = t.y; y < t.y + h; y++)
-                usedGrid[x][y] = 0;
+                usedGrid[x][y] = UnitTypes::None;
         }
     }
 
-    void addUsed(const TilePosition t, const int w, const int h)
+    void addUsed(const TilePosition t, UnitType type)
     {
-        for (auto x = t.x; x < t.x + w; x++) {
-            for (auto y = t.y; y < t.y + h; y++)
-                usedGrid[x][y] = 1;
+        for (auto x = t.x; x < t.x + type.tileWidth(); x++) {
+            for (auto y = t.y; y < t.y + type.tileHeight(); y++)
+                usedGrid[x][y] = type;
         }
     }
 

@@ -105,7 +105,7 @@ namespace McRave::Buildings {
 
                     // If we have no powered spots, can't build a solo spot
                     for (auto &small : block.getSmallTiles()) {
-                        if (BWEB::Map::isUsed(small)
+                        if (BWEB::Map::isUsed(small) != UnitTypes::None
                             || (!Terrain::isInAllyTerritory(small) && !BuildOrder::isProxy() && !Terrain::isIslandMap()))
                             solo = false;
                     }
@@ -672,14 +672,14 @@ namespace McRave::Buildings {
 
                 if (building.getRace() == Races::Zerg && building.requiresCreep() && !Broodwar->hasCreep(t))
                     return false;
-                if (BWEB::Map::isUsed(t))
+                if (BWEB::Map::isUsed(t) != UnitTypes::None)
                     return false;
             }
         }
 
         // Addon room check
         if (building.canBuildAddon()) {
-            if (BWEB::Map::isUsed(here + TilePosition(4, 1)))
+            if (BWEB::Map::isUsed(here + TilePosition(4, 1)) != UnitTypes::None)
                 return false;
         }
 

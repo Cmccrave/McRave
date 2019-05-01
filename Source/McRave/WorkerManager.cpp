@@ -200,12 +200,19 @@ namespace McRave::Workers {
 
         void updateAssignment(UnitInfo& worker)
         {
-            auto injured = (worker.unit()->getHitPoints() + worker.unit()->getShields() < worker.getType().maxHitPoints() + worker.getType().maxShields());
-            auto threatened = (worker.hasResource() && !closeToResource(worker) && Util::hasThreatOnPath(worker, worker.getPath())) || (worker.hasResource() && closeToResource(worker) && int(worker.getTargetedBy().size()) > 0);
-            auto distBest = (injured || threatened) ? 0.0 : DBL_MAX;
-            auto needNewAssignment = false;
-            vector<const BWEB::Station *> safeStations;
+            // Check the status of the worker and the assigned resource
+            const auto injured = worker.unit()->getHitPoints() + worker.unit()->getShields() < worker.getType().maxHitPoints() + worker.getType().maxShields();
+            const auto threatened = (worker.hasResource() && !closeToResource(worker) && Util::hasThreatOnPath(worker, worker.getPath())) || (worker.hasResource() && closeToResource(worker) && int(worker.getTargetedBy().size()) > 0);
+            const auto excessAssigned = worker.hasResource() && !injured && !threatened && worker.getResource().getGathererCount() >= 3 + int(worker.getResource().getType().isRefinery());
+
+            // Check if worker needs a re-assignment
+            const auto needGas = !Resources::isGasSaturated() && (gasWorkers < BuildOrder::gasWorkerLimit() || !BuildOrder::isOpener());
+            const auto needMinerals = !Resources::isMinSaturated() && worker.hasResource() && !worker.getResource().getType().isMineralField() && gasWorkers > BuildOrder::gasWorkerLimit() && BuildOrder::isOpener();
+            const auto needNewAssignment = !worker.hasResource() || needGas || needMinerals || threatened || excessAssigned;
+
             auto closest = BWEB::Stations::getClosestStation(worker.getTilePosition());
+            auto distBest = (injured || threatened) ? 0.0 : DBL_MAX;
+            vector<const BWEB::Station *> safeStations;
 
             const auto resourceReady = [&](ResourceInfo& resource, int i) {
                 if (!resource.unit()
@@ -217,28 +224,19 @@ namespace McRave::Workers {
                 return true;
             };
 
-            const auto needGas = !Resources::isGasSaturated() && ((gasWorkers < BuildOrder::gasWorkerLimit() && BuildOrder::isOpener()) || !BuildOrder::isOpener());
-            const auto needMinerals = !Resources::isMinSaturated() && worker.hasResource() && !worker.getResource().getType().isMineralField() && gasWorkers > BuildOrder::gasWorkerLimit() && BuildOrder::isOpener();
-
-            // Worker has no resource, we need gas, we need minerals, workers resource is threatened
-            if (!worker.hasResource()
-                || needGas
-                || needMinerals
-                || threatened
-                || (!injured && !threatened && worker.getResource().getGathererCount() >= 3 + int(worker.getResource().getType().isRefinery())))
-                needNewAssignment = true;
-
-            // HACK: Just return if we dont need an assignment, should make this better
+            // Return if we dont need an assignment
             if (!needNewAssignment)
                 return;
-            else if (worker.hasResource()) {
+
+            // Remove current assignemt
+            if (worker.hasResource()) {
                 worker.getResource().getType().isMineralField() ? minWorkers-- : gasWorkers--;
                 worker.getResource().removeTargetedBy(worker.weak_from_this());
                 worker.setResource(nullptr);
             }
 
             // 1) If threatened, find safe stations to move to on the Station network or generate a new path            
-            if (threatened) {
+            if (threatened) {                               
 
                 // Find a path on the station network
                 if (worker.getPosition().getDistance(closest->getResourceCentroid()) < 320.0) {

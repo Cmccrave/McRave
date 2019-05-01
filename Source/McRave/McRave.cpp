@@ -18,7 +18,8 @@
 // Move command doesn't care about threat, probably should
 // When choosing a tech or creating a building, allow certain unlocks/research
 // Adjust Production to check for unlocks
-// HT reserving causes production stall
+// HT/DT reserving causes production stall
+// Change BWEB used grid to a UnitType grid, so we can have specific path options for pathing to resources
 
 // Need a target based isThreatening
 // Examples:

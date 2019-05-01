@@ -12,7 +12,7 @@ namespace BWEB
             inline bool operator()(unsigned x, unsigned y) const
             {
                 TilePosition t(x, y);
-                if (x < width && y < height && !Map::isUsed(t) && Map::isWalkable(t))
+                if (x < width && y < height && Map::isUsed(t) == UnitTypes::None && Map::isWalkable(t))
                     return true;
                 return false;
             }
@@ -23,7 +23,7 @@ namespace BWEB
             inline bool operator()(unsigned x, unsigned y) const
             {
                 TilePosition t(x, y);
-                if (x < width && y < height && Walls::overlapsCurrentWall(t) == UnitTypes::None && !Map::isUsed(t) && Map::isWalkable(t))
+                if (x < width && y < height && Walls::overlapsCurrentWall(t) == UnitTypes::None && Map::isUsed(t) == UnitTypes::None && Map::isWalkable(t))
                     return true;
                 return false;
             }
@@ -47,7 +47,7 @@ namespace BWEB
                 || tile.getDistance(target) > maxDist * 1.2
                 || (!ignoreOverlap && Map::isOverlapping(tile))
                 || !Map::isWalkable(tile)
-                || Map::isUsed(tile)
+                || Map::isUsed(tile) != UnitTypes::None
                 || (Walls::overlapsCurrentWall(tile) != UnitTypes::None && (!allowLifted || Walls::overlapsCurrentWall(tile) != UnitTypes::Terran_Barracks));
         };
 

@@ -89,7 +89,7 @@ namespace McRave::Terrain {
                 // Shuttle check for island bases, check enemy owned bases
                 if (!station.getBWEMBase()->GetArea()->AccessibleFrom(BWEB::Map::getMainArea()) && Units::getEnemyCount(shuttle) <= 0)
                     continue;
-                if (BWEB::Map::isUsed(station.getBWEMBase()->Location()))
+                if (BWEB::Map::isUsed(station.getBWEMBase()->Location()) != UnitTypes::None)
                     continue;
                 if (enemyStartingTilePosition == station.getBWEMBase()->Location())
                     continue;
@@ -322,21 +322,21 @@ namespace McRave::Terrain {
     {
         if (naturalWall) {
             for (auto &piece : naturalWall->getSmallTiles()) {
-                if (BWEB::Map::isUsed(piece)) {
+                if (BWEB::Map::isUsed(piece) != UnitTypes::None) {
                     auto center = Position(piece) + Position(32, 32);
                     if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 32)
                         return true;
                 }
             }
             for (auto &piece : naturalWall->getMediumTiles()) {
-                if (BWEB::Map::isUsed(piece)) {
+                if (BWEB::Map::isUsed(piece) != UnitTypes::None) {
                     auto center = Position(piece) + Position(48, 32);
                     if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 48)
                         return true;
                 }
             }
             for (auto &piece : naturalWall->getLargeTiles()) {
-                if (BWEB::Map::isUsed(piece)) {
+                if (BWEB::Map::isUsed(piece) != UnitTypes::None) {
                     auto center = Position(piece) + Position(64, 48);
                     if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 64)
                         return true;

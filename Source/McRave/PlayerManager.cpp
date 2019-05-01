@@ -21,11 +21,14 @@ namespace McRave::Players
             auto &strengths = playerStrengths[player];
             for (auto &u : player.getUnits()) {
                 auto &unit = *u;
+
+                // HACK: Clear targeting here as it occurs before UnitManager updates
+                unit.getTargetedBy().clear();
+                unit.setTarget(nullptr);
+
                 if (unit.getType().isWorker() && unit.getRole() != Role::Combat)
                     continue;
                 addStrength(unit);
-                unit.getTargetedBy().clear();
-                unit.setTarget(nullptr);
             }
         }
     }
@@ -115,5 +118,25 @@ namespace McRave::Players
     }
     bool PvZ() {
         return vZ() && Broodwar->self()->getRace() == Races::Protoss;
+    }
+
+    bool TvP() {
+        return vP() && Broodwar->self()->getRace() == Races::Terran;
+    }
+    bool TvT() {
+        return vT() && Broodwar->self()->getRace() == Races::Terran;
+    }
+    bool TvZ() {
+        return vZ() && Broodwar->self()->getRace() == Races::Terran;
+    }
+
+    bool ZvP() {
+        return vP() && Broodwar->self()->getRace() == Races::Zerg;
+    }
+    bool ZvT() {
+        return vT() && Broodwar->self()->getRace() == Races::Zerg;
+    }
+    bool ZvZ() {
+        return vZ() && Broodwar->self()->getRace() == Races::Zerg;
     }
 }

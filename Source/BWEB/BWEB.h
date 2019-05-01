@@ -36,7 +36,7 @@ namespace BWEB::Map
     void removeUsed(BWAPI::TilePosition tile, int width, int height);
 
     /// <summary> Adds a section of BWAPI::TilePositions to the BWEB used grid. </summary>
-    void addUsed(BWAPI::TilePosition tile, int width, int height);
+    void addUsed(BWAPI::TilePosition tile, BWAPI::UnitType);
 
     /// <summary> Returns true if a section of BWAPI::TilePositions are within BWEBs overlap grid. </summary>
     bool isOverlapping(BWAPI::TilePosition here, int width = 1, int height = 1, bool ignoreBlocks = false);
@@ -47,8 +47,8 @@ namespace BWEB::Map
     /// <summary> Returns true if a section of BWAPI::TilePositions are within BWEBs reserve grid. </summary>
     bool isReserved(BWAPI::TilePosition here, int width = 1, int height = 1);
 
-    /// <summary> Returns true if a section of BWAPI::TilePositions are within BWEBs used grid. </summary>
-    bool isUsed(BWAPI::TilePosition here, int width = 1, int height = 1);
+    /// <summary> Returns the first UnitType found in a section of BWAPI::TilePositions, if it is within BWEBs used grid. </summary>
+    BWAPI::UnitType isUsed(BWAPI::TilePosition here, int width = 1, int height = 1);
 
     /// <summary> Returns true if a BWAPI::TilePosition is fully walkable. </summary>
     /// <param name="tile"> The BWAPI::TilePosition you want to check. </param>

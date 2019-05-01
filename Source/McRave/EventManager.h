@@ -83,7 +83,7 @@ namespace McRave::Events
 
     inline void customOnUnitLand(UnitInfo& unit)
     {
-        BWEB::Map::addUsed(unit.getTilePosition(), unit.getType().tileWidth(), unit.getType().tileHeight());
+        BWEB::Map::addUsed(unit.getTilePosition(), unit.getType());
 
         if (unit.getType().isResourceDepot())
             Stations::storeStation(unit.unit());
