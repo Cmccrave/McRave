@@ -166,46 +166,19 @@ namespace McRave::Util {
         return false;
     }
 
-
-    double getHighestThreat(WalkPosition here, UnitInfo& unit)
-    {
-        auto threat = max(MIN_THREAT, unit.getType().isFlyer() ? Grids::getEAirThreat(here) : Grids::getEGroundThreat(here));
-        return threat;
-
-        // Disable for now
-
-        //// Determine highest threat possible here
-        //auto t = unit.getType();
-        //auto highest = MIN_THREAT;
-        //auto dx = int(ceil(t.width() / 16.0));		// Half walk resolution width
-        //auto dy = int(ceil(t.height() / 16.0));		// Half walk resolution height
-
-        //WalkPosition center = here + WalkPosition(dx, dy);
-        //// Testing a performance increase for ground units instead
-        //if (!unit.getType().isFlyer()) {
-        //    auto grid = Grids::getEGroundThreat(center);
-        //    return max(grid, MIN_THREAT);
-        //}
-
-        //for (int x = here.x - dx; x < here.x + dx; x++) {
-        //    for (int y = here.y - dy; y < here.y + dy; y++) {
-        //        WalkPosition w(x, y);
-        //        if (!w.isValid())
-        //            continue;
-
-        //        auto current = unit.getType().isFlyer() ? Grids::getEAirThreat(w) : Grids::getEGroundThreat(w);
-        //        highest = (current > highest) ? current : highest;
-        //    }
-        //}
-        //return highest;
-    }
-
     double getCastLimit(TechType tech)
     {
         if (tech == TechTypes::Psionic_Storm || tech == TechTypes::Maelstrom || tech == TechTypes::Plague || tech == TechTypes::Ensnare)
             return 0.75;
         if (tech == TechTypes::Stasis_Field)
             return 2.0;
+        return 0.0;
+    }
+
+    double getCastRadius(TechType tech)
+    {
+        if (tech == TechTypes::Psionic_Storm || tech == TechTypes::Stasis_Field || tech == TechTypes::Maelstrom || tech == TechTypes::Plague || tech == TechTypes::Ensnare)
+            return 96.0;
         return 0.0;
     }
 

@@ -161,6 +161,7 @@ namespace McRave
         if (newOrder() || newCommand()) {
             if (command == UnitCommandTypes::Move)
                 thisUnit->move(here);
+            BWAPI::Broodwar->drawLineMap(position, here, BWAPI::Colors::Red);
             return true;
         }
         return false;
@@ -270,7 +271,9 @@ namespace McRave
     
     bool UnitInfo::canStartAttack()
     {
-        if (!target.lock() || (groundDamage == 0 && airDamage == 0))
+        if (!target.lock()
+            || (groundDamage == 0 && airDamage == 0)
+            || unitType == BWAPI::UnitTypes::Protoss_High_Templar)
             return false;
 
         auto cooldown = target.lock()->getType().isFlyer() ? thisUnit->getAirWeaponCooldown() : thisUnit->getGroundWeaponCooldown();
@@ -278,7 +281,6 @@ namespace McRave
         if (unitType == UnitTypes::Protoss_Reaver)
             cooldown = lastAttackFrame - Broodwar->getFrameCount() + 60;
 
-        auto targetExists = target.lock()->unit()->exists();
         auto cooldownReady =  cooldown < Broodwar->getLatencyFrames();
         auto cooldownWillBeReady = cooldown < engageDist / (transport.lock() ? transport.lock()->getSpeed() : speed);
         return cooldownReady || cooldownWillBeReady;
@@ -286,13 +288,15 @@ namespace McRave
 
     bool UnitInfo::canStartCast(BWAPI::TechType tech)
     {
-        if (energy < tech.energyCost())
+        if (!target.lock()
+            || energy < tech.energyCost()
+            || Command::overlapsActions(thisUnit, target.lock()->getPosition(), tech, PlayerState::Self, Util::getCastRadius(tech)))
             return false;
 
         if (auto currentTarget = target.lock()) {
             auto ground = Grids::getEGroundCluster(currentTarget->getPosition());
             auto air = Grids::getEAirCluster(currentTarget->getPosition());
-
+            
             if (ground + air >= Util::getCastLimit(tech))
                 return true;
         }

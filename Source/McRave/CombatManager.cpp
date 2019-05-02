@@ -152,7 +152,7 @@ namespace McRave::Combat {
             auto moveToTarget = unit.hasTarget() && (unit.getPosition().getDistance(unit.getTarget().getPosition()) <= SIM_RADIUS || unit.getType().isFlyer() || Broodwar->getFrameCount() < 15000);
 
             // If target is close, set as destination
-            if (moveToTarget && unit.getTarget().getPosition().isValid() && Grids::getMobility(unit.getEngagePosition()) > 0) {
+            if (unit.getEngagePosition().isValid() && moveToTarget && unit.getTarget().getPosition().isValid() && Grids::getMobility(unit.getEngagePosition()) > 0) {
                 if (unit.getTarget().unit()->exists())
                     unit.setDestination(Util::getInterceptPosition(unit));
                 else

@@ -66,11 +66,18 @@ namespace McRave::Command {
         }
 
         double defaultVisited(UnitInfo& unit, WalkPosition w) {
-            return log(min(500.0, max(100.0, double(Broodwar->getFrameCount() - Grids::lastVisitedFrame(w)))));
+            return log(clamp(25.0, double(Broodwar->getFrameCount() - Grids::lastVisitedFrame(w)), 1000.0));
         }
 
         double defaultMobility(UnitInfo& unit, WalkPosition w) {
             return unit.getType().isFlyer() ? 1.0 : log(100.0 + double(Grids::getMobility(w)));
+        }
+
+        double defaultThreat(UnitInfo& unit, WalkPosition w)
+        {
+            if (unit.isTransport())
+                return max(MIN_THREAT, Grids::getEGroundThreat(w) + Grids::getEAirThreat(w));
+            return max(MIN_THREAT, unit.getType().isFlyer() ? Grids::getEAirThreat(w) : Grids::getEGroundThreat(w));
         }
 
         Position findViablePosition(UnitInfo& unit, function<double(WalkPosition)> score)
@@ -96,11 +103,16 @@ namespace McRave::Command {
 
             // Find the best TilePosition in 5x5 so we can iterate the WalkPositions in the TilePosition
             multimap<double, TilePosition> sortedTiles;
-            auto start = unit.getTilePosition();
             auto bestPosition = Positions::Invalid;
             auto best = 0.0;
-            for (int x = start.x - 2; x < start.x + 4; x++) {
-                for (int y = start.y - 2; y < start.y + 4; y++) {
+
+            auto left = max(unit.getTilePosition().x - 2, unit.getType().tileWidth());
+            auto right = min(unit.getTilePosition().x + unit.getType().tileWidth() + 4, Broodwar->mapWidth() - unit.getType().tileWidth());
+            auto up = max(unit.getTilePosition().y - 2, unit.getType().tileHeight());
+            auto down = min(unit.getTilePosition().y + unit.getType().tileHeight() + 4, Broodwar->mapHeight() - unit.getType().tileHeight());
+
+            for (int x = left; x < right; x++) {
+                for (int y = up; y < down; y++) {
                     TilePosition t(x, y);
                     WalkPosition w = WalkPosition(t) + WalkPosition(2, 2);
                     Position p = Position(t) + Position(16, 16);
@@ -127,6 +139,7 @@ namespace McRave::Command {
                         if (current > best && viablePosition(w, Position(w))) {
                             best = current;
                             bestPosition = Position(w);
+                            Broodwar->drawBoxMap(Position(w), Position(w) + Position(9, 9), Colors::Green);
                         }
                     }
                 }
@@ -156,7 +169,7 @@ namespace McRave::Command {
                 unit.command(UnitCommandTypes::Right_Click_Unit, unit.getTransport());
                 return true;
             }
-            else if (unit.getType() == UnitTypes::Protoss_High_Templar && unit.getEnergy() < 75) {
+            else if (unit.getType() == UnitTypes::Protoss_High_Templar && (unit.getEnergy() < 75 || !unit.canStartCast(TechTypes::Psionic_Storm))) {
                 unit.command(UnitCommandTypes::Right_Click_Unit, unit.getTransport());
                 return true;
             }
@@ -209,16 +222,8 @@ namespace McRave::Command {
 
         // Should the unit execute an attack command
         const auto shouldAttack = [&]() {
-            if (unit.getRole() == Role::Combat) {
-
-                if (!Util::unitInRange(unit))
-                    return false;
-
-                // Check if we can get free attacks
-                if (Util::getHighestThreat(WalkPosition(unit.getEngagePosition()), unit) == MIN_THREAT)
-                    return true;
-                return unit.getLocalState() == LocalState::Attack;
-            }
+            if (unit.getRole() == Role::Combat)
+                return Util::unitInRange(unit) && unit.getLocalState() == LocalState::Attack;            
 
             if (unit.getRole() == Role::Scout) {
                 if (Terrain::getEnemyStartingPosition().isValid()) {
@@ -395,7 +400,7 @@ namespace McRave::Command {
             // Manual conversion until BWAPI::Point is fixed
             auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
             double distance = unit.hasTarget() ? 1.0 / (p.getDistance(unit.getTarget().getPosition())) : p.getDistance(BWEB::Map::getMainPosition());
-            double threat = Util::getHighestThreat(w, unit);
+            double threat = defaultThreat(unit, w);
             double grouping = defaultGrouping(unit, w);
             double mobility = defaultMobility(unit, w);
             double score = mobility / (threat * distance * grouping);
@@ -570,7 +575,7 @@ namespace McRave::Command {
 
             // Manual conversion until BWAPI::Point is fixed 
             auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
-            double threat = Util::getHighestThreat(w, unit);
+            double threat = defaultThreat(unit, w);
             double distance = (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination()));
             double visited = defaultVisited(unit, w);
             double grouping = defaultGrouping(unit, w);
@@ -620,7 +625,7 @@ namespace McRave::Command {
             // Manual conversion until BWAPI::Point is fixed
             auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
             double distance = ((unit.getType().isFlyer() || Terrain::isIslandMap()) ? log(p.getDistance(BWEB::Map::getMainPosition())) : Grids::getDistanceHome(w));
-            double threat = Util::getHighestThreat(w, unit);
+            double threat = defaultThreat(unit, w);
             double grouping = defaultGrouping(unit, w);
             double mobility = defaultMobility(unit, w);
             double score = mobility / (threat * distance * grouping);
@@ -657,7 +662,7 @@ namespace McRave::Command {
     {
         const auto scoreFunction = [&](WalkPosition w) {
             auto p = Position(w);
-            double threat = Util::getHighestThreat(w, unit);
+            double threat = defaultThreat(unit, w);
             double distance = 1.0 + (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination()));
             double score = 1.0 / (threat * distance);
             return score;
@@ -683,32 +688,28 @@ namespace McRave::Command {
             auto p = Position(w);
 
             if (!w.isValid()
-                //|| (transport.getTransportState() == TransportState::Engaging && !Util::isWalkable(start, w, UnitTypes::Protoss_Reaver && p.getDistance(transport.getDestination()) < 64.0)) disabled
                 || (unit.getTransportState() == TransportState::Engaging && Broodwar->getGroundHeight(TilePosition(w)) != Broodwar->getGroundHeight(TilePosition(unit.getDestination())) && p.getDistance(unit.getDestination()) < 64.0))
                 return 0.0;
 
             // If we just dropped units, we need to make sure not to leave them
             if (unit.getTransportState() == TransportState::Monitoring) {
-                bool proximity = true;
-                for (auto &u : unit.getAssignedCargo()) {
-                    if (u.lock()) {
-                        if (!u.lock()->unit()->isLoaded() && u.lock()->getPosition().getDistance(p) > 64.0)
-                            proximity = false;
-                    }
+                for (auto &c : unit.getAssignedCargo()) {
+                    auto &cargo = *c.lock();
+
+                    if (!cargo.unit()->isLoaded() && cargo.getPosition().getDistance(p) > 64.0)
+                        return 0.0;
+                    if (unit.getTransportState() == TransportState::Engaging && !Util::isWalkable(cargo, w) && p.getDistance(cargo.getDestination()) < 64.0)
+                        return 0.0;
                 }
-                if (!proximity)
-                    return 0.0;
             }
 
-            double threat = Util::getHighestThreat(w, unit);
+            double threat = defaultThreat(unit, w);
             double distance = unit.getTransportState() == TransportState::Retreating ? 1.0 / p.getDistance(unit.getDestination()) : p.getDistance(unit.getDestination());
             double visited = defaultVisited(unit, w);
-            double score = visited / (exp(threat) * distance);
+            double score = visited / (threat * distance);
 
             return score;
         };
-
-        // Broodwar->drawTextMap(unit.getPosition() - Position(0, 32), "%d", int(unit.getTransportState()));
 
         auto bestPosition = findViablePosition(unit, scoreFunction);
         if (bestPosition.isValid() && bestPosition != unit.getDestination()) {

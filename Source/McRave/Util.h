@@ -94,8 +94,8 @@ namespace McRave::Util {
     int chokeWidth(const BWEM::ChokePoint *);
     const BWEM::ChokePoint * getClosestChokepoint(BWAPI::Position);
 
-    double getHighestThreat(BWAPI::WalkPosition, UnitInfo&);
     double getCastLimit(BWAPI::TechType);
+    double getCastRadius(BWAPI::TechType);
 
     bool unitInRange(UnitInfo&);
     bool reactivePullWorker(UnitInfo&);

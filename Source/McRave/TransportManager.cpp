@@ -96,27 +96,21 @@ namespace McRave::Transports {
 
             // Check if this unit is ready to fight
             const auto readyToFight = [&](UnitInfo& cargo) {
-                auto reaver = cargo.getType() == UnitTypes::Protoss_Reaver;
-                auto ht = cargo.getType() == UnitTypes::Protoss_High_Templar;
-
-                // TESTING THIS:
-                if (Util::getHighestThreat(unit.getWalkPosition(), unit) < 1.0)
-                    return true;
+                auto reaverReady = cargo.getType() == UnitTypes::Protoss_Reaver && cargo.canStartAttack();
+                auto templarReady = cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.canStartCast(TechTypes::Psionic_Storm);
 
                 if (cargo.getLocalState() == LocalState::Retreat || unit.unit()->isUnderAttack() || cargo.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT)
                     return false;
-                if (cargo.getLocalState() == LocalState::Attack && ((reaver && cargo.canStartAttack()) || (ht && cargo.getEnergy() >= 75)))
-                    return true;
-                return false;
+                return cargo.getLocalState() == LocalState::Attack && (reaverReady || templarReady);
             };
 
             // Check if this unit is ready to unload
             const auto readyToUnload = [&](UnitInfo& cargo) {
-                auto reaver = cargo.getType() == UnitTypes::Protoss_Reaver;
+                auto reaverReady = cargo.getType() == UnitTypes::Protoss_Reaver && cargo.canStartAttack();
+                auto templarReady = cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.canStartCast(TechTypes::Psionic_Storm);
                 auto targetDist = cargo.getPosition().getDistance(cargo.getEngagePosition());
-                if (targetDist <= 64.0 && cargo.canStartAttack())
-                    return true;
-                return false;
+
+                return targetDist <= 64.0 && (reaverReady || templarReady);
             };
 
             // Check if this unit is ready to be picked up
@@ -128,7 +122,7 @@ namespace McRave::Transports {
                 auto targetDist = reaver && cargo.hasTarget() ? BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getTarget().getPosition()) - 256.0 : cargo.getPosition().getDistance(cargo.getEngagePosition());
 
                 if (unit.getPosition().getDistance(cargo.getPosition()) <= 160.0 || &cargo == closestCargo) {
-                    if (!cargo.hasTarget() || cargo.getLocalState() == LocalState::Retreat || targetDist > 128.0 || (ht && cargo.unit()->getEnergy() < 75) || (reaver && attackCooldown && threat)) {
+                    if (!cargo.hasTarget() || cargo.getLocalState() == LocalState::Retreat || targetDist > 128.0 || (ht && !cargo.canStartCast(TechTypes::Psionic_Storm)) || (reaver && attackCooldown && threat)) {
                         return true;
                     }
                 }
@@ -148,13 +142,7 @@ namespace McRave::Transports {
                     return true;
                 return false;
             };
-
-            const auto pickupPosition = [&](UnitInfo& cargo) {
-                double distance = unit.getPosition().getDistance(cargo.getPosition());
-                Position direction = (unit.getPosition() - cargo.getPosition()) * 64 / (int)distance;
-                return cargo.getPosition() - direction;
-            };
-
+            
             // Check if we should be loading/unloading any cargo
             bool shouldMonitor = false;
             for (auto &c : unit.getAssignedCargo()) {
@@ -168,7 +156,7 @@ namespace McRave::Transports {
                     // If it's requesting a pickup, set load state to 1	
                     if (readyToPickup(cargo)) {
                         unit.setTransportState(TransportState::Loading);
-                        unit.setDestination(pickupPosition(cargo));
+                        unit.setDestination(cargo.getPosition());
                         return;
                     }
                     else {
@@ -181,12 +169,15 @@ namespace McRave::Transports {
                 else if (cargo.unit()->isLoaded() && cargo.hasTarget() && cargo.getEngagePosition().isValid()) {
                     unit.setDestination(cargo.getEngagePosition());
 
-                    if (readyToFight(cargo)) {
-                        unit.setTransportState(TransportState::Engaging);
-
-                        if (readyToUnload(cargo))
-                            unit.unit()->unload(cargo.unit());
+                    if (readyToUnload(cargo)) {
+                        unit.unit()->unload(cargo.unit());
+                        if (unit.getType() == UnitTypes::Protoss_High_Templar) {
+                            Command::addAction(cargo.unit(), cargo.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self);
+                            return;
+                        }
                     }
+                    else if (readyToFight(cargo))
+                        unit.setTransportState(TransportState::Engaging);                    
                     else
                         unit.setTransportState(TransportState::Retreating);
                 }

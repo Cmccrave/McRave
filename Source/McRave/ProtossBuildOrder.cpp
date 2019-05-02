@@ -82,7 +82,7 @@ namespace McRave::BuildOrder::Protoss
         s = Units::getSupply();
 
         // Metrics for when to Expand/Add Production/Add Tech
-        satVal = Players::vT() ? 2 : 3;
+        satVal = 3;// Players::vT() ? 2 : 3;
         prodVal = com(Protoss_Gateway);
         baseVal = com(Protoss_Nexus);
         techVal = techList.size() + skipFirstTech;

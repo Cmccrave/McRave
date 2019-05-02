@@ -81,7 +81,7 @@ namespace BWEB::Map
                     }
                 }
             }
-            
+
             // If we still don't have a main choke, grab the closest chokepoint to our start
             if (!mainChoke) {
                 for (auto &choke : mainArea->ChokePoints()) {
@@ -476,7 +476,7 @@ namespace BWEB::Map
             }
         }
 
-        
+
         int x1 = Position(choke->Pos(choke->end1)).x;
         int y1 = int(ceil(x1 * slope)) + int(yInt);
         p1 = Position(x1, y1);
@@ -521,7 +521,8 @@ namespace BWEB::Map
     {
         for (auto x = t.x; x < t.x + w; x++) {
             for (auto y = t.y; y < t.y + h; y++)
-                overlapGrid[x][y] = 1;
+                if (TilePosition(x, y).isValid())
+                    overlapGrid[x][y] = 1;
         }
     }
 
@@ -529,7 +530,8 @@ namespace BWEB::Map
     {
         for (auto x = t.x; x < t.x + w; x++) {
             for (auto y = t.y; y < t.y + h; y++)
-                overlapGrid[x][y] = 0;
+                if (TilePosition(x, y).isValid())
+                    overlapGrid[x][y] = 0;
         }
     }
 
@@ -537,7 +539,8 @@ namespace BWEB::Map
     {
         for (auto x = t.x; x < t.x + w; x++) {
             for (auto y = t.y; y < t.y + h; y++)
-                usedGrid[x][y] = UnitTypes::None;
+                if (TilePosition(x, y).isValid())
+                    usedGrid[x][y] = UnitTypes::None;
         }
     }
 
@@ -545,7 +548,8 @@ namespace BWEB::Map
     {
         for (auto x = t.x; x < t.x + type.tileWidth(); x++) {
             for (auto y = t.y; y < t.y + type.tileHeight(); y++)
-                usedGrid[x][y] = type;
+                if (TilePosition(x, y).isValid())
+                    usedGrid[x][y] = type;
         }
     }
 
@@ -553,7 +557,8 @@ namespace BWEB::Map
     {
         for (auto x = t.x; x < t.x + w; x++) {
             for (auto y = t.y; y < t.y + h; y++)
-                reserveGrid[x][y] = 1;
+                if (TilePosition(x, y).isValid())
+                    reserveGrid[x][y] = 1;
         }
     }
 

@@ -130,7 +130,7 @@ namespace McRave::Command
                 addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self);
 
             // If close to target and can cast a storm
-            if (unit.hasTarget() && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= 400 && !Command::overlapsActions(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self, 96) && unit.unit()->getEnergy() >= 75 && (Grids::getEGroundCluster(unit.getTarget().getWalkPosition()) + Grids::getEAirCluster(unit.getTarget().getWalkPosition())) >= STORM_LIMIT) {
+            if (unit.hasTarget() && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= 400 && !Command::overlapsActions(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self, 96) && unit.canStartCast(TechTypes::Psionic_Storm)) {
                 unit.unit()->useTech(TechTypes::Psionic_Storm, unit.getTarget().unit());
                 addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self);
                 return true;

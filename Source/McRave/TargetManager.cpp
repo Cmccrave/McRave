@@ -79,7 +79,7 @@ namespace McRave::Targets {
             const auto checkBest = [&](UnitInfo& target, double thisUnit, double health, double reachDistance, double actualDistance) {
 
                 auto clusterTarget = unit.getType() == UnitTypes::Protoss_High_Templar || unit.getType() == UnitTypes::Protoss_Arbiter;
-                auto priority = /*(target.getType().isBuilding() && target.getGroundDamage() == 0.0 && target.getAirDamage() == 0.0) ? target.getPriority() / 50.0 : */target.getPriority();
+                auto priority = target.getPriority();
 
                 // Detector targeting
                 if ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == UnitTypes::Terran_Comsat_Station) {
@@ -89,13 +89,13 @@ namespace McRave::Targets {
 
                 // Cluster targeting for AoE units
                 else if (clusterTarget) {
-                    if (!target.getType().isBuilding() && target.getType() != UnitTypes::Terran_Vulture_Spider_Mine) {
+                    if (!target.getType().isBuilding() && target.getType() != UnitTypes::Terran_Vulture_Spider_Mine && !Command::overlapsActions(unit.unit(), target.getPosition(), TechTypes::Psionic_Storm, PlayerState::Self, 96)) {
 
                         double eGrid = Grids::getEGroundCluster(target.getWalkPosition()) + Grids::getEAirCluster(target.getWalkPosition());
                         double aGrid = Grids::getAGroundCluster(target.getWalkPosition()) + Grids::getAAirCluster(target.getWalkPosition());
                         double score = eGrid / exp(aGrid);
 
-                        thisUnit = (priority * score) / reachDistance;
+                        thisUnit = score / reachDistance;
                     }
                 }
 
@@ -141,7 +141,7 @@ namespace McRave::Targets {
                 double dist = unit.getPosition().getDistance(target.getPosition());
                 double widths = unit.getType().tileWidth() * 16.0 + target.getType().tileWidth() * 16.0;
                 double reachDistance = dist / reach;// (max(1.0, dist - reach - widths));
-                double actualDistance = !unit.getType().isFlyer() && target.getType().isFlyer() ? max(1.0, BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition()) - widths) : max(1.0, dist - widths);
+                double actualDistance = max(1.0, dist - widths);
                 double health = targetCanAttack ? 1.0 + (0.5*(1.0 - unit.getPercentTotal())) : 1.0;
                 double thisUnit = 0.0;
 
@@ -153,7 +153,8 @@ namespace McRave::Targets {
 
                 // If should target, check if it's best
                 if (shouldTarget(target, unitCanAttack, targetCanAttack))
-                    checkBest(target, thisUnit, health, reachDistance, actualDistance);
+                    //checkBest(target, thisUnit, health, reachDistance, actualDistance);
+                    checkBest(target, thisUnit, health, actualDistance, actualDistance);
             }
 
             // If unit is close, increment it

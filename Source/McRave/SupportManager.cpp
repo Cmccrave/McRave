@@ -82,13 +82,13 @@ namespace McRave::Support {
                         || Command::overlapsActions(unit.unit(), p, unit.getType(), PlayerState::Self, 96))
                         continue;
 
-                    auto threat = Util::getHighestThreat(w, unit);
+                    auto threat = max(MIN_THREAT, Grids::getEAirThreat(w));
                     auto dist = unit.hasTarget() ? (p.getDistance(destination)) + p.getDistance(unit.getTarget().getPosition()) : (p.getDistance(destination));
                     
                     // Try to keep the unit alive if it's cloaked inside detection
                     if (unit.unit()->isCloaked()) {
                         if (!Command::overlapsDetection(unit.unit(), p, PlayerState::Enemy) || unit.getPercentShield() > 0.8)
-                            threat = threat / 2.0;
+                            threat = threat / 2.0f;
                         if (unit.getPercentShield() <= LOW_SHIELD_PERCENT_LIMIT && threat > MIN_THREAT && Command::overlapsDetection(unit.unit(), p, PlayerState::Enemy))
                             continue;
                     }

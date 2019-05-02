@@ -107,6 +107,9 @@ namespace McRave {
             auto detection = player->isEnemy(BWAPI::Broodwar->self()) ? Command::overlapsDetection(thisUnit, position, PlayerState::Self) : Command::overlapsDetection(thisUnit, position, PlayerState::Enemy);
             return (burrowed || (thisUnit->exists() && thisUnit->isCloaked())) && !detection;
         }
+        bool isTransport() {
+            return unitType == BWAPI::UnitTypes::Protoss_Shuttle || unitType == BWAPI::UnitTypes::Terran_Dropship || unitType == BWAPI::UnitTypes::Zerg_Overlord; 
+        }
         bool isBurrowed() { return burrowed; }
         bool isFlying() { return flying; }
 

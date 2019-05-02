@@ -164,13 +164,19 @@ namespace McRave::Grids
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &unit = *u;
 
+                // Pixel and walk sizes
+                auto walkWidth = unit.getType().isBuilding() ? unit.getType().tileWidth() * 4 : (int)ceil(unit.getType().width() / 8.0);
+                auto walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : (int)ceil(unit.getType().height() / 8.0);
+
                 // Add a visited grid for rough guideline of what we've seen by this unit recently
                 auto start = unit.getWalkPosition();
-                for (int x = start.x - 4; x < start.x + 8; x++) {
-                    for (int y = start.y - 4; y < start.y + 8; y++) {
+                for (int x = start.x - 2; x < start.x + walkWidth + 2; x++) {
+                    for (int y = start.y - 2; y < start.y + walkHeight + 2; y++) {
                         auto t = WalkPosition(x, y);
-                        if (t.isValid())
+                        if (t.isValid()) {
                             visitedGrid[x][y] = Broodwar->getFrameCount();
+                            //Broodwar->drawBoxMap(Position(t), Position(t) + Position(9, 9), Colors::Green);
+                        }
                     }
                 }
 
