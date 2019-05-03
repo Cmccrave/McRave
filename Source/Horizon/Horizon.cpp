@@ -140,13 +140,13 @@ namespace McRave::Horizon {
 
                 // If enemy is stationary, it must be in range of the engage position on a diagonal or straight line
                 if (enemy.getSpeed() <= 0.0) {
-                    auto diEngageDistance = enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths + deadzone;
-                    auto stEngageDistance = unitStraightEngage.getDistance(enemy.getPosition()) - enemyRange - widths + deadzone;
-                    if (diEngageDistance > 64.0 && stEngageDistance > 64.0)
+                    auto diEngageDistance = enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths /*+ deadzone*/;
+                    //auto stEngageDistance = unitStraightEngage.getDistance(enemy.getPosition()) - enemyRange - widths + deadzone;
+                    if (diEngageDistance > 64.0/* && stEngageDistance > 64.0*/)
                         continue;
                 }
 
-                auto distance = max(0.0, enemy.getPosition().getDistance(unit.getPosition()) - enemyRange - widths + deadzone);
+                auto distance = max(0.0, enemy.getPosition().getDistance(unit.getPosition()) - enemyRange - widths /*+ deadzone*/);
                 auto speed = enemy.getSpeed() > 0.0 ? 24.0 * enemy.getSpeed() : 24.0 * unit.getSpeed();
                 auto simRatio =  simulationTime - (distance / speed);
 
@@ -190,16 +190,20 @@ namespace McRave::Horizon {
                 auto distance = engDist - widths + deadzone;
                 auto simRatio = simulationTime - (distance / speed);
 
+                auto reach = max(ally.getAirReach(), ally.getGroundReach());
+
                 // If the unit doesn't affect this simulation
                 if (simRatio <= 0.0 || (ally.getSpeed() <= 0.0 && ally.getPosition().getDistance(unit.getTarget().getPosition()) - allyRange - widths > 64.0))
                     continue;
 
                 // HACK: Bunch of hardcoded stuff
-                if (ally.getPosition().getDistance(unit.getTarget().getPosition()) / speed > simulationTime)
+                if (ally.getTarget().getPosition().getDistance(unit.getTarget().getPosition()) > reach)
                     continue;
                 if ((ally.getType() == UnitTypes::Protoss_Scout || ally.getType() == UnitTypes::Protoss_Corsair) && ally.getShields() < 30)
                     continue;
                 if (ally.getType() == UnitTypes::Terran_Wraith && ally.getHealth() <= 100)
+                    continue;
+                if (ally.getType() == UnitTypes::Protoss_High_Templar && !unit.canStartCast(TechTypes::Psionic_Storm))
                     continue;
                 if (ally.getType().maxShields() > 0 && ally.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && Broodwar->getFrameCount() < 8000)
                     continue;
@@ -272,7 +276,7 @@ namespace McRave::Horizon {
             }
         }
 
-        auto belowLimits = false;// unit.getType().isFlyer() ? (belowAirLimits || (sync && belowGrdLimits)) : (belowGrdLimits || (sync && belowAirLimits));
+        auto belowLimits = unit.getType().isFlyer() ? (belowAirLimits || (sync && belowGrdLimits)) : (belowGrdLimits || (sync && belowAirLimits));
 
         // If above/below thresholds, it's a sim win/loss
         if (unit.getSimValue() >= maxThreshold && !belowLimits) {

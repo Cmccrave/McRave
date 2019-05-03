@@ -235,22 +235,18 @@ namespace McRave::Workers {
                 worker.setResource(nullptr);
             }
 
-            // 1) If threatened, find safe stations to move to on the Station network or generate a new path            
-            if (threatened) {                               
+            // 1) Find safe stations to mine resources from
+            if (worker.getPosition().getDistance(closest->getResourceCentroid()) < 320.0) {
+                for (auto &s : Stations::getMyStations()) {
+                    auto station = s.second;
+                    auto closePath = Stations::pathStationToStation(closest, station);
+                    BWEB::Path path;
+                    if (closest && closePath)
+                        path = *closePath;
 
-                // Find a path on the station network
-                if (worker.getPosition().getDistance(closest->getResourceCentroid()) < 320.0) {
-                    for (auto &s : Stations::getMyStations()) {
-                        auto station = s.second;
-                        auto closePath = Stations::pathStationToStation(closest, station);
-                        BWEB::Path path;
-                        if (closest && closePath)
-                            path = *closePath;
-
-                        // Store station if it's safe
-                        if (!Util::hasThreatOnPath(worker, path) || worker.getPosition().getDistance(station->getResourceCentroid()) < 128.0)
-                            safeStations.push_back(station);
-                    }
+                    // Store station if it's safe
+                    if (!Util::hasThreatOnPath(worker, path) || worker.getPosition().getDistance(station->getResourceCentroid()) < 128.0)
+                        safeStations.push_back(station);
                 }
             }
 
@@ -260,7 +256,7 @@ namespace McRave::Workers {
                     auto &resource = *r;
                     if (!resourceReady(resource, 3))
                         continue;
-                    if (threatened && !safeStations.empty() && (!resource.getStation() || find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end()))
+                    if (!resource.getStation() || find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end())
                         continue;
 
                     auto dist = resource.getPosition().getDistance(worker.getPosition());
@@ -271,8 +267,8 @@ namespace McRave::Workers {
                 }
             }
 
-            // 3) Check if we need mineral workers
-            else {
+            // 3) Check if we need mineral workers or didn't get a gas assignment
+            if (needMinerals || !worker.hasResource()) {
                 for (int i = 1; i <= 2; i++) {
                     for (auto &r : Resources::getMyMinerals()) {
 
@@ -280,7 +276,7 @@ namespace McRave::Workers {
                         if (!resourceReady(resource, i))
                             continue;
 
-                        if (threatened && !safeStations.empty() && (!resource.getStation() || find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end()))
+                        if (!resource.getStation() || find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end())
                             continue;
 
                         double dist = resource.getPosition().getDistance(worker.getPosition());
@@ -318,7 +314,7 @@ namespace McRave::Workers {
                 make_pair(0, "Misc"),
                 make_pair(1, "Transport"),
                 make_pair(2, "ReturnCargo"),
-                make_pair(3, "clearNeutral"),
+                make_pair(3, "ClearNeutral"),
                 make_pair(4, "Build"),
                 make_pair(5, "Gather")
             };

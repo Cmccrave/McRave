@@ -10,7 +10,6 @@
 // *** TODO ***
 // BWEB Destination south walls not working
 // Test vs BBS
-// Prevent HT walking into enemies when storm isn't suitable (because it has ground damage > 0, it tries to use Attack)
 // Re-power buildings
 // Change UnitInfo::Command to take an Action
 // Add 3rd stargate on 3 base with carriers
@@ -19,7 +18,8 @@
 // When choosing a tech or creating a building, allow certain unlocks/research
 // Adjust Production to check for unlocks
 // HT/DT reserving causes production stall
-// Change BWEB used grid to a UnitType grid, so we can have specific path options for pathing to resources
+// Storm drops and storm cast limit testing
+// Retreat command keeps getting stuck in bad spots
 
 // Need a target based isThreatening
 // Examples:

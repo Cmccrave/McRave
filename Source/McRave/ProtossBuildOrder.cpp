@@ -117,8 +117,8 @@ namespace McRave::BuildOrder::Protoss
         if (buildCount(Protoss_Assimilator) == 0)
             gasLimit = 0;
 
-        // Pylon logic
-        if (vis(Protoss_Pylon) > int(fastExpand)) {
+        // Pylon logic after first two
+        if (vis(Protoss_Pylon) >= 2) {
             int providers = buildCount(Protoss_Pylon) > 0 ? 14 : 16;
             int count = min(22, Units::getSupply() / providers);
             int offset = com(Protoss_Nexus) - 1;

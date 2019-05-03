@@ -169,7 +169,7 @@ namespace McRave::Util {
     double getCastLimit(TechType tech)
     {
         if (tech == TechTypes::Psionic_Storm || tech == TechTypes::Maelstrom || tech == TechTypes::Plague || tech == TechTypes::Ensnare)
-            return 0.75;
+            return 1.5;
         if (tech == TechTypes::Stasis_Field)
             return 2.0;
         return 0.0;

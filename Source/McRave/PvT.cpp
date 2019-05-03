@@ -68,11 +68,11 @@ namespace McRave::BuildOrder::Protoss {
 
         // Openers
         if (currentOpener == "Proxy") {
-            itemQueue[Protoss_Pylon] =              Item(s >= 12, s >= 16);
+            itemQueue[Protoss_Pylon] =              Item((s >= 12) + (s >= 30), (s >= 16) + (s >= 30));
             itemQueue[Protoss_Gateway] =            Item((vis(Protoss_Pylon) > 0) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
         }
         else if (currentOpener == "Main") {
-            itemQueue[Protoss_Pylon] =				Item(s >= 14, s >= 16);
+            itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 30));
         }
 
@@ -279,6 +279,7 @@ namespace McRave::BuildOrder::Protoss {
         // 1 Gate - "http://liquipedia.net/starcraft/21_Nexus"
         // 2 Gate - "https://liquipedia.net/starcraft/2_Gate_Range_Expand"
         defaultPvT();
+        fastExpand =        true;
         playPassive =		Units::getEnemyCount(Terran_Siege_Tank_Tank_Mode) == 0 && Units::getEnemyCount(Terran_Siege_Tank_Siege_Mode) == 0 && Strategy::enemyPressure() ? vis(Protoss_Dragoon) < 12 : !firstReady();
         firstUpgrade =		UpgradeTypes::Singularity_Charge;
         firstTech =			TechTypes::None;

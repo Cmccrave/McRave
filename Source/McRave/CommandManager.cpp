@@ -169,7 +169,7 @@ namespace McRave::Command {
                 unit.command(UnitCommandTypes::Right_Click_Unit, unit.getTransport());
                 return true;
             }
-            else if (unit.getType() == UnitTypes::Protoss_High_Templar && (unit.getEnergy() < 75 || !unit.canStartCast(TechTypes::Psionic_Storm))) {
+            else if (unit.getType() == UnitTypes::Protoss_High_Templar && !unit.canStartCast(TechTypes::Psionic_Storm)) {
                 unit.command(UnitCommandTypes::Right_Click_Unit, unit.getTransport());
                 return true;
             }
@@ -223,12 +223,12 @@ namespace McRave::Command {
         // Should the unit execute an attack command
         const auto shouldAttack = [&]() {
             if (unit.getRole() == Role::Combat)
-                return Util::unitInRange(unit) && unit.getLocalState() == LocalState::Attack;            
+                return Util::unitInRange(unit) && unit.getLocalState() == LocalState::Attack;
 
             if (unit.getRole() == Role::Scout) {
                 if (Terrain::getEnemyStartingPosition().isValid()) {
                     auto attackers = int(unit.getTargetedBy().size());
-                    if (attackers == 0 || (attackers == 1 && unit.getTarget().hasTarget() && unit.getTarget().getTarget() == unit && unit.getPercentTotal() > unit.getTarget().getPercentTotal()))
+                    if (attackers == 0 || (attackers == 1 && unit.getPercentTotal() > unit.getTarget().getPercentTotal()))
                         return true;
                 }
             }
@@ -273,7 +273,7 @@ namespace McRave::Command {
                 auto interceptDistance = intercept.getDistance(unit.getPosition());
 
                 // Capital ships want to stay at max range due to their slow nature
-                if (unit.isCapitalShip() || unit.getTarget().isSuicidal())
+                if (unit.isCapitalShip() || unit.getTarget().isSuicidal() || unit.isSpellcaster())
                     return false;
 
                 // Approach units that are moving away from us
@@ -622,9 +622,12 @@ namespace McRave::Command {
     {
         // Low distance, low threat, high clustering
         const auto scoreFunction = [&](WalkPosition w) {
+
             // Manual conversion until BWAPI::Point is fixed
             auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
-            double distance = ((unit.getType().isFlyer() || Terrain::isIslandMap()) ? log(p.getDistance(BWEB::Map::getMainPosition())) : Grids::getDistanceHome(w));
+
+            // Distance is a mix of kiting and retreating
+            double distance = unit.hasTarget() ? p.getDistance(BWEB::Map::getMainPosition()) / (p.getDistance(unit.getTarget().getPosition())) : p.getDistance(BWEB::Map::getMainPosition());
             double threat = defaultThreat(unit, w);
             double grouping = defaultGrouping(unit, w);
             double mobility = defaultMobility(unit, w);
@@ -694,12 +697,13 @@ namespace McRave::Command {
             // If we just dropped units, we need to make sure not to leave them
             if (unit.getTransportState() == TransportState::Monitoring) {
                 for (auto &c : unit.getAssignedCargo()) {
-                    auto &cargo = *c.lock();
+                    if (auto &cargo = c.lock()) {
 
-                    if (!cargo.unit()->isLoaded() && cargo.getPosition().getDistance(p) > 64.0)
-                        return 0.0;
-                    if (unit.getTransportState() == TransportState::Engaging && !Util::isWalkable(cargo, w) && p.getDistance(cargo.getDestination()) < 64.0)
-                        return 0.0;
+                        if (!cargo->unit()->isLoaded() && cargo->getPosition().getDistance(p) > 64.0)
+                            return 0.0;
+                        if (unit.getTransportState() == TransportState::Engaging && !Util::isWalkable(*cargo, w) && p.getDistance(cargo->getDestination()) < 64.0)
+                            return 0.0;
+                    }
                 }
             }
 

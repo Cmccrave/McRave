@@ -81,7 +81,8 @@ namespace McRave::Combat {
                     || (unit.getType() == UnitTypes::Terran_Medic && unit.unit()->getEnergy() <= TechTypes::Healing.energyCost())
                     || (unit.getType() == UnitTypes::Zerg_Mutalisk && Grids::getEAirThreat((WalkPosition)unit.getEngagePosition()) > 0.0 && unit.getHealth() <= 30)
                     || (unit.getType().maxShields() > 0 && unit.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && Broodwar->getFrameCount() < 8000 && !Terrain::isInAllyTerritory(unit.getTilePosition()))
-                    || (unit.getType() == UnitTypes::Terran_SCV && Broodwar->getFrameCount() > 12000))
+                    || (unit.getType() == UnitTypes::Terran_SCV && Broodwar->getFrameCount() > 12000)
+                    || (unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine && !unit.getTarget().isBurrowed()))
                     return true;
                 return false;
             };

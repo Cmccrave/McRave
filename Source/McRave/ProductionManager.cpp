@@ -184,6 +184,9 @@ namespace McRave::Production {
                     needReavers = true;
             }
 
+            // Turn shuttles off for now
+            needShuttles = false;
+
             switch (unit)
             {
                 // Gateway Units

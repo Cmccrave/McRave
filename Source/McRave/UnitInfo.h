@@ -110,6 +110,9 @@ namespace McRave {
         bool isTransport() {
             return unitType == BWAPI::UnitTypes::Protoss_Shuttle || unitType == BWAPI::UnitTypes::Terran_Dropship || unitType == BWAPI::UnitTypes::Zerg_Overlord; 
         }
+        bool isSpellcaster() {
+            return unitType == BWAPI::UnitTypes::Protoss_High_Templar || unitType == BWAPI::UnitTypes::Protoss_Dark_Archon || unitType == BWAPI::UnitTypes::Terran_Medic;
+        }
         bool isBurrowed() { return burrowed; }
         bool isFlying() { return flying; }
 

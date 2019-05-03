@@ -73,7 +73,7 @@ namespace McRave::BuildOrder::Protoss {
 
         // Openers
         if (currentOpener == "Proxy") {
-            itemQueue[Protoss_Pylon] =					Item((s >= 12), (s >= 16));
+            itemQueue[Protoss_Pylon] =					Item((s >= 12) + (s >= 30), (s >= 16) + (s >= 30));
             itemQueue[Protoss_Gateway] =				Item((vis(Protoss_Pylon) > 0) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
         }
         else if (currentOpener == "Natural") {
