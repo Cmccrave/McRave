@@ -335,6 +335,7 @@ namespace McRave::Util {
                 || (!Terrain::isInAllyTerritory(t) && area && mapBWEM.GetArea(w) != area)
                 || dist < radius
                 || dist > distBest
+                || mapBWEM.GetArea(t) != area
                 || Command::overlapsActions(unit.unit(), p, unit.getType(), PlayerState::Self, 8)
                 || Command::isInDanger(unit, p)
                 || !isWalkable(unit, w)

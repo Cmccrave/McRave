@@ -9,7 +9,6 @@
 
 // *** TODO ***
 // BWEB Destination south walls not working
-// Test vs BBS
 // Re-power buildings
 // Change UnitInfo::Command to take an Action
 // Add 3rd stargate on 3 base with carriers
@@ -20,6 +19,8 @@
 // HT/DT reserving causes production stall
 // Storm drops and storm cast limit testing
 // Retreat command keeps getting stuck in bad spots
+// Mines at chokepoints causes unit suicide with defend command
+// Arbiter and Observer positioning
 
 // Need a target based isThreatening
 // Examples:

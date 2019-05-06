@@ -124,7 +124,7 @@ namespace McRave::BuildOrder::Terran {
             itemQueue[UnitTypes::Terran_Control_Tower] = Item(com(UnitTypes::Terran_Starport));
 
         // Machine Shop
-        if (com(UnitTypes::Terran_Factory) >= 2)
+        if (com(UnitTypes::Terran_Factory) >= 3)
             itemQueue[UnitTypes::Terran_Machine_Shop] = Item(max(1, com(UnitTypes::Terran_Factory) - com(UnitTypes::Terran_Command_Center) - 1));
 
         // Supply Depot logic

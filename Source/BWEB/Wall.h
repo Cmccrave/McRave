@@ -22,7 +22,7 @@ namespace BWEB {
             rawBuildings = b;
             rawDefenses = d;
         
-            pylonWall = find(rawBuildings.begin(), rawBuildings.end(), BWAPI::UnitTypes::Protoss_Gateway) == rawBuildings.end();
+            pylonWall = count(rawBuildings.begin(), rawBuildings.end(), BWAPI::UnitTypes::Protoss_Pylon) > 1;
         }
 
         void insertDefense(BWAPI::TilePosition here) { defenses.insert(here); }

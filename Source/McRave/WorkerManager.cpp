@@ -207,11 +207,12 @@ namespace McRave::Workers {
 
             // Check if worker needs a re-assignment
             const auto needGas = !Resources::isGasSaturated() && (gasWorkers < BuildOrder::gasWorkerLimit() || !BuildOrder::isOpener());
-            const auto needMinerals = !Resources::isMinSaturated() && worker.hasResource() && !worker.getResource().getType().isMineralField() && gasWorkers > BuildOrder::gasWorkerLimit() && BuildOrder::isOpener();
+            const auto needMinerals = !Resources::isMinSaturated() && (gasWorkers > BuildOrder::gasWorkerLimit() || !BuildOrder::isOpener());
             const auto needNewAssignment = !worker.hasResource() || needGas || needMinerals || threatened || excessAssigned;
 
-            auto closest = BWEB::Stations::getClosestStation(worker.getTilePosition());
+            auto closestStation = BWEB::Stations::getClosestStation(worker.getTilePosition());
             auto distBest = (injured || threatened) ? 0.0 : DBL_MAX;
+            auto oldResource = worker.hasResource() ? worker.getResource().shared_from_this() : nullptr;
             vector<const BWEB::Station *> safeStations;
 
             const auto resourceReady = [&](ResourceInfo& resource, int i) {
@@ -228,30 +229,20 @@ namespace McRave::Workers {
             if (!needNewAssignment)
                 return;
 
-            // Remove current assignemt
-            if (worker.hasResource()) {
-                worker.getResource().getType().isMineralField() ? minWorkers-- : gasWorkers--;
-                worker.getResource().removeTargetedBy(worker.weak_from_this());
-                worker.setResource(nullptr);
-            }
-
             // 1) Find safe stations to mine resources from
-            if (worker.getPosition().getDistance(closest->getResourceCentroid()) < 320.0) {
+            if (closestStation) {
                 for (auto &s : Stations::getMyStations()) {
                     auto station = s.second;
-                    auto closePath = Stations::pathStationToStation(closest, station);
-                    BWEB::Path path;
-                    if (closest && closePath)
-                        path = *closePath;
+                    auto path = Stations::pathStationToStation(closestStation, station);
 
                     // Store station if it's safe
-                    if (!Util::hasThreatOnPath(worker, path) || worker.getPosition().getDistance(station->getResourceCentroid()) < 128.0)
+                    if ((path && !Util::hasThreatOnPath(worker, *path)) || worker.getPosition().getDistance(station->getResourceCentroid()) < 128.0)
                         safeStations.push_back(station);
                 }
             }
 
             // 2) Check if we need gas workers
-            if (needGas) {
+            if (needGas || !worker.hasResource()) {
                 for (auto &r : Resources::getMyGas()) {
                     auto &resource = *r;
                     if (!resourceReady(resource, 3))
@@ -267,7 +258,7 @@ namespace McRave::Workers {
                 }
             }
 
-            // 3) Check if we need mineral workers or didn't get a gas assignment
+            // 3) Check if we need mineral workers
             if (needMinerals || !worker.hasResource()) {
                 for (int i = 1; i <= 2; i++) {
                     for (auto &r : Resources::getMyMinerals()) {
@@ -275,7 +266,6 @@ namespace McRave::Workers {
                         auto &resource = *r;
                         if (!resourceReady(resource, i))
                             continue;
-
                         if (!resource.getStation() || find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end())
                             continue;
 
@@ -293,6 +283,12 @@ namespace McRave::Workers {
 
             // 4) Assign resource
             if (worker.hasResource()) {
+
+                // Remove current assignemt
+                if (oldResource) {
+                    oldResource->getType().isMineralField() ? minWorkers-- : gasWorkers--;
+                    oldResource->removeTargetedBy(worker.weak_from_this());
+                }
 
                 // Add next assignment
                 worker.getResource().getType().isMineralField() ? minWorkers++ : gasWorkers++;

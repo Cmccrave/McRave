@@ -62,7 +62,7 @@ namespace McRave::Command {
         }
 
         double defaultGrouping(UnitInfo& unit, WalkPosition w) {
-            return unit.getType().isFlyer() ? max(0.1f, Grids::getAAirCluster(w)) : log(50.0 + Grids::getAGroundCluster(w));
+            return unit.getType().isFlyer() ? 1.0 / max(0.1f, Grids::getAAirCluster(w)) : log(50.0 + Grids::getAGroundCluster(w));
         }
 
         double defaultVisited(UnitInfo& unit, WalkPosition w) {
@@ -317,7 +317,7 @@ namespace McRave::Command {
             double distance = (unit.getType().isFlyer() || Terrain::isIslandMap()) ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
             double grouping = defaultGrouping(unit, w);
             double mobility = defaultMobility(unit, w);
-            double score = mobility / (distance * grouping);
+            double score = (grouping * mobility) / distance;
             return score;
         };
 
@@ -403,7 +403,7 @@ namespace McRave::Command {
             double threat = defaultThreat(unit, w);
             double grouping = defaultGrouping(unit, w);
             double mobility = defaultMobility(unit, w);
-            double score = mobility / (threat * distance * grouping);
+            double score = (grouping * mobility) / (threat * distance );
             return score;
         };
 
@@ -557,7 +557,7 @@ namespace McRave::Command {
             // Estimate a ranged radius
                 // At least: behind the melee arc or at least this units range
                 // At most: the number of ranged units we have * half a tile + this units ground range
-            auto rangedRadius = min(max(meleeRadius + 32, (int)unit.getGroundRange()) - 64, (Units::getNumberRanged() * 16) + (int)unit.getGroundRange() - 64);
+            auto rangedRadius = Terrain::getMainWall() ? 128.0 : min(max(meleeRadius + 32, (int)unit.getGroundRange()) - 64, (Units::getNumberRanged() * 16) + (int)unit.getGroundRange() - 64);
 
             // Find a concave position at the desired radius
             auto radius = unit.getGroundRange() > 32.0 ? rangedRadius : meleeRadius;

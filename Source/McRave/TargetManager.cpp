@@ -76,15 +76,16 @@ namespace McRave::Targets {
                 return true;
             };
 
-            const auto checkBest = [&](UnitInfo& target, double thisUnit, double health, double reachDistance, double actualDistance) {
+            const auto checkBest = [&](UnitInfo& target, double thisUnit, double health, double dist) {
 
+                auto visibility = log(clamp(25.0, Broodwar->getFrameCount() - double(Grids::lastVisibleFrame(target.getTilePosition())), 1000.0));
                 auto clusterTarget = unit.getType() == UnitTypes::Protoss_High_Templar || unit.getType() == UnitTypes::Protoss_Arbiter;
-                auto priority = target.getPriority();
+                auto priority = target.getPriority() * health / visibility;
 
                 // Detector targeting
                 if ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == UnitTypes::Terran_Comsat_Station) {
                     if (target.isBurrowed() || target.unit()->isCloaked())
-                        thisUnit = (priority * health) / reachDistance;
+                        thisUnit = priority / dist;
                 }
 
                 // Cluster targeting for AoE units
@@ -95,27 +96,27 @@ namespace McRave::Targets {
                         double aGrid = Grids::getAGroundCluster(target.getWalkPosition()) + Grids::getAAirCluster(target.getWalkPosition());
                         double score = eGrid / exp(aGrid);
 
-                        thisUnit = score / reachDistance;
+                        thisUnit = score / dist;
                     }
                 }
 
                 // Proximity targeting
                 else if (unit.getType() == UnitTypes::Protoss_Reaver) {
                     if (target.getType().isBuilding() && target.getGroundDamage() == 0.0 && target.getAirDamage() == 0.0)
-                        thisUnit = 0.1 / reachDistance;
+                        thisUnit = 0.1 / dist;
                     else
-                        thisUnit = health / reachDistance;
+                        thisUnit = health / dist;
                 }
 
                 // Priority targeting
                 else
-                    thisUnit = (priority * health) / reachDistance;
+                    thisUnit = priority / dist;
 
                 // If this target is more important to target, set as current target
-                if (thisUnit > bestScore || (thisUnit == bestScore && !clusterTarget && actualDistance < bestDistance)) {
+                if (thisUnit > bestScore || (thisUnit == bestScore && !clusterTarget && dist < bestDistance)) {
                     bestScore = thisUnit;
                     unit.setTarget(&target);
-                    bestDistance = actualDistance;
+                    bestDistance = dist;
                 }
             };
 
@@ -131,30 +132,25 @@ namespace McRave::Targets {
 
                 bool targetCanAttack = ((unit.getType().isFlyer() && target.getAirDamage() > 0.0) || (!unit.getType().isFlyer() && target.getGroundDamage() > 0.0) || (!unit.getType().isFlyer() && target.getType() == UnitTypes::Terran_Vulture_Spider_Mine));
                 bool unitCanAttack = ((target.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!target.getType().isFlyer() && unit.getGroundDamage() > 0.0) || (unit.getType() == UnitTypes::Protoss_Carrier));
-
-
+                
                 // HACK: Check for a flying building
                 if (target.unit()->exists() && target.unit()->isFlying() && unit.getAirDamage() <= 0.0)
-                    unitCanAttack = false;
-
-                double reach = target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
-                double dist = unit.getPosition().getDistance(target.getPosition());
+                    unitCanAttack = false;            
+                
                 double widths = unit.getType().tileWidth() * 16.0 + target.getType().tileWidth() * 16.0;
-                double reachDistance = dist / reach;// (max(1.0, dist - reach - widths));
-                double actualDistance = max(32.0, dist - widths);
+                double dist = max(32.0, unit.getPosition().getDistance(target.getPosition()) - widths);
                 double health = targetCanAttack ? 1.0 + (0.5*(1.0 - unit.getPercentTotal())) : 1.0;
                 double thisUnit = 0.0;
 
                 // Set sim position
-                if ((unitCanAttack || targetCanAttack) && actualDistance < closest) {
+                if ((unitCanAttack || targetCanAttack) && dist < closest) {
                     unit.setSimPosition(target.getPosition());
-                    closest = actualDistance;
+                    closest = dist;
                 }
 
                 // If should target, check if it's best
                 if (shouldTarget(target, unitCanAttack, targetCanAttack))
-                    //checkBest(target, thisUnit, health, reachDistance, actualDistance);
-                    checkBest(target, thisUnit, health, actualDistance, actualDistance);
+                    checkBest(target, thisUnit, health, dist);
             }
 
             // If unit is close, increment it
@@ -229,11 +225,8 @@ namespace McRave::Targets {
                     unit.setEngDist(max(0.0, unit.getPath().getDistance() - range));
                 }
                 // If unreachable
-                else if (!unit.getPath().isReachable()) {
-                    // HACK: Estimate until we can fix our pathing
-                    auto dist = unit.getPosition().getDistance(unit.getEngagePosition());
-                    unit.setEngDist(dist);
-                }
+                else if (!unit.getPath().isReachable())
+                    unit.setEngDist(DBL_MAX);                
             }
             // Otherwise approximate and double
             else {

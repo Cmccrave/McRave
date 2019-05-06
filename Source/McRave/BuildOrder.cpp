@@ -184,6 +184,14 @@ namespace McRave::BuildOrder
             unlockedType.insert(Protoss_Shuttle);
             techList.insert(Protoss_Shuttle);
         }
+        
+        // If enemy has detection, add HT to the tech
+        if (com(Protoss_Dark_Templar) >= 1) {
+            if (Units::getEnemyCount(Protoss_Observer) > 0 || Units::getEnemyCount(Protoss_Photon_Cannon) > 0 || Units::getEnemyCount(Terran_Science_Vessel) > 0 || Units::getEnemyCount(Terran_Missile_Turret) > 0 || Units::getEnemyCount(Terran_Vulture_Spider_Mine) > 0 || Units::getEnemyCount(Zerg_Overlord) > 0) {
+                unlockedType.insert(Protoss_High_Templar);
+                techList.insert(Protoss_High_Templar);
+            }
+        }
     }
 
     void checkAllTech()

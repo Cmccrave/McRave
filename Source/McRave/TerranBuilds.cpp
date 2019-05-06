@@ -24,6 +24,7 @@ namespace McRave::BuildOrder::Terran
         itemQueue[Terran_Barracks] =			Item(s >= 20);
         itemQueue[Terran_Refinery] =			Item(s >= 24);
         itemQueue[Terran_Factory] =				Item((s >= 30) + (s >= 36) + (s >= 46));
+        itemQueue[Terran_Machine_Shop] =        Item((s >= 30) + (com(Terran_Factory) >= 2));
     }
 }
 

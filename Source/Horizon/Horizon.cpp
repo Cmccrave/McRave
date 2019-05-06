@@ -203,8 +203,6 @@ namespace McRave::Horizon {
                     continue;
                 if (ally.getType() == UnitTypes::Terran_Wraith && ally.getHealth() <= 100)
                     continue;
-                if (ally.getType() == UnitTypes::Protoss_High_Templar && !unit.canStartCast(TechTypes::Psionic_Storm))
-                    continue;
                 if (ally.getType().maxShields() > 0 && ally.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && Broodwar->getFrameCount() < 8000)
                     continue;
                 if (ally.getType().getRace() == Races::Zerg && ally.getPercentTotal() < LOW_BIO_PERCENT_LIMIT)

@@ -100,7 +100,7 @@ namespace McRave::BuildOrder::Protoss {
             lockedTransition =  vis(Protoss_Robotics_Facility) > 0;
             getOpening =		s < 70;
             firstUnit =			com(Protoss_Dragoon) >= 3 ? Protoss_Reaver : UnitTypes::None;
-            
+
             itemQueue[Protoss_Nexus] =				Item(1);
             itemQueue[Protoss_Assimilator] =		Item(s >= 22);
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);
@@ -199,10 +199,10 @@ namespace McRave::BuildOrder::Protoss {
         else if (currentTransition == "DT") {
             // https://liquipedia.net/starcraft/DT_Fast_Expand_(vs._Terran)
             lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
-            getOpening =		s < 60;
+            getOpening =		vis(Protoss_Dark_Templar) >= 2 && s <= 80;
             hideTech =			com(Protoss_Dark_Templar) < 1;
             firstUnit =         vis(Protoss_Citadel_of_Adun) > 0 ? Protoss_Dark_Templar : UnitTypes::None;
-            firstUpgrade =		UpgradeTypes::Khaydarin_Core;
+            firstUpgrade =		vis(Protoss_Dark_Templar) >= 2 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
 
             itemQueue[Protoss_Nexus] =              Item(1 + (vis(Protoss_Dark_Templar) > 0));
             itemQueue[Protoss_Citadel_of_Adun] =	Item(s >= 36);
@@ -217,8 +217,8 @@ namespace McRave::BuildOrder::Protoss {
         // http://liquipedia.net/starcraft/12_Nexus
         defaultPvT();
         fastExpand =		true;
-        playPassive =		Units::getEnemyCount(Terran_Siege_Tank_Tank_Mode) == 0 && Units::getEnemyCount(Terran_Siege_Tank_Siege_Mode) == 0 && Strategy::enemyPressure() ? vis(Protoss_Dragoon) < 12 : !firstReady();
-        firstUpgrade =		vis(Protoss_Dragoon) >= 2 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
+        playPassive =		Units::getEnemyCount(Terran_Siege_Tank_Tank_Mode) == 0 && Units::getEnemyCount(Terran_Siege_Tank_Siege_Mode) == 0 && !Strategy::enemyPressure() ? vis(Protoss_Dragoon) < 12 : !firstReady();
+        firstUpgrade =		vis(Protoss_Dragoon) >= 1 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
         cutWorkers =		Production::hasIdleProduction() && com(Protoss_Cybernetics_Core) > 0;
         gasLimit =			goonRange() && com(Protoss_Nexus) < 2 ? 2 : INT_MAX;
 
@@ -228,7 +228,7 @@ namespace McRave::BuildOrder::Protoss {
 
             itemQueue[Protoss_Nexus] =				Item(1 + (s >= 24));
             itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 48));
-            itemQueue[Protoss_Assimilator] =		Item((s >= 30) + (s >= 60));
+            itemQueue[Protoss_Assimilator] =		Item((s >= 30) + (s >= 86));
             itemQueue[Protoss_Gateway] =			Item((s >= 28) + (s >= 34) + (s >= 80));
             itemQueue[Protoss_Cybernetics_Core] =	Item(vis(Protoss_Gateway) >= 2);
         }
@@ -237,14 +237,14 @@ namespace McRave::BuildOrder::Protoss {
 
             itemQueue[Protoss_Nexus] =				Item(1 + (s >= 24));
             itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 48));
-            itemQueue[Protoss_Assimilator] =		Item((s >= 28) + (s >= 60));
+            itemQueue[Protoss_Assimilator] =		Item((s >= 28) + (s >= 86));
             itemQueue[Protoss_Gateway] =			Item((s >= 26) + (s >= 32) + (s >= 80));
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 30);
         }
 
         // Reactions
         if (!lockedTransition) {
-            
+
             // Change Transition
             if (Strategy::enemyFastExpand() || enemyBuild() == "TSiegeExpand")
                 currentTransition =	"DoubleExpand";
@@ -253,7 +253,7 @@ namespace McRave::BuildOrder::Protoss {
         }
 
         // Transitions
-         if (currentTransition == "DoubleExpand") {
+        if (currentTransition == "DoubleExpand") {
             lockedTransition =  vis(Protoss_Nexus) >= 3;
             getOpening =		s < 140;
 
@@ -280,7 +280,7 @@ namespace McRave::BuildOrder::Protoss {
         // 2 Gate - "https://liquipedia.net/starcraft/2_Gate_Range_Expand"
         defaultPvT();
         fastExpand =        true;
-        playPassive =		Units::getEnemyCount(Terran_Siege_Tank_Tank_Mode) == 0 && Units::getEnemyCount(Terran_Siege_Tank_Siege_Mode) == 0 && Strategy::enemyPressure() ? vis(Protoss_Dragoon) < 12 : !firstReady();
+        playPassive =		Units::getEnemyCount(Terran_Siege_Tank_Tank_Mode) == 0 && Units::getEnemyCount(Terran_Siege_Tank_Siege_Mode) == 0 && !Strategy::enemyPressure() ? vis(Protoss_Dragoon) < 12 : !firstReady();
         firstUpgrade =		UpgradeTypes::Singularity_Charge;
         firstTech =			TechTypes::None;
         scout =				Broodwar->getStartLocations().size() == 4 ? vis(Protoss_Pylon) > 0 : vis(Protoss_Pylon) > 0;
@@ -301,7 +301,7 @@ namespace McRave::BuildOrder::Protoss {
             else if ((!Strategy::enemyFastExpand() && Terrain::foundEnemy() && currentTransition == "DoubleExpand") || Strategy::enemyPressure())
                 currentTransition = "Standard";
 
-			// Change Opener
+            // Change Opener
 
             // Change Build
             if (s < 42 && Strategy::enemyRush()) {
@@ -346,7 +346,7 @@ namespace McRave::BuildOrder::Protoss {
             getOpening =		s < 80;
             firstUnit =         com(Protoss_Nexus) >= 2 ? Protoss_Carrier : UnitTypes::None;
             lockedTransition =  com(Protoss_Nexus) >= 2;
-			gasLimit =			INT_MAX;
+            gasLimit =			INT_MAX;
 
             itemQueue[Protoss_Assimilator] =		Item((s >= 24) + (s >= 50));
             itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 26);

@@ -7,7 +7,8 @@ namespace McRave::Command
 {
     bool special(UnitInfo& unit)
     {
-        Position p(unit.getEngagePosition());
+        auto p(unit.getEngagePosition());
+        auto targetDist = unit.hasTarget() ? unit.getPosition().getDistance(unit.getTarget().getPosition()) : 0.0;
 
         auto canAffordMorph = [&](UnitType type) {
             if (Broodwar->self()->minerals() > type.mineralPrice() && Broodwar->self()->gas() > type.gasPrice() && Broodwar->self()->supplyTotal() - Broodwar->self()->supplyUsed() > type.supplyRequired())
@@ -73,13 +74,13 @@ namespace McRave::Command
 
         // Siege Tanks
         else if (unit.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) {
-            if (unit.hasTarget() && unit.getPosition().getDistance(unit.getTarget().getPosition()) < 384.0 && unit.getLocalState() == LocalState::Attack)
+            if (unit.hasTarget() && unit.getTarget().getGroundRange() > 32.0 && targetDist <= 450.0 && targetDist >= 100.0 && unit.getLocalState() == LocalState::Attack)
                 unit.unit()->siege();
             if (unit.getGlobalState() == GlobalState::Retreat && unit.getPosition().getDistance(Terrain::getDefendPosition()) < 320)
                 unit.unit()->siege();
         }
-        else if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode) {
-            if (unit.hasTarget() && unit.getPosition().getDistance(unit.getTarget().getPosition()) > 128.0 || unit.getLocalState() == LocalState::Retreat) {
+        else if (unit.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode) {           
+            if (unit.hasTarget() && (unit.getTarget().getGroundRange() <= 32.0 || targetDist < 100.0 || targetDist > 450.0 || unit.getLocalState() == LocalState::Retreat)) {
                 if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Unsiege)
                     unit.unit()->unsiege();
                 return true;

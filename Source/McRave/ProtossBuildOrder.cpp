@@ -135,7 +135,7 @@ namespace McRave::BuildOrder::Protoss
         if (!getOpening) {
             gasLimit = INT_MAX;
 
-            // HACK: Stop building DTs when enemy has detection - move "dont produce DT" to production, add HT to tech at certain supply
+            // HACK: Stop building DTs when enemy has observers - move "dont produce DT" to production, add HT to tech at certain supply
             if (Units::getEnemyCount(Protoss_Observer) > 0 && isTechUnit(Protoss_Dark_Templar)) {
                 techList.erase(Protoss_Dark_Templar);
                 unlockedType.erase(Protoss_Dark_Templar);
@@ -149,7 +149,8 @@ namespace McRave::BuildOrder::Protoss
 
             // Adding production
             if (shouldAddProduction()) {
-                int gateCount = min(vis(Protoss_Nexus) * 3, vis(Protoss_Gateway) + 1) - (int(isUnitUnlocked(Protoss_Carrier)) * 2);
+                auto gatesPerBase = 3 - int(isTechUnit(Protoss_Carrier));
+                auto gateCount = min(vis(Protoss_Nexus) * gatesPerBase, vis(Protoss_Gateway) + 1);
                 itemQueue[Protoss_Gateway] = Item(gateCount);
             }
 
