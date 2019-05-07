@@ -161,7 +161,6 @@ namespace McRave
         if (newOrder() || newCommand()) {
             if (command == UnitCommandTypes::Move)
                 thisUnit->move(here);
-            BWAPI::Broodwar->drawLineMap(position, here, BWAPI::Colors::Red);
             return true;
         }
         return false;

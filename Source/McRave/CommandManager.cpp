@@ -403,7 +403,7 @@ namespace McRave::Command {
             double threat = defaultThreat(unit, w);
             double grouping = defaultGrouping(unit, w);
             double mobility = defaultMobility(unit, w);
-            double score = (grouping * mobility) / (threat * distance );
+            double score = (grouping * mobility) / (threat * distance);
             return score;
         };
 
@@ -668,11 +668,18 @@ namespace McRave::Command {
             double threat = defaultThreat(unit, w);
             double distance = 1.0 + (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination()));
             double score = 1.0 / (threat * distance);
+
+            if (unit.getRole() == Role::Support && overlapsActions(unit.unit(), p, unit.getType(), PlayerState::Self, 96))
+                return 0.0;
+
+            // Try to keep the unit alive if it's cloaked inside detection
+            if (unit.unit()->isCloaked() && threat > MIN_THREAT && Command::overlapsDetection(unit.unit(), p, PlayerState::Enemy))
+                return 0.0;
             return score;
         };
 
         // Escorting
-        auto shouldEscort = false;
+        auto shouldEscort = unit.getRole() == Role::Support;
         if (!shouldEscort)
             return false;
 

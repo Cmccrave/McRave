@@ -4,5 +4,4 @@
 namespace McRave::Support {
 
     void onFrame();
-    void updateDecision(UnitInfo&);
 }

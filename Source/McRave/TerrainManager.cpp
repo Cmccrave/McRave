@@ -362,6 +362,9 @@ namespace McRave::Terrain {
 
     bool findNaturalWall(vector<UnitType>& types, const vector<UnitType>& defenses, bool tight)
     {
+        if (Broodwar->getGameType() == GameTypes::Use_Map_Settings)
+            return false;
+
         // Hack: Make a bunch of walls as Zerg for testing - disabled atm
         bool testing = false;
         if (testing && Broodwar->self()->getRace() == Races::Zerg) {
@@ -407,6 +410,9 @@ namespace McRave::Terrain {
 
     bool findMainWall(vector<UnitType>& types, const vector<UnitType>& defenses, bool tight)
     {
+        if (Broodwar->getGameType() == GameTypes::Use_Map_Settings)
+            return false;
+
         if (BWEB::Walls::getWall(BWEB::Map::getMainArea(), BWEB::Map::getMainChoke()) || BWEB::Walls::getWall(BWEB::Map::getNaturalArea(), BWEB::Map::getMainChoke()))
             return true;
         UnitType wallTight = Broodwar->enemy()->getRace() == Races::Protoss ? UnitTypes::Protoss_Zealot : UnitTypes::Zerg_Zergling;
