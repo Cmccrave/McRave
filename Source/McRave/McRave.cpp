@@ -21,6 +21,8 @@
 // Retreat command keeps getting stuck in bad spots
 // Mines at chokepoints causes unit suicide with defend command
 // Arbiter and Observer positioning
+// DTs get stuck between core/gate/pylon
+// Unwalkable tiles cause sim to drop to 0.00 briefly thinking it's unreachable
 
 // Need a target based isThreatening
 // Examples:

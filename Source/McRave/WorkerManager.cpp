@@ -206,8 +206,10 @@ namespace McRave::Workers {
             const auto excessAssigned = worker.hasResource() && !injured && !threatened && worker.getResource().getGathererCount() >= 3 + int(worker.getResource().getType().isRefinery());
 
             // Check if worker needs a re-assignment
-            const auto needGas = !Resources::isGasSaturated() && (gasWorkers < BuildOrder::gasWorkerLimit() || !BuildOrder::isOpener());
-            const auto needMinerals = !Resources::isMinSaturated() && (gasWorkers > BuildOrder::gasWorkerLimit() || !BuildOrder::isOpener());
+            const auto isGasWorker = worker.hasResource() && worker.getResource().getType().isRefinery();
+            const auto isMineralWorker = worker.hasResource() && worker.getResource().getType().isMineralField();
+            const auto needGas = !Resources::isGasSaturated() && isMineralWorker && (gasWorkers < BuildOrder::gasWorkerLimit() || !BuildOrder::isOpener());
+            const auto needMinerals = !Resources::isMinSaturated() && isGasWorker && gasWorkers > BuildOrder::gasWorkerLimit();
             const auto needNewAssignment = !worker.hasResource() || needGas || needMinerals || threatened || excessAssigned;
 
             auto closestStation = BWEB::Stations::getClosestStation(worker.getTilePosition());
@@ -245,9 +247,13 @@ namespace McRave::Workers {
             if (needGas || !worker.hasResource()) {
                 for (auto &r : Resources::getMyGas()) {
                     auto &resource = *r;
+
+                    if (!resource.hasStation())
+                        Broodwar->drawCircleMap(resource.getPosition(), 4, Colors::Brown, true);
+
                     if (!resourceReady(resource, 3))
                         continue;
-                    if (!resource.getStation() || find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end())
+                    if (!resource.hasStation() || find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end())
                         continue;
 
                     auto dist = resource.getPosition().getDistance(worker.getPosition());
@@ -266,7 +272,7 @@ namespace McRave::Workers {
                         auto &resource = *r;
                         if (!resourceReady(resource, i))
                             continue;
-                        if (!resource.getStation() || find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end())
+                        if (!resource.hasStation() || find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end())
                             continue;
 
                         double dist = resource.getPosition().getDistance(worker.getPosition());
@@ -275,7 +281,9 @@ namespace McRave::Workers {
                             distBest = dist;
                         }
                     }
-                    if (worker.hasResource())
+
+                    // Don't check again if we assigned one
+                    if (worker.hasResource() && worker.getResource().shared_from_this() != oldResource)
                         break;
                 }
 

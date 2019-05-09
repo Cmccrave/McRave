@@ -199,7 +199,7 @@ namespace McRave::BuildOrder::Protoss {
         else if (currentTransition == "DT") {
             // https://liquipedia.net/starcraft/DT_Fast_Expand_(vs._Terran)
             lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
-            getOpening =		vis(Protoss_Dark_Templar) >= 2 && s <= 80;
+            getOpening =		vis(Protoss_Dark_Templar) <= 2 && s <= 80;
             hideTech =			com(Protoss_Dark_Templar) < 1;
             firstUnit =         vis(Protoss_Citadel_of_Adun) > 0 ? Protoss_Dark_Templar : UnitTypes::None;
             firstUpgrade =		vis(Protoss_Dark_Templar) >= 2 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;

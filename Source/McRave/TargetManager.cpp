@@ -84,8 +84,15 @@ namespace McRave::Targets {
 
                 // Detector targeting
                 if ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == UnitTypes::Terran_Comsat_Station) {
-                    if (target.isBurrowed() || target.unit()->isCloaked())
-                        thisUnit = priority / dist;
+                    auto &closest = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+                        return u != unit && unit.hasTarget() && ((u.getAirDamage() > 0.0 && unit.getTarget().getType().isFlyer()) || (u.getGroundDamage() > 0.0 && !unit.getTarget().getType().isFlyer())) && u.getPosition().getDistance(unit.getTarget().getPosition()) < SIM_RADIUS;
+                    });
+
+                    // Detectors want to stay close to their target
+                    if (closest) {
+                        if (target.isBurrowed() || target.unit()->isCloaked())
+                            thisUnit = priority / dist;
+                    }
                 }
 
                 // Cluster targeting for AoE units

@@ -10,32 +10,26 @@ namespace McRave::Support {
         void updateDestination(UnitInfo& unit)
         {
             // Detectors want to stay close to their target
-            if (unit.getType().isDetector() && unit.hasTarget() && unit.getTarget().getPosition().isValid()) {
-                //auto &closest = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                //    return true;
-                //});
+            if (unit.hasTarget())
+                unit.setDestination(unit.getTarget().getPosition());
 
-                //if (closest && (closest->getGroundDamage() > 0.0 || closest->getAirDamage() > 0.0) && closest->getPosition().getDistance(unit.getTarget().getPosition()) < SIM_RADIUS)
-                    unit.setDestination(unit.getTarget().getPosition());
-            }
-
+            // Overlords move towards the closest stations for now
             else if (unit.getType() == UnitTypes::Zerg_Overlord)
                 unit.setDestination(Stations::getClosestStation(PlayerState::Self, unit.getPosition()));
 
             // Find the highest combat cluster that doesn't overlap a current support action of this UnitType
-            else {                
+            else {
                 auto highestCluster = 0.0;
-                for (auto itr = Combat::getCombatClusters().rbegin(); itr != Combat::getCombatClusters().rend(); itr++) {
-                    auto currentCluster = (*itr).first;
-                    auto currentPos = (*itr).second;
-                    if (currentCluster > highestCluster && !Command::overlapsActions(unit.unit(), currentPos, unit.getType(), PlayerState::Self, 64)) {
-                        highestCluster = currentCluster;
-                        unit.setDestination(currentPos);
+
+                for (auto &[score, position] : Combat::getCombatClusters()) {
+                    if (score > highestCluster && !Command::overlapsActions(unit.unit(), position, unit.getType(), PlayerState::Self, 64)) {
+                        highestCluster = score;
+                        unit.setDestination(position);
                     }
                 }
             }
 
-            Broodwar->drawCircleMap(unit.getDestination(), 4, Colors::Green);
+            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Purple);
         }
 
         void updateDecision(UnitInfo& unit)

@@ -665,12 +665,12 @@ namespace McRave::Command {
     {
         const auto scoreFunction = [&](WalkPosition w) {
             auto p = Position(w);
-            double threat = defaultThreat(unit, w);
-            double distance = 1.0 + (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination()));
-            double score = 1.0 / (threat * distance);
+            auto threat = defaultThreat(unit, w);
+            auto distance = unit.hasTarget() ? p.getDistance(unit.getDestination()) * log(p.getDistance(unit.getTarget().getPosition())) : p.getDistance(unit.getDestination());
+            auto score = 1.0 / (threat * distance);
 
-            if (unit.getRole() == Role::Support && overlapsActions(unit.unit(), p, unit.getType(), PlayerState::Self, 96))
-                return 0.0;
+            //if (unit.getRole() == Role::Support && overlapsActions(unit.unit(), p, unit.getType(), PlayerState::Self, 64))
+            //    return 0.0;
 
             // Try to keep the unit alive if it's cloaked inside detection
             if (unit.unit()->isCloaked() && threat > MIN_THREAT && Command::overlapsDetection(unit.unit(), p, PlayerState::Enemy))
