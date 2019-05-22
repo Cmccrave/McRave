@@ -98,7 +98,7 @@ namespace BWEB::Walls
             endTile = initialEnd;
         }
 
-        Path findOpeningInWall(Wall& wall, bool ignoreOverlap)
+        Path findOpeningInWall(Wall& wall)
         {
             // Check that the path points are possible to reach
             checkPathPoints(wall);
@@ -107,7 +107,7 @@ namespace BWEB::Walls
 
             // Get a new path
             BWEB::Path newPath;
-            newPath.createWallPath(currentWall, startCenter, endCenter, true, false);
+            newPath.createWallPath(currentWall, startCenter, endCenter, false);
             return newPath;
         }
 
@@ -300,7 +300,7 @@ namespace BWEB::Walls
             const auto scoreWall = [&] {
 
                 // Create a path searching for an opening
-                auto newPath = findOpeningInWall(wall, true);
+                auto newPath = findOpeningInWall(wall);
                 auto currentHole = TilePositions::None;
 
                 // If we want an open wall and it's not reachable, or we want a closed wall and it is reachable
@@ -431,7 +431,7 @@ namespace BWEB::Walls
 
                 // Check if we can lift the Barracks to get out
                 if (Broodwar->self()->getRace() == Races::Terran) {
-                    pathOut.createWallPath(currentWall, startCenter, endCenter, true, true);
+                    pathOut.createWallPath(currentWall, startCenter, endCenter, true);
                     if (!pathOut.isReachable())
                         return false;
                 }
@@ -669,7 +669,7 @@ namespace BWEB::Walls
             if (openWall) {
 
                 // Set any tiles on the path as reserved so we don't build on them
-                auto currentPath = findOpeningInWall(wall, false);
+                auto currentPath = findOpeningInWall(wall);
                 for (auto &tile : currentPath.getTiles())
                     Map::addReserve(tile, 1, 1);
 

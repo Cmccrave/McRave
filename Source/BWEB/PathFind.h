@@ -28,9 +28,12 @@ namespace BWEB
         void createUnitPath(const BWAPI::Position, const BWAPI::Position);
 
         /// <summary> Creates a path from the source to the target using BFS and some odd collision functionality. BWEB use mostly. </summary>
-        void createWallPath(std::map<BWAPI::TilePosition, BWAPI::UnitType>&, const BWAPI::Position, const BWAPI::Position, bool, bool);
+        void createWallPath(std::map<BWAPI::TilePosition, BWAPI::UnitType>&, const BWAPI::Position, const BWAPI::Position, bool);
 
         /// <summary> Creates a path from the source to the target using JPS, your provided collision function, and directions. </summary>
-        void createPath(const BWAPI::Position source, const BWAPI::Position target, std::function <bool(const BWAPI::TilePosition)> collision, std::vector<BWAPI::TilePosition> directions);
+        //void jpsPath(const BWAPI::Position source, const BWAPI::Position target, std::function <bool(const BWAPI::TilePosition)> collision, std::vector<BWAPI::TilePosition> directions);
+
+        /// <summary> Creates a path from the source to the target using BFS, your provided collision function, and directions. </summary>
+        void bfsPath(const BWAPI::Position source, const BWAPI::Position target, std::function <bool(const BWAPI::TilePosition)> collision, std::vector<BWAPI::TilePosition> directions);
     };
 }

@@ -353,6 +353,9 @@ namespace McRave::Units {
             if (info->hasResource())
                 Workers::removeUnit(*info);
 
+            if (info->hasTransport())
+                Transports::removeUnit(*info);
+
             if (info->hasTarget())
                 info->setTarget(nullptr);
 

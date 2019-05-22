@@ -32,6 +32,8 @@
 // Allow retreating inside own territory
 // Fix making obs AND forge for detection - 2 gate robo seems like it can make obs first
 
+// Remove createWallPath, remove BFS, change to JPS and use incrementing between points to reserve path
+
 // Antigas list
 // NeoBisu build is off
 

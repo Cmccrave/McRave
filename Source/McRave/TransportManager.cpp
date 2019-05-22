@@ -242,10 +242,11 @@ namespace McRave::Transports {
     void removeUnit(UnitInfo& unit)
     {
         if (unit.hasTransport()) {
-            //for (auto &cargo : unit.getTransport().getAssignedCargo()) {
-            //    if (cargo.lock())
-            //        unit.getTransport().getAssignedCargo().erase(cargo);
-            //}
+            auto &cargoList = unit.getTransport().getAssignedCargo();
+            for (auto &cargo = cargoList.begin(); cargo != cargoList.end(); cargo++){
+                if (cargo->lock() && cargo->lock() == unit.shared_from_this())
+                    cargoList.erase(cargo);
+            }
         }
 
         for (auto &c : unit.getAssignedCargo()) {

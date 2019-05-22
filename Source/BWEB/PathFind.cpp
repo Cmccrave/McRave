@@ -9,9 +9,12 @@ namespace BWEB
 {
     namespace {
         struct UnitCollision {
+            UnitCollision::UnitCollision(TilePosition sourceTile) {
+                source = sourceTile;
+            }
             inline bool operator()(unsigned x, unsigned y) const
             {
-                TilePosition t(x, y);
+                const TilePosition t(x, y);
                 if (x < width && y < height && Map::isUsed(t) == UnitTypes::None && (Map::isWalkable(t) || t == source))
                     return true;
                 return false;
@@ -36,21 +39,22 @@ namespace BWEB
         map<const BWEM::Area *, int> notReachableThisFrame;
     }
 
-    void Path::createWallPath(map<TilePosition, UnitType>& currentWall, const Position s, const Position t, bool ignoreOverlap, bool allowLifted)
+    void Path::createWallPath(map<TilePosition, UnitType>& currentWall, const Position s, const Position t, bool allowLifted)
     {
         TilePosition target = Map::tConvert(t);
         TilePosition source = Map::tConvert(s);
         vector<TilePosition> direction{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 } };
+        auto maxDist = source.getDistance(target);
 
         const auto collision = [&](const TilePosition tile) {
             return !tile.isValid()
-                || (!ignoreOverlap && Map::isOverlapping(tile))
+                || tile.getDistance(target) > maxDist * 1.2
                 || !Map::isWalkable(tile)
                 || Map::isUsed(tile) != UnitTypes::None
                 || (Walls::overlapsCurrentWall(tile) != UnitTypes::None && (!allowLifted || Walls::overlapsCurrentWall(tile) != UnitTypes::Terran_Barracks));
         };
 
-        createPath(s, t, collision, direction);
+        bfsPath(s, t, collision, direction);
     }
 
     void Path::createUnitPath(const Position s, const Position t)
@@ -66,8 +70,7 @@ namespace BWEB
         }
 
         vector<TilePosition> newJPSPath;
-        UnitCollision collision;
-        collision.source = source;
+        UnitCollision collision(source);
 
         if (JPS::findPath(newJPSPath, collision, source.x, source.y, target.x, target.y)) {
             Position current = s;
@@ -85,7 +88,7 @@ namespace BWEB
         }
     }
 
-    void Path::createPath(const Position s, const Position t, function <bool(const TilePosition)> collision, vector<TilePosition> direction)
+    void Path::bfsPath(const Position s, const Position t, function <bool(const TilePosition)> collision, vector<TilePosition> direction)
     {
         TilePosition source = Map::tConvert(s);
         TilePosition target = Map::tConvert(t);
@@ -151,4 +154,34 @@ namespace BWEB
             }
         }
     }
+
+    /*void Path::jpsPath(const Position s, const Position t, function <bool(const TilePosition)> collision, vector<TilePosition> direction)
+    {
+        TilePosition target = Map::tConvert(t);
+        TilePosition source = Map::tConvert(s);
+
+        auto checkReachable = notReachableThisFrame[Map::mapBWEM.GetArea(target)];
+        if (checkReachable >= Broodwar->getFrameCount()) {
+            reachable = false;
+            dist = DBL_MAX;
+            return;
+        }
+
+        vector<TilePosition> newJPSPath;
+
+        if (JPS::findPath(newJPSPath, collision, source.x, source.y, target.x, target.y)) {
+            Position current = s;
+            for (auto &t : newJPSPath) {
+                dist += Map::pConvert(t).getDistance(current);
+                current = Map::pConvert(t);
+                tiles.push_back(t);
+            }
+            reachable = true;
+        }
+        else {
+            dist = DBL_MAX;
+            notReachableThisFrame[Map::mapBWEM.GetArea(target)] = Broodwar->getFrameCount();
+            reachable = false;
+        }
+    }*/
 }

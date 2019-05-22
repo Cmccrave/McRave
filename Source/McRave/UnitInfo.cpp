@@ -76,7 +76,7 @@ namespace McRave
 
             // BWAPI won't reveal isStartingAttack when hold position is executed if the unit can't use hold position, XIMP uses this on workers
             if (player != Broodwar->self() && unitType.isWorker()) {
-                if (thisUnit->getGroundWeaponCooldown() > 0 || thisUnit->getAirWeaponCooldown() > 0)
+                if (thisUnit->getGroundWeaponCooldown() == 1 || thisUnit->getAirWeaponCooldown() == 1)
                     lastAttackFrame = Broodwar->getFrameCount();
             }
 
@@ -112,7 +112,7 @@ namespace McRave
                 }
             }
             else
-                target = std::weak_ptr<UnitInfo>();
+                target = weak_ptr<UnitInfo>();
         }
     }
 
