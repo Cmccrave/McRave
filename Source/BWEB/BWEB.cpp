@@ -15,7 +15,6 @@ namespace BWEB::Map
         const BWEM::ChokePoint * naturalChoke = nullptr;
         const BWEM::ChokePoint * mainChoke = nullptr;
 
-        int testGrid[256][256] ={};
         int reserveGrid[256][256] ={};
         int overlapGrid[256][256] ={};
         UnitType usedGrid[256][256] ={};
@@ -178,21 +177,22 @@ namespace BWEB::Map
         findMainChoke();
         findNaturalChoke();
 
-        // Test
+        // Initializes usedGrid and walkGrid
         for (int x = 0; x < Broodwar->mapWidth(); x++) {
             for (int y = 0; y < Broodwar->mapHeight(); y++) {
 
                 usedGrid[x][y] = UnitTypes::None;
 
-                auto walkable = true;
+                auto cnt = 0;
                 for (int dx = x * 4; dx < (x * 4) + 4; dx++) {
                     for (int dy = y * 4; dy < (y * 4) + 4; dy++) {
-                        if (WalkPosition(dx, dy).isValid() && !Broodwar->isWalkable(WalkPosition(dx, dy)))
-                            walkable = false;
+                        if (WalkPosition(dx, dy).isValid() && Broodwar->isWalkable(WalkPosition(dx, dy)))
+                            cnt++;
                     }
                 }
 
-                walkGrid[x][y] = walkable;
+                if (cnt >= 16)
+                    walkGrid[x][y] = true;
             }
         }
     }
@@ -286,13 +286,29 @@ namespace BWEB::Map
         Broodwar->drawCircleMap((Position)naturalChoke->Center(), 4, Colors::Green, true);
 
         // Draw Reserve Path and some grids
-        for (int x = 0; x < Broodwar->mapWidth(); x++) {
-            for (int y = 0; y < Broodwar->mapHeight(); y++) {
-                TilePosition t(x, y);
-                if (reserveGrid[x][y] >= 1)
-                    Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Black, false);
-                if (overlapGrid[x][y] >= 1)
-                    Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Grey, false);
+        bool testingBlocks = false;
+        if (testingBlocks) {
+            for (int x = 0; x < Broodwar->mapWidth(); x++) {
+                for (int y = 0; y < Broodwar->mapHeight(); y++) {
+                    TilePosition t(x, y);
+
+                    if (reserveGrid[x][y] >= 1)
+                        Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Black, false);
+                    if (overlapGrid[x][y] >= 1)
+                        Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Grey, false);
+                }
+            }
+        }
+
+        bool testingWalkable = false;
+        if (testingWalkable) {
+            for (int x = 0; x < Broodwar->mapWidth()*4; x++) {
+                for (int y = 0; y < Broodwar->mapHeight()*4; y++) {
+                    WalkPosition t(x, y);
+
+                    if (Broodwar->isWalkable(t))
+                        Broodwar->drawBoxMap(Position(t), Position(t) + Position(9, 9), Colors::Black, false);
+                }
             }
         }
 
@@ -537,11 +553,11 @@ namespace BWEB::Map
             for (auto y = location.y; y < location.y + type.tileHeight(); y++) {                
                 TilePosition tile(x, y);
                 if (!tile.isValid()
-                    //|| !Broodwar->isBuildable(tile)
-                    || !mapBWEM.GetTile(tile).Buildable()
-                    //|| !Broodwar->isWalkable(WalkPosition(tile))
-                    //|| Map::usedGrid[x][y] != UnitTypes::None
-                    //|| Map::reserveGrid[x][y] > 0
+                    || !Broodwar->isBuildable(tile)
+                    || !Broodwar->isWalkable(WalkPosition(tile))
+                    || Map::usedGrid[x][y] != UnitTypes::None
+                    || Map::reserveGrid[x][y] > 0
+                    || (!type.requiresCreep() && Broodwar->hasCreep(tile))
                     || (type.isResourceDepot() && !Broodwar->canBuildHere(tile, type)))
                     return false;
             }

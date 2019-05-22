@@ -14,7 +14,7 @@ namespace McRave::Math {
         // HACK: Some hardcoded values
         if (unit.getType() == Terran_Medic)
             return 5.0;
-        else if (unit.getType() == Protoss_Scarab || unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Zerg_Egg || unit.getType() == Zerg_Larva || unit.getGroundRange() <= 0.0)
+        else if (unit.getType() == Protoss_Scarab || unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Zerg_Egg || unit.getType() == Zerg_Larva || unit.getGroundDamage() <= 0.0)
             return 0.0;
         else if (unit.getType() == Protoss_Carrier) {
             double cnt = 0.0;
@@ -46,7 +46,7 @@ namespace McRave::Math {
     double getMaxAirStrength(UnitInfo& unit)
     {
         // HACK: Some hardcoded values
-        if (unit.getType() == Protoss_Scarab || unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Zerg_Egg || unit.getType() == Zerg_Larva || unit.getAirRange() <= 0.0)
+        if (unit.getType() == Protoss_Scarab || unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Zerg_Egg || unit.getType() == Zerg_Larva || unit.getAirDamage() <= 0.0)
             return 0.0;
 
         else if (unit.getType() == Protoss_Carrier) {
@@ -84,13 +84,7 @@ namespace McRave::Math {
         auto maxCost = 69.589;
         auto maxSurv = 60.624;
 
-        // Bunch of priority hacks
-        if (unit.getType() == Terran_Vulture_Spider_Mine) {
-            /*if (!unit.isBurrowed() || Command::overlapsDetection(unit.unit(), unit.getPosition(), PlayerState::Self))
-                return 2.0;
-            else*/
-                return 0.5;
-        }
+        // Bunch of priority hacks     
         if (unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Terran_Science_Vessel || unit.getType() == Protoss_Arbiter)
             return 1.0;
         if ((unit.unit()->isRepairing() || unit.unit()->isConstructing()) && unit.isThreatening())
@@ -113,7 +107,7 @@ namespace McRave::Math {
             }
         }
 
-        auto ff = unit.getGroundDamage() > 0 || unit.getAirDamage() > 0 || !unit.getType().isBuilding() ? 1 : 0;
+        auto ff = unit.canAttackGround() || unit.canAttackAir() || !unit.getType().isBuilding() ? 1 : 0;
         auto dps = ff + max(groundDPS(unit) / maxGrdDps, airDPS(unit) / maxAirDps);
         auto cost = relativeCost(unit) / maxCost;
         auto surv = survivability(unit) / maxSurv;
@@ -259,7 +253,7 @@ namespace McRave::Math {
             return 160.0;
         }
         if (unit.getType() == Terran_Vulture_Spider_Mine)
-            return 96.0;
+            return 160.0;
         return double(unit.getType().groundWeapon().maxRange());
     }
 

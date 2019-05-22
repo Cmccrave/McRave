@@ -107,6 +107,8 @@ namespace McRave::BuildOrder::Protoss {
                 currentTransition = "Defensive";
             else if (Strategy::getEnemyBuild() == "FFE")
                 currentTransition = "Expand";
+            else if (Strategy::getEnemyBuild() == "CannonRush")
+                currentTransition = "Robo";
 
             // Change Opener
 
@@ -149,7 +151,7 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Nexus] =				Item(1 + (s >= 50));
 
             auto cannonCount = int(1 + Units::getEnemyCount(Protoss_Zealot) + Units::getEnemyCount(Protoss_Dragoon)) / 2;
-            itemQueue[Protoss_Photon_Cannon] =		Item(com(Protoss_Forge) > 0 ? cannonCount : 0);
+            itemQueue[Protoss_Photon_Cannon] =		Item(cannonCount * (com(Protoss_Forge) > 0));
         }
         else if (currentTransition == "Robo") {
             // https://liquipedia.net/starcraft/2_Gate_Reaver_(vs._Protoss)
@@ -187,7 +189,7 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Nexus] =				Item(1 + (s >= 56));
 
             auto cannonCount = int(1 + Units::getEnemyCount(Protoss_Zealot) + Units::getEnemyCount(Protoss_Dragoon)) / 2;
-            itemQueue[Protoss_Photon_Cannon] =		Item(com(Protoss_Forge) > 0 ? cannonCount : 0);
+            itemQueue[Protoss_Photon_Cannon] =		Item(cannonCount * (com(Protoss_Forge) > 0));
         }
     }
 
@@ -251,7 +253,7 @@ namespace McRave::BuildOrder::Protoss {
             playPassive =		!Strategy::enemyFastExpand() && com(Protoss_Reaver) == 0;
 
             desiredDetection =  Protoss_Forge;
-            firstUnit =         (Units::getEnemyCount(Protoss_Dragoon) <= 2 || enemyBuild() == "1GateDT") ? Protoss_Observer : Protoss_Reaver;
+            firstUnit =         Strategy::enemyPressure() ? Protoss_Reaver : Protoss_Observer;
 
             itemQueue[Protoss_Robotics_Facility] =	Item(s >= 52);
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (2 * (s >= 58)));
@@ -264,7 +266,7 @@ namespace McRave::BuildOrder::Protoss {
 
             dragoonLimit =		INT_MAX;
             zealotLimit =		com(Protoss_Robotics_Facility) >= 1 ? 6 : zealotLimit;
-            firstUnit =         (Units::getEnemyCount(Protoss_Dragoon) <= 2 || enemyBuild() == "1GateDT") ? Protoss_Observer : Protoss_Reaver;
+            firstUnit =         Strategy::enemyPressure() ? Protoss_Reaver : Protoss_Observer;
 
             itemQueue[Protoss_Gateway] =				Item((s >= 20) + (s >= 50) + (s >= 62));
             itemQueue[Protoss_Robotics_Facility] =		Item(s >= 70);
@@ -294,16 +296,17 @@ namespace McRave::BuildOrder::Protoss {
         else if (currentTransition == "DT") {
             // https://liquipedia.net/starcraft/2_Gate_DT_(vs._Protoss) -- is actually 1 Gate
             lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
-            getOpening =        com(Protoss_Dark_Templar) <= 0;
-            playPassive =       com(Protoss_Dark_Templar) <= 0;
+            getOpening =        s <= 52;
+            playPassive =       s <= 52;
 
             firstUpgrade =      UpgradeTypes::None;
             hideTech =          true;
             firstUnit =         Protoss_Dark_Templar;
             desiredDetection =  Protoss_Forge;
+            wallNat =           s >= 52;
 
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (vis(Protoss_Templar_Archives) > 0));
-            itemQueue[Protoss_Forge] =              Item(s >= 60);
+            itemQueue[Protoss_Forge] =              Item(s >= 70);
             itemQueue[Protoss_Photon_Cannon] =      Item(2 * (com(Protoss_Forge) > 0));
         }
         else if (currentTransition == "Defensive") {

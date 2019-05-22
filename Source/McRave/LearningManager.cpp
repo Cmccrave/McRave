@@ -52,7 +52,7 @@ namespace McRave::Learning {
                 defenses.insert(defenses.end(), 6, Zerg_Sunken_Colony);
             }
 
-            if (Broodwar->self()->getRace() == Races::Terran) {
+            if (Broodwar->self()->getRace() == Races::Terran || BWEB::Map::getNaturalArea()->ChokePoints().size() == 1) {
                 if (Terrain::findMainWall(buildings, defenses, tight) || wallOptional)
                     return true;
             }
@@ -218,11 +218,11 @@ namespace McRave::Learning {
         {
             // HACK: Looking at more than 1 enemy potentially - lets us play FFA but doesn't help in team games, as we aren't looking at enemy count
             if (Players::getPlayers().size() > 3) {
-                if (Players::getNumberZerg() > Players::getNumberProtoss() + Players::getNumberTerran())
+                if (Players::getRaceCount(Races::Zerg, PlayerState::Enemy) > Players::getRaceCount(Races::Protoss, PlayerState::Enemy) + Players::getRaceCount(Races::Terran, PlayerState::Enemy))
                     BuildOrder::setLearnedBuild("FFE", "Forge", "5GateGoon");
-                else if (Players::getNumberProtoss() > Players::getNumberZerg() + Players::getNumberTerran())
+                else if (Players::getRaceCount(Races::Protoss, PlayerState::Enemy) > Players::getRaceCount(Races::Zerg, PlayerState::Enemy) + Players::getRaceCount(Races::Terran, PlayerState::Enemy))
                     BuildOrder::setLearnedBuild("1GateCore", "2Zealot", "Robo");
-                else if (Players::getNumberTerran() > Players::getNumberZerg() + Players::getNumberProtoss())
+                else if (Players::getRaceCount(Races::Terran, PlayerState::Enemy) > Players::getRaceCount(Races::Zerg, PlayerState::Enemy) + Players::getRaceCount(Races::Protoss, PlayerState::Enemy))
                     BuildOrder::setLearnedBuild("1GateCore", "1Zealot", "Robo");
             }
 
@@ -319,7 +319,7 @@ namespace McRave::Learning {
         bool testing = false;
         if (testing) {
             if (Broodwar->self()->getRace() == Races::Protoss) {
-                BuildOrder::setLearnedBuild("2Gate", "Main", "Expand");
+                BuildOrder::setLearnedBuild("FFE", "Forge", "NeoBisu");
                 isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                 return;
             }
@@ -430,7 +430,7 @@ namespace McRave::Learning {
                 double ucbVal = sqrt(2.0 * log((double)totalGamesPlayed) / numGames);
                 double val = winRate + ucbVal;
 
-                if (l == 0)
+                if (w > 0 && l == 0)
                     val = DBL_MAX;
 
                 switch (dashCnt) {

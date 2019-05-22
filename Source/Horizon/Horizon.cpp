@@ -29,25 +29,11 @@ namespace McRave::Horizon {
         map<const BWEM::ChokePoint *, double> enemySqueezeFactor;
         map<const BWEM::ChokePoint *, double> selfSqueezeFactor;
 
-        // Figure out whether it's likely the unit will move horizontally or vertically to its target
-        const auto straightEngagePosition =[&](UnitInfo& u) {
-            auto dx = unit.getPosition().x - unit.getEngagePosition().x;
-            auto dy = unit.getPosition().y - unit.getEngagePosition().y;
-
-            if (abs(dx) < abs(dy))
-                return unit.getEngagePosition() + Position(dx, 0);
-            if (abs(dx) > abs(dy))
-                return unit.getEngagePosition() + Position(0, dy);
-            return Positions::Invalid;
-        };
-
-        auto unitStraightEngage = straightEngagePosition(unit);
-
         const auto shouldIgnoreSim = [&]() {
             // If we have excessive resources, ignore our simulation and engage
-            if (!ignoreSim && Broodwar->self()->minerals() >= 2000 && Broodwar->self()->gas() >= 2000 && Units::getSupply() >= 380)
+            if (!ignoreSim && Broodwar->self()->minerals() >= 2000 && Broodwar->self()->gas() >= 2000 && Players::getSupply(PlayerState::Self) >= 380)
                 ignoreSim = true;
-            if (ignoreSim && Broodwar->self()->minerals() <= 500 || Broodwar->self()->gas() <= 500 || Units::getSupply() <= 240)
+            if (ignoreSim && Broodwar->self()->minerals() <= 500 || Broodwar->self()->gas() <= 500 || Players::getSupply(PlayerState::Self) <= 240)
                 ignoreSim = false;
 
             if (ignoreSim || (Terrain::isIslandMap() && !unit.getType().isFlyer())) {
@@ -140,8 +126,7 @@ namespace McRave::Horizon {
 
                 // If enemy is stationary, it must be in range of the engage position on a diagonal or straight line
                 if (enemy.getSpeed() <= 0.0) {
-                    auto diEngageDistance = enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths /*+ deadzone*/;
-                    //auto stEngageDistance = unitStraightEngage.getDistance(enemy.getPosition()) - enemyRange - widths + deadzone;
+                    auto diEngageDistance = enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths + deadzone;
                     if (diEngageDistance > 64.0/* && stEngageDistance > 64.0*/)
                         continue;
                 }
@@ -187,7 +172,7 @@ namespace McRave::Horizon {
                 auto allyRange = (unit.getTarget().getType().isFlyer() ? ally.getAirRange() : ally.getGroundRange());
                 auto speed = ally.hasTransport() ? 24.0 * ally.getTransport().getSpeed() : 24.0 * ally.getSpeed();
 
-                auto distance = engDist - widths + deadzone;
+                auto distance = max(0.0, engDist - widths /*+ deadzone*/);
                 auto simRatio = simulationTime - (distance / speed);
 
                 auto reach = max(ally.getAirReach(), ally.getGroundReach());

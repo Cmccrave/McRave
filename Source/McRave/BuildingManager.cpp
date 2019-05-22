@@ -165,13 +165,9 @@ namespace McRave::Buildings {
         {
             auto tileBest = TilePositions::Invalid;
             auto distBest = DBL_MAX;
-            const BWEB::Wall* wall = nullptr;
             set<TilePosition> placements;
 
-            if (BuildOrder::isWallMain())
-                wall = Terrain::getMainWall();
-            else if (BuildOrder::isWallNat() || Broodwar->self()->getRace() == Races::Zerg)
-                wall = Terrain::getNaturalWall();
+            auto wall = BWEB::Walls::getClosestWall(TilePosition(here));
 
             if (!wall)
                 return tileBest;
@@ -350,12 +346,14 @@ namespace McRave::Buildings {
                 || Strategy::getEnemyBuild() == "2HatchMuta"
                 || Strategy::getEnemyBuild() == "3HatchMuta"
                 || Strategy::needDetection()
-                || (Broodwar->self()->visibleUnitCount(Protoss_Nexus) >= 3 + (Players::getNumberTerran() > 0 || Players::getNumberProtoss() > 0))
-                || (Terrain::isIslandMap() && Players::getNumberZerg() > 0);
+                || (Broodwar->self()->visibleUnitCount(Protoss_Nexus) >= 3 + (Players::getRaceCount(Races::Terran, PlayerState::Enemy) > 0 || Players::getRaceCount(Races::Protoss, PlayerState::Enemy) > 0))
+                || (Terrain::isIslandMap() && Players::getRaceCount(Races::Zerg, PlayerState::Enemy) > 0);
 
             auto canBuildDefenses = (Broodwar->self()->getRace() == Races::Protoss && com(Protoss_Forge))
                 || (Broodwar->self()->getRace() == Races::Zerg && (com(Zerg_Spawning_Pool) || com(Zerg_Evolution_Chamber)))
                 || (Broodwar->self()->getRace() == Races::Terran && com(Terran_Engineering_Bay));
+
+            auto chokeCenter = BuildOrder::isWallMain() ? Position(BWEB::Map::getMainChoke()->Center()) : Position(BWEB::Map::getNaturalChoke()->Center());
 
             // Battery placing near chokes
             if (building == Protoss_Shield_Battery) {
@@ -379,12 +377,8 @@ namespace McRave::Buildings {
                 }
             }
 
-            else if (!here.isValid() && Terrain::getNaturalWall()) // Assumes we want to put it at the natural wall
-                here = closestDefLocation(building, Terrain::getNaturalWall()->getCentroid());
-
-            else if (building == Zerg_Creep_Colony)
-                here = closestDefLocation(building, BWEB::Map::getNaturalPosition());
-
+            else if (!here.isValid())
+                here = closestDefLocation(building, chokeCenter);
             return here;
         }
 
@@ -444,6 +438,9 @@ namespace McRave::Buildings {
             if (!placement.isValid() && !building.isResourceDepot())
                 placement = closestProdLocation(building, BWEB::Map::getMainPosition());
 
+            if (!placement.isValid() && Strategy::enemyProxy())
+                placement = Broodwar->getBuildLocation(building, BWEB::Map::getMainTile(), 16);
+
             return placement;
         }
 
@@ -491,14 +488,14 @@ namespace McRave::Buildings {
                     || (Terrain::getMainWall() && building.getPosition().getDistance(Terrain::getMainWall()->getCentroid()) < 256.0);
 
                 if (wallCheck && !building.unit()->isFlying()) {
-                    if (Units::getSupply() > 120 || BuildOrder::firstReady()) {
+                    if (Players::getSupply(PlayerState::Self) > 120 || BuildOrder::firstReady()) {
                         building.unit()->lift();
                         BWEB::Map::onUnitDestroy(building.unit());
                     }
                 }
 
                 // Find landing location as production building
-                else if ((Units::getSupply() > 120 || BuildOrder::firstReady()) && building.unit()->isFlying()) {
+                else if ((Players::getSupply(PlayerState::Self) > 120 || BuildOrder::firstReady()) && building.unit()->isFlying()) {
                     auto here = closestProdLocation(building.getType(), BWEB::Map::getMainPosition());
                     auto center = (Position)here + Position(building.getType().tileWidth() * 16, building.getType().tileHeight() * 16);
 

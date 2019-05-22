@@ -74,10 +74,6 @@ namespace McRave::Transports {
 
         void updateTransportState(UnitInfo& unit)
         {
-            // TODO: Broke transports for islands, fix later
-            unit.setDestination(BWEB::Map::getMainPosition());
-            unit.setTransportState(TransportState::None);
-
             UnitInfo * closestCargo = nullptr;
             auto distBest = DBL_MAX;
             for (auto &c : unit.getAssignedCargo()) {
@@ -96,10 +92,10 @@ namespace McRave::Transports {
 
             // Check if this unit is ready to fight
             const auto readyToFight = [&](UnitInfo& cargo) {
-                auto reaverReady = cargo.getType() == UnitTypes::Protoss_Reaver && cargo.canStartAttack();
-                auto templarReady = cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.canStartCast(TechTypes::Psionic_Storm);
+                auto reaverReady = cargo.getType() == UnitTypes::Protoss_Reaver && cargo.canStartAttack() && cargo.getPosition().getDistance(cargo.getTarget().getPosition()) > 160.0;
+                auto templarReady = cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.canStartCast(TechTypes::Psionic_Storm) && cargo.getPosition().getDistance(cargo.getTarget().getPosition()) > 200.0;
 
-                if (cargo.getLocalState() == LocalState::Retreat || unit.unit()->isUnderAttack() || cargo.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT)
+                if (cargo.getLocalState() == LocalState::Retreat || !unit.getTargetedBy().empty() || unit.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT || cargo.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT)
                     return false;
                 return cargo.getLocalState() == LocalState::Attack && (reaverReady || templarReady);
             };
@@ -142,7 +138,7 @@ namespace McRave::Transports {
                     return true;
                 return false;
             };
-            
+
             // Check if we should be loading/unloading any cargo
             bool shouldMonitor = false;
             for (auto &c : unit.getAssignedCargo()) {
@@ -159,7 +155,7 @@ namespace McRave::Transports {
                         unit.setDestination(cargo.getPosition());
                         return;
                     }
-                    else {
+                    else if (unit.getTargetedBy().empty()) {
                         unit.setDestination(cargo.getPosition());
                         shouldMonitor = true;
                     }
@@ -167,17 +163,19 @@ namespace McRave::Transports {
 
                 // Else if the cargo is loaded
                 else if (cargo.unit()->isLoaded() && cargo.hasTarget() && cargo.getEngagePosition().isValid()) {
-                    unit.setDestination(cargo.getEngagePosition());
+
+                    if (cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.canStartCast(TechTypes::Psionic_Storm))
+                        unit.setDestination(cargo.getEngagePosition());
 
                     if (readyToUnload(cargo)) {
                         unit.unit()->unload(cargo.unit());
                         if (unit.getType() == UnitTypes::Protoss_High_Templar) {
-                            Command::addAction(cargo.unit(), cargo.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self);
+                            //Command::addAction(cargo.unit(), cargo.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self);
                             return;
                         }
                     }
                     else if (readyToFight(cargo))
-                        unit.setTransportState(TransportState::Engaging);                    
+                        unit.setTransportState(TransportState::Engaging);
                     else
                         unit.setTransportState(TransportState::Retreating);
                 }
@@ -193,21 +191,11 @@ namespace McRave::Transports {
 
         void updateDestination(UnitInfo& unit)
         {
-            // Disabled - this didn't do anything in AIST version
-            // Check if the destination can be used for ground distance
-            //if (!Util::isWalkable(unit.getDestination())) {
-            //    auto distBest = DBL_MAX;
-            //    for (auto &cargo : unit.getAssignedCargo()) {
-            //        if (cargo->hasTarget()) {
-            //            auto cargoTarget = cargo->getTarget().getPosition();
-            //            auto dist = cargoTarget.getDistance(unit.getPosition());
-            //            if (Util::isWalkable(cargoTarget) && dist < distBest) {
-            //                unit.setDestination(cargoTarget);
-            //                distBest = dist;
-            //            }
-            //        }
-            //    }
-            //}
+            // Resort to going to the army center as long as we have an army
+            if (!unit.getDestination().isValid() && !Combat::getCombatClusters().empty()) {
+                auto highestClusterPosition = (*Combat::getCombatClusters().rbegin()).second;
+                unit.setDestination(highestClusterPosition);
+            }
         }
 
         void updateDecision(UnitInfo& unit)

@@ -111,8 +111,13 @@ namespace McRave {
             return unitType == BWAPI::UnitTypes::Protoss_Shuttle || unitType == BWAPI::UnitTypes::Terran_Dropship || unitType == BWAPI::UnitTypes::Zerg_Overlord; 
         }
         bool isSpellcaster() {
-            return unitType == BWAPI::UnitTypes::Protoss_High_Templar || unitType == BWAPI::UnitTypes::Protoss_Dark_Archon || unitType == BWAPI::UnitTypes::Terran_Medic;
+            return unitType == BWAPI::UnitTypes::Protoss_High_Templar || unitType == BWAPI::UnitTypes::Protoss_Dark_Archon || unitType == BWAPI::UnitTypes::Terran_Medic || unitType == BWAPI::UnitTypes::Terran_Science_Vessel;
         }
+        bool isSiegeTank() {
+            return unitType == BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode || unitType == BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode;
+        }
+
+
         bool isBurrowed() { return burrowed; }
         bool isFlying() { return flying; }
 
@@ -136,8 +141,10 @@ namespace McRave {
         bool isThreatening();
         bool canStartAttack();
         bool canStartCast(BWAPI::TechType);
-
-
+        bool canAttackGround();
+        bool canAttackAir();
+        bool withinReach(UnitInfo&);
+        bool withinRange(UnitInfo&);
 
         // Commanding the unit to prevent order/command spam
         bool command(BWAPI::UnitCommandType, BWAPI::Position, bool);

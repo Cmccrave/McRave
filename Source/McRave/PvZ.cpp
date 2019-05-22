@@ -62,7 +62,7 @@ namespace McRave::BuildOrder::Protoss {
         wallNat = true;
 
         auto min100 = Broodwar->self()->minerals() >= 100;
-        auto cannonCount = int(com(Protoss_Forge) > 0)
+        auto cannonCount = int(isAlmostComplete(Protoss_Forge))
             + (Units::getEnemyCount(Zerg_Zergling) >= 6)
             + (Units::getEnemyCount(Zerg_Zergling) >= 12)
             + (Units::getEnemyCount(Zerg_Zergling) >= 24)
@@ -140,11 +140,12 @@ namespace McRave::BuildOrder::Protoss {
 
         // If we want Cannons but have no Forge
         if (cannonCount > 0 && currentOpener != "Panic") {
-            if (com(Protoss_Forge) == 0) {
+            if (!isAlmostComplete(Protoss_Forge)) {
                 cannonCount = 0;
                 itemQueue[Protoss_Forge] = Item(1);
             }
-            itemQueue[Protoss_Photon_Cannon] =	Item(cannonCount);
+            else
+                itemQueue[Protoss_Photon_Cannon] =	Item(cannonCount);
         }
 
         // Transitions
@@ -341,6 +342,7 @@ namespace McRave::BuildOrder::Protoss {
             getOpening =		s < 70;
             dragoonLimit =		1;
             lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
+            playPassive =       s < 70;
 
             if (techList.find(Protoss_Dark_Templar) == techList.end())
                 firstUnit =			Protoss_Dark_Templar;

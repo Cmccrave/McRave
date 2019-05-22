@@ -5,4 +5,6 @@ namespace McRave::Combat {
 
     void onFrame();
     std::multimap<double, BWAPI::Position>& getCombatClusters();
+    BWAPI::Position getClosestRetreatPosition(BWAPI::Position);
+    //BWAPI::Position getClosestAttackPosition(BWAPI::Position);
 }

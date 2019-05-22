@@ -8,7 +8,6 @@ namespace McRave::Players
     namespace {
         map <Player, PlayerInfo> thePlayers;
         map <Race, int> raceCount;
-        map <PlayerInfo, TotalStrength> playerStrengths;
 
         void update(PlayerInfo& player)
         {
@@ -16,20 +15,6 @@ namespace McRave::Players
             player.update();
             if (!player.isSelf())
                 raceCount[player.getCurrentRace()]++;
-
-            // Add up the total strength for this player
-            auto &strengths = playerStrengths[player];
-            for (auto &u : player.getUnits()) {
-                auto &unit = *u;
-
-                // HACK: Clear targeting here as it occurs before UnitManager updates
-                unit.getTargetedBy().clear();
-                unit.setTarget(nullptr);
-
-                if (unit.getType().isWorker() && unit.getRole() != Role::Combat)
-                    continue;
-                addStrength(unit);
-            }
         }
     }
 
@@ -53,36 +38,45 @@ namespace McRave::Players
     {
         // Clear race count and recount
         raceCount.clear();
-        playerStrengths.clear();
-
         for (auto &[_, player] : thePlayers)
             update(player);
     }
 
-    TotalStrength getStrength(PlayerState state)
+    int getSupply(PlayerState state)
     {
-        TotalStrength combined;
+        auto combined = 0;
         for (auto &[_, player] : thePlayers) {
             if (player.getPlayerState() == state)
-                combined += playerStrengths[player];
+                combined += player.getSupply();
         }
         return combined;
     }
 
-    TotalStrength getStrength(PlayerInfo& comparePlayer)
+    int getRaceCount(Race race, PlayerState state)
     {
+        auto combined = 0;
         for (auto &[_, player] : thePlayers) {
-            if (player == comparePlayer)
-                return playerStrengths[player];
+            if (player.getCurrentRace() == race && player.getPlayerState() == state)
+                combined += 1;
         }
-        return TotalStrength();
+        return combined;
+    }
+
+    Strength getStrength(PlayerState state)
+    {
+        Strength combined;
+        for (auto &[_, player] : thePlayers) {
+            if (player.getPlayerState() == state)
+                combined += player.getStrength();
+        }
+        return combined;
     }
 
     void addStrength(UnitInfo& unit)
     {
         // TODO: When UnitInfo stores PlayerInfo, fix this
         auto &pInfo = thePlayers[unit.getPlayer()];
-        auto &strengths = playerStrengths[pInfo];
+        auto &strengths = pInfo.getStrength();
         for (auto &[p, player] : thePlayers) {
             if (p == unit.getPlayer()) {
                 if (unit.getType().isBuilding()) {
@@ -102,10 +96,7 @@ namespace McRave::Players
     }
 
     map <Player, PlayerInfo>& getPlayers() { return thePlayers; }
-    int getNumberZerg() { return raceCount[Races::Zerg]; }
-    int getNumberProtoss() { return raceCount[Races::Protoss]; }
-    int getNumberTerran() { return raceCount[Races::Terran]; }
-    int getNumberRandom() { return raceCount[Races::Unknown]; }
+
     bool vP() { return (thePlayers.size() == 3 && raceCount[Races::Protoss] > 0); }
     bool vT() { return (thePlayers.size() == 3 && raceCount[Races::Terran] > 0); }
     bool vZ() { return (thePlayers.size() == 3 && raceCount[Races::Zerg] > 0); }

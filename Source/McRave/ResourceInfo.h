@@ -13,7 +13,7 @@ namespace McRave
         BWAPI::UnitType type;
         BWAPI::Position position;
         BWAPI::TilePosition tilePosition;
-        const BWEB::Station * station;
+        BWEB::Station * station;
         ResourceState rState;
         std::vector<std::weak_ptr<UnitInfo>> targetedBy;
     public:
@@ -50,8 +50,8 @@ namespace McRave
 
         // 
         bool hasStation() { return station != nullptr; }
-        const BWEB::Station * getStation() { return station; }
-        void setStation(const BWEB::Station* newStation) { station = newStation; }
+        BWEB::Station * getStation() { return station; }
+        void setStation(BWEB::Station* newStation) { station = newStation; }
         int getGathererCount() { return int(targetedBy.size()); }
         int getRemainingResources() { return remainingResources; }
         ResourceState getResourceState() { return rState; }

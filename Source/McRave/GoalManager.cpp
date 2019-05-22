@@ -58,13 +58,13 @@ namespace McRave::Goals {
             // Attack enemy expansions with a small force
             // PvP / PvT
             if (Players::vP() || Players::vT()) {
-                auto distBest = 0.0;
+                auto distBest = DBL_MAX;
                 auto posBest = Positions::Invalid;
                 for (auto &s : Stations::getEnemyStations()) {
                     auto station = *s.second;
                     auto pos = station.getBWEMBase()->Center();
                     auto dist = BWEB::Map::getGroundDistance(pos, Terrain::getEnemyStartingPosition());
-                    if (dist > distBest) {
+                    if (dist < distBest) {
                         distBest = dist;
                         posBest = pos;
                     }
@@ -96,6 +96,8 @@ namespace McRave::Goals {
                     else {
                         assignPercentToGoal(nextExpand, UnitTypes::Protoss_Dragoon, 0.25);
                     }
+
+                    assignNumberToGoal(nextExpand, UnitTypes::Protoss_Observer, 1);
                 }
             }
 

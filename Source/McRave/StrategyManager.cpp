@@ -295,7 +295,7 @@ namespace McRave::Strategy {
                         enemyBuild = "1GateRobo";
                     else if (Units::getEnemyCount(Protoss_Gateway) >= 4)
                         enemyBuild = "4Gate";
-                    else if ((Units::getEnemyCount(Protoss_Citadel_of_Adun) >= 1 && Units::getEnemyCount(Protoss_Zealot) > 0) || Units::getEnemyCount(Protoss_Templar_Archives) >= 1 || (enemyBuild == "Unknown" && !goonRange && Units::getEnemyCount(Protoss_Dragoon) < 2 && Units::getSupply() > 80))
+                    else if ((Units::getEnemyCount(Protoss_Citadel_of_Adun) >= 1 && Units::getEnemyCount(Protoss_Zealot) > 0) || Units::getEnemyCount(Protoss_Templar_Archives) >= 1 || (enemyBuild == "Unknown" && !goonRange && Units::getEnemyCount(Protoss_Dragoon) < 2 && Players::getSupply(PlayerState::Self) > 80))
                         enemyBuild = "1GateDT";
                 }
 
@@ -317,7 +317,7 @@ namespace McRave::Strategy {
         void checkEnemyRush()
         {
             // Rush builds are immediately aggresive builds
-            rush = Units::getSupply() < 80 && (enemyBuild == "BBS" || enemyBuild == "2Gate" || enemyBuild == "5Pool" || enemyBuild == "4Pool");
+            rush = Players::getSupply(PlayerState::Self) < 80 && (enemyBuild == "BBS" || enemyBuild == "2Gate" || enemyBuild == "5Pool" || enemyBuild == "4Pool");
         }
 
         void checkEnemyPressure()
@@ -336,7 +336,7 @@ namespace McRave::Strategy {
                     || com(Protoss_Shield_Battery) > 0
                     || BuildOrder::isWallNat()
                     || (BuildOrder::isHideTech() && !rush)
-                    || Units::getSupply() > 60
+                    || Players::getSupply(PlayerState::Self) > 60
                     || Players::vT();
             }
         }
@@ -366,7 +366,7 @@ namespace McRave::Strategy {
         {
             // Proxy builds are built closer to me than the enemy
             proxy = proxy
-                || (Units::getSupply() < 80 && (enemyBuild == "CannonRush" || enemyBuild == "BunkerRush"));
+                || (Players::getSupply(PlayerState::Self) < 80 && (enemyBuild == "CannonRush" || enemyBuild == "BunkerRush"));
         }
 
         void updateEnemyBuild()
@@ -607,7 +607,7 @@ namespace McRave::Strategy {
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 auto myStrength = Players::getStrength(PlayerState::Self);
                 auto enemyStrength = Players::getStrength(PlayerState::Enemy);
-                unitScore[Zerg_Drone] = (myStrength.groundToGround + myStrength.groundDefense) / (enemyStrength.groundToGround - enemyStrength.groundDefense);
+                unitScore[Zerg_Drone] = clamp((1.0 + myStrength.groundToGround + myStrength.groundDefense) / (1.0 + enemyStrength.groundToGround - enemyStrength.groundDefense), 1.0, 100.0);
 
                 if (Units::getMyRoleCount(Role::Worker) > Units::getMyRoleCount(Role::Combat) && !BuildOrder::isOpener())
                     unitScore[Zerg_Drone] = 0.0;

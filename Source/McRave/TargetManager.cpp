@@ -25,15 +25,15 @@ namespace McRave::Targets {
                 bool selfHasAir = myStrength.airToGround > 0.0 || myStrength.airToAir > 0.0 || com(UnitTypes::Protoss_Shuttle) > 0;
 
                 bool targetMatters = (target.getAirDamage() > 0.0 && selfHasAir)
-                    || (target.getGroundDamage() > 0.0)
+                    || (target.canAttackGround())
                     || (target.getType().isDetector() && (vis(UnitTypes::Protoss_Dark_Templar) > 0 || vis(UnitTypes::Protoss_Observer) > 0))
-                    || (target.getAirDamage() == 0.0 && target.getGroundDamage() == 0.0 && !unit.hasTransport())
+                    || (!target.canAttackAir() && !target.canAttackGround() && !unit.hasTransport())
                     || (target.getType().isWorker())
                     || (!enemyHasGround && !enemyHasAir);
 
                 // Melee: Don't attack non threatening workers in our territory
-                if ((unit.getGroundRange() <= 32.0 && target.getType().isWorker() && !target.isThreatening() && (Units::getSupply() < 60 || int(unit.getTargetedBy().size()) > 0) && Terrain::isInAllyTerritory(target.getTilePosition()) && !target.hasAttackedRecently() && !Terrain::isInEnemyTerritory(target.getTilePosition()))
-                    
+                if ((unit.getGroundRange() <= 32.0 && target.getType().isWorker() && !target.isThreatening() && (Players::getSupply(PlayerState::Self) < 60 || int(unit.getTargetedBy().size()) > 0) && Terrain::isInAllyTerritory(target.getTilePosition()) && !target.hasAttackedRecently() && !Terrain::isInEnemyTerritory(target.getTilePosition()))
+
                     // Scout roles should only target non buildings
                     || (unit.getRole() == Role::Scout && target.getType().isBuilding())
 
@@ -53,7 +53,7 @@ namespace McRave::Targets {
                     || (target.getType() == UnitTypes::Terran_Vulture_Spider_Mine && unit.getType() == UnitTypes::Protoss_Zealot && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) < 2)
 
                     // If target is invisible and can't attack this unit
-                    || ((target.isBurrowed() || target.unit()->isCloaked()) && !target.unit()->isDetected() && !targetCanAttack && !unit.getType().isDetector())
+                    || (target.isHidden() && !targetCanAttack && !unit.getType().isDetector())
 
                     // Don't attack units that don't matter
                     || !targetMatters
@@ -70,8 +70,8 @@ namespace McRave::Targets {
                     // Zealot: Rushing Zealots only attack workers
                     || (unit.getType() == UnitTypes::Protoss_Zealot && BuildOrder::isRush() && !target.getType().isWorker() && Broodwar->getFrameCount() < 10000)
 
-                    // Don't attack enemy spider mines with more than 2 units
-                    || (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine && int(unit.getTargetedBy().size()) >= 2))
+                    // Don't attack enemy spider mines with more than 4 units
+                    || (target.getType() == UnitTypes::Terran_Vulture_Spider_Mine && int(target.getTargetedBy().size()) >= 4) && !target.isBurrowed())
                     return false;
                 return true;
             };
@@ -84,15 +84,17 @@ namespace McRave::Targets {
 
                 // Detector targeting
                 if ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == UnitTypes::Terran_Comsat_Station) {
-                    auto &closest = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                        return u != unit && unit.hasTarget() && ((u.getAirDamage() > 0.0 && unit.getTarget().getType().isFlyer()) || (u.getGroundDamage() > 0.0 && !unit.getTarget().getType().isFlyer())) && u.getPosition().getDistance(unit.getTarget().getPosition()) < SIM_RADIUS;
+
+                    // See if I have a unit close to the enemy
+                    auto closest = Util::getClosestUnit(target.getPosition(), PlayerState::Self, [&](auto &u) {
+                        return u != unit && u.withinReach(target);
                     });
 
                     // Detectors want to stay close to their target
-                    if (closest) {
-                        if (target.isBurrowed() || target.unit()->isCloaked())
-                            thisUnit = priority / dist;
-                    }
+                    if (closest && (target.isBurrowed() || target.unit()->isCloaked()))
+                        thisUnit = priority / dist;
+                    else
+                        thisUnit = -1.0;
                 }
 
                 // Cluster targeting for AoE units
@@ -101,15 +103,15 @@ namespace McRave::Targets {
 
                         double eGrid = Grids::getEGroundCluster(target.getWalkPosition()) + Grids::getEAirCluster(target.getWalkPosition());
                         double aGrid = Grids::getAGroundCluster(target.getWalkPosition()) + Grids::getAAirCluster(target.getWalkPosition());
-                        double score = eGrid / exp(aGrid);
+                        double score = eGrid / aGrid;
 
-                        thisUnit = score / dist;
+                        thisUnit = priority * score / dist;
                     }
                 }
 
                 // Proximity targeting
                 else if (unit.getType() == UnitTypes::Protoss_Reaver) {
-                    if (target.getType().isBuilding() && target.getGroundDamage() == 0.0 && target.getAirDamage() == 0.0)
+                    if (target.getType().isBuilding() && !target.canAttackGround() && !target.canAttackAir())
                         thisUnit = 0.1 / dist;
                     else
                         thisUnit = health / dist;
@@ -120,7 +122,7 @@ namespace McRave::Targets {
                     thisUnit = priority / dist;
 
                 // If this target is more important to target, set as current target
-                if (thisUnit > bestScore || (thisUnit == bestScore && !clusterTarget && dist < bestDistance)) {
+                if (thisUnit > bestScore || (thisUnit == bestScore && dist < bestDistance)) {
                     bestScore = thisUnit;
                     unit.setTarget(&target);
                     bestDistance = dist;
@@ -134,16 +136,16 @@ namespace McRave::Targets {
                 if (!target.unit()
                     || !target.getWalkPosition().isValid()
                     || !unit.getWalkPosition().isValid()
-                    || (target.getType().isBuilding() && !target.isThreatening() && target.getGroundDamage() == 0.0 && Terrain::isInAllyTerritory(target.getTilePosition()) && Broodwar->getFrameCount() < 10000))
+                    || (target.getType().isBuilding() && !target.isThreatening() && !target.canAttackGround() && Terrain::isInAllyTerritory(target.getTilePosition()) && Broodwar->getFrameCount() < 10000))
                     continue;
 
-                bool targetCanAttack = ((unit.getType().isFlyer() && target.getAirDamage() > 0.0) || (!unit.getType().isFlyer() && target.getGroundDamage() > 0.0) || (!unit.getType().isFlyer() && target.getType() == UnitTypes::Terran_Vulture_Spider_Mine));
-                bool unitCanAttack = ((target.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!target.getType().isFlyer() && unit.getGroundDamage() > 0.0) || (unit.getType() == UnitTypes::Protoss_Carrier));
-                
+                bool targetCanAttack = ((unit.getType().isFlyer() && target.getAirDamage() > 0.0) || (!unit.getType().isFlyer() && target.canAttackGround()) || (!unit.getType().isFlyer() && target.getType() == UnitTypes::Terran_Vulture_Spider_Mine));
+                bool unitCanAttack = ((target.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!target.getType().isFlyer() && unit.canAttackGround()) || (unit.getType() == UnitTypes::Protoss_Carrier));
+
                 // HACK: Check for a flying building
                 if (target.unit()->exists() && target.unit()->isFlying() && unit.getAirDamage() <= 0.0)
-                    unitCanAttack = false;            
-                
+                    unitCanAttack = false;
+
                 double widths = unit.getType().tileWidth() * 16.0 + target.getType().tileWidth() * 16.0;
                 double dist = max(32.0, unit.getPosition().getDistance(target.getPosition()) - widths);
                 double health = targetCanAttack ? 1.0 + (0.5*(1.0 - unit.getPercentTotal())) : 1.0;
@@ -161,8 +163,8 @@ namespace McRave::Targets {
             }
 
             // If unit is close, increment it
-            if (unit.hasTarget() && Util::unitInRange(unit))
-               unit.getTarget().getTargetedBy().push_back(make_shared<UnitInfo>(unit));
+            if (unit.hasTarget() && unit.withinRange(unit.getTarget()))
+                unit.getTarget().getTargetedBy().push_back(make_shared<UnitInfo>(unit));
         }
 
         void getEngagePosition(UnitInfo& unit)
@@ -172,12 +174,12 @@ namespace McRave::Targets {
                 return;
             }
 
-            int distance = (int)unit.getPosition().getDistance(unit.getTarget().getPosition());
-            int range = unit.getTarget().getType().isFlyer() ? (int)unit.getAirRange() : (int)unit.getGroundRange();
-            int leftover = distance - range;
-            Position direction = (unit.getPosition() - unit.getTarget().getPosition()) * leftover / distance;
+            int distance = unit.getPosition().getApproxDistance(unit.getTarget().getPosition());
+            int range = unit.getTarget().getType().isFlyer() ? int(unit.getAirRange()) : int(unit.getGroundRange());
+            auto direction = (unit.getPosition() - unit.getTarget().getPosition()) * (distance - range) / distance;
 
-            if (distance > range)
+            // If unit is loaded or further than their range, we want to calculate the expected engage position
+            if (distance > range || unit.unit()->isLoaded())
                 unit.setEngagePosition(unit.getPosition() - direction);
             else
                 unit.setEngagePosition(unit.getPosition());
@@ -233,7 +235,7 @@ namespace McRave::Targets {
                 }
                 // If unreachable
                 else if (!unit.getPath().isReachable())
-                    unit.setEngDist(DBL_MAX);                
+                    unit.setEngDist(DBL_MAX);
             }
             // Otherwise approximate and double
             else {

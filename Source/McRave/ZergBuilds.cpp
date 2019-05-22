@@ -1,5 +1,5 @@
 #include "McRave.h"
-#define s Units::getSupply()
+#define s Players::getSupply(PlayerState::Self)
 
 using namespace std;
 using namespace BWAPI;

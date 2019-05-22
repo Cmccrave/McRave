@@ -6,10 +6,10 @@ using namespace BWAPI;
 namespace BWEB::Stations {
 
     namespace {
-        std::vector<Station> stations;
+        vector<Station> stations;
     }
 
-    set<TilePosition> stationDefenses(const TilePosition here, const bool mirrorHorizontal, const bool mirrorVertical)
+    set<TilePosition> stationDefenses(TilePosition here, bool mirrorHorizontal, bool mirrorVertical)
     {
         set<TilePosition> defenses;
 
@@ -169,7 +169,7 @@ namespace BWEB::Stations {
                 for (auto &g : base.Geysers())
                     Map::addOverlap(g->TopLeft(), 4, 2);
 
-                const Station newStation(genCenter, stationDefenses(base.Location(), h, v), &base);
+                Station newStation(genCenter, stationDefenses(base.Location(), h, v), &base);
                 stations.push_back(newStation);
                 Map::addOverlap(base.Location(), 4, 3);
                 addResourceOverlap(genCenter);
@@ -189,10 +189,10 @@ namespace BWEB::Stations {
         }
     }
 
-    const Station * getClosestStation(TilePosition here)
+    Station * getClosestStation(TilePosition here)
     {
         auto distBest = DBL_MAX;
-        const Station* bestStation = nullptr;
+        Station* bestStation = nullptr;
         for (auto &station : stations) {
             const auto dist = here.getDistance(station.getBWEMBase()->Location());
 

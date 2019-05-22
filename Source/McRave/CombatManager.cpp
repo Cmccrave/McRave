@@ -7,6 +7,7 @@ namespace McRave::Combat {
 
     namespace {
 
+        set<Position> retreatPositions;
         multimap<double, Position> combatClusters;
         multimap<double, UnitInfo&> combatUnitsByDistance;
         constexpr tuple commands{ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::defend, Command::hunt, Command::escort, Command::retreat, Command::move };
@@ -15,7 +16,8 @@ namespace McRave::Combat {
         {
             if (unit.getType() == UnitTypes::Protoss_High_Templar
                 || unit.getType() == UnitTypes::Zerg_Defiler
-                || unit.getType() == UnitTypes::Protoss_Dark_Archon)
+                || unit.getType() == UnitTypes::Protoss_Dark_Archon
+                || unit.getType() == UnitTypes::Protoss_Reaver)
                 return;
 
             double strength = Grids::getAGroundCluster(unit.getWalkPosition()) + Grids::getAAirCluster(unit.getWalkPosition());
@@ -32,8 +34,7 @@ namespace McRave::Combat {
                 return;
             }
 
-            auto fightingAtHome = ((Terrain::isInAllyTerritory(unit.getTilePosition()) && Util::unitInRange(unit)) || Terrain::isInAllyTerritory(unit.getTarget().getTilePosition()));
-            auto invisTarget = unit.getTarget().isHidden();
+            auto fightingAtHome = ((Terrain::isInAllyTerritory(unit.getTilePosition()) && unit.withinRange(unit.getTarget())) || Terrain::isInAllyTerritory(unit.getTarget().getTilePosition()));
             auto enemyReach = unit.getType().isFlyer() ? unit.getTarget().getAirReach() : unit.getTarget().getGroundReach();
             auto enemyThreat = unit.getType().isFlyer() ? Grids::getEAirThreat(unit.getEngagePosition()) : Grids::getEGroundThreat(unit.getEngagePosition());
             auto destinationThreat = unit.getType().isFlyer() ? Grids::getEAirThreat(unit.getDestination()) : Grids::getEGroundThreat(unit.getDestination());
@@ -51,15 +52,17 @@ namespace McRave::Combat {
                 if (/*(unit.getType().isMechanical() && unit.getPercentTotal() < LOW_MECH_PERCENT_LIMIT)
                     || */(unit.getType().getRace() == Races::Zerg && unit.getPercentTotal() < LOW_BIO_PERCENT_LIMIT)
                     || (unit.getType() == UnitTypes::Protoss_High_Templar && unit.getEnergy() < 75)
-                    || Grids::getESplash(unit.getWalkPosition()) > 0
-                    || (invisTarget && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= enemyReach)
+                    //|| Grids::getESplash(unit.getWalkPosition()) > 0
+                    || (unit.getTarget().isHidden() && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= enemyReach)
                     || unit.getGlobalState() == GlobalState::Retreat)
                     return true;
                 return false;
             };
 
             const auto forceEngage = [&]() {
-                if (invisTarget)
+
+                // Can't force engage on a hidden unit
+                if (unit.getTarget().isHidden())
                     return false;
 
                 // If enemy needs to be killed
@@ -81,17 +84,17 @@ namespace McRave::Combat {
                     || (unit.getType() == UnitTypes::Terran_Medic && unit.unit()->getEnergy() <= TechTypes::Healing.energyCost())
                     || (unit.getType() == UnitTypes::Zerg_Mutalisk && Grids::getEAirThreat((WalkPosition)unit.getEngagePosition()) > 0.0 && unit.getHealth() <= 30)
                     || (unit.getType().maxShields() > 0 && unit.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && Broodwar->getFrameCount() < 8000 && !Terrain::isInAllyTerritory(unit.getTilePosition()))
-                    || (unit.getType() == UnitTypes::Terran_SCV && Broodwar->getFrameCount() > 12000)
-                    || (unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine && !unit.getTarget().isBurrowed()))
+                    || (unit.getType() == UnitTypes::Terran_SCV && Broodwar->getFrameCount() > 12000))
                     return true;
                 return false;
             };
 
             const auto localEngage = [&]() {
-                if ((Broodwar->getFrameCount() > 10000 && !unit.getType().isFlyer() && (unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode || unit.getTarget().getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode) && (unit.getPosition().getDistance(unit.getTarget().getPosition()) < 96.0 || Util::unitInRange(unit)))
-                    || ((unit.unit()->isCloaked() || unit.isBurrowed()) && !Command::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy))
-                    || (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && Util::unitInRange(unit))
-                    || (unit.getSimState() == SimState::Win && unit.getGlobalState() == GlobalState::Attack))
+                if ((!unit.getType().isFlyer() && unit.getTarget().isSiegeTank() && ((unit.withinRange(unit.getTarget()) && unit.getGroundRange() > 32.0) || (unit.withinReach(unit.getTarget()) && unit.getGroundRange() <= 32.0)))
+                    || (unit.isHidden() && !Command::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy))
+                    || (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && unit.withinRange(unit.getTarget()))
+                    || (unit.getSimState() == SimState::Win && unit.getGlobalState() == GlobalState::Attack)
+                    || (unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine && !unit.getTarget().isBurrowed()))
                     return true;
                 return false;
             };
@@ -260,12 +263,56 @@ namespace McRave::Combat {
                 }
             }
         }
+
+        void updateRetreatPositions()
+        {
+            retreatPositions.clear();
+            for (auto &[_, station] : Stations::getMyStations()) {
+                auto posBest = Positions::Invalid;
+                auto distBest = DBL_MAX;
+                auto tile = station->getBWEMBase()->Location();
+
+                // Find a TilePosition around it that is suitable to path to
+                for (int x = tile.x - 6; x < tile.x + 10; x++) {
+                    for (int y = tile.y - 6; y < tile.y + 10; y++) {
+                        TilePosition t(x, y);
+                        Position center = Position(t) + Position(16, 16);
+                        auto dist = center.getDistance(station->getResourceCentroid());
+                        if (t.isValid() && dist < distBest && BWEB::Map::isUsed(t) == UnitTypes::None) {
+                            posBest = center;
+                            distBest = dist;
+                        }
+                    }
+                }
+
+                // If valid, add to set of retreat positions
+                if (posBest.isValid()) {
+                    retreatPositions.insert(posBest);
+                    Broodwar->drawCircleMap(posBest, 6, Colors::Purple, true);
+                }
+            }
+        }
     }
 
     void onFrame() {
         Visuals::startPerfTest();
         updateUnits();
+        updateRetreatPositions();
         Visuals::endPerfTest("Combat");
+    }
+
+    Position getClosestRetreatPosition(Position here)
+    {
+        auto distBest = DBL_MAX;
+        auto posBest = Positions::Invalid;
+        for (auto &position : retreatPositions) {
+            auto dist = position.getDistance(here);
+            if (dist < distBest) {
+                posBest = position;
+                distBest = dist;
+            }
+        }
+        return posBest;
     }
 
     multimap<double, Position>& getCombatClusters() { return combatClusters; }

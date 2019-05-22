@@ -15,13 +15,17 @@ namespace McRave::Production {
         int reservedMineral, reservedGas;
         int idleFrame = 0;
 
+        bool haveOrUpgrading(UpgradeType upgrade, int level) {
+            return ((Broodwar->self()->isUpgrading(upgrade) && Broodwar->self()->getUpgradeLevel(upgrade) == level - 1) || Broodwar->self()->getUpgradeLevel(upgrade) >= level);
+        }
+
         bool isAffordable(UnitType unit)
         {
             auto mineralReserve = int(!BuildOrder::isTechUnit(unit)) * reservedMineral;
             auto gasReserve = int(!BuildOrder::isTechUnit(unit)) * reservedGas;
             auto mineralAffordable = (Broodwar->self()->minerals() >= unit.mineralPrice() + Buildings::getQueuedMineral() + mineralReserve) || unit.mineralPrice() == 0;
             auto gasAffordable = (Broodwar->self()->gas() >= unit.gasPrice() + Buildings::getQueuedGas() + gasReserve) || unit.gasPrice() == 0;
-            auto supplyAffordable = Units::getSupply() + unit.supplyRequired() <= Broodwar->self()->supplyTotal();
+            auto supplyAffordable = Players::getSupply(PlayerState::Self) + unit.supplyRequired() <= Broodwar->self()->supplyTotal();
 
             return mineralAffordable && gasAffordable && supplyAffordable;
         }
@@ -184,9 +188,6 @@ namespace McRave::Production {
                     needReavers = true;
             }
 
-            // Turn shuttles off for now
-            needShuttles = false;
-
             switch (unit)
             {
                 // Gateway Units
@@ -205,7 +206,7 @@ namespace McRave::Production {
             case Protoss_Reaver:
                 return needReavers;
             case Protoss_Observer:
-                return vis(unit) < 1 + (Units::getSupply() / 100);
+                return vis(unit) < 1 + (Players::getSupply(PlayerState::Self) / 100);
 
                 // Stargate Units
             case Protoss_Corsair:
@@ -320,11 +321,11 @@ namespace McRave::Production {
 
                     // Ground unit upgrades
                 case Protoss_Ground_Weapons:
-                    return !Terrain::isIslandMap() && (Units::getSupply() > 120 || Players::getNumberZerg() > 0);
+                    return !Terrain::isIslandMap() && (Players::getSupply(PlayerState::Self) > 120 || Players::getRaceCount(Races::Zerg, PlayerState::Enemy) > 0);
                 case Protoss_Ground_Armor:
                     return !Terrain::isIslandMap() && (Broodwar->self()->getUpgradeLevel(Protoss_Ground_Weapons) > Broodwar->self()->getUpgradeLevel(Protoss_Ground_Armor) || Broodwar->self()->isUpgrading(Protoss_Ground_Weapons));
                 case Protoss_Plasma_Shields:
-                    return (Broodwar->self()->getUpgradeLevel(Protoss_Ground_Weapons) >= 2 && Broodwar->self()->getUpgradeLevel(Protoss_Ground_Armor) >= 2);
+                    return haveOrUpgrading(Protoss_Ground_Weapons, 3) && haveOrUpgrading(Protoss_Ground_Armor, 3);
 
                     // Air unit upgrades
                 case Protoss_Air_Weapons:
@@ -391,17 +392,17 @@ namespace McRave::Production {
 
                     // Ground unit upgrades
                 case Zerg_Melee_Attacks:
-                    return (Units::getSupply() > 120);
+                    return (Players::getSupply(PlayerState::Self) > 120);
                 case Zerg_Missile_Attacks:
                     return vis(Zerg_Hydralisk) >= 8 || vis(Zerg_Lurker) >= 4;
                 case Zerg_Carapace:
-                    return (Units::getSupply() > 120);
+                    return (Players::getSupply(PlayerState::Self) > 120);
 
                     // Air unit upgrades
                 case Zerg_Flyer_Attacks:
-                    return (Units::getSupply() > 120);
+                    return (Players::getSupply(PlayerState::Self) > 120);
                 case Zerg_Flyer_Carapace:
-                    return (Units::getSupply() > 120);
+                    return (Players::getSupply(PlayerState::Self) > 120);
                 }
             }
             return false;
@@ -480,16 +481,16 @@ namespace McRave::Production {
 
         void produce(UnitInfo& building)
         {
-            int offset = 16;
-            double best = 0.0;
-            UnitType bestType = UnitTypes::None;
+            auto offset = 16;
+            auto best = 0.0;
+            auto bestType = UnitTypes::None;
 
             const auto scoreUnit = [&](UnitType type) {
-                double mineralCost = type.mineralPrice() == 0 ? 1.0 : Broodwar->self()->minerals() - type.mineralPrice() - (!BuildOrder::isTechUnit(type) * reservedMineral) - Buildings::getQueuedMineral();
-                double gasCost = type.gasPrice() == 0 ? 1.0 : Broodwar->self()->gas() - type.gasPrice() - (!BuildOrder::isTechUnit(type) * reservedGas) - Buildings::getQueuedGas();
+                const auto mineralCost = type.mineralPrice() == 0 ? 1.0 : Broodwar->self()->minerals() - type.mineralPrice() - (!BuildOrder::isTechUnit(type) * reservedMineral) - Buildings::getQueuedMineral();
+                const auto gasCost = type.gasPrice() == 0 ? 1.0 : Broodwar->self()->gas() - type.gasPrice() - (!BuildOrder::isTechUnit(type) * reservedGas) - Buildings::getQueuedGas();
 
-                double resourceScore = clamp(gasCost * mineralCost, 0.1, 10.0);
-                double strategyScore = clamp(Strategy::getUnitScore(type), 0.1, 10.0);
+                const auto resourceScore = clamp(gasCost * mineralCost, 0.1, 1.0);
+                const auto strategyScore = clamp(Strategy::getUnitScore(type), 0.1, 1.0);
                 return resourceScore * strategyScore;
             };
 
@@ -505,7 +506,7 @@ namespace McRave::Production {
             }
 
             for (auto &type : building.getType().buildsWhat()) {
-                double value = scoreUnit(type);
+                const auto value = scoreUnit(type);
 
                 // If we teched to DTs, try to create as many as possible
                 if (type == UnitTypes::Protoss_Dark_Templar && BuildOrder::getTechList().size() == 1 && isCreateable(building.unit(), type) && isSuitable(type)) {
@@ -533,16 +534,11 @@ namespace McRave::Production {
                     building.unit()->train(bestType);
                     building.setRemainingTrainFrame(bestType.buildTime());
                     idleProduction.erase(building.unit());
-                    return; // Only produce 1 unit per frame to prevent overspending
                 }
-
-                // HACK: Make zealots if we cant afford a DT, is this needed?
-                if (bestType == UnitTypes::Protoss_Dark_Templar && !isAffordable(UnitTypes::Protoss_Dark_Templar) && Players::vP() && Broodwar->self()->minerals() > 300)
-                    bestType = UnitTypes::Protoss_Zealot;
 
                 // Else if this is a tech unit, add it to idle production
                 else if (BuildOrder::getTechUnit() == bestType || BuildOrder::getTechList().find(bestType) != BuildOrder::getTechList().end()) {
-                    if (Units::getSupply() < 380)
+                    if (Players::getSupply(PlayerState::Self) < 380)
                         idleFrame = Broodwar->getFrameCount();
 
                     idleProduction[building.unit()] = bestType;

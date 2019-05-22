@@ -12,11 +12,12 @@ namespace BWEB
             inline bool operator()(unsigned x, unsigned y) const
             {
                 TilePosition t(x, y);
-                if (x < width && y < height && Map::isUsed(t) == UnitTypes::None && Map::isWalkable(t))
+                if (x < width && y < height && Map::isUsed(t) == UnitTypes::None && (Map::isWalkable(t) || t == source))
                     return true;
                 return false;
             }
             unsigned width = Broodwar->mapWidth(), height = Broodwar->mapHeight();
+            TilePosition source;
         };
 
         struct WallCollision {
@@ -39,12 +40,10 @@ namespace BWEB
     {
         TilePosition target = Map::tConvert(t);
         TilePosition source = Map::tConvert(s);
-        auto maxDist = source.getDistance(target);
         vector<TilePosition> direction{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 } };
 
         const auto collision = [&](const TilePosition tile) {
             return !tile.isValid()
-                || tile.getDistance(target) > maxDist * 1.2
                 || (!ignoreOverlap && Map::isOverlapping(tile))
                 || !Map::isWalkable(tile)
                 || Map::isUsed(tile) != UnitTypes::None
@@ -68,6 +67,7 @@ namespace BWEB
 
         vector<TilePosition> newJPSPath;
         UnitCollision collision;
+        collision.source = source;
 
         if (JPS::findPath(newJPSPath, collision, source.x, source.y, target.x, target.y)) {
             Position current = s;

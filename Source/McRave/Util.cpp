@@ -41,21 +41,7 @@ namespace McRave::Util {
         }
         return true;
     }
-
-    bool unitInRange(UnitInfo& unit)
-    {
-        if (!unit.hasTarget())
-            return false;
-
-        double widths = unit.getTarget().getType().width() + unit.getType().width();
-        double allyRange = widths + (unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
-
-        if (unit.getPosition().getDistance(unit.getTarget().getPosition()) <= allyRange + 32.0)
-            return true;
-        return false;
-    }
-
-
+    
     bool proactivePullWorker(UnitInfo& unit)
     {
         auto combatCount = Units::getMyRoleCount(Role::Combat);
@@ -159,7 +145,7 @@ namespace McRave::Util {
                 + Broodwar->self()->completedUnitCount(UnitTypes::Terran_Battlecruiser)
                 + Broodwar->self()->completedUnitCount(UnitTypes::Terran_Valkyrie);
 
-            //if ((mechUnits > 0 && Units::getRepairWorkers() < Units::getSupply() / 30)
+            //if ((mechUnits > 0 && Units::getRepairWorkers() < Players::getSupply(PlayerState::Self) / 30)
             //	|| (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) > 0 && BuildOrder::isFastExpand() && Units::getRepairWorkers() < 2))
             //	return true;
         }
@@ -171,11 +157,11 @@ namespace McRave::Util {
         if (tech == TechTypes::Psionic_Storm || tech == TechTypes::Maelstrom || tech == TechTypes::Plague || tech == TechTypes::Ensnare)
             return 1.5;
         if (tech == TechTypes::Stasis_Field)
-            return 2.0;
+            return 3.0;
         return 0.0;
     }
 
-    double getCastRadius(TechType tech)
+    int getCastRadius(TechType tech)
     {
         if (tech == TechTypes::Psionic_Storm || tech == TechTypes::Stasis_Field || tech == TechTypes::Maelstrom || tech == TechTypes::Plague || tech == TechTypes::Ensnare)
             return 96.0;
@@ -238,70 +224,7 @@ namespace McRave::Util {
             return 0;
         return int(choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2))) * 8;
     }
-
-    Line lineOfBestFit(const BWEM::ChokePoint * choke)
-    {
-        int minX= INT_MAX, maxX = INT_MIN, minY = INT_MAX, maxY = INT_MIN;
-        double sumX = 0, sumY = 0;
-        double sumXY = 0, sumX2 = 0, sumY2 = 0;
-        for (auto geo : choke->Geometry()) {
-            if (geo.x < minX) minX = geo.x;
-            if (geo.y < minY) minY = geo.y;
-            if (geo.x > maxX) maxX = geo.x;
-            if (geo.y > maxY) maxY = geo.y;
-
-            BWAPI::Position p = BWAPI::Position(geo) + BWAPI::Position(4, 4);
-            sumX += p.x;
-            sumY += p.y;
-            sumXY += p.x * p.y;
-            sumX2 += p.x * p.x;
-            sumY2 += p.y * p.y;
-        }
-        double xMean = sumX / choke->Geometry().size();
-        double yMean = sumY / choke->Geometry().size();
-        double denominator, slope, yInt;
-        if ((maxY - minY) > (maxX - minX))
-        {
-            denominator = (sumXY - sumY * xMean);
-            // handle vertical line error
-            if (std::fabs(denominator) < 1.0) {
-                slope = 0;
-                yInt = xMean;
-            }
-            else {
-                slope = (sumY2 - sumY * yMean) / denominator;
-                yInt = yMean - slope * xMean;
-            }
-        }
-        else {
-            denominator = sumX2 - sumX * xMean;
-            // handle vertical line error
-            if (std::fabs(denominator) < 1.0) {
-                slope = DBL_MAX;
-                yInt = 0;
-            }
-            else {
-                slope = (sumXY - sumX * yMean) / denominator;
-                yInt = yMean - slope * xMean;
-            }
-        }
-        return Line(yInt, slope);
-    }
-
-    Line parallelLine(Line line1, int x0, double distance)
-    {
-        double inverseSlope = (-1.0 / line1.slope);
-        double y0 = line1.y(int(x0));
-        double sq = sqrt(1.0 / (1.0 + pow(inverseSlope, 2.0)));
-
-        int x = x0 + int(distance * sq);
-        int y = int(y0 + distance * sq * inverseSlope);
-        double yInt2 = y - (line1.slope * x);
-
-        Line newLine(yInt2, line1.slope);
-        return newLine;
-    }
-
+    
     Position getConcavePosition(UnitInfo& unit, double radius, BWEM::Area const * area, Position here)
     {
         auto center = WalkPositions::None;
@@ -338,7 +261,7 @@ namespace McRave::Util {
                 || mapBWEM.GetArea(t) != area
                 || Command::overlapsActions(unit.unit(), p, unit.getType(), PlayerState::Self, 8)
                 || Command::isInDanger(unit, p)
-                || !isWalkable(unit, w)
+                //|| !isWalkable(unit, w)
                 || Buildings::overlapsQueue(unit.getType(), TilePosition(w)))
                 return;
 

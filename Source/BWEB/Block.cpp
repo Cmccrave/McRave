@@ -39,16 +39,14 @@ namespace BWEB::Blocks
             return pieces;
         }
 
-        bool canAddBlock(const TilePosition here, const int width, const int height, bool onlyBlock = false)
+        bool canAddBlock(const TilePosition here, const int width, const int height)
         {
-            const auto offset = onlyBlock ? 0 : 1;
-
             if (!TilePosition(here.x + width + 1, here.y + height + 1).isValid())
                 return false;
 
             // Check if a block of specified size would overlap any bases, resources or other blocks
-            for (auto x = here.x - offset; x < here.x + width + offset; x++) {
-                for (auto y = here.y - offset; y < here.y + height + offset; y++) {
+            for (auto x = here.x - 1; x < here.x + width + 1; x++) {
+                for (auto y = here.y - 1; y < here.y + height + 1; y++) {
                     const TilePosition t(x, y);
                     if (!t.isValid() || !Map::mapBWEM.GetTile(t).Buildable() || Map::isOverlapping(t) || Map::isReserved(t))
                         return false;
@@ -66,7 +64,7 @@ namespace BWEB::Blocks
 
         void findMainStartBlock()
         {
-            const auto  race = Broodwar->self()->getRace();
+            const auto race = Broodwar->self()->getRace();
             vector<Piece> pieces;
             bool blockFacesLeft, blockFacesUp;
 
@@ -93,9 +91,9 @@ namespace BWEB::Blocks
                     const auto blockCenter = Position(tile) + Position(128, 80);
                     const auto dist = blockCenter.getDistance(Map::getMainPosition()) + log(blockCenter.getDistance((Position)Map::getMainChoke()->Center()));
 
-                    if (dist < distBest && ((race == Races::Protoss && canAddBlock(tile, 8, 5, true))
-                        || (race == Races::Terran && canAddBlock(tile, 6, 5, true))
-                        || (race == Races::Zerg && creepOnCorners(tile, 5, 4) && canAddBlock(tile, 5, 4, true)))) {
+                    if (dist < distBest && ((race == Races::Protoss && canAddBlock(tile, 8, 5))
+                        || (race == Races::Terran && canAddBlock(tile, 6, 5))
+                        || (race == Races::Zerg && creepOnCorners(tile, 5, 4) && canAddBlock(tile, 5, 4)))) {
                         tileBest = tile;
                         distBest = dist;
 
@@ -116,7 +114,9 @@ namespace BWEB::Blocks
 
                         const auto blockCenter = Position(tile) + Position(128, 80);
                         const auto dist = blockCenter.getDistance(Map::getMainPosition()) + blockCenter.getDistance(Position(Map::getMainChoke()->Center()));
-                        if (dist < distBest && ((race == Races::Protoss && canAddBlock(tile, 8, 5)) || (race == Races::Terran && canAddBlock(tile, 6, 5)))) {
+                        if (dist < distBest &&
+                            ((race == Races::Protoss && canAddBlock(tile, 8, 5))
+                                || (race == Races::Terran && canAddBlock(tile, 6, 5)))) {
                             tileBest = tile;
                             distBest = dist;
 
@@ -160,7 +160,7 @@ namespace BWEB::Blocks
                 else if (race == Races::Protoss) {
                     if (blockFacesLeft) {
                         if (blockFacesUp)
-                            pieces ={ Piece::Large, Piece::Large, Piece::Row, Piece::Medium, Piece::Medium, Piece::Small };                            
+                            pieces ={ Piece::Large, Piece::Large, Piece::Row, Piece::Medium, Piece::Medium, Piece::Small };
                         else
                             pieces ={ Piece::Medium, Piece::Medium, Piece::Small, Piece::Row, Piece::Large, Piece::Large };
                     }
@@ -184,7 +184,7 @@ namespace BWEB::Blocks
             auto distBest = DBL_MAX;
             for (auto x = start.x - 12; x <= start.x + 16; x++) {
                 for (auto y = start.y - 12; y <= start.y + 16; y++) {
-                    TilePosition tile(x, y);
+                    const TilePosition tile(x, y);
 
                     if (!tile.isValid() || Map::mapBWEM.GetArea(tile) != Map::getMainArea())
                         continue;
@@ -248,7 +248,7 @@ namespace BWEB::Blocks
                     }
                 }
             }
-        }        
+        }
     }
 
     void eraseBlock(const TilePosition here)
@@ -264,6 +264,8 @@ namespace BWEB::Blocks
 
     void findBlocks()
     {
+        // Customized: want 2 start blocks
+        findMainStartBlock();
         findMainStartBlock();
         findMainDefenseBlock();
         findProductionBlocks();

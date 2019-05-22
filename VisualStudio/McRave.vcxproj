@@ -53,6 +53,7 @@
     <ClCompile Include="..\Source\McRave\GoalManager.cpp" />
     <ClCompile Include="..\Source\McRave\GridManager.cpp" />
     <ClCompile Include="..\Source\McRave\LearningManager.cpp" />
+    <ClCompile Include="..\Source\McRave\PlayerInfo.cpp" />
     <ClCompile Include="..\Source\McRave\PvP.cpp" />
     <ClCompile Include="..\Source\McRave\PvT.cpp" />
     <ClCompile Include="..\Source\McRave\PvZ.cpp" />

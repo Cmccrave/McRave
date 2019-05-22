@@ -28,6 +28,24 @@ namespace McRave
         }
     };
 
+    struct Strength {
+        double airToAir = 0.0;
+        double airToGround = 0.0;
+        double groundToAir = 0.0;
+        double groundToGround = 0.0;
+        double airDefense = 0.0;
+        double groundDefense = 0.0;
+
+        void operator+= (const Strength &second) {
+            airToAir += second.airToAir;
+            airToGround += second.airToGround;
+            groundToAir += second.groundToAir;
+            groundToGround += second.groundToGround;
+            airDefense += second.airDefense;
+            groundDefense += second.groundDefense;
+        }
+    };
+
     enum class Role {
         None, Worker, Combat, Transport, Scout, Production, Defender, Support
     };

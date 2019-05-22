@@ -30,7 +30,7 @@ namespace McRave::BuildOrder::Protoss {
             firstTech =			TechTypes::None;
             scout =				vis(Protoss_Cybernetics_Core) > 0;
             gasLimit =			INT_MAX;
-            zealotLimit =		Units::getImmThreat() > 0 ? 1 : 0;
+            zealotLimit =		0;
             dragoonLimit =		INT_MAX;
         }
     }
@@ -247,7 +247,7 @@ namespace McRave::BuildOrder::Protoss {
 
             // Change Transition
             if (Strategy::enemyFastExpand() || enemyBuild() == "TSiegeExpand")
-                currentTransition =	"DoubleExpand";
+                currentTransition =	s < 50 ? "DoubleExpand" : "ReaverCarrer";            
             else if (!Strategy::enemyFastExpand() && currentTransition == "DoubleExpand")
                 currentTransition = "Standard";
         }

@@ -36,7 +36,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Gas Trick
         if (gasTrick) {
-            if (Units::getSupply() == 18 && vis(Zerg_Drone) == 9) {
+            if (Players::getSupply(PlayerState::Self) == 18 && vis(Zerg_Drone) == 9) {
                 if (Broodwar->self()->minerals() >= 80)
                     itemQueue[Zerg_Extractor] = Item(1);
                 if (vis(Zerg_Extractor) > 0)
@@ -63,7 +63,7 @@ namespace McRave::BuildOrder::Zerg {
         // Overlord
         if (!bookSupply) {
             int providers = vis(Zerg_Overlord) > 0 ? 14 : 16;
-            int count = 1 + min(22, Units::getSupply() / providers);
+            int count = 1 + min(22, Players::getSupply(PlayerState::Self) / providers);
             if (vis(Zerg_Overlord) >= 3)
                 itemQueue[Zerg_Overlord] = Item(count);
         }
@@ -82,7 +82,7 @@ namespace McRave::BuildOrder::Zerg {
             if (shouldAddGas())
                 itemQueue[Zerg_Extractor] = Item(gasCount);
 
-            if (Units::getSupply() >= 100)
+            if (Players::getSupply(PlayerState::Self) >= 100)
                 itemQueue[Zerg_Evolution_Chamber] = Item(2);
         }
     }

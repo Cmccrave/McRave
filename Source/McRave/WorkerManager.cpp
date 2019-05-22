@@ -74,18 +74,23 @@ namespace McRave::Workers {
             // 3) Move to build
             else if (shouldMoveToBuild(worker, worker.getBuildPosition(), worker.getBuildingType())) {
 
-                // TODO: Generate a path and check for threat
                 worker.setDestination(center);
 
                 if (worker.getPosition().getDistance(center) > 32.0 + (96.0 * (double)worker.getBuildingType().isRefinery())) {
                     BWEB::Path newPath;
                     newPath.createUnitPath(worker.getPosition(), center);
                     worker.setPath(newPath);
-                    Command::move(worker);
+
+                    if (!Util::hasThreatOnPath(worker, newPath) || Terrain::isInAllyTerritory(worker.getTilePosition())) {
+                        Command::move(worker);
+                        return true;
+                    }
                 }
-                else if (worker.unit()->getOrder() != Orders::PlaceBuilding || worker.unit()->getLastCommand().getType() != UnitCommandTypes::Build)
-                    worker.unit()->build(worker.getBuildingType(), worker.getBuildPosition());
-                return true;
+                else {
+                    if (worker.unit()->getOrder() != Orders::PlaceBuilding || worker.unit()->getLastCommand().getType() != UnitCommandTypes::Build)
+                        worker.unit()->build(worker.getBuildingType(), worker.getBuildPosition());
+                    return true;
+                }
             }
             return false;
         }
@@ -141,8 +146,10 @@ namespace McRave::Workers {
 
             // If worker has a resource and it's mineable
             if (worker.hasResource() && worker.getResource().getResourceState() == ResourceState::Mineable) {
-                auto resourceCentroid = worker.getResource().getStation() ? worker.getResource().getStation()->getResourceCentroid() : Positions::Invalid;
-                worker.setDestination(resourceCentroid);
+
+                // HACK: Use the closest retreat point, as we know it's always pathable
+                auto pathPoint = Combat::getClosestRetreatPosition(worker.getResource().getPosition());
+                worker.setDestination(pathPoint);
 
                 // 1) If it's close or same area, don't need a path, set to empty	
                 if (closeToResource(worker)) {
@@ -151,9 +158,9 @@ namespace McRave::Workers {
                 }
 
                 // 2) If it's far, generate a path
-                else if (worker.getLastTile() != worker.getTilePosition() && resourceCentroid.isValid()) {
+                else if (worker.getLastTile() != worker.getTilePosition()) {
                     BWEB::Path newPath;
-                    newPath.createUnitPath(worker.getPosition(), resourceCentroid);
+                    newPath.createUnitPath(worker.getPosition(), worker.getDestination());
                     worker.setPath(newPath);
                 }
 
@@ -211,7 +218,7 @@ namespace McRave::Workers {
             const auto needGas = !Resources::isGasSaturated() && isMineralWorker && (gasWorkers < BuildOrder::gasWorkerLimit() || !BuildOrder::isOpener());
             const auto needMinerals = !Resources::isMinSaturated() && isGasWorker && gasWorkers > BuildOrder::gasWorkerLimit();
             const auto needNewAssignment = !worker.hasResource() || needGas || needMinerals || threatened || excessAssigned;
-
+            
             auto closestStation = BWEB::Stations::getClosestStation(worker.getTilePosition());
             auto distBest = (injured || threatened) ? 0.0 : DBL_MAX;
             auto oldResource = worker.hasResource() ? worker.getResource().shared_from_this() : nullptr;
@@ -238,7 +245,7 @@ namespace McRave::Workers {
                     auto path = Stations::pathStationToStation(closestStation, station);
 
                     // Store station if it's safe
-                    if ((path && !Util::hasThreatOnPath(worker, *path)) || worker.getPosition().getDistance(station->getResourceCentroid()) < 128.0)
+                    if ((path && !Util::hasThreatOnPath(worker, *path)) || worker.getPosition().getDistance(station->getResourceCentroid()) < 320.0)
                         safeStations.push_back(station);
                 }
             }

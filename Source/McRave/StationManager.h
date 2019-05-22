@@ -3,15 +3,16 @@
 
 namespace McRave::Stations
 {
-    std::map <BWAPI::Unit, const BWEB::Station *>& getMyStations();
-    std::map <BWAPI::Unit, const BWEB::Station *>& getEnemyStations();
+    std::map <BWAPI::Unit, BWEB::Station *>& getMyStations();
+    std::map <BWAPI::Unit, BWEB::Station *>& getEnemyStations();
     BWAPI::Position getClosestStation(PlayerState, BWAPI::Position);
 
     void onFrame();
     void onStart();
     void storeStation(BWAPI::Unit);
     void removeStation(BWAPI::Unit);
-    bool needDefenses(const BWEB::Station&);
-    bool stationNetworkExists(const BWEB::Station *, const BWEB::Station *);
-    BWEB::Path* pathStationToStation(const BWEB::Station *, const BWEB::Station *);
+    bool needDefenses(BWEB::Station&);
+    bool needPower(BWEB::Station&);
+    bool stationNetworkExists(BWEB::Station *, BWEB::Station *);
+    BWEB::Path* pathStationToStation(BWEB::Station *, BWEB::Station *);
 };

@@ -95,9 +95,8 @@ namespace McRave::Util {
     const BWEM::ChokePoint * getClosestChokepoint(BWAPI::Position);
 
     double getCastLimit(BWAPI::TechType);
-    double getCastRadius(BWAPI::TechType);
+    int getCastRadius(BWAPI::TechType);
 
-    bool unitInRange(UnitInfo&);
     bool reactivePullWorker(UnitInfo&);
     bool proactivePullWorker(UnitInfo&);
     bool pullRepairWorker(UnitInfo&);
@@ -105,9 +104,6 @@ namespace McRave::Util {
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, BWAPI::Position);
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, int, int);
     bool isWalkable(UnitInfo&, BWAPI::WalkPosition);
-
-    Line lineOfBestFit(const BWEM::ChokePoint *);
-    Line parallelLine(Line, int, double);
 
     BWAPI::Position getConcavePosition(UnitInfo&, double, BWEM::Area const * area = nullptr, BWAPI::Position here = BWAPI::Positions::Invalid);
     BWAPI::Position getInterceptPosition(UnitInfo&);

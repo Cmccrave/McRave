@@ -31,7 +31,20 @@ namespace McRave::BuildOrder
                 Zerg::situational();
                 Zerg::unlocks();
             }
-        }
+        }        
+    }
+
+    bool isAlmostComplete(UnitType t) {
+        auto closestBuilding = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
+            return u.getType() == t;
+        });
+        auto closestWorker = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
+            return u.getType() == Broodwar->self()->getRace().getWorker();
+        });
+
+        if (closestBuilding && closestWorker)
+            return (BWEB::Map::getGroundDistance(closestBuilding->getPosition(), BWEB::Map::getMainPosition()) / closestWorker->getSpeed()) > closestBuilding->unit()->getRemainingBuildTime();
+        return false;
     }
 
     bool techComplete()
@@ -80,7 +93,7 @@ namespace McRave::BuildOrder
                 return true;
         }
         else {
-            if (!productionSat && Broodwar->self()->minerals() >= 150 && (!Production::hasIdleProduction() || Units::getSupply() >= 300 || Broodwar->self()->minerals() > 600))
+            if (!productionSat && Broodwar->self()->minerals() >= 150 && (!Production::hasIdleProduction() || Players::getSupply(PlayerState::Self) >= 300 || Broodwar->self()->minerals() > 600))
                 return true;
         }
         return false;
@@ -220,18 +233,15 @@ namespace McRave::BuildOrder
         } while (moreToAdd);
 
         // For each building we need to check, add to our queue whatever is possible to build based on its required branch
-        int i = 0;
         for (auto &check : toCheck) {
 
             if (!check.isBuilding())
                 continue;
 
-            i += 10;
-
             bool canAdd = true;
             for (auto &pair : check.requiredUnits()) {
                 UnitType type(pair.first);
-                if (type.isBuilding() && Broodwar->self()->completedUnitCount(type) == 0) {
+                if (type.isBuilding() && !isAlmostComplete(type)) {
                     canAdd = false;
                 }
             }
@@ -241,10 +251,10 @@ namespace McRave::BuildOrder
                 itemQueue[Zerg_Lair] = Item(1);
 
             // Add extra production - TODO: move to shouldAddProduction
-            int s = Units::getSupply();
+            int s = Players::getSupply(PlayerState::Self);
             if (canAdd && buildCount(check) <= 1) {
                 if (check == Protoss_Stargate) {
-                    if ((s >= 150 && techList.find(Protoss_Corsair) != techList.end())
+                    if ((s >= 250 && techList.find(Protoss_Corsair) != techList.end())
                         || (s >= 300 && techList.find(Protoss_Arbiter) != techList.end())
                         || (s >= 100 && techList.find(Protoss_Carrier) != techList.end()))
                         itemQueue[check] = Item(2);
@@ -261,11 +271,11 @@ namespace McRave::BuildOrder
     void checkExoticTech()
     {
         // Corsair/Scout upgrades
-        if ((techList.find(Protoss_Scout) != techList.end() || techList.find(Protoss_Corsair) != techList.end()) && Units::getSupply() >= 300)
+        if ((techList.find(Protoss_Scout) != techList.end() || techList.find(Protoss_Corsair) != techList.end()) && Players::getSupply(PlayerState::Self) >= 300)
             itemQueue[Protoss_Fleet_Beacon] = Item(1);
 
         // Hive upgrades
-        if (Broodwar->self()->getRace() == Races::Zerg && Units::getSupply() >= 200) {
+        if (Broodwar->self()->getRace() == Races::Zerg && Players::getSupply(PlayerState::Self) >= 200) {
             itemQueue[Zerg_Queens_Nest] = Item(1);
             itemQueue[Zerg_Hive] = Item(Broodwar->self()->completedUnitCount(Zerg_Queens_Nest) >= 1);
             itemQueue[Zerg_Lair] = Item(Broodwar->self()->completedUnitCount(Zerg_Queens_Nest) < 1);

@@ -5,7 +5,7 @@ using namespace BWAPI;
 using namespace std;
 using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
-#define s Units::getSupply()
+#define s Players::getSupply(PlayerState::Self)
 
 namespace McRave::BuildOrder::Terran
 {
@@ -16,7 +16,7 @@ namespace McRave::BuildOrder::Terran
         firstUpgrade = UpgradeTypes::Ion_Thrusters;
         firstTech = TechTypes::None;
         getOpening = s < 70;
-        scout = vis(Terran_Barracks) > 0;
+        scout = s >= 20 && vis(Terran_Supply_Depot) > 0;
         wallMain = true;
         gasLimit = INT_MAX;
 

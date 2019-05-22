@@ -19,7 +19,7 @@ namespace McRave::Terrain {
         TilePosition enemyExpand = TilePositions::Invalid;
         vector<Position> meleeChokePositions;
         vector<Position> rangedChokePositions;
-        set<Base const*> allBases;
+        set<const Base *> allBases;
         BWEB::Wall* mainWall = nullptr;
         BWEB::Wall* naturalWall = nullptr;
         UnitType tightType = UnitTypes::None;
@@ -159,7 +159,7 @@ namespace McRave::Terrain {
             reverseRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) < Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
             flatRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) == Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
             narrowNatural = BWEB::Map::getNaturalChoke() ? int(BWEB::Map::getNaturalChoke()->Pos(BWEB::Map::getNaturalChoke()->end1).getDistance(BWEB::Map::getNaturalChoke()->Pos(BWEB::Map::getNaturalChoke()->end2)) / 4) <= 2 : false;
-            defendNatural = BWEB::Map::getNaturalChoke() ? BuildOrder::buildCount(baseType) > 1 || vis(baseType) > 1 || defendPosition == Position(BWEB::Map::getNaturalChoke()->Center()) || (reverseRamp && !Players::vZ() && Units::getSupply() > 100) : false;
+            defendNatural = BWEB::Map::getNaturalChoke() ? BuildOrder::buildCount(baseType) > 1 || vis(baseType) > 1 || defendPosition == Position(BWEB::Map::getNaturalChoke()->Center()) || (reverseRamp && !Players::vZ() && Players::getSupply(PlayerState::Self) > 100) : false;
 
             if (islandMap) {
                 defendPosition = BWEB::Map::getMainPosition();
@@ -376,33 +376,32 @@ namespace McRave::Terrain {
                     if (base.Starting())
                         invalidBase = true;
                 }
-                if (invalidBase)
+                if (invalidBase || area.Bases().empty())
                     continue;
 
                 const ChokePoint * bestChoke = nullptr;
                 double distBest = DBL_MAX;
                 for (auto &choke : area.ChokePoints()) {
-                    auto dist = Position(choke->Center()).getDistance(mapBWEM.Center());
+                    auto dist = BWEB::Map::getGroundDistance(Position(choke->Center()), mapBWEM.Center());
                     if (dist < distBest) {
                         distBest = dist;
                         bestChoke = choke;
                     }
                 }
-                BWEB::Walls::createWall(types, &area, bestChoke, UnitTypes::None, defenses);
+                
+                BWEB::Walls::createWall(types, &area, bestChoke, UnitTypes::None, defenses, true, false);
 
                 if (&area == BWEB::Map::getNaturalArea())
-                    naturalWall = BWEB::Walls::getWall(BWEB::Map::getNaturalArea());
+                    naturalWall = BWEB::Walls::getWall(BWEB::Map::getNaturalArea());                
             }
             return true;
         }
 
         else {
-
-            UnitType wallTight;
-            auto reservePath = Broodwar->self()->getRace() != Races::Terran;
+            auto openWall = Broodwar->self()->getRace() != Races::Terran;
             auto choke = BWEB::Map::getNaturalChoke();
             auto area = BWEB::Map::getNaturalArea();
-            naturalWall = BWEB::Walls::createWall(types, area, choke, tightType, defenses, reservePath, tight);
+            naturalWall = BWEB::Walls::createWall(types, area, choke, tightType, defenses, openWall, tight);
             return naturalWall != nullptr;
         }
         return false;
@@ -415,22 +414,13 @@ namespace McRave::Terrain {
 
         if (BWEB::Walls::getWall(BWEB::Map::getMainArea(), BWEB::Map::getMainChoke()) || BWEB::Walls::getWall(BWEB::Map::getNaturalArea(), BWEB::Map::getMainChoke()))
             return true;
-        UnitType wallTight = Broodwar->enemy()->getRace() == Races::Protoss ? UnitTypes::Protoss_Zealot : UnitTypes::Zerg_Zergling;
 
-        BWEB::Walls::createWall(types, BWEB::Map::getMainArea(), BWEB::Map::getMainChoke(), wallTight, defenses, false, tight);
-        BWEB::Wall * wallB = BWEB::Walls::getWall(BWEB::Map::getMainArea(), BWEB::Map::getMainChoke());
-        if (wallB) {
-            mainWall = wallB;
-            return true;
-        }
+        auto openWall = Broodwar->self()->getRace() != Races::Terran;
+        auto choke = BWEB::Map::getNaturalChoke();
+        auto area = BWEB::Map::getNaturalArea();
 
-        //BWEB::Walls::createWall(types, BWEB::Map::getNaturalArea(), BWEB::Map::getMainChoke(), wallTight, defenses, false, tight);
-        //BWEB::Wall * wallA = BWEB::Walls::getWall(BWEB::Map::getNaturalArea(), BWEB::Map::getMainChoke());
-        //if (wallA) {
-        //    mainWall = wallA;
-        //    return true;
-        //}
-        return false;
+        mainWall = BWEB::Walls::createWall(types, area, choke, tightType, defenses, openWall, tight);
+        return mainWall != nullptr;
     }
 
     bool isInAllyTerritory(TilePosition here)
@@ -506,7 +496,7 @@ namespace McRave::Terrain {
     vector<Position> getRangedChokePositions() { return rangedChokePositions; }
     set <const Area*>& getAllyTerritory() { return allyTerritory; }
     set <const Area*>& getEnemyTerritory() { return enemyTerritory; }
-    set <Base const*>& getAllBases() { return allBases; }
+    set <const Base *>& getAllBases() { return allBases; }
     const BWEB::Wall* getMainWall() { return mainWall; }
     const BWEB::Wall* getNaturalWall() { return naturalWall; }
 }

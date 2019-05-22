@@ -19,68 +19,75 @@ namespace McRave
         auto t = thisUnit->getType();
         auto p = thisUnit->getPlayer();
 
-        setLastPositions();
+        if (thisUnit->exists()) {
 
-        // Update unit positions		
-        position				= thisUnit->getPosition();
-        destination				= Positions::Invalid;
-        goal                    = Positions::Invalid;
-        tilePosition			= unit()->getTilePosition();
-        walkPosition			= Math::getWalkPosition(thisUnit);
+            setLastPositions();
 
-        // Update unit stats
-        unitType				= t;
-        player					= p;
-        health					= thisUnit->getHitPoints() > 0 ? thisUnit->getHitPoints() : health;
-        shields					= thisUnit->getShields() > 0 ? thisUnit->getShields() : shields;
-        energy					= thisUnit->getEnergy();
-        percentHealth			= t.maxHitPoints() > 0 ? double(health) / double(t.maxHitPoints()) : 0.0;
-        percentShield			= t.maxShields() > 0 ? double(shields) / double(t.maxShields()) : 0.0;
-        percentTotal			= t.maxHitPoints() + t.maxShields() > 0 ? double(health + shields) / double(t.maxHitPoints() + t.maxShields()) : 0.0;
-        groundRange				= Math::groundRange(*this);
-        groundDamage			= Math::groundDamage(*this);
-        groundReach				= groundRange + (speed * 32.0) + double(unitType.width() / 2) + 64.0;
-        airRange				= Math::airRange(*this);
-        airReach				= airRange + (speed * 32.0) + double(unitType.width() / 2) + 64.0;
-        airDamage				= Math::airDamage(*this);
-        speed 					= Math::speed(*this);
-        minStopFrame			= Math::getMinStopFrame(t);
-        burrowed				= thisUnit->isBurrowed() || thisUnit->getOrder() == Orders::Burrowing || thisUnit->getOrder() == Orders::VultureMine;
-        flying					= thisUnit->isFlying() || thisUnit->getType().isFlyer() || thisUnit->getOrder() == Orders::LiftingOff || thisUnit->getOrder() == Orders::BuildingLiftOff;
+            // Update unit positions		
+            position				= thisUnit->getPosition();
+            destination				= Positions::Invalid;
+            goal                    = Positions::Invalid;
+            tilePosition			= unit()->getTilePosition();
+            walkPosition			= Math::getWalkPosition(thisUnit);
 
-        // Update McRave stats
-        visibleGroundStrength	= Math::getVisibleGroundStrength(*this);
-        maxGroundStrength		= Math::getMaxGroundStrength(*this);
-        visibleAirStrength		= Math::getVisibleAirStrength(*this);
-        maxAirStrength			= Math::getMaxAirStrength(*this);
-        priority				= Math::getPriority(*this);
-        lastAttackFrame			= (t != UnitTypes::Protoss_Reaver && (thisUnit->isStartingAttack() || thisUnit->isRepairing())) ? Broodwar->getFrameCount() : lastAttackFrame;
+            // Update unit stats
+            unitType				= t;
+            player					= p;
+            health					= thisUnit->getHitPoints() > 0 ? thisUnit->getHitPoints() : health;
+            shields					= thisUnit->getShields() > 0 ? thisUnit->getShields() : shields;
+            energy					= thisUnit->getEnergy();
+            percentHealth			= t.maxHitPoints() > 0 ? double(health) / double(t.maxHitPoints()) : 0.0;
+            percentShield			= t.maxShields() > 0 ? double(shields) / double(t.maxShields()) : 0.0;
+            percentTotal			= t.maxHitPoints() + t.maxShields() > 0 ? double(health + shields) / double(t.maxHitPoints() + t.maxShields()) : 0.0;
+            groundRange				= Math::groundRange(*this);
+            groundDamage			= Math::groundDamage(*this);
+            groundReach				= groundRange + (speed * 32.0) + double(unitType.width() / 2) + 64.0;
+            airRange				= Math::airRange(*this);
+            airReach				= airRange + (speed * 32.0) + double(unitType.width() / 2) + 64.0;
+            airDamage				= Math::airDamage(*this);
+            speed 					= Math::speed(*this);
+            minStopFrame			= Math::getMinStopFrame(t);
+            burrowed				= thisUnit->getOrder() == Orders::Burrowing;
+            flying					= thisUnit->isFlying() || thisUnit->getType().isFlyer() || thisUnit->getOrder() == Orders::LiftingOff || thisUnit->getOrder() == Orders::BuildingLiftOff;
 
-        // Reset states
-        lState					= LocalState::None;
-        gState					= GlobalState::None;
-        tState					= TransportState::None;
+            // Update McRave stats
+            visibleGroundStrength	= Math::getVisibleGroundStrength(*this);
+            maxGroundStrength		= Math::getMaxGroundStrength(*this);
+            visibleAirStrength		= Math::getVisibleAirStrength(*this);
+            maxAirStrength			= Math::getMaxAirStrength(*this);
+            priority				= Math::getPriority(*this);
+            lastAttackFrame			= (t != UnitTypes::Protoss_Reaver && (thisUnit->isStartingAttack() || thisUnit->isRepairing())) ? Broodwar->getFrameCount() : lastAttackFrame;
 
-        // Resource held frame
-        if (thisUnit->isCarryingGas() || thisUnit->isCarryingMinerals())
-            resourceHeldFrames = max(resourceHeldFrames, 0) + 1;
-        else if (thisUnit->isGatheringGas() || thisUnit->isGatheringMinerals())
-            resourceHeldFrames = min(resourceHeldFrames, 0) - 1;
-        else
-            resourceHeldFrames = 0;
+            // Reset states
+            lState					= LocalState::None;
+            gState					= GlobalState::None;
+            tState					= TransportState::None;
 
-        // Remaining train frame
-        remainingTrainFrame = max(0, remainingTrainFrame - 1);
+            // Resource held frame
+            if (thisUnit->isCarryingGas() || thisUnit->isCarryingMinerals())
+                resourceHeldFrames = max(resourceHeldFrames, 0) + 1;
+            else if (thisUnit->isGatheringGas() || thisUnit->isGatheringMinerals())
+                resourceHeldFrames = min(resourceHeldFrames, 0) - 1;
+            else
+                resourceHeldFrames = 0;
 
-        // BWAPI won't reveal isStartingAttack when hold position is executed if the unit can't use hold position, XIMP uses this on workers
-        if (player != Broodwar->self() && unitType.isWorker()) {
-            if (thisUnit->getGroundWeaponCooldown() > 0 || thisUnit->getAirWeaponCooldown() > 0)
-                lastAttackFrame = Broodwar->getFrameCount();
+            // Remaining train frame
+            remainingTrainFrame = max(0, remainingTrainFrame - 1);
+
+            // BWAPI won't reveal isStartingAttack when hold position is executed if the unit can't use hold position, XIMP uses this on workers
+            if (player != Broodwar->self() && unitType.isWorker()) {
+                if (thisUnit->getGroundWeaponCooldown() > 0 || thisUnit->getAirWeaponCooldown() > 0)
+                    lastAttackFrame = Broodwar->getFrameCount();
+            }
+
+            target = std::weak_ptr<UnitInfo>();
+            updateTarget();
+            updateStuckCheck();
         }
 
-        target = std::weak_ptr<UnitInfo>();
-        updateTarget();
-        updateStuckCheck();
+        // If this is a spider mine and doesn't have a target, it's still considered burrowed
+        if (unitType == UnitTypes::Terran_Vulture_Spider_Mine && (!thisUnit->exists() || (!target.lock() && thisUnit->getSecondaryOrder() == Orders::Cloak)))
+            burrowed = true;
     }
 
     void UnitInfo::updateTarget()
@@ -150,9 +157,10 @@ namespace McRave
         // Check if we should overshoot for halting distance
         if (overshoot) {
             auto distance = position.getApproxDistance(here);
-            auto distExtra = max(distance, unitType.haltDistance() / 256);
-            if (distance > 0 && here.getDistance(position) < distExtra) {
-                here = position - (position - here) * (distExtra / distance);
+            auto haltDistance = max({ distance, 32, unitType.haltDistance() / 256 });
+
+            if (distance > 0) {
+                here = position - ((position - here) * haltDistance / distance);
                 here = Util::clipLine(position, here);
             }
         }
@@ -267,12 +275,12 @@ namespace McRave
         }
         return Broodwar->getFrameCount() - lastThreateningFrame < 50;
     }
-    
+
     bool UnitInfo::canStartAttack()
     {
         if (!target.lock()
             || (groundDamage == 0 && airDamage == 0)
-            || unitType == BWAPI::UnitTypes::Protoss_High_Templar)
+            || isSpellcaster())
             return false;
 
         auto cooldown = target.lock()->getType().isFlyer() ? thisUnit->getAirWeaponCooldown() : thisUnit->getGroundWeaponCooldown();
@@ -295,10 +303,51 @@ namespace McRave
         if (auto currentTarget = target.lock()) {
             auto ground = Grids::getEGroundCluster(currentTarget->getPosition());
             auto air = Grids::getEAirCluster(currentTarget->getPosition());
-            
-            if (ground + air >= Util::getCastLimit(tech))
+
+            if (ground + air >= Util::getCastLimit(tech) || currentTarget->isHidden() || (currentTarget->hasTarget() && currentTarget->getTarget() == *this))
                 return true;
         }
         return false;
+    }
+
+    bool UnitInfo::canAttackGround()
+    {
+        if (groundDamage > 0.0)
+            return true;
+
+        return unitType == UnitTypes::Protoss_High_Templar
+            || unitType == UnitTypes::Protoss_Dark_Archon
+            || unitType == UnitTypes::Protoss_Carrier
+            || unitType == UnitTypes::Terran_Medic
+            || unitType == UnitTypes::Terran_Science_Vessel
+            || unitType == UnitTypes::Zerg_Defiler
+            || unitType == UnitTypes::Zerg_Queen;
+    }
+
+    bool UnitInfo::canAttackAir()
+    {
+        if (airDamage > 0.0)
+            return true;
+
+        return unitType == UnitTypes::Protoss_High_Templar
+            || unitType == UnitTypes::Protoss_Dark_Archon
+            || unitType == UnitTypes::Protoss_Carrier
+            || unitType == UnitTypes::Terran_Science_Vessel
+            || unitType == UnitTypes::Zerg_Defiler
+            || unitType == UnitTypes::Zerg_Queen;
+    }
+
+    bool UnitInfo::withinReach(UnitInfo& unit)
+    {
+        auto sizes = (max(unit.getType().width(), unit.getType().height()) + max(unitType.width(), unitType.height())) / 2;
+        auto dist = position.getDistance(unit.getPosition()) - sizes - 32;
+        return unit.getType().isFlyer() ? airReach >= dist : groundReach >= dist;
+    }
+
+    bool UnitInfo::withinRange(UnitInfo& unit)
+    {
+        auto sizes = (max(unit.getType().width(), unit.getType().height()) + max(unitType.width(), unitType.height())) / 2;
+        auto dist = position.getDistance(unit.getPosition()) - sizes - 32;
+        return unit.getType().isFlyer() ? airRange >= dist : groundRange >= dist;
     }
 }

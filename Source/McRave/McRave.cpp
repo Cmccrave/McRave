@@ -11,18 +11,29 @@
 // BWEB Destination south walls not working
 // Re-power buildings
 // Change UnitInfo::Command to take an Action
-// Add 3rd stargate on 3 base with carriers
+// Add stargates gradually in carrier builds
 // Add frame timeouts for allowable enemy build detection
 // Move command doesn't care about threat, probably should
 // When choosing a tech or creating a building, allow certain unlocks/research
 // Adjust Production to check for unlocks
 // HT/DT reserving causes production stall
 // Storm drops and storm cast limit testing
-// Retreat command keeps getting stuck in bad spots
 // Mines at chokepoints causes unit suicide with defend command
-// Arbiter and Observer positioning
 // DTs get stuck between core/gate/pylon
-// Unwalkable tiles cause sim to drop to 0.00 briefly thinking it's unreachable
+// Only produce one unit per building at a time to prevent overspending
+// Obs/Arbiter positioning
+// Units think they cant reach an enemy between buildings
+// 2Gate reaction doesnt tech
+// Proxy bunker targeting
+// Path workers to point not blocked
+// Scanned obs just pause
+// Worker suicide
+// Lifted units not targetable
+// Allow retreating inside own territory
+// Fix making obs AND forge for detection - 2 gate robo seems like it can make obs first
+
+// Antigas list
+// NeoBisu build is off
 
 // Need a target based isThreatening
 // Examples:
@@ -37,7 +48,6 @@
 // Floating units removing mine positions
 // Monitor for overkilling units by hp - (2*nextDmgSource) <= 0 (double damage source to account for a potential miss?)
 // Use Player pointer instead of BWAPI::Player pointer in UnitInfo, gives advantage of knowing upgrades/tech that are available always
-// Use player filters to grab unit set in getClosestUnit template
 // Upgrade/Research unlock list
 // Add panic reactions for auto-loss builds
 // - Gate FE vs 4pool
@@ -86,7 +96,7 @@ void McRaveModule::onFrame()
     Resources::onFrame();
     Strategy::onFrame();
     BuildOrder::onFrame();
-    Stations::onFrame();        
+    Stations::onFrame();
 
     // Update commands
     Goals::onFrame();

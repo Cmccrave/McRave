@@ -6,8 +6,8 @@ using namespace std;
 namespace McRave::Stations {
 
     namespace {
-        map <Unit, const BWEB::Station *> myStations, enemyStations;
-        map<const BWEB::Station *, std::map<const BWEB::Station *, BWEB::Path>> stationNetwork;
+        map <Unit, BWEB::Station *> myStations, enemyStations;
+        map<BWEB::Station *, std::map<BWEB::Station *, BWEB::Path>> stationNetwork;
 
         void updateStations()
         {
@@ -147,16 +147,14 @@ namespace McRave::Stations {
         }
     }
 
-    bool needDefenses(const BWEB::Station& station)
+    bool needDefenses(BWEB::Station& station)
     {
-        auto center = TilePosition(station.getBWEMBase()->Center());
         auto defenseCount = station.getDefenseCount();
         auto main = station.getBWEMBase()->Location() == BWEB::Map::getMainTile();
         auto nat = station.getBWEMBase()->Location() == BWEB::Map::getNaturalTile();
 
-        if (!Pylons::hasPower(center, UnitTypes::Protoss_Photon_Cannon))
+        if (needPower(station))
             return false;
-
         if ((nat || main) && !Terrain::isIslandMap() && defenseCount <= 0)
             return true;
         else if (defenseCount <= 0)
@@ -168,7 +166,15 @@ namespace McRave::Stations {
         return false;
     }
 
-    bool stationNetworkExists(const BWEB::Station * start, const BWEB::Station * finish)
+    bool needPower(BWEB::Station& station)
+    {
+        auto center = TilePosition(station.getBWEMBase()->Center());
+        if (!Pylons::hasPower(center, UnitTypes::Protoss_Photon_Cannon))
+            return true;
+        return false;
+    }
+
+    bool stationNetworkExists(BWEB::Station * start, BWEB::Station * finish)
     {
         for (auto &s : stationNetwork) {
             auto s1 = s.first;
@@ -184,7 +190,7 @@ namespace McRave::Stations {
         return false;
     }
 
-    BWEB::Path* pathStationToStation(const BWEB::Station * start, const BWEB::Station * finish)
+    BWEB::Path* pathStationToStation(BWEB::Station * start, BWEB::Station * finish)
     {
         for (auto &s : stationNetwork) {
             auto s1 = s.first;
@@ -201,6 +207,6 @@ namespace McRave::Stations {
         return nullptr;
     }
 
-    map <BWAPI::Unit, const BWEB::Station *>& getMyStations() { return myStations; };
-    map <BWAPI::Unit, const BWEB::Station *>& getEnemyStations() { return enemyStations; }
+    map <BWAPI::Unit, BWEB::Station *>& getMyStations() { return myStations; };
+    map <BWAPI::Unit, BWEB::Station *>& getEnemyStations() { return enemyStations; }
 }

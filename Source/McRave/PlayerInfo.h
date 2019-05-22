@@ -13,8 +13,10 @@ namespace McRave
         BWAPI::Player thisPlayer;
         BWAPI::Race startRace, currentRace;
         BWAPI::TilePosition startLocation;
-        PlayerState pState;
         std::string build;
+
+        Strength pStrength;
+        PlayerState pState;
 
         bool alive;
         int supply;
@@ -38,39 +40,14 @@ namespace McRave
             return thisPlayer < p.player();
         }
 
-        void update()
-        {
-            // Store any upgrades this player has
-            for (auto &upgrade : BWAPI::UpgradeTypes::allUpgradeTypes()) {
-                if (thisPlayer->getUpgradeLevel(upgrade) > 0)
-                    playerUpgrades.insert(upgrade);
-            }
-
-            // Store any tech this player has
-            for (auto &tech : BWAPI::TechTypes::allTechTypes()) {
-                if (thisPlayer->hasResearched(tech))
-                    playerTechs.insert(tech);
-            }
-
-            // Set current allied status
-            if (thisPlayer->getID() == BWAPI::Broodwar->self()->getID())
-                pState = PlayerState::Self;
-            else if (thisPlayer->isEnemy(BWAPI::Broodwar->self()))
-                pState = PlayerState::Enemy;
-            else if (thisPlayer->isAlly(BWAPI::Broodwar->self()))
-                pState = PlayerState::Ally;
-            else 
-                pState = PlayerState::None;
-
-            auto race = thisPlayer->isNeutral() || !alive ? BWAPI::Races::None : thisPlayer->getRace(); // BWAPI returns Zerg for neutral race
-            currentRace = race;
-        }
+        void update();
 
         BWAPI::TilePosition getStartingLocation() { return startLocation; }
         BWAPI::Race getCurrentRace() { return currentRace; }
         BWAPI::Race getStartRace() { return startRace; }
         BWAPI::Player player() const { return thisPlayer; }
         PlayerState getPlayerState() { return pState; }
+        Strength getStrength() { return pStrength; }
         std::set <std::shared_ptr<UnitInfo>>& getUnits() { return units; }
         std::string getBuild() { return build; }
 

@@ -69,10 +69,10 @@ namespace McRave::BuildOrder {
         void situational();
         void unlocks();
         void island();
-                
+
         void PvP1GateCore();
         void PvP2Gate();
-        
+
         void PvTGateNexus();
         void PvTNexusGate();
         void PvT1GateCore();
@@ -80,7 +80,7 @@ namespace McRave::BuildOrder {
 
         void PvZFFE();
         void PvZ1GateCore();
-        void PvZ2Gate();      
+        void PvZ2Gate();
     }
 
     namespace Terran {
@@ -118,6 +118,7 @@ namespace McRave::BuildOrder {
     bool shouldAddGas();
     bool shouldExpand();
     bool techComplete();
+    bool isAlmostComplete(BWAPI::UnitType);
 
     std::map<BWAPI::UnitType, Item>& getItemQueue();
     BWAPI::UnitType getTechUnit();

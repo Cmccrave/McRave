@@ -110,7 +110,7 @@ namespace McRave::BuildOrder::Terran {
             unlockedType.insert(UnitTypes::Terran_Goliath);
             unlockedType.insert(UnitTypes::Terran_Vulture);
 
-            if (Units::getSupply() >= 80)
+            if (Players::getSupply(PlayerState::Self) >= 80)
                 unlockedType.insert(UnitTypes::Terran_Siege_Tank_Tank_Mode);
 
             if (!getOpening || com(UnitTypes::Terran_Marine) >= 4)
@@ -129,7 +129,7 @@ namespace McRave::BuildOrder::Terran {
 
         // Supply Depot logic
         if (vis(UnitTypes::Terran_Supply_Depot) > (int)fastExpand) {
-            int count = min(22, (int)floor((Units::getSupply() / max(15, (16 - vis(UnitTypes::Terran_Supply_Depot) - vis(UnitTypes::Terran_Command_Center))))));
+            int count = min(22, (int)floor((Players::getSupply(PlayerState::Self) / max(15, (16 - vis(UnitTypes::Terran_Supply_Depot) - vis(UnitTypes::Terran_Command_Center))))));
             itemQueue[UnitTypes::Terran_Supply_Depot] = Item(count);
         }
 
@@ -148,7 +148,7 @@ namespace McRave::BuildOrder::Terran {
                 itemQueue[UnitTypes::Terran_Refinery] = Item(Resources::getGasCount());
 
             // Armory logic TODO
-            itemQueue[UnitTypes::Terran_Armory] = Item((Units::getSupply() > 160) + (Units::getSupply() > 200));
+            itemQueue[UnitTypes::Terran_Armory] = Item((Players::getSupply(PlayerState::Self) > 160) + (Players::getSupply(PlayerState::Self) > 200));
 
             // Academy logic
             if (Strategy::needDetection()) {
@@ -160,7 +160,7 @@ namespace McRave::BuildOrder::Terran {
                 itemQueue[UnitTypes::Terran_Physics_Lab] = Item(1);
 
             // Engineering Bay logic
-            if (Units::getSupply() > 200)
+            if (Players::getSupply(PlayerState::Self) > 200)
                 itemQueue[UnitTypes::Terran_Engineering_Bay] = Item(1);
 
             // Barracks logic
@@ -176,7 +176,7 @@ namespace McRave::BuildOrder::Terran {
                 itemQueue[UnitTypes::Terran_Starport] = Item(min(com(UnitTypes::Terran_Command_Center) * 2, vis(UnitTypes::Terran_Starport) + 1));
 
             // Missle Turret logic
-            if (Players::getNumberZerg() > 0 && com(UnitTypes::Terran_Engineering_Bay) > 0)
+            if (Players::getRaceCount(Races::Zerg, PlayerState::Enemy) > 0 && com(UnitTypes::Terran_Engineering_Bay) > 0)
                 itemQueue[UnitTypes::Terran_Missile_Turret] = Item(com(UnitTypes::Terran_Command_Center) * 2);
         }
     }

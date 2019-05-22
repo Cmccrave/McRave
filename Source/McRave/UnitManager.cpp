@@ -19,19 +19,16 @@ namespace McRave::Units {
         map<UnitType, int> myCompleteTypes;
         map<Role, int> myRoles;
         set<Unit> splashTargets;
-        double immThreat, proxThreat;
-        int supply = 0;
+        double immThreat;
         int scoutDeadFrame = 0;
 
         void resetValues()
         {
             immThreat = 0.0;
-            proxThreat = 0.0;
             splashTargets.clear();
             enemyTypes.clear();
             myVisibleTypes.clear();
             myCompleteTypes.clear();
-            supply = 0;
 
             enemyUnits.clear();
             myUnits.clear();
@@ -39,10 +36,8 @@ namespace McRave::Units {
             allyUnits.clear();
         }
 
-        void updateRole(const shared_ptr<UnitInfo>& u)
+        void updateRole(UnitInfo& unit)
         {
-            auto &unit = *u;
-
             // Don't assign a role to uncompleted units
             if (!unit.unit()->isCompleted() && !unit.getType().isBuilding() && unit.getType() != UnitTypes::Zerg_Egg) {
                 unit.setRole(Role::None);
@@ -56,9 +51,9 @@ namespace McRave::Units {
             if (unit.getRole() == Role::None) {
                 if (unit.getType().isWorker())
                     unit.setRole(Role::Worker);
-                else if ((unit.getType().isBuilding() && unit.getGroundDamage() == 0.0 && unit.getAirDamage() == 0.0) || unit.getType() == UnitTypes::Zerg_Larva || unit.getType() == UnitTypes::Zerg_Egg)
+                else if ((unit.getType().isBuilding() && !unit.canAttackGround() && !unit.canAttackAir()) || unit.getType() == UnitTypes::Zerg_Larva || unit.getType() == UnitTypes::Zerg_Egg)
                     unit.setRole(Role::Production);
-                else if (unit.getType().isBuilding() && unit.getGroundDamage() != 0.0 && unit.getAirDamage() != 0.0)
+                else if (unit.getType().isBuilding() && (unit.canAttackGround() || unit.canAttackAir()))
                     unit.setRole(Role::Defender);
                 else if (unit.getType().spaceProvided() > 0)
                     unit.setRole(Role::Transport);
@@ -124,7 +119,7 @@ namespace McRave::Units {
 
             // Check if a worker morphed into a building
             if (unit.getRole() == Role::Worker && unit.getType().isBuilding()) {
-                if (unit.getType().isBuilding() && unit.getGroundDamage() == 0.0 && unit.getAirDamage() == 0.0)
+                if (unit.getType().isBuilding() && !unit.canAttackGround() && !unit.canAttackAir())
                     unit.setRole(Role::Production);
                 else
                     unit.setRole(Role::Combat);
@@ -156,24 +151,19 @@ namespace McRave::Units {
                     UnitInfo &unit = *u;
                     enemyUnits.insert(u);
 
-                    Broodwar->drawTextMap(unit.getPosition(), "%.3f", unit.getPriority());
-
                     // If this is a flying building that we haven't recognized as being a flyer, remove overlap tiles
                     auto flyingBuilding = unit.unit()->exists() && !unit.isFlying() && (unit.unit()->getOrder() == Orders::LiftingOff || unit.unit()->getOrder() == Orders::BuildingLiftOff || unit.unit()->isFlying());
                     if (flyingBuilding && unit.getLastTile().isValid())
                         Events::customOnUnitLift(unit);
 
-                    // If unit is visible, update it
-                    if (unit.unit()->exists()) {
-                        unit.update();
+                    unit.update();
 
-                        // TODO: Move to a UnitInfo flag
-                        if (unit.hasTarget() && (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Protoss_Scarab))
-                            splashTargets.insert(unit.getTarget().unit());
+                    // TODO: Move to a UnitInfo flag
+                    if (unit.hasTarget() && (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Protoss_Scarab))
+                        splashTargets.insert(unit.getTarget().unit());
 
-                        if (unit.getType().isBuilding() && !unit.isFlying() && BWEB::Map::isUsed(unit.getTilePosition()) == UnitTypes::None)
-                            Events::customOnUnitLand(unit);
-                    }
+                    if (unit.getType().isBuilding() && !unit.isFlying() && BWEB::Map::isUsed(unit.getTilePosition()) == UnitTypes::None)
+                        Events::customOnUnitLand(unit);
 
                     // Must see a 3x3 grid of Tiles to set a unit to invalid position
                     if (!unit.unit()->exists() && (!unit.isBurrowed() || Command::overlapsDetection(unit.unit(), unit.getPosition(), PlayerState::Self) || (unit.getWalkPosition().isValid() && Grids::getAGroundCluster(unit.getWalkPosition()) > 0)))
@@ -190,8 +180,6 @@ namespace McRave::Units {
                         else
                             immThreat += unit.getVisibleGroundStrength();
                     }
-                    if (unit.isThreatening())
-                        unit.circleRed();
                 }
             }
         }
@@ -213,7 +201,7 @@ namespace McRave::Units {
                     myUnits.insert(u);
 
                     unit.update();
-                    updateRole(u);
+                    updateRole(unit);
 
                     auto type = unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType() : unit.getType();
                     if (unit.unit()->isCompleted()) {
@@ -223,8 +211,6 @@ namespace McRave::Units {
                     else {
                         myVisibleTypes[type] ++;
                     }
-
-                    supply += type.supplyRequired();
                 }
             }
         }
@@ -327,7 +313,7 @@ namespace McRave::Units {
         BWEB::Map::onUnitDestroy(unit);
 
         // Find the unit
-        for (auto &[_,player] : Players::getPlayers()) {
+        for (auto &[_, player] : Players::getPlayers()) {
             for (auto &u : player.getUnits()) {
                 if (u->unit() == unit) {
 
@@ -404,6 +390,7 @@ namespace McRave::Units {
         return total;
     }
 
+    // TODO: Move to Players
     int getNumberRanged()
     {
         return com(UnitTypes::Protoss_Dragoon) + com(UnitTypes::Protoss_Reaver) + com(UnitTypes::Protoss_High_Templar)
@@ -443,8 +430,6 @@ namespace McRave::Units {
     map<UnitSizeType, int>& getEnemySizes() { return enemySizes; }
     map<UnitType, int>& getEnemyTypes() { return enemyTypes; }
     double getImmThreat() { return immThreat; }
-    double getProxThreat() { return proxThreat; }
-    int getSupply() { return supply; }
     int getMyRoleCount(Role role) { return myRoles[role]; }
     int getMyVisible(UnitType type) { return myVisibleTypes[type]; }
     int getMyComplete(UnitType type) { return myCompleteTypes[type]; }

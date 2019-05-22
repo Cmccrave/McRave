@@ -150,7 +150,6 @@ namespace McRave::Command
                     });
 
                     if (templar) {
-                        unit.circleOrange();
                         if (unit.unit()->getLastCommand().getTechType() != TechTypes::Archon_Warp)
                             unit.unit()->useTech(TechTypes::Archon_Warp, templar->unit());
                         return true;

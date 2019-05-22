@@ -25,7 +25,7 @@ namespace McRave::BuildOrder::Protoss
             else if (currentBuild == "2Gate")
                 PvP2Gate();
         }
-        else if (Players::vZ() || Players::getNumberRandom() > 0) {
+        else if (Players::vZ() || Players::getRaceCount(Races::Unknown, PlayerState::Enemy) > 0) {
             if (currentBuild == "1GateCore")
                 PvZ1GateCore();
             else if (currentBuild == "FFE")
@@ -68,7 +68,7 @@ namespace McRave::BuildOrder::Protoss
             else if (techUnit == None)
                 getNewTech();
         }
-
+        
         checkNewTech();
         checkAllTech();
         checkExoticTech();
@@ -79,13 +79,16 @@ namespace McRave::BuildOrder::Protoss
         auto skipFirstTech = int(currentTransition == "4Gate" || (Strategy::enemyGasSteal() && !Terrain::isNarrowNatural()) || Players::vT());
 
         // Set s for better build readability
-        s = Units::getSupply();
+        s = Players::getSupply(PlayerState::Self);
 
         // Metrics for when to Expand/Add Production/Add Tech
         satVal = 3;// Players::vT() ? 2 : 3;
         prodVal = com(Protoss_Gateway);
         baseVal = com(Protoss_Nexus);
         techVal = techList.size() + skipFirstTech;
+
+        // Subtract useless tech units?
+        techVal -= /*isTechUnit(Protoss_Observer) + */isTechUnit(Protoss_Dark_Templar) + isTechUnit(Protoss_Shuttle);
 
         // Against FFE add a Nexus for every 2 cannons we see
         if (Strategy::getEnemyBuild() == "FFE") {
@@ -110,7 +113,7 @@ namespace McRave::BuildOrder::Protoss
             techUnit = None;
 
         // If production is saturated and none are idle or we need detection, choose a tech
-        if (Terrain::isIslandMap() || (!getOpening && !getTech && !techSat) || Strategy::needDetection())
+        if (Terrain::isIslandMap() || (!getOpening && !getTech && !techSat) || (Strategy::needDetection() && !isTechUnit(desiredDetection)))
             getTech = true;
 
         // If we don't want an assimilator, set gas count to 0
@@ -120,7 +123,7 @@ namespace McRave::BuildOrder::Protoss
         // Pylon logic after first two
         if (vis(Protoss_Pylon) >= 2) {
             int providers = buildCount(Protoss_Pylon) > 0 ? 14 : 16;
-            int count = min(22, Units::getSupply() / providers);
+            int count = min(22, Players::getSupply(PlayerState::Self) / providers);
             int offset = com(Protoss_Nexus) - 1;
             int total = count - offset;
 
@@ -129,6 +132,13 @@ namespace McRave::BuildOrder::Protoss
 
             if (!getOpening && !Buildings::hasPoweredPositions() && vis(Protoss_Pylon) > 10)
                 itemQueue[Protoss_Pylon] = Item(vis(Protoss_Pylon) + 1);
+
+            if (Stations::getMyStations().size() >= 4) {
+                for (auto &[unit, station] : Stations::getMyStations()) {
+                    if (unit->isCompleted() && station->getDefenseCount() == 0 && Stations::needPower(*station))
+                        itemQueue[Protoss_Pylon] = Item(vis(Protoss_Pylon) + 1);
+                }
+            }
         }
 
         // If we're not in our opener
@@ -171,7 +181,7 @@ namespace McRave::BuildOrder::Protoss
                 itemQueue[Protoss_Cybernetics_Core] = Item(1);
 
             // Defensive Cannons
-            if (com(Protoss_Forge) >= 1 && ((vis(Protoss_Nexus) >= 3 + (Players::getNumberTerran() > 0 || Players::getNumberProtoss() > 0)) || (Terrain::isIslandMap() && Players::getNumberZerg() > 0))) {
+            if (com(Protoss_Forge) >= 1 && ((vis(Protoss_Nexus) >= 3 + (Players::getRaceCount(Races::Terran, PlayerState::Enemy) > 0 || Players::getRaceCount(Races::Protoss, PlayerState::Enemy) > 0)) || (Terrain::isIslandMap() && Players::getRaceCount(Races::Zerg, PlayerState::Enemy) > 0))) {
                 itemQueue[Protoss_Photon_Cannon] = Item(vis(Protoss_Photon_Cannon));
 
                 for (auto &station : Stations::getMyStations()) {
@@ -182,13 +192,19 @@ namespace McRave::BuildOrder::Protoss
                 }
             }
         }
+
+        // If we want to wall at the natural but we don't have a wall there, check main
+        if (wallNat && !Terrain::getNaturalWall() && Terrain::getMainWall()) {
+            wallNat = false;
+            wallMain = true;
+        }
     }
 
     void unlocks()
     {
         // Leg upgrade check
         auto zealotLegs = Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) > 0
-            || (com(Protoss_Citadel_of_Adun) > 0 && Units::getSupply() >= 200);
+            || (com(Protoss_Citadel_of_Adun) > 0 && Players::getSupply(PlayerState::Self) >= 200);
 
         // Check if we should always make Zealots
         if ((zealotLimit > vis(Protoss_Zealot))
