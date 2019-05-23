@@ -326,7 +326,7 @@ namespace BWEB::Walls
                     const auto center = Map::pConvert(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
                     const auto chokeDist = closestChokeTile(center).getDistance(center);
 
-                    dist += (!wall.isPylonWall() && type == UnitTypes::Protoss_Pylon) ? 1.0 / exp(chokeDist) : exp(chokeDist);
+                    dist += (!wall.isPylonWall() && type == UnitTypes::Protoss_Pylon) ? 1.0 / (chokeDist) : (chokeDist);
                 }
 
                 // Score wall based on path sizes and distances
@@ -824,7 +824,7 @@ namespace BWEB::Walls
         Broodwar->drawCircleMap(Position(startTile), 6, Colors::Purple, true);
         Broodwar->drawCircleMap(Position(endTile), 6, Colors::Yellow, false);
 
-        if (false) {
+        if (true) {
             for (int x = 0; x < Broodwar->mapWidth(); x++) {
                 for (int y = 0; y < Broodwar->mapHeight(); y++) {
                     TilePosition t(x, y);

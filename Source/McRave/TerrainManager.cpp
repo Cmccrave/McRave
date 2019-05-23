@@ -365,6 +365,12 @@ namespace McRave::Terrain {
         if (Broodwar->getGameType() == GameTypes::Use_Map_Settings)
             return false;
 
+        // Map specific criteria
+        if (Broodwar->mapFileName().find("Destination") != string::npos) {
+            tight = false;
+            tightType = UnitTypes::None;
+        }
+
         // Hack: Make a bunch of walls as Zerg for testing - disabled atm
         bool testing = false;
         if (testing && Broodwar->self()->getRace() == Races::Zerg) {
