@@ -13,6 +13,9 @@ namespace McRave::BuildOrder
 
         void updateBuild()
         {
+            // Set s for better build readability - TODO: better build order management
+            s = Players::getSupply(PlayerState::Self);
+
             // TODO: Check if we own a <race> unit - have a build order allowed PER race for FFA weirdness and maybe mind control shenanigans
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 Protoss::opener();

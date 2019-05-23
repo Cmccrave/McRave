@@ -128,7 +128,7 @@ namespace McRave::Util {
         }
 
         // If we have no combat units and there is a threat
-        if (Units::getImmThreat() > hackyOffset + myStrength.groundDefense && Broodwar->getFrameCount() < 10000)
+        if (Units::getImmThreat() > hackyOffset + myStrength.groundDefense && Broodwar->getFrameCount() < 10000)            
             return true;
         return false;
     }

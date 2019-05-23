@@ -78,9 +78,6 @@ namespace McRave::BuildOrder::Protoss
     {
         auto skipFirstTech = int(currentTransition == "4Gate" || (Strategy::enemyGasSteal() && !Terrain::isNarrowNatural()) || Players::vT());
 
-        // Set s for better build readability
-        s = Players::getSupply(PlayerState::Self);
-
         // Metrics for when to Expand/Add Production/Add Tech
         satVal = 3;// Players::vT() ? 2 : 3;
         prodVal = com(Protoss_Gateway);

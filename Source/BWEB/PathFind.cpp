@@ -23,19 +23,6 @@ namespace BWEB
             TilePosition source;
         };
 
-        struct WallCollision {
-            inline bool operator()(unsigned x, unsigned y) const
-            {
-                TilePosition t(x, y);
-                if (x < width && y < height && Walls::overlapsCurrentWall(t) == UnitTypes::None && Map::isUsed(t) == UnitTypes::None && Map::isWalkable(t))
-                    return true;
-                return false;
-            }
-            map<TilePosition, UnitType> currentWall;
-            unsigned width = Broodwar->mapWidth(), height = Broodwar->mapHeight();
-            bool ignoreOverlap;
-        };
-
         map<const BWEM::Area *, int> notReachableThisFrame;
     }
 
@@ -45,13 +32,15 @@ namespace BWEB
         TilePosition source = Map::tConvert(s);
         vector<TilePosition> direction{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 } };
         auto maxDist = source.getDistance(target);
-
+        
         const auto collision = [&](const TilePosition tile) {
             return !tile.isValid()
-                || tile.getDistance(target) > maxDist * 1.2
+                || tile.getDistance(target) > maxDist * 2.0
                 || !Map::isWalkable(tile)
                 || Map::isUsed(tile) != UnitTypes::None
-                || (Walls::overlapsCurrentWall(tile) != UnitTypes::None && (!allowLifted || Walls::overlapsCurrentWall(tile) != UnitTypes::Terran_Barracks));
+                || Map::isOverlapping(tile)
+                //|| (allowLifted && Walls::overlapsCurrentWall(tile) != UnitTypes::Terran_Barracks)
+                || (/*!allowLifted &&*/ Walls::overlapsCurrentWall(tile) != UnitTypes::None);
         };
 
         bfsPath(s, t, collision, direction);

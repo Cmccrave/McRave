@@ -296,8 +296,15 @@ namespace McRave
     bool UnitInfo::canStartCast(BWAPI::TechType tech)
     {
         if (!target.lock()
-            || energy < tech.energyCost()
             || Command::overlapsActions(thisUnit, target.lock()->getPosition(), tech, PlayerState::Self, Util::getCastRadius(tech)))
+            return false;
+
+        auto energyNeeded = tech.energyCost() - energy;
+        auto framesToEnergize = 17.856 * energyNeeded;
+        auto spellReady = energy >= tech.energyCost();
+        auto spellWillBeReady = framesToEnergize < engageDist / (transport.lock() ? transport.lock()->getSpeed() : speed);
+
+        if (!spellReady && !spellWillBeReady)
             return false;
 
         if (auto currentTarget = target.lock()) {

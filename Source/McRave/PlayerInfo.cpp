@@ -5,7 +5,6 @@ using namespace BWAPI;
 
 namespace McRave 
 {
-
     void PlayerInfo::update()
     {
         // Store any upgrades this player has
@@ -22,6 +21,7 @@ namespace McRave
 
         // Update player units
         supply = 0;
+        pStrength.clear();
         for (auto &u : units) {
             auto &unit = *u;
 

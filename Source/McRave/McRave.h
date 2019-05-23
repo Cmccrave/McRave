@@ -44,6 +44,15 @@ namespace McRave
             airDefense += second.airDefense;
             groundDefense += second.groundDefense;
         }
+
+        void clear() {
+            airToAir = 0.0;
+            airToGround = 0.0;
+            groundToAir = 0.0;
+            groundToGround = 0.0;
+            airDefense = 0.0;
+            groundDefense = 0.0;
+        }
     };
 
     enum class Role {

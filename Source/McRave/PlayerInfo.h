@@ -47,7 +47,7 @@ namespace McRave
         BWAPI::Race getStartRace() { return startRace; }
         BWAPI::Player player() const { return thisPlayer; }
         PlayerState getPlayerState() { return pState; }
-        Strength getStrength() { return pStrength; }
+        Strength& getStrength() { return pStrength; }
         std::set <std::shared_ptr<UnitInfo>>& getUnits() { return units; }
         std::string getBuild() { return build; }
 

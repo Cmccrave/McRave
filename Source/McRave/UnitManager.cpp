@@ -180,6 +180,9 @@ namespace McRave::Units {
                         else
                             immThreat += unit.getVisibleGroundStrength();
                     }
+
+                    if (unit.isThreatening())
+                        unit.circleRed();
                 }
             }
         }

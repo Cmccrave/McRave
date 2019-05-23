@@ -525,7 +525,6 @@ namespace McRave::Command {
             || unit.getLocalState() == LocalState::Attack)
             return false;
 
-
         // Probe Cannon surround
         if (unit.getType().isWorker() && vis(UnitTypes::Protoss_Photon_Cannon) > 0) {
             auto &cannon = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Self, [&](auto &u) {

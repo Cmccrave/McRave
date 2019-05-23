@@ -824,17 +824,19 @@ namespace BWEB::Walls
         Broodwar->drawCircleMap(Position(startTile), 6, Colors::Purple, true);
         Broodwar->drawCircleMap(Position(endTile), 6, Colors::Yellow, false);
 
-        for (int x = 0; x < Broodwar->mapWidth(); x++) {
-            for (int y = 0; y < Broodwar->mapHeight(); y++) {
-                TilePosition t(x, y);
+        if (false) {
+            for (int x = 0; x < Broodwar->mapWidth(); x++) {
+                for (int y = 0; y < Broodwar->mapHeight(); y++) {
+                    TilePosition t(x, y);
 
-                if (testGrid[x][y] > 0)
-                    Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Black, false);
+                    if (testGrid[x][y] > 0)
+                        Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Black, false);
 
-                /*if (reserveGrid[x][y] >= 1)
-                    Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Black, false);
-                if (overlapGrid[x][y] >= 1)
-                    Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Grey, false);*/
+                    /*if (reserveGrid[x][y] >= 1)
+                        Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Black, false);
+                    if (overlapGrid[x][y] >= 1)
+                        Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Grey, false);*/
+                }
             }
         }
     }

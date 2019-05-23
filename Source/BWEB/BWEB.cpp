@@ -286,7 +286,7 @@ namespace BWEB::Map
         Broodwar->drawCircleMap((Position)naturalChoke->Center(), 4, Colors::Green, true);
 
         // Draw Reserve Path and some grids
-        bool testingBlocks = false;
+        bool testingBlocks = true;
         if (testingBlocks) {
             for (int x = 0; x < Broodwar->mapWidth(); x++) {
                 for (int y = 0; y < Broodwar->mapHeight(); y++) {
