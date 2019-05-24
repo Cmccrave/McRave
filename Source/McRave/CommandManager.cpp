@@ -68,11 +68,11 @@ namespace McRave::Command {
         }
 
         double defaultVisited(UnitInfo& unit, WalkPosition w) {
-            return log(clamp(25.0, double(Broodwar->getFrameCount() - Grids::lastVisitedFrame(w)), 1000.0));
+            return log(clamp(25.0, double(Broodwar->getFrameCount() - Grids::lastVisibleFrame(TilePosition(w))), 1000.0));
         }
 
         double defaultMobility(UnitInfo& unit, WalkPosition w) {
-            return unit.getType().isFlyer() ? 1.0 : log(100.0 + double(Grids::getMobility(w)));
+            return unit.getType().isFlyer() ? 1.0 : log(1.0 + double(Grids::getMobility(w)));
         }
 
         double defaultThreat(UnitInfo& unit, WalkPosition w)
@@ -229,8 +229,10 @@ namespace McRave::Command {
 
         // Should the unit execute an attack command
         const auto shouldAttack = [&]() {
+
+            auto threatAtEngagement = unit.getType().isFlyer() ? Grids::getEAirThreat(unit.getEngagePosition()) : Grids::getEGroundThreat(unit.getEngagePosition());
             if (unit.getRole() == Role::Combat)
-                return unit.withinRange(unit.getTarget()) && unit.getLocalState() == LocalState::Attack;
+                return unit.withinRange(unit.getTarget()) && (unit.getLocalState() == LocalState::Attack || !threatAtEngagement);
 
             if (unit.getRole() == Role::Scout) {
                 return false; // Disabled until the scout stops getting killed easily
@@ -582,14 +584,14 @@ namespace McRave::Command {
     {
         const auto scoreFunction = [&](WalkPosition w) {
 
-            // Manual conversion until BWAPI::Point is fixed 
+            // Manual conversion until BWAPI::Point is fixed
             auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
-            double threat = defaultThreat(unit, w);
+            double threat = /*unit.getRole() == Role::Scout ? max(Grids::getEGroundThreat(w), 1.0f) :*/ defaultThreat(unit, w);
             double distance = (unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination()));
             double visited = defaultVisited(unit, w);
             double grouping = defaultGrouping(unit, w);
-            double mobility = defaultMobility(unit, w);
-            double score = mobility * visited / (exp(threat) * distance * grouping);
+            double mobility = threat > MIN_THREAT ? defaultMobility(unit, w) : 1.0;
+            double score = mobility * visited / (threat * distance * grouping);
 
             if (threat == MIN_THREAT
                 || (unit.unit()->isCloaked() && !overlapsDetection(unit.unit(), p, PlayerState::Enemy))

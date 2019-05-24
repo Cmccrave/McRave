@@ -219,7 +219,7 @@ namespace McRave::BuildOrder::Protoss {
         fastExpand =		true;
         playPassive =		Units::getEnemyCount(Terran_Siege_Tank_Tank_Mode) == 0 && Units::getEnemyCount(Terran_Siege_Tank_Siege_Mode) == 0 && !Strategy::enemyPressure() ? vis(Protoss_Dragoon) < 12 : !firstReady();
         firstUpgrade =		vis(Protoss_Dragoon) >= 1 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
-        cutWorkers =		Production::hasIdleProduction() && com(Protoss_Cybernetics_Core) > 0;
+        cutWorkers =		s >= 44 && s < 48;
         gasLimit =			goonRange() && com(Protoss_Nexus) < 2 ? 2 : INT_MAX;
 
         // Openers

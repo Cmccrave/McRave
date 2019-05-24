@@ -26,7 +26,7 @@ namespace McRave::Scouts {
             }
             else
                 proxyCheck = false;
-
+            
             // Calculate the number of unexplored bases
             int unexploredBases = 0;
             for (auto &tile : mapBWEM.StartingLocations()) {
@@ -280,6 +280,8 @@ namespace McRave::Scouts {
                 make_pair(2, "Hunt"),
                 make_pair(3, "Move"),
             };
+
+            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Purple);
 
             int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
             int i = Util::iterateCommands(commands, unit);

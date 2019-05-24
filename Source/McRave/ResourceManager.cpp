@@ -100,6 +100,7 @@ namespace McRave::Resources {
                     auto &station = *s.second;
                     if (station.getBWEMBase() == newStation->getBWEMBase()) {
                         info.setResourceState(ResourceState::Mineable);
+                        info.setStation(newStation);
                         break;
                     }
                 }

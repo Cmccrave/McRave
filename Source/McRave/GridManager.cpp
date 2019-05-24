@@ -118,11 +118,11 @@ namespace McRave::Grids
 
                     // Threat
                     if (grdGrid && dist <= unit.getGroundReach()) {
-                        grdGrid[x][y] += float(unit.getVisibleGroundStrength());
+                        grdGrid[x][y] += float(unit.getVisibleGroundStrength() * max(1.0, unit.getGroundReach() / dist));
                         saveReset(x, y);
                     }
                     if (airGrid && dist <= unit.getAirReach()) {
-                        airGrid[x][y] += float(unit.getVisibleAirStrength());
+                        airGrid[x][y] += float(unit.getVisibleAirStrength() * max(1.0, unit.getAirReach() / dist));
                         saveReset(x, y);
                     }
 

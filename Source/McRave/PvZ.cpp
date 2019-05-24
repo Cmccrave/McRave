@@ -354,16 +354,15 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Templar_Archives] =	Item(vis(Protoss_Gateway) >= 2);
         }
         else if (currentTransition == "Robo") {
-            getOpening =		s < 70;
-            firstUpgrade =		UpgradeTypes::Protoss_Air_Weapons;
-            firstTech =			TechTypes::None;
-            dragoonLimit =		1;
-            playPassive =		com(Protoss_Stargate) == 0;
-            firstUnit =         Protoss_Corsair;
-            lockedTransition =  vis(Protoss_Stargate) > 0;
+            //getOpening =		s < 70;
+            //firstUpgrade =		UpgradeTypes::Protoss_Air_Weapons;
+            //firstTech =			TechTypes::None;
+            //dragoonLimit =		1;
+            //playPassive =		com(Protoss_Stargate) == 0;
+            //firstUnit =         Protoss_Reaver;
+            //lockedTransition =  vis(Protoss_Stargate) > 0;
 
-            itemQueue[Protoss_Gateway] =			Item((s >= 20) + vis(Protoss_Corsair) > 0);
-            itemQueue[Protoss_Stargate] =			Item(com(Protoss_Cybernetics_Core) > 0);
+            //itemQueue[Protoss_Gateway] =			Item((s >= 20) + vis(Protoss_Reaver) > 0);
         }
         else if (currentTransition == "Defensive")
             PvZ2GateDefensive();

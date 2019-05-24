@@ -82,10 +82,11 @@ namespace McRave::BuildOrder::Protoss
         satVal = 3;// Players::vT() ? 2 : 3;
         prodVal = com(Protoss_Gateway);
         baseVal = com(Protoss_Nexus);
-        techVal = techList.size() + skipFirstTech;
+        techVal = techList.size() + skipFirstTech - isTechUnit(Protoss_Shuttle);
 
-        // Subtract useless tech units?
-        techVal -= /*isTechUnit(Protoss_Observer) + */isTechUnit(Protoss_Dark_Templar) + isTechUnit(Protoss_Shuttle);
+        // Subtract DT from tech units if we're on 2 bases
+        if (com(Protoss_Nexus) >= 2)
+            techVal -= isTechUnit(Protoss_Dark_Templar);
 
         // Against FFE add a Nexus for every 2 cannons we see
         if (Strategy::getEnemyBuild() == "FFE") {

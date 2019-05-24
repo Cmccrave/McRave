@@ -218,11 +218,11 @@ namespace McRave::Workers {
             const auto needGas = !Resources::isGasSaturated() && isMineralWorker && (gasWorkers < BuildOrder::gasWorkerLimit() || !BuildOrder::isOpener());
             const auto needMinerals = !Resources::isMinSaturated() && isGasWorker && gasWorkers > BuildOrder::gasWorkerLimit();
             const auto needNewAssignment = !worker.hasResource() || needGas || needMinerals || threatened || excessAssigned;
-            
+
             auto closestStation = BWEB::Stations::getClosestStation(worker.getTilePosition());
             auto distBest = (injured || threatened) ? 0.0 : DBL_MAX;
             auto oldResource = worker.hasResource() ? worker.getResource().shared_from_this() : nullptr;
-            vector<const BWEB::Station *> safeStations;
+            vector<BWEB::Station *> safeStations;
 
             const auto resourceReady = [&](ResourceInfo& resource, int i) {
                 if (!resource.unit()
@@ -254,9 +254,6 @@ namespace McRave::Workers {
             if (needGas || !worker.hasResource()) {
                 for (auto &r : Resources::getMyGas()) {
                     auto &resource = *r;
-
-                    if (!resource.hasStation())
-                        Broodwar->drawCircleMap(resource.getPosition(), 4, Colors::Brown, true);
 
                     if (!resourceReady(resource, 3))
                         continue;

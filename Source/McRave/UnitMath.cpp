@@ -88,11 +88,13 @@ namespace McRave::Math {
         if (unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Terran_Science_Vessel || unit.getType() == Protoss_Arbiter)
             return 1.0;
         if ((unit.unit()->isRepairing() || unit.unit()->isConstructing()) && unit.isThreatening())
-            return 1.0;
+            return 5.0;
         if (Broodwar->getFrameCount() < 6000 && Strategy::enemyProxy() && unit.getType() == Protoss_Pylon)
             return 0.0;
-        if (unit.unit()->isBeingConstructed() && unit.getType() == Terran_Bunker && Terrain::isInAllyTerritory(unit.getTilePosition()))
+        if (unit.unit()->isBeingConstructed() && unit.getType() == Terran_Bunker && Terrain::isInAllyTerritory(unit.getTilePosition())) {
+            unit.circleBlack();
             return 0.0;
+        }
         if (unit.getType() == Protoss_Carrier)
             return 0.5;
 

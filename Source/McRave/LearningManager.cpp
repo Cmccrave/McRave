@@ -316,10 +316,9 @@ namespace McRave::Learning {
             return;
         }
 
-        bool testing = true;
-        if (testing) {
+        if (false) {
             if (Broodwar->self()->getRace() == Races::Protoss) {
-                BuildOrder::setLearnedBuild("FFE", "Forge", "NeoBisu");
+                BuildOrder::setLearnedBuild("NexusGate", "Dragoon", "Standard");
                 isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                 return;
             }
