@@ -88,9 +88,8 @@ namespace McRave::Scouts {
                     return u.getRole() == Role::Scout;
                 });
 
-                if (scout) {
+                if (scout)
                     scout->setRole(Role::Worker);
-                }
             }
         }
 

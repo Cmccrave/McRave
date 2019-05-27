@@ -11,10 +11,16 @@ namespace McRave::Combat {
         multimap<double, Position> combatClusters;
         multimap<double, UnitInfo&> combatUnitsByDistance;
         constexpr tuple commands{ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::defend, Command::hunt, Command::escort, Command::retreat, Command::move };
-        int combatWorkers = 0;
 
         void updateRole(UnitInfo& unit)
         {
+            if (!unit.getType().isWorker())
+                return;
+
+            auto closestWorker = Util::getClosestUnit(Terrain::getDefendPosition(), PlayerState::Self, [&](auto &u) {
+                return u.getRole() == Role::Worker && (!unit.hasResource() || !unit.getResource().getType().isRefinery());
+            });
+
             auto combatCount = Units::getMyRoleCount(Role::Combat) - (unit.getRole() == Role::Combat ? 1 : 0);
             auto myGroundStrength = Players::getStrength(PlayerState::Self).groundToGround - (unit.getRole() == Role::Combat ? unit.getVisibleGroundStrength() : 0.0);
             auto closestStation = Stations::getClosestStation(PlayerState::Self, unit.getPosition());
@@ -22,14 +28,20 @@ namespace McRave::Combat {
 
             const auto proactivePullWorker = [&](UnitInfo& unit) {
 
+                // If this isn't the closest mineral worker to the defend position, don't pull it
+                if (unit.getRole() == Role::Worker && unit.shared_from_this() != closestWorker)
+                    return false;
+
+                // Don't pull workers too early
+                if (arriveAtDefense < Strategy::enemyArrivalFrame() - 100)
+                    return false;
+
                 if (Broodwar->self()->getRace() == Races::Protoss) {
                     int completedDefenders = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Photon_Cannon) + Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot);
                     int visibleDefenders = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot);
 
-                    // Don't pull low shield probes or gas mining probes
-                    if (unit.getType() == UnitTypes::Protoss_Probe && (unit.getShields() < 8 || (unit.hasResource() && unit.getResource().getType().isRefinery())))
-                        return false;
-                    if (arriveAtDefense < Strategy::enemyArrivalFrame() - 100)
+                    // Don't pull low shield probes
+                    if (unit.getType() == UnitTypes::Protoss_Probe && unit.getShields() < 8)
                         return false;
 
                     // If trying to hide tech, pull 1 probe with a Zealot
@@ -54,8 +66,8 @@ namespace McRave::Combat {
                             return true;
                     }
 
-                    // If trying to 1GateCore and scouted 2Gate late, pull workers to block choke
-                    if (BuildOrder::getCurrentBuild() == "1GateCore" && Strategy::getEnemyBuild() == "2Gate" && BuildOrder::getCurrentTransition() != "Defensive" && Strategy::defendChoke()) {                        
+                    // If trying to 1GateCore and scouted 2Gate late, pull workers to block choke when we are ready
+                    else if (BuildOrder::getCurrentBuild() == "1GateCore" && Strategy::getEnemyBuild() == "2Gate" && BuildOrder::getCurrentTransition() != "Defensive" && Strategy::defendChoke()) {                        
                         if (combatCount < 4)
                             return true;
                     }
@@ -87,7 +99,6 @@ namespace McRave::Combat {
                 return false;
             };
 
-            // TODO: Update role count and only pull closest worker to choke
             // Check if workers should fight or work
             if (unit.getType().isWorker()) {
                 if (unit.getRole() == Role::Worker && !unit.unit()->isCarryingMinerals() && !unit.unit()->isCarryingGas() && (reactivePullWorker(unit) || proactivePullWorker(unit)) {

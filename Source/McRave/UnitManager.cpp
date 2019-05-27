@@ -20,7 +20,6 @@ namespace McRave::Units {
         map<Role, int> myRoles;
         set<Unit> splashTargets;
         double immThreat;
-        int scoutDeadFrame = 0;
 
         void updateRole(UnitInfo& unit)
         {

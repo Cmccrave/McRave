@@ -9,10 +9,13 @@ namespace McRave::Support {
 
         map<Position, UnitType> futureAssignment;
 
+        void updateCounters()
+        {
+            futureAssignment.clear();
+        }
+
         void updateDestination(UnitInfo& unit)
         {
-            auto building = Broodwar->self()->getRace().getResourceDepot();
-
             auto isntAssigned = [&](Position here) {
                 for (auto &[pos, type] : futureAssignment) {
                     if (type == unit.getType() && pos.getDistance(here) < 256.0)
@@ -76,19 +79,22 @@ namespace McRave::Support {
             else
                 Command::escort(unit);
         }
+
+        void updateUnits()
+        {
+            for (auto &u : Units::getUnits(PlayerState::Self)) {
+                UnitInfo &unit = *u;
+                if (unit.getRole() == Role::Support) {
+                    updateDestination(unit);
+                    updateDecision(unit);
+                }
+            }
+        }
     }
 
     void onFrame()
     {
-        // TODO: Find a better solution
-        futureAssignment.clear();
-
-        for (auto &u : Units::getUnits(PlayerState::Self)) {
-            UnitInfo &unit = *u;
-            if (unit.getRole() == Role::Support) {
-                updateDestination(unit);
-                updateDecision(unit);
-            }
-        }
+        updateCounters();
+        updateUnits();
     }
 }
