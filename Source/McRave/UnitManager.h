@@ -19,6 +19,7 @@ namespace McRave::Units {
     int getNumberRanged();
 
     void onFrame();
+    void adjustRoleCount(Role, int);
     void storeUnit(BWAPI::Unit);
     void removeUnit(BWAPI::Unit);
     void morphUnit(BWAPI::Unit);

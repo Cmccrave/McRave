@@ -97,9 +97,6 @@ namespace McRave::Util {
     double getCastLimit(BWAPI::TechType);
     int getCastRadius(BWAPI::TechType);
 
-    bool reactivePullWorker(UnitInfo&);
-    bool proactivePullWorker(UnitInfo&);
-    bool pullRepairWorker(UnitInfo&);
     bool hasThreatOnPath(UnitInfo&, BWEB::Path&);
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, BWAPI::Position);
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, int, int);

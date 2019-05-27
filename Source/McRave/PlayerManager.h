@@ -9,6 +9,7 @@ namespace McRave::Players
     Strength getStrength(PlayerState);
 
     void addStrength(UnitInfo&);
+
     void onStart();
     void onFrame();
 

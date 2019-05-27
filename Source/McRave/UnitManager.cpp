@@ -211,6 +211,11 @@ namespace McRave::Units {
         }
     }
 
+    void adjustRoleCount(Role newRole, int adjustment)
+    {
+        myRoles[newRole] += adjustment;
+    }
+
     void onFrame()
     {
         Visuals::startPerfTest();

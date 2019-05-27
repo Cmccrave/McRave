@@ -11,26 +11,99 @@ namespace McRave::Combat {
         multimap<double, Position> combatClusters;
         multimap<double, UnitInfo&> combatUnitsByDistance;
         constexpr tuple commands{ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::defend, Command::hunt, Command::escort, Command::retreat, Command::move };
-        bool once = false;
+        int combatWorkers = 0;
 
         void updateRole(UnitInfo& unit)
         {
-            if (once)
-                return;
+            auto combatCount = Units::getMyRoleCount(Role::Combat) - (unit.getRole() == Role::Combat ? 1 : 0);
+            auto myGroundStrength = Players::getStrength(PlayerState::Self).groundToGround - (unit.getRole() == Role::Combat ? unit.getVisibleGroundStrength() : 0.0);
+            auto closestStation = Stations::getClosestStation(PlayerState::Self, unit.getPosition());
+            auto arriveAtDefense = Broodwar->getFrameCount() + (unit.getPosition().getDistance(Terrain::getDefendPosition()) / unit.getSpeed());
+
+            const auto proactivePullWorker = [&](UnitInfo& unit) {
+
+                if (Broodwar->self()->getRace() == Races::Protoss) {
+                    int completedDefenders = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Photon_Cannon) + Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot);
+                    int visibleDefenders = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot);
+
+                    // Don't pull low shield probes or gas mining probes
+                    if (unit.getType() == UnitTypes::Protoss_Probe && (unit.getShields() < 8 || (unit.hasResource() && unit.getResource().getType().isRefinery())))
+                        return false;
+                    if (arriveAtDefense < Strategy::enemyArrivalFrame() - 100)
+                        return false;
+
+                    // If trying to hide tech, pull 1 probe with a Zealot
+                    if (BuildOrder::isHideTech() && combatCount < 2 && completedDefenders > 0)
+                        return true;
+
+                    // If trying to FFE, pull based on Cannon/Zealot numbers, or lack of scouting information
+                    if (BuildOrder::getCurrentBuild() == "FFE") {
+                        if (Strategy::enemyRush() && combatCount < 8 - (2 * completedDefenders) && visibleDefenders >= 1)
+                            return true;
+                        if (Strategy::enemyPressure() && combatCount < 8 - (2 * completedDefenders) && visibleDefenders >= 2)
+                            return true;
+                        if (!Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && myGroundStrength < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
+                            return true;
+                    }
+
+                    // If trying to 2Gate at our natural, pull based on Zealot numbers
+                    else if (BuildOrder::getCurrentBuild() == "2Gate" && BuildOrder::getCurrentOpener() == "Natural") {
+                        if (Strategy::enemyRush() && combatCount < 8 - (2 * completedDefenders) && visibleDefenders >= 1)
+                            return true;
+                        if (Strategy::enemyPressure() && combatCount < 8 - (2 * completedDefenders) && visibleDefenders >= 2)
+                            return true;
+                    }
+
+                    // If trying to 1GateCore and scouted 2Gate late, pull workers to block choke
+                    if (BuildOrder::getCurrentBuild() == "1GateCore" && Strategy::getEnemyBuild() == "2Gate" && BuildOrder::getCurrentTransition() != "Defensive" && Strategy::defendChoke()) {                        
+                        if (combatCount < 4)
+                            return true;
+                    }
+                }
+                return false;
+            };
+
+            const auto reactivePullWorker = [&](UnitInfo& unit) {
+                if (Units::getEnemyCount(UnitTypes::Terran_Vulture) > 2)
+                    return false;
+
+                if (unit.getType() == UnitTypes::Protoss_Probe) {
+                    if (unit.getShields() < 8)
+                        return false;
+                }
+                if (unit.getType() == UnitTypes::Terran_SCV) {
+                    if (unit.getHealth() < 20)
+                        return false;
+                }
+
+                if (unit.hasTarget()) {
+                    if (unit.getTarget().hasAttackedRecently() && unit.getTarget().getPosition().getDistance(closestStation) < unit.getTarget().getGroundReach() && Grids::getEGroundThreat(unit.getWalkPosition()) > 0.0 && Broodwar->getFrameCount() < 10000)
+                        return true;
+                }
+
+                // If we have immediate threats
+                if (Units::getImmThreat() > myGroundStrength && Broodwar->getFrameCount() < 10000)
+                    return true;
+                return false;
+            };
 
             // TODO: Update role count and only pull closest worker to choke
             // Check if workers should fight or work
             if (unit.getType().isWorker()) {
-                if (unit.getRole() == Role::Worker && !unit.unit()->isCarryingMinerals() && !unit.unit()->isCarryingGas() && (Util::reactivePullWorker(unit) || Util::proactivePullWorker(unit) || Util::pullRepairWorker(unit))) {
+                if (unit.getRole() == Role::Worker && !unit.unit()->isCarryingMinerals() && !unit.unit()->isCarryingGas() && (reactivePullWorker(unit) || proactivePullWorker(unit)) {
                     unit.setRole(Role::Combat);
-                    Players::addStrength(unit);
                     unit.setBuildingType(UnitTypes::None);
                     unit.setBuildPosition(TilePositions::Invalid);
-                    once = true;
+
+                    // Adjust counters
+                    Players::addStrength(unit);
+                    Units::adjustRoleCount(unit.getRole(), 1);
                 }
-                else if (unit.getRole() == Role::Combat && !Util::reactivePullWorker(unit) && !Util::proactivePullWorker(unit) && !Util::pullRepairWorker(unit)) {
+                else if (unit.getRole() == Role::Combat && !reactivePullWorker(unit) && !proactivePullWorker(unit)) {
                     unit.setRole(Role::Worker);
-                    once = true;
+
+
+                    Units::adjustRoleCount(unit.getRole(), -1);
                 }
 
                 if (Util::reactivePullWorker(unit))

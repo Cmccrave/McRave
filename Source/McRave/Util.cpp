@@ -41,110 +41,6 @@ namespace McRave::Util {
         }
         return true;
     }
-    
-    bool proactivePullWorker(UnitInfo& unit)
-    {
-        auto combatCount = Units::getMyRoleCount(Role::Combat) - (unit.getRole() == Role::Combat ? 1 : 0);
-        auto myGroundStrength = Players::getStrength(PlayerState::Self).groundToGround - (unit.getRole() == Role::Combat ? unit.getVisibleGroundStrength() : 0.0);
-
-        auto arriveAtDefense = Broodwar->getFrameCount() + (unit.getPosition().getDistance(Terrain::getDefendPosition()) / unit.getSpeed());
-
-        if (Broodwar->self()->getRace() == Races::Protoss) {
-            int completedDefenders = Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Photon_Cannon) + Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot);
-            int visibleDefenders = Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Photon_Cannon) + Broodwar->self()->visibleUnitCount(UnitTypes::Protoss_Zealot);
-
-            if (unit.getType() == UnitTypes::Protoss_Probe && (unit.getShields() < 0 || (unit.hasResource() && unit.getResource().getType().isRefinery())))
-                return false;
-
-            if (BuildOrder::isHideTech() && combatCount < 2 && completedDefenders > 0)
-                return true;
-
-            if (BuildOrder::getCurrentBuild() == "FFE") {
-                if (arriveAtDefense < Strategy::enemyArrivalFrame() - 100)
-                    return false;
-
-                if (Strategy::enemyRush() && combatCount < 6 - (2 * completedDefenders) && visibleDefenders >= 1)
-                    return true;
-                if (Strategy::enemyRush() && myGroundStrength < 1.00 && completedDefenders < 2 && visibleDefenders >= 2)
-                    return true;
-                if (Strategy::enemyPressure() && myGroundStrength < 4.00 && completedDefenders < 5 && visibleDefenders >= 2)
-                    return true;
-                if (!Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && myGroundStrength < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
-                    return true;
-            }
-            else if (BuildOrder::getCurrentBuild() == "2Gate" && BuildOrder::getCurrentOpener() == "Natural") {
-                if (Strategy::getEnemyBuild() == "4Pool" && myGroundStrength < 4.00 && completedDefenders < 2)
-                    return true;
-                if (Strategy::getEnemyBuild() == "9Pool" && myGroundStrength < 4.00 && completedDefenders < 3)
-                    return true;
-            }
-            else if (BuildOrder::getCurrentBuild() == "1GateCore" && Strategy::getEnemyBuild() == "2Gate" && BuildOrder::getCurrentTransition() != "Defensive" && Strategy::defendChoke()) {
-                // Disabled for now - come back to it
-                return false;
-                if (combatCount < 4)
-                    return true;
-            }
-        }
-        else if (Broodwar->self()->getRace() == Races::Terran && BuildOrder::isWallNat()) {
-            if (Strategy::enemyRush() && BuildOrder::isFastExpand() && Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) < 1)
-                return true;
-        }
-        else if (Broodwar->self()->getRace() == Races::Zerg)
-            return false;
-        /*
-                if (Strategy::enemyProxy() && Strategy::getEnemyBuild() != "2Gate" && Units::getImmThreat() > myStrength.groundToGround + myStrength.groundDefense)
-                    return true;*/
-
-        return false;
-    }
-
-    bool reactivePullWorker(UnitInfo& unit)
-    {
-        auto combatCount = Units::getMyRoleCount(Role::Combat) - (unit.getRole() == Role::Combat ? 1 : 0);
-        auto myGroundStrength = Players::getStrength(PlayerState::Self).groundToGround - (unit.getRole() == Role::Combat ? unit.getVisibleGroundStrength() : 0.0);
-        auto closestStation = Stations::getClosestStation(PlayerState::Self, unit.getPosition());
-
-        if (Units::getEnemyCount(UnitTypes::Terran_Vulture) > 2)
-            return false;
-
-        if (unit.getType() == UnitTypes::Protoss_Probe) {
-            if (unit.getShields() < 8)
-                return false;
-        }
-        if (unit.getType() == UnitTypes::Terran_SCV) {
-            if (unit.getHealth() < 10)
-                return false;
-        }
-
-        if (unit.hasTarget()) {
-            if (unit.getTarget().hasAttackedRecently() && unit.getTarget().getPosition().getDistance(closestStation) < unit.getTarget().getGroundReach() && Grids::getEGroundThreat(unit.getWalkPosition()) > 0.0 && Broodwar->getFrameCount() < 10000)
-                return true;
-        }
-
-        // If we have no combat units and there is a threat
-        if (Units::getImmThreat() > myGroundStrength && Broodwar->getFrameCount() < 10000)
-            return true;
-        return false;
-    }
-
-    bool pullRepairWorker(UnitInfo& unit)
-    {
-        return false; // Disabled
-        if (Broodwar->self()->getRace() == Races::Terran) {
-            int mechUnits = Broodwar->self()->completedUnitCount(UnitTypes::Terran_Vulture)
-                + Broodwar->self()->completedUnitCount(UnitTypes::Terran_Siege_Tank_Siege_Mode)
-                + Broodwar->self()->completedUnitCount(UnitTypes::Terran_Siege_Tank_Tank_Mode)
-                + Broodwar->self()->completedUnitCount(UnitTypes::Terran_Goliath)
-                + Broodwar->self()->completedUnitCount(UnitTypes::Terran_Wraith)
-                + Broodwar->self()->completedUnitCount(UnitTypes::Terran_Battlecruiser)
-                + Broodwar->self()->completedUnitCount(UnitTypes::Terran_Valkyrie);
-
-            //if ((mechUnits > 0 && Units::getRepairWorkers() < Players::getSupply(PlayerState::Self) / 30)
-            //	|| (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Bunker) > 0 && BuildOrder::isFastExpand() && Units::getRepairWorkers() < 2))
-            //	return true;
-        }
-        return false;
-    }
 
     double getCastLimit(TechType tech)
     {
@@ -218,7 +114,7 @@ namespace McRave::Util {
             return 0;
         return int(choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2))) * 8;
     }
-    
+
     Position getConcavePosition(UnitInfo& unit, double radius, BWEM::Area const * area, Position here)
     {
         auto center = WalkPositions::None;
