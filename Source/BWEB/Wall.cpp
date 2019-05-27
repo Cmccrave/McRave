@@ -368,7 +368,7 @@ namespace BWEB::Walls
                 }
 
                 // Score wall based on path sizes and distances
-                const auto score = !openWall ? dist : currentHole.getDistance(startTile) * newPath.getDistance() / (dist);
+                const auto score = !openWall ? dist : log(currentHole.getDistance(startTile) * newPath.getDistance()) / max(1.0, dist);
                 if (score > bestWallScore) {
                     bestWall = currentWall;
                     bestWallScore = score;
@@ -454,7 +454,7 @@ namespace BWEB::Walls
                         const auto centerB = Map::pConvert(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
                         const auto angle2 = Map::getAngle(make_pair(centerB, here));
 
-                        if (abs(abs(angle1) - abs(angle2)) > 15.0)
+                        if (abs(abs(angle1) - abs(angle2)) > 45.0)
                             return false;
                     }
                 }

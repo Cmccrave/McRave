@@ -543,7 +543,7 @@ namespace McRave::Command {
             return false;
 
         // Probe Cannon surround
-        if (unit.getType().isWorker() && vis(UnitTypes::Protoss_Photon_Cannon) > 0) {
+        if (false && unit.getType().isWorker() && vis(UnitTypes::Protoss_Photon_Cannon) > 0) {
             auto &cannon = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Self, [&](auto &u) {
                 return u.getType() == UnitTypes::Protoss_Photon_Cannon;
             });
@@ -555,14 +555,14 @@ namespace McRave::Command {
                 for (int y = start.y - 2; y < start.y + 10; y++) {
                     WalkPosition w(x, y);
                     double dist = Position(w).getDistance(mapBWEM.Center());
-                    if (dist < distBest) {
+                    if (dist < distBest && Util::isWalkable(unit, w)) {
                         distBest = dist;
                         walkBest = w;
                     }
                 }
             }
 
-            if (walkBest.isValid() && unit.unit()->getLastCommand().getTargetPosition() != Position(walkBest)) {
+            if (walkBest.isValid()) {
                 unit.command(UnitCommandTypes::Move, Position(walkBest), false);
                 return true;
             }

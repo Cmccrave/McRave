@@ -63,8 +63,6 @@ namespace McRave::Util {
                 if (arriveAtDefense < Strategy::enemyArrivalFrame() - 100)
                     return false;
 
-                Broodwar << completedDefenders << endl;
-
                 if (Strategy::enemyRush() && combatCount < 6 - (2 * completedDefenders) && visibleDefenders >= 1)
                     return true;
                 if (Strategy::enemyRush() && myGroundStrength < 1.00 && completedDefenders < 2 && visibleDefenders >= 2)
