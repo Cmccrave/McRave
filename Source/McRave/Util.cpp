@@ -44,12 +44,8 @@ namespace McRave::Util {
     
     bool proactivePullWorker(UnitInfo& unit)
     {
-        auto combatCount = Units::getMyRoleCount(Role::Combat);
-        auto myStrength = Players::getStrength(PlayerState::Self);
-
-        // Subtract strength and count if this unit already is in combat role
-        myStrength.groundToGround -= unit.getVisibleGroundStrength();
-        combatCount -= int(unit.getRole() == Role::Combat);
+        auto combatCount = Units::getMyRoleCount(Role::Combat) - (unit.getRole() == Role::Combat ? 1 : 0);
+        auto myGroundStrength = Players::getStrength(PlayerState::Self).groundToGround - (unit.getRole() == Role::Combat ? unit.getVisibleGroundStrength() : 0.0);
 
         auto arriveAtDefense = Broodwar->getFrameCount() + (unit.getPosition().getDistance(Terrain::getDefendPosition()) / unit.getSpeed());
 
@@ -64,22 +60,24 @@ namespace McRave::Util {
                 return true;
 
             if (BuildOrder::getCurrentBuild() == "FFE") {
-                if (arriveAtDefense < Strategy::enemyArrivalFrame() - 50)
+                if (arriveAtDefense < Strategy::enemyArrivalFrame() - 100)
                     return false;
 
-                if (Strategy::enemyRush() && combatCount < max(2, Units::getEnemyCount(UnitTypes::Zerg_Zergling)) && visibleDefenders >= 1)
+                Broodwar << completedDefenders << endl;
+
+                if (Strategy::enemyRush() && combatCount < 6 - (2 * completedDefenders) && visibleDefenders >= 1)
                     return true;
-                if (Strategy::enemyRush() && myStrength.groundToGround < 1.00 && completedDefenders < 2 && visibleDefenders >= 2)
+                if (Strategy::enemyRush() && myGroundStrength < 1.00 && completedDefenders < 2 && visibleDefenders >= 2)
                     return true;
-                if (Strategy::enemyPressure() && myStrength.groundToGround < 4.00 && completedDefenders < 5 && visibleDefenders >= 2)
+                if (Strategy::enemyPressure() && myGroundStrength < 4.00 && completedDefenders < 5 && visibleDefenders >= 2)
                     return true;
-                if (!Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && myStrength.groundToGround < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
+                if (!Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && myGroundStrength < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
                     return true;
             }
             else if (BuildOrder::getCurrentBuild() == "2Gate" && BuildOrder::getCurrentOpener() == "Natural") {
-                if (Strategy::getEnemyBuild() == "4Pool" && myStrength.groundToGround < 4.00 && completedDefenders < 2)
+                if (Strategy::getEnemyBuild() == "4Pool" && myGroundStrength < 4.00 && completedDefenders < 2)
                     return true;
-                if (Strategy::getEnemyBuild() == "9Pool" && myStrength.groundToGround < 4.00 && completedDefenders < 3)
+                if (Strategy::getEnemyBuild() == "9Pool" && myGroundStrength < 4.00 && completedDefenders < 3)
                     return true;
             }
             else if (BuildOrder::getCurrentBuild() == "1GateCore" && Strategy::getEnemyBuild() == "2Gate" && BuildOrder::getCurrentTransition() != "Defensive" && Strategy::defendChoke()) {
@@ -104,11 +102,9 @@ namespace McRave::Util {
 
     bool reactivePullWorker(UnitInfo& unit)
     {
-        auto myStrength = Players::getStrength(PlayerState::Self);
+        auto combatCount = Units::getMyRoleCount(Role::Combat) - (unit.getRole() == Role::Combat ? 1 : 0);
+        auto myGroundStrength = Players::getStrength(PlayerState::Self).groundToGround - (unit.getRole() == Role::Combat ? unit.getVisibleGroundStrength() : 0.0);
         auto closestStation = Stations::getClosestStation(PlayerState::Self, unit.getPosition());
-
-        // HACK: This sucks
-        auto hackyOffset = unit.getRole() == Role::Combat ? myStrength.groundToGround - unit.getVisibleGroundStrength() : myStrength.groundToGround;
 
         if (Units::getEnemyCount(UnitTypes::Terran_Vulture) > 2)
             return false;
@@ -128,7 +124,7 @@ namespace McRave::Util {
         }
 
         // If we have no combat units and there is a threat
-        if (Units::getImmThreat() > hackyOffset + myStrength.groundDefense && Broodwar->getFrameCount() < 10000)            
+        if (Units::getImmThreat() > myGroundStrength && Broodwar->getFrameCount() < 10000)
             return true;
         return false;
     }
@@ -281,7 +277,7 @@ namespace McRave::Util {
 
     Position getInterceptPosition(UnitInfo& unit)
     {
-        auto timeToEngage = max(0.0, (unit.getEngDist() / unit.getSpeed()) - 24.0);
+        auto timeToEngage = max(0.0, (unit.getEngDist() / unit.getSpeed()));
         auto targetDestination = unit.getTarget().getPosition() + Position(int(unit.getTarget().unit()->getVelocityX() * timeToEngage), int(unit.getTarget().unit()->getVelocityY() * timeToEngage));
         targetDestination = Util::clipPosition(targetDestination);
         return targetDestination;

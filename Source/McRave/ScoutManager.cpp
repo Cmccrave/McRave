@@ -13,12 +13,12 @@ namespace McRave::Scouts {
         UnitType proxyType = UnitTypes::None;
         Position proxyPosition = Positions::Invalid;
 
-        void updateScoutCount()
+        void updateScoutRoles()
         {
             scoutCount = 1;
 
             // If we have seen an enemy Probe before we've scouted the enemy, follow it
-            if (Units::getEnemyCount(UnitTypes::Protoss_Probe) == 1 && Units::getEnemyCount(UnitTypes::Protoss_Zealot) == 0) {
+            if (Units::getEnemyCount(UnitTypes::Protoss_Probe) == 1 && Broodwar->getFrameCount() < 10000) {
                 auto &enemyProbe = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
                     return u.getType() == UnitTypes::Protoss_Probe;
                 });
@@ -26,7 +26,7 @@ namespace McRave::Scouts {
             }
             else
                 proxyCheck = false;
-            
+
             // Calculate the number of unexplored bases
             int unexploredBases = 0;
             for (auto &tile : mapBWEM.StartingLocations()) {
@@ -39,7 +39,7 @@ namespace McRave::Scouts {
             if (Players::PvZ()) {
 
                 // Don't scout vs 4Pool
-                if (Strategy::getEnemyBuild() == "4Pool")
+                if (Strategy::getEnemyBuild() == "4Pool" && Units::getEnemyCount(UnitTypes::Zerg_Zergling) >= 2)
                     scoutCount = 0;
 
                 // Send a 2nd scout after 1st scout
@@ -50,8 +50,12 @@ namespace McRave::Scouts {
             // If we are playing PvP
             if (Players::PvP()) {
 
-                // Send a 2nd scout versus a proxy
-                if ((Strategy::enemyProxy() || proxyCheck) && Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Zealot) < 1)
+                // No scouting if we see proxy cannons
+                if (Strategy::enemyProxy() && Units::getEnemyCount(UnitTypes::Protoss_Photon_Cannon) > 0)
+                    scoutCount = 0;
+
+                // Send a 2nd scout to find any proxies
+                else if ((Strategy::enemyProxy() || proxyCheck) && com(UnitTypes::Protoss_Zealot) < 1)
                     scoutCount = 2;
             }
 
@@ -60,11 +64,40 @@ namespace McRave::Scouts {
 
             if (Strategy::enemyPressure() && BuildOrder::isPlayPassive())
                 scoutCount = 0;
+
+            // Assign new scouts
+            if (BWEB::Map::getNaturalChoke() && BuildOrder::shouldScout() && Units::getMyRoleCount(Role::Scout) < Scouts::getScoutCount() /*&& Broodwar->getFrameCount() - scoutDeadFrame > 240*/) {
+                auto scout = Util::getClosestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
+                    return u.getRole() == Role::Worker && (!u.hasResource() || !u.getResource().getType().isRefinery()) && u.getBuildingType() == UnitTypes::None && !u.unit()->isCarryingMinerals() && !u.unit()->isCarryingGas();
+                });
+
+                if (scout) {
+                    scout->setRole(Role::Scout);
+                    scout->setBuildingType(UnitTypes::None);
+                    scout->setBuildPosition(TilePositions::Invalid);
+
+                    if (scout->hasResource())
+                        Workers::removeUnit(*scout);
+                }
+            }
+            else if (Units::getMyRoleCount(Role::Scout) > Scouts::getScoutCount()) {
+
+                // Look at scout targets and find the least useful scout, remove it
+                auto &target = Strategy::enemyProxy() || !Terrain::getEnemyStartingPosition().isValid() ? BWEB::Map::getMainPosition() : Terrain::getEnemyStartingPosition();
+                auto &scout = Util::getClosestUnitGround(target, PlayerState::Self, [&](auto &u) {
+                    return u.getRole() == Role::Scout;
+                });
+
+                if (scout) {
+                    scout->setRole(Role::Worker);
+                }
+            }
         }
 
         void updateScoutTargets()
         {
             scoutTargets.clear();
+            proxyPosition = Positions::Invalid;
 
             const auto explored = [](Position here) {
                 return Broodwar->isExplored(TilePosition(here));
@@ -92,10 +125,6 @@ namespace McRave::Scouts {
                     }
                 }
             }
-
-            // If it's a cannon rush, scout the main
-            else if (Strategy::getEnemyBuild() == "CannonRush")
-                addTarget(BWEB::Map::getMainPosition());
 
             // If enemy start is valid and explored, add a target to the most recent one to scout
             else if (Terrain::foundEnemy()) {
@@ -155,6 +184,9 @@ namespace McRave::Scouts {
             auto distBest = DBL_MAX;
 
             const auto isClosestAvailableScout = [&](Position here) {
+                if (scoutCount == 1)
+                    return true;
+
                 auto &closestScout = Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &u) {
                     return u.getRole() == Role::Scout && !u.getDestination().isValid();
                 });
@@ -163,25 +195,8 @@ namespace McRave::Scouts {
 
             if (!BuildOrder::firstReady() || BuildOrder::isOpener() || !Terrain::getEnemyStartingPosition().isValid()) {
 
-                // If it's a main or natural proxy
-                if (Strategy::enemyProxy() && Strategy::getEnemyBuild() == "2Gate") {
-                    auto &enemyPylon = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
-                        return u.getType() == UnitTypes::Protoss_Pylon;
-                    });
-
-                    if (enemyPylon && enemyPylon->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0) {
-                        if (enemyPylon->unit() && enemyPylon->unit()->exists()) {
-                            unit.unit()->attack(enemyPylon->unit());
-                            return;
-                        }
-                        else
-                            unit.setDestination(enemyPylon->getPosition());
-                        return;
-                    }
-                }
-
                 // If it's a center of map proxy
-                if ((proxyPosition.isValid() && isClosestAvailableScout(proxyPosition)) || proxyCheck) {
+                if ((proxyPosition.isValid() && isClosestAvailableScout(proxyPosition)) || (proxyCheck && isClosestAvailableScout(BWEB::Map::getMainPosition()))) {
 
                     // Determine what proxy type to expect
                     if (Units::getEnemyCount(UnitTypes::Terran_Barracks) > 0)
@@ -199,27 +214,15 @@ namespace McRave::Scouts {
                         return u.getType() == proxyType;
                     });
 
-                    auto enemyWorkerClose = enemyWorker && enemyWorker->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0;
+                    auto enemyWorkerClose = enemyWorker && enemyWorker->getPosition().getDistance(BWEB::Map::getMainPosition()) < 1280.0;
                     auto enemyWorkerConstructing = enemyWorker && enemyStructure && enemyWorker->getPosition().getDistance(enemyStructure->getPosition()) < 128.0;
                     auto enemyStructureProxy = enemyStructure && !Terrain::isInEnemyTerritory(enemyStructure->getTilePosition());
 
                     // Attempt to kill the worker if we find it - TODO: Check if the Attack command takes care of this
-                    if (Strategy::getEnemyBuild() != "2Gate" && (enemyWorkerClose || enemyWorkerConstructing)) {
-                        if (enemyWorker->unit() && enemyWorker->unit()->exists()) {
-                            unit.unit()->attack(enemyWorker->unit());
-                            return;
-                        }
-                        else
-                            unit.setDestination(enemyWorker->getPosition());
-                    }
-                    else if (enemyStructureProxy) {
-                        if (enemyStructure->unit() && enemyStructure->unit()->exists()) {
-                            unit.unit()->attack(enemyStructure->unit());
-                            return;
-                        }
-                        else
-                            unit.setDestination(enemyStructure->getPosition());
-                    }
+                    if (Strategy::getEnemyBuild() != "2Gate" && (enemyWorkerClose || enemyWorkerConstructing))
+                        unit.setDestination(enemyWorker->getPosition());
+                    else if (enemyStructureProxy)
+                        unit.setDestination(enemyStructure->getPosition());
                     else
                         unit.setDestination(BWEB::Map::getMainPosition());
                 }
@@ -244,12 +247,12 @@ namespace McRave::Scouts {
                     }
                 }
 
-                // Make sure we always do something
-                if (!unit.getDestination().isValid())
+                if (!unit.getDestination().isValid() && Terrain::getEnemyStartingPosition().isValid())
                     unit.setDestination(Terrain::getEnemyStartingPosition());
             }
 
-            else
+            // Make sure we always do something
+            else if (!unit.getDestination().isValid())
             {
                 int best = INT_MAX;
                 for (auto &area : mapBWEM.Areas()) {
@@ -270,15 +273,15 @@ namespace McRave::Scouts {
             }
         }
 
-        constexpr tuple commands{ Command::attack, Command::kite, Command::hunt, Command::move };
+        constexpr tuple commands{ Command::attack, Command::kite, Command::hunt/*, Command::move*/ };
         void updateDecision(UnitInfo& unit)
         {
             // Convert our commands to strings to display what the unit is doing for debugging
             map<int, string> commandNames{
                 make_pair(0, "Attack"),
                 make_pair(1, "Kite"),
-                make_pair(2, "Hunt"),
-                make_pair(3, "Move"),
+                make_pair(2, "Explore"),
+                //make_pair(3, "Move"),
             };
 
             Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Purple);
@@ -303,8 +306,8 @@ namespace McRave::Scouts {
     void onFrame()
     {
         Visuals::startPerfTest();
-        updateScoutCount();
         updateScoutTargets();
+        updateScoutRoles();
         updateScouts();
         Visuals::endPerfTest("Scouts");
     }

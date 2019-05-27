@@ -90,7 +90,7 @@ namespace McRave::Math {
         if ((unit.unit()->isRepairing() || unit.unit()->isConstructing()) && unit.isThreatening())
             return 5.0;
         if (Broodwar->getFrameCount() < 6000 && Strategy::enemyProxy() && unit.getType() == Protoss_Pylon)
-            return 0.0;
+            return Grids::getEGroundThreat(unit.getPosition()) == 0.0f ? 5.0 : 0.0;
         if (unit.unit()->isBeingConstructed() && unit.getType() == Terran_Bunker && Terrain::isInAllyTerritory(unit.getTilePosition())) {
             unit.circleBlack();
             return 0.0;
@@ -256,6 +256,10 @@ namespace McRave::Math {
         }
         if (unit.getType() == Terran_Vulture_Spider_Mine)
             return 160.0;
+        if (unit.getType() == Terran_SCV)
+            return 15.0;
+        if (unit.getType() == Protoss_Probe || unit.getType() == Zerg_Drone)
+            return 32.0;
         return double(unit.getType().groundWeapon().maxRange());
     }
 

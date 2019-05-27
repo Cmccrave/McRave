@@ -131,7 +131,7 @@ namespace McRave::Buildings {
                     placements = block.getSmallTiles();
 
                 for (auto &tile : placements)
-                    checkBest(building, tile, here, tileBest, distBest);                
+                    checkBest(building, tile, here, tileBest, distBest);
             }
 
             // Make sure we always place a pylon if we need large/medium spots or need supply
@@ -144,7 +144,7 @@ namespace McRave::Buildings {
                         continue;
                     if (!Terrain::isInAllyTerritory(block.getTilePosition()))
                         continue;
-                    
+
                     if (!BuildOrder::isOpener() && (!hasPoweredPositions() || Broodwar->self()->visibleUnitCount(Protoss_Pylon) < 20) && (poweredLarge > 0 || poweredMedium > 0)) {
                         if (poweredLarge == 0 && block.getLargeTiles().size() == 0)
                             continue;
@@ -239,7 +239,7 @@ namespace McRave::Buildings {
             currentExpansion = tileBest;
             return tileBest;
         }
-        
+
         TilePosition findResourceDepotLocation()
         {
             auto here = TilePositions::Invalid;
@@ -521,7 +521,7 @@ namespace McRave::Buildings {
                 building.unit()->cancelMorph();
                 BWEB::Map::removeUsed(building.getTilePosition(), 4, 2);
             }
-                         
+
             // Cancelling refineries we don't want
             if (building.getType().isRefinery() && Strategy::enemyRush() && vis(building.getType()) == 1 && building.getType().getRace() != Races::Zerg && BuildOrder::buildCount(building.getType()) < vis(building.getType())) {
                 building.unit()->cancelConstruction();
@@ -704,9 +704,10 @@ namespace McRave::Buildings {
         int safetyOffset = int(!type.isBuilding());
 
         // Check if there's a building queued there already
-        for (auto &queued : buildingsQueued) {
-            TilePosition tile = queued.first;
-            UnitType building = queued.second;
+        for (auto &[tile,building] : buildingsQueued) {
+
+            if (Broodwar->self()->minerals() < building.mineralPrice() || Broodwar->self()->gas() < building.gasPrice())
+                continue;
 
             for (int x = here.x - safetyOffset; x < here.x + safetyOffset; x++) {
                 for (int y = here.y - safetyOffset; y < here.y + safetyOffset; y++) {

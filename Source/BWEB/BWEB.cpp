@@ -520,6 +520,11 @@ namespace BWEB::Map
         int y2 = int(ceil(x2 * slope)) + int(yInt);
         p2 = Position(x2, y2);
 
+        // In case we failed
+        if (p1 == p2) {
+            p1 = Position(choke->Pos(choke->end1));
+            p2 = Position(choke->Pos(choke->end2));
+        }
         return make_pair(p1, p2);
     }
 

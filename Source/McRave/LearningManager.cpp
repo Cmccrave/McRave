@@ -7,10 +7,8 @@ using namespace BWAPI;
 using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
 
-
 namespace McRave::Learning {
     namespace {
-
         map <string, Build> myBuilds;
         stringstream ss;
         vector <string> buildNames;
@@ -169,7 +167,7 @@ namespace McRave::Learning {
 
                 if (build == "2Gate") {
                     if (transition == "DT")
-                        return /*p ||*/t;
+                        return p ||t;
                     if (transition == "Robo")
                         return p /*|| t*/ || r;
                     if (transition == "Expand")

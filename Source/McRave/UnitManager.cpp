@@ -22,20 +22,6 @@ namespace McRave::Units {
         double immThreat;
         int scoutDeadFrame = 0;
 
-        void resetValues()
-        {
-            immThreat = 0.0;
-            splashTargets.clear();
-            enemyTypes.clear();
-            myVisibleTypes.clear();
-            myCompleteTypes.clear();
-
-            enemyUnits.clear();
-            myUnits.clear();
-            neutralUnits.clear();
-            allyUnits.clear();
-        }
-
         void updateRole(UnitInfo& unit)
         {
             // Don't assign a role to uncompleted units
@@ -43,9 +29,6 @@ namespace McRave::Units {
                 unit.setRole(Role::None);
                 return;
             }
-
-            // Store old role to update counters after
-            auto oldRole = unit.getRole();
 
             // Update default role
             if (unit.getRole() == Role::None) {
@@ -57,27 +40,10 @@ namespace McRave::Units {
                     unit.setRole(Role::Defender);
                 else if (unit.getType().spaceProvided() > 0)
                     unit.setRole(Role::Transport);
+                else if ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == UnitTypes::Protoss_Arbiter)
+                    unit.setRole(Role::Support);
                 else
                     unit.setRole(Role::Combat);
-            }
-
-            // Check if workers should fight or work
-            if (unit.getType().isWorker()) {
-                if (unit.getRole() == Role::Worker && !unit.unit()->isCarryingMinerals() && !unit.unit()->isCarryingGas() && (Util::reactivePullWorker(unit) || Util::proactivePullWorker(unit) || Util::pullRepairWorker(unit))) {
-                    unit.setRole(Role::Combat);
-                    Players::addStrength(unit);
-                    unit.setBuildingType(UnitTypes::None);
-                    unit.setBuildPosition(TilePositions::Invalid);
-                }
-                else if (unit.getRole() == Role::Combat && !Util::reactivePullWorker(unit) && !Util::proactivePullWorker(unit) && !Util::pullRepairWorker(unit))
-                    unit.setRole(Role::Worker);
-
-                if (Util::reactivePullWorker(unit))
-                    unit.circleBlack();
-                if (Util::proactivePullWorker(unit))
-                    unit.circleBlue();
-                if (Util::pullRepairWorker(unit))
-                    unit.circleGreen();
             }
 
             // Check if an overlord should scout or support
@@ -89,53 +55,12 @@ namespace McRave::Units {
                 return;
             }
 
-            // Check if this unit should scout
-            if (BWEB::Map::getNaturalChoke() && BuildOrder::shouldScout() && Units::getMyRoleCount(Role::Scout) < Scouts::getScoutCount() && Broodwar->getFrameCount() - scoutDeadFrame > 240) {
-                auto &scout = Util::getClosestUnitGround(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
-                    return u.getRole() == Role::Worker && (!u.hasResource() || !u.getResource().getType().isRefinery()) && u.getBuildingType() == UnitTypes::None && !u.unit()->isCarryingMinerals() && !u.unit()->isCarryingGas();
-                });
-
-                if (scout) {
-                    scout->setRole(Role::Scout);
-                    scout->setBuildingType(UnitTypes::None);
-                    scout->setBuildPosition(TilePositions::Invalid);
-
-                    if (scout->hasResource())
-                        Workers::removeUnit(*scout);
-                }
-            }
-            else if (Units::getMyRoleCount(Role::Scout) > Scouts::getScoutCount()) {
-
-                // Look at scout targets and find the least useful scout, remove it
-                auto &target = Strategy::enemyProxy() || !Terrain::getEnemyStartingPosition().isValid() ? BWEB::Map::getMainPosition() : Terrain::getEnemyStartingPosition();
-                auto &scout = Util::getClosestUnitGround(target, PlayerState::Self, [&](auto &u) {
-                    return u.getRole() == Role::Scout;
-                });
-
-                if (scout) {
-                    scout->setRole(Role::Worker);
-                }
-            }
-
             // Check if a worker morphed into a building
             if (unit.getRole() == Role::Worker && unit.getType().isBuilding()) {
                 if (unit.getType().isBuilding() && !unit.canAttackGround() && !unit.canAttackAir())
                     unit.setRole(Role::Production);
                 else
                     unit.setRole(Role::Combat);
-            }
-
-            // Detectors and Support roles
-            if ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == UnitTypes::Protoss_Arbiter)
-                unit.setRole(Role::Support);
-
-            // Increment new role counter, decrement old role counter
-            auto newRole = unit.getRole();
-            if (oldRole != newRole) {
-                if (oldRole != Role::None)
-                    myRoles[oldRole] --;
-                if (newRole != Role::None)
-                    myRoles[newRole] ++;
             }
         }
 
@@ -236,16 +161,32 @@ namespace McRave::Units {
             }
         }
 
-        void updateUnitSizes()
+        void updateCounters()
         {
+            immThreat = 0.0;
+            splashTargets.clear();
+            enemyTypes.clear();
+            myVisibleTypes.clear();
+            myCompleteTypes.clear();
+
+            enemyUnits.clear();
+            myUnits.clear();
+            neutralUnits.clear();
+            allyUnits.clear();
+
             allySizes.clear();
             enemySizes.clear();
+
+            myRoles.clear();
 
             for (auto &p : Players::getPlayers()) {
                 PlayerInfo &player = p.second;
                 if (player.isSelf()) {
                     for (auto &u : player.getUnits()) {
                         UnitInfo &unit = *u;
+
+                        myRoles[unit.getRole()]++;
+
                         if (unit.getRole() == Role::Combat)
                             allySizes[unit.getType().size()]++;
                     }
@@ -273,8 +214,7 @@ namespace McRave::Units {
     void onFrame()
     {
         Visuals::startPerfTest();
-        resetValues();
-        updateUnitSizes();
+        updateCounters();
         updateUnits();
         Visuals::endPerfTest("Units");
     }
@@ -294,7 +234,7 @@ namespace McRave::Units {
         }
 
         if (unit->getType().isBuilding() && unit->getPlayer() == Broodwar->self()) {
-            auto &closestWorker = Util::getClosestUnit(unit->getPosition(), PlayerState::Self, [&](auto &u) {
+            auto closestWorker = Util::getClosestUnit(unit->getPosition(), PlayerState::Self, [&](auto &u) {
                 return u.getRole() == Role::Worker && u.getBuildPosition() == unit->getTilePosition();
             });
             if (closestWorker) {

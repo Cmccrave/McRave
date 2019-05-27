@@ -26,16 +26,15 @@ namespace BWEB
         map<const BWEM::Area *, int> notReachableThisFrame;
     }
 
-    void Path::createWallPath(map<TilePosition, UnitType>& currentWall, const Position s, const Position t, bool allowLifted)
+    void Path::createWallPath(const Position s, const Position t, bool allowLifted, double maxDist)
     {
         TilePosition target = Map::tConvert(t);
         TilePosition source = Map::tConvert(s);
         vector<TilePosition> direction{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 } };
-        auto maxDist = source.getDistance(target);
         
         const auto collision = [&](const TilePosition tile) {
             return !tile.isValid()
-                || tile.getDistance(target) > maxDist * 2.0
+                || tile.getDistance(target) > maxDist + 64.0
                 || !Map::isWalkable(tile)
                 || Map::isUsed(tile) != UnitTypes::None
                 || Map::isOverlapping(tile)
@@ -51,11 +50,13 @@ namespace BWEB
         TilePosition target = Map::tConvert(t);
         TilePosition source = Map::tConvert(s);
 
-        auto checkReachable = notReachableThisFrame[Map::mapBWEM.GetArea(target)];
-        if (checkReachable >= Broodwar->getFrameCount()) {
-            reachable = false;
-            dist = DBL_MAX;
-            return;
+        if (target.isValid() && Map::mapBWEM.GetArea(target)) {
+            auto checkReachable = notReachableThisFrame[Map::mapBWEM.GetArea(target)];
+            if (checkReachable >= Broodwar->getFrameCount() && Broodwar->getFrameCount() > 0) {
+                reachable = false;
+                dist = DBL_MAX;
+                return;
+            }
         }
 
         vector<TilePosition> newJPSPath;
@@ -70,7 +71,7 @@ namespace BWEB
             }
             reachable = true;
         }
-        else {
+        else if (target.isValid() && Map::mapBWEM.GetArea(target)) {
             dist = DBL_MAX;
             notReachableThisFrame[Map::mapBWEM.GetArea(target)] = Broodwar->getFrameCount();
             reachable = false;

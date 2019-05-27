@@ -23,6 +23,8 @@ namespace BWEB::Walls
         int failedSpawn = 0;
         int failedPower = 0;
 
+        double jpsDist = 0.0;
+
         void checkPathPoints(Wall& wall)
         {
             auto distBest = DBL_MAX;
@@ -34,7 +36,7 @@ namespace BWEB::Walls
                     for (auto y = initialStart.y - 2; y < initialStart.y + 2; y++) {
                         const TilePosition t(x, y);
                         const auto dist = t.getDistance(endTile);
-                        if (overlapsCurrentWall(t) != UnitTypes::None || !Map::isWalkable(t))
+                        if (overlapsCurrentWall(t) != UnitTypes::None || !Map::isWalkable(t) || Map::isOverlapping(t))
                             continue;
 
                         if (Map::mapBWEM.GetArea(t) == wall.getArea() && dist < distBest) {
@@ -51,7 +53,7 @@ namespace BWEB::Walls
                     for (auto y = initialEnd.y - 4; y < initialEnd.y + 4; y++) {
                         const TilePosition t(x, y);
                         const auto dist = t.getDistance(startTile);
-                        if (overlapsCurrentWall(t) != UnitTypes::None || !Map::isWalkable(t))
+                        if (overlapsCurrentWall(t) != UnitTypes::None || !Map::isWalkable(t) || Map::isOverlapping(t))
                             continue;
 
                         if (Map::mapBWEM.GetArea(t) && dist > distBest) {
@@ -67,31 +69,34 @@ namespace BWEB::Walls
         {
             const auto choke = wall.getChokePoint();
             const auto line = Map::lineOfBestFit(choke);
-            const auto perpLine = Map::perpendicularLine(line, 96.0);
+            const auto perpLine = Map::perpendicularLine(line, 320.0);
             const auto pathEnd = !perpLine.first.isValid() || Map::mapBWEM.GetArea(Map::tConvert(perpLine.first)) == wall.getArea() ? perpLine.second : perpLine.first;
 
-            // If there is only one choke at the natural and the wall is on the main choke, path between the top of the area and just past the main choke, towards the center of the map
-            if (choke == Map::getMainChoke() && Map::getNaturalArea()->ChokePoints().size() == 1) {
-                initialStart = Map::tConvert(wall.getArea()->Top());
-                initialEnd = Map::tConvert(pathEnd);
-            }
+            Broodwar << perpLine.first << endl;
+            Broodwar << perpLine.second << endl;
+
+            //// If there is only one choke at the natural and the wall is on the main choke, path between the top of the area and just past the main choke, towards the center of the map
+            //if (choke == Map::getMainChoke() && Map::getNaturalArea()->ChokePoints().size() == 1) {
+            //    initialStart = Map::tConvert(wall.getArea()->Top());
+            //    initialEnd = Map::tConvert(pathEnd);
+            //}
 
             // If the wall is on the natural choke, path between the main choke and just past the natural choke, towards the center of the map
-            else if (choke == Map::getNaturalChoke()) {
+            /*else */if (choke == Map::getNaturalChoke()) {
                 initialStart = Map::tConvert(Map::getMainChoke()->Center());
                 initialEnd = Map::tConvert(pathEnd);
             }
 
-            // If the wall is on the main choke, path between our start location and the natural choke
-            else if (choke == Map::getMainChoke() && Map::getNaturalChoke()) {
-                initialStart = (Map::getMainTile() + Map::tConvert(Map::getMainChoke()->Center())) / 2;
-                initialEnd = Map::tConvert(Map::getNaturalChoke()->Center());
-            }
+            //// If the wall is on the main choke, path between our start location and the natural choke
+            //else if (choke == Map::getMainChoke() && Map::getNaturalChoke()) {
+            //    initialStart = (Map::getMainTile() + Map::tConvert(Map::getMainChoke()->Center())) / 2;
+            //    initialEnd = Map::tConvert(Map::getNaturalChoke()->Center());
+            //}
 
-            // Default the pathing to the top of the area and towards the center of the map
+            //// Default the pathing to the top of the area and towards the center of the map
             else {
-                initialStart = Map::tConvert(wall.getArea()->Top());
-                initialEnd = Map::tConvert(pathEnd);
+                initialStart = Map::tConvert(perpLine.first);
+                initialEnd = Map::tConvert(perpLine.second);
             }
 
             startTile = initialStart;
@@ -107,7 +112,7 @@ namespace BWEB::Walls
 
             // Get a new path
             BWEB::Path newPath;
-            newPath.createWallPath(currentWall, startCenter, endCenter, false);
+            newPath.createWallPath(startCenter, endCenter, false, jpsDist);
             return newPath;
         }
 
@@ -260,7 +265,17 @@ namespace BWEB::Walls
 
         bool findSuitableWall(Wall& wall)
         {
+            // Create a path for limiting BFS exploration
+            Path jpsPath;
+            checkPathPoints(wall);
+            jpsPath.createUnitPath(Map::pConvert(startTile), Map::pConvert(endTile));
+            jpsDist = jpsPath.getDistance();
+
+            if (!jpsPath.isReachable())
+                return false;
+
             auto start = Map::tConvert(wall.getChokePoint()->Center());
+            auto areaTop = Map::tConvert(wall.getArea()->Top());
             auto movedStart = false;
 
             // Choke angle
@@ -275,7 +290,30 @@ namespace BWEB::Walls
             else
                 sort(wall.getRawBuildings().begin(), wall.getRawBuildings().end());
 
-            // If the start position isn't buildable - currently freezes if area top is not buildable
+            //// If the top of the area is not buildable, move towards the base of this area (if it exists) to find a buildable location
+            //while (!wall.getArea()->Bases().empty() && !Broodwar->isBuildable(areaTop)) {
+            //    auto distBest = DBL_MAX;
+            //    const auto base = wall.getArea()->Bases().begin()->Center();
+            //    const auto initialAreaTop = areaTop;
+
+            //    for (int x = initialAreaTop.x - 1; x <= initialAreaTop.x + 1; x++) {
+            //        for (int y = initialAreaTop.y - 1; y <= initialAreaTop.y + 1; y++) {
+            //            const TilePosition t(x, y);
+            //            if (!t.isValid())
+            //                continue;
+
+            //            const auto p = Position(t);
+            //            const auto dist = p.getDistance(base);
+
+            //            if (dist < distBest) {
+            //                distBest = dist;
+            //                areaTop = t;
+            //            }
+            //        }
+            //    }
+            //}
+
+            // If the start position isn't buildable, move towards the top of this area to find a buildable location
             while (!Broodwar->isBuildable(start)) {
                 auto distBest = DBL_MAX;
                 const auto initialStart = start;
@@ -286,7 +324,7 @@ namespace BWEB::Walls
                             continue;
 
                         const auto p = Position(t);
-                        const auto dist = p.getDistance(Position(wall.getArea()->Top()));
+                        const auto dist = p.getDistance(Position(areaTop));
 
                         if (dist < distBest) {
                             distBest = dist;
@@ -326,7 +364,7 @@ namespace BWEB::Walls
                     const auto center = Map::pConvert(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
                     const auto chokeDist = closestChokeTile(center).getDistance(center);
 
-                    dist += (!wall.isPylonWall() && type == UnitTypes::Protoss_Pylon) ? 1.0 / (chokeDist) : (chokeDist);
+                    dist += (!wall.isPylonWall() && type == UnitTypes::Protoss_Pylon) ? -chokeDist : (chokeDist);
                 }
 
                 // Score wall based on path sizes and distances
@@ -398,7 +436,7 @@ namespace BWEB::Walls
                     || overlapsCurrentWall(here, type.tileWidth(), type.tileHeight()) != UnitTypes::None
                     || Map::isOverlapping(here, type.tileWidth(), type.tileHeight(), true)
                     || !Map::isPlaceable(type, here)
-                    || !Map::tilesWithinArea(wall.getArea(), here, type.tileWidth(), type.tileHeight()))
+                    || (type == UnitTypes::Protoss_Pylon && !Map::tilesWithinArea(wall.getArea(), here, type.tileWidth(), type.tileHeight())))
                     return false;
                 return true;
             };
@@ -416,7 +454,7 @@ namespace BWEB::Walls
                         const auto centerB = Map::pConvert(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
                         const auto angle2 = Map::getAngle(make_pair(centerB, here));
 
-                        if (abs(abs(angle1) - abs(angle2)) > 30.0)
+                        if (abs(abs(angle1) - abs(angle2)) > 15.0)
                             return false;
                     }
                 }
@@ -431,7 +469,7 @@ namespace BWEB::Walls
 
                 // Check if we can lift the Barracks to get out
                 if (Broodwar->self()->getRace() == Races::Terran) {
-                    pathOut.createWallPath(currentWall, startCenter, endCenter, true);
+                    pathOut.createWallPath(startCenter, endCenter, true, jpsDist);
                     if (!pathOut.isReachable())
                         return false;
                 }
@@ -480,7 +518,7 @@ namespace BWEB::Walls
             };
 
             function<void(TilePosition)> recursiveCheck = [&](TilePosition start) -> void {
-                const auto radius = 10;
+                const auto radius = 6;
                 const auto type = *typeIterator;
 
                 for (auto x = start.x - radius; x < start.x + radius; x++) {
@@ -824,7 +862,7 @@ namespace BWEB::Walls
         Broodwar->drawCircleMap(Position(startTile), 6, Colors::Purple, true);
         Broodwar->drawCircleMap(Position(endTile), 6, Colors::Yellow, false);
 
-        if (true) {
+        if (false) {
             for (int x = 0; x < Broodwar->mapWidth(); x++) {
                 for (int y = 0; y < Broodwar->mapHeight(); y++) {
                     TilePosition t(x, y);

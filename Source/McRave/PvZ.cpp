@@ -77,6 +77,8 @@ namespace McRave::BuildOrder::Protoss {
             cannonCount = 7;
         else if (enemyBuild() == "3HatchMuta")
             cannonCount = 8;
+        else if (enemyBuild() == "4Pool")
+            cannonCount = 2 + (s >= 24);
 
         // Only queue one at a time to prevent idle probes
         cannonCount = min(vis(Protoss_Photon_Cannon) + 1, cannonCount);
@@ -89,9 +91,7 @@ namespace McRave::BuildOrder::Protoss {
                 currentOpener = "Panic";
 
             // Change Transition
-            if (enemyBuild() == "4Pool")
-                currentTransition =	"Defensive";
-            else if (enemyBuild() == "2HatchHydra" || enemyBuild() == "3HatchHydra")
+            if (enemyBuild() == "2HatchHydra" || enemyBuild() == "3HatchHydra")
                 currentTransition =	"StormRush";
             else if (enemyBuild() == "2HatchMuta" || enemyBuild() == "3HatchMuta")
                 currentTransition =	"DoubleStargate";
@@ -225,26 +225,31 @@ namespace McRave::BuildOrder::Protoss {
 
         // Openers
         if (currentOpener == "Proxy") {
-            itemQueue[Protoss_Pylon] =					Item((s >= 12) + (s >= 30), (s >= 16) + (s >= 30));
+            // 9/9
+            itemQueue[Protoss_Pylon] =					Item((s >= 12) + (s >= 26), (s >= 16) + (s >= 26));
             itemQueue[Protoss_Gateway] =				Item((vis(Protoss_Pylon) > 0) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
         }
         else if (currentOpener == "Natural") {
+            // 9/10
             if (Broodwar->getStartLocations().size() >= 3) {
-                itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
+                itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 26), (s >= 16) + (s >= 26));
                 itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0) + (s >= 20), (s >= 18) + (s >= 20));
             }
+            // 9/9
             else {
-                itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
+                itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 26), (s >= 16) + (s >= 26));
                 itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
             }
         }
         else if (currentOpener == "Main") {
+            // 10/12
             if (Broodwar->getStartLocations().size() >= 3) {
                 itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
                 itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 24));
             }
+            // 9/10
             else {
-                itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
+                itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 26));
                 itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0) + (s >= 20));
             }
         }
@@ -338,16 +343,12 @@ namespace McRave::BuildOrder::Protoss {
         if (currentTransition == "DT") {
             // Experimental build from Best
             firstUpgrade =		UpgradeTypes::None;
-            firstTech =			TechTypes::Psionic_Storm;
+            firstTech =			vis(Protoss_Dark_Templar) >= 2 ? TechTypes::Psionic_Storm : TechTypes::None;
             getOpening =		s < 70;
             dragoonLimit =		1;
             lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
             playPassive =       s < 70;
-
-            if (techList.find(Protoss_Dark_Templar) == techList.end())
-                firstUnit =			Protoss_Dark_Templar;
-            if (com(Protoss_Dark_Templar) >= 2 && techList.find(Protoss_High_Templar) == techList.end())
-                firstUnit =			Protoss_High_Templar;
+            firstUnit =			Protoss_Dark_Templar;
 
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 42));
             itemQueue[Protoss_Citadel_of_Adun] =	Item(s >= 34);

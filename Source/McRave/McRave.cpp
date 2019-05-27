@@ -16,26 +16,19 @@
 // Move command doesn't care about threat, probably should
 // When choosing a tech or creating a building, allow certain unlocks/research
 // Adjust Production to check for unlocks
-// HT/DT reserving causes production stall
-// Storm drops and storm cast limit testing
 // Mines at chokepoints causes unit suicide with defend command
 // DTs get stuck between core/gate/pylon
 // Only produce one unit per building at a time to prevent overspending
-// Obs/Arbiter positioning
+// Arbiter positioning
 // Units think they cant reach an enemy between buildings
-// 2Gate reaction doesnt tech
 // Proxy bunker targeting
 // Path workers to point not blocked
 // Scanned obs just pause
 // Worker suicide
 // Lifted units not targetable
 // Allow retreating inside own territory
-// Fix making obs AND forge for detection - 2 gate robo seems like it can make obs first
 
 // Remove createWallPath, remove BFS, change to JPS and use incrementing between points to reserve path
-
-// Antigas list
-// NeoBisu build is off
 
 // Need a target based isThreatening
 // Examples:

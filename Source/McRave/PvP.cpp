@@ -10,8 +10,6 @@ namespace McRave::BuildOrder::Protoss {
 
     namespace {
 
-        string enemyBuild() { return Strategy::getEnemyBuild(); }
-
         bool goonRange() {
             return Broodwar->self()->isUpgrading(UpgradeTypes::Singularity_Charge) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge);
         }
@@ -73,27 +71,32 @@ namespace McRave::BuildOrder::Protoss {
 
         // Openers
         if (currentOpener == "Proxy") {
-            itemQueue[Protoss_Pylon] =					Item((s >= 12) + (s >= 30), (s >= 16) + (s >= 30));
+            // 9/9
+            itemQueue[Protoss_Pylon] =					Item((s >= 12) + (s >= 26), (s >= 16) + (s >= 26));
             itemQueue[Protoss_Gateway] =				Item((vis(Protoss_Pylon) > 0) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
         }
         else if (currentOpener == "Natural") {
+            // 9/10
             if (Broodwar->getStartLocations().size() >= 3) {
-                itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
+                itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 26), (s >= 16) + (s >= 26));
                 itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0) + (s >= 20), (s >= 18) + (s >= 20));
             }
+            // 9/9
             else {
-                itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
+                itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 26), (s >= 16) + (s >= 26));
                 itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
             }
         }
         else if (currentOpener == "Main") {
+            // 10/12
             if (Broodwar->getStartLocations().size() >= 3) {
                 itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
                 itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 24));
             }
+            // 9/10
             else {
-                itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 30));
-                itemQueue[Protoss_Gateway] =			Item((s >= 18) + (s >= 20));
+                itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 26));
+                itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0) + (s >= 20));
             }
         }
 
@@ -105,7 +108,7 @@ namespace McRave::BuildOrder::Protoss {
                 currentTransition = "DT";
             else if (Strategy::enemyPressure() && currentOpener == "Natural")
                 currentTransition = "Defensive";
-            else if (Strategy::getEnemyBuild() == "FFE")
+            else if (Strategy::getEnemyBuild() == "FFE" || Strategy::getEnemyBuild() == "1GateDT")
                 currentTransition = "Expand";
             else if (Strategy::getEnemyBuild() == "CannonRush")
                 currentTransition = "Robo";
@@ -117,23 +120,18 @@ namespace McRave::BuildOrder::Protoss {
 
         // Transitions
         if (currentTransition == "DT") {
-            // https://liquipedia.net/starcraft/2_Gateway_Dark_Templar_(vs._Protoss)
-            if (Strategy::getEnemyBuild() == "2Gate")
-                PvP2GateDefensive();
-            else {
-                lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
-                getOpening =		s < 80;
-                firstUpgrade =      UpgradeTypes::None;
-                zealotLimit =       INT_MAX;
+            lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
+            getOpening =		s < 80;
+            firstUpgrade =      UpgradeTypes::None;
+            zealotLimit =       INT_MAX;
 
-                hideTech =			currentOpener == "Main" && com(Protoss_Zealot) < 2;
-                firstUnit =			Protoss_Dark_Templar;
-                desiredDetection =  Protoss_Forge;
+            hideTech =			currentOpener == "Main" && com(Protoss_Zealot) < 2;
+            firstUnit =			Protoss_Dark_Templar;
+            desiredDetection =  Protoss_Forge;
 
-                itemQueue[Protoss_Nexus] =				Item(1);
-                itemQueue[Protoss_Assimilator] =		Item(s >= 44);
-                itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 56);
-            }
+            itemQueue[Protoss_Nexus] =				Item(1);
+            itemQueue[Protoss_Assimilator] =		Item(s >= 44);
+            itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 56);
         }
         else if (currentTransition == "Expand") {
             // https://liquipedia.net/starcraft/2_Gate_(vs._Protoss)#10.2F12_Gateway_Expand
@@ -167,7 +165,7 @@ namespace McRave::BuildOrder::Protoss {
 
             // Decide whether to Reaver first or Obs first
             if (com(Protoss_Robotics_Facility) > 0) {
-                if (vis(Protoss_Observer) == 0 && (Units::getEnemyCount(Protoss_Dragoon) <= 2 || enemyBuild() == "1GateDT"))
+                if (vis(Protoss_Observer) == 0 && Units::getEnemyCount(Protoss_Dragoon) <= 2)
                     firstUnit = Protoss_Observer;
                 else
                     firstUnit = Protoss_Reaver;
@@ -230,20 +228,10 @@ namespace McRave::BuildOrder::Protoss {
         if (!lockedTransition) {
 
             // Change Transition
-            if (Strategy::enemyRush()) {
-                if (vis(Protoss_Cybernetics_Core) == 0)
-                    currentTransition = "Defensive";
-                else
-                    currentTransition = "4Gate";
-            }
-            else if (enemyBuild() == "1GateDT")
+            if (Strategy::enemyRush())
+                currentTransition = vis(Protoss_Cybernetics_Core) ? "4Gate" : "Defensive";
+            else if (Strategy::getEnemyBuild() == "1GateDT" || Strategy::getEnemyBuild() == "FFE")
                 currentTransition = "3GateRobo";
-            else if (enemyBuild() == "FFE")
-                currentTransition = "3GateRobo";
-
-            // Change Opener
-
-            // Change Build
         }
 
         // Transitions
@@ -252,7 +240,6 @@ namespace McRave::BuildOrder::Protoss {
             getOpening =        s < 80;
             playPassive =		!Strategy::enemyFastExpand() && com(Protoss_Reaver) == 0;
 
-            desiredDetection =  Protoss_Forge;
             firstUnit =         Strategy::enemyPressure() ? Protoss_Reaver : Protoss_Observer;
 
             itemQueue[Protoss_Robotics_Facility] =	Item(s >= 52);

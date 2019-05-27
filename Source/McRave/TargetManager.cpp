@@ -32,10 +32,10 @@ namespace McRave::Targets {
                     || (!enemyHasGround && !enemyHasAir);
 
                 // Melee: Don't attack non threatening workers in our territory
-                if ((unit.getGroundRange() <= 32.0 && target.getType().isWorker() && !target.isThreatening() && (Players::getSupply(PlayerState::Self) < 60 || int(unit.getTargetedBy().size()) > 0) && Terrain::isInAllyTerritory(target.getTilePosition()) && !target.hasAttackedRecently() && !Terrain::isInEnemyTerritory(target.getTilePosition()))
+                if ((unit.getRole() == Role::Combat && unit.getGroundRange() <= 32.0 && target.getType().isWorker() && !target.isThreatening() && (Players::getSupply(PlayerState::Self) < 60 || int(unit.getTargetedBy().size()) > 0) && Terrain::isInAllyTerritory(target.getTilePosition()) && !target.hasAttackedRecently() && !Terrain::isInEnemyTerritory(target.getTilePosition()))
 
                     // Scout roles should only target non buildings
-                    || (unit.getRole() == Role::Scout && target.getType().isBuilding())
+                    || (unit.getRole() == Role::Scout && target.getType().isBuilding() && Terrain::isInEnemyTerritory(target.getTilePosition()))
 
                     // Don't try to attack flyers that we can't reach
                     || (target.getType().isFlyer() && Grids::getMobility(target.getPosition()) == 0 && !unit.getType().isFlyer() && !target.unit()->exists())
@@ -188,7 +188,7 @@ namespace McRave::Targets {
         void getPathToTarget(UnitInfo& unit)
         {
             // Don't want a path if we're not fighting
-            if (unit.getRole() != Role::Combat)
+            if (unit.getRole() != Role::Combat && unit.getRole() != Role::Scout)
                 return;
 
             // If no target, no distance/path available

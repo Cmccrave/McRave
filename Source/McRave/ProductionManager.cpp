@@ -369,7 +369,6 @@ namespace McRave::Production {
             else if (Broodwar->self()->getRace() == Races::Zerg) {
                 switch (upgrade)
                 {
-
                     // Speed upgrades
                 case Metabolic_Boost:
                     return true;
@@ -486,8 +485,8 @@ namespace McRave::Production {
             auto bestType = UnitTypes::None;
 
             const auto scoreUnit = [&](UnitType type) {
-                const auto mineralCost = type.mineralPrice() == 0 ? 1.0 : Broodwar->self()->minerals() - type.mineralPrice() - (!BuildOrder::isTechUnit(type) * reservedMineral) - Buildings::getQueuedMineral();
-                const auto gasCost = type.gasPrice() == 0 ? 1.0 : Broodwar->self()->gas() - type.gasPrice() - (!BuildOrder::isTechUnit(type) * reservedGas) - Buildings::getQueuedGas();
+                const auto mineralCost = type.mineralPrice() == 0 || Broodwar->self()->minerals() == 0 ? 1.0 : (Broodwar->self()->minerals() - type.mineralPrice() - (!BuildOrder::isTechUnit(type) * reservedMineral) - Buildings::getQueuedMineral()) / Broodwar->self()->minerals();
+                const auto gasCost = type.gasPrice() == 0 || Broodwar->self()->gas() == 0 ? 1.0 : (Broodwar->self()->gas() - type.gasPrice() - (!BuildOrder::isTechUnit(type) * reservedGas) - Buildings::getQueuedGas()) / Broodwar->self()->gas();
 
                 const auto resourceScore = clamp(gasCost * mineralCost, 0.1, 1.0);
                 const auto strategyScore = clamp(Strategy::getUnitScore(type), 0.1, 1.0);

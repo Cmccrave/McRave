@@ -366,14 +366,13 @@ namespace McRave::Terrain {
             return false;
 
         // Map specific criteria
-        if (Broodwar->mapFileName().find("Destination") != string::npos) {
+        if (Broodwar->mapFileName().find("Destination") != string::npos || Broodwar->mapFileName().find("Python") != string::npos) {
             tight = false;
             tightType = UnitTypes::None;
         }
 
-        // Hack: Make a bunch of walls as Zerg for testing - disabled atm
-        bool testing = false;
-        if (testing && Broodwar->self()->getRace() == Races::Zerg) {
+        // Make a bunch of walls as Zerg for testing
+        if (true && Broodwar->self()->getRace() == Races::Zerg) {
             for (auto &area : mapBWEM.Areas()) {
 
                 // Only make walls at gas bases that aren't starting bases

@@ -11,6 +11,36 @@ namespace McRave::Combat {
         multimap<double, Position> combatClusters;
         multimap<double, UnitInfo&> combatUnitsByDistance;
         constexpr tuple commands{ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::defend, Command::hunt, Command::escort, Command::retreat, Command::move };
+        bool once = false;
+
+        void updateRole(UnitInfo& unit)
+        {
+            if (once)
+                return;
+
+            // TODO: Update role count and only pull closest worker to choke
+            // Check if workers should fight or work
+            if (unit.getType().isWorker()) {
+                if (unit.getRole() == Role::Worker && !unit.unit()->isCarryingMinerals() && !unit.unit()->isCarryingGas() && (Util::reactivePullWorker(unit) || Util::proactivePullWorker(unit) || Util::pullRepairWorker(unit))) {
+                    unit.setRole(Role::Combat);
+                    Players::addStrength(unit);
+                    unit.setBuildingType(UnitTypes::None);
+                    unit.setBuildPosition(TilePositions::Invalid);
+                    once = true;
+                }
+                else if (unit.getRole() == Role::Combat && !Util::reactivePullWorker(unit) && !Util::proactivePullWorker(unit) && !Util::pullRepairWorker(unit)) {
+                    unit.setRole(Role::Worker);
+                    once = true;
+                }
+
+                if (Util::reactivePullWorker(unit))
+                    unit.circleBlack();
+                if (Util::proactivePullWorker(unit))
+                    unit.circleBlue();
+                if (Util::pullRepairWorker(unit))
+                    unit.circleGreen();
+            }
+        }
 
         void updateClusters(UnitInfo& unit)
         {
@@ -239,10 +269,14 @@ namespace McRave::Combat {
         void updateUnits() {
             combatClusters.clear();
             combatUnitsByDistance.clear();
+            once = false;
 
             // Sort units by distance to destination
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
+
+                updateRole(unit); // HACK
+
                 if (unit.getRole() == Role::Combat) {
                     updateDestination(unit);
                     auto dist = unit.getPosition().getDistance(unit.getDestination());
@@ -253,6 +287,7 @@ namespace McRave::Combat {
             // Execute commands ordered by ascending distance
             for (auto &u : combatUnitsByDistance) {
                 auto &unit = u.second;
+
                 if (unit.getRole() == Role::Combat) {
                     Horizon::simulate(unit);
 

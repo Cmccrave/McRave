@@ -288,8 +288,8 @@ namespace McRave
         if (unitType == UnitTypes::Protoss_Reaver)
             cooldown = lastAttackFrame - Broodwar->getFrameCount() + 60;
 
-        auto cooldownReady =  cooldown < Broodwar->getLatencyFrames();
-        auto cooldownWillBeReady = cooldown < engageDist / (transport.lock() ? transport.lock()->getSpeed() : speed);
+        auto cooldownReady =  cooldown <= Broodwar->getLatencyFrames();
+        auto cooldownWillBeReady = cooldown <= engageDist / (transport.lock() ? transport.lock()->getSpeed() : speed);
         return cooldownReady || cooldownWillBeReady;
     }
 
@@ -347,14 +347,14 @@ namespace McRave
     bool UnitInfo::withinReach(UnitInfo& unit)
     {
         auto sizes = (max(unit.getType().width(), unit.getType().height()) + max(unitType.width(), unitType.height())) / 2;
-        auto dist = position.getDistance(unit.getPosition()) - sizes - 32;
+        auto dist = position.getDistance(unit.getPosition()) - sizes - 32.0;
         return unit.getType().isFlyer() ? airReach >= dist : groundReach >= dist;
     }
 
     bool UnitInfo::withinRange(UnitInfo& unit)
     {
         auto sizes = (max(unit.getType().width(), unit.getType().height()) + max(unitType.width(), unitType.height())) / 2;
-        auto dist = position.getDistance(unit.getPosition()) - sizes - 32;
+        auto dist = position.getDistance(unit.getPosition()) - sizes - 32.0;
         return unit.getType().isFlyer() ? airRange >= dist : groundRange >= dist;
     }
 }
