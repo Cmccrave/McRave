@@ -47,7 +47,7 @@ namespace McRave
             airDamage				= Math::airDamage(*this);
             speed 					= Math::speed(*this);
             minStopFrame			= Math::getMinStopFrame(t);
-            burrowed				= thisUnit->getOrder() == Orders::Burrowing;
+            burrowed				= (unitType != UnitTypes::Terran_Vulture_Spider_Mine && thisUnit->isBurrowed()) || thisUnit->getOrder() == Orders::Burrowing;
             flying					= thisUnit->isFlying() || thisUnit->getType().isFlyer() || thisUnit->getOrder() == Orders::LiftingOff || thisUnit->getOrder() == Orders::BuildingLiftOff;
 
             // Update McRave stats
@@ -304,8 +304,12 @@ namespace McRave
         auto spellReady = energy >= tech.energyCost();
         auto spellWillBeReady = framesToEnergize < engageDist / (transport.lock() ? transport.lock()->getSpeed() : speed);
 
+
         if (!spellReady && !spellWillBeReady)
             return false;
+
+        if (engageDist >= 360.0)
+            return true;
 
         if (auto currentTarget = target.lock()) {
             auto ground = Grids::getEGroundCluster(currentTarget->getPosition());

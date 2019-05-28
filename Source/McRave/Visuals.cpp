@@ -101,56 +101,59 @@ namespace McRave::Visuals {
                 BWEB::Map::draw();
             }
 
-
             if (gridSelection != 0) {
                 for (int x = 0; x <= Broodwar->mapWidth() * 4; x++) {
                     for (int y = 0; y <= Broodwar->mapHeight() * 4; y++) {
                         WalkPosition w(x, y);
 
+                        auto value = Grids::getMobility(w);
+
                         // If "draw mobility"
                         if (gridSelection == 1) {
                             auto gridColor = Colors::Black;
-                            switch (Grids::getMobility(w)) {
+
+                            switch (value) {
                             case 1:
-                                color = Colors::White;
+                                gridColor = Colors::White;
                                 break;
                             case 2:
-                                color = Colors::Grey;
+                                gridColor = Colors::Grey;
                                 break;
                             case 3:
-                                color = Colors::Red;
+                                gridColor = Colors::Red;
                                 break;
                             case 4:
-                                color = Colors::Orange;
+                                gridColor = Colors::Orange;
                                 break;
                             case 5:
-                                color = Colors::Yellow;
+                                gridColor = Colors::Yellow;
                                 break;
                             case 6:
-                                color = Colors::Green;
+                                gridColor = Colors::Green;
                                 break;
                             case 7:
-                                color = Colors::Cyan;
+                                gridColor = Colors::Cyan;
                                 break;
                             case 8:
-                                color = Colors::Blue;
+                                gridColor = Colors::Blue;
                                 break;
                             case 9:
-                                color = Colors::Purple;
+                                gridColor = Colors::Purple;
                                 break;
                             case 10:
-                                color = Colors::Brown;
+                                gridColor = Colors::Brown;
                                 break;
                             }
+
                             Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, gridColor);
                         }
-
+                        
                         if (gridSelection == 2) {
-                            if (Grids::getEAirThreat(w) > 0.0)
+                            if (Grids::getEGroundThreat(w) > 0.0)
                                 Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::White);
                         }
                         if (gridSelection == 3) {
-                            if (Grids::getEGroundThreat(w) > 0.0)
+                            if (Grids::getEAirThreat(w) > 0.0)
                                 Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::White);
                         }
                     }
@@ -280,10 +283,10 @@ namespace McRave::Visuals {
         else if (text == "/timers")			timers = !timers;
         else if (text == "/roles")          roles = !roles;
 
-        else if (text == "/grids -o")        gridSelection = 0;
-        else if (text == "/grids -m")        gridSelection = 1;
-        else if (text == "/grids -a")        gridSelection = 2;
-        else if (text == "/grids -g")        gridSelection = 3;
+        else if (text == "/grids 0")        gridSelection = 0;
+        else if (text == "/grids 1")        gridSelection = 1;
+        else if (text == "/grids 2")        gridSelection = 2;
+        else if (text == "/grids 3")        gridSelection = 3;
 
         else								Broodwar->sendText("%s", text.c_str());
         return;

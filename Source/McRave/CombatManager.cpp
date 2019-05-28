@@ -101,7 +101,7 @@ namespace McRave::Combat {
 
             // Check if workers should fight or work
             if (unit.getType().isWorker()) {
-                if (unit.getRole() == Role::Worker && !unit.unit()->isCarryingMinerals() && !unit.unit()->isCarryingGas() && (reactivePullWorker(unit) || proactivePullWorker(unit)) {
+                if (unit.getRole() == Role::Worker && !unit.unit()->isCarryingMinerals() && !unit.unit()->isCarryingGas() && (reactivePullWorker(unit) || proactivePullWorker(unit))) {
                     unit.setRole(Role::Combat);
                     unit.setBuildingType(UnitTypes::None);
                     unit.setBuildPosition(TilePositions::Invalid);
@@ -117,12 +117,10 @@ namespace McRave::Combat {
                     Units::adjustRoleCount(unit.getRole(), -1);
                 }
 
-                if (Util::reactivePullWorker(unit))
+                if (reactivePullWorker(unit))
                     unit.circleBlack();
-                if (Util::proactivePullWorker(unit))
+                if (proactivePullWorker(unit))
                     unit.circleBlue();
-                if (Util::pullRepairWorker(unit))
-                    unit.circleGreen();
             }
         }
 
@@ -353,7 +351,6 @@ namespace McRave::Combat {
         void updateUnits() {
             combatClusters.clear();
             combatUnitsByDistance.clear();
-            once = false;
 
             // Sort units by distance to destination
             for (auto &u : Units::getUnits(PlayerState::Self)) {

@@ -76,7 +76,7 @@ namespace McRave::Horizon {
                 return false;
             if (u.getPlayer() == Broodwar->self() && !u.hasTarget())
                 return false;
-            if (!u.unit() || u.getType().isWorker() || !u.unit()->isCompleted() || (u.unit() && u.unit()->exists() && (u.unit()->isStasised() || u.unit()->isMorphing())))
+            if (!u.unit() || u.getType().isWorker() || (!u.unit()->isCompleted() && u.unit()->exists()) || (u.unit() && u.unit()->exists() && (u.unit()->isStasised() || u.unit()->isMorphing())))
                 return false;
             if (u.getRole() != Role::None && u.getRole() != Role::Combat)
                 return false;

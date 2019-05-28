@@ -71,10 +71,7 @@ namespace BWEB::Walls
             const auto line = Map::lineOfBestFit(choke);
             const auto perpLine = Map::perpendicularLine(line, 320.0);
             const auto pathEnd = !perpLine.first.isValid() || Map::mapBWEM.GetArea(Map::tConvert(perpLine.first)) == wall.getArea() ? perpLine.second : perpLine.first;
-
-            Broodwar << perpLine.first << endl;
-            Broodwar << perpLine.second << endl;
-
+            
             //// If there is only one choke at the natural and the wall is on the main choke, path between the top of the area and just past the main choke, towards the center of the map
             //if (choke == Map::getMainChoke() && Map::getNaturalArea()->ChokePoints().size() == 1) {
             //    initialStart = Map::tConvert(wall.getArea()->Top());
@@ -580,11 +577,11 @@ namespace BWEB::Walls
                 recursiveCheck(start);
             } while (next_permutation(wall.getRawBuildings().begin(), find(wall.getRawBuildings().begin(), wall.getRawBuildings().end(), UnitTypes::Protoss_Pylon)));
 
-            Broodwar << "Angle: " << failedAngle << endl;
+            /*Broodwar << "Angle: " << failedAngle << endl;
             Broodwar << "Placement: " << failedPlacement << endl;
             Broodwar << "Tight: " << failedTight << endl;
             Broodwar << "Path: " << failedPath << endl;
-            Broodwar << "Spawn: " << failedSpawn << endl;
+            Broodwar << "Spawn: " << failedSpawn << endl;*/
 
             return !bestWall.empty();
         }

@@ -68,11 +68,11 @@ namespace McRave::Command {
         }
 
         double defaultVisited(UnitInfo& unit, WalkPosition w) {
-            return log(clamp(100.0, double(Broodwar->getFrameCount() - Grids::lastVisitedFrame(w)), 1000.0));
+            return log(clamp(double(Broodwar->getFrameCount() - Grids::lastVisitedFrame(w)), 100.0, 1000.0));
         }
 
         double defaultVisible(UnitInfo& unit, WalkPosition w) {
-            return log(clamp(100.0, double(Broodwar->getFrameCount() - Grids::lastVisibleFrame(TilePosition(w))), 1000.0));
+            return log(clamp(double(Broodwar->getFrameCount() - Grids::lastVisibleFrame(TilePosition(w))), 100.0, 1000.0));
         }
 
         double defaultMobility(UnitInfo& unit, WalkPosition w) {
@@ -96,8 +96,6 @@ namespace McRave::Command {
                 if (!unit.getType().isFlyer() &&
                     (Buildings::overlapsQueue(unit.getType(), unit.getTilePosition()) /*|| Grids::getESplash(here) > 0*/))
                     return false;
-
-
                 return true;
 
                 auto unitOnChokeGeo = unit.getWalkPosition().isValid() && !unit.getType().isFlyer() && !mapBWEM.GetArea(unit.getWalkPosition());
@@ -117,28 +115,32 @@ namespace McRave::Command {
             multimap<double, TilePosition> sortedTiles;
             auto bestPosition = Positions::Invalid;
             auto best = 0.0;
+            auto t = unit.getTilePosition() + TilePosition(1, 1); //TilePosition(unit.getPosition().x % 2 >= 16 ? 1 : 0, unit.getPosition().y % 2 >= 16 ? 1 : 0);
 
-            auto left = max(unit.getTilePosition().x - 2, unit.getType().tileWidth());
-            auto right = min(unit.getTilePosition().x + unit.getType().tileWidth() + 4, Broodwar->mapWidth() - unit.getType().tileWidth());
-            auto up = max(unit.getTilePosition().y - 2, unit.getType().tileHeight());
-            auto down = min(unit.getTilePosition().y + unit.getType().tileHeight() + 4, Broodwar->mapHeight() - unit.getType().tileHeight());
+            vector<TilePosition> directions{ {t.x, t.y + 1},{t.x - 1, t.y},{t.x, t.y - 1}, {t.x + 1, t.y} };
+            set<TilePosition> allowedDirections;
 
-            for (int x = left; x < right; x++) {
-                for (int y = up; y < down; y++) {
-                    TilePosition t(x, y);
-                    WalkPosition w = WalkPosition(t) + WalkPosition(2, 2);
-                    Position p = Position(t) + Position(16, 16);
+            // Search each Tile to see if it's walkable
+            for (vector<TilePosition>::iterator itr = directions.begin(); itr < directions.end(); itr++) {
+                auto side1 = *itr;
+                auto side2 = itr == directions.end() - 1 ? directions.at(0) : *(itr + 1);
+                auto corner = side1 + side2 - t;
 
-                    if (!t.isValid())
-                        continue;
+                auto side1Type = BWEB::Map::isUsed(side1);
+                auto side2Type = BWEB::Map::isUsed(side2);
+                auto cornerType = BWEB::Map::isUsed(corner);
 
-                    auto current = score(w);
-                    sortedTiles.insert(pair(1.0 / current, t));
-                }
+                if ((side1Type == UnitTypes::None || side2Type == UnitTypes::None) && cornerType == UnitTypes::None && (unit.getType().isFlyer() || Util::isWalkable(corner)))
+                    allowedDirections.insert(corner);
+                if (side1Type == UnitTypes::None && (unit.getType().isFlyer() || Util::isWalkable(side1)))
+                    allowedDirections.insert(side1 + (side1 - t));
+                if (side2Type == UnitTypes::None && (unit.getType().isFlyer() || Util::isWalkable(side2)))
+                    allowedDirections.insert(side2 + (side2 - t));
             }
 
-            for (auto &sortedPair : sortedTiles) {
-                WalkPosition w(sortedPair.second);
+            // Score each Walkposition to see which one is best
+            for (auto &tile : allowedDirections) {
+                WalkPosition w(tile);
 
                 // Iterate the WalkPositions within the TilePosition
                 for (int x = w.x; x < w.x + 4; x++) {
@@ -176,7 +178,7 @@ namespace McRave::Command {
             }
             return false;
         }
-   
+
         // If unit has a transport, load into it if we need to
         else if (unit.hasTransport() && unit.getTransport().unit()->exists()) {
             if (unit.getType() == UnitTypes::Protoss_Reaver && !unit.canStartAttack()) {
@@ -603,7 +605,7 @@ namespace McRave::Command {
             auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
             double threat = /*unit.getRole() == Role::Scout ? max(Grids::getEGroundThreat(w), 1.0f) :*/ defaultThreat(unit, w);
             double distance = unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
-            double visited = clamp(0.01, ((640.0 - distance) / 640.0) * defaultVisited(unit, w), 1.0);
+            double visited = clamp(((640.0 - distance) / 640.0) * defaultVisited(unit, w), 0.01, 1.0);
             double grouping = defaultGrouping(unit, w);
             double mobility = threat > MIN_THREAT ? defaultMobility(unit, w) : 1.0;
             double score = mobility * visited / (threat * distance * grouping);

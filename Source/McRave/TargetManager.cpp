@@ -78,7 +78,7 @@ namespace McRave::Targets {
 
             const auto checkBest = [&](UnitInfo& target, double thisUnit, double health, double dist) {
 
-                auto visibility = log(clamp(25.0, Broodwar->getFrameCount() - double(Grids::lastVisibleFrame(target.getTilePosition())), 1000.0));
+                auto visibility = log(clamp(Broodwar->getFrameCount() - double(Grids::lastVisibleFrame(target.getTilePosition())), 25.0, 1000.0));
                 auto clusterTarget = unit.getType() == UnitTypes::Protoss_High_Templar || unit.getType() == UnitTypes::Protoss_Arbiter;
                 auto priority = target.getPriority() * health / visibility;
 
@@ -174,15 +174,39 @@ namespace McRave::Targets {
                 return;
             }
 
-            int distance = unit.getPosition().getApproxDistance(unit.getTarget().getPosition());
-            int range = unit.getTarget().getType().isFlyer() ? int(unit.getAirRange()) : int(unit.getGroundRange());
-            auto direction = (unit.getPosition() - unit.getTarget().getPosition()) * (distance - range) / distance;
-
-            // If unit is loaded or further than their range, we want to calculate the expected engage position
-            if (distance > range || unit.unit()->isLoaded())
-                unit.setEngagePosition(unit.getPosition() - direction);
-            else
+            if (false && !unit.getPath().getTiles().empty() && !unit.unit()->isLoaded() && !unit.withinRange(unit.getTarget())) {
+                auto cumulativeDistance = 0.0;
+                auto range = unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
+                auto last = unit.getPosition();
                 unit.setEngagePosition(unit.getPosition());
+
+                for (auto &tile : unit.getPath().getTiles()) {
+                    auto center = Position(tile) + Position(16, 16);
+                    //Broodwar->drawLineMap(center, last, Colors::Red);
+                    auto dist = center.getDistance(last);
+                    if (dist + cumulativeDistance >= range) {
+                        auto direction = (last - center) * int((cumulativeDistance + dist - range) / dist);
+                        unit.setEngagePosition(center + direction);
+
+                        Broodwar->drawLineMap(unit.getPosition(), unit.getEngagePosition(), Colors::Cyan);
+                        //Broodwar->drawTextMap(unit.getPosition() + Position(0, 16), "%.2f", unit.getTarget().getPosition().getDistance(unit.getEngagePosition()));
+                        break;
+                    }
+                    cumulativeDistance += dist;
+                    last = center;
+                }
+            }
+            else {
+                int distance = unit.getPosition().getApproxDistance(unit.getTarget().getPosition());
+                int range = unit.getTarget().getType().isFlyer() ? int(unit.getAirRange()) : int(unit.getGroundRange());
+                auto direction = (unit.getPosition() - unit.getTarget().getPosition()) * (distance - range) / distance;
+
+                // If unit is loaded or further than their range, we want to calculate the expected engage position
+                if (distance > range || unit.unit()->isLoaded())
+                    unit.setEngagePosition(unit.getPosition() - direction);
+                else
+                    unit.setEngagePosition(unit.getPosition());
+            }
         }
 
         void getPathToTarget(UnitInfo& unit)
@@ -234,8 +258,10 @@ namespace McRave::Targets {
                     unit.setEngDist(max(0.0, unit.getPath().getDistance() - range));
                 }
                 // If unreachable
-                else if (!unit.getPath().isReachable())
+                else if (!unit.getPath().isReachable()) {
                     unit.setEngDist(DBL_MAX);
+                    unit.circleGreen();
+                }
             }
             // Otherwise approximate and double
             else {

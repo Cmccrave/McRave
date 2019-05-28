@@ -268,9 +268,13 @@ namespace McRave::Grids
                 for (int y = 0; y <= Broodwar->mapHeight() * 4; y++) {
 
                     WalkPosition w(x, y);
-                    if (!w.isValid()
-                        || !lingWalkable(w))
+                    if (!w.isValid())
                         continue;
+
+                    //if (!lingWalkable(w)) {
+                    //    mobility[x][y] = -1;
+                    //    continue;
+                    //}
 
                     for (int i = -12; i < 12; i++) {
                         for (int j = -12; j < 12; j++) {
@@ -281,7 +285,7 @@ namespace McRave::Grids
                         }
                     }
 
-                    mobility[x][y] = min(10, max(1, int(floor(mobility[x][y] / 56))));
+                    mobility[x][y] = clamp(int(floor(mobility[x][y] / 56)), 1, 10);
 
 
                     // Island
@@ -293,6 +297,16 @@ namespace McRave::Grids
                         distanceHome[x][y] = -1;
                     else if (mobility[x][y] > 0)
                         distanceHome[x][y] = 0;
+                }
+            }
+
+            for (auto &gas : Broodwar->getGeysers()) {
+                auto t = WalkPosition(gas->getTilePosition());
+                for (int x = t.x; x < t.x + gas->getType().tileWidth() * 4; x++) {
+                    for (int y = t.y; y < t.y + gas->getType().tileHeight() * 4; y++) {
+                        mobility[x][y] = -1;
+                        distanceHome[x][y] = -1;
+                    }
                 }
             }
         }

@@ -271,8 +271,6 @@ namespace McRave::Units {
                         Workers::removeUnit(*u);
                     if (u->getRole() != Role::None)
                         myRoles[u->getRole()]--;
-                    if (u->getRole() == Role::Scout)
-                        scoutDeadFrame = Broodwar->getFrameCount();
 
                     // Invalidates iterator, must return
                     player.getUnits().erase(u);
