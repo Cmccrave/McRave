@@ -91,13 +91,39 @@ namespace McRave::Util {
         return idx;
     }
 
+    template<typename F>
+    BWAPI::Position findPointOnPath(BWEB::Path path, F &&pred) {
+        auto last = TilePositions::Invalid;
+
+        // For each TilePosition on the path
+        for (auto &pos : path.getTiles()) {
+
+            // If last wasn't valid, this is likely the first TilePosition
+            if (!last.isValid()) {
+                last = pos;
+                continue;
+            }
+
+            // As long as last doesn't equal pos
+            while (last != pos) {
+                if (pred(Position(last)))
+                    return Position(last);
+
+                // Increment or decrement based on where we need to go
+                last.x != pos.x ? (last.x > pos.x ? last.x-- : last.x++) : 0;
+                last.y != pos.y ? (last.y > pos.y ? last.y-- : last.y++) : 0;
+            }
+            last = pos;
+        }
+        return Positions::Invalid;
+    }
+
     int chokeWidth(const BWEM::ChokePoint *);
     const BWEM::ChokePoint * getClosestChokepoint(BWAPI::Position);
 
     double getCastLimit(BWAPI::TechType);
     int getCastRadius(BWAPI::TechType);
 
-    bool hasThreatOnPath(UnitInfo&, BWEB::Path&);
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, BWAPI::Position);
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, int, int);
     bool isWalkable(UnitInfo&, BWAPI::WalkPosition);

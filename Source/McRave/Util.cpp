@@ -58,20 +58,6 @@ namespace McRave::Util {
         return 0;
     }
 
-    bool hasThreatOnPath(UnitInfo& unit, BWEB::Path& path)
-    {
-        if (path.getTiles().empty())
-            return false;
-
-        for (auto &tile : path.getTiles()) {
-            auto w = WalkPosition(tile);
-            auto threat = unit.getType().isFlyer() ? Grids::getEAirThreat(w) > 0.0 : Grids::getEGroundThreat(w) > 0.0;
-            if (threat)
-                return true;
-        }
-        return false;
-    }
-
     bool rectangleIntersect(Position topLeft, Position botRight, Position target)
     {
         if (target.x >= topLeft.x

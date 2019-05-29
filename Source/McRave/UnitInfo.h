@@ -116,8 +116,6 @@ namespace McRave {
         bool isSiegeTank() {
             return unitType == BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode || unitType == BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode;
         }
-
-
         bool isBurrowed() { return burrowed; }
         bool isFlying() { return flying; }
 

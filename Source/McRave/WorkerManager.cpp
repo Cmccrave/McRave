@@ -81,7 +81,11 @@ namespace McRave::Workers {
                     newPath.createUnitPath(worker.getPosition(), center);
                     worker.setPath(newPath);
 
-                    if (!Util::hasThreatOnPath(worker, newPath) || Terrain::isInAllyTerritory(worker.getTilePosition())) {
+                    auto threatPosition = Util::findPointOnPath(newPath, [&](Position p) {
+                        return worker.getType().isFlyer() ? Grids::getEGroundThreat(p) : Grids::getEAirThreat(p);
+                    });
+
+                    if (!threatPosition.isValid() || Terrain::isInAllyTerritory(worker.getTilePosition())) {
                         Command::move(worker);
                         return true;
                     }
@@ -173,8 +177,12 @@ namespace McRave::Workers {
                     //return true;
                 //}
 
+                auto threatPosition = Util::findPointOnPath(worker.getPath(), [&](Position p) {
+                    return worker.getType().isFlyer() ? Grids::getEGroundThreat(p) : Grids::getEAirThreat(p);
+                });
+
                 // 4) If no threat on path, mine it
-                /*else*/ if (!Util::hasThreatOnPath(worker, worker.getPath())) {
+                /*else*/ if (!threatPosition.isValid()) {
                     if (shouldIssueGather())
                         worker.unit()->gather(worker.getResource().unit());
                     else if (!resourceExists)
@@ -207,9 +215,13 @@ namespace McRave::Workers {
 
         void updateAssignment(UnitInfo& worker)
         {
+            auto threatPosition = Util::findPointOnPath(worker.getPath(), [&](Position p) {
+                return worker.getType().isFlyer() ? Grids::getEGroundThreat(p) : Grids::getEAirThreat(p);
+            });
+
             // Check the status of the worker and the assigned resource
             const auto injured = worker.unit()->getHitPoints() + worker.unit()->getShields() < worker.getType().maxHitPoints() + worker.getType().maxShields();
-            const auto threatened = (worker.hasResource() && !closeToResource(worker) && Util::hasThreatOnPath(worker, worker.getPath())) || (worker.hasResource() && closeToResource(worker) && int(worker.getTargetedBy().size()) > 0);
+            const auto threatened = (worker.hasResource() && !closeToResource(worker) && threatPosition.isValid()) || (worker.hasResource() && closeToResource(worker) && int(worker.getTargetedBy().size()) > 0);
             const auto excessAssigned = worker.hasResource() && !injured && !threatened && worker.getResource().getGathererCount() >= 3 + int(worker.getResource().getType().isRefinery());
 
             // Check if worker needs a re-assignment
@@ -242,11 +254,21 @@ namespace McRave::Workers {
             if (closestStation) {
                 for (auto &s : Stations::getMyStations()) {
                     auto station = s.second;
-                    auto path = Stations::pathStationToStation(closestStation, station);
+                    auto stationPath = Stations::pathStationToStation(closestStation, station);
 
-                    // Store station if it's safe
-                    if ((path && !Util::hasThreatOnPath(worker, *path)) || worker.getPosition().getDistance(station->getResourceCentroid()) < 320.0)
+                    // If worker is close, it must be safe
+                    if (worker.getPosition().getDistance(station->getResourceCentroid()) < 320.0 || mapBWEM.GetArea(worker.getTilePosition()) == station->getBWEMBase()->GetArea())
                         safeStations.push_back(station);
+
+                    // If worker is far, we need to check if it's safe
+                    else if (stationPath) {
+                        auto threatPosition = Util::findPointOnPath(*stationPath, [&](Position p) {
+                            return worker.getType().isFlyer() ? Grids::getEGroundThreat(p) : Grids::getEAirThreat(p);
+                        });
+
+                        if (!threatPosition.isValid())
+                            safeStations.push_back(station);
+                    }
                 }
             }
 
