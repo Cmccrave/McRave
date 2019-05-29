@@ -70,7 +70,7 @@ namespace McRave::Learning {
 
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (build == "1GateCore")
-                    return true;
+                    return t || p;
                 if (build == "2Gate")
                     return true;
                 if (build == "NexusGate" || build == "GateNexus")
@@ -114,7 +114,7 @@ namespace McRave::Learning {
                     if (opener == "Proxy")
                         return false;
                     if (opener == "Natural")
-                        return z /*|| p*/;
+                        return false;
                     if (opener == "Main")
                         return true;
                 }
@@ -156,7 +156,7 @@ namespace McRave::Learning {
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (build == "1GateCore") {
                     if (transition == "DT")
-                        return p || t || z;
+                        return p || t /*|| z*/;
                     if (transition == "3GateRobo")
                         return p || r;
                     if (transition == "Robo")

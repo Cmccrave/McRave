@@ -54,8 +54,8 @@ namespace McRave::Util {
     int getCastRadius(TechType tech)
     {
         if (tech == TechTypes::Psionic_Storm || tech == TechTypes::Stasis_Field || tech == TechTypes::Maelstrom || tech == TechTypes::Plague || tech == TechTypes::Ensnare)
-            return 96.0;
-        return 0.0;
+            return 96;
+        return 0;
     }
 
     bool hasThreatOnPath(UnitInfo& unit, BWEB::Path& path)
@@ -143,20 +143,21 @@ namespace McRave::Util {
             auto t = TilePosition(w);
             auto p = Position(w) + Position(4, 4);
             auto dist = p.getDistance(Position(center));
+            auto score = dist + log(p.getDistance(unit.getPosition()));
 
             if (!w.isValid()
                 || (!Terrain::isInAllyTerritory(t) && area && mapBWEM.GetArea(w) != area)
                 || dist < radius
-                || dist > distBest
+                || score > distBest
                 || mapBWEM.GetArea(t) != area
-                || Command::overlapsActions(unit.unit(), p, unit.getType(), PlayerState::Self, 8)
+                || Command::overlapsActions(unit.unit(), p, unit.getType(), PlayerState::Self, 24)
                 || Command::isInDanger(unit, p)
-                //|| !isWalkable(unit, w)
+                || Grids::getMobility(p) <= 6
                 || Buildings::overlapsQueue(unit.getType(), TilePosition(w)))
                 return;
 
             posBest = p;
-            distBest = dist;
+            distBest = score;
         };
 
         // Find a position around the center that is suitable

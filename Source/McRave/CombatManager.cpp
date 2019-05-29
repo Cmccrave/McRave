@@ -267,8 +267,11 @@ namespace McRave::Combat {
         {
             auto moveToTarget = unit.hasTarget() && (unit.getPosition().getDistance(unit.getTarget().getPosition()) <= SIM_RADIUS || unit.getType().isFlyer() || Broodwar->getFrameCount() < 15000);
 
+            if (unit.getGlobalState() == GlobalState::Retreat)
+                unit.setDestination(Terrain::getDefendPosition());
+
             // If target is close, set as destination
-            if (unit.getEngagePosition().isValid() && moveToTarget && unit.getTarget().getPosition().isValid() && Grids::getMobility(unit.getEngagePosition()) > 0) {
+            else if (unit.getEngagePosition().isValid() && moveToTarget && unit.getTarget().getPosition().isValid() && Grids::getMobility(unit.getEngagePosition()) > 0) {
                 if (unit.getTarget().unit()->exists())
                     unit.setDestination(Util::getInterceptPosition(unit));
                 else
@@ -356,6 +359,9 @@ namespace McRave::Combat {
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
 
+                updateClusters(unit);
+                updateGlobalState(unit);
+                updateLocalState(unit);
                 updateRole(unit); // HACK
 
                 if (unit.getRole() == Role::Combat) {
@@ -366,15 +372,17 @@ namespace McRave::Combat {
             }
 
             // Execute commands ordered by ascending distance
+            bool first = false;
             for (auto &u : combatUnitsByDistance) {
                 auto &unit = u.second;
 
+                if (!first) {
+                    unit.circleYellow();
+                    first = true;
+                }
+
                 if (unit.getRole() == Role::Combat) {
                     Horizon::simulate(unit);
-
-                    updateClusters(unit);
-                    updateGlobalState(unit);
-                    updateLocalState(unit);
                     updateDecision(unit);
                 }
             }

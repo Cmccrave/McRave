@@ -579,17 +579,14 @@ namespace McRave::Command {
                 unit.command(UnitCommandTypes::Move, BWEB::Map::getNaturalPosition(), true);
         }
         else {
-            // Estimate a melee radius
-            auto meleeRadius = Terrain::isDefendNatural() && Terrain::getNaturalWall() && Players::getSupply(PlayerState::Self) >= 40 && Players::vZ() ? 32 : min(160, Units::getNumberMelee() * 16);
-
-            // Estimate a ranged radius
-                // At least: behind the melee arc or at least this units range
-                // At most: the number of ranged units we have * half a tile + this units ground range
-            auto rangedRadius = Terrain::getMainWall() ? 128.0 : min(max(meleeRadius + 32, (int)unit.getGroundRange()) - 64, (Units::getNumberRanged() * 16) + (int)unit.getGroundRange() - 64);
+            // Estimate concave radii
+            auto meleeRadius = Terrain::isDefendNatural() && Terrain::getNaturalWall() && Players::getSupply(PlayerState::Self) >= 40 && Players::vZ() ? 32 : min(160, Units::getNumberMelee() * 16) + 32;
+            auto rangedRadius = !Terrain::isDefendNatural() && Terrain::getMainWall() ? 128.0 : max(int(unit.getGroundRange()), meleeRadius + 32);
 
             // Find a concave position at the desired radius
             auto radius = unit.getGroundRange() > 32.0 ? rangedRadius : meleeRadius;
             auto defendArea = Terrain::isDefendNatural() ? BWEB::Map::getNaturalArea() : BWEB::Map::getMainArea();
+
             auto bestPosition = Util::getConcavePosition(unit, radius, defendArea, Terrain::getDefendPosition());
             unit.command(UnitCommandTypes::Move, bestPosition, false);
             return true;

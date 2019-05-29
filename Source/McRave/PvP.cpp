@@ -73,18 +73,18 @@ namespace McRave::BuildOrder::Protoss {
         if (currentOpener == "Proxy") {
             // 9/9
             itemQueue[Protoss_Pylon] =					Item((s >= 12) + (s >= 26), (s >= 16) + (s >= 26));
-            itemQueue[Protoss_Gateway] =				Item((vis(Protoss_Pylon) > 0) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
+            itemQueue[Protoss_Gateway] =				Item((vis(Protoss_Pylon) > 0 && s >= 18) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
         }
         else if (currentOpener == "Natural") {
             // 9/10
             if (Broodwar->getStartLocations().size() >= 3) {
                 itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 26), (s >= 16) + (s >= 26));
-                itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0) + (s >= 20), (s >= 18) + (s >= 20));
+                itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0 && s >= 18) + (s >= 20), (s >= 18) + (s >= 20));
             }
             // 9/9
             else {
                 itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 26), (s >= 16) + (s >= 26));
-                itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
+                itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0 && s >= 18) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
             }
         }
         else if (currentOpener == "Main") {
@@ -96,7 +96,7 @@ namespace McRave::BuildOrder::Protoss {
             // 9/10
             else {
                 itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 26));
-                itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0) + (s >= 20));
+                itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0 && s >= 18) + (s >= 20));
             }
         }
 
@@ -105,17 +105,13 @@ namespace McRave::BuildOrder::Protoss {
 
             // Change Transition
             if (Strategy::enemyRush())
-                currentTransition = "DT";
+                currentTransition = "Defensive";
             else if (Strategy::enemyPressure() && currentOpener == "Natural")
                 currentTransition = "Defensive";
             else if (Strategy::getEnemyBuild() == "FFE" || Strategy::getEnemyBuild() == "1GateDT")
                 currentTransition = "Expand";
             else if (Strategy::getEnemyBuild() == "CannonRush")
                 currentTransition = "Robo";
-
-            // Change Opener
-
-            // Change Build
         }
 
         // Transitions
@@ -172,22 +168,25 @@ namespace McRave::BuildOrder::Protoss {
             }
         }
         else if (currentTransition == "Defensive") {
-            lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
-            getOpening =		s < 100;
+            PvP2GateDefensive();
 
-            playPassive =		com(Protoss_Gateway) < 5 && vis(Protoss_Dark_Templar) == 0;
-            zealotLimit	=		INT_MAX;
-            firstUnit =			Protoss_Dark_Templar;
-            wallNat =           s >= 56 || currentOpener == "Natural";
-            desiredDetection =  Protoss_Forge;
+            // This was used for natural defensive build
+            //lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
+            //getOpening =		s < 100;
 
-            itemQueue[Protoss_Assimilator] =        Item(s >= 64);
-            itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 66);
-            itemQueue[Protoss_Forge] =				Item(vis(Protoss_Zealot) >= 4);
-            itemQueue[Protoss_Nexus] =				Item(1 + (s >= 56));
+            //playPassive =		com(Protoss_Gateway) < 5 && vis(Protoss_Dark_Templar) == 0;
+            //zealotLimit	=		INT_MAX;
+            //firstUnit =			Protoss_Dark_Templar;
+            //wallNat =           s >= 56 || currentOpener == "Natural";
+            //desiredDetection =  Protoss_Forge;
 
-            auto cannonCount = int(1 + Units::getEnemyCount(Protoss_Zealot) + Units::getEnemyCount(Protoss_Dragoon)) / 2;
-            itemQueue[Protoss_Photon_Cannon] =		Item(cannonCount * (com(Protoss_Forge) > 0));
+            //itemQueue[Protoss_Assimilator] =        Item(s >= 64);
+            //itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 66);
+            //itemQueue[Protoss_Forge] =				Item(vis(Protoss_Zealot) >= 4);
+            //itemQueue[Protoss_Nexus] =				Item(1 + (s >= 56));
+
+            //auto cannonCount = int(1 + Units::getEnemyCount(Protoss_Zealot) + Units::getEnemyCount(Protoss_Dragoon)) / 2;
+            //itemQueue[Protoss_Photon_Cannon] =		Item(cannonCount * (com(Protoss_Forge) > 0));
         }
     }
 

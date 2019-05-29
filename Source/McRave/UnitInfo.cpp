@@ -135,10 +135,12 @@ namespace McRave
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames
         int frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
-        bool attackCooldown = frameSinceAttack <= minStopFrame - Broodwar->getRemainingLatencyFrames();
-        Command::addAction(thisUnit, here, unitType, PlayerState::Self);
+        bool cancelAttackRisk = frameSinceAttack <= minStopFrame - Broodwar->getRemainingLatencyFrames();
 
-        if (attackCooldown)
+        if (position.getDistance(here) < 64 && command == UnitCommandTypes::Move && role == Role::Combat)
+            Command::addAction(thisUnit, here, unitType, PlayerState::Self);
+
+        if (cancelAttackRisk)
             return false;
 
         // Check if this is a new order
