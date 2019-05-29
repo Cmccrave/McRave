@@ -50,13 +50,14 @@ namespace McRave::BuildOrder::Protoss {
         dragoonLimit =		vis(Protoss_Dark_Templar) > 0 ? INT_MAX : 0;
         firstUnit =         Protoss_Dark_Templar;
         desiredDetection =  Protoss_Forge;
+        cutWorkers =        Production::hasIdleProduction();
 
         itemQueue[Protoss_Nexus] =					Item(1);
         itemQueue[Protoss_Pylon] =					Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
         itemQueue[Protoss_Gateway] =				Item((s >= 20) + (s >= 24) + (s >= 66));
         itemQueue[Protoss_Assimilator] =			Item(s >= 36);
         itemQueue[Protoss_Shield_Battery] =			Item(enemyMoreZealots && vis(Protoss_Zealot) >= 2 && vis(Protoss_Pylon) >= 2);
-        itemQueue[Protoss_Cybernetics_Core] =		Item(s >= 40);
+        itemQueue[Protoss_Cybernetics_Core] =		Item(com(Protoss_Zealot) >= 5);
     }
 
     void PvP2Gate()
