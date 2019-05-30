@@ -28,7 +28,7 @@ namespace McRave::Players
             p.setPlayer(player);
             p.setStartRace(race);
             p.update();
-           
+
             if (!p.isSelf())
                 raceCount[p.getCurrentRace()]++;
         }
@@ -72,24 +72,26 @@ namespace McRave::Players
         return combined;
     }
 
-    void addStrength(UnitInfo& unit)
+    void adjustStrength(UnitInfo& unit, bool negative)
     {
+        auto i = 1 - (2 * negative);
+
         // TODO: When UnitInfo stores PlayerInfo, fix this
         auto &pInfo = thePlayers[unit.getPlayer()];
         auto &strengths = pInfo.getStrength();
         for (auto &[p, player] : thePlayers) {
             if (p == unit.getPlayer()) {
                 if (unit.getType().isBuilding()) {
-                    strengths.airDefense += unit.getVisibleAirStrength();
-                    strengths.groundDefense += unit.getVisibleGroundStrength();
+                    strengths.airDefense += i * unit.getVisibleAirStrength();
+                    strengths.groundDefense += i * unit.getVisibleGroundStrength();
                 }
                 else if (unit.getType().isFlyer()) {
-                    strengths.airToAir += unit.getVisibleAirStrength();
-                    strengths.airToGround += unit.getVisibleGroundStrength();
+                    strengths.airToAir += i * unit.getVisibleAirStrength();
+                    strengths.airToGround += i * unit.getVisibleGroundStrength();
                 }
                 else {
-                    strengths.groundToAir += unit.getVisibleAirStrength();
-                    strengths.groundToGround += unit.getVisibleGroundStrength();
+                    strengths.groundToAir += i * unit.getVisibleAirStrength();
+                    strengths.groundToGround += i * unit.getVisibleGroundStrength();
                 }
             }
         }

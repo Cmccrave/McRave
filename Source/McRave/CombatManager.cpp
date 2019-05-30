@@ -107,13 +107,14 @@ namespace McRave::Combat {
                     unit.setBuildPosition(TilePositions::Invalid);
 
                     // Adjust counters
-                    Players::addStrength(unit);
+                    Players::adjustStrength(unit, false);
                     Units::adjustRoleCount(unit.getRole(), 1);
                 }
                 else if (unit.getRole() == Role::Combat && !reactivePullWorker(unit) && !proactivePullWorker(unit)) {
                     unit.setRole(Role::Worker);
 
-
+                    // Adjust counters
+                    Players::adjustStrength(unit, true);
                     Units::adjustRoleCount(unit.getRole(), -1);
                 }
 
@@ -202,7 +203,7 @@ namespace McRave::Combat {
             };
 
             const auto localEngage = [&]() {
-                if ((!unit.getType().isFlyer() && unit.getTarget().isSiegeTank() && ((unit.withinRange(unit.getTarget()) && unit.getGroundRange() > 32.0) || (unit.withinReach(unit.getTarget()) && unit.getGroundRange() <= 32.0)))
+                if ((!unit.getType().isFlyer() && unit.getTarget().isSiegeTank() && unit.getTarget().getTargetedBy().size() >= 4 && ((unit.withinRange(unit.getTarget()) && unit.getGroundRange() > 32.0) || (unit.withinReach(unit.getTarget()) && unit.getGroundRange() <= 32.0)))
                     || (unit.isHidden() && !Command::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy))
                     || (unit.getType() == UnitTypes::Protoss_Reaver && !unit.unit()->isLoaded() && unit.withinRange(unit.getTarget()))
                     || (unit.getSimState() == SimState::Win && unit.getGlobalState() == GlobalState::Attack)

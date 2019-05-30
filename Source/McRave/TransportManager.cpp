@@ -196,6 +196,9 @@ namespace McRave::Transports {
                 auto highestClusterPosition = (*Combat::getCombatClusters().rbegin()).second;
                 unit.setDestination(highestClusterPosition);
             }
+
+            if (!unit.getDestination().isValid())
+                unit.setDestination(Terrain::getPlayerStartingPosition());
         }
 
         void updateDecision(UnitInfo& unit)

@@ -183,7 +183,7 @@ namespace McRave::Workers {
 
                 // 4) If no threat on path, mine it
                 /*else*/ if (!threatPosition.isValid()) {
-                    if (shouldIssueGather())
+                    if (shouldIssueGather() && closeToResource(worker))
                         worker.unit()->gather(worker.getResource().unit());
                     else if (!resourceExists)
                         Command::move(worker);

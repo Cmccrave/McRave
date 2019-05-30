@@ -8,7 +8,7 @@ namespace McRave::Players
     int getRaceCount(BWAPI::Race, PlayerState);
     Strength getStrength(PlayerState);
 
-    void addStrength(UnitInfo&);
+    void adjustStrength(UnitInfo&, bool);
 
     void onStart();
     void onFrame();

@@ -40,6 +40,15 @@ namespace McRave::BuildOrder::Protoss
         if (com(Protoss_Cybernetics_Core) == 0)
             return;
 
+        // Change desired detection if we get Cannons
+        if (Strategy::needDetection() && desiredDetection == Protoss_Forge) {
+            itemQueue[Protoss_Forge] = Item(1);
+            itemQueue[Protoss_Photon_Cannon] = Item(com(Protoss_Forge) * 2);
+
+            if (com(Protoss_Photon_Cannon) >= 2)
+                desiredDetection = Protoss_Observer;
+        }
+
         if (firstUnit != None && !isTechUnit(firstUnit))
             techUnit = firstUnit;
 
@@ -47,19 +56,11 @@ namespace McRave::BuildOrder::Protoss
         else if (getTech) {
 
             // If we need detection
-            if (Strategy::needDetection()) {
-                if (desiredDetection == Protoss_Observer)
-                    techUnit = Protoss_Observer;
-                else {
-                    techUnit = Protoss_Forge;
-                    wallNat = true;
-                    itemQueue[Protoss_Forge] = Item(1);
-                    itemQueue[Protoss_Photon_Cannon] = Item(com(Protoss_Forge) * 2);
-                }
-            }
+            if (Strategy::needDetection())
+                techUnit = desiredDetection;            
 
             // Various hardcoded tech choices
-            if (Players::vP() && techList.find(Protoss_Observer) == techList.end() && !techList.empty())
+            else if (Players::vP() && techList.find(Protoss_Observer) == techList.end() && !techList.empty())
                 techUnit = Protoss_Observer;
             else if (currentTransition == "DoubleExpand" && !isTechUnit(Protoss_High_Templar))
                 techUnit = Protoss_High_Templar;

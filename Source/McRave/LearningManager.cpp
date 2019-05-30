@@ -120,7 +120,7 @@ namespace McRave::Learning {
                 }
 
                 if (build == "FFE") {
-                    if (opener == "Gate" || opener == "Nexus" || opener == "Forge")
+                    if (/*opener == "Gate" || opener == "Nexus" || */opener == "Forge")
                         return z;
                 }
 
@@ -171,7 +171,7 @@ namespace McRave::Learning {
                     if (transition == "Robo")
                         return p /*|| t*/ || r;
                     if (transition == "Expand")
-                        return p || z;
+                        return p;
                     if (transition == "DoubleExpand")
                         return t;
                     if (transition == "4Gate")

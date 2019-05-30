@@ -163,6 +163,8 @@ namespace McRave::Stations {
             return true;
         else if (station.getDefenseCount() < 2 && (Strategy::getEnemyBuild() == "2HatchMuta" || Strategy::getEnemyBuild() == "3HatchMuta"))
             return true;
+        else if ((nat || main) && station.getDefenseCount() < 2 && BuildOrder::isTechUnit(UnitTypes::Protoss_Forge))
+            return true;
         return false;
     }
 

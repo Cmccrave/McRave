@@ -189,7 +189,7 @@ namespace McRave::BuildOrder::Protoss {
 
                 itemQueue[Protoss_Photon_Cannon] =		Item(cannonCount);
                 itemQueue[Protoss_Assimilator] =		Item((s >= 34) + (s >= 60));
-                itemQueue[Protoss_Cybernetics_Core] =	Item(vis(Protoss_Zealot) >= 1);
+                itemQueue[Protoss_Cybernetics_Core] =	Item(s >= 36);
                 itemQueue[Protoss_Citadel_of_Adun] =	Item(vis(Protoss_Assimilator) >= 2);
                 itemQueue[Protoss_Stargate] =			Item(com(Protoss_Cybernetics_Core) >= 1);
                 itemQueue[Protoss_Templar_Archives] =	Item(Broodwar->self()->isUpgrading(UpgradeTypes::Leg_Enhancements) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements));

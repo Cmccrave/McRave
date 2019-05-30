@@ -455,6 +455,7 @@ namespace McRave::Strategy {
                 unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
                 break;
             case Enum::Terran_Valkyrie:
+                unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
                 break;
 
             case Enum::Zerg_Zergling:
@@ -485,6 +486,7 @@ namespace McRave::Strategy {
                 unitScore[Protoss_Dark_Templar]			+= (size * 0.20) / vis(Protoss_Dark_Templar);
                 break;
             case Enum::Zerg_Mutalisk:
+                unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
                 unitScore[Protoss_Corsair]				+= (size * 1.00) / vis(Protoss_Corsair);
                 break;
             case Enum::Zerg_Guardian:
@@ -492,6 +494,7 @@ namespace McRave::Strategy {
                 unitScore[Protoss_Corsair]				+= (size * 1.00) / vis(Protoss_Corsair);
                 break;
             case Enum::Zerg_Devourer:
+                unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
                 break;
             case Enum::Zerg_Defiler:
                 unitScore[Protoss_Zealot]				+= (size * 1.00) / vis(Protoss_Zealot);
@@ -513,22 +516,33 @@ namespace McRave::Strategy {
                 unitScore[Protoss_Dark_Templar]			+= (size * 0.10) / vis(Protoss_Dark_Templar);
                 break;
             case Enum::Protoss_High_Templar:
+                unitScore[Protoss_Zealot]				+= (size * 0.50) / vis(Protoss_Zealot);
+                unitScore[Protoss_Dragoon]				+= (size * 0.50) / vis(Protoss_Dragoon);
                 unitScore[Protoss_High_Templar]			+= (size * 1.00) / vis(Protoss_High_Templar);
                 break;
             case Enum::Protoss_Dark_Templar:
+                unitScore[Protoss_Zealot]				+= (size * 0.50) / vis(Protoss_Zealot);
+                unitScore[Protoss_Dragoon]				+= (size * 0.50) / vis(Protoss_Dragoon);
                 unitScore[Protoss_Reaver]				+= (size * 1.00) / vis(Protoss_Reaver);
                 unitScore[Protoss_Observer]				+= (size * 1.00) / vis(Protoss_Observer);
                 break;
             case Enum::Protoss_Reaver:
+                unitScore[Protoss_Zealot]				+= (size * 0.50) / vis(Protoss_Zealot);
+                unitScore[Protoss_Dragoon]				+= (size * 0.50) / vis(Protoss_Dragoon);
                 unitScore[Protoss_Reaver]				+= (size * 1.00) / vis(Protoss_Reaver);
                 break;
             case Enum::Protoss_Archon:
+                unitScore[Protoss_Zealot]				+= (size * 0.50) / vis(Protoss_Zealot);
+                unitScore[Protoss_Dragoon]				+= (size * 0.50) / vis(Protoss_Dragoon);
                 unitScore[Protoss_High_Templar]			+= (size * 1.00) / vis(Protoss_High_Templar);
                 break;
             case Enum::Protoss_Dark_Archon:
+                unitScore[Protoss_Zealot]				+= (size * 0.50) / vis(Protoss_Zealot);
+                unitScore[Protoss_Dragoon]				+= (size * 0.50) / vis(Protoss_Dragoon);
                 unitScore[Protoss_High_Templar]			+= (size * 1.00) / vis(Protoss_High_Templar);
                 break;
             case Enum::Protoss_Scout:
+                unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
                 if (Terrain::isIslandMap())
                     unitScore[Protoss_Scout]			+= (size * 1.00) / vis(Protoss_Scout);
                 break;
@@ -539,9 +553,11 @@ namespace McRave::Strategy {
                     unitScore[Protoss_Scout]			    += (size * 1.00) / vis(Protoss_Scout);
                 break;
             case Enum::Protoss_Arbiter:
+                unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
                 unitScore[Protoss_High_Templar]			+= (size * 1.00) / vis(Protoss_High_Templar);
                 break;
             case Enum::Protoss_Corsair:
+                unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
                 unitScore[Protoss_High_Templar]			+= (size * 1.00) / vis(Protoss_High_Templar);
                 break;
             }
