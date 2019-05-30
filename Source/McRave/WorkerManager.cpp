@@ -185,7 +185,7 @@ namespace McRave::Workers {
                 /*else*/ if (!threatPosition.isValid()) {
                     if (shouldIssueGather() && closeToResource(worker))
                         worker.unit()->gather(worker.getResource().unit());
-                    else if (!resourceExists)
+                    else if (!closeToResource(worker))
                         Command::move(worker);
                     return true;
                 }
