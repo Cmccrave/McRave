@@ -226,8 +226,6 @@ namespace McRave::BuildOrder::Protoss {
             // Change Transition
             if (Strategy::enemyRush())
                 currentTransition = "Panic";
-            else if (Strategy::enemyPressure() && currentOpener == "Natural")
-                currentTransition = "Defensive";
             else if (Units::getEnemyCount(UnitTypes::Zerg_Sunken_Colony) >= 2)
                 currentTransition = "Expand";
         }
@@ -275,13 +273,6 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Cybernetics_Core] =       Item(vis(Protoss_Photon_Cannon) >= 2);
             itemQueue[Protoss_Photon_Cannon] =          Item(2 * (com(Protoss_Forge) > 0));
         }
-        else if (currentTransition == "Defensive") {
-            getOpening =        s < 80;
-
-            itemQueue[Protoss_Forge] =                  Item(1);
-            itemQueue[Protoss_Cybernetics_Core] =       Item(s >= 70);
-            itemQueue[Protoss_Photon_Cannon] =          Item(2 * (com(Protoss_Forge) > 0));
-        }
         else if (currentTransition == "Panic") {
             getOpening =        s < 80;
             wallNat =           currentOpener == "Natural";
@@ -303,7 +294,7 @@ namespace McRave::BuildOrder::Protoss {
 
             itemQueue[Protoss_Gateway] =                Item((s >= 20) + (s >= 24) + (s >= 62) + (s >= 70));
             itemQueue[Protoss_Assimilator] =            Item(s >= 44);
-            itemQueue[Protoss_Cybernetics_Core] =       Item(s >= 50);
+            itemQueue[Protoss_Cybernetics_Core] =       Item(vis(Protoss_Zealot) >= 5);
         }
     }
 
