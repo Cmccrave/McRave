@@ -168,21 +168,13 @@ namespace McRave::Workers {
                     worker.setPath(newPath);
                 }
 
-                Visuals::displayPath(worker.getPath().getTiles());
-
-                // 3) If we are under a threat, try to get away from the threat
-                //if (worker.getPath().getTiles().empty() && Grids::getEGroundThreat(worker.getWalkPosition()) > 0.0) {
-                    //Command::kite(w);
-                    //worker.circleOrange();
-                    //return true;
-                //}
-
+                // See if there's any threat on the path
                 auto threatPosition = Util::findPointOnPath(worker.getPath(), [&](Position p) {
                     return worker.getType().isFlyer() ? Grids::getEGroundThreat(p) : Grids::getEAirThreat(p);
                 });
 
-                // 4) If no threat on path, mine it
-                /*else*/ if (!threatPosition.isValid()) {
+                // 3) If no threat on path, mine it
+                if (!threatPosition.isValid()) {
                     if (shouldIssueGather() && closeToResource(worker))
                         worker.unit()->gather(worker.getResource().unit());
                     else if (!closeToResource(worker))
