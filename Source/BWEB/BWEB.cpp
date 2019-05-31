@@ -521,7 +521,7 @@ namespace BWEB::Map
         p2 = Position(x2, y2);
 
         // In case we failed
-        if (p1 == p2) {
+        if (p1 == p2 || !p1.isValid() || !p2.isValid()) {
             p1 = Position(choke->Pos(choke->end1));
             p2 = Position(choke->Pos(choke->end2));
         }

@@ -164,7 +164,6 @@ namespace McRave::Combat {
             const auto forceRetreat = [&]() {
                 if (/*(unit.getType().isMechanical() && unit.getPercentTotal() < LOW_MECH_PERCENT_LIMIT)
                     || */(unit.getType().getRace() == Races::Zerg && unit.getPercentTotal() < LOW_BIO_PERCENT_LIMIT)
-                    //|| (unit.getType() == UnitTypes::Protoss_High_Templar && unit.getEnergy() < 75)
                     //|| Grids::getESplash(unit.getWalkPosition()) > 0
                     || (unit.getTarget().isHidden() && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= enemyReach)
                     || unit.getGlobalState() == GlobalState::Retreat)
@@ -179,7 +178,7 @@ namespace McRave::Combat {
                     return false;
 
                 // If enemy needs to be killed
-                if (unit.getTarget().isThreatening())
+                if (unit.getTarget().isThreatening() && !unit.getType().isFlyer())
                     return true;
 
                 // If fighting in our territory

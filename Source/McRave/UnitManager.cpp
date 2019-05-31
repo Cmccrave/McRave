@@ -98,10 +98,10 @@ namespace McRave::Units {
                         enemyTypes[unit.getType()] += 1;
 
                     // If a unit is threatening our position
-                    if (unit.isThreatening() && (unit.getType().groundWeapon().damageAmount() > 0 || unit.getType() == UnitTypes::Terran_Bunker)) {
+                    if (unit.isThreatening()) {
                         if (unit.getType().isBuilding())
                             immThreat += 1.50;
-                        else
+                        else if (!unit.getType().isFlyer())
                             immThreat += unit.getVisibleGroundStrength();
                     }
 

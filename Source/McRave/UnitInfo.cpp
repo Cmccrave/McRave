@@ -146,7 +146,7 @@ namespace McRave
         // Check if this is a new order
         const auto newOrder = [&]() {
             auto canIssue = Broodwar->getFrameCount() - thisUnit->getLastCommandFrame() > Broodwar->getLatencyFrames();
-            auto newOrderPosition = thisUnit->getOrderTargetPosition().getDistance(here) > 32;
+            auto newOrderPosition = thisUnit->getOrderTargetPosition().getDistance(here) > 96;
             return canIssue && newOrderPosition;
         };
 

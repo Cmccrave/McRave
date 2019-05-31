@@ -24,7 +24,7 @@ namespace McRave::BuildOrder::Protoss {
             wallNat =           vis(Protoss_Nexus) >= 2;
 
             desiredDetection =  UnitTypes::Protoss_Observer;
-            firstUnit =         UnitTypes::None;
+            firstUnit =         None;
 
             firstUpgrade =		UpgradeTypes::Singularity_Charge;
             firstTech =			TechTypes::None;
@@ -174,23 +174,17 @@ namespace McRave::BuildOrder::Protoss {
             lockedTransition =  vis(Protoss_Robotics_Facility) > 0;
             getOpening =		s < 60;
             hideTech =			com(Protoss_Reaver) == 0;
+            firstUnit =         Strategy::enemyPressure() ? Protoss_Reaver : Protoss_Observer;
 
             itemQueue[Protoss_Nexus] =					Item(1 + (s >= 74));
             itemQueue[Protoss_Gateway] =				Item((s >= 20) + (s >= 60) + (s >= 62));
             itemQueue[Protoss_Robotics_Facility] =		Item(s >= 52);
-
-            // Decide whether to Reaver first or Obs first
-            if (com(Protoss_Robotics_Facility) > 0) {
-                if (vis(Protoss_Observer) == 0 && (Units::getEnemyCount(Terran_Vulture_Spider_Mine) > 0 || enemyBuild() == "2Fact"))
-                    firstUnit = Protoss_Observer;
-                else
-                    firstUnit = Protoss_Reaver;
-            }
         }
         else if (currentTransition == "4Gate") {
             // https://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)
             lockedTransition = vis(Protoss_Gateway) >= 4;
             getOpening = s < 80;
+            firstUnit = None;
 
             itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 30) + (2 * (s >= 62)));
             itemQueue[Protoss_Assimilator] =		Item(s >= 22);
@@ -201,7 +195,7 @@ namespace McRave::BuildOrder::Protoss {
             lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
             getOpening =		vis(Protoss_Dark_Templar) <= 2 && s <= 80;
             hideTech =			com(Protoss_Dark_Templar) < 1;
-            firstUnit =         vis(Protoss_Citadel_of_Adun) > 0 ? Protoss_Dark_Templar : UnitTypes::None;
+            firstUnit =         Protoss_Dark_Templar;
             firstUpgrade =		vis(Protoss_Dark_Templar) >= 2 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
 
             itemQueue[Protoss_Nexus] =              Item(1 + (vis(Protoss_Dark_Templar) > 0));
@@ -261,7 +255,8 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Assimilator] =		Item(s >= 28);
         }
         else if (currentTransition == "Standard") {
-            getOpening =		s < 90;
+            getOpening =		s < 90;            
+            firstUnit =         None;
         }
         else if (currentTransition == "ReaverCarrier") {
             getOpening =		s < 120;

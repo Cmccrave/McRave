@@ -18,7 +18,7 @@ namespace McRave::Scouts {
             scoutCount = 1;
 
             // If we have seen an enemy Probe before we've scouted the enemy, follow it
-            if (Units::getEnemyCount(UnitTypes::Protoss_Probe) == 1 && Broodwar->getFrameCount() < 10000) {
+            if (Units::getEnemyCount(UnitTypes::Protoss_Probe) == 1 && com(UnitTypes::Protoss_Zealot) < 1) {
                 auto &enemyProbe = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
                     return u.getType() == UnitTypes::Protoss_Probe;
                 });
@@ -272,6 +272,20 @@ namespace McRave::Scouts {
             }
         }
 
+        void updatePath(UnitInfo& unit)
+        {
+            BWEB::Path newPath;
+            newPath.createUnitPath(unit.getPosition(), unit.getDestination());
+            unit.setPath(newPath);
+
+            auto newDestination = Util::findPointOnPath(unit.getPath(), [&](Position p) {
+                return p.getDistance(unit.getPosition()) >= 64.0;
+            });
+
+            if (newDestination.isValid())
+                unit.setDestination(newDestination);
+        }
+
         constexpr tuple commands{ Command::attack, Command::kite, Command::hunt/*, Command::move*/ };
         void updateDecision(UnitInfo& unit)
         {
@@ -282,8 +296,6 @@ namespace McRave::Scouts {
                 make_pair(2, "Explore"),
                 //make_pair(3, "Move"),
             };
-
-            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Purple);
 
             int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
             int i = Util::iterateCommands(commands, unit);
@@ -296,6 +308,7 @@ namespace McRave::Scouts {
                 auto &unit = *u;
                 if (unit.getRole() == Role::Scout) {
                     updateAssignment(unit);
+                    updatePath(unit);
                     updateDecision(unit);
                 }
             }

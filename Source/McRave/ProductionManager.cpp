@@ -485,11 +485,14 @@ namespace McRave::Production {
             auto bestType = UnitTypes::None;
 
             const auto scoreUnit = [&](UnitType type) {
-                const auto mineralCost = Broodwar->self()->minerals() == 0 || type.mineralPrice() == 0 ? 1.0 : double(Broodwar->self()->minerals() - type.mineralPrice() - (!BuildOrder::isTechUnit(type) * reservedMineral) - Buildings::getQueuedMineral()) / double(Broodwar->self()->minerals());
-                const auto gasCost = Broodwar->self()->gas() == 0 || type.gasPrice() == 0 ? 1.0 : double(Broodwar->self()->gas() - type.gasPrice() - (!BuildOrder::isTechUnit(type) * reservedGas) - Buildings::getQueuedGas()) / double(Broodwar->self()->gas());
+                const auto mineralCost = Broodwar->self()->minerals() == 0 || type.mineralPrice() == 0 ? 0.5 : double(Broodwar->self()->minerals() - type.mineralPrice() - (!BuildOrder::isTechUnit(type) * reservedMineral) - Buildings::getQueuedMineral()) / double(Broodwar->self()->minerals());
+                const auto gasCost = Broodwar->self()->gas() == 0 || type.gasPrice() == 0 ? 0.5 : double(Broodwar->self()->gas() - type.gasPrice() - (!BuildOrder::isTechUnit(type) * reservedGas) - Buildings::getQueuedGas()) / double(Broodwar->self()->gas());
 
                 const auto resourceScore = clamp(gasCost * mineralCost, 0.01, 1.0);
-                const auto strategyScore = clamp(Strategy::getUnitScore(type), 0.01, 1.0);
+                const auto strategyScore = clamp(Strategy::getUnitScore(type) / max(1, vis(type)), 0.01, 1.0);
+
+                Broodwar << type.c_str() << ": " << strategyScore << endl;
+
                 return resourceScore * strategyScore;
             };
 
@@ -585,19 +588,19 @@ namespace McRave::Production {
             reservedMineral = 0;
             reservedGas = 0;
 
-            for (auto &[_,type] : idleProduction) {
+            for (auto &[_, type] : idleProduction) {
                 if (BuildOrder::isTechUnit(type)) {
                     reservedMineral += type.mineralPrice();
                     reservedGas += type.gasPrice();
                 }
             }
 
-            for (auto &[_,tech] : idleTech) {
+            for (auto &[_, tech] : idleTech) {
                 reservedMineral += tech.mineralPrice();
                 reservedGas += tech.gasPrice();
             }
 
-            for (auto &[_,upgrade] : idleUpgrade) {
+            for (auto &[_, upgrade] : idleUpgrade) {
                 reservedMineral += upgrade.mineralPrice();
                 reservedGas += upgrade.gasPrice();
             }

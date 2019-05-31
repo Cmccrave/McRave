@@ -405,160 +405,160 @@ namespace McRave::Strategy {
             switch (unit)
             {
             case Enum::Terran_Marine:
-                unitScore[Protoss_Zealot]				+= (size * 0.35) / vis(Protoss_Zealot);
-                unitScore[Protoss_Dragoon]				+= (size * 0.65) / vis(Protoss_Dragoon);
-                unitScore[Protoss_High_Templar]			+= (size * 0.90) / vis(Protoss_High_Templar);
-                unitScore[Protoss_Dark_Templar]			+= (size * 0.10) / vis(Protoss_Dark_Templar);
+                unitScore[Protoss_Zealot]				+= size * 0.35;
+                unitScore[Protoss_Dragoon]				+= size * 0.65;
+                unitScore[Protoss_High_Templar]			+= size * 0.90;
+                unitScore[Protoss_Dark_Templar]			+= size * 0.10;
                 break;
             case Enum::Terran_Medic:
-                unitScore[Protoss_Zealot]				+= (size * 0.35) / vis(Protoss_Zealot);
-                unitScore[Protoss_Dragoon]				+= (size * 0.65) / vis(Protoss_Dragoon);
-                unitScore[Protoss_High_Templar]			+= (size * 0.90) / vis(Protoss_High_Templar);
-                unitScore[Protoss_Dark_Templar]			+= (size * 0.10) / vis(Protoss_Dark_Templar);
+                unitScore[Protoss_Zealot]				+= size * 0.35;
+                unitScore[Protoss_Dragoon]				+= size * 0.65;
+                unitScore[Protoss_High_Templar]			+= size * 0.90;
+                unitScore[Protoss_Dark_Templar]			+= size * 0.10;
                 break;
             case Enum::Terran_Firebat:
-                unitScore[Protoss_Zealot]				+= (size * 0.35) / vis(Protoss_Zealot);
-                unitScore[Protoss_Dragoon]				+= (size * 0.65) / vis(Protoss_Dragoon);
-                unitScore[Protoss_High_Templar]			+= (size * 0.90) / vis(Protoss_High_Templar);
-                unitScore[Protoss_Dark_Templar]			+= (size * 0.10) / vis(Protoss_Dark_Templar);
+                unitScore[Protoss_Zealot]				+= size * 0.35;
+                unitScore[Protoss_Dragoon]				+= size * 0.65;
+                unitScore[Protoss_High_Templar]			+= size * 0.90;
+                unitScore[Protoss_Dark_Templar]			+= size * 0.10;
                 break;
             case Enum::Terran_Vulture:
-                unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
-                unitScore[Protoss_Observer]				+= (size * 0.70) / vis(Protoss_Observer);
-                unitScore[Protoss_Arbiter]				+= (size * 0.15) / vis(Protoss_Arbiter);
+                unitScore[Protoss_Dragoon]				+= size * 1.00;
+                unitScore[Protoss_Observer]				+= size * 0.70;
+                unitScore[Protoss_Arbiter]				+= size * 0.15;
                 break;
             case Enum::Terran_Goliath:
-                unitScore[Protoss_Zealot]				+= (size * 0.25) / vis(Protoss_Zealot);
-                unitScore[Protoss_Dragoon]				+= (size * 0.75) / vis(Protoss_Dragoon);
-                unitScore[Protoss_Arbiter]				+= (size * 0.70) / vis(Protoss_Arbiter);
-                unitScore[Protoss_High_Templar]			+= (size * 0.30) / (Protoss_High_Templar);
+                unitScore[Protoss_Zealot]				+= size * 0.25;
+                unitScore[Protoss_Dragoon]				+= size * 0.75;
+                unitScore[Protoss_Arbiter]				+= size * 0.70;
+                unitScore[Protoss_High_Templar]			+= size * 0.30;
                 break;
             case Enum::Terran_Siege_Tank_Siege_Mode:
-                unitScore[Protoss_Zealot]				+= (size * 0.75) / vis(Protoss_Zealot);
-                unitScore[Protoss_Dragoon]				+= (size * 0.25) / vis(Protoss_Dragoon);
-                unitScore[Protoss_Arbiter]				+= (size * 0.70) / vis(Protoss_Arbiter);
-                unitScore[Protoss_High_Templar]			+= (size * 0.30) / vis(Protoss_High_Templar);
+                unitScore[Protoss_Zealot]				+= size * 0.75;
+                unitScore[Protoss_Dragoon]				+= size * 0.25;
+                unitScore[Protoss_Arbiter]				+= size * 0.70;
+                unitScore[Protoss_High_Templar]			+= size * 0.30;
                 break;
             case Enum::Terran_Siege_Tank_Tank_Mode:
-                unitScore[Protoss_Zealot]				+= (size * 0.75) / vis(Protoss_Zealot);
-                unitScore[Protoss_Dragoon]				+= (size * 0.25) / vis(Protoss_Dragoon);
-                unitScore[Protoss_Arbiter]				+= (size * 0.70) / vis(Protoss_Arbiter);
-                unitScore[Protoss_High_Templar]			+= (size * 0.30) / vis(Protoss_High_Templar);
+                unitScore[Protoss_Zealot]				+= size * 0.75;
+                unitScore[Protoss_Dragoon]				+= size * 0.25;
+                unitScore[Protoss_Arbiter]				+= size * 0.70;
+                unitScore[Protoss_High_Templar]			+= size * 0.30;
                 break;
             case Enum::Terran_Wraith:
-                unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
+                unitScore[Protoss_Dragoon]				+= size * 1.00;
                 break;
             case Enum::Terran_Science_Vessel:
-                unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
+                unitScore[Protoss_Dragoon]				+= size * 1.00;
                 break;
             case Enum::Terran_Battlecruiser:
-                unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
+                unitScore[Protoss_Dragoon]				+= size * 1.00;
                 break;
             case Enum::Terran_Valkyrie:
-                unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
+                unitScore[Protoss_Dragoon]				+= size * 1.00;
                 break;
 
             case Enum::Zerg_Zergling:
-                unitScore[Protoss_Zealot]				+= (size * 0.85) / vis(Protoss_Zealot);
-                unitScore[Protoss_Dragoon]				+= (size * 0.15) / vis(Protoss_Dragoon);
-                unitScore[Protoss_Corsair]				+= (size * 0.60) / vis(Protoss_Corsair);
-                unitScore[Protoss_High_Templar]			+= (size * 0.30) / vis(Protoss_High_Templar);
-                unitScore[Protoss_Archon]				+= (size * 0.30) / vis(Protoss_Archon);
-                unitScore[Protoss_Dark_Templar]			+= (size * 0.10) / vis(Protoss_Dark_Templar);
+                unitScore[Protoss_Zealot]				+= size * 0.85;
+                unitScore[Protoss_Dragoon]				+= size * 0.15;
+                unitScore[Protoss_Corsair]				+= size * 0.60;
+                unitScore[Protoss_High_Templar]			+= size * 0.30;
+                unitScore[Protoss_Archon]				+= size * 0.30;
+                unitScore[Protoss_Dark_Templar]			+= size * 0.10;
                 break;
             case Enum::Zerg_Hydralisk:
-                unitScore[Protoss_Zealot]				+= (size * 0.75) / vis(Protoss_Zealot);
-                unitScore[Protoss_Dragoon]				+= (size * 0.25) / vis(Protoss_Dragoon);
-                unitScore[Protoss_High_Templar]			+= (size * 0.80) / vis(Protoss_High_Templar);
-                unitScore[Protoss_Dark_Templar]			+= (size * 0.20) / vis(Protoss_Dark_Templar);
-                unitScore[Protoss_Reaver]				+= (size * 0.30) / vis(Protoss_Reaver);
+                unitScore[Protoss_Zealot]				+= size * 0.75;
+                unitScore[Protoss_Dragoon]				+= size * 0.25;
+                unitScore[Protoss_High_Templar]			+= size * 0.80;
+                unitScore[Protoss_Dark_Templar]			+= size * 0.20;
+                unitScore[Protoss_Reaver]				+= size * 0.30;
                 break;
             case Enum::Zerg_Lurker:
-                unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
-                unitScore[Protoss_High_Templar]			+= (size * 0.70) / vis(Protoss_High_Templar);
-                unitScore[Protoss_Observer]				+= (size * 1.00) / vis(Protoss_Observer);
-                unitScore[Protoss_Reaver]				+= (size * 0.30) / vis(Protoss_Reaver);
+                unitScore[Protoss_Dragoon]				+= size * 1.00;
+                unitScore[Protoss_High_Templar]			+= size * 0.70;
+                unitScore[Protoss_Observer]				+= size * 1.00;
+                unitScore[Protoss_Reaver]				+= size * 0.30;
                 break;
             case Enum::Zerg_Ultralisk:
-                unitScore[Protoss_Zealot]				+= (size * 0.25) / vis(Protoss_Zealot);
-                unitScore[Protoss_Dragoon]				+= (size * 0.75) / vis(Protoss_Dragoon);
-                unitScore[Protoss_Reaver]				+= (size * 0.80) / vis(Protoss_Reaver);
-                unitScore[Protoss_Dark_Templar]			+= (size * 0.20) / vis(Protoss_Dark_Templar);
+                unitScore[Protoss_Zealot]				+= size * 0.25;
+                unitScore[Protoss_Dragoon]				+= size * 0.75;
+                unitScore[Protoss_Reaver]				+= size * 0.80;
+                unitScore[Protoss_Dark_Templar]			+= size * 0.20;
                 break;
             case Enum::Zerg_Mutalisk:
-                unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
-                unitScore[Protoss_Corsair]				+= (size * 1.00) / vis(Protoss_Corsair);
+                unitScore[Protoss_Dragoon]				+= size * 1.00;
+                unitScore[Protoss_Corsair]				+= size * 1.00;
                 break;
             case Enum::Zerg_Guardian:
-                unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
-                unitScore[Protoss_Corsair]				+= (size * 1.00) / vis(Protoss_Corsair);
+                unitScore[Protoss_Dragoon]				+= size * 1.00;
+                unitScore[Protoss_Corsair]				+= size * 1.00;
                 break;
             case Enum::Zerg_Devourer:
-                unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
+                unitScore[Protoss_Dragoon]				+= size * 1.00;
                 break;
             case Enum::Zerg_Defiler:
-                unitScore[Protoss_Zealot]				+= (size * 1.00) / vis(Protoss_Zealot);
-                unitScore[Protoss_Dark_Templar]			+= (size * 0.10) / vis(Protoss_Dark_Templar);
-                unitScore[Protoss_Reaver]				+= (size * 0.90) / vis(Protoss_Reaver);
+                unitScore[Protoss_Zealot]				+= size * 1.00;
+                unitScore[Protoss_Dark_Templar]			+= size * 0.10;
+                unitScore[Protoss_Reaver]				+= size * 0.90;
                 break;
 
             case Enum::Protoss_Zealot:
-                unitScore[Protoss_Zealot]				+= (size * 0.05) / vis(Protoss_Zealot);
-                unitScore[Protoss_Dragoon]				+= (size * 0.95) / vis(Protoss_Dragoon);
-                unitScore[Protoss_Reaver]				+= (size * 0.90) / vis(Protoss_Reaver);
-                unitScore[Protoss_Dark_Templar]			+= (size * 0.10) / vis(Protoss_Dark_Templar);
+                unitScore[Protoss_Zealot]				+= size * 0.05;
+                unitScore[Protoss_Dragoon]				+= size * 0.95;
+                unitScore[Protoss_Reaver]				+= size * 0.90;
+                unitScore[Protoss_Dark_Templar]			+= size * 0.10;
                 break;
             case Enum::Protoss_Dragoon:
-                unitScore[Protoss_Zealot]				+= (size * 0.15) / vis(Protoss_Zealot);
-                unitScore[Protoss_Dragoon]				+= (size * 0.85) / vis(Protoss_Dragoon);
-                unitScore[Protoss_Reaver]				+= (size * 0.60) / vis(Protoss_Reaver);
-                unitScore[Protoss_High_Templar]			+= (size * 0.30) / vis(Protoss_High_Templar);
-                unitScore[Protoss_Dark_Templar]			+= (size * 0.10) / vis(Protoss_Dark_Templar);
+                unitScore[Protoss_Zealot]				+= size * 0.15;
+                unitScore[Protoss_Dragoon]				+= size * 0.85;
+                unitScore[Protoss_Reaver]				+= size * 0.60;
+                unitScore[Protoss_High_Templar]			+= size * 0.30;
+                unitScore[Protoss_Dark_Templar]			+= size * 0.10;
                 break;
             case Enum::Protoss_High_Templar:
-                unitScore[Protoss_Zealot]				+= (size * 0.50) / vis(Protoss_Zealot);
-                unitScore[Protoss_Dragoon]				+= (size * 0.50) / vis(Protoss_Dragoon);
-                unitScore[Protoss_High_Templar]			+= (size * 1.00) / vis(Protoss_High_Templar);
+                unitScore[Protoss_Zealot]				+= size * 0.50;
+                unitScore[Protoss_Dragoon]				+= size * 0.50;
+                unitScore[Protoss_High_Templar]			+= size * 1.00;
                 break;
             case Enum::Protoss_Dark_Templar:
-                unitScore[Protoss_Zealot]				+= (size * 0.50) / vis(Protoss_Zealot);
-                unitScore[Protoss_Dragoon]				+= (size * 0.50) / vis(Protoss_Dragoon);
-                unitScore[Protoss_Reaver]				+= (size * 1.00) / vis(Protoss_Reaver);
-                unitScore[Protoss_Observer]				+= (size * 1.00) / vis(Protoss_Observer);
+                unitScore[Protoss_Zealot]				+= size * 0.50;
+                unitScore[Protoss_Dragoon]				+= size * 0.50;
+                unitScore[Protoss_Reaver]				+= size * 1.00;
+                unitScore[Protoss_Observer]				+= size * 1.00;
                 break;
             case Enum::Protoss_Reaver:
-                unitScore[Protoss_Zealot]				+= (size * 0.50) / vis(Protoss_Zealot);
-                unitScore[Protoss_Dragoon]				+= (size * 0.50) / vis(Protoss_Dragoon);
-                unitScore[Protoss_Reaver]				+= (size * 1.00) / vis(Protoss_Reaver);
+                unitScore[Protoss_Zealot]				+= size * 0.50;
+                unitScore[Protoss_Dragoon]				+= size * 0.50;
+                unitScore[Protoss_Reaver]				+= size * 1.00;
                 break;
             case Enum::Protoss_Archon:
-                unitScore[Protoss_Zealot]				+= (size * 0.50) / vis(Protoss_Zealot);
-                unitScore[Protoss_Dragoon]				+= (size * 0.50) / vis(Protoss_Dragoon);
-                unitScore[Protoss_High_Templar]			+= (size * 1.00) / vis(Protoss_High_Templar);
+                unitScore[Protoss_Zealot]				+= size * 0.50;
+                unitScore[Protoss_Dragoon]				+= size * 0.50;
+                unitScore[Protoss_High_Templar]			+= size * 1.00;
                 break;
             case Enum::Protoss_Dark_Archon:
-                unitScore[Protoss_Zealot]				+= (size * 0.50) / vis(Protoss_Zealot);
-                unitScore[Protoss_Dragoon]				+= (size * 0.50) / vis(Protoss_Dragoon);
-                unitScore[Protoss_High_Templar]			+= (size * 1.00) / vis(Protoss_High_Templar);
+                unitScore[Protoss_Zealot]				+= size * 0.50;
+                unitScore[Protoss_Dragoon]				+= size * 0.50;
+                unitScore[Protoss_High_Templar]			+= size * 1.00;
                 break;
             case Enum::Protoss_Scout:
-                unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
+                unitScore[Protoss_Dragoon]				+= size * 1.00;
                 if (Terrain::isIslandMap())
-                    unitScore[Protoss_Scout]			+= (size * 1.00) / vis(Protoss_Scout);
+                    unitScore[Protoss_Scout]			+= size * 1.00;
                 break;
             case Enum::Protoss_Carrier:
-                unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
+                unitScore[Protoss_Dragoon]				+= size * 1.00;
 
                 if (Terrain::isIslandMap())
-                    unitScore[Protoss_Scout]			    += (size * 1.00) / vis(Protoss_Scout);
+                    unitScore[Protoss_Scout]			+= size * 1.00;
                 break;
             case Enum::Protoss_Arbiter:
-                unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
-                unitScore[Protoss_High_Templar]			+= (size * 1.00) / vis(Protoss_High_Templar);
+                unitScore[Protoss_Dragoon]				+= size * 1.00;
+                unitScore[Protoss_High_Templar]			+= size * 1.00;
                 break;
             case Enum::Protoss_Corsair:
-                unitScore[Protoss_Dragoon]				+= (size * 1.00) / vis(Protoss_Dragoon);
-                unitScore[Protoss_High_Templar]			+= (size * 1.00) / vis(Protoss_High_Templar);
+                unitScore[Protoss_Dragoon]				+= size * 1.00;
+                unitScore[Protoss_High_Templar]			+= size * 1.00;
                 break;
             }
         }

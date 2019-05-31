@@ -178,8 +178,12 @@ namespace McRave::BuildOrder::Protoss {
                 itemQueue[Protoss_Stargate] =           Item((vis(Protoss_Corsair) > 0) + (vis(Protoss_Cybernetics_Core) > 0));
             }
             else if (currentTransition == "5GateGoon") {
-                getOpening =        s < 200;
+                getOpening =        s < 160;
                 lockedTransition =  vis(Protoss_Gateway) >= 3;
+
+                gasLimit =          INT_MAX;
+                zealotLimit =       2;
+                dragoonLimit =      INT_MAX;
 
                 firstUpgrade =      UpgradeTypes::Singularity_Charge;
                 firstTech =         TechTypes::None;

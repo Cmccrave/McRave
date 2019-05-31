@@ -179,7 +179,7 @@ namespace McRave::Learning {
                 }
 
                 if (build == "FFE") {
-                    if (transition == "NeoBisu" || transition == "2Stargate" || transition == "StormRush")
+                    if (transition == "NeoBisu" || transition == "2Stargate" || transition == "StormRush" || transition == "5GateGoon")
                         return z;
                 }
 
@@ -316,7 +316,7 @@ namespace McRave::Learning {
 
         if (false) {
             if (Broodwar->self()->getRace() == Races::Protoss) {
-                BuildOrder::setLearnedBuild("NexusGate", "Dragoon", "Standard");
+                BuildOrder::setLearnedBuild("FFE", "Forge", "5GateGoon");
                 isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                 return;
             }

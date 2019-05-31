@@ -96,7 +96,6 @@ namespace McRave::Command {
                 if (!unit.getType().isFlyer() &&
                     (Buildings::overlapsQueue(unit.getType(), unit.getTilePosition()) /*|| Grids::getESplash(here) > 0*/))
                     return false;
-                return true;
 
                 auto unitOnChokeGeo = unit.getWalkPosition().isValid() && !unit.getType().isFlyer() && !mapBWEM.GetArea(unit.getWalkPosition());
                 auto validAreas = unit.getWalkPosition().isValid() && here.isValid() && mapBWEM.GetArea(here) && mapBWEM.GetArea(unit.getWalkPosition()) && mapBWEM.GetArea(here)->AccessibleFrom(mapBWEM.GetArea(unit.getWalkPosition()));
@@ -117,8 +116,22 @@ namespace McRave::Command {
             auto best = 0.0;
             auto t = unit.getTilePosition() + TilePosition(1, 1); //TilePosition(unit.getPosition().x % 2 >= 16 ? 1 : 0, unit.getPosition().y % 2 >= 16 ? 1 : 0);
 
-            vector<TilePosition> directions{ {t.x, t.y + 1},{t.x - 1, t.y},{t.x, t.y - 1}, {t.x + 1, t.y} };
+            vector<TilePosition> directions{ {t.x, t.y - 1},{t.x - 1, t.y},{t.x, t.y + 1}, {t.x + 1, t.y} };
             set<TilePosition> allowedDirections;
+
+            const auto unitCanFitThrough = [&](TilePosition side1, TilePosition side2, UnitType b1, UnitType b2) {
+                auto dim1 = side1.x != t.x ?
+                    (side1.x < t.x ? b1.dimensionRight() + b2.dimensionLeft() : b1.dimensionLeft() + b2.dimensionRight()) :
+                    (side1.y < t.y ? b1.dimensionDown() + b2.dimensionUp() : b1.dimensionUp() + b2.dimensionDown());
+                auto dim2 = side2.x != t.x ?
+                    (side2.x < t.x ? b2.dimensionRight() + b1.dimensionLeft() : b2.dimensionLeft() + b1.dimensionRight()) :
+                    (side2.y < t.y ? b2.dimensionDown() + b1.dimensionUp() : b2.dimensionUp() + b1.dimensionDown());
+
+                auto dim1Ok = (side1.x != t.x && dim1 >= unit.getType().width()) || (side1.y != t.y && dim1 >= unit.getType().height());
+                auto dim2Ok = (side2.x != t.x && dim2 >= unit.getType().width()) || (side2.y != t.y && dim2 >= unit.getType().height());
+
+                return dim1Ok || dim2Ok;
+            };
 
             // Search each Tile to see if it's walkable
             for (vector<TilePosition>::iterator itr = directions.begin(); itr < directions.end(); itr++) {
@@ -130,7 +143,7 @@ namespace McRave::Command {
                 auto side2Type = BWEB::Map::isUsed(side2);
                 auto cornerType = BWEB::Map::isUsed(corner);
 
-                if ((side1Type == UnitTypes::None || side2Type == UnitTypes::None) && cornerType == UnitTypes::None && (unit.getType().isFlyer() || Util::isWalkable(corner)))
+                if ((side1Type == UnitTypes::None || side2Type == UnitTypes::None || unitCanFitThrough(side1, side2, side1Type, side2Type)) && cornerType == UnitTypes::None && (unit.getType().isFlyer() || Util::isWalkable(corner)))
                     allowedDirections.insert(corner);
                 if (side1Type == UnitTypes::None && (unit.getType().isFlyer() || Util::isWalkable(side1)))
                     allowedDirections.insert(side1 + (side1 - t));
@@ -153,7 +166,6 @@ namespace McRave::Command {
                         if (current > best && viablePosition(w, Position(w))) {
                             best = current;
                             bestPosition = Position(w);
-                            Broodwar->drawBoxMap(Position(w), Position(w) + Position(9, 9), Colors::Green);
                         }
                     }
                 }
@@ -601,7 +613,7 @@ namespace McRave::Command {
             // Manual conversion until BWAPI::Point is fixed
             auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
             double threat = /*unit.getRole() == Role::Scout ? max(Grids::getEGroundThreat(w), 1.0f) :*/ defaultThreat(unit, w);
-            double distance = unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
+            double distance = unit.getType().isFlyer() || unit.getRole() == Role::Scout ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
             double visited = clamp(((640.0 - distance) / 640.0) * defaultVisited(unit, w), 0.01, 1.0);
             double grouping = defaultGrouping(unit, w);
             double mobility = threat > MIN_THREAT ? defaultMobility(unit, w) : 1.0;
@@ -632,7 +644,7 @@ namespace McRave::Command {
 
         if (shouldHunt() && canHunt()) {
             auto bestPosition = findViablePosition(unit, scoreFunction);
-            if (bestPosition.isValid() && bestPosition != unit.getDestination()) {
+            if (bestPosition.isValid()) {
                 unit.command(UnitCommandTypes::Move, bestPosition, true);
                 return true;
             }
