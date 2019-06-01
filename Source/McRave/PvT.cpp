@@ -142,10 +142,6 @@ namespace McRave::BuildOrder::Protoss {
                 currentTransition = "Defensive";
             else if (Strategy::enemyFastExpand())
                 currentTransition = "DT";
-
-            // Change Opener
-
-            // Change Build
         }
 
         // Openers

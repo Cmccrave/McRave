@@ -94,7 +94,7 @@ namespace McRave::BuildOrder::Protoss {
             if (enemyBuild() == "2HatchHydra" || enemyBuild() == "3HatchHydra")
                 currentTransition = "StormRush";
             else if (enemyBuild() == "2HatchMuta" || enemyBuild() == "3HatchMuta")
-                currentTransition = "DoubleStargate";
+                currentTransition = "2Stargate";
         }
 
         // Openers
@@ -163,7 +163,7 @@ namespace McRave::BuildOrder::Protoss {
                 itemQueue[Protoss_Cybernetics_Core] =   Item((s >= 42));
                 itemQueue[Protoss_Stargate] =           Item(0);
             }
-            else if (currentTransition == "DoubleStargate") {
+            else if (currentTransition == "2Stargate") {
                 getOpening =        s < 80;
                 lockedTransition =  vis(Protoss_Stargate) >= 2;
 
