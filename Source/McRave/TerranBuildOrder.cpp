@@ -27,11 +27,11 @@ namespace McRave::BuildOrder::Terran {
         bool bioUnlocked, mechUnlocked, airUnlocked;
         bioUnlocked = mechUnlocked = airUnlocked = false;
 
-        satVal = 2;
-        prodVal = vis(UnitTypes::Terran_Barracks) + vis(UnitTypes::Terran_Factory) + vis(UnitTypes::Terran_Starport);
-        baseVal = vis(UnitTypes::Terran_Command_Center);
+        auto satVal = 2;
+        auto prodVal = vis(UnitTypes::Terran_Barracks) + vis(UnitTypes::Terran_Factory) + vis(UnitTypes::Terran_Starport);
+        auto baseVal = vis(UnitTypes::Terran_Command_Center);
+        auto techVal = techList.size();
 
-        techVal = techList.size();
         productionSat = (prodVal >= satVal * baseVal);
         techSat = (techVal > baseVal);
 

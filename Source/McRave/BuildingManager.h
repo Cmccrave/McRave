@@ -4,6 +4,8 @@
 namespace McRave::Buildings {
 
     void onFrame();
+    void onStart();
+
     bool isBuildable(BWAPI::UnitType, BWAPI::TilePosition);
     bool isQueueable(BWAPI::UnitType, BWAPI::TilePosition);
     bool overlapsQueue(BWAPI::UnitType, BWAPI::TilePosition);

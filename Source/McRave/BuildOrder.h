@@ -40,7 +40,6 @@ namespace McRave::BuildOrder {
         inline bool bookSupply = false;
         inline bool transitionReady = false;
 
-        inline int satVal, prodVal, techVal, baseVal;
         inline int gasLimit = INT_MAX;
         inline int zealotLimit = INT_MAX;
         inline int dragoonLimit = INT_MAX;
@@ -55,8 +54,7 @@ namespace McRave::BuildOrder {
         inline BWAPI::UpgradeType firstUpgrade = BWAPI::UpgradeTypes::None;
         inline BWAPI::TechType firstTech = BWAPI::TechTypes::None;
         inline BWAPI::UnitType firstUnit = BWAPI::UnitTypes::None;
-        inline BWAPI::UnitType techUnit;
-        inline BWAPI::UnitType productionUnit;
+        inline BWAPI::UnitType techUnit = BWAPI::UnitTypes::None;
         inline BWAPI::UnitType desiredDetection = BWAPI::UnitTypes::None;
         inline std::set <BWAPI::UnitType> techList;
         inline std::set <BWAPI::UnitType> unlockedType;
@@ -108,6 +106,7 @@ namespace McRave::BuildOrder {
 
     int buildCount(BWAPI::UnitType);
     bool firstReady();
+    bool unlockWhenReady(BWAPI::UnitType);
 
     void onFrame();
     void getNewTech();

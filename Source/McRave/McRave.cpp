@@ -30,28 +30,24 @@ using namespace McRave;
 
 void McRaveModule::onStart()
 {
-    Broodwar->enableFlag(Flag::UserInput);
-    Broodwar->setCommandOptimizationLevel(0);
-    Broodwar->setLatCom(true);
-
-    if (Broodwar->getGameType() != BWAPI::GameTypes::Use_Map_Settings)
-        Broodwar->setLocalSpeed(0);
-
     Players::onStart();
     Terrain::onStart();
-    BWEB::Map::onStart();
-    BWEB::Stations::findStations();
-
     Stations::onStart();
     Grids::onStart();
     Learning::onStart();
-    BWEB::Blocks::findBlocks();
+    Buildings::onStart();
+
+    Broodwar->enableFlag(Flag::UserInput);
+    Broodwar->setCommandOptimizationLevel(0);
+    Broodwar->setLatCom(true);
     Broodwar->sendText("glhf");
+    Broodwar->setLocalSpeed(Broodwar->getGameType() != BWAPI::GameTypes::Use_Map_Settings ? 0 : 42);
 }
 
 void McRaveModule::onEnd(bool isWinner)
 {
     Learning::onEnd(isWinner);
+
     Broodwar->sendText("ggwp");
 }
 

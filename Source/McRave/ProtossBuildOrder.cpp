@@ -77,13 +77,13 @@ namespace McRave::BuildOrder::Protoss
 
     void situational()
     {
-        auto skipFirstTech = int(currentTransition == "4Gate" || (Strategy::enemyGasSteal() && !Terrain::isNarrowNatural()) || Players::vT());
+        auto skipFirstTech = int(currentTransition == "4Gate" || currentTransition == "5GateGoon" || (Strategy::enemyGasSteal() && !Terrain::isNarrowNatural()) || Players::vT());
 
         // Metrics for when to Expand/Add Production/Add Tech
-        satVal = 3;// Players::vT() ? 2 : 3;
-        prodVal = com(Protoss_Gateway);
-        baseVal = com(Protoss_Nexus);
-        techVal = techList.size() + skipFirstTech - isTechUnit(Protoss_Shuttle);
+        auto satVal = 3;
+        auto prodVal = com(Protoss_Gateway);
+        auto baseVal = com(Protoss_Nexus);
+        auto techVal = techList.size() + skipFirstTech - isTechUnit(Protoss_Shuttle);
 
         // Subtract DT from tech units if we're on 2 bases
         if (com(Protoss_Nexus) >= 2)

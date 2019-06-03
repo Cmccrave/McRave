@@ -31,7 +31,7 @@ namespace McRave::Buildings {
             auto distBest = DBL_MAX;
             auto station = BWEB::Stations::getClosestStation(TilePosition(here));
             auto wall = BWEB::Walls::getClosestWall(TilePosition(here));
-            auto natOrMain = Terrain::getPlayerStartingTilePosition() == station->getBWEMBase()->Location() || BWEB::Map::getNaturalTile() == station->getBWEMBase()->Location();
+            auto natOrMain = BWEB::Map::getMainTile() == station->getBWEMBase()->Location() || BWEB::Map::getNaturalTile() == station->getBWEMBase()->Location();
 
             // Check closest stataion to see if one of their defense locations is best
             if (station) {
@@ -735,5 +735,11 @@ namespace McRave::Buildings {
     {
         updateBuildings();
         queueBuildings();
+    }
+
+    void onStart()
+    {
+        // Initialize Blocks
+        BWEB::Blocks::findBlocks();
     }
 }

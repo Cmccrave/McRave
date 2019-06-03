@@ -38,6 +38,10 @@ namespace McRave::BuildOrder
     }
 
     bool isAlmostComplete(UnitType t) {
+        if (com(t) > 0)
+            return true;
+
+        // Estimate how long until a building finishes based on how far it is from the nearest worker
         auto closestBuilding = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
             return u.getType() == t;
         });
@@ -52,12 +56,19 @@ namespace McRave::BuildOrder
 
     bool techComplete()
     {
+        // When 1 unit finishes
         if (techUnit == Protoss_Scout || techUnit == Protoss_Corsair || techUnit == Protoss_Reaver || techUnit == Protoss_Observer || techUnit == Terran_Science_Vessel)
             return (Broodwar->self()->completedUnitCount(techUnit) > 0);
+
+        // When storm finishes
         if (techUnit == Protoss_High_Templar)
             return (Broodwar->self()->hasResearched(TechTypes::Psionic_Storm));
+
+        // When 2 units finish
         if (techUnit == Protoss_Dark_Templar)
             return (Broodwar->self()->completedUnitCount(techUnit) >= 2);
+
+        // When 1 unit is visible
         return (Broodwar->self()->visibleUnitCount(techUnit) > 0);
     }
 
@@ -71,7 +82,7 @@ namespace McRave::BuildOrder
     bool shouldExpand()
     {
         UnitType baseType = Broodwar->self()->getRace().getResourceDepot();
-
+        
         if (Broodwar->self()->getRace() == Races::Protoss) {
             if (Broodwar->self()->minerals() > 400 + (50 * com(baseType)))
                 return true;
@@ -139,6 +150,25 @@ namespace McRave::BuildOrder
         return false;
     }
 
+    bool unlockWhenReady(UnitType type) {
+        bool ready = false;
+
+        if (type == Protoss_High_Templar || type == Protoss_Dark_Templar || type == Protoss_Archon || type == Protoss_Dark_Archon)
+            ready = com(Protoss_Templar_Archives) > 0;
+        if (type == Protoss_Corsair || type == Protoss_Scout)
+            ready = com(Protoss_Stargate) > 0;
+        if (type == Protoss_Reaver)
+            ready = com(Protoss_Robotics_Support_Bay) > 0;
+        if (type == Protoss_Observer)
+            ready = com(Protoss_Observatory) > 0;
+        if (type == Protoss_Carrier)
+            ready = com(Protoss_Fleet_Beacon) > 0;
+        if (type == Protoss_Arbiter)
+            ready = com(Protoss_Arbiter_Tribunal) > 0;
+
+        return ready;
+    }
+
     void getNewTech()
     {
         if (!getTech)
@@ -191,17 +221,19 @@ namespace McRave::BuildOrder
             unlockedType.insert(Zerg_Hydralisk);
         }
 
-        // If we have some Reavers add Obs to the tech
+        // Add Observers if we have Reavers
         if (com(Protoss_Reaver) >= 2) {
             techList.insert(Protoss_Observer);
             unlockedType.insert(Protoss_Observer);
         }
+
+        // Add Shuttles if we have Reavers/HT
         if (com(Protoss_Robotics_Facility) > 0 && (isTechUnit(Protoss_Reaver) || isTechUnit(Protoss_High_Templar))) {
             unlockedType.insert(Protoss_Shuttle);
             techList.insert(Protoss_Shuttle);
         }
         
-        // If enemy has detection, add HT to the tech
+        // Add HT if enemy has detection
         if (com(Protoss_Dark_Templar) >= 1) {
             if (Units::getEnemyCount(Protoss_Observer) > 0 || Units::getEnemyCount(Protoss_Photon_Cannon) > 0 || Units::getEnemyCount(Terran_Science_Vessel) > 0 || Units::getEnemyCount(Terran_Missile_Turret) > 0 || Units::getEnemyCount(Terran_Vulture_Spider_Mine) > 0 || Units::getEnemyCount(Zerg_Overlord) > 0) {
                 unlockedType.insert(Protoss_High_Templar);
@@ -280,8 +312,8 @@ namespace McRave::BuildOrder
         // Hive upgrades
         if (Broodwar->self()->getRace() == Races::Zerg && Players::getSupply(PlayerState::Self) >= 200) {
             itemQueue[Zerg_Queens_Nest] = Item(1);
-            itemQueue[Zerg_Hive] = Item(Broodwar->self()->completedUnitCount(Zerg_Queens_Nest) >= 1);
-            itemQueue[Zerg_Lair] = Item(Broodwar->self()->completedUnitCount(Zerg_Queens_Nest) < 1);
+            itemQueue[Zerg_Hive] = Item(com(Zerg_Queens_Nest) >= 1);
+            itemQueue[Zerg_Lair] = Item(com(Zerg_Queens_Nest) < 1);
         }
     }
 

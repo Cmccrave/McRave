@@ -15,7 +15,7 @@ namespace McRave::Util {
             if (!unit.unit() || !pred(unit))
                 continue;
 
-            double dist = here.getDistance(unit.getPosition());
+            auto dist = here.getDistance(unit.getPosition());
             if (dist < distBest) {
                 best = u;
                 distBest = dist;
@@ -36,7 +36,7 @@ namespace McRave::Util {
             if (!unit.unit() || !pred(unit))
                 continue;
 
-            double dist = here.getDistance(unit.getPosition());
+            auto dist = here.getDistance(unit.getPosition());
             if (dist > distBest) {
                 best = u;
                 distBest = dist;
@@ -57,7 +57,7 @@ namespace McRave::Util {
             if (!unit.unit() || !pred(unit))
                 continue;
 
-            double dist = BWEB::Map::getGroundDistance(here, unit.getPosition());
+            auto dist = BWEB::Map::getGroundDistance(here, unit.getPosition());
             if (dist < distBest) {
                 best = u;
                 distBest = dist;
@@ -121,8 +121,8 @@ namespace McRave::Util {
     int chokeWidth(const BWEM::ChokePoint *);
     const BWEM::ChokePoint * getClosestChokepoint(BWAPI::Position);
 
-    double getCastLimit(BWAPI::TechType);
     int getCastRadius(BWAPI::TechType);
+    double getCastLimit(BWAPI::TechType);
 
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, BWAPI::Position);
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, int, int);

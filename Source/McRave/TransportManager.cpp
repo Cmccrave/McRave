@@ -198,7 +198,7 @@ namespace McRave::Transports {
             }
 
             if (!unit.getDestination().isValid())
-                unit.setDestination(Terrain::getPlayerStartingPosition());
+                unit.setDestination(BWEB::Map::getMainPosition());
         }
 
         void updateDecision(UnitInfo& unit)

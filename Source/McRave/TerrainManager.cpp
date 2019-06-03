@@ -10,9 +10,7 @@ namespace McRave::Terrain {
         set <const Area*> allyTerritory;
         set <const Area*> enemyTerritory;
         Position enemyStartingPosition = Positions::Invalid;
-        Position playerStartingPosition;
         TilePosition enemyStartingTilePosition = TilePositions::Invalid;
-        TilePosition playerStartingTilePosition;
         Position mineralHold, backMineralHold;
         Position attackPosition, defendPosition;
         TilePosition enemyNatural = TilePositions::Invalid;
@@ -24,11 +22,11 @@ namespace McRave::Terrain {
         BWEB::Wall* naturalWall = nullptr;
         UnitType tightType = UnitTypes::None;
 
-        bool islandMap;
-        bool reverseRamp;
-        bool flatRamp;
-        bool narrowNatural;
-        bool defendNatural;
+        bool islandMap = false;
+        bool reverseRamp = false;
+        bool flatRamp = false;
+        bool narrowNatural = false;
+        bool defendNatural = false;
 
         void findEnemyStartingPosition()
         {
@@ -48,7 +46,7 @@ namespace McRave::Terrain {
                     if (dist < distBest)
                         distBest = dist, tileBest = start;
                 }
-                if (tileBest.isValid() && tileBest != playerStartingTilePosition) {
+                if (tileBest.isValid() && tileBest != BWEB::Map::getMainTile()) {
                     enemyStartingPosition = Position(tileBest) + Position(64, 48);
                     enemyStartingTilePosition = tileBest;
                 }
@@ -272,17 +270,14 @@ namespace McRave::Terrain {
 
     void onStart()
     {
+        // Initialize BWEM and BWEB
         mapBWEM.Initialize();
         mapBWEM.EnableAutomaticPathAnalysis();
-        bool startingLocationsOK = mapBWEM.FindBasesForStartingLocations();
-        assert(startingLocationsOK);
-        playerStartingTilePosition = Broodwar->self()->getStartLocation();
-        playerStartingPosition = Position(playerStartingTilePosition) + Position(64, 48);
+        BWEB::Map::onStart();
 
         // Check if the map is an island map
-        islandMap = false;
         for (auto &start : mapBWEM.StartingLocations()) {
-            if (!mapBWEM.GetArea(start)->AccessibleFrom(mapBWEM.GetArea(playerStartingTilePosition)))
+            if (!mapBWEM.GetArea(start)->AccessibleFrom(mapBWEM.GetArea(BWEB::Map::getMainTile())))
                 islandMap = true;
         }
 
@@ -490,13 +485,11 @@ namespace McRave::Terrain {
     Position getAttackPosition() { return attackPosition; }
     Position getDefendPosition() { return defendPosition; }
     Position getEnemyStartingPosition() { return enemyStartingPosition; }
-    Position getPlayerStartingPosition() { return playerStartingPosition; }
     Position getMineralHoldPosition() { return mineralHold; }
     Position getBackMineralHoldPosition() { return backMineralHold; }
     TilePosition getEnemyNatural() { return enemyNatural; }
     TilePosition getEnemyExpand() { return enemyExpand; }
     TilePosition getEnemyStartingTilePosition() { return enemyStartingTilePosition; }
-    TilePosition getPlayerStartingTilePosition() { return playerStartingTilePosition; }
     vector<Position> getMeleeChokePositions() { return meleeChokePositions; }
     vector<Position> getRangedChokePositions() { return rangedChokePositions; }
     set <const Area*>& getAllyTerritory() { return allyTerritory; }

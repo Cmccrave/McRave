@@ -54,7 +54,7 @@ namespace McRave::Support {
             }
 
             if (!unit.getDestination().isValid())
-                unit.setDestination(Terrain::getPlayerStartingPosition());            
+                unit.setDestination(BWEB::Map::getMainPosition());            
 
             futureAssignment.emplace(make_pair(unit.getDestination(), unit.getType()));
 

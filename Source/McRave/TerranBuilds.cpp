@@ -5,26 +5,25 @@ using namespace BWAPI;
 using namespace std;
 using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
-#define s Players::getSupply(PlayerState::Self)
 
 namespace McRave::BuildOrder::Terran
 {
-    static string enemyBuild = Strategy::getEnemyBuild();
-
     void RaxFact()
     {
-        firstUpgrade = UpgradeTypes::Ion_Thrusters;
-        firstTech = TechTypes::None;
-        getOpening = s < 70;
-        scout = s >= 20 && vis(Terran_Supply_Depot) > 0;
-        wallMain = true;
-        gasLimit = INT_MAX;
+        if (currentTransition == "2Fact") {
+            firstUpgrade = UpgradeTypes::Ion_Thrusters;
+            firstTech = TechTypes::None;
+            getOpening = s < 70;
+            scout = s >= 20 && vis(Terran_Supply_Depot) > 0;
+            wallMain = true;
+            gasLimit = INT_MAX;
 
-        itemQueue[Terran_Supply_Depot] =		Item(s >= 18);
-        itemQueue[Terran_Barracks] =			Item(s >= 20);
-        itemQueue[Terran_Refinery] =			Item(s >= 24);
-        itemQueue[Terran_Factory] =				Item((s >= 30) + (s >= 36) + (s >= 46));
-        itemQueue[Terran_Machine_Shop] =        Item((s >= 30) + (com(Terran_Factory) >= 2));
+            itemQueue[Terran_Supply_Depot] =		Item(s >= 18);
+            itemQueue[Terran_Barracks] =			Item(s >= 20);
+            itemQueue[Terran_Refinery] =			Item(s >= 24);
+            itemQueue[Terran_Factory] =				Item((s >= 30) + (s >= 36) + (s >= 46));
+            itemQueue[Terran_Machine_Shop] =        Item((s >= 30) + (com(Terran_Factory) >= 2));
+        }
     }
 }
 

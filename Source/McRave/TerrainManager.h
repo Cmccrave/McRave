@@ -25,13 +25,11 @@ namespace McRave::Terrain {
     BWAPI::Position getAttackPosition();
     BWAPI::Position getDefendPosition();
     BWAPI::Position getEnemyStartingPosition();
-    BWAPI::Position getPlayerStartingPosition();
     BWAPI::Position getMineralHoldPosition();
     BWAPI::Position getBackMineralHoldPosition();
     BWAPI::TilePosition getEnemyNatural();
     BWAPI::TilePosition getEnemyExpand();
     BWAPI::TilePosition getEnemyStartingTilePosition();
-    BWAPI::TilePosition getPlayerStartingTilePosition();
     std::vector<BWAPI::Position> getMeleeChokePositions();
     std::vector<BWAPI::Position> getRangedChokePositions();
     std::set <const BWEM::Area*>& getAllyTerritory();

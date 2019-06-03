@@ -10,43 +10,51 @@ namespace McRave::BuildOrder::Protoss {
 
     namespace {
 
-        string enemyBuild() { return Strategy::getEnemyBuild(); }
-
         bool goonRange() {
             return Broodwar->self()->isUpgrading(UpgradeTypes::Singularity_Charge) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge);
         }
 
+
+
+        bool mineral(int value) {
+            return Broodwar->self()->minerals() >= value;
+        }
+
+        bool gas(int value) {
+            return Broodwar->self()->gas() >= value;
+        }
+
         void defaultPvZ() {
-            hideTech =          false;
-            playPassive =       false;
-            fastExpand =        false;
-            wallNat =           false;
-            wallMain =          false;
+            hideTech =                                  false;
+            playPassive =                               false;
+            fastExpand =                                false;
+            wallNat =                                   false;
+            wallMain =                                  false;
 
-            desiredDetection =      UnitTypes::Protoss_Observer;
-            firstUnit =             UnitTypes::None;
+            desiredDetection =                          UnitTypes::Protoss_Observer;
+            firstUnit =                                 UnitTypes::None;
 
-            firstUpgrade =          UpgradeTypes::Protoss_Ground_Weapons;
-            firstTech =             TechTypes::None;
-            scout =                 vis(Protoss_Pylon) > 0;
-            gasLimit =              INT_MAX;
-            zealotLimit =           INT_MAX;
-            dragoonLimit =          0;
-            wallNat =               vis(Protoss_Nexus) >= 2;
+            firstUpgrade =                              UpgradeTypes::Protoss_Ground_Weapons;
+            firstTech =                                 TechTypes::None;
+            scout =                                     vis(Protoss_Pylon) > 0;
+            gasLimit =                                  INT_MAX;
+            zealotLimit =                               INT_MAX;
+            dragoonLimit =                              0;
+            wallNat =                                   vis(Protoss_Nexus) >= 2;
         }
     }
 
     void PvZ2GateDefensive() {
-        gasLimit =              (com(Protoss_Cybernetics_Core) && s >= 50) ? INT_MAX : 0;
-        getOpening =            vis(Protoss_Corsair) == 0;
-        playPassive =           s < 60;
-        firstUpgrade =          UpgradeTypes::None;
-        firstTech =             TechTypes::None;
-        cutWorkers =            Production::hasIdleProduction();
+        gasLimit =                                      (com(Protoss_Cybernetics_Core) && s >= 50) ? INT_MAX : 0;
+        getOpening =                                    vis(Protoss_Corsair) == 0;
+        playPassive =                                   s < 60;
+        firstUpgrade =                                  UpgradeTypes::None;
+        firstTech =                                     TechTypes::None;
+        cutWorkers =                                    Production::hasIdleProduction();
 
-        zealotLimit =           INT_MAX;
-        dragoonLimit =          (vis(Protoss_Templar_Archives) > 0 || Players::vT()) ? INT_MAX : 0;
-        firstUnit =             Protoss_Corsair;
+        zealotLimit =                                   INT_MAX;
+        dragoonLimit =                                  (vis(Protoss_Templar_Archives) > 0 || Players::vT()) ? INT_MAX : 0;
+        firstUnit =                                     Protoss_Corsair;
 
         itemQueue[Protoss_Nexus] =                      Item(1);
         itemQueue[Protoss_Pylon] =                      Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
@@ -58,10 +66,10 @@ namespace McRave::BuildOrder::Protoss {
     void PvZFFE()
     {
         defaultPvZ();
-        fastExpand = true;
-        wallNat = true;
 
-        auto min100 = Broodwar->self()->minerals() >= 100;
+        fastExpand =                                    true;
+        wallNat =                                       true;
+
         auto cannonCount = int(isAlmostComplete(Protoss_Forge))
             + (Units::getEnemyCount(Zerg_Zergling) >= 6)
             + (Units::getEnemyCount(Zerg_Zergling) >= 12)
@@ -69,15 +77,15 @@ namespace McRave::BuildOrder::Protoss {
             + (Units::getEnemyCount(Zerg_Hydralisk) / 2);
 
         // TODO: If scout died, go to 2 cannons, if next scout dies, go 3 cannons        
-        if (enemyBuild() == "2HatchHydra")
+        if (Strategy::getEnemyBuild() == "2HatchHydra")
             cannonCount = 5;
-        else if (enemyBuild() == "3HatchHydra")
+        else if (Strategy::getEnemyBuild() == "3HatchHydra")
             cannonCount = 4;
-        else if (enemyBuild() == "2HatchMuta")
+        else if (Strategy::getEnemyBuild() == "2HatchMuta")
             cannonCount = 7;
-        else if (enemyBuild() == "3HatchMuta")
+        else if (Strategy::getEnemyBuild() == "3HatchMuta")
             cannonCount = 8;
-        else if (enemyBuild() == "4Pool")
+        else if (Strategy::getEnemyBuild() == "4Pool")
             cannonCount = 2 + (s >= 24);
 
         // Only queue one at a time to prevent idle probes
@@ -87,13 +95,13 @@ namespace McRave::BuildOrder::Protoss {
         if (!lockedTransition) {
 
             // Change Opener
-            if (enemyBuild() == "4Pool" && currentOpener != "Forge")
+            if (Strategy::getEnemyBuild() == "4Pool" && currentOpener != "Forge")
                 currentOpener = "Panic";
 
             // Change Transition
-            if (enemyBuild() == "2HatchHydra" || enemyBuild() == "3HatchHydra")
+            if (Strategy::getEnemyBuild() == "2HatchHydra" || Strategy::getEnemyBuild() == "3HatchHydra")
                 currentTransition = "StormRush";
-            else if (enemyBuild() == "2HatchMuta" || enemyBuild() == "3HatchMuta")
+            else if (Strategy::getEnemyBuild() == "2HatchMuta" || Strategy::getEnemyBuild() == "3HatchMuta")
                 currentTransition = "2Stargate";
         }
 
@@ -105,8 +113,8 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Gateway] =                Item((s >= 32) + (s >= 40));
             itemQueue[Protoss_Forge] =                  Item(s >= 20);
 
-            scout = vis(Protoss_Pylon) > 0;
-            transitionReady = vis(Protoss_Gateway) >= 2;
+            scout =                                     vis(Protoss_Pylon) > 0;
+            transitionReady =                           vis(Protoss_Gateway) >= 2;
         }
         else if (currentOpener == "Nexus") {
             itemQueue[Protoss_Nexus] =                  Item(1 + (s >= 24));
@@ -152,24 +160,24 @@ namespace McRave::BuildOrder::Protoss {
         // Transitions
         if (transitionReady) {
             if (currentTransition == "StormRush") {
-                getOpening =        s < 80;
-                lockedTransition =  com(Protoss_Cybernetics_Core) > 0;
+                getOpening =                            s < 80;
+                lockedTransition =                      com(Protoss_Cybernetics_Core) > 0;
 
-                firstUpgrade =      UpgradeTypes::None;
-                firstTech =         TechTypes::Psionic_Storm;
-                firstUnit =         Protoss_High_Templar;
+                firstUpgrade =                          UpgradeTypes::None;
+                firstTech =                             TechTypes::Psionic_Storm;
+                firstUnit =                             Protoss_High_Templar;
 
                 itemQueue[Protoss_Assimilator] =        Item((s >= 38) + (s >= 60));
                 itemQueue[Protoss_Cybernetics_Core] =   Item((s >= 42));
                 itemQueue[Protoss_Stargate] =           Item(0);
             }
             else if (currentTransition == "2Stargate") {
-                getOpening =        s < 80;
-                lockedTransition =  vis(Protoss_Stargate) >= 2;
+                getOpening =                            s < 80;
+                lockedTransition =                      vis(Protoss_Stargate) >= 2;
 
-                firstUpgrade =      UpgradeTypes::Protoss_Air_Weapons;
-                firstTech =         TechTypes::None;
-                firstUnit =         Protoss_Corsair;
+                firstUpgrade =                          UpgradeTypes::Protoss_Air_Weapons;
+                firstTech =                             TechTypes::None;
+                firstUnit =                             Protoss_Corsair;
 
                 itemQueue[Protoss_Assimilator] =        Item((s >= 38) + (s >= 60));
                 itemQueue[Protoss_Cybernetics_Core] =   Item(s >= 40);
@@ -178,28 +186,28 @@ namespace McRave::BuildOrder::Protoss {
                 itemQueue[Protoss_Stargate] =           Item((vis(Protoss_Corsair) > 0) + (vis(Protoss_Cybernetics_Core) > 0));
             }
             else if (currentTransition == "5GateGoon") {
-                getOpening =        s < 160;
-                lockedTransition =  vis(Protoss_Gateway) >= 3;
+                getOpening =                            s < 160;
+                lockedTransition =                      vis(Protoss_Gateway) >= 3;
 
-                gasLimit =          INT_MAX;
-                zealotLimit =       2;
-                dragoonLimit =      INT_MAX;
+                gasLimit =                              INT_MAX;
+                zealotLimit =                           2;
+                dragoonLimit =                          INT_MAX;
 
-                firstUpgrade =      UpgradeTypes::Singularity_Charge;
-                firstTech =         TechTypes::None;
-                firstUnit =         UnitTypes::None;
+                firstUpgrade =                          UpgradeTypes::Singularity_Charge;
+                firstTech =                             TechTypes::None;
+                firstUnit =                             UnitTypes::None;
 
                 itemQueue[Protoss_Cybernetics_Core] =   Item(s >= 40);
                 itemQueue[Protoss_Gateway] =            Item((vis(Protoss_Cybernetics_Core) > 0) + (s >= 76) + (s >= 92) + (s >= 100));
                 itemQueue[Protoss_Assimilator] =        Item(1 + (s >= 116));
             }
             else if (currentTransition == "NeoBisu") {
-                getOpening =        s < 80;
-                lockedTransition =  vis(Protoss_Citadel_of_Adun) > 0;
+                getOpening =                            s < 80;
+                lockedTransition =                      vis(Protoss_Citadel_of_Adun) > 0;
 
-                firstUpgrade =      UpgradeTypes::Protoss_Air_Weapons;
-                firstTech =         TechTypes::None;
-                firstUnit =         Protoss_Corsair;
+                firstUpgrade =                          UpgradeTypes::Protoss_Air_Weapons;
+                firstTech =                             TechTypes::None;
+                firstUnit =                             Protoss_Corsair;
 
                 itemQueue[Protoss_Assimilator] =        Item((s >= 34) + (s >= 60));
                 itemQueue[Protoss_Cybernetics_Core] =   Item(s >= 36);

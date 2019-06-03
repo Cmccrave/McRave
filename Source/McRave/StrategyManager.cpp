@@ -193,7 +193,7 @@ namespace McRave::Strategy {
                 // FE Detection
                 if (unit.getType().isResourceDepot() && !Terrain::isStartingBase(unit.getTilePosition()))
                     enemyFE = true;
-                if (unit.getType() == Terran_Bunker && unit.getPosition().getDistance(enemyStart) < unit.getPosition().getDistance(Terrain::getPlayerStartingPosition()) && unit.getPosition().getDistance(enemyNat) < 320.0)
+                if (unit.getType() == Terran_Bunker && unit.getPosition().getDistance(enemyStart) < unit.getPosition().getDistance(BWEB::Map::getMainPosition()) && unit.getPosition().getDistance(enemyNat) < 320.0)
                     enemyFE = true;
             }
         }
@@ -304,7 +304,7 @@ namespace McRave::Strategy {
                     pressure = true;
 
                 // Proxy Detection
-                if (unit.getType() == Protoss_Pylon && unit.getPosition().getDistance(Terrain::getPlayerStartingPosition()) < 960.0)
+                if (unit.getType() == Protoss_Pylon && unit.getPosition().getDistance(BWEB::Map::getMainPosition()) < 960.0)
                     proxy = true;
 
                 // FE Detection
