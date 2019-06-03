@@ -172,21 +172,21 @@ namespace McRave::Visuals {
                 if (unit.unit()->isLoaded())
                     continue;
 
-                if (targets) {
+                if (targets || unit.unit()->isSelected()) {
                     if (unit.hasResource())
                         Broodwar->drawLineMap(unit.getResource().getPosition(), unit.getPosition(), color);
                     if (unit.hasTarget())
                         Broodwar->drawLineMap(unit.getTarget().getPosition(), unit.getPosition(), color);
                 }
 
-                if (strengths) {
+                if (strengths || unit.unit()->isSelected()) {
                     if (unit.getVisibleGroundStrength() > 0.0 || unit.getVisibleAirStrength() > 0.0) {
                         Broodwar->drawTextMap(unit.getPosition() + Position(5, -10), "Grd: %c %.2f", Text::Brown, unit.getVisibleGroundStrength());
                         Broodwar->drawTextMap(unit.getPosition() + Position(5, 2), "Air: %c %.2f", Text::Blue, unit.getVisibleAirStrength());
                     }
                 }
 
-                if (orders) {
+                if (orders || unit.unit()->isSelected()) {
                     int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
                     if (unit.getRole() == Role::Production && (unit.getType() == UnitTypes::Zerg_Egg || (unit.unit()->isTraining() && !unit.unit()->getTrainingQueue().empty()))) {
                         auto trainType = unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType().c_str() : unit.unit()->getTrainingQueue().front().c_str();

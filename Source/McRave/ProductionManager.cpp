@@ -490,9 +490,6 @@ namespace McRave::Production {
 
                 const auto resourceScore = clamp(gasCost * mineralCost, 0.01, 1.0);
                 const auto strategyScore = clamp(Strategy::getUnitScore(type) / max(1, vis(type)), 0.01, 1.0);
-
-                Broodwar << type.c_str() << ": " << strategyScore << endl;
-
                 return resourceScore * strategyScore;
             };
 

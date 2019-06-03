@@ -101,7 +101,7 @@ namespace McRave::Command {
                 auto validAreas = unit.getWalkPosition().isValid() && here.isValid() && mapBWEM.GetArea(here) && mapBWEM.GetArea(unit.getWalkPosition()) && mapBWEM.GetArea(here)->AccessibleFrom(mapBWEM.GetArea(unit.getWalkPosition()));
                 auto distanceFromUnit = (unit.getType().isFlyer() || validAreas || unitOnChokeGeo) ? p.getDistance(unit.getPosition()) : BWEB::Map::getGroundDistance(p, unit.getPosition());
 
-                // If too close of a command, is in danger or isn't walkable
+                // If too far of a command, is in danger or isn't walkable
                 if (distanceFromUnit >= 96
                     || (!unit.getType().isFlyer() && !Broodwar->isWalkable(here))
                     || isInDanger(unit, p)

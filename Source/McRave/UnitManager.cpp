@@ -47,9 +47,9 @@ namespace McRave::Units {
 
             // Check if an overlord should scout or support
             if (unit.getType() == UnitTypes::Zerg_Overlord) {
-                if (!Terrain::foundEnemy())
-                    unit.setRole(Role::Scout);
-                else
+                //if (!Terrain::foundEnemy())
+                //    unit.setRole(Role::Scout);
+                //else
                     unit.setRole(Role::Support);
                 return;
             }

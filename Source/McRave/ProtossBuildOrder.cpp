@@ -57,7 +57,7 @@ namespace McRave::BuildOrder::Protoss
 
             // If we need detection
             if (Strategy::needDetection())
-                techUnit = desiredDetection;            
+                techUnit = desiredDetection;
 
             // Various hardcoded tech choices
             else if (Players::vP() && techList.find(Protoss_Observer) == techList.end() && !techList.empty())
@@ -69,7 +69,7 @@ namespace McRave::BuildOrder::Protoss
             else if (techUnit == None)
                 getNewTech();
         }
-        
+
         checkNewTech();
         checkAllTech();
         checkExoticTech();
@@ -93,13 +93,13 @@ namespace McRave::BuildOrder::Protoss
         if (Strategy::getEnemyBuild() == "FFE") {
             auto cannonCount = Units::getEnemyCount(Protoss_Photon_Cannon);
 
-            if (cannonCount <= 2) {
+            if (cannonCount < 6) {
                 itemQueue[Protoss_Nexus] = Item(2);
                 gasLimit = !Resources::isMinSaturated() ? 2 : INT_MAX;
             }
             else {
                 itemQueue[Protoss_Nexus] = Item(3);
-                gasLimit = !Resources::isMinSaturated() ? 1 : INT_MAX;
+                gasLimit = !Resources::isMinSaturated() ? 2 : INT_MAX;
             }
         }
 

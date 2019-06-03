@@ -131,11 +131,13 @@ namespace McRave::Util {
             auto dist = p.getDistance(Position(center));
             auto score = dist + log(p.getDistance(unit.getPosition()));
 
+            auto correctArea = (here == Terrain::getDefendPosition() && Terrain::isInAllyTerritory(t)) || mapBWEM.GetArea(t) == area;
+
             if (!w.isValid()
                 || (!Terrain::isInAllyTerritory(t) && area && mapBWEM.GetArea(w) != area)
                 || dist < radius
                 || score > distBest
-                || mapBWEM.GetArea(t) != area
+                || !correctArea
                 || Command::overlapsActions(unit.unit(), p, unit.getType(), PlayerState::Self, 24)
                 || Command::isInDanger(unit, p)
                 || Grids::getMobility(p) <= 6

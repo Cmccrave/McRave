@@ -372,7 +372,7 @@ namespace McRave::Terrain {
         }
 
         // Make a bunch of walls as Zerg for testing
-        if (true && Broodwar->self()->getRace() == Races::Zerg) {
+        if (false && Broodwar->self()->getRace() == Races::Zerg) {
             for (auto &area : mapBWEM.Areas()) {
 
                 // Only make walls at gas bases that aren't starting bases

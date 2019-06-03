@@ -16,7 +16,7 @@ namespace BWEB
             inline bool operator()(unsigned x, unsigned y) const
             {
                 const TilePosition t(x, y);
-                if (x < width && y < height && Map::isUsed(t) == UnitTypes::None && (Map::isWalkable(t) || t == source || t == target))
+                if (x < width && y < height && ((Map::isUsed(t) == UnitTypes::None && Map::isWalkable(t)) || t == source || t == target))
                     return true;
                 return false;
             }

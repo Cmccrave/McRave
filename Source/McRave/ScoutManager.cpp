@@ -59,8 +59,8 @@ namespace McRave::Scouts {
                     scoutCount = 2;
             }
 
-            if (Broodwar->self()->getRace() == Races::Zerg && Terrain::getEnemyStartingPosition().isValid())
-                scoutCount = 0;
+            //if (Broodwar->self()->getRace() == Races::Zerg && Terrain::getEnemyStartingPosition().isValid())
+            //    scoutCount = 0;
 
             if (Strategy::enemyPressure() && BuildOrder::isPlayPassive())
                 scoutCount = 0;
@@ -296,6 +296,18 @@ namespace McRave::Scouts {
                 make_pair(2, "Explore"),
                 //make_pair(3, "Move"),
             };
+
+            // Gas steal tester
+            if (Broodwar->self()->getName() == "McRaveGasSteal" && Terrain::foundEnemy()) {
+                auto gas = Broodwar->getClosestUnit(Terrain::getEnemyStartingPosition(), Filter::GetType == UnitTypes::Resource_Vespene_Geyser);
+                Broodwar->drawLineMap(gas->getPosition(), unit.getPosition(), Colors::Red);
+                if (gas && gas->exists() && gas->getPosition().getDistance(Terrain::getEnemyStartingPosition()) < 320 && unit.getPosition().getDistance(Terrain::getEnemyStartingPosition()) < 160) {
+                    if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Build)
+                        unit.unit()->build(Broodwar->self()->getRace().getRefinery(), gas->getTilePosition());
+                    return;
+                }
+                unit.unit()->move(gas->getPosition());
+            }
 
             int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
             int i = Util::iterateCommands(commands, unit);

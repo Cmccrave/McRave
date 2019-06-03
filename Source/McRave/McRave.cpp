@@ -8,45 +8,21 @@
 #include "EventManager.h"
 
 // *** TODO ***
-// BWEB Destination south walls not working
 // Re-power buildings
 // Change UnitInfo::Command to take an Action
 // Add stargates gradually in carrier builds
 // Add frame timeouts for allowable enemy build detection
 // Move command doesn't care about threat, probably should
-// When choosing a tech or creating a building, allow certain unlocks/research
-// Adjust Production to check for unlocks
-// Mines at chokepoints causes unit suicide with defend command
 // DTs get stuck between core/gate/pylon
-// Only produce one unit per building at a time to prevent overspending
 // Arbiter positioning
-// Units think they cant reach an enemy between buildings
-// Proxy bunker targeting
-// Path workers to point not blocked
 // Scanned obs just pause
-// Worker suicide
 // Lifted units not targetable
 // Allow retreating inside own territory
-
 // Remove createWallPath, remove BFS, change to JPS and use incrementing between points to reserve path
-
-// Need a target based isThreatening
-// Examples:
-// - Melee shouldn't engage ranged on ramps, back up instead
-// - Engage when in range of defenses for FFE
 
 // Scout targets
 // - Check for Nexus when we see no gateways in PvP (find timing for this and check after this time based on last visible frame on our grid)
 // - Check for 3rd against Z when we see 2 hatchery and no gas
-
-// *** Ideas/Small fixes ***
-// Floating units removing mine positions
-// Monitor for overkilling units by hp - (2*nextDmgSource) <= 0 (double damage source to account for a potential miss?)
-// Use Player pointer instead of BWAPI::Player pointer in UnitInfo, gives advantage of knowing upgrades/tech that are available always
-// Upgrade/Research unlock list
-// Add panic reactions for auto-loss builds
-// - Gate FE vs 4pool
-// - Nexus first vs 6rax/BBS
 
 using namespace BWAPI;
 using namespace std;

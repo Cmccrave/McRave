@@ -293,6 +293,7 @@ namespace McRave::BuildOrder::Protoss {
             lockedTransition =  true;
 
             firstUpgrade =      UpgradeTypes::Singularity_Charge;
+            zealotLimit =       5;
             dragoonLimit =      INT_MAX;
             wallNat =           currentOpener == "Natural" ? true : s >= 120;
 
