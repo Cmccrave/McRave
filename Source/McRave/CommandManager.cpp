@@ -616,7 +616,7 @@ namespace McRave::Command {
             double distance = unit.getType().isFlyer() || unit.getRole() == Role::Scout ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
             double visited = clamp(((640.0 - distance) / 640.0) * defaultVisited(unit, w), 0.01, 1.0);
             double grouping = defaultGrouping(unit, w);
-            double mobility = threat > MIN_THREAT ? defaultMobility(unit, w) : 1.0;
+            double mobility = defaultMobility(unit, w);
             double score = mobility * visited / (threat * distance * grouping);
 
             if (threat == MIN_THREAT

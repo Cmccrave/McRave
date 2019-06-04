@@ -372,14 +372,8 @@ namespace McRave::Combat {
             }
 
             // Execute commands ordered by ascending distance
-            bool first = false;
             for (auto &u : combatUnitsByDistance) {
                 auto &unit = u.second;
-
-                if (!first) {
-                    unit.circleYellow();
-                    first = true;
-                }
 
                 if (unit.getRole() == Role::Combat) {
                     Horizon::simulate(unit);

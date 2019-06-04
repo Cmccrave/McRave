@@ -89,9 +89,9 @@ namespace McRave::Buildings {
             set<TilePosition> placements;
             for (auto &block : BWEB::Blocks::getBlocks()) {
                 Position blockCenter = Position(block.getTilePosition()) + Position(block.width() * 16, block.height() * 16);
-                if (!Terrain::isInAllyTerritory(block.getTilePosition()))
+                if (!Terrain::isInAllyTerritory(block.getTilePosition()) && !BuildOrder::isProxy())
                     continue;
-
+                
                 if (Broodwar->self()->getRace() == Races::Protoss && building == Protoss_Pylon && Broodwar->self()->visibleUnitCount(Protoss_Pylon) != 1) {
                     bool power = true;
                     bool solo = true;
@@ -355,6 +355,9 @@ namespace McRave::Buildings {
 
             auto chokeCenter = BuildOrder::isWallMain() ? Position(BWEB::Map::getMainChoke()->Center()) : Position(BWEB::Map::getNaturalChoke()->Center());
 
+            if (vis(Protoss_Photon_Cannon) == 0)
+                chokeCenter = (Position(BWEB::Map::getMainChoke()->Center()) + Position(BWEB::Map::getNaturalChoke()->Center())) / 2;
+
             // Battery placing near chokes
             if (building == Protoss_Shield_Battery) {
                 if (BuildOrder::isWallNat())
@@ -391,7 +394,13 @@ namespace McRave::Buildings {
 
         TilePosition findProxyLocation(UnitType building)
         {
-            // TODO: Improve proxy location (add a BWEB block)
+            // Find our proxy block, it's the only one with 2 large and 4 small
+            for (auto &block : BWEB::Blocks::getBlocks()) {
+                if (block.getLargeTiles().size() == 2 && block.getSmallTiles().size() == 4)
+                    return closestProdLocation(building, Position(block.getTilePosition()));
+            }
+
+            // Otherwise try to find something close to the center and hopefully don't mess up - TODO: Don't mess up better
             return closestProdLocation(building, mapBWEM.Center());
         }
 
@@ -704,7 +713,7 @@ namespace McRave::Buildings {
         int safetyOffset = int(!type.isBuilding());
 
         // Check if there's a building queued there already
-        for (auto &[tile,building] : buildingsQueued) {
+        for (auto &[tile, building] : buildingsQueued) {
 
             if (Broodwar->self()->minerals() < building.mineralPrice() || Broodwar->self()->gas() < building.gasPrice())
                 continue;

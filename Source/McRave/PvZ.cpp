@@ -14,8 +14,6 @@ namespace McRave::BuildOrder::Protoss {
             return Broodwar->self()->isUpgrading(UpgradeTypes::Singularity_Charge) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge);
         }
 
-
-
         bool mineral(int value) {
             return Broodwar->self()->minerals() >= value;
         }
@@ -89,7 +87,7 @@ namespace McRave::BuildOrder::Protoss {
             cannonCount = 2 + (s >= 24);
 
         // Only queue one at a time to prevent idle probes
-        cannonCount = min(vis(Protoss_Photon_Cannon) + 1, cannonCount);
+        cannonCount =                                   min(vis(Protoss_Photon_Cannon) + 1, cannonCount);
 
         // Reactions
         if (!lockedTransition) {
@@ -107,50 +105,49 @@ namespace McRave::BuildOrder::Protoss {
 
         // Openers
         if (currentOpener == "Forge") {
+            scout =                                     vis(Protoss_Pylon) > 0;
+            transitionReady =                           vis(Protoss_Gateway) >= 2;
+
             itemQueue[Protoss_Nexus] =                  Item(1 + (s >= 28));
             itemQueue[Protoss_Pylon] =                  Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
             itemQueue[Protoss_Assimilator] =            Item(com(Protoss_Forge) > 0 && vis(Protoss_Gateway) > 0);
             itemQueue[Protoss_Gateway] =                Item((s >= 32) + (s >= 40));
             itemQueue[Protoss_Forge] =                  Item(s >= 20);
-
-            scout =                                     vis(Protoss_Pylon) > 0;
-            transitionReady =                           vis(Protoss_Gateway) >= 2;
         }
         else if (currentOpener == "Nexus") {
+            scout =                                     vis(Protoss_Pylon) > 0;
+            transitionReady =                           vis(Protoss_Assimilator) >= 1;
+
             itemQueue[Protoss_Nexus] =                  Item(1 + (s >= 24));
             itemQueue[Protoss_Pylon] =                  Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
             itemQueue[Protoss_Assimilator] =            Item(vis(Protoss_Gateway) >= 1);
             itemQueue[Protoss_Gateway] =                Item(vis(Protoss_Forge) > 0);
             itemQueue[Protoss_Forge] =                  Item(vis(Protoss_Nexus) >= 2);
-
-            scout = vis(Protoss_Pylon) > 0;
-            transitionReady = vis(Protoss_Assimilator) >= 1;
         }
         else if (currentOpener == "Gate") {
+            scout =                                     vis(Protoss_Gateway) > 0;
+            transitionReady =                           vis(Protoss_Nexus) >= 2;
+
             itemQueue[Protoss_Nexus] =                  Item(1 + (s >= 42));
             itemQueue[Protoss_Pylon] =                  Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
             itemQueue[Protoss_Gateway] =                Item((vis(Protoss_Pylon) > 0) + (s >= 60));
             itemQueue[Protoss_Forge] =                  Item(s >= 60);
-
-            scout = vis(Protoss_Gateway) > 0;
-            transitionReady = vis(Protoss_Nexus) >= 2;
         }
         else if (currentOpener == "Panic") {
+            scout =                                     com(Protoss_Photon_Cannon) >= 3;
+            transitionReady =                           vis(Protoss_Pylon) >= 2;
             cutWorkers =                                vis(Protoss_Pylon) == 1 && vis(Protoss_Probe) >= 13;
 
             itemQueue[Protoss_Nexus] =                  Item(1);
             itemQueue[Protoss_Pylon] =                  Item(1 + (Units::getEnemyCount(Zerg_Zergling) < 6 || s >= 32));
             itemQueue[Protoss_Shield_Battery] =         Item(vis(Protoss_Gateway) > 0, com(Protoss_Gateway) > 0);
             itemQueue[Protoss_Gateway] =                Item(0);
-
-            scout = com(Protoss_Photon_Cannon) >= 3;
-            transitionReady = vis(Protoss_Pylon) >= 2;
         }
 
         // If we want Cannons but have no Forge
         if (cannonCount > 0 && currentOpener != "Panic") {
             if (!isAlmostComplete(Protoss_Forge)) {
-                cannonCount = 0;
+                cannonCount =                           0;
                 itemQueue[Protoss_Forge] =              Item(1);
             }
             else
@@ -228,9 +225,9 @@ namespace McRave::BuildOrder::Protoss {
     void PvZ2Gate()
     {
         defaultPvZ();
-        proxy = currentOpener == "Proxy";
-        wallNat = currentOpener == "Natural";
-        scout = Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
+        proxy =                                         currentOpener == "Proxy" && vis(Protoss_Gateway) < 2 && Broodwar->getFrameCount() < 5000;
+        wallNat =                                       currentOpener == "Natural";
+        scout =                                         Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
 
         // Reactions
         if (!lockedTransition) {
@@ -275,10 +272,9 @@ namespace McRave::BuildOrder::Protoss {
 
         // Builds
         if (currentTransition == "Expand") {
-            getOpening =        s < 90;
-            lockedTransition =  vis(Protoss_Nexus) >= 2;
-
-            wallNat =           currentOpener == "Natural" ? true : vis(Protoss_Nexus) >= 2;
+            getOpening =                                s < 90;
+            lockedTransition =                          vis(Protoss_Nexus) >= 2;
+            wallNat =                                   currentOpener == "Natural" ? true : vis(Protoss_Nexus) >= 2;
 
             itemQueue[Protoss_Nexus] =                  Item(1 + (s >= 42));
             itemQueue[Protoss_Forge] =                  Item(s >= 62);
@@ -286,24 +282,24 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Photon_Cannon] =          Item(2 * (com(Protoss_Forge) > 0));
         }
         else if (currentTransition == "Panic") {
-            getOpening =        s < 80;
-            wallNat =           currentOpener == "Natural";
+            getOpening =                                s < 80;
+            lockedTransition =                          true;
+            wallNat =                                   currentOpener == "Natural";
+            gasLimit =                                  1;
 
             itemQueue[Protoss_Nexus] =                  Item(1);
             itemQueue[Protoss_Gateway] =                Item((s >= 20) + (s >= 24) + (s >= 62) + (s >= 70));
             itemQueue[Protoss_Assimilator] =            Item(s >= 64);
             itemQueue[Protoss_Cybernetics_Core] =       Item(s >= 66);
-            gasLimit = 1;
         }
         else if (currentTransition == "4Gate") {
             // https://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)
-            getOpening =        s < 120;
-            lockedTransition =  true;
-
-            firstUpgrade =      UpgradeTypes::Singularity_Charge;
-            zealotLimit =       5;
-            dragoonLimit =      INT_MAX;
-            wallNat =           currentOpener == "Natural" ? true : s >= 120;
+            getOpening =                                s < 120;
+            lockedTransition =                          true;
+            firstUpgrade =                              UpgradeTypes::Singularity_Charge;
+            zealotLimit =                               5;
+            dragoonLimit =                              INT_MAX;
+            wallNat =                                   currentOpener == "Natural" ? true : s >= 120;
 
             itemQueue[Protoss_Gateway] =                Item((s >= 20) + (s >= 24) + (s >= 62) + (s >= 70));
             itemQueue[Protoss_Assimilator] =            Item(s >= 44);
@@ -314,8 +310,8 @@ namespace McRave::BuildOrder::Protoss {
     void PvZ1GateCore()
     {
         defaultPvZ();
-        scout = Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
-        gasLimit = INT_MAX;
+        scout =                                         Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
+        gasLimit =                                      INT_MAX;
 
         // Reactions
         if (!lockedTransition) {
@@ -334,34 +330,34 @@ namespace McRave::BuildOrder::Protoss {
 
         // Openers
         if (currentOpener == "1Zealot") {
-            zealotLimit = vis(Protoss_Cybernetics_Core) > 0 ? INT_MAX : 1;
+            zealotLimit =                               vis(Protoss_Cybernetics_Core) > 0 ? INT_MAX : 1;
 
             itemQueue[Protoss_Nexus] =                  Item(1);
-            itemQueue[Protoss_Pylon] =                  Item((s >= 16) + (s >= 30));
+            itemQueue[Protoss_Pylon] =                  Item((s >= 16) + (s >= 32));
             itemQueue[Protoss_Gateway] =                Item(s >= 20);
             itemQueue[Protoss_Assimilator] =            Item(s >= 24);
             itemQueue[Protoss_Cybernetics_Core] =       Item(s >= 34);
         }
         else if (currentOpener == "2Zealot") {
-            zealotLimit = vis(Protoss_Cybernetics_Core) > 0 ? INT_MAX : 2;
+            zealotLimit =                               vis(Protoss_Cybernetics_Core) > 0 ? INT_MAX : 2;
 
             itemQueue[Protoss_Nexus] =                  Item(1);
-            itemQueue[Protoss_Pylon] =                  Item((s >= 16) + (s >= 30));
+            itemQueue[Protoss_Pylon] =                  Item((s >= 16) + (s >= 24));
             itemQueue[Protoss_Gateway] =                Item(s >= 20);
-            itemQueue[Protoss_Assimilator] =            Item(s >= 24);
+            itemQueue[Protoss_Assimilator] =            Item(s >= 32);
             itemQueue[Protoss_Cybernetics_Core] =       Item(s >= 40);
         }
 
         // Builds
         if (currentTransition == "DT") {
             // Experimental build from Best
-            firstUpgrade =          UpgradeTypes::None;
-            firstTech =             vis(Protoss_Dark_Templar) >= 2 ? TechTypes::Psionic_Storm : TechTypes::None;
-            getOpening =            s < 70;
-            dragoonLimit =          1;
-            lockedTransition =      vis(Protoss_Citadel_of_Adun) > 0;
-            playPassive =           s < 70;
-            firstUnit =             Protoss_Dark_Templar;
+            firstUpgrade =                              UpgradeTypes::None;
+            firstTech =                                 vis(Protoss_Dark_Templar) >= 2 ? TechTypes::Psionic_Storm : TechTypes::None;
+            getOpening =                                s < 70;
+            dragoonLimit =                              1;
+            lockedTransition =                          vis(Protoss_Citadel_of_Adun) > 0;
+            playPassive =                               s < 70;
+            firstUnit =                                 Protoss_Dark_Templar;
 
             itemQueue[Protoss_Gateway] =                Item((s >= 20) + (s >= 42));
             itemQueue[Protoss_Citadel_of_Adun] =        Item(s >= 34);

@@ -90,7 +90,7 @@ namespace BWEB::Walls
             //    initialEnd = Map::tConvert(Map::getNaturalChoke()->Center());
             //}
 
-            //// Default the pathing to the top of the area and towards the center of the map
+            // Default the pathing to the top of the area and towards the center of the map
             else {
                 initialStart = Map::tConvert(perpLine.first);
                 initialEnd = Map::tConvert(perpLine.second);

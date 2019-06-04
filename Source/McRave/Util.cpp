@@ -133,7 +133,7 @@ namespace McRave::Util {
 
             auto correctArea = (here == Terrain::getDefendPosition() && Terrain::isInAllyTerritory(t)) || mapBWEM.GetArea(t) == area;
 
-            if (!w.isValid()
+            if (!w.isValid() || !t.isValid() || !p.isValid()
                 || (!Terrain::isInAllyTerritory(t) && area && mapBWEM.GetArea(w) != area)
                 || dist < radius
                 || score > distBest

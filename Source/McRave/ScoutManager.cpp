@@ -9,14 +9,13 @@ namespace McRave::Scouts {
 
         set<Position> scoutTargets;
         int scoutCount;
+        int scoutDeadFrame = 0;
         bool proxyCheck = false;
         UnitType proxyType = UnitTypes::None;
         Position proxyPosition = Positions::Invalid;
 
         void updateScoutRoles()
         {
-            scoutCount = 1;
-
             // If we have seen an enemy Probe before we've scouted the enemy, follow it
             if (Units::getEnemyCount(UnitTypes::Protoss_Probe) == 1 && com(UnitTypes::Protoss_Zealot) < 1) {
                 auto &enemyProbe = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
@@ -45,6 +44,10 @@ namespace McRave::Scouts {
                 // Send a 2nd scout after 1st scout
                 else if (!Terrain::getEnemyStartingPosition().isValid() && mapBWEM.StartingLocations().size() == 4 && unexploredBases == 2)
                     scoutCount = 2;
+
+                // Default to 1 scout
+                else
+                    scoutCount = 1;
             }
 
             // If we are playing PvP
@@ -57,16 +60,27 @@ namespace McRave::Scouts {
                 // Send a 2nd scout to find any proxies
                 else if ((Strategy::enemyProxy() || proxyCheck) && com(UnitTypes::Protoss_Zealot) < 1)
                     scoutCount = 2;
+
+                // Default to 1 scout
+                else
+                    scoutCount = 1;
             }
 
-            //if (Broodwar->self()->getRace() == Races::Zerg && Terrain::getEnemyStartingPosition().isValid())
-            //    scoutCount = 0;
+            // If we are playing PvT
+            if (Players::PvT()) {
+
+                // Default to 1 scout
+                scoutCount = 1;
+            }
+
+            if (Broodwar->self()->getRace() == Races::Zerg && Terrain::getEnemyStartingPosition().isValid())
+                scoutCount = 0;
 
             if (Strategy::enemyPressure() && BuildOrder::isPlayPassive())
                 scoutCount = 0;
 
-            // Assign new scouts
-            if (BWEB::Map::getNaturalChoke() && BuildOrder::shouldScout() && Units::getMyRoleCount(Role::Scout) < Scouts::getScoutCount() /*&& Broodwar->getFrameCount() - scoutDeadFrame > 240*/) {
+            // Assign new scouts after the last one died 10 seconds ago
+            if (BWEB::Map::getNaturalChoke() && BuildOrder::shouldScout() && Units::getMyRoleCount(Role::Scout) < Scouts::getScoutCount() && Broodwar->getFrameCount() - scoutDeadFrame > 240) {
                 auto scout = Util::getClosestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
                     return u.getRole() == Role::Worker && (!u.hasResource() || !u.getResource().getType().isRefinery()) && u.getBuildingType() == UnitTypes::None && !u.unit()->isCarryingMinerals() && !u.unit()->isCarryingGas();
                 });
@@ -83,13 +97,12 @@ namespace McRave::Scouts {
             else if (Units::getMyRoleCount(Role::Scout) > Scouts::getScoutCount()) {
 
                 // Look at scout targets and find the least useful scout, remove it
-                auto &target = Strategy::enemyProxy() || !Terrain::getEnemyStartingPosition().isValid() ? BWEB::Map::getMainPosition() : Terrain::getEnemyStartingPosition();
-                auto &scout = Util::getClosestUnitGround(target, PlayerState::Self, [&](auto &u) {
+                auto &scout = Util::getClosestUnitGround(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
                     return u.getRole() == Role::Scout;
                 });
-
                 if (scout)
                     scout->setRole(Role::Worker);
+
             }
         }
 
@@ -187,7 +200,7 @@ namespace McRave::Scouts {
                     return true;
 
                 auto &closestScout = Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &u) {
-                    return u.getRole() == Role::Scout && !u.getDestination().isValid();
+                    return u.getRole() == Role::Scout;
                 });
                 return unit.shared_from_this() == closestScout;
             };
@@ -263,7 +276,7 @@ namespace McRave::Scouts {
                             continue;
 
                         int time = Grids::lastVisibleFrame(base.Location());
-                        if (time < best) {
+                        if (time < best && isClosestAvailableScout(Position(base.Location()))) {
                             best = time;
                             unit.setDestination(Position(base.Location()));
                         }
@@ -334,6 +347,11 @@ namespace McRave::Scouts {
         updateScoutRoles();
         updateScouts();
         Visuals::endPerfTest("Scouts");
+    }
+
+    void removeUnit(UnitInfo& unit)
+    {
+        scoutDeadFrame = Broodwar->getFrameCount();
     }
 
     int getScoutCount() { return scoutCount; }

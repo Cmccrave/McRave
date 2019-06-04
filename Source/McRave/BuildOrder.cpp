@@ -58,18 +58,18 @@ namespace McRave::BuildOrder
     {
         // When 1 unit finishes
         if (techUnit == Protoss_Scout || techUnit == Protoss_Corsair || techUnit == Protoss_Reaver || techUnit == Protoss_Observer || techUnit == Terran_Science_Vessel)
-            return (Broodwar->self()->completedUnitCount(techUnit) > 0);
+            return Broodwar->self()->completedUnitCount(techUnit) > 0;
 
-        // When storm finishes
+        // When 2 units are visible
         if (techUnit == Protoss_High_Templar)
-            return (Broodwar->self()->hasResearched(TechTypes::Psionic_Storm));
+            return Broodwar->self()->visibleUnitCount(techUnit) >= 2;
 
         // When 2 units finish
         if (techUnit == Protoss_Dark_Templar)
-            return (Broodwar->self()->completedUnitCount(techUnit) >= 2);
+            return Broodwar->self()->completedUnitCount(techUnit) >= 2;
 
         // When 1 unit is visible
-        return (Broodwar->self()->visibleUnitCount(techUnit) > 0);
+        return Broodwar->self()->visibleUnitCount(techUnit) > 0;
     }
 
     void onFrame()

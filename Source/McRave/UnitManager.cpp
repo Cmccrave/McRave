@@ -269,6 +269,8 @@ namespace McRave::Units {
                         Transports::removeUnit(*u);
                     if (u->hasResource())
                         Workers::removeUnit(*u);
+                    if (u->getRole() == Role::Scout)
+                        Scouts::removeUnit(*u);
                     if (u->getRole() != Role::None)
                         myRoles[u->getRole()]--;
 

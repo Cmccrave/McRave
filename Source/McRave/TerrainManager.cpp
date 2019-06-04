@@ -273,6 +273,7 @@ namespace McRave::Terrain {
         // Initialize BWEM and BWEB
         mapBWEM.Initialize();
         mapBWEM.EnableAutomaticPathAnalysis();
+        mapBWEM.FindBasesForStartingLocations();
         BWEB::Map::onStart();
 
         // Check if the map is an island map
@@ -284,7 +285,7 @@ namespace McRave::Terrain {
         // HACK: Play Plasma as an island map
         if (Broodwar->mapFileName().find("Plasma") != string::npos)
             islandMap = true;
-
+        
         // Store non island bases	
         for (auto &area : mapBWEM.Areas()) {
             if (!islandMap && area.AccessibleNeighbours().size() == 0)
@@ -311,6 +312,9 @@ namespace McRave::Terrain {
         findDefendPosition();
 
         updateAreas();
+
+        Broodwar->drawCircleMap(Position(BWEB::Map::getNaturalChoke()->Center()), 4, Colors::Yellow, true);
+        Broodwar->drawCircleMap(Position(BWEB::Map::getMainChoke()->Center()), 6, Colors::Green, false);
     }
 
     bool inRangeOfWallPieces(UnitInfo& unit)
@@ -345,7 +349,7 @@ namespace McRave::Terrain {
     {
         if (naturalWall) {
             for (auto &piece : naturalWall->getDefenses()) {
-                if (BWEB::Map::isUsed(piece)) {
+                if (BWEB::Map::isUsed(piece) != UnitTypes::None) {
                     auto center = Position(piece) + Position(32, 32);
                     if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 32)
                         return true;

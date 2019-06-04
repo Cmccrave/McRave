@@ -112,7 +112,7 @@ namespace McRave::Learning {
 
                 if (build == "2Gate") {
                     if (opener == "Proxy")
-                        return false;
+                        return true;
                     if (opener == "Natural")
                         return false;
                     if (opener == "Main")
