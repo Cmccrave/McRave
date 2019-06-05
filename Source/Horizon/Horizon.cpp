@@ -184,6 +184,8 @@ namespace McRave::Horizon {
                 // HACK: Bunch of hardcoded stuff
                 if (ally.getTarget().getPosition().getDistance(unit.getTarget().getPosition()) > reach)
                     continue;
+                if (ally.getType() == UnitTypes::Protoss_High_Templar && !ally.canStartCast(TechTypes::Psionic_Storm))
+                    continue;
                 if ((ally.getType() == UnitTypes::Protoss_Scout || ally.getType() == UnitTypes::Protoss_Corsair) && ally.getShields() < 30)
                     continue;
                 if (ally.getType() == UnitTypes::Terran_Wraith && ally.getHealth() <= 100)

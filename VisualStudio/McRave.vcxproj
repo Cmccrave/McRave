@@ -261,6 +261,7 @@
       <TargetMachine>MachineX86</TargetMachine>
       <AdditionalDependencies>../lib/BWAPI.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/ignore:4099 %(AdditionalOptions)</AdditionalOptions>
+      <GenerateMapFile>true</GenerateMapFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='McRaveZ|Win32'">

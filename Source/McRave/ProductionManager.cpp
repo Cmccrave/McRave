@@ -198,7 +198,7 @@ namespace McRave::Production {
             case Protoss_Dark_Templar:
                 return vis(unit) < 4;
             case Protoss_High_Templar:
-                return vis(unit) < 10 && (Broodwar->self()->hasResearched(TechTypes::Psionic_Storm) || Broodwar->self()->isResearching(TechTypes::Psionic_Storm));
+                return vis(unit) < 6;
 
                 // Robo Units
             case Protoss_Shuttle:
@@ -489,7 +489,7 @@ namespace McRave::Production {
                 const auto gasCost = Broodwar->self()->gas() == 0 || type.gasPrice() == 0 ? 0.5 : double(Broodwar->self()->gas() - type.gasPrice() - (!BuildOrder::isTechUnit(type) * reservedGas) - Buildings::getQueuedGas()) / double(Broodwar->self()->gas());
 
                 const auto resourceScore = clamp(gasCost * mineralCost, 0.01, 1.0);
-                const auto strategyScore = clamp(Strategy::getUnitScore(type) / max(1, vis(type)), 0.01, 1.0);
+                const auto strategyScore = clamp(Strategy::getUnitScore(type) / double(max(1, vis(type))), 0.01, 1.0);
                 return resourceScore * strategyScore;
             };
 

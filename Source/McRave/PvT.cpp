@@ -36,14 +36,14 @@ namespace McRave::BuildOrder::Protoss {
     void PvT2GateDefensive() {
         gasLimit =                                      com(Protoss_Cybernetics_Core) > 0 && s >= 50 ? INT_MAX : 0;
         getOpening =                                    vis(Protoss_Dark_Templar) == 0;
-        playPassive =                                   vis(Protoss_Dark_Templar) == 0;
+        playPassive =                                   false;
         firstUpgrade =                                  UpgradeTypes::None;
         firstTech =                                     TechTypes::None;
         firstUnit =                                     s >= 80 ? Protoss_Dark_Templar : None;
         fastExpand =                                    false;
 
         zealotLimit =                                   INT_MAX;
-        dragoonLimit =                                  INT_MAX;
+        dragoonLimit =                                  s >= 50 ? INT_MAX : 0;
 
         itemQueue[Protoss_Nexus] =                      Item(1);
         itemQueue[Protoss_Pylon] =                      Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));

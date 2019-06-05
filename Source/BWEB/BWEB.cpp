@@ -40,7 +40,9 @@ namespace BWEB::Map
                         || base.Minerals().size() < 5)
                         continue;
 
-                    const auto dist = getGroundDistance(base.Center(), mainPosition);
+                    Position center = base.Center();
+
+                    const auto dist = getGroundDistance(center, mainPosition);
                     if (dist < distBest) {
                         distBest = dist;
                         naturalArea = base.GetArea();
@@ -322,6 +324,9 @@ namespace BWEB::Map
     {
         Position start(s), end(e);
         auto dist = 0.0;
+        auto last = start;
+        
+        // Check if we're in a valid area first
         if (!start.isValid()
             || !end.isValid()
             || !mapBWEM.GetArea(WalkPosition(start))
@@ -329,10 +334,25 @@ namespace BWEB::Map
             || !mapBWEM.GetArea(WalkPosition(start))->AccessibleFrom(mapBWEM.GetArea(WalkPosition(end))))
             return DBL_MAX;
 
-        for (auto &cpp : mapBWEM.GetPath(start, end)) {
-            auto center = Position(cpp->Center());
-            dist += start.getDistance(center);
-            start = center;
+        // Find the closest chokepoint node
+        const auto closestNode = [&](const BWEM::ChokePoint * cp) {
+            auto bestPosition = cp->Center();
+            const auto d1 = Position(cp->Center()).getDistance(last);
+            const auto d2 = Position(cp->Pos(cp->end1)).getDistance(last);
+            const auto d3 = Position(cp->Pos(cp->end2)).getDistance(last);
+
+            if (min({ d1,d2,d3 }) == d2)
+                return Position(cp->Pos(cp->end1));
+            if (min({ d1,d2,d3 }) == d3)
+                return Position(cp->Pos(cp->end2));
+            return Position(cp->Center());
+        };
+
+        // For each chokepoint, add the distance to the closest chokepoint node
+        for (auto &cpp : mapBWEM.GetPath(start, end)) {            
+            auto next = closestNode(cpp);
+            dist += next.getDistance(last);
+            last = next;
         }
 
         return dist += start.getDistance(end);

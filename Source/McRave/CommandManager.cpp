@@ -67,6 +67,10 @@ namespace McRave::Command {
             return unit.getType().isFlyer() ? 1.0 / max(0.1f, Grids::getAAirCluster(w)) : log(50.0 + Grids::getAGroundCluster(w));
         }
 
+        double defaultDistance(UnitInfo& unit, WalkPosition w) {
+            return (unit.getType().isFlyer() || Terrain::isIslandMap() || !mapBWEM.GetArea(w) || !mapBWEM.GetArea(WalkPosition(unit.getDestination()))) ? Position(w).getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(Position(w), unit.getDestination());
+        }
+
         double defaultVisited(UnitInfo& unit, WalkPosition w) {
             return log(clamp(double(Broodwar->getFrameCount() - Grids::lastVisitedFrame(w)), 100.0, 1000.0));
         }
@@ -337,7 +341,7 @@ namespace McRave::Command {
         const auto scoreFunction = [&](WalkPosition w) {
             // Manual conversion until BWAPI::Point is fixed
             auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
-            double distance = (unit.getType().isFlyer() || Terrain::isIslandMap()) ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
+            double distance = defaultDistance(unit, w);
             double grouping = defaultGrouping(unit, w);
             double mobility = defaultMobility(unit, w);
             double score = (grouping * mobility) / distance;
@@ -557,28 +561,43 @@ namespace McRave::Command {
             return false;
 
         // Probe Cannon surround
-        if (false && unit.getType().isWorker() && vis(UnitTypes::Protoss_Photon_Cannon) > 0) {
-            auto &cannon = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Self, [&](auto &u) {
+        if (unit.getType().isWorker() && vis(UnitTypes::Protoss_Photon_Cannon) > 0) {
+            auto &cannon = Util::getClosestUnitGround(mapBWEM.Center(), PlayerState::Self, [&](auto &u) {
                 return u.getType() == UnitTypes::Protoss_Photon_Cannon;
-            });
+            });            
 
-            auto distBest = DBL_MAX;
-            auto walkBest = WalkPositions::Invalid;
-            auto start = cannon->getWalkPosition();
-            for (int x = start.x - 2; x < start.x + 10; x++) {
-                for (int y = start.y - 2; y < start.y + 10; y++) {
-                    WalkPosition w(x, y);
-                    double dist = Position(w).getDistance(mapBWEM.Center());
-                    if (dist < distBest && Util::isWalkable(unit, w)) {
-                        distBest = dist;
-                        walkBest = w;
+            if (cannon) {
+
+                auto cannonDist = BWEB::Map::getGroundDistance(mapBWEM.Center(), cannon->getPosition());
+                auto distBest = DBL_MAX;
+                auto walkBest = WalkPositions::Invalid;
+                auto start = cannon->getWalkPosition();
+                for (int x = start.x - 10; x < start.x + 18; x++) {
+                    for (int y = start.y - 10; y < start.y + 18; y++) {
+                        WalkPosition w(x, y);
+                        Position p(w);
+                        double dist = BWEB::Map::getGroundDistance(mapBWEM.Center(), p);
+
+                        // This comes from our concave check, need a solution other than this
+                        if (!w.isValid()
+                            || p.getDistance(cannon->getPosition()) < 64.0
+                            || Command::overlapsActions(unit.unit(), p, unit.getType(), PlayerState::Self, 24)
+                            || Command::isInDanger(unit, p)
+                            || Grids::getMobility(p) <= 6
+                            || Buildings::overlapsQueue(unit.getType(), TilePosition(w))
+                            || dist >= cannonDist + 64)
+                            continue;
+
+                        if (dist < distBest) {
+                            distBest = dist;
+                            walkBest = w;
+                        }
                     }
                 }
-            }
-
-            if (walkBest.isValid()) {
-                unit.command(UnitCommandTypes::Move, Position(walkBest), false);
-                return true;
+                if (walkBest.isValid()) {
+                    unit.command(UnitCommandTypes::Move, Position(walkBest), false);
+                    return true;
+                }
             }
         }
 
@@ -613,7 +632,7 @@ namespace McRave::Command {
             // Manual conversion until BWAPI::Point is fixed
             auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
             double threat = /*unit.getRole() == Role::Scout ? max(Grids::getEGroundThreat(w), 1.0f) :*/ defaultThreat(unit, w);
-            double distance = unit.getType().isFlyer() || unit.getRole() == Role::Scout ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
+            double distance = defaultDistance(unit, w);
             double visited = clamp(((640.0 - distance) / 640.0) * defaultVisited(unit, w), 0.01, 1.0);
             double grouping = defaultGrouping(unit, w);
             double mobility = defaultMobility(unit, w);
@@ -660,10 +679,10 @@ namespace McRave::Command {
             // Manual conversion until BWAPI::Point is fixed
             auto p = Position((w.x * 8) + 4, (w.y * 8) + 4);
 
-            auto distRatio = unit.hasTarget() ? p.getDistance(unit.getTarget().getPosition()) / SIM_RADIUS : 1.0;
+            auto distRatio = unit.hasTarget() ? max(0.01, (SIM_RADIUS - p.getDistance(unit.getTarget().getPosition()))) / SIM_RADIUS : 1.0;
 
             // Distance is a mix of kiting and retreating
-            double distance = unit.hasTarget() ? distRatio * p.getDistance(BWEB::Map::getMainPosition()) / (p.getDistance(unit.getTarget().getPosition())) : p.getDistance(BWEB::Map::getMainPosition());
+            double distance = unit.hasTarget() ? p.getDistance(BWEB::Map::getMainPosition()) / (distRatio * p.getDistance(unit.getTarget().getPosition())) : p.getDistance(BWEB::Map::getMainPosition());
             double threat = defaultThreat(unit, w);
             double grouping = defaultGrouping(unit, w);
             double mobility = defaultMobility(unit, w);

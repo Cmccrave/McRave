@@ -198,6 +198,11 @@ namespace McRave::Targets {
         }
 
         void getEngageDistance(UnitInfo& unit) {
+
+            // If unnecessary to get engage distance
+            if (unit.getRole() != Role::Combat && unit.getRole() != Role::Scout)
+                return;
+
             if (!unit.getPath().isReachable()) {
                 unit.setEngDist(DBL_MAX);
                 unit.circleGreen();
@@ -208,7 +213,7 @@ namespace McRave::Targets {
 
         void getPathToTarget(UnitInfo& unit)
         {
-            // Don't want a path if we're not fighting
+            // If unnecessary to get path
             if (unit.getRole() != Role::Combat && unit.getRole() != Role::Scout)
                 return;
 

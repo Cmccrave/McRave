@@ -33,7 +33,7 @@ namespace McRave::Combat {
                     return false;
 
                 // Don't pull workers too early
-                if (arriveAtDefense < Strategy::enemyArrivalFrame() - 100)
+                if (arriveAtDefense < Strategy::enemyArrivalFrame() - 150)
                     return false;
 
                 if (Broodwar->self()->getRace() == Races::Protoss) {
@@ -267,7 +267,7 @@ namespace McRave::Combat {
         {
             auto moveToTarget = unit.hasTarget() && (unit.getPosition().getDistance(unit.getTarget().getPosition()) <= SIM_RADIUS || unit.getType().isFlyer() || Broodwar->getFrameCount() < 15000);
 
-            if (unit.getGlobalState() == GlobalState::Retreat)
+            if (unit.getGlobalState() == GlobalState::Retreat && (!unit.hasTarget() || (unit.hasTarget() && !unit.getTarget().isThreatening())))
                 unit.setDestination(Terrain::getDefendPosition());
 
             // If target is close, set as destination

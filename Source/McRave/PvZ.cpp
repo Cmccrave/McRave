@@ -51,7 +51,7 @@ namespace McRave::BuildOrder::Protoss {
         cutWorkers =                                    Production::hasIdleProduction();
 
         zealotLimit =                                   INT_MAX;
-        dragoonLimit =                                  (vis(Protoss_Templar_Archives) > 0 || Players::vT()) ? INT_MAX : 0;
+        dragoonLimit =                                  vis(Protoss_Templar_Archives) > 0 ? INT_MAX : 0;
         firstUnit =                                     Protoss_Corsair;
 
         itemQueue[Protoss_Nexus] =                      Item(1);
@@ -67,6 +67,7 @@ namespace McRave::BuildOrder::Protoss {
 
         fastExpand =                                    true;
         wallNat =                                       true;
+        cutWorkers =                                    Strategy::enemyRush() ? vis(Protoss_Photon_Cannon) < 2 : false;
 
         auto cannonCount = int(isAlmostComplete(Protoss_Forge))
             + (Units::getEnemyCount(Zerg_Zergling) >= 6)

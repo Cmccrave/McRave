@@ -130,8 +130,8 @@ namespace McRave::Util {
             auto p = Position(w) + Position(4, 4);
             auto dist = p.getDistance(Position(center));
             auto score = dist + log(p.getDistance(unit.getPosition()));
-
-            auto correctArea = (here == Terrain::getDefendPosition() && Terrain::isInAllyTerritory(t)) || mapBWEM.GetArea(t) == area;
+            
+            auto correctArea = (here == Terrain::getDefendPosition() && Terrain::isInAllyTerritory(t)) || (t.isValid() && mapBWEM.GetArea(t) == area);
 
             if (!w.isValid() || !t.isValid() || !p.isValid()
                 || (!Terrain::isInAllyTerritory(t) && area && mapBWEM.GetArea(w) != area)
