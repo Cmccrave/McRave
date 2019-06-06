@@ -382,8 +382,9 @@ namespace McRave::Workers {
         auto time = (dist / speed) + 50.0;
         auto enoughGas = worker.getBuildingType().gasPrice() > 0 ? Broodwar->self()->gas() + int(gasIncome * time) >= worker.getBuildingType().gasPrice() : true;
         auto enoughMins = worker.getBuildingType().mineralPrice() > 0 ? Broodwar->self()->minerals() + int(mineralIncome * time) >= worker.getBuildingType().mineralPrice() : true;
+        auto waitInstead = dist < 160.0 && (BuildOrder::isFastExpand() || BuildOrder::isProxy());
 
-        return enoughGas && enoughMins;
+        return (enoughGas && enoughMins) || waitInstead;
     };
 
     int getMineralWorkers() { return minWorkers; }

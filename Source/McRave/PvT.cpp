@@ -59,8 +59,9 @@ namespace McRave::BuildOrder::Protoss {
         defaultPvT();
         playPassive =                                   false;
         proxy =                                         currentOpener == "Proxy" && vis(Protoss_Gateway) < 2 && Broodwar->getFrameCount() < 5000;
-        wallNat =                                       currentOpener == "Natural";
-        scout =                                         Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
+        wallNat =                                       vis(Protoss_Nexus) >= 2 || currentOpener == "Natural";
+        scout =                                         currentOpener != "Proxy" && Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
+        rush =                                          currentOpener == "Proxy";
 
         // Openers
         if (currentOpener == "Proxy") {
@@ -78,7 +79,7 @@ namespace McRave::BuildOrder::Protoss {
             // Change Transition
             if (Strategy::enemyFastExpand())
                 currentTransition = "DT";
-            else if (Strategy::enemyRush())
+            else if (Strategy::enemyRush() && currentOpener != "Proxy")
                 currentTransition = "Defensive";
         }
 

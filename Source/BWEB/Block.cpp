@@ -22,9 +22,7 @@ namespace BWEB::Blocks
             }
             else if (height == 5) {
                 if (width == 4)
-                    pieces ={ Piece::Large, Piece::Row, Piece::Small, Piece::Small };
-                if (width == 8)
-                    pieces ={ Piece::Large, Piece::Large, Piece::Row, Piece::Small, Piece::Small, Piece::Small, Piece::Small };
+                    pieces ={ Piece::Large, Piece::Row, Piece::Small, Piece::Small };                
             }
             else if (height == 6) {
                 if (width == 10)
@@ -254,7 +252,6 @@ namespace BWEB::Blocks
 
         void findProxyBlock()
         {
-            // Credit: https://github.com/bmnielsen/Locutus/blob/master/Steamhammer/Source/BuildingPlacer.cpp#L586
             // For base-specific locations, avoid all areas likely to be traversed by worker scouts
             set<const BWEM::Area*> areasToAvoid;
             for (auto &first : Map::mapBWEM.StartingLocations()) {
@@ -277,85 +274,54 @@ namespace BWEB::Blocks
             // Gather the possible enemy start locations
             vector<TilePosition> enemyStartLocations;
             for (auto &start : Map::mapBWEM.StartingLocations()) {
-                if (start != Map::getMainTile())
+                if (Map::mapBWEM.GetArea(start) != Map::getMainArea())
                     enemyStartLocations.push_back(start);
             }
 
-            // Initialize variables for scoring possible locations
-            int overallDistBest = INT_MAX;
-            TilePosition overallTileBest = BWAPI::TilePositions::Invalid;
-            map<TilePosition, double> distBest;
-            map<TilePosition, BWAPI::TilePosition> tileBest;
-            for (auto &base : enemyStartLocations) {
-                distBest[base] = INT_MAX;
-                tileBest[base] = BWAPI::TilePositions::Invalid;
-            }
-
-            // Check if any corner of the block is in the avoided areas
-            const auto badArea = [&](TilePosition t) {
-                return areasToAvoid.find(Map::mapBWEM.GetArea(t)) != areasToAvoid.end()
-                    || areasToAvoid.find(Map::mapBWEM.GetArea(t + TilePosition(9, 0))) != areasToAvoid.end()
-                    || areasToAvoid.find(Map::mapBWEM.GetArea(t + TilePosition(9, 5))) != areasToAvoid.end()
-                    || areasToAvoid.find(Map::mapBWEM.GetArea(t + TilePosition(0, 5))) != areasToAvoid.end();
+            // Check if this block is in a good area
+            const auto goodArea = [&](TilePosition t) {
+                for (auto &start : enemyStartLocations) {
+                    if (Map::mapBWEM.GetArea(t) == Map::mapBWEM.GetArea(start))
+                        return true;
+                }
+                for (auto &area : areasToAvoid) {
+                    if (Map::mapBWEM.GetArea(t) == area)
+                        return true;
+                }
+                return false;
             };
 
+
             // Find the best locations
+            TilePosition tileBest = TilePositions::Invalid;
+            auto distBest = DBL_MAX;
             for (int x = 0; x < Broodwar->mapWidth(); x++) {
                 for (int y = 0; y < Broodwar->mapHeight(); y++) {
                     const TilePosition t(x, y);
                     if (!t.isValid()
-                        || !Broodwar->isBuildable(t)
-                        || badArea(t)
-                        || !canAddBlock(t, 10, 6))
+                        || !goodArea(t)
+                        || !canAddBlock(t, 8, 5))
                         continue;
 
                     const Position blockCenter = Position(t) + Position(160, 96);
 
                     // Consider each start location
-                    bool inStartLocationRegion = false;
-                    int minDist = INT_MAX;
-                    int maxDist = 0;
+                    auto dist = 0.0;
                     for (auto &base : enemyStartLocations) {
-
-
-                        // Compute distance, abort if it is not connected
                         const auto baseCenter = Position(base) + Position(64, 48);
-                        const auto dist = Map::getGroundDistance(blockCenter, Position(base));
-
-                        if (dist >= distBest[base] || dist < 2000)
-                            continue;
-
-                        // This is now the best block for this base
-                        distBest[base] = dist;
-                        tileBest[base] = t;
+                        dist += Map::getGroundDistance(blockCenter, baseCenter);
                     }
 
-                    // Don't consider center positions in a base
-                    if (inStartLocationRegion)
-                        continue;
-                    
-                    // Don't consider center positions too close to a base
-                    if (minDist < 2000)                    
-                        continue;
-
-                    // On 4+ player maps where the center isn't buildable, prefer locations closest to our main
-                    if (enemyStartLocations.size() >= 3 && minDist < ((double)maxDist * 0.75)) {
-                        int distToOurMain = Map::getGroundDistance(blockCenter, Map::getMainPosition());
-                        if (distToOurMain > minDist)
-                            continue;                        
-                    }
-
-                    // Update overall best if appropriate
-                    if (maxDist < overallDistBest) {
-                        overallDistBest = maxDist;
-                        overallTileBest = t;
+                    if (dist < distBest) {
+                        distBest = dist;
+                        tileBest = t;
                     }
                 }
-
-                // Add the blocks
-                for (auto &base : enemyStartLocations)
-                    insertBlock(tileBest[base], whichPieces(8, 5));                
             }
+
+            // Add the blocks
+            if (canAddBlock(tileBest, 8, 5))
+                insertBlock(tileBest, { Piece::Large, Piece::Large, Piece::Row, Piece::Small, Piece::Small, Piece::Small, Piece::Small });
         }
     }
 
@@ -376,6 +342,7 @@ namespace BWEB::Blocks
         findMainStartBlock();
         findMainStartBlock();
         findMainDefenseBlock();
+        findProxyBlock();
         findProductionBlocks();
     }
 

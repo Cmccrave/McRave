@@ -391,8 +391,10 @@ namespace McRave::Command {
 
                 if (unit.getPosition().getDistance(unit.getTarget().getPosition()) > range && unit.getDestination() == unit.getTarget().getPosition()) {
                     auto intercept = Util::getInterceptPosition(unit);
-                    unit.command(UnitCommandTypes::Move, intercept, true);
-                    return true;
+                    if (intercept.getDistance(unit.getTarget().getPosition()) < intercept.getDistance(unit.getPosition())) {
+                        unit.command(UnitCommandTypes::Move, intercept, true);
+                        return true;
+                    }
                 }
             }
 
@@ -557,7 +559,8 @@ namespace McRave::Command {
         bool closeToDefend = Terrain::getDefendPosition().getDistance(unit.getPosition()) < 640.0 || Terrain::isInAllyTerritory(unit.getTilePosition());
 
         if (!closeToDefend
-            || unit.getLocalState() == LocalState::Attack)
+            || unit.getLocalState() == LocalState::Attack
+            || (unit.hasTarget() && unit.getTarget().isHidden() && unit.getTarget().withinReach(unit)))
             return false;
 
         // Probe Cannon surround

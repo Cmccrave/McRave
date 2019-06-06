@@ -38,7 +38,6 @@ namespace McRave::BuildOrder::Protoss {
             gasLimit =                                  INT_MAX;
             zealotLimit =                               INT_MAX;
             dragoonLimit =                              0;
-            wallNat =                                   vis(Protoss_Nexus) >= 2;
         }
     }
 
@@ -227,15 +226,16 @@ namespace McRave::BuildOrder::Protoss {
     {
         defaultPvZ();
         proxy =                                         currentOpener == "Proxy" && vis(Protoss_Gateway) < 2 && Broodwar->getFrameCount() < 5000;
-        wallNat =                                       currentOpener == "Natural";
-        scout =                                         Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
+        wallNat =                                       vis(Protoss_Nexus) >= 2 || currentOpener == "Natural";
+        scout =                                         currentOpener != "Proxy" && Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
+        rush =                                          currentOpener == "Proxy";
 
         // Reactions
         if (!lockedTransition) {
 
             // Change Transition
-            if (Strategy::enemyRush())
-                currentTransition = "Panic";
+            if (Strategy::enemyRush() && currentOpener != "Proxy")
+                currentTransition = "Defensive";
             else if (Units::getEnemyCount(UnitTypes::Zerg_Sunken_Colony) >= 2)
                 currentTransition = "Expand";
         }
@@ -275,17 +275,17 @@ namespace McRave::BuildOrder::Protoss {
         if (currentTransition == "Expand") {
             getOpening =                                s < 90;
             lockedTransition =                          vis(Protoss_Nexus) >= 2;
-            wallNat =                                   currentOpener == "Natural" ? true : vis(Protoss_Nexus) >= 2;
+            wallNat =                                   vis(Protoss_Nexus) >= 2 || currentOpener == "Natural";
 
             itemQueue[Protoss_Nexus] =                  Item(1 + (s >= 42));
             itemQueue[Protoss_Forge] =                  Item(s >= 62);
             itemQueue[Protoss_Cybernetics_Core] =       Item(vis(Protoss_Photon_Cannon) >= 2);
             itemQueue[Protoss_Photon_Cannon] =          Item(2 * (com(Protoss_Forge) > 0));
         }
-        else if (currentTransition == "Panic") {
+        else if (currentTransition == "Defensive") {
             getOpening =                                s < 80;
             lockedTransition =                          true;
-            wallNat =                                   currentOpener == "Natural";
+            wallNat =                                   vis(Protoss_Nexus) >= 2 || currentOpener == "Natural";
             gasLimit =                                  1;
 
             itemQueue[Protoss_Nexus] =                  Item(1);
@@ -300,7 +300,7 @@ namespace McRave::BuildOrder::Protoss {
             firstUpgrade =                              UpgradeTypes::Singularity_Charge;
             zealotLimit =                               5;
             dragoonLimit =                              INT_MAX;
-            wallNat =                                   currentOpener == "Natural" ? true : s >= 120;
+            wallNat =                                   vis(Protoss_Nexus) >= 2 || currentOpener == "Natural";
 
             itemQueue[Protoss_Gateway] =                Item((s >= 20) + (s >= 24) + (s >= 62) + (s >= 70));
             itemQueue[Protoss_Assimilator] =            Item(s >= 44);

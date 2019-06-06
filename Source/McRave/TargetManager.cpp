@@ -67,9 +67,6 @@ namespace McRave::Targets {
                     // Flying units don't attack interceptors
                     || (unit.getType().isFlyer() && target.getType() == UnitTypes::Protoss_Interceptor)
 
-                    // Zealot: Rushing Zealots only attack workers
-                    || (unit.getType() == UnitTypes::Protoss_Zealot && BuildOrder::isRush() && !target.getType().isWorker() && Broodwar->getFrameCount() < 10000)
-
                     // Don't attack enemy spider mines with more than 4 units
                     || (target.getType() == UnitTypes::Terran_Vulture_Spider_Mine && int(target.getTargetedBy().size()) >= 4) && !target.isBurrowed())
                     return false;

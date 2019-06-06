@@ -18,7 +18,7 @@ namespace McRave::BuildOrder::Protoss {
             hideTech =                                  false;
             playPassive =                               false;
             fastExpand =                                false;
-            wallNat =                                   false;
+            wallNat =                                   vis(Protoss_Nexus) >= 2;
             wallMain =                                  false;
             delayFirstTech =                            false;
 
@@ -31,7 +31,6 @@ namespace McRave::BuildOrder::Protoss {
             gasLimit =			                        INT_MAX;
             zealotLimit =		                        1;
             dragoonLimit =		                        INT_MAX;
-            wallNat =                                   vis(Protoss_Nexus) >= 2;
         }
     }
 
@@ -65,9 +64,10 @@ namespace McRave::BuildOrder::Protoss {
         defaultPvP();
         zealotLimit =                                   5;
         proxy =                                         currentOpener == "Proxy" && vis(Protoss_Gateway) < 2 && Broodwar->getFrameCount() < 5000;
-        wallNat =                                       currentOpener == "Natural";
-        scout =                                         Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
+        wallNat =                                       vis(Protoss_Nexus) >= 2 || currentOpener == "Natural";
+        scout =                                         currentOpener != "Proxy" && Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
         cutWorkers =                                    Production::hasIdleProduction() && s <= 60;
+        rush =                                          currentOpener == "Proxy";
 
         // Openers
         if (currentOpener == "Proxy") {
@@ -104,12 +104,12 @@ namespace McRave::BuildOrder::Protoss {
         if (!lockedTransition) {
 
             // Change Transition
-            if (Strategy::enemyRush())
+            if (Strategy::enemyRush() && currentOpener != "Proxy")
                 currentTransition = "Defensive";
             else if (Strategy::enemyPressure() && currentOpener == "Natural")
                 currentTransition = "Defensive";
             else if (Strategy::getEnemyBuild() == "FFE" || Strategy::getEnemyBuild() == "1GateDT")
-                currentTransition = "Expand";
+                currentTransition = "Robo";
             else if (Strategy::getEnemyBuild() == "CannonRush")
                 currentTransition = "Robo";
         }
