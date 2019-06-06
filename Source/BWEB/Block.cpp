@@ -282,13 +282,13 @@ namespace BWEB::Blocks
             const auto goodArea = [&](TilePosition t) {
                 for (auto &start : enemyStartLocations) {
                     if (Map::mapBWEM.GetArea(t) == Map::mapBWEM.GetArea(start))
-                        return true;
+                        return false;
                 }
                 for (auto &area : areasToAvoid) {
                     if (Map::mapBWEM.GetArea(t) == area)
-                        return true;
+                        return false;
                 }
-                return false;
+                return true;
             };
 
 
