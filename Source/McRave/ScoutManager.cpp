@@ -81,9 +81,18 @@ namespace McRave::Scouts {
 
             // Assign new scouts after the last one died 10 seconds ago
             if (BWEB::Map::getNaturalChoke() && BuildOrder::shouldScout() && Units::getMyRoleCount(Role::Scout) < Scouts::getScoutCount() && Broodwar->getFrameCount() - scoutDeadFrame > 240) {
-                auto scout = Util::getClosestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
-                    return u.getRole() == Role::Worker && (!u.hasResource() || !u.getResource().getType().isRefinery()) && u.getBuildingType() == UnitTypes::None && !u.unit()->isCarryingMinerals() && !u.unit()->isCarryingGas();
-                });
+                shared_ptr<UnitInfo> scout = nullptr;
+
+                if (BuildOrder::isProxy()) {
+                    scout = Util::getFurthestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
+                        return u.getRole() == Role::Worker && (!u.hasResource() || !u.getResource().getType().isRefinery()) && u.getBuildingType() == UnitTypes::None && !u.unit()->isCarryingMinerals() && !u.unit()->isCarryingGas();
+                    });
+                }
+                else {
+                    scout = Util::getClosestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
+                        return u.getRole() == Role::Worker && (!u.hasResource() || !u.getResource().getType().isRefinery()) && u.getBuildingType() == UnitTypes::None && !u.unit()->isCarryingMinerals() && !u.unit()->isCarryingGas();
+                    });
+                }
 
                 if (scout) {
                     scout->setRole(Role::Scout);

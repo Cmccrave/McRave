@@ -285,7 +285,7 @@ namespace McRave::Terrain {
         // HACK: Play Plasma as an island map
         if (Broodwar->mapFileName().find("Plasma") != string::npos)
             islandMap = true;
-        
+
         // Store non island bases	
         for (auto &area : mapBWEM.Areas()) {
             if (!islandMap && area.AccessibleNeighbours().size() == 0)
@@ -315,6 +315,41 @@ namespace McRave::Terrain {
 
         Broodwar->drawCircleMap(Position(BWEB::Map::getNaturalChoke()->Center()), 4, Colors::Yellow, true);
         Broodwar->drawCircleMap(Position(BWEB::Map::getMainChoke()->Center()), 6, Colors::Green, false);
+
+        // For base-specific locations, avoid all areas likely to be traversed by worker scouts
+        set<const BWEM::Area*> areasToAvoid;
+        for (auto &first : mapBWEM.StartingLocations()) {
+            for (auto &second : mapBWEM.StartingLocations()) {
+                if (first == second)
+                    continue;
+
+                for (auto &choke : mapBWEM.GetPath(Position(first), Position(second))) {
+                    areasToAvoid.insert(choke->GetAreas().first);
+                    areasToAvoid.insert(choke->GetAreas().second);
+                }
+            }
+
+            // Also add any areas that neighbour each start location
+            auto baseArea = mapBWEM.GetNearestArea(first);
+            for (auto &area : baseArea->AccessibleNeighbours())
+                areasToAvoid.insert(area);
+        }
+
+        auto last = Positions::Invalid;
+        for (auto &area : areasToAvoid) {
+
+            Broodwar->drawCircleMap(Position(area->Top()), 8, Colors::Green, true);
+
+            auto next = Position(area->Top());
+
+            if (!last.isValid()) {
+                last = next;
+                continue;
+            }
+
+            Broodwar->drawLineMap(last, next, Colors::Cyan);
+            last = next;
+        }
     }
 
     bool inRangeOfWallPieces(UnitInfo& unit)
@@ -392,11 +427,11 @@ namespace McRave::Terrain {
                         bestChoke = choke;
                     }
                 }
-                
+
                 BWEB::Walls::createWall(types, &area, bestChoke, UnitTypes::None, defenses, true, false);
 
                 if (&area == BWEB::Map::getNaturalArea())
-                    naturalWall = BWEB::Walls::getWall(BWEB::Map::getNaturalArea());                
+                    naturalWall = BWEB::Walls::getWall(BWEB::Map::getNaturalArea());
             }
             return true;
         }

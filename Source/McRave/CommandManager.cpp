@@ -488,6 +488,10 @@ namespace McRave::Command {
                 if (interceptDistance > unit.getPosition().getDistance(unit.getTarget().getPosition()))
                     return false;
 
+                // Don't kite if we can start an attack
+                if (unit.canStartAttack())
+                    return false;
+
                 // Don't kite buildings unless we're a flying unit
                 if (unit.getTarget().getType().isBuilding() && !unit.getType().isFlyer())
                     return false;
@@ -510,14 +514,19 @@ namespace McRave::Command {
                 if (unit.getType() == UnitTypes::Protoss_Reaver
                     || unit.getType() == UnitTypes::Terran_Vulture
                     || allyRange >= enemyRange
-                    || unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine
-                    || !unit.canStartAttack())
+                    || unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine)
                     return true;
             }
 
-            // If unit isn't attacking at maximum range
-            if (enemyRange <= allyRange && unit.unit()->getDistance(unit.getTarget().getPosition()) <= allyRange - enemyRange)
+            // If unit is being targeted and should drop being targeted if possible
+            if (!unit.getTargetedBy().empty() && enemyRange <= allyRange)
                 return true;
+
+            // If unit isn't attacking at maximum range and unit outranges the target
+            if (enemyRange < allyRange && unit.unit()->getDistance(unit.getTarget().getPosition()) <= allyRange - enemyRange) {
+                unit.circleRed();
+                return true;
+            }
             return false;
         };
 

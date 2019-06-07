@@ -60,6 +60,22 @@ namespace McRave::Buildings {
                 }
             }
 
+            // Check closest defensive Block to see if it's best
+            set<TilePosition> placements;
+            for (auto &block : BWEB::Blocks::getBlocks()) {
+                if (block.isDefensive()) {
+                    if (building.tileWidth() == 4)
+                        placements = block.getLargeTiles();
+                    else if (building.tileWidth() == 3)
+                        placements = block.getMediumTiles();
+                    else
+                        placements = block.getSmallTiles();
+                }
+
+                for (auto &tile : placements)
+                    checkBest(building, tile, here, tileBest, distBest);
+            }
+
             return tileBest;
         }
 
@@ -91,7 +107,7 @@ namespace McRave::Buildings {
                 Position blockCenter = Position(block.getTilePosition()) + Position(block.width() * 16, block.height() * 16);
                 if (!Terrain::isInAllyTerritory(block.getTilePosition()) && !BuildOrder::isProxy())
                     continue;
-                
+
                 if (Broodwar->self()->getRace() == Races::Protoss && building == Protoss_Pylon && Broodwar->self()->visibleUnitCount(Protoss_Pylon) != 1) {
                     bool power = true;
                     bool solo = true;
@@ -276,6 +292,22 @@ namespace McRave::Buildings {
             // Check if any buildings lost power
             if (!unpoweredBlocks.empty()) {
                 // Do something
+                auto distBest = DBL_MAX;
+                auto tileBest = TilePositions::Invalid;
+                for (auto &block : unpoweredBlocks) {
+                    for (auto &tile : block.getSmallTiles())
+                        checkBest(Protoss_Pylon, tile, Position(block.getTilePosition()), here, distBest);
+                }
+
+                if (here.isValid())
+                    return here;
+            }
+
+            // Check if we want a shield battery near our choke
+            if (BuildOrder::buildCount(Protoss_Shield_Battery) > 0) {
+                here = closestDefLocation(Protoss_Pylon, Terrain::getDefendPosition());
+                if (here.isValid() && isBuildable(Protoss_Pylon, here) && isQueueable(Protoss_Pylon, here))
+                    return here;
             }
 
             // Check if we are being busted, add an extra pylon to the defenses
@@ -360,10 +392,7 @@ namespace McRave::Buildings {
 
             // Battery placing near chokes
             if (building == Protoss_Shield_Battery) {
-                if (BuildOrder::isWallNat())
-                    here = closestProdLocation(building, (Position)BWEB::Map::getNaturalChoke()->Center());
-                else
-                    here = closestProdLocation(building, (Position)BWEB::Map::getMainChoke()->Center());
+                here = closestDefLocation(building, Terrain::getDefendPosition());
                 return here;
             }
 
@@ -394,10 +423,11 @@ namespace McRave::Buildings {
 
         TilePosition findProxyLocation(UnitType building)
         {
-            // Find our proxy block, it's the only one with 2 large and 4 small
+            // Find our proxy block
             for (auto &block : BWEB::Blocks::getBlocks()) {
-                if (block.getLargeTiles().size() == 2 && block.getSmallTiles().size() == 4)
-                    return closestProdLocation(building, Position(block.getTilePosition()));
+                auto blockCenter = Position(block.getTilePosition() + TilePosition(block.width(), block.height()));
+                if (block.isProxy())
+                    return closestProdLocation(building, blockCenter);
             }
 
             // Otherwise try to find something close to the center and hopefully don't mess up - TODO: Don't mess up better

@@ -126,7 +126,7 @@ namespace McRave::BuildOrder::Protoss {
             desiredDetection =                          Protoss_Forge;
 
             itemQueue[Protoss_Nexus] =				    Item(1);
-            itemQueue[Protoss_Assimilator] =		    Item(s >= 44);
+            itemQueue[Protoss_Assimilator] =		    Item(s >= 52);
             itemQueue[Protoss_Cybernetics_Core] =	    Item(s >= 56);
         }
         else if (currentTransition == "Expand") {
@@ -140,7 +140,7 @@ namespace McRave::BuildOrder::Protoss {
             wallNat =                                   currentOpener == "Natural" || s >= 56;
             desiredDetection =                          Protoss_Forge;
 
-            itemQueue[Protoss_Assimilator] =		    Item(s >= 44);
+            itemQueue[Protoss_Assimilator] =		    Item(s >= 52);
             itemQueue[Protoss_Cybernetics_Core] =	    Item(vis(Protoss_Zealot) >= 5);
             itemQueue[Protoss_Forge] =				    Item(s >= 70);
             itemQueue[Protoss_Nexus] =				    Item(1 + (s >= 50));
@@ -156,7 +156,7 @@ namespace McRave::BuildOrder::Protoss {
             desiredDetection =                          Protoss_Forge;
 
             itemQueue[Protoss_Nexus] =				    Item(1);
-            itemQueue[Protoss_Assimilator] =		    Item(s >= 44);
+            itemQueue[Protoss_Assimilator] =		    Item(s >= 52);
             itemQueue[Protoss_Cybernetics_Core] =	    Item(vis(Protoss_Zealot) >= 5);
             itemQueue[Protoss_Robotics_Facility] =	    Item(com(Protoss_Dragoon) >= 2);
         }

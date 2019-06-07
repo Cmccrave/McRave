@@ -22,7 +22,7 @@ namespace BWEB::Blocks
             }
             else if (height == 5) {
                 if (width == 4)
-                    pieces ={ Piece::Large, Piece::Row, Piece::Small, Piece::Small };                
+                    pieces ={ Piece::Large, Piece::Row, Piece::Small, Piece::Small };
             }
             else if (height == 6) {
                 if (width == 10)
@@ -55,9 +55,39 @@ namespace BWEB::Blocks
             return true;
         }
 
+        bool canAddProxyBlock(const TilePosition here, const int width, const int height)
+        {
+            if (!TilePosition(here.x + width + 1, here.y + height + 1).isValid())
+                return false;
+
+            // Check if a proxy block of specified size is not buildable here
+            for (auto x = here.x - 1; x < here.x + width + 1; x++) {
+                for (auto y = here.y - 1; y < here.y + height + 1; y++) {
+                    const TilePosition t(x, y);
+                    if (!t.isValid() || !Map::mapBWEM.GetTile(t).Buildable() || !Broodwar->isWalkable(WalkPosition(t)))
+                        return false;
+                }
+            }
+            return true;
+        }
+
         void insertBlock(TilePosition here, vector<Piece> pieces)
         {
             Block newBlock(here, pieces);
+            allBlocks.push_back(newBlock);
+            Map::addOverlap(here, newBlock.width(), newBlock.height());
+        }
+
+        void insertProxyBlock(TilePosition here, vector<Piece> pieces)
+        {
+            Block newBlock(here, pieces, true);
+            allBlocks.push_back(newBlock);
+            Map::addOverlap(here, newBlock.width(), newBlock.height());
+        }
+
+        void insertDefensiveBlock(TilePosition here, vector<Piece> pieces)
+        {
+            Block newBlock(here, pieces, false, true);
             allBlocks.push_back(newBlock);
             Map::addOverlap(here, newBlock.width(), newBlock.height());
         }
@@ -199,7 +229,7 @@ namespace BWEB::Blocks
             }
 
             if (tileBest.isValid())
-                insertBlock(tileBest, { Piece::Small, Piece::Medium });
+                insertDefensiveBlock(tileBest, { Piece::Small, Piece::Medium });
         }
 
         void findProductionBlocks()
@@ -291,19 +321,20 @@ namespace BWEB::Blocks
                 return true;
             };
 
-
             // Find the best locations
             TilePosition tileBest = TilePositions::Invalid;
             auto distBest = DBL_MAX;
             for (int x = 0; x < Broodwar->mapWidth(); x++) {
                 for (int y = 0; y < Broodwar->mapHeight(); y++) {
-                    const TilePosition t(x, y);
-                    if (!t.isValid()
-                        || !goodArea(t)
-                        || !canAddBlock(t, 8, 5))
+                    const TilePosition topLeft(x, y);
+                    const TilePosition botRight(x + 8, y + 5);
+
+                    if (!topLeft.isValid()
+                        || !botRight.isValid()
+                        || !canAddProxyBlock(topLeft, 8, 5))
                         continue;
 
-                    const Position blockCenter = Position(t) + Position(160, 96);
+                    const Position blockCenter = Position(topLeft) + Position(160, 96);
 
                     // Consider each start location
                     auto dist = 0.0;
@@ -312,16 +343,20 @@ namespace BWEB::Blocks
                         dist += Map::getGroundDistance(blockCenter, baseCenter);
                     }
 
+                    // Bonus for placing in a good area
+                    if (goodArea(topLeft) && goodArea(botRight))
+                        dist = log(dist);                    
+
                     if (dist < distBest) {
                         distBest = dist;
-                        tileBest = t;
+                        tileBest = topLeft;
                     }
                 }
             }
 
             // Add the blocks
-            if (canAddBlock(tileBest, 8, 5))
-                insertBlock(tileBest, { Piece::Large, Piece::Large, Piece::Row, Piece::Small, Piece::Small, Piece::Small, Piece::Small });
+            if (canAddProxyBlock(tileBest, 8, 5))
+                insertProxyBlock(tileBest, { Piece::Large, Piece::Large, Piece::Row, Piece::Small, Piece::Small, Piece::Small, Piece::Small });
         }
     }
 

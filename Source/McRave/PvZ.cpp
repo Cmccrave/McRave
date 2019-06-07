@@ -303,7 +303,7 @@ namespace McRave::BuildOrder::Protoss {
             wallNat =                                   vis(Protoss_Nexus) >= 2 || currentOpener == "Natural";
 
             itemQueue[Protoss_Gateway] =                Item((s >= 20) + (s >= 24) + (s >= 62) + (s >= 70));
-            itemQueue[Protoss_Assimilator] =            Item(s >= 44);
+            itemQueue[Protoss_Assimilator] =            Item(s >= 52);
             itemQueue[Protoss_Cybernetics_Core] =       Item(vis(Protoss_Zealot) >= 5);
         }
     }
