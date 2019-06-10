@@ -33,6 +33,25 @@ namespace McRave::Buildings {
             auto wall = BWEB::Walls::getClosestWall(TilePosition(here));
             auto natOrMain = BWEB::Map::getMainTile() == station->getBWEMBase()->Location() || BWEB::Map::getNaturalTile() == station->getBWEMBase()->Location();
 
+            // For Shield Batteries, find the closest defensive Block to see if it's best
+            if (building == UnitTypes::Protoss_Shield_Battery) {
+                set<TilePosition> placements;
+                for (auto &block : BWEB::Blocks::getBlocks()) {
+                    if (block.isDefensive()) {
+                        if (building.tileWidth() == 4)
+                            placements = block.getLargeTiles();
+                        else if (building.tileWidth() == 3)
+                            placements = block.getMediumTiles();
+                        else
+                            placements = block.getSmallTiles();
+                    }
+
+                    for (auto &tile : placements)
+                        checkBest(building, tile, here, tileBest, distBest);
+                }
+                return tileBest;
+            }
+
             // Check closest stataion to see if one of their defense locations is best
             if (station) {
                 for (auto &defense : station->getDefenseLocations()) {
@@ -58,22 +77,6 @@ namespace McRave::Buildings {
                             checkBest(building, tile, here, tileBest, distBest);
                     }
                 }
-            }
-
-            // Check closest defensive Block to see if it's best
-            set<TilePosition> placements;
-            for (auto &block : BWEB::Blocks::getBlocks()) {
-                if (block.isDefensive()) {
-                    if (building.tileWidth() == 4)
-                        placements = block.getLargeTiles();
-                    else if (building.tileWidth() == 3)
-                        placements = block.getMediumTiles();
-                    else
-                        placements = block.getSmallTiles();
-                }
-
-                for (auto &tile : placements)
-                    checkBest(building, tile, here, tileBest, distBest);
             }
 
             return tileBest;
@@ -291,7 +294,6 @@ namespace McRave::Buildings {
 
             // Check if any buildings lost power
             if (!unpoweredBlocks.empty()) {
-                // Do something
                 auto distBest = DBL_MAX;
                 auto tileBest = TilePositions::Invalid;
                 for (auto &block : unpoweredBlocks) {
@@ -304,7 +306,7 @@ namespace McRave::Buildings {
             }
 
             // Check if we want a shield battery near our choke
-            if (BuildOrder::buildCount(Protoss_Shield_Battery) > 0) {
+            if (BuildOrder::buildCount(Protoss_Shield_Battery) > 0 && vis(Protoss_Shield_Battery) == 0) {
                 here = closestDefLocation(Protoss_Pylon, Terrain::getDefendPosition());
                 if (here.isValid() && isBuildable(Protoss_Pylon, here) && isQueueable(Protoss_Pylon, here))
                     return here;
@@ -737,15 +739,17 @@ namespace McRave::Buildings {
         return true;
     }
 
-    bool overlapsQueue(UnitType type, TilePosition here)
+    bool overlapsQueue(UnitInfo& unit, TilePosition here)
     {
         // HACK: We want to really make sure a unit doesn't block a building, so fudge it by a full tile
-        int safetyOffset = int(!type.isBuilding());
+        int safetyOffset = int(!unit.getType().isBuilding());
 
         // Check if there's a building queued there already
         for (auto &[tile, building] : buildingsQueued) {
 
-            if (Broodwar->self()->minerals() < building.mineralPrice() || Broodwar->self()->gas() < building.gasPrice())
+            if (Broodwar->self()->minerals() < building.mineralPrice()
+                || Broodwar->self()->gas() < building.gasPrice()
+                || unit.getBuildPosition() == tile)
                 continue;
 
             for (int x = here.x - safetyOffset; x < here.x + safetyOffset; x++) {

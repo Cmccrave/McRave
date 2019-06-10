@@ -172,8 +172,8 @@ namespace McRave::Targets {
             }
 
             auto range = unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
-            if (!unit.getPath().getTiles().empty() && !unit.unit()->isLoaded() && !unit.withinRange(unit.getTarget())) {
-                auto engagePosition = Util::findPointOnPath(unit.getPath(), [&](Position p) {
+            if (!unit.getAttackPath().getTiles().empty() && !unit.unit()->isLoaded() && !unit.withinRange(unit.getTarget())) {
+                auto engagePosition = Util::findPointOnPath(unit.getAttackPath(), [&](Position p) {
                     auto center = p + Position(16, 16);
                     return center.getDistance(unit.getTarget().getPosition()) <= range;
                 }) + Position(16, 16);
@@ -200,9 +200,9 @@ namespace McRave::Targets {
             if (unit.getRole() != Role::Combat && unit.getRole() != Role::Scout)
                 return;
 
-            if (!unit.getPath().isReachable()) {
+            if (!unit.getAttackPath().isReachable()) {
                 unit.setEngDist(DBL_MAX);
-                unit.circleGreen();
+                //unit.circleGreen();
             }
             auto dist = unit.getPosition().getDistance(unit.getEngagePosition());
             unit.setEngDist(dist);
@@ -218,35 +218,22 @@ namespace McRave::Targets {
             if (!unit.hasTarget()) {
                 BWEB::Path newPath;
                 unit.setEngDist(0.0);
-                unit.setPath(newPath);
+                unit.setAttackPath(newPath);
                 return;
             }
-
-            const auto shouldCreatePath =
-                (unit.getPath().getTiles().empty() || !unit.samePath());														    // If both units have the same tile
-
-            const auto canCreatePath =
-                (!unit.hasTransport()																							    // If unit has no transport				
-                    && unit.getTilePosition().isValid() && unit.getTarget().getTilePosition().isValid()								// If both units have valid tiles
-                    && BWEB::Map::isUsed(unit.getTarget().getTilePosition()) == UnitTypes::None										// Doesn't overlap buildings
-                    && BWEB::Map::isUsed(unit.getTilePosition()) == UnitTypes::None
-                    && !unit.getType().isFlyer() && !unit.getTarget().getType().isFlyer()											// Doesn't include flyers
-                    && unit.getPosition().getDistance(unit.getTarget().getPosition()) < SIM_RADIUS									// Isn't too far from engaging
-                    && BWEB::Map::isWalkable(unit.getTilePosition()) && BWEB::Map::isWalkable(unit.getTarget().getTilePosition()));	// Walkable tiles  
-
-                                                                                                                                    // Set distance as estimate when targeting a building/flying unit or far away
-            if (unit.getTarget().getType().isBuilding() || unit.getTarget().getType().isFlyer() || unit.getPosition().getDistance(unit.getTarget().getPosition()) >= SIM_RADIUS || unit.getTilePosition() == unit.getTarget().getTilePosition()) {
+            
+            if (unit.getTarget().getType().isBuilding() || unit.getTarget().getType().isFlyer() || unit.getTilePosition() == unit.getTarget().getTilePosition()) {
                 BWEB::Path newPath;
                 unit.setEngDist(unit.getPosition().getDistance(unit.getEngagePosition()));
-                unit.setPath(newPath);
+                unit.setAttackPath(newPath);
                 return;
             }
 
             // If should create path, grab one from BWEB
-            if (shouldCreatePath && canCreatePath) {
+            if (unit.canCreateAttackPath(unit.getTarget().getTilePosition())) {
                 BWEB::Path newPath;
                 newPath.createUnitPath(unit.getPosition(), unit.getTarget().getPosition());
-                unit.setPath(newPath);
+                unit.setAttackPath(newPath);
             }
         }
     }

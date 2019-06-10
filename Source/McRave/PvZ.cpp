@@ -58,6 +58,7 @@ namespace McRave::BuildOrder::Protoss {
         itemQueue[Protoss_Gateway] =                    Item((s >= 20) + (vis(Protoss_Zealot) > 0) + (s >= 66));
         itemQueue[Protoss_Assimilator] =                Item(s >= 40);
         itemQueue[Protoss_Cybernetics_Core] =           Item(s >= 58);
+        itemQueue[Protoss_Stargate] =                   Item(isAlmostComplete(Protoss_Cybernetics_Core));
     }
 
     void PvZFFE()
@@ -166,6 +167,8 @@ namespace McRave::BuildOrder::Protoss {
 
                 itemQueue[Protoss_Assimilator] =        Item((s >= 38) + (s >= 60));
                 itemQueue[Protoss_Cybernetics_Core] =   Item((s >= 42));
+                itemQueue[Protoss_Citadel_of_Adun] =    Item(isAlmostComplete(Protoss_Cybernetics_Core));
+                itemQueue[Protoss_Templar_Archives] =   Item(isAlmostComplete(Protoss_Citadel_of_Adun));
                 itemQueue[Protoss_Stargate] =           Item(0);
             }
             else if (currentTransition == "2Stargate") {
@@ -180,7 +183,7 @@ namespace McRave::BuildOrder::Protoss {
                 itemQueue[Protoss_Cybernetics_Core] =   Item(s >= 40);
                 itemQueue[Protoss_Citadel_of_Adun] =    Item(0);
                 itemQueue[Protoss_Templar_Archives] =   Item(0);
-                itemQueue[Protoss_Stargate] =           Item((vis(Protoss_Corsair) > 0) + (vis(Protoss_Cybernetics_Core) > 0));
+                itemQueue[Protoss_Stargate] =           Item((vis(Protoss_Corsair) > 0) + (isAlmostComplete(Protoss_Cybernetics_Core)));
             }
             else if (currentTransition == "5GateGoon") {
                 getOpening =                            s < 160;

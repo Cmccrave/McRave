@@ -499,7 +499,7 @@ namespace McRave::Production {
                 return;
             }
 
-            if (building.getType() == UnitTypes::Zerg_Larva && Buildings::overlapsQueue(UnitTypes::Zerg_Larva, building.getTilePosition())) {
+            if (building.getType() == UnitTypes::Zerg_Larva && Buildings::overlapsQueue(building, building.getTilePosition())) {
                 building.unit()->stop();
                 return;
             }

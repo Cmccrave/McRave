@@ -298,9 +298,9 @@ namespace McRave::Scouts {
         {
             BWEB::Path newPath;
             newPath.createUnitPath(unit.getPosition(), unit.getDestination());
-            unit.setPath(newPath);
+            unit.setAttackPath(newPath);
 
-            auto newDestination = Util::findPointOnPath(unit.getPath(), [&](Position p) {
+            auto newDestination = Util::findPointOnPath(unit.getAttackPath(), [&](Position p) {
                 return p.getDistance(unit.getPosition()) >= 64.0;
             });
 

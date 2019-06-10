@@ -141,7 +141,7 @@ namespace McRave::Util {
                 || Command::overlapsActions(unit.unit(), p, unit.getType(), PlayerState::Self, 24)
                 || Command::isInDanger(unit, p)
                 || Grids::getMobility(p) <= 6
-                || Buildings::overlapsQueue(unit.getType(), TilePosition(w)))
+                || Buildings::overlapsQueue(unit, TilePosition(w)))
                 return;
 
             posBest = p;
@@ -160,6 +160,10 @@ namespace McRave::Util {
 
     Position getInterceptPosition(UnitInfo& unit)
     {
+        // If we can't see the units speed, return its current position
+        if (!unit.unit()->exists())
+            return unit.getPosition();
+
         auto timeToEngage = max(0.0, (unit.getEngDist() / unit.getSpeed()));
         auto targetDestination = unit.getTarget().getPosition() + Position(int(unit.getTarget().unit()->getVelocityX() * timeToEngage), int(unit.getTarget().unit()->getVelocityY() * timeToEngage));
         targetDestination = Util::clipPosition(targetDestination);

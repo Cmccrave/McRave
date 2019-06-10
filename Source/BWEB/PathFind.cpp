@@ -12,17 +12,21 @@ namespace BWEB
             UnitCollision::UnitCollision(TilePosition sourceTile, TilePosition targetTile) {
                 source = sourceTile;
                 target = targetTile;
+                sourceType = Map::isUsed(source);
+                targetType = Map::isUsed(target);
             }
             inline bool operator()(unsigned x, unsigned y) const
             {
                 const TilePosition t(x, y);
-                if (x < width && y < height && ((Map::isUsed(t) == UnitTypes::None && Map::isWalkable(t)) || t == source || t == target))
+                if (x < width && y < height && Map::isWalkable(t) && (Map::isUsed(t) == UnitTypes::None || Map::isUsed(t) == sourceType || Map::isUsed(t) == targetType))
                     return true;
                 return false;
             }
             unsigned width = Broodwar->mapWidth(), height = Broodwar->mapHeight();
             TilePosition source;
             TilePosition target;
+            UnitType sourceType;
+            UnitType targetType;
         };
 
         map<const BWEM::Area *, int> notReachableThisFrame;

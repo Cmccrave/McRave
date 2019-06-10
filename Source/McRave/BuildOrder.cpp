@@ -150,17 +150,15 @@ namespace McRave::BuildOrder
         return false;
     }
 
-    bool unlockWhenReady(UnitType type) {
+    bool unlockReady(UnitType type) {
         bool ready = false;
 
         if (type == Protoss_High_Templar || type == Protoss_Dark_Templar || type == Protoss_Archon || type == Protoss_Dark_Archon)
             ready = com(Protoss_Templar_Archives) > 0;
         if (type == Protoss_Corsair || type == Protoss_Scout)
             ready = com(Protoss_Stargate) > 0;
-        if (type == Protoss_Reaver)
-            ready = com(Protoss_Robotics_Support_Bay) > 0;
-        if (type == Protoss_Observer)
-            ready = com(Protoss_Observatory) > 0;
+        if (type == Protoss_Reaver || type == Protoss_Observer)
+            ready = com(Protoss_Robotics_Facility) > 0;
         if (type == Protoss_Carrier)
             ready = com(Protoss_Fleet_Beacon) > 0;
         if (type == Protoss_Arbiter)

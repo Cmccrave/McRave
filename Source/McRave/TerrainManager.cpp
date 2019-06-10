@@ -316,40 +316,40 @@ namespace McRave::Terrain {
         Broodwar->drawCircleMap(Position(BWEB::Map::getNaturalChoke()->Center()), 4, Colors::Yellow, true);
         Broodwar->drawCircleMap(Position(BWEB::Map::getMainChoke()->Center()), 6, Colors::Green, false);
 
-        // For base-specific locations, avoid all areas likely to be traversed by worker scouts
-        set<const BWEM::Area*> areasToAvoid;
-        for (auto &first : mapBWEM.StartingLocations()) {
-            for (auto &second : mapBWEM.StartingLocations()) {
-                if (first == second)
-                    continue;
+        //// For base-specific locations, avoid all areas likely to be traversed by worker scouts
+        //set<const BWEM::Area*> areasToAvoid;
+        //for (auto &first : mapBWEM.StartingLocations()) {
+        //    for (auto &second : mapBWEM.StartingLocations()) {
+        //        if (first == second)
+        //            continue;
 
-                for (auto &choke : mapBWEM.GetPath(Position(first), Position(second))) {
-                    areasToAvoid.insert(choke->GetAreas().first);
-                    areasToAvoid.insert(choke->GetAreas().second);
-                }
-            }
+        //        for (auto &choke : mapBWEM.GetPath(Position(first), Position(second))) {
+        //            areasToAvoid.insert(choke->GetAreas().first);
+        //            areasToAvoid.insert(choke->GetAreas().second);
+        //        }
+        //    }
 
-            // Also add any areas that neighbour each start location
-            auto baseArea = mapBWEM.GetNearestArea(first);
-            for (auto &area : baseArea->AccessibleNeighbours())
-                areasToAvoid.insert(area);
-        }
+        //    // Also add any areas that neighbour each start location
+        //    auto baseArea = mapBWEM.GetNearestArea(first);
+        //    for (auto &area : baseArea->AccessibleNeighbours())
+        //        areasToAvoid.insert(area);
+        //}
 
-        auto last = Positions::Invalid;
-        for (auto &area : areasToAvoid) {
+        //auto last = Positions::Invalid;
+        //for (auto &area : areasToAvoid) {
 
-            Broodwar->drawCircleMap(Position(area->Top()), 8, Colors::Green, true);
+        //    Broodwar->drawCircleMap(Position(area->Top()), 8, Colors::Green, true);
 
-            auto next = Position(area->Top());
+        //    auto next = Position(area->Top());
 
-            if (!last.isValid()) {
-                last = next;
-                continue;
-            }
+        //    if (!last.isValid()) {
+        //        last = next;
+        //        continue;
+        //    }
 
-            Broodwar->drawLineMap(last, next, Colors::Cyan);
-            last = next;
-        }
+        //    Broodwar->drawLineMap(last, next, Colors::Cyan);
+        //    last = next;
+        //}
     }
 
     bool inRangeOfWallPieces(UnitInfo& unit)

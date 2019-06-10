@@ -106,7 +106,7 @@ namespace McRave::BuildOrder {
 
     int buildCount(BWAPI::UnitType);
     bool firstReady();
-    bool unlockWhenReady(BWAPI::UnitType);
+    bool unlockReady(BWAPI::UnitType);
 
     void onFrame();
     void getNewTech();

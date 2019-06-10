@@ -255,7 +255,7 @@ namespace McRave::Math {
             return 160.0;
         }
         if (unit.getType() == Terran_Vulture_Spider_Mine)
-            return 160.0;
+            return 96.0;
         if (unit.getType() == Terran_SCV)
             return 15.0;
         if (unit.getType() == Protoss_Probe || unit.getType() == Zerg_Drone)

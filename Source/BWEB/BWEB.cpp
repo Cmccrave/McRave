@@ -120,7 +120,7 @@ namespace BWEB::Map
 
             // If the natural area has only one chokepoint, then choose as that
             if (naturalArea && naturalArea->ChokePoints().size() == 1)
-                naturalChoke = naturalArea->ChokePoints().front();            
+                naturalChoke = naturalArea->ChokePoints().front();
 
             // Find area that shares the choke we need to defend
             else {
@@ -304,8 +304,8 @@ namespace BWEB::Map
 
         bool testingWalkable = false;
         if (testingWalkable) {
-            for (int x = 0; x < Broodwar->mapWidth()*4; x++) {
-                for (int y = 0; y < Broodwar->mapHeight()*4; y++) {
+            for (int x = 0; x < Broodwar->mapWidth() * 4; x++) {
+                for (int y = 0; y < Broodwar->mapHeight() * 4; y++) {
                     WalkPosition t(x, y);
 
                     if (Broodwar->isWalkable(t))
@@ -325,14 +325,47 @@ namespace BWEB::Map
         Position start(s), end(e);
         auto dist = 0.0;
         auto last = start;
-        
-        // Check if we're in a valid area first
-        if (!start.isValid()
-            || !end.isValid()
-            || !mapBWEM.GetArea(WalkPosition(start))
-            || !mapBWEM.GetArea(WalkPosition(end))
-            || !mapBWEM.GetArea(WalkPosition(start))->AccessibleFrom(mapBWEM.GetArea(WalkPosition(end))))
+
+        const auto validatePoint = [&](WalkPosition w) {
+            auto distBest = 0.0;
+            auto posBest = Position(w);
+            for (auto x = w.x - 1; x < w.x + 1; x++) {
+                for (auto y = w.y - 1; y < w.y + 1; y++) {
+                    WalkPosition w(x, y);
+                    if (!w.isValid()
+                        || !mapBWEM.GetArea(w))
+                        continue;
+
+                    auto p = Position(w);
+                    auto dist = p.getDistance(mapBWEM.Center());
+                    if (dist > distBest) {
+                        distBest = dist;
+                        posBest = p;
+                    }
+                }
+            }
+            return posBest;
+        };
+
+        // Return if not valid start or end
+        if (!start.isValid() || !end.isValid())
             return DBL_MAX;
+
+        // Check if we're in a valid area, if not try to find a different nearby WalkPosition
+        if (!mapBWEM.GetArea(WalkPosition(start)))
+            start = validatePoint(WalkPosition(start));
+        if (!mapBWEM.GetArea(WalkPosition(end)))
+            end = validatePoint(WalkPosition(end));
+
+        // Check if we're in a walkable valid area first, going to nearest area if our current area is invalid
+        if (!mapBWEM.GetMiniTile(WalkPosition(start)).Walkable() || !mapBWEM.GetMiniTile(WalkPosition(end)).Walkable()) {
+            if (!start.isValid()
+                || !end.isValid()
+                || !mapBWEM.GetArea(WalkPosition(start))
+                || !mapBWEM.GetArea(WalkPosition(end))
+                || !mapBWEM.GetArea(WalkPosition(start))->AccessibleFrom(mapBWEM.GetArea(WalkPosition(end))))
+                return DBL_MAX;
+        }
 
         // Find the closest chokepoint node
         const auto closestNode = [&](const BWEM::ChokePoint * cp) {
@@ -349,27 +382,13 @@ namespace BWEB::Map
         };
 
         // For each chokepoint, add the distance to the closest chokepoint node
-        for (auto &cpp : mapBWEM.GetPath(start, end)) {            
+        for (auto &cpp : mapBWEM.GetPath(start, end)) {
             auto next = closestNode(cpp);
             dist += next.getDistance(last);
             last = next;
         }
 
-        return dist += start.getDistance(end);
-    }
-
-    double distanceNextChoke(Position start, Position end)
-    {
-        if (!start.isValid() || !end.isValid())
-            return DBL_MAX;
-
-        auto bwemPath = mapBWEM.GetPath(start, end);
-        auto source = bwemPath.front();
-
-
-        BWEB::Path newPath;
-        newPath.createUnitPath(start, (Position)source->Center());
-        return newPath.getDistance();
+        return dist += last.getDistance(end);
     }
 
     TilePosition Map::getBuildPosition(UnitType type, const TilePosition searchCenter)
@@ -575,7 +594,7 @@ namespace BWEB::Map
                     return false;
             }
 
-            for (auto y = location.y; y < location.y + type.tileHeight(); y++) {                
+            for (auto y = location.y; y < location.y + type.tileHeight(); y++) {
                 TilePosition tile(x, y);
                 if (!tile.isValid()
                     || !Broodwar->isBuildable(tile)

@@ -57,6 +57,8 @@ namespace McRave::BuildOrder::Protoss {
         itemQueue[Protoss_Assimilator] =			    Item(s >= 36);
         itemQueue[Protoss_Shield_Battery] =			    Item(enemyMoreZealots && vis(Protoss_Zealot) >= 2 && vis(Protoss_Pylon) >= 2);
         itemQueue[Protoss_Cybernetics_Core] =		    Item(com(Protoss_Zealot) >= 5);
+        itemQueue[Protoss_Citadel_of_Adun] =            Item(isAlmostComplete(Protoss_Cybernetics_Core));
+        itemQueue[Protoss_Templar_Archives] =           Item(isAlmostComplete(Protoss_Citadel_of_Adun));
     }
 
     void PvP2Gate()
@@ -128,6 +130,8 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Nexus] =				    Item(1);
             itemQueue[Protoss_Assimilator] =		    Item(s >= 52);
             itemQueue[Protoss_Cybernetics_Core] =	    Item(s >= 56);
+            itemQueue[Protoss_Citadel_of_Adun] =        Item(isAlmostComplete(Protoss_Cybernetics_Core));
+            itemQueue[Protoss_Templar_Archives] =       Item(isAlmostComplete(Protoss_Citadel_of_Adun));
         }
         else if (currentTransition == "Expand") {
             // https://liquipedia.net/starcraft/2_Gate_(vs._Protoss)#10.2F12_Gateway_Expand
@@ -222,7 +226,7 @@ namespace McRave::BuildOrder::Protoss {
             // Change Transition
             if (Strategy::enemyRush())
                 currentTransition = vis(Protoss_Cybernetics_Core) ? "4Gate" : "Defensive";
-            else if (Strategy::getEnemyBuild() == "1GateDT" || Strategy::getEnemyBuild() == "FFE")
+            else if ((currentTransition != "Robo" && Strategy::getEnemyBuild() == "1GateDT") || Strategy::getEnemyBuild() == "FFE")
                 currentTransition = "3GateRobo";
         }
 
@@ -230,18 +234,18 @@ namespace McRave::BuildOrder::Protoss {
         if (currentTransition == "3GateRobo") {
             lockedTransition =                          vis(Protoss_Robotics_Facility) > 0;
             getOpening =                                s < 80;
-            playPassive =		                        !Strategy::enemyFastExpand() && com(Protoss_Reaver) == 0;
             firstUnit =                                 Strategy::enemyPressure() ? Protoss_Reaver : Protoss_Observer;
-
-            itemQueue[Protoss_Robotics_Facility] =	    Item(s >= 52);
+            playPassive =		                        !Strategy::enemyFastExpand() && com(firstUnit) == 0;
+            
             itemQueue[Protoss_Gateway] =			    Item((s >= 20) + (2 * (s >= 58)));
+            itemQueue[Protoss_Robotics_Facility] =	    Item(s >= 52);
         }
         else if (currentTransition == "Robo") {
             // http://liquipedia.net/starcraft/1_Gate_Reaver
             lockedTransition =                          vis(Protoss_Robotics_Facility) > 0;
             getOpening =		                        Strategy::enemyPressure() ? vis(Protoss_Reaver) < 3 : s < 70;
-            playPassive =		                        !Strategy::enemyFastExpand() && com(Protoss_Reaver) == 0;
             firstUnit =                                 Strategy::enemyPressure() ? Protoss_Reaver : Protoss_Observer;
+            playPassive =		                        !Strategy::enemyFastExpand() && com(firstUnit) == 0;
 
             dragoonLimit =		                        INT_MAX;
             zealotLimit =		                        com(Protoss_Robotics_Facility) >= 1 ? 6 : zealotLimit;
@@ -287,6 +291,8 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Gateway] =			    Item((s >= 20) + (vis(Protoss_Templar_Archives) > 0));
             itemQueue[Protoss_Forge] =                  Item(s >= 70);
             itemQueue[Protoss_Photon_Cannon] =          Item(2 * (com(Protoss_Forge) > 0));
+            itemQueue[Protoss_Citadel_of_Adun] =        Item(isAlmostComplete(Protoss_Cybernetics_Core));
+            itemQueue[Protoss_Templar_Archives] =       Item(isAlmostComplete(Protoss_Citadel_of_Adun));
         }
         else if (currentTransition == "Defensive") {
             lockedTransition =                         true;

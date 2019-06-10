@@ -256,15 +256,17 @@ namespace McRave::Combat {
         {
             auto moveToTarget = unit.hasTarget() && (unit.getPosition().getDistance(unit.getTarget().getPosition()) <= SIM_RADIUS || unit.getType().isFlyer() || Broodwar->getFrameCount() < 15000);
 
+            // If we're globally retreating, set defend position as destination
             if (unit.getGlobalState() == GlobalState::Retreat && (!unit.hasTarget() || (unit.hasTarget() && !unit.getTarget().isThreatening())))
                 unit.setDestination(Terrain::getDefendPosition());
 
             // If target is close, set as destination
             else if (unit.getEngagePosition().isValid() && moveToTarget && unit.getTarget().getPosition().isValid() && Grids::getMobility(unit.getEngagePosition()) > 0) {
-                if (unit.getTarget().unit()->exists())
+                auto intercept = Util::getInterceptPosition(unit);
+                if (intercept.getDistance(unit.getTarget().getPosition()) < intercept.getDistance(unit.getPosition()))
                     unit.setDestination(Util::getInterceptPosition(unit));
                 else
-                    unit.setDestination(unit.getTarget().getPosition());
+                    unit.setDestination(unit.getEngagePosition());
             }
 
             // If unit has a goal
@@ -298,6 +300,10 @@ namespace McRave::Combat {
             // If attack position is valid
             else if (Terrain::getAttackPosition().isValid())
                 unit.setDestination(Terrain::getAttackPosition());
+
+            // Resort to going to our target if we have one
+            else if (unit.hasTarget() && unit.getTarget().getPosition().isValid())
+                unit.setDestination(unit.getTarget().getPosition());
 
             // TODO: Check if a scout is moving here too
             // If no target and no enemy bases, move to a base location (random if we have found the enemy once already)

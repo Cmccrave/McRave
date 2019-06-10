@@ -76,10 +76,10 @@ namespace McRave::Workers {
 
                 worker.setDestination(center);
 
-                if (worker.getPosition().getDistance(center) > 32.0 + (96.0 * (double)worker.getBuildingType().isRefinery())) {
+                if (worker.getPosition().getDistance(center) >= 160.0) {
                     BWEB::Path newPath;
                     newPath.createUnitPath(worker.getPosition(), center);
-                    worker.setPath(newPath);
+                    worker.setAttackPath(newPath);
 
                     auto threatPosition = Util::findPointOnPath(newPath, [&](Position p) {
                         return worker.getType().isFlyer() ? Grids::getEGroundThreat(p) : Grids::getEAirThreat(p);
@@ -158,18 +158,18 @@ namespace McRave::Workers {
                 // 1) If it's close or same area, don't need a path, set to empty	
                 if (closeToResource(worker)) {
                     BWEB::Path emptyPath;
-                    worker.setPath(emptyPath);
+                    worker.setAttackPath(emptyPath);
                 }
 
                 // 2) If it's far, generate a path
-                else if (worker.getLastTile() != worker.getTilePosition()) {
+                else if (worker.canCreateAttackPath(worker.getDestination())) {
                     BWEB::Path newPath;
                     newPath.createUnitPath(worker.getPosition(), worker.getDestination());
-                    worker.setPath(newPath);
+                    worker.setAttackPath(newPath);
                 }
 
                 // See if there's any threat on the path
-                auto threatPosition = Util::findPointOnPath(worker.getPath(), [&](Position p) {
+                auto threatPosition = Util::findPointOnPath(worker.getAttackPath(), [&](Position p) {
                     return worker.getType().isFlyer() ? Grids::getEGroundThreat(p) : Grids::getEAirThreat(p);
                 });
 
@@ -207,7 +207,7 @@ namespace McRave::Workers {
 
         void updateAssignment(UnitInfo& worker)
         {
-            auto threatPosition = Util::findPointOnPath(worker.getPath(), [&](Position p) {
+            auto threatPosition = Util::findPointOnPath(worker.getAttackPath(), [&](Position p) {
                 return worker.getType().isFlyer() ? Grids::getEGroundThreat(p) : Grids::getEAirThreat(p);
             });
 
@@ -321,7 +321,7 @@ namespace McRave::Workers {
                 worker.getResource().addTargetedBy(worker.weak_from_this());
 
                 BWEB::Path emptyPath;
-                worker.setPath(emptyPath);
+                worker.setAttackPath(emptyPath);
 
                 // HACK: Update saturation checks
                 Resources::onFrame();

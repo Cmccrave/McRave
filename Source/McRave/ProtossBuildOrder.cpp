@@ -49,8 +49,10 @@ namespace McRave::BuildOrder::Protoss
                 desiredDetection = Protoss_Observer;
         }
 
-        if (firstUnit != None && !isTechUnit(firstUnit))
-            techUnit = firstUnit;
+        if (firstUnit != None && !isTechUnit(firstUnit)) {
+            if (unlockReady(firstUnit))
+                techUnit = firstUnit;
+        }
 
         // Some hardcoded techs based on needing detection or specific build orders
         else if (getTech) {
@@ -83,7 +85,7 @@ namespace McRave::BuildOrder::Protoss
         auto satVal = 3;
         auto prodVal = com(Protoss_Gateway);
         auto baseVal = com(Protoss_Nexus);
-        auto techVal = techList.size() + skipFirstTech - isTechUnit(Protoss_Shuttle);
+        auto techVal = int(techList.size()) + skipFirstTech - isTechUnit(Protoss_Shuttle);
 
         // Subtract DT from tech units if we're on 2 bases
         if (com(Protoss_Nexus) >= 2)

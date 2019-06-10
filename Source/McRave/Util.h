@@ -106,8 +106,8 @@ namespace McRave::Util {
 
             // As long as last doesn't equal pos
             while (last != pos) {
-                if (pred(Position(last)))
-                    return Position(last);
+                if (pred(Position(last) + Position(16,16)))
+                    return Position(last) + Position(16, 16);
 
                 // Increment or decrement based on where we need to go
                 last.x != pos.x ? (last.x > pos.x ? last.x-- : last.x++) : 0;

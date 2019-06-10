@@ -6,12 +6,21 @@ using namespace BWAPI;
 namespace McRave
 {
     UnitInfo::UnitInfo() {}
-
+    
     void UnitInfo::setLastPositions()
     {
         lastPos = position;
         lastTile = tilePosition;
         lastWalk =  walkPosition;
+    }
+
+    void UnitInfo::verifyPaths() 
+    {
+        if (lastTile != this->unit()->getTilePosition()) {
+            BWEB::Path emptyPath;
+            this->setRetreatPath(emptyPath);
+            this->setAttackPath(emptyPath);
+        }
     }
 
     void UnitInfo::update()
@@ -22,6 +31,7 @@ namespace McRave
         if (thisUnit->exists()) {
 
             setLastPositions();
+            verifyPaths();
 
             // Update unit positions		
             position				= thisUnit->getPosition();
@@ -131,7 +141,7 @@ namespace McRave
         speed 					= Math::speed(*this);
     }
 
-    bool UnitInfo::command(BWAPI::UnitCommandType command, BWAPI::Position here, bool overshoot)
+    bool UnitInfo::command(UnitCommandType command, Position here, bool overshoot)
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames
         int frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
@@ -176,7 +186,7 @@ namespace McRave
         return false;
     }
 
-    bool UnitInfo::command(BWAPI::UnitCommandType command, UnitInfo& targetUnit)
+    bool UnitInfo::command(UnitCommandType command, UnitInfo& targetUnit)
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames
         int frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
@@ -230,7 +240,7 @@ namespace McRave
         const auto threatening = [&] {
             // Building: blocking any buildings, is close or at home and can attack or is a battery, is a manner building
             if (unitType.isBuilding()) {
-                if (Buildings::overlapsQueue(unitType, tilePosition))
+                if (Buildings::overlapsQueue(*this, tilePosition))
                     return true;
                 if ((close || atHome) && (airDamage > 0.0 || groundDamage > 0.0 || unitType == UnitTypes::Protoss_Shield_Battery || unitType.isRefinery()))
                     return true;
@@ -295,7 +305,7 @@ namespace McRave
         return cooldownReady || cooldownWillBeReady;
     }
 
-    bool UnitInfo::canStartCast(BWAPI::TechType tech)
+    bool UnitInfo::canStartCast(TechType tech)
     {
         if (!target.lock()
             || Command::overlapsActions(thisUnit, target.lock()->getPosition(), tech, PlayerState::Self, Util::getCastRadius(tech)))

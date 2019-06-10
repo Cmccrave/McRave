@@ -67,8 +67,8 @@ namespace McRave {
         BWAPI::TilePosition buildPosition = BWAPI::TilePositions::Invalid;
         BWAPI::TilePosition lastTile = BWAPI::TilePositions::Invalid;
 
-        BWEB::Path path;
-        BWEB::Path resourcePath;
+        BWEB::Path attackPath;
+        BWEB::Path retreatPath;
         BWEM::CPPath quickPath;
 
         void updateTarget();
@@ -119,9 +119,6 @@ namespace McRave {
         bool isBurrowed() { return burrowed; }
         bool isFlying() { return flying; }
 
-        bool samePath() {
-            return (path.getTiles().front() == target.lock()->getTilePosition() && path.getTiles().back() == tilePosition);
-        }
         bool sameTile() { return lastTile == tilePosition; }
 
 
@@ -141,6 +138,42 @@ namespace McRave {
         bool canStartCast(BWAPI::TechType);
         bool canAttackGround();
         bool canAttackAir();
+
+        template <typename P>
+        bool canCreateAttackPath(P h) {
+            BWAPI::TilePosition here(h);
+
+            const auto shouldCreatePath =
+                (attackPath.getTiles().empty() || attackPath.getTiles().front() != here || attackPath.getTiles().back() != this->getTilePosition());    // ...attack path is empty or not the same
+
+            const auto canCreatePath =
+                (!this->hasTransport()																							                        // ...unit has no transport
+                    && this->hasTarget()                                                                                                                // ...unit has a target
+                    && this->getPosition().isValid() && here.isValid()								                                                    // ...both TilePositions are valid
+                    && !this->getType().isFlyer() && !this->getTarget().getType().isFlyer()											                    // ...neither units are flyers
+                    && BWEB::Map::isUsed(here) == BWAPI::UnitTypes::None && BWEB::Map::isUsed(this->getTilePosition()) == BWAPI::UnitTypes::None		// ...neither TilePositions overlap buildings
+                    && BWEB::Map::isWalkable(this->getTilePosition()) && BWEB::Map::isWalkable(here));	                                                // ...both TilePositions are on walkable tiles  
+
+            return shouldCreatePath && canCreatePath;
+        }
+
+        template <typename P>
+        bool canCreateRetreatPath(P h) {
+            BWAPI::TilePosition here(h);
+
+            const auto shouldCreatePath =
+                (retreatPath.getTiles().empty() || retreatPath.getTiles().front() != here || retreatPath.getTiles().back() != this->getTilePosition());    // ...attack path is empty or not the same
+
+            const auto canCreatePath =
+                (!this->hasTransport()																							                            // ...unit has no transport
+                    && this->getPosition().isValid() && here.isValid()								                                                        // ...both TilePositions are valid
+                    && !this->getType().isFlyer()											                                                                // ...unit is not a flyer
+                    && BWEB::Map::isUsed(here) == UnitTypes::None && BWEB::Map::isUsed(here) == UnitTypes::None		                                        // ...neither TilePositions overlap buildings
+                    && BWEB::Map::isWalkable(this->getTilePosition()) && BWEB::Map::isWalkable(here));	                                                    // ...both TilePositions are on walkable tiles   
+
+            return shouldCreatePath && canCreatePath;
+        }
+
         bool withinReach(UnitInfo&);
         bool withinRange(UnitInfo&);
 
@@ -151,6 +184,7 @@ namespace McRave {
 
 
         void update();
+        void verifyPaths();
         void createDummy(BWAPI::UnitType);
 
     #pragma region Drawing
@@ -192,7 +226,8 @@ namespace McRave {
         BWAPI::TilePosition getTilePosition() { return tilePosition; }
         BWAPI::TilePosition getBuildPosition() { return buildPosition; }
         BWAPI::TilePosition getLastTile() { return lastTile; }
-        BWEB::Path& getPath() { return path; }
+        BWEB::Path& getAttackPath() { return attackPath; }
+        BWEB::Path& getRetreatPath() { return retreatPath; }
         BWEM::CPPath& getQuickPath() { return quickPath; }
         double getPercentHealth() { return percentHealth; }
         double getPercentShield() { return percentShield; }
@@ -245,7 +280,8 @@ namespace McRave {
         void setWalkPosition(BWAPI::WalkPosition newPosition) { walkPosition = newPosition; }
         void setTilePosition(BWAPI::TilePosition newPosition) { tilePosition = newPosition; }
         void setBuildPosition(BWAPI::TilePosition newPosition) { buildPosition = newPosition; }
-        void setPath(BWEB::Path& newPath) { path = newPath; }
+        void setAttackPath(BWEB::Path& newPath) { attackPath = newPath; }
+        void setRetreatPath(BWEB::Path& newPath) { retreatPath = newPath; }
         void setQuickPath(BWEM::CPPath newPath) { quickPath = newPath; }
         void setLastPositions();
     #pragma endregion

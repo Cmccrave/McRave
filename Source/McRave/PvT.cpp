@@ -87,20 +87,23 @@ namespace McRave::BuildOrder::Protoss {
         if (currentTransition == "DT") {
             lockedTransition =                          vis(Protoss_Citadel_of_Adun) > 0;
             getOpening =                                s < 70;
-            firstUnit =                                 vis(Protoss_Dragoon) >= 3 ? Protoss_Dark_Templar : UnitTypes::None;
+            firstUnit =                                 Protoss_Dark_Templar;
 
             itemQueue[Protoss_Nexus] =                  Item(1);
             itemQueue[Protoss_Assimilator] =            Item(s >= 22);
             itemQueue[Protoss_Cybernetics_Core] =       Item(s >= 26);
+            itemQueue[Protoss_Citadel_of_Adun] =        Item(vis(Protoss_Dragoon) >= 3);
+            itemQueue[Protoss_Templar_Archives] =       Item(isAlmostComplete(Protoss_Citadel_of_Adun));
         }
         else if (currentTransition == "Robo") {
             lockedTransition =                          vis(Protoss_Robotics_Facility) > 0;
             getOpening =                                s < 70;
-            firstUnit =                                 com(Protoss_Dragoon) >= 3 ? Protoss_Reaver : UnitTypes::None;
+            firstUnit =                                 Protoss_Reaver;
 
             itemQueue[Protoss_Nexus] =                  Item(1);
             itemQueue[Protoss_Assimilator] =            Item(s >= 22);
             itemQueue[Protoss_Cybernetics_Core] =       Item(s >= 26);
+            itemQueue[Protoss_Robotics_Facility] =      Item(vis(Protoss_Dragoon) >= 3);
         }
         else if (currentTransition == "Expand") {
             lockedTransition =                          vis(Protoss_Nexus) >= 2;
@@ -176,7 +179,7 @@ namespace McRave::BuildOrder::Protoss {
             // https://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)
             lockedTransition =                          vis(Protoss_Gateway) >= 4;
             getOpening =                                s < 80;
-            firstUnit =                                 UnitTypes::None;
+            firstUnit =                                 None;
 
             itemQueue[Protoss_Gateway] =                Item((s >= 20) + (s >= 30) + (2 * (s >= 62)));
             itemQueue[Protoss_Assimilator] =            Item(s >= 22);
@@ -189,7 +192,7 @@ namespace McRave::BuildOrder::Protoss {
             hideTech =                                  com(Protoss_Dark_Templar) < 1;
             firstUnit =                                 Protoss_Dark_Templar;
             firstUpgrade =                              vis(Protoss_Dark_Templar) >= 2 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
-
+            
             itemQueue[Protoss_Nexus] =                  Item(1 + (vis(Protoss_Dark_Templar) > 0));
             itemQueue[Protoss_Citadel_of_Adun] =        Item(s >= 36);
             itemQueue[Protoss_Templar_Archives] =       Item(s >= 48);
@@ -253,6 +256,9 @@ namespace McRave::BuildOrder::Protoss {
             firstUnit =                                 com(Protoss_Reaver) > 0 ? Protoss_Carrier : Protoss_Reaver;
 
             itemQueue[Protoss_Gateway] =                Item((vis(Protoss_Pylon) > 1) + (vis(Protoss_Nexus) > 1) + (s >= 70) + (s >= 80));
+            itemQueue[Protoss_Robotics_Facility] =      Item(isAlmostComplete(Protoss_Cybernetics_Core));
+            itemQueue[Protoss_Stargate] =               Item(vis(Protoss_Reaver) > 0);
+            itemQueue[Protoss_Fleet_Beacon] =           Item(isAlmostComplete(Protoss_Stargate));
         }
     }
 
@@ -312,20 +318,23 @@ namespace McRave::BuildOrder::Protoss {
         }
         else if (currentTransition == "Standard") {
             getOpening =                                s < 80;
-            firstUnit =                                 com(Protoss_Nexus) >= 2 ? Protoss_Observer : UnitTypes::None;
+            firstUnit =                                 Protoss_Observer;
             lockedTransition =                          false;
 
             itemQueue[Protoss_Assimilator] =            Item((s >= 24) + (s >= 80));
             itemQueue[Protoss_Cybernetics_Core] =       Item(s >= 26);
+            itemQueue[Protoss_Robotics_Facility] =      Item(isAlmostComplete(Protoss_Cybernetics_Core));
         }
         else if (currentTransition == "Carrier") {
             getOpening =                                s < 80;
-            firstUnit =                                 com(Protoss_Nexus) >= 2 ? Protoss_Carrier : UnitTypes::None;
+            firstUnit =                                 Protoss_Carrier;
             lockedTransition =                          com(Protoss_Nexus) >= 2;
             gasLimit =                                  INT_MAX;
 
             itemQueue[Protoss_Assimilator] =            Item((s >= 24) + (s >= 50));
             itemQueue[Protoss_Cybernetics_Core] =       Item(s >= 26);
+            itemQueue[Protoss_Stargate] =               Item(isAlmostComplete(Protoss_Cybernetics_Core));
+            itemQueue[Protoss_Fleet_Beacon] =           Item(isAlmostComplete(Protoss_Stargate));
         }
     }
 }
