@@ -347,8 +347,9 @@ namespace BWEB::Map
             return posBest;
         };
 
-        // Return if not valid start or end
-        if (!start.isValid() || !end.isValid())
+        // Return DBL_MAX if not valid path points or not walkable path points
+        if (!start.isValid() || !end.isValid()
+            || !mapBWEM.GetMiniTile(WalkPosition(start)).Walkable() || !mapBWEM.GetMiniTile(WalkPosition(end)).Walkable())
             return DBL_MAX;
 
         // Check if we're in a valid area, if not try to find a different nearby WalkPosition
@@ -357,15 +358,13 @@ namespace BWEB::Map
         if (!mapBWEM.GetArea(WalkPosition(end)))
             end = validatePoint(WalkPosition(end));
 
-        // Check if we're in a walkable valid area first, going to nearest area if our current area is invalid
-        if (!mapBWEM.GetMiniTile(WalkPosition(start)).Walkable() || !mapBWEM.GetMiniTile(WalkPosition(end)).Walkable()) {
-            if (!start.isValid()
-                || !end.isValid()
-                || !mapBWEM.GetArea(WalkPosition(start))
-                || !mapBWEM.GetArea(WalkPosition(end))
-                || !mapBWEM.GetArea(WalkPosition(start))->AccessibleFrom(mapBWEM.GetArea(WalkPosition(end))))
-                return DBL_MAX;
-        }
+        // If not valid still, return DBL_MAX
+        if (!start.isValid()
+            || !end.isValid()
+            || !mapBWEM.GetArea(WalkPosition(start))
+            || !mapBWEM.GetArea(WalkPosition(end))
+            || !mapBWEM.GetArea(WalkPosition(start))->AccessibleFrom(mapBWEM.GetArea(WalkPosition(end))))
+            return DBL_MAX;
 
         // Find the closest chokepoint node
         const auto closestNode = [&](const BWEM::ChokePoint * cp) {
