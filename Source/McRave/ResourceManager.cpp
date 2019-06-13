@@ -60,6 +60,9 @@ namespace McRave::Resources {
             const auto update = [&](const shared_ptr<ResourceInfo>& r) {
                 updateInformation(r);
                 updateIncome(r);
+
+                if (!r->getStation())
+                    Broodwar->drawCircleMap(r->getPosition(), 4, Colors::Grey);
             };
 
             for (auto &r : myBoulders)
@@ -87,8 +90,11 @@ namespace McRave::Resources {
 
         // Check if we already stored this resource
         for (auto &u : resourceList) {
-            if (u->unit() == resource)
+            if (u->unit() == resource) {
+                if (resource->getPlayer() == Broodwar->self())
+                    u->setResourceState(resource->isCompleted() ? ResourceState::Mineable : ResourceState::Assignable);
                 return;
+            }
         }
 
         // If we are not on an inital frame, a geyser was just created and we need to see if we own it

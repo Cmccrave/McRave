@@ -93,13 +93,17 @@ namespace McRave::Buildings {
             // Refineries are only built on my own gas resources
             if (building.isRefinery()) {
                 for (auto &g : Resources::getMyGas()) {
-                    ResourceInfo &gas = *g;
-                    double dist = gas.getPosition().getDistance(here);
+                    auto &gas = *g;
+                    auto dist = gas.getPosition().getDistance(here);
 
-                    if (isQueueable(building, gas.getTilePosition()) && isBuildable(building, gas.getTilePosition()) && gas.getResourceState() != ResourceState::None && dist < distBest) {
-                        distBest = dist;
-                        tileBest = gas.getTilePosition();
-                    }
+                    if (Stations::ownedBy(gas.getStation()) != PlayerState::Self
+                        || !isQueueable(building, gas.getTilePosition())
+                        || !isBuildable(building, gas.getTilePosition())
+                        || dist >= distBest)
+                        continue;
+
+                    distBest = dist;
+                    tileBest = gas.getTilePosition();
                 }
                 return tileBest;
             }
@@ -695,7 +699,7 @@ namespace McRave::Buildings {
             for (auto &g : Resources::getMyGas()) {
                 ResourceInfo &gas = *g;
 
-                if (here == gas.getTilePosition() && gas.getResourceState() != ResourceState::None && gas.getType() != building)
+                if (here == gas.getTilePosition() && gas.getType() != building)
                     return true;
             }
             return false;

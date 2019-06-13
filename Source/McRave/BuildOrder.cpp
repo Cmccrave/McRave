@@ -34,7 +34,7 @@ namespace McRave::BuildOrder
                 Zerg::situational();
                 Zerg::unlocks();
             }
-        }        
+        }
     }
 
     bool isAlmostComplete(UnitType t) {
@@ -82,7 +82,7 @@ namespace McRave::BuildOrder
     bool shouldExpand()
     {
         UnitType baseType = Broodwar->self()->getRace().getResourceDepot();
-        
+
         if (Broodwar->self()->getRace() == Races::Protoss) {
             if (Broodwar->self()->minerals() > 400 + (50 * com(baseType)))
                 return true;
@@ -219,18 +219,25 @@ namespace McRave::BuildOrder
             unlockedType.insert(Zerg_Hydralisk);
         }
 
-        // Add Observers if we have Reavers
-        if (com(Protoss_Reaver) >= 2) {
+        // Add Observers if we have a Reaver
+        if (vis(Protoss_Reaver) >= 1) {
             techList.insert(Protoss_Observer);
             unlockedType.insert(Protoss_Observer);
         }
+
+        // Add Reavers if we have a Observer
+        if (vis(Protoss_Observer) >= 1) {
+            techList.insert(Protoss_Reaver);
+            unlockedType.insert(Protoss_Reaver);
+        }
+
 
         // Add Shuttles if we have Reavers/HT
         if (com(Protoss_Robotics_Facility) > 0 && (isTechUnit(Protoss_Reaver) || isTechUnit(Protoss_High_Templar))) {
             unlockedType.insert(Protoss_Shuttle);
             techList.insert(Protoss_Shuttle);
         }
-        
+
         // Add HT if enemy has detection
         if (com(Protoss_Dark_Templar) >= 1) {
             if (Units::getEnemyCount(Protoss_Observer) > 0 || Units::getEnemyCount(Protoss_Photon_Cannon) > 0 || Units::getEnemyCount(Terran_Science_Vessel) > 0 || Units::getEnemyCount(Terran_Missile_Turret) > 0 || Units::getEnemyCount(Terran_Vulture_Spider_Mine) > 0 || Units::getEnemyCount(Zerg_Overlord) > 0) {

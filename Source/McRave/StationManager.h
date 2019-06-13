@@ -14,5 +14,7 @@ namespace McRave::Stations
     bool needDefenses(BWEB::Station&);
     bool needPower(BWEB::Station&);
     bool stationNetworkExists(BWEB::Station *, BWEB::Station *);
+
+    PlayerState ownedBy(BWEB::Station *);
     BWEB::Path* pathStationToStation(BWEB::Station *, BWEB::Station *);
 };

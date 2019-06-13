@@ -72,7 +72,7 @@ namespace McRave::Stations {
 
         // 1) Change the resource states and store station
         unit->getPlayer() == Broodwar->self() ? myStations.emplace(unit, newStation) : enemyStations.emplace(unit, newStation);
-        ResourceState state = unit->isCompleted() ? ResourceState::Mineable : ResourceState::Assignable;
+        auto state = unit->isCompleted() ? ResourceState::Mineable : ResourceState::Assignable;
         if (unit->getPlayer() == Broodwar->self()) {
             for (auto &mineral : newStation->getBWEMBase()->Minerals()) {
 
@@ -80,29 +80,16 @@ namespace McRave::Stations {
                     Resources::storeResource(mineral->Unit());
 
                 auto resource = Resources::getResourceInfo(mineral->Unit());
-
-                if (resource) {
-                    resource->setResourceState(state);
-
-                    // HACK: Added this to fix some weird gas steal stuff
-                    if (state == ResourceState::Mineable)
-                        resource->setStation(newStation);
-                }
+                resource->setResourceState(state);
+                resource->setStation(myStations.at(unit));
             }
-            for (auto &gas : newStation->getBWEMBase()->Geysers()) {
 
+            for (auto &gas : newStation->getBWEMBase()->Geysers()) {
                 if (Broodwar->getFrameCount() == 0)
                     Resources::storeResource(gas->Unit());
 
                 auto resource = Resources::getResourceInfo(gas->Unit());
-
-                if (resource) {
-                    resource->setResourceState(state);
-
-                    // HACK: Added this to fix some weird gas steal stuff
-                    if (state == ResourceState::Mineable)
-                        resource->setStation(newStation);
-                }
+                resource->setStation(myStations.at(unit));
             }
         }
 
@@ -132,7 +119,7 @@ namespace McRave::Stations {
         for (auto &mineral : station->getBWEMBase()->Minerals()) {
             const auto &resource = Resources::getResourceInfo(mineral->Unit());
             if (resource)
-                resource->setResourceState(state);            
+                resource->setResourceState(state);
         }
         for (auto &gas : station->getBWEMBase()->Geysers()) {
             const auto &resource = Resources::getResourceInfo(gas->Unit());
@@ -193,6 +180,22 @@ namespace McRave::Stations {
             }
         }
         return false;
+    }
+
+    PlayerState ownedBy(BWEB::Station * thisStation)
+    {
+        if (!thisStation || BWEB::Map::isUsed(thisStation->getBWEMBase()->Location(), 4, 3) == UnitTypes::None)
+            return PlayerState::None;
+
+        for (auto &[_, station] : myStations) {
+            if (station == thisStation)
+                return PlayerState::Self;
+        }
+        for (auto &[_, station] : enemyStations) {
+            if (station == thisStation)
+                return PlayerState::Enemy;
+        }
+        return PlayerState::None;
     }
 
     BWEB::Path* pathStationToStation(BWEB::Station * start, BWEB::Station * finish)

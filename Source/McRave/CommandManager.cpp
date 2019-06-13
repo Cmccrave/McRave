@@ -628,7 +628,7 @@ namespace McRave::Command {
     bool hunt(UnitInfo& unit)
     {
         const auto scoreFunction = [&](WalkPosition w) {
-            const auto p =          Position(w) + Position(4,4);
+            const auto p =          Position(w) + Position(4, 4);
             const auto threat =     defaultThreat(unit, w);
             const auto distance =   defaultDistance(unit, w);
             const auto visited =    unit.getRole() == Role::Scout && threat > 0 ? 1.0 : defaultVisible(unit, w);
@@ -729,7 +729,7 @@ namespace McRave::Command {
                         return here.getDistance(unit.getPosition()) >= 256.0;
                     });
 
-                    if (bestPosition.isValid()){
+                    if (bestPosition.isValid()) {
                         unit.command(UnitCommandTypes::Move, bestPosition, true);
                         return true;
                     }
@@ -797,10 +797,10 @@ namespace McRave::Command {
                 }
             }
 
-            double threat = unit.getTransportState() == TransportState::Engaging ? 1.0 : defaultThreat(unit, w);
-            double distance = p.getDistance(unit.getDestination()) * p.getDistance(cluster);
-            double visited = 1.0;// defaultVisited(unit, w);
-            double score = visited / (threat * distance);
+            double threat =     unit.getTransportState() == TransportState::Engaging ? 1.0 : defaultThreat(unit, w);
+            double distance =   p.getDistance(unit.getDestination()) * p.getDistance(cluster);
+            double visited =    1.0;// defaultVisited(unit, w);
+            double score =      visited / (threat * distance);
 
             return score;
         };
