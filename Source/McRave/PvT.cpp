@@ -20,10 +20,8 @@ namespace McRave::BuildOrder::Protoss {
             fastExpand =        false;
             wallMain =          false;
             wallNat =           vis(Protoss_Nexus) >= 2;
-
             desiredDetection =  Protoss_Observer;
             firstUnit =         None;
-
             firstUpgrade =      UpgradeTypes::Singularity_Charge;
             firstTech =         TechTypes::None;
             scout =             vis(Protoss_Cybernetics_Core) > 0;

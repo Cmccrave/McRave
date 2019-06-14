@@ -45,6 +45,7 @@ namespace McRave::BuildOrder {
         inline int dragoonLimit = INT_MAX;
         inline int lingLimit = INT_MAX;
         inline int droneLimit = INT_MAX;
+        inline int startCount = 0;
         inline int s = 0;
 
         inline std::string currentBuild = "";

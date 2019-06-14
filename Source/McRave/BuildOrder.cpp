@@ -15,6 +15,7 @@ namespace McRave::BuildOrder
         {
             // Set s for better build readability - TODO: better build order management
             s = Players::getSupply(PlayerState::Self);
+            startCount = Broodwar->getStartLocations().size();
 
             // TODO: Check if we own a <race> unit - have a build order allowed PER race for FFA weirdness and maybe mind control shenanigans
             if (Broodwar->self()->getRace() == Races::Protoss) {
