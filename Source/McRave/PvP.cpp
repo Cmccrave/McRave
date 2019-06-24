@@ -197,7 +197,7 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Cybernetics_Core] =	    Item(s >= 34);
         }
         else if (currentOpener == "2Zealot") {
-            zealotLimit =                               2 * (s >= 60);
+            zealotLimit =                               2 * (s <= 60);
             scout =				                        vis(Protoss_Gateway) > 0;
 
             itemQueue[Protoss_Nexus] =				    Item(1);

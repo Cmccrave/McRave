@@ -314,9 +314,9 @@ namespace McRave::Learning {
             return;
         }
 
-        if (false) {
+        if (true) {
             if (Broodwar->self()->getRace() == Races::Protoss) {
-                BuildOrder::setLearnedBuild("2Gate", "Proxy", "DT");
+                BuildOrder::setLearnedBuild("NexusGate", "Dragoon", "ReaverCarrier");
                 isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                 return;
             }

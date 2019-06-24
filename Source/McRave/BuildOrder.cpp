@@ -232,7 +232,6 @@ namespace McRave::BuildOrder
             unlockedType.insert(Protoss_Reaver);
         }
 
-
         // Add Shuttles if we have Reavers/HT
         if (com(Protoss_Robotics_Facility) > 0 && (isTechUnit(Protoss_Reaver) || isTechUnit(Protoss_High_Templar))) {
             unlockedType.insert(Protoss_Shuttle);

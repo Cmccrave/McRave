@@ -81,7 +81,7 @@ namespace McRave::Command {
         }
 
         double defaultMobility(UnitInfo& unit, WalkPosition w) {
-            return unit.getType().isFlyer() ? 1.0 : log(40.0 + double(Grids::getMobility(w)));
+            return unit.getType().isFlyer() ? 1.0 : log(100.0 + double(Grids::getMobility(w)));
         }
 
         double defaultThreat(UnitInfo& unit, WalkPosition w)
@@ -100,16 +100,11 @@ namespace McRave::Command {
             const auto viablePosition = [&](WalkPosition here, Position p) {
                 // If not a flyer and position blocks a building, has collision or a splash threat
                 if (!unit.getType().isFlyer() &&
-                    (Buildings::overlapsQueue(unit, unit.getTilePosition()) /*|| Grids::getESplash(here) > 0*/))
-                    return false;
-
-                auto unitOnChokeGeo = unit.getWalkPosition().isValid() && !unit.getType().isFlyer() && !mapBWEM.GetArea(unit.getWalkPosition());
-                auto validAreas = unit.getWalkPosition().isValid() && here.isValid() && mapBWEM.GetArea(here) && mapBWEM.GetArea(unit.getWalkPosition()) && mapBWEM.GetArea(here)->AccessibleFrom(mapBWEM.GetArea(unit.getWalkPosition()));
-                auto distanceFromUnit = (unit.getType().isFlyer() || validAreas || unitOnChokeGeo) ? p.getDistance(unit.getPosition()) : BWEB::Map::getGroundDistance(p, unit.getPosition());
+                    (Buildings::overlapsQueue(unit, unit.getTilePosition()) || Grids::getESplash(here) > 0))
+                    return false;        
 
                 // If too far of a command, is in danger or isn't walkable
-                if (distanceFromUnit >= 96
-                    || (!unit.getType().isFlyer() && !Broodwar->isWalkable(here))
+                if ((!unit.getType().isFlyer() && !Broodwar->isWalkable(here))
                     || isInDanger(unit, p)
                     || !Util::isWalkable(unit, here))
                     return false;
@@ -120,7 +115,7 @@ namespace McRave::Command {
             multimap<double, TilePosition> sortedTiles;
             auto bestPosition = Positions::Invalid;
             auto best = 0.0;
-            auto t = unit.getTilePosition() + TilePosition(1, 1); //TilePosition(unit.getPosition().x % 2 >= 16 ? 1 : 0, unit.getPosition().y % 2 >= 16 ? 1 : 0);
+            auto t = unit.getTilePosition() + TilePosition(unit.getPosition().x % 32 >= 16 ? 0 : 1, unit.getPosition().y % 32 >= 16 ? 0 : 1);
 
             vector<TilePosition> directions{ {t.x, t.y - 1},{t.x - 1, t.y},{t.x, t.y + 1}, {t.x + 1, t.y} };
             set<TilePosition> allowedDirections;
@@ -140,7 +135,7 @@ namespace McRave::Command {
             };
 
             // Search each Tile to see if it's walkable
-            for (vector<TilePosition>::iterator itr = directions.begin(); itr < directions.end(); itr++) {
+            for (auto itr = directions.begin(); itr < directions.end(); itr++) {
                 auto side1 = *itr;
                 auto side2 = itr == directions.end() - 1 ? directions.at(0) : *(itr + 1);
                 auto corner = side1 + side2 - t;
@@ -160,6 +155,8 @@ namespace McRave::Command {
             // Score each Walkposition to see which one is best
             for (auto &tile : allowedDirections) {
                 WalkPosition w(tile);
+
+                Visuals::tileBox(tile, Colors::Green);
 
                 // Iterate the WalkPositions within the TilePosition
                 for (int x = w.x; x < w.x + 4; x++) {
@@ -396,6 +393,10 @@ namespace McRave::Command {
                 bestPosition = Util::findPointOnPath(unit.getAttackPath(), [&](Position here) {
                     return here.getDistance(unit.getPosition()) >= 256.0;
                 });
+
+                // If not valid, see if the path is less than 256.0 pixels long
+                if (!bestPosition.isValid() && unit.getAttackPath().getDistance() <= 256.0)
+                    bestPosition = unit.getDestination();                
 
                 if (bestPosition.isValid()) {
                     Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Green);
@@ -681,7 +682,7 @@ namespace McRave::Command {
             const auto threat =     defaultThreat(unit, w);
             const auto grouping =   defaultGrouping(unit, w);
             const auto mobility =   defaultMobility(unit, w);
-            const auto score =      1.0 / (threat * distance * grouping);
+            const auto score =      distance / (threat * grouping);
             return score;
         };
 

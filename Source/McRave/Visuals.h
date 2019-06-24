@@ -12,4 +12,7 @@ namespace McRave::Visuals {
 
     void drawDebugText(std::string, double);
     void drawDebugText(std::string, int);
+
+    void tileBox(BWAPI::TilePosition, BWAPI::Color);
+    void walkBox(BWAPI::WalkPosition, BWAPI::Color);
 };

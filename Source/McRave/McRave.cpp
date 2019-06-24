@@ -9,10 +9,8 @@
 
 // *** TODO ***
 // Re-power buildings
-// Change UnitInfo::Command to take an Action
 // Add stargates gradually in carrier builds
 // Add frame timeouts for allowable enemy build detection
-// Move command doesn't care about threat, probably should
 // DTs get stuck between core/gate/pylon
 // Arbiter positioning
 // Scanned obs just pause

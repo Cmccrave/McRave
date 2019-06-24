@@ -136,7 +136,7 @@ namespace McRave::BuildOrder::Protoss
 
             if (Stations::getMyStations().size() >= 4) {
                 for (auto &[unit, station] : Stations::getMyStations()) {
-                    if (unit->isCompleted() && station->getDefenseCount() == 0 && Stations::needPower(*station))
+                    if (station->getDefenseCount() == 0 && Stations::needPower(*station))
                         itemQueue[Protoss_Pylon] = Item(vis(Protoss_Pylon) + 1);
                 }
             }

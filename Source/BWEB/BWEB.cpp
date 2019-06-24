@@ -369,15 +369,16 @@ namespace BWEB::Map
         // Find the closest chokepoint node
         const auto closestNode = [&](const BWEM::ChokePoint * cp) {
             auto bestPosition = cp->Center();
-            const auto d1 = Position(cp->Center()).getDistance(last);
-            const auto d2 = Position(cp->Pos(cp->end1)).getDistance(last);
-            const auto d3 = Position(cp->Pos(cp->end2)).getDistance(last);
+            auto bestDist = DBL_MAX;
 
-            if (min({ d1,d2,d3 }) == d2)
-                return Position(cp->Pos(cp->end1));
-            if (min({ d1,d2,d3 }) == d3)
-                return Position(cp->Pos(cp->end2));
-            return Position(cp->Center());
+            for (auto w : cp->Geometry()) {
+                auto dist = Position(w).getDistance(last);
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    bestPosition = w;
+                }
+            }
+            return Position(bestPosition);
         };
 
         // For each chokepoint, add the distance to the closest chokepoint node

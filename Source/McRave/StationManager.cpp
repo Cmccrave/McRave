@@ -51,7 +51,7 @@ namespace McRave::Stations {
     Position getClosestStation(PlayerState pState, Position here)
     {
         auto &list = pState == PlayerState::Self ? myStations : enemyStations;
-        double distBest = DBL_MAX;
+        auto distBest = DBL_MAX;
         Position best;
         for (auto &station : list) {
             auto s = *station.second;
@@ -70,11 +70,15 @@ namespace McRave::Stations {
             || unit->getTilePosition() != newStation->getBWEMBase()->Location())
             return;
 
-        // 1) Change the resource states and store station
+        // Store station and set resource states if we own this station
         unit->getPlayer() == Broodwar->self() ? myStations.emplace(unit, newStation) : enemyStations.emplace(unit, newStation);
         auto state = unit->isCompleted() ? ResourceState::Mineable : ResourceState::Assignable;
         if (unit->getPlayer() == Broodwar->self()) {
             for (auto &mineral : newStation->getBWEMBase()->Minerals()) {
+
+                // If mineral no longer exists
+                if (!mineral->Unit())
+                    continue;
 
                 if (Broodwar->getFrameCount() == 0)
                     Resources::storeResource(mineral->Unit());
@@ -84,16 +88,22 @@ namespace McRave::Stations {
                 resource->setStation(myStations.at(unit));
             }
 
-            for (auto &gas : newStation->getBWEMBase()->Geysers()) {
-                if (Broodwar->getFrameCount() == 0)
-                    Resources::storeResource(gas->Unit());
+            for (auto &geyser : newStation->getBWEMBase()->Geysers()) {
 
-                auto resource = Resources::getResourceInfo(gas->Unit());
+                // If geyser no longer exists
+                if (!geyser->Unit())
+                    continue;
+
+                if (Broodwar->getFrameCount() == 0)
+                    Resources::storeResource(geyser->Unit());                
+
+                auto resource = Resources::getResourceInfo(geyser->Unit());
+                resource->setResourceState(state);
                 resource->setStation(myStations.at(unit));
             }
         }
 
-        // 2) Add to territory
+        // Add stations area to territory tracking
         if (unit->getTilePosition().isValid() && mapBWEM.GetArea(unit->getTilePosition())) {
             if (unit->getPlayer() == Broodwar->self())
                 Terrain::getAllyTerritory().insert(mapBWEM.GetArea(unit->getTilePosition()));
@@ -115,7 +125,7 @@ namespace McRave::Stations {
         auto &station = list[unit];
         auto state = ResourceState::None;
 
-        // 1) Change resource state of resources connected to not mineable
+        // Change resource state of resources connected to not mineable
         for (auto &mineral : station->getBWEMBase()->Minerals()) {
             const auto &resource = Resources::getResourceInfo(mineral->Unit());
             if (resource)
@@ -128,7 +138,7 @@ namespace McRave::Stations {
         }
         list.erase(unit);
 
-        // 2) Remove any territory it was in
+        // Remove any territory it was in
         if (unit->getTilePosition().isValid() && mapBWEM.GetArea(unit->getTilePosition())) {
             if (unit->getPlayer() == Broodwar->self())
                 Terrain::getAllyTerritory().erase(mapBWEM.GetArea(unit->getTilePosition()));

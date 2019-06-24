@@ -253,8 +253,9 @@ namespace McRave::BuildOrder::Protoss {
             lockedTransition =                          vis(Protoss_Robotics_Facility) > 0;
             firstUnit =                                 com(Protoss_Reaver) > 0 ? Protoss_Carrier : Protoss_Reaver;
 
+            itemQueue[Protoss_Assimilator] =            Item((s >= 28) + (s >= 68));
             itemQueue[Protoss_Gateway] =                Item((vis(Protoss_Pylon) > 1) + (vis(Protoss_Nexus) > 1) + (s >= 70) + (s >= 80));
-            itemQueue[Protoss_Robotics_Facility] =      Item(isAlmostComplete(Protoss_Cybernetics_Core));
+            itemQueue[Protoss_Robotics_Facility] =      Item(s >= 56);
             itemQueue[Protoss_Stargate] =               Item(vis(Protoss_Reaver) > 0);
             itemQueue[Protoss_Fleet_Beacon] =           Item(isAlmostComplete(Protoss_Stargate));
         }
@@ -321,7 +322,7 @@ namespace McRave::BuildOrder::Protoss {
 
             itemQueue[Protoss_Assimilator] =            Item((s >= 24) + (s >= 80));
             itemQueue[Protoss_Cybernetics_Core] =       Item(s >= 26);
-            itemQueue[Protoss_Robotics_Facility] =      Item(isAlmostComplete(Protoss_Cybernetics_Core));
+            itemQueue[Protoss_Robotics_Facility] =      Item(s >= 56);
         }
         else if (currentTransition == "Carrier") {
             getOpening =                                s < 80;
@@ -331,7 +332,7 @@ namespace McRave::BuildOrder::Protoss {
 
             itemQueue[Protoss_Assimilator] =            Item((s >= 24) + (s >= 50));
             itemQueue[Protoss_Cybernetics_Core] =       Item(s >= 26);
-            itemQueue[Protoss_Stargate] =               Item(isAlmostComplete(Protoss_Cybernetics_Core));
+            itemQueue[Protoss_Stargate] =               Item(com(Protoss_Gateway) >= 2);
             itemQueue[Protoss_Fleet_Beacon] =           Item(isAlmostComplete(Protoss_Stargate));
         }
     }

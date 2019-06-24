@@ -319,4 +319,12 @@ namespace McRave::Visuals {
         Broodwar->drawTextScreen(Position(0, 50 + screenOffset), "%s: %d", s.c_str(), i);
         screenOffset += 10;
     }
+
+    void tileBox(TilePosition here, Color color) {
+        Broodwar->drawBoxMap(Position(here), Position(here) + Position(33, 33), color);
+    }
+
+    void walkBox(WalkPosition here, Color color) {
+        Broodwar->drawBoxMap(Position(here), Position(here) + Position(9, 9), color);
+    }
 }
