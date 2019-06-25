@@ -155,15 +155,15 @@ namespace McRave::BuildOrder
         bool ready = false;
 
         if (type == Protoss_High_Templar || type == Protoss_Dark_Templar || type == Protoss_Archon || type == Protoss_Dark_Archon)
-            ready = com(Protoss_Templar_Archives) > 0;
+            ready = vis(Protoss_Citadel_of_Adun) > 0;
         if (type == Protoss_Corsair || type == Protoss_Scout)
-            ready = com(Protoss_Stargate) > 0;
+            ready = vis(Protoss_Stargate) > 0;
         if (type == Protoss_Reaver || type == Protoss_Observer)
-            ready = com(Protoss_Robotics_Facility) > 0;
+            ready = vis(Protoss_Robotics_Facility) > 0;
         if (type == Protoss_Carrier)
-            ready = com(Protoss_Fleet_Beacon) > 0;
+            ready = vis(Protoss_Fleet_Beacon) > 0;
         if (type == Protoss_Arbiter)
-            ready = com(Protoss_Arbiter_Tribunal) > 0;
+            ready = vis(Protoss_Arbiter_Tribunal) > 0;
 
         return ready;
     }
@@ -227,7 +227,7 @@ namespace McRave::BuildOrder
         }
 
         // Add Reavers if we have a Observer
-        if (vis(Protoss_Observer) >= 1) {
+        if (Players::vP() && vis(Protoss_Observer) >= 1) {
             techList.insert(Protoss_Reaver);
             unlockedType.insert(Protoss_Reaver);
         }

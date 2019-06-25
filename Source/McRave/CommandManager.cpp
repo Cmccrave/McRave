@@ -64,6 +64,7 @@ namespace McRave::Command {
         }
 
         double defaultGrouping(UnitInfo& unit, WalkPosition w) {
+            return 1.0;
             return unit.getType().isFlyer() ? 1.0 / max(0.1f, Grids::getAAirCluster(w)) : log(50.0 + Grids::getAGroundCluster(w));
         }
 
@@ -120,7 +121,7 @@ namespace McRave::Command {
             vector<TilePosition> directions{ {t.x, t.y - 1},{t.x - 1, t.y},{t.x, t.y + 1}, {t.x + 1, t.y} };
             set<TilePosition> allowedDirections;
 
-            const auto unitCanFitThrough = [&](TilePosition side1, TilePosition side2, UnitType b1, UnitType b2) {
+            const auto unitCanFitThrough = [&](TilePosition side1, TilePosition side2, UnitType b1, UnitType b2) {                
                 auto dim1 = side1.x != t.x ?
                     (side1.x < t.x ? b1.dimensionRight() + b2.dimensionLeft() : b1.dimensionLeft() + b2.dimensionRight()) :
                     (side1.y < t.y ? b1.dimensionDown() + b2.dimensionUp() : b1.dimensionUp() + b2.dimensionDown());
@@ -144,12 +145,22 @@ namespace McRave::Command {
                 auto side2Type = BWEB::Map::isUsed(side2);
                 auto cornerType = BWEB::Map::isUsed(corner);
 
-                if ((unit.getType().isFlyer() || side1Type == UnitTypes::None || side2Type == UnitTypes::None || unitCanFitThrough(side1, side2, side1Type, side2Type)) && cornerType == UnitTypes::None && (unit.getType().isFlyer() || Util::isWalkable(corner)))
+                auto side1Walkable = side1Type == UnitTypes::None && Util::isWalkable(side1);
+                auto side2Walkable = side2Type == UnitTypes::None && Util::isWalkable(side2);
+
+                if (unit.getType().isFlyer()) {
                     allowedDirections.insert(corner);
-                if (unit.getType().isFlyer() || (side1Type == UnitTypes::None && Util::isWalkable(side1)))
                     allowedDirections.insert(side1 + (side1 - t));
-                if (unit.getType().isFlyer() || (side2Type == UnitTypes::None && Util::isWalkable(side2)))
                     allowedDirections.insert(side2 + (side2 - t));
+                }
+                else {
+                    if ((side1Walkable || side2Walkable || unitCanFitThrough(side1, side2, side1Type, side2Type)) && cornerType == UnitTypes::None)
+                        allowedDirections.insert(corner);
+                    if (side1Walkable)
+                        allowedDirections.insert(side1 + (side1 - t));
+                    if (side2Walkable)
+                        allowedDirections.insert(side2 + (side2 - t));
+                }
             }
 
             // Score each Walkposition to see which one is best
@@ -235,14 +246,13 @@ namespace McRave::Command {
             if (unit.getType() == UnitTypes::Protoss_Carrier) {
                 auto leashRange = 320;
                 for (auto &interceptor : unit.unit()->getInterceptors()) {
-                    if (interceptor->getOrder() == Orders::InterceptorReturn && interceptor->isCompleted()) {
+                    if (interceptor->getOrder() != Orders::InterceptorAttack && interceptor->getShields() == interceptor->getType().maxShields() && interceptor->getHitPoints() == interceptor->getType().maxHitPoints() && interceptor->isCompleted()){
                         unit.command(UnitCommandTypes::Attack_Unit, unit.getTarget());
                         return true;
                     }
                 }
-                if (unit.getPosition().getApproxDistance(unit.getTarget().getPosition()) >= leashRange) {
+                if (unit.getPosition().getDistance(unit.getTarget().getPosition()) >= leashRange) {
                     unit.command(UnitCommandTypes::Attack_Unit, unit.getTarget());
-                    unit.circleBlue();
                     return true;
                 }
                 return false;
@@ -391,11 +401,11 @@ namespace McRave::Command {
             // Move to the first point that is at least 5 tiles away if possible
             if (!unit.getAttackPath().getTiles().empty() && unit.getAttackPath().isReachable()) {
                 bestPosition = Util::findPointOnPath(unit.getAttackPath(), [&](Position here) {
-                    return here.getDistance(unit.getPosition()) >= 256.0;
+                    return here.getDistance(unit.getPosition()) >= 32.0;
                 });
 
-                // If not valid, see if the path is less than 256.0 pixels long
-                if (!bestPosition.isValid() && unit.getAttackPath().getDistance() <= 256.0)
+                // If not valid, see if the path is less than 128.0 pixels long
+                if (!bestPosition.isValid() && unit.getAttackPath().getDistance() <= 32.0)
                     bestPosition = unit.getDestination();                
 
                 if (bestPosition.isValid()) {
@@ -445,12 +455,12 @@ namespace McRave::Command {
             if (unit.getType() == UnitTypes::Protoss_Carrier) {
                 auto leashRange = 320;
                 for (auto &interceptor : unit.unit()->getInterceptors()) {
-                    if (interceptor->getOrder() != Orders::InterceptorAttack && interceptor->isCompleted())
+                    if (interceptor->getOrder() != Orders::InterceptorAttack && interceptor->getShields() == interceptor->getType().maxShields() && interceptor->getHitPoints() == interceptor->getType().maxHitPoints() && interceptor->isCompleted())
                         return false;
                 }
-                if (unit.getPosition().getApproxDistance(unit.getTarget().getPosition()) >= leashRange)
-                    return false;
-                return true;
+                if (unit.getPosition().getDistance(unit.getTarget().getPosition()) <= leashRange)
+                    return true;
+                return false;
             }
 
             // Special Case: High Templars
@@ -558,7 +568,8 @@ namespace McRave::Command {
 
         if (!closeToDefend
             || unit.getLocalState() == LocalState::Attack
-            || (unit.hasTarget() && unit.getTarget().isHidden() && unit.getTarget().withinReach(unit)))
+            || (unit.hasTarget() && unit.getTarget().isHidden() && unit.getTarget().withinReach(unit))
+            || (Units::getEnemyCount(UnitTypes::Terran_Siege_Tank_Siege_Mode) > 0 || Units::getEnemyCount(UnitTypes::Terran_Siege_Tank_Tank_Mode) > 0))
             return false;
 
         // Probe Cannon surround

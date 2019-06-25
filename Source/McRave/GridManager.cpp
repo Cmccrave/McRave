@@ -253,17 +253,6 @@ namespace McRave::Grids
 
         void updateMobility()
         {
-            const auto lingWalkable = [&](WalkPosition here) {
-                for (int x = here.x; x < here.x + 1; x++) {
-                    for (int y = here.y; y < here.y + 1; y++) {
-                        WalkPosition w(x, y);
-                        if (!w.isValid() || !Broodwar->isWalkable(w))
-                            return false;
-                    }
-                }
-                return true;
-            };
-
             for (int x = 0; x <= Broodwar->mapWidth() * 4; x++) {
                 for (int y = 0; y <= Broodwar->mapHeight() * 4; y++) {
 
@@ -271,10 +260,10 @@ namespace McRave::Grids
                     if (!w.isValid())
                         continue;
 
-                    //if (!lingWalkable(w)) {
-                    //    mobility[x][y] = -1;
-                    //    continue;
-                    //}
+                    if (!Broodwar->isWalkable(w)) {
+                        mobility[x][y] = -1;
+                        continue;
+                    }
 
                     for (int i = -12; i < 12; i++) {
                         for (int j = -12; j < 12; j++) {

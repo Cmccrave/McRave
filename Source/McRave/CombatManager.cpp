@@ -165,11 +165,11 @@ namespace McRave::Combat {
                 return false;
             };
 
-            const auto globalEngage = [&]() {                
+            const auto globalEngage = [&]() {
                 if (unit.getTarget().isHidden())                                                                                            // ...target is hidden
-                    return false;              
+                    return false;
                 if (unit.getTarget().isThreatening() && !unit.getType().isFlyer())                                                          // ...target needs to be killed
-                    return true;                                
+                    return true;
                 if (fightingAtHome) {                                                                                                       // ...unit is fighting target in our territory
                     if ((!unit.getType().isFlyer() || !unit.getTarget().getType().isFlyer())                                                // ...unit and target are not flying units
                         && (Strategy::defendChoke() || unit.getGroundRange() > 64.0))                                                       // ...we're defending our choke or unit is ranged
@@ -237,7 +237,8 @@ namespace McRave::Combat {
                     || (!Strategy::enemyRush() && BuildOrder::isHideTech() && BuildOrder::isOpener())
                     || unit.getType().isWorker()
                     || (Broodwar->getFrameCount() < 13000 && BuildOrder::isPlayPassive())
-                    || (unit.getType() == Protoss_Corsair && !BuildOrder::firstReady() && Players::getStrength(PlayerState::Enemy).airToAir > 0.0))
+                    || (unit.getType() == Protoss_Corsair && !BuildOrder::firstReady() && Players::getStrength(PlayerState::Enemy).airToAir > 0.0)
+                    || unit.getType() == Protoss_Carrier && com(Protoss_Interceptor) < 16)
                     unit.setGlobalState(GlobalState::Retreat);
                 else
                     unit.setGlobalState(GlobalState::Attack);
@@ -257,7 +258,7 @@ namespace McRave::Combat {
             auto moveToTarget = unit.hasTarget() && (unit.getPosition().getDistance(unit.getTarget().getPosition()) <= SIM_RADIUS || unit.getType().isFlyer() || Broodwar->getFrameCount() < 15000);
 
             // If we're globally retreating, set defend position as destination
-            if (unit.getGlobalState() == GlobalState::Retreat && (!unit.hasTarget() || (unit.hasTarget() && !unit.getTarget().isThreatening())))
+            if (unit.getGlobalState() == GlobalState::Retreat && (!unit.hasTarget() || (unit.hasTarget() && (!unit.getTarget().isThreatening() || unit.getGroundRange() > 32.0 || unit.getSpeed() > unit.getTarget().getSpeed()))))
                 unit.setDestination(Terrain::getDefendPosition());
 
             // If target is close, set as destination
@@ -353,6 +354,9 @@ namespace McRave::Combat {
             // Sort units by distance to destination
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
+
+                if (unit.getType() == UnitTypes::Protoss_Interceptor)
+                    continue;
 
                 updateClusters(unit);
                 updateGlobalState(unit);

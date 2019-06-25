@@ -162,7 +162,9 @@ namespace McRave::BuildOrder::Protoss
             if (shouldAddProduction()) {
                 auto gatesPerBase = 3 - int(isTechUnit(Protoss_Carrier));
                 auto gateCount = min(vis(Protoss_Nexus) * gatesPerBase, vis(Protoss_Gateway) + 1);
+                auto stargateCount = min(4, int(isTechUnit(Protoss_Carrier)) * com(Protoss_Nexus));
                 itemQueue[Protoss_Gateway] = Item(gateCount);
+                itemQueue[Protoss_Stargate] = Item(stargateCount);
             }
 
             // Adding gas
@@ -210,6 +212,7 @@ namespace McRave::BuildOrder::Protoss
         // Check if we should always make Zealots
         if ((zealotLimit > vis(Protoss_Zealot))
             || zealotLegs
+            || isTechUnit(Protoss_Carrier)
             || (techUnit == Protoss_Dark_Templar && Players::vP()))
             unlockedType.insert(Protoss_Zealot);
         else

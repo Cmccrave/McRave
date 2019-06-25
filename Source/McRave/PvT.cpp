@@ -213,15 +213,15 @@ namespace McRave::BuildOrder::Protoss {
         // Openers
         if (currentOpener == "Zealot") {
             itemQueue[Protoss_Nexus] =                  Item(1 + (s >= 24));
-            itemQueue[Protoss_Pylon] =                  Item((s >= 16) + (s >= 48));
+            itemQueue[Protoss_Pylon] =                  Item((s >= 16) + (s >= 44));
             itemQueue[Protoss_Assimilator] =            Item((s >= 30) + (s >= 86));
             itemQueue[Protoss_Gateway] =                Item((s >= 28) + (s >= 34) + (s >= 80));
             itemQueue[Protoss_Cybernetics_Core] =       Item(vis(Protoss_Gateway) >= 2);
         }
         else if (currentOpener == "Dragoon") {
             itemQueue[Protoss_Nexus] =                  Item(1 + (s >= 24));
-            itemQueue[Protoss_Pylon] =                  Item((s >= 16) + (s >= 48));
-            itemQueue[Protoss_Assimilator] =            Item((s >= 28) + (s >= 86));
+            itemQueue[Protoss_Pylon] =                  Item((s >= 16) + (s >= 44));
+            itemQueue[Protoss_Assimilator] =            Item((s >= 26) + (s >= 86));
             itemQueue[Protoss_Gateway] =                Item((s >= 26) + (s >= 32) + (s >= 80));
             itemQueue[Protoss_Cybernetics_Core] =       Item(s >= 30);
         }
@@ -242,21 +242,21 @@ namespace McRave::BuildOrder::Protoss {
             getOpening =                                s < 140;
 
             itemQueue[Protoss_Nexus] =                  Item(1 + (s >= 24) + (com(Protoss_Cybernetics_Core) > 0));
-            itemQueue[Protoss_Assimilator] =            Item(s >= 28);
+            itemQueue[Protoss_Assimilator] =            Item(s >= 26);
         }
         else if (currentTransition == "Standard") {
             getOpening =                                s < 90;
             firstUnit =                                 None;
         }
         else if (currentTransition == "ReaverCarrier") {
+            // Actually just running carrier instead
             getOpening =                                s < 120;
-            lockedTransition =                          vis(Protoss_Robotics_Facility) > 0;
-            firstUnit =                                 com(Protoss_Reaver) > 0 ? Protoss_Carrier : Protoss_Reaver;
+            lockedTransition =                          vis(Protoss_Stargate) > 0;
+            firstUnit =                                 Protoss_Carrier;
 
-            itemQueue[Protoss_Assimilator] =            Item((s >= 28) + (s >= 68));
-            itemQueue[Protoss_Gateway] =                Item((vis(Protoss_Pylon) > 1) + (vis(Protoss_Nexus) > 1) + (s >= 70) + (s >= 80));
-            itemQueue[Protoss_Robotics_Facility] =      Item(s >= 56);
-            itemQueue[Protoss_Stargate] =               Item(vis(Protoss_Reaver) > 0);
+            itemQueue[Protoss_Assimilator] =            Item((s >= 26) + (s >= 68));
+            itemQueue[Protoss_Gateway] =                Item((vis(Protoss_Pylon) > 1) + (vis(Protoss_Nexus) > 1));
+            itemQueue[Protoss_Stargate] =               Item((s >= 72) + (vis(Protoss_Carrier) > 0));
             itemQueue[Protoss_Fleet_Beacon] =           Item(isAlmostComplete(Protoss_Stargate));
         }
     }

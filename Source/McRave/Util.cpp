@@ -20,10 +20,6 @@ namespace McRave::Util {
         int halfW = (walkWidth + 1) / 2;
         int halfH = (walkHeight + 1) / 2;
 
-        auto collision = Grids::getCollision(here);
-        if (collision > 0)
-            return false;
-
         for (int x = here.x - halfW; x < here.x + halfW; x++) {
             for (int y = here.y - halfH; y < here.y + halfH; y++) {
                 WalkPosition w(x, y);

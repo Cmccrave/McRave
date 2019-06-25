@@ -76,8 +76,8 @@ namespace McRave::Util {
         auto start = BWAPI::WalkPosition(here);
         for (int x = start.x; x < start.x + 4; x++) {
             for (int y = start.y; y < start.y + 4; y++) {
-                if (Grids::getMobility(BWAPI::WalkPosition(x, y)) == -1)
-                    return false;
+                if (Grids::getMobility(BWAPI::WalkPosition(x, y)) < 1)
+                    return false;                
             }
         }
         return true;
@@ -106,7 +106,7 @@ namespace McRave::Util {
 
             // As long as last doesn't equal pos
             while (last != pos) {
-                if (pred(Position(last) + Position(16,16)))
+                if (pred(Position(last) + Position(16, 16)))
                     return Position(last) + Position(16, 16);
 
                 // Increment or decrement based on where we need to go
