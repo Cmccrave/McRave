@@ -6,7 +6,7 @@ using namespace BWAPI;
 namespace McRave
 {
     UnitInfo::UnitInfo() {}
-    
+
     void UnitInfo::setLastPositions()
     {
         lastPos = position;
@@ -14,7 +14,7 @@ namespace McRave
         lastWalk =  walkPosition;
     }
 
-    void UnitInfo::verifyPaths() 
+    void UnitInfo::verifyPaths()
     {
         if (lastTile != this->unit()->getTilePosition()) {
             BWEB::Path emptyPath;
@@ -56,7 +56,7 @@ namespace McRave
             airReach				= airRange + (speed * 32.0) + double(unitType.width() / 2) + 64.0;
             airDamage				= Math::airDamage(*this);
             speed 					= Math::speed(*this);
-            minStopFrame			= Math::getMinStopFrame(t);
+            minStopFrame			= Math::stopAnimationFrames(t);
             burrowed				= (unitType != UnitTypes::Terran_Vulture_Spider_Mine && thisUnit->isBurrowed()) || thisUnit->getOrder() == Orders::Burrowing;
             flying					= thisUnit->isFlying() || thisUnit->getType().isFlyer() || thisUnit->getOrder() == Orders::LiftingOff || thisUnit->getOrder() == Orders::BuildingLiftOff;
 
@@ -145,7 +145,7 @@ namespace McRave
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames
         int frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
-        bool cancelAttackRisk = frameSinceAttack <= minStopFrame - Broodwar->getRemainingLatencyFrames();
+        bool cancelAttackRisk = frameSinceAttack <= minStopFrame - Broodwar->getLatencyFrames();
 
         if (position.getDistance(here) < 64 && command == UnitCommandTypes::Move && role == Role::Combat)
             Command::addAction(thisUnit, here, unitType, PlayerState::Self);
@@ -190,10 +190,10 @@ namespace McRave
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames
         int frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
-        bool attackCooldown = frameSinceAttack <= minStopFrame - Broodwar->getRemainingLatencyFrames();
+        bool cancelAttackRisk = frameSinceAttack <= minStopFrame - Broodwar->getLatencyFrames();
         Command::addAction(thisUnit, targetUnit.getPosition(), unitType, PlayerState::Self);
 
-        if (attackCooldown)
+        if (cancelAttackRisk)
             return false;
 
         // Check if this is a new order
@@ -295,14 +295,18 @@ namespace McRave
             || isSpellcaster())
             return false;
 
-        auto cooldown = target.lock()->getType().isFlyer() ? thisUnit->getAirWeaponCooldown() : thisUnit->getGroundWeaponCooldown();
+        
+
+        auto attackAnimation = lastPos != position ? Math::firstAttackAnimationFrames(unitType) : Math::contAttackAnimationFrames(unitType);
+        auto cooldown = (target.lock()->getType().isFlyer() ? thisUnit->getAirWeaponCooldown() : thisUnit->getGroundWeaponCooldown()) - Broodwar->getLatencyFrames() - attackAnimation;
+
+        Broodwar->drawTextMap(position, "%d", cooldown);
 
         if (unitType == UnitTypes::Protoss_Reaver)
             cooldown = lastAttackFrame - Broodwar->getFrameCount() + 60;
 
-        auto cooldownReady =  cooldown <= Broodwar->getLatencyFrames();
-        auto cooldownWillBeReady = cooldown <= engageDist / (transport.lock() ? transport.lock()->getSpeed() : speed);
-        return cooldownReady || cooldownWillBeReady;
+        auto cooldownReady = cooldown <= engageDist / (transport.lock() ? transport.lock()->getSpeed() : speed);
+        return cooldownReady;
     }
 
     bool UnitInfo::canStartCast(TechType tech)

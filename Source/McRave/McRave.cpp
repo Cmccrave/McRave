@@ -39,7 +39,7 @@ void McRaveModule::onStart()
     Broodwar->setCommandOptimizationLevel(0);
     Broodwar->setLatCom(true);
     Broodwar->sendText("glhf");
-    Broodwar->setLocalSpeed(Broodwar->getGameType() != BWAPI::GameTypes::Use_Map_Settings ? 0 : 42);
+    Broodwar->setLocalSpeed(Broodwar->getGameType() != BWAPI::GameTypes::Use_Map_Settings ? 0 : 200);
 }
 
 void McRaveModule::onEnd(bool isWinner)

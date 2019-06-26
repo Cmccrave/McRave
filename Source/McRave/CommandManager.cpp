@@ -141,6 +141,9 @@ namespace McRave::Command {
                 auto side2 = itr == directions.end() - 1 ? directions.at(0) : *(itr + 1);
                 auto corner = side1 + side2 - t;
 
+                //Visuals::tileBox(side1, Colors::Orange);
+                //Visuals::tileBox(side2, Colors::Orange);
+
                 auto side1Type = BWEB::Map::isUsed(side1);
                 auto side2Type = BWEB::Map::isUsed(side2);
                 auto cornerType = BWEB::Map::isUsed(corner);
@@ -150,16 +153,16 @@ namespace McRave::Command {
 
                 if (unit.getType().isFlyer()) {
                     allowedDirections.insert(corner);
-                    allowedDirections.insert(side1 + (side1 - t));
-                    allowedDirections.insert(side2 + (side2 - t));
+                    allowedDirections.insert(side1);
+                    allowedDirections.insert(side2);
                 }
                 else {
                     if ((side1Walkable || side2Walkable || unitCanFitThrough(side1, side2, side1Type, side2Type)) && cornerType == UnitTypes::None)
                         allowedDirections.insert(corner);
                     if (side1Walkable)
-                        allowedDirections.insert(side1 + (side1 - t));
+                        allowedDirections.insert(side1);
                     if (side2Walkable)
-                        allowedDirections.insert(side2 + (side2 - t));
+                        allowedDirections.insert(side2);
                 }
             }
 
@@ -512,7 +515,7 @@ namespace McRave::Command {
 
                 if (unit.getType() == UnitTypes::Protoss_Reaver
                     || unit.getType() == UnitTypes::Terran_Vulture
-                    || allyRange >= enemyRange
+                    || allyRange > enemyRange
                     || unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine)
                     return true;
             }

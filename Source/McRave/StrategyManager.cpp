@@ -328,6 +328,11 @@ namespace McRave::Strategy {
 
         void checkHoldChoke()
         {
+            if (Broodwar->getGameType() == BWAPI::GameTypes::Use_Map_Settings) {
+                holdChoke = true;
+                return;
+            }
+
             if (!holdChoke && Units::getImmThreat() > 0.0)
                 holdChoke = false;
             else {

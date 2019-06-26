@@ -145,9 +145,9 @@ namespace McRave::Targets {
 
                 double widths = unit.getType().tileWidth() * 16.0 + target.getType().tileWidth() * 16.0;
                 double dist = max(32.0, unit.getPosition().getDistance(target.getPosition()) - widths);
-                double health = targetCanAttack ? 1.0 + (0.5*(1.0 - unit.getPercentTotal())) : 1.0;
+                double health = (targetCanAttack ? 1.0 + (1.0*(1.0 - target.getPercentTotal())) : 1.0) + (0.25*target.getTargetedBy().size());
                 double thisUnit = 0.0;
-
+                
                 // Set sim position
                 if ((unitCanAttack || targetCanAttack) && dist < closest) {
                     unit.setSimPosition(target.getPosition());

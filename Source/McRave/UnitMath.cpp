@@ -335,13 +335,54 @@ namespace McRave::Math {
             return 0.0;
         return speed;
     }
-
-    int getMinStopFrame(UnitType unitType)
-    {
+    
+    int stopAnimationFrames(UnitType unitType) {
         if (unitType == Protoss_Dragoon)
-            return 9;
+            return 7;
         if (unitType == Zerg_Devourer)
             return 11;
+        return 0;
+    }
+
+    int firstAttackAnimationFrames(UnitType unitType) {
+        if (unitType == Protoss_Probe)
+            return 1;
+        if (unitType == Protoss_Zealot)
+            return 16;
+        if (unitType == Protoss_Dragoon)
+            return 18;
+        if (unitType == Protoss_Dark_Templar)
+            return 19;
+        if (unitType == Protoss_Archon)
+            return 18;
+        if (unitType == Protoss_Reaver)
+            return 3;
+        if (unitType == Protoss_Scout)
+            return 5;
+        if (unitType == Protoss_Corsair)
+            return 17;
+        if (unitType == Protoss_Arbiter)
+            return 10;
+        return 0;
+    }
+
+    int contAttackAnimationFrames(UnitType unitType) {
+        if (unitType == Protoss_Probe)
+            return 1;
+        if (unitType == Protoss_Zealot)
+            return 14;
+        if (unitType == Protoss_Dragoon)
+            return 6;
+        if (unitType == Protoss_Dark_Templar)
+            return 19;
+        if (unitType == Protoss_Archon)
+            return 18;
+        if (unitType == Protoss_Reaver)
+            return 3;
+        if (unitType == Protoss_Scout)
+            return 5;
+        if (unitType == Protoss_Corsair)
+            return 17;
         return 0;
     }
 
