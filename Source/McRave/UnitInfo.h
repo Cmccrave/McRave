@@ -76,29 +76,27 @@ namespace McRave {
     public:
         UnitInfo();
 
-        
-        
-        bool hasAttackedRecently() {
-            return (BWAPI::Broodwar->getFrameCount() - lastAttackFrame < 50);
-        }
-        bool isStuck() {
-            return (BWAPI::Broodwar->getFrameCount() - lastMoveFrame > 50);
-        }
-        bool targetsFriendly() {
-            return unitType == BWAPI::UnitTypes::Terran_Medic || unitType == BWAPI::UnitTypes::Terran_Science_Vessel || unitType == BWAPI::UnitTypes::Zerg_Defiler;
-        }
-        bool isSuicidal() {
-            return unitType == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine || unitType == BWAPI::UnitTypes::Zerg_Scourge || unitType == BWAPI::UnitTypes::Zerg_Infested_Terran;
-        }
-        bool isLightAir() {
-            return unitType == BWAPI::UnitTypes::Protoss_Corsair || unitType == BWAPI::UnitTypes::Zerg_Mutalisk || unitType == BWAPI::UnitTypes::Terran_Wraith;
-        }
-        bool isCapitalShip() {
-            return unitType == BWAPI::UnitTypes::Protoss_Carrier || unitType == BWAPI::UnitTypes::Terran_Battlecruiser || unitType == BWAPI::UnitTypes::Zerg_Guardian;
-        }
-        bool isHovering() {
-            return unitType.isWorker() || unitType == BWAPI::UnitTypes::Protoss_Archon || unitType == BWAPI::UnitTypes::Protoss_Dark_Archon || unitType == BWAPI::UnitTypes::Terran_Vulture;
-        }
+    #pragma region Utility
+        bool hasResource() { return !resource.expired(); }
+        bool hasTransport() { return !transport.expired(); }
+        bool hasTarget() { return !target.expired(); }
+        bool hasMoved() { return lastTile != tilePosition; }
+        bool hasAttackedRecently() { return (BWAPI::Broodwar->getFrameCount() - lastAttackFrame < 50); }
+        bool targetsFriendly() { return unitType == BWAPI::UnitTypes::Terran_Medic || unitType == BWAPI::UnitTypes::Terran_Science_Vessel || unitType == BWAPI::UnitTypes::Zerg_Defiler; }
+        bool isStuck() { return (BWAPI::Broodwar->getFrameCount() - lastMoveFrame > 50); }        
+        bool isSuicidal() { return unitType == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine || unitType == BWAPI::UnitTypes::Zerg_Scourge || unitType == BWAPI::UnitTypes::Zerg_Infested_Terran; }
+        bool isLightAir() { return unitType == BWAPI::UnitTypes::Protoss_Corsair || unitType == BWAPI::UnitTypes::Zerg_Mutalisk || unitType == BWAPI::UnitTypes::Terran_Wraith; }
+        bool isCapitalShip() { return unitType == BWAPI::UnitTypes::Protoss_Carrier || unitType == BWAPI::UnitTypes::Terran_Battlecruiser || unitType == BWAPI::UnitTypes::Zerg_Guardian; }
+        bool isHovering() { return unitType.isWorker() || unitType == BWAPI::UnitTypes::Protoss_Archon || unitType == BWAPI::UnitTypes::Protoss_Dark_Archon || unitType == BWAPI::UnitTypes::Terran_Vulture; }
+        bool isTransport() { return unitType == BWAPI::UnitTypes::Protoss_Shuttle || unitType == BWAPI::UnitTypes::Terran_Dropship || unitType == BWAPI::UnitTypes::Zerg_Overlord; }
+        bool isSpellcaster() { return unitType == BWAPI::UnitTypes::Protoss_High_Templar || unitType == BWAPI::UnitTypes::Protoss_Dark_Archon || unitType == BWAPI::UnitTypes::Terran_Medic || unitType == BWAPI::UnitTypes::Terran_Science_Vessel; }
+        bool isSiegeTank() { return unitType == BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode || unitType == BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode; }
+        bool isBurrowed() { return burrowed; }
+        bool isFlying() { return flying; }
+        bool isWithinReach(UnitInfo&);
+        bool isWithinRange(UnitInfo&);
+        bool isThreatening();
+
         bool isHealthy() {
             return (unitType.maxShields() > 0 && percentShield > LOW_SHIELD_PERCENT_LIMIT)
                 || (unitType.isMechanical() && percentHealth > LOW_MECH_PERCENT_LIMIT);
@@ -106,34 +104,8 @@ namespace McRave {
         bool isHidden() {
             auto detection = player->isEnemy(BWAPI::Broodwar->self()) ? Command::overlapsDetection(thisUnit, position, PlayerState::Self) : Command::overlapsDetection(thisUnit, position, PlayerState::Enemy);
             return (burrowed || (thisUnit->exists() && thisUnit->isCloaked())) && !detection;
-        }
-        bool isTransport() {
-            return unitType == BWAPI::UnitTypes::Protoss_Shuttle || unitType == BWAPI::UnitTypes::Terran_Dropship || unitType == BWAPI::UnitTypes::Zerg_Overlord; 
-        }
-        bool isSpellcaster() {
-            return unitType == BWAPI::UnitTypes::Protoss_High_Templar || unitType == BWAPI::UnitTypes::Protoss_Dark_Archon || unitType == BWAPI::UnitTypes::Terran_Medic || unitType == BWAPI::UnitTypes::Terran_Science_Vessel;
-        }
-        bool isSiegeTank() {
-            return unitType == BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode || unitType == BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode;
-        }
-        bool isBurrowed() { return burrowed; }
-        bool isFlying() { return flying; }
+        }        
 
-        bool sameTile() { return lastTile == tilePosition; }
-
-
-        bool hasResource() { return !resource.expired(); }
-        bool hasTransport() { return !transport.expired(); }
-        bool hasTarget() { return !target.expired(); }
-
-        int frameArrivesWhen() {
-            return BWAPI::Broodwar->getFrameCount() + int(position.getDistance(Terrain::getDefendPosition()) / speed);
-        }
-        int frameCompletesWhen() {
-            return BWAPI::Broodwar->getFrameCount() + int((1.0 - percentHealth) * double(unitType.buildTime()));
-        }
-
-        bool isThreatening();
         bool canStartAttack();
         bool canStartCast(BWAPI::TechType);
         bool canAttackGround();
@@ -162,7 +134,7 @@ namespace McRave {
             BWAPI::TilePosition here(h);
 
             const auto shouldCreatePath =
-                (retreatPath.getTiles().empty() || retreatPath.getTiles().front() != here || retreatPath.getTiles().back() != this->getTilePosition());    // ...attack path is empty or not the same
+                (retreatPath.getTiles().empty() || retreatPath.getTiles().front() != here || retreatPath.getTiles().back() != this->getTilePosition());    // ...retreat path is empty or not the same
 
             const auto canCreatePath =
                 (!this->hasTransport()																							                            // ...unit has no transport
@@ -174,18 +146,22 @@ namespace McRave {
             return shouldCreatePath && canCreatePath;
         }
 
-        bool withinReach(UnitInfo&);
-        bool withinRange(UnitInfo&);
-
         // Commanding the unit to prevent order/command spam
         bool command(BWAPI::UnitCommandType, BWAPI::Position, bool);
         bool command(BWAPI::UnitCommandType, UnitInfo&);
 
-
+        // Information about frame timings
+        int frameArrivesWhen() {
+            return BWAPI::Broodwar->getFrameCount() + int(position.getDistance(Terrain::getDefendPosition()) / speed);
+        }
+        int frameCompletesWhen() {
+            return BWAPI::Broodwar->getFrameCount() + int((1.0 - percentHealth) * double(unitType.buildTime()));
+        }
 
         void update();
         void verifyPaths();
         void createDummy(BWAPI::UnitType);
+    #pragma endregion
 
     #pragma region Drawing
         void circleRed() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Red); }

@@ -84,7 +84,7 @@ namespace McRave::Targets {
 
                     // See if I have a unit close to the enemy
                     auto closest = Util::getClosestUnit(target.getPosition(), PlayerState::Self, [&](auto &u) {
-                        return u != unit && u.withinReach(target);
+                        return u != unit && u.isWithinReach(target);
                     });
 
                     // Detectors want to stay close to their target
@@ -160,7 +160,7 @@ namespace McRave::Targets {
             }
 
             // If unit is close, increment it
-            if (unit.hasTarget() && unit.withinRange(unit.getTarget()))
+            if (unit.hasTarget() && unit.isWithinRange(unit.getTarget()))
                 unit.getTarget().getTargetedBy().push_back(make_shared<UnitInfo>(unit));
         }
 
@@ -172,7 +172,7 @@ namespace McRave::Targets {
             }
 
             auto range = unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
-            if (!unit.getAttackPath().getTiles().empty() && !unit.unit()->isLoaded() && !unit.withinRange(unit.getTarget())) {
+            if (!unit.getAttackPath().getTiles().empty() && !unit.unit()->isLoaded() && !unit.isWithinRange(unit.getTarget())) {
                 auto engagePosition = Util::findPointOnPath(unit.getAttackPath(), [&](Position p) {
                     auto center = p + Position(16, 16);
                     return center.getDistance(unit.getTarget().getPosition()) <= range;

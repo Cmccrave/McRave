@@ -145,7 +145,7 @@ namespace McRave::Combat {
                 return;
             }
 
-            const auto fightingAtHome = ((Terrain::isInAllyTerritory(unit.getTilePosition()) && unit.withinRange(unit.getTarget())) || Terrain::isInAllyTerritory(unit.getTarget().getTilePosition()));
+            const auto fightingAtHome = ((Terrain::isInAllyTerritory(unit.getTilePosition()) && unit.isWithinRange(unit.getTarget())) || Terrain::isInAllyTerritory(unit.getTarget().getTilePosition()));
             const auto enemyReach = unit.getType().isFlyer() ? unit.getTarget().getAirReach() : unit.getTarget().getGroundReach();
             const auto enemyThreat = unit.getType().isFlyer() ? Grids::getEAirThreat(unit.getEngagePosition()) : Grids::getEGroundThreat(unit.getEngagePosition());
             const auto destinationThreat = unit.getType().isFlyer() ? Grids::getEAirThreat(unit.getDestination()) : Grids::getEGroundThreat(unit.getDestination());
@@ -191,9 +191,9 @@ namespace McRave::Combat {
             };
 
             const auto localEngage = [&]() {
-                if ((!unit.getType().isFlyer() && unit.getTarget().isSiegeTank() && unit.getTarget().getTargetedBy().size() >= 4 && ((unit.withinRange(unit.getTarget()) && unit.getGroundRange() > 32.0) || (unit.withinReach(unit.getTarget()) && unit.getGroundRange() <= 32.0)))
+                if ((!unit.getType().isFlyer() && unit.getTarget().isSiegeTank() && unit.getTarget().getTargetedBy().size() >= 4 && ((unit.isWithinRange(unit.getTarget()) && unit.getGroundRange() > 32.0) || (unit.isWithinReach(unit.getTarget()) && unit.getGroundRange() <= 32.0)))
                     || (unit.isHidden() && !Command::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy))
-                    || (unit.getType() == Protoss_Reaver && !unit.unit()->isLoaded() && unit.withinRange(unit.getTarget()))
+                    || (unit.getType() == Protoss_Reaver && !unit.unit()->isLoaded() && unit.isWithinRange(unit.getTarget()))
                     || (unit.getSimState() == SimState::Win && unit.getGlobalState() == GlobalState::Attack)
                     || (unit.getTarget().getType() == Terran_Vulture_Spider_Mine && !unit.getTarget().isBurrowed()))
                     return true;

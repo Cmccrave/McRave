@@ -87,7 +87,7 @@ namespace McRave::Horizon {
             for (auto &e : Units::getUnits(PlayerState::Enemy)) {
                 UnitInfo &enemy = *e;
                 if (applySqueezeFactor(enemy)) {
-                    auto path = enemy.sameTile() ? enemy.getQuickPath() : mapBWEM.GetPath(enemy.getPosition(), unit.getPosition());
+                    auto path = !enemy.hasMoved() ? enemy.getQuickPath() : mapBWEM.GetPath(enemy.getPosition(), unit.getPosition());
                     enemy.setQuickPath(path);
                     for (auto &choke : path) {
                         if (enemy.getGroundReach() < enemy.getPosition().getDistance(Position(choke->Center())))
@@ -98,7 +98,7 @@ namespace McRave::Horizon {
             for (auto &a : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &ally = *a;
                 if (applySqueezeFactor(ally)) {
-                    auto path = ally.sameTile() ? ally.getQuickPath() : mapBWEM.GetPath(ally.getPosition(), ally.getTarget().getPosition());
+                    auto path = !ally.hasMoved() ? ally.getQuickPath() : mapBWEM.GetPath(ally.getPosition(), ally.getTarget().getPosition());
                     ally.setQuickPath(path);
                     for (auto &choke : path) {
                         if (ally.getGroundReach() < ally.getPosition().getDistance(Position(choke->Center())))

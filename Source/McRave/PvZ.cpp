@@ -80,9 +80,9 @@ namespace McRave::BuildOrder::Protoss {
             cannonCount = 5;
         else if (Strategy::getEnemyBuild() == "3HatchHydra")
             cannonCount = 4;
-        else if (Strategy::getEnemyBuild() == "2HatchMuta")
+        else if (Strategy::getEnemyBuild() == "2HatchMuta" && Broodwar->getFrameCount() >= 7200)
             cannonCount = 7;
-        else if (Strategy::getEnemyBuild() == "3HatchMuta")
+        else if (Strategy::getEnemyBuild() == "3HatchMuta" && Broodwar->getFrameCount() >= 7500)
             cannonCount = 8;
         else if (Strategy::getEnemyBuild() == "4Pool")
             cannonCount = 2 + (s >= 24);

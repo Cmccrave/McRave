@@ -623,7 +623,7 @@ namespace McRave::Buildings {
             queuedGas = 0;
             buildingsQueued.clear();
 
-            // 1) Add up how many buildings we have assigned to workers
+            // Add up how many buildings we have assigned to workers
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
 
@@ -631,7 +631,7 @@ namespace McRave::Buildings {
                     buildingsQueued[unit.getBuildPosition()] = unit.getBuildingType();
             }
 
-            // 2) Add up how many more buildings of each type we need
+            // Add up how many more buildings of each type we need
             for (auto &[building, item] : BuildOrder::getItemQueue()) {
                 int queuedCount = 0;
 
@@ -651,7 +651,7 @@ namespace McRave::Buildings {
                 if (building == Zerg_Lair)
                     morphOffset = Broodwar->self()->visibleUnitCount(Zerg_Hive);
 
-                // 3) Reserve building if our reserve count is higher than our visible count
+                // Reserve building if our reserve count is higher than our visible count
                 for (auto &[_, queuedType] : buildingsQueued) {
                     if (queuedType == building) {
                         queuedCount++;
@@ -664,7 +664,7 @@ namespace McRave::Buildings {
                     }
                 }
 
-                // 4) Queue building if our actual count is higher than our visible count
+                // Queue building if our actual count is higher than our visible count
                 if (item.getActualCount() > queuedCount + Broodwar->self()->visibleUnitCount(building) + morphOffset) {
                     auto here = getBuildLocation(building);
 

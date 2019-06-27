@@ -299,10 +299,10 @@ namespace McRave::Command {
 
             auto threatAtEngagement = unit.getType().isFlyer() ? Grids::getEAirThreat(unit.getEngagePosition()) : Grids::getEGroundThreat(unit.getEngagePosition());
             if (unit.getRole() == Role::Combat)
-                return unit.withinRange(unit.getTarget()) && (unit.getLocalState() == LocalState::Attack || !threatAtEngagement);
+                return unit.isWithinRange(unit.getTarget()) && (unit.getLocalState() == LocalState::Attack || !threatAtEngagement);
 
             if (unit.getRole() == Role::Scout)
-                return unit.withinRange(unit.getTarget()) && (unit.getPercentTotal() >= unit.getTarget().getPercentTotal());
+                return unit.isWithinRange(unit.getTarget()) && (unit.getPercentTotal() >= unit.getTarget().getPercentTotal());
 
             return false;
         };
@@ -394,7 +394,7 @@ namespace McRave::Command {
 
         auto shouldMove = [&]() {
             if (unit.getRole() == Role::Combat) {
-                if (unit.hasTarget() && unit.withinRange(unit.getTarget()) && !unit.getTarget().isHidden() && unit.getTarget().unit()->exists() && unit.getType() != UnitTypes::Zerg_Lurker)
+                if (unit.hasTarget() && unit.isWithinRange(unit.getTarget()) && !unit.getTarget().isHidden() && unit.getTarget().unit()->exists() && unit.getType() != UnitTypes::Zerg_Lurker)
                     return false;
                 if (unit.getLocalState() == LocalState::Attack)
                     return true;
@@ -599,7 +599,7 @@ namespace McRave::Command {
 
         if (!closeToDefend
             || unit.getLocalState() == LocalState::Attack
-            || (unit.hasTarget() && unit.getTarget().isHidden() && unit.getTarget().withinReach(unit))
+            || (unit.hasTarget() && unit.getTarget().isHidden() && unit.getTarget().isWithinReach(unit))
             || (Units::getEnemyCount(UnitTypes::Terran_Siege_Tank_Siege_Mode) > 0 || Units::getEnemyCount(UnitTypes::Terran_Siege_Tank_Tank_Mode) > 0))
             return false;
 

@@ -364,14 +364,14 @@ namespace McRave
             || unitType == UnitTypes::Zerg_Queen;
     }
 
-    bool UnitInfo::withinReach(UnitInfo& unit)
+    bool UnitInfo::isWithinReach(UnitInfo& unit)
     {
         auto sizes = (max(unit.getType().width(), unit.getType().height()) + max(unitType.width(), unitType.height())) / 2;
         auto dist = position.getDistance(unit.getPosition()) - sizes - 32.0;
         return unit.getType().isFlyer() ? airReach >= dist : groundReach >= dist;
     }
 
-    bool UnitInfo::withinRange(UnitInfo& unit)
+    bool UnitInfo::isWithinRange(UnitInfo& unit)
     {
         auto sizes = (max(unit.getType().width(), unit.getType().height()) + max(unitType.width(), unitType.height())) / 2;
         auto dist = position.getDistance(unit.getPosition()) - sizes - 32.0;

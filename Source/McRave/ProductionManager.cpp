@@ -13,7 +13,6 @@ namespace McRave::Production {
         map <Unit, UpgradeType> idleUpgrade;
         map <UnitType, int> trainedThisFrame;
         int reservedMineral, reservedGas;
-        int idleFrame = 0;
 
         bool haveOrUpgrading(UpgradeType upgrade, int level) {
             return ((Broodwar->self()->isUpgrading(upgrade) && Broodwar->self()->getUpgradeLevel(upgrade) == level - 1) || Broodwar->self()->getUpgradeLevel(upgrade) >= level);
@@ -198,7 +197,7 @@ namespace McRave::Production {
             case Protoss_Dark_Templar:
                 return vis(unit) < 4;
             case Protoss_High_Templar:
-                return vis(unit) < 6;
+                return vis(unit) < 4 + (Players::getSupply(PlayerState::Self) / 100);
 
                 // Robo Units
             case Protoss_Shuttle:
@@ -216,7 +215,7 @@ namespace McRave::Production {
             case Protoss_Carrier:
                 return true;
             case Protoss_Arbiter:
-                return (vis(unit) < 10 && (Broodwar->self()->isUpgrading(UpgradeTypes::Khaydarin_Core) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Khaydarin_Core)));
+                return (vis(unit) < 8 && (Broodwar->self()->isUpgrading(UpgradeTypes::Khaydarin_Core) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Khaydarin_Core)));
 
                 // Barracks Units
             case Terran_Marine:
@@ -438,7 +437,7 @@ namespace McRave::Production {
                 case Stasis_Field:
                     return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Khaydarin_Core) > 0;
                 case Recall:
-                    return (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
+                    return (Broodwar->self()->hasResearched(TechTypes::Stasis_Field) > 0 && Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
                 case Disruption_Web:
                     return (vis(UnitTypes::Protoss_Corsair) >= 10);
                 }
@@ -536,10 +535,7 @@ namespace McRave::Production {
                 }
 
                 // Else if this is a tech unit, add it to idle production
-                else if (BuildOrder::getTechUnit() == bestType || BuildOrder::getTechList().find(bestType) != BuildOrder::getTechList().end()) {
-                    if (Players::getSupply(PlayerState::Self) < 380)
-                        idleFrame = Broodwar->getFrameCount();
-
+                else if (BuildOrder::isTechUnit(bestType)) {
                     idleProduction[building.unit()] = bestType;
                     reservedMineral += bestType.mineralPrice();
                     reservedGas += bestType.gasPrice();
