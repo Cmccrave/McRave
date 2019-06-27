@@ -31,8 +31,6 @@ namespace McRave::Grids
     int getMobility(BWAPI::WalkPosition here);
     int getMobility(BWAPI::Position here);
 
-    double getDistanceHome(BWAPI::WalkPosition here);
-
     int lastVisibleFrame(BWAPI::TilePosition t);
     int lastVisitedFrame(BWAPI::WalkPosition w);
 }

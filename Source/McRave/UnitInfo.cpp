@@ -144,8 +144,8 @@ namespace McRave
     bool UnitInfo::command(UnitCommandType command, Position here, bool overshoot)
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames
-        int frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
-        bool cancelAttackRisk = frameSinceAttack <= minStopFrame - Broodwar->getLatencyFrames();
+        auto frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
+        auto cancelAttackRisk = frameSinceAttack <= minStopFrame - Broodwar->getLatencyFrames();
 
         if (position.getDistance(here) < 64 && command == UnitCommandTypes::Move && role == Role::Combat)
             Command::addAction(thisUnit, here, unitType, PlayerState::Self);
@@ -189,8 +189,8 @@ namespace McRave
     bool UnitInfo::command(UnitCommandType command, UnitInfo& targetUnit)
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames
-        int frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
-        bool cancelAttackRisk = frameSinceAttack <= minStopFrame - Broodwar->getLatencyFrames();
+        auto frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
+        auto cancelAttackRisk = frameSinceAttack <= minStopFrame - Broodwar->getLatencyFrames();
         Command::addAction(thisUnit, targetUnit.getPosition(), unitType, PlayerState::Self);
 
         if (cancelAttackRisk)
@@ -293,14 +293,14 @@ namespace McRave
         if (!target.lock()
             || (groundDamage == 0 && airDamage == 0)
             || isSpellcaster())
-            return false;
+            return false;        
 
+        auto attackAnimation = 0;
         
+        if (!unitType.isFlyer() && !isHovering())
+            attackAnimation = lastPos != position ? Math::firstAttackAnimationFrames(unitType) : Math::contAttackAnimationFrames(unitType);
 
-        auto attackAnimation = lastPos != position ? Math::firstAttackAnimationFrames(unitType) : Math::contAttackAnimationFrames(unitType);
         auto cooldown = (target.lock()->getType().isFlyer() ? thisUnit->getAirWeaponCooldown() : thisUnit->getGroundWeaponCooldown()) - Broodwar->getLatencyFrames() - attackAnimation;
-
-        Broodwar->drawTextMap(position, "%d", cooldown);
 
         if (unitType == UnitTypes::Protoss_Reaver)
             cooldown = lastAttackFrame - Broodwar->getFrameCount() + 60;

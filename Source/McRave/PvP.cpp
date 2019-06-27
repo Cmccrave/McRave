@@ -193,7 +193,7 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Nexus] =				    Item(1);
             itemQueue[Protoss_Pylon] =				    Item((s >= 16) + (s >= 30));
             itemQueue[Protoss_Gateway] =			    Item(s >= 20);
-            itemQueue[Protoss_Assimilator] =		    Item(s >= 24);
+            itemQueue[Protoss_Assimilator] =		    Item(s >= 22);
             itemQueue[Protoss_Cybernetics_Core] =	    Item(s >= 34);
         }
         else if (currentOpener == "2Zealot") {

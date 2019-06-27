@@ -64,7 +64,6 @@ namespace McRave::Command {
         }
 
         double defaultGrouping(UnitInfo& unit, WalkPosition w) {
-            return 1.0;
             return unit.getType().isFlyer() ? 1.0 / max(0.1f, Grids::getAAirCluster(w)) : log(50.0 + Grids::getAGroundCluster(w));
         }
 
@@ -82,7 +81,7 @@ namespace McRave::Command {
         }
 
         double defaultMobility(UnitInfo& unit, WalkPosition w) {
-            return unit.getType().isFlyer() ? 1.0 : log(100.0 + double(Grids::getMobility(w)));
+            return unit.getType().isFlyer() ? 1.0 : log(50.0 + double(Grids::getMobility(w)));
         }
 
         double defaultThreat(UnitInfo& unit, WalkPosition w)
@@ -93,7 +92,7 @@ namespace McRave::Command {
                     return max(MIN_THREAT, Grids::getEGroundThreat(w) + Grids::getEAirThreat(w));
                 return max(MIN_THREAT, Grids::getEAirThreat(w));
             }
-            return max(MIN_THREAT, unit.getType().isFlyer() ? Grids::getEAirThreat(w) : Grids::getEGroundThreat(w));
+            return max(MIN_THREAT, unit.getType().isFlyer() ? exp(Grids::getEAirThreat(w)) : exp(Grids::getEGroundThreat(w)));
         }
 
         Position findViablePosition(UnitInfo& unit, function<double(WalkPosition)> score)
@@ -102,17 +101,17 @@ namespace McRave::Command {
                 // If not a flyer and position blocks a building, has collision or a splash threat
                 if (!unit.getType().isFlyer() &&
                     (Buildings::overlapsQueue(unit, unit.getTilePosition()) || Grids::getESplash(here) > 0))
-                    return false;        
+                    return false;
 
                 // If too far of a command, is in danger or isn't walkable
-                if ((!unit.getType().isFlyer() && !Broodwar->isWalkable(here))
+                if ((!unit.getType().isFlyer() && Grids::getMobility(here) < 1)
                     || isInDanger(unit, p)
                     || !Util::isWalkable(unit, here))
                     return false;
                 return true;
             };
 
-            // Find the best TilePosition in 5x5 so we can iterate the WalkPositions in the TilePosition
+            /*// Find the best TilePosition in 5x5 so we can iterate the WalkPositions in the TilePosition
             multimap<double, TilePosition> sortedTiles;
             auto bestPosition = Positions::Invalid;
             auto best = 0.0;
@@ -121,7 +120,7 @@ namespace McRave::Command {
             vector<TilePosition> directions{ {t.x, t.y - 1},{t.x - 1, t.y},{t.x, t.y + 1}, {t.x + 1, t.y} };
             set<TilePosition> allowedDirections;
 
-            const auto unitCanFitThrough = [&](TilePosition side1, TilePosition side2, UnitType b1, UnitType b2) {                
+            const auto unitCanFitThrough = [&](TilePosition side1, TilePosition side2, UnitType b1, UnitType b2) {
                 auto dim1 = side1.x != t.x ?
                     (side1.x < t.x ? b1.dimensionRight() + b2.dimensionLeft() : b1.dimensionLeft() + b2.dimensionRight()) :
                     (side1.y < t.y ? b1.dimensionDown() + b2.dimensionUp() : b1.dimensionUp() + b2.dimensionDown());
@@ -150,6 +149,7 @@ namespace McRave::Command {
 
                 auto side1Walkable = side1Type == UnitTypes::None && Util::isWalkable(side1);
                 auto side2Walkable = side2Type == UnitTypes::None && Util::isWalkable(side2);
+                auto cornerWalkable = cornerType == UnitTypes::None && Util::isWalkable(corner);
 
                 if (unit.getType().isFlyer()) {
                     allowedDirections.insert(corner);
@@ -157,7 +157,7 @@ namespace McRave::Command {
                     allowedDirections.insert(side2);
                 }
                 else {
-                    if ((side1Walkable || side2Walkable || unitCanFitThrough(side1, side2, side1Type, side2Type)) && cornerType == UnitTypes::None)
+                    if (cornerWalkable && unitCanFitThrough(side1, side2, side1Type, side2Type))
                         allowedDirections.insert(corner);
                     if (side1Walkable)
                         allowedDirections.insert(side1);
@@ -187,6 +187,34 @@ namespace McRave::Command {
                     }
                 }
             }
+             return bestPosition;
+            */
+
+            auto walkWidth = unit.getType().isBuilding() ? unit.getType().tileWidth() * 4 : (int)ceil(unit.getType().width() / 8.0);
+            auto walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : (int)ceil(unit.getType().height() / 8.0);
+            auto start = unit.getWalkPosition();
+            auto bestPosition = Positions::Invalid;
+            auto best = 0.0;
+
+            // Iterate the WalkPositions within the TilePosition
+            for (int x = start.x - 12; x < start.x + 12 + walkWidth; x++) {
+                for (int y = start.y - 12; y < start.y + 12 + walkHeight; y++) {
+                    WalkPosition w(x, y);
+                    Position p = Position(w) + Position(4,4);
+                    if (!w.isValid() || p.getDistance(unit.getPosition()) > 96.0)
+                        continue;
+
+                    if(viablePosition(w, Position(w)))
+                        Visuals::walkBox(w, Colors::Green);
+
+                    auto current = score(w);
+                    if (current > best && viablePosition(w, Position(w))) {
+                        best = current;
+                        bestPosition = Position(w);
+                    }
+                }
+            }
+
             return bestPosition;
         }
     }
@@ -249,7 +277,7 @@ namespace McRave::Command {
             if (unit.getType() == UnitTypes::Protoss_Carrier) {
                 auto leashRange = 320;
                 for (auto &interceptor : unit.unit()->getInterceptors()) {
-                    if (interceptor->getOrder() != Orders::InterceptorAttack && interceptor->getShields() == interceptor->getType().maxShields() && interceptor->getHitPoints() == interceptor->getType().maxHitPoints() && interceptor->isCompleted()){
+                    if (interceptor->getOrder() != Orders::InterceptorAttack && interceptor->getShields() == interceptor->getType().maxShields() && interceptor->getHitPoints() == interceptor->getType().maxHitPoints() && interceptor->isCompleted()) {
                         unit.command(UnitCommandTypes::Attack_Unit, unit.getTarget());
                         return true;
                     }
@@ -354,7 +382,7 @@ namespace McRave::Command {
             const auto distance =   defaultDistance(unit, w);
             const auto grouping =   defaultGrouping(unit, w);
             const auto mobility =   defaultMobility(unit, w);
-            const auto score =      (grouping * mobility) / distance;
+            const auto score =      mobility / (distance * grouping);
             return score;
         };
 
@@ -404,12 +432,12 @@ namespace McRave::Command {
             // Move to the first point that is at least 5 tiles away if possible
             if (!unit.getAttackPath().getTiles().empty() && unit.getAttackPath().isReachable()) {
                 bestPosition = Util::findPointOnPath(unit.getAttackPath(), [&](Position here) {
-                    return here.getDistance(unit.getPosition()) >= 32.0;
+                    return here.getDistance(unit.getPosition()) >= 64.0;
                 });
 
                 // If not valid, see if the path is less than 128.0 pixels long
                 if (!bestPosition.isValid() && unit.getAttackPath().getDistance() <= 32.0)
-                    bestPosition = unit.getDestination();                
+                    bestPosition = unit.getDestination();
 
                 if (bestPosition.isValid()) {
                     Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Green);
@@ -445,7 +473,7 @@ namespace McRave::Command {
             const auto threat =     defaultThreat(unit, w);
             const auto grouping =   defaultGrouping(unit, w);
             const auto mobility =   defaultMobility(unit, w);
-            const auto score =      (grouping * mobility) / (threat * distance);
+            const auto score =      mobility / (threat * distance * grouping);
             return score;
         };
 

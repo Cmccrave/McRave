@@ -30,7 +30,7 @@ namespace McRave::Util {
                 if (!unit.getType().isFlyer()) {
                     if (rectangleIntersect(topLeft, botRight, p))
                         continue;                    
-                    else if (!Broodwar->isWalkable(w) || Grids::getCollision(w) > 0)
+                    else if (Grids::getMobility(w) < 1 || Grids::getCollision(w) > 0)
                         return false;
                 }
             }

@@ -12,7 +12,6 @@ namespace McRave::Grids
         vector<WalkPosition> resetVector;
 
         // Ally Grid
-        float parentDistance[1024][1024];
         float aGroundCluster[1024][1024] ={};
         float aAirCluster[1024][1024] ={};
 
@@ -26,7 +25,6 @@ namespace McRave::Grids
         // Mobility Grid
         int mobility[1024][1024] ={};
         int collision[1024][1024] ={};
-        double distanceHome[1024][1024] ={};
 
         int fasterDistGrids(int x1, int y1, int x2, int y2) {
             unsigned int min = abs((int)(x1 - x2));
@@ -280,12 +278,6 @@ namespace McRave::Grids
                     // Island
                     if (mapBWEM.GetArea(w) && mapBWEM.GetArea(w)->AccessibleNeighbours().size() == 0)
                         mobility[x][y] = -1;
-
-                    // Setup what is possible to check ground distances on
-                    if (mobility[x][y] <= 0)
-                        distanceHome[x][y] = -1;
-                    else if (mobility[x][y] > 0)
-                        distanceHome[x][y] = 0;
                 }
             }
 
@@ -294,61 +286,10 @@ namespace McRave::Grids
                 for (int x = t.x; x < t.x + gas->getType().tileWidth() * 4; x++) {
                     for (int y = t.y; y < t.y + gas->getType().tileHeight() * 4; y++) {
                         mobility[x][y] = -1;
-                        distanceHome[x][y] = -1;
                     }
                 }
             }
-        }
-
-        void updateDistance()
-        {
-            const auto lingWalkable = [&](WalkPosition here) {
-                for (int x = here.x; x < here.x + 1; x++) {
-                    for (int y = here.y; y < here.y + 1; y++) {
-                        WalkPosition w(x, y);
-                        if (!w.isValid() || !Broodwar->isWalkable(w))
-                            return false;
-                    }
-                }
-                return true;
-            };
-
-            WalkPosition source(BWEB::Map::getMainPosition());
-            vector<WalkPosition> direction{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 },{ -1,-1 },{ -1, 1 },{ 1, -1 },{ 1, 1 } };
-            float root2 = float(sqrt(2.0));
-
-            std::queue<BWAPI::WalkPosition> nodeQueue;
-            nodeQueue.emplace(source);
-
-            for (int x = 0; x <= Broodwar->mapWidth() * 4; x++) {
-                for (int y = 0; y <= Broodwar->mapHeight() * 4; y++) {
-                    distanceHome[x][y] = DBL_MAX;
-                }
-            }
-
-            // While not empty, pop off top
-            while (!nodeQueue.empty()) {
-                auto const tile = nodeQueue.front();
-                nodeQueue.pop();
-
-                int i = 0;
-                for (auto const &d : direction) {
-                    auto const next = tile + d;
-                    i++;
-
-                    if (next.isValid() && tile.isValid()) {
-                        // If next has a distance assigned or isn't walkable
-                        if (distanceHome[next.x][next.y] != DBL_MAX || !lingWalkable(next))
-                            continue;
-
-                        // Add distance and add to queue
-                        distanceHome[next.x][next.y] = (i > 4 ? root2 : 1.0) + parentDistance[tile.x][tile.y];
-                        parentDistance[next.x][next.y] = distanceHome[next.x][next.y];
-                        nodeQueue.emplace(next);
-                    }
-                }
-            }
-        }
+        }       
     }
 
     void onFrame()
@@ -363,7 +304,6 @@ namespace McRave::Grids
     void onStart()
     {
         updateMobility();
-        updateDistance();
     }
 
     float getAGroundCluster(WalkPosition here) { return aGroundCluster[here.x][here.y]; }
@@ -389,9 +329,6 @@ namespace McRave::Grids
 
     int getMobility(WalkPosition here) { return mobility[here.x][here.y]; }
     int getMobility(Position here) { return getMobility(WalkPosition(here)); }
-
-    double getDistanceHome(WalkPosition here) { return distanceHome[here.x][here.y]; }
-    double getDistanceHome(Position here) { return getDistanceHome(WalkPosition(here)); }
 
     int lastVisibleFrame(TilePosition t) { return visibleGrid[t.x][t.y]; }
     int lastVisitedFrame(WalkPosition w) { return visitedGrid[w.x][w.y]; }

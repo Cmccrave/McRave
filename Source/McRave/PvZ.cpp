@@ -158,7 +158,7 @@ namespace McRave::BuildOrder::Protoss {
         // Transitions
         if (transitionReady) {
             if (currentTransition == "StormRush") {
-                getOpening =                            s < 80;
+                getOpening =                            s < 100;
                 lockedTransition =                      com(Protoss_Cybernetics_Core) > 0;
 
                 firstUpgrade =                          UpgradeTypes::None;
@@ -172,7 +172,7 @@ namespace McRave::BuildOrder::Protoss {
                 itemQueue[Protoss_Stargate] =           Item(0);
             }
             else if (currentTransition == "2Stargate") {
-                getOpening =                            s < 80;
+                getOpening =                            s < 100;
                 lockedTransition =                      vis(Protoss_Stargate) >= 2;
 
                 firstUpgrade =                          UpgradeTypes::Protoss_Air_Weapons;
@@ -202,7 +202,7 @@ namespace McRave::BuildOrder::Protoss {
                 itemQueue[Protoss_Assimilator] =        Item(1 + (s >= 116));
             }
             else if (currentTransition == "NeoBisu") {
-                getOpening =                            s < 80;
+                getOpening =                            s < 100;
                 lockedTransition =                      vis(Protoss_Citadel_of_Adun) > 0;
 
                 firstUpgrade =                          UpgradeTypes::Protoss_Air_Weapons;

@@ -197,6 +197,14 @@ namespace BWEB::Map
                     walkGrid[x][y] = true;
             }
         }
+
+        for (auto gas : Broodwar->getGeysers()) {
+            for (int x = gas->getTilePosition().x; x < gas->getTilePosition().x + 4; x++) {
+                for (int y = gas->getTilePosition().y; y < gas->getTilePosition().y + 2; y++) {
+                    walkGrid[x][y] = false;
+                }
+            }
+        }
     }
 
     void onUnitDiscover(const Unit unit)
