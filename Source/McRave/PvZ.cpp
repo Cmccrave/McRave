@@ -159,7 +159,7 @@ namespace McRave::BuildOrder::Protoss {
         if (transitionReady) {
             if (currentTransition == "StormRush") {
                 getOpening =                            s < 100;
-                lockedTransition =                      com(Protoss_Cybernetics_Core) > 0;
+                lockedTransition =                      vis(Protoss_Citadel_of_Adun) > 0;
 
                 firstUpgrade =                          UpgradeTypes::None;
                 firstTech =                             TechTypes::Psionic_Storm;
@@ -203,7 +203,7 @@ namespace McRave::BuildOrder::Protoss {
             }
             else if (currentTransition == "NeoBisu") {
                 getOpening =                            s < 100;
-                lockedTransition =                      vis(Protoss_Citadel_of_Adun) > 0;
+                lockedTransition =                      vis(Protoss_Citadel_of_Adun) > 0 && vis(Protoss_Stargate) > 0;
 
                 firstUpgrade =                          UpgradeTypes::Protoss_Air_Weapons;
                 firstTech =                             TechTypes::None;

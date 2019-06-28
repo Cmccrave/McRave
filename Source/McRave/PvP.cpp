@@ -114,7 +114,7 @@ namespace McRave::BuildOrder::Protoss {
         // Transitions
         if (currentTransition == "DT") {
             lockedTransition =                          vis(Protoss_Citadel_of_Adun) > 0;
-            getOpening =		                        s < 80;
+            getOpening =		                        vis(Protoss_Dark_Templar) < 2;
             firstUpgrade =                              UpgradeTypes::None;
             firstUnit =			                        Protoss_Dark_Templar;
 
@@ -123,8 +123,8 @@ namespace McRave::BuildOrder::Protoss {
             desiredDetection =                          Protoss_Forge;
 
             itemQueue[Protoss_Nexus] =				    Item(1);
-            itemQueue[Protoss_Assimilator] =		    Item(s >= 52);
-            itemQueue[Protoss_Cybernetics_Core] =	    Item(s >= 56);
+            itemQueue[Protoss_Assimilator] =		    Item(s >= 50);
+            itemQueue[Protoss_Cybernetics_Core] =	    Item(vis(Protoss_Zealot) >= 5);
             itemQueue[Protoss_Citadel_of_Adun] =        Item(isAlmostComplete(Protoss_Cybernetics_Core));
             itemQueue[Protoss_Templar_Archives] =       Item(isAlmostComplete(Protoss_Citadel_of_Adun));
         }
@@ -138,10 +138,10 @@ namespace McRave::BuildOrder::Protoss {
             wallNat =                                   currentOpener == "Natural" || s >= 56;
             desiredDetection =                          Protoss_Forge;
 
-            itemQueue[Protoss_Assimilator] =		    Item(s >= 52);
+            itemQueue[Protoss_Assimilator] =		    Item(s >= 50);
             itemQueue[Protoss_Cybernetics_Core] =	    Item(vis(Protoss_Zealot) >= 5);
             itemQueue[Protoss_Forge] =				    Item(s >= 70);
-            itemQueue[Protoss_Nexus] =				    Item(1 + (s >= 50));
+            itemQueue[Protoss_Nexus] =				    Item(1 + (vis(Protoss_Zealot) >= 3));
 
             auto cannonCount =                          int(1 + Units::getEnemyCount(Protoss_Zealot) + Units::getEnemyCount(Protoss_Dragoon)) / 2;
             itemQueue[Protoss_Photon_Cannon] =		    Item(cannonCount * (com(Protoss_Forge) > 0));
@@ -153,7 +153,7 @@ namespace McRave::BuildOrder::Protoss {
             desiredDetection =                          Protoss_Forge;
 
             itemQueue[Protoss_Nexus] =				    Item(1);
-            itemQueue[Protoss_Assimilator] =		    Item(s >= 52);
+            itemQueue[Protoss_Assimilator] =		    Item(s >= 50);
             itemQueue[Protoss_Cybernetics_Core] =	    Item(vis(Protoss_Zealot) >= 5);
             itemQueue[Protoss_Robotics_Facility] =	    Item(com(Protoss_Dragoon) >= 2);
         }
@@ -186,7 +186,7 @@ namespace McRave::BuildOrder::Protoss {
         defaultPvP();
 
         // Openers
-        if (currentOpener == "1Zealot") {
+        if (currentOpener == "1Zealot") {               // ZCoreZ
             zealotLimit =                               vis(Protoss_Cybernetics_Core) > 0 ? max(2, Units::getEnemyCount(Protoss_Zealot)) : (s < 60);
             scout =				                        Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
 
@@ -196,7 +196,7 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Assimilator] =		    Item(s >= 22);
             itemQueue[Protoss_Cybernetics_Core] =	    Item(s >= 34);
         }
-        else if (currentOpener == "2Zealot") {
+        else if (currentOpener == "2Zealot") {          // ZZCore
             zealotLimit =                               2 * (s <= 60);
             scout =				                        vis(Protoss_Gateway) > 0;
 
@@ -263,8 +263,8 @@ namespace McRave::BuildOrder::Protoss {
         else if (currentTransition == "DT") {           // "https://liquipedia.net/starcraft/2_Gate_DT_(vs._Protoss)"
             firstUnit =                                 Protoss_Dark_Templar;
             lockedTransition =                          vis(Protoss_Citadel_of_Adun) > 0;
-            getOpening =                                s <= 52;
-            playPassive =                               s <= 52;
+            getOpening =		                        vis(Protoss_Dark_Templar) < 2;
+            playPassive =		                        vis(Protoss_Dark_Templar) < 2;
 
             desiredDetection =                          Protoss_Forge;
             firstUpgrade =                              UpgradeTypes::None;

@@ -201,11 +201,8 @@ namespace McRave::Command {
                 for (int y = start.y - 12; y < start.y + 12 + walkHeight; y++) {
                     WalkPosition w(x, y);
                     Position p = Position(w) + Position(4,4);
-                    if (!w.isValid() || p.getDistance(unit.getPosition()) > 96.0)
+                    if (!w.isValid() || (!unit.getType().isFlyer() && p.getDistance(unit.getPosition()) > 96.0))
                         continue;
-
-                    if(viablePosition(w, Position(w)))
-                        Visuals::walkBox(w, Colors::Green);
 
                     auto current = score(w);
                     if (current > best && viablePosition(w, Position(w))) {
@@ -681,8 +678,10 @@ namespace McRave::Command {
 
             if (threat == MIN_THREAT
                 || (unit.unit()->isCloaked() && !overlapsDetection(unit.unit(), p, PlayerState::Enemy))
-                || unit.getRole() == Role::Scout)
+                || unit.getRole() == Role::Scout) {
+                unit.circleBlack();
                 return score;
+            }
             return 0.0;
         };
 
@@ -717,14 +716,13 @@ namespace McRave::Command {
         // Low distance, low threat, high clustering
         const auto scoreFunction = [&](WalkPosition w) {
             const auto p =          Position(w) + Position(4, 4);
-            const auto distRatio =  unit.hasTarget() ? max(0.01, (SIM_RADIUS - p.getDistance(unit.getTarget().getPosition()))) / SIM_RADIUS : 1.0;
 
             // Distance is a mix of kiting and retreating
             const auto distance =   defaultDistance(unit, w);
             const auto threat =     defaultThreat(unit, w);
             const auto grouping =   defaultGrouping(unit, w);
             const auto mobility =   defaultMobility(unit, w);
-            const auto score =      distance / (threat * grouping);
+            const auto score =      mobility / (threat * grouping * distance);
             return score;
         };
 

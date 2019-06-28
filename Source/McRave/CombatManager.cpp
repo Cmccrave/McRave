@@ -149,6 +149,7 @@ namespace McRave::Combat {
             const auto enemyReach = unit.getType().isFlyer() ? unit.getTarget().getAirReach() : unit.getTarget().getGroundReach();
             const auto enemyThreat = unit.getType().isFlyer() ? Grids::getEAirThreat(unit.getEngagePosition()) : Grids::getEGroundThreat(unit.getEngagePosition());
             const auto destinationThreat = unit.getType().isFlyer() ? Grids::getEAirThreat(unit.getDestination()) : Grids::getEGroundThreat(unit.getDestination());
+            const auto distToSim = unit.getType().isFlyer() ? unit.getPosition().getDistance(unit.getSimPosition()) : BWEB::Map::getGroundDistance(unit.getPosition(), unit.getSimPosition());
 
             const auto inDanger = [&]() {
                 if (Command::isInDanger(unit, unit.getPosition()) || (Command::isInDanger(unit, unit.getEngagePosition()) && unit.getPosition().getDistance(unit.getEngagePosition()) < SIM_RADIUS))
@@ -209,7 +210,7 @@ namespace McRave::Combat {
                 else if (globalRetreat())
                     unit.setLocalState(LocalState::Retreat);
 
-                else if (unit.getPosition().getDistance(unit.getSimPosition()) <= SIM_RADIUS) {
+                else if (distToSim <= SIM_RADIUS) {
                     if (localRetreat())
                         unit.setLocalState(LocalState::Retreat);
                     else if (localEngage())
@@ -318,6 +319,7 @@ namespace McRave::Combat {
                     }
                 }
             }
+            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Yellow);
         }
 
         void updateDecision(UnitInfo& unit)

@@ -451,7 +451,7 @@ namespace BWEB::Walls
                         const auto centerB = Map::pConvert(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
                         const auto angle2 = Map::getAngle(make_pair(centerB, here));
 
-                        if (abs(abs(angle1) - abs(angle2)) > 45.0)
+                        if (abs(abs(angle1) - abs(angle2)) > 30.0)
                             return false;
                     }
                 }

@@ -34,7 +34,7 @@ namespace McRave::Buildings {
             auto natOrMain = BWEB::Map::getMainTile() == station->getBWEMBase()->Location() || BWEB::Map::getNaturalTile() == station->getBWEMBase()->Location();
 
             // For Shield Batteries, find the closest defensive Block to see if it's best
-            if (building == UnitTypes::Protoss_Shield_Battery) {
+            if (building == UnitTypes::Protoss_Shield_Battery || (building == UnitTypes::Protoss_Photon_Cannon && Strategy::needDetection())) {
                 set<TilePosition> placements;
                 for (auto &block : BWEB::Blocks::getBlocks()) {
                     if (block.isDefensive()) {

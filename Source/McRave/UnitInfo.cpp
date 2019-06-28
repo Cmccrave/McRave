@@ -179,6 +179,7 @@ namespace McRave
 
         // If this is a new order or new command than what we're requesting, we can issue it
         if (newOrder() || newCommand()) {
+            Broodwar->drawLineMap(position, here, Colors::Green);
             if (command == UnitCommandTypes::Move)
                 thisUnit->move(here);
             return true;
