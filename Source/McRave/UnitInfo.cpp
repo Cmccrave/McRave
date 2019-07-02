@@ -73,14 +73,6 @@ namespace McRave
             gState					= GlobalState::None;
             tState					= TransportState::None;
 
-            // Resource held frame
-            if (thisUnit->isCarryingGas() || thisUnit->isCarryingMinerals())
-                resourceHeldFrames = max(resourceHeldFrames, 0) + 1;
-            else if (thisUnit->isGatheringGas() || thisUnit->isGatheringMinerals())
-                resourceHeldFrames = min(resourceHeldFrames, 0) - 1;
-            else
-                resourceHeldFrames = 0;
-
             // Remaining train frame
             remainingTrainFrame = max(0, remainingTrainFrame - 1);
 
@@ -90,7 +82,7 @@ namespace McRave
                     lastAttackFrame = Broodwar->getFrameCount();
             }
 
-            target = std::weak_ptr<UnitInfo>();
+            target = weak_ptr<UnitInfo>();
             updateTarget();
             updateStuckCheck();
         }
@@ -127,6 +119,16 @@ namespace McRave
     }
 
     void UnitInfo::updateStuckCheck() {
+
+        // Check if a worker is being blocked from mining or returning cargo
+        if (thisUnit->isCarryingGas() || thisUnit->isCarryingMinerals())
+            resourceHeldFrames = max(resourceHeldFrames, 0) + 1;
+        else if (thisUnit->isGatheringGas() || thisUnit->isGatheringMinerals())
+            resourceHeldFrames = min(resourceHeldFrames, 0) - 1;
+        else
+            resourceHeldFrames = 0;
+
+        // Check if a unit hasn't moved in a while but is trying to
         if (player != Broodwar->self() || lastPos != position || !thisUnit->isMoving() || thisUnit->getLastCommand().getType() == UnitCommandTypes::Stop || lastAttackFrame == Broodwar->getFrameCount())
             lastMoveFrame = Broodwar->getFrameCount();
     }
@@ -296,11 +298,8 @@ namespace McRave
             || isSpellcaster())
             return false;        
 
-        auto attackAnimation = 0;
-        
-        if (!unitType.isFlyer() && !isHovering())
-            attackAnimation = lastPos != position ? Math::firstAttackAnimationFrames(unitType) : Math::contAttackAnimationFrames(unitType);
-
+        // Units that don't hover or fly have animation times to start and continue attacks
+        auto attackAnimation = !unitType.isFlyer() && !isHovering() ? (lastPos != position ? Math::firstAttackAnimationFrames(unitType) : Math::contAttackAnimationFrames(unitType)) : 0;
         auto cooldown = (target.lock()->getType().isFlyer() ? thisUnit->getAirWeaponCooldown() : thisUnit->getGroundWeaponCooldown()) - Broodwar->getLatencyFrames() - attackAnimation;
 
         if (unitType == UnitTypes::Protoss_Reaver)
@@ -321,7 +320,6 @@ namespace McRave
         auto spellReady = energy >= tech.energyCost();
         auto spellWillBeReady = framesToEnergize < engageDist / (transport.lock() ? transport.lock()->getSpeed() : speed);
 
-
         if (!spellReady && !spellWillBeReady)
             return false;
 
@@ -340,10 +338,8 @@ namespace McRave
 
     bool UnitInfo::canAttackGround()
     {
-        if (groundDamage > 0.0)
-            return true;
-
-        return unitType == UnitTypes::Protoss_High_Templar
+        return groundDamage > 0.0
+            || unitType == UnitTypes::Protoss_High_Templar
             || unitType == UnitTypes::Protoss_Dark_Archon
             || unitType == UnitTypes::Protoss_Carrier
             || unitType == UnitTypes::Terran_Medic
@@ -354,10 +350,8 @@ namespace McRave
 
     bool UnitInfo::canAttackAir()
     {
-        if (airDamage > 0.0)
-            return true;
-
-        return unitType == UnitTypes::Protoss_High_Templar
+        return airDamage > 0.0
+            || unitType == UnitTypes::Protoss_High_Templar
             || unitType == UnitTypes::Protoss_Dark_Archon
             || unitType == UnitTypes::Protoss_Carrier
             || unitType == UnitTypes::Terran_Science_Vessel
