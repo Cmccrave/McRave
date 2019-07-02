@@ -30,9 +30,6 @@ namespace McRave::Stations {
 
     void onStart()
     {
-        // Initialize Stations
-        BWEB::Stations::findStations();
-
         // Add paths to our station network
         for (auto &s1 : BWEB::Stations::getStations()) {
             for (auto &s2 : BWEB::Stations::getStations()) {

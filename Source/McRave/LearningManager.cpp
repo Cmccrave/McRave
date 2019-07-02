@@ -19,45 +19,21 @@ namespace McRave::Learning {
             auto wallOptional = false;
             auto tight = false;
 
-            // Protoss wall unit types
+            // Protoss wall requirements
             if (Broodwar->self()->getRace() == Races::Protoss) {
-                if (build == "2Gate" && opener == "Natural") {
-                    buildings ={ Protoss_Gateway, Protoss_Gateway, Protoss_Pylon };
-                    defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
-                }
-                else if (Players::vZ()) {
-                    tight = true;
-                    buildings ={ Protoss_Gateway, Protoss_Forge, Protoss_Pylon };
-                    defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
-                }
-                else {
-                    int count = max(2, (Util::chokeWidth(BWEB::Map::getNaturalChoke()) / 64) - 1);
-                    buildings.insert(buildings.end(), count, Protoss_Pylon);
-                    defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
-                    wallOptional = true;
-                }
+                if (BWEB::Map::getNaturalArea()->ChokePoints().size() == 1)
+                    return Terrain::getMainWall();
+                if (build == "FFE")
+                    return Terrain::getNaturalWall();
             }
 
-            // Terran wall unit types
-            if (Broodwar->self()->getRace() == Races::Terran) {
-                buildings ={ Terran_Barracks, Terran_Supply_Depot, Terran_Supply_Depot };
-                tight = true;
-            }
+            // Zerg wall requirements
+            if (Broodwar->self()->getRace() == Races::Zerg)
+                return true;
 
-            // Zerg wall unit types
-            if (Broodwar->self()->getRace() == Races::Zerg) {
-                buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber };
-                defenses.insert(defenses.end(), 6, Zerg_Sunken_Colony);
-            }
-
-            if (Broodwar->self()->getRace() == Races::Terran || BWEB::Map::getNaturalArea()->ChokePoints().size() == 1) {
-                if (Terrain::findMainWall(buildings, defenses, tight) || wallOptional)
-                    return true;
-            }
-            else {
-                if (Terrain::findNaturalWall(buildings, defenses, tight) || wallOptional)
-                    return true;
-            }
+            // Terran wall requirements
+            if (Broodwar->self()->getRace() == Races::Terran)
+                return Terrain::getMainWall();
             return false;
         }
 
@@ -167,7 +143,7 @@ namespace McRave::Learning {
 
                 if (build == "2Gate") {
                     if (transition == "DT")
-                        return p ||t;
+                        return p || t;
                     if (transition == "Robo")
                         return p /*|| t*/ || r;
                     if (transition == "Expand")
@@ -228,11 +204,9 @@ namespace McRave::Learning {
                 if (Players::vP())
                     BuildOrder::setLearnedBuild("1GateCore", "1Zealot", "Robo");
                 else if (Players::vZ())
-                    BuildOrder::setLearnedBuild("FFE", "Forge", "NeoBisu");
+                    BuildOrder::setLearnedBuild("2Gate", "Main", "4Gate");
                 else if (Players::vT())
                     BuildOrder::setLearnedBuild("GateNexus", "1Gate", "Standard");
-                else
-                    BuildOrder::setLearnedBuild("2Gate", "Main", "Robo");
             }
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 if (Players::vZ())
@@ -314,9 +288,9 @@ namespace McRave::Learning {
             return;
         }
 
-        if (false) {
+        if (true) {
             if (Broodwar->self()->getRace() == Races::Protoss) {
-                BuildOrder::setLearnedBuild("NexusGate", "Dragoon", "ReaverCarrier");
+                BuildOrder::setLearnedBuild("2Gate", "Proxy", "DT");
                 isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                 return;
             }

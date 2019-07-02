@@ -164,21 +164,17 @@ namespace BWEB::Map
         void findNeutrals()
         {
             // Add overlap for neutrals
-            for (auto &unit : Broodwar->neutral()->getUnits()) {
+            for (auto unit : Broodwar->getNeutralUnits()) {
                 if (unit && unit->exists() && unit->getType().topSpeed() == 0.0)
                     addOverlap(unit->getTilePosition(), unit->getType().tileWidth(), unit->getType().tileHeight());
+                if (unit->getType().isBuilding())
+                    addUsed(unit->getTilePosition(), unit->getType());
             }
         }
     }
 
     void onStart()
     {
-        findNeutrals();
-        findMain();
-        findNatural();
-        findMainChoke();
-        findNaturalChoke();
-
         // Initializes usedGrid and walkGrid
         for (int x = 0; x < Broodwar->mapWidth(); x++) {
             for (int y = 0; y < Broodwar->mapHeight(); y++) {
@@ -205,6 +201,12 @@ namespace BWEB::Map
                 }
             }
         }
+
+        findNeutrals();
+        findMain();
+        findNatural();
+        findMainChoke();
+        findNaturalChoke();
     }
 
     void onUnitDiscover(const Unit unit)
@@ -301,11 +303,29 @@ namespace BWEB::Map
             for (int x = 0; x < Broodwar->mapWidth(); x++) {
                 for (int y = 0; y < Broodwar->mapHeight(); y++) {
                     TilePosition t(x, y);
+                    auto type = usedGrid[x][y];
 
                     if (reserveGrid[x][y] >= 1)
                         Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Black, false);
                     if (overlapGrid[x][y] >= 1)
                         Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Grey, false);
+
+
+                }
+            }
+        }
+
+        bool testingUsed = true;
+        if (testingUsed) {
+            for (int x = 0; x < Broodwar->mapWidth(); x++) {
+                for (int y = 0; y < Broodwar->mapHeight(); y++) {
+                    TilePosition t(x, y);
+                    auto type = usedGrid[x][y];
+
+                    if (type != UnitTypes::None) {
+                        Broodwar->drawTextMap(Position(t) + Position(type.tileWidth() * 16, type.tileHeight() * 16), "%s", type.c_str());
+                        Broodwar->drawBoxMap(Position(t) + Position(4, 4), Position(t) + Position(29, 29), Colors::Grey, true);
+                    }
                 }
             }
         }
@@ -591,8 +611,6 @@ namespace BWEB::Map
 
     bool isPlaceable(UnitType type, const TilePosition location)
     {
-        // Placeable is valid if buildable and not overlapping neutrals
-        // Note: Must check neutrals due to the terrain below them technically being buildable
         const auto creepCheck = type.requiresCreep() ? true : false;
         for (auto x = location.x; x < location.x + type.tileWidth(); x++) {
 

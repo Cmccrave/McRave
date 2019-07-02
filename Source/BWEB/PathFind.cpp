@@ -51,6 +51,9 @@ namespace BWEB
         };
 
         bfsPath(s, t, collision, direction);
+
+        if (this->getDistance() > maxDist * 2)
+            reachable = false;
     }
 
     void Path::createUnitPath(const Position s, const Position t)

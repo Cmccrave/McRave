@@ -115,9 +115,11 @@ namespace BWEB::Map
     /// Returns the angle of a pair of BWAPI::Point
     template <class T>
     double getAngle(std::pair<T, T> p) {
-        auto dy = abs(double(p.first.y - p.second.y));
-        auto dx = abs(double(p.first.x - p.second.x));
-        return (dx > 0.0 ? atan(dy / dx) * 180.0 / 3.14 : 90.0);
+        auto left = p.first.x < p.second.x ? p.first : p.second;
+        auto right = left == p.first ? p.second : p.first;
+        auto dy = (double(left.y - right.y));
+        auto dx = (double(left.x - right.x));
+        return (dx != 0.0 ? atan(dy / dx) * 180.0 / 3.14 : 90.0);
     }
 
     inline BWAPI::Position pConvert(BWAPI::TilePosition t) {

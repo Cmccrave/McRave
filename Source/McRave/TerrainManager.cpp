@@ -3,6 +3,7 @@
 using namespace BWAPI;
 using namespace std;
 using namespace BWEM;
+using namespace UnitTypes;
 
 namespace McRave::Terrain {
 
@@ -20,6 +21,11 @@ namespace McRave::Terrain {
         set<const Base *> allBases;
         BWEB::Wall* mainWall = nullptr;
         BWEB::Wall* naturalWall = nullptr;
+
+        // Wall parameters
+        vector<UnitType> buildings;
+        vector<UnitType> defenses;
+        bool tight = true;
         UnitType tightType = UnitTypes::None;
 
         bool islandMap = false;
@@ -244,6 +250,107 @@ namespace McRave::Terrain {
                 allyTerritory.erase(BWEB::Map::getNaturalArea());
         }
 
+        void findNaturalWall()
+        {
+            if (Broodwar->getGameType() == GameTypes::Use_Map_Settings)
+                return;
+
+            auto openWall = Broodwar->self()->getRace() != Races::Terran;
+            auto choke = BWEB::Map::getNaturalChoke();
+            auto area = BWEB::Map::getNaturalArea();
+
+            naturalWall = BWEB::Walls::createWall(buildings, area, choke, tightType, defenses, openWall, tight);
+        }
+
+        void findMainWall()
+        {
+            if (Broodwar->getGameType() == GameTypes::Use_Map_Settings || Broodwar->self()->getRace() != Races::Terran)
+                return;
+
+            auto openWall = Broodwar->self()->getRace() != Races::Terran;
+            auto choke = BWEB::Map::getMainChoke();
+            auto area = BWEB::Map::getMainArea();
+
+            mainWall = BWEB::Walls::createWall(buildings, area, choke, tightType, defenses, openWall, tight);
+        }
+
+        void findOtherWalls()
+        {
+            // Make a bunch of walls as Zerg for testing
+            if (false && Broodwar->self()->getRace() == Races::Zerg) {
+                for (auto &area : mapBWEM.Areas()) {
+
+                    // Only make walls at gas bases that aren't starting bases
+                    bool invalidBase = false;
+                    for (auto &base : area.Bases()) {
+                        if (base.Starting())
+                            invalidBase = true;
+                    }
+                    if (invalidBase || area.Bases().empty())
+                        continue;
+
+                    const ChokePoint * bestChoke = nullptr;
+                    double distBest = DBL_MAX;
+                    for (auto &choke : area.ChokePoints()) {
+                        auto dist = BWEB::Map::getGroundDistance(Position(choke->Center()), mapBWEM.Center());
+                        if (dist < distBest) {
+                            distBest = dist;
+                            bestChoke = choke;
+                        }
+                    }
+
+                    BWEB::Walls::createWall(buildings, &area, bestChoke, UnitTypes::None, defenses, true, false);
+
+                    if (&area == BWEB::Map::getNaturalArea())
+                        naturalWall = BWEB::Walls::getWall(BWEB::Map::getNaturalArea());
+                }
+            }
+        }
+
+        void initializeWallParameters()
+        {
+            // Figure out what we need to be tight against
+            if (Broodwar->self()->getRace() == Races::Terran && Players::vP())
+                tightType = UnitTypes::Protoss_Zealot;
+            else if (Players::vZ())
+                tightType = UnitTypes::Zerg_Zergling;
+            else
+                tightType = UnitTypes::None;
+
+            // Protoss wall parameters
+            if (Broodwar->self()->getRace() == Races::Protoss) {
+                if (Players::vZ()) {
+                    tight = true;
+                    buildings ={ Protoss_Gateway, Protoss_Forge, Protoss_Pylon };
+                    defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
+                }
+                else {
+                    int count = max(2, (Util::chokeWidth(BWEB::Map::getNaturalChoke()) / 64) - 1);
+                    buildings.insert(buildings.end(), count, Protoss_Pylon);
+                    defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
+                }
+            }
+
+            // Terran wall parameters
+            if (Broodwar->self()->getRace() == Races::Terran) {
+                tight = true;
+                buildings ={ Terran_Barracks, Terran_Supply_Depot, Terran_Supply_Depot };
+            }
+
+            // Zerg wall parameters
+            if (Broodwar->self()->getRace() == Races::Terran) {
+                tight = false;
+                buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber };
+                defenses.insert(defenses.end(), 8, Zerg_Creep_Colony);
+            }
+
+            // Map specific criteria
+            if (Broodwar->mapFileName().find("Destination") != string::npos || Broodwar->mapFileName().find("Hitchhiker") != string::npos || Broodwar->mapFileName().find("Python") != string::npos || Broodwar->mapFileName().find("BlueStorm") != string::npos) {
+                tight = false;
+                tightType = UnitTypes::None;
+            }
+        }
+
         void updateAreas()
         {
             // Squish areas
@@ -275,6 +382,7 @@ namespace McRave::Terrain {
         mapBWEM.EnableAutomaticPathAnalysis();
         mapBWEM.FindBasesForStartingLocations();
         BWEB::Map::onStart();
+        BWEB::Stations::findStations();
 
         // Check if the map is an island map
         for (auto &start : mapBWEM.StartingLocations()) {
@@ -294,13 +402,10 @@ namespace McRave::Terrain {
                 allBases.insert(&base);
         }
 
-        // Figure out what we need to be tight against
-        if (Broodwar->self()->getRace() == Races::Terran && Players::vP())
-            tightType = UnitTypes::Protoss_Zealot;
-        else if (Players::vZ())
-            tightType = UnitTypes::Zerg_Zergling;
-        else
-            tightType = UnitTypes::None;
+        initializeWallParameters();
+        findMainWall();
+        findNaturalWall();
+        findOtherWalls();
     }
 
     void onFrame()
@@ -354,74 +459,6 @@ namespace McRave::Terrain {
             }
         }
         return false;
-    }
-
-    bool findNaturalWall(vector<UnitType>& types, const vector<UnitType>& defenses, bool tight)
-    {
-        if (Broodwar->getGameType() == GameTypes::Use_Map_Settings)
-            return false;
-
-        // Map specific criteria
-        if (Broodwar->mapFileName().find("Destination") != string::npos || Broodwar->mapFileName().find("Python") != string::npos) {
-            tight = false;
-            tightType = UnitTypes::None;
-        }
-
-        // Make a bunch of walls as Zerg for testing
-        if (false && Broodwar->self()->getRace() == Races::Zerg) {
-            for (auto &area : mapBWEM.Areas()) {
-
-                // Only make walls at gas bases that aren't starting bases
-                bool invalidBase = false;
-                for (auto &base : area.Bases()) {
-                    if (base.Starting())
-                        invalidBase = true;
-                }
-                if (invalidBase || area.Bases().empty())
-                    continue;
-
-                const ChokePoint * bestChoke = nullptr;
-                double distBest = DBL_MAX;
-                for (auto &choke : area.ChokePoints()) {
-                    auto dist = BWEB::Map::getGroundDistance(Position(choke->Center()), mapBWEM.Center());
-                    if (dist < distBest) {
-                        distBest = dist;
-                        bestChoke = choke;
-                    }
-                }
-
-                BWEB::Walls::createWall(types, &area, bestChoke, UnitTypes::None, defenses, true, false);
-
-                if (&area == BWEB::Map::getNaturalArea())
-                    naturalWall = BWEB::Walls::getWall(BWEB::Map::getNaturalArea());
-            }
-            return true;
-        }
-
-        else {
-            auto openWall = Broodwar->self()->getRace() != Races::Terran;
-            auto choke = BWEB::Map::getNaturalChoke();
-            auto area = BWEB::Map::getNaturalArea();
-            naturalWall = BWEB::Walls::createWall(types, area, choke, tightType, defenses, openWall, tight);
-            return naturalWall != nullptr;
-        }
-        return false;
-    }
-
-    bool findMainWall(vector<UnitType>& types, const vector<UnitType>& defenses, bool tight)
-    {
-        if (Broodwar->getGameType() == GameTypes::Use_Map_Settings)
-            return false;
-
-        if (BWEB::Walls::getWall(BWEB::Map::getMainArea(), BWEB::Map::getMainChoke()) || BWEB::Walls::getWall(BWEB::Map::getNaturalArea(), BWEB::Map::getMainChoke()))
-            return true;
-
-        auto openWall = Broodwar->self()->getRace() != Races::Terran;
-        auto choke = BWEB::Map::getNaturalChoke();
-        auto area = BWEB::Map::getNaturalArea();
-
-        mainWall = BWEB::Walls::createWall(types, area, choke, tightType, defenses, openWall, tight);
-        return mainWall != nullptr;
     }
 
     bool isInAllyTerritory(TilePosition here)

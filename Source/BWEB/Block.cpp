@@ -321,6 +321,17 @@ namespace BWEB::Blocks
                 return true;
             };
 
+            // Check if there's a blocking neutral between the positions to prevent bad pathing
+            const auto blockedPath = [&](Position source, Position target) {                
+                for (auto &choke : Map::mapBWEM.GetPath(source, target)) {
+                    if (Map::isUsed(TilePosition(choke->Center())) != UnitTypes::None) {
+                        Broodwar << Map::isUsed(TilePosition(choke->Center())).c_str() << endl;
+                        return true;
+                    }
+                }
+                return false;
+            };
+
             // Find the best locations
             TilePosition tileBest = TilePositions::Invalid;
             auto distBest = DBL_MAX;
@@ -337,15 +348,19 @@ namespace BWEB::Blocks
                     const Position blockCenter = Position(topLeft) + Position(160, 96);
 
                     // Consider each start location
-                    auto dist = 0.0;
+                    auto dist = 0.0;                    
                     for (auto &base : enemyStartLocations) {
                         const auto baseCenter = Position(base) + Position(64, 48);
                         dist += Map::getGroundDistance(blockCenter, baseCenter);
+                        if (blockedPath(blockCenter, baseCenter)) {
+                            dist = DBL_MAX;
+                            break;
+                        }
                     }
 
                     // Bonus for placing in a good area
                     if (goodArea(topLeft) && goodArea(botRight))
-                        dist = log(dist);                    
+                        dist = log(dist);
 
                     if (dist < distBest) {
                         distBest = dist;
