@@ -131,6 +131,20 @@ namespace McRave
         // Check if a unit hasn't moved in a while but is trying to
         if (player != Broodwar->self() || lastPos != position || !thisUnit->isMoving() || thisUnit->getLastCommand().getType() == UnitCommandTypes::Stop || lastAttackFrame == Broodwar->getFrameCount())
             lastMoveFrame = Broodwar->getFrameCount();
+
+        // Check if clipped between terrain or buildings
+        if (this->getTilePosition().isValid()) {
+            vector<TilePosition> directions{ {1,0}, {-1,0}, {0, 1}, {0,-1} };
+            bool trapped = true;
+            for (auto &tile : directions) {
+                auto current = this->getTilePosition() + tile;
+                if (BWEB::Map::isUsed(current) == UnitTypes::None && Util::isWalkable(current))
+                    trapped = false;
+            }
+
+            if (trapped)
+                lastMoveFrame = 0;
+        }
     }
 
     void UnitInfo::createDummy(UnitType t) {
@@ -323,7 +337,7 @@ namespace McRave
         if (!spellReady && !spellWillBeReady)
             return false;
 
-        if (engageDist >= 360.0)
+        if (engageDist >= SIM_RADIUS)
             return true;
 
         if (auto currentTarget = target.lock()) {

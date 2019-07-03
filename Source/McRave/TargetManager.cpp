@@ -99,7 +99,7 @@ namespace McRave::Targets {
                     if (!target.getType().isBuilding() && target.getType() != UnitTypes::Terran_Vulture_Spider_Mine && !Command::overlapsActions(unit.unit(), target.getPosition(), TechTypes::Psionic_Storm, PlayerState::Self, 96)) {
 
                         double eGrid = Grids::getEGroundCluster(target.getWalkPosition()) + Grids::getEAirCluster(target.getWalkPosition());
-                        double aGrid = Grids::getAGroundCluster(target.getWalkPosition()) + Grids::getAAirCluster(target.getWalkPosition());
+                        double aGrid = 1.0 + Grids::getAGroundCluster(target.getWalkPosition()) + Grids::getAAirCluster(target.getWalkPosition());
                         double score = eGrid / aGrid;
 
                         thisUnit = priority * score / dist;

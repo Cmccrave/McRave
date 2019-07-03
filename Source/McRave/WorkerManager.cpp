@@ -56,22 +56,22 @@ namespace McRave::Workers {
             if (!worker.getBuildingType().isValid() || !worker.getBuildPosition().isValid())
                 return false;
 
-            // 1) Attack any enemies inside the build area
+            // HACK - Attack any enemies inside the build area
             if (worker.hasTarget() && Util::rectangleIntersect(topLeft, botRight, worker.getTarget().getPosition())) {
                 if (Command::attack(worker)) {}
                 else if (Command::move(worker)) {}
                 return true;
             }
 
-            // 2) Cancel any buildings we don't need
-            else if ((BuildOrder::buildCount(worker.getBuildingType()) <= Broodwar->self()->visibleUnitCount(worker.getBuildingType()) || !Buildings::isBuildable(worker.getBuildingType(), worker.getBuildPosition()))) {
+            // Cancel any buildings we don't need or if the worker is stuck
+            else if (worker.isStuck() || BuildOrder::buildCount(worker.getBuildingType()) <= Broodwar->self()->visibleUnitCount(worker.getBuildingType()) || !Buildings::isBuildable(worker.getBuildingType(), worker.getBuildPosition())) {
                 worker.setBuildingType(UnitTypes::None);
                 worker.setBuildPosition(TilePositions::Invalid);
                 worker.unit()->stop();
                 return true;
             }
 
-            // 3) Move to build
+            // Move to build
             else if (shouldMoveToBuild(worker, worker.getBuildPosition(), worker.getBuildingType())) {
 
                 worker.setDestination(center);

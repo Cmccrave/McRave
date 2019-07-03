@@ -669,7 +669,7 @@ namespace McRave::Buildings {
                     auto here = getBuildLocation(building);
 
                     auto &builder = Util::getClosestUnit(Position(here), PlayerState::Self, [&](auto &u) {
-                        return u.getRole() == Role::Worker && (!u.hasResource() || u.getResource().getType().isMineralField()) && u.getBuildingType() == None;
+                        return u.getRole() == Role::Worker && !u.isStuck() && (!u.hasResource() || u.getResource().getType().isMineralField()) && u.getBuildingType() == None;
                     });
 
                     if (here.isValid() && builder && Workers::shouldMoveToBuild(*builder, here, building)) {

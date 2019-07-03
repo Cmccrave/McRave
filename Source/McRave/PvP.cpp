@@ -148,7 +148,7 @@ namespace McRave::BuildOrder::Protoss {
         }
         else if (currentTransition == "Robo") {         // "https://liquipedia.net/starcraft/2_Gate_Reaver_(vs._Protoss)"            
             lockedTransition =                          vis(Protoss_Robotics_Facility) > 0;
-            getOpening =		                        s < 70;
+            getOpening =		                        s < 130;
             firstUnit =                                 Strategy::enemyPressure() ? Protoss_Reaver : Protoss_Observer;
             desiredDetection =                          Protoss_Forge;
 

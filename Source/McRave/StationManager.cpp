@@ -74,29 +74,33 @@ namespace McRave::Stations {
             for (auto &mineral : newStation->getBWEMBase()->Minerals()) {
 
                 // If mineral no longer exists
-                if (!mineral->Unit())
+                if (!mineral || !mineral->Unit())
                     continue;
 
                 if (Broodwar->getFrameCount() == 0)
                     Resources::storeResource(mineral->Unit());
 
                 auto resource = Resources::getResourceInfo(mineral->Unit());
-                resource->setResourceState(state);
-                resource->setStation(myStations.at(unit));
+                if (resource) {
+                    resource->setResourceState(state);
+                    resource->setStation(myStations.at(unit));
+                }
             }
 
             for (auto &geyser : newStation->getBWEMBase()->Geysers()) {
 
                 // If geyser no longer exists
-                if (!geyser->Unit())
+                if (!geyser || !geyser->Unit())
                     continue;
 
                 if (Broodwar->getFrameCount() == 0)
                     Resources::storeResource(geyser->Unit());                
 
                 auto resource = Resources::getResourceInfo(geyser->Unit());
-                resource->setResourceState(state);
-                resource->setStation(myStations.at(unit));
+                if (resource) {
+                    resource->setResourceState(state);
+                    resource->setStation(myStations.at(unit));
+                }
             }
         }
 

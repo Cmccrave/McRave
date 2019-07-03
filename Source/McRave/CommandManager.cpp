@@ -196,9 +196,11 @@ namespace McRave::Command {
             auto bestPosition = Positions::Invalid;
             auto best = 0.0;
 
+            auto radius = unit.getType().isFlyer() ? 12 : 24 - Grids::getMobility(unit.getPosition());
+
             // Iterate the WalkPositions within the TilePosition
-            for (int x = start.x - 12; x < start.x + 12 + walkWidth; x++) {
-                for (int y = start.y - 12; y < start.y + 12 + walkHeight; y++) {
+            for (int x = start.x - radius; x < start.x + radius + walkWidth; x++) {
+                for (int y = start.y - radius; y < start.y + radius + walkHeight; y++) {
                     WalkPosition w(x, y);
                     Position p = Position(w) + Position(4,4);
                     if (!w.isValid() || (!unit.getType().isFlyer() && p.getDistance(unit.getPosition()) > 96.0))
@@ -422,26 +424,26 @@ namespace McRave::Command {
 
             auto bestPosition = Positions::Invalid;
 
-            Visuals::displayPath(unit.getAttackPath().getTiles());
+            //Visuals::displayPath(unit.getAttackPath().getTiles());
 
-            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Brown);
+            //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Brown);
 
-            // Move to the first point that is at least 5 tiles away if possible
-            if (!unit.getAttackPath().getTiles().empty() && unit.getAttackPath().isReachable()) {
-                bestPosition = Util::findPointOnPath(unit.getAttackPath(), [&](Position here) {
-                    return here.getDistance(unit.getPosition()) >= 64.0;
-                });
+            //// Move to the first point that is at least 5 tiles away if possible
+            //if (!unit.getAttackPath().getTiles().empty() && unit.getAttackPath().isReachable()) {
+            //    bestPosition = Util::findPointOnPath(unit.getAttackPath(), [&](Position here) {
+            //        return here.getDistance(unit.getPosition()) >= 64.0;
+            //    });
 
-                // If not valid, see if the path is less than 128.0 pixels long
-                if (!bestPosition.isValid() && unit.getAttackPath().getDistance() <= 32.0)
-                    bestPosition = unit.getDestination();
+            //    // If not valid, see if the path is less than 128.0 pixels long
+            //    if (!bestPosition.isValid() && unit.getAttackPath().getDistance() <= 32.0)
+            //        bestPosition = unit.getDestination();
 
-                if (bestPosition.isValid()) {
-                    Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Green);
-                    unit.command(UnitCommandTypes::Move, bestPosition, true);
-                    return true;
-                }
-            }
+            //    if (bestPosition.isValid()) {
+            //        Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Green);
+            //        unit.command(UnitCommandTypes::Move, bestPosition, true);
+            //        return true;
+            //    }
+            //}
 
             // Find the best position to move to
             bestPosition = findViablePosition(unit, scoreFunction);
@@ -744,40 +746,40 @@ namespace McRave::Command {
 
         if (canRetreat() && shouldRetreat()) {
 
-            auto bestPosition = Positions::Invalid;
+            //auto bestPosition = Positions::Invalid;
 
             // Find the best position to move to
-            if (unit.getType().isFlyer()) {
-                auto bestPosition = findViablePosition(unit, scoreFunction);
-                if (bestPosition.isValid()) {
-                    unit.command(UnitCommandTypes::Move, bestPosition, true);
-                    return true;
-                }
-            }
-            else {
+            //if (unit.getType().isFlyer()) {
+            //    auto bestPosition = findViablePosition(unit, scoreFunction);
+            //    if (bestPosition.isValid()) {
+            //        unit.command(UnitCommandTypes::Move, bestPosition, true);
+            //        return true;
+            //    }
+            //}
+            //else {
 
-                // Create a retreat path if needed
-                auto closestRetreat = Combat::getClosestRetreatPosition(unit.getPosition());
-                if (unit.canCreateRetreatPath(closestRetreat)) {
-                    BWEB::Path newRetreatPath;
-                    newRetreatPath.createUnitPath(unit.getPosition(), closestRetreat);
-                    unit.setRetreatPath(newRetreatPath);
-                }
+            //    // Create a retreat path if needed
+            //    auto closestRetreat = Combat::getClosestRetreatPosition(unit.getPosition());
+            //    if (unit.canCreateRetreatPath(closestRetreat)) {
+            //        BWEB::Path newRetreatPath;
+            //        newRetreatPath.createUnitPath(unit.getPosition(), closestRetreat);
+            //        unit.setRetreatPath(newRetreatPath);
+            //    }
 
-                // Move to the first point that is at least 5 tiles away if possible
-                if (!unit.getRetreatPath().getTiles().empty() && unit.getRetreatPath().isReachable()) {
-                    bestPosition = Util::findPointOnPath(unit.getRetreatPath(), [&](Position here) {
-                        return here.getDistance(unit.getPosition()) >= 256.0;
-                    });
+            //    // Move to the first point that is at least 5 tiles away if possible
+            //    if (!unit.getRetreatPath().getTiles().empty() && unit.getRetreatPath().isReachable()) {
+            //        bestPosition = Util::findPointOnPath(unit.getRetreatPath(), [&](Position here) {
+            //            return here.getDistance(unit.getPosition()) >= 256.0;
+            //        });
 
-                    if (bestPosition.isValid()) {
-                        unit.command(UnitCommandTypes::Move, bestPosition, true);
-                        return true;
-                    }
-                }
-            }
+            //        if (bestPosition.isValid()) {
+            //            unit.command(UnitCommandTypes::Move, bestPosition, true);
+            //            return true;
+            //        }
+            //    }
+            //}
 
-            bestPosition = findViablePosition(unit, scoreFunction);
+            auto bestPosition = findViablePosition(unit, scoreFunction);
             if (bestPosition.isValid()) {
                 unit.command(UnitCommandTypes::Move, bestPosition, true);
                 return true;

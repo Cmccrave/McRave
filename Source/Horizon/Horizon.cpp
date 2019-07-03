@@ -7,6 +7,30 @@ namespace McRave::Horizon {
 
     namespace {
         bool ignoreSim = false;
+        double minThreshold;
+        double maxThreshold;
+
+        void updateThresholds()
+        {
+            double minWinPercent = 0.5;
+            double maxWinPercent = 1.0;
+
+            if (Players::PvP()) {
+                minWinPercent = 0.6;
+                maxWinPercent = 1.0;
+            }
+            if (Players::PvZ()) {
+                minWinPercent = 0.6;
+                maxWinPercent = 1.0;
+            }
+            if (Players::PvT()) {
+                minWinPercent = 0.4;
+                maxWinPercent = 0.8;
+            }
+
+            minThreshold = max(0.0, log(10000.0 / Broodwar->getFrameCount())) + minWinPercent;
+            maxThreshold = max(0.0, log(10000.0 / Broodwar->getFrameCount())) + maxWinPercent;
+        }
     }
 
     void simulate(UnitInfo& unit)
@@ -16,8 +40,7 @@ namespace McRave::Horizon {
         Need to test deadzones and squeeze factors still.
         */
 
-        auto minThreshold = max(0.0, log(10000.0 / Broodwar->getFrameCount())) + 0.60;
-        auto maxThreshold = max(0.0, log(10000.0 / Broodwar->getFrameCount())) + 1.00;
+        updateThresholds();
         auto enemyLocalGroundStrength = 0.0, allyLocalGroundStrength = 0.0;
         auto enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;
         auto unitToEngage = max(0.0, unit.getEngDist() / (24.0 * unit.getSpeed()));

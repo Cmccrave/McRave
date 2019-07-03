@@ -288,7 +288,7 @@ namespace McRave::Learning {
             return;
         }
 
-        if (true) {
+        if (false) {
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 BuildOrder::setLearnedBuild("2Gate", "Proxy", "DT");
                 isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
