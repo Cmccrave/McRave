@@ -13,7 +13,7 @@ namespace McRave::Workers {
 
         bool closeToResource(UnitInfo& worker)
         {
-            auto close = BWEB::Map::getGroundDistance(worker.getResource().getPosition(), worker.getPosition()) <= 128.0;
+            auto close = BWEB::Map::getGroundDistance(worker.getResource().getPosition(), worker.getPosition()) <= 64.0;
             auto sameArea = mapBWEM.GetArea(worker.getTilePosition()) == mapBWEM.GetArea(worker.getResource().getTilePosition());
             return close || sameArea;
         }
@@ -74,21 +74,27 @@ namespace McRave::Workers {
             // Move to build
             else if (shouldMoveToBuild(worker, worker.getBuildPosition(), worker.getBuildingType())) {
 
-                worker.setDestination(center);
+                worker.setDestination(center);                
 
                 if (worker.getPosition().getDistance(center) >= 160.0) {
-                    BWEB::Path newPath;
-                    newPath.createUnitPath(worker.getPosition(), center);
-                    worker.setAttackPath(newPath);
 
-                    auto threatPosition = Util::findPointOnPath(newPath, [&](Position p) {
-                        return worker.getType().isFlyer() ? Grids::getEGroundThreat(p) : Grids::getEAirThreat(p);
+                    if (worker.canCreateAttackPath(worker.getDestination())) {
+                        BWEB::Path newPath;
+                        newPath.createUnitPath(worker.getPosition(), worker.getDestination());
+                        worker.setAttackPath(newPath);
+                    }
+
+                    auto newDestination = Util::findPointOnPath(worker.getAttackPath(), [&](Position p) {
+                        return p.getDistance(worker.getPosition()) >= 64.0 && Grids::getEGroundThreat(p) == 0.0f;
                     });
 
-                    if (!threatPosition.isValid() || Terrain::isInAllyTerritory(worker.getTilePosition())) {
-                        Command::move(worker);
-                        return true;
-                    }
+                    if (newDestination.isValid())
+                        worker.setDestination(newDestination);
+
+                    Broodwar->drawLineMap(worker.getPosition(), worker.getDestination(), Colors::Yellow);
+
+                    if (Command::move(worker))
+                        return true;                    
                 }
                 else {
                     if (worker.unit()->getOrder() != Orders::PlaceBuilding || worker.unit()->getLastCommand().getType() != UnitCommandTypes::Build)

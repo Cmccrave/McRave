@@ -119,10 +119,9 @@ namespace McRave {
                 (attackPath.getTiles().empty() || attackPath.getTiles().front() != here || attackPath.getTiles().back() != this->getTilePosition());    // ...attack path is empty or not the same
 
             const auto canCreatePath =
-                (!this->hasTransport()																							                        // ...unit has no transport
-                    && this->hasTarget()                                                                                                                // ...unit has a target
+                (!this->hasTransport()																							                        // ...unit has no transport                    
                     && this->getPosition().isValid() && here.isValid()								                                                    // ...both TilePositions are valid
-                    && !this->getType().isFlyer() && !this->getTarget().getType().isFlyer()											                    // ...neither units are flyers
+                    && !this->getType().isFlyer()											                                                            // ...unit is not a flyer
                     && BWEB::Map::isUsed(here) == BWAPI::UnitTypes::None && BWEB::Map::isUsed(this->getTilePosition()) == BWAPI::UnitTypes::None		// ...neither TilePositions overlap buildings
                     && BWEB::Map::isWalkable(this->getTilePosition()) && BWEB::Map::isWalkable(here));	                                                // ...both TilePositions are on walkable tiles  
 

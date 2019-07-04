@@ -155,7 +155,7 @@ namespace McRave::Transports {
                         unit.setDestination(cargo.getPosition());
                         return;
                     }
-                    else if (unit.getTargetedBy().empty()) {
+                    else if (unit.getTargetedBy().empty() && readyToFight(cargo)) {
                         unit.setDestination(cargo.getPosition());
                         shouldMonitor = true;
                     }
@@ -164,16 +164,10 @@ namespace McRave::Transports {
                 // Else if the cargo is loaded
                 else if (cargo.unit()->isLoaded() && cargo.hasTarget() && cargo.getEngagePosition().isValid()) {
 
-                    if (cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.canStartCast(TechTypes::Psionic_Storm))
-                        unit.setDestination(cargo.getEngagePosition());
+                    unit.setDestination(cargo.getEngagePosition());
 
-                    if (readyToUnload(cargo)) {
-                        unit.unit()->unload(cargo.unit());
-                        if (unit.getType() == UnitTypes::Protoss_High_Templar) {
-                            //Command::addAction(cargo.unit(), cargo.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self);
-                            return;
-                        }
-                    }
+                    if (readyToUnload(cargo))
+                        unit.unit()->unload(cargo.unit());                    
                     else if (readyToFight(cargo))
                         unit.setTransportState(TransportState::Engaging);
                     else

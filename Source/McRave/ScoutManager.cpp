@@ -296,9 +296,11 @@ namespace McRave::Scouts {
 
         void updatePath(UnitInfo& unit)
         {
-            BWEB::Path newPath;
-            newPath.createUnitPath(unit.getPosition(), unit.getDestination());
-            unit.setAttackPath(newPath);
+            if (unit.canCreateAttackPath(unit.getDestination())) {
+                BWEB::Path newPath;
+                newPath.createUnitPath(unit.getPosition(), unit.getDestination());
+                unit.setAttackPath(newPath);
+            }
 
             auto newDestination = Util::findPointOnPath(unit.getAttackPath(), [&](Position p) {
                 return p.getDistance(unit.getPosition()) >= 64.0;
@@ -306,9 +308,11 @@ namespace McRave::Scouts {
 
             if (newDestination.isValid())
                 unit.setDestination(newDestination);
+
+            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Yellow);
         }
 
-        constexpr tuple commands{ Command::attack, Command::kite, Command::hunt/*, Command::move*/ };
+        constexpr tuple commands{ Command::attack, Command::kite, Command::hunt };
         void updateDecision(UnitInfo& unit)
         {
             // Convert our commands to strings to display what the unit is doing for debugging

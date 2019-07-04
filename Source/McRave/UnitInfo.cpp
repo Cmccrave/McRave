@@ -133,7 +133,7 @@ namespace McRave
             lastMoveFrame = Broodwar->getFrameCount();
 
         // Check if clipped between terrain or buildings
-        if (this->getTilePosition().isValid()) {
+        if (this->getTilePosition().isValid() && BWEB::Map::isUsed(this->getTilePosition()) == UnitTypes::None && Util::isWalkable(this->getTilePosition())) {
             vector<TilePosition> directions{ {1,0}, {-1,0}, {0, 1}, {0,-1} };
             bool trapped = true;
             for (auto &tile : directions) {
@@ -195,7 +195,6 @@ namespace McRave
 
         // If this is a new order or new command than what we're requesting, we can issue it
         if (newOrder() || newCommand()) {
-            Broodwar->drawLineMap(position, here, Colors::Green);
             if (command == UnitCommandTypes::Move)
                 thisUnit->move(here);
             return true;
@@ -314,7 +313,7 @@ namespace McRave
 
         // Units that don't hover or fly have animation times to start and continue attacks
         auto attackAnimation = !unitType.isFlyer() && !isHovering() ? (lastPos != position ? Math::firstAttackAnimationFrames(unitType) : Math::contAttackAnimationFrames(unitType)) : 0;
-        auto cooldown = (target.lock()->getType().isFlyer() ? thisUnit->getAirWeaponCooldown() : thisUnit->getGroundWeaponCooldown()) - Broodwar->getLatencyFrames() - attackAnimation;
+        auto cooldown = (target.lock()->getType().isFlyer() ? thisUnit->getAirWeaponCooldown() : thisUnit->getGroundWeaponCooldown()) + Broodwar->getLatencyFrames() - attackAnimation;
 
         if (unitType == UnitTypes::Protoss_Reaver)
             cooldown = lastAttackFrame - Broodwar->getFrameCount() + 60;
@@ -337,7 +336,7 @@ namespace McRave
         if (!spellReady && !spellWillBeReady)
             return false;
 
-        if (engageDist >= SIM_RADIUS)
+        if (engageDist >= 64.0)
             return true;
 
         if (auto currentTarget = target.lock()) {

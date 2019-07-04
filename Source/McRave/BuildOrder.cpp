@@ -175,15 +175,16 @@ namespace McRave::BuildOrder
 
         // Choose a tech based on highest unit score
         double highest = 0.0;
-        for (auto &tech : Strategy::getUnitScores()) {
-            if (tech.first == Protoss_Dragoon
-                || tech.first == Protoss_Zealot
-                || tech.first == Protoss_Shuttle)
+        for (auto &[tech,score] : Strategy::getUnitScores()) {
+            if (tech == Protoss_Dragoon
+                || tech == Protoss_Zealot
+                || tech == Protoss_Shuttle
+                || isTechUnit(tech))
                 continue;
 
-            if (tech.second > highest) {
-                highest = tech.second;
-                techUnit = tech.first;
+            if (score > highest) {
+                highest = score;
+                techUnit = tech;
             }
         }
     }

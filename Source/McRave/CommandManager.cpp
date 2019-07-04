@@ -64,7 +64,7 @@ namespace McRave::Command {
         }
 
         double defaultGrouping(UnitInfo& unit, WalkPosition w) {
-            return unit.getType().isFlyer() ? 1.0 / max(0.1f, Grids::getAAirCluster(w)) : log(50.0 + Grids::getAGroundCluster(w));
+            return unit.getType().isFlyer() ? 1.0 / max(0.1f, Grids::getAAirCluster(w)) : log(20.0 + Grids::getAGroundCluster(w));
         }
 
         double defaultDistance(UnitInfo& unit, WalkPosition w) {
@@ -196,14 +196,14 @@ namespace McRave::Command {
             auto bestPosition = Positions::Invalid;
             auto best = 0.0;
 
-            auto radius = unit.getType().isFlyer() ? 12 : 24 - Grids::getMobility(unit.getPosition());
+            auto radius = unit.getType().isFlyer() ? 12 : 16;
 
             // Iterate the WalkPositions within the TilePosition
             for (int x = start.x - radius; x < start.x + radius + walkWidth; x++) {
                 for (int y = start.y - radius; y < start.y + radius + walkHeight; y++) {
                     WalkPosition w(x, y);
                     Position p = Position(w) + Position(4,4);
-                    if (!w.isValid() || (!unit.getType().isFlyer() && p.getDistance(unit.getPosition()) > 96.0))
+                    if (!w.isValid() || (!unit.getType().isFlyer() && p.getDistance(unit.getPosition()) > double(radius*8)))
                         continue;
 
                     auto current = score(w);
@@ -784,6 +784,10 @@ namespace McRave::Command {
                 unit.command(UnitCommandTypes::Move, bestPosition, true);
                 return true;
             }
+            else if (Combat::getClosestRetreatPosition(unit.getPosition()).isValid()) {
+                unit.command(UnitCommandTypes::Move, Combat::getClosestRetreatPosition(unit.getPosition()), true);
+                return true;
+            }
         }
         return false;
     }
@@ -831,11 +835,8 @@ namespace McRave::Command {
             if (unit.getTransportState() == TransportState::Monitoring) {
                 for (auto &c : unit.getAssignedCargo()) {
                     if (auto &cargo = c.lock()) {
-
                         if (!cargo->unit()->isLoaded() && cargo->getPosition().getDistance(p) > 64.0)
                             return 0.0;
-                        //if (unit.getTransportState() == TransportState::Engaging && !Util::isWalkable(*cargo, w) && p.getDistance(cargo->getDestination()) < 64.0)
-                        //    return 0.0;
                     }
                 }
             }
@@ -844,6 +845,9 @@ namespace McRave::Command {
             double distance =   p.getDistance(unit.getDestination()) * p.getDistance(cluster);
             double visited =    1.0;// defaultVisited(unit, w);
             double score =      visited / (threat * distance);
+
+            if (unit.getTransportState() == TransportState::Engaging && Grids::getMobility(p) < 1)
+                score = score / 5.0;
 
             return score;
         };
