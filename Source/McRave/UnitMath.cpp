@@ -9,7 +9,7 @@ using namespace UnitTypes;
 
 namespace McRave::Math {
 
-    double getMaxGroundStrength(UnitInfo& unit)
+    double maxGroundStrength(UnitInfo& unit)
     {
         // HACK: Some hardcoded values
         if (unit.getType() == Terran_Medic)
@@ -36,14 +36,14 @@ namespace McRave::Math {
         return dps * surv * eff;
     }
 
-    double getVisibleGroundStrength(UnitInfo& unit)
+    double visibleGroundStrength(UnitInfo& unit)
     {
         if (unit.unit()->isMaelstrommed() || unit.unit()->isStasised())
             return 0.0;
         return unit.getPercentTotal() * unit.getMaxGroundStrength();
     }
 
-    double getMaxAirStrength(UnitInfo& unit)
+    double maxAirStrength(UnitInfo& unit)
     {
         // HACK: Some hardcoded values
         if (unit.getType() == Protoss_Scarab || unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Zerg_Egg || unit.getType() == Zerg_Larva || unit.getAirDamage() <= 0.0)
@@ -69,14 +69,14 @@ namespace McRave::Math {
         return dps * surv * eff;
     }
 
-    double getVisibleAirStrength(UnitInfo& unit)
+    double visibleAirStrength(UnitInfo& unit)
     {
         if (unit.unit()->isMaelstrommed() || unit.unit()->isStasised())
             return 0.0;
         return unit.getPercentTotal() * unit.getMaxAirStrength();
     }
 
-    double getPriority(UnitInfo& unit)
+    double priority(UnitInfo& unit)
     {
         // According to sheet linked above, these are the maximum values for normalizing
         auto maxGrdDps = 13.884;
@@ -141,7 +141,7 @@ namespace McRave::Math {
         splash = splashModifier(unit);
         damage = unit.getGroundDamage();
         range = log(unit.getGroundRange());
-        cooldown = gWeaponCooldown(unit);
+        cooldown = groundCooldown(unit);
         if (damage <= 0)
             return 0.0;
         return splash * damage * range / cooldown;
@@ -153,14 +153,14 @@ namespace McRave::Math {
         splash = splashModifier(unit);
         damage = unit.getAirDamage();
         range = log(unit.getAirRange());
-        cooldown = aWeaponCooldown(unit);
+        cooldown = airCooldown(unit);
 
         if (damage <= 0)
             return 0.0;
         return splash * damage * range / cooldown;
     }
 
-    double gWeaponCooldown(UnitInfo& unit)
+    double groundCooldown(UnitInfo& unit)
     {
         if (unit.getType() == Terran_Bunker)
             return 15.0;
@@ -179,7 +179,7 @@ namespace McRave::Math {
         return unit.getType().groundWeapon().damageCooldown();
     }
 
-    double aWeaponCooldown(UnitInfo& unit)
+    double airCooldown(UnitInfo& unit)
     {
         if (unit.getType() == Terran_Bunker)
             return 15.0;
@@ -283,6 +283,16 @@ namespace McRave::Math {
         return double(unit.getType().airWeapon().maxRange());
     }
 
+    double groundReach(UnitInfo& unit) 
+    {
+        return unit.getGroundRange() + (unit.getSpeed() * 32.0) + double(unit.getType().width() / 2) + 64.0;
+    }
+
+    double airReach(UnitInfo& unit)
+    {
+        return unit.getAirRange() + (unit.getSpeed() * 32.0) + double(unit.getType().width() / 2) + 64.0;
+    }
+
     double groundDamage(UnitInfo& unit)
     {
         // TODO Check Reaver upgrade type functional here or if needed hardcoding
@@ -319,7 +329,7 @@ namespace McRave::Math {
         return unit.getType().airWeapon().damageAmount() + (unit.getType().airWeapon().damageBonus() * upLevel);
     }
 
-    double speed(UnitInfo& unit)
+    double moveSpeed(UnitInfo& unit)
     {
         double speed = unit.getType().topSpeed();
 
@@ -395,5 +405,10 @@ namespace McRave::Math {
         else
             return WalkPosition(unit->getTilePosition());
         return WalkPositions::None;
+    }
+
+    TilePosition getTilePosition(Unit unit)
+    {
+        return unit->getTilePosition() + TilePosition(unit->getPosition().x % 32 >= 16 ? 0 : 1, unit->getPosition().y % 32 >= 16 ? 0 : 1);
     }
 }

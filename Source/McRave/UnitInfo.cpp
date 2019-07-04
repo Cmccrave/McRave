@@ -18,8 +18,7 @@ namespace McRave
     {
         if (lastTile != this->unit()->getTilePosition()) {
             BWEB::Path emptyPath;
-            this->setRetreatPath(emptyPath);
-            this->setAttackPath(emptyPath);
+            this->setPath(emptyPath);
         }
     }
 
@@ -33,14 +32,14 @@ namespace McRave
             setLastPositions();
             verifyPaths();
 
-            // Update unit positions		
+            // Points		
             position				= thisUnit->getPosition();
             destination				= Positions::Invalid;
             goal                    = Positions::Invalid;
-            tilePosition			= unit()->getTilePosition();
+            tilePosition			= Math::getTilePosition(thisUnit);
             walkPosition			= Math::getWalkPosition(thisUnit);
 
-            // Update unit stats
+            // Stats
             unitType				= t;
             player					= p;
             health					= thisUnit->getHitPoints() > 0 ? thisUnit->getHitPoints() : health;
@@ -51,30 +50,29 @@ namespace McRave
             percentTotal			= t.maxHitPoints() + t.maxShields() > 0 ? double(health + shields) / double(t.maxHitPoints() + t.maxShields()) : 0.0;
             groundRange				= Math::groundRange(*this);
             groundDamage			= Math::groundDamage(*this);
-            groundReach				= groundRange + (speed * 32.0) + double(unitType.width() / 2) + 64.0;
+            groundReach				= Math::groundReach(*this);
             airRange				= Math::airRange(*this);
-            airReach				= airRange + (speed * 32.0) + double(unitType.width() / 2) + 64.0;
+            airReach				= Math::airReach(*this);
             airDamage				= Math::airDamage(*this);
-            speed 					= Math::speed(*this);
+            speed 					= Math::moveSpeed(*this);
             minStopFrame			= Math::stopAnimationFrames(t);
+            visibleGroundStrength	= Math::visibleGroundStrength(*this);
+            maxGroundStrength		= Math::maxGroundStrength(*this);
+            visibleAirStrength		= Math::visibleAirStrength(*this);
+            maxAirStrength			= Math::maxAirStrength(*this);
+            priority				= Math::priority(*this);
+
             burrowed				= (unitType != UnitTypes::Terran_Vulture_Spider_Mine && thisUnit->isBurrowed()) || thisUnit->getOrder() == Orders::Burrowing;
             flying					= thisUnit->isFlying() || thisUnit->getType().isFlyer() || thisUnit->getOrder() == Orders::LiftingOff || thisUnit->getOrder() == Orders::BuildingLiftOff;
 
-            // Update McRave stats
-            visibleGroundStrength	= Math::getVisibleGroundStrength(*this);
-            maxGroundStrength		= Math::getMaxGroundStrength(*this);
-            visibleAirStrength		= Math::getVisibleAirStrength(*this);
-            maxAirStrength			= Math::getMaxAirStrength(*this);
-            priority				= Math::getPriority(*this);
-            lastAttackFrame			= (t != UnitTypes::Protoss_Reaver && (thisUnit->isStartingAttack() || thisUnit->isRepairing())) ? Broodwar->getFrameCount() : lastAttackFrame;
-
-            // Reset states
+            // States
             lState					= LocalState::None;
             gState					= GlobalState::None;
             tState					= TransportState::None;
 
-            // Remaining train frame
-            remainingTrainFrame = max(0, remainingTrainFrame - 1);
+            // Frames
+            remainingTrainFrame =   max(0, remainingTrainFrame - 1);
+            lastAttackFrame			= (t != UnitTypes::Protoss_Reaver && (thisUnit->isStartingAttack() || thisUnit->isRepairing())) ? Broodwar->getFrameCount() : lastAttackFrame;
 
             // BWAPI won't reveal isStartingAttack when hold position is executed if the unit can't use hold position, XIMP uses this on workers
             if (player != Broodwar->self() && unitType.isWorker()) {
@@ -154,7 +152,7 @@ namespace McRave
         airRange				= Math::airRange(*this);
         groundDamage			= Math::groundDamage(*this);
         airDamage				= Math::airDamage(*this);
-        speed 					= Math::speed(*this);
+        speed 					= Math::moveSpeed(*this);
     }
 
     bool UnitInfo::command(UnitCommandType command, Position here, bool overshoot)
@@ -309,7 +307,7 @@ namespace McRave
         if (!target.lock()
             || (groundDamage == 0 && airDamage == 0)
             || isSpellcaster())
-            return false;        
+            return false;
 
         // Units that don't hover or fly have animation times to start and continue attacks
         auto attackAnimation = !unitType.isFlyer() && !isHovering() ? (lastPos != position ? Math::firstAttackAnimationFrames(unitType) : Math::contAttackAnimationFrames(unitType)) : 0;

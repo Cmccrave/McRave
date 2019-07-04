@@ -78,10 +78,10 @@ namespace McRave::Workers {
 
                 if (worker.getPosition().getDistance(center) >= 160.0) {
 
-                    if (worker.canCreateAttackPath(worker.getDestination())) {
+                    if (worker.canCreatePath(worker.getDestination())) {
                         BWEB::Path newPath;
                         newPath.createUnitPath(worker.getPosition(), worker.getDestination());
-                        worker.setAttackPath(newPath);
+                        worker.setPath(newPath);
                     }
 
                     auto newDestination = Util::findPointOnPath(worker.getAttackPath(), [&](Position p) {
@@ -164,14 +164,14 @@ namespace McRave::Workers {
                 // 1) If it's close or same area, don't need a path, set to empty	
                 if (closeToResource(worker)) {
                     BWEB::Path emptyPath;
-                    worker.setAttackPath(emptyPath);
+                    worker.setPath(emptyPath);
                 }
 
                 // 2) If it's far, generate a path
-                else if (worker.canCreateAttackPath(worker.getDestination())) {
+                else if (worker.canCreatePath(worker.getDestination())) {
                     BWEB::Path newPath;
                     newPath.createUnitPath(worker.getPosition(), worker.getDestination());
-                    worker.setAttackPath(newPath);
+                    worker.setPath(newPath);
                 }
 
                 // See if there's any threat on the path
@@ -327,7 +327,7 @@ namespace McRave::Workers {
                 worker.getResource().addTargetedBy(worker.weak_from_this());
 
                 BWEB::Path emptyPath;
-                worker.setAttackPath(emptyPath);
+                worker.setPath(emptyPath);
 
                 // HACK: Update saturation checks
                 Resources::onFrame();

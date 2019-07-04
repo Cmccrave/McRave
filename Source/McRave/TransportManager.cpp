@@ -155,7 +155,7 @@ namespace McRave::Transports {
                         unit.setDestination(cargo.getPosition());
                         return;
                     }
-                    else if (unit.getTargetedBy().empty() && readyToFight(cargo)) {
+                    else if (unit.getTargetedBy().empty()) {
                         unit.setDestination(cargo.getPosition());
                         shouldMonitor = true;
                     }

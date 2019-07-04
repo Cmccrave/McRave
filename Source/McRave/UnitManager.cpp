@@ -65,7 +65,6 @@ namespace McRave::Units {
 
         void updateEnemies()
         {
-            // Enemy
             for (auto &p : Players::getPlayers()) {
                 PlayerInfo &player = p.second;
                 if (!player.isEnemy())
@@ -372,7 +371,7 @@ namespace McRave::Units {
         case PlayerState::Self:
             return myUnits;
         }
-        return set<shared_ptr<UnitInfo>>{};
+        return myUnits;
     }
 
     set<Unit>& getSplashTargets() { return splashTargets; }

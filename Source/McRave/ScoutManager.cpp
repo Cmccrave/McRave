@@ -296,10 +296,10 @@ namespace McRave::Scouts {
 
         void updatePath(UnitInfo& unit)
         {
-            if (unit.canCreateAttackPath(unit.getDestination())) {
+            if (unit.canCreatePath(unit.getDestination())) {
                 BWEB::Path newPath;
                 newPath.createUnitPath(unit.getPosition(), unit.getDestination());
-                unit.setAttackPath(newPath);
+                unit.setPath(newPath);
             }
 
             auto newDestination = Util::findPointOnPath(unit.getAttackPath(), [&](Position p) {

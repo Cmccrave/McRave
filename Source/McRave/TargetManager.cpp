@@ -218,22 +218,22 @@ namespace McRave::Targets {
             if (!unit.hasTarget()) {
                 BWEB::Path newPath;
                 unit.setEngDist(0.0);
-                unit.setAttackPath(newPath);
+                unit.setPath(newPath);
                 return;
             }
             
             if (unit.getTarget().getType().isBuilding() || unit.getTarget().getType().isFlyer() || unit.getTilePosition() == unit.getTarget().getTilePosition()) {
                 BWEB::Path newPath;
                 unit.setEngDist(unit.getPosition().getDistance(unit.getEngagePosition()));
-                unit.setAttackPath(newPath);
+                unit.setPath(newPath);
                 return;
             }
 
             // If should create path, grab one from BWEB
-            if (unit.canCreateAttackPath(unit.getTarget().getTilePosition())) {
+            if (unit.canCreatePath(unit.getTarget().getTilePosition())) {
                 BWEB::Path newPath;
                 newPath.createUnitPath(unit.getPosition(), unit.getTarget().getPosition());
-                unit.setAttackPath(newPath);
+                unit.setPath(newPath);
             }
         }
     }
