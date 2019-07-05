@@ -106,6 +106,9 @@ namespace McRave::Grids
             for (int x = left; x < right; x++) {
                 for (int y = top; y < bottom; y++) {
 
+                    if (!Broodwar->isVisible(TilePosition(x / 4, y / 4)))
+                        continue;
+
                     auto dist = fasterDistGrids(x1, y1, (x * 8) + 4, (y * 8) + 4);
 
                     // Collision

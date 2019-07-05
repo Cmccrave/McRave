@@ -86,7 +86,7 @@ namespace McRave::Command {
         }
 
         double defaultMobility(UnitInfo& unit, WalkPosition w) {
-            return unit.getType().isFlyer() ? 1.0 : log(50.0 + double(Grids::getMobility(w)));
+            return unit.getType().isFlyer() ? 1.0 : log(10.0 + double(Grids::getMobility(w)));
         }
 
         double defaultThreat(UnitInfo& unit, WalkPosition w)
@@ -201,7 +201,7 @@ namespace McRave::Command {
             auto bestPosition = Positions::Invalid;
             auto best = 0.0;
 
-            auto radius = unit.getType().isFlyer() ? 12 : 18 - Grids::getMobility(unit.getPosition());
+            auto radius = unit.getType().isFlyer() ? 12 : 16 - Grids::getMobility(unit.getPosition());
 
             // Iterate the WalkPositions within the TilePosition
             for (int x = start.x - radius; x < start.x + radius + walkWidth; x++) {
