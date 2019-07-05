@@ -186,7 +186,9 @@ namespace McRave::Combat {
                     || (unit.getType() == Terran_Medic && unit.unit()->getEnergy() <= TechTypes::Healing.energyCost())                                                                                                                                                                                                                      // ...unit is a Medic with no energy
                     || (unit.getType() == Zerg_Mutalisk && Grids::getEAirThreat(unit.getEngagePosition()) > 0.0 && unit.getHealth() <= 30)                                                                                                                                                                                                  // ...unit is a low HP Mutalisk attacking a target under air threat
                     //|| (unit.getType().maxShields() > 0 && unit.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && Broodwar->getFrameCount() < 8000)                                                                                                                                                                                        // ...unit is a low shield unit in the early stages of the game - DISABLED
-                    || (unit.getType() == Terran_SCV && Broodwar->getFrameCount() > 12000))                                                                                                                                                                                                                                                 // ...unit is an SCV outside of early game
+                    || (unit.getType() == Terran_SCV && Broodwar->getFrameCount() > 12000)                                                                                                                                                                                                                                                  // ...unit is an SCV outside of early game
+                    || (unit.hasTransport() && !unit.unit()->isLoaded() && unit.getType() == Protoss_High_Templar && unit.canStartCast(TechTypes::Psionic_Storm))
+                    || (unit.hasTransport() && !unit.unit()->isLoaded() && unit.getType() == Protoss_Reaver && unit.canStartAttack()))
                     return true;
                 return false;
             };
@@ -263,68 +265,69 @@ namespace McRave::Combat {
                 unit.setDestination(Terrain::getDefendPosition());
 
             // If target is close, set as destination
-            else if (unit.getLocalState() == LocalState::Attack) {
-                if (unit.getEngagePosition().isValid() && moveToTarget && unit.getTarget().getPosition().isValid() && Grids::getMobility(unit.getEngagePosition()) > 0) {
-                    auto intercept = Util::getInterceptPosition(unit);
-                    if (intercept.getDistance(unit.getTarget().getPosition()) < intercept.getDistance(unit.getPosition()))
-                        unit.setDestination(Util::getInterceptPosition(unit));
-                    else
-                        unit.setDestination(unit.getEngagePosition());
-                }
-
-                // If unit has a goal
-                else if (unit.getGoal().isValid()) {
-
-                    // Find a concave if not in enemy territory
-                    if (!Terrain::isInEnemyTerritory((TilePosition)unit.getGoal())) {
-                        Position bestPosition = Util::getConcavePosition(unit, unit.getGroundRange(), mapBWEM.GetArea(TilePosition(unit.getGoal())));
-                        if (bestPosition.isValid() && (bestPosition != unit.getPosition() || unit.unit()->getLastCommand().getType() == UnitCommandTypes::None))
-                            unit.setDestination(bestPosition);
-                    }
-
-                    // Set as destination if it is
-                    else if (unit.unit()->getLastCommand().getTargetPosition() != unit.getGoal() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
-                        unit.setDestination(unit.getGoal());
-                }
-
-                // If this is a light air unit
-                else if (unit.isLightAir() && Stations::getEnemyStations().size() > 0) {
-                    auto best = INT_MAX;
-                    for (auto &station : Stations::getEnemyStations()) {
-                        auto tile = station.second->getBWEMBase()->Location();
-                        auto current = Grids::lastVisibleFrame(tile);
-                        if (current < best) {
-                            best = current;
-                            unit.setDestination(Position(tile));
-                        }
-                    }
-                }
-
-                // If attack position is valid
-                else if (Terrain::getAttackPosition().isValid())
-                    unit.setDestination(Terrain::getAttackPosition());
-
-                // Resort to going to our target if we have one
-                else if (unit.hasTarget() && unit.getTarget().getPosition().isValid())
-                    unit.setDestination(unit.getTarget().getPosition());
-
-                // TODO: Check if a scout is moving here too
-                // If no target and no enemy bases, move to a base location (random if we have found the enemy once already)
-                else if (unit.unit()->isIdle()) {
-                    if (Terrain::getEnemyStartingPosition().isValid())
-                        unit.setDestination(Terrain::randomBasePosition());
-                    else {
-                        for (auto &start : Broodwar->getStartLocations()) {
-                            if (start.isValid() && !Broodwar->isExplored(start) && !Command::overlapsActions(unit.unit(), Position(start), unit.getType(), PlayerState::Self, 32))
-                                unit.setDestination(Position(start));
-                        }
-                    }
-                }
+            if (unit.getLocalState() == LocalState::Attack && unit.getEngagePosition().isValid() && moveToTarget && unit.getTarget().getPosition().isValid() && Grids::getMobility(unit.getEngagePosition()) > 0) {
+                auto intercept = Util::getInterceptPosition(unit);
+                if (intercept.getDistance(unit.getTarget().getPosition()) < intercept.getDistance(unit.getPosition()))
+                    unit.setDestination(Util::getInterceptPosition(unit));
+                else
+                    unit.setDestination(unit.getEngagePosition());
             }
+
             else if (unit.getLocalState() == LocalState::Retreat) {
                 auto retreat = getClosestRetreatPosition(unit.getPosition());
                 if (retreat.isValid())
                     unit.setDestination(retreat);
+                unit.circleRed();
+                Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Yellow);
+            }
+
+            // If unit has a goal
+            else if (unit.getGoal().isValid()) {
+
+                // Find a concave if not in enemy territory
+                if (!Terrain::isInEnemyTerritory((TilePosition)unit.getGoal())) {
+                    Position bestPosition = Util::getConcavePosition(unit, unit.getGroundRange(), mapBWEM.GetArea(TilePosition(unit.getGoal())));
+                    if (bestPosition.isValid() && (bestPosition != unit.getPosition() || unit.unit()->getLastCommand().getType() == UnitCommandTypes::None))
+                        unit.setDestination(bestPosition);
+                }
+
+                // Set as destination if it is
+                else if (unit.unit()->getLastCommand().getTargetPosition() != unit.getGoal() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Move)
+                    unit.setDestination(unit.getGoal());
+            }
+
+            // If this is a light air unit
+            else if (unit.isLightAir() && Stations::getEnemyStations().size() > 0) {
+                auto best = INT_MAX;
+                for (auto &station : Stations::getEnemyStations()) {
+                    auto tile = station.second->getBWEMBase()->Location();
+                    auto current = Grids::lastVisibleFrame(tile);
+                    if (current < best) {
+                        best = current;
+                        unit.setDestination(Position(tile));
+                    }
+                }
+            }
+
+            // If attack position is valid
+            else if (Terrain::getAttackPosition().isValid())
+                unit.setDestination(Terrain::getAttackPosition());
+
+            // Resort to going to our target if we have one
+            else if (unit.hasTarget() && unit.getTarget().getPosition().isValid())
+                unit.setDestination(unit.getTarget().getPosition());
+
+            // TODO: Check if a scout is moving here too
+            // If no target and no enemy bases, move to a base location (random if we have found the enemy once already)
+            else if (unit.unit()->isIdle()) {
+                if (Terrain::getEnemyStartingPosition().isValid())
+                    unit.setDestination(Terrain::randomBasePosition());
+                else {
+                    for (auto &start : Broodwar->getStartLocations()) {
+                        if (start.isValid() && !Broodwar->isExplored(start) && !Command::overlapsActions(unit.unit(), Position(start), unit.getType(), PlayerState::Self, 32))
+                            unit.setDestination(Position(start));
+                    }
+                }
             }
 
             if (unit.canCreatePath(unit.getDestination())) {
@@ -333,14 +336,14 @@ namespace McRave::Combat {
                 unit.setPath(newPath);
             }
 
-            auto newDestination = Util::findPointOnPath(unit.getAttackPath(), [&](Position p) {
+            auto newDestination = Util::findPointOnPath(unit.getPath(), [&](Position p) {
                 return p.getDistance(unit.getPosition()) >= 64.0;
             });
 
             if (newDestination.isValid())
                 unit.setDestination(newDestination);
 
-            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Yellow);
+            //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Yellow);
         }
 
         void updateDecision(UnitInfo& unit)
@@ -387,7 +390,6 @@ namespace McRave::Combat {
                 updateRole(unit);
 
                 if (unit.getRole() == Role::Combat) {
-                    updateDestination(unit);
                     auto dist = unit.getPosition().getDistance(unit.getDestination());
                     combatUnitsByDistance.emplace(dist, unit);
                 }
@@ -399,6 +401,7 @@ namespace McRave::Combat {
 
                 if (unit.getRole() == Role::Combat) {
                     Horizon::simulate(unit);
+                    updateDestination(unit);
                     updateDecision(unit);
                 }
             }

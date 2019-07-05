@@ -128,12 +128,12 @@ namespace McRave::Command
 
             // TEST - Check if the order of the HT is storming to add as a command
             if (unit.unit()->getOrder() == Orders::CastPsionicStorm && unit.hasTarget())
-                addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self);
+                addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Neutral);
 
             // If close to target and can cast a storm
             if (unit.hasTarget() && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= 400 && unit.canStartCast(TechTypes::Psionic_Storm)) {
                 unit.unit()->useTech(TechTypes::Psionic_Storm, unit.getTarget().unit());
-                addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self);
+                addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Neutral);
                 return true;
             }
 

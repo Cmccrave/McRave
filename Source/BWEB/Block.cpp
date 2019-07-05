@@ -324,10 +324,8 @@ namespace BWEB::Blocks
             // Check if there's a blocking neutral between the positions to prevent bad pathing
             const auto blockedPath = [&](Position source, Position target) {                
                 for (auto &choke : Map::mapBWEM.GetPath(source, target)) {
-                    if (Map::isUsed(TilePosition(choke->Center())) != UnitTypes::None) {
-                        Broodwar << Map::isUsed(TilePosition(choke->Center())).c_str() << endl;
-                        return true;
-                    }
+                    if (Map::isUsed(TilePosition(choke->Center())) != UnitTypes::None)                        
+                        return true;                    
                 }
                 return false;
             };

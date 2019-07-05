@@ -7,6 +7,11 @@ namespace McRave::Command {
 
     namespace {
 
+        void drawActions()
+        {
+            // TODO
+        }
+
         void updateActions()
         {
             // Clear cache
@@ -61,10 +66,10 @@ namespace McRave::Command {
                 if (unit.getType().isDetector())
                     addAction(unit.unit(), unit.getPosition(), unit.getType(), PlayerState::Self);
             }
-        }
+        }               
 
         double defaultGrouping(UnitInfo& unit, WalkPosition w) {
-            return unit.getType().isFlyer() ? 1.0 / max(0.1f, Grids::getAAirCluster(w)) : log(20.0 + Grids::getAGroundCluster(w));
+            return unit.getType().isFlyer() ? 1.0 / max(0.1f, Grids::getAAirCluster(w)) : 1.0;
         }
 
         double defaultDistance(UnitInfo& unit, WalkPosition w) {
@@ -196,7 +201,7 @@ namespace McRave::Command {
             auto bestPosition = Positions::Invalid;
             auto best = 0.0;
 
-            auto radius = unit.getType().isFlyer() ? 12 : 16;
+            auto radius = unit.getType().isFlyer() ? 12 : 18 - Grids::getMobility(unit.getPosition());
 
             // Iterate the WalkPositions within the TilePosition
             for (int x = start.x - radius; x < start.x + radius + walkWidth; x++) {
@@ -424,18 +429,18 @@ namespace McRave::Command {
 
             auto bestPosition = Positions::Invalid;
 
-            //Visuals::displayPath(unit.getAttackPath().getTiles());
+            //Visuals::displayPath(unit.getPath().getTiles());
 
             //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Brown);
 
             //// Move to the first point that is at least 5 tiles away if possible
-            //if (!unit.getAttackPath().getTiles().empty() && unit.getAttackPath().isReachable()) {
-            //    bestPosition = Util::findPointOnPath(unit.getAttackPath(), [&](Position here) {
+            //if (!unit.getPath().getTiles().empty() && unit.getPath().isReachable()) {
+            //    bestPosition = Util::findPointOnPath(unit.getPath(), [&](Position here) {
             //        return here.getDistance(unit.getPosition()) >= 64.0;
             //    });
 
             //    // If not valid, see if the path is less than 128.0 pixels long
-            //    if (!bestPosition.isValid() && unit.getAttackPath().getDistance() <= 32.0)
+            //    if (!bestPosition.isValid() && unit.getPath().getDistance() <= 32.0)
             //        bestPosition = unit.getDestination();
 
             //    if (bestPosition.isValid()) {
@@ -798,11 +803,11 @@ namespace McRave::Command {
             const auto p = Position(w) + Position(4, 4);
             const auto threat = defaultThreat(unit, w);
             const auto distance = unit.hasTarget() ? p.getDistance(unit.getDestination()) * log(p.getDistance(unit.getTarget().getPosition())) : p.getDistance(unit.getDestination());
-            const auto score = 1.0 / (threat * distance);
+            auto score = 1.0 / (threat * distance);
 
             // Try to keep the unit alive if it's cloaked inside detection
             if (unit.unit()->isCloaked() && threat > MIN_THREAT && Command::overlapsDetection(unit.unit(), p, PlayerState::Enemy))
-                return 0.0;
+                score = score / 2.0;
             return score;
         };
 
@@ -842,7 +847,7 @@ namespace McRave::Command {
             }
 
             double threat =     unit.getTransportState() == TransportState::Engaging ? 1.0 : defaultThreat(unit, w);
-            double distance =   p.getDistance(unit.getDestination()) * p.getDistance(cluster);
+            double distance =   unit.getTransportState() == TransportState::Engaging ? p.getDistance(unit.getDestination()) : p.getDistance(unit.getDestination()) * p.getDistance(cluster);
             double visited =    1.0;// defaultVisited(unit, w);
             double score =      visited / (threat * distance);
 
@@ -969,6 +974,7 @@ namespace McRave::Command {
     void onFrame()
     {
         Visuals::startPerfTest();
+        drawActions();
         updateActions();
         Visuals::endPerfTest("Commands");
     }

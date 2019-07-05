@@ -115,7 +115,7 @@ namespace McRave {
             BWAPI::TilePosition here(h);
 
             const auto shouldCreatePath =
-                path.getTiles().empty();                                                                                                                // ...path is empty
+                path.getTiles().empty() || path.getTiles().front() != here || path.getTiles().back() != this->getTilePosition();                        // ...path is empty or not the same
 
             const auto canCreatePath =
                 (!this->hasTransport()																							                        // ...unit has no transport                    
@@ -183,7 +183,7 @@ namespace McRave {
         BWAPI::TilePosition getTilePosition() { return tilePosition; }
         BWAPI::TilePosition getBuildPosition() { return buildPosition; }
         BWAPI::TilePosition getLastTile() { return lastTile; }
-        BWEB::Path& getAttackPath() { return path; }
+        BWEB::Path& getPath() { return path; }
         BWEM::CPPath& getQuickPath() { return quickPath; }
         double getPercentHealth() { return percentHealth; }
         double getPercentShield() { return percentShield; }

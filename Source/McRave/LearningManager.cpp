@@ -25,6 +25,7 @@ namespace McRave::Learning {
                     return Terrain::getMainWall();
                 if (build == "FFE")
                     return Terrain::getNaturalWall();
+                return true;
             }
 
             // Zerg wall requirements

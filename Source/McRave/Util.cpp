@@ -11,10 +11,10 @@ namespace McRave::Util {
             return true;
 
         // Pixel rectangle
-        auto walkWidth = unit.getType().isBuilding() ? unit.getType().tileWidth() * 4 : (int)ceil(unit.getType().width() / 8.0);
-        auto walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : (int)ceil(unit.getType().height() / 8.0);
-        auto topLeft = Position(unit.getWalkPosition());
-        auto botRight = topLeft + Position(walkWidth * 8, walkHeight * 8);
+        const auto walkWidth = unit.getType().isBuilding() ? unit.getType().tileWidth() * 4 : (int)ceil(unit.getType().width() / 8.0);
+        const auto walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : (int)ceil(unit.getType().height() / 8.0);
+        const auto topLeft = Position(unit.getWalkPosition());
+        const auto botRight = topLeft + Position(walkWidth * 8, walkHeight * 8);
 
         // Round up
         int halfW = (walkWidth + 1) / 2;
@@ -23,13 +23,13 @@ namespace McRave::Util {
         for (int x = here.x - halfW; x < here.x + halfW; x++) {
             for (int y = here.y - halfH; y < here.y + halfH; y++) {
                 WalkPosition w(x, y);
-                Position p = Position(w) + Position(4, 4);
+                auto p = Position(w) + Position(4, 4);
                 if (!w.isValid())
                     return false;
 
                 if (!unit.getType().isFlyer()) {
                     if (rectangleIntersect(topLeft, botRight, p))
-                        continue;                    
+                        continue;
                     else if (Grids::getMobility(w) < 1 || Grids::getCollision(w) > 0)
                         return false;
                 }
@@ -126,7 +126,7 @@ namespace McRave::Util {
             auto p = Position(w) + Position(4, 4);
             auto dist = p.getDistance(Position(center));
             auto score = dist + log(p.getDistance(unit.getPosition()));
-            
+
             auto correctArea = (here == Terrain::getDefendPosition() && Terrain::isInAllyTerritory(t)) || (t.isValid() && mapBWEM.GetArea(t) == area);
 
             if (!w.isValid() || !t.isValid() || !p.isValid()

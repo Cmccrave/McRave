@@ -214,7 +214,7 @@ namespace McRave::Scouts {
                 return unit.shared_from_this() == closestScout;
             };
 
-            if (!BuildOrder::firstReady() || BuildOrder::isOpener() || !Terrain::getEnemyStartingPosition().isValid()) {
+            if (Broodwar->getFrameCount() < 10000) {
 
                 // If it's a center of map proxy
                 if ((proxyPosition.isValid() && isClosestAvailableScout(proxyPosition)) || (proxyCheck && isClosestAvailableScout(BWEB::Map::getMainPosition()))) {
@@ -302,7 +302,7 @@ namespace McRave::Scouts {
                 unit.setPath(newPath);
             }
 
-            auto newDestination = Util::findPointOnPath(unit.getAttackPath(), [&](Position p) {
+            auto newDestination = Util::findPointOnPath(unit.getPath(), [&](Position p) {
                 return p.getDistance(unit.getPosition()) >= 64.0;
             });
 

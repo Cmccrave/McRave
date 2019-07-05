@@ -310,7 +310,7 @@ namespace McRave
             return false;
 
         // Units that don't hover or fly have animation times to start and continue attacks
-        auto attackAnimation = !unitType.isFlyer() && !isHovering() ? (lastPos != position ? Math::firstAttackAnimationFrames(unitType) : Math::contAttackAnimationFrames(unitType)) : 0;
+        auto attackAnimation = /*!unitType.isFlyer() && !isHovering() ? (lastPos != position ? */Math::firstAttackAnimationFrames(unitType);// : Math::contAttackAnimationFrames(unitType)) : 0;
         auto cooldown = (target.lock()->getType().isFlyer() ? thisUnit->getAirWeaponCooldown() : thisUnit->getGroundWeaponCooldown()) + Broodwar->getLatencyFrames() - attackAnimation;
 
         if (unitType == UnitTypes::Protoss_Reaver)

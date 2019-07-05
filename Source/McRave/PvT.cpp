@@ -249,10 +249,9 @@ namespace McRave::BuildOrder::Protoss {
             firstUnit =                                 None;
         }
         else if (currentTransition == "ReaverCarrier") {
-            // Actually just running carrier instead
             getOpening =                                s < 120;
             lockedTransition =                          vis(Protoss_Stargate) > 0;
-            firstUnit =                                 Protoss_Carrier;
+            firstUnit =                                 Units::getEnemyCount(Terran_Medic) > 0 && vis(Protoss_Reaver) == 0 ? Protoss_Reaver : Protoss_Carrier;
 
             itemQueue[Protoss_Assimilator] =            Item((s >= 26) + (s >= 68));
             itemQueue[Protoss_Gateway] =                Item((vis(Protoss_Pylon) > 1) + (vis(Protoss_Nexus) > 1));

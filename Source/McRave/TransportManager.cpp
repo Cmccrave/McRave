@@ -92,8 +92,8 @@ namespace McRave::Transports {
 
             // Check if this unit is ready to fight
             const auto readyToFight = [&](UnitInfo& cargo) {
-                auto reaverReady = cargo.getType() == UnitTypes::Protoss_Reaver && cargo.canStartAttack() && cargo.getPosition().getDistance(cargo.getTarget().getPosition()) > 160.0;
-                auto templarReady = cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.canStartCast(TechTypes::Psionic_Storm) && cargo.getPosition().getDistance(cargo.getTarget().getPosition()) > 200.0;
+                auto reaverReady = cargo.getType() == UnitTypes::Protoss_Reaver && cargo.canStartAttack();
+                auto templarReady = cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.canStartCast(TechTypes::Psionic_Storm);
 
                 if (cargo.getLocalState() == LocalState::Retreat || !unit.getTargetedBy().empty() || unit.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT || cargo.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT)
                     return false;

@@ -96,7 +96,7 @@ namespace McRave::Targets {
 
                 // Cluster targeting for AoE units
                 else if (clusterTarget) {
-                    if (!target.getType().isBuilding() && target.getType() != UnitTypes::Terran_Vulture_Spider_Mine && !Command::overlapsActions(unit.unit(), target.getPosition(), TechTypes::Psionic_Storm, PlayerState::Self, 96)) {
+                    if (!target.getType().isBuilding() && target.getType() != UnitTypes::Terran_Vulture_Spider_Mine) {
 
                         double eGrid = Grids::getEGroundCluster(target.getWalkPosition()) + Grids::getEAirCluster(target.getWalkPosition());
                         double aGrid = 1.0 + Grids::getAGroundCluster(target.getWalkPosition()) + Grids::getAAirCluster(target.getWalkPosition());
@@ -144,7 +144,7 @@ namespace McRave::Targets {
                     unitCanAttack = false;
 
                 double widths = unit.getType().tileWidth() * 16.0 + target.getType().tileWidth() * 16.0;
-                double dist = max(32.0, unit.getPosition().getDistance(target.getPosition()) - widths);
+                double dist = max(1.0, unit.getPosition().getDistance(target.getPosition()) - widths);
                 double health = (targetCanAttack ? 1.0 + (1.0*(1.0 - target.getPercentTotal())) : 1.0) + (0.25*target.getTargetedBy().size());
                 double thisUnit = 0.0;
                 
@@ -172,8 +172,8 @@ namespace McRave::Targets {
             }
 
             auto range = unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
-            if (!unit.getAttackPath().getTiles().empty() && !unit.unit()->isLoaded() && !unit.isWithinRange(unit.getTarget())) {
-                auto engagePosition = Util::findPointOnPath(unit.getAttackPath(), [&](Position p) {
+            if (!unit.getPath().getTiles().empty() && !unit.unit()->isLoaded() && !unit.isWithinRange(unit.getTarget())) {
+                auto engagePosition = Util::findPointOnPath(unit.getPath(), [&](Position p) {
                     auto center = p + Position(16, 16);
                     return center.getDistance(unit.getTarget().getPosition()) <= range;
                 }) + Position(16, 16);
@@ -200,10 +200,9 @@ namespace McRave::Targets {
             if (unit.getRole() != Role::Combat && unit.getRole() != Role::Scout)
                 return;
 
-            if (!unit.getAttackPath().isReachable()) {
+            if (!unit.getPath().isReachable())
                 unit.setEngDist(DBL_MAX);
-                //unit.circleGreen();
-            }
+            
             auto dist = unit.getPosition().getDistance(unit.getEngagePosition());
             unit.setEngDist(dist);
         }

@@ -9,14 +9,9 @@
 
 // *** TODO ***
 // Re-power buildings
-// Add stargates gradually in carrier builds
 // Add frame timeouts for allowable enemy build detection
 // DTs get stuck between core/gate/pylon
-// Arbiter positioning
-// Scanned obs just pause
-// Lifted units not targetable
-// Allow retreating inside own territory
-// Remove createWallPath, remove BFS, change to JPS and use incrementing between points to reserve path
+// Units getting stuck moving along paths occasionally
 
 // Scout targets
 // - Check for Nexus when we see no gateways in PvP (find timing for this and check after this time based on last visible frame on our grid)

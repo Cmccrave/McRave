@@ -84,7 +84,7 @@ namespace McRave::Workers {
                         worker.setPath(newPath);
                     }
 
-                    auto newDestination = Util::findPointOnPath(worker.getAttackPath(), [&](Position p) {
+                    auto newDestination = Util::findPointOnPath(worker.getPath(), [&](Position p) {
                         return p.getDistance(worker.getPosition()) >= 64.0 && Grids::getEGroundThreat(p) == 0.0f;
                     });
 
@@ -162,7 +162,7 @@ namespace McRave::Workers {
                 worker.setDestination(pathPoint);
 
                 // 1) If it's close or same area, don't need a path, set to empty	
-                if (closeToResource(worker)) {
+                if (closeToResource(worker) || Grids::getAGroundCluster(worker.getPosition()) > 0.0f) {
                     BWEB::Path emptyPath;
                     worker.setPath(emptyPath);
                 }
@@ -175,13 +175,13 @@ namespace McRave::Workers {
                 }
 
                 // See if there's any threat on the path
-                auto threatPosition = Util::findPointOnPath(worker.getAttackPath(), [&](Position p) {
+                auto threatPosition = Util::findPointOnPath(worker.getPath(), [&](Position p) {
                     return worker.getType().isFlyer() ? Grids::getEGroundThreat(p) : Grids::getEAirThreat(p);
                 });
 
                 // 3) If no threat on path, mine it
                 if (!threatPosition.isValid()) {
-                    if (shouldIssueGather() && closeToResource(worker))
+                    if (shouldIssueGather() && (closeToResource(worker) || Grids::getAGroundCluster(worker.getPosition()) > 0.0f))
                         worker.unit()->gather(worker.getResource().unit());
                     else if (!closeToResource(worker))
                         Command::move(worker);
@@ -213,7 +213,7 @@ namespace McRave::Workers {
 
         void updateAssignment(UnitInfo& worker)
         {
-            auto threatPosition = Util::findPointOnPath(worker.getAttackPath(), [&](Position p) {
+            auto threatPosition = Util::findPointOnPath(worker.getPath(), [&](Position p) {
                 return worker.getType().isFlyer() ? Grids::getEGroundThreat(p) : Grids::getEAirThreat(p);
             });
 
