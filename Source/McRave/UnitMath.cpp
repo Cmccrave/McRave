@@ -84,9 +84,11 @@ namespace McRave::Math {
         auto maxCost = 69.589;
         auto maxSurv = 60.624;
 
-        // Bunch of priority hacks     
-        if (unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Terran_Science_Vessel || unit.getType() == Protoss_Arbiter)
+        // Bunch of priority hacks
+        if (unit.getType() == Terran_Vulture_Spider_Mine)
             return 1.0;
+        if (unit.getType() == Terran_Science_Vessel || unit.getType() == Protoss_Arbiter)
+            return 2.5;
         if ((unit.unit()->isRepairing() || unit.unit()->isConstructing()) && unit.isThreatening())
             return 5.0;
         if (Broodwar->getFrameCount() < 6000 && Strategy::enemyProxy() && unit.getType() == Protoss_Pylon)
@@ -255,7 +257,7 @@ namespace McRave::Math {
             return 160.0;
         }
         if (unit.getType() == Terran_Vulture_Spider_Mine)
-            return 96.0;
+            return 88.0;
         if (unit.getType() == Terran_SCV)
             return 15.0;
         if (unit.getType() == Protoss_Probe || unit.getType() == Zerg_Drone)
@@ -348,51 +350,11 @@ namespace McRave::Math {
     
     int stopAnimationFrames(UnitType unitType) {
         if (unitType == Protoss_Dragoon)
-            return 7;
+            return 10;
+        if (unitType == Protoss_Probe)
+            return 2;
         if (unitType == Zerg_Devourer)
             return 11;
-        return 0;
-    }
-
-    int firstAttackAnimationFrames(UnitType unitType) {
-        if (unitType == Protoss_Probe)
-            return 1;
-        if (unitType == Protoss_Zealot)
-            return 16;
-        if (unitType == Protoss_Dragoon)
-            return 18;
-        if (unitType == Protoss_Dark_Templar)
-            return 19;
-        if (unitType == Protoss_Archon)
-            return 18;
-        if (unitType == Protoss_Reaver)
-            return 3;
-        if (unitType == Protoss_Scout)
-            return 5;
-        if (unitType == Protoss_Corsair)
-            return 17;
-        if (unitType == Protoss_Arbiter)
-            return 10;
-        return 0;
-    }
-
-    int contAttackAnimationFrames(UnitType unitType) {
-        if (unitType == Protoss_Probe)
-            return 1;
-        if (unitType == Protoss_Zealot)
-            return 14;
-        if (unitType == Protoss_Dragoon)
-            return 6;
-        if (unitType == Protoss_Dark_Templar)
-            return 19;
-        if (unitType == Protoss_Archon)
-            return 18;
-        if (unitType == Protoss_Reaver)
-            return 3;
-        if (unitType == Protoss_Scout)
-            return 5;
-        if (unitType == Protoss_Corsair)
-            return 17;
         return 0;
     }
 

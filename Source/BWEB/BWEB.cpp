@@ -211,23 +211,28 @@ namespace BWEB::Map
 
     void onUnitDiscover(const Unit unit)
     {
-        if (!unit
-            || !unit->getType().isBuilding()
-            || unit->isFlying()
-            || unit->getType() == UnitTypes::Resource_Vespene_Geyser)
-            return;
-
         const auto tile = unit->getTilePosition();
         const auto type = unit->getType();
 
+        const auto gameStart = Broodwar->getFrameCount() == 0;
+        const auto okayToAdd = unit->getType().isBuilding()
+            || (gameStart && unit->getType().topSpeed() == 0.0);
+
+        
+
         // Add used tiles
-        for (auto x = tile.x; x < tile.x + type.tileWidth(); x++) {
-            for (auto y = tile.y; y < tile.y + type.tileHeight(); y++) {
-                TilePosition t(x, y);
-                if (!t.isValid())
-                    continue;
-                usedGrid[x][y] = type;
+        if (okayToAdd) {
+            for (auto x = tile.x; x < tile.x + type.tileWidth(); x++) {
+                for (auto y = tile.y; y < tile.y + type.tileHeight(); y++) {
+                    TilePosition t(x, y);
+                    if (!t.isValid())
+                        continue;
+                    usedGrid[x][y] = type;
+                }
             }
+
+            // Clear pathfinding cache
+            Pathfinding::clearCache();
         }
 
         // Add defense count to stations
@@ -255,22 +260,26 @@ namespace BWEB::Map
 
     void onUnitDestroy(const Unit unit)
     {
-        if (!unit
-            || !unit->getType().isBuilding()
-            || unit->isFlying())
-            return;
-
         const auto tile = unit->getTilePosition();
         const auto type = unit->getType();
 
-        // Remove any used tiles
-        for (auto x = tile.x; x < tile.x + type.tileWidth(); x++) {
-            for (auto y = tile.y; y < tile.y + type.tileHeight(); y++) {
-                TilePosition t(x, y);
-                if (!t.isValid())
-                    continue;
-                usedGrid[x][y] = UnitTypes::None;
+        const auto gameStart = Broodwar->getFrameCount() == 0;
+        const auto okayToRemove = unit->getType().isBuilding()
+            || (!gameStart && unit->getType().topSpeed() == 0.0);
+
+        // Add used tiles
+        if (okayToRemove) {
+            for (auto x = tile.x; x < tile.x + type.tileWidth(); x++) {
+                for (auto y = tile.y; y < tile.y + type.tileHeight(); y++) {
+                    TilePosition t(x, y);
+                    if (!t.isValid())
+                        continue;
+                    usedGrid[x][y] = UnitTypes::None;
+                }
             }
+
+            // Clear pathfinding cache
+            Pathfinding::clearCache();
         }
 
         // Remove defense count from stations
@@ -322,10 +331,8 @@ namespace BWEB::Map
                     TilePosition t(x, y);
                     auto type = usedGrid[x][y];
 
-                    if (type != UnitTypes::None) {
-                        Broodwar->drawTextMap(Position(t) + Position(type.tileWidth() * 16, type.tileHeight() * 16), "%s", type.c_str());
-                        Broodwar->drawBoxMap(Position(t) + Position(4, 4), Position(t) + Position(29, 29), Colors::Grey, true);
-                    }
+                    if (type != UnitTypes::None)
+                        Broodwar->drawBoxMap(Position(t) + Position(4, 4), Position(t) + Position(29, 29), Colors::Grey, true);                    
                 }
             }
         }
@@ -376,8 +383,7 @@ namespace BWEB::Map
         };
 
         // Return DBL_MAX if not valid path points or not walkable path points
-        if (!start.isValid() || !end.isValid()
-            || !mapBWEM.GetMiniTile(WalkPosition(start)).Walkable() || !mapBWEM.GetMiniTile(WalkPosition(end)).Walkable())
+        if (!start.isValid() || !end.isValid())
             return DBL_MAX;
 
         // Check if we're in a valid area, if not try to find a different nearby WalkPosition
@@ -395,7 +401,7 @@ namespace BWEB::Map
             return DBL_MAX;
 
         // Find the closest chokepoint node
-        const auto closestNode = [&](const BWEM::ChokePoint * cp) {
+        const auto accurateClosestNode = [&](const BWEM::ChokePoint * cp) {
             auto bestPosition = cp->Center();
             auto bestDist = DBL_MAX;
 
@@ -409,9 +415,28 @@ namespace BWEB::Map
             return Position(bestPosition);
         };
 
+        const auto fastClosestNode = [&](const BWEM::ChokePoint * cp) {
+            auto bestPosition = cp->Center();
+            auto bestDist = DBL_MAX;
+
+            const auto n1 = Position(cp->Pos(cp->end1));
+            const auto n2 = Position(cp->Pos(cp->end2));
+            const auto n3 = Position(cp->Center());
+
+            const auto d1 = n1.getDistance(last);
+            const auto d2 = n2.getDistance(last);
+            const auto d3 = n3.getDistance(last);
+
+            return d1 < d2 ? (d1 < d3 ? n1 : n3) : (d2 < d3 ? n2 : n3);
+        };
+
         // For each chokepoint, add the distance to the closest chokepoint node
+        auto first = true;
         for (auto &cpp : mapBWEM.GetPath(start, end)) {
-            auto next = closestNode(cpp);
+
+            auto large = cpp->Pos(cpp->end1).getDistance(cpp->Pos(cpp->end2)) > 10;
+
+            auto next = first && !large ? accurateClosestNode(cpp) : fastClosestNode(cpp);
             dist += next.getDistance(last);
             last = next;
         }

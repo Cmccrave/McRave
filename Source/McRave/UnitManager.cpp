@@ -98,7 +98,9 @@ namespace McRave::Units {
 
                     // If a unit is threatening our position
                     if (unit.isThreatening()) {
-                        if (unit.getType().isBuilding())
+                        if (unit.getType() == UnitTypes::Protoss_Photon_Cannon)
+                            immThreat += 5.00;
+                        else if (unit.getType().isBuilding())
                             immThreat += 1.50;
                         else if (!unit.getType().isFlyer())
                             immThreat += unit.getVisibleGroundStrength();
@@ -152,6 +154,8 @@ namespace McRave::Units {
                 for (auto &u : player.getUnits()) {
                     UnitInfo &unit = *u;
                     neutralUnits.insert(u);
+
+                    unit.update();
 
                     if (!unit.unit() || !unit.unit()->exists())
                         continue;

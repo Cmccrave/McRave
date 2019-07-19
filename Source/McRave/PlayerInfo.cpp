@@ -56,6 +56,8 @@ namespace McRave
             pState = PlayerState::Enemy;
         else if (thisPlayer->isAlly(BWAPI::Broodwar->self()))
             pState = PlayerState::Ally;
+        else if (thisPlayer->isNeutral())
+            pState = PlayerState::Neutral;
         else
             pState = PlayerState::None;
 

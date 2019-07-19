@@ -13,8 +13,14 @@ namespace McRave::Workers {
 
         bool closeToResource(UnitInfo& worker)
         {
-            auto close = BWEB::Map::getGroundDistance(worker.getResource().getPosition(), worker.getPosition()) <= 64.0;
-            auto sameArea = mapBWEM.GetArea(worker.getTilePosition()) == mapBWEM.GetArea(worker.getResource().getTilePosition());
+            // Great Barrier Reef was causing issues with ground distance to the resource
+            auto pathPoint = Combat::getClosestRetreatPosition(worker.getResource().getPosition());
+
+            if (!pathPoint.isValid())
+                return false;
+
+            auto close = BWEB::Map::getGroundDistance(pathPoint, worker.getPosition()) <= 128.0 || worker.getPosition().getDistance(pathPoint) < 64.0;
+            auto sameArea = mapBWEM.GetArea(worker.getTilePosition()) == mapBWEM.GetArea(TilePosition(pathPoint));
             return close || sameArea;
         }
 
@@ -74,9 +80,21 @@ namespace McRave::Workers {
             // Move to build
             else if (shouldMoveToBuild(worker, worker.getBuildPosition(), worker.getBuildingType())) {
 
-                worker.setDestination(center);                
+                worker.setDestination(center);
 
-                if (worker.getPosition().getDistance(center) >= 160.0) {
+                auto fullyVisible = Broodwar->isVisible(worker.getBuildPosition())
+                    && Broodwar->isVisible(worker.getBuildPosition() + TilePosition(worker.getBuildingType().tileWidth(), 0))
+                    && Broodwar->isVisible(worker.getBuildPosition() + TilePosition(worker.getBuildingType().tileWidth(), worker.getBuildingType().tileHeight()))
+                    && Broodwar->isVisible(worker.getBuildPosition() + TilePosition(0, worker.getBuildingType().tileHeight()));
+
+                if (fullyVisible && worker.getPosition().getDistance(center) < 128.0) {
+                    if (Broodwar->self()->minerals() < worker.getBuildingType().mineralPrice() || Broodwar->self()->gas() < worker.getBuildingType().gasPrice())
+                        worker.unit()->move(Position(worker.getBuildPosition()));
+                    else if (worker.unit()->getOrder() != Orders::PlaceBuilding || worker.unit()->getLastCommand().getType() != UnitCommandTypes::Build)
+                        worker.unit()->build(worker.getBuildingType(), worker.getBuildPosition());
+                    return true;
+                }
+                else {
 
                     if (worker.canCreatePath(worker.getDestination())) {
                         BWEB::Path newPath;
@@ -85,21 +103,17 @@ namespace McRave::Workers {
                     }
 
                     auto newDestination = Util::findPointOnPath(worker.getPath(), [&](Position p) {
-                        return p.getDistance(worker.getPosition()) >= 64.0 && Grids::getEGroundThreat(p) == 0.0f;
+                        return p.getDistance(worker.getPosition()) >= 160.0;
                     });
-
                     if (newDestination.isValid())
                         worker.setDestination(newDestination);
-
-                    Broodwar->drawLineMap(worker.getPosition(), worker.getDestination(), Colors::Yellow);
+                    else if (worker.hasResource() && worker.getPosition().getDistance(worker.getResource().getPosition()) < 160.0) {
+                        worker.command(UnitCommandTypes::Move, Position(worker.getBuildPosition()));
+                        return true;
+                    }
 
                     if (Command::move(worker))
-                        return true;                    
-                }
-                else {
-                    if (worker.unit()->getOrder() != Orders::PlaceBuilding || worker.unit()->getLastCommand().getType() != UnitCommandTypes::Build)
-                        worker.unit()->build(worker.getBuildingType(), worker.getBuildPosition());
-                    return true;
+                        return true;
                 }
             }
             return false;
@@ -161,13 +175,13 @@ namespace McRave::Workers {
                 auto pathPoint = Combat::getClosestRetreatPosition(worker.getResource().getPosition());
                 worker.setDestination(pathPoint);
 
-                // 1) If it's close or same area, don't need a path, set to empty	
+                // If it's close or same area, don't need a path, set to empty	
                 if (closeToResource(worker) || Grids::getAGroundCluster(worker.getPosition()) > 0.0f) {
                     BWEB::Path emptyPath;
                     worker.setPath(emptyPath);
                 }
 
-                // 2) If it's far, generate a path
+                // If it's far, generate a path
                 else if (worker.canCreatePath(worker.getDestination())) {
                     BWEB::Path newPath;
                     newPath.createUnitPath(worker.getPosition(), worker.getDestination());
@@ -179,10 +193,18 @@ namespace McRave::Workers {
                     return worker.getType().isFlyer() ? Grids::getEGroundThreat(p) : Grids::getEAirThreat(p);
                 });
 
-                // 3) If no threat on path, mine it
+                auto newDestination = Util::findPointOnPath(worker.getPath(), [&](Position p) {
+                    return p.getDistance(worker.getPosition()) >= 160.0;
+                });
+                if (newDestination.isValid())
+                    worker.setDestination(newDestination);
+
+                // If no threat on path, mine it
                 if (!threatPosition.isValid()) {
-                    if (shouldIssueGather() && (closeToResource(worker) || Grids::getAGroundCluster(worker.getPosition()) > 0.0f))
-                        worker.unit()->gather(worker.getResource().unit());
+                    if ((closeToResource(worker) || Grids::getAGroundCluster(worker.getPosition()) > 0.0f)) {
+                        if (shouldIssueGather())
+                            worker.unit()->gather(worker.getResource().unit());
+                    }
                     else if (!closeToResource(worker))
                         Command::move(worker);
                     return true;
@@ -278,6 +300,12 @@ namespace McRave::Workers {
                     if (!resourceReady(resource, 3))
                         continue;
                     if (!resource.hasStation() || find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end())
+                        continue;
+
+                    auto closestWorker = Util::getClosestUnit(resource.getPosition(), PlayerState::Self, [&](auto &u) {
+                        return u.getRole() == Role::Worker && (!u.hasResource() || u.getResource().getType().isMineralField());
+                    });
+                    if (worker.shared_from_this() != closestWorker)
                         continue;
 
                     auto dist = resource.getPosition().getDistance(worker.getPosition());

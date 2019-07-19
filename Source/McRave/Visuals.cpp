@@ -145,16 +145,29 @@ namespace McRave::Visuals {
                                 break;
                             }
 
-                            Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, gridColor);
+                            walkBox(w, gridColor);
                         }
                         
                         if (gridSelection == 2) {
                             if (Grids::getEGroundThreat(w) > 0.0)
-                                Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::White);
+                                walkBox(w, Colors::Black);
                         }
                         if (gridSelection == 3) {
                             if (Grids::getEAirThreat(w) > 0.0)
-                                Broodwar->drawCircleMap(Position(WalkPosition(x, y)) + Position(4, 4), 2, Colors::White);
+                                walkBox(w, Colors::Black);
+                        }
+                        if (gridSelection == 4) {
+
+                            if (Grids::getCollision(w) > 0)
+                                walkBox(w, Colors::Black);
+                        }
+                        if (gridSelection == 5) {
+                            if (Grids::getAGroundCluster(w) > 0.0)
+                                walkBox(w, Colors::Black);
+                        }
+                        if (gridSelection == 6) {
+                            if (Grids::getAAirCluster(w) > 0.0)
+                                walkBox(w, Colors::Black);
                         }
                     }
                 }
@@ -287,12 +300,15 @@ namespace McRave::Visuals {
         else if (text == "/grids 1")        gridSelection = 1;
         else if (text == "/grids 2")        gridSelection = 2;
         else if (text == "/grids 3")        gridSelection = 3;
+        else if (text == "/grids 4")        gridSelection = 4;
+        else if (text == "/grids 5")        gridSelection = 5;
+        else if (text == "/grids 6")        gridSelection = 6;
 
         else								Broodwar->sendText("%s", text.c_str());
         return;
     }
 
-    void displayPath(vector<TilePosition> path)
+    void displayPath(vector<TilePosition>& path)
     {
         int color = Broodwar->self()->getColor();
         if (paths && !path.empty()) {

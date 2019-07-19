@@ -85,9 +85,14 @@ namespace McRave
             updateStuckCheck();
         }
 
-        // If this is a spider mine and doesn't have a target, it's still considered burrowed
-        if (unitType == UnitTypes::Terran_Vulture_Spider_Mine && (!thisUnit->exists() || (!target.lock() && thisUnit->getSecondaryOrder() == Orders::Cloak)))
+        // If this is a spider mine and doesn't have a target, it's still considered burrowed, reduce its ground reach
+        if (unitType == UnitTypes::Terran_Vulture_Spider_Mine && (!thisUnit->exists() || (!target.lock() && thisUnit->getSecondaryOrder() == Orders::Cloak))) {
             burrowed = true;
+            groundReach = groundRange;
+        }
+
+        if (player->isEnemy(Broodwar->self()))
+            updateThreatening();
     }
 
     void UnitInfo::updateTarget()
@@ -127,8 +132,8 @@ namespace McRave
             resourceHeldFrames = 0;
 
         // Check if a unit hasn't moved in a while but is trying to
-        if (player != Broodwar->self() || lastPos != position || !thisUnit->isMoving() || thisUnit->getLastCommand().getType() == UnitCommandTypes::Stop || lastAttackFrame == Broodwar->getFrameCount())
-            lastMoveFrame = Broodwar->getFrameCount();
+        if (player != Broodwar->self() || lastTile != tilePosition || !thisUnit->isMoving() || thisUnit->getLastCommand().getType() == UnitCommandTypes::Stop || lastAttackFrame == Broodwar->getFrameCount())
+            lastTileMoveFrame = Broodwar->getFrameCount();
 
         // Check if clipped between terrain or buildings
         if (this->getTilePosition().isValid() && BWEB::Map::isUsed(this->getTilePosition()) == UnitTypes::None && Util::isWalkable(this->getTilePosition())) {
@@ -141,8 +146,12 @@ namespace McRave
             }
 
             if (trapped)
-                lastMoveFrame = 0;
+                lastTileMoveFrame = 0;
         }
+
+        // HACK: Workers are never stuck if they're within range of building
+        if (this->getBuildPosition().isValid() && this->getTilePosition().getDistance(this->getBuildPosition()) < 2)
+            lastTileMoveFrame= Broodwar->getFrameCount();
     }
 
     void UnitInfo::createDummy(UnitType t) {
@@ -155,33 +164,30 @@ namespace McRave
         speed 					= Math::moveSpeed(*this);
     }
 
-    bool UnitInfo::command(UnitCommandType command, Position here, bool overshoot)
+    bool UnitInfo::command(UnitCommandType command, Position here)
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames
         auto frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
         auto cancelAttackRisk = frameSinceAttack <= minStopFrame - Broodwar->getLatencyFrames();
-
-        if (position.getDistance(here) < 64 && command == UnitCommandTypes::Move && role == Role::Combat)
-            Command::addAction(thisUnit, here, unitType, PlayerState::Self);
 
         if (cancelAttackRisk)
             return false;
 
         // Check if this is a new order
         const auto newOrder = [&]() {
-            auto canIssue = Broodwar->getFrameCount() - thisUnit->getLastCommandFrame() > Broodwar->getLatencyFrames();
             auto newOrderPosition = thisUnit->getOrderTargetPosition().getDistance(here) > 96;
-            return canIssue && newOrderPosition;
+            auto newOrderType = thisUnit->getOrder() != Orders::Move;
+            return (newOrderPosition || newOrderType);
         };
 
         // Check if this is a new command
         const auto newCommand = [&]() {
-            auto newCommandPosition = (thisUnit->getLastCommand().getType() != command || thisUnit->getLastCommand().getTargetPosition() != here);
+            auto newCommandPosition = (thisUnit->getLastCommand().getType() != command || thisUnit->getLastCommand().getTargetPosition().getDistance(here) > 32);
             return newCommandPosition;
         };
 
         // Check if we should overshoot for halting distance
-        if (overshoot) {
+        if (unitType.isFlyer()) {
             auto distance = position.getApproxDistance(here);
             auto haltDistance = max({ distance, 32, unitType.haltDistance() / 256 });
 
@@ -191,8 +197,12 @@ namespace McRave
             }
         }
 
+        // Add action and grid movement
+        Command::addAction(thisUnit, here, unitType, PlayerState::Self);
+        Grids::addMovement(WalkPosition(here), unitType);
+
         // If this is a new order or new command than what we're requesting, we can issue it
-        if (newOrder() || newCommand()) {
+        if (newOrder() ||newCommand()) {
             if (command == UnitCommandTypes::Move)
                 thisUnit->move(here);
             return true;
@@ -205,16 +215,14 @@ namespace McRave
         // Check if we need to wait a few frames before issuing a command due to stop frames
         auto frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
         auto cancelAttackRisk = frameSinceAttack <= minStopFrame - Broodwar->getLatencyFrames();
-        Command::addAction(thisUnit, targetUnit.getPosition(), unitType, PlayerState::Self);
 
         if (cancelAttackRisk)
             return false;
 
         // Check if this is a new order
         const auto newOrder = [&]() {
-            auto canIssue = Broodwar->getFrameCount() - thisUnit->getLastCommandFrame() > Broodwar->getLatencyFrames();
-            auto newOrderTarget = thisUnit->getOrderTarget() != targetUnit.unit();
-            return canIssue && newOrderTarget;
+            auto newOrderTarget = thisUnit->getOrderTarget() && thisUnit->getOrderTarget() != targetUnit.unit();
+            return newOrderTarget;
         };
 
         // Check if this is a new command
@@ -223,27 +231,42 @@ namespace McRave
             return newCommandTarget;
         };
 
+        // Add action
+        Command::addAction(thisUnit, targetUnit.getPosition(), unitType, PlayerState::Self);
+
         // If this is a new order or new command than what we're requesting, we can issue it
-        if (newOrder() || newCommand()) {
+        if (newOrder() || newCommand() || command == UnitCommandTypes::Right_Click_Unit) {
             if (command == UnitCommandTypes::Attack_Unit)
                 thisUnit->attack(targetUnit.unit());
-            else if (command == UnitCommandTypes::Right_Click_Unit)
+            else if (command == UnitCommandTypes::Right_Click_Unit) {
                 thisUnit->rightClick(targetUnit.unit());
+                circleBlue();
+            }
             return true;
         }
         return false;
     }
 
-    bool UnitInfo::isThreatening()
+    void UnitInfo::updateThreatening()
     {
-        if ((burrowed || (thisUnit && thisUnit->exists() && thisUnit->isCloaked())) && !Command::overlapsDetection(thisUnit, position, PlayerState::Self) || Stations::getMyStations().size() > 2)
-            return false;
+        if ((burrowed || (thisUnit && thisUnit->exists() && thisUnit->isCloaked())) && !Command::overlapsDetection(thisUnit, position, PlayerState::Self) || Stations::getMyStations().size() > 2) {
+            threatening = false;
+            return;
+        }
 
-        auto temp = Terrain::isInAllyTerritory(tilePosition) || groundRange > 32.0 ? groundReach / 1.5 : groundReach / 5;
+        auto node1 = Position(BWEB::Map::getNaturalChoke()->Pos(BWEB::Map::getNaturalChoke()->end1));
+        auto node2 = Position(BWEB::Map::getNaturalChoke()->Pos(BWEB::Map::getNaturalChoke()->end2));
 
         // Define "close" - TODO: define better
-        auto close = position.getDistance(Terrain::getDefendPosition()) < temp;
         auto atHome = Terrain::isInAllyTerritory(tilePosition);
+        auto atDefense = Terrain::isDefendNatural() ? 
+            Terrain::getDefendPosition().getDistance(this->getPosition()) <= groundRange 
+            || node1.getDistance(this->getPosition()) <= groundRange
+            || node2.getDistance(this->getPosition()) <= groundRange
+
+            : Terrain::getDefendPosition().getDistance(this->getPosition()) < 64.0;
+
+        auto close = (!Strategy::defendChoke() && this->getPosition().getDistance(Terrain::getDefendPosition()) < groundReach / 2) || (Strategy::defendChoke() && (atHome || atDefense));
         auto manner = position.getDistance(Terrain::getMineralHoldPosition()) < 256.0;
         auto exists = thisUnit && thisUnit->exists();
         auto attacked = exists && hasAttackedRecently() && target.lock() && (target.lock()->getType().isBuilding() || target.lock()->getType().isWorker()) && (close || atHome);
@@ -251,7 +274,7 @@ namespace McRave
         auto inRangePieces = Terrain::inRangeOfWallPieces(*this);
         auto inRangeDefenses = Terrain::inRangeOfWallDefenses(*this);
 
-        const auto threatening = [&] {
+        const auto threateningCheck = [&] {
             // Building: blocking any buildings, is close or at home and can attack or is a battery, is a manner building
             if (unitType.isBuilding()) {
                 if (Buildings::overlapsQueue(*this, tilePosition))
@@ -295,28 +318,27 @@ namespace McRave
             return false;
         };
 
-        if (threatening()) {
+        if (threateningCheck()) {
             lastThreateningFrame = Broodwar->getFrameCount();
-            return true;
+            threatening = true;
         }
-        return Broodwar->getFrameCount() - lastThreateningFrame < 50;
+        threatening = Broodwar->getFrameCount() - lastThreateningFrame < 50;
     }
 
     bool UnitInfo::canStartAttack()
     {
-        if (!target.lock()
-            || (groundDamage == 0 && airDamage == 0)
-            || isSpellcaster())
+        if (!this->hasTarget()
+            || (this->getGroundDamage() == 0 && this->getAirDamage() == 0)
+            || this->isSpellcaster())
             return false;
 
         // Units that don't hover or fly have animation times to start and continue attacks
-        auto attackAnimation = /*!unitType.isFlyer() && !isHovering() ? (lastPos != position ? */Math::firstAttackAnimationFrames(unitType);// : Math::contAttackAnimationFrames(unitType)) : 0;
-        auto cooldown = (target.lock()->getType().isFlyer() ? thisUnit->getAirWeaponCooldown() : thisUnit->getGroundWeaponCooldown()) + Broodwar->getLatencyFrames() - attackAnimation;
+        auto cooldown = (this->getTarget().getType().isFlyer() ? this->unit()->getAirWeaponCooldown() : this->unit()->getGroundWeaponCooldown()) - Broodwar->getLatencyFrames();
 
-        if (unitType == UnitTypes::Protoss_Reaver)
-            cooldown = lastAttackFrame - Broodwar->getFrameCount() + 60;
+        if (this->getType() == UnitTypes::Protoss_Reaver)
+            cooldown = this->getLastAttackFrame() - Broodwar->getFrameCount() + 60;
 
-        auto cooldownReady = cooldown <= engageDist / (transport.lock() ? transport.lock()->getSpeed() : speed);
+        auto cooldownReady = cooldown <= this->getEngDist() / (this->hasTransport() ? this->getTransport().getSpeed() : this->getSpeed());
         return cooldownReady;
     }
 
@@ -334,14 +356,14 @@ namespace McRave
         if (!spellReady && !spellWillBeReady)
             return false;
 
-        if (engageDist >= 64.0)
+        if (unitType == UnitTypes::Protoss_High_Templar && engageDist >= 64.0)
             return true;
 
         if (auto currentTarget = target.lock()) {
             auto ground = Grids::getEGroundCluster(currentTarget->getPosition());
             auto air = Grids::getEAirCluster(currentTarget->getPosition());
 
-            if (ground + air >= Util::getCastLimit(tech) || currentTarget->isHidden() || (currentTarget->hasTarget() && currentTarget->getTarget() == *this))
+            if (ground + air >= Util::getCastLimit(tech) || (unitType == UnitTypes::Protoss_High_Templar && currentTarget->isHidden()))
                 return true;
         }
         return false;

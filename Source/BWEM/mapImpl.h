@@ -69,6 +69,7 @@ public:
 
 	int							BaseCount() const override								{ return GetGraph().BaseCount(); }
 	int							ChokePointCount() const override						{ return GetGraph().ChokePoints().size(); }
+    const vector<ChokePoint> &	GetChokePoints(const Area * a, const Area * b) const    { return GetGraph().GetChokePoints(a, b); }
 
 	const vector<BWAPI::TilePosition> &			StartingLocations() const override		{ return m_StartingLocations; }
 

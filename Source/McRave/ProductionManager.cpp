@@ -47,78 +47,78 @@ namespace McRave::Production {
             switch (unit)
             {
                 // Gateway Units
-            case UnitTypes::Enum::Protoss_Zealot:
+            case Enum::Protoss_Zealot:
                 return true;
-            case UnitTypes::Enum::Protoss_Dragoon:
-                return Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Cybernetics_Core) > 0;
-            case UnitTypes::Enum::Protoss_Dark_Templar:
-                return Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Templar_Archives) > 0;
-            case UnitTypes::Enum::Protoss_High_Templar:
-                return Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Templar_Archives) > 0;
+            case Enum::Protoss_Dragoon:
+                return Broodwar->self()->completedUnitCount(Protoss_Cybernetics_Core) > 0;
+            case Enum::Protoss_Dark_Templar:
+                return Broodwar->self()->completedUnitCount(Protoss_Templar_Archives) > 0;
+            case Enum::Protoss_High_Templar:
+                return Broodwar->self()->completedUnitCount(Protoss_Templar_Archives) > 0;
 
                 // Robo Units
-            case UnitTypes::Enum::Protoss_Shuttle:
+            case Enum::Protoss_Shuttle:
                 return true;
-            case UnitTypes::Enum::Protoss_Reaver:
-                return Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Robotics_Support_Bay) > 0;
-            case UnitTypes::Enum::Protoss_Observer:
-                return Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Observatory) > 0;
+            case Enum::Protoss_Reaver:
+                return Broodwar->self()->completedUnitCount(Protoss_Robotics_Support_Bay) > 0;
+            case Enum::Protoss_Observer:
+                return Broodwar->self()->completedUnitCount(Protoss_Observatory) > 0;
 
                 // Stargate Units
-            case UnitTypes::Enum::Protoss_Corsair:
+            case Enum::Protoss_Corsair:
                 return true;
-            case UnitTypes::Enum::Protoss_Scout:
+            case Enum::Protoss_Scout:
                 return true;
-            case UnitTypes::Enum::Protoss_Carrier:
-                return Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Fleet_Beacon) > 0;
-            case UnitTypes::Enum::Protoss_Arbiter:
-                return Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Arbiter_Tribunal) > 0;
+            case Enum::Protoss_Carrier:
+                return Broodwar->self()->completedUnitCount(Protoss_Fleet_Beacon) > 0;
+            case Enum::Protoss_Arbiter:
+                return Broodwar->self()->completedUnitCount(Protoss_Arbiter_Tribunal) > 0;
 
                 // Barracks Units
-            case UnitTypes::Enum::Terran_Marine:
+            case Enum::Terran_Marine:
                 return true;
-            case UnitTypes::Enum::Terran_Firebat:
-                return Broodwar->self()->completedUnitCount(UnitTypes::Terran_Academy) > 0;
-            case UnitTypes::Enum::Terran_Medic:
-                return Broodwar->self()->completedUnitCount(UnitTypes::Terran_Academy) > 0;
-            case UnitTypes::Enum::Terran_Ghost:
-                return Broodwar->self()->completedUnitCount(UnitTypes::Terran_Covert_Ops) > 0;
-            case UnitTypes::Enum::Terran_Nuclear_Missile:
-                return Broodwar->self()->completedUnitCount(UnitTypes::Terran_Covert_Ops) > 0;
+            case Enum::Terran_Firebat:
+                return Broodwar->self()->completedUnitCount(Terran_Academy) > 0;
+            case Enum::Terran_Medic:
+                return Broodwar->self()->completedUnitCount(Terran_Academy) > 0;
+            case Enum::Terran_Ghost:
+                return Broodwar->self()->completedUnitCount(Terran_Covert_Ops) > 0;
+            case Enum::Terran_Nuclear_Missile:
+                return Broodwar->self()->completedUnitCount(Terran_Covert_Ops) > 0;
 
                 // Factory Units
-            case UnitTypes::Enum::Terran_Vulture:
+            case Enum::Terran_Vulture:
                 return true;
-            case UnitTypes::Enum::Terran_Siege_Tank_Tank_Mode:
+            case Enum::Terran_Siege_Tank_Tank_Mode:
                 return building->getAddon() != nullptr ? true : false;
-            case UnitTypes::Enum::Terran_Goliath:
-                return (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Armory) > 0);
+            case Enum::Terran_Goliath:
+                return (Broodwar->self()->completedUnitCount(Terran_Armory) > 0);
 
                 // Starport Units
-            case UnitTypes::Enum::Terran_Wraith:
+            case Enum::Terran_Wraith:
                 return true;
-            case UnitTypes::Enum::Terran_Valkyrie:
-                return (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Armory) > 0 && building->getAddon() != nullptr) ? true : false;
-            case UnitTypes::Enum::Terran_Battlecruiser:
-                return (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Physics_Lab) && building->getAddon() != nullptr) ? true : false;
-            case UnitTypes::Enum::Terran_Science_Vessel:
-                return (Broodwar->self()->completedUnitCount(UnitTypes::Terran_Science_Facility) > 0 && building->getAddon() != nullptr) ? true : false;
-            case UnitTypes::Enum::Terran_Dropship:
+            case Enum::Terran_Valkyrie:
+                return (Broodwar->self()->completedUnitCount(Terran_Armory) > 0 && building->getAddon() != nullptr) ? true : false;
+            case Enum::Terran_Battlecruiser:
+                return (Broodwar->self()->completedUnitCount(Terran_Physics_Lab) && building->getAddon() != nullptr) ? true : false;
+            case Enum::Terran_Science_Vessel:
+                return (Broodwar->self()->completedUnitCount(Terran_Science_Facility) > 0 && building->getAddon() != nullptr) ? true : false;
+            case Enum::Terran_Dropship:
                 return building->getAddon() != nullptr ? true : false;
 
                 // Zerg Units
-            case UnitTypes::Enum::Zerg_Drone:
+            case Enum::Zerg_Drone:
                 return true;
-            case UnitTypes::Enum::Zerg_Zergling:
-                return (Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0);
-            case UnitTypes::Enum::Zerg_Hydralisk:
-                return (Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Hydralisk_Den) > 0);
-            case UnitTypes::Enum::Zerg_Mutalisk:
-                return (Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Spire) > 0);
-            case UnitTypes::Enum::Zerg_Scourge:
-                return (Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Spire) > 0);
-            case UnitTypes::Enum::Zerg_Ultralisk:
-                return (Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Ultralisk_Cavern) > 0);
+            case Enum::Zerg_Zergling:
+                return (Broodwar->self()->completedUnitCount(Zerg_Spawning_Pool) > 0);
+            case Enum::Zerg_Hydralisk:
+                return (Broodwar->self()->completedUnitCount(Zerg_Hydralisk_Den) > 0);
+            case Enum::Zerg_Mutalisk:
+                return (Broodwar->self()->completedUnitCount(Zerg_Spire) > 0);
+            case Enum::Zerg_Scourge:
+                return (Broodwar->self()->completedUnitCount(Zerg_Spire) > 0);
+            case Enum::Zerg_Ultralisk:
+                return (Broodwar->self()->completedUnitCount(Zerg_Ultralisk_Cavern) > 0);
             }
             return false;
         }
@@ -176,15 +176,20 @@ namespace McRave::Production {
             bool needReavers = false;
             bool needShuttles = false;
 
-            // Determine whether we want reavers or shuttles;
+            // Determine whether we want reavers or shuttles
             if (!Strategy::needDetection()) {
-                if ((Terrain::isIslandMap() && vis(unit) < 2 * vis(UnitTypes::Protoss_Nexus))
-                    || vis(UnitTypes::Protoss_Reaver) > (vis(UnitTypes::Protoss_Shuttle) * 2)
-                    || vis(Protoss_High_Templar) > vis(Protoss_Shuttle) * 4
-                    || (Players::vP() && vis(UnitTypes::Protoss_Shuttle) == 0 && com(UnitTypes::Protoss_Observatory) == 0))
+                if ((Terrain::isIslandMap() && vis(unit) < 2 * vis(Protoss_Nexus))
+                    || vis(Protoss_Reaver) > vis(Protoss_Shuttle) * 2
+                    || vis(Protoss_High_Templar) > vis(Protoss_Shuttle) * 4)
                     needShuttles = true;
-                if (!Terrain::isIslandMap() || (vis(UnitTypes::Protoss_Reaver) <= (vis(UnitTypes::Protoss_Shuttle) * 2)))
+                if (!Terrain::isIslandMap() || (vis(Protoss_Reaver) <= (vis(Protoss_Shuttle) * 2)))
                     needReavers = true;
+            }
+
+            // Try to make a shuttle first versus a fast expand
+            if (Strategy::enemyFastExpand() && vis(Protoss_Shuttle) == 0 && vis(Protoss_Reaver) == 0 && vis(Protoss_High_Templar) == 0) {
+                needShuttles = true;
+                needReavers = false;
             }
 
             switch (unit)
@@ -205,7 +210,7 @@ namespace McRave::Production {
             case Protoss_Reaver:
                 return needReavers;
             case Protoss_Observer:
-                return vis(unit) < 1 + (Players::getSupply(PlayerState::Self) / 100);
+                return Broodwar->getFrameCount() <= 13000 ? vis(unit) < 1 : vis(unit) < 1 + (Players::getSupply(PlayerState::Self) / 100);
 
                 // Stargate Units
             case Protoss_Corsair:
@@ -286,13 +291,13 @@ namespace McRave::Production {
 
                     // Energy upgrades
                 case Khaydarin_Amulet:
-                    return (vis(UnitTypes::Protoss_Assimilator) >= 4 && Broodwar->self()->hasResearched(TechTypes::Psionic_Storm) && Broodwar->self()->gas() >= 750);
+                    return (vis(Protoss_Assimilator) >= 4 && Broodwar->self()->hasResearched(TechTypes::Psionic_Storm) && Broodwar->self()->gas() >= 750);
                 case Khaydarin_Core:
                     return true;
 
                     // Range upgrades
                 case Singularity_Charge:
-                    return vis(UnitTypes::Protoss_Dragoon) >= 1;
+                    return vis(Protoss_Dragoon) >= 1;
 
                     // Sight upgrades
                 case Apial_Sensors:
@@ -310,13 +315,13 @@ namespace McRave::Production {
 
                     // Speed upgrades
                 case Gravitic_Drive:
-                    return vis(UnitTypes::Protoss_Shuttle) > 0;
+                    return vis(Protoss_Shuttle) > 0 && (vis(Protoss_High_Templar) > 0 || vis(Protoss_Reaver) >= 2);
                 case Gravitic_Thrusters:
-                    return vis(UnitTypes::Protoss_Scout) > 0;
+                    return vis(Protoss_Scout) > 0;
                 case Gravitic_Boosters:
                     return (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
                 case Leg_Enhancements:
-                    return (vis(UnitTypes::Protoss_Nexus) >= 2);
+                    return (vis(Protoss_Nexus) >= 2);
 
                     // Ground unit upgrades
                 case Protoss_Ground_Weapons:
@@ -328,7 +333,7 @@ namespace McRave::Production {
 
                     // Air unit upgrades
                 case Protoss_Air_Weapons:
-                    return (vis(UnitTypes::Protoss_Corsair) > 0 || vis(UnitTypes::Protoss_Scout) > 0 || (vis(Protoss_Stargate) > 0 && BuildOrder::isTechUnit(Protoss_Carrier) && Players::vT()));
+                    return (vis(Protoss_Corsair) > 0 || vis(Protoss_Scout) > 0 || (vis(Protoss_Stargate) > 0 && BuildOrder::isTechUnit(Protoss_Carrier) && Players::vT()));
                 case Protoss_Air_Armor:
                     return Broodwar->self()->getUpgradeLevel(Protoss_Air_Weapons) > Broodwar->self()->getUpgradeLevel(Protoss_Air_Armor);
                 }
@@ -343,7 +348,7 @@ namespace McRave::Production {
 
                     // Range upgrades
                 case Charon_Boosters:
-                    return Strategy::getUnitScore(UnitTypes::Terran_Goliath) > 1.00;
+                    return Strategy::getUnitScore(Terran_Goliath) > 1.00;
                 case U_238_Shells:
                     return Broodwar->self()->hasResearched(TechTypes::Stim_Packs);
 
@@ -437,9 +442,9 @@ namespace McRave::Production {
                 case Stasis_Field:
                     return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Khaydarin_Core) > 0;
                 case Recall:
-                    return (Broodwar->self()->hasResearched(TechTypes::Stasis_Field) > 0 && Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
+                    return (Broodwar->self()->hasResearched(TechTypes::Stasis_Field) && Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
                 case Disruption_Web:
-                    return (vis(UnitTypes::Protoss_Corsair) >= 10);
+                    return (vis(Protoss_Corsair) >= 10);
                 }
             }
 
@@ -450,13 +455,13 @@ namespace McRave::Production {
                 case Spider_Mines:
                     return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Ion_Thrusters) > 0 || Broodwar->self()->isUpgrading(UpgradeTypes::Ion_Thrusters);
                 case Tank_Siege_Mode:
-                    return Broodwar->self()->hasResearched(TechTypes::Spider_Mines) || Broodwar->self()->isResearching(TechTypes::Spider_Mines) || vis(UnitTypes::Terran_Siege_Tank_Tank_Mode) > 0;
+                    return Broodwar->self()->hasResearched(TechTypes::Spider_Mines) || Broodwar->self()->isResearching(TechTypes::Spider_Mines) || vis(Terran_Siege_Tank_Tank_Mode) > 0;
                 case Cloaking_Field:
-                    return vis(UnitTypes::Terran_Wraith) >= 2;
+                    return vis(Terran_Wraith) >= 2;
                 case Yamato_Gun:
-                    return vis(UnitTypes::Terran_Battlecruiser) >= 0;
+                    return vis(Terran_Battlecruiser) >= 0;
                 case Personnel_Cloaking:
-                    return vis(UnitTypes::Terran_Ghost) >= 2;
+                    return vis(Terran_Ghost) >= 2;
                 }
             }
 
@@ -481,24 +486,30 @@ namespace McRave::Production {
         {
             auto offset = 16;
             auto best = 0.0;
-            auto bestType = UnitTypes::None;
+            auto bestType = None;
 
             const auto scoreUnit = [&](UnitType type) {
-                const auto mineralCost = Broodwar->self()->minerals() == 0 || type.mineralPrice() == 0 ? 0.5 : double(Broodwar->self()->minerals() - type.mineralPrice() - (!BuildOrder::isTechUnit(type) * reservedMineral) - Buildings::getQueuedMineral()) / double(Broodwar->self()->minerals());
-                const auto gasCost = Broodwar->self()->gas() == 0 || type.gasPrice() == 0 ? 0.5 : double(Broodwar->self()->gas() - type.gasPrice() - (!BuildOrder::isTechUnit(type) * reservedGas) - Buildings::getQueuedGas()) / double(Broodwar->self()->gas());
+                auto mineralCost = Broodwar->self()->minerals() == 0 || type.mineralPrice() == 0 ? 1.0 : double(Broodwar->self()->minerals() - type.mineralPrice() - (!BuildOrder::isTechUnit(type) * reservedMineral) - Buildings::getQueuedMineral()) / double(Broodwar->self()->minerals());
+                auto gasCost = Broodwar->self()->gas() == 0 || type.gasPrice() == 0 ? 1.0 : double(Broodwar->self()->gas() - type.gasPrice() - (!BuildOrder::isTechUnit(type) * reservedGas) - Buildings::getQueuedGas()) / double(Broodwar->self()->gas());
+
+                // HACK: Prevent them going negative
+                mineralCost = max(0.01, mineralCost);
+                gasCost = max(0.01, gasCost);
 
                 const auto resourceScore = clamp(gasCost * mineralCost, 0.01, 1.0);
                 const auto strategyScore = clamp(Strategy::getUnitScore(type) / double(max(1, vis(type))), 0.01, 1.0);
                 return resourceScore * strategyScore;
+
+                Broodwar << type.c_str() << ": " << resourceScore << endl;
             };
 
-            if (building.getType() == UnitTypes::Zerg_Larva && BuildOrder::buildCount(Zerg_Overlord) > vis(Zerg_Overlord) + trainedThisFrame[Zerg_Overlord]) {
+            if (building.getType() == Zerg_Larva && BuildOrder::buildCount(Zerg_Overlord) > vis(Zerg_Overlord) + trainedThisFrame[Zerg_Overlord]) {
                 building.unit()->morph(Zerg_Overlord);
                 trainedThisFrame[Zerg_Overlord]++;
                 return;
             }
 
-            if (building.getType() == UnitTypes::Zerg_Larva && Buildings::overlapsQueue(building, building.getTilePosition())) {
+            if (building.getType() == Zerg_Larva && Buildings::overlapsQueue(building, building.getTilePosition())) {
                 building.unit()->stop();
                 return;
             }
@@ -506,8 +517,16 @@ namespace McRave::Production {
             for (auto &type : building.getType().buildsWhat()) {
                 const auto value = scoreUnit(type);
 
+                /*if (type == Protoss_Dark_Templar) {
+                    if (isCreateable(building.unit(), type))
+                        Broodwar << "C" << endl;
+                    if (isSuitable(type))
+                        Broodwar << "S" << endl;
+                    Broodwar << value << endl;
+                }*/
+
                 // If we teched to DTs, try to create as many as possible
-                if (type == UnitTypes::Protoss_Dark_Templar && BuildOrder::getTechList().size() == 1 && isCreateable(building.unit(), type) && isSuitable(type)) {
+                if (type == Protoss_Dark_Templar && BuildOrder::getTechList().size() == 1 && isCreateable(building.unit(), type) && isSuitable(type)) {
                     best = DBL_MAX;
                     bestType = type;
                 }
@@ -515,7 +534,7 @@ namespace McRave::Production {
                     best = DBL_MAX;
                     bestType = type;
                 }
-                else if (type == UnitTypes::Protoss_Observer && isCreateable(building.unit(), type) && isSuitable(type) && vis(type) < Broodwar->self()->completedUnitCount(UnitTypes::Protoss_Nexus)) {
+                else if (type == Protoss_Observer && isCreateable(building.unit(), type) && isSuitable(type) && vis(type) < Broodwar->self()->completedUnitCount(Protoss_Nexus)) {
                     best = DBL_MAX;
                     bestType = type;
                 }
@@ -525,7 +544,7 @@ namespace McRave::Production {
                 }
             }
 
-            if (bestType != UnitTypes::None) {
+            if (bestType != None) {
 
                 // If we can afford it, train it
                 if (isAffordable(bestType)) {
@@ -543,7 +562,7 @@ namespace McRave::Production {
 
                 // Else store a zero value idle
                 else
-                    idleProduction[building.unit()] = UnitTypes::None;
+                    idleProduction[building.unit()] = None;
             }
         }
 
@@ -606,6 +625,9 @@ namespace McRave::Production {
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &building = *u;
 
+                if (building.getRole() == Role::Production && building.unit()->getTrainingQueue().empty() && building.getRemainingTrainFrames() >= Broodwar->getFrameCount())
+                    building.circleBlue();
+
                 if (!building.unit()
                     || building.getRole() != Role::Production
                     || !building.unit()->isCompleted()
@@ -630,7 +652,8 @@ namespace McRave::Production {
                             building.unit()->buildAddon(unit);
                             continue;
                         }
-                        if (!BuildOrder::isWorkerCut() && unit.isWorker() && Broodwar->self()->completedUnitCount(unit) < 75 && isAffordable(unit) && (!Resources::isGasSaturated() || !Resources::isMinSaturated())) {
+                        auto makeExtra = vis(Protoss_Probe) <= 28 && Broodwar->self()->minerals() >= 200;
+                        if (!BuildOrder::isWorkerCut() && unit.isWorker() && Broodwar->self()->completedUnitCount(unit) < 75 && isAffordable(unit) && (!Resources::isGasSaturated() || !Resources::isMinSaturated() || makeExtra)) {
                             building.unit()->train(unit);
                             building.setRemainingTrainFrame(unit.buildTime());
                         }

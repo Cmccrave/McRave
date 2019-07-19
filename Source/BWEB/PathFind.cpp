@@ -31,6 +31,10 @@ namespace BWEB
             UnitType targetType;
         };
 
+        list<Path> dq;
+        map<pair<TilePosition, TilePosition>, list<Path>::iterator> ma;
+        int csize = 5000;
+
         map<const BWEM::Area *, int> notReachableThisFrame;
     }
 
@@ -39,7 +43,7 @@ namespace BWEB
         TilePosition target = Map::tConvert(t);
         TilePosition source = Map::tConvert(s);
         vector<TilePosition> direction{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 } };
-        
+
         const auto collision = [&](const TilePosition tile) {
             return !tile.isValid()
                 || tile.getDistance(target) > maxDist + 64.0
@@ -58,8 +62,28 @@ namespace BWEB
 
     void Path::createUnitPath(const Position s, const Position t)
     {
-        TilePosition target = Map::tConvert(t);
-        TilePosition source = Map::tConvert(s);
+        target = Map::tConvert(t);
+        source = Map::tConvert(s);
+        auto test = make_pair(source, target);
+
+        if (ma.find(test) == ma.end()) {
+            if (dq.size() == csize) {
+                auto last = dq.back();
+                dq.pop_back();
+                ma.erase(make_pair(last.getSource(), last.getTarget()));
+            }
+        }
+        else {
+            auto &oldPath = ma[test];
+            dist = oldPath->getDistance();
+            tiles = oldPath->getTiles();
+            reachable = oldPath->isReachable();
+
+            dq.erase(ma[test]);
+            dq.push_front(*this);
+            ma[test] = dq.begin();
+            return;
+        }
 
         if (target.isValid() && Map::mapBWEM.GetArea(target)) {
             auto checkReachable = notReachableThisFrame[Map::mapBWEM.GetArea(target)];
@@ -81,6 +105,12 @@ namespace BWEB
                 tiles.push_back(t);
             }
             reachable = true;
+            tiles.push_back(target);
+            tiles.push_back(source);
+
+            // update reference 
+            dq.push_front(*this);
+            ma[test] = dq.begin();
         }
         else if (target.isValid() && Map::mapBWEM.GetArea(target)) {
             dist = DBL_MAX;
@@ -185,4 +215,12 @@ namespace BWEB
             reachable = false;
         }
     }*/
+
+    namespace Pathfinding {
+        void clearCache()
+        {
+            dq.clear();
+            ma.clear();
+        }
+    }
 }

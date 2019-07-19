@@ -3,11 +3,11 @@
 #include "bwem.h"
 #include "BWEB.h"
 
-#define STORM_LIMIT 0.75
-#define STASIS_LIMIT 2.0
-#define LOW_SHIELD_PERCENT_LIMIT 0.2
-#define LOW_MECH_PERCENT_LIMIT 0.2
-#define LOW_BIO_PERCENT_LIMIT 0.3
+#define STORM_LIMIT 2.0
+#define STASIS_LIMIT 4.0
+#define LOW_SHIELD_PERCENT_LIMIT 0.5
+#define LOW_MECH_PERCENT_LIMIT 0.25
+#define LOW_BIO_PERCENT_LIMIT 0.25
 #define MIN_THREAT 0.01f
 #define SIM_RADIUS 640.0
 #define MAX_SCARAB 5 + (BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Reaver_Capacity) * 5)

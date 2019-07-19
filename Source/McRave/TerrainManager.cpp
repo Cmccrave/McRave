@@ -28,6 +28,7 @@ namespace McRave::Terrain {
         bool tight = true;
         UnitType tightType = UnitTypes::None;
 
+        bool shitMap = false;
         bool islandMap = false;
         bool reverseRamp = false;
         bool flatRamp = false;
@@ -145,6 +146,8 @@ namespace McRave::Terrain {
                     }
                 }
                 attackPosition = posBest;
+                if (posBest.isValid())
+                    Broodwar->drawCircleMap(posBest, 4, Colors::Cyan, true);
             }
 
             // Attack enemy main
@@ -236,8 +239,19 @@ namespace McRave::Terrain {
                 Position opening(mainWall->getOpening());
                 defendPosition = opening.isValid() ? opening : mainWall->getCentroid();
             }
-            else
-                defendPosition = Position(BWEB::Map::getMainChoke()->Center());
+            else {
+                if (BWEB::Map::getMainArea() && shitMap) {
+                    if (enemyStartingPosition.isValid()) {
+                        for (auto &choke : mapBWEM.GetPath(BWEB::Map::getMainPosition(), enemyStartingPosition)) {
+                            defendPosition = Position(choke->Center());
+                            break;
+                        }
+                    }
+                }
+                else {
+                    defendPosition = Position(BWEB::Map::getMainChoke()->Center());
+                }
+            }
 
             // If this isn't the same as the last position, make new concave positions
             if (defendPosition != oldDefendPosition) {
@@ -320,12 +334,13 @@ namespace McRave::Terrain {
             // Protoss wall parameters
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (Players::vZ()) {
-                    tight = true;
+                    tight = false;
                     buildings ={ Protoss_Gateway, Protoss_Forge, Protoss_Pylon };
                     defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
                 }
                 else {
-                    int count = max(2, (Util::chokeWidth(BWEB::Map::getNaturalChoke()) / 64) - 1);
+                    int count = 2;
+                    tight = false;
                     buildings.insert(buildings.end(), count, Protoss_Pylon);
                     defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
                 }
@@ -356,11 +371,16 @@ namespace McRave::Terrain {
             // Squish areas
             if (BWEB::Map::getNaturalArea()) {
 
-                // Add "empty" areas (ie. Andromeda areas around main)	
+                // Add "empty" areas (ie. Andromeda areas around main)
                 for (auto &area : BWEB::Map::getNaturalArea()->AccessibleNeighbours()) {
+
+                    if (area->ChokePoints().size() > 2 || shitMap)
+                        continue;
+
                     for (auto &choke : area->ChokePoints()) {
-                        if (choke->Center() == BWEB::Map::getMainChoke()->Center())
-                            allyTerritory.insert(area);
+                        if (choke->Center() == BWEB::Map::getMainChoke()->Center()) {
+                            allyTerritory.insert(area);                            
+                        }
                     }
                 }
 
@@ -369,7 +389,7 @@ namespace McRave::Terrain {
                     allyTerritory.insert(BWEB::Map::getNaturalArea());
 
                 // HACK: Add to my territory if chokes are shared
-                if (BWEB::Map::getMainChoke() == BWEB::Map::getNaturalChoke())
+                if (BWEB::Map::getMainChoke() == BWEB::Map::getNaturalChoke() || islandMap)
                     allyTerritory.insert(BWEB::Map::getNaturalArea());
             }
         }
@@ -393,6 +413,10 @@ namespace McRave::Terrain {
         // HACK: Play Plasma as an island map
         if (Broodwar->mapFileName().find("Plasma") != string::npos)
             islandMap = true;
+
+        // HACK:: Alchemist is a shit map
+        if (Broodwar->mapFileName().find("Alchemist") != string::npos)
+            shitMap = true;
 
         // Store non island bases	
         for (auto &area : mapBWEM.Areas()) {
@@ -514,6 +538,7 @@ namespace McRave::Terrain {
         return BWEB::Map::getMainPosition();
     }
 
+    bool isShitMap() { return shitMap; }
     bool isIslandMap() { return islandMap; }
     bool isReverseRamp() { return reverseRamp; }
     bool isFlatRamp() { return flatRamp; }

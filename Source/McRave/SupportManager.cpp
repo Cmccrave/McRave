@@ -54,7 +54,7 @@ namespace McRave::Support {
             }
 
             if (!unit.getDestination().isValid())
-                unit.setDestination(BWEB::Map::getMainPosition());            
+                unit.setDestination(BWEB::Map::getMainPosition());
 
             futureAssignment.emplace(make_pair(unit.getDestination(), unit.getType()));
 
@@ -70,12 +70,9 @@ namespace McRave::Support {
             }
 
             // Arbiters cast stasis on a target		
-            else if (unit.getType() == UnitTypes::Protoss_Arbiter && unit.hasTarget() && unit.getPosition().getDistance(unit.getTarget().getPosition()) < SIM_RADIUS && unit.getTarget().unit()->exists() && unit.unit()->getEnergy() >= TechTypes::Stasis_Field.energyCost() && !Command::overlapsActions(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self, 96)) {
-                if ((Grids::getEGroundCluster(unit.getTarget().getWalkPosition()) + Grids::getEAirCluster(unit.getTarget().getWalkPosition())) > STASIS_LIMIT) {
-                    unit.unit()->useTech(TechTypes::Stasis_Field, unit.getTarget().unit());
-                    Command::addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Stasis_Field, PlayerState::Self);
-                    return;
-                }
+            else if (unit.getType() == UnitTypes::Protoss_Arbiter && unit.canStartCast(TechTypes::Stasis_Field) && !Command::overlapsActions(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self, 96)) {
+                unit.unit()->useTech(TechTypes::Stasis_Field, unit.getTarget().unit());
+                Command::addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Stasis_Field, PlayerState::Self);
             }
 
             else

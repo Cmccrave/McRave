@@ -25,7 +25,8 @@ namespace McRave {
 
         int lastAttackFrame = 0;
         int lastVisibleFrame = 0;
-        int lastMoveFrame = 0;
+        int lastPosMoveFrame = 0;
+        int lastTileMoveFrame = 0;
         int lastThreateningFrame = 0;
         int resourceHeldFrames = 0;
         int remainingTrainFrame = 0;
@@ -36,6 +37,7 @@ namespace McRave {
 
         bool burrowed = false;
         bool flying = false;
+        bool threatening = false;
 
         BWAPI::Player player = nullptr;
         BWAPI::Unit thisUnit = nullptr;
@@ -72,6 +74,7 @@ namespace McRave {
 
         void updateTarget();
         void updateStuckCheck();
+        void updateThreatening();
     public:
         UnitInfo();
 
@@ -79,10 +82,10 @@ namespace McRave {
         bool hasResource() { return !resource.expired(); }
         bool hasTransport() { return !transport.expired(); }
         bool hasTarget() { return !target.expired(); }
-        bool hasMoved() { return lastTile != tilePosition; }
+        bool hasMovedArea() { return lastTile.isValid() && tilePosition.isValid() && BWEM::Map::Instance().GetArea(lastTile) != BWEM::Map::Instance().GetArea(tilePosition); }
         bool hasAttackedRecently() { return (BWAPI::Broodwar->getFrameCount() - lastAttackFrame < 50); }
         bool targetsFriendly() { return unitType == BWAPI::UnitTypes::Terran_Medic || unitType == BWAPI::UnitTypes::Terran_Science_Vessel || unitType == BWAPI::UnitTypes::Zerg_Defiler; }
-        bool isStuck() { return (BWAPI::Broodwar->getFrameCount() - lastMoveFrame > 50); }        
+        bool isStuck() { return (BWAPI::Broodwar->getFrameCount() - lastTileMoveFrame > 50); }
         bool isSuicidal() { return unitType == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine || unitType == BWAPI::UnitTypes::Zerg_Scourge || unitType == BWAPI::UnitTypes::Zerg_Infested_Terran; }
         bool isLightAir() { return unitType == BWAPI::UnitTypes::Protoss_Corsair || unitType == BWAPI::UnitTypes::Zerg_Mutalisk || unitType == BWAPI::UnitTypes::Terran_Wraith; }
         bool isCapitalShip() { return unitType == BWAPI::UnitTypes::Protoss_Carrier || unitType == BWAPI::UnitTypes::Terran_Battlecruiser || unitType == BWAPI::UnitTypes::Zerg_Guardian; }
@@ -92,9 +95,9 @@ namespace McRave {
         bool isSiegeTank() { return unitType == BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode || unitType == BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode; }
         bool isBurrowed() { return burrowed; }
         bool isFlying() { return flying; }
+        bool isThreatening() { return threatening; }
         bool isWithinReach(UnitInfo&);
         bool isWithinRange(UnitInfo&);
-        bool isThreatening();
 
         bool isHealthy() {
             return (unitType.maxShields() > 0 && percentShield > LOW_SHIELD_PERCENT_LIMIT)
@@ -103,7 +106,7 @@ namespace McRave {
         bool isHidden() {
             auto detection = player->isEnemy(BWAPI::Broodwar->self()) ? Command::overlapsDetection(thisUnit, position, PlayerState::Self) : Command::overlapsDetection(thisUnit, position, PlayerState::Enemy);
             return (burrowed || (thisUnit->exists() && thisUnit->isCloaked())) && !detection;
-        }        
+        }
 
         bool canStartAttack();
         bool canStartCast(BWAPI::TechType);
@@ -118,8 +121,7 @@ namespace McRave {
                 path.getTiles().empty() || path.getTiles().front() != here || path.getTiles().back() != this->getTilePosition();                        // ...path is empty or not the same
 
             const auto canCreatePath =
-                (!this->hasTransport()																							                        // ...unit has no transport                    
-                    && this->getPosition().isValid() && here.isValid()								                                                    // ...both TilePositions are valid
+                (this->getPosition().isValid() && here.isValid()								                                                    // ...both TilePositions are valid
                     && !this->getType().isFlyer()											                                                            // ...unit is not a flyer
                     && BWEB::Map::isUsed(here) == BWAPI::UnitTypes::None && BWEB::Map::isUsed(this->getTilePosition()) == BWAPI::UnitTypes::None		// ...neither TilePositions overlap buildings
                     && BWEB::Map::isWalkable(this->getTilePosition()) && BWEB::Map::isWalkable(here));	                                                // ...both TilePositions are on walkable tiles  
@@ -128,7 +130,7 @@ namespace McRave {
         }
 
         // Commanding the unit to prevent order/command spam
-        bool command(BWAPI::UnitCommandType, BWAPI::Position, bool);
+        bool command(BWAPI::UnitCommandType, BWAPI::Position);
         bool command(BWAPI::UnitCommandType, UnitInfo&);
 
         // Information about frame timings

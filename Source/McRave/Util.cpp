@@ -7,21 +7,29 @@ namespace McRave::Util {
 
     bool isWalkable(UnitInfo& unit, WalkPosition here)
     {
-        if (unit.getType().isFlyer())
+        if (unit.getType().isFlyer() && unit.getRole() != Role::Transport)
             return true;
 
+        auto walkWidth = unit.getType().isBuilding() ? unit.getType().tileWidth() * 4 : (int)ceil(unit.getType().width() / 8.0);
+        auto walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : (int)ceil(unit.getType().height() / 8.0);
+
+        auto halfW = walkWidth / 2;
+        auto halfH = walkHeight / 2;
+        auto wOffset = unit.getType().width() % 8 != 0 ? 1 : 0;
+        auto hOffset = unit.getType().height() % 8 != 0 ? 1 : 0;
+
+        auto left = max(0, here.x - halfW);
+        auto right = min(1024, here.x + halfW + wOffset);
+        auto top = max(0, here.y - halfH);
+        auto bottom = min(1024, here.y + halfH + hOffset);
+
         // Pixel rectangle
-        const auto walkWidth = unit.getType().isBuilding() ? unit.getType().tileWidth() * 4 : (int)ceil(unit.getType().width() / 8.0);
-        const auto walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : (int)ceil(unit.getType().height() / 8.0);
-        const auto topLeft = Position(unit.getWalkPosition());
-        const auto botRight = topLeft + Position(walkWidth * 8, walkHeight * 8);
+        auto ff = unit.getType().isBuilding() ? Position(0, 0) : Position(8, 8);
+        auto topLeft = Position(unit.getWalkPosition());
+        auto botRight = topLeft + Position(walkWidth * 8, walkHeight * 8);
 
-        // Round up
-        int halfW = (walkWidth + 1) / 2;
-        int halfH = (walkHeight + 1) / 2;
-
-        for (int x = here.x - halfW; x < here.x + halfW; x++) {
-            for (int y = here.y - halfH; y < here.y + halfH; y++) {
+        for (int x = left; x < right; x++) {
+            for (int y = top; y < bottom; y++) {
                 WalkPosition w(x, y);
                 auto p = Position(w) + Position(4, 4);
                 if (!w.isValid())

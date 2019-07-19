@@ -7,12 +7,15 @@ namespace BWEB
         std::vector<BWAPI::TilePosition> tiles;
         double dist;
         bool reachable;
+        BWAPI::TilePosition source, target;
     public:
         Path()
         {
             tiles ={};
             dist = 0.0;
             reachable = false;
+            source = BWAPI::TilePositions::Invalid;
+            target = BWAPI::TilePositions::Invalid;
         }
 
         /// <summary> Returns the vector of TilePositions associated with this Path. </summary>
@@ -35,5 +38,13 @@ namespace BWEB
 
         /// <summary> Creates a path from the source to the target using BFS, your provided collision function, and directions. </summary>
         void bfsPath(const BWAPI::Position source, const BWAPI::Position target, std::function <bool(const BWAPI::TilePosition)> collision, std::vector<BWAPI::TilePosition> directions);
+
+        ///
+        BWAPI::TilePosition getSource() { return source; }
+        BWAPI::TilePosition getTarget() { return target; }
     };
+
+    namespace Pathfinding {
+        void clearCache();
+    }
 }

@@ -16,20 +16,25 @@ namespace McRave::Horizon {
             double maxWinPercent = 1.0;
 
             if (Players::PvP()) {
-                minWinPercent = 0.6;
-                maxWinPercent = 1.0;
+                minWinPercent = 0.8;
+                maxWinPercent = 1.2;
             }
             if (Players::PvZ()) {
                 minWinPercent = 0.6;
-                maxWinPercent = 1.0;
+                maxWinPercent = 1.2;
             }
             if (Players::PvT()) {
-                minWinPercent = 0.4;
-                maxWinPercent = 0.8;
+                minWinPercent = 0.2;
+                maxWinPercent = 0.6;
             }
 
             minThreshold = max(0.0, log(10000.0 / Broodwar->getFrameCount())) + minWinPercent;
             maxThreshold = max(0.0, log(10000.0 / Broodwar->getFrameCount())) + maxWinPercent;
+
+            if (BuildOrder::getCurrentBuild() == "2Gate" && Broodwar->getFrameCount() < 8000) {
+                minWinPercent = 0.0;
+                maxWinPercent = 0.4;
+            }
         }
     }
 
@@ -49,6 +54,7 @@ namespace McRave::Horizon {
         auto sync = false;
         auto belowGrdLimits = false;
         auto belowAirLimits = false;
+        auto unitArea = mapBWEM.GetArea(unit.getTilePosition());
         map<const BWEM::ChokePoint *, double> enemySqueezeFactor;
         map<const BWEM::ChokePoint *, double> selfSqueezeFactor;
 
@@ -59,7 +65,7 @@ namespace McRave::Horizon {
             if (ignoreSim && Broodwar->self()->minerals() <= 500 || Broodwar->self()->gas() <= 500 || Players::getSupply(PlayerState::Self) <= 240)
                 ignoreSim = false;
 
-            if (ignoreSim || (Terrain::isIslandMap() && !unit.getType().isFlyer())) {
+            if (ignoreSim) {
                 unit.setSimState(SimState::Win);
                 unit.setSimValue(10.0);
                 return true;
@@ -78,8 +84,6 @@ namespace McRave::Horizon {
         };
 
         const auto applySqueezeFactor = [&](UnitInfo& source) {
-            return false; // Too slow atm
-
             if (source.getPlayer() == Broodwar->self() && (!source.hasTarget() || source.getTarget().getType().isFlyer() || !source.getTarget().getPosition().isValid()))
                 return false;
             if (source.getPlayer() != Broodwar->self() && (!unit.hasTarget() || unit.getTarget().getType().isFlyer() || !unit.getTarget().getPosition().isValid()))
@@ -106,12 +110,19 @@ namespace McRave::Horizon {
         };
 
         const auto simTerrain = [&]() {
+            if (BuildOrder::getCurrentBuild() == "2Gate" && Broodwar->getFrameCount() < 8000)
+                return;
+
             // For every ground unit, add a squeeze factor for navigating chokes
             for (auto &e : Units::getUnits(PlayerState::Enemy)) {
                 UnitInfo &enemy = *e;
                 if (applySqueezeFactor(enemy)) {
-                    auto path = !enemy.hasMoved() ? enemy.getQuickPath() : mapBWEM.GetPath(enemy.getPosition(), unit.getPosition());
+                    auto &path = !enemy.hasMovedArea() ? enemy.getQuickPath() : mapBWEM.GetPath(enemy.getPosition(), unit.getPosition());
                     enemy.setQuickPath(path);
+
+                    if (int(path.size()) > 2)
+                        continue;
+
                     for (auto &choke : path) {
                         if (enemy.getGroundReach() < enemy.getPosition().getDistance(Position(choke->Center())))
                             enemySqueezeFactor[choke]+= double(enemy.getType().width());
@@ -121,8 +132,12 @@ namespace McRave::Horizon {
             for (auto &a : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &ally = *a;
                 if (applySqueezeFactor(ally)) {
-                    auto path = !ally.hasMoved() ? ally.getQuickPath() : mapBWEM.GetPath(ally.getPosition(), ally.getTarget().getPosition());
+                    auto &path = !ally.hasMovedArea() ? ally.getQuickPath() : mapBWEM.GetPath(ally.getPosition(), ally.getTarget().getPosition());
                     ally.setQuickPath(path);
+
+                    if (int(path.size()) > 2)
+                        continue;
+
                     for (auto &choke : path) {
                         if (ally.getGroundReach() < ally.getPosition().getDistance(Position(choke->Center())))
                             selfSqueezeFactor[choke]+= double(ally.getType().width());
@@ -149,12 +164,12 @@ namespace McRave::Horizon {
 
                 // If enemy is stationary, it must be in range of the engage position on a diagonal or straight line
                 if (enemy.getSpeed() <= 0.0) {
-                    auto diEngageDistance = enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths + deadzone;
-                    if (diEngageDistance > 64.0/* && stEngageDistance > 64.0*/)
+                    auto engageDistance = enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths;
+                    if (engageDistance > 64.0)
                         continue;
                 }
 
-                auto distance = max(0.0, enemy.getPosition().getDistance(unit.getPosition()) - enemyRange - widths /*+ deadzone*/);
+                auto distance = max(0.0, enemy.getPosition().getDistance(unit.getPosition()) - enemyRange - widths + deadzone);
                 auto speed = enemy.getSpeed() > 0.0 ? 24.0 * enemy.getSpeed() : 24.0 * unit.getSpeed();
                 auto simRatio =  simulationTime - (distance / speed);
 
@@ -168,13 +183,12 @@ namespace McRave::Horizon {
                     simRatio = simRatio * 2.0;
 
                 // Check if we need to squeeze these units through a choke
-                // Disabled atm while Terrain analysis is simulated better
                 if (applySqueezeFactor(enemy)) {
-                    auto path = mapBWEM.GetPath(enemy.getPosition(), unit.getPosition());
-                    for (auto &choke : path) {
+                    auto &path = mapBWEM.GetPath(enemy.getPosition(), unit.getPosition());
+                    /*for (auto &choke : path) {
                         if (enemy.getGroundReach() < enemy.getPosition().getDistance(Position(choke->Center())))
-                            simRatio = simRatio * min(1.0, enemySqueezeFactor[choke]);
-                    }
+                            simRatio = simRatio * min(1.0, 2 * enemySqueezeFactor[choke]);
+                    }*/
                 }
 
                 // Add their values to the simulation
@@ -195,7 +209,7 @@ namespace McRave::Horizon {
                 auto allyRange = (unit.getTarget().getType().isFlyer() ? ally.getAirRange() : ally.getGroundRange());
                 auto speed = ally.hasTransport() ? 24.0 * ally.getTransport().getSpeed() : 24.0 * ally.getSpeed();
 
-                auto distance = max(0.0, engDist - widths /*+ deadzone*/);
+                auto distance = max(0.0, engDist - widths + deadzone);
                 auto simRatio = simulationTime - (distance / speed);
 
                 auto reach = max(ally.getAirReach(), ally.getGroundReach());
@@ -205,6 +219,8 @@ namespace McRave::Horizon {
                     continue;
 
                 // HACK: Bunch of hardcoded stuff
+                if (ally.getType() == UnitTypes::Protoss_Reaver && (!ally.isHealthy() || (ally.hasTransport() && !ally.getTransport().isHealthy())))
+                    continue;
                 if (ally.getTarget().getPosition().getDistance(unit.getTarget().getPosition()) > reach)
                     continue;
                 if (ally.getType() == UnitTypes::Protoss_High_Templar && !ally.canStartCast(TechTypes::Psionic_Storm))
@@ -229,12 +245,12 @@ namespace McRave::Horizon {
                 if (!sync && simRatio > 0.0 && ((unit.getType().isFlyer() && !ally.getType().isFlyer()) || (!unit.getType().isFlyer() && ally.getType().isFlyer())))
                     sync = true;
 
-                // Disabled atm while Terrain analysis is simulated better
+                // Check if we need to squeeze these units through a choke
                 if (applySqueezeFactor(ally)) {
-                    auto path = mapBWEM.GetPath(ally.getPosition(), ally.getTarget().getPosition());
+                    auto &path = mapBWEM.GetPath(ally.getPosition(), ally.getTarget().getPosition());
                     for (auto &choke : path) {
                         if (ally.getGroundReach() < ally.getPosition().getDistance(Position(choke->Center())))
-                            simRatio = simRatio * min(1.0, selfSqueezeFactor[choke]);
+                            simRatio = simRatio * min(1.0, 2 * selfSqueezeFactor[choke]);
                     }
                 }
 
@@ -251,7 +267,7 @@ namespace McRave::Horizon {
         if (shouldIgnoreSim())
             return;
 
-        //simTerrain();
+        simTerrain();
         simEnemies();
         simMyUnits();
 

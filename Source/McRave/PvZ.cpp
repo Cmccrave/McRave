@@ -69,26 +69,42 @@ namespace McRave::BuildOrder::Protoss {
         wallNat =                                       true;
         cutWorkers =                                    Strategy::enemyRush() ? vis(Protoss_Photon_Cannon) < 2 : false;
 
-        auto cannonCount = int(isAlmostComplete(Protoss_Forge))
-            + (Units::getEnemyCount(Zerg_Zergling) >= 6)
-            + (Units::getEnemyCount(Zerg_Zergling) >= 12)
-            + (Units::getEnemyCount(Zerg_Zergling) >= 24)
-            + (Units::getEnemyCount(Zerg_Hydralisk) / 2);
+        int cannonCount = 0;
 
-        // TODO: If scout died, go to 2 cannons, if next scout dies, go 3 cannons        
-        if (Strategy::getEnemyBuild() == "2HatchHydra")
-            cannonCount = 5;
-        else if (Strategy::getEnemyBuild() == "3HatchHydra")
-            cannonCount = 4;
-        else if (Strategy::getEnemyBuild() == "2HatchMuta" && Broodwar->getFrameCount() >= 7200)
-            cannonCount = 7;
-        else if (Strategy::getEnemyBuild() == "3HatchMuta" && Broodwar->getFrameCount() >= 7500)
-            cannonCount = 8;
-        else if (Strategy::getEnemyBuild() == "4Pool")
-            cannonCount = 2 + (s >= 24);
+        if (s < 160) {
+            cannonCount = int(isAlmostComplete(Protoss_Forge))
+                + (Units::getEnemyCount(Zerg_Zergling) >= 6)
+                + (Units::getEnemyCount(Zerg_Zergling) >= 12)
+                + (Units::getEnemyCount(Zerg_Zergling) >= 24)
+                + (Units::getEnemyCount(Zerg_Hydralisk) / 2);
 
-        // Only queue one at a time to prevent idle probes
-        cannonCount =                                   min(vis(Protoss_Photon_Cannon) + 1, cannonCount);
+            // TODO: If scout died, go to 2 cannons, if next scout dies, go 3 cannons        
+            if (Strategy::getEnemyBuild() == "2HatchHydra")
+                cannonCount = max(cannonCount, 5);
+            else if (Strategy::getEnemyBuild() == "3HatchHydra")
+                cannonCount = max(cannonCount, 4);
+            else if (Strategy::getEnemyBuild() == "2HatchMuta" && Broodwar->getFrameCount() >= 7200)
+                cannonCount = max(cannonCount, 3);
+            else if (Strategy::getEnemyBuild() == "3HatchMuta" && Broodwar->getFrameCount() >= 7500)
+                cannonCount = max(cannonCount, 4);
+            else if (Strategy::getEnemyBuild() == "4Pool")
+                cannonCount = max(cannonCount, 2 + (s >= 24));
+
+            if (cannonCount > 0) {
+                for (auto &[_, station] : Stations::getMyStations()) {
+                    if (!Stations::needPower(*station) && Strategy::getEnemyBuild() == "2HatchMuta" && Broodwar->getFrameCount() >= 7200) {
+                        cannonCount+=2;
+                    }
+                    if (!Stations::needPower(*station) && Strategy::getEnemyBuild() == "3HatchMuta" && Broodwar->getFrameCount() >= 7500) {
+                        cannonCount+=2;
+                    }
+                }
+            }
+
+            // Only queue one at a time to prevent idle probes
+            cannonCount =                                   min(vis(Protoss_Photon_Cannon) + 1, cannonCount);
+        }
+
 
         // Reactions
         if (!lockedTransition) {
@@ -145,6 +161,10 @@ namespace McRave::BuildOrder::Protoss {
             itemQueue[Protoss_Gateway] =                Item(0);
         }
 
+        // HACK: Don't add an assimilator if we're being rushed
+        if (Strategy::enemyRush())
+            itemQueue[Protoss_Assimilator] =            Item(0);
+
         // If we want Cannons but have no Forge
         if (cannonCount > 0 && currentOpener != "Panic") {
             if (!isAlmostComplete(Protoss_Forge)) {
@@ -189,7 +209,6 @@ namespace McRave::BuildOrder::Protoss {
                 getOpening =                            s < 160;
                 lockedTransition =                      vis(Protoss_Gateway) >= 3;
 
-                gasLimit =                              INT_MAX;
                 zealotLimit =                           2;
                 dragoonLimit =                          INT_MAX;
 
@@ -232,6 +251,7 @@ namespace McRave::BuildOrder::Protoss {
         wallNat =                                       vis(Protoss_Nexus) >= 2 || currentOpener == "Natural";
         scout =                                         currentOpener != "Proxy" && Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
         rush =                                          currentOpener == "Proxy";
+        transitionReady =                               vis(Protoss_Gateway) >= 2;
 
         // Reactions
         if (!lockedTransition) {
@@ -244,70 +264,68 @@ namespace McRave::BuildOrder::Protoss {
         }
 
         // Openers
-        if (currentOpener == "Proxy") {
-            // 9/9
-            itemQueue[Protoss_Pylon] =                  Item((s >= 12) + (s >= 26), (s >= 16) + (s >= 26));
-            itemQueue[Protoss_Gateway] =                Item((vis(Protoss_Pylon) > 0 && s >= 18) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
+        if (currentOpener == "Proxy") {                 // 9/9            
+            itemQueue[Protoss_Pylon] =					Item((s >= 12) + (s >= 26), (s >= 16) + (s >= 26));
+            itemQueue[Protoss_Gateway] =				Item((vis(Protoss_Pylon) > 0 && s >= 18) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
         }
-        else if (currentOpener == "Natural") {
-            // 9/10
-            if (Broodwar->getStartLocations().size() >= 3) {
-                itemQueue[Protoss_Pylon] =              Item((s >= 14) + (s >= 26), (s >= 16) + (s >= 26));
-                itemQueue[Protoss_Gateway] =            Item((vis(Protoss_Pylon) > 0 && s >= 18) + (s >= 20), (s >= 18) + (s >= 20));
-            }
-            // 9/9
-            else {
-                itemQueue[Protoss_Pylon] =              Item((s >= 14) + (s >= 26), (s >= 16) + (s >= 26));
-                itemQueue[Protoss_Gateway] =            Item((vis(Protoss_Pylon) > 0 && s >= 18) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
+        else if (currentOpener == "Natural") {           
+            if (startCount >= 3) {                      // 9/10
+                itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 26), (s >= 16) + (s >= 26));
+                itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0 && s >= 18) + (s >= 20), (s >= 18) + (s >= 20));
+            }            
+            else {                                      // 9/9
+                itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 26), (s >= 16) + (s >= 26));
+                itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0 && s >= 18) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
             }
         }
-        else if (currentOpener == "Main") {
-            // 10/12
-            if (Broodwar->getStartLocations().size() >= 3) {
-                itemQueue[Protoss_Pylon] =              Item((s >= 16) + (s >= 30));
-                itemQueue[Protoss_Gateway] =            Item((s >= 20) + (s >= 24));
-            }
-            // 9/10
-            else {
-                itemQueue[Protoss_Pylon] =              Item((s >= 16) + (s >= 26));
-                itemQueue[Protoss_Gateway] =            Item((vis(Protoss_Pylon) > 0 && s >= 18) + (s >= 20));
+        else if (currentOpener == "Main") {            
+            if (startCount >= 3) {                      // 10/12
+                itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 32));
+                itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 24));
+            }            
+            else {                                      // 9/10
+                itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 26));
+                itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0 && s >= 18) + (s >= 20));
             }
         }
 
         // Builds
-        if (currentTransition == "Expand") {
-            getOpening =                                s < 90;
-            lockedTransition =                          vis(Protoss_Nexus) >= 2;
-            wallNat =                                   vis(Protoss_Nexus) >= 2 || currentOpener == "Natural";
+        if (transitionReady) {
+            if (currentTransition == "Expand") {
+                getOpening =                                s < 90;
+                lockedTransition =                          vis(Protoss_Nexus) >= 2;
+                wallNat =                                   vis(Protoss_Nexus) >= 2 || currentOpener == "Natural";
 
-            itemQueue[Protoss_Nexus] =                  Item(1 + (s >= 42));
-            itemQueue[Protoss_Forge] =                  Item(s >= 62);
-            itemQueue[Protoss_Cybernetics_Core] =       Item(vis(Protoss_Photon_Cannon) >= 2);
-            itemQueue[Protoss_Photon_Cannon] =          Item(2 * (com(Protoss_Forge) > 0));
-        }
-        else if (currentTransition == "Defensive") {
-            getOpening =                                s < 80;
-            lockedTransition =                          true;
-            wallNat =                                   vis(Protoss_Nexus) >= 2 || currentOpener == "Natural";
-            gasLimit =                                  1;
+                itemQueue[Protoss_Nexus] =                  Item(1 + (s >= 42));
+                itemQueue[Protoss_Forge] =                  Item(s >= 62);
+                itemQueue[Protoss_Cybernetics_Core] =       Item(vis(Protoss_Photon_Cannon) >= 2);
+                itemQueue[Protoss_Photon_Cannon] =          Item(2 * (com(Protoss_Forge) > 0));
+            }
+            else if (currentTransition == "Defensive") {
+                getOpening =                                s < 80;
+                lockedTransition =                          true;
+                wallNat =                                   vis(Protoss_Nexus) >= 2 || currentOpener == "Natural";
+                gasLimit =                                  1;
 
-            itemQueue[Protoss_Nexus] =                  Item(1);
-            itemQueue[Protoss_Gateway] =                Item((s >= 20) + (s >= 24) + (s >= 62) + (s >= 70));
-            itemQueue[Protoss_Assimilator] =            Item(s >= 64);
-            itemQueue[Protoss_Cybernetics_Core] =       Item(s >= 66);
-        }
-        else if (currentTransition == "4Gate") {
-            // https://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)
-            getOpening =                                s < 120;
-            lockedTransition =                          true;
-            firstUpgrade =                              UpgradeTypes::Singularity_Charge;
-            zealotLimit =                               5;
-            dragoonLimit =                              INT_MAX;
-            wallNat =                                   vis(Protoss_Nexus) >= 2 || currentOpener == "Natural";
+                itemQueue[Protoss_Nexus] =                  Item(1);
+                itemQueue[Protoss_Gateway] =                Item(2 + (s >= 62) + (s >= 70));
+                itemQueue[Protoss_Assimilator] =            Item(s >= 64);
+                itemQueue[Protoss_Cybernetics_Core] =       Item(s >= 66);
+            }
+            else if (currentTransition == "4Gate") {
+                // https://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)
+                getOpening =                                s < 120;
+                lockedTransition =                          true;
+                firstUpgrade =                              UpgradeTypes::Singularity_Charge;
+                zealotLimit =                               5;
+                dragoonLimit =                              INT_MAX;
+                wallNat =                                   vis(Protoss_Nexus) >= 2 || currentOpener == "Natural";
+                playPassive =                               !firstReady() && !Terrain::foundEnemy();
 
-            itemQueue[Protoss_Gateway] =                Item((s >= 20) + (s >= 24) + (s >= 62) + (s >= 70));
-            itemQueue[Protoss_Assimilator] =            Item(s >= 52);
-            itemQueue[Protoss_Cybernetics_Core] =       Item(vis(Protoss_Zealot) >= 5);
+                itemQueue[Protoss_Gateway] =                Item(2 + (s >= 62) + (s >= 70));
+                itemQueue[Protoss_Assimilator] =            Item(s >= 52);
+                itemQueue[Protoss_Cybernetics_Core] =       Item(vis(Protoss_Zealot) >= 5);
+            }
         }
     }
 

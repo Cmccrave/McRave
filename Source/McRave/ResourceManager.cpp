@@ -60,13 +60,12 @@ namespace McRave::Resources {
             const auto update = [&](const shared_ptr<ResourceInfo>& r) {
                 updateInformation(r);
                 updateIncome(r);
-
-                if (!r->getStation())
-                    Broodwar->drawCircleMap(r->getPosition(), 4, Colors::Grey);
             };
 
-            for (auto &r : myBoulders)
+            for (auto &r : myBoulders) {
                 update(r);
+                Broodwar->drawCircleMap(r->getPosition(), 4, Colors::Grey);
+            }
 
             for (auto &r : myMinerals)
                 update(r);
@@ -86,7 +85,7 @@ namespace McRave::Resources {
     void storeResource(Unit resource)
     {
         auto info = ResourceInfo(resource);
-        auto &resourceList = (resource->getResources() > 0 ? (resource->getType().isMineralField() ? myMinerals : myGas) : myBoulders);
+        auto &resourceList = (resource->getResources() > 50 ? (resource->getType().isMineralField() ? myMinerals : myGas) : myBoulders);
 
         // Check if we already stored this resource
         for (auto &u : resourceList) {

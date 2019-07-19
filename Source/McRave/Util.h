@@ -92,22 +92,22 @@ namespace McRave::Util {
     }
 
     template<typename F>
-    BWAPI::Position findPointOnPath(BWEB::Path path, F &&pred) {
-        auto last = TilePositions::Invalid;
+    BWAPI::Position findPointOnPath(BWEB::Path& path, F &&pred) {
+        auto &last = path.getSource();
 
         // For each TilePosition on the path
         for (auto &pos : path.getTiles()) {
-
+            
             // If last wasn't valid, this is likely the first TilePosition
             if (!last.isValid()) {
                 last = pos;
                 continue;
-            }
+            }           
 
             // As long as last doesn't equal pos
             while (last != pos) {
                 if (pred(Position(last) + Position(16, 16)))
-                    return Position(last) + Position(16, 16);
+                    return Position(last) + Position(16, 16);                
 
                 // Increment or decrement based on where we need to go
                 last.x != pos.x ? (last.x > pos.x ? last.x-- : last.x++) : 0;

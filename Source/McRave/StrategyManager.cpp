@@ -14,6 +14,7 @@ namespace McRave::Strategy {
         bool invis = false;
         bool rush = false;
         bool holdChoke = false;
+        bool blockedScout = false;
 
         bool proxy = false;
         bool gasSteal = false;
@@ -166,7 +167,7 @@ namespace McRave::Strategy {
                 }
 
                 // Marine timing
-                if (unit.getType() == Terran_Marine) {
+                if (unit.getType() == Terran_Marine && Units::getEnemyCount(Terran_Marine) >= 2) {
                     if (rushFrame == 0 || unit.frameArrivesWhen() < rushFrame) {
                         rushFrame = unit.frameArrivesWhen();
                         if (rushFrame < 3900)
@@ -205,26 +206,22 @@ namespace McRave::Strategy {
             auto noExpand = Units::getEnemyCount(Protoss_Nexus) <= 1 && Units::getEnemyCount(Protoss_Forge) <= 0;
 
             // Detect missing buildings as a potential 2Gate
-            if (Terrain::getEnemyStartingPosition().isValid() && Broodwar->getFrameCount() > 3000 && Broodwar->isExplored((TilePosition)Terrain::getEnemyStartingPosition())) {
+            if (Terrain::getEnemyStartingPosition().isValid() && Broodwar->getFrameCount() < 3600 && Broodwar->isExplored((TilePosition)Terrain::getEnemyStartingPosition())) {
 
                 // Check 2 corners scouted
-                auto topLeft = TilePosition(Util::clipPosition(Terrain::getEnemyStartingPosition() - Position(320, 320)));
-                auto botRight = TilePosition(Util::clipPosition(Terrain::getEnemyStartingPosition() + Position(320, 320) + Position(128, 96)));
+                auto topLeft = TilePosition(Util::clipPosition(Terrain::getEnemyStartingPosition() - Position(160, 160)));
+                auto botRight = TilePosition(Util::clipPosition(Terrain::getEnemyStartingPosition() + Position(160, 160) + Position(128, 96)));
                 auto fullScout = Grids::lastVisibleFrame(topLeft) > 0 && Grids::lastVisibleFrame(botRight) > 0;
-                auto maybeProxy = noGates && noExpand;
+                auto maybeProxy = fullScout && noGates && noExpand;
 
-                if (fullScout) {
-                    if (maybeProxy) {
-                        enemyBuild = "2Gate";
-                        proxy = true;
-                    }
-                    else if (Units::getEnemyCount(Protoss_Gateway) >= 2 && Units::getEnemyCount(Protoss_Nexus) <= 1 && Units::getEnemyCount(Protoss_Cybernetics_Core) <= 0 && Units::getEnemyCount(Protoss_Dragoon) <= 0)
-                        enemyBuild = "2Gate";
-                    else if (enemyBuild == "2Gate") {
-                        enemyBuild = "Unknown";
-                        proxy = false;
-                    }
+                if (maybeProxy) {
+                    enemyBuild = "2Gate";
+                    proxy = true;
                 }
+                else if (Units::getEnemyCount(Protoss_Gateway) >= 2 && Units::getEnemyCount(Protoss_Nexus) <= 1)
+                    enemyBuild = "2Gate";
+                else
+                    enemyBuild = "Unknown";
             }
 
             for (auto &u : player.getUnits()) {
@@ -254,7 +251,7 @@ namespace McRave::Strategy {
 
                 // FFE
                 if (unit.getType() == Protoss_Photon_Cannon && Units::getEnemyCount(Protoss_Robotics_Facility) == 0) {
-                    if (unit.getPosition().getDistance((Position)Terrain::getEnemyNatural()) < 320.0) {
+                    if (unit.getPosition().getDistance((Position)Terrain::getEnemyNatural()) < 320.0 && Units::getEnemyCount(Protoss_Dragoon) == 0) {
                         enemyBuild = "FFE";
                         enemyFE = true;
                     }
@@ -270,37 +267,44 @@ namespace McRave::Strategy {
                     proxy = true;
                 }
 
+                // 2 Gate blind estimation
+                if (Broodwar->getFrameCount() < 6000 && unit.getType() == UnitTypes::Protoss_Zealot && Units::getEnemyCount(UnitTypes::Protoss_Zealot) >= 4)
+                    enemyBuild = "2Gate";
+
                 // 2 Gate Expand
                 if (unit.getType() == Protoss_Nexus) {
                     if (!Terrain::isStartingBase(unit.getTilePosition()) && Units::getEnemyCount(Protoss_Gateway) >= 2)
                         enemyBuild = "2GateExpand";
                 }
 
+                if (unit.getType().isWorker() && unit.unit()->exists() && unit.unit()->getOrder() == Orders::HoldPosition)
+                    blockedScout = true;
+
                 // Proxy Builds
                 if (unit.getType() == Protoss_Gateway || unit.getType() == Protoss_Pylon) {
                     if (Terrain::isInAllyTerritory(unit.getTilePosition()) || unit.getPosition().getDistance(mapBWEM.Center()) < 1280.0 || (BWEB::Map::getNaturalChoke() && unit.getPosition().getDistance((Position)BWEB::Map::getNaturalChoke()->Center()) < 480.0)) {
                         proxy = true;
 
-                        if (Units::getEnemyCount(Protoss_Gateway) >= 2)
+                        if (Units::getEnemyCount(Protoss_Gateway) >= 2 && Broodwar->getFrameCount() < 8000)
                             enemyBuild = "2Gate";
                     }
                 }
 
                 // 1GateCore
                 if (unit.getType() == Protoss_Cybernetics_Core) {
-                    if (unit.unit()->isUpgrading())
+                    if (unit.unit()->isUpgrading() && Broodwar->getFrameCount() < 8000)
                         goonRange = true;
 
                     if (Units::getEnemyCount(Protoss_Robotics_Facility) >= 1 && Units::getEnemyCount(Protoss_Gateway) <= 1)
                         enemyBuild = "1GateRobo";
                     else if (Units::getEnemyCount(Protoss_Gateway) >= 4)
                         enemyBuild = "4Gate";
-                    else if ((Units::getEnemyCount(Protoss_Citadel_of_Adun) >= 1 && Units::getEnemyCount(Protoss_Zealot) > 0) || Units::getEnemyCount(Protoss_Templar_Archives) >= 1 || (enemyBuild == "Unknown" && !goonRange && Units::getEnemyCount(Protoss_Dragoon) < 2 && Players::getSupply(PlayerState::Self) > 80))
+                    else if (Units::getEnemyCount(UnitTypes::Protoss_Forge) == 0 && ((Units::getEnemyCount(Protoss_Citadel_of_Adun) >= 1 && Units::getEnemyCount(Protoss_Zealot) > 0) || Units::getEnemyCount(Protoss_Templar_Archives) >= 1 || (enemyBuild == "Unknown" && !goonRange && Units::getEnemyCount(Protoss_Dragoon) < 2 && Players::getSupply(PlayerState::Self) > 80)))
                         enemyBuild = "1GateDT";
                 }
 
                 // Pressure checking
-                if (Units::getEnemyCount(Protoss_Gateway) >= 3)
+                if (Units::getEnemyCount(Protoss_Gateway) >= 3 || (Units::getEnemyCount(Protoss_Dragoon) >= 10 && Broodwar->getFrameCount() < 10000))
                     pressure = true;
 
                 // Proxy Detection
@@ -402,11 +406,7 @@ namespace McRave::Strategy {
         void updateProtossUnitScore(UnitType unit, int cnt)
         {
             double size = double(cnt) * double(unit.supplyRequired());
-
-            auto const vis = [&](UnitType t) {
-                return max(1.0, (double)Broodwar->self()->visibleUnitCount(t));
-            };
-
+            
             switch (unit)
             {
             case Enum::Terran_Marine:
@@ -439,14 +439,14 @@ namespace McRave::Strategy {
                 unitScore[Protoss_High_Templar]			+= size * 0.30;
                 break;
             case Enum::Terran_Siege_Tank_Siege_Mode:
-                unitScore[Protoss_Zealot]				+= size * 0.75;
-                unitScore[Protoss_Dragoon]				+= size * 0.25;
+                unitScore[Protoss_Zealot]				+= size * 0.40;
+                unitScore[Protoss_Dragoon]				+= size * 0.60;
                 unitScore[Protoss_Arbiter]				+= size * 0.70;
                 unitScore[Protoss_High_Templar]			+= size * 0.30;
                 break;
             case Enum::Terran_Siege_Tank_Tank_Mode:
-                unitScore[Protoss_Zealot]				+= size * 0.75;
-                unitScore[Protoss_Dragoon]				+= size * 0.25;
+                unitScore[Protoss_Zealot]				+= size * 0.40;
+                unitScore[Protoss_Dragoon]				+= size * 0.60;
                 unitScore[Protoss_Arbiter]				+= size * 0.70;
                 unitScore[Protoss_High_Templar]			+= size * 0.30;
                 break;
@@ -564,6 +564,10 @@ namespace McRave::Strategy {
             case Enum::Protoss_Corsair:
                 unitScore[Protoss_Dragoon]				+= size * 1.00;
                 unitScore[Protoss_High_Templar]			+= size * 1.00;
+                break;
+            case Enum::Protoss_Photon_Cannon:
+                unitScore[Protoss_Dragoon]				+= 1.00;
+                unitScore[Protoss_Zealot]				+= 0.50;
                 break;
             }
         }
@@ -762,6 +766,7 @@ namespace McRave::Strategy {
     bool enemyScouted() { return enemyScout; }
     bool enemyBust() { return enemyBuild.find("Hydra") != string::npos; }
     bool enemyPressure() { return pressure; }
+    bool enemyBlockedScout() { return blockedScout; }
     int enemyArrivalFrame() { return rushFrame; }
     map <UnitType, double>& getUnitScores() { return unitScore; }
 }

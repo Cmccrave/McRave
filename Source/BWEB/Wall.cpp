@@ -80,7 +80,7 @@ namespace BWEB::Walls
         {
             const auto choke = wall.getChokePoint();
             const auto line = Map::lineOfBestFit(choke);
-            const auto perpLine = Map::perpendicularLine(line, 320.0);
+            const auto perpLine = Map::perpendicularLine(line, 160.0);
             const auto pathEnd = !perpLine.first.isValid() || Map::mapBWEM.GetArea(Map::tConvert(perpLine.first)) == wall.getArea() ? perpLine.second : perpLine.first;
 
             //// If there is only one choke at the natural and the wall is on the main choke, path between the top of the area and just past the main choke, towards the center of the map
@@ -126,7 +126,7 @@ namespace BWEB::Walls
 
         bool goodTightness(Wall& wall, UnitType building, const TilePosition here)
         {
-            // If this is a powering pylon or we are making a pylon wall
+            // If this is a powering pylon and we are not making a pylon wall
             if (building == UnitTypes::Protoss_Pylon && !wall.isPylonWall())
                 return true;
 
@@ -139,8 +139,8 @@ namespace BWEB::Walls
             const auto walkWidth = building.tileWidth() * 4;
 
             // Dimension of UnitType to check tightness for
-            const auto vertTight = (tight == UnitTypes::None) ? 32 : tight.height();
-            const auto horizTight = (tight == UnitTypes::None) ? 32 : tight.width();
+            const auto vertTight = (tight == UnitTypes::None) ? 64 : tight.height();
+            const auto horizTight = (tight == UnitTypes::None) ? 64 : tight.width();
 
             // Checks each side of the building to see if it is valid for walling purposes
             const auto checkL = dimL < horizTight;
@@ -149,10 +149,10 @@ namespace BWEB::Walls
             const auto checkD = dimD < vertTight;
 
             // Figures out how many extra tiles we can check tightness for
-            const auto extraL = max(0, (horizTight - dimL) / 8);
-            const auto extraR = max(0, (horizTight - dimR) / 8);
-            const auto extraU = max(0, (vertTight - dimU) / 8);
-            const auto extraD = max(0, (vertTight - dimD) / 8);
+            const auto extraL = wall.isPylonWall() ? 0 : max(0, (horizTight - dimL) / 8);
+            const auto extraR = wall.isPylonWall() ? 0 : max(0, (horizTight - dimR) / 8);
+            const auto extraU = wall.isPylonWall() ? 0 : max(0, (vertTight - dimU) / 8);
+            const auto extraD = wall.isPylonWall() ? 0 : max(0, (vertTight - dimD) / 8);
 
             // Setup boundary WalkPositions to check for tightness
             const auto left =  Map::wConvert(here) - WalkPosition(1 + extraL, 0);
@@ -188,13 +188,18 @@ namespace BWEB::Walls
                 if (tight != UnitTypes::None && check && (!w.isValid() || !Broodwar->isWalkable(w)))
                     return true;
 
-                // If the tile is touching some resources
-                if (Map::isOverlapping(t))
-                    return true;
+                //// If the tile is touching some resources
+                //if (Map::isOverlapping(t))
+                //    return true;
 
                 // If we don't care about walling tight and the tile isn't walkable
                 if (!requireTight && !Map::isWalkable(t))
                     return true;
+
+                // If there's a mineral field or geyser here
+                if (Map::isUsed(t).isResourceContainer())
+                    return true;
+
                 return false;
             };
 
@@ -290,6 +295,8 @@ namespace BWEB::Walls
             const auto line = Map::lineOfBestFit(wall.getChokePoint());
             const auto angle1 = Map::getAngle(line);
 
+            Broodwar << angle1 << endl;
+
             // Sort all the pieces and iterate over them to find the best wall - by Hannes
             if (find(wall.getRawBuildings().begin(), wall.getRawBuildings().end(), UnitTypes::Protoss_Pylon) != wall.getRawBuildings().end()) {
                 sort(wall.getRawBuildings().begin(), wall.getRawBuildings().end(), [](UnitType l, UnitType r) { return (l == UnitTypes::Protoss_Pylon) < (r == UnitTypes::Protoss_Pylon); }); // Moves pylons to end
@@ -327,7 +334,7 @@ namespace BWEB::Walls
                 auto distBest = DBL_MAX;
 
                 // Iterate 3x3 around the current TilePosition and try to get within 5 tiles
-                while (startCenter.getDistance(wall.getArea()->Bases().front().Center()) > 96.0) {
+                while (startCenter.getDistance(wall.getArea()->Bases().front().Center()) > 160.0) {
                     for (int x = start.x - 1; x <= start.x + 1; x++) {
                         for (int y = start.y - 1; y <= start.y + 1; y++) {
                             const TilePosition t(x, y);
@@ -399,11 +406,12 @@ namespace BWEB::Walls
                     const auto center = Map::pConvert(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
                     const auto chokeDist = closestChokeTile(center).getDistance(center);
 
-                    dist += (!wall.isPylonWall() && type == UnitTypes::Protoss_Pylon) ? -chokeDist : (chokeDist);
+                    dist += (!wall.isPylonWall() && type == UnitTypes::Protoss_Pylon) ? 1.0 / chokeDist : (chokeDist);
                 }
 
                 // Score wall based on path sizes and distances
-                const auto score = !openWall ? dist : log(currentHole.getDistance(startTile) * newPath.getDistance()) / max(1.0, dist);
+                const auto score = !openWall ? dist : (/*currentHole.getDistance(startTile) * */newPath.getDistance()) / max(1.0, dist);
+
                 if (score > bestWallScore) {
                     bestWall = currentWall;
                     bestWallScore = score;
@@ -413,7 +421,7 @@ namespace BWEB::Walls
             const auto goodPower = [&](TilePosition here) {
                 const auto t = *typeIterator;
 
-                if (t != UnitTypes::Protoss_Pylon)
+                if (t != UnitTypes::Protoss_Pylon || wall.isPylonWall())
                     return true;
 
                 // TODO: Create a generic BWEB function that takes 2 tiles and tells you if the 1st tile will power the 2nd tile
@@ -476,21 +484,21 @@ namespace BWEB::Walls
                 return true;
             };
 
-            const auto goodAngle = [&](Position here) {
+            const auto goodAngle = [&](TilePosition here) {
                 const auto typeHere = *typeIterator;
-                const auto centerHere = here + Position(typeHere.tileWidth() * 16, typeHere.tileHeight() * 16);
+                const auto centerHere = Position(here) + Position(typeHere.tileWidth() * 16, typeHere.tileHeight() * 16);
 
                 // If we want a closed wall or we moved the starting iteration position, we don't care the angle of the buildings
                 if (!openWall)
                     return true;
 
-                // If this is a pylon or pylon wall, we don't care about angles as long as the start point wasn't moved
-                if (!wall.isPylonWall() || typeHere != UnitTypes::Protoss_Pylon) {
+                // Check if the angle is okay
+                if (typeHere != UnitTypes::Protoss_Pylon) {
                     for (auto &[tilePiece, typePiece] : currentWall) {
                         const auto centerPiece = Map::pConvert(tilePiece) + Position(typePiece.tileWidth() * 16, typePiece.tileHeight() * 16);
                         const auto angle2 = Map::getAngle(make_pair(centerPiece, centerHere));
                         if (typePiece != UnitTypes::Protoss_Pylon) {
-                            if (abs(angle1 - angle2) > 30.0)
+                            if (abs(angle1 - angle2) > 25.0)
                                 return false;
                         }
                     }
@@ -503,6 +511,8 @@ namespace BWEB::Walls
                 const auto endCenter = Map::pConvert(endTile) + Position(16, 16);
                 Position p;
                 Path pathHome, pathOut;
+
+                return true;
 
                 // Check if we can lift the Barracks to get out
                 if (Broodwar->self()->getRace() == Races::Terran) {
@@ -563,14 +573,14 @@ namespace BWEB::Walls
                         const TilePosition tile(x, y);
                         const auto center = Map::pConvert(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
 
-                        if (!tile.isValid() || (wall.isPylonWall() && center.getDistance(closestChokeTile(center)) > 128.0))
+                        if (!tile.isValid())
                             continue;
 
                         if (!goodPower(tile)) {
                             failedPower++;
                             continue;
                         }
-                        if (!goodAngle(center)) {
+                        if (!goodAngle(tile)) {
                             failedAngle++;
                             continue;
                         }
@@ -615,11 +625,13 @@ namespace BWEB::Walls
                 recursiveCheck(start);
             } while (next_permutation(wall.getRawBuildings().begin(), find(wall.getRawBuildings().begin(), wall.getRawBuildings().end(), UnitTypes::Protoss_Pylon)));
 
-            /*Broodwar << "Angle: " << failedAngle << endl;
+            /*Broodwar << "Power: " << failedPower << endl;
+            Broodwar << "Angle: " << failedAngle << endl;
             Broodwar << "Placement: " << failedPlacement << endl;
             Broodwar << "Tight: " << failedTight << endl;
             Broodwar << "Path: " << failedPath << endl;
             Broodwar << "Spawn: " << failedSpawn << endl;*/
+
             return !bestWall.empty();
         }
     }
@@ -670,7 +682,7 @@ namespace BWEB::Walls
                     || Map::isOverlapping(t, building.tileWidth(), building.tileHeight())
                     || !Map::isPlaceable(building, t)
                     || Map::tilesWithinArea(wall.getArea(), t, 2, 2) == 0
-                    || (isDefense && (center.getDistance(Map::pConvert(wall.getChokePoint()->Center())) < furthest || center.getDistance(doorCenter) < 96.0)))
+                    || (isDefense && (center.getDistance(Map::pConvert(wall.getChokePoint()->Center())) < furthest - 64.0 || center.getDistance(doorCenter) < 64.0)))
                     continue;
 
                 const auto dist = center.getDistance(doorCenter);

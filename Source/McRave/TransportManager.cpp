@@ -2,6 +2,7 @@
 
 using namespace BWAPI;
 using namespace std;
+using namespace UnitTypes;
 
 namespace McRave::Transports {
 
@@ -13,7 +14,12 @@ namespace McRave::Transports {
             return log(min(500.0, max(100.0, double(Broodwar->getFrameCount() - Grids::lastVisitedFrame(w)))));
         }
 
-        void updateCargo(UnitInfo& unit)
+        void removeCargo(UnitInfo& unit)
+        {
+
+        }
+
+        void addCargo(UnitInfo& unit)
         {
             auto cargoSize = 0;
             for (auto &c : unit.getAssignedCargo()) {
@@ -40,22 +46,42 @@ namespace McRave::Transports {
 
             // Check if we are ready to assign this unit to a transport
             const auto readyToAssignUnit = [&](UnitInfo& cargo) {
-                if (cargoSize + cargo.getType().spaceRequired() > 8 || cargo.hasTransport())
-                    return false;
-
                 auto targetDist = BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getEngagePosition());
 
-                if (cargo.getType() == UnitTypes::Protoss_Reaver || cargo.getType() == UnitTypes::Protoss_High_Templar)
+                if (cargo.getType() == Protoss_Reaver || cargo.getType() == Protoss_High_Templar)
                     return true;
                 if (Terrain::isIslandMap() && !cargo.getType().isFlyer() && targetDist > 640.0)
                     return true;
                 return false;
             };
 
-            // Update cargo information
+            // Check if we are ready to remove any units
+            auto &cargoList = unit.getAssignedCargo();
+            for (auto &c = cargoList.begin(); c != cargoList.end(); c++) {
+                auto &cargo = *(c->lock());
+
+                if (cargo.getRole() == Role::Combat && !readyToAssignUnit(cargo)) {
+                    cargoList.erase(c);
+                    cargo.setTransport(nullptr);
+                    cargoSize -= cargo.getType().spaceRequired();
+                    break;
+                }
+
+                if (cargo.getRole() == Role::Worker && !readyToAssignWorker(cargo)) {
+                    cargoList.erase(c);
+                    cargo.setTransport(nullptr);
+                    cargoSize -= cargo.getType().spaceRequired();
+                    break;
+                }
+            }
+
+            // Check if we are ready to add any units
             if (cargoSize < 8) {
                 for (auto &c : Units::getUnits(PlayerState::Self)) {
                     auto &cargo = *c;
+
+                    if (cargoSize + cargo.getType().spaceRequired() > 8 || cargo.hasTransport())
+                        continue;
 
                     if (cargo.getRole() == Role::Combat && readyToAssignUnit(cargo)) {
                         cargo.setTransport(&unit);
@@ -74,54 +100,69 @@ namespace McRave::Transports {
 
         void updateTransportState(UnitInfo& unit)
         {
-            UnitInfo * closestCargo = nullptr;
+            shared_ptr<UnitInfo> closestCargo = nullptr;
             auto distBest = DBL_MAX;
             for (auto &c : unit.getAssignedCargo()) {
                 if (c.expired())
                     continue;
                 auto &cargo = c.lock();
 
-                if (auto &cargo = c.lock()) {
-                    auto dist = cargo->getPosition().getDistance(unit.getPosition());
-                    if (dist < distBest) {
-                        distBest = dist;
-                        closestCargo = &*cargo;
-                    }
+                auto dist = cargo->getPosition().getDistance(unit.getPosition());
+                if (dist < distBest) {
+                    distBest = dist;
+                    closestCargo = cargo;
                 }
             }
 
-            // Check if this unit is ready to fight
-            const auto readyToFight = [&](UnitInfo& cargo) {
-                auto reaverReady = cargo.getType() == UnitTypes::Protoss_Reaver && cargo.canStartAttack();
-                auto templarReady = cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.canStartCast(TechTypes::Psionic_Storm);
+            if (closestCargo)
+                Broodwar->drawLineMap(unit.getPosition(), closestCargo->getPosition(), Colors::Cyan);
 
-                if (cargo.getLocalState() == LocalState::Retreat || !unit.getTargetedBy().empty() || unit.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT || cargo.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT)
+            auto closestThreat = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) {
+                return u.getAirDamage() > 0;
+            });
+            auto threatWithinRange = closestThreat ? closestThreat->isWithinRange(unit) : false;
+
+            // Check if the transport is too close
+            const auto tooClose = [&](UnitInfo& cargo) {
+                if (cargo.getType() != Protoss_High_Templar && cargo.getType() != Protoss_Reaver)
                     return false;
-                return cargo.getLocalState() == LocalState::Attack && (reaverReady || templarReady);
+
+                const auto range = cargo.getTarget().getType().isFlyer() ? cargo.getAirRange() : cargo.getGroundRange();
+                const auto targetDist = cargo.getType() == Protoss_High_Templar ? cargo.getPosition().getDistance(cargo.getTarget().getPosition()) : BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getTarget().getPosition());
+
+                return targetDist <= range;
+            };
+
+            // Check if the transport is too far
+            const auto tooFar = [&](UnitInfo& cargo) {
+                if (cargo.getType() != Protoss_High_Templar && cargo.getType() != Protoss_Reaver)
+                    return false;
+
+                const auto range = cargo.getTarget().getType().isFlyer() ? cargo.getAirRange() : cargo.getGroundRange();
+                const auto targetDist = cargo.getType() == Protoss_High_Templar ? cargo.getPosition().getDistance(cargo.getTarget().getPosition()) : BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getTarget().getPosition());
+
+                return targetDist >= range + 96.0;
             };
 
             // Check if this unit is ready to unload
             const auto readyToUnload = [&](UnitInfo& cargo) {
-                auto reaverReady = cargo.getType() == UnitTypes::Protoss_Reaver && cargo.canStartAttack();
-                auto templarReady = cargo.getType() == UnitTypes::Protoss_High_Templar && cargo.canStartCast(TechTypes::Psionic_Storm);
-                auto targetDist = cargo.getPosition().getDistance(cargo.getEngagePosition());
+                auto cargoReady = cargo.getType() == Protoss_High_Templar ? cargo.canStartCast(TechTypes::Psionic_Storm) : cargo.canStartAttack();
 
-                return targetDist <= 64.0 && (reaverReady || templarReady);
+                return cargo.getLocalState() == LocalState::Attack && unit.isHealthy() && cargo.isHealthy() && cargoReady;
             };
 
             // Check if this unit is ready to be picked up
-            const auto readyToPickup = [&](UnitInfo& cargo) {
-                auto attackCooldown = (Broodwar->getFrameCount() - cargo.getLastAttackFrame() <= 60 - Broodwar->getLatencyFrames());
-                auto reaver = cargo.getType() == UnitTypes::Protoss_Reaver;
-                auto ht = cargo.getType() == UnitTypes::Protoss_High_Templar;
-                auto threat = Grids::getEGroundThreat(cargo.getWalkPosition()) > 0.0;
-                auto targetDist = reaver && cargo.hasTarget() ? BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getTarget().getPosition()) - 256.0 : cargo.getPosition().getDistance(cargo.getEngagePosition());
+            const auto readyToLoad = [&](UnitInfo& cargo) {
+                if (!cargo.hasTarget())
+                    return true;
 
-                if (unit.getPosition().getDistance(cargo.getPosition()) <= 160.0 || &cargo == closestCargo) {
-                    if (!cargo.hasTarget() || cargo.getLocalState() == LocalState::Retreat || targetDist > 128.0 || (ht && !cargo.canStartCast(TechTypes::Psionic_Storm)) || (reaver && attackCooldown && threat)) {
-                        return true;
-                    }
-                }
+                auto range = cargo.getTarget().getType().isFlyer() ? cargo.getAirRange() : cargo.getGroundRange();
+                auto cargoReady = cargo.getType() == Protoss_High_Templar ? cargo.canStartCast(TechTypes::Psionic_Storm) : cargo.canStartAttack();
+                auto targetDist = cargo.getType() == Protoss_High_Templar ? cargo.getPosition().getDistance(cargo.getTarget().getPosition()) : BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getTarget().getPosition());
+                auto threat = Grids::getEGroundThreat(cargo.getWalkPosition()) > 0.0;
+
+                if (unit.getPosition().getDistance(cargo.getPosition()) <= 128.0 || cargo.shared_from_this() == closestCargo)
+                    return (cargo.getLocalState() == LocalState::Retreat || targetDist > range + 96.0 || !cargoReady);
                 return false;
             };
 
@@ -139,8 +180,16 @@ namespace McRave::Transports {
                 return false;
             };
 
+            const auto setState = [&](TransportState state) {
+                if (state == TransportState::Monitoring || state == TransportState::Loading)
+                    unit.setTransportState(state);
+                if (state == TransportState::Retreating && unit.getTransportState() != TransportState::Monitoring && unit.getTransportState() != TransportState::Loading)
+                    unit.setTransportState(state);
+                if (state == TransportState::Engaging && unit.getTransportState() == TransportState::None)
+                    unit.setTransportState(state);
+            };
+
             // Check if we should be loading/unloading any cargo
-            bool shouldMonitor = false;
             for (auto &c : unit.getAssignedCargo()) {
                 if (!c.lock())
                     continue;
@@ -150,47 +199,54 @@ namespace McRave::Transports {
                 if (!cargo.unit()->isLoaded()) {
 
                     // If it's requesting a pickup, set load state to 1	
-                    if (readyToPickup(cargo)) {
-                        unit.setTransportState(TransportState::Loading);
+                    if (readyToLoad(cargo)) {
+                        setState(TransportState::Loading);
                         unit.setDestination(cargo.getPosition());
-                        return;
                     }
-                    else if (unit.getTargetedBy().empty()) {
+                    else if (cargo.shared_from_this() == closestCargo) {
+                        setState(TransportState::Monitoring);
                         unit.setDestination(cargo.getPosition());
-                        shouldMonitor = true;
                     }
                 }
 
                 // Else if the cargo is loaded
-                else if (cargo.unit()->isLoaded() && cargo.hasTarget() && cargo.getEngagePosition().isValid()) {
+                else if (cargo.unit()->isLoaded()) {
 
-                    unit.setDestination(cargo.getEngagePosition());
+                    if (cargo.hasTarget() && cargo.getEngagePosition().isValid()) {
+                        if (readyToUnload(cargo)) {
+                            unit.setDestination(cargo.getEngagePosition());
+                            if (!tooFar(cargo))
+                                unit.unit()->unload(cargo.unit());
 
-                    if (readyToUnload(cargo))
-                        unit.unit()->unload(cargo.unit());                    
-                    else if (readyToFight(cargo))
-                        unit.setTransportState(TransportState::Engaging);
-                    else
-                        unit.setTransportState(TransportState::Retreating);
+                            setState(TransportState::Engaging);
+                        }
+                        else if (tooClose(cargo))
+                            setState(TransportState::Retreating);
+                        else if (tooFar(cargo) && unit.getGlobalState() == GlobalState::Attack)
+                            setState(TransportState::Engaging);
+                    }
                 }
-
-                // Dont attack until we're ready
-                else if (cargo.getGlobalState() == GlobalState::Retreat)
-                    unit.setDestination(BWEB::Map::getNaturalPosition());
             }
 
-            if (shouldMonitor)
-                unit.setTransportState(TransportState::Monitoring);
+            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Purple);
         }
 
         void updateDestination(UnitInfo& unit)
         {
-            // Resort to going to the army center as long as we have an army
+            // If we have no cargo, wait at nearest base
+            if (unit.getAssignedCargo().empty()) {
+                auto station = Stations::getClosestStation(PlayerState::Self, unit.getPosition());
+                if (station)
+                    unit.setDestination(station);
+            }
+
+            // Try going to the army center as long as we have an army
             if (!unit.getDestination().isValid() && !Combat::getCombatClusters().empty()) {
                 auto highestClusterPosition = (*Combat::getCombatClusters().rbegin()).second;
                 unit.setDestination(highestClusterPosition);
             }
 
+            // Resort to main, hopefully we still have it
             if (!unit.getDestination().isValid())
                 unit.setDestination(BWEB::Map::getMainPosition());
         }
@@ -220,10 +276,18 @@ namespace McRave::Transports {
                 auto &unit = *u;
 
                 if (unit.getRole() == Role::Transport) {
-                    updateCargo(unit);
+                    removeCargo(unit);
+                    addCargo(unit);
                     updateTransportState(unit);
                     updateDestination(unit);
                     updateDecision(unit);
+
+                    if (unit.getTransportState() == TransportState::Engaging)
+                        unit.circleGreen();
+                    if (unit.getTransportState() == TransportState::Retreating)
+                        unit.circleRed();
+                    if (unit.getTransportState() == TransportState::Monitoring)
+                        unit.circleYellow();
                 }
             }
         }
@@ -240,7 +304,7 @@ namespace McRave::Transports {
     {
         if (unit.hasTransport()) {
             auto &cargoList = unit.getTransport().getAssignedCargo();
-            for (auto &cargo = cargoList.begin(); cargo != cargoList.end(); cargo++){
+            for (auto &cargo = cargoList.begin(); cargo != cargoList.end(); cargo++) {
                 if (cargo->lock() && cargo->lock() == unit.shared_from_this()) {
                     cargoList.erase(cargo);
                     break;

@@ -109,6 +109,8 @@ public:
 	// Returns the number of ChokePoints.
 	virtual int							ChokePointCount() const = 0;
 
+    virtual const std::vector<ChokePoint> &	GetChokePoints(const Area * a, const Area * b) const = 0;
+
 	// Returns a Tile, given its position.
 	const Tile &						GetTile(const BWAPI::TilePosition & p, utils::check_t checkMode = utils::check_t::check) const	{ bwem_assert((checkMode == utils::check_t::no_check) || Valid(p)); utils::unused(checkMode); return m_Tiles[Size().x * p.y + p.x]; }
 

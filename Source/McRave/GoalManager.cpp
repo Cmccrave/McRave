@@ -50,7 +50,7 @@ namespace McRave::Goals {
                     auto station = *s.second;
 
                     if (station.getBWEMBase()->Location() != BWEB::Map::getNaturalTile() && station.getBWEMBase()->Location() != BWEB::Map::getMainTile() && station.getDefenseCount() == 0) {
-                        assignPercentToGoal(station.getBWEMBase()->Center(), UnitTypes::Protoss_Dragoon, 0.15);
+                        assignNumberToGoal(station.getBWEMBase()->Center(), UnitTypes::Protoss_Dragoon, 2);
                     }
                 }
             }
@@ -90,7 +90,7 @@ namespace McRave::Goals {
             Position nextExpand(Buildings::getCurrentExpansion());
             if (nextExpand.isValid()) {
                 UnitType building = Broodwar->self()->getRace().getResourceDepot();
-                if (BuildOrder::buildCount(building) > Broodwar->self()->visibleUnitCount(building)) {
+                if (Broodwar->self()->visibleUnitCount(building) >= 2 && BuildOrder::buildCount(building) > Broodwar->self()->visibleUnitCount(building)) {
                     if (Players::vZ())
                         assignPercentToGoal(nextExpand, UnitTypes::Protoss_Zealot, 0.15);
                     else {
@@ -113,11 +113,17 @@ namespace McRave::Goals {
 
             // Deny enemy expansions
             // PvT
-            if (Stations::getMyStations().size() >= 3 && Terrain::getEnemyExpand().isValid()) {
+            if (Stations::getMyStations().size() >= 3 && Terrain::getEnemyExpand().isValid() && Terrain::getEnemyExpand() != Buildings::getCurrentExpansion() && BWEB::Map::isUsed(Terrain::getEnemyExpand()) == UnitTypes::None) {
                 if (Players::vT() || Players::vP())
                     assignPercentToGoal((Position)Terrain::getEnemyExpand(), UnitTypes::Protoss_Dragoon, 0.15);
                 else
                     assignNumberToGoal((Position)Terrain::getEnemyExpand(), UnitTypes::Protoss_Dark_Templar, 1);
+            }
+
+            // Defend our natural versus 2Fact
+            // PvT
+            if (Players::vT() && Strategy::enemyPressure() && !BuildOrder::isPlayPassive() && Broodwar->getFrameCount() < 15000) {
+                assignNumberToGoal(BWEB::Map::getNaturalPosition(), UnitTypes::Protoss_Dragoon, 2);
             }
         }
 

@@ -53,7 +53,7 @@ namespace McRave::Learning {
                 if (build == "NexusGate" || build == "GateNexus")
                     return t;
                 if (build == "FFE")
-                    return z;
+                    return z && !Terrain::isShitMap() && !Terrain::isIslandMap();
             }
 
             if (Broodwar->self()->getRace() == Races::Terran && build != "") {
@@ -89,7 +89,7 @@ namespace McRave::Learning {
 
                 if (build == "2Gate") {
                     if (opener == "Proxy")
-                        return true;
+                        return !Terrain::isIslandMap() && (p /*|| z*/);
                     if (opener == "Natural")
                         return false;
                     if (opener == "Main")
@@ -133,13 +133,13 @@ namespace McRave::Learning {
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (build == "1GateCore") {
                     if (transition == "DT")
-                        return p || t /*|| z*/;
+                        return !Terrain::isShitMap() && (p || t /*|| z*/);
                     if (transition == "3GateRobo")
                         return p || r;
                     if (transition == "Robo")
-                        return p /*|| t*/ || r;
+                        return !Terrain::isShitMap() && !Terrain::isFlatRamp() && !Terrain::isReverseRamp() && (p /*|| t*/ || r);
                     if (transition == "4Gate")
-                        return p || t;
+                        return p;
                 }
 
                 if (build == "2Gate") {
@@ -148,7 +148,7 @@ namespace McRave::Learning {
                     if (transition == "Robo")
                         return p /*|| t*/ || r;
                     if (transition == "Expand")
-                        return p;
+                        return false;
                     if (transition == "DoubleExpand")
                         return t;
                     if (transition == "4Gate")
@@ -208,6 +208,8 @@ namespace McRave::Learning {
                     BuildOrder::setLearnedBuild("2Gate", "Main", "4Gate");
                 else if (Players::vT())
                     BuildOrder::setLearnedBuild("GateNexus", "1Gate", "Standard");
+                else
+                    BuildOrder::setLearnedBuild("2Gate", "Main", "Robo");
             }
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 if (Players::vZ())
@@ -223,7 +225,11 @@ namespace McRave::Learning {
 
     void onEnd(bool isWinner)
     {
-        if (Players::getPlayers().size() > 3)
+        if (!Broodwar->enemy() || Players::getPlayers().size() > 3)
+            return;
+
+        // HACK: Don't touch records if we play Plasma
+        if (Terrain::isIslandMap())
             return;
 
         // File extension including our race initial;
@@ -299,6 +305,22 @@ namespace McRave::Learning {
                 BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "3HatchLing");
                 isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                 return;
+            }
+        }
+
+
+        if (Terrain::isIslandMap()) {
+            if (Broodwar->self()->getRace() == Races::Protoss) {
+                if (Players::vT()) {
+                    BuildOrder::setLearnedBuild("NexusGate", "Dragoon", "ReaverCarrier");
+                    isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
+                    return;
+                }
+                else {
+                    BuildOrder::setLearnedBuild("1GateCore", "1Zealot", "4Gate");
+                    isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
+                    return;
+                }
             }
         }
 
@@ -399,7 +421,7 @@ namespace McRave::Learning {
                 numGames = w + l;
 
                 double winRate = numGames > 0 ? double(w) / double(numGames) : 0;
-                double ucbVal = sqrt(2.0 * log((double)totalGamesPlayed) / numGames);
+                double ucbVal = numGames > 0 ? cbrt(2.0 * log((double)totalGamesPlayed) / double(numGames)) : DBL_MAX;
                 double val = winRate + ucbVal;
 
                 if (w > 0 && l == 0)

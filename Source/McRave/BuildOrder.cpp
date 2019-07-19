@@ -87,7 +87,7 @@ namespace McRave::BuildOrder
         if (Broodwar->self()->getRace() == Races::Protoss) {
             if (Broodwar->self()->minerals() > 400 + (50 * com(baseType)))
                 return true;
-            else if (techUnit == None && !Production::hasIdleProduction() && Resources::isMinSaturated() && techSat && productionSat)
+            else if (techUnit == None && Resources::isMinSaturated() && techSat && productionSat)
                 return true;
         }
         else if (Broodwar->self()->getRace() == Races::Terran) {
@@ -108,7 +108,7 @@ namespace McRave::BuildOrder
                 return true;
         }
         else {
-            if (!productionSat && Broodwar->self()->minerals() >= 150 && (!Production::hasIdleProduction() || Players::getSupply(PlayerState::Self) >= 300 || Broodwar->self()->minerals() > 600))
+            if (!productionSat && Broodwar->self()->minerals() >= 150)
                 return true;
         }
         return false;
@@ -125,8 +125,7 @@ namespace McRave::BuildOrder
         }
 
         else if (Broodwar->self()->getRace() == Races::Protoss)
-            return Broodwar->self()->visibleUnitCount(Protoss_Assimilator) != 1 || workerCount >= 28 || Broodwar->self()->minerals() > 600;
-
+            return vis(Protoss_Assimilator) != 1 || workerCount >= 34 || Broodwar->self()->minerals() > 600;
 
         else if (Broodwar->self()->getRace() == Races::Terran)
             return true;
@@ -228,24 +227,33 @@ namespace McRave::BuildOrder
         }
 
         // Add Reavers if we have a Observer
-        if (Players::vP() && vis(Protoss_Observer) >= 1) {
+        if (Players::vP() && vis(Protoss_Observer) >= 1 && currentTransition != "4Gate") {
             techList.insert(Protoss_Reaver);
             unlockedType.insert(Protoss_Reaver);
         }
 
         // Add Shuttles if we have Reavers/HT
-        if (com(Protoss_Robotics_Facility) > 0 && (isTechUnit(Protoss_Reaver) || isTechUnit(Protoss_High_Templar))) {
+        if (com(Protoss_Robotics_Facility) > 0 && (isTechUnit(Protoss_Reaver) || isTechUnit(Protoss_High_Templar) || (Players::vP() && !Strategy::needDetection() && isTechUnit(Protoss_Observer)))) {
             unlockedType.insert(Protoss_Shuttle);
             techList.insert(Protoss_Shuttle);
         }
 
-        // Add HT if enemy has detection
-        if (com(Protoss_Dark_Templar) >= 1) {
-            if (Units::getEnemyCount(Protoss_Observer) > 0 || Units::getEnemyCount(Protoss_Photon_Cannon) > 0 || Units::getEnemyCount(Terran_Science_Vessel) > 0 || Units::getEnemyCount(Terran_Missile_Turret) > 0 || Units::getEnemyCount(Terran_Vulture_Spider_Mine) > 0 || Units::getEnemyCount(Zerg_Overlord) > 0) {
-                unlockedType.insert(Protoss_High_Templar);
-                techList.insert(Protoss_High_Templar);
-            }
-        }
+        //// Add HT or Arbiter if enemy has detection
+        //if (com(Protoss_Dark_Templar) >= 1) {
+        //    auto hasDetection = Units::getEnemyCount(Protoss_Observer) > 0
+        //        || Units::getEnemyCount(Protoss_Photon_Cannon) > 0
+        //        || Units::getEnemyCount(Terran_Science_Vessel) > 0
+        //        || Units::getEnemyCount(Terran_Missile_Turret) > 0 
+        //        || Units::getEnemyCount(Terran_Vulture_Spider_Mine) > 0
+        //        || Units::getEnemyCount(Zerg_Overlord) > 0;
+
+        //    auto substitute = Players::vT() ? Protoss_Arbiter : Protoss_High_Templar;
+
+        //    if (!Strategy::enemyPressure()) {
+        //        unlockedType.insert(substitute);
+        //        techList.insert(substitute);
+        //    }
+        //}
     }
 
     void checkAllTech()

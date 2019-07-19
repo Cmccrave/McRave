@@ -14,6 +14,7 @@ namespace McRave::Terrain {
     BWAPI::Position closestUnexploredStart();
     BWAPI::Position randomBasePosition();
        
+    bool isShitMap();
     bool isIslandMap();
     bool isReverseRamp();
     bool isFlatRamp();

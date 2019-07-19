@@ -9,13 +9,15 @@
 
 // *** TODO ***
 // Re-power buildings
+// Too many pylons on Plasma only?
+// Plasma? - bad targeting, remove units from shuttles in range, too many shuttles
+// Attacking proxies with scouts
 // Add frame timeouts for allowable enemy build detection
-// DTs get stuck between core/gate/pylon
-// Units getting stuck moving along paths occasionally
+// Targeting neutrals isn't necessarily best option
 
-// Scout targets
-// - Check for Nexus when we see no gateways in PvP (find timing for this and check after this time based on last visible frame on our grid)
-// - Check for 3rd against Z when we see 2 hatchery and no gas
+// Critical:
+// HT blocking buildings
+// Closest cargo to transport
 
 using namespace BWAPI;
 using namespace std;
@@ -34,7 +36,7 @@ void McRaveModule::onStart()
     Broodwar->setCommandOptimizationLevel(0);
     Broodwar->setLatCom(true);
     Broodwar->sendText("glhf");
-    Broodwar->setLocalSpeed(Broodwar->getGameType() != BWAPI::GameTypes::Use_Map_Settings ? 0 : 10);
+    Broodwar->setLocalSpeed(Broodwar->getGameType() != BWAPI::GameTypes::Use_Map_Settings ? 0 : 42);
 }
 
 void McRaveModule::onEnd(bool isWinner)

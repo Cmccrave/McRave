@@ -215,7 +215,7 @@ namespace McRave::Stations {
             auto s1 = s.first;
 
             // For each connected station, check if it exists
-            auto connectedStations = s.second;
+            auto &connectedStations = s.second;
             for (auto &pair : connectedStations) {
                 auto s2 = pair.first;
                 auto &path = pair.second;

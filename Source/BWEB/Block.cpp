@@ -9,6 +9,16 @@ namespace BWEB::Blocks
         vector<Block> allBlocks;
         map<const BWEM::Area *, int> typePerArea;
 
+        int countPieces(vector<Piece> pieces, Piece type)
+        {
+            auto count = 0;
+            for (auto &piece : pieces) {
+                if (piece == type)
+                    count++;
+            }
+            return count;
+        }
+
         vector<Piece> whichPieces(int width, int height)
         {
             vector<Piece> pieces;
@@ -92,7 +102,7 @@ namespace BWEB::Blocks
             Map::addOverlap(here, newBlock.width(), newBlock.height());
         }
 
-        void findMainStartBlock()
+        void findMainStartBlock(Position here)
         {
             const auto race = Broodwar->self()->getRace();
             vector<Piece> pieces;
@@ -104,14 +114,11 @@ namespace BWEB::Blocks
 
             auto tileBest = TilePositions::Invalid;
             auto distBest = DBL_MAX;
-            auto start = (Map::getMainTile() + (Map::getMainChoke() ? TilePosition(Map::getMainChoke()->Center()) : Map::getMainTile())) / 2;
-
-            if (race == Races::Zerg)
-                start = Map::getMainTile();
+            auto start = TilePosition(here);
 
             // Try to find a block near our starting location
-            for (auto x = start.x - 10; x <= start.x + 6; x++) {
-                for (auto y = start.y - 10; y <= start.y + 6; y++) {
+            for (auto x = start.x - 20; x <= start.x + 20; x++) {
+                for (auto y = start.y - 20; y <= start.y + 20; y++) {
                     const TilePosition tile(x, y);
 
                     if (!tile.isValid()
@@ -119,7 +126,7 @@ namespace BWEB::Blocks
                         continue;
 
                     const auto blockCenter = Position(tile) + Position(128, 80);
-                    const auto dist = blockCenter.getDistance(Map::getMainPosition()) + log(blockCenter.getDistance((Position)Map::getMainChoke()->Center()));
+                    const auto dist = blockCenter.getDistance(here);
 
                     if (dist < distBest && ((race == Races::Protoss && canAddBlock(tile, 8, 5))
                         || (race == Races::Terran && canAddBlock(tile, 6, 5))
@@ -236,6 +243,8 @@ namespace BWEB::Blocks
         {
             multimap<double, TilePosition> tilesByPathDist;
             map<Piece, int> mainPieces;
+            int totalMedium = 0;
+            int totalLarge = 0;
 
             // Calculate distance for each tile to our natural choke, we want to place bigger blocks closer to the chokes
             for (int y = 0; y < Broodwar->mapHeight(); y++) {
@@ -258,18 +267,22 @@ namespace BWEB::Blocks
                     if (pieces.empty())
                         continue;
 
-                    const auto hasMedium = find(pieces.begin(), pieces.end(), Piece::Medium) != pieces.end();
-                    const auto hasLarge = find(pieces.begin(), pieces.end(), Piece::Large) != pieces.end();
+                    const auto mediumCount = countPieces(pieces, Piece::Medium);
+                    const auto largeCount = countPieces(pieces, Piece::Large);
 
                     for (auto &[_, tile] : tilesByPathDist) {
 
-                        if (hasMedium && Map::mapBWEM.GetArea(tile) != Map::getMainArea() && Broodwar->self()->getRace() == Races::Protoss)
-                            continue;
-                        if (hasLarge && Map::mapBWEM.GetArea(tile) == Map::getMainArea() && mainPieces[Piece::Large] >= 8 && mainPieces[Piece::Medium] < 10)
+                        //if (totalMedium > 16 && mediumCount > 0 && Map::mapBWEM.GetArea(tile) != Map::getMainArea() && Broodwar->self()->getRace() == Races::Protoss)
+                        //    continue;
+                        if (largeCount > 0 && Map::mapBWEM.GetArea(tile) == Map::getMainArea() && mainPieces[Piece::Large] >= 12 && mainPieces[Piece::Medium] < 10)
                             continue;
 
                         if (canAddBlock(tile, i, j)) {
                             insertBlock(tile, pieces);
+
+                            totalMedium += mediumCount;
+                            totalLarge += largeCount;
+
                             if (Map::mapBWEM.GetArea(tile) == Map::getMainArea()) {
                                 for (auto &piece : pieces)
                                     mainPieces[piece]++;
@@ -322,10 +335,10 @@ namespace BWEB::Blocks
             };
 
             // Check if there's a blocking neutral between the positions to prevent bad pathing
-            const auto blockedPath = [&](Position source, Position target) {                
+            const auto blockedPath = [&](Position source, Position target) {
                 for (auto &choke : Map::mapBWEM.GetPath(source, target)) {
-                    if (Map::isUsed(TilePosition(choke->Center())) != UnitTypes::None)                        
-                        return true;                    
+                    if (Map::isUsed(TilePosition(choke->Center())) != UnitTypes::None)
+                        return true;
                 }
                 return false;
             };
@@ -346,7 +359,7 @@ namespace BWEB::Blocks
                     const Position blockCenter = Position(topLeft) + Position(160, 96);
 
                     // Consider each start location
-                    auto dist = 0.0;                    
+                    auto dist = 0.0;
                     for (auto &base : enemyStartLocations) {
                         const auto baseCenter = Position(base) + Position(64, 48);
                         dist += Map::getGroundDistance(blockCenter, baseCenter);
@@ -387,8 +400,8 @@ namespace BWEB::Blocks
     void findBlocks()
     {
         // Customized: want 2 start blocks
-        findMainStartBlock();
-        findMainStartBlock();
+        findMainStartBlock(Position(Map::getMainChoke()->Center()));
+        findMainStartBlock(Map::getMainPosition());
         findMainDefenseBlock();
         findProxyBlock();
         findProductionBlocks();
