@@ -72,7 +72,7 @@ namespace McRave::BuildOrder::Protoss
             // Various hardcoded tech choices
             else if (currentTransition == "DT" && Players::vT() && !isTechUnit(Protoss_Arbiter))
                 techUnit = Protoss_Arbiter;
-            else if (currentTransition == "DT" && !isTechUnit(Protoss_High_Templar))
+            else if (currentTransition == "DT" && !Players::vT() && !isTechUnit(Protoss_High_Templar))
                 techUnit = Protoss_High_Templar;
             else if (Players::vP() && techList.find(Protoss_Observer) == techList.end() && !techList.empty())
                 techUnit = Protoss_Observer;
@@ -81,7 +81,7 @@ namespace McRave::BuildOrder::Protoss
             else if (Strategy::getEnemyBuild() == "4Gate" && !isTechUnit(Protoss_Dark_Templar) && !Strategy::enemyGasSteal())
                 techUnit = Protoss_Dark_Templar;
             else if (currentTransition == "4Gate")
-                techUnit = Players::vZ() ? Protoss_Corsair : Protoss_High_Templar;
+                techUnit = Players::vZ() ? Protoss_Corsair : Protoss_Reaver;
             else if (techUnit == None)
                 getNewTech();
         }
@@ -93,64 +93,69 @@ namespace McRave::BuildOrder::Protoss
 
     void situational()
     {
-        auto skipFirstTech = Players::vT() ? 1 : 2 * int(currentTransition == "4Gate" || currentTransition == "5GateGoon" || (Strategy::enemyGasSteal() && !Terrain::isNarrowNatural()));
+        // How many tech we skip per base
+        auto skipOneTech = Players::vT() + int(firstUnit == None || (firstUnit != None && Stations::getMyStations().size() >= 2) || Strategy::getEnemyBuild() == "FFE" || (Strategy::enemyGasSteal() && !Terrain::isNarrowNatural()));
 
-        // Metrics for when to Expand/Add Production/Add Tech
-        auto satVal = 2.5;
-        auto prodVal = com(Protoss_Gateway) + com(Protoss_Stargate);
+        // Metrics for when to Expand/Add Production/Add Tech        
+        auto prodVal = com(Protoss_Gateway);
         auto baseVal = double(com(Protoss_Nexus));
-        auto techVal = int(techList.size()) + skipFirstTech - isTechUnit(Protoss_Shuttle);
+        auto satVal = int(2.5 * baseVal);
+        auto techVal = int(techList.size()) + skipOneTech - isTechUnit(Protoss_Shuttle) - isTechUnit(Protoss_Observer) + isTechUnit(Protoss_Arbiter);
 
         // Subtract DT from tech units if we're on 3 bases
         if (com(Protoss_Nexus) >= 3)
             techVal -= isTechUnit(Protoss_Dark_Templar);
 
-        // Against FFE add a Nexus for every 2 cannons we see
+        // Against FFE add a Nexus
         if (Strategy::getEnemyBuild() == "FFE" && Broodwar->getFrameCount() < 15000) {
-            auto cannonCount = Units::getEnemyCount(Protoss_Photon_Cannon);
+            auto cannonCount = Players::getCurrentCount(PlayerState::Enemy, Protoss_Photon_Cannon);
+            fastExpand = true;
 
             if (cannonCount < 6) {
                 itemQueue[Protoss_Nexus] = Item(2);
-                gasLimit = !Resources::isMinSaturated() ? vis(Protoss_Nexus) : INT_MAX;
+                itemQueue[Protoss_Assimilator] = Item((vis(Protoss_Nexus) >= 2) + (s >= 120));
+                zealotLimit = 0;
+                gasLimit = vis(Protoss_Nexus) != buildCount(Protoss_Nexus) ? 0 : INT_MAX;
             }
             else {
                 itemQueue[Protoss_Nexus] = Item(3);
-                gasLimit = !Resources::isMinSaturated() ? vis(Protoss_Nexus) : INT_MAX;
+                itemQueue[Protoss_Assimilator] = Item((vis(Protoss_Nexus) >= 2) + (s >= 120));
+                zealotLimit = 0;
+                gasLimit = vis(Protoss_Nexus) != buildCount(Protoss_Nexus) ? 0 : INT_MAX;
             }
         }
 
         // Saturation
-        productionSat = (prodVal >= int(satVal * baseVal));
-        techSat = (techVal >= baseVal) && (!delayFirstTech || productionSat);
+        productionSat = prodVal >= satVal;
+        techSat = techVal >= baseVal;
 
         // If we have our tech unit, set to none
         if (techComplete())
             techUnit = None;
 
         // If production is saturated and none are idle or we need detection, choose a tech
-        if ((!getOpening && !getTech && !techSat) || (Strategy::needDetection() && !isTechUnit(desiredDetection)))
+        if ((!getOpening && !getTech && !techSat && techUnit == None) || (Strategy::needDetection() && !isTechUnit(desiredDetection)))
             getTech = true;
 
-        // If we don't want an assimilator, set gas count to 0
-        if (buildCount(Protoss_Assimilator) == 0)
+        // Gas limits
+        if ((buildCount(Protoss_Assimilator) == 0 && com(Protoss_Probe) <= 12) || com(Protoss_Probe) <= 8)
             gasLimit = 0;
+        else if (com(Protoss_Probe) < 20)
+            gasLimit = min(gasLimit, com(Protoss_Probe) / 4);
+        else if (!getOpening && com(Protoss_Probe) >= 20)
+            gasLimit = INT_MAX;
 
         // Pylon logic after first two
         if (vis(Protoss_Pylon) >= 2) {
-            int providers = buildCount(Protoss_Pylon) > 0 ? 14 : 16;
-            int count = min(22, Players::getSupply(PlayerState::Self) / providers);
-            int offset = com(Protoss_Nexus) - 1;
-            int total = count - offset;
-
-            if (buildCount(Protoss_Pylon) < total)
-                itemQueue[Protoss_Pylon] = Item(total);
+            int count = min(22, Players::getSupply(PlayerState::Self) / 14) - (com(Protoss_Nexus) - 1);
+            itemQueue[Protoss_Pylon] = Item(count);
 
             if (!getOpening && !Buildings::hasPoweredPositions() && vis(Protoss_Pylon) > 10)
                 itemQueue[Protoss_Pylon] = Item(vis(Protoss_Pylon) + 1);
 
-            if (Stations::getMyStations().size() >= 4) {
+            if (Stations::getMyStations().size() >= 4 || Strategy::getEnemyBuild() == "2HatchMuta" || Strategy::getEnemyBuild() == "3HatchMuta") {
                 for (auto &[unit, station] : Stations::getMyStations()) {
-                    if (station->getDefenseCount() == 0 && Stations::needPower(*station))
+                    if (Stations::needPower(*station))
                         itemQueue[Protoss_Pylon] = Item(vis(Protoss_Pylon) + 1);
                 }
             }
@@ -158,13 +163,6 @@ namespace McRave::BuildOrder::Protoss
 
         // If we're not in our opener
         if (!getOpening) {
-            gasLimit = INT_MAX;
-
-            // HACK: Stop building DTs when enemy has observers - move "dont produce DT" to production
-            if (Units::getEnemyCount(Protoss_Observer) > 0 && isTechUnit(Protoss_Dark_Templar)) {
-                techList.erase(Protoss_Dark_Templar);
-                unlockedType.erase(Protoss_Dark_Templar);
-            }
 
             // Adding bases
             if (shouldExpand())
@@ -185,10 +183,15 @@ namespace McRave::BuildOrder::Protoss
                 itemQueue[Protoss_Assimilator] = Item(Resources::getGasCount());
 
             // Adding upgrade buildings
-            if (com(Protoss_Assimilator) >= 4) {
+            if (com(Protoss_Assimilator) >= 3) {
+                auto forgeCount = com(Protoss_Assimilator) >= 4 ? 2 - (int)Terrain::isIslandMap() : 1;
+                auto coreCount = com(Protoss_Assimilator) >= 4 ? 1 + (int)Terrain::isIslandMap() : 1;
+
                 itemQueue[Protoss_Cybernetics_Core] = Item(1 + (int)Terrain::isIslandMap());
                 itemQueue[Protoss_Forge] = Item(2 - (int)Terrain::isIslandMap());
             }
+
+            // Add a Forge when playing PvZ
             if (com(Protoss_Nexus) >= 2 && Players::vZ())
                 itemQueue[Protoss_Forge] = Item(1);
 
@@ -197,15 +200,22 @@ namespace McRave::BuildOrder::Protoss
                 itemQueue[Protoss_Cybernetics_Core] = Item(1);
 
             // Defensive Cannons
-            if (com(Protoss_Forge) >= 1 && ((vis(Protoss_Nexus) >= 3 + (Players::getRaceCount(Races::Terran, PlayerState::Enemy) > 0 || Players::getRaceCount(Races::Protoss, PlayerState::Enemy) > 0)) || (Terrain::isIslandMap() && Players::getRaceCount(Races::Zerg, PlayerState::Enemy) > 0))) {
+            if (com(Protoss_Forge) >= 1 && ((vis(Protoss_Nexus) >= (Players::vZ() ? 3 : 4)) || (Terrain::isIslandMap() && Players::vZ()))) {
                 itemQueue[Protoss_Photon_Cannon] = Item(vis(Protoss_Photon_Cannon));
 
                 for (auto &station : Stations::getMyStations()) {
                     auto &s = *station.second;
 
-                    if (Stations::needDefenses(s))
+                    if (Stations::needDefenses(s) > 0 && !Stations::needPower(s))
                         itemQueue[Protoss_Photon_Cannon] = Item(vis(Protoss_Photon_Cannon) + 1);
                 }
+            }
+
+            // Check if we can block an enemy expansion
+            if (Broodwar->getFrameCount() >= 10000) {
+                auto here = Terrain::getEnemyExpand();
+                if (here.isValid() && BWEB::Map::isUsed(here) == UnitTypes::None)
+                    itemQueue[Protoss_Pylon] = Item(buildCount(Protoss_Pylon) + 1);
             }
         }
 
@@ -223,16 +233,15 @@ namespace McRave::BuildOrder::Protoss
             || (com(Protoss_Citadel_of_Adun) > 0 && Players::getSupply(PlayerState::Self) >= 200);
 
         // Check if we should always make Zealots
-        if ((zealotLimit > vis(Protoss_Zealot))
-            || zealotLegs
-            || (techUnit == Protoss_Dark_Templar && Players::vP()))
+        if (zealotLimit > vis(Protoss_Zealot)
+            || zealotLegs)
             unlockedType.insert(Protoss_Zealot);
         else
             unlockedType.erase(Protoss_Zealot);
 
         // Check if we should always make Dragoons
         if ((Players::vZ() && Broodwar->getFrameCount() > 20000)
-            || Units::getEnemyCount(Zerg_Lurker) > 0
+            || Players::getCurrentCount(PlayerState::Enemy, Zerg_Lurker) > 0
             || dragoonLimit > vis(Protoss_Dragoon))
             unlockedType.insert(Protoss_Dragoon);
         else

@@ -8,12 +8,12 @@ namespace McRave::Events
     inline void onUnitDiscover(BWAPI::Unit unit)
     {
         BWEB::Map::onUnitDiscover(unit);
-        Units::storeUnit(unit);
+        Players::storeUnit(unit);
     }
 
     inline void onUnitCreate(BWAPI::Unit unit)
     {
-        Units::storeUnit(unit);
+        Players::storeUnit(unit);
         if (unit->getType().isResourceContainer())
             Resources::storeResource(unit);
         if (unit->getType().isResourceDepot())
@@ -23,7 +23,7 @@ namespace McRave::Events
     inline void onUnitDestroy(BWAPI::Unit unit)
     {
         BWEB::Map::onUnitDestroy(unit);
-        Units::removeUnit(unit);
+        Players::removeUnit(unit);
 
         if (unit->getType().isResourceDepot())
             Stations::removeStation(unit);
@@ -37,7 +37,7 @@ namespace McRave::Events
 
         // My unit
         if (unit->getPlayer() == BWAPI::Broodwar->self())
-            Units::morphUnit(unit);
+            Players::morphUnit(unit);
 
         // Enemy unit
         else if (unit->getPlayer()->isEnemy(BWAPI::Broodwar->self())) {
@@ -46,7 +46,7 @@ namespace McRave::Events
             if (unit->getType() == BWAPI::UnitTypes::Zerg_Drone)
                 Stations::removeStation(unit);
             else
-                Units::morphUnit(unit);
+                Players::morphUnit(unit);
         }
 
         // Refinery that morphed as an enemy
@@ -57,7 +57,7 @@ namespace McRave::Events
     inline void onUnitComplete(BWAPI::Unit unit)
     {
         if (unit->getPlayer() == BWAPI::Broodwar->self())
-            Units::storeUnit(unit);
+            Players::storeUnit(unit);
         if (unit->getType().isResourceDepot())
             Stations::storeStation(unit);
         if (unit->getType().isResourceContainer())
@@ -68,14 +68,14 @@ namespace McRave::Events
     {
         // HACK: Changing players is kind of annoying, so we just remove and re-store
         if (!unit->getType().isRefinery()) {
-            Units::removeUnit(unit);
-            Units::storeUnit(unit);
+            Players::removeUnit(unit);
+            Players::storeUnit(unit);
         }
     }
 
     inline void customOnUnitLift(UnitInfo& unit)
     {
-        BWEB::Map::removeUsed(unit.getTilePosition(), unit.getType().tileWidth(), unit.getType().tileHeight());
+        BWEB::Map::removeUsed(unit.getLastTile(), unit.getType().tileWidth(), unit.getType().tileHeight());
 
         if (unit.getType().isResourceDepot())
             Stations::removeStation(unit.unit());

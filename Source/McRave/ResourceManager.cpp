@@ -40,13 +40,24 @@ namespace McRave::Resources {
                 }
             }
 
+            // Update resource state
+            auto base = Util::getClosestUnit(resource.getPosition(), PlayerState::Self, [&](auto &u) {
+                return u.getType().isResourceDepot();
+            });
+
+            if (base && mapBWEM.GetArea(base->getTilePosition()) == mapBWEM.GetArea(resource.getTilePosition()))
+                base->unit()->isCompleted() ? resource.setResourceState(ResourceState::Mineable) : resource.setResourceState(ResourceState::Assignable);
+            else
+                resource.setResourceState(ResourceState::None);
+
             // Update saturation
             if (resource.getType().isMineralField() && minSat && resource.getGathererCount() < 2 && resource.getResourceState() != ResourceState::None)
                 minSat = false;
             else if (resource.getType() == geyserType && resource.unit()->isCompleted() && resource.getResourceState() != ResourceState::None && ((BuildOrder::isOpener() && resource.getGathererCount() < min(3, BuildOrder::gasWorkerLimit())) || (!BuildOrder::isOpener() && resource.getGathererCount() < 3)))
                 gasSat = false;
 
-            if (resource.getResourceState() == ResourceState::Mineable)
+            if (resource.getResourceState() == ResourceState::Mineable
+                || (resource.getResourceState() == ResourceState::Assignable && Stations::getMyStations().size() >= 3 && !Players::vP()))
                 resource.getType().isMineralField() ? minCount++ : gasCount++;
         }
 
@@ -89,28 +100,27 @@ namespace McRave::Resources {
 
         // Check if we already stored this resource
         for (auto &u : resourceList) {
-            if (u->unit() == resource) {
-                if (resource->getPlayer() == Broodwar->self())
-                    u->setResourceState(resource->isCompleted() ? ResourceState::Mineable : ResourceState::Assignable);
-                return;
-            }
+            if (u->unit() == resource)
+                return;            
         }
 
-        // If we are not on an inital frame, a geyser was just created and we need to see if we own it
+        // If we are not on an inital frame, a geyser was just created and we need to re-setup the station connection
         if (Broodwar->getFrameCount() > 0) {
             auto newStation = BWEB::Stations::getClosestStation(resource->getTilePosition());
 
             if (newStation) {
+                info.setStation(newStation);
+
                 for (auto &s : Stations::getMyStations()) {
                     auto &station = *s.second;
                     if (station.getBWEMBase() == newStation->getBWEMBase()) {
-                        info.setResourceState(ResourceState::Mineable);
-                        info.setStation(newStation);
+                        info.setResourceState(ResourceState::Mineable);                        
                         break;
                     }
                 }
             }
         }
+
         auto ptr = make_shared<ResourceInfo>(info);
         resourceList.insert(make_shared<ResourceInfo>(info));
     }

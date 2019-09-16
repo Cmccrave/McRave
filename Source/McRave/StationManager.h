@@ -11,10 +11,8 @@ namespace McRave::Stations
     void onStart();
     void storeStation(BWAPI::Unit);
     void removeStation(BWAPI::Unit);
-    bool needDefenses(BWEB::Station&);
+    int needDefenses(BWEB::Station&);
     bool needPower(BWEB::Station&);
-    bool stationNetworkExists(BWEB::Station *, BWEB::Station *);
 
     PlayerState ownedBy(BWEB::Station *);
-    BWEB::Path* pathStationToStation(BWEB::Station *, BWEB::Station *);
 };

@@ -1,6 +1,7 @@
 #include "McRave.h"
 #include "BuildOrder.h"
 #include <fstream>
+#include <iomanip>
 
 using namespace std;
 using namespace BWAPI;
@@ -12,6 +13,7 @@ namespace McRave::Learning {
         map <string, Build> myBuilds;
         stringstream ss;
         vector <string> buildNames;
+        string enemyRaceChar, mapName;
 
         bool isBuildPossible(string build, string opener)
         {
@@ -80,16 +82,16 @@ namespace McRave::Learning {
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (build == "1GateCore") {
                     if (opener == "0Zealot")
-                        return t;
+                        return t || p;
                     if (opener == "1Zealot")
                         return true;
                     if (opener == "2Zealot")
-                        return p || z || r;
+                        return z || r;
                 }
 
                 if (build == "2Gate") {
                     if (opener == "Proxy")
-                        return !Terrain::isIslandMap() && (p /*|| z*/);
+                        return false;// !Terrain::isIslandMap() && (p /*|| z*/);
                     if (opener == "Natural")
                         return false;
                     if (opener == "Main")
@@ -134,10 +136,10 @@ namespace McRave::Learning {
                 if (build == "1GateCore") {
                     if (transition == "DT")
                         return !Terrain::isShitMap() && (p || t /*|| z*/);
-                    if (transition == "3GateRobo")
+                    if (transition == "3Gate")
                         return p || r;
                     if (transition == "Robo")
-                        return !Terrain::isShitMap() && !Terrain::isFlatRamp() && !Terrain::isReverseRamp() && (p /*|| t*/ || r);
+                        return !Terrain::isShitMap() && (p /*|| t*/ || r);
                     if (transition == "4Gate")
                         return p;
                 }
@@ -237,11 +239,11 @@ namespace McRave::Learning {
         const string dash = "-";
         const string noStats = " 0 0 ";
         const string myRaceChar{ *Broodwar->self()->getRace().c_str() };
-        const string enemyRaceChar{ *Broodwar->enemy()->getRace().c_str() };
-        const string extension = mapLearning ? myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + Broodwar->mapFileName() + ".txt" : myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + ".txt";
+        const string learningExtension = mapLearning ? myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + Broodwar->mapFileName() + ".txt" : myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + ".txt";
+        const string gameInfoExtension = myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " Info.txt";
 
         // Write into the write directory 3 tokens at a time (4 if we detect a dash)
-        ofstream config("bwapi-data/write/" + extension);
+        ofstream config("bwapi-data/write/" + learningExtension);
         string token;
         LearningToken currentToken = LearningToken::Build;
 
@@ -286,6 +288,33 @@ namespace McRave::Learning {
                 config << token << " " << w << " " << l << endl;
             }
         }
+
+        // Write into the write directory information about what we saw the enemy do
+        ofstream gameLog("bwapi-data/write/" + gameInfoExtension, std::ios_base::app);
+
+        gameLog << mapName << ","
+            << Broodwar->enemy()->getName().c_str() << ","
+            << Strategy::getEnemyBuild() << ","
+            << currentBuild << "," << currentOpener << "," << currentTransition << ","
+            << (isWinner ? "Won": "Lost") << "," << std::setfill('0') << Util::getTime().minutes << ":" << std::setw(2) << Util::getTime().seconds;
+
+        // Store a list of total units everyone made
+        for (auto &type : UnitTypes::allUnitTypes()) {
+            if (!type.isBuilding()) {
+                auto cnt = Players::getTotalCount(PlayerState::Self, type);
+                if (cnt > 0)
+                    gameLog << "," << cnt << "," << type.c_str();
+            }
+        }
+        for (auto &type : UnitTypes::allUnitTypes()) {
+            if (!type.isBuilding()) {
+                auto cnt = Players::getTotalCount(PlayerState::Enemy, type);
+                if (cnt > 0)
+                    gameLog << "," << cnt << "," << type.c_str();
+            }
+        }
+
+        gameLog << endl;
     }
 
     void onStart()
@@ -295,42 +324,21 @@ namespace McRave::Learning {
             return;
         }
 
-        if (false) {
-            if (Broodwar->self()->getRace() == Races::Protoss) {
-                BuildOrder::setLearnedBuild("2Gate", "Proxy", "DT");
-                isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
-                return;
-            }
-            if (Broodwar->self()->getRace() == Races::Zerg) {
-                BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "3HatchLing");
-                isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
-                return;
-            }
-        }
-
-
-        if (Terrain::isIslandMap()) {
-            if (Broodwar->self()->getRace() == Races::Protoss) {
-                if (Players::vT()) {
-                    BuildOrder::setLearnedBuild("NexusGate", "Dragoon", "ReaverCarrier");
-                    isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
-                    return;
-                }
-                else {
-                    BuildOrder::setLearnedBuild("1GateCore", "1Zealot", "4Gate");
-                    isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
-                    return;
-                }
-            }
+        // Grab only the alpha characters from the map name to remove version numbers
+        for (auto &c : Broodwar->mapFileName()) {
+            if (isalpha(c))
+                mapName.push_back(c);
+            if (c == '.')
+                break;
         }
 
         // File extension including our race initial;
+        enemyRaceChar ={ *Broodwar->enemy()->getRace().c_str() };
         const auto mapLearning = false;
         const string dash = "-";
         const string noStats = " 0 0 ";
         const string myRaceChar{ *Broodwar->self()->getRace().c_str() };
-        const string enemyRaceChar{ *Broodwar->enemy()->getRace().c_str() };
-        const string extension = mapLearning ? myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + Broodwar->mapFileName() + ".txt" : myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + ".txt";
+        const string extension = mapLearning ? myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + mapName + ".txt" : myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + ".txt";
 
         // Tokens
         string buffer, token;
@@ -339,7 +347,7 @@ namespace McRave::Learning {
         if (Broodwar->self()->getRace() == Races::Protoss) {
 
             myBuilds["1GateCore"].openers ={ "0Zealot", "1Zealot", "2Zealot" };
-            myBuilds["1GateCore"].transitions ={ "DT", "Robo", "4Gate", "3GateRobo" };
+            myBuilds["1GateCore"].transitions ={ "DT", "Robo", "4Gate", "3Gate" };
 
             myBuilds["2Gate"].openers ={ "Proxy", "Natural", "Main" };
             myBuilds["2Gate"].transitions ={ "DT", "Robo", "4Gate", "Expand", "DoubleExpand" };
@@ -367,7 +375,7 @@ namespace McRave::Learning {
         }
 
         if (Broodwar->self()->getRace() == Races::Terran) {
-            BuildOrder::setLearnedBuild("RaxFact", "10Rax", "2FactVulture");
+            BuildOrder::setLearnedBuild("RaxFact", "10Rax", "2Fact");
             isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
             return;// Don't know what to do yet
 
@@ -503,5 +511,44 @@ namespace McRave::Learning {
             BuildOrder::setLearnedBuild(bestBuild, bestOpener, bestTransition);
         else
             getDefaultBuild();
+
+        // Hardcoded stuff
+        if (false) {
+            if (Players::PvZ()) {
+                BuildOrder::setLearnedBuild("FFE", "Forge", "NeoBisu");
+                isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
+                return;
+            }
+            if (Players::PvP()) {
+                BuildOrder::setLearnedBuild("1GateCore", "1Zealot", "3Gate");
+                isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
+                return;
+            }
+            if (Players::PvT()) {
+                BuildOrder::setLearnedBuild("NexusGate", "Dragoon", "Standard");
+                isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
+                return;
+            }
+            if (Broodwar->self()->getRace() == Races::Zerg) {
+                BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "3HatchLing");
+                isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
+                return;
+            }
+        }
+
+        if (Terrain::isIslandMap()) {
+            if (Broodwar->self()->getRace() == Races::Protoss) {
+                if (Players::vT()) {
+                    BuildOrder::setLearnedBuild("NexusGate", "Dragoon", "ReaverCarrier");
+                    isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
+                    return;
+                }
+                else {
+                    BuildOrder::setLearnedBuild("1GateCore", "1Zealot", "4Gate");
+                    isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
+                    return;
+                }
+            }
+        }
     }
 }

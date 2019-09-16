@@ -16,47 +16,41 @@ namespace McRave::Horizon {
             double maxWinPercent = 1.0;
 
             if (Players::PvP()) {
-                minWinPercent = 0.8;
-                maxWinPercent = 1.2;
+                minWinPercent = 0.80;
+                maxWinPercent = 1.20;
             }
             if (Players::PvZ()) {
                 minWinPercent = 0.6;
                 maxWinPercent = 1.2;
             }
             if (Players::PvT()) {
-                minWinPercent = 0.2;
-                maxWinPercent = 0.6;
+                minWinPercent = 0.4;
+                maxWinPercent = 1.0;
             }
 
             minThreshold = max(0.0, log(10000.0 / Broodwar->getFrameCount())) + minWinPercent;
             maxThreshold = max(0.0, log(10000.0 / Broodwar->getFrameCount())) + maxWinPercent;
 
-            if (BuildOrder::getCurrentBuild() == "2Gate" && Broodwar->getFrameCount() < 8000) {
-                minWinPercent = 0.0;
-                maxWinPercent = 0.4;
+            if (BuildOrder::isRush()) {
+                minThreshold = 0.00;
+                maxThreshold = 1.00;
             }
         }
     }
 
     void simulate(UnitInfo& unit)
     {
-        /*
-        Modified version of Horizon.
-        Need to test deadzones and squeeze factors still.
-        */
-
         updateThresholds();
         auto enemyLocalGroundStrength = 0.0, allyLocalGroundStrength = 0.0;
         auto enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;
-        auto unitToEngage = max(0.0, unit.getEngDist() / (24.0 * unit.getSpeed()));
+        auto unitToEngage = unit.getSpeed() > 0.0 ? unit.getEngDist() / (24.0 * unit.getSpeed()) : 5.0;
         auto simulationTime = unitToEngage + 5.0;
         auto unitSpeed = unit.getSpeed() * 24.0;
         auto sync = false;
         auto belowGrdLimits = false;
         auto belowAirLimits = false;
         auto unitArea = mapBWEM.GetArea(unit.getTilePosition());
-        map<const BWEM::ChokePoint *, double> enemySqueezeFactor;
-        map<const BWEM::ChokePoint *, double> selfSqueezeFactor;
+        map<const BWEM::ChokePoint *, pair<int, double>> squeezeFactor;
 
         const auto shouldIgnoreSim = [&]() {
             // If we have excessive resources, ignore our simulation and engage
@@ -84,78 +78,72 @@ namespace McRave::Horizon {
         };
 
         const auto applySqueezeFactor = [&](UnitInfo& source) {
-            if (source.getPlayer() == Broodwar->self() && (!source.hasTarget() || source.getTarget().getType().isFlyer() || !source.getTarget().getPosition().isValid()))
-                return false;
-            if (source.getPlayer() != Broodwar->self() && (!unit.hasTarget() || unit.getTarget().getType().isFlyer() || !unit.getTarget().getPosition().isValid()))
-                return false;
-            if (unit.getType().isFlyer() || source.getType().isFlyer() || !source.getPosition().isValid() || source.unit()->isLoaded() || unit.unit()->isLoaded())
-                return false;
-            if (source.hasTarget() && !source.getTarget().getPosition().isValid())
-                return false;
-            if (!mapBWEM.GetArea(source.getTilePosition()))
+            if (BuildOrder::isRush()
+                || !source.getTilePosition().isValid()
+                || !source.getTarget().getTilePosition().isValid()
+                || source.hasTransport()
+                || (!mapBWEM.GetArea(source.getTilePosition()) && !BWEB::Map::isWalkable(source.getTilePosition()))
+                || (!mapBWEM.GetArea(source.getTarget().getTilePosition()) && !BWEB::Map::isWalkable(source.getTarget().getTilePosition())))
                 return false;
             return true;
         };
 
-        const auto addToSim = [&](UnitInfo& u) {
-            if (u.getVisibleAirStrength() <= 0.0 && u.getVisibleGroundStrength() <= 0.0)
-                return false;
-            if (u.getPlayer() == Broodwar->self() && !u.hasTarget())
-                return false;
-            if (!u.unit() || u.getType().isWorker() || (!u.unit()->isCompleted() && u.unit()->exists()) || (u.unit() && u.unit()->exists() && (u.unit()->isStasised() || u.unit()->isMorphing())))
-                return false;
-            if (u.getRole() != Role::None && u.getRole() != Role::Combat)
+        const auto canAddToSim = [&](UnitInfo& u) {
+            if (!u.unit()
+                || u.getType().isWorker()
+                || (!u.unit()->isCompleted() && u.unit()->exists())
+                || (u.unit()->exists() && (u.unit()->isStasised() || u.unit()->isMorphing()))
+                || (u.getVisibleAirStrength() <= 0.0 && u.getVisibleGroundStrength() <= 0.0)
+                || (u.getPlayer() == Broodwar->self() && !u.hasTarget())
+                || (u.getRole() != Role::None && u.getRole() != Role::Combat))
                 return false;
             return true;
         };
 
         const auto simTerrain = [&]() {
-            if (BuildOrder::getCurrentBuild() == "2Gate" && Broodwar->getFrameCount() < 8000)
-                return;
-
-            // For every ground unit, add a squeeze factor for navigating chokes
-            for (auto &e : Units::getUnits(PlayerState::Enemy)) {
-                UnitInfo &enemy = *e;
-                if (applySqueezeFactor(enemy)) {
-                    auto &path = !enemy.hasMovedArea() ? enemy.getQuickPath() : mapBWEM.GetPath(enemy.getPosition(), unit.getPosition());
-                    enemy.setQuickPath(path);
-
-                    if (int(path.size()) > 2)
-                        continue;
-
-                    for (auto &choke : path) {
-                        if (enemy.getGroundReach() < enemy.getPosition().getDistance(Position(choke->Center())))
-                            enemySqueezeFactor[choke]+= double(enemy.getType().width());
-                    }
-                }
-            }
+            // Check if any units are attempting to pass through a chokepoint
             for (auto &a : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &ally = *a;
-                if (applySqueezeFactor(ally)) {
-                    auto &path = !ally.hasMovedArea() ? ally.getQuickPath() : mapBWEM.GetPath(ally.getPosition(), ally.getTarget().getPosition());
-                    ally.setQuickPath(path);
 
-                    if (int(path.size()) > 2)
-                        continue;
+                if (!canAddToSim(ally) || !applySqueezeFactor(ally) || int(ally.getQuickPath().size()) > 3)
+                    continue;
 
-                    for (auto &choke : path) {
-                        if (ally.getGroundReach() < ally.getPosition().getDistance(Position(choke->Center())))
-                            selfSqueezeFactor[choke]+= double(ally.getType().width());
+                auto targetReach = ally.getType().isFlyer() ? ally.getTarget().getAirReach() : ally.getTarget().getGroundReach();
+
+                if (!ally.getQuickPath().empty()) {
+
+                    // Add their width to each chokepoint it needs to move through
+                    for (auto &choke : ally.getQuickPath()) {
+                        if (Util::chokeWidth(choke) <= 128.0 && ally.getTarget().getPosition().getDistance(Position(choke->Center())) < targetReach) {
+                            squeezeFactor[choke].second+= (double(Util::chokeWidth(choke)) * ally.getSpeed()) / (double(ally.getType().width()) * double(ally.getType().height()));
+                            squeezeFactor[choke].first++;
+                            break;
+                        }
+                    }
+                }
+
+                else {
+                    auto choke = Util::getClosestChokepoint(ally.getEngagePosition());
+
+                    if (choke && Util::chokeWidth(choke) <= 128.0 && ally.getTarget().getPosition().getDistance(Position(choke->Center())) < targetReach) {
+                        auto cost = (double(ally.getType().width()) * double(ally.getType().height())) / ((double(Util::chokeWidth(choke)) / 32.0) * ally.getSpeed());
+                        squeezeFactor[choke].second+= log(cost);
+                        squeezeFactor[choke].first++;
                     }
                 }
             }
-            for (auto &choke : enemySqueezeFactor) {
-                choke.second = min(1.0, (double(Util::chokeWidth(choke.first)) / choke.second));
-            }
-            for (auto &choke : selfSqueezeFactor) {
-                choke.second = min(1.0, (double(Util::chokeWidth(choke.first)) / choke.second));
+
+            for (auto &[choke, squeeze] : squeezeFactor) {
+                auto cost = squeeze.second;
+                auto count = log(squeeze.first);
+                squeeze.second = 1.0 - exp(-20.0 / (cost * count));
             }
         };
 
         const auto simEnemies = [&]() {
             for (auto &e : Units::getUnits(PlayerState::Enemy)) {
                 UnitInfo &enemy = *e;
-                if (!addToSim(enemy))
+                if (!canAddToSim(enemy))
                     continue;
 
                 auto deadzone = (enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode && unit.getTarget().getPosition().getDistance(enemy.getPosition()) < 64.0) ? 64.0 : 0.0;
@@ -177,19 +165,10 @@ namespace McRave::Horizon {
                     continue;
 
                 // Situations where an enemy should be treated as stronger than it actually is
-                if (enemy.unit()->exists() && (enemy.unit()->isBurrowed() || enemy.unit()->isCloaked()) && !enemy.unit()->isDetected())
+                if (enemy.isHidden())
                     simRatio = simRatio * 2.0;
                 if (!enemy.getType().isFlyer() && Broodwar->getGroundHeight(enemy.getTilePosition()) > Broodwar->getGroundHeight(TilePosition(unit.getEngagePosition())))
                     simRatio = simRatio * 2.0;
-
-                // Check if we need to squeeze these units through a choke
-                if (applySqueezeFactor(enemy)) {
-                    auto &path = mapBWEM.GetPath(enemy.getPosition(), unit.getPosition());
-                    /*for (auto &choke : path) {
-                        if (enemy.getGroundReach() < enemy.getPosition().getDistance(Position(choke->Center())))
-                            simRatio = simRatio * min(1.0, 2 * enemySqueezeFactor[choke]);
-                    }*/
-                }
 
                 // Add their values to the simulation
                 enemyLocalGroundStrength += enemy.getVisibleGroundStrength() * simRatio;
@@ -197,47 +176,30 @@ namespace McRave::Horizon {
             }
         };
 
-        const auto simMyUnits = [&]() {
+        const auto simSelf = [&]() {
             for (auto &a : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &ally = *a;
-                if (!addToSim(ally))
+                if (!canAddToSim(ally))
                     continue;
 
                 auto deadzone = (ally.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode && unit.getTarget().getPosition().getDistance(ally.getPosition()) < 64.0) ? 64.0 : 0.0;
                 auto engDist = ally.getEngDist();
                 auto widths = double(ally.getType().width() + ally.getTarget().getType().width()) / 2.0;
                 auto allyRange = (unit.getTarget().getType().isFlyer() ? ally.getAirRange() : ally.getGroundRange());
-                auto speed = ally.hasTransport() ? 24.0 * ally.getTransport().getSpeed() : 24.0 * ally.getSpeed();
-
+                auto speed = 24.0 * ally.getSpeed();
                 auto distance = max(0.0, engDist - widths + deadzone);
                 auto simRatio = simulationTime - (distance / speed);
-
                 auto reach = max(ally.getAirReach(), ally.getGroundReach());
 
                 // If the unit doesn't affect this simulation
-                if (simRatio <= 0.0 || (ally.getSpeed() <= 0.0 && ally.getPosition().getDistance(unit.getTarget().getPosition()) - allyRange - widths > 64.0))
-                    continue;
-
-                // HACK: Bunch of hardcoded stuff
-                if (ally.getType() == UnitTypes::Protoss_Reaver && (!ally.isHealthy() || (ally.hasTransport() && !ally.getTransport().isHealthy())))
-                    continue;
-                if (ally.getTarget().getPosition().getDistance(unit.getTarget().getPosition()) > reach)
-                    continue;
-                if (ally.getType() == UnitTypes::Protoss_High_Templar && !ally.canStartCast(TechTypes::Psionic_Storm))
-                    continue;
-                if ((ally.getType() == UnitTypes::Protoss_Scout || ally.getType() == UnitTypes::Protoss_Corsair) && ally.getShields() < 30)
-                    continue;
-                if (ally.getType() == UnitTypes::Terran_Wraith && ally.getHealth() <= 100)
-                    continue;
-                if (ally.getType().maxShields() > 0 && ally.getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && Broodwar->getFrameCount() < 8000)
-                    continue;
-                if (ally.getType().getRace() == Races::Zerg && ally.getPercentTotal() < LOW_BIO_PERCENT_LIMIT)
-                    continue;
-                if (ally.getType() == UnitTypes::Zerg_Mutalisk && Grids::getEAirThreat((WalkPosition)ally.getEngagePosition()) > 0.0 && ally.getHealth() <= 30)
+                if (ally.localRetreat()
+                    || simRatio <= 0.0
+                    || (ally.getSpeed() <= 0.0 && ally.getPosition().getDistance(unit.getTarget().getPosition()) - allyRange - widths > 64.0)
+                    || (ally.getTarget().getPosition().getDistance(unit.getEngagePosition()) > max(ally.getGroundReach(), ally.getAirReach())))
                     continue;
 
                 // Situations where an ally should be treated as stronger than it actually is
-                if ((ally.unit()->isCloaked() || ally.unit()->isBurrowed()) && !Command::overlapsDetection(ally.unit(), ally.getEngagePosition(), PlayerState::Enemy))
+                if (ally.isHidden())
                     simRatio = simRatio * 2.0;
                 if (!ally.getType().isFlyer() && Broodwar->getGroundHeight(TilePosition(ally.getEngagePosition())) > Broodwar->getGroundHeight(TilePosition(ally.getTarget().getPosition())))
                     simRatio = simRatio * 2.0;
@@ -246,11 +208,22 @@ namespace McRave::Horizon {
                     sync = true;
 
                 // Check if we need to squeeze these units through a choke
-                if (applySqueezeFactor(ally)) {
-                    auto &path = mapBWEM.GetPath(ally.getPosition(), ally.getTarget().getPosition());
+
+                if (applySqueezeFactor(ally) && int(ally.getQuickPath().size()) <= 3) {
+                    auto &path = ally.getQuickPath();
+                    auto targetReach = ally.getType().isFlyer() ? ally.getTarget().getAirReach() : ally.getTarget().getGroundReach();
+
                     for (auto &choke : path) {
-                        if (ally.getGroundReach() < ally.getPosition().getDistance(Position(choke->Center())))
-                            simRatio = simRatio * min(1.0, 2 * selfSqueezeFactor[choke]);
+                        if (Util::chokeWidth(choke) <= 128.0 && ally.getTarget().getPosition().getDistance(Position(choke->Center())) < targetReach) {
+                            simRatio = simRatio * min(1.0, squeezeFactor[choke].second);
+                            break;
+                        }
+                    }
+
+                    if (ally.getQuickPath().empty()) {
+                        auto choke = Util::getClosestChokepoint(ally.getPosition());
+                        if (choke && Util::chokeWidth(choke) <= 128.0 && ally.getTarget().getPosition().getDistance(Position(choke->Center())) < targetReach)
+                            simRatio = simRatio * min(1.0, squeezeFactor[choke].second);
                     }
                 }
 
@@ -269,45 +242,24 @@ namespace McRave::Horizon {
 
         simTerrain();
         simEnemies();
-        simMyUnits();
+        simSelf();
 
-        double attackAirAsAir = enemyLocalAirStrength > 0.0 ? allyLocalAirStrength / enemyLocalAirStrength : 10.0;
-        double attackAirAsGround = enemyLocalGroundStrength > 0.0 ? allyLocalAirStrength / enemyLocalGroundStrength : 10.0;
-        double attackGroundAsAir = enemyLocalAirStrength > 0.0 ? allyLocalGroundStrength / enemyLocalAirStrength : 10.0;
-        double attackGroundasGround = enemyLocalGroundStrength > 0.0 ? allyLocalGroundStrength / enemyLocalGroundStrength : 10.0;
+        const auto attackAirAsAir =         enemyLocalAirStrength > 0.0 ? allyLocalAirStrength / enemyLocalAirStrength : 10.0;
+        const auto attackAirAsGround =      enemyLocalGroundStrength > 0.0 ? allyLocalAirStrength / enemyLocalGroundStrength : 10.0;
+        const auto attackGroundAsAir =      enemyLocalAirStrength > 0.0 ? allyLocalGroundStrength / enemyLocalAirStrength : 10.0;
+        const auto attackGroundasGround =   enemyLocalGroundStrength > 0.0 ? allyLocalGroundStrength / enemyLocalGroundStrength : 10.0;
+        const auto belowLimits =            unit.getType().isFlyer() ? (belowAirLimits || (sync && belowGrdLimits)) : (belowGrdLimits || (sync && belowAirLimits));
 
-        // If unit is a flyer and no air threat
-        if (unit.getType().isFlyer() && enemyLocalAirStrength == 0.0)
-            unit.setSimValue(10.0);
-
-        // If unit is not a flyer and no ground threat
-        else if (!unit.getType().isFlyer() && enemyLocalGroundStrength == 0.0)
-            unit.setSimValue(10.0);
-
-        // If unit has a target, determine what sim value to use
-        else if (unit.hasTarget()) {
-            if (sync) {
-                if (unit.getType().isFlyer())
-                    unit.setSimValue(min(attackAirAsAir, attackGroundAsAir));
-                else
-                    unit.setSimValue(min(attackAirAsGround, attackGroundasGround));
-            }
-            else {
-                if (unit.getType().isFlyer())
-                    unit.setSimValue(unit.getTarget().getType().isFlyer() ? attackAirAsAir : attackGroundAsAir);
-                else
-                    unit.setSimValue(unit.getTarget().getType().isFlyer() ? attackAirAsGround : attackGroundasGround);
-            }
-        }
-
-        auto belowLimits = unit.getType().isFlyer() ? (belowAirLimits || (sync && belowGrdLimits)) : (belowGrdLimits || (sync && belowAirLimits));
+        // Determine what sim value to use
+        if (sync)
+            unit.getType().isFlyer() ? unit.setSimValue(min(attackAirAsAir, attackGroundAsAir)) : unit.setSimValue(min(attackAirAsGround, attackGroundasGround));
+        else
+            unit.getType().isFlyer() ? unit.setSimValue(unit.getTarget().getType().isFlyer() ? attackAirAsAir : attackGroundAsAir) : unit.setSimValue(unit.getTarget().getType().isFlyer() ? attackAirAsGround : attackGroundasGround);
 
         // If above/below thresholds, it's a sim win/loss
-        if (unit.getSimValue() >= maxThreshold && !belowLimits) {
+        if (unit.getSimValue() >= maxThreshold && !belowLimits)
             unit.setSimState(SimState::Win);
-        }
-        else if (unit.getSimValue() <= minThreshold || belowLimits || (unit.getSimState() == SimState::None && unit.getSimValue() < maxThreshold)) {
+        else if (unit.getSimValue() <= minThreshold || belowLimits || (unit.getSimState() == SimState::None && unit.getSimValue() < maxThreshold))
             unit.setSimState(SimState::Loss);
-        }
     }
 }

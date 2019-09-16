@@ -7,6 +7,8 @@ namespace McRave
 {
     void PlayerInfo::update()
     {
+        set<shared_ptr<UnitInfo>> deadUnits;
+
         // Store any upgrades this player has
         for (auto &upgrade : BWAPI::UpgradeTypes::allUpgradeTypes()) {
             if (thisPlayer->getUpgradeLevel(upgrade) > 0)
@@ -26,15 +28,17 @@ namespace McRave
             auto &unit = *u;
 
             // Supply
-            supply += unit.getType().supplyRequired();
+            supply += unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType().supplyRequired() : unit.getType().supplyRequired();
             
             // Targets
             unit.getTargetedBy().clear();
             unit.setTarget(nullptr);
 
             // Strength
-            if (unit.getType().isWorker() && unit.getRole() != Role::Combat)
+            if ((unit.getType().isWorker() && unit.getRole() != Role::Combat)
+                || !unit.unit()->isCompleted())
                 continue;
+
             if (unit.getType().isBuilding()) {
                 pStrength.airDefense += unit.getVisibleAirStrength();
                 pStrength.groundDefense += unit.getVisibleGroundStrength();

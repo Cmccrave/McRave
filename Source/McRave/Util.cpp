@@ -2,16 +2,23 @@
 
 using namespace BWAPI;
 using namespace std;
+using namespace UnitTypes;;
 
 namespace McRave::Util {
+
+    namespace {
+        multimap<WalkPosition, double> badPosition;
+        map<TilePosition, TilePosition> closestGeoCache;
+        Time gameTime(0, 0);
+    }
 
     bool isWalkable(UnitInfo& unit, WalkPosition here)
     {
         if (unit.getType().isFlyer() && unit.getRole() != Role::Transport)
             return true;
 
-        auto walkWidth = unit.getType().isBuilding() ? unit.getType().tileWidth() * 4 : (int)ceil(unit.getType().width() / 8.0);
-        auto walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : (int)ceil(unit.getType().height() / 8.0);
+        auto walkWidth = (int)ceil(unit.getType().width() / 8.0);
+        auto walkHeight = (int)ceil(unit.getType().height() / 8.0);
 
         auto halfW = walkWidth / 2;
         auto halfH = walkHeight / 2;
@@ -30,10 +37,8 @@ namespace McRave::Util {
 
         for (int x = left; x < right; x++) {
             for (int y = top; y < bottom; y++) {
-                WalkPosition w(x, y);
-                auto p = Position(w) + Position(4, 4);
-                if (!w.isValid())
-                    return false;
+                const WalkPosition w(x, y);
+                const auto p = Position(w) + Position(4, 4);
 
                 if (!unit.getType().isFlyer()) {
                     if (rectangleIntersect(topLeft, botRight, p))
@@ -51,14 +56,14 @@ namespace McRave::Util {
         if (tech == TechTypes::Psionic_Storm || tech == TechTypes::Maelstrom || tech == TechTypes::Plague || tech == TechTypes::Ensnare)
             return 1.5;
         if (tech == TechTypes::Stasis_Field)
-            return 3.0;
+            return 2.5;
         return 0.0;
     }
 
     int getCastRadius(TechType tech)
     {
         if (tech == TechTypes::Psionic_Storm || tech == TechTypes::Stasis_Field || tech == TechTypes::Maelstrom || tech == TechTypes::Plague || tech == TechTypes::Ensnare)
-            return 96;
+            return 48;
         return 0;
     }
 
@@ -86,6 +91,7 @@ namespace McRave::Util {
     {
         double distBest = DBL_MAX;
         const BWEM::ChokePoint * closest = nullptr;
+
         for (auto &area : mapBWEM.Areas()) {
             for (auto &choke : area.ChokePoints()) {
                 double dist = Position(choke->Center()).getDistance(here);
@@ -105,11 +111,54 @@ namespace McRave::Util {
         return int(choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2))) * 8;
     }
 
-    Position getConcavePosition(UnitInfo& unit, double radius, BWEM::Area const * area, Position here)
+    Position getClosestChokeGeo(const BWEM::ChokePoint * choke, Position here)
     {
-        auto center = WalkPositions::None;
         auto distBest = DBL_MAX;
-        auto posBest = Positions::None;
+        auto walkBest = WalkPositions::Invalid;
+        for (auto &w : choke->Geometry()) {
+            const auto p = Position(w) + Position(4, 4);
+            const auto dist = p.getDistance(here);
+
+            if (dist < distBest) {
+                walkBest = w;
+                distBest = dist;
+            }
+        }
+        return Position(walkBest) + Position(4, 4);
+    }
+
+    Position getConcavePosition(UnitInfo& unit, BWEM::Area const * area, Position here)
+    {
+        const auto enemyRangeExists = Players::getTotalCount(PlayerState::Enemy, UnitTypes::Protoss_Dragoon) > 0
+            || Players::getTotalCount(PlayerState::Enemy, UnitTypes::Zerg_Hydralisk) > 0
+            || Players::vT();
+
+        if (Broodwar->getFrameCount() % 50 == 0) {
+            //closestGeoCache.clear();
+            badPosition.clear();
+        }
+
+        auto meleeCount = com(Protoss_Zealot) + com(Zerg_Zergling) + com(Terran_Firebat);
+        auto rangedCount = com(Protoss_Dragoon) + com(Protoss_Reaver) + com(Protoss_High_Templar) + com(Zerg_Hydralisk) + com(Terran_Marine) + com(Terran_Medic) + com(Terran_Siege_Tank_Siege_Mode) + com(Terran_Siege_Tank_Tank_Mode) + com(Terran_Vulture);
+
+        auto base = area->Bases().empty() ? nullptr : &area->Bases().front();
+
+        auto center = WalkPositions::None;
+        auto scoreBest = DBL_MAX;
+        auto posBest = BWEB::Map::getMainPosition();
+        auto choke = Util::getClosestChokepoint(here);
+        auto spacing = min(unit.getType().width(), unit.getType().height()) + 4;
+
+        auto meleeRadius = Terrain::isDefendNatural() && Terrain::getNaturalWall() && Players::getSupply(PlayerState::Self) >= 40 && Players::vZ() ? 32.0 : min(32.0, meleeCount * 16.0);
+        auto rangedRadius = max(meleeRadius + 32.0, Util::chokeWidth(choke) + (rangedCount * 8.0));
+        auto radius = enemyRangeExists && Players::getSupply(PlayerState::Self) >= 80 ? max(meleeRadius, rangedRadius) : unit.getGroundRange() > 32.0 ? rangedRadius : meleeRadius;
+        auto initialRadius = radius;
+
+        radius = !enemyRangeExists && Players::getCurrentCount(PlayerState::Enemy, Protoss_Zealot) > vis(Protoss_Zealot) * 2 ? 64.0 : radius;
+
+        // Offset the concave based on where we are creating concave and how far it is from the nearest choke
+        auto hereOffset = here.getDistance(BWEB::Map::getClosestChokeTile(choke, here));
+        radius += hereOffset;
 
         // Finds which position we are forming the concave at
         if (here.isValid())
@@ -125,38 +174,81 @@ namespace McRave::Util {
                 if (dist < distEnemyBest) {
                     distEnemyBest = dist;
                     center = c->Center();
+                    choke = c;
                 }
             }
         }
 
-        const auto checkbest = [&](WalkPosition w) {
-            auto t = TilePosition(w);
-            auto p = Position(w) + Position(4, 4);
-            auto dist = p.getDistance(Position(center));
-            auto score = dist + log(p.getDistance(unit.getPosition()));
+        // Grab the closest choke geo as the center
+        if (choke) {
+            if (closestGeoCache[unit.getTilePosition()] != TilePositions::None) {
+                center = WalkPosition(getClosestChokeGeo(choke, unit.getPosition()));
+                closestGeoCache[unit.getTilePosition()] = TilePosition(center);
+            }
+            center = WalkPosition(closestGeoCache[unit.getTilePosition()]) + WalkPosition(2, 2);
+            radius = min(unit.getPosition().getDistance(Position(center)) + 64.0, radius);
+        }
 
-            auto correctArea = (here == Terrain::getDefendPosition() && Terrain::isInAllyTerritory(t)) || (t.isValid() && mapBWEM.GetArea(t) == area);
+        // If we are trying to expand, try to get out of the way
+        auto resourceDepot = Broodwar->self()->getRace().getResourceDepot();
+        if (BuildOrder::buildCount(resourceDepot) > vis(resourceDepot) && vis(resourceDepot) == 1) {
+            radius = min(BWEB::Map::getNaturalPosition().getDistance(Position(BWEB::Map::getNaturalChoke()->Center())),
+                Position(BWEB::Map::getMainChoke()->Center()).getDistance(Position(BWEB::Map::getNaturalChoke()->Center())));
+            radius = clamp(radius, 0.0, radius - 128.0);
+        }
 
-            if (!w.isValid() || !t.isValid() || !p.isValid()
-                || (!Terrain::isInAllyTerritory(t) && area && mapBWEM.GetArea(w) != area)
-                || dist < radius
-                || score > distBest
-                || !correctArea
-                || Command::overlapsActions(unit.unit(), p, unit.getType(), PlayerState::Self, 24)
-                || Command::isInDanger(unit, p)
-                || Grids::getMobility(p) <= 6
-                || Buildings::overlapsQueue(unit, TilePosition(w)))
-                return;
+        const auto isSuitable = [&](WalkPosition w) {
+            const auto t = TilePosition(w);
+            const auto pTest = Position(w) + Position(4, 4);
 
-            posBest = p;
-            distBest = score;
+            if (!pTest.isValid()
+                || pTest.getDistance(Position(center)) < radius /*- 64.0*/
+                || pTest.getDistance(Position(center)) > radius + 64.0
+                || (area && mapBWEM.GetArea(w) != area)
+                || Buildings::overlapsQueue(unit, TilePosition(w))
+                || !Util::isWalkable(unit, w))
+                return false;
+
+            auto cachedResult = badPosition.equal_range(w);
+
+            // Check if too close or too far to a cache result
+            for (auto itr = cachedResult.first; itr != cachedResult.second; itr++) {
+                if (itr->second == radius)
+                    return false;
+            }
+
+            // Make sure we are the closest unit to it
+            auto closest = Util::getClosestUnit(pTest, PlayerState::Self, [&](auto &u) {
+                return u.getRole() == Role::Combat && u.getPosition().getDistance(pTest) < 48.0;
+            });
+            if (closest && closest != unit.shared_from_this())
+                return false;
+            return true;
         };
 
-        // Find a position around the center that is suitable
+        const auto scorePosition = [&](Position pTest) {
+            const auto distCenter = pTest.getDistance(Position(center));
+            const auto distUnit = log(pTest.getDistance(unit.getPosition()) + 32.0);
+            const auto distAreaBase = base ? base->Center().getDistance(pTest) : 1.0;
+            return distCenter * distAreaBase * distUnit;
+        };
+
+        /*if (isSuitable(WalkPosition(unit.unit()->getLastCommand().getTargetPosition())))
+            return unit.unit()->getLastCommand().getTargetPosition();
+        if (isSuitable(WalkPosition(unit.getPosition())))
+            return unit.getPosition();*/
+
+            // Find a position around the center that is suitable        
         for (int x = center.x - 40; x <= center.x + 40; x++) {
             for (int y = center.y - 40; y <= center.y + 40; y++) {
                 WalkPosition w(x, y);
-                checkbest(w);
+                const auto p = Position(w) + Position(4, 4);
+                const auto score = scorePosition(p);
+
+                if (score < scoreBest && isSuitable(w)) {
+                    posBest = p;
+                    scoreBest = score;
+                }
             }
         }
         return posBest;
@@ -165,10 +257,10 @@ namespace McRave::Util {
     Position getInterceptPosition(UnitInfo& unit)
     {
         // If we can't see the units speed, return its current position
-        if (!unit.unit()->exists())
-            return unit.getPosition();
+        if (!unit.getTarget().unit()->exists() || unit.getSpeed() == 0.0 || unit.getTarget().getSpeed() == 0.0)
+            return unit.getTarget().getPosition();
 
-        auto timeToEngage = max(0.0, (unit.getEngDist() / unit.getSpeed()));
+        auto timeToEngage = max(0.0, 2 * (unit.getEngDist() / unit.getSpeed()));
         auto targetDestination = unit.getTarget().getPosition() + Position(int(unit.getTarget().unit()->getVelocityX() * timeToEngage), int(unit.getTarget().unit()->getVelocityY() * timeToEngage));
         targetDestination = Util::clipPosition(targetDestination);
         return targetDestination;
@@ -213,5 +305,21 @@ namespace McRave::Util {
         source.x = clamp(source.x, 0, Broodwar->mapWidth() * 32);
         source.y = clamp(source.y, 0, Broodwar->mapHeight() * 32);
         return source;
+    }
+
+    Time getTime()
+    {
+        return gameTime;
+    }
+
+    void onFrame()
+    {
+        if (Broodwar->getFrameCount() % 24 == 0) {
+            gameTime.seconds++;
+            if (gameTime.seconds >= 60) {
+                gameTime.seconds = 0;
+                gameTime.minutes++;
+            }
+        }
     }
 }

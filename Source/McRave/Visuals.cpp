@@ -28,15 +28,12 @@ namespace McRave::Visuals {
 
         void drawInformation()
         {
-            // BWAPIs orange text doesn't point to the right color so this will be see occasionally
+            // BWAPIs green text doesn't point to the right color so this will be see occasionally
             int color = Broodwar->self()->getColor();
-            int textColor = color == 156 ? 17 : Broodwar->self()->getTextColor();
+            int textColor = color == 185 ? textColor = Text::DarkGreen : Broodwar->self()->getTextColor();
 
             // Reset the screenOffset for the performance tests
             screenOffset = 0;
-
-            //WalkPosition mouse(Broodwar->getMousePosition() + Broodwar->getScreenPosition());
-            //Broodwar->drawTextScreen(Broodwar->getMousePosition() - Position(0, 16), "%d", mapBWEM.GetMiniTile(mouse).Altitude());
 
             // Builds
             if (builds) {
@@ -47,12 +44,17 @@ namespace McRave::Visuals {
             // Scores
             if (scores) {
                 int offset = 0;
-                for (auto &unit : Strategy::getUnitScores()) {
-                    if (unit.first.isValid() && unit.second > 0.0) {
-                        Broodwar->drawTextScreen(0, offset, "%c%s: %c%.2f", textColor, unit.first.c_str(), Text::White, unit.second);
+                for (auto &[type, score] : Strategy::getUnitScores()) {
+                    if (score > 0.0) {
+                        Broodwar->drawTextScreen(0, offset, "%c%s: %c%.2f", textColor, type.c_str(), Text::White, score);
                         offset += 10;
                     }
                 }
+                for (auto &type : BuildOrder::getTechList()) {
+                    Broodwar->drawTextScreen(0, offset, "%c%s", Text::White, type.c_str());
+                    offset += 10;
+                }
+                Broodwar->drawTextScreen(0, offset, "%c%s", Text::Grey, BuildOrder::getTechUnit().c_str());
             }
 
             // Timers
@@ -180,7 +182,7 @@ namespace McRave::Visuals {
                 UnitInfo &unit = *u;
 
                 int color = unit.getPlayer()->getColor();
-                int textColor = color == 156 ? 17 : unit.getPlayer()->getTextColor();
+                int textColor = color == 185 ? textColor = Text::DarkGreen : unit.getPlayer()->getTextColor();
 
                 if (unit.unit()->isLoaded())
                     continue;
@@ -242,7 +244,7 @@ namespace McRave::Visuals {
                 UnitInfo &unit = *u;
 
                 int color = unit.getPlayer()->getColor();
-                int textColor = color == 156 ? 17 : unit.getPlayer()->getTextColor();
+                int textColor = color == 185 ? textColor = Text::DarkGreen : unit.getPlayer()->getTextColor();
 
                 if (targets) {
                     if (unit.hasTarget())

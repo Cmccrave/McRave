@@ -56,6 +56,7 @@ namespace McRave
         bool isAlly() { return pState == PlayerState::Ally; }
         bool isSelf() { return pState == PlayerState::Self; }
         bool isNeutral() { return pState == PlayerState::Neutral; }
+
         int getSupply() { return supply; }
 
         void setCurrentRace(BWAPI::Race newRace) { currentRace = newRace; }

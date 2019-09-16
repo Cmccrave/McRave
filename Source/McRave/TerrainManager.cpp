@@ -89,14 +89,10 @@ namespace McRave::Terrain {
             double best = 0.0;
             for (auto &station : BWEB::Stations::getStations()) {
 
-                UnitType shuttle = Broodwar->self()->getRace().getTransport();
-
-                // Shuttle check for island bases, check enemy owned bases
-                if (!station.getBWEMBase()->GetArea()->AccessibleFrom(BWEB::Map::getMainArea()) && Units::getEnemyCount(shuttle) <= 0)
-                    continue;
-                if (BWEB::Map::isUsed(station.getBWEMBase()->Location()) != UnitTypes::None)
-                    continue;
-                if (enemyStartingTilePosition == station.getBWEMBase()->Location())
+                // If station is used
+                if (BWEB::Map::isUsed(station.getBWEMBase()->Location()) != UnitTypes::None
+                    || enemyStartingTilePosition == station.getBWEMBase()->Location()
+                    || !station.getBWEMBase()->GetArea()->AccessibleFrom(BWEB::Map::getMainArea()))
                     continue;
 
                 // Get value of the expansion
@@ -112,10 +108,8 @@ namespace McRave::Terrain {
                 double distance;
                 if (!station.getBWEMBase()->GetArea()->AccessibleFrom(BWEB::Map::getMainArea()))
                     distance = log(station.getBWEMBase()->Center().getDistance(enemyStartingPosition));
-                else if (!Players::vT())
-                    distance = BWEB::Map::getGroundDistance(enemyStartingPosition, station.getBWEMBase()->Center()) / (BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), station.getBWEMBase()->Center()));
                 else
-                    distance = BWEB::Map::getGroundDistance(enemyStartingPosition, station.getBWEMBase()->Center());
+                    distance = BWEB::Map::getGroundDistance(enemyStartingPosition, station.getBWEMBase()->Center()) / (BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), station.getBWEMBase()->Center()));
 
                 double score = value / distance;
 
@@ -146,8 +140,6 @@ namespace McRave::Terrain {
                     }
                 }
                 attackPosition = posBest;
-                if (posBest.isValid())
-                    Broodwar->drawCircleMap(posBest, 4, Colors::Cyan, true);
             }
 
             // Attack enemy main
@@ -159,20 +151,18 @@ namespace McRave::Terrain {
 
         void findDefendPosition()
         {
-            Broodwar->drawCircleMap(defendPosition, 10, Colors::Brown);
-
             UnitType baseType = Broodwar->self()->getRace().getResourceDepot();
             Position oldDefendPosition = defendPosition;
             reverseRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) < Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
             flatRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) == Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
             narrowNatural = BWEB::Map::getNaturalChoke() ? int(BWEB::Map::getNaturalChoke()->Pos(BWEB::Map::getNaturalChoke()->end1).getDistance(BWEB::Map::getNaturalChoke()->Pos(BWEB::Map::getNaturalChoke()->end2)) / 4) <= 2 : false;
-            defendNatural = BWEB::Map::getNaturalChoke() ? BuildOrder::buildCount(baseType) > 1 || vis(baseType) > 1 || defendPosition == Position(BWEB::Map::getNaturalChoke()->Center()) || (reverseRamp && !Players::vZ() && Players::getSupply(PlayerState::Self) > 100) : false;
+            defendNatural = BWEB::Map::getNaturalChoke() ? BuildOrder::isWallNat() || BuildOrder::buildCount(baseType) > 1 || vis(baseType) > 1 || defendPosition == Position(BWEB::Map::getNaturalChoke()->Center()) || (/*reverseRamp && */!Players::vZ() && Players::getSupply(PlayerState::Self) > 140) : false;
 
             if (islandMap) {
                 defendPosition = BWEB::Map::getMainPosition();
                 return;
             }
-
+            
             // Set mineral holding positions
             double distBest = DBL_MAX;
             for (auto &station : Stations::getMyStations()) {
@@ -196,22 +186,32 @@ namespace McRave::Terrain {
                 defendNatural = false;
             }
 
-            // Defend our main choke if we're hiding tech
-            else if (BuildOrder::isHideTech() && BWEB::Map::getMainChoke() && Broodwar->self()->visibleUnitCount(baseType) == 1) {
-                defendPosition = (Position)BWEB::Map::getMainChoke()->Center();
-                defendNatural = false;
-            }
-
             // Natural defending
-            else if (naturalWall && BuildOrder::isWallNat()) {
-                Position opening(naturalWall->getOpening());
-                defendPosition = opening.isValid() ? opening : naturalWall->getCentroid();
-                allyTerritory.insert(BWEB::Map::getNaturalArea());
-                defendNatural = true;
-            }
             else if (defendNatural) {
                 defendPosition = Position(BWEB::Map::getNaturalChoke()->Center());
                 allyTerritory.insert(BWEB::Map::getNaturalArea());
+
+                // If there are multiple chokepoints
+                if (BWEB::Map::getNaturalArea()->ChokePoints().size() >= 3) {
+                    defendPosition = Position(0,0);
+                    int count = 0;
+                    for (auto &choke : BWEB::Map::getNaturalArea()->ChokePoints()) {
+                        if (BWEB::Map::getGroundDistance(Position(choke->Center()), mapBWEM.Center()) < BWEB::Map::getGroundDistance(BWEB::Map::getNaturalPosition(), mapBWEM.Center())) {
+                            defendPosition += Position(choke->Center());
+                            count++;
+                        }
+                    }
+                    if (count > 0)
+                        defendPosition /= count;
+                    else
+                        defendPosition = Position(BWEB::Map::getNaturalChoke()->Center());
+                }
+
+                // Check to see if we have a wall
+                else if (naturalWall && BuildOrder::isWallNat()) {
+                    Position opening(naturalWall->getOpening());
+                    defendPosition = opening.isValid() ? opening : naturalWall->getCentroid();
+                }
 
                 // Move the defend position on maps like destination
                 while (!Broodwar->isBuildable((TilePosition)defendPosition)) {
@@ -220,14 +220,15 @@ namespace McRave::Terrain {
                     for (int x = test.x - 1; x <= test.x + 1; x++) {
                         for (int y = test.y - 1; y <= test.y + 1; y++) {
                             TilePosition t(x, y);
+                            const Position p = Position(t) + Position(16, 16);
                             if (!t.isValid())
                                 continue;
 
-                            double dist = Position(t).getDistance((Position)BWEB::Map::getNaturalArea()->Top());
+                            double dist = p.getDistance(BWEB::Map::getNaturalPosition());
 
                             if (dist < distBest) {
                                 distBest = dist;
-                                defendPosition = (Position)t;
+                                defendPosition = p;
                             }
                         }
                     }
@@ -353,7 +354,7 @@ namespace McRave::Terrain {
             }
 
             // Zerg wall parameters
-            if (Broodwar->self()->getRace() == Races::Terran) {
+            if (Broodwar->self()->getRace() == Races::Zerg) {
                 tight = false;
                 buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber };
                 defenses.insert(defenses.end(), 8, Zerg_Creep_Colony);
@@ -379,7 +380,7 @@ namespace McRave::Terrain {
 
                     for (auto &choke : area->ChokePoints()) {
                         if (choke->Center() == BWEB::Map::getMainChoke()->Center()) {
-                            allyTerritory.insert(area);                            
+                            allyTerritory.insert(area);
                         }
                     }
                 }
@@ -443,52 +444,16 @@ namespace McRave::Terrain {
         updateAreas();
     }
 
-    bool inRangeOfWallPieces(UnitInfo& unit)
-    {
-        if (naturalWall) {
-            for (auto &piece : naturalWall->getSmallTiles()) {
-                if (BWEB::Map::isUsed(piece) != UnitTypes::None) {
-                    auto center = Position(piece) + Position(32, 32);
-                    if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 32)
-                        return true;
-                }
-            }
-            for (auto &piece : naturalWall->getMediumTiles()) {
-                if (BWEB::Map::isUsed(piece) != UnitTypes::None) {
-                    auto center = Position(piece) + Position(48, 32);
-                    if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 48)
-                        return true;
-                }
-            }
-            for (auto &piece : naturalWall->getLargeTiles()) {
-                if (BWEB::Map::isUsed(piece) != UnitTypes::None) {
-                    auto center = Position(piece) + Position(64, 48);
-                    if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 64)
-                        return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    bool inRangeOfWallDefenses(UnitInfo& unit)
-    {
-        if (naturalWall) {
-            for (auto &piece : naturalWall->getDefenses()) {
-                if (BWEB::Map::isUsed(piece) != UnitTypes::None) {
-                    auto center = Position(piece) + Position(32, 32);
-                    if (unit.getPosition().getDistance(center) < unit.getGroundRange() + 32)
-                        return true;
-                }
-            }
-        }
-        return false;
-    }
-
     bool isInAllyTerritory(TilePosition here)
     {
-        // Find the area of this tile position and see if it exists in ally territory
-        if (here.isValid() && mapBWEM.GetArea(here) && allyTerritory.find(mapBWEM.GetArea(here)) != allyTerritory.end())
+        if (here.isValid() && mapBWEM.GetArea(here))
+            return isInAllyTerritory(mapBWEM.GetArea(here));
+        return false;
+    }
+
+    bool isInAllyTerritory(const BWEM::Area * area)
+    {
+        if (allyTerritory.find(area) != allyTerritory.end())
             return true;
         return false;
     }
@@ -558,6 +523,6 @@ namespace McRave::Terrain {
     set <const Area*>& getAllyTerritory() { return allyTerritory; }
     set <const Area*>& getEnemyTerritory() { return enemyTerritory; }
     set <const Base *>& getAllBases() { return allBases; }
-    const BWEB::Wall* getMainWall() { return mainWall; }
-    const BWEB::Wall* getNaturalWall() { return naturalWall; }
+    BWEB::Wall* getMainWall() { return mainWall; }
+    BWEB::Wall* getNaturalWall() { return naturalWall; }
 }

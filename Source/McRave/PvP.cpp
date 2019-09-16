@@ -14,91 +14,100 @@ namespace McRave::BuildOrder::Protoss {
             return Broodwar->self()->isUpgrading(UpgradeTypes::Singularity_Charge) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge);
         }
 
+        bool enemyMoreZealots() {
+            return com(Protoss_Zealot) <= Players::getCurrentCount(PlayerState::Enemy, Protoss_Zealot) || Strategy::enemyProxy();
+        }
+
         void defaultPvP() {
-            hideTech =                                  false;
-            playPassive =                               false;
-            fastExpand =                                false;
-            wallNat =                                   vis(Protoss_Nexus) >= 2;
-            wallMain =                                  false;
-            delayFirstTech =                            false;
-            desiredDetection =                          Protoss_Observer;
-            firstUnit =                                 None;
-            firstUpgrade =		                        vis(Protoss_Dragoon) > 0 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
-            firstTech =			                        TechTypes::None;
-            scout =				                        vis(Protoss_Gateway) > 0;
-            gasLimit =			                        INT_MAX;
-            zealotLimit =		                        1;
-            dragoonLimit =		                        INT_MAX;
+
+            getOpening =            true;
+            wallNat =               vis(Protoss_Nexus) >= 2;
+            wallMain =              false;
+            scout =                 vis(Protoss_Gateway) > 0;
+            fastExpand =            false;
+            proxy =                 false;
+            hideTech =              false;
+            playPassive =           false;
+            rush =                  false;
+            cutWorkers =            false;
+            transitionReady =       false;
+
+            gasLimit =              INT_MAX;
+            zealotLimit =           1;
+            dragoonLimit =          INT_MAX;
+            wallDefenseDesired =    0;
+
+            desiredDetection =      Protoss_Observer;
+            firstUpgrade =		    vis(Protoss_Dragoon) > 0 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
+            firstTech =             TechTypes::None;
         }
     }
 
     void PvP2GateDefensive() {
 
-        auto enemyMoreZealots =                         com(Protoss_Zealot) <= Units::getEnemyCount(Protoss_Zealot) || Strategy::enemyProxy();
-
         lockedTransition =                              true;
-        firstUnit =                                     Units::getEnemyCount(Protoss_Dragoon) > 0 || Units::getEnemyCount(Protoss_Assimilator) > 0 ? Protoss_Dark_Templar : Protoss_Reaver;
 
-        gasLimit =			                            (vis(Protoss_Cybernetics_Core) > 0 && s >= 36) ? INT_MAX : 0;
-        getOpening =		                            s < 100;
-        playPassive	=		                            enemyMoreZealots && s < 100;
-        firstUpgrade =		                            UpgradeTypes::None;
+        // Make a tech decision before 3:30
+        if (Util::getTime() < Time(3, 30))
+            firstUnit =                                 (Players::getCurrentCount(PlayerState::Enemy, Protoss_Dragoon) > 0 || Players::getCurrentCount(PlayerState::Enemy, Protoss_Assimilator) > 0) ? Protoss_Reaver : None;
+
+        gasLimit =			                            (2 * (vis(Protoss_Cybernetics_Core) > 0 && s >= 46)) + (com(Protoss_Cybernetics_Core) > 0);
+        getOpening =		                            s < 120;
+        playPassive	=		                            enemyMoreZealots() && s < 100 && com(Protoss_Dragoon) < 4;
+        firstUpgrade =		                            com(Protoss_Dragoon) >= 2 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
         firstTech =			                            TechTypes::None;
         fastExpand =		                            false;
+        rush =                                          false;
 
-        zealotLimit =		                            !enemyMoreZealots && s > 80 ? 0 : INT_MAX;
-        dragoonLimit =		                            s > 80 ? INT_MAX : 0;
-        
+        zealotLimit =		                            s > 80 ? 0 : INT_MAX;
+        dragoonLimit =		                            s > 60 ? INT_MAX : 0;
+
         desiredDetection =                              Protoss_Forge;
-        cutWorkers =                                    enemyMoreZealots && Production::hasIdleProduction();
+        cutWorkers =                                    Util::getTime() < Time(3, 30) && enemyMoreZealots() && Production::hasIdleProduction();
 
         itemQueue[Protoss_Nexus] =					    Item(1);
         itemQueue[Protoss_Pylon] =					    Item((s >= 14) + (s >= 30), (s >= 16) + (s >= 30));
         itemQueue[Protoss_Gateway] =				    Item((s >= 20) + (s >= 24) + (s >= 66));
-        itemQueue[Protoss_Assimilator] =			    Item(s >= 36);
-        itemQueue[Protoss_Shield_Battery] =			    Item(enemyMoreZealots && vis(Protoss_Zealot) >= 2 && vis(Protoss_Pylon) >= 2);
-        itemQueue[Protoss_Cybernetics_Core] =		    Item(com(Protoss_Zealot) >= 5);
+        itemQueue[Protoss_Assimilator] =		        Item(vis(Protoss_Zealot) >= 5);
+        itemQueue[Protoss_Cybernetics_Core] =	        Item(vis(Protoss_Assimilator) >= 1);
+        itemQueue[Protoss_Shield_Battery] =			    Item(vis(Protoss_Zealot) >= 2 && vis(Protoss_Pylon) >= 2);
 
-        if (firstUnit == Protoss_Dark_Templar) {
-            itemQueue[Protoss_Citadel_of_Adun] =            Item(isAlmostComplete(Protoss_Cybernetics_Core));
-            itemQueue[Protoss_Templar_Archives] =           Item(isAlmostComplete(Protoss_Citadel_of_Adun));
-        }
-        else if (firstUnit == Protoss_Reaver)
+        if (firstUnit == Protoss_Reaver)
             itemQueue[Protoss_Robotics_Facility] =          Item(isAlmostComplete(Protoss_Cybernetics_Core));
-        
     }
 
     void PvP2Gate()
     {
         // "https://liquipedia.net/starcraft/2_Gate_(vs._Protoss)"
         defaultPvP();
-        zealotLimit =		                            s > 100 ? 0 : INT_MAX;
+        zealotLimit =		                            s <= 80 ? INT_MAX : 0;
         proxy =                                         currentOpener == "Proxy" && vis(Protoss_Gateway) < 2 && Broodwar->getFrameCount() < 5000;
-        wallNat =                                       !Strategy::enemyPressure() && s >= 80;
         scout =                                         currentOpener != "Proxy" && startCount >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
-        rush =                                          currentOpener == "Proxy";
+        rush =                                          Util::getTime() < Time(5, 0) && (Util::getTime() > Time(3, 30) || com(Protoss_Zealot) >= 3);
         transitionReady =                               vis(Protoss_Gateway) >= 2;
+        playPassive =                                   (!Strategy::enemyFastExpand() && Players::getCurrentCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 && Broodwar->getFrameCount() < 15000) || (Util::getTime() < Time(3, 30) && com(Protoss_Zealot) < 3);
+        desiredDetection =                              Protoss_Forge;
 
         // Openers
         if (currentOpener == "Proxy") {                 // 9/9            
             itemQueue[Protoss_Pylon] =					Item((s >= 12) + (s >= 26), (s >= 16) + (s >= 26));
             itemQueue[Protoss_Gateway] =				Item((vis(Protoss_Pylon) > 0 && s >= 18) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
         }
-        else if (currentOpener == "Natural") {           
+        else if (currentOpener == "Natural") {
             if (startCount >= 3) {                      // 9/10
                 itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 26), (s >= 16) + (s >= 26));
                 itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0 && s >= 18) + (s >= 20), (s >= 18) + (s >= 20));
-            }            
+            }
             else {                                      // 9/9
                 itemQueue[Protoss_Pylon] =				Item((s >= 14) + (s >= 26), (s >= 16) + (s >= 26));
                 itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0 && s >= 18) + (vis(Protoss_Gateway) > 0), 2 * (s >= 18));
             }
         }
-        else if (currentOpener == "Main") {            
+        else if (currentOpener == "Main") {
             if (startCount >= 3) {                      // 10/12
                 itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 32));
                 itemQueue[Protoss_Gateway] =			Item((s >= 20) + (s >= 24));
-            }            
+            }
             else {                                      // 9/10
                 itemQueue[Protoss_Pylon] =				Item((s >= 16) + (s >= 26));
                 itemQueue[Protoss_Gateway] =			Item((vis(Protoss_Pylon) > 0 && s >= 18) + (s >= 20));
@@ -108,68 +117,75 @@ namespace McRave::BuildOrder::Protoss {
         // Reactions
         if (!lockedTransition) {
 
-            // Change Transition
+            // If enemy is rushing
             if (Strategy::enemyRush() && currentOpener != "Proxy")
                 currentTransition = "Defensive";
             else if (Strategy::enemyPressure() && currentOpener == "Natural")
                 currentTransition = "Defensive";
+
+            // If we should do a robo transition instead
             else if (Strategy::getEnemyBuild() == "FFE" || Strategy::getEnemyBuild() == "1GateDT")
                 currentTransition = "Robo";
             else if (Strategy::getEnemyBuild() == "CannonRush")
                 currentTransition = "Robo";
+
+            else if (Strategy::enemyPressure())
+                currentTransition = "DT";
         }
 
         // Transitions
         if (transitionReady) {
             if (currentTransition == "DT") {
-                lockedTransition =                          vis(Protoss_Citadel_of_Adun) > 0;
-                getOpening =		                        vis(Protoss_Dark_Templar) < 2 && s <= 80;
+                lockedTransition =                          total(Protoss_Citadel_of_Adun) > 0;
+                getOpening =		                        s < 80;
                 firstUpgrade =                              UpgradeTypes::None;
                 firstUnit =			                        Protoss_Dark_Templar;
 
-                hideTech =			                        currentOpener == "Main" && com(Protoss_Zealot) < 2;
-                desiredDetection =                          Protoss_Forge;
+                wallNat =                                   (com(Protoss_Forge) > 0 && com(Protoss_Dark_Templar) > 0);
+                hideTech =			                        com(Protoss_Dark_Templar) <= 0;
 
                 itemQueue[Protoss_Gateway] =                Item(2 + (com(Protoss_Cybernetics_Core) > 0));
                 itemQueue[Protoss_Nexus] =				    Item(1);
-                itemQueue[Protoss_Assimilator] =		    Item(s >= 50);
-                itemQueue[Protoss_Cybernetics_Core] =	    Item(vis(Protoss_Zealot) >= 5);
+                itemQueue[Protoss_Assimilator] =		    Item(vis(Protoss_Zealot) >= 5);
+                itemQueue[Protoss_Cybernetics_Core] =	    Item(vis(Protoss_Assimilator) >= 1);
                 itemQueue[Protoss_Citadel_of_Adun] =        Item(isAlmostComplete(Protoss_Cybernetics_Core));
                 itemQueue[Protoss_Templar_Archives] =       Item(isAlmostComplete(Protoss_Citadel_of_Adun));
                 itemQueue[Protoss_Forge] =				    Item(s >= 70);
 
-                auto cannonCount =                          int(1 + Units::getEnemyCount(Protoss_Zealot) + Units::getEnemyCount(Protoss_Dragoon) - com(Protoss_Zealot) - com(Protoss_Dragoon) - com(Protoss_High_Templar) - com(Protoss_Dark_Templar)) / 2;
-                itemQueue[Protoss_Photon_Cannon] =		    Item(cannonCount * (com(Protoss_Forge) > 0));
+                if (Util::getTime() < Time(10, 0) && vis(Protoss_Nexus) >= 2) {
+                    auto cannonCount =                          2 + int(1 + Players::getCurrentCount(PlayerState::Enemy, Protoss_Zealot) + Players::getCurrentCount(PlayerState::Enemy, Protoss_Dragoon) - com(Protoss_Zealot) - com(Protoss_Dragoon) - com(Protoss_High_Templar) - com(Protoss_Dark_Templar));
+                    cannonCount =                               min(vis(Protoss_Photon_Cannon) + 1, cannonCount);
+                    itemQueue[Protoss_Photon_Cannon] =		    Item(cannonCount * (com(Protoss_Forge) > 0));
+                    wallDefenseDesired =                        cannonCount;
+                }
             }
             else if (currentTransition == "Expand") {       // "https://liquipedia.net/starcraft/2_Gate_(vs._Protoss)#10.2F12_Gateway_Expand"            
-                lockedTransition =                          vis(Protoss_Nexus) >= 2;
-                getOpening =		                        s < 100;
+                lockedTransition =                          total(Protoss_Nexus) >= 2;
+                getOpening =		                        s < 80;
                 firstUnit =                                 None;
 
-                delayFirstTech =                            true;
                 wallNat =                                   currentOpener == "Natural" || s >= 56;
-                desiredDetection =                          Protoss_Forge;
 
                 itemQueue[Protoss_Gateway] =                Item(2 + (com(Protoss_Cybernetics_Core) > 0));
-                itemQueue[Protoss_Assimilator] =		    Item(s >= 50);
-                itemQueue[Protoss_Cybernetics_Core] =	    Item(vis(Protoss_Zealot) >= 5);
+                itemQueue[Protoss_Assimilator] =		    Item(vis(Protoss_Zealot) >= 5);
+                itemQueue[Protoss_Cybernetics_Core] =	    Item(vis(Protoss_Assimilator) >= 1);
                 itemQueue[Protoss_Forge] =				    Item(s >= 70);
                 itemQueue[Protoss_Nexus] =				    Item(1 + (vis(Protoss_Zealot) >= 3));
 
-                auto cannonCount =                          int(1 + Units::getEnemyCount(Protoss_Zealot) + Units::getEnemyCount(Protoss_Dragoon) - com(Protoss_Zealot) - com(Protoss_Dragoon) - com(Protoss_High_Templar) - com(Protoss_Dark_Templar)) / 2;
+                auto cannonCount =                          int(1 + Players::getCurrentCount(PlayerState::Enemy, Protoss_Zealot) + Players::getCurrentCount(PlayerState::Enemy, Protoss_Dragoon) - com(Protoss_Zealot) - com(Protoss_Dragoon) - com(Protoss_High_Templar) - com(Protoss_Dark_Templar)) / 2;
+                cannonCount =                               min(vis(Protoss_Photon_Cannon) + 1, cannonCount);
                 itemQueue[Protoss_Photon_Cannon] =		    Item(cannonCount * (com(Protoss_Forge) > 0));
+                wallDefenseDesired =                        cannonCount;
             }
             else if (currentTransition == "Robo") {         // "https://liquipedia.net/starcraft/2_Gate_Reaver_(vs._Protoss)"            
-                lockedTransition =                          vis(Protoss_Robotics_Facility) > 0;
+                lockedTransition =                          total(Protoss_Robotics_Facility) > 0;
                 getOpening =		                        s < 130;
-                firstUnit =                                 Strategy::enemyPressure() ? Protoss_Reaver : Protoss_Observer;
-                desiredDetection =                          Protoss_Forge;
-                playPassive =                               Units::getEnemyCount(Protoss_Dragoon) >= 4 && vis(Protoss_Reaver) < 2;
+                firstUnit =                                 Players::getCurrentCount(PlayerState::Enemy, Protoss_Dragoon) > Players::getCurrentCount(PlayerState::Enemy, Protoss_Zealot) ? Protoss_Reaver : Protoss_Observer;
 
                 itemQueue[Protoss_Gateway] =                Item(2 + (com(Protoss_Cybernetics_Core) > 0));
                 itemQueue[Protoss_Nexus] =				    Item(1 + (s >= 130));
-                itemQueue[Protoss_Assimilator] =		    Item(s >= 50);
-                itemQueue[Protoss_Cybernetics_Core] =	    Item(vis(Protoss_Zealot) >= 5);
+                itemQueue[Protoss_Assimilator] =		    Item(vis(Protoss_Zealot) >= 5);
+                itemQueue[Protoss_Cybernetics_Core] =	    Item(vis(Protoss_Assimilator) >= 1);
                 itemQueue[Protoss_Robotics_Facility] =	    Item(com(Protoss_Dragoon) >= 2);
             }
             else if (currentTransition == "Defensive") {
@@ -190,123 +206,152 @@ namespace McRave::BuildOrder::Protoss {
                 //itemQueue[Protoss_Forge] =				Item(vis(Protoss_Zealot) >= 4);
                 //itemQueue[Protoss_Nexus] =				Item(1 + (s >= 56));
 
-                //auto cannonCount = int(1 + Units::getEnemyCount(Protoss_Zealot) + Units::getEnemyCount(Protoss_Dragoon)) / 2;
+                //auto cannonCount = int(1 + Players::getCurrentCount(PlayerState::Enemy, Protoss_Zealot) + Players::getCurrentCount(PlayerState::Enemy, Protoss_Dragoon)) / 2;
+                //cannonCount =                               min(vis(Protoss_Photon_Cannon) + 1, cannonCount);
                 //itemQueue[Protoss_Photon_Cannon] =		Item(cannonCount * (com(Protoss_Forge) > 0));
+                //wallDefenseDesired =                        cannonCount;
             }
         }
+
+        /*if (Terrain::isInAllyTerritory((TilePosition)Strategy::enemyScoutPosition())) {
+            itemQueue[Protoss_Citadel_of_Adun] =        Item(0);
+            itemQueue[Protoss_Robotics_Facility] =		Item(0);
+        }*/
     }
 
     void PvP1GateCore()
     {
         // "https://liquipedia.net/starcraft/1_Gate_Core_(vs._Protoss)"
         defaultPvP();
+        rush = !enemyMoreZealots() && Broodwar->getFrameCount() < 6000;
 
-        // Openers
-        if (currentOpener == "1Zealot") {               // ZCoreZ
-            zealotLimit =                               vis(Protoss_Cybernetics_Core) > 0 ? max(2, Units::getEnemyCount(Protoss_Zealot)) : (s < 60);
+        if (currentOpener == "0Zealot") {               // NZCore
+            zealotLimit =                               0;
+            scout =				                        vis(Protoss_Pylon) > 0;
+
+            itemQueue[Protoss_Nexus] =				    Item(1);
+            itemQueue[Protoss_Pylon] =				    Item((s >= 16) + (s >= 30));
+            itemQueue[Protoss_Gateway] =			    Item(s >= 20);
+            itemQueue[Protoss_Assimilator] =		    Item(s >= 24);
+            itemQueue[Protoss_Cybernetics_Core] =	    Item(s >= 26);
+        }
+        else if (currentOpener == "1Zealot") {          // ZCore
+            zealotLimit =                               s >= 60 ? 0 : 1;
             scout =				                        Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
 
             itemQueue[Protoss_Nexus] =				    Item(1);
-            itemQueue[Protoss_Pylon] =				    Item((s >= 16) + (s >= 30));
+            itemQueue[Protoss_Pylon] =				    Item((s >= 16) + (s >= 32));
             itemQueue[Protoss_Gateway] =			    Item(s >= 20);
-            itemQueue[Protoss_Assimilator] =		    Item(s >= 22);
+            itemQueue[Protoss_Assimilator] =		    Item(s >= 24);
             itemQueue[Protoss_Cybernetics_Core] =	    Item(s >= 34);
         }
-        else if (currentOpener == "2Zealot") {          // ZZCore
-            zealotLimit =                               2 * (s <= 60);
-            scout =				                        vis(Protoss_Gateway) > 0;
+        else if (currentOpener == "2Zealot") {          // ZCoreZ
+            zealotLimit =                               s >= 60 ? 0 : 1 + (vis(Protoss_Cybernetics_Core) > 0);
+            scout =				                        Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
 
             itemQueue[Protoss_Nexus] =				    Item(1);
-            itemQueue[Protoss_Pylon] =				    Item((s >= 16) + (s >= 30));
+            itemQueue[Protoss_Pylon] =				    Item((s >= 16) + (s >= 32));
             itemQueue[Protoss_Gateway] =			    Item(s >= 20);
-            itemQueue[Protoss_Assimilator] =		    Item(s >= 32);
-            itemQueue[Protoss_Cybernetics_Core] =	    Item(s >= 40);
+            itemQueue[Protoss_Assimilator] =		    Item(s >= 24);
+            itemQueue[Protoss_Cybernetics_Core] =	    Item(s >= 34);
         }
 
         // Reactions
         if (!lockedTransition) {
 
-            // Change Transition
+            // If enemy is rushing us
             if (Strategy::enemyRush() && vis(Protoss_Cybernetics_Core) == 0)
                 currentTransition = "Defensive";
-            else if (currentTransition != "Robo" && Strategy::getEnemyBuild() == "1GateDT")
-                currentTransition = "3GateRobo";
+            else if (Strategy::enemyRush() && vis(Protoss_Cybernetics_Core) > 0)
+                currentTransition = "4Gate";
+
+            // If our 4Gate would likely kill us
             else if (Strategy::enemyBlockedScout() && currentTransition == "4Gate")
-                currentTransition = "3GateRobo";
+                currentTransition = "Robo";
+
+            // If we didn't see enemy info by 3:30
+            else if (!Terrain::foundEnemy() && Util::getTime() > Time(3, 30))
+                currentTransition = "Robo";
+
+            // If we're not doing Robo vs potential DT, switch
+            else if (currentTransition != "Robo" && Players::getCurrentCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) > 0)
+                currentTransition = "Robo";
+
+            // If we see a FFE, 4Gate with an expansion
             else if (Strategy::getEnemyBuild() == "FFE")
                 currentTransition = "4Gate";
         }
 
         // Transitions
-        if (currentTransition == "3GateRobo") {         // "https://liquipedia.net/starcraft/3_Gate_Robo_(vs._Protoss)"
-            firstUnit =                                 Strategy::enemyPressure() ? Protoss_Reaver : Protoss_Observer;
-            lockedTransition =                          vis(Protoss_Robotics_Facility) > 0;
-            getOpening =		                        Strategy::getEnemyBuild() == "1GateDT" ? com(firstUnit) == 0 : Broodwar->getFrameCount() < 12500;
-            playPassive =		                        Strategy::getEnemyBuild() == "1GateDT" ? com(firstUnit) == 0 : Broodwar->getFrameCount() < 13500;
-
-            zealotLimit =		                        vis(Protoss_Robotics_Facility) >= 1 ? 3 : zealotLimit;
-
-            itemQueue[Protoss_Gateway] =			    Item((s >= 20) + (2 * (s >= 58)));
-            itemQueue[Protoss_Robotics_Facility] =	    Item(s >= 52);
-
-            if (!Strategy::enemyFastExpand() && Strategy::enemyPressure())
-                itemQueue[Protoss_Shield_Battery] =     Item(vis(Protoss_Robotics_Facility) > 0);
-        }
-        else if (currentTransition == "Robo") {         // "https://liquipedia.net/starcraft/2_Gate_Reaver_(vs._Protoss)"   
-            firstUnit =                                 Strategy::enemyPressure() ? Protoss_Reaver : Protoss_Observer;
-            lockedTransition =                          vis(Protoss_Robotics_Facility) > 0;
-            getOpening =		                        Strategy::getEnemyBuild() == "1GateDT" ? com(firstUnit) == 0 : Broodwar->getFrameCount() < 12500;
-            playPassive =		                        Strategy::getEnemyBuild() == "1GateDT" ? com(firstUnit) == 0 : Broodwar->getFrameCount() < 13500;
-
-            zealotLimit =		                        vis(Protoss_Robotics_Facility) >= 1 ? 3 : zealotLimit;
+        if (currentTransition == "Robo") {              // "https://liquipedia.net/starcraft/2_Gate_Reaver_(vs._Protoss)"   
+            firstUnit =                                 !Strategy::needDetection() && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 2 ? Protoss_Reaver : Protoss_Observer;
+            lockedTransition =                          total(Protoss_Robotics_Facility) > 0;
+            getOpening =		                        Terrain::isNarrowNatural() ? Util::getTime() < Time(6, 30) : Util::getTime() < Time(7, 30);
+            playPassive =		                        Terrain::isNarrowNatural() ? Util::getTime() < Time(8, 45) : Util::getTime() < Time(8, 00);
+            wallNat =                                   Terrain::isNarrowNatural() ? Util::getTime() > Time(4, 30) : Util::getTime() > Time(5, 00);
 
             itemQueue[Protoss_Gateway] =				Item((s >= 20) + (s >= 58));
             itemQueue[Protoss_Robotics_Facility] =		Item(s >= 50);
+            itemQueue[Protoss_Shield_Battery] =         Item((s >= 80) + (s >= 100));
+        }
+        else if (currentTransition == "3Gate") {        // 
+            firstUnit =                                 None;
+            lockedTransition =                          total(Protoss_Gateway) >= 3;
+            getOpening =		                        Strategy::enemyPressure() ? Broodwar->getFrameCount() < 9000 : Broodwar->getFrameCount() < 8000;
+            playPassive =		                        Strategy::enemyPressure() ? Broodwar->getFrameCount() < 13000 : false;
+            gasLimit =                                  vis(Protoss_Gateway) >= 2 && com(Protoss_Gateway) < 3 ? 2 : INT_MAX;
 
-            if (!Strategy::enemyFastExpand() && Strategy::enemyPressure())
-                itemQueue[Protoss_Shield_Battery] =     Item(vis(Protoss_Robotics_Facility) > 0);
+            wallNat =                                   Util::getTime() > Time(4, 30);
+
+            itemQueue[Protoss_Gateway] =			    Item((s >= 20) + (2 * (s >= 58)));
         }
         else if (currentTransition == "4Gate") {        // "https://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)" 
             firstUnit =                                 None;
-            lockedTransition =                          s > 24;
-            getOpening =                                s < 140 && Broodwar->getFrameCount() < 10000;
+            lockedTransition =                          total(Protoss_Gateway) >= 3;
+            getOpening =                                s < 140 && com(Protoss_Dragoon) < Players::getCurrentCount(PlayerState::Enemy, Protoss_Dragoon) + 8;
             playPassive =                               !firstReady();
 
             desiredDetection =                          Protoss_Forge;
-            zealotLimit =                               vis(Protoss_Cybernetics_Core) > 0 ? 2 : 1;
 
-            // HACK
+            // If enemy is rushing
             if (Strategy::enemyRush()) {
-                auto enemyMoreZealots =                 com(Protoss_Zealot) <= Units::getEnemyCount(Protoss_Zealot);
-                zealotLimit =                           INT_MAX;
-                gasLimit =                              vis(Protoss_Dragoon) > 2 ? 3 : 1;
-                itemQueue[Protoss_Shield_Battery] =		Item(enemyMoreZealots && vis(Protoss_Zealot) >= 2 && vis(Protoss_Pylon) >= 2);
+                zealotLimit =                               s < 60 ? INT_MAX : 0;
+                gasLimit =                                  vis(Protoss_Dragoon) > 2 ? 2 : 1;
+                playPassive =                               com(Protoss_Dragoon) < 2;
+                itemQueue[Protoss_Shield_Battery] =		    Item(enemyMoreZealots() && vis(Protoss_Zealot) >= 2 && vis(Protoss_Pylon) >= 2);
+                itemQueue[Protoss_Gateway] =			    Item((s >= 20) + (vis(Protoss_Pylon) >= 3) + (2 * (s >= 62)));
+                itemQueue[Protoss_Cybernetics_Core] =	    Item(s >= 34);
             }
-
-            itemQueue[Protoss_Gateway] =			    Item((s >= 20) + (s >= 54) + (2 * (s >= 62)));
-            itemQueue[Protoss_Assimilator] =		    Item(s >= 32);
-            itemQueue[Protoss_Cybernetics_Core] =	    Item(s >= 34);
+            else {
+                itemQueue[Protoss_Shield_Battery] =		    Item(0);
+                itemQueue[Protoss_Gateway] =			    Item((s >= 20) + (s >= 54) + (2 * (s >= 62)));
+                itemQueue[Protoss_Cybernetics_Core] =	    Item(s >= 34);
+            }
         }
         else if (currentTransition == "DT") {           // "https://liquipedia.net/starcraft/2_Gate_DT_(vs._Protoss)"
             firstUnit =                                 Protoss_Dark_Templar;
-            lockedTransition =                          vis(Protoss_Citadel_of_Adun) > 0;
-            getOpening =		                        vis(Protoss_Dark_Templar) < 2 && s < 80;
+            lockedTransition =                          total(Protoss_Citadel_of_Adun) > 0;
+            getOpening =		                        s < 90;
             playPassive =		                        Broodwar->getFrameCount() < 13500;
 
+            wallNat =                                   (com(Protoss_Forge) > 0 && com(Protoss_Dark_Templar) > 0);
             desiredDetection =                          Protoss_Forge;
             firstUpgrade =                              UpgradeTypes::None;
-            hideTech =                                  true;
-            wallNat =                                   s >= 52;
-            zealotLimit =                               vis(Protoss_Photon_Cannon) >= 2 ? INT_MAX : zealotLimit;
+            hideTech =                                  com(Protoss_Dark_Templar) <= 0;
+            zealotLimit =                               vis(Protoss_Photon_Cannon) >= 2 && s < 60 ? INT_MAX : zealotLimit;
 
             itemQueue[Protoss_Gateway] =			    Item((s >= 20) + (vis(Protoss_Templar_Archives) > 0));
             itemQueue[Protoss_Forge] =                  Item(s >= 70);
             itemQueue[Protoss_Photon_Cannon] =          Item(2 * (com(Protoss_Forge) > 0));
-            itemQueue[Protoss_Citadel_of_Adun] =        Item(isAlmostComplete(Protoss_Cybernetics_Core));
+            itemQueue[Protoss_Citadel_of_Adun] =        Item(vis(Protoss_Dragoon) > 0);
             itemQueue[Protoss_Templar_Archives] =       Item(isAlmostComplete(Protoss_Citadel_of_Adun));
 
-            auto cannonCount =                          int(1 + Units::getEnemyCount(Protoss_Zealot) + Units::getEnemyCount(Protoss_Dragoon) - com(Protoss_Zealot) - com(Protoss_Dragoon) - com(Protoss_High_Templar) - com(Protoss_Dark_Templar)) / 2;
-            itemQueue[Protoss_Photon_Cannon] =		    Item(cannonCount * (com(Protoss_Forge) > 0));
+            if (Util::getTime() < Time(10, 0) && vis(Protoss_Nexus) >= 2) {
+                auto cannonCount =                          2 + int(1 + Players::getCurrentCount(PlayerState::Enemy, Protoss_Zealot) + Players::getCurrentCount(PlayerState::Enemy, Protoss_Dragoon) - com(Protoss_Zealot) - com(Protoss_Dragoon) - com(Protoss_High_Templar) - com(Protoss_Dark_Templar)) / 2;
+                cannonCount =                               min(vis(Protoss_Photon_Cannon) + 1, cannonCount);
+                itemQueue[Protoss_Photon_Cannon] =		    Item(cannonCount * (com(Protoss_Forge) > 0));
+                wallDefenseDesired =                        cannonCount;
+            }
         }
         else if (currentTransition == "Defensive") {
             lockedTransition =                         true;
@@ -314,5 +359,10 @@ namespace McRave::BuildOrder::Protoss {
             desiredDetection =  Protoss_Forge;
             PvP2GateDefensive();
         }
+
+        /*if (Terrain::isInAllyTerritory((TilePosition)Strategy::enemyScoutPosition())) {
+            itemQueue[Protoss_Citadel_of_Adun] =        Item(0);
+            itemQueue[Protoss_Robotics_Facility] =		Item(0);
+        }*/
     }
 }

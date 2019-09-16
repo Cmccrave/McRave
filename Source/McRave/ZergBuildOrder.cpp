@@ -34,7 +34,7 @@ namespace McRave::BuildOrder::Zerg {
         auto baseVal = vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive);
         auto techVal = int(techList.size()) + 1;
 
-        // Gas Trick
+        // Executing gas Trick
         if (gasTrick) {
             if (Players::getSupply(PlayerState::Self) == 18 && vis(Zerg_Drone) == 9) {
                 if (Broodwar->self()->minerals() >= 80)
@@ -44,7 +44,7 @@ namespace McRave::BuildOrder::Zerg {
             }
         }
 
-        // When to tech
+        // Adding tech
         if (!getOpening && baseVal > techVal)
             getTech = true;
         if (techComplete())
@@ -54,13 +54,16 @@ namespace McRave::BuildOrder::Zerg {
         if (vis(Zerg_Drone) >= 8) {
             auto sunkenCount = 0;
             if (Players::vP())
-                sunkenCount = int(1 + Units::getEnemyCount(Protoss_Zealot) + Units::getEnemyCount(Protoss_Dragoon)) / 2;
+                sunkenCount = int(1 + Players::getCurrentCount(PlayerState::Enemy, Protoss_Zealot) + Players::getCurrentCount(PlayerState::Enemy, Protoss_Dragoon)) / 2;
             else if (Players::vT())
-                sunkenCount = int(Units::getEnemyCount(Terran_Vulture) > 0) ? 2 : 0;
+                sunkenCount = int(Players::getCurrentCount(PlayerState::Enemy, Terran_Vulture) > 0) ? 2 : 0;
+
+            sunkenCount -= (com(Zerg_Zergling) / 4) + (com(Zerg_Hydralisk)) + (com(Zerg_Mutalisk));
+
             itemQueue[Zerg_Creep_Colony] = Item(sunkenCount);
         }
 
-        // Overlord
+        // Adding Overlords
         if (!bookSupply) {
             int providers = vis(Zerg_Overlord) > 0 ? 14 : 16;
             int count = 1 + min(22, Players::getSupply(PlayerState::Self) / providers);
@@ -75,13 +78,15 @@ namespace McRave::BuildOrder::Zerg {
             gasLimit = INT_MAX;
             int gasCount = min(vis(Zerg_Extractor) + 1, Resources::getGasCount());
 
-            // Adding hatcheries when needed
+            // Adding Hatcheries
             if (shouldExpand() || shouldAddProduction())
                 itemQueue[Zerg_Hatchery] = Item(vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive) + 1);
 
+            // Adding Extractors
             if (shouldAddGas())
                 itemQueue[Zerg_Extractor] = Item(gasCount);
 
+            // Adding Evolution Chambers
             if (Players::getSupply(PlayerState::Self) >= 100)
                 itemQueue[Zerg_Evolution_Chamber] = Item(2);
         }

@@ -6,9 +6,9 @@ namespace McRave::Terrain {
     void onStart();
     void onFrame();
 
-    bool inRangeOfWallPieces(UnitInfo&);
-    bool inRangeOfWallDefenses(UnitInfo&);
     bool isInAllyTerritory(BWAPI::TilePosition);
+    bool isInAllyTerritory(const BWEM::Area *);
+
     bool isInEnemyTerritory(BWAPI::TilePosition);
     bool isStartingBase(BWAPI::TilePosition);
     BWAPI::Position closestUnexploredStart();
@@ -21,6 +21,7 @@ namespace McRave::Terrain {
     bool isNarrowNatural();
     bool isDefendNatural();
     bool foundEnemy();
+
     BWAPI::Position getAttackPosition();
     BWAPI::Position getDefendPosition();
     BWAPI::Position getEnemyStartingPosition();
@@ -34,6 +35,9 @@ namespace McRave::Terrain {
     std::set <const BWEM::Area*>& getAllyTerritory();
     std::set <const BWEM::Area*>& getEnemyTerritory();
     std::set <BWEM::Base const*>& getAllBases();
-    const BWEB::Wall* getMainWall();
-    const BWEB::Wall* getNaturalWall();
+    BWEB::Wall* getMainWall();
+    BWEB::Wall* getNaturalWall();
+
+
+    inline bool isExplored(BWAPI::Position here) { return BWAPI::Broodwar->isExplored(BWAPI::TilePosition(here)); }
 }

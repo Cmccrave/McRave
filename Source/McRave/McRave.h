@@ -9,7 +9,6 @@
 #define LOW_MECH_PERCENT_LIMIT 0.25
 #define LOW_BIO_PERCENT_LIMIT 0.25
 #define MIN_THREAT 0.01f
-#define SIM_RADIUS 640.0
 #define MAX_SCARAB 5 + (BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Reaver_Capacity) * 5)
 #define MAX_INTERCEPTOR 4 + (BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Carrier_Capacity) * 4)
 
@@ -25,6 +24,26 @@ namespace McRave
         double y(int x) { return (slope * double(x)) + yInt; }
         Line(double y, double s) {
             yInt = y, slope = s;
+        }
+    };
+
+    struct Time {
+        int minutes;
+        int seconds;
+        int frames;
+        Time(int m, int s) {
+            minutes = m, seconds = s;
+            frames = ((m * 60) + s) * 24;
+        }
+
+        bool operator< (const Time t2) {
+            return (minutes < t2.minutes)
+                || (minutes == t2.minutes && seconds < t2.seconds);
+        }
+
+        bool operator> (const Time t2) {
+            return (minutes > t2.minutes)
+                || (minutes == t2.minutes && seconds > t2.seconds);
         }
     };
 
@@ -59,11 +78,6 @@ namespace McRave
         None, Worker, Combat, Transport, Scout, Production, Defender, Support
     };
 
-    // Maybe use this?
-    enum class CombatType {
-        None, AirToAir, GroundToGround, AirToGround, GroundToAir
-    };
-
     enum class TransportState {
         None, Loading, Unloading, Monitoring, Engaging, Retreating
     };
@@ -81,7 +95,7 @@ namespace McRave
     };
 
     enum class SimState {
-        None, Win, Loss, HighWin, HighLoss
+        None, Win, Loss
     };
 
     enum class PlayerState {
@@ -90,6 +104,7 @@ namespace McRave
 }
 
 #include "Horizon.h"
+#include "ActionManager.h"
 #include "BuildingManager.h"
 #include "BuildOrder.h"
 #include "CommandManager.h"
@@ -124,16 +139,19 @@ namespace
 // Has to be after the includes to prevent compiler error
 // TODO: Fix includes and move this up with the States
 namespace McRave {
+
+    /// Returns the self owned visible unit count of this UnitType
     static int vis(BWAPI::UnitType t) {
         return Units::getMyVisible(t);
     }
+
+    /// Returns the self owned completed unit count of this UnitType
     static int com(BWAPI::UnitType t) {
         return Units::getMyComplete(t);
     }
-    //static int mins() {
-    //    return Broodwar->self()->minerals();
-    //}
-    //static int gas() {
-    //    return Broodwar->self()->gas();
-    //}
+
+    /// Returns the self total unit count of this UnitType
+    static int total(BWAPI::UnitType t) {
+        return Players::getTotalCount(PlayerState::Self, t);
+    }
 }

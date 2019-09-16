@@ -22,6 +22,7 @@ namespace McRave {
         double speed = 0.0;
         double engageDist = 0.0;
         double simValue = 0.0;
+        double simRadius = 0.0;
 
         int lastAttackFrame = 0;
         int lastVisibleFrame = 0;
@@ -38,9 +39,10 @@ namespace McRave {
         bool burrowed = false;
         bool flying = false;
         bool threatening = false;
+        bool hidden = false;
 
         BWAPI::Player player = nullptr;
-        BWAPI::Unit thisUnit = nullptr;
+        BWAPI::Unit bwUnit = nullptr;
         std::weak_ptr<UnitInfo> transport;
         std::weak_ptr<UnitInfo> target;
         std::weak_ptr<ResourceInfo> resource;
@@ -54,7 +56,7 @@ namespace McRave {
         SimState sState = SimState::None;
         Role role = Role::None;
 
-        BWAPI::UnitType unitType = BWAPI::UnitTypes::None;
+        BWAPI::UnitType type = BWAPI::UnitTypes::None;
         BWAPI::UnitType buildingType = BWAPI::UnitTypes::None;
 
         BWAPI::Position position = BWAPI::Positions::Invalid;
@@ -74,72 +76,92 @@ namespace McRave {
 
         void updateTarget();
         void updateStuckCheck();
+        void updateHidden();
         void updateThreatening();
     public:
         UnitInfo();
 
+        UnitInfo(BWAPI::Unit u) {
+            bwUnit = u;
+        }
+
     #pragma region Utility
-        bool hasResource() { return !resource.expired(); }
-        bool hasTransport() { return !transport.expired(); }
-        bool hasTarget() { return !target.expired(); }
-        bool hasMovedArea() { return lastTile.isValid() && tilePosition.isValid() && BWEM::Map::Instance().GetArea(lastTile) != BWEM::Map::Instance().GetArea(tilePosition); }
-        bool hasAttackedRecently() { return (BWAPI::Broodwar->getFrameCount() - lastAttackFrame < 50); }
-        bool targetsFriendly() { return unitType == BWAPI::UnitTypes::Terran_Medic || unitType == BWAPI::UnitTypes::Terran_Science_Vessel || unitType == BWAPI::UnitTypes::Zerg_Defiler; }
-        bool isStuck() { return (BWAPI::Broodwar->getFrameCount() - lastTileMoveFrame > 50); }
-        bool isSuicidal() { return unitType == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine || unitType == BWAPI::UnitTypes::Zerg_Scourge || unitType == BWAPI::UnitTypes::Zerg_Infested_Terran; }
-        bool isLightAir() { return unitType == BWAPI::UnitTypes::Protoss_Corsair || unitType == BWAPI::UnitTypes::Zerg_Mutalisk || unitType == BWAPI::UnitTypes::Terran_Wraith; }
-        bool isCapitalShip() { return unitType == BWAPI::UnitTypes::Protoss_Carrier || unitType == BWAPI::UnitTypes::Terran_Battlecruiser || unitType == BWAPI::UnitTypes::Zerg_Guardian; }
-        bool isHovering() { return unitType.isWorker() || unitType == BWAPI::UnitTypes::Protoss_Archon || unitType == BWAPI::UnitTypes::Protoss_Dark_Archon || unitType == BWAPI::UnitTypes::Terran_Vulture; }
-        bool isTransport() { return unitType == BWAPI::UnitTypes::Protoss_Shuttle || unitType == BWAPI::UnitTypes::Terran_Dropship || unitType == BWAPI::UnitTypes::Zerg_Overlord; }
-        bool isSpellcaster() { return unitType == BWAPI::UnitTypes::Protoss_High_Templar || unitType == BWAPI::UnitTypes::Protoss_Dark_Archon || unitType == BWAPI::UnitTypes::Terran_Medic || unitType == BWAPI::UnitTypes::Terran_Science_Vessel; }
-        bool isSiegeTank() { return unitType == BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode || unitType == BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode; }
-        bool isBurrowed() { return burrowed; }
-        bool isFlying() { return flying; }
-        bool isThreatening() { return threatening; }
-        bool isWithinReach(UnitInfo&);
-        bool isWithinRange(UnitInfo&);
+        bool hasResource()          { return !resource.expired(); }
+        bool hasTransport()         { return !transport.expired(); }
+        bool hasTarget()            { return !target.expired(); }
+        bool hasMovedArea()         { return lastTile.isValid() && tilePosition.isValid() && BWEM::Map::Instance().GetArea(lastTile) != BWEM::Map::Instance().GetArea(tilePosition); }
+        bool hasAttackedRecently()  { return (BWAPI::Broodwar->getFrameCount() - lastAttackFrame < 50); }
+        bool targetsFriendly()      { return type == BWAPI::UnitTypes::Terran_Medic || type == BWAPI::UnitTypes::Terran_Science_Vessel || type == BWAPI::UnitTypes::Zerg_Defiler; }
+        bool isStuck()              { return (BWAPI::Broodwar->getFrameCount() - lastTileMoveFrame > 100); }
+        bool isSuicidal()           { return type == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine || type == BWAPI::UnitTypes::Zerg_Scourge || type == BWAPI::UnitTypes::Zerg_Infested_Terran; }
+        bool isLightAir()           { return type == BWAPI::UnitTypes::Protoss_Corsair || type == BWAPI::UnitTypes::Zerg_Mutalisk || type == BWAPI::UnitTypes::Terran_Wraith; }
+        bool isCapitalShip()        { return type == BWAPI::UnitTypes::Protoss_Carrier || type == BWAPI::UnitTypes::Terran_Battlecruiser || type == BWAPI::UnitTypes::Zerg_Guardian; }
+        bool isHovering()           { return type.isWorker() || type == BWAPI::UnitTypes::Protoss_Archon || type == BWAPI::UnitTypes::Protoss_Dark_Archon || type == BWAPI::UnitTypes::Terran_Vulture; }
+        bool isTransport()          { return type == BWAPI::UnitTypes::Protoss_Shuttle || type == BWAPI::UnitTypes::Terran_Dropship || type == BWAPI::UnitTypes::Zerg_Overlord; }
+        bool isSpellcaster()        { return type == BWAPI::UnitTypes::Protoss_High_Templar || type == BWAPI::UnitTypes::Protoss_Dark_Archon || type == BWAPI::UnitTypes::Terran_Medic || type == BWAPI::UnitTypes::Terran_Science_Vessel; }
+        bool isSiegeTank()          { return type == BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode || type == BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode; }
+        bool isBurrowed()           { return burrowed; }
+        bool isFlying()             { return flying; }
+        bool isThreatening()        { return threatening; }
+        bool isHidden()             { return hidden; }
 
         bool isHealthy() {
-            return (unitType.maxShields() > 0 && percentShield > LOW_SHIELD_PERCENT_LIMIT)
-                || (unitType.isMechanical() && percentHealth > LOW_MECH_PERCENT_LIMIT);
+            return (type.maxShields() > 0 && percentShield > LOW_SHIELD_PERCENT_LIMIT)
+                || (type.isMechanical() && percentHealth > LOW_MECH_PERCENT_LIMIT)
+                || (type.getRace() == BWAPI::Races::Zerg && percentHealth > LOW_BIO_PERCENT_LIMIT);
         }
-        bool isHidden() {
-            auto detection = player->isEnemy(BWAPI::Broodwar->self()) ? Command::overlapsDetection(thisUnit, position, PlayerState::Self) : Command::overlapsDetection(thisUnit, position, PlayerState::Enemy);
-            return (burrowed || (thisUnit->exists() && thisUnit->isCloaked())) && !detection;
+        bool isRequestingPickup() {
+            if (!hasTarget() || !hasTransport())
+                return false;
+
+            auto range = getTarget().getType().isFlyer() ? getAirRange() : getGroundRange();
+            auto cargoReady = getType() == BWAPI::UnitTypes::Protoss_High_Templar ? canStartCast(BWAPI::TechTypes::Psionic_Storm) : canStartAttack();
+            auto threat = Grids::getEGroundThreat(getWalkPosition()) > 0.0;
+
+            return getPosition().getDistance(getTransport().getPosition()) <= 128.0 && (getLocalState() == LocalState::Retreat || getEngDist() > range + 32.0 || !cargoReady);
         }
-
-        bool canStartAttack();
-        bool canStartCast(BWAPI::TechType);
-        bool canAttackGround();
-        bool canAttackAir();
-
-        template <typename P>
-        bool canCreatePath(P h) {
+        bool canCreatePath(BWAPI::Position h) {
             BWAPI::TilePosition here(h);
 
             const auto shouldCreatePath =
-                path.getTiles().empty() || path.getTiles().front() != here || path.getTiles().back() != this->getTilePosition();                        // ...path is empty or not the same
+                path.getTiles().empty() || path.getTiles().front() != here || path.getTiles().back() != getTilePosition();                      // ...path is empty or not the same
 
             const auto canCreatePath =
-                (this->getPosition().isValid() && here.isValid()								                                                    // ...both TilePositions are valid
-                    && !this->getType().isFlyer()											                                                            // ...unit is not a flyer
-                    && BWEB::Map::isUsed(here) == BWAPI::UnitTypes::None && BWEB::Map::isUsed(this->getTilePosition()) == BWAPI::UnitTypes::None		// ...neither TilePositions overlap buildings
-                    && BWEB::Map::isWalkable(this->getTilePosition()) && BWEB::Map::isWalkable(here));	                                                // ...both TilePositions are on walkable tiles  
+                (getPosition().isValid() && here.isValid()								                                                        // ...both TilePositions are valid
+                    && !getType().isFlyer());											                                                        // ...unit is not a flyer
 
             return shouldCreatePath && canCreatePath;
         }
 
-        // Commanding the unit to prevent order/command spam
-        bool command(BWAPI::UnitCommandType, BWAPI::Position);
-        bool command(BWAPI::UnitCommandType, UnitInfo&);
+        bool isWithinReach(UnitInfo&);
+        bool isWithinRange(UnitInfo&);
+        bool isWithinBuildRange();
+        bool isWithinGatherRange();
+        bool canStartAttack();
+        bool canStartCast(BWAPI::TechType);
+        bool canStartGather();
+        bool canAttackGround();
+        bool canAttackAir();
+
+        // General commands that verify we aren't spamming the same command and sticking the unit
+        bool move(BWAPI::UnitCommandType, BWAPI::Position);
+        bool click(BWAPI::UnitCommandType, UnitInfo&);
+        bool cast(BWAPI::TechType, BWAPI::Position);
+        bool stop();
 
         // Information about frame timings
         int frameArrivesWhen() {
             return BWAPI::Broodwar->getFrameCount() + int(position.getDistance(Terrain::getDefendPosition()) / speed);
         }
         int frameCompletesWhen() {
-            return BWAPI::Broodwar->getFrameCount() + int((1.0 - percentHealth) * double(unitType.buildTime()));
+            return BWAPI::Broodwar->getFrameCount() + int((1.0 - percentHealth) * double(type.buildTime()));
         }
+
+        // Logic that dictates overriding simulation results
+        bool globalRetreat();
+        bool globalEngage();
+        bool localRetreat();
+        bool localEngage();
 
         void update();
         void verifyPaths();
@@ -147,13 +169,13 @@ namespace McRave {
     #pragma endregion
 
     #pragma region Drawing
-        void circleRed() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Red); }
-        void circleOrange() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Orange); }
-        void circleYellow() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Yellow); }
-        void circleGreen() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Green); }
-        void circleBlue() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Blue); }
-        void circlePurple() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Purple); }
-        void circleBlack() { BWAPI::Broodwar->drawCircleMap(position, unitType.width(), BWAPI::Colors::Black); }
+        void circleRed() { BWAPI::Broodwar->drawCircleMap(position, type.width(), BWAPI::Colors::Red); }
+        void circleOrange() { BWAPI::Broodwar->drawCircleMap(position, type.width(), BWAPI::Colors::Orange); }
+        void circleYellow() { BWAPI::Broodwar->drawCircleMap(position, type.width(), BWAPI::Colors::Yellow); }
+        void circleGreen() { BWAPI::Broodwar->drawCircleMap(position, type.width(), BWAPI::Colors::Green); }
+        void circleBlue() { BWAPI::Broodwar->drawCircleMap(position, type.width(), BWAPI::Colors::Blue); }
+        void circlePurple() { BWAPI::Broodwar->drawCircleMap(position, type.width(), BWAPI::Colors::Purple); }
+        void circleBlack() { BWAPI::Broodwar->drawCircleMap(position, type.width(), BWAPI::Colors::Black); }
     #pragma endregion
 
     #pragma region Getters
@@ -170,9 +192,9 @@ namespace McRave {
         UnitInfo &getTarget() { return *target.lock(); }
 
         Role getRole() { return role; }
-        BWAPI::Unit unit() { return thisUnit; }
-        BWAPI::UnitType getType() { return unitType; }
-        BWAPI::UnitType getBuildingType() { return buildingType; }
+        BWAPI::Unit unit() { return bwUnit; }
+        BWAPI::UnitType getType() { return type; }
+        BWAPI::UnitType getBuildType() { return buildingType; }
         BWAPI::Player getPlayer() { return player; }
         BWAPI::Position getPosition() { return position; }
         BWAPI::Position getEngagePosition() { return engagePosition; }
@@ -204,6 +226,7 @@ namespace McRave {
         double getPriority() { return priority; }
         double getEngDist() { return engageDist; }
         double getSimValue() { return simValue; }
+        double getSimRadius() { return simRadius; }
         int getShields() { return shields; }
         int getHealth() { return health; }
         int getLastAttackFrame() { return lastAttackFrame; }
@@ -227,8 +250,7 @@ namespace McRave {
         void setTransport(UnitInfo* unit) { unit ? transport = unit->weak_from_this() : transport.reset(); }
         void setTarget(UnitInfo* unit) { unit ? target = unit->weak_from_this() : target.reset(); }
         void setRole(Role newRole) { role = newRole; }
-        void setUnit(BWAPI::Unit newUnit) { thisUnit = newUnit; }
-        void setType(BWAPI::UnitType newType) { unitType = newType; }
+        void setType(BWAPI::UnitType newType) { type = newType; }
         void setBuildingType(BWAPI::UnitType newType) { buildingType = newType; }
         void setSimPosition(BWAPI::Position newPosition) { simPosition = newPosition; }
         void setPosition(BWAPI::Position newPosition) { position = newPosition; }
@@ -245,19 +267,19 @@ namespace McRave {
 
     #pragma region Operators
         bool operator== (UnitInfo& p) {
-            return thisUnit == p.unit();
+            return bwUnit == p.unit();
         }
 
         bool operator!= (UnitInfo& p) {
-            return thisUnit != p.unit();
+            return bwUnit != p.unit();
         }
 
         bool operator< (UnitInfo& p) {
-            return thisUnit < p.unit();
+            return bwUnit < p.unit();
         }
 
         bool operator< (std::weak_ptr<UnitInfo>(unit)) {
-            return thisUnit < unit.lock()->unit();
+            return bwUnit < unit.lock()->unit();
         }
     #pragma endregion
     };

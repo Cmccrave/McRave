@@ -12,6 +12,5 @@ namespace McRave::Buildings {
     bool hasPoweredPositions();
     int getQueuedMineral();
     int getQueuedGas();
-    int getNukesAvailable();
     BWAPI::TilePosition getCurrentExpansion();
 };

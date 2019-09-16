@@ -31,7 +31,6 @@ namespace McRave::BuildOrder {
         inline bool fastExpand = false;
         inline bool proxy = false;
         inline bool hideTech = false;
-        inline bool delayFirstTech = false;
         inline bool playPassive = false;
         inline bool rush = false;
         inline bool cutWorkers = false; // TODO: Use unlocking
@@ -47,6 +46,7 @@ namespace McRave::BuildOrder {
         inline int droneLimit = INT_MAX;
         inline int startCount = 0;
         inline int s = 0;
+        inline int wallDefenseDesired = 0;
 
         inline std::string currentBuild = "";
         inline std::string currentOpener = "";
@@ -127,6 +127,7 @@ namespace McRave::BuildOrder {
     BWAPI::TechType getFirstTech();
     std::set <BWAPI::UnitType>& getTechList();
     std::set <BWAPI::UnitType>& getUnlockedList();
+    int getWallDefenseDesired();
     int gasWorkerLimit();
     bool isWorkerCut();
     bool isUnitUnlocked(BWAPI::UnitType unit);

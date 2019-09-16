@@ -7,8 +7,15 @@ namespace McRave::Goals {
 
     namespace {
 
+        map<Position, int> goalFrameUpdate;
+
         void assignNumberToGoal(Position here, UnitType type, int count)
         {
+            // Only updates goals every 10 seconds to prevent indecisiveness
+            if (goalFrameUpdate[here] < Broodwar->getFrameCount() + 240)
+                return;
+            goalFrameUpdate[here] = Broodwar->getFrameCount();
+
             map<double, shared_ptr<UnitInfo>> unitByDist;
             map<UnitType, int> unitByType;
 
@@ -49,7 +56,7 @@ namespace McRave::Goals {
                 for (auto &s : Stations::getMyStations()) {
                     auto station = *s.second;
 
-                    if (station.getBWEMBase()->Location() != BWEB::Map::getNaturalTile() && station.getBWEMBase()->Location() != BWEB::Map::getMainTile() && station.getDefenseCount() == 0) {
+                    if (station.getBWEMBase()->Location() != BWEB::Map::getNaturalTile() && station.getBWEMBase()->Location() != BWEB::Map::getMainTile() && station.getGroundDefenseCount() == 0) {
                         assignNumberToGoal(station.getBWEMBase()->Center(), UnitTypes::Protoss_Dragoon, 2);
                     }
                 }
@@ -75,14 +82,30 @@ namespace McRave::Goals {
                     assignPercentToGoal(posBest, UnitTypes::Protoss_Zealot, 0.15);
             }
 
-            // Send a DT everywhere late game
+            // Send a DT / Zealot squad to enemys furthest station
             // PvE
-            if (Stations::getMyStations().size() >= 4) {
+            if (Stations::getMyStations().size() >= 2) {
+                auto distBest = 0.0;
+                auto posBest = Positions::Invalid;
                 for (auto &s : Stations::getEnemyStations()) {
                     auto station = *s.second;
                     auto pos = station.getBWEMBase()->Center();
-                    assignNumberToGoal(pos, UnitTypes::Protoss_Dark_Templar, 1);
+                    auto dist = pos.getDistance(Terrain::getEnemyStartingPosition());
+
+                    if (dist > distBest) {
+                        posBest = pos;
+                        distBest = dist;
+                    }
                 }
+
+                if (Actions::overlapsDetection(nullptr, posBest, PlayerState::Enemy) || vis(UnitTypes::Protoss_Dark_Templar) == 0) {
+                    if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) > 0)
+                        assignNumberToGoal(posBest, UnitTypes::Protoss_Zealot, 4);
+                    else
+                        assignNumberToGoal(posBest, UnitTypes::Protoss_Dragoon, 4);
+                }
+                else
+                    assignNumberToGoal(posBest, UnitTypes::Protoss_Dark_Templar, vis(UnitTypes::Protoss_Dark_Templar));
             }
 
             // Secure our own future expansion position
@@ -90,7 +113,7 @@ namespace McRave::Goals {
             Position nextExpand(Buildings::getCurrentExpansion());
             if (nextExpand.isValid()) {
                 UnitType building = Broodwar->self()->getRace().getResourceDepot();
-                if (Broodwar->self()->visibleUnitCount(building) >= 2 && BuildOrder::buildCount(building) > Broodwar->self()->visibleUnitCount(building)) {
+                if (vis(building) >= 2 && BuildOrder::buildCount(building) > vis(building)) {
                     if (Players::vZ())
                         assignPercentToGoal(nextExpand, UnitTypes::Protoss_Zealot, 0.15);
                     else {
@@ -136,7 +159,7 @@ namespace McRave::Goals {
         {
             //// Send lurkers to expansions when turtling		
             //if (Broodwar->self()->getRace() == Races::Zerg && !Stations::getMyStations().empty()) {
-            //    auto lurkerPerBase = Broodwar->self()->completedUnitCount(UnitTypes::Zerg_Lurker) / Stations::getMyStations().size();
+            //    auto lurkerPerBase = com(UnitTypes::Zerg_Lurker) / Stations::getMyStations().size();
 
             //    for (auto &base : Stations::getMyStations()) {
             //        auto station = *base.second;

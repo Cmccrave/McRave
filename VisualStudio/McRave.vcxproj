@@ -42,12 +42,14 @@
     <ClCompile Include="..\Source\BWEM\utils.cpp" />
     <ClCompile Include="..\Source\BWEM\winutils.cpp" />
     <ClCompile Include="..\Source\Horizon\Horizon.cpp" />
+    <ClCompile Include="..\Source\McRave\ActionManager.cpp" />
     <ClCompile Include="..\Source\McRave\BuildingManager.cpp" />
     <ClCompile Include="..\Source\McRave\BuildOrder.cpp" />
     <ClCompile Include="..\Source\McRave\CombatManager.cpp" />
     <ClCompile Include="..\Source\McRave\CommandManager.cpp" />
     <ClCompile Include="..\Source\McRave\Dll.cpp" />
     <ClInclude Include="..\Source\Horizon\Horizon.h" />
+    <ClInclude Include="..\Source\McRave\ActionManager.h" />
     <ClInclude Include="..\Source\McRave\CombatManager.h" />
     <ClInclude Include="..\Source\McRave\EventManager.h" />
     <ClCompile Include="..\Source\McRave\GoalManager.cpp" />

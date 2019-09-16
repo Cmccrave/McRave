@@ -198,10 +198,8 @@ namespace McRave::Math {
 
     double splashModifier(UnitInfo& unit)
     {
-        if (unit.getType() == Protoss_Archon || unit.getType() == Terran_Firebat)
+        if (unit.getType() == Protoss_Archon || unit.getType() == Terran_Firebat || unit.getType() == Protoss_Reaver)
             return 1.25;
-        if (unit.getType() == Protoss_Reaver)
-            return 1.50;
         if (unit.getType() == Protoss_High_Templar)
             return 4.00;
         if (unit.getType() == Terran_Siege_Tank_Siege_Mode)
@@ -233,7 +231,7 @@ namespace McRave::Math {
     double survivability(UnitInfo& unit)
     {
         double speed, armor, health;
-        speed = (unit.getType().isBuilding()) ? 1.0 : max(1.0, log(unit.getSpeed()));
+        speed = (unit.getType().isBuilding()) ? 1.0 : max(0.25, log(unit.getSpeed()));
         armor = 2.0 + double(unit.getType().armor() + unit.getPlayer()->getUpgradeLevel(unit.getType().armorUpgrade()));
         health = log(double(unit.getType().maxHitPoints() + unit.getType().maxShields()));
         return speed * armor * health;
@@ -371,6 +369,28 @@ namespace McRave::Math {
 
     TilePosition getTilePosition(Unit unit)
     {
-        return unit->getTilePosition() + TilePosition(unit->getPosition().x % 32 >= 16 ? 0 : 1, unit->getPosition().y % 32 >= 16 ? 0 : 1);
+        return unit->getType().isBuilding() ? unit->getTilePosition() : unit->getTilePosition() + TilePosition(unit->getPosition().x % 32 >= 16 ? 0 : 1, unit->getPosition().y % 32 >= 16 ? 0 : 1);
+    }
+
+    double realisticMineralCost(UnitType type)
+    {
+        if (type == Protoss_Archon)
+            return 100.0;
+        else if (type == Protoss_Dark_Archon)
+            return 250.0;
+        else if (type == Zerg_Sunken_Colony || type == Zerg_Spore_Colony)
+            return 175.0;
+        return type.mineralPrice();
+    }
+
+    double realisticGasCost(UnitType type)
+    {
+        if (type == Protoss_Archon)
+            return 300.0;
+        else if (type == Protoss_Dark_Archon)
+            return 200.0;
+        else if (type == Zerg_Sunken_Colony || type == Zerg_Spore_Colony)
+            return 0.0;
+        return type.gasPrice();
     }
 }

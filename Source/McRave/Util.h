@@ -73,11 +73,13 @@ namespace McRave::Util {
 
     template<typename T>
     bool isWalkable(T here) {
-        auto start = BWAPI::WalkPosition(here);
+        const auto start = BWAPI::WalkPosition(here);
         for (int x = start.x; x < start.x + 4; x++) {
             for (int y = start.y; y < start.y + 4; y++) {
                 if (Grids::getMobility(BWAPI::WalkPosition(x, y)) < 1)
-                    return false;                
+                    return false;
+                if (BWEB::Map::isUsed(TilePosition(WalkPosition(x, y))) != UnitTypes::None)
+                    return false;
             }
         }
         return true;
@@ -97,17 +99,17 @@ namespace McRave::Util {
 
         // For each TilePosition on the path
         for (auto &pos : path.getTiles()) {
-            
+
             // If last wasn't valid, this is likely the first TilePosition
             if (!last.isValid()) {
                 last = pos;
                 continue;
-            }           
+            }
 
             // As long as last doesn't equal pos
             while (last != pos) {
                 if (pred(Position(last) + Position(16, 16)))
-                    return Position(last) + Position(16, 16);                
+                    return Position(last) + Position(16, 16);
 
                 // Increment or decrement based on where we need to go
                 last.x != pos.x ? (last.x > pos.x ? last.x-- : last.x++) : 0;
@@ -128,8 +130,11 @@ namespace McRave::Util {
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, int, int);
     bool isWalkable(UnitInfo&, BWAPI::WalkPosition);
 
-    BWAPI::Position getConcavePosition(UnitInfo&, double, BWEM::Area const * area = nullptr, BWAPI::Position here = BWAPI::Positions::Invalid);
+    BWAPI::Position getConcavePosition(UnitInfo&, BWEM::Area const * area = nullptr, BWAPI::Position here = BWAPI::Positions::Invalid);
     BWAPI::Position getInterceptPosition(UnitInfo&);
     BWAPI::Position clipLine(BWAPI::Position, BWAPI::Position);
     BWAPI::Position clipPosition(BWAPI::Position);
+
+    Time getTime();
+    void onFrame();
 }

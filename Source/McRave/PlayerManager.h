@@ -4,16 +4,24 @@
 
 namespace McRave::Players
 {
+    int getCurrentCount(PlayerState, BWAPI::UnitType);
+    int getTotalCount(PlayerState, BWAPI::UnitType);
+    bool hasDetection(PlayerState);
+    bool hasMelee(PlayerState);
+    bool hasRanged(PlayerState);
+
     int getSupply(PlayerState);
     int getRaceCount(BWAPI::Race, PlayerState);
     Strength getStrength(PlayerState);
 
-    void adjustStrength(UnitInfo&, bool);
-
     void onStart();
     void onFrame();
+    void storeUnit(BWAPI::Unit);
+    void removeUnit(BWAPI::Unit);
+    void morphUnit(BWAPI::Unit);
 
     std::map <BWAPI::Player, PlayerInfo>& getPlayers();
+    PlayerInfo * getPlayerInfo(BWAPI::Player);
 
     bool vP();
     bool vT();

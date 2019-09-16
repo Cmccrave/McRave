@@ -50,6 +50,9 @@ namespace McRave::BuildOrder
             return u.getType() == Broodwar->self()->getRace().getWorker();
         });
 
+        if (closestBuilding && closestBuilding->unit()->isCompleted())
+            return true;
+
         if (closestBuilding && closestWorker)
             return (BWEB::Map::getGroundDistance(closestBuilding->getPosition(), BWEB::Map::getMainPosition()) / closestWorker->getSpeed()) > closestBuilding->unit()->getRemainingBuildTime();
         return false;
@@ -57,20 +60,23 @@ namespace McRave::BuildOrder
 
     bool techComplete()
     {
+        if (Strategy::needDetection() && techUnit == Protoss_Observer)
+            return vis(Protoss_Robotics_Facility) > 0;
+
         // When 1 unit finishes
         if (techUnit == Protoss_Scout || techUnit == Protoss_Corsair || techUnit == Protoss_Reaver || techUnit == Protoss_Observer || techUnit == Terran_Science_Vessel)
-            return Broodwar->self()->completedUnitCount(techUnit) > 0;
+            return com(techUnit) > 0;
 
         // When 2 units are visible
         if (techUnit == Protoss_High_Templar)
-            return Broodwar->self()->visibleUnitCount(techUnit) >= 2;
+            return vis(techUnit) >= 1 && Broodwar->self()->hasResearched(TechTypes::Psionic_Storm);
 
         // When 2 units finish
         if (techUnit == Protoss_Dark_Templar)
-            return Broodwar->self()->completedUnitCount(techUnit) >= 2;
+            return com(techUnit) >= 2;
 
         // When 1 unit is visible
-        return Broodwar->self()->visibleUnitCount(techUnit) > 0;
+        return vis(techUnit) > 0;
     }
 
     void onFrame()
@@ -85,9 +91,9 @@ namespace McRave::BuildOrder
         UnitType baseType = Broodwar->self()->getRace().getResourceDepot();
 
         if (Broodwar->self()->getRace() == Races::Protoss) {
-            if (Broodwar->self()->minerals() > 400 + (50 * com(baseType)))
+            if (com(baseType) >= 2 && Broodwar->self()->minerals() >= 400)
                 return true;
-            else if (techUnit == None && Resources::isMinSaturated() && techSat && productionSat)
+            else if (techUnit == None && (Resources::isMinSaturated() || com(baseType) >= 3) && (techSat || com(baseType) >= 4) && productionSat)
                 return true;
         }
         else if (Broodwar->self()->getRace() == Races::Terran) {
@@ -108,7 +114,9 @@ namespace McRave::BuildOrder
                 return true;
         }
         else {
-            if (!productionSat && Broodwar->self()->minerals() >= 150)
+            if (techUnit == None && !productionSat && Broodwar->self()->minerals() >= 150 && techSat)
+                return true;
+            if (Broodwar->self()->minerals() >= 300 && !productionSat)
                 return true;
         }
         return false;
@@ -116,7 +124,7 @@ namespace McRave::BuildOrder
 
     bool shouldAddGas()
     {
-        auto workerCount = Broodwar->self()->completedUnitCount(Broodwar->self()->getRace().getWorker());
+        auto workerCount = com(Broodwar->self()->getRace().getWorker());
         if (Broodwar->self()->getRace() == Races::Zerg) {
             if (Resources::isGasSaturated() && Broodwar->self()->minerals() - Production::getReservedMineral() - Buildings::getQueuedMineral() > 300)
                 return true;
@@ -125,7 +133,7 @@ namespace McRave::BuildOrder
         }
 
         else if (Broodwar->self()->getRace() == Races::Protoss)
-            return vis(Protoss_Assimilator) != 1 || workerCount >= 34 || Broodwar->self()->minerals() > 600;
+            return Broodwar->self()->gas() < 300 && (vis(Protoss_Assimilator) != 1 || workerCount >= 30 || Broodwar->self()->minerals() > 600);
 
         else if (Broodwar->self()->getRace() == Races::Terran)
             return true;
@@ -154,15 +162,15 @@ namespace McRave::BuildOrder
         bool ready = false;
 
         if (type == Protoss_High_Templar || type == Protoss_Dark_Templar || type == Protoss_Archon || type == Protoss_Dark_Archon)
-            ready = vis(Protoss_Citadel_of_Adun) > 0;
+            ready = com(Protoss_Citadel_of_Adun) > 0;
         if (type == Protoss_Corsair || type == Protoss_Scout)
-            ready = vis(Protoss_Stargate) > 0;
+            ready = com(Protoss_Stargate) > 0;
         if (type == Protoss_Reaver || type == Protoss_Observer)
-            ready = vis(Protoss_Robotics_Facility) > 0;
+            ready = com(Protoss_Robotics_Facility) > 0;
         if (type == Protoss_Carrier)
-            ready = vis(Protoss_Fleet_Beacon) > 0;
+            ready = com(Protoss_Fleet_Beacon) > 0;
         if (type == Protoss_Arbiter)
-            ready = vis(Protoss_Arbiter_Tribunal) > 0;
+            ready = com(Protoss_Arbiter_Tribunal) > 0;
 
         return ready;
     }
@@ -174,7 +182,7 @@ namespace McRave::BuildOrder
 
         // Choose a tech based on highest unit score
         double highest = 0.0;
-        for (auto &[tech,score] : Strategy::getUnitScores()) {
+        for (auto &[tech, score] : Strategy::getUnitScores()) {
             if (tech == Protoss_Dragoon
                 || tech == Protoss_Zealot
                 || tech == Protoss_Shuttle
@@ -206,28 +214,26 @@ namespace McRave::BuildOrder
             unlockedType.insert(techUnit);
         }
 
-        // Multi-unlock
-        if (techUnit == Protoss_Arbiter || techUnit == Protoss_High_Templar) {
-            unlockedType.insert(Protoss_Dark_Templar);
-            techList.insert(Protoss_Dark_Templar);
-        }
-        else if (techUnit == Zerg_Mutalisk && Players::getStrength(PlayerState::Enemy).airToAir > 0.0) {
+        // Add Scourge if we have Mutas and enemy has air to air
+        if (isTechUnit(Zerg_Mutalisk) && Players::getStrength(PlayerState::Enemy).airToAir > 0.0) {
             techList.insert(Zerg_Scourge);
             unlockedType.insert(Zerg_Scourge);
         }
-        else if (techUnit == Zerg_Lurker) {
+
+        // Add Hydralisks if we want Lurkers as they are needed first
+        if (isTechUnit(Zerg_Lurker)) {
             techList.insert(Zerg_Hydralisk);
             unlockedType.insert(Zerg_Hydralisk);
         }
 
         // Add Observers if we have a Reaver
-        if (vis(Protoss_Reaver) >= 1) {
+        if (Stations::getMyStations().size() >= 2 && vis(Protoss_Reaver) >= 2) {
             techList.insert(Protoss_Observer);
             unlockedType.insert(Protoss_Observer);
         }
 
         // Add Reavers if we have a Observer
-        if (Players::vP() && vis(Protoss_Observer) >= 1 && currentTransition != "4Gate") {
+        if (Players::vP() && vis(Protoss_Observer) >= 1 && !techSat && techUnit == None) {
             techList.insert(Protoss_Reaver);
             unlockedType.insert(Protoss_Reaver);
         }
@@ -238,22 +244,21 @@ namespace McRave::BuildOrder
             techList.insert(Protoss_Shuttle);
         }
 
-        //// Add HT or Arbiter if enemy has detection
-        //if (com(Protoss_Dark_Templar) >= 1) {
-        //    auto hasDetection = Units::getEnemyCount(Protoss_Observer) > 0
-        //        || Units::getEnemyCount(Protoss_Photon_Cannon) > 0
-        //        || Units::getEnemyCount(Terran_Science_Vessel) > 0
-        //        || Units::getEnemyCount(Terran_Missile_Turret) > 0 
-        //        || Units::getEnemyCount(Terran_Vulture_Spider_Mine) > 0
-        //        || Units::getEnemyCount(Zerg_Overlord) > 0;
+        // Add DT late game
+        if (Stations::getMyStations().size() >= 4) {
+            unlockedType.insert(Protoss_Dark_Templar);
+            techList.insert(Protoss_Dark_Templar);
+        }
 
-        //    auto substitute = Players::vT() ? Protoss_Arbiter : Protoss_High_Templar;
+        // Add HT or Arbiter if enemy has detection
+        if (com(Protoss_Dark_Templar) > 0) {            
 
-        //    if (!Strategy::enemyPressure()) {
-        //        unlockedType.insert(substitute);
-        //        techList.insert(substitute);
-        //    }
-        //}
+            auto substitute = Players::vT() ? Protoss_Arbiter : Protoss_High_Templar;
+            if (!Players::vP() && Players::hasDetection(PlayerState::Enemy)) {
+                unlockedType.insert(substitute);
+                techList.insert(substitute);
+            }
+        }
     }
 
     void checkAllTech()
@@ -273,7 +278,7 @@ namespace McRave::BuildOrder
             for (auto &check : toCheck) {
                 for (auto &pair : check.requiredUnits()) {
                     UnitType type(pair.first);
-                    if (Broodwar->self()->completedUnitCount(type) == 0 && toCheck.find(type) == toCheck.end()) {
+                    if (com(type) == 0 && toCheck.find(type) == toCheck.end()) {
                         toCheck.insert(type);
                         moreToAdd = true;
                     }
@@ -343,6 +348,7 @@ namespace McRave::BuildOrder
     TechType getFirstTech() { return firstTech; }
     set <UnitType>& getTechList() { return  techList; }
     set <UnitType>& getUnlockedList() { return  unlockedType; }
+    int getWallDefenseDesired() { return wallDefenseDesired; }
     int gasWorkerLimit() { return gasLimit; }
     bool isWorkerCut() { return cutWorkers; }
     bool isUnitUnlocked(UnitType unit) { return unlockedType.find(unit) != unlockedType.end(); }

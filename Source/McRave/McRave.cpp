@@ -8,16 +8,20 @@
 #include "EventManager.h"
 
 // *** TODO ***
-// Re-power buildings
-// Too many pylons on Plasma only?
-// Plasma? - bad targeting, remove units from shuttles in range, too many shuttles
-// Attacking proxies with scouts
-// Add frame timeouts for allowable enemy build detection
-// Targeting neutrals isn't necessarily best option
+// Move ResourceInfo to UnitInfo
+// Enemy opener/build/transition recognizer - 9pool into 2 hatch muta for example
+// Obs to scout bases
+// Interceptors targets might be convincing goons to dive tanks
+// Shuttles don't consider static defenses when decided engage/retreat
+// Change storms to care more about multi target rather than score
+// Test vs all Zerg rushes
 
-// Critical:
-// HT blocking buildings
-// Closest cargo to transport
+// ** Biggest issues **
+// Cannon cancelling to save money
+// Forming concave takes units too long
+// Stupid probes keep blocking cannons, forced gather doesnt work
+// Stuck probes between minerals/workers slow builds
+// Lock in the build at some point, it's somehow backing out and screwing up learning
 
 using namespace BWAPI;
 using namespace std;
@@ -42,12 +46,14 @@ void McRaveModule::onStart()
 void McRaveModule::onEnd(bool isWinner)
 {
     Learning::onEnd(isWinner);
-
     Broodwar->sendText("ggwp");
 }
 
 void McRaveModule::onFrame()
 {
+    // Update game state
+    Util::onFrame();
+
     // Update unit information and grids based on the information
     Players::onFrame();
     Units::onFrame();
@@ -64,7 +70,7 @@ void McRaveModule::onFrame()
     Goals::onFrame();
     Support::onFrame();
     Combat::onFrame();
-    Command::onFrame();
+    Actions::onFrame();
     Workers::onFrame();
     Scouts::onFrame();
     Transports::onFrame();
@@ -90,7 +96,7 @@ void McRaveModule::onPlayerLeft(Player player)
 
 void McRaveModule::onNukeDetect(Position target)
 {
-    Command::addAction(nullptr, target, TechTypes::Nuclear_Strike, PlayerState::Neutral);
+    Actions::addAction(nullptr, target, TechTypes::Nuclear_Strike, PlayerState::Neutral);
 }
 
 void McRaveModule::onUnitDiscover(Unit unit)

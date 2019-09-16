@@ -8,53 +8,36 @@ using namespace BWAPI;
 namespace BWEB
 {
     namespace {
-        struct UnitCollision {
-            UnitCollision::UnitCollision(TilePosition sourceTile, TilePosition targetTile) {
-                source = sourceTile;
-                target = targetTile;
-                sourceType = Map::isUsed(source);
-                targetType = Map::isUsed(target);
-            }
-            inline bool operator()(unsigned x, unsigned y) const
-            {
-                const TilePosition t(x, y);
-                if (t == source)
-                    return true;
-                if (x < width && y < height && Map::isWalkable(t) && (Map::isUsed(t) == UnitTypes::None /*|| Map::isUsed(t) == sourceType || Map::isUsed(t) == targetType*/))
-                    return true;
-                return false;
-            }
-            unsigned width = Broodwar->mapWidth(), height = Broodwar->mapHeight();
-            TilePosition source;
-            TilePosition target;
-            UnitType sourceType;
-            UnitType targetType;
-        };
 
-        list<Path> dq;
-        map<pair<TilePosition, TilePosition>, list<Path>::iterator> ma;
-        int csize = 5000;
+        list<Path> unitPathCache;
+        map<pair<TilePosition, TilePosition>, list<Path>::iterator> unitPathCacheRefs;
 
+        list<Path> customPathCache;
+        map<pair<TilePosition, TilePosition>, list<Path>::iterator> customPathCacheRefs;
+
+        int maxCacheSize = 10000;
         map<const BWEM::Area *, int> notReachableThisFrame;
     }
 
     void Path::createWallPath(const Position s, const Position t, bool allowLifted, double maxDist)
     {
-        TilePosition target = Map::tConvert(t);
-        TilePosition source = Map::tConvert(s);
-        vector<TilePosition> direction{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 } };
+        target = TilePosition(t);
+        source = TilePosition(s);
 
-        const auto collision = [&](const TilePosition tile) {
-            return !tile.isValid()
+        const auto isWalkable = [&](const TilePosition tile) {
+            if (!tile.isValid()
                 || tile.getDistance(target) > maxDist + 64.0
                 || !Map::isWalkable(tile)
                 || Map::isUsed(tile) != UnitTypes::None
-                || Map::isOverlapping(tile)
-                //|| (allowLifted && Walls::overlapsCurrentWall(tile) != UnitTypes::Terran_Barracks)
-                || (/*!allowLifted &&*/ Walls::overlapsCurrentWall(tile) != UnitTypes::None);
+                || Map::isReserved(tile)
+                || (allowLifted && Map::isUsed(tile) != UnitTypes::Terran_Barracks && Map::isUsed(tile) != UnitTypes::None)
+                || (!allowLifted && Map::isUsed(tile) != UnitTypes::None))
+                return false;
+            return true;
         };
 
-        bfsPath(s, t, collision, direction);
+        //jpsPath(s, t, isWalkable, direction);
+        bfsPath(s, t, isWalkable, false);
 
         if (this->getDistance() > maxDist * 2)
             reachable = false;
@@ -62,30 +45,48 @@ namespace BWEB
 
     void Path::createUnitPath(const Position s, const Position t)
     {
-        target = Map::tConvert(t);
-        source = Map::tConvert(s);
-        auto test = make_pair(source, target);
+        target = TilePosition(t);
+        source = TilePosition(s);
 
-        if (ma.find(test) == ma.end()) {
-            if (dq.size() == csize) {
-                auto last = dq.back();
-                dq.pop_back();
-                ma.erase(make_pair(last.getSource(), last.getTarget()));
+        // If this path does not exist in cache, remove last reference and erase reference
+        auto pathPoints = make_pair(source, target);
+        if (unitPathCacheRefs.find(pathPoints) == unitPathCacheRefs.end()) {
+            if (unitPathCache.size() == maxCacheSize) {
+                auto last = unitPathCache.back();
+                unitPathCache.pop_back();
+                unitPathCacheRefs.erase(make_pair(last.getSource(), last.getTarget()));
             }
         }
+
+        // If it does exist, set this path as cached version, update reference and push cached path to the front
         else {
-            auto &oldPath = ma[test];
+            auto &oldPath = unitPathCacheRefs[pathPoints];
             dist = oldPath->getDistance();
             tiles = oldPath->getTiles();
             reachable = oldPath->isReachable();
 
-            dq.erase(ma[test]);
-            dq.push_front(*this);
-            ma[test] = dq.begin();
+            unitPathCache.erase(unitPathCacheRefs[pathPoints]);
+            unitPathCache.push_front(*this);
+            unitPathCacheRefs[pathPoints] = unitPathCache.begin();
             return;
         }
 
-        if (target.isValid() && Map::mapBWEM.GetArea(target)) {
+        vector<TilePosition> newJPSPath;
+        const auto width = Broodwar->mapWidth();
+        const auto height = Broodwar->mapHeight();
+
+        const auto isWalkable = [&](const int x, const int y) {
+            const TilePosition tile(x, y);
+            if (x > width || y > height || x < 0 || y < 0)
+                return false;
+            if (tile == source || tile == target)
+                return true;
+            if (Map::isWalkable(tile) && Map::isUsed(tile) == UnitTypes::None)
+                return true;
+            return false;
+        };
+
+        if (target.isValid() && Map::mapBWEM.GetArea(target) && isWalkable(source.x, source.y)) {
             auto checkReachable = notReachableThisFrame[Map::mapBWEM.GetArea(target)];
             if (checkReachable >= Broodwar->getFrameCount() && Broodwar->getFrameCount() > 0) {
                 reachable = false;
@@ -94,24 +95,24 @@ namespace BWEB
             }
         }
 
-        vector<TilePosition> newJPSPath;
-        UnitCollision collision(source, target);
-
-        if (JPS::findPath(newJPSPath, collision, source.x, source.y, target.x, target.y)) {
+        // If we found a path, store what was found
+        if (JPS::findPath(newJPSPath, isWalkable, source.x, source.y, target.x, target.y)) {
             Position current = s;
             for (auto &t : newJPSPath) {
-                dist += Map::pConvert(t).getDistance(current);
-                current = Map::pConvert(t);
+                dist += Position(t).getDistance(current);
+                current = Position(t);
                 tiles.push_back(t);
             }
             reachable = true;
             tiles.push_back(target);
             tiles.push_back(source);
 
-            // update reference 
-            dq.push_front(*this);
-            ma[test] = dq.begin();
+            // Update cache 
+            unitPathCache.push_front(*this);
+            unitPathCacheRefs[pathPoints] = unitPathCache.begin();
         }
+
+        // If not found, set destination area as unreachable for this frame
         else if (target.isValid() && Map::mapBWEM.GetArea(target)) {
             dist = DBL_MAX;
             notReachableThisFrame[Map::mapBWEM.GetArea(target)] = Broodwar->getFrameCount();
@@ -119,13 +120,18 @@ namespace BWEB
         }
     }
 
-    void Path::bfsPath(const Position s, const Position t, function <bool(const TilePosition)> collision, vector<TilePosition> direction)
+    void Path::bfsPath(const Position s, const Position t, function <bool(const TilePosition)> isWalkable, bool diagonal)
     {
-        TilePosition source = Map::tConvert(s);
-        TilePosition target = Map::tConvert(t);
+        TilePosition source = TilePosition(s);
+        TilePosition target = TilePosition(t);
         auto maxDist = source.getDistance(target);
+        const auto width = Broodwar->mapWidth();
+        const auto height = Broodwar->mapHeight();
+        vector<TilePosition> direction{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 } };
 
-        if (source == target || source == TilePosition(0, 0) || target == TilePosition(0, 0))
+        if (source == target
+            || source == TilePosition(0, 0)
+            || target == TilePosition(0, 0))
             return;
 
         TilePosition parentGrid[256][256];
@@ -135,18 +141,18 @@ namespace BWEB
             tiles.push_back(target);
             reachable = true;
             TilePosition check = parentGrid[target.x][target.y];
-            dist += Map::pConvert(target).getDistance(Map::pConvert(check));
+            dist += Position(target).getDistance(Position(check));
 
             do {
                 tiles.push_back(check);
                 TilePosition prev = check;
                 check = parentGrid[check.x][check.y];
-                dist += Map::pConvert(prev).getDistance(Map::pConvert(check));
+                dist += Position(prev).getDistance(Position(check));
             } while (check != source);
 
             // HACK: Try to make it more accurate to positions instead of tiles
-            auto correctionSource = Map::pConvert(*(tiles.end() - 1));
-            auto correctionTarget = Map::pConvert(*(tiles.begin() + 1));
+            auto correctionSource = Position(*(tiles.end() - 1));
+            auto correctionTarget = Position(*(tiles.begin() + 1));
             dist += s.getDistance(correctionSource);
             dist += t.getDistance(correctionTarget);
             dist -= 64.0;
@@ -166,11 +172,11 @@ namespace BWEB
 
                 if (next.isValid()) {
                     // If next has parent or is a collision, continue
-                    if (parentGrid[next.x][next.y] != TilePosition(0, 0) || collision(next))
+                    if (parentGrid[next.x][next.y] != TilePosition(0, 0) || !isWalkable(next))
                         continue;
 
                     // Check diagonal collisions where necessary
-                    if ((d.x == 1 || d.x == -1) && (d.y == 1 || d.y == -1) && (collision(tile + TilePosition(d.x, 0)) || collision(tile + TilePosition(0, d.y))))
+                    if ((d.x == 1 || d.x == -1) && (d.y == 1 || d.y == -1) && (!isWalkable(tile + TilePosition(d.x, 0)) || !isWalkable(tile + TilePosition(0, d.y))))
                         continue;
 
                     // Set parent here
@@ -186,41 +192,108 @@ namespace BWEB
         }
     }
 
-    /*void Path::jpsPath(const Position s, const Position t, function <bool(const TilePosition)> collision, vector<TilePosition> direction)
+    void Path::jpsPath(const Position s, const Position t, function <bool(const TilePosition)> passedWalkable, bool diagonal)
     {
-        TilePosition target = Map::tConvert(t);
-        TilePosition source = Map::tConvert(s);
+        target = TilePosition(t);
+        source = TilePosition(s);
 
-        auto checkReachable = notReachableThisFrame[Map::mapBWEM.GetArea(target)];
-        if (checkReachable >= Broodwar->getFrameCount()) {
-            reachable = false;
-            dist = DBL_MAX;
+        // If this path does not exist in cache, remove last reference and erase reference
+        auto pathPoints = make_pair(source, target);
+        if (customPathCacheRefs.find(pathPoints) == customPathCacheRefs.end()) {
+            if (customPathCache.size() == maxCacheSize) {
+                auto last = customPathCache.back();
+                customPathCache.pop_back();
+                customPathCacheRefs.erase(make_pair(last.getSource(), last.getTarget()));
+            }
+        }
+
+        // If it does exist, set this path as cached version, update reference and push cached path to the front
+        else {
+            auto &oldPath = customPathCacheRefs[pathPoints];
+            dist = oldPath->getDistance();
+            tiles = oldPath->getTiles();
+            reachable = oldPath->isReachable();
+
+            customPathCache.erase(customPathCacheRefs[pathPoints]);
+            customPathCache.push_front(*this);
+            customPathCacheRefs[pathPoints] = customPathCache.begin();
             return;
         }
 
         vector<TilePosition> newJPSPath;
+        const auto width = Broodwar->mapWidth();
+        const auto height = Broodwar->mapHeight();
 
-        if (JPS::findPath(newJPSPath, collision, source.x, source.y, target.x, target.y)) {
+        const auto isWalkable = [&](const int x, const int y) {
+            const TilePosition tile(x, y);
+            if (x > width || y > height || x < 0 || y < 0)
+                return false;
+            if (tile == source || tile == target)
+                return true;
+            if (passedWalkable(tile))
+                return true;
+            return false;
+        };
+
+        if (target.isValid() && Map::mapBWEM.GetArea(target) && isWalkable(source.x, source.y)) {
+            auto checkReachable = notReachableThisFrame[Map::mapBWEM.GetArea(target)];
+            if (checkReachable >= Broodwar->getFrameCount() && Broodwar->getFrameCount() > 0) {
+                reachable = false;
+                dist = DBL_MAX;
+                return;
+            }
+        }
+
+        // If we found a path, store what was found
+        if (JPS::findPath(newJPSPath, isWalkable, source.x, source.y, target.x, target.y)) {
             Position current = s;
             for (auto &t : newJPSPath) {
-                dist += Map::pConvert(t).getDistance(current);
-                current = Map::pConvert(t);
+                dist += Position(t).getDistance(current);
+                current = Position(t);
                 tiles.push_back(t);
+
+                // Update cache 
+                customPathCache.push_front(*this);
+                customPathCacheRefs[pathPoints] = customPathCache.begin();
             }
             reachable = true;
+            tiles.push_back(target);
+            tiles.push_back(source);
         }
-        else {
+
+        // If not found, set destination area as unreachable for this frame
+        else if (target.isValid() && Map::mapBWEM.GetArea(target)) {
             dist = DBL_MAX;
             notReachableThisFrame[Map::mapBWEM.GetArea(target)] = Broodwar->getFrameCount();
             reachable = false;
         }
-    }*/
+    }
 
     namespace Pathfinding {
         void clearCache()
         {
-            dq.clear();
-            ma.clear();
+            unitPathCache.clear();
+            unitPathCacheRefs.clear();
+            customPathCache.clear();
+            customPathCacheRefs.clear();
+        }
+
+        bool terrainWalkable(TilePosition tile)
+        {
+            if (tile.x > Broodwar->mapWidth() || tile.y > Broodwar->mapHeight() || tile.x < 0 || tile.y < 0)
+                return false;
+            if (Map::isWalkable(tile))
+                return true;
+            return false;
+        }
+
+        bool unitWalkable(TilePosition tile)
+        {
+            if (tile.x > Broodwar->mapWidth() || tile.y > Broodwar->mapHeight() || tile.x < 0 || tile.y < 0)
+                return false;
+            if (Map::isWalkable(tile) && Map::isUsed(tile) == UnitTypes::None)
+                return true;
+            return false;
         }
     }
 }

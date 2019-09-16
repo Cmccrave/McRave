@@ -16,15 +16,10 @@ namespace McRave::BuildOrder::Zerg {
         bool gas(int amount) {
             return Broodwar->self()->gas() >= amount;
         }
-
-        string enemyBuild() {
-            return Strategy::getEnemyBuild();
-        }
     }
 
     void HatchPool()
     {
-        getOpening =    s < 90;
         fastExpand =    true;
         gasLimit =      vis(Zerg_Lair) || Broodwar->self()->isUpgrading(UpgradeTypes::Metabolic_Boost) ? 3 : 2;
         firstUpgrade =  UpgradeTypes::Metabolic_Boost;
@@ -77,7 +72,7 @@ namespace McRave::BuildOrder::Zerg {
 
             else if (currentTransition == "3HatchLing") {
                 getOpening =    s < 60 && Broodwar->getFrameCount() < 12000;
-                droneLimit =    11;
+                droneLimit =    13;
                 gasLimit =      lingSpeed() ? 0 : 3;
                 lingLimit =     INT_MAX;
                 bookSupply =    vis(Zerg_Overlord) < 3;

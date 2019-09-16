@@ -12,11 +12,10 @@ namespace McRave::Units {
         set<shared_ptr<UnitInfo>> myUnits;
         set<shared_ptr<UnitInfo>> neutralUnits;
         set<shared_ptr<UnitInfo>> allyUnits;
-        map<UnitSizeType, int> allySizes;
-        map<UnitSizeType, int> enemySizes;
-        map<UnitType, int> enemyTypes;
         map<UnitType, int> myVisibleTypes;
         map<UnitType, int> myCompleteTypes;
+        map<UnitSizeType, int> allySizes;
+        map<UnitSizeType, int> enemySizes;
         map<Role, int> myRoles;
         set<Unit> splashTargets;
         double immThreat;
@@ -85,16 +84,12 @@ namespace McRave::Units {
                     if (unit.hasTarget() && (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Protoss_Scarab))
                         splashTargets.insert(unit.getTarget().unit());
 
-                    if (unit.getType().isBuilding() && !unit.isFlying() && BWEB::Map::isUsed(unit.getTilePosition()) == UnitTypes::None)
+                    if (unit.getType().isBuilding() && !unit.isFlying() && BWEB::Map::isUsed(unit.getTilePosition()) == UnitTypes::None && Broodwar->isVisible(TilePosition(unit.getPosition())))
                         Events::customOnUnitLand(unit);
 
                     // Must see a 3x3 grid of Tiles to set a unit to invalid position
-                    if (!unit.unit()->exists() && (!unit.isBurrowed() || Command::overlapsDetection(unit.unit(), unit.getPosition(), PlayerState::Self) || (unit.getWalkPosition().isValid() && Grids::getAGroundCluster(unit.getWalkPosition()) > 0)))
+                    if (!unit.unit()->exists() && (!unit.isBurrowed() || Actions::overlapsDetection(unit.unit(), unit.getPosition(), PlayerState::Self) || (unit.getWalkPosition().isValid() && Grids::getAGroundCluster(unit.getWalkPosition()) > 0)))
                         Events::customOnUnitDisappear(unit);
-
-                    // If unit has a valid type, update enemy composition tracking
-                    if (unit.getType().isValid())
-                        enemyTypes[unit.getType()] += 1;
 
                     // If a unit is threatening our position
                     if (unit.isThreatening()) {
@@ -167,7 +162,6 @@ namespace McRave::Units {
         {
             immThreat = 0.0;
             splashTargets.clear();
-            enemyTypes.clear();
             myVisibleTypes.clear();
             myCompleteTypes.clear();
 
@@ -213,143 +207,13 @@ namespace McRave::Units {
         }
     }
 
-    void adjustRoleCount(Role newRole, int adjustment)
-    {
-        myRoles[newRole] += adjustment;
-    }
-
     void onFrame()
     {
         Visuals::startPerfTest();
         updateCounters();
         updateUnits();
         Visuals::endPerfTest("Units");
-    }
-
-    void storeUnit(Unit unit)
-    {
-        auto &player = Players::getPlayers()[unit->getPlayer()];
-        auto info = UnitInfo();
-
-        for (auto &p : Players::getPlayers()) {
-            for (auto &u : p.second.getUnits()) {
-                if (u->unit() == unit) {
-                    info = *u;
-                    return;
-                }
-            }
-        }
-
-        if (unit->getType().isBuilding() && unit->getPlayer() == Broodwar->self()) {
-            auto closestWorker = Util::getClosestUnit(unit->getPosition(), PlayerState::Self, [&](auto &u) {
-                return u.getRole() == Role::Worker && u.getBuildPosition() == unit->getTilePosition();
-            });
-            if (closestWorker) {
-                closestWorker->setBuildingType(UnitTypes::None);
-                closestWorker->setBuildPosition(TilePositions::Invalid);
-            }
-        }
-
-        info.setUnit(unit);
-        info.update();
-        player.getUnits().insert(make_shared<UnitInfo>(info));
-
-        if (unit->getPlayer() == Broodwar->self() && unit->getType() == UnitTypes::Protoss_Pylon)
-            Pylons::storePylon(unit);
-    }
-
-    void removeUnit(Unit unit)
-    {
-        BWEB::Map::onUnitDestroy(unit);
-
-        // Find the unit
-        for (auto &[_, player] : Players::getPlayers()) {
-            for (auto &u : player.getUnits()) {
-                if (u->unit() == unit) {
-
-                    // Remove assignments and roles
-                    if (u->hasTransport())
-                        Transports::removeUnit(*u);
-                    if (u->hasResource())
-                        Workers::removeUnit(*u);
-                    if (u->getRole() == Role::Scout)
-                        Scouts::removeUnit(*u);
-                    if (u->getRole() != Role::None)
-                        myRoles[u->getRole()]--;
-
-                    // Invalidates iterator, must return
-                    player.getUnits().erase(u);
-                    return;
-                }
-            }
-        }
-    }
-
-    void morphUnit(Unit unit)
-    {
-        // HACK: Changing players is kind of annoying, so we just remove and re-store
-        if (unit->getType().isRefinery()) {
-            removeUnit(unit);
-            storeUnit(unit);
-        }
-
-        // Morphing into a Hatchery
-        if (unit->getType() == UnitTypes::Zerg_Hatchery)
-            Stations::storeStation(unit);
-
-        // Grab the UnitInfo for this unit
-        auto &info = Units::getUnitInfo(unit);
-        if (info) {
-            if (info->hasResource())
-                Workers::removeUnit(*info);
-
-            if (info->hasTransport())
-                Transports::removeUnit(*info);
-
-            if (info->hasTarget())
-                info->setTarget(nullptr);
-
-            info->setBuildingType(UnitTypes::None);
-            info->setBuildPosition(TilePositions::Invalid);
-        }
-    }
-
-    int getEnemyCount(UnitType t)
-    {
-        // Finds how many of a UnitType the enemy has
-        auto itr = enemyTypes.find(t);
-        if (itr != enemyTypes.end())
-            return itr->second;
-        return 0;
-    }
-
-    int getNumberMelee()
-    {
-        auto total = 0;
-
-        // Check for combat workers
-        if (Broodwar->getFrameCount() < 10000) {
-            for (auto &u : Units::getUnits(PlayerState::Self)) {
-                auto &unit = *u;
-                if (unit.getRole() == Role::Combat && unit.getType().isWorker())
-                    total++;
-            }
-        }
-
-        total += com(UnitTypes::Protoss_Zealot) + com(UnitTypes::Protoss_Dark_Templar)
-            + com(UnitTypes::Terran_Medic) + com(UnitTypes::Terran_Firebat)
-            + com(UnitTypes::Zerg_Zergling);
-
-        return total;
-    }
-
-    // TODO: Move to Players
-    int getNumberRanged()
-    {
-        return com(UnitTypes::Protoss_Dragoon) + com(UnitTypes::Protoss_Reaver) + com(UnitTypes::Protoss_High_Templar)
-            + com(UnitTypes::Terran_Marine) + com(UnitTypes::Terran_Vulture) + com(UnitTypes::Terran_Siege_Tank_Tank_Mode) + com(UnitTypes::Terran_Siege_Tank_Siege_Mode) + com(UnitTypes::Terran_Goliath)
-            + com(UnitTypes::Zerg_Hydralisk) + com(UnitTypes::Zerg_Lurker) + com(UnitTypes::Zerg_Defiler);
-    }
+    }    
 
     const shared_ptr<UnitInfo> getUnitInfo(Unit unit)
     {
@@ -378,10 +242,9 @@ namespace McRave::Units {
         return myUnits;
     }
 
-    set<Unit>& getSplashTargets() { return splashTargets; }
     map<UnitSizeType, int>& getAllySizes() { return allySizes; }
     map<UnitSizeType, int>& getEnemySizes() { return enemySizes; }
-    map<UnitType, int>& getEnemyTypes() { return enemyTypes; }
+    set<Unit>& getSplashTargets() { return splashTargets; }
     double getImmThreat() { return immThreat; }
     int getMyRoleCount(Role role) { return myRoles[role]; }
     int getMyVisible(UnitType type) { return myVisibleTypes[type]; }

@@ -9,7 +9,9 @@ namespace McRave::Math {
     double visibleAirStrength(UnitInfo&);
     double priority(UnitInfo&);
     double relativeCost(UnitInfo&);
-    double groundDPS(UnitInfo&);    
+    double realisticMineralCost(BWAPI::UnitType);
+    double realisticGasCost(BWAPI::UnitType);
+    double groundDPS(UnitInfo&);
     double airDPS(UnitInfo&);
     double groundCooldown(UnitInfo&);
     double airCooldown(UnitInfo&);

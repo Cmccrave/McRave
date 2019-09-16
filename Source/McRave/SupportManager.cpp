@@ -39,7 +39,10 @@ namespace McRave::Support {
             else {
                 auto highestCluster = 0.0;
 
-                for (auto &[score, position] : Combat::getCombatClusters()) {
+                for (auto &[cluster, position] : Combat::getCombatClusters()) {
+
+                    const auto score = cluster / position.getDistance(Terrain::getAttackPosition());
+
                     if (score > highestCluster && isntAssigned(position)) {
                         highestCluster = score;
                         unit.setDestination(position);
@@ -57,22 +60,20 @@ namespace McRave::Support {
                 unit.setDestination(BWEB::Map::getMainPosition());
 
             futureAssignment.emplace(make_pair(unit.getDestination(), unit.getType()));
-
-            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Purple);
         }
 
         void updateDecision(UnitInfo& unit)
         {
             // If this unit is a scanner sweep, add the action and return
             if (unit.getType() == UnitTypes::Spell_Scanner_Sweep) {
-                Command::addAction(unit.unit(), unit.getPosition(), UnitTypes::Spell_Scanner_Sweep, PlayerState::Self);
+                Actions::addAction(unit.unit(), unit.getPosition(), UnitTypes::Spell_Scanner_Sweep, PlayerState::Self);
                 return;
             }
 
             // Arbiters cast stasis on a target		
-            else if (unit.getType() == UnitTypes::Protoss_Arbiter && unit.canStartCast(TechTypes::Stasis_Field) && !Command::overlapsActions(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self, 96)) {
+            else if (unit.getType() == UnitTypes::Protoss_Arbiter && unit.canStartCast(TechTypes::Stasis_Field) && !Actions::overlapsActions(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self, 96)) {
                 unit.unit()->useTech(TechTypes::Stasis_Field, unit.getTarget().unit());
-                Command::addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Stasis_Field, PlayerState::Self);
+                Actions::addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Stasis_Field, PlayerState::Self);
             }
 
             else
@@ -83,7 +84,7 @@ namespace McRave::Support {
         {
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &unit = *u;
-                if (unit.getRole() == Role::Support) {
+                if (unit.getRole() == Role::Support && unit.unit()->isCompleted()) {
                     updateDestination(unit);
                     updateDecision(unit);
                 }

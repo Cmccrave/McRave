@@ -58,7 +58,7 @@ namespace BWEB::Blocks
             for (auto x = here.x - 1; x < here.x + width + 1; x++) {
                 for (auto y = here.y - 1; y < here.y + height + 1; y++) {
                     const TilePosition t(x, y);
-                    if (!t.isValid() || !Map::mapBWEM.GetTile(t).Buildable() || Map::isOverlapping(t) || Map::isReserved(t))
+                    if (!t.isValid() || !Map::mapBWEM.GetTile(t).Buildable() || Map::isReserved(t))
                         return false;
                 }
             }
@@ -85,21 +85,21 @@ namespace BWEB::Blocks
         {
             Block newBlock(here, pieces);
             allBlocks.push_back(newBlock);
-            Map::addOverlap(here, newBlock.width(), newBlock.height());
+            Map::addReserve(here, newBlock.width(), newBlock.height());
         }
 
         void insertProxyBlock(TilePosition here, vector<Piece> pieces)
         {
             Block newBlock(here, pieces, true);
             allBlocks.push_back(newBlock);
-            Map::addOverlap(here, newBlock.width(), newBlock.height());
+            Map::addReserve(here, newBlock.width(), newBlock.height());
         }
 
         void insertDefensiveBlock(TilePosition here, vector<Piece> pieces)
         {
             Block newBlock(here, pieces, false, true);
             allBlocks.push_back(newBlock);
-            Map::addOverlap(here, newBlock.width(), newBlock.height());
+            Map::addReserve(here, newBlock.width(), newBlock.height());
         }
 
         void findMainStartBlock(Position here)
@@ -121,8 +121,7 @@ namespace BWEB::Blocks
                 for (auto y = start.y - 20; y <= start.y + 20; y++) {
                     const TilePosition tile(x, y);
 
-                    if (!tile.isValid()
-                        || Map::mapBWEM.GetArea(tile) != Map::getMainArea())
+                    if (!tile.isValid())
                         continue;
 
                     const auto blockCenter = Position(tile) + Position(128, 80);
@@ -399,10 +398,12 @@ namespace BWEB::Blocks
 
     void findBlocks()
     {
+        auto secondBlockMiddle = (Position(Map::getMainChoke()->Center()) + Position(Map::getMainPosition())) / 2;
+
         // Customized: want 2 start blocks
-        findMainStartBlock(Position(Map::getMainChoke()->Center()));
-        findMainStartBlock(Map::getMainPosition());
         findMainDefenseBlock();
+        findMainStartBlock(Map::getMainPosition());
+        findMainStartBlock(secondBlockMiddle);        
         findProxyBlock();
         findProductionBlocks();
     }
