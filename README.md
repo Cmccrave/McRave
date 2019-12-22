@@ -21,6 +21,3 @@ McRave is a simple AI that can play all 3 races to an extent, but is best at Pro
 For any questions, email christianmccrave@gmail.com , McRave was started January 3rd 2017 and is developed in C++ using Visual Studio Express 2017, BWAPI 4.2.0, BWEM 1.4.1 and BWEB 1.09.
 
 https://sites.google.com/view/mcrave/
-
-**Copyright 2018 Christian McCrave, all rights reserved.**
-Copyright exception: Fco. Javier Sacido for use in ChimeraBot
