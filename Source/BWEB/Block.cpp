@@ -188,8 +188,6 @@ namespace BWEB::Blocks
             // Mirror the block vertically/horizontally for better placement
             if (tileBest.isValid()) {
 
-                Broodwar << "Ye" << endl;
-
                 // TODO: Add T/Z mirroring
                 if (race == Races::Zerg)
                     pieces ={ Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small };

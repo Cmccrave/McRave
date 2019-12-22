@@ -185,7 +185,7 @@ namespace McRave::Util {
         auto scoreBest = DBL_MAX;
         auto posBest = BWEB::Map::getMainPosition();
         auto meleeRadius = 32.0;
-        auto rangedRadius = max(meleeRadius + 64.0, unit.getGroundRange() + (rangedCount * 4.0) - 32.0);
+        auto rangedRadius = max(meleeRadius + 64.0, unit.getGroundRange() + (rangedCount * 4.0));
         auto radius = (Players::getSupply(PlayerState::Self) >= 80 || unit.getGroundRange() > 32.0 || enemyRangeExists) ? rangedRadius : meleeRadius;
 
         const auto isSuitable = [&](WalkPosition w, double rMin, double rMax) {
@@ -213,7 +213,7 @@ namespace McRave::Util {
 
             if (!pTest.isValid()
                 || pTest.getDistance(projection) < rMin
-                || pTest.getDistance(projection) > rMax
+                || pTest.getDistance(projection) >= rMax
                 || (area && mapBWEM.GetArea(w) != area)
                 || Buildings::overlapsQueue(unit, TilePosition(w))
                 || !mapBWEM.GetMiniTile(w).Walkable()
@@ -231,7 +231,7 @@ namespace McRave::Util {
         };
 
         auto center = WalkPosition(here);
-        if (unit.getPosition() == unit.getLastPosition() && isSuitable(unit.getWalkPosition(), radius, radius + 32.0))
+        if (unit.getPosition() == unit.getLastPosition() && isSuitable(unit.getWalkPosition(), radius - 32.0, radius + 32.0))
             return unit.getPosition();
 
         // Find a position around the center that is suitable        
@@ -241,7 +241,7 @@ namespace McRave::Util {
                 const auto p = Position(w) + Position(4, 4);
                 const auto score = scorePosition(p);
 
-                if (score < scoreBest && isSuitable(w, radius, radius + 32.0)) {
+                if (score < scoreBest && isSuitable(w, radius - 32.0, radius + 32.0)) {
                     posBest = p;
                     scoreBest = score;
                 }

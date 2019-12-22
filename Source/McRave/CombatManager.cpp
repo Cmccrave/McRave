@@ -166,7 +166,7 @@ namespace McRave::Combat {
 
         void updateGlobalState(UnitInfo& unit)
         {
-            bool testingDefense = false;
+            bool testingDefense = true;
             if (testingDefense) {
                 unit.setGlobalState(GlobalState::Retreat);
                 return;

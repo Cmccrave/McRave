@@ -14,7 +14,6 @@
 // Interceptors targets might be convincing goons to dive tanks
 // Shuttles don't consider static defenses when decided engage/retreat
 // Change storms to care more about multi target rather than score
-// Test vs all Zerg rushes
 // Cannon detection action range too large
 // 2gate robo slow 2nd gas issue
 // 10/15 defensive reaction lost to BBS
