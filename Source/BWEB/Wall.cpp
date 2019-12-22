@@ -215,6 +215,14 @@ namespace BWEB {
             || !Map::isPlaceable(type, here)
             || Map::tilesWithinArea(this->getArea(), here, type.tileWidth(), type.tileHeight()) < 1)
             return false;
+
+        if (type.getRace() == Races::Zerg && type != UnitTypes::Zerg_Hatchery) {
+            for (auto x = here.x; x < here.x + type.tileWidth(); x++) {
+                auto tile = TilePosition(x, here.y - 1);
+                if (tile.isValid() && Map::isUsed(tile) == UnitTypes::Zerg_Hatchery)
+                    return false;
+            }
+        }
         return true;
     }
 
@@ -339,11 +347,11 @@ namespace BWEB {
 
         // If we want a closed wall, we need all buildings to be tight at the tightness resolution...
         if (!openWall) {
-            if (!lastBuilding && !firstBuilding)	// ...to the parent if not first building
+            if (!lastBuilding && !firstBuilding)    // ...to the parent if not first building
                 return parentTight;
-            if (firstBuilding)						// ...to the terrain if first building
+            if (firstBuilding)                        // ...to the terrain if first building
                 return terrainTight;
-            if (lastBuilding)						// ...to the parent and terrain if last building
+            if (lastBuilding)                        // ...to the parent and terrain if last building
                 return (terrainTight && parentTight);
         }
 
@@ -453,7 +461,7 @@ namespace BWEB {
         for (auto &building : this->getRawDefenses()) {
 
             const auto start = TilePosition(this->getCentroid());
-            const auto doorCenter = Position(this->getOpening()) + Position(16, 16);
+            const auto doorCenter = Position(this->inOpeningBook()) + Position(16, 16);
             const auto isDefense = building == UnitTypes::Protoss_Photon_Cannon || building == UnitTypes::Terran_Missile_Turret || building == UnitTypes::Terran_Bunker;
 
             // Iterate around wall centroid to find a suitable position
@@ -506,8 +514,14 @@ namespace BWEB {
 
     void Wall::initialize()
     {
-        chokeAngle = Map::getAngle(Map::lineOfBestFit(this->getChokePoint()));
-        pylonWall = count(rawBuildings.begin(), rawBuildings.end(), BWAPI::UnitTypes::Protoss_Pylon) > 1;
+        failedPlacement =   0;
+        failedAngle =       0;
+        failedPath =        0;
+        failedTight =       0;
+        failedSpawn =       0;
+        failedPower =       0;
+        chokeAngle =        Map::getAngle(Map::lineOfBestFit(this->getChokePoint()));
+        pylonWall =         count(rawBuildings.begin(), rawBuildings.end(), BWAPI::UnitTypes::Protoss_Pylon) > 1;
 
         // Create a path for limiting BFS exploration
         Path jpsPath;
@@ -710,7 +724,7 @@ namespace BWEB {
         }
 
         // Draw other Wall features
-        Broodwar->drawBoxMap(Position(this->getOpening()), Position(this->getOpening()) + Position(33, 33), color, true);
+        Broodwar->drawBoxMap(Position(this->inOpeningBook()), Position(this->inOpeningBook()) + Position(33, 33), color, true);
         Broodwar->drawCircleMap(Position(this->getCentroid()) + Position(16, 16), 8, color, true);
 
         // Draw the line and angle of the ChokePoint

@@ -33,49 +33,49 @@ namespace McRave
             setLastPositions();
             verifyPaths();
 
-            // Points		
-            position				= unit()->getPosition();
-            destination				= Positions::Invalid;
+            // Points        
+            position                = unit()->getPosition();
+            destination                = Positions::Invalid;
             goal                    = Positions::Invalid;
-            tilePosition			= Math::getTilePosition(unit());
-            walkPosition			= Math::getWalkPosition(unit());
+            tilePosition            = Math::getTilePosition(unit());
+            walkPosition            = Math::getWalkPosition(unit());
 
             // Stats
-            type				    = t;
-            player					= p;
-            health					= unit()->getHitPoints() > 0 ? unit()->getHitPoints() : health;
-            shields					= unit()->getShields() > 0 ? unit()->getShields() : shields;
-            energy					= unit()->getEnergy();
-            percentHealth			= t.maxHitPoints() > 0 ? double(health) / double(t.maxHitPoints()) : 0.0;
-            percentShield			= t.maxShields() > 0 ? double(shields) / double(t.maxShields()) : 0.0;
-            percentTotal			= t.maxHitPoints() + t.maxShields() > 0 ? double(health + shields) / double(t.maxHitPoints() + t.maxShields()) : 0.0;
-            groundRange				= Math::groundRange(*this);
-            groundDamage			= Math::groundDamage(*this);
-            groundReach				= Math::groundReach(*this);
-            airRange				= Math::airRange(*this);
-            airReach				= Math::airReach(*this);
-            airDamage				= Math::airDamage(*this);
-            speed 					= Math::moveSpeed(*this);
-            minStopFrame			= Math::stopAnimationFrames(t);
-            visibleGroundStrength	= Math::visibleGroundStrength(*this);
-            maxGroundStrength		= Math::maxGroundStrength(*this);
-            visibleAirStrength		= Math::visibleAirStrength(*this);
-            maxAirStrength			= Math::maxAirStrength(*this);
-            priority				= Math::priority(*this);
+            type                    = t;
+            player                    = p;
+            health                    = unit()->getHitPoints() > 0 ? unit()->getHitPoints() : health;
+            shields                    = unit()->getShields() > 0 ? unit()->getShields() : shields;
+            energy                    = unit()->getEnergy();
+            percentHealth            = t.maxHitPoints() > 0 ? double(health) / double(t.maxHitPoints()) : 0.0;
+            percentShield            = t.maxShields() > 0 ? double(shields) / double(t.maxShields()) : 0.0;
+            percentTotal            = t.maxHitPoints() + t.maxShields() > 0 ? double(health + shields) / double(t.maxHitPoints() + t.maxShields()) : 0.0;
+            groundRange                = Math::groundRange(*this);
+            groundDamage            = Math::groundDamage(*this);
+            groundReach                = Math::groundReach(*this);
+            airRange                = Math::airRange(*this);
+            airReach                = Math::airReach(*this);
+            airDamage                = Math::airDamage(*this);
+            speed                     = Math::moveSpeed(*this);
+            minStopFrame            = Math::stopAnimationFrames(t);
+            visibleGroundStrength    = Math::visibleGroundStrength(*this);
+            maxGroundStrength        = Math::maxGroundStrength(*this);
+            visibleAirStrength        = Math::visibleAirStrength(*this);
+            maxAirStrength            = Math::maxAirStrength(*this);
+            priority                = Math::priority(*this);
 
 
-            flying					= unit()->isFlying() || unit()->getType().isFlyer() || unit()->getOrder() == Orders::LiftingOff || unit()->getOrder() == Orders::BuildingLiftOff;
+            flying                    = unit()->isFlying() || unit()->getType().isFlyer() || unit()->getOrder() == Orders::LiftingOff || unit()->getOrder() == Orders::BuildingLiftOff;
 
-            simRadius               = 640.0;//walkPosition.isValid() ? clamp(flying && !mapBWEM.GetArea(walkPosition) ? 480.0 : (mapBWEM.GetArea(walkPosition) ? 640.0 - mapBWEM.GetArea(walkPosition)->MaxAltitude() : simRadius), 400.0, 640.0) : simRadius;
+            simRadius               = Grids::getMobility(getPosition()) <= 6 ? getPosition().getDistance(getSimPosition()) + 32.0 : 640.0;
 
             // States
-            lState					= LocalState::None;
-            gState					= GlobalState::None;
-            tState					= TransportState::None;
+            lState                    = LocalState::None;
+            gState                    = GlobalState::None;
+            tState                    = TransportState::None;
 
             // Frames
             remainingTrainFrame =   max(0, remainingTrainFrame - 1);
-            lastAttackFrame			= (t != Protoss_Reaver && (unit()->isStartingAttack() || unit()->isRepairing())) ? Broodwar->getFrameCount() : lastAttackFrame;
+            lastAttackFrame            = (t != Protoss_Reaver && (unit()->isStartingAttack() || unit()->isRepairing())) ? Broodwar->getFrameCount() : lastAttackFrame;
 
             // BWAPI won't reveal isStartingAttack when hold position is executed if the unit can't use hold position, XIMP uses this on workers
             if (getPlayer() != Broodwar->self() && getType().isWorker()) {
@@ -157,7 +157,7 @@ namespace McRave
                 }
 
                 if (cnt >= 3)
-                    trapped = true;                
+                    trapped = true;
             }
 
             if (trapped)
@@ -200,9 +200,10 @@ namespace McRave
 
         // If the unit attacked defenders, citizens or is building something
         auto attackedDefender = hasAttackedRecently() && hasTarget() && Terrain::isInAllyTerritory(getTarget().getTilePosition()) && getTarget().getType().canAttack();
-        auto attackedWorkers = hasAttackedRecently() && hasTarget() && getTarget().getType().isWorker();
+        auto attackedWorkers = hasAttackedRecently() && hasTarget() && Terrain::isInAllyTerritory(getTarget().getTilePosition()) && getTarget().getRole() == Role::Worker;
         auto attackedBuildings = hasAttackedRecently() && hasTarget() && getTarget().getType().isBuilding();
         auto constructing = unit()->exists() && (unit()->isConstructing() || unit()->getOrder() == Orders::ConstructingBuilding || unit()->getOrder() == Orders::PlaceBuilding);
+        auto preventRunby = getType() == Terran_Vulture && Broodwar->self()->getRace() == Races::Zerg;
 
         bool threateningThisFrame = false;
 
@@ -223,9 +224,9 @@ namespace McRave
         // Unit
         else {
             if (Strategy::defendChoke())
-                threateningThisFrame = (hasAttackedRecently() && (atDefense || atHome)) || attackedWorkers || attackedDefender || (atHome && threatening);
+                threateningThisFrame = ((atDefense || atHome) && (attackedWorkers || attackedDefender || getGroundRange() <= 32.0)) || (atHome && preventRunby);
             else
-                threateningThisFrame = (attackedWorkers || attackedBuildings || atResources);
+                threateningThisFrame = (atDefense || atHome) && (attackedWorkers || attackedBuildings || atResources);
         }
 
         //// Close to a shield battery
@@ -246,13 +247,13 @@ namespace McRave
     }
 
     void UnitInfo::createDummy(UnitType t) {
-        type				    = t;
-        player					= Broodwar->self();
-        groundRange				= Math::groundRange(*this);
-        airRange		        = Math::airRange(*this);
-        groundDamage			= Math::groundDamage(*this);
-        airDamage				= Math::airDamage(*this);
-        speed 					= Math::moveSpeed(*this);
+        type                    = t;
+        player                    = Broodwar->self();
+        groundRange                = Math::groundRange(*this);
+        airRange                = Math::airRange(*this);
+        groundDamage            = Math::groundDamage(*this);
+        airDamage                = Math::airDamage(*this);
+        speed                     = Math::moveSpeed(*this);
     }
 
     bool UnitInfo::move(UnitCommandType command, Position here)
@@ -468,32 +469,33 @@ namespace McRave
             || (getType() == Protoss_Reaver && !unit()->isLoaded() && isWithinRange(getTarget()))
             || (getTarget().getType() == Terran_Vulture_Spider_Mine && !getTarget().isBurrowed())
             || (hasTransport() && !unit()->isLoaded() && getType() == Protoss_High_Templar && canStartCast(TechTypes::Psionic_Storm) && isWithinRange(getTarget()))
-            || (hasTransport() && !unit()->isLoaded() && getType() == Protoss_Reaver && canStartAttack()) && isWithinRange(getTarget()));
+            || (hasTransport() && !unit()->isLoaded() && getType() == Protoss_Reaver && canStartAttack()) && isWithinRange(getTarget()));            
     }
 
     bool UnitInfo::localRetreat()
     {
-        return (getType() == Protoss_Zealot && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) == 0 && getTarget().getType() == Terran_Vulture)                 // ...unit is a slow Zealot attacking a Vulture
-            || (isLightAir() && getType().maxShields() > 0 && getTarget().getType() == Zerg_Overlord && Grids::getEAirThreat(getEngagePosition()) * 5.0 > (double)getShields())   // ...unit is a low shield light air attacking a Overlord under threat greater than our shields
-            || (getType() == Protoss_Corsair && getTarget().getType() == Zerg_Scourge && com(Protoss_Corsair) < 6)                                                                // ...unit is a Corsair attacking Scourge with less than 6 completed Corsairs
-            || (getType() == Terran_Medic && unit()->getEnergy() <= TechTypes::Healing.energyCost())                                                                              // ...unit is a Medic with no energy
-            || (getType() == Zerg_Mutalisk && Grids::getEAirThreat(getEngagePosition()) > 0.0 && getHealth() <= 30)                                                               // ...unit is a low HP Mutalisk attacking a target under air threat
-            || (getType().maxShields() > 0 && getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && !BuildOrder::isRush() && Broodwar->getFrameCount() < 10000)                        // ...unit is a low shield unit in the early stages of the game
-            || (getType() == Terran_SCV && Broodwar->getFrameCount() > 12000);                                                                                                    // ...unit is an SCV outside of early game
+        return (getType() == Protoss_Zealot && hasTarget() && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) == 0 && getTarget().getType() == Terran_Vulture)                 // ...unit is a slow Zealot attacking a Vulture
+            || (getType() == Protoss_Corsair && hasTarget() && getTarget().getType() == Zerg_Scourge && com(Protoss_Corsair) < 6)                                                                // ...unit is a Corsair attacking Scourge with less than 6 completed Corsairs
+            || (getType() == Terran_Medic && unit()->getEnergy() <= TechTypes::Healing.energyCost())                                                                                             // ...unit is a Medic with no energy
+            || (getType() == Zerg_Mutalisk && getEngagePosition().isValid() && Grids::getEAirThreat(getEngagePosition()) > 0.0 && getHealth() <= 30)                                             // ...unit is a low HP Mutalisk attacking a target under air threat
+            || (getType().maxShields() > 0 && getPercentShield() < LOW_SHIELD_PERCENT_LIMIT && !BuildOrder::isRush() && Broodwar->getFrameCount() < 10000)                                       // ...unit is a low shield unit in the early stages of the game
+            || (getType() == Terran_SCV && Broodwar->getFrameCount() > 12000)                                                                                                                    // ...unit is an SCV outside of early game
+            || (isLightAir() && hasTarget() && getType().maxShields() > 0 && getTarget().getType() == Zerg_Overlord && Grids::getEAirThreat(getEngagePosition()) * 5.0 > (double)getShields())   // ...unit is a low shield light air attacking a Overlord under threat greater than our shields
+            || (getType().getRace() == Races::Zerg && !isHealthy());                                                                                                                             // ...unit is a Zerg unit and is not healthy in early game;
     }
 
     bool UnitInfo::globalEngage()
     {
         return (getTarget().isThreatening() && !getTarget().isHidden())                                                                                                                           // ...target is threatening                    
-            || (!getType().isWorker() && getGroundRange() > getTarget().getGroundRange() && Terrain::isInAllyTerritory(getTarget().getTilePosition()) && !getTarget().isHidden());                // ...unit can get free hits in our territory
+            || (!getType().isWorker() && getGroundRange() > getTarget().getGroundRange() && Terrain::isInAllyTerritory(getTarget().getTilePosition()) && !getTarget().isHidden())                 // ...unit can get free hits in our territory
+            || (isSuicidal());
     }
 
     bool UnitInfo::globalRetreat()
     {
         const auto targetReach = getType().isFlyer() ? getTarget().getAirReach() : getTarget().getGroundReach();
 
-        return (getType().getRace() == Races::Zerg && !isHealthy())                                                                    // ...unit is a Zerg unit and is not healthy in early game
-            || Grids::getESplash(getWalkPosition()) > 0                                                                                // ...unit is within splash radius of a Spider Mine or Scarab
+        return Grids::getESplash(getWalkPosition()) > 0                                                                                // ...unit is within splash radius of a Spider Mine or Scarab
             || (getTarget().isHidden() && getPosition().getDistance(getTarget().getPosition()) <= targetReach)                         // ...target is hidden and Unit is within target reach
             || getGlobalState() == GlobalState::Retreat;                                                                               // ...global state is retreating
     }

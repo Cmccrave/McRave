@@ -20,8 +20,8 @@ namespace McRave::BuildOrder {
 
     // Need a namespace to share variables among the various files used
     namespace All {
-        inline std::map <BWAPI::UnitType, Item> itemQueue;
-        inline bool getOpening = true;
+        inline std::map <BWAPI::UnitType, int> buildQueue;
+        inline bool inOpeningBook = true;
         inline bool getTech = false;
         inline bool wallNat = false;
         inline bool wallMain = false;
@@ -36,7 +36,7 @@ namespace McRave::BuildOrder {
         inline bool cutWorkers = false; // TODO: Use unlocking
         inline bool lockedTransition = false;
         inline bool gasTrick = false;
-        inline bool bookSupply = false;
+        inline bool inBookSupply = false;
         inline bool transitionReady = false;
 
         inline int gasLimit = INT_MAX;
@@ -57,8 +57,11 @@ namespace McRave::BuildOrder {
         inline BWAPI::UnitType firstUnit = BWAPI::UnitTypes::None;
         inline BWAPI::UnitType techUnit = BWAPI::UnitTypes::None;
         inline BWAPI::UnitType desiredDetection = BWAPI::UnitTypes::None;
+        inline std::vector<BWAPI::UnitType> techOrder;
         inline std::set <BWAPI::UnitType> techList;
         inline std::set <BWAPI::UnitType> unlockedType;
+
+        inline std::map <BWAPI::UnitType, double> armyComposition;
     }
 
     namespace Protoss {
@@ -105,24 +108,23 @@ namespace McRave::BuildOrder {
         void PoolLair();
     }
 
+    double getCompositionPercentage(BWAPI::UnitType);
+    std::map<BWAPI::UnitType, double> getArmyComposition();
     int buildCount(BWAPI::UnitType);
     bool firstReady();
     bool unlockReady(BWAPI::UnitType);
 
     void onFrame();
     void getNewTech();
-    void checkNewTech();
-    void checkAllTech();
-    void checkExoticTech();
+    void getTechBuildings();
     bool shouldAddProduction();
     bool shouldAddGas();
     bool shouldExpand();
     bool techComplete();
-    bool isAlmostComplete(BWAPI::UnitType);
+    bool atPercent(BWAPI::UnitType, double);
 
-    std::map<BWAPI::UnitType, Item>& getItemQueue();
+    std::map<BWAPI::UnitType, int>& getBuildQueue();
     BWAPI::UnitType getTechUnit();
-    BWAPI::UnitType getFirstUnit();
     BWAPI::UpgradeType getFirstUpgrade();
     BWAPI::TechType getFirstTech();
     std::set <BWAPI::UnitType>& getTechList();
@@ -130,8 +132,8 @@ namespace McRave::BuildOrder {
     int getWallDefenseDesired();
     int gasWorkerLimit();
     bool isWorkerCut();
-    bool isUnitUnlocked(BWAPI::UnitType unit);
-    bool isTechUnit(BWAPI::UnitType unit);
+    bool isUnitUnlocked(BWAPI::UnitType);
+    bool isTechUnit(BWAPI::UnitType);
     bool isOpener();
     bool isFastExpand();
     bool shouldScout();

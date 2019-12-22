@@ -44,14 +44,8 @@ namespace McRave::Visuals {
             // Scores
             if (scores) {
                 int offset = 0;
-                for (auto &[type, score] : Strategy::getUnitScores()) {
-                    if (score > 0.0) {
-                        Broodwar->drawTextScreen(0, offset, "%c%s: %c%.2f", textColor, type.c_str(), Text::White, score);
-                        offset += 10;
-                    }
-                }
-                for (auto &type : BuildOrder::getTechList()) {
-                    Broodwar->drawTextScreen(0, offset, "%c%s", Text::White, type.c_str());
+                for (auto &[type, percent] : BuildOrder::getArmyComposition()) {
+                    Broodwar->drawTextScreen(0, offset, "%c%s  %d/%d  %.2f", Text::White, type.c_str(), vis(type), total(type), percent);
                     offset += 10;
                 }
                 Broodwar->drawTextScreen(0, offset, "%c%s", Text::Grey, BuildOrder::getTechUnit().c_str());
@@ -286,16 +280,16 @@ namespace McRave::Visuals {
 
     void onSendText(string text)
     {
-        if (text == "/targets")				targets = !targets;
-        else if (text == "/sim")			sim = !sim;
-        else if (text == "/strengths")		strengths = !strengths;
-        else if (text == "/builds")			builds = !builds;
-        else if (text == "/bweb")			bweb = !bweb;
-        else if (text == "/paths")			paths = !paths;
-        else if (text == "/orders")			orders = !orders;
-        else if (text == "/local")			local = !local;
-        else if (text == "/resources")		resources = !resources;
-        else if (text == "/timers")			timers = !timers;
+        if (text == "/targets")                targets = !targets;
+        else if (text == "/sim")            sim = !sim;
+        else if (text == "/strengths")        strengths = !strengths;
+        else if (text == "/builds")            builds = !builds;
+        else if (text == "/bweb")            bweb = !bweb;
+        else if (text == "/paths")            paths = !paths;
+        else if (text == "/orders")            orders = !orders;
+        else if (text == "/local")            local = !local;
+        else if (text == "/resources")        resources = !resources;
+        else if (text == "/timers")            timers = !timers;
         else if (text == "/roles")          roles = !roles;
 
         else if (text == "/grids 0")        gridSelection = 0;
@@ -306,7 +300,7 @@ namespace McRave::Visuals {
         else if (text == "/grids 5")        gridSelection = 5;
         else if (text == "/grids 6")        gridSelection = 6;
 
-        else								Broodwar->sendText("%s", text.c_str());
+        else                                Broodwar->sendText("%s", text.c_str());
         return;
     }
 

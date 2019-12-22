@@ -64,7 +64,7 @@ namespace McRave::Learning {
 
             if (Broodwar->self()->getRace() == Races::Zerg && build != "") {
                 if (build == "PoolLair")
-                    return z;
+                    return true;
                 if (build == "HatchPool")
                     return t || p;
             }
@@ -114,12 +114,14 @@ namespace McRave::Learning {
             }
 
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                if (build == "PoolLair")
+                if (build == "PoolLair") {
                     if (opener == "9Pool")
-                        return z;
-                if (build == "HatchPool")
+                        return true;
+                }
+                if (build == "HatchPool") {
                     if (opener == "12Hatch")
                         return t || p;
+                }
             }
             return false;
         }
@@ -166,7 +168,7 @@ namespace McRave::Learning {
                     if (transition == "DoubleExpand" || transition == "ReaverCarrier")
                         return t;
                     if (transition == "Standard")
-                        return t || p;
+                        return t;
                 }
 
                 if (build == "GateNexus") {
@@ -176,9 +178,12 @@ namespace McRave::Learning {
             }
 
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                if (build == "PoolLair")
+                if (build == "PoolLair") {
                     if (transition == "1HatchMuta")
                         return z;
+                    if (transition == "1HatchLurker")
+                        return t || p;
+                }
                 if (build == "HatchPool") {
                     if (transition == "2HatchMuta")
                         return t || p;
@@ -296,7 +301,7 @@ namespace McRave::Learning {
             << Broodwar->enemy()->getName().c_str() << ","
             << Strategy::getEnemyBuild() << ","
             << currentBuild << "," << currentOpener << "," << currentTransition << ","
-            << (isWinner ? "Won": "Lost") << "," << std::setfill('0') << Util::getTime().minutes << ":" << std::setw(2) << Util::getTime().seconds;
+            << (isWinner ? "Won" : "Lost") << "," << std::setfill('0') << Util::getTime().minutes << ":" << std::setw(2) << Util::getTime().seconds;
 
         // Store a list of total units everyone made
         for (auto &type : UnitTypes::allUnitTypes()) {
@@ -439,6 +444,7 @@ namespace McRave::Learning {
 
                     // Builds
                 case 0:
+                    thisBuild = token;
                     if (val > bestBuildWR && isBuildAllowed(enemyRace, token)) {
                         bestBuild = token;
                         bestBuildWR = val;
@@ -453,7 +459,8 @@ namespace McRave::Learning {
 
                     // Openers
                 case 1:
-                    if (val > bestOpenerWR && isOpenerAllowed(enemyRace, bestBuild, token)) {
+                    thisOpener = token;
+                    if (val > bestOpenerWR && isOpenerAllowed(enemyRace, thisBuild, token)) {
                         bestOpener = token;
                         bestOpenerWR = val;
 
@@ -464,7 +471,7 @@ namespace McRave::Learning {
 
                     // Transitions
                 case 2:
-                    if (val > bestTransitionWR && isTransitionAllowed(enemyRace, bestBuild, token)) {
+                    if (val > bestTransitionWR && isTransitionAllowed(enemyRace, thisBuild, token)) {
                         bestTransition = token;
                         bestTransitionWR = val;
                     }
@@ -530,7 +537,7 @@ namespace McRave::Learning {
                 return;
             }
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "3HatchLing");
+                BuildOrder::setLearnedBuild("PoolHatch", "9Pool10Hatch", "2HatchLing");
                 isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                 return;
             }

@@ -2,6 +2,7 @@
 
 using namespace BWAPI;
 using namespace std;
+using namespace UnitTypes;
 
 namespace McRave::Scouts {
 
@@ -12,7 +13,7 @@ namespace McRave::Scouts {
         int scoutDeadFrame = 0;
         bool proxyCheck = false;
         bool fullScout = false;
-        UnitType proxyType = UnitTypes::None;
+        UnitType proxyType = None;
         Position proxyPosition = Positions::Invalid;
         vector<Position> edges ={ {-320,-320}, {-320, 0}, {-320, 320}, {0, -320}, {0, 320}, {320, -320}, {320, 0}, {320, 320} };
 
@@ -22,9 +23,9 @@ namespace McRave::Scouts {
             scoutCount = 1;
 
             // If we have seen an enemy Probe before we've scouted the enemy, follow it
-            if (Players::getCurrentCount(PlayerState::Enemy, UnitTypes::Protoss_Probe) == 1 && com(UnitTypes::Protoss_Zealot) < 1) {
+            if (Players::getCurrentCount(PlayerState::Enemy, Protoss_Probe) == 1 && com(Protoss_Zealot) < 1) {
                 auto &enemyProbe = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return u.getType() == UnitTypes::Protoss_Probe;
+                    return u.getType() == Protoss_Probe;
                 });
                 proxyCheck = (enemyProbe && !Terrain::getEnemyStartingPosition().isValid() && (enemyProbe->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0 || Terrain::isInAllyTerritory(enemyProbe->getTilePosition())));
             }
@@ -43,7 +44,7 @@ namespace McRave::Scouts {
             if (Players::PvZ()) {
 
                 // Don't scout vs 4Pool
-                if (Strategy::enemyRush() && Players::getCurrentCount(PlayerState::Enemy, UnitTypes::Zerg_Zergling) >= 2 && Players::getSupply(PlayerState::Self) <= 46)
+                if (Strategy::enemyRush() && Players::getCurrentCount(PlayerState::Enemy, Zerg_Zergling) >= 2 && Players::getSupply(PlayerState::Self) <= 46)
                     scoutCount = 0;
 
                 // Send a 2nd scout after 1st scout
@@ -53,7 +54,7 @@ namespace McRave::Scouts {
 
             // If we are playing PvP, send a 2nd scout to find any proxies
             if (Players::PvP())
-                scoutCount = (Strategy::enemyProxy() || proxyCheck) && com(UnitTypes::Protoss_Zealot) < 1 ? 2 : 1;
+                scoutCount = (Strategy::enemyProxy() || proxyCheck) && com(Protoss_Zealot) < 1 ? 2 : 1;
 
             // If we are playing PvT, don't scout if we see a pressure build coming
             if (Players::PvT())
@@ -83,18 +84,18 @@ namespace McRave::Scouts {
 
                 if (BuildOrder::getCurrentOpener() == "Proxy") {
                     scout = Util::getFurthestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
-                        return u.getRole() == Role::Worker && (!u.hasResource() || !u.getResource().getType().isRefinery()) && u.getBuildType() == UnitTypes::None && !u.unit()->isCarryingMinerals() && !u.unit()->isCarryingGas();
+                        return u.getRole() == Role::Worker && (!u.hasResource() || !u.getResource().getType().isRefinery()) && u.getBuildType() == None && !u.unit()->isCarryingMinerals() && !u.unit()->isCarryingGas();
                     });
                 }
                 else {
                     scout = Util::getClosestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
-                        return u.getRole() == Role::Worker && (!u.hasResource() || !u.getResource().getType().isRefinery()) && u.getBuildType() == UnitTypes::None && !u.unit()->isCarryingMinerals() && !u.unit()->isCarryingGas();
+                        return u.getRole() == Role::Worker && (!u.hasResource() || !u.getResource().getType().isRefinery()) && u.getBuildType() == None && !u.unit()->isCarryingMinerals() && !u.unit()->isCarryingGas();
                     });
                 }
 
                 if (scout) {
                     scout->setRole(Role::Scout);
-                    scout->setBuildingType(UnitTypes::None);
+                    scout->setBuildingType(None);
                     scout->setBuildPosition(TilePositions::Invalid);
 
                     if (scout->hasResource())
@@ -124,7 +125,7 @@ namespace McRave::Scouts {
 
             // If it's a proxy, scout for the proxy building
             if (Strategy::enemyProxy()) {
-                auto proxyType = Players::vP() ? UnitTypes::Protoss_Pylon : UnitTypes::Terran_Barracks;
+                auto proxyType = Players::vP() ? Protoss_Pylon : Terran_Barracks;
 
                 if (Strategy::getEnemyBuild() != "CannonRush") {
                     if (Players::getCurrentCount(PlayerState::Enemy, proxyType) == 0) {
@@ -237,12 +238,12 @@ namespace McRave::Scouts {
                 if ((Strategy::enemyProxy() && proxyPosition.isValid() && isClosestAvailableScout(proxyPosition)) || (proxyCheck && isClosestAvailableScout(BWEB::Map::getMainPosition()))) {
 
                     // Determine what proxy type to expect
-                    if (Players::getCurrentCount(PlayerState::Enemy, UnitTypes::Terran_Barracks) > 0)
-                        proxyType = UnitTypes::Terran_Barracks;
-                    else if (Players::getCurrentCount(PlayerState::Enemy, UnitTypes::Protoss_Pylon) > 0)
-                        proxyType = UnitTypes::Protoss_Pylon;
-                    else if (Players::getCurrentCount(PlayerState::Enemy, UnitTypes::Protoss_Gateway) > 0)
-                        proxyType = UnitTypes::Protoss_Gateway;
+                    if (Players::getCurrentCount(PlayerState::Enemy, Terran_Barracks) > 0)
+                        proxyType = Terran_Barracks;
+                    else if (Players::getCurrentCount(PlayerState::Enemy, Protoss_Pylon) > 0)
+                        proxyType = Protoss_Pylon;
+                    else if (Players::getCurrentCount(PlayerState::Enemy, Protoss_Gateway) > 0)
+                        proxyType = Protoss_Gateway;
 
                     // Find the closet of the proxy type we expect
                     auto &enemyWorker = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
@@ -302,7 +303,7 @@ namespace McRave::Scouts {
                         if (area.AccessibleNeighbours().size() == 0
                             || Terrain::isInEnemyTerritory(base.Location())
                             || Terrain::isInAllyTerritory(base.Location())
-                            || Actions::overlapsActions(unit.unit(), center, UnitTypes::None, PlayerState::Self))
+                            || Actions::overlapsActions(unit.unit(), center, None, PlayerState::Self))
                             continue;
 
                         int time = Grids::lastVisibleFrame(base.Location());
@@ -316,7 +317,7 @@ namespace McRave::Scouts {
 
             // Add Action so other Units dont move to same location
             if (unit.getDestination().isValid())
-                Actions::addAction(unit.unit(), unit.getDestination(), UnitTypes::None, PlayerState::Self);
+                Actions::addAction(unit.unit(), unit.getDestination(), None, PlayerState::Self);
         }
 
         void updatePath(UnitInfo& unit)
@@ -349,7 +350,7 @@ namespace McRave::Scouts {
 
             // Gas steal tester
             if (Broodwar->self()->getName() == "McRaveGasSteal" && Terrain::foundEnemy()) {
-                auto gas = Broodwar->getClosestUnit(Terrain::getEnemyStartingPosition(), Filter::GetType == UnitTypes::Resource_Vespene_Geyser);
+                auto gas = Broodwar->getClosestUnit(Terrain::getEnemyStartingPosition(), Filter::GetType == Resource_Vespene_Geyser);
                 Broodwar->drawLineMap(gas->getPosition(), unit.getPosition(), Colors::Red);
                 if (gas && gas->exists() && gas->getPosition().getDistance(Terrain::getEnemyStartingPosition()) < 320 && unit.getPosition().getDistance(Terrain::getEnemyStartingPosition()) < 160) {
                     if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Build)

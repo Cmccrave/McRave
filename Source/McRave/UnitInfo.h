@@ -45,6 +45,7 @@ namespace McRave {
         BWAPI::Unit bwUnit = nullptr;
         std::weak_ptr<UnitInfo> transport;
         std::weak_ptr<UnitInfo> target;
+        std::weak_ptr<UnitInfo> backupTarget;
         std::weak_ptr<ResourceInfo> resource;
 
         std::vector<std::weak_ptr<UnitInfo>> assignedCargo;
@@ -89,6 +90,7 @@ namespace McRave {
         bool hasResource()          { return !resource.expired(); }
         bool hasTransport()         { return !transport.expired(); }
         bool hasTarget()            { return !target.expired(); }
+        bool hasBackupTarget()      { return !backupTarget.expired(); }
         bool hasMovedArea()         { return lastTile.isValid() && tilePosition.isValid() && BWEM::Map::Instance().GetArea(lastTile) != BWEM::Map::Instance().GetArea(tilePosition); }
         bool hasAttackedRecently()  { return (BWAPI::Broodwar->getFrameCount() - lastAttackFrame < 50); }
         bool targetsFriendly()      { return type == BWAPI::UnitTypes::Terran_Medic || type == BWAPI::UnitTypes::Terran_Science_Vessel || type == BWAPI::UnitTypes::Zerg_Defiler; }
@@ -108,7 +110,9 @@ namespace McRave {
         bool isHealthy() {
             return (type.maxShields() > 0 && percentShield > LOW_SHIELD_PERCENT_LIMIT)
                 || (type.isMechanical() && percentHealth > LOW_MECH_PERCENT_LIMIT)
-                || (type.getRace() == BWAPI::Races::Zerg && percentHealth > LOW_BIO_PERCENT_LIMIT);
+                || (type.getRace() == BWAPI::Races::Zerg && percentHealth > LOW_BIO_PERCENT_LIMIT)
+                || (type == BWAPI::UnitTypes::Zerg_Zergling && Players::ZvP() && health > 16)
+                || (type == BWAPI::UnitTypes::Zerg_Zergling && Players::ZvT() && health > 10);
         }
         bool isRequestingPickup() {
             if (!hasTarget() || !hasTransport())
@@ -127,8 +131,8 @@ namespace McRave {
                 path.getTiles().empty() || path.getTiles().front() != here || path.getTiles().back() != getTilePosition();                      // ...path is empty or not the same
 
             const auto canCreatePath =
-                (getPosition().isValid() && here.isValid()								                                                        // ...both TilePositions are valid
-                    && !getType().isFlyer());											                                                        // ...unit is not a flyer
+                (getPosition().isValid() && here.isValid()                                                                                        // ...both TilePositions are valid
+                    && !getType().isFlyer());                                                                                                    // ...unit is not a flyer
 
             return shouldCreatePath && canCreatePath;
         }
@@ -190,6 +194,7 @@ namespace McRave {
         ResourceInfo &getResource() { return *resource.lock(); }
         UnitInfo &getTransport() { return *transport.lock(); }
         UnitInfo &getTarget() { return *target.lock(); }
+        UnitInfo &getBackupTarget() { return *backupTarget.lock(); }
 
         Role getRole() { return role; }
         BWAPI::Unit unit() { return bwUnit; }
@@ -249,6 +254,7 @@ namespace McRave {
         void setResource(ResourceInfo* unit) { unit ? resource = unit->weak_from_this() : resource.reset(); }
         void setTransport(UnitInfo* unit) { unit ? transport = unit->weak_from_this() : transport.reset(); }
         void setTarget(UnitInfo* unit) { unit ? target = unit->weak_from_this() : target.reset(); }
+        void setBackupTarget(UnitInfo* unit) { unit ? backupTarget = unit->weak_from_this() : backupTarget.reset(); }
         void setRole(Role newRole) { role = newRole; }
         void setType(BWAPI::UnitType newType) { type = newType; }
         void setBuildingType(BWAPI::UnitType newType) { buildingType = newType; }

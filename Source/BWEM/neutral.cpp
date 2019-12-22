@@ -30,114 +30,114 @@ using namespace BWAPI_ext;
 //////////////////////////////////////////////////////////////////////////////////////////////
 
 Neutral::Neutral(BWAPI::Unit u, Map * pMap)
-	: m_bwapiUnit(u), m_bwapiType(u->getType()), m_pMap(pMap),
-	m_pos(u->getInitialPosition()),
-	m_topLeft(u->getInitialTilePosition()),
-	m_size(u->getInitialType().tileSize())
+    : m_bwapiUnit(u), m_bwapiType(u->getType()), m_pMap(pMap),
+    m_pos(u->getInitialPosition()),
+    m_topLeft(u->getInitialTilePosition()),
+    m_size(u->getInitialType().tileSize())
 {
-	if (u->getType() == Special_Right_Pit_Door) ++m_topLeft.x;
+    if (u->getType() == Special_Right_Pit_Door) ++m_topLeft.x;
 
-	PutOnTiles();
+    PutOnTiles();
 }
 
 
 Neutral::~Neutral()
 {
-	try
-	{
-		RemoveFromTiles();
-	
-		if (Blocking())
-			MapImpl::Get(GetMap())->OnBlockingNeutralDestroyed(this);
-	}
-	catch(...)
-	{
-		bwem_assert(false);
-	}
+    try
+    {
+        RemoveFromTiles();
+    
+        if (Blocking())
+            MapImpl::Get(GetMap())->OnBlockingNeutralDestroyed(this);
+    }
+    catch(...)
+    {
+        bwem_assert(false);
+    }
 }
 
 
 TilePosition Neutral::BottomRight() const
 {
-	return m_topLeft + m_size - 1;
+    return m_topLeft + m_size - 1;
 }
 
 
 void Neutral::PutOnTiles()
 {
-	bwem_assert(!m_pNextStacked);
+    bwem_assert(!m_pNextStacked);
 
-	for (int dy = 0 ; dy < Size().y ; ++dy)
-	for (int dx = 0 ; dx < Size().x ; ++dx)
-	{
-		auto& tile = MapImpl::Get(GetMap())->GetTile_(TopLeft() + TilePosition(dx, dy));
-		if (!tile.GetNeutral()) tile.AddNeutral(this);
-		else
-		{
-			Neutral * pTop = tile.GetNeutral()->LastStacked();
-			if (pTop->TopLeft() != TopLeft() || pTop->BottomRight() != BottomRight()) continue;
-			bwem_assert(this != tile.GetNeutral());
-			bwem_assert(this != pTop);
-			bwem_assert(!pTop->IsGeyser());
-			bwem_assert_plus(pTop->Type() == Type(), "stacked neutrals have different types: " + pTop->Type().getName() + " / " + Type().getName());
-			bwem_assert_plus(pTop->TopLeft() == TopLeft(), "stacked neutrals not aligned: " + my_to_string(pTop->TopLeft()) + " / " + my_to_string(TopLeft()));
-			bwem_assert((dx == 0) && (dy == 0));
+    for (int dy = 0 ; dy < Size().y ; ++dy)
+    for (int dx = 0 ; dx < Size().x ; ++dx)
+    {
+        auto& tile = MapImpl::Get(GetMap())->GetTile_(TopLeft() + TilePosition(dx, dy));
+        if (!tile.GetNeutral()) tile.AddNeutral(this);
+        else
+        {
+            Neutral * pTop = tile.GetNeutral()->LastStacked();
+            if (pTop->TopLeft() != TopLeft() || pTop->BottomRight() != BottomRight()) continue;
+            bwem_assert(this != tile.GetNeutral());
+            bwem_assert(this != pTop);
+            bwem_assert(!pTop->IsGeyser());
+            bwem_assert_plus(pTop->Type() == Type(), "stacked neutrals have different types: " + pTop->Type().getName() + " / " + Type().getName());
+            bwem_assert_plus(pTop->TopLeft() == TopLeft(), "stacked neutrals not aligned: " + my_to_string(pTop->TopLeft()) + " / " + my_to_string(TopLeft()));
+            bwem_assert((dx == 0) && (dy == 0));
 
-			pTop->m_pNextStacked = this;
-			return;
-		}
-	}
+            pTop->m_pNextStacked = this;
+            return;
+        }
+    }
 }
 
 
 void Neutral::RemoveFromTiles()
 {
-	for (int dy = 0 ; dy < Size().y ; ++dy)
-	for (int dx = 0 ; dx < Size().x ; ++dx)
-	{
-		auto& tile = MapImpl::Get(GetMap())->GetTile_(TopLeft() + TilePosition(dx, dy));
-		bwem_assert(tile.GetNeutral());
+    for (int dy = 0 ; dy < Size().y ; ++dy)
+    for (int dx = 0 ; dx < Size().x ; ++dx)
+    {
+        auto& tile = MapImpl::Get(GetMap())->GetTile_(TopLeft() + TilePosition(dx, dy));
+        bwem_assert(tile.GetNeutral());
 
-		if (tile.GetNeutral() == this)
-		{
-			tile.RemoveNeutral(this);
-			if (m_pNextStacked) tile.AddNeutral(m_pNextStacked);
-		}
-		else
-		{
-			Neutral * pPrevStacked = tile.GetNeutral();
-			while (pPrevStacked->NextStacked() != this) pPrevStacked = pPrevStacked->NextStacked();
-			bwem_assert(pPrevStacked->Type() == Type());
-			bwem_assert(pPrevStacked->TopLeft() == TopLeft());
-			bwem_assert((dx == 0) && (dy == 0));
+        if (tile.GetNeutral() == this)
+        {
+            tile.RemoveNeutral(this);
+            if (m_pNextStacked) tile.AddNeutral(m_pNextStacked);
+        }
+        else
+        {
+            Neutral * pPrevStacked = tile.GetNeutral();
+            while (pPrevStacked->NextStacked() != this) pPrevStacked = pPrevStacked->NextStacked();
+            bwem_assert(pPrevStacked->Type() == Type());
+            bwem_assert(pPrevStacked->TopLeft() == TopLeft());
+            bwem_assert((dx == 0) && (dy == 0));
 
-			pPrevStacked->m_pNextStacked = m_pNextStacked;
-			m_pNextStacked = nullptr;
-			return;
-		}
-	}
+            pPrevStacked->m_pNextStacked = m_pNextStacked;
+            m_pNextStacked = nullptr;
+            return;
+        }
+    }
 
-	m_pNextStacked = nullptr;
+    m_pNextStacked = nullptr;
 }
 
 
 vector<const Area *> Neutral::BlockedAreas() const
 {
-	vector<const Area *> Result;
-	for (WalkPosition w : m_blockedAreas)
-		Result.push_back(GetMap()->GetArea(w));
+    vector<const Area *> Result;
+    for (WalkPosition w : m_blockedAreas)
+        Result.push_back(GetMap()->GetArea(w));
 
-	return Result;
+    return Result;
 }
 
 
 void Neutral::SetBlocking(const vector<WalkPosition> & blockedAreas)
 {
-	bwem_assert(m_blockedAreas.empty() && !blockedAreas.empty());
+    bwem_assert(m_blockedAreas.empty() && !blockedAreas.empty());
 
-	m_blockedAreas = blockedAreas;
+    m_blockedAreas = blockedAreas;
 }
-	
+    
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -148,12 +148,12 @@ void Neutral::SetBlocking(const vector<WalkPosition> & blockedAreas)
 
 
 Ressource::Ressource(BWAPI::Unit u, Map * pMap)
-	: Neutral(u, pMap),
-	m_initialAmount(u->getInitialResources())
+    : Neutral(u, pMap),
+    m_initialAmount(u->getInitialResources())
 {
-	bwem_assert(Type().isMineralField() || (Type() == Resource_Vespene_Geyser));
+    bwem_assert(Type().isMineralField() || (Type() == Resource_Vespene_Geyser));
 }
-	
+    
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -164,18 +164,18 @@ Ressource::Ressource(BWAPI::Unit u, Map * pMap)
 
 
 Mineral::Mineral(BWAPI::Unit u, Map * pMap)
-	: Ressource(u, pMap)
+    : Ressource(u, pMap)
 {
-	bwem_assert(Type().isMineralField());
+    bwem_assert(Type().isMineralField());
 }
 
 
 Mineral::~Mineral()
 {
-	MapImpl::Get(GetMap())->OnMineralDestroyed(this);
+    MapImpl::Get(GetMap())->OnMineralDestroyed(this);
 }
 
-	
+    
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -186,9 +186,9 @@ Mineral::~Mineral()
 
 
 Geyser::Geyser(BWAPI::Unit u, Map * pMap)
-	: Ressource(u, pMap)
+    : Ressource(u, pMap)
 {
-	bwem_assert(Type() == Resource_Vespene_Geyser);
+    bwem_assert(Type() == Resource_Vespene_Geyser);
 }
 
 
@@ -196,7 +196,7 @@ Geyser::~Geyser()
 {
 }
 
-	
+    
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -208,14 +208,14 @@ Geyser::~Geyser()
 
 StaticBuilding::StaticBuilding(BWAPI::Unit u, Map * pMap) : Neutral(u, pMap)
 {
-	bwem_assert(Type().isSpecialBuilding() ||
-				(Type() == Special_Pit_Door) ||
-				Type() == Special_Right_Pit_Door);
+    bwem_assert(Type().isSpecialBuilding() ||
+                (Type() == Special_Pit_Door) ||
+                Type() == Special_Right_Pit_Door);
 }
 
 
 
-	
+    
 } // namespace BWEM
 
 

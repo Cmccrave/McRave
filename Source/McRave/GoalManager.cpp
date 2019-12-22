@@ -2,6 +2,13 @@
 
 using namespace BWAPI;
 using namespace std;
+using namespace UnitTypes;
+
+namespace McRave {
+    enum class GoalType {
+        None, Contain, Explore // ...possible future improvements here for better goal positioning
+    };
+}
 
 namespace McRave::Goals {
 
@@ -9,47 +16,64 @@ namespace McRave::Goals {
 
         map<Position, int> goalFrameUpdate;
 
-        void assignNumberToGoal(Position here, UnitType type, int count)
+        void assignNumberToGoal(Position here, UnitType type, int count, GoalType gType = GoalType::None)
         {
-            // Only updates goals every 10 seconds to prevent indecisiveness
-            if (goalFrameUpdate[here] < Broodwar->getFrameCount() + 240)
-                return;
+            //// Only updates goals every 10 seconds to prevent indecisiveness
+            //if (goalFrameUpdate[here] < Broodwar->getFrameCount() + 240)
+            //    return;
             goalFrameUpdate[here] = Broodwar->getFrameCount();
 
             map<double, shared_ptr<UnitInfo>> unitByDist;
             map<UnitType, int> unitByType;
 
-            // Store units by distance if they have a matching type
-            for (auto &u : Units::getUnits(PlayerState::Self)) {
-                UnitInfo &unit = *u;
+            for (int current = 0; current < count; current++) {
+                shared_ptr<UnitInfo> closest;
+                if (type.isFlyer())
+                    closest = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) {
+                    return u.getType() == type && !u.getGoal().isValid();
+                });                
 
-                if (unit.getType() == type) {
-                    double dist = unit.getType().isFlyer() ? unit.getPosition().getDistance(here) : BWEB::Map::getGroundDistance(unit.getPosition(), here);
-                    unitByDist[dist] = u;
+                if (closest) {
+                    if (gType == GoalType::Contain)
+                        here = Util::getConcavePosition(*closest, mapBWEM.GetArea(TilePosition(here)));
+                    // else if (state == GoalState::Explore)
+                        // find unexplored tiles in the area?
+                    closest->setGoal(here);
                 }
             }
 
-            // Iterate through closest units
-            for (auto &u : unitByDist) {
-                UnitInfo &unit = *u.second;
-                if (count > 0 && !unit.getGoal().isValid()) {
-                    unit.setGoal(here);
-                    count--;
-                }
-            }
+            //// Store units by distance if they have a matching type
+            //for (auto &u : Units::getUnits(PlayerState::Self)) {
+            //    UnitInfo &unit = *u;
+
+            //    if (unit.getType() == type) {
+            //        double dist = unit.getType().isFlyer() ? unit.getPosition().getDistance(here) : BWEB::Map::getGroundDistance(unit.getPosition(), here);
+            //        unitByDist[dist] = u;
+            //    }
+            //}
+
+            //// Iterate through closest units
+            //for (auto &u : unitByDist) {
+            //    UnitInfo &unit = *u.second;
+            //    if (count > 0 && !unit.getGoal().isValid()) {
+            //        unit.setGoal(here);
+            //        count--;
+            //    }
+            //}
         }
 
-        void assignPercentToGoal(Position here, UnitType type, double percent)
+        void assignPercentToGoal(Position here, UnitType type, double percent, GoalType gType = GoalType::None)
         {
-            // Cap at 4
-            int count = min(4, int(percent * double(vis(type))));
-            assignNumberToGoal(here, type, count);
+            // Clamp between 1 and 4
+            int count = clamp(int(percent * double(vis(type))), 1, 4);
+            assignNumberToGoal(here, type, count, gType);
         }
 
         void updateProtossGoals()
         {
             map<UnitType, int> unitTypes;
             auto enemyStrength = Players::getStrength(PlayerState::Enemy);
+            auto myRace = Broodwar->self()->getRace();
 
             // Defend my expansions
             if (enemyStrength.groundToGround > 0) {
@@ -57,7 +81,7 @@ namespace McRave::Goals {
                     auto station = *s.second;
 
                     if (station.getBWEMBase()->Location() != BWEB::Map::getNaturalTile() && station.getBWEMBase()->Location() != BWEB::Map::getMainTile() && station.getGroundDefenseCount() == 0) {
-                        assignNumberToGoal(station.getBWEMBase()->Center(), UnitTypes::Protoss_Dragoon, 2);
+                        assignNumberToGoal(station.getBWEMBase()->Center(), Protoss_Dragoon, 2, GoalType::Contain);
                     }
                 }
             }
@@ -77,12 +101,12 @@ namespace McRave::Goals {
                     }
                 }
                 if (Players::vP())
-                    assignPercentToGoal(posBest, UnitTypes::Protoss_Dragoon, 0.15);
+                    assignPercentToGoal(posBest, Protoss_Dragoon, 0.15);
                 else
-                    assignPercentToGoal(posBest, UnitTypes::Protoss_Zealot, 0.15);
+                    assignPercentToGoal(posBest, Protoss_Zealot, 0.15);
             }
 
-            // Send a DT / Zealot squad to enemys furthest station
+            // Send a DT / Zealot + Goon squad to enemys furthest station
             // PvE
             if (Stations::getMyStations().size() >= 2) {
                 auto distBest = 0.0;
@@ -98,29 +122,31 @@ namespace McRave::Goals {
                     }
                 }
 
-                if (Actions::overlapsDetection(nullptr, posBest, PlayerState::Enemy) || vis(UnitTypes::Protoss_Dark_Templar) == 0) {
+                if (Actions::overlapsDetection(nullptr, posBest, PlayerState::Enemy) || vis(Protoss_Dark_Templar) == 0) {
                     if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) > 0)
-                        assignNumberToGoal(posBest, UnitTypes::Protoss_Zealot, 4);
+                        assignNumberToGoal(posBest, Protoss_Zealot, 4);
                     else
-                        assignNumberToGoal(posBest, UnitTypes::Protoss_Dragoon, 4);
+                        assignNumberToGoal(posBest, Protoss_Dragoon, 4);
                 }
                 else
-                    assignNumberToGoal(posBest, UnitTypes::Protoss_Dark_Templar, vis(UnitTypes::Protoss_Dark_Templar));
+                    assignNumberToGoal(posBest, Protoss_Dark_Templar, vis(Protoss_Dark_Templar));
             }
 
             // Secure our own future expansion position
             // PvE
             Position nextExpand(Buildings::getCurrentExpansion());
             if (nextExpand.isValid()) {
-                UnitType building = Broodwar->self()->getRace().getResourceDepot();
+
+                auto building = Broodwar->self()->getRace().getResourceDepot();
+
                 if (vis(building) >= 2 && BuildOrder::buildCount(building) > vis(building)) {
                     if (Players::vZ())
-                        assignPercentToGoal(nextExpand, UnitTypes::Protoss_Zealot, 0.15);
+                        assignPercentToGoal(nextExpand, Protoss_Zealot, 0.15);
                     else {
-                        assignPercentToGoal(nextExpand, UnitTypes::Protoss_Dragoon, 0.25);
+                        assignPercentToGoal(nextExpand, Protoss_Dragoon, 0.25);
                     }
 
-                    assignNumberToGoal(nextExpand, UnitTypes::Protoss_Observer, 1);
+                    assignNumberToGoal(nextExpand, Protoss_Observer, 1);
                 }
             }
 
@@ -130,23 +156,23 @@ namespace McRave::Goals {
                 for (auto &u : Units::getUnits(PlayerState::Self)) {
                     UnitInfo &unit = *u;
                     if (unit.getRole() == Role::Transport)
-                        assignPercentToGoal(unit.getPosition(), UnitTypes::Protoss_Corsair, 0.25);
+                        assignPercentToGoal(unit.getPosition(), Protoss_Corsair, 0.25);
                 }
             }
 
             // Deny enemy expansions
             // PvT
-            if (Stations::getMyStations().size() >= 3 && Terrain::getEnemyExpand().isValid() && Terrain::getEnemyExpand() != Buildings::getCurrentExpansion() && BWEB::Map::isUsed(Terrain::getEnemyExpand()) == UnitTypes::None) {
+            if (Stations::getMyStations().size() >= 3 && Terrain::getEnemyExpand().isValid() && Terrain::getEnemyExpand() != Buildings::getCurrentExpansion() && BWEB::Map::isUsed(Terrain::getEnemyExpand()) == None) {
                 if (Players::vT() || Players::vP())
-                    assignPercentToGoal((Position)Terrain::getEnemyExpand(), UnitTypes::Protoss_Dragoon, 0.15);
+                    assignPercentToGoal((Position)Terrain::getEnemyExpand(), Protoss_Dragoon, 0.15);
                 else
-                    assignNumberToGoal((Position)Terrain::getEnemyExpand(), UnitTypes::Protoss_Dark_Templar, 1);
+                    assignNumberToGoal((Position)Terrain::getEnemyExpand(), Protoss_Dark_Templar, 1);
             }
 
             // Defend our natural versus 2Fact
             // PvT
             if (Players::vT() && Strategy::enemyPressure() && !BuildOrder::isPlayPassive() && Broodwar->getFrameCount() < 15000) {
-                assignNumberToGoal(BWEB::Map::getNaturalPosition(), UnitTypes::Protoss_Dragoon, 2);
+                assignNumberToGoal(BWEB::Map::getNaturalPosition(), Protoss_Dragoon, 2);
             }
         }
 
@@ -157,15 +183,12 @@ namespace McRave::Goals {
 
         void updateZergGoals()
         {
-            //// Send lurkers to expansions when turtling		
-            //if (Broodwar->self()->getRace() == Races::Zerg && !Stations::getMyStations().empty()) {
-            //    auto lurkerPerBase = com(UnitTypes::Zerg_Lurker) / Stations::getMyStations().size();
-
-            //    for (auto &base : Stations::getMyStations()) {
-            //        auto station = *base.second;
-            //        assignPercentToGoal(station.getResourceCentroid(), UnitTypes::Zerg_Lurker, 0.25);
-            //    }
-            //}
+            Position nextExpand(Buildings::getCurrentExpansion());
+            if (nextExpand.isValid()) {
+                auto building = Broodwar->self()->getRace().getResourceDepot();
+                if (vis(building) >= 2 && BuildOrder::buildCount(building) > vis(building))
+                    assignNumberToGoal(nextExpand, Zerg_Overlord, 1);
+            }
         }
     }
 

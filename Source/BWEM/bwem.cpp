@@ -26,13 +26,13 @@ namespace detail {
 
 void onAssertThrowFailed(const std::string & file, int line, const std::string & condition, const std::string & message)
 {
-	unused(file);
-	unused(line);
-	unused(condition);
-	unused(message);
+    unused(file);
+    unused(line);
+    unused(condition);
+    unused(message);
 
-	assert(false);
-	throw Exception(file + ", line " + std::to_string(line) + " - " + message);
+    assert(false);
+    throw Exception(file + ", line " + std::to_string(line) + " - " + message);
 }
 
 } // namespace details

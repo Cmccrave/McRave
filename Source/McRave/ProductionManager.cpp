@@ -20,8 +20,8 @@ namespace McRave::Production {
 
         bool isAffordable(UnitType unit)
         {
-            auto mineralReserve = int(!BuildOrder::isTechUnit(unit)) * reservedMineral;
-            auto gasReserve = int(!BuildOrder::isTechUnit(unit)) * reservedGas;
+            auto mineralReserve = int(!BuildOrder::isTechUnit(unit) || !idleTech.empty() || !idleUpgrade.empty()) * reservedMineral;
+            auto gasReserve = int(!BuildOrder::isTechUnit(unit) || !idleTech.empty() || !idleUpgrade.empty()) * reservedGas;
             auto mineralAffordable = (Broodwar->self()->minerals() >= unit.mineralPrice() + Buildings::getQueuedMineral() + mineralReserve) || unit.mineralPrice() == 0;
             auto gasAffordable = (Broodwar->self()->gas() >= unit.gasPrice() + Buildings::getQueuedGas() + gasReserve) || unit.gasPrice() == 0;
             auto supplyAffordable = Players::getSupply(PlayerState::Self) + unit.supplyRequired() <= Broodwar->self()->supplyTotal();
@@ -187,10 +187,9 @@ namespace McRave::Production {
             }
 
             // Determine our templar caps
-            auto htCap = min(2 * (Players::getSupply(PlayerState::Self) / 100), Players::vP ? 4 : 8);
+            auto htCap = min(2 * (Players::getSupply(PlayerState::Self) / 100), Players::vP() ? 4 : 8);
 
-
-            if (Players::vP() && com(Protoss_Reaver) + com(Protoss_High_Templar) <= 2) {
+            if (!Strategy::needDetection() && Players::vP() && com(Protoss_Reaver) + com(Protoss_High_Templar) < 2) {
                 needShuttles = false;
                 needReavers = true;
             }
@@ -213,7 +212,7 @@ namespace McRave::Production {
             case Protoss_Reaver:
                 return needReavers;
             case Protoss_Observer:
-                return BuildOrder::isTechUnit(Protoss_Reaver) && Broodwar->getFrameCount() <= 13000 ? vis(unit) < 1 : vis(unit) < 1 + (Players::getSupply(PlayerState::Self) / 100);
+                return (Util::getTime() > Time(10,0) || Strategy::needDetection()) ? vis(unit) < 1 + (Players::getSupply(PlayerState::Self) / 100) : 0;
 
                 // Stargate Units
             case Protoss_Corsair:
@@ -233,9 +232,9 @@ namespace McRave::Production {
             case Terran_Medic:
                 return com(unit) * 4 < com(Terran_Marine);
             case Terran_Ghost:
-                return BuildOrder::getCurrentBuild() == "TNukeMemes";
+                return false;
             case Terran_Nuclear_Missile:
-                return BuildOrder::getCurrentBuild() == "TNukeMemes";
+                return false;
 
                 // Factory Units
             case Terran_Vulture:
@@ -247,9 +246,9 @@ namespace McRave::Production {
 
                 // Starport Units
             case Terran_Wraith:
-                return BuildOrder::getCurrentBuild() == "T2PortWraith";
+                return false;
             case Terran_Valkyrie:
-                return BuildOrder::getCurrentBuild() == "T2PortWraith";
+                return false;
             case Terran_Battlecruiser:
                 return true;
             case Terran_Science_Vessel:
@@ -351,7 +350,7 @@ namespace McRave::Production {
 
                     // Range upgrades
                 case Charon_Boosters:
-                    return Strategy::getUnitScore(Terran_Goliath) > 1.00;
+                    return vis(Terran_Goliath) > 0;
                 case U_238_Shells:
                     return Broodwar->self()->hasResearched(TechTypes::Stim_Packs);
 
@@ -586,7 +585,7 @@ namespace McRave::Production {
             reservedGas = 0;
 
             for (auto &[_, type] : idleProduction) {
-                if (BuildOrder::isTechUnit(type)) {
+                if (Broodwar->self()->getRace() != Races::Zerg && BuildOrder::isTechUnit(type)) {
                     reservedMineral += type.mineralPrice();
                     reservedGas += type.gasPrice();
                 }
@@ -668,7 +667,7 @@ namespace McRave::Production {
         gasCost = max(0.1, gasCost);
 
         const auto resourceScore = clamp(gasCost * mineralCost, 0.01, 1.0);
-        const auto strategyScore = clamp(Strategy::getUnitScore(type) / double(max(1, vis(type))), 0.01, 1.0);
+        const auto strategyScore = BuildOrder::getCompositionPercentage(type) / double(max(1, vis(type)));
 
         return resourceScore * strategyScore;
     }

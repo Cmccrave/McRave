@@ -13,7 +13,8 @@ namespace McRave::Terrain {
         Position enemyStartingPosition = Positions::Invalid;
         TilePosition enemyStartingTilePosition = TilePositions::Invalid;
         Position mineralHold, backMineralHold;
-        Position attackPosition, defendPosition;
+        Position defendPosition = Positions::Invalid;
+        Position attackPosition = Positions::Invalid;
         TilePosition enemyNatural = TilePositions::Invalid;
         TilePosition enemyExpand = TilePositions::Invalid;
         vector<Position> meleeChokePositions;
@@ -26,7 +27,7 @@ namespace McRave::Terrain {
         vector<UnitType> buildings;
         vector<UnitType> defenses;
         bool tight = true;
-        UnitType tightType = UnitTypes::None;
+        UnitType tightType = None;
 
         bool shitMap = false;
         bool islandMap = false;
@@ -86,11 +87,14 @@ namespace McRave::Terrain {
 
         void findEnemyNextExpand()
         {
+            if (!enemyStartingPosition.isValid())
+                return;
+
             double best = 0.0;
             for (auto &station : BWEB::Stations::getStations()) {
 
                 // If station is used
-                if (BWEB::Map::isUsed(station.getBWEMBase()->Location()) != UnitTypes::None
+                if (BWEB::Map::isUsed(station.getBWEMBase()->Location()) != None
                     || enemyStartingTilePosition == station.getBWEMBase()->Location()
                     || !station.getBWEMBase()->GetArea()->AccessibleFrom(BWEB::Map::getMainArea()))
                     continue;
@@ -209,7 +213,7 @@ namespace McRave::Terrain {
 
                 // Check to see if we have a wall
                 else if (naturalWall && BuildOrder::isWallNat()) {
-                    Position opening(naturalWall->getOpening());
+                    Position opening(naturalWall->inOpeningBook());
                     defendPosition = opening.isValid() ? opening : naturalWall->getCentroid();
                 }
 
@@ -237,7 +241,7 @@ namespace McRave::Terrain {
 
             // Main defending
             else if (mainWall && BuildOrder::isWallMain()) {
-                Position opening(mainWall->getOpening());
+                Position opening(mainWall->inOpeningBook());
                 defendPosition = opening.isValid() ? opening : mainWall->getCentroid();
             }
             else {
@@ -275,6 +279,17 @@ namespace McRave::Terrain {
             auto area = BWEB::Map::getNaturalArea();
 
             naturalWall = BWEB::Walls::createWall(buildings, area, choke, tightType, defenses, openWall, tight);
+
+            if (!naturalWall && Broodwar->self()->getRace() == Races::Zerg) {
+                choke = BWEB::Map::getMainChoke();
+                buildings ={ Zerg_Hatchery };
+                naturalWall = BWEB::Walls::createWall(buildings, area, choke, tightType, defenses, openWall, tight);
+            }
+            if (!naturalWall && Broodwar->self()->getRace() == Races::Zerg) {
+                choke = BWEB::Map::getMainChoke();
+                buildings ={ Zerg_Evolution_Chamber };
+                naturalWall = BWEB::Walls::createWall(buildings, area, choke, tightType, defenses, openWall, tight);
+            }
         }
 
         void findMainWall()
@@ -314,7 +329,7 @@ namespace McRave::Terrain {
                         }
                     }
 
-                    BWEB::Walls::createWall(buildings, &area, bestChoke, UnitTypes::None, defenses, true, false);
+                    BWEB::Walls::createWall(buildings, &area, bestChoke, None, defenses, true, false);
 
                     if (&area == BWEB::Map::getNaturalArea())
                         naturalWall = BWEB::Walls::getWall(BWEB::Map::getNaturalArea());
@@ -326,11 +341,11 @@ namespace McRave::Terrain {
         {
             // Figure out what we need to be tight against
             if (Broodwar->self()->getRace() == Races::Terran && Players::vP())
-                tightType = UnitTypes::Protoss_Zealot;
+                tightType = Protoss_Zealot;
             else if (Players::vZ())
-                tightType = UnitTypes::Zerg_Zergling;
+                tightType = Zerg_Zergling;
             else
-                tightType = UnitTypes::None;
+                tightType = None;
 
             // Protoss wall parameters
             if (Broodwar->self()->getRace() == Races::Protoss) {
@@ -356,14 +371,14 @@ namespace McRave::Terrain {
             // Zerg wall parameters
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 tight = false;
-                buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber };
+                buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber };
                 defenses.insert(defenses.end(), 8, Zerg_Creep_Colony);
             }
 
             // Map specific criteria
             if (Broodwar->mapFileName().find("Destination") != string::npos || Broodwar->mapFileName().find("Hitchhiker") != string::npos || Broodwar->mapFileName().find("Python") != string::npos || Broodwar->mapFileName().find("BlueStorm") != string::npos) {
                 tight = false;
-                tightType = UnitTypes::None;
+                tightType = None;
             }
         }
 
@@ -419,7 +434,7 @@ namespace McRave::Terrain {
         if (Broodwar->mapFileName().find("Alchemist") != string::npos)
             shitMap = true;
 
-        // Store non island bases	
+        // Store non island bases    
         for (auto &area : mapBWEM.Areas()) {
             if (!islandMap && area.AccessibleNeighbours().size() == 0)
                 continue;

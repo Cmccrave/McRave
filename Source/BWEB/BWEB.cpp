@@ -20,10 +20,81 @@ namespace BWEB::Map
 
         map<BWAPI::Key, bool> lastKeyState;
         map<const BWEM::ChokePoint *, set<TilePosition>> chokeTiles;
+        map<const BWEM::ChokePoint *, pair<Position, Position>> chokeLines;
 
         int overlapGrid[256][256] ={};
         UnitType usedGrid[256][256] ={};
         bool walkGrid[256][256] ={};
+
+        void findLines()
+        {
+            for (auto &area : mapBWEM.Areas()) {
+                for (auto &choke : area.ChokePoints()) {
+                    Position p1, p2;
+                    int minX= INT_MAX, maxX = INT_MIN, minY = INT_MAX, maxY = INT_MIN;
+                    double sumX = 0, sumY = 0;
+                    double sumXY = 0, sumX2 = 0, sumY2 = 0;
+                    for (auto geo : choke->Geometry()) {
+                        if (geo.x < minX) minX = geo.x;
+                        if (geo.y < minY) minY = geo.y;
+                        if (geo.x > maxX) maxX = geo.x;
+                        if (geo.y > maxY) maxY = geo.y;
+
+                        BWAPI::Position p = BWAPI::Position(geo) + BWAPI::Position(4, 4);
+                        sumX += p.x;
+                        sumY += p.y;
+                        sumXY += p.x * p.y;
+                        sumX2 += p.x * p.x;
+                        sumY2 += p.y * p.y;
+                        //BWAPI::Broodwar->drawBoxMap(BWAPI::Position(geo), BWAPI::Position(geo) + BWAPI::Position(9, 9), BWAPI::Colors::Black);
+                    }
+                    double xMean = sumX / choke->Geometry().size();
+                    double yMean = sumY / choke->Geometry().size();
+                    double denominator, slope, yInt;
+                    if ((maxY - minY) > (maxX - minX))
+                    {
+                        denominator = (sumXY - sumY * xMean);
+                        // handle vertical line error
+                        if (std::fabs(denominator) < 1.0) {
+                            slope = 0;
+                            yInt = xMean;
+                        }
+                        else {
+                            slope = (sumY2 - sumY * yMean) / denominator;
+                            yInt = yMean - slope * xMean;
+                        }
+                    }
+                    else {
+                        denominator = sumX2 - sumX * xMean;
+                        // handle vertical line error
+                        if (std::fabs(denominator) < 1.0) {
+                            slope = DBL_MAX;
+                            yInt = 0;
+                        }
+                        else {
+                            slope = (sumXY - sumX * yMean) / denominator;
+                            yInt = yMean - slope * xMean;
+                        }
+                    }
+
+
+                    int x1 = Position(choke->Pos(choke->end1)).x;
+                    int y1 = int(ceil(x1 * slope)) + int(yInt);
+                    p1 = Position(x1, y1);
+
+                    int x2 = Position(choke->Pos(choke->end2)).x;
+                    int y2 = int(ceil(x2 * slope)) + int(yInt);
+                    p2 = Position(x2, y2);
+
+                    // In case we failed
+                    if (p1 == p2 || !p1.isValid() || !p2.isValid()) {
+                        p1 = Position(choke->Pos(choke->end1));
+                        p2 = Position(choke->Pos(choke->end2));
+                    }
+                    chokeLines[choke] = make_pair(p1, p2);
+                }
+            }
+        }
 
         void findMain()
         {
@@ -233,6 +304,7 @@ namespace BWEB::Map
         findNatural();
         findMainChoke();
         findNaturalChoke();
+        findLines();
     }
 
     void onUnitDiscover(const Unit unit)
@@ -552,68 +624,9 @@ namespace BWEB::Map
 
     pair<Position, Position> lineOfBestFit(const BWEM::ChokePoint * choke)
     {
-        Position p1, p2;
-        int minX= INT_MAX, maxX = INT_MIN, minY = INT_MAX, maxY = INT_MIN;
-        double sumX = 0, sumY = 0;
-        double sumXY = 0, sumX2 = 0, sumY2 = 0;
-        for (auto geo : choke->Geometry()) {
-            if (geo.x < minX) minX = geo.x;
-            if (geo.y < minY) minY = geo.y;
-            if (geo.x > maxX) maxX = geo.x;
-            if (geo.y > maxY) maxY = geo.y;
-
-            BWAPI::Position p = BWAPI::Position(geo) + BWAPI::Position(4, 4);
-            sumX += p.x;
-            sumY += p.y;
-            sumXY += p.x * p.y;
-            sumX2 += p.x * p.x;
-            sumY2 += p.y * p.y;
-            //BWAPI::Broodwar->drawBoxMap(BWAPI::Position(geo), BWAPI::Position(geo) + BWAPI::Position(9, 9), BWAPI::Colors::Black);
-        }
-        double xMean = sumX / choke->Geometry().size();
-        double yMean = sumY / choke->Geometry().size();
-        double denominator, slope, yInt;
-        if ((maxY - minY) > (maxX - minX))
-        {
-            denominator = (sumXY - sumY * xMean);
-            // handle vertical line error
-            if (std::fabs(denominator) < 1.0) {
-                slope = 0;
-                yInt = xMean;
-            }
-            else {
-                slope = (sumY2 - sumY * yMean) / denominator;
-                yInt = yMean - slope * xMean;
-            }
-        }
-        else {
-            denominator = sumX2 - sumX * xMean;
-            // handle vertical line error
-            if (std::fabs(denominator) < 1.0) {
-                slope = DBL_MAX;
-                yInt = 0;
-            }
-            else {
-                slope = (sumXY - sumX * yMean) / denominator;
-                yInt = yMean - slope * xMean;
-            }
-        }
-
-
-        int x1 = Position(choke->Pos(choke->end1)).x;
-        int y1 = int(ceil(x1 * slope)) + int(yInt);
-        p1 = Position(x1, y1);
-
-        int x2 = Position(choke->Pos(choke->end2)).x;
-        int y2 = int(ceil(x2 * slope)) + int(yInt);
-        p2 = Position(x2, y2);
-
-        // In case we failed
-        if (p1 == p2 || !p1.isValid() || !p2.isValid()) {
-            p1 = Position(choke->Pos(choke->end1));
-            p2 = Position(choke->Pos(choke->end2));
-        }
-        return make_pair(p1, p2);
+        if (choke)
+            return chokeLines[choke];
+        return {};
     }
 
     pair<Position, Position> perpendicularLine(pair<Position, Position> points, double length)
@@ -636,7 +649,7 @@ namespace BWEB::Map
         for (auto x = location.x; x < location.x + type.tileWidth(); x++) {
 
             if (creepCheck) {
-                TilePosition tile(x, location.y + 2);
+                TilePosition tile(x, location.y + 1);
                 if (!Broodwar->isBuildable(tile))
                     return false;
             }
@@ -647,7 +660,6 @@ namespace BWEB::Map
                     || !Broodwar->isBuildable(tile)
                     || !Broodwar->isWalkable(WalkPosition(tile))
                     || Map::isUsed(tile) != UnitTypes::None
-                    || (!type.requiresCreep() && Broodwar->hasCreep(tile))
                     || (type.isResourceDepot() && !Broodwar->canBuildHere(tile, type)))
                     return false;
             }

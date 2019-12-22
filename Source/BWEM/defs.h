@@ -20,29 +20,29 @@ namespace BWEM
 
 namespace detail
 {
-	void onAssertThrowFailed(const std::string & file, int line, const std::string & condition, const std::string & message);
+    void onAssertThrowFailed(const std::string & file, int line, const std::string & condition, const std::string & message);
 
 } // namespace details
 
-#define bwem_assert_debug_only(expr)			;//assert(expr)
-#define bwem_assert_plus(expr, message)			;//assert(expr)
-#define bwem_assert(expr)						;//bwem_assert_plus(expr, "")
+#define bwem_assert_debug_only(expr)            ;//assert(expr)
+#define bwem_assert_plus(expr, message)            ;//assert(expr)
+#define bwem_assert(expr)                        ;//bwem_assert_plus(expr, "")
 #define bwem_assert_throw_plus(expr, message)   ;//((expr)?(void)0:detail::onAssertThrowFailed(__FILE__,__LINE__, #expr, message))
-#define bwem_assert_throw(expr)					;//bwem_assert_throw_plus(expr, "")
+#define bwem_assert_throw(expr)                    ;//bwem_assert_throw_plus(expr, "")
 
 
-#define BWEM_USE_WINUTILS 1		// enable(1) or disable(0) the compilation of winutils.cpp
-								// winutils.h provides optional utils that require the windows headers.
+#define BWEM_USE_WINUTILS 1        // enable(1) or disable(0) the compilation of winutils.cpp
+                                // winutils.h provides optional utils that require the windows headers.
 
-#define BWEM_USE_MAP_PRINTER 1	// enable(1) or disable(0) the compilation of mapPrinter.cpp
-								// mapPrinter.h provides optional utils that require the EasyBMP Library (windows).
+#define BWEM_USE_MAP_PRINTER 1    // enable(1) or disable(0) the compilation of mapPrinter.cpp
+                                // mapPrinter.h provides optional utils that require the EasyBMP Library (windows).
 
 
 class Exception : public std::runtime_error
 {
 public:
-	explicit                Exception(const char * message) : std::runtime_error(message) {}
-	explicit                Exception(const std::string & message) : Exception(message.c_str()) {}
+    explicit                Exception(const char * message) : std::runtime_error(message) {}
+    explicit                Exception(const std::string & message) : Exception(message.c_str()) {}
 };
 
 
@@ -51,7 +51,7 @@ public:
 
 
 
-typedef int16_t altitude_t;		// type of the altitudes, in pixels
+typedef int16_t altitude_t;        // type of the altitudes, in pixels
 
 
 

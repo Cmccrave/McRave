@@ -128,7 +128,8 @@ namespace McRave::Util {
 
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, BWAPI::Position);
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, int, int);
-    bool isWalkable(UnitInfo&, BWAPI::WalkPosition);
+    bool isTightWalkable(UnitInfo&, BWAPI::WalkPosition);
+    bool isLooseWalkable(UnitInfo&, BWAPI::WalkPosition);
 
     BWAPI::Position getConcavePosition(UnitInfo&, BWEM::Area const * area = nullptr, BWAPI::Position here = BWAPI::Positions::Invalid);
     BWAPI::Position getInterceptPosition(UnitInfo&);

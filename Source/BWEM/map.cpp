@@ -28,14 +28,14 @@ namespace utils {
 
 bool seaSide(WalkPosition p, const Map * pMap)
 {
-	if (!pMap->GetMiniTile(p).Sea()) return false;
+    if (!pMap->GetMiniTile(p).Sea()) return false;
 
-	for (WalkPosition delta : {WalkPosition(0, -1), WalkPosition(-1, 0), WalkPosition(+1, 0), WalkPosition(0, +1)})
-		if (pMap->Valid(p + delta))
-			if (!pMap->GetMiniTile(p + delta, check_t::no_check).Sea())
-				return true;
+    for (WalkPosition delta : {WalkPosition(0, -1), WalkPosition(-1, 0), WalkPosition(+1, 0), WalkPosition(0, +1)})
+        if (pMap->Valid(p + delta))
+            if (!pMap->GetMiniTile(p + delta, check_t::no_check).Sea())
+                return true;
 
-	return false;
+    return false;
 }
 
 } // namespace utils
@@ -52,49 +52,49 @@ Map* Map::m_gInstance = nullptr;
 
 Map & Map::Instance()
 {
-	if (!m_gInstance) m_gInstance = new MapImpl();
+    if (!m_gInstance) m_gInstance = new MapImpl();
 
-	return *m_gInstance;
+    return *m_gInstance;
 }
 
 
 Position Map::RandomPosition() const
 {
-	const auto PixelSize = Position(Size());
-	return Position(rand() % PixelSize.x, rand() % PixelSize.y);
+    const auto PixelSize = Position(Size());
+    return Position(rand() % PixelSize.x, rand() % PixelSize.y);
 }
 
 
 template<class TPosition>
 TPosition crop(const TPosition & p, int siseX, int sizeY)
 {
-	TPosition res = p;
+    TPosition res = p;
 
-	if		(res.x < 0)			res.x = 0;
-	else if (res.x >= siseX)	res.x = siseX-1;
+    if        (res.x < 0)            res.x = 0;
+    else if (res.x >= siseX)    res.x = siseX-1;
 
-	if		(res.y < 0)			res.y = 0;
-	else if (res.y >= sizeY)	res.y = sizeY-1;
+    if        (res.y < 0)            res.y = 0;
+    else if (res.y >= sizeY)    res.y = sizeY-1;
 
-	return res;
+    return res;
 }
 
 
 TilePosition Map::Crop(const TilePosition & p) const
 {
-	return crop(p, Size().x, Size().y);
+    return crop(p, Size().x, Size().y);
 }
 
 
 WalkPosition Map::Crop(const WalkPosition & p) const
 {
-	return crop(p, WalkSize().x, WalkSize().y);
+    return crop(p, WalkSize().x, WalkSize().y);
 }
 
 
 Position Map::Crop(const Position & p) const
 {
-	return crop(p, 32*Size().x, 32*Size().y);
+    return crop(p, 32*Size().x, 32*Size().y);
 }
 
 

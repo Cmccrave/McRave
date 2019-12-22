@@ -15,13 +15,13 @@
 // Shuttles don't consider static defenses when decided engage/retreat
 // Change storms to care more about multi target rather than score
 // Test vs all Zerg rushes
-
-// ** Biggest issues **
+// Cannon detection action range too large
+// 2gate robo slow 2nd gas issue
+// 10/15 defensive reaction lost to BBS
 // Cannon cancelling to save money
-// Forming concave takes units too long
 // Stupid probes keep blocking cannons, forced gather doesnt work
-// Stuck probes between minerals/workers slow builds
-// Lock in the build at some point, it's somehow backing out and screwing up learning
+// Scout denial with Zealot
+// 2Gate might not be reserving properly for proxies
 
 using namespace BWAPI;
 using namespace std;

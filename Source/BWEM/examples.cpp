@@ -29,11 +29,11 @@ using namespace BWAPI_ext;
 
 namespace utils
 {
-	
+    
 
 struct SimplegridMapCell
 {
-	vector<Unit>		Units;
+    vector<Unit>        Units;
 };
 
 
@@ -41,74 +41,74 @@ struct SimplegridMapCell
 class SimplegridMap : public gridMap<SimplegridMapCell, 8>
 {
 public:
-						SimplegridMap(const Map * pMap) : gridMap(pMap) {}
+                        SimplegridMap(const Map * pMap) : gridMap(pMap) {}
 
-	void				Add(Unit unit);
-	void				Remove(Unit unit);
+    void                Add(Unit unit);
+    void                Remove(Unit unit);
 
-	vector<Unit>		GetUnits(TilePosition topLeft, TilePosition bottomRight, Player player) const;
+    vector<Unit>        GetUnits(TilePosition topLeft, TilePosition bottomRight, Player player) const;
 };
 
 
 void SimplegridMap::Add(Unit unit)
 {
-	auto& List = GetCell(TilePosition(unit->getPosition())).Units;
+    auto& List = GetCell(TilePosition(unit->getPosition())).Units;
 
-	if (!contains(List, unit)) List.push_back(unit);
+    if (!contains(List, unit)) List.push_back(unit);
 }
 
 
 void SimplegridMap::Remove(Unit unit)
 {
-	auto& List = GetCell(TilePosition(unit->getPosition())).Units;
+    auto& List = GetCell(TilePosition(unit->getPosition())).Units;
 
-	really_remove(List, unit);
+    really_remove(List, unit);
 }
 
 
 vector<Unit> SimplegridMap::GetUnits(TilePosition topLeft, TilePosition bottomRight, Player player) const
 {
-	vector<Unit> Res;
+    vector<Unit> Res;
 
-	int i1, j1, i2, j2;
-	tie(i1, j1) = GetCellCoords(topLeft);
-	tie(i2, j2) = GetCellCoords(bottomRight);
+    int i1, j1, i2, j2;
+    tie(i1, j1) = GetCellCoords(topLeft);
+    tie(i2, j2) = GetCellCoords(bottomRight);
 
-	for (int j = j1 ; j <= j2 ; ++j)
-	for (int i = i1 ; i <= i2 ; ++i)
-		for (Unit unit : GetCell(i, j).Units)
-			if (unit->getPlayer() == player)
-				if (BWAPI_ext::inBoundingBox(TilePosition(unit->getPosition()), topLeft, bottomRight))
-					Res.push_back(unit);
+    for (int j = j1 ; j <= j2 ; ++j)
+    for (int i = i1 ; i <= i2 ; ++i)
+        for (Unit unit : GetCell(i, j).Units)
+            if (unit->getPlayer() == player)
+                if (BWAPI_ext::inBoundingBox(TilePosition(unit->getPosition()), topLeft, bottomRight))
+                    Res.push_back(unit);
 
-	return Res;
+    return Res;
 }
 
 
 void gridMapExample(const Map & theMap)
 {
 
-	// 1) Initialization
-	SimplegridMap GridManager(&theMap);
+    // 1) Initialization
+    SimplegridMap GridManager(&theMap);
 
-	//  Note: generally, you will create one instance of gridMap, after calling Map::Instance().Initialize().
-	
-	
-	// 2) Update (in AIModule::onFrame)
-	for (int j = 0 ; j < GridManager.Height() ; ++j)
-	for (int i = 0 ; i < GridManager.Width() ; ++i)
-		GridManager.GetCell(i, j).Units.clear();
+    //  Note: generally, you will create one instance of gridMap, after calling Map::Instance().Initialize().
+    
+    
+    // 2) Update (in AIModule::onFrame)
+    for (int j = 0 ; j < GridManager.Height() ; ++j)
+    for (int i = 0 ; i < GridManager.Width() ; ++i)
+        GridManager.GetCell(i, j).Units.clear();
 
-	for (Unit unit : Broodwar->getAllUnits())
-		GridManager.Add(unit);
+    for (Unit unit : Broodwar->getAllUnits())
+        GridManager.Add(unit);
 
-	//  Note: alternatively, you could use the Remove and Add methods only, in the relevant BWAPI::AIModule methods.
+    //  Note: alternatively, you could use the Remove and Add methods only, in the relevant BWAPI::AIModule methods.
 
 
-	// 3) Use
-	TilePosition centerTile(theMap.Center());
-	for (Unit unit : GridManager.GetUnits(centerTile-10, centerTile+10, Broodwar->self()))
-		Broodwar << "My " << unit->getType().getName() << " #" << unit->getID() << " is near the center of the map." << endl;
+    // 3) Use
+    TilePosition centerTile(theMap.Center());
+    for (Unit unit : GridManager.GetUnits(centerTile-10, centerTile+10, Broodwar->self()))
+        Broodwar << "My " << unit->getType().getName() << " #" << unit->getID() << " is near the center of the map." << endl;
 }
 
 

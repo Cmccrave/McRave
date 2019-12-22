@@ -118,7 +118,8 @@ namespace McRave::Transports {
                     return false;
 
                 const auto range = cargo.getTarget().getType().isFlyer() ? cargo.getAirRange() : cargo.getGroundRange();
-                const auto targetDist = cargo.getType() == Protoss_High_Templar ? cargo.getPosition().getDistance(cargo.getTarget().getPosition()) : BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getTarget().getPosition());
+                //const auto targetDist = cargo.getType() == Protoss_High_Templar ? cargo.getPosition().getDistance(cargo.getTarget().getPosition()) : BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getTarget().getPosition());
+                const auto targetDist = cargo.getPosition().getDistance(cargo.getTarget().getPosition());
 
                 return targetDist == DBL_MAX || targetDist <= range;
             };
@@ -129,7 +130,8 @@ namespace McRave::Transports {
                     return false;
 
                 const auto range = cargo.getTarget().getType().isFlyer() ? cargo.getAirRange() : cargo.getGroundRange();
-                const auto targetDist = cargo.getType() == Protoss_High_Templar ? cargo.getPosition().getDistance(cargo.getTarget().getPosition()) : BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getTarget().getPosition());
+                //const auto targetDist = cargo.getType() == Protoss_High_Templar ? cargo.getPosition().getDistance(cargo.getTarget().getPosition()) : BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getTarget().getPosition());
+                const auto targetDist = cargo.getPosition().getDistance(cargo.getTarget().getPosition());
 
                 return targetDist >= range + 96.0;
             };
@@ -181,7 +183,7 @@ namespace McRave::Transports {
                 // If the cargo is not loaded
                 if (!cargo.unit()->isLoaded()) {
 
-                    // If it's requesting a pickup, set load state to 1	
+                    // If it's requesting a pickup, set load state to 1    
                     if (readyToLoad(cargo)) {
                         setState(TransportState::Loading);
                         unit.setDestination(cargo.getPosition());
@@ -241,8 +243,8 @@ namespace McRave::Transports {
 
         void updateDecision(UnitInfo& unit)
         {
-            if (!unit.unit() || !unit.unit()->exists()																							// Prevent crashes
-                || unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())	// If the unit is locked down, maelstrommed, stassised, or not completed
+            if (!unit.unit() || !unit.unit()->exists()                                                                                            // Prevent crashes
+                || unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())    // If the unit is locked down, maelstrommed, stassised, or not completed
                 return;
 
             // Convert our commands to strings to display what the unit is doing for debugging

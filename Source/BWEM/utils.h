@@ -41,25 +41,25 @@ template <class T> void unused(const T &) {}
 
 inline int queenWiseNorm(int dx, int dy)
 {
-	return std::max(abs(dx), abs(dy));
+    return std::max(abs(dx), abs(dy));
 }
 
 
 inline int squaredNorm(int dx, int dy)
 {
-	return dx*dx + dy*dy;
+    return dx*dx + dy*dy;
 }
 
 
 inline double norm(int dx, int dy)
 {
-	return sqrt(squaredNorm(dx, dy));
+    return sqrt(squaredNorm(dx, dy));
 }
 
 
 inline int scalar_product(int ax, int ay, int bx, int by)
 {
-	return ax*bx + ay*by;
+    return ax*bx + ay*by;
 }
 
 
@@ -81,18 +81,18 @@ std::string my_to_string(const T & value)
 template<class T>
 T string_to_value(const std::string & s)
 {
-	std::istringstream iss(s);
-	T res;
-	iss >> res;
-	return res;
+    std::istringstream iss(s);
+    T res;
+    iss >> res;
+    return res;
 }
 
 
 template<typename T>
 bool from_string(const std::string & s, T & dest)
 {
-	std::istringstream iss(s);
-	return !(iss >> dest).fail();
+    std::istringstream iss(s);
+    return !(iss >> dest).fail();
 }
 
 
@@ -116,11 +116,11 @@ I random_element(I begin, I end)
     const auto n = std::distance(begin, end);
     const auto divisor = (RAND_MAX + 1) / n;
 
-	typename std::remove_const<decltype(n)>::type k;
+    typename std::remove_const<decltype(n)>::type k;
     do { k = std::rand() / divisor; } while (k >= n);
 
     std::advance(begin, k);
-	return begin;
+    return begin;
 }
 
 
@@ -130,17 +130,17 @@ inline const typename T::value_type & random_element(const T & Container)
     const auto n = Container.size();
     const auto divisor = (RAND_MAX + 1) / n;
 
-	typename std::remove_const<decltype(n)>::type k;
+    typename std::remove_const<decltype(n)>::type k;
     do { k = std::rand() / divisor; } while (k >= n);
 
-	return Container[k];
+    return Container[k];
 }
 
 
 template<class T>
 inline typename T::value_type & random_element(T & Container)
 {
-	return const_cast<typename T::value_type &>(random_element(static_cast<const T &>(Container)));
+    return const_cast<typename T::value_type &>(random_element(static_cast<const T &>(Container)));
 }
 
 
@@ -170,10 +170,10 @@ inline bool contains(const T & Container, const E & Element)
 template<class T>
 inline void fast_erase(std::vector<T> & Vector, int i)
 {
-	bwem_assert((0 <= i) && (i < (int)Vector.size()));
+    bwem_assert((0 <= i) && (i < (int)Vector.size()));
 
-	std::swap(Vector[i], Vector.back());
-	Vector.pop_back();
+    std::swap(Vector[i], Vector.back());
+    Vector.pop_back();
 }
 
 
@@ -232,32 +232,32 @@ Mark Markable<Derived, Mark>::m_currentMark = 0;
 //////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  Provides free-to-use, intrusive data for several types of the BWEM library
-//	Despite their names and their types, they can be used for any purpose.
+//    Despite their names and their types, they can be used for any purpose.
 //
 
 class UserData
 {
 public:
-	// Free use.
-	int					Data() const					{ return m_data; }
-	void				SetData(int data) const			{ m_data = data; }
+    // Free use.
+    int                    Data() const                    { return m_data; }
+    void                SetData(int data) const            { m_data = data; }
 
-	// Free use.
-	void *				Ptr() const						{ return m_ptr; }
-	void				SetPtr(void * p) const			{ m_ptr = p; }
+    // Free use.
+    void *                Ptr() const                        { return m_ptr; }
+    void                SetPtr(void * p) const            { m_ptr = p; }
 
-	// Free use.
-	void *				Ext() const						{ return m_ext; }
-	void				SetExt(void * p) const			{ m_ext = p; }
+    // Free use.
+    void *                Ext() const                        { return m_ext; }
+    void                SetExt(void * p) const            { m_ext = p; }
 
 protected:
-						UserData() = default;
-						UserData(const UserData &) = default;
+                        UserData() = default;
+                        UserData(const UserData &) = default;
 
 private:
-	mutable void *		m_ptr = nullptr;
-	mutable void *		m_ext = nullptr;
-	mutable int			m_data = 0;
+    mutable void *        m_ptr = nullptr;
+    mutable void *        m_ext = nullptr;
+    mutable int            m_data = 0;
 };
 
 

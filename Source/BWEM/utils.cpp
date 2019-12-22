@@ -24,9 +24,9 @@ namespace utils {
 
 bool canWrite(const string & fileName)
 {
-	ofstream out(fileName);
-	out.close();
-	return !out.fail();
+    ofstream out(fileName);
+    out.close();
+    return !out.fail();
 }
 
 
@@ -61,7 +61,7 @@ static bool get_line_intersection(double p0_x, double p0_y, double p1_x, double 
 
 bool intersect(int ax, int ay, int bx, int by, int cx, int cy, int dx, int dy)
 {
-	return get_line_intersection(ax, ay, bx, by, cx, cy, dx, dy);
+    return get_line_intersection(ax, ay, bx, by, cx, cy, dx, dy);
 }
 
 

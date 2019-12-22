@@ -30,4 +30,12 @@ namespace McRave::Players
     bool PvP();
     bool PvZ();
     bool PvT();
+
+    bool TvP();
+    bool TvZ();
+    bool TvT();
+
+    bool ZvP();
+    bool ZvZ();
+    bool ZvT();
 }

@@ -73,10 +73,8 @@ namespace McRave::Resources {
                 updateIncome(r);
             };
 
-            for (auto &r : myBoulders) {
-                update(r);
-                Broodwar->drawCircleMap(r->getPosition(), 4, Colors::Grey);
-            }
+            for (auto &r : myBoulders)
+                update(r);            
 
             for (auto &r : myMinerals)
                 update(r);

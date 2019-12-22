@@ -2,6 +2,7 @@
 
 using namespace BWAPI;
 using namespace std;
+using namespace UnitTypes;
 
 namespace McRave::Actions {
 
@@ -55,7 +56,7 @@ namespace McRave::Actions {
                         addAction(unit.unit(), enemyTarget, TechTypes::Psionic_Storm, PlayerState::Neutral);
                 }
 
-                if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine)
+                if (unit.getType() == Terran_Vulture_Spider_Mine)
                     addAction(unit.unit(), unit.getPosition(), TechTypes::Spider_Mines, PlayerState::Enemy);
             }
 
@@ -132,7 +133,7 @@ namespace McRave::Actions {
             return false;
         };
 
-        return checkDangers(myActions) || checkDangers(enemyActions) || checkDangers(neutralActions);
+        return checkDangers(neutralActions);
     }
 
     bool overlapsDetection(Unit unit, Position here, PlayerState player)
@@ -147,7 +148,7 @@ namespace McRave::Actions {
             if (action.unit == unit)
                 continue;
 
-            if (action.type == UnitTypes::Spell_Scanner_Sweep) {
+            if (action.type == Spell_Scanner_Sweep) {
                 if (action.pos.getDistance(here) < 420.0)
                     return true;
             }

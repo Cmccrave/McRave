@@ -2,6 +2,7 @@
 
 using namespace BWAPI;
 using namespace std;
+using namespace UnitTypes;
 
 namespace McRave::Grids
 {
@@ -71,8 +72,8 @@ namespace McRave::Grids
         void addToGrids(UnitInfo& unit)
         {
             if ((unit.getType().isWorker() && unit.getPlayer() != Broodwar->self() && (!unit.unit()->exists() || Broodwar->getFrameCount() > 10000))
-                || unit.getType() == UnitTypes::Protoss_Interceptor
-                || unit.getType() == UnitTypes::Terran_Medic)
+                || unit.getType() == Protoss_Interceptor
+                || unit.getType() == Terran_Medic)
                 return;
 
             // Pixel and walk sizes
@@ -130,7 +131,7 @@ namespace McRave::Grids
                     const auto dist = fasterDistGrids(x1, y1, (x * 8) + 4, (y * 8) + 4);
 
                     // Cluster
-                    if (clusterGrid && dist < 48.0 && (unit.getPlayer() != Broodwar->self() || unit.getRole() == Role::Combat)) {
+                    if (clusterGrid && dist < 48.0 && (unit.getPlayer() != Broodwar->self() || (unit.getRole() == Role::Combat && !unit.localRetreat()))) {
                         clusterGrid[x][y] += float(unit.getPriority());
                         saveReset(x, y);
                     }
@@ -200,7 +201,7 @@ namespace McRave::Grids
                 }
 
                 // Spider mines are added to the enemy splash grid so ally units avoid allied mines
-                if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine) {
+                if (unit.getType() == Terran_Vulture_Spider_Mine) {
                     if (!unit.isBurrowed() && unit.hasTarget() && unit.getTarget().unit() && unit.getTarget().unit()->exists())
                         addSplash(unit);
                 }
@@ -221,7 +222,7 @@ namespace McRave::Grids
 
                 auto longRangeUnit = unit.getGroundRange() >= 224.0;
 
-                if (unit.getType() == UnitTypes::Terran_Vulture_Spider_Mine || unit.getType() == UnitTypes::Protoss_Scarab) {
+                if (unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Protoss_Scarab) {
                     if (unit.hasTarget() && unit.getTarget().unit() && unit.getTarget().unit()->exists())
                         addSplash(unit);
                 }
@@ -254,7 +255,7 @@ namespace McRave::Grids
                     }
                 }
 
-                if (u->getType() == UnitTypes::Spell_Disruption_Web)
+                if (u->getType() == Spell_Disruption_Web)
                     Actions::addAction(u, u->getPosition(), TechTypes::Disruption_Web, PlayerState::Neutral);
             }
         }

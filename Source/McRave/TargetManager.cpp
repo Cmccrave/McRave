@@ -71,9 +71,6 @@ namespace McRave::Targets {
                     // Don't attack units that don't matter
                     || !targetMatters
 
-                    // TEST: some ling stuff, don't attack Vultures
-                    || (unit.getType() == UnitTypes::Zerg_Zergling && target.getType() == UnitTypes::Terran_Vulture)
-
                     // DT: Don't attack Vultures not in range
                     || (unit.getType() == UnitTypes::Protoss_Dark_Templar && target.getType() == UnitTypes::Terran_Vulture && !unit.isWithinRange(target))
 
@@ -157,7 +154,7 @@ namespace McRave::Targets {
                 }
 
                 // DT want to kill any workers they're in reach of
-                else if ((unit.getType() == UnitTypes::Protoss_Dark_Templar || (BuildOrder::isRush() && unit.getGroundRange() <= 32)) && (target.getType().isWorker() || target.isSiegeTank()) && unit.isWithinReach(target) && !Actions::overlapsDetection(target.unit(), target.getPosition(), PlayerState::Enemy))
+                else if ((unit.getType() == UnitTypes::Protoss_Dark_Templar || (BuildOrder::isRush() && unit.getGroundRange() <= 32)) && (target.getType().isWorker() || target.isSiegeTank() || target.getType().isDetector()) && unit.isWithinReach(target) && !Actions::overlapsDetection(target.unit(), target.getPosition(), PlayerState::Enemy))
                     thisUnit = 10000.0 / dist;
                 
                 else if (unit.getType() == UnitTypes::Protoss_Dark_Templar && (target.getType() == UnitTypes::Protoss_Observatory || target.getType() == UnitTypes::Protoss_Robotics_Facility))
@@ -196,6 +193,11 @@ namespace McRave::Targets {
                 if (thisUnit > scoreBest) {
                     scoreBest = thisUnit;
                     unit.setTarget(&target);
+                }
+
+                if (dist < distBest) {
+                    distBest = dist;
+                    unit.setBackupTarget(&target);
                 }
             };
 
@@ -254,8 +256,13 @@ namespace McRave::Targets {
                 return;
             }
 
-            if (!unit.getPath().isReachable() && !unit.getTarget().getType().isBuilding() && !unit.getType().isFlyer() && !unit.getTarget().getType().isFlyer() && Grids::getMobility(unit.getTarget().getPosition()) >= 4) {
-                unit.setEngDist(DBL_MAX);
+            if (!unit.getPath().isReachable() && !unit.getTarget().getType().isBuilding() && !unit.getType().isFlyer() && !unit.getTarget().getType().isFlyer() && Grids::getMobility(unit.getTarget().getPosition()) >= 4) {                
+                if (unit.hasBackupTarget()) {
+                    unit.setTarget(&unit.getBackupTarget());
+                    unit.setEngDist(unit.getPosition().getDistance(unit.getBackupTarget().getPosition()));
+                }
+                else
+                    unit.setEngDist(DBL_MAX);
                 return;
             }
 

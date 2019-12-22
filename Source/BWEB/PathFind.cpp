@@ -26,7 +26,7 @@ namespace BWEB
 
         const auto isWalkable = [&](const TilePosition tile) {
             if (!tile.isValid()
-                || tile.getDistance(target) > maxDist + 64.0
+                || tile.getDistance(target) > maxDist * 2
                 || !Map::isWalkable(tile)
                 || Map::isUsed(tile) != UnitTypes::None
                 || Map::isReserved(tile)

@@ -30,26 +30,26 @@ double Timer::m_freq = 0.0;
 
 Timer::Timer()
 {
-	if (m_freq == 0.0)		// m_freq not initialized yet ?
-	{
-		LARGE_INTEGER li;
-		auto res = QueryPerformanceFrequency(&li);
-	    bwem_assert(res);
-		unused(res);
-		m_freq = li.QuadPart / 1000.0;
-	}
+    if (m_freq == 0.0)        // m_freq not initialized yet ?
+    {
+        LARGE_INTEGER li;
+        auto res = QueryPerformanceFrequency(&li);
+        bwem_assert(res);
+        unused(res);
+        m_freq = li.QuadPart / 1000.0;
+    }
 
-	Reset();
+    Reset();
 }
 
 
 int64_t Timer::Now() const
 {
-	LARGE_INTEGER li;
-	auto res = QueryPerformanceCounter(&li);
-	bwem_assert(res);
-	unused(res);
-	return li.QuadPart;
+    LARGE_INTEGER li;
+    auto res = QueryPerformanceCounter(&li);
+    bwem_assert(res);
+    unused(res);
+    return li.QuadPart;
 }
 
 

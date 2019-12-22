@@ -27,7 +27,7 @@ namespace McRave::Events
 
         if (unit->getType().isResourceDepot())
             Stations::removeStation(unit);
-        if (unit->getType().isResourceContainer())
+        if (unit->getType().isResourceContainer() || unit->getType() == BWAPI::UnitTypes::Zerg_Drone)
             Resources::removeResource(unit);
     }
 
@@ -51,7 +51,7 @@ namespace McRave::Events
 
         // Refinery that morphed as an enemy
         else if (unit->getType().isResourceContainer())
-            Resources::storeResource(unit);        
+            Resources::storeResource(unit);
     }
 
     inline void onUnitComplete(BWAPI::Unit unit)

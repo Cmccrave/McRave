@@ -62,7 +62,7 @@ namespace McRave::Workers {
             // Check if unit needs a re-assignment
             const auto isGasunit = unit.hasResource() && unit.getResource().getType().isRefinery();
             const auto isMineralunit = unit.hasResource() && unit.getResource().getType().isMineralField();
-            const auto needGas = !Resources::isGasSaturated() && isMineralunit && (gasWorkers < BuildOrder::gasWorkerLimit() || !BuildOrder::isOpener());
+            const auto needGas = !Resources::isGasSaturated() && isMineralunit && gasWorkers < BuildOrder::gasWorkerLimit();
             const auto needMinerals = !Resources::isMinSaturated() && isGasunit && gasWorkers > BuildOrder::gasWorkerLimit();
             const auto needNewAssignment = !unit.hasResource() || needGas || needMinerals || threatened || excessAssigned;
 

@@ -16,9 +16,6 @@ namespace McRave::Strategy {
     bool enemyPressure();
     bool enemyBlockedScout();
     int enemyArrivalFrame();
-    std::map <BWAPI::UnitType, double>& getUnitScores();
 
     void onFrame();
-    double getUnitScore(BWAPI::UnitType);
-    BWAPI::UnitType getHighestUnitScore();
 }

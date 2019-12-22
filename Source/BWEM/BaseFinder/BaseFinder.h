@@ -5,17 +5,17 @@
 
 namespace BaseFinder
 {
-	struct Base
-	{
-		BWAPI::TilePosition tpos;
-		BWAPI::Position pos;
-		std::vector<BWAPI::Unit> minerals;
-		std::vector<BWAPI::Unit> geysers;
-		// also make list of depot-blocking units?
-	};
+    struct Base
+    {
+        BWAPI::TilePosition tpos;
+        BWAPI::Position pos;
+        std::vector<BWAPI::Unit> minerals;
+        std::vector<BWAPI::Unit> geysers;
+        // also make list of depot-blocking units?
+    };
 
-	const std::vector<Base> &GetBases();
+    const std::vector<Base> &GetBases();
 
-	void Init();
-	void DrawStuff(BWAPI::TilePosition mintile, BWAPI::TilePosition maxtile);
+    void Init();
+    void DrawStuff(BWAPI::TilePosition mintile, BWAPI::TilePosition maxtile);
 }

@@ -28,8 +28,8 @@ namespace BWAPI_ext {
 
 void drawDiagonalCrossMap(BWAPI::Position topLeft, BWAPI::Position bottomRight, BWAPI::Color col)
 {
-	bw->drawLineMap(topLeft, bottomRight, col);
-	bw->drawLineMap(Position(bottomRight.x, topLeft.y), Position(topLeft.x, bottomRight.y), col);
+    bw->drawLineMap(topLeft, bottomRight, col);
+    bw->drawLineMap(Position(bottomRight.x, topLeft.y), Position(topLeft.x, bottomRight.y), col);
 }
 
 

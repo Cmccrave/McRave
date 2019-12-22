@@ -29,10 +29,10 @@ namespace McRave
         }
 
         void updateResource() {
-            type				= thisUnit->getType();
-            remainingResources	= thisUnit->getResources();
-            position			= thisUnit->getPosition();
-            tilePosition		= thisUnit->getTilePosition();
+            type                = thisUnit->getType();
+            remainingResources    = thisUnit->getResources();
+            position            = thisUnit->getPosition();
+            tilePosition        = thisUnit->getTilePosition();
         }
 
         void addTargetedBy(std::weak_ptr<UnitInfo> unit) {

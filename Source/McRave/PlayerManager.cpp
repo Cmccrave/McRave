@@ -60,6 +60,7 @@ namespace McRave::Players
     {
         auto playerInfo = getPlayerInfo(unit->getPlayer());
         auto unitInfo = UnitInfo(unit);
+        auto existingInfo = Units::getUnitInfo(unit);
 
         if (Units::getUnitInfo(unit))
             return;
@@ -75,7 +76,7 @@ namespace McRave::Players
         }
 
         if (playerInfo) {
-            
+
             // Setup the UnitInfo and update
             unitInfo.update();
             playerInfo->getUnits().insert(make_shared<UnitInfo>(unitInfo));
@@ -115,6 +116,8 @@ namespace McRave::Players
 
     void morphUnit(Unit unit)
     {
+        auto playerInfo = getPlayerInfo(unit->getPlayer());
+
         // HACK: Changing players is kind of annoying, so we just remove and re-store
         if (unit->getType().isRefinery()) {
             removeUnit(unit);
@@ -136,6 +139,12 @@ namespace McRave::Players
 
             if (info->hasTarget())
                 info->setTarget(nullptr);
+
+            if (info->getType() == UnitTypes::Zerg_Larva) {
+                auto newType = unit->getBuildType();
+                totalTypeCounts[playerInfo->getPlayerState()][info->getType()]--;
+                totalTypeCounts[playerInfo->getPlayerState()][newType]++;
+            }
 
             info->setBuildingType(UnitTypes::None);
             info->setBuildPosition(TilePositions::Invalid);
@@ -205,7 +214,7 @@ namespace McRave::Players
 
     PlayerInfo * getPlayerInfo(Player player)
     {
-        for (auto &[p,info] : thePlayers) {
+        for (auto &[p, info] : thePlayers) {
             if (p == player)
                 return &info;
         }

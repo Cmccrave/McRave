@@ -9,12 +9,13 @@ namespace McRave::Command {
     namespace {
 
         double defaultGrouping(UnitInfo& unit, WalkPosition w) {
-            return unit.getType().isFlyer() ? 1.0f / max(0.1f, Grids::getAAirCluster(w)) : max(0.1f, log(Grids::getAGroundCluster(w)));
+            return unit.getType().isFlyer() ? 1.0f / max(0.1f, log(Grids::getAAirCluster(w))) : max(0.1f, log(Grids::getAGroundCluster(w)));
         }
 
         double defaultDistance(UnitInfo& unit, WalkPosition w) {
             const auto p = Position(w) + Position(4, 4);
-            return unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
+            return p.getDistance(unit.getDestination());
+            //return unit.getType().isFlyer() ? p.getDistance(unit.getDestination()) : BWEB::Map::getGroundDistance(p, unit.getDestination());
         }
 
         double defaultVisited(UnitInfo& unit, WalkPosition w) {
@@ -55,7 +56,7 @@ namespace McRave::Command {
 
                 // If too far of a command, is in danger or isn't walkable
                 if ((!unit.getType().isFlyer() && Grids::getMobility(here) < 1)
-                    || !Util::isWalkable(unit, here)
+                    || !Util::isTightWalkable(unit, here)
                     || Actions::isInDanger(unit, p))
                     return false;
                 return true;
@@ -81,7 +82,7 @@ namespace McRave::Command {
             }
 
             // Find bounding box to score WalkPositions
-            const auto radius = unit.getType().isFlyer() ? 16 : 12 + (8 * moreTiles);
+            const auto radius = unit.getType().isFlyer() ? 24 : 8 + (16 * moreTiles);
             const auto left = max(0, start.x - radius);
             const auto right = min(Broodwar->mapWidth() * 4, start.x + radius + walkWidth);
             const auto up = max(0, start.y - radius);
@@ -275,7 +276,7 @@ namespace McRave::Command {
 
                 // Light air wants to approach air targets or anything that cant attack air
                 if (unit.isLightAir()) {
-                    if (unit.getTarget().getType().isFlyer() || unit.getTarget().getAirRange() == 0.0)
+                    if (!unit.getTarget().getType().isBuilding() && (unit.getTarget().getType().isFlyer() || unit.getTarget().getAirRange() == 0.0))
                         return true;
                     return false;
                 }
@@ -309,7 +310,7 @@ namespace McRave::Command {
             const auto distance =   defaultDistance(unit, w);
             const auto grouping =   defaultGrouping(unit, w);
             const auto mobility =   defaultMobility(unit, w);
-            const auto score =      unit.getRole() == Role::Worker ? mobility / (distance * grouping * threat) : mobility / (distance * grouping);
+            const auto score =      unit.getRole() == Role::Worker ? mobility / (distance * grouping * exp(threat)) : mobility / (distance * grouping);
             return score;
         };
 
@@ -437,13 +438,14 @@ namespace McRave::Command {
 
                 if (unit.getType() == UnitTypes::Protoss_Reaver
                     || allyRange > enemyRange
+                    || (!unit.getTargetedBy().empty() && allyRange == enemyRange)
                     || unit.getTarget().getType() == UnitTypes::Terran_Vulture_Spider_Mine)
                     return true;
-            }
 
-            // If unit is being targeted or is injured and should drop being targeted if possible
-            if ((!unit.getTargetedBy().empty() || !unit.isHealthy()) && enemyRange == allyRange)
-                return true;
+                // Kite instead of retreating if we are far enough into a game
+                if (unit.getGlobalState() == GlobalState::Attack && unit.getLocalState() == LocalState::Retreat)
+                    return true;
+            }
             return false;
         };
 
@@ -484,7 +486,7 @@ namespace McRave::Command {
         bool closeToMainChoke = Position(BWEB::Map::getMainChoke()->Center()).getDistance(unit.getPosition()) < 320.0;
         bool closeToNaturalChoke = Position(BWEB::Map::getNaturalChoke()->Center()).getDistance(unit.getPosition()) < 320.0;
         bool defendingExpansion = unit.getDestination().isValid() && !Terrain::isInEnemyTerritory((TilePosition)unit.getDestination());
-        bool closeToDefend = Terrain::isInAllyTerritory(unit.getTilePosition()) || (!mapBWEM.GetArea(unit.getTilePosition()) && (closeToMainChoke || closeToNaturalChoke)) || unit.getType().isWorker();
+        bool closeToDefend = Terrain::isInAllyTerritory(unit.getTilePosition()) || (closeToMainChoke || closeToNaturalChoke) || unit.getType().isWorker();
 
         if (!closeToDefend
             || unit.getLocalState() == LocalState::Attack
@@ -513,7 +515,7 @@ namespace McRave::Command {
                         if (!w.isValid()
                             || Actions::overlapsActions(unit.unit(), p, unit.getType(), PlayerState::Self, 16)
                             || Buildings::overlapsQueue(unit, TilePosition(w))
-                            || !Util::isWalkable(unit, w))
+                            || !Util::isTightWalkable(unit, w))
                             continue;
 
                         if (dist < distBest) {
@@ -581,8 +583,8 @@ namespace McRave::Command {
 
         const auto shouldHunt = [&]() {
             if (unit.getRole() == Role::Combat) {
-                if (unit.isLightAir() && Players::getStrength(PlayerState::Enemy).airToAir <= 0.0)
-                    return true;
+                if (unit.isLightAir())
+                    return Players::getStrength(PlayerState::Enemy).airToAir <= 0.0 && unit.getLocalState() == LocalState::Retreat;
             }
             else
                 return true;
@@ -619,7 +621,8 @@ namespace McRave::Command {
     bool retreat(UnitInfo& unit)
     {
         const auto scoreFunction = [&](WalkPosition w) {
-            const auto distance =   defaultDistance(unit, w);
+            const auto p =          Position(w) + Position(4, 4);
+            const auto distance =   (unit.hasTarget() && unit.getGlobalState() == GlobalState::Attack) ? defaultDistance(unit, w) / (p.getDistance(unit.getTarget().getPosition())) : defaultDistance(unit, w);
             const auto threat =     defaultThreat(unit, w);
             const auto grouping =   defaultGrouping(unit, w);
             const auto mobility =   defaultMobility(unit, w);

@@ -109,7 +109,7 @@ namespace BWEB::Blocks
             bool blockFacesLeft, blockFacesUp;
 
             const auto creepOnCorners = [&](TilePosition here, int width, int height) {
-                return Broodwar->hasCreep(here) && Broodwar->hasCreep(here + TilePosition(width, 0)) && Broodwar->hasCreep(here + TilePosition(0, height)) && Broodwar->hasCreep(here + TilePosition(width, height));
+                return Broodwar->hasCreep(here) && Broodwar->hasCreep(here + TilePosition(width - 1, 0)) && Broodwar->hasCreep(here + TilePosition(0, height - 1)) && Broodwar->hasCreep(here + TilePosition(width - 1, height - 1));
             };
 
             auto tileBest = TilePositions::Invalid;
@@ -120,7 +120,7 @@ namespace BWEB::Blocks
             for (auto x = start.x - 20; x <= start.x + 20; x++) {
                 for (auto y = start.y - 20; y <= start.y + 20; y++) {
                     const TilePosition tile(x, y);
-
+                    
                     if (!tile.isValid())
                         continue;
 
@@ -186,7 +186,9 @@ namespace BWEB::Blocks
             }
 
             // Mirror the block vertically/horizontally for better placement
-            else if (tileBest.isValid()) {
+            if (tileBest.isValid()) {
+
+                Broodwar << "Ye" << endl;
 
                 // TODO: Add T/Z mirroring
                 if (race == Races::Zerg)
@@ -221,12 +223,14 @@ namespace BWEB::Blocks
             for (auto x = start.x - 12; x <= start.x + 16; x++) {
                 for (auto y = start.y - 12; y <= start.y + 16; y++) {
                     const TilePosition tile(x, y);
-
-                    if (!tile.isValid() || Map::mapBWEM.GetArea(tile) != Map::getMainArea())
-                        continue;
-
                     const auto blockCenter = Position(tile) + Position(80, 32);
                     const auto dist = (blockCenter.getDistance((Position)Map::getMainChoke()->Center()));
+
+                    if (!tile.isValid()
+                        || Map::mapBWEM.GetArea(tile) != Map::getMainArea()
+                        || dist < 96.0)
+                        continue;
+                    
                     if (dist < distBest && canAddBlock(tile, 5, 2)) {
                         tileBest = tile;
                         distBest = dist;

@@ -36,49 +36,49 @@ using namespace BWAPI_ext;
 
 
 Base::Base(Area * pArea, const TilePosition & location, const vector<Ressource *> & AssignedRessources, const vector<Mineral *> & BlockingMinerals)
-	: m_pArea(pArea),
-	m_pMap(pArea->GetMap()),
-	m_location(location),
-	m_center(Position(location) + Position(UnitType(Terran_Command_Center).tileSize()) / 2),
-	m_BlockingMinerals(BlockingMinerals)
+    : m_pArea(pArea),
+    m_pMap(pArea->GetMap()),
+    m_location(location),
+    m_center(Position(location) + Position(UnitType(Terran_Command_Center).tileSize()) / 2),
+    m_BlockingMinerals(BlockingMinerals)
 {
-	bwem_assert(!AssignedRessources.empty());
+    bwem_assert(!AssignedRessources.empty());
 
-	for (Ressource * r : AssignedRessources)
-		if		(Mineral * m = r->IsMineral())	m_Minerals.push_back(m);
-		else if (Geyser * g = r->IsGeyser())		m_Geysers.push_back(g);
+    for (Ressource * r : AssignedRessources)
+        if        (Mineral * m = r->IsMineral())    m_Minerals.push_back(m);
+        else if (Geyser * g = r->IsGeyser())        m_Geysers.push_back(g);
 }
 
 
 Base::Base(const Base & Other)
-	: m_pMap(Other.m_pMap), m_pArea(Other.m_pArea)
+    : m_pMap(Other.m_pMap), m_pArea(Other.m_pArea)
 {
-	bwem_assert(false);
+    bwem_assert(false);
 }
 
 
 void Base::SetStartingLocation(const TilePosition & actualLocation)
 {
-	m_starting = true;
-	m_location = actualLocation;
-	m_center = Position(actualLocation) + Position(UnitType(Terran_Command_Center).tileSize()) / 2;
+    m_starting = true;
+    m_location = actualLocation;
+    m_center = Position(actualLocation) + Position(UnitType(Terran_Command_Center).tileSize()) / 2;
 }
 
 
 void Base::OnMineralDestroyed(const Mineral * pMineral)
 {
-	bwem_assert(pMineral);
+    bwem_assert(pMineral);
 
-	auto iMineral = find(m_Minerals.begin(), m_Minerals.end(), pMineral);
-	if (iMineral != m_Minerals.end())
-		fast_erase(m_Minerals, distance(m_Minerals.begin(), iMineral));
+    auto iMineral = find(m_Minerals.begin(), m_Minerals.end(), pMineral);
+    if (iMineral != m_Minerals.end())
+        fast_erase(m_Minerals, distance(m_Minerals.begin(), iMineral));
 
-	iMineral = find(m_BlockingMinerals.begin(), m_BlockingMinerals.end(), pMineral);
-	if (iMineral != m_BlockingMinerals.end())
-		fast_erase(m_BlockingMinerals, distance(m_BlockingMinerals.begin(), iMineral));
+    iMineral = find(m_BlockingMinerals.begin(), m_BlockingMinerals.end(), pMineral);
+    if (iMineral != m_BlockingMinerals.end())
+        fast_erase(m_BlockingMinerals, distance(m_BlockingMinerals.begin(), iMineral));
 }
 
-	
+    
 } // namespace BWEM
 
 

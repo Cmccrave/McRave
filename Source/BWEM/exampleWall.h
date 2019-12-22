@@ -55,35 +55,35 @@ namespace utils
 class ExampleWall
 {
 public:
-	enum class tight_t {zealot, zergling};
+    enum class tight_t {zealot, zergling};
 
-								ExampleWall(const Map & theMap, const ChokePoint * cp, tight_t tight = tight_t::zealot);
+                                ExampleWall(const Map & theMap, const ChokePoint * cp, tight_t tight = tight_t::zealot);
 
 
-	const ChokePoint *			GetCP() const							{ return m_cp; }
+    const ChokePoint *            GetCP() const                            { return m_cp; }
 
-	void						Compute();
-	void						DrawLocations() const;
+    void                        Compute();
+    void                        DrawLocations() const;
 
-	bool						Possible() const						{ return !m_Locations.empty(); }
-	int							Size() const							{ return m_Locations.size(); }
-	BWAPI::Position				Center() const							{ return m_center; }
+    bool                        Possible() const                        { return !m_Locations.empty(); }
+    int                            Size() const                            { return m_Locations.size(); }
+    BWAPI::Position                Center() const                            { return m_center; }
 
-	const std::vector<BWAPI::TilePosition> &	Locations() const		{ return m_Locations; }
-	const std::vector<BWAPI::UnitType> &		BuildingTypes() const	{ return m_BuildingTypes; }
+    const std::vector<BWAPI::TilePosition> &    Locations() const        { return m_Locations; }
+    const std::vector<BWAPI::UnitType> &        BuildingTypes() const    { return m_BuildingTypes; }
 
 protected:
-	void						Compute(int wallSize, const std::vector<BWAPI::TilePosition> & BuildableBorderTiles1,
-													  const std::vector<BWAPI::TilePosition> & BuildableBorderTiles2);
-	void						Compute(const Area * area);
-	void						PostCompute();
+    void                        Compute(int wallSize, const std::vector<BWAPI::TilePosition> & BuildableBorderTiles1,
+                                                      const std::vector<BWAPI::TilePosition> & BuildableBorderTiles2);
+    void                        Compute(const Area * area);
+    void                        PostCompute();
 
-	const Map *							m_theMap;
-	const ChokePoint *					m_cp;
-	tight_t								m_tight;
-	BWAPI::Position						m_center = BWAPI::Positions::None;
-	std::vector<BWAPI::TilePosition>	m_Locations;
-	std::vector<BWAPI::UnitType>		m_BuildingTypes;
+    const Map *                            m_theMap;
+    const ChokePoint *                    m_cp;
+    tight_t                                m_tight;
+    BWAPI::Position                        m_center = BWAPI::Positions::None;
+    std::vector<BWAPI::TilePosition>    m_Locations;
+    std::vector<BWAPI::UnitType>        m_BuildingTypes;
 };
 
 
@@ -91,8 +91,8 @@ std::vector<ExampleWall> findWalls(const Map & theMap);
 
 //  To prints the computed walls each frame, just add these two lines in your onFrame() handler.
 //
-// 	for (const ExampleWall & wall : findWalls(Map::Instance()))
-//		wall.DrawLocations();
+//     for (const ExampleWall & wall : findWalls(Map::Instance()))
+//        wall.DrawLocations();
 //
 //  However, this will slow down a lot the game, so you may want to store the returned vector
 //  in your onStart() handler and then use it in your onFrame() handler.

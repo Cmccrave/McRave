@@ -12,9 +12,10 @@ namespace McRave::Horizon {
 
         void updateThresholds()
         {
-            double minWinPercent = 0.5;
-            double maxWinPercent = 1.0;
+            double minWinPercent = 0.6;
+            double maxWinPercent = 1.2;
 
+            // P
             if (Players::PvP()) {
                 minWinPercent = 0.80;
                 maxWinPercent = 1.20;
@@ -28,12 +29,23 @@ namespace McRave::Horizon {
                 maxWinPercent = 1.0;
             }
 
-            minThreshold = max(0.0, log(10000.0 / Broodwar->getFrameCount())) + minWinPercent;
-            maxThreshold = max(0.0, log(10000.0 / Broodwar->getFrameCount())) + maxWinPercent;
+            // Z
+            if (Players::ZvP()) {
+                minWinPercent = 0.8;
+                maxWinPercent = 1.4;
+            }
 
-            if (BuildOrder::isRush()) {
+            if (Broodwar->self()->getRace() == Races::Zerg || !Strategy::enemyRush()) {
+                minThreshold = max(0.0, log(10000.0 / Broodwar->getFrameCount())) + minWinPercent;
+                maxThreshold = max(0.0, log(10000.0 / Broodwar->getFrameCount())) + maxWinPercent;
+            }
+            else if (BuildOrder::isRush()) {
                 minThreshold = 0.00;
                 maxThreshold = 1.00;
+            }
+            else {
+                minThreshold = minWinPercent;
+                maxThreshold = maxWinPercent;
             }
         }
     }
@@ -45,12 +57,11 @@ namespace McRave::Horizon {
         auto enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;
         auto unitToEngage = unit.getSpeed() > 0.0 ? unit.getEngDist() / (24.0 * unit.getSpeed()) : 5.0;
         auto simulationTime = unitToEngage + 5.0;
-        auto unitSpeed = unit.getSpeed() * 24.0;
         auto sync = false;
         auto belowGrdLimits = false;
         auto belowAirLimits = false;
         auto unitArea = mapBWEM.GetArea(unit.getTilePosition());
-        map<const BWEM::ChokePoint *, pair<int, double>> squeezeFactor;
+        map<const BWEM::ChokePoint *, double> squeezeFactor;
 
         const auto shouldIgnoreSim = [&]() {
             // If we have excessive resources, ignore our simulation and engage
@@ -115,8 +126,7 @@ namespace McRave::Horizon {
                     // Add their width to each chokepoint it needs to move through
                     for (auto &choke : ally.getQuickPath()) {
                         if (Util::chokeWidth(choke) <= 128.0 && ally.getTarget().getPosition().getDistance(Position(choke->Center())) < targetReach) {
-                            squeezeFactor[choke].second+= (double(Util::chokeWidth(choke)) * ally.getSpeed()) / (double(ally.getType().width()) * double(ally.getType().height()));
-                            squeezeFactor[choke].first++;
+                            squeezeFactor[choke]+= (double(Util::chokeWidth(choke)) * ally.getSpeed()) / (double(ally.getType().width()) * double(ally.getType().height()));
                             break;
                         }
                     }
@@ -127,16 +137,13 @@ namespace McRave::Horizon {
 
                     if (choke && Util::chokeWidth(choke) <= 128.0 && ally.getTarget().getPosition().getDistance(Position(choke->Center())) < targetReach) {
                         auto cost = (double(ally.getType().width()) * double(ally.getType().height())) / ((double(Util::chokeWidth(choke)) / 32.0) * ally.getSpeed());
-                        squeezeFactor[choke].second+= log(cost);
-                        squeezeFactor[choke].first++;
+                        squeezeFactor[choke]+= log(cost);
                     }
                 }
             }
 
-            for (auto &[choke, squeeze] : squeezeFactor) {
-                auto cost = squeeze.second;
-                auto count = log(squeeze.first);
-                squeeze.second = 1.0 - exp(-20.0 / (cost * count));
+            for (auto &[choke, cost] : squeezeFactor) {
+                cost = 1.0 - exp(-5.0 / cost);
             }
         };
 
@@ -150,7 +157,7 @@ namespace McRave::Horizon {
                 auto widths = double(enemy.getType().width() + unit.getType().width()) / 2.0;
                 auto enemyRange = (unit.getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange());
 
-                // If enemy is stationary, it must be in range of the engage position on a diagonal or straight line
+                // If enemy is stationary, it must be in range of the engage position
                 if (enemy.getSpeed() <= 0.0) {
                     auto engageDistance = enemy.getPosition().getDistance(unit.getEngagePosition()) - enemyRange - widths;
                     if (engageDistance > 64.0)
@@ -191,10 +198,13 @@ namespace McRave::Horizon {
                 auto simRatio = simulationTime - (distance / speed);
                 auto reach = max(ally.getAirReach(), ally.getGroundReach());
 
+                if (speed <= 0.0)
+                    simRatio = distance > 0.0 ? 0 : simulationTime;
+
                 // If the unit doesn't affect this simulation
                 if (ally.localRetreat()
                     || simRatio <= 0.0
-                    || (ally.getSpeed() <= 0.0 && ally.getPosition().getDistance(unit.getTarget().getPosition()) - allyRange - widths > 64.0)
+                    || (ally.getSpeed() <= 0.0 && distance > 0.0)
                     || (ally.getTarget().getPosition().getDistance(unit.getEngagePosition()) > max(ally.getGroundReach(), ally.getAirReach())))
                     continue;
 
@@ -215,7 +225,7 @@ namespace McRave::Horizon {
 
                     for (auto &choke : path) {
                         if (Util::chokeWidth(choke) <= 128.0 && ally.getTarget().getPosition().getDistance(Position(choke->Center())) < targetReach) {
-                            simRatio = simRatio * min(1.0, squeezeFactor[choke].second);
+                            simRatio = simRatio * min(1.0, squeezeFactor[choke]);
                             break;
                         }
                     }
@@ -223,7 +233,7 @@ namespace McRave::Horizon {
                     if (ally.getQuickPath().empty()) {
                         auto choke = Util::getClosestChokepoint(ally.getPosition());
                         if (choke && Util::chokeWidth(choke) <= 128.0 && ally.getTarget().getPosition().getDistance(Position(choke->Center())) < targetReach)
-                            simRatio = simRatio * min(1.0, squeezeFactor[choke].second);
+                            simRatio = simRatio * min(1.0, squeezeFactor[choke]);
                     }
                 }
 

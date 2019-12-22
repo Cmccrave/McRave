@@ -36,38 +36,38 @@ class MapDrawer
 {
 public:
 
-	static bool ProcessCommand(const std::string & command);
+    static bool ProcessCommand(const std::string & command);
 
-	static bool		showSeas;
-	static bool		showLakes;
-	static bool		showUnbuildable;
-	static bool		showGroundHeight;
-	static bool		showMinerals;
-	static bool		showGeysers;
-	static bool		showStaticBuildings;
-	static bool		showBases;
-	static bool		showAssignedRessources;
-	static bool		showFrontier;
-	static bool		showCP;
+    static bool        showSeas;
+    static bool        showLakes;
+    static bool        showUnbuildable;
+    static bool        showGroundHeight;
+    static bool        showMinerals;
+    static bool        showGeysers;
+    static bool        showStaticBuildings;
+    static bool        showBases;
+    static bool        showAssignedRessources;
+    static bool        showFrontier;
+    static bool        showCP;
 
-	struct Color
-	{
-		static const BWAPI::Color	sea;
-		static const BWAPI::Color	lakes;
-		static const BWAPI::Color	unbuildable;
-		static const BWAPI::Color	highGround;
-		static const BWAPI::Color	veryHighGround;
-		static const BWAPI::Color	minerals;
-		static const BWAPI::Color	geysers;
-		static const BWAPI::Color	staticBuildings;
-		static const BWAPI::Color	bases;
-		static const BWAPI::Color	assignedRessources;
-		static const BWAPI::Color	frontier;
-		static const BWAPI::Color	cp;
-	};
+    struct Color
+    {
+        static const BWAPI::Color    sea;
+        static const BWAPI::Color    lakes;
+        static const BWAPI::Color    unbuildable;
+        static const BWAPI::Color    highGround;
+        static const BWAPI::Color    veryHighGround;
+        static const BWAPI::Color    minerals;
+        static const BWAPI::Color    geysers;
+        static const BWAPI::Color    staticBuildings;
+        static const BWAPI::Color    bases;
+        static const BWAPI::Color    assignedRessources;
+        static const BWAPI::Color    frontier;
+        static const BWAPI::Color    cp;
+    };
 
 private:
-	static bool ProcessCommandVariants(const std::string & command, const std::string & attributName, bool & attribut);
+    static bool ProcessCommandVariants(const std::string & command, const std::string & attributName, bool & attribut);
 };
 
 

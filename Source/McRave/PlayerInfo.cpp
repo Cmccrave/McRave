@@ -53,6 +53,10 @@ namespace McRave
             }
         }
 
+        // Supply has to be an even number and is rounded up
+        if (supply % 2 == 1)
+            supply++;
+
         // Set current allied status
         if (thisPlayer->getID() == BWAPI::Broodwar->self()->getID())
             pState = PlayerState::Self;

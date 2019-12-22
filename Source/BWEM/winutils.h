@@ -33,17 +33,17 @@ namespace utils {
 class Timer
 {
 public:
-						Timer();		// calls Reset()
+                        Timer();        // calls Reset()
 
-	void				Reset()							{ m_start = Now(); }
-	double				ElapsedMilliseconds() const		{ return (Now() - m_start) / m_freq; }
+    void                Reset()                            { m_start = Now(); }
+    double                ElapsedMilliseconds() const        { return (Now() - m_start) / m_freq; }
 
 private:
-	int64_t				Now() const;
+    int64_t                Now() const;
 
-	int64_t				m_start;
+    int64_t                m_start;
 
-	static double		m_freq;		// counts per millisecond
+    static double        m_freq;        // counts per millisecond
 };
 
 

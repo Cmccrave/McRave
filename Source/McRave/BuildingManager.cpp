@@ -82,11 +82,11 @@ namespace McRave::Buildings {
             }
 
             // For Shield Batteries, find the closest defensive Block to see if it's best
-            if (building == UnitTypes::Protoss_Shield_Battery || building == UnitTypes::Protoss_Pylon || (building == UnitTypes::Protoss_Photon_Cannon && Strategy::needDetection())) {
+            if (building == Protoss_Shield_Battery || building == Protoss_Pylon || (building == Protoss_Photon_Cannon && Strategy::needDetection())) {
                 set<TilePosition> placements;
                 for (auto &block : BWEB::Blocks::getBlocks()) {
 
-                    if (building == UnitTypes::Protoss_Pylon)
+                    if (building == Protoss_Pylon)
                         placements = block.getSmallTiles();
                     else if (block.isDefensive())
                         placements = block.getMediumTiles();
@@ -144,7 +144,7 @@ namespace McRave::Buildings {
 
                     // If we have no powered spots, can't build a solo spot
                     for (auto &small : block.getSmallTiles()) {
-                        if (BWEB::Map::isUsed(small) != UnitTypes::None
+                        if (BWEB::Map::isUsed(small) != None
                             || (!Terrain::isInAllyTerritory(small) && !BuildOrder::isProxy() && !Terrain::isIslandMap()))
                             solo = false;
                     }
@@ -269,7 +269,7 @@ namespace McRave::Buildings {
                             value += double(mineral->Amount());
                         for (auto &gas : base.Geysers())
                             value += double(gas->Amount());
-                        if (base.Geysers().size() == 0 && !Terrain::isIslandMap())
+                        if (base.Geysers().size() == 0 && !Terrain::isIslandMap() && int(Stations::getMyStations().size()) < 3)
                             value = value / 1.5;
 
                         if (availablePieces[BWEB::Piece::Large] < 3 && largePieces < availablePieces[BWEB::Piece::Large])
@@ -452,7 +452,7 @@ namespace McRave::Buildings {
             }
 
             // Check if we can block an enemy expansion
-            if (Broodwar->getFrameCount() >= 10000) {
+            if (Util::getTime() > Time(8, 0) && int(Stations::getMyStations().size()) >= 2) {
                 here = Terrain::getEnemyExpand();
                 if (here.isValid() && isBuildable(Protoss_Pylon, here) && isQueueable(Protoss_Pylon, here))
                     return here;
@@ -579,7 +579,7 @@ namespace McRave::Buildings {
                 placement = closestProdLocation(building, BWEB::Map::getMainPosition());
 
             // HACK: Try to get a placement if we are being horror gated
-            if (!placement.isValid() && Strategy::enemyProxy() && Util::getTime() < Time(5,0))
+            if (!placement.isValid() && Strategy::enemyProxy() && Util::getTime() < Time(5, 0))
                 placement = Broodwar->getBuildLocation(building, BWEB::Map::getMainTile(), 16);
 
             return placement;
@@ -696,24 +696,24 @@ namespace McRave::Buildings {
             lairsMorphing = 0, hivesMorphing = 0;
             availablePieces.clear();
 
-            // Add up how many powered available spots we have		
+            // Add up how many powered available spots we have        
             for (auto &block : BWEB::Blocks::getBlocks()) {
                 for (auto &tile : block.getSmallTiles()) {
                     if (isBuildable(Protoss_Photon_Cannon, tile) && isQueueable(Protoss_Photon_Cannon, tile))
                         poweredSmall++;
-                    else if (BWEB::Map::isUsed(tile) == UnitTypes::None && Terrain::isInAllyTerritory(tile))
+                    else if (BWEB::Map::isUsed(tile) == None && Terrain::isInAllyTerritory(tile))
                         availablePieces[BWEB::Piece::Small]++;
                 }
                 for (auto &tile : block.getMediumTiles()) {
                     if (isBuildable(Protoss_Forge, tile) && isQueueable(Protoss_Forge, tile))
                         poweredMedium++;
-                    else if (BWEB::Map::isUsed(tile) == UnitTypes::None && Terrain::isInAllyTerritory(tile))
+                    else if (BWEB::Map::isUsed(tile) == None && Terrain::isInAllyTerritory(tile))
                         availablePieces[BWEB::Piece::Medium]++;
                 }
                 for (auto &tile : block.getLargeTiles()) {
                     if (isBuildable(Protoss_Gateway, tile) && isQueueable(Protoss_Gateway, tile))
                         poweredLarge++;
-                    else if (BWEB::Map::isUsed(tile) == UnitTypes::None && Terrain::isInAllyTerritory(tile))
+                    else if (BWEB::Map::isUsed(tile) == None && Terrain::isInAllyTerritory(tile))
                         availablePieces[BWEB::Piece::Large]++;
                 }
             }
@@ -741,7 +741,7 @@ namespace McRave::Buildings {
             }
 
             // Add up how many more buildings of each type we need
-            for (auto &[building, item] : BuildOrder::getItemQueue()) {
+            for (auto &[building, count] : BuildOrder::getBuildQueue()) {
                 int queuedCount = 0;
 
                 auto morphed = !building.whatBuilds().first.isWorker();
@@ -765,8 +765,8 @@ namespace McRave::Buildings {
                     if (queuedType == building) {
                         queuedCount++;
 
-                        // If we want to reserve more than we have, reserve resources
-                        if (item.getReserveCount() > vis(building) + morphOffset) {
+                        // If we want to reserve more than we have, reserve resources, starts at 8 supply currently
+                        if (Players::getSupply(PlayerState::Self) >= 16 && count > vis(building) + morphOffset) {
                             queuedMineral += building.mineralPrice();
                             queuedGas += building.gasPrice();
                         }
@@ -774,7 +774,7 @@ namespace McRave::Buildings {
                 }
 
                 // Queue building if our actual count is higher than our visible count
-                if (item.getActualCount() > queuedCount + vis(building) + morphOffset) {
+                if (count > queuedCount + vis(building) + morphOffset) {
                     auto here = getBuildLocation(building);
 
                     auto &builder = Util::getClosestUnit(Position(here), PlayerState::Self, [&](auto &u) {
@@ -823,14 +823,14 @@ namespace McRave::Buildings {
 
                 if (building.getRace() == Races::Zerg && building.requiresCreep() && !Broodwar->hasCreep(t))
                     return false;
-                if (BWEB::Map::isUsed(t) != UnitTypes::None)
+                if (BWEB::Map::isUsed(t) != None)
                     return false;
             }
         }
 
         // Addon room check
         if (building.canBuildAddon()) {
-            if (BWEB::Map::isUsed(here + TilePosition(4, 1)) != UnitTypes::None)
+            if (BWEB::Map::isUsed(here + TilePosition(4, 1)) != None)
                 return false;
         }
 
@@ -890,6 +890,19 @@ namespace McRave::Buildings {
     {
         updateBuildings();
         queueBuildings();
+
+        int x = 0;
+        for (auto &g : Resources::getMyGas()) {
+            auto &gas = *g;
+
+            Broodwar->drawTextMap(gas.getPosition() + Position(0, x), "%s", gas.getType().c_str());
+            x+=16;
+
+            if (Stations::ownedBy(gas.getStation()) != PlayerState::Self
+                || !isQueueable(Zerg_Extractor, gas.getTilePosition())
+                || !isBuildable(Zerg_Extractor, gas.getTilePosition()))
+                continue;
+        }
     }
 
     void onStart()

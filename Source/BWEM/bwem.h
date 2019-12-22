@@ -31,12 +31,12 @@ To see examples of how to use the BWEM library, have a look at the functions dec
 All the examples are runable, just follow the steps in the "Getting started" page of the html documentation.
 
 To get into the documentation of the API, just read the comments in the following files (preferably in this order):
-	tiles.h
-	map.h
-	area.h
-	cp.h
-	base.h
-	neutral.h
+    tiles.h
+    map.h
+    area.h
+    cp.h
+    base.h
+    neutral.h
 
 
 Many of the algorithms used in the analysis are parametrised and thus can be easily modified:

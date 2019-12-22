@@ -85,7 +85,7 @@ namespace BWEB {
         std::set<BWAPI::TilePosition> getDefenses() const { return defenses; }
 
         /// <summary> Returns the TilePosition belonging to the opening of the wall. </summary>
-        BWAPI::TilePosition getOpening() const { return opening; }
+        BWAPI::TilePosition inOpeningBook() const { return opening; }
 
         /// <summary> Returns the TilePosition belonging to the centroid of the wall pieces. </summary>
         BWAPI::Position getCentroid() const { return centroid; }

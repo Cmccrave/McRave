@@ -12,13 +12,52 @@ namespace McRave::Util {
         Time gameTime(0, 0);
     }
 
-    bool isWalkable(UnitInfo& unit, WalkPosition here)
+    bool isTightWalkable(UnitInfo& unit, WalkPosition here)
     {
         if (unit.getType().isFlyer() && unit.getRole() != Role::Transport)
             return true;
 
         auto walkWidth = (int)ceil(unit.getType().width() / 8.0);
         auto walkHeight = (int)ceil(unit.getType().height() / 8.0);
+
+        auto halfW = walkWidth / 2;
+        auto halfH = walkHeight / 2;
+        auto wOffset = unit.getType().width() % 8 != 0 ? 1 : 0;
+        auto hOffset = unit.getType().height() % 8 != 0 ? 1 : 0;
+
+        auto left = max(0, here.x - halfW - 1);
+        auto right = min(1024, here.x + halfW + wOffset);
+        auto top = max(0, here.y - halfH - 1);
+        auto bottom = min(1024, here.y + halfH + hOffset);
+
+        // Pixel rectangle
+        auto ff = unit.getType().isBuilding() ? Position(0, 0) : Position(8, 8);
+        auto topLeft = Position(unit.getWalkPosition());
+        auto botRight = topLeft + Position(walkWidth * 8, walkHeight * 8);
+
+        for (int x = left; x < right; x++) {
+            for (int y = top; y < bottom; y++) {
+                const WalkPosition w(x, y);
+                const auto p = Position(w) + Position(4, 4);
+
+                if (!unit.getType().isFlyer()) {
+                    if (rectangleIntersect(topLeft, botRight, p))
+                        continue;
+                    else if (Grids::getMobility(w) < 1 || Grids::getCollision(w) > 0)
+                        return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    bool isLooseWalkable(UnitInfo& unit, WalkPosition here)
+    {
+        if (unit.getType().isFlyer() && unit.getRole() != Role::Transport)
+            return true;
+
+        auto walkWidth = (int)ceil(unit.getType().width() / 8.0) + 4;
+        auto walkHeight = (int)ceil(unit.getType().height() / 8.0) + 4;
 
         auto halfW = walkWidth / 2;
         auto halfH = walkHeight / 2;
@@ -133,119 +172,76 @@ namespace McRave::Util {
             || Players::getTotalCount(PlayerState::Enemy, UnitTypes::Zerg_Hydralisk) > 0
             || Players::vT();
 
-        if (Broodwar->getFrameCount() % 50 == 0) {
-            //closestGeoCache.clear();
-            badPosition.clear();
-        }
+        auto choke = Util::getClosestChokepoint(here);
 
+        if (!choke)
+            return unit.getPosition();
+
+        auto chokeCount = area->ChokePoints().size();
+        Position projection;
         auto meleeCount = com(Protoss_Zealot) + com(Zerg_Zergling) + com(Terran_Firebat);
         auto rangedCount = com(Protoss_Dragoon) + com(Protoss_Reaver) + com(Protoss_High_Templar) + com(Zerg_Hydralisk) + com(Terran_Marine) + com(Terran_Medic) + com(Terran_Siege_Tank_Siege_Mode) + com(Terran_Siege_Tank_Tank_Mode) + com(Terran_Vulture);
-
         auto base = area->Bases().empty() ? nullptr : &area->Bases().front();
-
-        auto center = WalkPositions::None;
         auto scoreBest = DBL_MAX;
         auto posBest = BWEB::Map::getMainPosition();
-        auto choke = Util::getClosestChokepoint(here);
-        auto spacing = min(unit.getType().width(), unit.getType().height()) + 4;
+        auto meleeRadius = 32.0;
+        auto rangedRadius = max(meleeRadius + 64.0, unit.getGroundRange() + (rangedCount * 4.0) - 32.0);
+        auto radius = (Players::getSupply(PlayerState::Self) >= 80 || unit.getGroundRange() > 32.0 || enemyRangeExists) ? rangedRadius : meleeRadius;
 
-        auto meleeRadius = Terrain::isDefendNatural() && Terrain::getNaturalWall() && Players::getSupply(PlayerState::Self) >= 40 && Players::vZ() ? 32.0 : min(32.0, meleeCount * 16.0);
-        auto rangedRadius = max(meleeRadius + 32.0, Util::chokeWidth(choke) + (rangedCount * 8.0));
-        auto radius = enemyRangeExists && Players::getSupply(PlayerState::Self) >= 80 ? max(meleeRadius, rangedRadius) : unit.getGroundRange() > 32.0 ? rangedRadius : meleeRadius;
-        auto initialRadius = radius;
-
-        radius = !enemyRangeExists && Players::getCurrentCount(PlayerState::Enemy, Protoss_Zealot) > vis(Protoss_Zealot) * 2 ? 64.0 : radius;
-
-        // Offset the concave based on where we are creating concave and how far it is from the nearest choke
-        auto hereOffset = here.getDistance(BWEB::Map::getClosestChokeTile(choke, here));
-        radius += hereOffset;
-
-        // Finds which position we are forming the concave at
-        if (here.isValid())
-            center = (WalkPosition)here;
-        else if (area == BWEB::Map::getNaturalArea() && BWEB::Map::getNaturalChoke())
-            center = BWEB::Map::getNaturalChoke()->Center();
-        else if (area == BWEB::Map::getMainArea() && BWEB::Map::getMainChoke())
-            center = BWEB::Map::getMainChoke()->Center();
-        else if (area) {
-            auto distEnemyBest = DBL_MAX;
-            for (auto &c : area->ChokePoints()) {
-                double dist = BWEB::Map::getGroundDistance(Position(c->Center()), Terrain::getEnemyStartingPosition());
-                if (dist < distEnemyBest) {
-                    distEnemyBest = dist;
-                    center = c->Center();
-                    choke = c;
-                }
-            }
-        }
-
-        // Grab the closest choke geo as the center
-        if (choke) {
-            if (closestGeoCache[unit.getTilePosition()] != TilePositions::None) {
-                center = WalkPosition(getClosestChokeGeo(choke, unit.getPosition()));
-                closestGeoCache[unit.getTilePosition()] = TilePosition(center);
-            }
-            center = WalkPosition(closestGeoCache[unit.getTilePosition()]) + WalkPosition(2, 2);
-            radius = min(unit.getPosition().getDistance(Position(center)) + 64.0, radius);
-        }
-
-        // If we are trying to expand, try to get out of the way
-        auto resourceDepot = Broodwar->self()->getRace().getResourceDepot();
-        if (BuildOrder::buildCount(resourceDepot) > vis(resourceDepot) && vis(resourceDepot) == 1) {
-            radius = min(BWEB::Map::getNaturalPosition().getDistance(Position(BWEB::Map::getNaturalChoke()->Center())),
-                Position(BWEB::Map::getMainChoke()->Center()).getDistance(Position(BWEB::Map::getNaturalChoke()->Center())));
-            radius = clamp(radius, 0.0, radius - 128.0);
-        }
-
-        const auto isSuitable = [&](WalkPosition w) {
+        const auto isSuitable = [&](WalkPosition w, double rMin, double rMax) {
             const auto t = TilePosition(w);
             const auto pTest = Position(w) + Position(4, 4);
 
-            if (!pTest.isValid()
-                || pTest.getDistance(Position(center)) < radius /*- 64.0*/
-                || pTest.getDistance(Position(center)) > radius + 64.0
-                || (area && mapBWEM.GetArea(w) != area)
-                || Buildings::overlapsQueue(unit, TilePosition(w))
-                || !Util::isWalkable(unit, w))
-                return false;
+            // Find a vector projection of this point
+            if (choke) {
+                auto lineOfBestFit = BWEB::Map::lineOfBestFit(choke);;
+                auto chokeLine = lineOfBestFit.second - lineOfBestFit.first;
+                auto unitLine = pTest - lineOfBestFit.first;
+                auto projCalc = ((chokeLine.x * unitLine.x) + (chokeLine.y * unitLine.y)) / (pow(chokeLine.x, 2.0) + pow(chokeLine.y, 2.0));
+                projection = lineOfBestFit.first + Position(int(projCalc * chokeLine.x), int(projCalc * chokeLine.y));
 
-            auto cachedResult = badPosition.equal_range(w);
+                auto pt1 = Position(choke->Pos(choke->end1));
+                auto pt2 = Position(choke->Pos(choke->end2));
+                auto chokeCenter = Position(choke->Center());
+                auto pt1Dist = pt1.getDistance(chokeCenter);
+                auto pt2Dist = pt2.getDistance(chokeCenter);
+                auto projDist = projection.getDistance(chokeCenter);
 
-            // Check if too close or too far to a cache result
-            for (auto itr = cachedResult.first; itr != cachedResult.second; itr++) {
-                if (itr->second == radius)
-                    return false;
+                if (chokeCount < 3 && (pt1Dist < projDist || pt2Dist < projDist))
+                    projection = pt1.getDistance(projection) < pt2.getDistance(projection) ? pt1 : pt2;
             }
 
-            // Make sure we are the closest unit to it
-            auto closest = Util::getClosestUnit(pTest, PlayerState::Self, [&](auto &u) {
-                return u.getRole() == Role::Combat && u.getPosition().getDistance(pTest) < 48.0;
-            });
-            if (closest && closest != unit.shared_from_this())
+            if (!pTest.isValid()
+                || pTest.getDistance(projection) < rMin
+                || pTest.getDistance(projection) > rMax
+                || (area && mapBWEM.GetArea(w) != area)
+                || Buildings::overlapsQueue(unit, TilePosition(w))
+                || !mapBWEM.GetMiniTile(w).Walkable()
+                || Grids::getMobility(w) < 6
+                || !Util::isTightWalkable(unit, w))
                 return false;
             return true;
         };
 
         const auto scorePosition = [&](Position pTest) {
-            const auto distCenter = pTest.getDistance(Position(center));
-            const auto distUnit = log(pTest.getDistance(unit.getPosition()) + 32.0);
+            const auto distCenter = exp(pTest.getDistance(projection)) * pTest.getDistance(Position(choke->Center()));
+            const auto distUnit = pTest.getDistance(unit.getPosition());
             const auto distAreaBase = base ? base->Center().getDistance(pTest) : 1.0;
             return distCenter * distAreaBase * distUnit;
         };
 
-        /*if (isSuitable(WalkPosition(unit.unit()->getLastCommand().getTargetPosition())))
-            return unit.unit()->getLastCommand().getTargetPosition();
-        if (isSuitable(WalkPosition(unit.getPosition())))
-            return unit.getPosition();*/
+        auto center = WalkPosition(here);
+        if (unit.getPosition() == unit.getLastPosition() && isSuitable(unit.getWalkPosition(), radius, radius + 32.0))
+            return unit.getPosition();
 
-            // Find a position around the center that is suitable        
+        // Find a position around the center that is suitable        
         for (int x = center.x - 40; x <= center.x + 40; x++) {
             for (int y = center.y - 40; y <= center.y + 40; y++) {
                 WalkPosition w(x, y);
                 const auto p = Position(w) + Position(4, 4);
                 const auto score = scorePosition(p);
 
-                if (score < scoreBest && isSuitable(w)) {
+                if (score < scoreBest && isSuitable(w, radius, radius + 32.0)) {
                     posBest = p;
                     scoreBest = score;
                 }
