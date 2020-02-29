@@ -2,6 +2,7 @@
 
 using namespace BWAPI;
 using namespace std;
+using namespace UnitTypes;
 
 namespace McRave::Resources {
 
@@ -41,16 +42,17 @@ namespace McRave::Resources {
             }
 
             // Update resource state
+            auto station = Stations::getClosestStation(PlayerState::Self, resource.getPosition());
             auto base = Util::getClosestUnit(resource.getPosition(), PlayerState::Self, [&](auto &u) {
-                return u.getType().isResourceDepot();
+                return u.getType().isResourceDepot() && u.getPosition() == station;
             });
 
-            if (base && mapBWEM.GetArea(base->getTilePosition()) == mapBWEM.GetArea(resource.getTilePosition()))
-                base->unit()->isCompleted() ? resource.setResourceState(ResourceState::Mineable) : resource.setResourceState(ResourceState::Assignable);
+            if (base && resource.hasStation() && base->getPosition() == resource.getStation()->getBWEMBase()->Center())
+                (base->unit()->isCompleted() || base->getType() == Zerg_Lair || base->getType() == Zerg_Hive) ? resource.setResourceState(ResourceState::Mineable) : resource.setResourceState(ResourceState::Assignable);
             else
                 resource.setResourceState(ResourceState::None);
 
-            // Update saturation
+            // Update saturation            
             if (resource.getType().isMineralField() && minSat && resource.getGathererCount() < 2 && resource.getResourceState() != ResourceState::None)
                 minSat = false;
             else if (resource.getType() == geyserType && resource.unit()->isCompleted() && resource.getResourceState() != ResourceState::None && ((BuildOrder::isOpener() && resource.getGathererCount() < min(3, BuildOrder::gasWorkerLimit())) || (!BuildOrder::isOpener() && resource.getGathererCount() < 3)))

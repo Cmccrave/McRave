@@ -9,14 +9,13 @@ namespace McRave::Math {
     double visibleAirStrength(UnitInfo&);
     double priority(UnitInfo&);
     double relativeCost(UnitInfo&);
-    double realisticMineralCost(BWAPI::UnitType);
-    double realisticGasCost(BWAPI::UnitType);
     double groundDPS(UnitInfo&);
     double airDPS(UnitInfo&);
     double groundCooldown(UnitInfo&);
     double airCooldown(UnitInfo&);
     double splashModifier(UnitInfo&);
-    double effectiveness(UnitInfo&);
+    double grdEffectiveness(UnitInfo&);
+    double airEffectiveness(UnitInfo&);
     double survivability(UnitInfo&);
     double groundRange(UnitInfo&);
     double airRange(UnitInfo&);
@@ -25,10 +24,9 @@ namespace McRave::Math {
     double groundDamage(UnitInfo&);
     double airDamage(UnitInfo&);
     double moveSpeed(UnitInfo&);
+    int realisticMineralCost(BWAPI::UnitType);
+    int realisticGasCost(BWAPI::UnitType);
     int stopAnimationFrames(BWAPI::UnitType);
     int firstAttackAnimationFrames(BWAPI::UnitType);
     int contAttackAnimationFrames(BWAPI::UnitType);
-
-    BWAPI::WalkPosition getWalkPosition(BWAPI::Unit);
-    BWAPI::TilePosition getTilePosition(BWAPI::Unit);
 }

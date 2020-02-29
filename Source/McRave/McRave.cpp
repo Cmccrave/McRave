@@ -8,19 +8,21 @@
 #include "EventManager.h"
 
 // *** TODO ***
-// Move ResourceInfo to UnitInfo
+// Move ResourceInfo to UnitInfo?
 // Enemy opener/build/transition recognizer - 9pool into 2 hatch muta for example
 // Obs to scout bases
 // Interceptors targets might be convincing goons to dive tanks
 // Shuttles don't consider static defenses when decided engage/retreat
 // Change storms to care more about multi target rather than score
 // Cannon detection action range too large
-// 2gate robo slow 2nd gas issue
 // 10/15 defensive reaction lost to BBS
 // Cannon cancelling to save money
 // Stupid probes keep blocking cannons, forced gather doesnt work
 // Scout denial with Zealot
-// 2Gate might not be reserving properly for proxies
+// Chose more tech without needing it, then didnt expand
+
+// Zerg:
+// ZvZ
 
 using namespace BWAPI;
 using namespace std;
@@ -34,6 +36,7 @@ void McRaveModule::onStart()
     Grids::onStart();
     Learning::onStart();
     Buildings::onStart();
+    Util::onStart();
 
     Broodwar->enableFlag(Flag::UserInput);
     Broodwar->setCommandOptimizationLevel(0);
@@ -53,7 +56,7 @@ void McRaveModule::onFrame()
     // Update game state
     Util::onFrame();
 
-    // Update unit information and grids based on the information
+    // Update ingame information
     Players::onFrame();
     Units::onFrame();
     Grids::onFrame();
@@ -65,13 +68,13 @@ void McRaveModule::onFrame()
     BuildOrder::onFrame();
     Stations::onFrame();
 
-    // Update commands
+    // Update gameplay of the bot
+    Actions::onFrame();
     Goals::onFrame();
     Support::onFrame();
-    Combat::onFrame();
-    Actions::onFrame();
-    Workers::onFrame();
     Scouts::onFrame();
+    Combat::onFrame();
+    Workers::onFrame();
     Transports::onFrame();
     Buildings::onFrame();
     Production::onFrame();

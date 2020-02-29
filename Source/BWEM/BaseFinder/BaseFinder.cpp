@@ -94,7 +94,7 @@ namespace BaseFinder
     const std::vector<Base> &GetBases() { return bases; }
 
     const int BASE_MIN = 400;        // mininum resource value to consider for a base
-    const int MINERAL_MIN = 500;    // consider minerals smaller than this to be blockers
+    const int MINERAL_MIN = 450;    // consider minerals smaller than this to be blockers
     const int INC_DIST = 9 * 32;        // mid-to-mid pixel distance for including resources in a base
 
     void Init()

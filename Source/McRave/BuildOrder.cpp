@@ -17,12 +17,14 @@ namespace McRave::BuildOrder
             s = Players::getSupply(PlayerState::Self);
             startCount = Broodwar->getStartLocations().size();
             buildQueue.clear();
+            armyComposition.clear();
 
             // TODO: Check if we own a <race> unit - have a build order allowed PER race for FFA weirdness and maybe mind control shenanigans
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 Protoss::opener();
                 Protoss::tech();
                 Protoss::situational();
+                Protoss::composition();
                 Protoss::unlocks();
             }
             if (Broodwar->self()->getRace() == Races::Terran) {
@@ -34,8 +36,68 @@ namespace McRave::BuildOrder
                 Zerg::opener();
                 Zerg::tech();
                 Zerg::situational();
+                Zerg::composition();
                 Zerg::unlocks();
             }
+        }
+
+        void updateTechOrder()
+        {
+            const auto firstTechUnit = !techList.empty() ? *techList.begin() : None;
+
+            // PvP
+            if (Players::PvP()) {
+                if (firstTechUnit == Protoss_Dark_Templar)
+                    techOrder ={ Protoss_High_Templar, Protoss_Observer };
+                else
+                    techOrder ={ Protoss_Reaver, Protoss_High_Templar };
+            }
+
+            // PvZ
+            if (Players::PvZ()) {
+                if (firstTechUnit == Protoss_Reaver)
+                    techOrder ={ Protoss_Corsair, Protoss_High_Templar };
+                else if (firstTechUnit == Protoss_Corsair)
+                    techOrder ={ Protoss_High_Templar, Protoss_Reaver };
+                else if (firstTechUnit == Protoss_High_Templar)
+                    techOrder ={ Protoss_Corsair, Protoss_Reaver };
+                else
+                    techOrder ={ Protoss_Corsair, Protoss_Observer, Protoss_High_Templar };
+            }
+
+            // PvT
+            if (Players::PvT()) {
+                if (firstTechUnit == Protoss_Dark_Templar)
+                    techOrder ={ Protoss_Arbiter, Protoss_Observer, Protoss_High_Templar };
+                else if (firstTechUnit == Protoss_Carrier)
+                    techOrder ={ Protoss_Observer, Protoss_High_Templar };
+                else
+                    techOrder ={ Protoss_Observer, Protoss_Arbiter, Protoss_High_Templar };
+            }
+
+            // ZvP
+            if (Players::ZvP()) {
+                if (firstTechUnit == Zerg_Mutalisk)
+                    techOrder ={ Zerg_Hydralisk, Zerg_Lurker, Zerg_Defiler, Zerg_Ultralisk };
+                if (firstTechUnit == Zerg_Hydralisk)
+                    techOrder ={ Zerg_Mutalisk, Zerg_Lurker, Zerg_Defiler, Zerg_Ultralisk };
+                else
+                    techOrder ={ Zerg_Hydralisk, Zerg_Lurker, Zerg_Defiler, Zerg_Ultralisk };
+            }
+
+            // ZvT
+            if (Players::ZvT()) {
+                if (firstTechUnit == Zerg_Mutalisk)
+                    techOrder ={ Zerg_Hydralisk, Zerg_Lurker, Zerg_Defiler, Zerg_Ultralisk };
+                if (firstTechUnit == Zerg_Hydralisk)
+                    techOrder ={ Zerg_Mutalisk, Zerg_Lurker, Zerg_Defiler, Zerg_Ultralisk };
+                else
+                    techOrder ={ Zerg_Mutalisk, Zerg_Hydralisk, Zerg_Lurker, Zerg_Defiler, Zerg_Ultralisk };
+            }
+
+            // ZvZ
+            if (Players::ZvZ())
+                techOrder ={ Zerg_Mutalisk, Zerg_Devourer };
         }
     }
 
@@ -52,7 +114,7 @@ namespace McRave::BuildOrder
         });
 
         if (closestBuilding && closestWorker)
-            return double(closestBuilding->unit()->getRemainingBuildTime()) / double(t.buildTime()) >= percent;
+            return double(t.buildTime() - closestBuilding->unit()->getRemainingBuildTime()) / double(t.buildTime()) >= percent;
         return false;
     }
 
@@ -75,14 +137,7 @@ namespace McRave::BuildOrder
 
         // When 1 unit is visible
         return vis(techUnit) > 0;
-    }
-
-    void onFrame()
-    {
-        Visuals::startPerfTest();
-        updateBuild();
-        Visuals::endPerfTest("BuildOrder");
-    }
+    }    
 
     bool shouldExpand()
     {
@@ -90,9 +145,7 @@ namespace McRave::BuildOrder
 
         // Zerg has a slightly higher concentration of bases
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            if (com(baseType) >= 4 && Broodwar->self()->minerals() >= 600)
-                return true;
-            else if (techUnit == None && (Resources::isMinSaturated() || com(baseType) >= 5) && (techSat || com(baseType) >= 5) && productionSat)
+            if (techUnit == None && (techSat || com(baseType) >= 5) && productionSat && vis(Zerg_Hatchery) == com(Zerg_Hatchery))
                 return true;
         }
         else {
@@ -110,7 +163,7 @@ namespace McRave::BuildOrder
 
         // Zerg has a slightly higher concentration of production
         if (Broodwar->self()->getRace() == Races::Zerg)
-            return Broodwar->self()->minerals() >= 600 || (Broodwar->self()->minerals() >= 300 && vis(Zerg_Larva) < 3);
+            return (techUnit == None && !productionSat && Broodwar->self()->minerals() >= 300) || (Broodwar->self()->minerals() >= 300 && vis(Zerg_Larva) < 3 && vis(Zerg_Hatchery) == com(Zerg_Hatchery));
         else
             return (techUnit == None && !productionSat && Broodwar->self()->minerals() >= 150 && (techSat || com(baseType) >= 3)) || (Broodwar->self()->minerals() >= 300 && !productionSat);
         return false;
@@ -121,7 +174,7 @@ namespace McRave::BuildOrder
         auto workerCount = com(Broodwar->self()->getRace().getWorker());
         auto refineryCount = vis(Broodwar->self()->getRace().getRefinery());
 
-        return Broodwar->self()->gas() < 300 && (refineryCount != 1 || workerCount >= 30 || Broodwar->self()->minerals() > 600 || Resources::isMinSaturated());
+        return Broodwar->self()->gas() < 300 && ((refineryCount != 1 && Broodwar->self()->getRace() != Races::Zerg) || workerCount >= 30 || Broodwar->self()->minerals() > 600 || Resources::isMinSaturated());
     }
 
     double getCompositionPercentage(UnitType unit)
@@ -189,36 +242,41 @@ namespace McRave::BuildOrder
             }
             return;
         }
+       
+        if (getTech) {
 
-        // If we are not trying to tech right now
-        if (!getTech || techUnit != None)
-            return;
-
-        // Select next tech based on the order
-        for (auto &type : techOrder) {
-            if (!isTechUnit(type)) {
-                techUnit = type;
+            // If we already chose a tech unit
+            if (techUnit != None) {
                 getTech = false;
                 techList.insert(techUnit);
                 unlockedType.insert(techUnit);
-                break;
+                return;
+            }
+
+            // Select next tech based on the order
+            for (auto &type : techOrder) {
+                if (!isTechUnit(type)) {
+                    techUnit = type;
+                    getTech = false;
+                    techList.insert(techUnit);
+                    unlockedType.insert(techUnit);
+                    break;
+                }
             }
         }
-
     }
 
     void getTechBuildings()
     {
-        bool moreToAdd;
-        set<UnitType> toCheck;
-
         // For every unit in our tech list, ensure we are building the required buildings
+        set<UnitType> toCheck;
         for (auto &type : techList) {
             toCheck.insert(type);
             toCheck.insert(type.whatBuilds().first);
         }
 
         // Iterate all required branches of buildings that are required for this tech unit
+        bool moreToAdd;
         do {
             moreToAdd = false;
             for (auto &check : toCheck) {
@@ -245,11 +303,11 @@ namespace McRave::BuildOrder
                     canAdd = false;
             }
 
-            // HACK: Our check doesn't look for required buildings for tech needed for Lurkers
+            // Our check doesn't look for required buildings for tech needed for Lurkers
             if (check == Zerg_Lurker)
                 buildQueue[Zerg_Lair] = 1;
 
-            // Add extra production - TODO: move to shouldAddProduction
+            // Add extra production
             int s = Players::getSupply(PlayerState::Self);
             if (canAdd && buildCount(check) <= 1) {
                 if (check == Protoss_Stargate) {
@@ -262,7 +320,6 @@ namespace McRave::BuildOrder
                 }
                 else if (check != Protoss_Gateway)
                     buildQueue[check] = 1;
-
             }
         }
     }
@@ -273,14 +330,21 @@ namespace McRave::BuildOrder
         currentTransition = newTransition;
     }
 
-    map<BWAPI::UnitType, int>& getBuildQueue() { return buildQueue; }
-    std::map<BWAPI::UnitType, double> getArmyComposition() { return armyComposition; }
+    void onFrame()
+    {
+        Visuals::startPerfTest();
+        updateTechOrder();
+        updateBuild();        
+        Visuals::endPerfTest("BuildOrder");
+    }
+
+    map<UnitType, int>& getBuildQueue() { return buildQueue; }
+    map<UnitType, double> getArmyComposition() { return armyComposition; }
     UnitType getTechUnit() { return techUnit; }
     UpgradeType getFirstUpgrade() { return firstUpgrade; }
     TechType getFirstTech() { return firstTech; }
     set <UnitType>& getTechList() { return  techList; }
     set <UnitType>& getUnlockedList() { return  unlockedType; }
-    int getWallDefenseDesired() { return wallDefenseDesired; }
     int gasWorkerLimit() { return gasLimit; }
     bool isWorkerCut() { return cutWorkers; }
     bool isUnitUnlocked(UnitType unit) { return unlockedType.find(unit) != unlockedType.end(); }

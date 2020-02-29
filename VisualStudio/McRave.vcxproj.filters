@@ -127,9 +127,6 @@
     <ClCompile Include="..\Source\McRave\ZergBuildOrder.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\ZergBuilds.cpp">
-      <Filter>McRave</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\BWEM\BaseFinder\BaseFinder.cpp">
       <Filter>BWEM\BaseFinder</Filter>
     </ClCompile>
@@ -179,6 +176,15 @@
       <Filter>McRave</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\McRave\ActionManager.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\ZvT.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\ZvP.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\ZvZ.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
   </ItemGroup>

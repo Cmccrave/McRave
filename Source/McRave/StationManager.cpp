@@ -2,6 +2,7 @@
 
 using namespace BWAPI;
 using namespace std;
+using namespace UnitTypes;
 
 namespace McRave::Stations {
 
@@ -104,6 +105,26 @@ namespace McRave::Stations {
         auto &station = list[unit];
         list.erase(unit);
 
+        // Remove workers from any resources on this station
+        for (auto &mineral : Resources::getMyMinerals()) {
+            if (mineral->getStation() == newStation)
+                for (auto &worker : mineral->targetedByWhat()) {
+                    if (!worker.expired()) {
+                        worker.lock()->setResource(nullptr);
+                        mineral->removeTargetedBy(worker);
+                    }
+                }
+        }
+        for (auto &gas : Resources::getMyGas()) {
+            if (gas->getStation() == newStation)
+                for (auto &worker : gas->targetedByWhat()) {
+                    if (!worker.expired()) {
+                        worker.lock()->setResource(nullptr);
+                        gas->removeTargetedBy(worker);
+                    }
+                }
+        }
+
         // Remove any territory it was in
         if (unit->getTilePosition().isValid() && mapBWEM.GetArea(unit->getTilePosition())) {
             if (unit->getPlayer() == Broodwar->self())
@@ -113,11 +134,27 @@ namespace McRave::Stations {
         }
     }
 
-    int needDefenses(BWEB::Station& station)
+    int needGroundDefenses(BWEB::Station& station)
     {
-        const auto groundCount = station.getGroundDefenseCount();
-        const auto airCount = station.getAirDefenseCount();
-        const auto mainOrNat = station.getBWEMBase()->Location() == BWEB::Map::getMainTile() || station.getBWEMBase()->Location() == BWEB::Map::getNaturalTile();
+        // See how many workers are assigned
+        auto workerCount = 0;
+        for (auto &m : Resources::getMyMinerals()) {
+            auto &mineral = *m;
+            if (mineral.getStation() == &station && !mineral.targetedByWhat().empty())
+                workerCount++;
+        }
+        for (auto &g : Resources::getMyMinerals()) {
+            auto &gas = *g;
+            if (gas.getStation() == &station && !gas.targetedByWhat().empty())
+                workerCount++;
+        }
+
+        if (workerCount < 3)
+            return 0;
+
+        auto groundCount = station.getGroundDefenseCount();
+        const auto main = station.getBWEMBase()->Location() == BWEB::Map::getMainTile();
+        const auto nat = station.getBWEMBase()->Location() == BWEB::Map::getNaturalTile();
 
         // Grab total and current counts of minerals remaining for this base
         auto total = 0;
@@ -135,17 +172,64 @@ namespace McRave::Stations {
             }
         }
 
-        // Situations where main or natural want cannons
-        if (mainOrNat) {
-            if (BuildOrder::isTechUnit(UnitTypes::Protoss_Forge) || Strategy::getEnemyBuild() == "2HatchMuta" || Strategy::getEnemyBuild() == "3HatchMuta")
-                return (2 + int(station.getBWEMBase()->Location() == BWEB::Map::getMainTile())) - groundCount;
+        // Main defenses
+        if (main) {
+            if (Players::PvP() && Strategy::needDetection())
+                return 1 - groundCount;
+            if (Players::PvZ() && (Strategy::getEnemyBuild() == "2HatchMuta" || Strategy::getEnemyBuild() == "3HatchMuta"))
+                return 3 - groundCount; 
+            if (Players::ZvZ() && Players::getCurrentCount(PlayerState::Self, Zerg_Zergling) <= Players::getCurrentCount(PlayerState::Enemy, Zerg_Zergling) && Players::getCurrentCount(PlayerState::Self, Zerg_Zergling) >= 6)
+                return 1 - groundCount;
         }
-        else {
 
-            // Calculate percentage remaining and determine desired resources for this non main and non natural base
+        // Natural defenses
+        else if (nat) {
+            if (Players::PvP() && Strategy::needDetection())
+                return 1 - groundCount;
+            if (Players::PvZ() && (Strategy::getEnemyBuild() == "2HatchMuta" || Strategy::getEnemyBuild() == "3HatchMuta"))
+                return 2 - groundCount;
+        }
+
+        // Calculate percentage remaining and determine desired resources for this base
+        else {
             const auto percentage = double(current) / double(total);
-            const auto desired = (percentage >= 0.75) + (percentage >= 0.5) + (percentage >= 0.25) + (2 * Players::vZ()) - (Stations::getMyStations().size() <= 3) - (Stations::getMyStations().size() <= 4);
+            const auto desired = (percentage >= 0.75) + (percentage >= 0.5) + (percentage >= 0.25) - (Stations::getMyStations().size() <= 3) - (Stations::getMyStations().size() <= 4) + (Util::getTime() > Time(15, 0)) + (Util::getTime() > Time(20, 0));
             return desired - groundCount;
+        }
+        return 0;
+    }
+
+    int needAirDefenses(BWEB::Station& station)
+    {
+        // See how many workers are assigned
+        auto workerCount = 0;
+        for (auto &m : Resources::getMyMinerals()) {
+            auto &mineral = *m;
+            if (!mineral.targetedByWhat().empty())
+                workerCount++;
+        }
+        for (auto &g : Resources::getMyMinerals()) {
+            auto &gas = *g;
+            if (!gas.targetedByWhat().empty())
+                workerCount++;
+        }
+
+        if (workerCount < 3)
+            return 0;
+
+        auto airCount = station.getAirDefenseCount();
+        const auto enemyAir = Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Terran_Starport) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Zerg_Spire) > 0;
+
+        if (!Players::ZvZ() || vis(Zerg_Spire) == 0) {
+            if (enemyAir && Util::getTime() > Time(5, 0))
+                return 1 - airCount;
         }
         return 0;
     }
@@ -175,6 +259,6 @@ namespace McRave::Stations {
         return PlayerState::None;
     }
 
-    map <BWAPI::Unit, BWEB::Station *>& getMyStations() { return myStations; };
-    map <BWAPI::Unit, BWEB::Station *>& getEnemyStations() { return enemyStations; }
+    map <Unit, BWEB::Station *>& getMyStations() { return myStations; };
+    map <Unit, BWEB::Station *>& getEnemyStations() { return enemyStations; }
 }

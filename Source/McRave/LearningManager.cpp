@@ -64,9 +64,11 @@ namespace McRave::Learning {
 
             if (Broodwar->self()->getRace() == Races::Zerg && build != "") {
                 if (build == "PoolLair")
-                    return true;
+                    return z;
                 if (build == "HatchPool")
-                    return t || p;
+                    return t;
+                if (build == "PoolHatch")
+                    return p;
             }
             return false;
         }
@@ -116,11 +118,15 @@ namespace McRave::Learning {
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 if (build == "PoolLair") {
                     if (opener == "9Pool")
-                        return true;
+                        return z;
                 }
                 if (build == "HatchPool") {
                     if (opener == "12Hatch")
-                        return t || p;
+                        return t;
+                }
+                if (build == "PoolHatch") {
+                    if (opener == "Overpool")
+                        return p;
                 }
             }
             return false;
@@ -181,16 +187,14 @@ namespace McRave::Learning {
                 if (build == "PoolLair") {
                     if (transition == "1HatchMuta")
                         return z;
-                    if (transition == "1HatchLurker")
-                        return t || p;
                 }
                 if (build == "HatchPool") {
                     if (transition == "2HatchMuta")
-                        return t || p;
-                    if (transition == "2HatchHydra")
-                        return p;
-                    if (transition == "3HatchLing")
                         return t;
+                }
+                if (build == "PoolHatch") {
+                    if (transition == "2HatchMuta")
+                        return p;
                 }
             }
             return false;
@@ -221,8 +225,10 @@ namespace McRave::Learning {
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 if (Players::vZ())
                     BuildOrder::setLearnedBuild("PoolLair", "9Pool", "1HatchMuta");
-                else
+                else if (Players::vT())
                     BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "2HatchMuta");
+                else
+                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "2HatchMuta");
             }
 
             // Add walls
@@ -369,14 +375,14 @@ namespace McRave::Learning {
 
         if (Broodwar->self()->getRace() == Races::Zerg) {
 
-            myBuilds["PoolHatch"].openers ={ "9Pool", "12Pool", "13Pool" };
+            myBuilds["PoolHatch"].openers ={ "Overpool" };
             myBuilds["PoolHatch"].transitions={ "2HatchMuta", "2HatchHydra" };
 
-            myBuilds["HatchPool"].openers ={ "9Hatch" , "10Hatch", "12Hatch" };
+            myBuilds["HatchPool"].openers ={ "12Hatch" };
             myBuilds["HatchPool"].transitions={ "3HatchLing", "2HatchMuta", "2HatchHydra" };
 
             myBuilds["PoolLair"].openers ={ "9Pool" };
-            myBuilds["PoolLair"].transitions={ "1HatchMuta", "1HatchLurker" };
+            myBuilds["PoolLair"].transitions={ "1HatchMuta" };
         }
 
         if (Broodwar->self()->getRace() == Races::Terran) {
@@ -411,8 +417,6 @@ namespace McRave::Learning {
             sscopy << ss.str();
 
             // Initialize
-            string thisBuild = "";
-            string thisOpener = "";
             Race enemyRace = Broodwar->enemy()->getRace();
             int totalWins, totalLoses;
 
@@ -444,7 +448,6 @@ namespace McRave::Learning {
 
                     // Builds
                 case 0:
-                    thisBuild = token;
                     if (val > bestBuildWR && isBuildAllowed(enemyRace, token)) {
                         bestBuild = token;
                         bestBuildWR = val;
@@ -459,8 +462,7 @@ namespace McRave::Learning {
 
                     // Openers
                 case 1:
-                    thisOpener = token;
-                    if (val > bestOpenerWR && isOpenerAllowed(enemyRace, thisBuild, token)) {
+                    if (val > bestOpenerWR && isOpenerAllowed(enemyRace, bestBuild, token)) {
                         bestOpener = token;
                         bestOpenerWR = val;
 
@@ -471,7 +473,7 @@ namespace McRave::Learning {
 
                     // Transitions
                 case 2:
-                    if (val > bestTransitionWR && isTransitionAllowed(enemyRace, thisBuild, token)) {
+                    if (val > bestTransitionWR && isTransitionAllowed(enemyRace, bestBuild, token)) {
                         bestTransition = token;
                         bestTransitionWR = val;
                     }
@@ -527,7 +529,7 @@ namespace McRave::Learning {
                 return;
             }
             if (Players::PvP()) {
-                BuildOrder::setLearnedBuild("1GateCore", "1Zealot", "3Gate");
+                BuildOrder::setLearnedBuild("2Gate", "Main", "DT");
                 isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                 return;
             }

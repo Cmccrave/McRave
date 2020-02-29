@@ -26,21 +26,18 @@ namespace BWEB
 
         const auto isWalkable = [&](const TilePosition tile) {
             if (!tile.isValid()
-                || tile.getDistance(target) > maxDist * 2
-                || !Map::isWalkable(tile)
-                || Map::isUsed(tile) != UnitTypes::None
+                //|| tile.getDistance(target) > maxDist * 4
                 || Map::isReserved(tile)
+                || !Map::isWalkable(tile)
                 || (allowLifted && Map::isUsed(tile) != UnitTypes::Terran_Barracks && Map::isUsed(tile) != UnitTypes::None)
-                || (!allowLifted && Map::isUsed(tile) != UnitTypes::None))
+                || (!allowLifted && Map::isUsed(tile) != UnitTypes::None && Map::isUsed(tile) != UnitTypes::Zerg_Larva))
                 return false;
             return true;
         };
 
-        //jpsPath(s, t, isWalkable, direction);
         bfsPath(s, t, isWalkable, false);
-
-        if (this->getDistance() > maxDist * 2)
-            reachable = false;
+        //if (dist > maxDist * 2)
+        //    reachable = false;
     }
 
     void Path::createUnitPath(const Position s, const Position t)
@@ -183,13 +180,17 @@ namespace BWEB
                     parentGrid[next.x][next.y] = tile;
 
                     // If at target, return path
-                    if (next == target)
+                    if (next == target) {
                         createPath();
+                        return;
+                    }
 
                     nodeQueue.emplace(next);
                 }
             }
         }
+        reachable = false;
+        dist = DBL_MAX;
     }
 
     void Path::jpsPath(const Position s, const Position t, function <bool(const TilePosition)> passedWalkable, bool diagonal)

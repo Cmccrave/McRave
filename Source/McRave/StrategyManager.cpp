@@ -14,8 +14,10 @@ namespace McRave::Strategy {
         bool holdChoke = false;
         bool blockedScout = false;
 
+        bool proxyCheck = false;
         bool proxy = false;
         bool gasSteal = false;
+        bool air = false;
         bool enemyScout = false;
         bool pressure = false;
         Position scoutPosition = Positions::Invalid;
@@ -150,7 +152,10 @@ namespace McRave::Strategy {
                 enemyBuild = "BBS";
 
             // 2Fact
-            if ((Players::getCurrentCount(PlayerState::Enemy, Terran_Vulture_Spider_Mine) > 0 && Broodwar->getFrameCount() < 9000) || (Players::getCurrentCount(PlayerState::Enemy, Terran_Factory) >= 2 && vultureSpeed))
+            if ((Players::getCurrentCount(PlayerState::Enemy, Terran_Vulture_Spider_Mine) > 0 && Broodwar->getFrameCount() < 9000)
+                || (Players::getCurrentCount(PlayerState::Enemy, Terran_Factory) >= 2 && vultureSpeed)
+                || (Players::getCurrentCount(PlayerState::Enemy, Terran_Vulture) >= 3 && Util::getTime() < Time(5,0))
+                || (Broodwar->self()->getRace() == Races::Zerg && Players::getCurrentCount(PlayerState::Enemy, Terran_Vulture) >= 1 && Util::getTime() < Time(4, 30)))
                 enemyBuild = "2Fact";
 
             for (auto &u : player.getUnits()) {
@@ -222,7 +227,7 @@ namespace McRave::Strategy {
 
                 // CannonRush
                 if (unit.getType() == Protoss_Forge) {
-                    if (unit.getPosition().getDistance(Terrain::getEnemyStartingPosition()) < 320.0 && Players::getCurrentCount(PlayerState::Enemy, Protoss_Gateway) == 0)
+                    if (unit.getPosition().getDistance(Terrain::getEnemyStartingPosition()) < 320.0 && noGates && noExpand)
                         enemyBuild = "CannonRush";
                     else if (enemyBuild == "CannonRush")
                         enemyBuild = "Unknown";
@@ -260,11 +265,11 @@ namespace McRave::Strategy {
 
             // 2Gate Detection
             if (Util::getTime() < Time(3, 30)) {
-                if (Scouts::gotFullScout() && Util::getTime() < Time(3, 30) && noGates && noExpand) {
+                if (Scouts::gotFullScout() && Util::getTime() < Time(3, 30) && noGates && noExpand && Players::getTotalCount(PlayerState::Enemy, UnitTypes::Protoss_Zealot) > 0) {
                     enemyBuild = "2Gate";
                     proxy = true;
                 }
-                else if (Players::getCurrentCount(PlayerState::Enemy, Protoss_Gateway) >= 2 && Players::getCurrentCount(PlayerState::Enemy, Protoss_Nexus) <= 1) {
+                else if (Players::getCurrentCount(PlayerState::Enemy, Protoss_Gateway) >= 2 && noExpand) {
                     enemyBuild = "2Gate";
                     proxy = false;
                 }
@@ -296,8 +301,10 @@ namespace McRave::Strategy {
 
         void checkEnemyRush()
         {
+            auto supplySafe = Broodwar->self()->getRace() == Races::Zerg ? Players::getSupply(PlayerState::Self) < 40 : Players::getSupply(PlayerState::Self) < 80;
+
             // Rush builds are immediately aggresive builds
-            rush = Players::getSupply(PlayerState::Self) < 80 && (enemyBuild == "BBS" || enemyBuild == "2Gate" || enemyBuild == "5Pool" || enemyBuild == "4Pool");
+            rush = supplySafe && (enemyBuild == "BBS" || enemyBuild == "2Gate" || enemyBuild == "5Pool" || enemyBuild == "4Pool");
         }
 
         void checkEnemyPressure()
@@ -313,20 +320,28 @@ namespace McRave::Strategy {
                 return;
             }
 
-            if (!holdChoke && Units::getImmThreat() > 0.0)
-                holdChoke = false;
-            else if (Broodwar->self()->getRace() == Races::Protoss && Players::getSupply(PlayerState::Self) <= 40)
-                holdChoke = false;
-            else {
+            // Protoss
+            if (Broodwar->self()->getRace() == Races::Protoss) {
                 holdChoke = BuildOrder::isFastExpand()
                     || vis(Protoss_Dragoon) > 0
                     || com(Protoss_Shield_Battery) > 0
                     || BuildOrder::isWallNat()
                     || (BuildOrder::isHideTech() && !rush)
                     || Players::getSupply(PlayerState::Self) > 60
-                    || Players::vT()
-                    || Broodwar->self()->getRace() == Races::Zerg;
+                    || Players::vT();
+
+                if (Players::getSupply(PlayerState::Self) <= 40)
+                    holdChoke = false;
             }
+
+            // Zerg
+            if (Broodwar->self()->getRace() == Races::Zerg) {
+                holdChoke = !rush || BuildOrder::isFastExpand();
+            }
+
+            // Other situations
+            if (!holdChoke && Units::getImmThreat() > 0.0)
+                holdChoke = false;
         }
 
         void checkNeedDetection()
@@ -351,9 +366,31 @@ namespace McRave::Strategy {
 
         void checkEnemyProxy()
         {
+            // If we have seen an enemy Probe before we've scouted the enemy, follow it
+            if (Players::getCurrentCount(PlayerState::Enemy, Protoss_Probe) == 1 && com(Protoss_Zealot) < 1) {
+                auto &enemyProbe = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                    return u.getType() == Protoss_Probe;
+                });
+                proxyCheck = (enemyProbe && !Terrain::getEnemyStartingPosition().isValid() && (enemyProbe->getPosition().getDistance(BWEB::Map::getMainPosition()) < 640.0 || Terrain::isInAllyTerritory(enemyProbe->getTilePosition())));
+            }
+            else
+                proxyCheck = false;
+
             // Proxy builds are built closer to me than the enemy
             proxy = proxy
                 || (Players::getSupply(PlayerState::Self) < 80 && (enemyBuild == "CannonRush" || enemyBuild == "BunkerRush"));
+        }
+
+        void checkEnemyAir()
+        {
+            air = Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair)
+                || Players::getTotalCount(PlayerState::Enemy, Protoss_Scout)
+                || Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate)
+                || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith)
+                || Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie)
+                || Players::getTotalCount(PlayerState::Enemy, Terran_Starport)
+                || Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk)
+                || Players::getTotalCount(PlayerState::Enemy, Zerg_Spire);
         }
 
         void updateEnemyBuild()
@@ -388,28 +425,31 @@ namespace McRave::Strategy {
             }
         }
 
-        void updateSituationalBehaviour()
+        void globalReactions()
         {
             checkNeedDetection();
             checkEnemyPressure();
             checkEnemyProxy();
             checkEnemyRush();
+            checkEnemyAir();
             checkHoldChoke();
         }
     }
 
     void onFrame()
     {
-        updateSituationalBehaviour();
+        globalReactions();
         updateEnemyBuild();
     }
 
     string getEnemyBuild() { return enemyBuild; }
     Position enemyScoutPosition() { return scoutPosition; }
+    bool enemyAir() { return air; }
     bool enemyFastExpand() { return enemyFE; }
     bool enemyRush() { return rush; }
     bool needDetection() { return invis; }
     bool defendChoke() { return holdChoke; }
+    bool enemyPossibleProxy() { return proxyCheck; }
     bool enemyProxy() { return proxy; }
     bool enemyGasSteal() { return gasSteal; }
     bool enemyScouted() { return enemyScout; }

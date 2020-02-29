@@ -15,13 +15,15 @@ namespace BWEB {
         std::vector<BWAPI::UnitType> rawBuildings, rawDefenses;
         std::map<BWAPI::TilePosition, BWAPI::UnitType> currentLayout, bestLayout;
 
+        BWAPI::TilePosition node1Tight = BWAPI::TilePositions::Invalid, node2Tight = BWAPI::TilePositions::Invalid;
         const BWEM::Area * area;
         const BWEM::ChokePoint * choke;
-        bool pylonWall, openWall, requireTight;
+        const BWEM::Base * base;
+        bool pylonWall, openWall, requireTight, movedStart;
         double chokeAngle;
 
         std::vector<BWAPI::UnitType>::iterator typeIterator;
-        BWAPI::TilePosition initialStart, initialEnd, startTile, endTile;
+        BWAPI::TilePosition initialPathStart, initialPathEnd, pathStart, pathEnd;
         double bestWallScore = 0.0;
         double jpsDist = 0.0;
 
@@ -31,6 +33,7 @@ namespace BWEB {
         bool tightCheck(const BWAPI::UnitType, const BWAPI::TilePosition);
         bool spawnCheck(const BWAPI::UnitType, const BWAPI::TilePosition);
 
+        void cleanup();
         void initializePathPoints();
         void checkPathPoints();
         Path findOpeningInWall();
@@ -51,15 +54,16 @@ namespace BWEB {
             tightType = _tightType;
 
             bestWallScore = 0.0;
-            startTile = BWAPI::TilePositions::None;
-            endTile = BWAPI::TilePositions::None;
-            initialStart = BWAPI::TilePositions::None;
-            initialEnd = BWAPI::TilePositions::None;
+            pathStart = BWAPI::TilePositions::None;
+            pathEnd = BWAPI::TilePositions::None;
+            initialPathStart = BWAPI::TilePositions::None;
+            initialPathEnd = BWAPI::TilePositions::None;
 
             initialize();
             addCentroid();
             addOpening();
             addDefenses();
+            cleanup();
         }
 
         void addToWall(BWAPI::TilePosition here, BWAPI::UnitType building) {
@@ -85,7 +89,7 @@ namespace BWEB {
         std::set<BWAPI::TilePosition> getDefenses() const { return defenses; }
 
         /// <summary> Returns the TilePosition belonging to the opening of the wall. </summary>
-        BWAPI::TilePosition inOpeningBook() const { return opening; }
+        BWAPI::TilePosition getOpening() const { return opening; }
 
         /// <summary> Returns the TilePosition belonging to the centroid of the wall pieces. </summary>
         BWAPI::Position getCentroid() const { return centroid; }

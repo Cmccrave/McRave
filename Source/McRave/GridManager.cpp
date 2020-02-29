@@ -49,14 +49,11 @@ namespace McRave::Grids
 
         void addSplash(UnitInfo& unit)
         {
-            int walkWidth = (int)ceil(unit.getType().width() / 8.0);
-            int walkHeight = (int)ceil(unit.getType().height() / 8.0);
-
             WalkPosition start(unit.getTarget().getWalkPosition());
             Position target = unit.getTarget().getPosition();
 
-            for (int x = start.x - 12; x <= start.x + 12 + walkWidth; x++) {
-                for (int y = start.y - 12; y <= start.y + 12 + walkHeight; y++) {
+            for (int x = start.x - 12; x <= start.x + 12 + unit.getWalkWidth(); x++) {
+                for (int y = start.y - 12; y <= start.y + 12 + unit.getWalkHeight(); y++) {
 
                     WalkPosition w(x, y);
                     Position p = Position(w) + Position(4, 4);
@@ -71,14 +68,14 @@ namespace McRave::Grids
 
         void addToGrids(UnitInfo& unit)
         {
-            if ((unit.getType().isWorker() && unit.getPlayer() != Broodwar->self() && (!unit.unit()->exists() || Broodwar->getFrameCount() > 10000))
+            if ((unit.getType().isWorker() && unit.getPlayer() != Broodwar->self() && (!unit.unit()->exists() || Broodwar->getFrameCount() > 10000 || !unit.hasAttackedRecently()))
                 || unit.getType() == Protoss_Interceptor
                 || unit.getType() == Terran_Medic)
                 return;
 
             // Pixel and walk sizes
-            const auto walkWidth = unit.getType().isBuilding() ? unit.getType().tileWidth() * 4 : (int)ceil(unit.getType().width() / 8.0);
-            const auto walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : (int)ceil(unit.getType().height() / 8.0);
+            const auto walkWidth = unit.getType().isBuilding() ? unit.getType().tileWidth() * 4 : unit.getWalkWidth();
+            const auto walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : unit.getWalkHeight();
 
             // Choose threat grid
             auto grdGrid = unit.getPlayer() == Broodwar->self() ? nullptr : eGroundThreat;
@@ -92,7 +89,7 @@ namespace McRave::Grids
             // Limit checks so we don't have to check validity
             auto radius = (unit.getPlayer() != Broodwar->self() || unit.getRole() == Role::Combat) ? 1 + int(max(unit.getGroundReach(), unit.getAirReach())) / 8 : 0;
 
-            if (unit.getType().isWorker() && 
+            if (unit.getType().isWorker() &&
                 (unit.unit()->isConstructing() || unit.unit()->isGatheringGas() || unit.unit()->isGatheringMinerals()))
                 radius = radius / 3.0;
 
@@ -101,10 +98,10 @@ namespace McRave::Grids
             const auto top = max(0, unit.getWalkPosition().y - radius);
             const auto bottom = min(1024, unit.getWalkPosition().y + walkHeight + radius);
 
-            // Pixel rectangle
+            // Pixel rectangle (make any even size units an extra WalkPosition)
             const auto ff = unit.getType().isBuilding() ? Position(0, 0) : Position(8, 8);
             const auto topLeft = Position(unit.getWalkPosition());
-            const auto botRight = topLeft + Position(walkWidth * 8, walkHeight * 8);
+            const auto botRight = topLeft + Position(walkWidth * 8, walkHeight * 8) + Position(8 * (1 - unit.getWalkWidth() % 2), 8 * (1 - unit.getWalkHeight() % 2));
             const auto x1 = unit.getPosition().x;
             const auto y1 = unit.getPosition().y;
 
@@ -115,7 +112,7 @@ namespace McRave::Grids
             if (!closest)
                 inRange = false;
             else {
-                const auto dist = closest->getPosition().getDistance(unit.getPosition()) - 64.0;
+                const auto dist = closest->getPosition().getDistance(unit.getPosition()) - 128.0;
                 const auto vision = closest->getType().sightRange();
                 const auto range = max({ closest->getGroundRange(), closest->getAirRange(), unit.getGroundRange(), unit.getAirRange() });
 
@@ -128,7 +125,8 @@ namespace McRave::Grids
             for (int x = left; x < right; x++) {
                 for (int y = top; y < bottom; y++) {
 
-                    const auto dist = fasterDistGrids(x1, y1, (x * 8) + 4, (y * 8) + 4);
+                    //const auto dist = fasterDistGrids(x1, y1, (x * 8) + 4, (y * 8) + 4);
+                    const auto dist = unit.getPosition().getDistance(Position((x * 8) + 4, (y * 8) + 4));
 
                     // Cluster
                     if (clusterGrid && dist < 48.0 && (unit.getPlayer() != Broodwar->self() || (unit.getRole() == Role::Combat && !unit.localRetreat()))) {
@@ -144,11 +142,11 @@ namespace McRave::Grids
 
                     // Threat
                     if (inRange && grdGrid && dist <= unit.getGroundReach()) {
-                        grdGrid[x][y] += float(unit.getVisibleGroundStrength() * unit.getGroundReach() / (1.0 + dist));
+                        grdGrid[x][y] += float(unit.getVisibleGroundStrength() * unit.getGroundReach());
                         saveReset(x, y);
                     }
                     if (inRange && airGrid && dist <= unit.getAirReach()) {
-                        airGrid[x][y] += float(unit.getVisibleAirStrength() * unit.getAirReach() / (1.0 + dist));
+                        airGrid[x][y] += float(unit.getVisibleAirStrength() * unit.getAirReach());
                         saveReset(x, y);
                     }
                 }
@@ -355,29 +353,25 @@ namespace McRave::Grids
     int lastVisibleFrame(TilePosition t) { return visibleGrid[t.x][t.y]; }
     int lastVisitedFrame(WalkPosition w) { return visitedGrid[w.x][w.y]; }
 
-    void addMovement(WalkPosition here, UnitType type)
+    void addMovement(Position here, UnitType type)
     {
-        if (type.isFlyer())
-            return;
+        //if (type.isFlyer())
+        //    return;
 
-        auto walkWidth = type.isBuilding() ? type.tileWidth() * 4 : (int)ceil(type.width() / 8.0);
-        auto walkHeight = type.isBuilding() ? type.tileHeight() * 4 : (int)ceil(type.height() / 8.0);
+        //const auto w = WalkPosition(here);
+        //const auto hw = unit.getWalkWidth() / 2;
+        //const auto hh = unit.getWalkHeight() / 2;
 
-        auto halfW = walkWidth / 2;
-        auto halfH = walkHeight / 2;
-        auto wOffset = type.width() % 8 != 0 ? 1 : 0;
-        auto hOffset = type.height() % 8 != 0 ? 1 : 0;
+        //auto left = max(0, here.x - hw);
+        //auto right = min(1024, here.x + hw + wOffset);
+        //auto top = max(0, here.y - hh);
+        //auto bottom = min(1024, here.y + hh + hOffset);
 
-        auto left = max(0, here.x - halfW);
-        auto right = min(1024, here.x + halfW + wOffset);
-        auto top = max(0, here.y - halfH);
-        auto bottom = min(1024, here.y + halfH + hOffset);
-
-        for (int x = left; x < right; x++) {
-            for (int y = top; y < bottom; y++) {
-                collision[x][y] += 1;
-                saveReset(x, y);
-            }
-        }
+        //for (int x = left; x < right; x++) {
+        //    for (int y = top; y < bottom; y++) {
+        //        collision[x][y] += 1;
+        //        saveReset(x, y);
+        //    }
+        //}
     }
 }

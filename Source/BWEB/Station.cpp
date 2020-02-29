@@ -157,14 +157,17 @@ namespace BWEB::Stations {
 
     void findStations()
     {
-        const auto addResourceOverlap = [&](Position genCenter) {
-            TilePosition start(genCenter);
-            for (int x = start.x - 4; x < start.x + 4; x++) {
-                for (int y = start.y - 4; y < start.y + 4; y++) {
+        const auto addResourceOverlap = [&](Position resourceCenter, Position startCenter, Position stationCenter) {
+            TilePosition start(startCenter);
+
+            for (int x = start.x - 2; x < start.x + 2; x++) {
+                for (int y = start.y - 2; y < start.y + 2; y++) {
                     TilePosition t(x, y);
+                    Position p = Position(t) + Position(16, 16);
+
                     if (!t.isValid())
                         continue;
-                    if (t.getDistance(start) <= 4)
+                    if (p.getDistance(stationCenter) <= resourceCenter.getDistance(stationCenter))
                         Map::addReserve(t, 1, 1);
                 }
             }
@@ -196,19 +199,25 @@ namespace BWEB::Stations {
                 h = base.Center().x < sCenter.x;
                 v = base.Center().y < sCenter.y;
 
-                for (auto &m : base.Minerals())
+                for (auto &m : base.Minerals()) {
                     Map::addReserve(m->TopLeft(), 2, 1);
+                    addResourceOverlap(genCenter, (m->Pos() + base.Center()) / 2, base.Center());
+                }
 
-                for (auto &g : base.Geysers())
+
+                for (auto &g : base.Geysers()) {
                     Map::addReserve(g->TopLeft(), 4, 2);
+                    addResourceOverlap(genCenter, (g->Pos() + base.Center()) / 2, base.Center());
+                }
+
 
                 Station newStation(genCenter, stationDefenses(base.Location(), h, v), &base);
                 stations.push_back(newStation);
-                Map::addReserve(base.Location(), 4, 3);
-                addResourceOverlap(genCenter);
 
                 if (Broodwar->self()->getRace() == Races::Zerg)
-                    Map::addReserve(base.Location() - TilePosition(1, 1), 6, 5);
+                    Map::addReserve(base.Location(), 4, 4);
+                else
+                    Map::addReserve(base.Location(), 4, 3);
             }
         }
     }

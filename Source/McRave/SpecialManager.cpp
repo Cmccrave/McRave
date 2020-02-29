@@ -133,7 +133,7 @@ namespace McRave::Command
         {
             // Battlecruiser - Yamato
             if (unit.getType() == Terran_Battlecruiser) {
-                if ((unit.unit()->getOrder() == Orders::FireYamatoGun || (Broodwar->self()->hasResearched(TechTypes::Yamato_Gun) && unit.unit()->getEnergy() >= TechTypes::Yamato_Gun.energyCost()) && unit.getTarget().unit()->getHitPoints() >= 80) && unit.hasTarget() && unit.getTarget().unit()->exists()) {
+                if ((unit.unit()->getOrder() == Orders::FireYamatoGun || (Broodwar->self()->hasResearched(TechTypes::Yamato_Gun) && unit.getEnergy() >= TechTypes::Yamato_Gun.energyCost()) && unit.getTarget().unit()->getHitPoints() >= 80) && unit.hasTarget() && unit.getTarget().unit()->exists()) {
                     if ((unit.unit()->getLastCommand().getType() != UnitCommandTypes::Use_Tech || unit.unit()->getLastCommand().getTarget() != unit.getTarget().unit()))
                         unit.unit()->useTech(TechTypes::Yamato_Gun, unit.getTarget().unit());
 
@@ -145,7 +145,7 @@ namespace McRave::Command
             // Ghost - Cloak / Nuke
             else if (unit.getType() == Terran_Ghost) {
 
-                if (!unit.unit()->isCloaked() && unit.unit()->getEnergy() >= 50 && unit.getPosition().getDistance(unit.getEngagePosition()) < 320 && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy))
+                if (!unit.unit()->isCloaked() && unit.getEnergy() >= 50 && unit.getPosition().getDistance(unit.getEngagePosition()) < 320 && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy))
                     unit.unit()->useTech(TechTypes::Personnel_Cloaking);
 
                 if (com(Terran_Nuclear_Missile) > 0 && unit.hasTarget() && unit.getTarget().getWalkPosition().isValid() && unit.unit()->isCloaked() && Grids::getEAirCluster(unit.getTarget().getWalkPosition()) + Grids::getEGroundCluster(unit.getTarget().getWalkPosition()) > 5.0 && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= 320 && unit.getPosition().getDistance(unit.getTarget().getPosition()) > 200) {
@@ -166,7 +166,7 @@ namespace McRave::Command
                 unit.unit()->useTech(TechTypes::Stim_Packs);
 
             // Science Vessel - Defensive Matrix
-            else if (unit.getType() == Terran_Science_Vessel && unit.unit()->getEnergy() >= TechTypes::Defensive_Matrix) {
+            else if (unit.getType() == Terran_Science_Vessel && unit.getEnergy() >= TechTypes::Defensive_Matrix) {
                 auto &ally = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                     return (u.unit()->isUnderAttack());
                 });
@@ -177,14 +177,14 @@ namespace McRave::Command
 
             // Wraith - Cloak
             else if (unit.getType() == Terran_Wraith) {
-                if (unit.getHealth() >= 120 && !unit.unit()->isCloaked() && unit.unit()->getEnergy() >= 50 && unit.getPosition().getDistance(unit.getEngagePosition()) < 320 && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy))
+                if (unit.getHealth() >= 120 && !unit.unit()->isCloaked() && unit.getEnergy() >= 50 && unit.getPosition().getDistance(unit.getEngagePosition()) < 320 && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy))
                     unit.unit()->useTech(TechTypes::Cloaking_Field);
                 else if (unit.getHealth() <= 90 && unit.unit()->isCloaked())
                     unit.unit()->useTech(TechTypes::Cloaking_Field);
             }
 
             // Corsair - Disruption Web
-            else if (unit.getType() == Protoss_Corsair && unit.unit()->getEnergy() >= TechTypes::Disruption_Web.energyCost() && Broodwar->self()->hasResearched(TechTypes::Disruption_Web)) {
+            else if (unit.getType() == Protoss_Corsair && unit.getEnergy() >= TechTypes::Disruption_Web.energyCost() && Broodwar->self()->hasResearched(TechTypes::Disruption_Web)) {
                 auto closestEnemy = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) {
                     return u.getPosition().getDistance(unit.getPosition()) < 256.0 && !Actions::overlapsActions(unit.unit(), u.getPosition(), TechTypes::Disruption_Web, PlayerState::Self, 96) && u.hasAttackedRecently() && u.getSpeed() <= Protoss_Reaver.topSpeed();
                 });
@@ -286,8 +286,7 @@ namespace McRave::Command
         bool returnResource(UnitInfo& unit)
         {
             // Can't return cargo if we aren't carrying a resource or overlapping a building position
-            if ((!unit.unit()->isCarryingGas() && !unit.unit()->isCarryingMinerals())
-                || Buildings::overlapsQueue(unit, unit.getTilePosition()))
+            if ((!unit.unit()->isCarryingGas() && !unit.unit()->isCarryingMinerals()))
                 return false;
 
             auto checkPath = (unit.hasResource() && unit.getPosition().getDistance(unit.getResource().getPosition()) > 320.0) || (!unit.hasResource() && !Terrain::isInAllyTerritory(unit.getTilePosition()));
@@ -306,11 +305,11 @@ namespace McRave::Command
             // For now only workers clear neutrals
             auto resourceDepot = Broodwar->self()->getRace().getResourceDepot();
             if (!unit.getType().isWorker()
+                || Util::getTime() < Time(6, 0)
                 || vis(resourceDepot) < 2
                 || (BuildOrder::buildCount(resourceDepot) == vis(resourceDepot) && BuildOrder::isOpener())
                 || unit.unit()->isCarryingMinerals()
-                || unit.unit()->isCarryingGas()
-                /*|| boulderWorkers != 0*/)
+                || unit.unit()->isCarryingGas())
                 return false;
 
             // Find boulders to clear
@@ -319,9 +318,16 @@ namespace McRave::Command
                 if (!boulder.unit() || !boulder.unit()->exists())
                     continue;
                 if ((unit.getPosition().getDistance(boulder.getPosition()) <= 320.0 && boulder.getGathererCount() == 0) || (unit.unit()->isGatheringMinerals() && unit.unit()->getOrderTarget() == boulder.unit())) {
+
+                    auto closestWorker = Util::getClosestUnit(boulder.getPosition(), PlayerState::Self, [&](auto &u) {
+                        return u.getRole() == Role::Worker;
+                    });
+
+                    if (closestWorker != unit.shared_from_this())
+                        continue;
+
                     if (unit.unit()->getOrderTarget() != boulder.unit())
                         unit.unit()->gather(boulder.unit());
-                    //boulderWorkers = 1;
                     return true;
                 }
             }
@@ -356,6 +362,42 @@ namespace McRave::Command
         {
             if (unit.getRole() != Role::Worker)
                 return false;
+
+            // Check if we're trying to build a defense near this worker
+            if (unit.hasResource()) {
+                auto station = unit.getResource().getStation();
+                if (station && (Stations::needGroundDefenses(*station) > 0 || Stations::needAirDefenses(*station) > 0)) {
+                    auto builder = Util::getClosestUnit(unit.getResource().getPosition(), PlayerState::Self, [&](auto &u) {
+                        return u != unit && u.getBuildType() == Protoss_Photon_Cannon || u.getBuildType() == Protoss_Pylon || u.getBuildType() == Terran_Missile_Turret || u.getBuildType() == Zerg_Creep_Colony;
+                    });
+
+                    // Builder is close and may need space opened up
+                    if (builder) {
+                        auto center = Position(builder->getBuildPosition());
+                        if (builder->getPosition().getDistance(center) < 160.0 && unit.getResource().getPosition().getDistance(center) < 160.0 && Broodwar->self()->minerals() >= builder->getBuildType().mineralPrice()) {
+                            unit.circlePurple();
+
+                            // Get furthest Mineral
+                            BWEM::Mineral * furthest = nullptr;
+                            auto furthestDist = 0.0;
+                            for (auto &resource : unit.getResource().getStation()->getBWEMBase()->Minerals()) {
+                                if (resource && resource->Unit()->exists()) {
+                                    auto dist = resource->Pos().getDistance(center);
+                                    if (dist > furthestDist) {
+                                        furthestDist = dist;
+                                        furthest = resource;
+                                    }
+                                }
+                            }
+
+                            // Spam gather it to move out of the way
+                            unit.unit()->gather(furthest->Unit());
+                            return true;
+                        }
+                    }
+
+                }
+            }
 
             if (unit.hasResource() && unit.getResource().getResourceState() == ResourceState::Mineable && (unit.isWithinGatherRange() || Grids::getAGroundCluster(unit.getPosition()) > 0.0f)) {
                 if (unit.canStartGather())

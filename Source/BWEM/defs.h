@@ -74,7 +74,7 @@ const int lake_max_width_in_miniTiles = 8*4;
 // At least area_min_miniTiles connected MiniTiles are necessary for an Area to be created.
 const int area_min_miniTiles = 64;
 
-const int max_tiles_between_CommandCenter_and_ressources = 10;
+const int max_tiles_between_CommandCenter_and_ressources = 14;
 const int min_tiles_between_Bases = 10;
 
 const int max_tiles_between_StartingLocation_and_its_AssignedBase = 3;

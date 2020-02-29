@@ -171,7 +171,7 @@ namespace McRave::Actions {
 
         // Check outgoing UnitType Actions for this PlayerState
         for (auto &action : *actions) {
-            if (action.unit == unit)
+            if (action.unit == unit || (type != None && type != action.type))
                 continue;
             if (circleOverlap(action, checkPositions, distance))
                 return true;

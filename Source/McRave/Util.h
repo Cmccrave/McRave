@@ -128,14 +128,15 @@ namespace McRave::Util {
 
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, BWAPI::Position);
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, int, int);
-    bool isTightWalkable(UnitInfo&, BWAPI::WalkPosition);
-    bool isLooseWalkable(UnitInfo&, BWAPI::WalkPosition);
+    bool isTightWalkable(UnitInfo&, BWAPI::Position);
 
-    BWAPI::Position getConcavePosition(UnitInfo&, BWEM::Area const * area = nullptr, BWAPI::Position here = BWAPI::Positions::Invalid);
+    BWAPI::Position getConcavePosition(UnitInfo&, BWEM::Area const *, BWEM::ChokePoint const *);
     BWAPI::Position getInterceptPosition(UnitInfo&);
     BWAPI::Position clipLine(BWAPI::Position, BWAPI::Position);
     BWAPI::Position clipPosition(BWAPI::Position);
+    BWAPI::Position vectorProjection(std::pair<BWAPI::Position, BWAPI::Position>, BWAPI::Position);
 
     Time getTime();
+    void onStart();
     void onFrame();
 }

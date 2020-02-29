@@ -11,11 +11,16 @@ namespace McRave::Math {
 
     double maxGroundStrength(UnitInfo& unit)
     {
+        if (unit.getGroundDamage() <= 0.0)
+            return 0.0;
+
         // HACK: Some hardcoded values
         if (unit.getType() == Terran_Medic)
             return 5.0;
-        else if (unit.getType() == Protoss_Scarab || unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Zerg_Egg || unit.getType() == Zerg_Larva || unit.getGroundDamage() <= 0.0)
+        else if (unit.getType() == Protoss_Scarab || unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Zerg_Egg || unit.getType() == Zerg_Larva)
             return 0.0;
+
+        // Carrier is based on interceptor count
         else if (unit.getType() == Protoss_Carrier) {
             double cnt = 0.0;
             for (auto &i : unit.unit()->getInterceptors()) {
@@ -28,12 +33,11 @@ namespace McRave::Math {
             return cnt;
         }
 
-        double dps, surv, eff;
-        dps = groundDPS(unit);
-        surv = log(survivability(unit));
-        eff = effectiveness(unit);
-
-        return dps * surv * eff;
+        const auto dps = groundDPS(unit);
+        const auto surv = log(survivability(unit));
+        const auto eff = grdEffectiveness(unit);
+        const auto range = log(unit.getGroundRange());
+        return dps * range * surv * eff;
     }
 
     double visibleGroundStrength(UnitInfo& unit)
@@ -45,11 +49,11 @@ namespace McRave::Math {
 
     double maxAirStrength(UnitInfo& unit)
     {
-        // HACK: Some hardcoded values
-        if (unit.getType() == Protoss_Scarab || unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Zerg_Egg || unit.getType() == Zerg_Larva || unit.getAirDamage() <= 0.0)
+        if (unit.getAirDamage() <= 0.0)
             return 0.0;
 
-        else if (unit.getType() == Protoss_Carrier) {
+        // Carrier is based on interceptor count
+        if (unit.getType() == Protoss_Carrier) {
             double cnt = 0.0;
             for (auto &i : unit.unit()->getInterceptors()) {
                 if (i && !i->exists()) {
@@ -61,12 +65,11 @@ namespace McRave::Math {
             return cnt;
         }
 
-        double dps, surv, eff;
-        dps = airDPS(unit);
-        surv = log(survivability(unit));
-        eff = effectiveness(unit);
-
-        return dps * surv * eff;
+        const auto dps = airDPS(unit);
+        const auto surv = log(survivability(unit));
+        const auto eff = airEffectiveness(unit);
+        const auto range = log(unit.getAirRange());
+        return dps * range * surv * eff;
     }
 
     double visibleAirStrength(UnitInfo& unit)
@@ -79,26 +82,35 @@ namespace McRave::Math {
     double priority(UnitInfo& unit)
     {
         // According to sheet linked above, these are the maximum values for normalizing
-        auto maxGrdDps = 13.884;
-        auto maxAirDps = 11.326;
-        auto maxCost = 69.589;
-        auto maxSurv = 60.624;
+        const auto maxGrdDps = 2.333;
+        const auto maxAirDps = 2.000;
+        const auto maxCost = 69.589;
+        const auto maxSurv = 57.951;
+        auto bonus = 1.0;
+
+        // Add bonus for a repairing SCV
+        if (unit.getType() == Terran_SCV) {
+            const auto repairTarget = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) {
+                return u.getType() == Terran_Missile_Turret || u.getType() == Terran_Bunker;
+            });
+
+            if (repairTarget && (repairTarget->getPosition().getDistance(unit.getPosition()) < 128.0 || unit.unit()->isRepairing() || unit.unit()->isConstructing())) {
+                bonus = 30.0;
+                unit.circleBlue();
+            }
+        }
+
+        // If target is an egg, larva, scarab or spell
+        if (unit.getType() == UnitTypes::Zerg_Egg || unit.getType() == UnitTypes::Zerg_Larva || unit.getType() == UnitTypes::Protoss_Scarab || unit.getType().isSpell())
+            return 0.0;
 
         // Bunch of priority hacks
-        if (unit.getType() == Terran_Vulture_Spider_Mine)
-            return 1.0;
-        if (unit.getType() == Terran_Science_Vessel || unit.getType() == Protoss_Arbiter)
-            return 2.5;
-        if ((unit.unit()->isRepairing() || unit.unit()->isConstructing()) && unit.isThreatening())
+        if (unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Terran_Science_Vessel || unit.getType() == Protoss_Arbiter)
             return 5.0;
         if (Broodwar->getFrameCount() < 6000 && Strategy::enemyProxy() && unit.getType() == Protoss_Pylon)
             return Grids::getEGroundThreat(unit.getPosition()) == 0.0f ? 5.0 : 0.0;
-        if (unit.unit()->isBeingConstructed() && unit.getType() == Terran_Bunker && Terrain::isInAllyTerritory(unit.getTilePosition())) {
-            unit.circleBlack();
-            return 0.0;
-        }
         if (unit.getType() == Protoss_Carrier)
-            return 0.5;
+            return 1.0;
 
         // HACK: Kill neutrals blocking geysers for Sparkle
         if (unit.getTilePosition().isValid()) {
@@ -116,10 +128,7 @@ namespace McRave::Math {
         auto cost = relativeCost(unit) / maxCost;
         auto surv = survivability(unit) / maxSurv;
 
-        //Broodwar->drawTextMap(unit.getPosition(), "%.2f, %.2f, %.2f", dps, cost, surv);
-        //Broodwar->drawTextMap(unit.getPosition(), "%.2f", clamp((dps * cost / surv), 0.01, DBL_MAX));
-
-        return clamp((dps * cost / surv), 0.1, DBL_MAX);
+        return clamp(bonus * (dps * cost / surv), 0.1, 9999.99);
     }
 
     double relativeCost(UnitInfo& unit)
@@ -139,27 +148,18 @@ namespace McRave::Math {
 
     double groundDPS(UnitInfo& unit)
     {
-        double splash, damage, range, cooldown;
-        splash = splashModifier(unit);
-        damage = unit.getGroundDamage();
-        range = log(unit.getGroundRange());
-        cooldown = groundCooldown(unit);
-        if (damage <= 0)
-            return 0.0;
-        return splash * damage * range / cooldown;
+        const auto splash = splashModifier(unit);
+        const auto damage = unit.getGroundDamage();
+        const auto cooldown = groundCooldown(unit);
+        return damage > 1.0 ? splash * damage / cooldown : 0.0;
     }
 
     double airDPS(UnitInfo& unit)
     {
-        double splash, damage, range, cooldown;
-        splash = splashModifier(unit);
-        damage = unit.getAirDamage();
-        range = log(unit.getAirRange());
-        cooldown = airCooldown(unit);
-
-        if (damage <= 0)
-            return 0.0;
-        return splash * damage * range / cooldown;
+        const auto splash = splashModifier(unit);
+        const auto damage = unit.getAirDamage();
+        const auto cooldown = airCooldown(unit);
+        return  damage > 1.0 ? splash * damage / cooldown : 0.0;
     }
 
     double groundCooldown(UnitInfo& unit)
@@ -193,6 +193,8 @@ namespace McRave::Math {
             return 7.5;
         if (unit.getType() == Protoss_Interceptor)
             return 36.0;
+        if (unit.getType() == Terran_Valkyrie)
+            return 104.0;
         return unit.getType().airWeapon().damageCooldown();
     }
 
@@ -211,9 +213,9 @@ namespace McRave::Math {
         return 1.00;
     }
 
-    double effectiveness(UnitInfo& unit)
+    double grdEffectiveness(UnitInfo& unit)
     {
-        auto sizes = unit.getPlayer() == Broodwar->self() ? Units::getEnemySizes() : Units::getAllySizes();
+        auto sizes = unit.getPlayer() == Broodwar->self() ? Units::getEnemyGrdSizes() : Units::getAllyGrdSizes();
         auto large = sizes[UnitSizeTypes::Large];
         auto medium = sizes[UnitSizeTypes::Medium];
         auto small = sizes[UnitSizeTypes::Small];
@@ -228,12 +230,29 @@ namespace McRave::Math {
         return 1.0;
     }
 
+    double airEffectiveness(UnitInfo& unit)
+    {
+        auto sizes = unit.getPlayer() == Broodwar->self() ? Units::getEnemyAirSizes() : Units::getAllyAirSizes();
+        auto large = sizes[UnitSizeTypes::Large];
+        auto medium = sizes[UnitSizeTypes::Medium];
+        auto small = sizes[UnitSizeTypes::Small];
+        auto total = double(large + medium + small);
+
+        if (total > 0.0) {
+            if (unit.getType().airWeapon().damageType() == DamageTypes::Explosive)
+                return ((large*1.0) + (medium*0.75) + (small*0.5)) / total;
+            else if (unit.getType().airWeapon().damageType() == DamageTypes::Concussive)
+                return ((large*0.25) + (medium*0.5) + (small*1.0)) / total;
+        }
+        return 1.0;
+    }
+
     double survivability(UnitInfo& unit)
     {
-        double speed, armor, health;
-        speed = (unit.getType().isBuilding()) ? 1.0 : max(0.25, log(unit.getSpeed()));
-        armor = 2.0 + double(unit.getType().armor() + unit.getPlayer()->getUpgradeLevel(unit.getType().armorUpgrade()));
-        health = log(double(unit.getType().maxHitPoints() + unit.getType().maxShields()));
+        const auto avgUnitSpeed = 4.34;
+        const auto speed = log(unit.getSpeed() + avgUnitSpeed);
+        const auto armor = 0.25 + double(unit.getType().armor() + unit.getPlayer()->getUpgradeLevel(unit.getType().armorUpgrade()));
+        const auto health = log(double(unit.getType().maxHitPoints() + unit.getType().maxShields()));
         return speed * armor * health;
     }
 
@@ -283,7 +302,7 @@ namespace McRave::Math {
         return double(unit.getType().airWeapon().maxRange());
     }
 
-    double groundReach(UnitInfo& unit) 
+    double groundReach(UnitInfo& unit)
     {
         return unit.getGroundRange() + (unit.getSpeed() * 32.0) + double(unit.getType().width() / 2) + 64.0;
     }
@@ -323,7 +342,7 @@ namespace McRave::Math {
         if (unit.getType() == Protoss_Interceptor)
             return 12.0 + (2.0 * upLevel);
         if (unit.getType() == Terran_Valkyrie)
-            return 48.0 + (8.0 * upLevel);
+            return (48.0 * 0.36) + (8.0 * upLevel);
         if (unit.getType() == Protoss_High_Templar)
             return 112.0;
         return unit.getType().airWeapon().damageAmount() + (unit.getType().airWeapon().damageBonus() * upLevel);
@@ -345,7 +364,7 @@ namespace McRave::Math {
             return 0.0;
         return speed;
     }
-    
+
     int stopAnimationFrames(UnitType unitType) {
         if (unitType == Protoss_Dragoon)
             return 10;
@@ -356,41 +375,23 @@ namespace McRave::Math {
         return 0;
     }
 
-    WalkPosition getWalkPosition(Unit unit)
-    {
-        auto walkWidth = unit->getType().isBuilding() ? unit->getType().tileWidth() * 4 : (int)ceil(unit->getType().width() / 8.0);
-        auto walkHeight = unit->getType().isBuilding() ? unit->getType().tileHeight() * 4 : (int)ceil(unit->getType().height() / 8.0);
-        if (!unit->getType().isBuilding())
-            return WalkPosition(unit->getPosition()) - WalkPosition(walkWidth / 2, walkHeight / 2);
-        else
-            return WalkPosition(unit->getTilePosition());
-        return WalkPositions::None;
-    }
-
-    TilePosition getTilePosition(Unit unit)
-    {
-        return unit->getType().isBuilding() ? unit->getTilePosition() : unit->getTilePosition() + TilePosition(unit->getPosition().x % 32 >= 16 ? 0 : 1, unit->getPosition().y % 32 >= 16 ? 0 : 1);
-    }
-
-    double realisticMineralCost(UnitType type)
+    int realisticMineralCost(UnitType type)
     {
         if (type == Protoss_Archon)
-            return 100.0;
+            return 100;
         else if (type == Protoss_Dark_Archon)
-            return 250.0;
+            return 250;
         else if (type == Zerg_Sunken_Colony || type == Zerg_Spore_Colony)
-            return 175.0;
+            return 175;
         return type.mineralPrice();
     }
 
-    double realisticGasCost(UnitType type)
+    int realisticGasCost(UnitType type)
     {
         if (type == Protoss_Archon)
-            return 300.0;
+            return 300;
         else if (type == Protoss_Dark_Archon)
-            return 200.0;
-        else if (type == Zerg_Sunken_Colony || type == Zerg_Spore_Colony)
-            return 0.0;
+            return 200;
         return type.gasPrice();
     }
 }

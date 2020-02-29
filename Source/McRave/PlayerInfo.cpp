@@ -2,9 +2,14 @@
 
 using namespace std;
 using namespace BWAPI;
+using namespace UnitTypes;
 
-namespace McRave 
+namespace McRave
 {
+    namespace {
+        map<Unit, UnitType> actualEggType; // BWAPI issue #850
+    }
+
     void PlayerInfo::update()
     {
         set<shared_ptr<UnitInfo>> deadUnits;
@@ -26,17 +31,26 @@ namespace McRave
         pStrength.clear();
         for (auto &u : units) {
             auto &unit = *u;
+            auto type = unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType() : unit.getType();
+
+            if (unit.getType() == UnitTypes::Zerg_Egg) {
+                if (type == UnitTypes::None)
+                    type = actualEggType[unit.unit()];
+                else
+                    actualEggType[unit.unit()] = unit.unit()->getBuildType();
+            }
 
             // Supply
-            supply += unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType().supplyRequired() : unit.getType().supplyRequired();
-            
+            supply += type.supplyRequired();
+            supply += unit.unit()->getBuildType() == Zerg_Zergling || unit.unit()->getBuildType() == Zerg_Scourge;
+
             // Targets
             unit.getTargetedBy().clear();
             unit.setTarget(nullptr);
 
             // Strength
             if ((unit.getType().isWorker() && unit.getRole() != Role::Combat)
-                || !unit.unit()->isCompleted())
+                || (unit.unit()->exists() && !unit.unit()->isCompleted()))
                 continue;
 
             if (unit.getType().isBuilding()) {

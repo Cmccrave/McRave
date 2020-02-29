@@ -38,6 +38,9 @@ namespace McRave::Terrain {
     BWEB::Wall* getMainWall();
     BWEB::Wall* getNaturalWall();
 
+    int needGroundDefenses(BWEB::Wall&);
+    int needAirDefenses(BWEB::Wall&);
+
 
     inline bool isExplored(BWAPI::Position here) { return BWAPI::Broodwar->isExplored(BWAPI::TilePosition(here)); }
 }

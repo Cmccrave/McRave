@@ -14,10 +14,10 @@ namespace McRave::Visuals {
         bool targets = false;
         bool builds = true;
         bool bweb = false;
-        bool sim = true;
+        bool sim = false;
         bool paths = true;
         bool strengths = false;
-        bool orders = true;
+        bool orders = false;
         bool local = false;
         bool resources = false;
         bool timers = true;
@@ -45,7 +45,8 @@ namespace McRave::Visuals {
             if (scores) {
                 int offset = 0;
                 for (auto &[type, percent] : BuildOrder::getArmyComposition()) {
-                    Broodwar->drawTextScreen(0, offset, "%c%s  %d/%d  %.2f", Text::White, type.c_str(), vis(type), total(type), percent);
+                    auto scoreColor = BuildOrder::isTechUnit(type) ? Text::Turquoise : Text::White;
+                    Broodwar->drawTextScreen(0, offset, "%c%s  %d/%d  %.2f", scoreColor, type.c_str(), vis(type), total(type), percent);
                     offset += 10;
                 }
                 Broodwar->drawTextScreen(0, offset, "%c%s", Text::Grey, BuildOrder::getTechUnit().c_str());
@@ -68,7 +69,7 @@ namespace McRave::Visuals {
                     auto test = *itr;
                     if (test.first > 0.25) {
                         Broodwar->drawTextScreen(280, screenOffset, "%c%s", Text::White, test.second.c_str());
-                        Broodwar->drawTextScreen(372, screenOffset, "%c%.5f ms", Text::White, test.first);
+                        Broodwar->drawTextScreen(372, screenOffset, "%c%.3f ms", Text::White, test.first);
                         screenOffset += 10;
                     }
                 }
@@ -143,7 +144,7 @@ namespace McRave::Visuals {
 
                             walkBox(w, gridColor);
                         }
-                        
+
                         if (gridSelection == 2) {
                             if (Grids::getEGroundThreat(w) > 0.0)
                                 walkBox(w, Colors::Black);
@@ -165,6 +166,10 @@ namespace McRave::Visuals {
                             if (Grids::getAAirCluster(w) > 0.0)
                                 walkBox(w, Colors::Black);
                         }
+                        if (gridSelection == 7) {
+                            if (mapBWEM.GetMiniTile(w).Walkable())
+                                walkBox(w, Colors::Cyan);
+                        }
                     }
                 }
             }
@@ -181,21 +186,21 @@ namespace McRave::Visuals {
                 if (unit.unit()->isLoaded())
                     continue;
 
-                if (targets || unit.unit()->isSelected()) {
+                if (targets) {
                     if (unit.hasResource())
                         Broodwar->drawLineMap(unit.getResource().getPosition(), unit.getPosition(), color);
                     if (unit.hasTarget())
                         Broodwar->drawLineMap(unit.getTarget().getPosition(), unit.getPosition(), color);
                 }
 
-                if (strengths || unit.unit()->isSelected()) {
+                if (strengths) {
                     if (unit.getVisibleGroundStrength() > 0.0 || unit.getVisibleAirStrength() > 0.0) {
                         Broodwar->drawTextMap(unit.getPosition() + Position(5, -10), "Grd: %c %.2f", Text::Brown, unit.getVisibleGroundStrength());
                         Broodwar->drawTextMap(unit.getPosition() + Position(5, 2), "Air: %c %.2f", Text::Blue, unit.getVisibleAirStrength());
                     }
                 }
 
-                if (orders || unit.unit()->isSelected()) {
+                if (orders) {
                     int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
                     if (unit.getRole() == Role::Production && (unit.getType() == UnitTypes::Zerg_Egg || (unit.unit()->isTraining() && !unit.unit()->getTrainingQueue().empty()))) {
                         auto trainType = unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType().c_str() : unit.unit()->getTrainingQueue().front().c_str();
@@ -280,17 +285,17 @@ namespace McRave::Visuals {
 
     void onSendText(string text)
     {
-        if (text == "/targets")                targets = !targets;
-        else if (text == "/sim")            sim = !sim;
-        else if (text == "/strengths")        strengths = !strengths;
-        else if (text == "/builds")            builds = !builds;
+        if (text == "/targets")              targets = !targets;
+        else if (text == "/sim")             sim = !sim;
+        else if (text == "/strengths")       strengths = !strengths;
+        else if (text == "/builds")          builds = !builds;
         else if (text == "/bweb")            bweb = !bweb;
-        else if (text == "/paths")            paths = !paths;
-        else if (text == "/orders")            orders = !orders;
-        else if (text == "/local")            local = !local;
-        else if (text == "/resources")        resources = !resources;
-        else if (text == "/timers")            timers = !timers;
-        else if (text == "/roles")          roles = !roles;
+        else if (text == "/paths")           paths = !paths;
+        else if (text == "/orders")          orders = !orders;
+        else if (text == "/local")           local = !local;
+        else if (text == "/resources")       resources = !resources;
+        else if (text == "/timers")          timers = !timers;
+        else if (text == "/roles")           roles = !roles;
 
         else if (text == "/grids 0")        gridSelection = 0;
         else if (text == "/grids 1")        gridSelection = 1;
@@ -299,6 +304,7 @@ namespace McRave::Visuals {
         else if (text == "/grids 4")        gridSelection = 4;
         else if (text == "/grids 5")        gridSelection = 5;
         else if (text == "/grids 6")        gridSelection = 6;
+        else if (text == "/grids 7")        gridSelection = 7;
 
         else                                Broodwar->sendText("%s", text.c_str());
         return;
@@ -333,10 +339,10 @@ namespace McRave::Visuals {
     }
 
     void tileBox(TilePosition here, Color color) {
-        Broodwar->drawBoxMap(Position(here), Position(here) + Position(33, 33), color);
+        Broodwar->drawBoxMap(Position(here), Position(here) + Position(32, 32), color);
     }
 
     void walkBox(WalkPosition here, Color color) {
-        Broodwar->drawBoxMap(Position(here), Position(here) + Position(9, 9), color);
+        Broodwar->drawBoxMap(Position(here), Position(here) + Position(8, 8), color);
     }
 }

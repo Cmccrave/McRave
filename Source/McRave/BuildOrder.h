@@ -46,7 +46,6 @@ namespace McRave::BuildOrder {
         inline int droneLimit = INT_MAX;
         inline int startCount = 0;
         inline int s = 0;
-        inline int wallDefenseDesired = 0;
 
         inline std::string currentBuild = "";
         inline std::string currentOpener = "";
@@ -69,6 +68,7 @@ namespace McRave::BuildOrder {
         void opener();
         void tech();
         void situational();
+        void composition();
         void unlocks();
         void island();
 
@@ -89,6 +89,7 @@ namespace McRave::BuildOrder {
         void opener();
         void tech();
         void situational();
+        void composition();
         void unlocks();
         //void island();
 
@@ -100,12 +101,13 @@ namespace McRave::BuildOrder {
         void opener();
         void tech();
         void situational();
+        void composition();
         void unlocks();
         //void island();
 
-        void PoolHatch();
-        void HatchPool();
-        void PoolLair();
+        void ZvZPoolLair();
+        void ZvTHatchPool();
+        void ZvPPoolHatch();
     }
 
     double getCompositionPercentage(BWAPI::UnitType);

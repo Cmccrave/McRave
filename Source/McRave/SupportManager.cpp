@@ -25,12 +25,32 @@ namespace McRave::Support {
                 return true;
             };
 
+            auto canEscort = Players::getStrength(PlayerState::Self).groundToAir > 0.0;
+
             if (unit.getGoal().isValid())
                 unit.setDestination(unit.getGoal());
 
-            // Overlords move towards the closest stations for now
-            else if (unit.getType() == Zerg_Overlord && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0)
-                unit.setDestination(Stations::getClosestStation(PlayerState::Self, unit.getPosition()));
+            // Overlords
+            else if (!canEscort && unit.getType() == Zerg_Overlord) {
+                
+                auto closestSpore = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+                    return u.getType() == Zerg_Spore_Colony;
+                });
+
+                // Check if wall needs detection
+                if (Terrain::getMainWall() && !Actions::overlapsDetection(unit.unit(), Terrain::getMainWall()->getCentroid(), PlayerState::Self))
+                    unit.setDestination(Terrain::getMainWall()->getCentroid());
+
+                // If any station needs detection
+                else {
+                    for (auto &[_, station] : Stations::getMyStations()) {
+                        if (!Actions::overlapsDetection(unit.unit(), station->getBWEMBase()->Center(), PlayerState::Self))
+                            unit.setDestination(station->getBWEMBase()->Center());
+                    }
+                }
+
+                closestSpore ? unit.setDestination(closestSpore->getPosition()) : unit.setDestination(Stations::getClosestStation(PlayerState::Self, unit.getPosition()));
+            }
 
             // Detectors want to stay close to their target if we have a unit that can engage it
             else if (unit.getType().isDetector() && unit.hasTarget() && isntAssigned(unit.getTarget().getPosition()))
@@ -39,11 +59,8 @@ namespace McRave::Support {
             // Find the highest combat cluster that doesn't overlap a current support action of this UnitType
             else {
                 auto highestCluster = 0.0;
-
                 for (auto &[cluster, position] : Combat::getCombatClusters()) {
-
                     const auto score = cluster / position.getDistance(Terrain::getAttackPosition());
-
                     if (score > highestCluster && isntAssigned(position)) {
                         highestCluster = score;
                         unit.setDestination(position);

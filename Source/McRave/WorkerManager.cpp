@@ -46,6 +46,8 @@ namespace McRave::Workers {
                     unit.setDestination(newDestination);
             }
 
+            if (unit.unit()->isSelected())
+                Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
         }
 
         void updateAssignment(UnitInfo& unit)
@@ -217,17 +219,20 @@ namespace McRave::Workers {
     }
 
     bool shouldMoveToBuild(UnitInfo& unit, TilePosition tile, UnitType type) {
+        if (!mapBWEM.GetArea(unit.getTilePosition()))
+            return true;
+
         auto center = Position(tile) + Position(type.tileWidth() * 16, type.tileHeight() * 16);
         auto mineralIncome = max(0.0, double(minWorkers - 1) * 0.045);
         auto gasIncome = max(0.0, double(gasWorkers - 1) * 0.07);
         auto speed = unit.getSpeed();
-        auto dist = mapBWEM.GetArea(unit.getTilePosition()) ? BWEB::Map::getGroundDistance(unit.getPosition(), center) : unit.getPosition().getDistance(Position(unit.getBuildPosition()));
+        auto dist = BWEB::Map::getGroundDistance(unit.getPosition(), center);
         auto time = (dist / speed) + 50.0;
         auto enoughGas = unit.getBuildType().gasPrice() > 0 ? Broodwar->self()->gas() + int(gasIncome * time) >= unit.getBuildType().gasPrice() : true;
         auto enoughMins = unit.getBuildType().mineralPrice() > 0 ? Broodwar->self()->minerals() + int(mineralIncome * time) >= unit.getBuildType().mineralPrice() : true;
         auto waitInstead = dist < 160.0 && (BuildOrder::isFastExpand() || BuildOrder::isProxy());
 
-        return (enoughGas && enoughMins) || waitInstead;
+        return (enoughGas && enoughMins) /*|| waitInstead*/;
     };
 
     int getMineralWorkers() { return minWorkers; }

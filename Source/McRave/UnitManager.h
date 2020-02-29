@@ -6,8 +6,10 @@ namespace McRave::Units {
     const std::shared_ptr<UnitInfo> getUnitInfo(BWAPI::Unit);
     std::set<std::shared_ptr<UnitInfo>>& getUnits(PlayerState);
     std::set<BWAPI::Unit>& getSplashTargets();
-    std::map<BWAPI::UnitSizeType, int>& getAllySizes();
-    std::map<BWAPI::UnitSizeType, int>& getEnemySizes();
+    std::map<BWAPI::UnitSizeType, int>& getAllyGrdSizes();
+    std::map<BWAPI::UnitSizeType, int>& getEnemyGrdSizes();
+    std::map<BWAPI::UnitSizeType, int>& getAllyAirSizes();
+    std::map<BWAPI::UnitSizeType, int>& getEnemyAirSizes();
     double getImmThreat();
 
     int getMyRoleCount(Role);

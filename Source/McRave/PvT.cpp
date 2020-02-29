@@ -30,7 +30,6 @@ namespace McRave::BuildOrder::Protoss {
             gasLimit =                                      INT_MAX;
             zealotLimit =                                   0;
             dragoonLimit =                                  INT_MAX;
-            wallDefenseDesired =                            0;
 
             desiredDetection =                              Protoss_Observer;
             firstUpgrade =                                  UpgradeTypes::Singularity_Charge;

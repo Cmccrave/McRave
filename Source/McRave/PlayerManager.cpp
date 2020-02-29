@@ -26,7 +26,7 @@ namespace McRave::Players
 
                 // If unit has a valid type, update enemy composition tracking
                 if (unit.getType().isValid())
-                    typeCounts[unit.getType()] += 1;
+                    typeCounts[unit.getType()] += 1;                
             }
         }
     }
@@ -56,18 +56,17 @@ namespace McRave::Players
             update(player);
     }
 
-    void storeUnit(Unit unit)
+    void storeUnit(Unit bwUnit)
     {
-        auto playerInfo = getPlayerInfo(unit->getPlayer());
-        auto unitInfo = UnitInfo(unit);
-        auto existingInfo = Units::getUnitInfo(unit);
+        auto p = getPlayerInfo(bwUnit->getPlayer());
+        auto unit = UnitInfo(bwUnit);
 
-        if (Units::getUnitInfo(unit))
+        if (Units::getUnitInfo(bwUnit))
             return;
 
-        if (unit->getType().isBuilding() && unit->getPlayer() == Broodwar->self()) {
-            auto closestWorker = Util::getClosestUnit(unit->getPosition(), PlayerState::Self, [&](auto &u) {
-                return u.getRole() == Role::Worker && u.getBuildPosition() == unit->getTilePosition();
+        if (bwUnit->getType().isBuilding() && bwUnit->getPlayer() == Broodwar->self()) {
+            auto closestWorker = Util::getClosestUnit(bwUnit->getPosition(), PlayerState::Self, [&](auto &u) {
+                return u.getRole() == Role::Worker && u.getBuildPosition() == bwUnit->getTilePosition();
             });
             if (closestWorker) {
                 closestWorker->setBuildingType(UnitTypes::None);
@@ -75,28 +74,29 @@ namespace McRave::Players
             }
         }
 
-        if (playerInfo) {
+        if (p) {
 
             // Setup the UnitInfo and update
-            unitInfo.update();
-            playerInfo->getUnits().insert(make_shared<UnitInfo>(unitInfo));
+            unit.update();
+            p->getUnits().insert(make_shared<UnitInfo>(bwUnit));
 
-            if (unit->getPlayer() == Broodwar->self() && unit->getType() == UnitTypes::Protoss_Pylon)
-                Pylons::storePylon(unit);
+            if (unit.getPlayer() == Broodwar->self() && unit.getType() == UnitTypes::Protoss_Pylon)
+                Pylons::storePylon(bwUnit);
 
             // Increase total counts
-            totalTypeCounts[playerInfo->getPlayerState()][unitInfo.getType()]++;
+            if (unit.getType() != UnitTypes::Zerg_Zergling && unit.getType() != UnitTypes::Zerg_Scourge)
+                totalTypeCounts[p->getPlayerState()][unit.getType()]  += 1;
         }
     }
 
-    void removeUnit(Unit unit)
+    void removeUnit(Unit bwUnit)
     {
-        BWEB::Map::onUnitDestroy(unit);
+        BWEB::Map::onUnitDestroy(bwUnit);
 
         // Find the unit
         for (auto &[_, player] : Players::getPlayers()) {
             for (auto &u : player.getUnits()) {
-                if (u->unit() == unit) {
+                if (u->unit() == bwUnit) {
 
                     // Remove assignments and roles
                     if (u->hasTransport())
@@ -114,40 +114,40 @@ namespace McRave::Players
         }
     }
 
-    void morphUnit(Unit unit)
+    void morphUnit(Unit bwUnit)
     {
-        auto playerInfo = getPlayerInfo(unit->getPlayer());
+        auto playerInfo = getPlayerInfo(bwUnit->getPlayer());
 
         // HACK: Changing players is kind of annoying, so we just remove and re-store
-        if (unit->getType().isRefinery()) {
-            removeUnit(unit);
-            storeUnit(unit);
+        if (bwUnit->getType().isRefinery()) {
+            removeUnit(bwUnit);
+            storeUnit(bwUnit);
         }
 
         // Morphing into a Hatchery
-        if (unit->getType() == UnitTypes::Zerg_Hatchery)
-            Stations::storeStation(unit);
+        if (bwUnit->getType() == UnitTypes::Zerg_Hatchery)
+            Stations::storeStation(bwUnit);
 
         // Grab the UnitInfo for this unit
-        auto &info = Units::getUnitInfo(unit);
-        if (info) {
-            if (info->hasResource())
-                Workers::removeUnit(*info);
+        auto &u = Units::getUnitInfo(bwUnit);
+        if (u) {
+            if (u->hasResource())
+                Workers::removeUnit(*u);
+            if (u->hasTransport())
+                Transports::removeUnit(*u);
+            if (u->hasTarget())
+                u->setTarget(nullptr);
+            if (u->getRole() == Role::Scout)
+                Scouts::removeUnit(*u);
 
-            if (info->hasTransport())
-                Transports::removeUnit(*info);
-
-            if (info->hasTarget())
-                info->setTarget(nullptr);
-
-            if (info->getType() == UnitTypes::Zerg_Larva) {
-                auto newType = unit->getBuildType();
-                totalTypeCounts[playerInfo->getPlayerState()][info->getType()]--;
-                totalTypeCounts[playerInfo->getPlayerState()][newType]++;
+            if (u->getType() == UnitTypes::Zerg_Larva) {
+                auto type = bwUnit->getBuildType();
+                totalTypeCounts[playerInfo->getPlayerState()][u->getType()]--;
+                totalTypeCounts[playerInfo->getPlayerState()][type] += 1 + (type == UnitTypes::Zerg_Zergling || type == UnitTypes::Zerg_Scourge);
             }
 
-            info->setBuildingType(UnitTypes::None);
-            info->setBuildPosition(TilePositions::Invalid);
+            u->setBuildingType(UnitTypes::None);
+            u->setBuildPosition(TilePositions::Invalid);
         }
     }
 

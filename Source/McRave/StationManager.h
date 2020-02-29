@@ -11,7 +11,8 @@ namespace McRave::Stations
     void onStart();
     void storeStation(BWAPI::Unit);
     void removeStation(BWAPI::Unit);
-    int needDefenses(BWEB::Station&);
+    int needGroundDefenses(BWEB::Station&);
+    int needAirDefenses(BWEB::Station&);
     bool needPower(BWEB::Station&);
 
     PlayerState ownedBy(BWEB::Station *);

@@ -9,6 +9,8 @@ namespace McRave::Strategy {
     bool enemyRush();
     bool needDetection();
     bool defendChoke();
+    bool enemyAir();
+    bool enemyPossibleProxy();
     bool enemyProxy();
     bool enemyGasSteal();
     bool enemyScouted();

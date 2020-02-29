@@ -31,7 +31,6 @@ namespace McRave::BuildOrder::Protoss {
             gasLimit =                                      INT_MAX;
             zealotLimit =                                   INT_MAX;
             dragoonLimit =                                  0;
-            wallDefenseDesired =                            0;
 
             desiredDetection =                              Protoss_Observer;
             firstUnit =                                     None;
@@ -68,38 +67,6 @@ namespace McRave::BuildOrder::Protoss {
         cutWorkers =                                        Strategy::enemyRush() ? vis(Protoss_Photon_Cannon) < 2 : false;
 
         int cannonCount = 0;
-
-        if (s < 160) {
-            cannonCount = int(atPercent(Protoss_Forge, 1.00))
-                + (Players::getCurrentCount(PlayerState::Enemy, Zerg_Zergling) >= 6)
-                + (Players::getCurrentCount(PlayerState::Enemy, Zerg_Zergling) >= 12)
-                + (Players::getCurrentCount(PlayerState::Enemy, Zerg_Zergling) >= 24)
-                + (Players::getCurrentCount(PlayerState::Enemy, Zerg_Hydralisk) / 2);
-
-            wallDefenseDesired = cannonCount;
-
-            // TODO: If scout died, go to 2 cannons, if next scout dies, go 3 cannons        
-            if (Strategy::getEnemyBuild() == "2HatchHydra") {
-                cannonCount = max(cannonCount, 5);
-                wallDefenseDesired = 5;
-            }
-            else if (Strategy::getEnemyBuild() == "3HatchHydra") {
-                cannonCount = max(cannonCount, 4);
-                wallDefenseDesired = 4;
-            }
-            else if (Strategy::getEnemyBuild() == "2HatchMuta" && Util::getTime() > Time(4, 0)) {
-                cannonCount = max(cannonCount, 8);
-                wallDefenseDesired = 3;
-            }
-            else if (Strategy::getEnemyBuild() == "3HatchMuta" && Util::getTime() > Time(5, 0)) {
-                cannonCount = max(cannonCount, 9);
-                wallDefenseDesired = 3;
-            }
-            else if (Strategy::getEnemyBuild() == "4Pool") {
-                cannonCount = max(cannonCount, 2 + (s >= 24));
-                wallDefenseDesired = 3;
-            }
-        }
 
         // Reactions
         if (!lockedTransition) {
@@ -164,7 +131,6 @@ namespace McRave::BuildOrder::Protoss {
         if (cannonCount > 0 && currentOpener != "Panic") {
             if (!atPercent(Protoss_Forge, 1.00)) {
                 cannonCount =                               0;
-                wallDefenseDesired =                        0;
                 buildQueue[Protoss_Forge] =                 1;
             }
             else
@@ -312,11 +278,6 @@ namespace McRave::BuildOrder::Protoss {
                 buildQueue[Protoss_Nexus] =                 1 + (s >= 42);
                 buildQueue[Protoss_Forge] =                 s >= 62;
                 buildQueue[Protoss_Cybernetics_Core] =      vis(Protoss_Photon_Cannon) >= 2;
-
-                auto cannonCount =                          2 * (com(Protoss_Forge) > 0);
-                cannonCount =                               min(vis(Protoss_Photon_Cannon) + 1, cannonCount);
-                buildQueue[Protoss_Photon_Cannon] =         cannonCount;
-                wallDefenseDesired =                        cannonCount;
 
                 // Army Composition
                 armyComposition[Protoss_Zealot] =           0.25;

@@ -10,12 +10,12 @@ namespace McRave::Pylons
 
         void updatePower(Unit unit)
         {
-            TilePosition start = unit->getTilePosition();
-            int cnt = unit->exists() ? 1 : -1;
+            const auto start = unit->getTilePosition();
+            const auto cnt = unit->exists() ? 1 : -1;
 
             for (int x = 0; x <= 15; x++) {
                 for (int y = 0; y <= 9; y++) {
-                    TilePosition tile = TilePosition(x, y) + start - TilePosition(8, 5);
+                    const auto tile = TilePosition(x, y) + start - TilePosition(8, 5);
 
                     if (!tile.isValid())
                         continue;

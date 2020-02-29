@@ -34,5 +34,5 @@ namespace McRave::Grids
     int lastVisibleFrame(BWAPI::TilePosition t);
     int lastVisitedFrame(BWAPI::WalkPosition w);
 
-    void addMovement(BWAPI::WalkPosition, BWAPI::UnitType);
+    void addMovement(BWAPI::Position, BWAPI::UnitType);
 }

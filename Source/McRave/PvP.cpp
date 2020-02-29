@@ -22,10 +22,6 @@ namespace McRave::BuildOrder::Protoss {
             return (Players::getCurrentCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) > 0 && Players::getCurrentCount(PlayerState::Enemy, Protoss_Gateway) <= 2) || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) < 3 || Strategy::needDetection();
         }
 
-        bool prepareExpansionDefenses() {
-            return Util::getTime() < Time(10, 0) && vis(Protoss_Nexus) >= 2 && com(Protoss_Forge) > 0;
-        }
-
         void defaultPvP() {
 
             inOpeningBook =                                 true;
@@ -43,7 +39,6 @@ namespace McRave::BuildOrder::Protoss {
             gasLimit =                                      INT_MAX;
             zealotLimit =                                   1;
             dragoonLimit =                                  INT_MAX;
-            wallDefenseDesired =                            0;
 
             desiredDetection =                              Protoss_Observer;
             firstUpgrade =                                  vis(Protoss_Dragoon) > 0 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
@@ -105,6 +100,7 @@ namespace McRave::BuildOrder::Protoss {
         transitionReady =                                   vis(Protoss_Gateway) >= 2;
         playPassive =                                       (!Strategy::enemyFastExpand() && Players::getCurrentCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 && Broodwar->getFrameCount() < 15000) || (Util::getTime() < Time(3, 30) && com(Protoss_Zealot) < 3);
         desiredDetection =                                  Protoss_Forge;
+        gasLimit =                                          vis(Protoss_Cybernetics_Core) > 0 ? INT_MAX : 0;
 
         if (Strategy::enemyRush())
             buildQueue[Protoss_Shield_Battery] =            vis(Protoss_Zealot) >= 2 && vis(Protoss_Pylon) >= 2;
@@ -161,7 +157,7 @@ namespace McRave::BuildOrder::Protoss {
                 buildQueue[Protoss_Gateway] =               2 + (com(Protoss_Cybernetics_Core) > 0);
                 buildQueue[Protoss_Nexus] =                 1;
                 buildQueue[Protoss_Assimilator] =           total(Protoss_Zealot) >= 5;
-                buildQueue[Protoss_Cybernetics_Core] =      vis(Protoss_Assimilator) >= 1;
+                buildQueue[Protoss_Cybernetics_Core] =      (total(Protoss_Zealot) >= 3 && vis(Protoss_Assimilator) >= 1);
                 buildQueue[Protoss_Citadel_of_Adun] =       atPercent(Protoss_Cybernetics_Core, 1.00);
                 buildQueue[Protoss_Templar_Archives] =      atPercent(Protoss_Citadel_of_Adun, 1.00);
                 buildQueue[Protoss_Forge] =                 s >= 70;
@@ -170,14 +166,6 @@ namespace McRave::BuildOrder::Protoss {
                 armyComposition[Protoss_Zealot] =           0.05;
                 armyComposition[Protoss_Dark_Templar] =     0.05;
                 armyComposition[Protoss_Dragoon] =          0.90;
-
-                // Defenses
-                if (prepareExpansionDefenses()) {
-                    auto cannonCount =                      2 + int(1 + Players::getCurrentCount(PlayerState::Enemy, Protoss_Zealot) + Players::getCurrentCount(PlayerState::Enemy, Protoss_Dragoon) - com(Protoss_Zealot) - com(Protoss_Dragoon) - com(Protoss_High_Templar) - com(Protoss_Dark_Templar)) / 2;
-                    cannonCount =                           min(vis(Protoss_Photon_Cannon) + 1, cannonCount);
-                    buildQueue[Protoss_Photon_Cannon] =     cannonCount;
-                    wallDefenseDesired =                    cannonCount;
-                }
             }
             else if (currentTransition == "Expand") {       // "https://liquipedia.net/starcraft/2_Gate_(vs._Protoss)#10.2F12_Gateway_Expand"            
                 lockedTransition =                          total(Protoss_Nexus) >= 2;
@@ -188,21 +176,13 @@ namespace McRave::BuildOrder::Protoss {
                 // Build
                 buildQueue[Protoss_Gateway] =               2 + (com(Protoss_Cybernetics_Core) > 0);
                 buildQueue[Protoss_Assimilator] =           total(Protoss_Zealot) >= 5;
-                buildQueue[Protoss_Cybernetics_Core] =      vis(Protoss_Assimilator) >= 1;
+                buildQueue[Protoss_Cybernetics_Core] =      (total(Protoss_Zealot) >= 3 && vis(Protoss_Assimilator) >= 1);
                 buildQueue[Protoss_Forge] =                 s >= 70;
                 buildQueue[Protoss_Nexus] =                 1 + (vis(Protoss_Zealot) >= 3);
 
                 // Army Composition
                 armyComposition[Protoss_Zealot] =           0.10;
                 armyComposition[Protoss_Dragoon] =          0.90;
-
-                // Defenses
-                if (prepareExpansionDefenses()) {
-                    auto cannonCount =                      2 + int(1 + Players::getCurrentCount(PlayerState::Enemy, Protoss_Zealot) + Players::getCurrentCount(PlayerState::Enemy, Protoss_Dragoon) - com(Protoss_Zealot) - com(Protoss_Dragoon) - com(Protoss_High_Templar) - com(Protoss_Dark_Templar)) / 2;
-                    cannonCount =                           min(vis(Protoss_Photon_Cannon) + 1, cannonCount);
-                    buildQueue[Protoss_Photon_Cannon] =     cannonCount;
-                    wallDefenseDesired =                    cannonCount;
-                }
             }
             else if (currentTransition == "Robo") {         // "https://liquipedia.net/starcraft/2_Gate_Reaver_(vs._Protoss)"            
                 lockedTransition =                          total(Protoss_Robotics_Facility) > 0;
@@ -213,7 +193,7 @@ namespace McRave::BuildOrder::Protoss {
                 buildQueue[Protoss_Gateway] =               2 + (com(Protoss_Cybernetics_Core) > 0);
                 buildQueue[Protoss_Nexus] =                 1 + (s >= 130);
                 buildQueue[Protoss_Assimilator] =           total(Protoss_Zealot) >= 5;
-                buildQueue[Protoss_Cybernetics_Core] =      vis(Protoss_Assimilator) >= 1;
+                buildQueue[Protoss_Cybernetics_Core] =      (total(Protoss_Zealot) >= 3 && vis(Protoss_Assimilator) >= 1);
                 buildQueue[Protoss_Robotics_Facility] =     com(Protoss_Dragoon) >= 2;
 
                 // Army Composition
@@ -375,14 +355,6 @@ namespace McRave::BuildOrder::Protoss {
                 buildQueue[Protoss_Photon_Cannon] =         2 * (com(Protoss_Forge) > 0);
                 buildQueue[Protoss_Citadel_of_Adun] =       vis(Protoss_Dragoon) > 0;
                 buildQueue[Protoss_Templar_Archives] =      atPercent(Protoss_Citadel_of_Adun, 1.00);
-
-                // Defenses
-                if (prepareExpansionDefenses()) {
-                    auto cannonCount =                      2 + int(1 + Players::getCurrentCount(PlayerState::Enemy, Protoss_Zealot) + Players::getCurrentCount(PlayerState::Enemy, Protoss_Dragoon) - com(Protoss_Zealot) - com(Protoss_Dragoon) - com(Protoss_High_Templar) - com(Protoss_Dark_Templar)) / 2;
-                    cannonCount =                           min(vis(Protoss_Photon_Cannon) + 1, cannonCount);
-                    buildQueue[Protoss_Photon_Cannon] =     cannonCount;
-                    wallDefenseDesired =                    cannonCount;
-                }
 
                 // Army Composition
                 armyComposition[Protoss_Zealot] =           0.05;
