@@ -25,31 +25,43 @@ namespace McRave::Support {
                 return true;
             };
 
-            auto canEscort = Players::getStrength(PlayerState::Self).groundToAir > 0.0;
+            BWEB::Station * stationNeedsDetection = nullptr;
 
-            if (unit.getGoal().isValid())
+            // Check If any station needs detection
+            for (auto &[_, station] : Stations::getMyStations()) {
+                if (!Actions::overlapsDetection(unit.unit(), station->getBWEMBase()->Center(), PlayerState::Self)) {
+                    stationNeedsDetection = station;
+                    break;
+                }
+            }
+
+            // Check if any wall needs detection
+            
+
+            // Send detection to a wall that needs it
+            if (unit.getType().isDetector() && Walls::getNaturalWall() && !Actions::overlapsDetection(unit.unit(), Walls::getNaturalWall()->getCentroid(), PlayerState::Self))
+                unit.setDestination(Walls::getNaturalWall()->getCentroid());
+
+            // Send detection to a station that needs it
+            else if (unit.getType().isDetector() && stationNeedsDetection)
+                unit.setDestination(stationNeedsDetection->getBWEMBase()->Center());
+
+            // Set goal as destination
+            else if (unit.getGoal().isValid())
                 unit.setDestination(unit.getGoal());
 
-            // Overlords
-            else if (!canEscort && unit.getType() == Zerg_Overlord) {
-                
+            // Send Overlords to safety if needed
+            else if (unit.getType() == Zerg_Overlord && (Players::getStrength(PlayerState::Self).groundToAir == 0.0 || Players::getStrength(PlayerState::Self).airToAir == 0.0)) {
+
                 auto closestSpore = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                     return u.getType() == Zerg_Spore_Colony;
                 });
 
-                // Check if wall needs detection
-                if (Terrain::getMainWall() && !Actions::overlapsDetection(unit.unit(), Terrain::getMainWall()->getCentroid(), PlayerState::Self))
-                    unit.setDestination(Terrain::getMainWall()->getCentroid());
-
-                // If any station needs detection
-                else {
-                    for (auto &[_, station] : Stations::getMyStations()) {
-                        if (!Actions::overlapsDetection(unit.unit(), station->getBWEMBase()->Center(), PlayerState::Self))
-                            unit.setDestination(station->getBWEMBase()->Center());
-                    }
-                }
-
-                closestSpore ? unit.setDestination(closestSpore->getPosition()) : unit.setDestination(Stations::getClosestStation(PlayerState::Self, unit.getPosition()));
+                auto closestStation = Stations::getClosestStation(PlayerState::Self, unit.getPosition());
+                if (closestSpore)
+                    unit.setDestination(closestSpore->getPosition());
+                else if (closestStation)
+                    unit.setDestination(closestStation->getBWEMBase()->Center());
             }
 
             // Detectors want to stay close to their target if we have a unit that can engage it

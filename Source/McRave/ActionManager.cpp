@@ -201,10 +201,10 @@ namespace McRave::Actions {
                 continue;
 
             if (action.tech == TechTypes::Stasis_Field || action.tech == TechTypes::EMP_Shockwave) {
-                if (boxOverlap(action, checkPositions, Util::getCastRadius(action.tech)))
+                if (boxOverlap(action, checkPositions, int(Util::getCastRadius(action.tech))))
                     return true;
             }
-            else if (circleOverlap(action, checkPositions, Util::getCastRadius(action.tech)))
+            else if (circleOverlap(action, checkPositions, int(Util::getCastRadius(action.tech))))
                 return true;
         }
 
@@ -214,10 +214,10 @@ namespace McRave::Actions {
                 continue;
 
             if (action.tech == TechTypes::Stasis_Field || action.tech == TechTypes::EMP_Shockwave) {
-                if (boxOverlap(action, checkPositions, Util::getCastRadius(action.tech)))
+                if (boxOverlap(action, checkPositions, int(Util::getCastRadius(action.tech))))
                     return true;
             }
-            else if (circleOverlap(action, checkPositions, Util::getCastRadius(action.tech)))
+            else if (circleOverlap(action, checkPositions, int(Util::getCastRadius(action.tech))))
                 return true;
         }
         return false;

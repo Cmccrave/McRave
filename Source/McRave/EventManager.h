@@ -34,24 +34,23 @@ namespace McRave::Events
     inline void onUnitMorph(BWAPI::Unit unit)
     {
         BWEB::Map::onUnitMorph(unit);
+        auto info = Units::getUnitInfo(unit);
 
-        // My unit
-        if (unit->getPlayer() == BWAPI::Broodwar->self())
-            Players::morphUnit(unit);
+        // Cleanup canceled morphed buildings
+        if (info && info->getType().isBuilding() && unit->getType() == BWAPI::UnitTypes::Zerg_Drone) {
+            BWEB::Map::removeUsed(info->getTilePosition(), info->getType().tileWidth(), info->getType().tileHeight());
 
-        // Enemy unit
-        else if (unit->getPlayer()->isEnemy(BWAPI::Broodwar->self())) {
-
-            // Remove any stations on a canceled hatchery (because the ingame AI does this LUL)
-            if (unit->getType() == BWAPI::UnitTypes::Zerg_Drone)
-                Stations::removeStation(unit);
-            else
-                Players::morphUnit(unit);
+            if (info->getType().isResourceDepot())
+                Stations::removeStation(info->unit());
+            if (info->getPlayer() == BWAPI::Broodwar->self())
+                info->setRole(Role::Worker);
         }
 
         // Refinery that morphed as an enemy
-        else if (unit->getType().isResourceContainer())
+        if (unit->getType().isResourceContainer())
             Resources::storeResource(unit);
+
+        Players::morphUnit(unit);
     }
 
     inline void onUnitComplete(BWAPI::Unit unit)
@@ -73,7 +72,7 @@ namespace McRave::Events
         }
     }
 
-    inline void customOnUnitLift(UnitInfo& unit)
+    inline void onUnitLift(UnitInfo& unit)
     {
         BWEB::Map::removeUsed(unit.getLastTile(), unit.getType().tileWidth(), unit.getType().tileHeight());
 
@@ -81,7 +80,7 @@ namespace McRave::Events
             Stations::removeStation(unit.unit());
     }
 
-    inline void customOnUnitLand(UnitInfo& unit)
+    inline void onUnitLand(UnitInfo& unit)
     {
         BWEB::Map::addUsed(unit.getTilePosition(), unit.getType());
 
@@ -89,21 +88,33 @@ namespace McRave::Events
             Stations::storeStation(unit.unit());
     }
 
-    inline void customOnUnitDisappear(UnitInfo& unit)
+    inline void onUnitDisappear(UnitInfo& unit)
     {
-        int visibleArea = 0;
+        int visibleTiles = 0;
         for (int x = unit.getTilePosition().x - 1; x <= unit.getTilePosition().x + 1; x++) {
             for (int y = unit.getTilePosition().y - 1; y <= unit.getTilePosition().y + 1; y++) {
                 BWAPI::TilePosition t(x, y);
-                if (t.isValid() && BWAPI::Broodwar->isVisible(t))
-                    visibleArea++;
+                if (!t.isValid() || BWAPI::Broodwar->isVisible(t))
+                    visibleTiles++;
             }
         }
 
-        if (visibleArea >= 5 && BWAPI::Broodwar->isVisible(unit.getTilePosition())) {
+        if (visibleTiles >= 5) {
             unit.setPosition(BWAPI::Positions::Invalid);
             unit.setTilePosition(BWAPI::TilePositions::Invalid);
             unit.setWalkPosition(BWAPI::WalkPositions::Invalid);
         }
+    }
+
+    /// https://github.com/bwapi/bwapi/issues/853
+    inline void onUnitCancelBecauseBWAPISucks(UnitInfo& unit)
+    {
+        // Cleanup canceled morphed buildings
+        BWEB::Map::removeUsed(unit.getTilePosition(), unit.getType().tileWidth(), unit.getType().tileHeight());
+
+        if (unit.getType().isResourceDepot())
+            Stations::removeStation(unit.unit());
+        if (unit.getPlayer() == BWAPI::Broodwar->self())
+            unit.setRole(Role::Worker);
     }
 }

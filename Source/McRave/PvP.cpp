@@ -109,7 +109,7 @@ namespace McRave::BuildOrder::Protoss {
         if (!lockedTransition) {
 
             // If we should do a robo transition instead
-            if (Strategy::getEnemyBuild() == "FFE" || Strategy::getEnemyBuild() == "1GateDT")
+            if (Strategy::getEnemyBuild() == "FFE" || Strategy::getEnemyTransition() == "DT")
                 currentTransition = "Robo";
             else if (Strategy::getEnemyBuild() == "CannonRush")
                 currentTransition = "Robo";

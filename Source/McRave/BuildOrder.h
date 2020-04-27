@@ -33,7 +33,9 @@ namespace McRave::BuildOrder {
         inline bool hideTech = false;
         inline bool playPassive = false;
         inline bool rush = false;
+        inline bool pressure = false;
         inline bool cutWorkers = false; // TODO: Use unlocking
+        inline bool saveLarva = false;
         inline bool lockedTransition = false;
         inline bool gasTrick = false;
         inline bool inBookSupply = false;
@@ -106,7 +108,10 @@ namespace McRave::BuildOrder {
         //void island();
 
         void ZvZPoolLair();
+
         void ZvTHatchPool();
+        void ZvTPoolHatch();
+
         void ZvPPoolHatch();
     }
 
@@ -124,6 +129,7 @@ namespace McRave::BuildOrder {
     bool shouldExpand();
     bool techComplete();
     bool atPercent(BWAPI::UnitType, double);
+    bool atPercent(BWAPI::TechType, double);
 
     std::map<BWAPI::UnitType, int>& getBuildQueue();
     BWAPI::UnitType getTechUnit();
@@ -146,6 +152,7 @@ namespace McRave::BuildOrder {
     bool isPlayPassive();
     bool isRush();
     bool isGasTrick();
+    bool isSaveLarva();
     std::string getCurrentBuild();
     std::string getCurrentOpener();
     std::string getCurrentTransition();

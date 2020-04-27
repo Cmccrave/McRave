@@ -13,7 +13,7 @@ namespace McRave::Visuals {
 
         bool targets = false;
         bool builds = true;
-        bool bweb = false;
+        bool bweb = true;
         bool sim = false;
         bool paths = true;
         bool strengths = false;
@@ -38,7 +38,7 @@ namespace McRave::Visuals {
             // Builds
             if (builds) {
                 Broodwar->drawTextScreen(432, 16, "%c%s: %c%s %s", Text::White, BuildOrder::getCurrentBuild().c_str(), Text::Grey, BuildOrder::getCurrentOpener().c_str(), BuildOrder::getCurrentTransition().c_str());
-                Broodwar->drawTextScreen(432, 28, "%cvs %c%s", Text::White, Text::Grey, Strategy::getEnemyBuild().c_str());
+                Broodwar->drawTextScreen(432, 28, "%c%s: %c%s %s", Text::White, Strategy::getEnemyBuild().c_str(), Text::Grey, Strategy::getEnemyOpener().c_str(), Strategy::getEnemyTransition().c_str());
             }
 
             // Scores
@@ -147,7 +147,7 @@ namespace McRave::Visuals {
 
                         if (gridSelection == 2) {
                             if (Grids::getEGroundThreat(w) > 0.0)
-                                walkBox(w, Colors::Black);
+                                walkBox(w, Color(Grids::getEGroundThreat(w) * 120,0,0));
                         }
                         if (gridSelection == 3) {
                             if (Grids::getEAirThreat(w) > 0.0)
@@ -263,6 +263,11 @@ namespace McRave::Visuals {
                 }
             }
         }
+
+        void centerCameraOn(Position here) 
+        {
+            Broodwar->setScreenPosition(here - Position(320, 180));
+        }
     }
 
     void onFrame()
@@ -270,6 +275,8 @@ namespace McRave::Visuals {
         drawInformation();
         drawAllyInfo();
         drawEnemyInfo();
+
+        //centerCameraOn(Walls::getNaturalWall()->getCentroid());
     }
 
     void endPerfTest(string function)
@@ -310,18 +317,16 @@ namespace McRave::Visuals {
         return;
     }
 
-    void displayPath(vector<TilePosition>& path)
+    void displayPath(BWEB::Path& path)
     {
         int color = Broodwar->self()->getColor();
-        if (paths && !path.empty()) {
-            TilePosition next = TilePositions::Invalid;
-            for (auto &tile : path) {
-
-                if (tile == *(path.begin()))
-                    continue;
-
-                if (next.isValid() && tile.isValid())
+        if (paths && !path.getTiles().empty()) {
+            TilePosition next = path.getSource();
+            for (auto &tile : path.getTiles()) {
+                if (next.isValid() && tile.isValid()) {
                     Broodwar->drawLineMap(Position(next) + Position(16, 16), Position(tile) + Position(16, 16), color);
+                    Broodwar->drawCircleMap(Position(next) + Position(16, 16), 4, color, true);
+                }
 
                 next = tile;
             }

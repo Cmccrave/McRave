@@ -12,22 +12,13 @@ namespace McRave::Terrain {
         set <const Area*> enemyTerritory;
         Position enemyStartingPosition = Positions::Invalid;
         TilePosition enemyStartingTilePosition = TilePositions::Invalid;
-        Position mineralHold, backMineralHold;
+        Position mineralHold = Positions::Invalid;
         Position defendPosition = Positions::Invalid;
         Position attackPosition = Positions::Invalid;
+        Position harassPosition = Positions::Invalid;
         TilePosition enemyNatural = TilePositions::Invalid;
         TilePosition enemyExpand = TilePositions::Invalid;
-        vector<Position> meleeChokePositions;
-        vector<Position> rangedChokePositions;
         set<const Base *> allBases;
-        BWEB::Wall* mainWall = nullptr;
-        BWEB::Wall* naturalWall = nullptr;
-
-        // Wall parameters
-        vector<UnitType> buildings;
-        vector<UnitType> defenses;
-        bool tight = true;
-        UnitType tightType = None;
 
         bool shitMap = false;
         bool islandMap = false;
@@ -35,6 +26,7 @@ namespace McRave::Terrain {
         bool flatRamp = false;
         bool narrowNatural = false;
         bool defendNatural = false;
+        bool abandonNatural = false;
 
         void findEnemyStartingPosition()
         {
@@ -44,19 +36,66 @@ namespace McRave::Terrain {
             // Find closest enemy building
             for (auto &u : Units::getUnits(PlayerState::Enemy)) {
                 UnitInfo &unit = *u;
-                double distBest = 1280.0;
-                TilePosition tileBest = TilePositions::Invalid;
+                auto distBest = 1280.0;
+                auto tileBest = TilePositions::Invalid;
                 if (!unit.getType().isBuilding() || !unit.getTilePosition().isValid())
                     continue;
 
+                // Find closest starting location
                 for (auto &start : Broodwar->getStartLocations()) {
                     double dist = start.getDistance(unit.getTilePosition());
-                    if (dist < distBest)
-                        distBest = dist, tileBest = start;
+                    if (dist < distBest) {
+                        distBest = dist;
+                        tileBest = start;
+                    }
                 }
+                
+                // Set start if valid
                 if (tileBest.isValid() && tileBest != BWEB::Map::getMainTile()) {
                     enemyStartingPosition = Position(tileBest) + Position(64, 48);
                     enemyStartingTilePosition = tileBest;
+                }
+            }
+
+            // Infer based on enemy Overlord
+            if (Players::vZ() && Util::getTime() < Time(3, 00)) {
+                for (auto &u : Units::getUnits(PlayerState::Enemy)) {
+                    UnitInfo &unit = *u;
+                    auto frameDiffBest = DBL_MAX;
+                    auto tileBest = TilePositions::Invalid;
+
+                    if (unit.getType() != Zerg_Overlord)
+                        continue;
+
+                    for (auto &start : Broodwar->getStartLocations()) {
+                        auto startCenter = Position(start) + Position(64, 48);
+                        auto frameDiff = abs(Broodwar->getFrameCount() - (unit.getPosition().getDistance(startCenter) / unit.getSpeed()));
+
+                        if (frameDiff < 240 && frameDiff < frameDiffBest) {
+                            frameDiffBest = frameDiff;
+                            tileBest = start;
+                        }
+                    }
+
+                    // Set start if valid
+                    if (tileBest.isValid() && tileBest != BWEB::Map::getMainTile()) {
+                        enemyStartingPosition = Position(tileBest) + Position(64, 48);
+                        enemyStartingTilePosition = tileBest;
+                    }
+                }
+            }
+
+            // Assume
+            vector<TilePosition> unexploredStarts;
+            if (!enemyStartingPosition.isValid()) {
+                for (auto &topLeft : mapBWEM.StartingLocations()) {
+                    auto botRight = topLeft + TilePosition(3, 2);
+                    if (!Broodwar->isExplored(botRight) && !Broodwar->isExplored(topLeft))
+                        unexploredStarts.push_back(botRight);
+                }
+                if (unexploredStarts.size() == 1) {
+                    enemyStartingPosition = Position(unexploredStarts.front()) + Position(64, 48);
+                    enemyStartingTilePosition = unexploredStarts.front();
                 }
             }
         }
@@ -127,21 +166,17 @@ namespace McRave::Terrain {
 
         void findAttackPosition()
         {
-            // Attack possible enemy expansion location
-            if (enemyExpand.isValid() && !Broodwar->isExplored(enemyExpand) && !Broodwar->isExplored(enemyExpand + TilePosition(4, 3)))
-                attackPosition = (Position)enemyExpand;
-
             // Attack furthest enemy station
-            else if (Stations::getEnemyStations().size() > 0) {
-                double distBest = 0.0;
-                Position posBest;
+            if (Stations::getEnemyStations().size() > 0) {
+                auto distBest = 0.0;
+                auto posBest = Positions::Invalid;
 
                 for (auto &station : Stations::getEnemyStations()) {
                     auto &s = *station.second;
-                    double dist = Players::vP() ? 1.0 / enemyStartingPosition.getDistance(s.getBWEMBase()->Center()) : enemyStartingPosition.getDistance(s.getBWEMBase()->Center());
+                    const auto dist = enemyStartingPosition.getDistance(s.getBWEMBase()->Center());
                     if (dist >= distBest) {
                         distBest = dist;
-                        posBest = s.getBWEMBase()->Center();
+                        posBest = s.getResourceCentroid();
                     }
                 }
                 attackPosition = posBest;
@@ -152,14 +187,14 @@ namespace McRave::Terrain {
                 attackPosition = enemyStartingPosition;
             else
                 attackPosition = Positions::Invalid;
+
+            Broodwar->drawCircleMap(attackPosition, 3, Colors::Red, true);
         }
 
         void findDefendPosition()
         {
             UnitType baseType = Broodwar->self()->getRace().getResourceDepot();
             Position oldDefendPosition = defendPosition;
-            reverseRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) < Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
-            flatRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) == Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
             narrowNatural = BWEB::Map::getNaturalChoke() ? int(BWEB::Map::getNaturalChoke()->Pos(BWEB::Map::getNaturalChoke()->end1).getDistance(BWEB::Map::getNaturalChoke()->Pos(BWEB::Map::getNaturalChoke()->end2)) / 4) <= 2 : false;
             defendNatural = BWEB::Map::getNaturalChoke() ? BuildOrder::isWallNat() || BuildOrder::buildCount(baseType) > 1 || vis(baseType) > 1 || defendPosition == Position(BWEB::Map::getNaturalChoke()->Center()) || (/*reverseRamp && */!Players::vZ() && Players::getSupply(PlayerState::Self) > 140) : false;
 
@@ -180,8 +215,7 @@ namespace McRave::Terrain {
 
                 if (dist < distBest) {
                     distBest = dist;
-                    mineralHold = (Position(s.getResourceCentroid()) + s.getBWEMBase()->Center()) / 2;
-                    backMineralHold = (Position(s.getResourceCentroid()) - Position(s.getBWEMBase()->Center())) + Position(s.getResourceCentroid());
+                    mineralHold = s.getResourceCentroid();
                 }
             }
 
@@ -213,9 +247,9 @@ namespace McRave::Terrain {
                 }
 
                 // Check to see if we have a wall
-                else if (naturalWall && BuildOrder::isWallNat()) {
-                    Position opening(naturalWall->getOpening());
-                    defendPosition = opening.isValid() ? opening : naturalWall->getCentroid();
+                else if (Walls::getNaturalWall() && BuildOrder::isWallNat()) {
+                    Position opening(Walls::getNaturalWall()->getOpening());
+                    defendPosition = opening.isValid() ? opening : Walls::getNaturalWall()->getCentroid();
                 }
 
                 // Move the defend position on maps like destination
@@ -241,9 +275,9 @@ namespace McRave::Terrain {
             }
 
             // Main defending
-            else if (mainWall && BuildOrder::isWallMain()) {
-                Position opening(mainWall->getOpening());
-                defendPosition = opening.isValid() ? opening : mainWall->getCentroid();
+            else if (Walls::getMainWall() && BuildOrder::isWallMain()) {
+                Position opening(Walls::getMainWall()->getOpening());
+                defendPosition = opening.isValid() ? opening : Walls::getMainWall()->getCentroid();
             }
             else {
                 if (BWEB::Map::getMainArea() && shitMap) {
@@ -259,129 +293,31 @@ namespace McRave::Terrain {
                 }
             }
 
-            // If this isn't the same as the last position, make new concave positions
-            if (defendPosition != oldDefendPosition) {
-                meleeChokePositions.clear();
-                rangedChokePositions.clear();
-            }
-
             // If we aren't defending the natural, remove the area in case we added it
             if (!defendNatural)
                 allyTerritory.erase(BWEB::Map::getNaturalArea());
         }
 
-        void findNaturalWall()
+        void findHarassPosition()
         {
-            if (Broodwar->getGameType() == GameTypes::Use_Map_Settings || Broodwar->self()->getRace() == Races::Terran)
-                return;
-
-            auto openWall = Broodwar->self()->getRace() != Races::Terran;
-            auto choke = BWEB::Map::getNaturalChoke();
-            auto area = BWEB::Map::getNaturalArea();
-
-            naturalWall = BWEB::Walls::createWall(buildings, area, choke, tightType, defenses, openWall, tight);
-
-            if (!naturalWall && Broodwar->self()->getRace() == Races::Zerg) {
-                buildings ={ Zerg_Hatchery };
-                naturalWall = BWEB::Walls::createWall(buildings, area, choke, tightType, defenses, openWall, tight);
-            }
-            if (!naturalWall && Broodwar->self()->getRace() == Races::Zerg) {
-                buildings ={ Zerg_Evolution_Chamber };
-                naturalWall = BWEB::Walls::createWall(buildings, area, choke, tightType, defenses, openWall, tight);
-            }
-        }
-
-        void findMainWall()
-        {
-            if (Broodwar->getGameType() == GameTypes::Use_Map_Settings || Broodwar->self()->getRace() != Races::Terran)
-                return;
-
-            auto openWall = Broodwar->self()->getRace() != Races::Terran;
-            auto choke = BWEB::Map::getMainChoke();
-            auto area = BWEB::Map::getMainArea();
-
-            mainWall = BWEB::Walls::createWall(buildings, area, choke, tightType, defenses, openWall, tight);
-        }
-
-        void findOtherWalls()
-        {
-            // Make a bunch of walls as Zerg for testing
-            if (false && Broodwar->self()->getRace() == Races::Zerg) {
-                for (auto &area : mapBWEM.Areas()) {
-
-                    // Only make walls at gas bases that aren't starting bases
-                    bool invalidBase = false;
-                    for (auto &base : area.Bases()) {
-                        if (base.Starting())
-                            invalidBase = true;
-                    }
-                    if (invalidBase || area.Bases().empty())
-                        continue;
-
-                    const ChokePoint * bestChoke = nullptr;
-                    double distBest = DBL_MAX;
-                    for (auto &choke : area.ChokePoints()) {
-                        auto dist = BWEB::Map::getGroundDistance(Position(choke->Center()), mapBWEM.Center());
-                        if (dist < distBest) {
-                            distBest = dist;
-                            bestChoke = choke;
-                        }
-                    }
-
-                    BWEB::Walls::createWall(buildings, &area, bestChoke, None, defenses, true, false);
-
-                    if (&area == BWEB::Map::getNaturalArea())
-                        naturalWall = BWEB::Walls::getWall(BWEB::Map::getNaturalArea());
-                }
-            }
-        }
-
-        void initializeWallParameters()
-        {
-            // Figure out what we need to be tight against
-            if (Broodwar->self()->getRace() == Races::Terran && Players::vP())
-                tightType = Protoss_Zealot;
-            else if (Players::vZ())
-                tightType = Zerg_Zergling;
-            else
-                tightType = None;
-
-            // Protoss wall parameters
-            if (Broodwar->self()->getRace() == Races::Protoss) {
-                if (Players::vZ()) {
-                    tight = false;
-                    buildings ={ Protoss_Gateway, Protoss_Forge, Protoss_Pylon };
-                    defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
-                }
-                else {
-                    int count = 2;
-                    tight = false;
-                    buildings.insert(buildings.end(), count, Protoss_Pylon);
-                    defenses.insert(defenses.end(), 8, Protoss_Photon_Cannon);
+            auto best = INT_MAX;
+            for (auto &station : Stations::getEnemyStations()) {
+                auto tile = station.second->getBWEMBase()->Location();
+                auto current = Grids::lastVisibleFrame(tile);
+                if (current < best) {
+                    best = current;
+                    harassPosition = Position(tile);
                 }
             }
 
-            // Terran wall parameters
-            if (Broodwar->self()->getRace() == Races::Terran) {
-                tight = true;
-
-                /*if (Broodwar->mapFileName().find("Heartbreak") != string::npos)
-                    buildings ={ Terran_Barracks, Terran_Supply_Depot };
-                else*/
-                buildings ={ Terran_Barracks, Terran_Supply_Depot, Terran_Supply_Depot };
+            // Check enemy start and expand as well
+            if (Grids::lastVisibleFrame(enemyStartingTilePosition) < best) {
+                harassPosition = enemyStartingPosition;
+                best = Grids::lastVisibleFrame(enemyStartingTilePosition);
             }
-
-            // Zerg wall parameters
-            if (Broodwar->self()->getRace() == Races::Zerg) {
-                tight = false;
-                buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber };
-                defenses.insert(defenses.end(), 8, Zerg_Creep_Colony);
-            }
-
-            // Map specific criteria
-            if (Broodwar->self()->getRace() != Races::Terran && (Broodwar->mapFileName().find("Destination") != string::npos || Broodwar->mapFileName().find("Hitchhiker") != string::npos || Broodwar->mapFileName().find("Python") != string::npos || Broodwar->mapFileName().find("BlueStorm") != string::npos)) {
-                tight = false;
-                tightType = None;
+            if (Grids::lastVisibleFrame(enemyNatural) < best) {
+                harassPosition = Position(enemyNatural);
+                best = Grids::lastVisibleFrame(enemyNatural);
             }
         }
 
@@ -397,6 +333,16 @@ namespace McRave::Terrain {
                 // HACK: Add to my territory if chokes are shared
                 if (BWEB::Map::getMainChoke() == BWEB::Map::getNaturalChoke() || islandMap)
                     allyTerritory.insert(BWEB::Map::getNaturalArea());
+            }
+
+            // Abandon natural when not needed
+            if (isInAllyTerritory(BWEB::Map::getNaturalArea()) && Strategy::enemyRush()) {
+                abandonNatural = true;
+                allyTerritory.erase(BWEB::Map::getNaturalArea());
+            }
+            if (abandonNatural && !Strategy::enemyRush()) {
+                abandonNatural = false;
+                allyTerritory.insert(BWEB::Map::getNaturalArea());
             }
         }
     }
@@ -445,10 +391,8 @@ namespace McRave::Terrain {
             }
         }
 
-        initializeWallParameters();
-        findMainWall();
-        findNaturalWall();
-        findOtherWalls();
+        reverseRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) < Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
+        flatRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) == Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
     }
 
     void onFrame()
@@ -458,6 +402,7 @@ namespace McRave::Terrain {
         findEnemyNextExpand();
         findAttackPosition();
         findDefendPosition();
+        findHarassPosition();
 
         updateAreas();
     }
@@ -478,8 +423,14 @@ namespace McRave::Terrain {
 
     bool isInEnemyTerritory(TilePosition here)
     {
-        // Find the area of this tile position and see if it exists in enemy territory
         if (here.isValid() && mapBWEM.GetArea(here) && enemyTerritory.find(mapBWEM.GetArea(here)) != enemyTerritory.end())
+            return true;
+        return false;
+    }
+
+    bool isInEnemyTerritory(const BWEM::Area * area)
+    {
+        if (enemyTerritory.find(area) != enemyTerritory.end())
             return true;
         return false;
     }
@@ -521,71 +472,6 @@ namespace McRave::Terrain {
         return BWEB::Map::getMainPosition();
     }
 
-    int needGroundDefenses(BWEB::Wall& wall)
-    {
-        auto groundCount = wall.getGroundDefenseCount();
-
-        // P
-        if (Broodwar->self()->getRace() == Races::Protoss) {
-            auto prepareExpansionDefenses = Util::getTime() < Time(10, 0) && vis(Protoss_Nexus) >= 2 && com(Protoss_Forge) > 0;
-
-            if (Players::vP() && prepareExpansionDefenses && BuildOrder::isWallNat()) {
-                auto cannonCount = 2 + int(1 + Players::getCurrentCount(PlayerState::Enemy, Protoss_Zealot) + Players::getCurrentCount(PlayerState::Enemy, Protoss_Dragoon) - com(Protoss_Zealot) - com(Protoss_Dragoon) - com(Protoss_High_Templar) - com(Protoss_Dark_Templar)) / 2;
-                return cannonCount - groundCount;
-            }
-
-            if (Players::vZ() && BuildOrder::isWallNat()) {
-                auto cannonCount = int(com(Protoss_Forge) > 0)
-                    + (Players::getCurrentCount(PlayerState::Enemy, Zerg_Zergling) >= 6)
-                    + (Players::getCurrentCount(PlayerState::Enemy, Zerg_Zergling) >= 12)
-                    + (Players::getCurrentCount(PlayerState::Enemy, Zerg_Zergling) >= 24)
-                    + (Players::getCurrentCount(PlayerState::Enemy, Zerg_Hydralisk) / 2);
-
-                // TODO: If scout died, go to 2 cannons, if next scout dies, go 3 cannons        
-                if (Strategy::getEnemyBuild() == "2HatchHydra")
-                    return 5 - groundCount;
-                else if (Strategy::getEnemyBuild() == "3HatchHydra")
-                    return 4 - groundCount;
-                else if (Strategy::getEnemyBuild() == "2HatchMuta" && Util::getTime() > Time(4, 0))
-                    return 3 - groundCount;
-                else if (Strategy::getEnemyBuild() == "3HatchMuta" && Util::getTime() > Time(5, 0))
-                    return 3 - groundCount;
-                else if (Strategy::getEnemyBuild() == "4Pool")
-                    return 2 + (Players::getSupply(PlayerState::Self) >= 24) - groundCount;
-
-                return cannonCount - groundCount;
-            }
-        }
-
-        // Z
-        if (Broodwar->self()->getRace() == Races::Zerg) {
-            auto visSunken = vis(Zerg_Creep_Colony) + vis(Zerg_Sunken_Colony);
-
-            if (Players::vP())
-                return (2 * Strategy::enemyRush()) + int((Players::getCurrentCount(PlayerState::Enemy, Protoss_Zealot) + Players::getCurrentCount(PlayerState::Enemy, Protoss_Dragoon)) / max(1, visSunken)) - groundCount;
-            if (Players::vT())
-                return (2 * (Util::getTime() > Time(3,45) && Strategy::enemyPressure())) + int((Players::getCurrentCount(PlayerState::Enemy, Terran_Marine) + Players::getCurrentCount(PlayerState::Enemy, Terran_Firebat) / 6) / max(1, visSunken)) - groundCount;
-        }
-        return 0;
-    }
-
-    int needAirDefenses(BWEB::Wall& wall)
-    {
-        auto airCount = wall.getAirDefenseCount();
-
-        // P
-        if (Broodwar->self()->getRace() == Races::Protoss) {
-
-        }
-
-        // Z
-        if (Broodwar->self()->getRace() == Races::Zerg) {
-            if (Players::vP() && Util::getTime() > Time(5, 0))
-                return Strategy::enemyAir() - airCount;
-        }
-        return 0;
-    }
-
     bool isShitMap() { return shitMap; }
     bool isIslandMap() { return islandMap; }
     bool isReverseRamp() { return reverseRamp; }
@@ -595,17 +481,13 @@ namespace McRave::Terrain {
     bool foundEnemy() { return enemyStartingPosition.isValid() && Broodwar->isExplored(BWAPI::TilePosition(enemyStartingPosition)); }
     Position getAttackPosition() { return attackPosition; }
     Position getDefendPosition() { return defendPosition; }
+    Position getHarassPosition() { return harassPosition; }
     Position getEnemyStartingPosition() { return enemyStartingPosition; }
     Position getMineralHoldPosition() { return mineralHold; }
-    Position getBackMineralHoldPosition() { return backMineralHold; }
     TilePosition getEnemyNatural() { return enemyNatural; }
     TilePosition getEnemyExpand() { return enemyExpand; }
     TilePosition getEnemyStartingTilePosition() { return enemyStartingTilePosition; }
-    vector<Position> getMeleeChokePositions() { return meleeChokePositions; }
-    vector<Position> getRangedChokePositions() { return rangedChokePositions; }
     set <const Area*>& getAllyTerritory() { return allyTerritory; }
     set <const Area*>& getEnemyTerritory() { return enemyTerritory; }
     set <const Base*>& getAllBases() { return allBases; }
-    BWEB::Wall* getMainWall() { return mainWall; }
-    BWEB::Wall* getNaturalWall() { return naturalWall; }
 }

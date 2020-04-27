@@ -133,6 +133,9 @@ public:
     //       As a consequence, the returned path may not be the shortest one.
     const ChokePoint::Path &                GetPathTo(const ChokePoint * cp) const;
 
+    // Returns the pixel width of the Chokepoint, start from node n1 and ending at node n2
+    int                                      Width() const { return int(this->Pos(this->end1).getDistance(this->Pos(this->end2))) * 8;}
+
     Map *                                    GetMap() const;
 
     ChokePoint &                            operator=(const ChokePoint &) = delete;

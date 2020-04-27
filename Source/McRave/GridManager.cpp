@@ -68,8 +68,17 @@ namespace McRave::Grids
 
         void addToGrids(UnitInfo& unit)
         {
-            if ((unit.getType().isWorker() && unit.getPlayer() != Broodwar->self() && (!unit.unit()->exists() || Broodwar->getFrameCount() > 10000 || !unit.hasAttackedRecently()))
-                || unit.getType() == Protoss_Interceptor
+            // If it's an enemy worker, add to grids only if it's near our scout
+            if (BuildOrder::shouldScout() && unit.getType().isWorker() && unit.getPlayer() != Broodwar->self()) {
+                const auto closestScout = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+                    return u.getRole() == Role::Scout && !u.isFlying();
+                });
+
+                if (closestScout && unit.unit()->getOrder() != Orders::AttackUnit && unit.unit()->getOrderTargetPosition().getDistance(closestScout->getPosition()) > 64.0)
+                    return;
+            }
+
+            if (unit.getType() == Protoss_Interceptor
                 || unit.getType() == Terran_Medic)
                 return;
 
@@ -91,7 +100,7 @@ namespace McRave::Grids
 
             if (unit.getType().isWorker() &&
                 (unit.unit()->isConstructing() || unit.unit()->isGatheringGas() || unit.unit()->isGatheringMinerals()))
-                radius = radius / 3.0;
+                radius = radius / 3;
 
             const auto left = max(0, unit.getWalkPosition().x - radius);
             const auto right = min(1024, unit.getWalkPosition().x + walkWidth + radius);
@@ -112,7 +121,7 @@ namespace McRave::Grids
             if (!closest)
                 inRange = false;
             else {
-                const auto dist = closest->getPosition().getDistance(unit.getPosition()) - 128.0;
+                const auto dist = closest->getPosition().getDistance(unit.getPosition()) - 640.0;
                 const auto vision = closest->getType().sightRange();
                 const auto range = max({ closest->getGroundRange(), closest->getAirRange(), unit.getGroundRange(), unit.getAirRange() });
 
@@ -129,7 +138,7 @@ namespace McRave::Grids
                     const auto dist = unit.getPosition().getDistance(Position((x * 8) + 4, (y * 8) + 4));
 
                     // Cluster
-                    if (clusterGrid && dist < 48.0 && (unit.getPlayer() != Broodwar->self() || (unit.getRole() == Role::Combat && !unit.localRetreat()))) {
+                    if (clusterGrid && dist < 64.0 && (unit.getPlayer() != Broodwar->self() || unit.getRole() == Role::Combat)) {
                         clusterGrid[x][y] += float(unit.getPriority());
                         saveReset(x, y);
                     }
@@ -142,11 +151,11 @@ namespace McRave::Grids
 
                     // Threat
                     if (inRange && grdGrid && dist <= unit.getGroundReach()) {
-                        grdGrid[x][y] += float(unit.getVisibleGroundStrength() * unit.getGroundReach());
+                        grdGrid[x][y] += float(unit.getVisibleGroundStrength());
                         saveReset(x, y);
                     }
-                    if (inRange && airGrid && dist <= unit.getAirReach()) {
-                        airGrid[x][y] += float(unit.getVisibleAirStrength() * unit.getAirReach());
+                    if (/*inRange && */airGrid && dist <= unit.getAirReach()) {
+                        airGrid[x][y] += float(unit.getVisibleAirStrength());
                         saveReset(x, y);
                     }
                 }
@@ -324,6 +333,14 @@ namespace McRave::Grids
     void onStart()
     {
         updateMobility();
+
+        if (Broodwar->getGameType() == GameTypes::Use_Map_Settings) {
+            for (int x = 0; x <= Broodwar->mapWidth() * 4; x++) {
+                for (int y = 0; y <= Broodwar->mapHeight() * 4; y++) {
+                    visibleGrid[x][y] = -9999;
+                }
+            }
+        }
     }
 
     float getAGroundCluster(WalkPosition here) { return aGroundCluster[here.x][here.y]; }

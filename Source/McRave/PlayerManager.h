@@ -27,15 +27,15 @@ namespace McRave::Players
     bool vT();
     bool vZ();
 
-    bool PvP();
-    bool PvZ();
-    bool PvT();
+    inline bool PvP() { return vP() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Protoss; }
+    inline bool PvT() { return vT() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Protoss; }
+    inline bool PvZ() { return vZ() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Protoss; }
 
-    bool TvP();
-    bool TvZ();
-    bool TvT();
+    inline bool TvP() { return vP() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Terran; }
+    inline bool TvT() { return vT() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Terran; }
+    inline bool TvZ() { return vZ() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Terran; }
 
-    bool ZvP();
-    bool ZvZ();
-    bool ZvT();
+    inline bool ZvP() { return vP() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Zerg; }
+    inline bool ZvT() { return vT() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Zerg; }
+    inline bool ZvZ() { return vZ() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Zerg; }
 }

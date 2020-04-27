@@ -48,6 +48,7 @@
     <ClCompile Include="..\Source\McRave\CombatManager.cpp" />
     <ClCompile Include="..\Source\McRave\CommandManager.cpp" />
     <ClCompile Include="..\Source\McRave\Dll.cpp" />
+    <ClCompile Include="..\Source\McRave\WallManager.cpp" />
     <ClCompile Include="..\Source\McRave\ZvP.cpp" />
     <ClCompile Include="..\Source\McRave\ZvT.cpp" />
     <ClCompile Include="..\Source\McRave\ZvZ.cpp" />
@@ -137,6 +138,7 @@
     <ClInclude Include="..\Source\McRave\UnitManager.h" />
     <ClInclude Include="..\Source\McRave\UnitMath.h" />
     <ClInclude Include="..\Source\McRave\Util.h" />
+    <ClInclude Include="..\Source\McRave\WallManager.h" />
     <ClInclude Include="..\Source\McRave\WorkerManager.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

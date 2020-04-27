@@ -24,9 +24,9 @@ namespace McRave::Learning {
             // Protoss wall requirements
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (BWEB::Map::getNaturalArea()->ChokePoints().size() == 1)
-                    return Terrain::getMainWall();
+                    return Walls::getMainWall();
                 if (build == "FFE")
-                    return Terrain::getNaturalWall();
+                    return Walls::getNaturalWall();
                 return true;
             }
 
@@ -36,7 +36,7 @@ namespace McRave::Learning {
 
             // Terran wall requirements
             if (Broodwar->self()->getRace() == Races::Terran)
-                return Terrain::getMainWall();
+                return Walls::getMainWall();
             return false;
         }
 
@@ -189,11 +189,11 @@ namespace McRave::Learning {
                         return z;
                 }
                 if (build == "HatchPool") {
-                    if (transition == "2HatchMuta")
+                    if (transition == "2HatchMuta" || transition == "4BaseGuardian")
                         return t;
                 }
                 if (build == "PoolHatch") {
-                    if (transition == "2HatchMuta")
+                    if (transition == "2HatchMuta" || transition == "4BaseGuardian")
                         return p;
                 }
             }
@@ -226,9 +226,9 @@ namespace McRave::Learning {
                 if (Players::vZ())
                     BuildOrder::setLearnedBuild("PoolLair", "9Pool", "1HatchMuta");
                 else if (Players::vT())
-                    BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "2HatchMuta");
+                    BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "4BaseGuardian");
                 else
-                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "2HatchMuta");
+                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "4BaseGuardian");
             }
 
             // Add walls
@@ -306,6 +306,8 @@ namespace McRave::Learning {
         gameLog << mapName << ","
             << Broodwar->enemy()->getName().c_str() << ","
             << Strategy::getEnemyBuild() << ","
+            << Strategy::getEnemyOpener() << ","
+            << Strategy::getEnemyTransition() << ","
             << currentBuild << "," << currentOpener << "," << currentTransition << ","
             << (isWinner ? "Won" : "Lost") << "," << std::setfill('0') << Util::getTime().minutes << ":" << std::setw(2) << Util::getTime().seconds;
 
@@ -376,10 +378,10 @@ namespace McRave::Learning {
         if (Broodwar->self()->getRace() == Races::Zerg) {
 
             myBuilds["PoolHatch"].openers ={ "Overpool" };
-            myBuilds["PoolHatch"].transitions={ "2HatchMuta", "2HatchHydra" };
+            myBuilds["PoolHatch"].transitions={ "2HatchMuta", "4BaseGuardian" };
 
             myBuilds["HatchPool"].openers ={ "12Hatch" };
-            myBuilds["HatchPool"].transitions={ "3HatchLing", "2HatchMuta", "2HatchHydra" };
+            myBuilds["HatchPool"].transitions={ "2HatchMuta", "4BaseGuardian" };
 
             myBuilds["PoolLair"].openers ={ "9Pool" };
             myBuilds["PoolLair"].transitions={ "1HatchMuta" };
@@ -522,14 +524,14 @@ namespace McRave::Learning {
             getDefaultBuild();
 
         // Hardcoded stuff
-        if (false) {
+        if (true) {
             if (Players::PvZ()) {
                 BuildOrder::setLearnedBuild("FFE", "Forge", "NeoBisu");
                 isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                 return;
             }
             if (Players::PvP()) {
-                BuildOrder::setLearnedBuild("2Gate", "Main", "DT");
+                BuildOrder::setLearnedBuild("1GateCore", "1Zealot", "DT");
                 isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                 return;
             }
@@ -538,8 +540,18 @@ namespace McRave::Learning {
                 isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                 return;
             }
-            if (Broodwar->self()->getRace() == Races::Zerg) {
-                BuildOrder::setLearnedBuild("PoolHatch", "9Pool10Hatch", "2HatchLing");
+            if (Players::ZvZ()) {
+                BuildOrder::setLearnedBuild("PoolLair", "9Pool", "1HatchMuta");
+                isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
+                return;
+            }
+            if (Players::ZvT()) {
+                BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "2HatchMuta");
+                isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
+                return;
+            }
+            if (Players::ZvP()) {
+                BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "2HatchMuta");
                 isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                 return;
             }

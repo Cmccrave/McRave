@@ -225,7 +225,7 @@ namespace McRave::Transports {
             if (unit.getAssignedCargo().empty()) {
                 auto station = Stations::getClosestStation(PlayerState::Self, unit.getPosition());
                 if (station)
-                    unit.setDestination(station);
+                    unit.setDestination(station->getBWEMBase()->Center());
             }
 
             // Try going to the army center as long as we have an army

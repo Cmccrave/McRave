@@ -48,9 +48,40 @@ namespace McRave::BuildOrder::Protoss
         if (!atPercent(Protoss_Cybernetics_Core, 1.00))
             return;
 
+        const auto firstTechUnit = !techList.empty() ? *techList.begin() : None;
         const auto skipOneTech = Players::vT() + int(firstUnit == None || (firstUnit != None && Stations::getMyStations().size() >= 2) || Strategy::getEnemyBuild() == "FFE" || (Strategy::enemyGasSteal() && !Terrain::isNarrowNatural()));
         const auto techVal = int(techList.size()) + skipOneTech - isTechUnit(Protoss_Shuttle) - isTechUnit(Protoss_Observer) + isTechUnit(Protoss_Arbiter) - (com(Protoss_Nexus) >= 3 && isTechUnit(Protoss_Dark_Templar));
-        techSat = techVal >= int(Stations::getMyStations().size());
+        techSat = techVal >= com(Protoss_Nexus);
+
+        // PvP
+        if (Players::PvP()) {
+            if (firstTechUnit == Protoss_Dark_Templar)
+                techOrder ={ Protoss_High_Templar, Protoss_Observer };
+            else
+                techOrder ={ Protoss_Reaver, Protoss_High_Templar };
+        }
+
+        // PvZ
+        if (Players::PvZ()) {
+            if (firstTechUnit == Protoss_Reaver)
+                techOrder ={ Protoss_Corsair, Protoss_High_Templar };
+            else if (firstTechUnit == Protoss_Corsair)
+                techOrder ={ Protoss_High_Templar, Protoss_Reaver };
+            else if (firstTechUnit == Protoss_High_Templar)
+                techOrder ={ Protoss_Corsair, Protoss_Reaver };
+            else
+                techOrder ={ Protoss_Corsair, Protoss_Observer, Protoss_High_Templar };
+        }
+
+        // PvT
+        if (Players::PvT()) {
+            if (firstTechUnit == Protoss_Dark_Templar)
+                techOrder ={ Protoss_Arbiter, Protoss_Observer, Protoss_High_Templar };
+            else if (firstTechUnit == Protoss_Carrier)
+                techOrder ={ Protoss_Observer, Protoss_High_Templar };
+            else
+                techOrder ={ Protoss_Observer, Protoss_Arbiter, Protoss_High_Templar };
+        }
 
         // If we have our tech unit, set to none
         if (techComplete())
@@ -77,7 +108,7 @@ namespace McRave::BuildOrder::Protoss
         // Various hardcoded tech choices
         else if (getTech && currentTransition == "DoubleExpand" && !isTechUnit(Protoss_High_Templar))
             techUnit = Protoss_High_Templar;
-        else if (getTech && Strategy::getEnemyBuild() == "4Gate" && !isTechUnit(Protoss_Dark_Templar) && !Strategy::enemyGasSteal())
+        else if (getTech && Strategy::getEnemyTransition() == "4Gate" && !isTechUnit(Protoss_Dark_Templar) && !Strategy::enemyGasSteal())
             techUnit = Protoss_Dark_Templar;
 
         getNewTech();
@@ -121,7 +152,7 @@ namespace McRave::BuildOrder::Protoss
             if (!inOpeningBook && !Buildings::hasPoweredPositions() && vis(Protoss_Pylon) > 10)
                 buildQueue[Protoss_Pylon] = vis(Protoss_Pylon) + 1;
 
-            if (Stations::getMyStations().size() >= 4 || Strategy::getEnemyBuild() == "2HatchMuta" || Strategy::getEnemyBuild() == "3HatchMuta") {
+            if (Stations::getMyStations().size() >= 4 || Strategy::getEnemyTransition() == "2HatchMuta" || Strategy::getEnemyTransition() == "3HatchMuta") {
                 for (auto &[unit, station] : Stations::getMyStations()) {
                     if (Stations::needPower(*station))
                         buildQueue[Protoss_Pylon] = vis(Protoss_Pylon) + 1;
@@ -130,9 +161,9 @@ namespace McRave::BuildOrder::Protoss
         }
 
         // Adding Wall Defenses
-        if (Terrain::getNaturalWall()) {
-            if (Terrain::needAirDefenses(*Terrain::getNaturalWall()) > 0 || Terrain::needGroundDefenses(*Terrain::getNaturalWall()) > 0) {
-                Broodwar->drawCircleMap(Terrain::getNaturalWall()->getCentroid(), 8, Colors::Orange, true);
+        if (Walls::getNaturalWall()) {
+            if (Walls::needAirDefenses(*Walls::getNaturalWall()) > 0 || Walls::needGroundDefenses(*Walls::getNaturalWall()) > 0) {
+                Broodwar->drawCircleMap(Walls::getNaturalWall()->getCentroid(), 8, Colors::Orange, true);
                 buildQueue[Protoss_Photon_Cannon] += 1;
             }
         }
@@ -214,7 +245,7 @@ namespace McRave::BuildOrder::Protoss
         }
 
         // If we want to wall at the natural but we don't have a wall there, check main
-        if (wallNat && !Terrain::getNaturalWall() && Terrain::getMainWall()) {
+        if (wallNat && !Walls::getNaturalWall() && Walls::getMainWall()) {
             wallNat = false;
             wallMain = true;
         }

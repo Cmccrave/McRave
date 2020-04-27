@@ -70,11 +70,11 @@ namespace McRave::BuildOrder::Protoss {
 
         // Reactions
         if (!lockedTransition) {
-            if (Strategy::getEnemyBuild() == "4Pool" && currentOpener != "Forge")
+            if (Strategy::getEnemyOpener() == "4Pool" && currentOpener != "Forge")
                 currentOpener = "Panic";
-            if (Strategy::getEnemyBuild() == "2HatchHydra" || Strategy::getEnemyBuild() == "3HatchHydra")
+            if (Strategy::getEnemyTransition() == "2HatchHydra" || Strategy::getEnemyTransition() == "3HatchHydra")
                 currentTransition = "StormRush";
-            else if (Strategy::getEnemyBuild() == "2HatchMuta" || Strategy::getEnemyBuild() == "3HatchMuta")
+            else if (Strategy::getEnemyTransition() == "2HatchMuta" || Strategy::getEnemyTransition() == "3HatchMuta")
                 currentTransition = "2Stargate";
         }
 

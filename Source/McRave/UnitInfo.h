@@ -4,7 +4,9 @@
 
 namespace McRave {
 
-    class UnitInfo : public std::enable_shared_from_this<UnitInfo> {
+    class UnitInfo : public std::enable_shared_from_this<UnitInfo>
+    {
+    #pragma region UnitData
         double visibleGroundStrength = 0.0;
         double visibleAirStrength = 0.0;
         double maxGroundStrength = 0.0;
@@ -24,12 +26,12 @@ namespace McRave {
         double simValue = 0.0;
         double simRadius = 0.0;
 
-        int lastAttackFrame = 0;
-        int lastVisibleFrame = 0;
-        int lastPosMoveFrame = 0;
-        int lastTileMoveFrame = 0;
+        int lastAttackFrame = -999;
+        int lastVisibleFrame = -999;
+        int lastPosMoveFrame = -999;
+        int lastTileMoveFrame = -999;
         int lastThreateningFrame = 0;
-        int resourceHeldFrames = 0;
+        int resourceHeldFrames = -999;
         int remainingTrainFrame = 0;
         int shields = 0;
         int health = 0;
@@ -42,9 +44,11 @@ namespace McRave {
         bool flying = false;
         bool threatening = false;
         bool hidden = false;
+        bool nearSplash = false;
+        bool targetedBySuicide = false;
+    #pragma endregion
 
-        BWAPI::Player player = nullptr;
-        BWAPI::Unit bwUnit = nullptr;
+    #pragma region Targets
         std::weak_ptr<UnitInfo> transport;
         std::weak_ptr<UnitInfo> target;
         std::weak_ptr<UnitInfo> backupTarget;
@@ -52,15 +56,19 @@ namespace McRave {
 
         std::vector<std::weak_ptr<UnitInfo>> assignedCargo;
         std::vector<std::weak_ptr<UnitInfo>> targetedBy;
+    #pragma endregion
 
+    #pragma region States
         TransportState tState = TransportState::None;
         LocalState lState = LocalState::None;
         GlobalState gState = GlobalState::None;
         SimState sState = SimState::None;
         Role role = Role::None;
+    #pragma endregion
 
-    #pragma region BWAPI
-
+    #pragma region BWAPIData
+        BWAPI::Player player = nullptr;
+        BWAPI::Unit bwUnit = nullptr;
         BWAPI::UnitType type = BWAPI::UnitTypes::None;
         BWAPI::UnitType buildingType = BWAPI::UnitTypes::None;
 
@@ -75,22 +83,31 @@ namespace McRave {
         BWAPI::TilePosition tilePosition = BWAPI::TilePositions::Invalid;
         BWAPI::TilePosition buildPosition = BWAPI::TilePositions::Invalid;
         BWAPI::TilePosition lastTile = BWAPI::TilePositions::Invalid;
-
+        std::map<BWAPI::TilePosition, int> lastTilesVisited;
     #pragma endregion
 
-        BWEB::Path path;
+    #pragma region Paths
+        BWEB::Path destinationPath;
+        BWEB::Path targetPath;
         BWEM::CPPath quickPath;
+    #pragma endregion
 
+    #pragma region Updaters
         void updateTarget();
         void updateStuckCheck();
         void updateHidden();
         void updateThreatening();
+    #pragma endregion
+
     public:
+
+    #pragma region Constructors
         UnitInfo();
 
         UnitInfo(BWAPI::Unit u) {
             bwUnit = u;
         }
+    #pragma endregion
 
     #pragma region Utility
         bool hasResource() { return !resource.expired(); }
@@ -99,59 +116,18 @@ namespace McRave {
         bool hasBackupTarget() { return !backupTarget.expired(); }
         bool hasMovedArea() { return lastTile.isValid() && tilePosition.isValid() && BWEM::Map::Instance().GetArea(lastTile) != BWEM::Map::Instance().GetArea(tilePosition); }
         bool hasAttackedRecently() { return (BWAPI::Broodwar->getFrameCount() - lastAttackFrame < 50); }
-        bool targetsFriendly() { return type == BWAPI::UnitTypes::Terran_Medic || type == BWAPI::UnitTypes::Terran_Science_Vessel || type == BWAPI::UnitTypes::Zerg_Defiler; }
-        bool isStuck() { return (BWAPI::Broodwar->getFrameCount() - lastTileMoveFrame > 100); }
+        bool targetsFriendly() { return type == BWAPI::UnitTypes::Terran_Medic || type == BWAPI::UnitTypes::Terran_Science_Vessel || (type == BWAPI::UnitTypes::Zerg_Defiler && energy < 100); }
+        bool isStuck() { return (BWAPI::Broodwar->getFrameCount() - lastTileMoveFrame > 12); }
         bool isSuicidal() { return type == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine || type == BWAPI::UnitTypes::Zerg_Scourge || type == BWAPI::UnitTypes::Zerg_Infested_Terran; }
         bool isLightAir() { return type == BWAPI::UnitTypes::Protoss_Corsair || type == BWAPI::UnitTypes::Zerg_Mutalisk || type == BWAPI::UnitTypes::Terran_Wraith; }
         bool isCapitalShip() { return type == BWAPI::UnitTypes::Protoss_Carrier || type == BWAPI::UnitTypes::Terran_Battlecruiser || type == BWAPI::UnitTypes::Zerg_Guardian; }
         bool isHovering() { return type.isWorker() || type == BWAPI::UnitTypes::Protoss_Archon || type == BWAPI::UnitTypes::Protoss_Dark_Archon || type == BWAPI::UnitTypes::Terran_Vulture; }
         bool isTransport() { return type == BWAPI::UnitTypes::Protoss_Shuttle || type == BWAPI::UnitTypes::Terran_Dropship || type == BWAPI::UnitTypes::Zerg_Overlord; }
-        bool isSpellcaster() { return type == BWAPI::UnitTypes::Protoss_High_Templar || type == BWAPI::UnitTypes::Protoss_Dark_Archon || type == BWAPI::UnitTypes::Terran_Medic || type == BWAPI::UnitTypes::Terran_Science_Vessel; }
+        bool isSpellcaster() { return type == BWAPI::UnitTypes::Protoss_High_Templar || type == BWAPI::UnitTypes::Protoss_Dark_Archon || type == BWAPI::UnitTypes::Terran_Medic || type == BWAPI::UnitTypes::Terran_Science_Vessel || type == BWAPI::UnitTypes::Zerg_Defiler; }
         bool isSiegeTank() { return type == BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode || type == BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode; }
-        bool isBurrowed() { return burrowed; }
-        bool isFlying() { return flying; }
-        bool isThreatening() { return threatening; }
-        bool isHidden() { return hidden; }
 
-        bool isHealthy() {
-            return (type.maxShields() > 0 && percentShield > LOW_SHIELD_PERCENT_LIMIT)
-                || (type.isMechanical() && percentHealth > LOW_MECH_PERCENT_LIMIT)
-                || (type.getRace() == BWAPI::Races::Zerg && percentHealth > LOW_BIO_PERCENT_LIMIT)
-                || (type == BWAPI::UnitTypes::Zerg_Zergling && Players::ZvP() && health > 16)
-                || (type == BWAPI::UnitTypes::Zerg_Zergling && Players::ZvT() && health > 16);
-        }
-        bool isRequestingPickup() {
-            if (!hasTarget()
-                || !hasTransport()
-                || getPosition().getDistance(getTransport().getPosition()) > 128.0)
-                return false;
-
-            // Check if we Unit being attacked by multiple bullets
-            auto bulletCount = 0;
-            for (auto &bullet : BWAPI::Broodwar->getBullets()) {
-                if (bullet && bullet->exists() && bullet->getPlayer() != BWAPI::Broodwar->self() && bullet->getTarget() == bwUnit)
-                    bulletCount++;
-            }
-
-            auto range = getTarget().getType().isFlyer() ? getAirRange() : getGroundRange();
-            auto cargoReady = getType() == BWAPI::UnitTypes::Protoss_High_Templar ? canStartCast(BWAPI::TechTypes::Psionic_Storm) : canStartAttack();
-            auto threat = Grids::getEGroundThreat(getWalkPosition()) > 0.0;
-
-            return getLocalState() == LocalState::Retreat || getEngDist() > range + 32.0 || !cargoReady || bulletCount >= 4 || Units::getSplashTargets().find(bwUnit) != Units::getSplashTargets().end();
-        }
-        bool canCreatePath(BWAPI::Position h) {
-            BWAPI::TilePosition here(h);
-
-            const auto shouldCreatePath =
-                path.getTiles().empty() || path.getTiles().front() != here || path.getTiles().back() != getTilePosition();                      // ...path is empty or not the same
-
-            const auto canCreatePath =
-                (getPosition().isValid() && here.isValid()                                                                                        // ...both TilePositions are valid
-                    && !getType().isFlyer());                                                                                                    // ...unit is not a flyer
-
-            return shouldCreatePath && canCreatePath;
-        }
-
+        bool isHealthy();
+        bool isRequestingPickup();
         bool isWithinReach(UnitInfo&);
         bool isWithinRange(UnitInfo&);
         bool isWithinBuildRange();
@@ -172,14 +148,25 @@ namespace McRave {
             return BWAPI::Broodwar->getFrameCount() + int(position.getDistance(Terrain::getDefendPosition()) / speed);
         }
         int frameCompletesWhen() {
-            return BWAPI::Broodwar->getFrameCount() + int((1.0 - percentHealth) * double(type.buildTime()));
+            if (percentHealth >= 1.0 || bwUnit->isCompleted())
+                return BWAPI::Broodwar->getFrameCount();
+            auto ratio = (double(health) - (0.1 * double(type.maxHitPoints()))) / (0.9 * double(type.maxHitPoints()));
+            return BWAPI::Broodwar->getFrameCount() + int(std::round((1.0 - ratio) * double(type.buildTime())));
+        }
+        Time timeArrivesWhen() {
+            int arrival = frameArrivesWhen();
+            return Time(arrival / 1440, (arrival / 24) % 60);
+        }
+        Time timeCompletesWhen() {
+            int completes = frameCompletesWhen();
+            return Time(completes / 1440, (completes / 24) % 60);
         }
 
         // Logic that dictates overriding simulation results
-        bool globalRetreat();
-        bool globalEngage();
         bool localRetreat();
         bool localEngage();
+        bool globalRetreat();
+        bool globalEngage();
 
         void update();
         void verifyPaths();
@@ -199,6 +186,7 @@ namespace McRave {
     #pragma region Getters
         std::vector<std::weak_ptr<UnitInfo>>& getAssignedCargo() { return assignedCargo; }
         std::vector<std::weak_ptr<UnitInfo>>& getTargetedBy() { return targetedBy; }
+        std::map<BWAPI::TilePosition, int>& getLastTilesVisited() { return lastTilesVisited; }
 
         TransportState getTransportState() { return tState; }
         SimState getSimState() { return sState; }
@@ -211,7 +199,7 @@ namespace McRave {
         UnitInfo &getBackupTarget() { return *backupTarget.lock(); }
 
         Role getRole() { return role; }
-        BWAPI::Unit unit() { return bwUnit; }
+        BWAPI::Unit& unit() { return bwUnit; }
         BWAPI::UnitType getType() { return type; }
         BWAPI::UnitType getBuildType() { return buildingType; }
         BWAPI::Player getPlayer() { return player; }
@@ -226,7 +214,8 @@ namespace McRave {
         BWAPI::TilePosition getTilePosition() { return tilePosition; }
         BWAPI::TilePosition getBuildPosition() { return buildPosition; }
         BWAPI::TilePosition getLastTile() { return lastTile; }
-        BWEB::Path& getPath() { return path; }
+        BWEB::Path& getDestinationPath() { return destinationPath; }
+        BWEB::Path& getTargetPath() { return targetPath; }
         BWEM::CPPath& getQuickPath() { return quickPath; }
         double getPercentHealth() { return percentHealth; }
         double getPercentShield() { return percentShield; }
@@ -256,6 +245,12 @@ namespace McRave {
         int framesHoldingResource() { return resourceHeldFrames; }
         int getWalkWidth() { return walkWidth; }
         int getWalkHeight() { return walkHeight; }
+        bool isBurrowed() { return burrowed; }
+        bool isFlying() { return flying; }
+        bool isThreatening() { return threatening; }
+        bool isHidden() { return hidden; }
+        bool isNearSplash() { return nearSplash; }
+        bool isTargetedBySuicide() { return targetedBySuicide; }
     #pragma endregion      
 
     #pragma region Setters
@@ -282,7 +277,8 @@ namespace McRave {
         void setWalkPosition(BWAPI::WalkPosition newPosition) { walkPosition = newPosition; }
         void setTilePosition(BWAPI::TilePosition newPosition) { tilePosition = newPosition; }
         void setBuildPosition(BWAPI::TilePosition newPosition) { buildPosition = newPosition; }
-        void setPath(BWEB::Path& newPath) { path = newPath; }
+        void setDestinationPath(BWEB::Path& newPath) { destinationPath = newPath; }
+        void setTargetPath(BWEB::Path& newPath) { targetPath = newPath; }
         void setQuickPath(BWEM::CPPath newPath) { quickPath = newPath; }
         void setLastPositions();
     #pragma endregion

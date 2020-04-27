@@ -187,6 +187,9 @@
     <ClCompile Include="..\Source\McRave\ZvZ.cpp">
       <Filter>McRave</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\McRave\WallManager.cpp">
+      <Filter>McRave</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">
@@ -352,6 +355,9 @@
       <Filter>McRave</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\McRave\ActionManager.h">
+      <Filter>McRave</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\WallManager.h">
       <Filter>McRave</Filter>
     </ClInclude>
   </ItemGroup>

@@ -42,10 +42,10 @@ namespace McRave::BuildOrder::Terran {
         if (Players::getSupply(PlayerState::Self) >= 80)
             unlockedType.insert(Terran_Siege_Tank_Tank_Mode);
 
-        if (!inOpeningBook || com(Terran_Marine) >= 4)
+        /*if (!inOpeningBook || com(Terran_Marine) >= 4)
             unlockedType.erase(Terran_Marine);
-        else
-            unlockedType.insert(Terran_Marine);
+        else*/
+        unlockedType.insert(Terran_Marine);
 
 
         // Control Tower
@@ -62,16 +62,16 @@ namespace McRave::BuildOrder::Terran {
             buildQueue[Terran_Supply_Depot] = count;
         }
 
-        // Expansion logic
-        if (shouldExpand())
-            buildQueue[Terran_Command_Center] = com(Terran_Command_Center) + 1;
-
         // Bunker logic
         if (Strategy::enemyRush() && !wallMain)
             buildQueue[Terran_Bunker] = 1;
 
         if (!inOpeningBook)
         {
+            // Expansion logic
+            if (shouldExpand())
+                buildQueue[Terran_Command_Center] = com(Terran_Command_Center) + 1;
+
             // Refinery logic
             if (shouldAddGas())
                 buildQueue[Terran_Refinery] = Resources::getGasCount();

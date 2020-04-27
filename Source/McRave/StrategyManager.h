@@ -4,6 +4,8 @@
 namespace McRave::Strategy {
 
     std::string getEnemyBuild();
+    std::string getEnemyOpener();
+    std::string getEnemyTransition();
     BWAPI::Position enemyScoutPosition();
     bool enemyFastExpand();
     bool enemyRush();
@@ -17,7 +19,7 @@ namespace McRave::Strategy {
     bool enemyBust();
     bool enemyPressure();
     bool enemyBlockedScout();
-    int enemyArrivalFrame();
+    Time enemyArrivalTime();
 
     void onFrame();
 }

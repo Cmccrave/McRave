@@ -8,21 +8,27 @@
 #include "EventManager.h"
 
 // *** TODO ***
-// Move ResourceInfo to UnitInfo?
-// Enemy opener/build/transition recognizer - 9pool into 2 hatch muta for example
+// Check combat units by distance sorting (destination likely never valid at start)
+// Skipping grids on some units causes no collision to be added for those units
+
+// Protoss:
 // Obs to scout bases
 // Interceptors targets might be convincing goons to dive tanks
 // Shuttles don't consider static defenses when decided engage/retreat
 // Change storms to care more about multi target rather than score
 // Cannon detection action range too large
 // 10/15 defensive reaction lost to BBS
-// Cannon cancelling to save money
-// Stupid probes keep blocking cannons, forced gather doesnt work
 // Scout denial with Zealot
-// Chose more tech without needing it, then didnt expand
+// Battery placement at wall
+// Tech too quick
+// Goons get stuck
+// Pylon spam
 
 // Zerg:
-// ZvZ
+// Dropping drone scout causes it to mine closest mineral
+// Save larva only when at 3 larva
+// - Difficult, larva spawn is slightly random, extra on lair too?
+// Update canceling logic - change BWEB? prob not
 
 using namespace BWAPI;
 using namespace std;
@@ -32,11 +38,14 @@ void McRaveModule::onStart()
 {
     Players::onStart();
     Terrain::onStart();
+    Walls::onStart();
+    BWEB::Blocks::findBlocks();
     Stations::onStart();
     Grids::onStart();
     Learning::onStart();
     Buildings::onStart();
     Util::onStart();
+    Combat::onStart();
 
     Broodwar->enableFlag(Flag::UserInput);
     Broodwar->setCommandOptimizationLevel(0);
@@ -53,6 +62,9 @@ void McRaveModule::onEnd(bool isWinner)
 
 void McRaveModule::onFrame()
 {
+    if (Broodwar->getGameType() != GameTypes::Use_Map_Settings && Broodwar->isPaused())
+        return;
+
     // Update game state
     Util::onFrame();
 

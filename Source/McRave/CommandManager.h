@@ -3,15 +3,27 @@
 
 namespace McRave::Command {
 
-    bool misc(UnitInfo& unit);
-    bool move(UnitInfo& unit);
-    bool approach(UnitInfo& unit);
-    bool defend(UnitInfo& unit);
-    bool kite(UnitInfo& unit);
-    bool attack(UnitInfo& unit);
-    bool hunt(UnitInfo& unit);
-    bool escort(UnitInfo& unit);
-    bool special(UnitInfo& unit);
-    bool retreat(UnitInfo& unit);
-    bool transport(UnitInfo& unit);
+    bool misc(UnitInfo&);
+    bool move(UnitInfo&);
+    bool approach(UnitInfo&);
+    bool defend(UnitInfo&);
+    bool kite(UnitInfo&);
+    bool attack(UnitInfo&);
+    bool hunt(UnitInfo&);
+    bool escort(UnitInfo&);
+    bool special(UnitInfo&);
+    bool retreat(UnitInfo&);
+    bool transport(UnitInfo&);
+
+    bool click(UnitInfo&);
+    bool siege(UnitInfo&);
+    bool repair(UnitInfo&);
+    bool burrow(UnitInfo&);
+    bool cast(UnitInfo&);
+    bool morph(UnitInfo&);
+    bool train(UnitInfo&);
+    bool returnResource(UnitInfo&);
+    bool clearNeutral(UnitInfo&);
+    bool build(UnitInfo&);
+    bool gather(UnitInfo&);
 }

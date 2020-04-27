@@ -249,7 +249,7 @@ namespace McRave::BuildOrder::Protoss {
 
         // Reactions
         if (!lockedTransition) {
-            if (Strategy::enemyFastExpand() || Strategy::getEnemyBuild() == "SiegeExpand")
+            if (Strategy::enemyFastExpand() || Strategy::getEnemyTransition() == "SiegeExpand")
                 currentTransition = s < 50 ? "DoubleExpand" : "ReaverCarrier";
             else if (Terrain::getEnemyStartingPosition().isValid() && !Strategy::enemyFastExpand() && currentTransition == "DoubleExpand")
                 currentTransition = "Standard";
@@ -336,7 +336,7 @@ namespace McRave::BuildOrder::Protoss {
 
         // Reactions
         if (!lockedTransition) {
-            if (currentTransition != "Carrier" && (Strategy::enemyFastExpand() || Strategy::getEnemyBuild() == "TSiegeExpand"))
+            if (currentTransition != "Carrier" && (Strategy::enemyFastExpand() || Strategy::getEnemyTransition() == "SiegeExpand"))
                 currentTransition = "DoubleExpand";
             else if ((!Strategy::enemyFastExpand() && Terrain::foundEnemy() && currentTransition == "DoubleExpand") || Strategy::enemyPressure())
                 currentTransition = "Standard";

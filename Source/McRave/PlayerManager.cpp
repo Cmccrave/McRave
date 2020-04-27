@@ -26,7 +26,7 @@ namespace McRave::Players
 
                 // If unit has a valid type, update enemy composition tracking
                 if (unit.getType().isValid())
-                    typeCounts[unit.getType()] += 1;                
+                    typeCounts[unit.getType()] += 1;
             }
         }
     }
@@ -59,17 +59,17 @@ namespace McRave::Players
     void storeUnit(Unit bwUnit)
     {
         auto p = getPlayerInfo(bwUnit->getPlayer());
-        auto unit = UnitInfo(bwUnit);
+        auto info = make_shared<UnitInfo>(bwUnit);
 
         if (Units::getUnitInfo(bwUnit))
             return;
 
         if (bwUnit->getType().isBuilding() && bwUnit->getPlayer() == Broodwar->self()) {
             auto closestWorker = Util::getClosestUnit(bwUnit->getPosition(), PlayerState::Self, [&](auto &u) {
-                return u.getRole() == Role::Worker && u.getBuildPosition() == bwUnit->getTilePosition();
+                return u.getRole() == Role::Worker && (u.getType() != Terran_SCV || bwUnit->isCompleted()) && u.getBuildPosition() == bwUnit->getTilePosition();
             });
             if (closestWorker) {
-                closestWorker->setBuildingType(UnitTypes::None);
+                closestWorker->setBuildingType(None);
                 closestWorker->setBuildPosition(TilePositions::Invalid);
             }
         }
@@ -77,15 +77,15 @@ namespace McRave::Players
         if (p) {
 
             // Setup the UnitInfo and update
-            unit.update();
-            p->getUnits().insert(make_shared<UnitInfo>(bwUnit));
+            p->getUnits().insert(info);
+            info->update();
 
-            if (unit.getPlayer() == Broodwar->self() && unit.getType() == UnitTypes::Protoss_Pylon)
+            if (info->getPlayer() == Broodwar->self() && info->getType() == Protoss_Pylon)
                 Pylons::storePylon(bwUnit);
 
             // Increase total counts
-            if (unit.getType() != UnitTypes::Zerg_Zergling && unit.getType() != UnitTypes::Zerg_Scourge)
-                totalTypeCounts[p->getPlayerState()][unit.getType()]  += 1;
+            if (Broodwar->getFrameCount() == 0 || !p->isSelf() || (info->getType() != Zerg_Zergling && info->getType() != Zerg_Scourge))
+                totalTypeCounts[p->getPlayerState()][info->getType()]  += 1;
         }
     }
 
@@ -116,7 +116,7 @@ namespace McRave::Players
 
     void morphUnit(Unit bwUnit)
     {
-        auto playerInfo = getPlayerInfo(bwUnit->getPlayer());
+        auto p = getPlayerInfo(bwUnit->getPlayer());
 
         // HACK: Changing players is kind of annoying, so we just remove and re-store
         if (bwUnit->getType().isRefinery()) {
@@ -125,29 +125,37 @@ namespace McRave::Players
         }
 
         // Morphing into a Hatchery
-        if (bwUnit->getType() == UnitTypes::Zerg_Hatchery)
+        if (bwUnit->getType() == Zerg_Hatchery)
             Stations::storeStation(bwUnit);
 
         // Grab the UnitInfo for this unit
-        auto &u = Units::getUnitInfo(bwUnit);
-        if (u) {
-            if (u->hasResource())
-                Workers::removeUnit(*u);
-            if (u->hasTransport())
-                Transports::removeUnit(*u);
-            if (u->hasTarget())
-                u->setTarget(nullptr);
-            if (u->getRole() == Role::Scout)
-                Scouts::removeUnit(*u);
+        auto info = Units::getUnitInfo(bwUnit);
+        if (info) {
+            if (info->hasResource())
+                Workers::removeUnit(*info);
+            if (info->hasTransport())
+                Transports::removeUnit(*info);
+            if (info->hasTarget())
+                info->setTarget(nullptr);
+            if (info->getRole() == Role::Scout)
+                Scouts::removeUnit(*info);
 
-            if (u->getType() == UnitTypes::Zerg_Larva) {
+            if (p->isSelf() && info->getType() == Zerg_Larva) {
                 auto type = bwUnit->getBuildType();
-                totalTypeCounts[playerInfo->getPlayerState()][u->getType()]--;
-                totalTypeCounts[playerInfo->getPlayerState()][type] += 1 + (type == UnitTypes::Zerg_Zergling || type == UnitTypes::Zerg_Scourge);
+                totalTypeCounts[p->getPlayerState()][info->getType()]--;
+                totalTypeCounts[p->getPlayerState()][type] += 1 + (type == Zerg_Zergling || type == Zerg_Scourge);
+            }
+            if (!p->isSelf() && info->getType() == Zerg_Egg) {
+                totalTypeCounts[p->getPlayerState()][bwUnit->getType()] += 1;
+                totalTypeCounts[p->getPlayerState()][Zerg_Egg] -= 1;
+            }
+            if (!p->isSelf() && info->getType() == Zerg_Larva) {
+                totalTypeCounts[p->getPlayerState()][bwUnit->getType()] += 1;
+                totalTypeCounts[p->getPlayerState()][Zerg_Larva] -= 1;
             }
 
-            u->setBuildingType(UnitTypes::None);
-            u->setBuildPosition(TilePositions::Invalid);
+            info->setBuildingType(None);
+            info->setBuildPosition(TilePositions::Invalid);
         }
     }
 
@@ -161,8 +169,8 @@ namespace McRave::Players
         return 0;
     }
 
-    int getTotalCount(PlayerState state, UnitType type) {
-
+    int getTotalCount(PlayerState state, UnitType type)
+    {
         // Finds how many of a UnitType the PlayerState total has
         auto &list = totalTypeCounts[state];
         auto itr = list.find(type);
@@ -173,11 +181,11 @@ namespace McRave::Players
 
     bool hasDetection(PlayerState state)
     {
-        return getCurrentCount(state, Protoss_Observer) > 0
-            || getCurrentCount(state, Protoss_Photon_Cannon) > 0
-            || getCurrentCount(state, Terran_Science_Vessel) > 0
-            || getCurrentCount(state, Terran_Missile_Turret) > 0
-            || getCurrentCount(state, Zerg_Overlord) > 0;
+        return getTotalCount(state, Protoss_Observer) > 0
+            || getTotalCount(state, Protoss_Photon_Cannon) > 0
+            || getTotalCount(state, Terran_Science_Vessel) > 0
+            || getTotalCount(state, Terran_Missile_Turret) > 0
+            || getTotalCount(state, Zerg_Overlord) > 0;
     }
 
     int getSupply(PlayerState state)
@@ -210,8 +218,6 @@ namespace McRave::Players
         return combined;
     }
 
-    map <Player, PlayerInfo>& getPlayers() { return thePlayers; }
-
     PlayerInfo * getPlayerInfo(Player player)
     {
         for (auto &[p, info] : thePlayers) {
@@ -221,37 +227,8 @@ namespace McRave::Players
         return nullptr;
     }
 
+    map <Player, PlayerInfo>& getPlayers() { return thePlayers; }
     bool vP() { return (thePlayers.size() == 3 && raceCount[Races::Protoss] > 0); }
     bool vT() { return (thePlayers.size() == 3 && raceCount[Races::Terran] > 0); }
     bool vZ() { return (thePlayers.size() == 3 && raceCount[Races::Zerg] > 0); }
-
-    bool PvP() {
-        return vP() && Broodwar->self()->getRace() == Races::Protoss;
-    }
-    bool PvT() {
-        return vT() && Broodwar->self()->getRace() == Races::Protoss;
-    }
-    bool PvZ() {
-        return vZ() && Broodwar->self()->getRace() == Races::Protoss;
-    }
-
-    bool TvP() {
-        return vP() && Broodwar->self()->getRace() == Races::Terran;
-    }
-    bool TvT() {
-        return vT() && Broodwar->self()->getRace() == Races::Terran;
-    }
-    bool TvZ() {
-        return vZ() && Broodwar->self()->getRace() == Races::Terran;
-    }
-
-    bool ZvP() {
-        return vP() && Broodwar->self()->getRace() == Races::Zerg;
-    }
-    bool ZvT() {
-        return vT() && Broodwar->self()->getRace() == Races::Zerg;
-    }
-    bool ZvZ() {
-        return vZ() && Broodwar->self()->getRace() == Races::Zerg;
-    }
 }

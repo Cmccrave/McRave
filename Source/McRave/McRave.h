@@ -17,7 +17,7 @@ namespace McRave
     class UnitInfo;
     class ResourceInfo;
     class PlayerInfo;
-    
+
     struct Line {
         double yInt;
         double slope;
@@ -35,6 +35,10 @@ namespace McRave
             minutes = m, seconds = s;
             frames = ((m * 60) + s) * 24;
         }
+        Time() {
+            minutes = 999;
+            seconds = 0;
+        }
 
         bool operator< (const Time t2) {
             return (minutes < t2.minutes)
@@ -44,6 +48,15 @@ namespace McRave
         bool operator> (const Time t2) {
             return (minutes > t2.minutes)
                 || (minutes == t2.minutes && seconds > t2.seconds);
+        }
+
+        bool operator== (const Time t2) {
+            return minutes == t2.minutes && seconds == t2.seconds;
+        }
+
+        Time operator- (const Time t2) {
+            auto secondsDiff = (minutes * 60 + seconds) - (t2.minutes * 60 + t2.seconds);
+            return Time(secondsDiff / 60, secondsDiff % 60);
         }
     };
 
@@ -101,6 +114,10 @@ namespace McRave
     enum class PlayerState {
         None, Self, Ally, Enemy, Neutral
     };
+
+    enum class ScoutState {
+        None, Base, Proxy, Expand, Rush
+    };
 }
 
 #include "Horizon.h"
@@ -130,6 +147,7 @@ namespace McRave
 #include "UnitInfo.h"
 #include "Util.h"
 #include "Visuals.h"
+#include "WallManager.h"
 
 namespace
 {

@@ -7,17 +7,11 @@ EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
-		McRaveT|x86 = McRaveT|x86
-		McRaveZ|x86 = McRaveZ|x86
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{2E63AE74-758A-4607-9DE4-D28E814A6E13}.Debug|x86.ActiveCfg = Debug|Win32
 		{2E63AE74-758A-4607-9DE4-D28E814A6E13}.Debug|x86.Build.0 = Debug|Win32
-		{2E63AE74-758A-4607-9DE4-D28E814A6E13}.McRaveT|x86.ActiveCfg = McRaveT|Win32
-		{2E63AE74-758A-4607-9DE4-D28E814A6E13}.McRaveT|x86.Build.0 = McRaveT|Win32
-		{2E63AE74-758A-4607-9DE4-D28E814A6E13}.McRaveZ|x86.ActiveCfg = McRaveZ|Win32
-		{2E63AE74-758A-4607-9DE4-D28E814A6E13}.McRaveZ|x86.Build.0 = McRaveZ|Win32
 		{2E63AE74-758A-4607-9DE4-D28E814A6E13}.Release|x86.ActiveCfg = Release|Win32
 		{2E63AE74-758A-4607-9DE4-D28E814A6E13}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection

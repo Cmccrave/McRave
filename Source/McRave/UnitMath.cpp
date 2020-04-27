@@ -11,12 +11,11 @@ namespace McRave::Math {
 
     double maxGroundStrength(UnitInfo& unit)
     {
-        if (unit.getGroundDamage() <= 0.0)
-            return 0.0;
-
         // HACK: Some hardcoded values
         if (unit.getType() == Terran_Medic)
-            return 5.0;
+            return 3.0;
+        else if (unit.getGroundDamage() <= 0.0)
+            return 0.0;
         else if (unit.getType() == Protoss_Scarab || unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Zerg_Egg || unit.getType() == Zerg_Larva)
             return 0.0;
 
@@ -49,7 +48,10 @@ namespace McRave::Math {
 
     double maxAirStrength(UnitInfo& unit)
     {
-        if (unit.getAirDamage() <= 0.0)
+        // HACK: Some hardcoded values
+        if (unit.getType() == Terran_Medic)
+            return 3.0;
+        else if (unit.getAirDamage() <= 0.0)
             return 0.0;
 
         // Carrier is based on interceptor count
@@ -85,7 +87,7 @@ namespace McRave::Math {
         const auto maxGrdDps = 2.333;
         const auto maxAirDps = 2.000;
         const auto maxCost = 69.589;
-        const auto maxSurv = 57.951;
+        const auto maxSurv = 128.311;
         auto bonus = 1.0;
 
         // Add bonus for a repairing SCV
@@ -94,10 +96,8 @@ namespace McRave::Math {
                 return u.getType() == Terran_Missile_Turret || u.getType() == Terran_Bunker;
             });
 
-            if (repairTarget && (repairTarget->getPosition().getDistance(unit.getPosition()) < 128.0 || unit.unit()->isRepairing() || unit.unit()->isConstructing())) {
-                bonus = 30.0;
-                unit.circleBlue();
-            }
+            if (repairTarget && repairTarget->getPosition().getDistance(unit.getPosition()) < 96.0)
+                bonus = 100.0;
         }
 
         // If target is an egg, larva, scarab or spell
@@ -106,11 +106,9 @@ namespace McRave::Math {
 
         // Bunch of priority hacks
         if (unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Terran_Science_Vessel || unit.getType() == Protoss_Arbiter)
-            return 5.0;
-        if (Broodwar->getFrameCount() < 6000 && Strategy::enemyProxy() && unit.getType() == Protoss_Pylon)
-            return Grids::getEGroundThreat(unit.getPosition()) == 0.0f ? 5.0 : 0.0;
-        if (unit.getType() == Protoss_Carrier)
-            return 1.0;
+            return 15.0;
+        if (Strategy::enemyProxy() && unit.getType() == Protoss_Pylon)
+            return Grids::getEGroundThreat(unit.getPosition()) == 0.0f ? 5.0 : 1.0;
 
         // HACK: Kill neutrals blocking geysers for Sparkle
         if (unit.getTilePosition().isValid()) {
@@ -123,12 +121,11 @@ namespace McRave::Math {
             }
         }
 
-        auto ff = unit.canAttackGround() || unit.canAttackAir() || !unit.getType().isBuilding() ? 1 : 0;
+        auto ff = unit.canAttackGround() || unit.canAttackAir() || !unit.getType().isBuilding() ? 0.01 : 0;
         auto dps = ff + max(groundDPS(unit) / maxGrdDps, airDPS(unit) / maxAirDps);
         auto cost = relativeCost(unit) / maxCost;
         auto surv = survivability(unit) / maxSurv;
-
-        return clamp(bonus * (dps * cost / surv), 0.1, 9999.99);
+        return clamp(bonus * (dps * cost / surv), 0.001, 9999.99);
     }
 
     double relativeCost(UnitInfo& unit)
@@ -203,10 +200,10 @@ namespace McRave::Math {
         if (unit.getType() == Protoss_Archon || unit.getType() == Terran_Firebat || unit.getType() == Protoss_Reaver)
             return 1.25;
         if (unit.getType() == Protoss_High_Templar)
-            return 4.00;
+            return 2.00;
         if (unit.getType() == Terran_Siege_Tank_Siege_Mode)
             return 2.50;
-        if (unit.getType() == Terran_Valkyrie || unit.getType() == Zerg_Mutalisk)
+        if (unit.getType() == Terran_Valkyrie)
             return 1.50;
         if (unit.getType() == Zerg_Lurker)
             return 2.00;
@@ -250,9 +247,9 @@ namespace McRave::Math {
     double survivability(UnitInfo& unit)
     {
         const auto avgUnitSpeed = 4.34;
-        const auto speed = log(unit.getSpeed() + avgUnitSpeed);
-        const auto armor = 0.25 + double(unit.getType().armor() + unit.getPlayer()->getUpgradeLevel(unit.getType().armorUpgrade()));
-        const auto health = log(double(unit.getType().maxHitPoints() + unit.getType().maxShields()));
+        const auto speed = (unit.getSpeed() + avgUnitSpeed) / avgUnitSpeed;
+        const auto armor = 1.0 + double(unit.getType().armor() + unit.getPlayer()->getUpgradeLevel(unit.getType().armorUpgrade()));
+        const auto health = (double(unit.getType().maxHitPoints() + unit.getType().maxShields())) / 35.0;
         return speed * armor * health;
     }
 
@@ -262,7 +259,7 @@ namespace McRave::Math {
             return 192.0;
         if ((unit.getType() == Terran_Marine && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::U_238_Shells)) || (unit.getType() == Zerg_Hydralisk && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Grooved_Spines)))
             return 160.0;
-        if (unit.getType() == Protoss_High_Templar)
+        if (unit.getType() == Protoss_High_Templar || unit.getType() == Zerg_Defiler)
             return 288.0;
         if (unit.getType() == Protoss_Carrier)
             return 256.0;
@@ -290,7 +287,7 @@ namespace McRave::Math {
             return 160.0;
         if (unit.getType() == Terran_Goliath && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Charon_Boosters))
             return 256.0;
-        if (unit.getType() == Protoss_High_Templar)
+        if (unit.getType() == Protoss_High_Templar || unit.getType() == Zerg_Defiler)
             return 288.0;
         if (unit.getType() == Protoss_Carrier)
             return 256;
@@ -367,11 +364,9 @@ namespace McRave::Math {
 
     int stopAnimationFrames(UnitType unitType) {
         if (unitType == Protoss_Dragoon)
-            return 10;
-        if (unitType == Protoss_Probe)
-            return 2;
+            return 9;
         if (unitType == Zerg_Devourer)
-            return 11;
+            return 7;
         return 0;
     }
 
