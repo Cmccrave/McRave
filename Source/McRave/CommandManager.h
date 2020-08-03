@@ -9,7 +9,7 @@ namespace McRave::Command {
     bool defend(UnitInfo&);
     bool kite(UnitInfo&);
     bool attack(UnitInfo&);
-    bool hunt(UnitInfo&);
+    bool explore(UnitInfo&);
     bool escort(UnitInfo&);
     bool special(UnitInfo&);
     bool retreat(UnitInfo&);

@@ -28,37 +28,35 @@ namespace McRave::Workers {
             else if (unit.hasResource() && unit.getResource().getResourceState() == ResourceState::Mineable)
                 unit.setDestination(unit.getResource().getPosition());
 
-            const auto resourceWalkable = [&](TilePosition tile) {
-                return (unit.hasResource() && BWEB::Map::isUsed(tile) == unit.getResource().getType() && tile.getDistance(TilePosition(unit.getDestination())) <= 5) || BWEB::Pathfinding::unitWalkable(tile);
-            };
-
-            if (unit.getDestination().isValid() && unit.getDestinationPath().getTarget() != TilePosition(unit.getDestination())) {
-                BWEB::Path newPath;
-                newPath.jpsPath(unit.getPosition(), unit.getDestination(), resourceWalkable);
+            if (unit.getDestination().isValid() && (unit.getDestinationPath().getTarget() != TilePosition(unit.getDestination()) || !unit.getDestinationPath().isReachable())) {
+                BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
+                const auto resourceWalkable = [&](const TilePosition &tile) {
+                    return (unit.hasResource() && unit.getBuildType() == UnitTypes::None &&  BWEB::Map::isUsed(tile) == unit.getResource().getType() && tile.getDistance(TilePosition(unit.getDestination())) <= 8) || newPath.unitWalkable(tile);
+                };
+                newPath.generateJPS(resourceWalkable);
                 unit.setDestinationPath(newPath);
             }
 
             if (unit.getDestinationPath().getTarget() == TilePosition(unit.getDestination())) {
                 auto newDestination = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
-                    return p.getDistance(unit.getPosition()) >= 160.0;
+                    return p.getDistance(unit.getPosition()) >= 96.0;
                 });
 
                 if (newDestination.isValid())
                     unit.setDestination(newDestination);
             }
-
-            if (unit.unit()->isSelected())
-                Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
         }
 
-        void updateAssignment(UnitInfo& unit)
+        void updateResource(UnitInfo& unit)
         {
             // If unit has a resource currently, we need to check if it's safe
             auto resourceSafe = true;
             if (unit.hasResource()) {
-                BWEB::Path newPath;
-                newPath.jpsPath(unit.getPosition(), unit.getResource().getStation()->getResourceCentroid(), BWEB::Pathfinding::terrainWalkable);
-                unit.setDestinationPath(newPath);
+                BWEB::Path newPath(unit.getPosition(), unit.getResource().getStation()->getResourceCentroid(), unit.getType());
+                const auto walkable = [&](const TilePosition &t) {
+                    return newPath.terrainWalkable(t);
+                };
+                newPath.generateJPS(walkable);
 
                 auto threatPosition = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
                     return unit.getType().isFlyer() ? Grids::getEAirThreat(p) > 0.0f : Grids::getEGroundThreat(p) > 0.0f;
@@ -66,6 +64,8 @@ namespace McRave::Workers {
 
                 if (threatPosition)
                     resourceSafe = false;
+                else
+                    unit.setDestinationPath(newPath);
             }
 
             // Check the status of the unit and the assigned resource
@@ -77,7 +77,7 @@ namespace McRave::Workers {
             const auto isGasunit = unit.hasResource() && unit.getResource().getType().isRefinery();
             const auto isMineralunit = unit.hasResource() && unit.getResource().getType().isMineralField();
             const auto needGas = !Resources::isGasSaturated() && isMineralunit && gasWorkers < BuildOrder::gasWorkerLimit();
-            const auto needMinerals = !Resources::isMinSaturated() && isGasunit && gasWorkers > BuildOrder::gasWorkerLimit();
+            const auto needMinerals = (!Resources::isMinSaturated() || BuildOrder::isOpener()) && isGasunit && gasWorkers > BuildOrder::gasWorkerLimit();
             const auto needNewAssignment = !unit.hasResource() || needGas || needMinerals || threatened || excessAssigned;
 
             auto distBest = DBL_MAX;
@@ -102,14 +102,14 @@ namespace McRave::Workers {
             for (auto &[_, station] : Stations::getMyStations()) {
 
                 // If unit is close, it must be safe
-                if (unit.getPosition().getDistance(station->getResourceCentroid()) < 320.0 || mapBWEM.GetArea(unit.getTilePosition()) == station->getBWEMBase()->GetArea()) {
+                if (unit.getPosition().getDistance(station->getResourceCentroid()) < 320.0 || mapBWEM.GetArea(unit.getTilePosition()) == station->getBase()->GetArea()) {
                     safeStations.push_back(station);
                     continue;
                 }
 
                 // Otherwise create a path to it
-                BWEB::Path newPath;
-                newPath.jpsPath(unit.getPosition(), station->getResourceCentroid(), BWEB::Pathfinding::terrainWalkable);
+                BWEB::Path newPath(unit.getPosition(), station->getResourceCentroid(), unit.getType());
+                newPath.generateJPS([&](const TilePosition &t) { return newPath.terrainWalkable(t); });
                 unit.setDestinationPath(newPath);
 
                 // If unit is far, we need to check if it's safe
@@ -175,12 +175,14 @@ namespace McRave::Workers {
 
                         auto topLeftMineral = Position(resource.getPosition().x - resource.getType().dimensionLeft(), resource.getPosition().y - resource.getType().dimensionUp());
                         auto botRightMineral = Position(resource.getPosition().x + resource.getType().dimensionRight(), resource.getPosition().y + resource.getType().dimensionDown());
-                        auto stationPos = resource.getStation()->getBWEMBase()->Center();
+                        auto stationPos = resource.getStation()->getBase()->Center();
                         auto stationType = Broodwar->self()->getRace().getResourceDepot();
                         auto topLeftStation = Position(stationPos.x - stationType.dimensionLeft(), stationPos.y - stationType.dimensionUp());
                         auto botRightStation = Position(stationPos.x + stationType.dimensionRight(), stationPos.y + stationType.dimensionDown());
 
-                        double dist = Util::pxDistanceBB(topLeftMineral.x, topLeftMineral.y, botRightMineral.x, botRightMineral.y, topLeftStation.x, topLeftStation.y, botRightStation.x, botRightStation.y);
+                        auto stationDist = unit.getPosition().getDistance(resource.getStation()->getBase()->Center());
+                        auto resourceDist = Util::pxDistanceBB(topLeftMineral.x, topLeftMineral.y, botRightMineral.x, botRightMineral.y, topLeftStation.x, topLeftStation.y, botRightStation.x, botRightStation.y);
+                        auto dist = log(stationDist) * resourceDist;
                         if ((dist < distBest && !injured && !threatened) || (dist > distBest && (injured || threatened))) {
                             unit.setResource(r.get());
                             distBest = dist;
@@ -226,6 +228,30 @@ namespace McRave::Workers {
             }
         }
 
+        void updateBuilding(UnitInfo& unit)
+        {
+            if (unit.getBuildPosition() == TilePositions::None || unit.getBuildType() == UnitTypes::None)
+                return;
+
+            auto buildCenter = Position(unit.getBuildPosition()) + Position(unit.getBuildType().tileWidth() * 16, unit.getBuildType().tileHeight() * 16);
+
+            BWEB::Path newPath(unit.getPosition(), buildCenter, unit.getType());
+            newPath.generateJPS([&](const TilePosition &t) { return newPath.terrainWalkable(t); });
+
+            auto threatPosition = Util::findPointOnPath(newPath, [&](Position p) {
+                return Grids::getEGroundThreat(p) > 0.0;
+            });
+
+            auto aroundDefenders = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+                return !u.unit()->isMorphing() && (u.getType() == UnitTypes::Zerg_Sunken_Colony || u.getGoal() == unit.getPosition()) && u.getPosition().getDistance(unit.getPosition()) < 256.0 && u.getPosition().getDistance(buildCenter) < 256.0;
+            });
+
+            if ((!aroundDefenders && threatPosition && threatPosition.getDistance(unit.getPosition()) < 200.0) || unit.isBurrowed()) {
+                unit.setBuildingType(UnitTypes::None);
+                unit.setBuildPosition(TilePositions::Invalid);
+            }
+        }
+
         constexpr tuple commands{ Command::misc, Command::click, Command::burrow, Command::returnResource, Command::clearNeutral, Command::build, Command::gather, Command::move };
         void updateDecision(UnitInfo& unit)
         {
@@ -253,7 +279,8 @@ namespace McRave::Workers {
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
                 if (unit.getRole() == Role::Worker) {
-                    updateAssignment(unit);
+                    updateResource(unit);
+                    updateBuilding(unit);
                     updateDestination(unit);
                     updateDecision(unit);
                 }

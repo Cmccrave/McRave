@@ -26,28 +26,25 @@ namespace McRave::Support {
             };
 
             BWEB::Station * stationNeedsDetection = nullptr;
+            BWEB::Wall * wallNeedsDetection = nullptr;
 
             // Check If any station needs detection
-            for (auto &[_, station] : Stations::getMyStations()) {
-                if (!Actions::overlapsDetection(unit.unit(), station->getBWEMBase()->Center(), PlayerState::Self)) {
-                    stationNeedsDetection = station;
-                    break;
+            if (false) {
+                for (auto &[_, station] : Stations::getMyStations()) {
+                    if (!Actions::overlapsDetection(unit.unit(), station->getBase()->Center(), PlayerState::Self)) {
+                        stationNeedsDetection = station;
+                        break;
+                    }
                 }
             }
 
             // Check if any wall needs detection
-            
+            if (false) {
 
-            // Send detection to a wall that needs it
-            if (unit.getType().isDetector() && Walls::getNaturalWall() && !Actions::overlapsDetection(unit.unit(), Walls::getNaturalWall()->getCentroid(), PlayerState::Self))
-                unit.setDestination(Walls::getNaturalWall()->getCentroid());
-
-            // Send detection to a station that needs it
-            else if (unit.getType().isDetector() && stationNeedsDetection)
-                unit.setDestination(stationNeedsDetection->getBWEMBase()->Center());
+            }
 
             // Set goal as destination
-            else if (unit.getGoal().isValid())
+            if (unit.getGoal().isValid())
                 unit.setDestination(unit.getGoal());
 
             // Send Overlords to safety if needed
@@ -61,8 +58,20 @@ namespace McRave::Support {
                 if (closestSpore)
                     unit.setDestination(closestSpore->getPosition());
                 else if (closestStation)
-                    unit.setDestination(closestStation->getBWEMBase()->Center());
+                    unit.setDestination(closestStation->getBase()->Center());
             }
+
+            // Send detection to a wall that needs it
+            else if (unit.getType().isDetector() && wallNeedsDetection && !Actions::overlapsDetection(unit.unit(), wallNeedsDetection->getCentroid(), PlayerState::Self))
+                unit.setDestination(Walls::getNaturalWall()->getCentroid());
+
+            // Send detection to a station that needs it
+            else if (unit.getType().isDetector() && stationNeedsDetection && !Actions::overlapsDetection(unit.unit(), stationNeedsDetection->getBase()->Center(), PlayerState::Self))
+                unit.setDestination(stationNeedsDetection->getBase()->Center());
+
+            // Send Overlords to watch for proxy structures at our natural choke
+            else if (unit.getType() == Zerg_Overlord && Util::getTime() < Time(3, 00) && !Actions::overlapsDetection(unit.unit(), Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self))
+                unit.setDestination(Position(BWEB::Map::getNaturalChoke()->Center()));
 
             // Detectors want to stay close to their target if we have a unit that can engage it
             else if (unit.getType().isDetector() && unit.hasTarget() && isntAssigned(unit.getTarget().getPosition()))

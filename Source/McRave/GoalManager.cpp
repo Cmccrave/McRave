@@ -6,7 +6,7 @@ using namespace UnitTypes;
 
 namespace McRave {
     enum class GoalType {
-        None, Contain, Explore // ...possible future improvements here for better goal positioning
+        None, Contain, Explore, Escort // ...possible future improvements here for better goal positioning
     };
 }
 
@@ -30,13 +30,8 @@ namespace McRave::Goals {
                     });
                 }
 
-                if (closest) {
-                    //if (gType == GoalType::Contain)
-                        //here = Util::getConcavePosition(*closest, mapBWEM.GetArea(TilePosition(here)));
-                    // else if (state == GoalState::Explore)
-                        // find unexplored tiles in the area?
+                if (closest)
                     closest->setGoal(here);
-                }
             }
         }
 
@@ -61,7 +56,7 @@ namespace McRave::Goals {
                 for (auto &s : Stations::getMyStations()) {
                     auto station = *s.second;
 
-                    if (station.getBWEMBase()->Location() != BWEB::Map::getNaturalTile() && station.getBWEMBase()->Location() != BWEB::Map::getMainTile() && station.getGroundDefenseCount() == 0)
+                    if (station.getBase()->Location() != BWEB::Map::getNaturalTile() && station.getBase()->Location() != BWEB::Map::getMainTile() && station.getGroundDefenseCount() == 0)
                         assignNumberToGoal(station.getResourceCentroid(), Protoss_Dragoon, 2, GoalType::Contain);
                 }
             }
@@ -73,7 +68,7 @@ namespace McRave::Goals {
                 auto posBest = Positions::Invalid;
                 for (auto &s : Stations::getEnemyStations()) {
                     auto station = *s.second;
-                    auto pos = station.getBWEMBase()->Center();
+                    auto pos = station.getBase()->Center();
                     auto dist = BWEB::Map::getGroundDistance(pos, Terrain::getEnemyStartingPosition());
                     if (dist < distBest) {
                         distBest = dist;
@@ -93,7 +88,7 @@ namespace McRave::Goals {
                 auto posBest = Positions::Invalid;
                 for (auto &s : Stations::getEnemyStations()) {
                     auto station = *s.second;
-                    auto pos = station.getBWEMBase()->Center();
+                    auto pos = station.getBase()->Center();
                     auto dist = pos.getDistance(Terrain::getEnemyStartingPosition());
 
                     if (dist > distBest) {
@@ -171,13 +166,26 @@ namespace McRave::Goals {
 
             // Send detector to next expansion
             if (nextExpand.isValid()) {
-                auto building = Broodwar->self()->getRace().getResourceDepot();
-                if (vis(building) >= 2 && BuildOrder::buildCount(building) > vis(building))
+                auto hatchCount = vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive);
+                if (hatchCount >= 2 && BuildOrder::buildCount(Zerg_Hatchery) > vis(Zerg_Hatchery))
                     assignNumberToGoal(nextExpand, Zerg_Overlord, 1);
             }
 
+            // Escort building worker
+            if (nextExpand.isValid() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0) {
+                auto closestBuilder = Util::getClosestUnit(nextExpand, PlayerState::Self, [&](auto &u) {
+                    return u.getBuildType().isResourceDepot();
+                });
+
+                if (closestBuilder) {
+                    if (closestBuilder->hasTarget())
+                        assignNumberToGoal(closestBuilder->getTarget().getPosition(), Zerg_Mutalisk, 1, GoalType::Escort);
+                    assignNumberToGoal(closestBuilder->getPosition(), Zerg_Mutalisk, 4, GoalType::Escort);
+                }
+            }
+
             // Scout chokepoints between army movements
-            if (Util::getTime() > Time(6, 0) && Terrain::getEnemyStartingPosition().isValid() && Stations::getMyStations().size() >= 3) {
+            if (Util::getTime() < Time(4, 0) && Terrain::getEnemyStartingPosition().isValid() && Stations::getMyStations().size() >= 3) {
                 set<Position> chokesToGuard;
 
                 for (auto &area : Terrain::getEnemyTerritory()) {
@@ -198,7 +206,6 @@ namespace McRave::Goals {
                             for (auto &choke : *(neutralAreaPair.second)) {
                                 if (!choke.BlockingNeutral() && !choke.Blocked()) {
                                     chokesToGuard.insert(Position(choke.Center()));
-                                    Broodwar->drawCircleMap(Position(choke.Center()), 8, Colors::Cyan, true);
                                 }
                             }
                         }
@@ -209,6 +216,37 @@ namespace McRave::Goals {
                 // Guard each choke with 1 ling
                 for (auto &choke : chokesToGuard)
                     assignNumberToGoal(choke, Zerg_Zergling, 1);
+            }
+
+            // Aggresively deny enemy expansions
+            if (Util::getTime() > Time(4, 0) && !BuildOrder::isRush() && BuildOrder::isTechUnit(Zerg_Mutalisk) && !Players::ZvZ()) {
+                multimap<double, BWEB::Station> stationsByDistance;
+                for (auto &station : BWEB::Stations::getStations()) {
+                    if (Terrain::isInEnemyTerritory(station.getBase()->GetArea()))
+                        continue;
+                    if (station == Terrain::getEnemyNatural() || station == Terrain::getEnemyMain())
+                        continue;
+                    if (station == Terrain::getMyNatural() || station == Terrain::getMyMain())
+                        continue;
+                    if (Stations::ownedBy(&station) == PlayerState::Self || Stations::ownedBy(&station) == PlayerState::Enemy)
+                        continue;
+
+                    // Create a path and check if areas are already enemy owned
+                    auto badStation = false;
+                    auto path = mapBWEM.GetPath(station.getBase()->Center(), BWEB::Map::getMainPosition());
+                    for (auto &choke : path) {
+                        if (Terrain::isInEnemyTerritory(choke->GetAreas().first) || Terrain::isInEnemyTerritory(choke->GetAreas().second))
+                            badStation = true;
+                    }
+                    if (badStation)
+                        continue;
+
+                    auto dist = station.getBase()->Center().getDistance(Terrain::getEnemyStartingPosition()) * (1 + int(station.getBase()->Geysers().empty()));
+                    stationsByDistance.emplace(make_pair(dist, station));
+                }
+
+                for (auto &station : stationsByDistance)
+                    assignNumberToGoal(station.second.getBase()->Center(), Zerg_Zergling, 1);                
             }
 
             // Deny enemy expansions
@@ -232,23 +270,29 @@ namespace McRave::Goals {
             }
 
             // Defend my expansions
-            if (Util::getTime() > Time(8, 0) && enemyStrength.groundToGround > 0) {
+            if (Util::getTime() > Time(6, 0) && enemyStrength.groundToGround > 0) {
                 for (auto &s : Stations::getMyStations()) {
                     auto station = *s.second;
 
-                    auto closestWall = BWEB::Walls::getClosestWall(station.getBWEMBase()->Location());
-                    if (closestWall && closestWall->getGroundDefenseCount() > 0)
+                    auto closestEnemy = Util::getClosestUnit(station.getBase()->Center(), PlayerState::Enemy, [&](auto &u) {
+                        return u.canAttackGround() && !u.getType().isWorker();
+                    });
+
+                    auto closestWall = BWEB::Walls::getClosestWall(station.getBase()->Location());
+                    if (closestWall && closestWall->getArea() == station.getBase()->GetArea() && closestWall->getGroundDefenseCount() > 0)
                         continue;
 
-                    if (station.getBWEMBase()->Location() != BWEB::Map::getNaturalTile() && station.getBWEMBase()->Location() != BWEB::Map::getMainTile() && station.getGroundDefenseCount() == 0)
-                        assignNumberToGoal(station.getResourceCentroid(), Zerg_Zergling, 2, GoalType::Contain);
+                    if (!station.isMain() && station.getGroundDefenseCount() == 0)
+                        assignNumberToGoal(station.getResourceCentroid(), Zerg_Zergling, 6, GoalType::Contain);
+                    if (closestEnemy && closestEnemy->getPosition().getDistance(station.getBase()->Center()) < 480.0)
+                        assignNumberToGoal(station.getResourceCentroid(), Zerg_Mutalisk, 6, GoalType::Contain);
                 }
             }
 
             // Send an Overlord to last visited expansion to check
-            if (Util::getTime() > Time(8, 00)) {
+            if (Util::getTime() > Time(8, 00) && false) {
                 auto minTimeDiff = 1000;
-                auto desiredCount = com(Zerg_Overlord) - Stations::getMyStations().size();
+                auto desiredCount = com(Zerg_Overlord) - int(Stations::getMyStations().size());
                 auto count = 0;
 
                 for (auto &base : Terrain::getAllBases()) {

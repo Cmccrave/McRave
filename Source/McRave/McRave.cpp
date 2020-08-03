@@ -8,7 +8,6 @@
 #include "EventManager.h"
 
 // *** TODO ***
-// Check combat units by distance sorting (destination likely never valid at start)
 // Skipping grids on some units causes no collision to be added for those units
 
 // Protoss:
@@ -25,10 +24,8 @@
 // Pylon spam
 
 // Zerg:
-// Dropping drone scout causes it to mine closest mineral
-// Save larva only when at 3 larva
-// - Difficult, larva spawn is slightly random, extra on lair too?
-// Update canceling logic - change BWEB? prob not
+// APM spam is a problem late game
+// Add half saturated mineral check in resource manager, fix hacky gas removal in worker manager
 
 using namespace BWAPI;
 using namespace std;
@@ -39,11 +36,10 @@ void McRaveModule::onStart()
     Players::onStart();
     Terrain::onStart();
     Walls::onStart();
-    BWEB::Blocks::findBlocks();
+    Buildings::onStart();
     Stations::onStart();
     Grids::onStart();
     Learning::onStart();
-    Buildings::onStart();
     Util::onStart();
     Combat::onStart();
 

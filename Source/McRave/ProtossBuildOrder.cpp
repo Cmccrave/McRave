@@ -162,10 +162,8 @@ namespace McRave::BuildOrder::Protoss
 
         // Adding Wall Defenses
         if (Walls::getNaturalWall()) {
-            if (Walls::needAirDefenses(*Walls::getNaturalWall()) > 0 || Walls::needGroundDefenses(*Walls::getNaturalWall()) > 0) {
-                Broodwar->drawCircleMap(Walls::getNaturalWall()->getCentroid(), 8, Colors::Orange, true);
-                buildQueue[Protoss_Photon_Cannon] += 1;
-            }
+            if (Walls::needAirDefenses(*Walls::getNaturalWall()) > 0 || Walls::needGroundDefenses(*Walls::getNaturalWall()) > 0)
+                buildQueue[Protoss_Photon_Cannon] += 1;            
         }
 
         // Adding Station Defenses
@@ -174,7 +172,6 @@ namespace McRave::BuildOrder::Protoss
                 auto &s = *station.second;
 
                 if (Stations::needGroundDefenses(s) > 0 || Stations::needAirDefenses(s) > 0) {
-                    Broodwar->drawCircleMap(s.getBWEMBase()->Center(), 8, Colors::Orange, true);
                     buildQueue[Protoss_Photon_Cannon] += 1;
                     break;
                 }

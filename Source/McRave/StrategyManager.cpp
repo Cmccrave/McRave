@@ -15,7 +15,6 @@ namespace McRave::Strategy {
         bool blockedScout = false;
 
         bool proxyCheck = false;
-        bool proxy = false;
         bool gasSteal = false;
         bool air = false;
         bool enemyScout = false;
@@ -24,26 +23,63 @@ namespace McRave::Strategy {
         string enemyBuild = "Unknown";
         string enemyOpener = "Unknown";
         string enemyTransition = "Unknown";
+
         int poolFrame = INT_MAX;
         int enemyGas = 0;
-        int enemyFrame = 0;
         int inboundScoutFrame = 0;
+        Time enemyBuildTime;
+        Time enemyOpenerTime;
+        Time enemyTransitionTime;
+        pair<bool, Time> proxyTiming;
 
         bool goonRange = false;
         bool vultureSpeed = false;
 
         Time rushArrivalTime;
-        map<UnitType, Time> firstFinishedTime;
+
+        struct Timings {
+            vector<Time> countCompletedWhen;
+            vector<Time> countArrivesWhen;
+            Time firstCompletedWhen;
+            Time firstArrivesWhen;
+        };
+        map<UnitType, Timings> timingsList;
 
         bool finishedSooner(UnitType t1, UnitType t2)
         {
-            if (firstFinishedTime.find(t1) == firstFinishedTime.end())
+            if (timingsList.find(t1) == timingsList.end())
                 return false;
-            return (firstFinishedTime.find(t2) == firstFinishedTime.end() || firstFinishedTime.at(t1) < firstFinishedTime.at(t2));
+            if (timingsList.find(t2) == timingsList.end())
+                return true;
+
+            auto timings1 = timingsList[t1];
+            auto timings2 = timingsList[t2];
+            return (timings1.firstCompletedWhen < timings2.firstCompletedWhen);
+        }
+
+        bool completesBy(int count, UnitType type, Time beforeThis)
+        {
+            int current = 0;
+            for (auto &time : timingsList[type].countCompletedWhen) {
+                if (time < beforeThis)
+                    current++;
+            }
+            return current >= count;
+        }
+
+        bool arrivesBy(int count, UnitType type, Time beforeThis)
+        {
+            int current = 0;
+            for (auto &time : timingsList[type].countArrivesWhen) {
+                if (time < beforeThis)
+                    current++;
+            }
+            return current >= count;
         }
 
         void enemyStrategicInfo(PlayerInfo& player)
         {
+            timingsList.clear();
             auto workerNearUs = 0;
             for (auto &u : player.getUnits()) {
                 UnitInfo &unit =*u;
@@ -66,9 +102,17 @@ namespace McRave::Strategy {
                         enemyGas = unit.unit()->getInitialResources() - unit.unit()->getResources();
                 }
 
-                // Monitor if this is the first of its type to be scene and estimate the finishing frame
-                if (firstFinishedTime[unit.getType()] == Time(999, 0) && (!unit.getType().isResourceDepot() || !Terrain::isStartingBase(unit.getTilePosition())))
-                    firstFinishedTime[unit.getType()] = unit.timeCompletesWhen();
+                // Estimate the finishing frame
+                if (!unit.getType().isResourceDepot() || !Terrain::isStartingBase(unit.getTilePosition())) {
+                    timingsList[unit.getType()].countCompletedWhen.push_back(unit.timeCompletesWhen());
+                    timingsList[unit.getType()].countArrivesWhen.push_back(unit.timeArrivesWhen());
+
+                    if (timingsList[unit.getType()].firstArrivesWhen == Time(999, 0) || unit.timeArrivesWhen() < timingsList[unit.getType()].firstArrivesWhen)
+                        timingsList[unit.getType()].firstArrivesWhen = unit.timeArrivesWhen();
+
+                    if (timingsList[unit.getType()].firstCompletedWhen == Time(999, 0) || unit.timeCompletesWhen() < timingsList[unit.getType()].firstCompletedWhen)
+                        timingsList[unit.getType()].firstCompletedWhen = unit.timeCompletesWhen();
+                }
 
                 if (workerNearUs > 3 && Util::getTime() < Time(2, 30))
                     enemyTransition = "WorkerRush";
@@ -80,11 +124,42 @@ namespace McRave::Strategy {
                             enemyFE = true;
                     }
                 }
+
+                // Proxy detection
+                if (Util::getTime() < Time(5, 00)) {
+                    if ((unit.getType() == Protoss_Gateway && Players::getCurrentCount(PlayerState::Enemy, Protoss_Gateway) >= 2) || unit.getType() == Terran_Barracks) {
+                        auto closestMain = BWEB::Stations::getClosestMainStation(unit.getTilePosition());
+                        if (closestMain && closestMain->getBase()->GetArea() != mapBWEM.GetArea(unit.getTilePosition()))
+                            proxyTiming.first = true;
+
+                        if (Terrain::isInAllyTerritory(unit.getTilePosition())
+                            || unit.getPosition().getDistance(mapBWEM.Center()) < 960.0
+                            || (BWEB::Map::getNaturalChoke() && unit.getPosition().getDistance((Position)BWEB::Map::getNaturalChoke()->Center()) < 480.0)) {
+                            proxyTiming.first = true;
+                        }
+                    }
+                    if (unit.getType() == Protoss_Pylon && Players::getCurrentCount(PlayerState::Enemy, Protoss_Forge) >= 1) {
+                        auto closestMain = BWEB::Stations::getClosestMainStation(unit.getTilePosition());
+                        auto closestNat = BWEB::Stations::getClosestNaturalStation(unit.getTilePosition());
+                        if (closestNat && closestNat->getBase()->GetArea() != mapBWEM.GetArea(unit.getTilePosition()) && closestMain->getBase()->GetArea() != mapBWEM.GetArea(unit.getTilePosition()))
+                            proxyTiming.first = true;
+                    }
+
+                    if (unit.getType() == Protoss_Pylon) {
+                        auto closestMain = BWEB::Stations::getClosestMainStation(unit.getTilePosition());
+                        if (closestMain && Stations::ownedBy(closestMain) == PlayerState::Self && closestMain->getBase()->Center().getDistance(unit.getPosition()) < 960.0)
+                            proxyTiming.first = true;
+                    }
+                }
             }
         }
 
         void enemyZergBuilds(PlayerInfo& player)
         {
+            if (Util::getTime() - enemyBuildTime > Time(0, 05))
+                return;
+            enemyBuild = "Unknown";
+
             auto enemyHatchCount = Players::getCurrentCount(PlayerState::Enemy, Zerg_Hatchery)
                 + Players::getCurrentCount(PlayerState::Enemy, Zerg_Lair)
                 + Players::getCurrentCount(PlayerState::Enemy, Zerg_Hive);
@@ -94,15 +169,15 @@ namespace McRave::Strategy {
 
                 // If this is our first time seeing a Zergling, see how soon until it arrives
                 if (unit.getType() == UnitTypes::Zerg_Zergling) {
-                    if (rushArrivalTime == Time(999, 00) || unit.timeArrivesWhen() < rushArrivalTime)
+                    if (unit.timeArrivesWhen() < rushArrivalTime)
                         rushArrivalTime = unit.timeArrivesWhen();
                 }
             }
 
             // Zerg builds
-            if ((enemyFE || enemyHatchCount > 1) && firstFinishedTime[Zerg_Hatchery] < Time(3, 15))
+            if ((enemyFE || enemyHatchCount > 1) && completesBy(1, Zerg_Hatchery, Time(3, 15)))
                 enemyBuild = "HatchPool";
-            else if ((enemyFE || enemyHatchCount > 1) && firstFinishedTime[Zerg_Hatchery] < Time(4, 00))
+            else if ((enemyFE || enemyHatchCount > 1) && completesBy(1, Zerg_Hatchery, Time(4, 00)))
                 enemyBuild = "PoolHatch";
             else if ((!enemyFE && enemyHatchCount == 1) && Util::getTime() > Time(4, 00))
                 enemyBuild = "PoolLair";
@@ -110,17 +185,21 @@ namespace McRave::Strategy {
 
         void enemyZergOpeners(PlayerInfo& player)
         {
+            if (Util::getTime() - enemyOpenerTime > Time(0, 05))
+                return;
+            enemyOpener = "Unknown";
+
             auto enemyHatchCount = Players::getCurrentCount(PlayerState::Enemy, Zerg_Hatchery)
                 + Players::getCurrentCount(PlayerState::Enemy, Zerg_Lair)
                 + Players::getCurrentCount(PlayerState::Enemy, Zerg_Hive);
 
             // Pool timing
             if (enemyOpener == "Unknown") {
-                if (rushArrivalTime < Time(2, 45) || firstFinishedTime[Zerg_Zergling] < Time(2, 00) || firstFinishedTime[Zerg_Spawning_Pool] < Time(1, 30))
+                if (rushArrivalTime < Time(2, 30) || completesBy(1, Zerg_Zergling, Time(2, 00)) || completesBy(1, Zerg_Spawning_Pool, Time(1, 30)))
                     enemyOpener = "4Pool";
-                else if (rushArrivalTime < Time(3, 20) || firstFinishedTime[Zerg_Zergling] < Time(2, 30) || firstFinishedTime[Zerg_Spawning_Pool] < Time(2, 00))
+                else if (rushArrivalTime < Time(3, 20) || completesBy(1, Zerg_Zergling, Time(2, 30)) || completesBy(1, Zerg_Spawning_Pool, Time(2, 00)))
                     enemyOpener = "9Pool";
-                else if (enemyFE && (rushArrivalTime < Time(3, 50) || firstFinishedTime[Zerg_Zergling] < Time(3, 00) || firstFinishedTime[Zerg_Spawning_Pool] < Time(2, 00)))
+                else if (enemyFE && (rushArrivalTime < Time(3, 50) || completesBy(1, Zerg_Zergling, Time(3, 00)) || completesBy(1, Zerg_Spawning_Pool, Time(2, 00))))
                     enemyOpener = "12Pool";
             }
 
@@ -129,17 +208,21 @@ namespace McRave::Strategy {
 
         void enemyZergTransitions(PlayerInfo& player)
         {
+            if (Util::getTime() - enemyTransitionTime > Time(0, 05))
+                return;
+            enemyTransition = "Unknown";
+
             auto enemyHatchCount = Players::getCurrentCount(PlayerState::Enemy, Zerg_Hatchery)
                 + Players::getCurrentCount(PlayerState::Enemy, Zerg_Lair)
                 + Players::getCurrentCount(PlayerState::Enemy, Zerg_Hive);
 
             // Ling rush detection
-            if (enemyOpener == "4Pool" || (enemyOpener == "9Pool" && Util::getTime() < Time(3, 30) && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 12 && Players::getCurrentCount(PlayerState::Enemy, Zerg_Lair) == 0))
+            if (enemyOpener == "4Pool" || (enemyOpener == "9Pool" && Util::getTime() < Time(3, 20) && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 14 && Players::getCurrentCount(PlayerState::Enemy, Zerg_Lair) == 0 && Players::getCurrentCount(PlayerState::Enemy, Zerg_Hatchery) == 1))
                 enemyTransition = "LingRush";
 
             // Zergling all-in transitions
             if (Players::getCurrentCount(PlayerState::Enemy, Zerg_Spire) == 0 && Players::getCurrentCount(PlayerState::Enemy, Zerg_Hydralisk_Den) == 0 && Players::getCurrentCount(PlayerState::Enemy, Zerg_Lair) == 0) {
-                if ((Players::ZvZ() && !enemyFE && Players::getCurrentCount(PlayerState::Enemy, Zerg_Hatchery) == 2 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 8) || (Util::getTime() < Time(4, 30) && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 14))
+                if (Players::ZvZ() && !enemyFE && completesBy(2, Zerg_Hatchery, Time(4, 00)) && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 8)
                     enemyTransition = "2HatchLing";
                 else if (Players::getCurrentCount(PlayerState::Enemy, Zerg_Hatchery) == 3 && enemyGas < 148 && enemyGas >= 50 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 12)
                     enemyTransition = "3HatchLing";
@@ -174,12 +257,16 @@ namespace McRave::Strategy {
 
         void enemyTerranBuilds(PlayerInfo& player)
         {
+            if (Util::getTime() - enemyBuildTime > Time(0, 05))
+                return;
+            enemyBuild = "Unknown";
+
             for (auto &u : player.getUnits()) {
                 UnitInfo &unit = *u;
 
                 // Marine timing
-                if (unit.getType() == Terran_Marine) {
-                    if (rushArrivalTime == Time(999, 00) || unit.timeArrivesWhen() < rushArrivalTime)
+                if (unit.getType() == Terran_Marine && Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 2) {
+                    if (unit.timeArrivesWhen() < rushArrivalTime)
                         rushArrivalTime = unit.timeArrivesWhen();
                 }
 
@@ -190,24 +277,24 @@ namespace McRave::Strategy {
                 }
 
                 // FE Detection
-                if (unit.getType() == Terran_Bunker && unit.getPosition().getDistance(Position(Terrain::getEnemyNatural())) < 320.0)
-                    enemyFE = true;
+                if (Broodwar->getFrameCount() < 10000 && unit.getType() == Terran_Bunker) {
+                    if (unit.getPosition().getDistance(Position(Terrain::getEnemyNatural()->getChokepoint()->Center())) < 320.0 || unit.getPosition().getDistance(Position(Terrain::getEnemyNatural()->getBase()->Center())) < 320.0)
+                        enemyFE = true;
+                }
             }
 
             // 2Rax
-            if (rushArrivalTime < Time(2, 30)
-                || firstFinishedTime[Terran_Barracks] < Time(1, 45)
+            if ((rushArrivalTime < Time(3, 10) && Util::getTime() < Time(3, 25) && Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 3)
                 || (Util::getTime() < Time(2, 55) && Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) >= 2)
-                || (Util::getTime() < Time(2, 40) && Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 2)
-                || (Util::getTime() < Time(2, 55) && Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 3)
-                || (Util::getTime() < Time(3, 15) && Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 5)
-                || (Util::getTime() < Time(3, 35) && Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 7)
-                || (Util::getTime() < Time(3, 55) && Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 9)
-                || (Util::getTime() < Time(4, 10) && Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 11))
+                || (Util::getTime() < Time(4, 00) && Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) >= 2 && Players::getTotalCount(PlayerState::Enemy, Terran_Refinery) == 0)
+                || (Util::getTime() < Time(2, 55) && Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 3))
                 enemyBuild = "2Rax";
 
             // RaxCC
-            if ((Util::getTime() < Time(3, 00) && enemyFE))
+            if ((Util::getTime() < Time(4, 00) && enemyFE)
+                || rushArrivalTime < Time(2, 45)
+                || completesBy(1, Terran_Barracks, Time(1, 45))
+                || (Scouts::gotFullScout() && Util::getTime() > Time(2, 45) && Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) == 1 && Players::getTotalCount(PlayerState::Enemy, Terran_Refinery) == 0))
                 enemyBuild = "RaxCC";
 
             // RaxFact
@@ -217,38 +304,45 @@ namespace McRave::Strategy {
 
         void enemyTerranOpeners(PlayerInfo& player)
         {
+            if (Util::getTime() - enemyOpenerTime > Time(0, 05))
+                return;
+            enemyOpener = "Unknown";
+
             // Bio builds
             if (enemyBuild == "2Rax") {
-                // Main, Proxy, Expand
+                if (enemyFE)
+                    enemyOpener = "Expand";
+                else if (proxyTiming.first)
+                    enemyOpener = "Proxy";
+                else if (Util::getTime() > Time(4, 00))
+                    enemyOpener = "Main";
             }
 
             // Mech builds
             if (enemyBuild == "RaxFact") {
-                // Tank, Vulture, Goliath
+                // 1-5Fact???
             }
 
             // Expand builds
             if (enemyBuild == "RaxCC") {
-                // idk
+                if (rushArrivalTime < Time(2, 45)
+                    || completesBy(1, Terran_Barracks, Time(1, 45)))
+                    enemyOpener = "8Rax";
+                else if (enemyFE)
+                    enemyOpener = "1RaxFE";
             }
         }
 
         void enemyTerranTransitions(PlayerInfo& player)
         {
+            if (Util::getTime() - enemyTransitionTime > Time(0, 05))
+                return;
+            enemyTransition = "Unknown";
+
             auto hasTanks = Players::getCurrentCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) > 0 || Players::getCurrentCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode) > 0;
+            auto hasGols = Players::getCurrentCount(PlayerState::Enemy, Terran_Goliath) > 0;
 
-            // Academy timing
-            if (Players::ZvT() && enemyBuild == "2Rax") {
-
-                if (enemyFE)
-                    enemyTransition = "Expand";
-                else if (rushArrivalTime < Time(3, 15) || firstFinishedTime[Terran_Barracks] < Time(2,15))
-                    enemyTransition = "MarineRush";
-                else if (Util::getTime() > Time(4, 30))
-                    enemyTransition = "Academy";
-            }
-
-            // Factory builds
+            // General factory builds
             if ((Players::getTotalCount(PlayerState::Enemy, Terran_Vulture_Spider_Mine) > 0 && Util::getTime() < Time(6, 00))
                 || (Players::getTotalCount(PlayerState::Enemy, Terran_Factory) >= 2 && vultureSpeed)
                 || (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) >= 3 && Util::getTime() < Time(5, 30))
@@ -256,54 +350,66 @@ namespace McRave::Strategy {
                 || (Broodwar->self()->getRace() == Races::Zerg && Players::getCurrentCount(PlayerState::Enemy, Terran_Vulture) >= 1 && Util::getTime() < Time(5, 0)))
                 enemyTransition = "2Fact";
 
-            // Siege Expand
+            // PvT
             if (Players::PvT()) {
                 if ((Players::getCurrentCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) > 0 && Players::getCurrentCount(PlayerState::Enemy, Terran_Vulture) == 0)
                     || (enemyFE && Players::getCurrentCount(PlayerState::Enemy, Terran_Machine_Shop) > 0))
                     enemyTransition = "SiegeExpand";
             }
 
-            // 1 Fact Tanks
+            // ZvT
             if (Players::ZvT()) {
-                if ((hasTanks && Util::getTime() < Time(10, 00)) || (enemyFE && Players::getCurrentCount(PlayerState::Enemy, Terran_Machine_Shop) > 0 && Util::getTime() < Time(9, 00)))
-                    enemyTransition = "1FactTanks";
+
+                // RaxFact
+                if (enemyBuild == "RaxFact") {
+                    if ((!hasTanks && hasGols && enemyFE) || (Util::getTime() < Time(7, 30) && Players::getCurrentCount(PlayerState::Enemy, Terran_Armory) > 0) || (Util::getTime() < Time(8, 00) && Players::getCurrentCount(PlayerState::Enemy, Terran_Goliath) > 0))
+                        enemyTransition = "5FactGoliath";
+                }
+
+                // 2Rax
+                if (enemyBuild == "2Rax") {
+                    if (enemyFE && hasTanks && Util::getTime() < Time(10, 30))
+                        enemyTransition = "1FactTanks";
+                    else if (rushArrivalTime < Time(3, 15) || completesBy(2, Terran_Barracks, Time(2, 35)))
+                        enemyTransition = "MarineRush";
+                    else if (!enemyFE && (completesBy(1, Terran_Academy, Time(5, 10)) || player.hasTech(TechTypes::Stim_Packs) || arrivesBy(1, Terran_Medic, Time(6, 00)) || arrivesBy(1, Terran_Firebat, Time(6, 00))))
+                        enemyTransition = "Academy";
+                }
+
+                // RaxCC
+                if (enemyBuild == "RaxCC") {
+                    if (enemyFE && hasTanks && Util::getTime() < Time(10, 30))
+                        enemyTransition = "1FactTanks";
+                }
             }
+
+            // TvT
         }
 
         void enemyProtossBuilds(PlayerInfo& player)
         {
+            if (Util::getTime() - enemyBuildTime > Time(0, 05))
+                return;
+            enemyBuild = "Unknown";
+
             for (auto &u : player.getUnits()) {
                 UnitInfo &unit = *u;
 
                 // Zealot timing
                 if (unit.getType() == Protoss_Zealot) {
-                    if (rushArrivalTime == Time(999, 00) || unit.timeArrivesWhen() < rushArrivalTime)
+                    if (unit.timeArrivesWhen() < rushArrivalTime)
                         rushArrivalTime = unit.timeArrivesWhen();
-                }
-
-                // 1GateCore
-                if (unit.getType() == Protoss_Assimilator) {
-                    if (unit.timeCompletesWhen() < Time(2, 15))
-                        enemyBuild = "1GateCore";
-                }
-                if (unit.getType() == Protoss_Cybernetics_Core) {
-                    if (unit.timeCompletesWhen() < Time(3, 30))
-                        enemyBuild = "1GateCore";
-                }
-                if (unit.getType() == Protoss_Dragoon) {
-                    if (firstFinishedTime[unit.getType()] < Time(4, 10))
-                        enemyBuild = "1GateCore";
                 }
 
                 // CannonRush
                 if (unit.getType() == Protoss_Forge && Scouts::gotFullScout()) {
-                    if (unit.getPosition().getDistance(Terrain::getEnemyStartingPosition()) < 320.0 && Players::getCurrentCount(PlayerState::Enemy, Protoss_Gateway) == 0 && Players::getCurrentCount(PlayerState::Enemy, Protoss_Nexus) <= 1)
+                    if (unit.getPosition().getDistance(Terrain::getEnemyStartingPosition()) < 200.0 && Players::getCurrentCount(PlayerState::Enemy, Protoss_Gateway) == 0 && Players::getCurrentCount(PlayerState::Enemy, Protoss_Nexus) <= 1)
                         enemyBuild = "CannonRush";
                 }
 
                 // FFE
-                if ((unit.getType() == Protoss_Photon_Cannon || unit.getType() == Protoss_Forge)) {
-                    if (unit.getPosition().getDistance((Position)Terrain::getEnemyNatural()) < 320.0 && Broodwar->getFrameCount() < 8000) {
+                if (Util::getTime() < Time(4, 00) && (unit.getType() == Protoss_Photon_Cannon || unit.getType() == Protoss_Forge)) {
+                    if (unit.getPosition().getDistance(Position(Terrain::getEnemyNatural()->getChokepoint()->Center())) < 320.0 || unit.getPosition().getDistance(Position(Terrain::getEnemyNatural()->getBase()->Center())) < 320.0) {
                         enemyBuild = "FFE";
                         enemyFE = true;
                     }
@@ -312,47 +418,46 @@ namespace McRave::Strategy {
                 // TODO: Check if this actually works
                 if (unit.getType().isWorker() && unit.unit()->exists() && unit.unit()->getOrder() == Orders::HoldPosition)
                     blockedScout = true;
-
-                // Proxy detection
-                if (unit.getType() == Protoss_Gateway || unit.getType() == Protoss_Pylon) {
-                    auto closestStation = BWEB::Stations::getClosestStation(unit.getTilePosition());
-                    if (closestStation && !closestStation->isMain() && !closestStation->isNatural())
-                        proxy = true;
-
-                    if (Terrain::isInAllyTerritory(unit.getTilePosition())
-                        || unit.getPosition().getDistance(mapBWEM.Center()) < 1280.0
-                        || (BWEB::Map::getNaturalChoke() && unit.getPosition().getDistance((Position)BWEB::Map::getNaturalChoke()->Center()) < 480.0)) {
-
-                        proxy = true;
-                    }
-                }
             }
+
+            // 1GateCore - Gas estimation
+            if (completesBy(1, Protoss_Assimilator, Time(2, 15)))
+                enemyBuild = "1GateCore";
+
+            // 1GateCore - Core estimation
+            if (completesBy(1, Protoss_Cybernetics_Core, Time(3, 30)))
+                enemyBuild = "1GateCore";
+
+            // 1GateCore - Goon estimation
+            if (completesBy(1, Protoss_Dragoon, Time(4, 10)))
+                enemyBuild = "1GateCore";
 
             // 2Gate - Zealot estimation
             if ((Players::getTotalCount(PlayerState::Enemy, UnitTypes::Protoss_Zealot) >= 5 && Util::getTime() < Time(4, 0))
                 || (Players::getTotalCount(PlayerState::Enemy, UnitTypes::Protoss_Zealot) >= 3 && Util::getTime() < Time(3, 30))
-                || rushArrivalTime < Time(2, 50)) {
+                || arrivesBy(2, Protoss_Zealot, Time(3, 30))
+                || arrivesBy(3, Protoss_Zealot, Time(3, 55))
+                || arrivesBy(4, Protoss_Zealot, Time(4, 20))
+                || completesBy(2, Protoss_Gateway, Time(2, 55))) {
                 enemyBuild = "2Gate";
             }
 
-            // 2Gate - Gateway estimation
-            if (Util::getTime() < Time(3, 30)) {
-                if (Scouts::gotFullScout() && Util::getTime() < Time(3, 30) && Players::getCurrentCount(PlayerState::Enemy, Protoss_Gateway) == 0 && Players::getCurrentCount(PlayerState::Enemy, Protoss_Nexus) <= 1 && Players::getTotalCount(PlayerState::Enemy, UnitTypes::Protoss_Zealot) > 0) {
-                    enemyBuild = "2Gate";
-                    proxy = true;
-                }
-                else if (Players::getCurrentCount(PlayerState::Enemy, Protoss_Gateway) >= 2 && Players::getCurrentCount(PlayerState::Enemy, Protoss_Nexus) <= 1) {
-                    enemyBuild = "2Gate";
-                    proxy = false;
-                }
+            // 2Gate Proxy - No info estimation
+            if (Scouts::gotFullScout() && Util::getTime() < Time(3, 30) && Players::getCurrentCount(PlayerState::Enemy, Protoss_Gateway) == 0 && Players::getCurrentCount(PlayerState::Enemy, Protoss_Nexus) <= 1 && Players::getTotalCount(PlayerState::Enemy, UnitTypes::Protoss_Zealot) > 0) {
+                enemyBuild = "2Gate";
+                proxyTiming.first = true;
             }
         }
 
         void enemyProtossOpeners(PlayerInfo& player)
         {
+            if (Util::getTime() - enemyOpenerTime > Time(0, 05))
+                return;
+            enemyOpener = "Unknown";
+
             // 2Gate Openers
             if (enemyBuild == "2Gate") {
-                if (proxy || rushArrivalTime < Time(2, 50))
+                if (proxyTiming.first || arrivesBy(1, Protoss_Zealot, Time(2,50)) || arrivesBy(2, Protoss_Zealot, Time(3, 15)) || arrivesBy(4, Protoss_Zealot, Time(3, 50)))
                     enemyOpener = "Proxy";
                 else if (enemyFE)
                     enemyOpener = "Natural";
@@ -383,25 +488,36 @@ namespace McRave::Strategy {
 
         void enemyProtossTransitions(PlayerInfo& player)
         {
-            // ZealotRush
-            if (enemyBuild == "2Gate" && enemyOpener == "Proxy")
-                enemyTransition = "ZealotRush";
+            if (Util::getTime() - enemyTransitionTime > Time(0, 05))
+                return;
+            enemyTransition = "Unknown";
 
-            // 5ZealotExpand
-            if (enemyFE && (Players::getCurrentCount(PlayerState::Enemy, Protoss_Gateway) >= 2 || Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) >= 5) && Util::getTime() < Time(4, 45)) {
-                enemyTransition = "5ZealotExpand";
-                proxy = false;
+            // 2Gate rush
+            if (enemyBuild == "2Gate") {
+                if (enemyOpener == "Proxy"
+                    || (Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) >= 4 && Util::getTime() < Time(3, 50))
+                    || (Players::getTotalCount(PlayerState::Enemy, Protoss_Assimilator) == 0 && Util::getTime() > Time(5, 0))
+                    || completesBy(3, Protoss_Gateway, Time(3,30)))
+                    enemyTransition = "ZealotRush";
             }
 
-            // DT
-            if ((Players::getCurrentCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) >= 1 && Players::getCurrentCount(PlayerState::Enemy, Protoss_Zealot) > 0)
-                || Players::getCurrentCount(PlayerState::Enemy, Protoss_Templar_Archives) >= 1
-                || (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) < 2 && Players::getCurrentCount(PlayerState::Enemy, Protoss_Cybernetics_Core) >= 1 && Util::getTime() > Time(6, 45)))
-                enemyTransition = "DT";
+            // 2Gate tech
+            if (enemyBuild == "2Gate" || enemyBuild == "1GateCore") {
 
-            // Corsair
-            if (Players::getCurrentCount(PlayerState::Enemy, Protoss_Stargate) > 0)
-                enemyTransition = "Corsair";
+                // DT
+                if ((Players::getCurrentCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) >= 1 && Players::getCurrentCount(PlayerState::Enemy, Protoss_Zealot) > 0)
+                    || Players::getCurrentCount(PlayerState::Enemy, Protoss_Templar_Archives) >= 1
+                    || (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) < 2 && Players::getCurrentCount(PlayerState::Enemy, Protoss_Cybernetics_Core) >= 1 && Util::getTime() > Time(6, 45)))
+                    enemyTransition = "DT";
+
+                // Corsair
+                if (Players::getCurrentCount(PlayerState::Enemy, Protoss_Stargate) > 0)
+                    enemyTransition = "Corsair";
+
+                // 5ZealotExpand
+                if (Players::PvP() && enemyFE && (Players::getCurrentCount(PlayerState::Enemy, Protoss_Gateway) >= 2 || Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) >= 5) && Util::getTime() < Time(4, 45))
+                    enemyTransition = "5ZealotExpand";                
+            }
 
             // 4Gate
             if (Players::PvP()) {
@@ -411,15 +527,15 @@ namespace McRave::Strategy {
                     enemyTransition = "4Gate";
             }
             if (Players::ZvP()) {
-                if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 1)
+                if (!enemyFE && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 1)
                     enemyTransition = "4Gate";
             }
 
             // FFE transitions
             if (Players::ZvP() && enemyBuild == "FFE") {
-                if (Players::getCurrentCount(PlayerState::Enemy, Protoss_Gateway) >= 4 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 1)
+                if ((Players::getCurrentCount(PlayerState::Enemy, Protoss_Gateway) >= 4 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 1) || (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0))
                     enemyTransition = "5GateGoon";
-                else if (Players::getCurrentCount(PlayerState::Enemy, Protoss_Stargate) >= 1)
+                else if ((completesBy(1, Protoss_Stargate, Time(5, 45)) && completesBy(1, Protoss_Citadel_of_Adun, Time(5, 45))) || (Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 && Util::getTime() < Time(6, 15)))
                     enemyTransition = "NeoBisu";
                 else if (Players::getCurrentCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) >= 1)
                     enemyTransition = "ZealotArchon";
@@ -429,7 +545,7 @@ namespace McRave::Strategy {
         void checkEnemyRush()
         {
             // Rush builds are immediately aggresive builds
-            auto supplySafe = Broodwar->self()->getRace() == Races::Zerg ? Players::getSupply(PlayerState::Self) >= 40 : Players::getSupply(PlayerState::Self) >= 80;
+            auto supplySafe = Broodwar->self()->getRace() == Races::Zerg ? Players::getSupply(PlayerState::Self) >= 60 : Players::getSupply(PlayerState::Self) >= 80;
             rush = !supplySafe && (enemyTransition == "MarineRush" || enemyTransition == "ZealotRush" || enemyTransition == "LingRush" || enemyTransition == "WorkerRush");
         }
 
@@ -465,10 +581,8 @@ namespace McRave::Strategy {
 
             // Zerg
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                holdChoke = !Players::ZvZ() && (BuildOrder::isFastExpand()
-                    || BuildOrder::isWallNat()
-                    || !rush
-                    || Players::vT());
+                holdChoke = !Players::ZvZ()
+                    || (Strategy::getEnemyOpener() == "9Pool" && !rush && !pressure && com(Zerg_Sunken_Colony) == 0 && total(Zerg_Mutalisk) < 3);
             }
 
             // Other situations
@@ -517,9 +631,19 @@ namespace McRave::Strategy {
             else
                 proxyCheck = false;
 
+            // Needs to be true for 5 seconds to be a proxy
+            if (proxyTiming.first) {
+                if (proxyTiming.second == Time(999, 0))
+                    proxyTiming.second = Util::getTime();
+                if (Util::getTime() - proxyTiming.second < Time(0, 04))
+                    proxyTiming.first = false;
+            }
+            else
+                proxyTiming.second = Time(999, 0);
+
             // Proxy builds are built closer to me than the enemy
             auto supplySafe = Broodwar->self()->getRace() == Races::Zerg ? Players::getSupply(PlayerState::Self) >= 40 : Players::getSupply(PlayerState::Self) >= 80;
-            proxy = !supplySafe && (enemyBuild == "CannonRush" || enemyBuild == "BunkerRush" || proxy);
+            proxyTiming.first = !supplySafe && (enemyBuild == "CannonRush" || enemyBuild == "BunkerRush" || proxyTiming.first);
         }
 
         void checkEnemyAir()
@@ -536,12 +660,6 @@ namespace McRave::Strategy {
 
         void updateEnemyBuild()
         {
-            if (Broodwar->getFrameCount() - enemyFrame > 120 && enemyFrame != 0 && enemyTransition != "Unknown")
-                return;
-
-            if (enemyFrame == 0 && enemyTransition != "Unknown")
-                enemyFrame = Broodwar->getFrameCount();
-
             for (auto &p : Players::getPlayers()) {
                 PlayerInfo &player = p.second;
 
@@ -552,7 +670,6 @@ namespace McRave::Strategy {
                         return u.getType().isWorker();
                     });
                     scoutPosition = playersScout ? playersScout->getPosition() : Positions::Invalid;
-
 
                     enemyStrategicInfo(player);
                     if (player.getCurrentRace() == Races::Zerg) {
@@ -571,8 +688,56 @@ namespace McRave::Strategy {
                         enemyTerranTransitions(player);
                     }
 
-                    // TODO: We don't use this at the moment
-                    player.setBuild(enemyBuild);
+                    // Detected a build
+                    if (enemyBuild != "Unknown") {
+                        player.setBuild(enemyBuild);
+
+                        // Set a time if first time detecting it
+                        if (enemyBuildTime == Time(999, 0))
+                            enemyBuildTime = Util::getTime();
+
+                        // Reset build detection to not force a reaction until we are sure of the build
+                        if (Util::getTime() - enemyBuildTime < Time(0, 05))
+                            enemyBuild = "Unknown";                        
+                    }
+
+                    // Didn't detect a build, clear info
+                    else
+                        enemyBuildTime = Time(999, 0);
+
+                    // Detected an opener
+                    if (enemyOpener != "Unknown") {
+                        player.setOpener(enemyOpener);
+
+                        // Set a time if first time detecting it
+                        if (enemyOpenerTime == Time(999, 0))
+                            enemyOpenerTime = Util::getTime();
+
+                        // Reset opener detection to not force a reaction until we are sure of the opener
+                        if (Util::getTime() - enemyOpenerTime < Time(0, 05))
+                            enemyOpener = "Unknown";
+                    }
+
+                    // Didn't detect an opener, clear info
+                    else
+                        enemyOpenerTime = Time(999, 0);
+
+                    // Detected a transition
+                    if (enemyTransition != "Unknown") {
+                        player.setTransition(enemyTransition);
+
+                        // Set a time if first time detecting it
+                        if (enemyTransitionTime == Time(999, 0))
+                            enemyTransitionTime = Util::getTime();
+
+                        // Reset transition detection to not force a reaction until we are sure of the transition
+                        if (Util::getTime() - enemyTransitionTime < Time(0, 05))
+                            enemyTransition = "Unknown";
+                    }
+
+                    // Didn't detect a transition, clear info
+                    else
+                        enemyTransitionTime = Time(999, 0);
                 }
             }
         }
@@ -590,21 +755,24 @@ namespace McRave::Strategy {
 
     void onFrame()
     {
-        globalReactions();
         updateEnemyBuild();
+        globalReactions();
     }
 
     string getEnemyBuild() { return enemyBuild; }
     string getEnemyOpener() { return enemyOpener; }
     string getEnemyTransition() { return enemyTransition; }
     Position enemyScoutPosition() { return scoutPosition; }
+    Time getEnemyBuildTime() { return enemyBuildTime; }
+    Time getEnemyOpenerTime() { return enemyOpenerTime; }
+    Time getEnemyTransitionTime() { return enemyTransitionTime; }
     bool enemyAir() { return air; }
     bool enemyFastExpand() { return enemyFE; }
     bool enemyRush() { return rush; }
     bool needDetection() { return invis; }
     bool defendChoke() { return holdChoke; }
     bool enemyPossibleProxy() { return proxyCheck; }
-    bool enemyProxy() { return proxy; }
+    bool enemyProxy() { return proxyTiming.first; }
     bool enemyGasSteal() { return gasSteal; }
     bool enemyScouted() { return enemyScout; }
     bool enemyBust() { return enemyBuild.find("Hydra") != string::npos; }

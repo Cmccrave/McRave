@@ -13,13 +13,13 @@ namespace McRave::Visuals {
 
         bool targets = false;
         bool builds = true;
-        bool bweb = true;
+        bool bweb = false;
         bool sim = false;
         bool paths = true;
         bool strengths = false;
         bool orders = false;
         bool local = false;
-        bool resources = false;
+        bool resources = true;
         bool timers = true;
         bool scores = true;
         bool roles = false;
@@ -90,6 +90,11 @@ namespace McRave::Visuals {
                     Broodwar->drawTextMap(resource.getPosition() - Position(32, 8), "%cGatherers: %d", textColor, resource.getGathererCount());
                     Broodwar->drawTextMap(resource.getPosition() - Position(32, 16), "%cState: %d", textColor, (int)resource.getResourceState());
                 }
+
+                Broodwar->drawTextScreen(Position(4, 64), "RM: %d", Production::getReservedMineral());
+                Broodwar->drawTextScreen(Position(4, 80), "RG: %d", Production::getReservedGas());
+                Broodwar->drawTextScreen(Position(4, 96), "QM: %d", Buildings::getQueuedMineral());
+                Broodwar->drawTextScreen(Position(4, 114), "QG: %d", Buildings::getQueuedGas());
             }
 
 
@@ -147,7 +152,7 @@ namespace McRave::Visuals {
 
                         if (gridSelection == 2) {
                             if (Grids::getEGroundThreat(w) > 0.0)
-                                walkBox(w, Color(Grids::getEGroundThreat(w) * 120,0,0));
+                                walkBox(w, Color(int(Grids::getEGroundThreat(w) * 120), 0, 0));
                         }
                         if (gridSelection == 3) {
                             if (Grids::getEAirThreat(w) > 0.0)
@@ -163,7 +168,7 @@ namespace McRave::Visuals {
                                 walkBox(w, Colors::Black);
                         }
                         if (gridSelection == 6) {
-                            if (Grids::getAAirCluster(w) > 0.0)
+                            if (Grids::getAAirCluster(w) >= 0.9)
                                 walkBox(w, Colors::Black);
                         }
                         if (gridSelection == 7) {
@@ -264,7 +269,7 @@ namespace McRave::Visuals {
             }
         }
 
-        void centerCameraOn(Position here) 
+        void centerCameraOn(Position here)
         {
             Broodwar->setScreenPosition(here - Position(320, 180));
         }
@@ -275,8 +280,6 @@ namespace McRave::Visuals {
         drawInformation();
         drawAllyInfo();
         drawEnemyInfo();
-
-        //centerCameraOn(Walls::getNaturalWall()->getCentroid());
     }
 
     void endPerfTest(string function)

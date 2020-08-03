@@ -18,11 +18,69 @@ namespace McRave::Buildings {
         map<const BWEM::Area *, int> productionPerArea;
         TilePosition currentExpansion;
 
+        void testResourceDepotSpots(TilePosition& placement, UnitType building)
+        {
+            vector<BWEB::Station *> stationByScore;
+            auto parentStation = BWEB::Stations::getClosestMainStation(BWEB::Map::getMainTile());
+            auto allowedFirstMineralBase = (Players::ZvT() || Players::ZvZ() || Players::ZvP()) ? 4 : 3;
+
+            for (int cnt = 0; cnt < int(BWEB::Stations::getStations().size()); cnt++) {
+                auto costBest = DBL_MAX;
+                BWEB::Station * stationBest = nullptr;
+
+                for (auto &station : BWEB::Stations::getStations()) {
+                    auto value = 1.0;
+                    auto base = station.getBase();
+
+                    if (find(stationByScore.begin(), stationByScore.end(), &station) != stationByScore.end())
+                        continue;
+
+                    if (station.getBase()->Geysers().empty() && int(stationByScore.size()) < allowedFirstMineralBase)
+                        continue;
+
+                    auto grdParent = BWEB::Map::getGroundDistance(base->Center(), parentStation->getBase()->Center());
+                    auto grdHome = BWEB::Map::getGroundDistance(base->Center(), BWEB::Map::getMainPosition());
+
+                    auto airParent = base->Center().getDistance(parentStation->getBase()->Center());
+                    auto airHome = base->Center().getDistance(BWEB::Map::getMainPosition());
+
+                    auto closestEnemyStation = BWEB::Stations::getClosestNaturalStation(Terrain::getEnemyStartingTilePosition());
+                    auto airEnemy = closestEnemyStation ? base->Center().getDistance(closestEnemyStation->getBase()->Center()) : base->Center().getDistance(Terrain::getEnemyStartingPosition());
+                    auto grdEnemy = closestEnemyStation ? BWEB::Map::getGroundDistance(base->Center(), closestEnemyStation->getBase()->Center()) : BWEB::Map::getGroundDistance(base->Center(), Terrain::getEnemyStartingPosition());
+
+                    auto dist = (grdParent * grdHome * airParent * airHome) / (grdEnemy * airEnemy);
+                    if (dist < costBest) {
+                        costBest = dist;
+                        stationBest = &station;
+                    }
+                }
+
+                if (stationBest) {
+                    stationByScore.push_back(stationBest);
+                    parentStation = stationBest;
+                }
+            }
+
+            int cnt = 0;
+            int offset = 0;
+            for (auto &station : stationByScore) {
+                cnt++;
+                offset+=8;
+
+                if (building != None && isBuildable(building, station->getBase()->Location()) && isQueueable(building, station->getBase()->Location())) {
+                    placement = station->getBase()->Location();
+                    currentExpansion = placement;
+                    return;
+                }
+            }
+        }
+
         bool isDefensiveType(UnitType building)
         {
             return building == Protoss_Photon_Cannon
                 || building == Protoss_Shield_Battery
                 || building == Zerg_Creep_Colony
+                || (Players::ZvZ() && building == Zerg_Spire)
                 || building == Terran_Missile_Turret
                 || building == Terran_Bunker;
         }
@@ -74,13 +132,13 @@ namespace McRave::Buildings {
                 || building == Zerg_Hatchery;
         }
 
-        TilePosition returnClosest(UnitType building, set<TilePosition> placements, Position desired) {
+        TilePosition returnClosest(UnitType building, set<TilePosition> placements, Position desired, bool purelyClosest = false) {
             auto tileBest = TilePositions::Invalid;
             auto distBest = DBL_MAX;
             for (auto &placement : placements) {
                 auto center = Position(placement) + Position(building.tileWidth() * 16, building.tileHeight() * 16);
                 auto current = center.getDistance(desired);
-                if (current < distBest && isQueueable(building, placement) && isBuildable(building, placement)) {
+                if (current < distBest && isQueueable(building, placement) && (isBuildable(building, placement) || purelyClosest)) {
                     distBest = current;
                     tileBest = placement;
                 }
@@ -88,7 +146,7 @@ namespace McRave::Buildings {
             return tileBest;
         }
 
-        TilePosition returnFurthest(UnitType building, set<TilePosition> placements, Position desired) {
+        TilePosition returnFurthest(UnitType building, set<TilePosition> placements, Position desired, bool purelyFurthest = false) {
             auto tileBest = TilePositions::Invalid;
             auto distBest = 0.0;
             for (auto &placement : placements) {
@@ -244,56 +302,65 @@ namespace McRave::Buildings {
                 return false;
 
             // If we are expanding, it must be on an expansion area
-            UnitType baseType = Broodwar->self()->getRace().getResourceDepot();
-            double best = 0.0;
+            const auto baseType = Broodwar->self()->getRace().getResourceDepot();
+            auto best = 0.0;
+
+            const auto baseValue = [&](const BWEM::Base& base) {
+                auto value = 0.0;
+                for (auto &mineral : base.Minerals())
+                    value += double(mineral->Amount());
+                for (auto &gas : base.Geysers())
+                    value += double(gas->Amount());
+                if (base.Geysers().size() == 0 && !Terrain::isIslandMap() && int(Stations::getMyStations().size()) < 3)
+                    value = value / 1.5;
+                return value;
+            };
+
+            // Fast expands must be as close to home and have a gas geyser
+            if (Stations::getMyStations().size() == 1 && isBuildable(baseType, BWEB::Map::getNaturalTile()) && isQueueable(baseType, BWEB::Map::getNaturalTile())) {
+                placement = BWEB::Map::getNaturalTile();
+                currentExpansion = placement;
+                return true;
+            }
 
             if (Players::ZvP() || Players::ZvT()) {
 
-                // Expand to a natural                
-                if (Stations::getMyStations().size() == 2 || Stations::getMyStations().size() == 4) {
-                    for (auto &natural : BWEB::Stations::getNaturalStations()) {
+                auto naturalAt = Players::ZvT() ? 3 : 2;
+                auto mainAt = Players::ZvT() ? 2 : 3;
 
-                        auto &base = *natural.getBWEMBase();
-                        double value = 0.0;
-                        for (auto &mineral : base.Minerals())
-                            value += double(mineral->Amount());
-                        for (auto &gas : base.Geysers())
-                            value += double(gas->Amount());
-                        if (base.Geysers().size() == 0 && !Terrain::isIslandMap() && int(Stations::getMyStations().size()) < 3)
-                            value = value / 1.5;
+                // Expand to a main or natural if possible
+                for (auto &station : BWEB::Stations::getStations()) {
 
-                        if (Terrain::getEnemyNatural() == natural.getBWEMBase()->Location())
+                    if ((station.isMain() && int(Stations::getMyStations().size()) != mainAt) || (station.isNatural() && int(Stations::getMyStations().size()) != naturalAt) || (!station.isNatural() && !station.isMain()))
+                        continue;
+
+                    auto &base = *station.getBase();
+                    auto value = baseValue(base);
+
+                    // Check if we own the main closest if this is a natural
+                    if (station.isNatural() && mainAt < naturalAt) {
+                        auto closestMain = BWEB::Stations::getClosestMainStation(base.Location());
+                        if (Stations::ownedBy(closestMain) != PlayerState::Self)
                             continue;
-
-                        auto distance = BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), base.Center()) / (BWEB::Map::getGroundDistance(Terrain::getEnemyStartingPosition(), base.Center()));
-                        if (isBuildable(baseType, base.Location()) && isQueueable(baseType, base.Location()) && value / distance > best) {
-                            best = value / distance;
-                            placement = base.Location();
-                        }
                     }
-                }
 
-                // Expand to a main
-                if (Stations::getMyStations().size() == 3 || Stations::getMyStations().size() == 5) {
-                    for (auto &main : BWEB::Stations::getMainStations()) {
-
-                        auto &base = *main.getBWEMBase();
-                        double value = 0.0;
-                        for (auto &mineral : base.Minerals())
-                            value += double(mineral->Amount());
-                        for (auto &gas : base.Geysers())
-                            value += double(gas->Amount());
-                        if (base.Geysers().size() == 0 && !Terrain::isIslandMap() && int(Stations::getMyStations().size()) < 3)
-                            value = value / 1.5;
-
-                        if (Terrain::getEnemyStartingTilePosition() == main.getBWEMBase()->Location())
+                    // Check if we own the natural closest if this is a main
+                    if (station.isNatural() && mainAt < naturalAt) {
+                        auto closestNat = BWEB::Stations::getClosestNaturalStation(base.Location());
+                        if (Stations::ownedBy(closestNat) != PlayerState::Self)
                             continue;
+                    }
 
-                        auto distance = BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), base.Center()) / (BWEB::Map::getGroundDistance(Terrain::getEnemyStartingPosition(), base.Center()));
-                        if (isBuildable(baseType, base.Location()) && isQueueable(baseType, base.Location()) && value / distance > best) {
-                            best = value / distance;
-                            placement = base.Location();
-                        }
+                    // Don't try to take an enemy base
+                    if (Terrain::getEnemyNatural() == &station)
+                        continue;
+                    if (Terrain::getEnemyStartingTilePosition() == station.getBase()->Location())
+                        continue;
+
+                    auto distance = BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), base.Center()) / (BWEB::Map::getGroundDistance(Terrain::getEnemyStartingPosition(), base.Center()));
+                    if (isBuildable(baseType, base.Location()) && isQueueable(baseType, base.Location()) && value / distance > best) {
+                        best = value / distance;
+                        placement = base.Location();
                     }
                 }
 
@@ -303,57 +370,8 @@ namespace McRave::Buildings {
                 }
             }
 
-            // Fast expands must be as close to home and have a gas geyser
-            if (Stations::getMyStations().size() == 1 && isBuildable(baseType, BWEB::Map::getNaturalTile()) && isQueueable(baseType, BWEB::Map::getNaturalTile()))
-                placement = BWEB::Map::getNaturalTile();
-
             // Other expansions must be as close to home but as far away from the opponent
-            else {
-                for (auto &area : mapBWEM.Areas()) {
-                    for (auto &base : area.Bases()) {
-                        UnitType shuttle = Broodwar->self()->getRace().getTransport();
-
-                        // Shuttle check for island bases, check enemy owned bases - DISABLED
-                        if ((!area.AccessibleFrom(BWEB::Map::getMainArea()) /*&& vis(shuttle) <= 0*/) || Terrain::isInEnemyTerritory(base.Location()))
-                            continue;
-
-                        // Get production potential
-                        int largePieces = 0;
-                        for (auto &block : BWEB::Blocks::getBlocks()) {
-                            if (mapBWEM.GetArea(block.getTilePosition()) != base.GetArea())
-                                continue;
-                            for (auto &large : block.getLargeTiles())
-                                largePieces++;
-                        }
-
-                        // Get value of the expansion
-                        double value = 0.0;
-                        for (auto &mineral : base.Minerals())
-                            value += double(mineral->Amount());
-                        for (auto &gas : base.Geysers())
-                            value += double(gas->Amount());
-                        if (base.Geysers().size() == 0 && !Terrain::isIslandMap() && int(Stations::getMyStations().size()) < 3)
-                            value = value / 1.5;
-
-                        if (availablePieces[BWEB::Piece::Large] < 3 && largePieces < availablePieces[BWEB::Piece::Large])
-                            value = value / 1.5;
-
-                        // Get distance of the expansion
-                        double distance;
-                        if (!area.AccessibleFrom(BWEB::Map::getMainArea()))
-                            distance = log(base.Center().getDistance(BWEB::Map::getMainPosition()));
-                        else if (Players::getPlayers().size() > 3 || !Terrain::getEnemyStartingPosition().isValid())
-                            distance = BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), base.Center());
-                        else
-                            distance = BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), base.Center()) / (BWEB::Map::getGroundDistance(Terrain::getEnemyStartingPosition(), base.Center()));
-
-                        if (isBuildable(baseType, base.Location()) && isQueueable(baseType, base.Location()) && value / distance > best) {
-                            best = value / distance;
-                            placement = base.Location();
-                        }
-                    }
-                }
-            }
+            testResourceDepotSpots(placement, building);
             currentExpansion = placement;
             return placement.isValid();
         }
@@ -398,11 +416,26 @@ namespace McRave::Buildings {
 
                 int colonies = 0;
                 for (auto& tile : station->getDefenseLocations()) {
-                    if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony)
+                    if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony || buildingsQueued.find(tile) != buildingsQueued.end())
                         colonies++;
                 }
 
-                if (Stations::needGroundDefenses(*station) > colonies || Stations::needAirDefenses(*station) > colonies || (Broodwar->self()->getRace() == Races::Terran && vis(Terran_Bunker) > 4)) {
+                if (Stations::needGroundDefenses(*station) > colonies) {
+                    if (station->isMain()) {
+                        placement = returnClosest(building, station->getDefenseLocations(), Position(station->getResourceCentroid()));
+                        if (placement.isValid())
+                            return true;
+                    }
+                    else {
+                        for (auto &choke : station->getBase()->GetArea()->ChokePoints()) {
+                            placement = returnClosest(building, station->getDefenseLocations(), Position(choke->Center()), true);
+                            if (placement.isValid() && isBuildable(building, placement))
+                                return true;
+                            placement = TilePositions::Invalid;
+                        }
+                    }
+                }
+                if (Stations::needAirDefenses(*station) > colonies) {
                     placement = returnClosest(building, station->getDefenseLocations(), Position(station->getResourceCentroid()));
                     if (placement.isValid())
                         return true;
@@ -420,12 +453,12 @@ namespace McRave::Buildings {
                 }
 
                 if (Walls::needAirDefenses(wall) > colonies || Walls::needGroundDefenses(wall) > colonies || Broodwar->self()->getRace() == Races::Terran) {
-                    placement = returnClosest(building, wall.getDefenses(), closestStation ? (closestStation->getBWEMBase()->Center() + wall.getCentroid()) / 2 : wall.getCentroid());
+                    placement = returnClosest(building, wall.getDefenses(), closestStation ? (closestStation->getBase()->Center() + wall.getCentroid()) / 2 : wall.getCentroid());
                     if (placement.isValid())
                         return true;
                 }
             }
-            return placement.isValid();
+            return false;
         }
 
         bool findWallLocation(UnitType building, TilePosition& placement)
@@ -496,13 +529,12 @@ namespace McRave::Buildings {
             const auto stationNeedsPylon = [&](BWEB::Station * station) {
                 auto distBest = DBL_MAX;
                 auto tileBest = TilePositions::Invalid;
-                auto natOrMain = find(BWEB::Stations::getMainStations().begin(), BWEB::Stations::getMainStations().end(), station) != BWEB::Stations::getMainStations().end()
-                    || find(BWEB::Stations::getNaturalStations().begin(), BWEB::Stations::getNaturalStations().end(), station) != BWEB::Stations::getNaturalStations().end();
+                auto natOrMain = station->isMain() || station->isNatural();
 
                 // Check all defense locations for this station
                 for (auto &defense : station->getDefenseLocations()) {
                     double dist = Position(defense).getDistance(Position(station->getResourceCentroid()));
-                    if (dist < distBest && (natOrMain || (defense.y <= station->getBWEMBase()->Location().y + 1 && defense.y >= station->getBWEMBase()->Location().y))) {
+                    if (dist < distBest && (natOrMain || (defense.y <= station->getBase()->Location().y + 1 && defense.y >= station->getBase()->Location().y))) {
                         distBest = dist;
                         tileBest = defense;
                     }
@@ -667,26 +699,36 @@ namespace McRave::Buildings {
 
         void updateCommands(UnitInfo& building)
         {
+            const auto willDieToAttacks = [&]() {
+                auto possibleDamage = 0;
+                for (auto &attacker : building.getTargetedBy()) {
+                    if (attacker.lock() && attacker.lock()->isWithinRange(building))
+                        possibleDamage+= int(attacker.lock()->getGroundDamage());
+                }
+
+                return possibleDamage > building.getHealth() + building.getShields();
+            };
+
             // Lair morphing
-            if (building.getTilePosition() == BWEB::Map::getMainTile() && building.getType() == Zerg_Hatchery && BuildOrder::buildCount(Zerg_Lair) > vis(Zerg_Lair) + vis(Zerg_Hive) + morphedThisFrame[Zerg_Lair] + morphedThisFrame[Zerg_Hive]) {
+            if (building.getTilePosition() == BWEB::Map::getMainTile() && building.getType() == Zerg_Hatchery && !willDieToAttacks() && BuildOrder::buildCount(Zerg_Lair) > vis(Zerg_Lair) + vis(Zerg_Hive) + morphedThisFrame[Zerg_Lair] + morphedThisFrame[Zerg_Hive]) {
                 building.unit()->morph(Zerg_Lair);
                 morphedThisFrame[Zerg_Lair]++;
             }
 
             // Hive morphing
-            else if (building.getTilePosition() == BWEB::Map::getMainTile() && building.getType() == Zerg_Lair && BuildOrder::buildCount(Zerg_Hive) > vis(Zerg_Hive) + morphedThisFrame[Zerg_Hive]) {
+            else if (building.getTilePosition() == BWEB::Map::getMainTile() && building.getType() == Zerg_Lair && !willDieToAttacks() && BuildOrder::buildCount(Zerg_Hive) > vis(Zerg_Hive) + morphedThisFrame[Zerg_Hive]) {
                 building.unit()->morph(Zerg_Hive);
                 morphedThisFrame[Zerg_Hive]++;
             }
 
             // Greater Spire morphing
-            else if (building.getType() == Zerg_Spire && BuildOrder::buildCount(Zerg_Greater_Spire) > vis(Zerg_Greater_Spire) + morphedThisFrame[Zerg_Greater_Spire]) {
+            else if (building.getType() == Zerg_Spire && !willDieToAttacks() && BuildOrder::buildCount(Zerg_Greater_Spire) > vis(Zerg_Greater_Spire) + morphedThisFrame[Zerg_Greater_Spire]) {
                 building.unit()->morph(Zerg_Greater_Spire);
                 morphedThisFrame[Zerg_Greater_Spire]++;
             }
 
             // Sunken / Spore morphing
-            else if (building.getType() == Zerg_Creep_Colony) {
+            else if (building.getType() == Zerg_Creep_Colony && !willDieToAttacks()) {
                 auto morphType = UnitTypes::None;
                 auto station = BWEB::Stations::getClosestStation(building.getTilePosition());
                 auto wall = BWEB::Walls::getClosestWall(building.getTilePosition());
@@ -708,17 +750,14 @@ namespace McRave::Buildings {
 
                     building.unit()->morph(morphType);
                     morphedThisFrame[morphType]++;
+                    queuedMineral+=morphType.mineralPrice();
                 }
 
                 // If this is a Wall defense
                 if (wall && wall->getDefenses().find(building.getTilePosition()) != wall->getDefenses().end()) {
 
-                    // Morph Spore if needed
-                    if (Walls::needAirDefenses(*wall) > morphedThisFrame[Zerg_Spore_Colony])
-                        morphType = Zerg_Spore_Colony;
-
                     // Morph Sunken if needed
-                    else if (Walls::needGroundDefenses(*wall) > morphedThisFrame[Zerg_Sunken_Colony]) {
+                    if (Walls::needGroundDefenses(*wall) > morphedThisFrame[Zerg_Sunken_Colony]) {
 
                         // Check timing for when an attacker will arrive
                         if (closestAttacker) {
@@ -727,12 +766,18 @@ namespace McRave::Buildings {
                                 morphType = Zerg_Sunken_Colony;
                         }
 
-                        // Morph if we know harass type units exist and we need a few Sunkens or we're being rushed
-                        if (Players::getCurrentCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 || Players::getCurrentCount(PlayerState::Enemy, Terran_Vulture) > 0 || Strategy::enemyRush() || Players::ZvZ())
+                        // Morph if we need defenses now
+                        if (BuildOrder::makeDefensesNow())
                             morphType = Zerg_Sunken_Colony;
                     }
+
+                    // Morph Spore if needed
+                    if (Walls::needAirDefenses(*wall) > morphedThisFrame[Zerg_Spore_Colony])
+                        morphType = Zerg_Spore_Colony;
+
                     building.unit()->morph(morphType);
                     morphedThisFrame[morphType]++;
+                    queuedMineral+=morphType.mineralPrice();
                 }
             }
 
@@ -795,17 +840,9 @@ namespace McRave::Buildings {
             }
 
             // Cancelling buildings that are being built in but being attacked
-            if (!building.unit()->isCompleted()) {
-                auto possibleDamage = 0;
-                for (auto &attacker : building.getTargetedBy()) {
-                    if (attacker.lock() && attacker.lock()->isWithinRange(building))
-                        possibleDamage+= int(attacker.lock()->getGroundDamage());
-                }
-
-                if (possibleDamage > building.getHealth() + building.getShields()) {
-                    building.unit()->cancelConstruction();
-                    Events::onUnitCancelBecauseBWAPISucks(building);
-                }
+            if (!building.unit()->isCompleted() && willDieToAttacks()) {
+                building.unit()->cancelConstruction();
+                Events::onUnitCancelBecauseBWAPISucks(building);
             }
         }
 
@@ -888,35 +925,17 @@ namespace McRave::Buildings {
             queuedMineral = 0;
             queuedGas = 0;
 
-            //// Count how many workers have a queued building to create
-            //for (auto &u : Units::getUnits(PlayerState::Self)) {
-            //    auto &unit = *u;
-
-            //    // Check if we should remove a building assignment
-            //    if (unit.getBuildPosition().isValid() && (Broodwar->getFrameCount() % 240 == 0 || unit.isStuck() || BuildOrder::buildCount(unit.getBuildType()) <= vis(unit.getBuildType()) || !Buildings::isBuildable(unit.getBuildType(), unit.getBuildPosition()))) {
-            //        buildingsQueued.erase(unit.getBuildPosition());
-            //        unit.setBuildingType(UnitTypes::None);
-            //        unit.setBuildPosition(TilePositions::Invalid);
-            //        unit.move(UnitCommandTypes::Stop, unit.getPosition());
-            //    }
-            //    else if (unit.getBuildPosition().isValid())
-            //        buildingsQueued[unit.getBuildPosition()] = unit.getBuildType();
-            //}
-
-            //// Clear queue every 10 seconds in case a worker is stuck
-            //if (Broodwar->getFrameCount() % 240 == 0)
-            //    buildingsQueued.clear();
-
-            // Wipe clean all queued buildings
+            // Wipe clean all queued buildings, store a cache of old buildings
+            map<shared_ptr<UnitInfo>, TilePosition> oldBuilders;
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
                 if (unit.getBuildPosition().isValid()) {
+                    oldBuilders[u] = unit.getBuildPosition();
                     unit.setBuildingType(UnitTypes::None);
                     unit.setBuildPosition(TilePositions::Invalid);
                 }
             }
             buildingsQueued.clear();
-
 
             // Reserved resources for buildings that are trying to morph
             for (auto &[type, count] : morphedThisFrame) {
@@ -944,39 +963,32 @@ namespace McRave::Buildings {
                 if (building == Zerg_Lair)
                     morphOffset = vis(Zerg_Hive);
 
-                // Queue the cost of any morphs
+                // Queue the cost of any morphs or building
                 if (count > vis(building) + morphOffset) {
-                    queuedMineral += building.mineralPrice();
-                    queuedGas += building.gasPrice();
+                    queuedMineral += building.mineralPrice() * (count - vis(building) - morphOffset);
+                    queuedGas += building.gasPrice() * (count - vis(building) - morphOffset);
                 }
 
                 if (morphed)
                     continue;
 
-                // Reserve building if our reserve count is higher than our visible count
-                for (auto &[_, queuedType] : buildingsQueued) {
-                    if (queuedType == building) {
-                        queuedCount++;
-
-                        // If we want to reserve more than we have, reserve resources, starts at 8 supply currently
-                        if (Players::getSupply(PlayerState::Self) >= 16 && count > vis(building) + morphOffset) {
-                            queuedMineral += building.mineralPrice();
-                            queuedGas += building.gasPrice();
-                        }
-                    }
-                }
-
                 // Queue building if our actual count is higher than our visible count
                 while (count > queuedCount + vis(building) + morphOffset) {
                     queuedCount++;
                     auto here = getBuildLocation(building);
+                    auto center = Position(here) + Position(building.tileWidth() * 16, building.tileHeight() * 16);
 
-                    auto &builder = Util::getClosestUnitGround(Position(here), PlayerState::Self, [&](auto &u) {
+                    auto &builder = Util::getClosestUnitGround(center, PlayerState::Self, [&](auto &u) {
                         return u.getRole() == Role::Worker && !u.isStuck() && (!u.hasResource() || u.getResource().getType().isMineralField()) && u.getBuildType() == None;
                     });
 
                     if (builder) {
-                        Broodwar->drawLineMap(builder->getPosition(), Position(here), Colors::Green);
+                        for (auto &[oldBuilder, oldHere] : oldBuilders) {
+                            if (oldHere == here && Position(oldHere).getDistance(builder->getPosition()) > 320.0) {
+                                if (oldBuilder && !oldBuilder->isStuck())
+                                    builder = oldBuilder;
+                            }
+                        }
                     }
 
                     if (here.isValid() && builder && Workers::shouldMoveToBuild(*builder, here, building)) {
@@ -1009,9 +1021,16 @@ namespace McRave::Buildings {
             auto closestStation = Stations::getClosestStation(PlayerState::Self, Position(here));
             if (closestStation) {
                 for (auto &[unit, station] : Stations::getMyStations()) {
-                    if (station == closestStation && station->getDefenseLocations().find(here) != station->getDefenseLocations().end() && unit->getRemainingBuildTime() < 240) {
-                        creepSoon = true;
-                        break;
+                    if (station == closestStation && station->getDefenseLocations().find(here) != station->getDefenseLocations().end()) {
+
+                        // Found that > 5 tiles away causes us to wait forever
+                        if (center.getDistance(station->getBase()->Center()) > 160.0)
+                            return false;
+
+                        if (unit->getRemainingBuildTime() < 240) {
+                            creepSoon = true;
+                            break;
+                        }
                     }
                 }
             }
@@ -1120,10 +1139,14 @@ namespace McRave::Buildings {
     {
         updateBuildings();
         queueBuildings();
+
+        TilePosition test;
+        testResourceDepotSpots(test, None);
     }
 
     void onStart()
     {
         // Initialize Blocks
+        BWEB::Blocks::findBlocks();
     }
 }

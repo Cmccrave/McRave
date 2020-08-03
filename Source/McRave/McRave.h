@@ -172,4 +172,11 @@ namespace McRave {
     static int total(BWAPI::UnitType t) {
         return Players::getTotalCount(PlayerState::Self, t);
     }
+
+    static void easyWrite(std::string stuff)
+    {
+        std::ofstream writeFile;
+        writeFile.open("bwapi-data/write/McRave_Debug_Log.txt", std::ios::app);
+        writeFile << stuff << std::endl;
+    }
 }

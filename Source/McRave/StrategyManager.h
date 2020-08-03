@@ -7,6 +7,9 @@ namespace McRave::Strategy {
     std::string getEnemyOpener();
     std::string getEnemyTransition();
     BWAPI::Position enemyScoutPosition();
+    Time getEnemyBuildTime();
+    Time getEnemyOpenerTime();
+    Time getEnemyTransitionTime();
     bool enemyFastExpand();
     bool enemyRush();
     bool needDetection();

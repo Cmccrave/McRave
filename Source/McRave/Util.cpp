@@ -102,8 +102,8 @@ namespace McRave::Util {
             return unit.getTarget().getPosition();
 
         auto timeToEngage = clamp((unit.getEngDist() / unit.getSpeed()) * unit.getTarget().getSpeed() / unit.getSpeed(), 12.0, 96.0);
-        auto targetDestination = unit.getTarget().getPosition() + Position(int(unit.getTarget().unit()->getVelocityX() * timeToEngage), int(unit.getTarget().unit()->getVelocityY() * timeToEngage));
-        targetDestination = Util::clipPosition(targetDestination);
+        auto targetDestination = unit.getTarget().unit()->getOrderTargetPosition();
+        targetDestination = unit.getTarget().unit()->getOrder() != Orders::AttackUnit ? Util::clipPosition(targetDestination) : unit.getTarget().getPosition();
         return targetDestination;
     }
 
@@ -152,7 +152,7 @@ namespace McRave::Util {
     {
         auto directionVector = line.second - line.first;
         auto currVector = here - line.first;
-        auto projCalc = ((directionVector.x * currVector.x) + (directionVector.y * currVector.y)) / (pow(directionVector.x, 2.0) + pow(directionVector.y, 2.0));
+        auto projCalc = double((directionVector.x * currVector.x) + (directionVector.y * currVector.y)) / (pow(directionVector.x, 2.0) + pow(directionVector.y, 2.0));
         return (line.first + Position(int(projCalc * directionVector.x), int(projCalc * directionVector.y)));
     }
 

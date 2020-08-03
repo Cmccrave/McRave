@@ -87,7 +87,7 @@ namespace McRave::Scouts {
                 // If we find them, no more Drone scouting
                 if ((Players::ZvP() && Util::getTime() > Time(3, 30)) || (Players::ZvT() && Util::getTime() > Time(4, 30)) || Strategy::enemyRush() || Strategy::getEnemyBuild() != "Unknown")
                     desiredScoutTypeCounts[Zerg_Drone] = 0;
-                if (Strategy::enemyPressure() && BuildOrder::isPlayPassive())
+                if (Strategy::enemyPressure())
                     desiredScoutTypeCounts[Zerg_Drone] = 0;
 
                 // If enemy can't hit air, send Overlords to scout
@@ -105,7 +105,7 @@ namespace McRave::Scouts {
         void updateScoutRoles()
         {
             updateScountCount();
-            bool sendAnother = Broodwar->getFrameCount() - scoutDeadFrame > 240 || (Util::getTime() < Time(4, 0) && Strategy::getEnemyTransition() == "Unknown");
+            bool sendAnother = (Broodwar->self()->getRace() != Races::Zerg || scoutDeadFrame < 0) && (Broodwar->getFrameCount() - scoutDeadFrame > 240 || (Util::getTime() < Time(4, 0) && Strategy::getEnemyTransition() == "Unknown"));
 
             const auto assign = [&](UnitType type) {
                 shared_ptr<UnitInfo> scout = nullptr;
@@ -154,7 +154,7 @@ namespace McRave::Scouts {
             };
 
             for (auto &[type, count] : desiredScoutTypeCounts) {
-                if (currentScoutTypeCounts[type] < desiredScoutTypeCounts[type])
+                if (sendAnother && currentScoutTypeCounts[type] < desiredScoutTypeCounts[type])
                     assign(type);
                 else if (currentScoutTypeCounts[type] > desiredScoutTypeCounts[type])
                     remove(type);
@@ -221,7 +221,7 @@ namespace McRave::Scouts {
 
                 // Add each enemy station as a target
                 for (auto &[_, station] : Stations::getEnemyStations()) {
-                    auto tile = station->getBWEMBase()->Center();
+                    auto tile = station->getBase()->Center();
                     addTarget(Position(tile), ScoutState::Base);
                 }
 
@@ -251,12 +251,15 @@ namespace McRave::Scouts {
                 multimap<double, Position> startsByDist;
 
                 // Sort unexplored starts by distance
-                for (auto &start : mapBWEM.StartingLocations()) {
-                    auto center = Position(start) + Position(64, 48);
+                for (auto &topLeft : mapBWEM.StartingLocations()) {
+                    auto center = Position(topLeft) + Position(64, 48);
                     auto dist = BWEB::Map::getGroundDistance(center, BWEB::Map::getMainPosition());
 
-                    if (!Terrain::isExplored(center))
-                        startsByDist.emplace(dist, center);
+                    auto botRight = topLeft + TilePosition(3, 2);
+                    if (!Broodwar->isExplored(topLeft))
+                        startsByDist.emplace(dist, Position(topLeft));
+                    else if (!Broodwar->isExplored(botRight))
+                        startsByDist.emplace(dist, Position(botRight));
                     else
                         basesExplored++;
                 }
@@ -264,14 +267,14 @@ namespace McRave::Scouts {
                 // Assign n scout targets where n is scout count
                 for (auto &[_, position] : startsByDist)
                     addTarget(position, ScoutState::Base);
-
+                
                 // Scout the popular middle proxy location if it's walkable
                 if (Broodwar->self()->getRace() == Races::Protoss) {
                     if (basesExplored == 2 && !Players::vZ() && !Terrain::isExplored(mapBWEM.Center()) && BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), mapBWEM.Center()) != DBL_MAX)
                         addTarget(mapBWEM.Center(), ScoutState::Proxy);
                 }
                 else {
-                    if (basesExplored == 2 && !Players::vZ() && BuildOrder::shouldScout() && !Terrain::isExplored(mapBWEM.Center()) && BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), mapBWEM.Center()) != DBL_MAX)
+                    if (!Players::vZ() && BuildOrder::shouldScout() && !Terrain::isExplored(mapBWEM.Center()) && BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), mapBWEM.Center()) != DBL_MAX)
                         addTarget(mapBWEM.Center(), ScoutState::Proxy);
                 }
             }
@@ -360,8 +363,6 @@ namespace McRave::Scouts {
                         if (Actions::overlapsActions(unit.unit(), target, None, PlayerState::Self))
                             continue;
 
-                        Broodwar->drawCircleMap(target, 4, Colors::Cyan, true);
-
                         if (score > best && timeDiff > minTimeDiff) {
                             best = score;
                             unit.setDestination(target);
@@ -420,18 +421,16 @@ namespace McRave::Scouts {
             }
 
             // Add Action so other Units dont move to same location
-            if (unit.getDestination().isValid()) {
-                Actions::addAction(unit.unit(), unit.getDestination(), unit.getType(), PlayerState::Self);
-                Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Red);
-            }
+            if (unit.getDestination().isValid())
+                Actions::addAction(unit.unit(), unit.getDestination(), unit.getType(), PlayerState::Self);            
         }
 
         void updatePath(UnitInfo& unit)
         {
             if (!unit.isFlying()) {
                 if (unit.getDestination().isValid() && unit.getDestinationPath().getTarget() != TilePosition(unit.getDestination())) {
-                    BWEB::Path newPath;
-                    newPath.jpsPath(unit.getPosition(), unit.getDestination(), BWEB::Pathfinding::terrainWalkable);
+                    BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
+                    newPath.generateJPS([&](const TilePosition &t) { return newPath.terrainWalkable(t); });
                     unit.setDestinationPath(newPath);
                 }
 
@@ -446,7 +445,7 @@ namespace McRave::Scouts {
             }
         }
 
-        constexpr tuple commands{ Command::attack, Command::kite, Command::hunt };
+        constexpr tuple commands{ Command::attack, Command::kite, Command::explore };
         void updateDecision(UnitInfo& unit)
         {
             // Convert our commands to strings to display what the unit is doing for debugging

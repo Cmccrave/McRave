@@ -51,6 +51,7 @@ namespace McRave {
     #pragma region Targets
         std::weak_ptr<UnitInfo> transport;
         std::weak_ptr<UnitInfo> target;
+        std::weak_ptr<UnitInfo> simTarget;
         std::weak_ptr<UnitInfo> backupTarget;
         std::weak_ptr<ResourceInfo> resource;
 
@@ -113,6 +114,7 @@ namespace McRave {
         bool hasResource() { return !resource.expired(); }
         bool hasTransport() { return !transport.expired(); }
         bool hasTarget() { return !target.expired(); }
+        bool hasSimTarget() { return !simTarget.expired(); }
         bool hasBackupTarget() { return !backupTarget.expired(); }
         bool hasMovedArea() { return lastTile.isValid() && tilePosition.isValid() && BWEM::Map::Instance().GetArea(lastTile) != BWEM::Map::Instance().GetArea(tilePosition); }
         bool hasAttackedRecently() { return (BWAPI::Broodwar->getFrameCount() - lastAttackFrame < 50); }
@@ -125,11 +127,13 @@ namespace McRave {
         bool isTransport() { return type == BWAPI::UnitTypes::Protoss_Shuttle || type == BWAPI::UnitTypes::Terran_Dropship || type == BWAPI::UnitTypes::Zerg_Overlord; }
         bool isSpellcaster() { return type == BWAPI::UnitTypes::Protoss_High_Templar || type == BWAPI::UnitTypes::Protoss_Dark_Archon || type == BWAPI::UnitTypes::Terran_Medic || type == BWAPI::UnitTypes::Terran_Science_Vessel || type == BWAPI::UnitTypes::Zerg_Defiler; }
         bool isSiegeTank() { return type == BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode || type == BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode; }
+        bool isNearMapEdge() { return tilePosition.x < 2 || tilePosition.x > BWAPI::Broodwar->mapWidth() - 2 || tilePosition.y < 2 || tilePosition.y > BWAPI::Broodwar->mapHeight() - 2; }
 
         bool isHealthy();
         bool isRequestingPickup();
         bool isWithinReach(UnitInfo&);
         bool isWithinRange(UnitInfo&);
+        bool isWithinAngle(UnitInfo&);
         bool isWithinBuildRange();
         bool isWithinGatherRange();
         bool canStartAttack();
@@ -139,13 +143,12 @@ namespace McRave {
         bool canAttackAir();
 
         // General commands that verify we aren't spamming the same command and sticking the unit
-        bool move(BWAPI::UnitCommandType, BWAPI::Position);
-        bool click(BWAPI::UnitCommandType, UnitInfo&);
-        bool cast(BWAPI::TechType, BWAPI::Position);
+        bool command(BWAPI::UnitCommandType, BWAPI::Position);
+        bool command(BWAPI::UnitCommandType, UnitInfo&);
 
         // Information about frame timings
         int frameArrivesWhen() {
-            return BWAPI::Broodwar->getFrameCount() + int(position.getDistance(Terrain::getDefendPosition()) / speed);
+            return BWAPI::Broodwar->getFrameCount() + int(BWEB::Map::getGroundDistance(position, Terrain::getDefendPosition()) / speed);
         }
         int frameCompletesWhen() {
             if (percentHealth >= 1.0 || bwUnit->isCompleted())
@@ -196,6 +199,7 @@ namespace McRave {
         ResourceInfo &getResource() { return *resource.lock(); }
         UnitInfo &getTransport() { return *transport.lock(); }
         UnitInfo &getTarget() { return *target.lock(); }
+        UnitInfo &getSimTarget() { return *simTarget.lock(); }
         UnitInfo &getBackupTarget() { return *backupTarget.lock(); }
 
         Role getRole() { return role; }
@@ -265,6 +269,7 @@ namespace McRave {
         void setResource(ResourceInfo* unit) { unit ? resource = unit->weak_from_this() : resource.reset(); }
         void setTransport(UnitInfo* unit) { unit ? transport = unit->weak_from_this() : transport.reset(); }
         void setTarget(UnitInfo* unit) { unit ? target = unit->weak_from_this() : target.reset(); }
+        void setSimTarget(UnitInfo* unit) { unit ? simTarget = unit->weak_from_this() : simTarget.reset(); }
         void setBackupTarget(UnitInfo* unit) { unit ? backupTarget = unit->weak_from_this() : backupTarget.reset(); }
         void setRole(Role newRole) { role = newRole; }
         void setType(BWAPI::UnitType newType) { type = newType; }

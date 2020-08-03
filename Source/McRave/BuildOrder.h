@@ -40,6 +40,7 @@ namespace McRave::BuildOrder {
         inline bool gasTrick = false;
         inline bool inBookSupply = false;
         inline bool transitionReady = false;
+        inline bool defensesNow = false;
 
         inline int gasLimit = INT_MAX;
         inline int zealotLimit = INT_MAX;
@@ -108,6 +109,7 @@ namespace McRave::BuildOrder {
         //void island();
 
         void ZvZPoolLair();
+        void ZvZPoolHatch();
 
         void ZvTHatchPool();
         void ZvTPoolHatch();
@@ -137,7 +139,6 @@ namespace McRave::BuildOrder {
     BWAPI::TechType getFirstTech();
     std::set <BWAPI::UnitType>& getTechList();
     std::set <BWAPI::UnitType>& getUnlockedList();
-    int getWallDefenseDesired();
     int gasWorkerLimit();
     bool isWorkerCut();
     bool isUnitUnlocked(BWAPI::UnitType);
@@ -153,6 +154,7 @@ namespace McRave::BuildOrder {
     bool isRush();
     bool isGasTrick();
     bool isSaveLarva();
+    bool makeDefensesNow();
     std::string getCurrentBuild();
     std::string getCurrentOpener();
     std::string getCurrentTransition();

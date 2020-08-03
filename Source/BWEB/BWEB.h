@@ -42,11 +42,15 @@ namespace BWEB::Map
     void removeUsed(BWAPI::TilePosition tile, int width, int height);
 
     /// <summary> Returns the first UnitType found in a section of BWAPI::TilePositions, if it is within BWEBs used grid. </summary>
-    BWAPI::UnitType isUsed(BWAPI::TilePosition here, int width = 1, int height = 1);
+    BWAPI::UnitType isUsed(BWAPI::TilePosition here, int width, int height);
+
+    /// <summary> Returns the first UnitType found in a section of BWAPI::TilePositions, if it is within BWEBs used grid. </summary>
+    BWAPI::UnitType isUsed(BWAPI::TilePosition here);
 
     /// <summary> Returns true if a BWAPI::TilePosition is fully walkable. </summary>
     /// <param name="tile"> The BWAPI::TilePosition you want to check. </param>
-    bool isWalkable(BWAPI::TilePosition tile);
+    /// <param name="type"> The BWAPI::UnitType you want to path with. </param>
+    bool isWalkable(const BWAPI::TilePosition tile, BWAPI::UnitType type = BWAPI::UnitTypes::None);
 
     /// <summary> Returns true if the given BWAPI::UnitType is placeable at the given BWAPI::TilePosition. </summary>
     /// <param name="type"> The BWAPI::UnitType of the structure you want to build. </param>
@@ -81,11 +85,9 @@ namespace BWEB::Map
     /// Returns the angle of a pair of BWAPI::Point in degrees.
     template <class T>
     double getAngle(std::pair<T, T> p) {
-        auto left = p.first.x < p.second.x ? p.first : p.second;
-        auto right = left == p.first ? p.second : p.first;
-        auto dy = (double(left.y - right.y));
-        auto dx = (double(left.x - right.x));
-        return (std::abs(dx) > 1.0 ? atan(dy / dx) * 180.0 / 3.14 : 90.0);
+        auto dy = double(p.first.y - p.second.y);
+        auto dx = double(p.first.x - p.second.x);
+        return (std::abs(dx) > 1.0 ? std::atan2(dy, dx) * 180.0 / 3.14 : 90.0);
     }
 
     /// <summary> Returns the closest buildable BWAPI::TilePosition for any type of structure. </summary>

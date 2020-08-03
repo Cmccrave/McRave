@@ -9,17 +9,14 @@ namespace McRave::Combat {
     namespace {
         int lastRoleChange = 0;
         set<Position> retreatPositions;
-        pair<double, Position> airCluster;
         multimap<double, Position> combatClusters;
-        multimap<double, UnitInfo&> combatUnitsByDistance;
         map<const BWEM::ChokePoint*, vector<WalkPosition>> concaveCache;
-        map<TilePosition, int> testFIFO;
-        BWEB::Path airClusterPath;
-        constexpr tuple commands{ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::defend, Command::hunt, Command::escort, Command::retreat, Command::move };
 
-        function flyerWalkable = [](const TilePosition &t) {
-            return (((Broodwar->getFrameCount() - Grids::lastVisibleFrame(t)) > 1000 || Grids::getEAirThreat(Position(t)) <= Grids::getAAirCluster(Position(t))) && (Broodwar->getFrameCount() - testFIFO[t] > 240 || testFIFO[t] == 0));
-        };
+        BWEB::Path airClusterPath;
+        pair<double, Position> airCluster;
+        pair<UnitCommandType, Position> airCommanderCommand;
+
+        constexpr tuple commands{ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::defend, Command::explore, Command::escort, Command::retreat, Command::move };
 
         Position findConcavePosition(UnitInfo& unit, BWEM::Area const * area, BWEM::ChokePoint const * choke)
         {
@@ -35,60 +32,23 @@ namespace McRave::Combat {
             auto chokeCount = area->ChokePoints().size();
             auto chokeCenter = Position(choke->Center());
             auto isMelee = unit.getGroundDamage() > 0 && unit.getGroundRange() <= 32.0;
-            auto meleeCount = com(Protoss_Zealot) + com(Zerg_Zergling) + com(Terran_Firebat);
-            auto rangedCount = com(Protoss_Dragoon) + com(Protoss_Reaver) + com(Protoss_High_Templar) + com(Zerg_Hydralisk) + com(Terran_Marine) + com(Terran_Medic) + com(Terran_Siege_Tank_Siege_Mode) + com(Terran_Siege_Tank_Tank_Mode) + com(Terran_Vulture);
             auto base = area->Bases().empty() ? nullptr : &area->Bases().front();
             auto scoreBest = 0.0;
             auto posBest = unit.getPosition();
-            auto line = BWEB::Map::lineOfBestFit(choke);
 
             auto useMeleeRadius = isMelee && !enemyRangeExists && Players::getSupply(PlayerState::Self) < 80 && !Players::ZvT();
-            auto radius = useMeleeRadius && !Terrain::isDefendNatural() ? 64.0 : (choke->Width() / 2.0);
+            auto radius = useMeleeRadius && !Terrain::isDefendNatural() ? 128.0 : (choke->Width() / 2.0);
             auto alreadyValid = false;
 
-            //// Check if a wall exists at this choke
-            //auto wall = BWEB::Walls::getWall(choke);
-            //if (wall) {
-            //    auto minDistance = DBL_MAX;
-            //    for (auto &piece : wall->getLargeTiles()) {
-            //        auto center = Position(piece) + Position(64, 48);
-            //        auto closestGeo = BWEB::Map::getClosestChokeTile(choke, center);
-            //        if (center.getDistance(closestGeo) < minDistance)
-            //            minDistance = center.getDistance(closestGeo);
-            //    }
-
-            //    for (auto &piece : wall->getMediumTiles()) {
-            //        auto center = Position(piece) + Position(48, 32);
-            //        auto closestGeo = BWEB::Map::getClosestChokeTile(choke, center);
-            //        if (center.getDistance(closestGeo) < minDistance)
-            //            minDistance = center.getDistance(closestGeo);
-            //    }
-
-            //    for (auto &piece : wall->getSmallTiles()) {
-            //        auto center = Position(piece) + Position(32, 32);
-            //        auto closestGeo = BWEB::Map::getClosestChokeTile(choke, center);
-            //        if (center.getDistance(closestGeo) < minDistance)
-            //            minDistance = center.getDistance(closestGeo);
-            //    }
-            //    radius = wall->getOpening().isValid() ? minDistance + 32.0 : minDistance;
-            //}
+            // Choke end nodes and distance to choke center
+            auto p1 = Position(choke->Pos(choke->end1));
+            auto p2 = Position(choke->Pos(choke->end2));
+            auto p1Dist = p1.getDistance(chokeCenter);
+            auto p2Dist = p2.getDistance(chokeCenter);
 
             const auto isValid = [&](WalkPosition w, Position projection) {
                 const auto t = TilePosition(w);
                 const auto p = Position(w);
-
-                // Find a vector projection of this point
-                auto projDist = projection.getDistance(chokeCenter);
-
-                // Choke end nodes and distance to choke center
-                auto pt1 = Position(choke->Pos(choke->end1));
-                auto pt2 = Position(choke->Pos(choke->end2));
-                auto pt1Dist = pt1.getDistance(chokeCenter);
-                auto pt2Dist = pt2.getDistance(chokeCenter);
-
-                // Determine if we should lineup at projection or wrap around choke end nodes
-                if (chokeCount < 3 && (pt1Dist < projDist || pt2Dist < projDist))
-                    projection = pt1.getDistance(projection) < pt2.getDistance(projection) ? pt1 : pt2;
 
                 if ((alreadyValid && p.getDistance(unit.getPosition()) > 160.0)
                     || p.getDistance(projection) < radius
@@ -110,15 +70,21 @@ namespace McRave::Combat {
                 return 1.0 / (distCenter * distAreaBase * distUnit * distProj);
             };
 
-            // Testing something
-            //alreadyValid = scorePosition(unit.getWalkPosition()) > 0.0 && find(concaveCache[choke].begin(), concaveCache[choke].end(), unit.getWalkPosition()) != concaveCache[choke].end();
-
             // Find a position around the center that is suitable        
             auto &tiles = concaveCache[choke];
             for (auto &w : tiles) {
-                const auto projection = Util::vectorProjection(line, Position(w));
+                auto projection = Util::vectorProjection(make_pair(p1, p2), Position(w));
+
+                // Find a vector projection of this point
+                auto projDist = projection.getDistance(chokeCenter);
+
+                // Determine if we should lineup at projection or wrap around choke end nodes
+                if (chokeCount < 3 && (p1Dist < projDist || p2Dist < projDist))
+                    projection = (p1.getDistance(projection) < p2.getDistance(projection)) ? p1 : p2;
+
                 const auto score = scorePosition(w, projection);
 
+                // Swap order after we done debugging
                 if (score > scoreBest && isValid(w, projection)) {
                     posBest = Position(w);
                     scoreBest = score;
@@ -140,28 +106,37 @@ namespace McRave::Combat {
             });
 
             const auto combatCount = Units::getMyRoleCount(Role::Combat) - (unit.getRole() == Role::Combat ? 1 : 0);
-            const auto combatWorkersCount =  Units::getMyRoleCount(Role::Combat) - com(Protoss_Zealot) - com(Protoss_Dragoon);
+            const auto combatWorkersCount =  Units::getMyRoleCount(Role::Combat) - com(Protoss_Zealot) - com(Protoss_Dragoon) - com(Zerg_Zergling);
             const auto myGroundStrength = Players::getStrength(PlayerState::Self).groundToGround - (unit.getRole() == Role::Combat ? unit.getVisibleGroundStrength() : 0.0);
             const auto myDefenseStrength = Players::getStrength(PlayerState::Self).groundDefense;
             const auto closestStation = Stations::getClosestStation(PlayerState::Self, unit.getPosition());
             auto arriveAtDefense = unit.timeArrivesWhen();
 
-            const auto proactivePullWorker = [&](UnitInfo& unit) {
+            const auto healthyWorker = [&] {
+
+                // Don't pull low shield probes
+                if (unit.getType() == Protoss_Probe && unit.getShields() < 16)
+                    return false;
+
+                // Don't pull low health drones
+                if (unit.getType() == Zerg_Drone && unit.getHealth() < 20)
+                    return false;
+                return true;
+            };
+
+            const auto proactivePullWorker = [&]() {
 
                 // If this isn't the closest mineral worker to the defend position, don't pull it
                 if (unit.getRole() == Role::Worker && unit.shared_from_this() != closestWorker)
                     return false;
 
-                // Don't pull workers too early
-                if (arriveAtDefense < Strategy::enemyArrivalTime() - Time(0, 15))
-                    return false;
-
+                // Protoss
                 if (Broodwar->self()->getRace() == Races::Protoss) {
                     int completedDefenders = com(Protoss_Photon_Cannon) + com(Protoss_Zealot);
                     int visibleDefenders = vis(Protoss_Photon_Cannon) + vis(Protoss_Zealot);
 
-                    // Don't pull low shield probes
-                    if (unit.getType() == Protoss_Probe && unit.getShields() < 16)
+                    // Don't pull workers too early
+                    if (arriveAtDefense < Strategy::enemyArrivalTime() - Time(0, 15))
                         return false;
 
                     // If trying to hide tech, pull 1 probe with a Zealot
@@ -192,36 +167,65 @@ namespace McRave::Combat {
                             return true;
                     }
                 }
+
+                // Terran
+
+                // Zerg
+                if (Broodwar->self()->getRace() == Races::Zerg) {
+
+                    // Don't pull low health drones
+                    if (unit.getType().isWorker() && unit.getHealth() < 25)
+                        return false;
+                }
                 return false;
             };
 
-            const auto reactivePullWorker = [&](UnitInfo& unit) {
+            const auto reactivePullWorker = [&]() {
+
+                auto proxyBuildingWorker = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                    return u.isThreatening() && u.getType().isWorker();
+                });
+                auto proxyBuilding = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                    return u.isThreatening() && u.getType().isBuilding();
+                });
+                auto possibleBuildingWorker = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                    return proxyBuilding && u.getPosition().getDistance(proxyBuilding->getPosition()) < 160.0;
+                });
 
                 // HACK: Don't pull workers reactively versus vultures
                 if (Players::getCurrentCount(PlayerState::Enemy, Terran_Vulture) > 0)
                     return false;
 
                 // If this unit has a target that is threatening mining
-                if (unit.hasTarget() && Util::getTime() < Time(10, 0) && closestStation) {
-                    if (unit.isThreatening() && unit.getTarget().getPosition().getDistance(unit.getPosition()) < unit.getTarget().getGroundReach())
+                if (unit.hasTarget() && unit.getTarget().hasTarget() && unit.getTarget().getTarget().hasResource() && Util::getTime() < Time(10, 0)) {
+                    if (unit.getTarget().isThreatening() && unit.getTarget().getTarget().getPosition().getDistance(unit.getTarget().getTarget().getResource().getPosition()) < 32.0)
                         return true;
                 }
 
+                if (Units::getImmThreat() > myGroundStrength + myDefenseStrength && Util::getTime() < Time(5, 0))
+                    return true;
+
                 // If we have immediate threats
-                if ((!Strategy::enemyRush() || Strategy::getEnemyTransition() == "WorkerRush") && Units::getImmThreat() > myGroundStrength + myDefenseStrength && Util::getTime() < Time(10, 0))
+                if (Players::ZvT() && (proxyBuildingWorker || possibleBuildingWorker) && proxyBuilding && com(Zerg_Zergling) <= 0 && combatCount < 8)
                     return true;
                 return false;
             };
 
             // Check if workers should fight or work
             if (unit.getType().isWorker()) {
-                if (unit.getRole() == Role::Worker && !unit.unit()->isCarryingMinerals() && !unit.unit()->isCarryingGas() && (reactivePullWorker(unit) || proactivePullWorker(unit))) {
+                if (reactivePullWorker())
+                    unit.circleBlue();
+                if (proactivePullWorker())
+                    unit.circleOrange();
+                
+
+                if (unit.getRole() == Role::Worker && !unit.unit()->isCarryingMinerals() && !unit.unit()->isCarryingGas() && healthyWorker() && (reactivePullWorker() || proactivePullWorker())) {
                     unit.setRole(Role::Combat);
                     unit.setBuildingType(None);
                     unit.setBuildPosition(TilePositions::Invalid);
                     lastRoleChange = Broodwar->getFrameCount();
                 }
-                else if (unit.getRole() == Role::Combat && !reactivePullWorker(unit) && !proactivePullWorker(unit)) {
+                else if (unit.getRole() == Role::Combat && ((!reactivePullWorker() && !proactivePullWorker()) || !healthyWorker())) {
                     unit.setRole(Role::Worker);
                     lastRoleChange = Broodwar->getFrameCount();
                 }
@@ -264,17 +268,20 @@ namespace McRave::Combat {
                 return;
             }
 
-            const auto closeToSim = unit.getPosition().getDistance(unit.getSimPosition()) <= unit.getSimRadius() || Terrain::isInAllyTerritory(unit.getTarget().getTilePosition());
+            const auto simRadius = (unit.getGoal().isValid() && unit.getPosition().getDistance(unit.getGoal()) > unit.getSimRadius()) ? unit.getSimRadius() - 96.0 : unit.getSimRadius();
+            const auto closeToSim = unit.getPosition().getDistance(unit.getSimPosition()) < simRadius || Terrain::isInAllyTerritory(unit.getTarget().getTilePosition());
+            const auto temporaryRetreat = unit.isLightAir() && unit.hasTarget() && unit.canStartAttack() && !unit.isWithinAngle(unit.getTarget()) && Util::boxDistance(unit.getType(), unit.getPosition(), unit.getTarget().getType(), unit.getTarget().getPosition()) < 48.0;
 
             // Regardless of any decision, determine if Unit is in danger and needs to retreat
             if (Actions::isInDanger(unit, unit.getPosition())
-                || (Actions::isInDanger(unit, unit.getEngagePosition()) && unit.getPosition().getDistance(unit.getEngagePosition()) < unit.getSimRadius()))
+                || (Actions::isInDanger(unit, unit.getEngagePosition()) && unit.getPosition().getDistance(unit.getEngagePosition()) < simRadius)
+                || temporaryRetreat)
                 unit.setLocalState(LocalState::Retreat);
 
             // Regardless of local decision, determine if Unit needs to attack or retreat
             else if (unit.globalEngage())
-                unit.setLocalState(LocalState::Attack);
-            else if (unit.globalRetreat() && unit.getSimState() == SimState::Loss)
+                unit.setLocalState(LocalState::Attack);            
+            else if (unit.globalRetreat())
                 unit.setLocalState(LocalState::Retreat);
 
             // If within local decision range, determine if Unit needs to attack or retreat
@@ -318,14 +325,11 @@ namespace McRave::Combat {
 
             // Zerg
             else if (Broodwar->self()->getRace() == Races::Zerg) {
-
                 if (BuildOrder::isRush())
                     unit.setGlobalState(GlobalState::Attack);
-
                 else if ((Broodwar->getFrameCount() < 15000 && BuildOrder::isPlayPassive())
-                    || (Players::ZvT() && unit.getType() == Zerg_Zergling && Strategy::enemyPressure() && Util::getTime() < Time(8, 0)))
+                    || (Players::ZvT() && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Adrenal_Glands) == 0 && unit.getType() == Zerg_Zergling && (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Strategy::enemyPressure())))
                     unit.setGlobalState(GlobalState::Retreat);
-
                 else
                     unit.setGlobalState(GlobalState::Attack);
             }
@@ -344,29 +348,18 @@ namespace McRave::Combat {
             // If attacking and target is close, set as destination
             if (unit.getLocalState() == LocalState::Attack) {
                 const auto &intercept = Util::getInterceptPosition(unit);
-                if (intercept.getDistance(unit.getTarget().getPosition()) < intercept.getDistance(unit.getPosition()) && (Grids::getMobility(intercept) > 0 || unit.getType().isFlyer()))
+                if (intercept.getDistance(unit.getTarget().getPosition()) < intercept.getDistance(unit.getPosition()) && (Grids::getMobility(intercept) > 0 || unit.isFlying()))
                     unit.setDestination(intercept);
                 else
                     unit.setDestination(unit.getEngagePosition());
+
+                if (unit.getTargetPath().isReachable())
+                    unit.setDestinationPath(unit.getTargetPath());
             }
 
             // If we're globally retreating, set defend position as destination
-            else if (unit.getGlobalState() == GlobalState::Retreat && Strategy::defendChoke() && (!unit.hasTarget() || (unit.hasTarget() && (!unit.getTarget().isThreatening() || unit.getGroundRange() > 32.0 || unit.getSpeed() > unit.getTarget().getSpeed())))) {
-                const BWEM::Area * defendArea = nullptr;
-                const BWEM::ChokePoint * defendChoke = Terrain::isDefendNatural() && !Players::ZvT() ? BWEB::Map::getNaturalChoke() : BWEB::Map::getMainChoke();
-
-                // Decide which area is within my territory, useful for maps with small adjoining areas like Andromeda
-                if (!defendArea) {
-                    auto &[a1, a2] = defendChoke->GetAreas();
-                    if (a1 && Terrain::isInAllyTerritory(a1))
-                        defendArea = a1;
-                    if (a2 && Terrain::isInAllyTerritory(a2))
-                        defendArea = a2;
-                }
-
-                if (defendArea)
-                    unit.setDestination(findConcavePosition(unit, defendArea, defendChoke));
-            }
+            else if (unit.getGlobalState() == GlobalState::Retreat && Strategy::defendChoke() /*&& (!unit.hasTarget() || (unit.hasTarget() && (!unit.getTarget().isThreatening() || unit.getGroundRange() > 32.0 || unit.getSpeed() > unit.getTarget().getSpeed())))*/)
+                unit.setDestination(findConcavePosition(unit, Terrain::getDefendArea(), Terrain::getDefendChoke()));
 
             // If retreating, find closest retreat position
             else if (unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat) {
@@ -382,25 +375,38 @@ namespace McRave::Combat {
                 unit.setDestination(unit.getGoal());
 
             // If this is a light air unit, go to the air cluster first if far away
-            else if (unit.isFlying() && airCluster.second.isValid() && (unit.getPosition().getDistance(airCluster.second) > 160.0 || unit.isSuicidal()))
+            else if ((unit.isLightAir() || unit.getType() == Zerg_Scourge) && airCluster.second.isValid() && unit.getPosition().getDistance(airCluster.second) > 32.0)
                 unit.setDestination(airCluster.second);
 
+            // If this is a light air unit, defend any bases under attack
+            else if ((unit.isLightAir() || unit.getType() == Zerg_Scourge) && Units::getImmThreat() > 0.0) {
+                auto &attacker = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                    return u.isThreatening();
+                });
+                if (attacker)
+                    unit.setDestination(attacker->getPosition());
+            }
+
             // If this is a light air unit and we can harass
-            else if (unit.isLightAir() && Stations::getEnemyStations().size() > 0 && unit.getPosition().getDistance(unit.getSimPosition()) > unit.getSimRadius() + 160.0 && (!unit.hasTarget() || unit.getTarget().timeArrivesWhen() - Time(0, 10) > unit.timeArrivesWhen())) {
+            else if ((unit.isLightAir() || unit.getType() == Zerg_Scourge) && Players::getStrength(PlayerState::Enemy).airToAir * 2 <= Players::getStrength(PlayerState::Self).airToAir) {
                 unit.setDestination(Terrain::getHarassPosition());
                 unit.setDestinationPath(airClusterPath);
             }
 
-            // Resort to going to our target if we have one
-            else if (unit.hasTarget() && unit.getEngagePosition().isValid())
+            // If unit has a target and a valid engagement position
+            else if (unit.hasTarget() && unit.getEngagePosition().isValid()) {
                 unit.setDestination(unit.getEngagePosition());
+                unit.setDestinationPath(unit.getTargetPath());
+            }
 
             // If attack position is valid
-            else if (Terrain::getAttackPosition().isValid())
+            else if (Terrain::getAttackPosition().isValid() && unit.canAttackGround())
                 unit.setDestination(Terrain::getAttackPosition());
 
-            // If no target and no enemy bases, move to a base location (random if we have found the enemy once already)
+            // If no target and no enemy bases, move to a base location
             else if (!unit.hasTarget() || !unit.getTarget().getPosition().isValid() || unit.unit()->isIdle()) {
+
+                // Finishing enemy off, find remaining bases we haven't scouted
                 if (Terrain::getEnemyStartingPosition().isValid()) {
                     auto best = DBL_MAX;
 
@@ -418,15 +424,18 @@ namespace McRave::Combat {
                         }
                     }
                 }
+
+                // Scouting for enemy base initially
                 else {
 
                     // Sort unexplored starts by distance
                     multimap<double, Position> startsByDist;
-                    for (auto &start : mapBWEM.StartingLocations()) {
-                        const auto center = Position(start) + Position(64, 48);
+                    for (auto &topLeft : mapBWEM.StartingLocations()) {
+                        const auto center = Position(topLeft) + Position(64, 48);
                         const auto dist = BWEB::Map::getGroundDistance(center, BWEB::Map::getMainPosition());
+                        const auto botRight = topLeft + TilePosition(3, 2);
 
-                        if (!Terrain::isExplored(center))
+                        if (!Broodwar->isExplored(botRight) || !Broodwar->isExplored(topLeft))
                             startsByDist.emplace(dist, center);
                     }
 
@@ -446,34 +455,56 @@ namespace McRave::Combat {
                 }
             }
 
-            // Add Action so other Units dont move to same location
+            // Add action so other units dont move to same location
             if (unit.getDestination().isValid())
                 Actions::addAction(unit.unit(), unit.getDestination(), None, PlayerState::Self);
         }
 
         void updatePath(UnitInfo& unit)
         {
-            testFIFO = unit.getLastTilesVisited();
+            const auto farAway = unit.getPosition().getDistance(airCluster.second) > 128.0;
+
+            const auto flyerAttack = [&](const TilePosition &t) {
+                const auto center = Position(t) + Position(16, 16);
+                return (farAway || Broodwar->getFrameCount() - Grids::lastVisibleFrame(t) > 250 || unit.getSimState() != SimState::Loss) || center.getDistance(unit.getSimPosition()) > unit.getSimRadius() + 32.0;
+            };
+
+            const auto flyerRetreat = [&](const TilePosition &t) {
+                const auto center = Position(t) + Position(16, 16);
+                return (Grids::getEAirThreat(center) <= 0.0 || center.getDistance(unit.getSimPosition()) > unit.getSimRadius() + 32.0);
+            };
+
+            BWEB::Pathfinding::clearCache(flyerAttack); // No caching right now for flying paths
+            BWEB::Pathfinding::clearCache(flyerRetreat); // No caching right now for flying paths
 
             // Generate a new path that obeys collision of terrain and buildings
-            if (unit.getDestination().isValid() && !unit.isFlying()) {
-                BWEB::Path newPath;
-                newPath.jpsPath(unit.getPosition(), unit.getDestination(), BWEB::Pathfinding::unitWalkable);
+            if (!unit.isFlying() && !unit.getDestinationPath().getTarget().isValid()) {
+                BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
+                newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t); });
+                unit.setDestinationPath(newPath);
+            }
+
+            // Generate a flying path for harassing that obeys exploration and staying out of range of threats if possible
+            if (unit.isLightAir() && unit.getDestination() == Terrain::getHarassPosition()) {
+                BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
+                if (unit.getLocalState() != LocalState::Retreat)
+                    newPath.generateJPS(flyerAttack);
                 unit.setDestinationPath(newPath);
             }
 
             // If path is reachable, find a point n pixels away to set as new destination
             if (unit.getDestinationPath().isReachable()) {
                 auto newDestination = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
-                    return p.getDistance(unit.getPosition()) >= 160.0;
+                    return p.getDistance(unit.getPosition()) >= 96.0;
                 });
 
                 if (newDestination.isValid())
                     unit.setDestination(newDestination);
             }
-            else if (!unit.getQuickPath().empty()) {
+
+            // If not reachable, use a point along the BWEM Path
+            else if (!unit.isFlying() && !unit.getQuickPath().empty())
                 unit.setDestination(Position(unit.getQuickPath().front()->Center()));
-            }
         }
 
         void updateDecision(UnitInfo& unit)
@@ -491,7 +522,7 @@ namespace McRave::Combat {
                 make_pair(3, "Approach"),
                 make_pair(4, "Kite"),
                 make_pair(5, "Defend"),
-                make_pair(6, "Hunt"),
+                make_pair(6, "Explore"),
                 make_pair(7, "Escort"),
                 make_pair(8, "Retreat"),
                 make_pair(9, "Move")
@@ -504,11 +535,10 @@ namespace McRave::Combat {
         }
 
         void updateUnits() {
-            //BWEB::Pathfinding::clearCache(flyerWalkable);
             combatClusters.clear();
-            combatUnitsByDistance.clear();
             airCluster.first = 0.0;
             airCluster.second = Positions::Invalid;
+            multimap<double, UnitInfo&> combatUnitsByDistance;
 
             // Sort units by distance to destination
             for (auto &u : Units::getUnits(PlayerState::Self)) {
@@ -536,25 +566,46 @@ namespace McRave::Combat {
                 }
             }
 
-            // Setup air cluster harassing path
-            if (TilePosition(airCluster.second) != airClusterPath.getSource()) {
-                BWEB::Path newPath;
+            // Get an air commander
+            auto airCommander = Util::getClosestUnit(airCluster.second, PlayerState::Self, [&](auto &u) {
+                return u.isLightAir() && !u.localRetreat();
+            });
+            if (airCommander) {
 
-                if (airCluster.second.getDistance(Terrain::getHarassPosition()) > 640.0)
-                    newPath.jpsPath(airCluster.second, Terrain::getHarassPosition(), flyerWalkable);
+                // Execute the air commanders commands
+                Horizon::simulate(*airCommander);
+                updateDestination(*airCommander);
+                updatePath(*airCommander);
+                updateDecision(*airCommander);
 
-                airClusterPath = newPath;
+                airClusterPath = airCommander->getDestinationPath();
+
+                if (airClusterPath.isReachable())
+                    airCommander->circlePurple();
+
+                // Setup air commander commands for other units to follow
+                airCommanderCommand = make_pair(airCommander->unit()->getLastCommand().getType(), airCommander->unit()->getLastCommand().getTargetPosition());
             }
 
             // Execute commands ordered by ascending distance
             for (auto &u : combatUnitsByDistance) {
                 auto &unit = u.second;
 
-                if (unit.getRole() == Role::Combat) {
-                     
-                    if (unit.isNearSplash())
-                        unit.circleBlue();
+                // Light air close to the air cluster use the same command of the air commander
+                auto chaseDownFastUnit = unit.hasTarget() && unit.getSpeed() < unit.getTarget().getSpeed();
+                if (unit.isLightAir() && !unit.isNearSplash() && !chaseDownFastUnit && !unit.localRetreat() && unit.getPosition().getDistance(airCluster.second) < 128.0) {
+                    if (unit.hasTarget() && airCommanderCommand.first == UnitCommandTypes::Attack_Unit) {
+                        unit.command(UnitCommandTypes::Attack_Unit, unit.getTarget());
+                        continue;
+                    }
+                    else if (airCommanderCommand.first == UnitCommandTypes::Move) {
+                        unit.command(UnitCommandTypes::Move, airCommanderCommand.second);
+                        continue;
+                    }
+                }
 
+                // Combat unit decisions
+                if (unit.getRole() == Role::Combat) {
                     Horizon::simulate(unit);
                     updateDestination(unit);
                     updatePath(unit);
@@ -566,12 +617,18 @@ namespace McRave::Combat {
         void updateRetreatPositions()
         {
             retreatPositions.clear();
+
+            if (Terrain::getDefendChoke() == BWEB::Map::getMainChoke()) {
+                retreatPositions.insert(Terrain::getMyMain()->getResourceCentroid());
+                return;
+            }
+
             for (auto &[unit, station] : Stations::getMyStations()) {
                 auto posBest = Positions::Invalid;
                 auto distBest = DBL_MAX;
-                auto tile = station->getBWEMBase()->Location();
+                auto tile = station->getBase()->Location();
 
-                if (!unit->isCompleted() && !unit->isMorphing())
+                if (!unit->isCompleted() || unit->isMorphing())
                     continue;
 
                 // Find a TilePosition around it that is suitable to path to
@@ -596,10 +653,13 @@ namespace McRave::Combat {
 
     void onStart()
     {
+        if (!BWEB::Map::getMainChoke())
+            return;
+
         const auto createCache = [&](const BWEM::ChokePoint * chokePoint, const BWEM::Area * area) {
             auto center = chokePoint->Center();
-            for (int x = center.x - 60; x <= center.x + 60; x++) {
-                for (int y = center.y - 60; y <= center.y + 60; y++) {
+            for (int x = center.x - 30; x <= center.x + 30; x++) {
+                for (int y = center.y - 30; y <= center.y + 30; y++) {
                     WalkPosition w(x, y);
                     const auto p = Position(w) + Position(4, 4);
 
@@ -654,4 +714,6 @@ namespace McRave::Combat {
     }
 
     multimap<double, Position>& getCombatClusters() { return combatClusters; }
+
+    Position getAirClusterCenter() { return airCluster.second; }
 }

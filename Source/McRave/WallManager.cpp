@@ -19,99 +19,43 @@ namespace McRave::Walls {
 
     void findNaturalWall()
     {
-        if (Broodwar->getGameType() == GameTypes::Use_Map_Settings || Broodwar->self()->getRace() == Races::Terran)
-            return;
-
-        auto choke = BWEB::Map::getNaturalChoke();
-        auto area = BWEB::Map::getNaturalArea();
-        openWall = true;
-
-        naturalWall = BWEB::Walls::createWall(buildings, area, choke, tightType, defenses, openWall, tight);
+        naturalWall = BWEB::Walls::getWall(BWEB::Map::getNaturalChoke());
     }
 
     void findMainWall()
     {
-        if (Broodwar->getGameType() == GameTypes::Use_Map_Settings || Broodwar->self()->getRace() != Races::Terran)
-            return;
-
-        auto choke = BWEB::Map::getMainChoke();
-        auto area = BWEB::Map::getMainArea();
-        openWall = Broodwar->self()->getRace() != Races::Terran;
-
-        mainWall = BWEB::Walls::createWall(buildings, area, choke, tightType, defenses, openWall, tight);
+        mainWall = BWEB::Walls::getWall(BWEB::Map::getMainChoke());
     }
 
-    void findOtherWalls()
+    void findWalls()
     {
-        const auto naturalChoke = [&](BWEB::Station * natural, BWEB::Station * closestMain) {
-            set<BWEM::ChokePoint const *> nonChokes;
-            for (auto &choke : mapBWEM.GetPath(closestMain->getBWEMBase()->Center(), natural->getBWEMBase()->Center()))
-                nonChokes.insert(choke);
-
-            auto distBest = DBL_MAX;
-            const BWEM::Area* second = nullptr;
-            const BWEM::ChokePoint * naturalChoke = nullptr;
-
-            // Iterate each neighboring area to get closest to this natural area
-            for (auto &area : natural->getBWEMBase()->GetArea()->AccessibleNeighbours()) {
-                auto center = area->Top();
-                const auto dist = Position(center).getDistance(mapBWEM.Center());
-
-                bool wrongArea = false;
-                for (auto &choke : area->ChokePoints()) {
-                    if ((!choke->Blocked() && choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2)) <= 2) || nonChokes.find(choke) != nonChokes.end()) {
-                        wrongArea = true;
-                    }
-                }
-                if (wrongArea)
-                    continue;
-
-                if (center.isValid() && dist < distBest) {
-                    second = area;
-                    distBest = dist;
-                }
-            }
-
-            distBest = DBL_MAX;
-            for (auto &choke : natural->getBWEMBase()->GetArea()->ChokePoints()) {
-                if (choke->Center() == BWEB::Map::getMainChoke()->Center()
-                    || choke->Blocked()
-                    || nonChokes.find(choke) != nonChokes.end()
-                    || choke->Geometry().size() <= 3
-                    || (choke->GetAreas().first != second && choke->GetAreas().second != second))
-                    continue;
-
-                const auto dist = Position(choke->Center()).getDistance(Position(closestMain->getBWEMBase()->Center()));
-                if (dist < distBest) {
-                    naturalChoke = choke;
-                    distBest = dist;
-                }
-            }
-            return naturalChoke;
-        };
-
         // Create a Zerg/Protoss wall at every natural
         if (Broodwar->self()->getRace() != Races::Terran) {
             openWall = true;
-            for (auto &natural : BWEB::Stations::getNaturalStations()) {
-                if (natural.getBWEMBase()->Center() == BWEB::Map::getNaturalPosition())
+            for (auto &station : BWEB::Stations::getStations()) {
+                if (!station.isNatural())
                     continue;
 
-                auto closestMain = BWEB::Stations::getClosestMainStation(natural.getBWEMBase()->Location());
-                auto choke = naturalChoke(&natural, closestMain);
-                BWEB::Walls::createWall(buildings, natural.getBWEMBase()->GetArea(), choke, tightType, defenses, openWall, tight);
+                auto p1 = station.getChokepoint()->Pos(station.getChokepoint()->end1);
+                auto p2 = station.getChokepoint()->Pos(station.getChokepoint()->end2);
+
+                if (abs(p1.x - p2.x) * 8 >= 320 || abs(p1.y - p2.y) * 8 >= 256 || p1.getDistance(p2) * 8 >= 352 || Broodwar->mapFileName().find("Destination") != string::npos)
+                    buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber };
+                else if (abs(p1.x - p2.x) * 8 >= 288 || abs(p1.y - p2.y) * 8 >= 224 || p1.getDistance(p2) * 8 >= 288)
+                    buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber };
+                else
+                    buildings ={ Zerg_Hatchery };
+
+                BWEB::Walls::createWall(buildings, station.getBase()->GetArea(), station.getChokepoint(), tightType, defenses, openWall, tight);
             }
         }
-        
+
         // Create a Terran wall at every main
         else {
-            for (auto &main : BWEB::Stations::getMainStations()) {
-                if (main.getBWEMBase()->Center() == BWEB::Map::getMainPosition())
+            for (auto &station : BWEB::Stations::getStations()) {
+                if (!station.isMain())
                     continue;
-
-                auto closestNatural = BWEB::Stations::getClosestNaturalStation(main.getBWEMBase()->Location());
-                auto choke = mapBWEM.GetPath(main.getBWEMBase()->Center(), closestNatural->getBWEMBase()->Center()).front();
-                BWEB::Walls::createWall(buildings, main.getBWEMBase()->GetArea(), choke, tightType, defenses, openWall, tight);
+                BWEB::Walls::createWall(buildings, station.getBase()->GetArea(), station.getChokepoint(), tightType, defenses, openWall, tight);
             }
         }
     }
@@ -154,27 +98,21 @@ namespace McRave::Walls {
 
         // Zerg wall parameters
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            tight = false;            
+            tight = false;
             defenses.insert(defenses.end(), 10, Zerg_Creep_Colony);
 
             auto p1 = BWEB::Map::getNaturalChoke()->Pos(BWEB::Map::getNaturalChoke()->end1);
             auto p2 = BWEB::Map::getNaturalChoke()->Pos(BWEB::Map::getNaturalChoke()->end2);
-
-            if (abs(p1.x - p2.x) * 8 >= 320 || abs(p1.y - p2.y) * 8 >= 256 || p1.getDistance(p2) * 8 >= 288) {
-                Broodwar << "Wideboi" << endl;
-                buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber };
-            }
-            else
-                buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber };
+            buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber };
         }
     }
 
     void onStart()
     {
         initializeWallParameters();
+        findWalls();
         findMainWall();
         findNaturalWall();
-        findOtherWalls();
     }
 
     int needGroundDefenses(BWEB::Wall& wall)
@@ -182,6 +120,23 @@ namespace McRave::Walls {
         auto groundCount = wall.getGroundDefenseCount();
         if (!Terrain::isInAllyTerritory(wall.getArea()))
             return 0;
+
+        auto closestNatural = BWEB::Stations::getClosestNaturalStation(TilePosition(wall.getCentroid()));
+        auto mineralCount = 0;
+        auto workerCount = 0;
+        for (auto &mineral : Resources::getMyMinerals()) {
+            if (mineral->getStation() == closestNatural) {
+                workerCount += int(mineral->targetedByWhat().size());
+                mineralCount++;
+            }
+        }
+        auto saturationRatio = clamp(double(workerCount) * 2 / double(mineralCount), 0.5, 1.0);
+
+        const auto calculateDefensesNeeded = [&](int defensesDesired) {
+            if (Strategy::enemyRush() || Strategy::enemyPressure())
+                return defensesDesired - groundCount;
+            return int(round(saturationRatio * double(defensesDesired))) - groundCount;
+        };
 
         // Protoss
         if (Broodwar->self()->getRace() == Races::Protoss) {
@@ -218,27 +173,58 @@ namespace McRave::Walls {
         if (Broodwar->self()->getRace() == Races::Zerg) {
 
             if (Players::vP()) {
-                if (Strategy::getEnemyBuild() == "1GateCore")
-                    return (2 * (Util::getTime() > Time(5, 30))) + (2 * (Util::getTime() > Time(7, 00)));
 
-                if (BuildOrder::isOpener() || Stations::getMyStations().size() < 3) {
-                    const auto count = int((Players::getCurrentCount(PlayerState::Enemy, Protoss_Zealot) + Players::getCurrentCount(PlayerState::Enemy, Protoss_Dragoon)) / 1.5) - (com(Zerg_Zergling) / 6) + (2 * Players::getCurrentCount(PlayerState::Enemy, Protoss_Dark_Templar));
-                    return max(int(Strategy::getEnemyBuild() == "2Gate") * 3, count) - groundCount;
+                // 1GateCore
+                if (Strategy::getEnemyBuild() == "1GateCore" && Util::getTime() < Time(7, 00))
+                    return calculateDefensesNeeded((2 * (Util::getTime() > Time(5, 30))) + (2 * (Util::getTime() > Time(7, 00))));
+
+                // 2Gate
+                if (Strategy::getEnemyBuild() == "2Gate" && Util::getTime() < Time(5, 00)) {
+                    if (Strategy::enemyProxy())
+                        return 0;
+                    if (Strategy::enemyRush())
+                        return calculateDefensesNeeded(2 + (Util::getTime() > Time(4, 45)));
+                    return calculateDefensesNeeded((Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(4, 30)));
                 }
-                else
-                    return (Util::getTime().minutes - groundCount - 4) / 2;
+
+                // FFE
+                if (Strategy::getEnemyBuild() == "FFE") {
+                    if (Strategy::getEnemyTransition() == "5GateGoon" && Util::getTime() < Time(10, 30))
+                        return calculateDefensesNeeded((2 * (Util::getTime() > Time(5, 00))) + (2 * (Util::getTime() > Time(6, 30))) + (2 * (Util::getTime() > Time(8, 00))) + (2 * (Util::getTime() > Time(9, 30))));
+                    if (Strategy::getEnemyTransition() == "NeoBisu" && Util::getTime() < Time(6, 00))
+                        return calculateDefensesNeeded((2 * (Util::getTime() > Time(6, 00))));
+                    if (Strategy::getEnemyTransition() == "Unknown" && Util::getTime() < Time(6, 00))
+                        return calculateDefensesNeeded(Util::getTime() > Time(5, 00));
+                }
+
+                // Outside of openers, base it off how large the ground army of enemy is
+                const auto divisor = 2.0 + (0.35 * vis(Zerg_Sunken_Colony));
+                const auto count = int((Players::getCurrentCount(PlayerState::Enemy, Protoss_Zealot) + Players::getCurrentCount(PlayerState::Enemy, Protoss_Dragoon)) / divisor) + (2 * Players::getCurrentCount(PlayerState::Enemy, Protoss_Dark_Templar));
+                return max(int(Strategy::getEnemyBuild() == "2Gate") * 2, count) - groundCount;
             }
 
             if (Players::vT()) {
+                if (Strategy::getEnemyTransition() == "2Fact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
+                    return calculateDefensesNeeded(2 * (Util::getTime() > Time(3, 45)));
                 if (Strategy::getEnemyTransition() == "1FactTanks")
-                    return (5 * (Util::getTime() > Time(10, 30))) - groundCount;
+                    return calculateDefensesNeeded(6 * (Util::getTime() > Time(10, 00)));
+                if (Strategy::getEnemyTransition() == "5FactGoliath")
+                    return 0;
                 if (Strategy::getEnemyBuild() == "RaxFact")
-                    return (2 * (Util::getTime() > Time(3, 00))) - groundCount;
-                if (Strategy::getEnemyBuild() == "2Rax")
-                    return (2 * (Util::getTime() > Time(2, 00))) + (2 * (Util::getTime() > Time(4, 30))) - groundCount;
-                if (Strategy::getEnemyBuild() == "RaxCC")
-                    return (6 * (Util::getTime() > Time(6, 00))) - groundCount;
-                return (Players::getCurrentCount(PlayerState::Enemy, Terran_Marine) / 4) - groundCount;
+                    return calculateDefensesNeeded(1 * (Util::getTime() > Time(3, 45))) + (1 * (Util::getTime() > Time(4, 15))) + (1 * (Util::getTime() > Time(4, 45)));
+                if (Strategy::getEnemyBuild() == "2Rax" && !Strategy::enemyRush() && (Util::getTime() < Time(4, 30)))
+                    return calculateDefensesNeeded(2 * (Util::getTime() > Time(2, 00))) + (2 * (Util::getTime() > Time(4, 30)));
+                if (Strategy::enemyProxy())
+                    return 0;
+                if (Strategy::enemyRush())
+                    return calculateDefensesNeeded(2 + (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(5, 30)));
+                if (!Strategy::enemyFastExpand())
+                    return calculateDefensesNeeded(3 * (Util::getTime() > Time(4, 00)));
+            }
+
+            if (Players::vZ()) {
+                if (vis(Zerg_Drone) >= 12)
+                    return 2 - groundCount;
             }
         }
         return 0;
@@ -256,7 +242,7 @@ namespace McRave::Walls {
         }
 
         // Z
-        if ((Players::ZvP() || Players::ZvT()) && !BuildOrder::isTechUnit(Zerg_Mutalisk)) {
+        if ((Players::ZvP() || Players::ZvT()) && !BuildOrder::isTechUnit(Zerg_Mutalisk) && vis(Zerg_Lair) == 0) {
             if ((Strategy::enemyFastExpand() && Util::getTime() > Time(8, 0)) || (!Strategy::enemyFastExpand() && Util::getTime() > Time(7, 0)))
                 return Strategy::enemyAir() - airCount;
         }

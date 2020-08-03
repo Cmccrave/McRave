@@ -23,7 +23,7 @@ namespace McRave::Command
 
 
         // Bunker - Loading / Unloading
-        else if (unit.getType() == Terran_Marine /*&& unit.getGlobalState() == GlobalState::Retreat*/ && com(Terran_Bunker) > 0) {
+        else if (unit.getType() == Terran_Marine && com(Terran_Bunker) > 0) {
 
             auto &bunker = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                 return (u.getType() == Terran_Bunker && u.unit()->getSpaceRemaining() > 0);
@@ -101,7 +101,7 @@ namespace McRave::Command
 
     bool burrow(UnitInfo& unit)
     {
-        // Vulture spider mine burrow / unburrow
+        // Vulture spider mine burrowing
         if (unit.getType() == Terran_Vulture) {
             if (Broodwar->self()->hasResearched(TechTypes::Spider_Mines) && unit.unit()->getSpiderMineCount() > 0 && unit.getPosition().getDistance(unit.getSimPosition()) <= 400 && Broodwar->getUnitsInRadius(unit.getPosition(), 128, Filter::GetType == Terran_Vulture_Spider_Mine).size() <= 3) {
                 if (unit.unit()->getLastCommand().getTechType() != TechTypes::Spider_Mines || unit.unit()->getLastCommand().getTargetPosition().getDistance(unit.getPosition()) > 8)
@@ -110,19 +110,27 @@ namespace McRave::Command
             }
         }
 
-        // Lurker burrow / unburrow
+        // Lurker burrowing
         else if (unit.getType() == Zerg_Lurker) {
-            if (unit.getDestination().isValid() && unit.getPosition().getDistance(unit.getDestination()) < 64.0) {
-                if (!unit.unit()->isBurrowed()) {
-                    if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Burrow)
+            if (unit.getLocalState() == LocalState::Attack) {
+                if (unit.getDestination().isValid() && unit.getPosition().getDistance(unit.getDestination()) < 16.0) {
+                    if (!unit.unit()->isBurrowed()) {
+                        if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Burrow) {
+                            if (!unit.getTarget().isThreatening())
+                                easyWrite(to_string(unit.getSimValue()));
+                            unit.unit()->burrow();
+                        }
+                        return true;
+                    }
+                }
+                else if (!unit.unit()->isBurrowed() && unit.getPosition().getDistance(unit.getEngagePosition()) < 32.0) {
+                    if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Burrow) {
+                        if (!unit.getTarget().isThreatening())
+                            easyWrite(to_string(unit.getSimValue()));
                         unit.unit()->burrow();
+                    }
                     return true;
                 }
-            }
-            else if (!unit.unit()->isBurrowed() && unit.getPosition().getDistance(unit.getEngagePosition()) < 32.0) {
-                if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Burrow)
-                    unit.unit()->burrow();
-                return true;
             }
             else if (unit.unit()->isBurrowed() && unit.getPosition().getDistance(unit.getEngagePosition()) > 128.0) {
                 if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Unburrow)
@@ -131,10 +139,11 @@ namespace McRave::Command
             }
         }
 
-        // Drone burrow / unburrow
-        else if (unit.getType() == Zerg_Drone && Broodwar->self()->hasResearched(TechTypes::Burrowing)) {
-            if (!unit.isBurrowed()) {
-                if (unit.unit()->isUnderAttack() && Grids::getEGroundThreat(unit.getPosition()) > 0.0f) {
+        // Drone / Defiler burrowing
+        else if ((unit.getType().isWorker() || unit.getType() == Zerg_Defiler) && Broodwar->self()->hasResearched(TechTypes::Burrowing)) {
+            if (!unit.isBurrowed() && unit.unit()->canBurrow()) {
+                auto threatened = (unit.getType().isWorker() || unit.getType() == Zerg_Defiler) && unit.unit()->isUnderAttack();
+                if (threatened && Grids::getEGroundThreat(unit.getPosition()) > 0.0f) {
                     unit.unit()->burrow();
                     return true;
                 }
@@ -145,6 +154,14 @@ namespace McRave::Command
                     return true;
                 }
             }
+        }
+
+        // Zergling burrowing
+        else if (unit.getType() == Zerg_Zergling && Broodwar->self()->hasResearched(TechTypes::Burrowing)) {
+            if (!unit.isBurrowed() && !Buildings::overlapsQueue(unit, unit.getPosition()) && unit.getGoal().getDistance(unit.getPosition()) < 16.0)
+                unit.unit()->burrow();
+            if (unit.isBurrowed() && (Buildings::overlapsQueue(unit, unit.getPosition()) || unit.getGoal().getDistance(unit.getPosition()) > 16.0))
+                unit.unit()->unburrow();
         }
 
         return false;
@@ -420,6 +437,7 @@ namespace McRave::Command
             unit.unit()->build(unit.getBuildType(), unit.getBuildPosition());
             return true;
         }
+        // HACK: Just spam a move command
         else if (Workers::shouldMoveToBuild(unit, unit.getBuildPosition(), unit.getBuildType())) {
             Command::move(unit);
             return true;
@@ -432,13 +450,28 @@ namespace McRave::Command
         if (unit.getRole() != Role::Worker)
             return false;
 
+        const auto hasMineableResource = unit.hasResource() && unit.getResource().getResourceState() == ResourceState::Mineable && unit.getResource().unit()->exists();
+
+        const auto canGather = [&]() {
+            auto closestChokepoint = Util::getClosestChokepoint(unit.getPosition());
+            auto nearNonBlockingChoke = closestChokepoint && !closestChokepoint->Blocked();
+
+            if (hasMineableResource && (unit.isWithinGatherRange() || Grids::getAGroundCluster(unit.getPosition()) > 0.0f || nearNonBlockingChoke))
+                return true;
+            if (!hasMineableResource && (unit.unit()->isIdle() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Gather || (unit.unit()->getTarget() && !unit.unit()->getTarget()->getType().isMineralField())))
+                return true;
+            if (Buildings::overlapsQueue(unit, unit.getPosition()))
+                return true;
+            return false;
+        };
+
         // Check if we're trying to build a defense near this worker
         if (unit.hasResource()) {
             auto station = unit.getResource().getStation();
 
             if (station && (Stations::needGroundDefenses(*station) > 0 || Stations::needAirDefenses(*station) > 0)) {
                 auto builder = Util::getClosestUnit(unit.getResource().getPosition(), PlayerState::Self, [&](auto &u) {
-                    return u != unit && (u.getBuildType() == Protoss_Photon_Cannon || u.getBuildType() == Protoss_Pylon || u.getBuildType() == Terran_Missile_Turret || u.getBuildType() == Zerg_Creep_Colony);
+                    return u != unit && u.getBuildType() != UnitTypes::None;
                 });
 
                 // Builder is close and may need space opened up
@@ -450,7 +483,7 @@ namespace McRave::Command
                         // Get furthest Mineral
                         BWEM::Mineral * furthest = nullptr;
                         auto furthestDist = 0.0;
-                        for (auto &resource : unit.getResource().getStation()->getBWEMBase()->Minerals()) {
+                        for (auto &resource : unit.getResource().getStation()->getBase()->Minerals()) {
                             if (resource && resource->Unit()->exists()) {
                                 auto dist = resource->Pos().getDistance(center);
                                 if (dist > furthestDist) {
@@ -471,16 +504,12 @@ namespace McRave::Command
             }
         }
 
-        if (unit.hasResource() && unit.getResource().getResourceState() == ResourceState::Mineable && (unit.isWithinGatherRange() || Grids::getAGroundCluster(unit.getPosition()) > 0.0f)) {
-            unit.circleBlue();
-            if (unit.canStartGather())
-                unit.unit()->gather(unit.getResource().unit());
-            return true;
-        }
-        else if (!unit.hasResource() || unit.getResource().getResourceState() != ResourceState::Mineable) {
-            auto closest = unit.unit()->getClosestUnit(Filter::IsMineralField);
-            if (closest && closest->exists() && unit.unit()->getLastCommand().getTarget() != closest && unit.canStartGather())
-                unit.unit()->gather(closest);
+        // Gather from resource
+        auto station = Stations::getClosestStation(PlayerState::Self, unit.getPosition());
+        auto target = hasMineableResource ? unit.getResource().unit() : Broodwar->getClosestUnit(station ? station->getResourceCentroid() : BWEB::Map::getMainPosition(), Filter::IsMineralField);
+        if (target && canGather()) {            
+            if (unit.unit()->getTarget() != target)
+                unit.unit()->gather(target);
             return true;
         }
         return false;

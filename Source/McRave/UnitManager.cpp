@@ -75,14 +75,11 @@ namespace McRave::Units {
                     // Update
                     unit.update();
 
-                    if (unit.unit()->isSelected())
-                        Visuals::tileBox(unit.getTilePosition(), Colors::Purple);
-
                     // TODO: Move to a UnitInfo flag
                     if (unit.hasTarget() && (unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Protoss_Scarab))
                         splashTargets.insert(unit.getTarget().unit());
 
-                    if (unit.getType().isBuilding() && !unit.isFlying() && BWEB::Map::isUsed(unit.getTilePosition()) == None && Broodwar->isVisible(TilePosition(unit.getPosition())))
+                    if (unit.getType().isBuilding() && !unit.isFlying() && unit.getTilePosition().isValid() && BWEB::Map::isUsed(unit.getTilePosition()) == None && Broodwar->isVisible(TilePosition(unit.getPosition())))
                         Events::onUnitLand(unit);
 
                     // Must see a 3x3 grid of Tiles to set a unit to invalid position
@@ -98,9 +95,6 @@ namespace McRave::Units {
                         else if (!unit.getType().isFlyer())
                             immThreat += unit.getVisibleGroundStrength();
                     }
-
-                    if (unit.isThreatening())
-                        unit.circleRed();
                 }
             }
         }

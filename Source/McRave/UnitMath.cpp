@@ -89,16 +89,27 @@ namespace McRave::Math {
         const auto maxCost = 69.589;
         const auto maxSurv = 128.311;
         auto bonus = 1.0;
+        auto enemyStrength = Players::getStrength(PlayerState::Enemy);
 
         // Add bonus for a repairing SCV
-        if (unit.getType() == Terran_SCV) {
+        if (false && unit.getType() == Terran_SCV) {
             const auto repairTarget = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) {
                 return u.getType() == Terran_Missile_Turret || u.getType() == Terran_Bunker;
             });
 
-            if (repairTarget && repairTarget->getPosition().getDistance(unit.getPosition()) < 96.0)
+            if (repairTarget && Util::boxDistance(unit.getType(), unit.getPosition(), repairTarget->getType(), repairTarget->getPosition()) < 32.0) {
                 bonus = 100.0;
+                unit.circleBlue();
+            }
         }
+
+        // Add bonus for Observers that are vulnerable
+        if (unit.getType() == Protoss_Observer && !unit.isHidden())
+            bonus = 20.0;
+
+        // Add bonus for early game harass
+        if ((Players::ZvZ() || (enemyStrength.airToAir <= 0.0 && enemyStrength.groundToAir <= 0.0)) && unit.getType().isWorker() && Util::getTime() < Time(10, 00))
+            bonus = 2.0;
 
         // If target is an egg, larva, scarab or spell
         if (unit.getType() == UnitTypes::Zerg_Egg || unit.getType() == UnitTypes::Zerg_Larva || unit.getType() == UnitTypes::Protoss_Scarab || unit.getType().isSpell())
@@ -140,7 +151,10 @@ namespace McRave::Math {
             mineral = 175.0, gas = 0.0;
         else
             mineral = unit.getType().mineralPrice(), gas = unit.getType().gasPrice();
-        return max(log((mineral * 0.33) + (gas * 0.66)) * (double)max(unit.getType().supplyRequired(), 1), 5.00);
+
+        auto supply = (unit.canAttackAir() || unit.canAttackGround() || unit.getType().supplyRequired() > 0) ? max(double(unit.getType().supplyRequired()), 2.0) : 0.5;
+
+        return max(log((mineral * 0.33) + (gas * 0.66)) * supply, 5.00);
     }
 
     double groundDPS(UnitInfo& unit)
@@ -203,7 +217,7 @@ namespace McRave::Math {
             return 2.00;
         if (unit.getType() == Terran_Siege_Tank_Siege_Mode)
             return 2.50;
-        if (unit.getType() == Terran_Valkyrie)
+        if (unit.getType() == Terran_Valkyrie || unit.getType() == Zerg_Mutalisk)
             return 1.50;
         if (unit.getType() == Zerg_Lurker)
             return 2.00;
@@ -276,6 +290,10 @@ namespace McRave::Math {
             return 15.0;
         if (unit.getType() == Protoss_Probe || unit.getType() == Zerg_Drone)
             return 32.0;
+        if (unit.getType() == Zerg_Ultralisk)
+            return 48.0;
+        if (unit.getType() == Zerg_Lurker)
+            return 192.0 - (96.0 * !unit.isBurrowed());
         return double(unit.getType().groundWeapon().maxRange());
     }
 
@@ -368,6 +386,61 @@ namespace McRave::Math {
         if (unitType == Zerg_Devourer)
             return 7;
         return 0;
+
+
+        // Attack animation frames below
+        /*if (unitType == Terran_SCV)
+            return 2;
+        if (unitType == Terran_Marine)
+            return 8;
+        if (unitType == Terran_Firebat)
+            return 8;
+        if (unitType == Terran_Ghost)
+            return 3;
+        if (unitType == Terran_Vulture)
+            return 2;
+        if (unitType == Terran_Goliath)
+            return 1;
+        if (unitType == Terran_Siege_Tank_Tank_Mode || unitType == Terran_Siege_Tank_Siege_Mode)
+            return 1;
+        if (unitType == Terran_Wraith)
+            return 2;
+        if (unitType == Terran_Battlecruiser)
+            return 2;
+        if (unitType == Terran_Valkyrie)
+            return 40;
+        if (unitType == Protoss_Probe)
+            return 2;
+        if (unitType == Protoss_Zealot)
+            return 7;
+        if (unitType == Protoss_Dragoon)
+            return 7;
+        if (unitType == Protoss_Dark_Templar)
+            return 9;
+        if (unitType == Protoss_Archon)
+            return 15;
+        if (unitType == Protoss_Reaver)
+            return 1;
+        if (unitType == Protoss_Scout)
+            return 2;
+        if (unitType == Protoss_Corsair)
+            return 8;
+        if (unitType == Protoss_Arbiter)
+            return 4;
+        if (unitType == Zerg_Drone)
+            return 2;
+        if (unitType == Zerg_Zergling)
+            return 4;
+        if (unitType == Zerg_Hydralisk)
+            return 3;
+        if (unitType == Zerg_Lurker)
+            return 2;
+        if (unitType == Zerg_Ultralisk)
+            return 14;
+        if (unitType == Zerg_Mutalisk)
+            return 2;
+        if (unitType == Zerg_Devourer)
+            return 9;*/
     }
 
     int realisticMineralCost(UnitType type)

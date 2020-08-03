@@ -45,10 +45,10 @@ namespace McRave::Resources {
             auto station = Stations::getClosestStation(PlayerState::Self, resource.getPosition());
             if (station) {
                 auto base = Util::getClosestUnit(resource.getPosition(), PlayerState::Self, [&](auto &u) {
-                    return u.getType().isResourceDepot() && u.getPosition() == station->getBWEMBase()->Center();
+                    return u.getType().isResourceDepot() && u.getPosition() == station->getBase()->Center();
                 });
 
-                if (base && resource.hasStation() && base->getPosition() == resource.getStation()->getBWEMBase()->Center())
+                if (base && resource.hasStation() && base->getPosition() == resource.getStation()->getBase()->Center())
                     (base->unit()->isCompleted() || base->getType() == Zerg_Lair || base->getType() == Zerg_Hive) ? resource.setResourceState(ResourceState::Mineable) : resource.setResourceState(ResourceState::Assignable);
                 else
                     resource.setResourceState(ResourceState::None);
@@ -115,7 +115,7 @@ namespace McRave::Resources {
 
                 for (auto &s : Stations::getMyStations()) {
                     auto &station = *s.second;
-                    if (station.getBWEMBase() == newStation->getBWEMBase()) {
+                    if (station.getBase() == newStation->getBase()) {
                         info.setResourceState(ResourceState::Mineable);                        
                         break;
                     }

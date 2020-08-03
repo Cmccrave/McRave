@@ -90,16 +90,18 @@ namespace McRave::Events
 
     inline void onUnitDisappear(UnitInfo& unit)
     {
-        int visibleTiles = 0;
-        for (int x = unit.getTilePosition().x - 1; x <= unit.getTilePosition().x + 1; x++) {
-            for (int y = unit.getTilePosition().y - 1; y <= unit.getTilePosition().y + 1; y++) {
+        bool notVisibleFully = false;
+        for (int x = unit.getTilePosition().x - 2; x <= unit.getTilePosition().x + 2; x++) {
+            for (int y = unit.getTilePosition().y - 2; y <= unit.getTilePosition().y + 2; y++) {
                 BWAPI::TilePosition t(x, y);
-                if (!t.isValid() || BWAPI::Broodwar->isVisible(t))
-                    visibleTiles++;
+                if (t.isValid() && !BWAPI::Broodwar->isVisible(t)) {
+                    notVisibleFully = true;
+                    break;
+                }
             }
         }
 
-        if (visibleTiles >= 5) {
+        if (!notVisibleFully) {
             unit.setPosition(BWAPI::Positions::Invalid);
             unit.setTilePosition(BWAPI::TilePositions::Invalid);
             unit.setWalkPosition(BWAPI::WalkPositions::Invalid);

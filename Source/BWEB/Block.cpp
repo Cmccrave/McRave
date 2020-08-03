@@ -30,8 +30,11 @@ namespace BWEB::Blocks
 {
     namespace {
         vector<Block> allBlocks;
-        map<const BWEM::Area *, int> typePerArea;
-        map<Piece, int> mainPieces;
+
+        struct PieceCount {
+            map<Piece, int> pieces;
+        };
+        map<const BWEM::Area *, PieceCount> piecePerArea;
 
         int countPieces(vector<Piece> pieces, Piece type)
         {
@@ -70,6 +73,9 @@ namespace BWEB::Blocks
                 else if (height == 6) {
                     if (width == 5)
                         pieces ={ Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small, Piece::Row, Piece::Small, Piece::Medium };
+                    if (width == 6)
+                        pieces ={ Piece::Medium, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small, Piece::Row, Piece::Medium, Piece::Medium };
+
                 }
             }
 
@@ -179,11 +185,16 @@ namespace BWEB::Blocks
             return true;
         }
 
-        void insertBlock(TilePosition here, vector<Piece> pieces)
+        Block * createBlock(TilePosition here, vector<Piece> pieces)
         {
             Block newBlock(here, pieces);
-            allBlocks.push_back(newBlock);
-            Map::addReserve(here, newBlock.width(), newBlock.height());
+
+            if (newBlock.getTilePosition() == here) {
+                allBlocks.push_back(newBlock);
+                Map::addReserve(here, newBlock.width(), newBlock.height());
+                return &*allBlocks.end();
+            }
+            return nullptr;
         }
 
         void insertProxyBlock(TilePosition here, vector<Piece> pieces)
@@ -258,11 +269,13 @@ namespace BWEB::Blocks
                         }
 
                         if (tileBest.isValid() && canAddBlock(tileBest, i, j)) {
-                            if (Map::mapBWEM.GetArea(tileBest) == Map::getMainArea()) {
+                            auto area = Map::mapBWEM.GetArea(tileBest);
+                            auto newBlock = createBlock(tileBest, piecesBest);
+
+                            if (newBlock) {
                                 for (auto &piece : piecesBest)
-                                    mainPieces[piece]++;
+                                    piecePerArea[area].pieces[piece]++;
                             }
-                            insertBlock(tileBest, piecesBest);
                         }
                     }
                 }
@@ -279,7 +292,7 @@ namespace BWEB::Blocks
 
             // Added a block that allows a good shield battery placement or bunker placement
             auto tileBest = TilePositions::Invalid;
-            auto start = TilePosition(Map::getMainChoke()->Center());
+            auto start = Map::getMainChoke() ? TilePosition(Map::getMainChoke()->Center()) : Map::getMainTile();
             auto distBest = DBL_MAX;
             for (auto x = start.x - 12; x <= start.x + 16; x++) {
                 for (auto y = start.y - 12; y <= start.y + 16; y++) {
@@ -305,17 +318,17 @@ namespace BWEB::Blocks
 
         void findProductionBlocks()
         {
-            multimap<double, TilePosition> tilesByPathDist;
-            int totalMedium = 0;
-            int totalLarge = 0;
-
             // Calculate distance for each tile to our natural choke, we want to place bigger blocks closer to the chokes
+            multimap<double, TilePosition> tilesByPathDist;
             for (int y = 0; y < Broodwar->mapHeight(); y++) {
                 for (int x = 0; x < Broodwar->mapWidth(); x++) {
                     const TilePosition t(x, y);
-                    if (t.isValid() && Broodwar->isBuildable(t)) {
+                    if (t.isValid() && Broodwar->isBuildable(t) && Map::mapBWEM.GetArea(t) && !Map::mapBWEM.GetArea(t)->Bases().empty()) {
+
+                        const auto base = Map::mapBWEM.GetArea(t)->Bases().front();
+
                         const auto p = Position(x * 32, y * 32);
-                        const auto dist = (Map::getNaturalChoke() && Broodwar->self()->getRace() != Races::Zerg) ? p.getDistance(Position(Map::getNaturalChoke()->Center())) : p.getDistance(Map::getMainPosition());
+                        const auto dist = (Map::getNaturalChoke() && Broodwar->self()->getRace() != Races::Zerg) ? p.getDistance(Position(Map::getNaturalChoke()->Center())) : p.getDistance(base.Center());
                         tilesByPathDist.insert(make_pair(dist, t));
                     }
                 }
@@ -334,36 +347,38 @@ namespace BWEB::Blocks
                     const auto mediumCount = countPieces(pieces, Piece::Medium);
                     const auto largeCount = countPieces(pieces, Piece::Large);
 
+                    int cnt = 0;
                     for (auto &[_, tile] : tilesByPathDist) {
+
+                        auto area = Map::mapBWEM.GetArea(tile);
+                        if (!area)
+                            continue;
 
                         // Protoss caps large pieces in the main at 12 if we don't have necessary medium pieces
                         if (Broodwar->self()->getRace() == Races::Protoss) {
-                            if (largeCount > 0 && Map::mapBWEM.GetArea(tile) == Map::getMainArea() && mainPieces[Piece::Large] >= 12 && mainPieces[Piece::Medium] < 10)
+                            if (largeCount > 0 && piecePerArea[area].pieces[Piece::Large] >= 12 && piecePerArea[area].pieces[Piece::Medium] < 10)
                                 continue;
                         }
 
                         // Zerg only need 4 medium pieces and 2 small piece
                         if (Broodwar->self()->getRace() == Races::Zerg) {
-                            if ((mediumCount > 0 && mainPieces[Piece::Medium] >= 4)
-                                || (smallCount > 0 && mainPieces[Piece::Small] >= 2))
+                            if ((mediumCount > 0 && piecePerArea[area].pieces[Piece::Medium] >= 6)
+                                || (smallCount > 0 && piecePerArea[area].pieces[Piece::Small] >= 2)
+                                || (largeCount > 0 && piecePerArea[area].pieces[Piece::Large] >= 10))
                                 continue;
                         }
 
                         // Terran only need about 20 depot spots
                         if (Broodwar->self()->getRace() == Races::Terran) {
-                            if (mediumCount > 0 && mainPieces[Piece::Medium] >= 20)
+                            if (mediumCount > 0 && piecePerArea[area].pieces[Piece::Medium] >= 20)
                                 continue;
                         }
 
                         if (canAddBlock(tile, i, j)) {
-                            insertBlock(tile, pieces);
-
-                            totalMedium += mediumCount;
-                            totalLarge += largeCount;
-
-                            if (Map::mapBWEM.GetArea(tile) == Map::getMainArea()) {
+                            auto newBlock = createBlock(tile, pieces);
+                            if (newBlock) {
                                 for (auto &piece : pieces)
-                                    mainPieces[piece]++;
+                                    piecePerArea[area].pieces[piece]++;
                             }
                         }
                     }
@@ -373,6 +388,9 @@ namespace BWEB::Blocks
 
         void findProxyBlock()
         {
+            // Proxy breaks Luna top left wall
+            return;
+
             // For base-specific locations, avoid all areas likely to be traversed by worker scouts
             set<const BWEM::Area*> areasToAvoid;
             for (auto &first : Map::mapBWEM.StartingLocations()) {

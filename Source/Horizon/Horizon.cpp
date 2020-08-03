@@ -10,7 +10,7 @@ namespace McRave::Horizon {
         double minThreshold;
         double maxThreshold;
 
-        void updateThresholds()
+        void updateThresholds(UnitInfo& unit)
         {
             double minWinPercent = 0.6;
             double maxWinPercent = 1.2;
@@ -28,11 +28,11 @@ namespace McRave::Horizon {
                 minWinPercent = 0.6;
                 maxWinPercent = 1.0;
             }
-
+            
             // Z
             if (Players::ZvP()) {
                 minWinPercent = 0.80;
-                maxWinPercent = 1.40;
+                maxWinPercent = 1.20;
             }
             if (Players::ZvZ()) {
                 auto enemyMoreHatch = (Players::getCurrentCount(PlayerState::Enemy, UnitTypes::Zerg_Hatchery) + Players::getCurrentCount(PlayerState::Enemy, UnitTypes::Zerg_Lair) + Players::getCurrentCount(PlayerState::Enemy, UnitTypes::Zerg_Hive)
@@ -48,13 +48,13 @@ namespace McRave::Horizon {
                 }            
             }
             if (Players::ZvT()) {
-                minWinPercent = 1.00;
-                maxWinPercent = 1.40;
+                minWinPercent = 0.8;
+                maxWinPercent = 1.2;
             }
 
             if (BuildOrder::isRush()) {
-                minThreshold = 0.00;
-                maxThreshold = 1.00;
+                minThreshold = 0.25;
+                maxThreshold = 0.75;
             }
             else {
                 minThreshold = minWinPercent;
@@ -65,7 +65,7 @@ namespace McRave::Horizon {
 
     void simulate(UnitInfo& unit)
     {
-        updateThresholds();
+        updateThresholds(unit);
         auto enemyLocalGroundStrength = 0.0, allyLocalGroundStrength = 0.0;
         auto enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;
         auto unitToEngage = unit.getSpeed() > 0.0 ? unit.getEngDist() / (24.0 * unit.getSpeed()) : 5.0;
@@ -84,6 +84,7 @@ namespace McRave::Horizon {
             ignoreSim = true;
         if (ignoreSim && (Broodwar->self()->minerals() <= 500 || Broodwar->self()->gas() <= 500 || Players::getSupply(PlayerState::Self) <= 240))
             ignoreSim = false;
+
         if (ignoreSim) {
             unit.setSimState(SimState::Win);
             unit.setSimValue(10.0);
@@ -106,8 +107,8 @@ namespace McRave::Horizon {
                 || !source.getTarget().getTilePosition().isValid()
                 || source.hasTransport()
                 || source.isFlying()
-                || (!mapBWEM.GetArea(source.getTilePosition()) && !BWEB::Map::isWalkable(source.getTilePosition()))
-                || (!mapBWEM.GetArea(source.getTarget().getTilePosition()) && !BWEB::Map::isWalkable(source.getTarget().getTilePosition())))
+                || (!mapBWEM.GetArea(source.getTilePosition()) && !BWEB::Map::isWalkable(source.getTilePosition(), source.getType()))
+                || (!mapBWEM.GetArea(source.getTarget().getTilePosition()) && !BWEB::Map::isWalkable(source.getTarget().getTilePosition(), source.getTarget().getType())))
                 return false;
             return true;
         };
@@ -203,6 +204,7 @@ namespace McRave::Horizon {
                     continue;
 
                 const auto allyRange = max(ally.getAirRange(), ally.getGroundRange());
+                const auto allyReach = max(ally.getAirReach(), ally.getGroundReach());
                 const auto widths = double(ally.getType().width() + ally.getTarget().getType().width()) / 2.0;
                 const auto distance = max(0.0, ally.getEngDist() - widths);
                 const auto speed = 24.0 * ally.getSpeed();
@@ -212,7 +214,7 @@ namespace McRave::Horizon {
                 if (ally.localRetreat()
                     || simRatio <= 0.0
                     || (ally.getSpeed() <= 0.0 && distance > 0.0)
-                    || (ally.getPosition().getDistance(unit.getTarget().getPosition()) / speed) > simulationTime
+                    || (ally.getEngagePosition().getDistance(unit.getTarget().getPosition()) > allyReach)
                     || (ally.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode && unit.getTarget().getPosition().getDistance(ally.getPosition()) < 64.0))
                     continue;
 
@@ -277,5 +279,19 @@ namespace McRave::Horizon {
             unit.setSimState(SimState::Win);
         else if (unit.getSimValue() <= minThreshold || (unit.getSimState() == SimState::None && unit.getSimValue() < maxThreshold))
             unit.setSimState(SimState::Loss);
+
+        //// Check for hardcoded directional losses
+        //if (unit.isFlying()) {
+        //    if (unit.getTarget().isFlying() && belowAirtoAirLimit)
+        //        unit.setSimState(SimState::Loss);
+        //    else if (unit.getTarget().isFlying() && belowAirtoGrdLimit)
+        //        unit.setSimState(SimState::Loss);
+        //}
+        //else {
+        //    if (unit.getTarget().isFlying() && belowGrdtoAirLimit)
+        //        unit.setSimState(SimState::Loss);
+        //    else if (unit.getTarget().isFlying() && belowGrdtoGrdLimit)
+        //        unit.setSimState(SimState::Loss);
+        //}
     }
 }

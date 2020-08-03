@@ -13,7 +13,7 @@ namespace McRave
         BWAPI::Player thisPlayer;
         BWAPI::Race startRace, currentRace;
         BWAPI::TilePosition startLocation;
-        std::string build;
+        std::string build, opener, transition;
 
         Strength pStrength;
         PlayerState pState;
@@ -64,6 +64,8 @@ namespace McRave
         void setPlayer(BWAPI::Player newPlayer) { thisPlayer = newPlayer; }
         void setAlive(bool newState) { alive = newState; }
         void setBuild(std::string newBuild) { build = newBuild; }
+        void setOpener(std::string newOpener) { opener = newOpener; }
+        void setTransition(std::string newTransition) { transition = newTransition; }
 
         bool hasUpgrade(BWAPI::UpgradeType upgrade) {
             if (playerUpgrades.find(upgrade) != playerUpgrades.end())

@@ -8,4 +8,6 @@ namespace McRave::Combat {
     std::multimap<double, BWAPI::Position>& getCombatClusters();
     BWAPI::Position getClosestRetreatPosition(BWAPI::Position);
     //BWAPI::Position getClosestAttackPosition(BWAPI::Position);
+    BWAPI::Position getAirClusterCenter();
+    UnitInfo * getAirClusterCommander();
 }

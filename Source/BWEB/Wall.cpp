@@ -16,6 +16,9 @@ namespace BWEB {
         int failedTight = 0;
         int failedSpawn = 0;
         int failedPower = 0;
+
+        int resourceGrid[256][256];
+        int testGrid[256][256];
     }
 
     Position Wall::findCentroid()
@@ -101,9 +104,9 @@ namespace BWEB {
         const auto endCenter = Position(pathEnd) + Position(16, 16);
 
         // Get a new path
-        BWEB::Path newPath;
+        BWEB::Path newPath(endCenter, startCenter, UnitTypes::Protoss_Dragoon);
         allowLifted = false;
-        newPath.bfsPath(endCenter, startCenter, [&](auto &t) { return this->wallWalkable(t); }, false);
+        newPath.generateBFS([&](const auto &t) { return wallWalkable(t); }, false);
         return newPath;
     }
 
@@ -413,7 +416,8 @@ namespace BWEB {
             || !Map::isWalkable(tile)
             || (allowLifted && Map::isUsed(tile) != UnitTypes::Terran_Barracks && Map::isUsed(tile) != UnitTypes::None)
             || (!allowLifted && Map::isUsed(tile) != UnitTypes::None && Map::isUsed(tile) != UnitTypes::Zerg_Larva)
-            || (openWall && (tile).getDistance(pathEnd) > jpsDist / 32))
+            //|| (openWall && (tile).getDistance(pathEnd) - 96.0 > jpsDist / 32)
+            || resourceGrid[tile.x][tile.y] > 0)
             return false;
         return true;
     }
@@ -446,21 +450,30 @@ namespace BWEB {
         flatRamp                = Broodwar->isBuildable(TilePosition(choke->Center()));
         closestStation          = Stations::getClosestStation(TilePosition(choke->Center()));
 
+        // Setup a resource grid that prevents pathing through mineral lines
+        if (base) {
+            for (auto &mineral : base->Minerals()) {
+                for (int x = -1; x < 3; x++) {
+                    for (int y = -1; y < 3; y++) {
+                        resourceGrid[mineral->TopLeft().x + x][mineral->TopLeft().y + y] = 1;
+                    }
+                }
+            }
+        }
+
         // Check if a Pylon should be put in the wall to help the size of the Wall or away from the wall for protection
         auto p1 = choke->Pos(choke->end1);
         auto p2 = choke->Pos(choke->end2);
         pylonWallPiece = abs(p1.x - p2.x) * 8 >= 320 || abs(p1.y - p2.y) * 8 >= 256 || p1.getDistance(p2) * 8 >= 288;
 
-        // Create a jps path for limiting BFS exploration using the distance of the jps path
-        Path jpsPath;
+        // Initiliaze path points and check them
         initializePathPoints();
         checkPathPoints();
-        jpsPath.createUnitPath(Position(pathStart), Position(pathEnd));
-        jpsDist = jpsPath.getDistance();
 
-        // If we can't reach the end/start points, the Wall is likely not possible and won't be attempted
-        if (!jpsPath.isReachable())
-            return;
+        // Create a jps path for limiting BFS exploration using the distance of the jps path
+        Path jpsPath(Position(pathStart), Position(pathEnd), UnitTypes::Zerg_Zergling);
+        jpsPath.generateJPS([&](const TilePosition &t) { return jpsPath.unitWalkable(t); });
+        jpsDist = jpsPath.getDistance();   
 
         // Create notable locations to keep Wall pieces within proxmity of
         if (base)
@@ -487,7 +500,9 @@ namespace BWEB {
             auto moveTowards = (Position(initialPathStart) + base->Center()) / 2;
 
             // Iterate 3x3 around the current TilePosition and try to get within 5 tiles
-            while (startCenter.getDistance(moveTowards) > 320.0) {
+            auto triedCount = 0;
+            while (startCenter.getDistance(moveTowards) > 320.0 && triedCount < 50) {
+                triedCount++;
                 const auto initialStart = creationStart;
                 for (int x = initialStart.x - 1; x <= initialStart.x + 1; x++) {
                     for (int y = initialStart.y - 1; y <= initialStart.y + 1; y++) {
@@ -503,7 +518,6 @@ namespace BWEB {
                             creationStart = t;
                             startCenter = p;
                             movedStart = true;
-                            break;
                         }
                     }
                 }
@@ -511,22 +525,26 @@ namespace BWEB {
         }
 
         // If the creation start position isn't buildable, move towards the top of this area to find a buildable location
-        while (openWall && !Broodwar->isBuildable(creationStart)) {
-            auto distBest = DBL_MAX;
-            const auto initialStart = creationStart;
-            for (int x = initialStart.x - 1; x <= initialStart.x + 1; x++) {
-                for (int y = initialStart.y - 1; y <= initialStart.y + 1; y++) {
-                    const TilePosition t(x, y);
-                    if (!t.isValid())
-                        continue;
+        if (openWall) {
+            auto triedCount = 0;
+            while (!Broodwar->isBuildable(creationStart) && triedCount < 50) {
+                triedCount++;
+                auto distBest = DBL_MAX;
+                const auto initialStart = creationStart;
+                for (int x = initialStart.x - 1; x <= initialStart.x + 1; x++) {
+                    for (int y = initialStart.y - 1; y <= initialStart.y + 1; y++) {
+                        const TilePosition t(x, y);
+                        if (!t.isValid())
+                            continue;
 
-                    const auto p = Position(t);
-                    const auto dist = p.getDistance(Position(area->Top()));
+                        const auto p = Position(t);
+                        const auto dist = p.getDistance(Position(area->Top()));
 
-                    if (dist < distBest) {
-                        distBest = dist;
-                        creationStart = t;
-                        movedStart = true;
+                        if (dist < distBest) {
+                            distBest = dist;
+                            creationStart = t;
+                            movedStart = true;
+                        }
                     }
                 }
             }
@@ -545,7 +563,7 @@ namespace BWEB {
         // If it's a natural wall, path between the closest main and end of the perpendicular line
         if (isNatural) {
             Station * closestMain = Stations::getClosestMainStation(TilePosition(choke->Center()));
-            initialPathStart = closestMain ? TilePosition(Map::mapBWEM.GetPath(closestStation->getBWEMBase()->Center(), closestMain->getBWEMBase()->Center()).front()->Center()) : TilePosition(lineStart);
+            initialPathStart = closestMain ? TilePosition(Map::mapBWEM.GetPath(closestStation->getBase()->Center(), closestMain->getBase()->Center()).front()->Center()) : TilePosition(lineStart);
             initialPathEnd = TilePosition(lineEnd);
         }
 
@@ -626,7 +644,7 @@ namespace BWEB {
             currentLayout.clear();
             typeIterator = rawBuildings.begin();
             addNextPiece(creationStart);
-        } while (Broodwar->self()->getRace() == Races::Zerg ? next_permutation(find(rawBuildings.begin(), rawBuildings.end(), UnitTypes::Zerg_Hatchery), rawBuildings.begin())
+        } while (Broodwar->self()->getRace() == Races::Zerg ? next_permutation(find(rawBuildings.begin(), rawBuildings.end(), UnitTypes::Zerg_Hatchery), rawBuildings.end())
             : next_permutation(rawBuildings.begin(), find(rawBuildings.begin(), rawBuildings.end(), UnitTypes::Protoss_Pylon)));
 
         for (auto &[tile, type] : bestLayout) {
@@ -662,10 +680,8 @@ namespace BWEB {
                             closestNotableDist = dist;
                         }
                     }
-                    if (center.getDistance(closestNotable) >= 256.0 || center.getDistance(closestNotable) >= closestGeo.getDistance(closestNotable) + 48.0) {
-                        
+                    if (center.getDistance(closestNotable) >= 288.0 || center.getDistance(closestNotable) >= closestGeo.getDistance(closestNotable) + 48.0)
                         continue;
-                    }
                 }
 
                 // Try not to seal the wall poorly
@@ -965,7 +981,7 @@ namespace BWEB::Walls {
         auto timeNow = chrono::system_clock::to_time_t(timePointNow);
 
         // Print the clock position of this Wall
-        auto clock = round((Map::getAngle(make_pair(Map::mapBWEM.Center(), Position(area->Top()))) + 90) / 30);
+        auto clock = abs(round((Map::getAngle(make_pair(Map::mapBWEM.Center(), Position(area->Top()))) + 90) / 30));
         if (Position(area->Top()).x < Map::mapBWEM.Center().x)
             clock+= 6;
 

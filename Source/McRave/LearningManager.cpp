@@ -68,7 +68,7 @@ namespace McRave::Learning {
                 if (build == "HatchPool")
                     return t;
                 if (build == "PoolHatch")
-                    return p;
+                    return p || t;
             }
             return false;
         }
@@ -189,12 +189,16 @@ namespace McRave::Learning {
                         return z;
                 }
                 if (build == "HatchPool") {
-                    if (transition == "2HatchMuta" || transition == "4BaseGuardian")
-                        return t;
+                    if (transition == "2HatchMuta")
+                        return !Terrain::isShitMap() && t;
                 }
                 if (build == "PoolHatch") {
-                    if (transition == "2HatchMuta" || transition == "4BaseGuardian")
-                        return p;
+                    if (transition == "2HatchMuta")
+                        return !Terrain::isShitMap() && p;
+                    if (transition == "2HatchSpeedling")
+                        return Terrain::isShitMap() && p;
+                    if (transition == "3HatchSpeedling")
+                        return Terrain::isShitMap() && t;
                 }
             }
             return false;
@@ -202,18 +206,16 @@ namespace McRave::Learning {
 
         void getDefaultBuild()
         {
-            // HACK: Looking at more than 1 enemy potentially - lets us play FFA but doesn't help in team games, as we aren't looking at enemy count
-            if (Players::getPlayers().size() > 3) {
-                if (Players::getRaceCount(Races::Zerg, PlayerState::Enemy) > Players::getRaceCount(Races::Protoss, PlayerState::Enemy) + Players::getRaceCount(Races::Terran, PlayerState::Enemy))
-                    BuildOrder::setLearnedBuild("FFE", "Forge", "5GateGoon");
-                else if (Players::getRaceCount(Races::Protoss, PlayerState::Enemy) > Players::getRaceCount(Races::Zerg, PlayerState::Enemy) + Players::getRaceCount(Races::Terran, PlayerState::Enemy))
-                    BuildOrder::setLearnedBuild("1GateCore", "2Zealot", "Robo");
-                else if (Players::getRaceCount(Races::Terran, PlayerState::Enemy) > Players::getRaceCount(Races::Zerg, PlayerState::Enemy) + Players::getRaceCount(Races::Protoss, PlayerState::Enemy))
-                    BuildOrder::setLearnedBuild("1GateCore", "1Zealot", "Robo");
-            }
-
             if (Broodwar->self()->getRace() == Races::Protoss) {
-                if (Players::vP())
+                if (Players::getPlayers().size() > 3) {
+                    if (Players::getRaceCount(Races::Zerg, PlayerState::Enemy) > Players::getRaceCount(Races::Protoss, PlayerState::Enemy) + Players::getRaceCount(Races::Terran, PlayerState::Enemy))
+                        BuildOrder::setLearnedBuild("FFE", "Forge", "5GateGoon");
+                    else if (Players::getRaceCount(Races::Protoss, PlayerState::Enemy) > Players::getRaceCount(Races::Zerg, PlayerState::Enemy) + Players::getRaceCount(Races::Terran, PlayerState::Enemy))
+                        BuildOrder::setLearnedBuild("1GateCore", "2Zealot", "Robo");
+                    else if (Players::getRaceCount(Races::Terran, PlayerState::Enemy) > Players::getRaceCount(Races::Zerg, PlayerState::Enemy) + Players::getRaceCount(Races::Protoss, PlayerState::Enemy))
+                        BuildOrder::setLearnedBuild("1GateCore", "1Zealot", "Robo");
+                }
+                else if (Players::vP())
                     BuildOrder::setLearnedBuild("1GateCore", "1Zealot", "Robo");
                 else if (Players::vZ())
                     BuildOrder::setLearnedBuild("2Gate", "Main", "4Gate");
@@ -226,9 +228,11 @@ namespace McRave::Learning {
                 if (Players::vZ())
                     BuildOrder::setLearnedBuild("PoolLair", "9Pool", "1HatchMuta");
                 else if (Players::vT())
-                    BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "4BaseGuardian");
+                    BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "2HatchMuta");
+                else if (Players::vP())
+                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "2HatchMuta");
                 else
-                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "4BaseGuardian");
+                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "Unknown");
             }
 
             // Add walls
@@ -303,13 +307,22 @@ namespace McRave::Learning {
         // Write into the write directory information about what we saw the enemy do
         ofstream gameLog("bwapi-data/write/" + gameInfoExtension, std::ios_base::app);
 
-        gameLog << mapName << ","
-            << Broodwar->enemy()->getName().c_str() << ","
+        // Who won on what map in how long
+        gameLog << (isWinner ? "Won" : "Lost") << ","
+            << mapName << ","
+            << std::setfill('0') << Util::getTime().minutes << ":" << std::setw(2) << Util::getTime().seconds << ",";
+
+        // What strategies were used/detected
+        gameLog
             << Strategy::getEnemyBuild() << ","
             << Strategy::getEnemyOpener() << ","
             << Strategy::getEnemyTransition() << ","
-            << currentBuild << "," << currentOpener << "," << currentTransition << ","
-            << (isWinner ? "Won" : "Lost") << "," << std::setfill('0') << Util::getTime().minutes << ":" << std::setw(2) << Util::getTime().seconds;
+            << currentBuild << "," << currentOpener << "," << currentTransition << ",";
+
+        // When did we detect the enemy strategy
+        gameLog << std::setfill('0') << Strategy::getEnemyBuildTime().minutes << ":" << std::setw(2) << Strategy::getEnemyOpenerTime().seconds << ",";
+        gameLog << std::setfill('0') << Strategy::getEnemyOpenerTime().minutes << ":" << std::setw(2) << Strategy::getEnemyBuildTime().seconds << ",";
+        gameLog << std::setfill('0') << Strategy::getEnemyTransitionTime().minutes << ":" << std::setw(2) << Strategy::getEnemyTransitionTime().seconds;
 
         // Store a list of total units everyone made
         for (auto &type : UnitTypes::allUnitTypes()) {
@@ -378,10 +391,10 @@ namespace McRave::Learning {
         if (Broodwar->self()->getRace() == Races::Zerg) {
 
             myBuilds["PoolHatch"].openers ={ "Overpool" };
-            myBuilds["PoolHatch"].transitions={ "2HatchMuta", "4BaseGuardian" };
+            myBuilds["PoolHatch"].transitions={ "2HatchMuta", "2HatchSpeedling", "3HatchSpeedling" };
 
             myBuilds["HatchPool"].openers ={ "12Hatch" };
-            myBuilds["HatchPool"].transitions={ "2HatchMuta", "4BaseGuardian" };
+            myBuilds["HatchPool"].transitions={ "2HatchMuta", "2HatchSpeedling" };
 
             myBuilds["PoolLair"].openers ={ "9Pool" };
             myBuilds["PoolLair"].transitions={ "1HatchMuta" };
@@ -391,12 +404,6 @@ namespace McRave::Learning {
             BuildOrder::setLearnedBuild("RaxFact", "10Rax", "2Fact");
             isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
             return;// Don't know what to do yet
-
-/*
-            myBuilds["RaxFact"].openers ={ "8Rax", "10Rax", "12Rax" };
-            myBuilds["RaxFact"].transitions ={ "Joyo", "2FactVulture", "1FactExpand", "2PortWraith" };
-
-            myBuilds["2Rax"].openers = { "}*/
         }
 
         // Winrate tracking
@@ -524,7 +531,7 @@ namespace McRave::Learning {
             getDefaultBuild();
 
         // Hardcoded stuff
-        if (true) {
+        if (false) {
             if (Players::PvZ()) {
                 BuildOrder::setLearnedBuild("FFE", "Forge", "NeoBisu");
                 isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());

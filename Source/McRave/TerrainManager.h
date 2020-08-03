@@ -2,19 +2,30 @@
 #include <BWAPI.h>
 
 namespace McRave::Terrain {
-
-    void onStart();
-    void onFrame();
-
+    BWAPI::Position getClosestMapCorner(BWAPI::Position);
     bool isInAllyTerritory(BWAPI::TilePosition);
     bool isInAllyTerritory(const BWEM::Area *);
-
     bool isInEnemyTerritory(BWAPI::TilePosition);
     bool isInEnemyTerritory(const BWEM::Area *);
     bool isStartingBase(BWAPI::TilePosition);
-    BWAPI::Position closestUnexploredStart();
-    BWAPI::Position randomBasePosition();
-       
+    void onStart();
+    void onFrame();
+
+    std::set <const BWEM::Area*>& getAllyTerritory();
+    std::set <const BWEM::Area*>& getEnemyTerritory();
+    std::set <const BWEM::Base*>& getAllBases();
+    BWAPI::Position getAttackPosition();
+    BWAPI::Position getDefendPosition();
+    BWAPI::Position getHarassPosition();
+    BWAPI::Position getEnemyStartingPosition();
+    BWEB::Station * getEnemyMain();
+    BWEB::Station * getEnemyNatural();
+    BWEB::Station * getMyMain();
+    BWEB::Station * getMyNatural();
+    BWAPI::TilePosition getEnemyExpand();
+    BWAPI::TilePosition getEnemyStartingTilePosition();
+    const BWEM::ChokePoint * getDefendChoke();
+    const BWEM::Area * getDefendArea();
     bool isShitMap();
     bool isIslandMap();
     bool isReverseRamp();
@@ -22,18 +33,6 @@ namespace McRave::Terrain {
     bool isNarrowNatural();
     bool isDefendNatural();
     bool foundEnemy();
-
-    BWAPI::Position getAttackPosition();
-    BWAPI::Position getDefendPosition();
-    BWAPI::Position getHarassPosition();
-    BWAPI::Position getEnemyStartingPosition();
-    BWAPI::Position getMineralHoldPosition();
-    BWAPI::TilePosition getEnemyNatural();
-    BWAPI::TilePosition getEnemyExpand();
-    BWAPI::TilePosition getEnemyStartingTilePosition();
-    std::set <const BWEM::Area*>& getAllyTerritory();
-    std::set <const BWEM::Area*>& getEnemyTerritory();
-    std::set <BWEM::Base const*>& getAllBases();
 
     inline bool isExplored(BWAPI::Position here) { return BWAPI::Broodwar->isExplored(BWAPI::TilePosition(here)); }
 }

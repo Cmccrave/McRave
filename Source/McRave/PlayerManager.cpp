@@ -142,18 +142,28 @@ namespace McRave::Players
 
             if (p->isSelf() && info->getType() == Zerg_Larva) {
                 auto type = bwUnit->getBuildType();
-                totalTypeCounts[p->getPlayerState()][info->getType()]--;
                 totalTypeCounts[p->getPlayerState()][type] += 1 + (type == Zerg_Zergling || type == Zerg_Scourge);
+                totalTypeCounts[p->getPlayerState()][info->getType()]--;
             }
             if (!p->isSelf() && info->getType() == Zerg_Egg) {
                 totalTypeCounts[p->getPlayerState()][bwUnit->getType()] += 1;
-                totalTypeCounts[p->getPlayerState()][Zerg_Egg] -= 1;
+                totalTypeCounts[p->getPlayerState()][info->getType()] -= 1;
             }
             if (!p->isSelf() && info->getType() == Zerg_Larva) {
                 totalTypeCounts[p->getPlayerState()][bwUnit->getType()] += 1;
-                totalTypeCounts[p->getPlayerState()][Zerg_Larva] -= 1;
+                totalTypeCounts[p->getPlayerState()][info->getType()] -= 1;
             }
 
+            // Lurker Morph
+            if (p->isSelf() && info->getType() == Zerg_Hydralisk) {
+                totalTypeCounts[p->getPlayerState()][bwUnit->getType()] += 1;
+                totalTypeCounts[p->getPlayerState()][info->getType()] -= 1;
+            }
+            if (p->isSelf() && info->getType() == Zerg_Lurker_Egg) {
+                totalTypeCounts[p->getPlayerState()][bwUnit->getType()] += 1;
+                totalTypeCounts[p->getPlayerState()][info->getType()] -= 1;
+            }
+            
             info->setBuildingType(None);
             info->setBuildPosition(TilePositions::Invalid);
         }

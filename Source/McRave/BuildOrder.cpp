@@ -87,20 +87,26 @@ namespace McRave::BuildOrder
         if (techUnit == Protoss_Dark_Templar)
             return com(techUnit) >= 2;
 
+        // When timing attack finishes
+        if (techUnit == Zerg_Mutalisk || techUnit == Zerg_Hydralisk)
+            return total(techUnit) >= 12;
+        if (techUnit == Zerg_Lurker)
+            return Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect);
+
         // When 1 unit is visible
         return vis(techUnit) > 0;
-    }    
+    }
 
     bool shouldExpand()
     {
         const auto baseType = Broodwar->self()->getRace().getResourceDepot();
-        const auto hatchCount = com(Zerg_Hatchery) + com(Zerg_Lair) + com(Zerg_Hive);
+        const auto hatchCount = vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive);
+        const auto productionCap = int(round(1.5 * double(Stations::getMyStations().size())));
 
-        // Zerg has a slightly higher concentration of bases
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            if (!inOpeningBook && hatchCount >= 3 && (Resources::isMinSaturated() || Resources::isGasSaturated()) && techSat && productionSat)
+            if (Resources::isMinSaturated() && Resources::isGasSaturated() && techSat && productionSat)
                 return true;
-            else if (techUnit == None && (Resources::isMinSaturated() || Resources::isGasSaturated()) && techSat && productionSat)
+            else if (techUnit == None && techSat && productionSat && Broodwar->self()->minerals() >= 600 && !saveLarva)
                 return true;
         }
         else {
@@ -115,12 +121,12 @@ namespace McRave::BuildOrder
     bool shouldAddProduction()
     {
         const auto baseType = Broodwar->self()->getRace().getResourceDepot();
+        const auto hatchCount = com(Zerg_Hatchery) + com(Zerg_Lair) + com(Zerg_Hive);
 
-        // Zerg has a slightly higher concentration of production
         if (Broodwar->self()->getRace() == Races::Zerg)
-            return !productionSat && ((techUnit == None && techSat && Broodwar->self()->minerals() >= 600) || (Broodwar->self()->minerals() >= 300 && vis(Zerg_Larva) < 3));
+            return !productionSat && ((techUnit == None && techSat && Broodwar->self()->minerals() >= 600 && !saveLarva) || (Broodwar->self()->minerals() >= 400 && vis(Zerg_Larva) < 3 && !saveLarva));
         else
-            return !productionSat && ((techUnit == None && Broodwar->self()->minerals() >= 150 && (techSat || com(baseType) >= 3)) || (Broodwar->self()->minerals() >= 300));
+            return !productionSat && ((techUnit == None && Broodwar->self()->minerals() >= 150 && (techSat || com(baseType) >= 3)) || Broodwar->self()->minerals() >= 300);
         return false;
     }
 
@@ -128,8 +134,12 @@ namespace McRave::BuildOrder
     {
         auto workerCount = com(Broodwar->self()->getRace().getWorker());
         auto refineryCount = vis(Broodwar->self()->getRace().getRefinery());
+        auto workerUnlimitedGas = Players::ZvT() ? 40 : 60;
 
-        return Broodwar->self()->gas() < 300 && ((refineryCount != 1 && Broodwar->self()->getRace() != Races::Zerg) || workerCount >= 30 || Players::ZvZ() || Broodwar->self()->minerals() > 600 || Resources::isMinSaturated());
+        if (Broodwar->self()->getRace() == Races::Zerg)
+            return gasLimit >= Workers::getGasWorkers() && workerCount >= 10 && ((Broodwar->self()->minerals() > 600 && Broodwar->self()->gas() < 200 && Resources::isMinSaturated()) || productionSat || workerCount >= workerUnlimitedGas || Players::ZvZ());
+        else
+            return (Broodwar->self()->gas() < 300 || workerCount >= 30) && ((refineryCount != 1 && Broodwar->self()->getRace() != Races::Zerg) || workerCount >= 30 || Broodwar->self()->minerals() > 600 || Resources::isMinSaturated());
     }
 
     double getCompositionPercentage(UnitType unit)
@@ -197,7 +207,7 @@ namespace McRave::BuildOrder
             }
             return;
         }
-       
+
         if (getTech) {
 
             // If we already chose a tech unit
@@ -288,7 +298,7 @@ namespace McRave::BuildOrder
     void onFrame()
     {
         Visuals::startPerfTest();
-        updateBuild();        
+        updateBuild();
         Visuals::endPerfTest("BuildOrder");
     }
 
@@ -314,6 +324,7 @@ namespace McRave::BuildOrder
     bool isRush() { return rush; }
     bool isGasTrick() { return gasTrick; }
     bool isSaveLarva() { return saveLarva; }
+    bool makeDefensesNow() { return defensesNow; }
     string getCurrentBuild() { return currentBuild; }
     string getCurrentOpener() { return currentOpener; }
     string getCurrentTransition() { return currentTransition; }

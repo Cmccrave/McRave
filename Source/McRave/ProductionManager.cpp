@@ -23,11 +23,21 @@ namespace McRave::Production {
             if (unit == Zerg_Overlord)
                 return Broodwar->self()->minerals() >= unit.mineralPrice() + Buildings::getQueuedMineral();
 
+            auto selfMineral            = Broodwar->self()->minerals();
+            auto selfGas                = Broodwar->self()->gas();
+            auto selfSupply             = Players::getSupply(PlayerState::Self);
+
+            for (auto &[type, cnt] : trainedThisFrame) {
+                selfMineral            -= type.mineralPrice() * cnt;
+                selfGas                -= type.gasPrice() * cnt;
+                selfSupply             += type.supplyRequired() * cnt;
+            }
+
             auto mineralReserve         = int(!BuildOrder::isTechUnit(unit) || !idleTech.empty() || !idleUpgrade.empty()) * reservedMineral;
             auto gasReserve             = int(!BuildOrder::isTechUnit(unit) || !idleTech.empty() || !idleUpgrade.empty()) * reservedGas;
-            auto mineralAffordable      = unit.mineralPrice() == 0 || (Broodwar->self()->minerals() >= unit.mineralPrice() + Buildings::getQueuedMineral() + mineralReserve);
-            auto gasAffordable          = unit.gasPrice() == 0 || (Broodwar->self()->gas() >= unit.gasPrice() + Buildings::getQueuedGas() + gasReserve);
-            auto supplyAffordable       = unit.supplyRequired() == 0 || (Players::getSupply(PlayerState::Self) + unit.supplyRequired() <= Broodwar->self()->supplyTotal());
+            auto mineralAffordable      = unit.mineralPrice() == 0 || (selfMineral >= unit.mineralPrice() + Buildings::getQueuedMineral() + mineralReserve);
+            auto gasAffordable          = unit.gasPrice() == 0 || (selfGas >= unit.gasPrice() + Buildings::getQueuedGas() + gasReserve);
+            auto supplyAffordable       = unit.supplyRequired() == 0 || (selfSupply + unit.supplyRequired() <= Broodwar->self()->supplyTotal());
 
             return mineralAffordable && gasAffordable && supplyAffordable;
         }
@@ -157,7 +167,7 @@ namespace McRave::Production {
 
             // Tech that require a building
             if (tech == TechTypes::Lurker_Aspect && !Broodwar->self()->hasResearched(tech) && !Broodwar->self()->isResearching(tech))
-                return com(Zerg_Lair) && BuildOrder::isUnitUnlocked(Zerg_Lurker);
+                return (com(Zerg_Lair) > 0 || com(Zerg_Hive) > 0) && BuildOrder::isUnitUnlocked(Zerg_Lurker);
 
             for (auto &unit : tech.whatUses()) {
                 if (BuildOrder::isUnitUnlocked(unit) && !Broodwar->self()->hasResearched(tech) && !Broodwar->self()->isResearching(tech))
@@ -384,29 +394,29 @@ namespace McRave::Production {
                 case Metabolic_Boost:
                     return true;
                 case Muscular_Augments:
-                    return Broodwar->self()->getUpgradeLevel(Grooved_Spines);
+                    return (BuildOrder::isTechUnit(Zerg_Hydralisk) && Players::ZvP()) || Broodwar->self()->getUpgradeLevel(Grooved_Spines) > 0;
                 case Pneumatized_Carapace:
-                    return Stations::getMyStations().size() >= 3 && ((!BuildOrder::isOpener() && Strategy::needDetection()) || (Players::getStrength(PlayerState::Enemy).airToAir > 0 && !Players::ZvZ()));
+                    return Stations::getMyStations().size() >= 4 || (Players::getStrength(PlayerState::Enemy).airToAir > 0 && !Players::ZvZ() && Players::getSupply(PlayerState::Self) >= 100);
                 case Anabolic_Synthesis:
-                    return true;
+                    return Players::getTotalCount(PlayerState::Enemy, Terran_Marine) < 20 || Broodwar->self()->getUpgradeLevel(Chitinous_Plating) > 0;
 
                     // Range upgrades
                 case Grooved_Spines:
-                    return BuildOrder::isTechUnit(Zerg_Hydralisk);
+                    return (BuildOrder::isTechUnit(Zerg_Hydralisk) && !Players::ZvP()) || Broodwar->self()->getUpgradeLevel(Muscular_Augments) > 0;
 
                     // Other upgrades
                 case Chitinous_Plating:
-                    return true;
+                    return Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 20 || Broodwar->self()->getUpgradeLevel(Anabolic_Synthesis) > 0;
                 case Adrenal_Glands:
-                    return true;
+                    return vis(Zerg_Zergling) >= 6;
 
                     // Ground unit upgrades
                 case Zerg_Melee_Attacks:
-                    return vis(Zerg_Zergling) >= 60 && Players::getSupply(PlayerState::Self) > 200 && (Broodwar->self()->getUpgradeLevel(Zerg_Carapace) > Broodwar->self()->getUpgradeLevel(Zerg_Melee_Attacks) || Broodwar->self()->isUpgrading(Zerg_Missile_Attacks));
+                    return (vis(Zerg_Zergling) >= 30 || vis(Zerg_Ultralisk) >= 1) && Players::getSupply(PlayerState::Self) > 160 && (Broodwar->self()->getUpgradeLevel(Zerg_Carapace) > Broodwar->self()->getUpgradeLevel(Zerg_Melee_Attacks) || Broodwar->self()->isUpgrading(Zerg_Missile_Attacks));
                 case Zerg_Missile_Attacks:
                     return (vis(Zerg_Hydralisk) >= 16 || vis(Zerg_Lurker) >= 8) && (Broodwar->self()->getUpgradeLevel(Zerg_Carapace) > Broodwar->self()->getUpgradeLevel(Zerg_Missile_Attacks) || Broodwar->self()->isUpgrading(Zerg_Missile_Attacks));
                 case Zerg_Carapace:
-                    return (vis(Zerg_Hydralisk) >= 16 || vis(Zerg_Zergling) >= 60) && Players::getSupply(PlayerState::Self) > 200;
+                    return (vis(Zerg_Hydralisk) >= 16 || vis(Zerg_Zergling) >= 30 || vis(Zerg_Ultralisk) >= 1) && Players::getSupply(PlayerState::Self) > 160;
 
                     // Air unit upgrades
                 case Zerg_Flyer_Attacks:
@@ -524,26 +534,12 @@ namespace McRave::Production {
             for (auto &type : building.getType().buildsWhat()) {
 
                 if (!isCreateable(building.unit(), type)
-                    || !isSuitable(type))
+                    || !isSuitable(type)
+                    || (building.getType() == Zerg_Larva && BuildOrder::isSaveLarva()))
                     continue;
 
                 const auto value = scoreUnit(type);
-
-                // If we teched to DTs, try to create as many as possible
-                // TODO: Replace these somehow
-                if (type == Protoss_Dark_Templar && Broodwar->getFrameCount() < 12000 && vis(Protoss_Dark_Templar) < 2) {
-                    best = DBL_MAX;
-                    bestType = type;
-                }
-                else if (type == BuildOrder::getTechUnit() && vis(type) == 0 && isAffordable(type)) {
-                    best = DBL_MAX;
-                    bestType = type;
-                }
-                else if (type == Protoss_Observer && vis(type) < com(Protoss_Nexus)) {
-                    best = DBL_MAX;
-                    bestType = type;
-                }
-                else if (value >= best) {
+                if (value >= best) {
                     best = value;
                     bestType = type;
                 }
@@ -562,7 +558,7 @@ namespace McRave::Production {
                 }
 
                 // Else if this is a tech unit, add it to idle production
-                else if (BuildOrder::isTechUnit(bestType)) {
+                else if (BuildOrder::isTechUnit(bestType) && Broodwar->self()->getRace() != Races::Zerg) {
                     trainedThisFrame[bestType]++;
                     idleProduction[building.unit()] = bestType;
                     reservedMineral += bestType.mineralPrice();
@@ -637,7 +633,6 @@ namespace McRave::Production {
 
             for (auto &[unit, type] : idleProduction) {
                 if (BuildOrder::isTechUnit(type) && unit->exists()) {
-                    Broodwar->drawTextMap(unit->getPosition(), "%s", type.c_str());
                     reservedMineral += type.mineralPrice();
                     reservedGas += type.gasPrice();
                 }
@@ -645,7 +640,6 @@ namespace McRave::Production {
 
             for (auto &[unit, tech] : idleTech) {
                 if (unit->exists()) {
-                    Broodwar->drawTextMap(unit->getPosition(), "%s", tech.c_str());
                     reservedMineral += tech.mineralPrice();
                     reservedGas += tech.gasPrice();
                 }
@@ -653,7 +647,6 @@ namespace McRave::Production {
 
             for (auto &[unit, upgrade] : idleUpgrade) {
                 if (unit->exists()) {
-                    Broodwar->drawTextMap(unit->getPosition(), "%s", upgrade.c_str());
                     reservedMineral += upgrade.mineralPrice();
                     reservedGas += upgrade.gasPrice();
                 }
@@ -664,6 +657,76 @@ namespace McRave::Production {
         {
             trainedThisFrame.clear();
 
+            if (Broodwar->self()->getRace() == Races::Zerg) {
+
+                for (int i = 0; i < vis(Zerg_Larva); i++) {
+
+                    // 1. Find the UnitType we want.
+                    auto best = 0.0;
+                    auto bestType = None;
+
+                    // Choose an Overlord if we need one
+                    if (BuildOrder::buildCount(Zerg_Overlord) > vis(Zerg_Overlord) + trainedThisFrame[Zerg_Overlord])
+                        bestType = Zerg_Overlord;
+                    else {
+                        for (auto &type : UnitTypes::Zerg_Larva.buildsWhat()) {
+                            if (!isCreateable(nullptr, type)
+                                || !isSuitable(type))
+                                continue;
+
+                            const auto value = scoreUnit(type);
+                            if (value >= best) {
+                                best = value;
+                                bestType = type;
+                            }
+                        }
+                    }
+
+                    // 2. Sort stations by saturation.
+                    multimap<double, BWEB::Station *> stationsBySaturation;
+                    for (auto &[_, station] : Stations::getMyStations()) {
+                        auto droneCount = 0;
+                        auto mineralCount = 0;
+                        for (auto &mineral : Resources::getMyMinerals()) {
+                            if (mineral->getStation() == station) {
+                                mineralCount++;
+                                droneCount+=mineral->targetedByWhat().size();
+                            }
+                        }
+
+                        // Order by lowest saturation first if we want a worker
+                        if (bestType.isWorker()) {
+                            auto saturatedLevel = mineralCount > 0 ? droneCount / mineralCount : 2.0;
+                            stationsBySaturation.emplace(saturatedLevel, station);
+                        }
+
+                        // Otherwise order by highest saturation
+                        else {
+                            auto saturatedLevel = droneCount > 0 ? mineralCount / droneCount : 2.0;
+                            stationsBySaturation.emplace(saturatedLevel, station);
+                        }
+                    }
+
+                    // 3. Find a station that we should morph at based on the UnitType we want.
+                    for (auto &[_, station] : stationsBySaturation) {
+                        for (auto &u : Units::getUnits(PlayerState::Self)) {
+                            UnitInfo &larva = *u;
+
+                            if (!larva.unit()
+                                || larva.getRole() != Role::Production
+                                || !larva.unit()->isCompleted()
+                                || larva.getRemainingTrainFrames() >= Broodwar->getLatencyFrames()
+                                || lastTrainFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames())
+                                continue;
+
+                            // This larva is closest to this station
+                            auto closestStation = Stations::getClosestStation(PlayerState::Self, larva.getPosition());
+                            if (closestStation == station)
+                                produce(larva);
+                        }
+                    }
+                }
+            }
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &building = *u;
 
@@ -672,7 +735,7 @@ namespace McRave::Production {
                     || !building.unit()->isCompleted()
                     || building.getRemainingTrainFrames() >= Broodwar->getLatencyFrames()
                     || lastTrainFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames()
-                    || (building.getType() == Zerg_Larva && BuildOrder::isSaveLarva()))
+                    || building.getType() == Zerg_Larva)
                     continue;
 
                 // TODO: Combine into one - iterate all commands and return when true

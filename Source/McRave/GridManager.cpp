@@ -27,6 +27,9 @@ namespace McRave::Grids
         int mobility[1024][1024] ={};
         int collision[1024][1024] ={};
 
+        // Ultralisk Grid
+        bool ultraWalkable[256][256]={};
+
         int fasterDistGrids(int x1, int y1, int x2, int y2) {
             unsigned int min = abs((int)(x1 - x2));
             unsigned int max = abs((int)(y1 - y2));
@@ -69,7 +72,7 @@ namespace McRave::Grids
         void addToGrids(UnitInfo& unit)
         {
             // If it's an enemy worker, add to grids only if it's near our scout
-            if (BuildOrder::shouldScout() && unit.getType().isWorker() && unit.getPlayer() != Broodwar->self()) {
+            if (Util::getTime() < Time(8,0) && BuildOrder::shouldScout() && unit.getType().isWorker() && unit.getPlayer() != Broodwar->self()) {
                 const auto closestScout = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                     return u.getRole() == Role::Scout && !u.isFlying();
                 });
@@ -79,7 +82,8 @@ namespace McRave::Grids
             }
 
             if (unit.getType() == Protoss_Interceptor
-                || unit.getType() == Terran_Medic)
+                || unit.getType() == Terran_Medic
+                || unit.getType().isWorker())
                 return;
 
             // Pixel and walk sizes
@@ -135,16 +139,16 @@ namespace McRave::Grids
                 for (int y = top; y < bottom; y++) {
 
                     //const auto dist = fasterDistGrids(x1, y1, (x * 8) + 4, (y * 8) + 4);
-                    const auto dist = unit.getPosition().getDistance(Position((x * 8) + 4, (y * 8) + 4));
+                    const auto dist = float(unit.getPosition().getDistance(Position((x * 8) + 4, (y * 8) + 4)));
 
                     // Cluster
                     if (clusterGrid && dist < 64.0 && (unit.getPlayer() != Broodwar->self() || unit.getRole() == Role::Combat)) {
-                        clusterGrid[x][y] += float(unit.getPriority());
+                        clusterGrid[x][y] += (65.0f - dist) / 64.0f;
                         saveReset(x, y);
                     }
 
                     // Collision
-                    if (!unit.isFlying() && Util::rectangleIntersect(topLeft, botRight, x * 8, y * 8)) {
+                    if (!unit.isFlying() && !unit.isBurrowed() && Util::rectangleIntersect(topLeft, botRight, x * 8, y * 8)) {
                         collision[x][y] += 1;
                         saveReset(x, y);
                     }
@@ -319,6 +323,11 @@ namespace McRave::Grids
                 }
             }
         }
+
+        void updateUltraGrid()
+        {
+            
+        }
     }
 
     void onFrame()
@@ -333,6 +342,7 @@ namespace McRave::Grids
     void onStart()
     {
         updateMobility();
+        updateUltraGrid();
 
         if (Broodwar->getGameType() == GameTypes::Use_Map_Settings) {
             for (int x = 0; x <= Broodwar->mapWidth() * 4; x++) {
@@ -370,25 +380,51 @@ namespace McRave::Grids
     int lastVisibleFrame(TilePosition t) { return visibleGrid[t.x][t.y]; }
     int lastVisitedFrame(WalkPosition w) { return visitedGrid[w.x][w.y]; }
 
-    void addMovement(Position here, UnitType type)
+    void addMovement(Position here, UnitInfo& unit)
     {
-        //if (type.isFlyer())
-        //    return;
+        if (unit.isLightAir()) {
+            const auto walkWidth = unit.getWalkWidth();
+            const auto walkHeight = unit.getWalkHeight();
 
-        //const auto w = WalkPosition(here);
-        //const auto hw = unit.getWalkWidth() / 2;
-        //const auto hh = unit.getWalkHeight() / 2;
+            const auto left = max(0, WalkPosition(here).x - walkWidth - 4);
+            const auto right = min(1024, WalkPosition(here).x + walkWidth + 4);
+            const auto top = max(0, WalkPosition(here).y - walkHeight - 4);
+            const auto bottom = min(1024, WalkPosition(here).y + walkHeight + 4);
 
-        //auto left = max(0, here.x - hw);
-        //auto right = min(1024, here.x + hw + wOffset);
-        //auto top = max(0, here.y - hh);
-        //auto bottom = min(1024, here.y + hh + hOffset);
+            for (int x = left; x < right; x++) {
+                for (int y = top; y < bottom; y++) {
 
-        //for (int x = left; x < right; x++) {
-        //    for (int y = top; y < bottom; y++) {
-        //        collision[x][y] += 1;
-        //        saveReset(x, y);
-        //    }
-        //}
+                    //const auto dist = fasterDistGrids(x1, y1, (x * 8) + 4, (y * 8) + 4);
+                    const auto dist = float(here.getDistance(Position((x * 8) + 4, (y * 8) + 4)));
+
+                    // Cluster
+                    if (dist < 64.0) {
+                        aAirCluster[x][y] += (65.0f - dist) / 64.0f;
+                        saveReset(x, y);
+                    }
+                }
+            }
+        }
+
+        // Not using collision movement
+        return;
+
+        /*const auto w = WalkPosition(here);
+        const auto hw = unit.getWalkWidth() / 2;
+        const auto hh = unit.getWalkHeight() / 2;
+
+        auto left = max(0, here.x - hw);
+        auto right = min(1024, here.x + hw + wOffset);
+        auto top = max(0, here.y - hh);
+        auto bottom = min(1024, here.y + hh + hOffset);
+
+        for (int x = left; x < right; x++) {
+            for (int y = top; y < bottom; y++) {
+                collision[x][y] += 1;
+                saveReset(x, y);
+            }
+        }*/
     }
+
+    bool isUltraWalkable(TilePosition t) { return ultraWalkable[t.x][t.y]; }
 }
