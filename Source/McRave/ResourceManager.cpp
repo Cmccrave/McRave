@@ -11,7 +11,8 @@ namespace McRave::Resources {
         set<shared_ptr<ResourceInfo>> myMinerals;
         set<shared_ptr<ResourceInfo>> myGas;
         set<shared_ptr<ResourceInfo>> myBoulders;
-        bool minSat, gasSat;
+        bool minSat, gasSat, halfMinSat, halfGasSat;
+        int miners, gassers;
         int minCount, gasCount;
         int incomeMineral, incomeGas;
 
@@ -42,23 +43,22 @@ namespace McRave::Resources {
             }
 
             // Update resource state
-            auto station = Stations::getClosestStation(PlayerState::Self, resource.getPosition());
-            if (station) {
+            if (resource.hasStation()) {
                 auto base = Util::getClosestUnit(resource.getPosition(), PlayerState::Self, [&](auto &u) {
-                    return u.getType().isResourceDepot() && u.getPosition() == station->getBase()->Center();
+                    return u.getType().isResourceDepot() && u.getPosition() == resource.getStation()->getBase()->Center();
                 });
 
-                if (base && resource.hasStation() && base->getPosition() == resource.getStation()->getBase()->Center())
+                if (base)
                     (base->unit()->isCompleted() || base->getType() == Zerg_Lair || base->getType() == Zerg_Hive) ? resource.setResourceState(ResourceState::Mineable) : resource.setResourceState(ResourceState::Assignable);
                 else
                     resource.setResourceState(ResourceState::None);
             }
 
             // Update saturation            
-            if (resource.getType().isMineralField() && minSat && resource.getGathererCount() < 2 - (Broodwar->self()->getRace() == Races::Zerg) && resource.getResourceState() != ResourceState::None)
-                minSat = false;
-            else if (resource.getType() == geyserType && resource.unit()->isCompleted() && resource.getResourceState() != ResourceState::None && ((BuildOrder::isOpener() && resource.getGathererCount() < min(3, BuildOrder::gasWorkerLimit())) || (!BuildOrder::isOpener() && resource.getGathererCount() < 3)))
-                gasSat = false;
+            if (resource.getType().isMineralField() && resource.getResourceState() != ResourceState::None)
+                miners += resource.getGathererCount();
+            else if (resource.getType() == geyserType && resource.unit()->isCompleted() && resource.getResourceState() != ResourceState::None)
+                gassers += resource.getGathererCount();
 
             if (resource.getResourceState() == ResourceState::Mineable
                 || (resource.getResourceState() == ResourceState::Assignable && Stations::getMyStations().size() >= 3 && !Players::vP()))
@@ -67,10 +67,10 @@ namespace McRave::Resources {
 
         void updateResources()
         {
-            // Assume saturation, will be changed to false if any resource isn't saturated
-            minSat = true, gasSat = true;
-            incomeMineral = 0, incomeGas = 0;
-            minCount = 0, gasCount = 0;
+            minCount = 0;
+            gasCount = 0;
+            miners = 0;
+            gassers = 0;
 
             const auto update = [&](const shared_ptr<ResourceInfo>& r) {
                 updateInformation(r);
@@ -78,14 +78,39 @@ namespace McRave::Resources {
             };
 
             for (auto &r : myBoulders)
-                update(r);            
+                update(r);
 
             for (auto &r : myMinerals)
                 update(r);
 
             for (auto &r : myGas)
                 update(r);
+
+            minSat = miners >= minCount * 2;
+            halfMinSat = miners >= minCount;
+            gasSat = gassers >= gasCount * 3;
+            halfGasSat = gassers >= gasCount;
         }
+    }
+
+    void recheckSaturation()
+    {
+        miners = 0;
+        gassers = 0;
+
+        for (auto &r : myMinerals) {
+            auto &resource = *r;
+            miners += resource.getGathererCount();
+        }
+
+        for (auto &r : myGas) {
+            auto &resource = *r;
+            gassers += resource.getGathererCount();
+        }
+
+        auto saturatedAt = Broodwar->self()->getRace() == Races::Zerg ? 1 : 2;
+        minSat = (miners >= minCount * saturatedAt);
+        gasSat = (gassers >= gasCount * 3);
     }
 
     void onFrame()
@@ -103,25 +128,14 @@ namespace McRave::Resources {
         // Check if we already stored this resource
         for (auto &u : resourceList) {
             if (u->unit() == resource)
-                return;            
+                return;
         }
 
-        // If we are not on an inital frame, a geyser was just created and we need to re-setup the station connection
-        if (Broodwar->getFrameCount() > 0) {
-            auto newStation = BWEB::Stations::getClosestStation(resource->getTilePosition());
-
-            if (newStation) {
-                info.setStation(newStation);
-
-                for (auto &s : Stations::getMyStations()) {
-                    auto &station = *s.second;
-                    if (station.getBase() == newStation->getBase()) {
-                        info.setResourceState(ResourceState::Mineable);                        
-                        break;
-                    }
-                }
-            }
-        }
+        // Add station
+        auto newStation = BWEB::Stations::getClosestStation(resource->getTilePosition());
+        info.setStation(newStation);
+        if (Stations::ownedBy(newStation) == PlayerState::Self)
+            info.setResourceState(ResourceState::Assignable);
 
         auto ptr = make_shared<ResourceInfo>(info);
         resourceList.insert(make_shared<ResourceInfo>(info));
@@ -171,7 +185,9 @@ namespace McRave::Resources {
     int getIncomeMineral() { return incomeMineral; }
     int getIncomeGas() { return incomeGas; }
     bool isMinSaturated() { return minSat; }
+    bool isHalfMinSaturated() { return halfMinSat; }
     bool isGasSaturated() { return gasSat; }
+    bool isHalfGasSaturated() { return halfGasSat; }
     set<shared_ptr<ResourceInfo>>& getMyMinerals() { return myMinerals; }
     set<shared_ptr<ResourceInfo>>& getMyGas() { return myGas; }
     set<shared_ptr<ResourceInfo>>& getMyBoulders() { return myBoulders; }

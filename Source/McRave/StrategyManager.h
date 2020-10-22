@@ -22,6 +22,7 @@ namespace McRave::Strategy {
     bool enemyBust();
     bool enemyPressure();
     bool enemyBlockedScout();
+    bool enemyWalled();
     Time enemyArrivalTime();
 
     void onFrame();

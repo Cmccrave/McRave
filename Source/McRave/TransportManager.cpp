@@ -138,7 +138,7 @@ namespace McRave::Transports {
 
             // Check if this unit is ready to unload
             const auto readyToUnload = [&](UnitInfo& cargo) {
-                auto cargoReady = cargo.getType() == Protoss_High_Templar ? cargo.canStartCast(TechTypes::Psionic_Storm) : cargo.canStartAttack();
+                auto cargoReady = cargo.getType() == Protoss_High_Templar ? (cargo.canStartCast(TechTypes::Psionic_Storm, unit.getTarget().getPosition()) && unit.getPosition().getDistance(cargo.getTarget().getPosition()) <= 400) : cargo.canStartAttack();
 
                 return cargo.getLocalState() == LocalState::Attack && unit.isHealthy() && cargo.isHealthy() && cargoReady;
             };
@@ -221,6 +221,9 @@ namespace McRave::Transports {
 
         void updateDestination(UnitInfo& unit)
         {
+            if (unit.getTransportState() == TransportState::Loading || unit.getTransportState() == TransportState::Monitoring)
+                return;
+
             // If we have no cargo, wait at nearest base
             if (unit.getAssignedCargo().empty()) {
                 auto station = Stations::getClosestStation(PlayerState::Self, unit.getPosition());

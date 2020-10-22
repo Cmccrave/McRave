@@ -94,7 +94,7 @@ namespace McRave::Events
         for (int x = unit.getTilePosition().x - 2; x <= unit.getTilePosition().x + 2; x++) {
             for (int y = unit.getTilePosition().y - 2; y <= unit.getTilePosition().y + 2; y++) {
                 BWAPI::TilePosition t(x, y);
-                if (t.isValid() && !BWAPI::Broodwar->isVisible(t)) {
+                if (t.isValid() && BWEB::Map::isWalkable(t, BWAPI::UnitTypes::Protoss_Dragoon) && !BWAPI::Broodwar->isVisible(t)) {
                     notVisibleFully = true;
                     break;
                 }
@@ -102,9 +102,19 @@ namespace McRave::Events
         }
 
         if (!notVisibleFully) {
-            unit.setPosition(BWAPI::Positions::Invalid);
-            unit.setTilePosition(BWAPI::TilePositions::Invalid);
-            unit.setWalkPosition(BWAPI::WalkPositions::Invalid);
+            auto closestEnemy = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) {
+                return u != unit && !u.getType().isWorker() && !u.getType().isBuilding() && !u.isFlying() && !BWAPI::Broodwar->isVisible(u.getTilePosition());
+            });
+            if (closestEnemy) {
+                unit.setPosition(closestEnemy->getPosition());
+                unit.setTilePosition(closestEnemy->getTilePosition());
+                unit.setWalkPosition(closestEnemy->getWalkPosition());
+            }
+            else {
+                unit.setPosition(BWAPI::Positions::Invalid);
+                unit.setTilePosition(BWAPI::TilePositions::Invalid);
+                unit.setWalkPosition(BWAPI::WalkPositions::Invalid);
+            }
         }
     }
 

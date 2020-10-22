@@ -8,43 +8,34 @@ namespace McRave::Support {
 
     namespace {
 
-        map<Position, UnitType> futureAssignment;
+        constexpr tuple commands{ Command::misc, Command::special, Command::escort };
 
         void updateCounters()
         {
-            futureAssignment.clear();
         }
 
         void updateDestination(UnitInfo& unit)
         {
-            auto isntAssigned = [&](Position here) {
-                for (auto &[pos, type] : futureAssignment) {
-                    if (type == unit.getType() && pos.getDistance(here) < 256.0)
-                        return false;
-                }
-                return true;
-            };
-
-            BWEB::Station * stationNeedsDetection = nullptr;
-            BWEB::Wall * wallNeedsDetection = nullptr;
-
-            // Check If any station needs detection
-            if (false) {
-                for (auto &[_, station] : Stations::getMyStations()) {
-                    if (!Actions::overlapsDetection(unit.unit(), station->getBase()->Center(), PlayerState::Self)) {
-                        stationNeedsDetection = station;
-                        break;
+            // Send Overlords to a corner at least 10 tiles away when we know they will have air before we do
+            if (unit.getType() == Zerg_Overlord && Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "1GateCore" && Strategy::getEnemyTransition() == "Corsair" && Util::getTime() < Time(8, 00)) {
+                vector<Position> directions ={ Position(0,0), Position(0, Broodwar->mapHeight() * 32), Position(Broodwar->mapWidth() * 32, 0), Position(Broodwar->mapWidth() * 32, Broodwar->mapHeight() * 32) };
+                auto distBest = 0.0;
+                auto posBest = Positions::Invalid;
+                for (auto &p : directions) {
+                    auto pos = Util::clipPosition(p);
+                    auto distEnemy = pos.getDistance(Terrain::getEnemyStartingPosition());
+                    auto distHome = pos.getDistance(BWEB::Map::getMainPosition());
+                    Broodwar->drawLineMap(pos, BWEB::Map::getMainPosition(), Colors::Grey);
+                    if (distHome > 640.0 && distEnemy > distBest) {
+                        posBest = pos;
+                        distBest = distEnemy;
                     }
                 }
-            }
-
-            // Check if any wall needs detection
-            if (false) {
-
+                unit.setDestination(posBest);
             }
 
             // Set goal as destination
-            if (unit.getGoal().isValid())
+            else if (unit.getGoal().isValid())
                 unit.setDestination(unit.getGoal());
 
             // Send Overlords to safety if needed
@@ -61,62 +52,56 @@ namespace McRave::Support {
                     unit.setDestination(closestStation->getBase()->Center());
             }
 
-            // Send detection to a wall that needs it
-            else if (unit.getType().isDetector() && wallNeedsDetection && !Actions::overlapsDetection(unit.unit(), wallNeedsDetection->getCentroid(), PlayerState::Self))
-                unit.setDestination(Walls::getNaturalWall()->getCentroid());
-
-            // Send detection to a station that needs it
-            else if (unit.getType().isDetector() && stationNeedsDetection && !Actions::overlapsDetection(unit.unit(), stationNeedsDetection->getBase()->Center(), PlayerState::Self))
-                unit.setDestination(stationNeedsDetection->getBase()->Center());
-
-            // Send Overlords to watch for proxy structures at our natural choke
-            else if (unit.getType() == Zerg_Overlord && Util::getTime() < Time(3, 00) && !Actions::overlapsDetection(unit.unit(), Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self))
-                unit.setDestination(Position(BWEB::Map::getNaturalChoke()->Center()));
-
-            // Detectors want to stay close to their target if we have a unit that can engage it
-            else if (unit.getType().isDetector() && unit.hasTarget() && isntAssigned(unit.getTarget().getPosition()))
-                unit.setDestination(unit.getTarget().getPosition());
-
             // Find the highest combat cluster that doesn't overlap a current support action of this UnitType
             else {
-                auto highestCluster = 0.0;
+                auto highestCluster = 2.5;
                 for (auto &[cluster, position] : Combat::getCombatClusters()) {
-                    const auto score = cluster / position.getDistance(Terrain::getAttackPosition());
-                    if (score > highestCluster && isntAssigned(position)) {
+                    const auto score = cluster / (position.getDistance(Terrain::getAttackPosition()) * position.getDistance(unit.getPosition()));
+                    if (score > highestCluster && !Actions::overlapsActions(unit.unit(), position, unit.getType(), PlayerState::Self, 200.0)) {
                         highestCluster = score;
                         unit.setDestination(position);
                     }
                 }
+
+                // Move detectors between target and unit vs Terran
+                if (unit.getType().isDetector() && Players::vT()) {
+                    if (unit.hasTarget())
+                        unit.setDestination((unit.getTarget().getPosition() + unit.getDestination()) / 2);
+                    else {
+                        auto closestEnemy = Util::getClosestUnit(unit.getDestination(), PlayerState::Enemy, [&](auto &u) {
+                            return !u.getType().isWorker() && !u.getType().isBuilding();
+                        });
+
+                        if (closestEnemy)
+                            unit.setDestination((closestEnemy->getPosition() + unit.getDestination()) / 2);
+                    }
+                }
             }
 
-            // Resort to going to the army center as long as we have an army
-            if (!unit.getDestination().isValid() && !Combat::getCombatClusters().empty()) {
-                auto highestClusterPosition = (*Combat::getCombatClusters().rbegin()).second;
-                unit.setDestination(highestClusterPosition);
-            }
+            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Purple);
 
             if (!unit.getDestination().isValid())
                 unit.setDestination(BWEB::Map::getMainPosition());
-
-            futureAssignment.emplace(make_pair(unit.getDestination(), unit.getType()));
         }
 
         void updateDecision(UnitInfo& unit)
         {
-            // If this unit is a scanner sweep, add the action and return
-            if (unit.getType() == Spell_Scanner_Sweep) {
-                Actions::addAction(unit.unit(), unit.getPosition(), Spell_Scanner_Sweep, PlayerState::Self);
+            if (!unit.unit() || !unit.unit()->exists()                                                                                          // Prevent crashes            
+                || unit.unit()->isLoaded()
+                || unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())    // If the unit is locked down, maelstrommed, stassised, or not completed
                 return;
-            }
 
-            // Arbiters cast stasis on a target        
-            else if (unit.getType() == Protoss_Arbiter && unit.canStartCast(TechTypes::Stasis_Field) && !Actions::overlapsActions(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self, 96)) {
-                unit.unit()->useTech(TechTypes::Stasis_Field, unit.getTarget().unit());
-                Actions::addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Stasis_Field, PlayerState::Self);
-            }
+            // Convert our commands to strings to display what the unit is doing for debugging
+            map<int, string> commandNames{
+                make_pair(0, "Misc"),
+                make_pair(1, "Special"),
+                make_pair(2, "Escort")
+            };
 
-            else
-                Command::escort(unit);
+            // Iterate commands, if one is executed then don't try to execute other commands
+            int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
+            int i = Util::iterateCommands(commands, unit);
+            Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", Text::White, commandNames[i].c_str());
         }
 
         void updateUnits()

@@ -66,6 +66,14 @@ namespace BWEB
 
         /// <summary> Returns true if the TilePosition is walkable (includes buildings). </summary>
         bool unitWalkable(const BWAPI::TilePosition &tile);
+
+        bool operator== (const Path& r) {
+            return source == r.source && target == r.target;
+        };
+
+        bool operator!= (const Path& r) {
+            return source != r.source || target != r.target;
+        };
     };
 
     namespace Pathfinding {

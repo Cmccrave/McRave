@@ -16,10 +16,12 @@ namespace McRave::BuildOrder::Protoss {
 
         void defaultPvT() {
             inOpeningBook =                                 true;
-            wallNat =                                       com(Protoss_Pylon) >= 3 || currentOpener == "Natural";
+            inBookSupply =                                  vis(Protoss_Pylon) < 2;
+            wallNat =                                       com(Protoss_Pylon) >= 6 || currentOpener == "Natural";
             wallMain =                                      false;
             scout =                                         vis(Protoss_Cybernetics_Core) > 0;
-            fastExpand =                                    false;
+            wantNatural =                                   true;
+            wantThird =                                     true;
             proxy =                                         false;
             hideTech =                                      false;
             playPassive =                                   false;
@@ -34,6 +36,7 @@ namespace McRave::BuildOrder::Protoss {
             desiredDetection =                              Protoss_Observer;
             firstUpgrade =                                  UpgradeTypes::Singularity_Charge;
             firstTech =                                     TechTypes::None;
+            firstUnit =                                     None;
 
             armyComposition[Protoss_Dragoon] =              1.00;
         }
@@ -46,7 +49,8 @@ namespace McRave::BuildOrder::Protoss {
         firstUpgrade =                                      UpgradeTypes::None;
         firstTech =                                         TechTypes::None;
         firstUnit =                                         None;
-        fastExpand =                                        false;
+        wantNatural =                                   false;
+        wantThird =                                     false;
 
         zealotLimit =                                       s >= 50 ? 0 : INT_MAX;
         dragoonLimit =                                      s >= 50 ? INT_MAX : 0;
@@ -66,7 +70,7 @@ namespace McRave::BuildOrder::Protoss {
         proxy =                                             currentOpener == "Proxy" && vis(Protoss_Gateway) < 2 && Broodwar->getFrameCount() < 5000;
         scout =                                             currentOpener != "Proxy" && Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
         rush =                                              currentOpener == "Proxy";
-        playPassive =                                       Strategy::enemyPressure() && Util::getTime() < Time(6, 0);
+        playPassive =                                       Strategy::enemyPressure() && Util::getTime() < Time(5, 0);
 
         // Reactions
         if (!lockedTransition) {
@@ -239,7 +243,6 @@ namespace McRave::BuildOrder::Protoss {
     {
         // "http://liquipedia.net/starcraft/12_Nexus"
         defaultPvT();
-        fastExpand =                                        true;
         playPassive =                                       Strategy::enemyPressure() ? vis(Protoss_Dragoon) < 12 : !firstReady() && vis(Protoss_Dragoon) < 4;
         firstUpgrade =                                      vis(Protoss_Dragoon) >= 1 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
         cutWorkers =                                        s >= 44 && s < 48;
@@ -306,7 +309,7 @@ namespace McRave::BuildOrder::Protoss {
             else if (currentTransition == "ReaverCarrier") {
                 inOpeningBook =                             s < 120;
                 lockedTransition =                          total(Protoss_Stargate) > 0;
-                firstUnit =                                 Players::getCurrentCount(PlayerState::Enemy, Terran_Medic) > 0 && vis(Protoss_Reaver) == 0 ? Protoss_Reaver : Protoss_Carrier;
+                firstUnit =                                 Players::getVisibleCount(PlayerState::Enemy, Terran_Medic) > 0 && vis(Protoss_Reaver) == 0 ? Protoss_Reaver : Protoss_Carrier;
 
                 // Build
                 buildQueue[Protoss_Assimilator] =           1 + (s >= 56);
@@ -327,17 +330,14 @@ namespace McRave::BuildOrder::Protoss {
     void PvTGateNexus()
     {
         defaultPvT();
-        fastExpand =                                        true;
-        playPassive =                                       Strategy::enemyPressure() ? vis(Protoss_Dragoon) < 12 : !firstReady();
         firstUpgrade =                                      UpgradeTypes::Singularity_Charge;
         firstTech =                                         TechTypes::None;
-        scout =                                             Broodwar->getStartLocations().size() == 4 ? vis(Protoss_Pylon) > 0 : vis(Protoss_Pylon) > 0;
         zealotLimit =                                       0;
 
         // Reactions
         if (!lockedTransition) {
-            if (currentTransition != "Carrier" && (Strategy::enemyFastExpand() || Strategy::getEnemyTransition() == "SiegeExpand"))
-                currentTransition = "DoubleExpand";
+            if (Strategy::enemyFastExpand() || Strategy::getEnemyTransition() == "SiegeExpand")
+                currentTransition = "Carrier";
             else if ((!Strategy::enemyFastExpand() && Terrain::foundEnemy() && currentTransition == "DoubleExpand") || Strategy::enemyPressure())
                 currentTransition = "Standard";
 
@@ -354,6 +354,8 @@ namespace McRave::BuildOrder::Protoss {
             buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 30);
             buildQueue[Protoss_Gateway] =                   (s >= 20) + (vis(Protoss_Nexus) >= 2) + (s >= 76);
 
+            playPassive =                                   (Strategy::enemyPressure() ? vis(Protoss_Dragoon) < 16 : !firstReady()) || (com(Protoss_Dragoon) < 4 && !Strategy::enemyFastExpand());
+            scout =                                         Broodwar->getStartLocations().size() == 4 ? vis(Protoss_Pylon) > 0 : vis(Protoss_Pylon) > 0;
             gasLimit =                                      goonRange() && vis(Protoss_Nexus) < 2 ? 2 : INT_MAX;
             dragoonLimit =                                  Util::getTime() > Time(4, 0) || vis(Protoss_Nexus) >= 2 ? INT_MAX : 1;
             cutWorkers =                                    vis(Protoss_Probe) >= 19 && s < 46;
@@ -361,11 +363,13 @@ namespace McRave::BuildOrder::Protoss {
         else if (currentOpener == "2Gate") {                // "https://liquipedia.net/starcraft/2_Gate_Range_Expand"
 
             buildQueue[Protoss_Nexus] =                     1 + (s >= 40);
-            buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 30);
-            buildQueue[Protoss_Gateway] =                   (s >= 20) + (s >= 36) + (s >= 76);
+            buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 30) + (s >= 48);
+            buildQueue[Protoss_Gateway] =                   (s >= 20) + (s >= 34) + (s >= 76);
 
+            scout =                                         vis(Protoss_Cybernetics_Core) > 0;
+            inBookSupply =                                  vis(Protoss_Pylon) < 3;
             gasLimit =                                      goonRange() && vis(Protoss_Pylon) < 3 ? 2 : INT_MAX;
-            dragoonLimit =                                  Util::getTime() > Time(4, 0) || vis(Protoss_Nexus) >= 2 ? INT_MAX : 0;
+            dragoonLimit =                                  Util::getTime() > Time(4, 0) || vis(Protoss_Nexus) >= 2 || s >= 40 ? INT_MAX : 0;
             cutWorkers =                                    vis(Protoss_Probe) >= 20 && s < 48;
         }
 
@@ -377,16 +381,17 @@ namespace McRave::BuildOrder::Protoss {
             lockedTransition =                              total(Protoss_Nexus) >= 3;
 
             buildQueue[Protoss_Nexus] =                     1 + (s >= 42) + (s >= 70);
-            buildQueue[Protoss_Assimilator] =               (s >= 24) + (s >= 80);
+            buildQueue[Protoss_Assimilator] =               s >= 24;
             buildQueue[Protoss_Cybernetics_Core] =          s >= 26;
         }
         else if (currentTransition == "Standard") {
             inOpeningBook =                                 s < 80;
             firstUnit =                                     Protoss_Observer;
-            lockedTransition =                              false;
+            lockedTransition =                              total(Protoss_Nexus) >= 2;
 
-            buildQueue[Protoss_Assimilator] =               (s >= 24) + (s >= 80);
+            buildQueue[Protoss_Assimilator] =               s >= 24;
             buildQueue[Protoss_Cybernetics_Core] =          s >= 26;
+            buildQueue[Protoss_Robotics_Facility] =         s >= 62;
         }
         else if (currentTransition == "Carrier") {
             inOpeningBook =                                 s < 160;
@@ -395,7 +400,7 @@ namespace McRave::BuildOrder::Protoss {
 
             buildQueue[Protoss_Assimilator] =               (s >= 24) + (s >= 60);
             buildQueue[Protoss_Cybernetics_Core] =          s >= 26;
-            buildQueue[Protoss_Stargate] =                  vis(Protoss_Dragoon) >= 3;
+            buildQueue[Protoss_Stargate] =                  vis(Protoss_Dragoon) >= 6;
             buildQueue[Protoss_Fleet_Beacon] =              atPercent(Protoss_Stargate, 1.00);
         }
     }

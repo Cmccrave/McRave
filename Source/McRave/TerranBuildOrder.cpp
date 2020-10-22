@@ -57,7 +57,7 @@ namespace McRave::BuildOrder::Terran {
             buildQueue[Terran_Machine_Shop] = max(1, com(Terran_Factory) - com(Terran_Command_Center) - 1);
 
         // Supply Depot logic
-        if (vis(Terran_Supply_Depot) > (int)fastExpand) {
+        if (vis(Terran_Supply_Depot) > (int)takeNatural) {
             int count = min(22, (int)floor((Players::getSupply(PlayerState::Self) / max(15, (16 - vis(Terran_Supply_Depot) - vis(Terran_Command_Center))))));
             buildQueue[Terran_Supply_Depot] = count;
         }

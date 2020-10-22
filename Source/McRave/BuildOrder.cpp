@@ -90,44 +90,46 @@ namespace McRave::BuildOrder
         // When timing attack finishes
         if (techUnit == Zerg_Mutalisk || techUnit == Zerg_Hydralisk)
             return total(techUnit) >= 12;
-        if (techUnit == Zerg_Lurker)
-            return Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect);
+        if (techUnit == Zerg_Lurker) {
+            auto vsMech = Strategy::getEnemyTransition() == "2Fact"
+                || Strategy::getEnemyTransition() == "1FactTanks"
+                || Strategy::getEnemyTransition() == "5FactGoliath";
+            return Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) || vsMech;
+        }
 
         // When 1 unit is visible
         return vis(techUnit) > 0;
     }
 
-    bool shouldExpand()
+    void checkExpand()
     {
         const auto baseType = Broodwar->self()->getRace().getResourceDepot();
         const auto hatchCount = vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive);
-        const auto productionCap = int(round(1.5 * double(Stations::getMyStations().size())));
+        const auto availableMinerals = Broodwar->self()->minerals() - Buildings::getQueuedMineral() + (expandDesired * 300) + (rampDesired * 300);
 
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            if (Resources::isMinSaturated() && Resources::isGasSaturated() && techSat && productionSat)
-                return true;
-            else if (techUnit == None && techSat && productionSat && Broodwar->self()->minerals() >= 600 && !saveLarva)
-                return true;
+            expandDesired = (Resources::isHalfMinSaturated() && Resources::isGasSaturated() && techSat && productionSat && availableMinerals >= 300)
+                || (Resources::isHalfMinSaturated() && Resources::isGasSaturated() && availableMinerals >= 300 && !saveLarva && productionSat)
+                || (vis(Zerg_Larva) < hatchCount && availableMinerals >= 300 && !saveLarva && productionSat && vis(Zerg_Hatchery) == com(Zerg_Hatchery));
         }
-        else {
-            if (com(baseType) >= 2 && Broodwar->self()->minerals() >= 400)
-                return true;
-            else if (techUnit == None && (Resources::isMinSaturated() || com(baseType) >= 3) && (techSat || com(baseType) >= 3) && productionSat)
-                return true;
-        }
-        return false;
+        else
+            expandDesired = (techUnit == None && (Resources::isMinSaturated() || com(baseType) >= 3) && (techSat || com(baseType) >= 3) && productionSat)
+            || (com(baseType) >= 2 && availableMinerals >= 300 && (Resources::isMinSaturated() || Resources::isGasSaturated()));
     }
 
-    bool shouldAddProduction()
+    void checkRamp()
     {
         const auto baseType = Broodwar->self()->getRace().getResourceDepot();
         const auto hatchCount = com(Zerg_Hatchery) + com(Zerg_Lair) + com(Zerg_Hive);
+        const auto availableMinerals = Broodwar->self()->minerals() - Buildings::getQueuedMineral() + (expandDesired * 300) + (rampDesired * 300);
+
+        auto maxSat = int(Stations::getMyStations().size()) * 2;
 
         if (Broodwar->self()->getRace() == Races::Zerg)
-            return !productionSat && ((techUnit == None && techSat && Broodwar->self()->minerals() >= 600 && !saveLarva) || (Broodwar->self()->minerals() >= 400 && vis(Zerg_Larva) < 3 && !saveLarva));
+            rampDesired = (!productionSat && !saveLarva && ((techSat && availableMinerals >= 300) || (availableMinerals >= 300 && vis(Zerg_Larva) < min(3, hatchCount))))
+            || (availableMinerals >= 600 && hatchCount < maxSat && Resources::isGasSaturated() && Resources::isHalfMinSaturated() && vis(Zerg_Larva) < min(3, hatchCount));
         else
-            return !productionSat && ((techUnit == None && Broodwar->self()->minerals() >= 150 && (techSat || com(baseType) >= 3)) || Broodwar->self()->minerals() >= 300);
-        return false;
+            rampDesired = !productionSat && ((techUnit == None && Broodwar->self()->minerals() >= 150 && (techSat || com(baseType) >= 3)) || Broodwar->self()->minerals() >= 450);
     }
 
     bool shouldAddGas()
@@ -137,9 +139,9 @@ namespace McRave::BuildOrder
         auto workerUnlimitedGas = Players::ZvT() ? 40 : 60;
 
         if (Broodwar->self()->getRace() == Races::Zerg)
-            return gasLimit >= Workers::getGasWorkers() && workerCount >= 10 && ((Broodwar->self()->minerals() > 600 && Broodwar->self()->gas() < 200 && Resources::isMinSaturated()) || productionSat || workerCount >= workerUnlimitedGas || Players::ZvZ());
+            return gasLimit > vis(Zerg_Extractor) * 3 && workerCount >= 10 && ((Broodwar->self()->minerals() > 600 && Broodwar->self()->gas() < 200 && Resources::isHalfMinSaturated()) || productionSat || workerCount >= workerUnlimitedGas || Players::ZvZ());
         else
-            return (Broodwar->self()->gas() < 300 || workerCount >= 30) && ((refineryCount != 1 && Broodwar->self()->getRace() != Races::Zerg) || workerCount >= 30 || Broodwar->self()->minerals() > 600 || Resources::isMinSaturated());
+            return ((Broodwar->self()->minerals() > 600 && Broodwar->self()->gas() < 200) || Resources::isMinSaturated()) && workerCount >= 30;
     }
 
     double getCompositionPercentage(UnitType unit)
@@ -314,17 +316,21 @@ namespace McRave::BuildOrder
     bool isUnitUnlocked(UnitType unit) { return unlockedType.find(unit) != unlockedType.end(); }
     bool isTechUnit(UnitType unit) { return techList.find(unit) != techList.end(); }
     bool isOpener() { return inOpeningBook; }
-    bool isFastExpand() { return fastExpand; }
-    bool shouldScout() { return scout; }
+    bool takeNatural() { return wantNatural; }
+    bool takeThird() { return wantThird; }
     bool isWallNat() { return wallNat; }
     bool isWallMain() { return wallMain; }
     bool isProxy() { return proxy; }
     bool isHideTech() { return hideTech; }
     bool isPlayPassive() { return playPassive; }
     bool isRush() { return rush; }
+    bool isPressure() { return pressure; }
     bool isGasTrick() { return gasTrick; }
     bool isSaveLarva() { return saveLarva; }
     bool makeDefensesNow() { return defensesNow; }
+    bool shouldScout() { return scout; }
+    bool shouldExpand() { return expandDesired; }
+    bool shouldRamp() { return rampDesired; }
     string getCurrentBuild() { return currentBuild; }
     string getCurrentOpener() { return currentOpener; }
     string getCurrentTransition() { return currentTransition; }

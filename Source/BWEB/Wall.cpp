@@ -23,6 +23,9 @@ namespace BWEB {
 
     Position Wall::findCentroid()
     {
+        if (rawBuildings.empty())            
+            return Position(choke->Center());        
+
         // Create current centroid using all buildings except Pylons
         auto currentCentroid = Position(0, 0);
         auto sizeWall = int(rawBuildings.size());
@@ -102,9 +105,10 @@ namespace BWEB {
         checkPathPoints();
         const auto startCenter = Position(pathStart) + Position(16, 16);
         const auto endCenter = Position(pathEnd) + Position(16, 16);
+        const auto biggestUnit = Broodwar->self()->getRace() == Races::Zerg ? UnitTypes::Zerg_Ultralisk : UnitTypes::Protoss_Dragoon;
 
         // Get a new path
-        BWEB::Path newPath(endCenter, startCenter, UnitTypes::Protoss_Dragoon);
+        BWEB::Path newPath(endCenter, startCenter, biggestUnit);
         allowLifted = false;
         newPath.generateBFS([&](const auto &t) { return wallWalkable(t); }, false);
         return newPath;
@@ -172,7 +176,7 @@ namespace BWEB {
 
         // Check if the angle is okay between all pieces in the current layout
         for (auto &[tileLayout, typeLayout] : currentLayout) {
-            if (typeLayout == UnitTypes::Protoss_Pylon)
+            if (typeLayout == UnitTypes::Protoss_Pylon && !pylonWall && !pylonWallPiece)
                 continue;
 
             const auto centerPiece = Position(tileLayout) + Position(typeLayout.tileWidth() * 16, typeLayout.tileHeight() * 16);
@@ -473,7 +477,7 @@ namespace BWEB {
         // Create a jps path for limiting BFS exploration using the distance of the jps path
         Path jpsPath(Position(pathStart), Position(pathEnd), UnitTypes::Zerg_Zergling);
         jpsPath.generateJPS([&](const TilePosition &t) { return jpsPath.unitWalkable(t); });
-        jpsDist = jpsPath.getDistance();   
+        jpsDist = jpsPath.getDistance();
 
         // Create notable locations to keep Wall pieces within proxmity of
         if (base)
@@ -639,6 +643,10 @@ namespace BWEB {
 
     void Wall::addPieces()
     {
+        // If not adding any buildings to the wall
+        if (rawBuildings.empty())
+            return;
+
         // For each permutation, try to make a wall combination that is better than the current best
         do {
             currentLayout.clear();
@@ -739,10 +747,6 @@ namespace BWEB {
 
     void Wall::addDefenses()
     {
-        // Prevent adding defenses if we don't have a wall
-        if (bestLayout.empty())
-            return;
-
         // Find the furthest non Pylon building to the chokepoint
         auto furthest = 0.0;
         for (auto &tile : largeTiles) {
@@ -771,14 +775,43 @@ namespace BWEB {
             }
         }
 
-        auto closestStation = Stations::getClosestStation(TilePosition(choke->Center()));
+        // Add a secondary row of defenses if possible
+        if (choke && base) {
+            set<TilePosition> secondaryRow;
+            auto left = Position(choke->Center()).x < base->Center().x;
+            auto up = Position(choke->Center()).y < base->Center().y;
+
+            if (up)
+                secondaryRow ={ {-4, 6}, {-4, 4}, {-4, 2}, {-4, 0}, {-4, -2}, {-4, 4}, {-2, -4}, {0, -4}, {2, -4}, {4, -4}, {6, -4}, {6, -2}, {6, 0}, {6, 2}, {6, 4}, {6, 6} };
+            else
+                secondaryRow ={ {-4, -5}, {-4, -3}, {-4, -1}, {-4, 1}, {-4, 5}, {-2, 5}, {0, 5}, {2, 5}, {4, 5}, {6, 5}, {6, 3}, {6, 1}, {6, -1}, {6, -3}, {6, -5} };
+
+            auto type = (rawDefenses.front());
+            for (auto &placement : secondaryRow) {
+                auto tile = base->Location() + placement;
+
+                if (!tile.isValid()
+                    || Map::isReserved(tile, 2, 2)
+                    || !Map::isPlaceable(type, tile))
+                    continue;
+
+                Map::addUsed(tile, type);
+                auto &pathOut = findPathOut();
+                if ((openWall && pathOut.isReachable()) || !openWall) {
+                    defenses.insert(tile);
+                    Map::addReserve(tile, 2, 2);
+                }
+                Map::removeUsed(tile, 2, 2);
+            }
+        }
+
         for (auto &building : rawDefenses) {
 
-            const auto start = TilePosition(centroid);
+            const auto start = centroid.isValid() ? TilePosition(centroid) : TilePosition(choke->Center());
             const auto width = building.tileWidth() * 32;
             const auto height = building.tileHeight() * 32;
             const auto openingCenter = Position(opening) + Position(16, 16);
-            const auto arbitraryCloseMetric = Broodwar->self()->getRace() == Races::Zerg ? 32.0 : 160.0;
+            const auto arbitraryCloseMetric = 32.0;
 
             // Iterate around wall centroid to find a suitable position
             auto scoreBest = DBL_MAX;
@@ -1007,11 +1040,6 @@ namespace BWEB::Walls {
 
         if (!choke) {
             writeFile << "BWEB: Can't create a wall without a valid BWEM::Chokepoint" << endl;
-            return nullptr;
-        }
-
-        if (buildings.empty()) {
-            writeFile << "BWEB: Can't create a wall with an empty vector of UnitTypes." << endl;
             return nullptr;
         }
 

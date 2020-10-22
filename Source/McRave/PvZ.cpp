@@ -15,12 +15,13 @@ namespace McRave::BuildOrder::Protoss {
         }
 
         void defaultPvZ() {
-
             inOpeningBook =                                 true;
+            inBookSupply =                                  vis(Protoss_Pylon) < 2;
             wallNat =                                       vis(Protoss_Nexus) >= 2 || currentOpener == "Natural";
             wallMain =                                      false;
             scout =                                         vis(Protoss_Gateway) > 0;
-            fastExpand =                                    false;
+            wantNatural =                                   false;
+            wantThird =                                     false;
             proxy =                                         false;
             hideTech =                                      false;
             playPassive =                                   false;
@@ -33,9 +34,9 @@ namespace McRave::BuildOrder::Protoss {
             dragoonLimit =                                  0;
 
             desiredDetection =                              Protoss_Observer;
-            firstUnit =                                     None;
             firstUpgrade =                                  vis(Protoss_Dragoon) > 0 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
             firstTech =                                     TechTypes::None;
+            firstUnit =                                     None;
         }
     }
 
@@ -62,7 +63,7 @@ namespace McRave::BuildOrder::Protoss {
     void PvZFFE()
     {
         defaultPvZ();
-        fastExpand =                                        true;
+        wantNatural =                                       true;
         wallNat =                                           true;
         cutWorkers =                                        Strategy::enemyRush() ? vis(Protoss_Photon_Cannon) < 2 : false;
 
@@ -114,7 +115,7 @@ namespace McRave::BuildOrder::Protoss {
             cutWorkers =                                    vis(Protoss_Pylon) == 1 && vis(Protoss_Probe) >= 13;
 
             buildQueue[Protoss_Nexus] =                     1;
-            buildQueue[Protoss_Pylon] =                     1 + (Players::getCurrentCount(PlayerState::Enemy, Zerg_Zergling) < 6 || s >= 32);
+            buildQueue[Protoss_Pylon] =                     1 + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) < 6 || s >= 32);
             buildQueue[Protoss_Shield_Battery] =            vis(Protoss_Gateway) > 0, com(Protoss_Gateway) > 0;
             buildQueue[Protoss_Gateway] =                   0;
         }
@@ -237,7 +238,7 @@ namespace McRave::BuildOrder::Protoss {
 
         // Reactions
         if (!lockedTransition) {
-            if (Players::getCurrentCount(PlayerState::Enemy, UnitTypes::Zerg_Sunken_Colony) >= 4)
+            if (Players::getVisibleCount(PlayerState::Enemy, UnitTypes::Zerg_Sunken_Colony) >= 4)
                 currentTransition = "Expand";
         }
 

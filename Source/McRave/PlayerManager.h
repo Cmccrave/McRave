@@ -4,7 +4,8 @@
 
 namespace McRave::Players
 {
-    int getCurrentCount(PlayerState, BWAPI::UnitType);
+    int getVisibleCount(PlayerState, BWAPI::UnitType);
+    int getCompleteCount(PlayerState, BWAPI::UnitType);
     int getTotalCount(PlayerState, BWAPI::UnitType);
     bool hasDetection(PlayerState);
     bool hasMelee(PlayerState);

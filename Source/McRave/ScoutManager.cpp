@@ -8,14 +8,29 @@ namespace McRave::Scouts {
 
     namespace {
 
-        map<Position, ScoutState> scoutTargets;
+        struct ScoutTarget {
+            Position pos = Positions::Invalid;
+            ScoutState state = ScoutState::None;
+            double dist = 0.0;
+
+            ScoutTarget(Position p, double d, ScoutState s) {
+                dist = d, pos = p, state = s;
+            }
+
+            bool operator< (const ScoutTarget& r) const {
+                return dist < r.dist;
+            }
+        };
+
+        set<ScoutTarget> scoutTargets;
         map<UnitType, int> currentScoutTypeCounts;
         map<UnitType, int> desiredScoutTypeCounts;
         int scoutDeadFrame = -5000;
+        int basesExplored = 0;
         bool fullScout = false;
+        bool sacrificeScout = false;
         UnitType proxyType = None;
         Position proxyPosition = Positions::Invalid;
-        vector<Position> edges ={ {-320,-320}, {-480, 0}, {-320, 320}, {0, -480}, {0, 480}, {320, -320}, {480, 0}, {320, 320} };
 
         void updateScountCount()
         {
@@ -44,10 +59,10 @@ namespace McRave::Scouts {
                 if (Players::PvZ()) {
 
                     // Don't scout vs 4Pool
-                    if (Strategy::enemyRush() && Players::getCurrentCount(PlayerState::Enemy, Zerg_Zergling) >= 2 && Players::getSupply(PlayerState::Self) <= 46)
+                    if (Strategy::enemyRush() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 2 && Players::getSupply(PlayerState::Self) <= 46)
                         desiredScoutTypeCounts[Protoss_Probe] = 0;
 
-                    // Send a 2nd scout after 1st scout
+                    // Send a 2nd scout after 1st scout misses
                     else if (!Terrain::getEnemyStartingPosition().isValid() && mapBWEM.StartingLocations().size() == 4 && unexploredBases == 2)
                         desiredScoutTypeCounts[Protoss_Probe] = 2;
                 }
@@ -57,7 +72,7 @@ namespace McRave::Scouts {
                     desiredScoutTypeCounts[Protoss_Probe]++;
 
                 // If we are playing PvT, don't scout if we see a pressure build coming
-                if (Players::PvT() && Strategy::enemyPressure())
+                if (Players::PvT() && (Strategy::enemyPressure() || Strategy::enemyWalled()))
                     desiredScoutTypeCounts[Protoss_Probe] = 0;
 
                 // Check to see if we are contained
@@ -69,9 +84,12 @@ namespace McRave::Scouts {
                     if (closestEnemy && closestEnemy->getPosition().getDistance(Terrain::getDefendPosition()) < 640.0)
                         desiredScoutTypeCounts[Protoss_Probe] = 0;
 
-                    if (Strategy::enemyPressure() && BuildOrder::isPlayPassive())
+                    if (Strategy::enemyPressure())
                         desiredScoutTypeCounts[Protoss_Probe] = 0;
                 }
+
+                if (Util::getTime() > Time(5, 00))
+                    desiredScoutTypeCounts[Protoss_Probe] = 0;
             }
 
             // Terran
@@ -85,20 +103,28 @@ namespace McRave::Scouts {
                 desiredScoutTypeCounts[Zerg_Overlord] = 0;
 
                 // If we find them, no more Drone scouting
-                if ((Players::ZvP() && Util::getTime() > Time(3, 30)) || (Players::ZvT() && Util::getTime() > Time(4, 30)) || Strategy::enemyRush() || Strategy::getEnemyBuild() != "Unknown")
-                    desiredScoutTypeCounts[Zerg_Drone] = 0;
-                if (Strategy::enemyPressure())
+                if ((Players::ZvP() && Util::getTime() > Time(3, 30))
+                    || (Players::ZvT() && Util::getTime() > Time(4, 30))
+                    || Strategy::enemyRush()
+                    || Strategy::enemyPressure()
+                    || Strategy::enemyWalled()
+                    || Strategy::getEnemyBuild() == "FFE")
                     desiredScoutTypeCounts[Zerg_Drone] = 0;
 
                 // If enemy can't hit air, send Overlords to scout
                 if (Players::getStrength(PlayerState::Enemy).groundToAir <= 0.0
                     && Players::getStrength(PlayerState::Enemy).airToAir <= 0.0
-                    && Players::getCurrentCount(PlayerState::Enemy, Protoss_Cybernetics_Core) == 0
-                    && Players::getCurrentCount(PlayerState::Enemy, Protoss_Stargate) == 0
-                    && Players::getCurrentCount(PlayerState::Enemy, Zerg_Spire) == 0
+                    && Players::getVisibleCount(PlayerState::Enemy, Protoss_Stargate) == 0
+                    && Players::getVisibleCount(PlayerState::Enemy, Zerg_Spire) == 0
                     && (unexploredBases <= int(mapBWEM.StartingLocations().size()) - 1 || Terrain::getEnemyStartingPosition().isValid())
-                    && (!Players::vT() || !Terrain::getEnemyStartingPosition().isValid()))
+                    && (!Players::vT() || !Terrain::getEnemyStartingPosition().isValid() || Util::getTime() < Time(2, 00)))
                     desiredScoutTypeCounts[Zerg_Overlord] = 2;
+
+                // If we need to sacrifice an Overlord
+                sacrificeScout = ((Players::vP() && Players::getCompleteCount(PlayerState::Enemy, Protoss_Cybernetics_Core) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Assimilator) > 0) || (Strategy::getEnemyBuild() == "1GateCore" && Strategy::getEnemyTransition() == "Unknown"));
+                if (sacrificeScout && vis(Zerg_Overlord) == total(Zerg_Overlord))
+                    desiredScoutTypeCounts[Zerg_Overlord] = 2;
+
             }
         }
 
@@ -167,16 +193,45 @@ namespace McRave::Scouts {
             proxyPosition = Positions::Invalid;
 
             const auto addTarget = [](Position here, ScoutState state) {
-                if (here.isValid())
-                    scoutTargets.emplace(here, state);
+                auto realPos = Util::clipPosition(here);
+                int exploreCnt = 0;
+                scoutTargets.emplace(ScoutTarget(realPos, realPos.getDistance(BWEB::Map::getMainPosition()), state));
+                if (Grids::lastVisibleFrame(TilePosition(realPos)) > 0)
+                    exploreCnt++;
+                return exploreCnt;
+            };
+
+            const auto addTargetsAround = [](Position here, int radius, ScoutState state) {
+                auto sRadius = int(round(1.5*radius));
+                vector<Position> directions ={ Position(sRadius, 0), Position(-sRadius, 0), Position(0, sRadius), Position(0, -sRadius), Position(radius, radius), Position(-radius, radius), Position(radius, -radius), Position(-radius, -radius) };
+                int exploreCnt = 0;
+                for (auto &pos : directions) {
+                    auto realPos = Util::clipPosition(pos + here);
+                    if (mapBWEM.GetArea(TilePosition(realPos)) == mapBWEM.GetArea(TilePosition(realPos)))
+                        scoutTargets.emplace(ScoutTarget(realPos, realPos.getDistance(BWEB::Map::getMainPosition()), state));
+                    if (Grids::lastVisibleFrame(TilePosition(realPos)) > 0)
+                        exploreCnt++;
+                }
+                return exploreCnt;
             };
 
             // If it's a proxy, scout for the proxy building
             if (Strategy::enemyProxy()) {
                 auto proxyType = Players::vP() ? Protoss_Pylon : Terran_Barracks;
 
-                if (Strategy::getEnemyBuild() != "CannonRush") {
-                    if (Players::getCurrentCount(PlayerState::Enemy, proxyType) == 0) {
+                if (Strategy::getEnemyBuild() == "CannonRush") {
+                    auto &proxyBuilding = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                        return u.getType() == proxyType && !Terrain::isInEnemyTerritory(u.getTilePosition());
+                    });
+                    if (proxyBuilding) {
+                        addTarget(proxyBuilding->getPosition(), ScoutState::Proxy);
+                        proxyPosition = proxyBuilding->getPosition();
+                    }
+                    else
+                        addTargetsAround(BWEB::Map::getMainPosition(), 200, ScoutState::Base);
+                }
+                else {
+                    if (Players::getVisibleCount(PlayerState::Enemy, proxyType) == 0) {
 
                         // Check middle of map
                         addTarget(mapBWEM.Center(), ScoutState::Proxy);
@@ -198,56 +253,29 @@ namespace McRave::Scouts {
                         }
                     }
                 }
-                else {
-
-                    auto &proxyBuilding = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-                        return u.getType() == proxyType && !Terrain::isInEnemyTerritory(u.getTilePosition());
-                    });
-                    if (proxyBuilding) {
-                        addTarget(proxyBuilding->getPosition(), ScoutState::Proxy);
-                        proxyPosition = proxyBuilding->getPosition();
-                    }
-                    else {
-                        addTarget(BWEB::Map::getMainPosition() + Position(0, -200), ScoutState::Base);
-                        addTarget(BWEB::Map::getMainPosition() + Position(0, 200), ScoutState::Base);
-                        addTarget(BWEB::Map::getMainPosition() + Position(-200, 0), ScoutState::Base);
-                        addTarget(BWEB::Map::getMainPosition() + Position(200, 0), ScoutState::Base);
-                    }
-                }
             }
 
-            // If enemy start is valid and explored, add a target to the most recent one to scout
-            else if (Terrain::foundEnemy()) {
+            // If enemy start is valid, add targets around it and the natural
+            else if (Terrain::getEnemyStartingTilePosition().isValid()) {
 
                 // Add each enemy station as a target
                 for (auto &[_, station] : Stations::getEnemyStations()) {
                     auto tile = station->getBase()->Center();
-                    addTarget(Position(tile), ScoutState::Base);
+                    int exploredCount = Players::ZvZ() ? addTarget(Position(tile), ScoutState::Base) : addTargetsAround(Position(tile), max(6, Util::getTime().minutes) * 32, ScoutState::Base);
+                    auto fullyExplored = Players::ZvZ() ? 2 : 5;
+
+                    if (exploredCount > fullyExplored && Terrain::getEnemyNatural() && Broodwar->isExplored(TilePosition(Terrain::getEnemyNatural()->getBase()->Center())))
+                        fullScout = true;
                 }
 
-                // Add extra co-ordinates for better exploring and to determine if we got a full scout off
-                int cnt = 0;
-                int total = 8;
-                for (auto &dir : edges) {
-                    auto pos = Terrain::getEnemyStartingPosition() + dir;
-                    pos = Util::clipPosition(pos);
-                    !pos.isValid() ? total-- : cnt += Grids::lastVisibleFrame(TilePosition(pos)) > 0, addTarget(pos, ScoutState::Base);
-                }
-                if (cnt >= total - 1)
-                    fullScout = true;
-
-                if ((Players::vZ() && Stations::getEnemyStations().size() == 1)
-                    || (Players::vP() && Strategy::getEnemyBuild() == "FFE"))
-                    addTarget(Position(Terrain::getEnemyExpand()), ScoutState::Expand);
+                auto checkExpansionTime = Players::ZvZ() ? Time(3, 30) : Time(3, 15);
+                if (Terrain::getEnemyNatural() && Stations::getEnemyStations().size() == 1 && Util::getTime() > checkExpansionTime)
+                    addTarget(Terrain::getEnemyNatural()->getBase()->Center(), ScoutState::Expand);
             }
-
-            // If we know where the enemy started
-            else if (Terrain::getEnemyStartingTilePosition().isValid())
-                addTarget(Terrain::getEnemyStartingPosition(), ScoutState::Base);
 
             // If we have no idea where the enemy is
             else {
-                auto basesExplored = 0;
+                basesExplored = 0;
                 multimap<double, Position> startsByDist;
 
                 // Sort unexplored starts by distance
@@ -266,11 +294,11 @@ namespace McRave::Scouts {
 
                 // Assign n scout targets where n is scout count
                 for (auto &[_, position] : startsByDist)
-                    addTarget(position, ScoutState::Base);
-                
+                    addTarget(position, ScoutState::Start);
+
                 // Scout the popular middle proxy location if it's walkable
                 if (Broodwar->self()->getRace() == Races::Protoss) {
-                    if (basesExplored == 2 && !Players::vZ() && !Terrain::isExplored(mapBWEM.Center()) && BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), mapBWEM.Center()) != DBL_MAX)
+                    if (!Players::vZ() && basesExplored == 2 && !Terrain::isExplored(mapBWEM.Center()) && BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), mapBWEM.Center()) != DBL_MAX)
                         addTarget(mapBWEM.Center(), ScoutState::Proxy);
                 }
                 else {
@@ -279,12 +307,8 @@ namespace McRave::Scouts {
                 }
             }
 
-            // Add path between bases in ZvZ or ZvP vs 2Gate
-            if (Strategy::getEnemyTransition() != "Unknown" && (Players::ZvZ() || Strategy::getEnemyBuild() == "2Gate") && Terrain::getEnemyStartingPosition().isValid()) {
-                for (auto &choke : mapBWEM.GetPath(Terrain::getEnemyStartingPosition(), BWEB::Map::getMainPosition())) {
-                    if (Position(choke->Center()).getDistance(Terrain::getEnemyStartingPosition()) < Position(choke->Center()).getDistance(BWEB::Map::getMainPosition()))
-                        addTarget(Position(choke->Center()), ScoutState::Rush);
-                }
+            for (auto &target : scoutTargets) {
+                Broodwar->drawCircleMap(target.pos, 4, Colors::Green);
             }
         }
 
@@ -294,135 +318,81 @@ namespace McRave::Scouts {
             auto distBest = DBL_MAX;
 
             const auto isClosestAvailableScout = [&](Position here) {
-
-                shared_ptr<UnitInfo> closest;
-                if (unit.getType().isFlyer())
-                    closest = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) {
-                    return u.getType().isFlyer() && u.getRole() == Role::Scout;
+                auto closest = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) {
+                    return ((unit.isFlying() && u.isFlying()) || (!unit.isFlying() && !u.isFlying())) && u.getRole() == Role::Scout;
                 });
-                else {
-                    closest = Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &u) {
-                        return !u.getType().isFlyer() && u.getRole() == Role::Scout;
-                    });
-                }
                 return unit.shared_from_this() == closest;
             };
 
-            if (Broodwar->getFrameCount() < 10000) {
+            // If it's a center of map proxy
+            if ((Strategy::enemyProxy() && proxyPosition.isValid() && isClosestAvailableScout(proxyPosition)) || (!Players::ZvP() && Strategy::enemyPossibleProxy() && unit.getType().isWorker() && isClosestAvailableScout(BWEB::Map::getMainPosition()))) {
 
-                // If it's a center of map proxy
-                if ((Strategy::enemyProxy() && proxyPosition.isValid() && isClosestAvailableScout(proxyPosition)) || (!Players::ZvP() && Strategy::enemyPossibleProxy() && unit.getType().isWorker() && isClosestAvailableScout(BWEB::Map::getMainPosition()))) {
+                // Determine what proxy type to expect
+                if (Players::getVisibleCount(PlayerState::Enemy, Terran_Barracks) > 0)
+                    proxyType = Terran_Barracks;
+                else if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Pylon) > 0)
+                    proxyType = Protoss_Pylon;
+                else if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) > 0)
+                    proxyType = Protoss_Gateway;
 
-                    // Determine what proxy type to expect
-                    if (Players::getCurrentCount(PlayerState::Enemy, Terran_Barracks) > 0)
-                        proxyType = Terran_Barracks;
-                    else if (Players::getCurrentCount(PlayerState::Enemy, Protoss_Pylon) > 0)
-                        proxyType = Protoss_Pylon;
-                    else if (Players::getCurrentCount(PlayerState::Enemy, Protoss_Gateway) > 0)
-                        proxyType = Protoss_Gateway;
+                // Find the closet of the proxy type we expect
+                auto &enemyWorker = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
+                    return u.getType().isWorker();
+                });
+                auto &enemyStructure = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
+                    return u.getType() == proxyType;
+                });
 
-                    // Find the closet of the proxy type we expect
-                    auto &enemyWorker = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
-                        return u.getType().isWorker();
-                    });
-                    auto &enemyStructure = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto u) {
-                        return u.getType() == proxyType;
-                    });
+                auto enemyWorkerClose = enemyWorker && enemyWorker->getPosition().getDistance(BWEB::Map::getMainPosition()) < 1280.0;
+                auto enemyWorkerConstructing = enemyWorker && enemyStructure && enemyWorker->getPosition().getDistance(enemyStructure->getPosition()) < 128.0;
+                auto enemyStructureProxy = enemyStructure && !Terrain::isInEnemyTerritory(enemyStructure->getTilePosition());
 
-                    auto enemyWorkerClose = enemyWorker && enemyWorker->getPosition().getDistance(BWEB::Map::getMainPosition()) < 1280.0;
-                    auto enemyWorkerConstructing = enemyWorker && enemyStructure && enemyWorker->getPosition().getDistance(enemyStructure->getPosition()) < 128.0;
-                    auto enemyStructureProxy = enemyStructure && !Terrain::isInEnemyTerritory(enemyStructure->getTilePosition());
-
-                    // Attempt to kill the worker if we find it - TODO: Check if the Attack command takes care of this
-                    if (Strategy::getEnemyBuild() != "2Gate" && (enemyWorkerClose || enemyWorkerConstructing)) {
-                        unit.setDestination(enemyWorker->getPosition());
-                        unit.setTarget(&*enemyWorker);
-                    }
-                    else if (enemyStructureProxy) {
-                        unit.setDestination(enemyStructure->getPosition());
-                        unit.setTarget(&*enemyStructure);
-                    }
+                // Attempt to kill the worker if we find it - TODO: Check if the Attack command takes care of this
+                if (Strategy::getEnemyBuild() != "2Gate" && (enemyWorkerClose || enemyWorkerConstructing)) {
+                    unit.setDestination(enemyWorker->getPosition());
+                    unit.setTarget(&*enemyWorker);
                 }
-
-                // If we have scout targets, find the closest scout target
-                else if (!scoutTargets.empty()) {
-                    auto best = 0.0;
-                    auto minTimeDiff = 100;
-                    for (auto &[target, state] : scoutTargets) {
-                        auto dist = target.getDistance(unit.getPosition());
-                        auto time = 1 + Grids::lastVisibleFrame((TilePosition)target);
-                        auto timeDiff = max(Broodwar->getFrameCount(), 2 * minTimeDiff) - time;
-                        auto score = double(time) / dist;
-
-                        if (state == ScoutState::Proxy && unit.getType() == Zerg_Overlord)
-                            continue;
-
-                        if (scoutTargets.size() > 1 && (!isClosestAvailableScout(target) || Strategy::enemyProxy()))
-                            continue;
-
-                        if (Actions::overlapsActions(unit.unit(), target, None, PlayerState::Self))
-                            continue;
-
-                        if (score > best && timeDiff > minTimeDiff) {
-                            best = score;
-                            unit.setDestination(target);
-                        }
-                    }
-
-                    // Default to anything close
-                    if (!unit.getDestination().isValid()) {
-                        for (auto &[target, state] : scoutTargets) {
-                            auto dist = target.getDistance(unit.getPosition());
-                            auto time = 1 + Grids::lastVisibleFrame((TilePosition)target);
-                            auto timeDiff = max(Broodwar->getFrameCount(), 2 * minTimeDiff) - time;
-                            auto score = double(time) / dist;
-
-                            if (state == ScoutState::Proxy && unit.getType() == Zerg_Overlord)
-                                continue;
-
-                            if (scoutTargets.size() > 1 && (!isClosestAvailableScout(target) || Strategy::enemyProxy()))
-                                continue;
-
-                            if (score > best && timeDiff > minTimeDiff) {
-                                best = score;
-                                unit.setDestination(target);
-                            }
-                        }
-                    }
-                }
-
-                if (!unit.getDestination().isValid()) {
-                    if (Terrain::getEnemyStartingPosition().isValid())
-                        unit.setDestination(Terrain::getEnemyStartingPosition());
+                else if (enemyStructureProxy) {
+                    unit.setDestination(enemyStructure->getPosition());
+                    unit.setTarget(&*enemyStructure);
                 }
             }
 
-            // Make sure we always do something
-            else if (!unit.getDestination().isValid())
-            {
-                int best = INT_MAX;
-                for (auto &area : mapBWEM.Areas()) {
-                    for (auto &base : area.Bases()) {
-                        const auto center = base.Center();
+            // If we have scout targets, find the closest scout target
+            else if (!scoutTargets.empty()) {
+                auto best = -1.0;
+                auto minTimeDiff = 0;
+                auto avoidFirstScout = unit.getType() != Zerg_Overlord && ((Broodwar->getStartLocations().size() >= 4 && basesExplored < 3) || (Broodwar->getStartLocations().size() >= 3 && basesExplored < 1));
+                for (auto &target : scoutTargets) {
+                    auto time = Grids::lastVisibleFrame(TilePosition(target.pos));
+                    auto timeDiff = max(Broodwar->getFrameCount(), 2 * minTimeDiff) - time;
+                    auto score = double(timeDiff) / target.dist;
 
-                        if (area.AccessibleNeighbours().size() == 0
-                            || Terrain::isInEnemyTerritory(base.Location())
-                            || Terrain::isInAllyTerritory(base.Location())
-                            || Actions::overlapsActions(unit.unit(), center, None, PlayerState::Self))
-                            continue;
+                    if ((target.state == ScoutState::Proxy && unit.getType() == Zerg_Overlord)
+                        || !isClosestAvailableScout(target.pos)
+                        || (Actions::overlapsActions(unit.unit(), target.pos, unit.getType(), PlayerState::Self) && !Terrain::getEnemyStartingPosition().isValid()))
+                        continue;
 
-                        int time = Grids::lastVisibleFrame(base.Location());
-                        if (time < best && isClosestAvailableScout(center)) {
-                            best = time;
-                            unit.setDestination(center);
-                        }
+                    if (score > best && timeDiff >= minTimeDiff && (unit.getType() != Zerg_Drone || !avoidFirstScout || target.state != ScoutState::Start)) {
+                        best = score;
+                        unit.setDestination(target.pos);
                     }
+
+                    if (target.state == ScoutState::Start)
+                        avoidFirstScout = false;
                 }
+            }
+
+            if (!unit.getDestination().isValid()) {
+                if (Terrain::getEnemyStartingPosition().isValid())
+                    unit.setDestination(Terrain::getEnemyStartingPosition());
             }
 
             // Add Action so other Units dont move to same location
             if (unit.getDestination().isValid())
-                Actions::addAction(unit.unit(), unit.getDestination(), unit.getType(), PlayerState::Self);            
+                Actions::addAction(unit.unit(), unit.getDestination(), unit.getType(), PlayerState::Self);
+
+            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Blue);
         }
 
         void updatePath(UnitInfo& unit)
@@ -436,7 +406,7 @@ namespace McRave::Scouts {
 
                 if (unit.getDestinationPath().getTarget() == TilePosition(unit.getDestination())) {
                     auto newDestination = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
-                        return p.getDistance(unit.getPosition()) >= 160.0;
+                        return p.getDistance(unit.getPosition()) >= 64.0;
                     });
 
                     if (newDestination.isValid())
@@ -474,6 +444,7 @@ namespace McRave::Scouts {
 
         void updateScouts()
         {
+            // Update Overlords first
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
                 if (unit.getRole() == Role::Scout && unit.isFlying()) {
@@ -509,4 +480,5 @@ namespace McRave::Scouts {
     }
 
     bool gotFullScout() { return fullScout; }
+    bool isSacrificeScout() { return sacrificeScout; }
 }

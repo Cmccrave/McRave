@@ -28,7 +28,8 @@ namespace McRave::BuildOrder {
         inline bool scout = false;
         inline bool productionSat = false;
         inline bool techSat = false;
-        inline bool fastExpand = false;
+        inline bool wantNatural = false;
+        inline bool wantThird = false;
         inline bool proxy = false;
         inline bool hideTech = false;
         inline bool playPassive = false;
@@ -41,6 +42,10 @@ namespace McRave::BuildOrder {
         inline bool inBookSupply = false;
         inline bool transitionReady = false;
         inline bool defensesNow = false;
+
+        inline bool expandDesired = false;
+        inline bool rampDesired = false;
+        // inline bool techDesired = false;
 
         inline int gasLimit = INT_MAX;
         inline int zealotLimit = INT_MAX;
@@ -126,7 +131,11 @@ namespace McRave::BuildOrder {
     void onFrame();
     void getNewTech();
     void getTechBuildings();
-    bool shouldAddProduction();
+
+    void checkExpand();
+    void checkRamp();
+
+    bool shouldRamp();
     bool shouldAddGas();
     bool shouldExpand();
     bool techComplete();
@@ -144,7 +153,8 @@ namespace McRave::BuildOrder {
     bool isUnitUnlocked(BWAPI::UnitType);
     bool isTechUnit(BWAPI::UnitType);
     bool isOpener();
-    bool isFastExpand();
+    bool takeNatural();
+    bool takeThird();
     bool shouldScout();
     bool isWallNat();
     bool isWallMain();
@@ -152,6 +162,7 @@ namespace McRave::BuildOrder {
     bool isHideTech();
     bool isPlayPassive();
     bool isRush();
+    bool isPressure();
     bool isGasTrick();
     bool isSaveLarva();
     bool makeDefensesNow();

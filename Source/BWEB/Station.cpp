@@ -81,7 +81,6 @@ namespace BWEB {
             return;
 
         // Get closest partner base
-        const BWEM::Base * partnerBase = nullptr;
         auto distBest = DBL_MAX;
         for (auto &potentialPartner : (main ? natBases : mainBases)) {
             auto dist = potentialPartner->Center().getDistance(base->Center());
@@ -96,7 +95,7 @@ namespace BWEB {
 
         if (main && !Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()).empty()) {
             chokepoint = Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()).front();
-            
+
             // Partner only has one chokepoint means we have a shared choke with this path
             if (partnerBase->GetArea()->ChokePoints().size() == 1)
                 chokepoint = Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()).back();
@@ -159,63 +158,63 @@ namespace BWEB {
         set<TilePosition> basePlacements;
         set<TilePosition> geyserPlacements;
         auto here = base->Location();
-        auto placeRight = base->Center().x < defenseCentroid.x;
-        auto placeBelow = base->Center().y < defenseCentroid.y;
+        auto placeRight = base->Center().x > defenseCentroid.x;
+        auto placeBelow = base->Center().y > defenseCentroid.y;
 
-        const auto &topLeft = [&]() {
+        const auto &bottomRight = [&]() {
             if (!main)
-                basePlacements ={ {-2, -2}, {1, -2}, {-2, 1},                       // Close
-                                  {4, -1}, {4, 1}, {4, 3}, {0, 3}, {2, 3} };        // Far
+                basePlacements ={ {-2, -2}, {2, -2}, {-2, 1},                                         // Close
+                                  {4, -3}, {4, -1}, {4, 1}, {4, 3}, {2, 3}, {0, 3}, {-2, 3} };        // Far
             else
-                basePlacements ={ {-2, -2}, {1, -2}, {-2, 1} };                     // Close
+                basePlacements ={ {-2, -2}, {1, -2}, {-2, 1} };                                       // Close
 
             if (!natural) {
                 geyserPlacements ={ {0, -2}, {2, -2}, // Above
                                     {-2, 0}, {4, 0},  // Sides
-                                    {2, 2}            // Below
-                };
-            }
-        };
-
-        const auto &topRight = [&]() {
-            if (!main)
-                basePlacements ={ {4, -2}, {1, -2}, {4, 1},                         // Close
-                                  {-2, -1}, {-2, 1}, {-2, 3}, {0, 3}, {2, 3} };     // Far
-            else
-                basePlacements ={ {4, -2}, {1, -2}, {4, 1} };                       // Close
-
-            if (!natural) {
-                geyserPlacements ={ {0, -2}, {2, -2}, // Above
-                                    {-2, 0}, {4, 0},  // Sides
-                                    {0, 2}            // Below
+                                    //{2, 2}            // Below - was stopping blocks from forming properly
                 };
             }
         };
 
         const auto &bottomLeft = [&]() {
             if (!main)
-                basePlacements ={ {-2, 3}, {-2, 0}, {1, 3},                         // Close
-                                  {0, -2}, {2, -2}, {4, -2}, {4, 0}, {4, 2} };      // Far
+                basePlacements ={ {4, -2}, {0, -2}, {4, 1},                                         // Close
+                                  {-2, -3}, {-2, -1}, {-2, 1}, {-2, 3}, {0, 3}, {2, 3}, {4, 3} };   // Far
             else
-                basePlacements ={ {-2, 3}, {-2, 0}, {1, 3} };                       // Close
+                basePlacements ={ {4, -2}, {1, -2}, {4, 1} };                                       // Close
 
             if (!natural) {
-                geyserPlacements ={ {2, -2},          // Above
+                geyserPlacements ={ {0, -2}, {2, -2}, // Above
+                                    {-2, 0}, {4, 0},  // Sides
+                                    //{0, 2}            // Below - was stopping blocks from forming properly
+                };
+            }
+        };
+
+        const auto &topRight = [&]() {
+            if (!main)
+                basePlacements ={ {-2, 3}, {-2, 0}, {2, 3},                                         // Close
+                                  {-2, -2}, {0, -2}, {2, -2}, {4, -2}, {4, 0}, {4, 2}, {4, 4} };    // Far
+            else
+                basePlacements ={ {-2, 3}, {-2, 0}, {1, 3} };                                       // Close
+
+            if (!natural) {
+                geyserPlacements ={ //{2, -2},          // Above - was stopping blocks from forming properly
                                     {-2, 0}, {4, 0},  // Sides
                                     {0, 2}, {2, 2}    // Below
                 };
             }
         };
 
-        const auto &bottomRight = [&]() {
+        const auto &topLeft = [&]() {
             if (!main)
-                basePlacements ={ {4, 0}, {1, 3}, {4, 3},                           // Close
-                                  {-2, 2}, {-2, 0}, {-2, -2}, {0, -2}, {2, -2} };   // Far
+                basePlacements ={ {4, 0}, {0, 3}, {4, 3},                                             // Close
+                                  {-2, 4}, {-2, 2}, {-2, 0}, {-2, -2}, {0, -2}, {2, -2}, {4, -2} };   // Far
             else
-                basePlacements ={ {4, 0}, {1, 3}, {4, 3} };                         // Close
+                basePlacements ={ {4, 0}, {1, 3}, {4, 3} };                                           // Close
 
             if (!natural) {
-                geyserPlacements ={ {0, -2},          // Above
+                geyserPlacements ={ //{0, -2},          // Above - was stopping blocks from forming properly
                                     {-2, 0}, {4, 0},  // Sides
                                     {0, 2}, {2, 2}    // Below
                 };

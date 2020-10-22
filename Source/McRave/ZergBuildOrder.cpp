@@ -13,14 +13,16 @@ using namespace McRave::BuildOrder::All;
 namespace McRave::BuildOrder::Zerg {
 
     namespace {
-        bool forceHiveTransition = false;
-        bool forceLairTransition = false;
         bool skipOneTech = false;
+        bool againstRandom = false;
     }
 
     void opener()
     {
-        if (currentTransition == "Unknown") {
+        if (Players::getRaceCount(Races::Unknown, PlayerState::Enemy) > 0)
+            againstRandom = true;
+
+        if (againstRandom) {
             if (Players::vZ()) {
                 currentBuild = "PoolHatch";
                 currentOpener = "Overpool";
@@ -39,11 +41,11 @@ namespace McRave::BuildOrder::Zerg {
             if (currentBuild == "PoolHatch")
                 ZvTPoolHatch();
         }
-        else if (Players::vP()) {
+        else if (Players::vP() || Players::getRaceCount(Races::Unknown, PlayerState::Enemy) > 0) {
             if (currentBuild == "PoolHatch")
                 ZvPPoolHatch();
         }
-        else if (Players::vZ() || Players::getRaceCount(Races::Unknown, PlayerState::Enemy) > 0) {
+        else if (Players::vZ()) {
             if (currentBuild == "PoolLair")
                 ZvZPoolLair();
             if (currentBuild == "PoolHatch")
@@ -53,32 +55,44 @@ namespace McRave::BuildOrder::Zerg {
 
     void tech()
     {
-        const auto techVal = int(techList.size()) + skipOneTech - int(forceHiveTransition) - int(forceLairTransition);
+        const auto techVal = int(techList.size()) + skipOneTech + (vis(Zerg_Hive) > 0);
         const auto endOfTech = !techOrder.empty() && isTechUnit(techOrder.back());
         techSat = (techVal >= int(Stations::getMyStations().size())) || endOfTech;
 
         // ZvP
         if (Players::ZvP()) {
-            techOrder ={ Zerg_Mutalisk, Zerg_Lurker, Zerg_Hydralisk };
-            skipOneTech = true;
+            auto vsGoons = Strategy::getEnemyTransition() == "4Gate"
+                || Strategy::getEnemyTransition() == "5GateGoon";
+
+            if (vsGoons) {
+                techOrder ={ Zerg_Mutalisk, Zerg_Hydralisk, Zerg_Lurker, Zerg_Defiler };
+                skipOneTech = true;
+            }
+            else {
+                techOrder ={ Zerg_Mutalisk, Zerg_Lurker, Zerg_Hydralisk, Zerg_Defiler };
+                skipOneTech = true;
+            }
         }
 
         // ZvT
         if (Players::ZvT()) {
-
-            auto vsMech = (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) >= 4)
-                || (Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) + Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode)) > 0
+            auto vsMech = Strategy::getEnemyTransition() == "2Fact"
                 || Strategy::getEnemyTransition() == "1FactTanks"
-                || Strategy::getEnemyTransition() == "5FactGoliath"
-                || Strategy::getEnemyTransition() == "SiegeExpand";
+                || Strategy::getEnemyTransition() == "5FactGoliath";
+
+            if (isTechUnit(Zerg_Lurker) && vsMech) {
+                techList.erase(Zerg_Lurker);
+                unlockedType.erase(Zerg_Lurker);
+                unlockedType.erase(Zerg_Hydralisk);
+            }
 
             if (vsMech) {
-                techOrder ={ Zerg_Mutalisk, Zerg_Ultralisk };
+                techOrder ={ Zerg_Mutalisk, Zerg_Ultralisk, Zerg_Defiler };
                 skipOneTech = true;
             }
             else {
-                techOrder ={ Zerg_Mutalisk, Zerg_Lurker, Zerg_Ultralisk };
-                skipOneTech = false;
+                techOrder ={ Zerg_Mutalisk, Zerg_Lurker, Zerg_Ultralisk, Zerg_Defiler };
+                skipOneTech = true;
             }
         }
 
@@ -91,12 +105,12 @@ namespace McRave::BuildOrder::Zerg {
             techUnit = None;
 
         // Adding tech
-        auto readyToTech = com(Zerg_Extractor) == int(Stations::getMyStations().size()) || int(Stations::getMyStations().size()) >= 4 || (techList.empty() && vis(Zerg_Drone) >= 12);
+        auto readyToTech = vis(Zerg_Extractor) == int(Stations::getMyStations().size()) || int(Stations::getMyStations().size()) >= 4 || techList.empty();
         if (!inOpeningBook && readyToTech && techUnit == None && !techSat && productionSat && vis(Zerg_Drone) >= 14)
             getTech = true;
 
-        // Add Scourge if we have Mutas and enemy has air
-        if (isTechUnit(Zerg_Mutalisk) && Strategy::enemyAir())
+        // Add Scourge if we have Mutas
+        if (isTechUnit(Zerg_Mutalisk))
             unlockedType.insert(Zerg_Scourge);
 
         // Add Hydras if we want Lurkers
@@ -124,7 +138,8 @@ namespace McRave::BuildOrder::Zerg {
 
         // Adding Wall defenses
         auto needSpores = false;
-        if (!rush && vis(Zerg_Drone) >= 9) {
+        auto needSunks = false;
+        if (!rush && !pressure && (vis(Zerg_Drone) >= 9 || Players::ZvZ())) {
             for (auto &[_, wall] : BWEB::Walls::getWalls()) {
 
                 int colonies = 0;
@@ -134,37 +149,51 @@ namespace McRave::BuildOrder::Zerg {
                 }
 
                 if (Walls::needAirDefenses(wall) > colonies || Walls::needGroundDefenses(wall) > colonies) {
-                    buildQueue[Zerg_Creep_Colony] += 1;
-                    colonies++;
+                    auto difference = Walls::needGroundDefenses(wall) + Walls::needAirDefenses(wall) - colonies;
+                    buildQueue[Zerg_Creep_Colony] += difference;
+                    colonies += difference;
                 }
+
+                Broodwar->drawTextMap(wall.getCentroid(), "%d, %d", Walls::needAirDefenses(wall), Walls::needGroundDefenses(wall));
 
                 if (Walls::needAirDefenses(wall) > 0)
                     needSpores = true;
+                if (Walls::needGroundDefenses(wall) > 0)
+                    needSunks = true;
             }
         }
 
         // Adding Station defenses
-        if (!rush && (vis(Zerg_Drone) >= 9 || Players::ZvZ())) {
-            for (auto &station : Stations::getMyStations()) {
-                auto &s = *station.second;
+        if (!rush && !pressure && (vis(Zerg_Drone) >= 9 || Players::ZvZ())) {
+            for (auto &[_, s] : Stations::getMyStations()) {
+                auto &station = *s;
 
                 int colonies = 0;
-                for (auto& tile : s.getDefenseLocations()) {
+                for (auto& tile : station.getDefenseLocations()) {
                     if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony)
                         colonies++;
                 }
 
-                if (Stations::needGroundDefenses(s) > colonies || Stations::needAirDefenses(s) > colonies) {
-                    buildQueue[Zerg_Creep_Colony] += 1;
-                    colonies++;
+                if (Stations::needGroundDefenses(station) > colonies || Stations::needAirDefenses(station) > colonies) {
+                    auto difference = Stations::needGroundDefenses(station) + Stations::needAirDefenses(station) - colonies;
+
+                    // Queued only if we have the required structure
+                    if ((vis(Zerg_Spawning_Pool) > 0 && Stations::needGroundDefenses(station) > colonies) || (vis(Zerg_Evolution_Chamber) > 0 && Stations::needAirDefenses(station) > colonies))
+                        buildQueue[Zerg_Creep_Colony] += difference;
+
+                    colonies += difference;
                 }
 
-                if (Stations::needAirDefenses(s) > 0)
+                Broodwar->drawTextMap(station.getBase()->Center() + Position(0, 16), "%d, %d", Stations::needAirDefenses(station), Stations::needGroundDefenses(station));
+
+                if (Stations::needAirDefenses(station) > 0)
                     needSpores = true;
+                if (Stations::needGroundDefenses(station) > 0)
+                    needSunks = true;
             }
         }
 
-        defensesNow = buildQueue[Zerg_Creep_Colony] > 0 && vis(Zerg_Sunken_Colony) < 2 && (Players::getCurrentCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 || Players::getCurrentCount(PlayerState::Enemy, Terran_Vulture) > 0 || Strategy::getEnemyBuild() == "2Gate" || Strategy::enemyRush() || Players::ZvZ() || Util::getTime() > Time(6,30));
+        defensesNow = buildQueue[Zerg_Creep_Colony] > 0 && vis(Zerg_Sunken_Colony) < 1 && (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 || Players::getVisibleCount(PlayerState::Enemy, Terran_Vulture) > 0 || Strategy::getEnemyBuild() == "2Gate" || Strategy::getEnemyBuild() == "1GateCore" || Strategy::enemyRush() || Players::ZvZ() || Util::getTime() > Time(6, 30));
 
         // Adding Overlords outside opening book supply
         if (!inBookSupply) {
@@ -174,10 +203,15 @@ namespace McRave::BuildOrder::Zerg {
                 buildQueue[Zerg_Overlord] = count;
         }
 
+        // Adding Overlords if we are sacrificing a scout
+        if (Scouts::isSacrificeScout() && Util::getTime() > Time(3, 30))
+            buildQueue[Zerg_Overlord]++;
+
         // Adding Evolution Chambers
         if ((Players::getSupply(PlayerState::Self) >= 180 && Stations::getMyStations().size() >= 3)
+            || (techUnit == Zerg_Ultralisk && vis(Zerg_Queens_Nest) > 0)
             || needSpores)
-            buildQueue[Zerg_Evolution_Chamber] = 2 - Strategy::enemyAir();
+            buildQueue[Zerg_Evolution_Chamber] = needSpores ? 1 : 1 + (Stations::getMyStations().size() >= 4);
 
         // Outside of opening book
         if (!inOpeningBook) {
@@ -188,28 +222,30 @@ namespace McRave::BuildOrder::Zerg {
             auto totalGas = 0;
             for (auto &[type, percent] : armyComposition) {
                 auto percentExists = double(vis(type) * type.supplyRequired()) / double(s);
-
-                if (type.whatBuilds().first == Zerg_Larva) {
-                    totalMin += int(round(percent * (1.0 - percentExists) * type.mineralPrice()));
-                    totalGas += int(round(percent * (1.0 - percentExists)* type.gasPrice()));
-                }
-                else {
-                    auto parentMin = int(percent * type.whatBuilds().first.mineralPrice());
-                    auto parentGas = int(percent * type.whatBuilds().first.gasPrice());
-                    totalMin += int(percent * type.mineralPrice() * (1.0 - percentExists)) + parentMin;
-                    totalGas += int(percent * type.gasPrice() * (1.0 - percentExists)) + parentGas;
-                }
+                totalMin += max(1, int(round(percent - percentExists) * type.mineralPrice()));
+                totalGas += max(1, int(round(percent - percentExists) * type.gasPrice()));
             }
-            gasLimit = int(ceil(double(vis(Zerg_Drone) * totalGas * Resources::getGasCount() * 3 * 103) / double(totalMin * Resources::getMinCount() * 67)));
 
-            if (Players::ZvT())
-                gasLimit += (vis(Zerg_Lair)) + (3 * vis(Zerg_Hive));
+            gasLimit = int(ceil(double(vis(Zerg_Drone) * totalGas * Resources::getGasCount() * 3 * 103) / double(totalMin * Resources::getMinCount() * 2 * 67)));
+            if (Players::ZvZ())
+                gasLimit += int(1.0 * double(Stations::getMyStations().size()));
 
             // Adding Hatcheries
-            auto hatchPerBase = Players::ZvP() ? 1.5 : 1.0;
-            productionSat = vis(Zerg_Hive) + vis(Zerg_Lair) + vis(Zerg_Hatchery) >= hatchPerBase * Stations::getMyStations().size();
-            if (shouldExpand() || shouldAddProduction())
-                buildQueue[Zerg_Hatchery] = vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive) + 1;
+            auto desiredProduction = INT_MAX;
+            if (Players::ZvT())
+                desiredProduction = int(Stations::getMyStations().size()) + max(0, int(Stations::getMyStations().size()) - 3) + max(0, int(Stations::getMyStations().size()) - 4);
+            if (Players::ZvP())
+                desiredProduction = int(Stations::getMyStations().size()) + max(0, int(Stations::getMyStations().size()) - 3) + (Strategy::getEnemyBuild() != "FFE");
+            if (Players::ZvZ())
+                desiredProduction = int(Stations::getMyStations().size()) + max(0, int(Stations::getMyStations().size()) - 1);
+
+            if (Players::ZvP() && Strategy::getEnemyBuild() != "FFE")
+                wantThird = false;
+
+            productionSat = vis(Zerg_Hive) + vis(Zerg_Lair) + vis(Zerg_Hatchery) >= desiredProduction;
+            checkExpand();
+            checkRamp();
+            buildQueue[Zerg_Hatchery] = vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive) + expandDesired + rampDesired;
 
             // Adding Extractors
             if (shouldAddGas())
@@ -224,7 +260,9 @@ namespace McRave::BuildOrder::Zerg {
         }
 
         // Removing gas workers if we are adding Sunkens or have excess gas
-        if (!saveLarva && Stations::getMyStations().size() <= 3 && Broodwar->self()->minerals() < 150 && (defensesNow || Broodwar->self()->gas() > 400 || (Strategy::enemyRush() && Broodwar->self()->gas() > 200)))
+        if (Broodwar->self()->minerals() < 100 * int(Stations::getMyStations().size()) && (defensesNow || Broodwar->self()->gas() > 100 * int(Stations::getMyStations().size()) || (Strategy::enemyRush() && Broodwar->self()->gas() > 200)))
+            gasLimit = 0;
+        if (needSpores && Players::ZvZ() && com(Zerg_Evolution_Chamber) == 0)
             gasLimit = 0;
     }
 
@@ -236,44 +274,51 @@ namespace McRave::BuildOrder::Zerg {
 
         // ZvT
         if (Players::vT() && !inOpeningBook) {
-            auto vsMech = (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) >= 4)
-                || (Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) + Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode)) > 0
-                || Strategy::getEnemyTransition() == "1FactTanks";
+            auto vsMech = Strategy::getEnemyTransition() == "2Fact"
+                || Strategy::getEnemyTransition() == "1FactTanks"
+                || Strategy::getEnemyTransition() == "5FactGoliath";
 
             if (Util::getTime() > Time(15, 0) && Stations::getEnemyStations().size() == 0 && Terrain::foundEnemy()) {
                 armyComposition[Zerg_Drone] = 0.40;
                 armyComposition[Zerg_Mutalisk] = 0.60;
             }
-            else if (isTechUnit(Zerg_Defiler) && com(Zerg_Defiler_Mound)) {
-                armyComposition[Zerg_Drone] = 0.60;
-                armyComposition[Zerg_Zergling] = 0.20;
-                armyComposition[Zerg_Ultralisk] = 0.15;
+            else if (isTechUnit(Zerg_Defiler) && s >= 360) {
+                armyComposition[Zerg_Drone] = 0.50;
+                armyComposition[Zerg_Zergling] = 0.15;
+                armyComposition[Zerg_Mutalisk] = 0.20;
+                armyComposition[Zerg_Ultralisk] = 0.10;
                 armyComposition[Zerg_Defiler] = 0.05;
+            }
+            else if (isTechUnit(Zerg_Defiler)) {
+                armyComposition[Zerg_Drone] = 0.55;
+                armyComposition[Zerg_Zergling] = 0.30;
+                armyComposition[Zerg_Ultralisk] = 0.10;
+                armyComposition[Zerg_Defiler] = 0.05;
+            }
+            else if (isTechUnit(Zerg_Ultralisk) && s >= 360) {
+                armyComposition[Zerg_Drone] = 0.55;
+                armyComposition[Zerg_Mutalisk] = 0.20;
+                armyComposition[Zerg_Zergling] = 0.15;
+                armyComposition[Zerg_Ultralisk] = 0.10;
             }
             else if (isTechUnit(Zerg_Ultralisk) && com(Zerg_Ultralisk_Cavern)) {
                 armyComposition[Zerg_Drone] = 0.60;
-                armyComposition[Zerg_Zergling] = 0.25;
-                armyComposition[Zerg_Ultralisk] = 0.15;
+                armyComposition[Zerg_Zergling] = 0.30;
+                armyComposition[Zerg_Ultralisk] = 0.10;
             }
-            else if (isTechUnit(Zerg_Lurker) && vsMech) {
+            else if (isTechUnit(Zerg_Lurker) && atPercent(TechTypes::Lurker_Aspect, 0.8)) {
                 armyComposition[Zerg_Drone] = 0.60;
-                armyComposition[Zerg_Zergling] = 0.05;
-                armyComposition[Zerg_Mutalisk] = 0.35;
-            }
-            else if (isTechUnit(Zerg_Lurker) && (Broodwar->self()->isResearching(TechTypes::Lurker_Aspect) || Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect))) {
-                armyComposition[Zerg_Drone] = 0.70;
-                armyComposition[Zerg_Zergling] = 0.10;
-                armyComposition[Zerg_Hydralisk] = 0.20;
+                armyComposition[Zerg_Zergling] = 0.30;
+                armyComposition[Zerg_Hydralisk] = 0.10;
                 armyComposition[Zerg_Lurker] = 1.00;
-                armyComposition[Zerg_Mutalisk] = 0.00;
             }
-            else if (isTechUnit(Zerg_Hydralisk) && com(Zerg_Hydralisk_Den)) {
+            else if (isTechUnit(Zerg_Hydralisk)) {
                 armyComposition[Zerg_Drone] = 0.60;
                 armyComposition[Zerg_Zergling] = 0.00;
                 armyComposition[Zerg_Hydralisk] = 0.20;
                 armyComposition[Zerg_Mutalisk] = 0.20;
             }
-            else if (isTechUnit(Zerg_Mutalisk) && total(Zerg_Mutalisk) >= 12 && com(Zerg_Spire) && Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) >= 2) {
+            else if (isTechUnit(Zerg_Mutalisk) && total(Zerg_Mutalisk) >= 12 && Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) >= 2) {
                 armyComposition[Zerg_Drone] = 0.85;
                 armyComposition[Zerg_Zergling] = 0.00;
                 armyComposition[Zerg_Mutalisk] = 0.00;
@@ -296,30 +341,36 @@ namespace McRave::BuildOrder::Zerg {
 
         // ZvP
         if (Players::vP() && !inOpeningBook) {
-            if (isTechUnit(Zerg_Ultralisk) && com(Zerg_Ultralisk_Cavern)) {
-                armyComposition[Zerg_Drone] = 0.40;
-                armyComposition[Zerg_Zergling] = 0.40;
-                armyComposition[Zerg_Mutalisk] = 0.10;
-                armyComposition[Zerg_Ultralisk] = 0.10;
+            if (isTechUnit(Zerg_Defiler)) {
+                armyComposition[Zerg_Drone] = 0.50;
+                armyComposition[Zerg_Zergling] = 0.25;
+                armyComposition[Zerg_Hydralisk] = 0.20;
+                armyComposition[Zerg_Lurker] = 1.00;
+                armyComposition[Zerg_Defiler] = 0.05;
             }
             else if (isTechUnit(Zerg_Hydralisk) && isTechUnit(Zerg_Mutalisk) && isTechUnit(Zerg_Lurker)) {
-                armyComposition[Zerg_Drone] = 0.40;
+                armyComposition[Zerg_Drone] = 0.50;
                 armyComposition[Zerg_Zergling] = 0.10;
-                armyComposition[Zerg_Hydralisk] = 0.30;
-                armyComposition[Zerg_Lurker] = 0.10;
+                armyComposition[Zerg_Hydralisk] = 0.25;
+                armyComposition[Zerg_Lurker] = 0.05;
                 armyComposition[Zerg_Mutalisk] = 0.10;
             }
             else if (isTechUnit(Zerg_Lurker) && isTechUnit(Zerg_Mutalisk) && (Broodwar->self()->isResearching(TechTypes::Lurker_Aspect) || Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect))) {
-                armyComposition[Zerg_Drone] = 0.45;
-                armyComposition[Zerg_Zergling] = 0.10;
-                armyComposition[Zerg_Hydralisk] = 0.20;
+                armyComposition[Zerg_Drone] = 0.60;
+                armyComposition[Zerg_Zergling] = 0.05;
+                armyComposition[Zerg_Hydralisk] = 0.10;
                 armyComposition[Zerg_Lurker] = 0.05;
                 armyComposition[Zerg_Mutalisk] = 0.20;
             }
+            else if (isTechUnit(Zerg_Mutalisk) && Strategy::getEnemyBuild() != "FFE") {
+                armyComposition[Zerg_Drone] = 0.50;
+                armyComposition[Zerg_Zergling] = 0.05;
+                armyComposition[Zerg_Mutalisk] = 0.45;
+            }
             else if (isTechUnit(Zerg_Mutalisk)) {
                 armyComposition[Zerg_Drone] = 0.60;
-                armyComposition[Zerg_Zergling] = 0.10;
-                armyComposition[Zerg_Mutalisk] = 0.30;
+                armyComposition[Zerg_Zergling] = 0.05;
+                armyComposition[Zerg_Mutalisk] = 0.35;
             }
             else {
                 armyComposition[Zerg_Drone] = 0.80;
@@ -329,42 +380,39 @@ namespace McRave::BuildOrder::Zerg {
 
         // ZvZ
         if (Players::ZvZ() && !inOpeningBook) {
-            if (int(Stations::getMyStations().size()) >= 3) {
-                armyComposition[Zerg_Drone] = 0.40;
-                armyComposition[Zerg_Zergling] = 0.20;
+            if (isTechUnit(Zerg_Mutalisk)) {
+                armyComposition[Zerg_Drone] = 0.50;
+                armyComposition[Zerg_Zergling] = 0.10;
                 armyComposition[Zerg_Mutalisk] = 0.40;
             }
-            else if (isTechUnit(Zerg_Mutalisk)) {
-                armyComposition[Zerg_Drone] = 0.50;
-                armyComposition[Zerg_Zergling] = 0.00;
-                armyComposition[Zerg_Mutalisk] = 0.50;
-            }
             else {
-                armyComposition[Zerg_Drone] = 0.60;
-                armyComposition[Zerg_Zergling] = 0.40;
+                armyComposition[Zerg_Drone] = 0.55;
+                armyComposition[Zerg_Zergling] = 0.45;
             }
+        }
+
+        if (Resources::isMinSaturated() && Resources::isGasSaturated()) {
+            armyComposition[Zerg_Zergling] = armyComposition[Zerg_Drone];
+            armyComposition[Zerg_Drone] = 0.0;
         }
 
         // Add Scourge if we have Mutas and enemy has air to air
         if (isTechUnit(Zerg_Mutalisk)) {
-            auto airCount = Players::getCurrentCount(PlayerState::Enemy, Protoss_Corsair) + Players::getCurrentCount(PlayerState::Enemy, Terran_Wraith) + Players::getCurrentCount(PlayerState::Enemy, Terran_Valkyrie) + Players::getCurrentCount(PlayerState::Enemy, Zerg_Mutalisk);
+            auto airCount = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk);
+            auto needScourgeZvP = Players::ZvP() && (airCount >= 3 || vis(Zerg_Mutalisk) == 0) && ((vis(Zerg_Scourge) / 2) - 1 < airCount && airCount < 6 && Players::getStrength(PlayerState::Enemy).airToAir > 0.0);
+            auto needScourgeZvZ = Players::ZvZ() && (airCount / 2) > vis(Zerg_Scourge) && (total(Zerg_Mutalisk) >= 3 || currentTransition == "2HatchMuta");
 
-            if (((vis(Zerg_Scourge) / 2) - 1 < airCount && airCount < 6 && Players::getStrength(PlayerState::Enemy).airToAir > 0.0) || (total(Zerg_Scourge) < 4 && Players::ZvZ() && total(Zerg_Mutalisk) >= 3 && Strategy::getEnemyTransition() == "1HatchMuta")) {
+            if (needScourgeZvP || needScourgeZvZ) {
                 armyComposition[Zerg_Scourge] = max(0.20, armyComposition[Zerg_Mutalisk]);
                 armyComposition[Zerg_Mutalisk] = 0.00;
             }
         }
 
         // Specific compositions
-        if (isTechUnit(Zerg_Hydralisk) && !Terrain::isIslandMap() && (Players::getCurrentCount(PlayerState::Enemy, Protoss_Stargate) >= 3 || Players::getCurrentCount(PlayerState::Enemy, Protoss_Carrier) >= 4 || Players::getCurrentCount(PlayerState::Enemy, Protoss_Fleet_Beacon) >= 1)) {
+        if (isTechUnit(Zerg_Hydralisk) && !Terrain::isIslandMap() && (Players::getVisibleCount(PlayerState::Enemy, Protoss_Stargate) >= 3 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Carrier) >= 4 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Fleet_Beacon) >= 1)) {
+            armyComposition.clear();
             armyComposition[Zerg_Drone] = 0.50;
             armyComposition[Zerg_Hydralisk] = 0.50;
-        }
-
-        // Check if we are going Lurker, only make when Lurker tech almost ready or not in ZvT
-        if (isTechUnit(Zerg_Lurker) && Players::ZvT() && !atPercent(TechTypes::Lurker_Aspect, 0.8)) {
-            armyComposition[Zerg_Hydralisk] = 0.00;
-            armyComposition[Zerg_Lurker] = 0.00;
         }
 
         // Check if we are in ZvT and against Vultures, make more Drones instead of lings
@@ -396,6 +444,17 @@ namespace McRave::BuildOrder::Zerg {
         else {
             unlockedType.insert(Zerg_Zergling);
             unlockedType.insert(Zerg_Drone);
+        }
+
+        // UMS Unlocking
+        if (Broodwar->getGameType() == GameTypes::Use_Map_Settings) {
+            for (auto &type : BWAPI::UnitTypes::allUnitTypes()) {
+                if (!type.isBuilding() && type.getRace() == Races::Zerg && vis(type) >= 2) {
+                    unlockedType.insert(type);
+                    if (!type.isWorker())
+                        techList.insert(type);
+                }
+            }
         }
     }
 }

@@ -82,6 +82,8 @@ namespace BWEB::Blocks
             // Protoss Block pieces
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (height == 2) {
+                    if (width == 2)
+                        pieces ={ Piece::Small };
                     if (width == 5)
                         pieces ={ Piece::Small, Piece::Medium };
                 }
@@ -106,6 +108,20 @@ namespace BWEB::Blocks
                                 pieces ={ Piece::Small, Piece::Medium, Piece::Medium, Piece::Row, Piece::Large, Piece::Large };
                         }
                     }
+                    if (width == 16) {
+                        if (faceLeft) {
+                            if (faceUp)
+                                pieces ={ Piece::Large, Piece::Large, Piece::Large, Piece::Large, Piece::Row, Piece::Medium, Piece::Medium, Piece::Small, Piece::Medium, Piece::Medium, Piece::Small };
+                            else
+                                pieces ={ Piece::Medium, Piece::Medium, Piece::Small, Piece::Medium, Piece::Medium, Piece::Small, Piece::Row, Piece::Large, Piece::Large, Piece::Large, Piece::Large };
+                        }
+                        else {
+                            if (faceUp)
+                                pieces ={ Piece::Large, Piece::Large, Piece::Large, Piece::Large, Piece::Row, Piece::Small, Piece::Medium, Piece::Medium, Piece::Small, Piece::Medium, Piece::Medium };
+                            else
+                                pieces ={ Piece::Small, Piece::Medium, Piece::Medium, Piece::Small, Piece::Medium, Piece::Medium, Piece::Row, Piece::Large, Piece::Large, Piece::Large, Piece::Large };
+                        }
+                    }
                 }
                 else if (height == 6) {
                     if (width == 10)
@@ -114,10 +130,12 @@ namespace BWEB::Blocks
                         pieces ={ Piece::Large, Piece::Large, Piece::Addon, Piece::Large, Piece::Large, Piece::Row, Piece::Large, Piece::Large, Piece::Small, Piece::Large, Piece::Large };
                 }
                 else if (height == 8) {
-                    if (width == 8)
-                        pieces ={ Piece::Large, Piece::Large, Piece::Row, Piece::Small, Piece::Small, Piece::Small, Piece::Small, Piece::Row, Piece::Large, Piece::Large };
                     if (width == 5)
                         pieces ={ Piece::Large, Piece::Row, Piece::Small, Piece::Medium, Piece::Row, Piece::Large };
+                    if (width == 4)
+                        pieces ={ Piece::Large, Piece::Row, Piece::Small, Piece::Small, Piece::Row, Piece::Large };
+                    if (width == 8)
+                        pieces ={ Piece::Large, Piece::Large, Piece::Row, Piece::Space, Piece::Small, Piece::Small, Piece::Space, Piece::Row, Piece::Large, Piece::Large };
                 }
             }
 
@@ -218,7 +236,10 @@ namespace BWEB::Blocks
             const auto secondStart = race != Races::Zerg ? (Position(Map::getMainChoke()->Center()) + Map::getMainPosition()) / 2 : Map::getMainPosition();
 
             const auto creepOnCorners = [&](TilePosition here, int width, int height) {
-                return Broodwar->hasCreep(here) && Broodwar->hasCreep(here + TilePosition(width - 1, 0)) && Broodwar->hasCreep(here + TilePosition(0, height - 1)) && Broodwar->hasCreep(here + TilePosition(width - 1, height - 1));
+                return Broodwar->hasCreep(here)
+                    && Broodwar->hasCreep(here + TilePosition(width - 1, 0))
+                    && Broodwar->hasCreep(here + TilePosition(0, height - 1))
+                    && Broodwar->hasCreep(here + TilePosition(width - 1, height - 1));
             };
 
             const auto searchStart = [&](Position start) {
@@ -354,9 +375,11 @@ namespace BWEB::Blocks
                         if (!area)
                             continue;
 
-                        // Protoss caps large pieces in the main at 12 if we don't have necessary medium pieces
+                        // Protoss caps large pieces in the main at 16 if we don't have necessary medium pieces
                         if (Broodwar->self()->getRace() == Races::Protoss) {
-                            if (largeCount > 0 && piecePerArea[area].pieces[Piece::Large] >= 12 && piecePerArea[area].pieces[Piece::Medium] < 10)
+                            if (largeCount > 0 && piecePerArea[area].pieces[Piece::Large] >= 16 && piecePerArea[area].pieces[Piece::Medium] < 8)
+                                continue;
+                            if (mediumCount > 0 && piecePerArea[area].pieces[Piece::Medium] >= 9)
                                 continue;
                         }
 

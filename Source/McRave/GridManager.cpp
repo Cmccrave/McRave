@@ -7,10 +7,12 @@ using namespace UnitTypes;
 namespace McRave::Grids
 {
     namespace {
+
+        vector<WalkPosition> resetVector;
+
         bool resetGrid[1024][1024] ={};
         int visibleGrid[256][256] ={};
         int visitedGrid[1024][1024] ={};
-        vector<WalkPosition> resetVector;
 
         // Ally Grid
         float aGroundCluster[1024][1024] ={};
@@ -26,9 +28,6 @@ namespace McRave::Grids
         // Mobility Grid
         int mobility[1024][1024] ={};
         int collision[1024][1024] ={};
-
-        // Ultralisk Grid
-        bool ultraWalkable[256][256]={};
 
         int fasterDistGrids(int x1, int y1, int x2, int y2) {
             unsigned int min = abs((int)(x1 - x2));
@@ -72,7 +71,7 @@ namespace McRave::Grids
         void addToGrids(UnitInfo& unit)
         {
             // If it's an enemy worker, add to grids only if it's near our scout
-            if (Util::getTime() < Time(8,0) && BuildOrder::shouldScout() && unit.getType().isWorker() && unit.getPlayer() != Broodwar->self()) {
+            if (Util::getTime() < Time(8, 0) && BuildOrder::shouldScout() && unit.getType().isWorker() && unit.getPlayer() != Broodwar->self()) {
                 const auto closestScout = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                     return u.getRole() == Role::Scout && !u.isFlying();
                 });
@@ -83,12 +82,12 @@ namespace McRave::Grids
 
             if (unit.getType() == Protoss_Interceptor
                 || unit.getType() == Terran_Medic
-                || unit.getType().isWorker())
+                || unit.getType().isSpell())
                 return;
 
             // Pixel and walk sizes
-            const auto walkWidth = unit.getType().isBuilding() ? unit.getType().tileWidth() * 4 : unit.getWalkWidth();
-            const auto walkHeight = unit.getType().isBuilding() ? unit.getType().tileHeight() * 4 : unit.getWalkHeight();
+            const auto walkWidth = unit.getType().isBuilding() ? (unit.getType().tileWidth() * 4) : unit.getWalkWidth();
+            const auto walkHeight = unit.getType().isBuilding() ? (unit.getType().tileHeight() * 4) : unit.getWalkHeight();
 
             // Choose threat grid
             auto grdGrid = unit.getPlayer() == Broodwar->self() ? nullptr : eGroundThreat;
@@ -100,7 +99,7 @@ namespace McRave::Grids
                 (unit.getType().isFlyer() ? eAirCluster : eGroundCluster);
 
             // Limit checks so we don't have to check validity
-            auto radius = (unit.getPlayer() != Broodwar->self() || unit.getRole() == Role::Combat) ? 1 + int(max(unit.getGroundReach(), unit.getAirReach())) / 8 : 0;
+            auto radius = unit.getPlayer() != Broodwar->self() ? 1 + int(max(unit.getGroundReach(), unit.getAirReach())) / 8 : 8;
 
             if (unit.getType().isWorker() &&
                 (unit.unit()->isConstructing() || unit.unit()->isGatheringGas() || unit.unit()->isGatheringMinerals()))
@@ -111,39 +110,48 @@ namespace McRave::Grids
             const auto top = max(0, unit.getWalkPosition().y - radius);
             const auto bottom = min(1024, unit.getWalkPosition().y + walkHeight + radius);
 
+            const auto calcTopLeft = [&]() {
+                if (unit.getType().isBuilding())
+                    return Position(unit.getWalkPosition().x * 8 + ((unit.getType().tileWidth() * 16) - unit.getType().dimensionLeft()), unit.getWalkPosition().y * 8 + ((unit.getType().tileHeight() * 16) - unit.getType().dimensionUp()));
+                return Position(unit.getWalkPosition());
+            };
+
+            const auto calcBotRight = [&]() {
+                if (unit.getType().isBuilding())
+                    return Position(unit.getWalkPosition().x * 8 - ((unit.getType().tileWidth() * 16) - unit.getType().dimensionLeft()), unit.getWalkPosition().y * 8 - ((unit.getType().tileHeight() * 16) - unit.getType().dimensionUp())) + Position(unit.getType().tileWidth() * 32, unit.getType().tileHeight() * 32);
+                return Position(unit.getWalkPosition()) + Position(walkWidth * 8, walkHeight * 8) + Position(8 * (1 - unit.getWalkWidth() % 2), 8 * (1 - unit.getWalkHeight() % 2));
+            };
+
             // Pixel rectangle (make any even size units an extra WalkPosition)
             const auto ff = unit.getType().isBuilding() ? Position(0, 0) : Position(8, 8);
-            const auto topLeft = Position(unit.getWalkPosition());
-            const auto botRight = topLeft + Position(walkWidth * 8, walkHeight * 8) + Position(8 * (1 - unit.getWalkWidth() % 2), 8 * (1 - unit.getWalkHeight() % 2));
+            const auto topLeft = calcTopLeft();
+            const auto botRight = calcBotRight();
             const auto x1 = unit.getPosition().x;
             const auto y1 = unit.getPosition().y;
 
-            auto inRange = true;
-            auto closest = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto&u) { return true; });
-
             // If no nearby unit owned by self, ignore threat grids
-            if (!closest)
-                inRange = false;
-            else {
-                const auto dist = closest->getPosition().getDistance(unit.getPosition()) - 640.0;
-                const auto vision = closest->getType().sightRange();
+            auto inRange = false;
+            auto pState = unit.getPlayer() == Broodwar->self() ? PlayerState::Enemy : PlayerState::Self;
+            auto closest = Util::getClosestUnit(unit.getPosition(), pState, [&](auto&u) { return true; });
+            if (closest) {
+                const auto dist = Util::boxDistance(closest->getType(), closest->getPosition(), unit.getType(), unit.getPosition()) - 128.0;
+                const auto vision = max(closest->getType().sightRange(), unit.getType().sightRange());
                 const auto range = max({ closest->getGroundRange(), closest->getAirRange(), unit.getGroundRange(), unit.getAirRange() });
 
                 // If out of vision and range
-                if (dist > vision && dist > range)
-                    inRange = false;
+                if (dist <= vision || dist <= range)
+                    inRange = true;
             }
 
             // Iterate tiles and add to grid
             for (int x = left; x < right; x++) {
                 for (int y = top; y < bottom; y++) {
 
-                    //const auto dist = fasterDistGrids(x1, y1, (x * 8) + 4, (y * 8) + 4);
-                    const auto dist = float(unit.getPosition().getDistance(Position((x * 8) + 4, (y * 8) + 4)));
+                    const auto dist = fasterDistGrids(x1, y1, (x * 8) + 4, (y * 8) + 4);
 
                     // Cluster
-                    if (clusterGrid && dist < 64.0 && (unit.getPlayer() != Broodwar->self() || unit.getRole() == Role::Combat)) {
-                        clusterGrid[x][y] += (65.0f - dist) / 64.0f;
+                    if (clusterGrid && dist < 96.0 && (unit.getPlayer() != Broodwar->self() || unit.getRole() == Role::Combat)) {
+                        clusterGrid[x][y] += min(96.0f, (128.0f - dist)) / 96.0f;
                         saveReset(x, y);
                     }
 
@@ -155,11 +163,11 @@ namespace McRave::Grids
 
                     // Threat
                     if (inRange && grdGrid && dist <= unit.getGroundReach()) {
-                        grdGrid[x][y] += float(unit.getVisibleGroundStrength());
+                        grdGrid[x][y] += float(unit.getVisibleGroundStrength()) / max(1.0, log((double)dist));
                         saveReset(x, y);
                     }
-                    if (/*inRange && */airGrid && dist <= unit.getAirReach()) {
-                        airGrid[x][y] += float(unit.getVisibleAirStrength());
+                    if (inRange && airGrid && dist <= unit.getAirReach()) {
+                        airGrid[x][y] += float(unit.getVisibleAirStrength()) / max(1.0, log((double)dist));
                         saveReset(x, y);
                     }
                 }
@@ -231,8 +239,6 @@ namespace McRave::Grids
                 if (unit.unit()->exists() && (unit.unit()->isStasised() || unit.unit()->isMaelstrommed()))
                     continue;
 
-                auto longRangeUnit = unit.getGroundRange() >= 224.0;
-
                 if (unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Protoss_Scarab) {
                     if (unit.hasTarget() && unit.getTarget().unit() && unit.getTarget().unit()->exists())
                         addSplash(unit);
@@ -252,7 +258,8 @@ namespace McRave::Grids
                 WalkPosition start = WalkPosition(u->getTilePosition());
                 int width = u->getType().tileWidth() * 4;
                 int height = u->getType().tileHeight() * 4;
-                if (u->getType().isFlyer())
+                if (u->getType().isFlyer()
+                    || u->getType().isSpell())
                     continue;
 
                 for (int x = start.x; x < start.x + width; x++) {
@@ -265,16 +272,13 @@ namespace McRave::Grids
                         saveReset(x, y);
                     }
                 }
-
-                if (u->getType() == Spell_Disruption_Web)
-                    Actions::addAction(u, u->getPosition(), TechTypes::Disruption_Web, PlayerState::Neutral);
             }
         }
 
         void updateVisibility()
         {
-            for (int x = 0; x <= Broodwar->mapWidth(); x++) {
-                for (int y = 0; y <= Broodwar->mapHeight(); y++) {
+            for (int x = 0; x < Broodwar->mapWidth(); x++) {
+                for (int y = 0; y < Broodwar->mapHeight(); y++) {
                     TilePosition t(x, y);
                     if (Broodwar->isVisible(t))
                         visibleGrid[x][y] = Broodwar->getFrameCount();
@@ -326,7 +330,7 @@ namespace McRave::Grids
 
         void updateUltraGrid()
         {
-            
+
         }
     }
 
@@ -425,6 +429,4 @@ namespace McRave::Grids
             }
         }*/
     }
-
-    bool isUltraWalkable(TilePosition t) { return ultraWalkable[t.x][t.y]; }
 }

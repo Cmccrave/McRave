@@ -8,9 +8,18 @@ namespace McRave::Actions {
 
     namespace {
 
+        bool draw = false;
+
         void drawActions()
         {
-            // TODO            
+            // TODO
+            if (draw) {
+                for (auto &action : neutralActions) {
+                    auto topLeft = action.pos - Position(48, 48);
+                    auto botRight = action.pos + Position(48, 48);
+                    Broodwar->drawBoxMap(topLeft, botRight, Colors::Blue);
+                }
+            }
         }
 
         void updateActions()
@@ -66,6 +75,16 @@ namespace McRave::Actions {
 
                 if (unit.getType().isDetector() && unit.unit()->isCompleted())
                     addAction(unit.unit(), unit.getPosition(), unit.getType(), PlayerState::Self);
+            }
+
+            // Check neutral actions
+            for (auto &u : Units::getUnits(PlayerState::Neutral)) {
+                UnitInfo &unit = *u;
+
+                if (unit.getType() == Spell_Dark_Swarm)
+                    addAction(unit.unit(), unit.getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral);
+                if (unit.getType() == Spell_Disruption_Web)
+                    addAction(unit.unit(), unit.getPosition(), TechTypes::Disruption_Web, PlayerState::Neutral);
             }
         }
 
@@ -200,7 +219,7 @@ namespace McRave::Actions {
             if (action.unit == unit)
                 continue;
 
-            if (action.tech == TechTypes::Stasis_Field || action.tech == TechTypes::EMP_Shockwave) {
+            if (action.tech == TechTypes::Stasis_Field || action.tech == TechTypes::EMP_Shockwave || action.tech == TechTypes::Dark_Swarm) {
                 if (boxOverlap(action, checkPositions, int(Util::getCastRadius(action.tech))))
                     return true;
             }
@@ -213,9 +232,9 @@ namespace McRave::Actions {
             if (action.unit == unit)
                 continue;
 
-            if (action.tech == TechTypes::Stasis_Field || action.tech == TechTypes::EMP_Shockwave) {
+            if (action.tech == TechTypes::Stasis_Field || action.tech == TechTypes::EMP_Shockwave || action.tech == TechTypes::Dark_Swarm) {
                 if (boxOverlap(action, checkPositions, int(Util::getCastRadius(action.tech))))
-                    return true;
+                    return true;                
             }
             else if (circleOverlap(action, checkPositions, int(Util::getCastRadius(action.tech))))
                 return true;
@@ -228,7 +247,7 @@ namespace McRave::Actions {
         Visuals::startPerfTest();
         drawActions();
         updateActions();
-        Visuals::endPerfTest("Commands");
+        Visuals::endPerfTest("Actions");
     }
 
     vector <Action>* getActions(PlayerState player) {

@@ -30,9 +30,13 @@ namespace McRave {
         int lastVisibleFrame = -999;
         int lastPosMoveFrame = -999;
         int lastTileMoveFrame = -999;
+        int lastStuckFrame = 0;
         int lastThreateningFrame = 0;
         int resourceHeldFrames = -999;
         int remainingTrainFrame = 0;
+        int startedFrame = -999;
+        int completeFrame = -999;
+        int arriveFrame = -999;
         int shields = 0;
         int health = 0;
         int minStopFrame = 0;
@@ -40,12 +44,13 @@ namespace McRave {
         int walkWidth = 0;
         int walkHeight = 0;
 
+        bool completed = false;
         bool burrowed = false;
         bool flying = false;
         bool threatening = false;
         bool hidden = false;
         bool nearSplash = false;
-        bool targetedBySuicide = false;
+        bool nearSuicide = false;
     #pragma endregion
 
     #pragma region Targets
@@ -65,6 +70,7 @@ namespace McRave {
         GlobalState gState = GlobalState::None;
         SimState sState = SimState::None;
         Role role = Role::None;
+        GoalType gType = GoalType::None;
     #pragma endregion
 
     #pragma region BWAPIData
@@ -102,6 +108,9 @@ namespace McRave {
 
     public:
 
+        bool mineralFlagThing = false;
+
+
     #pragma region Constructors
         UnitInfo();
 
@@ -119,7 +128,7 @@ namespace McRave {
         bool hasMovedArea() { return lastTile.isValid() && tilePosition.isValid() && BWEM::Map::Instance().GetArea(lastTile) != BWEM::Map::Instance().GetArea(tilePosition); }
         bool hasAttackedRecently() { return (BWAPI::Broodwar->getFrameCount() - lastAttackFrame < 50); }
         bool targetsFriendly() { return type == BWAPI::UnitTypes::Terran_Medic || type == BWAPI::UnitTypes::Terran_Science_Vessel || (type == BWAPI::UnitTypes::Zerg_Defiler && energy < 100); }
-        bool isStuck() { return (BWAPI::Broodwar->getFrameCount() - lastTileMoveFrame > 12); }
+
         bool isSuicidal() { return type == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine || type == BWAPI::UnitTypes::Zerg_Scourge || type == BWAPI::UnitTypes::Zerg_Infested_Terran; }
         bool isLightAir() { return type == BWAPI::UnitTypes::Protoss_Corsair || type == BWAPI::UnitTypes::Zerg_Mutalisk || type == BWAPI::UnitTypes::Terran_Wraith; }
         bool isCapitalShip() { return type == BWAPI::UnitTypes::Protoss_Carrier || type == BWAPI::UnitTypes::Terran_Battlecruiser || type == BWAPI::UnitTypes::Zerg_Guardian; }
@@ -128,6 +137,7 @@ namespace McRave {
         bool isSpellcaster() { return type == BWAPI::UnitTypes::Protoss_High_Templar || type == BWAPI::UnitTypes::Protoss_Dark_Archon || type == BWAPI::UnitTypes::Terran_Medic || type == BWAPI::UnitTypes::Terran_Science_Vessel || type == BWAPI::UnitTypes::Zerg_Defiler; }
         bool isSiegeTank() { return type == BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode || type == BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode; }
         bool isNearMapEdge() { return tilePosition.x < 2 || tilePosition.x > BWAPI::Broodwar->mapWidth() - 2 || tilePosition.y < 2 || tilePosition.y > BWAPI::Broodwar->mapHeight() - 2; }
+        bool isCompleted() { return completed; }
 
         bool isHealthy();
         bool isRequestingPickup();
@@ -137,32 +147,42 @@ namespace McRave {
         bool isWithinBuildRange();
         bool isWithinGatherRange();
         bool canStartAttack();
-        bool canStartCast(BWAPI::TechType);
+        bool canStartCast(BWAPI::TechType, BWAPI::Position);
         bool canStartGather();
         bool canAttackGround();
         bool canAttackAir();
+
+        bool isStuck() { return BWAPI::Broodwar->getFrameCount() - lastTileMoveFrame > 48; }
+        bool wasStuckRecently() {
+            return BWAPI::Broodwar->getFrameCount() - lastStuckFrame < 240;
+        }
 
         // General commands that verify we aren't spamming the same command and sticking the unit
         bool command(BWAPI::UnitCommandType, BWAPI::Position);
         bool command(BWAPI::UnitCommandType, UnitInfo&);
 
         // Information about frame timings
-        int frameArrivesWhen() {
-            return BWAPI::Broodwar->getFrameCount() + int(BWEB::Map::getGroundDistance(position, Terrain::getDefendPosition()) / speed);
+        int frameStartedWhen() {
+            return startedFrame;
         }
         int frameCompletesWhen() {
-            if (percentHealth >= 1.0 || bwUnit->isCompleted())
-                return BWAPI::Broodwar->getFrameCount();
-            auto ratio = (double(health) - (0.1 * double(type.maxHitPoints()))) / (0.9 * double(type.maxHitPoints()));
-            return BWAPI::Broodwar->getFrameCount() + int(std::round((1.0 - ratio) * double(type.buildTime())));
+            return completeFrame;
         }
-        Time timeArrivesWhen() {
-            int arrival = frameArrivesWhen();
-            return Time(arrival / 1440, (arrival / 24) % 60);
+        int frameArrivesWhen() {
+            return arriveFrame;
+        }
+        Time timeStartedWhen() {
+            int started = frameStartedWhen();
+            return Time(started / 1440, (started / 24) % 60);
+
         }
         Time timeCompletesWhen() {
             int completes = frameCompletesWhen();
             return Time(completes / 1440, (completes / 24) % 60);
+        }
+        Time timeArrivesWhen() {
+            int arrival = frameArrivesWhen();
+            return Time(arrival / 1440, (arrival / 24) % 60);
         }
 
         // Logic that dictates overriding simulation results
@@ -203,6 +223,7 @@ namespace McRave {
         UnitInfo &getBackupTarget() { return *backupTarget.lock(); }
 
         Role getRole() { return role; }
+        GoalType getGoalType() { return gType; }
         BWAPI::Unit& unit() { return bwUnit; }
         BWAPI::UnitType getType() { return type; }
         BWAPI::UnitType getBuildType() { return buildingType; }
@@ -254,7 +275,7 @@ namespace McRave {
         bool isThreatening() { return threatening; }
         bool isHidden() { return hidden; }
         bool isNearSplash() { return nearSplash; }
-        bool isTargetedBySuicide() { return targetedBySuicide; }
+        bool isNearSuicide() { return nearSuicide; }
     #pragma endregion      
 
     #pragma region Setters
@@ -272,6 +293,7 @@ namespace McRave {
         void setSimTarget(UnitInfo* unit) { unit ? simTarget = unit->weak_from_this() : simTarget.reset(); }
         void setBackupTarget(UnitInfo* unit) { unit ? backupTarget = unit->weak_from_this() : backupTarget.reset(); }
         void setRole(Role newRole) { role = newRole; }
+        void setGoalType(GoalType newGoalType) { gType = newGoalType; }
         void setType(BWAPI::UnitType newType) { type = newType; }
         void setBuildingType(BWAPI::UnitType newType) { buildingType = newType; }
         void setSimPosition(BWAPI::Position newPosition) { simPosition = newPosition; }

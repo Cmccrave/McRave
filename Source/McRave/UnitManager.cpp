@@ -22,6 +22,7 @@ namespace McRave::Units {
         map<Role, int> myRoles;
         set<Unit> splashTargets;
         double immThreat;
+        Position enemyArmyCenter;
 
         void updateRole(UnitInfo& unit)
         {
@@ -49,15 +50,18 @@ namespace McRave::Units {
 
             // Check if a worker morphed into a building
             if (unit.getRole() == Role::Worker && unit.getType().isBuilding()) {
-                if (unit.getType().isBuilding() && !unit.canAttackGround() && !unit.canAttackAir())
+                if (unit.getType().isBuilding() && !unit.canAttackGround() && !unit.canAttackAir() && unit.getType() != Zerg_Creep_Colony)
                     unit.setRole(Role::Production);
                 else
-                    unit.setRole(Role::Combat);
+                    unit.setRole(Role::Defender);
             }
         }
 
         void updateEnemies()
         {
+            enemyArmyCenter = Position(0, 0);
+            auto enemyArmyCount = 0;
+
             for (auto &p : Players::getPlayers()) {
                 PlayerInfo &player = p.second;
                 if (!player.isEnemy())
@@ -76,8 +80,10 @@ namespace McRave::Units {
                     unit.update();
 
                     // TODO: Move to a UnitInfo flag
-                    if (unit.hasTarget() && (unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Protoss_Scarab))
+                    if (unit.hasTarget() && (unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Protoss_Scarab)) {
+                        Broodwar->drawLineMap(unit.getPosition(), unit.getTarget().getPosition(), Colors::Red);
                         splashTargets.insert(unit.getTarget().unit());
+                    }
 
                     if (unit.getType().isBuilding() && !unit.isFlying() && unit.getTilePosition().isValid() && BWEB::Map::isUsed(unit.getTilePosition()) == None && Broodwar->isVisible(TilePosition(unit.getPosition())))
                         Events::onUnitLand(unit);
@@ -88,6 +94,7 @@ namespace McRave::Units {
 
                     // If a unit is threatening our position
                     if (unit.isThreatening()) {
+                        unit.circleRed();
                         if (unit.getType() == Protoss_Photon_Cannon)
                             immThreat += 5.00;
                         else if (unit.getType().isBuilding())
@@ -95,8 +102,16 @@ namespace McRave::Units {
                         else if (!unit.getType().isFlyer())
                             immThreat += unit.getVisibleGroundStrength();
                     }
+
+                    // Add to army center
+                    if (unit.getPosition().isValid() && !unit.getType().isBuilding() && !unit.getType().isWorker()) {
+                        enemyArmyCenter += unit.getPosition();
+                        enemyArmyCount++;
+                    }
                 }
             }
+
+            enemyArmyCenter /= enemyArmyCount;
         }
 
         void updateAllies()
@@ -240,6 +255,7 @@ namespace McRave::Units {
     map<UnitSizeType, int>& getAllyAirSizes() { return allyAirSizes; }
     map<UnitSizeType, int>& getEnemyAirSizes() { return enemyAirSizes; }
     set<Unit>& getSplashTargets() { return splashTargets; }
+    Position getEnemyArmyCenter() { return enemyArmyCenter; }
     double getImmThreat() { return immThreat; }
     int getMyRoleCount(Role role) { return myRoles[role]; }
     int getMyVisible(UnitType type) { return myVisibleTypes[type]; }

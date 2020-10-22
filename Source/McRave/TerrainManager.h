@@ -3,6 +3,7 @@
 
 namespace McRave::Terrain {
     BWAPI::Position getClosestMapCorner(BWAPI::Position);
+    BWAPI::Position getClosestMapEdge(BWAPI::Position);
     bool isInAllyTerritory(BWAPI::TilePosition);
     bool isInAllyTerritory(const BWEM::Area *);
     bool isInEnemyTerritory(BWAPI::TilePosition);

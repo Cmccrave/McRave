@@ -68,7 +68,7 @@ namespace McRave::Learning {
                 if (build == "HatchPool")
                     return t;
                 if (build == "PoolHatch")
-                    return p || t;
+                    return true;
             }
             return false;
         }
@@ -116,17 +116,21 @@ namespace McRave::Learning {
             }
 
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                if (build == "PoolLair") {
-                    if (opener == "9Pool")
-                        return z;
+                if (build == "PoolHatch") {
+                    if (opener == "Overpool")
+                        return t || p;
+                    if (opener == "12Pool")
+                        return t || z;
+                    if (opener == "4Pool")
+                        return Terrain::isShitMap() && (t || p);
                 }
                 if (build == "HatchPool") {
                     if (opener == "12Hatch")
                         return t;
                 }
-                if (build == "PoolHatch") {
-                    if (opener == "Overpool")
-                        return p;
+                if (build == "PoolLair") {
+                    if (opener == "9Pool")
+                        return z;
                 }
             }
             return false;
@@ -194,9 +198,9 @@ namespace McRave::Learning {
                 }
                 if (build == "PoolHatch") {
                     if (transition == "2HatchMuta")
-                        return !Terrain::isShitMap() && p;
+                        return !Terrain::isShitMap();
                     if (transition == "2HatchSpeedling")
-                        return Terrain::isShitMap() && p;
+                        return (Terrain::isShitMap() && p) || r;
                     if (transition == "3HatchSpeedling")
                         return Terrain::isShitMap() && t;
                 }
@@ -232,7 +236,7 @@ namespace McRave::Learning {
                 else if (Players::vP())
                     BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "2HatchMuta");
                 else
-                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "Unknown");
+                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "2HatchSpeedling");
             }
 
             // Add walls
@@ -304,7 +308,17 @@ namespace McRave::Learning {
             }
         }
 
+        const auto copyFile = [&](string source, string destination) {
+            std::ifstream src(source, std::ios::binary);
+            std::ofstream dest(destination, std::ios::binary);
+            dest << src.rdbuf();
+            return src && dest;
+        };
+
         // Write into the write directory information about what we saw the enemy do
+        ifstream readFile("bwapi-data/read/" + gameInfoExtension);
+        if (readFile)
+            copyFile("bwapi-data/read/" + gameInfoExtension, "bwapi-data/write/" + gameInfoExtension);
         ofstream gameLog("bwapi-data/write/" + gameInfoExtension, std::ios_base::app);
 
         // Who won on what map in how long
@@ -320,8 +334,8 @@ namespace McRave::Learning {
             << currentBuild << "," << currentOpener << "," << currentTransition << ",";
 
         // When did we detect the enemy strategy
-        gameLog << std::setfill('0') << Strategy::getEnemyBuildTime().minutes << ":" << std::setw(2) << Strategy::getEnemyOpenerTime().seconds << ",";
-        gameLog << std::setfill('0') << Strategy::getEnemyOpenerTime().minutes << ":" << std::setw(2) << Strategy::getEnemyBuildTime().seconds << ",";
+        gameLog << std::setfill('0') << Strategy::getEnemyBuildTime().minutes << ":" << std::setw(2) << Strategy::getEnemyBuildTime().seconds << ",";
+        gameLog << std::setfill('0') << Strategy::getEnemyOpenerTime().minutes << ":" << std::setw(2) << Strategy::getEnemyOpenerTime().seconds << ",";
         gameLog << std::setfill('0') << Strategy::getEnemyTransitionTime().minutes << ":" << std::setw(2) << Strategy::getEnemyTransitionTime().seconds;
 
         // Store a list of total units everyone made
@@ -390,7 +404,7 @@ namespace McRave::Learning {
 
         if (Broodwar->self()->getRace() == Races::Zerg) {
 
-            myBuilds["PoolHatch"].openers ={ "Overpool" };
+            myBuilds["PoolHatch"].openers ={ "4Pool", "9Pool", "Overpool", "12Pool" };
             myBuilds["PoolHatch"].transitions={ "2HatchMuta", "2HatchSpeedling", "3HatchSpeedling" };
 
             myBuilds["HatchPool"].openers ={ "12Hatch" };
@@ -543,12 +557,12 @@ namespace McRave::Learning {
                 return;
             }
             if (Players::PvT()) {
-                BuildOrder::setLearnedBuild("NexusGate", "Dragoon", "Standard");
+                BuildOrder::setLearnedBuild("GateNexus", "2Gate", "Standard");
                 isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                 return;
             }
             if (Players::ZvZ()) {
-                BuildOrder::setLearnedBuild("PoolLair", "9Pool", "1HatchMuta");
+                BuildOrder::setLearnedBuild("PoolHatch", "12Pool", "2HatchMuta");
                 isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                 return;
             }

@@ -7,25 +7,15 @@
 #include "McRave.h"
 #include "EventManager.h"
 
-// *** TODO ***
-// Skipping grids on some units causes no collision to be added for those units
-
 // Protoss:
 // Obs to scout bases
 // Interceptors targets might be convincing goons to dive tanks
-// Shuttles don't consider static defenses when decided engage/retreat
-// Change storms to care more about multi target rather than score
-// Cannon detection action range too large
-// 10/15 defensive reaction lost to BBS
 // Scout denial with Zealot
-// Battery placement at wall
-// Tech too quick
-// Goons get stuck
-// Pylon spam
+// Pylon spam due to pylon wall priority
+// Obs/Arb suicide
 
 // Zerg:
-// APM spam is a problem late game
-// Add half saturated mineral check in resource manager, fix hacky gas removal in worker manager
+// ZvZ move ovies along paths to see if more lings are coming
 
 using namespace BWAPI;
 using namespace std;

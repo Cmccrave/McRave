@@ -140,7 +140,7 @@ namespace BWEB::Map
             set<BWEM::ChokePoint const *> mainChokes;
             for (auto &choke : mainArea->ChokePoints())
                 mainChokes.insert(choke);
-            if (mainChokes.size() == 1) {
+            if (mainChokes.size() == 1 && mapBWEM.GetPath(mainPosition, naturalPosition).size() == 1) {
                 mainChoke = *mainChokes.begin();
                 return;
             }
@@ -317,6 +317,8 @@ namespace BWEB::Map
                     if (drawWalk) {
                         if (walkGridFull[x][y])
                             Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Black, false);
+                        if (walkGridLarge[x][y])
+                            Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Black, true);
                     }
 
                     // Draw boxes around any TilePosition that shares an Area with mouses current Area
@@ -373,8 +375,10 @@ namespace BWEB::Map
             auto offset3 = Broodwar->isWalkable(w + WalkPosition(4, 0)) && Broodwar->isWalkable(w + WalkPosition(4, 1)) && Broodwar->isWalkable(w + WalkPosition(4, 2)) && Broodwar->isWalkable(w + WalkPosition(4, 3));
             auto offset4 = Broodwar->isWalkable(w + WalkPosition(5, 0)) && Broodwar->isWalkable(w + WalkPosition(5, 1)) && Broodwar->isWalkable(w + WalkPosition(5, 2)) && Broodwar->isWalkable(w + WalkPosition(5, 3));
 
-            return (offset1 && offset2 && offset3) ||
-                (offset2 && offset3 && offset4);
+            auto cornersWalkable = Broodwar->isWalkable(w) && Broodwar->isWalkable(w + WalkPosition(3, 0)) && Broodwar->isWalkable(w + WalkPosition(0, 3)) && Broodwar->isWalkable(w + WalkPosition(3, 3));
+
+            return (offset1 && offset2 && cornersWalkable) ||
+                (cornersWalkable && offset3 && offset4);
         };
 
         // Check for at least 2 columns to left and right of tile for walkability

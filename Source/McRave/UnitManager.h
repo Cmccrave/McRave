@@ -10,6 +10,7 @@ namespace McRave::Units {
     std::map<BWAPI::UnitSizeType, int>& getEnemyGrdSizes();
     std::map<BWAPI::UnitSizeType, int>& getAllyAirSizes();
     std::map<BWAPI::UnitSizeType, int>& getEnemyAirSizes();
+    BWAPI::Position getEnemyArmyCenter();
     double getImmThreat();
 
     int getMyRoleCount(Role);

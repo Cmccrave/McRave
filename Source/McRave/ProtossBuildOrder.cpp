@@ -49,8 +49,8 @@ namespace McRave::BuildOrder::Protoss
             return;
 
         const auto firstTechUnit = !techList.empty() ? *techList.begin() : None;
-        const auto skipOneTech = Players::vT() + int(firstUnit == None || (firstUnit != None && Stations::getMyStations().size() >= 2) || Strategy::getEnemyBuild() == "FFE" || (Strategy::enemyGasSteal() && !Terrain::isNarrowNatural()));
-        const auto techVal = int(techList.size()) + skipOneTech - isTechUnit(Protoss_Shuttle) - isTechUnit(Protoss_Observer) + isTechUnit(Protoss_Arbiter) - (com(Protoss_Nexus) >= 3 && isTechUnit(Protoss_Dark_Templar));
+        const auto skipOneTech = int(firstUnit == None || (firstUnit != None && Stations::getMyStations().size() >= 2) || Strategy::getEnemyBuild() == "FFE" || (Strategy::enemyGasSteal() && !Terrain::isNarrowNatural()));
+        const auto techVal = int(techList.size()) + skipOneTech - isTechUnit(Protoss_Shuttle) + isTechUnit(Protoss_Arbiter) - (com(Protoss_Nexus) >= 3 && isTechUnit(Protoss_Dark_Templar));
         techSat = techVal >= com(Protoss_Nexus);
 
         // PvP
@@ -119,8 +119,8 @@ namespace McRave::BuildOrder::Protoss
     {
         // Against FFE add a Nexus
         if (Strategy::getEnemyBuild() == "FFE" && Broodwar->getFrameCount() < 15000) {
-            auto cannonCount = Players::getCurrentCount(PlayerState::Enemy, Protoss_Photon_Cannon);
-            fastExpand = true;
+            auto cannonCount = Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon);
+            wantNatural = true;
 
             if (cannonCount < 6) {
                 buildQueue[Protoss_Nexus] = 2;
@@ -145,14 +145,11 @@ namespace McRave::BuildOrder::Protoss
             gasLimit = INT_MAX;
 
         // Pylon logic after first two
-        if (vis(Protoss_Pylon) >= 2) {
+        if (!inBookSupply) {
             int count = min(22, Players::getSupply(PlayerState::Self) / 14) - (com(Protoss_Nexus) - 1);
             buildQueue[Protoss_Pylon] = count;
 
-            if (!inOpeningBook && !Buildings::hasPoweredPositions() && vis(Protoss_Pylon) > 10)
-                buildQueue[Protoss_Pylon] = vis(Protoss_Pylon) + 1;
-
-            if (Stations::getMyStations().size() >= 4 || Strategy::getEnemyTransition() == "2HatchMuta" || Strategy::getEnemyTransition() == "3HatchMuta") {
+            if (com(Protoss_Pylon) >= (Players::vT() ? 5 : 3) || Strategy::getEnemyTransition() == "2HatchMuta" || Strategy::getEnemyTransition() == "3HatchMuta") {
                 for (auto &[unit, station] : Stations::getMyStations()) {
                     if (Stations::needPower(*station))
                         buildQueue[Protoss_Pylon] = vis(Protoss_Pylon) + 1;
@@ -162,8 +159,8 @@ namespace McRave::BuildOrder::Protoss
 
         // Adding Wall Defenses
         if (Walls::getNaturalWall()) {
-            if (Walls::needAirDefenses(*Walls::getNaturalWall()) > 0 || Walls::needGroundDefenses(*Walls::getNaturalWall()) > 0)
-                buildQueue[Protoss_Photon_Cannon] += 1;            
+            if (vis(Protoss_Forge) > 0 && (Walls::needAirDefenses(*Walls::getNaturalWall()) > 0 || Walls::needGroundDefenses(*Walls::getNaturalWall()) > 0))
+                buildQueue[Protoss_Photon_Cannon] = vis(Protoss_Photon_Cannon) + 1;
         }
 
         // Adding Station Defenses
@@ -171,27 +168,28 @@ namespace McRave::BuildOrder::Protoss
             for (auto &station : Stations::getMyStations()) {
                 auto &s = *station.second;
 
-                if (Stations::needGroundDefenses(s) > 0 || Stations::needAirDefenses(s) > 0) {
-                    buildQueue[Protoss_Photon_Cannon] += 1;
-                    break;
-                }
+                if (vis(Protoss_Forge) > 0 && (Stations::needGroundDefenses(s) > 0 || Stations::needAirDefenses(s) > 0))
+                    buildQueue[Protoss_Photon_Cannon] = vis(Protoss_Photon_Cannon) + 1;
             }
         }
 
         // If we're not in our opener
         if (!inOpeningBook) {
 
+            checkExpand();
+            checkRamp();
+
             // Adding bases
-            if (shouldExpand())
+            if (expandDesired)
                 buildQueue[Protoss_Nexus] = com(Protoss_Nexus) + 1;
 
             // Adding production
             auto maxGates = Players::vT() ? 16 : 12;
-            productionSat = (com(Protoss_Gateway) >= int(2.5 * com(Protoss_Nexus)) || com(Protoss_Gateway) >= maxGates);
-            if (shouldAddProduction()) {
-                auto gatesPerBase = 3 - int(isTechUnit(Protoss_Carrier));
-                auto gateCount = min({ maxGates, vis(Protoss_Nexus) * gatesPerBase, vis(Protoss_Gateway) + 1 });
-                auto stargateCount = min(4, int(isTechUnit(Protoss_Carrier)) * com(Protoss_Nexus));
+            auto gatesPerBase = 3.0 - (0.5 * (int(isTechUnit(Protoss_Carrier)) || int(Stations::getMyStations().size()) >= 3));
+            productionSat = (vis(Protoss_Gateway) >= int(2.5 * vis(Protoss_Nexus)) || vis(Protoss_Gateway) >= maxGates);
+            if (rampDesired) {
+                auto gateCount = min({ maxGates, int(round(com(Protoss_Nexus) * gatesPerBase)), vis(Protoss_Gateway) + 1 });
+                auto stargateCount = min(4, int(isTechUnit(Protoss_Carrier)) * vis(Protoss_Nexus));
                 buildQueue[Protoss_Gateway] = gateCount;
                 buildQueue[Protoss_Stargate] = stargateCount;
             }
@@ -229,12 +227,12 @@ namespace McRave::BuildOrder::Protoss
                 }
             }
 
-            // Check if we can block an enemy expansion
-            if (Broodwar->getFrameCount() >= 10000) {
-                auto here = Terrain::getEnemyExpand();
-                if (here.isValid() && BWEB::Map::isUsed(here) == None)
-                    buildQueue[Protoss_Pylon] = buildCount(Protoss_Pylon) + 1;
-            }
+            //// Check if we can block an enemy expansion
+            //if (Broodwar->getFrameCount() >= 10000) {
+            //    auto here = Terrain::getEnemyExpand();
+            //    if (here.isValid() && BWEB::Map::isUsed(here) == None)
+            //        buildQueue[Protoss_Pylon] = buildCount(Protoss_Pylon) + 1;
+            //}
 
             // Corsair/Scout upgrades
             if (Players::getSupply(PlayerState::Self) >= 300 && (isTechUnit(Protoss_Scout) || isTechUnit(Protoss_Corsair)))
@@ -278,11 +276,11 @@ namespace McRave::BuildOrder::Protoss
                 armyComposition[Protoss_Dragoon] = 0.75;
             }
             else if (isTechUnit(Protoss_High_Templar) || isTechUnit(Protoss_Arbiter)) {
-                armyComposition[Protoss_Zealot] = 0.15;
-                armyComposition[Protoss_Dragoon] = 0.80;
+                armyComposition[Protoss_Zealot] = 0.40;
+                armyComposition[Protoss_Dragoon] = 0.60;
             }
             else if (isTechUnit(Protoss_Observer))
-                armyComposition[Protoss_Dragoon] = 1.00;            
+                armyComposition[Protoss_Dragoon] = 1.00;
             else if (isTechUnit(Protoss_Dark_Templar))
                 armyComposition[Protoss_Dragoon] = 1.00;
         }
@@ -302,7 +300,7 @@ namespace McRave::BuildOrder::Protoss
         }
 
         for (auto &type : techList)
-            armyComposition[type] = 0.05;        
+            armyComposition[type] = 0.05;
     }
 
     void unlocks()
@@ -320,7 +318,7 @@ namespace McRave::BuildOrder::Protoss
 
         // Check if we should always make Dragoons
         if ((Players::vZ() && Broodwar->getFrameCount() > 20000)
-            || Players::getCurrentCount(PlayerState::Enemy, Zerg_Lurker) > 0
+            || Players::getVisibleCount(PlayerState::Enemy, Zerg_Lurker) > 0
             || dragoonLimit > vis(Protoss_Dragoon))
             unlockedType.insert(Protoss_Dragoon);
         else
@@ -362,8 +360,8 @@ namespace McRave::BuildOrder::Protoss
 
     void island()
     {
-        // DISABLED: Islands not being played until other bugs are fixed
-        if (shouldAddProduction()) {
+        // DISABLED: Islands not being played
+        if (rampDesired) {
 
             // PvZ island
             if (Players::vZ()) {

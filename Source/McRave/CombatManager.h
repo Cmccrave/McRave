@@ -6,8 +6,8 @@ namespace McRave::Combat {
     void onStart();
     void onFrame();
     std::multimap<double, BWAPI::Position>& getCombatClusters();
-    BWAPI::Position getClosestRetreatPosition(BWAPI::Position);
-    //BWAPI::Position getClosestAttackPosition(BWAPI::Position);
+    BWAPI::Position getClosestRetreatPosition(UnitInfo&);
     BWAPI::Position getAirClusterCenter();
-    UnitInfo * getAirClusterCommander();
+    std::set<BWAPI::Position> getDefendPositions();
+    void resetDefendPositionCache();
 }

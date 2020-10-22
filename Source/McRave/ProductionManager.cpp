@@ -49,12 +49,15 @@ namespace McRave::Production {
 
         bool isAffordable(UpgradeType upgrade)
         {
-            return Broodwar->self()->minerals() >= upgrade.mineralPrice() && Broodwar->self()->gas() >= upgrade.gasPrice();
+            auto mineralCost = upgrade.mineralPrice() + (upgrade.mineralPriceFactor() * Broodwar->self()->getUpgradeLevel(upgrade));
+            auto gasCost = upgrade.gasPrice() + (upgrade.gasPriceFactor() * Broodwar->self()->getUpgradeLevel(upgrade));
+            return Broodwar->self()->minerals() >= mineralCost && Broodwar->self()->gas() >= gasCost;
         }
 
         bool isCreateable(Unit building, UnitType unit)
         {
-            if (!BuildOrder::isUnitUnlocked(unit))
+            if (!BuildOrder::isUnitUnlocked(unit)
+                || BuildOrder::getCompositionPercentage(unit) <= 0.0)
                 return false;
 
             switch (unit)
@@ -152,6 +155,16 @@ namespace McRave::Production {
             if (upgrade == UpgradeTypes::Adrenal_Glands && Broodwar->self()->getUpgradeLevel(upgrade) == 0 && !Broodwar->self()->isUpgrading(upgrade))
                 return com(Zerg_Hive);
 
+            // Armor/Weapon upgrades
+            if (upgrade.maxRepeats() >= 3) {
+                if (upgrade.getRace() == Races::Zerg && ((Broodwar->self()->getUpgradeLevel(upgrade) == 1 && com(Zerg_Lair) == 0 && com(Zerg_Hive) == 0) || (Broodwar->self()->getUpgradeLevel(upgrade) == 2 && com(Zerg_Hive) == 0)))
+                    return false;
+                if (upgrade.getRace() == Races::Protoss && Broodwar->self()->getUpgradeLevel(upgrade) >= 1 && com(Protoss_Templar_Archives) == 0)
+                    return false;
+                if (upgrade.getRace() == Races::Terran && Broodwar->self()->getUpgradeLevel(upgrade) >= 1 && com(Terran_Science_Facility) == 0)
+                    return false;
+            }
+
             for (auto &unit : upgrade.whatUses()) {
                 if (BuildOrder::isUnitUnlocked(unit) && Broodwar->self()->getUpgradeLevel(upgrade) != upgrade.maxRepeats() && !Broodwar->self()->isUpgrading(upgrade))
                     return true;
@@ -179,14 +192,17 @@ namespace McRave::Production {
         bool isSuitable(UnitType unit)
         {
             if (unit.isWorker()) {
-                if (com(unit) < 70 && (!Resources::isMinSaturated() || !Resources::isGasSaturated() || Broodwar->self()->getRace() == Races::Zerg))
+                if (com(unit) < 70 && (!Resources::isMinSaturated() || !Resources::isGasSaturated()))
                     return true;
                 else
                     return false;
             }
 
-            if (unit.getRace() == Races::Zerg)
+            if (unit.getRace() == Races::Zerg) {
+                if (unit == Zerg_Defiler)
+                    return vis(unit) < 4;
                 return true;
+            }
 
             bool needReavers = false;
             bool needShuttles = false;
@@ -392,11 +408,11 @@ namespace McRave::Production {
                 {
                     // Speed upgrades
                 case Metabolic_Boost:
-                    return true;
+                    return vis(Zerg_Zergling) >= 20 || vis(Zerg_Hive) > 0;
                 case Muscular_Augments:
                     return (BuildOrder::isTechUnit(Zerg_Hydralisk) && Players::ZvP()) || Broodwar->self()->getUpgradeLevel(Grooved_Spines) > 0;
                 case Pneumatized_Carapace:
-                    return Stations::getMyStations().size() >= 4 || (Players::getStrength(PlayerState::Enemy).airToAir > 0 && !Players::ZvZ() && Players::getSupply(PlayerState::Self) >= 100);
+                    return (Util::getTime() > Time(12, 00) && int(Stations::getMyStations().size()) >= 3) || (Players::getStrength(PlayerState::Enemy).airToAir > 0 && !Players::ZvZ() && Players::getSupply(PlayerState::Self) >= 200);
                 case Anabolic_Synthesis:
                     return Players::getTotalCount(PlayerState::Enemy, Terran_Marine) < 20 || Broodwar->self()->getUpgradeLevel(Chitinous_Plating) > 0;
 
@@ -412,17 +428,17 @@ namespace McRave::Production {
 
                     // Ground unit upgrades
                 case Zerg_Melee_Attacks:
-                    return (vis(Zerg_Zergling) >= 30 || vis(Zerg_Ultralisk) >= 1) && Players::getSupply(PlayerState::Self) > 160 && (Broodwar->self()->getUpgradeLevel(Zerg_Carapace) > Broodwar->self()->getUpgradeLevel(Zerg_Melee_Attacks) || Broodwar->self()->isUpgrading(Zerg_Missile_Attacks));
+                    return (BuildOrder::getCompositionPercentage(Zerg_Zergling) > 0.0 || BuildOrder::getCompositionPercentage(Zerg_Ultralisk) > 0.0) && Players::getSupply(PlayerState::Self) > 160 && (Broodwar->self()->getUpgradeLevel(Zerg_Carapace) > Broodwar->self()->getUpgradeLevel(Zerg_Melee_Attacks) || Broodwar->self()->isUpgrading(Zerg_Carapace));
                 case Zerg_Missile_Attacks:
-                    return (vis(Zerg_Hydralisk) >= 16 || vis(Zerg_Lurker) >= 8) && (Broodwar->self()->getUpgradeLevel(Zerg_Carapace) > Broodwar->self()->getUpgradeLevel(Zerg_Missile_Attacks) || Broodwar->self()->isUpgrading(Zerg_Missile_Attacks));
+                    return (BuildOrder::getCompositionPercentage(Zerg_Hydralisk) > 0.0 || BuildOrder::getCompositionPercentage(Zerg_Lurker) > 0.0) && (Broodwar->self()->getUpgradeLevel(Zerg_Carapace) > Broodwar->self()->getUpgradeLevel(Zerg_Missile_Attacks) || Broodwar->self()->isUpgrading(Zerg_Carapace));
                 case Zerg_Carapace:
-                    return (vis(Zerg_Hydralisk) >= 16 || vis(Zerg_Zergling) >= 30 || vis(Zerg_Ultralisk) >= 1) && Players::getSupply(PlayerState::Self) > 160;
+                    return (BuildOrder::getTechUnit() == Zerg_Ultralisk || BuildOrder::getCompositionPercentage(Zerg_Hydralisk) > 0.0 || BuildOrder::getCompositionPercentage(Zerg_Zergling) > 0.0 || BuildOrder::getCompositionPercentage(Zerg_Ultralisk) > 0.0) && Players::getSupply(PlayerState::Self) > 100;
 
                     // Air unit upgrades
                 case Zerg_Flyer_Attacks:
-                    return BuildOrder::getTechUnit() != Zerg_Guardian && Players::getSupply(PlayerState::Self) > 200 && Broodwar->self()->getUpgradeLevel(Zerg_Flyer_Carapace) > Broodwar->self()->getUpgradeLevel(Zerg_Flyer_Attacks);
+                    return BuildOrder::getCompositionPercentage(Zerg_Mutalisk) > 0.0 && (Broodwar->self()->getUpgradeLevel(Zerg_Flyer_Carapace) > Broodwar->self()->getUpgradeLevel(Zerg_Flyer_Attacks) || Broodwar->self()->isUpgrading(Zerg_Flyer_Carapace));
                 case Zerg_Flyer_Carapace:
-                    return BuildOrder::getTechUnit() != Zerg_Guardian && Players::getSupply(PlayerState::Self) > 200;
+                    return BuildOrder::getCompositionPercentage(Zerg_Mutalisk) > 0.0 && Players::getSupply(PlayerState::Self) > 140;
                 }
             }
             return false;
@@ -487,7 +503,7 @@ namespace McRave::Production {
                 case Lurker_Aspect:
                     return true;
                 case Burrowing:
-                    return Stations::getMyStations().size() >= 3 && Players::getSupply(PlayerState::Self) > 120;
+                    return Stations::getMyStations().size() >= 3 && Players::getSupply(PlayerState::Self) > 100;
                 case Consume:
                     return true;
                 case Plague:
@@ -608,10 +624,11 @@ namespace McRave::Production {
                 idleUpgrade.erase(building.unit());
             }
 
+            int offset = 0;
             for (auto &upgrade : building.getType().upgradesWhat()) {
                 if (isCreateable(upgrade) && isSuitable(upgrade)) {
                     if (isAffordable(upgrade)) {
-                        building.setRemainingTrainFrame(upgrade.upgradeTime());
+                        building.setRemainingTrainFrame(upgrade.upgradeTime(Broodwar->self()->getUpgradeLevel(upgrade) + 1));
                         building.unit()->upgrade(upgrade);
                         lastTrainFrame = Broodwar->getFrameCount();
                     }
@@ -713,6 +730,7 @@ namespace McRave::Production {
                             UnitInfo &larva = *u;
 
                             if (!larva.unit()
+                                || larva.getType() != Zerg_Larva
                                 || larva.getRole() != Role::Production
                                 || !larva.unit()->isCompleted()
                                 || larva.getRemainingTrainFrames() >= Broodwar->getLatencyFrames()
@@ -752,7 +770,7 @@ namespace McRave::Production {
                             building.unit()->buildAddon(unit);
                             continue;
                         }
-                        auto makeExtra = vis(Protoss_Probe) <= 28 && Broodwar->self()->minerals() >= 200;
+                        auto makeExtra = vis(Protoss_Probe) <= 28 && Broodwar->self()->minerals() >= 400;
                         if (!BuildOrder::isWorkerCut() && unit.isWorker() && com(unit) < 75 && isAffordable(unit) && (!Resources::isGasSaturated() || !Resources::isMinSaturated() || makeExtra)) {
                             building.unit()->train(unit);
                             building.setRemainingTrainFrame(unit.buildTime());
@@ -774,23 +792,31 @@ namespace McRave::Production {
 
     double scoreUnit(UnitType type)
     {
+        if (BuildOrder::getTechUnit() == type && Broodwar->self()->getRace() != Races::Zerg)
+            return DBL_MAX;
+
         auto percentage = BuildOrder::getCompositionPercentage(type);
         auto trainedCount = vis(type) + trainedThisFrame[type];
 
         auto typeMineralCost = Math::realisticMineralCost(type);
         auto typeGasCost = Math::realisticGasCost(type);
 
+        for (auto &idleType : idleProduction) {
+            if (type == idleType.second)
+                trainedCount++;
+        }
+
         for (auto &secondType : type.buildsWhat()) {
             if (!secondType.isBuilding()) {
                 //percentage -= BuildOrder::getCompositionPercentage(secondType) * BuildOrder::getCompositionPercentage(type);
-                trainedCount += vis(secondType);
+                trainedCount += vis(secondType) + trainedThisFrame[secondType];
                 typeMineralCost += (int)round(BuildOrder::getCompositionPercentage(secondType) * BuildOrder::getCompositionPercentage(type) * Math::realisticMineralCost(secondType));
                 typeGasCost += (int)round(BuildOrder::getCompositionPercentage(secondType) * BuildOrder::getCompositionPercentage(type) * Math::realisticGasCost(secondType));
             }
         }
 
-        auto mineralCost = (Broodwar->self()->minerals() == 0 || typeMineralCost == 0) ? 1.0 : double(Broodwar->self()->minerals() - typeMineralCost) / double(Broodwar->self()->minerals());
-        auto gasCost = (Broodwar->self()->gas() == 0 || typeGasCost == 0) ? 1.0 : double(Broodwar->self()->gas() - typeGasCost) / double(Broodwar->self()->gas());
+        auto mineralCost = (Broodwar->self()->minerals() == 0 || typeMineralCost == 0) ? 1.0 : double(Broodwar->self()->minerals() - typeMineralCost - reservedMineral) / double(Broodwar->self()->minerals());
+        auto gasCost = (Broodwar->self()->gas() == 0 || typeGasCost == 0) ? 1.0 : double(Broodwar->self()->gas() - typeGasCost - reservedGas) / double(Broodwar->self()->gas());
 
         // HACK: Prevent them going negative
         mineralCost = max(0.01, mineralCost);
@@ -803,9 +829,6 @@ namespace McRave::Production {
 
         const auto resourceScore = clamp(gasCost * mineralCost, 0.01, 1.0);
         const auto strategyScore = 100.0 * percentage / double(max(1, trainedCount));
-
-        //Broodwar << type.c_str() << "    " << resourceScore << "    " << strategyScore << endl;
-
         return resourceScore + strategyScore;
     }
 

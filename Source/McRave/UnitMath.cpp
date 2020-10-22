@@ -91,26 +91,6 @@ namespace McRave::Math {
         auto bonus = 1.0;
         auto enemyStrength = Players::getStrength(PlayerState::Enemy);
 
-        // Add bonus for a repairing SCV
-        if (false && unit.getType() == Terran_SCV) {
-            const auto repairTarget = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) {
-                return u.getType() == Terran_Missile_Turret || u.getType() == Terran_Bunker;
-            });
-
-            if (repairTarget && Util::boxDistance(unit.getType(), unit.getPosition(), repairTarget->getType(), repairTarget->getPosition()) < 32.0) {
-                bonus = 100.0;
-                unit.circleBlue();
-            }
-        }
-
-        // Add bonus for Observers that are vulnerable
-        if (unit.getType() == Protoss_Observer && !unit.isHidden())
-            bonus = 20.0;
-
-        // Add bonus for early game harass
-        if ((Players::ZvZ() || (enemyStrength.airToAir <= 0.0 && enemyStrength.groundToAir <= 0.0)) && unit.getType().isWorker() && Util::getTime() < Time(10, 00))
-            bonus = 2.0;
-
         // If target is an egg, larva, scarab or spell
         if (unit.getType() == UnitTypes::Zerg_Egg || unit.getType() == UnitTypes::Zerg_Larva || unit.getType() == UnitTypes::Protoss_Scarab || unit.getType().isSpell())
             return 0.0;
@@ -216,10 +196,10 @@ namespace McRave::Math {
         if (unit.getType() == Protoss_High_Templar)
             return 2.00;
         if (unit.getType() == Terran_Siege_Tank_Siege_Mode)
-            return 2.50;
+            return 1.50;
         if (unit.getType() == Terran_Valkyrie || unit.getType() == Zerg_Mutalisk)
             return 1.50;
-        if (unit.getType() == Zerg_Lurker)
+        if (unit.getType() == Zerg_Lurker && Players::ZvT())
             return 2.00;
         return 1.00;
     }
@@ -319,12 +299,12 @@ namespace McRave::Math {
 
     double groundReach(UnitInfo& unit)
     {
-        return unit.getGroundRange() + (unit.getSpeed() * 32.0) + double(unit.getType().width() / 2) + 64.0;
+        return unit.getGroundRange() + (unit.getSpeed() * 16.0) + double(unit.getType().width() / 2) + 64.0;
     }
 
     double airReach(UnitInfo& unit)
     {
-        return unit.getAirRange() + (unit.getSpeed() * 32.0) + double(unit.getType().width() / 2) + 64.0;
+        return unit.getAirRange() + (unit.getSpeed() * 16.0) + double(unit.getType().width() / 2) + 64.0;
     }
 
     double groundDamage(UnitInfo& unit)
@@ -381,15 +361,15 @@ namespace McRave::Math {
     }
 
     int stopAnimationFrames(UnitType unitType) {
-        if (unitType == Protoss_Dragoon)
-            return 9;
-        if (unitType == Zerg_Devourer)
-            return 7;
-        return 0;
+        //if (unitType == Protoss_Dragoon)
+        //    return 9;
+        //if (unitType == Zerg_Devourer)
+        //    return 7;
+        //return 0;
 
 
         // Attack animation frames below
-        /*if (unitType == Terran_SCV)
+        if (unitType == Terran_SCV)
             return 2;
         if (unitType == Terran_Marine)
             return 8;
@@ -440,7 +420,7 @@ namespace McRave::Math {
         if (unitType == Zerg_Mutalisk)
             return 2;
         if (unitType == Zerg_Devourer)
-            return 9;*/
+            return 9;
     }
 
     int realisticMineralCost(UnitType type)

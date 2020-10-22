@@ -5,7 +5,7 @@
 namespace BWEB {
 
     enum class Piece {
-        Small, Medium, Large, Addon, Row
+        Small, Medium, Large, Addon, Row, Space
     };
 
     class Block
@@ -62,6 +62,11 @@ namespace BWEB {
                     rowWidth = 0;
                     rowHeight = 0;
                     here = tile + BWAPI::TilePosition(0, h);
+                }
+                if (p == Piece::Space) {
+                    here += BWAPI::TilePosition(2, 0);
+                    rowWidth += 2;
+                    rowHeight = std::max(rowHeight, 2);
                 }
             }
 

@@ -15,20 +15,21 @@ namespace McRave::BuildOrder::Protoss {
         }
 
         bool enemyMoreZealots() {
-            return com(Protoss_Zealot) <= Players::getCurrentCount(PlayerState::Enemy, Protoss_Zealot) || Strategy::enemyProxy();
+            return com(Protoss_Zealot) <= Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) || Strategy::enemyProxy();
         }
 
         bool enemyMaybeDT() {
-            return (Players::getCurrentCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) > 0 && Players::getCurrentCount(PlayerState::Enemy, Protoss_Gateway) <= 2) || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) < 3 || Strategy::needDetection();
+            return (Players::getVisibleCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) > 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) <= 2) || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) < 3 || Strategy::needDetection();
         }
 
         void defaultPvP() {
-
             inOpeningBook =                                 true;
+            inBookSupply =                                  vis(Protoss_Pylon) < 2;
             wallNat =                                       vis(Protoss_Nexus) >= 2;
             wallMain =                                      false;
             scout =                                         vis(Protoss_Gateway) > 0;
-            fastExpand =                                    false;
+            wantNatural =                                   false;
+            wantThird =                                     false;
             proxy =                                         false;
             hideTech =                                      false;
             playPassive =                                   false;
@@ -43,6 +44,7 @@ namespace McRave::BuildOrder::Protoss {
             desiredDetection =                              Protoss_Observer;
             firstUpgrade =                                  vis(Protoss_Dragoon) > 0 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
             firstTech =                                     TechTypes::None;
+            firstUnit =                                     None;
 
             armyComposition[Protoss_Zealot] =               0.10;
             armyComposition[Protoss_Dragoon] =              0.90;
@@ -55,14 +57,15 @@ namespace McRave::BuildOrder::Protoss {
 
         // Make a tech decision before 3:30
         if (Util::getTime() < Time(3, 30))
-            firstUnit =                                     (Players::getCurrentCount(PlayerState::Enemy, Protoss_Dragoon) > 0 || Players::getCurrentCount(PlayerState::Enemy, Protoss_Assimilator) > 0) ? Protoss_Reaver : None;
+            firstUnit =                                     (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) > 0 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Assimilator) > 0) ? Protoss_Reaver : None;
 
         gasLimit =                                          (2 * (vis(Protoss_Cybernetics_Core) > 0 && s >= 46)) + (com(Protoss_Cybernetics_Core) > 0);
         inOpeningBook =                                     s < 100;
         playPassive    =                                    enemyMoreZealots() && s < 100 && com(Protoss_Dragoon) < 4;
         firstUpgrade =                                      com(Protoss_Dragoon) >= 2 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
         firstTech =                                         TechTypes::None;
-        fastExpand =                                        false;
+        wantNatural =                                       false;
+        wantThird =                                         false;
         rush =                                              false;
 
         zealotLimit =                                       s > 80 ? 0 : INT_MAX;
@@ -98,7 +101,7 @@ namespace McRave::BuildOrder::Protoss {
         scout =                                             currentOpener != "Proxy" && startCount >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
         rush =                                              !Strategy::enemyRush() && Util::getTime() < Time(5, 0) && (Util::getTime() > Time(3, 30) || com(Protoss_Zealot) >= 3);
         transitionReady =                                   vis(Protoss_Gateway) >= 2;
-        playPassive =                                       (!Strategy::enemyFastExpand() && Players::getCurrentCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 && Broodwar->getFrameCount() < 15000) || (Util::getTime() < Time(3, 30) && com(Protoss_Zealot) < 3);
+        playPassive =                                       (!Strategy::enemyFastExpand() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 && Broodwar->getFrameCount() < 15000) || (Util::getTime() < Time(3, 30) && com(Protoss_Zealot) < 3);
         desiredDetection =                                  Protoss_Forge;
         gasLimit =                                          vis(Protoss_Cybernetics_Core) > 0 ? INT_MAX : 0;
 
@@ -233,10 +236,10 @@ namespace McRave::BuildOrder::Protoss {
                 currentTransition = "Robo";
 
             // If we're not doing Robo vs potential DT, switch
-            else if (currentTransition != "Robo" && Players::getCurrentCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) > 0)
+            else if (currentTransition != "Robo" && Players::getVisibleCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) > 0)
                 currentTransition = "Robo";
 
-            // If we see a FFE, 4Gate with an expansion
+            // If we see a FFE, 3Gate with an expansion
             else if (Strategy::getEnemyBuild() == "FFE")
                 currentTransition = "3Gate";
         }
@@ -315,7 +318,7 @@ namespace McRave::BuildOrder::Protoss {
             else if (currentTransition == "4Gate") {        // "https://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)" 
                 firstUnit =                                 None;
                 lockedTransition =                          total(Protoss_Gateway) >= 3;
-                inOpeningBook =                             s < 140 && com(Protoss_Dragoon) < Players::getCurrentCount(PlayerState::Enemy, Protoss_Dragoon) + 8;
+                inOpeningBook =                             s < 140 && com(Protoss_Dragoon) < Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) + 8;
                 playPassive =                               !firstReady();
                 desiredDetection =                          Protoss_Forge;
 

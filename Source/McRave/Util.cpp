@@ -32,13 +32,15 @@ namespace McRave::Util {
         if (tech == TechTypes::Psionic_Storm || tech == TechTypes::Maelstrom || tech == TechTypes::Plague || tech == TechTypes::Ensnare)
             return 1.5;
         if (tech == TechTypes::Stasis_Field)
-            return 2.5;
+            return 1.5;
         return 0.0;
     }
 
     double getCastRadius(TechType tech)
     {
-        if (tech == TechTypes::Psionic_Storm || tech == TechTypes::Stasis_Field || tech == TechTypes::Maelstrom || tech == TechTypes::Dark_Swarm || tech == TechTypes::Plague || tech == TechTypes::Ensnare)
+        if (tech == TechTypes::Dark_Swarm)
+            return 96.0;
+        if (tech == TechTypes::Psionic_Storm || tech == TechTypes::Stasis_Field || tech == TechTypes::Maelstrom || tech == TechTypes::Plague || tech == TechTypes::Ensnare)
             return 48.0;
         return 1.0;
     }
@@ -69,13 +71,13 @@ namespace McRave::Util {
             return true;
 
         const auto w = WalkPosition(here);
-        const auto hw = unit.getWalkWidth() / 2;
-        const auto hh = unit.getWalkHeight() / 2;
+        const auto hw = int(round(unit.getWalkWidth() / 2.0));
+        const auto hh = int(round(unit.getWalkHeight() / 2.0));
 
         const auto left = max(0, w.x - hw);
-        const auto right = min(1024, w.x + hw + (1 - unit.getWalkWidth() % 2));
+        const auto right = min(1024, w.x + hw + (1 - (unit.getWalkWidth() % 2)));
         const auto top = max(0, w.y - hh);
-        const auto bottom = min(1024, w.y + hh + (1 - unit.getWalkWidth() % 2));
+        const auto bottom = min(1024, w.y + hh + (1 - (unit.getWalkWidth() % 2)));
 
         // Rectangle of current unit position
         const auto topLeft = Position(unit.getWalkPosition());
@@ -101,9 +103,9 @@ namespace McRave::Util {
         if (!unit.getTarget().unit()->exists() || unit.getSpeed() == 0.0 || unit.getTarget().getSpeed() == 0.0)
             return unit.getTarget().getPosition();
 
+        auto trapTowards = unit.getTarget().isFlying() ? mapBWEM.Center() : Position(Util::getClosestChokepoint(unit.getTarget().getPosition())->Center());
         auto timeToEngage = clamp((unit.getEngDist() / unit.getSpeed()) * unit.getTarget().getSpeed() / unit.getSpeed(), 12.0, 96.0);
-        auto targetDestination = unit.getTarget().unit()->getOrderTargetPosition();
-        targetDestination = unit.getTarget().unit()->getOrder() != Orders::AttackUnit ? Util::clipPosition(targetDestination) : unit.getTarget().getPosition();
+        auto targetDestination = unit.getTarget().unit()->getOrder() != Orders::AttackUnit ? Util::clipPosition(((unit.getTarget().unit()->getOrderTargetPosition() * 3) + trapTowards) / 4) : unit.getTarget().getPosition();
         return targetDestination;
     }
 
@@ -143,8 +145,8 @@ namespace McRave::Util {
 
     Position clipPosition(Position source)
     {
-        source.x = clamp(source.x, 0, Broodwar->mapWidth() * 32);
-        source.y = clamp(source.y, 0, Broodwar->mapHeight() * 32);
+        source.x = clamp(source.x, 0, (Broodwar->mapWidth() * 32) - 1);
+        source.y = clamp(source.y, 0, (Broodwar->mapHeight() * 32) - 1);
         return source;
     }
 

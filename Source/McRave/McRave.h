@@ -8,7 +8,7 @@
 #define LOW_SHIELD_PERCENT_LIMIT 0.5
 #define LOW_MECH_PERCENT_LIMIT 0.25
 #define LOW_BIO_PERCENT_LIMIT 0.25
-#define MIN_THREAT 0.01f
+#define MIN_THREAT 0.000001f
 #define MAX_SCARAB 5 + (BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Reaver_Capacity) * 5)
 #define MAX_INTERCEPTOR 4 + (BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Carrier_Capacity) * 4)
 
@@ -87,6 +87,10 @@ namespace McRave
         }
     };
 
+    enum class GoalType {
+        None, Contain, Explore, Escort, Defend
+    };
+
     enum class Role {
         None, Worker, Combat, Transport, Scout, Production, Defender, Support
     };
@@ -116,7 +120,7 @@ namespace McRave
     };
 
     enum class ScoutState {
-        None, Base, Proxy, Expand, Rush
+        None, Base, Proxy, Expand, Start
     };
 }
 
@@ -173,6 +177,7 @@ namespace McRave {
         return Players::getTotalCount(PlayerState::Self, t);
     }
 
+    /// Writes to a file quickly, very slow function!
     static void easyWrite(std::string stuff)
     {
         std::ofstream writeFile;

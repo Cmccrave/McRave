@@ -38,16 +38,21 @@ namespace McRave::Visuals {
             // Builds
             if (builds) {
                 Broodwar->drawTextScreen(432, 16, "%c%s: %c%s %s", Text::White, BuildOrder::getCurrentBuild().c_str(), Text::Grey, BuildOrder::getCurrentOpener().c_str(), BuildOrder::getCurrentTransition().c_str());
-                Broodwar->drawTextScreen(432, 28, "%c%s: %c%s %s", Text::White, Strategy::getEnemyBuild().c_str(), Text::Grey, Strategy::getEnemyOpener().c_str(), Strategy::getEnemyTransition().c_str());
+                Broodwar->drawTextScreen(432, 26, "%c%s: %c%s %s", Text::White, Strategy::getEnemyBuild().c_str(), Text::Grey, Strategy::getEnemyOpener().c_str(), Strategy::getEnemyTransition().c_str());
+                Broodwar->drawTextScreen(160, 0, "%cExpanding", BuildOrder::shouldExpand() ? Text::White : Text::Grey);
+                Broodwar->drawTextScreen(160, 10, "%cRamping", BuildOrder::shouldRamp() ? Text::White : Text::Grey);
+                Broodwar->drawTextScreen(160, 20, "%cTeching", BuildOrder::getTechUnit() != UnitTypes::None ? Text::White : Text::Grey);
             }
 
             // Scores
             if (scores) {
                 int offset = 0;
-                for (auto &[type, percent] : BuildOrder::getArmyComposition()) {
-                    auto scoreColor = BuildOrder::isTechUnit(type) ? Text::Turquoise : Text::White;
-                    Broodwar->drawTextScreen(0, offset, "%c%s  %d/%d  %.2f", scoreColor, type.c_str(), vis(type), total(type), percent);
-                    offset += 10;
+                for (auto &type : UnitTypes::allUnitTypes()) {
+                    auto scoreColor = BuildOrder::isTechUnit(type) ? Text::White : Text::Grey;
+                    if ((total(type) > 0 && !type.isBuilding()) || BuildOrder::getCompositionPercentage(type) > 0.00) {
+                        Broodwar->drawTextScreen(0, offset, "%c%s  %d/%d  %.2f", scoreColor, type.c_str(), vis(type), total(type), BuildOrder::getCompositionPercentage(type));
+                        offset += 10;
+                    }
                 }
                 Broodwar->drawTextScreen(0, offset, "%c%s", Text::Grey, BuildOrder::getTechUnit().c_str());
             }
@@ -57,8 +62,8 @@ namespace McRave::Visuals {
                 int time = Broodwar->getFrameCount() / 24;
                 int seconds = time % 60;
                 int minute = time / 60;
-                Broodwar->drawTextScreen(432, 40, "%c%d", Text::Grey, Broodwar->getFrameCount());
-                Broodwar->drawTextScreen(482, 40, "%c%d:%02d", Text::Grey, minute, seconds);
+                Broodwar->drawTextScreen(432, 36, "%c%d", Text::Grey, Broodwar->getFrameCount());
+                Broodwar->drawTextScreen(482, 36, "%c%d:%02d", Text::Grey, minute, seconds);
 
                 multimap<double, string> sortMap;
                 for (auto test : myTest) {
@@ -94,7 +99,7 @@ namespace McRave::Visuals {
                 Broodwar->drawTextScreen(Position(4, 64), "RM: %d", Production::getReservedMineral());
                 Broodwar->drawTextScreen(Position(4, 80), "RG: %d", Production::getReservedGas());
                 Broodwar->drawTextScreen(Position(4, 96), "QM: %d", Buildings::getQueuedMineral());
-                Broodwar->drawTextScreen(Position(4, 114), "QG: %d", Buildings::getQueuedGas());
+                Broodwar->drawTextScreen(Position(4, 112), "QG: %d", Buildings::getQueuedGas());
             }
 
 
@@ -168,7 +173,9 @@ namespace McRave::Visuals {
                                 walkBox(w, Colors::Black);
                         }
                         if (gridSelection == 6) {
-                            if (Grids::getAAirCluster(w) >= 0.9)
+                            if (Grids::getAGroundCluster(w) > 4.0f)
+                                walkBox(w, Colors::Red);
+                            else if (Grids::getAAirCluster(w) >= 0.9)
                                 walkBox(w, Colors::Black);
                         }
                         if (gridSelection == 7) {
@@ -346,11 +353,11 @@ namespace McRave::Visuals {
         screenOffset += 10;
     }
 
-    void tileBox(TilePosition here, Color color) {
-        Broodwar->drawBoxMap(Position(here), Position(here) + Position(32, 32), color);
+    void tileBox(TilePosition here, Color color, bool solid) {
+        Broodwar->drawBoxMap(Position(here), Position(here) + Position(32, 32), color, solid);
     }
 
-    void walkBox(WalkPosition here, Color color) {
-        Broodwar->drawBoxMap(Position(here), Position(here) + Position(8, 8), color);
+    void walkBox(WalkPosition here, Color color, bool solid) {
+        Broodwar->drawBoxMap(Position(here), Position(here) + Position(8, 8), color, solid);
     }
 }

@@ -9,6 +9,7 @@ namespace BWEB {
     {
         const BWEM::Base* base;
         const BWEM::ChokePoint* chokepoint;
+        const BWEM::Base * partnerBase = nullptr;
         std::set<BWAPI::TilePosition> defenses;
         BWAPI::Position resourceCentroid, defenseCentroid;
         bool main, natural;
