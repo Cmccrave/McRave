@@ -16,6 +16,8 @@ namespace McRave::Support {
 
         void updateDestination(UnitInfo& unit)
         {
+            auto closestStation = Stations::getClosestStation(PlayerState::Self, unit.getPosition());
+
             // Send Overlords to a corner at least 10 tiles away when we know they will have air before we do
             if (unit.getType() == Zerg_Overlord && Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "1GateCore" && Strategy::getEnemyTransition() == "Corsair" && Util::getTime() < Time(8, 00)) {
                 vector<Position> directions ={ Position(0,0), Position(0, Broodwar->mapHeight() * 32), Position(Broodwar->mapWidth() * 32, 0), Position(Broodwar->mapWidth() * 32, Broodwar->mapHeight() * 32) };
@@ -38,6 +40,15 @@ namespace McRave::Support {
             else if (unit.getGoal().isValid())
                 unit.setDestination(unit.getGoal());
 
+            // Send Overlords around edge of map if they are far from home
+            else if (unit.getType() == Zerg_Overlord && Terrain::getEnemyStartingPosition().isValid() && closestStation && unit.getPosition().getDistance(closestStation->getBase()->Center()) > 320.0) {
+                auto closestCorner = Terrain::getClosestMapCorner(BWEB::Map::getMainPosition());
+                if (abs(unit.getPosition().x - closestCorner.x) > abs(unit.getPosition().y - closestCorner.y))
+                    unit.setDestination(Position(unit.getPosition().x, closestCorner.y));
+                else
+                    unit.setDestination(Position(closestCorner.x, unit.getPosition().y));
+            }
+
             // Send Overlords to safety if needed
             else if (unit.getType() == Zerg_Overlord && (Players::getStrength(PlayerState::Self).groundToAir == 0.0 || Players::getStrength(PlayerState::Self).airToAir == 0.0)) {
 
@@ -54,10 +65,10 @@ namespace McRave::Support {
 
             // Find the highest combat cluster that doesn't overlap a current support action of this UnitType
             else {
-                auto highestCluster = 2.5;
+                auto highestCluster = 0.0;
                 for (auto &[cluster, position] : Combat::getCombatClusters()) {
                     const auto score = cluster / (position.getDistance(Terrain::getAttackPosition()) * position.getDistance(unit.getPosition()));
-                    if (score > highestCluster && !Actions::overlapsActions(unit.unit(), position, unit.getType(), PlayerState::Self, 200.0)) {
+                    if (score > highestCluster && !Actions::overlapsActions(unit.unit(), position, unit.getType(), PlayerState::Self, 200)) {
                         highestCluster = score;
                         unit.setDestination(position);
                     }

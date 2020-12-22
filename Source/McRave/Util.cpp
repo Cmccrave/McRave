@@ -100,7 +100,10 @@ namespace McRave::Util {
     Position getInterceptPosition(UnitInfo& unit)
     {
         // If we can't see the units speed, return its current position
-        if (!unit.getTarget().unit()->exists() || unit.getSpeed() == 0.0 || unit.getTarget().getSpeed() == 0.0)
+        if (!unit.getTarget().unit()->exists()
+            || unit.getSpeed() == 0.0 
+            || unit.getTarget().getSpeed() == 0.0
+            || !unit.getTarget().unit()->isMoving())
             return unit.getTarget().getPosition();
 
         auto trapTowards = unit.getTarget().isFlying() ? mapBWEM.Center() : Position(Util::getClosestChokepoint(unit.getTarget().getPosition())->Center());

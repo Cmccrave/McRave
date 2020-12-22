@@ -120,7 +120,7 @@ namespace McRave
     };
 
     enum class ScoutState {
-        None, Base, Proxy, Expand, Start
+        None, Base, Proxy, Expand, Start, Safe
     };
 }
 

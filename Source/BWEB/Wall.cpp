@@ -776,7 +776,7 @@ namespace BWEB {
         }
 
         // Add a secondary row of defenses if possible
-        if (choke && base) {
+        if (choke && base && !rawDefenses.empty()) {
             set<TilePosition> secondaryRow;
             auto left = Position(choke->Center()).x < base->Center().x;
             auto up = Position(choke->Center()).y < base->Center().y;
@@ -823,7 +823,7 @@ namespace BWEB {
                     const auto closestGeo = Map::getClosestChokeTile(choke, center);
                     const auto overlapsDefense = closestStation && closestStation->getDefenseLocations().find(t) != closestStation->getDefenseLocations().end() && defenses.find(t) == defenses.end();
 
-                    const auto dist = center.getDistance(closestGeo);
+                    const auto dist = Broodwar->self()->getRace() == Races::Zerg ? center.getDistance((base->Center() + Position(initialPathStart)) / 2) : center.getDistance(closestGeo);
                     const auto tooClose = dist < furthest || center.getDistance(openingCenter) < arbitraryCloseMetric;
                     const auto tooFar = center.getDistance(centroid) > 200.0;
 

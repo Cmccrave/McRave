@@ -36,7 +36,6 @@ namespace McRave::BuildOrder {
         inline bool rush = false;
         inline bool pressure = false;
         inline bool cutWorkers = false; // TODO: Use unlocking
-        inline bool saveLarva = false;
         inline bool lockedTransition = false;
         inline bool gasTrick = false;
         inline bool inBookSupply = false;
@@ -52,6 +51,7 @@ namespace McRave::BuildOrder {
         inline int dragoonLimit = INT_MAX;
         inline int lingLimit = INT_MAX;
         inline int droneLimit = INT_MAX;
+        inline int larvaLimit = 0;
         inline int startCount = 0;
         inline int s = 0;
 
@@ -149,6 +149,7 @@ namespace McRave::BuildOrder {
     std::set <BWAPI::UnitType>& getTechList();
     std::set <BWAPI::UnitType>& getUnlockedList();
     int gasWorkerLimit();
+    int getLarvaLimit();
     bool isWorkerCut();
     bool isUnitUnlocked(BWAPI::UnitType);
     bool isTechUnit(BWAPI::UnitType);
@@ -164,7 +165,6 @@ namespace McRave::BuildOrder {
     bool isRush();
     bool isPressure();
     bool isGasTrick();
-    bool isSaveLarva();
     bool makeDefensesNow();
     std::string getCurrentBuild();
     std::string getCurrentOpener();

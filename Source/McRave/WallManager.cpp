@@ -47,7 +47,7 @@ namespace McRave::Walls {
                     else
                         buildings ={ Zerg_Hatchery };
                 }*/
-                if (Broodwar->self()->getRace() == Races::Protoss) {
+                if (Players::PvT() || Players::PvP()) {
                     if (abs(p1.x - p2.x) * 8 >= 352 || abs(p1.y - p2.y) * 8 >= 352 || p1.getDistance(p2) * 8 >= 386 || Broodwar->mapFileName().find("Destination") != string::npos)
                         buildings ={ Protoss_Pylon, Protoss_Pylon, Protoss_Pylon, Protoss_Pylon, Protoss_Pylon };
                     else if (abs(p1.x - p2.x) * 8 >= 288 || abs(p1.y - p2.y) * 8 >= 288 || p1.getDistance(p2) * 8 >= 288)
@@ -128,9 +128,6 @@ namespace McRave::Walls {
         if (!Terrain::isInAllyTerritory(wall.getArea()))
             return 0;
 
-        if (BuildOrder::isOpener() && BuildOrder::buildCount(Zerg_Spire) > 0 && vis(Zerg_Spire) == 0)
-            return 0;
-
         auto closestNatural = BWEB::Stations::getClosestNaturalStation(TilePosition(wall.getCentroid()));
         auto closestMain = BWEB::Stations::getClosestMainStation(TilePosition(wall.getCentroid()));
         auto resourceCount = 0.0;
@@ -190,34 +187,40 @@ namespace McRave::Walls {
 
         // Zerg
         if (Broodwar->self()->getRace() == Races::Zerg) {
+            if (BuildOrder::isOpener() && BuildOrder::buildCount(Zerg_Spire) > 0 && vis(Zerg_Spire) == 0)
+                return 0;
 
             if (Players::vP()) {
 
                 // 1GateCore
                 if (Strategy::getEnemyBuild() == "1GateCore") {
                     if (Strategy::getEnemyTransition() == "Corsair" && Util::getTime() < Time(5, 30))
-                        return (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(5, 00)) - groundCount;
+                        return (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(5, 00)) - groundCount;
                     else if (Strategy::getEnemyTransition() == "4Gate" && Util::getTime() < Time(8, 00))
-                        return (Util::getTime() > Time(4, 00)) + (2 * (Util::getTime() > Time(4, 45))) + (2 * (Util::getTime() > Time(5, 45))) + (2 * (Util::getTime() > Time(6, 15))) - groundCount;
+                        return (Util::getTime() > Time(3, 00)) + (2 * (Util::getTime() > Time(4, 45))) + (2 * (Util::getTime() > Time(5, 45))) + (2 * (Util::getTime() > Time(6, 15))) - groundCount;
                     else if (Util::getTime() < Time(5, 30))
-                        return (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(5, 00)) + (2 * (Util::getTime() > Time(5, 15))) - groundCount;
+                        return (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(5, 00)) + (2 * (Util::getTime() > Time(5, 15))) - groundCount;
                 }
 
                 // 2Gate
                 if (Strategy::getEnemyBuild() == "2Gate") {
                     if (Strategy::enemyProxy())
                         return 0;
-                    else if (Strategy::getEnemyTransition() == "4Gate" && Util::getTime() < Time(7, 00))
-                        return (Util::getTime() > Time(4, 30)) + (2 * (Util::getTime() > Time(5, 15))) + (2 * (Util::getTime() > Time(6, 15))) - groundCount;
-                    // return (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(5, 00)) + (2 * (Util::getTime() > Time(5, 15))) + (2 * (Util::getTime() > Time(5, 45))) + (2 * (Util::getTime() > Time(6, 15))) - groundCount;
+
                     else if (Strategy::enemyRush() && Util::getTime() < Time(5, 15))
-                        return 1 + (2 * (Util::getTime() > Time(4, 15))) + (Util::getTime() > Time(4, 45)) - groundCount;
+                        return (2 * (Util::getTime() > Time(3, 00))) + (2 * (Util::getTime() > Time(4, 15))) + (Util::getTime() > Time(4, 45)) - groundCount;
+
+                    else if (Strategy::getEnemyTransition() == "4Gate" && Util::getTime() < Time(7, 00))
+                        return (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(5, 15)) + (Util::getTime() > Time(5, 30)) + (Util::getTime() > Time(5, 45)) - groundCount;
+
                     else if (Util::getTime() < Time(5, 15))
-                        return (2 * (Util::getTime() > Time(3, 00))) + (Util::getTime() > Time(3, 45)) + (Util::getTime() > Time(4, 45)) - groundCount;
+                        return (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(3, 45)) + (Util::getTime() > Time(4, 45)) - groundCount;
                 }
 
                 // FFE
                 if (Strategy::getEnemyBuild() == "FFE") {
+                    if (Strategy::getEnemyTransition() == "Carriers")
+                        return 0;
                     if (Strategy::getEnemyTransition() == "5GateGoon" && Util::getTime() < Time(10, 30))
                         return calculateDefensesNeeded((2 * (Util::getTime() > Time(5, 00))) + (2 * (Util::getTime() > Time(6, 30))) + (2 * (Util::getTime() > Time(8, 00))) + (2 * (Util::getTime() > Time(9, 30))));
                     if (Strategy::getEnemyTransition() == "NeoBisu" && Util::getTime() < Time(6, 30))
@@ -229,13 +232,13 @@ namespace McRave::Walls {
                 }
 
                 // Outside of openers, base it off how large the ground army of enemy is
-                const auto divisor = 2.5 + max(0, ((Util::getTime().minutes - 12) / 4));
+                const auto divisor = 2.5 + max(0, ((Util::getTime().minutes - 10) / 4));
                 const auto count = int((Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) + Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon)) / divisor);
                 return calculateDefensesNeeded(count);
             }
 
             if (Players::vZ() && BuildOrder::getCurrentTransition().find("Muta") != string::npos && (BuildOrder::takeNatural() || int(Stations::getMyStations().size()) >= 2)) {
-                if (Strategy::getEnemyTransition() == "2HatchLing")
+                if (Strategy::getEnemyTransition() == "2HatchSpeedling")
                     return (Util::getTime() > Time(3, 45)) + (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(5, 30)) - groundCount;
                 else if (Util::getTime() < Time(6, 00) && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 40)
                     return 6 - groundCount;
@@ -248,18 +251,16 @@ namespace McRave::Walls {
             }
 
             if (Players::vT()) {
-                if (Strategy::getEnemyTransition() == "2Fact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
-                    return calculateDefensesNeeded(1 * (Util::getTime() > Time(4, 00)));
-                if (Strategy::getEnemyBuild() == "RaxFact")
-                    return calculateDefensesNeeded(1 * (Util::getTime() > Time(3, 45))) + (1 * (Util::getTime() > Time(4, 15))) + (1 * (Util::getTime() > Time(4, 45)));
-                if (Strategy::getEnemyBuild() == "2Rax" && !Strategy::enemyFastExpand() && !Strategy::enemyRush() && (Util::getTime() < Time(5, 00)))
+                if (Strategy::getEnemyTransition() == "2Fact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Strategy::getEnemyBuild() == "RaxFact" || Strategy::enemyWalled())
+                    return 1 - groundCount;
+                if (Strategy::getEnemyBuild() == "2Rax" && !Strategy::enemyFastExpand() && !Strategy::enemyRush() && Util::getTime() < Time(5, 00))
                     return calculateDefensesNeeded(2 * (Util::getTime() > Time(3, 15))) + (2 * (Util::getTime() > Time(4, 30)));
                 if (Strategy::enemyProxy())
                     return 0;
                 if (Strategy::enemyRush())
                     return calculateDefensesNeeded(2 + (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(5, 30)));
                 if (!Strategy::enemyFastExpand() && Strategy::getEnemyBuild() != "RaxCC")
-                    return calculateDefensesNeeded((Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(5, 00)) + (Util::getTime() > Time(5, 30)));
+                    return calculateDefensesNeeded((Util::getTime() > Time(3, 45)) + (Util::getTime() > Time(4, 30)));
                 if (Util::getTime() > Time(10, 00))
                     return min(1, (Util::getTime().minutes / 4)) - groundCount;
             }
@@ -288,7 +289,7 @@ namespace McRave::Walls {
 
         // Z
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            if ((!BuildOrder::isTechUnit(Zerg_Mutalisk) && vis(Zerg_Lair) == 0 && Util::getTime() > Time(5, 00)) || (Players::ZvT() && enemyAir && Util::getTime() > Time(11, 0))) {
+            if (!BuildOrder::isTechUnit(Zerg_Mutalisk) && vis(Zerg_Lair) == 0 && Util::getTime() > Time(5, 00)) {
                 if (enemyAir && !Strategy::enemyFastExpand() && Util::getTime() > Time(4, 0))
                     return 1 - airCount;
                 if (enemyAir && Util::getTime() > Time(10, 0))
@@ -296,7 +297,7 @@ namespace McRave::Walls {
             }
             if (Players::ZvZ() && total(Zerg_Zergling) > Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) && com(Zerg_Spire) == 0 && Util::getTime() > Time(4, 30) && Strategy::getEnemyTransition() == "Unknown" && BuildOrder::getCurrentTransition() == "2HatchMuta")
                 return 1 - airCount;
-            if (Players::ZvZ() && Strategy::getEnemyTransition() == "1HatchMuta" && BuildOrder::getCurrentTransition() == "2HatchMuta")
+            if (Util::getTime() > Time(4, 15) && Players::ZvZ() && Strategy::getEnemyTransition() == "1HatchMuta" && BuildOrder::getCurrentTransition() == "2HatchMuta")
                 return 1 - airCount;
         }
         return 0;

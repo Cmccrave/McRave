@@ -22,7 +22,9 @@ namespace McRave::Combat {
         BWEB::Path airClusterPath;
         pair<double, Position> airCluster;
         pair<UnitCommandType, Position> airCommanderCommand;
-        TilePosition cleanupPosition;
+        multimap<double, Position> groundCleanupPositions;
+        multimap<double, Position> airCleanupPositions;
+        map<TilePosition, int> surroundTileClaimers;
 
         constexpr tuple commands{ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::defend, Command::explore, Command::escort, Command::retreat, Command::move };
 
@@ -38,8 +40,8 @@ namespace McRave::Combat {
                 return unit.getPosition();
 
             // Push defense position away when trying to build defenses
-            auto closestBuilder = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
-                return u.getBuildType() == Zerg_Creep_Colony && u.getBuildPosition().isValid() && mapBWEM.GetArea(u.getBuildPosition()) == BWEB::Map::getNaturalArea();
+            auto closestBuilder = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+                return u.getBuildPosition().isValid();
             });
 
             auto chokeCount = area->ChokePoints().size();
@@ -50,7 +52,7 @@ namespace McRave::Combat {
             auto posBest = unit.getPosition();
 
             auto useMeleeRadius = isMelee && !enemyRangeExists && Players::getSupply(PlayerState::Self) < 80 && !Players::ZvT();
-            auto radius = clamp(vis(Zerg_Zergling) * 8.0, (choke->Width() / 1.0), (choke->Width() * 4.0));
+            auto radius = clamp(vis(unit.getType()) * unit.getType().width() / 2.0, (choke->Width() / 2.0), (choke->Width() * 2.0)) + (unit.getGroundRange() - 32.0);
             auto alreadyValid = false;
 
             // Choke end nodes and distance to choke center
@@ -66,12 +68,12 @@ namespace McRave::Combat {
                 if (!w.isValid()
                     || (alreadyValid && p.getDistance(unit.getPosition()) > 160.0)
                     || (closestBuilder && p.getDistance(closestBuilder->getPosition()) < 64.0)
-                    || p.getDistance(projection) < radius
-                    || p.getDistance(projection) >= 640.0
+                    || p.getDistance(projection) < radius - 32.0
+                    || p.getDistance(projection) >= radius + 32.0
                     || Buildings::overlapsPlan(unit, p)
                     || !Broodwar->isWalkable(w)
                     || !Util::isTightWalkable(unit, p)
-                    || Actions::overlapsActions(unit.unit(), p, TechTypes::Spider_Mines, PlayerState::Enemy, 96.0))
+                    || Actions::overlapsActions(unit.unit(), p, TechTypes::Spider_Mines, PlayerState::Enemy, 96))
                     return false;
                 return true;
             };
@@ -125,17 +127,13 @@ namespace McRave::Combat {
                 return u.getRole() == Role::Worker && (!unit.hasResource() || !unit.getResource().getType().isRefinery()) && !unit.getBuildPosition().isValid();
             });
 
-            const auto combatCount = Units::getMyRoleCount(Role::Combat) - (unit.getRole() == Role::Combat ? 1 : 0);
-            const auto combatWorkersCount =  Units::getMyRoleCount(Role::Combat) - com(Protoss_Zealot) - com(Protoss_Dragoon) - com(Zerg_Zergling) - (unit.getRole() == Role::Combat ? 1 : 0);
-            const auto myGroundStrength = Players::getStrength(PlayerState::Self).groundToGround - (unit.getRole() == Role::Combat ? unit.getVisibleGroundStrength() : 0.0);
-            const auto myDefenseStrength = Players::getStrength(PlayerState::Self).groundDefense;
-            const auto closestStation = Stations::getClosestStation(PlayerState::Self, unit.getPosition());
-            auto arriveAtDefense = unit.timeArrivesWhen();
+            auto combatCount = Units::getMyRoleCount(Role::Combat) - (unit.getRole() == Role::Combat ? 1 : 0);
+            auto combatWorkersCount =  Units::getMyRoleCount(Role::Combat) - com(Protoss_Zealot) - com(Protoss_Dragoon) - com(Zerg_Zergling) - (unit.getRole() == Role::Combat ? 1 : 0);
 
             const auto healthyWorker = [&] {
 
                 // Don't pull low shield probes
-                if (unit.getType() == Protoss_Probe && unit.getShields() < 16)
+                if (unit.getType() == Protoss_Probe && unit.getShields() <= 4)
                     return false;
 
                 // Don't pull low health drones
@@ -144,6 +142,7 @@ namespace McRave::Combat {
                 return true;
             };
 
+            // Proactive pulls will result in the worker defending
             const auto proactivePullWorker = [&]() {
 
                 // If this isn't the closest mineral worker to the defend position, don't pull it
@@ -155,9 +154,9 @@ namespace McRave::Combat {
                     int completedDefenders = com(Protoss_Photon_Cannon) + com(Protoss_Zealot);
                     int visibleDefenders = vis(Protoss_Photon_Cannon) + vis(Protoss_Zealot);
 
-                    // Don't pull workers too early
-                    if (arriveAtDefense < Strategy::enemyArrivalTime() - Time(0, 15))
-                        return false;
+                    //// Don't pull workers too early
+                    //if (Strategy::enemyArrivalTime() < Time(2, 00) && arriveAtDefense < Strategy::enemyArrivalTime() - Time(0, 30))
+                    //    return false;
 
                     // If trying to hide tech, pull 1 probe with a Zealot
                     if (!BuildOrder::isRush() && BuildOrder::isHideTech() && combatCount < 2 && completedDefenders > 0)
@@ -165,11 +164,13 @@ namespace McRave::Combat {
 
                     // If trying to FFE, pull based on Cannon/Zealot numbers, or lack of scouting information
                     if (BuildOrder::getCurrentBuild() == "FFE") {
-                        if (Strategy::enemyRush() && combatCount < 8 - (2 * completedDefenders) && visibleDefenders >= 1)
+                        if (Strategy::enemyRush() && Strategy::getEnemyOpener() == "4Pool" && combatCount < 8 - (2 * completedDefenders) && visibleDefenders >= 1)
                             return true;
                         if (Strategy::enemyPressure() && combatCount < 8 - (2 * completedDefenders) && visibleDefenders >= 2)
                             return true;
-                        if (!Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && myGroundStrength < 2.00 && completedDefenders < 1 && visibleDefenders > 0)
+                        if (Strategy::enemyRush() && Strategy::getEnemyOpener() == "9Pool" && Util::getTime() > Time(3, 15) && completedDefenders < 3)
+                            return combatWorkersCount < 3;
+                        if (!Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && combatCount < 2 && completedDefenders < 1 && visibleDefenders > 0)
                             return true;
                     }
 
@@ -192,34 +193,21 @@ namespace McRave::Combat {
 
                 // Zerg
                 if (Broodwar->self()->getRace() == Races::Zerg) {
-
-                    // Don't pull low health drones
-                    if (unit.getType().isWorker() && unit.getHealth() < 15)
-                        return false;
-
                     if (BuildOrder::getCurrentOpener() == "12Pool" && Strategy::getEnemyOpener() == "9Pool" && total(Zerg_Zergling) < 16)
                         return combatWorkersCount < 3;
-                    if (BuildOrder::getCurrentOpener() == "12Hatch" && Strategy::getEnemyOpener() == "8Rax" && com(Zerg_Zergling) < 6)
-                        return combatWorkersCount < com(Zerg_Drone) - 4;
                 }
                 return false;
             };
 
+            // Reactive pulls will cause the worker to attack aggresively
             const auto reactivePullWorker = [&]() {
 
+                auto proxyDangerousBuilding = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                    return u.isProxy() && u.getType().isBuilding() && u.canAttackGround();
+                });
                 auto proxyBuildingWorker = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return u.isThreatening() && u.getType().isWorker();
-                });
-                auto proxyBuilding = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return u.isThreatening() && u.getType().isBuilding();
-                });
-                auto possibleBuildingWorker = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return proxyBuilding && u.getPosition().getDistance(proxyBuilding->getPosition()) < 160.0;
-                });
-
-                // If we're trying to make our expanding hatchery and the drone is being harassed
-                if (vis(Zerg_Hatchery) == 1 && Util::getTime() < Time(3, 00) && BuildOrder::isOpener() && Units::getImmThreat() > 0.0f && Players::ZvP() && combatCount == 0)
-                    return true;
+                    return u.getType().isWorker() && (u.isThreatening() || (proxyDangerousBuilding && u.getType().isWorker() && u.getPosition().getDistance(proxyDangerousBuilding->getPosition()) < 160.0));
+                });    
 
                 // HACK: Don't pull workers reactively versus vultures
                 if (Players::getVisibleCount(PlayerState::Enemy, Terran_Vulture) > 0)
@@ -228,22 +216,49 @@ namespace McRave::Combat {
                     return false;
 
                 // If we have immediate threats
-                if (Players::ZvT() && (proxyBuildingWorker || possibleBuildingWorker) && proxyBuilding && com(Zerg_Zergling) <= 0 && combatCount < 8)
+                if (Players::ZvT() && proxyDangerousBuilding && com(Zerg_Zergling) <= 2)
+                    return combatWorkersCount < 6;
+                if (Players::ZvP() && (proxyBuildingWorker || proxyDangerousBuilding) && Strategy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
+                    return combatWorkersCount < (4 * Players::getVisibleCount(PlayerState::Enemy, proxyDangerousBuilding->getType()));
+                if (Strategy::getWorkersNearUs() > 2 && Strategy::getWorkersNearUs() >= combatWorkersCount)
+                    return Strategy::getWorkersNearUs() >= combatWorkersCount - 1;
+                if (BuildOrder::getCurrentOpener() == "12Hatch" && Strategy::getEnemyOpener() == "8Rax" && com(Zerg_Zergling) < 2)
+                    return combatWorkersCount <= com(Zerg_Drone) - 4;
+
+                // If we're trying to make our expanding hatchery and the drone is being harassed
+                if (vis(Zerg_Hatchery) == 1 && Util::getTime() < Time(3, 00) && BuildOrder::isOpener() && Units::getImmThreat() > 0.0f && Players::ZvP() && combatCount == 0)
                     return true;
                 return false;
             };
 
             // Check if workers should fight or work
             if (unit.getType().isWorker()) {
-                if (unit.getRole() == Role::Worker && !unit.unit()->isCarryingMinerals() && !unit.unit()->isCarryingGas() && healthyWorker() && (reactivePullWorker() || proactivePullWorker())) {
+                auto react = reactivePullWorker();
+                auto proact = proactivePullWorker();
+
+                // Pull a worker if needed
+                if (unit.getRole() == Role::Worker && !unit.unit()->isCarryingMinerals() && !unit.unit()->isCarryingGas() && healthyWorker() && (react || proact)) {
                     unit.setRole(Role::Combat);
                     unit.setBuildingType(None);
                     unit.setBuildPosition(TilePositions::Invalid);
                     lastRoleChange = Broodwar->getFrameCount();
                 }
-                else if (unit.getRole() == Role::Combat && ((!reactivePullWorker() && !proactivePullWorker()) || !healthyWorker())) {
+
+                // Return a worker if not needed
+                else if (unit.getRole() == Role::Combat && ((!react && !proact) || !healthyWorker())) {
                     unit.setRole(Role::Worker);
                     lastRoleChange = Broodwar->getFrameCount();
+                }
+
+                // HACK: Check if this was a reactive pull, set worker to always engage
+                if (unit.getRole() == Role::Combat) {
+                    combatCount--;
+                    combatWorkersCount--;
+                    react = reactivePullWorker();
+                    if (react) {
+                        unit.setLocalState(LocalState::Attack);
+                        unit.setGlobalState(GlobalState::Attack);
+                    }
                 }
             }
         }
@@ -284,12 +299,22 @@ namespace McRave::Combat {
                 return;
             }
 
-            const auto simRadius = (unit.getGoal().isValid() && unit.getPosition().getDistance(unit.getGoal()) > unit.getSimRadius()) ? unit.getSimRadius() - 96.0 : unit.getSimRadius();
-            const auto closeToSim = unit.getPosition().getDistance(unit.getSimPosition()) < simRadius || Terrain::isInAllyTerritory(unit.getTarget().getTilePosition());
+            bool testingAttack = false;
+            if (testingAttack) {
+                unit.setLocalState(LocalState::Attack);
+                unit.setGlobalState(GlobalState::Attack);
+                return;
+            }
+
+            if (unit.getLocalState() != LocalState::None)
+                return;
+
+            const auto simRadius = (unit.getGoal().isValid() && unit.getType() == Zerg_Zergling && unit.getPosition().getDistance(unit.getGoal()) > unit.getSimRadius()) ? unit.getSimRadius() - 96.0 : unit.getSimRadius();
+            const auto closeToSim = double(Util::boxDistance(unit.getType(), unit.getPosition(), unit.getSimTarget().getType(), unit.getSimTarget().getPosition())) < simRadius || Terrain::isInAllyTerritory(unit.getTarget().getTilePosition());
             const auto temporaryRetreat = unit.isLightAir() && unit.hasTarget() && unit.canStartAttack() && !unit.isWithinAngle(unit.getTarget()) && Util::boxDistance(unit.getType(), unit.getPosition(), unit.getTarget().getType(), unit.getTarget().getPosition()) <= 16.0;
 
             if (!checker.expired() && checker.lock() && unit.unit() == checker.lock()->unit())
-                unit.setLocalState(LocalState::Attack);
+                unit.setLocalState(LocalState::None);
 
             // Regardless of any decision, determine if Unit is in danger and needs to retreat
             else if (Actions::isInDanger(unit, unit.getPosition())
@@ -299,7 +324,7 @@ namespace McRave::Combat {
 
             // Regardless of local decision, determine if Unit needs to attack or retreat
             else if (unit.globalEngage())
-                unit.setLocalState(LocalState::Attack);
+                unit.setLocalState(LocalState::Attack);            
             else if (unit.globalRetreat())
                 unit.setLocalState(LocalState::Retreat);
 
@@ -323,6 +348,9 @@ namespace McRave::Combat {
                 unit.setGlobalState(GlobalState::Retreat);
                 return;
             }
+
+            if (unit.getGlobalState() != GlobalState::None)
+                return;
 
             // Protoss
             if (Broodwar->self()->getRace() == Races::Protoss) {
@@ -353,7 +381,7 @@ namespace McRave::Combat {
                 if (BuildOrder::isRush())
                     unit.setGlobalState(GlobalState::Attack);
                 else if ((Broodwar->getFrameCount() < 15000 && BuildOrder::isPlayPassive() && (!closestStrangler || (!checker.expired() && closestStrangler == checker.lock())))
-                    || (Players::ZvT() && Util::getTime() < Time(10, 00) && unit.getType() == Zerg_Zergling && (Strategy::enemyPressure() || Strategy::enemyWalled()))
+                    || (Players::ZvT() && Util::getTime() < Time(10, 00) && unit.getType() == Zerg_Zergling && (Strategy::getEnemyBuild() == "RaxFact" || Strategy::enemyWalled() || Players::getCompleteCount(PlayerState::Enemy, Terran_Vulture) > 0))
                     || (Players::ZvZ() && Util::getTime() < Time(10, 00) && unit.getType() == Zerg_Zergling && Players::getCompleteCount(PlayerState::Enemy, Zerg_Zergling) > com(Zerg_Zergling))
                     || (Players::ZvZ() && Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(2, 45)))
                     unit.setGlobalState(GlobalState::Retreat);
@@ -375,10 +403,32 @@ namespace McRave::Combat {
             // If attacking and target is close, set as destination
             if (unit.getLocalState() == LocalState::Attack) {
                 const auto &intercept = Util::getInterceptPosition(unit);
-                if (intercept.getDistance(unit.getTarget().getPosition()) < intercept.getDistance(unit.getPosition()) && (Grids::getMobility(intercept) > 0 || unit.isFlying()))
+                if (intercept.getDistance(unit.getTarget().getPosition()) < intercept.getDistance(unit.getPosition()) - 16.0 && (Grids::getMobility(intercept) > 0 || unit.isFlying())) {
                     unit.setDestination(intercept);
-                else
-                    unit.setDestination(unit.getEngagePosition());
+                    Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Yellow);
+                }
+                else {
+                    if (surroundTileClaimers[TilePosition(unit.getEngagePosition())] >= 1) {
+                        unit.setDestination(unit.getEngagePosition());
+                        auto distBest = DBL_MAX;
+                        vector<TilePosition> dirs ={ {-1,-1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1} };
+                        for (auto t : dirs) {
+                            auto tile = t + TilePosition(unit.getEngagePosition());
+                            auto center = Position(tile) + Position(16, 16);
+                            auto dist = center.getDistance(unit.getPosition());
+                            if (dist < distBest && surroundTileClaimers[tile] < 2) {
+                                dist = distBest;
+                                unit.setDestination(center);
+                            }
+                        }
+                        surroundTileClaimers[TilePosition(unit.getEngagePosition())]++;
+                    }
+                    else {
+                        unit.setDestination(unit.getEngagePosition());
+                        surroundTileClaimers[TilePosition(unit.getEngagePosition())]++;
+                    }
+                    Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
+                }
 
                 if (unit.getTargetPath().isReachable())
                     unit.setDestinationPath(unit.getTargetPath());
@@ -390,6 +440,8 @@ namespace McRave::Combat {
                     auto area = mapBWEM.GetArea(TilePosition(unit.getGoal()));
                     auto station = Stations::getClosestStation(PlayerState::Self, unit.getGoal());
                     auto choke = station ? station->getChokepoint() : nullptr;
+
+                    Broodwar->drawLineMap(unit.getPosition(), unit.getGoal(), Colors::Green);
 
                     if (area && choke)
                         unit.setDestination(findConcavePosition(unit, area, choke));
@@ -412,8 +464,10 @@ namespace McRave::Combat {
             }
 
             // If unit has a goal
-            else if (unit.getGoal().isValid())
+            else if (unit.getGoal().isValid()) {
                 unit.setDestination(unit.getGoal());
+                unit.circleBlue();
+            }
 
             // If this is a light air unit, go to the air cluster first if far away
             else if ((unit.isLightAir() || unit.getType() == Zerg_Scourge) && airCluster.second.isValid() && (unit.getPosition().getDistance(airCluster.second) > 32.0 || clusterTooSpread))
@@ -447,10 +501,48 @@ namespace McRave::Combat {
             // If no target and no enemy bases, move to a base location
             else if (!unit.hasTarget() || !unit.getTarget().getPosition().isValid() || unit.unit()->isIdle()) {
 
-                // Finishing enemy off, find remaining bases we haven't scouted
-                if (Terrain::getEnemyStartingPosition().isValid()) {
-                    auto best = DBL_MAX;
+                // Sort unexplored starts by distance
+                multimap<double, Position> startsByDist;
+                auto basesExplored = 0;
+                for (auto &topLeft : mapBWEM.StartingLocations()) {
+                    const auto botRight = topLeft + TilePosition(3, 2);
+                    const auto center = Position(topLeft) + Position(64, 48);
+                    const auto closestScout = Util::getClosestUnit(center, PlayerState::Self, [&](auto &u) {
+                        return u.getRole() == Role::Scout && (u.getDestination() == Position(topLeft) || u.getDestination() == Position(botRight));
+                    });
+                    const auto dist = closestScout ? closestScout->getPosition().getDistance(center) : BWEB::Map::getGroundDistance(center, BWEB::Map::getMainPosition());
 
+                    if (!Broodwar->isExplored(topLeft))
+                        startsByDist.emplace(dist, topLeft);
+                    else if (!Broodwar->isExplored(botRight))
+                        startsByDist.emplace(dist, botRight);
+                    else
+                        basesExplored++;
+                }
+
+                // Scouting for enemy base initially
+                if (!startsByDist.empty()) {
+
+                    // Assign closest that isn't assigned to a scout
+                    auto avoidFirstScout = (int(Broodwar->getStartLocations().size()) == 4 && basesExplored < 2) || (int(Broodwar->getStartLocations().size()) == 3 && basesExplored < 1);
+                    for (auto &[_, position] : startsByDist) {
+
+                        if (avoidFirstScout) {
+                            avoidFirstScout = false;
+                            continue;
+                        }
+
+                        if (!avoidFirstScout || (!Actions::overlapsActions(unit.unit(), position, Broodwar->self()->getRace().getWorker(), PlayerState::Self) && !Actions::overlapsActions(unit.unit(), position, Zerg_Overlord, PlayerState::Self))) {
+                            unit.setDestination(position);
+                            break;
+                        }
+                        avoidFirstScout = false;
+                    }
+                }
+
+                // Finishing enemy off, find remaining bases we haven't scouted
+                else if (Terrain::getEnemyStartingPosition().isValid()) {
+                    auto best = DBL_MAX;
                     for (auto &area : mapBWEM.Areas()) {
                         for (auto &base : area.Bases()) {
                             if (area.AccessibleNeighbours().size() == 0
@@ -464,48 +556,16 @@ namespace McRave::Combat {
                             }
                         }
                     }
-
-                    if (unit.isFlying() && Grids::lastVisibleFrame(cleanupPosition) < best)
-                        unit.setDestination(Position(cleanupPosition) + Position(16, 16));
                 }
 
-                // Scouting for enemy base initially
-                else {
-
-                    // Sort unexplored starts by distance
-                    multimap<double, Position> startsByDist;
-                    auto basesExplored = 0;
-                    for (auto &topLeft : mapBWEM.StartingLocations()) {
-                        const auto botRight = topLeft + TilePosition(3, 2);
-                        const auto center = Position(topLeft) + Position(64, 48);
-                        const auto closestScout = Util::getClosestUnit(center, PlayerState::Self, [&](auto &u) {
-                            return u.getRole() == Role::Scout && (u.getDestination() == Position(topLeft) || u.getDestination() == Position(botRight));
-                        });
-                        const auto dist = closestScout ? closestScout->getPosition().getDistance(center) : BWEB::Map::getGroundDistance(center, BWEB::Map::getMainPosition());
-
-                        if (!Broodwar->isExplored(topLeft))
-                            startsByDist.emplace(dist, topLeft);
-                        else if (!Broodwar->isExplored(botRight))
-                            startsByDist.emplace(dist, botRight);
-                        else
-                            basesExplored++;
-                    }
-
-                    // Assign closest that isn't assigned
-                    auto avoidFirstScout = (int(Broodwar->getStartLocations().size()) == 4 && basesExplored < 2) || (int(Broodwar->getStartLocations().size()) == 3 && basesExplored < 1);
-                    for (auto &[_, position] : startsByDist) {
-                        if (!avoidFirstScout || (!Actions::overlapsActions(unit.unit(), position, Broodwar->self()->getRace().getWorker(), PlayerState::Self) && !Actions::overlapsActions(unit.unit(), position, Zerg_Overlord, PlayerState::Self))) {
-                            unit.setDestination(position);
-                            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Black);
-                            break;
-                        }
-                        avoidFirstScout = false;
-                    }
-
-                    // Assigned furthest
-                    if (!unit.getDestination().isValid() && !startsByDist.empty())
-                        unit.setDestination(startsByDist.rbegin()->second);
-
+                // Finish off positions that are old
+                else if (unit.isFlying() && !airCleanupPositions.empty()) {
+                    unit.setDestination(airCleanupPositions.begin()->second);
+                    airCleanupPositions.erase(airCleanupPositions.begin());
+                }
+                else if (!unit.isFlying() && !groundCleanupPositions.empty()) {
+                    unit.setDestination(groundCleanupPositions.begin()->second);
+                    groundCleanupPositions.erase(groundCleanupPositions.begin());
                 }
             }
 
@@ -519,30 +579,36 @@ namespace McRave::Combat {
 
         void updatePath(UnitInfo& unit)
         {
-            const auto farAway = unit.getPosition().getDistance(airCluster.second) > 128.0;
+            const auto farAway = unit.getPosition().getDistance(airCluster.second) > 160.0;
 
             const auto flyerAttack = [&](const TilePosition &t) {
                 const auto center = Position(t) + Position(16, 16);
+                const auto centerBoxDistance = double(Util::boxDistance(unit.getType(), center, unit.getSimTarget().getType(), unit.getSimTarget().getPosition()));
+                const auto unitBoxDistance = double(Util::boxDistance(unit.getType(), unit.getPosition(), unit.getSimTarget().getType(), unit.getSimTarget().getPosition()));
                 if (farAway)
                     return (t.x > 1 && t.y > 1 && t.x < Broodwar->mapWidth() - 1 && t.y < Broodwar->mapHeight() - 1)
-                    && (Broodwar->getFrameCount() - Grids::lastVisibleFrame(t) > 250 || center.getDistance(unit.getSimPosition()) >= unit.getSimRadius());
+                    && centerBoxDistance >= unit.getSimRadius();
 
 
                 auto noneTooClose = true;
                 for (auto &pos : lastSimPositions) {
-                    if (pos.getDistance(unit.getPosition()) >= unit.getSimRadius() && pos.getDistance(center) < unit.getSimRadius() + 32.0) {
+                    auto posToUnit = Util::boxDistance(unit.getType(), unit.getPosition(), unit.getSimTarget().getType(), pos);
+                    auto posToCenter = Util::boxDistance(unit.getType(), center, unit.getSimTarget().getType(), pos);
+                    if (posToUnit >= unit.getSimRadius() - 48.0 && posToCenter <= unit.getSimRadius() + 48.0) {
                         noneTooClose = false;
                         break;
                     }
                 }
 
                 return (t.x > 1 && t.y > 1 && t.x < Broodwar->mapWidth() - 1 && t.y < Broodwar->mapHeight() - 1)
-                    && (Broodwar->getFrameCount() - Grids::lastVisibleFrame(t) > 250 || noneTooClose || (unit.hasTarget() && (unit.localEngage() || unit.getSimState() == SimState::Win || unit.globalEngage()) && center.getDistance(unit.getSimPosition()) < unit.getPosition().getDistance(unit.getSimPosition())));
+                    && (Broodwar->getFrameCount() - Grids::lastVisibleFrame(t) > 250 || noneTooClose || (unit.hasTarget() && (unit.localEngage() || unit.getSimState() == SimState::Win || unit.globalEngage()) && centerBoxDistance < unitBoxDistance));
             };
 
             const auto flyerRetreat = [&](const TilePosition &t) {
                 const auto center = Position(t) + Position(16, 16);
-                return (Grids::getEAirThreat(center) <= 0.0 || center.getDistance(unit.getSimPosition()) > unit.getPosition().getDistance(unit.getSimPosition()));
+                const auto centerBoxDistance = double(Util::boxDistance(unit.getType(), center, unit.getSimTarget().getType(), unit.getSimTarget().getPosition()));
+                const auto unitBoxDistance = double(Util::boxDistance(unit.getType(), unit.getPosition(), unit.getSimTarget().getType(), unit.getSimTarget().getPosition()));
+                return (Grids::getEAirThreat(center) <= 0.0 || centerBoxDistance > unitBoxDistance);
             };
 
             BWEB::Pathfinding::clearCache(flyerAttack); // No caching right now for flying paths
@@ -558,7 +624,7 @@ namespace McRave::Combat {
             }
 
             // Generate a flying path for harassing that obeys exploration and staying out of range of threats if possible
-            auto canHarass = !Players::ZvZ() || (Players::getStrength(PlayerState::Enemy).airToAir <= 0.0f && Strategy::getEnemyTransition().find("Muta") == string::npos);
+            auto canHarass = unit.hasSimTarget() && (!Players::ZvZ() || (Players::getStrength(PlayerState::Enemy).airToAir <= 0.0f && Strategy::getEnemyTransition().find("Muta") == string::npos));
             if (unit.isLightAir() && canHarass) {
                 if (unit.getLocalState() != LocalState::Retreat && (unit.getDestination() == Terrain::getHarassPosition() || farAway)) {
                     BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
@@ -621,39 +687,62 @@ namespace McRave::Combat {
 
         void updateCleanup()
         {
+            groundCleanupPositions.clear();
+            airCleanupPositions.clear();
+
+            if (Util::getTime() < Time(6, 00) || !Stations::getEnemyStations().empty())
+                return;
+
+            // Look at every TilePosition and sort by furthest oldest
             auto best = 0.0;
-            for (int x = 0; x <= Broodwar->mapWidth(); x++) {
-                for (int y = 0; y <= Broodwar->mapHeight(); y++) {
+            for (int x = 0; x < Broodwar->mapWidth(); x++) {
+                for (int y = 0; y < Broodwar->mapHeight(); y++) {
                     auto t = TilePosition(x, y);
+                    auto p = Position(t) + Position(16, 16);
 
                     if (!Broodwar->isBuildable(t))
                         continue;
 
-                    auto diff = Broodwar->getFrameCount() - Grids::lastVisibleFrame(t);
-                    if (diff > best) {
-                        best = diff;
-                        cleanupPosition = t;
-                    }
+                    auto frameDiff = (Broodwar->getFrameCount() - Grids::lastVisibleFrame(t));
+                    auto dist = p.getDistance(BWEB::Map::getMainPosition());
+
+                    if (mapBWEM.GetArea(t) && mapBWEM.GetArea(t)->AccessibleFrom(BWEB::Map::getMainArea()))
+                        groundCleanupPositions.emplace(make_pair(1.0 / (frameDiff * dist), p));
+                    else
+                        airCleanupPositions.emplace(make_pair(1.0 / (frameDiff * dist), p));
                 }
             }
         }
 
         void updateUnits() {
             combatClusters.clear();
+            surroundTileClaimers.clear();
             clusterTooSpread = false;
             airCluster.first = 0.0;
             airCluster.second = Positions::Invalid;
             multimap<double, UnitInfo&> combatUnitsByDistance;
 
-            const auto needEnemyCheck = !Players::ZvZ() && !Strategy::enemyRush() && Strategy::getEnemyBuild() != "2Gate" && !Strategy::enemyFastExpand() && Strategy::getEnemyTransition() == "Unknown"&& Util::getTime() > Time(3, 45) && Util::getTime() < Time(10, 0) && Broodwar->getFrameCount() - lastCheckFrame > 240;
-            if (needEnemyCheck && checker.expired()) {
+            // If the checking unit hasn't died, it's still trying to check the enemy
+            if (!checker.expired())
                 lastCheckFrame = Broodwar->getFrameCount();
+
+            // Determine if we need to create a new checking unit to try and detect the enemy build
+            const auto needEnemyCheck = !Players::ZvZ() && !Strategy::enemyRush() && Strategy::getEnemyBuild() != "RaxFact" && !Strategy::enemyFastExpand() && Strategy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(3, 45) && Util::getTime() < Time(10, 0) && Broodwar->getFrameCount() - lastCheckFrame > 240;
+            if (needEnemyCheck && checker.expired()) {
                 checker = Util::getClosestUnit(Units::getEnemyArmyCenter(), PlayerState::Self, [&](auto &u) {
                     return u.getRole() == Role::Combat && (u.getType() == Zerg_Zergling || u.getType() == Protoss_Zealot || u.getType() == Terran_Marine || u.getType() == Terran_Vulture);
                 });
+                if (checker.lock())
+                    checker.lock()->setTarget(nullptr);
             }
-            else if (Broodwar->getFrameCount() - Grids::lastVisibleFrame(TilePosition(Units::getEnemyArmyCenter())) < 120)
-                checker.reset();
+
+            // If the checking unit exists and has seen something, it can be released
+            else if (checker.lock()) {
+                auto sawArmy = Broodwar->getFrameCount() - Grids::lastVisibleFrame(TilePosition(Units::getEnemyArmyCenter())) < 120;
+                auto sawTarget = checker.lock()->hasTarget() && (checker.lock()->getTarget().unit()->exists() || checker.lock()->getTarget().getType().isBuilding());
+                if (sawArmy || sawTarget)
+                    checker.reset();
+            }
 
             // Sort units by distance to destination
             for (auto &u : Units::getUnits(PlayerState::Self)) {
@@ -676,7 +765,7 @@ namespace McRave::Combat {
                     updateClusters(unit);
                     updateGlobalState(unit);
                     updateLocalState(unit);
-                    auto dist = unit.hasTarget() ? 1.0 / unit.getPosition().getDistance(unit.getTarget().getPosition()) : unit.getPosition().getDistance(BWEB::Map::getMainPosition());
+                    auto dist = unit.hasTarget() ? unit.getPosition().getDistance(unit.getTarget().getPosition()) : 1.0;
                     combatUnitsByDistance.emplace(dist, unit);
                 }
             }
@@ -687,14 +776,16 @@ namespace McRave::Combat {
             });
             if (airCommander) {
 
-                if (lastSimPositions.size() >= 10) {
-                    if (TilePosition(lastSimPositions.front()) != TilePosition(airCommander->getSimPosition())) {
-                        lastSimPositions.pop_back();
-                        lastSimPositions.insert(lastSimPositions.begin(), airCommander->getSimPosition());
+                if (airCommander->hasSimTarget()) {
+                    if (lastSimPositions.size() >= 10) {
+                        if (TilePosition(lastSimPositions.front()) != TilePosition(airCommander->getSimTarget().getTilePosition())) {
+                            lastSimPositions.pop_back();
+                            lastSimPositions.insert(lastSimPositions.begin(), airCommander->getSimTarget().getPosition());
+                        }
                     }
+                    else
+                        lastSimPositions.insert(lastSimPositions.begin(), airCommander->getSimTarget().getPosition());
                 }
-                else
-                    lastSimPositions.insert(lastSimPositions.begin(), airCommander->getSimPosition());
 
                 // Execute the air commanders commands
                 Horizon::simulate(*airCommander);
@@ -714,7 +805,7 @@ namespace McRave::Combat {
 
                 // Light air close to the air cluster use the same command of the air commander
                 auto chaseDownFastUnit = unit.hasTarget() && unit.getSpeed() < unit.getTarget().getSpeed();
-                if (unit.isLightAir() && !unit.isNearSplash() && !chaseDownFastUnit && !unit.localRetreat() && unit.getPosition().getDistance(airCluster.second) < 64.0 && !airCommander->isNearSuicide() && !unit.isNearSuicide()) {
+                if (unit.isLightAir() && !unit.isNearSplash() && !chaseDownFastUnit && !unit.localRetreat() && unit.getPosition().getDistance(airCluster.second) < max(64, 10 * com(unit.getType())) && !airCommander->isNearSuicide() && !unit.isNearSuicide()) {
 
                     if (unit.getPosition().getDistance(airCluster.second) > 32.0)
                         clusterTooSpread = true;
@@ -722,12 +813,18 @@ namespace McRave::Combat {
                     Horizon::simulate(unit);
                     updateDestination(unit);
 
+                    auto percentMoveCloser = clamp(unit.getPosition().getDistance(airCluster.second) / 64.0, 0.0, 1.0);
+
                     if (unit.hasTarget() && unit.isWithinRange(unit.getTarget()) && airCommanderCommand.first == UnitCommandTypes::Attack_Unit) {
                         unit.command(UnitCommandTypes::Attack_Unit, unit.getTarget());
                         continue;
                     }
                     else if (airCommanderCommand.first == UnitCommandTypes::Move) {
-                        unit.command(UnitCommandTypes::Move, airCommanderCommand.second);
+                        auto positionx = (airCommanderCommand.second.x * (1.0 - percentMoveCloser)) + (airCluster.second.x * percentMoveCloser);
+                        auto positiony = (airCommanderCommand.second.y * (1.0 - percentMoveCloser)) + (airCluster.second.y * percentMoveCloser);                        
+                        unit.command(UnitCommandTypes::Move, Position(positionx, positiony));
+                        Broodwar->drawCircleMap(airCommanderCommand.second, 4, Colors::Purple, true);
+                        Broodwar->drawLineMap(unit.getPosition(), Position(positionx, positiony), Colors::Purple);
                         continue;
                     }
                 }

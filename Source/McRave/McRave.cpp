@@ -7,15 +7,28 @@
 #include "McRave.h"
 #include "EventManager.h"
 
+// Scout getting stuck
+
 // Protoss:
 // Obs to scout bases
 // Interceptors targets might be convincing goons to dive tanks
-// Scout denial with Zealot
-// Pylon spam due to pylon wall priority
 // Obs/Arb suicide
+// PylonManager into an onFrame event that looks at when pylon will complete
 
 // Zerg:
 // ZvZ move ovies along paths to see if more lings are coming
+// Mutas stalling
+// ZvZ spore logic
+// Holding 2 concave positions (nat and main)
+// ZvT 7 pool
+
+// BWEB:
+// Update wall code
+
+// Vs CannonRush:
+// Scout drone exploring
+// 1 Combat drone pulled too early
+// Approaching pylons/cannons
 
 using namespace BWAPI;
 using namespace std;

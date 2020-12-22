@@ -149,11 +149,11 @@ namespace McRave::Learning {
                     if (transition == "DT")
                         return !Terrain::isShitMap() && (p || t /*|| z*/);
                     if (transition == "3Gate")
-                        return p || r;
+                        return !Terrain::isNarrowNatural() && (p || r);
                     if (transition == "Robo")
-                        return !Terrain::isShitMap() && (p /*|| t*/ || r);
+                        return !Terrain::isShitMap() && !Terrain::isReverseRamp() && (p /*|| t*/ || r);
                     if (transition == "4Gate")
-                        return p;
+                        return !Terrain::isNarrowNatural() && p;
                 }
 
                 if (build == "2Gate") {
@@ -199,6 +199,8 @@ namespace McRave::Learning {
                 if (build == "PoolHatch") {
                     if (transition == "2HatchMuta")
                         return !Terrain::isShitMap();
+                    //if (transition == "4HatchMuta")
+                    //    return p;
                     if (transition == "2HatchSpeedling")
                         return (Terrain::isShitMap() && p) || r;
                     if (transition == "3HatchSpeedling")
@@ -405,7 +407,7 @@ namespace McRave::Learning {
         if (Broodwar->self()->getRace() == Races::Zerg) {
 
             myBuilds["PoolHatch"].openers ={ "4Pool", "9Pool", "Overpool", "12Pool" };
-            myBuilds["PoolHatch"].transitions={ "2HatchMuta", "2HatchSpeedling", "3HatchSpeedling" };
+            myBuilds["PoolHatch"].transitions={ "2HatchMuta", "2HatchSpeedling", "3HatchSpeedling", "4HatchMuta" };
 
             myBuilds["HatchPool"].openers ={ "12Hatch" };
             myBuilds["HatchPool"].transitions={ "2HatchMuta", "2HatchSpeedling" };
@@ -572,7 +574,7 @@ namespace McRave::Learning {
                 return;
             }
             if (Players::ZvP()) {
-                BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "2HatchMuta");
+                BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "4HatchMuta");
                 isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                 return;
             }

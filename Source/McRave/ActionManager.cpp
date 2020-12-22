@@ -172,7 +172,7 @@ namespace McRave::Actions {
                     return true;
             }
             else if (action.type.isDetector()) {
-                double range = action.type.isBuilding() ? 320.0 : 360.0;
+                double range = action.type.isBuilding() ? 224.0  : action.type.sightRange();
                 if (action.pos.getDistance(here) < range)
                     return true;
             }

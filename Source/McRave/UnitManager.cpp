@@ -95,12 +95,7 @@ namespace McRave::Units {
                     // If a unit is threatening our position
                     if (unit.isThreatening()) {
                         unit.circleRed();
-                        if (unit.getType() == Protoss_Photon_Cannon)
-                            immThreat += 5.00;
-                        else if (unit.getType().isBuilding())
-                            immThreat += 1.50;
-                        else if (!unit.getType().isFlyer())
-                            immThreat += unit.getVisibleGroundStrength();
+                        immThreat += unit.getVisibleGroundStrength();
                     }
 
                     // Add to army center
@@ -108,6 +103,8 @@ namespace McRave::Units {
                         enemyArmyCenter += unit.getPosition();
                         enemyArmyCount++;
                     }
+
+                    Broodwar->drawTextMap(unit.getPosition(), "%.2f", unit.getPriority());
                 }
             }
 

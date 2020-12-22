@@ -12,7 +12,7 @@ namespace BWEB
         struct PathCache {
             map<pair<TilePosition, TilePosition>, list<Path>::iterator> iteratorList;
             list<Path> pathCache;
-            map<const BWEM::Area*, int> notReachableThisFrame;
+            map<TilePosition, int> notReachableThisFrame;
         };
         map<function <bool(const TilePosition&)>*, PathCache> pathCache;
 
@@ -136,8 +136,8 @@ namespace BWEB
         };
 
         // If not reachable based on previous paths to this area
-        if (target.isValid() && Map::mapBWEM.GetArea(target) && isWalkable(source.x, source.y)) {
-            auto checkReachable = thisCached.notReachableThisFrame[Map::mapBWEM.GetArea(target)];
+        if (target.isValid() && isWalkable(source.x, source.y)) {
+            auto checkReachable = thisCached.notReachableThisFrame[target];
             if (checkReachable >= Broodwar->getFrameCount() && Broodwar->getFrameCount() > 0) {
                 reachable = false;
                 dist = DBL_MAX;
@@ -161,9 +161,9 @@ namespace BWEB
         }
 
         // If not found, set destination area as unreachable for this frame
-        else if (target.isValid() && Map::mapBWEM.GetArea(target)) {
+        else if (target.isValid()) {
             dist = DBL_MAX;
-            thisCached.notReachableThisFrame[Map::mapBWEM.GetArea(target)] = Broodwar->getFrameCount();
+            thisCached.notReachableThisFrame[target] = Broodwar->getFrameCount();
             reachable = false;
         }
     }

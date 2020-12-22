@@ -85,7 +85,7 @@ namespace McRave::BuildOrder
 
         // When 2 units finish
         if (techUnit == Protoss_Dark_Templar)
-            return com(techUnit) >= 2;
+            return total(techUnit) >= 4;
 
         // When timing attack finishes
         if (techUnit == Zerg_Mutalisk || techUnit == Zerg_Hydralisk)
@@ -105,31 +105,35 @@ namespace McRave::BuildOrder
     {
         const auto baseType = Broodwar->self()->getRace().getResourceDepot();
         const auto hatchCount = vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive);
-        const auto availableMinerals = Broodwar->self()->minerals() - Buildings::getQueuedMineral() + (expandDesired * 300) + (rampDesired * 300);
 
         if (Broodwar->self()->getRace() == Races::Zerg) {
+            const auto availableMinerals = Broodwar->self()->minerals() - Buildings::getQueuedMineral() + (expandDesired * 300) + (rampDesired * 300);
             expandDesired = (Resources::isHalfMinSaturated() && Resources::isGasSaturated() && techSat && productionSat && availableMinerals >= 300)
-                || (Resources::isHalfMinSaturated() && Resources::isGasSaturated() && availableMinerals >= 300 && !saveLarva && productionSat)
-                || (vis(Zerg_Larva) < hatchCount && availableMinerals >= 300 && !saveLarva && productionSat && vis(Zerg_Hatchery) == com(Zerg_Hatchery));
+                || (Resources::isHalfMinSaturated() && Resources::isGasSaturated() && availableMinerals >= 300 && larvaLimit == 0 && productionSat)
+                || (vis(Zerg_Larva) < hatchCount && availableMinerals >= 450 && larvaLimit == 0 && productionSat && vis(Zerg_Hatchery) == com(Zerg_Hatchery));
         }
-        else
-            expandDesired = (techUnit == None && (Resources::isMinSaturated() || com(baseType) >= 3) && (techSat || com(baseType) >= 3) && productionSat)
-            || (com(baseType) >= 2 && availableMinerals >= 300 && (Resources::isMinSaturated() || Resources::isGasSaturated()));
+        else {
+            const auto availableMinerals = Broodwar->self()->minerals() - Buildings::getQueuedMineral() + (expandDesired * 400) + (rampDesired * 150);
+            expandDesired = (techUnit == None && Resources::isGasSaturated() && (Resources::isMinSaturated() || com(baseType) >= 3) && (techSat || com(baseType) >= 3) && productionSat)
+                || (com(baseType) >= 2 && availableMinerals >= 800 && (Resources::isMinSaturated() || Resources::isGasSaturated()));
+        }
     }
 
     void checkRamp()
     {
         const auto baseType = Broodwar->self()->getRace().getResourceDepot();
         const auto hatchCount = com(Zerg_Hatchery) + com(Zerg_Lair) + com(Zerg_Hive);
-        const auto availableMinerals = Broodwar->self()->minerals() - Buildings::getQueuedMineral() + (expandDesired * 300) + (rampDesired * 300);
 
-        auto maxSat = int(Stations::getMyStations().size()) * 2;
-
-        if (Broodwar->self()->getRace() == Races::Zerg)
-            rampDesired = (!productionSat && !saveLarva && ((techSat && availableMinerals >= 300) || (availableMinerals >= 300 && vis(Zerg_Larva) < min(3, hatchCount))))
-            || (availableMinerals >= 600 && hatchCount < maxSat && Resources::isGasSaturated() && Resources::isHalfMinSaturated() && vis(Zerg_Larva) < min(3, hatchCount));
-        else
-            rampDesired = !productionSat && ((techUnit == None && Broodwar->self()->minerals() >= 150 && (techSat || com(baseType) >= 3)) || Broodwar->self()->minerals() >= 450);
+        if (Broodwar->self()->getRace() == Races::Zerg) {
+            const auto maxSat = int(Stations::getMyStations().size()) * 2;
+            const auto availableMinerals = Broodwar->self()->minerals() - Buildings::getQueuedMineral() + (expandDesired * 300) + (rampDesired * 300);
+            rampDesired = (!productionSat && larvaLimit == 0 && ((techSat && availableMinerals >= 300) || (availableMinerals >= 300 && vis(Zerg_Larva) < min(3, hatchCount))))
+                || (availableMinerals >= 600 && hatchCount < maxSat && Resources::isGasSaturated() && Resources::isHalfMinSaturated() && vis(Zerg_Larva) < min(3, hatchCount));
+        }
+        else {
+            const auto availableMinerals = Broodwar->self()->minerals() - Buildings::getQueuedMineral() + (expandDesired * 400) + (rampDesired * 150);
+            rampDesired = !productionSat && ((techUnit == None && availableMinerals >= 150 && (techSat || com(baseType) >= 3)) || availableMinerals >= 300);
+        }
     }
 
     bool shouldAddGas()
@@ -312,6 +316,7 @@ namespace McRave::BuildOrder
     set <UnitType>& getTechList() { return  techList; }
     set <UnitType>& getUnlockedList() { return  unlockedType; }
     int gasWorkerLimit() { return gasLimit; }
+    int getLarvaLimit() { return larvaLimit; }
     bool isWorkerCut() { return cutWorkers; }
     bool isUnitUnlocked(UnitType unit) { return unlockedType.find(unit) != unlockedType.end(); }
     bool isTechUnit(UnitType unit) { return techList.find(unit) != techList.end(); }
@@ -326,7 +331,6 @@ namespace McRave::BuildOrder
     bool isRush() { return rush; }
     bool isPressure() { return pressure; }
     bool isGasTrick() { return gasTrick; }
-    bool isSaveLarva() { return saveLarva; }
     bool makeDefensesNow() { return defensesNow; }
     bool shouldScout() { return scout; }
     bool shouldExpand() { return expandDesired; }

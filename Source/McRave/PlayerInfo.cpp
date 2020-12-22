@@ -58,11 +58,11 @@ namespace McRave
                 pStrength.airDefense += unit.getVisibleAirStrength();
                 pStrength.groundDefense += unit.getVisibleGroundStrength();
             }
-            else if (unit.getType().isFlyer()) {
+            else if (unit.getType().isFlyer() && !unit.isSpellcaster() && !unit.getType().isWorker()) {
                 pStrength.airToAir += unit.getVisibleAirStrength();
                 pStrength.airToGround += unit.getVisibleGroundStrength();
             }
-            else {
+            else if (!unit.isSpellcaster() && !unit.getType().isWorker()) {
                 pStrength.groundToAir += unit.getVisibleAirStrength();
                 pStrength.groundToGround += unit.getVisibleGroundStrength();
             }

@@ -8,7 +8,7 @@ namespace McRave::Transports {
 
     namespace {
 
-        constexpr tuple commands{ Command::transport, Command::move, Command::retreat };
+        constexpr tuple commands{ Command::transport, Command::escort, Command::retreat };
 
         void updateCargo(UnitInfo& unit)
         {
@@ -129,7 +129,7 @@ namespace McRave::Transports {
                 if (cargo.getType() != Protoss_High_Templar && cargo.getType() != Protoss_Reaver)
                     return false;
 
-                const auto range = cargo.getTarget().getType().isFlyer() ? cargo.getAirRange() : cargo.getGroundRange();
+                const auto range = cargo.getTarget().getType().isFlyer() ? max(cargo.getTarget().getAirRange(), cargo.getAirRange()) : cargo.getGroundRange();
                 //const auto targetDist = cargo.getType() == Protoss_High_Templar ? cargo.getPosition().getDistance(cargo.getTarget().getPosition()) : BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getTarget().getPosition());
                 const auto targetDist = cargo.getPosition().getDistance(cargo.getTarget().getPosition());
 
@@ -138,7 +138,7 @@ namespace McRave::Transports {
 
             // Check if this unit is ready to unload
             const auto readyToUnload = [&](UnitInfo& cargo) {
-                auto cargoReady = cargo.getType() == Protoss_High_Templar ? (cargo.canStartCast(TechTypes::Psionic_Storm, unit.getTarget().getPosition()) && unit.getPosition().getDistance(cargo.getTarget().getPosition()) <= 400) : cargo.canStartAttack();
+                auto cargoReady = cargo.getType() == Protoss_High_Templar ? (cargo.hasTarget() && cargo.canStartCast(TechTypes::Psionic_Storm, cargo.getTarget().getPosition()) && unit.getPosition().getDistance(cargo.getTarget().getPosition()) <= 400) : cargo.canStartAttack();
 
                 return cargo.getLocalState() == LocalState::Attack && unit.isHealthy() && cargo.isHealthy() && cargoReady;
             };
@@ -148,7 +148,7 @@ namespace McRave::Transports {
                 if (!cargo.hasTarget())
                     return true;
 
-                return (cargo.isRequestingPickup() || cargo.shared_from_this() == closestCargo);
+                return cargo.isRequestingPickup();
             };
 
             // Check if this worker is ready to mine
@@ -200,6 +200,8 @@ namespace McRave::Transports {
                     if (cargo.hasTarget() && cargo.getEngagePosition().isValid()) {
                         if (readyToUnload(cargo)) {
                             unit.setDestination(cargo.getEngagePosition());
+                            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
+
                             if (!tooFar(cargo))
                                 unit.unit()->unload(cargo.unit());
 
@@ -240,8 +242,6 @@ namespace McRave::Transports {
             // Resort to main, hopefully we still have it
             if (!unit.getDestination().isValid())
                 unit.setDestination(BWEB::Map::getMainPosition());
-
-            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
         }
 
         void updateDecision(UnitInfo& unit)
@@ -253,7 +253,7 @@ namespace McRave::Transports {
             // Convert our commands to strings to display what the unit is doing for debugging
             map<int, string> commandNames{
                 make_pair(0, "Transport"),
-                make_pair(1, "Move"),
+                make_pair(1, "Escort"),
                 make_pair(2, "Retreat"),
             };
 

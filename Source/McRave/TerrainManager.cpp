@@ -31,12 +31,12 @@ namespace McRave::Terrain {
         bool narrowNatural = false;
         bool defendNatural = false;
         bool abandonNatural = false;
-        int timeHarassingHere = 0;
+        int timeHarassingHere = 500;
 
         void findEnemy()
         {
             if (enemyStartingPosition.isValid()) {
-                if (Util::getTime() < Time(10, 00) && Broodwar->isExplored(enemyStartingTilePosition) && BWEB::Map::isUsed(enemyStartingTilePosition) == UnitTypes::None) {
+                if (Broodwar->isExplored(enemyStartingTilePosition) && Util::getTime() < Time(8, 00) && BWEB::Map::isUsed(enemyStartingTilePosition) == UnitTypes::None) {
                     enemyStartingPosition = Positions::Invalid;
                     enemyStartingTilePosition = TilePositions::Invalid;
                     enemyNatural = nullptr;
@@ -51,7 +51,9 @@ namespace McRave::Terrain {
                 UnitInfo &unit = *u;
                 auto distBest = 640.0;
                 auto tileBest = TilePositions::Invalid;
-                if (!unit.getType().isBuilding() || !unit.getTilePosition().isValid())
+                if (!unit.getType().isBuilding()
+                    || !unit.getTilePosition().isValid()
+                    || unit.isFlying())
                     continue;
 
                 // Find closest starting location
@@ -164,6 +166,7 @@ namespace McRave::Terrain {
         void findAttackPosition()
         {
             // Attack furthest enemy station
+            attackPosition = Positions::Invalid;
             if (Stations::getEnemyStations().size() >= 3) {
                 auto distBest = 0.0;
                 auto posBest = Positions::Invalid;
@@ -178,19 +181,18 @@ namespace McRave::Terrain {
                 }
                 attackPosition = posBest;
             }
-
-            // Attack enemy main
-            else if (enemyStartingPosition.isValid())
-                attackPosition = enemyStartingPosition;
-            else
-                attackPosition = Positions::Invalid;
         }
 
         void findDefendPosition()
         {
             const auto baseType = Broodwar->self()->getRace().getResourceDepot();
             narrowNatural = BWEB::Map::getNaturalChoke() && BWEB::Map::getNaturalChoke()->Width() <= 64;
-            defendNatural = BWEB::Map::getNaturalChoke() && !abandonNatural && (BuildOrder::isWallNat() || BuildOrder::buildCount(baseType) > (1 + !BuildOrder::takeNatural()) || Stations::getMyStations().size() >= 2 || (!Players::PvZ() && Players::getSupply(PlayerState::Self) > 140));
+            defendNatural = BWEB::Map::getNaturalChoke() && !abandonNatural &&
+                    (BuildOrder::isWallNat()
+                    || BuildOrder::buildCount(baseType) > (1 + !BuildOrder::takeNatural())
+                    || Stations::getMyStations().size() >= 2
+                    || (!Players::PvZ() && Players::getSupply(PlayerState::Self) > 140)
+                    || (Broodwar->self()->getRace() != Races::Zerg && reverseRamp));
 
             auto oldPos = defendPosition;
 
@@ -296,7 +298,7 @@ namespace McRave::Terrain {
         {
             auto best = 0.0;
 
-            if (Players::ZvT() && enemyMain) {
+            if (Players::ZvT() && enemyMain && BWEB::Map::isUsed(enemyMain->getBase()->Location()) != UnitTypes::None) {
                 harassPosition = enemyMain->getBase()->Center();
                 return;
             }
@@ -304,7 +306,7 @@ namespace McRave::Terrain {
             // Harass all stations by last visited
             if (Stations::getEnemyStations().size() >= 3) {
                 for (auto &[_, station] : Stations::getEnemyStations()) {
-                    auto score = Broodwar->getFrameCount() - Grids::lastVisibleFrame(TilePosition(station->getBase()->Center()));
+                    auto score = double(Broodwar->getFrameCount() - Grids::lastVisibleFrame(TilePosition(station->getBase()->Center())));
                     if (score > best) {
                         score = best;
                         harassPosition = station->getBase()->Center();
@@ -346,13 +348,17 @@ namespace McRave::Terrain {
                 if (BWEB::Map::getMainChoke() == BWEB::Map::getNaturalChoke() || islandMap)
                     allyTerritory.insert(BWEB::Map::getNaturalArea());
 
-                // Abandon natural when not needed - DISABLED: not sure what strategy will ever need this
-                if (Strategy::getEnemyBuild() == "2Gate" && Strategy::enemyProxy()) {
+                // Abandon natural when not needed
+                if (Players::ZvP() && Strategy::getEnemyBuild() == "2Gate" && Strategy::enemyProxy()) {
                     if (isInAllyTerritory(BWEB::Map::getNaturalArea()) && Strategy::enemyProxy())
                         abandonNatural = true;
                     if (abandonNatural && !Strategy::enemyProxy())
                         abandonNatural = false;
                 }
+
+                // Add natural if we plan to take it
+                if (BuildOrder::isOpener() && BuildOrder::takeNatural())
+                    allyTerritory.insert(BWEB::Map::getNaturalArea());
             }
         }
     }
@@ -397,6 +403,33 @@ namespace McRave::Terrain {
             }
         }
         return closestCorner;
+    }
+    
+    Position getOldestPosition(const Area * area)
+    {
+        auto oldest = DBL_MAX;
+        auto oldestTile = TilePositions::Invalid;
+        auto start = BWEB::Map::getMainArea()->TopLeft();
+        auto end = BWEB::Map::getMainArea()->BottomRight();
+        auto closestStation = Stations::getClosestStation(PlayerState::Self, Position(area->Top()));
+
+        for (int x = start.x; x < end.x; x++) {
+            for (int y = start.y; y < end.y; y++) {
+                auto t = TilePosition(x, y);
+                auto p = Position(t) + Position(16, 16);
+                if (!t.isValid()
+                    || mapBWEM.GetArea(t) != area
+                    || !Broodwar->isBuildable(t))
+                    continue;
+
+                auto visible = closestStation ? Grids::lastVisibleFrame(t) / p.getDistance(closestStation->getBase()->Center()) : Grids::lastVisibleFrame(t);
+                if (visible < oldest) {
+                    oldest = visible;
+                    oldestTile = t;
+                }
+            }
+        }
+        return Position(oldestTile) + Position(16, 16);
     }
 
     bool isInAllyTerritory(TilePosition here)

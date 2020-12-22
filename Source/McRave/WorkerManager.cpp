@@ -31,7 +31,7 @@ namespace McRave::Workers {
             if (unit.getDestination().isValid() && (unit.getDestinationPath().getTarget() != TilePosition(unit.getDestination()) || !unit.getDestinationPath().isReachable())) {
                 BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
                 const auto resourceWalkable = [&](const TilePosition &tile) {
-                    return (unit.hasResource() && unit.getBuildType() == UnitTypes::None &&  BWEB::Map::isUsed(tile) == unit.getResource().getType() && tile.getDistance(TilePosition(unit.getDestination())) <= 8) || newPath.unitWalkable(tile);
+                    return (unit.hasResource() && unit.getBuildType() == UnitTypes::None && BWEB::Map::isUsed(tile) == unit.getResource().getType() && tile.getDistance(TilePosition(unit.getDestination())) <= 8) || newPath.unitWalkable(tile) || (unit.getBuildType().isRefinery() && BWEB::Map::isUsed(tile) == UnitTypes::Resource_Vespene_Geyser);
                 };
                 newPath.generateJPS(resourceWalkable);
                 unit.setDestinationPath(newPath);
@@ -69,11 +69,12 @@ namespace McRave::Workers {
             }
 
             // Check the status of the unit and the assigned resource
-            const auto threatenedEarly = unit.hasResource() && Util::getTime() < Time(3, 30) && Util::getTime() > Time(2, 10) && !unit.getTargetedBy().empty();
-            const auto threatenedAll = unit.hasResource() && Util::getTime() > Time(3, 30) && Grids::getEGroundThreat(unit.getResource().getPosition()) > 0.0f && unit.hasTarget() && unit.getTarget().isThreatening() && !unit.getTarget().isFlying() && !unit.getTarget().getType().isWorker() && unit.getTarget().hasAttackedRecently();
+            const auto time = (Strategy::enemyRush() || Broodwar->self()->getRace() == Races::Zerg) ? Time(3, 30) : Time(8, 00);
+            const auto threatenedEarly = unit.hasResource() && Util::getTime() < time && Util::getTime() > Time(2, 10) && !unit.getTargetedBy().empty();
+            const auto threatenedAll = unit.hasResource() && Util::getTime() > time && Grids::getEGroundThreat(unit.getResource().getPosition()) > 0.0f && unit.hasTarget() && unit.getTarget().isThreatening() && !unit.getTarget().isFlying() && !unit.getTarget().getType().isWorker() && unit.getTarget().hasAttackedRecently();
             const auto injured = unit.unit()->getHitPoints() + unit.unit()->getShields() < unit.getType().maxHitPoints() + unit.getType().maxShields();
             const auto threatened = (threatenedEarly || threatenedAll);
-            const auto excessAssigned = unit.hasResource() && (unit.getPosition().getDistance(unit.getResource().getPosition()) < 64.0 || unit.getResource().getResourceState() != ResourceState::Mineable) && !threatened && unit.getResource().getGathererCount() >= 3 + int(unit.getResource().getType().isRefinery());
+            const auto excessAssigned = unit.hasResource() && !threatened && ((unit.getPosition().getDistance(unit.getResource().getPosition()) < 64.0 && unit.getResource().getGathererCount() >= 3 + int(unit.getResource().getType().isRefinery())) || unit.getResource().getResourceState() != ResourceState::Mineable);
 
             // Check if unit needs a re-assignment
             const auto isGasunit = unit.hasResource() && unit.getResource().getType().isRefinery();
@@ -222,17 +223,20 @@ namespace McRave::Workers {
 
             auto buildCenter = Position(unit.getBuildPosition()) + Position(unit.getBuildType().tileWidth() * 16, unit.getBuildType().tileHeight() * 16);
 
+            // Generate a path that obeys refinery placement as well
             BWEB::Path newPath(unit.getPosition(), buildCenter, unit.getType());
-            newPath.generateJPS([&](const TilePosition &t) { return newPath.terrainWalkable(t); });
+            auto buildingWalkable = [&](const auto &t) {
+                return newPath.unitWalkable(t) || (unit.getBuildType().isRefinery() && BWEB::Map::isUsed(t) == UnitTypes::Resource_Vespene_Geyser);
+            };
+            newPath.generateJPS([&](const TilePosition &t) { return buildingWalkable(t); });
 
             auto threatPosition = Util::findPointOnPath(newPath, [&](Position p) {
                 return Grids::getEGroundThreat(p) > 0.0 && Broodwar->isVisible(TilePosition(p));
             });
 
             auto aroundDefenders = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                return (!u.unit()->isMorphing() && u.getType() == UnitTypes::Zerg_Sunken_Colony && u.getPosition().getDistance(buildCenter) < 256.0)
-                    || u.getPosition().getDistance(buildCenter) < u.getGroundRange()
-                    || ((u.getGoal() == unit.getPosition() || (unit.hasTarget() && u.getGoal() == unit.getTarget().getPosition())) && (u.getPosition().getDistance(unit.getPosition()) < 256.0 || (unit.hasTarget() && u.getPosition().getDistance(unit.getTarget().getPosition()))));
+                return (unit.isWithinBuildRange() && u.getPosition().getDistance(buildCenter) < u.getGroundReach())
+                    || ((u.getGoal() == unit.getPosition() || (unit.hasTarget() && u.getGoal() == unit.getTarget().getPosition())) && (u.getPosition().getDistance(unit.getPosition()) < 256.0 || (unit.hasTarget() && u.getPosition().getDistance(unit.getTarget().getPosition()) < 256.0)));
             });
 
             if ((!aroundDefenders && threatPosition && threatPosition.getDistance(unit.getPosition()) < 200.0 && Util::getTime() > Time(5, 00)) || unit.isBurrowed()) {
@@ -241,7 +245,7 @@ namespace McRave::Workers {
             }
         }
 
-        constexpr tuple commands{ Command::misc, Command::attack, Command::click, Command::burrow, Command::returnResource, Command::clearNeutral, Command::build, Command::move, Command::gather };
+        constexpr tuple commands{ Command::misc, Command::attack, Command::click, Command::burrow, Command::returnResource, Command::build, Command::clearNeutral, Command::move, Command::gather };
         void updateDecision(UnitInfo& unit)
         {
             // Convert our commands to strings to display what the unit is doing for debugging
@@ -251,8 +255,8 @@ namespace McRave::Workers {
                 make_pair(2, "Click"),
                 make_pair(3, "Burrow"),
                 make_pair(4, "Return"),
-                make_pair(5, "Clear"),
-                make_pair(6, "Build"),
+                make_pair(5, "Build"),
+                make_pair(6, "Clear"),
                 make_pair(7, "Move"),
                 make_pair(8, "Gather")
             };

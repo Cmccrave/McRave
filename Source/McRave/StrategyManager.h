@@ -10,6 +10,8 @@ namespace McRave::Strategy {
     Time getEnemyBuildTime();
     Time getEnemyOpenerTime();
     Time getEnemyTransitionTime();
+
+    int getWorkersNearUs();
     bool enemyFastExpand();
     bool enemyRush();
     bool needDetection();

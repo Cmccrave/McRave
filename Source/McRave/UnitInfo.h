@@ -44,6 +44,7 @@ namespace McRave {
         int walkWidth = 0;
         int walkHeight = 0;
 
+        bool proxy = false;
         bool completed = false;
         bool burrowed = false;
         bool flying = false;
@@ -82,7 +83,6 @@ namespace McRave {
         BWAPI::Position position = BWAPI::Positions::Invalid;
         BWAPI::Position engagePosition = BWAPI::Positions::Invalid;
         BWAPI::Position destination = BWAPI::Positions::Invalid;
-        BWAPI::Position simPosition = BWAPI::Positions::Invalid;
         BWAPI::Position lastPos = BWAPI::Positions::Invalid;
         BWAPI::Position goal = BWAPI::Positions::Invalid;
         BWAPI::WalkPosition walkPosition = BWAPI::WalkPositions::Invalid;
@@ -101,9 +101,10 @@ namespace McRave {
 
     #pragma region Updaters
         void updateTarget();
-        void updateStuckCheck();
-        void updateHidden();
-        void updateThreatening();
+        void checkStuck();
+        void checkHidden();
+        void checkThreatening();
+        void checkProxy();
     #pragma endregion
 
     public:
@@ -232,7 +233,6 @@ namespace McRave {
         BWAPI::Position getEngagePosition() { return engagePosition; }
         BWAPI::Position getDestination() { return destination; }
         BWAPI::Position getLastPosition() { return lastPos; }
-        BWAPI::Position getSimPosition() { return simPosition; }
         BWAPI::Position getGoal() { return goal; }
         BWAPI::WalkPosition getWalkPosition() { return walkPosition; }
         BWAPI::WalkPosition getLastWalk() { return lastWalk; }
@@ -270,6 +270,7 @@ namespace McRave {
         int framesHoldingResource() { return resourceHeldFrames; }
         int getWalkWidth() { return walkWidth; }
         int getWalkHeight() { return walkHeight; }
+        bool isProxy() { return proxy; }
         bool isBurrowed() { return burrowed; }
         bool isFlying() { return flying; }
         bool isThreatening() { return threatening; }
@@ -296,7 +297,6 @@ namespace McRave {
         void setGoalType(GoalType newGoalType) { gType = newGoalType; }
         void setType(BWAPI::UnitType newType) { type = newType; }
         void setBuildingType(BWAPI::UnitType newType) { buildingType = newType; }
-        void setSimPosition(BWAPI::Position newPosition) { simPosition = newPosition; }
         void setPosition(BWAPI::Position newPosition) { position = newPosition; }
         void setEngagePosition(BWAPI::Position newPosition) { engagePosition = newPosition; }
         void setDestination(BWAPI::Position newPosition) { destination = newPosition; }

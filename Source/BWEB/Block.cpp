@@ -63,6 +63,10 @@ namespace BWEB::Blocks
                 else if (height == 3) {
                     if (width == 4)
                         pieces ={ Piece::Large };
+                    if (width == 8)
+                        pieces ={ Piece::Large, Piece::Large };
+                    if (width == 12)
+                        pieces ={ Piece::Large, Piece::Large, Piece::Large };
                 }
                 else if (height == 4) {
                     if (width == 3)

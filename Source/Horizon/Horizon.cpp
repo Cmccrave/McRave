@@ -15,6 +15,7 @@ namespace McRave::Horizon {
             double minWinPercent = 0.6;
             double maxWinPercent = 1.2;
             auto stationDifferenceTenth = max(0.0, double(Stations::getMyStations().size() - Stations::getEnemyStations().size()) / 20);
+            auto distbaseDifferenceTenth = (unit.hasTarget() && Terrain::getEnemyStartingPosition().isValid()) ? unit.getTarget().getPosition().getDistance(Terrain::getEnemyStartingPosition()) / (10 * BWEB::Map::getMainPosition().getDistance(Terrain::getEnemyStartingPosition())) : 0.0;
 
             // P
             if (Players::PvP()) {
@@ -40,14 +41,11 @@ namespace McRave::Horizon {
                 maxWinPercent = 1.10;
             }
             if (Players::ZvT()) {
-                minWinPercent = 0.8;
-                maxWinPercent = 1.2;
-                if (unit.hasTarget() && (unit.getTarget().getType().isBuilding() || unit.getTarget().getType().isWorker())) {
-                    maxWinPercent += 0.1;
-                }
+                minWinPercent = 0.8 - stationDifferenceTenth - distbaseDifferenceTenth;
+                maxWinPercent = 1.2 - stationDifferenceTenth - distbaseDifferenceTenth;
             }
 
-            if (BuildOrder::isPressure() && !Players::ZvZ()) {
+            if (BuildOrder::isPressure()) {
                 minThreshold = 0.50;
                 maxThreshold = 1.00;
             }
@@ -60,6 +58,14 @@ namespace McRave::Horizon {
                 maxThreshold = maxWinPercent;
             }
         }
+
+        double prepTime(UnitInfo& unit) {
+            if (unit.getType() == UnitTypes::Terran_Siege_Tank_Tank_Mode)
+                return 65.0 / 24.0;
+            if (unit.getType() == UnitTypes::Zerg_Lurker && !unit.isBurrowed())
+                return 36.0 / 24.0;
+            return 0.0;
+        };
     }
 
     void simulate(UnitInfo& unit)
@@ -68,14 +74,32 @@ namespace McRave::Horizon {
         auto enemyLocalGroundStrength = 0.0, allyLocalGroundStrength = 0.0;
         auto enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;
         auto unitToEngage = unit.getSpeed() > 0.0 ? unit.getEngDist() / (24.0 * unit.getSpeed()) : 5.0;
-        auto simulationTime = unitToEngage + 5.0;
-        auto sync = false;
+        auto simulationTime = unitToEngage + max(5.0, Players::getSupply(PlayerState::Self) / 20.0) + prepTime(unit);
         auto belowGrdtoGrdLimit = false;
         auto belowGrdtoAirLimit = false;
         auto belowAirtoAirLimit = false;
         auto belowAirtoGrdLimit = false;
         auto unitArea = mapBWEM.GetArea(unit.getTilePosition());
         map<const BWEM::ChokePoint *, double> squeezeFactor;
+
+        const auto crossingPoint = [&](UnitInfo& enemy) {
+            auto stepX = (unit.getPosition().x - enemy.getPosition().x) / unit.getPosition().getDistance(enemy.getPosition());
+            auto stepY = (unit.getPosition().y - enemy.getPosition().y) / unit.getPosition().getDistance(enemy.getPosition());
+
+            const auto range =                  enemy.getTarget().getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange();
+            auto stepCounter = 0;
+            auto totalSteps = unit.getPosition().getDistance(enemy.getPosition()) / 8;
+            auto x = double(unit.getPosition().x);
+            auto y = double(unit.getPosition().y);
+
+            for (auto stepCounter = 0; stepCounter < totalSteps; stepCounter++) {
+                auto p = Position(x, y);
+                if (Util::boxDistance(unit.getType(), p, enemy.getType(), enemy.getPosition()) < range)
+                    return p;
+                x -= stepX*8.0;
+                y -= stepY*8.0;
+            }
+        };
 
         // If we have excessive resources, ignore our simulation and engage
         if (!ignoreSim && Broodwar->self()->minerals() >= 2000 && Broodwar->self()->gas() >= 2000 && Players::getSupply(PlayerState::Self) >= 380)
@@ -117,7 +141,7 @@ namespace McRave::Horizon {
                 || (!u.unit()->isCompleted() && u.unit()->exists())
                 || (u.unit()->exists() && (u.unit()->isStasised() || u.unit()->isMorphing()))
                 || (u.getVisibleAirStrength() <= 0.0 && u.getVisibleGroundStrength() <= 0.0)
-                || (u.getPlayer() == Broodwar->self() && !u.hasTarget())
+                || (/*u.getPlayer() == Broodwar->self() && */!u.hasTarget())
                 || (u.getRole() != Role::None && u.getRole() != Role::Combat && u.getRole() != Role::Defender))
                 return false;
             return true;
@@ -167,25 +191,41 @@ namespace McRave::Horizon {
                 if (!canAddToSim(enemy))
                     continue;
 
-                const auto potentialMoveDistance = (Players::ZvZ() && enemy.getSpeed() > 0.0) ? double(Broodwar->getFrameCount() - enemy.getLastVisibleFrame()) * enemy.getSpeed() : 0.0;
-                const auto enemyRange = unit.getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange();
-                const auto distance = max(0.0, Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getEngagePosition()) - enemyRange - potentialMoveDistance);
-                const auto speed = enemy.getSpeed() > 0.0 ? 24.0 * enemy.getSpeed() : 24.0 * unit.getSpeed();
-                const auto timeToBeInRange = (Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getPosition()) - enemyRange) / speed;
-                auto simRatio = enemy.getSpeed() > 0.0 ? simulationTime - (distance / speed) : simulationTime - timeToBeInRange;
+                auto simRatio =                     0.0;
+                auto engagePoint =                  crossingPoint(enemy);
+                auto distUnit =                     double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getPosition()));
+                auto distEngage =                   double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), engagePoint));
+                const auto range =                  enemy.getTarget().getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange();
 
                 // If the unit doesn't affect this simulation
-                if (simRatio <= 0.0
-                    || (enemy.getSpeed() <= 0.0 && distance > 32.0)
-                    || (enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode && enemy.getPosition().getDistance(unit.getPosition()) < 64.0))
+                if ((enemy.getSpeed() <= 0.0 && distEngage > range + 32.0 && distUnit > range + 32.0)
+                    || (enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode && distUnit < 64.0)) {
+                    enemy.circleBlack();
                     continue;
+                }
+
+                // If enemy doesn't move, calculate how long it will remain in range once in range
+                if (enemy.getSpeed() <= 0.0) {
+                    const auto distance =               distUnit;
+                    const auto speed =                  enemy.getTarget().getSpeed() * 24.0;
+                    const auto engageTime =             (distance - range) / speed;
+                    simRatio =                          max(0.0, simulationTime - engageTime);
+                }
+
+                // If enemy can move, calculate how quickly it can engage
+                else {
+                    const auto distance =               min(distUnit, distEngage);
+                    const auto speed =                  enemy.getSpeed() * 24.0;
+                    const auto engageTime =             (distance - range) / speed;
+                    simRatio =                          max(0.0, simulationTime - engageTime);
+                }
 
                 // Hidden bonus
                 if (enemy.isHidden())
                     simRatio = simRatio * 2.0;
 
                 // High ground bonus
-                if (!enemy.getType().isFlyer() && enemyRange > 32.0 && Broodwar->getGroundHeight(enemy.getTilePosition()) > Broodwar->getGroundHeight(TilePosition(unit.getEngagePosition())))
+                if (!enemy.getType().isFlyer() && range > 32.0 && Broodwar->getGroundHeight(enemy.getTilePosition()) > Broodwar->getGroundHeight(TilePosition(enemy.getTarget().getEngagePosition())))
                     simRatio = simRatio * 2.0;
 
                 // Add their values to the simulation
@@ -203,8 +243,8 @@ namespace McRave::Horizon {
                 const auto allyRange = max(ally.getAirRange(), ally.getGroundRange());
                 const auto allyReach = max(ally.getAirReach(), ally.getGroundReach());
                 const auto distance = max(0.0, ally.getEngDist());
-                const auto speed = ally.getSpeed() > 0.0 ? 24.0 * ally.getSpeed() : 24.0 * unit.getSpeed();
-                auto simRatio = simulationTime - (distance / speed);
+                const auto speed = ally.getSpeed() > 0.0 ? ally.getSpeed() * 24.0 : unit.getSpeed() * 24.0;
+                auto simRatio = simulationTime - (distance / speed) - prepTime(ally);
 
                 // If the unit doesn't affect this simulation
                 if (ally.localRetreat()
@@ -255,7 +295,7 @@ namespace McRave::Horizon {
             }
         };
 
-        simTerrain();
+        //simTerrain();
         simEnemies();
         simSelf();
 

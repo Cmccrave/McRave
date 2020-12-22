@@ -118,7 +118,7 @@ namespace McRave::Grids
 
             const auto calcBotRight = [&]() {
                 if (unit.getType().isBuilding())
-                    return Position(unit.getWalkPosition().x * 8 - ((unit.getType().tileWidth() * 16) - unit.getType().dimensionLeft()), unit.getWalkPosition().y * 8 - ((unit.getType().tileHeight() * 16) - unit.getType().dimensionUp())) + Position(unit.getType().tileWidth() * 32, unit.getType().tileHeight() * 32);
+                    return Position(unit.getWalkPosition().x * 8 - ((unit.getType().tileWidth() * 16) - unit.getType().dimensionRight()), unit.getWalkPosition().y * 8 - ((unit.getType().tileHeight() * 16) - unit.getType().dimensionDown())) + Position(unit.getType().tileWidth() * 32, unit.getType().tileHeight() * 32);
                 return Position(unit.getWalkPosition()) + Position(walkWidth * 8, walkHeight * 8) + Position(8 * (1 - unit.getWalkWidth() % 2), 8 * (1 - unit.getWalkHeight() % 2));
             };
 
@@ -163,11 +163,11 @@ namespace McRave::Grids
 
                     // Threat
                     if (inRange && grdGrid && dist <= unit.getGroundReach()) {
-                        grdGrid[x][y] += float(unit.getVisibleGroundStrength()) / max(1.0, log((double)dist));
+                        grdGrid[x][y] += float(unit.getVisibleGroundStrength()) / max(1.0f, log((float)dist));
                         saveReset(x, y);
                     }
                     if (inRange && airGrid && dist <= unit.getAirReach()) {
-                        airGrid[x][y] += float(unit.getVisibleAirStrength()) / max(1.0, log((double)dist));
+                        airGrid[x][y] += float(unit.getVisibleAirStrength()) / max(1.0f, log((float)dist));
                         saveReset(x, y);
                     }
                 }

@@ -7,5 +7,6 @@
 namespace McRave::Pylons
 {
     void storePylon(BWAPI::Unit);
+    void removePylon(BWAPI::Unit);
     bool hasPower(BWAPI::TilePosition, BWAPI::UnitType);
 }

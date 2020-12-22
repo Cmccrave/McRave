@@ -240,7 +240,7 @@ namespace McRave::Buildings {
                     continue;
 
                 // --- Move to PylonLocator ---
-                if (Broodwar->self()->getRace() == Races::Protoss && building == Protoss_Pylon && vis(Protoss_Pylon) != 1) {
+                if (Broodwar->self()->getRace() == Races::Protoss && building == Protoss_Pylon) {
                     bool power = true;
                     bool solo = true;
 
@@ -250,6 +250,8 @@ namespace McRave::Buildings {
                     if (poweredLarge > poweredMedium && block.getMediumTiles().empty())
                         power = false;
                     if (poweredMedium > poweredLarge && block.getLargeTiles().empty())
+                        power = false;
+                    if (vis(Protoss_Pylon) < 2 && (block.getLargeTiles().empty() || block.getMediumTiles().empty()))
                         power = false;
 
                     // If we have no powered spots, can't build a solo spot
@@ -350,7 +352,7 @@ namespace McRave::Buildings {
                 return true;
             }
 
-            if (Players::ZvP() || (Players::ZvT() && Strategy::getEnemyTransition() != "2Fact")) {
+            if (Players::ZvP() || (Players::ZvT() && Strategy::getEnemyBuild() != "RaxFact")) {
 
                 auto naturalAt = Players::ZvT() ? 3 : 2;
                 auto mainAt = Players::ZvT() ? 2 : 3;
@@ -407,8 +409,7 @@ namespace McRave::Buildings {
         bool findProductionLocation(UnitType building, TilePosition& placement)
         {
             auto hatchCount = vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive);
-            if (!isProductionType(building)
-                /*|| (hatchCount > 1 && Broodwar->self()->getRace() == Races::Zerg && !BuildOrder::shouldRamp())*/)
+            if (!isProductionType(building))
                 return false;
 
             // If against a rush
@@ -508,6 +509,9 @@ namespace McRave::Buildings {
                 auto angle = BWEB::Map::getAngle(make_pair(Position(wall.getChokePoint()->Pos(wall.getChokePoint()->end1)),
                     Position(wall.getChokePoint()->Pos(wall.getChokePoint()->end2))));
 
+                auto closestMain = BWEB::Stations::getClosestMainStation(TilePosition(BWEB::Map::getMainChoke()->Center()));
+                auto desiredCenter = (closestMain && closestMain->getChokepoint() && Players::ZvT()) ? (Position(closestMain->getChokepoint()->Center()) + Position(wall.getChokePoint()->Center())) / 2 : Position(wall.getChokePoint()->Center());
+
                 // Determine if chokepoint is angled
                 auto angledChoke = false;
                 if ((abs(angle) < 70 && abs(angle) > 20) || (abs(angle) < 160 && abs(angle) > 110))
@@ -539,16 +543,19 @@ namespace McRave::Buildings {
                         return isDefensiveType(u.getType());
                     });
 
-                    // Try to place directly in line with other defenses
+                    // Try to place directly in line with closest defense
                     if (closestDefense) {
                         for (auto &line : lines) {
                             if (line.second >= 3) {
                                 for (auto &defense : wall.getDefenses()) {
-                                    if (value(defense) == line.first && value(defense) == value(closestDefense->getTilePosition()) && isBuildable(building, defense) && isPlannable(building, defense))
+                                    if (value(defense) == value(closestDefense->getTilePosition()) && isBuildable(Zerg_Creep_Colony, defense) && isPlannable(Zerg_Creep_Colony, defense))
                                         placements.insert(defense);
                                 }
                             }
                         }
+
+                        for (auto &placement : placements)
+                            Visuals::tileBox(placement + TilePosition(0, 1), Colors::Yellow, true);
                     }
 
                     // Try to place adjacent with other defenses
@@ -556,11 +563,30 @@ namespace McRave::Buildings {
                         for (auto &line : lines) {
                             if (line.second >= 3) {
                                 for (auto &defense : wall.getDefenses()) {
-                                    if (value(defense) == line.first && value(defense) <= value(closestDefense->getTilePosition()) + 2 && value(defense) >= value(closestDefense->getTilePosition()) - 2 && isBuildable(building, defense) && isPlannable(building, defense))
+                                    if (value(defense) == line.first && value(defense) <= value(closestDefense->getTilePosition()) + 2 && value(defense) >= value(closestDefense->getTilePosition()) - 2 && isBuildable(Zerg_Creep_Colony, defense) && isPlannable(Zerg_Creep_Colony, defense))
                                         placements.insert(defense);
                                 }
                             }
                         }
+
+                        for (auto &placement : placements)
+                            Visuals::tileBox(placement + TilePosition(1, 1), Colors::Orange, true);
+                    }
+
+                    // Try to place directly in line with a planned defense
+                    if (placements.empty()) {
+                        for (auto &[tile, type] : buildingsPlanned) {
+                            if (!isDefensiveType(type))
+                                continue;
+
+                            for (auto &defense : wall.getDefenses()) {
+                                if (value(defense) == value(tile) && isBuildable(Zerg_Creep_Colony, defense) && isPlannable(Zerg_Creep_Colony, defense))
+                                    placements.insert(defense);
+                            }
+                        }
+
+                        for (auto &placement : placements)
+                            Visuals::tileBox(placement + TilePosition(1, 0), Colors::Purple, true);
                     }
 
                     // Create a set of placements that are within rows/columns bigger than 3 if it's empty currently
@@ -576,7 +602,7 @@ namespace McRave::Buildings {
                     }
 
                     if (Walls::needAirDefenses(wall) > colonies || Walls::needGroundDefenses(wall) > colonies || Broodwar->self()->getRace() == Races::Terran) {
-                        placement = returnClosest(building, placements, closestStation ? Position(wall.getChokePoint()->Center()) : wall.getCentroid());
+                        placement = returnClosest(building, placements, desiredCenter);
                         if (placement.isValid())
                             return true;
                     }
@@ -704,23 +730,9 @@ namespace McRave::Buildings {
                 }
             }
 
-            //// Check if we can block an enemy expansion
-            //if (Util::getTime() > Time(8, 0) && int(Stations::getMyStations().size()) >= 2) {
-            //    placement = Terrain::getEnemyExpand();
-            //    if (placement.isValid() && isBuildable(Protoss_Pylon, placement) && isQueueable(Protoss_Pylon, placement))
-            //        return true;
-            //}
-
             // Check if this our second Pylon and we're hiding tech
-            if (building == Protoss_Pylon && vis(Protoss_Pylon) == 2) {
+            if (building == Protoss_Pylon && vis(Protoss_Pylon) == 2 && BuildOrder::isHideTech()) {
                 placement = furthestLocation(building, (Position)BWEB::Map::getMainChoke()->Center());
-                if (placement.isValid())
-                    return true;
-            }
-
-            // Check if this is our first Pylon versus Protoss
-            if (vis(Protoss_Pylon) == 0 && Players::vP() && !BuildOrder::isWallNat() && !BuildOrder::isWallMain()) {
-                placement = closestLocation(Protoss_Pylon, (Position)BWEB::Map::getMainChoke()->Center());
                 if (placement.isValid())
                     return true;
             }
@@ -769,13 +781,6 @@ namespace McRave::Buildings {
                     }
                 }
 
-                if (placement.isValid())
-                    return true;
-            }
-
-            // Check if we need powered spaces
-            if (poweredLarge == 0 || poweredMedium == 0) {
-                placement = closestLocation(Protoss_Pylon, BWEB::Map::getMainPosition());
                 if (placement.isValid())
                     return true;
             }
@@ -1156,21 +1161,22 @@ namespace McRave::Buildings {
 
         // Check to see if we expect creep to be here soon
         auto creepSoon = false;
-        if (Broodwar->self()->getRace() == Races::Zerg && !Broodwar->hasCreep(here)) {
+        auto distCheck = (Strategy::enemyProxy() || Strategy::enemyRush()) ? 100.0 : 120.0;
+        if (Broodwar->self()->getRace() == Races::Zerg) {
             auto closestStation = Stations::getClosestStation(PlayerState::Self, Position(here));
             if (closestStation) {
                 for (auto &[unit, station] : Stations::getMyStations()) {
                     if (station == closestStation && station->getDefenseLocations().find(here) != station->getDefenseLocations().end()) {
 
                         // Found that > 5 tiles away causes us to wait forever
-                        if (center.getDistance(station->getBase()->Center()) > 100.0)
+                        if (center.getDistance(station->getBase()->Center()) > distCheck)
                             return false;
 
                         // Don't build vertically
-                        if (here.y > station->getBase()->Location().y + 2 || here.y < station->getBase()->Location().y)
+                        if (here.y > station->getBase()->Location().y + 4 || here.y < station->getBase()->Location().y - 2)
                             continue;
 
-                        if (unit->getRemainingBuildTime() < 480) {
+                        if (unit->getRemainingBuildTime() < 320) {
                             creepSoon = true;
                             break;
                         }
@@ -1282,6 +1288,115 @@ namespace McRave::Buildings {
     {
         updateBuildings();
         updatePlan();
+
+        for (auto &[_, wall] : BWEB::Walls::getWalls()) {
+
+            auto closestStation = Stations::getClosestStation(PlayerState::Self, wall.getCentroid());
+            int colonies = 0;
+            for (auto &tile : wall.getDefenses()) {
+                if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony)
+                    colonies++;
+            }
+
+            auto angle = BWEB::Map::getAngle(make_pair(Position(wall.getChokePoint()->Pos(wall.getChokePoint()->end1)),
+                Position(wall.getChokePoint()->Pos(wall.getChokePoint()->end2))));
+
+            auto closestMain = BWEB::Stations::getClosestMainStation(TilePosition(BWEB::Map::getMainChoke()->Center()));
+            auto desiredCenter = (closestMain && closestMain->getChokepoint() && Players::ZvT()) ? (Position(closestMain->getChokepoint()->Center()) + Position(wall.getChokePoint()->Center())) / 2 : Position(wall.getChokePoint()->Center());
+
+            // Determine if chokepoint is angled
+            auto angledChoke = false;
+            if ((abs(angle) < 70 && abs(angle) > 20) || (abs(angle) < 160 && abs(angle) > 110))
+                angledChoke = true;
+
+            // Determine if geography of chokepoint is vertical
+            if (!angledChoke) {
+                auto verticalChoke = false;
+                auto diffX = abs(wall.getChokePoint()->Pos(wall.getChokePoint()->end1).x - wall.getChokePoint()->Pos(wall.getChokePoint()->end2).x);
+                auto diffY = abs(wall.getChokePoint()->Pos(wall.getChokePoint()->end1).y - wall.getChokePoint()->Pos(wall.getChokePoint()->end2).y);
+                if (diffX < diffY)
+                    verticalChoke = true;
+
+                // If vertical choke, we want a column of defenses, otherwise a row
+                const auto value = [&](TilePosition t) {
+                    if (verticalChoke)
+                        return t.x;
+                    return t.y;
+                };
+
+                // Count up defense inside highest rows/columns
+                map<int, int> lines;
+                for (auto &defense : wall.getDefenses())
+                    lines[value(defense)]++;
+
+                // Create a priotized list of placements
+                set<TilePosition> placements;
+                auto closestDefense = Util::getClosestUnit(wall.getCentroid(), PlayerState::Self, [&](auto &u) {
+                    return isDefensiveType(u.getType());
+                });
+
+                // Try to place directly in line with closest defense
+                if (closestDefense) {
+                    for (auto &line : lines) {
+                        if (line.second >= 3) {
+                            for (auto &defense : wall.getDefenses()) {
+                                if (value(defense) == value(closestDefense->getTilePosition()) && isBuildable(Zerg_Creep_Colony, defense) && isPlannable(Zerg_Creep_Colony, defense))
+                                    placements.insert(defense);
+                            }
+                        }
+                    }
+
+                    for (auto &placement : placements)
+                        Visuals::tileBox(placement + TilePosition(0, 1), Colors::Yellow, true);
+                }
+
+                // Try to place adjacent with other defenses
+                if (placements.empty() && closestDefense) {
+                    for (auto &line : lines) {
+                        if (line.second >= 3) {
+                            for (auto &defense : wall.getDefenses()) {
+                                if (value(defense) == line.first && value(defense) <= value(closestDefense->getTilePosition()) + 2 && value(defense) >= value(closestDefense->getTilePosition()) - 2 && isBuildable(Zerg_Creep_Colony, defense) && isPlannable(Zerg_Creep_Colony, defense))
+                                    placements.insert(defense);
+                            }
+                        }
+                    }
+
+                    for (auto &placement : placements)
+                        Visuals::tileBox(placement + TilePosition(1, 1), Colors::Orange, true);
+                }
+
+                // Try to place directly in line with a planned defense
+                if (placements.empty()) {
+                    for (auto &[tile, type] : buildingsPlanned) {
+                        if (!isDefensiveType(type))
+                            continue;
+
+                        for (auto &defense : wall.getDefenses()) {
+                            if (value(defense) == value(tile) && isBuildable(Zerg_Creep_Colony, defense) && isPlannable(Zerg_Creep_Colony, defense))
+                                placements.insert(defense);
+                        }
+                    }
+
+                    for (auto &placement : placements)
+                        Visuals::tileBox(placement + TilePosition(1, 0), Colors::Purple, true);
+                }
+
+                // Create a set of placements that are within rows/columns bigger than 3 if it's empty currently
+                if (placements.empty()) {
+                    for (auto &line : lines) {
+                        if (line.second >= 3) {
+                            for (auto &defense : wall.getDefenses()) {
+                                if (value(defense) == line.first)
+                                    placements.insert(defense);
+                            }
+                        }
+                    }
+                }
+
+                auto temp = returnClosest(Zerg_Creep_Colony, placements, desiredCenter);
+                Visuals::tileBox(temp, Colors::Red, true);
+            }
+        }
     }
 
     void onStart()

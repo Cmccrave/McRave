@@ -65,7 +65,7 @@ namespace McRave::BuildOrder::Protoss {
         defaultPvZ();
         wantNatural =                                       true;
         wallNat =                                           true;
-        cutWorkers =                                        Strategy::enemyRush() ? vis(Protoss_Photon_Cannon) < 2 : false;
+        cutWorkers =                                        Strategy::enemyRush() && vis(Protoss_Photon_Cannon) < 2 && vis(Protoss_Forge) > 0;
 
         int cannonCount = 0;
 
@@ -86,7 +86,7 @@ namespace McRave::BuildOrder::Protoss {
 
             buildQueue[Protoss_Nexus] =                     1 + (s >= 28);
             buildQueue[Protoss_Pylon] =                     (s >= 14) + (s >= 30), (s >= 16) + (s >= 30);
-            buildQueue[Protoss_Assimilator] =               com(Protoss_Forge) > 0;
+            buildQueue[Protoss_Assimilator] =               s >= 34;
             buildQueue[Protoss_Gateway] =                   s >= 32;
             buildQueue[Protoss_Forge] =                     s >= 20;
         }
@@ -190,7 +190,7 @@ namespace McRave::BuildOrder::Protoss {
 
                 // Build
                 buildQueue[Protoss_Cybernetics_Core] =      s >= 40;
-                buildQueue[Protoss_Gateway] =               (vis(Protoss_Cybernetics_Core) > 0) + (s >= 76) + (s >= 92) + (s >= 100);
+                buildQueue[Protoss_Gateway] =               (vis(Protoss_Cybernetics_Core) > 0) + (4 * (s >= 64));
                 buildQueue[Protoss_Assimilator] =           1 + (s >= 116);
 
                 // Army Composition

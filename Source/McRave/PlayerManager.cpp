@@ -110,6 +110,8 @@ namespace McRave::Players
                         Workers::removeUnit(*u);
                     if (u->getRole() == Role::Scout)
                         Scouts::removeUnit(*u);
+                    if (u->getPlayer() == Broodwar->self() && u->getType() == Protoss_Pylon)
+                        Pylons::removePylon(bwUnit);
 
                     // Invalidates iterator, must return
                     player.getUnits().erase(u);
@@ -160,6 +162,12 @@ namespace McRave::Players
 
             // When an existing type morphs again
             if (info->getType() == Zerg_Hydralisk || info->getType() == Zerg_Lurker_Egg || info->getType() == Zerg_Mutalisk || info->getType() == Zerg_Cocoon || info->getType() == Zerg_Creep_Colony) {
+                totalTypeCounts[p->getPlayerState()][bwUnit->getType()] += 1;
+                totalTypeCounts[p->getPlayerState()][info->getType()] -= 1;
+            }
+
+            // When an existing Drone morphs into a building
+            if (info->getType() == Zerg_Drone && bwUnit->getType().isBuilding()) {
                 totalTypeCounts[p->getPlayerState()][bwUnit->getType()] += 1;
                 totalTypeCounts[p->getPlayerState()][info->getType()] -= 1;
             }

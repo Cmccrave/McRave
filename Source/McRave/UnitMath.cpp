@@ -89,14 +89,13 @@ namespace McRave::Math {
         const auto maxCost = 69.589;
         const auto maxSurv = 128.311;
         auto bonus = 1.0;
-        auto enemyStrength = Players::getStrength(PlayerState::Enemy);
 
         // If target is an egg, larva, scarab or spell
         if (unit.getType() == UnitTypes::Zerg_Egg || unit.getType() == UnitTypes::Zerg_Larva || unit.getType() == UnitTypes::Protoss_Scarab || unit.getType().isSpell())
             return 0.0;
 
         // Bunch of priority hacks
-        if (unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Terran_Science_Vessel || unit.getType() == Protoss_Arbiter)
+        if (unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Terran_Science_Vessel || unit.getType() == Protoss_Arbiter || unit.getType() == Protoss_Carrier)
             return 15.0;
         if (Strategy::enemyProxy() && unit.getType() == Protoss_Pylon)
             return Grids::getEGroundThreat(unit.getPosition()) == 0.0f ? 5.0 : 1.0;
@@ -112,7 +111,7 @@ namespace McRave::Math {
             }
         }
 
-        auto ff = unit.canAttackGround() || unit.canAttackAir() || !unit.getType().isBuilding() ? 0.01 : 0;
+        auto ff = unit.canAttackGround() || unit.canAttackAir() || !unit.getType().isBuilding() ? 1.00 : 0;
         auto dps = ff + max(groundDPS(unit) / maxGrdDps, airDPS(unit) / maxAirDps);
         auto cost = relativeCost(unit) / maxCost;
         auto surv = survivability(unit) / maxSurv;
@@ -240,11 +239,16 @@ namespace McRave::Math {
 
     double survivability(UnitInfo& unit)
     {
+        const auto armor = [&]() {
+            auto upgrades = unit.getPlayer()->getUpgradeLevel(unit.getType().armorUpgrade());
+            auto miscUpgrades = (unit.getType() == Zerg_Ultralisk) * 2 * unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Chitinous_Plating);
+            return double(1 + upgrades + miscUpgrades);
+        };
+
         const auto avgUnitSpeed = 4.34;
         const auto speed = (unit.getSpeed() + avgUnitSpeed) / avgUnitSpeed;
-        const auto armor = 1.0 + double(unit.getType().armor() + unit.getPlayer()->getUpgradeLevel(unit.getType().armorUpgrade()));
         const auto health = (double(unit.getType().maxHitPoints() + unit.getType().maxShields())) / 35.0;
-        return speed * armor * health;
+        return speed * armor() * health;
     }
 
     double groundRange(UnitInfo& unit)
@@ -309,8 +313,10 @@ namespace McRave::Math {
 
     double groundDamage(UnitInfo& unit)
     {
+        auto attackCount = max(unit.getType().airWeapon().damageFactor(), unit.getType().maxGroundHits());
+        auto upLevel = unit.getPlayer()->getUpgradeLevel(unit.getType().groundWeapon().upgradeType());
+
         // TODO Check Reaver upgrade type functional here or if needed hardcoding
-        int upLevel = unit.getPlayer()->getUpgradeLevel(unit.getType().groundWeapon().upgradeType());
         if (unit.getType() == Protoss_Reaver) {
             if (unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Scarab_Damage))
                 return 125.00;
@@ -324,12 +330,14 @@ namespace McRave::Math {
             return 12.0 + (2.0 * upLevel);
         if (unit.getType() == Protoss_High_Templar)
             return 112.0;
-        return unit.getType().groundWeapon().damageAmount() + (unit.getType().groundWeapon().damageBonus() * upLevel);
+        return attackCount * (unit.getType().groundWeapon().damageAmount() + (unit.getType().groundWeapon().damageBonus() * upLevel));
     }
 
     double airDamage(UnitInfo& unit)
     {
-        int upLevel = unit.getPlayer()->getUpgradeLevel(unit.getType().airWeapon().upgradeType());
+        auto attackCount = max(unit.getType().airWeapon().damageFactor(), unit.getType().maxAirHits());
+        auto upLevel = unit.getPlayer()->getUpgradeLevel(unit.getType().airWeapon().upgradeType());
+
         if (unit.getType() == Terran_Bunker)
             return 24.0 + (4.0 * upLevel);
         if (unit.getType() == Protoss_Scout)
@@ -340,7 +348,7 @@ namespace McRave::Math {
             return (48.0 * 0.36) + (8.0 * upLevel);
         if (unit.getType() == Protoss_High_Templar)
             return 112.0;
-        return unit.getType().airWeapon().damageAmount() + (unit.getType().airWeapon().damageBonus() * upLevel);
+        return attackCount * (unit.getType().airWeapon().damageAmount() + (unit.getType().airWeapon().damageBonus() * upLevel));
     }
 
     double moveSpeed(UnitInfo& unit)
@@ -361,13 +369,6 @@ namespace McRave::Math {
     }
 
     int stopAnimationFrames(UnitType unitType) {
-        //if (unitType == Protoss_Dragoon)
-        //    return 9;
-        //if (unitType == Zerg_Devourer)
-        //    return 7;
-        //return 0;
-
-
         // Attack animation frames below
         if (unitType == Terran_SCV)
             return 2;
@@ -394,7 +395,7 @@ namespace McRave::Math {
         if (unitType == Protoss_Zealot)
             return 7;
         if (unitType == Protoss_Dragoon)
-            return 7;
+            return 9;
         if (unitType == Protoss_Dark_Templar)
             return 9;
         if (unitType == Protoss_Archon)
@@ -421,6 +422,7 @@ namespace McRave::Math {
             return 2;
         if (unitType == Zerg_Devourer)
             return 9;
+        return 0;
     }
 
     int realisticMineralCost(UnitType type)

@@ -19,7 +19,10 @@ namespace McRave::BuildOrder::Protoss {
         }
 
         bool enemyMaybeDT() {
-            return (Players::getVisibleCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) > 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) <= 2) || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) < 3 || Strategy::needDetection();
+            return (Players::getVisibleCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) > 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) <= 2)
+                || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) < 3
+                || Strategy::needDetection()
+                || Strategy::getEnemyTransition() == "DT";
         }
 
         void defaultPvP() {
@@ -96,22 +99,18 @@ namespace McRave::BuildOrder::Protoss {
     {
         // "https://liquipedia.net/starcraft/2_Gate_(vs._Protoss)"
         defaultPvP();
-        zealotLimit =                                       s <= 80 ? INT_MAX : 0;
+        zealotLimit =                                       s <= 80 ? 7 : 0;
         proxy =                                             currentOpener == "Proxy" && vis(Protoss_Gateway) < 2 && Broodwar->getFrameCount() < 5000;
         scout =                                             currentOpener != "Proxy" && startCount >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
-        rush =                                              !Strategy::enemyRush() && Util::getTime() < Time(5, 0) && (Util::getTime() > Time(3, 30) || com(Protoss_Zealot) >= 3);
         transitionReady =                                   vis(Protoss_Gateway) >= 2;
-        playPassive =                                       (!Strategy::enemyFastExpand() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 && Broodwar->getFrameCount() < 15000) || (Util::getTime() < Time(3, 30) && com(Protoss_Zealot) < 3);
         desiredDetection =                                  Protoss_Forge;
-        gasLimit =                                          vis(Protoss_Cybernetics_Core) > 0 ? INT_MAX : 0;
+        gasLimit =                                          total(Protoss_Zealot) >= 3 ? INT_MAX : 0;
 
         if (Strategy::enemyRush())
             buildQueue[Protoss_Shield_Battery] =            vis(Protoss_Zealot) >= 2 && vis(Protoss_Pylon) >= 2;
 
         // Reactions
         if (!lockedTransition) {
-
-            // If we should do a robo transition instead
             if (Strategy::getEnemyBuild() == "FFE" || Strategy::getEnemyTransition() == "DT")
                 currentTransition = "Robo";
             else if (Strategy::getEnemyBuild() == "CannonRush")
@@ -160,15 +159,15 @@ namespace McRave::BuildOrder::Protoss {
                 buildQueue[Protoss_Gateway] =               2 + (com(Protoss_Cybernetics_Core) > 0);
                 buildQueue[Protoss_Nexus] =                 1;
                 buildQueue[Protoss_Assimilator] =           total(Protoss_Zealot) >= 5;
-                buildQueue[Protoss_Cybernetics_Core] =      (total(Protoss_Zealot) >= 3 && vis(Protoss_Assimilator) >= 1);
+                buildQueue[Protoss_Cybernetics_Core] =      (total(Protoss_Zealot) >= 5 && vis(Protoss_Assimilator) >= 1);
                 buildQueue[Protoss_Citadel_of_Adun] =       atPercent(Protoss_Cybernetics_Core, 1.00);
                 buildQueue[Protoss_Templar_Archives] =      atPercent(Protoss_Citadel_of_Adun, 1.00);
                 buildQueue[Protoss_Forge] =                 s >= 70;
 
                 // Army Composition
-                armyComposition[Protoss_Zealot] =           0.05;
-                armyComposition[Protoss_Dark_Templar] =     0.05;
-                armyComposition[Protoss_Dragoon] =          0.90;
+                armyComposition[Protoss_Zealot] =           0.90;
+                armyComposition[Protoss_Dark_Templar] =     0.10;
+                armyComposition[Protoss_Dragoon] =          0.00;
             }
             else if (currentTransition == "Expand") {       // "https://liquipedia.net/starcraft/2_Gate_(vs._Protoss)#10.2F12_Gateway_Expand"            
                 lockedTransition =                          total(Protoss_Nexus) >= 2;
@@ -179,7 +178,7 @@ namespace McRave::BuildOrder::Protoss {
                 // Build
                 buildQueue[Protoss_Gateway] =               2 + (com(Protoss_Cybernetics_Core) > 0);
                 buildQueue[Protoss_Assimilator] =           total(Protoss_Zealot) >= 5;
-                buildQueue[Protoss_Cybernetics_Core] =      (total(Protoss_Zealot) >= 3 && vis(Protoss_Assimilator) >= 1);
+                buildQueue[Protoss_Cybernetics_Core] =      (total(Protoss_Zealot) >= 5 && vis(Protoss_Assimilator) >= 1);
                 buildQueue[Protoss_Forge] =                 s >= 70;
                 buildQueue[Protoss_Nexus] =                 1 + (vis(Protoss_Zealot) >= 3);
 
@@ -189,14 +188,14 @@ namespace McRave::BuildOrder::Protoss {
             }
             else if (currentTransition == "Robo") {         // "https://liquipedia.net/starcraft/2_Gate_Reaver_(vs._Protoss)"            
                 lockedTransition =                          total(Protoss_Robotics_Facility) > 0;
-                inOpeningBook =                             s < 130;
+                inOpeningBook =                             s < 80;
                 firstUnit =                                 enemyMaybeDT() ? Protoss_Observer : Protoss_Reaver;
 
                 // Build
                 buildQueue[Protoss_Gateway] =               2 + (com(Protoss_Cybernetics_Core) > 0);
-                buildQueue[Protoss_Nexus] =                 1 + (s >= 130);
+                buildQueue[Protoss_Nexus] =                 1;
                 buildQueue[Protoss_Assimilator] =           total(Protoss_Zealot) >= 5;
-                buildQueue[Protoss_Cybernetics_Core] =      (total(Protoss_Zealot) >= 3 && vis(Protoss_Assimilator) >= 1);
+                buildQueue[Protoss_Cybernetics_Core] =      (total(Protoss_Zealot) >= 5 && vis(Protoss_Assimilator) >= 1);
                 buildQueue[Protoss_Robotics_Facility] =     com(Protoss_Dragoon) >= 2;
 
                 // Army Composition
@@ -213,26 +212,25 @@ namespace McRave::BuildOrder::Protoss {
     {
         // "https://liquipedia.net/starcraft/1_Gate_Core_(vs._Protoss)"
         defaultPvP();
-        rush = !enemyMoreZealots() && com(Protoss_Dragoon) == 0;
 
         // Reactions
         if (!lockedTransition) {
 
             // If enemy is rushing us
-            if (Strategy::enemyRush() && vis(Protoss_Cybernetics_Core) == 0) {
+            if (Strategy::getEnemyBuild() == "2Gate" && vis(Protoss_Cybernetics_Core) == 0) {
                 currentBuild = "2Gate";
                 currentOpener = "Main";
                 currentTransition = "Robo";
             }
-            else if (Strategy::enemyRush() && vis(Protoss_Cybernetics_Core) > 0)
-                currentTransition = "4Gate";
+            else if (Strategy::getEnemyBuild() == "2Gate" && vis(Protoss_Cybernetics_Core) > 0)
+                currentTransition = "3Gate";
 
             // If our 4Gate would likely kill us
             else if (Strategy::enemyBlockedScout() && currentTransition == "4Gate")
                 currentTransition = "Robo";
 
             // If we didn't see enemy info by 3:30
-            else if (!Terrain::foundEnemy() && Util::getTime() > Time(3, 30))
+            else if (!Scouts::gotFullScout() && Util::getTime() > Time(3, 30))
                 currentTransition = "Robo";
 
             // If we're not doing Robo vs potential DT, switch
@@ -284,14 +282,12 @@ namespace McRave::BuildOrder::Protoss {
             if (currentTransition == "Robo") {              // "https://liquipedia.net/starcraft/2_Gate_Reaver_(vs._Protoss)"   
                 firstUnit =                                 enemyMaybeDT() ? Protoss_Observer : Protoss_Reaver;
                 lockedTransition =                          total(Protoss_Robotics_Facility) > 0;
-                inOpeningBook =                             Terrain::isNarrowNatural() ? Util::getTime() < Time(6, 30) : Util::getTime() < Time(7, 30);
-                playPassive =                               Terrain::isNarrowNatural() ? Util::getTime() < Time(8, 45) : Util::getTime() < Time(8, 00);
-                wallNat =                                   Terrain::isNarrowNatural() ? Util::getTime() > Time(4, 30) : Util::getTime() > Time(5, 00);
+                inOpeningBook =                             com(firstUnit) == 0;
+                playPassive =                               com(firstUnit) == 0;
 
                 // Build
                 buildQueue[Protoss_Gateway] =               (s >= 20) + (vis(Protoss_Robotics_Facility) > 0);
                 buildQueue[Protoss_Robotics_Facility] =     s >= 50;
-                buildQueue[Protoss_Shield_Battery] =        (s >= 80) + (s >= 100);
 
                 // Army Composition
                 armyComposition[Protoss_Zealot] =           0.05;
@@ -309,7 +305,7 @@ namespace McRave::BuildOrder::Protoss {
                 wallNat =                                   Util::getTime() > Time(4, 30);
 
                 // Build
-                buildQueue[Protoss_Gateway] =               (s >= 20) + (2 * (s >= 58));
+                buildQueue[Protoss_Gateway] =               (s >= 20) + (s >= 38) + (s >= 40);
 
                 // Army Composition
                 armyComposition[Protoss_Zealot] = 0.05;
@@ -318,14 +314,14 @@ namespace McRave::BuildOrder::Protoss {
             else if (currentTransition == "4Gate") {        // "https://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)" 
                 firstUnit =                                 None;
                 lockedTransition =                          total(Protoss_Gateway) >= 3;
-                inOpeningBook =                             s < 140 && com(Protoss_Dragoon) < Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) + 8;
+                inOpeningBook =                             s < 140;
                 playPassive =                               !firstReady();
                 desiredDetection =                          Protoss_Forge;
 
                 // Build
-                if (Strategy::enemyRush()) {
-                    zealotLimit =                           s < 60 ? INT_MAX : 0;
-                    gasLimit =                              vis(Protoss_Dragoon) > 2 ? 2 : 1;
+                if (Strategy::getEnemyBuild() == "2Gate") {
+                    zealotLimit =                           s < 60 ? 4 : 0;
+                    gasLimit =                              vis(Protoss_Dragoon) > 0 ? 3 : 1;
                     playPassive =                           com(Protoss_Dragoon) < 2;
                     buildQueue[Protoss_Shield_Battery] =    enemyMoreZealots() && vis(Protoss_Zealot) >= 2 && vis(Protoss_Pylon) >= 2;
                     buildQueue[Protoss_Gateway] =           (s >= 20) + (vis(Protoss_Pylon) >= 3) + (2 * (s >= 62));
@@ -333,7 +329,7 @@ namespace McRave::BuildOrder::Protoss {
                 }
                 else {
                     buildQueue[Protoss_Shield_Battery] =    0;
-                    buildQueue[Protoss_Gateway] =           (s >= 20) + (s >= 54) + (2 * (s >= 62));
+                    buildQueue[Protoss_Gateway] =           (s >= 20) + (s >= 40) + (2 * (s >= 62));
                     buildQueue[Protoss_Cybernetics_Core] =  s >= 34;
                 }
 

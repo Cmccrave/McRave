@@ -103,7 +103,7 @@ namespace McRave::Command
     {
         // Vulture spider mine burrowing
         if (unit.getType() == Terran_Vulture) {
-            if (Broodwar->self()->hasResearched(TechTypes::Spider_Mines) && unit.unit()->getSpiderMineCount() > 0 && unit.getPosition().getDistance(unit.getSimPosition()) <= 400 && Broodwar->getUnitsInRadius(unit.getPosition(), 128, Filter::GetType == Terran_Vulture_Spider_Mine).size() <= 3) {
+            if (Broodwar->self()->hasResearched(TechTypes::Spider_Mines) && unit.unit()->getSpiderMineCount() > 0 && unit.getPosition().getDistance(unit.getSimTarget().getPosition()) <= 400 && Broodwar->getUnitsInRadius(unit.getPosition(), 128, Filter::GetType == Terran_Vulture_Spider_Mine).size() <= 3) {
                 if (unit.unit()->getLastCommand().getTechType() != TechTypes::Spider_Mines || unit.unit()->getLastCommand().getTargetPosition().getDistance(unit.getPosition()) > 8)
                     unit.unit()->useTech(TechTypes::Spider_Mines, unit.getPosition());
                 return true;
@@ -132,15 +132,16 @@ namespace McRave::Command
 
         // Drone / Defiler burrowing
         else if ((unit.getType().isWorker() /*|| unit.getType() == Zerg_Defiler*/) && Broodwar->self()->hasResearched(TechTypes::Burrowing)) {
+            const auto threatenedEarly = unit.hasResource() && Util::getTime() < Time(3, 30) && Util::getTime() > Time(2, 10) && !unit.getTargetedBy().empty();
+            const auto threatenedAll = unit.hasResource() && Util::getTime() > Time(3, 30) && Grids::getEGroundThreat(unit.getResource().getPosition()) > 0.0f && unit.hasTarget() && unit.getTarget().isThreatening() && !unit.getTarget().isFlying() && !unit.getTarget().getType().isWorker() && unit.getTarget().hasAttackedRecently();
+            const auto threatened = (threatenedEarly || threatenedAll);
             if (!unit.isBurrowed() && unit.unit()->canBurrow()) {
-                auto threatened = (unit.getType().isWorker() || unit.getType() == Zerg_Defiler) && (unit.unit()->isUnderAttack() || !unit.getTargetedBy().empty()) && !Actions::overlapsDetection(unit.unit(), unit.getPosition(), PlayerState::Enemy);
                 if (threatened) {
                     unit.unit()->burrow();
                     return true;
                 }
             }
             else if (unit.isBurrowed()) {
-                auto threatened = (unit.getType().isWorker() || unit.getType() == Zerg_Defiler) && (unit.unit()->isUnderAttack() || !unit.getTargetedBy().empty() || Grids::getEGroundThreat(unit.getPosition()) > 0.0f) && !Actions::overlapsDetection(unit.unit(), unit.getPosition(), PlayerState::Enemy);
                 if (!threatened) {
                     unit.unit()->unburrow();
                     return true;
@@ -220,7 +221,7 @@ namespace McRave::Command
         }
 
         // Arbiters - Stasis Field       
-        else if (unit.getType() == Protoss_Arbiter && unit.canStartCast(TechTypes::Stasis_Field, unit.getTarget().getPosition()) && !Actions::overlapsActions(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self, 96)) {
+        else if (unit.getType() == Protoss_Arbiter && unit.hasTarget() && unit.canStartCast(TechTypes::Stasis_Field, unit.getTarget().getPosition()) && !Actions::overlapsActions(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Self, 96)) {
             unit.unit()->useTech(TechTypes::Stasis_Field, unit.getTarget().unit());
             Actions::addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Stasis_Field, PlayerState::Self);
             return true;
@@ -243,11 +244,11 @@ namespace McRave::Command
         else if (unit.getType() == Protoss_High_Templar) {
 
             // If trying to cast Psi Storm, add action
-            if (unit.unit()->getOrder() == Orders::CastPsionicStorm && unit.hasTarget())
+            if (unit.hasTarget() && unit.unit()->getOrder() == Orders::CastPsionicStorm)
                 Actions::addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Neutral);
 
             // If close to target and can cast a storm
-            if (unit.canStartCast(TechTypes::Psionic_Storm, unit.getTarget().getPosition()) && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= 320) {
+            if (unit.hasTarget() && unit.canStartCast(TechTypes::Psionic_Storm, unit.getTarget().getPosition()) && unit.getPosition().getDistance(unit.getTarget().getPosition()) <= 320) {
                 unit.unit()->useTech(TechTypes::Psionic_Storm, unit.getTarget().getPosition());
                 Actions::addAction(unit.unit(), unit.getTarget().getPosition(), TechTypes::Psionic_Storm, PlayerState::Neutral);
                 return true;
@@ -324,7 +325,7 @@ namespace McRave::Command
             const auto onlyLurkers = BuildOrder::getCompositionPercentage(Zerg_Lurker) >= 1.00 || (Players::ZvT() && BuildOrder::getCompositionPercentage(Zerg_Lurker) == 0.0 && BuildOrder::getCompositionPercentage(Zerg_Hydralisk) == 0.0);
 
             if ((wantLurkers || onlyLurkers)) {
-                if (canAffordMorph(Zerg_Lurker) && unit.getPosition().getDistance(unit.getSimPosition()) > unit.getSimRadius()) {
+                if (canAffordMorph(Zerg_Lurker) && unit.getPosition().getDistance(unit.getSimTarget().getPosition()) > unit.getSimRadius()) {
                     if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Morph)
                         unit.unit()->morph(Zerg_Lurker);
                     return true;
@@ -341,14 +342,14 @@ namespace McRave::Command
             const auto onlyGuard = BuildOrder::getCompositionPercentage(Zerg_Guardian) >= 1.00;
 
             if ((onlyGuard || wantGuard)) {
-                if (canAffordMorph(Zerg_Guardian) && unit.getPosition().getDistance(unit.getSimPosition()) >= unit.getSimRadius() && unit.getPosition().getDistance(unit.getSimPosition()) < unit.getSimRadius() + 160.0) {
+                if (canAffordMorph(Zerg_Guardian) && unit.getPosition().getDistance(unit.getSimTarget().getPosition()) >= unit.getSimRadius() && unit.getPosition().getDistance(unit.getSimTarget().getPosition()) < unit.getSimRadius() + 160.0) {
                     if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Morph)
                         unit.unit()->morph(Zerg_Guardian);
                     return true;
                 }
             }
             else if ((onlyDevo || wantDevo)) {
-                if (canAffordMorph(Zerg_Devourer) && unit.getPosition().getDistance(unit.getSimPosition()) >= unit.getSimRadius()) {
+                if (canAffordMorph(Zerg_Devourer) && unit.getPosition().getDistance(unit.getSimTarget().getPosition()) >= unit.getSimRadius()) {
                     if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Morph)
                         unit.unit()->morph(Zerg_Devourer);
                     return true;
