@@ -17,7 +17,7 @@ namespace McRave::Actions {
                 for (auto &action : neutralActions) {
                     auto topLeft = action.pos - Position(48, 48);
                     auto botRight = action.pos + Position(48, 48);
-                    Broodwar->drawBoxMap(topLeft, botRight, Colors::Blue);
+                    Visuals::drawBox(topLeft, botRight, Colors::Blue);
                 }
             }
         }
@@ -30,14 +30,27 @@ namespace McRave::Actions {
             allyActions.clear();
             enemyActions.clear();
 
+            const auto whatTech = [&](Order order) {
+                switch (order) {
+                case Orders::CastEMPShockwave:
+                    return TechTypes::EMP_Shockwave;
+                case Orders::CastDarkSwarm:
+                    return TechTypes::Dark_Swarm;
+                case Orders::CastDisruptionWeb:
+                    return TechTypes::Disruption_Web;
+                case Orders::CastPsionicStorm:
+                    return TechTypes::Psionic_Storm;
+                }
+                return TechTypes::None;
+            };
+
             // Check bullet based abilities, store as neutral PlayerState as it affects both sides
             for (auto &b : Broodwar->getBullets()) {
                 if (b && b->exists()) {
-                    if (b->getType() == BulletTypes::Psionic_Storm)
-                        addAction(nullptr, b->getPosition(), TechTypes::Psionic_Storm, PlayerState::Neutral);
-
                     if (b->getType() == BulletTypes::EMP_Missile)
                         addAction(nullptr, b->getTargetPosition(), TechTypes::EMP_Shockwave, PlayerState::Neutral);
+                    if (b->getType() == BulletTypes::Psionic_Storm)
+                        addAction(nullptr, b->getPosition(), TechTypes::Psionic_Storm, PlayerState::Neutral);
                 }
             }
 
@@ -55,14 +68,11 @@ namespace McRave::Actions {
                 if (unit.getType().isDetector())
                     addAction(unit.unit(), unit.getPosition(), unit.getType(), PlayerState::Enemy);
 
-                if (unit.unit()->exists()) {
-                    Order enemyOrder = unit.unit()->getOrder();
-                    Position enemyTarget = unit.unit()->getOrderTargetPosition();
-
-                    if (enemyOrder == Orders::CastEMPShockwave)
-                        addAction(unit.unit(), enemyTarget, TechTypes::EMP_Shockwave, PlayerState::Neutral);
-                    if (enemyOrder == Orders::CastPsionicStorm)
-                        addAction(unit.unit(), enemyTarget, TechTypes::Psionic_Storm, PlayerState::Neutral);
+                // Add action for previous orders that may or may not physically exist yet
+                for (auto &[frame, order] : unit.getOrderHistory()) {
+                    auto techUsed = whatTech(order.first);
+                    if (frame >= Broodwar->getFrameCount() - 7 && techUsed != TechTypes::None)
+                        Actions::addAction(unit.unit(), order.second, techUsed, PlayerState::Neutral);
                 }
 
                 if (unit.getType() == Terran_Vulture_Spider_Mine)
@@ -75,6 +85,13 @@ namespace McRave::Actions {
 
                 if (unit.getType().isDetector() && unit.unit()->isCompleted())
                     addAction(unit.unit(), unit.getPosition(), unit.getType(), PlayerState::Self);
+
+                // Add action for previous orders that may or may not physically exist yet
+                for (auto &[frame, order] : unit.getOrderHistory()) {
+                    auto techUsed = whatTech(order.first);
+                    if (frame >= Broodwar->getFrameCount() - 7 && techUsed != TechTypes::None)
+                        Actions::addAction(unit.unit(), order.second, techUsed, PlayerState::Neutral);
+                }
             }
 
             // Check neutral actions
@@ -133,7 +150,7 @@ namespace McRave::Actions {
                 if (command.tech == TechTypes::Psionic_Storm
                     || command.tech == TechTypes::Disruption_Web) {
 
-                    if (circleOverlap(command, checkPositions, 48))
+                    if (boxOverlap(command, checkPositions, 48))
                         return true;
                 }
 
@@ -172,7 +189,7 @@ namespace McRave::Actions {
                     return true;
             }
             else if (action.type.isDetector()) {
-                double range = action.type.isBuilding() ? 224.0  : action.type.sightRange();
+                double range = action.type.isBuilding() ? 224.0 : action.type.sightRange();
                 if (action.pos.getDistance(here) < range)
                     return true;
             }
@@ -234,7 +251,7 @@ namespace McRave::Actions {
 
             if (action.tech == TechTypes::Stasis_Field || action.tech == TechTypes::EMP_Shockwave || action.tech == TechTypes::Dark_Swarm) {
                 if (boxOverlap(action, checkPositions, int(Util::getCastRadius(action.tech))))
-                    return true;                
+                    return true;
             }
             else if (circleOverlap(action, checkPositions, int(Util::getCastRadius(action.tech))))
                 return true;

@@ -21,7 +21,7 @@ namespace McRave::BuildOrder::Protoss {
         bool enemyMaybeDT() {
             return (Players::getVisibleCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) > 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) <= 2)
                 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) < 3
-                || Strategy::needDetection()
+                || Strategy::enemyInvis()
                 || Strategy::getEnemyTransition() == "DT";
         }
 
@@ -41,8 +41,8 @@ namespace McRave::BuildOrder::Protoss {
             transitionReady =                               false;
 
             gasLimit =                                      INT_MAX;
-            zealotLimit =                                   1;
-            dragoonLimit =                                  INT_MAX;
+            unitLimits[Protoss_Zealot] =                    1;
+            unitLimits[Protoss_Dragoon] =                   INT_MAX;
 
             desiredDetection =                              Protoss_Observer;
             firstUpgrade =                                  vis(Protoss_Dragoon) > 0 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
@@ -71,8 +71,8 @@ namespace McRave::BuildOrder::Protoss {
         wantThird =                                         false;
         rush =                                              false;
 
-        zealotLimit =                                       s > 80 ? 0 : INT_MAX;
-        dragoonLimit =                                      s > 60 ? INT_MAX : 0;
+        unitLimits[Protoss_Zealot] =                        s > 80 ? 0 : INT_MAX;
+        unitLimits[Protoss_Dragoon] =                       s > 60 ? INT_MAX : 0;
 
         desiredDetection =                                  Protoss_Forge;
         cutWorkers =                                        Util::getTime() < Time(3, 30) && enemyMoreZealots() && Production::hasIdleProduction();
@@ -99,7 +99,7 @@ namespace McRave::BuildOrder::Protoss {
     {
         // "https://liquipedia.net/starcraft/2_Gate_(vs._Protoss)"
         defaultPvP();
-        zealotLimit =                                       s <= 80 ? 7 : 0;
+        unitLimits[Protoss_Zealot] =                        s <= 80 ? 7 : 0;
         proxy =                                             currentOpener == "Proxy" && vis(Protoss_Gateway) < 2 && Broodwar->getFrameCount() < 5000;
         scout =                                             currentOpener != "Proxy" && startCount >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
         transitionReady =                                   vis(Protoss_Gateway) >= 2;
@@ -226,7 +226,7 @@ namespace McRave::BuildOrder::Protoss {
                 currentTransition = "3Gate";
 
             // If our 4Gate would likely kill us
-            else if (Strategy::enemyBlockedScout() && currentTransition == "4Gate")
+            else if (Scouts::enemyDeniedScout() && currentTransition == "4Gate")
                 currentTransition = "Robo";
 
             // If we didn't see enemy info by 3:30
@@ -244,7 +244,7 @@ namespace McRave::BuildOrder::Protoss {
 
         // Openers
         if (currentOpener == "0Zealot") {                   // NZCore
-            zealotLimit =                                   0;
+            unitLimits[Protoss_Zealot] =                    0;
             scout =                                         vis(Protoss_Pylon) > 0;
             transitionReady =                               vis(Protoss_Cybernetics_Core) > 0;
 
@@ -255,7 +255,7 @@ namespace McRave::BuildOrder::Protoss {
             buildQueue[Protoss_Cybernetics_Core] =          s >= 26;
         }
         else if (currentOpener == "1Zealot") {              // ZCore
-            zealotLimit =                                   s >= 60 ? 0 : 1;
+            unitLimits[Protoss_Zealot] =                    s >= 60 ? 0 : 1;
             scout =                                         Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
             transitionReady =                               vis(Protoss_Cybernetics_Core) > 0;
 
@@ -266,7 +266,7 @@ namespace McRave::BuildOrder::Protoss {
             buildQueue[Protoss_Cybernetics_Core] =          s >= 34;
         }
         else if (currentOpener == "2Zealot") {              // ZCoreZ
-            zealotLimit =                                   s >= 60 ? 0 : 1 + (vis(Protoss_Cybernetics_Core) > 0);
+            unitLimits[Protoss_Zealot] =                    s >= 60 ? 0 : 1 + (vis(Protoss_Cybernetics_Core) > 0);
             scout =                                         Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
             transitionReady =                               vis(Protoss_Cybernetics_Core) > 0;
 
@@ -320,7 +320,7 @@ namespace McRave::BuildOrder::Protoss {
 
                 // Build
                 if (Strategy::getEnemyBuild() == "2Gate") {
-                    zealotLimit =                           s < 60 ? 4 : 0;
+                    unitLimits[Protoss_Zealot] =            s < 60 ? 4 : 0;
                     gasLimit =                              vis(Protoss_Dragoon) > 0 ? 3 : 1;
                     playPassive =                           com(Protoss_Dragoon) < 2;
                     buildQueue[Protoss_Shield_Battery] =    enemyMoreZealots() && vis(Protoss_Zealot) >= 2 && vis(Protoss_Pylon) >= 2;
@@ -346,7 +346,7 @@ namespace McRave::BuildOrder::Protoss {
                 desiredDetection =                          Protoss_Forge;
                 firstUpgrade =                              UpgradeTypes::None;
                 hideTech =                                  com(Protoss_Dark_Templar) <= 0;
-                zealotLimit =                               vis(Protoss_Photon_Cannon) >= 2 && s < 60 ? INT_MAX : zealotLimit;
+                unitLimits[Protoss_Zealot] =                vis(Protoss_Photon_Cannon) >= 2 && s < 60 ? INT_MAX : unitLimits[Protoss_Zealot];
 
                 // Build
                 buildQueue[Protoss_Gateway] =               (s >= 20) + (vis(Protoss_Templar_Archives) > 0);

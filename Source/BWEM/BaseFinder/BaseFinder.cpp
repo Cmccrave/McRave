@@ -110,13 +110,14 @@ namespace BaseFinder
         std::vector<Unit> res; res.reserve(200);
 
         for (Unit u : Broodwar->getStaticMinerals())
-        {
+        {            
             if (u->getInitialResources() < MINERAL_MIN) continue;
             TilePosition p = u->getInitialTilePosition();
             MarkResBlock(p, 2, 1);
             MarkBorderValue(p, 2, 1, 1);
             res.push_back(u);
         }
+
         for (Unit u : Broodwar->getStaticGeysers())
         {
             if (!u->getInitialResources()) continue;
@@ -162,16 +163,14 @@ namespace BaseFinder
         }
     }
 
-    void DrawStuff(TilePosition mintile, TilePosition maxtile)    // could add min/max tiles in here?
+    void DrawStuff()    // could add min/max tiles in here?
     {
         for (Base &base : bases) {
-            if (base.tpos.x < mintile.x || base.tpos.x > maxtile.x) continue;
-            if (base.tpos.y < mintile.y || base.tpos.y > maxtile.y) continue;
             Position bpos(base.tpos.x * 32 + 64, base.tpos.y * 32 + 48);
-            for (Unit u : base.minerals) Broodwar->drawLineMap(u->getInitialPosition(), bpos, Colors::Blue);
-            for (Unit u : base.geysers) Broodwar->drawLineMap(u->getInitialPosition(), bpos, Colors::Green);
+            for (Unit u : base.minerals)
+                Broodwar->drawLineMap(u->getInitialPosition(), bpos, Colors::Blue);
+            for (Unit u : base.geysers)
+                Broodwar->drawLineMap(u->getInitialPosition(), bpos, Colors::Green);
         }
     }
-
-
 }

@@ -19,7 +19,7 @@ namespace McRave
         PlayerState pState;
 
         bool alive;
-        int supply;
+        std::map<BWAPI::Race, int> raceSupply;
     public:
         PlayerInfo() {
             thisPlayer = nullptr;
@@ -28,8 +28,6 @@ namespace McRave
             alive = true;
             pState = PlayerState::None;
             build = "Unknown";
-
-            supply = 0;
         }
 
         bool operator== (PlayerInfo const& p) const {
@@ -57,7 +55,7 @@ namespace McRave
         bool isSelf() { return pState == PlayerState::Self; }
         bool isNeutral() { return pState == PlayerState::Neutral; }
 
-        int getSupply() { return supply; }
+        int getSupply(BWAPI::Race race) { return raceSupply[race]; }
 
         void setCurrentRace(BWAPI::Race newRace) { currentRace = newRace; }
         void setStartRace(BWAPI::Race newRace) { startRace = newRace; }

@@ -17,7 +17,14 @@ namespace McRave::BuildOrder::Protoss
                 PvP1GateCore();
         }
 
-        if (Players::vT()) {
+        if (Broodwar->getGameType() == GameTypes::Team_Free_For_All || Broodwar->getGameType() == GameTypes::Team_Melee) {
+            buildQueue[Protoss_Nexus] = Players::getSupply(PlayerState::Self, Races::None) >= 30;
+            currentBuild = "2Gate";
+            currentOpener = "Main";
+            currentTransition = "4Gate";
+            PvZ2Gate();
+        }
+        else if (Players::vT()) {
             if (currentBuild == "1GateCore")
                 PvT1GateCore();
             else if (currentBuild == "NexusGate")
@@ -89,7 +96,7 @@ namespace McRave::BuildOrder::Protoss
 
         // Change desired detection if we get Cannons
         // TODO: Clean up all below this section
-        if (Strategy::needDetection() && desiredDetection == Protoss_Forge) {
+        if (Strategy::enemyInvis() && desiredDetection == Protoss_Forge) {
             buildQueue[Protoss_Forge] = 1;
             buildQueue[Protoss_Photon_Cannon] = com(Protoss_Forge) * 2;
 
@@ -100,11 +107,11 @@ namespace McRave::BuildOrder::Protoss
         }
 
         // If production is saturated and none are idle or we need detection, choose a tech
-        if ((!inOpeningBook && !getTech && !techSat && techUnit == None) || (Strategy::needDetection() && !isTechUnit(desiredDetection)))
+        if ((!inOpeningBook && !getTech && !techSat && techUnit == None) || (Strategy::enemyInvis() && !isTechUnit(desiredDetection)))
             getTech = true;
 
         // If we need detection
-        if (getTech && Strategy::needDetection() && !isTechUnit(desiredDetection))
+        if (getTech && Strategy::enemyInvis() && !isTechUnit(desiredDetection))
             techUnit = desiredDetection;
 
         // Various hardcoded tech choices
@@ -127,13 +134,13 @@ namespace McRave::BuildOrder::Protoss
             if (cannonCount < 6) {
                 buildQueue[Protoss_Nexus] = 2;
                 buildQueue[Protoss_Assimilator] = (vis(Protoss_Nexus) >= 2) + (s >= 120);
-                zealotLimit = 0;
+                unitLimits[Protoss_Zealot] = 0;
                 gasLimit = vis(Protoss_Nexus) != buildCount(Protoss_Nexus) ? 0 : INT_MAX;
             }
             else {
                 buildQueue[Protoss_Nexus] = 3;
                 buildQueue[Protoss_Assimilator] = (vis(Protoss_Nexus) >= 2) + (s >= 120);
-                zealotLimit = 0;
+                unitLimits[Protoss_Zealot] = 0;
                 gasLimit = vis(Protoss_Nexus) != buildCount(Protoss_Nexus) ? 0 : INT_MAX;
             }
         }
@@ -148,15 +155,8 @@ namespace McRave::BuildOrder::Protoss
 
         // Pylon logic after first two
         if (!inBookSupply) {
-            int count = min(22, Players::getSupply(PlayerState::Self) / 14) - (com(Protoss_Nexus) - 1);
+            int count = min(22, s / 14) - (com(Protoss_Nexus) - 1);
             buildQueue[Protoss_Pylon] = count;
-
-            if (com(Protoss_Pylon) >= (Players::vT() ? 5 : 3) || Strategy::getEnemyTransition() == "2HatchMuta" || Strategy::getEnemyTransition() == "3HatchMuta") {
-                for (auto &[unit, station] : Stations::getMyStations()) {
-                    if (Stations::needPower(*station))
-                        buildQueue[Protoss_Pylon] = vis(Protoss_Pylon) + 1;
-                }
-            }
         }
 
         // Adding Wall Defenses
@@ -168,9 +168,7 @@ namespace McRave::BuildOrder::Protoss
         // Adding Station Defenses
         if (int(Stations::getMyStations().size()) >= 2) {
             for (auto &station : Stations::getMyStations()) {
-                auto &s = *station.second;
-
-                if (vis(Protoss_Forge) > 0 && (Stations::needGroundDefenses(s) > 0 || Stations::needAirDefenses(s) > 0))
+                if (vis(Protoss_Forge) > 0 && (Stations::needGroundDefenses(station) > 0 || Stations::needAirDefenses(station) > 0))
                     buildQueue[Protoss_Photon_Cannon] = vis(Protoss_Photon_Cannon) + 1;
             }
         }
@@ -221,15 +219,13 @@ namespace McRave::BuildOrder::Protoss
                 buildQueue[Protoss_Photon_Cannon] = vis(Protoss_Photon_Cannon);
 
                 for (auto &station : Stations::getMyStations()) {
-                    auto &s = *station.second;
-
-                    if (Stations::needGroundDefenses(s) > 0 && !Stations::needPower(s))
+                    if (Stations::needGroundDefenses(station) > 0 && !Stations::needPower(station))
                         buildQueue[Protoss_Photon_Cannon] = vis(Protoss_Photon_Cannon) + 1;
                 }
             }
 
             // Corsair/Scout upgrades
-            if (Players::getSupply(PlayerState::Self) >= 300 && (isTechUnit(Protoss_Scout) || isTechUnit(Protoss_Corsair)))
+            if (s >= 300 && (isTechUnit(Protoss_Scout) || isTechUnit(Protoss_Corsair)))
                 buildQueue[Protoss_Fleet_Beacon] = 1;
         }
 
@@ -297,10 +293,10 @@ namespace McRave::BuildOrder::Protoss
     {
         // Leg upgrade check
         auto zealotLegs = Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) > 0
-            || (com(Protoss_Citadel_of_Adun) > 0 && Players::getSupply(PlayerState::Self) >= 200);
+            || (com(Protoss_Citadel_of_Adun) > 0 && s >= 200);
 
         // Check if we should always make Zealots
-        if (zealotLimit > vis(Protoss_Zealot)
+        if (unitLimits[Protoss_Zealot] > vis(Protoss_Zealot)
             || zealotLegs)
             unlockedType.insert(Protoss_Zealot);
         else
@@ -309,7 +305,7 @@ namespace McRave::BuildOrder::Protoss
         // Check if we should always make Dragoons
         if ((Players::vZ() && Broodwar->getFrameCount() > 20000)
             || Players::getVisibleCount(PlayerState::Enemy, Zerg_Lurker) > 0
-            || dragoonLimit > vis(Protoss_Dragoon))
+            || unitLimits[Protoss_Dragoon] > vis(Protoss_Dragoon))
             unlockedType.insert(Protoss_Dragoon);
         else
             unlockedType.erase(Protoss_Dragoon);
@@ -327,7 +323,7 @@ namespace McRave::BuildOrder::Protoss
         //}
 
         // Add Shuttles if we have Reavers/HT
-        if (com(Protoss_Robotics_Facility) > 0 && (isTechUnit(Protoss_Reaver) || isTechUnit(Protoss_High_Templar) || (Players::vP() && !Strategy::needDetection() && isTechUnit(Protoss_Observer)))) {
+        if (com(Protoss_Robotics_Facility) > 0 && (isTechUnit(Protoss_Reaver) || isTechUnit(Protoss_High_Templar) || (Players::vP() && !Strategy::enemyInvis() && isTechUnit(Protoss_Observer)))) {
             techList.insert(Protoss_Shuttle);
             unlockedType.insert(Protoss_Shuttle);
         }

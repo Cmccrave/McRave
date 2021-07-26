@@ -48,6 +48,7 @@
     <ClCompile Include="..\Source\McRave\CombatManager.cpp" />
     <ClCompile Include="..\Source\McRave\CommandManager.cpp" />
     <ClCompile Include="..\Source\McRave\Dll.cpp" />
+    <ClCompile Include="..\Source\McRave\ResourceInfo.cpp" />
     <ClCompile Include="..\Source\McRave\WallManager.cpp" />
     <ClCompile Include="..\Source\McRave\ZvP.cpp" />
     <ClCompile Include="..\Source\McRave\ZvT.cpp" />
@@ -215,6 +216,8 @@
     <LibraryPath>..\..\..\lib;$(LibraryPath)</LibraryPath>
     <OutDir>..\..\..\..\StarCraft McRave\bwapi-data\AI\</OutDir>
     <TargetName>$(ProjectName)d</TargetName>
+    <CodeAnalysisRuleSet>NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -231,6 +234,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <WholeProgramOptimization>false</WholeProgramOptimization>
+      <EnablePREfast>true</EnablePREfast>
     </ClCompile>
     <PreLinkEvent />
     <Link>
@@ -270,7 +274,8 @@
       <GenerateMapFile>true</GenerateMapFile>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y "$(TargetDir)$(ProjectName).dll" "C:\Users\Christian\AppData\Roaming\scbw\bots\McRaveZ\AI\McRave.dll"</Command>
+      <Command>copy /Y "$(TargetDir)$(ProjectName).dll" "C:\Users\Christian\AppData\Roaming\scbw\bots\McRave\AI\McRave.dll"
+copy /Y "$(TargetDir)$(ProjectName).dll" "C:\Users\Christian\AppData\Roaming\scbw\bots\McRaveZ\AI\McRave.dll"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='McRaveZ|Win32'">

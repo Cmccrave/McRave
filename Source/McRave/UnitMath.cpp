@@ -35,7 +35,7 @@ namespace McRave::Math {
         const auto dps = groundDPS(unit);
         const auto surv = log(survivability(unit));
         const auto eff = grdEffectiveness(unit);
-        const auto range = log(unit.getGroundRange());
+        const auto range = log(unit.getGroundRange() + 64.0);
         return dps * range * surv * eff;
     }
 
@@ -70,7 +70,7 @@ namespace McRave::Math {
         const auto dps = airDPS(unit);
         const auto surv = log(survivability(unit));
         const auto eff = airEffectiveness(unit);
-        const auto range = log(unit.getAirRange());
+        const auto range = log(unit.getAirRange() + 64.0);
         return dps * range * surv * eff;
     }
 
@@ -84,11 +84,14 @@ namespace McRave::Math {
     double priority(UnitInfo& unit)
     {
         // According to sheet linked above, these are the maximum values for normalizing
-        const auto maxGrdDps = 2.333;
-        const auto maxAirDps = 2.000;
+        const auto maxGrdDps = 2.083;
+        const auto maxAirDps = 1.875;
         const auto maxCost = 69.589;
         const auto maxSurv = 128.311;
         auto bonus = 1.0;
+
+        if (unit.isMarkedForDeath())
+            return 5.0;
 
         // If target is an egg, larva, scarab or spell
         if (unit.getType() == UnitTypes::Zerg_Egg || unit.getType() == UnitTypes::Zerg_Larva || unit.getType() == UnitTypes::Protoss_Scarab || unit.getType().isSpell())
@@ -141,7 +144,7 @@ namespace McRave::Math {
         const auto splash = splashModifier(unit);
         const auto damage = unit.getGroundDamage();
         const auto cooldown = groundCooldown(unit);
-        return damage > 1.0 ? splash * damage / cooldown : 0.0;
+        return (damage > 1.0 && cooldown > 0.0) ? splash * damage / cooldown : 0.0;
     }
 
     double airDPS(UnitInfo& unit)
@@ -149,7 +152,7 @@ namespace McRave::Math {
         const auto splash = splashModifier(unit);
         const auto damage = unit.getAirDamage();
         const auto cooldown = airCooldown(unit);
-        return  damage > 1.0 ? splash * damage / cooldown : 0.0;
+        return (damage > 1.0 && cooldown > 0.0) ? splash * damage / cooldown : 0.0;
     }
 
     double groundCooldown(UnitInfo& unit)
@@ -205,10 +208,10 @@ namespace McRave::Math {
 
     double grdEffectiveness(UnitInfo& unit)
     {
-        auto sizes = unit.getPlayer() == Broodwar->self() ? Units::getEnemyGrdSizes() : Units::getAllyGrdSizes();
-        auto large = sizes[UnitSizeTypes::Large];
-        auto medium = sizes[UnitSizeTypes::Medium];
-        auto small = sizes[UnitSizeTypes::Small];
+        auto &sizes = unit.getPlayer() == Broodwar->self() ? Units::getEnemyGrdSizes() : Units::getAllyGrdSizes();
+        auto &large = sizes[UnitSizeTypes::Large];
+        auto &medium = sizes[UnitSizeTypes::Medium];
+        auto &small = sizes[UnitSizeTypes::Small];
         auto total = double(large + medium + small);
 
         if (total > 0.0) {
@@ -222,10 +225,10 @@ namespace McRave::Math {
 
     double airEffectiveness(UnitInfo& unit)
     {
-        auto sizes = unit.getPlayer() == Broodwar->self() ? Units::getEnemyAirSizes() : Units::getAllyAirSizes();
-        auto large = sizes[UnitSizeTypes::Large];
-        auto medium = sizes[UnitSizeTypes::Medium];
-        auto small = sizes[UnitSizeTypes::Small];
+        auto &sizes = unit.getPlayer() == Broodwar->self() ? Units::getEnemyAirSizes() : Units::getAllyAirSizes();
+        auto &large = sizes[UnitSizeTypes::Large];
+        auto &medium = sizes[UnitSizeTypes::Medium];
+        auto &small = sizes[UnitSizeTypes::Small];
         auto total = double(large + medium + small);
 
         if (total > 0.0) {

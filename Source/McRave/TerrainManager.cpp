@@ -23,6 +23,7 @@ namespace McRave::Terrain {
         TilePosition enemyExpand = TilePositions::Invalid;
         const ChokePoint * defendChoke = nullptr;
         const Area * defendArea = nullptr;
+        map<BWEB::Station *, Position> safeSpots;
 
         bool shitMap = false;
         bool islandMap = false;
@@ -31,7 +32,7 @@ namespace McRave::Terrain {
         bool narrowNatural = false;
         bool defendNatural = false;
         bool abandonNatural = false;
-        int timeHarassingHere = 500;
+        int timeHarassingHere = 1500;
 
         void findEnemy()
         {
@@ -41,35 +42,27 @@ namespace McRave::Terrain {
                     enemyStartingTilePosition = TilePositions::Invalid;
                     enemyNatural = nullptr;
                     enemyMain = nullptr;
+                    Stations::getEnemyStations().clear();
                 }
                 else
-                    return;                
+                    return;
             }
 
             // Find closest enemy building
             for (auto &u : Units::getUnits(PlayerState::Enemy)) {
                 UnitInfo &unit = *u;
-                auto distBest = 640.0;
-                auto tileBest = TilePositions::Invalid;
                 if (!unit.getType().isBuilding()
                     || !unit.getTilePosition().isValid()
-                    || unit.isFlying())
+                    || unit.isFlying()
+                    || unit.isProxy())
                     continue;
 
-                // Find closest starting location
-                for (auto &start : Broodwar->getStartLocations()) {
-                    auto center = Position(start) + Position(64, 48);
-                    auto dist = center.getDistance(unit.getPosition());
-                    if (dist < distBest) {
-                        distBest = dist;
-                        tileBest = start;
-                    }
-                }
+                const auto closestMain = BWEB::Stations::getClosestMainStation(unit.getTilePosition());
 
                 // Set start if valid
-                if (tileBest.isValid() && tileBest != BWEB::Map::getMainTile()) {
-                    enemyStartingPosition = Position(tileBest) + Position(64, 48);
-                    enemyStartingTilePosition = tileBest;
+                if (closestMain && closestMain != myMain) {
+                    enemyStartingTilePosition = closestMain->getBase()->Location();
+                    enemyStartingPosition = Position(enemyStartingTilePosition) + Position(64, 48);
                 }
             }
 
@@ -110,7 +103,7 @@ namespace McRave::Terrain {
                         unexploredStarts.push_back(topLeft);
                 }
 
-                if (unexploredStarts.size() == 1) {
+                if (int(unexploredStarts.size()) == 1) {
                     enemyStartingPosition = Position(unexploredStarts.front()) + Position(64, 48);
                     enemyStartingTilePosition = unexploredStarts.front();
                 }
@@ -118,8 +111,13 @@ namespace McRave::Terrain {
 
             // Locate Stations
             if (enemyStartingPosition.isValid()) {
-                enemyNatural = BWEB::Stations::getClosestNaturalStation(enemyStartingTilePosition);
                 enemyMain = BWEB::Stations::getClosestMainStation(enemyStartingTilePosition);
+                enemyNatural = BWEB::Stations::getClosestNaturalStation(enemyStartingTilePosition);
+
+                if (enemyMain) {
+                    enemyTerritory.insert(enemyMain->getBase()->GetArea());
+                    Stations::getEnemyStations().push_back(enemyMain);
+                }
             }
         }
 
@@ -166,21 +164,29 @@ namespace McRave::Terrain {
         void findAttackPosition()
         {
             // Attack furthest enemy station
-            attackPosition = Positions::Invalid;
-            if (Stations::getEnemyStations().size() >= 3) {
-                auto distBest = 0.0;
-                auto posBest = Positions::Invalid;
+            attackPosition = enemyStartingPosition;
+            auto distBest = 0.0;
+            auto posBest = Positions::Invalid;
 
-                for (auto &station : Stations::getEnemyStations()) {
-                    auto &s = *station.second;
-                    const auto dist = enemyStartingPosition.getDistance(s.getBase()->Center());
-                    if (dist >= distBest) {
-                        distBest = dist;
-                        posBest = s.getResourceCentroid();
-                    }
+            for (auto &station : Stations::getEnemyStations()) {
+                const auto dist = enemyStartingPosition.getDistance(station->getBase()->Center());
+                if (dist < distBest
+                    || BWEB::Map::isUsed(station->getBase()->Location()) == UnitTypes::None)
+                    continue;
+
+                const auto stationWalkable = [&](const TilePosition &t) {
+                    return Util::rectangleIntersect(Position(station->getBase()->Location()), Position(station->getBase()->Location()) + Position(128, 96), Position(t));
+                };
+
+                BWEB::Path path(Position(BWEB::Map::getNaturalChoke()->Center()), station->getBase()->Center(), Zerg_Ultralisk, true, true);
+                path.generateJPS([&](auto &t) { return path.unitWalkable(t) || stationWalkable(t); });
+
+                if (path.isReachable()) {
+                    distBest = dist;
+                    posBest = station->getResourceCentroid();
                 }
-                attackPosition = posBest;
             }
+            attackPosition = posBest;
         }
 
         void findDefendPosition()
@@ -188,10 +194,10 @@ namespace McRave::Terrain {
             const auto baseType = Broodwar->self()->getRace().getResourceDepot();
             narrowNatural = BWEB::Map::getNaturalChoke() && BWEB::Map::getNaturalChoke()->Width() <= 64;
             defendNatural = BWEB::Map::getNaturalChoke() && !abandonNatural &&
-                    (BuildOrder::isWallNat()
+                (BuildOrder::isWallNat()
                     || BuildOrder::buildCount(baseType) > (1 + !BuildOrder::takeNatural())
                     || Stations::getMyStations().size() >= 2
-                    || (!Players::PvZ() && Players::getSupply(PlayerState::Self) > 140)
+                    || (!Players::PvZ() && Players::getSupply(PlayerState::Self, Races::Protoss) > 140)
                     || (Broodwar->self()->getRace() != Races::Zerg && reverseRamp));
 
             auto oldPos = defendPosition;
@@ -200,8 +206,27 @@ namespace McRave::Terrain {
             if (shitMap && enemyStartingPosition.isValid())
                 mainChoke = mapBWEM.GetPath(BWEB::Map::getMainPosition(), enemyStartingPosition).front();
 
+            // On Alchemist just defend the choke we determine
+            if (Terrain::isShitMap() && Walls::getNaturalWall()) {
+                defendChoke = Walls::getNaturalWall()->getChokePoint();
+                defendArea = Walls::getNaturalWall()->getArea();
+                defendPosition = Position(defendChoke->Center());
+                allyTerritory.insert(Walls::getNaturalWall()->getArea());
+                return;
+            }
+
+            // See if a defense is in range of our main choke
+            auto defenseCanStopRunyby = Players::ZvT();
+            if (defendNatural) {
+                auto closestDefense = Util::getClosestUnit(Position(BWEB::Map::getMainChoke()->Center()), PlayerState::Self, [&](auto &u) {
+                    return u.getRole() == Role::Defender && u.canAttackGround();
+                });
+                if (closestDefense && closestDefense->getPosition().getDistance(Position(BWEB::Map::getMainChoke()->Center())) < closestDefense->getGroundRange() + 64.0)
+                    defenseCanStopRunyby = true;
+            }
+
             // If we want to defend our mineral line
-            if (!Strategy::defendChoke() || islandMap) {
+            if (!Combat::defendChoke() || islandMap) {
                 defendNatural = false;
                 auto closestStation = BWEB::Stations::getClosestMainStation(BWEB::Map::getMainTile());
                 auto closestUnit = Util::getClosestUnit(closestStation->getBase()->Center(), PlayerState::Self, [&](auto &u) {
@@ -210,7 +235,7 @@ namespace McRave::Terrain {
 
                 if (closestUnit) {
                     auto distBest = DBL_MAX;
-                    for (auto &defense : closestStation->getDefenseLocations()) {
+                    for (auto &defense : closestStation->getDefenses()) {
                         auto center = Position(defense) + Position(32, 32);
                         if (Buildings::overlapsPlan(*closestUnit, center))
                             continue;
@@ -226,44 +251,22 @@ namespace McRave::Terrain {
             }
 
             // If we want to prevent a runby
-            else if (Strategy::defendChoke() && (Players::ZvT() || (Players::ZvP() && Util::getTime() < Time(8, 00)))) {
-                defendPosition = Position(mainChoke->Center());
+            else if (Combat::defendChoke() && !flatRamp && com(Zerg_Sunken_Colony) > 0 && !Strategy::enemyPressure() && (defenseCanStopRunyby || Players::ZvT())) {
+                defendPosition = Position(mainChoke->Center()) + Position(4, 4);
                 defendNatural = false;
             }
 
             // Natural defending position
             else if (defendNatural) {
+                defendPosition = Stations::getDefendPosition(myNatural);
                 allyTerritory.insert(BWEB::Map::getNaturalArea());
-                defendPosition = Position(BWEB::Map::getNaturalChoke()->Center());
-
-                // Check to see if we have a wall
-                if (Walls::getNaturalWall() && BuildOrder::isWallNat()) {
-                    Position opening(Walls::getNaturalWall()->getOpening());
-                    defendPosition = opening.isValid() ? opening : Walls::getNaturalWall()->getCentroid();
-                }
-
-                // If there are multiple chokepoints
-                else if (BWEB::Map::getNaturalArea()->ChokePoints().size() >= 3) {
-                    defendPosition = Position(0, 0);
-                    int count = 0;
-                    for (auto &choke : BWEB::Map::getNaturalArea()->ChokePoints()) {
-                        if (BWEB::Map::getGroundDistance(Position(choke->Center()), mapBWEM.Center()) < BWEB::Map::getGroundDistance(BWEB::Map::getNaturalPosition(), mapBWEM.Center())) {
-                            defendPosition += Position(choke->Center());
-                            count++;
-                        }
-                    }
-                    if (count > 0)
-                        defendPosition /= count;
-                    else
-                        defendPosition = Position(BWEB::Map::getNaturalChoke()->Center());
-                }
             }
 
             // Main defending position
             else {
                 allyTerritory.insert(BWEB::Map::getMainArea());
                 allyTerritory.erase(BWEB::Map::getNaturalArea()); // Erase just in case we dropped natural defense
-                defendPosition = Position(mainChoke->Center());
+                defendPosition = Position(mainChoke->Center()) + Position(4, 4);
 
                 // Check to see if we have a wall
                 if (Walls::getMainWall() && BuildOrder::isWallMain()) {
@@ -289,54 +292,157 @@ namespace McRave::Terrain {
                 defendChoke = mainChoke;
                 defendArea = BWEB::Map::getMainArea();
             }
-
-            if (defendPosition != oldPos)
-                Combat::resetDefendPositionCache();
         }
 
         void findHarassPosition()
         {
-            auto best = 0.0;
+            if (!enemyMain)
+                return;
 
-            if (Players::ZvT() && enemyMain && BWEB::Map::isUsed(enemyMain->getBase()->Location()) != UnitTypes::None) {
-                harassPosition = enemyMain->getBase()->Center();
+            const auto commanderInRange = [&](Position here) {
+                auto commander = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) {
+                    return u.getType() == Zerg_Mutalisk;
+                });
+                return commander && commander->getPosition().getDistance(here) < 160.0;
+            };
+
+            // Check if enemy lost all bases
+            auto lostAll = true;
+            for (auto &station : Stations::getEnemyStations()) {
+                if (!Stations::isBaseExplored(station) || BWEB::Map::isUsed(station->getBase()->Location()) != UnitTypes::None)
+                    lostAll = false;
+            }
+            if (lostAll) {
+                harassPosition = Positions::Invalid;
                 return;
             }
 
+            // Some hardcoded ZvT stuff
+            if (Players::ZvT() && Util::getTime() < Time(7, 00) && enemyMain) {
+                harassPosition = enemyMain->getBase()->Center();
+                return;
+            }
+            if (Players::ZvT() && Util::getTime() > Time(10, 00)) {
+                auto closestEnemy = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                    return u.isThreatening() || (u.getPosition().getDistance(BWEB::Map::getMainPosition()) < u.getPosition().getDistance(Terrain::getEnemyStartingPosition()) && !u.isHidden());
+                });
+                if (closestEnemy) {
+                    harassPosition = closestEnemy->getPosition();
+                    return;
+                }
+            }
+
+            // Switch positions
+            auto switchPosition = timeHarassingHere > 2000 || !harassPosition.isValid() || commanderInRange(harassPosition);
+            if (switchPosition) {
+                timeHarassingHere = 0;
+                harassPosition = Positions::Invalid;
+            }
+            else
+                timeHarassingHere++;
+
+            // Can harass if commander not in range and has defenses <= i
+            const auto suitableStationToHarass = [&](BWEB::Station * station, int i) {
+                return station && !commanderInRange(station->getResourceCentroid()) && Stations::getAirDefenseCount(station) == i && (!Stations::isBaseExplored(station) || BWEB::Map::isUsed(station->getBase()->Location()) != UnitTypes::None);
+            };
+
+            // Can check if we haven't visited recently, but we did explore it
+            const auto suitableStationToCheck = [&](BWEB::Station * station) {
+                return (Stations::isBaseExplored(station) && Stations::lastVisible(station) < Broodwar->getFrameCount() - 720);
+            };
+
+            // Create a list of valid positions to harass/check
+            set<Position> checkPositions;
+            for (int i = 0; i < 4; i++) {
+
+                // Check for harassing
+                if (suitableStationToHarass(Terrain::getEnemyMain(), i))
+                    checkPositions.insert(Terrain::getEnemyMain()->getResourceCentroid());
+                if (suitableStationToHarass(Terrain::getEnemyNatural(), i))
+                    checkPositions.insert(Terrain::getEnemyNatural()->getResourceCentroid());
+                for (auto &station : Stations::getEnemyStations()) {
+                    if (suitableStationToHarass(station, i))
+                        checkPositions.insert(station->getResourceCentroid());
+                }
+
+                // Check natural periodically
+                if (Util::getTime() > Time(6, 00) && suitableStationToCheck(Terrain::getEnemyNatural()))
+                    checkPositions.insert(Terrain::getEnemyNatural()->getResourceCentroid());
+
+                if (!checkPositions.empty())
+                    break;
+            }
+
+            // Set enemy army if our air size is large enough to break contains (need to expand)
+            if (vis(Zerg_Mutalisk) >= 36 && Units::getEnemyArmyCenter().isValid() && Units::getEnemyArmyCenter().getDistance(BWEB::Map::getMainPosition()) < Units::getEnemyArmyCenter().getDistance(Terrain::getEnemyStartingPosition()) && BuildOrder::shouldExpand())
+                harassPosition = (Units::getEnemyArmyCenter());
+
             // Harass all stations by last visited
-            if (Stations::getEnemyStations().size() >= 3) {
-                for (auto &[_, station] : Stations::getEnemyStations()) {
-                    auto score = double(Broodwar->getFrameCount() - Grids::lastVisibleFrame(TilePosition(station->getBase()->Center())));
+            else if (switchPosition) {
+                auto best = -1;
+                for (auto &pos : checkPositions) {
+                    auto score = Broodwar->getFrameCount() - Grids::lastVisibleFrame(TilePosition(pos));
+                    Visuals::drawCircle(pos, 10, Colors::Cyan);
                     if (score > best) {
                         score = best;
-                        harassPosition = station->getBase()->Center();
+                        harassPosition = pos;
                     }
                 }
             }
+        }
 
-            // Check enemy main and natural
-            else if (enemyMain && enemyNatural) {
-                auto mainScore = Broodwar->getFrameCount() - Grids::lastVisibleFrame(TilePosition(enemyMain->getBase()->Center()));
-                auto natScore = Broodwar->getFrameCount() - Grids::lastVisibleFrame(TilePosition(enemyNatural->getBase()->Center()));
-
-                auto switchPosition = timeHarassingHere > 500
-                    || (mainScore == 0 && harassPosition == enemyMain->getBase()->Center() && BWEB::Map::isUsed(enemyNatural->getBase()->Location()) != UnitTypes::None)
-                    || (natScore == 0 && harassPosition == enemyNatural->getBase()->Center() && BWEB::Map::isUsed(enemyMain->getBase()->Location()) != UnitTypes::None);
-
-                if (switchPosition && harassPosition != enemyMain->getBase()->Center()) {
-                    harassPosition = enemyMain->getBase()->Center();
-                    best = mainScore;
+        void findSafeSpots()
+        {
+            const auto neighborCheck = [&](auto t) {
+                for (int x = -3; x <= 3; x++) {
+                    for (int y = -3; y <= 3; y++) {
+                        TilePosition tile = t + TilePosition(x, y);
+                        if (tile.isValid() && BWEB::Map::isWalkable(tile) && (mapBWEM.GetTile(tile).MinAltitude() > 0 || BWEB::Map::isUsed(tile) != UnitTypes::None))
+                            return false;
+                    }
                 }
-                else if (switchPosition && harassPosition != enemyNatural->getBase()->Center()) {
-                    harassPosition = enemyNatural->getBase()->Center();
-                    best = natScore;
-                }
+                return true;
+            };
 
-                if (switchPosition)
-                    timeHarassingHere = 0;
-                else
-                    timeHarassingHere++;
+            const auto findBestSafeSpot = [&](BWEB::Station& station, TilePosition start, double &distBest) {
+                for (auto x = start.x - 12; x < start.x + 16; x++) {
+                    for (auto y = start.y - 12; y < start.y + 15; y++) {
+                        const TilePosition tile(x, y);
+                        const auto center = Position(tile) + Position(16, 16);
+
+                        if (!tile.isValid()
+                            || mapBWEM.GetArea(tile) == station.getBase()->GetArea()
+                            || mapBWEM.GetTile(tile).MinAltitude() > 0
+                            || Util::boxDistance(Zerg_Overlord, center, Zerg_Hatchery, station.getBase()->Center()) > 320
+                            //|| !neighborCheck(tile)
+                            )
+                            continue;
+
+                        //Visuals::tileBox(tile, Colors::Green);
+
+                        auto dist = center.getDistance(BWEB::Map::getMainPosition()) * center.getDistance(getClosestMapEdge(center)) / center.getDistance(Terrain::getEnemyStartingPosition());
+                        //Broodwar->drawTextMap(center, "%.2f", dist);
+                        if (dist < distBest) {
+                            safeSpots[&station] = center;
+                            distBest = dist;
+                        }
+                    }
+                }
+            };
+
+            // Create safe spots at each station
+            for (auto &station : BWEB::Stations::getStations()) {
+
+                auto distBest = DBL_MAX;
+                findBestSafeSpot(station, station.getBase()->Location(), distBest);
+
+                if (station.getChokepoint())
+                    findBestSafeSpot(station, TilePosition(station.getChokepoint()->Center()), distBest);
             }
+
+            // Draw
+            //for (auto &[station, pos] : safeSpots)
+                //Broodwar->drawLineMap(station->getBase()->Center(), pos, Colors::Cyan);
         }
 
         void updateAreas()
@@ -347,14 +453,6 @@ namespace McRave::Terrain {
                 // Add to territory if chokes are shared
                 if (BWEB::Map::getMainChoke() == BWEB::Map::getNaturalChoke() || islandMap)
                     allyTerritory.insert(BWEB::Map::getNaturalArea());
-
-                // Abandon natural when not needed
-                if (Players::ZvP() && Strategy::getEnemyBuild() == "2Gate" && Strategy::enemyProxy()) {
-                    if (isInAllyTerritory(BWEB::Map::getNaturalArea()) && Strategy::enemyProxy())
-                        abandonNatural = true;
-                    if (abandonNatural && !Strategy::enemyProxy())
-                        abandonNatural = false;
-                }
 
                 // Add natural if we plan to take it
                 if (BuildOrder::isOpener() && BuildOrder::takeNatural())
@@ -404,14 +502,14 @@ namespace McRave::Terrain {
         }
         return closestCorner;
     }
-    
+
     Position getOldestPosition(const Area * area)
     {
         auto oldest = DBL_MAX;
         auto oldestTile = TilePositions::Invalid;
         auto start = BWEB::Map::getMainArea()->TopLeft();
         auto end = BWEB::Map::getMainArea()->BottomRight();
-        auto closestStation = Stations::getClosestStation(PlayerState::Self, Position(area->Top()));
+        auto closestStation = Stations::getClosestStationGround(PlayerState::Self, Position(area->Top()));
 
         for (int x = start.x; x < end.x; x++) {
             for (int y = start.y; y < end.y; y++) {
@@ -419,7 +517,12 @@ namespace McRave::Terrain {
                 auto p = Position(t) + Position(16, 16);
                 if (!t.isValid()
                     || mapBWEM.GetArea(t) != area
-                    || !Broodwar->isBuildable(t))
+                    || Broodwar->isVisible(t)
+                    || (Broodwar->getFrameCount() - Grids::lastVisibleFrame(t) < 480)
+                    || !Broodwar->isBuildable(t + TilePosition(-1, 0))
+                    || !Broodwar->isBuildable(t + TilePosition(1, 0))
+                    || !Broodwar->isBuildable(t + TilePosition(0, -1))
+                    || !Broodwar->isBuildable(t + TilePosition(0, 1)))
                     continue;
 
                 auto visible = closestStation ? Grids::lastVisibleFrame(t) / p.getDistance(closestStation->getBase()->Center()) : Grids::lastVisibleFrame(t);
@@ -430,6 +533,12 @@ namespace McRave::Terrain {
             }
         }
         return Position(oldestTile) + Position(16, 16);
+    }
+
+    Position getSafeSpot(BWEB::Station * station) {
+        if (station && safeSpots.find(station) != safeSpots.end())
+            return safeSpots[station];
+        return Positions::Invalid;
     }
 
     bool isInAllyTerritory(TilePosition here)
@@ -513,6 +622,7 @@ namespace McRave::Terrain {
             }
         }
 
+        findSafeSpots();
         reverseRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) < Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
         flatRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) == Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
         myMain = BWEB::Stations::getClosestMainStation(BWEB::Map::getMainTile());
@@ -529,6 +639,8 @@ namespace McRave::Terrain {
         findHarassPosition();
 
         updateAreas();
+
+        findSafeSpots();
     }
 
     set<const Area*>& getAllyTerritory() { return allyTerritory; }

@@ -17,5 +17,5 @@ namespace BaseFinder
     const std::vector<Base> &GetBases();
 
     void Init();
-    void DrawStuff(BWAPI::TilePosition mintile, BWAPI::TilePosition maxtile);
+    void DrawStuff();
 }

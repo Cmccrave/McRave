@@ -1,6 +1,5 @@
 #pragma once
 #include "McRave.h"
-#include "PlayerInfo.h"
 
 namespace McRave::Players
 {
@@ -11,7 +10,7 @@ namespace McRave::Players
     bool hasMelee(PlayerState);
     bool hasRanged(PlayerState);
 
-    int getSupply(PlayerState);
+    int getSupply(PlayerState, BWAPI::Race);
     int getRaceCount(BWAPI::Race, PlayerState);
     Strength getStrength(PlayerState);
 

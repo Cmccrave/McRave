@@ -85,9 +85,6 @@ namespace McRave::Players
             p->getUnits().insert(info);
             info->update();
 
-            if (info->getPlayer() == Broodwar->self() && info->getType() == Protoss_Pylon)
-                Pylons::storePylon(bwUnit);
-
             // Increase total counts
             if (Broodwar->getFrameCount() == 0 || !p->isSelf() || (info->getType() != Zerg_Zergling && info->getType() != Zerg_Scourge))
                 totalTypeCounts[p->getPlayerState()][info->getType()]  += 1;
@@ -110,8 +107,6 @@ namespace McRave::Players
                         Workers::removeUnit(*u);
                     if (u->getRole() == Role::Scout)
                         Scouts::removeUnit(*u);
-                    if (u->getPlayer() == Broodwar->self() && u->getType() == Protoss_Pylon)
-                        Pylons::removePylon(bwUnit);
 
                     // Invalidates iterator, must return
                     player.getUnits().erase(u);
@@ -129,6 +124,7 @@ namespace McRave::Players
         if (bwUnit->getType().isRefinery()) {
             removeUnit(bwUnit);
             storeUnit(bwUnit);
+            BWEB::Map::addUsed(bwUnit->getTilePosition(), bwUnit->getType());   // Storing doesn't seem to re-add the used tiles right now
         }
 
         // Morphing into a Hatchery
@@ -149,8 +145,7 @@ namespace McRave::Players
 
             // When we morph a larva, store the type of what we are making, rather than the egg
             if (p->isSelf() && info->getType() == Zerg_Larva) {
-                auto type = bwUnit->getBuildType();
-                totalTypeCounts[p->getPlayerState()][type] += 1 + (type == Zerg_Zergling || type == Zerg_Scourge);
+                totalTypeCounts[p->getPlayerState()][bwUnit->getBuildType()] += 1 + (bwUnit->getBuildType() == Zerg_Zergling || bwUnit->getBuildType() == Zerg_Scourge);
                 totalTypeCounts[p->getPlayerState()][info->getType()]--;
             }
 
@@ -161,7 +156,7 @@ namespace McRave::Players
             }
 
             // When an existing type morphs again
-            if (info->getType() == Zerg_Hydralisk || info->getType() == Zerg_Lurker_Egg || info->getType() == Zerg_Mutalisk || info->getType() == Zerg_Cocoon || info->getType() == Zerg_Creep_Colony) {
+            if (info->getType() == Zerg_Hydralisk || info->getType() == Zerg_Lurker_Egg || info->getType() == Zerg_Mutalisk || info->getType() == Zerg_Cocoon) {
                 totalTypeCounts[p->getPlayerState()][bwUnit->getType()] += 1;
                 totalTypeCounts[p->getPlayerState()][info->getType()] -= 1;
             }
@@ -171,7 +166,13 @@ namespace McRave::Players
                 totalTypeCounts[p->getPlayerState()][bwUnit->getType()] += 1;
                 totalTypeCounts[p->getPlayerState()][info->getType()] -= 1;
             }
-            
+
+            // When an existing building morphs - use the whatBuilds due to onUnitMorph occuring 1 frame after
+            if (info->getType() == Zerg_Sunken_Colony || info->getType() == Zerg_Spore_Colony || info->getType() == Zerg_Lair || info->getType() == Zerg_Hive || info->getType() == Zerg_Greater_Spire) {
+                totalTypeCounts[p->getPlayerState()][bwUnit->getType()] += 1;
+                totalTypeCounts[p->getPlayerState()][bwUnit->getType().whatBuilds().first] -= 1;
+            }
+
             info->setBuildingType(None);
             info->setBuildPosition(TilePositions::Invalid);
         }
@@ -216,12 +217,12 @@ namespace McRave::Players
             || getTotalCount(state, Zerg_Overlord) > 0;
     }
 
-    int getSupply(PlayerState state)
+    int getSupply(PlayerState state, Race race)
     {
         auto combined = 0;
         for (auto &[_, player] : thePlayers) {
             if (player.getPlayerState() == state)
-                combined += player.getSupply();
+                combined += player.getSupply(race);
         }
         return combined;
     }

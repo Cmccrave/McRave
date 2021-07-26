@@ -6,19 +6,27 @@ using namespace UnitTypes;
 
 namespace McRave::Targets {
 
+    set<UnitType> cancelPriority ={ Terran_Missile_Turret, Terran_Barracks, Terran_Factory, Terran_Starport, Terran_Armory, Terran_Bunker };
+    set<UnitType> allowedBuildings ={ Terran_Armory, Protoss_Cybernetics_Core, Protoss_Photon_Cannon, Zerg_Spire };
+
     namespace {
 
         bool isValidTarget(UnitInfo& unit, UnitInfo& target)
         {
             if (!target.unit()
                 || target.unit()->isInvincible()
-                || !target.getWalkPosition().isValid())
+                || !target.getWalkPosition().isValid()
+                || target.unit()->isStasised()
+                || (!unit.isFlying() && target.lastUnreachableFrame > Broodwar->getFrameCount() - 96 && !target.isWithinRange(unit) && !unit.isWithinRange(target)))
                 return false;
             return true;
         }
 
         bool isSuitableTarget(UnitInfo& unit, UnitInfo& target)
         {
+            if (target.movedFlag)
+                return false;
+
             auto enemyStrength = Players::getStrength(PlayerState::Enemy);
             auto myStrength = Players::getStrength(PlayerState::Self);
 
@@ -45,46 +53,96 @@ namespace McRave::Targets {
                 || (!enemyHasGround && !enemyHasAir)
                 || (Players::ZvZ() && enemyCanDefendUnit)
                 || (Players::ZvZ() && Strategy::enemyFastExpand())
-                || Util::getTime() > Time(10, 0);
+                || Util::getTime() > Time(6, 00)
+                || Strategy::enemyGreedy()
+                || (target.getType() == Protoss_Pylon && target.isProxy() && Strategy::getEnemyTransition() == "ZealotRush");
 
+            // Combat Role
             if (unit.getRole() == Role::Combat) {
-                if ((unit.getType() == Protoss_Zealot && target.getType() == Terran_Vulture_Spider_Mine && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) < 2)                 // Zealot: Don't target mines without +2
-                    || (unit.getType() == Protoss_Zealot && (target.getSpeed() > unit.getSpeed() || target.getType().isBuilding()) && !target.getType().isWorker() && BuildOrder::isRush())             // Zealot: Don't target faster units or buildings when we are rushing
-                    || (unit.getType() == Protoss_Dark_Templar && target.getType() == Terran_Vulture && !unit.isWithinRange(target))                                                                    // DT: Don't target Vultures not in range
-                    || !unitCanAttack || !targetMatters                                                                                                                                                 // Don't target units that don't matter or unit can't attack it
-                    || (target.getType() == Terran_Vulture_Spider_Mine && int(target.getTargetedBy().size()) >= 4 && !target.isBurrowed())                                                              // Don't attack enemy spider mines with more than 4 units
-                    || (target.getType() == Protoss_Interceptor && unit.isFlying())                                                                                                                     // Don't target interceptors as a flying unit
-                    || (target.unit()->exists() && target.unit()->isStasised())                                                                                                                         // Don't target stasis units
-                    || (target.getType().isWorker() && !unit.getType().isWorker() && Strategy::getEnemyTransition() != "WorkerRush" && !target.hasAttackedRecently() && unit.getGroundRange() <= 32.0 && !target.isThreatening() && (!atHome || !target.getTargetedBy().empty() || Players::ZvZ()) && !atEnemy && Util::getTime() < Time(8, 00))                            // Don't target non threatening workers in our territory
-                    || (target.isHidden() && (!targetCanAttack || (!Players::hasDetection(PlayerState::Self) && Players::PvP())) && !unit.getType().isDetector())                                       // Don't target if invisible and can't attack this unit or we have no detectors in PvP
-                    || (target.isFlying() && !unit.isFlying() && !target.unit()->exists() && Grids::getMobility(target.getPosition()) < 1)                                                              // Don't target flyers that we can't reach
-                    || (target.getType().isBuilding() && !target.canAttackGround() && !target.canAttackAir() && Terrain::isInAllyTerritory(target.getTilePosition()) && Broodwar->getFrameCount() < 10000 && !target.isThreatening()) // Don't attack proxy structures that can't hit us (cannon rush)
-                    || (!target.canAttackGround() && Strategy::getEnemyBuild() == "2Gate" && Strategy::enemyProxy() && target.getType() != Protoss_Pylon)
-                    || (unit.isSpellcaster() && (target.getType() == Terran_Vulture_Spider_Mine || target.getType().isBuilding()))
-                    || (unit.getType() == Zerg_Mutalisk && !enemyHasAir && !target.getType().isWorker() && !target.canAttackAir() && !target.isThreatening() && Util::getTime() < Time(10, 00) && (enemyHasGround || enemyHasAir))
-                    || (unit.getType() == Zerg_Mutalisk && target.getType().isBuilding() && !target.canAttackAir() && !target.canAttackGround() && Util::getTime() < Time(10, 00))
-                    || (unit.getType() == Zerg_Mutalisk && Grids::getAAirCluster(unit.getPosition()) <= 8.0f && (target.getType() == Terran_Missile_Turret || target.getType() == Protoss_Photon_Cannon || target.getType() == Zerg_Spore_Colony))
-                    || (unit.getType() == Zerg_Mutalisk && Grids::getAAirCluster(unit.getPosition()) <= 12.0f && (target.getType() == Terran_Bunker || target.getType() == Protoss_Dragoon || target.getType() == Protoss_Zealot) && !target.isThreatening())
-                    || (unit.getType() == Zerg_Scourge && !Stations::getEnemyStations().empty() && (target.getType() == Zerg_Overlord || target.getType().isBuilding() || target.getType() == Protoss_Interceptor))
-                    || (unit.getType() == Zerg_Zergling && Strategy::getEnemyBuild() == "2Gate" && Strategy::enemyProxy() && Util::getTime() < Time(5, 00) && !target.getType().isWorker() && !target.isThreatening())
-                    || (unit.getType() == Zerg_Zergling && target.getType().isBuilding() && Players::ZvZ() && !target.canAttackGround() && !target.canAttackAir() && Util::getTime() < Time(5, 00) && !Strategy::enemyFastExpand())
-                    || (unit.getType() == Zerg_Defiler && (target.getType().isBuilding() || target.getType().isWorker()))
-                    || (unit.getType() == Zerg_Defiler && unit.targetsFriendly() && target.getType() != Zerg_Zergling)                                                                                  // Don't target important units for consume
-                    || (unit.getType() == Zerg_Defiler && target.isFlying())
-                    || (unit.getType().isWorker() && target.getType().isWorker() && !target.isThreatening() && !target.isProxy())
+
+                // Generic
+                if (!unitCanAttack
+                    || !targetMatters
+                    || (target.getType() == Terran_Vulture_Spider_Mine && int(target.getTargetedBy().size()) >= 4 && !target.isBurrowed())                                  // Don't over target spider mines
+                    || (target.getType() == Protoss_Interceptor && unit.isFlying())                                                                                         // Don't target interceptors as a flying unit
+                    || (target.getType().isWorker() && !unit.getType().isWorker() && (Strategy::getEnemyTransition() != "WorkerRush" || !atHome) && !target.hasAttackedRecently() && unit.getGroundRange() <= 32.0 && !target.isThreatening() && (!target.getTargetedBy().empty() || Players::ZvZ()) && !atEnemy && Util::getTime() < Time(8, 00))                            // Don't target non threatening workers in our territory
+                    || (target.isHidden() && (!targetCanAttack || (!Players::hasDetection(PlayerState::Self) && Players::PvP())) && !unit.getType().isDetector())           // Don't target if invisible and can't attack this unit or we have no detectors in PvP
+                    || (target.isFlying() && !unit.isFlying() && !BWEB::Map::isWalkable(target.getTilePosition(), unit.getType()) && !unit.isWithinRange(target))           // Don't target flyers that we can't reach
+                    || (target.getType().isBuilding() && !target.canAttackGround() && !target.canAttackAir() && atHome && !target.isThreatening() && (target.getType() != Protoss_Pylon || !target.isProxy()) && Util::getTime() < Time(5, 00))     // Don't attack buildings that aren't threatening early on
+                    || (unit.isSpellcaster() && (target.getType() == Terran_Vulture_Spider_Mine || target.getType().isBuilding()))                                          // Don't cast spells on mines or buildings
                     || (unit.isLightAir() && target.getType() == Protoss_Interceptor)
                     || (unit.getType().isWorker() && target.getType() == Terran_Bunker && !selfHasGround))
                     return false;
+
+                // Zergling
+                if (unit.getType() == Zerg_Zergling) {
+                    if (Util::getTime() < Time(5, 00)) {
+                        if ((Players::ZvZ() && !target.canAttackGround() && !Strategy::enemyFastExpand())                                // Avoid non ground hitters to try and kill drones
+                            || (Players::ZvT() && target.getType().isWorker() && !target.isThreatening() && Strategy::getEnemyBuild() == "RaxFact")                       // Avoid workers when we need to prepare for runbys
+                            || (BuildOrder::isProxy() && !target.isThreatening() && !target.getType().isWorker() && Util::getTime() < Time(6, 00)))
+                            return false;
+                    }
+                    if (unit.attemptingRunby() && !target.getType().isWorker())
+                        return false;
+                }
+
+                // Mutalisk
+                if (unit.getType() == Zerg_Mutalisk) {
+                    auto anythingTime = Players::ZvZ() ? Time(7, 00) : Time(12, 00);
+                    auto defendExpander = BuildOrder::shouldExpand() && target.getType() == Terran_Vulture;
+
+                    if (!defendExpander && Util::getTime() < anythingTime && unit.attemptingHarass() && !target.isThreatening() && !unit.canOneShot(target) && !target.getType().isWorker() && !target.isLightAir()) {
+                        auto invalidBuilding = target.getType().isBuilding() && allowedBuildings.find(target.getType()) == allowedBuildings.end() && (target.unit()->isCompleted() || !target.canAttackAir());
+
+                        if ((enemyHasAir && !target.getType().isWorker() && !target.canAttackAir() && enemyHasGround)                                                                   // Avoid non-air shooters
+                            || (!target.getType().isWorker() && !target.getType().isBuilding() && !target.canAttackAir())                                                               // Avoid ground fighters only that we can't oneshot
+                            || (target.getType().isBuilding() && enemyHasAir && !target.canAttackAir() && !target.canAttackGround())                                                    // Avoid buildings that don't fight
+                            || (invalidBuilding && Grids::getAAirCluster(unit.getPosition()) <= 24.0f)                                                                                  // Avoid completed buildings that don't fight without a medium cluster
+                            || (!unit.canTwoShot(target) && !target.isFlying() && !target.getType().isBuilding()))                                                                      // Avoid units we can't 2 shot
+                            return false;
+                    }
+                }
+
+                // Lurker
+                if (unit.getType() == Zerg_Lurker) {
+                    if (!target.getType().isWorker() && BuildOrder::isProxy())
+                        return false;
+                }
+
+                // Scourge
+                if (unit.getType() == Zerg_Scourge) {
+                    if ((!Stations::getEnemyStations().empty() && target.getType().isBuilding())                                                                            // Avoid targeting buildings if the enemy has a base still
+                        || target.getType() == Zerg_Overlord                                                                                                                // Don't target overlords
+                        || target.getType() == Protoss_Interceptor)                                                                                                         // Don't target interceptors
+                        return false;
+                }
+
+                // Defiler
+                if (unit.getType() == Zerg_Defiler) {
+                    if (target.getType().isBuilding()
+                        || target.getType().isWorker()
+                        || (unit.targetsFriendly() && target.getType() != Zerg_Zergling)
+                        || target.isFlying())
+                        return false;
+                }
+
+                // Zealot
+                if (unit.getType() == Protoss_Zealot) {
+                    if ((target.getType() == Terran_Vulture_Spider_Mine && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) < 2)                     // Avoid mines without +2 to oneshot them
+                        || ((target.getSpeed() > unit.getSpeed() || target.getType().isBuilding()) && !target.getType().isWorker() && BuildOrder::isRush()))                // Avoid faster units when we're rushing
+                        return false;
+                }
+
+                // Dark Templar
+                if (unit.getType() == Protoss_Dark_Templar) {
+                    if (target.getType() == Terran_Vulture && !unit.isWithinRange(target))                                                                                  // Avoid vultures if not in range already
+                        return false;
+                }
             }
+
             if (unit.getRole() == Role::Scout) {
-                if (target.getType().isBuilding() && !target.isThreatening())
+                if (!target.getType().isWorker() && !target.isThreatening())
                     return false;
-            }
-            if (unit.getRole() == Role::Worker) {
-
-            }
-            if (unit.getRole() == Role::Support) {
-
             }
             return true;
         }
@@ -92,28 +150,62 @@ namespace McRave::Targets {
         double scoreTarget(UnitInfo& unit, UnitInfo& target)
         {
             // Scoring parameters
-            const auto range =          target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
-            const auto reach =          target.getType().isFlyer() ? unit.getAirReach() : unit.getGroundReach();
+            auto range =          target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
+            auto reach =          target.getType().isFlyer() ? unit.getAirReach() : unit.getGroundReach();
             const auto boxDistance =    double(Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()));
             const auto dist =           exp(0.0125 * boxDistance);
 
+            if (unit.isSiegeTank()) {
+                range = 384.0;
+                reach = range + (unit.getSpeed() * 16.0) + double(unit.getType().width() / 2) + 64.0;
+            }
+
+            // HACK to not target air units over cliffs or in areas technically far away
+            if (!unit.isFlying() && target.isFlying() && BWEB::Map::isWalkable(target.getTilePosition(), Zerg_Ultralisk)) {
+                auto grdDist = BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition());
+                auto airDist = unit.getPosition().getDistance(target.getPosition());
+                if (grdDist > airDist * 2)
+                    return 0.0;
+            }
+
             const auto bonusScore = [&]() {
+
+                // Add bonus for expansion killing
+                if (target.getType().isResourceDepot() && (Util::getTime() > Time(8, 00) || Strategy::enemyGreedy()) && !unit.isLightAir())
+                    return 5000.0;
+
                 // Add bonus for Observers that are vulnerable
                 if (target.getType() == Protoss_Observer && !target.isHidden())
                     return 20.0;
 
                 // Add penalty for a Terran building that's being constructed
-                if (target.getType().isBuilding() && target.getType().getRace() == Races::Terran && target.unit()->isBeingConstructed() && !target.isThreatening())
-                    return 0.0;
+                if (target.getType().isBuilding() && target.getType().getRace() == Races::Terran && !target.unit()->isCompleted() && !target.isThreatening() && !target.unit()->getBuildUnit())
+                    return 0.1;
+
+                // Add penalty for a Terran building that has been repaired recently
+                if (target.getType().isBuilding() && target.hasRepairedRecently())
+                    return 0.1;
 
                 // Add bonus for an SCV repairing a turret or building a turret
-                if (target.getType().isWorker() && ((target.unit()->isConstructing() && target.unit()->getBuildUnit() && target.unit()->getBuildUnit()->getType() == Terran_Missile_Turret) || (target.unit()->isRepairing() && target.hasTarget() && target.getTarget().getType() == Terran_Missile_Turret)))
-                    return 2.0;
+                if (target.getType().isWorker() && ((target.unit()->isConstructing() && target.unit()->getBuildUnit() && cancelPriority.find(target.unit()->getBuildUnit()->getType()) != cancelPriority.end()) || (target.hasRepairedRecently())))
+                    return 10.0;
+
+                // Add bonus for a building warping in
+                if (target.unit()->exists() && !target.unit()->isCompleted() && (target.getType() == Protoss_Photon_Cannon || (target.getType() == Terran_Missile_Turret && !target.unit()->getBuildUnit())))
+                    return 25.0;
 
                 // Add bonus for a DT to kill important counters
                 if (unit.getType() == Protoss_Dark_Templar && unit.isWithinReach(target) && !Actions::overlapsDetection(target.unit(), target.getPosition(), PlayerState::Enemy)
                     && (target.getType().isWorker() || target.isSiegeTank() || target.getType().isDetector() || target.getType() == Protoss_Observatory || target.getType() == Protoss_Robotics_Facility))
                     return 20.0;
+
+                // Add bonus for being able to one shot a unit
+                if (unit.canOneShot(target))
+                    return 4.0;
+
+                // Add bonus for being able to two shot a unit
+                if (unit.canTwoShot(target))
+                    return 2.0;
                 return 1.0;
             };
 
@@ -125,26 +217,10 @@ namespace McRave::Targets {
             };
 
             const auto focusScore = [&]() {
-                if (!unit.isLightAir() && (range <= 32.0 || target.getType() == Protoss_Interceptor) && boxDistance <= range) {
-                    if (target.getTargetedBy().size() < 3 || Players::ZvZ())
-                        return exp(int(target.getTargetedBy().size()) + 1);
-                    else
-                        return 1.0;
-                }
-
-                else if ((!Players::ZvZ() || target.isFlying()) && range > 32.0 && boxDistance <= reach) {
-                    if (unit.isLightAir()) {
-                        int actual = 0;
-                        for (auto &t : target.getTargetedBy()) {
-                            if (auto &targeter = t.lock())
-                                actual += targeter->isLightAir();
-                        }
-                        return exp(actual + 1);
-                    }
-                    else {
-                        return exp(int(target.getTargetedBy().size()) + 1);
-                    }
-                }
+                if (range > 32.0 && boxDistance <= reach)
+                    return exp(int(target.getTargetedBy().size()) + 1);
+                if (range <= 32.0 && int(target.getTargetedBy().size()) >= 6)
+                    return 1.0 / (int(target.getTargetedBy().size()));
                 return 1.0;
             };
 
@@ -156,11 +232,7 @@ namespace McRave::Targets {
                 return target.getPriority();
             };
 
-            const auto targetScore = healthScore() * focusScore() * priorityScore();
-
-
-            if (unit.unit()->isSelected() && unit.getType() == Protoss_Reaver)
-                Broodwar->drawTextMap(target.getPosition(), "%.2f", 1.0 / dist);
+            const auto targetScore = healthScore() * focusScore() * priorityScore() * bonusScore();
 
             // Detector targeting (distance to nearest ally added)
             if ((target.isBurrowed() || target.unit()->isCloaked()) && ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == Terran_Comsat_Station)) {
@@ -184,20 +256,13 @@ namespace McRave::Targets {
 
             // Defender targeting (distance not used)
             else if (unit.getRole() == Role::Defender && boxDistance - range <= 16.0)
-                return priorityScore();
+                return healthScore() * priorityScore();
 
             // Proximity targeting (targetScore not used)
             else if (unit.getType() == Protoss_Reaver || unit.getType() == Zerg_Ultralisk) {
                 if (target.getType().isBuilding() && !target.canAttackGround() && !target.canAttackAir())
                     return 0.1 / dist;
                 return 1.0 / dist;
-            }
-
-            // Priority targeting
-            else if (unit.isThreatening()) {
-                auto closestStation = Stations::getClosestStation(PlayerState::Self, target.getPosition());
-                if (closestStation)
-                    return targetScore / (dist * closestStation->getBase()->Center().getDistance(target.getPosition()));
             }
             return targetScore / dist;
         }
@@ -207,14 +272,13 @@ namespace McRave::Targets {
             double distBest = DBL_MAX;
             for (auto &t : Units::getUnits(pState)) {
                 UnitInfo &target = *t;
-                auto targetCanAttack = ((unit.getType().isFlyer() && target.getAirDamage() > 0.0) || (!unit.getType().isFlyer() && target.canAttackGround()) || (!unit.getType().isFlyer() && target.getType() == Terran_Vulture_Spider_Mine));
-                auto unitCanAttack = ((target.getType().isFlyer() && unit.getAirDamage() > 0.0) || (!target.getType().isFlyer() && unit.canAttackGround()) || (unit.getType() == Protoss_Carrier));
+                auto targetCanAttack = ((unit.isFlying() && target.getAirDamage() > 0.0) || (!unit.isFlying() && target.canAttackGround()) || (!unit.getType().isFlyer() && target.getType() == Terran_Vulture_Spider_Mine));
+                auto unitCanAttack = ((target.isFlying() && unit.getAirDamage() > 0.0) || (!target.isFlying() && unit.canAttackGround()) || (unit.getType() == Protoss_Carrier));
 
-                // HACK: Check for a flying building
-                if (target.unit()->exists() && target.unit()->isFlying() && unit.getAirDamage() <= 0.0)
-                    unitCanAttack = false;
+                if (!targetCanAttack && (!unit.hasTarget() || target != unit.getTarget()))
+                    continue;
 
-                if (!unitCanAttack && !targetCanAttack)
+                if (!target.isWithinReach(unit))
                     continue;
 
                 // Set sim position
@@ -224,6 +288,9 @@ namespace McRave::Targets {
                     distBest = dist;
                 }
             }
+
+            if (!unit.hasSimTarget() && unit.hasTarget())
+                unit.setSimTarget(&unit.getTarget());
         }
 
         void getBestTarget(UnitInfo& unit, PlayerState pState)
@@ -236,8 +303,39 @@ namespace McRave::Targets {
                     || !isSuitableTarget(unit, target))
                     continue;
 
-                if (unit.getType() == Protoss_Reaver)
-                    target.circlePurple();
+                // If this target is more important to target, set as current target
+                const auto thisUnit = scoreTarget(unit, target);
+                if (thisUnit > scoreBest) {
+                    scoreBest = thisUnit;
+                    unit.setTarget(&target);
+                }
+            }
+
+            // Check for any self targets marked for death
+            for (auto &t : Units::getUnits(PlayerState::Self)) {
+                UnitInfo &target = *t;
+
+                if (!isValidTarget(unit, target)
+                    || !target.isMarkedForDeath()
+                    || unit.isLightAir())
+                    continue;
+
+                // If this target is more important to target, set as current target
+                const auto thisUnit = scoreTarget(unit, target);
+                if (thisUnit > scoreBest) {
+                    scoreBest = thisUnit;
+                    unit.setTarget(&target);
+                }
+            }
+
+            // Check for any neutral targets marked for death
+            for (auto &t : Units::getUnits(PlayerState::Neutral)) {
+                UnitInfo &target = *t;
+
+                if (!isValidTarget(unit, target)
+                    || !target.isMarkedForDeath()
+                    || unit.isLightAir())
+                    continue;
 
                 // If this target is more important to target, set as current target
                 const auto thisUnit = scoreTarget(unit, target);
@@ -254,19 +352,19 @@ namespace McRave::Targets {
 
         void getEngagePosition(UnitInfo& unit)
         {
-            if (unit.getRole() == Role::Defender) {
-                unit.setEngagePosition(unit.getPosition());
+            if (!unit.hasTarget()) {
+                unit.setEngagePosition(Positions::Invalid);
                 return;
             }
 
-            if (!unit.hasTarget() || unit.getRole() != Role::Combat) {
-                unit.setEngagePosition(Positions::None);
+            if (unit.getRole() == Role::Defender || unit.isSuicidal()) {
+                unit.setEngagePosition(unit.getTarget().getPosition());
                 return;
             }
 
             // Have to set it to at least 64 or units can't path sometimes to engage position
             auto range = max(64.0, unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
-            if (!unit.getTargetPath().getTiles().empty() && (!unit.isWithinRange(unit.getTarget()) || unit.unit()->isLoaded())) {
+            if (unit.getTargetPath().isReachable() && (!unit.isWithinRange(unit.getTarget()) || unit.unit()->isLoaded())) {
                 auto usedType = BWEB::Map::isUsed(TilePosition(unit.getTarget().getTilePosition()));
 
                 auto engagePosition = Util::findPointOnPath(unit.getTargetPath(), [&](Position p) {
@@ -288,36 +386,33 @@ namespace McRave::Targets {
 
             // If unit is loaded or further than their range, we want to calculate the expected engage position
             if (distance > range || unit.unit()->isLoaded())
-                unit.setEngagePosition(engagePosition);            
+                unit.setEngagePosition(engagePosition);
             else
                 unit.setEngagePosition(unit.getPosition());
         }
 
         void getEngageDistance(UnitInfo& unit)
         {
-            if (unit.getRole() == Role::Defender) {
+            if (unit.getRole() == Role::Defender && unit.hasTarget()) {
+                auto range = unit.getTarget().isFlying() ? unit.getAirRange() : unit.getGroundRange();
+                unit.setEngDist(Util::boxDistance(unit.getType(), unit.getPosition(), unit.getTarget().getType(), unit.getTarget().getPosition()) - range);
+                return;
+            }
+
+            if (!unit.hasTarget() || (unit.getPlayer() == Broodwar->self() && unit.getRole() != Role::Combat)) {
                 unit.setEngDist(0.0);
                 return;
             }
 
-            if (!unit.hasTarget() || unit.getRole() != Role::Combat) {
-                unit.setEngDist(0.0);
+            if (unit.getPlayer() == Broodwar->self() && !Terrain::isInAllyTerritory(unit.getTilePosition()) && !unit.getTargetPath().isReachable() && !unit.getTarget().getType().isBuilding() && !unit.isFlying() && !unit.getTarget().isFlying() && Grids::getMobility(unit.getTarget().getPosition()) >= 4) {
+                unit.setEngDist(DBL_MAX);
                 return;
             }
 
-            if (!unit.getTargetPath().isReachable() && !unit.getTarget().getType().isBuilding() && !unit.isFlying() && !unit.getTarget().isFlying() && Grids::getMobility(unit.getTarget().getPosition()) >= 4) {
-                if (unit.hasBackupTarget()) {
-                    unit.setTarget(&unit.getBackupTarget());
-                    unit.setEngDist(unit.getPosition().getDistance(unit.getBackupTarget().getPosition()));
-                }
-                else {
-                    Broodwar->drawLineMap(unit.getPosition(), unit.getTarget().getPosition(), Colors::Cyan);
-                    unit.setEngDist(DBL_MAX);
-                }
-                return;
-            }
+            auto dist = (unit.isFlying() || unit.getTarget().isFlying()) ? unit.getPosition().getDistance(unit.getEngagePosition()) : BWEB::Map::getGroundDistance(unit.getPosition(), unit.getEngagePosition()) - 32.0;
+            if (dist == DBL_MAX)
+                dist = 2.0 * unit.getPosition().getDistance(unit.getEngagePosition());
 
-            auto dist = unit.getPosition().getDistance(unit.getEngagePosition());
             unit.setEngDist(dist);
         }
 
@@ -332,59 +427,44 @@ namespace McRave::Targets {
                 BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
                 unit.setEngDist(0.0);
                 unit.setTargetPath(newPath);
-                unit.setQuickPath({});
                 return;
             }
-
-            // If no quick path, grab one
-            if (unit.getQuickPath().empty() && !unit.getTarget().isFlying() && !unit.getType().isFlyer())
-                unit.setQuickPath(mapBWEM.GetPath(unit.getPosition(), unit.getTarget().getPosition()));
 
             // Don't generate a target path in these cases
             if (unit.getTarget().isFlying() || unit.isFlying()) {
                 BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
                 unit.setTargetPath(newPath);
-                unit.setQuickPath({});
                 return;
             }
 
-            // Create a pathpoint
-            auto pathPoint = unit.getTarget().getPosition();
-            if (!BWEB::Map::isWalkable(unit.getTarget().getTilePosition(), unit.getType()) || BWEB::Map::isUsed(unit.getTarget().getTilePosition()) != UnitTypes::None) {
-                auto closest = DBL_MAX;
-                for (int x = unit.getTarget().getTilePosition().x - 1; x < unit.getTarget().getTilePosition().x + unit.getTarget().getType().tileWidth() + 1; x++) {
-                    for (int y = unit.getTarget().getTilePosition().y - 1; y < unit.getTarget().getTilePosition().y + unit.getTarget().getType().tileHeight() + 1; y++) {
-                        auto center = Position(TilePosition(x, y)) + Position(16, 16);
-                        auto dist = center.getDistance(unit.getPosition());
-                        if (dist < closest && BWEB::Map::isWalkable(TilePosition(x, y), unit.getType()) && BWEB::Map::isUsed(TilePosition(x, y)) == UnitTypes::None) {
-                            closest = dist;
-                            pathPoint = center;
-                        }
+            // See if we can borrow a path from a targeter around us
+            auto maxDist = Players::getSupply(PlayerState::Self, Races::None) / 2;
+            for (auto &t : unit.getTarget().getTargetedBy()) {
+                if (auto targeter = t.lock()) {
+                    if (unit.getTarget() == targeter->getTarget() && targeter->getTargetPath().isReachable() && targeter->getPosition().getDistance(targeter->getTarget().getPosition()) < unit.getPosition().getDistance(unit.getTarget().getPosition()) && targeter->getPosition().getDistance(unit.getPosition()) < maxDist) {
+                        unit.setTargetPath(targeter->getTargetPath());
+                        return;
                     }
                 }
             }
+            
+            // TODO: Need a custom target walkable for a building
+            auto targetType = unit.getTarget().getType();
+            auto targetPos = unit.getTarget().getPosition();
+            const auto targetWalkable = [&](const TilePosition &t) {
+                return targetType.isBuilding() && Util::rectangleIntersect(targetPos, targetPos + Position(targetType.tileSize()), Position(t));
+            };
 
             // If should create path, grab one from BWEB
-            if (unit.getTargetPath().getTarget() != TilePosition(pathPoint)) {
-                BWEB::Path newPath(unit.getPosition(), pathPoint, unit.getType());
-                newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t); });
+            if (unit.getTargetPath().getTarget() != TilePosition(unit.getTarget().getPosition()) && (!mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(unit.getTarget().getPosition())) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(unit.getTarget().getPosition()))))) {
+                BWEB::Path newPath(unit.getPosition(), unit.getTarget().getPosition(), unit.getType());
+                newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t) || targetWalkable(t); });
                 unit.setTargetPath(newPath);
-                Visuals::displayPath(unit.getTargetPath());
+
+                if (!newPath.isReachable() && newPath.unitWalkable(unit.getTilePosition()))
+                    unit.getTarget().lastUnreachableFrame = Broodwar->getFrameCount();                
             }
         }
-    }
-
-    void getBackupTarget(UnitInfo& unit)
-    {
-        // Originally used to kill neutral buildings
-        /*if (unit.getRole() == Role::Combat && !unit.getType().isFlyer()) {
-            if (!unit.hasTarget() || Terrain::isIslandMap()) {
-                getBestTarget(unit, PlayerState::Neutral);
-                getPathToTarget(unit);
-                getEngagePosition(unit);
-                getEngageDistance(unit);
-            }
-        }*/
     }
 
     void getTarget(UnitInfo& unit)
@@ -397,7 +477,6 @@ namespace McRave::Targets {
             getPathToTarget(unit);
             getEngagePosition(unit);
             getEngageDistance(unit);
-            getBackupTarget(unit);
         }
     }
 }

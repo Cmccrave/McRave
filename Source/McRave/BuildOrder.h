@@ -4,19 +4,6 @@
 #include <set>
 
 namespace McRave::BuildOrder {
-    class Item
-    {
-        int actualCount, reserveCount;
-    public:
-        Item() {};
-
-        Item(int actual, int reserve = -1) {
-            actualCount = actual, reserveCount = (reserve == -1 ? actual : reserve);
-        }
-
-        int const getReserveCount() { return reserveCount; }
-        int const getActualCount() { return actualCount; }
-    };
 
     // Need a namespace to share variables among the various files used
     namespace All {
@@ -41,17 +28,14 @@ namespace McRave::BuildOrder {
         inline bool inBookSupply = false;
         inline bool transitionReady = false;
         inline bool defensesNow = false;
+        inline bool planEarly = false;
 
         inline bool expandDesired = false;
         inline bool rampDesired = false;
         // inline bool techDesired = false;
 
+        inline std::map<BWAPI::UnitType, int> unitLimits;
         inline int gasLimit = INT_MAX;
-        inline int zealotLimit = INT_MAX;
-        inline int dragoonLimit = INT_MAX;
-        inline int lingLimit = INT_MAX;
-        inline int droneLimit = INT_MAX;
-        inline int larvaLimit = 0;
         inline int startCount = 0;
         inline int s = 0;
 
@@ -116,10 +100,8 @@ namespace McRave::BuildOrder {
         void ZvZPoolLair();
         void ZvZPoolHatch();
 
-        void ZvTHatchPool();
-        void ZvTPoolHatch();
-
-        void ZvPPoolHatch();
+        void ZvT();
+        void ZvP();
     }
 
     double getCompositionPercentage(BWAPI::UnitType);
@@ -135,6 +117,8 @@ namespace McRave::BuildOrder {
     void checkExpand();
     void checkRamp();
 
+    int getGasQueued();
+    int getMinQueued();
     bool shouldRamp();
     bool shouldAddGas();
     bool shouldExpand();
@@ -149,7 +133,7 @@ namespace McRave::BuildOrder {
     std::set <BWAPI::UnitType>& getTechList();
     std::set <BWAPI::UnitType>& getUnlockedList();
     int gasWorkerLimit();
-    int getLarvaLimit();
+    int getUnitLimit(BWAPI::UnitType);
     bool isWorkerCut();
     bool isUnitUnlocked(BWAPI::UnitType);
     bool isTechUnit(BWAPI::UnitType);
@@ -165,6 +149,7 @@ namespace McRave::BuildOrder {
     bool isRush();
     bool isPressure();
     bool isGasTrick();
+    bool isPlanEarly();
     bool makeDefensesNow();
     std::string getCurrentBuild();
     std::string getCurrentOpener();

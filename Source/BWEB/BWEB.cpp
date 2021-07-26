@@ -439,7 +439,7 @@ namespace BWEB::Map
 
         const auto gameStart = Broodwar->getFrameCount() == 0;
         const auto okayToAdd = (unit->getType().isBuilding() && !unit->isFlying())
-            || (gameStart && unit->getType().topSpeed() == 0.0);
+            || (gameStart && unit->getType().topSpeed() == 0.0 && unit->getPlayer()->isNeutral());
 
         // Add used tiles
         if (okayToAdd) {
@@ -464,7 +464,7 @@ namespace BWEB::Map
 
         const auto gameStart = Broodwar->getFrameCount() == 0;
         const auto okayToRemove = (unit->getType().isBuilding() && !unit->isFlying())
-            || (!gameStart && unit->getType().topSpeed() == 0.0);
+            || (!gameStart && unit->getType().topSpeed() == 0.0 && unit->getPlayer()->isNeutral());
 
         // Add used tiles
         if (okayToRemove) {
@@ -480,6 +480,10 @@ namespace BWEB::Map
             // Clear pathfinding cache
             Pathfinding::clearCacheFully();
         }
+        
+        // Update BWEM
+        if (unit->getPlayer()->isNeutral() && find_if(Map::mapBWEM.StaticBuildings().begin(), Map::mapBWEM.StaticBuildings().end(), [&](auto &n) { return n.get()->Unit() == unit; }) != Map::mapBWEM.StaticBuildings().end())
+            Map::mapBWEM.OnStaticBuildingDestroyed(unit);
     }
 
     void onUnitMorph(const Unit unit)
@@ -688,7 +692,7 @@ namespace BWEB::Map
             first = false;
         }
 
-        return dist += last.getDistance(end);
+        return dist += last.getDistance(end) - start.getDistance(Position(s)) - end.getDistance(Position(e));
     }
 
     Position getClosestChokeTile(const BWEM::ChokePoint * choke, Position here)
@@ -779,7 +783,7 @@ namespace BWEB::Map
 
         // Search through each station to find the closest valid TilePosition
         for (auto &station : Stations::getStations()) {
-            for (auto &tile : station.getDefenseLocations()) {
+            for (auto &tile : station.getDefenses()) {
                 const auto dist = tile.getDistance(searchCenter);
                 if (dist < distBest && isPlaceable(type, tile)) {
                     distBest = dist;

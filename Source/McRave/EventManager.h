@@ -9,6 +9,9 @@ namespace McRave::Events
     {
         BWEB::Map::onUnitDiscover(unit);
         Players::storeUnit(unit);
+
+        if (unit->getType().isResourceDepot())
+            Stations::storeStation(unit);
     }
 
     inline void onUnitCreate(BWAPI::Unit unit)
@@ -49,6 +52,7 @@ namespace McRave::Events
         // Refinery that morphed as an enemy
         if (unit->getType().isResourceContainer())
             Resources::storeResource(unit);
+
 
         Players::morphUnit(unit);
     }
@@ -94,7 +98,7 @@ namespace McRave::Events
         for (int x = unit.getTilePosition().x - 2; x <= unit.getTilePosition().x + 2; x++) {
             for (int y = unit.getTilePosition().y - 2; y <= unit.getTilePosition().y + 2; y++) {
                 BWAPI::TilePosition t(x, y);
-                if (t.isValid() && BWEB::Map::isWalkable(t, BWAPI::UnitTypes::Protoss_Dragoon) && !BWAPI::Broodwar->isVisible(t)) {
+                if (t.isValid() && BWEB::Map::isWalkable(t, BWAPI::UnitTypes::Protoss_Dragoon) && BWAPI::Broodwar->getGroundHeight(t) == BWAPI::Broodwar->getGroundHeight(unit.getTilePosition()) && !BWAPI::Broodwar->isVisible(t)) {
                     notVisibleFully = true;
                     break;
                 }
@@ -109,11 +113,13 @@ namespace McRave::Events
                 unit.setPosition(closestEnemy->getPosition());
                 unit.setTilePosition(closestEnemy->getTilePosition());
                 unit.setWalkPosition(closestEnemy->getWalkPosition());
+                unit.movedFlag = true;
             }
             else {
                 unit.setPosition(BWAPI::Positions::Invalid);
                 unit.setTilePosition(BWAPI::TilePositions::Invalid);
                 unit.setWalkPosition(BWAPI::WalkPositions::Invalid);
+                unit.movedFlag = true;
             }
         }
     }

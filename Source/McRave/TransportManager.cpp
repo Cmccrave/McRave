@@ -200,7 +200,6 @@ namespace McRave::Transports {
                     if (cargo.hasTarget() && cargo.getEngagePosition().isValid()) {
                         if (readyToUnload(cargo)) {
                             unit.setDestination(cargo.getEngagePosition());
-                            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
 
                             if (!tooFar(cargo))
                                 unit.unit()->unload(cargo.unit());
@@ -228,7 +227,7 @@ namespace McRave::Transports {
 
             // If we have no cargo, wait at nearest base
             if (unit.getAssignedCargo().empty()) {
-                auto station = Stations::getClosestStation(PlayerState::Self, unit.getPosition());
+                auto station = Stations::getClosestStationGround(PlayerState::Self, unit.getPosition());
                 if (station)
                     unit.setDestination(station->getBase()->Center());
             }
@@ -273,13 +272,6 @@ namespace McRave::Transports {
                     updateTransportState(unit);
                     updateDestination(unit);
                     updateDecision(unit);
-
-                    if (unit.getTransportState() == TransportState::Engaging)
-                        unit.circleGreen();
-                    if (unit.getTransportState() == TransportState::Retreating)
-                        unit.circleRed();
-                    if (unit.getTransportState() == TransportState::Monitoring)
-                        unit.circleYellow();
                 }
             }
         }

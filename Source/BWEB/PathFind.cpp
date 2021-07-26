@@ -9,115 +9,145 @@ namespace BWEB
 {
     namespace {
 
+        struct Node {
+            TilePosition tile, parent;
+            double f, g, h;
+            int id = 0;
+
+            Node(TilePosition _tile, TilePosition _parent, double _f, double _g, double _h, int _id) {
+                tile = _tile;
+                parent = _parent;
+                f = _f;
+                g = _g;
+                h = _h;
+                id = _id;
+            }
+
+            Node() {
+                tile = TilePosition(-1, -1);
+            };
+
+            bool operator <(const Node &rhs) const {
+                return f > rhs.f;
+            }
+
+            bool operator ==(const Node &rhs) const {
+                return tile == rhs.tile;
+            }
+        };
+
+        int oneDim(TilePosition tile) {
+            return (tile.y * Broodwar->mapWidth()) + tile.x;
+        }
+
         struct PathCache {
             map<pair<TilePosition, TilePosition>, list<Path>::iterator> iteratorList;
             list<Path> pathCache;
-            map<TilePosition, int> notReachableThisFrame;
+            map<pair<TilePosition, TilePosition>, int> notReachableThisFrame;
         };
-        map<function <bool(const TilePosition&)>*, PathCache> pathCache;
 
+        map<function <bool(const TilePosition&)>*, PathCache> pathCache;
         int maxCacheSize = 10000;
+        int currentId = 0;
+        Node closedSet[65536];
     }
 
-    void Path::generateBFS(function <bool(const TilePosition&)> isWalkable, bool diagonal)
+    void Path::generateBFS(function <bool(const TilePosition&)> isWalkable)
     {
-        auto maxDist = source.getDistance(target);
-        const auto width = Broodwar->mapWidth();
-        const auto height = Broodwar->mapHeight();
-        vector<TilePosition> direction{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 } };
-
-        if (source == target
-            || source == TilePosition(0, 0)
-            || target == TilePosition(0, 0))
+        if (!source.isValid() || !target.isValid())
             return;
 
-        TilePosition parentGrid[256][256];
+        // TODO: Add caching
 
-        // This function requires that parentGrid has been filled in for a path from source to target
-        const auto createPath = [&]() {
-            tiles.push_back(target);
-            reachable = true;
-            TilePosition check = parentGrid[target.x][target.y];
-            dist += Position(target).getDistance(Position(check));
+        currentId++;
+        if (currentId == INT_MAX)
+            currentId = 0;
 
-            do {
-                tiles.push_back(check);
-                TilePosition prev = check;
-                check = parentGrid[check.x][check.y];
-                dist += Position(prev).getDistance(Position(check));
-            } while (check != source);
+        queue<Node> openSet;
+        vector<TilePosition> direction{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 } };
+        openSet.push(Node(target, target, 1.0, 1.0, 1.0, currentId));
 
-            // HACK: Try to make it more accurate to positions instead of tiles
-            auto correctionSource = Position(*(tiles.end() - 1));
-            auto correctionTarget = Position(*(tiles.begin() + 1));
-            dist += Position(source).getDistance(correctionSource);
-            dist += Position(target).getDistance(correctionTarget);
-            dist -= 64.0;
+        if (diagonal)
+            direction.insert(direction.end(), { { -1, -1 }, { -1, 1 }, { 1, -1 }, { 1, 1 } });
+
+        // Create the path
+        const auto createPath = [&](Node& current) {
+            while (current.tile != target) {
+                dist += Position(current.tile).getDistance(Position(current.parent));
+                tiles.push_back(current.tile);
+                current = closedSet[oneDim(current.parent)];
+            }
+            if (current.tile == target) {
+                reachable = true;
+                tiles.push_back(target);
+            }
         };
 
-        queue<TilePosition> nodeQueue;
-        nodeQueue.emplace(source);
-        parentGrid[source.x][source.y] = source;
+        // Iterate the open set
+        while (!openSet.empty()) {
+            Node parent = openSet.front();
+            openSet.pop();
+            closedSet[oneDim(parent.tile)] = parent;
 
-        // While not empty, pop off top the closest TilePosition to target
-        while (!nodeQueue.empty()) {
-            auto const tile = nodeQueue.front();
-            nodeQueue.pop();
+            if (parent.tile == source) {
+                createPath(parent);
+                return;
+            }
 
-            for (auto const &d : direction) {
-                auto const next = tile + d;
+            for (const auto &d : direction) {
+                const auto t = parent.tile + d;
 
-                if (next.isValid()) {
-                    // If next has parent or is a collision, continue
-                    if (parentGrid[next.x][next.y] != TilePosition(0, 0) || !isWalkable(next))
-                        continue;
+                if (!t.isValid() || !isWalkable(t))
+                    continue;
 
-                    // Check diagonal collisions where necessary
-                    if ((d.x == 1 || d.x == -1) && (d.y == 1 || d.y == -1) && (!isWalkable(tile + TilePosition(d.x, 0)) || !isWalkable(tile + TilePosition(0, d.y))))
-                        continue;
+                Node &cs = closedSet[oneDim(t)];
 
-                    // Set parent here
-                    parentGrid[next.x][next.y] = tile;
+                // Closed Node has been queued or closed
+                if (cs.tile != TilePosition(-1, -1) && cs.id == currentId)
+                    continue;
 
-                    // If at target, return path
-                    if (next == target) {
-                        createPath();
-                        return;
-                    }
+                // Check diagonal collisions where necessary
+                if (d.x != 0 && d.y != 0 && (!isWalkable(t + TilePosition(d.x, 0)) || !isWalkable(t + TilePosition(0, d.y))))
+                    continue;
 
-                    nodeQueue.emplace(next);
-                }
+                openSet.push(Node(t, parent.tile, 0, 0, 0, currentId));
+                cs.tile = t;
+                cs.id = currentId;
             }
         }
-        reachable = false;
-        dist = DBL_MAX;
     }
 
-    void Path::generateJPS(function <bool(const TilePosition&)> passedWalkable, bool diagonal)
+    void Path::generateJPS(function <bool(const TilePosition&)> passedWalkable)
     {
-        // If this path does not exist in cache, remove last reference and erase reference
         auto &pathPoints = make_pair(source, target);
         auto &thisCached = pathCache[&passedWalkable];
 
-        if (thisCached.iteratorList.find(pathPoints) == thisCached.iteratorList.end()) {
-            if (thisCached.pathCache.size() == maxCacheSize) {
-                auto last = thisCached.pathCache.back();
-                thisCached.pathCache.pop_back();
-                thisCached.iteratorList.erase(make_pair(last.getSource(), last.getTarget()));
-            }
-        }
-
-        // If it does exist, set this path as cached version, update reference and push cached path to the front
-        else {
-            auto &oldPath = thisCached.iteratorList[pathPoints];
-            dist = oldPath->getDistance();
-            tiles = oldPath->getTiles();
-            reachable = oldPath->isReachable();
-
-            thisCached.pathCache.erase(thisCached.iteratorList[pathPoints]);
-            thisCached.pathCache.push_front(*this);
-            thisCached.iteratorList[pathPoints] = thisCached.pathCache.begin();
+        if (!target.isValid()
+            || !source.isValid())
             return;
+
+        // If this path does not exist in cache, remove last path and erase reference
+        if (cached) {
+            if (thisCached.iteratorList.find(pathPoints) == thisCached.iteratorList.end()) {
+                if (thisCached.pathCache.size() == maxCacheSize) {
+                    auto last = thisCached.pathCache.back();
+                    thisCached.pathCache.pop_back();
+                    thisCached.iteratorList.erase(make_pair(last.getSource(), last.getTarget()));
+                }
+            }
+
+            // If it does exist, set this path as cached version, update reference and push cached path to the front
+            else {
+                auto &oldPath = thisCached.iteratorList[pathPoints];
+                dist = oldPath->getDistance();
+                tiles = oldPath->getTiles();
+                reachable = oldPath->isReachable();
+
+                thisCached.pathCache.erase(thisCached.iteratorList[pathPoints]);
+                thisCached.pathCache.push_front(*this);
+                thisCached.iteratorList[pathPoints] = thisCached.pathCache.begin();
+                return;
+            }
         }
 
         vector<TilePosition> newJPSPath;
@@ -135,9 +165,9 @@ namespace BWEB
             return false;
         };
 
-        // If not reachable based on previous paths to this area
-        if (target.isValid() && isWalkable(source.x, source.y)) {
-            auto checkReachable = thisCached.notReachableThisFrame[target];
+        // If not reachable based on previous paths to this pair
+        if (cached) {
+            auto checkReachable = thisCached.notReachableThisFrame[make_pair(source, target)];
             if (checkReachable >= Broodwar->getFrameCount() && Broodwar->getFrameCount() > 0) {
                 reachable = false;
                 dist = DBL_MAX;
@@ -148,23 +178,88 @@ namespace BWEB
         // If we found a path, store what was found
         if (JPS::findPath(newJPSPath, isWalkable, source.x, source.y, target.x, target.y)) {
             Position current = Position(source);
+            tiles.push_back(source);
             for (auto &t : newJPSPath) {
                 dist += Position(t).getDistance(current);
                 current = Position(t);
                 tiles.push_back(t);
             }
             reachable = true;
+        }
 
-            // Update cache 
+        // If not found, set destination pair as unreachable for this frame
+        else {
+            dist = DBL_MAX;
+            reachable = false;
+            if (cached)
+                thisCached.notReachableThisFrame[make_pair(source, target)] = Broodwar->getFrameCount();
+        }
+
+        // Update cache
+        if (cached) {
             thisCached.pathCache.push_front(*this);
             thisCached.iteratorList[pathPoints] = thisCached.pathCache.begin();
         }
+    }
 
-        // If not found, set destination area as unreachable for this frame
-        else if (target.isValid()) {
-            dist = DBL_MAX;
-            thisCached.notReachableThisFrame[target] = Broodwar->getFrameCount();
-            reachable = false;
+    void Path::generateAS(function <double(const TilePosition&)> passedHeuristic)
+    {
+        if (!source.isValid() || !target.isValid())
+            return;
+
+        // TODO: Add caching
+
+        currentId++;
+        if (currentId == INT_MAX)
+            currentId = 0;
+
+        priority_queue <Node> openSet;
+        vector<TilePosition> direction{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 } };
+        openSet.push(Node(target, target, 1.0, 1.0, 1.0, currentId));
+
+        if (diagonal)
+            direction.insert(direction.end(), { { -1, -1 }, { -1, 1 }, { 1, -1 }, { 1, 1 } });
+
+        const auto createPath = [&](Node& current) {
+            while (current.tile != target) {
+                tiles.push_back(current.tile);
+                current = closedSet[oneDim(current.parent)];
+            }
+            if (current.tile == target) {
+                reachable = true;
+                tiles.push_back(target);
+            }
+        };
+
+        while (!openSet.empty()) {
+            Node parent = openSet.top();
+            openSet.pop();
+            closedSet[oneDim(parent.tile)] = parent;
+
+            if (parent.tile == source) {
+                createPath(parent);
+                return;
+            }
+
+            for (const auto &d : direction) {
+                const auto t = parent.tile + d;
+
+                if (!t.isValid())
+                    continue;
+
+                auto g = parent.g + passedHeuristic(t);
+                auto h = source.getDistance(t) + ((d.x != 0 && d.y != 0) ? 1.414 : 1.0);
+                auto f = g + h;
+                Node &cs = closedSet[oneDim(t)];
+
+                // Closed Node has been queued or closed
+                if (cs.tile != TilePosition(-1, -1) && cs.id == currentId)
+                    continue;
+
+                openSet.push(Node(t, parent.tile, f, g, h, currentId));
+                cs.tile = t;
+                cs.id = currentId;
+            }
         }
     }
 
@@ -180,7 +275,6 @@ namespace BWEB
         if (Map::isWalkable(tile, type) && Map::isUsed(tile) == UnitTypes::None)
             return true;
         return false;
-
     }
 
     namespace Pathfinding {
@@ -192,6 +286,15 @@ namespace BWEB
         void clearCache(function <bool(const TilePosition&)> passedWalkable) {
             pathCache[&passedWalkable].iteratorList.clear();
             pathCache[&passedWalkable].pathCache.clear();
+        }
+
+        void testCache() {
+            for (auto &[_, cache] : pathCache) {
+                for (auto &[tile, frame] : cache.notReachableThisFrame) {
+                    if (frame >= Broodwar->getFrameCount() - 10)
+                        Broodwar->drawLineMap(Position(tile.first), Position(tile.second), Colors::Red);
+                }
+            }
         }
     }
 }

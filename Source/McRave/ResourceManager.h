@@ -3,13 +3,13 @@
 
 namespace McRave::Resources
 {
-    int getMinCount();
+    int getMineralCount();
     int getGasCount();
     int getIncomeMineral();
     int getIncomeGas();
-    bool isMinSaturated();
+    bool isMineralSaturated();
     bool isGasSaturated();
-    bool isHalfMinSaturated();
+    bool isHalfMineralSaturated();
     bool isHalfGasSaturated();
     std::set <std::shared_ptr<ResourceInfo>>& getMyMinerals();
     std::set <std::shared_ptr<ResourceInfo>>& getMyGas();
@@ -17,6 +17,8 @@ namespace McRave::Resources
 
     void recheckSaturation();
     void onFrame();
+    void onStart();
+    void onEnd();
     void storeResource(BWAPI::Unit);
     void removeResource(BWAPI::Unit);
 

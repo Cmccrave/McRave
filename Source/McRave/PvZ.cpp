@@ -30,8 +30,8 @@ namespace McRave::BuildOrder::Protoss {
             transitionReady =                               false;
 
             gasLimit =                                      INT_MAX;
-            zealotLimit =                                   INT_MAX;
-            dragoonLimit =                                  0;
+            unitLimits[Protoss_Zealot] =                    INT_MAX;
+            unitLimits[Protoss_Dragoon] =                   0;
 
             desiredDetection =                              Protoss_Observer;
             firstUpgrade =                                  vis(Protoss_Dragoon) > 0 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
@@ -48,8 +48,8 @@ namespace McRave::BuildOrder::Protoss {
         firstTech =                                         TechTypes::None;
         cutWorkers =                                        Production::hasIdleProduction();
 
-        zealotLimit =                                       INT_MAX;
-        dragoonLimit =                                      vis(Protoss_Templar_Archives) > 0 ? INT_MAX : 0;
+        unitLimits[Protoss_Zealot] =                        INT_MAX;
+        unitLimits[Protoss_Dragoon] =                       vis(Protoss_Templar_Archives) > 0 ? INT_MAX : 0;
         firstUnit =                                         Protoss_Corsair;
 
         buildQueue[Protoss_Nexus] =                         1;
@@ -116,7 +116,7 @@ namespace McRave::BuildOrder::Protoss {
 
             buildQueue[Protoss_Nexus] =                     1;
             buildQueue[Protoss_Pylon] =                     1 + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) < 6 || s >= 32);
-            buildQueue[Protoss_Shield_Battery] =            vis(Protoss_Gateway) > 0, com(Protoss_Gateway) > 0;
+            buildQueue[Protoss_Shield_Battery] =            vis(Protoss_Gateway) > 0;
             buildQueue[Protoss_Gateway] =                   0;
         }
 
@@ -161,13 +161,13 @@ namespace McRave::BuildOrder::Protoss {
             }
             else if (currentTransition == "2Stargate") {
                 inOpeningBook =                             s < 100;
-                lockedTransition =                          total(Protoss_Stargate) >= 2;
-                firstUpgrade =                              UpgradeTypes::Protoss_Air_Weapons;
+                lockedTransition =                          total(Protoss_Stargate) >= 2; 
+                firstUpgrade =                              total(Protoss_Stargate) > 0 ? UpgradeTypes::Protoss_Air_Weapons : UpgradeTypes::None;
                 firstTech =                                 TechTypes::None;
                 firstUnit =                                 Protoss_Corsair;
 
                 // Build
-                buildQueue[Protoss_Assimilator] =           (s >= 38) + (s >= 80);
+                buildQueue[Protoss_Assimilator] =           (s >= 38) + (atPercent(Protoss_Cybernetics_Core, 0.75));
                 buildQueue[Protoss_Cybernetics_Core] =      s >= 36;
                 buildQueue[Protoss_Citadel_of_Adun] =       0;
                 buildQueue[Protoss_Templar_Archives] =      0;
@@ -182,8 +182,8 @@ namespace McRave::BuildOrder::Protoss {
             else if (currentTransition == "5GateGoon") {    // "https://liquipedia.net/starcraft/5_Gate_Ranged_Goons_(vs._Zerg)"
                 inOpeningBook =                             s < 160;
                 lockedTransition =                          total(Protoss_Gateway) >= 3;
-                zealotLimit =                               2;
-                dragoonLimit =                              INT_MAX;
+                unitLimits[Protoss_Zealot] =                2;
+                unitLimits[Protoss_Dragoon] =               INT_MAX;
                 firstUpgrade =                              UpgradeTypes::Singularity_Charge;
                 firstTech =                                 TechTypes::None;
                 firstUnit =                                 UnitTypes::None;
@@ -199,15 +199,15 @@ namespace McRave::BuildOrder::Protoss {
             else if (currentTransition == "NeoBisu") {      // "https://liquipedia.net/starcraft/%2B1_Sair/Speedlot_(vs._Zerg)"
                 inOpeningBook =                             s < 100;
                 lockedTransition =                          total(Protoss_Citadel_of_Adun) > 0 && total(Protoss_Stargate) > 0;
-                firstUpgrade =                              UpgradeTypes::Protoss_Air_Weapons;
+                firstUpgrade =                              total(Protoss_Stargate) > 0 ? UpgradeTypes::Protoss_Air_Weapons : UpgradeTypes::None;
                 firstTech =                                 TechTypes::None;
                 firstUnit =                                 Protoss_Corsair;
 
                 // Build
-                buildQueue[Protoss_Assimilator] =           (s >= 34) + (s >= 60);
+                buildQueue[Protoss_Assimilator] =           (s >= 34) + (atPercent(Protoss_Cybernetics_Core, 0.75));
                 buildQueue[Protoss_Gateway] =               1 + (vis(Protoss_Citadel_of_Adun) > 0);
                 buildQueue[Protoss_Cybernetics_Core] =      s >= 36;
-                buildQueue[Protoss_Citadel_of_Adun] =       vis(Protoss_Assimilator) >= 2;
+                buildQueue[Protoss_Citadel_of_Adun] =       vis(Protoss_Corsair) > 0;
                 buildQueue[Protoss_Stargate] =              com(Protoss_Cybernetics_Core) >= 1;
                 buildQueue[Protoss_Templar_Archives] =      Broodwar->self()->isUpgrading(UpgradeTypes::Leg_Enhancements) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements);
 
@@ -289,8 +289,8 @@ namespace McRave::BuildOrder::Protoss {
                 inOpeningBook =                             s < 120;
                 lockedTransition =                          true;
                 firstUpgrade =                              UpgradeTypes::Singularity_Charge;
-                zealotLimit =                               5;
-                dragoonLimit =                              INT_MAX;
+                unitLimits[Protoss_Zealot] =                5;
+                unitLimits[Protoss_Dragoon] =               INT_MAX;
                 wallNat =                                   vis(Protoss_Nexus) >= 2 || currentOpener == "Natural";
                 playPassive =                               !firstReady() && (!Terrain::foundEnemy() || Strategy::enemyPressure());
 
@@ -324,7 +324,7 @@ namespace McRave::BuildOrder::Protoss {
 
         // Openers
         if (currentOpener == "1Zealot") {
-            zealotLimit =                                   vis(Protoss_Cybernetics_Core) > 0 ? INT_MAX : 1;
+            unitLimits[Protoss_Zealot] =                    vis(Protoss_Cybernetics_Core) > 0 ? INT_MAX : 1;
 
             buildQueue[Protoss_Nexus] =                     1;
             buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 32);
@@ -333,7 +333,7 @@ namespace McRave::BuildOrder::Protoss {
             buildQueue[Protoss_Cybernetics_Core] =          s >= 34;
         }
         else if (currentOpener == "2Zealot") {
-            zealotLimit =                                   vis(Protoss_Cybernetics_Core) > 0 ? INT_MAX : 2;
+            unitLimits[Protoss_Zealot] =                    vis(Protoss_Cybernetics_Core) > 0 ? INT_MAX : 2;
 
             buildQueue[Protoss_Nexus] =                     1;
             buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 24);
@@ -347,7 +347,7 @@ namespace McRave::BuildOrder::Protoss {
             firstUpgrade =                                  UpgradeTypes::None;
             firstTech =                                     vis(Protoss_Dark_Templar) >= 2 ? TechTypes::Psionic_Storm : TechTypes::None;
             inOpeningBook =                                 s < 70;
-            dragoonLimit =                                  1;
+            unitLimits[Protoss_Dragoon] =                   1;
             lockedTransition =                              total(Protoss_Citadel_of_Adun) > 0;
             playPassive =                                   s < 70;
             firstUnit =                                     Protoss_Dark_Templar;

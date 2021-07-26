@@ -590,8 +590,7 @@ namespace BWEM {
                         (cur->Altitude() / (double)TempAreaList[bigger].HighestAltitude() >= 0.90) ||
                         (cur->Altitude() / (double)TempAreaList[smaller].HighestAltitude() >= 0.90) ||
                         any_of(StartingLocations().begin(), StartingLocations().end(), [&pos](const TilePosition & startingLoc)
-                    { return dist(TilePosition(pos), startingLoc + TilePosition(2, 1)) <= 3; }) ||
-                        false
+                    { return dist(TilePosition(pos), startingLoc + TilePosition(2, 1)) <= 3; })
                         )
                     {
                         // adds cur to the absorbing area:

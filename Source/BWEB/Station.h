@@ -7,17 +7,23 @@ namespace BWEB {
 
     class Station
     {
-        const BWEM::Base* base;
-        const BWEM::ChokePoint* chokepoint;
+        const BWEM::Base* base = nullptr;
         const BWEM::Base * partnerBase = nullptr;
-        std::set<BWAPI::TilePosition> defenses;
+        const BWEM::ChokePoint* choke = nullptr;
         BWAPI::Position resourceCentroid, defenseCentroid;
+        std::set<BWAPI::TilePosition> secondaryLocations;
+        std::set<BWAPI::TilePosition> defenses;
         bool main, natural;
+        double defenseAngle = 0.0;
+        double baseAngle = 0.0;
+        double chokeAngle = 0.0;
 
-        void addResourceReserve(BWAPI::Position, BWAPI::Position, BWAPI::Position);
         void initialize();
         void findChoke();
+        void findSecondaryLocations();
         void findDefenses();
+        void addResourceReserves();
+        void cleanup();
 
     public:
         Station(const BWEM::Base* _base, bool _main, bool _natural)
@@ -25,30 +31,30 @@ namespace BWEB {
             base                = _base;
             main                = _main;
             natural             = _natural;
-            resourceCentroid    = BWAPI::Position(0,0);
-            defenseCentroid     = BWAPI::Position(0,0);
+            resourceCentroid    = BWAPI::Position(0, 0);
+            defenseCentroid     = BWAPI::Position(0, 0);
             initialize();
             findChoke();
+            findSecondaryLocations();
             findDefenses();
+            addResourceReserves();
+            cleanup();
         }
 
         /// <summary> Returns the central position of the resources associated with this Station including geysers. </summary>
         BWAPI::Position getResourceCentroid() { return resourceCentroid; }
 
+        /// <summary> Returns a backup base placement in case the main is blocked or a second one is desired for walling purposes. </summary>
+        std::set<BWAPI::TilePosition> getSecondaryLocations() { return secondaryLocations; }
+
         /// <summary> Returns the set of defense locations associated with this Station. </summary>
-        std::set<BWAPI::TilePosition>& getDefenseLocations() { return defenses; }
+        std::set<BWAPI::TilePosition>& getDefenses() { return defenses; }
 
         /// <summary> Returns the BWEM Base associated with this Station. </summary>
         const BWEM::Base * getBase() { return base; }
 
         /// <summary> Returns the BWEM Choke that should be used for generating a Wall at. </summmary>
-        const BWEM::ChokePoint * getChokepoint() { return chokepoint; }
-
-        /// <summary> Returns the number of ground defenses associated with this Station. </summary>
-        int getGroundDefenseCount();
-
-        /// <summary> Returns the number of air defenses associated with this Station. </summary>
-        int getAirDefenseCount();
+        const BWEM::ChokePoint * getChokepoint() { return choke; }
 
         /// <summary> Returns true if the Station is a main Station. </summary>
         bool isMain() { return main; }
@@ -59,8 +65,14 @@ namespace BWEB {
         /// <summary> Draws all the features of the Station. </summary>
         void draw();
 
+        ///
+        double getDefenseAngle() { return defenseAngle; }
+
         bool operator== (Station* s) {
-            return base == s->getBase();
+            return s && base == s->getBase();
+        }
+        bool operator== (Station s) {
+            return base == s.getBase();
         }
     };
 

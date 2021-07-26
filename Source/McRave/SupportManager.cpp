@@ -16,59 +16,44 @@ namespace McRave::Support {
 
         void updateDestination(UnitInfo& unit)
         {
-            auto closestStation = Stations::getClosestStation(PlayerState::Self, unit.getPosition());
+            auto closestStation = Stations::getClosestStationAir(PlayerState::Self, unit.getPosition());
+            auto closestSpore = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+                return u.getType() == Zerg_Spore_Colony;
+            });
 
-            // Send Overlords to a corner at least 10 tiles away when we know they will have air before we do
-            if (unit.getType() == Zerg_Overlord && Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "1GateCore" && Strategy::getEnemyTransition() == "Corsair" && Util::getTime() < Time(8, 00)) {
-                vector<Position> directions ={ Position(0,0), Position(0, Broodwar->mapHeight() * 32), Position(Broodwar->mapWidth() * 32, 0), Position(Broodwar->mapWidth() * 32, Broodwar->mapHeight() * 32) };
-                auto distBest = 0.0;
-                auto posBest = Positions::Invalid;
-                for (auto &p : directions) {
-                    auto pos = Util::clipPosition(p);
-                    auto distEnemy = pos.getDistance(Terrain::getEnemyStartingPosition());
-                    auto distHome = pos.getDistance(BWEB::Map::getMainPosition());
-                    Broodwar->drawLineMap(pos, BWEB::Map::getMainPosition(), Colors::Grey);
-                    if (distHome > 640.0 && distEnemy > distBest) {
-                        posBest = pos;
-                        distBest = distEnemy;
+            // Send Overlords to safety from enemy air
+            if (unit.getType() == Zerg_Overlord && closestSpore && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 || !unit.isHealthy())) {
+                if (closestSpore) {
+                    unit.setDestination(closestSpore->getPosition());
+                    for (int x = -1; x <= 1; x++) {
+                        for (int y = -1; y <= 1; y++) {
+                            auto center = Position(closestSpore->getTilePosition() + TilePosition(x, y)) + Position(16, 16);
+                            auto closest = Util::getClosestUnit(center, PlayerState::Self, [&](auto &u) {
+                                return u.getType() == Zerg_Overlord;
+                            });
+                            if (closest && unit == *closest) {
+                                unit.setDestination(center);
+                                goto endloop;
+                            }
+                        }
                     }
                 }
-                unit.setDestination(posBest);
+            endloop:;
             }
+
+            else if (unit.getType() == Zerg_Overlord && !closestSpore && Strategy::getEnemyOpener() == "Corsair" && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 || !unit.isHealthy()))
+                unit.setDestination(Terrain::getMyNatural()->getBase()->Center());
 
             // Set goal as destination
-            else if (unit.getGoal().isValid())
+            else if (unit.getGoal().isValid() && (!Terrain::isInAllyTerritory(unit.getTilePosition()) || Terrain::isInAllyTerritory(TilePosition(unit.getGoal())) || Players::ZvZ()))
                 unit.setDestination(unit.getGoal());
 
-            // Send Overlords around edge of map if they are far from home
-            else if (unit.getType() == Zerg_Overlord && Terrain::getEnemyStartingPosition().isValid() && closestStation && unit.getPosition().getDistance(closestStation->getBase()->Center()) > 320.0) {
-                auto closestCorner = Terrain::getClosestMapCorner(BWEB::Map::getMainPosition());
-                if (abs(unit.getPosition().x - closestCorner.x) > abs(unit.getPosition().y - closestCorner.y))
-                    unit.setDestination(Position(unit.getPosition().x, closestCorner.y));
-                else
-                    unit.setDestination(Position(closestCorner.x, unit.getPosition().y));
-            }
-
-            // Send Overlords to safety if needed
-            else if (unit.getType() == Zerg_Overlord && (Players::getStrength(PlayerState::Self).groundToAir == 0.0 || Players::getStrength(PlayerState::Self).airToAir == 0.0)) {
-
-                auto closestSpore = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                    return u.getType() == Zerg_Spore_Colony;
-                });
-
-                auto closestStation = Stations::getClosestStation(PlayerState::Self, unit.getPosition());
-                if (closestSpore)
-                    unit.setDestination(closestSpore->getPosition());
-                else if (closestStation)
-                    unit.setDestination(closestStation->getBase()->Center());
-            }
-
             // Find the highest combat cluster that doesn't overlap a current support action of this UnitType
-            else {
+            else if (unit.getType() != Zerg_Overlord || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace)) {
                 auto highestCluster = 0.0;
                 for (auto &[cluster, position] : Combat::getCombatClusters()) {
                     const auto score = cluster / (position.getDistance(Terrain::getAttackPosition()) * position.getDistance(unit.getPosition()));
-                    if (score > highestCluster && !Actions::overlapsActions(unit.unit(), position, unit.getType(), PlayerState::Self, 200)) {
+                    if (score > highestCluster && !Actions::overlapsActions(unit.unit(), position, unit.getType(), PlayerState::Self, 64)) {
                         highestCluster = score;
                         unit.setDestination(position);
                     }
@@ -88,8 +73,10 @@ namespace McRave::Support {
                     }
                 }
             }
-
-            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Purple);
+            else if (Terrain::getMyNatural() && Stations::needAirDefenses(Terrain::getMyNatural()) > 0)
+                unit.setDestination(Terrain::getMyNatural()->getBase()->Center());
+            else if (closestStation)
+                unit.setDestination(closestStation->getBase()->Center());
 
             if (!unit.getDestination().isValid())
                 unit.setDestination(BWEB::Map::getMainPosition());

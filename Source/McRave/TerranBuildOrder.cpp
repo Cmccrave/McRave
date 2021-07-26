@@ -11,6 +11,14 @@ namespace McRave::BuildOrder::Terran {
     {
         if (currentBuild == "RaxFact")
             RaxFact();
+
+        if (Broodwar->getGameType() == GameTypes::Team_Free_For_All || Broodwar->getGameType() == GameTypes::Team_Melee) {
+            buildQueue[Terran_Command_Center] = Players::getSupply(PlayerState::Self, Races::None) >= 30;
+            currentBuild = "RaxFact";
+            currentOpener = "10Rax";
+            currentTransition = "2Fact";
+            RaxFact();
+        }
     }
 
     void tech()
@@ -21,7 +29,6 @@ namespace McRave::BuildOrder::Terran {
 
     void situational()
     {
-
         auto satVal = 2;
         auto prodVal = vis(Terran_Barracks) + vis(Terran_Factory) + vis(Terran_Starport);
         auto baseVal = vis(Terran_Command_Center);
@@ -32,20 +39,27 @@ namespace McRave::BuildOrder::Terran {
 
         if (techComplete())
             techUnit = None; // If we have our tech unit, set to none    
-        if (Strategy::needDetection() || (!inOpeningBook && !getTech && !techSat /*&& productionSat*/ && techUnit == None))
+        if (Strategy::enemyInvis() || (!inOpeningBook && !getTech && !techSat /*&& productionSat*/ && techUnit == None))
             getTech = true; // If production is saturated and none are idle or we need detection, choose a tech
 
         productionSat = (com(Terran_Factory) >= min(12, (2 * vis(Terran_Command_Center))));
         unlockedType.insert(Terran_Goliath);
         unlockedType.insert(Terran_Vulture);
 
-        if (Players::getSupply(PlayerState::Self) >= 80)
+        if (s >= 80)
             unlockedType.insert(Terran_Siege_Tank_Tank_Mode);
 
         /*if (!inOpeningBook || com(Terran_Marine) >= 4)
             unlockedType.erase(Terran_Marine);
         else*/
         unlockedType.insert(Terran_Marine);
+        unlockedType.insert(Terran_Vulture);
+        unlockedType.insert(Terran_Siege_Tank_Tank_Mode);
+        unlockedType.insert(Terran_Siege_Tank_Siege_Mode);
+
+        armyComposition[Terran_Marine] = 0.05;
+        armyComposition[Terran_Vulture] = 0.75;
+        armyComposition[Terran_Siege_Tank_Tank_Mode] = 0.20;
 
 
         // Control Tower
@@ -57,8 +71,8 @@ namespace McRave::BuildOrder::Terran {
             buildQueue[Terran_Machine_Shop] = max(1, com(Terran_Factory) - com(Terran_Command_Center) - 1);
 
         // Supply Depot logic
-        if (vis(Terran_Supply_Depot) > (int)takeNatural) {
-            int count = min(22, (int)floor((Players::getSupply(PlayerState::Self) / max(15, (16 - vis(Terran_Supply_Depot) - vis(Terran_Command_Center))))));
+        if (vis(Terran_Supply_Depot) > 0) {
+            int count = min(22, s / 14) - (com(Terran_Command_Center) - 1);
             buildQueue[Terran_Supply_Depot] = count;
         }
 
@@ -77,10 +91,10 @@ namespace McRave::BuildOrder::Terran {
                 buildQueue[Terran_Refinery] = Resources::getGasCount();
 
             // Armory logic TODO
-            buildQueue[Terran_Armory] = (Players::getSupply(PlayerState::Self) > 160) + (Players::getSupply(PlayerState::Self) > 200);
+            buildQueue[Terran_Armory] = (s > 160) + (s > 200);
 
             // Academy logic
-            if (Strategy::needDetection()) {
+            if (Strategy::enemyInvis()) {
                 buildQueue[Terran_Academy] = 1;
                 buildQueue[Terran_Comsat_Station] = 2;
             }
@@ -89,7 +103,7 @@ namespace McRave::BuildOrder::Terran {
                 buildQueue[Terran_Physics_Lab] = 1;
 
             // Engineering Bay logic
-            if (Players::getSupply(PlayerState::Self) > 200)
+            if (s > 200)
                 buildQueue[Terran_Engineering_Bay] = 1;
 
             // Missle Turret logic

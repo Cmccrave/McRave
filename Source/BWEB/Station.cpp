@@ -11,32 +11,69 @@ namespace BWEB {
         vector<const BWEM::Base *> natBases;
     }
 
-    void Station::addResourceReserve(Position resourceCenter, Position startCenter, Position stationCenter)
+    void Station::addResourceReserves()
     {
-        TilePosition start(startCenter);
-        TilePosition test = start;
+        const auto addReserve = [&](Unit resource) {
+            TilePosition start(resource->getPosition());
+            vector<TilePosition> directions{ {1,0}, {-1,0}, {0, 1}, {0,-1} };
+            auto end = (base->Center() * 5 / 6) + (resourceCentroid / 6);
 
-        while (test != TilePosition(stationCenter)) {
-            auto distBest = DBL_MAX;
-            start = test;
-            for (int x = start.x - 1; x <= start.x + 1; x++) {
-                for (int y = start.y - 1; y <= start.y + 1; y++) {
-                    TilePosition t(x, y);
-                    Position p = Position(t) + Position(16, 16);
-
-                    if (!t.isValid())
-                        continue;
-
-                    auto dist = Map::isReserved(t) ? p.getDistance(stationCenter) + 16 : p.getDistance(stationCenter);
-                    if (dist <= distBest) {
-                        test = t;
-                        distBest = dist;
+            // Get the starting tile
+            auto distClosest = DBL_MAX;
+            for (int x = resource->getTilePosition().x; x < resource->getTilePosition().x + resource->getType().tileWidth(); x++) {
+                for (int y = resource->getTilePosition().y; y < resource->getTilePosition().y + resource->getType().tileHeight(); y++) {
+                    auto tile = TilePosition(x, y);
+                    auto center = Position(tile) + Position(16, 16);
+                    auto dist = center.getDistance(resourceCentroid);
+                    if (dist < distClosest) {
+                        start = tile;
+                        distClosest = dist;
                     }
                 }
             }
 
-            if (test.isValid())
-                Map::addReserve(test, 1, 1);
+            TilePosition next = start;
+            while (next != TilePosition(end)) {
+                auto distBest = DBL_MAX;
+                start = next;
+                for (auto &t : directions) {
+                    auto tile = start + t;
+                    auto pos = Position(tile) + Position(16, 16);
+
+                    if (!tile.isValid())
+                        continue;
+
+                    auto dist = pos.getDistance(end);
+                    if (dist <= distBest) {
+                        next = tile;
+                        distBest = dist;
+                    }
+                }
+
+                if (next.isValid()) {
+                    Map::addReserve(next, 1, 1);
+
+                    // Remove any defenses in the way of a geyser
+                    if (!resource->getType().isMineralField()) {
+                        for (auto &def : defenses) {
+                            if (next.x >= def.x && next.x < def.x + 2 && next.y >= def.y && next.y < def.y + 2) {
+                                defenses.erase(def);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        // Add reserved tiles
+        for (auto &m : base->Minerals()) {
+            Map::addReserve(m->TopLeft(), 2, 1);
+            addReserve(m->Unit());
+        }
+        for (auto &g : base->Geysers()) {
+            Map::addReserve(g->TopLeft(), 4, 2);
+            addReserve(g->Unit());
         }
     }
 
@@ -61,17 +98,7 @@ namespace BWEB {
 
         if (cnt > 0)
             resourceCentroid = resourceCentroid / cnt;
-
-        // Add reserved tiles
-        for (auto &m : base->Minerals()) {
-            Map::addReserve(m->TopLeft(), 2, 1);
-            addResourceReserve(resourceCentroid, m->Pos(), base->Center());
-        }
-        for (auto &g : base->Geysers()) {
-            Map::addReserve(g->TopLeft(), 4, 2);
-            addResourceReserve(resourceCentroid, g->Pos(), base->Center());
-        }
-        Map::addReserve(base->Location(), 4, 3);
+        Map::addUsed(base->Location(), Broodwar->self()->getRace().getResourceDepot());
     }
 
     void Station::findChoke()
@@ -94,18 +121,18 @@ namespace BWEB {
 
 
         if (main && !Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()).empty()) {
-            chokepoint = Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()).front();
+            choke = Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()).front();
 
             // Partner only has one chokepoint means we have a shared choke with this path
             if (partnerBase->GetArea()->ChokePoints().size() == 1)
-                chokepoint = Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()).back();
+                choke = Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()).back();
         }
 
         else {
 
             // Only one chokepoint in this area
             if (base->GetArea()->ChokePoints().size() == 1) {
-                chokepoint = base->GetArea()->ChokePoints().front();
+                choke = base->GetArea()->ChokePoints().front();
                 return;
             }
 
@@ -137,92 +164,61 @@ namespace BWEB {
             }
 
             distBest = DBL_MAX;
-            for (auto &choke : base->GetArea()->ChokePoints()) {
-                if (choke->Center() == BWEB::Map::getMainChoke()->Center()
-                    || choke->Blocked()
-                    || choke->Geometry().size() <= 3
-                    || (choke->GetAreas().first != second && choke->GetAreas().second != second))
+            for (auto &c : base->GetArea()->ChokePoints()) {
+                if (c->Center() == BWEB::Map::getMainChoke()->Center()
+                    || c->Blocked()
+                    || c->Geometry().size() <= 3
+                    || (c->GetAreas().first != second && c->GetAreas().second != second))
                     continue;
 
-                const auto dist = Position(choke->Center()).getDistance(Position(partnerBase->Center()));
+                const auto dist = Position(c->Center()).getDistance(Position(partnerBase->Center()));
                 if (dist < distBest) {
-                    chokepoint = choke;
+                    choke = c;
                     distBest = dist;
                 }
+            }
+        }
+
+        if (choke && !main)
+            defenseCentroid = Position(choke->Center());
+
+    }
+
+    void Station::findSecondaryLocations()
+    {
+        auto cnt = 0;
+        if (main)
+            cnt = 1;
+        if (!main && !natural)
+            cnt = 2;
+
+        for (int i = 0; i < cnt; i++) {
+            auto distBest = DBL_MAX;
+            auto tileBest = TilePositions::Invalid;
+            for (auto x = base->Location().x - 4; x <= base->Location().x + 4; x++) {
+                for (auto y = base->Location().y - 3; y <= base->Location().y + 3; y++) {
+                    auto tile = TilePosition(x, y);
+                    auto center = Position(tile) + Position(64, 48);
+                    auto dist = center.getDistance(resourceCentroid);
+                    if (dist < distBest && Map::isPlaceable(Broodwar->self()->getRace().getResourceDepot(), tile)) {
+                        distBest = dist;
+                        tileBest = tile;
+                    }
+                }
+            }
+
+            if (tileBest.isValid()) {
+                secondaryLocations.insert(tileBest);
+                Map::addUsed(tileBest, Broodwar->self()->getRace().getResourceDepot());
             }
         }
     }
 
     void Station::findDefenses()
     {
-        set<TilePosition> basePlacements;
-        set<TilePosition> geyserPlacements;
+        vector<TilePosition> basePlacements;
+        vector<TilePosition> geyserPlacements ={ {-2, -2}, {-2, 0}, {-2, 2}, {0, -2}, {0, 2}, {2, -2}, {2, 2}, {4, -2}, {4, 0}, {4, 2} };
         auto here = base->Location();
-        auto placeRight = base->Center().x > defenseCentroid.x;
-        auto placeBelow = base->Center().y > defenseCentroid.y;
-
-        const auto &bottomRight = [&]() {
-            if (!main)
-                basePlacements ={ {-2, -2}, {2, -2}, {-2, 1},                                         // Close
-                                  {4, -3}, {4, -1}, {4, 1}, {4, 3}, {2, 3}, {0, 3}, {-2, 3} };        // Far
-            else
-                basePlacements ={ {-2, -2}, {1, -2}, {-2, 1} };                                       // Close
-
-            if (!natural) {
-                geyserPlacements ={ {0, -2}, {2, -2}, // Above
-                                    {-2, 0}, {4, 0},  // Sides
-                                    //{2, 2}            // Below - was stopping blocks from forming properly
-                };
-            }
-        };
-
-        const auto &bottomLeft = [&]() {
-            if (!main)
-                basePlacements ={ {4, -2}, {0, -2}, {4, 1},                                         // Close
-                                  {-2, -3}, {-2, -1}, {-2, 1}, {-2, 3}, {0, 3}, {2, 3}, {4, 3} };   // Far
-            else
-                basePlacements ={ {4, -2}, {1, -2}, {4, 1} };                                       // Close
-
-            if (!natural) {
-                geyserPlacements ={ {0, -2}, {2, -2}, // Above
-                                    {-2, 0}, {4, 0},  // Sides
-                                    //{0, 2}            // Below - was stopping blocks from forming properly
-                };
-            }
-        };
-
-        const auto &topRight = [&]() {
-            if (!main)
-                basePlacements ={ {-2, 3}, {-2, 0}, {2, 3},                                         // Close
-                                  {-2, -2}, {0, -2}, {2, -2}, {4, -2}, {4, 0}, {4, 2}, {4, 4} };    // Far
-            else
-                basePlacements ={ {-2, 3}, {-2, 0}, {1, 3} };                                       // Close
-
-            if (!natural) {
-                geyserPlacements ={ //{2, -2},          // Above - was stopping blocks from forming properly
-                                    {-2, 0}, {4, 0},  // Sides
-                                    {0, 2}, {2, 2}    // Below
-                };
-            }
-        };
-
-        const auto &topLeft = [&]() {
-            if (!main)
-                basePlacements ={ {4, 0}, {0, 3}, {4, 3},                                             // Close
-                                  {-2, 4}, {-2, 2}, {-2, 0}, {-2, -2}, {0, -2}, {2, -2}, {4, -2} };   // Far
-            else
-                basePlacements ={ {4, 0}, {1, 3}, {4, 3} };                                           // Close
-
-            if (!natural) {
-                geyserPlacements ={ //{0, -2},          // Above - was stopping blocks from forming properly
-                                    {-2, 0}, {4, 0},  // Sides
-                                    {0, 2}, {2, 2}    // Below
-                };
-            }
-        };
-
-        // Insert defenses
-        placeBelow ? (placeRight ? bottomRight() : bottomLeft()) : (placeRight ? topRight() : topLeft());
         auto defenseType = UnitTypes::None;
         if (Broodwar->self()->getRace() == Races::Protoss)
             defenseType = UnitTypes::Protoss_Photon_Cannon;
@@ -231,11 +227,70 @@ namespace BWEB {
         if (Broodwar->self()->getRace() == Races::Zerg)
             defenseType = UnitTypes::Zerg_Creep_Colony;
 
+        // Get angle of chokepoint
+        if (choke && base && (main || natural)) {
+            auto dist = min(480.0, getBase()->Center().getDistance(Position(choke->Center())));
+            baseAngle = fmod(Map::getAngle(make_pair(getBase()->Center(), Position(choke->Center()) + Position(4, 4))), 3.14);
+            chokeAngle = fmod(Map::getAngle(make_pair(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2)))), 3.14);
+
+            auto diff = baseAngle - chokeAngle;
+            diff > 0.7 ? baseAngle -= 1.57 : baseAngle += 1.57;
+            defenseAngle = max(0.0, (baseAngle  * (dist / 480.0)) + (chokeAngle * (480.0 - dist) / 480.0));
+
+            if (base->GetArea()->ChokePoints().size() >= 3) {
+                const BWEM::ChokePoint * validSecondChoke = nullptr;
+                for (auto &otherChoke : base->GetArea()->ChokePoints()) {
+                    if (choke == otherChoke)
+                        continue;
+
+                    if ((choke->GetAreas().first == otherChoke->GetAreas().first && choke->GetAreas().second == otherChoke->GetAreas().second)
+                        || (choke->GetAreas().first == otherChoke->GetAreas().second && choke->GetAreas().second == otherChoke->GetAreas().first))
+                        validSecondChoke = otherChoke;
+                }
+
+                if (validSecondChoke)
+                    defenseAngle = (Map::getAngle(make_pair(Position(choke->Center()), Position(validSecondChoke->Center()))) + Map::getAngle(make_pair(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2))))) / 2.0;
+            }
+        }
+        else {
+            defenseCentroid = BWEB::Map::mapBWEM.Center();
+            defenseAngle = fmod(Map::getAngle(make_pair(Position(getBase()->Center()), defenseCentroid)), 3.14) + 1.57;
+        }
+
+        // Round to nearest pi/8 rads
+        auto nearestEight = int(round(defenseAngle / 0.3926991));
+        auto angle = nearestEight % 8;
+
+        // Generate defenses
+        if (main)
+            basePlacements ={ {-2, -2}, {-2, 1}, {1, -2} };
+        else {
+            if (angle == 0)
+                basePlacements ={ {-2, 2}, {-2, 0}, {-2, -2}, {0, 3}, {0, -2}, {2, -2}, {4, -2}, {4, 0}, {4, 2} };   // 0/8                
+            if (angle == 1 || angle == 7)
+                basePlacements ={ {-2, 3}, {-2, 1}, {-2, -1}, {0, -2}, {1, 3}, {2, -2}, {4, -1}, {4, 1}, };  // pi/8                
+            if (angle == 2 || angle == 6)
+                basePlacements ={ {-2, 2}, {-2, 0}, {0, 3}, {0, -2}, {2, -2}, {4, -2}, {4, 0} };   // pi/4                
+            if (angle == 3 || angle == 5)
+                basePlacements ={ {-2, 2}, {-2, 0}, {-1, -2}, {0, 3}, {1, -2}, {2, 3}, {3, -2}, {4, 0} };  // 3pi/8                
+            if (angle == 4)
+                basePlacements ={ {-2, 2}, {-2, 0}, {-2, -2}, {0, 3}, {0, -2}, {2, 3}, {2, -2}, {4, 3}, {4, -2} };   // pi/2
+        }
+
+        // Flip them vertically / horizontally as needed
+        if (base->Center().y < defenseCentroid.y) {
+            for (auto &placement : basePlacements)
+                placement.y = -(placement.y - 1);
+        }
+        if (base->Center().x < defenseCentroid.x) {
+            for (auto &placement : basePlacements)
+                placement.x = -(placement.x - 2);
+        }
+
         // Add scanner addon for Terran
         if (Broodwar->self()->getRace() == Races::Terran) {
             auto scannerTile = here + TilePosition(4, 1);
             defenses.insert(scannerTile);
-            Map::addReserve(scannerTile, 2, 2);
             Map::addUsed(scannerTile, defenseType);
         }
 
@@ -244,52 +299,24 @@ namespace BWEB {
             auto tile = base->Location() + placement;
             if (Map::isPlaceable(defenseType, tile)) {
                 defenses.insert(tile);
-                Map::addReserve(tile, 2, 2);
                 Map::addUsed(tile, defenseType);
             }
         }
 
-        // Add a defense near the geysers of this base if possible
-        for (auto &geyser : base->Geysers()) {
-            for (auto &placement : geyserPlacements) {
-                auto tile = geyser->TopLeft() + placement;
-                if (Map::isPlaceable(defenseType, tile)) {
-                    defenses.insert(tile);
-                    Map::addReserve(tile, 2, 2);
-                    Map::addUsed(tile, defenseType);
+        // Add geyser defenses
+        if (main) {
+            for (auto &geyser : base->Geysers()) {
+                for (auto &placement : geyserPlacements) {
+                    auto tile = geyser->TopLeft() + placement;
+                    auto center = Position(tile) + Position(16, 16);
+                    if (center.getDistance(base->Center()) > geyser->Pos().getDistance(base->Center()) && Map::isPlaceable(defenseType, tile)) {
+                        defenses.insert(tile);
+                        Map::addUsed(tile, defenseType);
+                    }
                 }
             }
         }
 
-        // Remove used
-        for (auto &tile : defenses)
-            Map::removeUsed(tile, 2, 2);
-    }
-
-    int Station::getGroundDefenseCount()
-    {
-        int count = 0;
-        for (auto &defense : defenses) {
-            auto type = Map::isUsed(defense);
-            if (type == UnitTypes::Protoss_Photon_Cannon
-                || type == UnitTypes::Zerg_Sunken_Colony
-                || type == UnitTypes::Terran_Bunker)
-                count++;
-        }
-        return count;
-    }
-
-    int Station::getAirDefenseCount()
-    {
-        int count = 0;
-        for (auto &defense : defenses) {
-            auto type = Map::isUsed(defense);
-            if (type == UnitTypes::Protoss_Photon_Cannon
-                || type == UnitTypes::Zerg_Spore_Colony
-                || type == UnitTypes::Terran_Missile_Turret)
-                count++;
-        }
-        return count;
     }
 
     void Station::draw()
@@ -304,12 +331,60 @@ namespace BWEB {
         }
 
         // Draw corresponding choke
-        if (chokepoint && base && (main || natural)) {
-            Broodwar->drawLineMap(Position(chokepoint->Pos(chokepoint->end1)), Position(chokepoint->Pos(chokepoint->end2)), Colors::Grey);
-            Broodwar->drawLineMap(base->Center(), Position(chokepoint->Center()), Colors::Grey);
+        if (choke && base && (main || natural)) {
+
+            if (base->GetArea()->ChokePoints().size() >= 3) {
+                const BWEM::ChokePoint * validSecondChoke = nullptr;
+                for (auto &otherChoke : base->GetArea()->ChokePoints()) {
+                    if (choke == otherChoke)
+                        continue;
+
+                    if ((choke->GetAreas().first == otherChoke->GetAreas().first && choke->GetAreas().second == otherChoke->GetAreas().second)
+                        || (choke->GetAreas().first == otherChoke->GetAreas().second && choke->GetAreas().second == otherChoke->GetAreas().first))
+                        validSecondChoke = choke;
+                }
+
+                if (validSecondChoke) {
+                    Broodwar->drawLineMap(Position(validSecondChoke->Pos(validSecondChoke->end1)), Position(validSecondChoke->Pos(validSecondChoke->end2)), Colors::Grey);
+                    Broodwar->drawLineMap(base->Center(), Position(validSecondChoke->Center()), Colors::Grey);
+                    Broodwar->drawLineMap(Position(choke->Center()), Position(validSecondChoke->Center()), Colors::Grey);
+                }
+            }
+
+            Broodwar->drawLineMap(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2)), Colors::Grey);
+            Broodwar->drawLineMap(base->Center(), Position(choke->Center()), Colors::Grey);
         }
 
+        // Label angle
+        Broodwar->drawTextMap(base->Center() - Position(0, 16), "%c%.2f", Text::White, baseAngle);
+        Broodwar->drawTextMap(base->Center(), "%c%.2f", Text::White, chokeAngle);
+        Broodwar->drawTextMap(base->Center() + Position(0, 16), "%c%.2f", Text::White, defenseAngle);
+
         Broodwar->drawBoxMap(Position(base->Location()), Position(base->Location()) + Position(129, 97), color);
+        Broodwar->drawTextMap(Position(base->Location()) + Position(4, 84), "%cS", textColor);
+        for (auto &location : secondaryLocations) {
+            Broodwar->drawBoxMap(Position(location), Position(location) + Position(129, 97), color);
+            Broodwar->drawTextMap(Position(location) + Position(4, 84), "%cS", textColor);
+        }
+    }
+
+    void Station::cleanup()
+    {
+        // Remove used on defenses
+        for (auto &tile : defenses) {
+            Map::removeUsed(tile, 2, 2);
+            Map::addReserve(tile, 2, 2);
+        }
+
+        // Remove used on secondary locations
+        for (auto &tile : secondaryLocations) {
+            Map::removeUsed(tile, 4, 3);
+            Map::addReserve(tile, 4, 3);
+        }
+
+        // Remove used on main location
+        Map::removeUsed(getBase()->Location(), 4, 3);
+        Map::addReserve(getBase()->Location(), 4, 3);
     }
 }
 

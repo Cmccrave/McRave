@@ -14,25 +14,27 @@ namespace McRave::BuildOrder
         void updateBuild()
         {
             // Set s for better build readability - TODO: better build order management
-            s = Players::getSupply(PlayerState::Self);
             startCount = Broodwar->getStartLocations().size();
             buildQueue.clear();
             armyComposition.clear();
 
             // TODO: Check if we own a <race> unit - have a build order allowed PER race for FFA weirdness and maybe mind control shenanigans
-            if (Broodwar->self()->getRace() == Races::Protoss) {
+            if (Players::getSupply(PlayerState::Self, Races::Protoss) > 0) {
+                s = Players::getSupply(PlayerState::Self, Races::Protoss);
                 Protoss::opener();
                 Protoss::tech();
                 Protoss::composition();
                 Protoss::situational();
                 Protoss::unlocks();
             }
-            if (Broodwar->self()->getRace() == Races::Terran) {
+            if (Players::getSupply(PlayerState::Self, Races::Terran) > 0) {
+                s = Players::getSupply(PlayerState::Self, Races::Terran);
                 Terran::opener();
                 Terran::tech();
                 Terran::situational();
             }
-            if (Broodwar->self()->getRace() == Races::Zerg) {
+            if (Players::getSupply(PlayerState::Self, Races::Zerg) > 0) {
+                s = Players::getSupply(PlayerState::Self, Races::Zerg);
                 Zerg::opener();
                 Zerg::tech();
                 Zerg::composition();
@@ -40,6 +42,42 @@ namespace McRave::BuildOrder
                 Zerg::unlocks();
             }
         }
+    }
+
+    int getGasQueued()
+    {
+        int gasQueued = 0;
+        for (auto &[building, count] : buildQueue) {
+            int morphOffset = 0;
+            if (building == Zerg_Creep_Colony)
+                morphOffset = vis(Zerg_Sunken_Colony) + vis(Zerg_Spore_Colony);
+            if (building == Zerg_Hatchery)
+                morphOffset = vis(Zerg_Lair) + vis(Zerg_Hive);
+            if (building == Zerg_Lair)
+                morphOffset = vis(Zerg_Hive);
+
+            if (count > vis(building) + morphOffset)
+                gasQueued += building.gasPrice() * (count - vis(building) - morphOffset);
+        }
+        return gasQueued;
+    }
+
+    int getMinQueued()
+    {
+        int minQueued = 0;
+        for (auto &[building, count] : buildQueue) {
+            int morphOffset = 0;
+            if (building == Zerg_Creep_Colony)
+                morphOffset = vis(Zerg_Sunken_Colony) + vis(Zerg_Spore_Colony);
+            if (building == Zerg_Hatchery)
+                morphOffset = vis(Zerg_Lair) + vis(Zerg_Hive);
+            if (building == Zerg_Lair)
+                morphOffset = vis(Zerg_Hive);
+
+            if (count > vis(building) + morphOffset)
+                minQueued += building.mineralPrice() * (count - vis(building) - morphOffset);
+        }
+        return minQueued;
     }
 
     bool atPercent(UnitType t, double percent) {
@@ -72,7 +110,7 @@ namespace McRave::BuildOrder
 
     bool techComplete()
     {
-        if (Strategy::needDetection() && techUnit == Protoss_Observer)
+        if (Strategy::enemyInvis() && techUnit == Protoss_Observer)
             return vis(Protoss_Robotics_Facility) > 0;
 
         // When 1 unit finishes
@@ -89,7 +127,7 @@ namespace McRave::BuildOrder
 
         // When timing attack finishes
         if (techUnit == Zerg_Mutalisk || techUnit == Zerg_Hydralisk)
-            return total(techUnit) >= 12;
+            return total(techUnit) >= 6;
         if (techUnit == Zerg_Lurker) {
             auto vsMech = Strategy::getEnemyTransition() == "2Fact"
                 || Strategy::getEnemyTransition() == "1FactTanks"
@@ -103,35 +141,33 @@ namespace McRave::BuildOrder
 
     void checkExpand()
     {
+        if (inOpeningBook)
+            return;
+
         const auto baseType = Broodwar->self()->getRace().getResourceDepot();
-        const auto hatchCount = vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive);
 
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            const auto availableMinerals = Broodwar->self()->minerals() - Buildings::getQueuedMineral() + (expandDesired * 300) + (rampDesired * 300);
-            expandDesired = (Resources::isHalfMinSaturated() && Resources::isGasSaturated() && techSat && productionSat && availableMinerals >= 300)
-                || (Resources::isHalfMinSaturated() && Resources::isGasSaturated() && availableMinerals >= 300 && larvaLimit == 0 && productionSat)
-                || (vis(Zerg_Larva) < hatchCount && availableMinerals >= 450 && larvaLimit == 0 && productionSat && vis(Zerg_Hatchery) == com(Zerg_Hatchery));
+
         }
         else {
-            const auto availableMinerals = Broodwar->self()->minerals() - Buildings::getQueuedMineral() + (expandDesired * 400) + (rampDesired * 150);
-            expandDesired = (techUnit == None && Resources::isGasSaturated() && (Resources::isMinSaturated() || com(baseType) >= 3) && (techSat || com(baseType) >= 3) && productionSat)
-                || (com(baseType) >= 2 && availableMinerals >= 800 && (Resources::isMinSaturated() || Resources::isGasSaturated()));
+            const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
+            expandDesired = (techUnit == None && Resources::isGasSaturated() && (Resources::isMineralSaturated() || com(baseType) >= 3) && (techSat || com(baseType) >= 3) && productionSat)
+                || (com(baseType) >= 2 && availableMinerals >= 800 && (Resources::isMineralSaturated() || Resources::isGasSaturated()));
         }
     }
 
     void checkRamp()
     {
+        if (inOpeningBook)
+            return;
+
         const auto baseType = Broodwar->self()->getRace().getResourceDepot();
-        const auto hatchCount = com(Zerg_Hatchery) + com(Zerg_Lair) + com(Zerg_Hive);
 
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            const auto maxSat = int(Stations::getMyStations().size()) * 2;
-            const auto availableMinerals = Broodwar->self()->minerals() - Buildings::getQueuedMineral() + (expandDesired * 300) + (rampDesired * 300);
-            rampDesired = (!productionSat && larvaLimit == 0 && ((techSat && availableMinerals >= 300) || (availableMinerals >= 300 && vis(Zerg_Larva) < min(3, hatchCount))))
-                || (availableMinerals >= 600 && hatchCount < maxSat && Resources::isGasSaturated() && Resources::isHalfMinSaturated() && vis(Zerg_Larva) < min(3, hatchCount));
+
         }
         else {
-            const auto availableMinerals = Broodwar->self()->minerals() - Buildings::getQueuedMineral() + (expandDesired * 400) + (rampDesired * 150);
+            const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
             rampDesired = !productionSat && ((techUnit == None && availableMinerals >= 150 && (techSat || com(baseType) >= 3)) || availableMinerals >= 300);
         }
     }
@@ -140,12 +176,12 @@ namespace McRave::BuildOrder
     {
         auto workerCount = com(Broodwar->self()->getRace().getWorker());
         auto refineryCount = vis(Broodwar->self()->getRace().getRefinery());
-        auto workerUnlimitedGas = Players::ZvT() ? 40 : 60;
+        auto workerUnlimitedGas = Players::ZvT() ? 40 : 50;
 
         if (Broodwar->self()->getRace() == Races::Zerg)
-            return gasLimit > vis(Zerg_Extractor) * 3 && workerCount >= 10 && ((Broodwar->self()->minerals() > 600 && Broodwar->self()->gas() < 200 && Resources::isHalfMinSaturated()) || productionSat || workerCount >= workerUnlimitedGas || Players::ZvZ());
+            return gasLimit > vis(Zerg_Extractor) * 3 && workerCount >= 10 && ((Broodwar->self()->minerals() > 300 && Broodwar->self()->gas() < 200 && Resources::isHalfMineralSaturated()) || productionSat || workerCount >= workerUnlimitedGas || Players::ZvZ());
         else
-            return ((Broodwar->self()->minerals() > 600 && Broodwar->self()->gas() < 200) || Resources::isMinSaturated()) && workerCount >= 30;
+            return ((Broodwar->self()->minerals() > 600 && Broodwar->self()->gas() < 200) || Resources::isMineralSaturated()) && workerCount >= 30;
     }
 
     double getCompositionPercentage(UnitType unit)
@@ -279,7 +315,7 @@ namespace McRave::BuildOrder
                 buildQueue[Zerg_Lair] = 1;
 
             // Add extra production
-            int s = Players::getSupply(PlayerState::Self);
+            int s = Players::getSupply(PlayerState::Self, Races::Protoss);
             if (canAdd && buildCount(check) <= 1) {
                 if (check == Protoss_Stargate) {
                     if ((s >= 250 && techList.find(Protoss_Corsair) != techList.end())
@@ -316,7 +352,7 @@ namespace McRave::BuildOrder
     set <UnitType>& getTechList() { return  techList; }
     set <UnitType>& getUnlockedList() { return  unlockedType; }
     int gasWorkerLimit() { return gasLimit; }
-    int getLarvaLimit() { return larvaLimit; }
+    int getUnitLimit(UnitType type) { return unitLimits[type]; }
     bool isWorkerCut() { return cutWorkers; }
     bool isUnitUnlocked(UnitType unit) { return unlockedType.find(unit) != unlockedType.end(); }
     bool isTechUnit(UnitType unit) { return techList.find(unit) != techList.end(); }
@@ -331,6 +367,7 @@ namespace McRave::BuildOrder
     bool isRush() { return rush; }
     bool isPressure() { return pressure; }
     bool isGasTrick() { return gasTrick; }
+    bool isPlanEarly() { return planEarly; }
     bool makeDefensesNow() { return defensesNow; }
     bool shouldScout() { return scout; }
     bool shouldExpand() { return expandDesired; }

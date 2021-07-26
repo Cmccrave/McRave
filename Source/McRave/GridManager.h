@@ -24,7 +24,8 @@ namespace McRave::Grids
     float getEAirCluster(BWAPI::Position here);
 
     int getCollision(BWAPI::WalkPosition here);
-
+    int getVCollision(BWAPI::WalkPosition here);
+    int getHCollision(BWAPI::WalkPosition here);
 
     int getESplash(BWAPI::WalkPosition here);
 
@@ -35,4 +36,6 @@ namespace McRave::Grids
     int lastVisitedFrame(BWAPI::WalkPosition w);
 
     void addMovement(BWAPI::Position, UnitInfo&);
+
+    bool hasCliffVision(BWAPI::TilePosition);
 }

@@ -92,26 +92,25 @@ void Neutral::PutOnTiles()
 
 void Neutral::RemoveFromTiles()
 {
-    for (int dy = 0 ; dy < Size().y ; ++dy)
-    for (int dx = 0 ; dx < Size().x ; ++dx)
+    for (int dy = 0; dy < Size().y ; ++dy)
+    for (int dx = 0; dx < Size().x ; ++dx)
     {
         auto& tile = MapImpl::Get(GetMap())->GetTile_(TopLeft() + TilePosition(dx, dy));
-        bwem_assert(tile.GetNeutral());
 
         if (tile.GetNeutral() == this)
         {
             tile.RemoveNeutral(this);
             if (m_pNextStacked) tile.AddNeutral(m_pNextStacked);
         }
-        else
+        else if (tile.GetNeutral())
         {
             Neutral * pPrevStacked = tile.GetNeutral();
-            while (pPrevStacked->NextStacked() != this) pPrevStacked = pPrevStacked->NextStacked();
-            bwem_assert(pPrevStacked->Type() == Type());
-            bwem_assert(pPrevStacked->TopLeft() == TopLeft());
-            bwem_assert((dx == 0) && (dy == 0));
+            while (pPrevStacked && pPrevStacked->NextStacked() != this)
+                pPrevStacked = pPrevStacked->NextStacked();
 
-            pPrevStacked->m_pNextStacked = m_pNextStacked;
+            if(pPrevStacked)
+                pPrevStacked->m_pNextStacked = m_pNextStacked;
+
             m_pNextStacked = nullptr;
             return;
         }
@@ -125,7 +124,7 @@ vector<const Area *> Neutral::BlockedAreas() const
 {
     vector<const Area *> Result;
     for (WalkPosition w : m_blockedAreas)
-        Result.push_back(GetMap()->GetArea(w));
+        Result.push_back(GetMap()->GetNearestArea(w));
 
     return Result;
 }

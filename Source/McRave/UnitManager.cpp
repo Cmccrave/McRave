@@ -20,7 +20,6 @@ namespace McRave::Units {
         map<UnitSizeType, int> allyAirSizes;
         map<UnitSizeType, int> enemyAirSizes;
         map<Role, int> myRoles;
-        set<Unit> splashTargets;
         double immThreat;
         Position enemyArmyCenter;
 
@@ -79,12 +78,6 @@ namespace McRave::Units {
                     // Update
                     unit.update();
 
-                    // TODO: Move to a UnitInfo flag
-                    if (unit.hasTarget() && (unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Protoss_Scarab)) {
-                        Broodwar->drawLineMap(unit.getPosition(), unit.getTarget().getPosition(), Colors::Red);
-                        splashTargets.insert(unit.getTarget().unit());
-                    }
-
                     if (unit.getType().isBuilding() && !unit.isFlying() && unit.getTilePosition().isValid() && BWEB::Map::isUsed(unit.getTilePosition()) == None && Broodwar->isVisible(TilePosition(unit.getPosition())))
                         Events::onUnitLand(unit);
 
@@ -93,18 +86,14 @@ namespace McRave::Units {
                         Events::onUnitDisappear(unit);
 
                     // If a unit is threatening our position
-                    if (unit.isThreatening()) {
-                        unit.circleRed();
-                        immThreat += unit.getVisibleGroundStrength();
-                    }
+                    if (unit.isThreatening())
+                        immThreat += unit.getVisibleGroundStrength();                    
 
                     // Add to army center
-                    if (unit.getPosition().isValid() && !unit.getType().isBuilding() && !unit.getType().isWorker()) {
+                    if (unit.getPosition().isValid() && !unit.getType().isBuilding() && !unit.getType().isWorker() && !unit.movedFlag) {
                         enemyArmyCenter += unit.getPosition();
                         enemyArmyCount++;
                     }
-
-                    Broodwar->drawTextMap(unit.getPosition(), "%.2f", unit.getPriority());
                 }
             }
 
@@ -165,7 +154,6 @@ namespace McRave::Units {
         void updateCounters()
         {
             immThreat = 0.0;
-            splashTargets.clear();
             myVisibleTypes.clear();
             myCompleteTypes.clear();
 
@@ -251,7 +239,6 @@ namespace McRave::Units {
     map<UnitSizeType, int>& getEnemyGrdSizes() { return enemyGrdSizes; }
     map<UnitSizeType, int>& getAllyAirSizes() { return allyAirSizes; }
     map<UnitSizeType, int>& getEnemyAirSizes() { return enemyAirSizes; }
-    set<Unit>& getSplashTargets() { return splashTargets; }
     Position getEnemyArmyCenter() { return enemyArmyCenter; }
     double getImmThreat() { return immThreat; }
     int getMyRoleCount(Role role) { return myRoles[role]; }

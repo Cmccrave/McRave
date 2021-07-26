@@ -18,6 +18,8 @@ namespace McRave
     class ResourceInfo;
     class PlayerInfo;
 
+    static int distTest = 54;
+
     struct Line {
         double yInt;
         double slope;
@@ -39,15 +41,28 @@ namespace McRave
             minutes = 999;
             seconds = 0;
         }
+        std::string toString() {
+            return std::to_string(minutes) + ":" + (seconds < 10 ? "0" + std::to_string(seconds) : std::to_string(seconds));
+        }
 
         bool operator< (const Time t2) {
             return (minutes < t2.minutes)
                 || (minutes == t2.minutes && seconds < t2.seconds);
         }
 
+        bool operator<= (const Time t2) {
+            return (minutes < t2.minutes)
+                || (minutes == t2.minutes && seconds <= t2.seconds);
+        }
+
         bool operator> (const Time t2) {
             return (minutes > t2.minutes)
                 || (minutes == t2.minutes && seconds > t2.seconds);
+        }
+
+        bool operator>= (const Time t2) {
+            return (minutes > t2.minutes)
+                || (minutes == t2.minutes && seconds >= t2.seconds);
         }
 
         bool operator== (const Time t2) {
@@ -59,6 +74,13 @@ namespace McRave
             return Time(secondsDiff / 60, secondsDiff % 60);
         }
     };
+
+    inline BWAPI::GameWrapper& operator<<(BWAPI::GameWrapper& bw, const Time& t) {
+        bw << t.minutes << ":";
+        t.seconds < 10 ? bw << "0" << t.seconds : bw << t.seconds;
+        bw << std::endl;
+        return bw;
+    }
 
     struct Strength {
         double airToAir = 0.0;
@@ -88,7 +110,7 @@ namespace McRave
     };
 
     enum class GoalType {
-        None, Contain, Explore, Escort, Defend
+        None, Attack, Contain, Explore, Escort, Defend
     };
 
     enum class Role {
@@ -118,10 +140,6 @@ namespace McRave
     enum class PlayerState {
         None, Self, Ally, Enemy, Neutral
     };
-
-    enum class ScoutState {
-        None, Base, Proxy, Expand, Start, Safe
-    };
 }
 
 #include "Horizon.h"
@@ -135,6 +153,7 @@ namespace McRave
 #include "StationManager.h"
 #include "WorkerManager.h"
 #include "LearningManager.h"
+#include "PlayerInfo.h"
 #include "PlayerManager.h"
 #include "ProductionManager.h"
 #include "PylonManager.h"
@@ -177,8 +196,8 @@ namespace McRave {
         return Players::getTotalCount(PlayerState::Self, t);
     }
 
-    /// Writes to a file quickly, very slow function!
-    static void easyWrite(std::string stuff)
+    /// Writes to a file, very slow function!
+    static void easyWrite(std::string& stuff)
     {
         std::ofstream writeFile;
         writeFile.open("bwapi-data/write/McRave_Debug_Log.txt", std::ios::app);

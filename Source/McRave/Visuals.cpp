@@ -9,26 +9,42 @@ namespace McRave::Visuals {
     namespace {
         chrono::steady_clock::time_point start;
         int screenOffset = 0;
-        map <string, double> myTest;
+
+        struct FrameTest {
+            double current = 0.0;
+            double average = 0.0;
+            double maximum = 0.0;
+            string name = "";
+
+            FrameTest(string _name) {
+                name = _name;
+            }
+
+            void update(double dur) {
+                average = average * 0.99 + dur * 0.01;
+                current = dur;
+                maximum = max(maximum, dur);
+            }
+        };
+        vector<FrameTest> frameTests;
 
         bool targets = false;
         bool builds = true;
         bool bweb = false;
         bool sim = false;
-        bool paths = true;
+        bool paths = false;
         bool strengths = false;
         bool orders = false;
         bool local = false;
-        bool resources = true;
+        bool global = false;
+        bool resources = false;
         bool timers = true;
         bool scores = true;
         bool roles = false;
 
-        int gridSelection = 0;
-
         void drawInformation()
         {
-            // BWAPIs green text doesn't point to the right color so this will be see occasionally
+            // BWAPIs green text doesn't point to the right color so this will be seen occasionally
             int color = Broodwar->self()->getColor();
             int textColor = color == 185 ? textColor = Text::DarkGreen : Broodwar->self()->getTextColor();
 
@@ -65,18 +81,29 @@ namespace McRave::Visuals {
                 Broodwar->drawTextScreen(432, 36, "%c%d", Text::Grey, Broodwar->getFrameCount());
                 Broodwar->drawTextScreen(482, 36, "%c%d:%02d", Text::Grey, minute, seconds);
 
-                multimap<double, string> sortMap;
-                for (auto test : myTest) {
-                    sortMap.emplace(test.second, test.first);
-                }
+                sort(frameTests.begin(), frameTests.end(), [&](auto &left, auto &right) { return left.average > right.average; });
 
-                for (auto itr = sortMap.rbegin(); itr != sortMap.rend(); itr++) {
-                    auto test = *itr;
-                    if (test.first > 0.25) {
-                        Broodwar->drawTextScreen(280, screenOffset, "%c%s", Text::White, test.second.c_str());
-                        Broodwar->drawTextScreen(372, screenOffset, "%c%.3f ms", Text::White, test.first);
+                auto overall = 0.0;
+                for (auto &test : frameTests) {
+                    if (test.average > 0.25 || test.current > 10.0 || test.maximum > 25.0) {
+                        Broodwar->drawTextScreen(230, screenOffset, "%c%s", Text::White, test.name.c_str());
+                        Broodwar->drawTextScreen(322, screenOffset, "%c%.1fms, %.1fms, %.1fms", Text::White, test.average, test.current, test.maximum);
                         screenOffset += 10;
                     }
+                    overall += test.current;
+                }
+
+                if (overall > 10000) {
+                    Broodwar << "10s DQ at: " << Util::getTime() << endl;
+                    McRave::easyWrite("10s DQ at: " + Util::getTime().toString());
+                }
+                else if (overall > 1000) {
+                    Broodwar << "1s DQ at: " << Util::getTime() << endl;
+                    McRave::easyWrite("1s DQ at: " + Util::getTime().toString());
+                }
+                else if (overall > 55) {
+                    Broodwar << "55ms DQ at: " << Util::getTime() << endl;
+                    McRave::easyWrite("55ms DQ at: " + Util::getTime().toString());
                 }
             }
 
@@ -107,84 +134,6 @@ namespace McRave::Visuals {
             if (bweb) {
                 BWEB::Map::draw();
             }
-
-            if (gridSelection != 0) {
-                for (int x = 0; x <= Broodwar->mapWidth() * 4; x++) {
-                    for (int y = 0; y <= Broodwar->mapHeight() * 4; y++) {
-                        WalkPosition w(x, y);
-
-                        auto value = Grids::getMobility(w);
-
-                        // If "draw mobility"
-                        if (gridSelection == 1) {
-                            auto gridColor = Colors::Black;
-
-                            switch (value) {
-                            case 1:
-                                gridColor = Colors::White;
-                                break;
-                            case 2:
-                                gridColor = Colors::Grey;
-                                break;
-                            case 3:
-                                gridColor = Colors::Red;
-                                break;
-                            case 4:
-                                gridColor = Colors::Orange;
-                                break;
-                            case 5:
-                                gridColor = Colors::Yellow;
-                                break;
-                            case 6:
-                                gridColor = Colors::Green;
-                                break;
-                            case 7:
-                                gridColor = Colors::Cyan;
-                                break;
-                            case 8:
-                                gridColor = Colors::Blue;
-                                break;
-                            case 9:
-                                gridColor = Colors::Purple;
-                                break;
-                            case 10:
-                                gridColor = Colors::Brown;
-                                break;
-                            }
-
-                            walkBox(w, gridColor);
-                        }
-
-                        if (gridSelection == 2) {
-                            if (Grids::getEGroundThreat(w) > 0.0)
-                                walkBox(w, Color(int(Grids::getEGroundThreat(w) * 120), 0, 0));
-                        }
-                        if (gridSelection == 3) {
-                            if (Grids::getEAirThreat(w) > 0.0)
-                                walkBox(w, Colors::Black);
-                        }
-                        if (gridSelection == 4) {
-
-                            if (Grids::getCollision(w) > 0)
-                                walkBox(w, Colors::Black);
-                        }
-                        if (gridSelection == 5) {
-                            if (Grids::getAGroundCluster(w) > 0.0)
-                                walkBox(w, Colors::Black);
-                        }
-                        if (gridSelection == 6) {
-                            if (Grids::getAGroundCluster(w) > 4.0f)
-                                walkBox(w, Colors::Red);
-                            else if (Grids::getAAirCluster(w) >= 0.9)
-                                walkBox(w, Colors::Black);
-                        }
-                        if (gridSelection == 7) {
-                            if (mapBWEM.GetMiniTile(w).Walkable())
-                                walkBox(w, Colors::Cyan);
-                        }
-                    }
-                }
-            }
         }
 
         void drawAllyInfo()
@@ -199,10 +148,13 @@ namespace McRave::Visuals {
                     continue;
 
                 if (targets) {
-                    if (unit.hasResource())
-                        Broodwar->drawLineMap(unit.getResource().getPosition(), unit.getPosition(), color);
                     if (unit.hasTarget())
-                        Broodwar->drawLineMap(unit.getTarget().getPosition(), unit.getPosition(), color);
+                        Visuals::drawLine(unit.getTarget().getPosition(), unit.getPosition(), color);
+                }
+
+                if (resources) {
+                    if (unit.hasResource())
+                        Visuals::drawLine(unit.getResource().getPosition(), unit.getPosition(), color);
                 }
 
                 if (strengths) {
@@ -234,6 +186,10 @@ namespace McRave::Visuals {
                     if (unit.getRole() == Role::Combat)
                         Broodwar->drawTextMap(unit.getPosition(), "%c%d", textColor, unit.getLocalState());
                 }
+                if (global) {
+                    if (unit.getRole() == Role::Combat)
+                        Broodwar->drawTextMap(unit.getPosition(), "%c%d", textColor, unit.getGlobalState());
+                }
 
                 if (sim) {
                     if (unit.getRole() == Role::Combat) {
@@ -259,7 +215,7 @@ namespace McRave::Visuals {
 
                 if (targets) {
                     if (unit.hasTarget())
-                        Broodwar->drawLineMap(unit.getTarget().getPosition(), unit.getPosition(), color);
+                        Visuals::drawLine(unit.getTarget().getPosition(), unit.getPosition(), color);
                 }
 
                 if (strengths) {
@@ -275,11 +231,11 @@ namespace McRave::Visuals {
                 }
             }
         }
+    }
 
-        void centerCameraOn(Position here)
-        {
-            Broodwar->setScreenPosition(here - Position(320, 180));
-        }
+    void centerCameraOn(Position here)
+    {
+        Broodwar->setScreenPosition(here - Position(320, 180));
     }
 
     void onFrame()
@@ -292,7 +248,16 @@ namespace McRave::Visuals {
     void endPerfTest(string function)
     {
         double dur = std::chrono::duration <double, std::milli>(std::chrono::high_resolution_clock::now() - start).count();
-        myTest[function] = myTest[function] * 0.99 + dur * 0.01;
+        bool found = false;
+        for (auto &test : frameTests) {
+            if (test.name == function) {
+                test.update(dur);
+                found = true;
+            }
+        }
+
+        if (!found)
+            frameTests.push_back(FrameTest(function));
     }
 
     void startPerfTest()
@@ -310,32 +275,23 @@ namespace McRave::Visuals {
         else if (text == "/paths")           paths = !paths;
         else if (text == "/orders")          orders = !orders;
         else if (text == "/local")           local = !local;
+        else if (text == "/global")          global = !global;
         else if (text == "/resources")       resources = !resources;
         else if (text == "/timers")          timers = !timers;
         else if (text == "/roles")           roles = !roles;
-
-        else if (text == "/grids 0")        gridSelection = 0;
-        else if (text == "/grids 1")        gridSelection = 1;
-        else if (text == "/grids 2")        gridSelection = 2;
-        else if (text == "/grids 3")        gridSelection = 3;
-        else if (text == "/grids 4")        gridSelection = 4;
-        else if (text == "/grids 5")        gridSelection = 5;
-        else if (text == "/grids 6")        gridSelection = 6;
-        else if (text == "/grids 7")        gridSelection = 7;
-
-        else                                Broodwar->sendText("%s", text.c_str());
+        else                                 Broodwar->sendText("%s", text.c_str());
         return;
     }
 
-    void displayPath(BWEB::Path& path)
+    void drawPath(BWEB::Path& path)
     {
         int color = Broodwar->self()->getColor();
         if (paths && !path.getTiles().empty()) {
             TilePosition next = path.getSource();
             for (auto &tile : path.getTiles()) {
                 if (next.isValid() && tile.isValid()) {
-                    Broodwar->drawLineMap(Position(next) + Position(16, 16), Position(tile) + Position(16, 16), color);
-                    Broodwar->drawCircleMap(Position(next) + Position(16, 16), 4, color, true);
+                    Visuals::drawLine(Position(next) + Position(16, 16), Position(tile) + Position(16, 16), color);
+                    Visuals::drawCircle(Position(next) + Position(16, 16), 4, color, true);
                 }
 
                 next = tile;
@@ -353,11 +309,42 @@ namespace McRave::Visuals {
         screenOffset += 10;
     }
 
-    void tileBox(TilePosition here, Color color, bool solid) {
-        Broodwar->drawBoxMap(Position(here), Position(here) + Position(32, 32), color, solid);
+    void drawBox(Position here, Position there, Color color, bool solid) {
+        here = Util::clipPosition(here);
+        there = Util::clipPosition(there);
+        Broodwar->drawBoxMap(here, there, color, solid);
+    }
+    void drawBox(WalkPosition here, WalkPosition there, Color color, bool solid) {
+        drawBox(Position(here), Position(there), color, solid);
+    }
+    void drawBox(TilePosition here, TilePosition there, Color color, bool solid) {
+        drawBox(Position(here), Position(there), color, solid);
     }
 
-    void walkBox(WalkPosition here, Color color, bool solid) {
-        Broodwar->drawBoxMap(Position(here), Position(here) + Position(8, 8), color, solid);
+    void drawCircle(Position here, int radius, Color color, bool solid) {
+        here = Util::clipPosition(here);
+        Broodwar->drawCircleMap(here, radius, color, solid);
+    }
+    void drawCircle(WalkPosition here, int radius, Color color, bool solid) {
+        drawCircle(Position(here), radius, color, solid);
+    }
+    void drawCircle(TilePosition here, int radius, Color color, bool solid) {
+        drawCircle(Position(here), radius, color, solid);
+    }
+
+    void drawLine(const BWEM::ChokePoint * choke, Color color)
+    {
+        Broodwar->drawLineMap(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2)), color);
+    }
+    void drawLine(Position here, Position there, Color color) {
+        here = Util::clipPosition(here);
+        there = Util::clipPosition(there);
+        Broodwar->drawLineMap(here, there, color);
+    }
+    void drawLine(WalkPosition here, WalkPosition there, Color color) {
+        drawLine(Position(here), Position(there), color);
+    }
+    void drawLine(TilePosition here, TilePosition there, Color color) {
+        drawLine(Position(here), Position(there), color);
     }
 }

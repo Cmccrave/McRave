@@ -30,8 +30,8 @@ namespace McRave::BuildOrder::Protoss {
             transitionReady =                               false;
 
             gasLimit =                                      INT_MAX;
-            zealotLimit =                                   0;
-            dragoonLimit =                                  INT_MAX;
+            unitLimits[Protoss_Zealot] =                    0;
+            unitLimits[Protoss_Dragoon] =                   INT_MAX;
 
             desiredDetection =                              Protoss_Observer;
             firstUpgrade =                                  UpgradeTypes::Singularity_Charge;
@@ -49,11 +49,11 @@ namespace McRave::BuildOrder::Protoss {
         firstUpgrade =                                      UpgradeTypes::None;
         firstTech =                                         TechTypes::None;
         firstUnit =                                         None;
-        wantNatural =                                   false;
-        wantThird =                                     false;
+        wantNatural =                                       false;
+        wantThird =                                         false;
 
-        zealotLimit =                                       s >= 50 ? 0 : INT_MAX;
-        dragoonLimit =                                      s >= 50 ? INT_MAX : 0;
+        unitLimits[Protoss_Zealot] =                        s >= 50 ? 0 : INT_MAX;
+        unitLimits[Protoss_Dragoon] =                       s >= 50 ? INT_MAX : 0;
 
         buildQueue[Protoss_Nexus] =                         1;
         buildQueue[Protoss_Pylon] =                         (s >= 16) + (s >= 30);
@@ -90,6 +90,9 @@ namespace McRave::BuildOrder::Protoss {
 
         // Transitions
         if (currentTransition == "DT") {
+            playPassive =                                   Strategy::getEnemyBuild() == "2Rax" && vis(Protoss_Dark_Templar) == 0;
+            unitLimits[Protoss_Zealot] =                                   Strategy::getEnemyBuild() == "2Rax" ? 2 : 0;
+            gasLimit =                                      Strategy::getEnemyBuild() == "2Rax" && total(Protoss_Gateway) < 2 ? 0 : 3;
             lockedTransition =                              total(Protoss_Citadel_of_Adun) > 0;
             inOpeningBook =                                 s < 70;
             firstUnit =                                     Protoss_Dark_Templar;
@@ -174,7 +177,7 @@ namespace McRave::BuildOrder::Protoss {
 
         // Openers
         if (currentOpener == "0Zealot") {                   // NZCore            
-            zealotLimit = 0;
+            unitLimits[Protoss_Zealot] = 0;
             buildQueue[Protoss_Nexus] =                     1;
             buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 30);
             buildQueue[Protoss_Gateway] =                   s >= 20;
@@ -182,7 +185,7 @@ namespace McRave::BuildOrder::Protoss {
             buildQueue[Protoss_Cybernetics_Core] =          s >= 26;
         }
         else if (currentOpener == "1Zealot") {              // ZCore            
-            zealotLimit = 1;
+            unitLimits[Protoss_Zealot] = 1;
             buildQueue[Protoss_Nexus] =                     1;
             buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 32);
             buildQueue[Protoss_Gateway] =                   s >= 20;
@@ -247,7 +250,7 @@ namespace McRave::BuildOrder::Protoss {
         firstUpgrade =                                      vis(Protoss_Dragoon) >= 1 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
         cutWorkers =                                        s >= 44 && s < 48;
         gasLimit =                                          goonRange() && com(Protoss_Nexus) < 2 ? 2 : INT_MAX;
-        zealotLimit =                                       currentOpener == "Zealot" ? 1 : 0;
+        unitLimits[Protoss_Zealot] =                        currentOpener == "Zealot" ? 1 : 0;
         scout =                                             vis(Protoss_Pylon) > 0;
 
         // Reactions
@@ -332,7 +335,7 @@ namespace McRave::BuildOrder::Protoss {
         defaultPvT();
         firstUpgrade =                                      UpgradeTypes::Singularity_Charge;
         firstTech =                                         TechTypes::None;
-        zealotLimit =                                       0;
+        unitLimits[Protoss_Zealot] =                        0;
 
         // Reactions
         if (!lockedTransition) {
@@ -341,7 +344,7 @@ namespace McRave::BuildOrder::Protoss {
             else if ((!Strategy::enemyFastExpand() && Terrain::foundEnemy() && currentTransition == "DoubleExpand") || Strategy::enemyPressure())
                 currentTransition = "Standard";
 
-            if (s < 42 && Strategy::enemyRush()) {
+            if (s < 42 && Strategy::getEnemyBuild() == "2Rax") {
                 currentBuild = "2Gate";
                 currentOpener = "Main";
                 currentTransition = "DT";
@@ -357,7 +360,7 @@ namespace McRave::BuildOrder::Protoss {
             playPassive =                                   (Strategy::enemyPressure() ? vis(Protoss_Dragoon) < 16 : !firstReady()) || (com(Protoss_Dragoon) < 4 && !Strategy::enemyFastExpand());
             scout =                                         Broodwar->getStartLocations().size() == 4 ? vis(Protoss_Pylon) > 0 : vis(Protoss_Pylon) > 0;
             gasLimit =                                      goonRange() && vis(Protoss_Nexus) < 2 ? 2 : INT_MAX;
-            dragoonLimit =                                  Util::getTime() > Time(4, 0) || vis(Protoss_Nexus) >= 2 ? INT_MAX : 1;
+            unitLimits[Protoss_Dragoon] =                   Util::getTime() > Time(4, 0) || vis(Protoss_Nexus) >= 2 ? INT_MAX : 1;
             cutWorkers =                                    vis(Protoss_Probe) >= 19 && s < 46;
         }
         else if (currentOpener == "2Gate") {                // "https://liquipedia.net/starcraft/2_Gate_Range_Expand"
@@ -369,7 +372,7 @@ namespace McRave::BuildOrder::Protoss {
             scout =                                         vis(Protoss_Cybernetics_Core) > 0;
             inBookSupply =                                  vis(Protoss_Pylon) < 3;
             gasLimit =                                      goonRange() && vis(Protoss_Pylon) < 3 ? 2 : INT_MAX;
-            dragoonLimit =                                  Util::getTime() > Time(4, 0) || vis(Protoss_Nexus) >= 2 || s >= 40 ? INT_MAX : 0;
+            unitLimits[Protoss_Dragoon] =                   Util::getTime() > Time(4, 0) || vis(Protoss_Nexus) >= 2 || s >= 40 ? INT_MAX : 0;
             cutWorkers =                                    vis(Protoss_Probe) >= 20 && s < 48;
         }
 

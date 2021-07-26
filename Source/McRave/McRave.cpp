@@ -6,33 +6,31 @@
 #include "Header.h"
 #include "McRave.h"
 #include "EventManager.h"
+#include <chrono>
+#include "../BWEM/BaseFinder/BaseFinder.h"
 
-// Scout getting stuck
+// TODO:
+// -- Protoss --
+// Add pylons to nexuses when needed (monitor for pylon spam though)
+// Manner pylon self (neo moon 12)
+// FFE vs 4pool, probes defend minerals
+// Prefer pylons that power locations we need
 
-// Protoss:
-// Obs to scout bases
-// Interceptors targets might be convincing goons to dive tanks
-// Obs/Arb suicide
-// PylonManager into an onFrame event that looks at when pylon will complete
-
-// Zerg:
-// ZvZ move ovies along paths to see if more lings are coming
-// Mutas stalling
-// ZvZ spore logic
-// Holding 2 concave positions (nat and main)
-// ZvT 7 pool
-
-// BWEB:
-// Update wall code
-
-// Vs CannonRush:
-// Scout drone exploring
-// 1 Combat drone pulled too early
-// Approaching pylons/cannons
+// Not needed for CoG:
+// Defilers get stuck on blue storm - dont even use them anyways, so it's fine
+// Look at gas income for knowing how much larva we can save, spend remaining
+// Add drilling (move to furthest mineral, attack only when in range and clustered)
+// Defilers in ZvP
+// Need better swarm placement on own hydras
+// Sunks vs 5 fact gol moveout, plenty of minerals still
+// Add 4pool in
+// Eggs on pathfinder marked as blockers
 
 using namespace BWAPI;
 using namespace std;
 using namespace McRave;
+
+static chrono::time_point<chrono::system_clock> start;
 
 void McRaveModule::onStart()
 {
@@ -45,18 +43,27 @@ void McRaveModule::onStart()
     Learning::onStart();
     Util::onStart();
     Combat::onStart();
+    Resources::onStart();
+    Scouts::onStart();
+
+    start = std::chrono::system_clock::now();
 
     Broodwar->enableFlag(Flag::UserInput);
     Broodwar->setCommandOptimizationLevel(0);
     Broodwar->setLatCom(true);
     Broodwar->sendText("glhf");
     Broodwar->setLocalSpeed(Broodwar->getGameType() != BWAPI::GameTypes::Use_Map_Settings ? 0 : 42);
+
+    McRave::easyWrite("New game on " + Broodwar->mapName());
+    BWEB::Pathfinding::clearCacheFully();
 }
 
 void McRaveModule::onEnd(bool isWinner)
 {
     Learning::onEnd(isWinner);
+    Resources::onEnd();
     Broodwar->sendText("ggwp");
+    BWEB::Pathfinding::clearCacheFully();
 }
 
 void McRaveModule::onFrame()
@@ -71,9 +78,11 @@ void McRaveModule::onFrame()
     Players::onFrame();
     Units::onFrame();
     Grids::onFrame();
+    Pylons::onFrame();
 
-    // Update relevant map information and strategy    
+    // Update relevant map information and strategy
     Terrain::onFrame();
+    Walls::onFrame();
     Resources::onFrame();
     Strategy::onFrame();
     BuildOrder::onFrame();

@@ -85,9 +85,9 @@ namespace BWEB::Map
     /// Returns the angle of a pair of BWAPI::Point in degrees.
     template <class T>
     double getAngle(std::pair<T, T> p) {
-        auto dy = double(p.first.y - p.second.y);
-        auto dx = double(p.first.x - p.second.x);
-        return (std::abs(dx) > 1.0 ? std::atan2(dy, dx) * 180.0 / 3.14 : 90.0);
+        auto dy = double(p.second.y - p.first.y);
+        auto dx = double(p.second.x - p.first.x);
+        return std::abs(dx) > 1.0 ? fmod(std::atan2(dy, dx) + 6.28, 6.28) : 1.57;
     }
 
     /// <summary> Returns the closest buildable BWAPI::TilePosition for any type of structure. </summary>

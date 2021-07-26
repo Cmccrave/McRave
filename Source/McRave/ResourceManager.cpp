@@ -11,10 +11,13 @@ namespace McRave::Resources {
         set<shared_ptr<ResourceInfo>> myMinerals;
         set<shared_ptr<ResourceInfo>> myGas;
         set<shared_ptr<ResourceInfo>> myBoulders;
-        bool minSat, gasSat, halfMinSat, halfGasSat;
+        bool mineralSat, gasSat, halfMineralSat, halfGasSat;
         int miners, gassers;
-        int minCount, gasCount;
+        int mineralCount, gasCount;
         int incomeMineral, incomeGas;
+        int maxGas;
+        int maxMin;
+        string mapName, myRaceChar;
 
         void updateIncome(const shared_ptr<ResourceInfo>& r)
         {
@@ -35,7 +38,7 @@ namespace McRave::Resources {
             UnitType geyserType = Broodwar->self()->getRace().getRefinery();
 
             // If resource is blocked from usage
-            if (resource.getType().isRefinery() && resource.getTilePosition().isValid()) {
+            if (!resource.getType().isMineralField() && resource.getTilePosition().isValid()) {
                 for (auto block = mapBWEM.GetTile(resource.getTilePosition()).GetNeutral(); block; block = block->NextStacked()) {
                     if (block && block->Unit() && block->Unit()->exists() && block->Unit()->isInvincible() && !block->IsGeyser())
                         resource.setResourceState(ResourceState::None);
@@ -48,10 +51,13 @@ namespace McRave::Resources {
                     return u.getType().isResourceDepot() && u.getPosition() == resource.getStation()->getBase()->Center();
                 });
 
-                if (base)
-                    (base->unit()->isCompleted() || base->getType() == Zerg_Lair || base->getType() == Zerg_Hive) ? resource.setResourceState(ResourceState::Mineable) : resource.setResourceState(ResourceState::Assignable);
-                else
-                    resource.setResourceState(ResourceState::None);
+                resource.setResourceState(ResourceState::None);
+                if (base) {
+                    if (base->unit()->getRemainingBuildTime() < 300 || base->getType() == Zerg_Lair || base->getType() == Zerg_Hive || (resource.getType().isRefinery() && resource.unit()->getRemainingBuildTime() < 120))
+                        resource.setResourceState(ResourceState::Mineable);
+                    else
+                        resource.setResourceState(ResourceState::Assignable);
+                }
             }
 
             // Update saturation            
@@ -60,17 +66,29 @@ namespace McRave::Resources {
             else if (resource.getType() == geyserType && resource.unit()->isCompleted() && resource.getResourceState() != ResourceState::None)
                 gassers += resource.getGathererCount();
 
-            if (resource.getResourceState() == ResourceState::Mineable
-                || (resource.getResourceState() == ResourceState::Assignable && Stations::getMyStations().size() >= 3 && !Players::vP()))
-                resource.getType().isMineralField() ? minCount++ : gasCount++;
+            if (!resource.isBoulder()) {
+                if (resource.getResourceState() == ResourceState::Mineable || (resource.getResourceState() == ResourceState::Assignable && Stations::getMyStations().size() >= 3 && !Players::vP())) {
+                    resource.getType().isMineralField() ? mineralCount++ : gasCount++;
+                    resource.getType().isMineralField() ? maxMin+=resource.getWorkerCap() : maxGas+=resource.getWorkerCap();
+                }
+
+                for (auto &w : resource.targetedByWhat()) {
+                    if (auto worker = w.lock()) {
+                        if (worker->getBuildPosition().isValid())
+                             maxMin--, maxGas--;
+                    }
+                }
+            }
         }
 
         void updateResources()
         {
-            minCount = 0;
+            mineralCount = 0;
             gasCount = 0;
             miners = 0;
             gassers = 0;
+            maxGas = 0;
+            maxMin = 0;
 
             const auto update = [&](const shared_ptr<ResourceInfo>& r) {
                 updateInformation(r);
@@ -79,16 +97,14 @@ namespace McRave::Resources {
 
             for (auto &r : myBoulders)
                 update(r);
-
             for (auto &r : myMinerals)
                 update(r);
-
             for (auto &r : myGas)
                 update(r);
 
-            minSat = miners >= minCount * 2;
-            halfMinSat = miners >= minCount;
-            gasSat = gassers >= gasCount * 3;
+            mineralSat = miners >= maxMin;
+            halfMineralSat = miners >= mineralCount;
+            gasSat = gassers >= maxGas;
             halfGasSat = gassers >= gasCount;
         }
     }
@@ -108,9 +124,10 @@ namespace McRave::Resources {
             gassers += resource.getGathererCount();
         }
 
-        auto saturatedAt = Broodwar->self()->getRace() == Races::Zerg ? 1 : 2;
-        minSat = (miners >= minCount * saturatedAt);
-        gasSat = (gassers >= gasCount * 3);
+        mineralSat = miners >= maxMin;
+        halfMineralSat = miners >= mineralCount;
+        gasSat = gassers >= maxGas;
+        halfGasSat = gassers >= gasCount;
     }
 
     void onFrame()
@@ -120,10 +137,89 @@ namespace McRave::Resources {
         Visuals::endPerfTest("Resources");
     }
 
+    void onStart()
+    {
+        // Store all resources
+        for (auto &resource : Broodwar->getMinerals())
+            storeResource(resource);
+        for (auto &resource : Broodwar->getGeysers())
+            storeResource(resource);
+
+        // Grab only the alpha characters from the map name to remove version numbers
+        for (auto &c : Broodwar->mapFileName()) {
+            if (isalpha(c))
+                mapName.push_back(c);
+            if (c == '.')
+                break;
+        }
+
+        myRaceChar = *Broodwar->self()->getRace().c_str();
+        ifstream readFileA("bwapi-data/AI/" + mapName + "GatherInfo" + myRaceChar + ".txt");
+        int x, y, cnt;
+        string line;
+        while (readFileA) {
+            readFileA >> x >> y >> cnt;
+
+            for (auto &mineral : myMinerals) {
+
+                if (x == mineral->getPosition().x && y == mineral->getPosition().y) {
+                    while (cnt > 0) {
+                        readFileA >> x >> y;
+                        mineral->getGatherOrderPositions().insert(Position(x, y));
+                        cnt--;
+                    }
+                }
+            }
+        }
+
+        ifstream readFileB("bwapi-data/AI/" + mapName + "ReturnInfo" + myRaceChar + ".txt");
+        while (readFileB) {
+            readFileB >> x >> y >> cnt;
+
+            for (auto &mineral : myMinerals) {
+
+                if (x == mineral->getPosition().x && y == mineral->getPosition().y) {
+                    while (cnt > 0) {
+                        readFileB >> x >> y;
+                        mineral->getReturnOrderPositions().insert(Position(x, y));
+                        cnt--;
+                    }
+                }
+            }
+        }
+    }
+
+    void onEnd()
+    {
+        ofstream readFileA("bwapi-data/AI/" + mapName + "GatherInfo" + myRaceChar + ".txt");
+        if (readFileA) {
+            for (auto &mineral : myMinerals) {
+                if (!mineral->getGatherOrderPositions().empty()) {
+                    readFileA << mineral->getPosition().x << " " << mineral->getPosition().y << " " << mineral->getGatherOrderPositions().size() << "\n";
+                    for (auto &pos : mineral->getGatherOrderPositions())
+                        readFileA << pos.x << " " << pos.y << " ";
+                    readFileA << "\n";
+                }
+            }
+        }
+
+        ofstream readFileB("bwapi-data/AI/" + mapName + "ReturnInfo" + myRaceChar + ".txt");
+        if (readFileB) {
+            for (auto &mineral : myMinerals) {
+                if (!mineral->getReturnOrderPositions().empty()) {
+                    readFileB << mineral->getPosition().x << " " << mineral->getPosition().y << " " << mineral->getReturnOrderPositions().size() << "\n";
+                    for (auto &pos : mineral->getReturnOrderPositions())
+                        readFileB << pos.x << " " << pos.y << " ";
+                    readFileB << "\n";
+                }
+            }
+        }
+    }
+
     void storeResource(Unit resource)
     {
         auto info = ResourceInfo(resource);
-        auto &resourceList = (resource->getResources() > 50 ? (resource->getType().isMineralField() ? myMinerals : myGas) : myBoulders);
+        auto &resourceList = (!info.isBoulder() ? (resource->getType().isMineralField() ? myMinerals : myGas) : myBoulders);
 
         // Check if we already stored this resource
         for (auto &u : resourceList) {
@@ -136,8 +232,6 @@ namespace McRave::Resources {
         info.setStation(newStation);
         if (Stations::ownedBy(newStation) == PlayerState::Self)
             info.setResourceState(ResourceState::Assignable);
-
-        auto ptr = make_shared<ResourceInfo>(info);
         resourceList.insert(make_shared<ResourceInfo>(info));
     }
 
@@ -180,12 +274,12 @@ namespace McRave::Resources {
         return nullptr;
     }
 
-    int getMinCount() { return minCount; }
+    int getMineralCount() { return mineralCount; }
     int getGasCount() { return gasCount; }
     int getIncomeMineral() { return incomeMineral; }
     int getIncomeGas() { return incomeGas; }
-    bool isMinSaturated() { return minSat; }
-    bool isHalfMinSaturated() { return halfMinSat; }
+    bool isMineralSaturated() { return mineralSat; }
+    bool isHalfMineralSaturated() { return halfMineralSat; }
     bool isGasSaturated() { return gasSat; }
     bool isHalfGasSaturated() { return halfGasSat; }
     set<shared_ptr<ResourceInfo>>& getMyMinerals() { return myMinerals; }
