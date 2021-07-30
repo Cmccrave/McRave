@@ -186,6 +186,9 @@ namespace BWEB {
 
     void Station::findSecondaryLocations()
     {
+        if (Broodwar->self()->getRace() != Races::Zerg)
+            return;
+
         auto cnt = 0;
         if (main)
             cnt = 1;

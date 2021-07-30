@@ -162,8 +162,6 @@ namespace McRave
             destination                 = Positions::Invalid;
             formation                   = Positions::Invalid;
             concaveFlag                 = false;
-            goal                        = Positions::Invalid;
-            gType                       = GoalType::None;
 
             // McRave Stats
             groundRange                 = Math::groundRange(*this);
@@ -474,7 +472,7 @@ namespace McRave
             }
             if (getPosition().getDistance(Position(BWEB::Map::getMainChoke()->Center())) < 64.0 && int(Stations::getMyStations().size()) >= 2)
                 return true;
-            
+
             // Fix for Andromeda like maps
             if (Terrain::isInAllyTerritory(getTilePosition()) && mapBWEM.GetArea(getTilePosition()) != BWEB::Map::getNaturalArea() && int(Stations::getMyStations().size()) >= 2)
                 return true;
@@ -486,7 +484,7 @@ namespace McRave
 
         // Building
         if (getType().isBuilding()) {
-            threateningThisFrame = Buildings::overlapsPlan(*this, getPosition())
+            threateningThisFrame = Planning::overlapsPlan(*this, getPosition())
                 || ((atChoke || atHome) && (airDamage > 0.0 || groundDamage > 0.0 || getType() == Protoss_Shield_Battery || getType().isRefinery()))
                 || nearResources();
         }
@@ -543,7 +541,7 @@ namespace McRave
                 auto proxyBuilding = (isNotInMain && isNotInNat) || closerToMyMain || closerToMyNat;
 
                 if (proxyBuilding)
-                    proxy = true;                
+                    proxy = true;
             }
         }
     }

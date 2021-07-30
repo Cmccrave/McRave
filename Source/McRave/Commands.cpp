@@ -53,7 +53,7 @@ namespace McRave::Command {
             // Check if this is a viable position for movement
             const auto viablePosition = [&](const WalkPosition& w, Position p) {
                 if (!unit.getType().isFlyer() || unit.getRole() == Role::Transport) {
-                    if (Buildings::overlapsPlan(unit, p) || Grids::getESplash(w) > 0 || !Util::findWalkable(unit, p))
+                    if (Planning::overlapsPlan(unit, p) || Grids::getESplash(w) > 0 || !Util::findWalkable(unit, p))
                         return false;
                 }
                 if (Actions::isInDanger(unit, p))

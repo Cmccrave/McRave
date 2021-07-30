@@ -123,10 +123,10 @@ namespace McRave::Visuals {
                     Broodwar->drawTextMap(resource.getPosition() - Position(32, 16), "%cState: %d", textColor, (int)resource.getResourceState());
                 }
 
-                Broodwar->drawTextScreen(Position(4, 64), "RM: %d", Production::getReservedMineral());
-                Broodwar->drawTextScreen(Position(4, 80), "RG: %d", Production::getReservedGas());
-                Broodwar->drawTextScreen(Position(4, 96), "QM: %d", Buildings::getQueuedMineral());
-                Broodwar->drawTextScreen(Position(4, 112), "QG: %d", Buildings::getQueuedGas());
+                Broodwar->drawTextScreen(Position(4, 64), "%cReserved: %d", Text::GreyBlue, Production::getReservedMineral());
+                Broodwar->drawTextScreen(Position(4, 80), "%cReserved: %d", Text::Green, Production::getReservedGas());
+                Broodwar->drawTextScreen(Position(4, 96), "%cPlanned: %d", Text::GreyBlue, Planning::getPlannedMineral());
+                Broodwar->drawTextScreen(Position(4, 112), "%cPlanned: %d", Text::Green, Planning::getPlannedGas());
             }
 
 

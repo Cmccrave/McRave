@@ -158,7 +158,7 @@ namespace McRave::BuildOrder::Protoss {
                 // Build
                 buildQueue[Protoss_Gateway] =               2 + (com(Protoss_Cybernetics_Core) > 0);
                 buildQueue[Protoss_Nexus] =                 1;
-                buildQueue[Protoss_Assimilator] =           total(Protoss_Zealot) >= 5;
+                buildQueue[Protoss_Assimilator] =           total(Protoss_Zealot) >= 3;
                 buildQueue[Protoss_Cybernetics_Core] =      (total(Protoss_Zealot) >= 5 && vis(Protoss_Assimilator) >= 1);
                 buildQueue[Protoss_Citadel_of_Adun] =       atPercent(Protoss_Cybernetics_Core, 1.00);
                 buildQueue[Protoss_Templar_Archives] =      atPercent(Protoss_Citadel_of_Adun, 1.00);
@@ -177,7 +177,7 @@ namespace McRave::BuildOrder::Protoss {
 
                 // Build
                 buildQueue[Protoss_Gateway] =               2 + (com(Protoss_Cybernetics_Core) > 0);
-                buildQueue[Protoss_Assimilator] =           total(Protoss_Zealot) >= 5;
+                buildQueue[Protoss_Assimilator] =           total(Protoss_Zealot) >= 3;
                 buildQueue[Protoss_Cybernetics_Core] =      (total(Protoss_Zealot) >= 5 && vis(Protoss_Assimilator) >= 1);
                 buildQueue[Protoss_Forge] =                 s >= 70;
                 buildQueue[Protoss_Nexus] =                 1 + (vis(Protoss_Zealot) >= 3);
@@ -194,7 +194,7 @@ namespace McRave::BuildOrder::Protoss {
                 // Build
                 buildQueue[Protoss_Gateway] =               2 + (com(Protoss_Cybernetics_Core) > 0);
                 buildQueue[Protoss_Nexus] =                 1;
-                buildQueue[Protoss_Assimilator] =           total(Protoss_Zealot) >= 5;
+                buildQueue[Protoss_Assimilator] =           total(Protoss_Zealot) >= 3;
                 buildQueue[Protoss_Cybernetics_Core] =      (total(Protoss_Zealot) >= 5 && vis(Protoss_Assimilator) >= 1);
                 buildQueue[Protoss_Robotics_Facility] =     com(Protoss_Dragoon) >= 2;
 

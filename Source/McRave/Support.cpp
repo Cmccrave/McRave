@@ -45,7 +45,7 @@ namespace McRave::Support {
                 unit.setDestination(Terrain::getMyNatural()->getBase()->Center());
 
             // Set goal as destination
-            else if (unit.getGoal().isValid() && (!Terrain::isInAllyTerritory(unit.getTilePosition()) || Terrain::isInAllyTerritory(TilePosition(unit.getGoal())) || Players::ZvZ()))
+            else if (unit.getGoal().isValid())
                 unit.setDestination(unit.getGoal());
 
             // Find the highest combat cluster that doesn't overlap a current support action of this UnitType

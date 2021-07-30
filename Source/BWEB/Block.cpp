@@ -148,8 +148,6 @@ namespace BWEB::Blocks
             // Protoss Block pieces
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (height == 2) {
-                    if (width == 2)
-                        pieces ={ Piece::Small };
                     if (width == 5)
                         pieces ={ Piece::Small, Piece::Medium };
                 }
@@ -271,6 +269,8 @@ namespace BWEB::Blocks
             };
 
             const auto productionReachable = [&](TilePosition start) {
+                if (!Map::mapBWEM.GetArea(here))
+                    return false;
                 for (auto &choke : Map::mapBWEM.GetArea(here)->ChokePoints()) {
                     auto path = BWEB::Path(start + TilePosition(0, 3), TilePosition(choke->Center()), UnitTypes::Protoss_Dragoon, false, false);
                     auto maxDist = path.getSource().getDistance(path.getTarget());

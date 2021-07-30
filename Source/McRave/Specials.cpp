@@ -152,9 +152,9 @@ namespace McRave::Command
         else if (unit.getType() == Zerg_Zergling && Broodwar->self()->hasResearched(TechTypes::Burrowing)) {
             auto fullHealth = unit.getHealth() == unit.getType().maxHitPoints();
 
-            if (!unit.isBurrowed() && unit.getGoalType() == GoalType::Contain && !Buildings::overlapsPlan(unit, unit.getPosition()) && unit.getGoal().getDistance(unit.getPosition()) < 16.0 && !Actions::overlapsDetection(unit.unit(), unit.getPosition(), PlayerState::Enemy))
+            if (!unit.isBurrowed() && unit.getGoalType() == GoalType::Contain && !Planning::overlapsPlan(unit, unit.getPosition()) && unit.getGoal().getDistance(unit.getPosition()) < 16.0 && !Actions::overlapsDetection(unit.unit(), unit.getPosition(), PlayerState::Enemy))
                 unit.unit()->burrow();
-            if (unit.isBurrowed() && (unit.getGoalType() != GoalType::Contain || Buildings::overlapsPlan(unit, unit.getPosition()) || unit.getGoal().getDistance(unit.getPosition()) > 16.0 || Actions::overlapsDetection(unit.unit(), unit.getPosition(), PlayerState::Enemy)))
+            if (unit.isBurrowed() && (unit.getGoalType() != GoalType::Contain || Planning::overlapsPlan(unit, unit.getPosition()) || unit.getGoal().getDistance(unit.getPosition()) > 16.0 || Actions::overlapsDetection(unit.unit(), unit.getPosition(), PlayerState::Enemy)))
                 unit.unit()->unburrow();
         }
 
@@ -503,7 +503,7 @@ namespace McRave::Command
                 return true;
             if (!hasMineableResource && resource->exists())
                 return true;
-            if (Buildings::overlapsPlan(unit, unit.getPosition()))
+            if (Planning::overlapsPlan(unit, unit.getPosition()))
                 return true;
             return false;
         };

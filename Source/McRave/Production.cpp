@@ -21,7 +21,7 @@ namespace McRave::Production {
         bool isAffordable(UnitType unit)
         {
             if (unit == Zerg_Overlord)
-                return Broodwar->self()->minerals() >= unit.mineralPrice() + Buildings::getQueuedMineral();
+                return Broodwar->self()->minerals() >= unit.mineralPrice() + Planning::getPlannedMineral();
 
             auto selfMineral            = Broodwar->self()->minerals();
             auto selfGas                = Broodwar->self()->gas();
@@ -35,8 +35,8 @@ namespace McRave::Production {
 
             auto mineralReserve         = int(!BuildOrder::isTechUnit(unit) || !idleTech.empty() || !idleUpgrade.empty()) * reservedMineral;
             auto gasReserve             = int(!BuildOrder::isTechUnit(unit) || !idleTech.empty() || !idleUpgrade.empty()) * reservedGas;
-            auto mineralAffordable      = unit.mineralPrice() == 0 || (selfMineral >= unit.mineralPrice() + Buildings::getQueuedMineral() + mineralReserve);
-            auto gasAffordable          = unit.gasPrice() == 0 || (selfGas >= unit.gasPrice() + Buildings::getQueuedGas() + gasReserve);
+            auto mineralAffordable      = unit.mineralPrice() == 0 || (selfMineral >= unit.mineralPrice() + Planning::getPlannedMineral() + mineralReserve);
+            auto gasAffordable          = unit.gasPrice() == 0 || (selfGas >= unit.gasPrice() + Planning::getPlannedGas() + gasReserve);
             auto supplyAffordable       = unit.supplyRequired() == 0 || (selfSupply + unit.supplyRequired() <= Broodwar->self()->supplyTotal());
 
             return mineralAffordable && gasAffordable && supplyAffordable;
@@ -725,7 +725,7 @@ namespace McRave::Production {
                         || !larva.unit()->isCompleted()
                         || larva.getRemainingTrainFrames() >= Broodwar->getLatencyFrames()
                         || lastTrainFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames()
-                        || (Buildings::overlapsPlan(larva, larva.getPosition()) && Util::getTime() > Time(4, 00)))
+                        || (Planning::overlapsPlan(larva, larva.getPosition()) && Util::getTime() > Time(4, 00)))
                         return false;
 
                     auto closestStation = Stations::getClosestStationAir(PlayerState::Self, larva.getPosition());
@@ -861,7 +861,7 @@ namespace McRave::Production {
             if (!closestStation)
                 return false;
 
-            auto mustMoveToLeft = Buildings::overlapsPlan(larva, larva.getPosition());
+            auto mustMoveToLeft = Planning::overlapsPlan(larva, larva.getPosition());
             auto canMove = (larva.getPosition().y - 16.0 > larva.unit()->getHatchery()->getPosition().y || larva.getPosition().x + 24 > larva.unit()->getHatchery()->getPosition().x);
             if (canMove && mustMoveToLeft) {
                 if (larva.unit()->getLastCommand().getType() != UnitCommandTypes::Stop)

@@ -70,9 +70,6 @@
     <ClCompile Include="..\Source\Horizon\Horizon.cpp">
       <Filter>Horizon</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\BuildingManager.cpp">
-      <Filter>McRave\Macro</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\ProtossBuildOrder.cpp">
       <Filter>McRave\Builds\Protoss</Filter>
     </ClCompile>
@@ -94,42 +91,6 @@
     <ClCompile Include="..\Source\McRave\PlayerInfo.cpp">
       <Filter>McRave\Info\Player</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\PlayerManager.cpp">
-      <Filter>McRave\Info\Player</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\ProductionManager.cpp">
-      <Filter>McRave\Macro</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\PylonManager.cpp">
-      <Filter>McRave\Macro</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\ResourceManager.cpp">
-      <Filter>McRave\Info\Resources</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\SpecialManager.cpp">
-      <Filter>McRave\Micro</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\StationManager.cpp">
-      <Filter>McRave\Map</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\GridManager.cpp">
-      <Filter>McRave\Map</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\ActionManager.cpp">
-      <Filter>McRave\Strategy</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\GoalManager.cpp">
-      <Filter>McRave\Strategy</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\StrategyManager.cpp">
-      <Filter>McRave\Strategy</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\SupportManager.cpp">
-      <Filter>McRave\Micro</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\TerrainManager.cpp">
-      <Filter>McRave\Map</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\TerranBuilds.cpp">
       <Filter>McRave\Builds\Terran</Filter>
     </ClCompile>
@@ -139,16 +100,7 @@
     <ClCompile Include="..\Source\McRave\BuildOrder.cpp">
       <Filter>McRave\Builds\All</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\LearningManager.cpp">
-      <Filter>McRave\Builds\All</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\TransportManager.cpp">
-      <Filter>McRave\Micro</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\UnitInfo.cpp">
-      <Filter>McRave\Info\Units</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\UnitManager.cpp">
       <Filter>McRave\Info\Units</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\McRave\UnitMath.cpp">
@@ -159,9 +111,6 @@
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Visuals.cpp">
       <Filter>McRave\Main</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\WallManager.cpp">
-      <Filter>McRave\Map</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\McRave\ZergBuildOrder.cpp">
       <Filter>McRave\Builds\Zerg</Filter>
@@ -175,23 +124,80 @@
     <ClCompile Include="..\Source\McRave\ZvZ.cpp">
       <Filter>McRave\Builds\Zerg</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\WorkerManager.cpp">
-      <Filter>McRave\Micro</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\CombatManager.cpp">
-      <Filter>McRave\Micro</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\ScoutManager.cpp">
-      <Filter>McRave\Micro</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\CommandManager.cpp">
-      <Filter>McRave\Micro</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\TargetManager.cpp">
-      <Filter>McRave\Info\Units</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\ResourceInfo.cpp">
       <Filter>McRave\Info\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Planning.cpp">
+      <Filter>McRave\Macro</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Expansions.cpp">
+      <Filter>McRave\Macro</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Production.cpp">
+      <Filter>McRave\Macro</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Pylons.cpp">
+      <Filter>McRave\Macro</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Targeting.cpp">
+      <Filter>McRave\Info\Units</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Buildings.cpp">
+      <Filter>McRave\Info\Units</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Units.cpp">
+      <Filter>McRave\Info\Units</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Grids.cpp">
+      <Filter>McRave\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Stations.cpp">
+      <Filter>McRave\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Terrain.cpp">
+      <Filter>McRave\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Walls.cpp">
+      <Filter>McRave\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Combat.cpp">
+      <Filter>McRave\Micro</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Commands.cpp">
+      <Filter>McRave\Micro</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Scouts.cpp">
+      <Filter>McRave\Micro</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Specials.cpp">
+      <Filter>McRave\Micro</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Support.cpp">
+      <Filter>McRave\Micro</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Transports.cpp">
+      <Filter>McRave\Micro</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Workers.cpp">
+      <Filter>McRave\Micro</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Actions.cpp">
+      <Filter>McRave\Strategy</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Goals.cpp">
+      <Filter>McRave\Strategy</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Strategy.cpp">
+      <Filter>McRave\Strategy</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Resources.cpp">
+      <Filter>McRave\Info\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Players.cpp">
+      <Filter>McRave\Info\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Learning.cpp">
+      <Filter>McRave\Builds\All</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -270,12 +276,6 @@
     <ClInclude Include="..\Source\Horizon\Horizon.h">
       <Filter>Horizon</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\BuildingManager.h">
-      <Filter>McRave\Macro</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\EventManager.h">
-      <Filter>McRave\Main</Filter>
-    </ClInclude>
     <ClInclude Include="..\Source\McRave\Header.h">
       <Filter>McRave\Main</Filter>
     </ClInclude>
@@ -285,55 +285,13 @@
     <ClInclude Include="..\Source\McRave\PlayerInfo.h">
       <Filter>McRave\Info\Player</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\PlayerManager.h">
-      <Filter>McRave\Info\Player</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\ProductionManager.h">
-      <Filter>McRave\Macro</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\PylonManager.h">
-      <Filter>McRave\Macro</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\ResourceManager.h">
-      <Filter>McRave\Info\Resources</Filter>
-    </ClInclude>
     <ClInclude Include="..\Source\McRave\ResourceInfo.h">
       <Filter>McRave\Info\Resources</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\StationManager.h">
-      <Filter>McRave\Map</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\GridManager.h">
-      <Filter>McRave\Map</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\ActionManager.h">
-      <Filter>McRave\Strategy</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\GoalManager.h">
-      <Filter>McRave\Strategy</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\StrategyManager.h">
-      <Filter>McRave\Strategy</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\SupportManager.h">
-      <Filter>McRave\Micro</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\TerrainManager.h">
-      <Filter>McRave\Map</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\McRave\BuildOrder.h">
       <Filter>McRave\Builds\All</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\LearningManager.h">
-      <Filter>McRave\Builds\All</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\TransportManager.h">
-      <Filter>McRave\Micro</Filter>
-    </ClInclude>
     <ClInclude Include="..\Source\McRave\UnitInfo.h">
-      <Filter>McRave\Info\Units</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\UnitManager.h">
       <Filter>McRave\Info\Units</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\McRave\UnitMath.h">
@@ -345,23 +303,77 @@
     <ClInclude Include="..\Source\McRave\Visuals.h">
       <Filter>McRave\Main</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\WallManager.h">
+    <ClInclude Include="..\Source\McRave\Planning.h">
+      <Filter>McRave\Macro</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Expansions.h">
+      <Filter>McRave\Macro</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Production.h">
+      <Filter>McRave\Macro</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Pylons.h">
+      <Filter>McRave\Macro</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Targeting.h">
+      <Filter>McRave\Info\Units</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Buildings.h">
+      <Filter>McRave\Info\Units</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Units.h">
+      <Filter>McRave\Info\Units</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Events.h">
+      <Filter>McRave\Main</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Grids.h">
       <Filter>McRave\Map</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\WorkerManager.h">
+    <ClInclude Include="..\Source\McRave\Stations.h">
+      <Filter>McRave\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Terrain.h">
+      <Filter>McRave\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Walls.h">
+      <Filter>McRave\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Combat.h">
       <Filter>McRave\Micro</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\CombatManager.h">
+    <ClInclude Include="..\Source\McRave\Commands.h">
       <Filter>McRave\Micro</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\ScoutManager.h">
+    <ClInclude Include="..\Source\McRave\Scouts.h">
       <Filter>McRave\Micro</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\CommandManager.h">
+    <ClInclude Include="..\Source\McRave\Support.h">
       <Filter>McRave\Micro</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\TargetManager.h">
-      <Filter>McRave\Info\Units</Filter>
+    <ClInclude Include="..\Source\McRave\Transports.h">
+      <Filter>McRave\Micro</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Workers.h">
+      <Filter>McRave\Micro</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Actions.h">
+      <Filter>McRave\Strategy</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Goals.h">
+      <Filter>McRave\Strategy</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Strategy.h">
+      <Filter>McRave\Strategy</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Resources.h">
+      <Filter>McRave\Info\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Players.h">
+      <Filter>McRave\Info\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Learning.h">
+      <Filter>McRave\Builds\All</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -82,6 +82,14 @@ namespace McRave::Goals {
                 worker->setGoal(here);
         }
 
+        void clearGoals()
+        {
+            for (auto &unit : Units::getUnits(PlayerState::Self)) {
+                unit->setGoal(Positions::Invalid);
+                unit->setGoalType(GoalType::None);
+            }
+        }
+
         void updateGenericGoals()
         {
             auto rangedType = UnitTypes::None;
@@ -116,7 +124,7 @@ namespace McRave::Goals {
             if (Stations::getMyStations().size() >= 3) {
                 for (auto &station : Stations::getMyStations()) {
 
-                    if (Stations::getGroundDefenseCount(station) >= 2 || Stations::needGroundDefenses(station) == 0)
+                    if (Stations::getGroundDefenseCount(station) >= 2 || Stations::needGroundDefenses(station) == 0 || (Broodwar->self()->getRace() == Races::Protoss && Stations::needPower(station)))
                         continue;
 
                     // If it's a main, defend at the natural
@@ -143,32 +151,30 @@ namespace McRave::Goals {
             if (BuildOrder::isPlanEarly()) {
                 if (int(Stations::getMyStations().size() < 2))
                     assignWorker(Terrain::getMyNatural()->getBase()->Center());
-                else if (Buildings::getCurrentExpansion())
-                    assignWorker(Buildings::getCurrentExpansion()->getBase()->Center());
+                else if (Planning::getCurrentExpansion())
+                    assignWorker(Planning::getCurrentExpansion()->getBase()->Center());
             }
 
             // Send detector to next expansion
-            if (Buildings::getCurrentExpansion()) {
-                auto nextExpand = Buildings::getCurrentExpansion()->getBase()->Center();
-                auto needDetector = Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 || Players::ZvZ();
-                if (nextExpand.isValid() && needDetector && BWEB::Map::isUsed(Buildings::getCurrentExpansion()->getBase()->Location()) == UnitTypes::None) {
+            if (Planning::getCurrentExpansion()) {
+                auto nextExpand = Planning::getCurrentExpansion()->getBase()->Center();
+                auto needDetector = Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 || Players::vZ();
+                if (nextExpand.isValid() && needDetector && BWEB::Map::isUsed(Planning::getCurrentExpansion()->getBase()->Location()) == UnitTypes::None) {
                     if (Stations::getMyStations().size() >= 2 && BuildOrder::buildCount(base) > vis(base))
                         assignNumberToGoal(nextExpand, detector, 1);
                 }
 
-                // Escort expanders - causing crashes?
+                // Escort expanders
                 if (nextExpand.isValid() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) >= 2) {
                     auto closestBuilder = Util::getClosestUnit(nextExpand, PlayerState::Self, [&](auto &u) {
                         return u.getBuildType().isResourceDepot();
                     });
-
                     auto type = (vis(airType) > 0 && Broodwar->self()->getRace() == Races::Zerg) ? airType : rangedType;
 
                     if (closestBuilder) {
                         for (auto &t : closestBuilder->getTargetedBy()) {
                             if (auto targeter = t.lock())
-                                assignNumberToGoal(targeter->getPosition(), type, 1, GoalType::Escort);
-                            
+                                assignNumberToGoal(targeter->getPosition(), type, 1, GoalType::Escort);                            
                         }
                     }
                 }
@@ -190,7 +196,7 @@ namespace McRave::Goals {
                         continue;
                     if (station == Terrain::getEnemyNatural() || station == Terrain::getEnemyMain())
                         continue;
-                    if (station == Terrain::getMyNatural() || station == Terrain::getMyMain() || (Buildings::getCurrentExpansion() && station == Buildings::getCurrentExpansion()))
+                    if (station == Terrain::getMyNatural() || station == Terrain::getMyMain() || (Planning::getCurrentExpansion() && station == Planning::getCurrentExpansion()))
                         continue;
                     if (Stations::ownedBy(&station) == PlayerState::Self || Stations::ownedBy(&station) == PlayerState::Enemy)
                         continue;
@@ -266,7 +272,7 @@ namespace McRave::Goals {
             }
 
             // Send a DT / Zealot + Goon squad to enemys furthest station
-            if (Stations::getMyStations().size() >= 2) {
+            if (Stations::getMyStations().size() >= 3) {
                 auto distBest = 0.0;
                 auto posBest = Positions::Invalid;
                 for (auto &station : Stations::getEnemyStations()) {
@@ -360,10 +366,6 @@ namespace McRave::Goals {
                         assignNumberToGoal(closestSunk->getPosition(), Zerg_Overlord, 1, GoalType::Escort);
                 }
             }
-
-            // Assign an Overlord to scout enemy third
-            if (Terrain::getEnemyExpand().isValid() && !Players::ZvZ())
-                assignNumberToGoal(Terrain::getEnemyExpand(), Zerg_Overlord, 1, GoalType::Escort);
 
             // Assign an Overlord to each main choke
             for (auto &station : Stations::getMyStations()) {
@@ -472,6 +474,7 @@ namespace McRave::Goals {
 
     void onFrame()
     {
+        clearGoals();
         updateGenericGoals();
         updateProtossGoals();
         updateTerranGoals();

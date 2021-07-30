@@ -237,7 +237,7 @@ namespace McRave::Terrain {
                     auto distBest = DBL_MAX;
                     for (auto &defense : closestStation->getDefenses()) {
                         auto center = Position(defense) + Position(32, 32);
-                        if (Buildings::overlapsPlan(*closestUnit, center))
+                        if (Planning::overlapsPlan(*closestUnit, center))
                             continue;
                         auto dist = center.getDistance(closestStation->getResourceCentroid());
                         if (dist < distBest) {

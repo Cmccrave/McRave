@@ -338,7 +338,7 @@ namespace McRave::Combat {
                         if ((closestStuck && pos.getDistance(closestStuck->getPosition()) < 32.0)
                             || (closestUnit->hasTarget() && Broodwar->getGroundHeight(TilePosition(pos)) <= Broodwar->getGroundHeight(closestUnit->getTarget().getTilePosition()) && closestUnit->getTarget().getPosition().getDistance(pos) < 480.0 && closestDef && closestUnit->getTarget().getGroundRange() > 32.0 && pos.getDistance(closestUnit->getTarget().getPosition()) < closestDef->getPosition().getDistance(closestUnit->getTarget().getPosition()))
                             || (closestBuilder && pos.getDistance(closestBuilder->getPosition()) < 128.0)
-                            || Buildings::overlapsPlan(*closestUnit, pos)
+                            || Planning::overlapsPlan(*closestUnit, pos)
                             || Actions::overlapsActions(closestUnit->unit(), pos, TechTypes::Spider_Mines, PlayerState::Enemy, 96)
                             || !Util::findWalkable(*closestUnit, pos))
                             continue;

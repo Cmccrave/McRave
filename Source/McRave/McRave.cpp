@@ -5,7 +5,7 @@
 
 #include "Header.h"
 #include "McRave.h"
-#include "EventManager.h"
+#include "Events.h"
 #include <chrono>
 #include "../BWEM/BaseFinder/BaseFinder.h"
 
@@ -15,6 +15,31 @@
 // Manner pylon self (neo moon 12)
 // FFE vs 4pool, probes defend minerals
 // Prefer pylons that power locations we need
+
+// Losses between CoG and AIIDE:
+// Z
+// - Worker rush
+// - Scourge dodging fails
+// - 2Gate defense fails
+// - 1 Base DT/Sair
+    // - recognized as DT likely
+    // - need a spore started at 4:00
+// - 3HatchLing (Black Crow)
+    // - 1 more sunk
+    // Mutas only stayed home
+// - 2HatchLing (Crona)
+// Drones stuck on Benzene transfer because of neutral building
+// Gates in back of base, couldnt see, thought it was proxy
+    // Saw a Zealot in base, use that
+// Against bio, sometimes targeting stuff further away and eating marines
+// Need to target air hitters before workers
+// ZvZ 2nd hatch feels a bit late at times
+// ZvZ lings at home suck at fighting, need to hold choke with larger numbers
+// 4th hatch vs T must be an expo
+// Undefended 3rds, need a 5HH build
+
+// P
+// - Dead to cannon rush - possible Z weakness too
 
 // Not needed for CoG:
 // Defilers get stuck on blue storm - dont even use them anyways, so it's fine
@@ -37,7 +62,8 @@ void McRaveModule::onStart()
     Players::onStart();
     Terrain::onStart();
     Walls::onStart();
-    Buildings::onStart();
+    Planning::onStart();
+    Expansion::onStart();
     Stations::onStart();
     Grids::onStart();
     Learning::onStart();
@@ -96,6 +122,8 @@ void McRaveModule::onFrame()
     Combat::onFrame();
     Workers::onFrame();
     Transports::onFrame();
+    Expansion::onFrame();
+    Planning::onFrame();
     Buildings::onFrame();
     Production::onFrame();
 
