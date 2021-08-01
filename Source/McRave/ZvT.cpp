@@ -156,7 +156,7 @@ namespace McRave::BuildOrder::Zerg {
         unitLimits[Zerg_Zergling] =                 INT_MAX;
         gasLimit =                                  ((!Strategy::enemyProxy() || com(Zerg_Zergling) >= 6) && !lingSpeed()) ? capGas(100) : 0;
 
-        wallNat =                                   true;
+        wallNat =                                   false;
         inOpeningBook =                             total(Zerg_Zergling) < 36;
         firstUpgrade =                              UpgradeTypes::Metabolic_Boost;
         firstUnit =                                 UnitTypes::None;
@@ -259,6 +259,22 @@ namespace McRave::BuildOrder::Zerg {
     {
         defaultZvT();
 
+        // Reactions
+        if (!lockedTransition) {
+            if (Strategy::enemyRush() || Strategy::enemyProxy())
+                currentTransition = "2HatchSpeedling";
+            if (Strategy::getEnemyOpener() == "8Rax") {
+                currentBuild = "PoolHatch";
+                currentOpener = "12Pool";
+                currentTransition = "2HatchMuta";
+            }
+            if (Strategy::getEnemyTransition() == "WorkerRush") {
+                currentBuild = "PoolHatch";
+                currentOpener = "Overpool";
+                currentTransition = "2HatchSpeedling";
+            }
+        }
+
         // Openers
         if (currentOpener == "12Hatch")
             ZvT12Hatch();
@@ -268,17 +284,6 @@ namespace McRave::BuildOrder::Zerg {
             ZvTOverpool();
         if (currentOpener == "12Pool")
             ZvT12Pool();
-
-        // Reactions
-        if (!lockedTransition) {
-            if (Strategy::enemyRush() || Strategy::enemyProxy())
-                currentTransition = "2HatchSpeedling";
-            if (Strategy::getEnemyOpener() == "8Rax" || Strategy::getEnemyTransition() == "WorkerRush") {
-                currentBuild = "PoolHatch";
-                currentOpener = "12Pool";
-                currentTransition = "2HatchMuta";
-            }
-        }
 
         // Builds
         if (transitionReady) {

@@ -9,5 +9,5 @@ namespace McRave::Pylons
     void onFrame();
     bool hasPowerNow(BWAPI::TilePosition, BWAPI::UnitType);
     bool hasPowerSoon(BWAPI::TilePosition, BWAPI::UnitType);
-    int countPoweredPositions(BWAPI::UnitSizeType);
+    int countPoweredPositions(BWAPI::UnitType);
 }

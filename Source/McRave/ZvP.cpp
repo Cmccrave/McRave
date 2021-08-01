@@ -305,6 +305,42 @@ namespace McRave::BuildOrder::Zerg {
         armyComposition[Zerg_Zergling] =                0.80;
     }
 
+    void ZvP3HatchHydra()
+    {
+
+    }
+
+    void ZvP6HatchHydra()
+    {
+        //`https://liquipedia.net/starcraft/6_hatch_(vs._Protoss)`
+        lockedTransition =                              hatchCount() >= 3 || total(Zerg_Mutalisk) > 0;
+        inOpeningBook =                                 total(Zerg_Hydralisk) < 24;
+        inBookSupply =                                  vis(Zerg_Overlord) < 5;
+        firstUpgrade =                                  UpgradeTypes::Muscular_Augments;
+        firstUnit =                                     Zerg_Hydralisk;
+        hideTech =                                      true;
+        unitLimits[Zerg_Drone] =                        INT_MAX;
+        unitLimits[Zerg_Zergling] =                     lingsNeeded();
+        playPassive =                                   false;
+        wantThird =                                     true;
+        gasLimit =                                      (vis(Zerg_Drone) >= 14) ? gasMax() : 0;
+        planEarly =                                     hatchCount() < 3 && s >= 28;
+
+        buildQueue[Zerg_Hatchery] =                     2 + (s >= 30 && vis(Zerg_Extractor) > 0) + (s >= 64) + (s >= 70) + (s >= 76);
+        buildQueue[Zerg_Extractor] =                    (s >= 30) + (s >= 84);
+        buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 46) + (s >= 62);
+        buildQueue[Zerg_Lair] =                         (s >= 36);
+        buildQueue[Zerg_Spire] =                        (s >= 40 && atPercent(Zerg_Lair, 0.95) && vis(Zerg_Drone) >= 16);
+        buildQueue[Zerg_Hydralisk_Den] =                (s >= 80);
+        buildQueue[Zerg_Evolution_Chamber] =            (s >= 84);
+
+        // Composition
+        armyComposition[Zerg_Drone] =                   0.60;
+        armyComposition[Zerg_Zergling] =                0.10;
+        armyComposition[Zerg_Hydralisk] =               0.30;
+        armyComposition[Zerg_Scourge] =                 0.05;
+    }
+
     void ZvP2HatchLurker()
     {
         // 'https://liquipedia.net/starcraft/2_Hatch_Lurker_(vs._Terran)'
@@ -444,6 +480,8 @@ namespace McRave::BuildOrder::Zerg {
                 ZvP2HatchSpeedling();
             if (currentTransition == "3HatchSpeedling")
                 ZvP3HatchSpeedling();
+            if (currentTransition == "6HatchHydra")
+                ZvP6HatchHydra();
             if (currentTransition == "2HatchLurker")
                 ZvP2HatchLurker();
         }

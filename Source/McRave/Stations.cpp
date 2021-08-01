@@ -288,6 +288,13 @@ namespace McRave::Stations {
         else {
             if (Strategy::getEnemyTransition() == "Carriers")
                 return 0;
+
+
+
+            // 
+            if (Players::ZvP() && BuildOrder::getCurrentTransition().find("2Hatch") == string::npos)
+                return 2 - groundCount;
+
             if ((Players::ZvT() && Util::getTime() > Time(16, 00)) || Players::ZvP()) {
                 auto chokeCount = max(2, int(station->getBase()->GetArea()->ChokePoints().size()));
                 auto resourceCount = 0;

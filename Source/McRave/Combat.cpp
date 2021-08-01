@@ -477,8 +477,8 @@ namespace McRave::Combat {
                     return combatWorkersCount < 6;
                 if (Players::ZvP() && proxyDangerousBuilding && Strategy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
                     return combatWorkersCount < (4 * Players::getVisibleCount(PlayerState::Enemy, proxyDangerousBuilding->getType()));
-                if (Strategy::getWorkersNearUs() > 2 && Strategy::getWorkersNearUs() >= combatWorkersCount)
-                    return Strategy::getWorkersNearUs() >= combatWorkersCount - 1;
+                if (Strategy::getEnemyTransition() == "WorkerRush" && com(Zerg_Spawning_Pool) == 0)
+                    return Strategy::getWorkersNearUs() >= combatWorkersCount - 3;
                 if (BuildOrder::getCurrentOpener() == "12Hatch" && Strategy::getEnemyOpener() == "8Rax" && com(Zerg_Zergling) < 2)
                     return combatWorkersCount <= com(Zerg_Drone) - 4;
 
@@ -567,15 +567,6 @@ namespace McRave::Combat {
                 unit.setGlobalState(GlobalState::Attack);
                 return;
             }
-
-            /*if (!unit.hasTarget()) {
-                if (insideRetreatRadius && !unit.getSimTarget().getType().isWorker() && !Strategy::enemyProxy())
-                    unit.setLocalState(LocalState::Retreat);
-                else
-                    unit.setLocalState(LocalState::None);
-                return;
-            }*/
-
 
             const auto distSim = double(Util::boxDistance(unit.getType(), unit.getPosition(), unit.getSimTarget().getType(), unit.getSimTarget().getPosition()));
             const auto distTarget = double(Util::boxDistance(unit.getType(), unit.getPosition(), unit.getTarget().getType(), unit.getTarget().getPosition()));

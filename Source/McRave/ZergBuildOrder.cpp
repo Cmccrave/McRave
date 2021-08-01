@@ -256,20 +256,16 @@ namespace McRave::BuildOrder::Zerg {
             currentBuild = "PoolHatch";
             currentOpener = "9Pool";
             currentTransition = "2HatchMuta";
-            ZvZPoolLair();
+            ZvZ();
         }
 
         if (Players::vT())
-            ZvT();        
+            ZvT();
         else if (Players::vP() || Players::getRaceCount(Races::Unknown, PlayerState::Enemy) > 0)
             ZvP();
+        else if (Players::vZ())
+            ZvZ();
         
-        else if (Players::vZ()) {
-            if (currentBuild == "PoolLair")
-                ZvZPoolLair();
-            if (currentBuild == "PoolHatch")
-                ZvZPoolHatch();
-        }
     }
 
     void tech()

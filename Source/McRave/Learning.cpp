@@ -228,6 +228,8 @@ namespace McRave::Learning {
                             return z && !Terrain::isShitMap();
                         if (transition == "3HatchSpeedling")
                             return false;
+                        if (transition == "6HatchHydra")
+                            return p;
                         if (transition == "2HatchLurker")
                             return false;
                     }
@@ -387,7 +389,7 @@ namespace McRave::Learning {
         void getPermanentBuild()
         {
             // Testing builds if needed
-            if (false) {
+            if (true) {
                 if (Players::PvZ()) {
                     BuildOrder::setLearnedBuild("FFE", "Forge", "NeoBisu");
                     isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
@@ -414,7 +416,7 @@ namespace McRave::Learning {
                     return;
                 }
                 if (Players::ZvP()) {
-                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "2HatchLurker");
+                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "6HatchHydra");
                     isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                     return;
                 }
@@ -468,11 +470,11 @@ namespace McRave::Learning {
 
                 Build PoolHatch("PoolHatch");
                 PoolHatch.openers ={ BuildComponent("4Pool"), BuildComponent("9Pool"), BuildComponent("Overpool"), BuildComponent("12Pool") };
-                PoolHatch.transitions={ BuildComponent("2HatchMuta"), BuildComponent("3HatchMuta"), BuildComponent("4HatchMuta"), BuildComponent("2HatchSpeedling"), BuildComponent("3HatchSpeedling"), BuildComponent("2HatchLurker") };
+                PoolHatch.transitions={ BuildComponent("2HatchMuta"), BuildComponent("3HatchMuta"), BuildComponent("2HatchSpeedling"), BuildComponent("3HatchSpeedling"), BuildComponent("6HatchHydra"), BuildComponent("2HatchLurker") };
 
                 Build HatchPool("HatchPool");
                 HatchPool.openers ={ BuildComponent("9Hatch"), BuildComponent("10Hatch"), BuildComponent("12Hatch") };
-                HatchPool.transitions={ BuildComponent("2HatchMuta"), BuildComponent("3HatchMuta"), BuildComponent("2HatchSpeedling") };
+                HatchPool.transitions={ BuildComponent("2HatchMuta"), BuildComponent("3HatchMuta"), BuildComponent("2HatchSpeedling"), BuildComponent("6HatchHydra") };
 
                 Build PoolLair("PoolLair");
                 PoolLair.openers ={ BuildComponent("9Pool"), BuildComponent("12Pool") };

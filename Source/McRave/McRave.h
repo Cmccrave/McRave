@@ -185,12 +185,12 @@ namespace McRave {
 
     /// Returns the self owned visible unit count of this UnitType
     static int vis(BWAPI::UnitType t) {
-        return Units::getMyVisible(t);
+        return Players::getVisibleCount(PlayerState::Self, t);
     }
 
     /// Returns the self owned completed unit count of this UnitType
     static int com(BWAPI::UnitType t) {
-        return Units::getMyComplete(t);
+        return Players::getCompleteCount(PlayerState::Self, t);
     }
 
     /// Returns the self total unit count of this UnitType

@@ -62,7 +62,6 @@ namespace McRave::BuildOrder {
         void situational();
         void composition();
         void unlocks();
-        void island();
 
         void PvP1GateCore();
         void PvP2Gate();
@@ -83,7 +82,6 @@ namespace McRave::BuildOrder {
         void situational();
         void composition();
         void unlocks();
-        //void island();
 
         void RaxFact();
     }
@@ -95,13 +93,10 @@ namespace McRave::BuildOrder {
         void situational();
         void composition();
         void unlocks();
-        //void island();
-
-        void ZvZPoolLair();
-        void ZvZPoolHatch();
 
         void ZvT();
         void ZvP();
+        void ZvZ();
     }
 
     double getCompositionPercentage(BWAPI::UnitType);

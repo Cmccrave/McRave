@@ -13,8 +13,6 @@ namespace McRave::Units {
         set<shared_ptr<UnitInfo>> myUnits;
         set<shared_ptr<UnitInfo>> neutralUnits;
         set<shared_ptr<UnitInfo>> allyUnits;
-        map<UnitType, int> myVisibleTypes;
-        map<UnitType, int> myCompleteTypes;
         map<UnitSizeType, int> allyGrdSizes;
         map<UnitSizeType, int> enemyGrdSizes;
         map<UnitSizeType, int> allyAirSizes;
@@ -118,15 +116,6 @@ namespace McRave::Units {
 
                     unit.update();
                     updateRole(unit);
-
-                    auto type = unit.getType() == Zerg_Egg ? unit.unit()->getBuildType() : unit.getType();
-                    if (unit.unit()->isCompleted() && !unit.unit()->isMorphing()) {
-                        myCompleteTypes[type] += 1;
-                        myVisibleTypes[type] += 1;
-                    }
-                    else {
-                        myVisibleTypes[type] += 1 + (type == Zerg_Zergling || type == Zerg_Scourge);
-                    }
                 }
             }
         }
@@ -154,8 +143,6 @@ namespace McRave::Units {
         void updateCounters()
         {
             immThreat = 0.0;
-            myVisibleTypes.clear();
-            myCompleteTypes.clear();
 
             enemyUnits.clear();
             myUnits.clear();
@@ -208,7 +195,7 @@ namespace McRave::Units {
         Visuals::endPerfTest("Units");
     }
 
-    const shared_ptr<UnitInfo> getUnitInfo(Unit unit)
+    shared_ptr<UnitInfo> getUnitInfo(Unit unit)
     {
         for (auto &[_, player] : Players::getPlayers()) {
             for (auto &u : player.getUnits()) {
@@ -242,6 +229,4 @@ namespace McRave::Units {
     Position getEnemyArmyCenter() { return enemyArmyCenter; }
     double getImmThreat() { return immThreat; }
     int getMyRoleCount(Role role) { return myRoles[role]; }
-    int getMyVisible(UnitType type) { return myVisibleTypes[type]; }
-    int getMyComplete(UnitType type) { return myCompleteTypes[type]; }
 }

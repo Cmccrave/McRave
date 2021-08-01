@@ -332,9 +332,11 @@ namespace McRave::Planning {
 
                 // Protosss
                 if (Broodwar->self()->getRace() == Races::Protoss) {
-                    if ((Pylons::countPoweredPositions(UnitSizeTypes::Large) < 2 && block.getLargeTiles().empty())
-                        || (Pylons::countPoweredPositions(UnitSizeTypes::Medium) < 2 && block.getMediumTiles().empty()))
-                        continue;
+                    if (building == Protoss_Pylon) {
+                        if ((Pylons::countPoweredPositions(Protoss_Gateway) < 2 && block.getLargeTiles().empty())
+                            || (Pylons::countPoweredPositions(Protoss_Forge) < 2 && block.getMediumTiles().empty()))
+                            continue;
+                    }
                 }
 
                 if (!block.getPlacements(building).empty())

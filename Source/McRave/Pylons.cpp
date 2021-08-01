@@ -6,13 +6,14 @@ using namespace std;
 namespace McRave::Pylons
 {
     namespace {
-        map<TilePosition, int> smallMediumLocations, largeLocations;
+        map<TilePosition, int> smallLocations, mediumLocations, largeLocations;
         map<UnitSizeType, int> poweredPositions;
 
         void updatePowerGrid()
         {
             // Update power of every Pylon
-            smallMediumLocations.clear();
+            smallLocations.clear();
+            mediumLocations.clear();
             largeLocations.clear();
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
@@ -32,26 +33,34 @@ namespace McRave::Pylons
                                 largeLocations[tile] = max(largeLocations[tile], count);
                         }
                         else if (y == 1 || y == 8) {
-                            if (x >= 2 && x <= 13)
-                                smallMediumLocations[tile] = max(smallMediumLocations[tile], count);
+                            if (x >= 2 && x <= 13) {
+                                smallLocations[tile] = max(smallLocations[tile], count);
+                                mediumLocations[tile] = max(mediumLocations[tile], count);
+                            }
                             if (x >= 1 && x <= 12)
                                 largeLocations[tile] = max(largeLocations[tile], count);
                         }
                         else if (y == 2 || y == 7) {
-                            if (x >= 1 && x <= 14)
-                                smallMediumLocations[tile] = max(smallMediumLocations[tile], count);
+                            if (x >= 1 && x <= 14) {
+                                smallLocations[tile] = max(smallLocations[tile], count);
+                                mediumLocations[tile] = max(mediumLocations[tile], count);
+                            }
                             if (x <= 13)
                                 largeLocations[tile] = max(largeLocations[tile], count);
                         }
-                        else if (y == 3 || y == 4 || y == 5 || y == 6) {
-                            if (x >= 1)
-                                smallMediumLocations[tile] = max(smallMediumLocations[tile], count);
+                        else if (y >= 3 && y <= 6) {
+                            if (x >= 1 && x <= 14)
+                                smallLocations[tile] = max(mediumLocations[tile], count);
+                            if (x <= 15)
+                                mediumLocations[tile] = max(mediumLocations[tile], count);
                             if (x <= 14)
-                                largeLocations[tile] = max(largeLocations[tile], count);
+                                largeLocations[tile] = max(largeLocations[tile], count);                            
                         }
                         else if (y == 9) {
-                            if (x >= 5 && x <= 10)
-                                smallMediumLocations[tile] = max(smallMediumLocations[tile], count);
+                            if (x >= 5 && x <= 10) {
+                                smallLocations[tile] = max(smallLocations[tile], count);
+                                mediumLocations[tile] = max(mediumLocations[tile], count);
+                            }
                             if (x >= 4 && x <= 9)
                                 largeLocations[tile] = max(largeLocations[tile], count);
                         }
@@ -70,8 +79,12 @@ namespace McRave::Pylons
                         poweredPositions[UnitSizeTypes::Large]++;
                 }
                 for (auto &medium : block.getMediumTiles()) {
-                    if (smallMediumLocations[medium] > 0 && BWEB::Map::isUsed(medium) == UnitTypes::None)
+                    if (mediumLocations[medium] > 0 && BWEB::Map::isUsed(medium) == UnitTypes::None)
                         poweredPositions[UnitSizeTypes::Medium]++;
+                }
+                for (auto &small : block.getMediumTiles()) {
+                    if (smallLocations[small] > 0 && BWEB::Map::isUsed(small) == UnitTypes::None)
+                        poweredPositions[UnitSizeTypes::Small]++;
                 }
             }
         }
@@ -85,21 +98,33 @@ namespace McRave::Pylons
 
     bool hasPowerNow(TilePosition here, UnitType building)
     {
-        if (building.tileHeight() == 2 && smallMediumLocations[here] == 2)
-            return true;
-        else if (building.tileHeight() == 3 && largeLocations[here] == 2)
-            return true;
+        if (building.tileWidth() == 2)
+            return smallLocations[here] == 2;
+        else if (building.tileWidth() == 3)
+            return mediumLocations[here] == 2;
+        else if (building.tileWidth() == 4)
+            return largeLocations[here] == 2;
         return false;
     }
 
     bool hasPowerSoon(TilePosition here, UnitType building)
     {
-        if (building.tileHeight() == 2 && smallMediumLocations[here] >= 1)
-            return true;
-        else if (building.tileHeight() == 3 && largeLocations[here] >= 1)
-            return true;
+        if (building.tileWidth() == 2)
+            return smallLocations[here] >= 1;
+        else if (building.tileWidth() == 3)
+            return mediumLocations[here] >= 1;
+        else if (building.tileWidth() == 4)
+            return largeLocations[here] >= 1;
         return false;
     }
 
-    int countPoweredPositions(UnitSizeType type) { return poweredPositions[type]; }
+    int countPoweredPositions(UnitType building) {
+        if (building.tileWidth() == 2)
+            return poweredPositions[UnitSizeTypes::Small];
+        if (building.tileWidth() == 3)
+            return poweredPositions[UnitSizeTypes::Medium];
+        if (building.tileWidth() == 4)
+            return poweredPositions[UnitSizeTypes::Large];
+        return 0;
+    }
 }

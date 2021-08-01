@@ -170,9 +170,6 @@ namespace McRave::Strategy {
                     unitsStored.insert(unit.unit());
                 }
 
-                if (workersNearUs > 5 && Util::getTime() < Time(3, 00))
-                    enemyStrat.transition.name = "WorkerRush";
-
                 // Monitor for a fast expand
                 if (unit.getType().isResourceDepot()) {
                     for (auto &base : Terrain::getAllBases()) {
@@ -390,6 +387,9 @@ namespace McRave::Strategy {
             auto hasGols = Players::getVisibleCount(PlayerState::Enemy, Terran_Goliath) > 0;
             auto hasWraiths = Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith) > 0;
 
+            if (workersNearUs >= 3 && Util::getTime() < Time(3, 00))
+                enemyStrat.transition.name = "WorkerRush";
+
             // PvT
             if (Players::PvT()) {
                 if ((Players::getVisibleCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) > 0 && Players::getVisibleCount(PlayerState::Enemy, Terran_Vulture) == 0)
@@ -580,6 +580,9 @@ namespace McRave::Strategy {
                     || completesBy(3, Protoss_Gateway, Time(3, 30)))
                     enemyStrat.transition.name = "ZealotRush";
             }
+
+            if (workersNearUs >= 3 && Util::getTime() < Time(3, 00))
+                enemyStrat.transition.name = "WorkerRush";
 
             // 2Gate
             if (enemyStrat.build.name == "2Gate" || enemyStrat.build.name == "1GateCore") {
