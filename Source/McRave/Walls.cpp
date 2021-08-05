@@ -328,7 +328,7 @@ namespace McRave::Walls {
             if (Strategy::getEnemyTransition() == "Corsair" && Util::getTime() < Time(8, 30))
                 return (Util::getTime() > Time(3, 40)) + (Util::getTime() > Time(7, 30));
             else if (Strategy::getEnemyTransition() == "DT" && Util::getTime() < Time(8, 30))
-                return (Util::getTime() > Time(3, 40)) + (Util::getTime() > Time(4, 20)) + (Util::getTime() > Time(5, 00)) + (Util::getTime() > Time(5, 20)) + (Util::getTime() > Time(5, 40)) + (Util::getTime() > Time(6, 00));
+                return (Util::getTime() > Time(3, 40)) + (Util::getTime() > Time(4, 20)) + (Util::getTime() > Time(5, 00)) + (Util::getTime() > Time(5, 20)) + (Util::getTime() > Time(5, 40));
             else if (Util::getTime() < Time(6, 15) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) >= 1)
                 return (Util::getTime() > Time(3, 40)) + (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 20)) + noExpandOrTech;
             else if (Util::getTime() < Time(6, 15))
@@ -506,9 +506,10 @@ namespace McRave::Walls {
                 return 1 - airCount;
             if (Players::ZvZ() && Util::getTime() > Time(4, 15) && Strategy::getEnemyTransition() == "1HatchMuta" && BuildOrder::getCurrentTransition() == "2HatchMuta")
                 return 1 - airCount;
-            if (Players::ZvP() && Util::getTime() > Time(4, 00) && Util::getTime() < Time(7, 00) && Strategy::getEnemyBuild() == "1GateCore" && Strategy::getEnemyTransition() == "Corsair")
+
+            if (Players::ZvP() && Util::getTime() > Time(4, 00) && Strategy::getEnemyBuild() == "1GateCore" && Strategy::getEnemyTransition() == "Corsair")
                 return 1 - airCount;
-            if (Players::ZvP() && Util::getTime() > Time(4, 30) && Util::getTime() < Time(7, 00) && Strategy::getEnemyBuild() == "2Gate" && Strategy::getEnemyTransition() == "Corsair")
+            if (Players::ZvP() && Util::getTime() > Time(4, 30) && Strategy::getEnemyBuild() == "2Gate" && Strategy::getEnemyTransition() == "Corsair")
                 return 1 - airCount;
         }
         return 0;

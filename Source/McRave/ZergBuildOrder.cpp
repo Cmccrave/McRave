@@ -265,7 +265,7 @@ namespace McRave::BuildOrder::Zerg {
             ZvP();
         else if (Players::vZ())
             ZvZ();
-        
+
     }
 
     void tech()
@@ -294,13 +294,6 @@ namespace McRave::BuildOrder::Zerg {
 
         // ZvT
         if (Players::ZvT()) {
-
-            if (isTechUnit(Zerg_Lurker) && vsMech) {
-                techList.erase(Zerg_Lurker);
-                unlockedType.erase(Zerg_Lurker);
-                unlockedType.erase(Zerg_Hydralisk);
-            }
-
             if (vsMech)
                 techOrder ={ Zerg_Mutalisk };
             else
@@ -319,14 +312,6 @@ namespace McRave::BuildOrder::Zerg {
         auto readyToTech = vis(Zerg_Extractor) >= int(Stations::getMyStations().size()) || int(Stations::getMyStations().size()) >= 4 || techList.empty();
         if (!inOpeningBook && readyToTech && techUnit == None && !techSat && productionSat && vis(Zerg_Drone) >= 10)
             getTech = true;
-
-        // Add Scourge if we have Mutas
-        if (isTechUnit(Zerg_Mutalisk))
-            unlockedType.insert(Zerg_Scourge);
-
-        // Add Hydras if we want Lurkers
-        if (isTechUnit(Zerg_Lurker) && unitLimits.find(Zerg_Hydralisk) == unitLimits.end())
-            unlockedType.insert(Zerg_Hydralisk);
 
         getNewTech();
         getTechBuildings();
@@ -494,7 +479,7 @@ namespace McRave::BuildOrder::Zerg {
                 armyComposition[Zerg_Mutalisk] =                0.30;
                 currentComposition =                            Composition::Muta;
             }
-            else if (isTechUnit(Zerg_Lurker)) {                
+            else if (isTechUnit(Zerg_Lurker)) {
                 armyComposition[Zerg_Drone] =                   0.60;
                 armyComposition[Zerg_Zergling] =                0.20;
                 armyComposition[Zerg_Hydralisk] =               0.20;
@@ -585,8 +570,7 @@ namespace McRave::BuildOrder::Zerg {
 
     void unlocks()
     {
-        // Always unlock Overlords
-        unlockedType.insert(Zerg_Overlord);
+        unlockedType.clear();
 
         // Saving larva to burst out tech units
         int limitBy = int(Stations::getMyStations().size()) * 3;
@@ -594,9 +578,14 @@ namespace McRave::BuildOrder::Zerg {
         if ((inOpeningBook || techList.size() == 1) && ((atPercent(Zerg_Spire, 0.50) && com(Zerg_Spire) == 0) || (atPercent(Zerg_Hydralisk_Den, 0.6) && com(Zerg_Hydralisk_Den) == 0)))
             unitLimits[Zerg_Larva] = max(0, limitBy - total(Zerg_Mutalisk) - total(Zerg_Hydralisk));
 
-        // Drone and Ling limiting in opening book
-        unlockedType.insert(Zerg_Zergling);
-        unlockedType.insert(Zerg_Drone);
+        // Unlocking units
+        unlockedType.insert(Zerg_Overlord);
+        for (auto &[type, per] : armyComposition) {
+            if (per > 0.0)
+                unlockedType.insert(type);
+        }
+
+        // Unit limiting in opening book
         if (inOpeningBook) {
             for (auto &type : unitLimits) {
                 if (type.second > vis(type.first))

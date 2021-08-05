@@ -983,6 +983,6 @@ namespace McRave
             return false;
         if (Players::ZvZ() && vis(Zerg_Mutalisk) <= Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk))
             return false;
-        return (isLightAir() || getType() == Zerg_Scourge) && Terrain::getHarassPosition().isValid();
+        return isLightAir() && Terrain::getHarassPosition().isValid();
     }
 }

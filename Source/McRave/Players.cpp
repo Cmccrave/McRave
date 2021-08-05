@@ -26,11 +26,24 @@ namespace McRave::Players
             for (auto &u : player.getUnits()) {
                 auto &unit = *u;
 
-                // If unit has a valid type, update enemy composition tracking
-                if (unit.getType().isValid())
-                    visCounts[unit.getType()] += 1;
-                if (unit.getType().isValid() && unit.isCompleted())
-                    comCounts[unit.getType()] += 1;
+                if (player.isSelf()) {
+                    auto type = unit.getType() == Zerg_Egg ? unit.unit()->getBuildType() : unit.getType();
+                    if (unit.unit()->isCompleted() && !unit.unit()->isMorphing()) {
+                        comCounts[type] += 1;
+                        visCounts[type] += 1;
+                    }
+                    else {
+                        visCounts[type] += 1 + (type == Zerg_Zergling || type == Zerg_Scourge);
+                    }
+                }
+                else {
+
+                    // If unit has a valid type, update enemy composition tracking
+                    if (unit.getType().isValid())
+                        visCounts[unit.getType()] += 1;
+                    if (unit.getType().isValid() && unit.isCompleted())
+                        comCounts[unit.getType()] += 1;
+                }
             }
         }
     }

@@ -393,8 +393,9 @@ namespace McRave::Goals {
                     }
                 }
                 if (posBest.isValid()) {
-                    assignPercentToGoal(posBest, Zerg_Hydralisk, 0.50, GoalType::Attack);
                     assignPercentToGoal(posBest, Zerg_Zergling, 1.00, GoalType::Attack);
+                    if (Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines) && Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments))
+                        assignPercentToGoal(posBest, Zerg_Hydralisk, 0.50, GoalType::Attack);
                 }
             }
 

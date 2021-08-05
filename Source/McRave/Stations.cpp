@@ -289,10 +289,12 @@ namespace McRave::Stations {
             if (Strategy::getEnemyTransition() == "Carriers")
                 return 0;
 
+            // 2 Hatch
+            if (Players::ZvP() && BuildOrder::getCurrentTransition().find("2Hatch") != string::npos)
+                return 1 - groundCount;
 
-
-            // 
-            if (Players::ZvP() && BuildOrder::getCurrentTransition().find("2Hatch") == string::npos)
+            // Other
+            if (Players::ZvP() && BuildOrder::getCurrentTransition().find("2Hatch") == string::npos && Util::getTime() > Time(5, 00))
                 return 2 - groundCount;
 
             if ((Players::ZvT() && Util::getTime() > Time(16, 00)) || Players::ZvP()) {

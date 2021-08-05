@@ -557,8 +557,15 @@ namespace McRave::Combat {
 
         void updateLocalState(UnitInfo& unit)
         {
-            if (!unit.hasSimTarget() || !unit.hasTarget()) {
+            if (!unit.hasSimTarget()) {
                 unit.setLocalState(LocalState::None);
+                return;
+            }
+            const auto distSim = double(Util::boxDistance(unit.getType(), unit.getPosition(), unit.getSimTarget().getType(), unit.getSimTarget().getPosition()));
+            const auto insideRetreatRadius = distSim < unit.getRetreatRadius();
+
+            if (!unit.hasTarget()) {
+                unit.setLocalState(insideRetreatRadius ? LocalState::Retreat : LocalState::None);
                 return;
             }
 
@@ -568,10 +575,8 @@ namespace McRave::Combat {
                 return;
             }
 
-            const auto distSim = double(Util::boxDistance(unit.getType(), unit.getPosition(), unit.getSimTarget().getType(), unit.getSimTarget().getPosition()));
             const auto distTarget = double(Util::boxDistance(unit.getType(), unit.getPosition(), unit.getTarget().getType(), unit.getTarget().getPosition()));
             const auto insideEngageRadius = distTarget < unit.getEngageRadius() && unit.getGlobalState() == GlobalState::Attack;
-            const auto insideRetreatRadius = distSim < unit.getRetreatRadius() && distTarget < unit.getRetreatRadius() * 2;
 
             // HACK: Workers are sometimes forced to engage endlessly
             if (unit.getLocalState() != LocalState::None)

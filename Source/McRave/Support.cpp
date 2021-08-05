@@ -80,6 +80,8 @@ namespace McRave::Support {
 
             if (!unit.getDestination().isValid())
                 unit.setDestination(BWEB::Map::getMainPosition());
+
+            Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Red);
         }
 
         void updateDecision(UnitInfo& unit)

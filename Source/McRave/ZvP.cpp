@@ -42,14 +42,14 @@ namespace McRave::BuildOrder::Zerg {
 
         int lingsNeeded() {
             auto maxValue = currentTransition.find("3Hatch") != string::npos ? 48 : 24;
-            if (total(Zerg_Zergling) < 14 && Strategy::getEnemyOpener() == "9/9")
-                return 14;
-            if (vis(Zerg_Zergling) < 4 && Strategy::getEnemyOpener() == "9/9")
-                return 4;
-            if (total(Zerg_Zergling) < 10 && Strategy::getEnemyOpener() == "10/12")
-                return 10;
-            if (total(Zerg_Zergling) < 6 && Strategy::getEnemyOpener() == "10/17")
-                return 6;
+            if (Strategy::getEnemyBuild() == "2Gate") {
+                if (total(Zerg_Zergling) < 14 && Strategy::getEnemyOpener() == "9/9")
+                    return 14;
+                if (total(Zerg_Zergling) < 10 && (Strategy::getEnemyOpener() == "10/12" || Strategy::getEnemyOpener() == "Unknown"))
+                    return 10;
+                if (total(Zerg_Zergling) < 6 && Strategy::getEnemyOpener() == "10/17")
+                    return 6;
+            }
 
             if (Strategy::enemyProxy())
                 return 24;
@@ -150,7 +150,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Overlord] =                     (Strategy::getEnemyBuild() == "FFE" && atPercent(Zerg_Spire, 0.5)) ? 5 : 1 + (s >= 18) + (s >= 32) + (2 * (s >= 50)) + (s >= 80);
 
         // Composition
-        if (playPassive && com(Zerg_Spire) == 0 && lingsNeeded() > vis(Zerg_Zergling)) {
+        if (com(Zerg_Spire) == 0 && lingsNeeded() > vis(Zerg_Zergling)) {
             armyComposition[Zerg_Drone] =               0.00;
             armyComposition[Zerg_Zergling] =            1.00;
         }
@@ -190,7 +190,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 46) + (2 * (s >= 66)) + (s >= 68) + (s >= 82);
 
         // Composition
-        if (playPassive && com(Zerg_Spire) == 0 && lingsNeeded() > vis(Zerg_Zergling)) {
+        if (com(Zerg_Spire) == 0 && lingsNeeded() > vis(Zerg_Zergling)) {
             armyComposition[Zerg_Drone] =               0.00;
             armyComposition[Zerg_Zergling] =            1.00;
         }
@@ -265,19 +265,6 @@ namespace McRave::BuildOrder::Zerg {
             armyComposition[Zerg_Drone] =                   0.00;
             armyComposition[Zerg_Zergling] =                1.00;
         }
-
-        //// Ease any transitions
-        //if (Util::getTime() > Time(5, 00) && vis(Zerg_Drone) >= 9)
-        //    gasLimit = capGas(100);
-
-        //// Start a hatch when we know our natural hatch will be dead by
-        //if (Strategy::enemyProxy() && hatchCount() <= 2) {
-        //    auto natHatch = Util::getClosestUnit(Terrain::getMyNatural()->getBase()->Center(), PlayerState::Self, [&](auto &u) {
-        //        return u.getType().isResourceDepot() && u.getTilePosition() == Terrain::getMyNatural()->getBase()->Location();
-        //    });
-        //    if (natHatch && !natHatch->isHealthy())
-        //        buildQueue[Zerg_Hatchery] = 3;
-        //}
     }
 
     void ZvP3HatchSpeedling()
@@ -321,13 +308,14 @@ namespace McRave::BuildOrder::Zerg {
         hideTech =                                      true;
         unitLimits[Zerg_Drone] =                        INT_MAX;
         unitLimits[Zerg_Zergling] =                     lingsNeeded();
-        playPassive =                                   false;
+        unitLimits[Zerg_Scourge] =                      6;
+        playPassive =                                   (Strategy::getEnemyBuild() == "1GateCore" || (Strategy::getEnemyBuild() == "2Gate" && Strategy::getEnemyOpener() != "Unknown")) && Util::getTime() < Time(5, 00);
         wantThird =                                     true;
         gasLimit =                                      (vis(Zerg_Drone) >= 14) ? gasMax() : 0;
-        planEarly =                                     hatchCount() < 3 && s >= 28;
+        planEarly =                                     hatchCount() < 3 && s == 28;
 
         buildQueue[Zerg_Hatchery] =                     2 + (s >= 30 && vis(Zerg_Extractor) > 0) + (s >= 64) + (s >= 70) + (s >= 76);
-        buildQueue[Zerg_Extractor] =                    (s >= 30) + (s >= 84);
+        buildQueue[Zerg_Extractor] =                    (s >= 30) + (s >= 84) + (vis(Zerg_Evolution_Chamber) > 0);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 46) + (s >= 62);
         buildQueue[Zerg_Lair] =                         (s >= 36);
         buildQueue[Zerg_Spire] =                        (s >= 40 && atPercent(Zerg_Lair, 0.95) && vis(Zerg_Drone) >= 16);
@@ -335,10 +323,16 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Evolution_Chamber] =            (s >= 84);
 
         // Composition
-        armyComposition[Zerg_Drone] =                   0.60;
-        armyComposition[Zerg_Zergling] =                0.10;
-        armyComposition[Zerg_Hydralisk] =               0.30;
-        armyComposition[Zerg_Scourge] =                 0.05;
+        if (com(Zerg_Spire) == 0 && lingsNeeded() > vis(Zerg_Zergling)) {
+            armyComposition[Zerg_Drone] =               0.00;
+            armyComposition[Zerg_Zergling] =            1.00;
+        }
+        else {
+            armyComposition[Zerg_Drone] =               0.60;
+            armyComposition[Zerg_Zergling] =            0.10;
+            armyComposition[Zerg_Hydralisk] =           0.30;
+            armyComposition[Zerg_Scourge] =             0.05;
+        }
     }
 
     void ZvP2HatchLurker()
@@ -460,8 +454,8 @@ namespace McRave::BuildOrder::Zerg {
         if (!lockedTransition) {
             if (Strategy::enemyProxy())
                 currentTransition = "2HatchSpeedling";
-            /*if ((Strategy::getEnemyBuild() == "2Gate" || Strategy::getEnemyBuild() == "1GateCore") && Strategy::enemyFastExpand() && Util::getTime() < Time(3, 45))
-                currentTransition = "3HatchSpeedling";*/
+            if (Strategy::getEnemyBuild() == "2Gate" && currentTransition == "6HatchHydra")
+                currentTransition = "3HatchMuta";
             if (Strategy::enemyProxy() && Util::getTime() < Time(2, 00))
                 currentOpener = "9Pool";
             if (Strategy::getEnemyOpener() == "9/9")
