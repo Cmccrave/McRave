@@ -179,7 +179,7 @@ namespace McRave::BuildOrder
         auto workerUnlimitedGas = Players::ZvT() ? 40 : 50;
 
         if (Broodwar->self()->getRace() == Races::Zerg)
-            return gasLimit > vis(Zerg_Extractor) * 3 && workerCount >= 10 && ((Broodwar->self()->minerals() > 300 && Broodwar->self()->gas() < 200 && Resources::isHalfMineralSaturated()) || productionSat || workerCount >= workerUnlimitedGas || Players::ZvZ());
+            return gasLimit > vis(Zerg_Extractor) * 3 && workerCount >= 10 && (Resources::isHalfMineralSaturated() || productionSat || workerCount >= workerUnlimitedGas || Players::ZvZ());
         else
             return ((Broodwar->self()->minerals() > 600 && Broodwar->self()->gas() < 200) || Resources::isMineralSaturated()) && workerCount >= 30;
     }

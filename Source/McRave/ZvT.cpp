@@ -128,15 +128,18 @@ namespace McRave::BuildOrder::Zerg {
         gasLimit =                                  com(Zerg_Drone) >= 11 ? gasMax() : 0;
 
         inOpeningBook =                             total(Zerg_Mutalisk) <= 9;
-        firstUpgrade =                              vis(Zerg_Lair) > 0 ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+        firstUpgrade =                              (vis(Zerg_Extractor) >= 2 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
         firstUnit =                                 Zerg_Mutalisk;
         inBookSupply =                              vis(Zerg_Overlord) < 7 || total(Zerg_Mutalisk) < 9;
+        
+        auto fourthHatch =                          (Strategy::enemyFastExpand() && s >= 66) || total(Zerg_Mutalisk) >= 9;
+        auto planEarly =                            (Strategy::enemyFastExpand() && s >= 60) || atPercent(Zerg_Lair, 0.6);
 
-        buildQueue[Zerg_Hatchery] =                 2 + (s >= 26) + (Strategy::enemyFastExpand() ? atPercent(Zerg_Spire, 0.4) : s >= 66);
+        buildQueue[Zerg_Hatchery] =                 2 + (s >= 26) + fourthHatch;
         buildQueue[Zerg_Extractor] =                (hatchCount() >= 2 && vis(Zerg_Drone) >= 13) + (s >= 42);
         buildQueue[Zerg_Overlord] =                 1 + (s >= 18) + (s >= 32) + (s >= 48) + (atPercent(Zerg_Spire, 0.5) * 3);
-        buildQueue[Zerg_Lair] =                     (vis(Zerg_Drone) >= 16 && gas(80));
-        buildQueue[Zerg_Spire] =                    (s >= 32 && atPercent(Zerg_Lair, 0.80));
+        buildQueue[Zerg_Lair] =                     (vis(Zerg_Drone) >= 16 && gas(100));
+        buildQueue[Zerg_Spire] =                    (s >= 42 && atPercent(Zerg_Lair, 0.80));
 
         // Composition
         if (Strategy::getEnemyBuild() == "2Rax" && !Strategy::enemyFastExpand() && (com(Zerg_Sunken_Colony) == 0 || com(Zerg_Drone) < 9)) {

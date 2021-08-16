@@ -176,18 +176,14 @@ namespace McRave::BuildOrder::Zerg {
         wantThird =                                     Strategy::enemyFastExpand() || hatchCount() >= 3;
         gasLimit =                                      (vis(Zerg_Drone) >= 11) ? gasMax() : 0;
 
-        auto fourthHatch = total(Zerg_Mutalisk) >= 6;
-        if (Strategy::enemyPressure())
-            fourthHatch = false;
-        else if (Strategy::enemyFastExpand())
-            fourthHatch = (com(Zerg_Lair) > 0 && vis(Zerg_Drone) >= 16);
+        auto fourthHatch = Strategy::getEnemyBuild() == "FFE" && com(Zerg_Lair) > 0 && vis(Zerg_Drone) >= 16;
 
         // Build
         buildQueue[Zerg_Hatchery] =                     2 + (s >= 26 && vis(Zerg_Drone) >= 13) + fourthHatch;
-        buildQueue[Zerg_Extractor] =                    (s >= 28 && vis(Zerg_Drone) >= 10) + (vis(Zerg_Lair) > 0 && vis(Zerg_Drone) >= 16);
-        buildQueue[Zerg_Lair] =                         (s >= 32 && vis(Zerg_Drone) >= 12 && gas(80));
+        buildQueue[Zerg_Extractor] =                    (s >= 32 && vis(Zerg_Drone) >= 15) + (vis(Zerg_Lair) > 0 && vis(Zerg_Drone) >= 16);
+        buildQueue[Zerg_Lair] =                         (s >= 32 && vis(Zerg_Drone) >= 15 && gas(100));
         buildQueue[Zerg_Spire] =                        (s >= 32 && atPercent(Zerg_Lair, 0.95) && vis(Zerg_Drone) >= 16);
-        buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 46) + (2 * (s >= 66)) + (s >= 68) + (s >= 82);
+        buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32 && vis(Zerg_Extractor) > 0) + (s >= 46) + (2 * (s >= 66)) + (s >= 68) + (s >= 82);
 
         // Composition
         if (com(Zerg_Spire) == 0 && lingsNeeded() > vis(Zerg_Zergling)) {

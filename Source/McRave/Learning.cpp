@@ -416,7 +416,7 @@ namespace McRave::Learning {
                     return;
                 }
                 if (Players::ZvP()) {
-                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "6HatchHydra");
+                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "3HatchMuta");
                     isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                     return;
                 }

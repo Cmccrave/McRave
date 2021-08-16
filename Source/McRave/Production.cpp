@@ -711,7 +711,7 @@ namespace McRave::Production {
                             bestType = type;
                         }
                     }
-                }                
+                }
 
                 auto validLarva = [&](UnitInfo &larva, double saturation, BWEB::Station * station) {
                     if (!larva.unit()
@@ -745,13 +745,13 @@ namespace McRave::Production {
                         UnitInfo &larva = *u;
                         if (larvaTrickRequired(larva))
                             continue;
-                        
+
                         else if (validLarva(larva, val, station)) {
                             produce(larva);
                             produced = true;
                         }
                         else if (larvaTrickOptional(larva))
-                            continue;                        
+                            continue;
 
                         if (produced)
                             goto endloop;

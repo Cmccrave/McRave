@@ -225,6 +225,7 @@ namespace McRave::Workers {
             const auto threatened =         isResourceThreatened(unit);
             const auto excessAssigned =     isResourceFlooded(unit);
             const auto transferStation =    getTransferStation();
+            const auto closestStation =     Stations::getClosestStationAir(PlayerState::Self, unit.getPosition());
 
             // Check if unit needs a re-assignment
             const auto needGas =            unit.unit()->isCarryingMinerals() && !Resources::isGasSaturated() && isMineralunit && gasWorkers < BuildOrder::gasWorkerLimit();
@@ -263,7 +264,7 @@ namespace McRave::Workers {
                         continue;
 
                     auto closestunit = Util::getClosestUnit(resource.getPosition(), PlayerState::Self, [&](auto &u) {
-                        return u.getRole() == Role::Worker && !u.getBuildType().isValid() && (!u.hasResource() || u.getResource().getType().isMineralField());
+                        return u.getRole() == Role::Worker && !u.getBuildPosition().isValid() && (!u.hasResource() || u.getResource().getType().isMineralField());
                     });
                     if (closestunit && unit != closestunit)
                         continue;
@@ -285,13 +286,14 @@ namespace McRave::Workers {
 
                         if (!resourceReady(resource, allowedGatherCount)
                             || (!safeStations.empty() && find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end())
+                            || (closestStation && Stations::getSaturationRatio(closestStation) < 2.0 && resource.getStation() != closestStation)
                             || (transferStation && resource.getStation() != transferStation)
                             || resource.isThreatened())
                             continue;
 
                         auto stationDist = unit.getPosition().getDistance(resource.getStation()->getBase()->Center());
                         auto resourceDist = Util::boxDistance(UnitTypes::Resource_Mineral_Field, resource.getPosition(), Broodwar->self()->getRace().getResourceDepot(), resource.getStation()->getBase()->Center());
-                        auto dist = stationDist * (unit.hasTarget() ? resource.getPosition().getDistance(unit.getTarget().getPosition()) : resourceDist);
+                        auto dist = stationDist * resourceDist;
 
                         if ((dist < distBest && !threatened) || (dist > distBest && threatened)) {
                             unit.setResource(r.get());
