@@ -170,7 +170,7 @@ namespace McRave::BuildOrder::Zerg {
         firstUpgrade =                                  UpgradeTypes::None;
         firstUnit =                                     Zerg_Mutalisk;
         hideTech =                                      true;
-        unitLimits[Zerg_Drone] =                        INT_MAX;
+        unitLimits[Zerg_Drone] =                        33;
         unitLimits[Zerg_Zergling] =                     lingsNeeded();
         playPassive =                                   (Strategy::getEnemyBuild() == "1GateCore" || (Strategy::getEnemyBuild() == "2Gate" && Strategy::getEnemyOpener() != "Unknown")) && (com(Zerg_Mutalisk) == 0 || Util::getTime() < Time(6, 00));
         wantThird =                                     Strategy::enemyFastExpand() || hatchCount() >= 3;

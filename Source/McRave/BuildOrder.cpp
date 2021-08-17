@@ -275,6 +275,20 @@ namespace McRave::BuildOrder
 
     void getTechBuildings()
     {
+        const auto preReqCompleted = [&](UnitType type) {
+            int morphOffset = 0;
+            if (type == Zerg_Creep_Colony)
+                morphOffset = vis(Zerg_Sunken_Colony) + vis(Zerg_Spore_Colony);
+            if (type == Zerg_Hatchery)
+                morphOffset = vis(Zerg_Lair) + vis(Zerg_Hive);
+            if (type == Zerg_Lair)
+                morphOffset = vis(Zerg_Hive);
+
+            if (com(type) + morphOffset == 0)
+                return false;
+            return true;
+        };
+
         // For every unit in our tech list, ensure we are building the required buildings
         set<UnitType> toCheck;
         for (auto &type : techList) {
@@ -289,7 +303,7 @@ namespace McRave::BuildOrder
             for (auto &check : toCheck) {
                 for (auto &pair : check.requiredUnits()) {
                     UnitType type(pair.first);
-                    if (com(type) == 0 && toCheck.find(type) == toCheck.end()) {
+                    if (!preReqCompleted(type) && toCheck.find(type) == toCheck.end()) {
                         toCheck.insert(type);
                         moreToAdd = true;
                     }
@@ -303,31 +317,14 @@ namespace McRave::BuildOrder
             if (!check.isBuilding())
                 continue;
 
-            bool canAdd = true;
-            for (auto &pair : check.requiredUnits()) {
-                UnitType type(pair.first);
-                if (type.isBuilding() && !atPercent(type, 1.00))
-                    canAdd = false;
-            }
-
             // Our check doesn't look for required buildings for tech needed for Lurkers
             if (check == Zerg_Lurker)
                 buildQueue[Zerg_Lair] = 1;
 
-            // Add extra production
-            int s = Players::getSupply(PlayerState::Self, Races::Protoss);
-            if (canAdd && buildCount(check) <= 1) {
-                if (check == Protoss_Stargate) {
-                    if ((s >= 250 && techList.find(Protoss_Corsair) != techList.end())
-                        || (s >= 300 && techList.find(Protoss_Arbiter) != techList.end())
-                        || (s >= 100 && techList.find(Protoss_Carrier) != techList.end()))
-                        buildQueue[check] = 2;
-                    else
-                        buildQueue[check] = 1;
-                }
-                else if (check != Protoss_Gateway)
-                    buildQueue[check] = 1;
-            }
+            // Queue tech structure
+            int s = Players::getSupply(PlayerState::Self, check.getRace());
+            if (buildCount(check) <= 1)
+                buildQueue[check] = 1;
         }
     }
 

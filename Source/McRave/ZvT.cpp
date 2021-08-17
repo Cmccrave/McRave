@@ -123,7 +123,7 @@ namespace McRave::BuildOrder::Zerg {
     void ZvT3HatchMuta()
     {
         lockedTransition =                          vis(Zerg_Lair) > 0;
-        unitLimits[Zerg_Drone] =                    26;
+        unitLimits[Zerg_Drone] =                    33;
         unitLimits[Zerg_Zergling] =                 lingsNeeded();
         gasLimit =                                  com(Zerg_Drone) >= 11 ? gasMax() : 0;
 
@@ -136,7 +136,7 @@ namespace McRave::BuildOrder::Zerg {
         auto planEarly =                            (Strategy::enemyFastExpand() && s >= 60) || atPercent(Zerg_Lair, 0.6);
 
         buildQueue[Zerg_Hatchery] =                 2 + (s >= 26) + fourthHatch;
-        buildQueue[Zerg_Extractor] =                (hatchCount() >= 2 && vis(Zerg_Drone) >= 13) + (s >= 42);
+        buildQueue[Zerg_Extractor] =                (hatchCount() >= 2 && vis(Zerg_Drone) >= 13) + (s >= 44);
         buildQueue[Zerg_Overlord] =                 1 + (s >= 18) + (s >= 32) + (s >= 48) + (atPercent(Zerg_Spire, 0.5) * 3);
         buildQueue[Zerg_Lair] =                     (vis(Zerg_Drone) >= 16 && gas(100));
         buildQueue[Zerg_Spire] =                    (s >= 42 && atPercent(Zerg_Lair, 0.80));
@@ -200,7 +200,7 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvT12Hatch()
     {
-        transitionReady =                               vis(Zerg_Extractor) > 0;
+        transitionReady =                               vis(Zerg_Spawning_Pool) > 0;
         unitLimits[Zerg_Zergling] =                     lingsNeeded();
         unitLimits[Zerg_Drone] =                        14;
         gasLimit =                                      ((!Strategy::enemyProxy() || com(Zerg_Zergling) >= 6) && !lingSpeed()) ? capGas(100) : 0;
@@ -208,7 +208,6 @@ namespace McRave::BuildOrder::Zerg {
         planEarly =                                     hatchCount() == 1 && s == 22;
 
         buildQueue[Zerg_Hatchery] =                     1 + (s >= 24);
-        buildQueue[Zerg_Extractor] =                    (vis(Zerg_Spawning_Pool) > 0 && s >= 24);
         buildQueue[Zerg_Spawning_Pool] =                (hatchCount() >= 2 && s >= 24);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 16) + (s >= 32);
 

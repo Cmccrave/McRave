@@ -343,8 +343,8 @@ namespace McRave::Strategy {
                 enemyStrat.build.name = "RaxCC";
 
             // RaxFact
-            if (Util::getTime() < Time(3, 00) && Players::getTotalCount(PlayerState::Enemy, Terran_Refinery) > 0
-                || (Util::getTime() < Time(5, 00) && hasMech))
+            if (Util::getTime() < Time(3, 00) && Players::getTotalCount(PlayerState::Enemy, Terran_Factory) > 0
+                || Util::getTime() < Time(5, 00) && hasMech)
                 enemyStrat.build.name = "RaxFact";
 
             // 2Rax Proxy - No info estimation

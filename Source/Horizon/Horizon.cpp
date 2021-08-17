@@ -89,7 +89,6 @@ namespace McRave::Horizon {
 
         const auto addToSim = [&](UnitInfo& u) {
             if (!u.unit()
-                || (u.getType().isWorker() && Util::getTime() > Time(5, 00) && !u.hasAttackedRecently())
                 || (u.getType().isWorker() && ((u.unit()->exists() && u.unit()->getOrder() != Orders::AttackUnit) || !u.hasAttackedRecently()))
                 || (!u.unit()->isCompleted() && u.unit()->exists())
                 || (u.unit()->exists() && (u.unit()->isStasised() || u.unit()->isMorphing()))
@@ -191,7 +190,6 @@ namespace McRave::Horizon {
         const auto attackGroundAsAir =      enemyLocalAirStrength > 0.0 ? allyLocalGroundStrength / enemyLocalAirStrength : 10.0;
         const auto attackGroundAsGround =   enemyLocalGroundStrength > 0.0 ? allyLocalGroundStrength / enemyLocalGroundStrength : 10.0;
 
-
         if (!unit.hasTarget())
             unit.getType().isFlyer() ? unit.setSimValue(min(attackAirAsAir, attackGroundAsAir)) : unit.setSimValue(min(attackAirAsGround, attackGroundAsGround));
         else
@@ -202,7 +200,7 @@ namespace McRave::Horizon {
         // If above/below thresholds, it's a sim win/loss
         if (unit.getSimValue() >= maxThreshold - engagedAlreadyOffset)
             unit.setSimState(SimState::Win);
-        else if (unit.getSimValue() <= minThreshold + engagedAlreadyOffset || (unit.getSimState() == SimState::None && unit.getSimValue() < maxThreshold))
+        else if (unit.getSimValue() <= minThreshold - engagedAlreadyOffset || (unit.getSimState() == SimState::None && unit.getSimValue() < maxThreshold))
             unit.setSimState(SimState::Loss);
 
         // Check for hardcoded directional losses

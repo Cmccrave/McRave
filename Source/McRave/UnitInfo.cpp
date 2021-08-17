@@ -215,7 +215,7 @@ namespace McRave
                 completeFrame = Broodwar->getFrameCount();
             }
 
-            arriveFrame = isFlying() ? position.getDistance(BWEB::Map::getMainPosition()) / speed :
+            arriveFrame = isFlying() ? int(position.getDistance(BWEB::Map::getMainPosition()) / speed) :
                 Broodwar->getFrameCount() + int(BWEB::Map::getGroundDistance(position, BWEB::Map::getMainPosition()) / speed);
 
 
@@ -557,15 +557,8 @@ namespace McRave
         if (cancelAttackRisk && !isLightAir())
             return false;
 
+        // Add some wiggle room for movement
         here += Position(rand() % 2 - 1, rand() % 2 - 1);
-
-        // Check if this is a new command
-        const auto newCommand = [&]() {
-            auto newCommandPosition = unit()->getLastCommand().getTargetPosition().getDistance(here) > 32;
-            auto newCommandType = unit()->getLastCommand().getType() != cmd;
-            auto newCommandFrame = Broodwar->getFrameCount() - unit()->getLastCommandFrame() - Broodwar->getLatencyFrames() > 12;
-            return newCommandPosition || newCommandType || newCommandFrame;
-        };
 
         // Check if we should overshoot for halting distance
         if (cmd == UnitCommandTypes::Move && !getBuildPosition().isValid() && (getType().isFlyer() || isHovering() || getType() == Protoss_High_Templar)) {
@@ -581,6 +574,14 @@ namespace McRave
                 here = overShootHere;
         }
 
+        // Check if this is a new command
+        const auto newCommand = [&]() {
+            auto newCommandPosition = unit()->getLastCommand().getTargetPosition().getDistance(here) > 32;
+            auto newCommandType = unit()->getLastCommand().getType() != cmd;
+            auto newCommandFrame = Broodwar->getFrameCount() - unit()->getLastCommandFrame() - Broodwar->getLatencyFrames() > 12;
+            return newCommandPosition || newCommandType || newCommandFrame;
+        };
+
         // Add action and grid movement
         if ((cmd == UnitCommandTypes::Move || cmd == UnitCommandTypes::Right_Click_Position) && getPosition().getDistance(here) < 160.0) {
             Actions::addAction(unit(), here, getType(), PlayerState::Self);
@@ -588,7 +589,7 @@ namespace McRave
         }
 
         // If this is a new order or new command than what we're requesting, we can issue it
-        if ((Util::getTime() < Time(10, 00) && isLightAir()) || newCommand()) {
+        if (newCommand()) {
             if (cmd == UnitCommandTypes::Move)
                 unit()->move(here);
             if (cmd == UnitCommandTypes::Right_Click_Position)
@@ -793,7 +794,7 @@ namespace McRave
     bool UnitInfo::localEngage()
     {
         auto oneShotTimer = Time(12, 00);
-        return ((!isFlying() && getTarget().isSiegeTank() && getTarget().getTargetedBy().size() >= 4 && getType() != Zerg_Lurker && ((isWithinRange(getTarget()) && getGroundRange() > 32.0) || (isWithinReach(getTarget()) && getGroundRange() <= 32.0)))
+        return ((!isFlying() && getTarget().isSiegeTank() && getType() != Zerg_Lurker && ((isWithinRange(getTarget()) && getGroundRange() > 32.0) || (isWithinReach(getTarget()) && getGroundRange() <= 32.0)))
             || (getType() == Protoss_Reaver && !unit()->isLoaded() && isWithinRange(getTarget()))
             || (getTarget().getType() == Terran_Vulture_Spider_Mine && !getTarget().isBurrowed())
             || (getType() == Zerg_Mutalisk && Util::getTime() < oneShotTimer && hasTarget() && canOneShot(getTarget()))
@@ -912,7 +913,6 @@ namespace McRave
         return (getTarget().isThreatening() && !isLightAir() && !lingVsVulture && !getTarget().isHidden() && (Util::getTime() < Time(10, 00) || getSimState() == SimState::Win || Players::ZvZ()))                                                                          // ...target is threatening                    
             || (!getType().isWorker() && (getGroundRange() > getTarget().getGroundRange() || getTarget().getType().isWorker()) && Terrain::isInAllyTerritory(getTarget().getTilePosition()) && !getTarget().isHidden())                 // ...unit can get free hits in our territory
             || (isSuicidal() && hasTarget() && (getTarget().isWithinRange(*this) || Terrain::isInAllyTerritory(getTarget().getTilePosition()) || getTarget().isThreatening() || getTarget().getPosition().getDistance(getGoal()) < 160.0) && !nearEnemyDefenseStructure())
-            //|| (isLightAir() && hasTarget() && !getTarget().getType().isBuilding() && Broodwar->getFrameCount() - getTarget().getLastVisibleFrame() > 480 && Broodwar->getFrameCount() - getLastAttackFrame() > 480 && Grids::getAAirCluster(getPosition()) >= 12.0f)
             || ((isHidden() || getType() == Zerg_Lurker) && !Actions::overlapsDetection(unit(), getEngagePosition(), PlayerState::Enemy))
             || (!isFlying() && Actions::overlapsActions(unit(), getEngagePosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, 96))
             || (!isFlying() && (getGroundRange() < 32.0 || getType() == Zerg_Lurker) && Terrain::isInEnemyTerritory(getTilePosition()) && (Util::getTime() > Time(8, 00) || BuildOrder::isProxy()) && nearEnemyStation() && !Players::ZvZ())
