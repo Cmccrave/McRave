@@ -982,7 +982,7 @@ namespace McRave::Combat {
             // Get an air commander if new one needed
             if (airCommander.expired() || airCommander.lock()->globalRetreat() || airCommander.lock()->localRetreat() || (airCluster.second.isValid() && airCommander.lock()->getPosition().getDistance(airCluster.second) > 64.0)) {
                 airCommander = Util::getClosestUnit(airCluster.second, PlayerState::Self, [&](auto &u) {
-                    return u.isLightAir() && !u.globalRetreat() && !u.getGoal().isValid();
+                    return u.isLightAir() && !u.localRetreat() && !u.globalRetreat() && !u.getGoal().isValid();
                 });
             }
 
@@ -1056,7 +1056,7 @@ namespace McRave::Combat {
                     continue;
 
                 // Light air close to the air cluster use the same command of the air commander
-                if (airCommander.lock() && !unit.globalRetreat() && unit.isLightAir() && !airCommander.lock()->isNearSplash() && !unit.isNearSplash() && !airCommander.lock()->isNearSuicide() && !unit.isNearSuicide() && unit.getPosition().getDistance(airCommander.lock()->getPosition()) <= 96.0) {
+                if (airCommander.lock() && !unit.localRetreat() && !unit.globalRetreat() && unit.isLightAir() && !airCommander.lock()->isNearSplash() && !unit.isNearSplash() && !airCommander.lock()->isNearSuicide() && !unit.isNearSuicide() && unit.getPosition().getDistance(airCommander.lock()->getPosition()) <= 96.0) {
 
                     Horizon::simulate(unit);
                     updateDestination(unit);

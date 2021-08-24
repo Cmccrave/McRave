@@ -6,9 +6,12 @@ namespace McRave
 {
     class PlayerInfo
     {
-        std::set <BWAPI::UpgradeType> playerUpgrades;
-        std::set <BWAPI::TechType> playerTechs;
-        std::set <std::shared_ptr<UnitInfo>> units;
+        std::set<BWAPI::UpgradeType> playerUpgrades;
+        std::set<BWAPI::TechType> playerTechs;
+        std::set<std::shared_ptr<UnitInfo>> units;
+        std::map<BWAPI::UnitType, int> visibleTypeCounts;
+        std::map<BWAPI::UnitType, int> completeTypeCounts;
+        std::map<BWAPI::UnitType, int> totalTypeCounts;
 
         BWAPI::Player thisPlayer;
         BWAPI::Race startRace, currentRace;
@@ -46,8 +49,12 @@ namespace McRave
         BWAPI::Player player() const { return thisPlayer; }
         PlayerState getPlayerState() { return pState; }
         Strength& getStrength() { return pStrength; }
-        std::set <std::shared_ptr<UnitInfo>>& getUnits() { return units; }
+        std::set<std::shared_ptr<UnitInfo>>& getUnits() { return units; }
         std::string getBuild() { return build; }
+
+        std::map<BWAPI::UnitType, int>& getVisibleTypeCounts() { return visibleTypeCounts; }
+        std::map<BWAPI::UnitType, int>& getCompleteTypeCounts() { return completeTypeCounts; }
+        std::map<BWAPI::UnitType, int>& getTotalTypeCounts() { return totalTypeCounts; }
 
         bool isAlive() { return alive; }
         bool isEnemy() { return pState == PlayerState::Enemy; }

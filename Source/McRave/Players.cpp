@@ -9,9 +9,9 @@ namespace McRave::Players
     namespace {
         map <Player, PlayerInfo> thePlayers;
         map <Race, int> raceCount;
-        map <PlayerState, map<UnitType, int>> visibleTypeCounts;
-        map <PlayerState, map<UnitType, int>> completeTypeCounts;
-        map <PlayerState, map<UnitType, int>> totalTypeCounts;
+        map <PlayerState, map<UnitType, int>> allVisibleTypeCounts;
+        map <PlayerState, map<UnitType, int>> allCompleteTypeCounts;
+        map <PlayerState, map<UnitType, int>> allTotalTypeCounts;
 
         void update(PlayerInfo& player)
         {
@@ -20,31 +20,12 @@ namespace McRave::Players
             if (!player.isSelf())
                 raceCount[player.getCurrentRace()]++;
 
-            auto &visCounts = visibleTypeCounts[player.getPlayerState()];
-            auto &comCounts = completeTypeCounts[player.getPlayerState()];
-
-            for (auto &u : player.getUnits()) {
-                auto &unit = *u;
-
-                if (player.isSelf()) {
-                    auto type = unit.getType() == Zerg_Egg ? unit.unit()->getBuildType() : unit.getType();
-                    if (unit.unit()->isCompleted() && !unit.unit()->isMorphing()) {
-                        comCounts[type] += 1;
-                        visCounts[type] += 1;
-                    }
-                    else {
-                        visCounts[type] += 1 + (type == Zerg_Zergling || type == Zerg_Scourge);
-                    }
-                }
-                else {
-
-                    // If unit has a valid type, update enemy composition tracking
-                    if (unit.getType().isValid())
-                        visCounts[unit.getType()] += 1;
-                    if (unit.getType().isValid() && unit.isCompleted())
-                        comCounts[unit.getType()] += 1;
-                }
-            }
+            for (auto &[type, cnt] : player.getVisibleTypeCounts())
+                allVisibleTypeCounts[player.getPlayerState()][type]+=cnt;
+            for (auto &[type, cnt] : player.getCompleteTypeCounts())
+                allCompleteTypeCounts[player.getPlayerState()][type]+=cnt;
+            for (auto &[type, cnt] : player.getTotalTypeCounts())
+                allTotalTypeCounts[player.getPlayerState()][type]+=cnt;
         }
     }
 
@@ -67,8 +48,9 @@ namespace McRave::Players
     void onFrame()
     {
         // Clear race count and recount
-        visibleTypeCounts.clear();
-        completeTypeCounts.clear();
+        allVisibleTypeCounts.clear();
+        allCompleteTypeCounts.clear();
+        allTotalTypeCounts.clear();
         raceCount.clear();
         for (auto &[_, player] : thePlayers)
             update(player);
@@ -97,10 +79,11 @@ namespace McRave::Players
             // Setup the UnitInfo and update
             p->getUnits().insert(info);
             info->update();
+            auto &counts = p->getTotalTypeCounts();
 
             // Increase total counts
             if (Broodwar->getFrameCount() == 0 || !p->isSelf() || (info->getType() != Zerg_Zergling && info->getType() != Zerg_Scourge))
-                totalTypeCounts[p->getPlayerState()][info->getType()]  += 1;
+                counts[info->getType()] += 1;
         }
     }
 
@@ -156,34 +139,36 @@ namespace McRave::Players
             if (info->getRole() == Role::Scout)
                 Scouts::removeUnit(*info);
 
+            auto &counts = p->getTotalTypeCounts();
+
             // When we morph a larva, store the type of what we are making, rather than the egg
             if (p->isSelf() && info->getType() == Zerg_Larva) {
-                totalTypeCounts[p->getPlayerState()][bwUnit->getBuildType()] += 1 + (bwUnit->getBuildType() == Zerg_Zergling || bwUnit->getBuildType() == Zerg_Scourge);
-                totalTypeCounts[p->getPlayerState()][info->getType()]--;
+                counts[bwUnit->getBuildType()] += 1 + (bwUnit->getBuildType() == Zerg_Zergling || bwUnit->getBuildType() == Zerg_Scourge);
+                counts[info->getType()]--;
             }
 
             // When enemy morphs a larva, store the egg type, when the egg hatches, store the morphed type
             if (!p->isSelf() && (info->getType() == Zerg_Larva || info->getType() == Zerg_Egg)) {
-                totalTypeCounts[p->getPlayerState()][bwUnit->getType()] += 1;
-                totalTypeCounts[p->getPlayerState()][info->getType()] -= 1;
+                counts[bwUnit->getType()] += 1;
+                counts[info->getType()] -= 1;
             }
 
             // When an existing type morphs again
             if (info->getType() == Zerg_Hydralisk || info->getType() == Zerg_Lurker_Egg || info->getType() == Zerg_Mutalisk || info->getType() == Zerg_Cocoon) {
-                totalTypeCounts[p->getPlayerState()][bwUnit->getType()] += 1;
-                totalTypeCounts[p->getPlayerState()][info->getType()] -= 1;
+                counts[bwUnit->getType()] += 1;
+                counts[info->getType()] -= 1;
             }
 
             // When an existing Drone morphs into a building
             if (info->getType() == Zerg_Drone && bwUnit->getType().isBuilding()) {
-                totalTypeCounts[p->getPlayerState()][bwUnit->getType()] += 1;
-                totalTypeCounts[p->getPlayerState()][info->getType()] -= 1;
+                counts[bwUnit->getType()] += 1;
+                counts[info->getType()] -= 1;
             }
 
             // When an existing building morphs - use the whatBuilds due to onUnitMorph occuring 1 frame after
             if (info->getType() == Zerg_Sunken_Colony || info->getType() == Zerg_Spore_Colony || info->getType() == Zerg_Lair || info->getType() == Zerg_Hive || info->getType() == Zerg_Greater_Spire) {
-                totalTypeCounts[p->getPlayerState()][bwUnit->getType()] += 1;
-                totalTypeCounts[p->getPlayerState()][bwUnit->getType().whatBuilds().first] -= 1;
+                counts[bwUnit->getType()] += 1;
+                counts[bwUnit->getType().whatBuilds().first] -= 1;
             }
 
             info->setBuildingType(None);
@@ -194,7 +179,7 @@ namespace McRave::Players
     int getCompleteCount(PlayerState state, UnitType type)
     {
         // Finds how many of a UnitType this PlayerState currently has completed
-        auto &list = completeTypeCounts[state];
+        auto &list = allCompleteTypeCounts[state];
         auto itr = list.find(type);
         if (itr != list.end())
             return itr->second;
@@ -204,7 +189,7 @@ namespace McRave::Players
     int getVisibleCount(PlayerState state, UnitType type)
     {
         // Finds how many of a UnitType this PlayerState currently has visible
-        auto &list = visibleTypeCounts[state];
+        auto &list = allVisibleTypeCounts[state];
         auto itr = list.find(type);
         if (itr != list.end())
             return itr->second;
@@ -214,7 +199,7 @@ namespace McRave::Players
     int getTotalCount(PlayerState state, UnitType type)
     {
         // Finds how many of a UnitType the PlayerState total has ever had
-        auto &list = totalTypeCounts[state];
+        auto &list = allTotalTypeCounts[state];
         auto itr = list.find(type);
         if (itr != list.end())
             return itr->second;

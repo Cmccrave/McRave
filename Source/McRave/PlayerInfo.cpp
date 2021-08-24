@@ -27,46 +27,66 @@ namespace McRave
         // Update player units
         raceSupply.clear();
         pStrength.clear();
+        visibleTypeCounts.clear();
+        completeTypeCounts.clear();
         for (auto &u : units) {
             auto &unit = *u;
             auto type = unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType() : unit.getType();
 
             /// BWAPI issue #850
-            if (unit.getType() == UnitTypes::Zerg_Egg) {
-                if (type == UnitTypes::None)
-                    type = actualEggType[unit.unit()];
-                else
-                    actualEggType[unit.unit()] = unit.unit()->getBuildType();
+            if (type == UnitTypes::None && actualEggType.find(unit.unit()) != actualEggType.end())
+                type = actualEggType[unit.unit()];
+            if (unit.getType() == UnitTypes::Zerg_Egg && unit.unit()->getBuildType() != UnitTypes::None) {
+                actualEggType[unit.unit()] = unit.unit()->getBuildType();
+                type = unit.unit()->getBuildType();
             }
 
             // Supply
-            raceSupply[unit.getType().getRace()] += type.supplyRequired();
-            raceSupply[unit.getType().getRace()] += unit.unit()->getBuildType() == Zerg_Zergling || unit.unit()->getBuildType() == Zerg_Scourge;
+            raceSupply[type.getRace()] += type.supplyRequired();
+            raceSupply[type.getRace()] += type == Zerg_Zergling || type == Zerg_Scourge;
 
             // All supply
             raceSupply[Races::None] += type.supplyRequired();
-            raceSupply[Races::None] += unit.unit()->getBuildType() == Zerg_Zergling || unit.unit()->getBuildType() == Zerg_Scourge;
+            raceSupply[Races::None] += type == Zerg_Zergling || type == Zerg_Scourge;
 
             // Targets
             unit.getTargetedBy().clear();
             unit.setTarget(nullptr);
             unit.borrowedPath = false;
 
+            // Counts
+            if (isSelf()) {
+                if (unit.unit()->isCompleted() && !unit.unit()->isMorphing()) {
+                    completeTypeCounts[type] += 1;
+                    visibleTypeCounts[type] += 1;
+                }
+                else
+                    visibleTypeCounts[type] += 1 + (type == Zerg_Zergling || type == Zerg_Scourge);
+            }
+            else {
+
+                // If unit has a valid type, update enemy composition tracking
+                if (type.isValid())
+                    visibleTypeCounts[type] += 1;
+                if (type.isValid() && unit.isCompleted())
+                    completeTypeCounts[type] += 1;
+            }
+
             // Strength
-            if ((unit.getType().isWorker() && unit.getRole() != Role::Combat)
-                || (unit.unit()->exists() && !unit.getType().isBuilding() && !unit.unit()->isCompleted())
+            if ((type.isWorker() && unit.getRole() != Role::Combat)
+                || (unit.unit()->exists() && !type.isBuilding() && !unit.unit()->isCompleted())
                 || (unit.unit()->isMorphing()))
                 continue;
 
-            if (unit.getType().isBuilding()) {
+            if (type.isBuilding()) {
                 pStrength.airDefense += unit.getVisibleAirStrength();
                 pStrength.groundDefense += unit.getVisibleGroundStrength();
             }
-            else if (unit.getType().isFlyer() && !unit.isSpellcaster() && !unit.getType().isWorker()) {
+            else if (type.isFlyer() && !unit.isSpellcaster() && !type.isWorker()) {
                 pStrength.airToAir += unit.getVisibleAirStrength();
                 pStrength.airToGround += unit.getVisibleGroundStrength();
             }
-            else if (!unit.isSpellcaster() && !unit.getType().isWorker()) {
+            else if (!unit.isSpellcaster() && !type.isWorker()) {
                 pStrength.groundToAir += unit.getVisibleAirStrength();
                 pStrength.groundToGround += unit.getVisibleGroundStrength();
             }
