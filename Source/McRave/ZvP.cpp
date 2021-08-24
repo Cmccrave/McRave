@@ -161,6 +161,11 @@ namespace McRave::BuildOrder::Zerg {
         }
     }
 
+    void ZvP2pt5HatchMuta()
+    {
+
+    }
+
     void ZvP3HatchMuta()
     {
         // 'https://liquipedia.net/starcraft/3_Hatch_Spire_(vs._Protoss)'
@@ -415,6 +420,24 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Overlord] =                     1 + (s >= 20 && vis(Zerg_Spawning_Pool) > 0) + (s >= 30);
     }
 
+    void ZvP10Hatch()
+    {
+        // 'https://liquipedia.net/starcraft/10_Hatch'
+        transitionReady =                               total(Zerg_Overlord) >= 2;
+        unitLimits[Zerg_Zergling] =                     lingsNeeded();
+        gasLimit =                                      0;
+        scout =                                         false;
+        wantNatural =                                   !Strategy::enemyProxy();
+        playPassive =                                   false;
+        unitLimits[Zerg_Drone] =                        10;
+        planEarly =                                     hatchCount() == 1 && s == 20 && Broodwar->self()->minerals() >= 150;
+        gasTrick =                                      s >= 18 && hatchCount() < 2 && total(Zerg_Spawning_Pool) == 0;
+
+        buildQueue[Zerg_Hatchery] =                     1 + (s >= 20);
+        buildQueue[Zerg_Spawning_Pool] =                hatchCount() >= 2;
+        buildQueue[Zerg_Overlord] =                     1 + (s >= 18 && vis(Zerg_Spawning_Pool) > 0) + (s >= 36);
+    }
+
     void ZvP12Hatch()
     {
         // 'https://liquipedia.net/starcraft/12_Hatch_(vs._Protoss)'
@@ -443,6 +466,8 @@ namespace McRave::BuildOrder::Zerg {
             ZvP4Pool();
         if (currentOpener == "9Pool")
             ZvP9Pool();
+        if (currentOpener == "10Hatch")
+            ZvP10Hatch();
         if (currentOpener == "12Hatch")
             ZvP12Hatch();
 
@@ -462,6 +487,8 @@ namespace McRave::BuildOrder::Zerg {
         if (transitionReady) {
             if (currentTransition == "2HatchMuta")
                 ZvP2HatchMuta();
+            if (currentTransition == "2.5HatchMuta")
+                ZvP2pt5HatchMuta();
             if (currentTransition == "3HatchMuta")
                 ZvP3HatchMuta();
             if (currentTransition == "4HatchMuta")
