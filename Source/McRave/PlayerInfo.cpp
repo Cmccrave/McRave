@@ -55,20 +55,10 @@ namespace McRave
             unit.borrowedPath = false;
 
             // Counts
-            if (isSelf()) {
-                if (unit.unit()->isCompleted() && !unit.unit()->isMorphing()) {
-                    completeTypeCounts[type] += 1;
-                    visibleTypeCounts[type] += 1;
-                }
-                else
-                    visibleTypeCounts[type] += 1 + (type == Zerg_Zergling || type == Zerg_Scourge);
-            }
-            else {
-
-                // If unit has a valid type, update enemy composition tracking
-                if (type.isValid())
-                    visibleTypeCounts[type] += 1;
-                if (type.isValid() && unit.isCompleted())
+            int eggOffset = int(isSelf() && !unit.isCompleted() && (type == Zerg_Zergling || type == Zerg_Scourge));
+            if (type != UnitTypes::None && type.isValid()) {
+                visibleTypeCounts[type] += 1 + eggOffset;
+                if (unit.isCompleted())
                     completeTypeCounts[type] += 1;
             }
 
