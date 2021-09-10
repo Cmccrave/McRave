@@ -22,6 +22,21 @@ namespace McRave::Targets {
             return true;
         }
 
+        bool suitableTargetWorker(UnitInfo& unit, UnitInfo& target)
+        {
+
+        }
+
+        bool suitableTargetBuilding(UnitInfo& unit, UnitInfo& target)
+        {
+
+        }
+
+        bool suitableTargetUnit(UnitInfo& unit, UnitInfo& target)
+        {
+
+        }
+
         bool isSuitableTarget(UnitInfo& unit, UnitInfo& target)
         {
             if (target.movedFlag)
@@ -77,7 +92,7 @@ namespace McRave::Targets {
                 // Zergling
                 if (unit.getType() == Zerg_Zergling) {
                     if (Util::getTime() < Time(5, 00)) {
-                        if ((Players::ZvZ() && !target.canAttackGround() && !Strategy::enemyFastExpand())                                // Avoid non ground hitters to try and kill drones
+                        if ((Players::ZvZ() && !target.canAttackGround() && !Strategy::enemyFastExpand())                                                                 // Avoid non ground hitters to try and kill drones
                             || (Players::ZvT() && target.getType().isWorker() && !target.isThreatening() && Strategy::getEnemyBuild() == "RaxFact")                       // Avoid workers when we need to prepare for runbys
                             || (BuildOrder::isProxy() && !target.isThreatening() && !target.getType().isWorker() && Util::getTime() < Time(6, 00)))
                             return false;

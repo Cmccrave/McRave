@@ -20,6 +20,22 @@ namespace BWEB {
         int resourceGrid[256][256];
         int testGrid[256][256];
         int existingDefenseGrid[256][256];
+
+        int tilesWithinArea(BWEM::Area const * area, const TilePosition here, const int width, const int height)
+        {
+            auto cnt = 0;
+            for (auto x = here.x; x < here.x + width; x++) {
+                for (auto y = here.y; y < here.y + height; y++) {
+                    TilePosition t(x, y);
+                    if (!t.isValid())
+                        return false;
+
+                    if (Map::mapBWEM.GetArea(t) == area)
+                        cnt++;
+                }
+            }
+            return cnt;
+        }
     }
 
     Position Wall::findCentroid()
@@ -237,7 +253,7 @@ namespace BWEB {
         // Check if placement is valid
         if (Map::isReserved(here, type.tileWidth(), type.tileHeight())
             || !Map::isPlaceable(type, here)
-            || Map::tilesWithinArea(area, here, type.tileWidth(), type.tileHeight()) == 0)
+            || tilesWithinArea(area, here, type.tileWidth(), type.tileHeight()) == 0)
             return false;
         return true;
     }
@@ -801,7 +817,7 @@ namespace BWEB {
         const auto validDefense = [&](const TilePosition tile, UnitType type) {
             if (!tile.isValid()
                 || Map::isReserved(tile, 2, 2)
-                || Map::tilesWithinArea(area, tile, type.tileWidth(), type.tileHeight()) == 0
+                || tilesWithinArea(area, tile, type.tileWidth(), type.tileHeight()) == 0
                 || !Map::isPlaceable(type, tile))
                 return false;
             return true;

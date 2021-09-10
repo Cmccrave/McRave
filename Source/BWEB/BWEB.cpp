@@ -30,76 +30,6 @@ namespace BWEB::Map
         bool walkGridFull[256][256] ={};
         bool logInfo = true;
 
-        void findLines()
-        {
-            for (auto &area : mapBWEM.Areas()) {
-                for (auto &choke : area.ChokePoints()) {
-                    Position p1, p2;
-                    int minX= INT_MAX, maxX = INT_MIN, minY = INT_MAX, maxY = INT_MIN;
-                    double sumX = 0, sumY = 0;
-                    double sumXY = 0, sumX2 = 0, sumY2 = 0;
-
-                    for (auto &geo : choke->Geometry()) {
-                        if (geo.x < minX) minX = geo.x;
-                        if (geo.y < minY) minY = geo.y;
-                        if (geo.x > maxX) maxX = geo.x;
-                        if (geo.y > maxY) maxY = geo.y;
-
-                        BWAPI::Position p = BWAPI::Position(geo);
-                        sumX += p.x;
-                        sumY += p.y;
-                        sumXY += p.x * p.y;
-                        sumX2 += p.x * p.x;
-                        sumY2 += p.y * p.y;
-                    }
-                    double xMean = sumX / double(choke->Geometry().size());
-                    double yMean = sumY / double(choke->Geometry().size());
-                    double denominator, slope, yInt;
-                    if ((maxY - minY) > (maxX - minX)) {
-                        denominator = (sumXY - sumY * xMean);
-
-                        // Handle vertical line error
-                        if (std::fabs(denominator) < 16000.0) {
-                            slope = 0;
-                            yInt = yMean;
-                        }
-                        else {
-                            slope = (sumY2 - sumY * yMean) / denominator;
-                            yInt = yMean - slope * xMean;
-                        }
-                    }
-                    else {
-                        denominator = sumX2 - sumX * xMean;
-
-                        // Handle vertical line error
-                        if (std::fabs(denominator) < 1.0) {
-                            slope = DBL_MAX;
-                            yInt = yMean;
-                        }
-                        else {
-                            slope = (sumXY - sumX * yMean) / denominator;
-                            yInt = yMean - slope * xMean;
-                        }
-                    }
-
-                    int x1 = Position(choke->Pos(choke->end1)).x;
-                    int y1 = int(round(double(x1) * slope)) + int(round(yInt));
-                    p1 = Position(x1, y1);
-
-                    int x2 = Position(choke->Pos(choke->end2)).x;
-                    int y2 = int(round(double(x2) * slope)) + int(round(yInt));
-                    p2 = Position(x2, y2);
-
-                    // In case we failed
-                    if (p1 == p2 || !p1.isValid() || !p2.isValid()) {
-                        p1 = Position(choke->Pos(choke->end1));
-                        p2 = Position(choke->Pos(choke->end2));
-                    }
-                    chokeLines[choke] = make_pair(p1, p2);
-                }
-            }
-        }
-
         void findMain()
         {
             mainTile = Broodwar->self()->getStartLocation();
@@ -265,15 +195,6 @@ namespace BWEB::Map
         }
     }
 
-    void easyWrite(string stuff)
-    {
-        if (logInfo) {
-            ofstream writeFile;
-            writeFile.open("bwapi-data/write/BWEB_Log.txt", std::ios::app);
-            writeFile << stuff << endl;
-        }
-    }
-
     void draw()
     {
         WalkPosition mouse(Broodwar->getMousePosition() + Broodwar->getScreenPosition());
@@ -429,7 +350,6 @@ namespace BWEB::Map
         findNatural();
         findMainChoke();
         findNaturalChoke();
-        findLines();
     }
 
     void onUnitDiscover(const Unit unit)
@@ -555,11 +475,6 @@ namespace BWEB::Map
         return UnitTypes::None;
     }
 
-    UnitType isUsed(const TilePosition here)
-    {
-        return Map::usedGrid[here.x][here.y];
-    }
-
     bool isWalkable(const TilePosition here, UnitType type)
     {
         if (type.width() >= 30 || type.height() >= 30)
@@ -596,22 +511,6 @@ namespace BWEB::Map
             }
         }
         return true;
-    }
-
-    int tilesWithinArea(BWEM::Area const * area, const TilePosition here, const int width, const int height)
-    {
-        auto cnt = 0;
-        for (auto x = here.x; x < here.x + width; x++) {
-            for (auto y = here.y; y < here.y + height; y++) {
-                TilePosition t(x, y);
-                if (!t.isValid())
-                    return false;
-
-                if (Map::mapBWEM.GetArea(t) == area)
-                    cnt++;
-            }
-        }
-        return cnt;
     }
 
     template <class T>
@@ -699,7 +598,7 @@ namespace BWEB::Map
     {
         auto best = DBL_MAX;
         auto posBest = Positions::Invalid;
-        for (auto &tile : Map::getChokeTiles(choke)) {
+        for (auto &tile : chokeTiles[choke]) {
             const auto p = Position(tile) + Position(16, 16);
             const auto dist = p.getDistance(here);
             if (dist < best) {
@@ -708,20 +607,6 @@ namespace BWEB::Map
             }
         }
         return posBest;
-    }
-
-    set<TilePosition> getChokeTiles(const BWEM::ChokePoint * choke)
-    {
-        if (choke)
-            return chokeTiles[choke];
-        return {};
-    }
-
-    pair<Position, Position> lineOfBestFit(const BWEM::ChokePoint * choke)
-    {
-        if (choke)
-            return chokeLines[choke];
-        return {};
     }
 
     pair<Position, Position> perpendicularLine(pair<Position, Position> points, double length)
@@ -736,62 +621,6 @@ namespace BWEB::Map
         auto direction1 = Position(-dy1, dx1) + ((n1 + n2) / 2);
         auto direction2 = Position(-dy2, dx2) + ((n1 + n2) / 2);
         return make_pair(direction1, direction2);
-    }
-
-    TilePosition getBuildPosition(UnitType type, const TilePosition searchCenter)
-    {
-        auto distBest = DBL_MAX;
-        auto tileBest = TilePositions::Invalid;
-
-        // Search through each block to find the closest block and valid position
-        for (auto &block : Blocks::getBlocks()) {
-            set<TilePosition> placements;
-
-            if (type.tileWidth() == 4)
-                placements = block.getLargeTiles();
-            else if (type.tileWidth() == 3)
-                placements = block.getMediumTiles();
-            else
-                placements = block.getSmallTiles();
-
-            for (auto &tile : placements) {
-                const auto dist = tile.getDistance(searchCenter);
-                if (dist < distBest && isPlaceable(type, tile)) {
-                    distBest = dist;
-                    tileBest = tile;
-                }
-            }
-        }
-        return tileBest;
-    }
-
-    TilePosition getDefBuildPosition(UnitType type, const TilePosition searchCenter)
-    {
-        auto distBest = DBL_MAX;
-        auto tileBest = TilePositions::Invalid;
-
-        // Search through each wall to find the closest valid TilePosition
-        for (auto &[_, wall] : Walls::getWalls()) {
-            for (auto &tile : wall.getDefenses()) {
-                const auto dist = tile.getDistance(searchCenter);
-                if (dist < distBest && isPlaceable(type, tile)) {
-                    distBest = dist;
-                    tileBest = tile;
-                }
-            }
-        }
-
-        // Search through each station to find the closest valid TilePosition
-        for (auto &station : Stations::getStations()) {
-            for (auto &tile : station.getDefenses()) {
-                const auto dist = tile.getDistance(searchCenter);
-                if (dist < distBest && isPlaceable(type, tile)) {
-                    distBest = dist;
-                    tileBest = tile;
-                }
-            }
-        }
-        return tileBest;
     }
 
     const BWEM::Area * getNaturalArea() { return naturalArea; }
