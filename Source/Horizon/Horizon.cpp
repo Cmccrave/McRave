@@ -200,7 +200,7 @@ namespace McRave::Horizon {
         // If above/below thresholds, it's a sim win/loss
         if (unit.getSimValue() >= maxThreshold - engagedAlreadyOffset)
             unit.setSimState(SimState::Win);
-        else if (unit.getSimValue() <= minThreshold - engagedAlreadyOffset || (unit.getSimState() == SimState::None && unit.getSimValue() < maxThreshold))
+        else if (unit.getSimValue() < minThreshold - engagedAlreadyOffset || (unit.getSimState() == SimState::None && unit.getSimValue() < maxThreshold))
             unit.setSimState(SimState::Loss);
 
         // Check for hardcoded directional losses
