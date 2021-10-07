@@ -5,6 +5,7 @@ McRave is a simple AI that can play all 3 races to an extent, but is best at ~~P
 **Recent Results:**
 - Zerg: 7th CoG 2020 (31.64% Winrate)
 - Zerg: 5th AIIDE 2020 (57.22% Winrate)
+- Zerg: 3rd CoG 2021 (68.17% Winrate)
 
 **Thanks to:**
 - Nathan Roth (Antiga/Iruian) for providing expert analysis of replays and being a strategic advisor.
