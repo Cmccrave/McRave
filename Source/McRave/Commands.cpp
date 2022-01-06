@@ -177,6 +177,9 @@ namespace McRave::Command {
             return false;
         };
 
+        if (canAttack())
+            unit.circle(Colors::Green);
+
         // If unit can move and should attack
         if (canAttack() && shouldAttack()) {
             unit.command(Attack_Unit, unit.getTarget());

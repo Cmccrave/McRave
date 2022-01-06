@@ -977,7 +977,7 @@ namespace McRave::Planning {
     bool overlapsPlan(UnitInfo& unit, Position here)
     {
         // If this is a defensive building and we don't have a plan for it here anymore
-        if (isDefensiveType(unit.getType()) && validDefenses.find(unit.getTilePosition()) == validDefenses.end())
+        if (isDefensiveType(unit.getType()) && unit.getPlayer() == Broodwar->self() && validDefenses.find(unit.getTilePosition()) == validDefenses.end())
             return true;
 
         // Check if there's a building queued there already

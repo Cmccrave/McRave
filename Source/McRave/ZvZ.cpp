@@ -222,11 +222,13 @@ namespace McRave::BuildOrder::Zerg {
             ZvZ12Pool();
 
         // Transitions
-        if (currentTransition == "1HatchMuta")
-            ZvZ1HatchMuta();
-        if (currentTransition == "2HatchMuta")
-            ZvZ2HatchMuta();
-        if (currentTransition == "2HatchSpeedling")
-            ZvZ2HatchSpeedling();
+        if (transitionReady) {
+            if (currentTransition == "1HatchMuta")
+                ZvZ1HatchMuta();
+            if (currentTransition == "2HatchMuta")
+                ZvZ2HatchMuta();
+            if (currentTransition == "2HatchSpeedling")
+                ZvZ2HatchSpeedling();
+        }
     }
 }

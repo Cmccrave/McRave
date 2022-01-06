@@ -58,12 +58,23 @@ namespace McRave::Players
 
     void storeUnit(Unit bwUnit)
     {
-        auto p = getPlayerInfo(bwUnit->getPlayer());
+        auto player = getPlayerInfo(bwUnit->getPlayer());
         auto info = make_shared<UnitInfo>(bwUnit);
 
+        // Unit already exists, no need to store
         if (Units::getUnitInfo(bwUnit))
             return;
 
+        // Reavers have their attack time set when a scarab is spawned by them
+        if (bwUnit->getType() == Protoss_Scarab) {
+            const auto closestReaver = Util::getClosestUnit(bwUnit->getPosition(), player->getPlayerState(), [&](auto &u) {
+                return u.getType() == Protoss_Reaver;
+            });
+            if (closestReaver)
+                closestReaver->setLastAttackFrame(Broodwar->getFrameCount());
+        }
+
+        // When a building starts, set the closest worker to no longer have a building
         if (bwUnit->getType().isBuilding() && bwUnit->getPlayer() == Broodwar->self()) {
             auto closestWorker = Util::getClosestUnit(bwUnit->getPosition(), PlayerState::Self, [&](auto &u) {
                 return u.getRole() == Role::Worker && (u.getType() != Terran_SCV || bwUnit->isCompleted()) && u.getBuildPosition() == bwUnit->getTilePosition();
@@ -74,15 +85,13 @@ namespace McRave::Players
             }
         }
 
-        if (p) {
-
-            // Setup the UnitInfo and update
-            p->getUnits().insert(info);
+        // If a player exists that owns this unit, update the unit and total counts
+        if (player) {
+            player->getUnits().insert(info);
             info->update();
-            auto &counts = p->getTotalTypeCounts();
+            auto &counts = player->getTotalTypeCounts();
 
-            // Increase total counts
-            if (Broodwar->getFrameCount() == 0 || !p->isSelf() || (info->getType() != Zerg_Zergling && info->getType() != Zerg_Scourge))
+            if (Broodwar->getFrameCount() == 0 || !player->isSelf() || (info->getType() != Zerg_Zergling && info->getType() != Zerg_Scourge))
                 counts[info->getType()] += 1;
         }
     }

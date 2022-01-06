@@ -123,6 +123,7 @@ namespace McRave {
         void checkHidden();
         void checkThreatening();
         void checkProxy();
+        void checkCompletion();
     #pragma endregion
 
     public:
@@ -225,7 +226,7 @@ namespace McRave {
 
         void update();
         void verifyPaths();
-        void setLastPositions();
+        void updateHistory();
     #pragma endregion
        
     #pragma region Getters

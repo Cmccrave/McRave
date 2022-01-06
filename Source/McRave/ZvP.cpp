@@ -402,18 +402,13 @@ namespace McRave::BuildOrder::Zerg {
     {
         // 'https://liquipedia.net/starcraft/9_Pool_(vs._Protoss)'
         transitionReady =                               hatchCount() >= 2;
-        unitLimits[Zerg_Drone] =                        11 - hatchCount();
+        unitLimits[Zerg_Drone] =                        Strategy::enemyFastExpand() ? INT_MAX : (12 - hatchCount());
         unitLimits[Zerg_Zergling] =                     lingsNeeded();
         gasLimit =                                      0;
         gasTrick =                                      vis(Zerg_Spawning_Pool) > 0 && total(Zerg_Overlord) < 2;
         scout =                                         scout || (vis(Zerg_Spawning_Pool) > 0 && s >= 22) || (Terrain::isShitMap() && vis(Zerg_Spawning_Pool) > 0);
         wantNatural =                                   !Strategy::enemyProxy();
         playPassive =                                   false;
-
-        if (Strategy::enemyFastExpand())
-            unitLimits[Zerg_Drone] =                        INT_MAX;
-        else
-            unitLimits[Zerg_Drone] =                        12 - vis(Zerg_Hatchery);
 
         buildQueue[Zerg_Hatchery] =                     1 + (s >= 20 && vis(Zerg_Spawning_Pool) > 0 && atPercent(Zerg_Spawning_Pool, 0.8) && vis(Zerg_Overlord) >= 2 && (!Strategy::enemyProxy() || vis(Zerg_Sunken_Colony) >= 2));
         buildQueue[Zerg_Spawning_Pool] =                s >= 18;
