@@ -43,16 +43,11 @@ namespace McRave
 
             // Supply
             raceSupply[type.getRace()] += type.supplyRequired();
-            raceSupply[type.getRace()] += type == Zerg_Zergling || type == Zerg_Scourge;
+            raceSupply[type.getRace()] += !unit.isCompleted() && (type == Zerg_Zergling || type == Zerg_Scourge);
 
             // All supply
             raceSupply[Races::None] += type.supplyRequired();
-            raceSupply[Races::None] += type == Zerg_Zergling || type == Zerg_Scourge;
-
-            // Targets
-            unit.getTargetedBy().clear();
-            unit.setTarget(nullptr);
-            unit.borrowedPath = false;
+            raceSupply[Races::None] += !unit.isCompleted() && (type == Zerg_Zergling || type == Zerg_Scourge);
 
             // Counts
             int eggOffset = int(isSelf() && !unit.isCompleted() && (type == Zerg_Zergling || type == Zerg_Scourge));
@@ -80,12 +75,6 @@ namespace McRave
                 pStrength.groundToAir += unit.getVisibleAirStrength();
                 pStrength.groundToGround += unit.getVisibleGroundStrength();
             }
-        }
-
-        // Supply has to be an even number and is rounded up - TODO: Check
-        for (auto &[race, supply] : raceSupply) {
-            if (supply % 2 == 1)
-                supply++;
         }
 
         // Set current allied status

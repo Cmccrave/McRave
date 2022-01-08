@@ -853,8 +853,6 @@ namespace McRave::Planning {
                     plannedGas += building.gasPrice() * (count - vis(building) - morphOffset);
                 }
 
-                Visuals::drawDebugText(building.c_str(), count - queuedCount + vis(building) + morphOffset);
-
                 if (morphed)
                     continue;
 

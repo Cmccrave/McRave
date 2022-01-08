@@ -51,6 +51,7 @@
     <ClCompile Include="..\Source\McRave\Expansions.cpp" />
     <ClCompile Include="..\Source\McRave\Planning.cpp" />
     <ClCompile Include="..\Source\McRave\ResourceInfo.cpp" />
+    <ClCompile Include="..\Source\McRave\Roles.cpp" />
     <ClCompile Include="..\Source\McRave\Walls.cpp" />
     <ClCompile Include="..\Source\McRave\ZvP.cpp" />
     <ClCompile Include="..\Source\McRave\ZvT.cpp" />
@@ -124,6 +125,7 @@
     <ClInclude Include="..\Source\McRave\Header.h" />
     <ClInclude Include="..\Source\McRave\Learning.h" />
     <ClInclude Include="..\Source\McRave\Planning.h" />
+    <ClInclude Include="..\Source\McRave\Roles.h" />
     <ClInclude Include="..\Source\McRave\Visuals.h" />
     <ClInclude Include="..\Source\McRave\McRave.h" />
     <ClInclude Include="..\Source\McRave\PlayerInfo.h" />

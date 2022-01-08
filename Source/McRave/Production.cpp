@@ -566,6 +566,7 @@ namespace McRave::Production {
                     continue;
 
                 const auto value = scoreUnit(type);
+
                 if (value > best) {
                     best = value;
                     bestType = type;
@@ -576,6 +577,7 @@ namespace McRave::Production {
 
                 // If we can afford it, train it
                 if (isAffordable(bestType)) {
+                    Broodwar << bestType.c_str() << endl;
                     trainedThisFrame[bestType]++;
                     building.unit()->train(bestType);
                     building.setRemainingTrainFrame(bestType.buildTime());

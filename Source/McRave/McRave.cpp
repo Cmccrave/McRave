@@ -56,6 +56,8 @@ void McRaveModule::onFrame()
     // Update ingame information
     Players::onFrame();
     Units::onFrame();
+    Roles::onFrame();
+    Targets::onFrame();
     Grids::onFrame();
     Pylons::onFrame();
 

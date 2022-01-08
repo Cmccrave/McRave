@@ -11,6 +11,34 @@ namespace McRave::Targets {
 
     namespace {
 
+        // TODO:
+        void getInterceptPosition(UnitInfo& unit) {
+            unit.setInterceptPosition(Positions::Invalid);
+        }
+
+        void getSurroundPosition(UnitInfo& unit) {
+            // If we can't see the units speed, return its current position
+            if (!unit.hasTarget()
+                || !unit.getTarget().unit()->exists()
+                || unit.getSpeed() == 0.0
+                || unit.getTarget().getSpeed() == 0.0
+                || !unit.getTarget().getPosition().isValid()
+                || !Terrain::getEnemyStartingPosition().isValid())
+                return;
+
+            auto trapTowards = Positions::Invalid;
+            if (unit.getTarget().isFlying())
+                trapTowards = Terrain::getEnemyStartingPosition();
+            else if (unit.getTarget().isThreatening())
+                trapTowards = Position(BWEB::Map::getMainChoke()->Center());
+            else {
+                auto path = mapBWEM.GetPath(unit.getTarget().getPosition(), Terrain::getEnemyStartingPosition());
+                trapTowards = (path.empty() || !path.front()) ? Terrain::getEnemyStartingPosition() : Position(path.front()->Center());
+            }
+            auto surroundPosition = Util::clipPosition(((unit.getTarget().getPosition() * 3) + trapTowards) / 4);
+            unit.setSurroundPosition(surroundPosition);
+        }
+
         bool isValidTarget(UnitInfo& unit, UnitInfo& target)
         {
             if (!target.unit()
@@ -462,7 +490,7 @@ namespace McRave::Targets {
                     }
                 }
             }
-            
+
             // TODO: Need a custom target walkable for a building
             auto targetType = unit.getTarget().getType();
             auto targetPos = unit.getTarget().getPosition();
@@ -477,21 +505,101 @@ namespace McRave::Targets {
                 unit.setTargetPath(newPath);
 
                 if (!newPath.isReachable() && newPath.unitWalkable(unit.getTilePosition()))
-                    unit.getTarget().lastUnreachableFrame = Broodwar->getFrameCount();                
+                    unit.getTarget().lastUnreachableFrame = Broodwar->getFrameCount();
+            }
+        }
+
+        void getTarget(UnitInfo& unit)
+        {
+            auto pState = unit.targetsFriendly() ? PlayerState::Self : PlayerState::Enemy;
+
+            // HACK: Spider mines have a set order target, possibly scarabs too
+            if (unit.getType() == Terran_Vulture_Spider_Mine) {
+                if (unit.unit()->getOrderTarget())
+                    unit.setTarget(&*Units::getUnitInfo(unit.unit()->getOrderTarget()));
+            }
+
+            if (unit.getRole() == Role::Combat || unit.getRole() == Role::Support || unit.getRole() == Role::Defender || unit.getRole() == Role::Worker || unit.getRole() == Role::Scout) {
+                getBestTarget(unit, pState);
+                getSimTarget(unit, PlayerState::Enemy);
+                if (unit.hasTarget()) {
+                    getPathToTarget(unit);
+                    getEngagePosition(unit);
+                    getEngageDistance(unit);
+                    getSurroundPosition(unit);
+                    getInterceptPosition(unit);
+                }
+            }
+
+            if (unit.getPlayer()->isEnemy(Broodwar->self())) {
+                if (unit.unit()->getOrderTarget()) {
+                    auto &targetInfo = Units::getUnitInfo(unit.unit()->getOrderTarget());
+                    if (targetInfo) {
+                        unit.setTarget(&*targetInfo);
+                        targetInfo->getTargetedBy().push_back(unit.weak_from_this());
+                    }
+                }
+                else if (unit.getType() != Terran_Vulture_Spider_Mine) {
+                    auto closest = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+                        return (u.isFlying() && unit.getAirDamage() > 0.0) || (!u.isFlying() && unit.getGroundDamage() > 0.0);
+                    });
+                    if (closest)
+                        unit.setTarget(&*closest);
+                }
+
+                if (unit.hasTarget()) {
+                    auto range = max(64.0, unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
+                    auto distance = Util::boxDistance(unit.getType(), unit.getPosition(), unit.getTarget().getType(), unit.getTarget().getPosition());
+                    auto direction = ((distance - range) / distance);
+                    auto engageX = int((unit.getPosition().x - unit.getTarget().getPosition().x) * direction);
+                    auto engageY = int((unit.getPosition().y - unit.getTarget().getPosition().y) * direction);
+                    auto engagePosition = unit.getPosition() - Position(engageX, engageY);
+
+                    // If unit is loaded or further than their range, we want to calculate the expected engage position
+                    if (distance > range || unit.unit()->isLoaded())
+                        unit.setEngagePosition(engagePosition);
+                    else
+                        unit.setEngagePosition(unit.getPosition());
+
+                    unit.setEngDist(unit.getPosition().getDistance(unit.getEngagePosition()));
+
+                    // HACK: Replicate the target to other light air around it since
+                    if (unit.getTarget().isLightAir()) {
+                        for (auto &p : Players::getPlayers()) {
+                            if (p.second.isSelf()) {
+                                for (auto &u : p.second.getUnits())
+                                    if (u->isLightAir() && find(u->getTargetedBy().begin(), u->getTargetedBy().end(), unit.weak_from_this()) == u->getTargetedBy().end() && u->getPosition().getDistance(unit.getTarget().getPosition()) < 120.0)
+                                        u->getTargetedBy().push_back(unit.weak_from_this());
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (unit.hasTarget() && (unit.getType() == Protoss_Reaver || unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Protoss_Archon || unit.getType() == Protoss_Corsair || unit.getType() == Terran_Valkyrie || unit.getType() == Zerg_Devourer) && unit.isWithinRange(unit.getTarget()))
+                unit.getTarget().setTargetedBySplash(true);
+        }
+
+        void updateSelf()
+        {
+            for (auto &u : Units::getUnits(PlayerState::Self)) {
+                UnitInfo& unit = *u;
+                getTarget(unit);
+            }
+        }
+
+        void updateEnemy()
+        {
+            for (auto &u : Units::getUnits(PlayerState::Enemy)) {
+                UnitInfo& unit = *u;
+                getTarget(unit);
             }
         }
     }
 
-    void getTarget(UnitInfo& unit)
+    void onFrame()
     {
-        auto pState = unit.targetsFriendly() ? PlayerState::Self : PlayerState::Enemy;
-
-        if (unit.getRole() == Role::Combat || unit.getRole() == Role::Support || unit.getRole() == Role::Defender || unit.getRole() == Role::Worker || unit.getRole() == Role::Scout) {
-            getBestTarget(unit, pState);
-            getSimTarget(unit, PlayerState::Enemy);
-            getPathToTarget(unit);
-            getEngagePosition(unit);
-            getEngageDistance(unit);
-        }
+        updateSelf();
+        updateEnemy();
     }
 }

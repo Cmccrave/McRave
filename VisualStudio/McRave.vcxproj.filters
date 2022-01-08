@@ -199,6 +199,9 @@
     <ClCompile Include="..\Source\McRave\Learning.cpp">
       <Filter>McRave\Builds\All</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\McRave\Roles.cpp">
+      <Filter>McRave\Info\Units</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">
@@ -374,6 +377,9 @@
     </ClInclude>
     <ClInclude Include="..\Source\McRave\Learning.h">
       <Filter>McRave\Builds\All</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Roles.h">
+      <Filter>McRave\Info\Units</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

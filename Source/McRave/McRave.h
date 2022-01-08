@@ -161,6 +161,7 @@ namespace McRave
 #include "Pylons.h"
 #include "ResourceInfo.h"
 #include "Resources.h"
+#include "Roles.h"
 #include "Scouts.h"
 #include "Strategy.h"
 #include "Support.h"

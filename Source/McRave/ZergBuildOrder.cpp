@@ -226,7 +226,7 @@ namespace McRave::BuildOrder::Zerg {
                 gasLimit = 0;
             if (needSpores && Players::ZvZ() && com(Zerg_Evolution_Chamber) == 0)
                 gasLimit = 0;
-            if (Units::getMyRoleCount(Role::Worker) < 5)
+            if (Roles::getMyRoleCount(Role::Worker) < 5)
                 gasLimit = 0;
             if (Players::ZvZ() && vis(Zerg_Drone) < 8 && gasRemaining >= 100)
                 gasLimit = vis(Zerg_Drone) - 5;

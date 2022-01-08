@@ -65,6 +65,7 @@ namespace McRave::Learning {
                     return t;
                 if (build == "FFE")
                     return z && !Terrain::isShitMap() && !Terrain::isIslandMap();
+                return false;
             };
 
             const auto openerOkay = [&]() {
@@ -97,6 +98,7 @@ namespace McRave::Learning {
                     if (opener == "1Gate" || opener == "2Gate")
                         return t;
                 }
+                return false;
             };
 
             const auto transitionOkay = [&]() {
@@ -140,6 +142,7 @@ namespace McRave::Learning {
                     if (transition == "DoubleExpand" || transition == "Carrier" || transition == "Standard")
                         return t;
                 }
+                return false;
             };
 
             return buildOkay() && openerOkay() && transitionOkay();
@@ -424,7 +427,7 @@ namespace McRave::Learning {
                     return;
                 }
                 if (Players::ZvP()) {
-                    BuildOrder::setLearnedBuild("HatchPool", "10Hatch", "2HatchMuta");
+                    BuildOrder::setLearnedBuild("HatchPool", "Overpool", "3HatchMuta");
                     isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                     return;
                 }

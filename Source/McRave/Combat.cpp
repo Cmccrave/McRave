@@ -388,8 +388,8 @@ namespace McRave::Combat {
                 return u.getRole() == Role::Worker && !unit.getGoal().isValid() && (!unit.hasResource() || !unit.getResource().getType().isRefinery()) && !unit.getBuildPosition().isValid();
             });
 
-            auto combatCount = Units::getMyRoleCount(Role::Combat) - (unit.getRole() == Role::Combat ? 1 : 0);
-            auto combatWorkersCount =  Units::getMyRoleCount(Role::Combat) - com(Protoss_Zealot) - com(Protoss_Dragoon) - com(Zerg_Zergling) - (unit.getRole() == Role::Combat ? 1 : 0);
+            auto combatCount = Roles::getMyRoleCount(Role::Combat) - (unit.getRole() == Role::Combat ? 1 : 0);
+            auto combatWorkersCount =  Roles::getMyRoleCount(Role::Combat) - com(Protoss_Zealot) - com(Protoss_Dragoon) - com(Zerg_Zergling) - (unit.getRole() == Role::Combat ? 1 : 0);
 
             const auto healthyWorker = [&] {
 

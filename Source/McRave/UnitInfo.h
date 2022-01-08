@@ -67,7 +67,6 @@ namespace McRave {
         std::weak_ptr<UnitInfo> transport;
         std::weak_ptr<UnitInfo> target;
         std::weak_ptr<UnitInfo> simTarget;
-        std::weak_ptr<UnitInfo> backupTarget;
         std::weak_ptr<ResourceInfo> resource;
 
         std::vector<std::weak_ptr<UnitInfo>> assignedCargo;
@@ -119,6 +118,8 @@ namespace McRave {
 
     #pragma region Updaters
         void updateTarget();
+        void updateHistory();
+        void updateStatistics();
         void checkStuck();
         void checkHidden();
         void checkThreatening();
@@ -128,6 +129,7 @@ namespace McRave {
 
     public:
 
+        // HACK: Hacky flags that were added quickly
         bool concaveFlag = false;
         bool movedFlag = false;
         int lastUnreachableFrame = -999;
@@ -226,7 +228,6 @@ namespace McRave {
 
         void update();
         void verifyPaths();
-        void updateHistory();
     #pragma endregion
        
     #pragma region Getters
@@ -305,11 +306,15 @@ namespace McRave {
     #pragma endregion      
 
     #pragma region Setters
+        void setAssumedLocation(BWAPI::Position p, BWAPI::WalkPosition w, BWAPI::TilePosition t) {
+            position = p;
+            walkPosition = w;
+            tilePosition = t;
+        }
         void setTargetedBySplash(bool newValue) { targetedBySplash = newValue; }
         void setMarkForDeath(bool newValue) { markedForDeath = newValue; }
         void setEngDist(double newValue) { engageDist = newValue; }
         void setSimValue(double newValue) { simValue = newValue; }
-        void setLastAttackFrame(int newValue) { lastAttackFrame = newValue; }
         void setRemainingTrainFrame(int newFrame) { remainingTrainFrame = newFrame; }
         void setTransportState(TransportState newState) { tState = newState; }
         void setSimState(SimState newState) { sState = newState; }
@@ -319,20 +324,19 @@ namespace McRave {
         void setTransport(UnitInfo* unit) { unit ? transport = unit->weak_from_this() : transport.reset(); }
         void setTarget(UnitInfo* unit) { unit ? target = unit->weak_from_this() : target.reset(); }
         void setSimTarget(UnitInfo* unit) { unit ? simTarget = unit->weak_from_this() : simTarget.reset(); }
-        void setBackupTarget(UnitInfo* unit) { unit ? backupTarget = unit->weak_from_this() : backupTarget.reset(); }
         void setRole(Role newRole) { role = newRole; }
         void setGoalType(GoalType newGoalType) { gType = newGoalType; }
         void setBuildingType(BWAPI::UnitType newType) { buildingType = newType; }
         void setFormation(BWAPI::Position newPosition) { formation = newPosition; }
-        void setPosition(BWAPI::Position newPosition) { position = newPosition; }
         void setEngagePosition(BWAPI::Position newPosition) { engagePosition = newPosition; }
         void setDestination(BWAPI::Position newPosition) { destination = newPosition; }
         void setGoal(BWAPI::Position newPosition) { goal = newPosition; }
-        void setWalkPosition(BWAPI::WalkPosition newPosition) { walkPosition = newPosition; }
-        void setTilePosition(BWAPI::TilePosition newPosition) { tilePosition = newPosition; }
         void setBuildPosition(BWAPI::TilePosition newPosition) { buildPosition = newPosition; }
         void setDestinationPath(BWEB::Path& newPath) { destinationPath = newPath; }
         void setTargetPath(BWEB::Path& newPath) { targetPath = newPath; }
+
+        void setInterceptPosition(BWAPI::Position p) { interceptPosition = p; }
+        void setSurroundPosition(BWAPI::Position p) { surroundPosition = p; }
     #pragma endregion
 
     #pragma region Drawing

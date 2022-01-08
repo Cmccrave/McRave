@@ -65,15 +65,6 @@ namespace McRave::Players
         if (Units::getUnitInfo(bwUnit))
             return;
 
-        // Reavers have their attack time set when a scarab is spawned by them
-        if (bwUnit->getType() == Protoss_Scarab) {
-            const auto closestReaver = Util::getClosestUnit(bwUnit->getPosition(), player->getPlayerState(), [&](auto &u) {
-                return u.getType() == Protoss_Reaver;
-            });
-            if (closestReaver)
-                closestReaver->setLastAttackFrame(Broodwar->getFrameCount());
-        }
-
         // When a building starts, set the closest worker to no longer have a building
         if (bwUnit->getType().isBuilding() && bwUnit->getPlayer() == Broodwar->self()) {
             auto closestWorker = Util::getClosestUnit(bwUnit->getPosition(), PlayerState::Self, [&](auto &u) {

@@ -381,13 +381,6 @@ namespace McRave::Command
             unit.unit()->train(Protoss_Interceptor);
             return false;
         }
-
-        // Reaver - Train Scarab
-        else if (unit.getType() == Protoss_Reaver && !unit.unit()->isLoaded() && unit.unit()->getScarabCount() + int(unit.unit()->getTrainingQueue().size()) < MAX_SCARAB && (Broodwar->self()->minerals() >= 25 || unit.unit()->getGroundWeaponCooldown() >= 60)) {
-            unit.unit()->train(Protoss_Scarab);
-            unit.setLastAttackFrame(Broodwar->getFrameCount());    /// Use this to fudge whether a Reaver has actually shot when using shuttles due to cooldown reset
-            return false;
-        }
         return false;
     }
 

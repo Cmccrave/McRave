@@ -67,34 +67,6 @@ namespace McRave
                 return 400.0 + Players::getSupply(PlayerState::Self, Races::None);
             return 320.0 + Players::getSupply(PlayerState::Self, Races::None);
         }
-
-        Position calcInterceptPosition(UnitInfo& unit) {
-            return Positions::Invalid;
-        }
-
-        Position calcSurroundPosition(UnitInfo& unit) {
-            // If we can't see the units speed, return its current position
-            if (!unit.hasTarget()
-                || !unit.getTarget().unit()->exists()
-                || unit.getSpeed() == 0.0
-                || unit.getTarget().getSpeed() == 0.0
-                || !unit.getTarget().getPosition().isValid()
-                || !Terrain::getEnemyStartingPosition().isValid())
-                return Positions::Invalid;
-
-            auto trapTowards = Positions::Invalid;
-            if (unit.getTarget().isFlying())
-                trapTowards = Terrain::getEnemyStartingPosition();
-            else if (unit.getTarget().isThreatening())
-                trapTowards = Position(BWEB::Map::getMainChoke()->Center());
-            else {
-                auto path = mapBWEM.GetPath(unit.getTarget().getPosition(), Terrain::getEnemyStartingPosition());
-                trapTowards = (path.empty() || !path.front()) ? Terrain::getEnemyStartingPosition() : Position(path.front()->Center());
-            }
-            auto timeToEngage = clamp((unit.getEngDist() / unit.getSpeed()) * unit.getTarget().getSpeed() / unit.getSpeed(), 12.0, 96.0);
-            auto targetDestination = Util::clipPosition(((unit.getTarget().getPosition() * 3) + trapTowards) / 4);
-            return targetDestination;
-        }
     }
 
     void UnitInfo::circle(Color color) {
@@ -110,24 +82,26 @@ namespace McRave
 
     void UnitInfo::updateHistory()
     {
-        tileHistory[Broodwar->getFrameCount()] = getTilePosition();
-        walkHistory[Broodwar->getFrameCount()] = getWalkPosition();
-        positionHistory[Broodwar->getFrameCount()] = getPosition();
+        if (unit()->exists()) {
+            tileHistory[Broodwar->getFrameCount()] = getTilePosition();
+            walkHistory[Broodwar->getFrameCount()] = getWalkPosition();
+            positionHistory[Broodwar->getFrameCount()] = getPosition();
 
-        orderHistory[Broodwar->getFrameCount()] = make_pair(unit()->getOrder(), unit()->getOrderTargetPosition());
-        commandHistory[Broodwar->getFrameCount()] = unit()->getLastCommand().getType();
+            orderHistory[Broodwar->getFrameCount()] = make_pair(unit()->getOrder(), unit()->getOrderTargetPosition());
+            commandHistory[Broodwar->getFrameCount()] = unit()->getLastCommand().getType();
 
-        if (tileHistory.size() > 30)
-            tileHistory.erase(tileHistory.begin());
-        if (walkHistory.size() > 30)
-            walkHistory.erase(walkHistory.begin());
-        if (positionHistory.size() > 30)
-            positionHistory.erase(positionHistory.begin());
+            if (tileHistory.size() > 30)
+                tileHistory.erase(tileHistory.begin());
+            if (walkHistory.size() > 30)
+                walkHistory.erase(walkHistory.begin());
+            if (positionHistory.size() > 30)
+                positionHistory.erase(positionHistory.begin());
 
-        if (orderHistory.size() > 10)
-            orderHistory.erase(orderHistory.begin());
-        if (commandHistory.size() > 10)
-            commandHistory.erase(commandHistory.begin());
+            if (orderHistory.size() > 10)
+                orderHistory.erase(orderHistory.begin());
+            if (commandHistory.size() > 10)
+                commandHistory.erase(commandHistory.begin());
+        }
     }
 
     void UnitInfo::verifyPaths()
@@ -140,9 +114,17 @@ namespace McRave
 
         if (lastTile.isValid() && unit()->getTilePosition().isValid() && mapBWEM.GetArea(lastTile) != mapBWEM.GetArea(unit()->getTilePosition()))
             quickPath.clear();
+        borrowedPath = false;
     }
 
     void UnitInfo::update()
+    {
+        updateStatistics();
+        verifyPaths();
+        updateHistory();
+    }
+
+    void UnitInfo::updateStatistics()
     {
         auto t = unit()->getType();
         auto p = unit()->getPlayer();
@@ -152,8 +134,6 @@ namespace McRave
             lastPos                     = position;
             lastTile                    = tilePosition;
             lastWalk                    = walkPosition;
-
-            verifyPaths();
 
             // Unit Stats
             type                        = t;
@@ -209,20 +189,20 @@ namespace McRave
             lastRepairFrame             = (unit()->isRepairing() || unit()->isBeingHealed()) ? Broodwar->getFrameCount() : lastRepairFrame;
             minStopFrame                = Math::stopAnimationFrames(t);
             lastStimFrame               = unit()->isStimmed() ? Broodwar->getFrameCount() : lastStimFrame;
-            lastVisibleFrame            = Broodwar->getFrameCount();            
+            lastVisibleFrame            = Broodwar->getFrameCount();
             arriveFrame                 = isFlying() ? int(position.getDistance(BWEB::Map::getMainPosition()) / speed) :
-                                                       Broodwar->getFrameCount() + int(BWEB::Map::getGroundDistance(position, BWEB::Map::getMainPosition()) / speed);
+                Broodwar->getFrameCount() + int(BWEB::Map::getGroundDistance(position, BWEB::Map::getMainPosition()) / speed);
 
             checkHidden();
             checkStuck();
             checkProxy();
             checkCompletion();
-
-            updateHistory();
-
             checkThreatening();
         }
-        updateTarget();
+
+        // Clear targets and targeting information
+        getTargetedBy().clear();
+        target.reset();
 
         // Check if this unit is close to a splash unit
         if (getPlayer() == Broodwar->self() && flying) {
@@ -244,73 +224,6 @@ namespace McRave
 
             if (closestSuicide && Util::boxDistance(getType(), getPosition(), closestSuicide->getType(), closestSuicide->unit()->getOrderTargetPosition()) < closestSuicide->getAirReach() && Util::boxDistance(getType(), getPosition(), closestSuicide->getType(), closestSuicide->unit()->getPosition()) < 48.0)
                 nearSuicide = true;
-        }
-    }
-
-    void UnitInfo::updateTarget()
-    {
-        // Update my target
-        if (getPlayer() == Broodwar->self()) {
-            target = weak_ptr<UnitInfo>();
-            if (getType() == Terran_Vulture_Spider_Mine) {
-                if (unit()->getOrderTarget())
-                    target = Units::getUnitInfo(unit()->getOrderTarget());
-            }
-            else
-                Targets::getTarget(*this);
-
-            surroundPosition            = calcSurroundPosition(*this);
-            interceptPosition           = calcInterceptPosition(*this);
-        }
-
-        // Update enemy target based on orders or closest self target
-        else if (getPlayer()->isEnemy(Broodwar->self())) {
-
-            if (unit()->getOrderTarget()) {
-                auto &targetInfo = Units::getUnitInfo(unit()->getOrderTarget());
-                if (targetInfo) {
-                    target = targetInfo;
-                    targetInfo->getTargetedBy().push_back(this->weak_from_this());
-                }
-            }
-            else if (getType() != Terran_Vulture_Spider_Mine) {
-                auto closest = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-                    return (u.isFlying() && getAirDamage() > 0.0) || (!u.isFlying() && getGroundDamage() > 0.0);
-                });
-                if (closest)
-                    target = closest;
-            }
-
-            if (hasTarget() && (getType() == Protoss_Reaver || getType() == Terran_Vulture_Spider_Mine || getType() == Protoss_Archon || getType() == Protoss_Corsair || getType() == Terran_Valkyrie || getType() == Zerg_Devourer) && isWithinRange(getTarget()))
-                getTarget().setTargetedBySplash(true);
-
-            if (hasTarget()) {
-                auto range = max(64.0, getTarget().getType().isFlyer() ? getAirRange() : getGroundRange());
-                auto distance = Util::boxDistance(getType(), getPosition(), getTarget().getType(), getTarget().getPosition());
-                auto direction = ((distance - range) / distance);
-                auto engageX = int((getPosition().x - getTarget().getPosition().x) * direction);
-                auto engageY = int((getPosition().y - getTarget().getPosition().y) * direction);
-                auto engagePosition = getPosition() - Position(engageX, engageY);
-
-                // If unit is loaded or further than their range, we want to calculate the expected engage position
-                if (distance > range || unit()->isLoaded())
-                    setEngagePosition(engagePosition);
-                else
-                    setEngagePosition(getPosition());
-
-                setEngDist(getPosition().getDistance(getEngagePosition()));
-
-                // HACK: Replicate the target to other light air around it since
-                if (getTarget().isLightAir()) {
-                    for (auto &p : Players::getPlayers()) {
-                        if (p.second.isSelf()) {
-                            for (auto &u : p.second.getUnits())
-                                if (u->isLightAir() && find(u->getTargetedBy().begin(), u->getTargetedBy().end(), this->weak_from_this()) == u->getTargetedBy().end() && u->getPosition().getDistance(getTarget().getPosition()) < 120.0)
-                                    u->getTargetedBy().push_back(this->weak_from_this());
-                        }
-                    }
-                }
-            }
         }
     }
 
@@ -385,6 +298,8 @@ namespace McRave
     {
         if (!getPlayer()->isEnemy(Broodwar->self()))
             return;
+
+        circle(Colors::Yellow);
 
         // Determine how close it is to strategic locations
         const auto choke = Terrain::isDefendNatural() ? BWEB::Map::getNaturalChoke() : BWEB::Map::getMainChoke();
@@ -496,12 +411,17 @@ namespace McRave
         }
 
         // Determine if this unit is threatening
-        if (threateningThisFrame) threateningFrames++;
-        else threateningFrames = 0;
+        if (threateningThisFrame)
+            threateningFrames++;
+        else
+            threateningFrames = 0;
 
         if (threateningFrames > 8)
             lastThreateningFrame = Broodwar->getFrameCount();
         threatening = Broodwar->getFrameCount() - lastThreateningFrame <= min(64, Util::getTime().minutes * 2);
+
+        if (threatening)
+            circle(Colors::Red);
     }
 
     void UnitInfo::checkProxy()
@@ -512,8 +432,9 @@ namespace McRave
             return;
         }
 
+        // Check if an enemy building is a proxy
         if (player->isEnemy(Broodwar->self())) {
-            if (getType() == Terran_Barracks || getType() == Terran_Bunker || getType() == Protoss_Gateway || getType() == Protoss_Photon_Cannon || getType() == Protoss_Pylon) {
+            if (getType() == Terran_Barracks || getType() == Terran_Bunker || getType() == Protoss_Gateway || getType() == Protoss_Photon_Cannon || getType() == Protoss_Pylon || getType() == Protoss_Forge) {
                 auto closestMain = BWEB::Stations::getClosestMainStation(getTilePosition());
                 auto closestNat = BWEB::Stations::getClosestNaturalStation(getTilePosition());
                 auto isNotInMain = closestNat && closestNat->getBase()->GetArea() != mapBWEM.GetArea(getTilePosition()) && getPosition().getDistance(closestNat->getBase()->Center()) > 640.0;
@@ -531,11 +452,14 @@ namespace McRave
 
     void UnitInfo::checkCompletion()
     {
+        // Calculate completion based on build time
         if (!bwUnit->isCompleted()) {
             auto ratio = (double(health) - (0.1 * double(type.maxHitPoints()))) / (0.9 * double(type.maxHitPoints()));
             completeFrame = Broodwar->getFrameCount() + int(std::round((1.0 - ratio) * double(type.buildTime())));
             startedFrame = Broodwar->getFrameCount() - int(std::round((ratio) * double(type.buildTime())));
         }
+
+        // Set completion based on seeing it already completed and this is the first time visible
         else if (startedFrame == -999 && completeFrame == -999) {
             startedFrame = Broodwar->getFrameCount();
             completeFrame = Broodwar->getFrameCount();
