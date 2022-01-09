@@ -49,6 +49,7 @@
     <ClCompile Include="..\Source\McRave\Commands.cpp" />
     <ClCompile Include="..\Source\McRave\Dll.cpp" />
     <ClCompile Include="..\Source\McRave\Expansions.cpp" />
+    <ClCompile Include="..\Source\McRave\Pathing.cpp" />
     <ClCompile Include="..\Source\McRave\Planning.cpp" />
     <ClCompile Include="..\Source\McRave\ResourceInfo.cpp" />
     <ClCompile Include="..\Source\McRave\Roles.cpp" />
@@ -124,6 +125,7 @@
     <ClInclude Include="..\Source\McRave\Grids.h" />
     <ClInclude Include="..\Source\McRave\Header.h" />
     <ClInclude Include="..\Source\McRave\Learning.h" />
+    <ClInclude Include="..\Source\McRave\Pathing.h" />
     <ClInclude Include="..\Source\McRave\Planning.h" />
     <ClInclude Include="..\Source\McRave\Roles.h" />
     <ClInclude Include="..\Source\McRave\Visuals.h" />

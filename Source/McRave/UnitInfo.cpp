@@ -647,9 +647,9 @@ namespace McRave
         if (type.isBuilding())
             return percentHealth > 0.5;
 
-        return (type.maxShields() > 0 && percentShield > LOW_SHIELD_PERCENT_LIMIT)
-            || (type.isMechanical() && percentHealth > LOW_MECH_PERCENT_LIMIT)
-            || (type.getRace() == BWAPI::Races::Zerg && percentHealth > LOW_BIO_PERCENT_LIMIT)
+        return (type.maxShields() > 0 && percentShield > 0.5)
+            || (type.isMechanical() && percentHealth > 0.25)
+            || (type.getRace() == BWAPI::Races::Zerg && percentHealth > 0.25)
             || (type == BWAPI::UnitTypes::Zerg_Zergling && Players::ZvP() && health > 16)
             || (type == BWAPI::UnitTypes::Zerg_Zergling && Players::ZvT() && health > 16);
     }

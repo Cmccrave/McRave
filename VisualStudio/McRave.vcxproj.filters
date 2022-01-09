@@ -202,6 +202,9 @@
     <ClCompile Include="..\Source\McRave\Roles.cpp">
       <Filter>McRave\Info\Units</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\McRave\Pathing.cpp">
+      <Filter>McRave\Info\Units</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">
@@ -379,6 +382,9 @@
       <Filter>McRave\Builds\All</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\McRave\Roles.h">
+      <Filter>McRave\Info\Units</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Pathing.h">
       <Filter>McRave\Info\Units</Filter>
     </ClInclude>
   </ItemGroup>

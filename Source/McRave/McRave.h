@@ -3,31 +3,13 @@
 #include "bwem.h"
 #include "BWEB.h"
 
-#define STORM_LIMIT 2.0
-#define STASIS_LIMIT 4.0
-#define LOW_SHIELD_PERCENT_LIMIT 0.5
-#define LOW_MECH_PERCENT_LIMIT 0.25
-#define LOW_BIO_PERCENT_LIMIT 0.25
 #define MIN_THREAT 0.000001f
-#define MAX_SCARAB 5 + (BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Reaver_Capacity) * 5)
-#define MAX_INTERCEPTOR 4 + (BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Carrier_Capacity) * 4)
 
 namespace McRave
 {
     class UnitInfo;
     class ResourceInfo;
     class PlayerInfo;
-
-    static int distTest = 54;
-
-    struct Line {
-        double yInt;
-        double slope;
-        double y(int x) { return (slope * double(x)) + yInt; }
-        Line(double y, double s) {
-            yInt = y, slope = s;
-        }
-    };
 
     struct Time {
         int minutes;
@@ -154,6 +136,7 @@ namespace McRave
 #include "Stations.h"
 #include "Workers.h"
 #include "Learning.h"
+#include "Pathing.h"
 #include "Planning.h"
 #include "PlayerInfo.h"
 #include "Players.h"

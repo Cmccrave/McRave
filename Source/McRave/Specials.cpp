@@ -377,7 +377,7 @@ namespace McRave::Command
     bool train(UnitInfo& unit)
     {
         // Carrier - Train Interceptor
-        if (unit.getType() == Protoss_Carrier && unit.unit()->getInterceptorCount() < MAX_INTERCEPTOR && !unit.unit()->isTraining()) {
+        if (unit.getType() == Protoss_Carrier && unit.unit()->getInterceptorCount() < (4 + (BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Carrier_Capacity) * 4)) && !unit.unit()->isTraining()) {
             unit.unit()->train(Protoss_Interceptor);
             return false;
         }

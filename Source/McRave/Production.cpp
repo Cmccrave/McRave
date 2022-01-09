@@ -577,7 +577,6 @@ namespace McRave::Production {
 
                 // If we can afford it, train it
                 if (isAffordable(bestType)) {
-                    Broodwar << bestType.c_str() << endl;
                     trainedThisFrame[bestType]++;
                     building.unit()->train(bestType);
                     building.setRemainingTrainFrame(bestType.buildTime());
@@ -819,7 +818,7 @@ namespace McRave::Production {
             auto larvaMinCost = BuildOrder::getTechUnit().mineralPrice() * BuildOrder::getUnitLimit(Zerg_Larva);
             auto larvaGasCost = BuildOrder::getTechUnit().gasPrice() * BuildOrder::getUnitLimit(Zerg_Larva);
 
-            if (vis(Zerg_Larva) <= BuildOrder::getUnitLimit(Zerg_Larva)
+            if ((type != Zerg_Overlord && vis(Zerg_Larva) <= BuildOrder::getUnitLimit(Zerg_Larva))
                 || Broodwar->self()->minerals() - type.mineralPrice() < larvaMinCost
                 || Broodwar->self()->gas() - type.gasPrice() < larvaGasCost)
                 return 0.0;

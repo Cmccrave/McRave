@@ -58,6 +58,7 @@ void McRaveModule::onFrame()
     Units::onFrame();
     Roles::onFrame();
     Targets::onFrame();
+    Pathing::onFrame();
     Grids::onFrame();
     Pylons::onFrame();
 
