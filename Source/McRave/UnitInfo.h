@@ -60,7 +60,6 @@ namespace McRave {
         bool nearSuicide = false;
         bool markedForDeath = false;
         bool commander = false;
-        bool targetedBySplash = false;
     #pragma endregion
 
     #pragma region Targets
@@ -156,7 +155,8 @@ namespace McRave {
         bool hasRepairedRecently() { return (BWAPI::Broodwar->getFrameCount() - lastRepairFrame < 120); }
         bool targetsFriendly() { return type == BWAPI::UnitTypes::Terran_Medic || type == BWAPI::UnitTypes::Terran_Science_Vessel || (type == BWAPI::UnitTypes::Zerg_Defiler && energy < 100); }
 
-        bool isSuicidal() { return type == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine || type == BWAPI::UnitTypes::Zerg_Scourge || type == BWAPI::UnitTypes::Zerg_Infested_Terran; }
+        bool isSuicidal() { return type == BWAPI::UnitTypes::Protoss_Scarab || type == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine || type == BWAPI::UnitTypes::Zerg_Scourge || type == BWAPI::UnitTypes::Zerg_Infested_Terran; }
+        bool isSplasher() { return type == BWAPI::UnitTypes::Protoss_Reaver || type == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine || type == BWAPI::UnitTypes::Protoss_Archon || type == BWAPI::UnitTypes::Protoss_Corsair || type == BWAPI::UnitTypes::Terran_Valkyrie || type == BWAPI::UnitTypes::Zerg_Devourer; }
         bool isLightAir() { return type == BWAPI::UnitTypes::Protoss_Corsair || type == BWAPI::UnitTypes::Zerg_Mutalisk || type == BWAPI::UnitTypes::Terran_Wraith; }
         bool isCapitalShip() { return type == BWAPI::UnitTypes::Protoss_Carrier || type == BWAPI::UnitTypes::Terran_Battlecruiser || type == BWAPI::UnitTypes::Zerg_Guardian; }
         bool isHovering() { return type.isWorker() || type == BWAPI::UnitTypes::Protoss_Archon || type == BWAPI::UnitTypes::Protoss_Dark_Archon || type == BWAPI::UnitTypes::Terran_Vulture; }
@@ -294,7 +294,6 @@ namespace McRave {
         int framesHoldingResource() { return resourceHeldFrames; }
         int getWalkWidth() { return walkWidth; }
         int getWalkHeight() { return walkHeight; }
-        bool isTargetedBySplash() { return targetedBySplash; }
         bool isMarkedForDeath() { return markedForDeath; }
         bool isProxy() { return proxy; }
         bool isBurrowed() { return burrowed; }
@@ -303,6 +302,23 @@ namespace McRave {
         bool isHidden() { return hidden; }
         bool isNearSplash() { return nearSplash; }
         bool isNearSuicide() { return nearSuicide; }
+
+        bool isTargetedBySplash() {
+            return std::any_of(targetedBy.begin(), targetedBy.end(), [&](auto &t) {
+                return !t.expired() && t.lock()->isSplasher();
+            });
+        }
+        bool isTargetedByHidden() {
+            return std::any_of(targetedBy.begin(), targetedBy.end(), [&](auto &t) {
+                return !t.expired() && t.lock()->isHidden();
+            });
+        }
+        bool isTargetedBySuicide() {
+            return std::any_of(targetedBy.begin(), targetedBy.end(), [&](auto &t) {
+                return !t.expired() && t.lock()->isSuicidal();
+            });
+        }
+
     #pragma endregion      
 
     #pragma region Setters
@@ -311,7 +327,6 @@ namespace McRave {
             walkPosition = w;
             tilePosition = t;
         }
-        void setTargetedBySplash(bool newValue) { targetedBySplash = newValue; }
         void setMarkForDeath(bool newValue) { markedForDeath = newValue; }
         void setEngDist(double newValue) { engageDist = newValue; }
         void setSimValue(double newValue) { simValue = newValue; }

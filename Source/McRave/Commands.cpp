@@ -201,7 +201,7 @@ namespace McRave::Command {
 
         const auto shouldApproach = [&]() {
 
-            if (unit.hasTarget() && unit.isTargetedBySplash())
+            if (unit.hasTarget() && unit.isTargetedBySuicide())
                 return true;
 
             if (unit.getRole() == Role::Combat) {
@@ -425,7 +425,7 @@ namespace McRave::Command {
                 auto intercept = unit.getInterceptPosition();
                 auto interceptDistance = intercept.getDistance(unit.getPosition());
 
-                if (unit.hasTarget() && unit.isTargetedBySplash())
+                if (unit.hasTarget() && unit.isTargetedBySuicide())
                     return false;
 
                 if (unit.getTarget().isSuicidal())                                                                             // Do kite when the target is a suicidal unit

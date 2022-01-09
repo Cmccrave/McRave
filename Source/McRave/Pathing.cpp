@@ -164,6 +164,12 @@ namespace McRave::Pathing {
                     getInterceptPosition(unit);
                 }
             }
+
+            for (auto &u : Units::getUnits(PlayerState::Enemy)) {
+                UnitInfo& unit = *u;
+                getEngagePosition(unit);
+                getEngageDistance(unit);
+            }
         }
     }
 

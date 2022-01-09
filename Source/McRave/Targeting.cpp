@@ -369,17 +369,19 @@ namespace McRave::Targets {
         {
             auto pState = unit.targetsFriendly() ? PlayerState::Self : PlayerState::Enemy;
 
-            // HACK: Spider mines have a set order target, possibly scarabs too
+            // Spider mines have a set order target, possibly scarabs too
             if (unit.getType() == Terran_Vulture_Spider_Mine) {
                 if (unit.unit()->getOrderTarget())
                     unit.setTarget(&*Units::getUnitInfo(unit.unit()->getOrderTarget()));
             }
 
+            // Self units are assigned targets
             if (unit.getRole() == Role::Combat || unit.getRole() == Role::Support || unit.getRole() == Role::Defender || unit.getRole() == Role::Worker || unit.getRole() == Role::Scout) {
                 getBestTarget(unit, pState);
                 getSimTarget(unit, PlayerState::Enemy);
             }
 
+            // Enemy units are assumed targets or order targets
             if (unit.getPlayer()->isEnemy(Broodwar->self())) {
                 if (unit.unit()->getOrderTarget()) {
                     auto &targetInfo = Units::getUnitInfo(unit.unit()->getOrderTarget());
@@ -396,49 +398,25 @@ namespace McRave::Targets {
                         unit.setTarget(&*closest);
                 }
 
-                if (unit.hasTarget()) {
-                    auto range = max(64.0, unit.getTarget().getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
-                    auto distance = Util::boxDistance(unit.getType(), unit.getPosition(), unit.getTarget().getType(), unit.getTarget().getPosition());
-                    auto direction = ((distance - range) / distance);
-                    auto engageX = int((unit.getPosition().x - unit.getTarget().getPosition().x) * direction);
-                    auto engageY = int((unit.getPosition().y - unit.getTarget().getPosition().y) * direction);
-                    auto engagePosition = unit.getPosition() - Position(engageX, engageY);
-
-                    // If unit is loaded or further than their range, we want to calculate the expected engage position
-                    if (distance > range || unit.unit()->isLoaded())
-                        unit.setEngagePosition(engagePosition);
-                    else
-                        unit.setEngagePosition(unit.getPosition());
-
-                    unit.setEngDist(unit.getPosition().getDistance(unit.getEngagePosition()));
-
-                    // HACK: Replicate the target to other light air around it since
-                    if (unit.getTarget().isLightAir()) {
-                        for (auto &p : Players::getPlayers()) {
-                            if (p.second.isSelf()) {
-                                for (auto &u : p.second.getUnits())
-                                    if (u->isLightAir() && find(u->getTargetedBy().begin(), u->getTargetedBy().end(), unit.weak_from_this()) == u->getTargetedBy().end() && u->getPosition().getDistance(unit.getTarget().getPosition()) < 120.0)
-                                        u->getTargetedBy().push_back(unit.weak_from_this());
-                            }
+                // HACK: Replicate the target to other light air around it
+                if (unit.hasTarget() && unit.getTarget().isLightAir()) {
+                    for (auto &p : Players::getPlayers()) {
+                        if (p.second.isSelf()) {
+                            for (auto &u : p.second.getUnits())
+                                if (u->isLightAir() && find(u->getTargetedBy().begin(), u->getTargetedBy().end(), unit.weak_from_this()) == u->getTargetedBy().end() && u->getPosition().getDistance(unit.getTarget().getPosition()) < 120.0)
+                                    u->getTargetedBy().push_back(unit.weak_from_this());
                         }
                     }
                 }
             }
-
-            if (unit.hasTarget() && (unit.getType() == Protoss_Reaver || unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Protoss_Archon || unit.getType() == Protoss_Corsair || unit.getType() == Terran_Valkyrie || unit.getType() == Zerg_Devourer) && unit.isWithinRange(unit.getTarget()))
-                unit.getTarget().setTargetedBySplash(true);
         }
 
-        void updateSelf()
+        void updateTargets()
         {
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo& unit = *u;
                 getTarget(unit);
             }
-        }
-
-        void updateEnemy()
-        {
             for (auto &u : Units::getUnits(PlayerState::Enemy)) {
                 UnitInfo& unit = *u;
                 getTarget(unit);
@@ -448,7 +426,6 @@ namespace McRave::Targets {
 
     void onFrame()
     {
-        updateSelf();
-        updateEnemy();
+        updateTargets();
     }
 }

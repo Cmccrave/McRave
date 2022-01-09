@@ -159,7 +159,6 @@ namespace McRave
             formation                   = Positions::Invalid;
             concaveFlag                 = false;
             movedFlag                   = false;
-            targetedBySplash            = false;
 
             // McRave Stats
             groundRange                 = Math::groundRange(*this);
@@ -672,7 +671,7 @@ namespace McRave
         auto cargoReady = getType() == BWAPI::UnitTypes::Protoss_High_Templar ? canStartCast(BWAPI::TechTypes::Psionic_Storm, getTarget().getPosition()) : canStartAttack();
         auto threat = Grids::getEGroundThreat(getWalkPosition()) > 0.0;
 
-        return getLocalState() == LocalState::Retreat || getEngDist() > range + 32.0 || (!cargoReady && threat) || bulletCount >= 4 || isTargetedBySplash();
+        return getLocalState() == LocalState::Retreat || getEngDist() > range + 32.0 || (!cargoReady && threat) || bulletCount >= 4 || isTargetedBySuicide();
     }
 
     bool UnitInfo::isWithinReach(UnitInfo& otherUnit)
@@ -849,12 +848,12 @@ namespace McRave
             || (!isFlying() && (getGroundRange() < 32.0 || getType() == Zerg_Lurker) && Terrain::isInEnemyTerritory(getTilePosition()) && (Util::getTime() > Time(8, 00) || BuildOrder::isProxy()) && nearEnemyStation() && !Players::ZvZ())
             || (getType() == Zerg_Lurker && BuildOrder::isProxy() && nearProxyStructure())
             || (!isFlying() && Actions::overlapsActions(unit(), getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, 96))
-            || isTargetedBySplash();
+            || isTargetedBySuicide();
     }
 
     bool UnitInfo::globalRetreat()
     {
-        return (Grids::getESplash(getWalkPosition()) > 0 && !isTargetedBySplash())                                                                                                                  // ...unit is within splash radius of a Spider Mine or Scarab
+        return (Grids::getESplash(getWalkPosition()) > 0 && !isTargetedBySuicide())                                                                                                                  // ...unit is within splash radius of a Spider Mine or Scarab
             || (hasTarget() && getTarget().isHidden() && getPosition().getDistance(getTarget().getPosition()) <= (getType().isFlyer() ? getTarget().getAirReach() : getTarget().getGroundReach()))  // ...target is hidden and Unit is within target reach
             || (getGlobalState() == GlobalState::Retreat && !Terrain::isInAllyTerritory(getTilePosition()))                                                                                         // ...global state is retreating
             || (getType() == Zerg_Mutalisk && hasTarget() && !getTarget().isThreatening() && !isWithinRange(getTarget()) && !getTarget().isWithinRange(*this) && getHealth() <= 50 && Util::getTime() > Time(8, 00))                // ...unit is a low HP Mutalisk attacking a target under air threat    

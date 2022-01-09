@@ -332,7 +332,7 @@ namespace McRave::Walls {
             else if (Util::getTime() < Time(6, 15) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) >= 1)
                 return (Util::getTime() > Time(3, 40)) + (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 20)) + noExpandOrTech;
             else if (Util::getTime() < Time(6, 15))
-                return (Util::getTime() > Time(3, 40)) + noExpandOrTech;
+                return (Util::getTime() > Time(3, 40)) + (Util::getTime() > Time(4, 00)) + noExpandOrTech;
         }
 
         // 2Gate
