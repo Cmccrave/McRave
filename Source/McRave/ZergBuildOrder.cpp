@@ -188,7 +188,7 @@ namespace McRave::BuildOrder::Zerg {
         {
             // Calculate the number of gas workers we need outside of the opening book
             if (!inOpeningBook) {
-                auto totalMin = 0;
+                auto totalMin = 1;
                 auto totalGas = 0;
                 for (auto &[type, percent] : armyComposition) {
                     if (unitLimits[type] > 0)
@@ -201,9 +201,9 @@ namespace McRave::BuildOrder::Zerg {
                 auto resourceRate = (3.0 * 103.0 / (67.1));
                 auto resourceCount = double(Resources::getGasCount()) / double(Resources::getMineralCount());
 
-                gasLimit = int(double(vis(Zerg_Drone) * totalGas) / double(totalMin) * resourceRate * resourceCount);
+                gasLimit = int(double(vis(Zerg_Drone) * totalGas) / (double(totalMin) * resourceRate * resourceCount));
                 if (Players::ZvZ())
-                    gasLimit += int(1.0 * double(Stations::getMyStations().size()));
+                    gasLimit += int(Stations::getMyStations().size());
                 if (Players::getSupply(PlayerState::Self, Races::Zerg) > 100)
                     gasLimit += vis(Zerg_Evolution_Chamber);
             }

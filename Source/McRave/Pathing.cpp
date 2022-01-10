@@ -125,6 +125,7 @@ namespace McRave::Pathing {
         }
 
         void getSurroundPosition(UnitInfo& unit) {
+
             // If we can't see the units speed, return its current position
             if (!unit.hasTarget()
                 || !unit.getTarget().unit()->exists()
@@ -149,6 +150,16 @@ namespace McRave::Pathing {
 
         // TODO: Implement
         void getInterceptPosition(UnitInfo& unit) {
+
+            // If we can't see the units speed, return its current position
+            if (!unit.hasTarget()
+                || !unit.getTarget().unit()->exists()
+                || unit.getSpeed() == 0.0
+                || unit.getTarget().getSpeed() == 0.0
+                || !unit.getTarget().getPosition().isValid()
+                || !Terrain::getEnemyStartingPosition().isValid())
+                return;
+
             unit.setInterceptPosition(Positions::Invalid);
         }
 

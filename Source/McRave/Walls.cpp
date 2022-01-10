@@ -337,15 +337,14 @@ namespace McRave::Walls {
 
         // 2Gate
         if (Strategy::getEnemyBuild() == "2Gate") {
-
             if ((Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) > 0 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0) && Util::getTime() < Time(5, 15))
-                return (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 20)) + noExpandOrTech;
+                return (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(4, 00)) /*+ (Util::getTime() > Time(4, 20))*/ + noExpandOrTech;
 
             else if (Util::getTime() < Time(5, 15) && Strategy::getEnemyOpener() == "10/17")
-                return (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 20)) + noExpandOrTech;
+                return (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(4, 00)) /*+ (Util::getTime() > Time(4, 20))*/ + noExpandOrTech;
 
             else if (Util::getTime() < Time(5, 15) && (Strategy::getEnemyOpener() == "10/12" || Strategy::getEnemyOpener() == "Unknown"))
-                return (Util::getTime() > Time(3, 10)) + (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(4, 00)) + noExpandOrTech;
+                return (Util::getTime() > Time(3, 10)) + (Util::getTime() > Time(3, 30)) /*+ (Util::getTime() > Time(4, 00))*/ + noExpandOrTech;
 
             else if (Util::getTime() < Time(5, 15) && (Strategy::getEnemyOpener() == "9/9" || Strategy::getEnemyTransition() == "ZealotRush"))
                 return (Util::getTime() > Time(2, 50)) + (Util::getTime() > Time(4, 00)) + noExpandOrTech;
@@ -364,7 +363,7 @@ namespace McRave::Walls {
             if (Strategy::getEnemyTransition() == "Unknown" && Util::getTime() < Time(5, 15))
                 return ((2 * (Util::getTime() > Time(6, 00))) + (Util::getTime() > Time(6, 30)) + (2 * (Util::getTime() > Time(8, 00))));
             if (Util::getTime() < Time(8, 00))
-                return ((Util::getTime() > Time(5, 45)) + (Util::getTime() > Time(6, 15)) + (Util::getTime() > Time(6, 45)));
+                return ((Util::getTime() > Time(5, 30)) + (Util::getTime() > Time(6, 15)) + (Util::getTime() > Time(6, 45)));
         }
 
         // Outside of openers, base it off how large the ground army of enemy is

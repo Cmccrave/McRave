@@ -371,6 +371,55 @@ namespace McRave::Math {
         return speed;
     }
 
+    double simRadius(UnitInfo& unit)
+    {
+        if (unit.getPlayer()->isEnemy(Broodwar->self()))
+            return 0.0;
+
+        if (unit.isFlying()) {
+            if (Players::getTotalCount(PlayerState::Enemy, Terran_Goliath) > 0)
+                return 352.0;
+            if (Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0
+                || Players::getTotalCount(PlayerState::Enemy, Protoss_Carrier) > 0
+                || Players::getTotalCount(PlayerState::Enemy, Protoss_Arbiter) > 0
+                || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0
+                || Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony) > 0)
+                return 320.0;
+            if (Players::getTotalCount(PlayerState::Enemy, Terran_Ghost) > 0
+                || Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) > 0
+                || Players::getTotalCount(PlayerState::Enemy, Terran_Missile_Turret) > 0)
+                return 288.0;
+            return 256.0;
+        }
+
+        if (Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Terran_Battlecruiser) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Protoss_Carrier) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Protoss_Arbiter) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Zerg_Guardian) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Zerg_Defiler) > 0)
+            return 540.0 + Players::getSupply(PlayerState::Self, Races::None);
+        if (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Terran_Goliath) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Terran_Bunker) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Zerg_Lurker) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0
+            || Players::getTotalCount(PlayerState::Enemy, Zerg_Sunken_Colony) > 0)
+            return 400.0 + Players::getSupply(PlayerState::Self, Races::None);
+        return 320.0 + Players::getSupply(PlayerState::Self, Races::None);
+    }
+
     int stopAnimationFrames(UnitType unitType) {
         // Attack animation frames below
         if (unitType == Terran_SCV)

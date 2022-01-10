@@ -190,16 +190,12 @@ namespace McRave::Command {
         const auto canApproach = [&]() {
             if (!unit.hasTarget()
                 || unit.getSpeed() <= 0.0
-                || unit.canStartAttack()
-                || unit.getType() == Zerg_Lurker)
+                || unit.canStartAttack())
                 return false;
             return true;
         };
 
         const auto shouldApproach = [&]() {
-
-            if (unit.hasTarget() && unit.isTargetedBySuicide())
-                return true;
 
             if (unit.getRole() == Role::Combat) {
 
@@ -216,6 +212,9 @@ namespace McRave::Command {
                 // HACK: Dragoons shouldn't approach Vultures before range upgrade
                 if (unit.getType() == Protoss_Dragoon && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge) == 0)
                     return false;
+
+                if (unit.hasTarget() && unit.isTargetedBySuicide())
+                    return true;
 
                 // Approach units that are moving away from us
                 if ((!unit.isLightAir() || unit.getTarget().isFlying()) && unit.getTarget().getInterceptPosition().isValid() && interceptDistance > unit.getPosition().getDistance(unit.getTarget().getPosition()))

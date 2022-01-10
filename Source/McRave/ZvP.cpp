@@ -41,49 +41,28 @@ namespace McRave::BuildOrder::Zerg {
         }
 
         int lingsNeeded() {
+            auto minValue = 6;
+            auto armyValue = int((Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) * 2.5) + (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) * 1.5) - (Strategy::enemyFastExpand() * 8));
             auto maxValue = currentTransition.find("3Hatch") != string::npos ? 48 : 24;
+
             if (Strategy::getEnemyBuild() == "2Gate") {
                 if (total(Zerg_Zergling) < 14 && Strategy::getEnemyOpener() == "9/9")
-                    return 14;
+                    minValue = 14;
                 if (total(Zerg_Zergling) < 10 && (Strategy::getEnemyOpener() == "10/12" || Strategy::getEnemyOpener() == "Unknown"))
-                    return 10;
+                    minValue = 10;
                 if (total(Zerg_Zergling) < 6 && Strategy::getEnemyOpener() == "10/17")
-                    return 6;
+                    minValue = 6;
             }
-
-            if (Strategy::enemyProxy())
-                return 24;
-
-            if (currentTransition.find("3Hatch") != string::npos) {
-                auto armyMatchValue = (Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) * 2) + (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) * 2) - (Strategy::enemyFastExpand() * 8);
-
-                if (Strategy::getEnemyBuild() == "2Gate") {
-                    auto minValue = max(6, 2 * (Util::getTime().minutes - 3));
-                    return clamp(armyMatchValue, minValue, 48) - max(0, ((colonyCount() - 1) * 4));
-                }
-
-                if (Strategy::getEnemyBuild() == "1GateCore") {
-                    auto minValue = max(6, 2 * (Util::getTime().minutes - 3));
-                    return clamp(armyMatchValue, minValue, 48) - max(0, ((colonyCount() - 1) * 4));
-                }
+            if (Strategy::getEnemyBuild() == "1GateCore") {
+                if (total(Zerg_Zergling) < 6)
+                    minValue = 6;
             }
-            else {
-                auto armyMatchValue = (Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) * 2) + (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon)) - (Strategy::enemyFastExpand() * 8);
-
-                if (Strategy::getEnemyBuild() == "2Gate") {
-                    auto minValue = max(6, 2 * (Util::getTime().minutes - 3));
-                    return clamp(armyMatchValue, minValue, 24) - max(0, ((colonyCount() - 1) * 4));
-                }
-
-                if (Strategy::getEnemyBuild() == "1GateCore") {
-                    auto minValue = max(6, 2 * (Util::getTime().minutes - 3));
-                    return clamp(armyMatchValue, minValue, 12) - max(0, ((colonyCount() - 1) * 4));
-                }
-            }
-
             if (Strategy::getEnemyBuild() == "FFE")
-                return 6 * vis(Zerg_Lair);
-            return 6;
+                minValue = 6 * vis(Zerg_Lair);
+            if (Strategy::enemyProxy())
+                minValue = 24;
+
+            return clamp(armyValue, minValue, maxValue) - max(0, ((colonyCount() - 1) * 4));
         }
 
         void defaultZvP() {
@@ -256,7 +235,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Hatchery] =                     1 + (s >= 20 && vis(Zerg_Spawning_Pool) > 0 && (!Strategy::enemyProxy() || vis(Zerg_Zergling) >= 6));
         buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && com(Zerg_Drone) >= 8 && vis(Zerg_Zergling) >= 6 && (!Strategy::enemyProxy() || vis(Zerg_Sunken_Colony) > 0));
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 30);
-        
+
         // Composition
         if (vis(Zerg_Drone) < 6) {
             armyComposition[Zerg_Drone] =                   0.60;

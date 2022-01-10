@@ -112,11 +112,9 @@ namespace McRave {
     #pragma region Paths
         BWEB::Path destinationPath;
         BWEB::Path targetPath;
-        BWEM::CPPath quickPath;
     #pragma endregion
 
     #pragma region Updaters
-        void updateTarget();
         void updateHistory();
         void updateStatistics();
         void checkStuck();
@@ -132,10 +130,6 @@ namespace McRave {
         bool concaveFlag = false;
         bool movedFlag = false;
         int lastUnreachableFrame = -999;
-        bool borrowedPath = false;
-
-        bool canOneShot(UnitInfo&);
-        bool canTwoShot(UnitInfo&);
 
 
     #pragma region Constructors
@@ -167,6 +161,8 @@ namespace McRave {
         bool isCompleted() { return completed; }
         bool isStimmed() { return BWAPI::Broodwar->getFrameCount() - lastStimFrame < 300; }
         bool isCommander() { return commander; }
+        bool isStuck() { return BWAPI::Broodwar->getFrameCount() - lastTileMoveFrame > 240; }
+        bool wasStuckRecently() { return BWAPI::Broodwar->getFrameCount() - lastStuckFrame < 240; }
 
         bool isHealthy();
         bool isRequestingPickup();
@@ -180,11 +176,8 @@ namespace McRave {
         bool canStartGather();
         bool canAttackGround();
         bool canAttackAir();
-
-        bool isStuck() { return BWAPI::Broodwar->getFrameCount() - lastTileMoveFrame > 240; }
-        bool wasStuckRecently() {
-            return BWAPI::Broodwar->getFrameCount() - lastStuckFrame < 240;
-        }
+        bool canOneShot(UnitInfo&);
+        bool canTwoShot(UnitInfo&);
 
         // General commands that verify we aren't spamming the same command and sticking the unit
         bool command(BWAPI::UnitCommandType, BWAPI::Position);
@@ -229,7 +222,7 @@ namespace McRave {
         void update();
         void verifyPaths();
     #pragma endregion
-       
+
     #pragma region Getters
         std::vector<std::weak_ptr<UnitInfo>>& getAssignedCargo() { return assignedCargo; }
         std::vector<std::weak_ptr<UnitInfo>>& getTargetedBy() { return targetedBy; }

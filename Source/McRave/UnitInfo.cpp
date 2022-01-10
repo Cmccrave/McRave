@@ -21,52 +21,6 @@ namespace McRave
                 return WalkPosition(unit->getTilePosition());
             return WalkPositions::None;
         }
-
-        double calcSimRadius(UnitInfo* unit)
-        {
-            if (unit->isFlying()) {
-                if (Players::getTotalCount(PlayerState::Enemy, Terran_Goliath) > 0)
-                    return 352.0;
-                if (Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0
-                    || Players::getTotalCount(PlayerState::Enemy, Protoss_Carrier) > 0
-                    || Players::getTotalCount(PlayerState::Enemy, Protoss_Arbiter) > 0
-                    || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0
-                    || Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony) > 0)
-                    return 320.0;
-                if (Players::getTotalCount(PlayerState::Enemy, Terran_Ghost) > 0
-                    || Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) > 0
-                    || Players::getTotalCount(PlayerState::Enemy, Terran_Missile_Turret) > 0)
-                    return 288.0;
-                return 256.0;
-            }
-
-            if (Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Terran_Battlecruiser) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Protoss_Carrier) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Protoss_Arbiter) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Zerg_Guardian) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Zerg_Defiler) > 0)
-                return 540.0 + Players::getSupply(PlayerState::Self, Races::None);
-            if (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Terran_Goliath) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Terran_Bunker) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Zerg_Lurker) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Zerg_Sunken_Colony) > 0)
-                return 400.0 + Players::getSupply(PlayerState::Self, Races::None);
-            return 320.0 + Players::getSupply(PlayerState::Self, Races::None);
-        }
     }
 
     void UnitInfo::circle(Color color) {
@@ -111,10 +65,6 @@ namespace McRave
             destinationPath = emptyPath;
             targetPath = emptyPath;
         }
-
-        if (lastTile.isValid() && unit()->getTilePosition().isValid() && mapBWEM.GetArea(lastTile) != mapBWEM.GetArea(unit()->getTilePosition()))
-            quickPath.clear();
-        borrowedPath = false;
     }
 
     void UnitInfo::update()
@@ -157,6 +107,11 @@ namespace McRave
             walkPosition                = calcWalkPosition(this);
             destination                 = Positions::Invalid;
             formation                   = Positions::Invalid;
+            surroundPosition            = Positions::Invalid;
+            interceptPosition           = Positions::Invalid;
+
+            // Flags
+            flying                      = unit()->isFlying() || getType().isFlyer() || unit()->getOrder() == Orders::LiftingOff || unit()->getOrder() == Orders::BuildingLiftOff;
             concaveFlag                 = false;
             movedFlag                   = false;
 
@@ -173,14 +128,13 @@ namespace McRave
             visibleAirStrength          = Math::visibleAirStrength(*this);
             maxAirStrength              = Math::maxAirStrength(*this);
             priority                    = Math::priority(*this);
-            engageRadius                = calcSimRadius(this) + 96.0;
-            retreatRadius               = calcSimRadius(this);
+            engageRadius                = Math::simRadius(*this) + 96.0;
+            retreatRadius               = Math::simRadius(*this);
 
             // States
             lState                      = LocalState::None;
             gState                      = GlobalState::None;
             tState                      = TransportState::None;
-            flying                      = unit()->isFlying() || getType().isFlyer() || unit()->getOrder() == Orders::LiftingOff || unit()->getOrder() == Orders::BuildingLiftOff;
 
             // Frames
             remainingTrainFrame         = max(0, remainingTrainFrame - 1);
