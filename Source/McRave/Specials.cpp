@@ -128,12 +128,11 @@ namespace McRave::Command
             }
         }
 
-        // Drone / Defiler burrowing
-        else if ((unit.getType().isWorker() /*|| unit.getType() == Zerg_Defiler*/) && Broodwar->self()->hasResearched(TechTypes::Burrowing)) {
-            const auto threatenedEarly = unit.hasResource() && Util::getTime() < Time(3, 30) && Util::getTime() > Time(2, 10) && !unit.getTargetedBy().empty();
-            const auto threatenedAll = unit.hasResource() && Util::getTime() > Time(3, 30) && Grids::getEGroundThreat(unit.getResource().getPosition()) > 0.0f && unit.hasTarget() && unit.getTarget().isThreatening() && !unit.getTarget().isFlying() && !unit.getTarget().getType().isWorker();
-            const auto threatened = (threatenedEarly || threatenedAll);
-
+        // Drone
+        else if (unit.getType().isWorker() && Broodwar->self()->hasResearched(TechTypes::Burrowing)) {
+            const auto resourceThreatened = Grids::getEGroundThreat(unit.getResource().getPosition()) > 0.0f || !unit.getTargetedBy().empty();
+            const auto threatened = unit.hasResource() && resourceThreatened && unit.hasTarget() && unit.getTarget().isThreatening() && !unit.getTarget().isFlying() && !unit.getTarget().getType().isWorker();
+            
             if (!unit.isBurrowed()) {
                 if (threatened) {
                     unit.unit()->burrow();
