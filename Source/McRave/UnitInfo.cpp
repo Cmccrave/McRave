@@ -204,26 +204,40 @@ namespace McRave
         target.reset();
 
         // Check if this unit is close to a splash unit
-        if (getPlayer() == Broodwar->self() && flying) {
+        if (getPlayer() == Broodwar->self()) {
             nearSplash = false;
             auto closestSplasher = Util::getClosestUnit(position, PlayerState::Enemy, [&](auto &u) {
-                return (u.getType() == Protoss_Corsair && Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) >= 6) || u.getType() == Protoss_Archon || u.getType() == Terran_Valkyrie || u.getType() == Zerg_Devourer;
+                return u.isSplasher() && ((!this->isFlying() && u.canAttackGround()) || (this->isFlying() && u.canAttackAir()));
             });
 
-            if (closestSplasher && Util::boxDistance(getType(), getPosition(), closestSplasher->getType(), closestSplasher->getPosition()) < closestSplasher->getAirRange())
+            if (closestSplasher && closestSplasher->isWithinReach(*this))
                 nearSplash = true;
         }
 
         // Check if this unit is close to a suicidal unit
-        if (getPlayer() == Broodwar->self() && flying) {
+        if (getPlayer() == Broodwar->self()) {
             nearSuicide = false;
             auto closestSuicide = Util::getClosestUnit(position, PlayerState::Enemy, [&](auto &u) {
-                return u.getType() == Zerg_Scourge || u.getType() == Zerg_Infested_Terran;
+                return u.isSuicidal() && ((!this->isFlying() && u.canAttackGround()) || (this->isFlying() && u.canAttackAir()));
             });
 
             if (closestSuicide && Util::boxDistance(getType(), getPosition(), closestSuicide->getType(), closestSuicide->unit()->getOrderTargetPosition()) < closestSuicide->getAirReach() && Util::boxDistance(getType(), getPosition(), closestSuicide->getType(), closestSuicide->unit()->getPosition()) < 48.0)
                 nearSuicide = true;
         }
+
+        // Check if this unit is close to a hidden unit
+        if (getPlayer() == Broodwar->self()) {
+            nearSuicide = false;
+            auto closestSuicide = Util::getClosestUnit(position, PlayerState::Enemy, [&](auto &u) {
+                return u.isSuicidal();
+            });
+
+            if (closestSuicide && closestSuicide->isWithinReach(*this))
+                nearSuicide = true;
+        }
+
+        if (nearSuicide)
+            circle(Colors::Red);
     }
 
     void UnitInfo::checkStuck() {
@@ -853,9 +867,8 @@ namespace McRave
 
     bool UnitInfo::globalRetreat()
     {
-        return (Grids::getESplash(getWalkPosition()) > 0 && !isTargetedBySuicide())                                                                                                                  // ...unit is within splash radius of a Spider Mine or Scarab
-            || (hasTarget() && getTarget().isHidden() && getPosition().getDistance(getTarget().getPosition()) <= (getType().isFlyer() ? getTarget().getAirReach() : getTarget().getGroundReach()))  // ...target is hidden and Unit is within target reach
-            || (getGlobalState() == GlobalState::Retreat && !Terrain::isInAllyTerritory(getTilePosition()))                                                                                         // ...global state is retreating
+        return (hasTarget() && getTarget().isHidden() && getPosition().getDistance(getTarget().getPosition()) <= (getType().isFlyer() ? getTarget().getAirReach() : getTarget().getGroundReach()))
+            || (getGlobalState() == GlobalState::Retreat && !Terrain::isInAllyTerritory(getTilePosition()))
             || (getType() == Zerg_Mutalisk && hasTarget() && !getTarget().isThreatening() && !isWithinRange(getTarget()) && !getTarget().isWithinRange(*this) && getHealth() <= 50 && Util::getTime() > Time(8, 00))                // ...unit is a low HP Mutalisk attacking a target under air threat    
             || (getType() == Zerg_Hydralisk && BuildOrder::getCompositionPercentage(Zerg_Lurker) >= 1.00)
             || (getType() == Zerg_Hydralisk && !getGoal().isValid() && (!Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines) || !Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments)))

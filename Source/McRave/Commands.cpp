@@ -11,7 +11,7 @@ namespace McRave::Command {
 
         double defaultGrouping(UnitInfo& unit, WalkPosition w) {
             return unit.getType().isFlyer() ?
-                ((unit.isNearSplash() || unit.isNearSuicide()) ? clamp(Grids::getAAirCluster(w), 0.05f, 1.0f) : 1.00)
+                ((unit.isNearSplash() || unit.isNearSuicide()) ? clamp(Grids::getAAirCluster(w), 0.75f, 5.0f) : 1.00)
                 : 1.0;
         }
 
@@ -53,7 +53,7 @@ namespace McRave::Command {
             // Check if this is a viable position for movement
             const auto viablePosition = [&](const WalkPosition& w, Position p) {
                 if (!unit.getType().isFlyer() || unit.getRole() == Role::Transport) {
-                    if (Planning::overlapsPlan(unit, p) || Grids::getESplash(w) > 0 || !Util::findWalkable(unit, p))
+                    if (Planning::overlapsPlan(unit, p) || !Util::findWalkable(unit, p))
                         return false;
                 }
                 if (Actions::isInDanger(unit, p))
@@ -177,9 +177,6 @@ namespace McRave::Command {
             return false;
         };
 
-        if (canAttack())
-            unit.circle(Colors::Green);
-
         // If unit can move and should attack
         if (canAttack() && shouldAttack()) {
             unit.command(Attack_Unit, unit.getTarget());
@@ -227,6 +224,9 @@ namespace McRave::Command {
                 // If crushing victory, push forward
                 if (!unit.isLightAir() && unit.getSimValue() >= 5.0 && unit.getTarget().getGroundRange() > 32.0)
                     return true;
+
+                if (!unit.isTargetedBySplash() && !unit.isTargetedBySuicide() && (unit.getTarget().isSplasher() || unit.getTarget().isSuicidal()))
+                    return false;
             }
 
             // If this units range is lower and target isn't a building

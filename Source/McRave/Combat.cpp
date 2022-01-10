@@ -588,8 +588,8 @@ namespace McRave::Combat {
             const auto winningState = (!atHome || !BuildOrder::isPlayPassive()) && unit.getSimState() == SimState::Win;
 
             // Regardless of any decision, determine if Unit is in danger and needs to retreat
-            if (Actions::isInDanger(unit, unit.getPosition())
-                || (Actions::isInDanger(unit, unit.getEngagePosition()) && insideEngageRadius)
+            if ((Actions::isInDanger(unit, unit.getPosition()) && !unit.isTargetedBySuicide())
+                || (Actions::isInDanger(unit, unit.getEngagePosition()) && insideEngageRadius && !unit.isTargetedBySuicide())
                 || reAlign)
                 unit.setLocalState(LocalState::Retreat);
 
@@ -1056,7 +1056,7 @@ namespace McRave::Combat {
                     continue;
 
                 // Light air close to the air cluster use the same command of the air commander
-                if (airCommander.lock() && !unit.localRetreat() && !unit.globalRetreat() && unit.isLightAir() && !airCommander.lock()->isNearSplash() && !unit.isNearSplash() && !airCommander.lock()->isNearSuicide() && !unit.isNearSuicide() && unit.getPosition().getDistance(airCommander.lock()->getPosition()) <= 96.0) {
+                if (airCommander.lock() && !unit.localRetreat() && !unit.globalRetreat() && unit.isLightAir() && !airCommander.lock()->isNearSuicide() && !unit.isNearSuicide() && unit.getPosition().getDistance(airCommander.lock()->getPosition()) <= 96.0) {
 
                     Horizon::simulate(unit);
                     updateDestination(unit);

@@ -23,7 +23,6 @@ namespace McRave::Grids
         float eAirThreat[1024][1024] ={};
         float eGroundCluster[1024][1024] ={};
         float eAirCluster[1024][1024] ={};
-        int eSplash[1024][1024] ={};
 
         // Mobility Grid
         int mobility[1024][1024] ={};
@@ -50,25 +49,6 @@ namespace McRave::Grids
         {
             if (!std::exchange(resetGrid[x][y], 1))
                 resetVector.emplace_back(x, y);
-        }
-
-        void addSplash(UnitInfo& unit)
-        {
-            WalkPosition start(unit.getTarget().getWalkPosition());
-            Position target = unit.getTarget().getPosition();
-
-            for (int x = start.x - 12; x <= start.x + 12 + unit.getWalkWidth(); x++) {
-                for (int y = start.y - 12; y <= start.y + 12 + unit.getWalkHeight(); y++) {
-
-                    WalkPosition w(x, y);
-                    Position p = Position(w) + Position(4, 4);
-                    if (!w.isValid())
-                        continue;
-
-                    saveReset(x, y);
-                    eSplash[x][y] += (target.getDistance(p) <= 96);
-                }
-            }
         }
 
         void addToGrids(UnitInfo& unit, Position position, WalkPosition walkPosition)
@@ -204,7 +184,6 @@ namespace McRave::Grids
                 eAirThreat[x][y] = 0.0;
                 eGroundCluster[x][y] = 0;
                 eAirCluster[x][y] = 0;
-                eSplash[x][y] = 0;
 
                 collision[x][y] = 0;
                 verticalCollision[x][y] = 0;
@@ -225,7 +204,9 @@ namespace McRave::Grids
                 if ((unit.unit()->exists() && (unit.unit()->isStasised() || unit.unit()->isMaelstrommed()))
                     || unit.getType() == Protoss_Interceptor
                     || unit.getType().isSpell()
-                    || (unit.getPlayer() == Broodwar->self() && !unit.getType().isBuilding() && !unit.unit()->isCompleted()))
+                    || (unit.getPlayer() == Broodwar->self() && !unit.getType().isBuilding() && !unit.unit()->isCompleted())
+                    || unit.getType() == Terran_Vulture_Spider_Mine
+                    || unit.getType() == Protoss_Scarab)
                     continue;
 
                 // Pixel and walk sizes
@@ -237,20 +218,11 @@ namespace McRave::Grids
                 for (int x = start.x - 2; x < start.x + walkWidth + 2; x++) {
                     for (int y = start.y - 2; y < start.y + walkHeight + 2; y++) {
                         auto t = WalkPosition(x, y);
-                        if (t.isValid()) {
-                            visitedGrid[x][y] = Broodwar->getFrameCount();
-                            //Broodwar->drawBoxMap(Position(t), Position(t) + Position(9, 9), Colors::Green);
-                        }
+                        visitedGrid[x][y] = Broodwar->getFrameCount();
                     }
                 }
 
-                // Spider mines are added to the enemy splash grid so ally units avoid allied mines
-                if (unit.getType() == Terran_Vulture_Spider_Mine) {
-                    if (!unit.isBurrowed() && unit.hasTarget() && unit.getTarget().unit() && unit.getTarget().unit()->exists())
-                        addSplash(unit);
-                }
-
-                else if (!unit.unit()->isLoaded())
+                if (!unit.unit()->isLoaded())
                     addToGrids(unit, unit.getPosition(), unit.getWalkPosition());
             }
             Visuals::endPerfTest("Grid Self");
@@ -266,16 +238,12 @@ namespace McRave::Grids
                 if ((unit.unit()->exists() && (unit.unit()->isStasised() || unit.unit()->isMaelstrommed()))
                     || unit.getType() == Protoss_Interceptor
                     || (unit.getType().isWorker() && !unit.hasAttackedRecently())
-                    || unit.getType().isSpell())
+                    || unit.getType().isSpell()
+                    || unit.getType() == Terran_Vulture_Spider_Mine
+                    || unit.getType() == Protoss_Scarab)
                     continue;
 
-                if (unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Protoss_Scarab) {
-                    if (unit.hasTarget() && unit.getTarget().unit() && unit.getTarget().unit()->exists())
-                        addSplash(unit);
-                }
-                else {
-                    addToGrids(unit, unit.getPosition(), unit.getWalkPosition());
-                }
+                addToGrids(unit, unit.getPosition(), unit.getWalkPosition());
             }
             Visuals::endPerfTest("Grid Enemy");
         }
@@ -385,7 +353,7 @@ namespace McRave::Grids
         const auto fullyFogged = [&](auto &t) {
             for (int x = -2; x <= 2; x++) {
                 for (int y = -2; y <= 2; y++) {
-                    auto tile = t + TilePosition(x,y);
+                    auto tile = t + TilePosition(x, y);
                     if (!tile.isValid())
                         continue;
 
@@ -420,7 +388,7 @@ namespace McRave::Grids
 
         for (int x = 0; x < Broodwar->mapWidth(); x++) {
             for (int y = 0; y < Broodwar->mapHeight(); y++) {
-                if (!fullyFogged(TilePosition(x, y)) || !fullyRanged(TilePosition(x,y)) || areaBlocked(mapBWEM.GetArea(TilePosition(x,y))))
+                if (!fullyFogged(TilePosition(x, y)) || !fullyRanged(TilePosition(x, y)) || areaBlocked(mapBWEM.GetArea(TilePosition(x, y))))
                     cliffVision[x][y] = true;
                 else
                     cliffVision[x][y] = false;
@@ -449,7 +417,6 @@ namespace McRave::Grids
     int getCollision(WalkPosition here) { return collision[here.x][here.y]; }
     int getVCollision(WalkPosition here) { return verticalCollision[here.x][here.y]; }
     int getHCollision(WalkPosition here) { return horizontalCollision[here.x][here.y]; }
-    int getESplash(WalkPosition here) { return eSplash[here.x][here.y]; }
 
     int getMobility(WalkPosition here) { return mobility[here.x][here.y]; }
     int getMobility(Position here) { return getMobility(WalkPosition(here)); }

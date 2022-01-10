@@ -11,6 +11,14 @@ namespace McRave
     class ResourceInfo;
     class PlayerInfo;
 
+    /// Writes to a file, very slow function!
+    static void easyWrite(std::string& stuff)
+    {
+        std::ofstream writeFile;
+        writeFile.open("bwapi-data/write/McRave_Debug_Log.txt", std::ios::app);
+        writeFile << stuff << std::endl;
+    }
+
     struct Time {
         int minutes;
         int seconds;
@@ -161,32 +169,4 @@ namespace McRave
 namespace
 {
     auto &mapBWEM = BWEM::Map::Instance();
-}
-
-// Has to be after the includes to prevent compiler error
-// TODO: Fix includes and move this up with the States
-namespace McRave {
-
-    /// Returns the self owned visible unit count of this UnitType
-    static int vis(BWAPI::UnitType t) {
-        return Players::getVisibleCount(PlayerState::Self, t);
-    }
-
-    /// Returns the self owned completed unit count of this UnitType
-    static int com(BWAPI::UnitType t) {
-        return Players::getCompleteCount(PlayerState::Self, t);
-    }
-
-    /// Returns the self total unit count of this UnitType
-    static int total(BWAPI::UnitType t) {
-        return Players::getTotalCount(PlayerState::Self, t);
-    }
-
-    /// Writes to a file, very slow function!
-    static void easyWrite(std::string& stuff)
-    {
-        std::ofstream writeFile;
-        writeFile.open("bwapi-data/write/McRave_Debug_Log.txt", std::ios::app);
-        writeFile << stuff << std::endl;
-    }
 }

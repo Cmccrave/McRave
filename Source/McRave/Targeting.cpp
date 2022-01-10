@@ -397,17 +397,6 @@ namespace McRave::Targets {
                     if (closest)
                         unit.setTarget(&*closest);
                 }
-
-                // HACK: Replicate the target to other light air around it
-                if (unit.hasTarget() && unit.getTarget().isLightAir()) {
-                    for (auto &p : Players::getPlayers()) {
-                        if (p.second.isSelf()) {
-                            for (auto &u : p.second.getUnits())
-                                if (u->isLightAir() && find(u->getTargetedBy().begin(), u->getTargetedBy().end(), unit.weak_from_this()) == u->getTargetedBy().end() && u->getPosition().getDistance(unit.getTarget().getPosition()) < 120.0)
-                                    u->getTargetedBy().push_back(unit.weak_from_this());
-                        }
-                    }
-                }
             }
         }
 
