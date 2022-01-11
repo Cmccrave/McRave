@@ -725,7 +725,7 @@ namespace McRave::Production {
                         || !larva.unit()->getHatchery()
                         || !larva.unit()->isCompleted()
                         || larva.getRemainingTrainFrames() >= Broodwar->getLatencyFrames()
-                        || lastTrainFrame >= Broodwar->getFrameCount() + Broodwar->getLatencyFrames()
+                        || lastTrainFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() + 4
                         || (Planning::overlapsPlan(larva, larva.getPosition()) && Util::getTime() > Time(4, 00)))
                         return false;
 
@@ -737,25 +737,25 @@ namespace McRave::Production {
                 auto produced = false;
                 multimap<double, BWEB::Station*> stations;
                 for (auto &[val, station] : Stations::getStationsBySaturation()) {
-                    auto newVal = bestType.isWorker() ? 1.0 / val : val;
+                    auto newVal = bestType.isWorker() ? val : 1.0 / val;
                     stations.emplace(newVal, station);
                 }
 
+                int aa = 0;
                 for (auto &[val, station] : stations) {
+                    aa++;
                     for (auto &u : Units::getUnits(PlayerState::Self)) {
                         UnitInfo &larva = *u;
-                        if (larvaTrickRequired(larva))
-                            continue;
-
-                        else if (validLarva(larva, val, station)) {
-                            produce(larva);
-                            produced = true;
+                        if (!larvaTrickRequired(larva)) {
+                            if (validLarva(larva, val, station)) {
+                                produce(larva);
+                                produced = true;
+                            }
+                            else if (larvaTrickOptional(larva))
+                                continue;
+                            if (produced)
+                                goto endloop;
                         }
-                        else if (larvaTrickOptional(larva))
-                            continue;
-
-                        if (produced)
-                            goto endloop;
                     }
                 }
             }

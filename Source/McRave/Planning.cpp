@@ -569,17 +569,6 @@ namespace McRave::Planning {
                 // If this wall needs defenses
                 if (Walls::needGroundDefenses(wall) > colonies) {
 
-                    // Against Zealot builds try to place far back
-                    if (Strategy::getEnemyOpener() == "9/9") {
-                        for (int i = 4; i > 1; i--) {
-                            placement = returnClosest(building, wall.getDefenses(i), desiredCenter);
-                            if (placement.isValid()) {
-                                plannedGround.insert(placement);
-                                return true;
-                            }
-                        }
-                    }
-
                     // Try to place in adjacent rows as existing defenses
                     if (desiredRow != 0) {
                         placement = returnClosest(building, wall.getDefenses(desiredRow), desiredCenter);

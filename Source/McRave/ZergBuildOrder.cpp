@@ -178,7 +178,7 @@ namespace McRave::BuildOrder::Zerg {
                 const auto incompleteHatch = vis(Zerg_Hatchery) - com(Zerg_Hatchery);
 
                 rampDesired = (Resources::isHalfMineralSaturated() && Resources::isGasSaturated() && !productionSat)
-                    || (vis(Zerg_Larva) + incompleteHatch < min(3, hatchCount) && !productionSat)
+                    || (vis(Zerg_Larva) + (2 * incompleteHatch) < min(3, hatchCount) && !productionSat)
                     || (availableMinerals >= 600 && hatchCount < maxSat);
 
                 buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive) + expandDesired + rampDesired);

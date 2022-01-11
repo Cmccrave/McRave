@@ -42,7 +42,7 @@ namespace McRave::BuildOrder::Zerg {
 
         int lingsNeeded() {
             auto minValue = 6;
-            auto armyValue = int((Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) * 2.5) + (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) * 1.5) - (Strategy::enemyFastExpand() * 8));
+            auto armyValue = int((Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) * 2) + (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) * 1.5) - (Strategy::enemyFastExpand() * 8));
             auto maxValue = currentTransition.find("3Hatch") != string::npos ? 48 : 24;
 
             if (com(Zerg_Spawning_Pool) == 0)
@@ -52,9 +52,9 @@ namespace McRave::BuildOrder::Zerg {
                 if (total(Zerg_Zergling) < 6 && Strategy::getEnemyOpener() == "10/17")
                     minValue = 6;
                 if (total(Zerg_Zergling) < 10 && (Strategy::getEnemyOpener() == "10/12" || Strategy::getEnemyOpener() == "Unknown" || Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0))
-                    minValue = 10;
+                    minValue = 8;
                 if (total(Zerg_Zergling) < 14 && Strategy::getEnemyOpener() == "9/9")
-                    minValue = 14;
+                    minValue = 10;
             }
             if (Strategy::getEnemyBuild() == "1GateCore") {
                 if (total(Zerg_Zergling) < 6)
