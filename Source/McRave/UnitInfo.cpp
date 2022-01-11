@@ -138,7 +138,7 @@ namespace McRave
 
             // Frames
             remainingTrainFrame         = max(0, remainingTrainFrame - 1);
-            lastAttackFrame             = ((canAttackGround() && unit()->getGroundWeaponCooldown() == type.groundWeapon().damageCooldown()) || (canAttackAir() && (unit()->getAirWeaponCooldown() == type.airWeapon().damageCooldown()))) ? Broodwar->getFrameCount() : lastAttackFrame;
+            lastAttackFrame             = ((canAttackGround() && unit()->getGroundWeaponCooldown() >= type.groundWeapon().damageCooldown() - 1) || (canAttackAir() && (unit()->getAirWeaponCooldown() >= type.airWeapon().damageCooldown() - 1))) ? Broodwar->getFrameCount() : lastAttackFrame;
             lastRepairFrame             = (unit()->isRepairing() || unit()->isBeingHealed()) ? Broodwar->getFrameCount() : lastRepairFrame;
             minStopFrame                = Math::stopAnimationFrames(t);
             lastStimFrame               = unit()->isStimmed() ? Broodwar->getFrameCount() : lastStimFrame;
@@ -468,16 +468,6 @@ namespace McRave
             return newCommandPosition || newCommandType || newCommandFrame;
         };
 
-        //// Check if this is a new command
-        //const auto newCommand = [&]() {
-        //    auto distLastCmd = unit()->getLastCommand().getTargetPosition().getDistance(here);
-        //    auto framesLastCmd = Broodwar->getFrameCount() - unit()->getLastCommandFrame() - Broodwar->getLatencyFrames();
-        //    auto newCommandPosition = distLastCmd > 16 && framesLastCmd > 8;
-        //    auto newCommandFrame = framesLastCmd > 32;
-        //    auto newCommandType = unit()->getLastCommand().getType() != cmd;
-        //    return newCommandPosition || newCommandFrame || newCommandType;
-        //};
-
         // Add action and grid movement
         if ((cmd == UnitCommandTypes::Move || cmd == UnitCommandTypes::Right_Click_Position) && getPosition().getDistance(here) < 160.0) {
             Actions::addAction(unit(), here, getType(), PlayerState::Self);
@@ -533,6 +523,9 @@ namespace McRave
             || isSpellcaster()
             || (getType() == UnitTypes::Zerg_Lurker && !isBurrowed()))
             return false;
+
+        if (isSuicidal())
+            return true;
 
         // Special Case: Carriers
         if (getType() == UnitTypes::Protoss_Carrier) {

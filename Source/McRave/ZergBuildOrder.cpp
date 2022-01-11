@@ -276,8 +276,7 @@ namespace McRave::BuildOrder::Zerg {
             || Strategy::getEnemyTransition() == "5FactGoliath"
             || Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) >= 3;
 
-        auto vsGoons = Strategy::getEnemyTransition() == "4Gate"
-            || Strategy::getEnemyTransition() == "5GateGoon";
+        auto vsGoons = Strategy::getEnemyTransition() == "4Gate";
 
         const auto techVal = int(techList.size()) + (2 * Players::ZvT()) + (Players::ZvP()) + vsMech + vsGoons;
         const auto endOfTech = !techOrder.empty() && isTechUnit(techOrder.back());

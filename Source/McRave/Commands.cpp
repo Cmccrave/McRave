@@ -146,6 +146,9 @@ namespace McRave::Command {
 
         const auto shouldAttack = [&]() {
 
+            if (unit.canStartAttack())
+                unit.circle(Colors::Green);
+
             // Combat will attack when in range
             if (unit.getRole() == Role::Combat) {
                 if (unit.getType() == Zerg_Mutalisk && unit.isWithinRange(unit.getTarget()) && unit.canStartAttack() && !unit.isWithinAngle(unit.getTarget()))
@@ -421,8 +424,6 @@ namespace McRave::Command {
             }
 
             if (unit.getRole() == Role::Combat || unit.getRole() == Role::Scout) {
-                auto intercept = unit.getInterceptPosition();
-                auto interceptDistance = intercept.getDistance(unit.getPosition());
 
                 if (unit.hasTarget() && unit.isTargetedBySuicide())
                     return false;
@@ -430,7 +431,7 @@ namespace McRave::Command {
                 if (unit.getTarget().isSuicidal())                                                                             // Do kite when the target is a suicidal unit
                     return true;
 
-                if (!unit.getTarget().canAttackGround() && !unit.getTarget().canAttackAir() && !unit.getType().isFlyer())      // Don't kite buildings unless we're a flying unit
+                if (!unit.getTarget().canAttackGround() && !unit.getTarget().canAttackAir() && !unit.getType().isFlyer())      // Don't kite non attackers unless we're a flying unit
                     return false;
 
                 if (unit.getType() == Zerg_Zergling || unit.getType() == Protoss_Corsair)

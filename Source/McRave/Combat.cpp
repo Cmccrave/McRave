@@ -981,9 +981,13 @@ namespace McRave::Combat {
         {
             // Get an air commander if new one needed
             if (airCommander.expired() || airCommander.lock()->globalRetreat() || airCommander.lock()->localRetreat() || (airCluster.second.isValid() && airCommander.lock()->getPosition().getDistance(airCluster.second) > 64.0)) {
-                airCommander = Util::getClosestUnit(airCluster.second, PlayerState::Self, [&](auto &u) {
-                    return u.isLightAir() && !u.localRetreat() && !u.globalRetreat() && !u.getGoal().isValid();
-                });
+                for (auto &u : combatUnitsByDistance) {
+                    auto &unit = u.second;
+                    if (unit.isLightAir() && unit.getPosition().getDistance(airCluster.second) < 64.0) {
+                        airCommander = unit.weak_from_this();
+                        break;
+                    }
+                }
             }
 
             // If we have an air commander
@@ -1057,22 +1061,17 @@ namespace McRave::Combat {
 
                 // Light air close to the air cluster use the same command of the air commander
                 if (airCommander.lock() && !unit.localRetreat() && !unit.globalRetreat() && unit.isLightAir() && !airCommander.lock()->isNearSuicide() && !unit.isNearSuicide() && unit.getPosition().getDistance(airCommander.lock()->getPosition()) <= 96.0) {
-
-                    Horizon::simulate(unit);
-                    updateDestination(unit);
-
-                    auto percentMoveCloser = clamp(unit.getPosition().getDistance(airCommander.lock()->getPosition()) / 96.0, 0.0, 1.0);
-                    if (unit.hasTarget() && (airCommanderCommand.first == UnitCommandTypes::Attack_Unit || (Broodwar->getFrameCount() - airCommander.lock()->getLastAttackFrame() < 8 && unit.canStartAttack())))
+                    if (unit.hasTarget() && airCommanderCommand.first == UnitCommandTypes::Attack_Unit)
                         unit.command(UnitCommandTypes::Attack_Unit, unit.getTarget());
-                    else if (airCommanderCommand.first == UnitCommandTypes::Move && !unit.isTargetedBySplash()) {
-                        auto positionx = (airCommanderCommand.second.x * (1.0 - percentMoveCloser)) + (airCommander.lock()->getPosition().x * percentMoveCloser);
-                        auto positiony = (airCommanderCommand.second.y * (1.0 - percentMoveCloser)) + (airCommander.lock()->getPosition().y * percentMoveCloser);
-                        unit.command(UnitCommandTypes::Move, Position(positionx, positiony));
-                    }
+                    else if (airCommanderCommand.first == UnitCommandTypes::Move && !unit.isTargetedBySplash())
+                        unit.command(UnitCommandTypes::Move, airCommanderCommand.second);
                     else if (airCommanderCommand.first == UnitCommandTypes::Right_Click_Position && !unit.isTargetedBySplash())
                         unit.command(UnitCommandTypes::Right_Click_Position, airCommanderCommand.second);
-                    else
+                    else {
+                        Horizon::simulate(unit);
+                        updateDestination(unit);
                         updateDecision(unit);
+                    }
                 }
 
                 // Combat unit decisions
