@@ -148,7 +148,7 @@ namespace McRave::Goals {
             }
 
             // Send a worker early when we want to
-            if (BuildOrder::isPlanEarly()) {
+            if (BuildOrder::isPlanEarly() && Planning::getCurrentExpansion() && !Planning::whatPlannedHere(Planning::getCurrentExpansion()->getBase()->Location()).isResourceDepot()) {
                 if (int(Stations::getMyStations().size() < 2))
                     assignWorker(Terrain::getMyNatural()->getBase()->Center());
                 else if (Planning::getCurrentExpansion())

@@ -594,6 +594,10 @@ namespace McRave::Strategy {
                     || (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) < 2 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) >= 1 && Util::getTime() > Time(6, 45)))
                     enemyStrat.transition.name = "DT";
 
+                // Speedlot
+                if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 8)
+                    enemyStrat.transition.name = "Speedlot";
+
                 // Corsair
                 if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Stargate) > 0
                     || Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) > 0
@@ -619,7 +623,7 @@ namespace McRave::Strategy {
                 }
                 if (Players::ZvP()) {
 
-                    if ((!enemyStrat.expand.possible && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4)
+                    if ((!enemyStrat.expand.possible && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 && Util::getTime() < Time(6, 00))
                         || (typeUpgrading.find(Protoss_Cybernetics_Core) != typeUpgrading.end() && Util::getTime() > Time(4, 00))
                         || (Players::getPlayerInfo(Broodwar->enemy())->hasUpgrade(UpgradeTypes::Singularity_Charge))
                         || (arrivesBy(3, Protoss_Dragoon, Time(5, 45)))

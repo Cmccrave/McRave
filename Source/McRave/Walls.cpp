@@ -337,17 +337,17 @@ namespace McRave::Walls {
 
         // 2Gate
         if (Strategy::getEnemyBuild() == "2Gate") {
-            if ((Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) > 0 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0) && Util::getTime() < Time(5, 15))
-                return (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(4, 00)) /*+ (Util::getTime() > Time(4, 20))*/ + noExpandOrTech;
+            if (Util::getTime() < Time(6, 00) && (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) > 0 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0))
+                return (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(4, 00)) + noExpandOrTech;
 
-            else if (Util::getTime() < Time(5, 15) && Strategy::getEnemyOpener() == "10/17")
-                return (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(4, 00)) /*+ (Util::getTime() > Time(4, 20))*/ + noExpandOrTech;
+            else if (Util::getTime() < Time(6, 00) && Strategy::getEnemyOpener() == "10/17")
+                return (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(4, 00)) + noExpandOrTech;
 
-            else if (Util::getTime() < Time(5, 15) && (Strategy::getEnemyOpener() == "10/12" || Strategy::getEnemyOpener() == "Unknown"))
-                return (Util::getTime() > Time(3, 10)) + (Util::getTime() > Time(3, 30)) /*+ (Util::getTime() > Time(4, 00))*/ + noExpandOrTech;
+            else if (Util::getTime() < Time(6, 00) && (Strategy::getEnemyOpener() == "10/12" || Strategy::getEnemyOpener() == "Unknown"))
+                return (Util::getTime() > Time(3, 10)) + (Util::getTime() > Time(3, 30)) + noExpandOrTech;
 
-            else if (Util::getTime() < Time(5, 15) && (Strategy::getEnemyOpener() == "9/9" || Strategy::getEnemyTransition() == "ZealotRush"))
-                return (Util::getTime() > Time(2, 50)) + (Util::getTime() > Time(4, 00)) + noExpandOrTech;
+            else if (Util::getTime() < Time(6, 00) && (Strategy::getEnemyOpener() == "9/9" || Strategy::getEnemyTransition() == "ZealotRush" || Strategy::getEnemyTransition() == "Speedlot"))
+                return (Util::getTime() > Time(2, 50)) + (Util::getTime() > Time(4, 00)) + noExpandOrTech + (noExpandOrTech && Util::getTime() > Time(5, 45));
         }
 
         // FFE

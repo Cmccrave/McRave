@@ -566,10 +566,10 @@ namespace McRave::Production {
                     continue;
 
                 const auto value = scoreUnit(type);
-
                 if (value > best) {
                     best = value;
                     bestType = type;
+                    building.circle(Colors::Green);
                 }
             }
 
@@ -725,7 +725,7 @@ namespace McRave::Production {
                         || !larva.unit()->getHatchery()
                         || !larva.unit()->isCompleted()
                         || larva.getRemainingTrainFrames() >= Broodwar->getLatencyFrames()
-                        || lastTrainFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames()
+                        || lastTrainFrame >= Broodwar->getFrameCount() + Broodwar->getLatencyFrames()
                         || (Planning::overlapsPlan(larva, larva.getPosition()) && Util::getTime() > Time(4, 00)))
                         return false;
 

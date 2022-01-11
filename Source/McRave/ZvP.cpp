@@ -45,13 +45,16 @@ namespace McRave::BuildOrder::Zerg {
             auto armyValue = int((Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) * 2.5) + (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) * 1.5) - (Strategy::enemyFastExpand() * 8));
             auto maxValue = currentTransition.find("3Hatch") != string::npos ? 48 : 24;
 
+            if (com(Zerg_Spawning_Pool) == 0)
+                return 0;
+
             if (Strategy::getEnemyBuild() == "2Gate") {
-                if (total(Zerg_Zergling) < 14 && Strategy::getEnemyOpener() == "9/9")
-                    minValue = 14;
-                if (total(Zerg_Zergling) < 10 && (Strategy::getEnemyOpener() == "10/12" || Strategy::getEnemyOpener() == "Unknown"))
-                    minValue = 10;
                 if (total(Zerg_Zergling) < 6 && Strategy::getEnemyOpener() == "10/17")
                     minValue = 6;
+                if (total(Zerg_Zergling) < 10 && (Strategy::getEnemyOpener() == "10/12" || Strategy::getEnemyOpener() == "Unknown" || Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0))
+                    minValue = 10;
+                if (total(Zerg_Zergling) < 14 && Strategy::getEnemyOpener() == "9/9")
+                    minValue = 14;
             }
             if (Strategy::getEnemyBuild() == "1GateCore") {
                 if (total(Zerg_Zergling) < 6)
@@ -415,13 +418,13 @@ namespace McRave::BuildOrder::Zerg {
     void ZvP12Hatch()
     {
         // 'https://liquipedia.net/starcraft/12_Hatch_(vs._Protoss)'
-        transitionReady =                               vis(Zerg_Spawning_Pool) > 0;
+        transitionReady =                               com(Zerg_Spawning_Pool) > 0;
         unitLimits[Zerg_Zergling] =                     lingsNeeded();
         gasLimit =                                      0;
         scout =                                         scout || (hatchCount() >= 2) || (Terrain::isShitMap() && vis(Zerg_Overlord) >= 2);
         wantNatural =                                   !Strategy::enemyProxy();
         playPassive =                                   false;
-        unitLimits[Zerg_Drone] =                        13 - vis(Zerg_Hatchery) - vis(Zerg_Spawning_Pool);
+        unitLimits[Zerg_Drone] =                        13 - vis(Zerg_Hatchery);
         planEarly =                                     hatchCount() == 1 && s == 22;
 
         buildQueue[Zerg_Hatchery] =                     1 + (s >= 24);

@@ -130,7 +130,7 @@ namespace McRave::Command
 
         // Drone
         else if (unit.getType().isWorker() && Broodwar->self()->hasResearched(TechTypes::Burrowing)) {
-            const auto resourceThreatened = Grids::getEGroundThreat(unit.getResource().getPosition()) > 0.0f || !unit.getTargetedBy().empty();
+            const auto resourceThreatened = (unit.hasResource() && Grids::getEGroundThreat(unit.getResource().getPosition()) > 0.0f) || !unit.getTargetedBy().empty();
             const auto threatened = unit.hasResource() && resourceThreatened && unit.hasTarget() && unit.getTarget().isThreatening() && !unit.getTarget().isFlying() && !unit.getTarget().getType().isWorker();
             
             if (!unit.isBurrowed()) {

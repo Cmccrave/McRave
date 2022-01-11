@@ -534,6 +534,7 @@ namespace McRave::Planning {
             // Defense placements near walls
             for (auto &[_, wall] : BWEB::Walls::getWalls()) {
                 auto desiredCenter = Position(wall.getChokePoint()->Center());
+                auto desiredRow = 0;
                 auto closestMain = BWEB::Stations::getClosestMainStation(TilePosition(wall.getChokePoint()->Center()));
 
                 if (wall.getGroundDefenseCount() < 2) {
@@ -544,6 +545,19 @@ namespace McRave::Planning {
                 }
                 else if (wall.getStation()) {
                     desiredCenter = Position(wall.getStation()->getResourceCentroid());
+                }
+
+                if (wall.getGroundDefenseCount() < 2) {
+                    auto closestDefense = Util::getClosestUnit(Position(closestMain->getChokepoint()->Center()), PlayerState::Self, [&](auto &u) {
+                        return isDefensiveType(u.getType());
+                    });
+                    if (closestDefense) {
+                        desiredCenter = closestDefense->getPosition();
+                        for (int i = 4; i > 1; i--) {
+                            if (wall.getDefenses(i).find(closestDefense->getTilePosition()) != wall.getDefenses(i).end())
+                                desiredRow = i;
+                        }
+                    }
                 }
 
                 int colonies = 0;
@@ -563,6 +577,15 @@ namespace McRave::Planning {
                                 plannedGround.insert(placement);
                                 return true;
                             }
+                        }
+                    }
+
+                    // Try to place in adjacent rows as existing defenses
+                    if (desiredRow != 0) {
+                        placement = returnClosest(building, wall.getDefenses(desiredRow), desiredCenter);
+                        if (placement.isValid()) {
+                            plannedGround.insert(placement);
+                            return true;
                         }
                     }
 
@@ -864,7 +887,7 @@ namespace McRave::Planning {
                     if (!here.isValid())
                         continue;
 
-                    //Visuals::drawBox(Position(here) + Position(4, 4), Position(here + building.tileSize()) - Position(4, 4), Colors::White);
+                    Visuals::drawBox(Position(here) + Position(4, 4), Position(here + building.tileSize()) - Position(4, 4), Colors::White);
 
                     auto &builder = Util::getClosestUnitGround(center, PlayerState::Self, [&](auto &u) {
                         if (u.getType().getRace() != building.getRace()
@@ -884,7 +907,7 @@ namespace McRave::Planning {
                     }
 
                     if (here.isValid() && builder && Workers::shouldMoveToBuild(*builder, here, building)) {
-                        //Visuals::drawLine(builder->getPosition(), center, Colors::White);
+                        Visuals::drawLine(builder->getPosition(), center, Colors::White);
                         builder->setBuildingType(building);
                         builder->setBuildPosition(here);
                         buildingsPlanned[here] = building;
