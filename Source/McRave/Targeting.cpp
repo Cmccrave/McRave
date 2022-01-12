@@ -11,6 +11,12 @@ namespace McRave::Targets {
 
     namespace {
 
+        bool allowWorkerTarget(UnitInfo& unit, UnitInfo& target) {
+            bool atHome = Terrain::isInAllyTerritory(target.getTilePosition());
+            bool atEnemy = Terrain::isInEnemyTerritory(target.getTilePosition());
+            return (target.getType().isWorker() && !unit.getType().isWorker() && (Strategy::getEnemyTransition() != "WorkerRush" || !atHome) && !target.hasAttackedRecently() && unit.getGroundRange() <= 32.0 && !target.isThreatening() && (!target.getTargetedBy().empty() || Players::ZvZ()) && !atEnemy && Util::getTime() < Time(8, 00));
+        }
+
         bool isValidTarget(UnitInfo& unit, UnitInfo& target)
         {
             if (!target.unit()
@@ -80,7 +86,7 @@ namespace McRave::Targets {
                     || !targetMatters
                     || (target.getType() == Terran_Vulture_Spider_Mine && int(target.getTargetedBy().size()) >= 4 && !target.isBurrowed())                                  // Don't over target spider mines
                     || (target.getType() == Protoss_Interceptor && unit.isFlying())                                                                                         // Don't target interceptors as a flying unit
-                    || (target.getType().isWorker() && !unit.getType().isWorker() && (Strategy::getEnemyTransition() != "WorkerRush" || !atHome) && !target.hasAttackedRecently() && unit.getGroundRange() <= 32.0 && !target.isThreatening() && (!target.getTargetedBy().empty() || Players::ZvZ()) && !atEnemy && Util::getTime() < Time(8, 00))                            // Don't target non threatening workers in our territory
+                    || (allowWorkerTarget(unit, target))
                     || (target.isHidden() && (!targetCanAttack || (!Players::hasDetection(PlayerState::Self) && Players::PvP())) && !unit.getType().isDetector())           // Don't target if invisible and can't attack this unit or we have no detectors in PvP
                     || (target.isFlying() && !unit.isFlying() && !BWEB::Map::isWalkable(target.getTilePosition(), unit.getType()) && !unit.isWithinRange(target))           // Don't target flyers that we can't reach
                     || (target.getType().isBuilding() && !target.canAttackGround() && !target.canAttackAir() && atHome && !target.isThreatening() && (target.getType() != Protoss_Pylon || !target.isProxy()) && Util::getTime() < Time(5, 00))     // Don't attack buildings that aren't threatening early on
@@ -294,6 +300,9 @@ namespace McRave::Targets {
                     continue;
 
                 if (!target.isWithinReach(unit))
+                    continue;
+
+                if (!allowWorkerTarget(unit, target))
                     continue;
 
                 // Set sim position

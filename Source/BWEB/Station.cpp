@@ -16,16 +16,17 @@ namespace BWEB {
         const auto addReserve = [&](Unit resource) {
             TilePosition start(resource->getPosition());
             vector<TilePosition> directions{ {1,0}, {-1,0}, {0, 1}, {0,-1} };
-            auto end = (base->Center() * 5 / 6) + (resourceCentroid / 6);
+            auto diff = (base->Center() - resourceCentroid);
+            auto end = base->Center() + (diff / 4);
 
             // Get the starting tile
-            auto distClosest = DBL_MAX;
+            auto distClosest = 0.0;
             for (int x = resource->getTilePosition().x; x < resource->getTilePosition().x + resource->getType().tileWidth(); x++) {
                 for (int y = resource->getTilePosition().y; y < resource->getTilePosition().y + resource->getType().tileHeight(); y++) {
                     auto tile = TilePosition(x, y);
                     auto center = Position(tile) + Position(16, 16);
                     auto dist = center.getDistance(resourceCentroid);
-                    if (dist < distClosest) {
+                    if (dist > distClosest) {
                         start = tile;
                         distClosest = dist;
                     }

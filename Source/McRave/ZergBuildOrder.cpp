@@ -213,21 +213,18 @@ namespace McRave::BuildOrder::Zerg {
         void removeExcessGas()
         {
             // Removing gas workers if we are adding Sunkens or have excess gas
-            auto gasRemaining = Broodwar->self()->gas() - BuildOrder::getGasQueued();
-            auto minRemaining = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
-            auto dropGasRush = (Strategy::enemyRush() && Broodwar->self()->gas() > 200);
-            auto dropGasExcess = gasRemaining > 15 * vis(Zerg_Drone) - 100;
-            auto dropGasDefenses = needSunks && Util::getTime() < Time(4, 00);
-            auto dropGasBroke = minRemaining < 50 && Broodwar->self()->gas() >= 100 && Util::getTime() < Time(4, 30);
-            auto dropGasDrones = !Players::ZvZ() && vis(Zerg_Lair) > 0 && vis(Zerg_Drone) < 18;
+            auto gasRemaining       = Broodwar->self()->gas() - BuildOrder::getGasQueued();
+            auto minRemaining       = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
+            auto dropGasRush        = (Strategy::enemyRush() && Broodwar->self()->gas() > 200);
+            auto dropGasExcess      = gasRemaining > 15 * vis(Zerg_Drone) - 100;
+            auto dropGasDefenses    = needSunks && Util::getTime() < Time(4, 00);
+            auto dropGasBroke       = minRemaining < 50 && Broodwar->self()->gas() >= 100 && Util::getTime() < Time(4, 30);
+            auto dropGasDrones      = !Players::ZvZ() && vis(Zerg_Lair) > 0 && vis(Zerg_Drone) < 18;
 
-            if (unitLimits[Zerg_Larva] < 3 && !rush && !pressure && minRemaining < 100 && (dropGasRush || dropGasExcess || dropGasDefenses || dropGasDrones))
-                gasLimit = 0;
-            if (dropGasBroke)
-                gasLimit = 0;
-            if (needSpores && Players::ZvZ() && com(Zerg_Evolution_Chamber) == 0)
-                gasLimit = 0;
-            if (Roles::getMyRoleCount(Role::Worker) < 5)
+            if (dropGasBroke
+                || Roles::getMyRoleCount(Role::Worker) < 5
+                || (needSpores && Players::ZvZ() && com(Zerg_Evolution_Chamber) == 0)
+                || (unitLimits[Zerg_Larva] < 3 && !rush && !pressure && minRemaining < 100 && (dropGasRush || dropGasExcess || dropGasDefenses || dropGasDrones)))
                 gasLimit = 0;
             if (Players::ZvZ() && vis(Zerg_Drone) < 8 && gasRemaining >= 100)
                 gasLimit = vis(Zerg_Drone) - 5;

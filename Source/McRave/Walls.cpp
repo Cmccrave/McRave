@@ -347,7 +347,7 @@ namespace McRave::Walls {
                 return (Util::getTime() > Time(3, 10)) + (Util::getTime() > Time(3, 30)) + noExpandOrTech;
 
             else if (Util::getTime() < Time(6, 00) && (Strategy::getEnemyOpener() == "9/9" || Strategy::getEnemyTransition() == "ZealotRush" || Strategy::getEnemyTransition() == "Speedlot"))
-                return (Util::getTime() > Time(2, 50)) + (Util::getTime() > Time(4, 00)) + noExpandOrTech + (noExpandOrTech && Util::getTime() > Time(5, 45));
+                return (Util::getTime() > Time(2, 50)) + (Util::getTime() > Time(3, 10)) + (Util::getTime() > Time(4, 00)) + noExpandOrTech;
         }
 
         // FFE

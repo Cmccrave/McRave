@@ -968,9 +968,16 @@ namespace McRave::Combat {
 
             // If the checking unit exists and has seen something, it can be released
             else if (checker.lock()) {
-                auto sawArmy = Units::getEnemyArmyCenter().isValid() && Broodwar->getFrameCount() - Grids::lastVisibleFrame(TilePosition(Units::getEnemyArmyCenter())) < 120;
                 auto sawTarget = checker.lock()->hasTarget() && !checker.lock()->getTarget().getType().isWorker() && (checker.lock()->getTarget().unit()->exists() || checker.lock()->getTarget().getType().isBuilding());
-                if (sawArmy || sawTarget || checker.lock()->getGoal().isValid()) {
+                if (sawTarget) {
+                    Broodwar << "Saw target" << endl;
+                    Visuals::centerCameraOn(checker.lock()->getTarget().getPosition());
+                }
+                else {
+                    Visuals::centerCameraOn(checker.lock()->getPosition());
+                }
+
+                if (sawTarget || checker.lock()->getGoal().isValid()) {
                     checker.reset();
                     lastCheckFrame = Broodwar->getFrameCount();
                 }
