@@ -569,7 +569,6 @@ namespace McRave::Production {
                 if (value > best) {
                     best = value;
                     bestType = type;
-                    building.circle(Colors::Green);
                 }
             }
 

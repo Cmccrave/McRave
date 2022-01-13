@@ -146,9 +146,6 @@ namespace McRave::Command {
 
         const auto shouldAttack = [&]() {
 
-            if (unit.canStartAttack())
-                unit.circle(Colors::Green);
-
             // Combat will attack when in range
             if (unit.getRole() == Role::Combat) {
                 if (unit.getType() == Zerg_Mutalisk && unit.isWithinRange(unit.getTarget()) && unit.canStartAttack() && !unit.isWithinAngle(unit.getTarget()))

@@ -175,19 +175,19 @@ namespace McRave
                 return u.isSuicidal() && ((!this->isFlying() && u.canAttackGround()) || (this->isFlying() && u.canAttackAir()));
             });
 
-            if (closestSuicide && Util::boxDistance(getType(), getPosition(), closestSuicide->getType(), closestSuicide->unit()->getOrderTargetPosition()) < closestSuicide->getAirReach() && Util::boxDistance(getType(), getPosition(), closestSuicide->getType(), closestSuicide->unit()->getPosition()) < 48.0)
+            if (closestSuicide && Util::boxDistance(getType(), getPosition(), closestSuicide->getType(), closestSuicide->unit()->getOrderTargetPosition()) < 64.0 && Util::boxDistance(getType(), getPosition(), closestSuicide->getType(), closestSuicide->unit()->getPosition()) < 64.0)
                 nearSuicide = true;
         }
 
         // Check if this unit is close to a hidden unit
         if (getPlayer() == Broodwar->self()) {
-            nearSuicide = false;
-            auto closestSuicide = Util::getClosestUnit(position, PlayerState::Enemy, [&](auto &u) {
-                return u.isSuicidal();
+            nearHidden = false;
+            auto closestHidden = Util::getClosestUnit(position, PlayerState::Enemy, [&](auto &u) {
+                return u.isHidden();
             });
 
-            if (closestSuicide && closestSuicide->isWithinReach(*this))
-                nearSuicide = true;
+            if (closestHidden && closestHidden->isWithinReach(*this))
+                nearHidden = true;
         }
 
         if (nearSuicide)
@@ -265,8 +265,6 @@ namespace McRave
     {
         if (!getPlayer()->isEnemy(Broodwar->self()))
             return;
-
-        circle(Colors::Yellow);
 
         // Determine how close it is to strategic locations
         const auto choke = Terrain::isDefendNatural() ? BWEB::Map::getNaturalChoke() : BWEB::Map::getMainChoke();
@@ -695,27 +693,16 @@ namespace McRave
 
     bool UnitInfo::localRetreat()
     {
-        auto targetedByHidden = false;
-        for (auto &t : getTargetedBy()) {
-            if (auto targeter = t.lock()) {
-                if (targeter->isHidden())
-                    targetedByHidden = true;
-            }
-        }
-        if (targetedByHidden)
-            return true;
-
         return (getType() == Protoss_Zealot && hasTarget() && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) == 0 && getTarget().getType() == Terran_Vulture)                 // ...unit is a slow Zealot attacking a Vulture
             || (getType() == Protoss_Corsair && hasTarget() && getTarget().isSuicidal() && com(Protoss_Corsair) < 6)                                                                             // ...unit is a Corsair attacking Scourge with less than 6 completed Corsairs
             || (getType() == Terran_Medic && getEnergy() <= TechTypes::Healing.energyCost())                                                                                                     // ...unit is a Medic with no energy        
             || (getType() == Terran_SCV && Broodwar->getFrameCount() > 12000)                                                                                                                    // ...unit is an SCV outside of early game
             || (isLightAir() && hasTarget() && getType().maxShields() > 0 && getTarget().getType() == Zerg_Overlord && Grids::getEAirThreat(getEngagePosition()) * 5.0 > (double)getShields())   // ...unit is a low shield light air attacking a Overlord under threat greater than our shields
             || (getType() == Zerg_Zergling && Players::ZvZ() && getTargetedBy().size() >= 3 && !Terrain::isInAllyTerritory(getTilePosition()) && Util::getTime() < Time(3, 15))
-            || (getType() == Zerg_Zergling && Players::ZvP() && !getTargetedBy().empty() && getHealth() < 20 && Util::getTime() < Time(4, 00) && !isWithinRange(getTarget()))
+            || (getType() == Zerg_Zergling && Players::ZvP() && !getTargetedBy().empty() && getHealth() < 20 && Util::getTime() < Time(4, 00))
             || (getType() == Zerg_Zergling && hasTarget() && !isHealthy() && getTarget().getType().isWorker())
-            || (hasTarget() && getTarget().isSuicidal() && getTarget().unit()->getOrderTargetPosition().getDistance(getPosition()) < 64.0)
-            || unit()->isIrradiated()
-            ;
+            || nearSuicide
+            || unit()->isIrradiated();
     }
 
     bool UnitInfo::canOneShot(UnitInfo& target) {
@@ -812,13 +799,12 @@ namespace McRave
 
     bool UnitInfo::globalRetreat()
     {
-        return (hasTarget() && getTarget().isHidden() && getPosition().getDistance(getTarget().getPosition()) <= (getType().isFlyer() ? getTarget().getAirReach() : getTarget().getGroundReach()))
+        return nearHidden
             || (getGlobalState() == GlobalState::Retreat && !Terrain::isInAllyTerritory(getTilePosition()))
-            || (getType() == Zerg_Mutalisk && hasTarget() && !getTarget().isThreatening() && !isWithinRange(getTarget()) && !getTarget().isWithinRange(*this) && getHealth() <= 50 && Util::getTime() > Time(8, 00))                // ...unit is a low HP Mutalisk attacking a target under air threat    
+            || (getType() == Zerg_Mutalisk && hasTarget() && !getTarget().isThreatening() && getTarget().canAttackAir() && !isWithinRange(getTarget()) && getHealth() <= 50)                // ...unit is a low HP Mutalisk attacking a target under air threat    
             || (getType() == Zerg_Hydralisk && BuildOrder::getCompositionPercentage(Zerg_Lurker) >= 1.00)
             || (getType() == Zerg_Hydralisk && !getGoal().isValid() && (!Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines) || !Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments)))
-            || (isNearSuicide())
-            ;
+            || (isNearSuicide());
     }
 
     bool UnitInfo::attemptingRunby()

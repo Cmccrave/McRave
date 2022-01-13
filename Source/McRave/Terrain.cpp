@@ -221,7 +221,7 @@ namespace McRave::Terrain {
                 auto closestDefense = Util::getClosestUnit(Position(BWEB::Map::getMainChoke()->Center()), PlayerState::Self, [&](auto &u) {
                     return u.getRole() == Role::Defender && u.canAttackGround();
                 });
-                if (closestDefense && closestDefense->getPosition().getDistance(Position(BWEB::Map::getMainChoke()->Center())) < closestDefense->getGroundRange() + 64.0)
+                if (closestDefense && closestDefense->getPosition().getDistance(Position(BWEB::Map::getMainChoke()->Center())) < closestDefense->getGroundRange() + 128.0)
                     defenseCanStopRunyby = true;
             }
 

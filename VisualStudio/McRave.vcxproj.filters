@@ -160,27 +160,6 @@
     <ClCompile Include="..\Source\McRave\Walls.cpp">
       <Filter>McRave\Map</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\Combat.cpp">
-      <Filter>McRave\Micro</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\Commands.cpp">
-      <Filter>McRave\Micro</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\Scouts.cpp">
-      <Filter>McRave\Micro</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\Specials.cpp">
-      <Filter>McRave\Micro</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\Support.cpp">
-      <Filter>McRave\Micro</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\Transports.cpp">
-      <Filter>McRave\Micro</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\Workers.cpp">
-      <Filter>McRave\Micro</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\Actions.cpp">
       <Filter>McRave\Strategy</Filter>
     </ClCompile>
@@ -204,6 +183,27 @@
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Pathing.cpp">
       <Filter>McRave\Info\Units</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Workers.cpp">
+      <Filter>McRave\Micro\Worker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Combat.cpp">
+      <Filter>McRave\Micro\Combat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Scouts.cpp">
+      <Filter>McRave\Micro\Scout</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Support.cpp">
+      <Filter>McRave\Micro\Support</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Transports.cpp">
+      <Filter>McRave\Micro\Transport</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Commands.cpp">
+      <Filter>McRave\Micro\All</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Specials.cpp">
+      <Filter>McRave\Micro\All</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -345,24 +345,6 @@
     <ClInclude Include="..\Source\McRave\Walls.h">
       <Filter>McRave\Map</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\Combat.h">
-      <Filter>McRave\Micro</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\Commands.h">
-      <Filter>McRave\Micro</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\Scouts.h">
-      <Filter>McRave\Micro</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\Support.h">
-      <Filter>McRave\Micro</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\Transports.h">
-      <Filter>McRave\Micro</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\Workers.h">
-      <Filter>McRave\Micro</Filter>
-    </ClInclude>
     <ClInclude Include="..\Source\McRave\Actions.h">
       <Filter>McRave\Strategy</Filter>
     </ClInclude>
@@ -386,6 +368,24 @@
     </ClInclude>
     <ClInclude Include="..\Source\McRave\Pathing.h">
       <Filter>McRave\Info\Units</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Workers.h">
+      <Filter>McRave\Micro\Worker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Combat.h">
+      <Filter>McRave\Micro\Combat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Scouts.h">
+      <Filter>McRave\Micro\Scout</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Support.h">
+      <Filter>McRave\Micro\Support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Transports.h">
+      <Filter>McRave\Micro\Transport</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Commands.h">
+      <Filter>McRave\Micro\All</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -445,6 +445,24 @@
     </Filter>
     <Filter Include="McRave\Strategy">
       <UniqueIdentifier>{5be6fb6e-002d-452d-bcaf-f2f060ea2314}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Micro\Combat">
+      <UniqueIdentifier>{47b64926-ce31-482c-a5d5-b39500c6224c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Micro\Worker">
+      <UniqueIdentifier>{6586f124-005e-4a19-9f5e-8b8c1bbe0ca7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Micro\Support">
+      <UniqueIdentifier>{fe78872a-c0ff-48a9-a1dd-36200db61567}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Micro\Transport">
+      <UniqueIdentifier>{52dd598d-026d-440b-a2ef-efd60d5a909b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Micro\Scout">
+      <UniqueIdentifier>{cff871e6-db86-43e0-bef5-396ab11ba453}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Micro\All">
+      <UniqueIdentifier>{25108f01-a860-44db-8e3b-ae59a838051d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

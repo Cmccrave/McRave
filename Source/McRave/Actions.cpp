@@ -8,7 +8,7 @@ namespace McRave::Actions {
 
     namespace {
 
-        bool draw = false;
+        bool draw = true;
 
         void drawActions()
         {
@@ -18,6 +18,11 @@ namespace McRave::Actions {
                     auto topLeft = action.pos - Position(48, 48);
                     auto botRight = action.pos + Position(48, 48);
                     Visuals::drawBox(topLeft, botRight, Colors::Blue);
+                }
+                for (auto &action : enemyActions) {
+                    auto topLeft = action.pos - Position(48, 48);
+                    auto botRight = action.pos + Position(48, 48);
+                    Visuals::drawBox(topLeft, botRight, Colors::Red);
                 }
             }
         }

@@ -177,8 +177,8 @@ namespace McRave::BuildOrder::Zerg {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
                 const auto incompleteHatch = vis(Zerg_Hatchery) - com(Zerg_Hatchery);
 
-                rampDesired = (Resources::isHalfMineralSaturated() && Resources::isGasSaturated() && !productionSat)
-                    || (vis(Zerg_Larva) + (2 * incompleteHatch) < min(3, hatchCount) && !productionSat)
+                rampDesired = (availableMinerals >= 200 && Resources::isHalfMineralSaturated() && Resources::isGasSaturated() && !productionSat)
+                    || (availableMinerals >= 200 && vis(Zerg_Larva) + (2 * incompleteHatch) < min(3, hatchCount) && !productionSat)
                     || (availableMinerals >= 600 && hatchCount < maxSat);
 
                 buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive) + expandDesired + rampDesired);
@@ -382,7 +382,8 @@ namespace McRave::BuildOrder::Zerg {
                     currentComposition =                        Composition::UltraLing;
                 }
                 else {
-                    armyComposition[Zerg_Drone] =               0.60;
+                    armyComposition[Zerg_Drone] =               0.55;
+                    armyComposition[Zerg_Mutalisk] =            0.05;
                     armyComposition[Zerg_Zergling] =            0.30;
                     armyComposition[Zerg_Ultralisk] =           0.10;
                     currentComposition =                        Composition::UltraLing;
@@ -550,6 +551,7 @@ namespace McRave::BuildOrder::Zerg {
             auto needScourgeZvZ = Players::ZvZ() && (airCount / 2) > vis(Zerg_Scourge) && (total(Zerg_Mutalisk) >= 3 || currentTransition == "2HatchMuta") && vis(Zerg_Scourge) < 2;
             auto needScourgeZvT = Players::ZvT() &&
                 ((Strategy::getEnemyTransition() == "2PortWraith" && (airCount >= 3 || vis(Zerg_Mutalisk) == 0) && ((vis(Zerg_Scourge) / 2) - 1 < airCount && airCount < 6 && Players::getStrength(PlayerState::Enemy).airToAir > 0.0))
+                    || (Players::getVisibleCount(PlayerState::Enemy, Terran_Valkyrie) >= 2 && vis(Zerg_Scourge) < 8)
                     || (Util::getTime() > Time(10, 00) && vis(Zerg_Scourge) < 4));
 
             if (needScourgeZvP || needScourgeZvZ || needScourgeZvT) {

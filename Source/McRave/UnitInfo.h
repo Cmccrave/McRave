@@ -58,6 +58,7 @@ namespace McRave {
         bool hidden = false;
         bool nearSplash = false;
         bool nearSuicide = false;
+        bool nearHidden = false;
         bool markedForDeath = false;
         bool commander = false;
     #pragma endregion
@@ -295,6 +296,7 @@ namespace McRave {
         bool isHidden() { return hidden; }
         bool isNearSplash() { return nearSplash; }
         bool isNearSuicide() { return nearSuicide; }
+        bool isNearHidden() { return nearHidden; }
 
         bool isTargetedBySplash() {
             return std::any_of(targetedBy.begin(), targetedBy.end(), [&](auto &t) {

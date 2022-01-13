@@ -51,9 +51,9 @@ namespace McRave::BuildOrder::Zerg {
             if (Strategy::getEnemyBuild() == "2Gate") {
                 if (total(Zerg_Zergling) < 6 && Strategy::getEnemyOpener() == "10/17")
                     minValue = 6;
-                if (total(Zerg_Zergling) < 10 && (Strategy::getEnemyOpener() == "10/12" || Strategy::getEnemyOpener() == "Unknown" || Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0))
+                if (total(Zerg_Zergling) < 8 && (Strategy::getEnemyOpener() == "10/12" || Strategy::getEnemyOpener() == "Unknown"))
                     minValue = 8;
-                if (total(Zerg_Zergling) < 14 && Strategy::getEnemyOpener() == "9/9")
+                if (total(Zerg_Zergling) < 10 && (Strategy::getEnemyOpener() == "9/9" || Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) >= 2))
                     minValue = 10;
             }
             if (Strategy::getEnemyBuild() == "1GateCore") {

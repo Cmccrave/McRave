@@ -302,10 +302,11 @@ namespace McRave::Walls {
                     + (Util::getTime() > Time(5, 40))
                     + (Util::getTime() > Time(6, 00))
                     + (Util::getTime() > Time(6, 20))
-                    + (Util::getTime() > Time(6, 40))
-                    + (Util::getTime() > Time(7, 20))
-                    + (Util::getTime() > Time(8, 20))
-                    + (Util::getTime() > Time(9, 20));
+                    //+ (Util::getTime() > Time(6, 40))
+                    //+ (Util::getTime() > Time(7, 20))
+                    //+ (Util::getTime() > Time(8, 20))
+                    //+ (Util::getTime() > Time(9, 20))
+                    ;
             }
             else {
                 return 1
@@ -316,10 +317,11 @@ namespace McRave::Walls {
                     + (Util::getTime() > Time(5, 40))
                     + (Util::getTime() > Time(6, 00))
                     + (Util::getTime() > Time(6, 20))
-                    + (Util::getTime() > Time(6, 40))
-                    + (Util::getTime() > Time(7, 00))
-                    + (Util::getTime() > Time(8, 00))
-                    + (Util::getTime() > Time(9, 00));
+                    //+ (Util::getTime() > Time(6, 40))
+                    //+ (Util::getTime() > Time(7, 00))
+                    //+ (Util::getTime() > Time(8, 00))
+                    //+ (Util::getTime() > Time(9, 00))
+                    ;
             }
         }
 

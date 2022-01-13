@@ -8,6 +8,8 @@ namespace McRave::Pathing {
 
     namespace {
 
+        map<UnitInfo&, Position> surroundPositions;
+
         void getPathToTarget(UnitInfo& unit)
         {
             // If unnecessary to get path
@@ -163,6 +165,15 @@ namespace McRave::Pathing {
             unit.setInterceptPosition(Positions::Invalid);
         }
 
+        void updateSurroundPositions()
+        {
+            for (auto &u : Units::getUnits(PlayerState::Enemy)) {
+                UnitInfo& unit = *u;
+                
+
+            }
+        }
+
         void updatePaths()
         {
             for (auto &u : Units::getUnits(PlayerState::Self)) {
@@ -186,6 +197,7 @@ namespace McRave::Pathing {
 
     void onFrame()
     {
+        updateSurroundPositions();
         updatePaths();
     }
 }
