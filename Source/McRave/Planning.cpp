@@ -149,7 +149,7 @@ namespace McRave::Planning {
 
             // See if it's being blocked
             auto closestEnemy = Util::getClosestUnit(center, PlayerState::Enemy, [&](auto &u) {
-                return !u.isFlying();
+                return !u.isFlying() && u.getType() != Terran_Vulture_Spider_Mine;
             });
             if (closestEnemy && Util::boxDistance(closestEnemy->getType(), closestEnemy->getPosition(), building, center) < 32.0)
                 return false;

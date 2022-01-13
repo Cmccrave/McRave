@@ -799,9 +799,7 @@ namespace McRave
             return closestDefense && closestDefense->getPosition().getDistance(getPosition()) < 256.0;
         };
 
-        auto lingVsVulture = hasTarget() && getTarget().getType() == Terran_Vulture && getType() == Zerg_Zergling && getTarget().getPosition().getDistance(getPosition()) > 160.0;
-
-        return (getTarget().isThreatening() && !isLightAir() && !lingVsVulture && !getTarget().isHidden() && (Util::getTime() < Time(10, 00) || getSimState() == SimState::Win || Players::ZvZ()))                                                                          // ...target is threatening                    
+        return (getTarget().isThreatening() && !isLightAir() && !getTarget().isHidden() && (Util::getTime() < Time(10, 00) || getSimState() == SimState::Win || Players::ZvZ()))                                                                          // ...target is threatening                    
             || (!getType().isWorker() && (getGroundRange() > getTarget().getGroundRange() || getTarget().getType().isWorker()) && Terrain::isInAllyTerritory(getTarget().getTilePosition()) && !getTarget().isHidden())                 // ...unit can get free hits in our territory
             || (isSuicidal() && hasTarget() && (getTarget().isWithinRange(*this) || Terrain::isInAllyTerritory(getTarget().getTilePosition()) || getTarget().isThreatening() || getTarget().getPosition().getDistance(getGoal()) < 160.0) && !nearEnemyDefenseStructure())
             || ((isHidden() || getType() == Zerg_Lurker) && !Actions::overlapsDetection(unit(), getEngagePosition(), PlayerState::Enemy))
