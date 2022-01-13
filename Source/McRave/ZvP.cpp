@@ -392,7 +392,7 @@ namespace McRave::BuildOrder::Zerg {
         wantNatural =                                   !Strategy::enemyProxy();
         playPassive =                                   false;
 
-        buildQueue[Zerg_Hatchery] =                     1 + (s >= 20 && vis(Zerg_Spawning_Pool) > 0 && atPercent(Zerg_Spawning_Pool, 0.8) && vis(Zerg_Overlord) >= 2 && (!Strategy::enemyProxy() || vis(Zerg_Sunken_Colony) >= 2));
+        buildQueue[Zerg_Hatchery] =                     1 + (s >= 20 && vis(Zerg_Spawning_Pool) > 0 && atPercent(Zerg_Spawning_Pool, 0.8 && total(Zerg_Zergling) >= 6) && vis(Zerg_Overlord) >= 2 && (!Strategy::enemyProxy() || vis(Zerg_Sunken_Colony) >= 2));
         buildQueue[Zerg_Spawning_Pool] =                s >= 18;
         buildQueue[Zerg_Overlord] =                     1 + (s >= 20 && vis(Zerg_Spawning_Pool) > 0) + (s >= 30);
     }

@@ -547,16 +547,14 @@ namespace McRave::Planning {
                     desiredCenter = Position(wall.getStation()->getResourceCentroid());
                 }
 
-                if (wall.getGroundDefenseCount() < 2) {
-                    auto closestDefense = Util::getClosestUnit(Position(closestMain->getChokepoint()->Center()), PlayerState::Self, [&](auto &u) {
-                        return isDefensiveType(u.getType());
-                    });
-                    if (closestDefense) {
-                        desiredCenter = closestDefense->getPosition();
-                        for (int i = 4; i > 1; i--) {
-                            if (wall.getDefenses(i).find(closestDefense->getTilePosition()) != wall.getDefenses(i).end())
-                                desiredRow = i;
-                        }
+                auto closestDefense = Util::getClosestUnit(Position(closestMain->getChokepoint()->Center()), PlayerState::Self, [&](auto &u) {
+                    return isDefensiveType(u.getType());
+                });
+                if (closestDefense) {
+                    desiredCenter = closestDefense->getPosition();
+                    for (int i = 4; i > 1; i--) {
+                        if (wall.getDefenses(i).find(closestDefense->getTilePosition()) != wall.getDefenses(i).end())
+                            desiredRow = i;
                     }
                 }
 
@@ -572,6 +570,11 @@ namespace McRave::Planning {
                     // Try to place in adjacent rows as existing defenses
                     if (desiredRow != 0) {
                         placement = returnClosest(building, wall.getDefenses(desiredRow), desiredCenter);
+                        if (placement.isValid()) {
+                            plannedGround.insert(placement);
+                            return true;
+                        }
+                        placement = returnClosest(building, wall.getDefenses(desiredRow - 1), desiredCenter);
                         if (placement.isValid()) {
                             plannedGround.insert(placement);
                             return true;
@@ -973,7 +976,7 @@ namespace McRave::Planning {
     {
         auto itr = buildingsPlanned.find(here);
         if (itr != buildingsPlanned.end())
-            return itr->second;       
+            return itr->second;
 
         // Since Zerg buildings can morph from a colony, we need to differentiate which type we planned for when placing
         if (plannedGround.find(here) != plannedGround.end())

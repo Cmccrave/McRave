@@ -725,7 +725,7 @@ namespace McRave::Production {
                         || !larva.unit()->getHatchery()
                         || !larva.unit()->isCompleted()
                         || larva.getRemainingTrainFrames() >= Broodwar->getLatencyFrames()
-                        || lastTrainFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() + 4
+                        || lastTrainFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4
                         || (Planning::overlapsPlan(larva, larva.getPosition()) && Util::getTime() > Time(4, 00)))
                         return false;
 
@@ -769,7 +769,7 @@ namespace McRave::Production {
                     || building.getRole() != Role::Production
                     || !building.unit()->isCompleted()
                     || building.getRemainingTrainFrames() >= Broodwar->getLatencyFrames()
-                    || lastTrainFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames()
+                    || lastTrainFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4
                     || building.getType() == Zerg_Larva)
                     continue;
 

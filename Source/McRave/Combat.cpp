@@ -565,11 +565,11 @@ namespace McRave::Combat {
             const auto insideRetreatRadius = distSim < unit.getRetreatRadius();
 
             if (!unit.hasTarget()) {
-                unit.setLocalState(insideRetreatRadius ? LocalState::Retreat : LocalState::None);
+                unit.setLocalState(LocalState::None);
                 return;
             }
 
-            if (!checker.expired() && checker.lock() && unit.unit() == checker.lock()->unit()) {
+            if ((!checker.expired() && checker.lock() && unit.unit() == checker.lock()->unit())) {
                 unit.setLocalState(LocalState::None);
                 unit.setGlobalState(GlobalState::Attack);
                 return;
@@ -749,7 +749,7 @@ namespace McRave::Combat {
             }
 
             // If unit has a target and a valid engagement position
-            else if (unit.hasTarget()) {
+            else if (unit.hasTarget() && !unit.attemptingRunby()) {
                 unit.setDestination(unit.getTarget().getPosition());
                 unit.setDestinationPath(unit.getTargetPath());
             }
@@ -837,7 +837,8 @@ namespace McRave::Combat {
             };
 
             // Generate a new path that obeys collision of terrain and buildings
-            if (!unit.isFlying() && unit.getDestination().isValid() && unit.getDestinationPath() != unit.getTargetPath() && unit.getDestinationPath().getTarget() != TilePosition(unit.getDestination())) {
+            auto needPath = unit.getDestinationPath().getTiles().empty() || unit.getDestinationPath() != unit.getTargetPath();
+            if (!unit.isFlying() && unit.getDestination().isValid() && needPath && unit.getDestinationPath().getTarget() != TilePosition(unit.getDestination())) {
 
                 // Create a pathpoint
                 auto pathPoint = unit.getDestination();
@@ -969,14 +970,6 @@ namespace McRave::Combat {
             // If the checking unit exists and has seen something, it can be released
             else if (checker.lock()) {
                 auto sawTarget = checker.lock()->hasTarget() && !checker.lock()->getTarget().getType().isWorker() && (checker.lock()->getTarget().unit()->exists() || checker.lock()->getTarget().getType().isBuilding());
-                if (sawTarget) {
-                    Broodwar << "Saw target" << endl;
-                    Visuals::centerCameraOn(checker.lock()->getTarget().getPosition());
-                }
-                else {
-                    Visuals::centerCameraOn(checker.lock()->getPosition());
-                }
-
                 if (sawTarget || checker.lock()->getGoal().isValid()) {
                     checker.reset();
                     lastCheckFrame = Broodwar->getFrameCount();
@@ -1048,6 +1041,7 @@ namespace McRave::Combat {
                     updateDestination(unit);
                     updateFormation(unit);
                     combatUnitsByDistance.emplace(unit.getPosition().getDistance(unit.getDestination()), unit);
+                    Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
                 }
             }
         }

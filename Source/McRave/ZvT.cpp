@@ -53,7 +53,7 @@ namespace McRave::BuildOrder::Zerg {
             if (Strategy::enemyProxy() || Strategy::getEnemyOpener() == "8Rax" || Strategy::getEnemyTransition() == "WorkerRush")
                 return 10;
             if (Strategy::getEnemyBuild() == "RaxFact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
-                return Util::getTime() > Time(3, 00) ? 6 : 0;
+                return Util::getTime() > Time(3, 00) ? 10 : 0;
             if (Strategy::enemyPressure() || Strategy::getEnemyBuild() == "2Rax")
                 return 6;
             return 4;

@@ -173,9 +173,9 @@ namespace McRave::Command {
             if (unit.getRole() == Role::Defender)
                 return unit.isWithinRange(unit.getTarget());
 
-            // Scouts will attack when in range and at home
-            if (unit.getRole() == Role::Scout)
-                return unit.isWithinRange(unit.getTarget());
+            //// Scouts will attack when in range and at home
+            //if (unit.getRole() == Role::Scout)
+            //    return unit.isWithinRange(unit.getTarget()) && (unit.getShields() > 15 || unit.getHealth() > 35);
 
             return false;
         };

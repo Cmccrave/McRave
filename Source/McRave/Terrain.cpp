@@ -251,7 +251,7 @@ namespace McRave::Terrain {
             }
 
             // If we want to prevent a runby
-            else if (Combat::defendChoke() && !flatRamp && com(Zerg_Sunken_Colony) > 0 && !Strategy::enemyPressure() && (defenseCanStopRunyby || Players::ZvT())) {
+            else if (Combat::defendChoke() && !flatRamp && com(Zerg_Sunken_Colony) > 0 && (defenseCanStopRunyby || Players::ZvT())) {
                 defendPosition = Position(mainChoke->Center()) + Position(4, 4);
                 defendNatural = false;
             }

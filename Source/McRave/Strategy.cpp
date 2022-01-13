@@ -408,15 +408,15 @@ namespace McRave::Strategy {
 
                 // RaxFact
                 if (enemyStrat.build.name == "RaxFact") {
-                    if ((hasGols && enemyStrat.expand.possible && Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) >= 4) || (Util::getTime() < Time(8, 30) && Players::getVisibleCount(PlayerState::Enemy, Terran_Armory) > 0))
+                    if ((hasGols && enemyStrat.expand.possible && Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) >= 4) || (Util::getTime() < Time(6, 30) && Players::getVisibleCount(PlayerState::Enemy, Terran_Armory) > 0))
                         enemyStrat.transition.name = "5FactGoliath";
                     if (hasWraiths && Util::getTime() < Time(6, 00))
                         enemyStrat.transition.name = "2PortWraith";
 
-                    if ((Players::getTotalCount(PlayerState::Enemy, Terran_Machine_Shop) >= 2 && typeUpgrading.find(Terran_Machine_Shop) != typeUpgrading.end() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture_Spider_Mine) > 0)
-                        || (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) >= 3 && Util::getTime() < Time(5, 00))
-                        || (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) >= 5 && Util::getTime() < Time(5, 30))
-                        || (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) >= 7 && Util::getTime() < Time(6, 00)))
+                    if ((Players::getTotalCount(PlayerState::Enemy, Terran_Machine_Shop) >= 2 && (typeUpgrading.find(Terran_Machine_Shop) != typeUpgrading.end() || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture_Spider_Mine) > 0))
+                        || (Players::getTotalCount(PlayerState::Enemy, Terran_Machine_Shop) >= 2 && Util::getTime() < Time(6, 00))
+                        || (arrivesBy(5, Terran_Vulture, Time(6, 15)))
+                        || (arrivesBy(7, Terran_Vulture, Time(6, 45))))
                         enemyStrat.transition.name = "2Fact";
                 }
 

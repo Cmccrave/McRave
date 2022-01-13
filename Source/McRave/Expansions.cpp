@@ -79,8 +79,7 @@ namespace McRave::Expansion {
 
         void updateExpandPlan()
         {
-            if (Broodwar->getFrameCount() < 5
-                || !Terrain::getEnemyNatural())
+            if (Broodwar->getFrameCount() < 5)
                 return;
 
             updateExpandBlockers();
@@ -109,8 +108,8 @@ namespace McRave::Expansion {
                     auto airParent = station.getBase()->Center().getDistance(parentStation->getBase()->Center());
                     auto airHome = station.getBase()->Center().getDistance(Position(BWEB::Map::getNaturalChoke()->Center()));
                     auto airCenter = station.getBase()->Center().getDistance(mapBWEM.Center());
-                    auto grdEnemy = expansionNetwork[enemyStation][&station].getDistance();
-                    auto airEnemy = station.getBase()->Center().getDistance(enemyStation->getBase()->Center());
+                    auto grdEnemy = enemyStation ? expansionNetwork[enemyStation][&station].getDistance() : 1.0;
+                    auto airEnemy = enemyStation ? station.getBase()->Center().getDistance(enemyStation->getBase()->Center()) : 1.0;
 
                     if (station.getBase()->GetArea() == mapBWEM.GetArea(TilePosition(mapBWEM.Center())) && expansionOrder.size() < 4)
                         continue;

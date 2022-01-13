@@ -268,14 +268,8 @@ namespace McRave::BuildOrder::Zerg {
 
     void tech()
     {
-        auto vsMech = Strategy::getEnemyTransition() == "2Fact"
-            || Strategy::getEnemyTransition() == "1FactTanks"
-            || Strategy::getEnemyTransition() == "5FactGoliath"
-            || Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) >= 3;
-
-        auto vsGoons = Strategy::getEnemyTransition() == "4Gate";
-
-        const auto techVal = int(techList.size()) + (2 * Players::ZvT()) + (Players::ZvP()) + vsMech + vsGoons;
+        const auto vsGoonsGols = Strategy::getEnemyTransition() == "4Gate" || Strategy::getEnemyTransition() == "5FactGoliath";
+        const auto techVal = int(techList.size()) + (2 * Players::ZvT()) + (Players::ZvP()) + vsGoonsGols;
         const auto endOfTech = !techOrder.empty() && isTechUnit(techOrder.back());
         techSat = (techVal >= int(Stations::getMyStations().size())) || endOfTech;
 
@@ -283,7 +277,7 @@ namespace McRave::BuildOrder::Zerg {
         if (Players::ZvP()) {
             if (Strategy::getEnemyTransition() == "Carriers")
                 techOrder ={ Zerg_Mutalisk, Zerg_Hydralisk };
-            else if (vsGoons)
+            else if (vsGoonsGols)
                 techOrder ={ Zerg_Mutalisk, Zerg_Hydralisk };
             else
                 techOrder ={ Zerg_Mutalisk, Zerg_Hydralisk, Zerg_Lurker };
@@ -291,7 +285,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // ZvT
         if (Players::ZvT()) {
-            if (vsMech)
+            if (vsGoonsGols)
                 techOrder ={ Zerg_Mutalisk };
             else
                 techOrder ={ Zerg_Mutalisk, Zerg_Ultralisk, Zerg_Defiler };

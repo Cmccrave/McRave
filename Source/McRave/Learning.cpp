@@ -400,7 +400,7 @@ namespace McRave::Learning {
         void getPermanentBuild()
         {
             // Testing builds if needed
-            if (false) {
+            if (true) {
                 if (Players::PvZ()) {
                     BuildOrder::setLearnedBuild("FFE", "Forge", "NeoBisu");
                     isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
@@ -422,7 +422,7 @@ namespace McRave::Learning {
                     return;
                 }
                 if (Players::ZvT()) {
-                    BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "3HatchMuta");
+                    BuildOrder::setLearnedBuild("PoolHatch", "12Pool", "3HatchMuta");
                     isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                     return;
                 }

@@ -262,8 +262,6 @@ namespace McRave::Stations {
                 if (Players::ZvT()) {
                     if (Players::getTotalCount(PlayerState::Enemy, Terran_Dropship) > 0)
                         return (Util::getTime() > Time(11, 00)) + (Util::getTime() > Time(15, 00)) - groundCount;
-                    if (Strategy::getEnemyTransition() == "2Fact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Strategy::getEnemyBuild() == "RaxFact")
-                        return (Util::getTime() > Time(4, 15)) - groundCount;
                 }
             }
             return 0;

@@ -149,8 +149,8 @@ namespace McRave::Actions {
         const auto checkDangers = [&](vector<Action>& actions) {
             for (auto &command : actions) {
 
-                if (command.type == UnitTypes::Protoss_Scarab || command.type == UnitTypes::Terran_Vulture_Spider_Mine) {
-                    if (circleOverlap(command, checkPositions, 128))
+                if (!unit.isFlying() && (command.type == UnitTypes::Protoss_Scarab || command.type == UnitTypes::Terran_Vulture_Spider_Mine)) {
+                    if (circleOverlap(command, checkPositions, 64))
                         return true;
                 }
 

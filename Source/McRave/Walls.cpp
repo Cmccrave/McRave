@@ -339,15 +339,12 @@ namespace McRave::Walls {
         if (Strategy::getEnemyBuild() == "2Gate") {
             if (Util::getTime() < Time(6, 00) && (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) > 0 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0))
                 return (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(4, 00)) + noExpandOrTech;
-
             else if (Util::getTime() < Time(6, 00) && Strategy::getEnemyOpener() == "10/17")
                 return (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(4, 00)) + noExpandOrTech;
-
             else if (Util::getTime() < Time(6, 00) && (Strategy::getEnemyOpener() == "10/12" || Strategy::getEnemyOpener() == "Unknown"))
-                return (Util::getTime() > Time(3, 10)) + (Util::getTime() > Time(3, 30)) + noExpandOrTech;
-
+                return 1 + (Util::getTime() > Time(3, 30)) + noExpandOrTech;
             else if (Util::getTime() < Time(6, 00) && (Strategy::getEnemyOpener() == "9/9" || Strategy::getEnemyTransition() == "ZealotRush" || Strategy::getEnemyTransition() == "Speedlot"))
-                return (Util::getTime() > Time(2, 50)) + (Util::getTime() > Time(3, 10)) + (Util::getTime() > Time(4, 00)) + noExpandOrTech;
+                return 1 + (Util::getTime() > Time(3, 10)) + (Util::getTime() > Time(4, 00)) + noExpandOrTech;
         }
 
         // FFE
@@ -402,8 +399,6 @@ namespace McRave::Walls {
                 return (Util::getTime() > Time(3, 30));
         }
 
-        if (!Strategy::enemyFastExpand() && Strategy::getEnemyBuild() != "RaxCC")
-            return ((Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(5, 00)));
         if (Util::getTime() > Time(10, 00))
             return max(1, (Util::getTime().minutes / 4));
         return (Util::getTime() > Time(3, 30));
@@ -504,11 +499,6 @@ namespace McRave::Walls {
             if (Players::ZvZ() && Util::getTime() > Time(4, 30) && total(Zerg_Zergling) > Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) && com(Zerg_Spire) == 0 && Strategy::getEnemyTransition() == "Unknown" && BuildOrder::getCurrentTransition() == "2HatchMuta")
                 return 1 - airCount;
             if (Players::ZvZ() && Util::getTime() > Time(4, 15) && Strategy::getEnemyTransition() == "1HatchMuta" && BuildOrder::getCurrentTransition() == "2HatchMuta")
-                return 1 - airCount;
-
-            if (Players::ZvP() && Util::getTime() > Time(4, 00) && Strategy::getEnemyBuild() == "1GateCore" && Strategy::getEnemyTransition() == "Corsair")
-                return 1 - airCount;
-            if (Players::ZvP() && Util::getTime() > Time(4, 30) && Strategy::getEnemyBuild() == "2Gate" && Strategy::getEnemyTransition() == "Corsair")
                 return 1 - airCount;
         }
         return 0;
