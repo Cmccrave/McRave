@@ -682,15 +682,16 @@ namespace McRave::Combat {
 
             // If attacking and target is close, set as destination
             if (unit.getLocalState() == LocalState::Attack) {
-                if (unit.getInterceptPosition().isValid() && unit.getInterceptPosition().getDistance(unit.getTarget().getPosition()) < unit.getInterceptPosition().getDistance(unit.getPosition()) - 16.0 && (Grids::getMobility(unit.getInterceptPosition()) > 0 || unit.isFlying()))
+                if (unit.getInterceptPosition().isValid())
                     unit.setDestination(unit.getInterceptPosition());
-                else if (unit.attemptingSurround())
+                else if (unit.getSurroundPosition().isValid())
                     unit.setDestination(unit.getSurroundPosition());
                 else
                     unit.setDestination(unit.getEngagePosition());
 
                 if (unit.getTargetPath().isReachable())
                     unit.setDestinationPath(unit.getTargetPath());
+                Broodwar->drawLineMap(unit.getPosition(), unit.getSurroundPosition(), Colors::Cyan);
             }
 
             // If we're not ready to attack with a proxy yet
@@ -1041,7 +1042,6 @@ namespace McRave::Combat {
                     updateDestination(unit);
                     updateFormation(unit);
                     combatUnitsByDistance.emplace(unit.getPosition().getDistance(unit.getDestination()), unit);
-                    Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
                 }
             }
         }

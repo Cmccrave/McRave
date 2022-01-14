@@ -33,7 +33,5 @@ namespace McRave::Grids
     int lastVisibleFrame(BWAPI::TilePosition t);
     int lastVisitedFrame(BWAPI::WalkPosition w);
 
-    void addMovement(BWAPI::Position, UnitInfo&);
-
     bool hasCliffVision(BWAPI::TilePosition);
 }

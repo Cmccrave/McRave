@@ -8,7 +8,6 @@ namespace McRave::Pathing {
 
     namespace {
 
-        map<UnitInfo&, Position> surroundPositions;
 
         void getPathToTarget(UnitInfo& unit)
         {
@@ -126,31 +125,6 @@ namespace McRave::Pathing {
             unit.setEngDist(dist);
         }
 
-        void getSurroundPosition(UnitInfo& unit) {
-
-            // If we can't see the units speed, return its current position
-            if (!unit.hasTarget()
-                || !unit.getTarget().unit()->exists()
-                || unit.getSpeed() == 0.0
-                || unit.getTarget().getSpeed() == 0.0
-                || !unit.getTarget().getPosition().isValid()
-                || !Terrain::getEnemyStartingPosition().isValid())
-                return;
-
-            auto trapTowards = Positions::Invalid;
-            if (unit.getTarget().isFlying())
-                trapTowards = Terrain::getEnemyStartingPosition();
-            else if (unit.getTarget().isThreatening())
-                trapTowards = Position(BWEB::Map::getMainChoke()->Center());
-            else {
-                auto path = mapBWEM.GetPath(unit.getTarget().getPosition(), Terrain::getEnemyStartingPosition());
-                trapTowards = (path.empty() || !path.front()) ? Terrain::getEnemyStartingPosition() : Position(path.front()->Center());
-            }
-            auto surroundPosition = Util::clipPosition(((unit.getTarget().getPosition() * 3) + trapTowards) / 4);
-            unit.setSurroundPosition(surroundPosition);
-        }
-
-        // TODO: Implement
         void getInterceptPosition(UnitInfo& unit) {
 
             // If we can't see the units speed, return its current position
@@ -167,30 +141,68 @@ namespace McRave::Pathing {
 
         void updateSurroundPositions()
         {
+            if (Stations::getEnemyStations().empty())
+                return;
+
+            // Allowed types to surround
+            auto allowedTypes ={ Zerg_Zergling, Protoss_Zealot };
+
             for (auto &u : Units::getUnits(PlayerState::Enemy)) {
                 UnitInfo& unit = *u;
-                
 
+                // Figure out how to trap the unit
+                auto trapTowards = Positions::Invalid;
+                if (unit.isThreatening())
+                    trapTowards = Position(BWEB::Map::getMainChoke()->Center());
+                else {
+                    auto path = mapBWEM.GetPath(unit.getPosition(), Terrain::getEnemyStartingPosition());
+                    trapTowards = (path.empty() || !path.front()) ? Terrain::getEnemyStartingPosition() : Position(path.front()->Center());
+                }
+
+                // Create surround positions in a primitive fashion
+                vector<pair<Position, double>> surroundPositions;
+                auto closestStation = Stations::getClosestStationGround(PlayerState::Enemy, unit.getPosition());
+                for (int x = -1; x <= 1; x++) {
+                    for (int y = -1; y <= 1; y++) {
+                        if (x == 0 && y == 0)
+                            continue;
+                        auto p = (unit.getPosition()) + Position(x * unit.getType().width(), y * unit.getType().height());
+                        surroundPositions.push_back(make_pair(p, p.getDistance(trapTowards)));
+                    }
+                }
+
+                // Sort positions by summed distances
+                sort(surroundPositions.begin(), surroundPositions.end(), [&](auto &l, auto &r) {
+                    return l.second < r.second;
+                });
+
+                // Assign closest targeter
+                for (auto &[pos, dist] : surroundPositions) {
+                    auto closestTargeter = Util::getClosestUnit(pos, PlayerState::Self, [&](auto &u) {
+                        return u.hasTarget() && find(allowedTypes.begin(), allowedTypes.end(), u.getType()) != allowedTypes.end() && (!u.getSurroundPosition().isValid() || u.getSurroundPosition() == pos) && u.getRole() == Role::Combat;
+                    });
+                    if (closestTargeter && Util::findWalkable(*closestTargeter, pos))
+                        closestTargeter->setSurroundPosition(pos);                    
+                }
             }
         }
 
         void updatePaths()
         {
+            for (auto &u : Units::getUnits(PlayerState::Enemy)) {
+                UnitInfo& unit = *u;
+                getEngagePosition(unit);
+                getEngageDistance(unit);
+            }
+
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo& unit = *u;
                 if (unit.hasTarget()) {
                     getPathToTarget(unit);
                     getEngagePosition(unit);
                     getEngageDistance(unit);
-                    getSurroundPosition(unit);
                     getInterceptPosition(unit);
                 }
-            }
-
-            for (auto &u : Units::getUnits(PlayerState::Enemy)) {
-                UnitInfo& unit = *u;
-                getEngagePosition(unit);
-                getEngageDistance(unit);
             }
         }
     }

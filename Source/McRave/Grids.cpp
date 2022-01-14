@@ -424,35 +424,5 @@ namespace McRave::Grids
     int lastVisibleFrame(TilePosition t) { return visibleGrid[t.x][t.y]; }
     int lastVisitedFrame(WalkPosition w) { return visitedGrid[w.x][w.y]; }
 
-    void addMovement(Position here, UnitInfo& unit)
-    {
-        if (unit.isLightAir()) {
-            const auto walkWidth = unit.getWalkWidth();
-            const auto walkHeight = unit.getWalkHeight();
-
-            const auto left = max(0, WalkPosition(here).x - walkWidth - 4);
-            const auto right = min(1024, WalkPosition(here).x + walkWidth + 4);
-            const auto top = max(0, WalkPosition(here).y - walkHeight - 4);
-            const auto bottom = min(1024, WalkPosition(here).y + walkHeight + 4);
-
-            for (int x = left; x < right; x++) {
-                for (int y = top; y < bottom; y++) {
-
-                    //const auto dist = fasterDistGrids(x1, y1, (x * 8) + 4, (y * 8) + 4);
-                    const auto dist = float(here.getDistance(Position((x * 8) + 4, (y * 8) + 4)));
-
-                    //// Cluster
-                    //if (dist < 64.0) {
-                    //    aAirCluster[x][y] += (65.0f - dist) / 64.0f;
-                    //    saveReset(x, y);
-                    //}
-                }
-            }
-        }
-        else {
-            addToGrids(unit, here, WalkPosition(here));
-        }
-    }
-
     bool hasCliffVision(TilePosition t) { return cliffVision[t.x][t.y]; }
 }

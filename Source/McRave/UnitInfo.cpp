@@ -469,7 +469,6 @@ namespace McRave
         // Add action and grid movement
         if ((cmd == UnitCommandTypes::Move || cmd == UnitCommandTypes::Right_Click_Position) && getPosition().getDistance(here) < 160.0) {
             Actions::addAction(unit(), here, getType(), PlayerState::Self);
-            Grids::addMovement(here, *this);
         }
 
         // If this is a new order or new command than what we're requesting, we can issue it
@@ -816,37 +815,41 @@ namespace McRave
             time = Time(3, 45);
 
         if ((Strategy::enemyProxy() && Strategy::getEnemyBuild() == "2Gate" && timeCompletesWhen() < time)
-            || (Players::vP() && Strategy::getEnemyBuild() == "Unknown" && Util::getTime() < time))
+            || (Players::vP() && Strategy::getEnemyBuild() == "Unknown" && Util::getTime() < time && Units::getImmThreat() <= 0.0))
             return true;
         return false;
     }
 
     bool UnitInfo::attemptingSurround()
     {
-        if (!hasTarget()
-            || !getSurroundPosition().isValid()
-            || getGroundRange() > 32.0
-            || getAirRange() > 32.0
-            || isSuicidal()
-            || Util::getTime() < Time(3, 30)
-            || getTarget().getType() == getType()
-            || getTarget().getType().isBuilding()
-            || getTarget().getType().isWorker())
-            return false;
+        //if (!hasTarget()
+        //    || !getSurroundPosition().isValid()
+        //    || getGroundRange() > 32.0
+        //    || getAirRange() > 32.0
+        //    || isSuicidal()
+        //    || Util::getTime() < Time(3, 30)
+        //    || getTarget().getType() == getType()
+        //    || getTarget().getType().isBuilding()
+        //    || getTarget().getType().isWorker())
+        //    return false;
 
-        auto closestChoke = Util::getClosestChokepoint(getTarget().getPosition());
-        if (getTarget().getPosition().getDistance(Position(closestChoke->Center())) < 64.0 && vis(getType()) >= 10 && closestChoke->Width() < 64.0)
-            return false;
+        //auto closestChoke = Util::getClosestChokepoint(getTarget().getPosition());
+        //if (getTarget().getPosition().getDistance(Position(closestChoke->Center())) < 64.0 && vis(getType()) >= 10 && closestChoke->Width() < 64.0)
+        //    return false;
 
-        double howClose = 24.0;
-        for (auto &t : getTarget().getTargetedBy()) {
-            if (auto targeter = t.lock()) {
-                if (targeter->getPosition().getDistance(getSurroundPosition()) < getPosition().getDistance(getSurroundPosition()))
-                    howClose -= 16.0;
-            }
-        }
-        if (getPosition().getDistance(getSurroundPosition()) + howClose > getTarget().getPosition().getDistance(getSurroundPosition()))
+        //double howClose = 24.0;
+        //for (auto &t : getTarget().getTargetedBy()) {
+        //    if (auto targeter = t.lock()) {
+        //        if (targeter->getPosition().getDistance(getSurroundPosition()) < getPosition().getDistance(getSurroundPosition()))
+        //            howClose -= 16.0;
+        //    }
+        //}
+        //if (getPosition().getDistance(getSurroundPosition()) + howClose > getTarget().getPosition().getDistance(getSurroundPosition()))
+        //    return true;
+
+        if (surroundPosition.isValid() && position.getDistance(surroundPosition) > 16.0)
             return true;
+
         return false;
     }
 
