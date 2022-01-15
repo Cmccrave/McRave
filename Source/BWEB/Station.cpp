@@ -17,16 +17,16 @@ namespace BWEB {
             TilePosition start(resource->getPosition());
             vector<TilePosition> directions{ {1,0}, {-1,0}, {0, 1}, {0,-1} };
             auto diff = (base->Center() - resourceCentroid);
-            auto end = base->Center() + (diff / 4);
-
+            auto end = resource->getType().isMineralField() ? base->Center() + (diff / 4) : base->Center() - (diff / 4);
+            
             // Get the starting tile
-            auto distClosest = 0.0;
+            auto distClosest = resource->getType().isMineralField() ? 0.0 : DBL_MAX;
             for (int x = resource->getTilePosition().x; x < resource->getTilePosition().x + resource->getType().tileWidth(); x++) {
                 for (int y = resource->getTilePosition().y; y < resource->getTilePosition().y + resource->getType().tileHeight(); y++) {
                     auto tile = TilePosition(x, y);
                     auto center = Position(tile) + Position(16, 16);
                     auto dist = center.getDistance(resourceCentroid);
-                    if (dist > distClosest) {
+                    if (resource->getType().isMineralField() ? dist > distClosest : dist < distClosest) {
                         start = tile;
                         distClosest = dist;
                     }

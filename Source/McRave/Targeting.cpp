@@ -6,8 +6,8 @@ using namespace UnitTypes;
 
 namespace McRave::Targets {
 
-    set<UnitType> cancelPriority ={ Terran_Missile_Turret, Terran_Barracks, Terran_Factory, Terran_Starport, Terran_Armory, Terran_Bunker };
-    set<UnitType> allowedBuildings ={ Terran_Armory, Protoss_Cybernetics_Core, Protoss_Photon_Cannon, Zerg_Spire };
+    set<UnitType> cancelPriority ={ Terran_Barracks, Terran_Factory, Terran_Starport, Terran_Armory, Terran_Bunker };
+    set<UnitType> allowedBuildings ={ Terran_Armory, Protoss_Cybernetics_Core, Terran_Missile_Turret, Protoss_Photon_Cannon, Zerg_Spire };
 
     namespace {
 
@@ -22,6 +22,7 @@ namespace McRave::Targets {
                     || unit.getGroundRange() > 32.0
                     || target.isThreatening()
                     || (target.getTargetedBy().empty() && !Players::ZvZ())
+                    || unit.attemptingRunby()
                     || atEnemy;
             }
             return true;
@@ -113,7 +114,7 @@ namespace McRave::Targets {
                             || (BuildOrder::isProxy() && !target.isThreatening() && !target.getType().isWorker() && Util::getTime() < Time(6, 00)))
                             return false;
                     }
-                    if (unit.attemptingRunby() && !target.getType().isWorker())
+                    if (unit.attemptingRunby() && !target.getType().isWorker() && !target.getType().isBuilding())
                         return false;
                 }
 
@@ -121,14 +122,14 @@ namespace McRave::Targets {
                 if (unit.getType() == Zerg_Mutalisk) {
                     auto anythingTime = Players::ZvZ() ? Time(7, 00) : Time(12, 00);
                     auto defendExpander = BuildOrder::shouldExpand() && target.getType() == Terran_Vulture;
+                    auto invalidBuilding = target.getType().isBuilding() && allowedBuildings.find(target.getType()) == allowedBuildings.end();
 
                     if (!defendExpander && Util::getTime() < anythingTime && unit.attemptingHarass() && !target.isThreatening() && !unit.canOneShot(target) && !target.getType().isWorker() && !target.isLightAir()) {
-                        auto invalidBuilding = target.getType().isBuilding() && allowedBuildings.find(target.getType()) == allowedBuildings.end() && (target.unit()->isCompleted() || !target.canAttackAir());
 
                         if ((enemyHasAir && !target.getType().isWorker() && !target.canAttackAir() && enemyHasGround)                                                                   // Avoid non-air shooters
                             || (!target.getType().isWorker() && !target.getType().isBuilding() && !target.canAttackAir())                                                               // Avoid ground fighters only that we can't oneshot
                             || (target.getType().isBuilding() && enemyHasAir && !target.canAttackAir() && !target.canAttackGround())                                                    // Avoid buildings that don't fight
-                            || (invalidBuilding && Grids::getAAirCluster(unit.getPosition()) <= 24.0f)                                                                                  // Avoid completed buildings that don't fight without a medium cluster
+                            || invalidBuilding
                             || (!unit.canTwoShot(target) && !target.isFlying() && !target.getType().isBuilding()))                                                                      // Avoid units we can't 2 shot
                             return false;
                     }
@@ -250,8 +251,8 @@ namespace McRave::Targets {
             const auto focusScore = [&]() {
                 if (range > 32.0 && boxDistance <= reach)
                     return exp(int(target.getTargetedBy().size()) + 1);
-                if (range <= 32.0 && int(target.getTargetedBy().size()) >= 6)
-                    return 1.0 / (int(target.getTargetedBy().size()));
+                //if (range <= 32.0 && int(target.getTargetedBy().size()) >= 6)
+                //    return 1.0 / (int(target.getTargetedBy().size()));
                 return 1.0;
             };
 
@@ -379,8 +380,8 @@ namespace McRave::Targets {
                 }
             }
 
-            // If unit is close, add this unit to the targeted by vector
-            if (unit.hasTarget() && unit.isWithinReach(unit.getTarget()) && unit.getRole() == Role::Combat)
+            // Add this unit to the targeted by vector
+            if (unit.hasTarget() && unit.getRole() == Role::Combat)
                 unit.getTarget().getTargetedBy().push_back(unit.weak_from_this());
         }
 

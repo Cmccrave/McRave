@@ -216,13 +216,13 @@ namespace McRave::Terrain {
             }
 
             // See if a defense is in range of our main choke
-            auto defenseCanStopRunyby = Players::ZvT();
+            auto defendRunby = Players::ZvT();
             if (defendNatural) {
                 auto closestDefense = Util::getClosestUnit(Position(BWEB::Map::getMainChoke()->Center()), PlayerState::Self, [&](auto &u) {
                     return u.getRole() == Role::Defender && u.canAttackGround();
                 });
                 if (closestDefense && closestDefense->getPosition().getDistance(Position(BWEB::Map::getMainChoke()->Center())) < closestDefense->getGroundRange() + 128.0)
-                    defenseCanStopRunyby = true;
+                    defendRunby = true;
             }
 
             // If we want to defend our mineral line
@@ -251,7 +251,7 @@ namespace McRave::Terrain {
             }
 
             // If we want to prevent a runby
-            else if (Combat::defendChoke() && !flatRamp && com(Zerg_Sunken_Colony) > 0 && (defenseCanStopRunyby || Players::ZvT())) {
+            else if (Combat::defendChoke() && !flatRamp && com(Zerg_Sunken_Colony) > 0 && defendRunby && vis(Zerg_Sunken_Colony) < 2 && vis(Zerg_Zergling) < 12) {
                 defendPosition = Position(mainChoke->Center()) + Position(4, 4);
                 defendNatural = false;
             }

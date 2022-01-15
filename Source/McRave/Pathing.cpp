@@ -8,7 +8,6 @@ namespace McRave::Pathing {
 
     namespace {
 
-
         void getPathToTarget(UnitInfo& unit)
         {
             // If unnecessary to get path
@@ -150,11 +149,14 @@ namespace McRave::Pathing {
             for (auto &u : Units::getUnits(PlayerState::Enemy)) {
                 UnitInfo& unit = *u;
 
+                if (unit.getTargetedBy().empty())
+                    continue;
+
                 // Figure out how to trap the unit
-                auto trapTowards = Positions::Invalid;
+                auto trapTowards = Position(BWEB::Map::getNaturalChoke()->Center());
                 if (unit.isThreatening())
                     trapTowards = Position(BWEB::Map::getMainChoke()->Center());
-                else {
+                else if (unit.getPosition().isValid() && Terrain::getEnemyStartingPosition().isValid()) {
                     auto path = mapBWEM.GetPath(unit.getPosition(), Terrain::getEnemyStartingPosition());
                     trapTowards = (path.empty() || !path.front()) ? Terrain::getEnemyStartingPosition() : Position(path.front()->Center());
                 }
@@ -179,7 +181,9 @@ namespace McRave::Pathing {
                 // Assign closest targeter
                 for (auto &[pos, dist] : surroundPositions) {
                     auto closestTargeter = Util::getClosestUnit(pos, PlayerState::Self, [&](auto &u) {
-                        return u.hasTarget() && find(allowedTypes.begin(), allowedTypes.end(), u.getType()) != allowedTypes.end() && (!u.getSurroundPosition().isValid() || u.getSurroundPosition() == pos) && u.getRole() == Role::Combat;
+                        return u.hasTarget() && u.getTarget() == unit.weak_from_this()
+                            && find(allowedTypes.begin(), allowedTypes.end(), u.getType()) != allowedTypes.end()
+                            && (!u.getSurroundPosition().isValid() || u.getSurroundPosition() == pos) && u.getRole() == Role::Combat;
                     });
                     if (closestTargeter && Util::findWalkable(*closestTargeter, pos))
                         closestTargeter->setSurroundPosition(pos);                    

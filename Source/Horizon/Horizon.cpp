@@ -43,7 +43,7 @@ namespace McRave::Horizon {
         // Z
         if (Players::ZvP()) {
             minWinPercent = 0.90;
-            maxWinPercent = 1.30;
+            maxWinPercent = 1.60;
         }
         if (Players::ZvZ()) {
             minWinPercent = 1.00;
@@ -81,7 +81,7 @@ namespace McRave::Horizon {
             unit.setSimValue(10.0);
             return;
         }
-        else if (unit.getEngDist() == DBL_MAX) {
+        else if (unit.getEngDist() == DBL_MAX || !unit.hasTarget()) {
             unit.setSimState(SimState::Loss);
             unit.setSimValue(0.0);
             return;
@@ -90,7 +90,7 @@ namespace McRave::Horizon {
         const auto addToSim = [&](UnitInfo& u) {
             if (!u.unit()
                 || (u.getType().isWorker() && ((u.unit()->exists() && u.unit()->getOrder() != Orders::AttackUnit) || !u.hasAttackedRecently()))
-                || (!u.unit()->isCompleted() && u.unit()->exists())
+                || (u.unit()->exists() && !u.unit()->isCompleted())
                 || (u.unit()->exists() && (u.unit()->isStasised() || u.unit()->isMorphing()))
                 || (u.getVisibleAirStrength() <= 0.0 && u.getVisibleGroundStrength() <= 0.0)
                 || (!u.hasTarget())
@@ -159,16 +159,17 @@ namespace McRave::Horizon {
             if (!addToSim(ally))
                 continue;
 
-            const auto allyRange = max(ally.getAirRange(), ally.getGroundRange());
-            const auto allyReach = max(ally.getAirReach(), ally.getGroundReach());
-            const auto distance = ally.getEngDist();
+            const auto range = max(ally.getAirRange(), ally.getGroundRange());
+            const auto reach = max(ally.getAirReach(), ally.getGroundReach());
+            const auto distance = double(Util::boxDistance(ally.getType(), ally.getPosition(), unit.getType(), unit.getTarget().getPosition())); //ally.getEngDist();
             const auto speed = ally.getSpeed() > 0.0 ? ally.getSpeed() * 24.0 : unit.getSpeed() * 24.0;
-            auto simRatio = simulationTime - (distance / speed) - prepTime(ally);
+            const auto engageTime = max(0.0, (distance - range) / speed);
+            auto simRatio = max(0.0, simulationTime - engageTime + prepTime(ally));
 
             // If the unit doesn't affect this simulation
             if (ally.localRetreat()
                 || (ally.getSpeed() <= 0.0 && ally.getEngDist() > -16.0)
-                || (unit.hasTarget() && ally.hasTarget() && ally.getEngagePosition().getDistance(unit.getTarget().getPosition()) > allyReach))
+                || (unit.hasTarget() && ally.hasTarget() && ally.getEngagePosition().getDistance(unit.getTarget().getPosition()) > reach))
                 continue;
 
             // Add their values to the simulation

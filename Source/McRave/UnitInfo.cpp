@@ -292,9 +292,9 @@ namespace McRave
         // Check if our defenses can hit or be hit
         auto nearDefenders = [&]() {
             auto closestDefender = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-                return u.getRole() == Role::Defender && ((!u.unit()->isMorphing() && u.unit()->isCompleted() && u.canAttackGround()) || (Util::getTime() < Time(4, 15) && hasAttackedRecently()));
+                return u.getRole() == Role::Defender && u.canAttackGround();
             });
-            return closestDefender && (closestDefender->isWithinRange(*this) || isWithinRange(*closestDefender));
+            return closestDefender && ((closestDefender->isWithinRange(*this) && closestDefender->isCompleted()) || isWithinRange(*closestDefender));
         };
 
         // Checks if it can damage an already damaged building
@@ -358,8 +358,8 @@ namespace McRave
 
         // Unit
         else
-            threateningThisFrame = attackedDefender
-            || attackedWorkers
+            threateningThisFrame = /*attackedDefender
+            || */attackedWorkers
             || nearResources()
             || nearFragileBuilding()
             || nearBuildPosition()
@@ -800,7 +800,7 @@ namespace McRave
     {
         return nearHidden
             || (getGlobalState() == GlobalState::Retreat && !Terrain::isInAllyTerritory(getTilePosition()))
-            || (getType() == Zerg_Mutalisk && hasTarget() && !getTarget().isThreatening() && getTarget().canAttackAir() && !isWithinRange(getTarget()) && getHealth() <= 50)                // ...unit is a low HP Mutalisk attacking a target under air threat    
+            || (getType() == Zerg_Mutalisk && hasTarget() && !getTarget().isThreatening() && !isWithinRange(getTarget()) && getHealth() <= 50)                // ...unit is a low HP Mutalisk attacking a target under air threat    
             || (getType() == Zerg_Hydralisk && BuildOrder::getCompositionPercentage(Zerg_Lurker) >= 1.00)
             || (getType() == Zerg_Hydralisk && !getGoal().isValid() && (!Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines) || !Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments)))
             || (isNearSuicide());
@@ -822,34 +822,10 @@ namespace McRave
 
     bool UnitInfo::attemptingSurround()
     {
-        //if (!hasTarget()
-        //    || !getSurroundPosition().isValid()
-        //    || getGroundRange() > 32.0
-        //    || getAirRange() > 32.0
-        //    || isSuicidal()
-        //    || Util::getTime() < Time(3, 30)
-        //    || getTarget().getType() == getType()
-        //    || getTarget().getType().isBuilding()
-        //    || getTarget().getType().isWorker())
-        //    return false;
-
-        //auto closestChoke = Util::getClosestChokepoint(getTarget().getPosition());
-        //if (getTarget().getPosition().getDistance(Position(closestChoke->Center())) < 64.0 && vis(getType()) >= 10 && closestChoke->Width() < 64.0)
-        //    return false;
-
-        //double howClose = 24.0;
-        //for (auto &t : getTarget().getTargetedBy()) {
-        //    if (auto targeter = t.lock()) {
-        //        if (targeter->getPosition().getDistance(getSurroundPosition()) < getPosition().getDistance(getSurroundPosition()))
-        //            howClose -= 16.0;
-        //    }
-        //}
-        //if (getPosition().getDistance(getSurroundPosition()) + howClose > getTarget().getPosition().getDistance(getSurroundPosition()))
-        //    return true;
-
+        if (attemptingRunby())
+            return false;
         if (surroundPosition.isValid() && position.getDistance(surroundPosition) > 16.0)
             return true;
-
         return false;
     }
 

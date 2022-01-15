@@ -152,7 +152,7 @@ namespace McRave::Command {
                     return false;
                 if (unit.attemptingSurround())
                     return false;
-                return unit.isWithinRange(unit.getTarget()) && unit.getLocalState() == LocalState::Attack;
+                return unit.isWithinRange(unit.getTarget()) && (unit.getLocalState() == LocalState::Attack || unit.attemptingRunby());
             }
 
             // Workers will poke damage if near a build job or is threatning our gathering
@@ -169,10 +169,6 @@ namespace McRave::Command {
             // Defenders will attack when in range
             if (unit.getRole() == Role::Defender)
                 return unit.isWithinRange(unit.getTarget());
-
-            //// Scouts will attack when in range and at home
-            //if (unit.getRole() == Role::Scout)
-            //    return unit.isWithinRange(unit.getTarget()) && (unit.getShields() > 15 || unit.getHealth() > 35);
 
             return false;
         };
@@ -260,7 +256,7 @@ namespace McRave::Command {
             const auto mobility =   defaultMobility(unit, w);
             auto score = 0.0;
 
-            if ((unit.getRole() == Role::Worker && !Terrain::isInAllyTerritory(unit.getTilePosition())) || unit.attemptingRunby())
+            if ((unit.getRole() == Role::Worker && !Terrain::isInAllyTerritory(unit.getTilePosition())))
                 score = mobility / (distance * grouping * threat);
             else
                 score = mobility / (distance * grouping);

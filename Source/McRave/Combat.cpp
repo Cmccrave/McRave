@@ -145,7 +145,7 @@ namespace McRave::Combat {
                 formation.angle = BWEB::Map::getAngle(make_pair(tempClosestChoke->Pos(tempClosestChoke->end1), tempClosestChoke->Pos(tempClosestChoke->end2)));
 
                 // Calculate base radius
-                formation.unitTangentSize = sqrt(pow(formation.type.width(), 2.0) + pow(formation.type.height(), 2.0)) + 8.0;
+                formation.unitTangentSize = sqrt(pow(formation.type.width(), 2.0) + pow(formation.type.height(), 2.0)) + 2.0;
                 formation.radius = clamp(double(formation.count) * (formation.unitTangentSize / 2.0), double(tempClosestChoke->Width() / 2), 256.0);
 
                 // Get closest enemy station
@@ -228,7 +228,7 @@ namespace McRave::Combat {
                 }
 
                 // Create some formations
-                auto radsPerUnit = min(formation.radius / (formation.unitTangentSize * formation.count * 1.57), formation.unitTangentSize / (1.0 * formation.radius));
+                auto radsPerUnit = min(formation.radius / (formation.unitTangentSize * formation.count * 3.14), formation.unitTangentSize / (1.0 * formation.radius));
                 auto wrapCount = 0;
                 auto countPerRadius = 0;
 
@@ -562,7 +562,7 @@ namespace McRave::Combat {
                 return;
             }
             const auto distSim = double(Util::boxDistance(unit.getType(), unit.getPosition(), unit.getSimTarget().getType(), unit.getSimTarget().getPosition()));
-            const auto insideRetreatRadius = distSim < unit.getRetreatRadius();
+            const auto insideRetreatRadius = distSim < unit.getRetreatRadius() && !unit.attemptingRunby();
 
             if (!unit.hasTarget()) {
                 unit.setLocalState(LocalState::None);
@@ -682,7 +682,9 @@ namespace McRave::Combat {
 
             // If attacking and target is close, set as destination
             if (unit.getLocalState() == LocalState::Attack) {
-                if (unit.getInterceptPosition().isValid())
+                if (unit.attemptingRunby())
+                    unit.setDestination(unit.getEngagePosition());
+                else if (unit.getInterceptPosition().isValid())
                     unit.setDestination(unit.getInterceptPosition());
                 else if (unit.getSurroundPosition().isValid())
                     unit.setDestination(unit.getSurroundPosition());
@@ -750,7 +752,7 @@ namespace McRave::Combat {
             }
 
             // If unit has a target and a valid engagement position
-            else if (unit.hasTarget() && !unit.attemptingRunby()) {
+            else if (unit.hasTarget()) {
                 unit.setDestination(unit.getTarget().getPosition());
                 unit.setDestinationPath(unit.getTargetPath());
             }

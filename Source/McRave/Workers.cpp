@@ -278,7 +278,7 @@ namespace McRave::Workers {
             }
 
             // Check if we need mineral units
-            if (needMinerals || !unit.hasResource() || threatened || excessAssigned || transferStation) {
+            if (needMinerals || !unit.hasResource() || threatened || excessAssigned /*|| transferStation*/) {
                 for (int i = 1; i <= 2; i++) {
                     for (auto &r : Resources::getMyMinerals()) {
                         auto &resource = *r;
@@ -287,7 +287,7 @@ namespace McRave::Workers {
                         if (!resourceReady(resource, allowedGatherCount)
                             || (!safeStations.empty() && find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end())
                             || (closestStation && Stations::getSaturationRatio(closestStation) < 2.0 && resource.getStation() != closestStation)
-                            || (transferStation && resource.getStation() != transferStation)
+                            //|| (transferStation && resource.getStation() != transferStation)
                             || resource.isThreatened())
                             continue;
 

@@ -139,9 +139,6 @@
     <ClCompile Include="..\Source\McRave\Pylons.cpp">
       <Filter>McRave\Macro</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\Targeting.cpp">
-      <Filter>McRave\Info\Units</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\Buildings.cpp">
       <Filter>McRave\Info\Units</Filter>
     </ClCompile>
@@ -181,9 +178,6 @@
     <ClCompile Include="..\Source\McRave\Roles.cpp">
       <Filter>McRave\Info\Units</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\Pathing.cpp">
-      <Filter>McRave\Info\Units</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\Workers.cpp">
       <Filter>McRave\Micro\Worker</Filter>
     </ClCompile>
@@ -204,6 +198,12 @@
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Specials.cpp">
       <Filter>McRave\Micro\All</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Targeting.cpp">
+      <Filter>McRave\Info\Units\Targeting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Pathing.cpp">
+      <Filter>McRave\Info\Units\Targeting</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -321,9 +321,6 @@
     <ClInclude Include="..\Source\McRave\Pylons.h">
       <Filter>McRave\Macro</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\Targeting.h">
-      <Filter>McRave\Info\Units</Filter>
-    </ClInclude>
     <ClInclude Include="..\Source\McRave\Buildings.h">
       <Filter>McRave\Info\Units</Filter>
     </ClInclude>
@@ -366,9 +363,6 @@
     <ClInclude Include="..\Source\McRave\Roles.h">
       <Filter>McRave\Info\Units</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\Pathing.h">
-      <Filter>McRave\Info\Units</Filter>
-    </ClInclude>
     <ClInclude Include="..\Source\McRave\Workers.h">
       <Filter>McRave\Micro\Worker</Filter>
     </ClInclude>
@@ -386,6 +380,12 @@
     </ClInclude>
     <ClInclude Include="..\Source\McRave\Commands.h">
       <Filter>McRave\Micro\All</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Targeting.h">
+      <Filter>McRave\Info\Units\Targeting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Pathing.h">
+      <Filter>McRave\Info\Units\Targeting</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -463,6 +463,9 @@
     </Filter>
     <Filter Include="McRave\Micro\All">
       <UniqueIdentifier>{25108f01-a860-44db-8e3b-ae59a838051d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Info\Units\Targeting">
+      <UniqueIdentifier>{8a712b9a-0ae0-4fb3-984a-83d3189ade54}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

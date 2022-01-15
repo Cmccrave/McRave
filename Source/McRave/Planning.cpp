@@ -582,7 +582,7 @@ namespace McRave::Planning {
                     }
 
                     // Try to always place in front rows first
-                    auto firstRow = wall.getGroundDefenseCount() == 0 && !Players::ZvT() ? 2 : 1;
+                    auto firstRow = 2;
                     for (int i = firstRow; i <= 4; i++) {
                         placement = returnClosest(building, wall.getDefenses(i), desiredCenter);
                         if (placement.isValid()) {
