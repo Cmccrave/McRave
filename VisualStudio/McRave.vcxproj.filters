@@ -133,9 +133,6 @@
     <ClCompile Include="..\Source\McRave\Expansions.cpp">
       <Filter>McRave\Macro</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\Production.cpp">
-      <Filter>McRave\Macro</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\Pylons.cpp">
       <Filter>McRave\Macro</Filter>
     </ClCompile>
@@ -204,6 +201,9 @@
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Pathing.cpp">
       <Filter>McRave\Info\Units\Targeting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Production.cpp">
+      <Filter>McRave\Macro\Production</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -315,9 +315,6 @@
     <ClInclude Include="..\Source\McRave\Expansions.h">
       <Filter>McRave\Macro</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\Production.h">
-      <Filter>McRave\Macro</Filter>
-    </ClInclude>
     <ClInclude Include="..\Source\McRave\Pylons.h">
       <Filter>McRave\Macro</Filter>
     </ClInclude>
@@ -386,6 +383,9 @@
     </ClInclude>
     <ClInclude Include="..\Source\McRave\Pathing.h">
       <Filter>McRave\Info\Units\Targeting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Production.h">
+      <Filter>McRave\Macro\Production</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -466,6 +466,9 @@
     </Filter>
     <Filter Include="McRave\Info\Units\Targeting">
       <UniqueIdentifier>{8a712b9a-0ae0-4fb3-984a-83d3189ade54}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Macro\Production">
+      <UniqueIdentifier>{0908ccb8-e1a5-42f3-b5ae-d5099e920bd6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

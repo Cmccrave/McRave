@@ -400,7 +400,7 @@ namespace McRave::Learning {
         void getPermanentBuild()
         {
             // Testing builds if needed
-            if (true) {
+            if (false) {
                 if (Players::PvZ()) {
                     BuildOrder::setLearnedBuild("FFE", "Forge", "NeoBisu");
                     isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());

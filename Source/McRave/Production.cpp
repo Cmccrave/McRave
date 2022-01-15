@@ -14,6 +14,13 @@ namespace McRave::Production {
         int reservedMineral, reservedGas;
         int lastTrainFrame = 0;
 
+        void reset()
+        {
+            trainedThisFrame.clear();
+            reservedMineral = 0;
+            reservedGas = 0;
+        }
+
         bool haveOrUpgrading(UpgradeType upgrade, int level) {
             return ((Broodwar->self()->isUpgrading(upgrade) && Broodwar->self()->getUpgradeLevel(upgrade) == level - 1) || Broodwar->self()->getUpgradeLevel(upgrade) >= level);
         }
@@ -661,9 +668,6 @@ namespace McRave::Production {
         void updateReservedResources()
         {
             // Reserved minerals for idle buildings, tech and upgrades
-            reservedMineral = 0;
-            reservedGas = 0;
-
             for (auto &[unit, type] : idleProduction) {
                 if (BuildOrder::isTechUnit(type) && unit->exists()) {
                     reservedMineral += type.mineralPrice();
@@ -686,10 +690,8 @@ namespace McRave::Production {
             }
         }
 
-        void updateProduction()
+        void updateLarva()
         {
-            trainedThisFrame.clear();
-
             for (int i = 0; i < vis(Zerg_Larva); i++) {
 
                 // Find the best UnitType
@@ -745,9 +747,7 @@ namespace McRave::Production {
                     stations.emplace(saturation * larvaCount, station);
                 }
 
-                int aa = 0;
                 for (auto &[val, station] : stations) {
-                    aa++;
                     for (auto &u : Units::getUnits(PlayerState::Self)) {
                         UnitInfo &larva = *u;
                         if (!larvaTrickRequired(larva)) {
@@ -758,13 +758,15 @@ namespace McRave::Production {
                             else if (larvaTrickOptional(larva))
                                 continue;
                             if (produced)
-                                goto endloop;
+                                return;
                         }
                     }
                 }
             }
-        endloop:;
+        }
 
+        void updateProduction()
+        {
             const auto commands ={ addon, produce, research, upgrade };
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &building = *u;
@@ -807,7 +809,9 @@ namespace McRave::Production {
     void onFrame()
     {
         Visuals::startPerfTest();
+        reset();
         updateReservedResources();
+        updateLarva();
         updateProduction();
         Visuals::endPerfTest("Production");
     }

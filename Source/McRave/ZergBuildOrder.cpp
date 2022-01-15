@@ -216,9 +216,9 @@ namespace McRave::BuildOrder::Zerg {
             auto gasRemaining       = Broodwar->self()->gas() - BuildOrder::getGasQueued();
             auto minRemaining       = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
             auto dropGasRush        = (Strategy::enemyRush() && Broodwar->self()->gas() > 200);
-            auto dropGasExcess      = gasRemaining > 15 * vis(Zerg_Drone) - 100;
+            auto dropGasExcess      = gasRemaining > 15 * vis(Zerg_Drone) - 125;
             auto dropGasDefenses    = needSunks && Util::getTime() < Time(4, 00);
-            auto dropGasBroke       = minRemaining < 50 && Broodwar->self()->gas() >= 100 && Util::getTime() < Time(4, 30);
+            auto dropGasBroke       = minRemaining < 75 && Broodwar->self()->gas() >= 100 && Util::getTime() < Time(4, 30);
             auto dropGasDrones      = !Players::ZvZ() && vis(Zerg_Lair) > 0 && vis(Zerg_Drone) < 18;
 
             if (dropGasBroke

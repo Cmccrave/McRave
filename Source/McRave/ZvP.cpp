@@ -42,7 +42,7 @@ namespace McRave::BuildOrder::Zerg {
 
         int lingsNeeded() {
             auto lings = 0;
-            auto timingValue = 6;
+            auto timingValue = 0;
             auto initialValue = 0;
 
             if (com(Zerg_Spawning_Pool) == 0)
@@ -51,26 +51,26 @@ namespace McRave::BuildOrder::Zerg {
             // For every opener we expect:
             // Initial lings when pool completes
             if (Strategy::getEnemyBuild() == "2Gate") {
-                if (Strategy::getEnemyOpener() == "10/17")
-                    initialValue = 6;
-                else if (Strategy::getEnemyOpener() == "10/12")
-                    initialValue = 10;
+                initialValue = 6;
+
+                if (Strategy::getEnemyOpener() == "10/12")
+                    initialValue = 8;
                 else if (Strategy::getEnemyOpener() == "9/9")
-                    initialValue = 14;
+                    initialValue = 10;
             }
             if (Strategy::getEnemyBuild() == "1GateCore")
                 initialValue = 6;
 
             // For every transition we expect:
             // Every minute we want 6 more lings starting at 3:00 and 3:30
-            if (Strategy::getEnemyTransition() == "4Gate")
-                timingValue = 5;
-            else if (Strategy::getEnemyTransition().find("3Gate") != string::npos || Strategy::getEnemyTransition() == "DT")
-                timingValue = 4;
-            else if (Strategy::getEnemyTransition() == "Corsair")
-                timingValue = 2;
-            else if (Strategy::getEnemyBuild() == "FFE")
-                timingValue = 0;
+            if (currentTransition.find("3Hatch") != string::npos) {
+                if (Strategy::getEnemyTransition() == "4Gate")
+                    timingValue = 5;
+                else if (Strategy::getEnemyTransition().find("3Gate") != string::npos || Strategy::getEnemyTransition() == "DT")
+                    timingValue = 4;
+                else if (Strategy::getEnemyTransition() == "Corsair")
+                    timingValue = 2;
+            }
 
             lings = max(initialValue, (((Util::getTime().minutes - 1) * 60 + Util::getTime().seconds) / 60) * timingValue);
             return lings;
@@ -162,7 +162,7 @@ namespace McRave::BuildOrder::Zerg {
         lockedTransition =                              hatchCount() >= 3 || total(Zerg_Mutalisk) > 0;
         inOpeningBook =                                 total(Zerg_Mutalisk) < 9;
         inBookSupply =                                  vis(Zerg_Overlord) < 8 || total(Zerg_Mutalisk) < 9;
-        firstUpgrade =                                  Strategy::getEnemyBuild() != "FFE" ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+        firstUpgrade =                                  UpgradeTypes::None;
         firstUnit =                                     Zerg_Mutalisk;
         hideTech =                                      true;
         unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) == 0 ? 15 - hatchCount() : 33;
@@ -176,7 +176,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Build
         buildQueue[Zerg_Hatchery] =                     2 + (s >= 26) + fourthHatch;
-        buildQueue[Zerg_Extractor] =                    (s >= 32 && vis(Zerg_Drone) >= 11 && hatchCount() >= 3) + (vis(Zerg_Lair) > 0 && vis(Zerg_Drone) >= 19);
+        buildQueue[Zerg_Extractor] =                    (s >= 32 && vis(Zerg_Drone) >= 11 && hatchCount() >= 3) + (vis(Zerg_Lair) > 0 && vis(Zerg_Drone) >= 21);
         buildQueue[Zerg_Lair] =                         (s >= 32 && vis(Zerg_Drone) >= 15 && gas(100));
         buildQueue[Zerg_Spire] =                        (s >= 32 && atPercent(Zerg_Lair, 0.95) && vis(Zerg_Drone) >= 16);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32 && vis(Zerg_Extractor) > 0) + (s >= 48) + spireOverlords;
