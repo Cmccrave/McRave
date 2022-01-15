@@ -736,8 +736,13 @@ namespace McRave::Production {
                 auto produced = false;
                 multimap<double, BWEB::Station*> stations;
                 for (auto &[val, station] : Stations::getStationsBySaturation()) {
-                    auto newVal = bestType.isWorker() ? val : 1.0 / val;
-                    stations.emplace(newVal, station);
+                    auto saturation = bestType.isWorker() ? val : 1.0 / val;
+                    auto larvaCount = count_if(Units::getUnits(PlayerState::Self).begin(), Units::getUnits(PlayerState::Self).end(), [&](auto &u) {
+                        auto &unit = *u;
+                        return unit.getType() == Zerg_Larva && unit.unit()->getHatchery() && unit.unit()->getHatchery()->getTilePosition() == station->getBase()->Location();
+                    });
+
+                    stations.emplace(saturation * larvaCount, station);
                 }
 
                 int aa = 0;
