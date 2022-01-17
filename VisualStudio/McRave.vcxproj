@@ -53,11 +53,11 @@
     <ClCompile Include="..\Source\McRave\Planning.cpp" />
     <ClCompile Include="..\Source\McRave\ResourceInfo.cpp" />
     <ClCompile Include="..\Source\McRave\Roles.cpp" />
-    <ClCompile Include="..\Source\McRave\Spy.cpp" />
-    <ClCompile Include="..\Source\McRave\SpyGeneral.cpp" />
-    <ClCompile Include="..\Source\McRave\SpyProtoss.cpp" />
-    <ClCompile Include="..\Source\McRave\SpyTerran.cpp" />
-    <ClCompile Include="..\Source\McRave\SpyZerg.cpp" />
+    <ClCompile Include="..\Source\McRave\Spy\Spy.cpp" />
+    <ClCompile Include="..\Source\McRave\Spy\SpyGeneral.cpp" />
+    <ClCompile Include="..\Source\McRave\Spy\SpyProtoss.cpp" />
+    <ClCompile Include="..\Source\McRave\Spy\SpyTerran.cpp" />
+    <ClCompile Include="..\Source\McRave\Spy\SpyZerg.cpp" />
     <ClCompile Include="..\Source\McRave\Walls.cpp" />
     <ClCompile Include="..\Source\McRave\ZvP.cpp" />
     <ClCompile Include="..\Source\McRave\ZvT.cpp" />
@@ -132,7 +132,7 @@
     <ClInclude Include="..\Source\McRave\Pathing.h" />
     <ClInclude Include="..\Source\McRave\Planning.h" />
     <ClInclude Include="..\Source\McRave\Roles.h" />
-    <ClInclude Include="..\Source\McRave\Spy.h" />
+    <ClInclude Include="..\Source\McRave\Spy\Spy.h" />
     <ClInclude Include="..\Source\McRave\Visuals.h" />
     <ClInclude Include="..\Source\McRave\McRave.h" />
     <ClInclude Include="..\Source\McRave\PlayerInfo.h" />

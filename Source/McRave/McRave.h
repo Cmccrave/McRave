@@ -154,7 +154,7 @@ namespace McRave
 #include "Resources.h"
 #include "Roles.h"
 #include "Scouts.h"
-#include "Spy.h"
+#include "Spy/Spy.h"
 #include "Support.h"
 #include "Targeting.h"
 #include "Terrain.h"

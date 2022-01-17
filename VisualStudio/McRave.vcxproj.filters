@@ -202,19 +202,19 @@
     <ClCompile Include="..\Source\McRave\Terrain.cpp">
       <Filter>McRave\Map\Terrain</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\SpyProtoss.cpp">
+    <ClCompile Include="..\Source\McRave\Spy\Spy.cpp">
       <Filter>McRave\Strategy\Spy</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\Spy.cpp">
+    <ClCompile Include="..\Source\McRave\Spy\SpyGeneral.cpp">
       <Filter>McRave\Strategy\Spy</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\SpyTerran.cpp">
+    <ClCompile Include="..\Source\McRave\Spy\SpyProtoss.cpp">
       <Filter>McRave\Strategy\Spy</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\SpyZerg.cpp">
+    <ClCompile Include="..\Source\McRave\Spy\SpyTerran.cpp">
       <Filter>McRave\Strategy\Spy</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\SpyGeneral.cpp">
+    <ClCompile Include="..\Source\McRave\Spy\SpyZerg.cpp">
       <Filter>McRave\Strategy\Spy</Filter>
     </ClCompile>
   </ItemGroup>
@@ -396,7 +396,7 @@
     <ClInclude Include="..\Source\McRave\Terrain.h">
       <Filter>McRave\Map\Terrain</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\Spy.h">
+    <ClInclude Include="..\Source\McRave\Spy\Spy.h">
       <Filter>McRave\Strategy\Spy</Filter>
     </ClInclude>
   </ItemGroup>
@@ -487,6 +487,9 @@
     </Filter>
     <Filter Include="McRave\Strategy\Spy">
       <UniqueIdentifier>{6abfefaf-534b-455e-b1cd-97095a170c34}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Micro\Combat\Formation">
+      <UniqueIdentifier>{f82ac477-8863-40f7-90de-7bbe7e3eb14b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
