@@ -107,6 +107,64 @@ namespace McRave::Strategy {
             return current >= count;
         }
 
+        void enemyBuildOrder(PlayerInfo& player)
+        {
+            if (player.getCurrentRace() == Races::Zerg) {
+                if (!enemyStrat.build.confirmed || enemyStrat.build.changeable)
+                    enemyZergBuilds(player);
+                if (!enemyStrat.opener.confirmed || enemyStrat.opener.changeable)
+                    enemyZergOpeners(player);
+                if (!enemyStrat.transition.confirmed || enemyStrat.transition.changeable)
+                    enemyZergTransitions(player);
+            }
+            else if (player.getCurrentRace() == Races::Protoss) {
+                if (!enemyStrat.build.confirmed || enemyStrat.build.changeable)
+                    enemyProtossBuilds(player);
+                if (!enemyStrat.opener.confirmed || enemyStrat.opener.changeable)
+                    enemyProtossOpeners(player);
+                if (!enemyStrat.transition.confirmed || enemyStrat.transition.changeable)
+                    enemyProtossTransitions(player);
+            }
+            else if (player.getCurrentRace() == Races::Terran) {
+                if (!enemyStrat.build.confirmed || enemyStrat.build.changeable)
+                    enemyTerranBuilds(player);
+                if (!enemyStrat.opener.confirmed || enemyStrat.opener.changeable)
+                    enemyTerranOpeners(player);
+                if (!enemyStrat.transition.confirmed || enemyStrat.transition.changeable)
+                    enemyTerranTransitions(player);
+            }
+        }
+
+        void enemyArrivalTimes(PlayerInfo& player)
+        {
+            for (auto &u : player.getUnits()) {
+                UnitInfo &unit =*u;
+
+                // Estimate the finishing frame - HACK: Sometimes time arrival was negative
+                if (unitsStored.find(unit.unit()) == unitsStored.end() && (unit.getType().isBuilding() || unit.timeArrivesWhen().minutes > 0)) {
+                    timingsList[unit.getType()].countStartedWhen.push_back(unit.timeStartedWhen());
+                    timingsList[unit.getType()].countCompletedWhen.push_back(unit.timeCompletesWhen());
+                    timingsList[unit.getType()].countArrivesWhen.push_back(unit.timeArrivesWhen());
+
+                    if (!unit.getType().isBuilding())
+                        McRave::easyWrite(string(unit.getType().c_str()) + " arrives at " + unit.timeArrivesWhen().toString() + ", observed at " + Util::getTime().toString());
+                    else
+                        McRave::easyWrite(string(unit.getType().c_str()) + " completes at " + unit.timeCompletesWhen().toString() + ", observed at " + Util::getTime().toString());
+
+                    if (timingsList[unit.getType()].firstArrivesWhen == Time(999, 0) || unit.timeArrivesWhen() < timingsList[unit.getType()].firstArrivesWhen)
+                        timingsList[unit.getType()].firstArrivesWhen = unit.timeArrivesWhen();
+
+                    if (timingsList[unit.getType()].firstStartedWhen == Time(999, 0) || unit.timeStartedWhen() < timingsList[unit.getType()].firstStartedWhen)
+                        timingsList[unit.getType()].firstStartedWhen = unit.timeStartedWhen();
+
+                    if (timingsList[unit.getType()].firstCompletedWhen == Time(999, 0) || unit.timeCompletesWhen() < timingsList[unit.getType()].firstCompletedWhen)
+                        timingsList[unit.getType()].firstCompletedWhen = unit.timeCompletesWhen();
+
+                    unitsStored.insert(unit.unit());
+                }
+            }
+        }
+
         void enemyStrategicInfo(PlayerInfo& player)
         {
             // Monitor for a wall
@@ -153,29 +211,6 @@ namespace McRave::Strategy {
                 if (unit.unit()->isUpgrading() && typeUpgrading.find(unit.getType()) == typeUpgrading.end())
                     typeUpgrading.insert(unit.getType());
 
-                // Estimate the finishing frame - HACK: Sometimes time arrival was negative
-                if (unitsStored.find(unit.unit()) == unitsStored.end() && (unit.getType().isBuilding() || unit.timeArrivesWhen().minutes > 0)) {
-                    timingsList[unit.getType()].countStartedWhen.push_back(unit.timeStartedWhen());
-                    timingsList[unit.getType()].countCompletedWhen.push_back(unit.timeCompletesWhen());
-                    timingsList[unit.getType()].countArrivesWhen.push_back(unit.timeArrivesWhen());
-
-                    if (!unit.getType().isBuilding())
-                        McRave::easyWrite(string(unit.getType().c_str()) + " arrives at " + unit.timeArrivesWhen().toString() + ", observed at " + Util::getTime().toString());
-                    else
-                        McRave::easyWrite(string(unit.getType().c_str()) + " completes at " + unit.timeCompletesWhen().toString() + ", observed at " + Util::getTime().toString());
-
-                    if (timingsList[unit.getType()].firstArrivesWhen == Time(999, 0) || unit.timeArrivesWhen() < timingsList[unit.getType()].firstArrivesWhen)
-                        timingsList[unit.getType()].firstArrivesWhen = unit.timeArrivesWhen();
-
-                    if (timingsList[unit.getType()].firstStartedWhen == Time(999, 0) || unit.timeStartedWhen() < timingsList[unit.getType()].firstStartedWhen)
-                        timingsList[unit.getType()].firstStartedWhen = unit.timeStartedWhen();
-
-                    if (timingsList[unit.getType()].firstCompletedWhen == Time(999, 0) || unit.timeCompletesWhen() < timingsList[unit.getType()].firstCompletedWhen)
-                        timingsList[unit.getType()].firstCompletedWhen = unit.timeCompletesWhen();
-
-                    unitsStored.insert(unit.unit());
-                }
-
                 // Monitor for a fast expand
                 if (unit.getType().isResourceDepot()) {
                     for (auto &base : Terrain::getAllBases()) {
@@ -184,7 +219,7 @@ namespace McRave::Strategy {
                     }
                 }
 
-                // Proxy detection
+                // Monitor for a proxy
                 if (Util::getTime() < Time(5, 00)) {
                     if (unit.isProxy())
                         enemyStrat.proxy.possible = true;
@@ -745,37 +780,15 @@ namespace McRave::Strategy {
                 enemyStrat.greedy.confirmed = false;
         }
 
-        void updateEnemyBuild()
+        void updateEnemies()
         {
             for (auto &p : Players::getPlayers()) {
                 PlayerInfo &player = p.second;
 
                 if (player.isEnemy()) {
                     enemyStrategicInfo(player);
-                    if (player.getCurrentRace() == Races::Zerg) {
-                        if (!enemyStrat.build.confirmed || enemyStrat.build.changeable)
-                            enemyZergBuilds(player);
-                        if (!enemyStrat.opener.confirmed || enemyStrat.opener.changeable)
-                            enemyZergOpeners(player);
-                        if (!enemyStrat.transition.confirmed || enemyStrat.transition.changeable)
-                            enemyZergTransitions(player);
-                    }
-                    else if (player.getCurrentRace() == Races::Protoss) {
-                        if (!enemyStrat.build.confirmed || enemyStrat.build.changeable)
-                            enemyProtossBuilds(player);
-                        if (!enemyStrat.opener.confirmed || enemyStrat.opener.changeable)
-                            enemyProtossOpeners(player);
-                        if (!enemyStrat.transition.confirmed || enemyStrat.transition.changeable)
-                            enemyProtossTransitions(player);
-                    }
-                    else if (player.getCurrentRace() == Races::Terran) {
-                        if (!enemyStrat.build.confirmed || enemyStrat.build.changeable)
-                            enemyTerranBuilds(player);
-                        if (!enemyStrat.opener.confirmed || enemyStrat.opener.changeable)
-                            enemyTerranOpeners(player);
-                        if (!enemyStrat.transition.confirmed || enemyStrat.transition.changeable)
-                            enemyTerranTransitions(player);
-                    }
+                    enemyArrivalTimes(player);
+                    enemyBuildOrder(player);
                 }
             }
 
@@ -807,7 +820,7 @@ namespace McRave::Strategy {
 
     void onFrame()
     {
-        updateEnemyBuild();
+        updateEnemies();
         globalReactions();
     }
 
