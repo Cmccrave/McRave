@@ -12,7 +12,7 @@ namespace McRave::Production {
         map <Unit, UpgradeType> idleUpgrade;
         map <UnitType, int> trainedThisFrame;
         int reservedMineral, reservedGas;
-        int lastTrainFrame = 0;
+        int lastTrainFrame = -999;
 
         void reset()
         {

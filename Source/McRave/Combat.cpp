@@ -693,7 +693,6 @@ namespace McRave::Combat {
 
                 if (unit.getTargetPath().isReachable())
                     unit.setDestinationPath(unit.getTargetPath());
-                Broodwar->drawLineMap(unit.getPosition(), unit.getSurroundPosition(), Colors::Cyan);
             }
 
             // If we're not ready to attack with a proxy yet

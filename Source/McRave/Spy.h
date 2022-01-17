@@ -9,7 +9,7 @@ namespace McRave::Spy {
         bool changeable = false;
         int framesTrue = 0;
         int framesRequired = 50;
-        int framesChangeable = 1000;
+        int framesChangeable = 200;
         std::string name = "Unknown";
 
         void update() {
@@ -45,11 +45,11 @@ namespace McRave::Spy {
         StrategySpy() {
             listOfStrats ={ &build, &opener, &transition, &expand, &rush, &wall, &proxy, &early, &steal, &pressure, &greedy, &invis };
             build.framesRequired = 100;
-            build.framesChangeable = 1000;
+            build.framesChangeable = 200;
             opener.framesRequired = 100;
-            opener.framesChangeable = 1000;
+            opener.framesChangeable = 200;
             transition.framesRequired = 100;
-            transition.framesChangeable = 1000;
+            transition.framesChangeable = 200;
         }
     };
 

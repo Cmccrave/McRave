@@ -545,9 +545,9 @@ namespace McRave::Command {
             const auto mobility =   defaultMobility(unit, w);
 
             auto score = 0.0;
-            if (!Grids::hasCliffVision(TilePosition(w)))
-                score =            mobility / (distance * grouping);
-            else
+            //if (!Grids::hasCliffVision(TilePosition(w)))
+            //    score =            mobility / (distance * grouping);
+            //else
                 score =            mobility / (exp(threat) * distance * grouping);
 
             return score;
@@ -587,6 +587,9 @@ namespace McRave::Command {
             }
 
             auto bestPosition = findViablePosition(unit, scoreFunction);
+
+            if (unit.getRole() == Role::Scout)
+                Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Yellow);
             if (bestPosition.isValid()) {
                 unit.command(Move, bestPosition);
                 return true;

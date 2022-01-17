@@ -415,6 +415,8 @@ namespace McRave::Scouts {
                     }
                 }
             }
+
+            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
         }
 
         void updatePath(UnitInfo& unit)

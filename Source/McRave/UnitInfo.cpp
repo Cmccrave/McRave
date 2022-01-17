@@ -448,7 +448,7 @@ namespace McRave
         // Check if we should overshoot for halting distance
         if (cmd == UnitCommandTypes::Move && !getBuildPosition().isValid() && (getType().isFlyer() || isHovering() || getType() == Protoss_High_Templar)) {
             auto distance = int(getPosition().getDistance(here));
-            auto haltDistance = max({ distance, 32, getType().haltDistance() / 256 }) + 128.0;
+            auto haltDistance = max({ distance, 32, getType().haltDistance() / 256 });
             auto overShootHere = here;
 
             if (distance > 0) {
@@ -472,6 +472,7 @@ namespace McRave
         }
 
         // If this is a new order or new command than what we're requesting, we can issue it
+        Broodwar->drawCircleMap(here, 4, Colors::Red);
         if (newCommand()) {
             if (cmd == UnitCommandTypes::Move)
                 unit()->move(here);

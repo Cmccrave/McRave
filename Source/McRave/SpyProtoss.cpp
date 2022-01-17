@@ -180,13 +180,15 @@ namespace McRave::Spy::Protoss {
                 }
                 if (Players::ZvP()) {
 
-                    if ((!theSpy.expand.possible && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 && Util::getTime() < Time(6, 00))
-                        || (theSpy.typeUpgrading.find(Protoss_Cybernetics_Core) != theSpy.typeUpgrading.end() && Util::getTime() > Time(4, 00))
-                        || (Players::getPlayerInfo(Broodwar->enemy())->hasUpgrade(UpgradeTypes::Singularity_Charge) && Util::getTime() < Time(6, 00))
-                        || (arrivesBy(3, Protoss_Dragoon, Time(5, 45)))
-                        || (arrivesBy(5, Protoss_Dragoon, Time(6, 05)))
-                        || (completesBy(4, Protoss_Gateway, Time(5, 30)) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) >= 1))
-                        theSpy.transition.name = "4Gate";
+                    if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) == 0) {
+                        if ((!theSpy.expand.possible && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 && Util::getTime() < Time(6, 00))
+                            || (theSpy.typeUpgrading.find(Protoss_Cybernetics_Core) != theSpy.typeUpgrading.end() && Util::getTime() > Time(4, 00))
+                            || (Players::getPlayerInfo(Broodwar->enemy())->hasUpgrade(UpgradeTypes::Singularity_Charge) && Util::getTime() < Time(6, 00))
+                            || (arrivesBy(3, Protoss_Dragoon, Time(5, 45)))
+                            || (arrivesBy(5, Protoss_Dragoon, Time(6, 05)))
+                            || (completesBy(4, Protoss_Gateway, Time(5, 30)) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) >= 1))
+                            theSpy.transition.name = "4Gate";
+                    }
                 }
 
                 // 5ZealotExpand
