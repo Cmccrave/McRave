@@ -41,7 +41,7 @@ namespace McRave::Support {
             endloop:;
             }
 
-            else if (unit.getType() == Zerg_Overlord && !closestSpore && Strategy::getEnemyOpener() == "Corsair" && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 || !unit.isHealthy()))
+            else if (unit.getType() == Zerg_Overlord && !closestSpore && Spy::getEnemyOpener() == "Corsair" && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 || !unit.isHealthy()))
                 unit.setDestination(Terrain::getMyNatural()->getBase()->Center());
 
             // Set goal as destination

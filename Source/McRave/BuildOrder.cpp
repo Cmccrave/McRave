@@ -110,7 +110,7 @@ namespace McRave::BuildOrder
 
     bool techComplete()
     {
-        if (Strategy::enemyInvis() && techUnit == Protoss_Observer)
+        if (Spy::enemyInvis() && techUnit == Protoss_Observer)
             return vis(Protoss_Robotics_Facility) > 0;
 
         // When 1 unit finishes
@@ -129,9 +129,9 @@ namespace McRave::BuildOrder
         if (techUnit == Zerg_Mutalisk || techUnit == Zerg_Hydralisk)
             return total(techUnit) >= 6;
         if (techUnit == Zerg_Lurker) {
-            auto vsMech = Strategy::getEnemyTransition() == "2Fact"
-                || Strategy::getEnemyTransition() == "1FactTanks"
-                || Strategy::getEnemyTransition() == "5FactGoliath";
+            auto vsMech = Spy::getEnemyTransition() == "2Fact"
+                || Spy::getEnemyTransition() == "1FactTanks"
+                || Spy::getEnemyTransition() == "5FactGoliath";
             return Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) || vsMech;
         }
 

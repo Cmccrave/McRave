@@ -17,7 +17,7 @@ namespace McRave::Targets {
 
             if (target.getType().isWorker() && Util::getTime() < Time(8, 00)) {
                 return unit.getType().isWorker()
-                    || Strategy::getEnemyTransition() == "WorkerRush"
+                    || Spy::getEnemyTransition() == "WorkerRush"
                     || target.hasAttackedRecently()
                     || unit.getGroundRange() > 32.0
                     || target.isThreatening()
@@ -84,10 +84,10 @@ namespace McRave::Targets {
                 || (target.getType().isWorker())
                 || (!enemyHasGround && !enemyHasAir)
                 || (Players::ZvZ() && enemyCanDefendUnit)
-                || (Players::ZvZ() && Strategy::enemyFastExpand())
+                || (Players::ZvZ() && Spy::enemyFastExpand())
                 || Util::getTime() > Time(6, 00)
-                || Strategy::enemyGreedy()
-                || (target.getType() == Protoss_Pylon && target.isProxy() && Strategy::getEnemyTransition() == "ZealotRush");
+                || Spy::enemyGreedy()
+                || (target.getType() == Protoss_Pylon && target.isProxy() && Spy::getEnemyTransition() == "ZealotRush");
 
             // Combat Role
             if (unit.getRole() == Role::Combat) {
@@ -109,8 +109,8 @@ namespace McRave::Targets {
                 // Zergling
                 if (unit.getType() == Zerg_Zergling) {
                     if (Util::getTime() < Time(5, 00)) {
-                        if ((Players::ZvZ() && !target.canAttackGround() && !Strategy::enemyFastExpand())                                                                 // Avoid non ground hitters to try and kill drones
-                            || (Players::ZvT() && target.getType().isWorker() && !target.isThreatening() && Strategy::getEnemyBuild() == "RaxFact")                       // Avoid workers when we need to prepare for runbys
+                        if ((Players::ZvZ() && !target.canAttackGround() && !Spy::enemyFastExpand())                                                                 // Avoid non ground hitters to try and kill drones
+                            || (Players::ZvT() && target.getType().isWorker() && !target.isThreatening() && Spy::getEnemyBuild() == "RaxFact")                       // Avoid workers when we need to prepare for runbys
                             || (BuildOrder::isProxy() && !target.isThreatening() && !target.getType().isWorker() && Util::getTime() < Time(6, 00)))
                             return false;
                     }
@@ -203,7 +203,7 @@ namespace McRave::Targets {
             const auto bonusScore = [&]() {
 
                 // Add bonus for expansion killing
-                if (target.getType().isResourceDepot() && (Util::getTime() > Time(8, 00) || Strategy::enemyGreedy()) && !unit.isLightAir())
+                if (target.getType().isResourceDepot() && (Util::getTime() > Time(8, 00) || Spy::enemyGreedy()) && !unit.isLightAir())
                     return 5000.0;
 
                 // Add bonus for Observers that are vulnerable

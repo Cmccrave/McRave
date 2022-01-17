@@ -456,7 +456,7 @@ namespace McRave::Planning {
 
             // Hide tech if needed or against a rush
             if ((BuildOrder::isHideTech() && (building == Protoss_Citadel_of_Adun || building == Protoss_Templar_Archives))
-                || (Strategy::enemyRush() && (Players::PvZ() || Players::TvZ())))
+                || (Spy::enemyRush() && (Players::PvZ() || Players::TvZ())))
                 placement = furthestLocation(building, (Position)BWEB::Map::getMainChoke()->Center());
 
             // Try to place the tech building inside a main base
@@ -650,7 +650,7 @@ namespace McRave::Planning {
                 return false;
 
             // Don't wall if not needed
-            if ((!BuildOrder::isWallNat() && !BuildOrder::isWallMain()) || (Strategy::enemyBust() && BuildOrder::isOpener()))
+            if ((!BuildOrder::isWallNat() && !BuildOrder::isWallMain()) || (Spy::enemyBust() && BuildOrder::isOpener()))
                 return false;
 
             // As Zerg, we have to place natural hatch before wall
@@ -740,7 +740,7 @@ namespace McRave::Planning {
             };
 
             // Check if any Nexus needs a Pylon for defense placement
-            if (com(Protoss_Pylon) >= (Players::vT() ? 5 : 3) || Strategy::getEnemyTransition() == "2HatchMuta" || Strategy::getEnemyTransition() == "3HatchMuta") {
+            if (com(Protoss_Pylon) >= (Players::vT() ? 5 : 3) || Spy::getEnemyTransition() == "2HatchMuta" || Spy::getEnemyTransition() == "3HatchMuta") {
                 for (auto &station : Stations::getMyStations()) {
                     placement = stationNeedsPylon(station);
                     if (placement.isValid())
@@ -764,14 +764,14 @@ namespace McRave::Planning {
             }
 
             // Check if our main choke should get a Pylon for a Shield Battery
-            if (vis(Protoss_Pylon) == 1 && !BuildOrder::takeNatural() && (!Strategy::enemyRush() || !Players::vZ())) {
+            if (vis(Protoss_Pylon) == 1 && !BuildOrder::takeNatural() && (!Spy::enemyRush() || !Players::vZ())) {
                 placement = closestLocation(Protoss_Pylon, (Position)BWEB::Map::getMainChoke()->Center());
                 if (placement.isValid())
                     return true;
             }
 
             // Check if we are being busted, add an extra pylon to the defenses
-            if (Strategy::enemyBust() && Walls::getNaturalWall() && BuildOrder::isWallNat()) {
+            if (Spy::enemyBust() && Walls::getNaturalWall() && BuildOrder::isWallNat()) {
                 int cnt = 0;
                 TilePosition sum(0, 0);
                 TilePosition center(0, 0);
@@ -826,7 +826,7 @@ namespace McRave::Planning {
             }
 
             // HACK: Try to get a placement if we are being horror gated
-            if (Strategy::enemyProxy() && Util::getTime() < Time(5, 00) && !isDefensiveType(building) && !building.isResourceDepot())
+            if (Spy::enemyProxy() && Util::getTime() < Time(5, 00) && !isDefensiveType(building) && !building.isResourceDepot())
                 placement = Broodwar->getBuildLocation(building, BWEB::Map::getMainTile(), 16);
 
             return placement;

@@ -157,9 +157,6 @@
     <ClCompile Include="..\Source\McRave\Goals.cpp">
       <Filter>McRave\Strategy</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\Strategy.cpp">
-      <Filter>McRave\Strategy</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\Resources.cpp">
       <Filter>McRave\Info\Resources</Filter>
     </ClCompile>
@@ -204,6 +201,21 @@
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Terrain.cpp">
       <Filter>McRave\Map\Terrain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\SpyProtoss.cpp">
+      <Filter>McRave\Strategy\Spy</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Spy.cpp">
+      <Filter>McRave\Strategy\Spy</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\SpyTerran.cpp">
+      <Filter>McRave\Strategy\Spy</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\SpyZerg.cpp">
+      <Filter>McRave\Strategy\Spy</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\SpyGeneral.cpp">
+      <Filter>McRave\Strategy\Spy</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -342,9 +354,6 @@
     <ClInclude Include="..\Source\McRave\Goals.h">
       <Filter>McRave\Strategy</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\Strategy.h">
-      <Filter>McRave\Strategy</Filter>
-    </ClInclude>
     <ClInclude Include="..\Source\McRave\Resources.h">
       <Filter>McRave\Info\Resources</Filter>
     </ClInclude>
@@ -386,6 +395,9 @@
     </ClInclude>
     <ClInclude Include="..\Source\McRave\Terrain.h">
       <Filter>McRave\Map\Terrain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Spy.h">
+      <Filter>McRave\Strategy\Spy</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -472,6 +484,9 @@
     </Filter>
     <Filter Include="McRave\Map\Terrain">
       <UniqueIdentifier>{9323e7f8-4184-42ff-a9ee-c0831f2269f4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Strategy\Spy">
+      <UniqueIdentifier>{6abfefaf-534b-455e-b1cd-97095a170c34}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

@@ -223,7 +223,7 @@ namespace McRave::Goals {
                     for (auto &[dist, station] : stationsByDistance) {
                         auto type = meleeType;
 
-                        if (!Strategy::enemyGreedy())
+                        if (!Spy::enemyGreedy())
                             assignNumberToGoal(station.getBase()->Center(), type, 1, GoalType::Contain);
                     }
                 }
@@ -318,7 +318,7 @@ namespace McRave::Goals {
             auto enemyStrength = Players::getStrength(PlayerState::Enemy);
 
             // Clear out base early game
-            if (Util::getTime() < Time(5, 00) && !Strategy::enemyRush() && !Strategy::enemyPressure() && !Players::ZvZ()) {
+            if (Util::getTime() < Time(5, 00) && !Spy::enemyRush() && !Spy::enemyPressure() && !Players::ZvZ()) {
                 auto oldestTile = Terrain::getOldestPosition(BWEB::Map::getMainArea());
 
                 if (oldestTile.isValid())
@@ -326,7 +326,7 @@ namespace McRave::Goals {
             }
 
             // Assign an Overlord to watch our Choke early on
-            if ((Util::getTime() < Time(3, 00) && !Strategy::enemyProxy()) || (Util::getTime() < Time(2, 15) && Strategy::enemyProxy()) || (Players::ZvZ() && enemyStrength.airToAir <= 0.0))
+            if ((Util::getTime() < Time(3, 00) && !Spy::enemyProxy()) || (Util::getTime() < Time(2, 15) && Spy::enemyProxy()) || (Players::ZvZ() && enemyStrength.airToAir <= 0.0))
                 assignNumberToGoal(Position(BWEB::Map::getNaturalChoke()->Center()), Zerg_Overlord, 1, GoalType::Escort);
 
             // Assign the first available Overlord to each natural
@@ -374,12 +374,12 @@ namespace McRave::Goals {
             }
 
             // Attack enemy expansions with a small force         
-            if (Util::getTime() > Time(6, 00) || Strategy::enemyProxy()) {
+            if (Util::getTime() > Time(6, 00) || Spy::enemyProxy()) {
                 auto distBest = 0.0;
                 auto posBest = Positions::Invalid;
                 for (auto &station : Stations::getEnemyStations()) {
 
-                    if (!Strategy::enemyProxy()) {
+                    if (!Spy::enemyProxy()) {
                         if (station == Terrain::getEnemyNatural()
                             || station == Terrain::getEnemyMain())
                             continue;

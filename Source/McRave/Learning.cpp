@@ -551,15 +551,15 @@ namespace McRave::Learning {
 
         // What strategies were used/detected
         gameLog
-            << Strategy::getEnemyBuild() << ","
-            << Strategy::getEnemyOpener() << ","
-            << Strategy::getEnemyTransition() << ","
+            << Spy::getEnemyBuild() << ","
+            << Spy::getEnemyOpener() << ","
+            << Spy::getEnemyTransition() << ","
             << currentBuild << "," << currentOpener << "," << currentTransition << ",";
 
         // When did we detect the enemy strategy
-        gameLog << std::setfill('0') << Strategy::getEnemyBuildTime().minutes << ":" << std::setw(2) << Strategy::getEnemyBuildTime().seconds << ",";
-        gameLog << std::setfill('0') << Strategy::getEnemyOpenerTime().minutes << ":" << std::setw(2) << Strategy::getEnemyOpenerTime().seconds << ",";
-        gameLog << std::setfill('0') << Strategy::getEnemyTransitionTime().minutes << ":" << std::setw(2) << Strategy::getEnemyTransitionTime().seconds;
+        gameLog << std::setfill('0') << Spy::getEnemyBuildTime().minutes << ":" << std::setw(2) << Spy::getEnemyBuildTime().seconds << ",";
+        gameLog << std::setfill('0') << Spy::getEnemyOpenerTime().minutes << ":" << std::setw(2) << Spy::getEnemyOpenerTime().seconds << ",";
+        gameLog << std::setfill('0') << Spy::getEnemyTransitionTime().minutes << ":" << std::setw(2) << Spy::getEnemyTransitionTime().seconds;
 
         // Store a list of total units everyone made
         for (auto &type : UnitTypes::allUnitTypes()) {

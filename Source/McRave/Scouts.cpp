@@ -107,41 +107,41 @@ namespace McRave::Scouts {
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 desiredScoutTypeCounts[Protoss_Probe] = int(BuildOrder::shouldScout())
                     + int(Players::PvZ() && !Terrain::getEnemyStartingPosition().isValid() && mapBWEM.StartingLocations().size() == 4 && unexploredMains.size() == 2)
-                    + int(Players::PvP() && (Strategy::enemyProxy() || Strategy::enemyPossibleProxy()) && com(Protoss_Zealot) < 1);
+                    + int(Players::PvP() && (Spy::enemyProxy() || Spy::enemyPossibleProxy()) && com(Protoss_Zealot) < 1);
 
                 // No probe scouting when encountering the following situations
-                if ((Players::PvZ() && Strategy::enemyRush() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 2)
-                    || (Players::PvT() && (Strategy::enemyPressure() || Strategy::enemyWalled()))
-                    || (BuildOrder::isPlayPassive() && Strategy::enemyPressure())
+                if ((Players::PvZ() && Spy::enemyRush() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 2)
+                    || (Players::PvT() && (Spy::enemyPressure() || Spy::enemyWalled()))
+                    || (BuildOrder::isPlayPassive() && Spy::enemyPressure())
                     || (Util::getTime() > Time(5, 00)))
                     desiredScoutTypeCounts[Protoss_Probe] = 0;
             }
 
             // Terran
             if (Broodwar->self()->getRace() == Races::Terran) {
-                desiredScoutTypeCounts[Terran_SCV] = (BuildOrder::shouldScout() || Strategy::enemyPossibleProxy() || Strategy::enemyProxy());
+                desiredScoutTypeCounts[Terran_SCV] = (BuildOrder::shouldScout() || Spy::enemyPossibleProxy() || Spy::enemyProxy());
             }
 
             // Zerg
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 desiredScoutTypeCounts[Zerg_Overlord] = 2;
-                desiredScoutTypeCounts[Zerg_Drone] = int(BuildOrder::shouldScout() || Strategy::enemyProxy())
+                desiredScoutTypeCounts[Zerg_Drone] = int(BuildOrder::shouldScout() || Spy::enemyProxy())
                     + int(BuildOrder::shouldScout() && BuildOrder::isProxy());
 
                 // No drone scouting when encountering the following situations
-                if ((Players::ZvP() && Util::getTime() > Time(3, 30) && Strategy::enemyFastExpand())
+                if ((Players::ZvP() && Util::getTime() > Time(3, 30) && Spy::enemyFastExpand())
                     || (Players::ZvP() && Util::getTime() > Time(4, 30))
                     || (Players::ZvT() && Util::getTime() > Time(4, 30))
                     || workerScoutDenied
-                    || Strategy::enemyRush()
-                    || Strategy::enemyPressure()
-                    || Strategy::enemyWalled()
-                    || Strategy::enemyFastExpand()
+                    || Spy::enemyRush()
+                    || Spy::enemyPressure()
+                    || Spy::enemyWalled()
+                    || Spy::enemyFastExpand()
                     || (Terrain::isShitMap() && Terrain::getEnemyStartingPosition().isValid())
                     || (BuildOrder::isProxy() && Terrain::getEnemyStartingPosition().isValid())
-                    || Strategy::getEnemyBuild() == "FFE"
-                    || (Strategy::getEnemyBuild() == "2Gate" && (Util::getTime() > Time(3, 30) || Strategy::getEnemyOpener() != "Unknown"))
-                    || Strategy::getEnemyBuild() == "1GateCore")
+                    || Spy::getEnemyBuild() == "FFE"
+                    || (Spy::getEnemyBuild() == "2Gate" && (Util::getTime() > Time(3, 30) || Spy::getEnemyOpener() != "Unknown"))
+                    || Spy::getEnemyBuild() == "1GateCore")
                     desiredScoutTypeCounts[Zerg_Drone] = 0;
 
                 // No overlord scouting main when encountering the following situations
@@ -155,12 +155,12 @@ namespace McRave::Scouts {
                 }
 
                 // If we need to sacrifice an Overlord, ensure we have at least 1
-                sacrifice = Players::ZvP() && Terrain::getEnemyStartingPosition().isValid() && Terrain::getEnemyNatural() && Broodwar->isExplored(Terrain::getEnemyNatural()->getBase()->Location()) && !Strategy::enemyFastExpand() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) < 2 && Strategy::getEnemyTransition() == "Unknown";
+                sacrifice = Players::ZvP() && Terrain::getEnemyStartingPosition().isValid() && Terrain::getEnemyNatural() && Broodwar->isExplored(Terrain::getEnemyNatural()->getBase()->Location()) && !Spy::enemyFastExpand() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) < 2 && Spy::getEnemyTransition() == "Unknown";
                 if (sacrifice)
                     desiredScoutTypeCounts[Zerg_Overlord] = 1;
 
                 if (Util::getTime() > Time(10, 00)
-                    || Strategy::getEnemyBuild() == "FFE"
+                    || Spy::getEnemyBuild() == "FFE"
                     || Players::getVisibleCount(PlayerState::Enemy, Protoss_Stargate) > 0
                     || Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) > 0
                     || Players::getVisibleCount(PlayerState::Enemy, Zerg_Spire) > 0
@@ -172,7 +172,7 @@ namespace McRave::Scouts {
 
         void updateScoutRoles()
         {
-            bool sendAnother = scoutDeadFrame < 0 && (Broodwar->getFrameCount() - scoutDeadFrame > 240 || (Util::getTime() < Time(4, 0) && Strategy::getEnemyTransition() == "Unknown"));
+            bool sendAnother = scoutDeadFrame < 0 && (Broodwar->getFrameCount() - scoutDeadFrame > 240 || (Util::getTime() < Time(4, 0) && Spy::getEnemyTransition() == "Unknown"));
             const auto assign = [&](UnitType type) {
                 shared_ptr<UnitInfo> scout = nullptr;
 
@@ -308,8 +308,8 @@ namespace McRave::Scouts {
             const auto closestProxyBuilding = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto& u) {
                 return u.isProxy();
             });
-            if (Strategy::enemyProxy() && !closestProxyBuilding) {
-                if (Strategy::getEnemyBuild() == "CannonRush")
+            if (Spy::enemyProxy() && !closestProxyBuilding) {
+                if (Spy::getEnemyBuild() == "CannonRush")
                     addTarget(BWEB::Map::getMainPosition(), ScoutType::Proxy, 200);
                 else
                     addTarget(mapBWEM.Center(), ScoutType::Proxy, 200);

@@ -97,7 +97,7 @@ namespace McRave::BuildOrder::Zerg {
             }
 
             // Adding Overlords if we are sacrificing a scout or know we will lose one
-            if ((Scouts::isSacrificeScout() || Strategy::getEnemyTransition() == "Corsair") && Util::getTime() > Time(3, 45))
+            if ((Scouts::isSacrificeScout() || Spy::getEnemyTransition() == "Corsair") && Util::getTime() > Time(3, 45))
                 buildQueue[Zerg_Overlord] = max(3, buildQueue[Zerg_Overlord]);
 
             if (Players::ZvP() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) > 0 && vis(Zerg_Lair) == 0 && vis(Zerg_Hydralisk_Den) == 0 && vis(Zerg_Spore_Colony) == 0)
@@ -149,9 +149,9 @@ namespace McRave::BuildOrder::Zerg {
 
         void queueProduction()
         {
-            auto vsMech = Strategy::getEnemyTransition() == "2Fact"
-                || Strategy::getEnemyTransition() == "1FactTanks"
-                || Strategy::getEnemyTransition() == "5FactGoliath"
+            auto vsMech = Spy::getEnemyTransition() == "2Fact"
+                || Spy::getEnemyTransition() == "1FactTanks"
+                || Spy::getEnemyTransition() == "5FactGoliath"
                 || Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) >= 3;
 
             // Adding Hatcheries
@@ -160,12 +160,12 @@ namespace McRave::BuildOrder::Zerg {
             if (Players::ZvT())
                 desiredProduction = int(Stations::getMyStations().size()) + max(0, int(Stations::getMyStations().size()) - 3) + max(0, int(Stations::getMyStations().size()) - 4);
             if (Players::ZvP())
-                desiredProduction = int(Stations::getMyStations().size()) + (2 * max(0, int(Stations::getMyStations().size()) - 2)) + (Strategy::getEnemyBuild() != "FFE");
+                desiredProduction = int(Stations::getMyStations().size()) + (2 * max(0, int(Stations::getMyStations().size()) - 2)) + (Spy::getEnemyBuild() != "FFE");
             if (Players::ZvZ())
                 desiredProduction = int(Stations::getMyStations().size()) + max(0, int(Stations::getMyStations().size()) - 1) - (int(Stations::getEnemyStations().size() >= 2));
 
             // Situational increases
-            if (Strategy::getEnemyTransition() == "4Gate" && int(Stations::getMyStations().size()) <= 2)
+            if (Spy::getEnemyTransition() == "4Gate" && int(Stations::getMyStations().size()) <= 2)
                 desiredProduction = 4;
 
             productionSat = hatchCount >= min(7, desiredProduction);
@@ -215,7 +215,7 @@ namespace McRave::BuildOrder::Zerg {
             // Removing gas workers if we are adding Sunkens or have excess gas
             auto gasRemaining       = Broodwar->self()->gas() - BuildOrder::getGasQueued();
             auto minRemaining       = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
-            auto dropGasRush        = (Strategy::enemyRush() && Broodwar->self()->gas() > 200);
+            auto dropGasRush        = (Spy::enemyRush() && Broodwar->self()->gas() > 200);
             auto dropGasExcess      = gasRemaining > 15 * vis(Zerg_Drone) - 125;
             auto dropGasDefenses    = needSunks && Util::getTime() < Time(4, 00);
             auto dropGasBroke       = minRemaining < 75 && Broodwar->self()->gas() >= 100 && Util::getTime() < Time(4, 30);
@@ -268,14 +268,14 @@ namespace McRave::BuildOrder::Zerg {
 
     void tech()
     {
-        const auto vsGoonsGols = Strategy::getEnemyTransition() == "4Gate" || Strategy::getEnemyTransition() == "5FactGoliath";
+        const auto vsGoonsGols = Spy::getEnemyTransition() == "4Gate" || Spy::getEnemyTransition() == "5FactGoliath";
         const auto techVal = int(techList.size()) + (2 * Players::ZvT()) + (Players::ZvP()) + vsGoonsGols;
         const auto endOfTech = !techOrder.empty() && isTechUnit(techOrder.back());
         techSat = (techVal >= int(Stations::getMyStations().size())) || endOfTech;
 
         // ZvP
         if (Players::ZvP()) {
-            if (Strategy::getEnemyTransition() == "Carriers")
+            if (Spy::getEnemyTransition() == "Carriers")
                 techOrder ={ Zerg_Mutalisk, Zerg_Hydralisk };
             else if (vsGoonsGols)
                 techOrder ={ Zerg_Mutalisk, Zerg_Hydralisk };
@@ -316,7 +316,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Creep_Colony] = vis(Zerg_Creep_Colony) + vis(Zerg_Spore_Colony) + vis(Zerg_Sunken_Colony);
         queueWallDefenses();
         queueStationDefenses();
-        defensesNow = buildQueue[Zerg_Creep_Colony] > 0 && vis(Zerg_Sunken_Colony) < 1 && (Strategy::getEnemyBuild() == "RaxFact" || Strategy::getEnemyBuild() == "2Gate" || Strategy::getEnemyBuild() == "1GateCore" || Strategy::enemyRush() || Players::ZvZ() || Util::getTime() > Time(6, 30));
+        defensesNow = buildQueue[Zerg_Creep_Colony] > 0 && vis(Zerg_Sunken_Colony) < 1 && (Spy::getEnemyBuild() == "RaxFact" || Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore" || Spy::enemyRush() || Players::ZvZ() || Util::getTime() > Time(6, 30));
 
         // Queue up supply, upgrade structures
         queueOverlords();
@@ -341,9 +341,9 @@ namespace McRave::BuildOrder::Zerg {
 
         // ZvT
         if (Players::vT() && !inOpeningBook) {
-            auto vsMech = Strategy::getEnemyTransition() == "2Fact"
-                || Strategy::getEnemyTransition() == "1FactTanks"
-                || Strategy::getEnemyTransition() == "5FactGoliath";
+            auto vsMech = Spy::getEnemyTransition() == "2Fact"
+                || Spy::getEnemyTransition() == "1FactTanks"
+                || Spy::getEnemyTransition() == "5FactGoliath";
 
             // Cleanup enemy
             if (Util::getTime() > Time(15, 0) && Stations::getEnemyStations().size() == 0 && Terrain::foundEnemy()) {
@@ -510,9 +510,9 @@ namespace McRave::BuildOrder::Zerg {
         if (!inOpeningBook) {
             int hatchCount = vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive);
             int pumpLings = 0;
-            if (Strategy::getEnemyTransition() == "Robo")
+            if (Spy::getEnemyTransition() == "Robo")
                 pumpLings = 12;
-            if (Strategy::getEnemyTransition() == "4Gate" && hatchCount >= 4)
+            if (Spy::getEnemyTransition() == "4Gate" && hatchCount >= 4)
                 pumpLings = 24;
             if (Resources::isMineralSaturated() && Resources::isGasSaturated() && int(Stations::getMyStations().size()) <= 2)
                 pumpLings = 200;
@@ -527,14 +527,14 @@ namespace McRave::BuildOrder::Zerg {
         }
 
         // Specific compositions
-        if (isTechUnit(Zerg_Hydralisk) && !Terrain::isIslandMap() && (Players::getVisibleCount(PlayerState::Enemy, Protoss_Stargate) >= 3 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Carrier) >= 4 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Fleet_Beacon) >= 1 || Strategy::getEnemyTransition() == "DoubleStargate" || Strategy::getEnemyTransition() == "Carriers")) {
+        if (isTechUnit(Zerg_Hydralisk) && !Terrain::isIslandMap() && (Players::getVisibleCount(PlayerState::Enemy, Protoss_Stargate) >= 3 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Carrier) >= 4 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Fleet_Beacon) >= 1 || Spy::getEnemyTransition() == "DoubleStargate" || Spy::getEnemyTransition() == "Carriers")) {
             armyComposition.clear();
             armyComposition[Zerg_Drone] = 0.50;
             armyComposition[Zerg_Hydralisk] = 0.50;
         }
 
         // Determine if we should drone up instead of build army
-        if (Util::getTime() < Time(10, 00) && !inOpeningBook && !Strategy::enemyProxy() && !Strategy::enemyRush()) {
+        if (Util::getTime() < Time(10, 00) && !inOpeningBook && !Spy::enemyProxy() && !Spy::enemyRush()) {
             auto enemyGroundRatio =     0.5 - clamp(Players::getStrength(PlayerState::Enemy).groundDefense / (0.01 + Players::getStrength(PlayerState::Enemy).groundToGround + Players::getStrength(PlayerState::Enemy).airToGround + Players::getStrength(PlayerState::Enemy).groundDefense), 0.0, 1.0);
             auto enemyAirRatio =        0.5 - clamp(Players::getStrength(PlayerState::Enemy).airDefense / (0.01 + Players::getStrength(PlayerState::Enemy).airToAir + Players::getStrength(PlayerState::Enemy).groundToAir + Players::getStrength(PlayerState::Enemy).airDefense), 0.0, 1.0);
 
@@ -550,7 +550,7 @@ namespace McRave::BuildOrder::Zerg {
             auto needScourgeZvP = Players::ZvP() && (((airCount / 2) > vis(Zerg_Scourge) && (airCount >= 3 || vis(Zerg_Mutalisk) == 0) && airCount < 6) || (Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 && vis(Zerg_Scourge) < 2) || (Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 4 && vis(Zerg_Scourge) < 4));
             auto needScourgeZvZ = Players::ZvZ() && (airCount / 2) > vis(Zerg_Scourge) && (total(Zerg_Mutalisk) >= 3 || currentTransition == "2HatchMuta") && vis(Zerg_Scourge) < 2;
             auto needScourgeZvT = Players::ZvT() &&
-                ((Strategy::getEnemyTransition() == "2PortWraith" && (airCount >= 3 || vis(Zerg_Mutalisk) == 0) && ((vis(Zerg_Scourge) / 2) - 1 < airCount && airCount < 6 && Players::getStrength(PlayerState::Enemy).airToAir > 0.0))
+                ((Spy::getEnemyTransition() == "2PortWraith" && (airCount >= 3 || vis(Zerg_Mutalisk) == 0) && ((vis(Zerg_Scourge) / 2) - 1 < airCount && airCount < 6 && Players::getStrength(PlayerState::Enemy).airToAir > 0.0))
                     || (Players::getVisibleCount(PlayerState::Enemy, Terran_Valkyrie) >= 2 && vis(Zerg_Scourge) < 8)
                     || (Util::getTime() > Time(10, 00) && vis(Zerg_Scourge) < 4));
 

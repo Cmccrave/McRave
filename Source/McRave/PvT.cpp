@@ -70,11 +70,11 @@ namespace McRave::BuildOrder::Protoss {
         proxy =                                             currentOpener == "Proxy" && vis(Protoss_Gateway) < 2 && Broodwar->getFrameCount() < 5000;
         scout =                                             currentOpener != "Proxy" && Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
         rush =                                              currentOpener == "Proxy";
-        playPassive =                                       Strategy::enemyPressure() && Util::getTime() < Time(5, 0);
+        playPassive =                                       Spy::enemyPressure() && Util::getTime() < Time(5, 0);
 
         // Reactions
         if (!lockedTransition) {
-            if (Strategy::enemyFastExpand())
+            if (Spy::enemyFastExpand())
                 currentTransition = "DT";
         }
 
@@ -90,9 +90,9 @@ namespace McRave::BuildOrder::Protoss {
 
         // Transitions
         if (currentTransition == "DT") {
-            playPassive =                                   Strategy::getEnemyBuild() == "2Rax" && vis(Protoss_Dark_Templar) == 0;
-            unitLimits[Protoss_Zealot] =                                   Strategy::getEnemyBuild() == "2Rax" ? 2 : 0;
-            gasLimit =                                      Strategy::getEnemyBuild() == "2Rax" && total(Protoss_Gateway) < 2 ? 0 : 3;
+            playPassive =                                   Spy::getEnemyBuild() == "2Rax" && vis(Protoss_Dark_Templar) == 0;
+            unitLimits[Protoss_Zealot] =                                   Spy::getEnemyBuild() == "2Rax" ? 2 : 0;
+            gasLimit =                                      Spy::getEnemyBuild() == "2Rax" && total(Protoss_Gateway) < 2 ? 0 : 3;
             lockedTransition =                              total(Protoss_Citadel_of_Adun) > 0;
             inOpeningBook =                                 s < 70;
             firstUnit =                                     Protoss_Dark_Templar;
@@ -166,12 +166,12 @@ namespace McRave::BuildOrder::Protoss {
 
         // Reactions
         if (!lockedTransition) {
-            if (Strategy::enemyRush()) {
+            if (Spy::enemyRush()) {
                 currentBuild = "2Gate";
                 currentOpener = "Main";
                 currentTransition = "DT";
             }
-            else if (Strategy::enemyFastExpand())
+            else if (Spy::enemyFastExpand())
                 currentTransition = "DT";
         }
 
@@ -198,7 +198,7 @@ namespace McRave::BuildOrder::Protoss {
             lockedTransition =                              total(Protoss_Robotics_Facility) > 0;
             inOpeningBook =                                 s < 60;
             hideTech =                                      com(Protoss_Reaver) <= 0;
-            firstUnit =                                     Strategy::enemyPressure() ? Protoss_Reaver : Protoss_Observer;
+            firstUnit =                                     Spy::enemyPressure() ? Protoss_Reaver : Protoss_Observer;
 
             buildQueue[Protoss_Nexus] =                     1 + (s >= 74);
             buildQueue[Protoss_Gateway] =                   (s >= 20) + (s >= 60) + (s >= 62);
@@ -229,7 +229,7 @@ namespace McRave::BuildOrder::Protoss {
             hideTech =                                      com(Protoss_Dark_Templar) <= 0;
             firstUnit =                                     Protoss_Dark_Templar;
             firstUpgrade =                                  vis(Protoss_Dark_Templar) >= 2 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
-            playPassive =                                   Strategy::enemyPressure() ? vis(Protoss_Observer) == 0 : false;
+            playPassive =                                   Spy::enemyPressure() ? vis(Protoss_Observer) == 0 : false;
 
             buildQueue[Protoss_Gateway] =                   (s >= 20) + (vis(Protoss_Templar_Archives) > 0);
             buildQueue[Protoss_Nexus] =                     1 + (vis(Protoss_Dark_Templar) > 0);
@@ -246,7 +246,7 @@ namespace McRave::BuildOrder::Protoss {
     {
         // "http://liquipedia.net/starcraft/12_Nexus"
         defaultPvT();
-        playPassive =                                       Strategy::enemyPressure() ? vis(Protoss_Dragoon) < 12 : !firstReady() && vis(Protoss_Dragoon) < 4;
+        playPassive =                                       Spy::enemyPressure() ? vis(Protoss_Dragoon) < 12 : !firstReady() && vis(Protoss_Dragoon) < 4;
         firstUpgrade =                                      vis(Protoss_Dragoon) >= 1 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
         cutWorkers =                                        s >= 44 && s < 48;
         gasLimit =                                          goonRange() && com(Protoss_Nexus) < 2 ? 2 : INT_MAX;
@@ -255,11 +255,11 @@ namespace McRave::BuildOrder::Protoss {
 
         // Reactions
         if (!lockedTransition) {
-            if (Strategy::enemyFastExpand() || Strategy::getEnemyTransition() == "SiegeExpand")
+            if (Spy::enemyFastExpand() || Spy::getEnemyTransition() == "SiegeExpand")
                 currentTransition = s < 50 ? "DoubleExpand" : "ReaverCarrier";
-            else if (Terrain::getEnemyStartingPosition().isValid() && !Strategy::enemyFastExpand() && currentTransition == "DoubleExpand")
+            else if (Terrain::getEnemyStartingPosition().isValid() && !Spy::enemyFastExpand() && currentTransition == "DoubleExpand")
                 currentTransition = "Standard";
-            else if (Strategy::enemyPressure())
+            else if (Spy::enemyPressure())
                 currentTransition = "Standard";
         }
 
@@ -339,12 +339,12 @@ namespace McRave::BuildOrder::Protoss {
 
         // Reactions
         if (!lockedTransition) {
-            if (Strategy::enemyFastExpand() || Strategy::getEnemyTransition() == "SiegeExpand")
+            if (Spy::enemyFastExpand() || Spy::getEnemyTransition() == "SiegeExpand")
                 currentTransition = "Carrier";
-            else if ((!Strategy::enemyFastExpand() && Terrain::foundEnemy() && currentTransition == "DoubleExpand") || Strategy::enemyPressure())
+            else if ((!Spy::enemyFastExpand() && Terrain::foundEnemy() && currentTransition == "DoubleExpand") || Spy::enemyPressure())
                 currentTransition = "Standard";
 
-            if (s < 42 && Strategy::getEnemyBuild() == "2Rax") {
+            if (s < 42 && Spy::getEnemyBuild() == "2Rax") {
                 currentBuild = "2Gate";
                 currentOpener = "Main";
                 currentTransition = "DT";
@@ -357,7 +357,7 @@ namespace McRave::BuildOrder::Protoss {
             buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 30);
             buildQueue[Protoss_Gateway] =                   (s >= 20) + (vis(Protoss_Nexus) >= 2) + (s >= 76);
 
-            playPassive =                                   (Strategy::enemyPressure() ? vis(Protoss_Dragoon) < 16 : !firstReady()) || (com(Protoss_Dragoon) < 4 && !Strategy::enemyFastExpand());
+            playPassive =                                   (Spy::enemyPressure() ? vis(Protoss_Dragoon) < 16 : !firstReady()) || (com(Protoss_Dragoon) < 4 && !Spy::enemyFastExpand());
             scout =                                         Broodwar->getStartLocations().size() == 4 ? vis(Protoss_Pylon) > 0 : vis(Protoss_Pylon) > 0;
             gasLimit =                                      goonRange() && vis(Protoss_Nexus) < 2 ? 2 : INT_MAX;
             unitLimits[Protoss_Dragoon] =                   Util::getTime() > Time(4, 0) || vis(Protoss_Nexus) >= 2 ? INT_MAX : 1;

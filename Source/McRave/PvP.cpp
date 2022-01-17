@@ -15,14 +15,14 @@ namespace McRave::BuildOrder::Protoss {
         }
 
         bool enemyMoreZealots() {
-            return com(Protoss_Zealot) <= Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) || Strategy::enemyProxy();
+            return com(Protoss_Zealot) <= Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) || Spy::enemyProxy();
         }
 
         bool enemyMaybeDT() {
             return (Players::getVisibleCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) > 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) <= 2)
                 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) < 3
-                || Strategy::enemyInvis()
-                || Strategy::getEnemyTransition() == "DT";
+                || Spy::enemyInvis()
+                || Spy::getEnemyTransition() == "DT";
         }
 
         void defaultPvP() {
@@ -106,16 +106,16 @@ namespace McRave::BuildOrder::Protoss {
         desiredDetection =                                  Protoss_Forge;
         gasLimit =                                          total(Protoss_Zealot) >= 3 ? INT_MAX : 0;
 
-        if (Strategy::enemyRush())
+        if (Spy::enemyRush())
             buildQueue[Protoss_Shield_Battery] =            vis(Protoss_Zealot) >= 2 && vis(Protoss_Pylon) >= 2;
 
         // Reactions
         if (!lockedTransition) {
-            if (Strategy::getEnemyBuild() == "FFE" || Strategy::getEnemyTransition() == "DT")
+            if (Spy::getEnemyBuild() == "FFE" || Spy::getEnemyTransition() == "DT")
                 currentTransition = "Robo";
-            else if (Strategy::getEnemyBuild() == "CannonRush")
+            else if (Spy::getEnemyBuild() == "CannonRush")
                 currentTransition = "Robo";
-            else if (Strategy::enemyPressure())
+            else if (Spy::enemyPressure())
                 currentTransition = "DT";
         }
 
@@ -217,12 +217,12 @@ namespace McRave::BuildOrder::Protoss {
         if (!lockedTransition) {
 
             // If enemy is rushing us
-            if (Strategy::getEnemyBuild() == "2Gate" && vis(Protoss_Cybernetics_Core) == 0) {
+            if (Spy::getEnemyBuild() == "2Gate" && vis(Protoss_Cybernetics_Core) == 0) {
                 currentBuild = "2Gate";
                 currentOpener = "Main";
                 currentTransition = "Robo";
             }
-            else if (Strategy::getEnemyBuild() == "2Gate" && vis(Protoss_Cybernetics_Core) > 0)
+            else if (Spy::getEnemyBuild() == "2Gate" && vis(Protoss_Cybernetics_Core) > 0)
                 currentTransition = "3Gate";
 
             // If our 4Gate would likely kill us
@@ -238,7 +238,7 @@ namespace McRave::BuildOrder::Protoss {
                 currentTransition = "Robo";
 
             // If we see a FFE, 3Gate with an expansion
-            else if (Strategy::getEnemyBuild() == "FFE")
+            else if (Spy::getEnemyBuild() == "FFE")
                 currentTransition = "3Gate";
         }
 
@@ -299,8 +299,8 @@ namespace McRave::BuildOrder::Protoss {
             else if (currentTransition == "3Gate") {        // -nolink-
                 firstUnit =                                 None;
                 lockedTransition =                          total(Protoss_Gateway) >= 3;
-                inOpeningBook =                             Strategy::enemyPressure() ? Broodwar->getFrameCount() < 9000 : Broodwar->getFrameCount() < 8000;
-                playPassive =                               Strategy::enemyPressure() ? Broodwar->getFrameCount() < 13000 : false;
+                inOpeningBook =                             Spy::enemyPressure() ? Broodwar->getFrameCount() < 9000 : Broodwar->getFrameCount() < 8000;
+                playPassive =                               Spy::enemyPressure() ? Broodwar->getFrameCount() < 13000 : false;
                 gasLimit =                                  vis(Protoss_Gateway) >= 2 && com(Protoss_Gateway) < 3 ? 2 : INT_MAX;
                 wallNat =                                   Util::getTime() > Time(4, 30);
 
@@ -319,7 +319,7 @@ namespace McRave::BuildOrder::Protoss {
                 desiredDetection =                          Protoss_Forge;
 
                 // Build
-                if (Strategy::getEnemyBuild() == "2Gate") {
+                if (Spy::getEnemyBuild() == "2Gate") {
                     unitLimits[Protoss_Zealot] =            s < 60 ? 4 : 0;
                     gasLimit =                              vis(Protoss_Dragoon) > 0 ? 3 : 1;
                     playPassive =                           com(Protoss_Dragoon) < 2;

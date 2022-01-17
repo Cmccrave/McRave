@@ -39,7 +39,7 @@ namespace McRave::BuildOrder::Terran {
 
         if (techComplete())
             techUnit = None; // If we have our tech unit, set to none    
-        if (Strategy::enemyInvis() || (!inOpeningBook && !getTech && !techSat /*&& productionSat*/ && techUnit == None))
+        if (Spy::enemyInvis() || (!inOpeningBook && !getTech && !techSat /*&& productionSat*/ && techUnit == None))
             getTech = true; // If production is saturated and none are idle or we need detection, choose a tech
 
         productionSat = (com(Terran_Factory) >= min(12, (2 * vis(Terran_Command_Center))));
@@ -77,7 +77,7 @@ namespace McRave::BuildOrder::Terran {
         }
 
         // Bunker logic
-        if (Strategy::enemyRush() && !wallMain)
+        if (Spy::enemyRush() && !wallMain)
             buildQueue[Terran_Bunker] = 1;
 
         if (!inOpeningBook)
@@ -94,7 +94,7 @@ namespace McRave::BuildOrder::Terran {
             buildQueue[Terran_Armory] = (s > 160) + (s > 200);
 
             // Academy logic
-            if (Strategy::enemyInvis()) {
+            if (Spy::enemyInvis()) {
                 buildQueue[Terran_Academy] = 1;
                 buildQueue[Terran_Comsat_Station] = 2;
             }

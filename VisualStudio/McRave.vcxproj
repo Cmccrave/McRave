@@ -53,6 +53,11 @@
     <ClCompile Include="..\Source\McRave\Planning.cpp" />
     <ClCompile Include="..\Source\McRave\ResourceInfo.cpp" />
     <ClCompile Include="..\Source\McRave\Roles.cpp" />
+    <ClCompile Include="..\Source\McRave\Spy.cpp" />
+    <ClCompile Include="..\Source\McRave\SpyGeneral.cpp" />
+    <ClCompile Include="..\Source\McRave\SpyProtoss.cpp" />
+    <ClCompile Include="..\Source\McRave\SpyTerran.cpp" />
+    <ClCompile Include="..\Source\McRave\SpyZerg.cpp" />
     <ClCompile Include="..\Source\McRave\Walls.cpp" />
     <ClCompile Include="..\Source\McRave\ZvP.cpp" />
     <ClCompile Include="..\Source\McRave\ZvT.cpp" />
@@ -78,7 +83,6 @@
     <ClCompile Include="..\Source\McRave\Scouts.cpp" />
     <ClCompile Include="..\Source\McRave\Specials.cpp" />
     <ClCompile Include="..\Source\McRave\Stations.cpp" />
-    <ClCompile Include="..\Source\McRave\Strategy.cpp" />
     <ClCompile Include="..\Source\McRave\Support.cpp" />
     <ClCompile Include="..\Source\McRave\Targeting.cpp" />
     <ClCompile Include="..\Source\McRave\Terrain.cpp" />
@@ -128,6 +132,7 @@
     <ClInclude Include="..\Source\McRave\Pathing.h" />
     <ClInclude Include="..\Source\McRave\Planning.h" />
     <ClInclude Include="..\Source\McRave\Roles.h" />
+    <ClInclude Include="..\Source\McRave\Spy.h" />
     <ClInclude Include="..\Source\McRave\Visuals.h" />
     <ClInclude Include="..\Source\McRave\McRave.h" />
     <ClInclude Include="..\Source\McRave\PlayerInfo.h" />
@@ -138,7 +143,6 @@
     <ClInclude Include="..\Source\McRave\Resources.h" />
     <ClInclude Include="..\Source\McRave\Scouts.h" />
     <ClInclude Include="..\Source\McRave\Stations.h" />
-    <ClInclude Include="..\Source\McRave\Strategy.h" />
     <ClInclude Include="..\Source\McRave\Support.h" />
     <ClInclude Include="..\Source\McRave\Targeting.h" />
     <ClInclude Include="..\Source\McRave\Terrain.h" />

@@ -56,7 +56,7 @@ namespace McRave::BuildOrder::Protoss
             return;
 
         const auto firstTechUnit = !techList.empty() ? *techList.begin() : None;
-        const auto skipOneTech = int(firstUnit == None || (firstUnit != None && Stations::getMyStations().size() >= 2) || Strategy::getEnemyBuild() == "FFE" || (Strategy::enemyGasSteal() && !Terrain::isNarrowNatural()));
+        const auto skipOneTech = int(firstUnit == None || (firstUnit != None && Stations::getMyStations().size() >= 2) || Spy::getEnemyBuild() == "FFE" || (Spy::enemyGasSteal() && !Terrain::isNarrowNatural()));
         const auto techVal = int(techList.size()) + skipOneTech - isTechUnit(Protoss_Shuttle) + isTechUnit(Protoss_Arbiter) - (com(Protoss_Nexus) >= 3 && isTechUnit(Protoss_Dark_Templar));
         techSat = techVal >= int(Stations::getMyStations().size());
 
@@ -96,7 +96,7 @@ namespace McRave::BuildOrder::Protoss
 
         // Change desired detection if we get Cannons
         // TODO: Clean up all below this section
-        if (Strategy::enemyInvis() && desiredDetection == Protoss_Forge) {
+        if (Spy::enemyInvis() && desiredDetection == Protoss_Forge) {
             buildQueue[Protoss_Forge] = 1;
             buildQueue[Protoss_Photon_Cannon] = com(Protoss_Forge) * 2;
 
@@ -107,17 +107,17 @@ namespace McRave::BuildOrder::Protoss
         }
 
         // If production is saturated and none are idle or we need detection, choose a tech
-        if ((!inOpeningBook && !getTech && !techSat && techUnit == None) || (Strategy::enemyInvis() && !isTechUnit(desiredDetection)))
+        if ((!inOpeningBook && !getTech && !techSat && techUnit == None) || (Spy::enemyInvis() && !isTechUnit(desiredDetection)))
             getTech = true;
 
         // If we need detection
-        if (getTech && Strategy::enemyInvis() && !isTechUnit(desiredDetection))
+        if (getTech && Spy::enemyInvis() && !isTechUnit(desiredDetection))
             techUnit = desiredDetection;
 
         // Various hardcoded tech choices
         else if (getTech && currentTransition == "DoubleExpand" && !isTechUnit(Protoss_High_Templar))
             techUnit = Protoss_High_Templar;
-        else if (getTech && Strategy::getEnemyTransition() == "4Gate" && !isTechUnit(Protoss_Dark_Templar) && !Strategy::enemyGasSteal())
+        else if (getTech && Spy::getEnemyTransition() == "4Gate" && !isTechUnit(Protoss_Dark_Templar) && !Spy::enemyGasSteal())
             techUnit = Protoss_Dark_Templar;
 
         getNewTech();
@@ -127,7 +127,7 @@ namespace McRave::BuildOrder::Protoss
     void situational()
     {
         // Against FFE add a Nexus
-        if (Strategy::getEnemyBuild() == "FFE" && Broodwar->getFrameCount() < 15000) {
+        if (Spy::getEnemyBuild() == "FFE" && Broodwar->getFrameCount() < 15000) {
             auto cannonCount = Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon);
             wantNatural = true;
 
@@ -323,7 +323,7 @@ namespace McRave::BuildOrder::Protoss
         //}
 
         // Add Shuttles if we have Reavers/HT
-        if (com(Protoss_Robotics_Facility) > 0 && (isTechUnit(Protoss_Reaver) || isTechUnit(Protoss_High_Templar) || (Players::vP() && !Strategy::enemyInvis() && isTechUnit(Protoss_Observer)))) {
+        if (com(Protoss_Robotics_Facility) > 0 && (isTechUnit(Protoss_Reaver) || isTechUnit(Protoss_High_Templar) || (Players::vP() && !Spy::enemyInvis() && isTechUnit(Protoss_Observer)))) {
             techList.insert(Protoss_Shuttle);
             unlockedType.insert(Protoss_Shuttle);
         }

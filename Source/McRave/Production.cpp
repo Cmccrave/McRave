@@ -219,7 +219,7 @@ namespace McRave::Production {
             bool needShuttles = false;
 
             // Determine whether we want reavers or shuttles
-            if (!Strategy::enemyInvis() && BuildOrder::isTechUnit(Protoss_Reaver)) {
+            if (!Spy::enemyInvis() && BuildOrder::isTechUnit(Protoss_Reaver)) {
                 if ((Terrain::isIslandMap() && vis(unit) < 2 * vis(Protoss_Nexus))
                     || vis(Protoss_Shuttle) == 0
                     || vis(Protoss_Reaver) > vis(Protoss_Shuttle) * 2
@@ -250,7 +250,7 @@ namespace McRave::Production {
             case Protoss_Reaver:
                 return needReavers;
             case Protoss_Observer:
-                return (Util::getTime() > Time(10, 0) || Strategy::enemyInvis()) ? vis(unit) < 1 + (Players::getSupply(PlayerState::Self, Races::Protoss) / 100) : vis(unit) < 1;
+                return (Util::getTime() > Time(10, 0) || Spy::enemyInvis()) ? vis(unit) < 1 + (Players::getSupply(PlayerState::Self, Races::Protoss) / 100) : vis(unit) < 1;
 
                 // Stargate Units
             case Protoss_Corsair:
@@ -419,7 +419,7 @@ namespace McRave::Production {
                 case Muscular_Augments:
                     return (BuildOrder::isTechUnit(Zerg_Hydralisk) && Players::ZvP()) || Broodwar->self()->getUpgradeLevel(Grooved_Spines) > 0;
                 case Pneumatized_Carapace:
-                    return (Players::ZvT() && Strategy::getEnemyTransition() == "2PortWraith")
+                    return (Players::ZvT() && Spy::getEnemyTransition() == "2PortWraith")
                         || (Players::ZvP() && Players::getStrength(PlayerState::Enemy).airToAir > 0 && Players::getSupply(PlayerState::Self, Races::Zerg) >= 160);
                 case Anabolic_Synthesis:
                     return Players::getTotalCount(PlayerState::Enemy, Terran_Marine) < 20 || Broodwar->self()->getUpgradeLevel(Chitinous_Plating) > 0;
@@ -719,7 +719,7 @@ namespace McRave::Production {
                     if (!larva.unit()
                         || larva.getType() != Zerg_Larva
                         || larva.getRole() != Role::Production
-                        || (bestType == Zerg_Overlord && !station->isNatural() && Players::ZvP() && Util::getTime() > Time(4, 00) && Util::getTime() < Time(7, 00) && Strategy::getEnemyTransition() == "Corsair")
+                        || (bestType == Zerg_Overlord && !station->isNatural() && Players::ZvP() && Util::getTime() > Time(4, 00) && Util::getTime() < Time(7, 00) && Spy::getEnemyTransition() == "Corsair")
                         || ((bestType == Zerg_Overlord || bestType.isWorker()) && larva.isProxy())
                         || (larva.isProxy() && bestType != Zerg_Hydralisk && BuildOrder::getCurrentTransition().find("Lurker") != string::npos)
                         || (!larva.isProxy() && BuildOrder::isProxy() && bestType == Zerg_Hydralisk)

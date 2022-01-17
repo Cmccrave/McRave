@@ -28,7 +28,7 @@ namespace McRave {
     void ResourceInfo::updateThreatened()
     {
         // Determine if this resource is threatened based on a substantial threat nearby
-        const auto time = (Strategy::enemyRush() || Broodwar->self()->getRace() == Races::Zerg) ? Time(3, 00) : Time(4, 00);
+        const auto time = (Spy::enemyRush() || Broodwar->self()->getRace() == Races::Zerg) ? Time(3, 00) : Time(4, 00);
         threatened = Units::getImmThreat() > 0.0 && Util::getTime() > time && Grids::getEGroundThreat(position) > min(6.0f, 0.10f * float(Util::getTime().minutes));
 
         // Determine if this resource is threatened based on an assigned worker being attacked

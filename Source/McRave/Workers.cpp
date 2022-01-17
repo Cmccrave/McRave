@@ -52,7 +52,7 @@ namespace McRave::Workers {
         BWEB::Station * getTransferStation(UnitInfo& unit)
         {
             // Allow some drones to transfer early on - TODO: Move to StationManager
-            if (Util::getTime() < Time(3, 30) && !Strategy::enemyRush() && vis(UnitTypes::Zerg_Drone) >= 9) {
+            if (Util::getTime() < Time(3, 30) && !Spy::enemyRush() && vis(UnitTypes::Zerg_Drone) >= 9) {
                 for (auto &station : Stations::getMyStations()) {
                     int droneCount = 0;
 

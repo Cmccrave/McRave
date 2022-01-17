@@ -83,7 +83,7 @@ namespace McRave::Command
             //    return (u.getType().isMechanical() && u.getPercentHealth() < 1.0);
             //});
 
-            //if (!Strategy::enemyRush() && mech && mech->unit() && unit.getPosition().getDistance(mech->getPosition()) <= 320 && Grids::getMobility(mech->getWalkPosition()) > 0) {
+            //if (!Spy::enemyRush() && mech && mech->unit() && unit.getPosition().getDistance(mech->getPosition()) <= 320 && Grids::getMobility(mech->getWalkPosition()) > 0) {
             //    if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != mech->unit())
             //        unit.unit()->repair(mech->unit());
             //    return true;
@@ -94,7 +94,7 @@ namespace McRave::Command
             //    return u.getPercentHealth() < 0.35 || (u.getType() == Terran_Bunker && u.getPercentHealth() < 1.0);
             //});
 
-            //if (building && building->unit() && (!Strategy::enemyRush() || building->getType() == Terran_Bunker)) {
+            //if (building && building->unit() && (!Spy::enemyRush() || building->getType() == Terran_Bunker)) {
             //    if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != building->unit())
             //        unit.unit()->repair(building->unit());
             //    return true;

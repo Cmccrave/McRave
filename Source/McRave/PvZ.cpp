@@ -65,17 +65,17 @@ namespace McRave::BuildOrder::Protoss {
         defaultPvZ();
         wantNatural =                                       true;
         wallNat =                                           true;
-        cutWorkers =                                        Strategy::enemyRush() && vis(Protoss_Photon_Cannon) < 2 && vis(Protoss_Forge) > 0;
+        cutWorkers =                                        Spy::enemyRush() && vis(Protoss_Photon_Cannon) < 2 && vis(Protoss_Forge) > 0;
 
         int cannonCount = 0;
 
         // Reactions
         if (!lockedTransition) {
-            if (Strategy::getEnemyOpener() == "4Pool" && currentOpener != "Forge")
+            if (Spy::getEnemyOpener() == "4Pool" && currentOpener != "Forge")
                 currentOpener = "Panic";
-            if (Strategy::getEnemyTransition() == "2HatchHydra" || Strategy::getEnemyTransition() == "3HatchHydra")
+            if (Spy::getEnemyTransition() == "2HatchHydra" || Spy::getEnemyTransition() == "3HatchHydra")
                 currentTransition = "StormRush";
-            else if (Strategy::getEnemyTransition() == "2HatchMuta" || Strategy::getEnemyTransition() == "3HatchMuta")
+            else if (Spy::getEnemyTransition() == "2HatchMuta" || Spy::getEnemyTransition() == "3HatchMuta")
                 currentTransition = "2Stargate";
         }
 
@@ -121,7 +121,7 @@ namespace McRave::BuildOrder::Protoss {
         }
 
         // Don't add an assimilator if we're being rushed
-        if (Strategy::enemyRush())
+        if (Spy::enemyRush())
             buildQueue[Protoss_Assimilator] =               0;
 
         // Don't mine gas if we need cannons
@@ -292,7 +292,7 @@ namespace McRave::BuildOrder::Protoss {
                 unitLimits[Protoss_Zealot] =                5;
                 unitLimits[Protoss_Dragoon] =               INT_MAX;
                 wallNat =                                   vis(Protoss_Nexus) >= 2 || currentOpener == "Natural";
-                playPassive =                               !firstReady() && (!Terrain::foundEnemy() || Strategy::enemyPressure());
+                playPassive =                               !firstReady() && (!Terrain::foundEnemy() || Spy::enemyPressure());
 
                 buildQueue[Protoss_Gateway] =               2 + (s >= 62) + (s >= 70);
                 buildQueue[Protoss_Assimilator] =           s >= 52;
@@ -315,7 +315,7 @@ namespace McRave::BuildOrder::Protoss {
         if (!lockedTransition) {
 
             // If enemy is rushing, pressuring or stole gas
-            if (Strategy::enemyRush() || Strategy::enemyPressure() || Strategy::enemyGasSteal()) {
+            if (Spy::enemyRush() || Spy::enemyPressure() || Spy::enemyGasSteal()) {
                 currentBuild = "2Gate";
                 currentOpener = "Main";
                 currentTransition = "4Gate";

@@ -66,7 +66,7 @@ void McRaveModule::onFrame()
     Terrain::onFrame();
     Walls::onFrame();
     Resources::onFrame();
-    Strategy::onFrame();
+    Spy::onFrame();
     BuildOrder::onFrame();
     Stations::onFrame();
 

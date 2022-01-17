@@ -217,9 +217,9 @@ namespace McRave::Stations {
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (Stations::needPower(station))
                     return 0;
-                if (Players::PvP() && Strategy::enemyInvis())
+                if (Players::PvP() && Spy::enemyInvis())
                     return 1 - groundCount;
-                if (Players::PvZ() && (Strategy::getEnemyTransition().find("Muta") != string::npos))
+                if (Players::PvZ() && (Spy::getEnemyTransition().find("Muta") != string::npos))
                     return 3 - groundCount;
             }
             if (Broodwar->self()->getRace() == Races::Zerg) {
@@ -227,12 +227,12 @@ namespace McRave::Stations {
                     if (BuildOrder::getCurrentTransition().find("Muta") == string::npos)
                         groundCount += 2;
 
-                    if (Strategy::getEnemyOpener() == "7Pool" && BuildOrder::getCurrentOpener() == "12Pool")
+                    if (Spy::getEnemyOpener() == "7Pool" && BuildOrder::getCurrentOpener() == "12Pool")
                         return 1 - groundCount;
 
-                    else if (Strategy::getEnemyTransition() == "2HatchSpeedling" && vis(Zerg_Spire) > 0 && !Strategy::enemyFastExpand())
+                    else if (Spy::getEnemyTransition() == "2HatchSpeedling" && vis(Zerg_Spire) > 0 && !Spy::enemyFastExpand())
                         return (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(5, 00)) - groundCount;
-                    else if (Strategy::getEnemyTransition() == "+1Ling")
+                    else if (Spy::getEnemyTransition() == "+1Ling")
                         return (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(4, 45)) - groundCount;
                     else if (Util::getTime() < Time(5, 30) && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 40)
                         return 6 - groundCount;
@@ -240,20 +240,20 @@ namespace McRave::Stations {
                         return 4 - groundCount;
                     else if (Util::getTime() < Time(6, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3)
                         return 4 - groundCount;
-                    else if (Strategy::enemyPressure())
+                    else if (Spy::enemyPressure())
                         return (Util::getTime() > Time(3, 45)) + (vis(Zerg_Sunken_Colony) > 0) + (vis(Zerg_Drone) >= 8 && com(Zerg_Sunken_Colony) >= 2) - groundCount;
-                    else if (Strategy::enemyRush() && (total(Zerg_Zergling) >= 12 || BuildOrder::getCurrentBuild() != "PoolLair"))
+                    else if (Spy::enemyRush() && (total(Zerg_Zergling) >= 12 || BuildOrder::getCurrentBuild() != "PoolLair"))
                         return 1 + (vis(Zerg_Sunken_Colony) > 0) + (vis(Zerg_Drone) >= 8 && com(Zerg_Sunken_Colony) >= 2) - groundCount;
                     else if (!Terrain::foundEnemy() && vis(Zerg_Spire) > 0 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 16)
                         return 1 - groundCount;
-                    else if (Strategy::getEnemyTransition().find("Muta") == string::npos && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 16)
+                    else if (Spy::getEnemyTransition().find("Muta") == string::npos && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 16)
                         return 1 - groundCount;
                     else if (Util::getTime() > Time(5, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > 4 * vis(Zerg_Zergling))
                         return 1 - groundCount;
                 }
 
                 if (Players::ZvP()) {
-                    if (Strategy::enemyProxy() && Strategy::getEnemyBuild() == "2Gate")
+                    if (Spy::enemyProxy() && Spy::getEnemyBuild() == "2Gate")
                         return (Util::getTime() > Time(2, 00)) + (Util::getTime() > Time(2, 30)) - groundCount;
                     if (BuildOrder::isProxy() && BuildOrder::getCurrentTransition() == "2HatchLurker")
                         return (Util::getTime() > Time(2, 45)) + (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(4, 15)) - groundCount;
@@ -269,9 +269,9 @@ namespace McRave::Stations {
 
         // Natural defenses
         else if (station->isNatural()) {
-            if (Players::PvP() && Strategy::enemyInvis())
+            if (Players::PvP() && Spy::enemyInvis())
                 return 2 - groundCount;
-            if (Players::PvZ() && (Strategy::getEnemyTransition() == "2HatchMuta" || Strategy::getEnemyTransition() == "3HatchMuta"))
+            if (Players::PvZ() && (Spy::getEnemyTransition() == "2HatchMuta" || Spy::getEnemyTransition() == "3HatchMuta"))
                 return 2 - groundCount;
 
             if (Broodwar->self()->getRace() == Races::Protoss) {
@@ -284,7 +284,7 @@ namespace McRave::Stations {
 
         // Calculate percentage remaining and determine desired resources for this base
         else {
-            if (Strategy::getEnemyTransition() == "Carriers")
+            if (Spy::getEnemyTransition() == "Carriers")
                 return 0;
 
             // 2 Hatch
@@ -314,7 +314,7 @@ namespace McRave::Stations {
                 auto saturationRatio = resourceCount > 0 ? double(droneCount) / double(resourceCount) : 0.0;
                 return (Util::getTime() > Time(7, 30)) + (Util::getTime() > Time(8, 00)) - groundCount;
             }
-            if (Players::ZvT() && Util::getTime() > Time(4, 15) && (Strategy::getEnemyTransition() == "2Fact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Strategy::getEnemyBuild() == "RaxFact" || Strategy::enemyWalled()))
+            if (Players::ZvT() && Util::getTime() > Time(4, 15) && (Spy::getEnemyTransition() == "2Fact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled()))
                 return 1 - groundCount;
 
             if (Broodwar->self()->getRace() == Races::Protoss) {
@@ -337,9 +337,9 @@ namespace McRave::Stations {
             || (Players::getTotalCount(PlayerState::Enemy, Zerg_Spire) > 0 && Util::getTime() > Time(4, 45));
 
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            if (Players::ZvZ() && total(Zerg_Zergling) > Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) && com(Zerg_Spire) == 0 && Util::getTime() > Time(4, 30) && Strategy::getEnemyTransition() == "Unknown" && BuildOrder::getCurrentTransition() == "2HatchMuta")
+            if (Players::ZvZ() && total(Zerg_Zergling) > Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) && com(Zerg_Spire) == 0 && Util::getTime() > Time(4, 30) && Spy::getEnemyTransition() == "Unknown" && BuildOrder::getCurrentTransition() == "2HatchMuta")
                 return 1 + (Util::getTime() > Time(5, 15)) - airCount;
-            if (Players::ZvZ() && Util::getTime() > Time(4, 15) && Strategy::getEnemyTransition() == "1HatchMuta" && BuildOrder::getCurrentTransition() != "1HatchMuta")
+            if (Players::ZvZ() && Util::getTime() > Time(4, 15) && Spy::getEnemyTransition() == "1HatchMuta" && BuildOrder::getCurrentTransition() != "1HatchMuta")
                 return 1 - airCount;
             if (Players::ZvP() && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) <= 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) > 0 && vis(Zerg_Lair) == 0 && vis(Zerg_Hydralisk_Den) == 0)
                 return 1 - airCount;

@@ -54,7 +54,7 @@ namespace McRave::Visuals {
             // Builds
             if (builds) {
                 Broodwar->drawTextScreen(432, 16, "%c%s: %c%s %s", Text::White, BuildOrder::getCurrentBuild().c_str(), Text::Grey, BuildOrder::getCurrentOpener().c_str(), BuildOrder::getCurrentTransition().c_str());
-                Broodwar->drawTextScreen(432, 26, "%c%s: %c%s %s", Text::White, Strategy::getEnemyBuild().c_str(), Text::Grey, Strategy::getEnemyOpener().c_str(), Strategy::getEnemyTransition().c_str());
+                Broodwar->drawTextScreen(432, 26, "%c%s: %c%s %s", Text::White, Spy::getEnemyBuild().c_str(), Text::Grey, Spy::getEnemyOpener().c_str(), Spy::getEnemyTransition().c_str());
                 Broodwar->drawTextScreen(160, 0, "%cExpanding", BuildOrder::shouldExpand() ? Text::White : Text::Grey);
                 Broodwar->drawTextScreen(160, 10, "%cRamping", BuildOrder::shouldRamp() ? Text::White : Text::Grey);
                 Broodwar->drawTextScreen(160, 20, "%cTeching", BuildOrder::getTechUnit() != UnitTypes::None ? Text::White : Text::Grey);

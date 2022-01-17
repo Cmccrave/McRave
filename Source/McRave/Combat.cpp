@@ -421,26 +421,26 @@ namespace McRave::Combat {
 
                     // If trying to FFE, pull based on Cannon/Zealot numbers, or lack of scouting information
                     if (BuildOrder::getCurrentBuild() == "FFE") {
-                        if (Strategy::enemyRush() && Strategy::getEnemyOpener() == "4Pool" && combatCount < 8 - (2 * completedDefenders) && visibleDefenders >= 1)
+                        if (Spy::enemyRush() && Spy::getEnemyOpener() == "4Pool" && combatCount < 8 - (2 * completedDefenders) && visibleDefenders >= 1)
                             return true;
-                        if (Strategy::enemyPressure() && combatCount < 8 - (2 * completedDefenders) && visibleDefenders >= 2)
+                        if (Spy::enemyPressure() && combatCount < 8 - (2 * completedDefenders) && visibleDefenders >= 2)
                             return true;
-                        if (Strategy::enemyRush() && Strategy::getEnemyOpener() == "9Pool" && Util::getTime() > Time(3, 15) && completedDefenders < 3)
+                        if (Spy::enemyRush() && Spy::getEnemyOpener() == "9Pool" && Util::getTime() > Time(3, 15) && completedDefenders < 3)
                             return combatWorkersCount < 3;
-                        if (!Terrain::getEnemyStartingPosition().isValid() && Strategy::getEnemyBuild() == "Unknown" && combatCount < 2 && completedDefenders < 1 && visibleDefenders > 0)
+                        if (!Terrain::getEnemyStartingPosition().isValid() && Spy::getEnemyBuild() == "Unknown" && combatCount < 2 && completedDefenders < 1 && visibleDefenders > 0)
                             return true;
                     }
 
                     // If trying to 2Gate at our natural, pull based on Zealot numbers
                     else if (BuildOrder::getCurrentBuild() == "2Gate" && BuildOrder::getCurrentOpener() == "Natural") {
-                        if (Strategy::enemyRush() && combatCount < 8 - (2 * completedDefenders) && visibleDefenders >= 1)
+                        if (Spy::enemyRush() && combatCount < 8 - (2 * completedDefenders) && visibleDefenders >= 1)
                             return true;
-                        if (Strategy::enemyPressure() && combatCount < 8 - (2 * completedDefenders) && visibleDefenders >= 2)
+                        if (Spy::enemyPressure() && combatCount < 8 - (2 * completedDefenders) && visibleDefenders >= 2)
                             return true;
                     }
 
                     // If trying to 1GateCore and scouted 2Gate late, pull workers to block choke when we are ready
-                    else if (BuildOrder::getCurrentBuild() == "1GateCore" && Strategy::getEnemyBuild() == "2Gate" && BuildOrder::getCurrentTransition() != "Defensive" && holdChoke) {
+                    else if (BuildOrder::getCurrentBuild() == "1GateCore" && Spy::getEnemyBuild() == "2Gate" && BuildOrder::getCurrentTransition() != "Defensive" && holdChoke) {
                         if (Util::getTime() < Time(3, 30) && combatWorkersCount < 2)
                             return true;
                     }
@@ -450,7 +450,7 @@ namespace McRave::Combat {
 
                 // Zerg
                 if (Broodwar->self()->getRace() == Races::Zerg) {
-                    if (BuildOrder::getCurrentOpener() == "12Pool" && Strategy::getEnemyOpener() == "9Pool" && total(Zerg_Zergling) < 16 && int(Stations::getMyStations().size()) >= 2)
+                    if (BuildOrder::getCurrentOpener() == "12Pool" && Spy::getEnemyOpener() == "9Pool" && total(Zerg_Zergling) < 16 && int(Stations::getMyStations().size()) >= 2)
                         return combatWorkersCount < 3;
                 }
                 return false;
@@ -469,17 +469,17 @@ namespace McRave::Combat {
                 // HACK: Don't pull workers reactively versus vultures
                 if (Players::getVisibleCount(PlayerState::Enemy, Terran_Vulture) > 0)
                     return false;
-                if (Strategy::getEnemyBuild() == "2Gate" && Strategy::enemyProxy())
+                if (Spy::getEnemyBuild() == "2Gate" && Spy::enemyProxy())
                     return false;
 
                 // If we have immediate threats
                 if (Players::ZvT() && proxyDangerousBuilding && com(Zerg_Zergling) <= 2)
                     return combatWorkersCount < 6;
-                if (Players::ZvP() && proxyDangerousBuilding && Strategy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
+                if (Players::ZvP() && proxyDangerousBuilding && Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
                     return combatWorkersCount < (4 * Players::getVisibleCount(PlayerState::Enemy, proxyDangerousBuilding->getType()));
-                if (Strategy::getEnemyTransition() == "WorkerRush" && com(Zerg_Spawning_Pool) == 0)
-                    return Strategy::getWorkersNearUs() >= combatWorkersCount - 3;
-                if (BuildOrder::getCurrentOpener() == "12Hatch" && Strategy::getEnemyOpener() == "8Rax" && com(Zerg_Zergling) < 2)
+                if (Spy::getEnemyTransition() == "WorkerRush" && com(Zerg_Spawning_Pool) == 0)
+                    return Spy::getWorkersNearUs() >= combatWorkersCount - 3;
+                if (BuildOrder::getCurrentOpener() == "12Hatch" && Spy::getEnemyOpener() == "8Rax" && com(Zerg_Zergling) < 2)
                     return combatWorkersCount <= com(Zerg_Drone) - 4;
 
                 // If we're trying to make our expanding hatchery and the drone is being harassed
@@ -489,7 +489,7 @@ namespace McRave::Combat {
                     return combatWorkersCount < 1;
 
                 // If we suspect a cannon rush is coming
-                if (Players::ZvP() && Strategy::enemyPossibleProxy() && Util::getTime() < Time(3, 00))
+                if (Players::ZvP() && Spy::enemyPossibleProxy() && Util::getTime() < Time(3, 00))
                     return combatWorkersCount < 1;
                 return false;
             };
@@ -624,8 +624,8 @@ namespace McRave::Combat {
 
             // Protoss
             if (Broodwar->self()->getRace() == Races::Protoss) {
-                if ((!BuildOrder::takeNatural() && Strategy::enemyFastExpand())
-                    || (Strategy::enemyProxy() && !Strategy::enemyRush())
+                if ((!BuildOrder::takeNatural() && Spy::enemyFastExpand())
+                    || (Spy::enemyProxy() && !Spy::enemyRush())
                     || BuildOrder::isRush()
                     || unit.getType() == Protoss_Dark_Templar
                     || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 && com(Protoss_Observer) == 0 && Broodwar->getFrameCount() < 15000))
@@ -634,7 +634,7 @@ namespace McRave::Combat {
                 else if (unit.getType().isWorker()
                     || (Broodwar->getFrameCount() < 15000 && BuildOrder::isPlayPassive())
                     || (unit.getType() == Protoss_Corsair && !BuildOrder::firstReady() && Players::getStrength(PlayerState::Enemy).airToAir > 0.0)
-                    || (unit.getType() == Protoss_Carrier && com(Protoss_Interceptor) < 16 && !Strategy::enemyPressure()))
+                    || (unit.getType() == Protoss_Carrier && com(Protoss_Interceptor) < 16 && !Spy::enemyPressure()))
                     unit.setGlobalState(GlobalState::Retreat);
                 else
                     unit.setGlobalState(GlobalState::Attack);
@@ -652,7 +652,7 @@ namespace McRave::Combat {
                     || Broodwar->getGameType() == GameTypes::Use_Map_Settings)
                     unit.setGlobalState(GlobalState::Attack);
                 else if ((Broodwar->getFrameCount() < 15000 && BuildOrder::isPlayPassive())
-                    || (Players::ZvT() && Util::getTime() < Time(12, 00) && Util::getTime() > Time(3, 30) && unit.getType() == Zerg_Zergling && !Strategy::enemyGreedy() && (Strategy::getEnemyBuild() == "RaxFact" || Strategy::enemyWalled() || Players::getCompleteCount(PlayerState::Enemy, Terran_Vulture) > 0))
+                    || (Players::ZvT() && Util::getTime() < Time(12, 00) && Util::getTime() > Time(3, 30) && unit.getType() == Zerg_Zergling && !Spy::enemyGreedy() && (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled() || Players::getCompleteCount(PlayerState::Enemy, Terran_Vulture) > 0))
                     || (Players::ZvZ() && Util::getTime() < Time(10, 00) && unit.getType() == Zerg_Zergling && Players::getCompleteCount(PlayerState::Enemy, Zerg_Zergling) > com(Zerg_Zergling))
                     || (Players::ZvZ() && Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(2, 45))
                     || (BuildOrder::isProxy() && BuildOrder::isPlayPassive())
@@ -962,7 +962,7 @@ namespace McRave::Combat {
         void updateArmyChecker()
         {
             // Determine if we need to create a new checking unit to try and detect the enemy build
-            const auto needEnemyCheck = !Players::ZvZ() && !Strategy::enemyRush() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) <= 0 && Strategy::getEnemyTransition() == "Unknown" && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(6, 00) && Broodwar->getFrameCount() - lastCheckFrame > 240;
+            const auto needEnemyCheck = !Players::ZvZ() && !Spy::enemyRush() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) <= 0 && Spy::getEnemyTransition() == "Unknown" && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(6, 00) && Broodwar->getFrameCount() - lastCheckFrame > 240;
 
             if (needEnemyCheck && checker.expired()) {
                 checker = Util::getClosestUnit(Units::getEnemyArmyCenter(), PlayerState::Self, [&](auto &u) {
@@ -1134,7 +1134,7 @@ namespace McRave::Combat {
 
         void checkHoldChoke()
         {
-            auto defensiveAdvantage = (Players::ZvZ() && BuildOrder::getCurrentOpener() == Strategy::getEnemyOpener()) || (Players::ZvZ() && BuildOrder::getCurrentOpener() == "12Pool" && Strategy::getEnemyOpener() == "9Pool");
+            auto defensiveAdvantage = (Players::ZvZ() && BuildOrder::getCurrentOpener() == Spy::getEnemyOpener()) || (Players::ZvZ() && BuildOrder::getCurrentOpener() == "12Pool" && Spy::getEnemyOpener() == "9Pool");
 
             // UMS Setting
             if (Broodwar->getGameType() == BWAPI::GameTypes::Use_Map_Settings) {
@@ -1148,7 +1148,7 @@ namespace McRave::Combat {
                     || vis(Protoss_Dragoon) > 0
                     || com(Protoss_Shield_Battery) > 0
                     || BuildOrder::isWallNat()
-                    || (BuildOrder::isHideTech() && !Strategy::enemyRush())
+                    || (BuildOrder::isHideTech() && !Spy::enemyRush())
                     || Players::getSupply(PlayerState::Self, Races::None) > 60
                     || Players::vT();
             }
@@ -1159,8 +1159,8 @@ namespace McRave::Combat {
 
             // Zerg
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                holdChoke = (!Players::ZvZ() && (Strategy::getEnemyBuild() != "2Gate" || !Strategy::enemyProxy()))
-                    || (defensiveAdvantage && !Strategy::enemyPressure() && vis(Zerg_Sunken_Colony) == 0 && com(Zerg_Mutalisk) < 3 && Util::getTime() > Time(3, 30))
+                holdChoke = (!Players::ZvZ() && (Spy::getEnemyBuild() != "2Gate" || !Spy::enemyProxy()))
+                    || (defensiveAdvantage && !Spy::enemyPressure() && vis(Zerg_Sunken_Colony) == 0 && com(Zerg_Mutalisk) < 3 && Util::getTime() > Time(3, 30))
                     || (BuildOrder::takeNatural() && total(Zerg_Zergling) >= 10)
                     || Players::getSupply(PlayerState::Self, Races::None) > 60;
             }

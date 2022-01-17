@@ -65,7 +65,7 @@ namespace McRave::Buildings {
             }
 
             // Cancelling refineries we don't want
-            if (building.getType().isRefinery() && Strategy::enemyRush() && vis(building.getType()) == 1 && building.getType().getRace() != Races::Zerg && BuildOrder::buildCount(building.getType()) < vis(building.getType())) {
+            if (building.getType().isRefinery() && Spy::enemyRush() && vis(building.getType()) == 1 && building.getType().getRace() != Races::Zerg && BuildOrder::buildCount(building.getType()) < vis(building.getType())) {
                 building.unit()->cancelConstruction();
             }
 
@@ -76,13 +76,13 @@ namespace McRave::Buildings {
             }
 
             // Cancelling hatcheries if we're being proxy 2gated
-            if (building.getType() == Zerg_Hatchery && building.unit()->getRemainingBuildTime() < 120 && building.getTilePosition() == Terrain::getMyNatural()->getBase()->Location() && BuildOrder::isOpener() && Strategy::getEnemyBuild() == "2Gate" && Strategy::enemyProxy()) {
+            if (building.getType() == Zerg_Hatchery && building.unit()->getRemainingBuildTime() < 120 && building.getTilePosition() == Terrain::getMyNatural()->getBase()->Location() && BuildOrder::isOpener() && Spy::getEnemyBuild() == "2Gate" && Spy::enemyProxy()) {
                 building.unit()->cancelConstruction();
                 Events::onUnitCancelBecauseBWAPISucks(building);
             }
 
             // Cancelling lairs if we're being proxy 2gated
-            if (building.getType() == Zerg_Lair && BuildOrder::isOpener() && Strategy::getEnemyBuild() == "2Gate" && Strategy::getEnemyOpener() == "Proxy" && BuildOrder::getCurrentTransition().find("Muta") == string::npos) {
+            if (building.getType() == Zerg_Lair && BuildOrder::isOpener() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyOpener() == "Proxy" && BuildOrder::getCurrentTransition().find("Muta") == string::npos) {
                 building.unit()->cancelConstruction();
             }
         }

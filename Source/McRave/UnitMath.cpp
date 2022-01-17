@@ -100,7 +100,7 @@ namespace McRave::Math {
         // Bunch of priority hacks
         if (unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Terran_Science_Vessel || unit.getType() == Protoss_Arbiter || unit.getType() == Protoss_Carrier)
             return 15.0;
-        if (Strategy::enemyProxy() && unit.getType() == Protoss_Pylon)
+        if (Spy::enemyProxy() && unit.getType() == Protoss_Pylon)
             return Grids::getEGroundThreat(unit.getPosition()) == 0.0f ? 5.0 : 1.0;
 
         // HACK: Kill neutrals blocking geysers for Sparkle

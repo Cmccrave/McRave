@@ -814,7 +814,7 @@ namespace McRave
         if (Broodwar->getStartLocations().size() >= 4)
             time = Time(3, 45);
 
-        if (Strategy::enemyProxy() && Strategy::getEnemyBuild() == "2Gate" && timeCompletesWhen() < time)
+        if (Spy::enemyProxy() && Spy::getEnemyBuild() == "2Gate" && timeCompletesWhen() < time)
             return true;
         return false;
     }

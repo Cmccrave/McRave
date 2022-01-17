@@ -41,20 +41,20 @@ namespace McRave::BuildOrder::Zerg {
         }
 
         int lingsNeeded() {
-            if (Strategy::getEnemyOpener() == "1RaxFE")
+            if (Spy::getEnemyOpener() == "1RaxFE")
                 return 0;
-            if (Strategy::getEnemyBuild() == "2Rax") {
+            if (Spy::getEnemyBuild() == "2Rax") {
                 if (vis(Zerg_Sunken_Colony) == 0)
                     return int(max(6.0, 1.5 * Players::getVisibleCount(PlayerState::Enemy, Terran_Marine)));
                 return 6;
             }
-            if (Strategy::enemyRush())
+            if (Spy::enemyRush())
                 return 18;
-            if (Strategy::enemyProxy() || Strategy::getEnemyOpener() == "8Rax" || Strategy::getEnemyTransition() == "WorkerRush")
+            if (Spy::enemyProxy() || Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyTransition() == "WorkerRush")
                 return 10;
-            if (Strategy::getEnemyBuild() == "RaxFact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
+            if (Spy::getEnemyBuild() == "RaxFact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
                 return Util::getTime() > Time(3, 00) ? 10 : 0;
-            if (Strategy::enemyPressure() || Strategy::getEnemyBuild() == "2Rax")
+            if (Spy::enemyPressure() || Spy::getEnemyBuild() == "2Rax")
                 return 6;
             return 4;
         }
@@ -69,7 +69,7 @@ namespace McRave::BuildOrder::Zerg {
             wantThird =                                     true;
             proxy =                                         false;
             hideTech =                                      false;
-            playPassive =                                   Util::getTime() > Time(3, 30) && !Strategy::enemyFastExpand() && com(Zerg_Mutalisk) < 5;
+            playPassive =                                   Util::getTime() > Time(3, 30) && !Spy::enemyFastExpand() && com(Zerg_Mutalisk) < 5;
             rush =                                          false;
             pressure =                                      false;
             cutWorkers =                                    false;
@@ -109,7 +109,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Spire] =                    atPercent(Zerg_Lair, 0.80);
 
         // Composition
-        if (Strategy::getEnemyBuild() == "2Rax" && !Strategy::enemyFastExpand() && (com(Zerg_Sunken_Colony) == 0 || com(Zerg_Drone) < 9)) {
+        if (Spy::getEnemyBuild() == "2Rax" && !Spy::enemyFastExpand() && (com(Zerg_Sunken_Colony) == 0 || com(Zerg_Drone) < 9)) {
             armyComposition[Zerg_Drone] =               0.20;
             armyComposition[Zerg_Zergling] =            0.80;
         }
@@ -132,8 +132,8 @@ namespace McRave::BuildOrder::Zerg {
         firstUnit =                                 Zerg_Mutalisk;
         inBookSupply =                              vis(Zerg_Overlord) < 7 || total(Zerg_Mutalisk) < 9;
         
-        auto fourthHatch =                          (Strategy::enemyFastExpand() && s >= 66) || total(Zerg_Mutalisk) >= 9;
-        auto planEarly =                            (Strategy::enemyFastExpand() && s >= 60) || atPercent(Zerg_Lair, 0.6);
+        auto fourthHatch =                          (Spy::enemyFastExpand() && s >= 66) || total(Zerg_Mutalisk) >= 9;
+        auto planEarly =                            (Spy::enemyFastExpand() && s >= 60) || atPercent(Zerg_Lair, 0.6);
 
         buildQueue[Zerg_Hatchery] =                 2 + (s >= 26) + fourthHatch;
         buildQueue[Zerg_Extractor] =                (hatchCount() >= 2 && vis(Zerg_Drone) >= 13) + (s >= 44);
@@ -142,7 +142,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Spire] =                    (s >= 42 && atPercent(Zerg_Lair, 0.80));
 
         // Composition
-        if (Strategy::getEnemyBuild() == "2Rax" && !Strategy::enemyFastExpand() && (com(Zerg_Sunken_Colony) == 0 || com(Zerg_Drone) < 9)) {
+        if (Spy::getEnemyBuild() == "2Rax" && !Spy::enemyFastExpand() && (com(Zerg_Sunken_Colony) == 0 || com(Zerg_Drone) < 9)) {
             armyComposition[Zerg_Drone] =               0.20;
             armyComposition[Zerg_Zergling] =            0.80;
         }
@@ -157,7 +157,7 @@ namespace McRave::BuildOrder::Zerg {
     {
         unitLimits[Zerg_Drone] =                    total(Zerg_Zergling) >= 12 ? 11 : 9;
         unitLimits[Zerg_Zergling] =                 INT_MAX;
-        gasLimit =                                  ((!Strategy::enemyProxy() || com(Zerg_Zergling) >= 6) && !lingSpeed()) ? capGas(100) : 0;
+        gasLimit =                                  ((!Spy::enemyProxy() || com(Zerg_Zergling) >= 6) && !lingSpeed()) ? capGas(100) : 0;
 
         wallNat =                                   false;
         inOpeningBook =                             total(Zerg_Zergling) < 36;
@@ -203,7 +203,7 @@ namespace McRave::BuildOrder::Zerg {
         transitionReady =                               vis(Zerg_Spawning_Pool) > 0;
         unitLimits[Zerg_Zergling] =                     lingsNeeded();
         unitLimits[Zerg_Drone] =                        14;
-        gasLimit =                                      ((!Strategy::enemyProxy() || com(Zerg_Zergling) >= 6) && !lingSpeed()) ? capGas(100) : 0;
+        gasLimit =                                      ((!Spy::enemyProxy() || com(Zerg_Zergling) >= 6) && !lingSpeed()) ? capGas(100) : 0;
         scout =                                         scout || vis(Zerg_Hatchery) >= 2 || (Terrain::isShitMap() && vis(Zerg_Overlord) >= 2);
         planEarly =                                     hatchCount() == 1 && s == 22;
 
@@ -232,13 +232,13 @@ namespace McRave::BuildOrder::Zerg {
     void ZvTOverpool()
     {
         transitionReady =                               hatchCount() >= 2;
-        unitLimits[Zerg_Drone] =                        Strategy::enemyFastExpand() ? INT_MAX : 14;
+        unitLimits[Zerg_Drone] =                        Spy::enemyFastExpand() ? INT_MAX : 14;
         unitLimits[Zerg_Zergling] =                     lingsNeeded();
         gasLimit =                                      com(Zerg_Drone) >= 11 ? gasMax() : 0;
         scout =                                         scout || vis(Zerg_Spawning_Pool) > 0 || (Terrain::isShitMap() && vis(Zerg_Spawning_Pool) > 0);
         proxy =                                         false;
 
-        buildQueue[Zerg_Hatchery] =                     1 + (Strategy::enemyProxy() ? total(Zerg_Zergling) >= 6 : s >= 22 && vis(Zerg_Spawning_Pool) > 0);
+        buildQueue[Zerg_Hatchery] =                     1 + (Spy::enemyProxy() ? total(Zerg_Zergling) >= 6 : s >= 22 && vis(Zerg_Spawning_Pool) > 0);
         buildQueue[Zerg_Spawning_Pool] =                (vis(Zerg_Overlord) >= 2);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 30);
     }
@@ -263,14 +263,14 @@ namespace McRave::BuildOrder::Zerg {
 
         // Reactions
         if (!lockedTransition) {
-            if (Strategy::enemyRush() || Strategy::enemyProxy())
+            if (Spy::enemyRush() || Spy::enemyProxy())
                 currentTransition = "2HatchSpeedling";
-            if (Strategy::getEnemyOpener() == "8Rax") {
+            if (Spy::getEnemyOpener() == "8Rax") {
                 currentBuild = "PoolHatch";
                 currentOpener = "12Pool";
                 currentTransition = "2HatchMuta";
             }
-            if (Strategy::getEnemyTransition() == "WorkerRush") {
+            if (Spy::getEnemyTransition() == "WorkerRush") {
                 currentBuild = "PoolHatch";
                 currentOpener = "Overpool";
                 currentTransition = "2HatchSpeedling";

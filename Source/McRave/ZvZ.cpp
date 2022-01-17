@@ -43,7 +43,7 @@ namespace McRave::BuildOrder::Zerg {
         int lingsNeeded() {
             if (Players::getTotalCount(PlayerState::Enemy, Zerg_Sunken_Colony) >= 1 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) < 6)
                 return 24;
-            else if (Strategy::getEnemyTransition() == "2HatchSpeedling")
+            else if (Spy::getEnemyTransition() == "2HatchSpeedling")
                 return 6;
             else if (vis(Zerg_Spire) > 0)
                 return 16;
@@ -143,7 +143,7 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvZ2HatchSpeedling()
     {
-        inOpeningBook =                                 total(Zerg_Zergling) < 24 && Strategy::getEnemyTransition() != "2HatchSpeedling";
+        inOpeningBook =                                 total(Zerg_Zergling) < 24 && Spy::getEnemyTransition() != "2HatchSpeedling";
         unitLimits[Zerg_Drone] =                        9;
         unitLimits[Zerg_Zergling] =                     INT_MAX;
         gasLimit =                                      !lingSpeed() ? capGas(100) : (vis(Zerg_Hatchery) >= 2);
@@ -151,7 +151,7 @@ namespace McRave::BuildOrder::Zerg {
         firstUnit =                                     UnitTypes::None;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
         pressure =                                      Broodwar->self()->getUpgradeLevel(UpgradeTypes::Metabolic_Boost) == 1 && Util::getTime() < Time(4, 00);
-        playPassive =                                   vis(Zerg_Zergling) <= Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) || (Strategy::enemyRush() && total(Zerg_Zergling) < 24) || total(Zerg_Zergling) < 12;
+        playPassive =                                   vis(Zerg_Zergling) <= Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) || (Spy::enemyRush() && total(Zerg_Zergling) < 24) || total(Zerg_Zergling) < 12;
 
         // Build
         buildQueue[Zerg_Hatchery] =                     1 + (s >= 20 && vis(Zerg_Spawning_Pool) > 0);
@@ -167,9 +167,9 @@ namespace McRave::BuildOrder::Zerg {
     {
         transitionReady =                               lingSpeed();
         unitLimits[Zerg_Drone] =                        9 - (vis(Zerg_Extractor) > 0) + (vis(Zerg_Overlord) > 1);
-        unitLimits[Zerg_Zergling] =                     Strategy::enemyRush() ? INT_MAX : 10;
-        gasLimit =                                      (Strategy::enemyRush() && com(Zerg_Sunken_Colony) == 0) ? 0 : gasMax();
-        playPassive =                                   (com(Zerg_Mutalisk) == 0 && Strategy::enemyRush()) || (Strategy::getEnemyOpener() == "9Pool" && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 8 && !Strategy::enemyRush() && !Strategy::enemyPressure() && total(Zerg_Mutalisk) == 0);
+        unitLimits[Zerg_Zergling] =                     Spy::enemyRush() ? INT_MAX : 10;
+        gasLimit =                                      (Spy::enemyRush() && com(Zerg_Sunken_Colony) == 0) ? 0 : gasMax();
+        playPassive =                                   (com(Zerg_Mutalisk) == 0 && Spy::enemyRush()) || (Spy::getEnemyOpener() == "9Pool" && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 8 && !Spy::enemyRush() && !Spy::enemyPressure() && total(Zerg_Mutalisk) == 0);
 
         buildQueue[Zerg_Spawning_Pool] =                s >= 18;
         buildQueue[Zerg_Extractor] =                    s >= 18 && vis(Zerg_Spawning_Pool) > 0;
@@ -178,11 +178,11 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvZOverpool()
     {
-        transitionReady =                               total(Zerg_Zergling) >= 6 || (Strategy::enemyFastExpand() && com(Zerg_Spawning_Pool) > 0);
-        unitLimits[Zerg_Drone] =                        Strategy::enemyFastExpand() ? 16 : 10;
+        transitionReady =                               total(Zerg_Zergling) >= 6 || (Spy::enemyFastExpand() && com(Zerg_Spawning_Pool) > 0);
+        unitLimits[Zerg_Drone] =                        Spy::enemyFastExpand() ? 16 : 10;
         unitLimits[Zerg_Zergling] =                     6;
         gasLimit =                                      capGas(100);
-        playPassive =                                   (com(Zerg_Mutalisk) == 0 && Strategy::enemyRush()) || (Strategy::getEnemyOpener() == "9Pool" && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 8 && !Strategy::enemyRush() && !Strategy::enemyPressure() && total(Zerg_Mutalisk) == 0);
+        playPassive =                                   (com(Zerg_Mutalisk) == 0 && Spy::enemyRush()) || (Spy::getEnemyOpener() == "9Pool" && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 8 && !Spy::enemyRush() && !Spy::enemyPressure() && total(Zerg_Mutalisk) == 0);
 
         buildQueue[Zerg_Hatchery] =                     1 + (s >= 22);
         buildQueue[Zerg_Spawning_Pool] =                (vis(Zerg_Overlord) >= 2);
