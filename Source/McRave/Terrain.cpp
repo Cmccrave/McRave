@@ -34,6 +34,21 @@ namespace McRave::Terrain {
         bool abandonNatural = false;
         int timeHarassingHere = 1500;
 
+        bool checkDefendRunby()
+        {
+            if (Players::ZvP() && com(Zerg_Zergling) >= 16) {
+                defendPosition = (Position(BWEB::Map::getMainChoke()->Center()) + Position(BWEB::Map::getNaturalChoke()->Center()) + Position(4, 4)) / 2;
+                defendNatural = true;
+                return true;
+            }
+            if (Players::ZvT()) {
+                defendPosition = Position(BWEB::Map::getMainChoke()->Center()) + Position(4, 4);
+                defendNatural = true;
+                return true;
+            }
+            return false;
+        }
+
         void findEnemy()
         {
             if (enemyStartingPosition.isValid()) {
@@ -251,8 +266,8 @@ namespace McRave::Terrain {
             }
 
             // If we want to prevent a runby
-            else if (Combat::defendChoke() && !flatRamp && com(Zerg_Sunken_Colony) > 0 && defendRunby && vis(Zerg_Sunken_Colony) < 2 && vis(Zerg_Zergling) < 12) {
-                defendPosition = Position(mainChoke->Center()) + Position(4, 4);
+            else if (Combat::defendChoke() && vis(Zerg_Zergling) > 12) {
+                defendPosition = (Position(mainChoke->Center()) + Position(BWEB::Map::getNaturalChoke()->Center()) + Position(4, 4)) / 2;
                 defendNatural = false;
             }
 

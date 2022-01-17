@@ -293,82 +293,66 @@ namespace McRave::Walls {
             && Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) == 0
             && Players::getTotalCount(PlayerState::Enemy, Protoss_Archon) == 0;
 
-        // 4Gate - Upwards of 12 sunkens allowed... Still sane Exile?
+        // 4Gate
         if (Strategy::getEnemyTransition() == "4Gate" && Util::getTime() < Time(12, 00)) {
-
-            if (Strategy::enemyFastExpand()) {
-                return 1
-                    + (Util::getTime() > Time(4, 00))
-                    + (!skipSunken && Util::getTime() > Time(4, 30))
-                    + (!skipSunken && Util::getTime() > Time(5, 00))
-                    //+ (Util::getTime() > Time(5, 20))
-                    + (Util::getTime() > Time(5, 40))
-                    //+ (Util::getTime() > Time(6, 00))
-                    + (Util::getTime() > Time(6, 20))
-                    //+ (Util::getTime() > Time(6, 40))
-                    + (Util::getTime() > Time(7, 20))
-                    + (Util::getTime() > Time(8, 20))
-                    + (Util::getTime() > Time(9, 20))
-                    ;
-            }
-            else {
-                return 1
-                    + (Util::getTime() > Time(4, 00))
-                    + (!skipSunken && Util::getTime() > Time(4, 30))
-                    + (!skipSunken && Util::getTime() > Time(5, 00))
-                    //+ (Util::getTime() > Time(5, 20))
-                    + (Util::getTime() > Time(5, 40))
-                    //+ (Util::getTime() > Time(6, 00))
-                    + (Util::getTime() > Time(6, 20))
-                    //+ (Util::getTime() > Time(6, 40))
-                    + (Util::getTime() > Time(7, 00))
-                    + (Util::getTime() > Time(8, 00))
-                    + (Util::getTime() > Time(9, 00))
-                    ;
-            }
+            return 1
+                + (Util::getTime() > Time(4, 00))
+                + (!skipSunken && Util::getTime() > Time(4, 30))
+                + (!skipSunken && Util::getTime() > Time(5, 00))
+                + (Util::getTime() > Time(5, 40))
+                + (Util::getTime() > Time(6, 20))
+                + (Util::getTime() > Time(7, 00))
+                + (Util::getTime() > Time(8, 00))
+                + (Util::getTime() > Time(9, 00))
+                ;
         }
 
-        // 1GateCore
-        if (Strategy::getEnemyBuild() == "1GateCore" || (Strategy::getEnemyBuild() == "Unknown" && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 1)) {
-            if (Strategy::getEnemyTransition() == "Corsair" && Util::getTime() < Time(8, 30))
-                return (Util::getTime() > Time(3, 40))
-                + (!skipSunken && Util::getTime() > Time(7, 30));
-            else if (Strategy::getEnemyTransition() == "DT" && Util::getTime() < Time(8, 30))
-                return (Util::getTime() > Time(3, 40))
-                + (!skipSunken && Util::getTime() > Time(4, 20))
+        // DT
+        if (Util::getTime() < Time(8, 30) && Strategy::getEnemyTransition() == "DT") {
+            return 2
                 + (!skipSunken && Util::getTime() > Time(5, 00))
                 + (Util::getTime() > Time(5, 20))
                 + (Util::getTime() > Time(5, 40));
-            else if (Util::getTime() < Time(6, 15) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) >= 1)
+        }
+
+        // Corsair
+        if (Util::getTime() < Time(8, 30) && Strategy::getEnemyTransition() == "Corsair")
+            return 1
+            + (!skipSunken && Util::getTime() > Time(7, 30));
+
+        // Speedlot
+        if (Util::getTime() < Time(8, 30) && (Strategy::getEnemyTransition() == "Speedlot" || Strategy::getEnemyTransition() == "ZealotRush"))
+            return 1
+            + (Util::getTime() > Time(3, 10))
+            + (!skipSunken && Util::getTime() > Time(4, 00))
+            + (!skipSunken && Util::getTime() > Time(4, 30))
+            + (Util::getTime() > Time(5, 20));
+
+        // 1GateCore
+        if (Strategy::getEnemyBuild() == "1GateCore" || (Strategy::getEnemyBuild() == "Unknown" && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 1)) {
+            if (Util::getTime() < Time(6, 15) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) >= 1)
                 return (Util::getTime() > Time(3, 40))
                 + (!skipSunken && Util::getTime() > Time(4, 00))
                 + (!skipSunken && Util::getTime() > Time(4, 20))
                 + noExpandOrTech;
             else if (Util::getTime() < Time(6, 15))
-                return (Util::getTime() > Time(3, 40))
+                return 1
                 + (!skipSunken && Util::getTime() > Time(4, 00))
                 + noExpandOrTech;
         }
 
         // 2Gate
-        if (Strategy::getEnemyBuild() == "2Gate") {
+        if (Strategy::getEnemyBuild() == "2Gate" && !Strategy::enemyProxy()) {
             if (Util::getTime() < Time(6, 00) && Strategy::getEnemyOpener() == "10/17")
                 return (Util::getTime() > Time(3, 40))
-                + (!skipSunken && Util::getTime() > Time(4, 00))
-                + (!skipSunken && Util::getTime() > Time(4, 20))
-                + (Util::getTime() > Time(5, 00))
                 + noExpandOrTech;
             else if (Util::getTime() < Time(6, 00) && (Strategy::getEnemyOpener() == "10/12" || Strategy::getEnemyOpener() == "Unknown"))
                 return 1
                 + (!skipSunken && Util::getTime() > Time(3, 30))
-                + (!skipSunken && Util::getTime() > Time(4, 30))
-                + (Util::getTime() > Time(5, 00))
                 + noExpandOrTech;
-            else if (Util::getTime() < Time(6, 00) && (Strategy::getEnemyOpener() == "9/9" || Strategy::getEnemyTransition() == "ZealotRush" || Strategy::getEnemyTransition() == "Speedlot"))
+            else if (Util::getTime() < Time(6, 00) && Strategy::getEnemyOpener() == "9/9")
                 return 1
                 + (Util::getTime() > Time(3, 10))
-                + (!skipSunken && Util::getTime() > Time(4, 00))
-                + (!skipSunken && Util::getTime() > Time(4, 30))
                 + noExpandOrTech;
         }
 
@@ -392,13 +376,6 @@ namespace McRave::Walls {
                 return ((2 * (Util::getTime() > Time(6, 00))) + (Util::getTime() > Time(6, 30)) + (2 * (Util::getTime() > Time(8, 00))));
             if (Util::getTime() < Time(8, 00))
                 return ((Util::getTime() > Time(5, 30)) + (Util::getTime() > Time(6, 15)) + (Util::getTime() > Time(6, 45)));
-        }
-
-        // Outside of openers, base it off how large the ground army of enemy is
-        if (Util::getTime() > Time(8, 00)) {
-            const auto divisor = 2.0 + max(0.0, (double(Util::getTime().minutes - 6) / 4.0));
-            const auto count = int(double(Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) + Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon)) / divisor);
-            return (count);
         }
         return 0;
     }

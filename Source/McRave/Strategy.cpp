@@ -11,8 +11,10 @@ namespace McRave::Strategy {
         struct Strat {
             bool possible = false;
             bool confirmed = false;
+            bool changeable = false;
             int framesTrue = 0;
             int framesRequired = 50;
+            int framesChangeable = 1000;
             string name = "Unknown";
 
             void update() {
@@ -23,6 +25,7 @@ namespace McRave::Strategy {
                     possible = false;
                     name = "Unknown";
                 }
+                changeable = framesTrue > framesChangeable;
             }
         };
 
@@ -33,9 +36,12 @@ namespace McRave::Strategy {
 
             StrategySelections() {
                 listOfStrats ={ &expand, &rush, &wall, &proxy, &early, &steal, &pressure, &greedy, &invis, &build, &opener, &transition };
-                build.framesRequired = 360;
-                opener.framesRequired = 360;
-                transition.framesRequired = 360;
+                build.framesRequired = 100;
+                build.framesChangeable = 1000;
+                opener.framesRequired = 100;
+                opener.framesChangeable = 1000;
+                transition.framesRequired = 100;
+                transition.framesChangeable = 1000;
             }
         };
 
@@ -515,7 +521,7 @@ namespace McRave::Strategy {
                 enemyStrat.build.name = "1GateCore";
 
             // 2Gate Proxy - No info estimation
-            if (Scouts::gotFullScout() && Util::getTime() < Time(3, 30) && !completesBy(1, Protoss_Pylon, Time(1,15)) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Forge) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Nexus) <= 1) {
+            if (Scouts::gotFullScout() && Util::getTime() < Time(3, 30) && !completesBy(1, Protoss_Pylon, Time(1, 15)) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Forge) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Nexus) <= 1) {
                 enemyStrat.build.name = "2Gate";
                 enemyStrat.proxy.possible = true;
             }
@@ -747,27 +753,27 @@ namespace McRave::Strategy {
                 if (player.isEnemy()) {
                     enemyStrategicInfo(player);
                     if (player.getCurrentRace() == Races::Zerg) {
-                        if (!enemyStrat.build.confirmed)
+                        if (!enemyStrat.build.confirmed || enemyStrat.build.changeable)
                             enemyZergBuilds(player);
-                        if (!enemyStrat.opener.confirmed)
+                        if (!enemyStrat.opener.confirmed || enemyStrat.opener.changeable)
                             enemyZergOpeners(player);
-                        if (!enemyStrat.transition.confirmed)
+                        if (!enemyStrat.transition.confirmed || enemyStrat.transition.changeable)
                             enemyZergTransitions(player);
                     }
                     else if (player.getCurrentRace() == Races::Protoss) {
-                        if (!enemyStrat.build.confirmed)
+                        if (!enemyStrat.build.confirmed || enemyStrat.build.changeable)
                             enemyProtossBuilds(player);
-                        if (!enemyStrat.opener.confirmed)
+                        if (!enemyStrat.opener.confirmed || enemyStrat.opener.changeable)
                             enemyProtossOpeners(player);
-                        if (!enemyStrat.transition.confirmed)
+                        if (!enemyStrat.transition.confirmed || enemyStrat.transition.changeable)
                             enemyProtossTransitions(player);
                     }
                     else if (player.getCurrentRace() == Races::Terran) {
-                        if (!enemyStrat.build.confirmed)
+                        if (!enemyStrat.build.confirmed || enemyStrat.build.changeable)
                             enemyTerranBuilds(player);
-                        if (!enemyStrat.opener.confirmed)
+                        if (!enemyStrat.opener.confirmed || enemyStrat.opener.changeable)
                             enemyTerranOpeners(player);
-                        if (!enemyStrat.transition.confirmed)
+                        if (!enemyStrat.transition.confirmed || enemyStrat.transition.changeable)
                             enemyTerranTransitions(player);
                     }
                 }

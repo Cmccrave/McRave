@@ -140,7 +140,7 @@ namespace McRave::Pathing {
 
         void updateSurroundPositions()
         {
-            if (Stations::getEnemyStations().empty())
+            if (Players::ZvZ())
                 return;
 
             // Allowed types to surround
@@ -154,7 +154,7 @@ namespace McRave::Pathing {
 
                 // Figure out how to trap the unit
                 auto trapTowards = Position(BWEB::Map::getNaturalChoke()->Center());
-                if (unit.isThreatening())
+                if (unit.isThreatening() || Util::getTime() < Time(4, 30))
                     trapTowards = Position(BWEB::Map::getMainChoke()->Center());
                 else if (unit.getPosition().isValid() && Terrain::getEnemyStartingPosition().isValid()) {
                     auto path = mapBWEM.GetPath(unit.getPosition(), Terrain::getEnemyStartingPosition());
@@ -163,7 +163,6 @@ namespace McRave::Pathing {
 
                 // Create surround positions in a primitive fashion
                 vector<pair<Position, double>> surroundPositions;
-                auto closestStation = Stations::getClosestStationGround(PlayerState::Enemy, unit.getPosition());
                 for (int x = -1; x <= 1; x++) {
                     for (int y = -1; y <= 1; y++) {
                         if (x == 0 && y == 0)
@@ -179,14 +178,25 @@ namespace McRave::Pathing {
                 });
 
                 // Assign closest targeter
+                int i = 0;
                 for (auto &[pos, dist] : surroundPositions) {
+                    Broodwar->drawTextMap(pos, "%d", i);
+                    i++;
                     auto closestTargeter = Util::getClosestUnit(pos, PlayerState::Self, [&](auto &u) {
                         return u.hasTarget() && u.getTarget() == unit.weak_from_this()
                             && find(allowedTypes.begin(), allowedTypes.end(), u.getType()) != allowedTypes.end()
                             && (!u.getSurroundPosition().isValid() || u.getSurroundPosition() == pos) && u.getRole() == Role::Combat;
                     });
-                    if (closestTargeter && Util::findWalkable(*closestTargeter, pos))
-                        closestTargeter->setSurroundPosition(pos);                    
+
+                    // Get time to arrive to the surround position
+                    if (closestTargeter) {
+                        auto speedDiff = closestTargeter->getSpeed() - unit.getSpeed();
+                        auto framesToCatchUp = (speedDiff * closestTargeter->getPosition().getDistance(pos) / closestTargeter->getSpeed()) + (closestTargeter->getPosition().getDistance(pos) / closestTargeter->getSpeed());
+                        auto correctedPos = pos + Position(int(unit.unit()->getVelocityX() * framesToCatchUp), int(unit.unit()->getVelocityY() * framesToCatchUp));
+
+                        if (Util::findWalkable(*closestTargeter, correctedPos))
+                            closestTargeter->setSurroundPosition(correctedPos);
+                    }
                 }
             }
         }

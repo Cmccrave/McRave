@@ -14,6 +14,55 @@ namespace McRave::Planning {
         BWEB::Station * currentExpansion = nullptr;
         BWEB::Station * nextExpansion = nullptr;
 
+        shared_ptr<UnitInfo> getBuilder(UnitType building, Position here)
+        {
+            auto &builder = Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &u) {
+                if (u.getType().getRace() != building.getRace()
+                    || u.getBuildType() != None
+                    || u.unit()->getOrder() == Orders::ConstructingBuilding
+                    || !Workers::canAssignToBuild(u))
+                    return false;
+                return true;
+            });
+            return builder;
+        }
+
+        bool creepOrPowerReadyOnArrival(UnitType building, TilePosition here, UnitInfo& builder)
+        {
+            const auto adjacentToHatch = [&](auto &hatch) {
+                return (here.x - hatch.x >= -2 && here.x - hatch.x <= 4 && here.y - hatch.y >= -2 && here.y - hatch.y <= 3);
+            };
+
+            // TODO: Impl
+            if (building.requiresPsi()) {
+
+            }
+
+            if (building.requiresCreep()) {
+
+                // Check if a hatchery that is adjacent to this position will finish soon
+                for (auto &u : Units::getUnits(PlayerState::Self)) {
+                    auto &unit = *u;
+                    if (unit.getType() == Zerg_Hatchery && adjacentToHatch(unit.getTilePosition())) {
+                        auto builderArriveFrame = builder.getPosition().getDistance(unit.getPosition()) / builder.getSpeed();
+                        if (builderArriveFrame > unit.frameCompletesWhen())
+                            return true;
+                    }
+                }
+
+                // Check if there is full creep on this position
+                for (int x = here.x; x < here.x + building.tileWidth(); x++) {
+                    for (int y = here.y; y < here.y + building.tileHeight(); y++) {
+                        TilePosition t(x, y);
+                        if (!Broodwar->hasCreep(t))
+                            return false;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
         bool overlapsLarvaHistory(UnitType building, TilePosition here)
         {
             auto center = Position(here) + Position(building.tileWidth() * 16, building.tileHeight() * 16);
@@ -137,43 +186,12 @@ namespace McRave::Planning {
             auto center = Position(here) + Position(building.tileWidth() * 16, building.tileHeight() * 16);
             auto creepFully = true;
 
-            if (building.requiresCreep()) {
-                for (int x = here.x; x < here.x + building.tileWidth(); x++) {
-                    for (int y = here.y; y < here.y + building.tileHeight(); y++) {
-                        TilePosition t(x, y);
-                        if (!Broodwar->hasCreep(t))
-                            creepFully = false;
-                    }
-                }
-            }
-
             // See if it's being blocked
             auto closestEnemy = Util::getClosestUnit(center, PlayerState::Enemy, [&](auto &u) {
                 return !u.isFlying() && u.getType() != Terran_Vulture_Spider_Mine;
             });
             if (closestEnemy && Util::boxDistance(closestEnemy->getType(), closestEnemy->getPosition(), building, center) < 32.0)
                 return false;
-
-            // Check to see if we expect creep to be here soon
-            auto creepSoon = false;
-            auto distCheck = 110.0;
-            if (!creepFully && building.requiresCreep()) {
-                auto closestStation = Stations::getClosestStationGround(PlayerState::Self, Position(here));
-                if (closestStation) {
-
-                    if (Players::ZvP() && Strategy::getEnemyOpener() != "10/17" && (here.y > closestStation->getBase()->Location().y + 1 || here.y < closestStation->getBase()->Location().y))
-                        return false;
-
-                    // Found that > 5 tiles away causes us to wait forever
-                    if (center.getDistance(closestStation->getBase()->Center()) > distCheck)
-                        return false;
-                    creepSoon = true;
-
-                    // Don't build vertically
-                    if (Strategy::enemyRush() && (here.y > closestStation->getBase()->Location().y + 4 || here.y < closestStation->getBase()->Location().y - 2))
-                        return false;
-                }
-            }
 
             // Refinery only on Geysers
             if (building.isRefinery()) {
@@ -186,14 +204,11 @@ namespace McRave::Planning {
                 return false;
             }
 
-            // Used tile / creep check
+            // Used tile check
             for (int x = here.x; x < here.x + building.tileWidth(); x++) {
                 for (int y = here.y; y < here.y + building.tileHeight(); y++) {
                     TilePosition t(x, y);
                     if (!t.isValid())
-                        return false;
-
-                    if (building.getRace() == Races::Zerg && !creepSoon && building.requiresCreep() && !Broodwar->hasCreep(t))
                         return false;
                     if (BWEB::Map::isUsed(t) != None)
                         return false;
@@ -209,6 +224,13 @@ namespace McRave::Planning {
             // Psi check
             if (building.requiresPsi() && !Pylons::hasPowerSoon(here, building))
                 return false;
+
+            // Creep check
+            if (building.requiresCreep()) {
+                auto builder = getBuilder(building, center);
+                return builder && creepOrPowerReadyOnArrival(building, here, *builder);
+            }
+
             return true;
         }
 
@@ -804,7 +826,7 @@ namespace McRave::Planning {
             }
 
             // HACK: Try to get a placement if we are being horror gated
-            if (Strategy::enemyProxy() && Util::getTime() < Time(5, 0) && !isDefensiveType(building) && !building.isResourceDepot())
+            if (Strategy::enemyProxy() && Util::getTime() < Time(5, 00) && !isDefensiveType(building) && !building.isResourceDepot())
                 placement = Broodwar->getBuildLocation(building, BWEB::Map::getMainTile(), 16);
 
             return placement;
@@ -878,17 +900,7 @@ namespace McRave::Planning {
                     auto center = Position(here) + Position(building.tileWidth() * 16, building.tileHeight() * 16);
                     if (!here.isValid())
                         continue;
-
-                    Visuals::drawBox(Position(here) + Position(4, 4), Position(here + building.tileSize()) - Position(4, 4), Colors::White);
-
-                    auto &builder = Util::getClosestUnitGround(center, PlayerState::Self, [&](auto &u) {
-                        if (u.getType().getRace() != building.getRace()
-                            || u.getBuildType() != None
-                            || u.unit()->getOrder() == Orders::ConstructingBuilding
-                            || !Workers::canAssignToBuild(u))
-                            return false;
-                        return true;
-                    });
+                    auto builder = getBuilder(building, center);
 
                     // Use old builder if we're not early game, as long as it's not stuck or was stuck recently
                     if (builder && Util::getTime() > Time(3, 00)) {
@@ -899,6 +911,7 @@ namespace McRave::Planning {
                     }
 
                     if (here.isValid() && builder && Workers::shouldMoveToBuild(*builder, here, building)) {
+                        Visuals::drawBox(Position(here) + Position(4, 4), Position(here + building.tileSize()) - Position(4, 4), Colors::White);
                         Visuals::drawLine(builder->getPosition(), center, Colors::White);
                         builder->setBuildingType(building);
                         builder->setBuildPosition(here);

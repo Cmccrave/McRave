@@ -43,37 +43,43 @@ namespace McRave::BuildOrder::Zerg {
         int lingsNeeded() {
             auto lings = 0;
             auto timingValue = 0;
-            auto initialValue = 0;
+            auto initialValue = 6;
 
             if (com(Zerg_Spawning_Pool) == 0)
                 return 0;
 
             // For every opener we expect:
-            // Initial lings when pool completes
+            // 2H/3H: Initial lings when pool completes
+            // 2H/3H: Extra lings if enemy will arrive before defenses are ready
             if (Strategy::getEnemyBuild() == "2Gate") {
                 initialValue = 6;
 
                 if (Strategy::getEnemyOpener() == "10/12")
                     initialValue = 8;
                 else if (Strategy::getEnemyOpener() == "9/9")
-                    initialValue = 10;
+                    initialValue = 12;
             }
             if (Strategy::getEnemyBuild() == "1GateCore")
                 initialValue = 6;
+            if (total(Zerg_Zergling) < initialValue)
+                return initialValue;
 
             // For every transition we expect:
-            // Every minute we want 6 more lings starting at 3:00 and 3:30
+            // 3H: Every minute we want 6 more lings starting at 3:00 and 3:30
+            // 2H: Nothing
             if (currentTransition.find("3Hatch") != string::npos) {
-                if (Strategy::getEnemyTransition() == "4Gate")
+                if (Strategy::getEnemyTransition() == "4Gate" || Strategy::getEnemyTransition() == "Speedlot")
                     timingValue = 5;
                 else if (Strategy::getEnemyTransition().find("3Gate") != string::npos || Strategy::getEnemyTransition() == "DT")
                     timingValue = 4;
                 else if (Strategy::getEnemyTransition() == "Corsair")
                     timingValue = 2;
+                else
+                    timingValue = 1;
             }
 
-            lings = max(initialValue, (((Util::getTime().minutes - 1) * 60 + Util::getTime().seconds) / 60) * timingValue);
-            return lings;
+            auto time = double((Util::getTime().minutes - 1) * 60 + (Util::getTime().seconds)) / 60.0;
+            return int(time * timingValue);
         }
 
         void defaultZvP() {
@@ -81,7 +87,6 @@ namespace McRave::BuildOrder::Zerg {
             inBookSupply =                                  true;
             wallNat =                                       hatchCount() >= 4 || Terrain::isShitMap();
             wallMain =                                      false;
-            scout =                                         false;
             wantNatural =                                   true;
             wantThird =                                     Strategy::getEnemyBuild() == "FFE";
             proxy =                                         false;
@@ -441,7 +446,7 @@ namespace McRave::BuildOrder::Zerg {
         transitionReady =                               total(Zerg_Overlord) >= 2;
         unitLimits[Zerg_Zergling] =                     lingsNeeded();
         gasLimit =                                      0;
-        scout =                                         false;
+        scout =                                         scout || (com(Zerg_Drone) >= 10);
         wantNatural =                                   !Strategy::enemyProxy();
         playPassive =                                   false;
         unitLimits[Zerg_Drone] =                        10;

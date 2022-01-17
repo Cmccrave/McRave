@@ -183,7 +183,7 @@ namespace McRave
         if (getPlayer() == Broodwar->self()) {
             nearHidden = false;
             auto closestHidden = Util::getClosestUnit(position, PlayerState::Enemy, [&](auto &u) {
-                return u.isHidden();
+                return u.isHidden() && ((!this->isFlying() && u.canAttackGround()) || (this->isFlying() && u.canAttackAir()));
             });
 
             if (closestHidden && closestHidden->isWithinReach(*this))
@@ -292,15 +292,15 @@ namespace McRave
         // Check if our defenses can hit or be hit
         auto nearDefenders = [&]() {
             auto closestDefender = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-                return u.getRole() == Role::Defender && u.canAttackGround();
+                return u.getRole() == Role::Defender && u.canAttackGround() && (u.isCompleted() || isWithinRange(u) || Util::getTime() < Time(4, 00));
             });
-            return closestDefender && ((closestDefender->isWithinRange(*this) && closestDefender->isCompleted()) || isWithinRange(*closestDefender));
+            return closestDefender && closestDefender->isWithinRange(*this);
         };
 
         // Checks if it can damage an already damaged building
         auto nearFragileBuilding = [&]() {
             auto fragileBuilding = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-                return !u.isHealthy() && u.getType().isBuilding() && (u.unit()->isCompleted() || isWithinRange(u)) && Terrain::isInAllyTerritory(u.getTilePosition());
+                return !u.isHealthy() && u.getType().isBuilding() && (u.isCompleted() || isWithinRange(u)) && Terrain::isInAllyTerritory(u.getTilePosition());
             });
             return fragileBuilding && canAttackGround() && Util::boxDistance(fragileBuilding->getType(), fragileBuilding->getPosition(), getType(), getPosition()) < proximityCheck;
         };
@@ -814,15 +814,14 @@ namespace McRave
         if (Broodwar->getStartLocations().size() >= 4)
             time = Time(3, 45);
 
-        if ((Strategy::enemyProxy() && Strategy::getEnemyBuild() == "2Gate" && timeCompletesWhen() < time)
-            || (Players::vP() && Strategy::getEnemyBuild() == "Unknown" && Util::getTime() < time && Units::getImmThreat() <= 0.0))
+        if (Strategy::enemyProxy() && Strategy::getEnemyBuild() == "2Gate" && timeCompletesWhen() < time)
             return true;
         return false;
     }
 
     bool UnitInfo::attemptingSurround()
     {
-        if (attemptingRunby())
+        if (attemptingRunby() || (hasTarget() && getTarget().getCurrentSpeed() == 0.0))
             return false;
         if (surroundPosition.isValid() && position.getDistance(surroundPosition) > 16.0)
             return true;

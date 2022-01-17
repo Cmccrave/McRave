@@ -148,9 +148,6 @@
     <ClCompile Include="..\Source\McRave\Stations.cpp">
       <Filter>McRave\Map</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\Terrain.cpp">
-      <Filter>McRave\Map</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\Walls.cpp">
       <Filter>McRave\Map</Filter>
     </ClCompile>
@@ -204,6 +201,9 @@
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Production.cpp">
       <Filter>McRave\Macro\Production</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Terrain.cpp">
+      <Filter>McRave\Map\Terrain</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -333,9 +333,6 @@
     <ClInclude Include="..\Source\McRave\Stations.h">
       <Filter>McRave\Map</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\Terrain.h">
-      <Filter>McRave\Map</Filter>
-    </ClInclude>
     <ClInclude Include="..\Source\McRave\Walls.h">
       <Filter>McRave\Map</Filter>
     </ClInclude>
@@ -386,6 +383,9 @@
     </ClInclude>
     <ClInclude Include="..\Source\McRave\Production.h">
       <Filter>McRave\Macro\Production</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Terrain.h">
+      <Filter>McRave\Map\Terrain</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -469,6 +469,9 @@
     </Filter>
     <Filter Include="McRave\Macro\Production">
       <UniqueIdentifier>{0908ccb8-e1a5-42f3-b5ae-d5099e920bd6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Map\Terrain">
+      <UniqueIdentifier>{9323e7f8-4184-42ff-a9ee-c0831f2269f4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

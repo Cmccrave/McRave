@@ -250,9 +250,9 @@ namespace McRave::Targets {
 
             const auto focusScore = [&]() {
                 if (range > 32.0 && boxDistance <= reach)
-                    return exp(int(target.getTargetedBy().size()) + 1);
-                //if (range <= 32.0 && int(target.getTargetedBy().size()) >= 6)
-                //    return 1.0 / (int(target.getTargetedBy().size()));
+                    return (1.0 + double(target.getTargetedBy().size()));
+                if (range <= 32.0)
+                    return 4.0 / (1.0 + double(target.getTargetedBy().size()));
                 return 1.0;
             };
 

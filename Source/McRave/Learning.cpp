@@ -178,6 +178,8 @@ namespace McRave::Learning {
                 if (build == "HatchPool") {
                     if (opener == "12Hatch")
                         return !z;
+                    if (opener == "10Hatch")
+                        return p;
                 }
                 if (build == "PoolLair") {
                     if (opener == "9Pool")

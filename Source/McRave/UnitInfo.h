@@ -274,6 +274,7 @@ namespace McRave {
         double getAirReach() { return airReach; }
         double getAirDamage() { return airDamage; }
         double getSpeed() { return speed; }
+        double getCurrentSpeed() { return currentSpeed; }
         double getPriority() { return priority; }
         double getEngDist() { return engageDist; }
         double getSimValue() { return simValue; }
