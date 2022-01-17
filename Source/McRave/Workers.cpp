@@ -81,7 +81,7 @@ namespace McRave::Workers {
         {
             auto buildCenter = Position(unit.getBuildPosition()) + Position(unit.getBuildType().tileWidth() * 16, unit.getBuildType().tileHeight() * 16);
 
-            if (Util::getTime() < Time(2, 00))
+            if (Util::getTime() < Time(4, 00))
                 return true;
 
             for (auto &t : unit.getTargetedBy()) {
@@ -93,7 +93,7 @@ namespace McRave::Workers {
 
             // If around defenders
             auto aroundDefenders = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                if ((u.getRole() != Role::Combat && u.getRole() != Role::Defender) || u.getGlobalState() == GlobalState::Retreat)
+                if (u.getRole() != Role::Combat && u.getRole() != Role::Defender)
                     return false;
 
                 return (unit.isWithinBuildRange() && u.getPosition().getDistance(buildCenter) < u.getGroundReach())

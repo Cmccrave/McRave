@@ -163,13 +163,21 @@ namespace McRave::Pathing {
 
                 // Create surround positions in a primitive fashion
                 vector<pair<Position, double>> surroundPositions;
-                for (int x = -1; x <= 1; x++) {
-                    for (int y = -1; y <= 1; y++) {
-                        if (x == 0 && y == 0)
-                            continue;
-                        auto p = (unit.getPosition()) + Position(x * unit.getType().width(), y * unit.getType().height());
-                        surroundPositions.push_back(make_pair(p, p.getDistance(trapTowards)));
-                    }
+                auto width = unit.getType().isBuilding() ? unit.getType().tileWidth() * 16 : unit.getType().width();
+                auto height = unit.getType().isBuilding() ? unit.getType().tileHeight() * 16 : unit.getType().height();
+                for (double x = -1.0; x <= 1.0; x += 1.0 / double(unit.getType().tileWidth())) {
+                    auto p = (unit.getPosition()) + Position(int(x * width), int(-1.0 * height));
+                    auto q = (unit.getPosition()) + Position(int(x * width), int(1.0 * height));
+                    surroundPositions.push_back(make_pair(p, p.getDistance(trapTowards)));
+                    surroundPositions.push_back(make_pair(q, q.getDistance(trapTowards)));
+                }
+                for (double y = -1.0; y <= 1.0; y += 1.0 / double(unit.getType().tileHeight())) {
+                    if (y <= -0.99 || y >= 0.99)
+                        continue;
+                    auto p = (unit.getPosition()) + Position(int(-1.0 * width), int(y * height));
+                    auto q = (unit.getPosition()) + Position(int(1.0 * width), int(y * height));
+                    surroundPositions.push_back(make_pair(p, p.getDistance(trapTowards)));
+                    surroundPositions.push_back(make_pair(q, q.getDistance(trapTowards)));
                 }
 
                 // Sort positions by summed distances
@@ -178,10 +186,7 @@ namespace McRave::Pathing {
                 });
 
                 // Assign closest targeter
-                int i = 0;
                 for (auto &[pos, dist] : surroundPositions) {
-                    Broodwar->drawTextMap(pos, "%d", i);
-                    i++;
                     auto closestTargeter = Util::getClosestUnit(pos, PlayerState::Self, [&](auto &u) {
                         return u.hasTarget() && u.getTarget() == unit.weak_from_this()
                             && find(allowedTypes.begin(), allowedTypes.end(), u.getType()) != allowedTypes.end()
