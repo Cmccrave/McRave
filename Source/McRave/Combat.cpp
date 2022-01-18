@@ -54,52 +54,6 @@ namespace McRave::Combat {
         multimap<Position, Formation> groundFormations;
         constexpr tuple commands{ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::defend, Command::explore, Command::escort, Command::retreat, Command::move };
 
-        void getBestPathFormationPoint(UnitInfo &unit)
-        {
-            // WIP
-            return;
-
-            vector<TilePosition> tiles;
-            auto currentDestTile = TilePosition(unit.getDestination());
-            auto currentDest = unit.getDestination();
-
-            TilePosition nextPathPoint = TilePosition(Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
-                return p.getDistance(unit.getPosition()) >= 96.0;
-            }));
-            Position next = Position(nextPathPoint) + Position(16, 16);
-
-            for (int x = currentDestTile.x - 3; x <= currentDestTile.x + 3; x++) {
-                for (int y = currentDestTile.y - 3; y <= currentDestTile.y + 3; y++) {
-                    auto center = Position(TilePosition(x, y)) + Position(16, 16);
-                    if (center.getDistance(unit.getPosition()) > center.getDistance(unit.getDestination()) && center.getDistance(next) < unit.getDestination().getDistance(next) + 48.0)
-                        tiles.push_back(TilePosition(x, y));
-                }
-            }
-
-            auto distBest = DBL_MAX;
-            for (auto &tile : tiles) {
-                auto center = Position(tile) + Position(16, 16);
-                auto dist = unit.getPosition().getDistance(center) * (0.1 + (8 * count(occupiedTiles.begin(), occupiedTiles.end(), tile)));
-                if (unit.unit()->isSelected())
-                    Visuals::drawBox(tile, tile + TilePosition(1, 1), Colors::Purple);
-                if (dist < distBest && BWEB::Map::isWalkable(tile, unit.getType())) {
-                    unit.setDestination(center);
-                    distBest = dist;
-                }
-            }
-
-            auto start = TilePosition(unit.getDestination());
-            for (int x = start.x - 1; x <= start.x + 1; x++) {
-                for (int y = start.y - 1; y <= start.y + 1; y++) {
-                    auto tile = TilePosition(x, y);
-                    occupiedTiles.push_back(tile);
-                }
-            }
-            occupiedTiles.push_back(TilePosition(unit.getDestination()));
-            //Visuals::drawBox(TilePosition(unit.getDestination()), TilePosition(unit.getDestination()) + TilePosition(1, 1), Colors::Green);
-
-        }
-
         void updateFormations() {
             groundFormations.clear();
 
@@ -132,243 +86,22 @@ namespace McRave::Combat {
                     }
                 }
             }
-
-            // Generate formation positions
-            for (auto &[pos, formation] : groundFormations) {
-
-                if (formation.range == 0.0
-                    || !formation.center.isValid())
-                    continue;
-
-                // For now, we only make formations as defensive measures, so let's just use a chokepoint angle
-                auto tempClosestChoke =  Util::getClosestChokepoint(formation.center);
-                formation.angle = BWEB::Map::getAngle(make_pair(tempClosestChoke->Pos(tempClosestChoke->end1), tempClosestChoke->Pos(tempClosestChoke->end2)));
-
-                // Calculate base radius
-                formation.unitTangentSize = sqrt(pow(formation.type.width(), 2.0) + pow(formation.type.height(), 2.0)) + 2.0;
-                formation.radius = clamp(double(formation.count) * (formation.unitTangentSize / 2.0), double(tempClosestChoke->Width() / 2), 256.0);
-
-                // Get closest enemy station
-                const auto closestEnemyStation = Stations::getClosestStationAir(PlayerState::Enemy, formation.center);
-                const auto closestSelfStation = Stations::getClosestStationAir(PlayerState::Self, formation.center);
-
-                // Rotate angle perpendicular to the choke, based on which direction we want
-                auto posStartPosition = Util::clipPosition(pos + Position(int(64.0 * cos(formation.angle + 1.57)), int(64.0 * sin(formation.angle + 1.57))));
-                auto negStartPosition = Util::clipPosition(pos + Position(int(64.0 * cos(formation.angle - 1.57)), int(64.0 * sin(formation.angle - 1.57))));
-                //Visuals::drawLine(formation.center, posStartPosition, Colors::Cyan);
-                //Visuals::drawLine(formation.center, negStartPosition, Colors::Yellow);
-
-                if (mapBWEM.GetArea(TilePosition(posStartPosition)) == Terrain::getDefendArea())
-                    formation.angle = formation.angle + 1.57;
-                else if (mapBWEM.GetArea(TilePosition(negStartPosition)) == Terrain::getDefendArea())
-                    formation.angle = formation.angle - 1.57;
-                else if (closestEnemyStation && posStartPosition.isValid() && negStartPosition.isValid()) {
-                    mapBWEM.GetPath(posStartPosition, closestEnemyStation->getBase()->Center()).size() > mapBWEM.GetPath(negStartPosition, closestEnemyStation->getBase()->Center()).size() ?
-                        formation.angle = formation.angle + 1.57 :
-                        formation.angle = formation.angle - 1.57;
-                }
-                defendPositions.clear();
-
-                //Broodwar->drawTextMap(posStartPosition, "%d", mapBWEM.GetPath(posStartPosition, closestEnemyStation->getBase()->Center()).size());
-                //Broodwar->drawTextMap(negStartPosition, "%d", mapBWEM.GetPath(negStartPosition, closestEnemyStation->getBase()->Center()).size());
-
-                // Create start position
-                formation.start = pos + Position(int(64.0 * cos(formation.angle)), int(64.0 * sin(formation.angle)));
-                //Visuals::drawLine(formation.start, formation.center, Colors::Purple);
-
-                // See if there's a defense, set radius to at least its distance
-                auto closestDefense = Util::getClosestUnit(formation.center, PlayerState::Self, [&](auto &u) {
-                    return u.getRole() == Role::Defender && u.isCompleted() && mapBWEM.GetArea(u.getTilePosition()) == mapBWEM.GetArea(TilePosition(formation.start));
-                });
-                if (closestSelfStation && closestSelfStation->isNatural() && mapBWEM.GetArea(TilePosition(formation.start)) == closestSelfStation->getBase()->GetArea())
-                    formation.radius = closestSelfStation->getBase()->Center().getDistance(formation.center) + 32.0;
-                if (closestDefense && !Players::ZvT())
-                    formation.radius = closestDefense->getPosition().getDistance(formation.center) + 64.0;
-
-                formation.baseRadius = formation.radius;
-
-                //// Find edges of concave
-                //vector<WalkPosition> directions ={ {-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1} };
-                //vector<WalkPosition> edges;
-                //int cnt = 0;
-                //bool oppositesFound = false;
-                //while (!oppositesFound) {
-                //    cnt++;
-                //    for (auto dir : directions) {
-                //        WalkPosition c = WalkPosition(formation.center);
-                //        WalkPosition w = c + (dir * cnt);
-                //        if (Grids::getMobility(w) <= 0 || w.x == 1 || w.y == 1 || w.x == Broodwar->mapWidth() * 4 - 1 || w.y == Broodwar->mapHeight() * 4 - 1) {
-                //            if (find_if(edges.begin(), edges.end(), [&](auto &p) { return ((p.x < c.x && w.x > c.x) || (p.x > c.x && w.x < c.x)) && ((p.y < c.y && w.y > c.y) || (p.y > c.y && w.y < c.y)); }) != edges.end()) {
-                //                oppositesFound = true;
-                //                edges ={ w, c + WalkPosition(w.x - c.x, w.y - c.y) };
-                //                break;
-                //            }
-                //            edges.push_back(w);
-                //        }
-                //    }
-                //}
-
-                //if (!edges.empty()) {
-                //    auto angleSum = 0.0;
-                //    for (auto &edge : edges) {
-                //        auto edgeCenter = Position(edge) + Position(4, 4);
-                //        angleSum += BWEB::Map::getAngle(make_pair(formation.center, edgeCenter));
-                //        Visuals::drawLine(formation.center, edgeCenter, Colors::Blue);
-                //    }
-                //    formation.angle = angleSum / double(edges.size());
-
-                //}
-
-
-
-                // Adjust radius if a small formation exists inside it
-                for (auto &[_, otherFormation] : groundFormations) {
-                    if (otherFormation.center == formation.center && otherFormation.range < formation.range)
-                        formation.radius = max(formation.radius, otherFormation.radius + formation.unitTangentSize * 2.0);
-                }
-
-                // Create some formations
-                auto radsPerUnit = min(formation.radius / (formation.unitTangentSize * formation.count * 3.14), formation.unitTangentSize / (1.0 * formation.radius));
-                auto wrapCount = 0;
-                auto countPerRadius = 0;
-
-                auto radsPositive = formation.angle;
-                auto radsNegative = formation.angle;
-                auto lastPosPosition = Positions::Invalid;
-                auto lastNegPosition = Positions::Invalid;
-
-                bool stopPositive = false;
-                bool stopNegative = false;
-                while (wrapCount < 4 && int(formation.positions.size()) < 5000) {
-
-                    auto posPosition = pos + Position(int(formation.radius * cos(radsPositive)), int(formation.radius * sin(radsPositive)));
-                    auto negPosition = pos + Position(int(formation.radius * cos(radsNegative)), int(formation.radius * sin(radsNegative)));
-
-                    auto validPosition = [&](Position &p, Position &last) {
-                        if (!p.isValid()
-                            || !formation.start.isValid()
-                            || Grids::getMobility(p) <= 4
-                            || mapBWEM.GetArea(TilePosition(p)) != mapBWEM.GetArea(TilePosition(formation.start))
-                            || Util::boxDistance(formation.type, p, formation.type, last) <= 2)
-                            return false;
-                        countPerRadius++;
-                        formation.positions[wrapCount].push_back(p);
-                        return true;
-                    };
-
-                    // Neutral position
-                    if (radsPositive == radsNegative && validPosition(posPosition, lastPosPosition)) {
-                        radsPositive += radsPerUnit;
-                        radsNegative -= radsPerUnit;
-                        lastPosPosition = posPosition;
-                        lastNegPosition = negPosition;
-                        //Visuals::drawCircle(posPosition, 3, Colors::Yellow);
-                        continue;
-                    }
-
-                    // Positive position
-                    if (!stopPositive && validPosition(posPosition, lastPosPosition)) {
-                        radsPositive += radsPerUnit;
-                        lastPosPosition = posPosition;
-                        //Visuals::drawCircle(posPosition, 3, Colors::Green);
-                    }
-                    else
-                        radsPositive += 3.14 / 180.0;
-
-                    // Negative position
-                    if (!stopNegative && validPosition(negPosition, lastNegPosition)) {
-                        radsNegative -= radsPerUnit;
-                        lastNegPosition = negPosition;
-                        //Visuals::drawCircle(negPosition, 2, Colors::Red);
-                    }
-                    else
-                        radsNegative -= 3.14 / 180.0;
-
-                    if (radsPositive > formation.angle + 1.57)
-                        stopPositive = true;
-                    if (radsNegative < formation.angle - 1.57)
-                        stopNegative = true;
-
-                    if (stopPositive && stopNegative) {
-                        stopPositive = false;
-                        stopNegative = false;
-                        wrapCount++;
-                        formation.radius += formation.unitTangentSize;
-                        radsPositive = formation.angle;
-                        radsNegative = formation.angle;
-                    }
-                }
-            }
         }
 
         void assignFormations()
         {
-            for (auto &[_, formation] : groundFormations) {
-
-                for (int i = 0; i < 4; i++) {
-
-                    // HACK: Sort them at the natural to block runbys
-                    auto formationArea = mapBWEM.GetArea(TilePosition(formation.start));
-                    if (formationArea == BWEB::Map::getNaturalArea())
-                        sort(formation.positions[0].begin(), formation.positions[0].end(), [&](auto &lhs, auto &rhs) {
-                        return lhs.getDistance(Position(BWEB::Map::getMainChoke()->Center())) < rhs.getDistance(Position(BWEB::Map::getMainChoke()->Center()));
+            for (auto &concave : Formations::getConcaves()) {
+                for (auto &pos : concave.positions) {
+                    auto closestUnit = Util::getClosestUnit(pos, PlayerState::Self, [&](auto &u) {
+                        return u.getType() == concave.type && u.getFormation() == concave.center && !u.concaveFlag;
                     });
 
-                    int fromCenter = 0;
-                    for (auto &pos : formation.positions[i]) {
-                        fromCenter++;
+                    if (!closestUnit)
+                        continue;
 
-                        auto closestUnit = Util::getClosestUnit(pos, PlayerState::Self, [&](auto &u) {
-                            return (u.getGroundRange() == formation.range || (formation.count > 6 && formation.range >= u.getGroundRange())) && u.getDestination() == formation.center && !u.concaveFlag;
-                        });
-                        auto closestDef = Util::getClosestUnit((pos + formation.center) / 2, PlayerState::Self, [&](auto &u) {
-                            return u.getRole() == Role::Defender && mapBWEM.GetArea(u.getTilePosition()) == mapBWEM.GetArea(TilePosition(formation.start));
-                        });
-
-                        if (!closestUnit)
-                            continue;
-
-                        auto closestBuilder = Util::getClosestUnit(pos, PlayerState::Self, [&](auto &u) {
-                            return u.getBuildPosition().isValid();
-                        });
-                        auto closestStuck = Util::getClosestUnit(pos, PlayerState::Self, [&](auto &u) {
-                            return (u.getFormation() == formation.center && u.getPosition().getDistance(formation.center) < formation.baseRadius - 64.0);
-                        });
-
-                        if ((closestStuck && pos.getDistance(closestStuck->getPosition()) < 32.0)
-                            || (closestUnit->hasTarget() && Broodwar->getGroundHeight(TilePosition(pos)) <= Broodwar->getGroundHeight(closestUnit->getTarget().getTilePosition()) && closestUnit->getTarget().getPosition().getDistance(pos) < 480.0 && closestDef && closestUnit->getTarget().getGroundRange() > 32.0 && pos.getDistance(closestUnit->getTarget().getPosition()) < closestDef->getPosition().getDistance(closestUnit->getTarget().getPosition()))
-                            || (closestBuilder && pos.getDistance(closestBuilder->getPosition()) < 128.0)
-                            || Planning::overlapsPlan(*closestUnit, pos)
-                            || Actions::overlapsActions(closestUnit->unit(), pos, TechTypes::Spider_Mines, PlayerState::Enemy, 96)
-                            || !Util::findWalkable(*closestUnit, pos))
-                            continue;
-
-                        if (closestDef) {
-                            auto closestWall = BWEB::Walls::getClosestWall(closestDef->getTilePosition());
-                            if (closestWall && closestWall->getDefenses().find(closestDef->getTilePosition()) != closestWall->getDefenses().end()) {
-                                if (Terrain::getEnemyStartingPosition().isValid()) {
-                                    auto path = mapBWEM.GetPath(closestDef->getPosition(), Terrain::getEnemyStartingPosition());
-                                    if (!path.empty()) {
-                                        //Visuals::drawLine(closestDef->getPosition(), Position(path.front()->Center()), Colors::Orange);
-                                        if (pos.getDistance(Position(path.front()->Center())) < closestDef->getPosition().getDistance(Position(path.front()->Center())) - 48.0)
-                                            continue;
-                                    }
-                                }
-                                else {
-                                    auto choke = Util::getClosestChokepoint(formation.center);
-                                    if (choke) {
-                                        //Visuals::drawLine(closestDef->getPosition(), Position(choke->Center()), Colors::Yellow);
-                                        if (pos.getDistance(Position(choke->Center())) < closestDef->getPosition().getDistance(Position(choke->Center())) - 48.0)
-                                            continue;
-                                    }
-                                }
-                            }
-                        }
-
-                        closestUnit->setDestination(pos);
-                        closestUnit->concaveFlag = true;
-                        defendPositions.insert(pos);
-                    }
+                    closestUnit->setDestination(pos);
+                    closestUnit->concaveFlag = true;
+                    defendPositions.insert(pos);
                 }
             }
         }
@@ -612,7 +345,7 @@ namespace McRave::Combat {
 
         void updateGlobalState(UnitInfo& unit)
         {
-            bool testingDefense = false;
+            bool testingDefense = true;
             if (testingDefense) {
                 holdChoke = true;
                 unit.setGlobalState(GlobalState::Retreat);
@@ -893,10 +626,8 @@ namespace McRave::Combat {
                     return p.getDistance(unit.getPosition()) >= 64.0;
                 });
 
-                if (newDestination.isValid())
-                    unit.setDestination(newDestination);
-
-                getBestPathFormationPoint(unit);
+                /*if (newDestination.isValid())
+                    unit.setDestination(newDestination);*/
             }
         }
 
@@ -1216,6 +947,8 @@ namespace McRave::Combat {
         updateDefenders();
         updateRetreatPositions();
         updateFormations();
+        Clusters::onFrame();
+        Formations::onFrame();
         Visuals::endPerfTest("Combat");
     }
 
@@ -1250,4 +983,5 @@ namespace McRave::Combat {
     set<Position>& getDefendPositions() { return defendPositions; }
     multimap<double, Position>& getCombatClusters() { return combatClusters; }
     Position getAirClusterCenter() { return airCluster.second; }
+    multimap<double, UnitInfo&> getCombatUnitsByDistance() { return combatUnitsByDistance; }
 }

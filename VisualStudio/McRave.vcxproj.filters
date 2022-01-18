@@ -217,6 +217,12 @@
     <ClCompile Include="..\Source\McRave\Spy\SpyZerg.cpp">
       <Filter>McRave\Strategy\Spy</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\McRave\Formations.cpp">
+      <Filter>McRave\Micro\Combat\Formation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Clusters.cpp">
+      <Filter>McRave\Micro\Combat</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">

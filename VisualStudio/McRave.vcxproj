@@ -45,10 +45,12 @@
     <ClCompile Include="..\Source\McRave\Actions.cpp" />
     <ClCompile Include="..\Source\McRave\Buildings.cpp" />
     <ClCompile Include="..\Source\McRave\BuildOrder.cpp" />
+    <ClCompile Include="..\Source\McRave\Clusters.cpp" />
     <ClCompile Include="..\Source\McRave\Combat.cpp" />
     <ClCompile Include="..\Source\McRave\Commands.cpp" />
     <ClCompile Include="..\Source\McRave\Dll.cpp" />
     <ClCompile Include="..\Source\McRave\Expansions.cpp" />
+    <ClCompile Include="..\Source\McRave\Formations.cpp" />
     <ClCompile Include="..\Source\McRave\Pathing.cpp" />
     <ClCompile Include="..\Source\McRave\Planning.cpp" />
     <ClCompile Include="..\Source\McRave\ResourceInfo.cpp" />

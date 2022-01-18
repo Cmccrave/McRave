@@ -472,7 +472,6 @@ namespace McRave
         }
 
         // If this is a new order or new command than what we're requesting, we can issue it
-        Broodwar->drawCircleMap(here, 4, Colors::Red);
         if (newCommand()) {
             if (cmd == UnitCommandTypes::Move)
                 unit()->move(here);
