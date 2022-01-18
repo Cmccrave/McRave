@@ -37,7 +37,6 @@ namespace McRave::Combat {
         std::vector<Cluster>& getClusters();
     }
 
-    void onStart();
     void onFrame();
 
     bool defendChoke();

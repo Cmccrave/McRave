@@ -278,7 +278,7 @@ namespace McRave::Command
 
             // If within range of an intermediate point within engaging distance
             if (unit.hasTarget() && Players::ZvT()) {
-                for (auto &tile : unit.getDestinationPath().getTiles()) {
+                for (auto &tile : unit.getObjectivePath().getTiles()) {
                     auto center = Position(tile) + Position(16, 16);
 
                     auto distMin = BuildOrder::getCompositionPercentage(Zerg_Hydralisk) > 0.0 ? 200.0 : 0.0;

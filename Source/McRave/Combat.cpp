@@ -8,6 +8,8 @@ namespace McRave::Combat {
 
     namespace {
 
+
+
         int lastCheckFrame = 0;
         weak_ptr<UnitInfo> checker;
 
@@ -31,69 +33,418 @@ namespace McRave::Combat {
         multimap<double, Position> groundCleanupPositions;
         multimap<double, Position> airCleanupPositions;
 
-        struct Formation {
-            Position center, start, from;
-            map<int, vector<Position>> positions;
-            double range = 0.0;
-            double baseRadius, radius = 0.0;
-            double angle = 0.0;
-            double unitTangentSize;
-            UnitType type = UnitTypes::None;
-            int count = 0;
-
-            Formation(double _range, UnitType _type, Position _center, Position _start, Position _from) {
-                range = _range;
-                type = _type;
-                center = _center;
-                start = _start;
-                from = _from;
-                count = 1;
-            }
-        };
-
-        multimap<Position, Formation> groundFormations;
         constexpr tuple commands{ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::defend, Command::explore, Command::escort, Command::retreat, Command::move };
 
-        void updateFormations() {
-            groundFormations.clear();
+        void updateObjective(UnitInfo& unit)
+        {
+            // HACK: Proxy lurker stuff
+            if (unit.getType() == Zerg_Lurker && BuildOrder::isProxy() && Util::getTime() < Time(12, 00)) {
+                unit.setObjective(Terrain::getEnemyMain()->getResourceCentroid());
+                return;
+            }
 
-            // Count how many units at this destination, create any new formations we need
-            for (auto &u : Units::getUnits(PlayerState::Self)) {
-                auto &unit = *u;
-                if (unit.getRole() != Role::Combat)
-                    continue;
+            // If attacking and target is close, set as destination
+            if (unit.getLocalState() == LocalState::Attack) {
+                if (unit.attemptingRunby())
+                    unit.setObjective(unit.getEngagePosition());
+                else if (unit.getInterceptPosition().isValid())
+                    unit.setObjective(unit.getInterceptPosition());
+                else if (unit.getSurroundPosition().isValid())
+                    unit.setObjective(unit.getSurroundPosition());
+                else
+                    unit.setObjective(unit.getEngagePosition());
 
-                auto formationFound = false;
-                for (auto &[pos, formation] : groundFormations) {
-                    if (formation.center == unit.getFormation() && formation.range == unit.getGroundRange()) {
-                        formation.count++;
-                        formationFound = true;
-                        break;
+                if (unit.getTargetPath().isReachable())
+                    unit.setObjectivePath(unit.getTargetPath());
+            }
+
+            // If we're not ready to attack with a proxy yet
+            else if (unit.getGlobalState() == GlobalState::Retreat && BuildOrder::isProxy()) {
+                const auto closestProxy = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+                    return u.getType() == Zerg_Hatchery || u.getType() == Zerg_Lair || u.getType() == Protoss_Gateway || u.getType() == Terran_Barracks;
+                });
+                if (closestProxy)
+                    unit.setObjective(closestProxy->getPosition());
+            }
+
+            // If we're globally retreating, set defend position as destination
+            else if (unit.getGlobalState() == GlobalState::Retreat && holdChoke) {
+                if (unit.isLightAir() || !unit.isHealthy())
+                    unit.setObjective(BWEB::Map::getMainPosition());
+                else
+                    unit.setObjective(Terrain::getDefendPosition());
+            }
+
+            // If retreating, find closest retreat position
+            else if (unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat) {
+                const auto &retreat = getClosestRetreatPosition(unit);
+                if (retreat.isValid() && (!unit.isLightAir() || Players::getStrength(PlayerState::Enemy).airToAir > 0.0))
+                    unit.setObjective(retreat);
+                else
+                    unit.setObjective(BWEB::Map::getMainPosition());
+            }
+
+            // If unit has a goal
+            else if (unit.getGoal().isValid())
+                unit.setObjective(unit.getGoal());
+
+            // If this is a light air unit, defend any bases under heavy attack
+            else if ((unit.isLightAir() || unit.getType() == Zerg_Scourge) && ((Units::getImmThreat() > 25.0 && Stations::getMyStations().size() >= 3 && Stations::getMyStations().size() > Stations::getEnemyStations().size()) || (Players::ZvZ() && Units::getImmThreat() > 5.0))) {
+                auto &attacker = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                    return u.isThreatening() && !u.isHidden();
+                });
+                if (attacker)
+                    unit.setObjective(attacker->getPosition());
+            }
+
+            // If this is a light air unit, go to the air cluster first if far away
+            else if ((unit.isLightAir() || unit.getType() == Zerg_Scourge) && airCommander.lock() && unit.getPosition().getDistance(airCommander.lock()->getPosition()) > 64.0)
+                unit.setObjective(airCluster.second);
+
+            // If this is a light air unit and we can harass
+            else if (unit.attemptingHarass()) {
+                unit.setObjective(Terrain::getHarassPosition());
+                unit.setObjectivePath(airClusterPath);
+            }
+
+            // If unit has a target and a valid engagement position
+            else if (unit.hasTarget()) {
+                unit.setObjective(unit.getTarget().getPosition());
+                unit.setObjectivePath(unit.getTargetPath());
+            }
+
+            // If attack position is valid
+            else if (Terrain::getAttackPosition().isValid() && unit.canAttackGround())
+                unit.setObjective(Terrain::getAttackPosition());
+
+            // If no target and no enemy bases, move to a base location
+            else if (!unit.hasTarget() || !unit.getTarget().getPosition().isValid() || unit.unit()->isIdle()) {
+
+                // Finishing enemy off, find remaining bases we haven't scouted, if we haven't visited in 2 minutes
+                if (Terrain::getEnemyStartingPosition().isValid()) {
+                    auto best = DBL_MAX;
+                    for (auto &area : mapBWEM.Areas()) {
+                        for (auto &base : area.Bases()) {
+                            if (area.AccessibleNeighbours().size() == 0
+                                || Terrain::isInAllyTerritory(base.Location()))
+                                continue;
+
+                            int time = Grids::lastVisibleFrame(base.Location());
+                            if (time < best) {
+                                best = time;
+                                unit.setObjective(Position(base.Location()));
+                            }
+                        }
                     }
                 }
 
-                if (!formationFound)
-                    groundFormations.emplace(unit.getFormation(), Formation(unit.getGroundRange(), unit.getType(), unit.getFormation(), unit.getPosition(), (BWEB::Map::getMainPosition() + unit.getFormation()) / 2));
-            }
+                // Need to scout in drone scouting order in ZvZ, ovie order in non ZvZ
+                else {
+                    combatScoutOrder = Scouts::getScoutOrder(Zerg_Zergling);
+                    if (!combatScoutOrder.empty()) {
+                        for (auto &station : combatScoutOrder) {
+                            if (!Stations::isBaseExplored(station)) {
+                                unit.setObjective(station->getBase()->Center());
+                                break;
+                            }
+                        }
+                    }
 
-            // Squish formations together that should be together
-            for (auto &[pos1, formation1] : groundFormations) {
-                for (auto &[pos2, formation2] : groundFormations) {
-                    if (formation1.center == formation2.center && formation1.type != formation2.type && formation1.count >= 6 && formation1.range > formation2.range) {
-                        formation1.count += formation2.count;
-                        formation2.count = 0;
-                        formation2.range = 0.0;
+                    if (combatScoutOrder.size() > 2 && !Stations::isBaseExplored(*(combatScoutOrder.begin() + 1))) {
+                        combatScoutOrder.erase(combatScoutOrder.begin());
+                    }
+                }
+
+                // Finish off positions that are old
+                if (Util::getTime() > Time(8, 00)) {
+                    if (unit.isFlying() && !airCleanupPositions.empty()) {
+                        unit.setObjective(airCleanupPositions.begin()->second);
+                        airCleanupPositions.erase(airCleanupPositions.begin());
+                    }
+                    else if (!unit.isFlying() && !groundCleanupPositions.empty()) {
+                        unit.setObjective(groundCleanupPositions.begin()->second);
+                        groundCleanupPositions.erase(groundCleanupPositions.begin());
                     }
                 }
             }
         }
+
+        void updatePath(UnitInfo& unit)
+        {
+            auto simDistCurrent = unit.hasSimTarget() ? unit.getPosition().getApproxDistance(unit.getSimTarget().getPosition()) : 640.0;
+
+            const auto flyerHeuristic = [&](const TilePosition &t) {
+                const auto center = Position(t) + Position(16, 16);
+
+                auto d = center.getApproxDistance(unit.getSimTarget().getPosition());
+                for (auto &pos : lastSimPositions)
+                    d = min(d, center.getApproxDistance(pos));
+
+                auto dist = unit.getSimState() == SimState::Win ? 1.0 : max(0.01, double(d) - min(simDistCurrent, unit.getRetreatRadius() + 64.0));
+                auto vis = unit.getSimState() == SimState::Win ? 1.0 : clamp(double(Broodwar->getFrameCount() - Grids::lastVisibleFrame(t)) / 960.0, 0.5, 3.0);
+                return 1.00 / (vis * dist);
+            };
+
+            const auto flyerRegroup = [&](const TilePosition &t) {
+                const auto center = Position(t) + Position(16, 16);
+                auto threat = Grids::getEAirThreat(center);
+                return threat;
+            };
+
+            // Generate a new path that obeys collision of terrain and buildings
+            auto needPath = unit.getObjectivePath().getTiles().empty() || unit.getObjectivePath() != unit.getTargetPath();
+            if (!unit.isFlying() && unit.getDestination().isValid() && needPath && unit.getObjectivePath().getTarget() != TilePosition(unit.getDestination())) {
+
+                // Create a pathpoint
+                auto pathPoint = unit.getDestination();
+                auto usedTile = BWEB::Map::isUsed(TilePosition(unit.getDestination()));
+                if (!BWEB::Map::isWalkable(TilePosition(unit.getDestination()), unit.getType()) || usedTile != UnitTypes::None) {
+                    auto dimensions = usedTile != UnitTypes::None ? usedTile.tileSize() : TilePosition(1, 1);
+                    auto closest = DBL_MAX;
+                    for (int x = TilePosition(unit.getDestination()).x - dimensions.x; x < TilePosition(unit.getDestination()).x + dimensions.x + 1; x++) {
+                        for (int y = TilePosition(unit.getDestination()).y - dimensions.y; y < TilePosition(unit.getDestination()).y + dimensions.y + 1; y++) {
+                            auto center = Position(TilePosition(x, y)) + Position(16, 16);
+                            auto dist = center.getDistance(unit.getPosition());
+                            if (dist < closest && BWEB::Map::isWalkable(TilePosition(x, y), unit.getType()) && BWEB::Map::isUsed(TilePosition(x, y)) == UnitTypes::None) {
+                                closest = dist;
+                                pathPoint = center;
+                            }
+                        }
+                    }
+                }
+
+                if (!mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(pathPoint)) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(pathPoint)))) {
+                    BWEB::Path newPath(unit.getPosition(), pathPoint, unit.getType());
+                    newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t); });
+                    unit.setObjectivePath(newPath);
+                }
+            }
+
+            // Generate a flying path for harassing that obeys exploration and staying out of range of threats if possible
+            auto inCluster = unit.getPosition().getDistance(airCluster.second) < 64.0;
+            auto canHarass = unit.getLocalState() != LocalState::Retreat && unit.getDestination() == Terrain::getHarassPosition() && unit.hasSimTarget() && inCluster && unit.attemptingHarass();
+            auto enemyPressure = unit.hasTarget() && Util::getTime() < Time(7, 00) && unit.getTarget().getPosition().getDistance(BWEB::Map::getMainPosition()) < unit.getTarget().getPosition().getDistance(Terrain::getEnemyStartingPosition());
+            if (unit.isLightAir() && !unit.getGoal().isValid() && canHarass && !enemyPressure) {
+                BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
+                newPath.generateAS(flyerHeuristic);
+                unit.setObjectivePath(newPath);
+            }
+
+            // Generate a flying path for regrouping
+            if (unit.isLightAir() && !unit.globalRetreat() && !unit.getGoal().isValid() && !inCluster && airCluster.second.isValid()) {
+                BWEB::Path newPath(unit.getPosition(), airCluster.second, unit.getType());
+                newPath.generateAS(flyerRegroup);
+                unit.setObjectivePath(newPath);
+            }
+
+            // If path is reachable, find a point n pixels away to set as new destination
+            if (unit.getObjectivePath().isReachable()) {
+                auto newDestination = Util::findPointOnPath(unit.getObjectivePath(), [&](Position p) {
+                    return p.getDistance(unit.getPosition()) >= 64.0;
+                });
+
+                if (newDestination.isValid())
+                    unit.setDestination(newDestination);
+            }
+        }
+
+        void updateDecision(UnitInfo& unit)
+        {
+            if (!unit.unit() || !unit.unit()->exists()                                                                                          // Prevent crashes            
+                || unit.unit()->isLoaded()
+                || unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())    // If the unit is locked down, maelstrommed, stassised, or not completed
+                return;
+
+            // Convert our commands to strings to display what the unit is doing for debugging
+            map<int, string> commandNames{
+                make_pair(0, "Misc"),
+                make_pair(1, "Special"),
+                make_pair(2, "Attack"),
+                make_pair(3, "Approach"),
+                make_pair(4, "Kite"),
+                make_pair(5, "Defend"),
+                make_pair(6, "Explore"),
+                make_pair(7, "Escort"),
+                make_pair(8, "Retreat"),
+                make_pair(9, "Move")
+            };
+
+            // Iterate commands, if one is executed then don't try to execute other commands
+            int height = unit.getType().height() / 2;
+            int width = unit.getType().width() / 2;
+            int i = Util::iterateCommands(commands, unit);
+            auto startText = unit.getPosition() + Position(-4 * int(commandNames[i].length() / 2), height);
+            Broodwar->drawTextMap(startText, "%c%s", Text::White, commandNames[i].c_str());
+        }
+
+        void updateCleanup()
+        {
+            groundCleanupPositions.clear();
+            airCleanupPositions.clear();
+
+            if (Util::getTime() < Time(6, 00) || !Stations::getEnemyStations().empty())
+                return;
+
+            // Look at every TilePosition and sort by furthest oldest
+            auto best = 0.0;
+            for (int x = 0; x < Broodwar->mapWidth(); x++) {
+                for (int y = 0; y < Broodwar->mapHeight(); y++) {
+                    auto t = TilePosition(x, y);
+                    auto p = Position(t) + Position(16, 16);
+
+                    if (!Broodwar->isBuildable(t))
+                        continue;
+
+                    auto frameDiff = (Broodwar->getFrameCount() - Grids::lastVisibleFrame(t));
+                    auto dist = p.getDistance(BWEB::Map::getMainPosition());
+
+                    if (mapBWEM.GetArea(t) && mapBWEM.GetArea(t)->AccessibleFrom(BWEB::Map::getMainArea()))
+                        groundCleanupPositions.emplace(make_pair(1.0 / (frameDiff * dist), p));
+                    else
+                        airCleanupPositions.emplace(make_pair(1.0 / (frameDiff * dist), p));
+                }
+            }
+        }
+
+        void updateArmyChecker()
+        {
+            // Determine if we need to create a new checking unit to try and detect the enemy build
+            const auto needEnemyCheck = !Players::ZvZ() && !Spy::enemyRush() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) <= 0 && Spy::getEnemyTransition() == "Unknown" && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(6, 00) && Broodwar->getFrameCount() - lastCheckFrame > 240;
+
+            if (needEnemyCheck && checker.expired()) {
+                checker = Util::getClosestUnit(Units::getEnemyArmyCenter(), PlayerState::Self, [&](auto &u) {
+                    return u.getRole() == Role::Combat && !u.getGoal().isValid() && (u.getType() == Zerg_Zergling || u.getType() == Protoss_Zealot || u.getType() == Terran_Marine || u.getType() == Terran_Vulture);
+                });
+            }
+
+            // If the checking unit exists and has seen something, it can be released
+            else if (checker.lock()) {
+                auto sawTarget = checker.lock()->hasTarget() && !checker.lock()->getTarget().getType().isWorker() && (checker.lock()->getTarget().unit()->exists() || checker.lock()->getTarget().getType().isBuilding());
+                if (sawTarget || checker.lock()->getGoal().isValid()) {
+                    checker.reset();
+                    lastCheckFrame = Broodwar->getFrameCount();
+                }
+            }
+        }
+
+        void updateAirCommander()
+        {
+            // Get an air commander if new one needed
+            if (airCommander.expired() || airCommander.lock()->globalRetreat() || airCommander.lock()->localRetreat() || (airCluster.second.isValid() && airCommander.lock()->getPosition().getDistance(airCluster.second) > 64.0)) {
+                for (auto &u : combatUnitsByDistance) {
+                    auto &unit = u.second;
+                    if (unit.isLightAir() && unit.getPosition().getDistance(airCluster.second) < 64.0) {
+                        airCommander = unit.weak_from_this();
+                        break;
+                    }
+                }
+            }
+
+            // If we have an air commander
+            if (airCommander.lock()) {
+                if (airCommander.lock()->hasSimTarget() && find(lastSimPositions.begin(), lastSimPositions.end(), airCommander.lock()->getSimTarget().getPosition()) == lastSimPositions.end()) {
+                    if (lastSimPositions.size() >= 5)
+                        lastSimPositions.pop_back();
+                    lastSimPositions.insert(lastSimPositions.begin(), airCommander.lock()->getSimTarget().getPosition());
+                }
+
+                // Execute the air commanders commands
+                Horizon::simulate(*airCommander.lock());
+                updateObjective(*airCommander.lock());
+                updatePath(*airCommander.lock());
+                updateDecision(*airCommander.lock());
+
+                // Setup air commander commands for other units to follow
+                airClusterPath = airCommander.lock()->getObjectivePath();
+                airCommanderCommand = make_pair(airCommander.lock()->getCommandType(), airCommander.lock()->getCommandPosition());
+            }
+        }
+
+        void updateRetreatPositions()
+        {
+            retreatPositions.clear();
+
+            if (Terrain::getDefendChoke() == BWEB::Map::getMainChoke()) {
+                retreatPositions.insert(Terrain::getMyMain()->getResourceCentroid());
+                return;
+            }
+
+            for (auto &station : Stations::getMyStations()) {
+
+                auto wallDefending = false;
+                if (station->getChokepoint()) {
+                    auto wall = BWEB::Walls::getWall(station->getChokepoint());
+                    if (wall && wall->getGroundDefenseCount() >= 2)
+                        wallDefending = true;
+                }
+
+                // A non main station cannot be a retreat point if an enemy is within reach
+                if (!station->isMain() && !wallDefending && Stations::getGroundDefenseCount(station) < 2) {
+                    const auto closestEnemy = Util::getClosestUnitGround(station->getBase()->Center(), PlayerState::Enemy, [&](auto &u) {
+                        return u.canAttackGround();
+                    });
+
+                    if (closestEnemy && closestEnemy->getPosition().getDistance(station->getBase()->Center()) < closestEnemy->getGroundReach() * 2.0)
+                        continue;
+                }
+
+                // Store the defending position for this station
+                auto defendPosition = Stations::getDefendPosition(station);
+                if (defendPosition.isValid())
+                    retreatPositions.insert(defendPosition);
+
+            }
+        }
+
+        void checkHoldChoke()
+        {
+            auto defensiveAdvantage = (Players::ZvZ() && BuildOrder::getCurrentOpener() == Spy::getEnemyOpener()) || (Players::ZvZ() && BuildOrder::getCurrentOpener() == "12Pool" && Spy::getEnemyOpener() == "9Pool");
+
+            // UMS Setting
+            if (Broodwar->getGameType() == BWAPI::GameTypes::Use_Map_Settings) {
+                holdChoke = true;
+                return;
+            }
+
+            // Protoss
+            if (Broodwar->self()->getRace() == Races::Protoss && Players::getSupply(PlayerState::Self, Races::None) > 40) {
+                holdChoke = BuildOrder::takeNatural()
+                    || vis(Protoss_Dragoon) > 0
+                    || com(Protoss_Shield_Battery) > 0
+                    || BuildOrder::isWallNat()
+                    || (BuildOrder::isHideTech() && !Spy::enemyRush())
+                    || Players::getSupply(PlayerState::Self, Races::None) > 60
+                    || Players::vT();
+            }
+
+            // Terran
+            if (Broodwar->self()->getRace() == Races::Terran && Players::getSupply(PlayerState::Self, Races::None) > 40)
+                holdChoke = true;
+
+            // Zerg
+            if (Broodwar->self()->getRace() == Races::Zerg) {
+                holdChoke = (!Players::ZvZ() && (Spy::getEnemyBuild() != "2Gate" || !Spy::enemyProxy()))
+                    || (defensiveAdvantage && !Spy::enemyPressure() && vis(Zerg_Sunken_Colony) == 0 && com(Zerg_Mutalisk) < 3 && Util::getTime() > Time(3, 30))
+                    || (BuildOrder::takeNatural() && total(Zerg_Zergling) >= 10)
+                    || Players::getSupply(PlayerState::Self, Races::None) > 60;
+            }
+        }
+
+
+
+
+
+
+
+
+
 
         void assignFormations()
         {
             for (auto &concave : Formations::getConcaves()) {
                 for (auto &pos : concave.positions) {
                     auto closestUnit = Util::getClosestUnit(pos, PlayerState::Self, [&](auto &u) {
-                        return u.getType() == concave.type && u.getFormation() == concave.center && !u.concaveFlag;
+                        return u.getType() == concave.type && u.getObjective() == concave.center && !u.concaveFlag;
                     });
 
                     if (!closestUnit)
@@ -405,355 +756,13 @@ namespace McRave::Combat {
             }
         }
 
-        void updateDestination(UnitInfo& unit)
-        {
-            // HACK: Proxy lurker stuff
-            if (unit.getType() == Zerg_Lurker && BuildOrder::isProxy() && Util::getTime() < Time(12, 00)) {
-                unit.setDestination(Terrain::getEnemyMain()->getResourceCentroid());
-                return;
-            }
-
-            // If attacking and target is close, set as destination
-            if (unit.getLocalState() == LocalState::Attack) {
-                if (unit.attemptingRunby())
-                    unit.setDestination(unit.getEngagePosition());
-                else if (unit.getInterceptPosition().isValid())
-                    unit.setDestination(unit.getInterceptPosition());
-                else if (unit.getSurroundPosition().isValid())
-                    unit.setDestination(unit.getSurroundPosition());
-                else
-                    unit.setDestination(unit.getEngagePosition());
-
-                if (unit.getTargetPath().isReachable())
-                    unit.setDestinationPath(unit.getTargetPath());
-            }
-
-            // If we're not ready to attack with a proxy yet
-            else if (unit.getGlobalState() == GlobalState::Retreat && BuildOrder::isProxy()) {
-                const auto closestProxy = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                    return u.getType() == Zerg_Hatchery || u.getType() == Zerg_Lair || u.getType() == Protoss_Gateway || u.getType() == Terran_Barracks;
-                });
-                if (closestProxy)
-                    unit.setDestination(closestProxy->getPosition());
-            }
-
-            // If we're globally retreating, set defend position as destination
-            else if (unit.getGlobalState() == GlobalState::Retreat && holdChoke) {
-                if (unit.isLightAir() || !unit.isHealthy())
-                    unit.setDestination(BWEB::Map::getMainPosition());
-                else
-                    unit.setDestination(Terrain::getDefendPosition());
-
-                if (!unit.isLightAir())
-                    unit.setFormation(unit.getDestination());
-            }
-
-            // If retreating, find closest retreat position
-            else if (unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat) {
-                const auto &retreat = getClosestRetreatPosition(unit);
-                if (retreat.isValid() && (!unit.isLightAir() || Players::getStrength(PlayerState::Enemy).airToAir > 0.0))
-                    unit.setDestination(retreat);
-                else
-                    unit.setDestination(BWEB::Map::getMainPosition());
-
-                if (!unit.isLightAir())
-                    unit.setFormation(unit.getDestination());
-            }
-
-            // If unit has a goal
-            else if (unit.getGoal().isValid())
-                unit.setDestination(unit.getGoal());
-
-            // If this is a light air unit, defend any bases under heavy attack
-            else if ((unit.isLightAir() || unit.getType() == Zerg_Scourge) && ((Units::getImmThreat() > 25.0 && Stations::getMyStations().size() >= 3 && Stations::getMyStations().size() > Stations::getEnemyStations().size()) || (Players::ZvZ() && Units::getImmThreat() > 5.0))) {
-                auto &attacker = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return u.isThreatening() && !u.isHidden();
-                });
-                if (attacker)
-                    unit.setDestination(attacker->getPosition());
-            }
-
-            // If this is a light air unit, go to the air cluster first if far away
-            else if ((unit.isLightAir() || unit.getType() == Zerg_Scourge) && airCommander.lock() && unit.getPosition().getDistance(airCommander.lock()->getPosition()) > 64.0)
-                unit.setDestination(airCluster.second);
-
-            // If this is a light air unit and we can harass
-            else if (unit.attemptingHarass()) {
-                unit.setDestination(Terrain::getHarassPosition());
-                unit.setDestinationPath(airClusterPath);
-            }
-
-            // If unit has a target and a valid engagement position
-            else if (unit.hasTarget()) {
-                unit.setDestination(unit.getTarget().getPosition());
-                unit.setDestinationPath(unit.getTargetPath());
-            }
-
-            // If attack position is valid
-            else if (Terrain::getAttackPosition().isValid() && unit.canAttackGround())
-                unit.setDestination(Terrain::getAttackPosition());
-
-            // If no target and no enemy bases, move to a base location
-            else if (!unit.hasTarget() || !unit.getTarget().getPosition().isValid() || unit.unit()->isIdle()) {
-
-                // Finishing enemy off, find remaining bases we haven't scouted, if we haven't visited in 2 minutes
-                if (Terrain::getEnemyStartingPosition().isValid()) {
-                    auto best = DBL_MAX;
-                    for (auto &area : mapBWEM.Areas()) {
-                        for (auto &base : area.Bases()) {
-                            if (area.AccessibleNeighbours().size() == 0
-                                || Terrain::isInAllyTerritory(base.Location()))
-                                continue;
-
-                            int time = Grids::lastVisibleFrame(base.Location());
-                            if (time < best) {
-                                best = time;
-                                unit.setDestination(Position(base.Location()));
-                            }
-                        }
-                    }
-                }
-
-                // Need to scout in drone scouting order in ZvZ, ovie order in non ZvZ
-                else {
-                    if (!combatScoutOrder.empty()) {
-                        for (auto &station : combatScoutOrder) {
-                            if (!Stations::isBaseExplored(station)) {
-                                unit.setDestination(station->getBase()->Center());
-                                break;
-                            }
-                        }
-                    }
-
-                    if (combatScoutOrder.size() > 2 && !Stations::isBaseExplored(*(combatScoutOrder.begin() + 1))) {
-                        combatScoutOrder.erase(combatScoutOrder.begin());
-                    }
-                }
-
-                // Finish off positions that are old
-                if (Util::getTime() > Time(8, 00)) {
-                    if (unit.isFlying() && !airCleanupPositions.empty()) {
-                        unit.setDestination(airCleanupPositions.begin()->second);
-                        airCleanupPositions.erase(airCleanupPositions.begin());
-                    }
-                    else if (!unit.isFlying() && !groundCleanupPositions.empty()) {
-                        unit.setDestination(groundCleanupPositions.begin()->second);
-                        groundCleanupPositions.erase(groundCleanupPositions.begin());
-                    }
-                }
-            }
-        }
-
-        void updateFormation(UnitInfo& unit)
-        {
-
-        }
-
-        void updatePath(UnitInfo& unit)
-        {
-            auto simDistCurrent = unit.hasSimTarget() ? unit.getPosition().getApproxDistance(unit.getSimTarget().getPosition()) : 640.0;
-
-            const auto flyerHeuristic = [&](const TilePosition &t) {
-                const auto center = Position(t) + Position(16, 16);
-
-                auto d = center.getApproxDistance(unit.getSimTarget().getPosition());
-                for (auto &pos : lastSimPositions)
-                    d = min(d, center.getApproxDistance(pos));
-
-                auto dist = unit.getSimState() == SimState::Win ? 1.0 : max(0.01, double(d) - min(simDistCurrent, unit.getRetreatRadius() + 64.0));
-                auto vis = unit.getSimState() == SimState::Win ? 1.0 : clamp(double(Broodwar->getFrameCount() - Grids::lastVisibleFrame(t)) / 960.0, 0.5, 3.0);
-                return 1.00 / (vis * dist);
-            };
-
-            const auto flyerRegroup = [&](const TilePosition &t) {
-                const auto center = Position(t) + Position(16, 16);
-                auto threat = Grids::getEAirThreat(center);
-                return threat;
-            };
-
-            // Generate a new path that obeys collision of terrain and buildings
-            auto needPath = unit.getDestinationPath().getTiles().empty() || unit.getDestinationPath() != unit.getTargetPath();
-            if (!unit.isFlying() && unit.getDestination().isValid() && needPath && unit.getDestinationPath().getTarget() != TilePosition(unit.getDestination())) {
-
-                // Create a pathpoint
-                auto pathPoint = unit.getDestination();
-                auto usedTile = BWEB::Map::isUsed(TilePosition(unit.getDestination()));
-                if (!BWEB::Map::isWalkable(TilePosition(unit.getDestination()), unit.getType()) || usedTile != UnitTypes::None) {
-                    auto dimensions = usedTile != UnitTypes::None ? usedTile.tileSize() : TilePosition(1, 1);
-                    auto closest = DBL_MAX;
-                    for (int x = TilePosition(unit.getDestination()).x - dimensions.x; x < TilePosition(unit.getDestination()).x + dimensions.x + 1; x++) {
-                        for (int y = TilePosition(unit.getDestination()).y - dimensions.y; y < TilePosition(unit.getDestination()).y + dimensions.y + 1; y++) {
-                            auto center = Position(TilePosition(x, y)) + Position(16, 16);
-                            auto dist = center.getDistance(unit.getPosition());
-                            if (dist < closest && BWEB::Map::isWalkable(TilePosition(x, y), unit.getType()) && BWEB::Map::isUsed(TilePosition(x, y)) == UnitTypes::None) {
-                                closest = dist;
-                                pathPoint = center;
-                            }
-                        }
-                    }
-                }
-
-                if (!mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(pathPoint)) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(pathPoint)))) {
-                    BWEB::Path newPath(unit.getPosition(), pathPoint, unit.getType());
-                    newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t); });
-                    unit.setDestinationPath(newPath);
-                }
-            }
-
-            // Generate a flying path for harassing that obeys exploration and staying out of range of threats if possible
-            auto inCluster = unit.getPosition().getDistance(airCluster.second) < 64.0;
-            auto canHarass = unit.getLocalState() != LocalState::Retreat && unit.getDestination() == Terrain::getHarassPosition() && unit.hasSimTarget() && inCluster && unit.attemptingHarass();
-            auto enemyPressure = unit.hasTarget() && Util::getTime() < Time(7, 00) && unit.getTarget().getPosition().getDistance(BWEB::Map::getMainPosition()) < unit.getTarget().getPosition().getDistance(Terrain::getEnemyStartingPosition());
-            if (unit.isLightAir() && !unit.getGoal().isValid() && canHarass && !enemyPressure) {
-                BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
-                newPath.generateAS(flyerHeuristic);
-                unit.setDestinationPath(newPath);
-                //Visuals::drawPath(newPath);
-                //Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Green);
-            }
-
-            // Generate a flying path for regrouping
-            if (unit.isLightAir() && !unit.globalRetreat() && !unit.getGoal().isValid() && !inCluster && airCluster.second.isValid()) {
-                BWEB::Path newPath(unit.getPosition(), airCluster.second, unit.getType());
-                newPath.generateAS(flyerRegroup);
-                unit.setDestinationPath(newPath);
-                //Visuals::drawPath(newPath);
-            }
-
-            // If path is reachable, find a point n pixels away to set as new destination
-            if (unit.getDestinationPath().isReachable()) {
-                auto newDestination = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
-                    return p.getDistance(unit.getPosition()) >= 64.0;
-                });
-
-                /*if (newDestination.isValid())
-                    unit.setDestination(newDestination);*/
-            }
-        }
-
-        void updateDecision(UnitInfo& unit)
-        {
-            if (!unit.unit() || !unit.unit()->exists()                                                                                          // Prevent crashes            
-                || unit.unit()->isLoaded()
-                || unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())    // If the unit is locked down, maelstrommed, stassised, or not completed
-                return;
-
-            // Convert our commands to strings to display what the unit is doing for debugging
-            map<int, string> commandNames{
-                make_pair(0, "Misc"),
-                make_pair(1, "Special"),
-                make_pair(2, "Attack"),
-                make_pair(3, "Approach"),
-                make_pair(4, "Kite"),
-                make_pair(5, "Defend"),
-                make_pair(6, "Explore"),
-                make_pair(7, "Escort"),
-                make_pair(8, "Retreat"),
-                make_pair(9, "Move")
-            };
-
-            // Iterate commands, if one is executed then don't try to execute other commands
-            int height = unit.getType().height() / 2;
-            int width = unit.getType().width() / 2;
-            int i = Util::iterateCommands(commands, unit);
-            auto startText = unit.getPosition() + Position(-4 * int(commandNames[i].length() / 2), height);
-            Broodwar->drawTextMap(startText, "%c%s", Text::White, commandNames[i].c_str());
-        }
-
-        void updateCleanup()
-        {
-            groundCleanupPositions.clear();
-            airCleanupPositions.clear();
-
-            if (Util::getTime() < Time(6, 00) || !Stations::getEnemyStations().empty())
-                return;
-
-            // Look at every TilePosition and sort by furthest oldest
-            auto best = 0.0;
-            for (int x = 0; x < Broodwar->mapWidth(); x++) {
-                for (int y = 0; y < Broodwar->mapHeight(); y++) {
-                    auto t = TilePosition(x, y);
-                    auto p = Position(t) + Position(16, 16);
-
-                    if (!Broodwar->isBuildable(t))
-                        continue;
-
-                    auto frameDiff = (Broodwar->getFrameCount() - Grids::lastVisibleFrame(t));
-                    auto dist = p.getDistance(BWEB::Map::getMainPosition());
-
-                    if (mapBWEM.GetArea(t) && mapBWEM.GetArea(t)->AccessibleFrom(BWEB::Map::getMainArea()))
-                        groundCleanupPositions.emplace(make_pair(1.0 / (frameDiff * dist), p));
-                    else
-                        airCleanupPositions.emplace(make_pair(1.0 / (frameDiff * dist), p));
-                }
-            }
-        }
-
-        void updateArmyChecker()
-        {
-            // Determine if we need to create a new checking unit to try and detect the enemy build
-            const auto needEnemyCheck = !Players::ZvZ() && !Spy::enemyRush() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) <= 0 && Spy::getEnemyTransition() == "Unknown" && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(6, 00) && Broodwar->getFrameCount() - lastCheckFrame > 240;
-
-            if (needEnemyCheck && checker.expired()) {
-                checker = Util::getClosestUnit(Units::getEnemyArmyCenter(), PlayerState::Self, [&](auto &u) {
-                    return u.getRole() == Role::Combat && !u.getGoal().isValid() && (u.getType() == Zerg_Zergling || u.getType() == Protoss_Zealot || u.getType() == Terran_Marine || u.getType() == Terran_Vulture);
-                });
-            }
-
-            // If the checking unit exists and has seen something, it can be released
-            else if (checker.lock()) {
-                auto sawTarget = checker.lock()->hasTarget() && !checker.lock()->getTarget().getType().isWorker() && (checker.lock()->getTarget().unit()->exists() || checker.lock()->getTarget().getType().isBuilding());
-                if (sawTarget || checker.lock()->getGoal().isValid()) {
-                    checker.reset();
-                    lastCheckFrame = Broodwar->getFrameCount();
-                }
-            }
-        }
-
-        void updateAirCommander()
-        {
-            // Get an air commander if new one needed
-            if (airCommander.expired() || airCommander.lock()->globalRetreat() || airCommander.lock()->localRetreat() || (airCluster.second.isValid() && airCommander.lock()->getPosition().getDistance(airCluster.second) > 64.0)) {
-                for (auto &u : combatUnitsByDistance) {
-                    auto &unit = u.second;
-                    if (unit.isLightAir() && unit.getPosition().getDistance(airCluster.second) < 64.0) {
-                        airCommander = unit.weak_from_this();
-                        break;
-                    }
-                }
-            }
-
-            // If we have an air commander
-            if (airCommander.lock()) {
-                if (airCommander.lock()->hasSimTarget() && find(lastSimPositions.begin(), lastSimPositions.end(), airCommander.lock()->getSimTarget().getPosition()) == lastSimPositions.end()) {
-                    if (lastSimPositions.size() >= 5)
-                        lastSimPositions.pop_back();
-                    lastSimPositions.insert(lastSimPositions.begin(), airCommander.lock()->getSimTarget().getPosition());
-                }
-
-                // Execute the air commanders commands
-                Horizon::simulate(*airCommander.lock());
-                updateDestination(*airCommander.lock());
-                updatePath(*airCommander.lock());
-                updateDecision(*airCommander.lock());
-
-                // Setup air commander commands for other units to follow
-                airClusterPath = airCommander.lock()->getDestinationPath();
-                airCommanderCommand = make_pair(airCommander.lock()->getCommandType(), airCommander.lock()->getCommandPosition());
-            }
-        }
-
         void sortCombatUnits()
         {
-            // Sort units by distance to destination
-            airCluster.first = 0.0;
-            airCluster.second = Positions::Invalid;
-            combatClusters.clear();
+            // 1. Sort combat units by distance to target
             combatUnitsByDistance.clear();
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
 
-                // Don't update if
                 if (!unit.unit()->isCompleted()
                     || unit.getType() == Terran_Vulture_Spider_Mine
                     || unit.getType() == Protoss_Scarab
@@ -761,29 +770,19 @@ namespace McRave::Combat {
                     || unit.getType().isSpell())
                     continue;
 
-                // Check if we need to pull/push workers to/from combat role
+                // TODO: Move to Roles
+                // 2. Check if we need a worker pull or return a worker
                 if (unit.getType().isWorker())
                     updateRole(unit);
 
-                // Update combat role units states and sort by distance to destination
                 if (unit.getRole() == Role::Combat) {
-                    updateClusters(unit);
-                    updateGlobalState(unit);
-                    updateLocalState(unit);
-                    Horizon::simulate(unit);
-                    updateDestination(unit);
-                    updateFormation(unit);
+                    updateClusters(unit); // TODO: Move to Clusters
                     combatUnitsByDistance.emplace(unit.getPosition().getDistance(unit.getDestination()), unit);
                 }
             }
         }
 
-        void updateUnits() {
-            combatScoutOrder = Scouts::getScoutOrder(Zerg_Zergling);
-            updateArmyChecker();
-            sortCombatUnits();
-            updateAirCommander();
-            assignFormations();
+        void gogoCombat() {            
 
             // Execute commands ordered by ascending distance
             for (auto &u : combatUnitsByDistance) {
@@ -802,153 +801,55 @@ namespace McRave::Combat {
                         unit.command(UnitCommandTypes::Right_Click_Position, airCommanderCommand.second);
                     else {
                         Horizon::simulate(unit);
-                        updateDestination(unit);
+                        updateObjective(unit);
                         updateDecision(unit);
                     }
                 }
 
                 // Combat unit decisions
                 else if (unit.getRole() == Role::Combat) {
-                    updatePath(unit);
                     updateDecision(unit);
                 }
             }
         }
 
-        void updateRetreatPositions()
+        void updateCombatUnits()
         {
-            retreatPositions.clear();
-
-            if (Terrain::getDefendChoke() == BWEB::Map::getMainChoke()) {
-                retreatPositions.insert(Terrain::getMyMain()->getResourceCentroid());
-                return;
-            }
-
-            for (auto &station : Stations::getMyStations()) {
-
-                auto wallDefending = false;
-                if (station->getChokepoint()) {
-                    auto wall = BWEB::Walls::getWall(station->getChokepoint());
-                    if (wall && wall->getGroundDefenseCount() >= 2)
-                        wallDefending = true;
-                }
-
-                // A non main station cannot be a retreat point if an enemy is within reach
-                if (!station->isMain() && !wallDefending && Stations::getGroundDefenseCount(station) < 2) {
-                    const auto closestEnemy = Util::getClosestUnitGround(station->getBase()->Center(), PlayerState::Enemy, [&](auto &u) {
-                        return u.canAttackGround();
-                    });
-
-                    if (closestEnemy && closestEnemy->getPosition().getDistance(station->getBase()->Center()) < closestEnemy->getGroundReach() * 2.0)
-                        continue;
-                }
-
-                // Store the defending position for this station
-                auto defendPosition = Stations::getDefendPosition(station);
-                if (defendPosition.isValid())
-                    retreatPositions.insert(defendPosition);
-
+            // 3. Horizon
+            // 4. Update global and local states
+            // 5. Assign a global destination
+            for (auto &[_, unit] : combatUnitsByDistance) {
+                Horizon::simulate(unit);
+                updateGlobalState(unit);
+                updateLocalState(unit);
+                updateObjective(unit);
+                unit.setDestination(unit.getObjective());
+                updatePath(unit);
+                Broodwar->drawLineMap(unit.getPosition(), unit.getObjective(), Colors::Cyan);
             }
         }
 
-        void updateDefenders()
+        void reset()
         {
-            // Update all my buildings
-            for (auto &u : Units::getUnits(PlayerState::Self)) {
-                auto &unit = *u;
-
-                if (unit.getRole() == Role::Defender)
-                    updateDecision(unit);
-            }
+            airCluster.first = 0.0;
+            airCluster.second = Positions::Invalid;
+            combatClusters.clear();
+            combatUnitsByDistance.clear();
         }
-
-        void checkHoldChoke()
-        {
-            auto defensiveAdvantage = (Players::ZvZ() && BuildOrder::getCurrentOpener() == Spy::getEnemyOpener()) || (Players::ZvZ() && BuildOrder::getCurrentOpener() == "12Pool" && Spy::getEnemyOpener() == "9Pool");
-
-            // UMS Setting
-            if (Broodwar->getGameType() == BWAPI::GameTypes::Use_Map_Settings) {
-                holdChoke = true;
-                return;
-            }
-
-            // Protoss
-            if (Broodwar->self()->getRace() == Races::Protoss && Players::getSupply(PlayerState::Self, Races::None) > 40) {
-                holdChoke = BuildOrder::takeNatural()
-                    || vis(Protoss_Dragoon) > 0
-                    || com(Protoss_Shield_Battery) > 0
-                    || BuildOrder::isWallNat()
-                    || (BuildOrder::isHideTech() && !Spy::enemyRush())
-                    || Players::getSupply(PlayerState::Self, Races::None) > 60
-                    || Players::vT();
-            }
-
-            // Terran
-            if (Broodwar->self()->getRace() == Races::Terran && Players::getSupply(PlayerState::Self, Races::None) > 40)
-                holdChoke = true;
-
-            // Zerg
-            if (Broodwar->self()->getRace() == Races::Zerg) {
-                holdChoke = (!Players::ZvZ() && (Spy::getEnemyBuild() != "2Gate" || !Spy::enemyProxy()))
-                    || (defensiveAdvantage && !Spy::enemyPressure() && vis(Zerg_Sunken_Colony) == 0 && com(Zerg_Mutalisk) < 3 && Util::getTime() > Time(3, 30))
-                    || (BuildOrder::takeNatural() && total(Zerg_Zergling) >= 10)
-                    || Players::getSupply(PlayerState::Self, Races::None) > 60;
-            }
-        }
-    }
-
-    void onStart()
-    {
-        if (!BWEB::Map::getMainChoke())
-            return;
-
-        const auto createCache = [&](const BWEM::ChokePoint * chokePoint, const BWEM::Area * area) {
-            auto center = chokePoint->Center();
-            for (int x = center.x - 50; x <= center.x + 50; x++) {
-                for (int y = center.y - 50; y <= center.y + 50; y++) {
-                    WalkPosition w(x, y);
-                    const auto p = Position(w) + Position(4, 4);
-
-                    if (!p.isValid()
-                        || (area && mapBWEM.GetArea(w) != area)
-                        || Grids::getMobility(w) < 6)
-                        continue;
-
-                    auto closest = Util::getClosestChokepoint(p);
-                    if (closest != chokePoint && p.getDistance(Position(closest->Center())) < 96.0 && (closest == BWEB::Map::getMainChoke() || closest == BWEB::Map::getNaturalChoke()))
-                        continue;
-
-                    concaveCache[chokePoint].push_back(w);
-                }
-            }
-        };
-
-        // Main area for defending sometimes is wrong like Andromeda and Polaris Rhapsody
-        const BWEM::Area * defendArea = nullptr;
-        auto &[a1, a2] = BWEB::Map::getMainChoke()->GetAreas();
-        if (a1 && Terrain::isInAllyTerritory(a1))
-            defendArea = a1;
-        if (a2 && Terrain::isInAllyTerritory(a2))
-            defendArea = a2;
-
-        createCache(BWEB::Map::getMainChoke(), defendArea);
-        createCache(BWEB::Map::getMainChoke(), BWEB::Map::getMainArea());
-
-        // Natural area should always be correct
-        createCache(BWEB::Map::getNaturalChoke(), BWEB::Map::getNaturalArea());
-    }
+    }    
 
     void onFrame() {
         Visuals::startPerfTest();
-
-        checkHoldChoke();
-        updateCleanup();
-        updateUnits();
-        updateDefenders();
+        reset();
         updateRetreatPositions();
-        updateFormations();
+        sortCombatUnits();
+        updateArmyChecker();
+        updateCombatUnits();
         Clusters::onFrame();
         Formations::onFrame();
+        updateAirCommander();
+        assignFormations();
+        gogoCombat();
         Visuals::endPerfTest("Combat");
     }
 

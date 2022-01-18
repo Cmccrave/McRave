@@ -23,7 +23,6 @@ void McRaveModule::onStart()
     Grids::onStart();
     Learning::onStart();
     Util::onStart();
-    Combat::onStart();
     Resources::onStart();
     Scouts::onStart();
 
@@ -76,6 +75,7 @@ void McRaveModule::onFrame()
     Support::onFrame();
     Scouts::onFrame();
     Combat::onFrame();
+    Defender::onFrame();
     Workers::onFrame();
     Transports::onFrame();
     Expansion::onFrame();

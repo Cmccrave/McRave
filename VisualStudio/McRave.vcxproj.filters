@@ -223,6 +223,9 @@
     <ClCompile Include="..\Source\McRave\Clusters.cpp">
       <Filter>McRave\Micro\Combat</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\McRave\Defender.cpp">
+      <Filter>McRave\Micro\Defender</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">
@@ -405,6 +408,9 @@
     <ClInclude Include="..\Source\McRave\Spy\Spy.h">
       <Filter>McRave\Strategy\Spy</Filter>
     </ClInclude>
+    <ClInclude Include="..\Source\McRave\Defender.h">
+      <Filter>McRave\Micro\Defender</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="BWEM">
@@ -496,6 +502,9 @@
     </Filter>
     <Filter Include="McRave\Micro\Combat\Formation">
       <UniqueIdentifier>{f82ac477-8863-40f7-90de-7bbe7e3eb14b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Micro\Defender">
+      <UniqueIdentifier>{73d53f71-c9a9-4156-a9ee-5d7e9d7fda64}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

@@ -36,17 +36,17 @@ namespace McRave::Combat::Formations {
             const auto dVectorX = double(cluster.sharedTarget.x - cluster.sharedPosition.x) / cluster.sharedTarget.getDistance(cluster.sharedPosition);
             const auto dVectorY = double(cluster.sharedTarget.y - cluster.sharedPosition.y) / cluster.sharedTarget.getDistance(cluster.sharedPosition);
             const auto dVector = Position(int(dVectorX * radius), int(dVectorY * radius));
-            auto startPosition = Util::clipPosition(cluster.sharedPosition + dVector);
-            //Broodwar->drawCircleMap(startPosition, 4, Colors::Green, true);
+            auto startPosition = Util::clipPosition(cluster.sharedTarget + dVector);
+            Broodwar->drawCircleMap(startPosition, 4, Colors::Green, true);
 
             // See if there's a defense, set radius to at least its distance
-            if (includeDefenders) {
+            /*if (includeDefenders) {
                 auto closestDefense = Util::getClosestUnit(cluster.sharedTarget, PlayerState::Self, [&](auto &u) {
                     return u.getRole() == Role::Defender && u.isCompleted() && mapBWEM.GetArea(u.getTilePosition()) == mapBWEM.GetArea(TilePosition(startPosition));
                 });
                 if (closestDefense && !Players::ZvT())
                     radius = closestDefense->getPosition().getDistance(cluster.sharedTarget) + 64.0;
-            }
+            }*/
 
             // Start creating positions starting at the start position
             auto angle = BWEB::Map::getAngle(make_pair(startPosition, cluster.sharedPosition));
@@ -65,8 +65,8 @@ namespace McRave::Combat::Formations {
             concave.type = type;
             
             while (int(concave.positions.size()) < 5000) {
-                auto posPosition = cluster.sharedPosition + Position(int(radius * cos(radsPositive)), int(radius * sin(radsPositive)));
-                auto negPosition = cluster.sharedPosition + Position(int(radius * cos(radsNegative)), int(radius * sin(radsNegative)));
+                auto posPosition = cluster.sharedTarget + Position(int(radius * cos(radsPositive)), int(radius * sin(radsPositive)));
+                auto negPosition = cluster.sharedTarget + Position(int(radius * cos(radsNegative)), int(radius * sin(radsNegative)));
 
                 auto validPosition = [&](Position &p, Position &last) {
                     if (!p.isValid()
@@ -74,6 +74,7 @@ namespace McRave::Combat::Formations {
                         || Util::boxDistance(type, p, type, last) <= 2)
                         return false;
                     concave.positions.push_back(p);
+                    Broodwar->drawCircleMap(p, 2, Colors::Orange);
                     return true;
                 };
 
@@ -118,10 +119,10 @@ namespace McRave::Combat::Formations {
             }
 
             for (auto &unit : cluster.units) {
-                unit.lock()->setFormation(cluster.sharedTarget);
+                unit.lock()->setFormation(concave.center);
             }
             for (auto &position : concave.positions) {
-                Broodwar->drawLineMap(position, concave.center, Colors::Blue);
+                //Broodwar->drawLineMap(position, concave.center, Colors::Blue);
                 Broodwar->drawCircleMap(position, 4, Colors::Blue);
             }
             concaves.push_back(concave);

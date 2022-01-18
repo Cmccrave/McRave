@@ -62,7 +62,7 @@ namespace McRave
     {
         if (lastTile != unit()->getTilePosition()) {
             BWEB::Path emptyPath;
-            destinationPath = emptyPath;
+            objectivePath = emptyPath;
             targetPath = emptyPath;
         }
     }
@@ -106,6 +106,7 @@ namespace McRave
             tilePosition                = t.isBuilding() ? unit()->getTilePosition() : TilePosition(unit()->getPosition());
             walkPosition                = calcWalkPosition(this);
             destination                 = Positions::Invalid;
+            objective                   = Positions::Invalid;
             formation                   = Positions::Invalid;
             surroundPosition            = Positions::Invalid;
             interceptPosition           = Positions::Invalid;

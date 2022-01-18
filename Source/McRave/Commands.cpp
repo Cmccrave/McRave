@@ -320,7 +320,7 @@ namespace McRave::Command {
                 return true;
             }
 
-            if (!unit.getDestinationPath().isReachable()) {
+            if (!unit.getObjectivePath().isReachable()) {
                 unit.command(Move, unit.getDestination());
                 return true;
             }

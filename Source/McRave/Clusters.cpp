@@ -10,22 +10,19 @@ namespace McRave::Combat::Clusters {
 
     void createClusters()
     {
-        // Group together units that are
         clusters.clear();
         for (auto &[_, unit] : Combat::getCombatUnitsByDistance()) {
 
-            // Check if any existing formations match this units type and commanalities
+            // Check if any existing formations match this units type and common objective
             bool foundCluster = false;
             for (auto &cluster : clusters) {
                 if (cluster.typeCounts.find(unit.getType()) != cluster.typeCounts.end()) {
-                    auto positionInCommon = unit.getPosition().getDistance(cluster.sharedPosition) < cluster.sharedRadius;
-                    auto destInCommon = unit.getDestination() == cluster.sharedPosition;
+                    auto destinationInCommon = unit.getObjective().getDistance(cluster.sharedTarget) < cluster.sharedRadius || unit.getObjective() == cluster.sharedTarget;
 
-                    if (positionInCommon) {
+                    if (destinationInCommon) {
                         cluster.sharedRadius += double(unit.getType().width() * unit.getType().height()) * 3.14 / cluster.sharedRadius;
                         cluster.typeCounts[unit.getType()]++;
                         cluster.units.push_back(unit.weak_from_this());
-                        //Broodwar->drawLineMap(unit.getPosition(), cluster.sharedPosition, Colors::Blue);
                         foundCluster = true;
                     }
                 }
@@ -33,10 +30,14 @@ namespace McRave::Combat::Clusters {
 
             // Didn't find existing formation, create a new one
             if (!foundCluster) {
-                auto target = unit.getDestination();
-                Cluster newCluster(unit.getPosition(), target, unit.getType());
+                Cluster newCluster(unit.getPosition(), unit.getObjective(), unit.getType());
                 clusters.push_back(newCluster);
             }
+        }
+
+        for (auto &cluster : clusters)
+        {
+            Broodwar->drawCircleMap(cluster.sharedTarget, 3, Colors::Red);
         }
     }
 

@@ -48,6 +48,7 @@
     <ClCompile Include="..\Source\McRave\Clusters.cpp" />
     <ClCompile Include="..\Source\McRave\Combat.cpp" />
     <ClCompile Include="..\Source\McRave\Commands.cpp" />
+    <ClCompile Include="..\Source\McRave\Defender.cpp" />
     <ClCompile Include="..\Source\McRave\Dll.cpp" />
     <ClCompile Include="..\Source\McRave\Expansions.cpp" />
     <ClCompile Include="..\Source\McRave\Formations.cpp" />
@@ -67,6 +68,7 @@
     <ClInclude Include="..\Source\Horizon\Horizon.h" />
     <ClInclude Include="..\Source\McRave\Actions.h" />
     <ClInclude Include="..\Source\McRave\Combat.h" />
+    <ClInclude Include="..\Source\McRave\Defender.h" />
     <ClInclude Include="..\Source\McRave\Events.h" />
     <ClCompile Include="..\Source\McRave\Goals.cpp" />
     <ClCompile Include="..\Source\McRave\Grids.cpp" />

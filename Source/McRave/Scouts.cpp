@@ -422,14 +422,14 @@ namespace McRave::Scouts {
         void updatePath(UnitInfo& unit)
         {
             if (!unit.isFlying()) {
-                if (unit.getDestination().isValid() && unit.getDestinationPath().getTarget() != TilePosition(unit.getDestination()) && (!mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(unit.getDestination())) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(unit.getDestination()))))) {
+                if (unit.getDestination().isValid() && unit.getObjectivePath().getTarget() != TilePosition(unit.getDestination()) && (!mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(unit.getDestination())) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(unit.getDestination()))))) {
                     BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
                     newPath.generateJPS([&](const TilePosition &t) { return newPath.terrainWalkable(t); });
-                    unit.setDestinationPath(newPath);
+                    unit.setObjectivePath(newPath);
                 }
 
-                if (unit.getDestinationPath().getTarget() == TilePosition(unit.getDestination())) {
-                    auto newDestination = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
+                if (unit.getObjectivePath().getTarget() == TilePosition(unit.getDestination())) {
+                    auto newDestination = Util::findPointOnPath(unit.getObjectivePath(), [&](Position p) {
                         return p.getDistance(unit.getPosition()) >= 64.0;
                     });
 
