@@ -24,6 +24,7 @@ namespace McRave::Stations
     int lastVisible(BWEB::Station*);
     double getSaturationRatio(BWEB::Station *);
     BWAPI::Position getDefendPosition(BWEB::Station *);
+    BWEB::Station * getClosestRetreatStation(UnitInfo&);
 
     PlayerState ownedBy(BWEB::Station *);
 };

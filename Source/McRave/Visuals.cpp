@@ -32,7 +32,7 @@ namespace McRave::Visuals {
         bool builds = true;
         bool bweb = false;
         bool sim = false;
-        bool paths = false;
+        bool paths = true;
         bool strengths = false;
         bool orders = false;
         bool local = false;

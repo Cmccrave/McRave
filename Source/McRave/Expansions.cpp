@@ -18,8 +18,8 @@ namespace McRave::Expansion {
             for (auto &station : BWEB::Stations::getStations()) {
                 auto& path = expansionNetwork[Terrain::getMyMain()][&station];
                 if (!path.getTiles().empty()) {
-                    auto danger = Util::findPointOnPath(path, [&](auto &t) {
-                        return Terrain::isInEnemyTerritory(TilePosition(t));
+                    auto danger = Util::findPointOnPath(path, [&](auto &p) {
+                        return Terrain::inTerritory(PlayerState::Enemy, p);
                     });
 
                     if (danger.isValid())
@@ -46,7 +46,7 @@ namespace McRave::Expansion {
             // Create a map of blocking neutrals per station
             blockingNeutrals.clear();
             for (auto &[station, path] : expansionNetwork[Terrain::getMyMain()]) {
-                Visuals::drawPath(path);
+                //Visuals::drawPath(path);
                 Util::testPointOnPath(path, [&](Position &p) {
                     auto type = BWEB::Map::isUsed(TilePosition(p));
                     if (type != UnitTypes::None) {
@@ -124,7 +124,7 @@ namespace McRave::Expansion {
                         continue;
                     if (mapBWEM.GetPath(BWEB::Map::getMainPosition(), station.getBase()->Center()).empty() && expansionOrder.size() < 3)
                         continue;
-                    if (Terrain::isInEnemyTerritory(station.getBase()->GetArea()))
+                    if (Terrain::inTerritory(PlayerState::Enemy, station.getBase()->GetArea()))
                         continue;
                     if (find_if(islandStations.begin(), islandStations.end(), [&](auto &s) { return s == &station; }) != islandStations.end())
                         continue;

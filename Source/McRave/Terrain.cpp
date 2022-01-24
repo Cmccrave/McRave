@@ -8,8 +8,8 @@ using namespace UnitTypes;
 namespace McRave::Terrain {
 
     namespace {
-        set<const Area*> allyTerritory;
-        set<const Area*> enemyTerritory;
+        map<const Area*, PlayerState> territoryArea;
+        map<WalkPosition, PlayerState> territoryChokeGeometry;
         set<const Base *> allBases;
         BWEB::Station * enemyNatural = nullptr;
         BWEB::Station * enemyMain = nullptr;
@@ -130,7 +130,7 @@ namespace McRave::Terrain {
                 enemyNatural = BWEB::Stations::getClosestNaturalStation(enemyStartingTilePosition);
 
                 if (enemyMain) {
-                    enemyTerritory.insert(enemyMain->getBase()->GetArea());
+                    addTerritory(PlayerState::Enemy, enemyMain);
                     Stations::getEnemyStations().push_back(enemyMain);
                 }
             }
@@ -226,7 +226,7 @@ namespace McRave::Terrain {
                 defendChoke = Walls::getNaturalWall()->getChokePoint();
                 defendArea = Walls::getNaturalWall()->getArea();
                 defendPosition = Position(defendChoke->Center());
-                allyTerritory.insert(Walls::getNaturalWall()->getArea());
+                addTerritory(PlayerState::Self, Walls::getNaturalWall()->getStation());
                 return;
             }
 
@@ -265,22 +265,16 @@ namespace McRave::Terrain {
                     defendPosition = closestStation ? (closestStation->getResourceCentroid() + closestStation->getBase()->Center()) / 2 : BWEB::Map::getMainPosition();
             }
 
-            // If we want to prevent a runby
-            else if (Combat::defendChoke() && vis(Zerg_Zergling) > 12) {
-                defendPosition = (Position(mainChoke->Center()) + Position(BWEB::Map::getNaturalChoke()->Center()) + Position(4, 4)) / 2;
-                defendNatural = false;
-            }
-
             // Natural defending position
             else if (defendNatural) {
                 defendPosition = Stations::getDefendPosition(myNatural);
-                allyTerritory.insert(BWEB::Map::getNaturalArea());
+                addTerritory(PlayerState::Self, myNatural);
             }
 
             // Main defending position
             else {
-                allyTerritory.insert(BWEB::Map::getMainArea());
-                allyTerritory.erase(BWEB::Map::getNaturalArea()); // Erase just in case we dropped natural defense
+                addTerritory(PlayerState::Self, myMain);
+                removeTerritory(PlayerState::Self, myNatural); // Erase just in case we dropped natural defense
                 defendPosition = Position(mainChoke->Center()) + Position(4, 4);
 
                 // Check to see if we have a wall
@@ -295,9 +289,9 @@ namespace McRave::Terrain {
 
                 // Decide which area is within my territory, useful for maps with small adjoining areas like Andromeda
                 auto &[a1, a2] = defendChoke->GetAreas();
-                if (a1 && Terrain::isInAllyTerritory(a1))
+                if (a1 && Terrain::inTerritory(PlayerState::Self, a1))
                     defendArea = a1;
-                if (a2 && Terrain::isInAllyTerritory(a2))
+                if (a2 && Terrain::inTerritory(PlayerState::Self, a2))
                     defendArea = a2;
                 defendChoke = BWEB::Map::getNaturalChoke();
             }
@@ -467,11 +461,11 @@ namespace McRave::Terrain {
 
                 // Add to territory if chokes are shared
                 if (BWEB::Map::getMainChoke() == BWEB::Map::getNaturalChoke() || islandMap)
-                    allyTerritory.insert(BWEB::Map::getNaturalArea());
+                    addTerritory(PlayerState::Self, myNatural);
 
                 // Add natural if we plan to take it
                 if (BuildOrder::isOpener() && BuildOrder::takeNatural())
-                    allyTerritory.insert(BWEB::Map::getNaturalArea());
+                    addTerritory(PlayerState::Self, myNatural);
             }
         }
     }
@@ -556,41 +550,90 @@ namespace McRave::Terrain {
         return Positions::Invalid;
     }
 
-    bool isInAllyTerritory(TilePosition here)
+    bool inTerritory(PlayerState playerState, Position here)
     {
-        if (here.isValid() && mapBWEM.GetArea(here))
-            return isInAllyTerritory(mapBWEM.GetArea(here));
-        return false;
+        if (!here.isValid())
+            return false;
+
+        auto area = mapBWEM.GetArea(TilePosition(here));
+        return (area && territoryArea[area] == playerState) || (!area && territoryChokeGeometry[WalkPosition(here)] == playerState);
     }
 
-    bool isInAllyTerritory(const Area * area)
+    bool inTerritory(PlayerState playerState, const BWEM::Area* area)
     {
-        if (allyTerritory.find(area) != allyTerritory.end())
-            return true;
-        return false;
+        return (area && territoryArea[area] == playerState);
     }
 
-    bool isInEnemyTerritory(TilePosition here)
+    void addTerritory(PlayerState playerState, BWEB::Station* station)
     {
-        if (here.isValid() && mapBWEM.GetArea(here) && enemyTerritory.find(mapBWEM.GetArea(here)) != enemyTerritory.end())
-            return true;
-        return false;
-    }
+        // Add the current station area to territory
+        if (territoryArea[station->getBase()->GetArea()] == PlayerState::None) {
+            territoryArea[station->getBase()->GetArea()] = playerState;
 
-    bool isInEnemyTerritory(const Area * area)
-    {
-        if (enemyTerritory.find(area) != enemyTerritory.end())
-            return true;
-        return false;
-    }
+            // Add individual choke tiles to territory
+            if (station->getChokepoint()) {
+                for (auto &geo : station->getChokepoint()->Geometry()) {
+                    if (territoryChokeGeometry[geo] == PlayerState::None)
+                        territoryChokeGeometry[geo] = playerState;
+                }
+            }
 
-    bool isStartingBase(TilePosition here)
-    {
-        for (auto tile : Broodwar->getStartLocations()) {
-            if (here.getDistance(tile) < 4)
-                return true;
+            // Add empty areas between main/natural partners to territory
+            if (station->isMain() || station->isNatural()) {
+                auto closestPartner = station->isMain() ? BWEB::Stations::getClosestNaturalStation(station->getBase()->Location())
+                    : BWEB::Stations::getClosestMainStation(station->getBase()->Location());
+
+                if (closestPartner) {
+                    for (auto &area : station->getBase()->GetArea()->AccessibleNeighbours()) {
+
+                        if (area->ChokePoints().size() > 2
+                            || shitMap)
+                            continue;
+
+                        for (auto &choke : area->ChokePoints()) {
+                            if (choke == closestPartner->getChokepoint())
+                                territoryArea[area] = playerState;
+                        }
+                    }
+                }
+            }
         }
-        return false;
+    }
+
+    void removeTerritory(PlayerState playerState, BWEB::Station* station)
+    {
+        // Remove the current station area from territory
+        if (territoryArea[station->getBase()->GetArea()] == playerState) {
+            territoryArea[station->getBase()->GetArea()] = PlayerState::None;
+
+            // Remove individual choke tiles from territory
+            if (station->getChokepoint()) {
+                for (auto &geo : station->getChokepoint()->Geometry()) {
+                    if (territoryChokeGeometry[geo] == playerState)
+                        territoryChokeGeometry[geo] = PlayerState::None;
+                }
+            }
+
+            // Remove empty areas between main/natural partners from territory
+            if (station->isMain() || station->isNatural()) {
+                auto closestPartner = station->isMain() ? BWEB::Stations::getClosestNaturalStation(station->getBase()->Location())
+                    : BWEB::Stations::getClosestMainStation(station->getBase()->Location());
+
+                if (closestPartner) {
+                    for (auto &area : station->getBase()->GetArea()->AccessibleNeighbours()) {
+
+                        if (area->ChokePoints().size() > 2
+                            || shitMap)
+                            continue;
+
+                        for (auto &choke : area->ChokePoints()) {
+                            if (choke == closestPartner->getChokepoint())
+                                territoryArea[area] = PlayerState::None;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     void onStart()
@@ -624,19 +667,6 @@ namespace McRave::Terrain {
                 allBases.insert(&base);
         }
 
-        // Add "empty" areas (ie. Andromeda areas around main)
-        for (auto &area : BWEB::Map::getNaturalArea()->AccessibleNeighbours()) {
-
-            if (area->ChokePoints().size() > 2 || shitMap)
-                continue;
-
-            for (auto &choke : area->ChokePoints()) {
-                if (choke->Center() == BWEB::Map::getMainChoke()->Center()) {
-                    allyTerritory.insert(area);
-                }
-            }
-        }
-
         findSafeSpots();
         reverseRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) < Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
         flatRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) == Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
@@ -658,8 +688,6 @@ namespace McRave::Terrain {
         findSafeSpots();
     }
 
-    set<const Area*>& getAllyTerritory() { return allyTerritory; }
-    set<const Area*>& getEnemyTerritory() { return enemyTerritory; }
     set<const Base*>& getAllBases() { return allBases; }
     Position getAttackPosition() { return attackPosition; }
     Position getDefendPosition() { return defendPosition; }

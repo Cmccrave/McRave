@@ -64,6 +64,7 @@ namespace McRave
             BWEB::Path emptyPath;
             objectivePath = emptyPath;
             targetPath = emptyPath;
+            retreatPath = emptyPath;
         }
     }
 
@@ -107,6 +108,7 @@ namespace McRave
             walkPosition                = calcWalkPosition(this);
             destination                 = Positions::Invalid;
             objective                   = Positions::Invalid;
+            retreat                     = Positions::Invalid;
             formation                   = Positions::Invalid;
             surroundPosition            = Positions::Invalid;
             interceptPosition           = Positions::Invalid;
@@ -277,12 +279,12 @@ namespace McRave
         auto threateningThisFrame = false;
 
         // If the unit is close to stations, defenses or resources owned by us
-        const auto atHome = Terrain::isInAllyTerritory(getTilePosition()) && closestStation && closestStation->getBase()->Center().getDistance(getPosition()) < 640.0;
+        const auto atHome = Terrain::inTerritory(PlayerState::Self, getPosition()) && closestStation && closestStation->getBase()->Center().getDistance(getPosition()) < 640.0;
         const auto atChoke = getPosition().getDistance(closestGeo) <= rangeCheck;
 
         // If the unit attacked defenders, workers or buildings
-        const auto attackedDefender = hasAttackedRecently() && hasTarget() && Terrain::isInAllyTerritory(getTarget().getTilePosition()) && getTarget().getRole() == Role::Defender;
-        const auto attackedWorkers = hasAttackedRecently() && hasTarget() && Terrain::isInAllyTerritory(getTarget().getTilePosition()) && getTarget().getRole() == Role::Worker;
+        const auto attackedDefender = hasAttackedRecently() && hasTarget() && Terrain::inTerritory(PlayerState::Self, getTarget().getPosition()) && getTarget().getRole() == Role::Defender;
+        const auto attackedWorkers = hasAttackedRecently() && hasTarget() && Terrain::inTerritory(PlayerState::Self, getTarget().getPosition()) && getTarget().getRole() == Role::Worker;
         const auto attackedBuildings = hasAttackedRecently() && hasTarget() && getTarget().getType().isBuilding();
 
         // Check if our resources are in danger
@@ -301,7 +303,7 @@ namespace McRave
         // Checks if it can damage an already damaged building
         auto nearFragileBuilding = [&]() {
             auto fragileBuilding = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-                return !u.isHealthy() && u.getType().isBuilding() && (u.isCompleted() || isWithinRange(u)) && Terrain::isInAllyTerritory(u.getTilePosition());
+                return !u.isHealthy() && u.getType().isBuilding() && (u.isCompleted() || isWithinRange(u)) && Terrain::inTerritory(PlayerState::Self, u.getPosition());
             });
             return fragileBuilding && canAttackGround() && Util::boxDistance(fragileBuilding->getType(), fragileBuilding->getPosition(), getType(), getPosition()) < proximityCheck;
         };
@@ -338,7 +340,7 @@ namespace McRave
                 return true;
 
             // Fix for Andromeda like maps
-            if (Terrain::isInAllyTerritory(getTilePosition()) && mapBWEM.GetArea(getTilePosition()) != BWEB::Map::getNaturalArea() && int(Stations::getMyStations().size()) >= 2)
+            if (Terrain::inTerritory(PlayerState::Self, getPosition()) && mapBWEM.GetArea(getTilePosition()) != BWEB::Map::getNaturalArea() && int(Stations::getMyStations().size()) >= 2)
                 return true;
 
             return getTilePosition().isValid() && mapBWEM.GetArea(getTilePosition()) == BWEB::Map::getMainArea() && (int(Stations::getMyStations().size()) >= 2 || Combat::defendChoke());
@@ -444,7 +446,7 @@ namespace McRave
             return false;
 
         // Add some wiggle room for movement
-        here += Position(rand() % 2 - 1, rand() % 2 - 1);
+        // here += Position(rand() % 2 - 1, rand() % 2 - 1);
 
         // Check if we should overshoot for halting distance
         if (cmd == UnitCommandTypes::Move && !getBuildPosition().isValid() && (getType().isFlyer() || isHovering() || getType() == Protoss_High_Templar)) {
@@ -698,7 +700,7 @@ namespace McRave
             || (getType() == Terran_Medic && getEnergy() <= TechTypes::Healing.energyCost())                                                                                                     // ...unit is a Medic with no energy        
             || (getType() == Terran_SCV && Broodwar->getFrameCount() > 12000)                                                                                                                    // ...unit is an SCV outside of early game
             || (isLightAir() && hasTarget() && getType().maxShields() > 0 && getTarget().getType() == Zerg_Overlord && Grids::getEAirThreat(getEngagePosition()) * 5.0 > (double)getShields())   // ...unit is a low shield light air attacking a Overlord under threat greater than our shields
-            || (getType() == Zerg_Zergling && Players::ZvZ() && getTargetedBy().size() >= 3 && !Terrain::isInAllyTerritory(getTilePosition()) && Util::getTime() < Time(3, 15))
+            || (getType() == Zerg_Zergling && Players::ZvZ() && getTargetedBy().size() >= 3 && !Terrain::inTerritory(PlayerState::Self, getPosition()) && Util::getTime() < Time(3, 15))
             || (getType() == Zerg_Zergling && Players::ZvP() && !getTargetedBy().empty() && getHealth() < 20 && Util::getTime() < Time(4, 00))
             || (getType() == Zerg_Zergling && hasTarget() && !isHealthy() && getTarget().getType().isWorker())
             || nearSuicide
@@ -787,11 +789,11 @@ namespace McRave
         };
 
         return (getTarget().isThreatening() && !isLightAir() && !getTarget().isHidden() && (Util::getTime() < Time(10, 00) || getSimState() == SimState::Win || Players::ZvZ()))                                                                          // ...target is threatening                    
-            || (!getType().isWorker() && (getGroundRange() > getTarget().getGroundRange() || getTarget().getType().isWorker()) && Terrain::isInAllyTerritory(getTarget().getTilePosition()) && !getTarget().isHidden())                 // ...unit can get free hits in our territory
-            || (isSuicidal() && hasTarget() && (getTarget().isWithinRange(*this) || Terrain::isInAllyTerritory(getTarget().getTilePosition()) || getTarget().isThreatening() || getTarget().getPosition().getDistance(getGoal()) < 160.0) && !nearEnemyDefenseStructure())
+            || (!getType().isWorker() && (getGroundRange() > getTarget().getGroundRange() || getTarget().getType().isWorker()) && Terrain::inTerritory(PlayerState::Self, getTarget().getPosition()) && !getTarget().isHidden())                 // ...unit can get free hits in our territory
+            || (isSuicidal() && hasTarget() && (getTarget().isWithinRange(*this) || Terrain::inTerritory(PlayerState::Self, getTarget().getPosition()) || getTarget().isThreatening() || getTarget().getPosition().getDistance(getGoal()) < 160.0) && !nearEnemyDefenseStructure())
             || ((isHidden() || getType() == Zerg_Lurker) && !Actions::overlapsDetection(unit(), getEngagePosition(), PlayerState::Enemy))
             || (!isFlying() && Actions::overlapsActions(unit(), getEngagePosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, 96))
-            || (!isFlying() && (getGroundRange() < 32.0 || getType() == Zerg_Lurker) && Terrain::isInEnemyTerritory(getTilePosition()) && (Util::getTime() > Time(8, 00) || BuildOrder::isProxy()) && nearEnemyStation() && !Players::ZvZ())
+            || (!isFlying() && (getGroundRange() < 32.0 || getType() == Zerg_Lurker) && Terrain::inTerritory(PlayerState::Enemy, getPosition()) && (Util::getTime() > Time(8, 00) || BuildOrder::isProxy()) && nearEnemyStation() && !Players::ZvZ())
             || (getType() == Zerg_Lurker && BuildOrder::isProxy() && nearProxyStructure())
             || (!isFlying() && Actions::overlapsActions(unit(), getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, 96))
             || isTargetedBySuicide();
@@ -800,10 +802,8 @@ namespace McRave
     bool UnitInfo::globalRetreat()
     {
         return nearHidden
-            || (getGlobalState() == GlobalState::Retreat && !Terrain::isInAllyTerritory(getTilePosition()))
+            || (getGlobalState() == GlobalState::Retreat && !Terrain::inTerritory(PlayerState::Self, getPosition()))
             || (getType() == Zerg_Mutalisk && hasTarget() && !getTarget().isThreatening() && !isWithinRange(getTarget()) && getHealth() <= 50)                // ...unit is a low HP Mutalisk attacking a target under air threat    
-            || (getType() == Zerg_Hydralisk && BuildOrder::getCompositionPercentage(Zerg_Lurker) >= 1.00)
-            || (getType() == Zerg_Hydralisk && !getGoal().isValid() && (!Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines) || !Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments)))
             || (isNearSuicide());
     }
 

@@ -12,8 +12,8 @@ namespace McRave::Targets {
     namespace {
 
         bool allowWorkerTarget(UnitInfo& unit, UnitInfo& target) {
-            bool atHome = Terrain::isInAllyTerritory(target.getTilePosition());
-            bool atEnemy = Terrain::isInEnemyTerritory(target.getTilePosition());
+            bool atHome = Terrain::inTerritory(PlayerState::Self, target.getPosition());
+            bool atEnemy = Terrain::inTerritory(PlayerState::Enemy, target.getPosition());
 
             if (target.getType().isWorker() && Util::getTime() < Time(8, 00)) {
                 return unit.getType().isWorker()
@@ -69,8 +69,8 @@ namespace McRave::Targets {
             bool selfHasGround = myStrength.groundToAir > 0.0 || myStrength.groundToGround > 0.0;
             bool selfHasAir = myStrength.airToGround > 0.0 || myStrength.airToAir > 0.0;
 
-            bool atHome = Terrain::isInAllyTerritory(target.getTilePosition());
-            bool atEnemy = Terrain::isInEnemyTerritory(target.getTilePosition());
+            bool atHome = Terrain::inTerritory(PlayerState::Self, target.getPosition());
+            bool atEnemy = Terrain::inTerritory(PlayerState::Enemy, target.getPosition());
 
             bool enemyCanDefendUnit = unit.isFlying() ? enemyStrength.airDefense > 0.0 : enemyStrength.groundDefense > 0.0;
 

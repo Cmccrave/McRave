@@ -506,5 +506,8 @@
     <Filter Include="McRave\Micro\Defender">
       <UniqueIdentifier>{73d53f71-c9a9-4156-a9ee-5d7e9d7fda64}</UniqueIdentifier>
     </Filter>
+    <Filter Include="McRave\Micro\Combat\Pathing">
+      <UniqueIdentifier>{a248130f-bdef-4bc3-888e-73439d00ad79}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

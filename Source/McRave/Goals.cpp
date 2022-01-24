@@ -192,7 +192,7 @@ namespace McRave::Goals {
                     if (!closestSelfStation || !closestEnemyStation)
                         continue;
 
-                    if (Terrain::isInEnemyTerritory(station.getBase()->GetArea()))
+                    if (Terrain::inTerritory(PlayerState::Enemy, station.getBase()->GetArea()))
                         continue;
                     if (station == Terrain::getEnemyNatural() || station == Terrain::getEnemyMain())
                         continue;
@@ -208,7 +208,7 @@ namespace McRave::Goals {
                     auto badStation = false;
                     auto path = mapBWEM.GetPath(station.getBase()->Center(), BWEB::Map::getMainPosition());
                     for (auto &choke : path) {
-                        if (Terrain::isInEnemyTerritory(choke->GetAreas().first) || Terrain::isInEnemyTerritory(choke->GetAreas().second))
+                        if (Terrain::inTerritory(PlayerState::Enemy, choke->GetAreas().first) || Terrain::inTerritory(PlayerState::Enemy, choke->GetAreas().second))
                             badStation = true;
                     }
                     if (badStation)
@@ -355,7 +355,7 @@ namespace McRave::Goals {
             // Assign an Overlord to each Wall
             if (!Players::vT()) {
                 for (auto &[_, wall] : BWEB::Walls::getWalls()) {
-                    if (!Terrain::isInAllyTerritory(wall.getArea()))
+                    if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()))
                         continue;
 
                     auto closestSunk = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Self, [&](auto &u) {
@@ -430,7 +430,7 @@ namespace McRave::Goals {
                     if (!closestEnemyStation
                         || !closestSelfStation
                         || pos.getDistance(closestEnemyStation->getBase()->Center()) < pos.getDistance(closestSelfStation->getBase()->Center())
-                        || Terrain::isInEnemyTerritory(TilePosition(pos)))
+                        || Terrain::inTerritory(PlayerState::Enemy, pos))
                         continue;
 
                     validSecondaryNodes.push_back(pos);

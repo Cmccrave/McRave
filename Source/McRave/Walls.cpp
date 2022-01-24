@@ -433,7 +433,7 @@ namespace McRave::Walls {
     int needGroundDefenses(BWEB::Wall& wall)
     {
         auto groundCount = wall.getGroundDefenseCount() /*+ (BuildOrder::getCurrentTransition().find("2Hatch") == string::npos) * ((Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(7, 00)))*/;
-        if (!Terrain::isInAllyTerritory(wall.getArea()))
+        if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()))
             return 0;
 
         // Protoss
@@ -492,7 +492,7 @@ namespace McRave::Walls {
             || Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0
             || (Players::getTotalCount(PlayerState::Enemy, Zerg_Spire) > 0 && Util::getTime() > Time(4, 45));
 
-        if (!Terrain::isInAllyTerritory(wall.getArea()))
+        if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()))
             return 0;
 
         // Protoss

@@ -69,13 +69,13 @@ namespace McRave::Spy::General {
 
                 // Monitor the soonest the enemy will scout us
                 if (unit.getType().isWorker()) {
-                    if (Terrain::isInAllyTerritory(unit.getTilePosition()))
+                    if (Terrain::inTerritory(PlayerState::Self, unit.getPosition()))
                         theSpy.workersNearUs++;
                 }
 
                 // Monitor gas intake or gas steal
                 if (unit.getType().isRefinery() && unit.unit()->exists()) {
-                    if (Terrain::isInAllyTerritory(unit.getTilePosition()))
+                    if (Terrain::inTerritory(PlayerState::Self, unit.getPosition()))
                         theSpy.steal.possible = true;
                     else
                         theSpy.gasMined = unit.unit()->getInitialResources() - unit.unit()->getResources();

@@ -10,6 +10,7 @@ namespace McRave::Stations {
         vector<BWEB::Station *> myStations, enemyStations;
         multimap<double, BWEB::Station *> stationsBySaturation;
         map<BWEB::Station *, int> airDefenseCount, groundDefenseCount;
+        set<BWEB::Station*> retreatPositions;
 
         void updateSaturation() {
 
@@ -59,12 +60,47 @@ namespace McRave::Stations {
                 }
             }
         }
+
+        void updateRetreatPositions()
+        {
+            retreatPositions.clear();
+
+            if (Terrain::getDefendChoke() == BWEB::Map::getMainChoke()) {
+                retreatPositions.insert(Terrain::getMyMain());
+                return;
+            }
+
+            for (auto &station : Stations::getMyStations()) {
+
+                auto wallDefending = false;
+                if (station->getChokepoint()) {
+                    auto wall = BWEB::Walls::getWall(station->getChokepoint());
+                    if (wall && wall->getGroundDefenseCount() >= 2)
+                        wallDefending = true;
+                }
+
+                // A non main station cannot be a retreat point if an enemy is within reach
+                if (!station->isMain() && !wallDefending && Stations::getGroundDefenseCount(station) < 2) {
+                    const auto closestEnemy = Util::getClosestUnitGround(station->getBase()->Center(), PlayerState::Enemy, [&](auto &u) {
+                        return u.canAttackGround();
+                    });
+
+                    if (closestEnemy && closestEnemy->getPosition().getDistance(station->getBase()->Center()) < closestEnemy->getGroundReach() * 2.0)
+                        continue;
+                }
+
+                // Store the defending station
+                retreatPositions.insert(station);
+
+            }
+        }
     }
 
     void onFrame() {
         Visuals::startPerfTest();
         updateSaturation();
         updateStationDefenses();
+        updateRetreatPositions();
         Visuals::endPerfTest("Stations");
     }
 
@@ -133,13 +169,8 @@ namespace McRave::Stations {
             }
         }
 
-        // Add stations area to territory tracking
-        if (unit->getTilePosition().isValid() && mapBWEM.GetArea(unit->getTilePosition())) {
-            if (unit->getPlayer() == Broodwar->self())
-                Terrain::getAllyTerritory().insert(mapBWEM.GetArea(unit->getTilePosition()));
-            else
-                Terrain::getEnemyTerritory().insert(mapBWEM.GetArea(unit->getTilePosition()));
-        }
+        // Add any territory it is in
+        Terrain::addTerritory(unit->getPlayer() == Broodwar->self() ? PlayerState::Self : PlayerState::Enemy, newStation);
     }
 
     void removeStation(Unit unit) {
@@ -175,12 +206,7 @@ namespace McRave::Stations {
         }
 
         // Remove any territory it was in
-        if (unit->getTilePosition().isValid() && mapBWEM.GetArea(unit->getTilePosition())) {
-            if (unit->getPlayer() == Broodwar->self())
-                Terrain::getAllyTerritory().erase(mapBWEM.GetArea(unit->getTilePosition()));
-            else
-                Terrain::getEnemyTerritory().erase(mapBWEM.GetArea(unit->getTilePosition()));
-        }
+        Terrain::removeTerritory(unit->getPlayer() == Broodwar->self() ? PlayerState::Self : PlayerState::Enemy, newStation);
     }
 
     int needGroundDefenses(BWEB::Station * station) {
@@ -470,6 +496,34 @@ namespace McRave::Stations {
             }
         }
         return defendPosition;
+    }
+
+    BWEB::Station * getClosestRetreatStation(UnitInfo& unit)
+    {
+        auto distBest = DBL_MAX;
+        auto bestStation = Terrain::getMyMain();
+        for (auto &station : retreatPositions) {
+            auto position = Stations::getDefendPosition(station);
+
+            // Check if anything targeting this unit is withing reach
+            bool withinTargeterReach = false;
+            for (auto &t : unit.getTargetedBy()) {
+                if (auto targeter = t.lock()) {
+                    auto reach = unit.isFlying() ? targeter->getAirReach() : targeter->getGroundReach();
+                    if (targeter->getPosition().getDistance(position) < reach)
+                        withinTargeterReach = true;
+                    if (targeter->getPosition().getDistance(position) < unit.getPosition().getDistance(position))
+                        withinTargeterReach = true;
+                }
+            }
+
+            auto dist = position.getDistance(unit.getPosition());
+            if (dist < distBest && !withinTargeterReach) {
+                bestStation = station;
+                distBest = dist;
+            }
+        }
+        return bestStation;
     }
 
     vector<BWEB::Station *>& getMyStations() { return myStations; };

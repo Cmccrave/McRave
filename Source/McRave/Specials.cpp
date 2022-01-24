@@ -389,7 +389,7 @@ namespace McRave::Command
         if ((!unit.unit()->isCarryingGas() && !unit.unit()->isCarryingMinerals()))
             return false;
 
-        auto checkPath = (unit.hasResource() && unit.getPosition().getDistance(unit.getResource().getPosition()) > 320.0) || (!unit.hasResource() && !Terrain::isInAllyTerritory(unit.getTilePosition()));
+        auto checkPath = (unit.hasResource() && unit.getPosition().getDistance(unit.getResource().getPosition()) > 320.0) || (!unit.hasResource() && !Terrain::inTerritory(PlayerState::Self, unit.getPosition()));
         if (checkPath) {
             // TODO: Create a path to the closest station and check if it's safe
         }

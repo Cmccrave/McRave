@@ -40,7 +40,7 @@ namespace McRave::BuildOrder::Zerg {
             if (!needLarvaSpending && !rush && !pressure && (vis(Zerg_Drone) >= 9 || Players::ZvZ())) {
                 for (auto &[_, wall] : BWEB::Walls::getWalls()) {
 
-                    if (!Terrain::isInAllyTerritory(wall.getArea()))
+                    if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()))
                         continue;
 
                     auto colonies = 0;

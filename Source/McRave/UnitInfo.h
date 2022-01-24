@@ -92,6 +92,7 @@ namespace McRave {
         BWAPI::Position position = BWAPI::Positions::Invalid;
         BWAPI::Position engagePosition = BWAPI::Positions::Invalid;
         BWAPI::Position destination = BWAPI::Positions::Invalid;
+        BWAPI::Position retreat = BWAPI::Positions::Invalid;
         BWAPI::Position objective = BWAPI::Positions::Invalid;
         BWAPI::Position lastPos = BWAPI::Positions::Invalid;
         BWAPI::Position goal = BWAPI::Positions::Invalid;
@@ -114,6 +115,7 @@ namespace McRave {
     #pragma region Paths
         BWEB::Path objectivePath;
         BWEB::Path targetPath;
+        BWEB::Path retreatPath;
     #pragma endregion
 
     #pragma region Updaters
@@ -255,6 +257,7 @@ namespace McRave {
         BWAPI::Position getEngagePosition() { return engagePosition; }
         BWAPI::Position getDestination() { return destination; }
         BWAPI::Position getObjective() { return objective; }
+        BWAPI::Position getRetreat() { return retreat; }
         BWAPI::Position getGoal() { return goal; }
         BWAPI::Position getInterceptPosition() { return interceptPosition; }
         BWAPI::Position getSurroundPosition() { return surroundPosition; }
@@ -264,6 +267,7 @@ namespace McRave {
         BWAPI::TilePosition getLastTile() { return lastTile; }
         BWEB::Path& getObjectivePath() { return objectivePath; }
         BWEB::Path& getTargetPath() { return targetPath; }
+        BWEB::Path& getRetreatPath() { return retreatPath; }
         double getPercentTotal() { return percentTotal; }
         double getVisibleGroundStrength() { return visibleGroundStrength; }
         double getMaxGroundStrength() { return maxGroundStrength; }
@@ -343,11 +347,13 @@ namespace McRave {
         void setFormation(BWAPI::Position newPosition) { formation = newPosition; }
         void setEngagePosition(BWAPI::Position newPosition) { engagePosition = newPosition; }
         void setDestination(BWAPI::Position newPosition) { destination = newPosition; }
+        void setRetreat(BWAPI::Position newPosition) { retreat = newPosition; }
         void setObjective(BWAPI::Position newPosition) { objective = newPosition; }
         void setGoal(BWAPI::Position newPosition) { goal = newPosition; }
         void setBuildPosition(BWAPI::TilePosition newPosition) { buildPosition = newPosition; }
         void setObjectivePath(BWEB::Path& newPath) { objectivePath = newPath; }
         void setTargetPath(BWEB::Path& newPath) { targetPath = newPath; }
+        void setRetreatPath(BWEB::Path& newPath) { retreatPath = newPath; }
 
         void setInterceptPosition(BWAPI::Position p) { interceptPosition = p; }
         void setSurroundPosition(BWAPI::Position p) { surroundPosition = p; }

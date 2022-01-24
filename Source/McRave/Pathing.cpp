@@ -112,7 +112,7 @@ namespace McRave::Pathing {
                 return;
             }
 
-            if (unit.getPlayer() == Broodwar->self() && !Terrain::isInAllyTerritory(unit.getTilePosition()) && !unit.getTargetPath().isReachable() && !unit.getTarget().getType().isBuilding() && !unit.isFlying() && !unit.getTarget().isFlying() && Grids::getMobility(unit.getTarget().getPosition()) >= 4) {
+            if (unit.getPlayer() == Broodwar->self() && !Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && !unit.getTargetPath().isReachable() && !unit.getTarget().getType().isBuilding() && !unit.isFlying() && !unit.getTarget().isFlying() && Grids::getMobility(unit.getTarget().getPosition()) >= 4) {
                 unit.setEngDist(DBL_MAX);
                 return;
             }

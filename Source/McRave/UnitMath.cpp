@@ -106,7 +106,7 @@ namespace McRave::Math {
         // HACK: Kill neutrals blocking geysers for Sparkle
         if (unit.getTilePosition().isValid()) {
             const auto area = mapBWEM.GetArea(unit.getTilePosition());
-            if (area && Terrain::isInAllyTerritory(unit.getTilePosition())) {
+            if (area && Terrain::inTerritory(PlayerState::Self, unit.getPosition())) {
                 for (auto &gas : area->Geysers()) {
                     if (gas->TopLeft().getDistance(unit.getTilePosition()) < 2 && !unit.unit()->isInvincible())
                         return 10.0;

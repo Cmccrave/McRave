@@ -284,7 +284,7 @@ namespace McRave::Planning {
             set<TilePosition> placements;
             for (auto &block : BWEB::Blocks::getBlocks()) {
                 Position blockCenter = Position(block.getTilePosition()) + Position(block.width() * 16, block.height() * 16);
-                if (!Terrain::isInAllyTerritory(block.getTilePosition()))
+                if (!Terrain::inTerritory(PlayerState::Self, block.getCenter()))
                     continue;
 
                 // Not sure what this is for
@@ -341,7 +341,7 @@ namespace McRave::Planning {
             multimap<double, BWEB::Block*> listByDist;
             for (auto &block : list) {
                 if (!closestStation
-                    || (!Terrain::isInAllyTerritory(block.getTilePosition()) && !BuildOrder::isProxy()))
+                    || (!Terrain::inTerritory(PlayerState::Self, block.getCenter()) && !BuildOrder::isProxy()))
                     continue;
 
                 // Zerg
@@ -662,7 +662,7 @@ namespace McRave::Planning {
             if (!Terrain::isShitMap()) {
                 for (auto &[_, wall] : BWEB::Walls::getWalls()) {
 
-                    if (!Terrain::isInAllyTerritory(wall.getArea()))
+                    if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()))
                         continue;
 
                     // Setup placements

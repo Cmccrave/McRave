@@ -257,7 +257,7 @@ namespace McRave::Command {
             const auto mobility =   defaultMobility(unit, w);
             auto score = 0.0;
 
-            if ((unit.getRole() == Role::Worker && !Terrain::isInAllyTerritory(unit.getTilePosition())))
+            if ((unit.getRole() == Role::Worker && !Terrain::inTerritory(PlayerState::Self, unit.getPosition())))
                 score = mobility / (distance * grouping * threat);
             else
                 score = mobility / (distance * grouping);
@@ -487,8 +487,8 @@ namespace McRave::Command {
 
         bool closeToMainChoke = Position(BWEB::Map::getMainChoke()->Center()).getDistance(unit.getPosition()) < 320.0;
         bool closeToNaturalChoke = Position(BWEB::Map::getNaturalChoke()->Center()).getDistance(unit.getPosition()) < 320.0;
-        bool defendingExpansion = unit.getDestination().isValid() && !Terrain::isInEnemyTerritory((TilePosition)unit.getDestination());
-        bool closeToDefend = Terrain::isInAllyTerritory(unit.getTilePosition()) || closeToMainChoke || closeToNaturalChoke || unit.getType().isWorker() || (unit.getGoalType() == GoalType::Defend && unit.getPosition().getDistance(unit.getGoal()) < 320.0);
+        bool defendingExpansion = unit.getDestination().isValid() && !Terrain::inTerritory(PlayerState::Enemy, unit.getDestination());
+        bool closeToDefend = Terrain::inTerritory(PlayerState::Self, unit.getPosition()) || closeToMainChoke || closeToNaturalChoke || unit.getType().isWorker() || (unit.getGoalType() == GoalType::Defend && unit.getPosition().getDistance(unit.getGoal()) < 320.0);
 
         const auto canDefend = [&]() {
             if (unit.getRole() == Role::Combat)
@@ -501,10 +501,7 @@ namespace McRave::Command {
                 || (unit.hasTarget() && unit.getTarget().isSiegeTank()))
                 return false;
 
-            if (unit.getGoal().isValid() && unit.getGoalType() == GoalType::Defend)
-                return closeToDefend;
-
-            return closeToDefend && (unit.isHealthy() || !BuildOrder::isPlayPassive()) && !unit.getGoal().isValid() && unit.getLocalState() != LocalState::Attack && unit.getGlobalState() != GlobalState::Attack;
+            return closeToDefend && (unit.isHealthy() || !BuildOrder::isPlayPassive()) && unit.getGoal().isValid() && unit.getLocalState() != LocalState::Attack && unit.getGlobalState() != GlobalState::Attack;
         };
 
         if (canDefend() && shouldDefend()) {
@@ -659,7 +656,7 @@ namespace McRave::Command {
                 return true;
             }
             else {
-                unit.command(Move, Combat::getClosestRetreatPosition(unit));
+                unit.command(Move, Stations::getDefendPosition(Stations::getClosestRetreatStation(unit)));
                 return true;
             }
         }
@@ -706,7 +703,7 @@ namespace McRave::Command {
     bool transport(UnitInfo& unit)
     {
         auto cluster = Positions::Invalid;
-        auto closestRetreat = Combat::getClosestRetreatPosition(unit);
+        auto closestRetreat = Stations::getClosestRetreatStation(unit);
 
         const auto scoreFunction = [&](WalkPosition w) {
             auto p = Position(w) + Position(4, 4);
@@ -714,7 +711,7 @@ namespace McRave::Command {
             const auto airDist =        max(1.0, p.getDistance(unit.getDestination()));
             const auto grdDist =        max(1.0, BWEB::Map::getGroundDistance(p, unit.getDestination()));
             const auto dist =           grdDist;
-            const auto distRetreat =    p.getDistance(closestRetreat);
+            const auto distRetreat =    p.getDistance(Stations::getDefendPosition(closestRetreat));
 
             if (grdDist == DBL_MAX)
                 return 0.0;
