@@ -34,9 +34,9 @@ namespace McRave::Combat::Clusters {
                     auto objectiveInCommon = unit.getObjective().getDistance(cluster.sharedObjective) < cluster.sharedRadius;
 
                     if (objectiveInCommon && retreatInCommon) {
-                        cluster.sharedRadius += double(unit.getType().width() * unit.getType().height()) * 3.14 / cluster.sharedRadius;
-                        cluster.typeCounts[unit.getType()]++;
+                        cluster.sharedRadius += double(unit.getType().width() * unit.getType().height()) / cluster.sharedRadius;
                         cluster.units.push_back(unit.weak_from_this());
+                        cluster.typeCounts[unit.getType()]++;
                         foundCluster = true;
                         break;
                     }
@@ -61,7 +61,7 @@ namespace McRave::Combat::Clusters {
         for (auto &cluster : clusters) {
 
             // If no commander, find one
-            if (cluster.commander.lock()) {
+            if (cluster.commander.lock() && !cluster.mobileCluster) {
                 cluster.commander.lock()->circle(Colors::Orange);
                 continue;
             }
@@ -78,7 +78,8 @@ namespace McRave::Combat::Clusters {
                 return find(cluster.units.begin(), cluster.units.end(), u.weak_from_this()) != cluster.units.end();
             });
             if (closestToCentroid) {
-                cluster.sharedPosition = closestToCentroid->getPosition();
+                cluster.mobileCluster = closestToCentroid->getGlobalState() != GlobalState::Retreat;
+                cluster.sharedPosition = avgPosition;
                 cluster.sharedRetreat = closestToCentroid->getRetreat();
                 cluster.sharedObjective = closestToCentroid->getObjective();
                 cluster.commander = closestToCentroid->weak_from_this();

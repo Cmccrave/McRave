@@ -8,7 +8,7 @@ namespace McRave::Combat::Formations {
 
     vector<Formation> concaves;
 
-    void assignPosition(Formation& concave, Position p, int& assignmentsRemaining)
+    void assignPosition(Cluster& cluster, Formation& concave, Position p, int& assignmentsRemaining)
     {
         auto closestUnit = Util::getClosestUnit(p, PlayerState::Self, [&](auto &u) {
             return find(concave.cluster.units.begin(), concave.cluster.units.end(), u.weak_from_this()) != concave.cluster.units.end() && !u.concaveFlag;
@@ -24,7 +24,11 @@ namespace McRave::Combat::Formations {
             || !Util::findWalkable(*closestUnit, p))
             return;
 
-        auto inRange = closestUnit->getPosition().getDistance(concave.center) - 64 < p.getDistance(concave.center) || closestUnit->getPosition().getDistance(p) < 160.0;
+        // TODO: Check if we would be in range of an enemy before a defense (defending only)
+
+        auto inRange = closestUnit->getPosition().getDistance(concave.center) - 64 < p.getDistance(concave.center)
+            || closestUnit->getPosition().getDistance(p) < 160.0
+            || (cluster.mobileCluster && closestUnit->getPosition().getDistance(p) < 256.0);
 
         if (inRange) {
             closestUnit->setFormation(p);
@@ -33,33 +37,46 @@ namespace McRave::Combat::Formations {
         assignmentsRemaining--;
     }
 
-    pair<Position, Position> getPathPoints(Cluster& cluster, double radius)
+    pair<Position, Position> getPathPoints(Cluster& cluster, Formation& formation, double& radius)
     {
+        auto commander = cluster.commander.lock();
         Position objective = cluster.sharedObjective;
         Position retreat = cluster.sharedRetreat;
-        if (cluster.commander.lock()) {
-            auto i = 0;
-            retreat = Util::findPointOnPath(cluster.commander.lock()->getRetreatPath(), [&](Position p) {
-                i++;
-                return i >= 10;
-            });
+
+        auto i = 0;
+        retreat = Util::findPointOnPath(cluster.commander.lock()->getRetreatPath(), [&](Position p) {
+            i++;
+            return i >= 10;
+        });
+
+        // If commander is fighting, form a concave around the target
+        if (commander->getLocalState() == LocalState::Attack) {
+            objective = commander->getTarget().getPosition();
+            radius = commander->getGroundRange() - 32.0;
+        }
+        else {
             i = 0;
             objective = Util::findPointOnPath(cluster.commander.lock()->getObjectivePath(), [&](Position p) {
                 i++;
-                return i >= 10;
+                return i >= 10 && (!cluster.mobileCluster || p.getDistance(cluster.commander.lock()->getPosition()) > radius + 160.0) && (!cluster.mobileCluster || p.getDistance(cluster.sharedPosition) > radius + 160.0);
             });
-
-            if (!objective.isValid())
-                objective = cluster.sharedObjective;
-            if (!retreat.isValid())
-                retreat = cluster.sharedRetreat;
         }
+
+        if (!objective.isValid())
+            objective = cluster.sharedObjective;
+        if (!retreat.isValid())
+            retreat = cluster.sharedRetreat;
+
         return make_pair(retreat, objective);
     }
 
-    void createConcave(Cluster& cluster, bool includeDefenders = false)
+    void createConcave(Cluster& cluster)
     {
         for (auto &[type, count] : cluster.typeCounts) {
+
+            auto commander = cluster.commander.lock();
+            if (!commander)
+                continue;
 
             // Create a concave
             Formation concave;
@@ -67,20 +84,20 @@ namespace McRave::Combat::Formations {
 
             // Set the radius of the concave
             const auto unitTangentSize = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0));
-            auto radius = min(cluster.commander.lock()->getRetreatRadius(), count * unitTangentSize / 2.0);
-            if (cluster.commander.lock()->getGlobalState() == GlobalState::Retreat) {
+            auto radius = min(commander->getRetreatRadius(), count * unitTangentSize / 2.0);
+
+            // If we are setting up a static formation, align concave with buildings close by
+            if (!cluster.mobileCluster) {
                 auto closestDefense = Util::getClosestUnit(cluster.sharedObjective, PlayerState::Self, [&](auto &u) {
                     return u.getType().isBuilding() && u.isCompleted();
                 });
-                if (closestDefense) {
-                    closestDefense->circle(Colors::Black);
+                if (closestDefense)
                     radius = max(radius, closestDefense->getPosition().getDistance(cluster.sharedObjective));
-                }
             }
 
             // Determine how large of a concave we are making
-            auto [retreat, objective] = getPathPoints(cluster, radius);
-            concave.center = cluster.commander.lock()->getLocalState() == LocalState::Retreat ? retreat : objective;
+            auto[retreat, objective] = getPathPoints(cluster, concave, radius);
+            concave.center = commander->getLocalState() == LocalState::Retreat ? retreat : objective;
 
             // Create an initial directional vector to find the starting location of the concave
             const auto dVectorX = double(concave.center.x - retreat.x) * 32.0 / concave.center.getDistance(retreat);
@@ -100,8 +117,13 @@ namespace McRave::Combat::Formations {
             bool stopNegative = false;
             auto wrap = 0;
 
-            auto assignmentsRemaining = int(cluster.units.size());
+            Broodwar->drawLineMap(commander->getPosition(), concave.center, Colors::Purple);
+            Broodwar->drawCircleMap(objective, 4, Colors::Green, true);
+            Broodwar->drawCircleMap(retreat, 4, Colors::Red, true);
+            Broodwar->drawCircleMap(concave.center, 6, Colors::White);
+            Broodwar->drawLineMap(objective, retreat, Colors::White);
 
+            auto assignmentsRemaining = int(cluster.units.size());
             while (assignmentsRemaining > 0) {
                 auto rp = Position(int(radius * cos(radsPositive)), int(radius * sin(radsPositive)));
                 auto rd = Position(int(radius * cos(radsNegative)), int(radius * sin(radsNegative)));
@@ -110,11 +132,12 @@ namespace McRave::Combat::Formations {
 
                 auto validPosition = [&](Position &p, Position &last) {
                     if (!p.isValid()
-                        || (cluster.commander.lock()->getGlobalState() == GlobalState::Retreat && !Terrain::inTerritory(PlayerState::Self, p))
+                        || (!cluster.mobileCluster && !Terrain::inTerritory(PlayerState::Self, p))
                         || Grids::getMobility(p) <= 4
                         || BWEB::Map::isUsed(TilePosition(p)) != UnitTypes::None
                         || Util::boxDistance(type, p, type, last) <= 2)
                         return false;
+                    Broodwar->drawCircleMap(p, 2, Colors::Orange);
                     concave.positions.push_back(p);
                     return true;
                 };
@@ -125,7 +148,7 @@ namespace McRave::Combat::Formations {
                     radsNegative -= radsPerUnit;
                     lastPosPosition = posPosition;
                     lastNegPosition = negPosition;
-                    assignPosition(concave, posPosition, assignmentsRemaining);
+                    assignPosition(cluster, concave, posPosition, assignmentsRemaining);
                     continue;
                 }
 
@@ -133,7 +156,7 @@ namespace McRave::Combat::Formations {
                 if (!stopPositive && validPosition(posPosition, lastPosPosition)) {
                     radsPositive += radsPerUnit;
                     lastPosPosition = posPosition;
-                    assignPosition(concave, posPosition, assignmentsRemaining);
+                    assignPosition(cluster, concave, posPosition, assignmentsRemaining);
                 }
                 else
                     radsPositive += 3.14 / 180.0;
@@ -142,7 +165,7 @@ namespace McRave::Combat::Formations {
                 if (!stopNegative && validPosition(negPosition, lastNegPosition)) {
                     radsNegative -= radsPerUnit;
                     lastNegPosition = negPosition;
-                    assignPosition(concave, negPosition, assignmentsRemaining);
+                    assignPosition(cluster, concave, negPosition, assignmentsRemaining);
                 }
                 else
                     radsNegative -= 3.14 / 180.0;
@@ -163,6 +186,8 @@ namespace McRave::Combat::Formations {
                         break;
                 }
             }
+            if (cluster.mobileCluster)
+                reverse(concave.positions.begin(), concave.positions.end());
             concaves.push_back(concave);
         }
     }
@@ -183,7 +208,7 @@ namespace McRave::Combat::Formations {
         // Each cluster has a UnitType and count, make a formation that considers each
         for (auto &cluster : Clusters::getClusters()) {
             if (cluster.shape == Shape::Concave)
-                createConcave(cluster, true);
+                createConcave(cluster);
             else if (cluster.shape == Shape::Line)
                 createLine(cluster);
             else if (cluster.shape == Shape::Box)

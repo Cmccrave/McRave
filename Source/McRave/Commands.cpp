@@ -310,10 +310,10 @@ namespace McRave::Command {
         // If unit can move and should move
         if (canMove() && shouldMove()) {
 
-            if (unit.getRole() == Role::Combat && !unit.attemptingSurround() && !unit.isSuicidal() && unit.hasTarget() && unit.canStartAttack() && unit.isWithinReach(unit.getTarget()) && unit.getLocalState() == LocalState::Attack) {
-                unit.command(Right_Click_Position, unit.getTarget().getPosition());
-                return true;
-            }
+            //if (unit.getRole() == Role::Combat && !unit.attemptingSurround() && !unit.isSuicidal() && unit.hasTarget() && unit.canStartAttack() && unit.isWithinReach(unit.getTarget()) && unit.getLocalState() == LocalState::Attack) {
+            //    unit.command(Right_Click_Position, unit.getTarget().getPosition());
+            //    return true;
+            //}
 
             if (unit.getRole() == Role::Worker && unit.getBuildType().isValid() && unit.getPosition().getDistance(unit.getDestination()) < 64.0) {
                 unit.unit()->move(unit.getDestination());
@@ -328,6 +328,7 @@ namespace McRave::Command {
             // Find the best position to move to
             auto bestPosition = findViablePosition(unit, scoreFunction);
             if (bestPosition.isValid()) {
+                Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Yellow);
                 unit.command(Move, bestPosition);
                 return true;
             }

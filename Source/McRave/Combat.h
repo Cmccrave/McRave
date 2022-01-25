@@ -14,6 +14,7 @@ namespace McRave::Combat {
         Shape shape = Shape::Concave;
         std::vector<std::weak_ptr<UnitInfo>> units;
         std::weak_ptr<UnitInfo> commander;
+        bool mobileCluster = false;
 
         Cluster(BWAPI::Position _sp, BWAPI::Position _sr, BWAPI::Position _so, BWAPI::UnitType _t) {
             sharedPosition = _sp;
