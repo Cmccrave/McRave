@@ -130,7 +130,7 @@ namespace McRave::Goals {
                     // If it's a main, defend at the natural
                     if (station->isMain()) {
                         auto closestNatural = BWEB::Stations::getClosestNaturalStation(station->getBase()->Location());
-                        if (closestNatural && closestNatural->getBase()->Center()) {
+                        if (closestNatural) {
                             auto closestWall = BWEB::Walls::getClosestWall(closestNatural->getBase()->Location());
                             if (closestWall && closestWall->getGroundDefenseCount() >= 2)
                                 continue;

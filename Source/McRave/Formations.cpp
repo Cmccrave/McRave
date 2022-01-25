@@ -24,7 +24,7 @@ namespace McRave::Combat::Formations {
             || !Util::findWalkable(*closestUnit, p))
             return;
 
-        auto inRange = closestUnit->getPosition().getDistance(concave.center) - 64 < p.getDistance(concave.center);
+        auto inRange = closestUnit->getPosition().getDistance(concave.center) - 64 < p.getDistance(concave.center) || closestUnit->getPosition().getDistance(p) < 160.0;
 
         if (inRange) {
             closestUnit->setFormation(p);
@@ -65,44 +65,28 @@ namespace McRave::Combat::Formations {
             Formation concave;
             concave.cluster = cluster;
 
-            // Determine how large of a concave we are making
-            const auto unitTangentSize = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0)) + 2.0;
+            // Set the radius of the concave
+            const auto unitTangentSize = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0));
             auto radius = min(cluster.commander.lock()->getRetreatRadius(), count * unitTangentSize / 2.0);
-            auto [retreatA, objectiveA] = getPathPoints(cluster, radius);
-
-            // Whats the center?
-            if (cluster.commander.lock()->getLocalState() == LocalState::Retreat)
-                concave.center = retreatA;
-            else
-                concave.center = objectiveA;
-
-            Broodwar->drawCircleMap(objectiveA, 4, Colors::Green, true);
-            Broodwar->drawCircleMap(retreatA, 4, Colors::Red, true);
-            Broodwar->drawCircleMap(concave.center, 6, Colors::White);
-            Broodwar->drawLineMap(objectiveA, retreatA, Colors::White);
-
-            // Create an initial directional vector to find the starting location of the concave
-            const auto dVectorX = double(concave.center.x - retreatA.x) * 32.0 / concave.center.getDistance(retreatA);
-            const auto dVectorY = double(concave.center.y - retreatA.y) * 32.0 / concave.center.getDistance(retreatA);
-            const auto dVector = Position(int(dVectorX), int(dVectorY));
-
-            // See if there's a defense, set radius to at least its distance
-            if (cluster.commander.lock()->getLocalState() == LocalState::Retreat || (cluster.commander.lock()->getGoal().isValid() && cluster.commander.lock()->getGoalType() == GoalType::Defend)) {
-                auto closestDefense = Util::getClosestUnit(concave.center, PlayerState::Self, [&](auto &u) {
-                    return u.getRole() == Role::Defender && u.isCompleted();
+            if (cluster.commander.lock()->getGlobalState() == GlobalState::Retreat) {
+                auto closestDefense = Util::getClosestUnit(cluster.sharedObjective, PlayerState::Self, [&](auto &u) {
+                    return u.getType().isBuilding() && u.isCompleted();
                 });
-                if (closestDefense && !Players::ZvT()) {
+                if (closestDefense) {
                     closestDefense->circle(Colors::Black);
-                    radius = closestDefense->getPosition().getDistance(concave.center);
+                    radius = max(radius, closestDefense->getPosition().getDistance(cluster.sharedObjective));
                 }
             }
 
-            // FUCK
+            // Determine how large of a concave we are making
             auto [retreat, objective] = getPathPoints(cluster, radius);
+            concave.center = cluster.commander.lock()->getLocalState() == LocalState::Retreat ? retreat : objective;
+
+            // Create an initial directional vector to find the starting location of the concave
+            const auto dVectorX = double(concave.center.x - retreat.x) * 32.0 / concave.center.getDistance(retreat);
+            const auto dVectorY = double(concave.center.y - retreat.y) * 32.0 / concave.center.getDistance(retreat);
+            const auto dVector = Position(int(dVectorX), int(dVectorY));
             auto startPosition = (concave.center - (dVector * int(radius)) / 32);
-
-
-            Broodwar->drawCircleMap(startPosition, 4, Colors::Blue);
 
             // Start creating positions starting at the start position
             auto angle = BWEB::Map::getAngle(make_pair(startPosition, concave.center));
@@ -114,7 +98,7 @@ namespace McRave::Combat::Formations {
 
             bool stopPositive = false;
             bool stopNegative = false;
-            auto wrap = true;
+            auto wrap = 0;
 
             auto assignmentsRemaining = int(cluster.units.size());
 
@@ -125,14 +109,13 @@ namespace McRave::Combat::Formations {
                 auto negPosition = concave.center + (dVector.x == 0 ? rd : rd * -1);
 
                 auto validPosition = [&](Position &p, Position &last) {
-                    Broodwar->drawCircleMap(p, 2, Colors::Red);
                     if (!p.isValid()
+                        || (cluster.commander.lock()->getGlobalState() == GlobalState::Retreat && !Terrain::inTerritory(PlayerState::Self, p))
                         || Grids::getMobility(p) <= 4
                         || BWEB::Map::isUsed(TilePosition(p)) != UnitTypes::None
                         || Util::boxDistance(type, p, type, last) <= 2)
                         return false;
                     concave.positions.push_back(p);
-                    Broodwar->drawCircleMap(p, 2, Colors::Orange);
                     return true;
                 };
 
@@ -175,9 +158,9 @@ namespace McRave::Combat::Formations {
                     radius += unitTangentSize;
                     radsPositive = angle;
                     radsNegative = angle;
-                    if (!wrap)
+                    wrap++;
+                    if (wrap > 5)
                         break;
-                    wrap = false;
                 }
             }
             concaves.push_back(concave);

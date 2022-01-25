@@ -501,7 +501,7 @@ namespace McRave::Command {
                 || (unit.hasTarget() && unit.getTarget().isSiegeTank()))
                 return false;
 
-            return closeToDefend && (unit.isHealthy() || !BuildOrder::isPlayPassive()) && unit.getGoal().isValid() && unit.getLocalState() != LocalState::Attack && unit.getGlobalState() != GlobalState::Attack;
+            return closeToDefend && (unit.isHealthy() || !BuildOrder::isPlayPassive()) && unit.getLocalState() != LocalState::Attack && unit.getGlobalState() != GlobalState::Attack;
         };
 
         if (canDefend() && shouldDefend()) {

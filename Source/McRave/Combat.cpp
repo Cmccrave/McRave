@@ -127,7 +127,12 @@ namespace McRave::Combat {
                     unit.setObjectivePath(unit.getTargetPath());
             }
             else if (unit.getGlobalState() == GlobalState::Retreat) {
-                unit.setObjective(Terrain::getDefendPosition());
+                if (BuildOrder::isPlayPassive())
+                    unit.setObjective(Terrain::getDefendPosition());
+                else {
+                    const auto &retreat = Stations::getClosestRetreatStation(unit);
+                    retreat ? unit.setObjective(Stations::getDefendPosition(retreat)) : unit.setObjective(Position(BWEB::Map::getMainChoke()->Center()));
+                }
             }
             else {
 
@@ -152,7 +157,7 @@ namespace McRave::Combat {
 
         void updateRetreat(UnitInfo& unit)
         {
-            if (unit.getGlobalState() == GlobalState::Retreat)
+            if (unit.getGlobalState() == GlobalState::Retreat && BuildOrder::isPlayPassive())
                 unit.setRetreat(BWEB::Map::getMainPosition());
             else {
                 const auto &retreat = Stations::getClosestRetreatStation(unit);
@@ -623,7 +628,6 @@ namespace McRave::Combat {
 
         void updateGlobalState(UnitInfo& unit)
         {
-            unit.setGlobalState(GlobalState::Retreat);
             if (unit.getGlobalState() != GlobalState::None)
                 return;
 
@@ -719,9 +723,9 @@ namespace McRave::Combat {
                     else {
                         updateDestination(unit);
                         updateDecision(unit);
-                        Broodwar->drawLineMap(unit.getPosition(), unit.getObjective(), Colors::Green);
-                        Broodwar->drawLineMap(unit.getPosition(), unit.getRetreat(), Colors::Orange);
-                        Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
+                        //Broodwar->drawLineMap(unit.getPosition(), unit.getObjective(), Colors::Green);
+                        //Broodwar->drawLineMap(unit.getPosition(), unit.getRetreat(), Colors::Orange);
+                        //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
                     }
                 }
 
@@ -730,12 +734,12 @@ namespace McRave::Combat {
                     updateDestination(unit);
                     updateDecision(unit);
 
-                    if (unit.getType() != Zerg_Zergling)
+                    if (unit.getType() != Zerg_Hydralisk)
                         continue;
 
-                    Broodwar->drawLineMap(unit.getPosition(), unit.getObjective(), Colors::Green);
-                    Broodwar->drawLineMap(unit.getPosition(), unit.getRetreat(), Colors::Orange);
-                    Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
+                    //Broodwar->drawLineMap(unit.getPosition(), unit.getObjective(), Colors::Green);
+                    //Broodwar->drawLineMap(unit.getPosition(), unit.getRetreat(), Colors::Orange);
+                    //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
                 }
             }
         }

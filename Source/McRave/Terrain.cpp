@@ -265,6 +265,12 @@ namespace McRave::Terrain {
                     defendPosition = closestStation ? (closestStation->getResourceCentroid() + closestStation->getBase()->Center()) / 2 : BWEB::Map::getMainPosition();
             }
 
+            // If we want to prevent a runby
+            else if (Combat::defendChoke() && Players::ZvT()) {
+                defendPosition = Position(mainChoke->Center());
+                defendNatural = false;
+            }
+
             // Natural defending position
             else if (defendNatural) {
                 defendPosition = Stations::getDefendPosition(myNatural);
