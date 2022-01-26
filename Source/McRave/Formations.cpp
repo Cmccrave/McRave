@@ -31,6 +31,7 @@ namespace McRave::Combat::Formations {
             || (cluster.mobileCluster && closestUnit->getPosition().getDistance(p) < 256.0);
 
         if (inRange) {
+            Broodwar->drawCircleMap(p, 2, Colors::Orange);
             closestUnit->setFormation(p);
             closestUnit->concaveFlag = true;
         }
@@ -73,10 +74,7 @@ namespace McRave::Combat::Formations {
     void createConcave(Cluster& cluster)
     {
         for (auto &[type, count] : cluster.typeCounts) {
-
             auto commander = cluster.commander.lock();
-            if (!commander)
-                continue;
 
             // Create a concave
             Formation concave;
@@ -207,6 +205,10 @@ namespace McRave::Combat::Formations {
         // Create formations of each cluster
         // Each cluster has a UnitType and count, make a formation that considers each
         for (auto &cluster : Clusters::getClusters()) {
+            auto commander = cluster.commander.lock();
+            if (!commander)
+                continue;
+
             if (cluster.shape == Shape::Concave)
                 createConcave(cluster);
             else if (cluster.shape == Shape::Line)

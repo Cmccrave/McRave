@@ -161,7 +161,7 @@ namespace McRave::Horizon {
 
             const auto range = max(ally.getAirRange(), ally.getGroundRange());
             const auto reach = max(ally.getAirReach(), ally.getGroundReach());
-            const auto distance = double(Util::boxDistance(ally.getType(), ally.getPosition(), unit.getType(), unit.getTarget().getPosition())); //ally.getEngDist();
+            const auto distance = double(Util::boxDistance(ally.getType(), ally.getPosition(), unit.getType(), unit.getTarget().getPosition()));
             const auto speed = ally.getSpeed() > 0.0 ? ally.getSpeed() * 24.0 : unit.getSpeed() * 24.0;
             const auto engageTime = max(0.0, (distance - range) / speed);
             auto simRatio = max(0.0, simulationTime - engageTime + prepTime(ally));

@@ -52,15 +52,15 @@ namespace McRave::Combat::Clusters {
             }
         }
 
-        // Delete empty clusters (1 or less units)
+        // Delete empty clusters - solo or no commander
         clusters.erase(remove_if(clusters.begin(), clusters.end(), [&](auto& cluster) {
-            return int(cluster.units.size()) <= 1;
+            return int(cluster.units.size()) <= 1 || cluster.commander.expired();
         }), clusters.end());
 
         // For each cluster
         for (auto &cluster : clusters) {
 
-            // If no commander, find one
+            // If commander exists for a static cluster, don't try to find a new one
             if (cluster.commander.lock() && !cluster.mobileCluster) {
                 cluster.commander.lock()->circle(Colors::Orange);
                 continue;

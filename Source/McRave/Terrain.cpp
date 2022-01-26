@@ -231,7 +231,7 @@ namespace McRave::Terrain {
             }
 
             // See if a defense is in range of our main choke
-            auto defendRunby = Players::ZvT();
+            auto defendRunby = false;
             if (defendNatural) {
                 auto closestDefense = Util::getClosestUnit(Position(BWEB::Map::getMainChoke()->Center()), PlayerState::Self, [&](auto &u) {
                     return u.getRole() == Role::Defender && u.canAttackGround();
@@ -266,7 +266,7 @@ namespace McRave::Terrain {
             }
 
             // If we want to prevent a runby
-            else if (Combat::defendChoke() && Players::ZvT()) {
+            else if (Combat::defendChoke() && defendRunby) {
                 defendPosition = Position(mainChoke->Center());
                 defendNatural = false;
             }

@@ -261,6 +261,8 @@ namespace McRave::Targets {
                     return target.getPriority() / 4.0;
                 if (target.getType().isWorker() && unit.isLightAir() && Grids::getEAirThreat(unit.getPosition()) > 0.0f)
                     return target.getPriority() / 4.0;
+                if (target.getType().isWorker() && !Terrain::inTerritory(PlayerState::Enemy, target.getPosition()))
+                    return target.getPriority() / 10.0;
                 return target.getPriority();
             };
 

@@ -318,7 +318,7 @@ namespace McRave::Goals {
             auto enemyStrength = Players::getStrength(PlayerState::Enemy);
 
             // Clear out base early game
-            if (Util::getTime() < Time(5, 00) && !Spy::enemyRush() && !Spy::enemyPressure() && !Players::ZvZ()) {
+            if (Util::getTime() < Time(5, 00) && !Spy::enemyRush() && !Spy::enemyPressure() && !Players::ZvZ() && Players::getVisibleCount(PlayerState::Enemy, Terran_Barracks) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0) {
                 auto oldestTile = Terrain::getOldestPosition(BWEB::Map::getMainArea());
 
                 if (oldestTile.isValid())

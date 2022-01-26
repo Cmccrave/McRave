@@ -14,8 +14,8 @@ namespace McRave::Spy::Terran {
                 UnitInfo &unit = *u;
 
                 // Marine timing
-                if (unit.getType() == Terran_Marine && Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 2) {
-                    if (theSpy.transition.name == "Unknown" && unit.timeArrivesWhen().minutes > 0 && unit.timeArrivesWhen() < theSpy.rushArrivalTime)
+                if (unit.getType() == Terran_Marine) {
+                    if (unit.timeArrivesWhen().minutes > 0 && unit.timeArrivesWhen() < theSpy.rushArrivalTime)
                         theSpy.rushArrivalTime = unit.timeArrivesWhen();
                 }
 

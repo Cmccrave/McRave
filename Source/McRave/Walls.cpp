@@ -394,6 +394,8 @@ namespace McRave::Walls {
 
         // RaxCC
         if (Spy::getEnemyBuild() == "RaxCC") {
+            if (Spy::getEnemyOpener() == "8Rax")
+                return 1;
             if (Spy::enemyProxy())
                 return 0;
             return (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(4, 45));

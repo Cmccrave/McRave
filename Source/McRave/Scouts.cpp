@@ -137,6 +137,7 @@ namespace McRave::Scouts {
                     || Spy::enemyPressure()
                     || Spy::enemyWalled()
                     || Spy::enemyFastExpand()
+                    || Spy::getEnemyOpener() == "8Rax"
                     || (Terrain::isShitMap() && Terrain::getEnemyStartingPosition().isValid())
                     || (BuildOrder::isProxy() && Terrain::getEnemyStartingPosition().isValid())
                     || Spy::getEnemyBuild() == "FFE"

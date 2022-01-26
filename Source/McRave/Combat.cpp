@@ -172,6 +172,7 @@ namespace McRave::Combat {
 
             if (unit.getFormation().isValid()) {
                 unit.setDestination(unit.getFormation());
+                unit.circle(Colors::Orange);
                 return;
             }
 
@@ -194,9 +195,13 @@ namespace McRave::Combat {
             if (!unit.getDestination().isValid()) {
                 if (unit.getGoal().isValid())
                     unit.setDestination(unit.getGoal());
-                else if (unit.getGlobalState() == GlobalState::Retreat || unit.getLocalState() == LocalState::Retreat)
+                else if (unit.getLocalState() == LocalState::Retreat)
                     unit.setDestination(unit.getRetreat());
-                else if (unit.getGlobalState() == GlobalState::Attack || unit.getLocalState() == LocalState::Attack)
+                else if (unit.getLocalState() == LocalState::Attack)
+                    unit.setDestination(unit.getObjective());
+                else if (unit.getGlobalState() == GlobalState::Retreat)
+                    unit.setDestination(unit.getRetreat());
+                else if (unit.getGlobalState() == GlobalState::Attack)
                     unit.setDestination(unit.getObjective());
             }
         }
@@ -511,8 +516,8 @@ namespace McRave::Combat {
                     return combatWorkersCount < 6;
                 if (Players::ZvP() && proxyDangerousBuilding && Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
                     return combatWorkersCount < (4 * Players::getVisibleCount(PlayerState::Enemy, proxyDangerousBuilding->getType()));
-                if (Spy::getEnemyTransition() == "WorkerRush" && com(Zerg_Spawning_Pool) == 0)
-                    return Spy::getWorkersNearUs() >= combatWorkersCount - 3;
+                if (Spy::getWorkersNearUs() > 2 && com(Zerg_Zergling) < Spy::getWorkersNearUs())
+                    return Spy::getWorkersNearUs() >= combatWorkersCount - 3;                
                 if (BuildOrder::getCurrentOpener() == "12Hatch" && Spy::getEnemyOpener() == "8Rax" && com(Zerg_Zergling) < 2)
                     return combatWorkersCount <= com(Zerg_Drone) - 4;
 
@@ -552,7 +557,7 @@ namespace McRave::Combat {
                     combatCount--;
                     combatWorkersCount--;
                     react = reactivePullWorker();
-                    if (react) {
+                    if (react && unit.hasTarget()) {
                         unit.setLocalState(LocalState::Attack);
                         unit.setGlobalState(GlobalState::Attack);
                     }
@@ -591,13 +596,12 @@ namespace McRave::Combat {
 
         void updateLocalState(UnitInfo& unit)
         {
-            if (!unit.hasSimTarget() || !unit.hasTarget() || unit.getLocalState() != LocalState::None) {
-                unit.setLocalState(LocalState::None);
+            if (!unit.hasSimTarget() || !unit.hasTarget() || unit.getLocalState() != LocalState::None)
                 return;
-            }
+
             const auto distSim = double(Util::boxDistance(unit.getType(), unit.getPosition(), unit.getSimTarget().getType(), unit.getSimTarget().getPosition()));
-            const auto insideRetreatRadius = distSim < unit.getRetreatRadius() && !unit.attemptingRunby();
             const auto distTarget = double(Util::boxDistance(unit.getType(), unit.getPosition(), unit.getTarget().getType(), unit.getTarget().getPosition()));
+            const auto insideRetreatRadius = distSim < unit.getRetreatRadius() && !unit.attemptingRunby();
             const auto insideEngageRadius = distTarget < unit.getEngageRadius() && unit.getGlobalState() == GlobalState::Attack;
             const auto atHome = Terrain::inTerritory(PlayerState::Self, unit.getTarget().getPosition()) && mapBWEM.GetArea(unit.getTilePosition()) == mapBWEM.GetArea(unit.getTarget().getTilePosition()) && !Players::ZvZ();
             const auto reAlign = (unit.getType() == Zerg_Mutalisk && unit.hasTarget() && unit.canStartAttack() && !unit.isWithinAngle(unit.getTarget()) && Util::boxDistance(unit.getType(), unit.getPosition(), unit.getTarget().getType(), unit.getTarget().getPosition()) <= 32.0);
@@ -610,8 +614,10 @@ namespace McRave::Combat {
                 unit.setLocalState(LocalState::Retreat);
 
             // Regardless of local decision, determine if Unit needs to attack or retreat
-            else if (unit.globalEngage())
+            else if (unit.globalEngage()) {
                 unit.setLocalState(LocalState::Attack);
+                unit.circle(Colors::Red);
+            }
             else if (unit.globalRetreat())
                 unit.setLocalState(LocalState::Retreat);
 
@@ -620,6 +626,10 @@ namespace McRave::Combat {
                 unit.setLocalState(LocalState::Attack);
             else if ((insideRetreatRadius || atHome) && (unit.localRetreat() || unit.getSimState() == SimState::Loss))
                 unit.setLocalState(LocalState::Retreat);
+
+            // Check if we shouldn't issue any commands
+            else if (insideEngageRadius && !unit.isFlying())
+                unit.setLocalState(LocalState::Hold);
 
             // Default state
             else
@@ -733,13 +743,9 @@ namespace McRave::Combat {
                 else if (unit.getRole() == Role::Combat) {
                     updateDestination(unit);
                     updateDecision(unit);
-
-                    if (unit.getType() != Zerg_Hydralisk)
-                        continue;
-
                     //Broodwar->drawLineMap(unit.getPosition(), unit.getObjective(), Colors::Green);
                     //Broodwar->drawLineMap(unit.getPosition(), unit.getRetreat(), Colors::Orange);
-                    //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
+                    Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
                 }
             }
         }

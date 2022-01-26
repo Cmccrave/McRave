@@ -480,6 +480,8 @@ namespace McRave
                 unit()->move(here);
             if (cmd == UnitCommandTypes::Right_Click_Position)
                 unit()->rightClick(here);
+            if (cmd == UnitCommandTypes::Stop)
+                unit()->stop();
             return true;
         }
         return false;
@@ -788,15 +790,25 @@ namespace McRave
             return closestDefense && closestDefense->getPosition().getDistance(getPosition()) < 256.0;
         };
 
+        const auto engagingWithWorkers = [&]() {
+            if (!hasTarget())
+                return false;
+            const auto closestCombatWorker = Util::getClosestUnit(getTarget().getPosition(), PlayerState::Self, [&](auto &u) {
+                return u.getType().isWorker() && u.getRole() == Role::Combat;
+            });
+            return closestCombatWorker && closestCombatWorker->getPosition().getDistance(getTarget().getPosition()) < getPosition().getDistance(getTarget().getPosition()) + 64.0;
+        };
+
         return (getTarget().isThreatening() && !isLightAir() && !getTarget().isHidden() && (Util::getTime() < Time(10, 00) || getSimState() == SimState::Win || Players::ZvZ()))                                                                          // ...target is threatening                    
-            || (!getType().isWorker() && (getGroundRange() > getTarget().getGroundRange() || getTarget().getType().isWorker()) && Terrain::inTerritory(PlayerState::Self, getTarget().getPosition()) && !getTarget().isHidden())                 // ...unit can get free hits in our territory
+            || (!getType().isWorker() && !Spy::enemyRush() && (getGroundRange() > getTarget().getGroundRange() || getTarget().getType().isWorker()) && Terrain::inTerritory(PlayerState::Self, getTarget().getPosition()) && !getTarget().isHidden())                 // ...unit can get free hits in our territory
             || (isSuicidal() && hasTarget() && (getTarget().isWithinRange(*this) || Terrain::inTerritory(PlayerState::Self, getTarget().getPosition()) || getTarget().isThreatening() || getTarget().getPosition().getDistance(getGoal()) < 160.0) && !nearEnemyDefenseStructure())
             || ((isHidden() || getType() == Zerg_Lurker) && !Actions::overlapsDetection(unit(), getEngagePosition(), PlayerState::Enemy))
             || (!isFlying() && Actions::overlapsActions(unit(), getEngagePosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, 96))
             || (!isFlying() && (getGroundRange() < 32.0 || getType() == Zerg_Lurker) && Terrain::inTerritory(PlayerState::Enemy, getPosition()) && (Util::getTime() > Time(8, 00) || BuildOrder::isProxy()) && nearEnemyStation() && !Players::ZvZ())
             || (getType() == Zerg_Lurker && BuildOrder::isProxy() && nearProxyStructure())
             || (!isFlying() && Actions::overlapsActions(unit(), getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, 96))
-            || isTargetedBySuicide();
+            || isTargetedBySuicide()
+            || engagingWithWorkers();
     }
 
     bool UnitInfo::globalRetreat()

@@ -102,8 +102,9 @@ namespace McRave::Command {
     bool misc(UnitInfo& unit)
     {
         // Unstick a unit
-        if (unit.isStuck()) {
-            unit.unit()->stop();
+        if (unit.isStuck() || unit.getLocalState() == LocalState::Hold) {
+            unit.circle(Colors::Black);
+            unit.command(Stop, unit.getPosition());
             return true;
         }
 
@@ -310,10 +311,10 @@ namespace McRave::Command {
         // If unit can move and should move
         if (canMove() && shouldMove()) {
 
-            //if (unit.getRole() == Role::Combat && !unit.attemptingSurround() && !unit.isSuicidal() && unit.hasTarget() && unit.canStartAttack() && unit.isWithinReach(unit.getTarget()) && unit.getLocalState() == LocalState::Attack) {
-            //    unit.command(Right_Click_Position, unit.getTarget().getPosition());
-            //    return true;
-            //}
+            if (unit.getRole() == Role::Combat && !unit.attemptingSurround() && !unit.isSuicidal() && unit.hasTarget() && unit.canStartAttack() && unit.isWithinReach(unit.getTarget()) && unit.getLocalState() == LocalState::Attack) {
+                unit.command(Right_Click_Position, unit.getTarget().getPosition());
+                return true;
+            }
 
             if (unit.getRole() == Role::Worker && unit.getBuildType().isValid() && unit.getPosition().getDistance(unit.getDestination()) < 64.0) {
                 unit.unit()->move(unit.getDestination());
@@ -328,7 +329,6 @@ namespace McRave::Command {
             // Find the best position to move to
             auto bestPosition = findViablePosition(unit, scoreFunction);
             if (bestPosition.isValid()) {
-                Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Yellow);
                 unit.command(Move, bestPosition);
                 return true;
             }
@@ -429,7 +429,8 @@ namespace McRave::Command {
                 if (!unit.getTarget().canAttackGround() && !unit.getTarget().canAttackAir() && !unit.getType().isFlyer())      // Don't kite non attackers unless we're a flying unit
                     return false;
 
-                if (unit.getType() == Zerg_Zergling || unit.getType() == Protoss_Corsair)
+                if (unit.getType() == Zerg_Zergling || unit.getType() == Protoss_Corsair
+                    || (unit.getGroundRange() < 32.0 && unit.getAirRange() < 32.0))
                     return false;
 
                 if (unit.getType() == Protoss_Zealot && Util::getTime() < Time(4, 00) && Players::PvZ())
@@ -459,6 +460,7 @@ namespace McRave::Command {
                     unit.unit()->gather(unit.getResource().unit());
                     return true;
                 }
+                return false;
             }
 
             // If we aren't defending the choke, we just want to move to our mineral hold position
