@@ -66,7 +66,6 @@ namespace McRave::BuildOrder::Zerg {
             playPassive =                                   false;
             rush =                                          false;
             pressure =                                      false;
-            cutWorkers =                                    false;
             transitionReady =                               false;
 
             gasLimit =                                      gasMax();

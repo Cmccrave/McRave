@@ -291,6 +291,13 @@ namespace McRave::BuildOrder::Protoss
 
     void unlocks()
     {
+        // Unlocking units
+        unlockedType.clear();
+        for (auto &[type, per] : armyComposition) {
+            if (per > 0.0)
+                unlockedType.insert(type);
+        }
+
         // Leg upgrade check
         auto zealotLegs = Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) > 0
             || (com(Protoss_Citadel_of_Adun) > 0 && s >= 200);

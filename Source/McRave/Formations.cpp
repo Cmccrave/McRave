@@ -115,11 +115,11 @@ namespace McRave::Combat::Formations {
             bool stopNegative = false;
             auto wrap = 0;
 
-            Broodwar->drawLineMap(commander->getPosition(), concave.center, Colors::Purple);
+            //Broodwar->drawLineMap(commander->getPosition(), concave.center, Colors::Purple);
             Broodwar->drawCircleMap(objective, 4, Colors::Green, true);
             Broodwar->drawCircleMap(retreat, 4, Colors::Red, true);
             Broodwar->drawCircleMap(concave.center, 6, Colors::White);
-            Broodwar->drawLineMap(objective, retreat, Colors::White);
+            //Broodwar->drawLineMap(objective, retreat, Colors::White);
 
             auto assignmentsRemaining = int(cluster.units.size());
             while (assignmentsRemaining > 0) {

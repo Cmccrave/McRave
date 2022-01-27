@@ -745,7 +745,7 @@ namespace McRave::Combat {
                     updateDecision(unit);
                     //Broodwar->drawLineMap(unit.getPosition(), unit.getObjective(), Colors::Green);
                     //Broodwar->drawLineMap(unit.getPosition(), unit.getRetreat(), Colors::Orange);
-                    Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
+                    //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
                 }
             }
         }

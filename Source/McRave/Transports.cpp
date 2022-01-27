@@ -39,7 +39,7 @@ namespace McRave::Transports {
             const auto readyToAssignUnit = [&](UnitInfo& cargo) {
                 auto targetDist = BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getEngagePosition());
 
-                if (cargo.getType() == Protoss_Reaver || cargo.getType() == Protoss_High_Templar)
+                if (cargo.getType() == Protoss_Dragoon || cargo.getType() == Protoss_High_Templar)
                     return true;
                 if (Terrain::isIslandMap() && !cargo.getType().isFlyer() && targetDist > 640.0)
                     return true;
@@ -210,7 +210,7 @@ namespace McRave::Transports {
                                 setState(TransportState::Retreating);
                         }
                         else if (tooClose(cargo))
-                            setState(TransportState::Retreating);                        
+                            setState(TransportState::Retreating);
                         else if (tooFar(cargo) && unit.getGlobalState() == GlobalState::Attack)
                             setState(TransportState::Engaging);
                         else

@@ -26,17 +26,20 @@ namespace McRave::BuildOrder::Protoss {
             hideTech =                                      false;
             playPassive =                                   false;
             rush =                                          false;
-            cutWorkers =                                    false;
             transitionReady =                               false;
 
             gasLimit =                                      INT_MAX;
             unitLimits[Protoss_Zealot] =                    INT_MAX;
             unitLimits[Protoss_Dragoon] =                   0;
+            unitLimits[Protoss_Probe] =                     INT_MAX;
 
             desiredDetection =                              Protoss_Observer;
             firstUpgrade =                                  vis(Protoss_Dragoon) > 0 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
             firstTech =                                     TechTypes::None;
             firstUnit =                                     None;
+
+            armyComposition[Protoss_Probe] =                1.00;
+            armyComposition[Protoss_Zealot] =               1.00;
         }
     }
 
@@ -46,7 +49,6 @@ namespace McRave::BuildOrder::Protoss {
         playPassive =                                       s < 60;
         firstUpgrade =                                      UpgradeTypes::None;
         firstTech =                                         TechTypes::None;
-        cutWorkers =                                        Production::hasIdleProduction();
 
         unitLimits[Protoss_Zealot] =                        INT_MAX;
         unitLimits[Protoss_Dragoon] =                       vis(Protoss_Templar_Archives) > 0 ? INT_MAX : 0;
@@ -65,7 +67,6 @@ namespace McRave::BuildOrder::Protoss {
         defaultPvZ();
         wantNatural =                                       true;
         wallNat =                                           true;
-        cutWorkers =                                        Spy::enemyRush() && vis(Protoss_Photon_Cannon) < 2 && vis(Protoss_Forge) > 0;
 
         int cannonCount = 0;
 
@@ -112,7 +113,7 @@ namespace McRave::BuildOrder::Protoss {
         else if (currentOpener == "Panic") {
             scout =                                         com(Protoss_Photon_Cannon) >= 3;
             transitionReady =                               vis(Protoss_Pylon) >= 2;
-            cutWorkers =                                    vis(Protoss_Pylon) == 1 && vis(Protoss_Probe) >= 13;
+            unitLimits[Protoss_Probe] =                     13;
 
             buildQueue[Protoss_Nexus] =                     1;
             buildQueue[Protoss_Pylon] =                     1 + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) < 6 || s >= 32);
@@ -248,7 +249,7 @@ namespace McRave::BuildOrder::Protoss {
             buildQueue[Protoss_Gateway] =                   (vis(Protoss_Pylon) > 0 && s >= 18) + (vis(Protoss_Gateway) > 0);
         }
         else if (currentOpener == "Natural") {
-            if (startCount >= 3) {                          // 9/10
+            if (Broodwar->getStartLocations().size() >= 3) {                          // 9/10
                 buildQueue[Protoss_Pylon] =                 (s >= 14) + (s >= 26);
                 buildQueue[Protoss_Gateway] =               (vis(Protoss_Pylon) > 0 && s >= 18) + (s >= 20);
             }
@@ -258,7 +259,7 @@ namespace McRave::BuildOrder::Protoss {
             }
         }
         else if (currentOpener == "Main") {
-            if (startCount >= 3) {                          // 10/12
+            if (Broodwar->getStartLocations().size() >= 3) {                          // 10/12
                 buildQueue[Protoss_Pylon] =                 (s >= 16) + (s >= 32);
                 buildQueue[Protoss_Gateway] =               (s >= 20) + (s >= 24);
             }

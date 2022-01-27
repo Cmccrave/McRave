@@ -41,17 +41,17 @@ namespace McRave::Targets {
 
         bool suitableTargetWorker(UnitInfo& unit, UnitInfo& target)
         {
-
+            return false;
         }
 
         bool suitableTargetBuilding(UnitInfo& unit, UnitInfo& target)
         {
-
+            return false;
         }
 
         bool suitableTargetUnit(UnitInfo& unit, UnitInfo& target)
         {
-
+            return false;
         }
 
         bool isSuitableTarget(UnitInfo& unit, UnitInfo& target)

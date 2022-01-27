@@ -37,18 +37,19 @@ namespace McRave::BuildOrder::Protoss {
             hideTech =                                      false;
             playPassive =                                   false;
             rush =                                          false;
-            cutWorkers =                                    false;
             transitionReady =                               false;
 
             gasLimit =                                      INT_MAX;
             unitLimits[Protoss_Zealot] =                    1;
             unitLimits[Protoss_Dragoon] =                   INT_MAX;
+            unitLimits[Protoss_Probe] =                     INT_MAX;
 
             desiredDetection =                              Protoss_Observer;
             firstUpgrade =                                  vis(Protoss_Dragoon) > 0 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
             firstTech =                                     TechTypes::None;
             firstUnit =                                     None;
 
+            armyComposition[Protoss_Probe] =                1.00;
             armyComposition[Protoss_Zealot] =               0.10;
             armyComposition[Protoss_Dragoon] =              0.90;
         }
@@ -75,7 +76,6 @@ namespace McRave::BuildOrder::Protoss {
         unitLimits[Protoss_Dragoon] =                       s > 60 ? INT_MAX : 0;
 
         desiredDetection =                                  Protoss_Forge;
-        cutWorkers =                                        Util::getTime() < Time(3, 30) && enemyMoreZealots() && Production::hasIdleProduction();
 
         buildQueue[Protoss_Nexus] =                         1;
         buildQueue[Protoss_Pylon] =                         (s >= 14) + (s >= 30), (s >= 16) + (s >= 30);
@@ -101,7 +101,7 @@ namespace McRave::BuildOrder::Protoss {
         defaultPvP();
         unitLimits[Protoss_Zealot] =                        s <= 80 ? 7 : 0;
         proxy =                                             currentOpener == "Proxy" && vis(Protoss_Gateway) < 2 && Broodwar->getFrameCount() < 5000;
-        scout =                                             currentOpener != "Proxy" && startCount >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
+        scout =                                             currentOpener != "Proxy" && Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
         transitionReady =                                   vis(Protoss_Gateway) >= 2;
         desiredDetection =                                  Protoss_Forge;
         gasLimit =                                          total(Protoss_Zealot) >= 3 ? INT_MAX : 0;
@@ -125,7 +125,7 @@ namespace McRave::BuildOrder::Protoss {
             buildQueue[Protoss_Gateway] =                   (vis(Protoss_Pylon) > 0 && s >= 18) + (vis(Protoss_Gateway) > 0);
         }
         else if (currentOpener == "Natural") {
-            if (startCount >= 3) {                          // 9/10
+            if (Broodwar->getStartLocations().size() >= 3) {                          // 9/10
                 buildQueue[Protoss_Pylon] =                 (s >= 14) + (s >= 26);
                 buildQueue[Protoss_Gateway] =               (vis(Protoss_Pylon) > 0 && s >= 18) + (s >= 20);
             }
@@ -135,7 +135,7 @@ namespace McRave::BuildOrder::Protoss {
             }
         }
         else if (currentOpener == "Main") {
-            if (startCount >= 3) {                          // 10/12
+            if (Broodwar->getStartLocations().size() >= 3) {                          // 10/12
                 buildQueue[Protoss_Pylon] =                 (s >= 16) + (s >= 32);
                 buildQueue[Protoss_Gateway] =               (s >= 20) + (s >= 24);
             }

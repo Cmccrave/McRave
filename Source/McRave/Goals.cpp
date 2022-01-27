@@ -181,7 +181,7 @@ namespace McRave::Goals {
             }
 
             // Aggresively deny enemy expansions
-            if (Terrain::getEnemyStartingPosition().isValid() && Util::getTime() > Time(5, 00) && !BuildOrder::isRush() && !Players::ZvZ()) {
+            if (Terrain::getEnemyStartingPosition().isValid() && Stations::getMyStations().size() >= 3 && !BuildOrder::isRush() && !Players::ZvZ()) {
                 multimap<double, BWEB::Station> stationsByDistance;
 
                 for (auto &station : BWEB::Stations::getStations()) {

@@ -139,9 +139,14 @@ namespace McRave
             gState                      = GlobalState::None;
             tState                      = TransportState::None;
 
+            // Attack Frame
+            if ((getType() == Protoss_Reaver && unit()->getGroundWeaponCooldown() >= 59)
+                || (getType() != Protoss_Reaver && canAttackGround() && unit()->getGroundWeaponCooldown() >= type.groundWeapon().damageCooldown() - 1)
+                || (getType() != Protoss_Reaver && canAttackAir() && unit()->getAirWeaponCooldown() >= type.airWeapon().damageCooldown() - 1))
+                lastAttackFrame         = Broodwar->getFrameCount();            
+
             // Frames
             remainingTrainFrame         = max(0, remainingTrainFrame - 1);
-            lastAttackFrame             = ((canAttackGround() && unit()->getGroundWeaponCooldown() >= type.groundWeapon().damageCooldown() - 1) || (canAttackAir() && (unit()->getAirWeaponCooldown() >= type.airWeapon().damageCooldown() - 1))) ? Broodwar->getFrameCount() : lastAttackFrame;
             lastRepairFrame             = (unit()->isRepairing() || unit()->isBeingHealed()) ? Broodwar->getFrameCount() : lastRepairFrame;
             minStopFrame                = Math::stopAnimationFrames(t);
             lastStimFrame               = unit()->isStimmed() ? Broodwar->getFrameCount() : lastStimFrame;
@@ -541,11 +546,28 @@ namespace McRave
             return false;
         }
 
+        // Special Case: Reavers - Shuttles reset the cooldown of their attacks to 30 frames not 60 frames
+        if (getType() == Protoss_Reaver && hasTransport() && unit()->isLoaded()) {
+            auto dist = Util::boxDistance(getType(), getPosition(), getTarget().getType(), getTarget().getPosition());
+            return (dist < getGroundRange());
+        }
+
         auto weaponCooldown = getType() == Protoss_Reaver ? 60 : (getTarget().getType().isFlyer() ? getType().airWeapon().damageCooldown() : getType().groundWeapon().damageCooldown());
         auto cooldown = lastAttackFrame + (weaponCooldown / 2) - Broodwar->getFrameCount() + Broodwar->getLatencyFrames();
+        auto speed = hasTransport() ? getTransport().getSpeed() : getSpeed();
         auto range = (getTarget().getType().isFlyer() ? getAirRange() : getGroundRange());
         auto boxDistance = Util::boxDistance(getType(), getPosition(), getTarget().getType(), getTarget().getPosition()) + (currentSpeed * Broodwar->getLatencyFrames());
-        auto cooldownReady = getSpeed() > 0.0 ? max(0, cooldown) <= max(0.0, boxDistance - range) / (hasTransport() ? getTransport().getSpeed() : getSpeed()) : cooldown <= 0.0;
+        auto cooldownReady = getSpeed() > 0.0 ? max(0, cooldown) <= max(0.0, boxDistance - range) / speed : cooldown <= 0.0;
+
+        if (getType() == Protoss_Reaver) {
+            Broodwar << "lastAttackFrame" << lastAttackFrame << endl;
+            Broodwar << "boxDistance" << boxDistance << endl;
+            Broodwar << "range" << range << endl;
+            Broodwar << "speed" << speed << endl;
+        }
+
+        if (cooldownReady)
+            circle(Colors::Green);
         return cooldownReady;
     }
 
@@ -631,10 +653,9 @@ namespace McRave
         }
 
         auto range = getTarget().getType().isFlyer() ? getAirRange() : getGroundRange();
-        auto cargoReady = getType() == BWAPI::UnitTypes::Protoss_High_Templar ? canStartCast(BWAPI::TechTypes::Psionic_Storm, getTarget().getPosition()) : canStartAttack();
-        auto threat = Grids::getEGroundThreat(getWalkPosition()) > 0.0;
+        auto cargoPickup = getType() == BWAPI::UnitTypes::Protoss_High_Templar ? (!canStartCast(BWAPI::TechTypes::Psionic_Storm, getTarget().getPosition()) || Grids::getEGroundThreat(getWalkPosition()) <= MIN_THREAT) : !canStartAttack();
 
-        return getLocalState() == LocalState::Retreat || getEngDist() > range + 32.0 || (!cargoReady && threat) || bulletCount >= 4 || isTargetedBySuicide();
+        return getLocalState() == LocalState::Retreat || getEngDist() > range + 32.0 || cargoPickup || bulletCount >= 4 || isTargetedBySuicide();
     }
 
     bool UnitInfo::isWithinReach(UnitInfo& otherUnit)

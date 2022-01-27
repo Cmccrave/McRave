@@ -83,32 +83,31 @@ namespace McRave::BuildOrder::Zerg {
         }
 
         void defaultZvP() {
-            inOpeningBook =                                 true;
-            inBookSupply =                                  true;
-            wallNat =                                       hatchCount() >= 4 || Terrain::isShitMap();
-            wallMain =                                      false;
-            wantNatural =                                   true;
-            wantThird =                                     Spy::getEnemyBuild() == "FFE";
-            proxy =                                         false;
-            hideTech =                                      false;
-            playPassive =                                   false;
-            rush =                                          false;
-            pressure =                                      false;
-            cutWorkers =                                    false;
-            transitionReady =                               false;
-            planEarly =                                     false;
+            inOpeningBook =                             true;
+            inBookSupply =                              true;
+            wallNat =                                   hatchCount() >= 4 || Terrain::isShitMap();
+            wallMain =                                  false;
+            wantNatural =                               true;
+            wantThird =                                 Spy::getEnemyBuild() == "FFE";
+            proxy =                                     false;
+            hideTech =                                  false;
+            playPassive =                               false;
+            rush =                                      false;
+            pressure =                                  false;
+            transitionReady =                           false;
+            planEarly =                                 false;
 
-            gasLimit =                                      gasMax();
-            unitLimits[Zerg_Zergling] =                     lingsNeeded();
-            unitLimits[Zerg_Drone] =                        INT_MAX;
+            gasLimit =                                  gasMax();
+            unitLimits[Zerg_Zergling] =                 lingsNeeded();
+            unitLimits[Zerg_Drone] =                    INT_MAX;
 
-            desiredDetection =                              Zerg_Overlord;
-            firstUpgrade =                                  vis(Zerg_Zergling) >= 6 ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
-            firstTech =                                     TechTypes::None;
-            firstUnit =                                     None;
+            desiredDetection =                          Zerg_Overlord;
+            firstUpgrade =                              vis(Zerg_Zergling) >= 6 ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+            firstTech =                                 TechTypes::None;
+            firstUnit =                                 None;
 
-            armyComposition[Zerg_Drone] =                   0.60;
-            armyComposition[Zerg_Zergling] =                0.40;
+            armyComposition[Zerg_Drone] =               0.60;
+            armyComposition[Zerg_Zergling] =            0.40;
         }
     }
 
@@ -255,12 +254,12 @@ namespace McRave::BuildOrder::Zerg {
 
         // Composition
         if (vis(Zerg_Drone) < 6) {
-            armyComposition[Zerg_Drone] =                   0.60;
-            armyComposition[Zerg_Zergling] =                0.40;
+            armyComposition[Zerg_Drone] =               0.60;
+            armyComposition[Zerg_Zergling] =            0.40;
         }
         else {
-            armyComposition[Zerg_Drone] =                   0.00;
-            armyComposition[Zerg_Zergling] =                1.00;
+            armyComposition[Zerg_Drone] =               0.00;
+            armyComposition[Zerg_Zergling] =            1.00;
         }
     }
 
@@ -313,8 +312,8 @@ namespace McRave::BuildOrder::Zerg {
             armyComposition[Zerg_Zergling] =            1.00;
         }
         else {
-            armyComposition[Zerg_Drone] =                   0.60;
-            armyComposition[Zerg_Zergling] =                0.40;
+            armyComposition[Zerg_Drone] =               0.60;
+            armyComposition[Zerg_Zergling] =            0.40;
         }
     }
 
@@ -398,9 +397,9 @@ namespace McRave::BuildOrder::Zerg {
         playPassive =                                   false;
 
         if (Spy::enemyFastExpand())
-            unitLimits[Zerg_Drone] =                        INT_MAX;
+            unitLimits[Zerg_Drone] =                    INT_MAX;
         else
-            unitLimits[Zerg_Drone] =                        12 - vis(Zerg_Hatchery);
+            unitLimits[Zerg_Drone] =                    12 - vis(Zerg_Hatchery);
 
         buildQueue[Zerg_Hatchery] =                     1 + (s >= 22 && vis(Zerg_Spawning_Pool) > 0 && (!Spy::enemyProxy() || vis(Zerg_Sunken_Colony) >= 2));
         buildQueue[Zerg_Spawning_Pool] =                (vis(Zerg_Overlord) >= 2);

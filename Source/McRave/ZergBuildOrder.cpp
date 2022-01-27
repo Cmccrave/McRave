@@ -316,8 +316,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Creep_Colony] = vis(Zerg_Creep_Colony) + vis(Zerg_Spore_Colony) + vis(Zerg_Sunken_Colony);
         queueWallDefenses();
         queueStationDefenses();
-        defensesNow = buildQueue[Zerg_Creep_Colony] > 0 && vis(Zerg_Sunken_Colony) < 1 && (Spy::getEnemyBuild() == "RaxFact" || Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore" || Spy::enemyRush() || Players::ZvZ() || Util::getTime() > Time(6, 30));
-
+        
         // Queue up supply, upgrade structures
         queueOverlords();
         queueUpgradeStructures();
@@ -563,8 +562,6 @@ namespace McRave::BuildOrder::Zerg {
 
     void unlocks()
     {
-        unlockedType.clear();
-
         // Saving larva to burst out tech units
         int limitBy = int(Stations::getMyStations().size()) * 3;
         unitLimits[Zerg_Larva] = 0;
@@ -572,6 +569,7 @@ namespace McRave::BuildOrder::Zerg {
             unitLimits[Zerg_Larva] = max(0, limitBy - total(Zerg_Mutalisk) - total(Zerg_Hydralisk));
 
         // Unlocking units
+        unlockedType.clear();
         unlockedType.insert(Zerg_Overlord);
         for (auto &[type, per] : armyComposition) {
             if (per > 0.0)

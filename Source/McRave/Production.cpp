@@ -69,6 +69,9 @@ namespace McRave::Production {
 
             switch (unit)
             {
+            case Enum::Protoss_Probe:
+                return true;
+
                 // Gateway Units
             case Enum::Protoss_Zealot:
                 return true;
@@ -96,6 +99,9 @@ namespace McRave::Production {
                 return com(Protoss_Fleet_Beacon) > 0;
             case Enum::Protoss_Arbiter:
                 return com(Protoss_Arbiter_Tribunal) > 0;
+
+            case Enum::Terran_SCV:
+                return true;
 
                 // Barracks Units
             case Enum::Terran_Marine:
@@ -202,12 +208,8 @@ namespace McRave::Production {
 
         bool isSuitable(UnitType unit)
         {
-            if (unit.isWorker()) {
-                if (com(unit) < 70 && (!Resources::isMineralSaturated() || !Resources::isGasSaturated()))
-                    return true;
-                else
-                    return false;
-            }
+            if (unit.isWorker())
+                return com(unit) < 70 && (!Resources::isMineralSaturated() || !Resources::isGasSaturated());
 
             if (unit.getRace() == Races::Zerg) {
                 if (unit == Zerg_Defiler)
@@ -215,10 +217,9 @@ namespace McRave::Production {
                 return true;
             }
 
+            // Determine whether we want reavers or shuttles
             bool needReavers = false;
             bool needShuttles = false;
-
-            // Determine whether we want reavers or shuttles
             if (!Spy::enemyInvis() && BuildOrder::isTechUnit(Protoss_Reaver)) {
                 if ((Terrain::isIslandMap() && vis(unit) < 2 * vis(Protoss_Nexus))
                     || vis(Protoss_Shuttle) == 0
@@ -780,27 +781,9 @@ namespace McRave::Production {
                     continue;
 
                 // Iterate commmands and break if we execute one
-                if (!building.getType().isResourceDepot() || building.getType().getRace() == Races::Zerg) {
-                    for (auto &command : commands) {
-                        if (command(building))
-                            break;
-                    }
-                }
-
-                // TODO: Move this into commands above
-                else {
-                    for (auto &unit : building.getType().buildsWhat()) {
-                        if (unit.isAddon() && !building.unit()->getAddon() && BuildOrder::buildCount(unit) > vis(unit)) {
-                            building.unit()->buildAddon(unit);
-                            continue;
-                        }
-                        auto makeExtra = vis(Protoss_Probe) <= 28 && Broodwar->self()->minerals() >= 400 && !BuildOrder::isOpener();
-                        if (!BuildOrder::isWorkerCut() && unit.isWorker() && com(unit) < 75 && isAffordable(unit) && (!Resources::isGasSaturated() || !Resources::isMineralSaturated() || makeExtra)) {
-                            building.unit()->train(unit);
-                            building.setRemainingTrainFrame(unit.buildTime());
-                            lastTrainFrame = Broodwar->getFrameCount();
-                        }
-                    }
+                for (auto &command : commands) {
+                    if (command(building))
+                        break;
                 }
             }
         }

@@ -58,53 +58,52 @@ namespace McRave::BuildOrder::Zerg {
         }
 
         void defaultZvT() {
-            inOpeningBook =                                 true;
-            inBookSupply =                                  true;
-            wallNat =                                       hatchCount() >= 4;
-            wallMain =                                      false;
-            scout =                                         false;
-            wantNatural =                                   true;
-            wantThird =                                     true;
-            proxy =                                         false;
-            hideTech =                                      false;
-            playPassive =                                   Util::getTime() > Time(3, 30) && !Spy::enemyFastExpand() && com(Zerg_Mutalisk) < 5;
-            rush =                                          false;
-            pressure =                                      false;
-            cutWorkers =                                    false;
-            transitionReady =                               false;
+            inOpeningBook =                             true;
+            inBookSupply =                              true;
+            wallNat =                                   hatchCount() >= 4;
+            wallMain =                                  false;
+            scout =                                     false;
+            wantNatural =                               true;
+            wantThird =                                 true;
+            proxy =                                     false;
+            hideTech =                                  false;
+            playPassive =                               Util::getTime() > Time(3, 30) && !Spy::enemyFastExpand() && com(Zerg_Mutalisk) < 5;
+            rush =                                      false;
+            pressure =                                  false;
+            transitionReady =                           false;
 
-            gasLimit =                                      gasMax();
-            unitLimits[Zerg_Zergling] =                     lingsNeeded();
-            unitLimits[Zerg_Drone] =                        INT_MAX;
+            gasLimit =                                  gasMax();
+            unitLimits[Zerg_Zergling] =                 lingsNeeded();
+            unitLimits[Zerg_Drone] =                    INT_MAX;
 
-            desiredDetection =                              Zerg_Overlord;
-            firstUpgrade =                                  vis(Zerg_Zergling) >= 8 ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
-            firstTech =                                     TechTypes::None;
-            firstUnit =                                     None;
+            desiredDetection =                          Zerg_Overlord;
+            firstUpgrade =                              vis(Zerg_Zergling) >= 8 ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+            firstTech =                                 TechTypes::None;
+            firstUnit =                                 None;
 
-            armyComposition[Zerg_Drone] =                   0.60;
-            armyComposition[Zerg_Zergling] =                0.40;
+            armyComposition[Zerg_Drone] =               0.60;
+            armyComposition[Zerg_Zergling] =            0.40;
         }
     }
 
     void ZvT2HatchMuta()
     {
-        lockedTransition =                          vis(Zerg_Lair) > 0;
-        unitLimits[Zerg_Drone] =                    com(Zerg_Spawning_Pool) > 0 ? 28 : 15 - hatchCount();
-        unitLimits[Zerg_Zergling] =                 lingsNeeded();
-        gasLimit =                                  gasMax();
+        lockedTransition =                              vis(Zerg_Lair) > 0;
+        unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 28 : 15 - hatchCount();
+        unitLimits[Zerg_Zergling] =                     lingsNeeded();
+        gasLimit =                                      gasMax();
 
-        inOpeningBook =                             total(Zerg_Mutalisk) <= 9;
-        firstUpgrade =                              UpgradeTypes::None;
-        firstUnit =                                 Zerg_Mutalisk;
-        inBookSupply =                              total(Zerg_Mutalisk) < 6;
-        planEarly =                                 atPercent(Zerg_Lair, 0.5) && int(Stations::getMyStations().size()) < 3 && Spy::getEnemyOpener() != "8Rax";
+        inOpeningBook =                                 total(Zerg_Mutalisk) <= 9;
+        firstUpgrade =                                  UpgradeTypes::None;
+        firstUnit =                                     Zerg_Mutalisk;
+        inBookSupply =                                  total(Zerg_Mutalisk) < 6;
+        planEarly =                                     atPercent(Zerg_Lair, 0.5) && int(Stations::getMyStations().size()) < 3 && Spy::getEnemyOpener() != "8Rax";
 
-        buildQueue[Zerg_Hatchery] =                 2 + (total(Zerg_Mutalisk) >= 6);
-        buildQueue[Zerg_Extractor] =                (hatchCount() >= 2 && vis(Zerg_Drone) >= 10) + (atPercent(Zerg_Spire, 0.1 + (0.05 * colonyCount())));
-        buildQueue[Zerg_Overlord] =                 1 + (s >= 18) + (s >= 32) + (2 * atPercent(Zerg_Spire, 0.25));
-        buildQueue[Zerg_Lair] =                     (vis(Zerg_Drone) >= 12 && gas(80));
-        buildQueue[Zerg_Spire] =                    atPercent(Zerg_Lair, 0.80);
+        buildQueue[Zerg_Hatchery] =                     2 + (total(Zerg_Mutalisk) >= 6);
+        buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 10) + (atPercent(Zerg_Spire, 0.1 + (0.05 * colonyCount())));
+        buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (2 * atPercent(Zerg_Spire, 0.25));
+        buildQueue[Zerg_Lair] =                         (vis(Zerg_Drone) >= 12 && gas(80));
+        buildQueue[Zerg_Spire] =                        atPercent(Zerg_Lair, 0.80);
 
         // Composition
         if (com(Zerg_Spire) == 0 && lingsNeeded() > vis(Zerg_Zergling)) {
@@ -153,47 +152,47 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvT2HatchSpeedling()
     {
-        unitLimits[Zerg_Drone] =                    total(Zerg_Zergling) >= 12 ? 11 : 9;
-        unitLimits[Zerg_Zergling] =                 INT_MAX;
-        gasLimit =                                  ((!Spy::enemyProxy() || com(Zerg_Zergling) >= 6) && !lingSpeed()) ? capGas(100) : 0;
+        unitLimits[Zerg_Drone] =                        total(Zerg_Zergling) >= 12 ? 11 : 9;
+        unitLimits[Zerg_Zergling] =                     INT_MAX;
+        gasLimit =                                      ((!Spy::enemyProxy() || com(Zerg_Zergling) >= 6) && !lingSpeed()) ? capGas(100) : 0;
 
-        wallNat =                                   false;
-        inOpeningBook =                             total(Zerg_Zergling) < 36;
-        firstUpgrade =                              UpgradeTypes::Metabolic_Boost;
-        firstUnit =                                 UnitTypes::None;
-        inBookSupply =                              vis(Zerg_Overlord) < 3;
-        rush =                                      true;
+        wallNat =                                       false;
+        inOpeningBook =                                 total(Zerg_Zergling) < 36;
+        firstUpgrade =                                  UpgradeTypes::Metabolic_Boost;
+        firstUnit =                                     UnitTypes::None;
+        inBookSupply =                                  vis(Zerg_Overlord) < 3;
+        rush =                                          true;
 
         // Build
-        buildQueue[Zerg_Overlord] =                 1 + (s >= 18) + (s >= 26);
-        buildQueue[Zerg_Extractor] =                (hatchCount() >= 2 && vis(Zerg_Drone) >= 9);
+        buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 26);
+        buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 9);
 
         // Composition
-        armyComposition[Zerg_Drone] =               0.00;
-        armyComposition[Zerg_Zergling] =            1.00;
+        armyComposition[Zerg_Drone] =                   0.00;
+        armyComposition[Zerg_Zergling] =                1.00;
     }
 
     void ZvT3HatchSpeedling()
     {
-        unitLimits[Zerg_Drone] =                    13;
-        unitLimits[Zerg_Zergling] =                 hatchCount() >= 3 ? INT_MAX : 0;
-        gasLimit =                                  !lingSpeed() ? capGas(100) : 0;
+        unitLimits[Zerg_Drone] =                        13;
+        unitLimits[Zerg_Zergling] =                     hatchCount() >= 3 ? INT_MAX : 0;
+        gasLimit =                                      !lingSpeed() ? capGas(100) : 0;
 
-        wallNat =                                   true;
-        inOpeningBook =                             total(Zerg_Zergling) < 80;
-        firstUpgrade =                              UpgradeTypes::Metabolic_Boost;
-        firstUnit =                                 UnitTypes::None;
-        inBookSupply =                              vis(Zerg_Overlord) < 3;
-        rush =                                      true;
+        wallNat =                                       true;
+        inOpeningBook =                                 total(Zerg_Zergling) < 80;
+        firstUpgrade =                                  UpgradeTypes::Metabolic_Boost;
+        firstUnit =                                     UnitTypes::None;
+        inBookSupply =                                  vis(Zerg_Overlord) < 3;
+        rush =                                          true;
 
         // Build
-        buildQueue[Zerg_Hatchery] =                 1 + (s >= 22 && vis(Zerg_Spawning_Pool) > 0) + (s >= 26);
-        buildQueue[Zerg_Overlord] =                 1 + (s >= 18) + (s >= 26);
-        buildQueue[Zerg_Extractor] =                (s >= 24);
+        buildQueue[Zerg_Hatchery] =                     1 + (s >= 22 && vis(Zerg_Spawning_Pool) > 0) + (s >= 26);
+        buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 26);
+        buildQueue[Zerg_Extractor] =                    (s >= 24);
 
         // Composition
-        armyComposition[Zerg_Drone] =               0.20;
-        armyComposition[Zerg_Zergling] =            0.80;
+        armyComposition[Zerg_Drone] =                   0.20;
+        armyComposition[Zerg_Zergling] =                0.80;
     }
 
     void ZvT12Hatch()

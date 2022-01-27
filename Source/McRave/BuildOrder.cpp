@@ -14,7 +14,6 @@ namespace McRave::BuildOrder
         void updateBuild()
         {
             // Set s for better build readability - TODO: better build order management
-            startCount = Broodwar->getStartLocations().size();
             buildQueue.clear();
             armyComposition.clear();
 
@@ -350,7 +349,6 @@ namespace McRave::BuildOrder
     set <UnitType>& getUnlockedList() { return  unlockedType; }
     int gasWorkerLimit() { return gasLimit; }
     int getUnitLimit(UnitType type) { return unitLimits[type]; }
-    bool isWorkerCut() { return cutWorkers; }
     bool isUnitUnlocked(UnitType unit) { return unlockedType.find(unit) != unlockedType.end(); }
     bool isTechUnit(UnitType unit) { return techList.find(unit) != techList.end(); }
     bool isOpener() { return inOpeningBook; }
@@ -365,7 +363,6 @@ namespace McRave::BuildOrder
     bool isPressure() { return pressure; }
     bool isGasTrick() { return gasTrick; }
     bool isPlanEarly() { return planEarly; }
-    bool makeDefensesNow() { return defensesNow; }
     bool shouldScout() { return scout; }
     bool shouldExpand() { return expandDesired; }
     bool shouldRamp() { return rampDesired; }

@@ -22,12 +22,10 @@ namespace McRave::BuildOrder {
         inline bool playPassive = false;
         inline bool rush = false;
         inline bool pressure = false;
-        inline bool cutWorkers = false; // TODO: Use unlocking
         inline bool lockedTransition = false;
         inline bool gasTrick = false;
         inline bool inBookSupply = false;
         inline bool transitionReady = false;
-        inline bool defensesNow = false;
         inline bool planEarly = false;
 
         inline bool expandDesired = false;
@@ -36,7 +34,6 @@ namespace McRave::BuildOrder {
 
         inline std::map<BWAPI::UnitType, int> unitLimits;
         inline int gasLimit = INT_MAX;
-        inline int startCount = 0;
         inline int s = 0;
 
         inline std::string currentBuild = "";
@@ -129,7 +126,6 @@ namespace McRave::BuildOrder {
     std::set <BWAPI::UnitType>& getUnlockedList();
     int gasWorkerLimit();
     int getUnitLimit(BWAPI::UnitType);
-    bool isWorkerCut();
     bool isUnitUnlocked(BWAPI::UnitType);
     bool isTechUnit(BWAPI::UnitType);
     bool isOpener();
@@ -145,7 +141,6 @@ namespace McRave::BuildOrder {
     bool isPressure();
     bool isGasTrick();
     bool isPlanEarly();
-    bool makeDefensesNow();
     std::string getCurrentBuild();
     std::string getCurrentOpener();
     std::string getCurrentTransition();

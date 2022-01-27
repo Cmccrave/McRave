@@ -26,41 +26,21 @@ namespace McRave::BuildOrder::Protoss {
             hideTech =                                      false;
             playPassive =                                   false;
             rush =                                          false;
-            cutWorkers =                                    false;
             transitionReady =                               false;
 
             gasLimit =                                      INT_MAX;
             unitLimits[Protoss_Zealot] =                    0;
             unitLimits[Protoss_Dragoon] =                   INT_MAX;
+            unitLimits[Protoss_Probe] =                     INT_MAX;
 
             desiredDetection =                              Protoss_Observer;
             firstUpgrade =                                  UpgradeTypes::Singularity_Charge;
             firstTech =                                     TechTypes::None;
             firstUnit =                                     None;
 
+            armyComposition[Protoss_Probe] =                1.00;
             armyComposition[Protoss_Dragoon] =              1.00;
         }
-    }
-
-    void PvT2GateDefensive() {
-        gasLimit =                                          com(Protoss_Cybernetics_Core) > 0 && s >= 50 ? INT_MAX : 0;
-        inOpeningBook =                                     s < 80;
-        playPassive =                                       false;
-        firstUpgrade =                                      UpgradeTypes::None;
-        firstTech =                                         TechTypes::None;
-        firstUnit =                                         None;
-        wantNatural =                                       false;
-        wantThird =                                         false;
-
-        unitLimits[Protoss_Zealot] =                        s >= 50 ? 0 : INT_MAX;
-        unitLimits[Protoss_Dragoon] =                       s >= 50 ? INT_MAX : 0;
-
-        buildQueue[Protoss_Nexus] =                         1;
-        buildQueue[Protoss_Pylon] =                         (s >= 16) + (s >= 30);
-        buildQueue[Protoss_Gateway] =                       (s >= 20) + (s >= 24) + (s >= 66);
-        buildQueue[Protoss_Assimilator] =                   s >= 40;
-        buildQueue[Protoss_Shield_Battery] =                vis(Protoss_Zealot) >= 2 && vis(Protoss_Pylon) >= 2;
-        buildQueue[Protoss_Cybernetics_Core] =              s >= 58;
     }
 
     void PvT2Gate()
@@ -248,7 +228,6 @@ namespace McRave::BuildOrder::Protoss {
         defaultPvT();
         playPassive =                                       Spy::enemyPressure() ? vis(Protoss_Dragoon) < 12 : !firstReady() && vis(Protoss_Dragoon) < 4;
         firstUpgrade =                                      vis(Protoss_Dragoon) >= 1 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
-        cutWorkers =                                        s >= 44 && s < 48;
         gasLimit =                                          goonRange() && com(Protoss_Nexus) < 2 ? 2 : INT_MAX;
         unitLimits[Protoss_Zealot] =                        currentOpener == "Zealot" ? 1 : 0;
         scout =                                             vis(Protoss_Pylon) > 0;
@@ -344,7 +323,7 @@ namespace McRave::BuildOrder::Protoss {
             else if ((!Spy::enemyFastExpand() && Terrain::foundEnemy() && currentTransition == "DoubleExpand") || Spy::enemyPressure())
                 currentTransition = "Standard";
 
-            if (s < 42 && Spy::getEnemyBuild() == "2Rax") {
+            if (s < 42 && Spy::getEnemyBuild() == "2Rax" && !goonRange()) {
                 currentBuild = "2Gate";
                 currentOpener = "Main";
                 currentTransition = "DT";
@@ -361,10 +340,9 @@ namespace McRave::BuildOrder::Protoss {
             scout =                                         Broodwar->getStartLocations().size() == 4 ? vis(Protoss_Pylon) > 0 : vis(Protoss_Pylon) > 0;
             gasLimit =                                      goonRange() && vis(Protoss_Nexus) < 2 ? 2 : INT_MAX;
             unitLimits[Protoss_Dragoon] =                   Util::getTime() > Time(4, 0) || vis(Protoss_Nexus) >= 2 ? INT_MAX : 1;
-            cutWorkers =                                    vis(Protoss_Probe) >= 19 && s < 46;
+            unitLimits[Protoss_Probe] =                     20;
         }
         else if (currentOpener == "2Gate") {                // "https://liquipedia.net/starcraft/2_Gate_Range_Expand"
-
             buildQueue[Protoss_Nexus] =                     1 + (s >= 40);
             buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 30) + (s >= 48);
             buildQueue[Protoss_Gateway] =                   (s >= 20) + (s >= 34) + (s >= 76);
@@ -373,7 +351,7 @@ namespace McRave::BuildOrder::Protoss {
             inBookSupply =                                  vis(Protoss_Pylon) < 3;
             gasLimit =                                      goonRange() && vis(Protoss_Pylon) < 3 ? 2 : INT_MAX;
             unitLimits[Protoss_Dragoon] =                   Util::getTime() > Time(4, 0) || vis(Protoss_Nexus) >= 2 || s >= 40 ? INT_MAX : 0;
-            cutWorkers =                                    vis(Protoss_Probe) >= 20 && s < 48;
+            unitLimits[Protoss_Probe] =                     20;
         }
 
         // Transitions

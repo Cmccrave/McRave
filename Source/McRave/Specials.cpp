@@ -376,8 +376,13 @@ namespace McRave::Command
     bool train(UnitInfo& unit)
     {
         // Carrier - Train Interceptor
-        if (unit.getType() == Protoss_Carrier && unit.unit()->getInterceptorCount() < (4 + (BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Carrier_Capacity) * 4)) && !unit.unit()->isTraining()) {
+        if (unit.getType() == Protoss_Carrier && unit.unit()->getInterceptorCount() < (4 + (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Carrier_Capacity) * 4))) {
             unit.unit()->train(Protoss_Interceptor);
+            return false;
+        }
+        // Reaver - Train Scarab
+        if (unit.getType() == Protoss_Reaver && unit.unit()->getScarabCount() < (5 + (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Reaver_Capacity) * 5))) {
+            unit.unit()->train(Protoss_Scarab);
             return false;
         }
         return false;
