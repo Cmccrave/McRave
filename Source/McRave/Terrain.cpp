@@ -266,7 +266,7 @@ namespace McRave::Terrain {
             }
 
             // If we want to prevent a runby
-            else if (Combat::defendChoke() && defendRunby) {
+            else if (Combat::defendChoke() && !defendRunby) {
                 defendPosition = Position(mainChoke->Center());
                 defendNatural = false;
             }
@@ -307,6 +307,8 @@ namespace McRave::Terrain {
                 defendChoke = mainChoke;
                 defendArea = BWEB::Map::getMainArea();
             }
+
+            Broodwar->drawTriangleMap(defendPosition + Position(0, -20), defendPosition + Position(-20, 10), defendPosition + Position(20, 10), Colors::Green);
         }
 
         void findHarassPosition()

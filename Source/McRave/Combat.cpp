@@ -10,19 +10,11 @@ namespace McRave::Combat {
         int lastRoleChange = 0;
         set<Position> defendPositions;
         vector<Position> lastSimPositions;
-        multimap<double, Position> combatClusters;
-        map<const BWEM::ChokePoint*, vector<WalkPosition>> concaveCache;
         multimap<double, UnitInfo&> combatUnitsByDistance;
         vector<TilePosition> occupiedTiles;
 
         bool holdChoke = false;;
-        bool multipleUnitsBlocked = false;
         vector<BWEB::Station*> combatScoutOrder;
-
-        BWEB::Path airClusterPath;
-        weak_ptr<UnitInfo> airCommander;
-        pair<double, Position> airCluster;
-        pair<UnitCommandType, Position> airCommanderCommand;
         multimap<double, Position> groundCleanupPositions;
         multimap<double, Position> airCleanupPositions;
 
@@ -32,7 +24,7 @@ namespace McRave::Combat {
         {
             if (!unit.isLightAir())
                 return false;
-            return airCommander.lock() && unit.getPosition().getDistance(airCommander.lock()->getPosition()) > 64.0;
+            return unit.hasCommander() && unit.getPosition().getDistance(unit.getCommander().getPosition()) > 64.0;
         }
 
         void getCleanupPosition(UnitInfo& unit)
@@ -138,8 +130,6 @@ namespace McRave::Combat {
 
                 if (unit.getGoal().isValid())
                     unit.setObjective(unit.getGoal());
-                else if (lightUnitNeedsRegroup(unit))
-                    unit.setObjective(airCommander.lock()->getPosition());
                 else if (unit.attemptingHarass())
                     unit.setObjective(Terrain::getHarassPosition());
                 else if (Terrain::getAttackPosition().isValid() && unit.canAttackGround())
@@ -157,7 +147,7 @@ namespace McRave::Combat {
 
         void updateRetreat(UnitInfo& unit)
         {
-            if (unit.getGlobalState() == GlobalState::Retreat && BuildOrder::isPlayPassive())
+            if (unit.getGlobalState() == GlobalState::Retreat)
                 unit.setRetreat(BWEB::Map::getMainPosition());
             else {
                 const auto &retreat = Stations::getClosestRetreatStation(unit);
@@ -172,9 +162,10 @@ namespace McRave::Combat {
 
             if (unit.getFormation().isValid()) {
                 unit.setDestination(unit.getFormation());
-                unit.circle(Colors::Orange);
                 return;
             }
+            else if (lightUnitNeedsRegroup(unit))
+                unit.setDestination(unit.getCommander().getPosition());
 
             auto pathDestination = &unit.getObjectivePath();
             if (unit.getLocalState() == LocalState::Retreat)
@@ -190,18 +181,13 @@ namespace McRave::Combat {
                     unit.setDestination(newDestination);
             }
 
-            //Visuals::drawPath(unit.getObjectivePath());
-
+            // Resort destination to something
             if (!unit.getDestination().isValid()) {
                 if (unit.getGoal().isValid())
                     unit.setDestination(unit.getGoal());
                 else if (unit.getLocalState() == LocalState::Retreat)
                     unit.setDestination(unit.getRetreat());
-                else if (unit.getLocalState() == LocalState::Attack)
-                    unit.setDestination(unit.getObjective());
-                else if (unit.getGlobalState() == GlobalState::Retreat)
-                    unit.setDestination(unit.getRetreat());
-                else if (unit.getGlobalState() == GlobalState::Attack)
+                else
                     unit.setDestination(unit.getObjective());
             }
         }
@@ -301,13 +287,13 @@ namespace McRave::Combat {
 
         void updateHarassPath(UnitInfo& unit)
         {
-            if (!unit.isLightAir() || airCommander.expired())
+            if (!unit.isLightAir())
                 return;
 
             // Generate a flying path for harassing that obeys exploration and staying out of range of threats if possible
             auto canHarass = unit.getLocalState() != LocalState::Retreat && unit.getObjective() == Terrain::getHarassPosition() && unit.hasSimTarget() && unit.attemptingHarass();
             auto enemyPressure = unit.hasTarget() && Util::getTime() < Time(7, 00) && unit.getTarget().getPosition().getDistance(BWEB::Map::getMainPosition()) < unit.getTarget().getPosition().getDistance(Terrain::getEnemyStartingPosition());
-            if (!unit.getGoal().isValid() && canHarass && !enemyPressure && unit == airCommander.lock()) {
+            if (!unit.getGoal().isValid() && canHarass && !enemyPressure) {
 
                 auto simDistCurrent = unit.getPosition().getApproxDistance(unit.getSimTarget().getPosition());
                 auto simPosition = unit.getSimTarget().getPosition();
@@ -328,26 +314,10 @@ namespace McRave::Combat {
                 newPath.generateAS(flyerAttack);
                 unit.setObjectivePath(newPath);
             }
-
-            // Generate a flying path for regrouping
-            auto inCluster = unit.getPosition().getDistance(airCluster.second) < 64.0;
-            if (!unit.getGoal().isValid() && !inCluster && airCluster.second.isValid() && !unit.globalRetreat()) {
-
-                const auto flyerRegroup = [&](const TilePosition &t) {
-                    const auto center = Position(t) + Position(16, 16);
-                    auto threat = Grids::getEAirThreat(center);
-                    return threat;
-                };
-
-                BWEB::Path newPath(unit.getPosition(), airCluster.second, unit.getType());
-                newPath.generateAS(flyerRegroup);
-                unit.setObjectivePath(newPath);
-            }
         }
 
         void updateObjectivePath(UnitInfo& unit)
         {
-            //Broodwar->drawLineMap(unit.getPosition(), unit.getObjective(), Colors::Green);
             // Generate a new path that obeys collision of terrain and buildings
             auto needPath = unit.getObjectivePath().getTiles().empty() || unit.getObjectivePath() != unit.getTargetPath();
             if (!unit.isFlying() && unit.getObjective().isValid() && needPath && unit.getObjectivePath().getTarget() != TilePosition(unit.getObjective())) {
@@ -357,6 +327,20 @@ namespace McRave::Combat {
                     newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t); });
                     unit.setObjectivePath(newPath);
                 }
+
+            }
+            // Generate a flying path for regrouping
+            if (!unit.isLightAir() && lightUnitNeedsRegroup(unit) && !unit.getGoal().isValid() && !unit.globalRetreat()) {
+
+                const auto flyerRegroup = [&](const TilePosition &t) {
+                    const auto center = Position(t) + Position(16, 16);
+                    auto threat = Grids::getEAirThreat(center);
+                    return threat;
+                };
+
+                BWEB::Path newPath(unit.getPosition(), unit.getObjective(), unit.getType());
+                newPath.generateAS(flyerRegroup);
+                unit.setObjectivePath(newPath);
             }
             //Visuals::drawPath(unit.getObjectivePath());
         }
@@ -378,37 +362,27 @@ namespace McRave::Combat {
 
 
 
-        void updateAirCommander()
+        void updateCommanders()
         {
-            // Get an air commander if new one needed
-            if (airCommander.expired() || airCommander.lock()->globalRetreat() || airCommander.lock()->localRetreat() || (airCluster.second.isValid() && airCommander.lock()->getPosition().getDistance(airCluster.second) > 64.0)) {
-                for (auto &u : combatUnitsByDistance) {
-                    auto &unit = u.second;
-                    if (unit.isLightAir() && unit.getPosition().getDistance(airCluster.second) < 64.0) {
-                        airCommander = unit.weak_from_this();
-                        break;
-                    }
-                }
-            }
+            // Execute commands for commanders first
+            for (auto &cluster : Clusters::getClusters()) {
+                auto &commander = cluster.commander.lock();
+                if (!commander || cluster.commandShare == CommandShare::None)
+                    continue;
 
-            // If we have an air commander
-            if (airCommander.lock()) {
-                if (airCommander.lock()->hasSimTarget() && find(lastSimPositions.begin(), lastSimPositions.end(), airCommander.lock()->getSimTarget().getPosition()) == lastSimPositions.end()) {
+                // For pathing purposes, we store light air commander sim positions
+                if (commander->hasSimTarget() && find(lastSimPositions.begin(), lastSimPositions.end(), commander->getSimTarget().getPosition()) == lastSimPositions.end()) {
                     if (lastSimPositions.size() >= 5)
                         lastSimPositions.pop_back();
-                    lastSimPositions.insert(lastSimPositions.begin(), airCommander.lock()->getSimTarget().getPosition());
+                    lastSimPositions.insert(lastSimPositions.begin(), commander->getSimTarget().getPosition());
                 }
 
-                // Execute the air commanders commands
-                Horizon::simulate(*airCommander.lock());
-                updateObjective(*airCommander.lock());
-                updateDestination(*airCommander.lock());
-                updateHarassPath(*airCommander.lock());
-                updateDecision(*airCommander.lock());
-
-                // Setup air commander commands for other units to follow
-                //airClusterPath = airCommander.lock()->getObjectivePath();
-                airCommanderCommand = make_pair(airCommander.lock()->getCommandType(), airCommander.lock()->getCommandPosition());
+                // Air commanders have a harass path as their objective
+                Horizon::simulate(*commander);
+                updateObjective(*commander);
+                updateHarassPath(*commander);
+                updateDestination(*commander);
+                updateDecision(*commander);
             }
         }
 
@@ -517,7 +491,7 @@ namespace McRave::Combat {
                 if (Players::ZvP() && proxyDangerousBuilding && Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
                     return combatWorkersCount < (4 * Players::getVisibleCount(PlayerState::Enemy, proxyDangerousBuilding->getType()));
                 if (Spy::getWorkersNearUs() > 2 && com(Zerg_Zergling) < Spy::getWorkersNearUs())
-                    return Spy::getWorkersNearUs() >= combatWorkersCount - 3;                
+                    return Spy::getWorkersNearUs() >= combatWorkersCount - 3;
                 if (BuildOrder::getCurrentOpener() == "12Hatch" && Spy::getEnemyOpener() == "8Rax" && com(Zerg_Zergling) < 2)
                     return combatWorkersCount <= com(Zerg_Drone) - 4;
 
@@ -562,35 +536,6 @@ namespace McRave::Combat {
                         unit.setGlobalState(GlobalState::Attack);
                     }
                 }
-            }
-        }
-
-        void updateClusters(UnitInfo& unit)
-        {
-            // Don't update clusters for fragile combat units
-            if (unit.getType() == Protoss_High_Templar
-                || unit.getType() == Protoss_Dark_Archon
-                || unit.getType() == Protoss_Reaver
-                || unit.getType() == Protoss_Interceptor
-                || unit.getType() == Zerg_Defiler)
-                return;
-
-            // Figure out what type to make the center of our cluster around
-            auto clusterAround = UnitTypes::None;
-            if (Broodwar->self()->getRace() == Races::Protoss)
-                clusterAround = vis(Protoss_Carrier) > 0 ? Protoss_Carrier : Protoss_Corsair;
-            else if (Broodwar->self()->getRace() == Races::Zerg)
-                clusterAround = vis(Zerg_Guardian) > 0 ? Zerg_Guardian : Zerg_Mutalisk;
-            else if (Broodwar->self()->getRace() == Races::Terran)
-                clusterAround = vis(Terran_Battlecruiser) > 0 ? Terran_Battlecruiser : Terran_Wraith;
-
-            if (unit.isFlying() && unit.getType() == clusterAround) {
-                if (Grids::getAAirCluster(unit.getWalkPosition()) > airCluster.first)
-                    airCluster = make_pair(Grids::getAAirCluster(unit.getWalkPosition()), unit.getPosition());
-            }
-            else if (!unit.isFlying() && unit.getWalkPosition().isValid()) {
-                const auto strength = Grids::getAGroundCluster(unit.getWalkPosition()) + Grids::getAAirCluster(unit.getWalkPosition());
-                combatClusters.emplace(strength, unit.getPosition());
             }
         }
 
@@ -706,46 +651,33 @@ namespace McRave::Combat {
                 if (unit.getType().isWorker())
                     updateRole(unit);
 
-                if (unit.getRole() == Role::Combat) {
-                    updateClusters(unit); // TODO: Move to Clusters
+                if (unit.getRole() == Role::Combat)
                     combatUnitsByDistance.emplace(unit.getPosition().getDistance(unit.getDestination()), unit);
-                }
             }
         }
 
-        void gogoCombat() {
-
-            // Execute commands ordered by ascending distance
-            for (auto &u : combatUnitsByDistance) {
-                auto &unit = u.second;
-
-                if (airCommander.lock() && unit == *airCommander.lock())
-                    continue;
-
-                // Light air close to the air cluster use the same command of the air commander
-                if (airCommander.lock() && !unit.localRetreat() && !unit.globalRetreat() && unit.isLightAir() && !airCommander.lock()->isNearSuicide() && !unit.isNearSuicide() && unit.getPosition().getDistance(airCommander.lock()->getPosition()) <= 96.0) {
-                    if (unit.hasTarget() && airCommanderCommand.first == UnitCommandTypes::Attack_Unit)
-                        unit.command(UnitCommandTypes::Attack_Unit, unit.getTarget());
-                    else if (airCommanderCommand.first == UnitCommandTypes::Move && !unit.isTargetedBySplash())
-                        unit.command(UnitCommandTypes::Move, airCommanderCommand.second);
-                    else if (airCommanderCommand.first == UnitCommandTypes::Right_Click_Position && !unit.isTargetedBySplash())
-                        unit.command(UnitCommandTypes::Right_Click_Position, airCommanderCommand.second);
+        void gogoCombat() 
+        {
+            for (auto &cluster : Clusters::getClusters()) {
+                for (auto &u : cluster.units) {
+                    auto &unit = *u.lock();
+                    if (cluster.commandShare == CommandShare::Exact && !lightUnitNeedsRegroup(unit)) {
+                        auto commander = cluster.commander.lock();
+                        if (commander->getCommandType() == UnitCommandTypes::Attack_Unit && unit.hasTarget())
+                            unit.command(commander->getCommandType(), unit.getTarget());
+                        else if (commander->getCommandType() == UnitCommandTypes::Move && !unit.isTargetedBySplash())
+                            unit.command(commander->getCommandType(), commander->getCommandPosition());
+                        else if (commander->getCommandType() == UnitCommandTypes::Right_Click_Position && !unit.isTargetedBySplash())
+                            unit.command(UnitCommandTypes::Right_Click_Position, commander->getCommandPosition());
+                        else {
+                            updateDestination(unit);
+                            updateDecision(unit);
+                        }
+                    }
                     else {
                         updateDestination(unit);
                         updateDecision(unit);
-                        //Broodwar->drawLineMap(unit.getPosition(), unit.getObjective(), Colors::Green);
-                        //Broodwar->drawLineMap(unit.getPosition(), unit.getRetreat(), Colors::Orange);
-                        //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
                     }
-                }
-
-                // Combat unit decisions
-                else if (unit.getRole() == Role::Combat) {
-                    updateDestination(unit);
-                    updateDecision(unit);
-                    //Broodwar->drawLineMap(unit.getPosition(), unit.getObjective(), Colors::Green);
-                    //Broodwar->drawLineMap(unit.getPosition(), unit.getRetreat(), Colors::Orange);
-                    //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
                 }
             }
         }
@@ -769,9 +701,6 @@ namespace McRave::Combat {
 
         void reset()
         {
-            airCluster.first = 0.0;
-            airCluster.second = Positions::Invalid;
-            combatClusters.clear();
             combatUnitsByDistance.clear();
         }
     }
@@ -783,7 +712,7 @@ namespace McRave::Combat {
         updateCombatUnits();
         Clusters::onFrame();
         Formations::onFrame();
-        updateAirCommander();
+        updateCommanders();
         gogoCombat();
         checkHoldChoke();
         Visuals::endPerfTest("Combat");
@@ -791,7 +720,5 @@ namespace McRave::Combat {
 
     bool defendChoke() { return holdChoke; }
     set<Position>& getDefendPositions() { return defendPositions; }
-    multimap<double, Position>& getCombatClusters() { return combatClusters; }
-    Position getAirClusterCenter() { return airCluster.second; }
     multimap<double, UnitInfo&> getCombatUnitsByDistance() { return combatUnitsByDistance; }
 }

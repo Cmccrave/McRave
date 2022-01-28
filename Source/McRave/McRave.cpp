@@ -74,8 +74,8 @@ void McRaveModule::onFrame()
     Goals::onFrame();
     Support::onFrame();
     Scouts::onFrame();
-    Combat::onFrame();
     Defender::onFrame();
+    Combat::onFrame();
     Workers::onFrame();
     Transports::onFrame();
     Expansion::onFrame();

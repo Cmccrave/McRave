@@ -7,13 +7,18 @@ namespace McRave::Combat {
         None, Concave, Line, Box
     };
 
+    enum class CommandShare {
+        None, Exact, Parallel
+    };
+
     struct Cluster {
         BWAPI::Position sharedPosition, sharedRetreat, sharedObjective;
         std::map<BWAPI::UnitType, int> typeCounts;
         double sharedRadius = 160.0;
-        Shape shape = Shape::Concave;
         std::vector<std::weak_ptr<UnitInfo>> units;
         std::weak_ptr<UnitInfo> commander;
+        CommandShare commandShare;
+        Shape shape;
         bool mobileCluster = false;
 
         Cluster(BWAPI::Position _sp, BWAPI::Position _sr, BWAPI::Position _so, BWAPI::UnitType _t) {
@@ -43,8 +48,6 @@ namespace McRave::Combat {
     void onFrame();
 
     bool defendChoke();
-    std::multimap<double, BWAPI::Position>& getCombatClusters();
-    BWAPI::Position getAirClusterCenter();
     std::set<BWAPI::Position>& getDefendPositions();
     std::multimap<double, UnitInfo&> getCombatUnitsByDistance();
 }

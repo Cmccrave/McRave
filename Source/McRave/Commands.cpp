@@ -705,7 +705,6 @@ namespace McRave::Command {
 
     bool transport(UnitInfo& unit)
     {
-        auto cluster = Positions::Invalid;
         auto closestRetreat = Stations::getClosestRetreatStation(unit);
 
         const auto scoreFunction = [&](WalkPosition w) {
@@ -740,14 +739,6 @@ namespace McRave::Command {
 
             return score;
         };
-
-        auto highestCluster = 0.0;
-        for (auto &[score, position] : Combat::getCombatClusters()) {
-            if (score > highestCluster) {
-                highestCluster = score;
-                cluster = position;
-            }
-        }
 
         auto bestPosition = findViablePosition(unit, scoreFunction);
         if (bestPosition.isValid()) {

@@ -47,19 +47,19 @@ namespace McRave::Combat::Formations {
         auto i = 0;
         retreat = Util::findPointOnPath(cluster.commander.lock()->getRetreatPath(), [&](Position p) {
             i++;
-            return i >= 10;
+            return i >= 5;
         });
 
         // If commander is fighting, form a concave around the target
         if (commander->getLocalState() == LocalState::Attack) {
             objective = commander->getTarget().getPosition();
-            radius = commander->getGroundRange() - 32.0;
+            radius = commander->getGroundRange();
         }
         else {
             i = 0;
             objective = Util::findPointOnPath(cluster.commander.lock()->getObjectivePath(), [&](Position p) {
                 i++;
-                return i >= 10 && (!cluster.mobileCluster || p.getDistance(cluster.commander.lock()->getPosition()) > radius + 160.0) && (!cluster.mobileCluster || p.getDistance(cluster.sharedPosition) > radius + 160.0);
+                return i >= 7 && (!cluster.mobileCluster || p.getDistance(cluster.commander.lock()->getPosition()) > radius + 160.0) && (!cluster.mobileCluster || p.getDistance(cluster.sharedPosition) > radius + 160.0);
             });
         }
 
@@ -83,19 +83,28 @@ namespace McRave::Combat::Formations {
             // Set the radius of the concave
             const auto unitTangentSize = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0));
             auto radius = min(commander->getRetreatRadius(), count * unitTangentSize / 2.0);
+            bool useDefense = false;
 
             // If we are setting up a static formation, align concave with buildings close by
             if (!cluster.mobileCluster) {
                 auto closestDefense = Util::getClosestUnit(cluster.sharedObjective, PlayerState::Self, [&](auto &u) {
-                    return u.getType().isBuilding() && u.isCompleted();
+                    return u.getType().isBuilding() && u.isCompleted() && u.getFormation() == cluster.sharedObjective;
                 });
-                if (closestDefense)
+                if (closestDefense) {
                     radius = max(radius, closestDefense->getPosition().getDistance(cluster.sharedObjective));
+                    useDefense = true;
+                }
             }
 
             // Determine how large of a concave we are making
             auto[retreat, objective] = getPathPoints(cluster, concave, radius);
             concave.center = commander->getLocalState() == LocalState::Retreat ? retreat : objective;
+
+            // TODO: This is pretty hacky because we determined the radius around the final objective
+            if (useDefense) {
+                concave.center = cluster.sharedObjective;
+                objective = cluster.sharedObjective;
+            }
 
             // Create an initial directional vector to find the starting location of the concave
             const auto dVectorX = double(concave.center.x - retreat.x) * 32.0 / concave.center.getDistance(retreat);
@@ -124,9 +133,9 @@ namespace McRave::Combat::Formations {
             auto assignmentsRemaining = int(cluster.units.size());
             while (assignmentsRemaining > 0) {
                 auto rp = Position(int(radius * cos(radsPositive)), int(radius * sin(radsPositive)));
-                auto rd = Position(int(radius * cos(radsNegative)), int(radius * sin(radsNegative)));
-                auto posPosition = concave.center + (dVector.x == 0 ? rp : rp * -1);
-                auto negPosition = concave.center + (dVector.x == 0 ? rd : rd * -1);
+                auto rn = Position(int(radius * cos(radsNegative)), int(radius * sin(radsNegative)));
+                auto posPosition = concave.center - rp;
+                auto negPosition = concave.center - rn;
 
                 auto validPosition = [&](Position &p, Position &last) {
                     if (!p.isValid()
@@ -135,7 +144,6 @@ namespace McRave::Combat::Formations {
                         || BWEB::Map::isUsed(TilePosition(p)) != UnitTypes::None
                         || Util::boxDistance(type, p, type, last) <= 2)
                         return false;
-                    Broodwar->drawCircleMap(p, 2, Colors::Orange);
                     concave.positions.push_back(p);
                     return true;
                 };

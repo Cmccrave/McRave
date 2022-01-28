@@ -30,14 +30,24 @@ namespace McRave::Defender {
             Broodwar->drawTextMap(startText, "%c%s", Text::White, commandNames[i].c_str());
         }
 
+        void updateFormation(UnitInfo& unit)
+        {
+            // Set formation to closest station chokepoint to align units to
+            const auto closestStation = Stations::getClosestStationGround(PlayerState::Self, unit.getPosition());
+            if (closestStation && closestStation->getChokepoint())
+                unit.setFormation(Position(closestStation->getChokepoint()->Center()));
+        }
+
         void updateDefenders()
         {
             // Update all my buildings
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
 
-                if (unit.getRole() == Role::Defender)
+                if (unit.getRole() == Role::Defender) {
+                    updateFormation(unit);
                     updateDecision(unit);
+                }
             }
         }
     }

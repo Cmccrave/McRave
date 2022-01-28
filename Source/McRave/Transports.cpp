@@ -232,12 +232,6 @@ namespace McRave::Transports {
                     unit.setDestination(station->getBase()->Center());
             }
 
-            // Try going to the army center as long as we have an army
-            if (!unit.getDestination().isValid() && !Combat::getCombatClusters().empty()) {
-                auto highestClusterPosition = (*Combat::getCombatClusters().rbegin()).second;
-                unit.setDestination(highestClusterPosition);
-            }
-
             // Resort to main, hopefully we still have it
             if (!unit.getDestination().isValid())
                 unit.setDestination(BWEB::Map::getMainPosition());

@@ -22,24 +22,35 @@ namespace McRave::Combat::Clusters {
         //clusters.clear();
         for (auto &[_, unit] : Combat::getCombatUnitsByDistance()) {
 
-            if (unit.isFlying())
+            if (unit.getType() == Protoss_High_Templar
+                || unit.getType() == Protoss_Dark_Archon
+                || unit.getType() == Protoss_Reaver
+                || unit.getType() == Protoss_Interceptor
+                || unit.getType() == Zerg_Defiler)
                 continue;
 
             // Check if any existing formations match this units type and common objective
             bool foundCluster = false;
             for (auto &cluster : clusters) {
-                if (cluster.typeCounts.find(unit.getType()) != cluster.typeCounts.end()) {
-                    auto positionInCommon = unit.getPosition().getDistance(cluster.sharedPosition) < cluster.sharedRadius;
-                    auto retreatInCommon = unit.getRetreat().getDistance(cluster.sharedRetreat) < cluster.sharedRadius;
-                    auto objectiveInCommon = unit.getObjective().getDistance(cluster.sharedObjective) < cluster.sharedRadius;
+                auto flyingCluster = any_of(cluster.units.begin(), cluster.units.end(), [&](auto &u) {
+                    return u.lock()->isFlying();
+                });
+                if ((flyingCluster && !unit.isFlying()) || (!flyingCluster && unit.isFlying()))
+                    continue;
 
-                    if (objectiveInCommon && retreatInCommon) {
-                        cluster.sharedRadius += double(unit.getType().width() * unit.getType().height()) / cluster.sharedRadius;
-                        cluster.units.push_back(unit.weak_from_this());
-                        cluster.typeCounts[unit.getType()]++;
-                        foundCluster = true;
-                        break;
-                    }
+                auto positionInCommon = unit.getPosition().getDistance(cluster.sharedPosition) < cluster.sharedRadius;
+                auto retreatInCommon = unit.getRetreat().getDistance(cluster.sharedRetreat) < cluster.sharedRadius;
+                auto objectiveInCommon = unit.getObjective().getDistance(cluster.sharedObjective) < cluster.sharedRadius;
+
+                Broodwar->drawLineMap(unit.getPosition(), unit.getObjective(), Colors::Green);
+                Broodwar->drawLineMap(unit.getPosition(), unit.getRetreat(), Colors::Red);
+
+                if (objectiveInCommon && retreatInCommon) {
+                    cluster.sharedRadius += unit.isLightAir() ? 0.0 : double(unit.getType().width() * unit.getType().height()) / cluster.sharedRadius;
+                    cluster.units.push_back(unit.weak_from_this());
+                    cluster.typeCounts[unit.getType()]++;
+                    foundCluster = true;
+                    break;
                 }
             }
 
@@ -52,16 +63,12 @@ namespace McRave::Combat::Clusters {
             }
         }
 
-        // Delete empty clusters - solo or no commander
-        clusters.erase(remove_if(clusters.begin(), clusters.end(), [&](auto& cluster) {
-            return int(cluster.units.size()) <= 1 || cluster.commander.expired();
-        }), clusters.end());
-
         // For each cluster
         for (auto &cluster : clusters) {
 
-            // If commander exists for a static cluster, don't try to find a new one
-            if (cluster.commander.lock() && !cluster.mobileCluster) {
+            // If commander satisifed for a static cluster, don't try to find a new one
+            auto commander = cluster.commander.lock();
+            if (commander && !commander->globalRetreat() && !commander->localRetreat() && !cluster.mobileCluster) {
                 cluster.commander.lock()->circle(Colors::Orange);
                 continue;
             }
@@ -83,9 +90,20 @@ namespace McRave::Combat::Clusters {
                 cluster.sharedRetreat = closestToCentroid->getRetreat();
                 cluster.sharedObjective = closestToCentroid->getObjective();
                 cluster.commander = closestToCentroid->weak_from_this();
+                cluster.commandShare = cluster.commander.lock()->isLightAir() ? CommandShare::Exact : CommandShare::Parallel;
+                cluster.shape = cluster.commander.lock()->isLightAir() ? Shape::None : Shape::Concave;
                 closestToCentroid->circle(Colors::Yellow);
+
+                // Assign commander to each unit
+                for (auto &unit : cluster.units)
+                    unit.lock()->setCommander(&*closestToCentroid);
             }
         }
+
+        // Delete empty clusters - solo or no commander
+        clusters.erase(remove_if(clusters.begin(), clusters.end(), [&](auto& cluster) {
+            return int(cluster.units.size()) <= 1 || cluster.commander.expired();
+        }), clusters.end());
     }
 
     void onFrame()

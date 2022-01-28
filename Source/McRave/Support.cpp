@@ -51,11 +51,13 @@ namespace McRave::Support {
             // Find the highest combat cluster that doesn't overlap a current support action of this UnitType
             else if (unit.getType() != Zerg_Overlord || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace)) {
                 auto highestCluster = 0.0;
-                for (auto &[cluster, position] : Combat::getCombatClusters()) {
-                    const auto score = cluster / (position.getDistance(Terrain::getAttackPosition()) * position.getDistance(unit.getPosition()));
+                for (auto &cluster : Combat::Clusters::getClusters()) {
+                    const auto position = cluster.commander.lock()->getPosition();
+                    const auto score = cluster.units.size() / (position.getDistance(Terrain::getAttackPosition()) * position.getDistance(unit.getPosition()));
                     if (score > highestCluster && !Actions::overlapsActions(unit.unit(), position, unit.getType(), PlayerState::Self, 64)) {
                         highestCluster = score;
                         unit.setDestination(position);
+                        cluster.typeCounts[unit.getType()]++;
                     }
                 }
 

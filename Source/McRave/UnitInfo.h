@@ -60,12 +60,12 @@ namespace McRave {
         bool nearSuicide = false;
         bool nearHidden = false;
         bool markedForDeath = false;
-        bool commander = false;
     #pragma endregion
 
     #pragma region Targets
         std::weak_ptr<UnitInfo> transport;
         std::weak_ptr<UnitInfo> target;
+        std::weak_ptr<UnitInfo> commander;
         std::weak_ptr<UnitInfo> simTarget;
         std::weak_ptr<ResourceInfo> resource;
 
@@ -148,6 +148,7 @@ namespace McRave {
         bool hasResource() { return !resource.expired(); }
         bool hasTransport() { return !transport.expired(); }
         bool hasTarget() { return !target.expired(); }
+        bool hasCommander() { return !commander.expired(); }
         bool hasSimTarget() { return !simTarget.expired(); }
         bool hasAttackedRecently() { return (BWAPI::Broodwar->getFrameCount() - lastAttackFrame < 120); }
         bool hasRepairedRecently() { return (BWAPI::Broodwar->getFrameCount() - lastRepairFrame < 120); }
@@ -164,7 +165,6 @@ namespace McRave {
         bool isNearMapEdge() { return tilePosition.x < 2 || tilePosition.x > BWAPI::Broodwar->mapWidth() - 2 || tilePosition.y < 2 || tilePosition.y > BWAPI::Broodwar->mapHeight() - 2; }
         bool isCompleted() { return completed; }
         bool isStimmed() { return BWAPI::Broodwar->getFrameCount() - lastStimFrame < 300; }
-        bool isCommander() { return commander; }
         bool isStuck() { return BWAPI::Broodwar->getFrameCount() - lastTileMoveFrame > 240; }
         bool wasStuckRecently() { return BWAPI::Broodwar->getFrameCount() - lastStuckFrame < 240; }
 
@@ -244,6 +244,7 @@ namespace McRave {
         ResourceInfo &getResource() { return *resource.lock(); }
         UnitInfo &getTransport() { return *transport.lock(); }
         UnitInfo &getTarget() { return *target.lock(); }
+        UnitInfo &getCommander() { return *commander.lock(); }
         UnitInfo &getSimTarget() { return *simTarget.lock(); }
 
         Role getRole() { return role; }
@@ -340,6 +341,7 @@ namespace McRave {
         void setResource(ResourceInfo* unit) { unit ? resource = unit->weak_from_this() : resource.reset(); }
         void setTransport(UnitInfo* unit) { unit ? transport = unit->weak_from_this() : transport.reset(); }
         void setTarget(UnitInfo* unit) { unit ? target = unit->weak_from_this() : target.reset(); }
+        void setCommander(UnitInfo* unit) { unit ? commander = unit->weak_from_this() : commander.reset(); }
         void setSimTarget(UnitInfo* unit) { unit ? simTarget = unit->weak_from_this() : simTarget.reset(); }
         void setRole(Role newRole) { role = newRole; }
         void setGoalType(GoalType newGoalType) { gType = newGoalType; }

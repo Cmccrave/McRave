@@ -477,7 +477,7 @@ namespace McRave::Stations {
             if (count > 0)
                 defendPosition /= count;
             else
-                defendPosition = Position(BWEB::Map::getNaturalChoke()->Center()) + Position(4, 4);
+                defendPosition = Position(BWEB::Map::getNaturalChoke()->Center());
         }
 
         // If defend position isn't walkable, move it towards the closest base
@@ -487,7 +487,7 @@ namespace McRave::Stations {
             auto start = WalkPosition(defendPosition);
 
             for (auto &dir : directions) {
-                auto center = Position(start + dir) + Position(4, 4);
+                auto center = Position(start + dir);
                 auto dist = center.getDistance(BWEB::Map::getNaturalPosition());
                 if (dist < best) {
                     defendPosition = center;
@@ -504,6 +504,14 @@ namespace McRave::Stations {
         auto bestStation = Terrain::getMyMain();
         for (auto &station : retreatPositions) {
             auto position = Stations::getDefendPosition(station);
+
+            // If this is a main, check if we own a natural that isn't under attack
+            // TODO: Check if under attack
+            if (station->isMain()) {
+                const auto closestNatural = BWEB::Stations::getClosestNaturalStation(station->getBase()->Location());
+                if (closestNatural && Stations::ownedBy(closestNatural) == PlayerState::Self)
+                    continue;
+            }
 
             // Check if anything targeting this unit is withing reach
             bool withinTargeterReach = false;
