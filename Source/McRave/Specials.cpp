@@ -15,7 +15,7 @@ namespace McRave::Command
         // Shield Battery - Repair Shields
         if (com(Protoss_Shield_Battery) > 0 && (unit.unit()->getGroundWeaponCooldown() > Broodwar->getLatencyFrames() || unit.unit()->getAirWeaponCooldown() > Broodwar->getLatencyFrames()) && unit.getType().maxShields() > 0 && (unit.unit()->getShields() <= 10 || (unit.unit()->getShields() < unit.getType().maxShields() && unit.unit()->getOrderTarget() && unit.unit()->getOrderTarget()->exists() && unit.unit()->getOrderTarget()->getType() == Protoss_Shield_Battery && unit.unit()->getOrderTarget()->getEnergy() >= 10))) {
             auto &battery = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                return u.getType() == Protoss_Shield_Battery && u.unit()->isCompleted() && u.getEnergy() > 10;
+                return u->getType() == Protoss_Shield_Battery && u->unit()->isCompleted() && u->getEnergy() > 10;
             });
 
             if (battery && ((unit.getType().isFlyer() && (!unit.hasTarget() || (unit.getTarget().getPosition().getDistance(unit.getPosition()) >= 320))) || unit.unit()->getDistance(battery->getPosition()) < 320)) {
@@ -30,7 +30,7 @@ namespace McRave::Command
         else if (unit.getType() == Terran_Marine && com(Terran_Bunker) > 0) {
 
             auto &bunker = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                return (u.getType() == Terran_Bunker && u.unit()->getSpaceRemaining() > 0);
+                return (u->getType() == Terran_Bunker && u->unit()->getSpaceRemaining() > 0);
             });
 
             if (bunker) {
@@ -199,7 +199,7 @@ namespace McRave::Command
         // Science Vessel - Defensive Matrix
         else if (unit.getType() == Terran_Science_Vessel && unit.getEnergy() >= TechTypes::Defensive_Matrix) {
             auto &ally = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                return (u.unit()->isUnderAttack());
+                return (u->unit()->isUnderAttack());
             });
             if (ally && ally->getPosition().getDistance(unit.getPosition()) < 640)
                 unit.unit()->useTech(TechTypes::Defensive_Matrix, ally->unit());
@@ -235,7 +235,7 @@ namespace McRave::Command
             // If close to a slow enemy and can cast disruption web
             if (unit.getEnergy() >= TechTypes::Disruption_Web.energyCost() && Broodwar->self()->hasResearched(TechTypes::Disruption_Web)) {
                 auto slowEnemy = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return u.getPosition().getDistance(unit.getPosition()) < 256.0 && !Actions::overlapsActions(unit.unit(), u.getPosition(), TechTypes::Disruption_Web, PlayerState::Self, 96) && u.hasAttackedRecently() && u.getSpeed() <= Protoss_Reaver.topSpeed();
+                    return u->getPosition().getDistance(unit.getPosition()) < 256.0 && !Actions::overlapsActions(unit.unit(), u->getPosition(), TechTypes::Disruption_Web, PlayerState::Self, 96) && u->hasAttackedRecently() && u->getSpeed() <= Protoss_Reaver.topSpeed();
                 });
 
                 if (slowEnemy) {
@@ -319,7 +319,7 @@ namespace McRave::Command
 
                 // Try to find a friendly templar who is low energy and is threatened
                 auto &templar = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                    return u != unit && u.getType() == Protoss_High_Templar && u.unit()->isCompleted() && (wantArchons || (u.getEnergy() < 75 && Grids::getEGroundThreat(u.getWalkPosition()) > 0.0));
+                    return *u != unit && u->getType() == Protoss_High_Templar && u->unit()->isCompleted() && (wantArchons || (u->getEnergy() < 75 && Grids::getEGroundThreat(u->getWalkPosition()) > 0.0));
                 });
 
                 if (templar) {
@@ -337,7 +337,7 @@ namespace McRave::Command
 
             if ((wantLurkers || onlyLurkers)) {
                 const auto furthestHydra = Util::getFurthestUnit(Terrain::getEnemyStartingPosition(), PlayerState::Self, [&](auto &u) {
-                    return u.getType() == UnitTypes::Zerg_Hydralisk;
+                    return u->getType() == UnitTypes::Zerg_Hydralisk;
                 });
                 if (canAffordMorph(Zerg_Lurker) && furthestHydra && unit == *furthestHydra) {
                     if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Morph)
@@ -448,7 +448,7 @@ namespace McRave::Command
             if ((unit.getPosition().getDistance(boulder.getPosition()) <= 320.0 && boulder.getGathererCount() == 0) || (unit.unit()->isGatheringMinerals() && unit.unit()->getOrderTarget() == boulder.unit())) {
 
                 auto closestWorker = Util::getClosestUnit(boulder.getPosition(), PlayerState::Self, [&](auto &u) {
-                    return u.getRole() == Role::Worker;
+                    return u->getRole() == Role::Worker;
                 });
 
                 if (closestWorker != unit.shared_from_this())
@@ -510,7 +510,7 @@ namespace McRave::Command
             auto buildCenter = Position(unit.getBuildPosition()) + Position(unit.getBuildType().tileWidth() * 16, unit.getBuildType().tileHeight() * 16);
             if (unit.getPosition().getDistance(buildCenter) > 256.0) {
                 auto closestMineral = Util::getClosestUnit(buildCenter, PlayerState::Neutral, [&](auto &u) {
-                    return u.getType().isMineralField();
+                    return u->getType().isMineralField();
                 });
                 if (closestMineral && closestMineral->getPosition().getDistance(buildCenter) < unit.getPosition().getDistance(buildCenter) && closestMineral->getPosition().getDistance(buildCenter) < 256.0) {
                     unit.unit()->gather(closestMineral->unit());
@@ -546,7 +546,7 @@ namespace McRave::Command
 
             if (station) {
                 auto builder = Util::getClosestUnit(unit.getResource().getPosition(), PlayerState::Self, [&](auto &u) {
-                    return u != unit && u.getBuildType() != UnitTypes::None && station->getDefenses().find(u.getBuildPosition()) != station->getDefenses().end();
+                    return *u != unit && u->getBuildType() != UnitTypes::None && station->getDefenses().find(u->getBuildPosition()) != station->getDefenses().end();
                 });
 
                 // Builder is close and may need space opened up

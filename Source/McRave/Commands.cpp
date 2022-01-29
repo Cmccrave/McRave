@@ -125,7 +125,7 @@ namespace McRave::Command {
         // If unit is potentially stuck, try to find a manner pylon
         else if (unit.getRole() == Role::Worker && (unit.framesHoldingResource() >= 100 || unit.framesHoldingResource() <= -200)) {
             auto &pylon = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) {
-                return u.getType() == UnitTypes::Protoss_Pylon;
+                return u->getType() == UnitTypes::Protoss_Pylon;
             });
             if (pylon && pylon->unit() && pylon->unit()->exists() && pylon->getPosition().getDistance(unit.getPosition()) < 128.0) {
                 unit.command(Attack_Unit, *pylon);
@@ -669,7 +669,7 @@ namespace McRave::Command {
     bool escort(UnitInfo& unit)
     {
         auto closestDefense = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-            return u.canAttackAir();
+            return u->canAttackAir();
         });
 
         const auto scoreFunction = [&](WalkPosition w) {

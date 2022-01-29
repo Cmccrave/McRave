@@ -108,7 +108,7 @@ namespace McRave::Events
         if (!notVisibleFully) {
             unit.movedFlag = true;
             auto closestEnemy = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) {
-                return u != unit && !u.getType().isWorker() && !u.getType().isBuilding() && !u.isFlying() && !BWAPI::Broodwar->isVisible(u.getTilePosition());
+                return *u != unit && !u->getType().isWorker() && !u->getType().isBuilding() && !u->isFlying() && !BWAPI::Broodwar->isVisible(u->getTilePosition());
             });
             closestEnemy ? unit.setAssumedLocation(closestEnemy->getPosition(), closestEnemy->getWalkPosition(), closestEnemy->getTilePosition()) :
                            unit.setAssumedLocation(BWAPI::Positions::Invalid, BWAPI::WalkPositions::Invalid, BWAPI::TilePositions::Invalid);

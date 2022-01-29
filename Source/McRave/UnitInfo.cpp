@@ -169,7 +169,7 @@ namespace McRave
         if (getPlayer() == Broodwar->self()) {
             nearSplash = false;
             auto closestSplasher = Util::getClosestUnit(position, PlayerState::Enemy, [&](auto &u) {
-                return u.isSplasher() && ((!this->isFlying() && u.canAttackGround()) || (this->isFlying() && u.canAttackAir()));
+                return u->isSplasher() && ((!this->isFlying() && u->canAttackGround()) || (this->isFlying() && u->canAttackAir()));
             });
 
             if (closestSplasher && closestSplasher->isWithinReach(*this))
@@ -180,7 +180,7 @@ namespace McRave
         if (getPlayer() == Broodwar->self()) {
             nearSuicide = false;
             auto closestSuicide = Util::getClosestUnit(position, PlayerState::Enemy, [&](auto &u) {
-                return u.isSuicidal() && ((!this->isFlying() && u.canAttackGround()) || (this->isFlying() && u.canAttackAir()));
+                return u->isSuicidal() && ((!this->isFlying() && u->canAttackGround()) || (this->isFlying() && u->canAttackAir()));
             });
 
             if (closestSuicide && Util::boxDistance(getType(), getPosition(), closestSuicide->getType(), closestSuicide->unit()->getOrderTargetPosition()) < 64.0 && Util::boxDistance(getType(), getPosition(), closestSuicide->getType(), closestSuicide->unit()->getPosition()) < 64.0)
@@ -191,7 +191,7 @@ namespace McRave
         if (getPlayer() == Broodwar->self()) {
             nearHidden = false;
             auto closestHidden = Util::getClosestUnit(position, PlayerState::Enemy, [&](auto &u) {
-                return u.isHidden() && ((!this->isFlying() && u.canAttackGround()) || (this->isFlying() && u.canAttackAir()));
+                return u->isHidden() && ((!this->isFlying() && u->canAttackGround()) || (this->isFlying() && u->canAttackAir()));
             });
 
             if (closestHidden && closestHidden->isWithinReach(*this))
@@ -300,7 +300,7 @@ namespace McRave
         // Check if our defenses can hit or be hit
         auto nearDefenders = [&]() {
             auto closestDefender = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-                return u.getRole() == Role::Defender && u.canAttackGround() && (u.isCompleted() || isWithinRange(u) || Util::getTime() < Time(4, 00));
+                return u->getRole() == Role::Defender && u->canAttackGround() && (u->isCompleted() || isWithinRange(*u) || Util::getTime() < Time(4, 00));
             });
             return closestDefender && closestDefender->isWithinRange(*this);
         };
@@ -308,7 +308,7 @@ namespace McRave
         // Checks if it can damage an already damaged building
         auto nearFragileBuilding = [&]() {
             auto fragileBuilding = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-                return !u.isHealthy() && u.getType().isBuilding() && (u.isCompleted() || isWithinRange(u)) && Terrain::inTerritory(PlayerState::Self, u.getPosition());
+                return !u->isHealthy() && u->getType().isBuilding() && (u->isCompleted() || isWithinRange(*u)) && Terrain::inTerritory(PlayerState::Self, u->getPosition());
             });
             return fragileBuilding && canAttackGround() && Util::boxDistance(fragileBuilding->getType(), fragileBuilding->getPosition(), getType(), getPosition()) < proximityCheck;
         };
@@ -317,7 +317,7 @@ namespace McRave
         auto nearBuildPosition = [&]() {
             if (atHome && !isFlying() && Util::getTime() < Time(5, 00)) {
                 auto closestBuilder = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-                    return u.getRole() == Role::Worker && u.getBuildPosition().isValid() && u.getBuildType().isValid();
+                    return u->getRole() == Role::Worker && u->getBuildPosition().isValid() && u->getBuildType().isValid();
                 });
 
                 if (closestBuilder) {
@@ -377,7 +377,7 @@ namespace McRave
         // Specific case: Marine near a proxy bunker
         if (getType() == Terran_Marine && Util::getTime() < Time(5, 00)) {
             auto closestThreateningBunker = Util::getClosestUnit(getPosition(), PlayerState::Enemy, [&](auto &u) {
-                return u.isThreatening() && u.getType() == Terran_Bunker;
+                return u->isThreatening() && u->getType() == Terran_Bunker;
             });
             if (closestThreateningBunker && closestThreateningBunker->getPosition().getDistance(getPosition()) < 160.0)
                 threateningThisFrame = true;
@@ -558,16 +558,6 @@ namespace McRave
         auto range = (getTarget().getType().isFlyer() ? getAirRange() : getGroundRange());
         auto boxDistance = Util::boxDistance(getType(), getPosition(), getTarget().getType(), getTarget().getPosition()) + (currentSpeed * Broodwar->getLatencyFrames());
         auto cooldownReady = getSpeed() > 0.0 ? max(0, cooldown) <= max(0.0, boxDistance - range) / speed : cooldown <= 0.0;
-
-        if (getType() == Protoss_Reaver) {
-            Broodwar << "lastAttackFrame" << lastAttackFrame << endl;
-            Broodwar << "boxDistance" << boxDistance << endl;
-            Broodwar << "range" << range << endl;
-            Broodwar << "speed" << speed << endl;
-        }
-
-        if (cooldownReady)
-            circle(Colors::Green);
         return cooldownReady;
     }
 
@@ -739,7 +729,7 @@ namespace McRave
         if (Util::getTime() < Time(10, 00) && (target.getType() == Terran_Marine || target.getType() == Terran_SCV || target.getType() == Terran_Firebat)) {
             if (Players::getVisibleCount(PlayerState::Enemy, Terran_Bunker) > 0) {
                 auto closestBunker = Util::getClosestUnit(target.getPosition(), PlayerState::Enemy, [&](auto &b) {
-                    return b.getType() == Terran_Bunker;
+                    return b->getType() == Terran_Bunker;
                 });
                 if (closestBunker && closestBunker->getPosition().getDistance(target.getPosition()) < 200.0) {
                     return false;
@@ -799,14 +789,14 @@ namespace McRave
 
         const auto nearProxyStructure = [&]() {
             const auto closestProxy = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-                return u.getType().isBuilding() && u.isProxy();
+                return u->getType().isBuilding() && u->isProxy();
             });
             return closestProxy && closestProxy->getPosition().getDistance(getPosition()) < 160.0;
         };
 
         const auto nearEnemyDefenseStructure = [&]() {
             const auto closestDefense = Util::getClosestUnit(getPosition(), PlayerState::Enemy, [&](auto &u) {
-                return u.getType().isBuilding() && ((u.canAttackGround() && isFlying()) || (u.canAttackAir() && !isFlying()));
+                return u->getType().isBuilding() && ((u->canAttackGround() && isFlying()) || (u->canAttackAir() && !isFlying()));
             });
             return closestDefense && closestDefense->getPosition().getDistance(getPosition()) < 256.0;
         };
@@ -815,7 +805,7 @@ namespace McRave
             if (!hasTarget())
                 return false;
             const auto closestCombatWorker = Util::getClosestUnit(getTarget().getPosition(), PlayerState::Self, [&](auto &u) {
-                return u.getType().isWorker() && u.getRole() == Role::Combat;
+                return u->getType().isWorker() && u->getRole() == Role::Combat;
             });
             return closestCombatWorker && closestCombatWorker->getPosition().getDistance(getTarget().getPosition()) < getPosition().getDistance(getTarget().getPosition()) + 64.0;
         };

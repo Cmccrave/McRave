@@ -48,7 +48,7 @@ namespace McRave::Resources {
             // Update resource state
             if (resource.hasStation()) {
                 auto base = Util::getClosestUnit(resource.getPosition(), PlayerState::Self, [&](auto &u) {
-                    return u.getType().isResourceDepot() && u.getPosition() == resource.getStation()->getBase()->Center();
+                    return u->getType().isResourceDepot() && u->getPosition() == resource.getStation()->getBase()->Center();
                 });
 
                 resource.setResourceState(ResourceState::None);

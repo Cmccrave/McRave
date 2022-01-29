@@ -234,7 +234,7 @@ namespace McRave::Terrain {
             auto defendRunby = false;
             if (defendNatural) {
                 auto closestDefense = Util::getClosestUnit(Position(BWEB::Map::getMainChoke()->Center()), PlayerState::Self, [&](auto &u) {
-                    return u.getRole() == Role::Defender && u.canAttackGround();
+                    return u->getRole() == Role::Defender && u->canAttackGround();
                 });
                 if (closestDefense && closestDefense->getPosition().getDistance(Position(BWEB::Map::getMainChoke()->Center())) < closestDefense->getGroundRange() + 128.0)
                     defendRunby = true;
@@ -245,7 +245,7 @@ namespace McRave::Terrain {
                 defendNatural = false;
                 auto closestStation = BWEB::Stations::getClosestMainStation(BWEB::Map::getMainTile());
                 auto closestUnit = Util::getClosestUnit(closestStation->getBase()->Center(), PlayerState::Self, [&](auto &u) {
-                    return u.getRole() == Role::Combat;
+                    return u->getRole() == Role::Combat;
                 });
 
                 if (closestUnit) {
@@ -318,7 +318,7 @@ namespace McRave::Terrain {
 
             const auto commanderInRange = [&](Position here) {
                 auto commander = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) {
-                    return u.getType() == Zerg_Mutalisk;
+                    return u->getType() == Zerg_Mutalisk;
                 });
                 return commander && commander->getPosition().getDistance(here) < 160.0;
             };
@@ -341,7 +341,7 @@ namespace McRave::Terrain {
             }
             if (Players::ZvT() && Util::getTime() > Time(10, 00)) {
                 auto closestEnemy = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return u.isThreatening() || (u.getPosition().getDistance(BWEB::Map::getMainPosition()) < u.getPosition().getDistance(Terrain::getEnemyStartingPosition()) && !u.isHidden());
+                    return u->isThreatening() || (u->getPosition().getDistance(BWEB::Map::getMainPosition()) < u->getPosition().getDistance(Terrain::getEnemyStartingPosition()) && !u->isHidden());
                 });
                 if (closestEnemy) {
                     harassPosition = closestEnemy->getPosition();

@@ -271,7 +271,7 @@ namespace McRave::Targets {
             // Detector targeting (distance to nearest ally added)
             if ((target.isBurrowed() || target.unit()->isCloaked()) && ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == Terran_Comsat_Station)) {
                 auto closest = Util::getClosestUnit(target.getPosition(), PlayerState::Self, [&](auto &u) {
-                    return u != unit && u.getRole() == Role::Combat && target.getType().isFlyer() ? u.getAirRange() > 0 : u.getGroundRange() > 0;
+                    return *u != unit && u->getRole() == Role::Combat && target.getType().isFlyer() ? u->getAirRange() > 0 : u->getGroundRange() > 0;
                 });
 
                 // Detectors want to stay close to their target if we have a friendly nearby
@@ -414,7 +414,7 @@ namespace McRave::Targets {
                 }
                 else if (unit.getType() != Terran_Vulture_Spider_Mine) {
                     auto closest = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                        return (u.isFlying() && unit.getAirDamage() > 0.0) || (!u.isFlying() && unit.getGroundDamage() > 0.0);
+                        return (u->isFlying() && unit.getAirDamage() > 0.0) || (!u->isFlying() && unit.getGroundDamage() > 0.0);
                     });
                     if (closest)
                         unit.setTarget(&*closest);

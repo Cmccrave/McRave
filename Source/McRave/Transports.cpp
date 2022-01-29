@@ -108,7 +108,7 @@ namespace McRave::Transports {
             }
 
             auto closestThreat = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) {
-                return u.getAirDamage() > 0;
+                return u->getAirDamage() > 0;
             });
             auto threatWithinRange = closestThreat ? closestThreat->isWithinRange(unit) : false;
 

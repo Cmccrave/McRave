@@ -17,10 +17,10 @@ namespace McRave::Planning {
         shared_ptr<UnitInfo> getBuilder(UnitType building, Position here)
         {
             auto &builder = Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &u) {
-                if (u.getType().getRace() != building.getRace()
-                    || u.getBuildType() != None
-                    || u.unit()->getOrder() == Orders::ConstructingBuilding
-                    || !Workers::canAssignToBuild(u))
+                if (u->getType().getRace() != building.getRace()
+                    || u->getBuildType() != None
+                    || u->unit()->getOrder() == Orders::ConstructingBuilding
+                    || !Workers::canAssignToBuild(*u))
                     return false;
                 return true;
             });
@@ -188,7 +188,7 @@ namespace McRave::Planning {
 
             // See if it's being blocked
             auto closestEnemy = Util::getClosestUnit(center, PlayerState::Enemy, [&](auto &u) {
-                return !u.isFlying() && u.getType() != Terran_Vulture_Spider_Mine;
+                return !u->isFlying() && u->getType() != Terran_Vulture_Spider_Mine;
             });
             if (closestEnemy && Util::boxDistance(closestEnemy->getType(), closestEnemy->getPosition(), building, center) < 32.0)
                 return false;
@@ -490,7 +490,7 @@ namespace McRave::Planning {
             // Place spire as close to the Lair in case we're hiding it
             if (building == Zerg_Spire) {
                 auto closestLair = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
-                    return u.getType() == Zerg_Lair;
+                    return u->getType() == Zerg_Lair;
                 });
 
                 if (closestLair) {
@@ -570,7 +570,7 @@ namespace McRave::Planning {
                 }
 
                 auto closestDefense = Util::getClosestUnit(Position(closestMain->getChokepoint()->Center()), PlayerState::Self, [&](auto &u) {
-                    return isDefensiveType(u.getType());
+                    return isDefensiveType(u->getType());
                 });
                 if (closestDefense) {
                     desiredCenter = closestDefense->getPosition();

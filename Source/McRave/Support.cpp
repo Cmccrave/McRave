@@ -18,7 +18,7 @@ namespace McRave::Support {
         {
             auto closestStation = Stations::getClosestStationAir(PlayerState::Self, unit.getPosition());
             auto closestSpore = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                return u.getType() == Zerg_Spore_Colony;
+                return u->getType() == Zerg_Spore_Colony;
             });
 
             // Send Overlords to safety from enemy air
@@ -29,7 +29,7 @@ namespace McRave::Support {
                         for (int y = -1; y <= 1; y++) {
                             auto center = Position(closestSpore->getTilePosition() + TilePosition(x, y)) + Position(16, 16);
                             auto closest = Util::getClosestUnit(center, PlayerState::Self, [&](auto &u) {
-                                return u.getType() == Zerg_Overlord;
+                                return u->getType() == Zerg_Overlord;
                             });
                             if (closest && unit == *closest) {
                                 unit.setDestination(center);
@@ -67,7 +67,7 @@ namespace McRave::Support {
                         unit.setDestination((unit.getTarget().getPosition() + unit.getDestination()) / 2);
                     else {
                         auto closestEnemy = Util::getClosestUnit(unit.getDestination(), PlayerState::Enemy, [&](auto &u) {
-                            return !u.getType().isWorker() && !u.getType().isBuilding();
+                            return !u->getType().isWorker() && !u->getType().isBuilding();
                         });
 
                         if (closestEnemy)

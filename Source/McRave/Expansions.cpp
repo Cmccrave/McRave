@@ -51,7 +51,7 @@ namespace McRave::Expansion {
                     auto type = BWEB::Map::isUsed(TilePosition(p));
                     if (type != UnitTypes::None) {
                         const auto closestNeutral = Util::getClosestUnit(p, PlayerState::Neutral, [&](auto &u) {
-                            return u.getType() == type;
+                            return u->getType() == type;
                         });
                         if (closestNeutral && closestNeutral->getPosition().getDistance(p) < 96.0) {
                             blockingNeutrals[station].push_back(closestNeutral);

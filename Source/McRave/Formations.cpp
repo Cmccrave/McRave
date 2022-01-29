@@ -11,10 +11,10 @@ namespace McRave::Combat::Formations {
     void assignPosition(Cluster& cluster, Formation& concave, Position p, int& assignmentsRemaining)
     {
         auto closestUnit = Util::getClosestUnit(p, PlayerState::Self, [&](auto &u) {
-            return find(concave.cluster.units.begin(), concave.cluster.units.end(), u.weak_from_this()) != concave.cluster.units.end() && !u.concaveFlag;
+            return find(concave.cluster.units.begin(), concave.cluster.units.end(), u) != concave.cluster.units.end() && !u->concaveFlag;
         });
         auto closestBuilder = Util::getClosestUnit(p, PlayerState::Self, [&](auto &u) {
-            return u.getBuildPosition().isValid();
+            return u->getBuildPosition().isValid();
         });
 
         if (!closestUnit
@@ -25,7 +25,6 @@ namespace McRave::Combat::Formations {
             return;
 
         // TODO: Check if we would be in range of an enemy before a defense (defending only)
-
         auto inRange = closestUnit->getPosition().getDistance(concave.center) - 64 < p.getDistance(concave.center)
             || closestUnit->getPosition().getDistance(p) < 160.0
             || (cluster.mobileCluster && closestUnit->getPosition().getDistance(p) < 256.0);
@@ -88,7 +87,7 @@ namespace McRave::Combat::Formations {
             // If we are setting up a static formation, align concave with buildings close by
             if (!cluster.mobileCluster) {
                 auto closestDefense = Util::getClosestUnit(cluster.sharedObjective, PlayerState::Self, [&](auto &u) {
-                    return u.getType().isBuilding() && u.isCompleted() && u.getFormation() == cluster.sharedObjective;
+                    return u->getType().isBuilding() && u->isCompleted() && u->getFormation() == cluster.sharedObjective;
                 });
                 if (closestDefense) {
                     radius = max(radius, closestDefense->getPosition().getDistance(cluster.sharedObjective));

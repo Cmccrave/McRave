@@ -65,7 +65,7 @@ namespace McRave::Scouts {
                 return;
 
             auto closestWorker = Util::getFurthestUnit(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
-                return u.getType().isWorker() && u.getRole() == Role::Scout;
+                return u->getType().isWorker() && u->getRole() == Role::Scout;
             });
             if (closestWorker) {
                 auto closestMain = BWEB::Stations::getClosestMainStation(closestWorker->getTilePosition());
@@ -180,17 +180,17 @@ namespace McRave::Scouts {
                 // Proxy takes furthest from natural choke
                 if (type.isWorker() && BuildOrder::getCurrentOpener() == "Proxy") {
                     scout = Util::getFurthestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
-                        return u.getRole() == Role::Worker && u.getType() == type && (!u.hasResource() || !u.getResource().getType().isRefinery()) && u.getBuildType() == None && !u.unit()->isCarryingMinerals() && !u.unit()->isCarryingGas();
+                        return u->getRole() == Role::Worker && u->getType() == type && (!u->hasResource() || !u->getResource().getType().isRefinery()) && u->getBuildType() == None && !u->unit()->isCarryingMinerals() && !u->unit()->isCarryingGas();
                     });
                 }
                 else if (type.isFlyer()) {
                     scout = Util::getClosestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
-                        return u.getRole() == Role::Support && u.getType() == type;
+                        return u->getRole() == Role::Support && u->getType() == type;
                     });
                 }
                 else if (type.isWorker())
                     scout = Util::getClosestUnitGround(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
-                    return u.getRole() == Role::Worker && u.getType() == type && (!u.hasResource() || !u.getResource().getType().isRefinery()) && u.getBuildType() == None && !u.unit()->isCarryingMinerals() && !u.unit()->isCarryingGas();
+                    return u->getRole() == Role::Worker && u->getType() == type && (!u->hasResource() || !u->getResource().getType().isRefinery()) && u->getBuildType() == None && !u->unit()->isCarryingMinerals() && !u->unit()->isCarryingGas();
                 });
 
                 if (scout) {
@@ -207,12 +207,12 @@ namespace McRave::Scouts {
                 shared_ptr<UnitInfo> scout = nullptr;
                 if (type.isFlyer()) {
                     scout = Util::getFurthestUnit(Terrain::getEnemyStartingPosition(), PlayerState::Self, [&](auto &u) {
-                        return u.getRole() == Role::Scout && u.getType() == type;
+                        return u->getRole() == Role::Scout && u->getType() == type;
                     });
                 }
                 else {
                     scout = Util::getClosestUnitGround(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
-                        return u.getRole() == Role::Scout && u.getType() == type;
+                        return u->getRole() == Role::Scout && u->getType() == type;
                     });
                 }
 
@@ -307,7 +307,7 @@ namespace McRave::Scouts {
 
             // Against known proxies without visible proxy style buildings
             const auto closestProxyBuilding = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto& u) {
-                return u.isProxy();
+                return u->isProxy();
             });
             if (Spy::enemyProxy() && !closestProxyBuilding) {
                 if (Spy::getEnemyBuild() == "CannonRush")

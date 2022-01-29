@@ -600,6 +600,7 @@ namespace McRave::Learning {
             if (c == '.')
                 break;
         }
+        McRave::easyWrite("New game on " + mapName);
 
         // File extension including our race initial;
         mapLearning         = false;

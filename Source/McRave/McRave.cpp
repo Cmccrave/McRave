@@ -32,7 +32,6 @@ void McRaveModule::onStart()
     Broodwar->sendText("glhf");
     Broodwar->setLocalSpeed(Broodwar->getGameType() != BWAPI::GameTypes::Use_Map_Settings ? 0 : 42);
 
-    McRave::easyWrite("New game on " + Broodwar->mapName());
     BWEB::Pathfinding::clearCacheFully();
 }
 

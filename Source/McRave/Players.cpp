@@ -68,7 +68,7 @@ namespace McRave::Players
         // When a building starts, set the closest worker to no longer have a building
         if (bwUnit->getType().isBuilding() && bwUnit->getPlayer() == Broodwar->self()) {
             auto closestWorker = Util::getClosestUnit(bwUnit->getPosition(), PlayerState::Self, [&](auto &u) {
-                return u.getRole() == Role::Worker && (u.getType() != Terran_SCV || bwUnit->isCompleted()) && u.getBuildPosition() == bwUnit->getTilePosition();
+                return u->getRole() == Role::Worker && (u->getType() != Terran_SCV || bwUnit->isCompleted()) && u->getBuildPosition() == bwUnit->getTilePosition();
             });
             if (closestWorker) {
                 closestWorker->setBuildingType(None);

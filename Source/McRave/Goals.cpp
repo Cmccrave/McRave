@@ -21,9 +21,9 @@ namespace McRave::Goals {
 
                 if (type.isFlyer()) {
                     const auto closest = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) {
-                        if (gType == GoalType::Attack && u.globalRetreat())
+                        if (gType == GoalType::Attack && u->globalRetreat())
                             return false;
-                        return u.getType() == type && !u.getGoal().isValid();
+                        return u->getType() == type && !u->getGoal().isValid();
                     });
 
                     if (closest) {
@@ -34,9 +34,9 @@ namespace McRave::Goals {
 
                 else {
                     const auto closest = Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &u) {
-                        if (gType == GoalType::Attack && u.globalRetreat())
+                        if (gType == GoalType::Attack && u->globalRetreat())
                             return false;
-                        return u.getType() == type && !u.getGoal().isValid();
+                        return u->getType() == type && !u->getGoal().isValid();
                     });
 
                     if (closest) {
@@ -76,7 +76,7 @@ namespace McRave::Goals {
         // HACK: Need a pred function integrated above 
         void assignWorker(Position here) {
             auto worker = Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &u) {
-                return Workers::canAssignToBuild(u) || u.getPosition().getDistance(here) < 64.0;
+                return Workers::canAssignToBuild(*u) || u->getPosition().getDistance(here) < 64.0;
             });
             if (worker)
                 worker->setGoal(here);
@@ -167,7 +167,7 @@ namespace McRave::Goals {
                 // Escort expanders
                 if (nextExpand.isValid() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) >= 2) {
                     auto closestBuilder = Util::getClosestUnit(nextExpand, PlayerState::Self, [&](auto &u) {
-                        return u.getBuildType().isResourceDepot();
+                        return u->getBuildType().isResourceDepot();
                     });
                     auto type = (vis(airType) > 0 && Broodwar->self()->getRace() == Races::Zerg) ? airType : rangedType;
 
@@ -338,10 +338,10 @@ namespace McRave::Goals {
             // Assign an Overlord to each Station
             for (auto &station : Stations::getMyStations()) {
                 auto closestSunk = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Self, [&](auto &u) {
-                    return u.getType() == Zerg_Sunken_Colony && find(station->getDefenses().begin(), station->getDefenses().end(), u.getTilePosition()) != station->getDefenses().end();
+                    return u->getType() == Zerg_Sunken_Colony && find(station->getDefenses().begin(), station->getDefenses().end(), u->getTilePosition()) != station->getDefenses().end();
                 });
                 auto closestSpore = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Self, [&](auto &u) {
-                    return u.getType() == Zerg_Spore_Colony && find(station->getDefenses().begin(), station->getDefenses().end(), u.getTilePosition()) != station->getDefenses().end();
+                    return u->getType() == Zerg_Spore_Colony && find(station->getDefenses().begin(), station->getDefenses().end(), u->getTilePosition()) != station->getDefenses().end();
                 });
 
                 if (closestSpore)
@@ -359,7 +359,7 @@ namespace McRave::Goals {
                         continue;
 
                     auto closestSunk = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Self, [&](auto &u) {
-                        return u.getType() == Zerg_Sunken_Colony && wall.getDefenses().find(u.getTilePosition()) != wall.getDefenses().end();
+                        return u->getType() == Zerg_Sunken_Colony && wall.getDefenses().find(u->getTilePosition()) != wall.getDefenses().end();
                     });
 
                     if (closestSunk)

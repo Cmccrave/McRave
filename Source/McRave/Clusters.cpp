@@ -82,7 +82,7 @@ namespace McRave::Combat::Clusters {
 
             // Get closest unit to centroid
             const auto closestToCentroid = Util::getClosestUnit(avgPosition, PlayerState::Self, [&](auto &u) {
-                return find(cluster.units.begin(), cluster.units.end(), u.weak_from_this()) != cluster.units.end();
+                return find(cluster.units.begin(), cluster.units.end(), u) != cluster.units.end();
             });
             if (closestToCentroid) {
                 cluster.mobileCluster = closestToCentroid->getGlobalState() != GlobalState::Retreat;
@@ -102,7 +102,7 @@ namespace McRave::Combat::Clusters {
 
         // Delete empty clusters - solo or no commander
         clusters.erase(remove_if(clusters.begin(), clusters.end(), [&](auto& cluster) {
-            return int(cluster.units.size()) <= 1 || cluster.commander.expired();
+            return cluster.units.empty() || cluster.commander.expired();
         }), clusters.end());
     }
 

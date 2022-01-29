@@ -85,10 +85,10 @@ namespace McRave::BuildOrder
 
         // Estimate how long until a building finishes based on how far it is from the nearest worker
         auto closestBuilding = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
-            return u.getType() == t;
+            return u->getType() == t;
         });
         auto closestWorker = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
-            return u.getType() == Broodwar->self()->getRace().getWorker();
+            return u->getType() == Broodwar->self()->getRace().getWorker();
         });
 
         if (closestBuilding && closestWorker)
@@ -102,7 +102,7 @@ namespace McRave::BuildOrder
 
         // Estimate how long until a building finishes based on how far it is from the nearest worker
         auto closestBuilding = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
-            return u.getType() == t.whatResearches() && u.unit()->isResearching();
+            return u->getType() == t.whatResearches() && u->unit()->isResearching();
         });
         return closestBuilding != nullptr;
     }

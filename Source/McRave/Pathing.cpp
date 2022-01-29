@@ -188,9 +188,9 @@ namespace McRave::Pathing {
                 // Assign closest targeter
                 for (auto &[pos, dist] : surroundPositions) {
                     auto closestTargeter = Util::getClosestUnit(pos, PlayerState::Self, [&](auto &u) {
-                        return u.hasTarget() && u.getTarget() == unit.weak_from_this()
-                            && find(allowedTypes.begin(), allowedTypes.end(), u.getType()) != allowedTypes.end()
-                            && (!u.getSurroundPosition().isValid() || u.getSurroundPosition() == pos) && u.getRole() == Role::Combat;
+                        return u->hasTarget() && u->getTarget() == unit
+                            && find(allowedTypes.begin(), allowedTypes.end(), u->getType()) != allowedTypes.end()
+                            && (!u->getSurroundPosition().isValid() || u->getSurroundPosition() == pos) && u->getRole() == Role::Combat;
                     });
 
                     // Get time to arrive to the surround position

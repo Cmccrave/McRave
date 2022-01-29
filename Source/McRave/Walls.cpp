@@ -276,14 +276,14 @@ namespace McRave::Walls {
         // Try to see what we expect based on first Zealot push out
         if (Spy::getEnemyBuild() == "Unknown" && Scouts::enemyDeniedScout() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 1 && wall.getGroundDefenseCount() == 0) {
             auto closestZealot = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
-                return u.getType() == Protoss_Zealot;
+                return u->getType() == Protoss_Zealot;
             });
             if (closestZealot && closestZealot->timeArrivesWhen() < Time(3, 50) && BWEB::Map::getGroundDistance(closestZealot->getPosition(), BWEB::Map::getNaturalPosition()) < 640.0)
                 return (Util::getTime() > Time(2, 50));
         }
 
         // If we are a 3H build, we can skip 1 sunken
-        auto skipSunken = BuildOrder::getCurrentTransition().find("3Hatch") != string::npos;
+        auto skipSunken = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
 
         // See if they expanded or got some tech at a reasonable point for 1 base play
         auto noExpandOrTech = Util::getTime() > Time(5, 30) && !Spy::enemyFastExpand()
@@ -338,6 +338,7 @@ namespace McRave::Walls {
             else if (Util::getTime() < Time(6, 15))
                 return 1
                 + (!skipSunken && Util::getTime() > Time(4, 00))
+                + (!skipSunken && Util::getTime() > Time(4, 40))
                 + noExpandOrTech;
         }
 

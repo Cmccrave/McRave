@@ -65,7 +65,7 @@ namespace McRave::Workers {
 
                     // Check if worker arrives in time when hatch completes
                     auto closestHatch = Util::getClosestUnit(station->getBase()->Center(), PlayerState::Self, [&](auto &u) {
-                        return u.getType().isResourceDepot();
+                        return u->getType().isResourceDepot();
                     });
                     auto framesToArrive = unit.getPosition().getDistance(station->getBase()->Center()) / unit.getSpeed();
                     auto frameCompletedAt = closestHatch->timeCompletesWhen().frames;
@@ -93,13 +93,13 @@ namespace McRave::Workers {
 
             // If around defenders
             auto aroundDefenders = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                if (u.getRole() != Role::Combat && u.getRole() != Role::Defender)
+                if (u->getRole() != Role::Combat && u->getRole() != Role::Defender)
                     return false;
 
-                return (unit.isWithinBuildRange() && u.getPosition().getDistance(buildCenter) < u.getGroundReach())
-                    || (mapBWEM.GetArea(unit.getTilePosition()) == mapBWEM.GetArea(unit.getBuildPosition()) && u.getPosition().getDistance(buildCenter) < u.getGroundReach())
-                    || (unit.hasTarget() && u.getPosition().getDistance(unit.getTarget().getPosition()) < unit.getGroundRange())
-                    || (unit.hasTarget() && u.getPosition().getDistance(unit.getTarget().getPosition()) < unit.getPosition().getDistance(unit.getTarget().getPosition()));
+                return (unit.isWithinBuildRange() && u->getPosition().getDistance(buildCenter) < u->getGroundReach())
+                    || (mapBWEM.GetArea(unit.getTilePosition()) == mapBWEM.GetArea(unit.getBuildPosition()) && u->getPosition().getDistance(buildCenter) < u->getGroundReach())
+                    || (unit.hasTarget() && u->getPosition().getDistance(unit.getTarget().getPosition()) < unit.getGroundRange())
+                    || (unit.hasTarget() && u->getPosition().getDistance(unit.getTarget().getPosition()) < unit.getPosition().getDistance(unit.getTarget().getPosition()));
             });
             if (aroundDefenders)
                 return true;
@@ -273,7 +273,7 @@ namespace McRave::Workers {
                         continue;
 
                     auto closestunit = Util::getClosestUnit(resource.getPosition(), PlayerState::Self, [&](auto &u) {
-                        return u.getRole() == Role::Worker && !u.getBuildPosition().isValid() && (!u.hasResource() || u.getResource().getType().isMineralField());
+                        return u->getRole() == Role::Worker && !u->getBuildPosition().isValid() && (!u->hasResource() || u->getResource().getType().isMineralField());
                     });
                     if (closestunit && unit != closestunit)
                         continue;

@@ -40,12 +40,10 @@ namespace McRave::Util {
         std::shared_ptr<UnitInfo> best = nullptr;
 
         for (auto &u : units) {
-            auto &unit = *u;
-
-            if (!unit.unit() || !pred(unit))
+            if (!pred(u))
                 continue;
 
-            auto dist = here.getDistance(unit.getPosition());
+            auto dist = here.getDistance(u->getPosition());
             if (dist < distBest) {
                 best = u;
                 distBest = dist;
@@ -61,12 +59,10 @@ namespace McRave::Util {
         std::shared_ptr<UnitInfo> best = nullptr;
 
         for (auto &u : units) {
-            auto &unit = *u;
-
-            if (!unit.unit() || !pred(unit))
+            if (!pred(u))
                 continue;
 
-            auto dist = here.getDistance(unit.getPosition());
+            auto dist = here.getDistance(u->getPosition());
             if (dist > distBest) {
                 best = u;
                 distBest = dist;
@@ -82,12 +78,10 @@ namespace McRave::Util {
         std::shared_ptr<UnitInfo> best = nullptr;
 
         for (auto &u : units) {
-            auto &unit = *u;
-
-            if (!unit.unit() || !pred(unit))
+            if (!pred(u))
                 continue;
 
-            auto dist = BWEB::Map::getGroundDistance(here, unit.getPosition());
+            auto dist = BWEB::Map::getGroundDistance(here, u->getPosition());
             if (dist < distBest) {
                 best = u;
                 distBest = dist;
@@ -103,12 +97,10 @@ namespace McRave::Util {
         std::shared_ptr<UnitInfo> best = nullptr;
 
         for (auto &u : units) {
-            auto &unit = *u;
-
-            if (!unit.unit() || !pred(unit))
+            if (!pred(u))
                 continue;
 
-            auto dist = BWEB::Map::getGroundDistance(here, unit.getPosition());
+            auto dist = BWEB::Map::getGroundDistance(here, u->getPosition());
             if (dist > distBest) {
                 best = u;
                 distBest = dist;

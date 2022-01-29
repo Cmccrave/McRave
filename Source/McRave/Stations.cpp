@@ -82,7 +82,7 @@ namespace McRave::Stations {
                 // A non main station cannot be a retreat point if an enemy is within reach
                 if (!station->isMain() && !wallDefending && Stations::getGroundDefenseCount(station) < 2) {
                     const auto closestEnemy = Util::getClosestUnitGround(station->getBase()->Center(), PlayerState::Enemy, [&](auto &u) {
-                        return u.canAttackGround();
+                        return u->canAttackGround();
                     });
 
                     if (closestEnemy && closestEnemy->getPosition().getDistance(station->getBase()->Center()) < closestEnemy->getGroundReach() * 2.0)
@@ -407,7 +407,7 @@ namespace McRave::Stations {
     {
         // TODO: This is really slow
         const auto base = Util::getClosestUnit(station->getBase()->Center(), PlayerState::Self, [&](auto &u) {
-            return u.getType().isResourceDepot();
+            return u->getType().isResourceDepot();
         });
         return base && base->unit()->isCompleted();
     }

@@ -130,6 +130,13 @@ namespace McRave::Combat {
 
                 if (unit.getGoal().isValid())
                     unit.setObjective(unit.getGoal());
+                else if ((unit.isLightAir() || unit.getType() == Zerg_Scourge) && ((Units::getImmThreat() > 25.0 && Stations::getMyStations().size() >= 3 && Stations::getMyStations().size() > Stations::getEnemyStations().size()) || (Players::ZvZ() && Units::getImmThreat() > 5.0))) {
+                    auto &attacker = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                        return u->isThreatening() && !u->isHidden();
+                    });
+                    if (attacker)
+                        unit.setDestination(attacker->getPosition());
+                }
                 else if (unit.attemptingHarass())
                     unit.setObjective(Terrain::getHarassPosition());
                 else if (Terrain::getAttackPosition().isValid() && unit.canAttackGround())
@@ -398,7 +405,7 @@ namespace McRave::Combat {
 
             // Only proactively pull the closest worker to our defend position
             auto closestWorker = Util::getClosestUnit(Terrain::getDefendPosition(), PlayerState::Self, [&](auto &u) {
-                return u.getRole() == Role::Worker && !unit.getGoal().isValid() && (!unit.hasResource() || !unit.getResource().getType().isRefinery()) && !unit.getBuildPosition().isValid();
+                return u->getRole() == Role::Worker && !unit.getGoal().isValid() && (!unit.hasResource() || !unit.getResource().getType().isRefinery()) && !unit.getBuildPosition().isValid();
             });
 
             auto combatCount = Roles::getMyRoleCount(Role::Combat) - (unit.getRole() == Role::Combat ? 1 : 0);
@@ -473,10 +480,10 @@ namespace McRave::Combat {
             const auto reactivePullWorker = [&]() {
 
                 auto proxyDangerousBuilding = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return u.isProxy() && u.getType().isBuilding() && u.canAttackGround();
+                    return u->isProxy() && u->getType().isBuilding() && u->canAttackGround();
                 });
                 auto proxyBuildingWorker = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return u.getType().isWorker() && (u.isThreatening() || (proxyDangerousBuilding && u.getType().isWorker() && u.getPosition().getDistance(proxyDangerousBuilding->getPosition()) < 160.0));
+                    return u->getType().isWorker() && (u->isThreatening() || (proxyDangerousBuilding && u->getType().isWorker() && u->getPosition().getDistance(proxyDangerousBuilding->getPosition()) < 160.0));
                 });
 
                 // HACK: Don't pull workers reactively versus vultures
@@ -656,7 +663,7 @@ namespace McRave::Combat {
             }
         }
 
-        void gogoCombat() 
+        void updateCommands()
         {
             for (auto &cluster : Clusters::getClusters()) {
                 for (auto &u : cluster.units) {
@@ -688,12 +695,8 @@ namespace McRave::Combat {
                 Horizon::simulate(unit);
                 updateGlobalState(unit);
                 updateLocalState(unit);
-
                 updateObjective(unit);
                 updateRetreat(unit);
-
-                updateHarassPath(unit);
-
                 updateObjectivePath(unit);
                 updateRetreatPath(unit);
             }
@@ -713,7 +716,7 @@ namespace McRave::Combat {
         Clusters::onFrame();
         Formations::onFrame();
         updateCommanders();
-        gogoCombat();
+        updateCommands();
         checkHoldChoke();
         Visuals::endPerfTest("Combat");
     }

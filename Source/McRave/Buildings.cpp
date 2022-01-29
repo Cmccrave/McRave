@@ -99,7 +99,7 @@ namespace McRave::Buildings {
             if (building.getType() == Zerg_Hatchery && !willDieToAttacks(building) && BuildOrder::buildCount(Zerg_Lair) > vis(Zerg_Lair) + vis(Zerg_Hive) + morphedThisFrame[Zerg_Lair] + morphedThisFrame[Zerg_Hive]) {
                 auto morphTile = BWEB::Map::getMainTile();
                 const auto closestScout = Util::getClosestUnitGround(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return u.getType().isWorker();
+                    return u->getType().isWorker();
                 });
                 if (closestScout && int(Stations::getMyStations().size()) >= 2 && mapBWEM.GetArea(closestScout->getTilePosition()) == BWEB::Map::getMainArea())
                     morphTile = BWEB::Map::getNaturalTile();
@@ -152,7 +152,7 @@ namespace McRave::Buildings {
             // Terran building needs new scv
             if (building.getType().getRace() == Races::Terran && !building.unit()->isCompleted() && !building.unit()->getBuildUnit()) {
                 auto &builder = Util::getClosestUnit(building.getPosition(), PlayerState::Self, [&](auto &u) {
-                    return u.getType().isWorker() && u.getBuildType() == None;
+                    return u->getType().isWorker() && u->getBuildType() == None;
                 });
 
                 if (builder)

@@ -58,6 +58,9 @@ namespace McRave::BuildOrder::Zerg {
                     initialValue = 8;
                 else if (Spy::getEnemyOpener() == "9/9")
                     initialValue = 12;
+
+                if (currentTransition.find("2Hatch") == string::npos)
+                    initialValue += 6;
             }
             if (Spy::getEnemyBuild() == "1GateCore")
                 initialValue = 6;
@@ -67,7 +70,7 @@ namespace McRave::BuildOrder::Zerg {
             // For every transition we expect:
             // 3H: Every minute we want 6 more lings starting at 3:00 and 3:30
             // 2H: Nothing
-            if (currentTransition.find("3Hatch") != string::npos) {
+            if (currentTransition.find("2Hatch") == string::npos) {
                 if (Spy::getEnemyTransition() == "4Gate" || Spy::getEnemyTransition() == "Speedlot")
                     timingValue = 5;
                 else if (Spy::getEnemyTransition().find("3Gate") != string::npos || Spy::getEnemyTransition() == "DT")
