@@ -71,6 +71,7 @@ namespace McRave::BuildOrder::Zerg {
             rush =                                      false;
             pressure =                                  false;
             transitionReady =                           false;
+            planEarly =                                 false;
 
             gasLimit =                                  gasMax();
             unitLimits[Zerg_Zergling] =                 lingsNeeded();
@@ -99,7 +100,17 @@ namespace McRave::BuildOrder::Zerg {
         inBookSupply =                                  total(Zerg_Mutalisk) < 6;
         planEarly =                                     atPercent(Zerg_Lair, 0.5) && int(Stations::getMyStations().size()) < 3 && Spy::getEnemyOpener() != "8Rax";
 
-        buildQueue[Zerg_Hatchery] =                     2 + (total(Zerg_Mutalisk) >= 6);
+        auto thirdHatch =  (total(Zerg_Mutalisk) >= 6);
+        if (Spy::enemyPressure()) {
+            thirdHatch = false;
+            planEarly = false;
+        }
+        else if (vis(Zerg_Drone) >= 20 && s >= 48) {
+            thirdHatch = true;
+            planEarly = atPercent(Zerg_Lair, 0.5) && int(Stations::getMyStations().size()) < 3;
+        }
+
+        buildQueue[Zerg_Hatchery] =                     2 + thirdHatch;
         buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 10) + (atPercent(Zerg_Spire, 0.1 + (0.05 * colonyCount())));
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (2 * atPercent(Zerg_Spire, 0.25));
         buildQueue[Zerg_Lair] =                         (vis(Zerg_Drone) >= 12 && gas(80));
@@ -235,7 +246,7 @@ namespace McRave::BuildOrder::Zerg {
         scout =                                         scout || vis(Zerg_Spawning_Pool) > 0 || (Terrain::isShitMap() && vis(Zerg_Spawning_Pool) > 0);
         proxy =                                         false;
 
-        buildQueue[Zerg_Hatchery] =                     1 + (Spy::enemyProxy() ? total(Zerg_Zergling) >= 6 : s >= 22 && vis(Zerg_Spawning_Pool) > 0);
+        buildQueue[Zerg_Hatchery] =                     1 + (Spy::enemyProxy() ? total(Zerg_Zergling) >= 6 : s >= 22);
         buildQueue[Zerg_Spawning_Pool] =                (vis(Zerg_Overlord) >= 2);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 30);
     }

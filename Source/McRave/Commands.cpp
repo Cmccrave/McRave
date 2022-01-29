@@ -250,6 +250,7 @@ namespace McRave::Command {
 
     bool move(UnitInfo& unit)
     {
+        auto atHome = Terrain::inTerritory(PlayerState::Self, unit.getPosition());
         const auto scoreFunction = [&](WalkPosition w) {
             const auto p =          Position(w) + Position(4, 4);
             const auto threat =     defaultThreat(unit, w);
@@ -258,7 +259,7 @@ namespace McRave::Command {
             const auto mobility =   defaultMobility(unit, w);
             auto score = 0.0;
 
-            if ((unit.getRole() == Role::Worker && !Terrain::inTerritory(PlayerState::Self, unit.getPosition())))
+            if (unit.getRole() == Role::Worker && !atHome)
                 score = mobility / (distance * grouping * threat);
             else
                 score = mobility / (distance * grouping);

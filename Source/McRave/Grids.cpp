@@ -102,6 +102,8 @@ namespace McRave::Grids
                 if (dist <= vision || dist <= range)
                     inRange = true;
             }
+            if (!inRange || pState == PlayerState::Self)
+                return;
 
             // Iterate tiles and add to grid
             for (int x = left; x < right; x++) {
@@ -120,7 +122,7 @@ namespace McRave::Grids
                     }
 
                     // Threat
-                    if (inRange && (grdGrid || airGrid)) {
+                    if (grdGrid || airGrid) {
                         const auto dist = fasterDistGrids(x1, y1, (x * 8) + 4, (y * 8) + 4);
                         if (grdGrid && dist <= unit.getGroundReach()) {
                             grdGrid[x][y] += float(unit.getVisibleGroundStrength()) / max(1.0f, log((float)dist));

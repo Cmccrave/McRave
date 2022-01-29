@@ -60,7 +60,14 @@ namespace McRave::Horizon {
 
     void simulate(UnitInfo& unit)
     {
+        if (unit.getEngDist() == DBL_MAX || !unit.hasTarget()) {
+            unit.setSimState(SimState::Loss);
+            unit.setSimValue(0.0);
+            return;
+        }
+
         updateThresholds(unit);
+        auto &unitTarget = unit.getTarget();
         auto enemyLocalGroundStrength = 0.0, allyLocalGroundStrength = 0.0;
         auto enemyLocalAirStrength = 0.0, allyLocalAirStrength = 0.0;
         auto unitToEngage = unit.getSpeed() > 0.0 ? unit.getEngDist() / (24.0 * unit.getSpeed()) : 5.0;
@@ -81,11 +88,6 @@ namespace McRave::Horizon {
             unit.setSimValue(10.0);
             return;
         }
-        else if (unit.getEngDist() == DBL_MAX || !unit.hasTarget()) {
-            unit.setSimState(SimState::Loss);
-            unit.setSimValue(0.0);
-            return;
-        }
 
         const auto addToSim = [&](UnitInfo& u) {
             if (!u.unit()
@@ -99,10 +101,10 @@ namespace McRave::Horizon {
             return true;
         };
 
-        const auto addBonus = [&](UnitInfo& u, double &simRatio) {
+        const auto addBonus = [&](UnitInfo& u, UnitInfo& t, double &simRatio) {
             if (u.isHidden())
                 simRatio *= 2.0;
-            if (!u.getType().isFlyer() && u.getGroundRange() > 32.0 && Broodwar->getGroundHeight(u.getTilePosition()) > Broodwar->getGroundHeight(TilePosition(u.getTarget().getEngagePosition())))
+            if (!u.getType().isFlyer() && u.getGroundRange() > 32.0 && Broodwar->getGroundHeight(u.getTilePosition()) > Broodwar->getGroundHeight(TilePosition(t.getEngagePosition())))
                 simRatio *= 2.0;
             return;
         };
@@ -112,24 +114,25 @@ namespace McRave::Horizon {
             if (!addToSim(enemy))
                 continue;
 
+            auto &enemyTarget =                 enemy.getTarget();
             auto simRatio =                     0.0;
             auto distTarget =                   double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getPosition()));
             auto distEngage =                   double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getEngagePosition()));
-            const auto range =                  enemy.getTarget().getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange();
+            const auto range =                  enemyTarget.getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange();
             const auto enemyReach =             max(enemy.getAirReach(), enemy.getGroundReach());
 
             // If the unit doesn't affect this simulation
             if ((enemy.getSpeed() <= 0.0 && distEngage > range + 32.0 && distTarget > range + 32.0)
                 || (enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode && distTarget < 64.0)
-                || (enemy.getSpeed() <= 0.0 && distTarget > 0.0 && enemy.getTarget().getSpeed() <= 0.0)
-                || (enemy.targetsFriendly() && unit.hasTarget() && enemy.getPosition().getDistance(unit.getTarget().getPosition()) >= enemyReach)
+                || (enemy.getSpeed() <= 0.0 && distTarget > 0.0 && enemyTarget.getSpeed() <= 0.0)
+                || (enemy.targetsFriendly() && unit.hasTarget() && enemy.getPosition().getDistance(unitTarget.getPosition()) >= enemyReach)
                 /*|| (!enemy.targetsFriendly() && enemy.getEngagePosition().getDistance(unit.getEngagePosition()) > enemyReach && enemy.getPosition().getDistance(unit.getPosition()) > enemyReach)*/)
                 continue;
 
             // If enemy doesn't move, calculate how long it will remain in range once in range
             if (enemy.getSpeed() <= 0.0) {
                 const auto distance =               distTarget;
-                const auto speed =                  enemy.getTarget().getSpeed() * 24.0;
+                const auto speed =                  enemyTarget.getSpeed() * 24.0;
                 const auto engageTime =             max(0.0, (distance - range) / speed);
                 simRatio =                          max(0.0, simulationTime - engageTime);
             }
@@ -143,7 +146,7 @@ namespace McRave::Horizon {
             }
 
             // Add their values to the simulation
-            addBonus(enemy, simRatio);
+            addBonus(enemy, enemyTarget, simRatio);
             if (enemy.canAttackAir() && enemy.canAttackGround()) {
                 enemyLocalGroundStrength += max(enemy.getVisibleGroundStrength(), enemy.getVisibleAirStrength()) * simRatio;
                 enemyLocalAirStrength += max(enemy.getVisibleGroundStrength(), enemy.getVisibleAirStrength()) * simRatio;
@@ -159,9 +162,10 @@ namespace McRave::Horizon {
             if (!addToSim(ally))
                 continue;
 
+            auto &allyTarget = ally.getTarget();
             const auto range = max(ally.getAirRange(), ally.getGroundRange());
             const auto reach = max(ally.getAirReach(), ally.getGroundReach());
-            const auto distance = double(Util::boxDistance(ally.getType(), ally.getPosition(), unit.getType(), unit.getTarget().getPosition()));
+            const auto distance = double(Util::boxDistance(ally.getType(), ally.getPosition(), unit.getType(), unitTarget.getPosition()));
             const auto speed = ally.getSpeed() > 0.0 ? ally.getSpeed() * 24.0 : unit.getSpeed() * 24.0;
             const auto engageTime = max(0.0, (distance - range) / speed);
             auto simRatio = max(0.0, simulationTime - engageTime + prepTime(ally));
@@ -169,19 +173,19 @@ namespace McRave::Horizon {
             // If the unit doesn't affect this simulation
             if (ally.localRetreat()
                 || (ally.getSpeed() <= 0.0 && ally.getEngDist() > -16.0)
-                || (unit.hasTarget() && ally.hasTarget() && ally.getEngagePosition().getDistance(unit.getTarget().getPosition()) > reach))
+                || (unit.hasTarget() && ally.hasTarget() && ally.getEngagePosition().getDistance(unitTarget.getPosition()) > reach))
                 continue;
 
             // Add their values to the simulation
-            addBonus(ally, simRatio);
+            addBonus(ally, allyTarget, simRatio);
             allyLocalGroundStrength += ally.getVisibleGroundStrength() * simRatio;
             allyLocalAirStrength += ally.getVisibleAirStrength() * simRatio;
 
             // Check if any ally are below the limit to synhcronize sim values
-            if (ally.hasTarget() && unit.hasTarget() && ally.getTarget() == unit.getTarget() && ally.getSimValue() <= minThreshold && ally.getSimValue() != 0.0) {
+            if (ally.hasTarget() && unit.hasTarget() && allyTarget == unitTarget && ally.getSimValue() <= minThreshold && ally.getSimValue() != 0.0) {
                 ally.isFlying() ?
-                    (ally.getTarget().isFlying() ? belowAirtoAirLimit = true : belowAirtoGrdLimit = true) :
-                    (ally.getTarget().isFlying() ? belowGrdtoAirLimit = true : belowGrdtoGrdLimit = true);
+                    (allyTarget.isFlying() ? belowAirtoAirLimit = true : belowAirtoGrdLimit = true) :
+                    (allyTarget.isFlying() ? belowGrdtoAirLimit = true : belowGrdtoGrdLimit = true);
             }
         }
 
@@ -194,7 +198,7 @@ namespace McRave::Horizon {
         if (!unit.hasTarget())
             unit.getType().isFlyer() ? unit.setSimValue(min(attackAirAsAir, attackGroundAsAir)) : unit.setSimValue(min(attackAirAsGround, attackGroundAsGround));
         else
-            unit.getType().isFlyer() ? unit.setSimValue(unit.getTarget().getType().isFlyer() ? attackAirAsAir : attackGroundAsAir) : unit.setSimValue(unit.getTarget().getType().isFlyer() ? attackAirAsGround : attackGroundAsGround);
+            unit.getType().isFlyer() ? unit.setSimValue(unitTarget.getType().isFlyer() ? attackAirAsAir : attackGroundAsAir) : unit.setSimValue(unitTarget.getType().isFlyer() ? attackAirAsGround : attackGroundAsGround);
 
         auto engagedAlreadyOffset = unit.getSimState() == SimState::Win ? 0.2 : 0.0;
 
@@ -207,15 +211,15 @@ namespace McRave::Horizon {
         // Check for hardcoded directional losses
         if (unit.hasTarget() && unit.getSimValue() < maxThreshold - engagedAlreadyOffset) {
             if (unit.isFlying()) {
-                if (unit.getTarget().isFlying() && belowAirtoAirLimit)
+                if (unitTarget.isFlying() && belowAirtoAirLimit)
                     unit.setSimState(SimState::Loss);
-                else if (unit.getTarget().isFlying() && belowAirtoGrdLimit)
+                else if (!unitTarget.isFlying() && belowAirtoGrdLimit)
                     unit.setSimState(SimState::Loss);
             }
             else {
-                if (unit.getTarget().isFlying() && belowGrdtoAirLimit)
+                if (unitTarget.isFlying() && belowGrdtoAirLimit)
                     unit.setSimState(SimState::Loss);
-                else if (!unit.getTarget().isFlying() && belowGrdtoGrdLimit)
+                else if (!unitTarget.isFlying() && belowGrdtoGrdLimit)
                     unit.setSimState(SimState::Loss);
             }
         }

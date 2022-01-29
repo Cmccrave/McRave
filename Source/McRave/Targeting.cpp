@@ -69,9 +69,6 @@ namespace McRave::Targets {
             bool selfHasGround = myStrength.groundToAir > 0.0 || myStrength.groundToGround > 0.0;
             bool selfHasAir = myStrength.airToGround > 0.0 || myStrength.airToAir > 0.0;
 
-            bool atHome = Terrain::inTerritory(PlayerState::Self, target.getPosition());
-            bool atEnemy = Terrain::inTerritory(PlayerState::Enemy, target.getPosition());
-
             bool enemyCanDefendUnit = unit.isFlying() ? enemyStrength.airDefense > 0.0 : enemyStrength.groundDefense > 0.0;
 
             // Check if the target is important right now to attack
@@ -100,7 +97,7 @@ namespace McRave::Targets {
                     || (!allowWorkerTarget(unit, target))
                     || (target.isHidden() && (!targetCanAttack || (!Players::hasDetection(PlayerState::Self) && Players::PvP())) && !unit.getType().isDetector())           // Don't target if invisible and can't attack this unit or we have no detectors in PvP
                     || (target.isFlying() && !unit.isFlying() && !BWEB::Map::isWalkable(target.getTilePosition(), unit.getType()) && !unit.isWithinRange(target))           // Don't target flyers that we can't reach
-                    || (target.getType().isBuilding() && !target.canAttackGround() && !target.canAttackAir() && atHome && !target.isThreatening() && (target.getType() != Protoss_Pylon || !target.isProxy()) && Util::getTime() < Time(5, 00))     // Don't attack buildings that aren't threatening early on
+                    || (target.getType().isBuilding() && !target.canAttackGround() && !target.canAttackAir() && !target.isThreatening() && (target.getType() != Protoss_Pylon || !target.isProxy()) && Util::getTime() < Time(5, 00))     // Don't attack buildings that aren't threatening early on
                     || (unit.isSpellcaster() && (target.getType() == Terran_Vulture_Spider_Mine || target.getType().isBuilding()))                                          // Don't cast spells on mines or buildings
                     || (unit.isLightAir() && target.getType() == Protoss_Interceptor)
                     || (unit.getType().isWorker() && target.getType() == Terran_Bunker && !selfHasGround))
