@@ -10,9 +10,17 @@ namespace McRave::Combat::Formations {
 
     void assignPosition(Cluster& cluster, Formation& concave, Position p, int& assignmentsRemaining)
     {
-        auto closestUnit = Util::getClosestUnit(p, PlayerState::Self, [&](auto &u) {
-            return find(concave.cluster.units.begin(), concave.cluster.units.end(), u) != concave.cluster.units.end() && !u->concaveFlag;
-        });
+        shared_ptr<UnitInfo> closestUnit;
+        auto distBest = DBL_MAX;
+        for (auto &u : cluster.units) {
+            if (auto &unit = u.lock()) {
+                auto dist = unit->getPosition().getDistance(p);
+                if (dist < distBest) {
+                    distBest = dist;
+                    closestUnit = unit;
+                }
+            }
+        }
         auto closestBuilder = Util::getClosestUnit(p, PlayerState::Self, [&](auto &u) {
             return u->getBuildPosition().isValid();
         });
@@ -44,7 +52,7 @@ namespace McRave::Combat::Formations {
         Position retreat = cluster.sharedRetreat;
 
         auto i = 0;
-        retreat = Util::findPointOnPath(cluster.commander.lock()->getRetreatPath(), [&](Position p) {
+        retreat = Util::findPointOnPath(commander->getRetreatPath(), [&](Position p) {
             i++;
             return i >= 5;
         });
@@ -56,9 +64,9 @@ namespace McRave::Combat::Formations {
         }
         else {
             i = 0;
-            objective = Util::findPointOnPath(cluster.commander.lock()->getObjectivePath(), [&](Position p) {
+            objective = Util::findPointOnPath(commander->getObjectivePath(), [&](Position p) {
                 i++;
-                return i >= 7 && (!cluster.mobileCluster || p.getDistance(cluster.commander.lock()->getPosition()) > radius + 160.0) && (!cluster.mobileCluster || p.getDistance(cluster.sharedPosition) > radius + 160.0);
+                return i >= 7 && (!cluster.mobileCluster || p.getDistance(commander->getPosition()) > radius + 160.0) && (!cluster.mobileCluster || p.getDistance(cluster.sharedPosition) > radius + 160.0);
             });
         }
 

@@ -188,18 +188,18 @@ namespace McRave::Stations {
         // Remove workers from any resources on this station
         for (auto &mineral : Resources::getMyMinerals()) {
             if (mineral->getStation() == newStation)
-                for (auto &worker : mineral->targetedByWhat()) {
-                    if (!worker.expired()) {
-                        worker.lock()->setResource(nullptr);
+                for (auto &w : mineral->targetedByWhat()) {
+                    if (auto worker = w.lock()) {
+                        worker->setResource(nullptr);
                         mineral->removeTargetedBy(worker);
                     }
                 }
         }
         for (auto &gas : Resources::getMyGas()) {
             if (gas->getStation() == newStation)
-                for (auto &worker : gas->targetedByWhat()) {
-                    if (!worker.expired()) {
-                        worker.lock()->setResource(nullptr);
+                for (auto &w : gas->targetedByWhat()) {
+                    if (auto worker = w.lock()) {
+                        worker->setResource(nullptr);
                         gas->removeTargetedBy(worker);
                     }
                 }

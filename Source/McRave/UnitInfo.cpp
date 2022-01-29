@@ -143,7 +143,7 @@ namespace McRave
             if ((getType() == Protoss_Reaver && unit()->getGroundWeaponCooldown() >= 59)
                 || (getType() != Protoss_Reaver && canAttackGround() && unit()->getGroundWeaponCooldown() >= type.groundWeapon().damageCooldown() - 1)
                 || (getType() != Protoss_Reaver && canAttackAir() && unit()->getAirWeaponCooldown() >= type.airWeapon().damageCooldown() - 1))
-                lastAttackFrame         = Broodwar->getFrameCount();            
+                lastAttackFrame         = Broodwar->getFrameCount();
 
             // Frames
             remainingTrainFrame         = max(0, remainingTrainFrame - 1);
@@ -174,9 +174,13 @@ namespace McRave
 
             if (closestSplasher && closestSplasher->isWithinReach(*this))
                 nearSplash = true;
+
+            targetedBySplash = any_of(targetedBy.begin(), targetedBy.end(), [&](auto &t) {
+                return !t.expired() && t.lock()->isSplasher();
+            });
         }
 
-        // Check if this unit is close to a suicidal unit
+        // Check if this unit is close to / targeted by a suicidal unit
         if (getPlayer() == Broodwar->self()) {
             nearSuicide = false;
             auto closestSuicide = Util::getClosestUnit(position, PlayerState::Enemy, [&](auto &u) {
@@ -185,6 +189,10 @@ namespace McRave
 
             if (closestSuicide && Util::boxDistance(getType(), getPosition(), closestSuicide->getType(), closestSuicide->unit()->getOrderTargetPosition()) < 64.0 && Util::boxDistance(getType(), getPosition(), closestSuicide->getType(), closestSuicide->unit()->getPosition()) < 64.0)
                 nearSuicide = true;
+
+            targetedBySuicide = any_of(targetedBy.begin(), targetedBy.end(), [&](auto &t) {
+                return !t.expired() && t.lock()->isSuicidal();
+            });
         }
 
         // Check if this unit is close to a hidden unit
@@ -196,6 +204,10 @@ namespace McRave
 
             if (closestHidden && closestHidden->isWithinReach(*this))
                 nearHidden = true;
+
+            targetedByHidden = any_of(targetedBy.begin(), targetedBy.end(), [&](auto &t) {
+                return !t.expired() && t.lock()->isHidden();
+            });
         }
 
         if (nearSuicide)

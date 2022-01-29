@@ -13,9 +13,11 @@ namespace McRave::Buildings {
 
         bool willDieToAttacks(UnitInfo& building) {
             auto possibleDamage = 0;
-            for (auto &attacker : building.getTargetedBy()) {
-                if (attacker.lock() && attacker.lock()->isWithinRange(building))
-                    possibleDamage+= int(attacker.lock()->getGroundDamage());
+            for (auto &a : building.getTargetedBy()) {
+                if (auto attacker = a.lock()) {
+                    if (attacker->isWithinRange(building))
+                        possibleDamage+= int(attacker->getGroundDamage());
+                }
             }
 
             return possibleDamage > building.getHealth() + building.getShields();

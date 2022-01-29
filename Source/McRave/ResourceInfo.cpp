@@ -53,19 +53,20 @@ namespace McRave {
         // Calculate the worker cap for the resource
         workerCap = 2 + !type.isMineralField();
         for (auto &t : targetedBy) {
-            if (t.expired() || !t.lock())
+            if (t.expired())
                 continue;
 
-            auto targeter = t.lock();
-            if (targeter->unit()->isCarryingGas() || targeter->unit()->isCarryingMinerals())
-                framesPerTrips[t]++;
-            else if (Util::boxDistance(type, position, targeter->getType(), targeter->getPosition()) < 16.0)
-                framesPerTrips[t]=0;
+            if (auto targeter = t.lock()) {
+                if (targeter->unit()->isCarryingGas() || targeter->unit()->isCarryingMinerals())
+                    framesPerTrips[t]++;
+                else if (Util::boxDistance(type, position, targeter->getType(), targeter->getPosition()) < 16.0)
+                    framesPerTrips[t]=0;
 
-            if (!type.isMineralField() && framesPerTrips[t] > 52)
-                workerCap = 4;
-            if (targeter->getBuildPosition().isValid())
-                workerCap++;
+                if (!type.isMineralField() && framesPerTrips[t] > 52)
+                    workerCap = 4;
+                if (targeter->getBuildPosition().isValid())
+                    workerCap++;
+            }
         }
     }
 
