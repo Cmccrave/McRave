@@ -103,7 +103,6 @@ namespace McRave::Command {
     {
         // Unstick a unit
         if (unit.isStuck() || unit.getLocalState() == LocalState::Hold) {
-            unit.circle(Colors::Black);
             unit.command(Stop, unit.getPosition());
             return true;
         }
@@ -550,7 +549,7 @@ namespace McRave::Command {
             //if (!Grids::hasCliffVision(TilePosition(w)))
             //    score =            mobility / (distance * grouping);
             //else
-                score =            mobility / (exp(threat) * distance * grouping);
+            score =            mobility / (exp(threat) * distance * grouping);
 
             return score;
         };

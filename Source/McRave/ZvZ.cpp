@@ -49,8 +49,7 @@ namespace McRave::BuildOrder::Zerg {
                 return 16;
             else if (vis(Zerg_Lair) > 0)
                 return 18;
-            else
-                return 8;
+            return 12;
         }
 
         void defaultZvZ() {
@@ -88,7 +87,7 @@ namespace McRave::BuildOrder::Zerg {
         lockedTransition =                              vis(Zerg_Lair) > 0;
         unitLimits[Zerg_Drone] =                        atPercent(Zerg_Lair, 0.50) ? 12 : 9;
         unitLimits[Zerg_Zergling] =                     lingsNeeded();
-        gasLimit =                                      (lingSpeed() && com(Zerg_Lair) == 0) ? 2 - (vis(Zerg_Lair) > 0 && !atPercent(Zerg_Lair, 0.75)) : gasMax();
+        gasLimit =                                      gasMax();
         firstUnit =                                     Zerg_Mutalisk;
         inBookSupply =                                  vis(Zerg_Overlord) < 4 && total(Zerg_Mutalisk) < 3;
 

@@ -139,14 +139,14 @@ namespace McRave::Combat {
                 }
                 else if (unit.attemptingHarass())
                     unit.setObjective(Terrain::getHarassPosition());
-                else if (Terrain::getAttackPosition().isValid() && unit.canAttackGround())
-                    unit.setObjective(Terrain::getAttackPosition());
                 else if (unit.hasTarget()) {
                     unit.setObjective(unit.getTarget().getPosition());
 
                     // HACK: Performance improvement
                     unit.setObjectivePath(unit.getTargetPath());
                 }
+                else if (Terrain::getAttackPosition().isValid() && unit.canAttackGround())
+                    unit.setObjective(Terrain::getAttackPosition());
                 else
                     getCleanupPosition(unit);
             }
@@ -562,16 +562,19 @@ namespace McRave::Combat {
             // Regardless of any decision, determine if Unit is in danger and needs to retreat
             if ((Actions::isInDanger(unit, unit.getPosition()) && !unit.isTargetedBySuicide())
                 || (Actions::isInDanger(unit, unit.getEngagePosition()) && insideEngageRadius && !unit.isTargetedBySuicide())
+                || (unit.isTargetedBySuicide() && unit.isNearSuicide() && unit.isFlying())
                 || reAlign)
                 unit.setLocalState(LocalState::Retreat);
 
             // Regardless of local decision, determine if Unit needs to attack or retreat
             else if (unit.globalEngage()) {
                 unit.setLocalState(LocalState::Attack);
-                unit.circle(Colors::Red);
+                unit.circle(Colors::Green);
             }
-            else if (unit.globalRetreat())
+            else if (unit.globalRetreat()) {
+                unit.circle(Colors::Red);
                 unit.setLocalState(LocalState::Retreat);
+            }
 
             // If within local decision range, determine if Unit needs to attack or retreat
             else if ((insideEngageRadius || atHome) && (unit.localEngage() || winningState))
@@ -668,7 +671,7 @@ namespace McRave::Combat {
             for (auto &cluster : Clusters::getClusters()) {
                 for (auto &u : cluster.units) {
                     auto &unit = *u.lock();
-                    if (cluster.commandShare == CommandShare::Exact && !lightUnitNeedsRegroup(unit)) {
+                    if (cluster.commandShare == CommandShare::Exact && !unit.localRetreat() && !unit.globalRetreat() && !lightUnitNeedsRegroup(unit)) {
                         auto commander = cluster.commander.lock();
                         if (commander->getCommandType() == UnitCommandTypes::Attack_Unit && unit.hasTarget())
                             unit.command(commander->getCommandType(), unit.getTarget());
@@ -684,6 +687,7 @@ namespace McRave::Combat {
                     else {
                         updateDestination(unit);
                         updateDecision(unit);
+                        Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
                     }
                 }
             }

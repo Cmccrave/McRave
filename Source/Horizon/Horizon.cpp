@@ -46,8 +46,8 @@ namespace McRave::Horizon {
             maxWinPercent = 1.60;
         }
         if (Players::ZvZ()) {
-            minWinPercent = 1.00;
-            maxWinPercent = 1.20;
+            minWinPercent = 0.8;
+            maxWinPercent = 1.4;
         }
         if (Players::ZvT()) {
             minWinPercent = 0.8 - baseCountSwing + baseDistSwing;

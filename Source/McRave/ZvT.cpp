@@ -111,7 +111,7 @@ namespace McRave::BuildOrder::Zerg {
         }
 
         buildQueue[Zerg_Hatchery] =                     2 + thirdHatch;
-        buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 10) + (atPercent(Zerg_Spire, 0.1 + (0.05 * colonyCount())));
+        buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 10) + (vis(Zerg_Spire) > 0);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (2 * atPercent(Zerg_Spire, 0.25));
         buildQueue[Zerg_Lair] =                         (vis(Zerg_Drone) >= 12 && gas(80));
         buildQueue[Zerg_Spire] =                        atPercent(Zerg_Lair, 0.80);
@@ -133,7 +133,7 @@ namespace McRave::BuildOrder::Zerg {
         lockedTransition =                              vis(Zerg_Lair) > 0;
         unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 33 : 15 - hatchCount();
         unitLimits[Zerg_Zergling] =                     lingsNeeded();
-        gasLimit =                                      com(Zerg_Drone) >= 11 ? gasMax() : 0;
+        gasLimit =                                      gasMax();
 
         inOpeningBook =                                 total(Zerg_Mutalisk) <= 9;
         firstUpgrade =                                  (vis(Zerg_Extractor) >= 2 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
@@ -144,7 +144,7 @@ namespace McRave::BuildOrder::Zerg {
         planEarly =                                     (Spy::enemyFastExpand() && s >= 60) || atPercent(Zerg_Lair, 0.6) && Spy::getEnemyOpener() != "8Rax";
 
         buildQueue[Zerg_Hatchery] =                     2 + (s >= 26) + fourthHatch;
-        buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 13) + (s >= 44);
+        buildQueue[Zerg_Extractor] =                    (hatchCount() >= 3) + (s >= 44);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 48) + (atPercent(Zerg_Spire, 0.5) * 3);
         buildQueue[Zerg_Lair] =                         (vis(Zerg_Drone) >= 16 && gas(100));
         buildQueue[Zerg_Spire] =                        (s >= 42 && atPercent(Zerg_Lair, 0.80));

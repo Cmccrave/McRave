@@ -19,7 +19,6 @@ namespace McRave::Combat::Clusters {
                 cluster.typeCounts[cluster.commander.lock()->getType()]++;
         }
 
-        //clusters.clear();
         for (auto &[_, unit] : Combat::getCombatUnitsByDistance()) {
 
             if (unit.getType() == Protoss_High_Templar
@@ -68,10 +67,8 @@ namespace McRave::Combat::Clusters {
 
             // If commander satisifed for a static cluster, don't try to find a new one
             auto commander = cluster.commander.lock();
-            if (commander && !commander->globalRetreat() && !commander->localRetreat() && !cluster.mobileCluster) {
-                cluster.commander.lock()->circle(Colors::Orange);
+            if (commander && !commander->globalRetreat() && !commander->localRetreat() && !cluster.mobileCluster)
                 continue;
-            }
 
             // Find a centroid
             auto avgPosition = Position(0, 0);
@@ -81,9 +78,14 @@ namespace McRave::Combat::Clusters {
             avgPosition /= cluster.units.size();
 
             // Get closest unit to centroid
-            const auto closestToCentroid = Util::getClosestUnit(avgPosition, PlayerState::Self, [&](auto &u) {
-                return find(cluster.units.begin(), cluster.units.end(), u) != cluster.units.end();
+            auto closestToCentroid = Util::getClosestUnit(avgPosition, PlayerState::Self, [&](auto &u) {
+                return !u->globalRetreat() && !u->localRetreat() && find(cluster.units.begin(), cluster.units.end(), u) != cluster.units.end();
             });
+            if (!closestToCentroid) {
+                closestToCentroid = Util::getClosestUnit(avgPosition, PlayerState::Self, [&](auto &u) {
+                    return find(cluster.units.begin(), cluster.units.end(), u) != cluster.units.end();
+                });
+            }
             if (closestToCentroid) {
                 cluster.mobileCluster = closestToCentroid->getGlobalState() != GlobalState::Retreat;
                 cluster.sharedPosition = avgPosition;
@@ -92,7 +94,6 @@ namespace McRave::Combat::Clusters {
                 cluster.commander = closestToCentroid->weak_from_this();
                 cluster.commandShare = cluster.commander.lock()->isLightAir() ? CommandShare::Exact : CommandShare::Parallel;
                 cluster.shape = cluster.commander.lock()->isLightAir() ? Shape::None : Shape::Concave;
-                closestToCentroid->circle(Colors::Yellow);
 
                 // Assign commander to each unit
                 for (auto &unit : cluster.units)

@@ -161,10 +161,6 @@ namespace McRave
             checkThreatening();
         }
 
-        // Clear targets and targeting information
-        getTargetedBy().clear();
-        target.reset();
-
         // Check if this unit is close to a splash unit
         if (getPlayer() == Broodwar->self()) {
             nearSplash = false;
@@ -187,8 +183,12 @@ namespace McRave
                 return u->isSuicidal() && ((!this->isFlying() && u->canAttackGround()) || (this->isFlying() && u->canAttackAir()));
             });
 
-            if (closestSuicide && Util::boxDistance(getType(), getPosition(), closestSuicide->getType(), closestSuicide->unit()->getOrderTargetPosition()) < 64.0 && Util::boxDistance(getType(), getPosition(), closestSuicide->getType(), closestSuicide->unit()->getPosition()) < 64.0)
-                nearSuicide = true;
+            if (closestSuicide && closestSuicide->unit()->getOrderTargetPosition()) {
+                auto distToSelf = Util::boxDistance(getType(), getPosition(), closestSuicide->getType(), closestSuicide->getPosition());
+                auto distToOrder = Util::boxDistance(getType(), getPosition(), closestSuicide->getType(), closestSuicide->unit()->getOrderTargetPosition());
+                if (distToOrder + distToSelf < 96.0)
+                    nearSuicide = true;
+            }
 
             targetedBySuicide = any_of(targetedBy.begin(), targetedBy.end(), [&](auto &t) {
                 return !t.expired() && t.lock()->isSuicidal();
@@ -210,8 +210,8 @@ namespace McRave
             });
         }
 
-        if (nearSuicide)
-            circle(Colors::Red);
+        target.reset();
+        targetedBy.clear();
     }
 
     void UnitInfo::checkStuck() {
@@ -404,9 +404,6 @@ namespace McRave
         if (threateningFrames > 8)
             lastThreateningFrame = Broodwar->getFrameCount();
         threatening = Broodwar->getFrameCount() - lastThreateningFrame <= min(64, Util::getTime().minutes * 2);
-
-        if (threatening)
-            circle(Colors::Red);
     }
 
     void UnitInfo::checkProxy()
@@ -463,7 +460,7 @@ namespace McRave
             return false;
 
         // Add some wiggle room for movement
-        // here += Position(rand() % 2 - 1, rand() % 2 - 1);
+        here += Position(rand() % 2 - 1, rand() % 2 - 1);
 
         // Check if we should overshoot for halting distance
         if (cmd == UnitCommandTypes::Move && !getBuildPosition().isValid() && (getType().isFlyer() || isHovering() || getType() == Protoss_High_Templar)) {
@@ -728,7 +725,6 @@ namespace McRave
             || (getType() == Zerg_Zergling && Players::ZvZ() && getTargetedBy().size() >= 3 && !Terrain::inTerritory(PlayerState::Self, getPosition()) && Util::getTime() < Time(3, 15))
             || (getType() == Zerg_Zergling && Players::ZvP() && !getTargetedBy().empty() && getHealth() < 20 && Util::getTime() < Time(4, 00))
             || (getType() == Zerg_Zergling && hasTarget() && !isHealthy() && getTarget().getType().isWorker())
-            || nearSuicide
             || unit()->isIrradiated();
     }
 
@@ -830,7 +826,7 @@ namespace McRave
             || (!isFlying() && (getGroundRange() < 32.0 || getType() == Zerg_Lurker) && Terrain::inTerritory(PlayerState::Enemy, getPosition()) && (Util::getTime() > Time(8, 00) || BuildOrder::isProxy()) && nearEnemyStation() && !Players::ZvZ())
             || (getType() == Zerg_Lurker && BuildOrder::isProxy() && nearProxyStructure())
             || (!isFlying() && Actions::overlapsActions(unit(), getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, 96))
-            || isTargetedBySuicide()
+            || (isTargetedBySuicide() && !isFlying())
             || engagingWithWorkers();
     }
 
@@ -839,7 +835,7 @@ namespace McRave
         return nearHidden
             || (getGlobalState() == GlobalState::Retreat && !Terrain::inTerritory(PlayerState::Self, getPosition()))
             || (getType() == Zerg_Mutalisk && hasTarget() && !getTarget().isThreatening() && !isWithinRange(getTarget()) && getHealth() <= 50)                // ...unit is a low HP Mutalisk attacking a target under air threat    
-            || (isNearSuicide());
+            ;
     }
 
     bool UnitInfo::attemptingRunby()

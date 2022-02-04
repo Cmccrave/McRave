@@ -33,7 +33,7 @@ namespace McRave::Pathing {
             auto maxDist = Players::getSupply(PlayerState::Self, Races::None) / 2;
             for (auto &t : unit.getTarget().getTargetedBy()) {
                 if (auto targeter = t.lock()) {
-                    if (unit.getTarget() == targeter->getTarget() && targeter->getTargetPath().isReachable() && targeter->getPosition().getDistance(targeter->getTarget().getPosition()) < unit.getPosition().getDistance(unit.getTarget().getPosition()) && targeter->getPosition().getDistance(unit.getPosition()) < maxDist) {
+                    if (targeter->hasTarget() && unit.getTarget() == targeter->getTarget() && targeter->getTargetPath().isReachable() && targeter->getPosition().getDistance(targeter->getTarget().getPosition()) < unit.getPosition().getDistance(unit.getTarget().getPosition()) && targeter->getPosition().getDistance(unit.getPosition()) < maxDist) {
                         unit.setTargetPath(targeter->getTargetPath());
                         return;
                     }

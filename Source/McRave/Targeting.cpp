@@ -6,7 +6,7 @@ using namespace UnitTypes;
 
 namespace McRave::Targets {
 
-    set<UnitType> cancelPriority ={ Terran_Barracks, Terran_Factory, Terran_Starport, Terran_Armory, Terran_Bunker };
+    set<UnitType> cancelPriority ={ Terran_Missile_Turret, Terran_Barracks, Terran_Bunker, Terran_Factory, Terran_Starport, Terran_Armory, Terran_Bunker };
     set<UnitType> allowedBuildings ={ Terran_Armory, Protoss_Cybernetics_Core, Terran_Missile_Turret, Protoss_Photon_Cannon, Zerg_Spire };
 
     namespace {
@@ -246,10 +246,8 @@ namespace McRave::Targets {
             };
 
             const auto focusScore = [&]() {
-                if (range > 32.0 && boxDistance <= reach)
+                if ((range > 32.0 && boxDistance <= reach) || (range <= 32.0 && boxDistance <= range))
                     return (1.0 + double(target.getTargetedBy().size()));
-                if (range <= 32.0)
-                    return 4.0 / (1.0 + double(target.getTargetedBy().size()));
                 return 1.0;
             };
 

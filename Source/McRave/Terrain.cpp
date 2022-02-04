@@ -178,6 +178,9 @@ namespace McRave::Terrain {
 
         void findAttackPosition()
         {
+            if (Util::getTime() < Time(6, 00))
+                attackPosition = enemyStartingPosition;
+
             // Attack furthest enemy station
             attackPosition = enemyStartingPosition;
             auto distBest = 0.0;
