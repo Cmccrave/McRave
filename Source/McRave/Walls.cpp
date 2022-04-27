@@ -435,7 +435,7 @@ namespace McRave::Walls {
 
     int needGroundDefenses(BWEB::Wall& wall)
     {
-        auto groundCount = wall.getGroundDefenseCount() /*+ (BuildOrder::getCurrentTransition().find("2Hatch") == string::npos) * ((Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(7, 00)))*/;
+        auto groundCount = wall.getGroundDefenseCount();
         if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()))
             return 0;
 
@@ -480,6 +480,8 @@ namespace McRave::Walls {
                 return calcSaturationRatio(wall, calcGroundDefZvT(wall)) - groundCount;
             if (Players::vZ())
                 return calcSaturationRatio(wall, calcGroundDefZvZ(wall)) - groundCount;
+            if (Broodwar->getGameType() == GameTypes::Free_For_All && Broodwar->getPlayers().size() > 2)
+                return (Util::getTime().minutes / 2) - groundCount;
         }
         return 0;
     }

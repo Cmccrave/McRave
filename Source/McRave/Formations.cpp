@@ -33,7 +33,6 @@ namespace McRave::Combat::Formations {
             return;
 
         // TODO: Check if we would be in range of an enemy before a defense (defending only)
-        Broodwar->drawCircleMap(concave.center, 8, Colors::Purple);
         auto inRange = closestUnit->getPosition().getDistance(concave.center) - 64 < p.getDistance(concave.center)
             || closestUnit->getPosition().getDistance(p) < 160.0
             || (cluster.mobileCluster && closestUnit->getPosition().getDistance(p) < 256.0);

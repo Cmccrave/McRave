@@ -154,8 +154,10 @@ namespace McRave::Pathing {
                     continue;
 
                 // Figure out how to trap the unit
-                auto trapTowards = Position(BWEB::Map::getNaturalChoke()->Center());
-                if (unit.isThreatening() || Util::getTime() < Time(4, 30))
+                auto trapTowards = Terrain::getEnemyStartingPosition();
+                if (BWEB::Map::getNaturalChoke())
+                    trapTowards = Position(BWEB::Map::getNaturalChoke()->Center());
+                if (BWEB::Map::getMainChoke() && (unit.isThreatening() || Util::getTime() < Time(4, 30)))
                     trapTowards = Position(BWEB::Map::getMainChoke()->Center());
                 else if (unit.getPosition().isValid() && Terrain::getEnemyStartingPosition().isValid()) {
                     auto path = mapBWEM.GetPath(unit.getPosition(), Terrain::getEnemyStartingPosition());

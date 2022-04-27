@@ -54,11 +54,10 @@ namespace BWEB::Map
     /// <param name="tile"> The BWAPI::TilePosition you want to build on. </param>
     bool isPlaceable(BWAPI::UnitType type, BWAPI::TilePosition tile);
 
-    template <class T>
     /// <summary> Returns the estimated ground distance from one Position type to another Position type. </summary>
     /// <param name="start"> The first Position. </param>
     /// <param name="end"> The second Position. </param>
-    double getGroundDistance(T start, T end);
+    double getGroundDistance(BWAPI::Position start, BWAPI::Position end);
 
     /// Returns the closest BWAPI::Position that makes up the geometry of a BWEM::ChokePoint to another BWAPI::Position.
     BWAPI::Position getClosestChokeTile(const BWEM::ChokePoint *, BWAPI::Position);

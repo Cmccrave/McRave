@@ -646,7 +646,7 @@ namespace BWEB::Blocks
 
     void eraseBlock(const TilePosition here)
     {
-        for (auto &it = allBlocks.begin(); it != allBlocks.end(); ++it) {
+        for (auto it = allBlocks.begin(); it != allBlocks.end(); ++it) {
             auto &block = *it;
             if (here.x >= block.getTilePosition().x && here.x < block.getTilePosition().x + block.width() && here.y >= block.getTilePosition().y && here.y < block.getTilePosition().y + block.height()) {
                 allBlocks.erase(it);
@@ -662,20 +662,13 @@ namespace BWEB::Blocks
         findMainStartBlocks();
         findProxyBlock();
         findProductionBlocks();
+        Pathfinding::clearCacheFully();
     }
 
     void draw()
     {
         for (auto &block : allBlocks)
             block.draw();
-        //for (int x = 0; x < Broodwar->mapWidth(); x++) {
-        //    for (int y = 0; y < Broodwar->mapHeight(); y++) {
-        //        if (testGrid[x][y])
-        //            //Broodwar->drawBoxMap(Position(TilePosition(x, y)), Position(TilePosition(x, y)) + Position(32, 32), Colors::Cyan);
-        //            Broodwar->drawTextMap(Position(TilePosition(x, y)), "%d", testGrid[x][y]);
-        //    }
-        //}
-
     }
 
     vector<Block>& getBlocks() {

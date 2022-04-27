@@ -102,8 +102,8 @@ namespace McRave::Grids
                 if (dist <= vision || dist <= range)
                     inRange = true;
             }
-            if (!inRange || pState == PlayerState::Self)
-                return;
+            if (!inRange)
+                return;            
 
             // Iterate tiles and add to grid
             for (int x = left; x < right; x++) {

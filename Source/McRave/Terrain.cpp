@@ -196,7 +196,8 @@ namespace McRave::Terrain {
                     return Util::rectangleIntersect(Position(station->getBase()->Location()), Position(station->getBase()->Location()) + Position(128, 96), Position(t));
                 };
 
-                BWEB::Path path(Position(BWEB::Map::getNaturalChoke()->Center()), station->getBase()->Center(), Zerg_Ultralisk, true, true);
+                auto pathFrom = BWEB::Map::getNaturalChoke() ? Position(BWEB::Map::getNaturalChoke()->Center()) : BWEB::Map::getMainPosition();
+                BWEB::Path path(pathFrom, station->getBase()->Center(), Zerg_Ultralisk, true, true);
                 path.generateJPS([&](auto &t) { return path.unitWalkable(t) || stationWalkable(t); });
 
                 if (path.isReachable()) {
@@ -269,19 +270,19 @@ namespace McRave::Terrain {
             }
 
             // If we want to prevent a runby
-            else if (Combat::defendChoke() && !defendRunby) {
+            else if (Combat::defendChoke() && mainChoke && !defendRunby) {
                 defendPosition = Position(mainChoke->Center());
                 defendNatural = false;
             }
 
             // Natural defending position
-            else if (defendNatural) {
+            else if (defendNatural && myNatural) {
                 defendPosition = Stations::getDefendPosition(myNatural);
                 addTerritory(PlayerState::Self, myNatural);
             }
 
             // Main defending position
-            else {
+            else if (mainChoke) {
                 addTerritory(PlayerState::Self, myMain);
                 removeTerritory(PlayerState::Self, myNatural); // Erase just in case we dropped natural defense
                 defendPosition = Position(mainChoke->Center()) + Position(4, 4);
@@ -294,7 +295,7 @@ namespace McRave::Terrain {
             }
 
             // Natural defending area and choke
-            if (defendNatural) {
+            if (defendNatural && defendChoke) {
 
                 // Decide which area is within my territory, useful for maps with small adjoining areas like Andromeda
                 auto &[a1, a2] = defendChoke->GetAreas();
@@ -306,7 +307,7 @@ namespace McRave::Terrain {
             }
 
             // Main defend area and choke
-            else {
+            else if (mainChoke) {
                 defendChoke = mainChoke;
                 defendArea = BWEB::Map::getMainArea();
             }
@@ -368,7 +369,7 @@ namespace McRave::Terrain {
 
             // Can check if we haven't visited recently, but we did explore it
             const auto suitableStationToCheck = [&](BWEB::Station * station) {
-                return (Stations::isBaseExplored(station) && Stations::lastVisible(station) < Broodwar->getFrameCount() - 720);
+                return station && (Stations::isBaseExplored(station) && Stations::lastVisible(station) < Broodwar->getFrameCount() - 720);
             };
 
             // Create a list of valid positions to harass/check
@@ -467,6 +468,12 @@ namespace McRave::Terrain {
 
         void updateAreas()
         {
+            for (auto& station : BWEB::Stations::getStations())
+            {
+                if (station.isNatural())
+                    station.draw();
+            }
+
             // Squish areas
             if (BWEB::Map::getNaturalArea()) {
 
@@ -654,7 +661,6 @@ namespace McRave::Terrain {
         mapBWEM.EnableAutomaticPathAnalysis();
         mapBWEM.FindBasesForStartingLocations();
         BWEB::Map::onStart();
-        BWEB::Stations::findStations();
 
         // Check if the map is an island map
         for (auto &start : mapBWEM.StartingLocations()) {

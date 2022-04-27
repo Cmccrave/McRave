@@ -46,6 +46,9 @@ namespace McRave::Spy {
     
     void onFrame()
     {
+        if ((Broodwar->getGameType() == GameTypes::Free_For_All && Broodwar->getPlayers().size() > 2) || Broodwar->getGameType() == GameTypes::Team_Free_For_All || Broodwar->getGameType() == GameTypes::Team_Melee)
+            return;
+
         General::updateGeneral(theSpy);
         Protoss::updateProtoss(theSpy);
         Terran::updateTerran(theSpy);

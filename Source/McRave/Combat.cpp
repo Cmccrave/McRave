@@ -167,7 +167,7 @@ namespace McRave::Combat {
             if (unit.getDestination().isValid())
                 return;
 
-            if (unit.getFormation().isValid()) {
+            if (unit.getFormation().isValid() && unit.getLocalState() == LocalState::Retreat) {
                 unit.setDestination(unit.getFormation());
                 return;
             }
@@ -562,7 +562,7 @@ namespace McRave::Combat {
             // Regardless of any decision, determine if Unit is in danger and needs to retreat
             if ((Actions::isInDanger(unit, unit.getPosition()) && !unit.isTargetedBySuicide())
                 || (Actions::isInDanger(unit, unit.getEngagePosition()) && insideEngageRadius && !unit.isTargetedBySuicide())
-                || (unit.isTargetedBySuicide() && unit.isNearSuicide() && unit.isFlying())
+                || (unit.isNearSuicide() && unit.isFlying())
                 || reAlign)
                 unit.setLocalState(LocalState::Retreat);
 

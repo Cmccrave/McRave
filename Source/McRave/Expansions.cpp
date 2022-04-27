@@ -90,6 +90,10 @@ namespace McRave::Expansion {
             auto parentStation = Terrain::getMyNatural();
             auto enemyStation = Terrain::getEnemyNatural();
 
+            // TODO: BWEB has failed, we can't expand
+            if (!parentStation)
+                return;
+
             // Score each station
             auto allowedFirstMineralBase = (Players::vT() || Players::ZvZ() || Players::ZvP()) ? 4 : 3;
             expansionOrder.clear();

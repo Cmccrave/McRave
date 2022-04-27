@@ -207,8 +207,6 @@ namespace McRave::BuildOrder::Zerg {
                     gasLimit += int(Stations::getMyStations().size());
                 if (Players::getSupply(PlayerState::Self, Races::Zerg) > 100)
                     gasLimit += vis(Zerg_Evolution_Chamber);
-
-                Broodwar << gasLimit << endl;
             }
         }
 
@@ -251,12 +249,19 @@ namespace McRave::BuildOrder::Zerg {
             }
         }
 
+        if (Broodwar->getGameType() == GameTypes::Free_For_All && Broodwar->getPlayers().size() > 2) {
+            currentBuild = "HatchPool";
+            currentOpener = "10Hatch";
+            currentTransition = "3HatchMuta";
+            ZvFFA();
+        }
+
         if (Broodwar->getGameType() == GameTypes::Team_Free_For_All || Broodwar->getGameType() == GameTypes::Team_Melee) {
             buildQueue[Zerg_Hatchery] = Players::getSupply(PlayerState::Self, Races::None) >= 30;
-            currentBuild = "PoolHatch";
-            currentOpener = "9Pool";
-            currentTransition = "2HatchMuta";
-            ZvZ();
+            currentBuild = "HatchPool";
+            currentOpener = "10Hatch";
+            currentTransition = "3HatchMuta";
+            ZvFFA();
         }
 
         if (Players::vT())
@@ -297,6 +302,10 @@ namespace McRave::BuildOrder::Zerg {
         if (Players::ZvZ())
             techOrder ={ Zerg_Mutalisk };
 
+        // ZvFFA
+        if (Broodwar->getGameType() == GameTypes::Free_For_All && Broodwar->getPlayers().size() > 2)
+            techOrder ={ Zerg_Mutalisk, Zerg_Hydralisk };
+
         // If we have our tech unit, set to none
         if (techComplete())
             techUnit = None;
@@ -318,7 +327,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Creep_Colony] = vis(Zerg_Creep_Colony) + vis(Zerg_Spore_Colony) + vis(Zerg_Sunken_Colony);
         queueWallDefenses();
         queueStationDefenses();
-        
+
         // Queue up supply, upgrade structures
         queueOverlords();
         queueUpgradeStructures();
@@ -503,6 +512,28 @@ namespace McRave::BuildOrder::Zerg {
             else {
                 armyComposition[Zerg_Drone] =                   0.55;
                 armyComposition[Zerg_Zergling] =                0.45;
+                currentComposition =                            Composition::Ling;
+            }
+        }
+
+        // ZvFFA
+        if (Broodwar->getGameType() == GameTypes::Free_For_All && Broodwar->getPlayers().size() > 2) {
+            if (isTechUnit(Zerg_Hydralisk) && isTechUnit(Zerg_Mutalisk)) {
+                armyComposition[Zerg_Drone] =                   0.70;
+                armyComposition[Zerg_Zergling] =                0.00;
+                armyComposition[Zerg_Hydralisk] =               0.20;
+                armyComposition[Zerg_Mutalisk] =                0.10;
+                currentComposition =                            Composition::HydraMuta;
+            }
+            else if (isTechUnit(Zerg_Mutalisk)) {
+                armyComposition[Zerg_Drone] =                   0.70;
+                armyComposition[Zerg_Zergling] =                0.00;
+                armyComposition[Zerg_Mutalisk] =                0.30;
+                currentComposition =                            Composition::Muta;
+            }
+            else {
+                armyComposition[Zerg_Drone] =                   0.80;
+                armyComposition[Zerg_Zergling] =                0.20;
                 currentComposition =                            Composition::Ling;
             }
         }

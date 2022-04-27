@@ -226,6 +226,9 @@
     <ClCompile Include="..\Source\McRave\Defender.cpp">
       <Filter>McRave\Micro\Defender</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\McRave\ZvFFA.cpp">
+      <Filter>McRave\Builds\Zerg</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">

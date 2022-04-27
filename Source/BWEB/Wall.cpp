@@ -1004,7 +1004,7 @@ namespace BWEB {
         // Returns how many visible ground defensive structures exist in this Walls defense locations
         int count = 0;
         for (auto &tile : defenses[0]) {
-            auto &type = Map::isUsed(tile);
+            auto type = Map::isUsed(tile);
             if (type == UnitTypes::Protoss_Photon_Cannon
                 || type == UnitTypes::Zerg_Sunken_Colony
                 || type == UnitTypes::Terran_Bunker)
@@ -1018,7 +1018,7 @@ namespace BWEB {
         // Returns how many visible air defensive structures exist in this Walls defense locations
         int count = 0;
         for (auto &tile : defenses[0]) {
-            auto &type = Map::isUsed(tile);
+            auto type = Map::isUsed(tile);
             if (type == UnitTypes::Protoss_Photon_Cannon
                 || type == UnitTypes::Zerg_Spore_Colony
                 || type == UnitTypes::Terran_Missile_Turret)
@@ -1113,9 +1113,9 @@ namespace BWEB::Walls {
         auto timeNow = chrono::system_clock::to_time_t(timePointNow);
 
         // Print the clock position of this Wall
-        auto clock = abs(round((Map::getAngle(make_pair(Map::mapBWEM.Center(), Position(area->Top()))) + 1.57) / 0.52));
-        if (Position(area->Top()).x < Map::mapBWEM.Center().x)
-            clock+= 6;
+        auto clock = (round((Map::getAngle(make_pair(Position(area->Top()), Map::mapBWEM.Center())) - 1.57) / 0.52));
+        if (clock < 0)
+            clock+=12;
 
         // Open the log file if desired and write information
         if (logInfo) {
@@ -1225,7 +1225,6 @@ namespace BWEB::Walls {
     {
         for (auto &[_, wall] : walls)
             wall.draw();
-
 
         //return;
         for (int x = 0; x < Broodwar->mapWidth(); x++) {

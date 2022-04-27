@@ -980,9 +980,6 @@ namespace McRave::Planning {
 
     void onStart()
     {
-        // Initialize Blocks
-        BWEB::Blocks::findBlocks();
-        BWEB::Pathfinding::clearCacheFully();
     }
 
     UnitType whatPlannedHere(TilePosition here)

@@ -41,9 +41,6 @@ namespace McRave::Combat::Clusters {
                 auto retreatInCommon = unit.getRetreat().getDistance(cluster.sharedRetreat) < cluster.sharedRadius;
                 auto objectiveInCommon = unit.getObjective().getDistance(cluster.sharedObjective) < cluster.sharedRadius;
 
-                Broodwar->drawLineMap(unit.getPosition(), unit.getObjective(), Colors::Green);
-                Broodwar->drawLineMap(unit.getPosition(), unit.getRetreat(), Colors::Red);
-
                 if (objectiveInCommon && retreatInCommon) {
                     cluster.sharedRadius += unit.isLightAir() ? 0.0 : double(unit.getType().width() * unit.getType().height()) / cluster.sharedRadius;
                     cluster.units.push_back(unit.weak_from_this());

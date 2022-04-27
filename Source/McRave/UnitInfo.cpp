@@ -21,6 +21,8 @@ namespace McRave
                 return WalkPosition(unit->getTilePosition());
             return WalkPositions::None;
         }
+
+        map<int, int> commandsPerFrame;
     }
 
     void UnitInfo::circle(Color color) {
@@ -186,7 +188,7 @@ namespace McRave
             if (closestSuicide && closestSuicide->unit()->getOrderTargetPosition()) {
                 auto distToSelf = Util::boxDistance(getType(), getPosition(), closestSuicide->getType(), closestSuicide->getPosition());
                 auto distToOrder = Util::boxDistance(getType(), getPosition(), closestSuicide->getType(), closestSuicide->unit()->getOrderTargetPosition());
-                if (distToOrder + distToSelf < 96.0)
+                if (distToSelf < 80.0)
                     nearSuicide = true;
             }
 
@@ -353,7 +355,7 @@ namespace McRave
                         return true;
                 }
             }
-            if (getPosition().getDistance(Position(BWEB::Map::getMainChoke()->Center())) < 64.0 && int(Stations::getMyStations().size()) >= 2)
+            if (BWEB::Map::getMainChoke() && getPosition().getDistance(Position(BWEB::Map::getMainChoke()->Center())) < 64.0 && int(Stations::getMyStations().size()) >= 2)
                 return true;
 
             // Fix for Andromeda like maps
@@ -434,17 +436,25 @@ namespace McRave
 
     void UnitInfo::checkCompletion()
     {
+        int extra = 0;
+        if (type.getRace() == BWAPI::Races::Terran)
+            extra = 2;
+        else if (type.getRace() == BWAPI::Races::Protoss)
+            extra = 72;
+        else
+            extra = 9;
+
         // Calculate completion based on build time
         if (!bwUnit->isCompleted()) {
             auto ratio = (double(health) - (0.1 * double(type.maxHitPoints()))) / (0.9 * double(type.maxHitPoints()));
-            completeFrame = Broodwar->getFrameCount() + int(std::round((1.0 - ratio) * double(type.buildTime())));
+            completeFrame = Broodwar->getFrameCount() + int(std::round((1.0 - ratio) * double(type.buildTime()))) + extra;
             startedFrame = Broodwar->getFrameCount() - int(std::round((ratio) * double(type.buildTime())));
         }
 
         // Set completion based on seeing it already completed and this is the first time visible
         else if (startedFrame == -999 && completeFrame == -999) {
-            startedFrame = Broodwar->getFrameCount();
             completeFrame = Broodwar->getFrameCount();
+            startedFrame = Broodwar->getFrameCount();
         }
     }
 
@@ -477,9 +487,9 @@ namespace McRave
         }
 
         const auto newCommand = [&]() {
-            auto newCommandPosition = unit()->getLastCommand().getTargetPosition().getDistance(here) > 32;
+            auto newCommandPosition = unit()->getLastCommand().getTargetPosition().getDistance(here) > 16;
             auto newCommandType = unit()->getLastCommand().getType() != cmd;
-            auto newCommandFrame = Broodwar->getFrameCount() - unit()->getLastCommandFrame() - Broodwar->getLatencyFrames() > 12;
+            auto newCommandFrame = Broodwar->getFrameCount() - unit()->getLastCommandFrame() - Broodwar->getLatencyFrames() > 24;
             return newCommandPosition || newCommandType || newCommandFrame;
         };
 
@@ -489,13 +499,14 @@ namespace McRave
         }
 
         // If this is a new order or new command than what we're requesting, we can issue it
-        if (newCommand()) {
+        if (newCommand() && commandsPerFrame[Broodwar->getFrameCount()] < 64) {
             if (cmd == UnitCommandTypes::Move)
                 unit()->move(here);
             if (cmd == UnitCommandTypes::Right_Click_Position)
                 unit()->rightClick(here);
             if (cmd == UnitCommandTypes::Stop)
                 unit()->stop();
+            commandsPerFrame[Broodwar->getFrameCount()]++;
             return true;
         }
         return false;
@@ -522,11 +533,12 @@ namespace McRave
         Actions::addAction(unit(), targetUnit.getPosition(), getType(), PlayerState::Self);
 
         // If this is a new order or new command than what we're requesting, we can issue it
-        if (newCommand() || cmd == UnitCommandTypes::Right_Click_Unit) {
+        if (newCommand() && commandsPerFrame[Broodwar->getFrameCount()] < 64) {
             if (cmd == UnitCommandTypes::Attack_Unit)
                 unit()->attack(targetUnit.unit());
             else if (cmd == UnitCommandTypes::Right_Click_Unit)
                 unit()->rightClick(targetUnit.unit());
+            commandsPerFrame[Broodwar->getFrameCount()]++;
             return true;
         }
         return false;

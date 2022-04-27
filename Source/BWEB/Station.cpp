@@ -9,6 +9,8 @@ namespace BWEB {
         vector<Station> stations;
         vector<const BWEM::Base *> mainBases;
         vector<const BWEM::Base *> natBases;
+        vector<const BWEM::ChokePoint*> mainChokes;
+        vector<const BWEM::ChokePoint*> natChokes;
     }
 
     void Station::addResourceReserves()
@@ -17,7 +19,7 @@ namespace BWEB {
             vector<TilePosition> directions{ {1,0}, {-1,0}, {0, 1}, {0,-1} };
             auto diff = (base->Center() - resourceCentroid);
             auto end = resource->getType().isMineralField() ? base->Center() + (diff / 4) : base->Center() - (diff / 4);
-            
+
             // Get the starting tile for a geyser
             if (resource->getType().isRefinery()) {
                 auto distClosest = resource->getType().isMineralField() ? 0.0 : DBL_MAX;
@@ -72,7 +74,7 @@ namespace BWEB {
         for (auto &m : base->Minerals()) {
             Map::addReserve(m->TopLeft(), 2, 1);
             addReserve(m->Unit(), m->Unit()->getTilePosition());
-            addReserve(m->Unit(), m->Unit()->getTilePosition() + TilePosition(1,0));
+            addReserve(m->Unit(), m->Unit()->getTilePosition() + TilePosition(1, 0));
         }
         for (auto &g : base->Geysers()) {
             Map::addReserve(g->TopLeft(), 4, 2);
@@ -107,13 +109,13 @@ namespace BWEB {
     void Station::findChoke()
     {
         // Only find a Chokepoint for mains or naturals
-        if (!main && !natural)
+        if (!main && !natural && base->GetArea()->ChokePoints().size() > 1)
             return;
 
         // Get closest partner base
         auto distBest = DBL_MAX;
         for (auto &potentialPartner : (main ? natBases : mainBases)) {
-            auto dist = potentialPartner->Center().getDistance(base->Center());
+            auto dist = Map::getGroundDistance(potentialPartner->Center(), base->Center());
             if (dist < distBest) {
                 partnerBase = potentialPartner;
                 distBest = dist;
@@ -122,14 +124,18 @@ namespace BWEB {
         if (!partnerBase)
             return;
 
-
-        if (main && !Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()).empty()) {
-            choke = Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()).front();
+        // Get partner choke
+        const BWEM::ChokePoint * partnerChoke = nullptr;
+        if (!Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()).empty()) {
+            partnerChoke = Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()).front();
 
             // Partner only has one chokepoint means we have a shared choke with this path
             if (partnerBase->GetArea()->ChokePoints().size() == 1)
-                choke = Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()).back();
+                partnerChoke = Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()).back();
         }
+
+        if (main && partnerChoke)
+            choke = partnerChoke;
 
         else {
 
@@ -168,8 +174,8 @@ namespace BWEB {
 
             distBest = DBL_MAX;
             for (auto &c : base->GetArea()->ChokePoints()) {
-                if (c->Center() == BWEB::Map::getMainChoke()->Center()
-                    || c->Blocked()
+                if (c->Blocked()
+                    || find(mainChokes.begin(), mainChokes.end(), c) != mainChokes.end()
                     || c->Geometry().size() <= 3
                     || (c->GetAreas().first != second && c->GetAreas().second != second))
                     continue;
@@ -184,7 +190,8 @@ namespace BWEB {
 
         if (choke && !main)
             defenseCentroid = Position(choke->Center());
-
+        if (choke)
+            main ? mainChokes.push_back(choke) : natChokes.push_back(choke);
     }
 
     void Station::findSecondaryLocations()
@@ -406,11 +413,12 @@ namespace BWEB::Stations {
             }
         }
 
-        // Find all natural bases        
+        // Find all natural bases
         for (auto &main : mainBases) {
 
             const BWEM::Base * baseBest = nullptr;
             auto distBest = DBL_MAX;
+
             for (auto &area : Map::mapBWEM.Areas()) {
                 for (auto &base : area.Bases()) {
 
@@ -422,7 +430,7 @@ namespace BWEB::Stations {
                         continue;
 
                     const auto dist = Map::getGroundDistance(base.Center(), main->Center());
-                    if (dist < distBest) {
+                    if (dist < distBest && dist < 960.0) {
                         distBest = dist;
                         baseBest = &base;
                     }
@@ -432,17 +440,44 @@ namespace BWEB::Stations {
             // Store any natural we found
             if (baseBest)
                 natBases.push_back(baseBest);
+
+            // Refuse to not have a natural for each main, try again but less strict
+            else {
+                for (auto &area : Map::mapBWEM.Areas()) {
+                    for (auto &base : area.Bases()) {
+                        if (base.Starting())
+                            continue;
+
+                        const auto dist = Map::getGroundDistance(main->Center(), base.Center());
+                        if (dist < distBest) {
+                            distBest = dist;
+                            baseBest = &base;
+                        }
+                    }
+                }
+
+                // Store any natural we found
+                if (baseBest)
+                    natBases.push_back(baseBest);
+            }
         }
 
-        // Create Stations
+        // Create main stations
+        for (auto &main : mainBases) {
+            Station newStation(main, true, false);
+            stations.push_back(newStation);
+        }
+
+        // Create natural stations
+        for (auto &nat : natBases) {
+            Station newStation(nat, false, true);
+            stations.push_back(newStation);
+        }
+
+        // Create remaining stations
         for (auto &area : Map::mapBWEM.Areas()) {
             for (auto &base : area.Bases()) {
-
-                auto isMain = find(mainBases.begin(), mainBases.end(), &base) != mainBases.end();
-                auto isNatural = find(natBases.begin(), natBases.end(), &base) != natBases.end();
-
-                // Add to our station lists
-                Station newStation(&base, isMain, isNatural);
+                Station newStation(&base, false, false);
                 stations.push_back(newStation);
             }
         }

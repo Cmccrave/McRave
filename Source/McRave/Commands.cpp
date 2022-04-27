@@ -11,7 +11,7 @@ namespace McRave::Command {
 
         double defaultGrouping(UnitInfo& unit, WalkPosition w) {
             return unit.getType().isFlyer() ?
-                ((unit.isNearSplash() || unit.isNearSuicide()) ? clamp(Grids::getAAirCluster(w), 0.75f, 5.0f) : 1.00)
+                ((unit.isTargetedBySplash() || unit.isTargetedBySuicide()) ? exp(clamp(Grids::getAAirCluster(w), 0.50f, 5.0f)) : 1.00)
                 : 1.0;
         }
 
@@ -420,10 +420,10 @@ namespace McRave::Command {
 
             if (unit.getRole() == Role::Combat || unit.getRole() == Role::Scout) {
 
-                if (unit.hasTarget() && unit.isTargetedBySuicide())
+                if (unit.hasTarget() && unit.isTargetedBySuicide() && !unit.isFlying())
                     return false;
 
-                if (unit.getTarget().isSuicidal())                                                                             // Do kite when the target is a suicidal unit
+                if (unit.getTarget().isSuicidal() && !unit.isFlying())                                                         // Do kite when the target is a suicidal unit
                     return true;
 
                 if (!unit.getTarget().canAttackGround() && !unit.getTarget().canAttackAir() && !unit.getType().isFlyer())      // Don't kite non attackers unless we're a flying unit
@@ -488,8 +488,8 @@ namespace McRave::Command {
             return score;
         };
 
-        bool closeToMainChoke = Position(BWEB::Map::getMainChoke()->Center()).getDistance(unit.getPosition()) < 320.0;
-        bool closeToNaturalChoke = Position(BWEB::Map::getNaturalChoke()->Center()).getDistance(unit.getPosition()) < 320.0;
+        bool closeToMainChoke = BWEB::Map::getMainChoke() && Position(BWEB::Map::getMainChoke()->Center()).getDistance(unit.getPosition()) < 320.0;
+        bool closeToNaturalChoke = BWEB::Map::getNaturalChoke() && Position(BWEB::Map::getNaturalChoke()->Center()).getDistance(unit.getPosition()) < 320.0;
         bool defendingExpansion = unit.getDestination().isValid() && !Terrain::inTerritory(PlayerState::Enemy, unit.getDestination());
         bool closeToDefend = Terrain::inTerritory(PlayerState::Self, unit.getPosition()) || closeToMainChoke || closeToNaturalChoke || unit.getType().isWorker() || (unit.getGoalType() == GoalType::Defend && unit.getPosition().getDistance(unit.getGoal()) < 320.0);
 
@@ -607,6 +607,7 @@ namespace McRave::Command {
     {
         auto distHome = unit.getPosition().getDistance(unit.getDestination());
         auto percentRetreatHome = unit.hasTarget() ? clamp(unit.getPosition().getDistance(unit.getSimTarget().getPosition()) / unit.getEngageRadius(), 0.0, 1.0) : 1.0;
+        Broodwar->drawTextMap(unit.getPosition(), "%.2f", percentRetreatHome);
 
         const auto scoreFunction = [&](WalkPosition w) {
             const auto p =          Position(w) + Position(4, 4);
@@ -615,8 +616,8 @@ namespace McRave::Command {
             const auto grouping =   defaultGrouping(unit, w);
             const auto mobility =   defaultMobility(unit, w);
 
-            if (unit.isLightAir() && p.getDistance(unit.getDestination()) > unit.getPosition().getDistance(unit.getDestination()) + 32.0)
-                return 0.0;
+            //if (unit.isLightAir() && p.getDistance(unit.getDestination()) > unit.getPosition().getDistance(unit.getDestination()) + 32.0)
+            //    return 0.0;
 
             auto distTargeted = 1.0;
             for (auto &t : unit.getTargetedBy()) {

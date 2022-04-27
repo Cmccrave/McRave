@@ -326,8 +326,10 @@ namespace McRave::Goals {
             }
 
             // Assign an Overlord to watch our Choke early on
-            if ((Util::getTime() < Time(3, 00) && !Spy::enemyProxy()) || (Util::getTime() < Time(2, 15) && Spy::enemyProxy()) || (Players::ZvZ() && enemyStrength.airToAir <= 0.0))
-                assignNumberToGoal(Position(BWEB::Map::getNaturalChoke()->Center()), Zerg_Overlord, 1, GoalType::Escort);
+            if (BWEB::Map::getNaturalChoke()) {
+                if ((Util::getTime() < Time(3, 00) && !Spy::enemyProxy()) || (Util::getTime() < Time(2, 15) && Spy::enemyProxy()) || (Players::ZvZ() && enemyStrength.airToAir <= 0.0))
+                    assignNumberToGoal(Position(BWEB::Map::getNaturalChoke()->Center()), Zerg_Overlord, 1, GoalType::Escort);
+            }
 
             // Assign the first available Overlord to each natural
             for (auto &station : Stations::getMyStations()) {

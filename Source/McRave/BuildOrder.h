@@ -94,6 +94,7 @@ namespace McRave::BuildOrder {
         void ZvT();
         void ZvP();
         void ZvZ();
+        void ZvFFA();
     }
 
     double getCompositionPercentage(BWAPI::UnitType);

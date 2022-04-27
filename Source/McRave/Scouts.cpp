@@ -177,19 +177,21 @@ namespace McRave::Scouts {
             const auto assign = [&](UnitType type) {
                 shared_ptr<UnitInfo> scout = nullptr;
 
+                auto assignPos = BWEB::Map::getNaturalChoke() ? Position(BWEB::Map::getNaturalChoke()->Center()) : BWEB::Map::getMainPosition();
+
                 // Proxy takes furthest from natural choke
                 if (type.isWorker() && BuildOrder::getCurrentOpener() == "Proxy") {
-                    scout = Util::getFurthestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
+                    scout = Util::getFurthestUnit(assignPos, PlayerState::Self, [&](auto &u) {
                         return u->getRole() == Role::Worker && u->getType() == type && (!u->hasResource() || !u->getResource().getType().isRefinery()) && u->getBuildType() == None && !u->unit()->isCarryingMinerals() && !u->unit()->isCarryingGas();
                     });
                 }
                 else if (type.isFlyer()) {
-                    scout = Util::getClosestUnit(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
+                    scout = Util::getClosestUnit(assignPos, PlayerState::Self, [&](auto &u) {
                         return u->getRole() == Role::Support && u->getType() == type;
                     });
                 }
                 else if (type.isWorker())
-                    scout = Util::getClosestUnitGround(Position(BWEB::Map::getNaturalChoke()->Center()), PlayerState::Self, [&](auto &u) {
+                    scout = Util::getClosestUnitGround(assignPos, PlayerState::Self, [&](auto &u) {
                     return u->getRole() == Role::Worker && u->getType() == type && (!u->hasResource() || !u->getResource().getType().isRefinery()) && u->getBuildType() == None && !u->unit()->isCarryingMinerals() && !u->unit()->isCarryingGas();
                 });
 
@@ -317,7 +319,7 @@ namespace McRave::Scouts {
             }
 
             // If enemy start is valid, add targets around it and the natural
-            if (Terrain::getEnemyStartingPosition().isValid()) {
+            if (Terrain::getEnemyMain() && Terrain::getEnemyNatural()) {
 
                 // Add each enemy station as a target
                 addTarget(Position(Terrain::getEnemyMain()->getBase()->Center()), ScoutType::Main, 160);
@@ -351,7 +353,7 @@ namespace McRave::Scouts {
             }
 
             // Scout the popular middle proxy location if it's walkable
-            if (!Players::vZ() && !Terrain::foundEnemy() && scoutOrder.front() && (Stations::isBaseExplored(scoutOrder.front()) || Broodwar->getStartLocations().size() >= 4) && !Terrain::isExplored(mapBWEM.Center()) && BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), mapBWEM.Center()) != DBL_MAX)
+            if (!Players::vZ() && !Terrain::foundEnemy() && !scoutOrder.empty() && scoutOrder.front() && (Stations::isBaseExplored(scoutOrder.front()) || Broodwar->getStartLocations().size() >= 4) && !Terrain::isExplored(mapBWEM.Center()) && BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), mapBWEM.Center()) != DBL_MAX)
                 addTarget(mapBWEM.Center(), ScoutType::Proxy);
 
             // Determine if we achieved a full scout
@@ -529,7 +531,7 @@ namespace McRave::Scouts {
                     auto pos = Position(tile);
                     auto dist = pos.getDistance(Position(closestMain->getChokepoint()->Center())) + pos.getDistance(Position(station.getChokepoint()->Center())) + pos.getDistance(closestMain->getBase()->Center());
 
-                    if (!Grids::hasCliffVision(tile))
+                    if (tile.isValid() && !Grids::hasCliffVision(tile))
                         dist = dist * 10;
 
                     if (dist > distBest) {
