@@ -29,7 +29,7 @@ namespace McRave::BuildOrder::Zerg {
             auto onTheWay = 0;
             for (auto &w : Units::getUnits(PlayerState::Self)) {
                 auto &worker = *w;
-                if (worker.unit()->isCarryingGas() || (worker.hasResource() && worker.getResource().getType().isRefinery()))
+                if (worker.unit()->isCarryingGas() || (worker.hasResource() && worker.getResource().lock()->getType().isRefinery()))
                     onTheWay+=8;
             }
 

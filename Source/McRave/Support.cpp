@@ -66,7 +66,7 @@ namespace McRave::Support {
                 // Move detectors between target and unit vs Terran
                 if (unit.getType().isDetector() && Players::vT()) {
                     if (unit.hasTarget())
-                        unit.setDestination((unit.getTarget().getPosition() + unit.getDestination()) / 2);
+                        unit.setDestination((unit.getTarget().lock()->getPosition() + unit.getDestination()) / 2);
                     else {
                         auto closestEnemy = Util::getClosestUnit(unit.getDestination(), PlayerState::Enemy, [&](auto &u) {
                             return !u->getType().isWorker() && !u->getType().isBuilding();

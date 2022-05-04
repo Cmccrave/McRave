@@ -23,13 +23,35 @@ namespace McRave::Combat {
         multimap<double, Position> groundCleanupPositions;
         multimap<double, Position> airCleanupPositions;
 
+        Position getPathPoint(UnitInfo& unit, Position start)
+        {
+            // Create a pathpoint
+            auto pathPoint = start;
+            auto usedTile = BWEB::Map::isUsed(TilePosition(start));
+            if (!BWEB::Map::isWalkable(TilePosition(start), unit.getType()) || usedTile != UnitTypes::None) {
+                auto dimensions = usedTile != UnitTypes::None ? usedTile.tileSize() : TilePosition(1, 1);
+                auto closest = DBL_MAX;
+                for (int x = TilePosition(start).x - dimensions.x; x < TilePosition(start).x + dimensions.x + 1; x++) {
+                    for (int y = TilePosition(start).y - dimensions.y; y < TilePosition(start).y + dimensions.y + 1; y++) {
+                        auto center = Position(TilePosition(x, y)) + Position(16, 16);
+                        auto dist = center.getDistance(unit.getPosition());
+                        if (dist < closest && BWEB::Map::isWalkable(TilePosition(x, y), unit.getType()) && BWEB::Map::isUsed(TilePosition(x, y)) == UnitTypes::None) {
+                            closest = dist;
+                            pathPoint = center;
+                        }
+                    }
+                }
+            }
+            return pathPoint;
+        }
+
         constexpr tuple commands{ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::defend, Command::explore, Command::escort, Command::retreat, Command::move };
 
         bool lightUnitNeedsRegroup(UnitInfo& unit)
         {
             if (!unit.isLightAir())
                 return false;
-            return unit.hasCommander() && unit.getPosition().getDistance(unit.getCommander().getPosition()) > 64.0;
+            return unit.hasCommander() && unit.getPosition().getDistance(unit.getCommander().lock()->getPosition()) > 64.0;
         }
 
         void getCleanupPosition(UnitInfo& unit)
@@ -80,28 +102,6 @@ namespace McRave::Combat {
                     groundCleanupPositions.erase(groundCleanupPositions.begin());
                 }
             }
-        }
-
-        Position getPathPoint(UnitInfo& unit, Position start)
-        {
-            // Create a pathpoint
-            auto pathPoint = start;
-            auto usedTile = BWEB::Map::isUsed(TilePosition(start));
-            if (!BWEB::Map::isWalkable(TilePosition(start), unit.getType()) || usedTile != UnitTypes::None) {
-                auto dimensions = usedTile != UnitTypes::None ? usedTile.tileSize() : TilePosition(1, 1);
-                auto closest = DBL_MAX;
-                for (int x = TilePosition(start).x - dimensions.x; x < TilePosition(start).x + dimensions.x + 1; x++) {
-                    for (int y = TilePosition(start).y - dimensions.y; y < TilePosition(start).y + dimensions.y + 1; y++) {
-                        auto center = Position(TilePosition(x, y)) + Position(16, 16);
-                        auto dist = center.getDistance(unit.getPosition());
-                        if (dist < closest && BWEB::Map::isWalkable(TilePosition(x, y), unit.getType()) && BWEB::Map::isUsed(TilePosition(x, y)) == UnitTypes::None) {
-                            closest = dist;
-                            pathPoint = center;
-                        }
-                    }
-                }
-            }
-            return pathPoint;
         }
 
         void updateSimulation(UnitInfo& unit)
@@ -165,24 +165,31 @@ namespace McRave::Combat {
             Horizon::simulate(unit);
 
             auto engagedAlreadyOffset = unit.getSimState() == SimState::Win ? 0.2 : 0.0;
+            auto unitTarget = unit.getTarget().lock();
 
             // Check if any allied unit is below the limit to synhcronize sim values
             for (auto &a : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &self = *a;
 
-                if (self.hasTarget() && unit.hasTarget() && self.getTarget() == unit.getTarget() && self.getSimValue() <= minThreshold && self.getSimValue() != 0.0) {
-                    self.isFlying() ?
-                        (self.getTarget().isFlying() ? belowAirtoAirLimit = true : belowAirtoGrdLimit = true) :
-                        (self.getTarget().isFlying() ? belowGrdtoAirLimit = true : belowGrdtoGrdLimit = true);
+                if (self.hasTarget()) {
+                    auto selfTarget = self.getTarget().lock();
+                    if (selfTarget == unitTarget && self.getSimValue() <= minThreshold && self.getSimValue() != 0.0) {
+                        self.isFlying() ?
+                            (selfTarget->isFlying() ? belowAirtoAirLimit = true : belowAirtoGrdLimit = true) :
+                            (selfTarget->isFlying() ? belowGrdtoAirLimit = true : belowGrdtoGrdLimit = true);
+                    }
                 }
             }
             for (auto &a : Units::getUnits(PlayerState::Ally)) {
                 UnitInfo &ally = *a;
 
-                if (ally.hasTarget() && unit.hasTarget() && ally.getTarget() == unit.getTarget() && ally.getSimValue() <= minThreshold && ally.getSimValue() != 0.0) {
-                    ally.isFlying() ?
-                        (ally.getTarget().isFlying() ? belowAirtoAirLimit = true : belowAirtoGrdLimit = true) :
-                        (ally.getTarget().isFlying() ? belowGrdtoAirLimit = true : belowGrdtoGrdLimit = true);
+                if (ally.hasTarget()) {
+                    auto allyTarget = ally.getTarget().lock();
+                    if (ally.getTarget() == unit.getTarget() && ally.getSimValue() <= minThreshold && ally.getSimValue() != 0.0) {
+                        ally.isFlying() ?
+                            (allyTarget->isFlying() ? belowAirtoAirLimit = true : belowAirtoGrdLimit = true) :
+                            (allyTarget->isFlying() ? belowGrdtoAirLimit = true : belowGrdtoGrdLimit = true);
+                    }
                 }
             }
 
@@ -193,17 +200,17 @@ namespace McRave::Combat {
                 unit.setSimState(SimState::Loss);
 
             // Check for hardcoded directional losses
-            if (unit.hasTarget() && unit.getSimValue() < maxThreshold - engagedAlreadyOffset) {
+            if (unit.getSimValue() < maxThreshold - engagedAlreadyOffset) {
                 if (unit.isFlying()) {
-                    if (unit.getTarget().isFlying() && belowAirtoAirLimit)
+                    if (unitTarget->isFlying() && belowAirtoAirLimit)
                         unit.setSimState(SimState::Loss);
-                    else if (!unit.getTarget().isFlying() && belowAirtoGrdLimit)
+                    else if (!unitTarget->isFlying() && belowAirtoGrdLimit)
                         unit.setSimState(SimState::Loss);
                 }
                 else {
-                    if (unit.getTarget().isFlying() && belowGrdtoAirLimit)
+                    if (unitTarget->isFlying() && belowGrdtoAirLimit)
                         unit.setSimState(SimState::Loss);
-                    else if (!unit.getTarget().isFlying() && belowGrdtoGrdLimit)
+                    else if (!unitTarget->isFlying() && belowGrdtoGrdLimit)
                         unit.setSimState(SimState::Loss);
                 }
             }
@@ -214,7 +221,8 @@ namespace McRave::Combat {
         {
             // If attacking and target is close, set as destination
             if (unit.getLocalState() == LocalState::Attack) {
-                unit.setObjective(unit.getTarget().getPosition());
+                if (unit.hasTarget())
+                    unit.setObjective(unit.getTarget().lock()->getPosition());
 
                 if (unit.attemptingRunby())
                     unit.setObjective(unit.getEngagePosition());
@@ -251,7 +259,7 @@ namespace McRave::Combat {
                 else if (unit.attemptingHarass())
                     unit.setObjective(Terrain::getHarassPosition());
                 else if (unit.hasTarget()) {
-                    unit.setObjective(unit.getTarget().getPosition());
+                    unit.setObjective(unit.getTarget().lock()->getPosition());
 
                     // HACK: Performance improvement
                     unit.setObjectivePath(unit.getTargetPath());
@@ -283,7 +291,7 @@ namespace McRave::Combat {
                 return;
             }
             else if (lightUnitNeedsRegroup(unit))
-                unit.setDestination(unit.getCommander().getPosition());
+                unit.setDestination(unit.getCommander().lock()->getPosition());
 
             auto pathDestination = &unit.getObjectivePath();
             if (unit.getLocalState() == LocalState::Retreat)
@@ -402,20 +410,25 @@ namespace McRave::Combat {
             }
         }
 
-
         void updateHarassPath(UnitInfo& unit)
         {
-            if (!unit.isLightAir())
-                return;
+            if (unit.isLightAir() && !unit.getGoal().isValid() && unit.hasSimTarget()) {
 
-            // Generate a flying path for harassing that obeys exploration and staying out of range of threats if possible
-            auto canHarass = unit.getLocalState() != LocalState::Retreat && unit.getObjective() == Terrain::getHarassPosition() && unit.hasSimTarget() && unit.attemptingHarass();
-            auto enemyPressure = unit.hasTarget() && Util::getTime() < Time(7, 00) && unit.getTarget().getPosition().getDistance(BWEB::Map::getMainPosition()) < unit.getTarget().getPosition().getDistance(Terrain::getEnemyStartingPosition());
-            if (!unit.getGoal().isValid() && canHarass && !enemyPressure) {
+                // Check if we can harass
+                auto simTarget = unit.getSimTarget().lock();
+                auto canHarass = unit.getLocalState() != LocalState::Retreat && unit.getObjective() == Terrain::getHarassPosition() && unit.attemptingHarass();
 
-                auto simDistCurrent = unit.getPosition().getApproxDistance(unit.getSimTarget().getPosition());
-                auto simPosition = unit.getSimTarget().getPosition();
+                // Check if the enemy is pressuring us
+                auto enemyPressure = false;
+                if (unit.hasTarget()) {
+                    auto unitTarget = unit.getTarget().lock();
+                    enemyPressure = Util::getTime() < Time(7, 00) && unitTarget->getPosition().getDistance(BWEB::Map::getMainPosition()) < unitTarget->getPosition().getDistance(Terrain::getEnemyStartingPosition());
+                }
 
+                auto simDistCurrent = unit.getPosition().getApproxDistance(simTarget->getPosition());
+                auto simPosition = simTarget->getPosition();
+
+                // Generate a flying path for harassing that obeys exploration and staying out of range of threats if possible
                 const auto flyerAttack = [&](const TilePosition &t) {
                     const auto center = Position(t) + Position(16, 16);
 
@@ -428,9 +441,11 @@ namespace McRave::Combat {
                     return 1.00 / (vis * dist);
                 };
 
-                BWEB::Path newPath(unit.getPosition(), unit.getObjective(), unit.getType());
-                newPath.generateAS(flyerAttack);
-                unit.setObjectivePath(newPath);
+                if (canHarass && !enemyPressure) {
+                    BWEB::Path newPath(unit.getPosition(), unit.getObjective(), unit.getType());
+                    newPath.generateAS(flyerAttack);
+                    unit.setObjectivePath(newPath);
+                }
             }
         }
 
@@ -463,23 +478,6 @@ namespace McRave::Combat {
             //Visuals::drawPath(unit.getObjectivePath());
         }
 
-        void updateRetreatPath(UnitInfo& unit)
-        {
-            // Generate a new path that obeys collision of terrain and buildings
-            auto needPath = unit.getRetreatPath().getTiles().empty();
-            if (!unit.isFlying() && needPath && unit.getRetreatPath().getTarget() != TilePosition(unit.getRetreat())) {
-                auto pathPoint = getPathPoint(unit, unit.getRetreat());
-                if (!mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(pathPoint)) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(pathPoint)))) {
-                    BWEB::Path newPath(unit.getPosition(), pathPoint, unit.getType());
-                    newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t); });
-                    unit.setRetreatPath(newPath);
-                }
-            }
-            //Visuals::drawPath(unit.getRetreatPath());
-        }
-
-
-
         void updateCommanders()
         {
             // Execute commands for commanders first
@@ -489,10 +487,13 @@ namespace McRave::Combat {
                     continue;
 
                 // For pathing purposes, we store light air commander sim positions
-                if (commander->hasSimTarget() && find(lastSimPositions.begin(), lastSimPositions.end(), commander->getSimTarget().getPosition()) == lastSimPositions.end()) {
-                    if (lastSimPositions.size() >= 5)
-                        lastSimPositions.pop_back();
-                    lastSimPositions.insert(lastSimPositions.begin(), commander->getSimTarget().getPosition());
+                if (commander->hasSimTarget()) {
+                    auto simTarget = commander->getSimTarget().lock();
+                    if (find(lastSimPositions.begin(), lastSimPositions.end(), simTarget->getPosition()) == lastSimPositions.end()) {
+                        if (lastSimPositions.size() >= 5)
+                            lastSimPositions.pop_back();
+                        lastSimPositions.insert(lastSimPositions.begin(), simTarget->getPosition());
+                    }
                 }
 
                 // Air commanders have a harass path as their objective
@@ -516,7 +517,7 @@ namespace McRave::Combat {
 
             // Only proactively pull the closest worker to our defend position
             auto closestWorker = Util::getClosestUnit(Terrain::getDefendPosition(), PlayerState::Self, [&](auto &u) {
-                return u->getRole() == Role::Worker && !unit.getGoal().isValid() && (!unit.hasResource() || !unit.getResource().getType().isRefinery()) && !unit.getBuildPosition().isValid();
+                return u->getRole() == Role::Worker && !u->getGoal().isValid() && (!u->hasResource() || !u->getResource().lock()->getType().isRefinery()) && !unit.getBuildPosition().isValid();
             });
 
             auto combatCount = Roles::getMyRoleCount(Role::Combat) - (unit.getRole() == Role::Combat ? 1 : 0);
@@ -649,7 +650,7 @@ namespace McRave::Combat {
                     combatCount--;
                     combatWorkersCount--;
                     react = reactivePullWorker();
-                    if (react && unit.hasTarget()) {
+                    if (react && !unit.hasTarget()) {
                         unit.setLocalState(LocalState::Attack);
                         unit.setGlobalState(GlobalState::Attack);
                     }
@@ -662,12 +663,14 @@ namespace McRave::Combat {
             if (!unit.hasSimTarget() || !unit.hasTarget() || unit.getLocalState() != LocalState::None)
                 return;
 
-            const auto distSim = double(Util::boxDistance(unit.getType(), unit.getPosition(), unit.getSimTarget().getType(), unit.getSimTarget().getPosition()));
-            const auto distTarget = double(Util::boxDistance(unit.getType(), unit.getPosition(), unit.getTarget().getType(), unit.getTarget().getPosition()));
+            auto simTarget = unit.getSimTarget().lock();
+            auto unitTarget = unit.getTarget().lock();
+            const auto distSim = double(Util::boxDistance(unit.getType(), unit.getPosition(), simTarget->getType(), simTarget->getPosition()));
+            const auto distTarget = double(Util::boxDistance(unit.getType(), unit.getPosition(), unitTarget->getType(), unitTarget->getPosition()));
             const auto insideRetreatRadius = distSim < unit.getRetreatRadius() && !unit.attemptingRunby();
             const auto insideEngageRadius = distTarget < unit.getEngageRadius() && unit.getGlobalState() == GlobalState::Attack;
-            const auto atHome = Terrain::inTerritory(PlayerState::Self, unit.getTarget().getPosition()) && mapBWEM.GetArea(unit.getTilePosition()) == mapBWEM.GetArea(unit.getTarget().getTilePosition()) && !Players::ZvZ();
-            const auto reAlign = (unit.getType() == Zerg_Mutalisk && unit.hasTarget() && unit.canStartAttack() && !unit.isWithinAngle(unit.getTarget()) && Util::boxDistance(unit.getType(), unit.getPosition(), unit.getTarget().getType(), unit.getTarget().getPosition()) <= 32.0);
+            const auto atHome = Terrain::inTerritory(PlayerState::Self, unitTarget->getPosition()) && mapBWEM.GetArea(unit.getTilePosition()) == mapBWEM.GetArea(unitTarget->getTilePosition()) && !Players::ZvZ();
+            const auto reAlign = (unit.getType() == Zerg_Mutalisk && unit.canStartAttack() && !unit.isWithinAngle(*unitTarget) && Util::boxDistance(unit.getType(), unit.getPosition(), unitTarget->getType(), unitTarget->getPosition()) <= 32.0);
             const auto winningState = (!atHome || !BuildOrder::isPlayPassive()) && unit.getSimState() == SimState::Win;
 
             // Regardless of any decision, determine if Unit is in danger and needs to retreat
@@ -785,7 +788,7 @@ namespace McRave::Combat {
                     if (cluster.commandShare == CommandShare::Exact && !unit.localRetreat() && !unit.globalRetreat() && !lightUnitNeedsRegroup(unit)) {
                         auto commander = cluster.commander.lock();
                         if (commander->getCommandType() == UnitCommandTypes::Attack_Unit && unit.hasTarget())
-                            unit.command(commander->getCommandType(), unit.getTarget());
+                            unit.command(commander->getCommandType(), *unit.getTarget().lock());
                         else if (commander->getCommandType() == UnitCommandTypes::Move && !unit.isTargetedBySplash())
                             unit.command(commander->getCommandType(), commander->getCommandPosition());
                         else if (commander->getCommandType() == UnitCommandTypes::Right_Click_Position && !unit.isTargetedBySplash())
@@ -813,7 +816,6 @@ namespace McRave::Combat {
                 updateObjective(unit);
                 updateRetreat(unit);
                 updateObjectivePath(unit);
-                updateRetreatPath(unit);
             }
         }
 

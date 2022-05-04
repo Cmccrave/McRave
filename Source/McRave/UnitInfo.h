@@ -244,11 +244,11 @@ namespace McRave {
         GlobalState getGlobalState() { return gState; }
         LocalState getLocalState() { return lState; }
 
-        ResourceInfo &getResource() { return *resource.lock(); }
-        UnitInfo &getTransport() { return *transport.lock(); }
-        UnitInfo &getTarget() { return *target.lock(); }
-        UnitInfo &getCommander() { return *commander.lock(); }
-        UnitInfo &getSimTarget() { return *simTarget.lock(); }
+        std::weak_ptr<ResourceInfo> getResource() { return resource; }
+        std::weak_ptr<UnitInfo> getTransport() { return transport; }
+        std::weak_ptr<UnitInfo> getTarget() { return target; }
+        std::weak_ptr<UnitInfo> getCommander() { return commander; }
+        std::weak_ptr<UnitInfo> getSimTarget() { return simTarget; }
 
         Role getRole() { return role; }
         GoalType getGoalType() { return gType; }

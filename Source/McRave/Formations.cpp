@@ -59,7 +59,7 @@ namespace McRave::Combat::Formations {
 
         // If commander is fighting, form a concave around the target
         if (commander->getLocalState() == LocalState::Attack) {
-            objective = commander->getTarget().getPosition();
+            objective = commander->getTarget().lock()->getPosition();
             radius = commander->getGroundRange();
         }
         else {

@@ -149,12 +149,12 @@ namespace McRave::Visuals {
 
                 if (targets) {
                     if (unit.hasTarget())
-                        Visuals::drawLine(unit.getTarget().getPosition(), unit.getPosition(), color);
+                        Visuals::drawLine(unit.getTarget().lock()->getPosition(), unit.getPosition(), color);
                 }
 
                 if (resources) {
                     if (unit.hasResource())
-                        Visuals::drawLine(unit.getResource().getPosition(), unit.getPosition(), color);
+                        Visuals::drawLine(unit.getResource().lock()->getPosition(), unit.getPosition(), color);
                 }
 
                 if (strengths) {
@@ -215,7 +215,7 @@ namespace McRave::Visuals {
 
                 if (targets) {
                     if (unit.hasTarget())
-                        Visuals::drawLine(unit.getTarget().getPosition(), unit.getPosition(), color);
+                        Visuals::drawLine(unit.getTarget().lock()->getPosition(), unit.getPosition(), color);
                 }
 
                 if (strengths) {

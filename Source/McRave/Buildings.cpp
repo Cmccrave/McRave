@@ -169,10 +169,11 @@ namespace McRave::Buildings {
             reBuild(building);
 
             // Comsat scans - Move to special manager
-            if (building.getType() == Terran_Comsat_Station) {
-                if (building.hasTarget() && building.getTarget().unit()->exists() && !Actions::overlapsDetection(building.unit(), building.getTarget().getPosition(), PlayerState::Enemy)) {
-                    building.unit()->useTech(TechTypes::Scanner_Sweep, building.getTarget().getPosition());
-                    Actions::addAction(building.unit(), building.getTarget().getPosition(), TechTypes::Scanner_Sweep, PlayerState::Self);
+            if (building.getType() == Terran_Comsat_Station && building.hasTarget()) {
+                auto buildingTarget = building.getTarget().lock();
+                if (buildingTarget->unit()->exists() && !Actions::overlapsDetection(building.unit(), buildingTarget->getPosition(), PlayerState::Enemy)) {
+                    building.unit()->useTech(TechTypes::Scanner_Sweep, buildingTarget->getPosition());
+                    Actions::addAction(building.unit(), buildingTarget->getPosition(), TechTypes::Scanner_Sweep, PlayerState::Self);
                 }
             }
         }

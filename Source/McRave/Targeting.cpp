@@ -33,8 +33,7 @@ namespace McRave::Targets {
             if (!target.unit()
                 || target.unit()->isInvincible()
                 || !target.getWalkPosition().isValid()
-                || target.unit()->isStasised()
-                || (!unit.isFlying() && target.lastUnreachableFrame > Broodwar->getFrameCount() - 96 && !target.isWithinRange(unit) && !unit.isWithinRange(target)))
+                || target.unit()->isStasised())
                 return false;
             return true;
         }
@@ -189,14 +188,6 @@ namespace McRave::Targets {
                 reach = range + (unit.getSpeed() * 16.0) + double(unit.getType().width() / 2) + 64.0;
             }
 
-            // HACK to not target air units over cliffs or in areas technically far away
-            if (!unit.isFlying() && target.isFlying() && BWEB::Map::isWalkable(target.getTilePosition(), Zerg_Ultralisk)) {
-                auto grdDist = BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition());
-                auto airDist = unit.getPosition().getDistance(target.getPosition());
-                if (grdDist > airDist * 2)
-                    return 0.0;
-            }
-
             const auto bonusScore = [&]() {
 
                 // Add bonus for expansion killing
@@ -322,11 +313,27 @@ namespace McRave::Targets {
             }
 
             if (!unit.hasSimTarget() && unit.hasTarget())
-                unit.setSimTarget(&unit.getTarget());
+                unit.setSimTarget(&*unit.getTarget().lock());
         }
 
         void getBestTarget(UnitInfo& unit, PlayerState pState)
         {
+            const auto checkGroundAccess = [&](UnitInfo& target) {
+                if (unit.isFlying())
+                    return true;
+
+                if (target.lastUnreachableFrame > Broodwar->getFrameCount() - 96 && !target.isWithinRange(unit) && !unit.isWithinRange(target))
+                    return false;
+
+                if (target.isFlying() && BWEB::Map::isWalkable(target.getTilePosition(), Zerg_Ultralisk)) {
+                    auto grdDist = BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition());
+                    auto airDist = unit.getPosition().getDistance(target.getPosition());
+                    if (grdDist > airDist * 2)
+                        return false;
+                }
+                return true;
+            };
+
             auto scoreBest = 0.0;
             for (auto &t : Units::getUnits(pState)) {
                 UnitInfo &target = *t;
@@ -337,7 +344,7 @@ namespace McRave::Targets {
 
                 // If this target is more important to target, set as current target
                 const auto thisUnit = scoreTarget(unit, target);
-                if (thisUnit > scoreBest) {
+                if (thisUnit > scoreBest && checkGroundAccess(target)) {
                     scoreBest = thisUnit;
                     unit.setTarget(&target);
                 }
@@ -354,7 +361,7 @@ namespace McRave::Targets {
 
                 // If this target is more important to target, set as current target
                 const auto thisUnit = scoreTarget(unit, target);
-                if (thisUnit > scoreBest) {
+                if (thisUnit > scoreBest && checkGroundAccess(target)) {
                     scoreBest = thisUnit;
                     unit.setTarget(&target);
                 }
@@ -371,7 +378,7 @@ namespace McRave::Targets {
 
                 // If this target is more important to target, set as current target
                 const auto thisUnit = scoreTarget(unit, target);
-                if (thisUnit > scoreBest) {
+                if (thisUnit > scoreBest && checkGroundAccess(target)) {
                     scoreBest = thisUnit;
                     unit.setTarget(&target);
                 }
@@ -379,7 +386,7 @@ namespace McRave::Targets {
 
             // Add this unit to the targeted by vector
             if (unit.hasTarget() && unit.getRole() == Role::Combat)
-                unit.getTarget().getTargetedBy().push_back(unit.weak_from_this());
+                unit.getTarget().lock()->getTargetedBy().push_back(unit.weak_from_this());
         }
 
         void getTarget(UnitInfo& unit)

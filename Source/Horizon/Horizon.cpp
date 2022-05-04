@@ -18,8 +18,8 @@ namespace McRave::Horizon {
                 || (u.unit()->exists() && !u.unit()->isCompleted())
                 || (u.unit()->exists() && (u.unit()->isStasised() || u.unit()->isMorphing()))
                 || (u.getVisibleAirStrength() <= 0.0 && u.getVisibleGroundStrength() <= 0.0)
-                || (!u.hasTarget())
-                || (u.getRole() != Role::None && u.getRole() != Role::Combat && u.getRole() != Role::Defender))
+                || (u.getRole() != Role::None && u.getRole() != Role::Combat && u.getRole() != Role::Defender)
+                || !u.hasTarget())
                 return false;
             return true;
         }
@@ -43,7 +43,7 @@ namespace McRave::Horizon {
 
     void simulate(UnitInfo& unit)
     {
-        auto &unitTarget = unit.getTarget();
+        auto &unitTarget = unit.getTarget().lock();
         const auto unitToEngage = unit.getSpeed() > 0.0 ? unit.getEngDist() / (24.0 * unit.getSpeed()) : 5.0;
         const auto simulationTime = unitToEngage + max(5.0, Players::getSupply(PlayerState::Self, Races::None) / 20.0) + addPrepTime(unit);
         map<Player, SimStrength> simStrengthPerPlayer;
@@ -53,24 +53,24 @@ namespace McRave::Horizon {
             if (!addToSim(enemy))
                 continue;
 
-            auto &enemyTarget =                 enemy.getTarget();
+            auto &enemyTarget =                 enemy.getTarget().lock();
             auto simRatio =                     0.0;
             const auto distTarget =             double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getPosition()));
             const auto distEngage =             double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getEngagePosition()));
-            const auto range =                  enemyTarget.getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange();
+            const auto range =                  enemyTarget->getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange();
             const auto enemyReach =             max(enemy.getAirReach(), enemy.getGroundReach());
 
             // If the unit doesn't affect this simulation
             if ((enemy.getSpeed() <= 0.0 && distEngage > range + 32.0 && distTarget > range + 32.0)
                 || (enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode && distTarget < 64.0)
-                || (enemy.getSpeed() <= 0.0 && distTarget > 0.0 && enemyTarget.getSpeed() <= 0.0)
-                || (enemy.targetsFriendly() && unit.hasTarget() && enemy.getPosition().getDistance(unitTarget.getPosition()) >= enemyReach))
+                || (enemy.getSpeed() <= 0.0 && distTarget > 0.0 && enemyTarget->getSpeed() <= 0.0)
+                || (enemy.targetsFriendly() && unit.hasTarget() && enemy.getPosition().getDistance(unitTarget->getPosition()) >= enemyReach))
                 continue;
 
             // If enemy doesn't move, calculate how long it will remain in range once in range
             if (enemy.getSpeed() <= 0.0) {
                 const auto distance =               distTarget;
-                const auto speed =                  enemyTarget.getSpeed() * 24.0;
+                const auto speed =                  enemyTarget->getSpeed() * 24.0;
                 const auto engageTime =             max(0.0, (distance - range) / speed);
                 simRatio =                          max(0.0, simulationTime - engageTime);
             }
@@ -84,7 +84,7 @@ namespace McRave::Horizon {
             }
 
             // Add their values to the simulation
-            addBonus(enemy, enemyTarget, simRatio);
+            addBonus(enemy, *enemyTarget, simRatio);
             if (enemy.canAttackAir() && enemy.canAttackGround()) {
                 simStrengthPerPlayer[enemy.getPlayer()].ground += max(enemy.getVisibleGroundStrength(), enemy.getVisibleAirStrength()) * simRatio;
                 simStrengthPerPlayer[enemy.getPlayer()].air += max(enemy.getVisibleGroundStrength(), enemy.getVisibleAirStrength()) * simRatio;
@@ -100,10 +100,10 @@ namespace McRave::Horizon {
             if (!addToSim(self))
                 continue;
 
-            auto &selfTarget = self.getTarget();
+            auto &selfTarget = self.getTarget().lock();
             const auto range = max(self.getAirRange(), self.getGroundRange());
             const auto reach = max(self.getAirReach(), self.getGroundReach());
-            const auto distance = double(Util::boxDistance(self.getType(), self.getPosition(), unit.getType(), unitTarget.getPosition()));
+            const auto distance = double(Util::boxDistance(self.getType(), self.getPosition(), unit.getType(), unitTarget->getPosition()));
             const auto speed = self.getSpeed() > 0.0 ? self.getSpeed() * 24.0 : unit.getSpeed() * 24.0;
             const auto engageTime = max(0.0, (distance - range) / speed);
             auto simRatio = max(0.0, simulationTime - engageTime + addPrepTime(self));
@@ -111,11 +111,11 @@ namespace McRave::Horizon {
             // If the unit doesn't affect this simulation
             if (self.localRetreat()
                 || (self.getSpeed() <= 0.0 && self.getEngDist() > -16.0)
-                || (unit.hasTarget() && self.hasTarget() && self.getEngagePosition().getDistance(unitTarget.getPosition()) > reach))
+                || (unit.hasTarget() && self.hasTarget() && self.getEngagePosition().getDistance(unitTarget->getPosition()) > reach))
                 continue;
 
             // Add their values to the simulation
-            addBonus(self, selfTarget, simRatio);
+            addBonus(self, *selfTarget, simRatio);
             simStrengthPerPlayer[self.getPlayer()].ground += self.getVisibleGroundStrength() * simRatio;
             simStrengthPerPlayer[self.getPlayer()].air += self.getVisibleAirStrength() * simRatio;
         }
@@ -125,21 +125,21 @@ namespace McRave::Horizon {
             if (!addToSim(ally))
                 continue;
 
-            auto &allyTarget = ally.getTarget();
+            auto &allyTarget = ally.getTarget().lock();
             const auto range = max(ally.getAirRange(), ally.getGroundRange());
             const auto reach = max(ally.getAirReach(), ally.getGroundReach());
-            const auto distance = double(Util::boxDistance(ally.getType(), ally.getPosition(), unit.getType(), unitTarget.getPosition()));
+            const auto distance = double(Util::boxDistance(ally.getType(), ally.getPosition(), unit.getType(), unitTarget->getPosition()));
             const auto speed = ally.getSpeed() > 0.0 ? ally.getSpeed() * 24.0 : unit.getSpeed() * 24.0;
             const auto engageTime = max(0.0, (distance - range) / speed);
             auto simRatio = max(0.0, simulationTime - engageTime + addPrepTime(ally));
 
             // If the unit doesn't affect this simulation
             if ((ally.getSpeed() <= 0.0 && ally.getEngDist() > -16.0)
-                || (unit.hasTarget() && ally.hasTarget() && ally.getEngagePosition().getDistance(unitTarget.getPosition()) > reach))
+                || (unit.hasTarget() && ally.hasTarget() && ally.getEngagePosition().getDistance(unitTarget->getPosition()) > reach))
                 continue;
 
             // Add their values to the simulation
-            addBonus(ally, allyTarget, simRatio);
+            addBonus(ally, *allyTarget, simRatio);
             simStrengthPerPlayer[ally.getPlayer()].ground += ally.getVisibleGroundStrength() * simRatio;
             simStrengthPerPlayer[ally.getPlayer()].air += ally.getVisibleAirStrength() * simRatio;
         }
@@ -169,6 +169,6 @@ namespace McRave::Horizon {
         if (!unit.hasTarget())
             unit.getType().isFlyer() ? unit.setSimValue(min(attackAirAsAir, attackGroundAsAir)) : unit.setSimValue(min(attackAirAsGround, attackGroundAsGround));
         else
-            unit.getType().isFlyer() ? unit.setSimValue(unitTarget.getType().isFlyer() ? attackAirAsAir : attackGroundAsAir) : unit.setSimValue(unitTarget.getType().isFlyer() ? attackAirAsGround : attackGroundAsGround);
+            unit.getType().isFlyer() ? unit.setSimValue(unitTarget->getType().isFlyer() ? attackAirAsAir : attackGroundAsAir) : unit.setSimValue(unitTarget->getType().isFlyer() ? attackAirAsGround : attackGroundAsGround);
     }
 }

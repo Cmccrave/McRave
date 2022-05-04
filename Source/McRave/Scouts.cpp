@@ -182,7 +182,7 @@ namespace McRave::Scouts {
                 // Proxy takes furthest from natural choke
                 if (type.isWorker() && BuildOrder::getCurrentOpener() == "Proxy") {
                     scout = Util::getFurthestUnit(assignPos, PlayerState::Self, [&](auto &u) {
-                        return u->getRole() == Role::Worker && u->getType() == type && (!u->hasResource() || !u->getResource().getType().isRefinery()) && u->getBuildType() == None && !u->unit()->isCarryingMinerals() && !u->unit()->isCarryingGas();
+                        return u->getRole() == Role::Worker && u->getType() == type && (!u->hasResource() || !u->getResource().lock()->getType().isRefinery()) && u->getBuildType() == None && !u->unit()->isCarryingMinerals() && !u->unit()->isCarryingGas();
                     });
                 }
                 else if (type.isFlyer()) {
@@ -192,7 +192,7 @@ namespace McRave::Scouts {
                 }
                 else if (type.isWorker())
                     scout = Util::getClosestUnitGround(assignPos, PlayerState::Self, [&](auto &u) {
-                    return u->getRole() == Role::Worker && u->getType() == type && (!u->hasResource() || !u->getResource().getType().isRefinery()) && u->getBuildType() == None && !u->unit()->isCarryingMinerals() && !u->unit()->isCarryingGas();
+                    return u->getRole() == Role::Worker && u->getType() == type && (!u->hasResource() || !u->getResource().lock()->getType().isRefinery()) && u->getBuildType() == None && !u->unit()->isCarryingMinerals() && !u->unit()->isCarryingGas();
                 });
 
                 if (scout) {

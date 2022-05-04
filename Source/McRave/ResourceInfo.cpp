@@ -34,7 +34,11 @@ namespace McRave {
         // Determine if this resource is threatened based on an assigned worker being attacked
         for (auto &w : targetedBy) {
             if (auto worker = w.lock()) {
-                if (worker->isWithinGatherRange() && !worker->isBurrowed() && !worker->getTargetedBy().empty() && worker->hasTarget() && worker->getTarget().isThreatening() && !worker->getTarget().getType().isWorker()) {
+                if (!worker->hasTarget())
+                    continue;
+                auto workerTarget = worker->getTarget().lock();
+
+                if (worker->isWithinGatherRange() && !worker->isBurrowed() && !worker->getTargetedBy().empty() && workerTarget->isThreatening() && !workerTarget->getType().isWorker()) {
                     for (auto &e : worker->getTargetedBy()) {
                         if (auto enemy = e.lock()) {
                             if (enemy->isWithinRange(*worker)) {

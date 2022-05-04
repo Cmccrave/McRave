@@ -163,6 +163,8 @@ namespace McRave::BuildOrder::Zerg {
                 desiredProduction = int(Stations::getMyStations().size()) + (2 * max(0, int(Stations::getMyStations().size()) - 2)) + (Spy::getEnemyBuild() != "FFE");
             if (Players::ZvZ())
                 desiredProduction = int(Stations::getMyStations().size()) + max(0, int(Stations::getMyStations().size()) - 1) - (int(Stations::getEnemyStations().size() >= 2));
+            if (Players::ZvFFA())
+                desiredProduction = int(Stations::getMyStations().size()) + max(0, int(Stations::getMyStations().size()) - 1);
 
             // Situational increases
             if (Spy::getEnemyTransition() == "4Gate" && int(Stations::getMyStations().size()) <= 2)
