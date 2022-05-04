@@ -10,15 +10,13 @@ namespace McRave::Combat::Formations {
 
     void assignPosition(Cluster& cluster, Formation& concave, Position p, int& assignmentsRemaining)
     {
-        shared_ptr<UnitInfo> closestUnit;
+        UnitInfo* closestUnit = nullptr;
         auto distBest = DBL_MAX;
-        for (auto &u : cluster.units) {
-            if (auto &unit = u.lock()) {
-                auto dist = unit->getPosition().getDistance(p);
-                if (dist < distBest && !unit->concaveFlag) {
-                    distBest = dist;
-                    closestUnit = unit;
-                }
+        for (auto &unit : cluster.units) {
+            auto dist = unit.getPosition().getDistance(p);
+            if (dist < distBest && !unit.concaveFlag) {
+                distBest = dist;
+                closestUnit = &unit;
             }
         }
         auto closestBuilder = Util::getClosestUnit(p, PlayerState::Self, [&](auto &u) {

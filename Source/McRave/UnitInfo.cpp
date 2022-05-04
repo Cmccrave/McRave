@@ -103,6 +103,7 @@ namespace McRave
             walkHeight                  = int(ceil(double(t.height()) / 8.0));
             completed                   = unit()->isCompleted() && !unit()->isMorphing();
             currentSpeed                = sqrt(pow(unit()->getVelocityX(), 2) + pow(unit()->getVelocityY(), 2));
+            invincible                  = unit()->isInvincible() || unit()->isStasised();
 
             // Points        
             position                    = unit()->getPosition();
@@ -487,7 +488,7 @@ namespace McRave
         }
 
         const auto newCommand = [&]() {
-            auto newCommandPosition = unit()->getLastCommand().getTargetPosition().getDistance(here) > 16;
+            auto newCommandPosition = unit()->getLastCommand().getTargetPosition().getDistance(here) > 24;
             auto newCommandType = unit()->getLastCommand().getType() != cmd;
             auto newCommandFrame = Broodwar->getFrameCount() - unit()->getLastCommandFrame() - Broodwar->getLatencyFrames() > 24;
             return newCommandPosition || newCommandType || newCommandFrame;

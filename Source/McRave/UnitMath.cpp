@@ -108,7 +108,7 @@ namespace McRave::Math {
             const auto area = mapBWEM.GetArea(unit.getTilePosition());
             if (area && Terrain::inTerritory(PlayerState::Self, unit.getPosition())) {
                 for (auto &gas : area->Geysers()) {
-                    if (gas->TopLeft().getDistance(unit.getTilePosition()) < 2 && !unit.unit()->isInvincible())
+                    if (gas->TopLeft().getDistance(unit.getTilePosition()) < 2 && !unit.isInvincible())
                         return 10.0;
                 }
             }

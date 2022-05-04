@@ -12,6 +12,7 @@ namespace McRave::Players
         map <PlayerState, map<UnitType, int>> allVisibleTypeCounts;
         map <PlayerState, map<UnitType, int>> allCompleteTypeCounts;
         map <PlayerState, map<UnitType, int>> allTotalTypeCounts;
+        map <PlayerState, Strength> allPlayerStrengths;
 
         void update(PlayerInfo& player)
         {
@@ -26,6 +27,7 @@ namespace McRave::Players
                 allCompleteTypeCounts[player.getPlayerState()][type]+=cnt;
             for (auto &[type, cnt] : player.getTotalTypeCounts())
                 allTotalTypeCounts[player.getPlayerState()][type]+=cnt;
+            allPlayerStrengths[player.getPlayerState()] += player.getStrength();
         }
     }
 
@@ -51,6 +53,7 @@ namespace McRave::Players
         allVisibleTypeCounts.clear();
         allCompleteTypeCounts.clear();
         allTotalTypeCounts.clear();
+        allPlayerStrengths.clear();
         raceCount.clear();
         for (auto &[_, player] : thePlayers)
             update(player);
@@ -235,16 +238,6 @@ namespace McRave::Players
         return combined;
     }
 
-    Strength getStrength(PlayerState state)
-    {
-        Strength combined;
-        for (auto &[_, player] : thePlayers) {
-            if (player.getPlayerState() == state)
-                combined += player.getStrength();
-        }
-        return combined;
-    }
-
     PlayerInfo * getPlayerInfo(Player player)
     {
         for (auto &[p, info] : thePlayers) {
@@ -254,6 +247,7 @@ namespace McRave::Players
         return nullptr;
     }
 
+    Strength getStrength(PlayerState state) { return allPlayerStrengths[state]; }
     map <Player, PlayerInfo>& getPlayers() { return thePlayers; }
     bool vP() { return (thePlayers.size() == 3 && raceCount[Races::Protoss] > 0); }
     bool vT() { return (thePlayers.size() == 3 && raceCount[Races::Terran] > 0); }

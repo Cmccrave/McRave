@@ -63,6 +63,7 @@ namespace McRave {
         bool targetedBySuicide = false;
         bool targetedByHidden = false;
         bool markedForDeath = false;
+        bool invincible = false;
     #pragma endregion
 
     #pragma region Targets
@@ -169,6 +170,7 @@ namespace McRave {
         bool isCompleted() { return completed; }
         bool isStimmed() { return BWAPI::Broodwar->getFrameCount() - lastStimFrame < 300; }
         bool isStuck() { return BWAPI::Broodwar->getFrameCount() - lastTileMoveFrame > 240; }
+        bool isInvincible() { return invincible; }
         bool wasStuckRecently() { return BWAPI::Broodwar->getFrameCount() - lastStuckFrame < 240; }
 
         bool isHealthy();

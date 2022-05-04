@@ -782,8 +782,7 @@ namespace McRave::Combat {
         void updateCommands()
         {
             for (auto &cluster : Clusters::getClusters()) {
-                for (auto &u : cluster.units) {
-                    auto &unit = *u.lock();
+                for (auto &unit : cluster.units) {
                     if (cluster.commandShare == CommandShare::Exact && !unit.localRetreat() && !unit.globalRetreat() && !lightUnitNeedsRegroup(unit)) {
                         auto commander = cluster.commander.lock();
                         if (commander->getCommandType() == UnitCommandTypes::Attack_Unit && unit.hasTarget())

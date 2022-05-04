@@ -32,7 +32,7 @@ namespace McRave::Combat::Clusters {
             bool foundCluster = false;
             for (auto &cluster : clusters) {
                 auto flyingCluster = any_of(cluster.units.begin(), cluster.units.end(), [&](auto &u) {
-                    return u.lock()->isFlying();
+                    return u.isFlying();
                 });
                 if ((flyingCluster && !unit.isFlying()) || (!flyingCluster && unit.isFlying()))
                     continue;
@@ -43,7 +43,7 @@ namespace McRave::Combat::Clusters {
 
                 if (objectiveInCommon && retreatInCommon) {
                     cluster.sharedRadius += unit.isLightAir() ? 0.0 : double(unit.getType().width() * unit.getType().height()) / cluster.sharedRadius;
-                    cluster.units.push_back(unit.weak_from_this());
+                    cluster.units.push_back(unit);
                     cluster.typeCounts[unit.getType()]++;
                     foundCluster = true;
                     break;
@@ -53,7 +53,7 @@ namespace McRave::Combat::Clusters {
             // Didn't find existing formation, create a new one
             if (!foundCluster) {
                 Cluster newCluster(unit.getPosition(), unit.getRetreat(), unit.getObjective(), unit.getType());
-                newCluster.units.push_back(unit.weak_from_this());
+                newCluster.units.push_back(unit);
                 newCluster.typeCounts[unit.getType()]++;
                 clusters.push_back(newCluster);
             }
@@ -70,7 +70,7 @@ namespace McRave::Combat::Clusters {
             // Find a centroid
             auto avgPosition = Position(0, 0);
             for (auto &unit : cluster.units) {
-                avgPosition += unit.lock()->getPosition();
+                avgPosition += unit.getPosition();
             }
             avgPosition /= cluster.units.size();
 
@@ -94,7 +94,7 @@ namespace McRave::Combat::Clusters {
 
                 // Assign commander to each unit
                 for (auto &unit : cluster.units)
-                    unit.lock()->setCommander(&*closestToCentroid);
+                    unit.setCommander(&*closestToCentroid);
             }
         }
 

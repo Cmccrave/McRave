@@ -12,9 +12,6 @@ namespace McRave::Targets {
     namespace {
 
         bool allowWorkerTarget(UnitInfo& unit, UnitInfo& target) {
-            bool atHome = Terrain::inTerritory(PlayerState::Self, target.getPosition());
-            bool atEnemy = Terrain::inTerritory(PlayerState::Enemy, target.getPosition());
-
             if (target.getType().isWorker() && Util::getTime() < Time(8, 00)) {
                 return unit.getType().isWorker()
                     || Spy::getEnemyTransition() == "WorkerRush"
@@ -23,7 +20,7 @@ namespace McRave::Targets {
                     || target.isThreatening()
                     || (target.getTargetedBy().empty() && !Players::ZvZ())
                     || unit.attemptingRunby()
-                    || atEnemy;
+                    || Terrain::inTerritory(PlayerState::Enemy, target.getPosition());
             }
             return true;
         }
@@ -31,9 +28,8 @@ namespace McRave::Targets {
         bool isValidTarget(UnitInfo& unit, UnitInfo& target)
         {
             if (!target.unit()
-                || target.unit()->isInvincible()
-                || !target.getWalkPosition().isValid()
-                || target.unit()->isStasised())
+                || target.isInvincible()
+                || !target.getWalkPosition().isValid())
                 return false;
             return true;
         }
@@ -58,8 +54,8 @@ namespace McRave::Targets {
             if (target.movedFlag)
                 return false;
 
-            auto enemyStrength = Players::getStrength(PlayerState::Enemy);
-            auto myStrength = Players::getStrength(PlayerState::Self);
+            auto &enemyStrength = Players::getStrength(PlayerState::Enemy);
+            auto &myStrength = Players::getStrength(PlayerState::Self);
 
             bool targetCanAttack = !unit.isHidden() && (((unit.getType().isFlyer() && target.getAirDamage() > 0.0) || (!unit.getType().isFlyer() && target.canAttackGround()) || (!unit.getType().isFlyer() && target.getType() == Terran_Vulture_Spider_Mine)));
             bool unitCanAttack = !target.isHidden() && ((target.isFlying() && unit.getAirDamage() > 0.0) || (!target.isFlying() && unit.canAttackGround()) || (unit.getType() == Protoss_Carrier));

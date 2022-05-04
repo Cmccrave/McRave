@@ -14,6 +14,8 @@ namespace McRave::Grids
         int visibleGrid[256][256] ={};
         int visitedGrid[1024][1024] ={};
 
+        double logLookup[1024]={};
+
         // Ally Grid
         float aGroundCluster[1024][1024] ={};
         float aAirCluster[1024][1024] ={};
@@ -36,6 +38,7 @@ namespace McRave::Grids
         {
             // Don't add these to grids
             if ((unit.unit()->exists() && (unit.unit()->isStasised() || unit.unit()->isMaelstrommed() || unit.unit()->isLoaded()))
+                || !unit.getPosition().isValid()
                 || unit.getType() == Protoss_Interceptor
                 || unit.getType().isSpell()
                 || unit.getType() == Terran_Vulture_Spider_Mine
@@ -66,15 +69,21 @@ namespace McRave::Grids
                 resetVector.emplace_back(x, y);
         }
 
-        void addToGrids(UnitInfo& unit, bool collisionReq, bool threatReq)
+        void addCollision(UnitInfo& unit)
         {
-            if (!unit.getPosition().isValid())
+
+        }
+
+        void addThreat(UnitInfo& unit)
+        {
+            if (!unit.getPlayer()->isEnemy(Broodwar->self()))
                 return;
 
-            // Pixel and walk sizes
-            const auto walkWidth = unit.getType().isBuilding() ? (unit.getType().tileWidth() * 4) : unit.getWalkWidth();
-            const auto walkHeight = unit.getType().isBuilding() ? (unit.getType().tileHeight() * 4) : unit.getWalkHeight();
 
+        }
+
+        void addToGrids(UnitInfo& unit, bool collisionReq, bool threatReq)
+        {
             // Choose threat grid
             auto grdGrid = unit.getPlayer() == Broodwar->self() ? nullptr : eGroundThreat;
             auto airGrid = unit.getPlayer() == Broodwar->self() ? nullptr : eAirThreat;
@@ -92,9 +101,9 @@ namespace McRave::Grids
                 radius = radius / 3;
 
             const auto left = max(0, unit.getWalkPosition().x - radius);
-            const auto right = min(1024, unit.getWalkPosition().x + walkWidth + radius);
+            const auto right = min(1024, unit.getWalkPosition().x + unit.getWalkWidth() + radius);
             const auto top = max(0, unit.getWalkPosition().y - radius);
-            const auto bottom = min(1024, unit.getWalkPosition().y + walkHeight + radius);
+            const auto bottom = min(1024, unit.getWalkPosition().y + unit.getWalkHeight() + radius);
 
             // Pixel rectangle (make any even size units an extra WalkPosition)
             const auto topLeft = Position(unit.getPosition().x - unit.getType().dimensionLeft(), unit.getPosition().y - unit.getType().dimensionUp());
@@ -165,11 +174,11 @@ namespace McRave::Grids
                     if (grdGrid || airGrid) {
                         const auto dist = fasterDistGrids(x1, y1, (x * 8) + 4, (y * 8) + 4);
                         if (grdGrid && dist <= unit.getGroundReach()) {
-                            grdGrid[x][y] += float(unit.getVisibleGroundStrength()) / max(1.0f, log((float)dist));
+                            grdGrid[x][y] += float(unit.getVisibleGroundStrength()) / max(1.0, logLookup[dist / 16]);
                             saveReset(x, y);
                         }
                         if (airGrid && dist <= unit.getAirReach()) {
-                            airGrid[x][y] += float(unit.getVisibleAirStrength()) / max(1.0f, log((float)dist));
+                            airGrid[x][y] += float(unit.getVisibleAirStrength()) / max(1.0, logLookup[dist / 16]);
                             saveReset(x, y);
                         }
                     }
@@ -326,6 +335,13 @@ namespace McRave::Grids
                 }
             }
         }
+
+        void initializeLogTable()
+        {
+            for (int i = 0; i < 1024; i++) {
+                logLookup[i] = log(16 * i);
+            }
+        }
     }
 
     void onFrame()
@@ -339,6 +355,7 @@ namespace McRave::Grids
 
     void onStart()
     {
+        initializeLogTable();
         initializeMobility();
 
         const auto areaBlocked = [&](const BWEM::Area * a) {
