@@ -310,7 +310,7 @@ namespace McRave::Walls {
     }
 
     int calcGroundDefZvFFA(BWEB::Wall& wall) {
-        return 1 + (Util::getTime() > Time(3, 10));
+        return 1 + (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(5, 00));
     }
 
     int needGroundDefenses(BWEB::Wall& wall)

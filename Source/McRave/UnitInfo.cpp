@@ -500,6 +500,7 @@ namespace McRave
 
         // If this is a new order or new command than what we're requesting, we can issue it
         if (newCommand() && commandsPerFrame[Broodwar->getFrameCount()] < 64) {
+            Broodwar->drawLineMap(position, here, Colors::Red);
             if (cmd == UnitCommandTypes::Move)
                 unit()->move(here);
             if (cmd == UnitCommandTypes::Right_Click_Position)

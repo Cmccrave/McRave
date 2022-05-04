@@ -221,17 +221,16 @@ namespace McRave::Combat {
         {
             // If attacking and target is close, set as destination
             if (unit.getLocalState() == LocalState::Attack) {
-                if (unit.hasTarget())
-                    unit.setObjective(unit.getTarget().lock()->getPosition());
-
                 if (unit.attemptingRunby())
                     unit.setObjective(unit.getEngagePosition());
                 else if (unit.getInterceptPosition().isValid())
                     unit.setObjective(unit.getInterceptPosition());
                 else if (unit.getSurroundPosition().isValid())
                     unit.setObjective(unit.getSurroundPosition());
-                else
+                else if (unit.getEngagePosition().isValid())
                     unit.setObjective(unit.getEngagePosition());
+                else if (unit.hasTarget())
+                    unit.setObjective(unit.getTarget().lock()->getPosition());
 
                 // HACK: Performance improvement
                 if (unit.getTargetPath().isReachable())
@@ -286,7 +285,7 @@ namespace McRave::Combat {
             if (unit.getDestination().isValid())
                 return;
 
-            if (unit.getFormation().isValid() && unit.getLocalState() == LocalState::Retreat) {
+            if (unit.getFormation().isValid()) {
                 unit.setDestination(unit.getFormation());
                 return;
             }

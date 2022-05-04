@@ -57,10 +57,6 @@ namespace McRave::BuildOrder::Terran {
         unlockedType.insert(Terran_Siege_Tank_Tank_Mode);
         unlockedType.insert(Terran_Siege_Tank_Siege_Mode);
 
-        armyComposition[Terran_Marine] = 0.05;
-        armyComposition[Terran_Vulture] = 0.75;
-        armyComposition[Terran_Siege_Tank_Tank_Mode] = 0.20;
-
 
         // Control Tower
         if (com(Terran_Starport) >= 1)
@@ -109,6 +105,45 @@ namespace McRave::BuildOrder::Terran {
             // Missle Turret logic
             if (Players::vZ() && com(Terran_Engineering_Bay) > 0)
                 buildQueue[Terran_Missile_Turret] = com(Terran_Command_Center) * 2;
+        }
+    }
+
+    void composition()
+    {
+        armyComposition[Terran_SCV] = 1.00;
+        armyComposition[Terran_Marine] = 0.05;
+        armyComposition[Terran_Vulture] = 0.75;
+        armyComposition[Terran_Siege_Tank_Tank_Mode] = 0.20;
+    }
+
+    void unlocks()
+    {
+        // Unlocking units
+        unlockedType.clear();
+        for (auto &[type, per] : armyComposition) {
+            if (per > 0.0)
+                unlockedType.insert(type);
+        }
+
+        // Unit limiting in opening book
+        if (inOpeningBook) {
+            for (auto &type : unitLimits) {
+                if (type.second > vis(type.first))
+                    unlockedType.insert(type.first);
+                else
+                    unlockedType.erase(type.first);
+            }
+        }
+
+        // UMS Unlocking
+        if (Broodwar->getGameType() == GameTypes::Use_Map_Settings) {
+            for (auto &type : BWAPI::UnitTypes::allUnitTypes()) {
+                if (!type.isBuilding() && type.getRace() == Races::Terran && vis(type) >= 2) {
+                    unlockedType.insert(type);
+                    if (!type.isWorker())
+                        techList.insert(type);
+                }
+            }
         }
     }
 }

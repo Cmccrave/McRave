@@ -30,7 +30,9 @@ namespace McRave::BuildOrder
                 s = Players::getSupply(PlayerState::Self, Races::Terran);
                 Terran::opener();
                 Terran::tech();
+                Terran::composition();
                 Terran::situational();
+                Terran::unlocks();
             }
             if (Players::getSupply(PlayerState::Self, Races::Zerg) > 0) {
                 s = Players::getSupply(PlayerState::Self, Races::Zerg);

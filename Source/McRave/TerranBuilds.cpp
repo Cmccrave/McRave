@@ -24,6 +24,7 @@ namespace McRave::BuildOrder::Terran
             buildQueue[Terran_Factory] =            (s >= 30) + (s >= 36) + (s >= 46);
             buildQueue[Terran_Machine_Shop] =       (s >= 30) + (com(Terran_Factory) >= 2);
 
+            armyComposition[Terran_SCV] = 1.00;
             armyComposition[Terran_Marine] = 0.05;
             armyComposition[Terran_Vulture] = 0.75;
             armyComposition[Terran_Siege_Tank_Tank_Mode] = 0.20;
