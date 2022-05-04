@@ -65,129 +65,6 @@ namespace McRave::Walls {
         mainWall = BWEB::Walls::getWall(BWEB::Map::getMainChoke());
     }
 
-    void findHardWalls()
-    {
-        if (!Terrain::isShitMap())
-            return;
-
-        // The unfortunate reality of playing Zerg on literally the shittiest map in a tournament.
-
-        multimap<UnitType, TilePosition> wall1 ={
-            { Zerg_Sunken_Colony, TilePosition(37,108) },
-            { Zerg_Sunken_Colony, TilePosition(35,108) },
-            { Zerg_Sunken_Colony, TilePosition(35,110) },
-            { Zerg_Sunken_Colony, TilePosition(33,110) },
-            { Zerg_Sunken_Colony, TilePosition(33,112) },
-            { Zerg_Sunken_Colony, TilePosition(33,114) },
-            { Zerg_Sunken_Colony, TilePosition(31,114) },
-            { Zerg_Sunken_Colony, TilePosition(31,116) },
-            { Zerg_Sunken_Colony, TilePosition(29,116) },
-            { Zerg_Sunken_Colony, TilePosition(29,118) },
-            { Zerg_Sunken_Colony, TilePosition(27,117) },
-            { Zerg_Sunken_Colony, TilePosition(25,118) },
-            { Zerg_Hatchery, TilePosition(35,112) }
-        };
-        auto choke1 = Util::getClosestChokepoint(Position(TilePosition(35, 112)));
-        auto area1 = mapBWEM.GetArea(TilePosition(35, 112));
-        BWEB::Walls::createHardWall(wall1, area1, choke1);
-
-        multimap<UnitType, TilePosition> wall2 ={
-            { Zerg_Sunken_Colony, TilePosition(58,97) },
-            { Zerg_Sunken_Colony, TilePosition(58,99) },
-            { Zerg_Sunken_Colony, TilePosition(56,97) },
-            { Zerg_Sunken_Colony, TilePosition(56,99) },
-            { Zerg_Sunken_Colony, TilePosition(56,101) },
-            { Zerg_Sunken_Colony, TilePosition(54,99) },
-            { Zerg_Sunken_Colony, TilePosition(54,101) },
-            { Zerg_Sunken_Colony, TilePosition(54,103) },
-            { Zerg_Sunken_Colony, TilePosition(52,101) },
-            { Zerg_Sunken_Colony, TilePosition(52,103) },
-            { Zerg_Sunken_Colony, TilePosition(52,105) },
-            { Zerg_Sunken_Colony, TilePosition(50,103) },
-            { Zerg_Hatchery, TilePosition(50,98) }
-        };
-        auto choke2 = Util::getClosestChokepoint(Position(TilePosition(50, 98)));
-        auto area2 = mapBWEM.GetArea(TilePosition(50, 98));
-        BWEB::Walls::createHardWall(wall2, area2, choke2);
-
-        multimap<UnitType, TilePosition> wall3 ={
-            { Zerg_Sunken_Colony, TilePosition(114,64) },
-            { Zerg_Sunken_Colony, TilePosition(114,66) },
-            { Zerg_Sunken_Colony, TilePosition(116,64) },
-            { Zerg_Sunken_Colony, TilePosition(116,66) },
-            { Zerg_Sunken_Colony, TilePosition(118,64) },
-            { Zerg_Sunken_Colony, TilePosition(118,66) },
-            { Zerg_Sunken_Colony, TilePosition(120,64) },
-            { Zerg_Sunken_Colony, TilePosition(120,66) },
-            { Zerg_Sunken_Colony, TilePosition(120,68) },
-            { Zerg_Sunken_Colony, TilePosition(122,68) },
-            { Zerg_Sunken_Colony, TilePosition(122,70) },
-            { Zerg_Sunken_Colony, TilePosition(124,69) },
-            { Zerg_Hatchery, TilePosition(122,65) }
-        };
-        auto choke3 = Util::getClosestChokepoint(Position(TilePosition(122, 65)));
-        auto area3 = mapBWEM.GetArea(TilePosition(122, 65));
-        BWEB::Walls::createHardWall(wall3, area3, choke3);
-
-        multimap<UnitType, TilePosition> wall4 ={
-             { Zerg_Sunken_Colony, TilePosition(118,24) },
-             { Zerg_Sunken_Colony, TilePosition(118,26) },
-             { Zerg_Sunken_Colony, TilePosition(118,28) },
-             { Zerg_Sunken_Colony, TilePosition(118,30) },
-             { Zerg_Sunken_Colony, TilePosition(118,32) },
-             { Zerg_Sunken_Colony, TilePosition(118,34) },
-             { Zerg_Sunken_Colony, TilePosition(120,24) },
-             { Zerg_Sunken_Colony, TilePosition(120,26) },
-             { Zerg_Sunken_Colony, TilePosition(120,28) },
-             { Zerg_Sunken_Colony, TilePosition(120,30) },
-             { Zerg_Sunken_Colony, TilePosition(120,32) },
-             { Zerg_Sunken_Colony, TilePosition(120,34) },
-             { Zerg_Hatchery, TilePosition(122,27) }
-        };
-        auto choke4 = Util::getClosestChokepoint(Position(TilePosition(112, 27)));
-        auto area4 = mapBWEM.GetArea(TilePosition(122, 27));
-        BWEB::Walls::createHardWall(wall4, area4, choke4);
-
-
-        multimap<UnitType, TilePosition> wall5 ={
-            { Zerg_Sunken_Colony, TilePosition(38,0) },
-            { Zerg_Sunken_Colony, TilePosition(36,0) },
-            { Zerg_Sunken_Colony, TilePosition(36,2) },
-            { Zerg_Sunken_Colony, TilePosition(34,0) },
-            { Zerg_Sunken_Colony, TilePosition(34,2) },
-            { Zerg_Sunken_Colony, TilePosition(34,4) },
-            { Zerg_Sunken_Colony, TilePosition(32,2) },
-            { Zerg_Sunken_Colony, TilePosition(32,4) },
-            { Zerg_Sunken_Colony, TilePosition(32,6) },
-            { Zerg_Sunken_Colony, TilePosition(30,4) },
-            { Zerg_Sunken_Colony, TilePosition(30,6) },
-            { Zerg_Sunken_Colony, TilePosition(30,8) },
-            { Zerg_Hatchery, TilePosition(28,1) }
-        };
-        auto choke5 = Util::getClosestChokepoint(Position(TilePosition(28, 1)));
-        auto area5 = mapBWEM.GetArea(TilePosition(28, 1));
-        BWEB::Walls::createHardWall(wall5, area5, choke5);
-
-        multimap<UnitType, TilePosition> wall6 ={
-            { Zerg_Sunken_Colony, TilePosition(22,26) },
-            { Zerg_Sunken_Colony, TilePosition(24,25) },
-            { Zerg_Sunken_Colony, TilePosition(24,27) },
-            { Zerg_Sunken_Colony, TilePosition(26,26) },
-            { Zerg_Sunken_Colony, TilePosition(26,28) },
-            { Zerg_Sunken_Colony, TilePosition(28,26) },
-            { Zerg_Sunken_Colony, TilePosition(28,28) },
-            { Zerg_Sunken_Colony, TilePosition(28,30) },
-            { Zerg_Sunken_Colony, TilePosition(30,30) },
-            { Zerg_Sunken_Colony, TilePosition(31,32) },
-            { Zerg_Sunken_Colony, TilePosition(32,30) },
-            { Zerg_Sunken_Colony, TilePosition(33,32) },
-            { Zerg_Hatchery, TilePosition(30,27) }
-        };
-        auto choke6 = Util::getClosestChokepoint(Position(TilePosition(30, 27)));
-        auto area6 = mapBWEM.GetArea(TilePosition(30, 27));
-        BWEB::Walls::createHardWall(wall6, area6, choke6);
-    }
-
     void findWalls()
     {
         if (Terrain::isShitMap())
@@ -229,7 +106,6 @@ namespace McRave::Walls {
     {
         initializeWallParameters();
         findWalls();
-        findHardWalls();
         findMainWall();
         findNaturalWall();
     }
@@ -433,6 +309,10 @@ namespace McRave::Walls {
         return 0;
     }
 
+    int calcGroundDefZvFFA(BWEB::Wall& wall) {
+        return 1 + (Util::getTime() > Time(3, 10));
+    }
+
     int needGroundDefenses(BWEB::Wall& wall)
     {
         auto groundCount = wall.getGroundDefenseCount();
@@ -481,7 +361,7 @@ namespace McRave::Walls {
             if (Players::vZ())
                 return calcSaturationRatio(wall, calcGroundDefZvZ(wall)) - groundCount;
             if (Broodwar->getGameType() == GameTypes::Free_For_All && Broodwar->getPlayers().size() > 2)
-                return (Util::getTime().minutes / 2) - groundCount;
+                return calcSaturationRatio(wall, calcGroundDefZvFFA(wall)) - groundCount;
         }
         return 0;
     }

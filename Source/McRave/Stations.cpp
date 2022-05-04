@@ -221,6 +221,9 @@ namespace McRave::Stations {
                 groundCount++;
         }
 
+        if (Players::ZvFFA() && !station->isMain() && !station->isNatural())
+            return 2 - groundCount;
+
         // Grab total and current counts of minerals remaining for this base
         auto initial = 0;
         auto current = 0;

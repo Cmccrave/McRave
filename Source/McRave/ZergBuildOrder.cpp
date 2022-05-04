@@ -233,7 +233,7 @@ namespace McRave::BuildOrder::Zerg {
 
     void opener()
     {
-        if (Players::getRaceCount(Races::Unknown, PlayerState::Enemy) > 0)
+        if (Players::getRaceCount(Races::Unknown, PlayerState::Enemy) > 0 && !Players::ZvFFA() && !Players::ZvTVB())
             againstRandom = true;
 
         if (againstRandom) {
@@ -249,28 +249,24 @@ namespace McRave::BuildOrder::Zerg {
             }
         }
 
-        if (Broodwar->getGameType() == GameTypes::Free_For_All && Broodwar->getPlayers().size() > 2) {
-            currentBuild = "HatchPool";
-            currentOpener = "10Hatch";
-            currentTransition = "3HatchMuta";
-            ZvFFA();
-        }
-
+        // TODO: Team melee / Team FFA support
         if (Broodwar->getGameType() == GameTypes::Team_Free_For_All || Broodwar->getGameType() == GameTypes::Team_Melee) {
             buildQueue[Zerg_Hatchery] = Players::getSupply(PlayerState::Self, Races::None) >= 30;
             currentBuild = "HatchPool";
             currentOpener = "10Hatch";
             currentTransition = "3HatchMuta";
             ZvFFA();
+            return;
         }
 
         if (Players::vT())
             ZvT();
-        else if (Players::vP() || Players::getRaceCount(Races::Unknown, PlayerState::Enemy) > 0)
+        else if (Players::vP() || againstRandom)
             ZvP();
         else if (Players::vZ())
             ZvZ();
-
+        else if (Players::ZvFFA())
+            ZvFFA();
     }
 
     void tech()
@@ -517,7 +513,7 @@ namespace McRave::BuildOrder::Zerg {
         }
 
         // ZvFFA
-        if (Broodwar->getGameType() == GameTypes::Free_For_All && Broodwar->getPlayers().size() > 2) {
+        if ((Players::ZvTVB() || Players::ZvFFA()) && !inOpeningBook) {
             if (isTechUnit(Zerg_Hydralisk) && isTechUnit(Zerg_Mutalisk)) {
                 armyComposition[Zerg_Drone] =                   0.70;
                 armyComposition[Zerg_Zergling] =                0.00;

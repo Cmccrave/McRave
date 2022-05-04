@@ -46,6 +46,7 @@ namespace McRave::Combat {
     }
 
     void onFrame();
+    void onStart();
 
     bool defendChoke();
     std::set<BWAPI::Position>& getDefendPositions();

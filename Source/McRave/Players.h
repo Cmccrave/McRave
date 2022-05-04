@@ -28,18 +28,26 @@ namespace McRave
         bool vP();
         bool vT();
         bool vZ();
+        bool vFFA();
+        bool vTVB();
 
         inline bool PvP() { return vP() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Protoss; }
         inline bool PvT() { return vT() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Protoss; }
         inline bool PvZ() { return vZ() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Protoss; }
+        inline bool PvFFA() { return vFFA() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Protoss; }
+        inline bool PvTVB() { return vTVB() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Protoss; }
 
         inline bool TvP() { return vP() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Terran; }
         inline bool TvT() { return vT() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Terran; }
         inline bool TvZ() { return vZ() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Terran; }
+        inline bool TvFFA() { return vFFA() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Terran; }
+        inline bool TvTVB() { return vTVB() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Terran; }
 
         inline bool ZvP() { return vP() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Zerg; }
         inline bool ZvT() { return vT() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Zerg; }
         inline bool ZvZ() { return vZ() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Zerg; }
+        inline bool ZvFFA() { return vFFA() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Zerg; }
+        inline bool ZvTVB() { return vTVB() && BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Zerg; }
     }
 
     /// Returns the self owned visible unit count of this UnitType

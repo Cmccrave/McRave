@@ -270,7 +270,7 @@ namespace McRave
     void UnitInfo::checkHidden()
     {
         // Burrowed check for non spider mine type units or units we can see using the order for burrowing
-        burrowed = (getType() != Terran_Vulture_Spider_Mine && unit()->isBurrowed()) || unit()->getOrder() == Orders::Burrowing;
+        burrowed = (getType() != Terran_Vulture_Spider_Mine && unit()->isBurrowed());
 
         // If this is a spider mine and doesn't have a target, then it is an inactive mine and unable to attack
         if (getType() == Terran_Vulture_Spider_Mine && (!unit()->exists() || (!hasTarget() && unit()->getSecondaryOrder() == Orders::Cloak))) {

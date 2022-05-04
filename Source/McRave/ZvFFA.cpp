@@ -51,7 +51,7 @@ namespace McRave::BuildOrder::Zerg {
                 return initialValue;
 
             auto time = double((Util::getTime().minutes - 1) * 60 + (Util::getTime().seconds)) / 60.0;
-            return int(time * 2);
+            return int(time * 3);
         }
 
         void defaultZvFFA() {
@@ -126,9 +126,9 @@ namespace McRave::BuildOrder::Zerg {
         transitionReady =                               total(Zerg_Overlord) >= 2;
         unitLimits[Zerg_Zergling] =                     lingsNeeded();
         gasLimit =                                      0;
-        scout =                                         scout || (com(Zerg_Drone) >= 10);
+        scout =                                         false;
         wantNatural =                                   !Spy::enemyProxy();
-        playPassive =                                   false;
+        playPassive =                                   true;
         unitLimits[Zerg_Drone] =                        10;
         planEarly =                                     hatchCount() == 1 && s == 20 && Broodwar->self()->minerals() >= 150;
         gasTrick =                                      s >= 18 && hatchCount() < 2 && total(Zerg_Spawning_Pool) == 0;

@@ -25,6 +25,7 @@ void McRaveModule::onStart()
     Util::onStart();
     Resources::onStart();
     Scouts::onStart();
+    Combat::onStart();
 
     Broodwar->enableFlag(Flag::UserInput);
     Broodwar->setCommandOptimizationLevel(0);

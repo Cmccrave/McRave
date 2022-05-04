@@ -280,6 +280,8 @@ namespace McRave::Learning {
                     BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "2HatchMuta");
                 else if (Players::vP())
                     BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "2HatchMuta");
+                else if (Players::ZvFFA() || Players::ZvTVB())
+                    BuildOrder::setLearnedBuild("HatchPool", "10Hatch", "3HatchMuta");
                 else
                     BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "2HatchSpeedling");
             }
@@ -506,7 +508,7 @@ namespace McRave::Learning {
 
     void onEnd(bool isWinner)
     {
-        if (!Broodwar->enemy() || Players::getPlayers().size() > 3)
+        if (!Broodwar->enemy() || Players::ZvFFA() || Players::ZvTVB())
             return;
 
         // HACK: Don't touch records if we play islands, since islands aren't fully implemented yet
@@ -582,7 +584,7 @@ namespace McRave::Learning {
 
     void onStart()
     {
-        if (!Broodwar->enemy() || Players::getPlayers().size() > 3) {
+        if (!Broodwar->enemy() || Players::ZvFFA() || Players::ZvTVB()) {
             getDefaultBuild();
             return;
         }
