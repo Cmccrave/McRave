@@ -178,17 +178,30 @@ namespace McRave::Terrain {
 
         void findAttackPosition()
         {
-            if (Util::getTime() < Time(6, 00))
+            // Choose a default attack position, in FFA we choose enemy station to us that isn't ours
+            auto distBest = Players::vFFA() ? DBL_MAX : 0.0;
+            auto posBest = Positions::Invalid;
+            if (Players::vFFA()) {
+                for (auto &station : Stations::getEnemyStations()) {
+                    auto dist = station->getBase()->Center().getDistance(BWEB::Map::getMainPosition());
+                    if (dist < distBest) {
+                        distBest = dist;
+                        posBest = station->getBase()->Center();
+                    }
+                }
+            }
+            else if (enemyStartingPosition.isValid() && Util::getTime() < Time(6, 00))
                 attackPosition = enemyStartingPosition;
 
-            // Attack furthest enemy station
+            // Attack furthest enemy station from enemy main, closest enemy station to us in FFA
             attackPosition = enemyStartingPosition;
-            auto distBest = 0.0;
-            auto posBest = Positions::Invalid;
+            distBest = Players::vFFA() ? DBL_MAX : 0.0;
+            posBest = Positions::Invalid;
 
             for (auto &station : Stations::getEnemyStations()) {
                 const auto dist = enemyStartingPosition.getDistance(station->getBase()->Center());
-                if (dist < distBest
+                if ((!Players::vFFA() && dist < distBest)
+                    || (Players::vFFA() && dist > distBest)
                     || BWEB::Map::isUsed(station->getBase()->Location()) == UnitTypes::None)
                     continue;
 
@@ -314,6 +327,12 @@ namespace McRave::Terrain {
                 });
                 return commander && commander->getPosition().getDistance(here) < 160.0;
             };
+
+            // In FFA just hit closest base to us
+            if (Players::vFFA()) {
+                harassPosition = attackPosition;
+                return;
+            }
 
             // Check if enemy lost all bases
             auto lostAll = true;

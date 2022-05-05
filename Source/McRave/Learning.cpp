@@ -265,6 +265,11 @@ namespace McRave::Learning {
                 else
                     BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "2HatchSpeedling");
             }
+
+            // Terran
+            if (Broodwar->self()->getRace() == Races::Terran) {
+                BuildOrder::setLearnedBuild("RaxFact", "10Rax", "2Fact");
+            }
         }
 
         void getBestBuild()

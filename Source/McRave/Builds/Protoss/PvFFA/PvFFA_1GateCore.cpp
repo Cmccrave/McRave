@@ -13,7 +13,7 @@ namespace McRave::BuildOrder::Protoss {
         // -nolink-
         firstUnit =                                 None;
         lockedTransition =                          total(Protoss_Gateway) >= 3;
-        inOpeningBook =                             Spy::enemyPressure() ? Broodwar->getFrameCount() < 9000 : Broodwar->getFrameCount() < 8000;
+        inOpeningBook =                             s < 82;
         playPassive =                               Spy::enemyPressure() ? Broodwar->getFrameCount() < 13000 : false;
         gasLimit =                                  vis(Protoss_Gateway) >= 2 && com(Protoss_Gateway) < 3 ? 2 : INT_MAX;
         wallNat =                                   Util::getTime() > Time(4, 30);

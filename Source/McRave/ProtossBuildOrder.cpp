@@ -31,7 +31,6 @@ namespace McRave::BuildOrder::Protoss
         const auto firstTechUnit = !techList.empty() ? *techList.begin() : None;
         const auto skipOneTech = int(firstUnit == None || (firstUnit != None && Stations::getMyStations().size() >= 2) || Spy::getEnemyBuild() == "FFE" || (Spy::enemyGasSteal() && !Terrain::isNarrowNatural()));
         const auto techVal = int(techList.size()) + skipOneTech - isTechUnit(Protoss_Shuttle) + isTechUnit(Protoss_Arbiter) - (com(Protoss_Nexus) >= 3 && isTechUnit(Protoss_Dark_Templar));
-        techSat = techVal >= int(Stations::getMyStations().size());
 
         // PvP
         if (Players::PvP()) {
@@ -62,6 +61,12 @@ namespace McRave::BuildOrder::Protoss
             else
                 techOrder ={ Protoss_Observer, Protoss_Arbiter, Protoss_High_Templar };
         }
+
+        // PvFFA
+        if (Players::PvFFA()) {
+            techOrder ={ Protoss_Observer, Protoss_Arbiter, Protoss_High_Templar };
+        }
+        techSat = techVal >= int(Stations::getMyStations().size());
 
         // If we have our tech unit, set to none
         if (techComplete())
@@ -215,6 +220,7 @@ namespace McRave::BuildOrder::Protoss
             return;
 
         armyComposition.clear();
+        armyComposition[Protoss_Probe] = 1.00;
 
         // Ordered sections in reverse tech order such that it only checks the most relevant section first
         if (Players::vP()) {
@@ -256,6 +262,15 @@ namespace McRave::BuildOrder::Protoss
             }
             else
                 armyComposition[Protoss_Zealot] = 1.00;
+        }
+
+        if (Players::PvFFA()) {
+            if (isTechUnit(Protoss_High_Templar) || isTechUnit(Protoss_Arbiter)) {
+                armyComposition[Protoss_Zealot] = 0.40;
+                armyComposition[Protoss_Dragoon] = 0.60;
+            }
+            else
+                armyComposition[Protoss_Dragoon] = 1.00;
         }
 
         for (auto &type : techList)
