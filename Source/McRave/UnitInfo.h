@@ -173,6 +173,11 @@ namespace McRave {
         bool isInvincible() { return invincible; }
         bool wasStuckRecently() { return BWAPI::Broodwar->getFrameCount() - lastStuckFrame < 240; }
 
+        bool isLocalRetreat();
+        bool isLocalEngage();
+        bool isGlobalRetreat();
+        bool isGlobalEngage();
+
         bool isHealthy();
         bool isRequestingPickup();
         bool isWithinReach(UnitInfo&);

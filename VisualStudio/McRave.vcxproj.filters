@@ -73,15 +73,6 @@
     <ClCompile Include="..\Source\McRave\ProtossBuildOrder.cpp">
       <Filter>McRave\Builds\Protoss</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\PvP.cpp">
-      <Filter>McRave\Builds\Protoss</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\PvT.cpp">
-      <Filter>McRave\Builds\Protoss</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\PvZ.cpp">
-      <Filter>McRave\Builds\Protoss</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\Dll.cpp">
       <Filter>McRave\Main</Filter>
     </ClCompile>
@@ -90,9 +81,6 @@
     </ClCompile>
     <ClCompile Include="..\Source\McRave\PlayerInfo.cpp">
       <Filter>McRave\Info\Player</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\TerranBuilds.cpp">
-      <Filter>McRave\Builds\Terran</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\McRave\TerranBuildOrder.cpp">
       <Filter>McRave\Builds\Terran</Filter>
@@ -111,18 +99,6 @@
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Visuals.cpp">
       <Filter>McRave\Main</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\ZergBuildOrder.cpp">
-      <Filter>McRave\Builds\Zerg</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\ZvP.cpp">
-      <Filter>McRave\Builds\Zerg</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\ZvT.cpp">
-      <Filter>McRave\Builds\Zerg</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\ZvZ.cpp">
-      <Filter>McRave\Builds\Zerg</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\McRave\ResourceInfo.cpp">
       <Filter>McRave\Info\Resources</Filter>
@@ -226,8 +202,83 @@
     <ClCompile Include="..\Source\McRave\Defender.cpp">
       <Filter>McRave\Micro\Defender</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\ZvFFA.cpp">
+    <ClCompile Include="..\Source\McRave\Builds\Protoss\PvT\PvT_2Gate.cpp">
+      <Filter>McRave\Builds\Protoss\PvT</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Protoss\PvT\PvT_1GateCore.cpp">
+      <Filter>McRave\Builds\Protoss\PvT</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Protoss\PvT\PvT_2Base.cpp">
+      <Filter>McRave\Builds\Protoss\PvT</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Protoss\PvZ\PvZ_1GateCore.cpp">
+      <Filter>McRave\Builds\Protoss\PvZ</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Protoss\PvZ\PvZ_2Gate.cpp">
+      <Filter>McRave\Builds\Protoss\PvZ</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Protoss\PvP\PvP_1GateCore.cpp">
+      <Filter>McRave\Builds\Protoss\PvP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Protoss\PvP\PvP_2Gate.cpp">
+      <Filter>McRave\Builds\Protoss\PvP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Protoss\PvFFA\PvFFA_1GateCore.cpp">
+      <Filter>McRave\Builds\Protoss\PvFFA</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Protoss\PvZ\PvZ_FFE.cpp">
+      <Filter>McRave\Builds\Protoss\PvZ</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvZ\ZvZ_PoolHatch.cpp">
+      <Filter>McRave\Builds\Zerg\ZvZ</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvZ\ZvZ_PoolLair.cpp">
+      <Filter>McRave\Builds\Zerg\ZvZ</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvT\ZvT_PoolHatch.cpp">
+      <Filter>McRave\Builds\Zerg\ZvT</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvT\ZvT_HatchPool.cpp">
+      <Filter>McRave\Builds\Zerg\ZvT</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvP\ZvP_PoolHatch.cpp">
+      <Filter>McRave\Builds\Zerg\ZvP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvP\ZvP_HatchPool.cpp">
+      <Filter>McRave\Builds\Zerg\ZvP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Protoss\PvP\PvP.cpp">
+      <Filter>McRave\Builds\Protoss\PvP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Protoss\PvT\PvT.cpp">
+      <Filter>McRave\Builds\Protoss\PvT</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Protoss\PvZ\PvZ.cpp">
+      <Filter>McRave\Builds\Protoss\PvZ</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvZ\ZvZ.cpp">
+      <Filter>McRave\Builds\Zerg\ZvZ</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvT\ZvT.cpp">
+      <Filter>McRave\Builds\Zerg\ZvT</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvP\ZvP.cpp">
+      <Filter>McRave\Builds\Zerg\ZvP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvFFA\ZvFFA.cpp">
+      <Filter>McRave\Builds\Zerg\ZvFFA</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvFFA\ZvFFA_HatchPool.cpp">
+      <Filter>McRave\Builds\Zerg\ZvFFA</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Zerg\ZergBuildOrder.cpp">
       <Filter>McRave\Builds\Zerg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\TvA.cpp">
+      <Filter>McRave\Builds\Terran\TvA</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Protoss\PvFFA\PvFFA.cpp">
+      <Filter>McRave\Builds\Protoss\PvFFA</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -511,6 +562,33 @@
     </Filter>
     <Filter Include="McRave\Micro\Combat\Pathing">
       <UniqueIdentifier>{a248130f-bdef-4bc3-888e-73439d00ad79}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Builds\Protoss\PvZ">
+      <UniqueIdentifier>{c6a1cb01-78e9-4a67-ac61-36137770ca96}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Builds\Protoss\PvT">
+      <UniqueIdentifier>{23057fb9-c38a-4e2c-aee5-1932427d0d08}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Builds\Protoss\PvP">
+      <UniqueIdentifier>{5598992c-d4e4-4993-aef1-05e46a8313e5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Builds\Protoss\PvFFA">
+      <UniqueIdentifier>{46f55096-36d6-4a8a-98eb-1f3c4e958acf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Builds\Zerg\ZvFFA">
+      <UniqueIdentifier>{67de1e4f-8061-4b5a-a0c3-251c88d803b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Builds\Zerg\ZvP">
+      <UniqueIdentifier>{6afeacd8-0ca4-4fe4-9afa-1d02871fa9ee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Builds\Zerg\ZvT">
+      <UniqueIdentifier>{86a9ac7c-3781-4379-9908-dc67b0fb4d91}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Builds\Zerg\ZvZ">
+      <UniqueIdentifier>{44b3f59c-cd40-4450-b91e-c992687375f5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Builds\Terran\TvA">
+      <UniqueIdentifier>{e0538aa9-127f-431d-bfa6-25c11ac5815f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

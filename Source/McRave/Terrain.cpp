@@ -24,8 +24,8 @@ namespace McRave::Terrain {
         const ChokePoint * defendChoke = nullptr;
         const Area * defendArea = nullptr;
         map<BWEB::Station *, Position> safeSpots;
+        vector<Position> mapEdges, mapCorners;
 
-        bool shitMap = false;
         bool islandMap = false;
         bool reverseRamp = false;
         bool flatRamp = false;
@@ -220,19 +220,7 @@ namespace McRave::Terrain {
                     || (Broodwar->self()->getRace() != Races::Zerg && reverseRamp));
 
             auto oldPos = defendPosition;
-
             auto mainChoke = BWEB::Map::getMainChoke();
-            if (shitMap && enemyStartingPosition.isValid())
-                mainChoke = mapBWEM.GetPath(BWEB::Map::getMainPosition(), enemyStartingPosition).front();
-
-            // On Alchemist just defend the choke we determine
-            if (Terrain::isShitMap() && Walls::getNaturalWall()) {
-                defendChoke = Walls::getNaturalWall()->getChokePoint();
-                defendArea = Walls::getNaturalWall()->getArea();
-                defendPosition = Position(defendChoke->Center());
-                addTerritory(PlayerState::Self, Walls::getNaturalWall()->getStation());
-                return;
-            }
 
             // See if a defense is in range of our main choke
             auto defendRunby = false;
@@ -604,8 +592,7 @@ namespace McRave::Terrain {
                 if (closestPartner) {
                     for (auto &area : station->getBase()->GetArea()->AccessibleNeighbours()) {
 
-                        if (area->ChokePoints().size() > 2
-                            || shitMap)
+                        if (area->ChokePoints().size() > 2)
                             continue;
 
                         for (auto &choke : area->ChokePoints()) {
@@ -640,8 +627,7 @@ namespace McRave::Terrain {
                 if (closestPartner) {
                     for (auto &area : station->getBase()->GetArea()->AccessibleNeighbours()) {
 
-                        if (area->ChokePoints().size() > 2
-                            || shitMap)
+                        if (area->ChokePoints().size() > 2)
                             continue;
 
                         for (auto &choke : area->ChokePoints()) {
@@ -672,10 +658,6 @@ namespace McRave::Terrain {
         if (Broodwar->mapFileName().find("Plasma") != string::npos)
             islandMap = true;
 
-        // HACK: Alchemist is a shit map (no seriously, if you're reading this you have no idea)
-        if (Broodwar->mapFileName().find("Alchemist") != string::npos)
-            shitMap = true;
-
         // Store non island bases
         for (auto &area : mapBWEM.Areas()) {
             if (!islandMap && area.AccessibleNeighbours().size() == 0)
@@ -701,8 +683,6 @@ namespace McRave::Terrain {
         findHarassPosition();
 
         updateAreas();
-
-        findSafeSpots();
     }
 
     set<const Base*>& getAllBases() { return allBases; }
@@ -718,7 +698,6 @@ namespace McRave::Terrain {
     TilePosition getEnemyStartingTilePosition() { return enemyStartingTilePosition; }
     const ChokePoint * getDefendChoke() { return defendChoke; }
     const Area * getDefendArea() { return defendArea; }
-    bool isShitMap() { return shitMap; }
     bool isIslandMap() { return islandMap; }
     bool isReverseRamp() { return reverseRamp; }
     bool isFlatRamp() { return flatRamp; }

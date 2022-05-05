@@ -60,17 +60,30 @@ namespace McRave::BuildOrder {
         void composition();
         void unlocks();
 
-        void PvP1GateCore();
-        void PvP2Gate();
+        void PvP_1GC();
+        void PvP_2G();
 
-        void PvTGateNexus();
-        void PvTNexusGate();
-        void PvT1GateCore();
-        void PvT2Gate();
+        void PvT_1GC();
+        void PvT_2G();
+        void PvT_2B();
 
-        void PvZFFE();
-        void PvZ1GateCore();
-        void PvZ2Gate();
+        void PvZ_1GC();
+        void PvZ_2G();
+        void PvZ_FFE();
+
+        void PvFFA_1GC();
+
+        bool goonRange();
+        bool enemyMoreZealots();
+        bool enemyMaybeDT();
+        void defaultPvP();
+        void defaultPvT();
+        void defaultPvZ();
+
+        void PvT();
+        void PvP();
+        void PvZ();
+        void PvFFA();
     }
 
     namespace Terran {
@@ -80,7 +93,7 @@ namespace McRave::BuildOrder {
         void composition();
         void unlocks();
 
-        void RaxFact();
+        void TvA();
     }
 
     namespace Zerg {
@@ -90,6 +103,34 @@ namespace McRave::BuildOrder {
         void situational();
         void composition();
         void unlocks();
+
+        void ZvT_HP();
+        void ZvT_PH();
+
+        void ZvP_HP();
+        void ZvP_PH();
+
+        void ZvZ_PH();
+        void ZvZ_PL();
+
+        void ZvFFA_HP();
+
+        bool lingSpeed();
+        bool gas(int);
+        int gasMax();
+        int capGas(int);
+        int hatchCount();
+        int colonyCount();
+
+        int lingsNeeded_ZvFFA();
+        int lingsNeeded_ZvP();
+        int lingsNeeded_ZvZ();
+        int lingsNeeded_ZvT();
+
+        void defaultZvT();
+        void defaultZvP();
+        void defaultZvZ();
+        void defaultZvFFA();
 
         void ZvT();
         void ZvP();

@@ -61,10 +61,10 @@ namespace McRave::Learning {
                     return t || p;
                 if (build == "2Gate")
                     return true;
-                if (build == "NexusGate" || build == "GateNexus")
+                if (build == "2Base")
                     return t;
                 if (build == "FFE")
-                    return z && !Terrain::isShitMap() && !Terrain::isIslandMap();
+                    return z && !Terrain::isIslandMap();
                 return false;
             };
 
@@ -77,25 +77,17 @@ namespace McRave::Learning {
                 }
 
                 if (build == "2Gate") {
-                    if (opener == "Proxy")
-                        return false;// !Terrain::isIslandMap() && (p /*|| z*/);
-                    if (opener == "Natural")
-                        return false;
                     if (opener == "Main")
                         return true;
                 }
 
                 if (build == "FFE") {
-                    if (/*opener == "Gate" || opener == "Nexus" || */opener == "Forge")
+                    if (opener == "Forge")
                         return z;
                 }
 
-                if (build == "NexusGate") {
-                    if (opener == "Dragoon" || opener == "Zealot")
-                        return /*p ||*/ t;
-                }
-                if (build == "GateNexus") {
-                    if (opener == "1Gate" || opener == "2Gate")
+                if (build == "2Base") {
+                    if (opener == "12Nexus" || opener == "21Nexus" || opener == "20Nexus")
                         return t;
                 }
                 return false;
@@ -104,11 +96,11 @@ namespace McRave::Learning {
             const auto transitionOkay = [&]() {
                 if (build == "1GateCore") {
                     if (transition == "DT")
-                        return !Terrain::isShitMap() && (p || t /*|| z*/);
+                        return (p || t);
                     if (transition == "3Gate")
                         return !Terrain::isNarrowNatural() && (p || r);
                     if (transition == "Robo")
-                        return !Terrain::isShitMap() && !Terrain::isReverseRamp() && (p /*|| t*/ || r);
+                        return !Terrain::isReverseRamp() && (p || r);
                     if (transition == "4Gate")
                         return !Terrain::isNarrowNatural() && p;
                 }
@@ -117,11 +109,9 @@ namespace McRave::Learning {
                     if (transition == "DT")
                         return p || t;
                     if (transition == "Robo")
-                        return p /*|| t*/ || r;
+                        return p || r;
                     if (transition == "Expand")
                         return false;
-                    if (transition == "DoubleExpand")
-                        return t;
                     if (transition == "4Gate")
                         return z;
                 }
@@ -131,15 +121,8 @@ namespace McRave::Learning {
                         return z;
                 }
 
-                if (build == "NexusGate") {
-                    if (transition == "DoubleExpand" || transition == "ReaverCarrier")
-                        return t;
-                    if (transition == "Standard")
-                        return t;
-                }
-
-                if (build == "GateNexus") {
-                    if (transition == "DoubleExpand" || transition == "Carrier" || transition == "Standard")
+                if (build == "2Base") {
+                    if (transition == "ReaverCarrier" || transition == "Carrier" || transition == "Obs")
                         return t;
                 }
                 return false;
@@ -199,11 +182,11 @@ namespace McRave::Learning {
                 }
                 if (build == "PoolHatch") {
                     if (transition == "2HatchMuta")
-                        return true && (!z || !Terrain::isShitMap());
+                        return !z;
                     if (transition == "3HatchMuta")
                         return !z;
                     if (transition == "2HatchSpeedling")
-                        return z && !Terrain::isShitMap();
+                        return z;
                     if (transition == "3HatchSpeedling")
                         return false;
                     if (transition == "6HatchHydra")
@@ -255,39 +238,33 @@ namespace McRave::Learning {
 
         void getDefaultBuild()
         {
+            // Protoss
             if (Broodwar->self()->getRace() == Races::Protoss) {
-                if (Players::getPlayers().size() > 3) {
-                    if (Players::getRaceCount(Races::Zerg, PlayerState::Enemy) > Players::getRaceCount(Races::Protoss, PlayerState::Enemy) + Players::getRaceCount(Races::Terran, PlayerState::Enemy))
-                        BuildOrder::setLearnedBuild("FFE", "Forge", "5GateGoon");
-                    else if (Players::getRaceCount(Races::Protoss, PlayerState::Enemy) > Players::getRaceCount(Races::Zerg, PlayerState::Enemy) + Players::getRaceCount(Races::Terran, PlayerState::Enemy))
-                        BuildOrder::setLearnedBuild("1GateCore", "2Zealot", "Robo");
-                    else if (Players::getRaceCount(Races::Terran, PlayerState::Enemy) > Players::getRaceCount(Races::Zerg, PlayerState::Enemy) + Players::getRaceCount(Races::Protoss, PlayerState::Enemy))
-                        BuildOrder::setLearnedBuild("1GateCore", "1Zealot", "Robo");
-                }
-                else if (Players::vP())
+                if (Players::PvP())
                     BuildOrder::setLearnedBuild("1GateCore", "1Zealot", "Robo");
-                else if (Players::vZ())
+                else if (Players::PvZ())
                     BuildOrder::setLearnedBuild("2Gate", "Main", "4Gate");
-                else if (Players::vT())
-                    BuildOrder::setLearnedBuild("GateNexus", "1Gate", "Standard");
+                else if (Players::PvT())
+                    BuildOrder::setLearnedBuild("2Base", "21Nexus", "Obs");
+                else if (Players::PvFFA() || Players::PvTVB())
+                    BuildOrder::setLearnedBuild("1GateCore", "1Zealot", "3Gate");
                 else
                     BuildOrder::setLearnedBuild("2Gate", "Main", "Robo");
             }
+
+            // Zerg
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                if (Players::vZ())
+                if (Players::ZvZ())
                     BuildOrder::setLearnedBuild("PoolLair", "9Pool", "1HatchMuta");
-                else if (Players::vT())
+                else if (Players::ZvT())
                     BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "2HatchMuta");
-                else if (Players::vP())
+                else if (Players::ZvP())
                     BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "2HatchMuta");
                 else if (Players::ZvFFA() || Players::ZvTVB())
                     BuildOrder::setLearnedBuild("HatchPool", "10Hatch", "3HatchMuta");
                 else
                     BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "2HatchSpeedling");
             }
-
-            // Add walls
-            isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
         }
 
         void getBestBuild()
@@ -407,49 +384,27 @@ namespace McRave::Learning {
             if (false) {
                 if (Players::PvZ()) {
                     BuildOrder::setLearnedBuild("FFE", "Forge", "NeoBisu");
-                    isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                     return;
                 }
                 if (Players::PvP()) {
                     BuildOrder::setLearnedBuild("1GateCore", "1Zealot", "DT");
-                    isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                     return;
                 }
                 if (Players::PvT()) {
-                    BuildOrder::setLearnedBuild("GateNexus", "2Gate", "Standard");
-                    isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
+                    BuildOrder::setLearnedBuild("2Base", "21Nexus", "Obs");
                     return;
                 }
                 if (Players::ZvZ()) {
                     BuildOrder::setLearnedBuild("PoolHatch", "12Pool", "2HatchMuta");
-                    isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                     return;
                 }
                 if (Players::ZvT()) {
                     BuildOrder::setLearnedBuild("PoolHatch", "12Pool", "3HatchMuta");
-                    isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                     return;
                 }
                 if (Players::ZvP()) {
                     BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "3HatchMuta");
-                    isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                     return;
-                }
-            }
-
-            // HACK: Island play
-            if (Terrain::isIslandMap()) {
-                if (Broodwar->self()->getRace() == Races::Protoss) {
-                    if (Players::vT()) {
-                        BuildOrder::setLearnedBuild("NexusGate", "Dragoon", "ReaverCarrier");
-                        isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
-                        return;
-                    }
-                    else {
-                        BuildOrder::setLearnedBuild("1GateCore", "1Zealot", "4Gate");
-                        isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
-                        return;
-                    }
                 }
             }
         }
@@ -463,22 +418,18 @@ namespace McRave::Learning {
                 OneGateCore.transitions ={ BuildComponent("DT"), BuildComponent("Robo"), BuildComponent("4Gate"), BuildComponent("3Gate") };
 
                 Build TwoGate("2Gate");
-                TwoGate.openers ={ BuildComponent("Proxy"), BuildComponent("Natural"), BuildComponent("Main") };
+                TwoGate.openers ={ BuildComponent("Main") };
                 TwoGate.transitions ={ BuildComponent("DT"), BuildComponent("Robo"), BuildComponent("4Gate"), BuildComponent("Expand"), BuildComponent("DoubleExpand") };
 
                 Build FFE("FFE");
-                FFE.openers ={ BuildComponent("Forge"), BuildComponent("Gate"), BuildComponent("Nexus") };
+                FFE.openers ={ BuildComponent("Forge") };
                 FFE.transitions ={ BuildComponent("NeoBisu"), BuildComponent("2Stargate"), BuildComponent("StormRush"), BuildComponent("4GateArchon"), BuildComponent("CorsairReaver"), BuildComponent("5GateGoon") };
 
-                Build NexusGate("NexusGate");
-                NexusGate.openers ={ BuildComponent("Dragoon"), BuildComponent("Zealot") };
-                NexusGate.transitions ={ BuildComponent("Standard"), BuildComponent("DoubleExpand"), BuildComponent("ReaverCarrier") };
-
-                Build GateNexus("GateNexus");
-                GateNexus.openers ={ BuildComponent("1Gate"), BuildComponent("2Gate") };
-                GateNexus.transitions ={ BuildComponent("Standard"), BuildComponent("DoubleExpand"), BuildComponent("Carrier") };
-
-                myBuilds ={ OneGateCore, TwoGate, FFE, NexusGate, GateNexus };
+                Build TwoBase("2Base");
+                TwoBase.openers ={ BuildComponent("12Nexus"), BuildComponent("20Nexus"), BuildComponent("21Nexus") };
+                TwoBase.transitions ={ BuildComponent("Obs"), BuildComponent("Carrier"), BuildComponent("ReaverCarrier") };
+                
+                myBuilds ={ OneGateCore, TwoGate, FFE, TwoBase };
             }
 
             if (Broodwar->self()->getRace() == Races::Zerg) {
@@ -584,7 +535,7 @@ namespace McRave::Learning {
 
     void onStart()
     {
-        if (!Broodwar->enemy() || Players::ZvFFA() || Players::ZvTVB()) {
+        if (!Broodwar->enemy() || Players::vFFA() || Players::vTVB()) {
             getDefaultBuild();
             return;
         }
@@ -608,7 +559,7 @@ namespace McRave::Learning {
         mapLearning         = false;
         myRaceChar          ={ *Broodwar->self()->getRace().c_str() };
         enemyRaceChar       ={ *Broodwar->enemy()->getRace().c_str() };
-        version             = "AIIDE2021";
+        version             = "Offseason2022";
         noStats             = " 0 0 ";
         learningExtension   = mapLearning ? myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + mapName + ".txt" : myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + version + ".txt";
         gameInfoExtension   = myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + version + " Info.txt";

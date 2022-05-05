@@ -31,7 +31,7 @@ namespace McRave::Combat {
     };
 
     struct Formation {
-        Cluster cluster;
+        Cluster* cluster;
         BWAPI::Position center;
         std::vector<BWAPI::Position> positions;
     };

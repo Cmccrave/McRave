@@ -8,7 +8,7 @@ using namespace McRave::BuildOrder::All;
 
 namespace McRave::BuildOrder::Terran
 {
-    void RaxFact()
+    void TvA()
     {
         if (currentTransition == "2Fact") {
             firstUpgrade =  UpgradeTypes::Ion_Thrusters;

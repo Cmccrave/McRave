@@ -249,7 +249,7 @@ namespace McRave::Combat {
                 if (unit.getGoal().isValid())
                     unit.setObjective(unit.getGoal());
                 else if ((unit.isLightAir() || unit.getType() == Zerg_Scourge) && ((Units::getImmThreat() > 25.0 && Stations::getMyStations().size() >= 3 && Stations::getMyStations().size() > Stations::getEnemyStations().size()) || (Players::ZvZ() && Units::getImmThreat() > 5.0))) {
-                    auto &attacker = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                    auto attacker = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
                         return u->isThreatening() && !u->isHidden();
                     });
                     if (attacker)
@@ -474,7 +474,7 @@ namespace McRave::Combat {
                 newPath.generateAS(flyerRegroup);
                 unit.setObjectivePath(newPath);
             }
-            //Visuals::drawPath(unit.getObjectivePath());
+            Visuals::drawPath(unit.getObjectivePath());
         }
 
         void updateCommanders()
@@ -538,7 +538,7 @@ namespace McRave::Combat {
             const auto proactivePullWorker = [&]() {
 
                 // If this isn't the closest mineral worker to the defend position, don't pull it
-                if (unit.getRole() == Role::Worker && unit.shared_from_this() != closestWorker)
+                if (unit.getRole() == Role::Worker && unit != *closestWorker)
                     return false;
 
                 // Protoss
@@ -616,7 +616,7 @@ namespace McRave::Combat {
                 // If we're trying to make our expanding hatchery and the drone is being harassed
                 if (vis(Zerg_Hatchery) == 1 && Util::getTime() < Time(3, 00) && BuildOrder::isOpener() && Units::getImmThreat() > 0.0f && Players::ZvP() && combatCount == 0)
                     return combatWorkersCount < 1;
-                if (Players::ZvP() && Util::getTime() < Time(4, 00) && !Terrain::isShitMap() && int(Stations::getMyStations().size()) < 2 && BuildOrder::getBuildQueue()[Zerg_Hatchery] >= 2 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Probe) > 0)
+                if (Players::ZvP() && Util::getTime() < Time(4, 00) && int(Stations::getMyStations().size()) < 2 && BuildOrder::getBuildQueue()[Zerg_Hatchery] >= 2 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Probe) > 0)
                     return combatWorkersCount < 1;
 
                 // If we suspect a cannon rush is coming

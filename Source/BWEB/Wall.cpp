@@ -1096,15 +1096,6 @@ namespace BWEB {
 
 namespace BWEB::Walls {
 
-    Wall* createHardWall(multimap<UnitType, TilePosition>& buildings, const BWEM::Area * area, const BWEM::ChokePoint * choke)
-    {
-        for (auto &[type, tile] : buildings)
-            Map::addReserve(tile, type.tileWidth(), type.tileHeight());        
-        BWEB::Wall wall(area, choke, buildings);
-        walls.emplace(choke, wall);
-        return &walls.at(choke);
-    }
-
     Wall* createWall(vector<UnitType>& buildings, const BWEM::Area * area, const BWEM::ChokePoint * choke, const UnitType tightType, const vector<UnitType>& defenses, const bool openWall, const bool requireTight)
     {
         ofstream writeFile;

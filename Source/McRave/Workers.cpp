@@ -275,7 +275,7 @@ namespace McRave::Workers {
                     auto closestunit = Util::getClosestUnit(resource.getPosition(), PlayerState::Self, [&](auto &u) {
                         return u->getRole() == Role::Worker && !u->getBuildPosition().isValid() && (!u->hasResource() || u->getResource().lock()->getType().isMineralField());
                     });
-                    if (closestunit && unit != closestunit)
+                    if (closestunit && unit != *closestunit)
                         continue;
 
                     auto dist = resource.getPosition().getDistance(unit.getPosition());

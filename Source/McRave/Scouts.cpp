@@ -138,7 +138,6 @@ namespace McRave::Scouts {
                     || Spy::enemyWalled()
                     || Spy::enemyFastExpand()
                     || Spy::getEnemyOpener() == "8Rax"
-                    || (Terrain::isShitMap() && Terrain::getEnemyStartingPosition().isValid())
                     || (BuildOrder::isProxy() && Terrain::getEnemyStartingPosition().isValid())
                     || Spy::getEnemyBuild() == "FFE"
                     || (Spy::getEnemyBuild() == "2Gate" && (Util::getTime() > Time(3, 30) || Spy::getEnemyOpener() != "Unknown"))
@@ -175,7 +174,7 @@ namespace McRave::Scouts {
         {
             bool sendAnother = scoutDeadFrame < 0 && (Broodwar->getFrameCount() - scoutDeadFrame > 240 || (Util::getTime() < Time(4, 0) && Spy::getEnemyTransition() == "Unknown"));
             const auto assign = [&](UnitType type) {
-                shared_ptr<UnitInfo> scout = nullptr;
+                UnitInfo* scout = nullptr;
 
                 auto assignPos = BWEB::Map::getNaturalChoke() ? Position(BWEB::Map::getNaturalChoke()->Center()) : BWEB::Map::getMainPosition();
 
@@ -206,7 +205,7 @@ namespace McRave::Scouts {
             };
 
             const auto remove = [&](UnitType type) {
-                shared_ptr<UnitInfo> scout = nullptr;
+                UnitInfo* scout = nullptr;
                 if (type.isFlyer()) {
                     scout = Util::getFurthestUnit(Terrain::getEnemyStartingPosition(), PlayerState::Self, [&](auto &u) {
                         return u->getRole() == Role::Scout && u->getType() == type;
@@ -408,7 +407,7 @@ namespace McRave::Scouts {
                 auto &list = (firstOverlord && unit.getType() == Zerg_Overlord) ? scoutOrderFirstOverlord : scoutOrder;
                 for (auto &station : list) {
                     auto closestNatural = BWEB::Stations::getClosestNaturalStation(station->getBase()->Location());
-                    if (closestNatural && !Stations::isBaseExplored(closestNatural) && unit.getType() == Zerg_Overlord && !Terrain::isShitMap()) {
+                    if (closestNatural && !Stations::isBaseExplored(closestNatural) && unit.getType() == Zerg_Overlord) {
                         unit.setDestination(closestNatural->getBase()->Center());
                         break;
                     }
@@ -520,7 +519,8 @@ namespace McRave::Scouts {
         for (auto &station : BWEB::Stations::getStations()) {
             auto closestMain = BWEB::Stations::getClosestMainStation(TilePosition(station.getBase()->Center()));
             if (!station.isNatural()
-                || !closestMain)
+                || !closestMain
+                || !closestMain->getChokepoint())
                 continue;
 
             auto distBest = 0.0;

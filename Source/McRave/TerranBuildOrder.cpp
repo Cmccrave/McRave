@@ -9,16 +9,7 @@ namespace McRave::BuildOrder::Terran {
 
     void opener()
     {
-        if (currentBuild == "RaxFact")
-            RaxFact();
-
-        if (Broodwar->getGameType() == GameTypes::Team_Free_For_All || Broodwar->getGameType() == GameTypes::Team_Melee) {
-            buildQueue[Terran_Command_Center] = Players::getSupply(PlayerState::Self, Races::None) >= 30;
-            currentBuild = "RaxFact";
-            currentOpener = "10Rax";
-            currentTransition = "2Fact";
-            RaxFact();
-        }
+        TvA();
     }
 
     void tech()

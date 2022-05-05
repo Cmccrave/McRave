@@ -22,7 +22,6 @@ namespace McRave::Terrain {
     BWAPI::TilePosition getEnemyStartingTilePosition();
     const BWEM::ChokePoint * getDefendChoke();
     const BWEM::Area * getDefendArea();
-    bool isShitMap();
     bool isIslandMap();
     bool isReverseRamp();
     bool isFlatRamp();

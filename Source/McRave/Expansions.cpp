@@ -8,7 +8,7 @@ namespace McRave::Expansion {
     namespace {
         vector<BWEB::Station*> expansionOrder, dangerousStations, islandStations;
         map<BWEB::Station *, map<BWEB::Station*, BWEB::Path>> expansionNetwork;
-        map<BWEB::Station*, vector<weak_ptr<UnitInfo>>> blockingNeutrals;
+        map<BWEB::Station*, vector<UnitInfo*>> blockingNeutrals;
         bool blockersExists = false;
 
         void updateDangerousStations()
@@ -32,8 +32,8 @@ namespace McRave::Expansion {
         {
             // Check if any base is an island separated by resources
             for (auto &station : BWEB::Stations::getStations()) {
-                for (auto &b : blockingNeutrals[&station]) {
-                    if (auto blocker = b.lock()) {
+                for (auto &blocker : blockingNeutrals[&station]) {
+                    if (blocker) {
                         if (blocker->getType().isMineralField() || blocker->getType().isRefinery())
                             islandStations.push_back(&station);
                     }
@@ -70,8 +70,8 @@ namespace McRave::Expansion {
                 blockersExists = !blockingNeutrals[Planning::getCurrentExpansion()].empty();
 
                 // Mark the blockers for the next expansion for death, so we can kill it before we need an expansion
-                for (auto &n : blockingNeutrals[Planning::getCurrentExpansion()]) {
-                    if (auto neutral = n.lock())
+                for (auto &neutral : blockingNeutrals[Planning::getCurrentExpansion()]) {
+                    if (neutral)
                         neutral->setMarkForDeath(true);
                 }
             }
@@ -144,7 +144,7 @@ namespace McRave::Expansion {
                     auto dist = (grdParent * grdHome * airParent * airHome) / (grdEnemy * airEnemy * airCenter);
                     auto blockerCost = 0.0;
                     for (auto &blocker : blockingNeutrals[&station])
-                        blockerCost += double(blocker.lock()->getHealth()) / 1000.0;
+                        blockerCost += double(blocker->getHealth()) / 1000.0;
 
                     if (blockerCost > 0)
                         dist = blockerCost;

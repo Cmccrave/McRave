@@ -83,7 +83,7 @@ namespace McRave::Combat::Formations {
 
             // Create a concave
             Formation concave;
-            concave.cluster = cluster;
+            concave.cluster = &cluster;
 
             // Set the radius of the concave
             const auto unitTangentSize = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0));

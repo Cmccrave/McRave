@@ -233,6 +233,37 @@ namespace McRave::BuildOrder::Zerg {
         }
     }
 
+    bool lingSpeed() {
+        return Broodwar->self()->isUpgrading(UpgradeTypes::Metabolic_Boost) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Metabolic_Boost);
+    }
+
+    bool gas(int amount) {
+        return Broodwar->self()->gas() >= amount;
+    }
+
+    int gasMax() {
+        return Resources::getGasCount() * 3;
+    }
+
+    int capGas(int value) {
+        auto onTheWay = 0;
+        for (auto &w : Units::getUnits(PlayerState::Self)) {
+            auto &worker = *w;
+            if (worker.unit()->isCarryingGas() || (worker.hasResource() && worker.getResource().lock()->getType().isRefinery()))
+                onTheWay+=8;
+        }
+
+        return int(round(double(value - Broodwar->self()->gas() - onTheWay) / 8.0));
+    }
+
+    int hatchCount() {
+        return vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive);
+    }
+
+    int colonyCount() {
+        return vis(Zerg_Creep_Colony) + vis(Zerg_Sunken_Colony);
+    }
+
     void opener()
     {
         if (Players::getRaceCount(Races::Unknown, PlayerState::Enemy) > 0 && !Players::ZvFFA() && !Players::ZvTVB())
@@ -276,7 +307,6 @@ namespace McRave::BuildOrder::Zerg {
         const auto vsGoonsGols = Spy::getEnemyTransition() == "4Gate" || Spy::getEnemyTransition() == "5FactGoliath";
         const auto techVal = int(techList.size()) + (2 * Players::ZvT()) + (Players::ZvP()) + vsGoonsGols;
         const auto endOfTech = !techOrder.empty() && isTechUnit(techOrder.back());
-        techSat = (techVal >= int(Stations::getMyStations().size())) || endOfTech;
 
         // ZvP
         if (Players::ZvP()) {
@@ -302,13 +332,14 @@ namespace McRave::BuildOrder::Zerg {
 
         // ZvFFA
         if (Broodwar->getGameType() == GameTypes::Free_For_All && Broodwar->getPlayers().size() > 2)
-            techOrder ={ Zerg_Mutalisk, Zerg_Hydralisk };
+            techOrder ={ Zerg_Mutalisk, Zerg_Hydralisk, Zerg_Lurker };
 
         // If we have our tech unit, set to none
         if (techComplete())
             techUnit = None;
 
         // Adding tech
+        techSat = (techVal >= int(Stations::getMyStations().size())) || endOfTech;
         auto readyToTech = vis(Zerg_Extractor) >= int(Stations::getMyStations().size()) || int(Stations::getMyStations().size()) >= 4 || techList.empty();
         if (!inOpeningBook && readyToTech && techUnit == None && !techSat && productionSat && vis(Zerg_Drone) >= 10)
             getTech = true;
@@ -516,7 +547,15 @@ namespace McRave::BuildOrder::Zerg {
 
         // ZvFFA
         if ((Players::ZvTVB() || Players::ZvFFA()) && !inOpeningBook) {
-            if (isTechUnit(Zerg_Hydralisk) && isTechUnit(Zerg_Mutalisk)) {
+            if (isTechUnit(Zerg_Hydralisk) && isTechUnit(Zerg_Mutalisk) && isTechUnit(Zerg_Lurker)) {
+                armyComposition[Zerg_Drone] =                   0.60;
+                armyComposition[Zerg_Zergling] =                0.00;
+                armyComposition[Zerg_Hydralisk] =               0.25;
+                armyComposition[Zerg_Lurker] =                  0.05;
+                armyComposition[Zerg_Mutalisk] =                0.10;
+                currentComposition =                            Composition::HydraLurker;
+            }
+            else if (isTechUnit(Zerg_Hydralisk) && isTechUnit(Zerg_Mutalisk)) {
                 armyComposition[Zerg_Drone] =                   0.70;
                 armyComposition[Zerg_Zergling] =                0.00;
                 armyComposition[Zerg_Hydralisk] =               0.20;

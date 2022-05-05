@@ -14,9 +14,9 @@ namespace McRave::Planning {
         BWEB::Station * currentExpansion = nullptr;
         BWEB::Station * nextExpansion = nullptr;
 
-        shared_ptr<UnitInfo> getBuilder(UnitType building, Position here)
+        UnitInfo* getBuilder(UnitType building, Position here)
         {
-            auto &builder = Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &u) {
+            auto builder = Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &u) {
                 if (u->getType().getRace() != building.getRace()
                     || u->getBuildType() != None
                     || u->unit()->getOrder() == Orders::ConstructingBuilding
@@ -392,34 +392,9 @@ namespace McRave::Planning {
                 return false;
 
             // First expansion is always the Natural
-            if (Stations::getMyStations().size() == 1 && !Terrain::isShitMap() && isBuildable(baseType, BWEB::Map::getNaturalTile()) && isPlannable(baseType, BWEB::Map::getNaturalTile()) && isPathable(building, BWEB::Map::getNaturalTile())) {
+            if (Stations::getMyStations().size() == 1 && isBuildable(baseType, BWEB::Map::getNaturalTile()) && isPlannable(baseType, BWEB::Map::getNaturalTile()) && isPathable(building, BWEB::Map::getNaturalTile())) {
                 placement = BWEB::Map::getNaturalTile();
                 currentExpansion = Terrain::getMyNatural();
-                expansionPlanned = true;
-                return true;
-            }
-
-            if (Stations::getMyStations().size() == 1 && Terrain::isShitMap() && Terrain::getEnemyStartingPosition().isValid()) {
-                if (BWEB::Map::getMainTile() == TilePosition(8, 7)) {
-                    if (Terrain::getEnemyStartingTilePosition() == TilePosition(43, 118))
-                        placement = TilePosition(45, 19);
-                    else
-                        placement = TilePosition(8, 41);
-                }
-                if (BWEB::Map::getMainTile() == TilePosition(43, 118)) {
-                    if (Terrain::getEnemyStartingTilePosition() == TilePosition(8, 7))
-                        placement = TilePosition(77, 118);
-                    else
-                        placement = TilePosition(8, 113);
-                }
-                if (BWEB::Map::getMainTile() == TilePosition(117, 51)) {
-                    if (Terrain::getEnemyStartingTilePosition() == TilePosition(8, 7))
-                        placement = TilePosition(91, 67);
-                    else
-                        placement = TilePosition(108, 13);
-
-                }
-
                 expansionPlanned = true;
                 return true;
             }
@@ -654,35 +629,23 @@ namespace McRave::Planning {
                 return false;
 
             // As Zerg, we have to place natural hatch before wall
-            if (building == Zerg_Hatchery && !Terrain::isShitMap() && isPlannable(building, BWEB::Map::getNaturalTile()) && BWEB::Map::isUsed(BWEB::Map::getNaturalTile()) == UnitTypes::None)
+            if (building == Zerg_Hatchery && isPlannable(building, BWEB::Map::getNaturalTile()) && BWEB::Map::isUsed(BWEB::Map::getNaturalTile()) == UnitTypes::None)
                 return false;
 
             // Find a wall location
             set<TilePosition> placements;
-            if (!Terrain::isShitMap()) {
-                for (auto &[_, wall] : BWEB::Walls::getWalls()) {
+            for (auto &[_, wall] : BWEB::Walls::getWalls()) {
 
-                    if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()))
-                        continue;
-
-                    // Setup placements
-                    if (building.tileWidth() == 4)
-                        placements.insert(wall.getLargeTiles().begin(), wall.getLargeTiles().end());
-                    else if (building.tileWidth() == 3)
-                        placements.insert(wall.getMediumTiles().begin(), wall.getMediumTiles().end());
-                    else
-                        placements.insert(wall.getSmallTiles().begin(), wall.getSmallTiles().end());
-                }
-            }
-            else if (Walls::getNaturalWall()) {
+                if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()))
+                    continue;
 
                 // Setup placements
                 if (building.tileWidth() == 4)
-                    placements.insert(Walls::getNaturalWall()->getLargeTiles().begin(), Walls::getNaturalWall()->getLargeTiles().end());
+                    placements.insert(wall.getLargeTiles().begin(), wall.getLargeTiles().end());
                 else if (building.tileWidth() == 3)
-                    placements.insert(Walls::getNaturalWall()->getMediumTiles().begin(), Walls::getNaturalWall()->getMediumTiles().end());
+                    placements.insert(wall.getMediumTiles().begin(), wall.getMediumTiles().end());
                 else
-                    placements.insert(Walls::getNaturalWall()->getSmallTiles().begin(), Walls::getNaturalWall()->getSmallTiles().end());
+                    placements.insert(wall.getSmallTiles().begin(), wall.getSmallTiles().end());
             }
 
             // Get closest placement
@@ -853,11 +816,11 @@ namespace McRave::Planning {
         void updatePlan()
         {
             // Wipe clean all queued buildings, store a cache of old buildings
-            map<shared_ptr<UnitInfo>, TilePosition> oldBuilders;
+            map<TilePosition, UnitInfo*> oldBuilders;
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
                 if (unit.getBuildPosition().isValid()) {
-                    oldBuilders[u] = unit.getBuildPosition();
+                    oldBuilders[unit.getBuildPosition()] = &unit;
                     unit.setBuildingType(UnitTypes::None);
                     unit.setBuildPosition(TilePositions::Invalid);
                 }
@@ -904,7 +867,7 @@ namespace McRave::Planning {
 
                     // Use old builder if we're not early game, as long as it's not stuck or was stuck recently
                     if (builder && Util::getTime() > Time(3, 00)) {
-                        for (auto &[oldBuilder, oldHere] : oldBuilders) {
+                        for (auto &[oldHere, oldBuilder] : oldBuilders) {
                             if (oldHere == here && oldBuilder && Workers::canAssignToBuild(*oldBuilder))
                                 builder = oldBuilder;
                         }

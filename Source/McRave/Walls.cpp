@@ -67,9 +67,6 @@ namespace McRave::Walls {
 
     void findWalls()
     {
-        if (Terrain::isShitMap())
-            return;
-
         // Create a Zerg/Protoss wall at every natural
         if (Broodwar->self()->getRace() != Races::Terran) {
             openWall = true;
@@ -112,28 +109,7 @@ namespace McRave::Walls {
 
     void onFrame()
     {
-        if (Terrain::isShitMap() && Terrain::getEnemyStartingPosition().isValid()) {
-            if (BWEB::Map::getMainTile() == TilePosition(8, 7)) {
-                if (Terrain::getEnemyStartingTilePosition() == TilePosition(43, 118))
-                    naturalWall = BWEB::Walls::getClosestWall(TilePosition(30, 27));
-                else
-                    naturalWall = BWEB::Walls::getClosestWall(TilePosition(28, 1));
-            }
 
-            if (BWEB::Map::getMainTile() == TilePosition(43, 118)) {
-                if (Terrain::getEnemyStartingTilePosition() == TilePosition(8, 7))
-                    naturalWall = BWEB::Walls::getClosestWall(TilePosition(35, 112));
-                else
-                    naturalWall = BWEB::Walls::getClosestWall(TilePosition(50, 98));
-            }
-
-            if (BWEB::Map::getMainTile() == TilePosition(117, 51)) {
-                if (Terrain::getEnemyStartingTilePosition() == TilePosition(8, 7))
-                    naturalWall = BWEB::Walls::getClosestWall(TilePosition(122, 27));
-                else
-                    naturalWall = BWEB::Walls::getClosestWall(TilePosition(122, 65));
-            }
-        }
     }
 
     int calcSaturationRatio(BWEB::Wall& wall, int defensesDesired)
