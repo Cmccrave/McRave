@@ -140,51 +140,6 @@ namespace McRave::BuildOrder
         return vis(techUnit) > 0;
     }
 
-    void checkExpand()
-    {
-        if (inOpeningBook)
-            return;
-
-        const auto baseType = Broodwar->self()->getRace().getResourceDepot();
-
-        if (Broodwar->self()->getRace() == Races::Zerg) {
-
-        }
-        else {
-            const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
-            expandDesired = (techUnit == None && Resources::isGasSaturated() && (Resources::isMineralSaturated() || com(baseType) >= 3) && (techSat || com(baseType) >= 3) && productionSat)
-                || (com(baseType) >= 2 && availableMinerals >= 800 && (Resources::isMineralSaturated() || Resources::isGasSaturated()));
-        }
-    }
-
-    void checkRamp()
-    {
-        if (inOpeningBook)
-            return;
-
-        const auto baseType = Broodwar->self()->getRace().getResourceDepot();
-
-        if (Broodwar->self()->getRace() == Races::Zerg) {
-
-        }
-        else {
-            const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
-            rampDesired = !productionSat && ((techUnit == None && availableMinerals >= 150 && (techSat || com(baseType) >= 3)) || availableMinerals >= 300);
-        }
-    }
-
-    bool shouldAddGas()
-    {
-        auto workerCount = com(Broodwar->self()->getRace().getWorker());
-        auto refineryCount = vis(Broodwar->self()->getRace().getRefinery());
-        auto workerUnlimitedGas = Players::ZvT() ? 40 : 50;
-
-        if (Broodwar->self()->getRace() == Races::Zerg)
-            return gasLimit > vis(Zerg_Extractor) * 3 && workerCount >= 10 && (Resources::isHalfMineralSaturated() || productionSat || workerCount >= workerUnlimitedGas || Players::ZvZ());
-        else
-            return ((Broodwar->self()->minerals() > 600 && Broodwar->self()->gas() < 200) || Resources::isMineralSaturated()) && workerCount >= 30;
-    }
-
     double getCompositionPercentage(UnitType unit)
     {
         auto ptr = armyComposition.find(unit);

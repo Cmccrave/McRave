@@ -7,17 +7,164 @@ using namespace McRave::BuildOrder::All;
 
 namespace McRave::BuildOrder::Protoss
 {
+    namespace {
+        bool againstRandom = false;
+
+        void queueWallDefenses()
+        {
+            // Adding Wall Defenses
+            if (Walls::getNaturalWall()) {
+                if (vis(Protoss_Forge) > 0 && (Walls::needAirDefenses(*Walls::getNaturalWall()) > 0 || Walls::needGroundDefenses(*Walls::getNaturalWall()) > 0))
+                    buildQueue[Protoss_Photon_Cannon] = vis(Protoss_Photon_Cannon) + 1;
+            }
+        }
+
+        void queueStationDefenses()
+        {
+            // Adding Station Defenses
+            if (int(Stations::getMyStations().size()) >= 2) {
+                for (auto &station : Stations::getMyStations()) {
+                    if (vis(Protoss_Forge) > 0 && (Stations::needGroundDefenses(station) > 0 || Stations::needAirDefenses(station) > 0))
+                        buildQueue[Protoss_Photon_Cannon] = vis(Protoss_Photon_Cannon) + 1;
+                }
+            }
+        }
+
+        void queueSupply()
+        {
+            if (!inBookSupply) {
+                int count = min(22, s / 14) - (com(Protoss_Nexus) - 1);
+                buildQueue[Protoss_Pylon] = count;
+
+                for (auto &station : Stations::getMyStations()) {
+                    if (Stations::needPower(station)) {
+                        buildQueue[Protoss_Pylon]++;
+                        break;
+                    }
+                }
+            }
+        }
+
+        void queueGeysers()
+        {
+            if (!inOpeningBook) {
+                gasDesired = ((Broodwar->self()->minerals() > 600 && Broodwar->self()->gas() < 200) || Resources::isMineralSaturated()) && com(Protoss_Probe) >= 30;
+                buildQueue[Protoss_Assimilator] = min(vis(Protoss_Assimilator) + gasDesired, Resources::getGasCount());
+            }
+        }
+
+        void queueUpgradeStructures()
+        {
+            // If we're not in our opener
+            if (!inOpeningBook) {
+
+                // Adding upgrade buildings
+                if (com(Protoss_Assimilator) >= 3) {
+                    auto forgeCount = com(Protoss_Assimilator) >= 4 ? 2 - (int)Terrain::isIslandMap() : 1;
+                    auto coreCount = com(Protoss_Assimilator) >= 4 ? 1 + (int)Terrain::isIslandMap() : 1;
+
+                    buildQueue[Protoss_Cybernetics_Core] = 1 + (int)Terrain::isIslandMap();
+                    buildQueue[Protoss_Forge] = 2 - (int)Terrain::isIslandMap();
+                }
+
+                // Important to have a forge vs Z
+                if (com(Protoss_Nexus) >= 2 && Players::vZ())
+                    buildQueue[Protoss_Forge] = 1;
+
+                // Ensure we build a core outside our opening book
+                if (com(Protoss_Gateway) >= 2)
+                    buildQueue[Protoss_Cybernetics_Core] = 1;
+
+                // Corsair/Scout upgrades
+                if (s >= 300 && (isTechUnit(Protoss_Scout) || isTechUnit(Protoss_Corsair)))
+                    buildQueue[Protoss_Fleet_Beacon] = 1;
+            }
+        }
+
+        void queueExpansions()
+        {
+            // Against FFE add a Nexus
+            if (Spy::getEnemyBuild() == "FFE" && Broodwar->getFrameCount() < 15000) {
+                auto cannonCount = Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon);
+                wantNatural = true;
+
+                if (cannonCount < 6) {
+                    buildQueue[Protoss_Nexus] = 2;
+                    buildQueue[Protoss_Assimilator] = (vis(Protoss_Nexus) >= 2) + (s >= 120);
+                    unitLimits[Protoss_Zealot] = 0;
+                    gasLimit = vis(Protoss_Nexus) != buildCount(Protoss_Nexus) ? 0 : INT_MAX;
+                }
+                else {
+                    buildQueue[Protoss_Nexus] = 3;
+                    buildQueue[Protoss_Assimilator] = (vis(Protoss_Nexus) >= 2) + (s >= 120);
+                    unitLimits[Protoss_Zealot] = 0;
+                    gasLimit = vis(Protoss_Nexus) != buildCount(Protoss_Nexus) ? 0 : INT_MAX;
+                }
+            }
+
+            // If we're not in our opener
+            if (!inOpeningBook) {
+                const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
+                expandDesired = (techUnit == None && Resources::isGasSaturated() && (Resources::isMineralSaturated() || com(Protoss_Nexus) >= 3) && (techSat || com(Protoss_Nexus) >= 3) && productionSat)
+                    || (com(Protoss_Nexus) >= 2 && availableMinerals >= 800 && (Resources::isMineralSaturated() || Resources::isGasSaturated()))
+                    || (Stations::getMyStations().size() >= 4 && Stations::getMiningStationsCount() <= 2)
+                    || (Stations::getMyStations().size() >= 4 && Stations::getGasingStationsCount() <= 1);
+
+                buildQueue[Protoss_Nexus] = com(Protoss_Nexus) + expandDesired;
+            }
+        }
+
+        void queueProduction()
+        {
+            // If we're not in our opener
+            if (!inOpeningBook) {
+                const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
+                rampDesired = !productionSat && ((techUnit == None && availableMinerals >= 150 && (techSat || com(Protoss_Nexus) >= 3)) || availableMinerals >= 300);
+
+                // Adding production
+                auto maxGates = Players::vT() ? 16 : 12;
+                auto gatesPerBase = 3.0 - (0.5 * (int(isTechUnit(Protoss_Carrier)) || int(Stations::getMyStations().size()) >= 3));
+                productionSat = (vis(Protoss_Gateway) >= int(2.5 * vis(Protoss_Nexus)) || vis(Protoss_Gateway) >= maxGates);
+                if (rampDesired) {
+                    auto gateCount = min({ maxGates, int(round(com(Protoss_Nexus) * gatesPerBase)), vis(Protoss_Gateway) + 1 });
+                    auto stargateCount = min(4, int(isTechUnit(Protoss_Carrier)) * vis(Protoss_Nexus));
+                    buildQueue[Protoss_Gateway] = gateCount;
+                    buildQueue[Protoss_Stargate] = stargateCount;
+                }
+            }
+        }
+
+        void calculateGasLimit()
+        {
+            // Gas limits
+            if ((buildCount(Protoss_Assimilator) == 0 && com(Protoss_Probe) <= 12) || com(Protoss_Probe) <= 8)
+                gasLimit = 0;
+            else if (com(Protoss_Probe) < 20)
+                gasLimit = min(gasLimit, com(Protoss_Probe) / 4);
+            else if (!inOpeningBook && com(Protoss_Probe) >= 20)
+                gasLimit = INT_MAX;
+        }
+
+        void removeExcessGas()
+        {
+
+        }
+    }
+    
     bool goonRange() {
         return Broodwar->self()->isUpgrading(UpgradeTypes::Singularity_Charge) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge);
     }
 
     void opener()
     {
+        if (Players::getRaceCount(Races::Unknown, PlayerState::Enemy) > 0 && !Players::ZvFFA() && !Players::ZvTVB())
+            againstRandom = true;
+
         if (Players::PvT())
             PvT();
         else if (Players::PvP())
             PvP();
-        else if (Players::PvZ() || Players::PvR())
+        else if (Players::PvZ() || againstRandom)
             PvZ();
         else if (Players::PvFFA() || Players::PvTVB())
             PvFFA();
@@ -104,108 +251,22 @@ namespace McRave::BuildOrder::Protoss
 
     void situational()
     {
-        // Against FFE add a Nexus
-        if (Spy::getEnemyBuild() == "FFE" && Broodwar->getFrameCount() < 15000) {
-            auto cannonCount = Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon);
-            wantNatural = true;
+        // Queue up defenses
+        queueWallDefenses();
+        queueStationDefenses();
 
-            if (cannonCount < 6) {
-                buildQueue[Protoss_Nexus] = 2;
-                buildQueue[Protoss_Assimilator] = (vis(Protoss_Nexus) >= 2) + (s >= 120);
-                unitLimits[Protoss_Zealot] = 0;
-                gasLimit = vis(Protoss_Nexus) != buildCount(Protoss_Nexus) ? 0 : INT_MAX;
-            }
-            else {
-                buildQueue[Protoss_Nexus] = 3;
-                buildQueue[Protoss_Assimilator] = (vis(Protoss_Nexus) >= 2) + (s >= 120);
-                unitLimits[Protoss_Zealot] = 0;
-                gasLimit = vis(Protoss_Nexus) != buildCount(Protoss_Nexus) ? 0 : INT_MAX;
-            }
-        }
+        // Queue up supply, upgrade structures
+        queueSupply();
+        queueUpgradeStructures();
+        queueGeysers();
 
-        // Gas limits
-        if ((buildCount(Protoss_Assimilator) == 0 && com(Protoss_Probe) <= 12) || com(Protoss_Probe) <= 8)
-            gasLimit = 0;
-        else if (com(Protoss_Probe) < 20)
-            gasLimit = min(gasLimit, com(Protoss_Probe) / 4);
-        else if (!inOpeningBook && com(Protoss_Probe) >= 20)
-            gasLimit = INT_MAX;
+        // Outside of opening book, book no longer is in control of queuing production, expansions or gas limits
+        queueExpansions();
+        queueProduction();
+        calculateGasLimit();
 
-        // Pylon logic after first two
-        if (!inBookSupply) {
-            int count = min(22, s / 14) - (com(Protoss_Nexus) - 1);
-            buildQueue[Protoss_Pylon] = count;
-        }
-
-        // Adding Wall Defenses
-        if (Walls::getNaturalWall()) {
-            if (vis(Protoss_Forge) > 0 && (Walls::needAirDefenses(*Walls::getNaturalWall()) > 0 || Walls::needGroundDefenses(*Walls::getNaturalWall()) > 0))
-                buildQueue[Protoss_Photon_Cannon] = vis(Protoss_Photon_Cannon) + 1;
-        }
-
-        // Adding Station Defenses
-        if (int(Stations::getMyStations().size()) >= 2) {
-            for (auto &station : Stations::getMyStations()) {
-                if (vis(Protoss_Forge) > 0 && (Stations::needGroundDefenses(station) > 0 || Stations::needAirDefenses(station) > 0))
-                    buildQueue[Protoss_Photon_Cannon] = vis(Protoss_Photon_Cannon) + 1;
-            }
-        }
-
-        // If we're not in our opener
-        if (!inOpeningBook) {
-            checkExpand();
-            checkRamp();
-
-            // Adding bases
-            if (expandDesired)
-                buildQueue[Protoss_Nexus] = com(Protoss_Nexus) + 1;
-
-            // Adding production
-            auto maxGates = Players::vT() ? 16 : 12;
-            auto gatesPerBase = 3.0 - (0.5 * (int(isTechUnit(Protoss_Carrier)) || int(Stations::getMyStations().size()) >= 3));
-            productionSat = (vis(Protoss_Gateway) >= int(2.5 * vis(Protoss_Nexus)) || vis(Protoss_Gateway) >= maxGates);
-            if (rampDesired) {
-                auto gateCount = min({ maxGates, int(round(com(Protoss_Nexus) * gatesPerBase)), vis(Protoss_Gateway) + 1 });
-                auto stargateCount = min(4, int(isTechUnit(Protoss_Carrier)) * vis(Protoss_Nexus));
-                buildQueue[Protoss_Gateway] = gateCount;
-                buildQueue[Protoss_Stargate] = stargateCount;
-            }
-
-            // Adding gas
-            if (shouldAddGas())
-                buildQueue[Protoss_Assimilator] = Resources::getGasCount();
-
-            // Adding upgrade buildings
-            if (com(Protoss_Assimilator) >= 3) {
-                auto forgeCount = com(Protoss_Assimilator) >= 4 ? 2 - (int)Terrain::isIslandMap() : 1;
-                auto coreCount = com(Protoss_Assimilator) >= 4 ? 1 + (int)Terrain::isIslandMap() : 1;
-
-                buildQueue[Protoss_Cybernetics_Core] = 1 + (int)Terrain::isIslandMap();
-                buildQueue[Protoss_Forge] = 2 - (int)Terrain::isIslandMap();
-            }
-
-            // Add a Forge when playing PvZ
-            if (com(Protoss_Nexus) >= 2 && Players::vZ())
-                buildQueue[Protoss_Forge] = 1;
-
-            // Ensure we build a core outside our opening book
-            if (com(Protoss_Gateway) >= 2)
-                buildQueue[Protoss_Cybernetics_Core] = 1;
-
-            // Defensive Cannons
-            if (com(Protoss_Forge) >= 1 && ((vis(Protoss_Nexus) >= (Players::vZ() ? 3 : 4)) || (Terrain::isIslandMap() && Players::vZ()))) {
-                buildQueue[Protoss_Photon_Cannon] = vis(Protoss_Photon_Cannon);
-
-                for (auto &station : Stations::getMyStations()) {
-                    if (Stations::needGroundDefenses(station) > 0 && !Stations::needPower(station))
-                        buildQueue[Protoss_Photon_Cannon] = vis(Protoss_Photon_Cannon) + 1;
-                }
-            }
-
-            // Corsair/Scout upgrades
-            if (s >= 300 && (isTechUnit(Protoss_Scout) || isTechUnit(Protoss_Corsair)))
-                buildQueue[Protoss_Fleet_Beacon] = 1;
-        }
+        // Optimize our gas mining by dropping gas mining at specific excessive values
+        removeExcessGas();
 
         // If we want to wall at the natural but we don't have a wall there, check main
         if (wallNat && !Walls::getNaturalWall() && Walls::getMainWall()) {

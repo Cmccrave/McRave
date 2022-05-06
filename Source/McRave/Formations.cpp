@@ -36,7 +36,6 @@ namespace McRave::Combat::Formations {
             || (cluster.mobileCluster && closestUnit->getPosition().getDistance(p) < 256.0);
 
         if (inRange) {
-            Broodwar->drawCircleMap(p, 2, Colors::Orange);
             closestUnit->setFormation(p);
             closestUnit->concaveFlag = true;
         }

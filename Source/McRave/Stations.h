@@ -25,6 +25,8 @@ namespace McRave::Stations
     double getSaturationRatio(BWEB::Station *);
     BWAPI::Position getDefendPosition(BWEB::Station *);
     BWEB::Station * getClosestRetreatStation(UnitInfo&);
+    int getGasingStationsCount();
+    int getMiningStationsCount();
 
     PlayerState ownedBy(BWEB::Station *);
 };

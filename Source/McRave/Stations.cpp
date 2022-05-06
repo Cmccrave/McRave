@@ -8,26 +8,31 @@ namespace McRave::Stations {
 
     namespace {
         vector<BWEB::Station *> myStations, enemyStations;
+        map<BWEB::Station*, Position> defendPositions;
         multimap<double, BWEB::Station *> stationsBySaturation;
         map<BWEB::Station *, int> airDefenseCount, groundDefenseCount;
         set<BWEB::Station*> retreatPositions;
+        int miningStations = 0, gasingStations = 0;
 
         void updateSaturation() {
 
             // Sort stations by saturation and current larva count
             stationsBySaturation.clear();
+            auto mineralsLeft = 0, gasLeft = 0;
             for (auto &station : Stations::getMyStations()) {
                 auto workerCount = 0;
                 auto resourceCount = 0;
                 for (auto &mineral : Resources::getMyMinerals()) {
                     if (mineral->getStation() == station) {
                         resourceCount++;
+                        mineralsLeft+=mineral->unit()->getResources();
                         workerCount+=mineral->targetedByWhat().size();
                     }
                 }
                 for (auto &gas : Resources::getMyGas()) {
                     if (gas->getStation() == station) {
                         resourceCount++;
+                        gasLeft+=gas->unit()->getResources();
                         workerCount+=gas->targetedByWhat().size();
                     }
                 }
@@ -36,6 +41,10 @@ namespace McRave::Stations {
                 auto saturatedLevel = workerCount > 0 ? double(workerCount) / double(resourceCount) : 0.0;
                 stationsBySaturation.emplace(saturatedLevel, station);
             }
+
+            // Determine how many mining and gasing stations we have
+            miningStations = int(ceil(mineralsLeft / 1500));
+            gasingStations = int(ceil(gasLeft / 5000));
         }
 
         void updateStationDefenses() {
@@ -94,6 +103,64 @@ namespace McRave::Stations {
 
             }
         }
+
+        void updateDefendPositions()
+        {
+            for (auto &station : myStations) {
+                auto defendPosition = Positions::Invalid;
+                const BWEM::ChokePoint * defendChoke = nullptr;
+                if (station->getChokepoint()) {
+                    defendPosition = Position(station->getChokepoint()->Center());
+                    defendChoke = station->getChokepoint();
+                }
+                else if (Terrain::getEnemyStartingPosition().isValid()) {
+                    auto path = mapBWEM.GetPath(station->getBase()->Center(), Terrain::getEnemyStartingPosition());
+                    if (!path.empty()) {
+                        defendPosition = Position(path.front()->Center());
+                        defendChoke = path.front();
+                    }
+                }
+
+                // If there are multiple chokepoints with the same area pair
+                auto pathTowards = Terrain::getEnemyStartingPosition().isValid() ? Terrain::getEnemyStartingPosition() : mapBWEM.Center();
+                if (station->getBase()->GetArea()->ChokePoints().size() >= 3) {
+                    defendPosition = Position(0, 0);
+                    int count = 0;
+
+                    for (auto &choke : station->getBase()->GetArea()->ChokePoints()) {
+                        if (choke->GetAreas() != defendChoke->GetAreas())
+                            continue;
+
+                        if (Position(choke->Center()).getDistance(pathTowards) < station->getBase()->Center().getDistance(pathTowards)) {
+                            defendPosition += Position(choke->Center());
+                            count++;
+                            Visuals::drawCircle(Position(choke->Center()), 4, Colors::Cyan, true);
+                        }
+                    }
+                    if (count > 0)
+                        defendPosition /= count;
+                    else
+                        defendPosition = Position(BWEB::Map::getNaturalChoke()->Center());
+                }
+
+                // If defend position isn't walkable, move it towards the closest base
+                vector<WalkPosition> directions ={ {-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1} };
+                while (Grids::getMobility(defendPosition) <= 2) {
+                    auto best = DBL_MAX;
+                    auto start = WalkPosition(defendPosition);
+
+                    for (auto &dir : directions) {
+                        auto center = Position(start + dir);
+                        auto dist = center.getDistance(BWEB::Map::getNaturalPosition());
+                        if (dist < best) {
+                            defendPosition = center;
+                            best = dist;
+                        }
+                    }
+                }
+                defendPositions[station] = defendPosition;
+            }
+        }
     }
 
     void onFrame() {
@@ -101,6 +168,7 @@ namespace McRave::Stations {
         updateSaturation();
         updateStationDefenses();
         updateRetreatPositions();
+        updateDefendPositions();
         Visuals::endPerfTest("Stations");
     }
 
@@ -244,8 +312,6 @@ namespace McRave::Stations {
         if (station->isMain()) {
 
             if (Broodwar->self()->getRace() == Races::Protoss) {
-                if (Stations::needPower(station))
-                    return 0;
                 if (Players::PvP() && Spy::enemyInvis())
                     return 1 - groundCount;
                 if (Players::PvZ() && (Spy::getEnemyTransition().find("Muta") != string::npos))
@@ -376,14 +442,6 @@ namespace McRave::Stations {
         return 0;
     }
 
-    int getGroundDefenseCount(BWEB::Station * station) {
-        return groundDefenseCount[station];
-    }
-
-    int getAirDefenseCount(BWEB::Station * station) {
-        return airDefenseCount[station];
-    }
-
     bool needPower(BWEB::Station * station) {
         auto count = 0;
         for (auto &defense : station->getDefenses()) {
@@ -445,62 +503,6 @@ namespace McRave::Stations {
         return PlayerState::None;
     }
 
-    Position getDefendPosition(BWEB::Station * station)
-    {
-        auto defendPosition = Positions::Invalid;
-        const BWEM::ChokePoint * defendChoke = nullptr;
-        if (station->getChokepoint()) {
-            defendPosition = Position(station->getChokepoint()->Center());
-            defendChoke = station->getChokepoint();
-        }
-        else if (Terrain::getEnemyStartingPosition().isValid()) {
-            auto path = mapBWEM.GetPath(station->getBase()->Center(), Terrain::getEnemyStartingPosition());
-            if (!path.empty()) {
-                defendPosition = Position(path.front()->Center());
-                defendChoke = path.front();
-            }
-        }
-
-        // If there are multiple chokepoints with the same area pair
-        auto pathTowards = Terrain::getEnemyStartingPosition().isValid() ? Terrain::getEnemyStartingPosition() : mapBWEM.Center();
-        if (station->getBase()->GetArea()->ChokePoints().size() >= 3) {
-            defendPosition = Position(0, 0);
-            int count = 0;
-
-            for (auto &choke : station->getBase()->GetArea()->ChokePoints()) {
-                if (choke->GetAreas() != defendChoke->GetAreas())
-                    continue;
-
-                if (Position(choke->Center()).getDistance(pathTowards) < station->getBase()->Center().getDistance(pathTowards)) {
-                    defendPosition += Position(choke->Center());
-                    count++;
-                    Visuals::drawCircle(Position(choke->Center()), 4, Colors::Cyan, true);
-                }
-            }
-            if (count > 0)
-                defendPosition /= count;
-            else
-                defendPosition = Position(BWEB::Map::getNaturalChoke()->Center());
-        }
-
-        // If defend position isn't walkable, move it towards the closest base
-        vector<WalkPosition> directions ={ {-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1} };
-        while (Grids::getMobility(defendPosition) <= 2) {
-            auto best = DBL_MAX;
-            auto start = WalkPosition(defendPosition);
-
-            for (auto &dir : directions) {
-                auto center = Position(start + dir);
-                auto dist = center.getDistance(BWEB::Map::getNaturalPosition());
-                if (dist < best) {
-                    defendPosition = center;
-                    best = dist;
-                }
-            }
-        }
-        return defendPosition;
-    }
-
     BWEB::Station * getClosestRetreatStation(UnitInfo& unit)
     {
         auto distBest = DBL_MAX;
@@ -537,7 +539,12 @@ namespace McRave::Stations {
         return bestStation;
     }
 
+    Position getDefendPosition(BWEB::Station * station) { return defendPositions[station]; }
     vector<BWEB::Station *>& getMyStations() { return myStations; };
     vector<BWEB::Station *>& getEnemyStations() { return enemyStations; }
     multimap<double, BWEB::Station *>& getStationsBySaturation() { return stationsBySaturation; }
+    int getGasingStationsCount() { return gasingStations; }
+    int getMiningStationsCount() { return miningStations; }
+    int getGroundDefenseCount(BWEB::Station * station) { return groundDefenseCount[station]; }
+    int getAirDefenseCount(BWEB::Station * station) { return airDefenseCount[station]; }
 }

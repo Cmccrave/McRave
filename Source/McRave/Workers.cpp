@@ -257,7 +257,7 @@ namespace McRave::Workers {
                     || resource.getType() == UnitTypes::Resource_Vespene_Geyser
                     || (resource.unit()->exists() && !resource.unit()->isCompleted())
                     || resource.getGathererCount() >= i
-                    || resource.getResourceState() != ResourceState::Mineable)
+                    || (resource.getResourceState() != ResourceState::Mineable && Stations::getMiningStationsCount() != 0))
                     return false;
                 return true;
             };

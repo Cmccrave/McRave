@@ -12,15 +12,10 @@ using namespace McRave::BuildOrder::All;
 
 namespace McRave::BuildOrder::Zerg {
 
-    enum class Composition {
-        None, Ling, Hydra, HydraLurker, HydraLurkerDefiler, HydraMuta, HydraMutaDefiler, Muta, MutaLing, MutaLurkerLing, MutaLingDefiler, UltraLing, UltraLingDefiler
-    };
-
     namespace {
         bool againstRandom = false;
         bool needSpores = false;
         bool needSunks = false;
-        Composition currentComposition;
 
         void queueGasTrick()
         {
@@ -86,7 +81,7 @@ namespace McRave::BuildOrder::Zerg {
             }
         }
 
-        void queueOverlords()
+        void queueSupply()
         {
             // Adding Overlords outside opening book supply
             if (!inBookSupply) {
@@ -107,12 +102,17 @@ namespace McRave::BuildOrder::Zerg {
         void queueGeysers()
         {
             // Adding Extractors
-            if (shouldAddGas() && !inOpeningBook)
-                buildQueue[Zerg_Extractor] = min(vis(Zerg_Extractor) + 1, Resources::getGasCount());
+            if (!inOpeningBook) {
 
-            // Prevent extractors if no gas
-            if (gasLimit == 0 && !Players::ZvZ())
-                buildQueue[Zerg_Extractor] = 0;
+                gasDesired = gasLimit > vis(Zerg_Extractor) * 3 && com(Zerg_Drone) >= 10
+                    && (Resources::isHalfMineralSaturated() || productionSat || com(Zerg_Drone) >= (Players::ZvT() ? 40 : 50) || Players::ZvZ());
+
+                buildQueue[Zerg_Extractor] = min(vis(Zerg_Extractor) + gasDesired, Resources::getGasCount());
+
+                // Try to cancel extractors we don't need
+                if (gasLimit == 0 && !Players::ZvZ())
+                    buildQueue[Zerg_Extractor] = 0;
+            }
         }
 
         void queueUpgradeStructures()
@@ -176,7 +176,7 @@ namespace McRave::BuildOrder::Zerg {
                 maxSat = 24;
 
             if (!inOpeningBook && unitLimits[Zerg_Larva] == 0) {
-                const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
+                const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued() - (expandDesired || rampDesired) ? 300 : 0;
                 const auto incompleteHatch = vis(Zerg_Hatchery) - com(Zerg_Hatchery);
 
                 rampDesired = (availableMinerals >= 200 && Resources::isHalfMineralSaturated() && Resources::isGasSaturated() && !productionSat)
@@ -358,7 +358,7 @@ namespace McRave::BuildOrder::Zerg {
         queueStationDefenses();
 
         // Queue up supply, upgrade structures
-        queueOverlords();
+        queueSupply();
         queueUpgradeStructures();
         queueGeysers();
         queueGasTrick();
@@ -388,7 +388,6 @@ namespace McRave::BuildOrder::Zerg {
             if (Util::getTime() > Time(15, 0) && Stations::getEnemyStations().size() == 0 && Terrain::foundEnemy()) {
                 armyComposition[Zerg_Drone] =                   0.40;
                 armyComposition[Zerg_Mutalisk] =                0.60;
-                currentComposition =                            Composition::Muta;
             }
 
             // Defiler tech
@@ -400,14 +399,12 @@ namespace McRave::BuildOrder::Zerg {
                     armyComposition[Zerg_Mutalisk] =            0.20;
                     armyComposition[Zerg_Ultralisk] =           0.10;
                     armyComposition[Zerg_Defiler] =             0.05;
-                    currentComposition =                        Composition::UltraLingDefiler;
                 }
                 else {
                     armyComposition[Zerg_Drone] =               0.55;
                     armyComposition[Zerg_Zergling] =            0.30;
                     armyComposition[Zerg_Ultralisk] =           0.10;
                     armyComposition[Zerg_Defiler] =             0.05;
-                    currentComposition =                        Composition::UltraLingDefiler;
                 }
             }
 
@@ -418,14 +415,12 @@ namespace McRave::BuildOrder::Zerg {
                     armyComposition[Zerg_Mutalisk] =            0.20;
                     armyComposition[Zerg_Zergling] =            0.15;
                     armyComposition[Zerg_Ultralisk] =           0.10;
-                    currentComposition =                        Composition::UltraLing;
                 }
                 else {
                     armyComposition[Zerg_Drone] =               0.55;
                     armyComposition[Zerg_Mutalisk] =            0.05;
                     armyComposition[Zerg_Zergling] =            0.30;
                     armyComposition[Zerg_Ultralisk] =           0.10;
-                    currentComposition =                        Composition::UltraLing;
                 }
             }
 
@@ -436,7 +431,6 @@ namespace McRave::BuildOrder::Zerg {
                 armyComposition[Zerg_Hydralisk] =               0.05;
                 armyComposition[Zerg_Lurker] =                  1.00;
                 armyComposition[Zerg_Mutalisk] =                0.20;
-                currentComposition =                            Composition::MutaLurkerLing;
             }
 
             // Hydralisk tech
@@ -445,7 +439,6 @@ namespace McRave::BuildOrder::Zerg {
                 armyComposition[Zerg_Zergling] =                0.00;
                 armyComposition[Zerg_Hydralisk] =               0.20;
                 armyComposition[Zerg_Mutalisk] =                0.10;
-                currentComposition =                            Composition::HydraMuta;
             }
 
             // Mutalisk tech
@@ -454,13 +447,11 @@ namespace McRave::BuildOrder::Zerg {
                     armyComposition[Zerg_Drone] =               0.40;
                     armyComposition[Zerg_Zergling] =            0.40;
                     armyComposition[Zerg_Mutalisk] =            0.20;
-                    currentComposition =                        Composition::MutaLing;
                 }
                 else {
                     armyComposition[Zerg_Drone] =               0.70;
                     armyComposition[Zerg_Zergling] =            0.00;
                     armyComposition[Zerg_Mutalisk] =            0.30;
-                    currentComposition =                        Composition::Muta;
                 }
             }
 
@@ -469,12 +460,10 @@ namespace McRave::BuildOrder::Zerg {
                 if (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0) {
                     armyComposition[Zerg_Drone] =               1.00;
                     armyComposition[Zerg_Zergling] =            0.00;
-                    currentComposition =                        Composition::None;
                 }
                 else {
                     armyComposition[Zerg_Drone] =               0.40;
                     armyComposition[Zerg_Zergling] =            0.60;
-                    currentComposition =                        Composition::Ling;
                 }
             }
         }
@@ -487,7 +476,6 @@ namespace McRave::BuildOrder::Zerg {
                 armyComposition[Zerg_Hydralisk] =               0.25;
                 armyComposition[Zerg_Mutalisk] =                0.10;
                 armyComposition[Zerg_Defiler] =                 0.05;
-                currentComposition =                            Composition::HydraMutaDefiler;
             }
             else if (isTechUnit(Zerg_Hydralisk) && isTechUnit(Zerg_Mutalisk) && isTechUnit(Zerg_Lurker)) {
                 armyComposition[Zerg_Drone] =                   0.60;
@@ -495,32 +483,27 @@ namespace McRave::BuildOrder::Zerg {
                 armyComposition[Zerg_Hydralisk] =               0.25;
                 armyComposition[Zerg_Lurker] =                  0.05;
                 armyComposition[Zerg_Mutalisk] =                0.10;
-                currentComposition =                            Composition::HydraLurker;
             }
             else if (isTechUnit(Zerg_Hydralisk) && isTechUnit(Zerg_Mutalisk)) {
                 armyComposition[Zerg_Drone] =                   0.70;
                 armyComposition[Zerg_Zergling] =                0.00;
                 armyComposition[Zerg_Hydralisk] =               0.20;
                 armyComposition[Zerg_Mutalisk] =                0.10;
-                currentComposition =                            Composition::HydraMuta;
             }
             else if (isTechUnit(Zerg_Mutalisk)) {
                 armyComposition[Zerg_Drone] =                   0.70;
                 armyComposition[Zerg_Zergling] =                0.00;
                 armyComposition[Zerg_Mutalisk] =                0.30;
-                currentComposition =                            Composition::Muta;
             }
             else if (isTechUnit(Zerg_Lurker)) {
                 armyComposition[Zerg_Drone] =                   0.60;
                 armyComposition[Zerg_Zergling] =                0.20;
                 armyComposition[Zerg_Hydralisk] =               0.20;
                 armyComposition[Zerg_Lurker] =                  1.00;
-                currentComposition =                            Composition::HydraLurker;
             }
             else {
                 armyComposition[Zerg_Drone] =                   0.80;
                 armyComposition[Zerg_Zergling] =                0.20;
-                currentComposition =                            Composition::Ling;
             }
         }
 
@@ -530,18 +513,15 @@ namespace McRave::BuildOrder::Zerg {
                 armyComposition[Zerg_Drone] =                   0.50;
                 armyComposition[Zerg_Zergling] =                0.00;
                 armyComposition[Zerg_Mutalisk] =                0.50;
-                currentComposition =                            Composition::MutaLing;
             }
             else if (isTechUnit(Zerg_Mutalisk)) {
                 armyComposition[Zerg_Drone] =                   0.40;
                 armyComposition[Zerg_Zergling] =                0.20;
                 armyComposition[Zerg_Mutalisk] =                0.40;
-                currentComposition =                            Composition::MutaLing;
             }
             else {
                 armyComposition[Zerg_Drone] =                   0.55;
                 armyComposition[Zerg_Zergling] =                0.45;
-                currentComposition =                            Composition::Ling;
             }
         }
 
@@ -553,25 +533,21 @@ namespace McRave::BuildOrder::Zerg {
                 armyComposition[Zerg_Hydralisk] =               0.25;
                 armyComposition[Zerg_Lurker] =                  0.05;
                 armyComposition[Zerg_Mutalisk] =                0.10;
-                currentComposition =                            Composition::HydraLurker;
             }
             else if (isTechUnit(Zerg_Hydralisk) && isTechUnit(Zerg_Mutalisk)) {
                 armyComposition[Zerg_Drone] =                   0.70;
                 armyComposition[Zerg_Zergling] =                0.00;
                 armyComposition[Zerg_Hydralisk] =               0.20;
                 armyComposition[Zerg_Mutalisk] =                0.10;
-                currentComposition =                            Composition::HydraMuta;
             }
             else if (isTechUnit(Zerg_Mutalisk)) {
                 armyComposition[Zerg_Drone] =                   0.70;
                 armyComposition[Zerg_Zergling] =                0.00;
                 armyComposition[Zerg_Mutalisk] =                0.30;
-                currentComposition =                            Composition::Muta;
             }
             else {
                 armyComposition[Zerg_Drone] =                   0.80;
                 armyComposition[Zerg_Zergling] =                0.20;
-                currentComposition =                            Composition::Ling;
             }
         }
 

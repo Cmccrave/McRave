@@ -28,6 +28,7 @@ namespace McRave::BuildOrder {
         inline bool transitionReady = false;
         inline bool planEarly = false;
 
+        inline bool gasDesired = false;
         inline bool expandDesired = false;
         inline bool rampDesired = false;
         // inline bool techDesired = false;

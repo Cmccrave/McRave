@@ -285,7 +285,7 @@ namespace McRave::Combat {
             if (unit.getDestination().isValid())
                 return;
 
-            if (unit.getFormation().isValid()) {
+            if (unit.getFormation().isValid() && unit.getLocalState() != LocalState::None) {
                 unit.setDestination(unit.getFormation());
                 return;
             }
@@ -474,7 +474,7 @@ namespace McRave::Combat {
                 newPath.generateAS(flyerRegroup);
                 unit.setObjectivePath(newPath);
             }
-            Visuals::drawPath(unit.getObjectivePath());
+            //Visuals::drawPath(unit.getObjectivePath());
         }
 
         void updateCommanders()
@@ -799,7 +799,6 @@ namespace McRave::Combat {
                     else {
                         updateDestination(unit);
                         updateDecision(unit);
-                        Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
                     }
                 }
             }

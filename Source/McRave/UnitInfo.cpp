@@ -202,7 +202,7 @@ namespace McRave
         if (getPlayer() == Broodwar->self()) {
             nearHidden = false;
             auto closestHidden = Util::getClosestUnit(position, PlayerState::Enemy, [&](auto &u) {
-                return u->isHidden() && ((!this->isFlying() && u->canAttackGround()) || (this->isFlying() && u->canAttackAir()));
+                return u->isHidden() && u->unit()->exists() && ((!this->isFlying() && u->canAttackGround()) || (this->isFlying() && u->canAttackAir()));
             });
 
             if (closestHidden && closestHidden->isWithinReach(*this))
