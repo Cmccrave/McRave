@@ -104,7 +104,7 @@ namespace McRave::BuildOrder::Zerg {
         }
         else if (Spy::enemyFastExpand() && vis(Zerg_Drone) >= 20 && s >= 48) {
             thirdHatch = true;
-            planEarly = atPercent(Zerg_Lair, 0.5) && int(Stations::getMyStations().size()) < 3;
+            planEarly = atPercent(Zerg_Lair, 0.5) && int(Stations::getStations(PlayerState::Self).size()) < 3;
         }
 
         // Build

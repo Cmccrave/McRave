@@ -449,13 +449,13 @@ namespace McRave::Production {
                 case Zerg_Flyer_Attacks:
                     if (Players::ZvP() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) < 2)
                         return false;
-                    if (Players::ZvZ() && int(Stations::getMyStations().size()) < 2)
+                    if (Players::ZvZ() && int(Stations::getStations(PlayerState::Self).size()) < 2)
                         return false;
                     return BuildOrder::getCompositionPercentage(Zerg_Mutalisk) > 0.0 && (Broodwar->self()->getUpgradeLevel(Zerg_Flyer_Carapace) > Broodwar->self()->getUpgradeLevel(Zerg_Flyer_Attacks) + 1 || Broodwar->self()->isUpgrading(Zerg_Flyer_Carapace));
                 case Zerg_Flyer_Carapace:
                     if (Players::ZvP() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) < 2)
                         return false;
-                    if (Players::ZvZ() && int(Stations::getMyStations().size()) < 2)
+                    if (Players::ZvZ() && int(Stations::getStations(PlayerState::Self).size()) < 2)
                         return false;
                     return BuildOrder::getCompositionPercentage(Zerg_Mutalisk) > 0.0 && total(Zerg_Mutalisk) >= 12;
                 }
@@ -522,7 +522,7 @@ namespace McRave::Production {
                 case Lurker_Aspect:
                     return true;
                 case Burrowing:
-                    return Stations::getMyStations().size() >= 3 && Players::getSupply(PlayerState::Self, Races::Zerg) > 140;
+                    return Stations::getStations(PlayerState::Self).size() >= 3 && Players::getSupply(PlayerState::Self, Races::Zerg) > 140;
                 case Consume:
                     return true;
                 case Plague:
@@ -733,7 +733,7 @@ namespace McRave::Production {
                         || (Planning::overlapsPlan(larva, larva.getPosition()) && Util::getTime() > Time(4, 00)))
                         return false;
 
-                    auto closestStation = Stations::getClosestStationAir(PlayerState::Self, larva.getPosition());
+                    auto closestStation = Stations::getClosestStationAir(larva.getPosition(), PlayerState::Self);
                     return station == closestStation;
                 };
 
@@ -851,7 +851,7 @@ namespace McRave::Production {
 
     bool larvaTrickRequired(UnitInfo& larva) {
         if (larva.getType() == Zerg_Larva && larva.unit()->getHatchery()) {
-            auto closestStation = Stations::getClosestStationAir(PlayerState::Self, larva.unit()->getHatchery()->getPosition());
+            auto closestStation = Stations::getClosestStationAir(larva.unit()->getHatchery()->getPosition(), PlayerState::Self);
             if (!closestStation)
                 return false;
 
@@ -868,7 +868,7 @@ namespace McRave::Production {
 
     bool larvaTrickOptional(UnitInfo& larva) {
         if (larva.getType() == Zerg_Larva && larva.unit()->getHatchery()) {
-            auto closestStation = Stations::getClosestStationAir(PlayerState::Self, larva.unit()->getHatchery()->getPosition());
+            auto closestStation = Stations::getClosestStationAir(larva.unit()->getHatchery()->getPosition(), PlayerState::Self);
             if (!closestStation)
                 return false;
 

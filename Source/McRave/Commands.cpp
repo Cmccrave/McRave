@@ -63,8 +63,8 @@ namespace McRave::Command {
 
             auto bestPosition = Positions::Invalid;
             auto best = 0.0;
-            const auto start = unit.getWalkPosition();
-            const auto radius = unit.getType().isFlyer() ? 12 : clamp(int(unit.getSpeed()), 4, 8) + 8;
+            const auto start = WalkPosition(unit.getDestination());
+            const auto radius = 4;
 
             // Create a box, keep units outside a tile of the edge of the map if it's a flyer
             const auto left = max(0, start.x - radius);
@@ -77,9 +77,6 @@ namespace McRave::Command {
                 for (auto y = up; y < down; y++) {
                     const WalkPosition w(x, y);
                     const Position p = Position(w);
-
-                    if (p.getApproxDistance(unit.getPosition()) > radius * 8)
-                        continue;
 
                     auto current = score(w);
                     if (unit.isLightAir() && unit.getLocalState() != LocalState::Attack) {

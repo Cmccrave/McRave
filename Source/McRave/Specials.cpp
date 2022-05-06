@@ -434,7 +434,7 @@ namespace McRave::Command
         auto resourceDepot = Broodwar->self()->getRace().getResourceDepot();
         if (!unit.getType().isWorker()
             || Util::getTime() < Time(6, 0)
-            || Stations::getMyStations().size() <= 2
+            || Stations::getStations(PlayerState::Self).size() <= 2
             || (BuildOrder::buildCount(resourceDepot) == vis(resourceDepot) && BuildOrder::isOpener())
             || unit.unit()->isCarryingMinerals()
             || unit.unit()->isCarryingGas())
@@ -579,7 +579,7 @@ namespace McRave::Command
         }
 
         // Gather from resource
-        auto station = Stations::getClosestStationGround(PlayerState::Self, unit.getPosition());
+        auto station = Stations::getClosestStationGround(unit.getPosition(), PlayerState::Self);
         auto target = hasMineableResource ? unit.getResource().lock()->unit() : Broodwar->getClosestUnit(station ? station->getResourceCentroid() : BWEB::Map::getMainPosition(), Filter::IsMineralField);
         if (target && canGather(target)) {
             auto boxDist = Util::boxDistance(unit.getType(), unit.getPosition(), target->getType(), target->getPosition());

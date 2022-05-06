@@ -124,7 +124,7 @@ namespace McRave::Combat {
                 return;
             }
 
-            auto baseCountSwing = Util::getTime() > Time(5, 00) ? max(0.0, (double(Stations::getMyStations().size()) - double(Stations::getEnemyStations().size())) / 20) : 0.0;
+            auto baseCountSwing = Util::getTime() > Time(5, 00) ? max(0.0, (double(Stations::getStations(PlayerState::Self).size()) - double(Stations::getStations(PlayerState::Enemy).size())) / 20) : 0.0;
             auto baseDistSwing = Util::getTime() > Time(5, 00) ? unit.getEngagePosition().getDistance(Terrain::getEnemyStartingPosition()) / (10 * BWEB::Map::getMainPosition().getDistance(Terrain::getEnemyStartingPosition())) : 0.0;
             auto belowGrdtoGrdLimit = false;
             auto belowGrdtoAirLimit = false;
@@ -219,8 +219,12 @@ namespace McRave::Combat {
 
         void updateObjective(UnitInfo& unit)
         {
+            if (lightUnitNeedsRegroup(unit))
+                unit.setDestination(unit.getCommander().lock()->getPosition());
+
+
             // If attacking and target is close, set as destination
-            if (unit.getLocalState() == LocalState::Attack) {
+            else if (unit.getLocalState() == LocalState::Attack) {
                 if (unit.attemptingRunby())
                     unit.setObjective(unit.getEngagePosition());
                 else if (unit.getInterceptPosition().isValid())
@@ -248,7 +252,7 @@ namespace McRave::Combat {
 
                 if (unit.getGoal().isValid())
                     unit.setObjective(unit.getGoal());
-                else if ((unit.isLightAir() || unit.getType() == Zerg_Scourge) && ((Units::getImmThreat() > 25.0 && Stations::getMyStations().size() >= 3 && Stations::getMyStations().size() > Stations::getEnemyStations().size()) || (Players::ZvZ() && Units::getImmThreat() > 5.0))) {
+                else if ((unit.isLightAir() || unit.getType() == Zerg_Scourge) && ((Units::getImmThreat() > 25.0 && Stations::getStations(PlayerState::Self).size() >= 3 && Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size()) || (Players::ZvZ() && Units::getImmThreat() > 5.0))) {
                     auto attacker = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
                         return u->isThreatening() && !u->isHidden();
                     });
@@ -277,6 +281,7 @@ namespace McRave::Combat {
             else {
                 const auto &retreat = Stations::getClosestRetreatStation(unit);
                 retreat ? unit.setRetreat(retreat->getBase()->Center()) : unit.setRetreat(BWEB::Map::getMainPosition());
+                Broodwar->drawLineMap(unit.getPosition(), unit.getRetreat(), Colors::Yellow);
             }
         }
 
@@ -285,15 +290,13 @@ namespace McRave::Combat {
             if (unit.getDestination().isValid())
                 return;
 
-            if (unit.getFormation().isValid() && unit.getLocalState() != LocalState::None) {
+            if (unit.getFormation().isValid() && unit.getGlobalState() == GlobalState::Retreat) {
                 unit.setDestination(unit.getFormation());
                 return;
             }
-            else if (lightUnitNeedsRegroup(unit))
-                unit.setDestination(unit.getCommander().lock()->getPosition());
 
             auto pathDestination = &unit.getObjectivePath();
-            if (unit.getLocalState() == LocalState::Retreat)
+            if (unit.getLocalState() != LocalState::Attack)
                 pathDestination = &unit.getRetreatPath();
 
             // If path is reachable, find a point n pixels away to set as new destination
@@ -310,7 +313,7 @@ namespace McRave::Combat {
             if (!unit.getDestination().isValid()) {
                 if (unit.getGoal().isValid())
                     unit.setDestination(unit.getGoal());
-                else if (unit.getLocalState() == LocalState::Retreat)
+                else if (unit.getLocalState() != LocalState::Attack)
                     unit.setDestination(unit.getRetreat());
                 else
                     unit.setDestination(unit.getObjective());
@@ -351,7 +354,7 @@ namespace McRave::Combat {
             groundCleanupPositions.clear();
             airCleanupPositions.clear();
 
-            if (Util::getTime() < Time(6, 00) || !Stations::getEnemyStations().empty())
+            if (Util::getTime() < Time(6, 00) || !Stations::getStations(PlayerState::Enemy).empty())
                 return;
 
             // Look at every TilePosition and sort by furthest oldest
@@ -581,7 +584,7 @@ namespace McRave::Combat {
 
                 // Zerg
                 if (Broodwar->self()->getRace() == Races::Zerg) {
-                    if (BuildOrder::getCurrentOpener() == "12Pool" && Spy::getEnemyOpener() == "9Pool" && total(Zerg_Zergling) < 16 && int(Stations::getMyStations().size()) >= 2)
+                    if (BuildOrder::getCurrentOpener() == "12Pool" && Spy::getEnemyOpener() == "9Pool" && total(Zerg_Zergling) < 16 && int(Stations::getStations(PlayerState::Self).size()) >= 2)
                         return combatWorkersCount < 3;
                 }
                 return false;
@@ -616,7 +619,7 @@ namespace McRave::Combat {
                 // If we're trying to make our expanding hatchery and the drone is being harassed
                 if (vis(Zerg_Hatchery) == 1 && Util::getTime() < Time(3, 00) && BuildOrder::isOpener() && Units::getImmThreat() > 0.0f && Players::ZvP() && combatCount == 0)
                     return combatWorkersCount < 1;
-                if (Players::ZvP() && Util::getTime() < Time(4, 00) && int(Stations::getMyStations().size()) < 2 && BuildOrder::getBuildQueue()[Zerg_Hatchery] >= 2 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Probe) > 0)
+                if (Players::ZvP() && Util::getTime() < Time(4, 00) && int(Stations::getStations(PlayerState::Self).size()) < 2 && BuildOrder::getBuildQueue()[Zerg_Hatchery] >= 2 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Probe) > 0)
                     return combatWorkersCount < 1;
 
                 // If we suspect a cannon rush is coming
@@ -799,6 +802,8 @@ namespace McRave::Combat {
                     else {
                         updateDestination(unit);
                         updateDecision(unit);
+                        if (unit.unit()->isSelected())
+                            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
                     }
                 }
             }

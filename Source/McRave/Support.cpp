@@ -16,7 +16,7 @@ namespace McRave::Support {
 
         void updateDestination(UnitInfo& unit)
         {
-            auto closestStation = Stations::getClosestStationAir(PlayerState::Self, unit.getPosition());
+            auto closestStation = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self);
             auto closestSpore = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                 return u->getType() == Zerg_Spore_Colony;
             });
@@ -85,6 +85,9 @@ namespace McRave::Support {
             if (!unit.getDestination().isValid())
                 unit.setDestination(BWEB::Map::getMainPosition());
 
+            // Shorten destination to 96 pixels in front for navigation
+            auto dir = (unit.getDestination() - unit.getPosition()) * 96 / unit.getPosition().getDistance(unit.getDestination());
+            unit.setDestination(unit.getPosition() + dir);
             Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Red);
         }
 

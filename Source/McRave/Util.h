@@ -16,22 +16,11 @@ namespace McRave::Util {
 
     BWAPI::Position clipLine(BWAPI::Position, BWAPI::Position);
     BWAPI::Position clipPosition(BWAPI::Position);
-    BWAPI::Position projectLine(std::pair<BWAPI::Position, BWAPI::Position>, BWAPI::Position);
 
     Time getTime();
 
     void onStart();
     void onFrame();
-
-    template<typename F>
-    bool isBetweenC(F a, F b, F c) {
-        return a >= b && a <= c;
-    }
-
-    template<typename F>
-    bool isBetweenX(F a, F b, F c) {
-        return a > b && a < c;
-    }
 
     template<typename F>
     UnitInfo* getClosestUnit(BWAPI::Position here, PlayerState player, F &&pred) {

@@ -121,8 +121,8 @@ namespace McRave::Goals {
             }
 
             // Defend my expansions
-            if (Stations::getMyStations().size() >= 3) {
-                for (auto &station : Stations::getMyStations()) {
+            if (Stations::getStations(PlayerState::Self).size() >= 3) {
+                for (auto &station : Stations::getStations(PlayerState::Self)) {
 
                     if (Stations::getGroundDefenseCount(station) >= 2 || Stations::needGroundDefenses(station) == 0 || (Broodwar->self()->getRace() == Races::Protoss && Stations::needPower(station)))
                         continue;
@@ -149,7 +149,7 @@ namespace McRave::Goals {
 
             // Send a worker early when we want to
             if (BuildOrder::isPlanEarly() && Planning::getCurrentExpansion() && !Planning::whatPlannedHere(Planning::getCurrentExpansion()->getBase()->Location()).isResourceDepot()) {
-                if (int(Stations::getMyStations().size() < 2))
+                if (int(Stations::getStations(PlayerState::Self).size() < 2))
                     assignWorker(Terrain::getMyNatural()->getBase()->Center());
                 else if (Planning::getCurrentExpansion())
                     assignWorker(Planning::getCurrentExpansion()->getBase()->Center());
@@ -160,7 +160,7 @@ namespace McRave::Goals {
                 auto nextExpand = Planning::getCurrentExpansion()->getBase()->Center();
                 auto needDetector = Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 || Players::vZ();
                 if (nextExpand.isValid() && needDetector && BWEB::Map::isUsed(Planning::getCurrentExpansion()->getBase()->Location()) == UnitTypes::None) {
-                    if (Stations::getMyStations().size() >= 2 && BuildOrder::buildCount(base) > vis(base))
+                    if (Stations::getStations(PlayerState::Self).size() >= 2 && BuildOrder::buildCount(base) > vis(base))
                         assignNumberToGoal(nextExpand, detector, 1);
                 }
 
@@ -181,13 +181,13 @@ namespace McRave::Goals {
             }
 
             // Aggresively deny enemy expansions
-            if (Terrain::getEnemyStartingPosition().isValid() && Stations::getMyStations().size() >= 3 && !BuildOrder::isRush() && !Players::ZvZ()) {
+            if (Terrain::getEnemyStartingPosition().isValid() && Stations::getStations(PlayerState::Self).size() >= 3 && !BuildOrder::isRush() && !Players::ZvZ()) {
                 multimap<double, BWEB::Station> stationsByDistance;
 
                 for (auto &station : BWEB::Stations::getStations()) {
 
-                    auto closestSelfStation = Stations::getClosestStationGround(PlayerState::Self, station.getBase()->Center());
-                    auto closestEnemyStation = Stations::getClosestStationGround(PlayerState::Enemy, station.getBase()->Center());
+                    auto closestSelfStation = Stations::getClosestStationGround(station.getBase()->Center(), PlayerState::Self);
+                    auto closestEnemyStation = Stations::getClosestStationGround(station.getBase()->Center(), PlayerState::Enemy);
 
                     if (!closestSelfStation || !closestEnemyStation)
                         continue;
@@ -256,7 +256,7 @@ namespace McRave::Goals {
             if (Players::vP() || Players::vT()) {
                 auto distBest = 0.0;
                 auto posBest = Positions::Invalid;
-                for (auto &station : Stations::getEnemyStations()) {
+                for (auto &station : Stations::getStations(PlayerState::Enemy)) {
                     auto pos = station->getBase()->Center();
                     auto dist = BWEB::Map::getGroundDistance(pos, Terrain::getEnemyStartingPosition());
                     if (dist > distBest) {
@@ -272,10 +272,10 @@ namespace McRave::Goals {
             }
 
             // Send a DT / Zealot + Goon squad to enemys furthest station
-            if (Stations::getMyStations().size() >= 3) {
+            if (Stations::getStations(PlayerState::Self).size() >= 3) {
                 auto distBest = 0.0;
                 auto posBest = Positions::Invalid;
-                for (auto &station : Stations::getEnemyStations()) {
+                for (auto &station : Stations::getStations(PlayerState::Enemy)) {
                     auto pos = station->getBase()->Center();
                     auto dist = pos.getDistance(Terrain::getEnemyStartingPosition());
 
@@ -332,13 +332,13 @@ namespace McRave::Goals {
             }
 
             // Assign the first available Overlord to each natural
-            for (auto &station : Stations::getMyStations()) {
+            for (auto &station : Stations::getStations(PlayerState::Self)) {
                 if (station->isNatural())
                     assignNumberToGoal(station->getBase()->Center(), Zerg_Overlord, 1, GoalType::Escort);
             }
 
             // Assign an Overlord to each Station
-            for (auto &station : Stations::getMyStations()) {
+            for (auto &station : Stations::getStations(PlayerState::Self)) {
                 auto closestSunk = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Self, [&](auto &u) {
                     return u->getType() == Zerg_Sunken_Colony && find(station->getDefenses().begin(), station->getDefenses().end(), u->getTilePosition()) != station->getDefenses().end();
                 });
@@ -370,7 +370,7 @@ namespace McRave::Goals {
             }
 
             // Assign an Overlord to each main choke
-            for (auto &station : Stations::getMyStations()) {
+            for (auto &station : Stations::getStations(PlayerState::Self)) {
                 if (station->isMain() && station->getChokepoint())
                     assignNumberToGoal(station->getChokepoint()->Center(), Zerg_Overlord, 1, GoalType::Escort);
             }
@@ -379,7 +379,7 @@ namespace McRave::Goals {
             if (Util::getTime() > Time(6, 00) || Spy::enemyProxy()) {
                 auto distBest = 0.0;
                 auto posBest = Positions::Invalid;
-                for (auto &station : Stations::getEnemyStations()) {
+                for (auto &station : Stations::getStations(PlayerState::Enemy)) {
 
                     if (!Spy::enemyProxy()) {
                         if (station == Terrain::getEnemyNatural()
@@ -426,8 +426,8 @@ namespace McRave::Goals {
                 int i = 0;
                 for (auto &pos : nodes) {
 
-                    auto closestEnemyStation = Stations::getClosestStationAir(PlayerState::Enemy, pos);
-                    auto closestSelfStation = Stations::getClosestStationAir(PlayerState::Self, pos);
+                    auto closestEnemyStation = Stations::getClosestStationAir(pos, PlayerState::Enemy);
+                    auto closestSelfStation = Stations::getClosestStationAir(pos, PlayerState::Self);
 
                     if (!closestEnemyStation
                         || !closestSelfStation

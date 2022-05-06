@@ -57,7 +57,7 @@ namespace McRave::Terrain {
                     enemyStartingTilePosition = TilePositions::Invalid;
                     enemyNatural = nullptr;
                     enemyMain = nullptr;
-                    Stations::getEnemyStations().clear();
+                    Stations::getStations(PlayerState::Enemy).clear();
                 }
                 else
                     return;
@@ -131,7 +131,7 @@ namespace McRave::Terrain {
 
                 if (enemyMain) {
                     addTerritory(PlayerState::Enemy, enemyMain);
-                    Stations::getEnemyStations().push_back(enemyMain);
+                    Stations::getStations(PlayerState::Enemy).push_back(enemyMain);
                 }
             }
         }
@@ -182,7 +182,7 @@ namespace McRave::Terrain {
             auto distBest = Players::vFFA() ? DBL_MAX : 0.0;
             auto posBest = Positions::Invalid;
             if (Players::vFFA()) {
-                for (auto &station : Stations::getEnemyStations()) {
+                for (auto &station : Stations::getStations(PlayerState::Enemy)) {
                     auto dist = station->getBase()->Center().getDistance(BWEB::Map::getMainPosition());
                     if (dist < distBest) {
                         distBest = dist;
@@ -198,7 +198,7 @@ namespace McRave::Terrain {
             distBest = Players::vFFA() ? DBL_MAX : 0.0;
             posBest = Positions::Invalid;
 
-            for (auto &station : Stations::getEnemyStations()) {
+            for (auto &station : Stations::getStations(PlayerState::Enemy)) {
                 const auto dist = enemyStartingPosition.getDistance(station->getBase()->Center());
                 if ((!Players::vFFA() && dist < distBest)
                     || (Players::vFFA() && dist > distBest)
@@ -228,7 +228,7 @@ namespace McRave::Terrain {
             defendNatural = BWEB::Map::getNaturalChoke() && !abandonNatural &&
                 (BuildOrder::isWallNat()
                     || BuildOrder::buildCount(baseType) > (1 + !BuildOrder::takeNatural())
-                    || Stations::getMyStations().size() >= 2
+                    || Stations::getStations(PlayerState::Self).size() >= 2
                     || (!Players::PvZ() && Players::getSupply(PlayerState::Self, Races::Protoss) > 140)
                     || (Broodwar->self()->getRace() != Races::Zerg && reverseRamp));
 
@@ -336,7 +336,7 @@ namespace McRave::Terrain {
 
             // Check if enemy lost all bases
             auto lostAll = true;
-            for (auto &station : Stations::getEnemyStations()) {
+            for (auto &station : Stations::getStations(PlayerState::Enemy)) {
                 if (!Stations::isBaseExplored(station) || BWEB::Map::isUsed(station->getBase()->Location()) != UnitTypes::None)
                     lostAll = false;
             }
@@ -388,7 +388,7 @@ namespace McRave::Terrain {
                     checkPositions.insert(Terrain::getEnemyMain()->getResourceCentroid());
                 if (suitableStationToHarass(Terrain::getEnemyNatural(), i))
                     checkPositions.insert(Terrain::getEnemyNatural()->getResourceCentroid());
-                for (auto &station : Stations::getEnemyStations()) {
+                for (auto &station : Stations::getStations(PlayerState::Enemy)) {
                     if (suitableStationToHarass(station, i))
                         checkPositions.insert(station->getResourceCentroid());
                 }
@@ -543,7 +543,7 @@ namespace McRave::Terrain {
         auto oldestTile = TilePositions::Invalid;
         auto start = BWEB::Map::getMainArea()->TopLeft();
         auto end = BWEB::Map::getMainArea()->BottomRight();
-        auto closestStation = Stations::getClosestStationGround(PlayerState::Self, Position(area->Top()));
+        auto closestStation = Stations::getClosestStationGround(Position(area->Top()), PlayerState::Self);
 
         for (int x = start.x; x < end.x; x++) {
             for (int y = start.y; y < end.y; y++) {

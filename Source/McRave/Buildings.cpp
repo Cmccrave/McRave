@@ -103,7 +103,7 @@ namespace McRave::Buildings {
                 const auto closestScout = Util::getClosestUnitGround(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
                     return u->getType().isWorker();
                 });
-                if (closestScout && int(Stations::getMyStations().size()) >= 2 && mapBWEM.GetArea(closestScout->getTilePosition()) == BWEB::Map::getMainArea())
+                if (closestScout && int(Stations::getStations(PlayerState::Self).size()) >= 2 && mapBWEM.GetArea(closestScout->getTilePosition()) == BWEB::Map::getMainArea())
                     morphTile = BWEB::Map::getNaturalTile();
 
                 if (building.getTilePosition() == morphTile)

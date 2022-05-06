@@ -227,7 +227,7 @@ namespace McRave::Transports {
 
             // If we have no cargo, wait at nearest base
             if (unit.getAssignedCargo().empty()) {
-                auto station = Stations::getClosestStationGround(PlayerState::Self, unit.getPosition());
+                auto station = Stations::getClosestStationGround(unit.getPosition(), PlayerState::Self);
                 if (station)
                     unit.setDestination(station->getBase()->Center());
             }

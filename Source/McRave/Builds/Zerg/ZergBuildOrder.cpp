@@ -63,7 +63,7 @@ namespace McRave::BuildOrder::Zerg {
         {
             // Adding Station defenses
             if (vis(Zerg_Drone) >= 8 || Players::ZvZ()) {
-                for (auto &station : Stations::getMyStations()) {
+                for (auto &station : Stations::getStations(PlayerState::Self)) {
                     auto colonies = 0;
                     auto wallNeeds = station->getChokepoint() && BWEB::Walls::getWall(station->getChokepoint()) && (Walls::needGroundDefenses(*BWEB::Walls::getWall(station->getChokepoint())) > 0 || Walls::needAirDefenses(*BWEB::Walls::getWall(station->getChokepoint())) > 0);
                     for (auto& tile : station->getDefenses()) {
@@ -120,14 +120,14 @@ namespace McRave::BuildOrder::Zerg {
         void queueUpgradeStructures()
         {
             // Adding Evolution Chambers
-            if ((s >= 180 && Stations::getMyStations().size() >= 3)
+            if ((s >= 180 && Stations::getStations(PlayerState::Self).size() >= 3)
                 || (techUnit == Zerg_Ultralisk && vis(Zerg_Queens_Nest) > 0))
-                buildQueue[Zerg_Evolution_Chamber] = 1 + (Stations::getMyStations().size() >= 4);
+                buildQueue[Zerg_Evolution_Chamber] = 1 + (Stations::getStations(PlayerState::Self).size() >= 4);
             if (needSpores)
                 buildQueue[Zerg_Evolution_Chamber] = max(buildQueue[Zerg_Evolution_Chamber], 1);
 
             // Hive upgrades
-            if (int(Stations::getMyStations().size()) >= 4 - Players::ZvT() && vis(Zerg_Drone) >= 36) {
+            if (int(Stations::getStations(PlayerState::Self).size()) >= 4 - Players::ZvT() && vis(Zerg_Drone) >= 36) {
                 buildQueue[Zerg_Queens_Nest] = 1;
                 buildQueue[Zerg_Hive] = com(Zerg_Queens_Nest) >= 1;
                 buildQueue[Zerg_Lair] = com(Zerg_Queens_Nest) < 1;
@@ -139,11 +139,11 @@ namespace McRave::BuildOrder::Zerg {
             if (!inOpeningBook && unitLimits[Zerg_Larva] == 0) {
                 const auto hatchCount = vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive);
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
-                const auto resourceSat = Resources::isGasSaturated() && (int(Stations::getMyStations().size()) >= 4 ? Resources::isMineralSaturated() : Resources::isHalfMineralSaturated());
+                const auto resourceSat = Resources::isGasSaturated() && (int(Stations::getStations(PlayerState::Self).size()) >= 4 ? Resources::isMineralSaturated() : Resources::isHalfMineralSaturated());
 
                 expandDesired = (techUnit == None && resourceSat && techSat && productionSat)
-                    || (Players::ZvZ() && Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony) > 0 && Stations::getMyStations().size() < Stations::getEnemyStations().size() && availableMinerals > 300)
-                    || (vis(Zerg_Drone) >= 16 && int(Stations::getMyStations().size()) <= 1);
+                    || (Players::ZvZ() && Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony) > 0 && Stations::getStations(PlayerState::Self).size() < Stations::getStations(PlayerState::Enemy).size() && availableMinerals > 300)
+                    || (vis(Zerg_Drone) >= 16 && int(Stations::getStations(PlayerState::Self).size()) <= 1);
 
                 buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive) + expandDesired + rampDesired);
             }
@@ -158,23 +158,23 @@ namespace McRave::BuildOrder::Zerg {
 
             // Adding Hatcheries
             const auto hatchCount = vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive);
-            auto desiredProduction = int(Stations::getMyStations().size());
+            auto desiredProduction = int(Stations::getStations(PlayerState::Self).size());
             if (Players::ZvT())
-                desiredProduction = int(Stations::getMyStations().size()) + max(0, int(Stations::getMyStations().size()) - 3) + max(0, int(Stations::getMyStations().size()) - 4);
+                desiredProduction = int(Stations::getStations(PlayerState::Self).size()) + max(0, int(Stations::getStations(PlayerState::Self).size()) - 3) + max(0, int(Stations::getStations(PlayerState::Self).size()) - 4);
             if (Players::ZvP())
-                desiredProduction = int(Stations::getMyStations().size()) + (2 * max(0, int(Stations::getMyStations().size()) - 2)) + (Spy::getEnemyBuild() != "FFE");
+                desiredProduction = int(Stations::getStations(PlayerState::Self).size()) + (2 * max(0, int(Stations::getStations(PlayerState::Self).size()) - 2)) + (Spy::getEnemyBuild() != "FFE");
             if (Players::ZvZ())
-                desiredProduction = int(Stations::getMyStations().size()) + max(0, int(Stations::getMyStations().size()) - 1) - (int(Stations::getEnemyStations().size() >= 2));
+                desiredProduction = int(Stations::getStations(PlayerState::Self).size()) + max(0, int(Stations::getStations(PlayerState::Self).size()) - 1) - (int(Stations::getStations(PlayerState::Enemy).size() >= 2));
             if (Players::ZvFFA())
-                desiredProduction = int(Stations::getMyStations().size()) + max(0, int(Stations::getMyStations().size()) - 1);
+                desiredProduction = int(Stations::getStations(PlayerState::Self).size()) + max(0, int(Stations::getStations(PlayerState::Self).size()) - 1);
 
             // Situational increases
-            if (Spy::getEnemyTransition() == "4Gate" && int(Stations::getMyStations().size()) <= 2)
+            if (Spy::getEnemyTransition() == "4Gate" && int(Stations::getStations(PlayerState::Self).size()) <= 2)
                 desiredProduction = 4;
 
             productionSat = hatchCount >= min(7, desiredProduction);
-            auto maxSat = clamp(int(Stations::getMyStations().size()) * 2, 5, 8);
-            if (vsMech && int(Stations::getMyStations().size()) >= 4 && armyComposition[Zerg_Zergling] > 0.0)
+            auto maxSat = clamp(int(Stations::getStations(PlayerState::Self).size()) * 2, 5, 8);
+            if (vsMech && int(Stations::getStations(PlayerState::Self).size()) >= 4 && armyComposition[Zerg_Zergling] > 0.0)
                 maxSat = 24;
 
             if (!inOpeningBook && unitLimits[Zerg_Larva] == 0) {
@@ -208,7 +208,7 @@ namespace McRave::BuildOrder::Zerg {
 
                 gasLimit = int(double(vis(Zerg_Drone) * totalGas * resourceCount * resourceRate) / (double(totalMin)));
                 if (Players::ZvZ())
-                    gasLimit += int(Stations::getMyStations().size());
+                    gasLimit += int(Stations::getStations(PlayerState::Self).size());
                 if (Players::getSupply(PlayerState::Self, Races::Zerg) > 100)
                     gasLimit += vis(Zerg_Evolution_Chamber);
             }
@@ -341,8 +341,8 @@ namespace McRave::BuildOrder::Zerg {
             techUnit = None;
 
         // Adding tech
-        techSat = (techVal >= int(Stations::getMyStations().size())) || endOfTech;
-        auto readyToTech = vis(Zerg_Extractor) >= int(Stations::getMyStations().size()) || int(Stations::getMyStations().size()) >= 4 || techList.empty();
+        techSat = (techVal >= int(Stations::getStations(PlayerState::Self).size())) || endOfTech;
+        auto readyToTech = vis(Zerg_Extractor) >= int(Stations::getStations(PlayerState::Self).size()) || int(Stations::getStations(PlayerState::Self).size()) >= 4 || techList.empty();
         if (!inOpeningBook && readyToTech && techUnit == None && !techSat && productionSat && vis(Zerg_Drone) >= 10)
             getTech = true;
 
@@ -387,7 +387,7 @@ namespace McRave::BuildOrder::Zerg {
                 || Spy::getEnemyTransition() == "5FactGoliath";
 
             // Cleanup enemy
-            if (Util::getTime() > Time(15, 0) && Stations::getEnemyStations().size() == 0 && Terrain::foundEnemy()) {
+            if (Util::getTime() > Time(15, 0) && Stations::getStations(PlayerState::Enemy).size() == 0 && Terrain::foundEnemy()) {
                 armyComposition[Zerg_Drone] =                   0.40;
                 armyComposition[Zerg_Mutalisk] =                0.60;
             }
@@ -561,7 +561,7 @@ namespace McRave::BuildOrder::Zerg {
                 pumpLings = 12;
             if (Spy::getEnemyTransition() == "4Gate" && hatchCount >= 4)
                 pumpLings = 24;
-            if (Resources::isMineralSaturated() && Resources::isGasSaturated() && int(Stations::getMyStations().size()) <= 2)
+            if (Resources::isMineralSaturated() && Resources::isGasSaturated() && int(Stations::getStations(PlayerState::Self).size()) <= 2)
                 pumpLings = 200;
             if (Players::ZvZ() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Spire) == 0 && vis(Zerg_Drone) > Players::getVisibleCount(PlayerState::Enemy, Zerg_Drone))
                 pumpLings = Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling);
@@ -611,7 +611,7 @@ namespace McRave::BuildOrder::Zerg {
     void unlocks()
     {
         // Saving larva to burst out tech units
-        int limitBy = int(Stations::getMyStations().size()) * 3;
+        int limitBy = int(Stations::getStations(PlayerState::Self).size()) * 3;
         unitLimits[Zerg_Larva] = 0;
         if ((inOpeningBook || techList.size() == 1) && ((atPercent(Zerg_Spire, 0.50) && com(Zerg_Spire) == 0) || (atPercent(Zerg_Hydralisk_Den, 0.6) && com(Zerg_Hydralisk_Den) == 0)))
             unitLimits[Zerg_Larva] = max(0, limitBy - total(Zerg_Mutalisk) - total(Zerg_Hydralisk));

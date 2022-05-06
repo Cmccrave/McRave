@@ -66,7 +66,7 @@ namespace McRave::BuildOrder::Zerg {
         firstUpgrade =                                  UpgradeTypes::None;
         firstUnit =                                     Zerg_Mutalisk;
         inBookSupply =                                  total(Zerg_Mutalisk) < 6;
-        planEarly =                                     atPercent(Zerg_Lair, 0.5) && int(Stations::getMyStations().size()) < 3 && Spy::getEnemyOpener() != "8Rax";
+        planEarly =                                     atPercent(Zerg_Lair, 0.5) && int(Stations::getStations(PlayerState::Self).size()) < 3 && Spy::getEnemyOpener() != "8Rax";
 
         auto thirdHatch =  (total(Zerg_Mutalisk) >= 6);
         if (Spy::enemyPressure()) {
@@ -75,7 +75,7 @@ namespace McRave::BuildOrder::Zerg {
         }
         else if (vis(Zerg_Drone) >= 20 && s >= 48) {
             thirdHatch = true;
-            planEarly = atPercent(Zerg_Lair, 0.5) && int(Stations::getMyStations().size()) < 3;
+            planEarly = atPercent(Zerg_Lair, 0.5) && int(Stations::getStations(PlayerState::Self).size()) < 3;
         }
 
         buildQueue[Zerg_Hatchery] =                     2 + thirdHatch;

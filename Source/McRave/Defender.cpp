@@ -33,7 +33,7 @@ namespace McRave::Defender {
         void updateFormation(UnitInfo& unit)
         {
             // Set formation to closest station chokepoint to align units to
-            const auto closestStation = Stations::getClosestStationGround(PlayerState::Self, unit.getPosition());
+            const auto closestStation = Stations::getClosestStationGround(unit.getPosition(), PlayerState::Self);
             if (closestStation && closestStation->getChokepoint())
                 unit.setFormation(Position(closestStation->getChokepoint()->Center()));
         }

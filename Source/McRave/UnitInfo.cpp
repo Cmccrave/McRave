@@ -293,7 +293,7 @@ namespace McRave
         const auto choke = Terrain::isDefendNatural() ? BWEB::Map::getNaturalChoke() : BWEB::Map::getMainChoke();
         const auto area = Terrain::isDefendNatural() ? BWEB::Map::getNaturalArea() : BWEB::Map::getMainArea();
         const auto closestGeo = BWEB::Map::getClosestChokeTile(choke, getPosition());
-        const auto closestStation = Stations::getClosestStationAir(PlayerState::Self, getPosition());
+        const auto closestStation = Stations::getClosestStationAir(getPosition(), PlayerState::Self);
         const auto rangeCheck = max({ getAirRange() + 32.0, getGroundRange() + 32.0, 64.0 });
         const auto proximityCheck = max(rangeCheck, 200.0);
         auto threateningThisFrame = false;
@@ -356,14 +356,14 @@ namespace McRave
                         return true;
                 }
             }
-            if (BWEB::Map::getMainChoke() && getPosition().getDistance(Position(BWEB::Map::getMainChoke()->Center())) < 64.0 && int(Stations::getMyStations().size()) >= 2)
+            if (BWEB::Map::getMainChoke() && getPosition().getDistance(Position(BWEB::Map::getMainChoke()->Center())) < 64.0 && int(Stations::getStations(PlayerState::Self).size()) >= 2)
                 return true;
 
             // Fix for Andromeda like maps
-            if (Terrain::inTerritory(PlayerState::Self, getPosition()) && mapBWEM.GetArea(getTilePosition()) != BWEB::Map::getNaturalArea() && int(Stations::getMyStations().size()) >= 2)
+            if (Terrain::inTerritory(PlayerState::Self, getPosition()) && mapBWEM.GetArea(getTilePosition()) != BWEB::Map::getNaturalArea() && int(Stations::getStations(PlayerState::Self).size()) >= 2)
                 return true;
 
-            return getTilePosition().isValid() && mapBWEM.GetArea(getTilePosition()) == BWEB::Map::getMainArea() && (int(Stations::getMyStations().size()) >= 2 || Combat::defendChoke());
+            return getTilePosition().isValid() && mapBWEM.GetArea(getTilePosition()) == BWEB::Map::getMainArea() && (int(Stations::getStations(PlayerState::Self).size()) >= 2 || Combat::defendChoke());
         };
 
         const auto constructing = unit()->exists() && (unit()->isConstructing() || unit()->getOrder() == Orders::ConstructingBuilding || unit()->getOrder() == Orders::PlaceBuilding);
@@ -471,7 +471,7 @@ namespace McRave
             return false;
 
         // Add some wiggle room for movement
-        here += Position(rand() % 2 - 1, rand() % 2 - 1);
+        //here += Position(rand() % 2 - 1, rand() % 2 - 1);
 
         // Check if we should overshoot for halting distance
         if (cmd == UnitCommandTypes::Move && !getBuildPosition().isValid() && (getType().isFlyer() || isHovering() || getType() == Protoss_High_Templar)) {
@@ -814,7 +814,7 @@ namespace McRave
         auto unitTarget = getTarget().lock();
 
         const auto nearEnemyStation = [&]() {
-            const auto closestEnemyStation = Stations::getClosestStationGround(PlayerState::Enemy, getPosition());
+            const auto closestEnemyStation = Stations::getClosestStationGround(getPosition(), PlayerState::Enemy);
             return (closestEnemyStation && getPosition().getDistance(closestEnemyStation->getBase()->Center()) < 400.0);
         };
 
@@ -857,7 +857,8 @@ namespace McRave
     {
         return nearHidden
             || (getGlobalState() == GlobalState::Retreat && !Terrain::inTerritory(PlayerState::Self, getPosition()))
-            || (getType() == Zerg_Mutalisk && hasTarget() && !getTarget().lock()->isThreatening() && !isWithinRange(*getTarget().lock()) && getHealth() <= 50)                // ...unit is a low HP Mutalisk attacking a target under air threat    
+            || (getType() == Zerg_Mutalisk && hasTarget() && !getTarget().lock()->isThreatening() && !isWithinRange(*getTarget().lock()) && getHealth() <= 50)                               // ...unit is a low HP Mutalisk attacking a target under air threat    
+            || (getType() == Protoss_Scout && hasTarget() && !getTarget().lock()->isThreatening() && !isWithinRange(*getTarget().lock()) && getHealth() + getShields() <= 80)                // ...unit is a low HP Scout attacking a target under air threat    
             ;
     }
 
@@ -887,7 +888,7 @@ namespace McRave
     {
         if (Players::ZvZ() && vis(Zerg_Zergling) + 4 * com(Zerg_Sunken_Colony) < Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling))
             return false;
-        if (Players::ZvZ() && Terrain::getEnemyMain() && Terrain::getEnemyNatural() && Stations::getAirDefenseCount(Terrain::getEnemyMain()) > 0 && Stations::getAirDefenseCount(Terrain::getEnemyNatural()) > 0 && int(Stations::getMyStations().size()) < 2)
+        if (Players::ZvZ() && Terrain::getEnemyMain() && Terrain::getEnemyNatural() && Stations::getAirDefenseCount(Terrain::getEnemyMain()) > 0 && Stations::getAirDefenseCount(Terrain::getEnemyNatural()) > 0 && int(Stations::getStations(PlayerState::Self).size()) < 2)
             return false;
         if (Players::ZvZ() && vis(Zerg_Mutalisk) <= Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk))
             return false;

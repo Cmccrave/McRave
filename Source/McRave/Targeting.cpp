@@ -135,7 +135,7 @@ namespace McRave::Targets {
 
                 // Scourge
                 if (unit.getType() == Zerg_Scourge) {
-                    if ((!Stations::getEnemyStations().empty() && target.getType().isBuilding())                                                                            // Avoid targeting buildings if the enemy has a base still
+                    if ((!Stations::getStations(PlayerState::Enemy).empty() && target.getType().isBuilding())                                                                            // Avoid targeting buildings if the enemy has a base still
                         || target.getType() == Zerg_Overlord                                                                                                                // Don't target overlords
                         || target.getType() == Protoss_Interceptor)                                                                                                         // Don't target interceptors
                         return false;

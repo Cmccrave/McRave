@@ -148,6 +148,8 @@ namespace BWEB::Blocks
             // Protoss Block pieces
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (height == 2) {
+                    if (width == 2)
+                        pieces ={ Piece::Small };
                     if (width == 5)
                         pieces ={ Piece::Small, Piece::Medium };
                 }
@@ -261,7 +263,7 @@ namespace BWEB::Blocks
         bool canAddBlock(const TilePosition here, const int width, const int height, multimap<TilePosition, Piece> pieces, BlockType type)
         {
             const auto blockWalkable = [&](const TilePosition &t) {
-                return (t.x < here.x || t.x > here.x + width || t.y < here.y || t.y > here.y + height) && !blockGrid[t.x][t.y];
+                return (t.x < here.x || t.x > here.x + width || t.y < here.y || t.y > here.y + height) && !blockGrid[t.x][t.y] && !BWEB::Map::isReserved(t);
             };
 
             const auto blockExists = [&](const TilePosition &t) {

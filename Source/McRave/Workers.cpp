@@ -21,7 +21,7 @@ namespace McRave::Workers {
                 safeStations.push_back(unit.getResource().lock()->getStation());
 
             // Find safe stations to mine resources from
-            for (auto &station : Stations::getMyStations()) {
+            for (auto &station : Stations::getStations(PlayerState::Self)) {
                 auto closestNatural = BWEB::Stations::getClosestNaturalStation(station->getBase()->Location());
                 auto closestMain = BWEB::Stations::getClosestMainStation(station->getBase()->Location());
 
@@ -53,7 +53,7 @@ namespace McRave::Workers {
         {
             // Allow some drones to transfer early on - TODO: Move to StationManager
             if (Util::getTime() < Time(3, 30) && !Spy::enemyRush() && vis(UnitTypes::Zerg_Drone) >= 9) {
-                for (auto &station : Stations::getMyStations()) {
+                for (auto &station : Stations::getStations(PlayerState::Self)) {
                     int droneCount = 0;
 
                     for (auto &mineral : Resources::getMyMinerals()) {
@@ -234,7 +234,7 @@ namespace McRave::Workers {
             const auto threatened =         isResourceThreatened(unit);
             const auto excessAssigned =     isResourceFlooded(unit);
             const auto transferStation =    getTransferStation(unit);
-            const auto closestStation =     Stations::getClosestStationAir(PlayerState::Self, unit.getPosition());
+            const auto closestStation =     Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self);
 
             // Check if unit needs a re-assignment
             const auto needGas =            unit.unit()->isCarryingMinerals() && !Resources::isGasSaturated() && isMineralunit && gasWorkers < BuildOrder::gasWorkerLimit();

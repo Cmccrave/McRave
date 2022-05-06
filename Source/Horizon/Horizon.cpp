@@ -152,11 +152,11 @@ namespace McRave::Horizon {
             auto enemy = player->isEnemy(Broodwar->self());
             if (enemy) {
                 addForces ? enemyGroundStrength += sim.ground : enemyGroundStrength = max(enemyGroundStrength, sim.ground);
-                addForces ? enemyAirStrength = sim.air : enemyAirStrength = max(enemyAirStrength, sim.air);
+                addForces ? enemyAirStrength += sim.air : enemyAirStrength = max(enemyAirStrength, sim.air);
             }
             else {
-                addForces ? allyGroundStrength += sim.ground : allyGroundStrength = max(allyGroundStrength, sim.ground);
-                addForces ? allyAirStrength += sim.air : allyAirStrength = max(allyAirStrength, sim.air);
+                addForces ? allyGroundStrength = sim.ground : allyGroundStrength = max(allyGroundStrength, sim.ground);
+                addForces ? allyAirStrength = sim.air : allyAirStrength = max(allyAirStrength, sim.air);
             }
         }
 

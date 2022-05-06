@@ -268,7 +268,7 @@ namespace McRave::Walls {
     }
 
     int calcGroundDefZvZ(BWEB::Wall& wall) {
-        if ((BuildOrder::getCurrentTransition().find("Muta") != string::npos || Util::getTime() > Time(6, 00)) && (BuildOrder::takeNatural() || int(Stations::getMyStations().size()) >= 2)) {
+        if ((BuildOrder::getCurrentTransition().find("Muta") != string::npos || Util::getTime() > Time(6, 00)) && (BuildOrder::takeNatural() || int(Stations::getStations(PlayerState::Self).size()) >= 2)) {
             if (Players::ZvZ() && BuildOrder::isOpener() && BuildOrder::buildCount(Zerg_Spire) > 0 && vis(Zerg_Spire) == 0)
                 return 0;
             else if (Spy::getEnemyTransition() == "2HatchSpeedling")

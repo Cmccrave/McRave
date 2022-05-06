@@ -20,7 +20,7 @@ namespace McRave::BuildOrder::Terran {
         void queueStationDefenses()
         {
             // Adding Station Defenses
-            for (auto &station : Stations::getMyStations()) {
+            for (auto &station : Stations::getStations(PlayerState::Self)) {
                 if (vis(Terran_Engineering_Bay) > 0 && Stations::needAirDefenses(station) > 0)
                     buildQueue[Terran_Missile_Turret] = vis(Terran_Missile_Turret) + 1;
             }
@@ -82,8 +82,8 @@ namespace McRave::BuildOrder::Terran {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
                 expandDesired = (techUnit == None && Resources::isGasSaturated() && (Resources::isMineralSaturated() || com(Terran_Command_Center) >= 3) && (techSat || com(Terran_Command_Center) >= 3) && productionSat)
                     || (com(Terran_Command_Center) >= 2 && availableMinerals >= 800 && (Resources::isMineralSaturated() || Resources::isGasSaturated()))
-                    || (Stations::getMyStations().size() >= 4 && Stations::getMiningStationsCount() <= 2)
-                    || (Stations::getMyStations().size() >= 4 && Stations::getGasingStationsCount() <= 1);
+                    || (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getMiningStationsCount() <= 2)
+                    || (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getGasingStationsCount() <= 1);
 
                 buildQueue[Terran_Command_Center] = com(Terran_Command_Center) + expandDesired;
             }
