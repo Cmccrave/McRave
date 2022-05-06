@@ -5,6 +5,8 @@ using namespace BWAPI;
 using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
 
+#include "../ZergBuildOrder.h"
+
 namespace McRave::BuildOrder::Zerg {
 
     void defaultZvFFA() {

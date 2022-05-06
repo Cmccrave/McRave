@@ -58,6 +58,8 @@
     <ClCompile Include="..\Source\McRave\Builds\Protoss\PvZ\PvZ_1GateCore.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Protoss\PvZ\PvZ_FFE.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Protoss\PvZ\PvZ_2Gate.cpp" />
+    <ClCompile Include="..\Source\McRave\Builds\Terran\TerranBuildOrder.cpp" />
+    <ClCompile Include="..\Source\McRave\Builds\Terran\TvFFA\TvA.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZergBuildOrder.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvFFA\ZvFFA.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvFFA\ZvFFA_HatchPool.cpp" />
@@ -89,6 +91,9 @@
     <ClCompile Include="..\Source\McRave\Walls.cpp" />
     <ClInclude Include="..\Source\Horizon\Horizon.h" />
     <ClInclude Include="..\Source\McRave\Actions.h" />
+    <ClInclude Include="..\Source\McRave\Builds\Protoss\ProtossBuildOrder.h" />
+    <ClInclude Include="..\Source\McRave\Builds\Terran\TerranBuildOrder.h" />
+    <ClInclude Include="..\Source\McRave\Builds\Zerg\ZergBuildOrder.h" />
     <ClInclude Include="..\Source\McRave\Combat.h" />
     <ClInclude Include="..\Source\McRave\Defender.h" />
     <ClInclude Include="..\Source\McRave\Events.h" />
@@ -109,8 +114,6 @@
     <ClCompile Include="..\Source\McRave\Support.cpp" />
     <ClCompile Include="..\Source\McRave\Targeting.cpp" />
     <ClCompile Include="..\Source\McRave\Terrain.cpp" />
-    <ClCompile Include="..\Source\McRave\TerranBuildOrder.cpp" />
-    <ClCompile Include="..\Source\McRave\TvA.cpp" />
     <ClCompile Include="..\Source\McRave\Transports.cpp" />
     <ClCompile Include="..\Source\McRave\UnitInfo.cpp" />
     <ClCompile Include="..\Source\McRave\Units.cpp" />

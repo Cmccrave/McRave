@@ -10,6 +10,8 @@ using namespace McRave::BuildOrder::All;
 // Hydra: 5.5 drones per hatch - 0.5 gas per hatch
 // Muta: 8 drones per hatch - 1 gas per hatch
 
+#include "ZergBuildOrder.h"
+
 namespace McRave::BuildOrder::Zerg {
 
     namespace {

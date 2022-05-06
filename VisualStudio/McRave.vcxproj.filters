@@ -82,9 +82,6 @@
     <ClCompile Include="..\Source\McRave\PlayerInfo.cpp">
       <Filter>McRave\Info\Player</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\TerranBuildOrder.cpp">
-      <Filter>McRave\Builds\Terran</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\BuildOrder.cpp">
       <Filter>McRave\Builds\All</Filter>
     </ClCompile>
@@ -274,11 +271,14 @@
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZergBuildOrder.cpp">
       <Filter>McRave\Builds\Zerg</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\TvA.cpp">
-      <Filter>McRave\Builds\Terran\TvA</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\Builds\Protoss\PvFFA\PvFFA.cpp">
       <Filter>McRave\Builds\Protoss\PvFFA</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Terran\TerranBuildOrder.cpp">
+      <Filter>McRave\Builds\Terran</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Terran\TvFFA\TvA.cpp">
+      <Filter>McRave\Builds\Terran\TvFFA</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -465,6 +465,15 @@
     <ClInclude Include="..\Source\McRave\Defender.h">
       <Filter>McRave\Micro\Defender</Filter>
     </ClInclude>
+    <ClInclude Include="..\Source\McRave\Builds\Zerg\ZergBuildOrder.h">
+      <Filter>McRave\Builds\Zerg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Builds\Protoss\ProtossBuildOrder.h">
+      <Filter>McRave\Builds\Protoss</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Builds\Terran\TerranBuildOrder.h">
+      <Filter>McRave\Builds\Terran</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="BWEM">
@@ -587,7 +596,7 @@
     <Filter Include="McRave\Builds\Zerg\ZvZ">
       <UniqueIdentifier>{44b3f59c-cd40-4450-b91e-c992687375f5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="McRave\Builds\Terran\TvA">
+    <Filter Include="McRave\Builds\Terran\TvFFA">
       <UniqueIdentifier>{e0538aa9-127f-431d-bfa6-25c11ac5815f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>

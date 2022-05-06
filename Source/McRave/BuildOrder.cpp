@@ -7,6 +7,10 @@ using namespace BWAPI;
 using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
 
+#include "Builds/Zerg/ZergBuildOrder.h"
+#include "Builds/Protoss/ProtossBuildOrder.h"
+#include "Builds/Terran//TerranBuildOrder.h"
+
 namespace McRave::BuildOrder
 {
     namespace {

@@ -6,6 +6,8 @@ using namespace std;
 using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
 
+#include "../TerranBuildOrder.h"
+
 namespace McRave::BuildOrder::Terran
 {
     void TvA()

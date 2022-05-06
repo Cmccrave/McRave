@@ -6,6 +6,8 @@ using namespace std;
 using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
 
+#include "../ProtossBuildOrder.h"
+
 namespace McRave::BuildOrder::Protoss {
 
     void defaultPvP() {
