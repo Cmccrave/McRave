@@ -336,7 +336,7 @@ namespace McRave::Command {
                 return true;
             }
 
-            if (!unit.getObjectivePath().isReachable()) {
+            if (!unit.getDestinationPath().isReachable()) {
                 unit.command(Move, unit.getDestination());
                 return true;
             }
@@ -608,8 +608,6 @@ namespace McRave::Command {
 
             auto bestPosition = findViablePosition(unit, scoreFunction);
 
-            if (unit.getRole() == Role::Scout)
-                Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Yellow);
             if (bestPosition.isValid()) {
                 unit.command(Move, bestPosition);
                 return true;

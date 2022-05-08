@@ -33,10 +33,10 @@ namespace McRave::Workers {
                 else {
                     BWEB::Path newPath(unit.getPosition(), station->getBase()->Center(), unit.getType());
                     newPath.generateJPS([&](const TilePosition &t) { return newPath.terrainWalkable(t) || Util::rectangleIntersect(Position(station->getBase()->Location()), Position(station->getBase()->Location()) + Position(96, 64), Position(t)); });
-                    unit.setObjectivePath(newPath);
+                    unit.setDestinationPath(newPath);
 
                     // If unit is far, we need to check if it's safe
-                    auto threatPosition = Util::findPointOnPath(unit.getObjectivePath(), [&](Position p) {
+                    auto threatPosition = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
                         return (unit.getType().isFlyer() ? Grids::getEAirThreat(p) > 0.0f : Grids::getEGroundThreat(p) > 0.0f) ||
                             (unit.hasTarget() && p.getDistance(unit.getTarget().lock()->getPosition()) < unit.getTarget().lock()->getGroundReach());
                     });
@@ -130,7 +130,7 @@ namespace McRave::Workers {
                 };
                 newPath.generateJPS(walkable);
 
-                auto threatPosition = Util::findPointOnPath(unit.getObjectivePath(), [&](Position p) {
+                auto threatPosition = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
                     return (unit.getType().isFlyer() ? Grids::getEAirThreat(p) > 0.0f : Grids::getEGroundThreat(p) > 0.0f) ||
                         (unit.hasTarget() && p.getDistance(unit.getTarget().lock()->getPosition()) < unit.getTarget().lock()->getGroundReach());
                 });
@@ -138,7 +138,7 @@ namespace McRave::Workers {
                 if (threatPosition)
                     return false;
                 else
-                    unit.setObjectivePath(newPath);
+                    unit.setDestinationPath(newPath);
             }
             return true;
         }
@@ -167,7 +167,7 @@ namespace McRave::Workers {
         void updatePath(UnitInfo& unit)
         {
             // Create a path
-            if (unit.getDestination().isValid() && (unit.getObjectivePath().getTarget() != TilePosition(unit.getDestination()) || !unit.getObjectivePath().isReachable()) && (!mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(unit.getDestination())) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(unit.getDestination()))))) {
+            if (unit.getDestination().isValid() && (unit.getDestinationPath().getTarget() != TilePosition(unit.getDestination()) || !unit.getDestinationPath().isReachable()) && (!mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(unit.getDestination())) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(unit.getDestination()))))) {
                 BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
                 auto resourceTile = unit.hasResource() ? unit.getResource().lock()->getTilePosition() : TilePositions::Invalid;
                 auto resourceType = unit.hasResource() ? unit.getResource().lock()->getType() : UnitTypes::None;
@@ -177,12 +177,12 @@ namespace McRave::Workers {
                         || newPath.unitWalkable(tile);
                 };
                 newPath.generateJPS(resourceWalkable);
-                unit.setObjectivePath(newPath);
+                unit.setDestinationPath(newPath);
             }
 
             // Set destination to intermediate position along path
-            if (unit.getObjectivePath().getTarget() == TilePosition(unit.getDestination())) {
-                auto newDestination = Util::findPointOnPath(unit.getObjectivePath(), [&](Position p) {
+            if (unit.getDestinationPath().getTarget() == TilePosition(unit.getDestination())) {
+                auto newDestination = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
                     return p.getDistance(unit.getPosition()) >= 64.0;
                 });
 

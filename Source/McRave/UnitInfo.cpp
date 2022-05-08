@@ -64,9 +64,7 @@ namespace McRave
     {
         if (lastTile != unit()->getTilePosition()) {
             BWEB::Path emptyPath;
-            objectivePath = emptyPath;
-            targetPath = emptyPath;
-            retreatPath = emptyPath;
+            destinationPath = emptyPath;
         }
     }
 
@@ -110,7 +108,6 @@ namespace McRave
             tilePosition                = t.isBuilding() ? unit()->getTilePosition() : TilePosition(unit()->getPosition());
             walkPosition                = calcWalkPosition(this);
             destination                 = Positions::Invalid;
-            objective                   = Positions::Invalid;
             retreat                     = Positions::Invalid;
             formation                   = Positions::Invalid;
             surroundPosition            = Positions::Invalid;
@@ -470,9 +467,6 @@ namespace McRave
         if (cancelAttackRisk && !isLightAir())
             return false;
 
-        // Add some wiggle room for movement
-        //here += Position(rand() % 2 - 1, rand() % 2 - 1);
-
         // Check if we should overshoot for halting distance
         if (cmd == UnitCommandTypes::Move && !getBuildPosition().isValid() && (getType().isFlyer() || isHovering() || getType() == Protoss_High_Templar)) {
             auto distance = int(getPosition().getDistance(here));
@@ -501,7 +495,6 @@ namespace McRave
 
         // If this is a new order or new command than what we're requesting, we can issue it
         if (newCommand() && commandsPerFrame[Broodwar->getFrameCount()] < 64) {
-            Broodwar->drawLineMap(position, here, Colors::Red);
             if (cmd == UnitCommandTypes::Move)
                 unit()->move(here);
             if (cmd == UnitCommandTypes::Right_Click_Position)

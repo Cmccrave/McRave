@@ -38,10 +38,9 @@ namespace McRave::Combat::Clusters {
                     continue;
 
                 auto positionInCommon = unit.getPosition().getDistance(cluster.sharedPosition) < cluster.sharedRadius;
-                auto retreatInCommon = unit.getRetreat().getDistance(cluster.sharedRetreat) < cluster.sharedRadius;
-                auto objectiveInCommon = unit.getObjective().getDistance(cluster.sharedObjective) < cluster.sharedRadius;
+                auto destinationInCommon = unit.getDestination().getDistance(cluster.sharedRetreat) < cluster.sharedRadius;
 
-                if (objectiveInCommon && retreatInCommon) {
+                if (destinationInCommon) {
                     cluster.sharedRadius += unit.isLightAir() ? 0.0 : double(unit.getType().width() * unit.getType().height()) / cluster.sharedRadius;
                     cluster.units.push_back(unit);
                     cluster.typeCounts[unit.getType()]++;
@@ -52,7 +51,7 @@ namespace McRave::Combat::Clusters {
 
             // Didn't find existing formation, create a new one
             if (!foundCluster) {
-                Cluster newCluster(unit.getPosition(), unit.getRetreat(), unit.getObjective(), unit.getType());
+                Cluster newCluster(unit.getPosition(), unit.getRetreat(), unit.getDestination(), unit.getType());
                 newCluster.units.push_back(unit);
                 newCluster.typeCounts[unit.getType()]++;
                 clusters.push_back(newCluster);
@@ -86,8 +85,7 @@ namespace McRave::Combat::Clusters {
             if (closestToCentroid) {
                 cluster.mobileCluster = closestToCentroid->getGlobalState() != GlobalState::Retreat;
                 cluster.sharedPosition = avgPosition;
-                cluster.sharedRetreat = closestToCentroid->getRetreat();
-                cluster.sharedObjective = closestToCentroid->getObjective();
+                cluster.sharedObjective = closestToCentroid->getDestination();
                 cluster.commander = closestToCentroid->weak_from_this();
                 cluster.commandShare = cluster.commander.lock()->isLightAir() ? CommandShare::Exact : CommandShare::Parallel;
                 cluster.shape = cluster.commander.lock()->isLightAir() ? Shape::None : Shape::Concave;

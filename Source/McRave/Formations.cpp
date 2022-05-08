@@ -48,24 +48,24 @@ namespace McRave::Combat::Formations {
         Position objective = cluster.sharedObjective;
         Position retreat = cluster.sharedRetreat;
 
-        auto i = 0;
-        retreat = Util::findPointOnPath(commander->getRetreatPath(), [&](Position p) {
-            i++;
-            return i >= 5;
-        });
+        //auto i = 0;
+        //retreat = Util::findPointOnPath(commander->getRetreatPath(), [&](Position p) {
+        //    i++;
+        //    return i >= 5;
+        //});
 
-        // If commander is fighting, form a concave around the target
-        if (commander->getLocalState() == LocalState::Attack) {
-            objective = commander->getTarget().lock()->getPosition();
-            radius = commander->getGroundRange();
-        }
-        else {
-            i = 0;
-            objective = Util::findPointOnPath(commander->getObjectivePath(), [&](Position p) {
-                i++;
-                return i >= 7 && (!cluster.mobileCluster || p.getDistance(commander->getPosition()) > radius + 160.0) && (!cluster.mobileCluster || p.getDistance(cluster.sharedPosition) > radius + 160.0);
-            });
-        }
+        //// If commander is fighting, form a concave around the target
+        //if (commander->getLocalState() == LocalState::Attack) {
+        //    objective = commander->getTarget().lock()->getPosition();
+        //    radius = commander->getGroundRange();
+        //}
+        //else {
+        //    i = 0;
+        //    objective = Util::findPointOnPath(commander->getObjectivePath(), [&](Position p) {
+        //        i++;
+        //        return i >= 7 && (!cluster.mobileCluster || p.getDistance(commander->getPosition()) > radius + 160.0) && (!cluster.mobileCluster || p.getDistance(cluster.sharedPosition) > radius + 160.0);
+        //    });
+        //}
 
         if (!objective.isValid())
             objective = cluster.sharedObjective;

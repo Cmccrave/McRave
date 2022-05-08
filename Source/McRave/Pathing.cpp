@@ -30,147 +30,52 @@ namespace McRave::Pathing {
             return pathPoint;
         }
 
-        void trySharedPaths(UnitInfo& unit)
-        {
-            // See if we can borrow a path from a targeter around us
-            auto maxDist = Players::getSupply(PlayerState::Self, Races::None) / 2;
-            auto unitTarget = unit.getTarget().lock();
-            for (auto &t : unitTarget->getTargetedBy()) {
-                if (auto targeter = t.lock()) {
-                    if (targeter->hasTarget()) {
-                        auto targeterTarget = targeter->getTarget().lock();
-                        if (unit.getTarget() == targeter->getTarget() && targeter->getTargetPath().isReachable() && targeter->getPosition().getDistance(targeterTarget->getPosition()) < unit.getPosition().getDistance(unitTarget->getPosition()) && targeter->getPosition().getDistance(unit.getPosition()) < maxDist) {
-                            unit.setTargetPath(targeter->getTargetPath());
-                            unit.setRetreatPath(targeter->getRetreatPath());
-                            return;
-                        }
-                    }
-                }
-            }
-        }
-
-        void getTargetPath(UnitInfo& unit)
-        {
-            // If unnecessary to get path
-            if (unit.getRole() != Role::Combat || !unit.getTargetPath().getTiles().empty())
-                return;
-
-            // If no target, no distance/path available
-            if (!unit.hasTarget()) {
-                BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
-                unit.setEngDist(0.0);
-                unit.setTargetPath(newPath);
-                return;
-            }
-            auto unitTarget = unit.getTarget().lock();
-
-            // Don't generate a target path in these cases
-            if (unitTarget->isFlying() || unit.isFlying()) {
-                BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
-                unit.setTargetPath(newPath);
-                return;
-            }
-
-            // TODO: Need a custom target walkable for a building
-            const auto targetWalkable = [&](const TilePosition &t) {
-                return unitTarget->getType().isBuilding() && Util::rectangleIntersect(unitTarget->getPosition(), unitTarget->getPosition() + Position(unitTarget->getType().tileSize()), Position(t));
-            };
-
-            // If should create path, grab one from BWEB
-            if (unit.getTargetPath().getTarget() != TilePosition(unitTarget->getPosition()) && (!mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(unitTarget->getPosition())) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(unitTarget->getPosition()))))) {
-                BWEB::Path newPath(unit.getPosition(), unitTarget->getPosition(), unit.getType());
-                newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t) || targetWalkable(t); });
-                unit.setTargetPath(newPath);
-
-                if (!newPath.isReachable() && newPath.unitWalkable(unit.getTilePosition()))
-                    unitTarget->lastUnreachableFrame = Broodwar->getFrameCount();
-            }
-        }
-
-        void getRetreatPath(UnitInfo& unit)
-        {
-            // If unnecessary to get path
-            if (unit.getRole() != Role::Combat || !unit.getRetreatPath().getTiles().empty())
-                return;
-
-            // Generate a new path that obeys collision of terrain and buildings
-            auto needPath = unit.getRetreatPath().getTiles().empty();
-            if (!unit.isFlying() && needPath && unit.getRetreatPath().getTarget() != TilePosition(unit.getRetreat())) {
-                auto pathPoint = getPathPoint(unit, unit.getRetreat());
-                if (!mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(pathPoint)) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(pathPoint)))) {
-                    BWEB::Path newPath(unit.getPosition(), pathPoint, unit.getType());
-                    newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t); });
-                    unit.setRetreatPath(newPath);
-                }
-            }
-        }
-
         void getEngagePosition(UnitInfo& unit)
         {
-            if (!unit.hasTarget()) {
+            // Without a target, we cannot assume an engage position
+            if (!unit.hasTarget() || unit.getPlayer() != Broodwar->self()) {
                 unit.setEngagePosition(Positions::Invalid);
                 return;
             }
-            auto unitTarget = unit.getTarget().lock();
 
+            auto unitTarget = unit.getTarget().lock();
             if (unit.getRole() == Role::Defender || unit.isSuicidal()) {
                 unit.setEngagePosition(unitTarget->getPosition());
                 return;
             }
 
-            // Have to set it to at least 64 or units can't path sometimes to engage position
-            auto range = max(64.0, unitTarget->getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
-            if (unit.getTargetPath().isReachable() && (!unit.isWithinRange(*unitTarget) || unit.unit()->isLoaded())) {
-                auto usedType = BWEB::Map::isUsed(unitTarget->getTilePosition());
+            // Create a binary search tree in a circle around the target
+            auto testPosition = Positions::None;
+            auto testDist = 0.0;
+            auto up = unitTarget->getPosition();
+            pair<double, double> radrange ={ 0.00, 3.14 };
+            auto range = unitTarget->isFlying() ? unit.getAirRange() : unit.getGroundRange();
+            for (int i = 1; i <= 5; i++) {
+                auto diff = (radrange.second - radrange.first) / 4.0;
+                auto p1 = up + Position(range*cos(radrange.first), range*sin(radrange.first));
+                auto p2 = up + Position(range*cos(radrange.second), range*sin(radrange.second));
 
-                auto engagePosition = Util::findPointOnPath(unit.getTargetPath(), [&](Position p) {
-                    auto usedHere = BWEB::Map::isUsed(TilePosition(p));
-                    return usedHere == UnitTypes::None && Util::boxDistance(unitTarget->getType(), unitTarget->getPosition(), unit.getType(), p) <= range;
-                });
+                if (!p1.isValid())
+                    radrange = make_pair(radrange.second - diff, radrange.second + diff);
+                else if (!p2.isValid())
+                    radrange = make_pair(radrange.first - diff, radrange.first + diff);
+                else {
+                    auto dist1 = BWEB::Map::getGroundDistance(p1, unit.getPosition()) + BWEB::Map::getGroundDistance(p1, unitTarget->getPosition());
+                    auto dist2 = BWEB::Map::getGroundDistance(p2, unit.getPosition()) + BWEB::Map::getGroundDistance(p2, unitTarget->getPosition());
 
-                if (engagePosition.isValid()) {
-                    unit.setEngagePosition(engagePosition);
-                    return;
+                    if (i < 5)
+                        radrange = dist1 < dist2 ? make_pair(radrange.first - diff, radrange.first + diff) : make_pair(radrange.second - diff, radrange.second + diff);
+                    else {
+                        testPosition = (dist1 < dist2 ? p1 : p2);
+                        testDist = (dist1 < dist2 ? dist1 : dist2);
+                    }
+
+                    Broodwar->drawTextMap(p1, "%d", i);
+                    Broodwar->drawTextMap(p2, "%d", i);
                 }
             }
-
-            auto distance = Util::boxDistance(unit.getType(), unit.getPosition(), unitTarget->getType(), unitTarget->getPosition());
-            auto direction = ((distance - range) / distance);
-            auto engageX = int((unit.getPosition().x - unitTarget->getPosition().x) * direction);
-            auto engageY = int((unit.getPosition().y - unitTarget->getPosition().y) * direction);
-            auto engagePosition = unit.getPosition() - Position(engageX, engageY);
-
-            // If unit is loaded or further than their range, we want to calculate the expected engage position
-            if (distance > range || unit.unit()->isLoaded())
-                unit.setEngagePosition(engagePosition);
-            else
-                unit.setEngagePosition(unit.getPosition());
-        }
-
-        void getEngageDistance(UnitInfo& unit)
-        {
-            if (!unit.hasTarget() || (unit.getPlayer() == Broodwar->self() && unit.getRole() != Role::Combat)) {
-                unit.setEngDist(0.0);
-                return;
-            }
-            auto unitTarget = unit.getTarget().lock();
-
-            if (unit.getRole() == Role::Defender && unit.hasTarget()) {
-                auto range = unitTarget->isFlying() ? unit.getAirRange() : unit.getGroundRange();
-                unit.setEngDist(Util::boxDistance(unit.getType(), unit.getPosition(), unitTarget->getType(), unitTarget->getPosition()) - range);
-                return;
-            }
-
-            if (unit.getPlayer() == Broodwar->self() && !Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && !unit.getTargetPath().isReachable() && !unitTarget->getType().isBuilding() && !unit.isFlying() && !unitTarget->isFlying() && Grids::getMobility(unitTarget->getPosition()) >= 4) {
-                unit.setEngDist(DBL_MAX);
-                return;
-            }
-
-            auto dist = (unit.isFlying() || unitTarget->isFlying()) ? unit.getPosition().getDistance(unit.getEngagePosition()) : BWEB::Map::getGroundDistance(unit.getPosition(), unit.getEngagePosition()) - 32.0;
-            if (dist == DBL_MAX)
-                dist = 2.0 * unit.getPosition().getDistance(unit.getEngagePosition());
-
-            unit.setEngDist(dist);
+            unit.setEngagePosition(testPosition);
+            unit.setEngDist(testDist);
         }
 
         void getInterceptPosition(UnitInfo& unit)
@@ -267,17 +172,12 @@ namespace McRave::Pathing {
             for (auto &u : Units::getUnits(PlayerState::Enemy)) {
                 UnitInfo& unit = *u;
                 getEngagePosition(unit);
-                getEngageDistance(unit);
             }
 
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo& unit = *u;
                 if (unit.hasTarget()) {
-                    trySharedPaths(unit);
-                    getTargetPath(unit);
-                    getRetreatPath(unit);
                     getEngagePosition(unit);
-                    getEngageDistance(unit);
                     getInterceptPosition(unit);
                 }
             }

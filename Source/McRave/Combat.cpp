@@ -47,13 +47,6 @@ namespace McRave::Combat {
 
         constexpr tuple commands{ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::defend, Command::explore, Command::escort, Command::retreat, Command::move };
 
-        bool lightUnitNeedsRegroup(UnitInfo& unit)
-        {
-            if (!unit.isLightAir())
-                return false;
-            return unit.hasCommander() && unit.getPosition().getDistance(unit.getCommander().lock()->getPosition()) > 64.0;
-        }
-
         void getCleanupPosition(UnitInfo& unit)
         {
             // Finishing enemy off, find remaining bases we haven't scouted, if we haven't visited in 2 minutes
@@ -68,7 +61,7 @@ namespace McRave::Combat {
                         int time = Grids::lastVisibleFrame(base.Location());
                         if (time < best) {
                             best = time;
-                            unit.setObjective(Position(base.Location()));
+                            unit.setDestination(Position(base.Location()));
                         }
                     }
                 }
@@ -80,7 +73,7 @@ namespace McRave::Combat {
                 if (!combatScoutOrder.empty()) {
                     for (auto &station : combatScoutOrder) {
                         if (!Stations::isBaseExplored(station)) {
-                            unit.setObjective(station->getBase()->Center());
+                            unit.setDestination(station->getBase()->Center());
                             break;
                         }
                     }
@@ -94,13 +87,69 @@ namespace McRave::Combat {
             // Finish off positions that are old
             if (Util::getTime() > Time(8, 00)) {
                 if (unit.isFlying() && !airCleanupPositions.empty()) {
-                    unit.setObjective(airCleanupPositions.begin()->second);
+                    unit.setDestination(airCleanupPositions.begin()->second);
                     airCleanupPositions.erase(airCleanupPositions.begin());
                 }
                 else if (!unit.isFlying() && !groundCleanupPositions.empty()) {
-                    unit.setObjective(groundCleanupPositions.begin()->second);
+                    unit.setDestination(groundCleanupPositions.begin()->second);
                     groundCleanupPositions.erase(groundCleanupPositions.begin());
                 }
+            }
+        }
+
+        bool lightUnitNeedsRegroup(UnitInfo& unit)
+        {
+            if (!unit.isLightAir())
+                return false;
+            return unit.hasCommander() && unit.getPosition().getDistance(unit.getCommander().lock()->getPosition()) > 64.0;
+        }
+
+        void updateDestination(UnitInfo& unit)
+        {
+            if (lightUnitNeedsRegroup(unit))
+                unit.setDestination(unit.getCommander().lock()->getPosition());
+
+            // If attacking and target is close, set as destination
+            else if (unit.getLocalState() == LocalState::Attack) {
+                if (unit.attemptingRunby())
+                    unit.setDestination(unit.getEngagePosition());
+                else if (unit.getInterceptPosition().isValid())
+                    unit.setDestination(unit.getInterceptPosition());
+                else if (unit.getSurroundPosition().isValid())
+                    unit.setDestination(unit.getSurroundPosition());
+                else if (unit.getEngagePosition().isValid())
+                    unit.setDestination(unit.getEngagePosition());
+                else if (unit.hasTarget())
+                    unit.setDestination(unit.getTarget().lock()->getPosition());
+            }
+            else if (unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat) {
+                if (unit.getFormation().isValid() && unit.getGlobalState() == GlobalState::Retreat)
+                    unit.setDestination(unit.getFormation());                
+                else if (BuildOrder::isPlayPassive())
+                    unit.setDestination(Terrain::getDefendPosition());
+                else {
+                    const auto &retreat = Stations::getClosestRetreatStation(unit);
+                    retreat ? unit.setDestination(Stations::getDefendPosition(retreat)) : unit.setDestination(Position(BWEB::Map::getMainChoke()->Center()));
+                }
+            }
+            else {
+                if (unit.getGoal().isValid())
+                    unit.setDestination(unit.getGoal());
+                else if ((unit.isLightAir() || unit.getType() == Zerg_Scourge) && ((Units::getImmThreat() > 25.0 && Stations::getStations(PlayerState::Self).size() >= 3 && Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size()) || (Players::ZvZ() && Units::getImmThreat() > 5.0))) {
+                    auto attacker = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                        return u->isThreatening() && !u->isHidden();
+                    });
+                    if (attacker)
+                        unit.setDestination(attacker->getPosition());
+                }
+                else if (unit.attemptingHarass())
+                    unit.setDestination(Terrain::getHarassPosition());
+                else if (unit.hasTarget())
+                    unit.setDestination(unit.getTarget().lock()->getPosition());
+                else if (Terrain::getAttackPosition().isValid() && unit.canAttackGround())
+                    unit.setDestination(Terrain::getAttackPosition());
+                else
+                    getCleanupPosition(unit);
             }
         }
 
@@ -217,109 +266,6 @@ namespace McRave::Combat {
 
         }
 
-        void updateObjective(UnitInfo& unit)
-        {
-            if (lightUnitNeedsRegroup(unit))
-                unit.setDestination(unit.getCommander().lock()->getPosition());
-
-
-            // If attacking and target is close, set as destination
-            else if (unit.getLocalState() == LocalState::Attack) {
-                if (unit.attemptingRunby())
-                    unit.setObjective(unit.getEngagePosition());
-                else if (unit.getInterceptPosition().isValid())
-                    unit.setObjective(unit.getInterceptPosition());
-                else if (unit.getSurroundPosition().isValid())
-                    unit.setObjective(unit.getSurroundPosition());
-                else if (unit.getEngagePosition().isValid())
-                    unit.setObjective(unit.getEngagePosition());
-                else if (unit.hasTarget())
-                    unit.setObjective(unit.getTarget().lock()->getPosition());
-
-                // HACK: Performance improvement
-                if (unit.getTargetPath().isReachable())
-                    unit.setObjectivePath(unit.getTargetPath());
-            }
-            else if (unit.getGlobalState() == GlobalState::Retreat) {
-                if (BuildOrder::isPlayPassive())
-                    unit.setObjective(Terrain::getDefendPosition());
-                else {
-                    const auto &retreat = Stations::getClosestRetreatStation(unit);
-                    retreat ? unit.setObjective(Stations::getDefendPosition(retreat)) : unit.setObjective(Position(BWEB::Map::getMainChoke()->Center()));
-                }
-            }
-            else {
-
-                if (unit.getGoal().isValid())
-                    unit.setObjective(unit.getGoal());
-                else if ((unit.isLightAir() || unit.getType() == Zerg_Scourge) && ((Units::getImmThreat() > 25.0 && Stations::getStations(PlayerState::Self).size() >= 3 && Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size()) || (Players::ZvZ() && Units::getImmThreat() > 5.0))) {
-                    auto attacker = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-                        return u->isThreatening() && !u->isHidden();
-                    });
-                    if (attacker)
-                        unit.setDestination(attacker->getPosition());
-                }
-                else if (unit.attemptingHarass())
-                    unit.setObjective(Terrain::getHarassPosition());
-                else if (unit.hasTarget()) {
-                    unit.setObjective(unit.getTarget().lock()->getPosition());
-
-                    // HACK: Performance improvement
-                    unit.setObjectivePath(unit.getTargetPath());
-                }
-                else if (Terrain::getAttackPosition().isValid() && unit.canAttackGround())
-                    unit.setObjective(Terrain::getAttackPosition());
-                else
-                    getCleanupPosition(unit);
-            }
-        }
-
-        void updateRetreat(UnitInfo& unit)
-        {
-            if (unit.getGlobalState() == GlobalState::Retreat)
-                unit.setRetreat(BWEB::Map::getMainPosition());
-            else {
-                const auto &retreat = Stations::getClosestRetreatStation(unit);
-                retreat ? unit.setRetreat(retreat->getBase()->Center()) : unit.setRetreat(BWEB::Map::getMainPosition());
-                Broodwar->drawLineMap(unit.getPosition(), unit.getRetreat(), Colors::Yellow);
-            }
-        }
-
-        void updateDestination(UnitInfo& unit)
-        {
-            if (unit.getDestination().isValid())
-                return;
-
-            if (unit.getFormation().isValid() && unit.getGlobalState() == GlobalState::Retreat) {
-                unit.setDestination(unit.getFormation());
-                return;
-            }
-
-            auto pathDestination = &unit.getObjectivePath();
-            if (unit.getLocalState() != LocalState::Attack)
-                pathDestination = &unit.getRetreatPath();
-
-            // If path is reachable, find a point n pixels away to set as new destination
-            if (pathDestination->isReachable()) {
-                auto newDestination = Util::findPointOnPath(*pathDestination, [&](Position p) {
-                    return p.getDistance(unit.getPosition()) >= 160.0;
-                });
-
-                if (newDestination.isValid())
-                    unit.setDestination(newDestination);
-            }
-
-            // Resort destination to something
-            if (!unit.getDestination().isValid()) {
-                if (unit.getGoal().isValid())
-                    unit.setDestination(unit.getGoal());
-                else if (unit.getLocalState() != LocalState::Attack)
-                    unit.setDestination(unit.getRetreat());
-                else
-                    unit.setDestination(unit.getObjective());
-            }
-        }
-
         void updateDecision(UnitInfo& unit)
         {
             if (!unit.unit() || !unit.unit()->exists()                                                                                          // Prevent crashes            
@@ -418,7 +364,7 @@ namespace McRave::Combat {
 
                 // Check if we can harass
                 auto simTarget = unit.getSimTarget().lock();
-                auto canHarass = unit.getLocalState() != LocalState::Retreat && unit.getObjective() == Terrain::getHarassPosition() && unit.attemptingHarass();
+                auto canHarass = unit.getLocalState() != LocalState::Retreat && unit.getDestination() == Terrain::getHarassPosition() && unit.attemptingHarass();
 
                 // Check if the enemy is pressuring us
                 auto enemyPressure = false;
@@ -444,23 +390,22 @@ namespace McRave::Combat {
                 };
 
                 if (canHarass && !enemyPressure) {
-                    BWEB::Path newPath(unit.getPosition(), unit.getObjective(), unit.getType());
+                    BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
                     newPath.generateAS(flyerAttack);
-                    unit.setObjectivePath(newPath);
+                    unit.setDestinationPath(newPath);
                 }
             }
         }
 
-        void updateObjectivePath(UnitInfo& unit)
+        void updateDestinationPath(UnitInfo& unit)
         {
             // Generate a new path that obeys collision of terrain and buildings
-            auto needPath = unit.getObjectivePath().getTiles().empty() || unit.getObjectivePath() != unit.getTargetPath();
-            if (!unit.isFlying() && unit.getObjective().isValid() && needPath && unit.getObjectivePath().getTarget() != TilePosition(unit.getObjective())) {
-                auto pathPoint = getPathPoint(unit, unit.getObjective());
+            if (!unit.isFlying() && unit.getDestination().isValid() && unit.getDestinationPath().getTiles().empty() && unit.getDestinationPath().getTarget() != TilePosition(unit.getDestination())) {
+                auto pathPoint = getPathPoint(unit, unit.getDestination());
                 if (!mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(pathPoint)) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(pathPoint)))) {
                     BWEB::Path newPath(unit.getPosition(), pathPoint, unit.getType());
                     newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t); });
-                    unit.setObjectivePath(newPath);
+                    unit.setDestinationPath(newPath);
                 }
 
             }
@@ -473,9 +418,19 @@ namespace McRave::Combat {
                     return threat;
                 };
 
-                BWEB::Path newPath(unit.getPosition(), unit.getObjective(), unit.getType());
+                BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
                 newPath.generateAS(flyerRegroup);
-                unit.setObjectivePath(newPath);
+                unit.setDestinationPath(newPath);
+            }
+
+            // If path is reachable, find a point n pixels away to set as new destination
+            if (unit.getDestinationPath().isReachable()) {
+                auto newDestination = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
+                    return p.getDistance(unit.getPosition()) >= 160.0;
+                });
+
+                if (newDestination.isValid())
+                    unit.setDestination(newDestination);
             }
             //Visuals::drawPath(unit.getObjectivePath());
         }
@@ -500,9 +455,8 @@ namespace McRave::Combat {
 
                 // Air commanders have a harass path as their objective
                 updateSimulation(*commander);
-                updateObjective(*commander);
-                updateHarassPath(*commander);
                 updateDestination(*commander);
+                updateHarassPath(*commander);
                 updateDecision(*commander);
             }
         }
@@ -801,9 +755,8 @@ namespace McRave::Combat {
                     }
                     else {
                         updateDestination(unit);
+                        updateDestinationPath(unit);
                         updateDecision(unit);
-                        if (unit.unit()->isSelected())
-                            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
                     }
                 }
             }
@@ -815,9 +768,6 @@ namespace McRave::Combat {
                 updateSimulation(unit);
                 updateGlobalState(unit);
                 updateLocalState(unit);
-                updateObjective(unit);
-                updateRetreat(unit);
-                updateObjectivePath(unit);
             }
         }
 
