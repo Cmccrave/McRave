@@ -66,24 +66,36 @@ namespace McRave::Walls {
 
         void findWalls()
         {
+            initializeWallParameters();
+
+            // Create a wall and reduce the building count on each iteration
+            const auto genWall = [&](auto buildings, auto area, auto choke) {
+                while (!BWEB::Walls::getWall(choke)) {
+                    BWEB::Walls::createWall(buildings, area, choke, tightType, defenses, openWall, tight);
+                    if (Players::PvZ() || buildings.empty())
+                        break;
+
+                    UnitType lastBuilding = *buildings.rbegin();
+                    buildings.pop_back();
+                    if (lastBuilding == Zerg_Hatchery)
+                        buildings.push_back(Zerg_Evolution_Chamber);
+                }
+            };
+
             // Create a Zerg/Protoss wall at every natural
             if (Broodwar->self()->getRace() != Races::Terran) {
                 openWall = true;
-                for (auto &station : BWEB::Stations::getStations()) {
-                    initializeWallParameters();
-                    if (!station.isNatural())
-                        continue;
 
-                    // Create a wall and reduce the building count on each iteration
-                    while (!BWEB::Walls::getWall(station.getChokepoint())) {
-                        BWEB::Walls::createWall(buildings, station.getBase()->GetArea(), station.getChokepoint(), tightType, defenses, openWall, tight);
-                        if (Players::PvZ() || buildings.empty())
-                            break;
-
-                        UnitType lastBuilding = *buildings.rbegin();
-                        buildings.pop_back();
-                        if (lastBuilding == Zerg_Hatchery)
-                            buildings.push_back(Zerg_Evolution_Chamber);
+                // In FFA just make a wall at our natural (if we have one)
+                if (Players::vFFA() && Terrain::getMyNatural() && BWEB::Map::getNaturalChoke()) {
+                    genWall(buildings, Terrain::getMyNatural()->getBase()->GetArea(), BWEB::Map::getNaturalChoke());
+                }
+                else {
+                    for (auto &station : BWEB::Stations::getStations()) {
+                        initializeWallParameters();
+                        if (!station.isNatural())
+                            continue;
+                        genWall(buildings, station.getBase()->GetArea(), station.getChokepoint());
                     }
                 }
             }

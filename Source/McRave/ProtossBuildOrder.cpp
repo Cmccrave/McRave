@@ -213,7 +213,7 @@ namespace McRave::BuildOrder::Protoss
 
         // PvFFA
         if (Players::PvFFA()) {
-            techOrder ={ Protoss_Observer, Protoss_Scout };
+            techOrder ={ Protoss_Observer, Protoss_Reaver, Protoss_Carrier };
         }
         techSat = techVal >= Stations::getGasingStationsCount();
 

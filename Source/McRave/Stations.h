@@ -24,6 +24,10 @@ namespace McRave::Stations
     BWEB::Station * getClosestRetreatStation(UnitInfo&);
     int getGasingStationsCount();
     int getMiningStationsCount();
+    int getMineralsRemaining(BWEB::Station *);
+    int getGasRemaining(BWEB::Station *);
+    int getMineralsInitial(BWEB::Station *);
+    int getGasInitial(BWEB::Station *);
 
     PlayerState ownedBy(BWEB::Station *);
 

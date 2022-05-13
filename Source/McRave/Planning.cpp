@@ -301,6 +301,11 @@ namespace McRave::Planning {
                         if ((Pylons::countPoweredPositions(Protoss_Gateway) < 2 && block.getLargeTiles().empty())
                             || (Pylons::countPoweredPositions(Protoss_Forge) < 2 && block.getMediumTiles().empty()))
                             continue;
+
+                        if (!block.getPlacements(building).empty()) {
+                            listByDist.emplace(make_pair(block.getCenter().getDistance(here) / (1 + block.getLargeTiles().size() + block.getMediumTiles().size()), &block));
+                            continue;
+                        }
                     }
                 }
 

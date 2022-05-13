@@ -34,6 +34,7 @@ namespace McRave::Terrain {
         bool abandonNatural = false;
         int timeHarassingHere = 1500;
 
+        // TODO: This is unused, is it useful?
         bool checkDefendRunby()
         {
             if (Players::ZvP() && com(Zerg_Zergling) >= 16) {
@@ -237,7 +238,7 @@ namespace McRave::Terrain {
 
             // See if a defense is in range of our main choke
             auto defendRunby = false;
-            if (defendNatural) {
+            if (defendNatural && Broodwar->self()->getRace() == Races::Zerg) {
                 auto closestDefense = Util::getClosestUnit(Position(BWEB::Map::getMainChoke()->Center()), PlayerState::Self, [&](auto &u) {
                     return u->getRole() == Role::Defender && u->canAttackGround();
                 });
@@ -271,7 +272,7 @@ namespace McRave::Terrain {
             }
 
             // If we want to prevent a runby
-            else if (Combat::defendChoke() && mainChoke && !defendRunby) {
+            else if (Combat::defendChoke() && mainChoke && defendRunby) {
                 defendPosition = Position(mainChoke->Center());
                 defendNatural = false;
             }

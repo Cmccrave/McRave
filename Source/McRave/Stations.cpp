@@ -4,36 +4,40 @@ using namespace BWAPI;
 using namespace std;
 using namespace UnitTypes;
 
-namespace McRave::Stations {
-
+namespace McRave::Stations 
+{
     namespace {
         map<BWEB::Station*, PlayerState> stations;
         map<BWEB::Station*, Position> defendPositions;
         multimap<double, BWEB::Station *> stationsBySaturation;
         multimap<double, BWEB::Station *> stationsByProduction;
-        map<BWEB::Station *, int> airDefenseCount, groundDefenseCount;
+        map<BWEB::Station *, int> airDefenseCount, groundDefenseCount, remainingMinerals, remainingGas, initialMinerals, initialGas;
         set<BWEB::Station*> retreatPositions;
         int miningStations = 0, gasingStations = 0;
 
         void updateSaturation() {
 
             // Sort stations by saturation and current larva count
+            remainingMinerals.clear();
+            remainingGas.clear();
             stationsBySaturation.clear();
-            auto mineralsLeft = 0, gasLeft = 0;
+            auto mineralsLeftTotal = 0, gasLeftTotal = 0;
             for (auto &station : getStations(PlayerState::Self)) {
                 auto workerCount = 0;
                 auto resourceCount = 0;
                 for (auto &mineral : Resources::getMyMinerals()) {
                     if (mineral->getStation() == station) {
                         resourceCount++;
-                        mineralsLeft+=mineral->unit()->getResources();
+                        remainingMinerals[station]+=mineral->unit()->getResources();
+                        mineralsLeftTotal+=mineral->unit()->getResources();
                         workerCount+=mineral->targetedByWhat().size();
                     }
                 }
                 for (auto &gas : Resources::getMyGas()) {
                     if (gas->getStation() == station) {
                         resourceCount++;
-                        gasLeft+=gas->unit()->getResources();
+                        remainingGas[station]+=gas->unit()->getResources();
+                        gasLeftTotal+=gas->unit()->getResources();
                         workerCount+=gas->targetedByWhat().size();
                     }
                 }
@@ -44,8 +48,8 @@ namespace McRave::Stations {
             }
 
             // Determine how many mining and gasing stations we have
-            miningStations = int(ceil(mineralsLeft / 1500));
-            gasingStations = int(ceil(gasLeft / 5000));
+            miningStations = int(ceil(double(mineralsLeftTotal) / 1500.0));
+            gasingStations = int(ceil(double(gasLeftTotal) / 5000.0));
         }
 
         void updateProduction()
@@ -148,7 +152,7 @@ namespace McRave::Stations {
                     int count = 0;
 
                     for (auto &choke : station->getBase()->GetArea()->ChokePoints()) {
-                        if (choke->GetAreas() != defendChoke->GetAreas())
+                        if (defendChoke && choke->GetAreas() != defendChoke->GetAreas())
                             continue;
 
                         if (Position(choke->Center()).getDistance(pathTowards) < station->getBase()->Center().getDistance(pathTowards)) {
@@ -194,7 +198,12 @@ namespace McRave::Stations {
     }
 
     void onStart() {
-
+        for (auto station : BWEB::Stations::getStations()) {
+            for (auto &mineral : station.getBase()->Minerals())
+                initialMinerals[&station] += mineral->InitialAmount();
+            for (auto &gas : station.getBase()->Geysers())
+                initialGas[&station] += gas->InitialAmount();
+        }
     }
 
     void storeStation(Unit unit) {
@@ -535,4 +544,8 @@ namespace McRave::Stations {
     int getMiningStationsCount() { return miningStations; }
     int getGroundDefenseCount(BWEB::Station * station) { return groundDefenseCount[station]; }
     int getAirDefenseCount(BWEB::Station * station) { return airDefenseCount[station]; }
+    int getMineralsRemaining(BWEB::Station * station) { return remainingMinerals[station]; }
+    int getGasRemaining(BWEB::Station * station) { return remainingGas[station]; }
+    int getMineralsInitial(BWEB::Station * station) { return initialMinerals[station]; }
+    int getGasInitial(BWEB::Station * station) { return initialGas[station]; }
 }

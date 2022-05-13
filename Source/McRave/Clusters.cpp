@@ -15,8 +15,12 @@ namespace McRave::Combat::Clusters {
             cluster.units.clear();
             cluster.typeCounts.clear();
             cluster.sharedRadius = 160.0;
-            if (cluster.commander.lock())
-                cluster.typeCounts[cluster.commander.lock()->getType()]++;
+            if (auto commander = cluster.commander.lock()) {
+                cluster.typeCounts[commander->getType()]++;
+                cluster.units.push_back(*commander);
+                cluster.sharedDestination = commander->getDestination();
+                cluster.sharedPosition = commander->getPosition();
+            }
         }
 
         for (auto &u : Units::getUnits(PlayerState::Self)) {
@@ -100,7 +104,7 @@ namespace McRave::Combat::Clusters {
 
         // Delete empty clusters - solo or no commander
         clusters.erase(remove_if(clusters.begin(), clusters.end(), [&](auto& cluster) {
-            return cluster.units.empty() || cluster.commander.expired();
+            return int(cluster.units.size()) <= 1 || cluster.commander.expired();
         }), clusters.end());
     }
 

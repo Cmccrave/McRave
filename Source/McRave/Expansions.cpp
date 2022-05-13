@@ -102,10 +102,10 @@ namespace McRave::Expansion {
                 expansionOrder.push_back(Terrain::getMyMain());
             if (Terrain::getMyNatural())
                 expansionOrder.push_back(Terrain::getMyNatural());
+
             for (int i = 0; i < int(BWEB::Stations::getStations().size()); i++) {
                 auto costBest = DBL_MAX;
                 BWEB::Station * stationBest = nullptr;
-
                 auto home = BWEB::Map::getNaturalChoke() ? Position(BWEB::Map::getNaturalChoke()->Center()) : BWEB::Map::getMainPosition();
 
                 for (auto &station : BWEB::Stations::getStations()) {
@@ -117,23 +117,19 @@ namespace McRave::Expansion {
                     auto grdEnemy = enemyStation ? expansionNetwork[enemyStation][&station].getDistance() : 1.0;
                     auto airEnemy = enemyStation ? station.getBase()->Center().getDistance(enemyStation->getBase()->Center()) : 1.0;
 
-                    if (station.getBase()->GetArea() == mapBWEM.GetArea(TilePosition(mapBWEM.Center())) && expansionOrder.size() < 4)
-                        continue;
-                    if (find_if(expansionOrder.begin(), expansionOrder.end(), [&](auto &s) { return s == &station; }) != expansionOrder.end())
-                        continue;
-                    if (station == Terrain::getMyMain()
+                    if ((station.getBase()->GetArea() == mapBWEM.GetArea(TilePosition(mapBWEM.Center())) && expansionOrder.size() < 4)
+                        || (find_if(expansionOrder.begin(), expansionOrder.end(), [&](auto &s) { return s == &station; }) != expansionOrder.end())
+                        || station == Terrain::getMyMain()
                         || station == Terrain::getMyNatural()
                         || (Terrain::getEnemyMain() && station == Terrain::getEnemyMain())
-                        || (Terrain::getEnemyNatural() && station == Terrain::getEnemyNatural()))
+                        || (Terrain::getEnemyNatural() && station == Terrain::getEnemyNatural())
+                        || (station.getBase()->Geysers().empty() && int(expansionOrder.size()) < allowedFirstMineralBase)
+                        || (mapBWEM.GetPath(BWEB::Map::getMainPosition(), station.getBase()->Center()).empty() && expansionOrder.size() < 3)
+                        || (Terrain::inTerritory(PlayerState::Enemy, station.getBase()->GetArea()))
+                        || (find_if(islandStations.begin(), islandStations.end(), [&](auto &s) { return s == &station; }) != islandStations.end()))
                         continue;
-                    if (station.getBase()->Geysers().empty() && int(expansionOrder.size()) < allowedFirstMineralBase)
-                        continue;
-                    if (mapBWEM.GetPath(BWEB::Map::getMainPosition(), station.getBase()->Center()).empty() && expansionOrder.size() < 3)
-                        continue;
-                    if (Terrain::inTerritory(PlayerState::Enemy, station.getBase()->GetArea()))
-                        continue;
-                    if (find_if(islandStations.begin(), islandStations.end(), [&](auto &s) { return s == &station; }) != islandStations.end())
-                        continue;
+
+                    // Check if it's a dangerous/blocked station
                     if (find_if(dangerousStations.begin(), dangerousStations.end(), [&](auto &s) { return s == &station; }) != dangerousStations.end()) {
                         grdEnemy = sqrt(1.0 + grdEnemy);
                         airEnemy = sqrt(1.0 + airEnemy);
@@ -142,17 +138,22 @@ namespace McRave::Expansion {
                         grdHome *= sqrt(1.0 + double(blockingNeutrals[&station].size()));
                         airHome *= sqrt(1.0 + double(blockingNeutrals[&station].size()));
                     }
-
                     auto dist = (grdParent * grdHome * airParent * airHome) / (grdEnemy * airEnemy * airCenter);
+
+                    // Check for a blocking neutral
                     auto blockerCost = 0.0;
                     for (auto &blocker : blockingNeutrals[&station])
                         blockerCost += double(blocker->getHealth()) / 1000.0;
-
                     if (blockerCost > 0)
                         dist = blockerCost;
 
-                    if (dist < costBest) {
-                        costBest = dist;
+                    // Add in remaining resources
+                    auto percentMinerals = (double(1 + Stations::getMineralsRemaining(&station)) / double(1 + Stations::getMineralsInitial(&station)));
+                    auto percentGas = (double(1 + Stations::getGasRemaining(&station)) / double(1 + Stations::getGasInitial(&station)));
+                    auto cost = dist / (percentMinerals * percentGas);
+
+                    if (cost < costBest) {
+                        costBest = cost;
                         stationBest = &station;
                     }
                 }

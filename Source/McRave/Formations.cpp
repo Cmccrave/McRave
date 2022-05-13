@@ -14,7 +14,7 @@ namespace McRave::Combat::Formations {
         auto distBest = DBL_MAX;
         for (auto &unit : cluster.units) {
             auto dist = unit.getPosition().getDistance(p);
-            if (dist < distBest && !unit.concaveFlag) {
+            if (dist < distBest && !unit.concaveFlag && unit.getLocalState() != LocalState::Attack) {
                 distBest = dist;
                 closestUnit = &unit;
             }
@@ -39,6 +39,7 @@ namespace McRave::Combat::Formations {
             closestUnit->setFormation(p);
             closestUnit->setDestination(p);
             closestUnit->concaveFlag = true;
+            Broodwar->drawLineMap(closestUnit->getPosition(), p, Colors::Orange);
         }
         assignmentsRemaining--;
     }
@@ -55,8 +56,13 @@ namespace McRave::Combat::Formations {
 
             // Set the radius of the concave
             const auto unitTangentSize = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0));
-            auto radius = min(count * unitTangentSize / 2.0, commander->getEngDist());
+            auto radius = count * unitTangentSize / 2.0;
             bool useDefense = false;
+
+            if (commander->getLocalState() != LocalState::Retreat && commander->hasTarget())
+                radius = max(0.0, double(Util::boxDistance(commander->getType(), commander->getPosition(), commander->getTarget().lock()->getType(), commander->getTarget().lock()->getPosition())) - 64.0);
+            if (radius < 1.0)
+                continue;
 
             // If we are setting up a static formation, align concave with buildings close by
             if (!cluster.mobileCluster) {
