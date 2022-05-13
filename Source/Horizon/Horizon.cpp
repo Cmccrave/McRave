@@ -43,6 +43,9 @@ namespace McRave::Horizon {
 
     void simulate(UnitInfo& unit)
     {
+        if (!unit.hasTarget())
+            return;
+
         auto &unitTarget = unit.getTarget().lock();
         const auto unitToEngage = unit.getSpeed() > 0.0 ? unit.getEngDist() / (24.0 * unit.getSpeed()) : 5.0;
         const auto simulationTime = unitToEngage + max(5.0, Players::getSupply(PlayerState::Self, Races::None) / 20.0) + addPrepTime(unit);

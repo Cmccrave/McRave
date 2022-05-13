@@ -32,29 +32,35 @@ namespace McRave::BuildOrder::Protoss {
         void PvT_2B_21Nexus()
         {
             // "http://liquipedia.net/starcraft/21_Nexus"
-            buildQueue[Protoss_Nexus] =                     1 + (s >= 42);
-            buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 30);
-            buildQueue[Protoss_Gateway] =                   (s >= 20) + (vis(Protoss_Nexus) >= 2) + (s >= 76);
+            playPassive =                                       (Spy::enemyPressure() ? vis(Protoss_Dragoon) < 16 : !firstReady()) || (com(Protoss_Dragoon) < 4 && !Spy::enemyFastExpand());
+            scout =                                             Broodwar->getStartLocations().size() == 4 ? vis(Protoss_Pylon) > 0 : vis(Protoss_Pylon) > 0;
+            gasLimit =                                          goonRange() && vis(Protoss_Nexus) < 2 ? 2 : INT_MAX;
+            unitLimits[Protoss_Dragoon] =                       Util::getTime() > Time(4, 0) || vis(Protoss_Nexus) >= 2 ? INT_MAX : 1;
+            unitLimits[Protoss_Probe] =                         20;
+            transitionReady =                                   vis(Protoss_Gateway) >= 3;
 
-            playPassive =                                   (Spy::enemyPressure() ? vis(Protoss_Dragoon) < 16 : !firstReady()) || (com(Protoss_Dragoon) < 4 && !Spy::enemyFastExpand());
-            scout =                                         Broodwar->getStartLocations().size() == 4 ? vis(Protoss_Pylon) > 0 : vis(Protoss_Pylon) > 0;
-            gasLimit =                                      goonRange() && vis(Protoss_Nexus) < 2 ? 2 : INT_MAX;
-            unitLimits[Protoss_Dragoon] =                   Util::getTime() > Time(4, 0) || vis(Protoss_Nexus) >= 2 ? INT_MAX : 1;
-            unitLimits[Protoss_Probe] =                     20;
+            buildQueue[Protoss_Nexus] =                         1 + (s >= 42);
+            buildQueue[Protoss_Pylon] =                         (s >= 16) + (s >= 30);
+            buildQueue[Protoss_Assimilator] =                   s >= 30;
+            buildQueue[Protoss_Gateway] =                       (s >= 20) + (vis(Protoss_Nexus) >= 2) + (s >= 76);
+            buildQueue[Protoss_Cybernetics_Core] =              s >= 26;
         }
 
         void PvT_2B_20Nexus()
         {
             // "https://liquipedia.net/starcraft/2_Gate_Range_Expand"
-            buildQueue[Protoss_Nexus] =                     1 + (s >= 40);
-            buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 30) + (s >= 48);
-            buildQueue[Protoss_Gateway] =                   (s >= 20) + (s >= 34) + (s >= 76);
+            scout =                                             vis(Protoss_Cybernetics_Core) > 0;
+            inBookSupply =                                      vis(Protoss_Pylon) < 3;
+            gasLimit =                                          goonRange() && vis(Protoss_Pylon) < 3 ? 2 : INT_MAX;
+            unitLimits[Protoss_Dragoon] =                       Util::getTime() > Time(4, 0) || vis(Protoss_Nexus) >= 2 || s >= 40 ? INT_MAX : 0;
+            unitLimits[Protoss_Probe] =                         20;
+            transitionReady =                                   vis(Protoss_Gateway) >= 3;
 
-            scout =                                         vis(Protoss_Cybernetics_Core) > 0;
-            inBookSupply =                                  vis(Protoss_Pylon) < 3;
-            gasLimit =                                      goonRange() && vis(Protoss_Pylon) < 3 ? 2 : INT_MAX;
-            unitLimits[Protoss_Dragoon] =                   Util::getTime() > Time(4, 0) || vis(Protoss_Nexus) >= 2 || s >= 40 ? INT_MAX : 0;
-            unitLimits[Protoss_Probe] =                     20;
+            buildQueue[Protoss_Nexus] =                         1 + (s >= 40);
+            buildQueue[Protoss_Pylon] =                         (s >= 16) + (s >= 30) + (s >= 48);
+            buildQueue[Protoss_Assimilator] =                   s >= 30;
+            buildQueue[Protoss_Gateway] =                       (s >= 20) + (s >= 34) + (s >= 76);
+            buildQueue[Protoss_Cybernetics_Core] =              s >= 26;
         }
 
         void PvT_2B_Obs()
@@ -115,20 +121,22 @@ namespace McRave::BuildOrder::Protoss {
             }
         }
 
-        // Builds
-        if (currentBuild == "12Nexus")
+        // Openers
+        if (currentOpener == "12Nexus")
             PvT_2B_12Nexus();
-        if (currentBuild == "20Nexus")
+        if (currentOpener == "20Nexus")
             PvT_2B_20Nexus();
-        if (currentBuild == "21Nexus")
+        if (currentOpener == "21Nexus")
             PvT_2B_21Nexus();
 
         // Transitions
-        if (currentTransition == "Obs")
-            PvT_2B_Obs();
-        if (currentTransition == "Carrer")
-            PvT_2B_Carrier();
-        if (currentTransition == "ReaverCarrier")
-            PvT_2B_ReaverCarrier();
+        if (transitionReady) {
+            if (currentTransition == "Obs")
+                PvT_2B_Obs();
+            if (currentTransition == "Carrer")
+                PvT_2B_Carrier();
+            if (currentTransition == "ReaverCarrier")
+                PvT_2B_ReaverCarrier();
+        }
     }
 }

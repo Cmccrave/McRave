@@ -46,7 +46,7 @@ namespace McRave::Spy {
     
     void onFrame()
     {
-        if ((Broodwar->getGameType() == GameTypes::Free_For_All && Broodwar->getPlayers().size() > 2) || Broodwar->getGameType() == GameTypes::Team_Free_For_All || Broodwar->getGameType() == GameTypes::Team_Melee)
+        if (Players::vFFA())
             return;
 
         General::updateGeneral(theSpy);

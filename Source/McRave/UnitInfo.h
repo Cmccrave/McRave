@@ -92,10 +92,11 @@ namespace McRave {
         BWAPI::UnitType type = BWAPI::UnitTypes::None;
         BWAPI::UnitType buildingType = BWAPI::UnitTypes::None;
 
-        BWAPI::Position formation = BWAPI::Positions::Invalid;
         BWAPI::Position position = BWAPI::Positions::Invalid;
         BWAPI::Position engagePosition = BWAPI::Positions::Invalid;
         BWAPI::Position destination = BWAPI::Positions::Invalid;
+        BWAPI::Position formation = BWAPI::Positions::Invalid;
+        BWAPI::Position navigation = BWAPI::Positions::Invalid;
         BWAPI::Position retreat = BWAPI::Positions::Invalid;
         BWAPI::Position lastPos = BWAPI::Positions::Invalid;
         BWAPI::Position goal = BWAPI::Positions::Invalid;
@@ -255,10 +256,11 @@ namespace McRave {
         BWAPI::UnitType getType() { return type; }
         BWAPI::UnitType getBuildType() { return buildingType; }
         BWAPI::Player getPlayer() { return player; }
-        BWAPI::Position getFormation() { return formation; }
         BWAPI::Position getPosition() { return position; }
         BWAPI::Position getEngagePosition() { return engagePosition; }
         BWAPI::Position getDestination() { return destination; }
+        BWAPI::Position getFormation() { return formation; }
+        BWAPI::Position getNavigation() { return navigation; }
         BWAPI::Position getRetreat() { return retreat; }
         BWAPI::Position getGoal() { return goal; }
         BWAPI::Position getInterceptPosition() { return interceptPosition; }
@@ -332,9 +334,10 @@ namespace McRave {
         void setRole(Role newRole) { role = newRole; }
         void setGoalType(GoalType newGoalType) { gType = newGoalType; }
         void setBuildingType(BWAPI::UnitType newType) { buildingType = newType; }
-        void setFormation(BWAPI::Position newPosition) { formation = newPosition; }
         void setEngagePosition(BWAPI::Position newPosition) { engagePosition = newPosition; }
         void setDestination(BWAPI::Position newPosition) { destination = newPosition; }
+        void setFormation(BWAPI::Position newPosition) { formation = newPosition; }
+        void setNavigation(BWAPI::Position newPosition) { navigation = newPosition; }
         void setRetreat(BWAPI::Position newPosition) { retreat = newPosition; }
         void setGoal(BWAPI::Position newPosition) { goal = newPosition; }
         void setBuildPosition(BWAPI::TilePosition newPosition) { buildPosition = newPosition; }

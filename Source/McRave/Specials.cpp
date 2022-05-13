@@ -116,11 +116,9 @@ namespace McRave::Command
 
         // Lurker burrowing
         else if (unit.getType() == Zerg_Lurker) {
-            if (unit.getLocalState() == LocalState::Attack) {
-                if (!unit.unit()->isBurrowed() && unit.getPosition().getDistance(unit.getEngagePosition()) < 16.0) {
-                    unit.unit()->burrow();
-                    return true;
-                }
+            if (!unit.unit()->isBurrowed() && unit.getLocalState() == LocalState::Attack && unit.getPosition().getDistance(unit.getEngagePosition()) < 16.0) {
+                unit.unit()->burrow();
+                return true;
             }
             else if (unit.unit()->isBurrowed() && unit.getPosition().getDistance(unit.getEngagePosition()) > 32.0) {
                 unit.unit()->unburrow();

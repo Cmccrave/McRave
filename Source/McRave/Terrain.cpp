@@ -329,13 +329,13 @@ namespace McRave::Terrain {
             };
 
             // In FFA just hit closest base to us
-            if (Players::vFFA()) {
+            if (Players::vFFA() && attackPosition.isValid()) {
                 harassPosition = attackPosition;
                 return;
             }
 
             // Check if enemy lost all bases
-            auto lostAll = true;
+            auto lostAll = !Stations::getStations(PlayerState::Enemy).empty();
             for (auto &station : Stations::getStations(PlayerState::Enemy)) {
                 if (!Stations::isBaseExplored(station) || BWEB::Map::isUsed(station->getBase()->Location()) != UnitTypes::None)
                     lostAll = false;
@@ -414,6 +414,18 @@ namespace McRave::Terrain {
                     if (score > best) {
                         score = best;
                         harassPosition = pos;
+                    }
+                }
+
+                if (checkPositions.empty()) {
+                    auto distBest = DBL_MAX;
+                    for (auto &station : BWEB::Stations::getStations()) {
+                        auto dist = station.getBase()->Center().getDistance(BWEB::Map::getMainPosition());
+                        auto visitedRecently = Broodwar->getFrameCount() - Stations::lastVisible(&station) < 1500;
+                        if (station.isMain() && !visitedRecently && !Stations::isBaseExplored(&station) && dist < distBest) {
+                            harassPosition = station.getBase()->Center();
+                            distBest = dist;
+                        }
                     }
                 }
             }

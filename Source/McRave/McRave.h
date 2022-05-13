@@ -137,7 +137,7 @@ namespace McRave
 #include "Buildings.h"
 #include "BuildOrder.h"
 #include "Commands.h"
-#include "Combat.h"
+#include "Micro/Combat/Combat.h"
 #include "Defender.h"
 #include "Expansions.h"
 #include "Goals.h"

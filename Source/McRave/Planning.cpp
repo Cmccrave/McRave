@@ -153,6 +153,8 @@ namespace McRave::Planning {
                         return false;
                     if (BWEB::Map::isUsed(t) != None)
                         return false;
+                    if (!Broodwar->isBuildable(t))
+                        return false;
                 }
             }
 
@@ -884,6 +886,7 @@ namespace McRave::Planning {
 
     void onStart()
     {
+        BWEB::Blocks::findBlocks();
     }
 
     UnitType whatPlannedHere(TilePosition here)

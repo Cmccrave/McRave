@@ -60,7 +60,7 @@ namespace McRave::Buildings {
 
         void cancel(UnitInfo& building)
         {
-            // Cancelling Refinerys for our gas trick
+            // Cancelling refineries for our gas trick
             if (BuildOrder::isGasTrick() && building.getType().isRefinery() && !building.unit()->isCompleted() && BuildOrder::buildCount(building.getType()) < vis(building.getType())) {
                 building.unit()->cancelMorph();
                 BWEB::Map::removeUsed(building.getTilePosition(), 4, 2);

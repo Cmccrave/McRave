@@ -53,49 +53,228 @@ namespace McRave::Walls {
                 //buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber };
             }
         }
-    }
+    
+        void findNaturalWall()
+        {
+            naturalWall = BWEB::Walls::getWall(BWEB::Map::getNaturalChoke());
+        }
 
-    void findNaturalWall()
-    {
-        naturalWall = BWEB::Walls::getWall(BWEB::Map::getNaturalChoke());
-    }
+        void findMainWall()
+        {
+            mainWall = BWEB::Walls::getWall(BWEB::Map::getMainChoke());
+        }
 
-    void findMainWall()
-    {
-        mainWall = BWEB::Walls::getWall(BWEB::Map::getMainChoke());
-    }
+        void findWalls()
+        {
+            // Create a Zerg/Protoss wall at every natural
+            if (Broodwar->self()->getRace() != Races::Terran) {
+                openWall = true;
+                for (auto &station : BWEB::Stations::getStations()) {
+                    initializeWallParameters();
+                    if (!station.isNatural())
+                        continue;
 
-    void findWalls()
-    {
-        // Create a Zerg/Protoss wall at every natural
-        if (Broodwar->self()->getRace() != Races::Terran) {
-            openWall = true;
-            for (auto &station : BWEB::Stations::getStations()) {
-                initializeWallParameters();
-                if (!station.isNatural())
-                    continue;
+                    // Create a wall and reduce the building count on each iteration
+                    while (!BWEB::Walls::getWall(station.getChokepoint())) {
+                        BWEB::Walls::createWall(buildings, station.getBase()->GetArea(), station.getChokepoint(), tightType, defenses, openWall, tight);
+                        if (Players::PvZ() || buildings.empty())
+                            break;
 
-                // Create a wall and reduce the building count on each iteration
-                while (!BWEB::Walls::getWall(station.getChokepoint())) {
+                        UnitType lastBuilding = *buildings.rbegin();
+                        buildings.pop_back();
+                        if (lastBuilding == Zerg_Hatchery)
+                            buildings.push_back(Zerg_Evolution_Chamber);
+                    }
+                }
+            }
+
+            // Create a Terran wall at every main
+            else {
+                for (auto &station : BWEB::Stations::getStations()) {
+                    if (!station.isMain())
+                        continue;
                     BWEB::Walls::createWall(buildings, station.getBase()->GetArea(), station.getChokepoint(), tightType, defenses, openWall, tight);
-                    if (Players::PvZ() || buildings.empty())
-                        break;
-
-                    UnitType lastBuilding = *buildings.rbegin();
-                    buildings.pop_back();
-                    if (lastBuilding == Zerg_Hatchery)
-                        buildings.push_back(Zerg_Evolution_Chamber);
                 }
             }
         }
+    
+        int calcSaturationRatio(BWEB::Wall& wall, int defensesDesired)
+        {
+            auto closestNatural = BWEB::Stations::getClosestNaturalStation(TilePosition(wall.getCentroid()));
+            auto closestMain = BWEB::Stations::getClosestMainStation(TilePosition(wall.getCentroid()));
 
-        // Create a Terran wall at every main
-        else {
-            for (auto &station : BWEB::Stations::getStations()) {
-                if (!station.isMain())
-                    continue;
-                BWEB::Walls::createWall(buildings, station.getBase()->GetArea(), station.getChokepoint(), tightType, defenses, openWall, tight);
+            auto saturationRatio = clamp((Stations::getSaturationRatio(closestNatural) + Stations::getSaturationRatio(closestMain)), 0.1, 1.0);
+            if (Spy::enemyRush() || Spy::enemyPressure() || Util::getTime() < Time(6, 00))
+                return defensesDesired;
+            return int(ceil(saturationRatio * double(defensesDesired)));
+        }
+
+        int calcGroundDefZvP(BWEB::Wall& wall) {
+
+            // Try to see what we expect based on first Zealot push out
+            if (Spy::getEnemyBuild() == "Unknown" && Scouts::enemyDeniedScout() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 1 && wall.getGroundDefenseCount() == 0) {
+                auto closestZealot = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
+                    return u->getType() == Protoss_Zealot;
+                });
+                if (closestZealot && closestZealot->timeArrivesWhen() < Time(3, 50) && BWEB::Map::getGroundDistance(closestZealot->getPosition(), BWEB::Map::getNaturalPosition()) < 640.0)
+                    return (Util::getTime() > Time(2, 50));
             }
+
+            // If we are a 3H build, we can skip 1 sunken
+            auto skipSunken = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
+
+            // See if they expanded or got some tech at a reasonable point for 1 base play
+            auto noExpandOrTech = Util::getTime() > Time(5, 30) && !Spy::enemyFastExpand()
+                && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0
+                && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) == 0
+                && Players::getTotalCount(PlayerState::Enemy, Protoss_High_Templar) == 0
+                && Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) == 0
+                && Players::getTotalCount(PlayerState::Enemy, Protoss_Archon) == 0;
+
+            // 4Gate
+            if (Spy::getEnemyTransition() == "4Gate" && Util::getTime() < Time(12, 00)) {
+                return 1
+                    + (Util::getTime() > Time(4, 00))
+                    + (!skipSunken && Util::getTime() > Time(4, 30))
+                    + (!skipSunken && Util::getTime() > Time(5, 00))
+                    + (Util::getTime() > Time(5, 40))
+                    + (Util::getTime() > Time(6, 20))
+                    + (Util::getTime() > Time(7, 00))
+                    + (Util::getTime() > Time(8, 00))
+                    + (Util::getTime() > Time(9, 00))
+                    ;
+            }
+
+            // DT
+            if (Util::getTime() < Time(8, 30) && Spy::getEnemyTransition() == "DT") {
+                return 2
+                    + (!skipSunken && Util::getTime() > Time(5, 00))
+                    + (Util::getTime() > Time(5, 20))
+                    + (Util::getTime() > Time(5, 40));
+            }
+
+            // Corsair
+            if (Util::getTime() < Time(8, 30) && Spy::getEnemyTransition() == "Corsair")
+                return 1
+                + (!skipSunken && Util::getTime() > Time(7, 30));
+
+            // Speedlot
+            if (Util::getTime() < Time(8, 30) && (Spy::getEnemyTransition() == "Speedlot" || Spy::getEnemyTransition() == "ZealotRush"))
+                return 1
+                + (Util::getTime() > Time(3, 10))
+                + (!skipSunken && Util::getTime() > Time(4, 00))
+                + (!skipSunken && Util::getTime() > Time(4, 30))
+                + (Util::getTime() > Time(5, 20));
+
+            // 1GateCore
+            if (Spy::getEnemyBuild() == "1GateCore" || (Spy::getEnemyBuild() == "Unknown" && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 1)) {
+                if (Util::getTime() < Time(6, 15) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) >= 1)
+                    return (Util::getTime() > Time(3, 40))
+                    + (!skipSunken && Util::getTime() > Time(4, 00))
+                    + (!skipSunken && Util::getTime() > Time(4, 20))
+                    + noExpandOrTech;
+                else if (Util::getTime() < Time(6, 15))
+                    return 1
+                    + (!skipSunken && Util::getTime() > Time(4, 00))
+                    + (!skipSunken && Util::getTime() > Time(4, 40))
+                    + noExpandOrTech;
+            }
+
+            // 2Gate
+            if (Spy::getEnemyBuild() == "2Gate" && !Spy::enemyProxy()) {
+                if (Util::getTime() < Time(6, 00) && Spy::getEnemyOpener() == "10/17")
+                    return (Util::getTime() > Time(3, 40))
+                    + noExpandOrTech;
+                else if (Util::getTime() < Time(6, 00) && (Spy::getEnemyOpener() == "10/12" || Spy::getEnemyOpener() == "Unknown"))
+                    return 1
+                    + (!skipSunken && Util::getTime() > Time(3, 30))
+                    + noExpandOrTech;
+                else if (Util::getTime() < Time(6, 00) && Spy::getEnemyOpener() == "9/9")
+                    return 1
+                    + (Util::getTime() > Time(3, 10))
+                    + noExpandOrTech;
+            }
+
+            // FFE
+            if (Spy::getEnemyBuild() == "FFE") {
+                if (Spy::getEnemyTransition() == "Carriers")
+                    return 0;
+                if (Spy::getEnemyTransition() == "5GateGoon" && Util::getTime() < Time(10, 00))
+                    return (Util::getTime() > Time(5, 40))
+                    + (Util::getTime() > Time(6, 00))
+                    + (Util::getTime() > Time(6, 20))
+                    + (Util::getTime() > Time(6, 40))
+                    + (Util::getTime() > Time(7, 00))
+                    + (Util::getTime() > Time(8, 00))
+                    + (Util::getTime() > Time(9, 00));
+                if (Spy::getEnemyTransition() == "NeoBisu" && Util::getTime() < Time(6, 30))
+                    return ((2 * (Util::getTime() > Time(6, 00))));
+                if (Spy::getEnemyTransition() == "Speedlot" && Util::getTime() < Time(7, 00))
+                    return ((2 * (Util::getTime() > Time(5, 00))) + (2 * (Util::getTime() > Time(5, 30))) + (2 * (Util::getTime() > Time(6, 00))));
+                if (Spy::getEnemyTransition() == "Unknown" && Util::getTime() < Time(5, 15))
+                    return ((2 * (Util::getTime() > Time(6, 00))) + (Util::getTime() > Time(6, 30)) + (2 * (Util::getTime() > Time(8, 00))));
+                if (Util::getTime() < Time(8, 00))
+                    return ((Util::getTime() > Time(5, 30)) + (Util::getTime() > Time(6, 15)) + (Util::getTime() > Time(6, 45)));
+            }
+            return 0;
+        }
+
+        int calcGroundDefZvT(BWEB::Wall& wall) {
+
+            // 2Rax
+            if (Spy::getEnemyBuild() == "2Rax") {
+                if (Spy::enemyProxy())
+                    return 0;
+                if (!Spy::enemyFastExpand() && !Spy::enemyRush() && Util::getTime() < Time(5, 00))
+                    return (2 * (Util::getTime() > Time(3, 15))) + (2 * (Util::getTime() > Time(4, 30)));
+                if (Spy::enemyRush())
+                    return (2 + (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(5, 30)));
+            }
+
+            // RaxCC
+            if (Spy::getEnemyBuild() == "RaxCC") {
+                if (Spy::getEnemyOpener() == "8Rax")
+                    return 1;
+                if (Spy::enemyProxy())
+                    return 0;
+                return (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(4, 45));
+            }
+
+            // RaxFact
+            if (Spy::getEnemyBuild() == "RaxFact") {
+                if (Spy::getEnemyTransition() == "5FacGoliath")
+                    return 5 * (Util::getTime() > Time(11, 00));
+                if (Spy::getEnemyTransition() == "2Fact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Spy::enemyWalled())
+                    return (Util::getTime() > Time(3, 30));
+            }
+
+            if (Util::getTime() > Time(10, 00))
+                return max(1, (Util::getTime().minutes / 4));
+            return (Util::getTime() > Time(3, 30));
+        }
+
+        int calcGroundDefZvZ(BWEB::Wall& wall) {
+            if ((BuildOrder::getCurrentTransition().find("Muta") != string::npos || Util::getTime() > Time(6, 00)) && (BuildOrder::takeNatural() || int(Stations::getStations(PlayerState::Self).size()) >= 2)) {
+                if (Players::ZvZ() && BuildOrder::isOpener() && BuildOrder::buildCount(Zerg_Spire) > 0 && vis(Zerg_Spire) == 0)
+                    return 0;
+                else if (Spy::getEnemyTransition() == "2HatchSpeedling")
+                    return (Util::getTime() > Time(3, 45)) + (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(5, 30));
+                else if (Util::getTime() < Time(6, 00) && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 40)
+                    return 6;
+                else if (Util::getTime() < Time(6, 00) && (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 || Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 26))
+                    return 4;
+                else if (Spy::enemyPressure())
+                    return (Util::getTime() > Time(4, 10)) + (vis(Zerg_Sunken_Colony) > 0) + (vis(Zerg_Drone) >= 8 && com(Zerg_Sunken_Colony) >= 2);
+                else if (Spy::enemyRush() && total(Zerg_Zergling) >= 6)
+                    return 1 + (vis(Zerg_Sunken_Colony) > 0) + (vis(Zerg_Drone) >= 8 && com(Zerg_Sunken_Colony) >= 2);
+            }
+            return 0;
+        }
+
+        int calcGroundDefZvFFA(BWEB::Wall& wall) {
+            return 1
+                + (Util::getTime() > Time(5, 20))
+                + (Util::getTime() > Time(5, 40));
         }
     }
 
@@ -110,183 +289,6 @@ namespace McRave::Walls {
     void onFrame()
     {
 
-    }
-
-    int calcSaturationRatio(BWEB::Wall& wall, int defensesDesired)
-    {
-        auto closestNatural = BWEB::Stations::getClosestNaturalStation(TilePosition(wall.getCentroid()));
-        auto closestMain = BWEB::Stations::getClosestMainStation(TilePosition(wall.getCentroid()));
-
-        auto saturationRatio = clamp((Stations::getSaturationRatio(closestNatural) + Stations::getSaturationRatio(closestMain)), 0.1, 1.0);
-        if (Spy::enemyRush() || Spy::enemyPressure() || Util::getTime() < Time(6, 00))
-            return defensesDesired;
-        return int(ceil(saturationRatio * double(defensesDesired)));
-    }
-
-    int calcGroundDefZvP(BWEB::Wall& wall) {
-
-        // Try to see what we expect based on first Zealot push out
-        if (Spy::getEnemyBuild() == "Unknown" && Scouts::enemyDeniedScout() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 1 && wall.getGroundDefenseCount() == 0) {
-            auto closestZealot = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
-                return u->getType() == Protoss_Zealot;
-            });
-            if (closestZealot && closestZealot->timeArrivesWhen() < Time(3, 50) && BWEB::Map::getGroundDistance(closestZealot->getPosition(), BWEB::Map::getNaturalPosition()) < 640.0)
-                return (Util::getTime() > Time(2, 50));
-        }
-
-        // If we are a 3H build, we can skip 1 sunken
-        auto skipSunken = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
-
-        // See if they expanded or got some tech at a reasonable point for 1 base play
-        auto noExpandOrTech = Util::getTime() > Time(5, 30) && !Spy::enemyFastExpand()
-            && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0
-            && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) == 0
-            && Players::getTotalCount(PlayerState::Enemy, Protoss_High_Templar) == 0
-            && Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) == 0
-            && Players::getTotalCount(PlayerState::Enemy, Protoss_Archon) == 0;
-
-        // 4Gate
-        if (Spy::getEnemyTransition() == "4Gate" && Util::getTime() < Time(12, 00)) {
-            return 1
-                + (Util::getTime() > Time(4, 00))
-                + (!skipSunken && Util::getTime() > Time(4, 30))
-                + (!skipSunken && Util::getTime() > Time(5, 00))
-                + (Util::getTime() > Time(5, 40))
-                + (Util::getTime() > Time(6, 20))
-                + (Util::getTime() > Time(7, 00))
-                + (Util::getTime() > Time(8, 00))
-                + (Util::getTime() > Time(9, 00))
-                ;
-        }
-
-        // DT
-        if (Util::getTime() < Time(8, 30) && Spy::getEnemyTransition() == "DT") {
-            return 2
-                + (!skipSunken && Util::getTime() > Time(5, 00))
-                + (Util::getTime() > Time(5, 20))
-                + (Util::getTime() > Time(5, 40));
-        }
-
-        // Corsair
-        if (Util::getTime() < Time(8, 30) && Spy::getEnemyTransition() == "Corsair")
-            return 1
-            + (!skipSunken && Util::getTime() > Time(7, 30));
-
-        // Speedlot
-        if (Util::getTime() < Time(8, 30) && (Spy::getEnemyTransition() == "Speedlot" || Spy::getEnemyTransition() == "ZealotRush"))
-            return 1
-            + (Util::getTime() > Time(3, 10))
-            + (!skipSunken && Util::getTime() > Time(4, 00))
-            + (!skipSunken && Util::getTime() > Time(4, 30))
-            + (Util::getTime() > Time(5, 20));
-
-        // 1GateCore
-        if (Spy::getEnemyBuild() == "1GateCore" || (Spy::getEnemyBuild() == "Unknown" && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 1)) {
-            if (Util::getTime() < Time(6, 15) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) >= 1)
-                return (Util::getTime() > Time(3, 40))
-                + (!skipSunken && Util::getTime() > Time(4, 00))
-                + (!skipSunken && Util::getTime() > Time(4, 20))
-                + noExpandOrTech;
-            else if (Util::getTime() < Time(6, 15))
-                return 1
-                + (!skipSunken && Util::getTime() > Time(4, 00))
-                + (!skipSunken && Util::getTime() > Time(4, 40))
-                + noExpandOrTech;
-        }
-
-        // 2Gate
-        if (Spy::getEnemyBuild() == "2Gate" && !Spy::enemyProxy()) {
-            if (Util::getTime() < Time(6, 00) && Spy::getEnemyOpener() == "10/17")
-                return (Util::getTime() > Time(3, 40))
-                + noExpandOrTech;
-            else if (Util::getTime() < Time(6, 00) && (Spy::getEnemyOpener() == "10/12" || Spy::getEnemyOpener() == "Unknown"))
-                return 1
-                + (!skipSunken && Util::getTime() > Time(3, 30))
-                + noExpandOrTech;
-            else if (Util::getTime() < Time(6, 00) && Spy::getEnemyOpener() == "9/9")
-                return 1
-                + (Util::getTime() > Time(3, 10))
-                + noExpandOrTech;
-        }
-
-        // FFE
-        if (Spy::getEnemyBuild() == "FFE") {
-            if (Spy::getEnemyTransition() == "Carriers")
-                return 0;
-            if (Spy::getEnemyTransition() == "5GateGoon" && Util::getTime() < Time(10, 00))
-                return (Util::getTime() > Time(5, 40))
-                + (Util::getTime() > Time(6, 00))
-                + (Util::getTime() > Time(6, 20))
-                + (Util::getTime() > Time(6, 40))
-                + (Util::getTime() > Time(7, 00))
-                + (Util::getTime() > Time(8, 00))
-                + (Util::getTime() > Time(9, 00));
-            if (Spy::getEnemyTransition() == "NeoBisu" && Util::getTime() < Time(6, 30))
-                return ((2 * (Util::getTime() > Time(6, 00))));
-            if (Spy::getEnemyTransition() == "Speedlot" && Util::getTime() < Time(7, 00))
-                return ((2 * (Util::getTime() > Time(5, 00))) + (2 * (Util::getTime() > Time(5, 30))) + (2 * (Util::getTime() > Time(6, 00))));
-            if (Spy::getEnemyTransition() == "Unknown" && Util::getTime() < Time(5, 15))
-                return ((2 * (Util::getTime() > Time(6, 00))) + (Util::getTime() > Time(6, 30)) + (2 * (Util::getTime() > Time(8, 00))));
-            if (Util::getTime() < Time(8, 00))
-                return ((Util::getTime() > Time(5, 30)) + (Util::getTime() > Time(6, 15)) + (Util::getTime() > Time(6, 45)));
-        }
-        return 0;
-    }
-
-    int calcGroundDefZvT(BWEB::Wall& wall) {
-
-        // 2Rax
-        if (Spy::getEnemyBuild() == "2Rax") {
-            if (Spy::enemyProxy())
-                return 0;
-            if (!Spy::enemyFastExpand() && !Spy::enemyRush() && Util::getTime() < Time(5, 00))
-                return (2 * (Util::getTime() > Time(3, 15))) + (2 * (Util::getTime() > Time(4, 30)));
-            if (Spy::enemyRush())
-                return (2 + (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(5, 30)));
-        }
-
-        // RaxCC
-        if (Spy::getEnemyBuild() == "RaxCC") {
-            if (Spy::getEnemyOpener() == "8Rax")
-                return 1;
-            if (Spy::enemyProxy())
-                return 0;
-            return (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(4, 45));
-        }
-
-        // RaxFact
-        if (Spy::getEnemyBuild() == "RaxFact") {
-            if (Spy::getEnemyTransition() == "5FacGoliath")
-                return 5 * (Util::getTime() > Time(11, 00));
-            if (Spy::getEnemyTransition() == "2Fact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Spy::enemyWalled())
-                return (Util::getTime() > Time(3, 30));
-        }
-
-        if (Util::getTime() > Time(10, 00))
-            return max(1, (Util::getTime().minutes / 4));
-        return (Util::getTime() > Time(3, 30));
-    }
-
-    int calcGroundDefZvZ(BWEB::Wall& wall) {
-        if ((BuildOrder::getCurrentTransition().find("Muta") != string::npos || Util::getTime() > Time(6, 00)) && (BuildOrder::takeNatural() || int(Stations::getStations(PlayerState::Self).size()) >= 2)) {
-            if (Players::ZvZ() && BuildOrder::isOpener() && BuildOrder::buildCount(Zerg_Spire) > 0 && vis(Zerg_Spire) == 0)
-                return 0;
-            else if (Spy::getEnemyTransition() == "2HatchSpeedling")
-                return (Util::getTime() > Time(3, 45)) + (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(5, 30));
-            else if (Util::getTime() < Time(6, 00) && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 40)
-                return 6;
-            else if (Util::getTime() < Time(6, 00) && (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 || Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 26))
-                return 4;
-            else if (Spy::enemyPressure())
-                return (Util::getTime() > Time(4, 10)) + (vis(Zerg_Sunken_Colony) > 0) + (vis(Zerg_Drone) >= 8 && com(Zerg_Sunken_Colony) >= 2);
-            else if (Spy::enemyRush() && total(Zerg_Zergling) >= 6)
-                return 1 + (vis(Zerg_Sunken_Colony) > 0) + (vis(Zerg_Drone) >= 8 && com(Zerg_Sunken_Colony) >= 2);
-        }
-        return 0;
-    }
-
-    int calcGroundDefZvFFA(BWEB::Wall& wall) {
-        return 1 + (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(5, 00));
     }
 
     int needGroundDefenses(BWEB::Wall& wall)

@@ -8,6 +8,7 @@ namespace McRave
 {
     namespace {
         map<Unit, UnitType> actualEggType; /// BWAPI issue #850
+        int extractorsLastFrame = 0;
     }
 
     void PlayerInfo::update()
@@ -24,11 +25,18 @@ namespace McRave
                 playerTechs.insert(tech);
         }
 
+        extractorsLastFrame = visibleTypeCounts[Zerg_Extractor];
+
         // Update player units
         raceSupply.clear();
         pStrength.clear();
         visibleTypeCounts.clear();
         completeTypeCounts.clear();
+
+        // Offset Zerg supply if an extractor is being made, since the drone is destroyed/created 1 frame off of an extractor creation/destruction
+        if (extractorsLastFrame != Broodwar->self()->visibleUnitCount(Zerg_Extractor))
+            raceSupply[Races::Zerg] += 2 * (Broodwar->self()->visibleUnitCount(Zerg_Extractor) - extractorsLastFrame);
+
         for (auto &u : units) {
             auto &unit = *u;
             auto type = unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType() : unit.getType();

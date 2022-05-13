@@ -17,7 +17,7 @@ namespace McRave::Command {
 
         double defaultDistance(UnitInfo& unit, WalkPosition w) {
             const auto p = Position(w) + Position(4, 4);
-            return max(1.0, p.getDistance(unit.getDestination()));
+            return max(1.0, p.getDistance(unit.getNavigation()));
         }
 
         double defaultVisited(UnitInfo& unit, WalkPosition w) {
@@ -36,7 +36,7 @@ namespace McRave::Command {
         {
             const auto p = Position(w) + Position(4, 4);
             if (unit.isTransport()) {
-                if (p.getDistance(unit.getDestination()) < 32.0)
+                if (p.getDistance(unit.getNavigation()) < 32.0)
                     return max(MIN_THREAT, Grids::getEGroundThreat(w) + Grids::getEAirThreat(w));
                 return max(MIN_THREAT, Grids::getEAirThreat(w));
             }
@@ -63,7 +63,7 @@ namespace McRave::Command {
 
             auto bestPosition = Positions::Invalid;
             auto best = 0.0;
-            const auto start = WalkPosition(unit.getDestination());
+            const auto start = WalkPosition(unit.getNavigation());
             const auto radius = 4;
 
             // Create a box, keep units outside a tile of the edge of the map if it's a flyer
@@ -331,11 +331,6 @@ namespace McRave::Command {
                 return true;
             }
 
-            if (unit.getRole() == Role::Worker && unit.getBuildType().isValid() && unit.getPosition().getDistance(unit.getDestination()) < 64.0) {
-                unit.unit()->move(unit.getDestination());
-                return true;
-            }
-
             if (!unit.getDestinationPath().isReachable()) {
                 unit.command(Move, unit.getDestination());
                 return true;
@@ -574,7 +569,7 @@ namespace McRave::Command {
         };
 
         const auto canExplore = [&]() {
-            if (unit.getDestination().isValid() && unit.getSpeed() > 0.0)
+            if (unit.getNavigation().isValid() && unit.getSpeed() > 0.0)
                 return true;
             return false;
         };

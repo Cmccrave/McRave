@@ -73,12 +73,17 @@
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvZ\ZvZ_PoolHatch.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvZ\ZvZ_PoolLair.cpp" />
     <ClCompile Include="..\Source\McRave\Clusters.cpp" />
-    <ClCompile Include="..\Source\McRave\Combat.cpp" />
     <ClCompile Include="..\Source\McRave\Commands.cpp" />
     <ClCompile Include="..\Source\McRave\Defender.cpp" />
     <ClCompile Include="..\Source\McRave\Dll.cpp" />
     <ClCompile Include="..\Source\McRave\Expansions.cpp" />
     <ClCompile Include="..\Source\McRave\Formations.cpp" />
+    <ClCompile Include="..\Source\McRave\Micro\Combat\Combat.cpp" />
+    <ClCompile Include="..\Source\McRave\Micro\Combat\Decision.cpp" />
+    <ClCompile Include="..\Source\McRave\Micro\Combat\Destination.cpp" />
+    <ClCompile Include="..\Source\McRave\Micro\Combat\Navigation.cpp" />
+    <ClCompile Include="..\Source\McRave\Micro\Combat\Simulation.cpp" />
+    <ClCompile Include="..\Source\McRave\Micro\Combat\State.cpp" />
     <ClCompile Include="..\Source\McRave\Pathing.cpp" />
     <ClCompile Include="..\Source\McRave\Planning.cpp" />
     <ClCompile Include="..\Source\McRave\ResourceInfo.cpp" />
@@ -94,7 +99,6 @@
     <ClInclude Include="..\Source\McRave\Builds\Protoss\ProtossBuildOrder.h" />
     <ClInclude Include="..\Source\McRave\Builds\Terran\TerranBuildOrder.h" />
     <ClInclude Include="..\Source\McRave\Builds\Zerg\ZergBuildOrder.h" />
-    <ClInclude Include="..\Source\McRave\Combat.h" />
     <ClInclude Include="..\Source\McRave\Defender.h" />
     <ClInclude Include="..\Source\McRave\Events.h" />
     <ClCompile Include="..\Source\McRave\Goals.cpp" />
@@ -154,6 +158,7 @@
     <ClInclude Include="..\Source\McRave\Grids.h" />
     <ClInclude Include="..\Source\McRave\Header.h" />
     <ClInclude Include="..\Source\McRave\Learning.h" />
+    <ClInclude Include="..\Source\McRave\Micro\Combat\Combat.h" />
     <ClInclude Include="..\Source\McRave\Pathing.h" />
     <ClInclude Include="..\Source\McRave\Planning.h" />
     <ClInclude Include="..\Source\McRave\Roles.h" />

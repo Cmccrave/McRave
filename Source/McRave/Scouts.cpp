@@ -266,17 +266,9 @@ namespace McRave::Scouts {
 
                 // Create worker scouting order
                 scoutOrder = scoutOrderFirstOverlord;
-                reverse(scoutOrder.begin(), scoutOrder.end());
 
-                /*int i = 0;
-                for (auto &station : scoutOrderFirstOverlord) {
-                    Broodwar->drawTextMap(station->getBase()->Center(), "%d", i);
-                    i++;
-                }                i = 0;
-                for (auto &station : scoutOrder) {
-                    Broodwar->drawTextMap(station->getBase()->Center() + Position(0, 16), "%d", i);
-                    i++;
-                }*/
+                if (!Players::vFFA())
+                    reverse(scoutOrder.begin(), scoutOrder.end());
             }
         }
 
@@ -517,6 +509,7 @@ namespace McRave::Scouts {
         for (auto &station : BWEB::Stations::getStations()) {
             auto closestMain = BWEB::Stations::getClosestMainStation(TilePosition(station.getBase()->Center()));
             if (!station.isNatural()
+                || !station.getChokepoint()
                 || !closestMain
                 || !closestMain->getChokepoint())
                 continue;

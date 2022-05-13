@@ -49,7 +49,8 @@ namespace McRave::BuildOrder::Protoss {
             buildQueue[Protoss_Templar_Archives] =          s >= 48;
 
             // Army composition
-            armyComposition[Protoss_Dragoon] =              1.00;
+            armyComposition[Protoss_Dragoon] =              0.95;
+            armyComposition[Protoss_Zealot] =               0.05;
         }
 
         void PvT_1GC_4Gate()
@@ -64,7 +65,8 @@ namespace McRave::BuildOrder::Protoss {
             buildQueue[Protoss_Cybernetics_Core] =          s >= 26;
 
             // Army composition
-            armyComposition[Protoss_Dragoon] =              1.00;
+            armyComposition[Protoss_Dragoon] =              0.95;
+            armyComposition[Protoss_Zealot] =               0.05;
         }
 
         void PvT_1GC_NZCore()
@@ -78,6 +80,10 @@ namespace McRave::BuildOrder::Protoss {
             buildQueue[Protoss_Gateway] =                   s >= 20;
             buildQueue[Protoss_Assimilator] =               s >= 24;
             buildQueue[Protoss_Cybernetics_Core] =          s >= 26;
+
+            // Army composition
+            armyComposition[Protoss_Dragoon] =              0.95;
+            armyComposition[Protoss_Zealot] =               0.05;
         }
 
         void PvT_1GC_ZCore()
@@ -91,6 +97,10 @@ namespace McRave::BuildOrder::Protoss {
             buildQueue[Protoss_Gateway] =                   s >= 20;
             buildQueue[Protoss_Assimilator] =               s >= 24;
             buildQueue[Protoss_Cybernetics_Core] =          s >= 36;
+
+            // Army composition
+            armyComposition[Protoss_Dragoon] =              0.95;
+            armyComposition[Protoss_Zealot] =               0.05;
         }
     }
 

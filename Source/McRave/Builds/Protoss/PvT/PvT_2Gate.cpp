@@ -21,10 +21,10 @@ namespace McRave::BuildOrder::Protoss {
             inOpeningBook =                                 s < 70;
             firstUnit =                                     Protoss_Dark_Templar;
             hideTech =                                      true;
+            firstUpgrade =                                  UpgradeTypes::None;
 
             // Build
             buildQueue[Protoss_Nexus] =                     1;
-            buildQueue[Protoss_Assimilator] =               s >= 22;
             buildQueue[Protoss_Cybernetics_Core] =          s >= 26;
             buildQueue[Protoss_Citadel_of_Adun] =           vis(Protoss_Dragoon) >= 3;
             buildQueue[Protoss_Templar_Archives] =          atPercent(Protoss_Citadel_of_Adun, 1.00);
@@ -73,9 +73,11 @@ namespace McRave::BuildOrder::Protoss {
             // "https://liquipedia.net/starcraft/10/15_Gates_(vs._Terran)"
             scout =                                         Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
             playPassive =                                   Spy::enemyPressure() && Util::getTime() < Time(5, 0);
+            transitionReady =                               vis(Protoss_Gateway) >= 2;
 
             buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 30);
             buildQueue[Protoss_Gateway] =                   (s >= 20) + (s >= 30);
+            buildQueue[Protoss_Assimilator] =               s >= 22;
         }
     }
 
@@ -94,11 +96,13 @@ namespace McRave::BuildOrder::Protoss {
             PvT_2G_1015();
 
         // Transitions
-        if (currentTransition == "Robo")
-            PvT_2G_Robo();
-        if (currentTransition == "DT")
-            PvT_2G_DT();
-        if (currentTransition == "Expand")
-            PvT_2G_Expand();
+        if (transitionReady) {
+            if (currentTransition == "Robo")
+                PvT_2G_Robo();
+            if (currentTransition == "DT")
+                PvT_2G_DT();
+            if (currentTransition == "Expand")
+                PvT_2G_Expand();
+        }
     }
 }

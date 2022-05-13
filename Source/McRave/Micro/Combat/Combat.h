@@ -12,7 +12,7 @@ namespace McRave::Combat {
     };
 
     struct Cluster {
-        BWAPI::Position sharedPosition, sharedRetreat, sharedObjective;
+        BWAPI::Position sharedPosition, sharedDestination;
         std::map<BWAPI::UnitType, int> typeCounts;
         double sharedRadius = 160.0;
         std::vector<UnitInfo> units;
@@ -21,10 +21,9 @@ namespace McRave::Combat {
         Shape shape;
         bool mobileCluster = false;
 
-        Cluster(BWAPI::Position _sp, BWAPI::Position _sr, BWAPI::Position _so, BWAPI::UnitType _t) {
+        Cluster(BWAPI::Position _sp, BWAPI::Position _sd, BWAPI::UnitType _t) {
             sharedPosition = _sp;
-            sharedRetreat = _sr;
-            sharedObjective = _so;
+            sharedDestination = _sd;
             typeCounts[_t] = 1;
         }
         Cluster() {};
@@ -45,10 +44,29 @@ namespace McRave::Combat {
         std::vector<Cluster>& getClusters();
     }
 
+    namespace Simulation {
+        void update(UnitInfo&);
+    }
+
+    namespace State {
+        void update(UnitInfo&);
+    }
+
+    namespace Decision {
+        void update(UnitInfo&);
+    }
+
+    namespace Destination {
+        void update(UnitInfo&);
+    }
+
+    namespace Navigation {
+        void update(UnitInfo&);
+    }
+
     void onFrame();
     void onStart();
 
     bool defendChoke();
     std::set<BWAPI::Position>& getDefendPositions();
-    std::multimap<double, UnitInfo&> getCombatUnitsByDistance();
 }

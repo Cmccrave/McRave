@@ -127,7 +127,7 @@ namespace McRave::Stations {
         void updateDefendPositions()
         {
             for (auto &station : getStations(PlayerState::Self)) {
-                auto defendPosition = Positions::Invalid;
+                auto defendPosition = station->getBase()->Center();
                 const BWEM::ChokePoint * defendChoke = nullptr;
                 if (station->getChokepoint()) {
                     defendPosition = Position(station->getChokepoint()->Center());
@@ -201,12 +201,8 @@ namespace McRave::Stations {
         auto newStation = BWEB::Stations::getClosestStation(unit->getTilePosition());
         if (!newStation
             || !unit->getType().isResourceDepot()
-            || unit->getTilePosition() != newStation->getBase()->Location())
-            return;
-
-        auto &list = (unit->getPlayer() == Broodwar->self()) ? getStations(PlayerState::Self) : getStations(PlayerState::Enemy);
-        auto &existing = find(list.begin(), list.end(), newStation);
-        if (existing != list.end() && *existing == newStation)
+            || unit->getTilePosition() != newStation->getBase()->Location()
+            || stations[newStation] != PlayerState::None)
             return;
 
         // Store station and set resource states if we own this station
@@ -236,15 +232,9 @@ namespace McRave::Stations {
 
     void removeStation(Unit unit) {
         auto newStation = BWEB::Stations::getClosestStation(unit->getTilePosition());
-        if (!newStation)
+        if (!newStation || stations.find(newStation) == stations.end())
             return;
-
-        auto &list = unit->getPlayer() == Broodwar->self() ? getStations(PlayerState::Self) : getStations(PlayerState::Enemy);
-        auto &existing = find(list.begin(), list.end(), newStation);
-        if (existing == list.end())
-            return;
-
-        list.erase(existing);
+        stations.erase(newStation);
 
         // Remove workers from any resources on this station
         for (auto &mineral : Resources::getMyMinerals()) {

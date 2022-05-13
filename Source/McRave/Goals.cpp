@@ -4,10 +4,6 @@ using namespace BWAPI;
 using namespace std;
 using namespace UnitTypes;
 
-namespace McRave {
-
-}
-
 namespace McRave::Goals {
 
     namespace {
@@ -181,7 +177,7 @@ namespace McRave::Goals {
             }
 
             // Aggresively deny enemy expansions
-            if (Terrain::getEnemyStartingPosition().isValid() && Stations::getStations(PlayerState::Self).size() >= 3 && !BuildOrder::isRush() && !Players::ZvZ()) {
+            if (Terrain::getEnemyStartingPosition().isValid() && Stations::getStations(PlayerState::Self).size() >= 3 && !BuildOrder::isRush() && !Players::ZvZ() && !Players::vFFA()) {
                 multimap<double, BWEB::Station> stationsByDistance;
 
                 for (auto &station : BWEB::Stations::getStations()) {

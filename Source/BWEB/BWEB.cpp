@@ -200,7 +200,6 @@ namespace BWEB::Map
         findNeutrals();
         findMain();
         findNatural();
-        BWEB::Blocks::findBlocks();
     }
 
     void onUnitDiscover(const Unit unit)
@@ -440,7 +439,7 @@ namespace BWEB::Map
             first = false;
         }
 
-        return dist;
+        return dist + last.getDistance(end);
     }
 
     Position getClosestChokeTile(const BWEM::ChokePoint * choke, Position here)

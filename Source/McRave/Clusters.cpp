@@ -19,9 +19,11 @@ namespace McRave::Combat::Clusters {
                 cluster.typeCounts[cluster.commander.lock()->getType()]++;
         }
 
-        for (auto &[_, unit] : Combat::getCombatUnitsByDistance()) {
+        for (auto &u : Units::getUnits(PlayerState::Self)) {
+            auto &unit = *u;
 
-            if (unit.getType() == Protoss_High_Templar
+            if (unit.getRole() != Role::Combat
+                || unit.getType() == Protoss_High_Templar
                 || unit.getType() == Protoss_Dark_Archon
                 || unit.getType() == Protoss_Reaver
                 || unit.getType() == Protoss_Interceptor
@@ -38,7 +40,7 @@ namespace McRave::Combat::Clusters {
                     continue;
 
                 auto positionInCommon = unit.getPosition().getDistance(cluster.sharedPosition) < cluster.sharedRadius;
-                auto destinationInCommon = unit.getDestination().getDistance(cluster.sharedRetreat) < cluster.sharedRadius;
+                auto destinationInCommon = unit.getDestination().getDistance(cluster.sharedDestination) < cluster.sharedRadius;
 
                 if (destinationInCommon) {
                     cluster.sharedRadius += unit.isLightAir() ? 0.0 : double(unit.getType().width() * unit.getType().height()) / cluster.sharedRadius;
@@ -51,7 +53,7 @@ namespace McRave::Combat::Clusters {
 
             // Didn't find existing formation, create a new one
             if (!foundCluster) {
-                Cluster newCluster(unit.getPosition(), unit.getRetreat(), unit.getDestination(), unit.getType());
+                Cluster newCluster(unit.getPosition(), unit.getDestination(), unit.getType());
                 newCluster.units.push_back(unit);
                 newCluster.typeCounts[unit.getType()]++;
                 clusters.push_back(newCluster);
@@ -85,7 +87,7 @@ namespace McRave::Combat::Clusters {
             if (closestToCentroid) {
                 cluster.mobileCluster = closestToCentroid->getGlobalState() != GlobalState::Retreat;
                 cluster.sharedPosition = avgPosition;
-                cluster.sharedObjective = closestToCentroid->getDestination();
+                cluster.sharedDestination = closestToCentroid->getDestination();
                 cluster.commander = closestToCentroid->weak_from_this();
                 cluster.commandShare = cluster.commander.lock()->isLightAir() ? CommandShare::Exact : CommandShare::Parallel;
                 cluster.shape = cluster.commander.lock()->isLightAir() ? Shape::None : Shape::Concave;

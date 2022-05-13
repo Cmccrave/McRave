@@ -212,4 +212,7 @@ namespace McRave::Util {
         }
         return returnVector;
     }
+
+    std::pair<double, BWAPI::Position> getClosestPointToRadiusAir(BWAPI::Position, BWAPI::Position, double);
+    std::pair<double, BWAPI::Position> getClosestPointToRadiusGround(BWAPI::Position, BWAPI::Position, double);
 }

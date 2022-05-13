@@ -160,6 +160,14 @@ namespace McRave::BuildOrder::Protoss {
                 currentTransition = "2Stargate";
         }
 
+        // Openers
+        if (currentOpener == "Forge")
+            PvZ_FFE_Forge();
+        if (currentOpener == "Gate")
+            PvZ_FFE_Gate();
+        if (currentOpener == "Nexus")
+            PvZ_FFE_Nexus();
+
         // Transitions
         if (transitionReady) {
             if (currentTransition == "StormRush")

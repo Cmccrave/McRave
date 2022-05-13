@@ -124,12 +124,6 @@
     <ClCompile Include="..\Source\McRave\Walls.cpp">
       <Filter>McRave\Map</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\Actions.cpp">
-      <Filter>McRave\Strategy</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\Goals.cpp">
-      <Filter>McRave\Strategy</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\Resources.cpp">
       <Filter>McRave\Info\Resources</Filter>
     </ClCompile>
@@ -144,9 +138,6 @@
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Workers.cpp">
       <Filter>McRave\Micro\Worker</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\Combat.cpp">
-      <Filter>McRave\Micro\Combat</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Scouts.cpp">
       <Filter>McRave\Micro\Scout</Filter>
@@ -189,9 +180,6 @@
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Spy\SpyZerg.cpp">
       <Filter>McRave\Strategy\Spy</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\Formations.cpp">
-      <Filter>McRave\Micro\Combat\Formation</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Clusters.cpp">
       <Filter>McRave\Micro\Combat</Filter>
@@ -279,6 +267,33 @@
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Builds\Terran\TvFFA\TvA.cpp">
       <Filter>McRave\Builds\Terran\TvFFA</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Formations.cpp">
+      <Filter>McRave\Micro\Combat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Micro\Combat\Simulation.cpp">
+      <Filter>McRave\Micro\Combat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Micro\Combat\State.cpp">
+      <Filter>McRave\Micro\Combat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Micro\Combat\Navigation.cpp">
+      <Filter>McRave\Micro\Combat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Micro\Combat\Decision.cpp">
+      <Filter>McRave\Micro\Combat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Micro\Combat\Combat.cpp">
+      <Filter>McRave\Micro\Combat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Goals.cpp">
+      <Filter>McRave\Strategy\Goals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Actions.cpp">
+      <Filter>McRave\Strategy\Actions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Micro\Combat\Destination.cpp">
+      <Filter>McRave\Micro\Combat</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -411,12 +426,6 @@
     <ClInclude Include="..\Source\McRave\Walls.h">
       <Filter>McRave\Map</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\Actions.h">
-      <Filter>McRave\Strategy</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\Goals.h">
-      <Filter>McRave\Strategy</Filter>
-    </ClInclude>
     <ClInclude Include="..\Source\McRave\Resources.h">
       <Filter>McRave\Info\Resources</Filter>
     </ClInclude>
@@ -431,9 +440,6 @@
     </ClInclude>
     <ClInclude Include="..\Source\McRave\Workers.h">
       <Filter>McRave\Micro\Worker</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\Combat.h">
-      <Filter>McRave\Micro\Combat</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\McRave\Scouts.h">
       <Filter>McRave\Micro\Scout</Filter>
@@ -473,6 +479,15 @@
     </ClInclude>
     <ClInclude Include="..\Source\McRave\Builds\Terran\TerranBuildOrder.h">
       <Filter>McRave\Builds\Terran</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Micro\Combat\Combat.h">
+      <Filter>McRave\Micro\Combat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Goals.h">
+      <Filter>McRave\Strategy\Goals</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Actions.h">
+      <Filter>McRave\Strategy\Actions</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -563,14 +578,8 @@
     <Filter Include="McRave\Strategy\Spy">
       <UniqueIdentifier>{6abfefaf-534b-455e-b1cd-97095a170c34}</UniqueIdentifier>
     </Filter>
-    <Filter Include="McRave\Micro\Combat\Formation">
-      <UniqueIdentifier>{f82ac477-8863-40f7-90de-7bbe7e3eb14b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="McRave\Micro\Defender">
       <UniqueIdentifier>{73d53f71-c9a9-4156-a9ee-5d7e9d7fda64}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="McRave\Micro\Combat\Pathing">
-      <UniqueIdentifier>{a248130f-bdef-4bc3-888e-73439d00ad79}</UniqueIdentifier>
     </Filter>
     <Filter Include="McRave\Builds\Protoss\PvZ">
       <UniqueIdentifier>{c6a1cb01-78e9-4a67-ac61-36137770ca96}</UniqueIdentifier>
@@ -598,6 +607,12 @@
     </Filter>
     <Filter Include="McRave\Builds\Terran\TvFFA">
       <UniqueIdentifier>{e0538aa9-127f-431d-bfa6-25c11ac5815f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Strategy\Goals">
+      <UniqueIdentifier>{7d32044f-5090-4418-ba76-a450cd54e4dc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Strategy\Actions">
+      <UniqueIdentifier>{23424057-565c-4690-96e5-95da7c95da7b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

@@ -430,7 +430,7 @@ namespace BWEB::Stations {
                         continue;
 
                     const auto dist = Map::getGroundDistance(base.Center(), main->Center());
-                    if (dist < distBest && dist < 960.0) {
+                    if (dist < distBest && dist < 1600.0) {
                         distBest = dist;
                         baseBest = &base;
                     }

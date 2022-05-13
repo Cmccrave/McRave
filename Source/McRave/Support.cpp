@@ -88,7 +88,8 @@ namespace McRave::Support {
             // Shorten destination to 96 pixels in front for navigation
             auto dir = (unit.getDestination() - unit.getPosition()) * 96 / unit.getPosition().getDistance(unit.getDestination());
             unit.setDestination(unit.getPosition() + dir);
-            Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Red);
+            unit.setNavigation(unit.getDestination());
+            Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Red);
         }
 
         void updateDecision(UnitInfo& unit)

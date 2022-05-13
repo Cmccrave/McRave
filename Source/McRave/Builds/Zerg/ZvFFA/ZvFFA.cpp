@@ -49,7 +49,7 @@ namespace McRave::BuildOrder::Zerg {
             return initialValue;
 
         auto time = double((Util::getTime().minutes - 1) * 60 + (Util::getTime().seconds)) / 60.0;
-        return int(time * 3);
+        return int(time * 4);
     }
 
     void ZvFFA()

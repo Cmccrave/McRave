@@ -106,11 +106,13 @@ namespace McRave::Expansion {
                 auto costBest = DBL_MAX;
                 BWEB::Station * stationBest = nullptr;
 
+                auto home = BWEB::Map::getNaturalChoke() ? Position(BWEB::Map::getNaturalChoke()->Center()) : BWEB::Map::getMainPosition();
+
                 for (auto &station : BWEB::Stations::getStations()) {
                     auto grdParent = log(expansionNetwork[parentStation][&station].getDistance());
                     auto grdHome = expansionNetwork[Terrain::getMyMain()][&station].getDistance();
                     auto airParent = station.getBase()->Center().getDistance(parentStation->getBase()->Center());
-                    auto airHome = station.getBase()->Center().getDistance(Position(BWEB::Map::getNaturalChoke()->Center()));
+                    auto airHome = station.getBase()->Center().getDistance(home);
                     auto airCenter = station.getBase()->Center().getDistance(mapBWEM.Center());
                     auto grdEnemy = enemyStation ? expansionNetwork[enemyStation][&station].getDistance() : 1.0;
                     auto airEnemy = enemyStation ? station.getBase()->Center().getDistance(enemyStation->getBase()->Center()) : 1.0;

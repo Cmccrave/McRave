@@ -173,7 +173,7 @@ namespace McRave::Workers {
                 auto resourceType = unit.hasResource() ? unit.getResource().lock()->getType() : UnitTypes::None;
 
                 const auto resourceWalkable = [&](const TilePosition &tile) {
-                    return (unit.hasResource() && tile.x >= resourceTile.x && tile.x < resourceTile.x + resourceType.tileWidth() && tile.y >= resourceTile.y && tile.y < resourceTile.y + resourceType.tileHeight())
+                    return (unit.hasResource() && !unit.getBuildPosition().isValid() && tile.x >= resourceTile.x && tile.x < resourceTile.x + resourceType.tileWidth() && tile.y >= resourceTile.y && tile.y < resourceTile.y + resourceType.tileHeight())
                         || newPath.unitWalkable(tile);
                 };
                 newPath.generateJPS(resourceWalkable);
@@ -181,14 +181,16 @@ namespace McRave::Workers {
             }
 
             // Set destination to intermediate position along path
+            unit.setNavigation(unit.getDestination());
             if (unit.getDestinationPath().getTarget() == TilePosition(unit.getDestination())) {
                 auto newDestination = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
                     return p.getDistance(unit.getPosition()) >= 64.0;
                 });
 
                 if (newDestination.isValid())
-                    unit.setDestination(newDestination);
+                    unit.setNavigation(newDestination);
             }
+            Visuals::drawPath(unit.getDestinationPath());
         }
 
         void updateDestination(UnitInfo& unit)

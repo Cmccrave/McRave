@@ -520,7 +520,7 @@ namespace McRave::Production {
             else if (Broodwar->self()->getRace() == Races::Zerg) {
                 switch (tech) {
                 case Lurker_Aspect:
-                    return true;
+                    return !BuildOrder::isTechUnit(Zerg_Hydralisk) || (haveOrUpgrading(UpgradeTypes::Grooved_Spines, 1) && haveOrUpgrading(UpgradeTypes::Muscular_Augments, 1));
                 case Burrowing:
                     return Stations::getStations(PlayerState::Self).size() >= 3 && Players::getSupply(PlayerState::Self, Races::Zerg) > 140;
                 case Consume:
