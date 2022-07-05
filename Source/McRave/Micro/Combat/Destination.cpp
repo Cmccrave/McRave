@@ -90,22 +90,12 @@ namespace McRave::Combat::Destination {
                 }
             }
         }
-   
-        bool lightUnitNeedsRegroup(UnitInfo& unit)
-        {
-            if (!unit.isLightAir())
-                return false;
-            return unit.hasCommander() && unit.getPosition().getDistance(unit.getCommander().lock()->getPosition()) > 64.0;
-        }
     }
 
     void updateDestination(UnitInfo& unit)
     {
-        if (lightUnitNeedsRegroup(unit) && !unit.getGoal().isValid() && !unit.globalRetreat() && !unit.localRetreat())
-            unit.setDestination(unit.getCommander().lock()->getPosition());
-
         // If attacking and target is close, set as destination
-        else if (unit.getLocalState() == LocalState::Attack) {
+        if (unit.getLocalState() == LocalState::Attack) {
             if (unit.attemptingRunby())
                 unit.setDestination(unit.getEngagePosition());
             else if (unit.getInterceptPosition().isValid())
@@ -146,6 +136,8 @@ namespace McRave::Combat::Destination {
             else
                 getCleanupPosition(unit);
         }
+
+        Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
     }
 
     void update(UnitInfo& unit)

@@ -9,6 +9,7 @@ namespace McRave::Planning {
 
         int plannedMineral, plannedGas;
         map<TilePosition, UnitType> buildingsPlanned;
+        map<TilePosition, int> buildingTimer;
         set<TilePosition> validDefenses, plannedGround, plannedAir;
         bool expansionPlanned = false;
         BWEB::Station * currentExpansion = nullptr;
@@ -813,8 +814,13 @@ namespace McRave::Planning {
                         continue;
                     auto builder = getBuilder(building, center);
 
+                    // Expired building attempt on current builder
+                    if (buildingTimer[here] <= Broodwar->getFrameCount()) {
+                        buildingTimer.erase(here);
+                    }
+
                     // Use old builder if we're not early game, as long as it's not stuck or was stuck recently
-                    if (builder && Util::getTime() > Time(3, 00)) {
+                    else if (builder && Util::getTime() > Time(3, 00)) {
                         for (auto &[oldHere, oldBuilder] : oldBuilders) {
                             if (oldHere == here && oldBuilder && Workers::canAssignToBuild(*oldBuilder))
                                 builder = oldBuilder;
@@ -827,6 +833,9 @@ namespace McRave::Planning {
                         builder->setBuildingType(building);
                         builder->setBuildPosition(here);
                         buildingsPlanned[here] = building;
+
+                        if (buildingTimer.find(here) == buildingTimer.end())
+                            buildingTimer[here] = Broodwar->getFrameCount() + (BWEB::Map::getGroundDistance(builder->getPosition(), center) / builder->getSpeed());
                     }
                 }
             }

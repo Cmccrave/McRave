@@ -117,8 +117,12 @@ namespace McRave::Combat::Navigation {
 
     void updateNavigation(UnitInfo& unit)
     {
+        if (lightUnitNeedsRegroup(unit) && !unit.getGoal().isValid() && !unit.globalRetreat() && !unit.localRetreat())
+            unit.setNavigation(unit.getCommander().lock()->getPosition());
+        else
+            unit.setNavigation(unit.getDestination());
+
         // If path is reachable, find a point n pixels away to set as new destination
-        unit.setNavigation(unit.getDestination());
         if (unit.getDestinationPath().isReachable()) {
             auto newDestination = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
                 return p.getDistance(unit.getPosition()) >= 160.0;
@@ -137,6 +141,7 @@ namespace McRave::Combat::Navigation {
         else
             updateDestinationPath(unit);
         updateNavigation(unit);
-    }
 
+        //Broodwar->drawLineMap(unit.getPosition(), unit.getNavigation(), Colors::Red);
+    }
 }

@@ -304,7 +304,7 @@ namespace McRave::BuildOrder::Zerg {
         hideTech =                                      true;
         unitLimits[Zerg_Drone] =                        INT_MAX;
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvP();
-        unitLimits[Zerg_Scourge] =                      6;
+        unitLimits[Zerg_Scourge] =                      max(2, Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) * 2);
         playPassive =                                   (Spy::getEnemyBuild() == "1GateCore" || (Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyOpener() != "Unknown")) && Util::getTime() < Time(5, 00);
         wantThird =                                     true;
         gasLimit =                                      (vis(Zerg_Drone) >= 14) ? gasMax() : 0;

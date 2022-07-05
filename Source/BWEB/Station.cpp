@@ -316,6 +316,17 @@ namespace BWEB {
             }
         }
 
+        // Try to fit more defenses with secondary positions
+        for (auto &placement : basePlacements) {
+            for (auto &secondary : secondaryLocations) {
+                auto tile = secondary + placement;
+                if (Map::isPlaceable(defenseType, tile)) {
+                    defenses.insert(tile);
+                    Map::addUsed(tile, defenseType);
+                }
+            }
+        }
+
         // Add geyser defenses
         if (main) {
             for (auto &geyser : base->Geysers()) {
@@ -478,7 +489,9 @@ namespace BWEB::Stations {
         for (auto &area : Map::mapBWEM.Areas()) {
             for (auto &base : area.Bases()) {
                 Station newStation(&base, false, false);
-                stations.push_back(newStation);
+                if (find(stations.begin(), stations.end(), newStation) == stations.end()) {
+                    stations.push_back(newStation);
+                }
             }
         }
     }

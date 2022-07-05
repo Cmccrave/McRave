@@ -109,7 +109,7 @@ namespace McRave::BuildOrder::Zerg {
         inBookSupply =                                  vis(Zerg_Overlord) < 7 || total(Zerg_Mutalisk) < 9;
 
         auto fourthHatch =                              (Spy::enemyFastExpand() && s >= 66) || total(Zerg_Mutalisk) >= 9;
-        planEarly =                                     (Spy::enemyFastExpand() && s >= 60) || atPercent(Zerg_Lair, 0.6) && Spy::getEnemyOpener() != "8Rax";
+        planEarly =                                     ((Spy::enemyFastExpand() && s >= 60) || atPercent(Zerg_Lair, 0.6)) && Spy::getEnemyOpener() != "8Rax" && int(Stations::getStations(PlayerState::Self).size()) < 3;
 
         buildQueue[Zerg_Hatchery] =                     2 + (s >= 26) + fourthHatch;
         buildQueue[Zerg_Extractor] =                    (hatchCount() >= 3) + (s >= 44);

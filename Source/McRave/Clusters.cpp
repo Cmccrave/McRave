@@ -10,6 +10,11 @@ namespace McRave::Combat::Clusters {
 
     void createClusters()
     {
+        // Delete empty clusters - solo or no commander
+        clusters.erase(remove_if(clusters.begin(), clusters.end(), [&](auto& cluster) {
+            return int(cluster.units.size()) <= 1 || cluster.commander.expired();
+        }), clusters.end());
+
         // Clear units out of the cluster
         for (auto& cluster : clusters) {
             cluster.units.clear();
@@ -102,9 +107,9 @@ namespace McRave::Combat::Clusters {
             }
         }
 
-        // Delete empty clusters - solo or no commander
+        // Delete empty clusters - empty or no commander
         clusters.erase(remove_if(clusters.begin(), clusters.end(), [&](auto& cluster) {
-            return int(cluster.units.size()) <= 1 || cluster.commander.expired();
+            return int(cluster.units.size()) < 1 || cluster.commander.expired();
         }), clusters.end());
     }
 

@@ -56,11 +56,12 @@ namespace McRave::Combat::Formations {
 
             // Set the radius of the concave
             const auto unitTangentSize = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0));
-            auto radius = count * unitTangentSize / 2.0;
+            auto cmderDist = commander->getPosition().getDistance(commander->getDestination());
+            auto radius = clamp(cmderDist - 64.0, count * unitTangentSize / 2.0, cmderDist + 64.0);
             bool useDefense = false;
 
-            if (commander->getLocalState() != LocalState::Retreat && commander->hasTarget())
-                radius = max(0.0, double(Util::boxDistance(commander->getType(), commander->getPosition(), commander->getTarget().lock()->getType(), commander->getTarget().lock()->getPosition())) - 64.0);
+            commander->circle(Colors::Yellow);
+
             if (radius < 1.0)
                 continue;
 
