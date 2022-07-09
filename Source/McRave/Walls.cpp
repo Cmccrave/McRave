@@ -269,8 +269,6 @@ namespace McRave::Walls {
             if ((BuildOrder::getCurrentTransition().find("Muta") != string::npos || Util::getTime() > Time(6, 00)) && (BuildOrder::takeNatural() || int(Stations::getStations(PlayerState::Self).size()) >= 2)) {
                 if (Players::ZvZ() && BuildOrder::isOpener() && BuildOrder::buildCount(Zerg_Spire) > 0 && vis(Zerg_Spire) == 0)
                     return 0;
-                else if (Spy::getEnemyTransition() == "2HatchSpeedling")
-                    return (Util::getTime() > Time(3, 45)) + (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(5, 30));
                 else if (Util::getTime() < Time(6, 00) && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 40)
                     return 6;
                 else if (Util::getTime() < Time(6, 00) && (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 || Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 26))
@@ -344,13 +342,13 @@ namespace McRave::Walls {
 
         // Zerg
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            if (Players::vP())
+            if (Players::ZvP())
                 return calcSaturationRatio(wall, calcGroundDefZvP(wall)) - groundCount;
-            if (Players::vT())
+            if (Players::ZvT())
                 return calcSaturationRatio(wall, calcGroundDefZvT(wall)) - groundCount;
-            if (Players::vZ())
+            if (Players::ZvZ())
                 return calcSaturationRatio(wall, calcGroundDefZvZ(wall)) - groundCount;
-            if (Broodwar->getGameType() == GameTypes::Free_For_All && Broodwar->getPlayers().size() > 2)
+            if (Players::ZvFFA())
                 return calcSaturationRatio(wall, calcGroundDefZvFFA(wall)) - groundCount;
         }
         return 0;

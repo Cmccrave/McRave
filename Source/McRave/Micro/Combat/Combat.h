@@ -15,7 +15,7 @@ namespace McRave::Combat {
         BWAPI::Position sharedPosition, sharedDestination;
         std::map<BWAPI::UnitType, int> typeCounts;
         double sharedRadius = 160.0;
-        std::vector<UnitInfo> units;
+        std::vector< std::weak_ptr<UnitInfo>> units;
         std::weak_ptr<UnitInfo> commander;
         CommandShare commandShare;
         Shape shape;
@@ -68,5 +68,4 @@ namespace McRave::Combat {
     void onStart();
 
     bool defendChoke();
-    std::set<BWAPI::Position>& getDefendPositions();
 }

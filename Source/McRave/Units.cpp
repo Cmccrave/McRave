@@ -50,8 +50,10 @@ namespace McRave::Units {
                         Events::onUnitDisappear(unit);
 
                     // If a unit is threatening our position
-                    if (unit.isThreatening())
+                    if (unit.isThreatening()) {
                         immThreat += unit.getVisibleGroundStrength();
+                        unit.circle(Colors::Red);
+                    }
 
                     // Add to army center
                     if (unit.getPosition().isValid() && !unit.getType().isBuilding() && !unit.getType().isWorker() && !unit.movedFlag) {

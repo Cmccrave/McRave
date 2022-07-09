@@ -84,6 +84,10 @@ namespace McRave
                 pStrength.groundToGround += unit.getVisibleGroundStrength();
             }
         }
+        
+        // Round up to nearest 2 (for actual Broodwar supply)
+        for (auto &supply : raceSupply)
+            supply.second += (supply.second % 2);
 
         // Set current allied status
         if (thisPlayer->getID() == BWAPI::Broodwar->self()->getID())

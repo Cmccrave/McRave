@@ -72,7 +72,7 @@ namespace McRave::BuildOrder::Zerg {
                 timingValue = 5;
             else if (Spy::getEnemyTransition().find("3Gate") != string::npos || Spy::getEnemyTransition() == "DT")
                 timingValue = 4;
-            else if (Spy::getEnemyTransition() == "Corsair" || Broodwar->getGameType() == GameTypes::Free_For_All)
+            else if (Spy::getEnemyTransition() == "Corsair" || Players::ZvFFA())
                 timingValue = 2;
             else
                 timingValue = 1;

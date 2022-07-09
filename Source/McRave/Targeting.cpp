@@ -81,12 +81,14 @@ namespace McRave::Targets {
                 || Spy::enemyGreedy()
                 || (target.getType() == Protoss_Pylon && target.isProxy() && Spy::getEnemyTransition() == "ZealotRush");
 
+            if (!unitCanAttack)
+                return false;
+
             // Combat Role
             if (unit.getRole() == Role::Combat) {
 
                 // Generic
-                if (!unitCanAttack
-                    || !targetMatters
+                if (!targetMatters
                     || (target.getType() == Terran_Vulture_Spider_Mine && int(target.getTargetedBy().size()) >= 4 && !target.isBurrowed())                                  // Don't over target spider mines
                     || (target.getType() == Protoss_Interceptor && unit.isFlying())                                                                                         // Don't target interceptors as a flying unit
                     || (!allowWorkerTarget(unit, target))
@@ -187,7 +189,7 @@ namespace McRave::Targets {
             const auto bonusScore = [&]() {
 
                 // Add bonus for expansion killing
-                if (target.getType().isResourceDepot() && (Util::getTime() > Time(8, 00) || Spy::enemyGreedy()) && !unit.isLightAir())
+                if (target.getType().isResourceDepot() && !Players::ZvZ() && (Util::getTime() > Time(8, 00) || Spy::enemyGreedy()) && !unit.isLightAir())
                     return 5000.0;
 
                 // Add bonus for Observers that are vulnerable
@@ -216,11 +218,11 @@ namespace McRave::Targets {
                     return 20.0;
 
                 // Add bonus for being able to one shot a unit
-                if (unit.canOneShot(target))
+                if (!Players::ZvZ() && unit.canOneShot(target))
                     return 4.0;
 
                 // Add bonus for being able to two shot a unit
-                if (unit.canTwoShot(target))
+                if (!Players::ZvZ() && unit.canTwoShot(target))
                     return 2.0;
                 return 1.0;
             };
@@ -239,8 +241,6 @@ namespace McRave::Targets {
             };
 
             const auto priorityScore = [&]() {
-                if (!target.getType().isWorker() && ((!target.canAttackAir() && unit.isFlying()) || (!target.canAttackGround() && !unit.isFlying())))
-                    return target.getPriority() / 4.0;
                 if (target.getType().isWorker() && unit.isLightAir() && Grids::getEAirThreat(unit.getPosition()) > 0.0f)
                     return target.getPriority() / 4.0;
                 if (target.getType().isWorker() && !Terrain::inTerritory(PlayerState::Enemy, target.getPosition()))

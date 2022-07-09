@@ -70,6 +70,7 @@
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvT\ZvT_HatchPool.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvT\ZvT_PoolHatch.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvZ\ZvZ.cpp" />
+    <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvZ\ZvZ_HatchPool.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvZ\ZvZ_PoolHatch.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvZ\ZvZ_PoolLair.cpp" />
     <ClCompile Include="..\Source\McRave\Clusters.cpp" />
@@ -93,6 +94,7 @@
     <ClCompile Include="..\Source\McRave\Spy\SpyProtoss.cpp" />
     <ClCompile Include="..\Source\McRave\Spy\SpyTerran.cpp" />
     <ClCompile Include="..\Source\McRave\Spy\SpyZerg.cpp" />
+    <ClCompile Include="..\Source\McRave\Strategy\Zones\Zones.cpp" />
     <ClCompile Include="..\Source\McRave\Walls.cpp" />
     <ClInclude Include="..\Source\Horizon\Horizon.h" />
     <ClInclude Include="..\Source\McRave\Actions.h" />
@@ -163,6 +165,7 @@
     <ClInclude Include="..\Source\McRave\Planning.h" />
     <ClInclude Include="..\Source\McRave\Roles.h" />
     <ClInclude Include="..\Source\McRave\Spy\Spy.h" />
+    <ClInclude Include="..\Source\McRave\Strategy\Zones\Zones.h" />
     <ClInclude Include="..\Source\McRave\Visuals.h" />
     <ClInclude Include="..\Source\McRave\McRave.h" />
     <ClInclude Include="..\Source\McRave\PlayerInfo.h" />

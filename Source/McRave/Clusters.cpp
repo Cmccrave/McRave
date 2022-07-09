@@ -12,7 +12,7 @@ namespace McRave::Combat::Clusters {
     {
         // Delete empty clusters - solo or no commander
         clusters.erase(remove_if(clusters.begin(), clusters.end(), [&](auto& cluster) {
-            return int(cluster.units.size()) <= 1 || cluster.commander.expired();
+            return (int(cluster.units.size()) <= 1 || cluster.commander.expired());
         }), clusters.end());
 
         // Clear units out of the cluster
@@ -22,7 +22,7 @@ namespace McRave::Combat::Clusters {
             cluster.sharedRadius = 160.0;
             if (auto commander = cluster.commander.lock()) {
                 cluster.typeCounts[commander->getType()]++;
-                cluster.units.push_back(*commander);
+                cluster.units.push_back(cluster.commander);
                 cluster.sharedDestination = commander->getDestination();
                 cluster.sharedPosition = commander->getPosition();
             }
@@ -39,21 +39,23 @@ namespace McRave::Combat::Clusters {
                 || unit.getType() == Zerg_Defiler)
                 continue;
 
+            unit.setFormation(Positions::Invalid);
+
             // Check if any existing formations match this units type and common objective
             bool foundCluster = false;
             for (auto &cluster : clusters) {
                 auto flyingCluster = any_of(cluster.units.begin(), cluster.units.end(), [&](auto &u) {
-                    return u.isFlying();
-                });
+                    return u.lock()->isFlying();
+                }) || (cluster.commander.lock() && cluster.commander.lock()->isFlying());
                 if ((flyingCluster && !unit.isFlying()) || (!flyingCluster && unit.isFlying()))
                     continue;
 
-                auto positionInCommon = unit.getPosition().getDistance(cluster.sharedPosition) < cluster.sharedRadius;
-                auto destinationInCommon = unit.getDestination().getDistance(cluster.sharedDestination) < cluster.sharedRadius;
+                auto positionInCommon = unit.getPosition().getDistance(cluster.sharedPosition) < cluster.sharedRadius || unit.getPosition().getDistance(cluster.sharedDestination) < cluster.sharedRadius;
+                auto destinationInCommon = unit.getDestination().getDistance(cluster.sharedDestination) < cluster.sharedRadius || unit.getDestination().getDistance(cluster.sharedPosition) < cluster.sharedRadius;
 
                 if (destinationInCommon) {
                     cluster.sharedRadius += unit.isLightAir() ? 0.0 : double(unit.getType().width() * unit.getType().height()) / cluster.sharedRadius;
-                    cluster.units.push_back(unit);
+                    cluster.units.push_back(unit.weak_from_this());
                     cluster.typeCounts[unit.getType()]++;
                     foundCluster = true;
                     break;
@@ -63,7 +65,7 @@ namespace McRave::Combat::Clusters {
             // Didn't find existing formation, create a new one
             if (!foundCluster) {
                 Cluster newCluster(unit.getPosition(), unit.getDestination(), unit.getType());
-                newCluster.units.push_back(unit);
+                newCluster.units.push_back(unit.weak_from_this());
                 newCluster.typeCounts[unit.getType()]++;
                 clusters.push_back(newCluster);
             }
@@ -79,8 +81,9 @@ namespace McRave::Combat::Clusters {
 
             // Find a centroid
             auto avgPosition = Position(0, 0);
-            for (auto &unit : cluster.units) {
-                avgPosition += unit.getPosition();
+            for (auto &u : cluster.units) {
+                auto unit = u.lock();
+                avgPosition += unit->getPosition();
             }
             avgPosition /= cluster.units.size();
 
@@ -102,8 +105,10 @@ namespace McRave::Combat::Clusters {
                 cluster.shape = cluster.commander.lock()->isLightAir() ? Shape::None : Shape::Concave;
 
                 // Assign commander to each unit
-                for (auto &unit : cluster.units)
-                    unit.setCommander(&*closestToCentroid);
+                for (auto &u : cluster.units) {
+                    auto unit = u.lock();
+                    unit->setCommander(&*closestToCentroid);
+                }
             }
         }
 

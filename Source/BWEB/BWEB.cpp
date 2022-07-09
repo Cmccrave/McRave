@@ -81,8 +81,10 @@ namespace BWEB::Map
                     // Draw boxes around TilePositions that are used
                     if (drawUsed) {
                         const auto type = usedGrid[x][y];
-                        if (type != UnitTypes::None)
+                        if (type != UnitTypes::None) {
                             Broodwar->drawBoxMap(Position(t) + Position(8, 8), Position(t) + Position(25, 25), Colors::Black, true);
+                            Broodwar->drawTextMap(Position(t), "%s", type.c_str());
+                        }
                     }
 
                     // Draw boxes around fully walkable TilePositions

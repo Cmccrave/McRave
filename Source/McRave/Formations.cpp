@@ -10,13 +10,15 @@ namespace McRave::Combat::Formations {
 
     void assignPosition(Cluster& cluster, Formation& concave, Position p, int& assignmentsRemaining)
     {
-        UnitInfo* closestUnit = nullptr;
+        UnitInfo * closestUnit = nullptr;
         auto distBest = DBL_MAX;
-        for (auto &unit : cluster.units) {
-            auto dist = unit.getPosition().getDistance(p);
-            if (dist < distBest && !unit.concaveFlag && unit.getLocalState() != LocalState::Attack) {
-                distBest = dist;
-                closestUnit = &unit;
+        for (auto &u : cluster.units) {
+            if (auto unit = u.lock()) {
+                auto dist = unit->getPosition().getDistance(p);
+                if (dist < distBest && !unit->getFormation().isValid() && unit->getLocalState() != LocalState::Attack) {
+                    distBest = dist;
+                    closestUnit = &*unit;
+                }
             }
         }
         auto closestBuilder = Util::getClosestUnit(p, PlayerState::Self, [&](auto &u) {
@@ -37,10 +39,11 @@ namespace McRave::Combat::Formations {
 
         if (inRange) {
             closestUnit->setFormation(p);
-            closestUnit->setDestination(p);
-            closestUnit->concaveFlag = true;
-            Broodwar->drawLineMap(closestUnit->getPosition(), p, Colors::Orange);
+
+            if (Terrain::inTerritory(PlayerState::Self, closestUnit->getPosition()))
+                Zones::addZone(closestUnit->getFormation(), ZoneType::Engage, 160, 320);
         }
+
         assignmentsRemaining--;
     }
 
@@ -58,7 +61,6 @@ namespace McRave::Combat::Formations {
             const auto unitTangentSize = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0));
             auto cmderDist = commander->getPosition().getDistance(commander->getDestination());
             auto radius = clamp(cmderDist - 64.0, count * unitTangentSize / 2.0, cmderDist + 64.0);
-            bool useDefense = false;
 
             commander->circle(Colors::Yellow);
 
@@ -66,14 +68,12 @@ namespace McRave::Combat::Formations {
                 continue;
 
             // If we are setting up a static formation, align concave with buildings close by
-            if (!cluster.mobileCluster) {
-                auto closestDefense = Util::getClosestUnit(cluster.sharedDestination, PlayerState::Self, [&](auto &u) {
-                    return u->getType().isBuilding() && u->isCompleted() && u->getFormation() == cluster.sharedDestination;
+            if (commander->getGlobalState() == GlobalState::Retreat) {
+                auto closestBuilding = Util::getClosestUnit(cluster.sharedDestination, PlayerState::Self, [&](auto &u) {
+                    return u->getType().isBuilding() && ((u->isCompleted() && u->getFormation() == cluster.sharedDestination) || !Combat::defendChoke());
                 });
-                if (closestDefense) {
-                    radius = closestDefense->getPosition().getDistance(cluster.sharedDestination);
-                    useDefense = true;
-                }
+                if (closestBuilding)
+                    radius = closestBuilding->getPosition().getDistance(cluster.sharedDestination);                
             }
 
             // Get a retreat point
@@ -93,10 +93,6 @@ namespace McRave::Combat::Formations {
             bool stopPositive = false;
             bool stopNegative = false;
             auto wrap = 0;
-
-            Broodwar->drawLineMap(commander->getPosition(), concave.center, Colors::Purple);
-            Broodwar->drawCircleMap(retreat->getBase()->Center(), 4, Colors::Red, true);
-            Broodwar->drawCircleMap(concave.center, 6, Colors::White);
 
             auto assignmentsRemaining = int(cluster.units.size());
             while (assignmentsRemaining > 0) {

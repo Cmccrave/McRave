@@ -313,25 +313,29 @@ namespace McRave::Util {
 
     pair<double, Position> getClosestPointToRadiusGround(Position source, Position target, double radius)
     {
-        // Create a binary search tree in a circle around the target
+        // Create a search tree in a circle around the target
         auto position = target;
         auto dist = source.getDistance(target);
         pair<double, double> radrange ={ 0.00, 3.14 };
         for (int i = 1; i <= 8; i++) {
-            auto diff = (radrange.second - radrange.first) / 4.0;
+            auto diff = (radrange.second - radrange.first) / 3.0; // Allows for correction in the event that the first few points are unwalkable
             auto p1 = target + Position(radius*cos(radrange.first), radius*sin(radrange.first));
             auto p2 = target + Position(radius*cos(radrange.second), radius*sin(radrange.second));
 
-            if (!p1.isValid() || !BWEB::Map::isWalkable(TilePosition(p1), None))
+            if (!p1.isValid()) {
                 radrange ={ radrange.second - diff, radrange.second + diff };
-            else if (!p2.isValid() || (!BWEB::Map::isWalkable(TilePosition(p2), None)))
+            }
+            else if (!p2.isValid()) {
                 radrange ={ radrange.first - diff, radrange.first + diff };
+            }
             else {
                 auto dist1 = BWEB::Map::getGroundDistance(p1, source) + BWEB::Map::getGroundDistance(p1, target);
                 auto dist2 = BWEB::Map::getGroundDistance(p2, source) + BWEB::Map::getGroundDistance(p2, target);
 
-                if (i < 5)
+                if (i < 8) {
                     dist1 < dist2 ? radrange ={ radrange.first - diff, radrange.first + diff } : radrange ={ radrange.second - diff, radrange.second + diff };
+                    Broodwar->drawTextMap(dist1 < dist2 ? p1 : p2, "%d", i);
+                }
                 else {
                     position = (dist1 < dist2 ? p1 : p2);
                     dist = (dist1 < dist2 ? dist1 : dist2);

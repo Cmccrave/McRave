@@ -161,7 +161,7 @@ namespace McRave::Goals {
                 }
 
                 // Escort expanders
-                if (nextExpand.isValid() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) >= 2) {
+                if (nextExpand.isValid() && (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) >= 2 || Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony) >= 2)) {
                     auto closestBuilder = Util::getClosestUnit(nextExpand, PlayerState::Self, [&](auto &u) {
                         return u->getBuildType().isResourceDepot();
                     });

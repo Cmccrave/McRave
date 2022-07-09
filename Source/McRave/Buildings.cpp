@@ -87,6 +87,11 @@ namespace McRave::Buildings {
             if (building.getType() == Zerg_Lair && BuildOrder::isOpener() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyOpener() == "Proxy" && BuildOrder::getCurrentTransition().find("Muta") == string::npos) {
                 building.unit()->cancelConstruction();
             }
+
+            // Cancelling colonies we don't need now
+            if (building.getType() == Zerg_Creep_Colony) {
+
+            }
         }
 
         void morph(UnitInfo& building)

@@ -12,6 +12,13 @@ namespace McRave::Combat::Destination {
         multimap<double, Position> groundCleanupPositions;
         multimap<double, Position> airCleanupPositions;
 
+        bool lightUnitNeedsRegroup(UnitInfo& unit)
+        {
+            if (!unit.isLightAir())
+                return false;
+            return unit.hasCommander() && unit.getPosition().getDistance(unit.getCommander().lock()->getPosition()) > 64.0;
+        }
+
         void updateCleanup()
         {
             groundCleanupPositions.clear();
@@ -108,9 +115,9 @@ namespace McRave::Combat::Destination {
                 unit.setDestination(unit.getTarget().lock()->getPosition());
         }
         else if (unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat) {
-            if (unit.getFormation().isValid() && unit.getGlobalState() == GlobalState::Retreat)
-                unit.setDestination(unit.getFormation());
-            else if (BuildOrder::isPlayPassive())
+            if (lightUnitNeedsRegroup(unit) && !unit.getGoal().isValid() && !unit.globalRetreat() && !unit.localRetreat())
+                unit.setDestination(unit.getCommander().lock()->getPosition());
+            else if (Terrain::getDefendPosition().isValid() && unit.getGlobalState() == GlobalState::Retreat)
                 unit.setDestination(Terrain::getDefendPosition());
             else {
                 const auto &retreat = Stations::getClosestRetreatStation(unit);
@@ -118,7 +125,9 @@ namespace McRave::Combat::Destination {
             }
         }
         else {
-            if (unit.getGoal().isValid())
+            if (lightUnitNeedsRegroup(unit) && !unit.getGoal().isValid() && !unit.globalRetreat() && !unit.localRetreat())
+                unit.setDestination(unit.getCommander().lock()->getPosition());
+            else if (unit.getGoal().isValid())
                 unit.setDestination(unit.getGoal());
             else if ((unit.isLightAir() || unit.getType() == Zerg_Scourge) && ((Units::getImmThreat() > 25.0 && Stations::getStations(PlayerState::Self).size() >= 3 && Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size()) || (Players::ZvZ() && Units::getImmThreat() > 5.0))) {
                 auto attacker = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {

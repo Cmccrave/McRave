@@ -9,9 +9,6 @@ namespace McRave::Combat {
     namespace {
 
         int lastRoleChange = 0;
-        set<Position> defendPositions;
-        vector<TilePosition> occupiedTiles;
-
         bool holdChoke = false;
 
         bool lightUnitNeedsRegroup(UnitInfo& unit)
@@ -23,7 +20,9 @@ namespace McRave::Combat {
 
         void checkHoldChoke()
         {
-            auto defensiveAdvantage = (Players::ZvZ() && BuildOrder::getCurrentOpener() == Spy::getEnemyOpener()) || (Players::ZvZ() && BuildOrder::getCurrentOpener() == "12Pool" && Spy::getEnemyOpener() == "9Pool");
+            auto defensiveAdvantage = (Players::ZvZ() && BuildOrder::getCurrentOpener() == Spy::getEnemyOpener())
+                || (Players::ZvZ() && BuildOrder::getCurrentOpener() == "12Pool" && Spy::getEnemyOpener() == "9Pool")
+                || (Players::ZvZ() && vis(Zerg_Zergling) >= Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) + 2);
 
             // UMS Setting
             if (Broodwar->getGameType() == BWAPI::GameTypes::Use_Map_Settings) {
@@ -89,7 +88,7 @@ namespace McRave::Combat {
             const auto proactivePullWorker = [&]() {
 
                 // If this isn't the closest mineral worker to the defend position, don't pull it
-                if (unit.getRole() == Role::Worker && unit != *closestWorker)
+                if (unit.getRole() == Role::Worker && closestWorker && unit != *closestWorker)
                     return false;
 
                 // Protoss
@@ -165,10 +164,13 @@ namespace McRave::Combat {
                     return combatWorkersCount <= com(Zerg_Drone) - 4;
 
                 // If we're trying to make our expanding hatchery and the drone is being harassed
-                if (vis(Zerg_Hatchery) == 1 && Util::getTime() < Time(3, 00) && BuildOrder::isOpener() && Units::getImmThreat() > 0.0f && Players::ZvP() && combatCount == 0)
+                if (Players::ZvP() && vis(Zerg_Hatchery) == 1 && Util::getTime() < Time(3, 00) && BuildOrder::isOpener() && Units::getImmThreat() > 0.0f && combatCount == 0)
                     return combatWorkersCount < 1;
                 if (Players::ZvP() && Util::getTime() < Time(4, 00) && int(Stations::getStations(PlayerState::Self).size()) < 2 && BuildOrder::getBuildQueue()[Zerg_Hatchery] >= 2 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Probe) > 0)
                     return combatWorkersCount < 1;
+
+                if (Players::ZvZ() && Spy::getEnemyOpener() == "4Pool" && Units::getImmThreat() > 0.0f && com(Zerg_Zergling) == 0)
+                    return combatWorkersCount < 10;
 
                 // If we suspect a cannon rush is coming
                 if (Players::ZvP() && Spy::enemyPossibleProxy() && Util::getTime() < Time(3, 00))
@@ -237,22 +239,24 @@ namespace McRave::Combat {
                 }
 
                 // Update remaining units
-                for (auto &unit : cluster.units) {
-                    if (cluster.commandShare == CommandShare::Exact && !unit.localRetreat() && !unit.globalRetreat() && !lightUnitNeedsRegroup(unit)) {
-                        if (commander->getCommandType() == UnitCommandTypes::Attack_Unit && unit.hasTarget())
-                            unit.command(commander->getCommandType(), *unit.getTarget().lock());
-                        else if (commander->getCommandType() == UnitCommandTypes::Move && !unit.isTargetedBySplash())
-                            unit.command(commander->getCommandType(), commander->getCommandPosition());
-                        else if (commander->getCommandType() == UnitCommandTypes::Right_Click_Position && !unit.isTargetedBySplash())
-                            unit.command(UnitCommandTypes::Right_Click_Position, commander->getCommandPosition());
-                        else {
-                            Navigation::update(unit);
-                            Decision::update(unit);
+                for (auto &u : cluster.units) {
+                    if (auto unit = u.lock()) {
+                        if (cluster.commandShare == CommandShare::Exact && !unit->localRetreat() && !unit->globalRetreat() && !lightUnitNeedsRegroup(*unit)) {
+                            if (commander->getCommandType() == UnitCommandTypes::Attack_Unit && unit->hasTarget())
+                                unit->command(commander->getCommandType(), *unit->getTarget().lock());
+                            else if (commander->getCommandType() == UnitCommandTypes::Move && !unit->isTargetedBySplash())
+                                unit->command(commander->getCommandType(), commander->getCommandPosition());
+                            else if (commander->getCommandType() == UnitCommandTypes::Right_Click_Position && !unit->isTargetedBySplash())
+                                unit->command(UnitCommandTypes::Right_Click_Position, commander->getCommandPosition());
+                            else {
+                                Navigation::update(*unit);
+                                Decision::update(*unit);
+                            }
                         }
-                    }
-                    else {
-                        Navigation::update(unit);
-                        Decision::update(unit);
+                        else {
+                            Navigation::update(*unit);
+                            Decision::update(*unit);
+                        }
                     }
                 }
             }
@@ -271,5 +275,4 @@ namespace McRave::Combat {
     }
 
     bool defendChoke() { return holdChoke; }
-    set<Position>& getDefendPositions() { return defendPositions; }
 }

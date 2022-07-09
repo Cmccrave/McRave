@@ -99,6 +99,10 @@ namespace McRave
         }
     };
 
+    enum class ZoneType {
+        None, Engage, Retreat, Escort
+    };
+
     enum class GoalType {
         None, Attack, Contain, Explore, Escort, Defend
     };
@@ -166,6 +170,7 @@ namespace McRave
 #include "Util.h"
 #include "Visuals.h"
 #include "Walls.h"
+#include "Strategy/Zones/Zones.h"
 
 namespace
 {

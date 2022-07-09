@@ -43,10 +43,10 @@ namespace McRave::BuildOrder::Zerg {
         else if (Spy::getEnemyTransition() == "2HatchSpeedling")
             return 6;
         else if (vis(Zerg_Spire) > 0)
-            return 16;
+            return 12;
         else if (vis(Zerg_Lair) > 0)
             return 18;
-        return 12;
+        return 16;
     }
 
     void ZvZ()

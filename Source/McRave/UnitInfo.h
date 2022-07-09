@@ -66,7 +66,7 @@ namespace McRave {
         bool invincible = false;
     #pragma endregion
 
-    #pragma region Targets
+    #pragma region Pointers
         std::weak_ptr<UnitInfo> transport;
         std::weak_ptr<UnitInfo> target;
         std::weak_ptr<UnitInfo> commander;
@@ -133,7 +133,6 @@ namespace McRave {
     public:
 
         // HACK: Hacky flags that were added quickly
-        bool concaveFlag = false;
         bool movedFlag = false;
         int lastUnreachableFrame = -999;
 

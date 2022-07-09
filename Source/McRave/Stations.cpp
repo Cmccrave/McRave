@@ -4,7 +4,7 @@ using namespace BWAPI;
 using namespace std;
 using namespace UnitTypes;
 
-namespace McRave::Stations 
+namespace McRave::Stations
 {
     namespace {
         map<BWEB::Station*, PlayerState> stations;
@@ -185,6 +185,132 @@ namespace McRave::Stations
                 defendPositions[station] = defendPosition;
             }
         }
+
+        int calcGroundDefPvP(BWEB::Station * station)
+        {
+            auto groundCount = getGroundDefenseCount(station);
+
+            if (station->isMain()) {
+                if (Spy::enemyInvis())
+                    return 1 - groundCount;
+            }
+            else if (station->isNatural()) {
+                if (Spy::enemyInvis())
+                    return 2 - groundCount;
+            }
+            else {
+            }
+            return 0;
+        }
+
+        int calcGroundDefPvT(BWEB::Station * station)
+        {
+            if (station->isMain()) {
+            }
+            else if (station->isNatural()) {
+            }
+            else {
+            }
+            return 0;
+        }
+
+        int calcGroundDefPvZ(BWEB::Station * station)
+        {
+            auto groundCount = getGroundDefenseCount(station);
+
+            if (station->isMain()) {
+                if (Spy::getEnemyTransition().find("Muta") != string::npos)
+                    return 3 - groundCount;
+            }
+            else if (station->isNatural()) {
+                if (Spy::getEnemyTransition().find("Muta") != string::npos)
+                    return 2 - groundCount;
+            }
+            else {
+            }
+            return 0;
+        }
+
+        int calcGroundDefZvP(BWEB::Station * station)
+        {
+            auto groundCount = getGroundDefenseCount(station);
+
+            if (station->isMain()) {
+                if (Spy::enemyProxy() && Spy::getEnemyBuild() == "2Gate")
+                    return (Util::getTime() > Time(2, 00)) + (Util::getTime() > Time(2, 30)) - groundCount;
+                if (BuildOrder::isProxy() && BuildOrder::getCurrentTransition() == "2HatchLurker")
+                    return (Util::getTime() > Time(2, 45)) + (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(4, 15)) - groundCount;
+            }
+            else if (station->isNatural()) {
+            }
+            else {
+                if (BuildOrder::getCurrentTransition().find("2Hatch") != string::npos)
+                    return 1 - groundCount;
+                if (BuildOrder::getCurrentTransition().find("2Hatch") == string::npos && Util::getTime() > Time(5, 00))
+                    return 2 - groundCount;
+                return (Util::getTime() > Time(7, 30)) + (Util::getTime() > Time(8, 00)) - groundCount;
+            }
+            return 0;
+        }
+
+        int calcGroundDefZvT(BWEB::Station * station)
+        {
+            auto groundCount = getGroundDefenseCount(station);
+
+            if (station->isMain()) {
+                if (Players::getTotalCount(PlayerState::Enemy, Terran_Dropship) > 0)
+                    return (Util::getTime() > Time(11, 00)) + (Util::getTime() > Time(15, 00)) - groundCount;
+            }
+            else if (station->isNatural()) {
+            }
+            else {
+                if (Util::getTime() > Time(4, 15) && (Spy::getEnemyTransition() == "2Fact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled()))
+                    return 1 - groundCount;
+                return (Util::getTime() > Time(7, 30)) + (Util::getTime() > Time(8, 00)) - groundCount;
+            }
+            return 0;
+        }
+
+        int calcGroundDefZvZ(BWEB::Station * station)
+        {
+            auto groundCount = getGroundDefenseCount(station);
+
+            if (station->isMain()) {
+                if (BuildOrder::takeNatural() || getStations(PlayerState::Self).size() > 1)
+                    return 0;
+
+                groundCount += Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony) + (vis(Zerg_Hatchery) + vis(Zerg_Lair) >= 2);
+                if (Spy::enemyRush() && (total(Zerg_Zergling) >= 12 || BuildOrder::getCurrentBuild() != "PoolLair"))
+                    return 1 + (vis(Zerg_Sunken_Colony) > 0) + (vis(Zerg_Drone) >= 8 && com(Zerg_Sunken_Colony) >= 2) - groundCount;
+                else if (Spy::getEnemyOpener() == "7Pool" && BuildOrder::getCurrentOpener() == "12Pool")
+                    return 1 - groundCount;
+                else if (Spy::getEnemyTransition() == "2HatchSpeedling" && vis(Zerg_Spire) > 0)
+                    return (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(5, 00)) - groundCount;
+                else if (Spy::getEnemyTransition() == "+1Ling")
+                    return (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(4, 45)) - groundCount;
+                else if (Util::getTime() < Time(6, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3)
+                    return (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(5, 00)) + (Util::getTime() > Time(6, 00)) - groundCount;
+                else if (!Terrain::foundEnemy() && vis(Zerg_Spire) > 0 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 16)
+                    return 1 - groundCount;
+                else if (Spy::getEnemyTransition().find("Muta") == string::npos && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 16)
+                    return 1 - groundCount;
+                else if (Util::getTime() > Time(5, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > 4 * vis(Zerg_Zergling))
+                    return 1 - groundCount;
+            }
+            else if (station->isNatural()) {
+            }
+            else {
+            }
+            return 0;
+        }
+
+        int calcGroundDefZvFFA(BWEB::Station * station)
+        {
+            auto groundCount = getGroundDefenseCount(station);
+
+            if (Players::ZvFFA() && !station->isMain() && !station->isNatural())
+                return 2 - groundCount;
+        }
     }
 
     void onFrame() {
@@ -270,147 +396,24 @@ namespace McRave::Stations
     }
 
     int needGroundDefenses(BWEB::Station * station) {
-        auto groundCount = getGroundDefenseCount(station);
-        auto myStationCount = getStations(PlayerState::Self).size();
 
-        if (BuildOrder::isRush() || BuildOrder::isPressure())
+        if (BuildOrder::isRush()
+            || BuildOrder::isPressure()
+            || Spy::getEnemyTransition() == "Carriers")
             return 0;
 
-        // In mirror matchup, we can delay sunkens if they make sunkens
-        if (Players::ZvZ()) {
-            if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony) >= 2 && Util::getTime() < Time(4, 30))
-                groundCount++;
-        }
-
-        if (Players::ZvFFA() && !station->isMain() && !station->isNatural())
-            return 2 - groundCount;
-
-        // Grab total and current counts of minerals remaining for this base
-        auto initial = 0;
-        auto current = 0;
-        for (auto &mineral : station->getBase()->Minerals()) {
-            if (mineral && mineral->Unit()->exists()) {
-                initial += mineral->InitialAmount();
-                current += mineral->Amount();
-            }
-        }
-        for (auto &gas : station->getBase()->Geysers()) {
-            if (gas && gas->Unit()->exists()) {
-                initial += gas->InitialAmount();
-                current += gas->Amount();
-            }
-        }
-
-        // Main defenses
-        if (station->isMain()) {
-
-            if (Broodwar->self()->getRace() == Races::Protoss) {
-                if (Players::PvP() && Spy::enemyInvis())
-                    return 1 - groundCount;
-                if (Players::PvZ() && (Spy::getEnemyTransition().find("Muta") != string::npos))
-                    return 3 - groundCount;
-            }
-            if (Broodwar->self()->getRace() == Races::Zerg) {
-                if (Players::ZvZ() && !BuildOrder::takeNatural() && myStationCount <= 1) {
-                    if (BuildOrder::getCurrentTransition().find("Muta") == string::npos)
-                        groundCount += 2;
-
-                    if (Spy::getEnemyOpener() == "7Pool" && BuildOrder::getCurrentOpener() == "12Pool")
-                        return 1 - groundCount;
-
-                    else if (Spy::getEnemyTransition() == "2HatchSpeedling" && vis(Zerg_Spire) > 0 && !Spy::enemyFastExpand())
-                        return (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(5, 00)) - groundCount;
-                    else if (Spy::getEnemyTransition() == "+1Ling")
-                        return (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(4, 45)) - groundCount;
-                    else if (Util::getTime() < Time(5, 30) && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 40)
-                        return 6 - groundCount;
-                    else if (Util::getTime() < Time(4, 45) && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 26)
-                        return 4 - groundCount;
-                    else if (Util::getTime() < Time(6, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3)
-                        return 4 - groundCount;
-                    else if (Spy::enemyPressure())
-                        return (Util::getTime() > Time(3, 45)) + (vis(Zerg_Sunken_Colony) > 0) + (vis(Zerg_Drone) >= 8 && com(Zerg_Sunken_Colony) >= 2) - groundCount;
-                    else if (Spy::enemyRush() && (total(Zerg_Zergling) >= 12 || BuildOrder::getCurrentBuild() != "PoolLair"))
-                        return 1 + (vis(Zerg_Sunken_Colony) > 0) + (vis(Zerg_Drone) >= 8 && com(Zerg_Sunken_Colony) >= 2) - groundCount;
-                    else if (!Terrain::foundEnemy() && vis(Zerg_Spire) > 0 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 16)
-                        return 1 - groundCount;
-                    else if (Spy::getEnemyTransition().find("Muta") == string::npos && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 16)
-                        return 1 - groundCount;
-                    else if (Util::getTime() > Time(5, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > 4 * vis(Zerg_Zergling))
-                        return 1 - groundCount;
-                }
-
-                if (Players::ZvP()) {
-                    if (Spy::enemyProxy() && Spy::getEnemyBuild() == "2Gate")
-                        return (Util::getTime() > Time(2, 00)) + (Util::getTime() > Time(2, 30)) - groundCount;
-                    if (BuildOrder::isProxy() && BuildOrder::getCurrentTransition() == "2HatchLurker")
-                        return (Util::getTime() > Time(2, 45)) + (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(4, 15)) - groundCount;
-                }
-
-                if (Players::ZvT()) {
-                    if (Players::getTotalCount(PlayerState::Enemy, Terran_Dropship) > 0)
-                        return (Util::getTime() > Time(11, 00)) + (Util::getTime() > Time(15, 00)) - groundCount;
-                }
-            }
-            return 0;
-        }
-
-        // Natural defenses
-        else if (station->isNatural()) {
-            if (Players::PvP() && Spy::enemyInvis())
-                return 2 - groundCount;
-            if (Players::PvZ() && (Spy::getEnemyTransition() == "2HatchMuta" || Spy::getEnemyTransition() == "3HatchMuta"))
-                return 2 - groundCount;
-
-            if (Broodwar->self()->getRace() == Races::Protoss) {
-                const auto percentage = double(current) / double(initial);
-                const auto desired = (percentage >= 0.75) + (percentage >= 0.5) + (percentage >= 0.25) - (myStationCount <= 4) - (myStationCount <= 5) + (Util::getTime() > Time(15, 0));
-                return desired - groundCount;
-            }
-            return 0;
-        }
-
-        // Calculate percentage remaining and determine desired resources for this base
-        else {
-            if (Spy::getEnemyTransition() == "Carriers")
-                return 0;
-
-            // 2 Hatch
-            if (Players::ZvP() && BuildOrder::getCurrentTransition().find("2Hatch") != string::npos)
-                return 1 - groundCount;
-
-            // Other
-            if (Players::ZvP() && BuildOrder::getCurrentTransition().find("2Hatch") == string::npos && Util::getTime() > Time(5, 00))
-                return 2 - groundCount;
-
-            if ((Players::ZvT() && Util::getTime() > Time(16, 00)) || Players::ZvP()) {
-                auto chokeCount = max(2, int(station->getBase()->GetArea()->ChokePoints().size()));
-                auto resourceCount = 0;
-                auto droneCount = 0;
-                for (auto &mineral : Resources::getMyMinerals()) {
-                    if (mineral->getStation() == station) {
-                        droneCount += int(mineral->targetedByWhat().size());
-                        resourceCount++;
-                    }
-                }
-                for (auto &gas : Resources::getMyGas()) {
-                    if (gas->getStation() == station) {
-                        droneCount += int(gas->targetedByWhat().size());
-                        resourceCount++;
-                    }
-                }
-                auto saturationRatio = resourceCount > 0 ? double(droneCount) / double(resourceCount) : 0.0;
-                return (Util::getTime() > Time(7, 30)) + (Util::getTime() > Time(8, 00)) - groundCount;
-            }
-            if (Players::ZvT() && Util::getTime() > Time(4, 15) && (Spy::getEnemyTransition() == "2Fact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled()))
-                return 1 - groundCount;
-
-            if (Broodwar->self()->getRace() == Races::Protoss) {
-                const auto percentage = double(current) / double(initial);
-                const auto desired = max(2, (percentage >= 0.75) + (percentage >= 0.5) + (percentage >= 0.25) - (myStationCount <= 4) - (myStationCount <= 5) + (Util::getTime() > Time(15, 0)));
-                return desired - groundCount;
-            }
-        }
+        if (Players::PvP())
+            return calcGroundDefPvP(station);
+        if (Players::PvT())
+            return calcGroundDefPvT(station);
+        if (Players::PvZ())
+            return calcGroundDefPvZ(station);
+        if (Players::ZvP())
+            return calcGroundDefZvP(station);
+        if (Players::ZvT())
+            return calcGroundDefZvT(station);
+        if (Players::ZvZ())
+            return calcGroundDefZvZ(station);
         return 0;
     }
 

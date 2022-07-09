@@ -812,6 +812,7 @@ namespace McRave::Planning {
                     auto center = Position(here) + Position(building.tileWidth() * 16, building.tileHeight() * 16);
                     if (!here.isValid())
                         continue;
+                    
                     auto builder = getBuilder(building, center);
 
                     // Expired building attempt on current builder
@@ -820,12 +821,15 @@ namespace McRave::Planning {
                     }
 
                     // Use old builder if we're not early game, as long as it's not stuck or was stuck recently
-                    else if (builder && Util::getTime() > Time(3, 00)) {
+                    else {
                         for (auto &[oldHere, oldBuilder] : oldBuilders) {
                             if (oldHere == here && oldBuilder && Workers::canAssignToBuild(*oldBuilder))
                                 builder = oldBuilder;
                         }
                     }
+                    
+                    if (!builder)
+                        Visuals::drawBox(Position(here) + Position(4, 4), Position(here + building.tileSize()) - Position(4, 4), Colors::Red);                    
 
                     if (here.isValid() && builder && Workers::shouldMoveToBuild(*builder, here, building)) {
                         Visuals::drawBox(Position(here) + Position(4, 4), Position(here + building.tileSize()) - Position(4, 4), Colors::White);
@@ -835,7 +839,7 @@ namespace McRave::Planning {
                         buildingsPlanned[here] = building;
 
                         if (buildingTimer.find(here) == buildingTimer.end())
-                            buildingTimer[here] = Broodwar->getFrameCount() + (BWEB::Map::getGroundDistance(builder->getPosition(), center) / builder->getSpeed());
+                            buildingTimer[here] = Broodwar->getFrameCount() + (BWEB::Map::getGroundDistance(builder->getPosition(), center) / builder->getSpeed()) + 200;                        
                     }
                 }
             }

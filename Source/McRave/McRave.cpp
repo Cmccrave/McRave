@@ -82,6 +82,7 @@ void McRaveModule::onFrame()
     Planning::onFrame();
     Buildings::onFrame();
     Production::onFrame();
+    Zones::onFrame();
 
     // Display information from this frame
     Visuals::onFrame();

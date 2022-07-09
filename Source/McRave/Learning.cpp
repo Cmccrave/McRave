@@ -145,16 +145,16 @@ namespace McRave::Learning {
                 if (build == "HatchPool")
                     return !z;
                 if (build == "PoolHatch")
-                    return true;
+                    return !z;
                 return false;
             };
 
             const auto openerOkay = [&]() {
                 if (build == "PoolHatch") {
                     if (opener == "Overpool")
-                        return t || p;
+                        return t;
                     if (opener == "12Pool")
-                        return t || z;
+                        return t;
                     if (opener == "9Pool")
                         return p;
                 }
@@ -182,11 +182,9 @@ namespace McRave::Learning {
                 }
                 if (build == "PoolHatch") {
                     if (transition == "2HatchMuta")
-                        return !z;
+                        return true;
                     if (transition == "3HatchMuta")
                         return !z;
-                    if (transition == "2HatchSpeedling")
-                        return z;
                     if (transition == "3HatchSpeedling")
                         return false;
                     if (transition == "6HatchHydra")
@@ -564,7 +562,7 @@ namespace McRave::Learning {
         mapLearning         = false;
         myRaceChar          ={ *Broodwar->self()->getRace().c_str() };
         enemyRaceChar       ={ *Broodwar->enemy()->getRace().c_str() };
-        version             = "Offseason2022";
+        version             = "CoG2022";
         noStats             = " 0 0 ";
         learningExtension   = mapLearning ? myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + mapName + ".txt" : myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + version + ".txt";
         gameInfoExtension   = myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + version + " Info.txt";

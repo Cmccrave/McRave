@@ -231,6 +231,15 @@ namespace McRave::Visuals {
                 }
             }
         }
+
+        void drawStations() 
+        {
+            for (auto &station : Stations::getStations(PlayerState::Self)) {
+                auto topLeft = Position(station->getBase()->Location());
+                Broodwar->drawTextMap(topLeft, "%d", Stations::needGroundDefenses(station));
+                Broodwar->drawTextMap(topLeft + Position(0,16), "%d", Stations::needAirDefenses(station));
+            }
+        }
     }
 
     void centerCameraOn(Position here)
@@ -243,6 +252,7 @@ namespace McRave::Visuals {
         drawInformation();
         drawAllyInfo();
         drawEnemyInfo();
+        drawStations();
     }
 
     void endPerfTest(string function)

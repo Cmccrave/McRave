@@ -51,6 +51,16 @@ namespace McRave::Combat::Navigation {
             }
         }
 
+        // Check if we can harass
+        auto canHarass = unit.getLocalState() != LocalState::Retreat && unit.getDestination() == Terrain::getHarassPosition() && unit.attemptingHarass();
+
+        // Check if the enemy is pressuring us
+        auto enemyPressure = false;
+        if (unit.hasTarget()) {
+            auto unitTarget = unit.getTarget().lock();
+            enemyPressure = Util::getTime() < Time(7, 00) && unitTarget->getPosition().getDistance(BWEB::Map::getMainPosition()) < unitTarget->getPosition().getDistance(Terrain::getEnemyStartingPosition());
+        }
+
         // Generate a flying path for regrouping
         if (lightUnitNeedsRegroup(unit) && !unit.getGoal().isValid() && !unit.globalRetreat() && !unit.localRetreat()) {
 
@@ -65,17 +75,7 @@ namespace McRave::Combat::Navigation {
             unit.setDestinationPath(newPath);
         }
 
-        else if (!unit.getGoal().isValid()) {
-
-            // Check if we can harass
-            auto canHarass = unit.getLocalState() != LocalState::Retreat && unit.getDestination() == Terrain::getHarassPosition() && unit.attemptingHarass();
-
-            // Check if the enemy is pressuring us
-            auto enemyPressure = false;
-            if (unit.hasTarget()) {
-                auto unitTarget = unit.getTarget().lock();
-                enemyPressure = Util::getTime() < Time(7, 00) && unitTarget->getPosition().getDistance(BWEB::Map::getMainPosition()) < unitTarget->getPosition().getDistance(Terrain::getEnemyStartingPosition());
-            }
+        else if (!unit.getGoal().isValid() && canHarass && !enemyPressure) {
 
             auto simDistCurrent = unit.hasSimTarget() ? unit.getPosition().getApproxDistance(unit.getSimTarget().lock()->getPosition()) : unit.getPosition().getApproxDistance(unit.getDestination());
             auto simPosition = unit.hasSimTarget() ? unit.getSimTarget().lock()->getPosition() : unit.getDestination();
@@ -93,13 +93,16 @@ namespace McRave::Combat::Navigation {
                 return 1.00 / (vis * dist);
             };
 
-            if (canHarass && !enemyPressure) {
-                BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
-                newPath.generateAS(flyerAttack);
-                unit.setDestinationPath(newPath);
-            }
+            BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
+            newPath.generateAS(flyerAttack);
+            unit.setDestinationPath(newPath);
         }
-        Visuals::drawPath(unit.getDestinationPath());
+        else {
+            BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
+            newPath.generateJPS([&](const TilePosition &t) { return true; });
+            unit.setDestinationPath(newPath);
+        }
+        //Visuals::drawPath(unit.getDestinationPath());
     }
 
     void updateDestinationPath(UnitInfo& unit)
@@ -117,8 +120,10 @@ namespace McRave::Combat::Navigation {
 
     void updateNavigation(UnitInfo& unit)
     {
-        if (lightUnitNeedsRegroup(unit) && !unit.getGoal().isValid() && !unit.globalRetreat() && !unit.localRetreat())
-            unit.setNavigation(unit.getCommander().lock()->getPosition());
+        if (unit.getFormation().isValid() && (unit.getPosition().getDistance(unit.getDestination()) < unit.getEngageRadius() || unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat)) {
+            unit.setNavigation(unit.getFormation());
+            return;
+        }
         else
             unit.setNavigation(unit.getDestination());
 
@@ -131,7 +136,6 @@ namespace McRave::Combat::Navigation {
             if (newDestination.isValid())
                 unit.setNavigation(newDestination);
         }
-        Visuals::drawPath(unit.getDestinationPath());
     }
 
     void update(UnitInfo& unit)
@@ -142,6 +146,6 @@ namespace McRave::Combat::Navigation {
             updateDestinationPath(unit);
         updateNavigation(unit);
 
-        //Broodwar->drawLineMap(unit.getPosition(), unit.getNavigation(), Colors::Red);
+        Broodwar->drawLineMap(unit.getPosition(), unit.getNavigation(), Colors::Red);
     }
 }

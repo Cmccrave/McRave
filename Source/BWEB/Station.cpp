@@ -62,6 +62,7 @@ namespace BWEB {
                         for (auto &def : defenses) {
                             if (next.x >= def.x && next.x < def.x + 2 && next.y >= def.y && next.y < def.y + 2) {
                                 defenses.erase(def);
+                                Map::removeUsed(def, 2, 2);
                                 break;
                             }
                         }
@@ -317,8 +318,8 @@ namespace BWEB {
         }
 
         // Try to fit more defenses with secondary positions
-        for (auto &placement : basePlacements) {
-            for (auto &secondary : secondaryLocations) {
+        for (auto secondary : secondaryLocations) {
+            for (auto placement : basePlacements) {
                 auto tile = secondary + placement;
                 if (Map::isPlaceable(defenseType, tile)) {
                     defenses.insert(tile);
@@ -380,9 +381,9 @@ namespace BWEB {
         }
 
         // Label angle
-        Broodwar->drawTextMap(base->Center() - Position(0, 16), "%c%.2f", Text::White, baseAngle);
-        Broodwar->drawTextMap(base->Center(), "%c%.2f", Text::White, chokeAngle);
-        Broodwar->drawTextMap(base->Center() + Position(0, 16), "%c%.2f", Text::White, defenseAngle);
+        //Broodwar->drawTextMap(base->Center() - Position(0, 16), "%c%.2f", Text::White, baseAngle);
+        //Broodwar->drawTextMap(base->Center(), "%c%.2f", Text::White, chokeAngle);
+        //Broodwar->drawTextMap(base->Center() + Position(0, 16), "%c%.2f", Text::White, defenseAngle);
 
         Broodwar->drawBoxMap(Position(base->Location()), Position(base->Location()) + Position(129, 97), color);
         Broodwar->drawTextMap(Position(base->Location()) + Position(4, 84), "%cS", textColor);
@@ -488,10 +489,11 @@ namespace BWEB::Stations {
         // Create remaining stations
         for (auto &area : Map::mapBWEM.Areas()) {
             for (auto &base : area.Bases()) {
+                if (find(natBases.begin(), natBases.end(), &base) != natBases.end() || find(mainBases.begin(), mainBases.end(), &base) != mainBases.end())
+                    continue;
+
                 Station newStation(&base, false, false);
-                if (find(stations.begin(), stations.end(), newStation) == stations.end()) {
-                    stations.push_back(newStation);
-                }
+                stations.push_back(newStation);
             }
         }
     }

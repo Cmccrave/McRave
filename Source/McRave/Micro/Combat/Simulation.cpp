@@ -41,7 +41,7 @@ namespace McRave::Combat::Simulation {
         auto engagedAlreadyOffset = unit.getSimState() == SimState::Win ? 0.2 : 0.0;
         auto unitTarget = unit.getTarget().lock();
 
-        // Check if any allied unit is below the limit to synhcronize sim values
+        // Check if any allied unit is below the limit to synchronize sim values
         for (auto &a : Units::getUnits(PlayerState::Self)) {
             UnitInfo &self = *a;
 

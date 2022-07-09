@@ -41,28 +41,6 @@ namespace McRave::BuildOrder::Zerg {
             }
         }
 
-        void ZvZ_PH_2HatchSpeedling()
-        {
-            inOpeningBook =                                 total(Zerg_Zergling) < 24 && Spy::getEnemyTransition() != "2HatchSpeedling";
-            unitLimits[Zerg_Drone] =                        9;
-            unitLimits[Zerg_Zergling] =                     INT_MAX;
-            gasLimit =                                      !lingSpeed() ? capGas(100) : (vis(Zerg_Hatchery) >= 2);
-            firstUpgrade =                                  UpgradeTypes::Metabolic_Boost;
-            firstUnit =                                     UnitTypes::None;
-            inBookSupply =                                  vis(Zerg_Overlord) < 3;
-            pressure =                                      Broodwar->self()->getUpgradeLevel(UpgradeTypes::Metabolic_Boost) == 1 && Util::getTime() < Time(4, 00);
-            playPassive =                                   vis(Zerg_Zergling) <= Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) || (Spy::enemyRush() && total(Zerg_Zergling) < 24) || total(Zerg_Zergling) < 12;
-
-            // Build
-            buildQueue[Zerg_Hatchery] =                     1 + (s >= 20 && vis(Zerg_Spawning_Pool) > 0);
-            buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 9);
-            buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32);
-
-            // Composition
-            armyComposition[Zerg_Drone] =                   0.20;
-            armyComposition[Zerg_Zergling] =                0.80;
-        }
-
         void ZvZ_PH_Overpool()
         {
             transitionReady =                               total(Zerg_Zergling) >= 6 || (Spy::enemyFastExpand() && com(Zerg_Spawning_Pool) > 0);
@@ -104,8 +82,6 @@ namespace McRave::BuildOrder::Zerg {
         if (transitionReady) {
             if (currentTransition == "2HatchMuta")
                 ZvZ_PH_2HatchMuta();
-            if (currentTransition == "2HatchSpeedling")
-                ZvZ_PH_2HatchSpeedling();
         }
     }
 }

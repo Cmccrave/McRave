@@ -67,6 +67,7 @@ namespace McRave::BuildOrder::Zerg {
         firstUnit =                                     Zerg_Mutalisk;
         inBookSupply =                                  total(Zerg_Mutalisk) < 6;
         planEarly =                                     atPercent(Zerg_Lair, 0.5) && int(Stations::getStations(PlayerState::Self).size()) < 3 && Spy::getEnemyOpener() != "8Rax";
+        wantThird =                                     Spy::enemyFastExpand();
 
         auto thirdHatch =  (total(Zerg_Mutalisk) >= 6);
         if (Spy::enemyPressure()) {
@@ -75,7 +76,7 @@ namespace McRave::BuildOrder::Zerg {
         }
         else if (vis(Zerg_Drone) >= 20 && s >= 48) {
             thirdHatch = true;
-            planEarly = atPercent(Zerg_Lair, 0.5) && int(Stations::getStations(PlayerState::Self).size()) < 3;
+            planEarly = atPercent(Zerg_Lair, 0.5) && int(Stations::getStations(PlayerState::Self).size()) < 3 && wantThird;
         }
 
         buildQueue[Zerg_Hatchery] =                     2 + thirdHatch;
@@ -107,9 +108,10 @@ namespace McRave::BuildOrder::Zerg {
         firstUpgrade =                                  (vis(Zerg_Extractor) >= 2 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
         firstUnit =                                     Zerg_Mutalisk;
         inBookSupply =                                  vis(Zerg_Overlord) < 7 || total(Zerg_Mutalisk) < 9;
+        wantThird =                                     Spy::enemyFastExpand();
 
         auto fourthHatch =                              (Spy::enemyFastExpand() && s >= 66) || total(Zerg_Mutalisk) >= 9;
-        planEarly =                                     ((Spy::enemyFastExpand() && s >= 60) || atPercent(Zerg_Lair, 0.6)) && Spy::getEnemyOpener() != "8Rax" && int(Stations::getStations(PlayerState::Self).size()) < 3;
+        planEarly =                                     ((Spy::enemyFastExpand() && s >= 60) || atPercent(Zerg_Lair, 0.6)) && wantThird && int(Stations::getStations(PlayerState::Self).size()) < 3;
 
         buildQueue[Zerg_Hatchery] =                     2 + (s >= 26) + fourthHatch;
         buildQueue[Zerg_Extractor] =                    (hatchCount() >= 3) + (s >= 44);

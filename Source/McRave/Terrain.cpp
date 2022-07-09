@@ -191,8 +191,10 @@ namespace McRave::Terrain {
                     }
                 }
             }
-            else if (enemyStartingPosition.isValid() && Util::getTime() < Time(6, 00))
+            else if (enemyStartingPosition.isValid() && Util::getTime() < Time(6, 00)) {
                 attackPosition = enemyStartingPosition;
+                return;
+            }
 
             // Attack furthest enemy station from enemy main, closest enemy station to us in FFA
             attackPosition = enemyStartingPosition;
@@ -200,7 +202,8 @@ namespace McRave::Terrain {
             posBest = Positions::Invalid;
 
             for (auto &station : Stations::getStations(PlayerState::Enemy)) {
-                const auto dist = enemyStartingPosition.getDistance(station->getBase()->Center());
+                auto dist = enemyStartingPosition.getDistance(station->getBase()->Center());
+
                 if ((!Players::vFFA() && dist < distBest)
                     || (Players::vFFA() && dist > distBest)
                     || BWEB::Map::isUsed(station->getBase()->Location()) == UnitTypes::None)
@@ -228,6 +231,7 @@ namespace McRave::Terrain {
             narrowNatural = BWEB::Map::getNaturalChoke() && BWEB::Map::getNaturalChoke()->Width() <= 64;
             defendNatural = BWEB::Map::getNaturalChoke() && !abandonNatural &&
                 (BuildOrder::isWallNat()
+                    || BuildOrder::takeNatural()
                     || BuildOrder::buildCount(baseType) > (1 + !BuildOrder::takeNatural())
                     || Stations::getStations(PlayerState::Self).size() >= 2
                     || (!Players::PvZ() && Players::getSupply(PlayerState::Self, Races::Protoss) > 140)
@@ -238,7 +242,7 @@ namespace McRave::Terrain {
 
             // See if a defense is in range of our main choke
             auto defendRunby = false;
-            if (defendNatural && Broodwar->self()->getRace() == Races::Zerg) {
+            if (defendNatural && Broodwar->self()->getRace() == Races::Zerg && !Players::ZvZ()) {
                 auto closestDefense = Util::getClosestUnit(Position(BWEB::Map::getMainChoke()->Center()), PlayerState::Self, [&](auto &u) {
                     return u->getRole() == Role::Defender && u->canAttackGround();
                 });
@@ -246,33 +250,8 @@ namespace McRave::Terrain {
                     defendRunby = true;
             }
 
-            // If we want to defend our mineral line
-            if (!Combat::defendChoke() || islandMap) {
-                defendNatural = false;
-                auto closestStation = BWEB::Stations::getClosestMainStation(BWEB::Map::getMainTile());
-                auto closestUnit = Util::getClosestUnit(closestStation->getBase()->Center(), PlayerState::Self, [&](auto &u) {
-                    return u->getRole() == Role::Combat;
-                });
-
-                if (closestUnit) {
-                    auto distBest = DBL_MAX;
-                    for (auto &defense : closestStation->getDefenses()) {
-                        auto center = Position(defense) + Position(32, 32);
-                        if (Planning::overlapsPlan(*closestUnit, center))
-                            continue;
-                        auto dist = center.getDistance(closestStation->getResourceCentroid());
-                        if (dist < distBest) {
-                            defendPosition = center;
-                            distBest = dist;
-                        }
-                    }
-                }
-                else
-                    defendPosition = closestStation ? (closestStation->getResourceCentroid() + closestStation->getBase()->Center()) / 2 : BWEB::Map::getMainPosition();
-            }
-
             // If we want to prevent a runby
-            else if (Combat::defendChoke() && mainChoke && defendRunby) {
+            if (Combat::defendChoke() && mainChoke && defendRunby) {
                 defendPosition = Position(mainChoke->Center());
                 defendNatural = false;
             }
@@ -285,6 +264,7 @@ namespace McRave::Terrain {
 
             // Main defending position
             else if (mainChoke) {
+                defendNatural = false;
                 addTerritory(PlayerState::Self, myMain);
                 removeTerritory(PlayerState::Self, myNatural); // Erase just in case we dropped natural defense
                 defendPosition = Position(mainChoke->Center()) + Position(4, 4);
@@ -624,7 +604,8 @@ namespace McRave::Terrain {
                 if (closestPartner) {
                     for (auto &area : station->getBase()->GetArea()->AccessibleNeighbours()) {
 
-                        if (area->ChokePoints().size() > 2)
+                        if (area->ChokePoints().size() > 2
+                            || area == closestPartner->getBase()->GetArea())
                             continue;
 
                         for (auto &choke : area->ChokePoints()) {
@@ -659,7 +640,8 @@ namespace McRave::Terrain {
                 if (closestPartner) {
                     for (auto &area : station->getBase()->GetArea()->AccessibleNeighbours()) {
 
-                        if (area->ChokePoints().size() > 2)
+                        if (area->ChokePoints().size() > 2
+                            || area == closestPartner->getBase()->GetArea())
                             continue;
 
                         for (auto &choke : area->ChokePoints()) {

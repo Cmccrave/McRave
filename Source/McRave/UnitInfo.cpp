@@ -109,13 +109,11 @@ namespace McRave
             walkPosition                = calcWalkPosition(this);
             destination                 = Positions::Invalid;
             retreat                     = Positions::Invalid;
-            formation                   = Positions::Invalid;
             surroundPosition            = Positions::Invalid;
             interceptPosition           = Positions::Invalid;
 
             // Flags
             flying                      = unit()->isFlying() || getType().isFlyer() || unit()->getOrder() == Orders::LiftingOff || unit()->getOrder() == Orders::BuildingLiftOff;
-            concaveFlag                 = false;
             movedFlag                   = false;
 
             // McRave Stats
@@ -151,7 +149,7 @@ namespace McRave
             minStopFrame                = Math::stopAnimationFrames(t);
             lastStimFrame               = unit()->isStimmed() ? Broodwar->getFrameCount() : lastStimFrame;
             lastVisibleFrame            = Broodwar->getFrameCount();
-            arriveFrame                 = isFlying() ? int(position.getDistance(BWEB::Map::getMainPosition()) / speed) :
+            arriveFrame                 = isFlying() ? Broodwar->getFrameCount() + int(position.getDistance(BWEB::Map::getMainPosition()) / speed) :
                 Broodwar->getFrameCount() + int(BWEB::Map::getGroundDistance(position, BWEB::Map::getMainPosition()) / speed);
 
             checkHidden();
@@ -283,7 +281,8 @@ namespace McRave
 
     void UnitInfo::checkThreatening()
     {
-        if (!getPlayer()->isEnemy(Broodwar->self()))
+        if (!getPlayer()->isEnemy(Broodwar->self())
+            || getType() == Zerg_Overlord)
             return;
 
         // Determine how close it is to strategic locations
@@ -344,16 +343,10 @@ namespace McRave
 
         // Checks if this unit is range of our army
         auto nearArmy = [&]() {
-            if (Combat::defendChoke()) {
-                for (auto &pos : Combat::getDefendPositions()) {
-                    Visuals::drawCircle(pos, 2, Colors::Red);
-                    if (getPosition().getDistance(pos) < rangeCheck)
-                        return true;
-                    if (getPosition().getDistance(BWEB::Map::getMainPosition()) < pos.getDistance(BWEB::Map::getMainPosition()))
-                        return true;
-                }
-            }
             if (BWEB::Map::getMainChoke() && getPosition().getDistance(Position(BWEB::Map::getMainChoke()->Center())) < 64.0 && int(Stations::getStations(PlayerState::Self).size()) >= 2)
+                return true;
+
+            if (Roles::getMyRoleCount(Role::Defender) == 0 && Zones::getZone(getPosition()) == ZoneType::Engage && Terrain::inTerritory(PlayerState::Self, getPosition()))
                 return true;
 
             // Fix for Andromeda like maps
@@ -847,11 +840,15 @@ namespace McRave
     }
 
     bool UnitInfo::globalRetreat()
-    {
+    { 
+        auto thisTarget = !target.expired() ? target.lock() : nullptr;
+        auto freeTarget = thisTarget && ((!getTarget().lock()->canAttackAir() && this->isFlying()) || (!thisTarget->canAttackGround() && !this->isFlying()))
+            && (Terrain::inTerritory(PlayerState::Self, thisTarget->getPosition()) || !Terrain::inTerritory(PlayerState::Enemy, thisTarget->getPosition()));
+
         return nearHidden
             || (getGlobalState() == GlobalState::Retreat && !Terrain::inTerritory(PlayerState::Self, getPosition()))
-            || (getType() == Zerg_Mutalisk && hasTarget() && !getTarget().lock()->isThreatening() && !isWithinRange(*getTarget().lock()) && getHealth() <= 50)                               // ...unit is a low HP Mutalisk attacking a target under air threat    
-            || (getType() == Protoss_Scout && hasTarget() && !getTarget().lock()->isThreatening() && !isWithinRange(*getTarget().lock()) && getHealth() + getShields() <= 80)                // ...unit is a low HP Scout attacking a target under air threat    
+            || (getType() == Zerg_Mutalisk && thisTarget && !freeTarget && !thisTarget->isThreatening() && !isWithinRange(*thisTarget) && !thisTarget->isWithinRange(*this) && getHealth() <= 50)               // ...unit is a low HP Mutalisk attacking a target under air threat    
+            || (getType() == Protoss_Scout && hasTarget() && !thisTarget->isThreatening() && !isWithinRange(*thisTarget) && getHealth() + getShields() <= 80)                                                   // ...unit is a low HP Scout attacking a target under air threat    
             ;
     }
 
@@ -881,7 +878,7 @@ namespace McRave
     {
         if (Players::ZvZ() && vis(Zerg_Zergling) + 4 * com(Zerg_Sunken_Colony) < Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling))
             return false;
-        if (Players::ZvZ() && Terrain::getEnemyMain() && Terrain::getEnemyNatural() && Stations::getAirDefenseCount(Terrain::getEnemyMain()) > 0 && Stations::getAirDefenseCount(Terrain::getEnemyNatural()) > 0 && int(Stations::getStations(PlayerState::Self).size()) < 2)
+        if (Players::ZvZ() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) > 0 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Spore_Colony) > 0)
             return false;
         if (Players::ZvZ() && vis(Zerg_Mutalisk) <= Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk))
             return false;

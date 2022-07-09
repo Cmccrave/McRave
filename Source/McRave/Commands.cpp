@@ -522,28 +522,20 @@ namespace McRave::Command {
         };
 
         if (canDefend() && shouldDefend()) {
+            if (unit.getPosition().getDistance(unit.getFormation()) < 160.0) {
+                unit.command(Move, unit.getFormation());
+                return true;
+            }
 
-            if (Combat::defendChoke()) {
-
-                if (unit.getPosition().getDistance(unit.getDestination()) < 160.0) {
-                    unit.command(Move, unit.getDestination());
-                    return true;
-                }
-
-                // Find the best position to move to
-                auto bestPosition = findViablePosition(unit, scoreFunction);
-                if (bestPosition.isValid()) {
-                    unit.command(Move, bestPosition);
-                    return true;
-                }
-                else {
-                    bestPosition = unit.getDestination();
-                    unit.command(Move, bestPosition);
-                    return true;
-                }
+            // Find the best position to move to
+            auto bestPosition = findViablePosition(unit, scoreFunction);
+            if (bestPosition.isValid()) {
+                unit.command(Move, bestPosition);
+                return true;
             }
             else {
-                unit.command(Move, Terrain::getDefendPosition());
+                bestPosition = unit.getDestination();
+                unit.command(Move, bestPosition);
                 return true;
             }
         }

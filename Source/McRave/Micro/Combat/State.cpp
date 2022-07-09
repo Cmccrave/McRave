@@ -44,9 +44,9 @@ namespace McRave::Combat::State {
         else if ((insideRetreatRadius || atHome) && (unit.localRetreat() || unit.getSimState() == SimState::Loss))
             unit.setLocalState(LocalState::Retreat);
 
-        // Check if we shouldn't issue any commands
-        else if (insideEngageRadius && !unit.isFlying())
-            unit.setLocalState(LocalState::Hold);
+        //// Check if we shouldn't issue any commands
+        //else if (insideEngageRadius && !unit.isFlying())
+        //    unit.setLocalState(LocalState::Hold);
 
         // Default state
         else
