@@ -130,15 +130,15 @@ namespace McRave::Stations
 
         void updateDefendPositions()
         {
-            for (auto &station : getStations(PlayerState::Self)) {
-                auto defendPosition = station->getBase()->Center();
+            for (auto &station : BWEB::Stations::getStations()) {
+                auto defendPosition = station.getBase()->Center();
                 const BWEM::ChokePoint * defendChoke = nullptr;
-                if (station->getChokepoint()) {
-                    defendPosition = Position(station->getChokepoint()->Center());
-                    defendChoke = station->getChokepoint();
+                if (station.getChokepoint()) {
+                    defendPosition = Position(station.getChokepoint()->Center());
+                    defendChoke = station.getChokepoint();
                 }
                 else if (Terrain::getEnemyStartingPosition().isValid()) {
-                    auto path = mapBWEM.GetPath(station->getBase()->Center(), Terrain::getEnemyStartingPosition());
+                    auto path = mapBWEM.GetPath(station.getBase()->Center(), Terrain::getEnemyStartingPosition());
                     if (!path.empty()) {
                         defendPosition = Position(path.front()->Center());
                         defendChoke = path.front();
@@ -147,15 +147,15 @@ namespace McRave::Stations
 
                 // If there are multiple chokepoints with the same area pair
                 auto pathTowards = Terrain::getEnemyStartingPosition().isValid() ? Terrain::getEnemyStartingPosition() : mapBWEM.Center();
-                if (station->getBase()->GetArea()->ChokePoints().size() >= 3) {
+                if (station.getBase()->GetArea()->ChokePoints().size() >= 3) {
                     defendPosition = Position(0, 0);
                     int count = 0;
 
-                    for (auto &choke : station->getBase()->GetArea()->ChokePoints()) {
+                    for (auto &choke : station.getBase()->GetArea()->ChokePoints()) {
                         if (defendChoke && choke->GetAreas() != defendChoke->GetAreas())
                             continue;
 
-                        if (Position(choke->Center()).getDistance(pathTowards) < station->getBase()->Center().getDistance(pathTowards)) {
+                        if (Position(choke->Center()).getDistance(pathTowards) < station.getBase()->Center().getDistance(pathTowards)) {
                             defendPosition += Position(choke->Center());
                             count++;
                             Visuals::drawCircle(Position(choke->Center()), 4, Colors::Cyan, true);
@@ -182,7 +182,7 @@ namespace McRave::Stations
                         }
                     }
                 }
-                defendPositions[station] = defendPosition;
+                defendPositions[&station] = defendPosition;
             }
         }
 
@@ -279,21 +279,42 @@ namespace McRave::Stations
                 if (BuildOrder::takeNatural() || getStations(PlayerState::Self).size() > 1)
                     return 0;
 
-                groundCount += Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony) + (vis(Zerg_Hatchery) + vis(Zerg_Lair) >= 2);
+                if (Util::getTime() > Time(4, 30))
+                    groundCount += Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony);
+
+                // 4 Pool
                 if (Spy::enemyRush() && (total(Zerg_Zergling) >= 12 || BuildOrder::getCurrentBuild() != "PoolLair"))
                     return 1 + (vis(Zerg_Sunken_Colony) > 0) + (vis(Zerg_Drone) >= 8 && com(Zerg_Sunken_Colony) >= 2) - groundCount;
-                else if (Spy::getEnemyOpener() == "7Pool" && BuildOrder::getCurrentOpener() == "12Pool")
+
+                // 7 Pool
+                else if (Spy::getEnemyOpener() == "7Pool" && Spy::getEnemyTransition() != "1HatchMuta")
                     return 1 - groundCount;
-                else if (Spy::getEnemyTransition() == "2HatchSpeedling" && vis(Zerg_Spire) > 0)
-                    return (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(5, 00)) - groundCount;
+
+                // 12 Pool
+                else if (Spy::getEnemyOpener() == "12Pool" && Spy::getEnemyTransition() != "1HatchMuta")
+                    return (Util::getTime() > Time(4, 00)) - groundCount;
+
+                // 10 Hatch or speedling all-in
+                else if ((Spy::getEnemyOpener() == "10Hatch" || Spy::getEnemyTransition() == "2HatchSpeedling") && vis(Zerg_Spire) > 0)
+                    return (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(4, 30)) - groundCount;
+
+                // +1Ling
                 else if (Spy::getEnemyTransition() == "+1Ling")
                     return (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(4, 45)) - groundCount;
+
+                // 3 Hatch
                 else if (Util::getTime() < Time(6, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3)
                     return (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(5, 00)) + (Util::getTime() > Time(6, 00)) - groundCount;
+
+                // Unknown
                 else if (!Terrain::foundEnemy() && vis(Zerg_Spire) > 0 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 16)
                     return 1 - groundCount;
+
+                // Unknown and lots of lings
                 else if (Spy::getEnemyTransition().find("Muta") == string::npos && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 16)
                     return 1 - groundCount;
+
+                // Unknown and lots of lings
                 else if (Util::getTime() > Time(5, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > 4 * vis(Zerg_Zergling))
                     return 1 - groundCount;
             }
@@ -505,7 +526,7 @@ namespace McRave::Stations
 
             // Check if anything targeting this unit is withing reach
             bool withinTargeterReach = false;
-            for (auto &t : unit.getTargetedBy()) {
+            for (auto &t : unit.getUnitsInRangeOfThis()) {
                 if (auto targeter = t.lock()) {
                     auto reach = unit.isFlying() ? targeter->getAirReach() : targeter->getGroundReach();
                     if (targeter->getPosition().getDistance(position) < reach)

@@ -51,11 +51,15 @@ namespace McRave::Support {
             // Find the highest combat cluster that doesn't overlap a current support action of this UnitType
             else if (unit.getType() != Zerg_Overlord || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace)) {
                 auto highestCluster = 0.0;
+                auto types ={ Zerg_Hydralisk, Zerg_Ultralisk, Protoss_Dragoon, Terran_Marine, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode };
                 for (auto &cluster : Combat::Clusters::getClusters()) {
                     if (auto commander = cluster.commander.lock()) {
+                        if (find(types.begin(), types.end(), commander->getType()) == types.end())
+                            continue;
+
                         const auto position = commander->getPosition();
                         const auto score = cluster.units.size() / (position.getDistance(Terrain::getAttackPosition()) * position.getDistance(unit.getPosition()));
-                        if (score > highestCluster && !Actions::overlapsActions(unit.unit(), position, unit.getType(), PlayerState::Self, 64)) {
+                        if (score > highestCluster && !commander->isFlying() && !Actions::overlapsActions(unit.unit(), position, unit.getType(), PlayerState::Self, 64)) {
                             highestCluster = score;
                             unit.setDestination(position);
                             cluster.typeCounts[unit.getType()]++;
@@ -64,7 +68,7 @@ namespace McRave::Support {
                 }
 
                 // Move detectors between target and unit vs Terran
-                if (unit.getType().isDetector() && Players::vT()) {
+                if (unit.getType().isDetector() && Players::PvT()) {
                     if (unit.hasTarget())
                         unit.setDestination((unit.getTarget().lock()->getPosition() + unit.getDestination()) / 2);
                     else {

@@ -39,6 +39,8 @@ namespace McRave::BuildOrder::Zerg {
     }
 
     int lingsNeeded_ZvT() {
+        if (com(Zerg_Spawning_Pool) == 0)
+            return 0;
         if (Spy::getEnemyBuild() == "2Rax") {
             if (vis(Zerg_Sunken_Colony) == 0)
                 return int(max(6.0, 1.5 * Players::getVisibleCount(PlayerState::Enemy, Terran_Marine)));
@@ -49,7 +51,7 @@ namespace McRave::BuildOrder::Zerg {
         if (Spy::enemyProxy() || Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyTransition() == "WorkerRush")
             return 10;
         if (Spy::getEnemyBuild() == "RaxFact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
-            return Util::getTime() > Time(3, 00) ? 10 : 0;
+            return Util::getTime() > Time(3, 00) ? 6 : 0;
         if (Spy::enemyPressure() || Spy::getEnemyBuild() == "2Rax")
             return 6;
         return 6;
@@ -66,18 +68,10 @@ namespace McRave::BuildOrder::Zerg {
         firstUpgrade =                                  UpgradeTypes::None;
         firstUnit =                                     Zerg_Mutalisk;
         inBookSupply =                                  total(Zerg_Mutalisk) < 6;
-        planEarly =                                     atPercent(Zerg_Lair, 0.5) && int(Stations::getStations(PlayerState::Self).size()) < 3 && Spy::getEnemyOpener() != "8Rax";
-        wantThird =                                     Spy::enemyFastExpand();
+        wantThird =                                     !Spy::enemyPressure() && !Spy::enemyRush() && Spy::getEnemyOpener() != "8Rax" && Spy::getEnemyBuild() != "RaxFact";
+        planEarly =                                     wantThird && atPercent(Zerg_Lair, 0.5) && int(Stations::getStations(PlayerState::Self).size()) < 3;
 
-        auto thirdHatch =  (total(Zerg_Mutalisk) >= 6);
-        if (Spy::enemyPressure()) {
-            thirdHatch = false;
-            planEarly = false;
-        }
-        else if (vis(Zerg_Drone) >= 20 && s >= 48) {
-            thirdHatch = true;
-            planEarly = atPercent(Zerg_Lair, 0.5) && int(Stations::getStations(PlayerState::Self).size()) < 3 && wantThird;
-        }
+        auto thirdHatch =  (total(Zerg_Mutalisk) >= 6) || (vis(Zerg_Drone) >= 20 && s >= 48 && vis(Zerg_Spire) > 0);
 
         buildQueue[Zerg_Hatchery] =                     2 + thirdHatch;
         buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 10) + (vis(Zerg_Spire) > 0);
@@ -116,7 +110,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Hatchery] =                     2 + (s >= 26) + fourthHatch;
         buildQueue[Zerg_Extractor] =                    (hatchCount() >= 3) + (s >= 44);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 48) + (atPercent(Zerg_Spire, 0.5) * 3);
-        buildQueue[Zerg_Lair] =                         (vis(Zerg_Drone) >= 16 && gas(100));
+        buildQueue[Zerg_Lair] =                         (vis(Zerg_Drone) >= 12 && gas(80));
         buildQueue[Zerg_Spire] =                        (s >= 42 && atPercent(Zerg_Lair, 0.80));
 
         // Composition

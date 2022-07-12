@@ -422,7 +422,7 @@ namespace McRave::Production {
                 case Pneumatized_Carapace:
                     return (Players::ZvT() && Spy::getEnemyTransition() == "2PortWraith")
                         || (Players::ZvP() && Players::getStrength(PlayerState::Enemy).airToAir > 0 && Players::getSupply(PlayerState::Self, Races::Zerg) >= 160)
-                        || (Spy::enemyInvis())
+                        || (Spy::enemyInvis() && (BuildOrder::isTechUnit(Zerg_Hydralisk) || BuildOrder::isTechUnit(Zerg_Ultralisk)))
                         || (Players::getSupply(PlayerState::Self, Races::Zerg) >= 200);
                 case Anabolic_Synthesis:
                     return Players::getTotalCount(PlayerState::Enemy, Terran_Marine) < 20 || Broodwar->self()->getUpgradeLevel(Chitinous_Plating) > 0;

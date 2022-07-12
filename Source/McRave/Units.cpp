@@ -60,6 +60,8 @@ namespace McRave::Units {
                         enemyArmyCenter += unit.getPosition();
                         enemyArmyCount++;
                     }
+
+                    //Broodwar->drawTextMap(unit.getPosition(), "%.2f", unit.getPriority());
                 }
             }
 

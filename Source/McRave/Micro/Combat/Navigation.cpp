@@ -41,41 +41,24 @@ namespace McRave::Combat::Navigation {
 
     void updateHarassPath(UnitInfo& unit)
     {
-        // For pathing purposes, we store light air commander sim positions
-        if (unit.hasSimTarget()) {
-            auto simTarget = unit.getSimTarget().lock();
-            if (find(lastSimPositions.begin(), lastSimPositions.end(), simTarget->getPosition()) == lastSimPositions.end()) {
-                if (lastSimPositions.size() >= 5)
-                    lastSimPositions.pop_back();
-                lastSimPositions.insert(lastSimPositions.begin(), simTarget->getPosition());
-            }
-        }
-
         // Check if we can harass
-        auto canHarass = unit.getLocalState() != LocalState::Retreat && unit.getDestination() == Terrain::getHarassPosition() && unit.attemptingHarass();
+        if (!unit.getGoal().isValid() && unit.getLocalState() != LocalState::Retreat && unit.getDestination() == Terrain::getHarassPosition() && unit.attemptingHarass()) {
 
-        // Check if the enemy is pressuring us
-        auto enemyPressure = false;
-        if (unit.hasTarget()) {
-            auto unitTarget = unit.getTarget().lock();
-            enemyPressure = Util::getTime() < Time(7, 00) && unitTarget->getPosition().getDistance(BWEB::Map::getMainPosition()) < unitTarget->getPosition().getDistance(Terrain::getEnemyStartingPosition());
-        }
+            if (unit.hasCommander() && *unit.getCommander().lock() != unit) {
+                auto commander = unit.getCommander().lock();
+                unit.setDestinationPath(commander->getDestinationPath());
+                return;
+            }
 
-        // Generate a flying path for regrouping
-        if (lightUnitNeedsRegroup(unit) && !unit.getGoal().isValid() && !unit.globalRetreat() && !unit.localRetreat()) {
-
-            const auto flyerRegroup = [&](const TilePosition &t) {
-                const auto center = Position(t) + Position(16, 16);
-                auto threat = Grids::getEAirThreat(center);
-                return threat;
-            };
-
-            BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
-            newPath.generateAS(flyerRegroup);
-            unit.setDestinationPath(newPath);
-        }
-
-        else if (!unit.getGoal().isValid() && canHarass && !enemyPressure) {
+            // For pathing purposes, we store light air commander sim positions
+            if (unit.hasSimTarget()) {
+                auto simTarget = unit.getSimTarget().lock();
+                if (find(lastSimPositions.begin(), lastSimPositions.end(), simTarget->getPosition()) == lastSimPositions.end()) {
+                    if (lastSimPositions.size() >= 5)
+                        lastSimPositions.pop_back();
+                    lastSimPositions.insert(lastSimPositions.begin(), simTarget->getPosition());
+                }
+            }
 
             auto simDistCurrent = unit.hasSimTarget() ? unit.getPosition().getApproxDistance(unit.getSimTarget().lock()->getPosition()) : unit.getPosition().getApproxDistance(unit.getDestination());
             auto simPosition = unit.hasSimTarget() ? unit.getSimTarget().lock()->getPosition() : unit.getDestination();
@@ -88,7 +71,7 @@ namespace McRave::Combat::Navigation {
                 for (auto &pos : lastSimPositions)
                     d = min(d, center.getApproxDistance(pos));
 
-                auto dist = unit.getSimState() == SimState::Win ? 1.0 : max(0.01, double(d) - min(simDistCurrent, int(unit.getRetreatRadius() + 64.0)));
+                auto dist = unit.getSimState() == SimState::Win ? 1.0 : max(0.01, double(d) - min(simDistCurrent + 32, int(unit.getRetreatRadius() + 96.0)));
                 auto vis = unit.getSimState() == SimState::Win ? 1.0 : clamp(double(Broodwar->getFrameCount() - Grids::lastVisibleFrame(t)) / 960.0, 0.5, 3.0);
                 return 1.00 / (vis * dist);
             };
@@ -96,13 +79,20 @@ namespace McRave::Combat::Navigation {
             BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
             newPath.generateAS(flyerAttack);
             unit.setDestinationPath(newPath);
+            Visuals::drawPath(unit.getDestinationPath());
         }
+
+        // Generate a flying path for regrouping/retreating
         else {
+            const auto flyerRegroup = [&](const TilePosition &t) {
+                return Grids::getEAirThreat(Position(t) + Position(16, 16));
+            };
+
             BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
-            newPath.generateJPS([&](const TilePosition &t) { return true; });
+            newPath.generateAS(flyerRegroup);
             unit.setDestinationPath(newPath);
+            unit.circle(Colors::Purple);
         }
-        //Visuals::drawPath(unit.getDestinationPath());
     }
 
     void updateDestinationPath(UnitInfo& unit)

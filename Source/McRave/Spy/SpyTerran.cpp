@@ -54,8 +54,8 @@ namespace McRave::Spy::Terran {
                 theSpy.build.name = "RaxCC";
 
             // RaxFact
-            if (Util::getTime() < Time(3, 00) && Players::getTotalCount(PlayerState::Enemy, Terran_Factory) > 0
-                || Util::getTime() < Time(5, 00) && hasMech)
+            if (completesBy(1, Terran_Factory, Time(4,00))
+                || (Util::getTime() < Time(5, 15) && hasMech))
                 theSpy.build.name = "RaxFact";
 
             // 2Rax Proxy - No info estimation
@@ -119,15 +119,16 @@ namespace McRave::Spy::Terran {
 
                 // RaxFact
                 if (theSpy.build.name == "RaxFact") {
-                    if ((hasGols && theSpy.expand.possible && Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) >= 4) || (Util::getTime() < Time(6, 30) && Players::getVisibleCount(PlayerState::Enemy, Terran_Armory) > 0))
+                    if ((hasGols && theSpy.expand.possible && Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) >= 4)
+                        || (Util::getTime() < Time(6, 30) && Players::getVisibleCount(PlayerState::Enemy, Terran_Armory) > 0)
+                        || (theSpy.upgradeLevel[UpgradeTypes::Charon_Boosters] > 0) && Util::getTime() < Time(8, 00))
                         theSpy.transition.name = "5FactGoliath";
                     if (hasWraiths && Util::getTime() < Time(6, 00))
                         theSpy.transition.name = "2PortWraith";
 
                     if ((Players::getTotalCount(PlayerState::Enemy, Terran_Machine_Shop) >= 2 && (theSpy.typeUpgrading.find(Terran_Machine_Shop) != theSpy.typeUpgrading.end() || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture_Spider_Mine) > 0))
                         || (Players::getTotalCount(PlayerState::Enemy, Terran_Machine_Shop) >= 2 && Util::getTime() < Time(6, 00))
-                        || (arrivesBy(5, Terran_Vulture, Time(6, 15)))
-                        || (arrivesBy(7, Terran_Vulture, Time(6, 45))))
+                        || (theSpy.upgradeLevel[UpgradeTypes::Ion_Thrusters] && Util::getTime() < Time(6, 15)))
                         theSpy.transition.name = "2Fact";
                 }
 

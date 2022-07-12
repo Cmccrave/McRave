@@ -74,7 +74,8 @@ namespace McRave {
         std::weak_ptr<ResourceInfo> resource;
 
         std::vector<std::weak_ptr<UnitInfo>> assignedCargo;
-        std::vector<std::weak_ptr<UnitInfo>> targetedBy;
+        std::vector<std::weak_ptr<UnitInfo>> unitsTargetingThis;
+        std::vector<std::weak_ptr<UnitInfo>> unitsInRangeOfThis;
     #pragma endregion
 
     #pragma region States
@@ -231,7 +232,8 @@ namespace McRave {
 
     #pragma region Getters
         std::vector<std::weak_ptr<UnitInfo>>& getAssignedCargo() { return assignedCargo; }
-        std::vector<std::weak_ptr<UnitInfo>>& getTargetedBy() { return targetedBy; }
+        std::vector<std::weak_ptr<UnitInfo>>& getUnitsTargetingThis() { return unitsTargetingThis; }
+        std::vector<std::weak_ptr<UnitInfo>>& getUnitsInRangeOfThis() { return unitsInRangeOfThis; }
         std::map<int, BWAPI::TilePosition>& getTileHistory() { return tileHistory; }
         std::map<int, BWAPI::WalkPosition>& getWalkHistory() { return walkHistory; }
         std::map<int, BWAPI::Position>& getPositionHistory() { return positionHistory; }

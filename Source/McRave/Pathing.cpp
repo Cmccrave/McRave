@@ -34,14 +34,14 @@ namespace McRave::Pathing {
             if (unit.isFlying()) {
                 auto engage = Util::getClosestPointToRadiusAir(unit.getPosition(), unitTarget->getPosition(), range);
                 unit.setEngagePosition(engage.second);
-                unit.setEngDist(engage.first);
+                unit.setEngDist(engage.first - range);
             }
 
             // Create a binary search tree in a circle around the target
             else {
                 auto engage = Util::getClosestPointToRadiusGround(unit.getPosition(), unitTarget->getPosition(), range);
                 unit.setEngagePosition(engage.second);
-                unit.setEngDist(engage.first);
+                unit.setEngDist(engage.first - range);
             }
         }
 
@@ -73,7 +73,7 @@ namespace McRave::Pathing {
             for (auto &u : Units::getUnits(PlayerState::Enemy)) {
                 UnitInfo& unit = *u;
 
-                if (unit.getTargetedBy().empty()
+                if (unit.getUnitsTargetingThis().empty()
                     || unit.isFlying())
                     continue;
 

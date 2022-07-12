@@ -115,9 +115,7 @@ namespace McRave::Combat::Destination {
                 unit.setDestination(unit.getTarget().lock()->getPosition());
         }
         else if (unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat) {
-            if (lightUnitNeedsRegroup(unit) && !unit.getGoal().isValid() && !unit.globalRetreat() && !unit.localRetreat())
-                unit.setDestination(unit.getCommander().lock()->getPosition());
-            else if (Terrain::getDefendPosition().isValid() && unit.getGlobalState() == GlobalState::Retreat)
+            if (Terrain::getDefendPosition().isValid() && unit.getGlobalState() == GlobalState::Retreat)
                 unit.setDestination(Terrain::getDefendPosition());
             else {
                 const auto &retreat = Stations::getClosestRetreatStation(unit);
@@ -125,9 +123,7 @@ namespace McRave::Combat::Destination {
             }
         }
         else {
-            if (lightUnitNeedsRegroup(unit) && !unit.getGoal().isValid() && !unit.globalRetreat() && !unit.localRetreat())
-                unit.setDestination(unit.getCommander().lock()->getPosition());
-            else if (unit.getGoal().isValid())
+            if (unit.getGoal().isValid())
                 unit.setDestination(unit.getGoal());
             else if ((unit.isLightAir() || unit.getType() == Zerg_Scourge) && ((Units::getImmThreat() > 25.0 && Stations::getStations(PlayerState::Self).size() >= 3 && Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size()) || (Players::ZvZ() && Units::getImmThreat() > 5.0))) {
                 auto attacker = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {

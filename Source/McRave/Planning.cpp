@@ -330,9 +330,9 @@ namespace McRave::Planning {
 
             // If we are expanding, it must be on an expansion area and be when build order requests one
             const auto expand = Broodwar->self()->getRace() != Races::Zerg
-                || (!BuildOrder::isOpener() && BuildOrder::shouldExpand())
-                || (BuildOrder::isOpener() && int(Stations::getStations(PlayerState::Self).size()) <= 1 && BuildOrder::takeNatural())
-                || (BuildOrder::isOpener() && int(Stations::getStations(PlayerState::Self).size()) <= 2 && BuildOrder::takeThird());
+                || BuildOrder::shouldExpand()
+                || (int(Stations::getStations(PlayerState::Self).size()) <= 1 && BuildOrder::takeNatural())
+                || (int(Stations::getStations(PlayerState::Self).size()) <= 2 && BuildOrder::takeThird());
 
             if (!building.isResourceDepot()
                 || !expand

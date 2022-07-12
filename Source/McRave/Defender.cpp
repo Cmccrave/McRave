@@ -36,6 +36,10 @@ namespace McRave::Defender {
             const auto closestStation = Stations::getClosestStationGround(unit.getPosition(), PlayerState::Self);
             if (closestStation && closestStation->getChokepoint())
                 unit.setFormation(Position(closestStation->getChokepoint()->Center()));
+
+            // Add a zone to help with engagements
+            Zones::addZone(unit.getPosition(), ZoneType::Defend, 1, unit.getGroundRange());
+            Zones::addZone(unit.getPosition(), ZoneType::Defend, 1, unit.getAirRange());
         }
 
         void updateDefenders()

@@ -317,8 +317,8 @@ namespace McRave::Util {
         auto position = target;
         auto dist = source.getDistance(target);
         pair<double, double> radrange ={ 0.00, 3.14 };
-        for (int i = 1; i <= 8; i++) {
-            auto diff = (radrange.second - radrange.first) / 3.0; // Allows for correction in the event that the first few points are unwalkable
+        for (int i = 1; i <= 10; i++) {
+            auto diff = (radrange.second - radrange.first) / double(i + 1); // Allows for correction in the event that the first few points are unwalkable
             auto p1 = target + Position(radius*cos(radrange.first), radius*sin(radrange.first));
             auto p2 = target + Position(radius*cos(radrange.second), radius*sin(radrange.second));
 
@@ -332,7 +332,7 @@ namespace McRave::Util {
                 auto dist1 = BWEB::Map::getGroundDistance(p1, source) + BWEB::Map::getGroundDistance(p1, target);
                 auto dist2 = BWEB::Map::getGroundDistance(p2, source) + BWEB::Map::getGroundDistance(p2, target);
 
-                if (i < 8) {
+                if (i < 10) {
                     dist1 < dist2 ? radrange ={ radrange.first - diff, radrange.first + diff } : radrange ={ radrange.second - diff, radrange.second + diff };
                     Broodwar->drawTextMap(dist1 < dist2 ? p1 : p2, "%d", i);
                 }

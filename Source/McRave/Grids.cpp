@@ -14,8 +14,6 @@ namespace McRave::Grids
         int visibleGrid[256][256] ={};
         int visitedGrid[1024][1024] ={};
 
-        double logLookup16[1024]={};
-
         // Ally Grid
         float aGroundCluster[1024][1024] ={};
         float aAirCluster[1024][1024] ={};
@@ -161,11 +159,11 @@ namespace McRave::Grids
                     if (grdGrid || airGrid) {
                         const auto dist = fasterDistGrids(x1, y1, (x * 8) + 4, (y * 8) + 4);
                         if (grdGrid && dist <= unit.getGroundReach()) {
-                            grdGrid[x][y] += float(unit.getVisibleGroundStrength() / max(1.0, logLookup16[dist / 16]));
+                            grdGrid[x][y] += float(unit.getVisibleGroundStrength() / max(1.0, logLookup16[dist/16]));
                             saveReset(x, y);
                         }
                         if (airGrid && dist <= unit.getAirReach()) {
-                            airGrid[x][y] += float(unit.getVisibleAirStrength() / max(1.0, logLookup16[dist / 16]));
+                            airGrid[x][y] += float(unit.getVisibleAirStrength() / max(1.0, logLookup16[dist/16]));
                             saveReset(x, y);
                         }
                     }

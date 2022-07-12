@@ -9,46 +9,66 @@ namespace McRave::Command {
 
     namespace {
 
-        double defaultGrouping(UnitInfo& unit, WalkPosition w) {
-            return unit.getType().isFlyer() ?
-                ((unit.isTargetedBySplash() || unit.isTargetedBySuicide()) ? exp(clamp(Grids::getAAirCluster(w), 0.50f, 5.0f)) : 1.00)
-                : 1.0;
+        double grouping(UnitInfo& unit, WalkPosition w) {
+            if (unit.isFlying()) {
+                if (unit.hasCommander() && (unit.isTargetedBySplash() || unit.isTargetedBySuicide())) {
+                    return 1.0 + Position(w).getDistance(unit.getCommander().lock()->getCommandPosition());
+                }
+            }
+            return 1.0;
         }
 
-        double defaultDistance(UnitInfo& unit, WalkPosition w) {
+        double distance(UnitInfo& unit, WalkPosition w) {
             const auto p = Position(w) + Position(4, 4);
             return max(1.0, p.getDistance(unit.getNavigation()));
         }
 
-        double defaultVisited(UnitInfo& unit, WalkPosition w) {
+        double visited(UnitInfo& unit, WalkPosition w) {
             return log(clamp(double(Broodwar->getFrameCount() - Grids::lastVisitedFrame(w)), 100.0, 1000.0));
         }
 
-        double defaultVisible(UnitInfo& unit, WalkPosition w) {
+        double visible(UnitInfo& unit, WalkPosition w) {
             return log(clamp(double(Broodwar->getFrameCount() - Grids::lastVisibleFrame(TilePosition(w))), 100.0, 1000.0));
         }
 
-        double defaultMobility(UnitInfo& unit, WalkPosition w) {
+        double mobility(UnitInfo& unit, WalkPosition w) {
             return unit.isFlying() ? 1.0 : log(10.0 + double(Grids::getMobility(w)));
         }
 
-        double defaultThreat(UnitInfo& unit, WalkPosition w)
+        double threat(UnitInfo& unit, WalkPosition w)
         {
+            if (!unit.isFlying() && !unit.getType().isWorker())
+                return 1.0;
+
             const auto p = Position(w) + Position(4, 4);
             if (unit.isTransport()) {
                 if (p.getDistance(unit.getNavigation()) < 32.0)
-                    return max(MIN_THREAT, Grids::getEGroundThreat(w) + Grids::getEAirThreat(w));
-                return max(MIN_THREAT, Grids::getEAirThreat(w));
+                    return max(0.1f, Grids::getEGroundThreat(w) + Grids::getEAirThreat(w));
+                return max(0.1f, Grids::getEAirThreat(w));
             }
 
             if (unit.isHidden()) {
                 if (!Actions::overlapsDetection(unit.unit(), p, PlayerState::Enemy))
-                    return MIN_THREAT;
+                    return 0.1;
             }
-            return max(MIN_THREAT, unit.getType().isFlyer() ? Grids::getEAirThreat(w) : Grids::getEGroundThreat(w));
+            return max(0.1f, unit.getType().isFlyer() ? Grids::getEAirThreat(w) : Grids::getEGroundThreat(w));
         }
 
-        Position findViablePosition(UnitInfo& unit, function<double(WalkPosition)> score)
+        double avoidance(UnitInfo& unit, WalkPosition w)
+        {
+            if (!unit.isFlying() && !unit.getType().isWorker())
+                return 1.0;
+
+            const auto p = Position(w) + Position(4, 4);
+            auto distTargeted = unit.hasTarget() ? unit.getTarget().lock()->getPosition().getDistance(p) : 1.0;
+            for (auto &t : unit.getUnitsInRangeOfThis()) {
+                if (auto target = t.lock())
+                    distTargeted = max(distTargeted, double(Util::boxDistance(unit.getType(), p, target->getType(), target->getPosition())));                
+            }
+            return distTargeted;
+        }
+
+        Position findViablePosition(UnitInfo& unit, Position pstart, int radius, function<double(WalkPosition)> score)
         {
             // Check if this is a viable position for movement
             const auto viablePosition = [&](const WalkPosition& w, Position p) {
@@ -63,8 +83,7 @@ namespace McRave::Command {
 
             auto bestPosition = Positions::Invalid;
             auto best = 0.0;
-            const auto start = WalkPosition(unit.getNavigation());
-            const auto radius = 4;
+            const auto start = WalkPosition(pstart);
 
             // Create a box, keep units outside a tile of the edge of the map if it's a flyer
             const auto left = max(0, start.x - radius);
@@ -76,7 +95,7 @@ namespace McRave::Command {
             for (auto x = left; x < right; x++) {
                 for (auto y = up; y < down; y++) {
                     const WalkPosition w(x, y);
-                    const Position p = Position(w);
+                    const Position p = Position(w) + Position(4,4);
 
                     auto current = score(w);
                     if (unit.isLightAir() && unit.getLocalState() != LocalState::Attack) {
@@ -162,7 +181,7 @@ namespace McRave::Command {
                     const auto botRight = topLeft + Position(unit.getBuildType().tileWidth() * 32, unit.getBuildType().tileHeight() * 32);
                     return Util::rectangleIntersect(topLeft, botRight, unitTarget->getPosition());
                 }
-                if (unitTarget->isThreatening() && unit.getTargetedBy().empty() && (unit.isHealthy() || unit.getTargetedBy().empty()) && unit.isWithinRange(*unitTarget) && unit.isWithinGatherRange())
+                if (unitTarget->isThreatening() && unit.getUnitsInRangeOfThis().empty() && unit.isHealthy() && unit.isWithinRange(*unitTarget) && unit.isWithinGatherRange())
                     return true;
             }
 
@@ -255,16 +274,12 @@ namespace McRave::Command {
         auto atHome = Terrain::inTerritory(PlayerState::Self, unit.getPosition());
         const auto scoreFunction = [&](WalkPosition w) {
             const auto p =          Position(w) + Position(4, 4);
-            const auto threat =     defaultThreat(unit, w);
-            const auto distance =   defaultDistance(unit, w);
-            const auto grouping =   defaultGrouping(unit, w);
-            const auto mobility =   defaultMobility(unit, w);
             auto score = 0.0;
 
             if (unit.getRole() == Role::Worker && !atHome)
-                score = mobility / (distance * grouping * threat);
+                score = mobility(unit, w) * grouping(unit, w) / (distance(unit, w) * avoidance(unit, w));
             else
-                score = mobility / (distance * grouping);
+                score = mobility(unit, w) * grouping(unit, w) / (distance(unit, w));
             return score;
         };
 
@@ -337,7 +352,7 @@ namespace McRave::Command {
             }
 
             // Find the best position to move to
-            auto bestPosition = findViablePosition(unit, scoreFunction);
+            auto bestPosition = findViablePosition(unit, unit.getNavigation(), 4, scoreFunction);
             if (bestPosition.isValid()) {
                 unit.command(Move, bestPosition);
                 return true;
@@ -359,24 +374,7 @@ namespace McRave::Command {
         auto unitTarget = unit.getTarget().lock();
 
         const auto scoreFunction = [&](WalkPosition w) {
-            const auto p =          Position(w) + Position(4, 4);
-            const auto threat =     defaultThreat(unit, w);
-            const auto grouping =   defaultGrouping(unit, w);
-            const auto mobility =   defaultMobility(unit, w);
-
-            auto distTargeted = 1.0;
-            for (auto &t : unit.getTargetedBy()) {
-                if (auto target = t.lock()) {
-                    auto range = unit.isFlying() ? target->getAirRange() : target->getGroundRange();
-                    auto strength = unit.isFlying() ? target->getVisibleAirStrength() : target->getVisibleGroundStrength();
-                    auto dist = Util::boxDistance(unit.getType(), p, target->getType(), target->getPosition());
-                    distTargeted += max(0.0, dist - range) * strength;
-                }
-            }
-
-            distTargeted += p.getDistance(unitTarget->getPosition());
-
-            const auto score =      (mobility * distTargeted) / (threat * grouping);
+            const auto score =      (mobility(unit, w) * avoidance(unit, w) * grouping(unit, w)) / (threat(unit, w));
             return score;
         };
 
@@ -420,14 +418,8 @@ namespace McRave::Command {
             auto allyRange = (unitTarget->getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
             auto enemyRange = (unit.getType().isFlyer() ? unitTarget->getAirRange() : unitTarget->getGroundRange());
 
-            if (unit.getRole() == Role::Worker && !unit.getTargetedBy().empty() && Util::getTime() < Time(3, 30)) {
-                for (auto &t : unit.getTargetedBy()) {
-                    if (auto targeter = t.lock()) {
-                        if (targeter->isWithinRange(unit))
-                            return true;
-                    }
-                }
-            }
+            if (unit.getRole() == Role::Worker)
+                return Util::getTime() < Time(3, 30) && !unit.getUnitsInRangeOfThis().empty();
 
             if (unit.getRole() == Role::Combat || unit.getRole() == Role::Scout) {
 
@@ -451,7 +443,7 @@ namespace McRave::Command {
                     || unit.isLightAir()                                                                                        // Do kite when this is a light air unit
                     || allyRange > enemyRange                                                                                   // Do kite when this units range is higher than its target
                     || unit.isCapitalShip()                                                                                     // Do kite when this unit is a capital ship
-                    || ((!unit.getTargetedBy().empty() || !unit.isHealthy()) && allyRange == enemyRange))                       // Do kite when this unit is being attacked or isn't healthy
+                    || ((!unit.getUnitsTargetingThis().empty() || !unit.isHealthy()) && allyRange == enemyRange))               // Do kite when this unit is being attacked or isn't healthy
                     return true;
             }
             return false;
@@ -481,7 +473,7 @@ namespace McRave::Command {
             }
 
             // If we found a valid position, move to it
-            auto bestPosition = findViablePosition(unit, scoreFunction);
+            auto bestPosition = findViablePosition(unit, unit.getPosition(), 12, scoreFunction);
             if (bestPosition.isValid()) {
                 unit.command(Move, bestPosition);
                 return true;
@@ -493,15 +485,12 @@ namespace McRave::Command {
     bool defend(UnitInfo& unit)
     {
         const auto scoreFunction = [&](WalkPosition w) {
-            const auto distance =   defaultDistance(unit, w);
-            const auto mobility =   defaultMobility(unit, w);
-            const auto score =      mobility / distance;
+            const auto score =      mobility(unit, w) / distance(unit, w);
             return score;
         };
 
         bool closeToMainChoke = BWEB::Map::getMainChoke() && Position(BWEB::Map::getMainChoke()->Center()).getDistance(unit.getPosition()) < 320.0;
         bool closeToNaturalChoke = BWEB::Map::getNaturalChoke() && Position(BWEB::Map::getNaturalChoke()->Center()).getDistance(unit.getPosition()) < 320.0;
-        bool defendingExpansion = unit.getDestination().isValid() && !Terrain::inTerritory(PlayerState::Enemy, unit.getDestination());
         bool closeToDefend = Terrain::inTerritory(PlayerState::Self, unit.getPosition()) || closeToMainChoke || closeToNaturalChoke || unit.getType().isWorker() || (unit.getGoalType() == GoalType::Defend && unit.getPosition().getDistance(unit.getGoal()) < 320.0);
 
         const auto canDefend = [&]() {
@@ -528,7 +517,7 @@ namespace McRave::Command {
             }
 
             // Find the best position to move to
-            auto bestPosition = findViablePosition(unit, scoreFunction);
+            auto bestPosition = findViablePosition(unit, unit.getNavigation(), 4, scoreFunction);
             if (bestPosition.isValid()) {
                 unit.command(Move, bestPosition);
                 return true;
@@ -545,18 +534,7 @@ namespace McRave::Command {
     bool explore(UnitInfo& unit)
     {
         const auto scoreFunction = [&](WalkPosition w) {
-            auto threat =     defaultThreat(unit, w);
-            const auto distance =   defaultDistance(unit, w) + 640.0; // Padded by rough width or height of starting area
-            const auto visible =    defaultVisited(unit, w);
-            const auto grouping =   defaultGrouping(unit, w);
-            const auto mobility =   defaultMobility(unit, w);
-
-            auto score = 0.0;
-            //if (!Grids::hasCliffVision(TilePosition(w)))
-            //    score =            mobility / (distance * grouping);
-            //else
-            score =            mobility / (exp(threat) * distance * grouping);
-
+            auto score = mobility(unit, w) * grouping(unit, w) / (avoidance(unit, w) * distance(unit, w));
             return score;
         };
 
@@ -593,7 +571,7 @@ namespace McRave::Command {
                 return true;
             }
 
-            auto bestPosition = findViablePosition(unit, scoreFunction);
+            auto bestPosition = findViablePosition(unit, unit.getNavigation(), 4, scoreFunction);
 
             if (bestPosition.isValid()) {
                 unit.command(Move, bestPosition);
@@ -609,26 +587,8 @@ namespace McRave::Command {
 
     bool retreat(UnitInfo& unit)
     {
-        auto distHome = unit.getPosition().getDistance(unit.getDestination());
-
         const auto scoreFunction = [&](WalkPosition w) {
-            const auto p =          Position(w) + Position(4, 4);
-            const auto distance =   defaultDistance(unit, w);
-            const auto threat =     defaultThreat(unit, w);
-            const auto grouping =   defaultGrouping(unit, w);
-            const auto mobility =   defaultMobility(unit, w);
-
-            auto distTargeted = 1.0;
-            for (auto &t : unit.getTargetedBy()) {
-                if (auto target = t.lock()) {
-                    auto range = unit.isFlying() ? target->getAirRange() : target->getGroundRange();
-                    auto strength = unit.isFlying() ? target->getVisibleAirStrength() : target->getVisibleGroundStrength();
-                    auto dist = Util::boxDistance(unit.getType(), p, target->getType(), target->getPosition());
-                    distTargeted += max(0.0, dist - range) * strength;
-                }
-            }
-
-            auto score = (mobility * distTargeted) / (threat * grouping * distance);
+            auto score = (mobility(unit, w) * avoidance(unit, w) * grouping(unit, w)) / (threat(unit, w) * (distance(unit, w)));
             return score;
         };
 
@@ -650,9 +610,10 @@ namespace McRave::Command {
 
         if (canRetreat() && shouldRetreat()) {
 
-            auto bestPosition = findViablePosition(unit, scoreFunction);
+            auto bestPosition = findViablePosition(unit, unit.getNavigation(), 8, scoreFunction);
             if (bestPosition.isValid()) {
                 unit.command(Move, bestPosition);
+                Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Brown);
                 return true;
             }
             else {
@@ -670,15 +631,7 @@ namespace McRave::Command {
         });
 
         const auto scoreFunction = [&](WalkPosition w) {
-            const auto p = Position(w) + Position(4, 4);
-            const auto threat = defaultThreat(unit, w);
-            auto distance = defaultDistance(unit, w);
-
-            // Keep Arbiters at a safe escorting distance
-            if (unit.getType() == Protoss_Arbiter && threat > MIN_THREAT)
-                distance += 128.0;
-
-            auto score = 1.0 / (threat * distance);
+            auto score = 1.0 / (threat(unit, w) * distance(unit, w));
             return score;
         };
 
@@ -692,7 +645,7 @@ namespace McRave::Command {
             return false;
 
         // If we found a valid position, move to it
-        auto bestPosition = findViablePosition(unit, scoreFunction);
+        auto bestPosition = findViablePosition(unit, unit.getNavigation(), 4, scoreFunction);
         if (bestPosition.isValid()) {
             unit.command(Move, bestPosition);
             return true;
@@ -715,7 +668,7 @@ namespace McRave::Command {
             if (grdDist == DBL_MAX)
                 return 0.0;
 
-            const auto threat =     unit.getTransportState() == TransportState::Retreating ? defaultThreat(unit, w) : 1.0;
+            const auto threat =     unit.getTransportState() == TransportState::Retreating ? avoidance(unit, w) : 1.0;
             const auto distance =   unit.getTransportState() == TransportState::Retreating ? distRetreat : dist;
             double score =          1.0 / (threat * distance);
 
@@ -737,7 +690,7 @@ namespace McRave::Command {
             return score;
         };
 
-        auto bestPosition = findViablePosition(unit, scoreFunction);
+        auto bestPosition = findViablePosition(unit, unit.getNavigation(), 4, scoreFunction);
         if (bestPosition.isValid()) {
             unit.command(Move, bestPosition);
             return true;

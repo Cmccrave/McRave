@@ -27,7 +27,7 @@ namespace McRave::Horizon {
         void addBonus(UnitInfo& u, UnitInfo& t, double &simRatio) {
             if (u.isHidden())
                 simRatio *= 2.0;
-            if (!u.getType().isFlyer() && u.getGroundRange() > 32.0 && Broodwar->getGroundHeight(u.getTilePosition()) > Broodwar->getGroundHeight(TilePosition(t.getEngagePosition())))
+            if (!u.isFlying() && !t.isFlying() && u.getGroundRange() > 32.0 && Broodwar->getGroundHeight(u.getTilePosition()) > Broodwar->getGroundHeight(TilePosition(t.getEngagePosition())))
                 simRatio *= 2.0;
             return;
         }
@@ -106,7 +106,7 @@ namespace McRave::Horizon {
             auto &selfTarget = self.getTarget().lock();
             const auto range = max(self.getAirRange(), self.getGroundRange());
             const auto reach = max(self.getAirReach(), self.getGroundReach());
-            const auto distance = double(Util::boxDistance(self.getType(), self.getPosition(), unit.getType(), unitTarget->getPosition()));
+            const auto distance = double(Util::boxDistance(self.getType(), self.getPosition(), unitTarget->getType(), unitTarget->getPosition()));
             const auto speed = self.getSpeed() > 0.0 ? self.getSpeed() * 24.0 : unit.getSpeed() * 24.0;
             const auto engageTime = max(0.0, (distance - range) / speed);
             auto simRatio = max(0.0, simulationTime - engageTime + addPrepTime(self));

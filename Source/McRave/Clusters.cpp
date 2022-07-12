@@ -41,8 +41,10 @@ namespace McRave::Combat::Clusters {
 
             unit.setFormation(Positions::Invalid);
 
-            // Check if any existing formations match this units type and common objective
-            bool foundCluster = false;
+            // Check if any existing formations match this units type and common objective, get closest
+            Cluster * closestCluster = nullptr;
+            auto distBest = DBL_MAX;
+
             for (auto &cluster : clusters) {
                 auto flyingCluster = any_of(cluster.units.begin(), cluster.units.end(), [&](auto &u) {
                     return u.lock()->isFlying();
@@ -50,20 +52,27 @@ namespace McRave::Combat::Clusters {
                 if ((flyingCluster && !unit.isFlying()) || (!flyingCluster && unit.isFlying()))
                     continue;
 
+                auto strategyInCommon = !cluster.commander.expired() && cluster.commander.lock()->isLightAir() && unit.isLightAir() && !unit.getGoal().isValid(); // TODO: Can we just set units destination to the commander instead?
                 auto positionInCommon = unit.getPosition().getDistance(cluster.sharedPosition) < cluster.sharedRadius || unit.getPosition().getDistance(cluster.sharedDestination) < cluster.sharedRadius;
                 auto destinationInCommon = unit.getDestination().getDistance(cluster.sharedDestination) < cluster.sharedRadius || unit.getDestination().getDistance(cluster.sharedPosition) < cluster.sharedRadius;
+                auto dist = min({ unit.getPosition().getDistance(cluster.sharedPosition), unit.getPosition().getDistance(cluster.sharedDestination),
+                                unit.getDestination().getDistance(cluster.sharedDestination), unit.getDestination().getDistance(cluster.sharedPosition) })
+                        * (1.0 + cluster.sharedPosition.getDistance(cluster.sharedDestination));
 
-                if (destinationInCommon) {
-                    cluster.sharedRadius += unit.isLightAir() ? 0.0 : double(unit.getType().width() * unit.getType().height()) / cluster.sharedRadius;
-                    cluster.units.push_back(unit.weak_from_this());
-                    cluster.typeCounts[unit.getType()]++;
-                    foundCluster = true;
-                    break;
+                if (dist < distBest && (destinationInCommon || positionInCommon || strategyInCommon)) {
+                    distBest = dist;
+                    closestCluster = &cluster;
                 }
             }
 
+            if (closestCluster) {
+                closestCluster->sharedRadius += unit.isLightAir() ? 160.0 : double(unit.getType().width() * unit.getType().height()) / closestCluster->sharedRadius;
+                closestCluster->units.push_back(unit.weak_from_this());
+                closestCluster->typeCounts[unit.getType()]++;
+            }
+
             // Didn't find existing formation, create a new one
-            if (!foundCluster) {
+            else {
                 Cluster newCluster(unit.getPosition(), unit.getDestination(), unit.getType());
                 newCluster.units.push_back(unit.weak_from_this());
                 newCluster.typeCounts[unit.getType()]++;
@@ -74,22 +83,29 @@ namespace McRave::Combat::Clusters {
         // For each cluster
         for (auto &cluster : clusters) {
 
-            // If commander satisifed for a static cluster, don't try to find a new one
-            auto commander = cluster.commander.lock();
-            if (commander && !commander->globalRetreat() && !commander->localRetreat() && !cluster.mobileCluster)
-                continue;
-
             // Find a centroid
             auto avgPosition = Position(0, 0);
+            auto cnt = 0;
             for (auto &u : cluster.units) {
                 auto unit = u.lock();
-                avgPosition += unit->getPosition();
+                if (!unit->globalRetreat() && !unit->localRetreat()) {
+                    avgPosition += unit->getPosition();
+                    cnt++;
+                }
             }
-            avgPosition /= cluster.units.size();
+            if (cnt > 0)
+                cluster.sharedPosition = avgPosition / cnt;
+            else
+                cluster.sharedPosition = cluster.units.begin()->lock()->getPosition();
+
+            // If commander satisifed for a static cluster, don't try to find a new one
+            auto commander = cluster.commander.lock();
+            if (commander && !commander->globalRetreat() && !commander->localRetreat() && !cluster.mobileCluster && commander->getPosition().getDistance(cluster.sharedPosition) < cluster.sharedRadius)
+                continue;
 
             // Get closest unit to centroid
             auto closestToCentroid = Util::getClosestUnit(avgPosition, PlayerState::Self, [&](auto &u) {
-                return !u->globalRetreat() && !u->localRetreat() && find(cluster.units.begin(), cluster.units.end(), u) != cluster.units.end();
+                return !u->isTargetedBySplash() && !u->isTargetedBySuicide() && !u->globalRetreat() && !u->localRetreat() && find(cluster.units.begin(), cluster.units.end(), u) != cluster.units.end();
             });
             if (!closestToCentroid) {
                 closestToCentroid = Util::getClosestUnit(avgPosition, PlayerState::Self, [&](auto &u) {
@@ -97,12 +113,11 @@ namespace McRave::Combat::Clusters {
                 });
             }
             if (closestToCentroid) {
-                cluster.mobileCluster = closestToCentroid->getGlobalState() != GlobalState::Retreat;
-                cluster.sharedPosition = avgPosition;
+                cluster.mobileCluster = closestToCentroid->getGlobalState() != GlobalState::Retreat;                
                 cluster.sharedDestination = closestToCentroid->getDestination();
                 cluster.commander = closestToCentroid->weak_from_this();
-                cluster.commandShare = cluster.commander.lock()->isLightAir() ? CommandShare::Exact : CommandShare::Parallel;
-                cluster.shape = cluster.commander.lock()->isLightAir() ? Shape::None : Shape::Concave;
+                cluster.commandShare = closestToCentroid->isLightAir() ? CommandShare::Exact : CommandShare::Parallel;
+                cluster.shape = closestToCentroid->isLightAir() ? Shape::None : Shape::Concave;
 
                 // Assign commander to each unit
                 for (auto &u : cluster.units) {

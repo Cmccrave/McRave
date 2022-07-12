@@ -84,7 +84,7 @@ namespace McRave::Workers {
             if (Util::getTime() < Time(4, 00))
                 return true;
 
-            for (auto &t : unit.getTargetedBy()) {
+            for (auto &t : unit.getUnitsTargetingThis()) {
                 if (auto targeter = t.lock()) {
                     if (targeter->isThreatening())
                         return false;
@@ -346,7 +346,7 @@ namespace McRave::Workers {
             }
         }
 
-        constexpr tuple commands{ Command::misc, Command::attack, Command::click, Command::burrow, Command::returnResource, Command::build, Command::clearNeutral, Command::move, Command::kite, Command::gather };
+        constexpr tuple commands{ Command::misc, Command::attack, Command::click, Command::burrow, Command::returnResource, Command::build, Command::clearNeutral, Command::move, Command::gather };
         void updateDecision(UnitInfo& unit)
         {
             // Convert our commands to strings to display what the unit is doing for debugging

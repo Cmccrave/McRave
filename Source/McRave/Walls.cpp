@@ -266,18 +266,6 @@ namespace McRave::Walls {
         }
 
         int calcGroundDefZvZ(BWEB::Wall& wall) {
-            if ((BuildOrder::getCurrentTransition().find("Muta") != string::npos || Util::getTime() > Time(6, 00)) && (BuildOrder::takeNatural() || int(Stations::getStations(PlayerState::Self).size()) >= 2)) {
-                if (Players::ZvZ() && BuildOrder::isOpener() && BuildOrder::buildCount(Zerg_Spire) > 0 && vis(Zerg_Spire) == 0)
-                    return 0;
-                else if (Util::getTime() < Time(6, 00) && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 40)
-                    return 6;
-                else if (Util::getTime() < Time(6, 00) && (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 || Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 26))
-                    return 4;
-                else if (Spy::enemyPressure())
-                    return (Util::getTime() > Time(4, 10)) + (vis(Zerg_Sunken_Colony) > 0) + (vis(Zerg_Drone) >= 8 && com(Zerg_Sunken_Colony) >= 2);
-                else if (Spy::enemyRush() && total(Zerg_Zergling) >= 6)
-                    return 1 + (vis(Zerg_Sunken_Colony) > 0) + (vis(Zerg_Drone) >= 8 && com(Zerg_Sunken_Colony) >= 2);
-            }
             return 0;
         }
 

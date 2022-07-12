@@ -20,7 +20,7 @@ namespace McRave::Spy {
                 possible = false;
                 name = "Unknown";
             }
-            changeable = framesTrue > framesChangeable;
+            changeable = framesTrue < framesChangeable;
         }
     };
 
@@ -38,6 +38,8 @@ namespace McRave::Spy {
         Time buildTime, openerTime, transitionTime, rushArrivalTime;
         std::vector<Strat*> listOfStrats;
         std::map<BWAPI::UnitType, UnitTimings> enemyTimings;
+        std::map<BWAPI::UpgradeType, int> upgradeLevel;
+        std::map<BWAPI::TechType, bool> techResearched; // TODO: Impl
         int workersNearUs = 0;
         int gasMined = 0;
         std::set<BWAPI::UnitType> typeUpgrading; // TODO: Better impl (doesn't look at current state)

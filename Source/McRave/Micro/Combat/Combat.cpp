@@ -234,6 +234,7 @@ namespace McRave::Combat {
                 // Update the commander first
                 auto commander = cluster.commander.lock();
                 if (commander) {
+                    commander->circle(Colors::Yellow);
                     Navigation::update(*commander);
                     Decision::update(*commander);
                 }
@@ -241,9 +242,11 @@ namespace McRave::Combat {
                 // Update remaining units
                 for (auto &u : cluster.units) {
                     if (auto unit = u.lock()) {
-                        if (cluster.commandShare == CommandShare::Exact && !unit->localRetreat() && !unit->globalRetreat() && !lightUnitNeedsRegroup(*unit)) {
-                            if (commander->getCommandType() == UnitCommandTypes::Attack_Unit && unit->hasTarget())
-                                unit->command(commander->getCommandType(), *unit->getTarget().lock());
+                        auto sharedDecision = cluster.commandShare == CommandShare::Exact && !unit->localRetreat() && !unit->globalRetreat() && !unit->isNearSuicide();
+
+                        if (sharedDecision) {
+                            if (commander->getCommandType() == UnitCommandTypes::Attack_Unit)
+                                unit->command(commander->getCommandType(), *commander->getTarget().lock());
                             else if (commander->getCommandType() == UnitCommandTypes::Move && !unit->isTargetedBySplash())
                                 unit->command(commander->getCommandType(), commander->getCommandPosition());
                             else if (commander->getCommandType() == UnitCommandTypes::Right_Click_Position && !unit->isTargetedBySplash())

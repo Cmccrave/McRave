@@ -82,7 +82,7 @@ namespace McRave::Combat::Formations {
                 continue;
 
             // Start creating positions starting at the start position
-            auto startPosition = Util::getClosestPointToRadiusGround(retreat->getBase()->Center(), cluster.sharedDestination, 32).second;
+            auto startPosition = Util::getClosestPointToRadiusGround(retreat->getBase()->Center(), cluster.sharedDestination, radius/2.0).second;
             auto angle = BWEB::Map::getAngle(make_pair(startPosition, concave.center));
             auto radsPerUnit = min(radius / (unitTangentSize * count * 3.14), unitTangentSize / (1.0 * radius));
             auto radsPositive = angle;

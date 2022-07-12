@@ -105,8 +105,8 @@ namespace McRave::Combat::Simulation {
             maxWinPercent = 1.2;
         }
         if (Players::PvT()) {
-            minWinPercent = 0.6 - baseCountSwing;
-            maxWinPercent = 1.0 - baseCountSwing;
+            minWinPercent = 0.6;
+            maxWinPercent = 1.0;
         }
 
         // Z
@@ -119,8 +119,8 @@ namespace McRave::Combat::Simulation {
             maxWinPercent = 1.4;
         }
         if (Players::ZvT()) {
-            minWinPercent = 0.8 - baseCountSwing + baseDistSwing;
-            maxWinPercent = 1.2 - baseCountSwing + baseDistSwing;
+            minWinPercent = 0.8;
+            maxWinPercent = 1.2;
         }
 
         minThreshold = minWinPercent - baseCountSwing + baseDistSwing;

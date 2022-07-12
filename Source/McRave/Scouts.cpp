@@ -179,7 +179,7 @@ namespace McRave::Scouts {
                 if (sacrifice)
                     desiredScoutTypeCounts[Zerg_Overlord] = 1;
 
-                if (Util::getTime() > Time(10, 00)
+                if (total(Zerg_Mutalisk) > 0
                     || Spy::getEnemyBuild() == "FFE"
                     || Players::getVisibleCount(PlayerState::Enemy, Protoss_Stargate) > 0
                     || (Players::ZvZ() && Util::getTime() > Time(5, 00)))

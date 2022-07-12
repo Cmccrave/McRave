@@ -128,7 +128,7 @@ namespace McRave::Command
 
         // Drone
         else if (unit.getType().isWorker() && Broodwar->self()->hasResearched(TechTypes::Burrowing)) {
-            const auto resourceThreatened = (unit.hasResource() && Grids::getEGroundThreat(unit.getResource().lock()->getPosition()) > 0.0f) || !unit.getTargetedBy().empty();
+            const auto resourceThreatened = (unit.hasResource() && Grids::getEGroundThreat(unit.getResource().lock()->getPosition()) > 0.0f) || !unit.getUnitsTargetingThis().empty();
             const auto threatened = unit.hasResource() && resourceThreatened && unit.hasTarget() && unit.getTarget().lock()->isThreatening() && !unit.getTarget().lock()->isFlying() && !unit.getTarget().lock()->getType().isWorker();
 
             if (!unit.isBurrowed()) {
@@ -489,8 +489,12 @@ namespace McRave::Command
         const auto hasMineableResource = unit.hasResource() && unit.getResource().lock()->getResourceState() == ResourceState::Mineable && unit.getResource().lock()->unit()->exists();
 
         const auto canGather = [&](Unit resource) {
+            if (unit.unit()->getTarget() == resource)
+                return false;
+
             auto closestChokepoint = Util::getClosestChokepoint(unit.getPosition());
             auto nearNonBlockingChoke = closestChokepoint && !closestChokepoint->Blocked() && unit.getPosition().getDistance(Position(closestChokepoint->Center())) < 160.0;
+            auto boxDist = Util::boxDistance(unit.getType(), unit.getPosition(), resource->getType(), resource->getPosition());
 
             if (Grids::getEGroundThreat(unit.getPosition()) > 0.0f)
                 return true;
@@ -499,6 +503,8 @@ namespace McRave::Command
             if (!hasMineableResource && resource->exists())
                 return true;
             if (Planning::overlapsPlan(unit, unit.getPosition()))
+                return true;
+            if ((unit.hasResource() && boxDist > 0 && unit.unit()->getOrder() == Orders::MoveToMinerals && unit.getResource().lock()->getGatherOrderPositions().find(unit.getPosition()) != unit.getResource().lock()->getGatherOrderPositions().end()))
                 return true;
             return false;
         };
@@ -512,6 +518,7 @@ namespace McRave::Command
                 });
                 if (closestMineral && closestMineral->getPosition().getDistance(buildCenter) < unit.getPosition().getDistance(buildCenter) && closestMineral->getPosition().getDistance(buildCenter) < 256.0) {
                     unit.unit()->gather(closestMineral->unit());
+                    unit.circle(Colors::Yellow);
                     return true;
                 }
             }
@@ -568,6 +575,7 @@ namespace McRave::Command
                         // Spam gather it to move out of the way
                         if (furthest) {
                             unit.unit()->gather(furthest->Unit());
+                            unit.circle(Colors::Red);
                             return true;
                         }
                     }
@@ -577,15 +585,15 @@ namespace McRave::Command
         }
 
         // Gather from resource
+        unit.circle(Colors::Cyan);
         auto station = Stations::getClosestStationGround(unit.getPosition(), PlayerState::Self);
         auto target = hasMineableResource ? unit.getResource().lock()->unit() : Broodwar->getClosestUnit(station ? station->getResourceCentroid() : BWEB::Map::getMainPosition(), Filter::IsMineralField);
         if (target && canGather(target)) {
-            auto boxDist = Util::boxDistance(unit.getType(), unit.getPosition(), target->getType(), target->getPosition());
-            if (unit.unit()->getTarget() != target || (unit.hasResource() && boxDist > 0 && unit.unit()->getOrder() == Orders::MoveToMinerals && unit.getResource().lock()->getGatherOrderPositions().find(unit.getPosition()) != unit.getResource().lock()->getGatherOrderPositions().end())) {
-                unit.unit()->gather(target);
-            }
+            unit.unit()->gather(target);
+            unit.circle(Colors::Green);
             return true;
         }
+        unit.circle(Colors::Purple);
         return false;
     }
 

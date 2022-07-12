@@ -18,7 +18,7 @@ namespace McRave::Targets {
                     || target.hasAttackedRecently()
                     || unit.getGroundRange() > 32.0
                     || target.isThreatening()
-                    || (target.getTargetedBy().empty() && !Players::ZvZ())
+                    || (target.getUnitsTargetingThis().empty() && !Players::ZvZ())
                     || unit.attemptingRunby()
                     || Terrain::inTerritory(PlayerState::Enemy, target.getPosition());
             }
@@ -89,7 +89,7 @@ namespace McRave::Targets {
 
                 // Generic
                 if (!targetMatters
-                    || (target.getType() == Terran_Vulture_Spider_Mine && int(target.getTargetedBy().size()) >= 4 && !target.isBurrowed())                                  // Don't over target spider mines
+                    || (target.getType() == Terran_Vulture_Spider_Mine && int(target.getUnitsTargetingThis().size()) >= 4 && !target.isBurrowed())                                  // Don't over target spider mines
                     || (target.getType() == Protoss_Interceptor && unit.isFlying())                                                                                         // Don't target interceptors as a flying unit
                     || (!allowWorkerTarget(unit, target))
                     || (target.isHidden() && (!targetCanAttack || (!Players::hasDetection(PlayerState::Self) && Players::PvP())) && !unit.getType().isDetector())           // Don't target if invisible and can't attack this unit or we have no detectors in PvP
@@ -228,20 +228,19 @@ namespace McRave::Targets {
             };
 
             const auto healthScore = [&]() {
-                const auto healthRatio = unit.isLightAir() ? 1.0 : (1.0 - target.getPercentTotal());
                 if (range > 32.0 && target.unit()->isCompleted())
-                    return 1.0 + (0.1*healthRatio);
+                    return 1.0 + (0.1 * (1.0 - target.getPercentTotal()));
                 return 1.0;
             };
 
             const auto focusScore = [&]() {
                 if ((range > 32.0 && boxDistance <= reach) || (range <= 32.0 && boxDistance <= range))
-                    return (1.0 + double(target.getTargetedBy().size()));
+                    return (1.0 + double(target.getUnitsTargetingThis().size()));
                 return 1.0;
             };
 
             const auto priorityScore = [&]() {
-                if (target.getType().isWorker() && unit.isLightAir() && Grids::getEAirThreat(unit.getPosition()) > 0.0f)
+                if (!target.getType().isWorker() && !target.isThreatening() && ((!target.canAttackAir() && unit.isFlying()) || (!target.canAttackGround() && !unit.isFlying())))
                     return target.getPriority() / 4.0;
                 if (target.getType().isWorker() && !Terrain::inTerritory(PlayerState::Enemy, target.getPosition()))
                     return target.getPriority() / 10.0;
@@ -382,7 +381,7 @@ namespace McRave::Targets {
 
             // Add this unit to the targeted by vector
             if (unit.hasTarget() && unit.getRole() == Role::Combat)
-                unit.getTarget().lock()->getTargetedBy().push_back(unit.weak_from_this());
+                unit.getTarget().lock()->getUnitsTargetingThis().push_back(unit.weak_from_this());
         }
 
         void getTarget(UnitInfo& unit)
@@ -407,7 +406,7 @@ namespace McRave::Targets {
                     auto &targetInfo = Units::getUnitInfo(unit.unit()->getOrderTarget());
                     if (targetInfo) {
                         unit.setTarget(&*targetInfo);
-                        targetInfo->getTargetedBy().push_back(unit.weak_from_this());
+                        targetInfo->getUnitsTargetingThis().push_back(unit.weak_from_this());
                     }
                 }
                 else if (unit.getType() != Terran_Vulture_Spider_Mine) {

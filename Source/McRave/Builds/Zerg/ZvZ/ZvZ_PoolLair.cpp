@@ -13,22 +13,23 @@ namespace McRave::BuildOrder::Zerg {
 
         void ZvZ_PL_1HatchMuta()
         {
-            inOpeningBook =                                 total(Zerg_Mutalisk) < 3;
+            inOpeningBook =                                 total(Zerg_Mutalisk) < 4;
             lockedTransition =                              vis(Zerg_Lair) > 0;
             unitLimits[Zerg_Drone] =                        atPercent(Zerg_Lair, 0.50) ? 12 : 9;
             unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvZ();
             gasLimit =                                      (lingSpeed() && total(Zerg_Lair) == 0) ? 2 : gasMax();
             firstUnit =                                     Zerg_Mutalisk;
-            inBookSupply =                                  vis(Zerg_Overlord) < 4 && total(Zerg_Mutalisk) < 3;
+            inBookSupply =                                   total(Zerg_Mutalisk) < 3;
 
-            auto secondHatch = (Spy::getEnemyTransition() == "1HatchMuta" && atPercent(Zerg_Spire, 0.75))
+            auto secondHatch = (Spy::getEnemyTransition() == "1HatchMuta" && total(Zerg_Mutalisk) >= 4)
                 || (Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony) >= 2 && Util::getTime() < Time(3, 30));
+            wantNatural = secondHatch;
 
             // Build
             buildQueue[Zerg_Lair] =                         gas(100) && vis(Zerg_Spawning_Pool) > 0 && total(Zerg_Zergling) >= 6 && vis(Zerg_Drone) >= 8;
             buildQueue[Zerg_Spire] =                        lingSpeed() && atPercent(Zerg_Lair, 0.95) && vis(Zerg_Drone) >= 9;
             buildQueue[Zerg_Hatchery] =                     1 + secondHatch;
-            buildQueue[Zerg_Overlord] =                     1 + (vis(Zerg_Extractor) >= 1) + (s >= 32) + (s >= 40 || atPercent(Zerg_Spire, 0.35));
+            buildQueue[Zerg_Overlord] =                     (com(Zerg_Spire) == 0 && atPercent(Zerg_Spire, 0.35) && (s >= 34)) ? 4 : 1 + (vis(Zerg_Extractor) >= 1) + (s >= 32) + (s >= 46);
 
             // Army Composition
             if (com(Zerg_Spire) > 0) {

@@ -20,10 +20,12 @@ namespace McRave::Spy::General {
                     theSpy.enemyTimings[unit.getType()].countCompletedWhen.push_back(unit.timeCompletesWhen());
                     theSpy.enemyTimings[unit.getType()].countArrivesWhen.push_back(unit.timeArrivesWhen());
 
+                    auto count = int(theSpy.enemyTimings[unit.getType()].countStartedWhen.size());
+
                     if (!unit.getType().isBuilding())
-                        McRave::easyWrite(string(unit.getType().c_str()) + " arrives at " + unit.timeArrivesWhen().toString() + ", observed at " + Util::getTime().toString());
+                        McRave::easyWrite(string(unit.getType().c_str()) + " " + to_string(count) + " arrives at " + unit.timeArrivesWhen().toString() + ", observed at " + Util::getTime().toString());
                     else
-                        McRave::easyWrite(string(unit.getType().c_str()) + " completes at " + unit.timeCompletesWhen().toString() + ", observed at " + Util::getTime().toString());
+                        McRave::easyWrite(string(unit.getType().c_str()) + " " + to_string(count) + " completes at " + unit.timeCompletesWhen().toString() + ", observed at " + Util::getTime().toString());
 
                     if (theSpy.enemyTimings[unit.getType()].firstArrivesWhen == Time(999, 0) || unit.timeArrivesWhen() < theSpy.enemyTimings[unit.getType()].firstArrivesWhen)
                         theSpy.enemyTimings[unit.getType()].firstArrivesWhen = unit.timeArrivesWhen();
@@ -183,6 +185,13 @@ namespace McRave::Spy::General {
             if (Util::getTime() > Time(10, 00))
                 theSpy.greedy.confirmed = false;
         }
+
+        void checkEnemyUpgrade(PlayerInfo& player, StrategySpy& theSpy)
+        {
+            for (auto &upgrade : UpgradeTypes::allUpgradeTypes()) {
+                theSpy.upgradeLevel[upgrade] = player.hasUpgrade(upgrade);
+            }
+        }
     }
 
     void updateGeneral(StrategySpy& theSpy)
@@ -202,6 +211,7 @@ namespace McRave::Spy::General {
                 checkEnemyEarly(player, theSpy);
                 checkEnemyProxy(player, theSpy);
                 checkEnemyGreedy(player, theSpy);
+                checkEnemyUpgrade(player, theSpy);
             }
         }
 

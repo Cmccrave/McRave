@@ -3,8 +3,6 @@
 #include "bwem.h"
 #include "BWEB.h"
 
-#define MIN_THREAT 0.000001f
-
 namespace McRave
 {
     class UnitInfo;
@@ -100,7 +98,7 @@ namespace McRave
     };
 
     enum class ZoneType {
-        None, Engage, Retreat, Escort
+        None, Engage, Retreat, Defend
     };
 
     enum class GoalType {
@@ -134,6 +132,9 @@ namespace McRave
     enum class PlayerState {
         None, Self, Ally, Enemy, Neutral
     };
+
+
+    inline double logLookup16[1024]={};
 }
 
 #include "Horizon.h"

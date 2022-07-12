@@ -161,14 +161,15 @@ namespace McRave::Goals {
                 }
 
                 // Escort expanders
-                if (nextExpand.isValid() && (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) >= 2 || Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony) >= 2)) {
+                if (nextExpand.isValid() && (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) >= 2 || Stations::getStations(PlayerState::Self).size() <= 1)) {
                     auto closestBuilder = Util::getClosestUnit(nextExpand, PlayerState::Self, [&](auto &u) {
                         return u->getBuildType().isResourceDepot();
                     });
                     auto type = (vis(airType) > 0 && Broodwar->self()->getRace() == Races::Zerg) ? airType : rangedType;
 
                     if (closestBuilder) {
-                        for (auto &t : closestBuilder->getTargetedBy()) {
+                        assignNumberToGoal(closestBuilder->getPosition(), type, 1, GoalType::Escort);
+                        for (auto &t : closestBuilder->getUnitsTargetingThis()) {
                             if (auto targeter = t.lock())
                                 assignNumberToGoal(targeter->getPosition(), type, 1, GoalType::Escort);                            
                         }

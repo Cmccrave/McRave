@@ -13,7 +13,7 @@ namespace McRave::Buildings {
 
         bool willDieToAttacks(UnitInfo& building) {
             auto possibleDamage = 0;
-            for (auto &a : building.getTargetedBy()) {
+            for (auto &a : building.getUnitsTargetingThis()) {
                 if (auto attacker = a.lock()) {
                     if (attacker->isWithinRange(building))
                         possibleDamage+= int(attacker->getGroundDamage());
@@ -108,7 +108,7 @@ namespace McRave::Buildings {
                 const auto closestScout = Util::getClosestUnitGround(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
                     return u->getType().isWorker();
                 });
-                if (closestScout && int(Stations::getStations(PlayerState::Self).size()) >= 2 && mapBWEM.GetArea(closestScout->getTilePosition()) == BWEB::Map::getMainArea())
+                if (closestScout && com(Zerg_Hatchery) >= 2 && mapBWEM.GetArea(closestScout->getTilePosition()) == BWEB::Map::getMainArea())
                     morphTile = BWEB::Map::getNaturalTile();
 
                 if (building.getTilePosition() == morphTile)

@@ -38,8 +38,8 @@ namespace McRave {
                     continue;
                 auto workerTarget = worker->getTarget().lock();
 
-                if (worker->isWithinGatherRange() && !worker->isBurrowed() && !worker->getTargetedBy().empty() && workerTarget->isThreatening() && !workerTarget->getType().isWorker()) {
-                    for (auto &e : worker->getTargetedBy()) {
+                if (worker->isWithinGatherRange() && !worker->isBurrowed() && !worker->getUnitsTargetingThis().empty() && workerTarget->isThreatening() && !workerTarget->getType().isWorker()) {
+                    for (auto &e : worker->getUnitsTargetingThis()) {
                         if (auto enemy = e.lock()) {
                             if (enemy->isWithinRange(*worker)) {
                                 threatened = true;

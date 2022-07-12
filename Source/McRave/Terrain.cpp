@@ -31,7 +31,6 @@ namespace McRave::Terrain {
         bool flatRamp = false;
         bool narrowNatural = false;
         bool defendNatural = false;
-        bool abandonNatural = false;
         int timeHarassingHere = 1500;
 
         // TODO: This is unused, is it useful?
@@ -229,7 +228,7 @@ namespace McRave::Terrain {
         {
             const auto baseType = Broodwar->self()->getRace().getResourceDepot();
             narrowNatural = BWEB::Map::getNaturalChoke() && BWEB::Map::getNaturalChoke()->Width() <= 64;
-            defendNatural = BWEB::Map::getNaturalChoke() && !abandonNatural &&
+            defendNatural = BWEB::Map::getNaturalChoke() &&
                 (BuildOrder::isWallNat()
                     || BuildOrder::takeNatural()
                     || BuildOrder::buildCount(baseType) > (1 + !BuildOrder::takeNatural())
@@ -241,7 +240,7 @@ namespace McRave::Terrain {
             auto mainChoke = BWEB::Map::getMainChoke();
 
             // See if a defense is in range of our main choke
-            auto defendRunby = false;
+            auto defendRunby = Spy::getEnemyBuild() == "RaxFact";
             if (defendNatural && Broodwar->self()->getRace() == Races::Zerg && !Players::ZvZ()) {
                 auto closestDefense = Util::getClosestUnit(Position(BWEB::Map::getMainChoke()->Center()), PlayerState::Self, [&](auto &u) {
                     return u->getRole() == Role::Defender && u->canAttackGround();
@@ -258,6 +257,7 @@ namespace McRave::Terrain {
 
             // Natural defending position
             else if (defendNatural && myNatural) {
+                defendChoke = BWEB::Map::getNaturalChoke();
                 defendPosition = Stations::getDefendPosition(myNatural);
                 addTerritory(PlayerState::Self, myNatural);
             }
@@ -277,14 +277,8 @@ namespace McRave::Terrain {
             }
 
             // Natural defending area and choke
-            if (defendNatural && defendChoke) {
-
-                // Decide which area is within my territory, useful for maps with small adjoining areas like Andromeda
-                auto &[a1, a2] = defendChoke->GetAreas();
-                if (a1 && Terrain::inTerritory(PlayerState::Self, a1))
-                    defendArea = a1;
-                if (a2 && Terrain::inTerritory(PlayerState::Self, a2))
-                    defendArea = a2;
+            if (defendNatural) {
+                defendArea = BWEB::Map::getNaturalArea();
                 defendChoke = BWEB::Map::getNaturalChoke();
             }
 
@@ -306,7 +300,10 @@ namespace McRave::Terrain {
                 auto commander = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) {
                     return u->getType() == Zerg_Mutalisk;
                 });
-                return commander && commander->getPosition().getDistance(here) < 160.0;
+                return commander && ((commander->getPosition().getDistance(harassPosition) < 160.0) || 
+                    (commander->getTilePosition().isValid() && harassPosition.isValid()
+                    && mapBWEM.GetArea(commander->getTilePosition()) && mapBWEM.GetArea(TilePosition(harassPosition))
+                    && mapBWEM.GetArea(commander->getTilePosition()) == mapBWEM.GetArea(TilePosition(harassPosition))));
             };
 
             // In FFA just hit closest base to us
@@ -333,7 +330,7 @@ namespace McRave::Terrain {
             }
             if (Players::ZvT() && Util::getTime() > Time(10, 00)) {
                 auto closestEnemy = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return u->isThreatening() || (u->getPosition().getDistance(BWEB::Map::getMainPosition()) < u->getPosition().getDistance(Terrain::getEnemyStartingPosition()) && !u->isHidden());
+                    return u->isThreatening();
                 });
                 if (closestEnemy) {
                     harassPosition = closestEnemy->getPosition();

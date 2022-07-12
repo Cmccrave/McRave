@@ -316,7 +316,7 @@ namespace McRave::Math {
 
     double groundDamage(UnitInfo& unit)
     {
-        auto attackCount = max(unit.getType().airWeapon().damageFactor(), unit.getType().maxGroundHits());
+        auto attackCount = max(unit.getType().groundWeapon().damageFactor(), unit.getType().maxGroundHits());
         auto upLevel = unit.getPlayer()->getUpgradeLevel(unit.getType().groundWeapon().upgradeType());
 
         // TODO Check Reaver upgrade type functional here or if needed hardcoding
