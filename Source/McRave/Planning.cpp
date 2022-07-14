@@ -839,7 +839,7 @@ namespace McRave::Planning {
                         buildingsPlanned[here] = building;
 
                         if (buildingTimer.find(here) == buildingTimer.end())
-                            buildingTimer[here] = Broodwar->getFrameCount() + (BWEB::Map::getGroundDistance(builder->getPosition(), center) / builder->getSpeed()) + 200;                        
+                            buildingTimer[here] = Broodwar->getFrameCount() + int(BWEB::Map::getGroundDistance(builder->getPosition(), center) / builder->getSpeed()) + 200;                        
                     }
                 }
             }

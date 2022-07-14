@@ -114,11 +114,12 @@ namespace McRave::Targets {
 
                 // Mutalisk
                 if (unit.getType() == Zerg_Mutalisk) {
-                    auto anythingTime = Players::ZvZ() ? Time(7, 00) : Time(12, 00);
-                    auto defendExpander = BuildOrder::shouldExpand() && target.getType() == Terran_Vulture;
+                    auto anythingTime = Util::getTime() > (Players::ZvZ() ? Time(7, 00) : Time(12, 00));
+                    auto anythingSupply = Players::getSupply(PlayerState::Enemy, Races::None) < 20;
+                    auto defendExpander = BuildOrder::shouldExpand() && unit.getGoal().isValid();
                     auto invalidBuilding = target.getType().isBuilding() && allowedBuildings.find(target.getType()) == allowedBuildings.end();
 
-                    if (!defendExpander && Util::getTime() < anythingTime && unit.attemptingHarass() && !target.isThreatening() && !unit.canOneShot(target) && !target.getType().isWorker() && !target.isLightAir()) {
+                    if (!defendExpander && !anythingTime && !anythingSupply && unit.attemptingHarass() && !target.isThreatening() && !unit.canOneShot(target) && !target.getType().isWorker() && !target.isLightAir()) {
 
                         if ((enemyHasAir && !target.getType().isWorker() && !target.canAttackAir() && enemyHasGround)                                                                   // Avoid non-air shooters
                             || (!target.getType().isWorker() && !target.getType().isBuilding() && !target.canAttackAir())                                                               // Avoid ground fighters only that we can't oneshot
@@ -234,6 +235,8 @@ namespace McRave::Targets {
             };
 
             const auto focusScore = [&]() {
+                if (unit.isLightAir())
+                    return 1.0;
                 if ((range > 32.0 && boxDistance <= reach) || (range <= 32.0 && boxDistance <= range))
                     return (1.0 + double(target.getUnitsTargetingThis().size()));
                 return 1.0;

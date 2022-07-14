@@ -230,7 +230,7 @@ namespace McRave::BuildOrder::Zerg {
                 auto dropGasExcess      = gasRemaining > 15 * vis(Zerg_Drone) && !inOpeningBook;
                 auto dropGasDefenses    = needSunks && Util::getTime() < Time(4, 00);
                 auto dropGasBroke       = minRemaining < 75 && gasRemaining >= 100 && Util::getTime() < Time(4, 30);
-                auto dropGasDrones      = minRemaining < 75 && !Players::ZvZ() && vis(Zerg_Lair) > 0 && vis(Zerg_Drone) < 18;
+                auto dropGasDrones      = minRemaining < 75 && gasRemaining >= 100 && !Players::ZvZ() && vis(Zerg_Lair) > 0 && vis(Zerg_Drone) < 18;
 
                 if ((dropGasBroke && Util::getTime() < Time(4, 30))
                     || Roles::getMyRoleCount(Role::Worker) < 5
@@ -453,10 +453,10 @@ namespace McRave::BuildOrder::Zerg {
 
             // Mutalisk tech
             else if (isTechUnit(Zerg_Mutalisk)) {
-                if (total(Zerg_Mutalisk) >= 32 && com(Zerg_Hive) > 0) {
+                if (total(Zerg_Mutalisk) >= 32 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Adrenal_Glands) > 0) {
                     armyComposition[Zerg_Drone] =               0.40;
-                    armyComposition[Zerg_Zergling] =            0.40;
-                    armyComposition[Zerg_Mutalisk] =            0.20;
+                    armyComposition[Zerg_Zergling] =            0.30;
+                    armyComposition[Zerg_Mutalisk] =            0.30;
                 }
                 else {
                     armyComposition[Zerg_Drone] =               0.70;
@@ -641,9 +641,14 @@ namespace McRave::BuildOrder::Zerg {
             }
         }
 
-        // Remove Lings if we're against Vults
-        if (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 && total(Zerg_Hive) == 0 && unitLimits[Zerg_Zergling] <= vis(Zerg_Zergling))
-            unlockedType.erase(Zerg_Zergling);
+        // Remove Lings if we're against Vults, adding at Hive
+        if (Players::ZvT()) {
+            if (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 && total(Zerg_Hive) == 0 && unitLimits[Zerg_Zergling] <= vis(Zerg_Zergling))
+                unlockedType.erase(Zerg_Zergling);
+            if (total(Zerg_Hive) > 0)
+                unlockedType.insert(Zerg_Zergling);
+        }
+
 
         // UMS Unlocking
         if (Broodwar->getGameType() == GameTypes::Use_Map_Settings) {

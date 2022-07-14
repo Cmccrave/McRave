@@ -274,6 +274,7 @@ namespace McRave::Stations
         int calcGroundDefZvZ(BWEB::Station * station)
         {
             auto groundCount = getGroundDefenseCount(station);
+            auto desiredDefenses = 0;
 
             if (station->isMain()) {
                 if (BuildOrder::takeNatural() || getStations(PlayerState::Self).size() > 1)
@@ -283,46 +284,46 @@ namespace McRave::Stations
                     groundCount += Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony);
 
                 // 4 Pool
-                if (Spy::enemyRush() && (total(Zerg_Zergling) >= 12 || BuildOrder::getCurrentBuild() != "PoolLair"))
-                    return 1 + (vis(Zerg_Sunken_Colony) > 0) + (vis(Zerg_Drone) >= 8 && com(Zerg_Sunken_Colony) >= 2) - groundCount;
+                if (Spy::getEnemyOpener() == "4Pool")
+                    desiredDefenses = max(desiredDefenses, 1 + (vis(Zerg_Drone) >= 8 && com(Zerg_Sunken_Colony) >= 1));
 
                 // 7 Pool
-                else if (Spy::getEnemyOpener() == "7Pool" && Spy::getEnemyTransition() != "1HatchMuta")
-                    return 1 - groundCount;
+                if (Spy::getEnemyOpener() == "7Pool" && Spy::getEnemyTransition() != "1HatchMuta")
+                    desiredDefenses = max(desiredDefenses, 1);
 
                 // 12 Pool
-                else if (Spy::getEnemyOpener() == "12Pool" && Spy::getEnemyTransition() != "1HatchMuta")
-                    return (Util::getTime() > Time(4, 00)) - groundCount;
+                if (Spy::getEnemyOpener() == "12Pool" && Spy::getEnemyTransition() != "1HatchMuta")
+                    desiredDefenses = max(desiredDefenses, int(Util::getTime() > Time(4, 00)));
 
                 // 10 Hatch or speedling all-in
-                else if ((Spy::getEnemyOpener() == "10Hatch" || Spy::getEnemyTransition() == "2HatchSpeedling") && vis(Zerg_Spire) > 0)
-                    return (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(4, 30)) - groundCount;
+                if ((Spy::getEnemyOpener() == "10Hatch" || Spy::getEnemyTransition() == "2HatchSpeedling") && vis(Zerg_Spire) > 0)
+                    desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(4, 30)));
 
                 // +1Ling
-                else if (Spy::getEnemyTransition() == "+1Ling")
-                    return (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(4, 45)) - groundCount;
+                if (Spy::getEnemyTransition() == "+1Ling")
+                    desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(4, 45)));
 
                 // 3 Hatch
-                else if (Util::getTime() < Time(6, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3)
-                    return (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(5, 00)) + (Util::getTime() > Time(6, 00)) - groundCount;
+                if (Util::getTime() < Time(6, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3)
+                    desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(5, 00)) + (Util::getTime() > Time(6, 00)));
 
                 // Unknown
-                else if (!Terrain::foundEnemy() && vis(Zerg_Spire) > 0 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 16)
-                    return 1 - groundCount;
+                if (!Terrain::foundEnemy() && vis(Zerg_Spire) > 0 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 16)
+                    desiredDefenses = max(desiredDefenses, 1);
 
                 // Unknown and lots of lings
-                else if (Spy::getEnemyTransition().find("Muta") == string::npos && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 16)
-                    return 1 - groundCount;
+                if (Spy::getEnemyTransition().find("Muta") == string::npos && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 16)
+                    desiredDefenses = max(desiredDefenses, 1);
 
                 // Unknown and lots of lings
-                else if (Util::getTime() > Time(5, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > 4 * vis(Zerg_Zergling))
-                    return 1 - groundCount;
+                if (Util::getTime() > Time(5, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > 4 * vis(Zerg_Zergling))
+                    desiredDefenses = max(desiredDefenses, 1);
             }
             else if (station->isNatural()) {
             }
             else {
             }
-            return 0;
+            return desiredDefenses - groundCount;
         }
 
         int calcGroundDefZvFFA(BWEB::Station * station)

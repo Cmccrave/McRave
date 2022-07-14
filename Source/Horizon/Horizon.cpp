@@ -24,6 +24,10 @@ namespace McRave::Horizon {
             return true;
         }
 
+        double perpDist(Position p0, Position p1, Position p2) {
+           return abs(double((p2.x - p1.x) * (p1.y - p0.y) - (p1.x - p0.x) * (p2.y - p1.y))) / p1.getDistance(p2);
+        }
+
         void addBonus(UnitInfo& u, UnitInfo& t, double &simRatio) {
             if (u.isHidden())
                 simRatio *= 2.0;
@@ -48,7 +52,8 @@ namespace McRave::Horizon {
 
         auto &unitTarget = unit.getTarget().lock();
         const auto unitToEngage = unit.getSpeed() > 0.0 ? unit.getEngDist() / (24.0 * unit.getSpeed()) : 5.0;
-        const auto simulationTime = unitToEngage + max(5.0, Players::getSupply(PlayerState::Self, Races::None) / 20.0) + addPrepTime(unit);
+        const auto simulationTime = unitToEngage + 5.0 + addPrepTime(unit);
+        const auto targetDisplacement = unitToEngage * unitTarget->getSpeed() * 24.0;
         map<Player, SimStrength> simStrengthPerPlayer;
 
         for (auto &e : Units::getUnits(PlayerState::Enemy)) {
@@ -58,21 +63,22 @@ namespace McRave::Horizon {
 
             auto &enemyTarget =                 enemy.getTarget().lock();
             auto simRatio =                     0.0;
-            const auto distTarget =             double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getPosition()));
-            const auto distEngage =             double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getEngagePosition()));
+            const auto distTarget =             double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getPosition())) - targetDisplacement;
+            const auto distEngage =             double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getEngagePosition())) - targetDisplacement;
+            //const auto distPerp =               perpDist(enemy.getPosition(), unit.getPosition(), unit.getEngagePosition());
             const auto range =                  enemyTarget->getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange();
             const auto enemyReach =             max(enemy.getAirReach(), enemy.getGroundReach());
 
             // If the unit doesn't affect this simulation
-            if ((enemy.getSpeed() <= 0.0 && distEngage > range + 32.0 && distTarget > range + 32.0)
+            if ((enemy.getSpeed() <= 0.0 && distEngage > range + 32.0 && distTarget > range + 32.0 /*&& distPerp > range*/)
                 || (enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode && distTarget < 64.0)
-                || (enemy.getSpeed() <= 0.0 && distTarget > 0.0 && enemyTarget->getSpeed() <= 0.0)
+                || (enemy.getSpeed() <= 0.0 && distTarget > range /*&& distPerp > range*/ && enemyTarget->getSpeed() <= 0.0)
                 || (enemy.targetsFriendly() && unit.hasTarget() && enemy.getPosition().getDistance(unitTarget->getPosition()) >= enemyReach))
                 continue;
 
             // If enemy doesn't move, calculate how long it will remain in range once in range
             if (enemy.getSpeed() <= 0.0) {
-                const auto distance =               distTarget;
+                const auto distance =               distTarget;// min(distPerp, distTarget);
                 const auto speed =                  enemyTarget->getSpeed() * 24.0;
                 const auto engageTime =             max(0.0, (distance - range) / speed);
                 simRatio =                          max(0.0, simulationTime - engageTime);
@@ -80,7 +86,7 @@ namespace McRave::Horizon {
 
             // If enemy can move, calculate how quickly it can engage
             else {
-                const auto distance =               min(distTarget, distEngage);
+                const auto distance =               min(distTarget, distEngage); //min({ distPerp, distTarget, distEngage });
                 const auto speed =                  enemy.getSpeed() * 24.0;
                 const auto engageTime =             max(0.0, (distance - range) / speed);
                 simRatio =                          max(0.0, simulationTime - engageTime);
@@ -96,6 +102,9 @@ namespace McRave::Horizon {
                 simStrengthPerPlayer[enemy.getPlayer()].ground += enemy.getVisibleGroundStrength() * simRatio;
                 simStrengthPerPlayer[enemy.getPlayer()].air += enemy.getVisibleAirStrength() * simRatio;
             }
+
+            if (unit.unit()->isSelected())
+                Broodwar->drawTextMap(enemy.getPosition(), "%.2f", unitToEngage);
         }
 
         for (auto &a : Units::getUnits(PlayerState::Self)) {
@@ -121,6 +130,9 @@ namespace McRave::Horizon {
             addBonus(self, *selfTarget, simRatio);
             simStrengthPerPlayer[self.getPlayer()].ground += self.getVisibleGroundStrength() * simRatio;
             simStrengthPerPlayer[self.getPlayer()].air += self.getVisibleAirStrength() * simRatio;
+
+            if (unit.unit()->isSelected())
+                Broodwar->drawTextMap(self.getPosition(), "%.2f", simRatio);
         }
 
         for (auto &a : Units::getUnits(PlayerState::Ally)) {

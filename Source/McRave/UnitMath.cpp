@@ -197,8 +197,8 @@ namespace McRave::Math {
             return 1.25;
         if (unit.getType() == Protoss_High_Templar)
             return 2.00;
-        if (unit.getType() == Terran_Siege_Tank_Siege_Mode)
-            return 1.50;
+        if (unit.isSiegeTank())
+            return 2.00;
         if (unit.getType() == Terran_Valkyrie || unit.getType() == Zerg_Mutalisk)
             return 1.50;
         if (unit.getType() == Zerg_Lurker && Players::ZvT())
@@ -209,9 +209,9 @@ namespace McRave::Math {
     double grdEffectiveness(UnitInfo& unit)
     {
         auto &sizes = unit.getPlayer() == Broodwar->self() ? Units::getEnemyGrdSizes() : Units::getAllyGrdSizes();
-        auto &large = sizes[UnitSizeTypes::Large];
-        auto &medium = sizes[UnitSizeTypes::Medium];
-        auto &small = sizes[UnitSizeTypes::Small];
+        auto large = double(sizes[UnitSizeTypes::Large]);
+        auto medium = double(sizes[UnitSizeTypes::Medium]);
+        auto small = double(sizes[UnitSizeTypes::Small]);
         auto total = double(large + medium + small);
 
         if (total > 0.0) {
@@ -226,9 +226,9 @@ namespace McRave::Math {
     double airEffectiveness(UnitInfo& unit)
     {
         auto &sizes = unit.getPlayer() == Broodwar->self() ? Units::getEnemyAirSizes() : Units::getAllyAirSizes();
-        auto &large = sizes[UnitSizeTypes::Large];
-        auto &medium = sizes[UnitSizeTypes::Medium];
-        auto &small = sizes[UnitSizeTypes::Small];
+        auto large = double(sizes[UnitSizeTypes::Large]);
+        auto medium = double(sizes[UnitSizeTypes::Medium]);
+        auto small = double(sizes[UnitSizeTypes::Small]);
         auto total = double(large + medium + small);
 
         if (total > 0.0) {

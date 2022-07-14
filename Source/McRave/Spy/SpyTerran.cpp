@@ -119,10 +119,6 @@ namespace McRave::Spy::Terran {
 
                 // RaxFact
                 if (theSpy.build.name == "RaxFact") {
-                    if ((hasGols && theSpy.expand.possible && Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) >= 4)
-                        || (Util::getTime() < Time(6, 30) && Players::getVisibleCount(PlayerState::Enemy, Terran_Armory) > 0)
-                        || (theSpy.upgradeLevel[UpgradeTypes::Charon_Boosters] > 0) && Util::getTime() < Time(8, 00))
-                        theSpy.transition.name = "5FactGoliath";
                     if (hasWraiths && Util::getTime() < Time(6, 00))
                         theSpy.transition.name = "2PortWraith";
 
@@ -150,15 +146,19 @@ namespace McRave::Spy::Terran {
                 if (theSpy.build.name == "RaxCC") {
                     if (theSpy.expand.possible && (hasTanks || Players::getVisibleCount(PlayerState::Enemy, Terran_Machine_Shop) > 0) && Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) <= 1 && Players::getVisibleCount(PlayerState::Enemy, Terran_Barracks) >= 3 && Util::getTime() < Time(10, 30))
                         theSpy.transition.name = "1FactTanks";
-                    if ((hasGols && theSpy.expand.possible && Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) >= 4 && Players::getVisibleCount(PlayerState::Enemy, Terran_Armory) > 0)
-                        || (Util::getTime() < Time(7, 30) && Players::getVisibleCount(PlayerState::Enemy, Terran_Armory) > 0)
-                        || (Util::getTime() < Time(7, 30) && Players::getTotalCount(PlayerState::Enemy, Terran_Goliath) >= 5)
-                        || (Util::getTime() < Time(8, 30) && Players::getTotalCount(PlayerState::Enemy, Terran_Goliath) >= 8))
-                        theSpy.transition.name = "5FactGoliath";
                     else if (theSpy.expand.possible && Players::getVisibleCount(PlayerState::Enemy, Terran_Barracks) >= 5 && Util::getTime() < Time(7, 00))
                         theSpy.transition.name = "+1 5Rax";
                 }
+
+                if ((hasGols && theSpy.expand.possible && Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) >= 4 && Players::getVisibleCount(PlayerState::Enemy, Terran_Armory) > 0)
+                    || (Util::getTime() < Time(6, 30) && Players::getVisibleCount(PlayerState::Enemy, Terran_Armory) > 0)
+                    || (theSpy.upgradeLevel[UpgradeTypes::Charon_Boosters] > 0) && Util::getTime() < Time(10, 00)
+                    || (Util::getTime() < Time(7, 30) && Players::getVisibleCount(PlayerState::Enemy, Terran_Armory) > 0)
+                    || (Util::getTime() < Time(7, 30) && Players::getTotalCount(PlayerState::Enemy, Terran_Goliath) >= 5)
+                    || (Util::getTime() < Time(8, 30) && Players::getTotalCount(PlayerState::Enemy, Terran_Goliath) >= 8))
+                    theSpy.transition.name = "5FactGoliath";
             }
+
 
             // TvT
         }

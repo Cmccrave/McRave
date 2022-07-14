@@ -92,13 +92,13 @@ namespace McRave::Combat::Simulation {
 
     void updateThresholds(UnitInfo& unit)
     {
-        auto baseCountSwing = Util::getTime() > Time(5, 00) ? max(0.0, (double(Stations::getStations(PlayerState::Self).size()) - double(Stations::getStations(PlayerState::Enemy).size())) / 20) : 0.0;
-        auto baseDistSwing = Util::getTime() > Time(5, 00) ? unit.getEngagePosition().getDistance(Terrain::getEnemyStartingPosition()) / (10 * BWEB::Map::getMainPosition().getDistance(Terrain::getEnemyStartingPosition())) : 0.0;
+        //auto baseCountSwing = Util::getTime() > Time(5, 00) ? max(0.0, (double(Stations::getStations(PlayerState::Self).size()) - double(Stations::getStations(PlayerState::Enemy).size())) / 20) : 0.0;
+        //auto baseDistSwing = Util::getTime() > Time(5, 00) ? unit.getEngagePosition().getDistance(Terrain::getEnemyStartingPosition()) / (10 * BWEB::Map::getMainPosition().getDistance(Terrain::getEnemyStartingPosition())) : 0.0;
 
         // P
         if (Players::PvP()) {
-            minWinPercent = 0.80;
-            maxWinPercent = 1.20;
+            minWinPercent = 0.8;
+            maxWinPercent = 1.2;
         }
         if (Players::PvZ()) {
             minWinPercent = 0.6;
@@ -111,20 +111,20 @@ namespace McRave::Combat::Simulation {
 
         // Z
         if (Players::ZvP()) {
-            minWinPercent = 0.90;
-            maxWinPercent = 1.60;
+            minWinPercent = 0.9;
+            maxWinPercent = 1.6;
         }
         if (Players::ZvZ()) {
             minWinPercent = 0.8;
             maxWinPercent = 1.4;
         }
         if (Players::ZvT()) {
-            minWinPercent = 0.8;
-            maxWinPercent = 1.2;
+            minWinPercent = 1.0;
+            maxWinPercent = 1.4;
         }
 
-        minThreshold = minWinPercent - baseCountSwing + baseDistSwing;
-        maxThreshold = maxWinPercent - baseCountSwing + baseDistSwing;
+        minThreshold = minWinPercent/* - baseCountSwing + baseDistSwing*/;
+        maxThreshold = maxWinPercent/* - baseCountSwing + baseDistSwing*/;
     }
 
     void update(UnitInfo& unit)

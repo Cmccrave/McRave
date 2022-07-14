@@ -60,10 +60,10 @@ namespace McRave::Command {
                 return 1.0;
 
             const auto p = Position(w) + Position(4, 4);
-            auto distTargeted = unit.hasTarget() ? unit.getTarget().lock()->getPosition().getDistance(p) : 1.0;
+            auto distTargeted = (unit.hasTarget() && unit.getTarget().lock()->canAttackAir()) ? (unit.getTarget().lock()->getPosition().getDistance(p) * unit.getTarget().lock()->getVisibleAirStrength()) : 1.0;
             for (auto &t : unit.getUnitsInRangeOfThis()) {
                 if (auto target = t.lock())
-                    distTargeted = max(distTargeted, double(Util::boxDistance(unit.getType(), p, target->getType(), target->getPosition())));                
+                    distTargeted = max(distTargeted, double(Util::boxDistance(unit.getType(), p, target->getType(), target->getPosition())) * target->getVisibleAirStrength());
             }
             return distTargeted;
         }
@@ -588,7 +588,7 @@ namespace McRave::Command {
     bool retreat(UnitInfo& unit)
     {
         const auto scoreFunction = [&](WalkPosition w) {
-            auto score = (mobility(unit, w) * avoidance(unit, w) * grouping(unit, w)) / (threat(unit, w) * (distance(unit, w)));
+            auto score = (mobility(unit, w) * grouping(unit, w)) / (threat(unit, w) * (distance(unit, w)));
             return score;
         };
 

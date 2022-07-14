@@ -12,13 +12,6 @@ namespace McRave::Combat::Destination {
         multimap<double, Position> groundCleanupPositions;
         multimap<double, Position> airCleanupPositions;
 
-        bool lightUnitNeedsRegroup(UnitInfo& unit)
-        {
-            if (!unit.isLightAir())
-                return false;
-            return unit.hasCommander() && unit.getPosition().getDistance(unit.getCommander().lock()->getPosition()) > 64.0;
-        }
-
         void updateCleanup()
         {
             groundCleanupPositions.clear();
@@ -123,26 +116,31 @@ namespace McRave::Combat::Destination {
             }
         }
         else {
-            if (unit.getGoal().isValid())
+            if (unit.getGoal().isValid()) {
                 unit.setDestination(unit.getGoal());
-            else if ((unit.isLightAir() || unit.getType() == Zerg_Scourge) && ((Units::getImmThreat() > 25.0 && Stations::getStations(PlayerState::Self).size() >= 3 && Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size()) || (Players::ZvZ() && Units::getImmThreat() > 5.0))) {
-                auto attacker = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return u->isThreatening() && !u->isHidden();
-                });
-                if (attacker)
-                    unit.setDestination(attacker->getPosition());
+                //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Red);
             }
-            else if (unit.attemptingHarass())
+            else if (unit.attemptingRegroup()) {
+                unit.setDestination(unit.getCommander().lock()->getPosition());
+                //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Orange);
+            }
+            else if (unit.attemptingHarass()) {
                 unit.setDestination(Terrain::getHarassPosition());
-            else if (unit.hasTarget())
+                //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Yellow);
+            }
+            else if (unit.hasTarget()) {
                 unit.setDestination(unit.getTarget().lock()->getPosition());
-            else if (Terrain::getAttackPosition().isValid() && unit.canAttackGround())
+                //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Green);
+            }
+            else if (Terrain::getAttackPosition().isValid() && unit.canAttackGround()) {
                 unit.setDestination(Terrain::getAttackPosition());
-            else
+                //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Blue);
+            }
+            else {
                 getCleanupPosition(unit);
+                //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Purple);
+            }
         }
-
-        Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
     }
 
     void update(UnitInfo& unit)

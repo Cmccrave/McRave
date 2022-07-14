@@ -7,7 +7,7 @@ using namespace UnitTypes;
 namespace McRave::Combat::Navigation {
 
     namespace {
-        vector<Position> lastSimPositions;
+        map<UnitInfo*, vector<Position>> lastSimPositions;
 
         bool lightUnitNeedsRegroup(UnitInfo& unit)
         {
@@ -41,24 +41,36 @@ namespace McRave::Combat::Navigation {
 
     void updateHarassPath(UnitInfo& unit)
     {
-        // Check if we can harass
-        if (!unit.getGoal().isValid() && unit.getLocalState() != LocalState::Retreat && unit.getDestination() == Terrain::getHarassPosition() && unit.attemptingHarass()) {
+        auto regrouping = (unit.attemptingRegroup() && unit.getDestination() == unit.getCommander().lock()->getPosition());
+        auto harassing = (unit.getDestination() == Terrain::getHarassPosition() && unit.attemptingHarass());
 
-            if (unit.hasCommander() && *unit.getCommander().lock() != unit) {
-                auto commander = unit.getCommander().lock();
-                unit.setDestinationPath(commander->getDestinationPath());
-                return;
-            }
+        // For pathing purposes, we store light air commander sim positions
+        auto &simPositions = lastSimPositions[&unit];
+        if (unit.hasSimTarget()) {
+            auto simTarget = unit.getSimTarget().lock();
 
-            // For pathing purposes, we store light air commander sim positions
-            if (unit.hasSimTarget()) {
-                auto simTarget = unit.getSimTarget().lock();
-                if (find(lastSimPositions.begin(), lastSimPositions.end(), simTarget->getPosition()) == lastSimPositions.end()) {
-                    if (lastSimPositions.size() >= 5)
-                        lastSimPositions.pop_back();
-                    lastSimPositions.insert(lastSimPositions.begin(), simTarget->getPosition());
-                }
+            if (find(simPositions.begin(), simPositions.end(), simTarget->getPosition()) == simPositions.end()) {
+                if (simPositions.size() >= 5)
+                    simPositions.pop_back();
+                simPositions.insert(simPositions.begin(), simTarget->getPosition());
             }
+        }
+
+        // Generate a flying path for retreating or regrouping
+        if (!unit.getGoal().isValid() && (unit.globalRetreat() || unit.localRetreat() || unit.getLocalState() == LocalState::Retreat || regrouping)) {
+
+            const auto flyerRegroup = [&](const TilePosition &t) {
+                return Grids::getEAirThreat(Position(t) + Position(16, 16));
+            };
+
+            BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
+            newPath.generateAS(flyerRegroup);
+            unit.setDestinationPath(newPath);
+            //unit.circle(Colors::Purple);
+        }
+
+        // Generate a flying path for harassing
+        else if (!unit.getGoal().isValid() && harassing) {
 
             auto simDistCurrent = unit.hasSimTarget() ? unit.getPosition().getApproxDistance(unit.getSimTarget().lock()->getPosition()) : unit.getPosition().getApproxDistance(unit.getDestination());
             auto simPosition = unit.hasSimTarget() ? unit.getSimTarget().lock()->getPosition() : unit.getDestination();
@@ -68,10 +80,10 @@ namespace McRave::Combat::Navigation {
                 const auto center = Position(t) + Position(16, 16);
 
                 auto d = center.getApproxDistance(simPosition);
-                for (auto &pos : lastSimPositions)
+                for (auto &pos : simPositions)
                     d = min(d, center.getApproxDistance(pos));
 
-                auto dist = unit.getSimState() == SimState::Win ? 1.0 : max(0.01, double(d) - min(simDistCurrent + 32, int(unit.getRetreatRadius() + 96.0)));
+                auto dist = unit.getSimState() == SimState::Win ? 1.0 : max(0.01, double(d) - min(simDistCurrent, int(unit.getRetreatRadius() + 64.0)));
                 auto vis = unit.getSimState() == SimState::Win ? 1.0 : clamp(double(Broodwar->getFrameCount() - Grids::lastVisibleFrame(t)) / 960.0, 0.5, 3.0);
                 return 1.00 / (vis * dist);
             };
@@ -79,19 +91,15 @@ namespace McRave::Combat::Navigation {
             BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
             newPath.generateAS(flyerAttack);
             unit.setDestinationPath(newPath);
-            Visuals::drawPath(unit.getDestinationPath());
+            //unit.circle(Colors::Red);
         }
 
-        // Generate a flying path for regrouping/retreating
+        // Generate a generic JPS path
         else {
-            const auto flyerRegroup = [&](const TilePosition &t) {
-                return Grids::getEAirThreat(Position(t) + Position(16, 16));
-            };
-
             BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
-            newPath.generateAS(flyerRegroup);
+            newPath.generateJPS([&](const TilePosition &t) { return true; });
             unit.setDestinationPath(newPath);
-            unit.circle(Colors::Purple);
+            //unit.circle(Colors::Orange);
         }
     }
 
@@ -135,7 +143,5 @@ namespace McRave::Combat::Navigation {
         else
             updateDestinationPath(unit);
         updateNavigation(unit);
-
-        Broodwar->drawLineMap(unit.getPosition(), unit.getNavigation(), Colors::Red);
     }
 }

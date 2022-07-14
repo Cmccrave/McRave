@@ -46,7 +46,7 @@ namespace McRave::BuildOrder::Zerg {
             unitLimits[Zerg_Drone] =                        13;
             scout =                                         scout || (com(Zerg_Drone) >= 9);
 
-            buildQueue[Zerg_Hatchery] =                     1 + (s >= 24 && vis(Zerg_Extractor) > 0);
+            buildQueue[Zerg_Hatchery] =                     1 + (s >= 24 && vis(Zerg_Spawning_Pool) > 0);
             buildQueue[Zerg_Overlord] =                     1 + (s >= 18);
             buildQueue[Zerg_Spawning_Pool] =                s >= 26;
         }

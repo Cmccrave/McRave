@@ -283,6 +283,10 @@ namespace McRave
             burrowed = true;
             groundReach = getGroundRange();
         }
+        if (getType() == UnitTypes::Spell_Scanner_Sweep) {
+            hidden = true;
+            return;
+        }
 
         // A unit is considered hidden if it is burrowed or cloaked and not under detection
         hidden = (burrowed || bwUnit->isCloaked())
@@ -313,6 +317,16 @@ namespace McRave
         const auto attackedWorkers = hasAttackedRecently() && hasTarget() && Terrain::inTerritory(PlayerState::Self, getTarget().lock()->getPosition()) && getTarget().lock()->getRole() == Role::Worker;
         const auto attackedBuildings = hasAttackedRecently() && hasTarget() && getTarget().lock()->getType().isBuilding();
 
+        auto closestDefender = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
+            return u->getRole() == Role::Defender && u->canAttackGround() && (u->isCompleted() || isWithinRange(*u) || Util::getTime() < Time(4, 00));
+        });
+        auto closestBuilder = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
+            return u->getRole() == Role::Worker && u->getBuildPosition().isValid() && u->getBuildType().isValid();
+        });
+        auto fragileBuilding = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
+            return !u->isHealthy() && u->getType().isBuilding() && (u->isCompleted() || isWithinRange(*u)) && Terrain::inTerritory(PlayerState::Self, u->getPosition());
+        });
+
         // Check if our resources are in danger
         auto nearResources = [&]() {
             return closestStation && closestStation == Terrain::getMyMain() && closestStation->getResourceCentroid().getDistance(getPosition()) < proximityCheck && atHome;
@@ -320,27 +334,17 @@ namespace McRave
 
         // Check if our defenses can hit or be hit
         auto nearDefenders = [&]() {
-            auto closestDefender = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-                return u->getRole() == Role::Defender && u->canAttackGround() && (u->isCompleted() || isWithinRange(*u) || Util::getTime() < Time(4, 00));
-            });
             return closestDefender && closestDefender->isWithinRange(*this);
         };
 
         // Checks if it can damage an already damaged building
         auto nearFragileBuilding = [&]() {
-            auto fragileBuilding = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-                return !u->isHealthy() && u->getType().isBuilding() && (u->isCompleted() || isWithinRange(*u)) && Terrain::inTerritory(PlayerState::Self, u->getPosition());
-            });
             return fragileBuilding && canAttackGround() && Util::boxDistance(fragileBuilding->getType(), fragileBuilding->getPosition(), getType(), getPosition()) < proximityCheck;
         };
 
         // Check if any builders can be hit or blocked
         auto nearBuildPosition = [&]() {
             if (atHome && !isFlying() && Util::getTime() < Time(5, 00)) {
-                auto closestBuilder = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-                    return u->getRole() == Role::Worker && u->getBuildPosition().isValid() && u->getBuildType().isValid();
-                });
-
                 if (closestBuilder) {
                     auto center = Position(closestBuilder->getBuildPosition()) + Position(closestBuilder->getBuildType().tileWidth() * 16, closestBuilder->getBuildType().tileHeight() * 16);
                     if (Util::boxDistance(getType(), getPosition(), closestBuilder->getBuildType(), center) < proximityCheck
@@ -357,7 +361,11 @@ namespace McRave
                 return true;
 
             if (Zones::getZone(getPosition()) == ZoneType::Engage) {
-                if (hasTarget() && (isWithinRange(*getTarget().lock()) || Units::getImmThreat() > 0.0))
+                if (closestDefender) {
+                    if (mapBWEM.GetArea(closestDefender->getTilePosition()) == mapBWEM.GetArea(getTilePosition()))
+                        return false;
+                }
+                if (hasTarget() && Terrain::inTerritory(PlayerState::Self, getTarget().lock()->getPosition()) && (isWithinRange(*getTarget().lock()) || Units::getImmThreat() > 0.0))
                     return true;
             }
 
@@ -725,11 +733,11 @@ namespace McRave
             return false;
         auto unitTarget = getTarget().lock();
 
-        auto oneShotTimer = Time(12, 00);
+        auto oneShotTimer = Time(10, 00);
         return ((!isFlying() && unitTarget->isSiegeTank() && getType() != Zerg_Lurker && isWithinRange(*getTarget().lock()) && getGroundRange() > 32.0)
             || (getType() == Protoss_Reaver && !unit()->isLoaded() && isWithinRange(*getTarget().lock()))
             || (unitTarget->getType() == Terran_Vulture_Spider_Mine && !unitTarget->isBurrowed())
-            || (getType() == Zerg_Mutalisk && Util::getTime() < oneShotTimer && hasTarget() && canOneShot(*getTarget().lock()) && (isWithinRange(*getTarget().lock()) || !unitsInRangeOfThis.empty()))
+            || (getType() == Zerg_Mutalisk && Util::getTime() < oneShotTimer && hasTarget() && canOneShot(*getTarget().lock()))
             || (hasTransport() && !unit()->isLoaded() && getType() == Protoss_High_Templar && canStartCast(TechTypes::Psionic_Storm, unitTarget->getPosition()) && isWithinRange(*getTarget().lock()))
             || (hasTransport() && !unit()->isLoaded() && getType() == Protoss_Reaver && canStartAttack()) && isWithinRange(*getTarget().lock()));
     }
@@ -863,7 +871,8 @@ namespace McRave
         // Try to save Mutas that are low hp when the firepower isn't needed
         const auto mutaSavingRequired = getType() == Zerg_Mutalisk && thisTarget && !freeTarget &&
             (Players::ZvZ() ? (Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) == 0) : (Util::getTime() > Time(8, 00)))
-            && !thisTarget->isThreatening() && !isWithinRange(*thisTarget) && !thisTarget->isWithinRange(*this) && getHealth() <= 50;
+            && !thisTarget->isThreatening() && !isWithinRange(*thisTarget) && !thisTarget->isWithinRange(*this) && getHealth() <= 50
+            && !Terrain::inTerritory(PlayerState::Enemy, getPosition());
         
         // Try to save scouts as they have high shield counts
         const auto scoutSavingRequired = getType() == Protoss_Scout && hasTarget() && !thisTarget->isThreatening() && !isWithinRange(*thisTarget) && getHealth() + getShields() <= 80;
@@ -889,9 +898,9 @@ namespace McRave
 
     bool UnitInfo::attemptingSurround()
     {
-        if (attemptingRunby() || (hasTarget() && getTarget().lock()->getCurrentSpeed() == 0.0))
+        if (attemptingRunby() || (hasTarget() && getTarget().lock()->getCurrentSpeed() <= 0.0))
             return false;
-        if (surroundPosition.isValid() && position.getDistance(surroundPosition) > 16.0)
+        if (surroundPosition.isValid() && !Terrain::inTerritory(PlayerState::Enemy, surroundPosition) && position.getDistance(surroundPosition) > 16.0)
             return true;
         return false;
     }
@@ -913,5 +922,12 @@ namespace McRave
                 return false;
         }
         return isLightAir() && Terrain::getHarassPosition().isValid();
+    }
+
+    bool UnitInfo::attemptingRegroup()
+    {
+        if (!isLightAir())
+            return false;
+        return hasCommander() && getPosition().getDistance(getCommander().lock()->getPosition()) > 160.0;
     }
 }

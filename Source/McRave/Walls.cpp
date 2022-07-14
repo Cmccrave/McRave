@@ -262,7 +262,7 @@ namespace McRave::Walls {
 
             if (Util::getTime() > Time(10, 00))
                 return max(1, (Util::getTime().minutes / 4));
-            return (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(5, 00));
+            return (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(5, 00));
         }
 
         int calcGroundDefZvZ(BWEB::Wall& wall) {

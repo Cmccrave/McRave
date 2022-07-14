@@ -51,10 +51,10 @@ namespace McRave::BuildOrder::Zerg {
         if (Spy::enemyProxy() || Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyTransition() == "WorkerRush")
             return 10;
         if (Spy::getEnemyBuild() == "RaxFact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
-            return Util::getTime() > Time(3, 00) ? 6 : 0;
+            return 4 + 6 * (Util::getTime() > Time(4, 00));
         if (Spy::enemyPressure() || Spy::getEnemyBuild() == "2Rax")
             return 6;
-        return 6;
+        return 2;
     }
 
     void ZvT2HatchMuta()

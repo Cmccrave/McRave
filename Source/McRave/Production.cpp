@@ -435,7 +435,7 @@ namespace McRave::Production {
                 case Chitinous_Plating:
                     return Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 20 || Broodwar->self()->getUpgradeLevel(Anabolic_Synthesis) > 0;
                 case Adrenal_Glands:
-                    return vis(Zerg_Zergling) >= 6;
+                    return Broodwar->self()->getUpgradeLevel(Metabolic_Boost) > 0;
 
                     // Ground unit upgrades
                 case Zerg_Melee_Attacks:

@@ -93,7 +93,7 @@ namespace McRave
         if (thisPlayer->getID() == BWAPI::Broodwar->self()->getID())
             pState = PlayerState::Self;
         else if (thisPlayer->isEnemy(BWAPI::Broodwar->self()))
-            pState = PlayerState::Enemy;
+            pState = PlayerState::Enemy;        
         else if (thisPlayer->isAlly(BWAPI::Broodwar->self()))
             pState = PlayerState::Ally;
         else

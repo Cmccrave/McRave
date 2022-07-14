@@ -308,7 +308,7 @@ namespace McRave::Util {
     {
         auto diff = source - target;
         auto dist = source.getDistance(target);
-        return { dist, (diff * (radius / dist)) + target };
+        return { dist, source - (diff * ((dist - radius) / dist)) };
     }
 
     pair<double, Position> getClosestPointToRadiusGround(Position source, Position target, double radius)

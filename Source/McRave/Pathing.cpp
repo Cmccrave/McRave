@@ -32,16 +32,20 @@ namespace McRave::Pathing {
             //
             auto range = unitTarget->isFlying() ? unit.getAirRange() : unit.getGroundRange();
             if (unit.isFlying()) {
-                auto engage = Util::getClosestPointToRadiusAir(unit.getPosition(), unitTarget->getPosition(), range);
-                unit.setEngagePosition(engage.second);
-                unit.setEngDist(engage.first - range);
+                auto distance = Util::boxDistance(unit.getType(), unit.getPosition(), unit.getTarget().lock()->getType(), unit.getTarget().lock()->getPosition());
+                auto direction = ((distance - range) / distance);
+                auto engageX = int((unit.getPosition().x - unit.getTarget().lock()->getPosition().x) * direction);
+                auto engageY = int((unit.getPosition().y - unit.getTarget().lock()->getPosition().y) * direction);
+                auto engagePosition = unit.getPosition() - Position(engageX, engageY);
+                unit.setEngagePosition(engagePosition);
+                unit.setEngDist(unit.getPosition().getDistance(unit.getEngagePosition()));
             }
 
             // Create a binary search tree in a circle around the target
             else {
                 auto engage = Util::getClosestPointToRadiusGround(unit.getPosition(), unitTarget->getPosition(), range);
                 unit.setEngagePosition(engage.second);
-                unit.setEngDist(engage.first - range);
+                unit.setEngDist(engage.first);
             }
         }
 

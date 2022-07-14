@@ -225,6 +225,7 @@ namespace McRave {
         bool attemptingRunby();
         bool attemptingSurround();
         bool attemptingHarass();
+        bool attemptingRegroup();
 
         void update();
         void verifyPaths();
