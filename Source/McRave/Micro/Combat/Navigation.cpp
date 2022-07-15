@@ -118,15 +118,14 @@ namespace McRave::Combat::Navigation {
 
     void updateNavigation(UnitInfo& unit)
     {
-        if (unit.getFormation().isValid() && (unit.getPosition().getDistance(unit.getDestination()) < unit.getEngageRadius() || unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat)) {
+        unit.setNavigation(unit.getDestination());
+        if (unit.getFormation().isValid() && (unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat)) {
             unit.setNavigation(unit.getFormation());
             return;
-        }
-        else
-            unit.setNavigation(unit.getDestination());
+        }            
 
         // If path is reachable, find a point n pixels away to set as new destination
-        if (unit.getDestinationPath().isReachable()) {
+        if (unit.getDestinationPath().isReachable() && unit.getPosition().getDistance(unit.getDestination()) > 96.0) {
             auto newDestination = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
                 return p.getDistance(unit.getPosition()) >= 160.0;
             });

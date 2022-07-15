@@ -17,11 +17,11 @@ namespace McRave::BuildOrder::Zerg {
             transitionReady =                               vis(Zerg_Spawning_Pool) > 0;
             unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvP();
             gasLimit =                                      0;
-            scout =                                         scout || (hatchCount() >= 2);
+            scout =                                         scout || (hatchCount() == 1 && s == 22 && Util::getTime() > Time(1, 30));
             wantNatural =                                   !Spy::enemyProxy();
             playPassive =                                   false;
             unitLimits[Zerg_Drone] =                        13 - vis(Zerg_Hatchery);
-            planEarly =                                     hatchCount() == 1 && s == 22;
+            planEarly =                                     (hatchCount() == 1 && s == 22 && Util::getTime() > Time(1, 30));
 
             buildQueue[Zerg_Hatchery] =                     1 + (s >= 24);
             buildQueue[Zerg_Spawning_Pool] =                hatchCount() >= 2;

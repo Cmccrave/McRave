@@ -77,8 +77,7 @@ namespace McRave::Pathing {
             for (auto &u : Units::getUnits(PlayerState::Enemy)) {
                 UnitInfo& unit = *u;
 
-                if (unit.getUnitsTargetingThis().empty()
-                    || unit.isFlying())
+                if (unit.isFlying())
                     continue;
 
                 // Figure out how to trap the unit
@@ -127,12 +126,13 @@ namespace McRave::Pathing {
 
                     // Get time to arrive to the surround position
                     if (closestTargeter) {
-                        auto speedDiff = closestTargeter->getSpeed() - unit.getSpeed();
-                        auto framesToCatchUp = (speedDiff * closestTargeter->getPosition().getDistance(pos) / closestTargeter->getSpeed()) + (closestTargeter->getPosition().getDistance(pos) / closestTargeter->getSpeed());
-                        auto correctedPos = pos + Position(int(unit.unit()->getVelocityX() * framesToCatchUp), int(unit.unit()->getVelocityY() * framesToCatchUp));
+                        auto framesToArrive = closestTargeter->getPosition().getDistance(pos) / closestTargeter->getSpeed();
+                        auto correctedPos = pos + Position(int(unit.unit()->getVelocityX() * framesToArrive), int(unit.unit()->getVelocityY() * framesToArrive));
 
-                        if (Util::findWalkable(*closestTargeter, correctedPos))
+                        if (Util::findWalkable(*closestTargeter, correctedPos)) {
                             closestTargeter->setSurroundPosition(correctedPos);
+                            Broodwar->drawLineMap(closestTargeter->getPosition(), correctedPos, Colors::Green);
+                        }
                     }
                 }
             }

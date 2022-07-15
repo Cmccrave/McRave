@@ -75,9 +75,9 @@ namespace McRave::BuildOrder::Zerg {
 
                     if ((vis(Zerg_Spawning_Pool) > 0 && Stations::needGroundDefenses(station) > colonies) || (vis(Zerg_Evolution_Chamber) > 0 && Stations::needAirDefenses(station) > colonies))
                         buildQueue[Zerg_Creep_Colony] += clamp(Stations::needGroundDefenses(station) + Stations::needAirDefenses(station) - colonies, 0, 2);
-                    if (Stations::needAirDefenses(station) > 0)
+                    if (Stations::needAirDefenses(station) > colonies)
                         needSpores = true;
-                    if (Stations::needGroundDefenses(station) > 0)
+                    if (Stations::needGroundDefenses(station) > colonies)
                         needSunks = true;
                 }
             }
@@ -118,15 +118,17 @@ namespace McRave::BuildOrder::Zerg {
 
         void queueUpgradeStructures()
         {
+            auto hiveEventually = techList.find(Zerg_Ultralisk) != techList.end() || techList.find(Zerg_Defiler) != techList.end();
+
             // Adding Evolution Chambers
-            if ((s >= 180 && Stations::getStations(PlayerState::Self).size() >= 3)
+            if ((s >= 200 && Stations::getStations(PlayerState::Self).size() >= 3)
                 || (techUnit == Zerg_Ultralisk && vis(Zerg_Queens_Nest) > 0))
                 buildQueue[Zerg_Evolution_Chamber] = 1 + (Stations::getStations(PlayerState::Self).size() >= 4);
             if (needSpores)
                 buildQueue[Zerg_Evolution_Chamber] = max(buildQueue[Zerg_Evolution_Chamber], 1);
 
             // Hive upgrades
-            if (int(Stations::getStations(PlayerState::Self).size()) >= 4 - Players::ZvT() && vis(Zerg_Drone) >= 36) {
+            if (int(Stations::getStations(PlayerState::Self).size()) >= 4 - Players::ZvT() && vis(Zerg_Drone) >= 36 && hiveEventually) {
                 buildQueue[Zerg_Queens_Nest] = 1;
                 buildQueue[Zerg_Hive] = com(Zerg_Queens_Nest) >= 1;
                 buildQueue[Zerg_Lair] = com(Zerg_Queens_Nest) < 1;
@@ -232,7 +234,7 @@ namespace McRave::BuildOrder::Zerg {
                 auto dropGasBroke       = minRemaining < 75 && gasRemaining >= 100 && Util::getTime() < Time(4, 30);
                 auto dropGasDrones      = minRemaining < 75 && gasRemaining >= 100 && !Players::ZvZ() && vis(Zerg_Lair) > 0 && vis(Zerg_Drone) < 18;
 
-                if ((dropGasBroke && Util::getTime() < Time(4, 30))
+                if ((dropGasBroke)
                     || Roles::getMyRoleCount(Role::Worker) < 5
                     || (needSpores && Players::ZvZ() && com(Zerg_Evolution_Chamber) == 0)
                     || (unitLimits[Zerg_Larva] < 3 && !rush && !pressure && minRemaining < 100 && (dropGasRush || dropGasExcess || dropGasDefenses || dropGasDrones)))
@@ -314,7 +316,7 @@ namespace McRave::BuildOrder::Zerg {
 
     void tech()
     {
-        const auto vsGoonsGols = Spy::getEnemyTransition() == "4Gate" || Spy::getEnemyTransition() == "5FactGoliath";
+        const auto vsGoonsGols = Spy::getEnemyTransition() == "4Gate" || Spy::getEnemyTransition() == "5GateGoon" || Spy::getEnemyTransition() == "5FactGoliath";
         const auto techVal = int(techList.size()) + (2 * Players::ZvT()) + (Players::ZvP()) + vsGoonsGols;
         const auto endOfTech = !techOrder.empty() && isTechUnit(techOrder.back());
 
@@ -620,8 +622,11 @@ namespace McRave::BuildOrder::Zerg {
         // Saving larva to burst out tech units
         int limitBy = int(Stations::getStations(PlayerState::Self).size()) * 3;
         unitLimits[Zerg_Larva] = 0;
-        if ((inOpeningBook || techList.size() == 1) && ((atPercent(Zerg_Spire, 0.50) && com(Zerg_Spire) == 0) || (atPercent(Zerg_Hydralisk_Den, 0.6) && com(Zerg_Hydralisk_Den) == 0)))
+        if ((inOpeningBook || techList.size() == 1) && ((atPercent(Zerg_Spire, 0.50) && com(Zerg_Spire) == 0 && armyComposition[Zerg_Mutalisk] > 0) || (atPercent(Zerg_Hydralisk_Den, 0.6) && com(Zerg_Hydralisk_Den) == 0 && armyComposition[Zerg_Hydralisk] > 0)))
             unitLimits[Zerg_Larva] = max(0, limitBy - total(Zerg_Mutalisk) - total(Zerg_Hydralisk));
+
+        if (unitLimits[Zerg_Larva] > 0)
+            Broodwar << unitLimits[Zerg_Larva] << endl;
 
         // Unlocking units
         unlockedType.clear();

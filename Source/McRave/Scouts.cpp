@@ -284,6 +284,15 @@ namespace McRave::Scouts {
                 // Create worker scouting order
                 scoutOrder = scoutOrderFirstOverlord;
 
+                // Sometimes proxies get placed at the 3rd closest Station
+                if (Players::ZvP()) {
+                    auto thirdStation = Stations::getClosestStationAir(BWEB::Map::getMainPosition(), PlayerState::None, [&](auto &station) {
+                        return station != Terrain::getMyMain() && station != Terrain::getMyNatural();
+                    });
+                    if (thirdStation)
+                        scoutOrder.push_back(thirdStation);
+                }
+
                 if (!Players::vFFA())
                     reverse(scoutOrder.begin(), scoutOrder.end());
             }
@@ -291,6 +300,14 @@ namespace McRave::Scouts {
 
         void updateScoutTargets()
         {
+            int i = 0;
+            for (auto &target : scoutTargets) {
+                for (auto &pos : target.positions) {
+                    i++;
+                    Broodwar->drawTextMap(pos, "%d", i);
+                }
+            }
+
             scoutTargets.clear();
             proxyPosition = Positions::Invalid;
 
@@ -309,27 +326,27 @@ namespace McRave::Scouts {
             if (Terrain::getEnemyMain() && Terrain::getEnemyNatural()) {
 
                 // Add each enemy station as a target
-                addTarget(Position(Terrain::getEnemyMain()->getBase()->Center()), ScoutType::Main, 160);
+                addTarget(Position(Terrain::getEnemyMain()->getBase()->Center()), ScoutType::Main, 256);
                 if (onlyNaturalScout)
                     addTarget(Position(Terrain::getEnemyNatural()->getBase()->Center()), ScoutType::Natural, 160);
 
                 // Add enemy geyser as a scout
-                if (Terrain::getEnemyMain() && Stations::isBaseExplored(Terrain::getEnemyMain()) && !Stations::isGeyserExplored(Terrain::getEnemyMain()) && Util::getTime() < Time(3, 45)) {
+                if (Terrain::getEnemyMain() && fullScout && !Stations::isGeyserExplored(Terrain::getEnemyMain()) && Util::getTime() < Time(3, 45)) {
                     for (auto &geyser : Resources::getMyGas()) {
                         if (geyser->getStation() == Terrain::getEnemyMain())
-                            addTarget(Position(geyser->getPosition()), ScoutType::Main, 0);
+                            addTarget(Position(geyser->getPosition()), ScoutType::Main);
                     }
                 }
 
                 // Add each enemy pylon as a target
                 for (auto &unit : Units::getUnits(PlayerState::Enemy)) {
-                    if (unit->getType() == Protoss_Pylon && unit->getTilePosition().isValid() && mapBWEM.GetArea(unit->getTilePosition()) == Terrain::getEnemyMain()->getBase()->GetArea())
-                        addTarget(unit->getPosition(), ScoutType::Main, 0);
+                    if (unit->getType() == Protoss_Pylon && fullScout && unit->getTilePosition().isValid() && mapBWEM.GetArea(unit->getTilePosition()) == Terrain::getEnemyMain()->getBase()->GetArea())
+                        addTarget(unit->getPosition(), ScoutType::Main);
                 }
 
                 // Add main choke as a target
-                if (Terrain::getEnemyMain() && Terrain::getEnemyMain()->getChokepoint() && Stations::isBaseExplored(Terrain::getEnemyMain()))
-                    addTarget(Position(Terrain::getEnemyMain()->getChokepoint()->Center()), ScoutType::Main, 0);
+                if (Terrain::getEnemyMain() && fullScout && Terrain::getEnemyMain()->getChokepoint() && Stations::isBaseExplored(Terrain::getEnemyMain()))
+                    addTarget(Position(Terrain::getEnemyMain()->getChokepoint()->Center()), ScoutType::Main);
 
                 // Add safe natural positions
                 if (onlyNaturalScout) {
@@ -351,7 +368,7 @@ namespace McRave::Scouts {
                 for (auto &pos : target.positions)
                     exploredCount += Broodwar->isExplored(TilePosition(pos));
 
-                auto fullyExplored = Players::ZvZ() ? 2 : 5;
+                auto fullyExplored = Players::ZvZ() ? 2 : 7;
                 if (exploredCount > fullyExplored && Terrain::getEnemyNatural() && Broodwar->isExplored(TilePosition(Terrain::getEnemyNatural()->getBase()->Center())))
                     fullScout = true;
             }
@@ -415,7 +432,7 @@ namespace McRave::Scouts {
             if (!unit.isFlying()) {
                 if (unit.getDestination().isValid() && unit.getDestinationPath().getTarget() != TilePosition(unit.getDestination()) && (!mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(unit.getDestination())) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(unit.getDestination()))))) {
                     BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
-                    newPath.generateJPS([&](const TilePosition &t) { return newPath.terrainWalkable(t); });
+                    newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t); });
                     unit.setDestinationPath(newPath);
                 }
 

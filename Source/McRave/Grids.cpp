@@ -70,8 +70,8 @@ namespace McRave::Grids
         void addToGrids(UnitInfo& unit, bool collisionReq, bool threatReq)
         {
             // Choose threat grid
-            auto grdGrid = unit.getPlayer() == Broodwar->self() ? nullptr : eGroundThreat;
-            auto airGrid = unit.getPlayer() == Broodwar->self() ? nullptr : eAirThreat;
+            auto grdGrid = (unit.getPlayer() == Broodwar->self() || !unit.canAttackGround()) ? nullptr : eGroundThreat;
+            auto airGrid = (unit.getPlayer() == Broodwar->self() || !unit.canAttackAir()) ? nullptr : eAirThreat;
 
             // Choose cluster grid
             auto clusterGrid = unit.getPlayer() == Broodwar->self() ?

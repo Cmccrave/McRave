@@ -50,7 +50,7 @@ namespace McRave::Units {
                         Events::onUnitDisappear(unit);
 
                     // If a unit is threatening our position
-                    if (unit.isThreatening()) {
+                    if (unit.isThreatening() && !unit.getType().isWorker()) {
                         immThreat += unit.getVisibleGroundStrength();
                         unit.circle(Colors::Red);
                     }

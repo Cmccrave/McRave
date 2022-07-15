@@ -63,6 +63,14 @@ namespace McRave::Production {
 
         bool isCreateable(Unit building, UnitType unit)
         {
+            if (unit == Zerg_Scourge) {
+                if (!BuildOrder::isUnitUnlocked(unit))
+                    Broodwar << "Not unlocked" << endl;
+                if (BuildOrder::getCompositionPercentage(unit) <= 0.0)
+                    Broodwar << "No percentage" << endl;
+            }
+
+
             if (!BuildOrder::isUnitUnlocked(unit)
                 || BuildOrder::getCompositionPercentage(unit) <= 0.0)
                 return false;

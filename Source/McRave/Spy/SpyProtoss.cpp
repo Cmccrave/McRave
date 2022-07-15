@@ -72,7 +72,7 @@ namespace McRave::Spy::Protoss {
                 theSpy.build.name = "1GateCore";
 
             // 2Gate Proxy - No info estimation
-            if (Scouts::gotFullScout() && Util::getTime() < Time(3, 30) && !completesBy(1, Protoss_Pylon, Time(1, 15)) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Forge) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Nexus) <= 1) {
+            if (Scouts::gotFullScout() && Util::getTime() < Time(3, 30) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Forge) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Nexus) <= 1) {
                 theSpy.build.name = "2Gate";
                 theSpy.proxy.possible = true;
             }
@@ -152,7 +152,7 @@ namespace McRave::Spy::Protoss {
                     theSpy.transition.name = "DT";
 
                 // Speedlot
-                if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 8)
+                if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 8 && theSpy.upgradeLevel[UpgradeTypes::Leg_Enhancements] > 0)
                     theSpy.transition.name = "Speedlot";
 
                 // Corsair

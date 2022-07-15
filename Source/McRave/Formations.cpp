@@ -62,19 +62,15 @@ namespace McRave::Combat::Formations {
             auto cmderDist = commander->getPosition().getDistance(commander->getDestination());
             auto radius = clamp(cmderDist - 64.0, count * unitTangentSize / 2.0, cmderDist + 64.0);
 
-            commander->circle(Colors::Yellow);
-
             if (radius < 1.0)
                 continue;
 
             // If we are setting up a static formation, align concave with buildings close by
-            if (commander->getGlobalState() == GlobalState::Retreat) {
-                auto closestBuilding = Util::getClosestUnit(cluster.sharedDestination, PlayerState::Self, [&](auto &u) {
-                    return u->getType().isBuilding() && ((u->isCompleted() && u->getFormation() == cluster.sharedDestination) || !Combat::defendChoke());
-                });
-                if (closestBuilding)
-                    radius = closestBuilding->getPosition().getDistance(cluster.sharedDestination);                
-            }
+            auto closestBuilding = Util::getClosestUnit(cluster.sharedDestination, PlayerState::Self, [&](auto &u) {
+                return (u->getType().isBuilding() && u->getFormation().getDistance(cluster.sharedDestination) < 64.0) || (u->getType().isResourceDepot() && Terrain::isDefendNatural());
+            });
+            if (closestBuilding)
+                radius = closestBuilding->getPosition().getDistance(cluster.sharedDestination);            
 
             // Get a retreat point
             auto retreat = Stations::getClosestRetreatStation(*commander);
@@ -82,7 +78,7 @@ namespace McRave::Combat::Formations {
                 continue;
 
             // Start creating positions starting at the start position
-            auto startPosition = Util::getClosestPointToRadiusGround(retreat->getBase()->Center(), cluster.sharedDestination, radius/2.0).second;
+            auto startPosition = Util::getClosestPointToRadiusGround(retreat->getBase()->Center(), cluster.sharedDestination, radius / 2.0).second;
             auto angle = BWEB::Map::getAngle(make_pair(startPosition, concave.center));
             auto radsPerUnit = min(radius / (unitTangentSize * count * 3.14), unitTangentSize / (1.0 * radius));
             auto radsPositive = angle;

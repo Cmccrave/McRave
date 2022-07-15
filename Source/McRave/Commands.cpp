@@ -56,16 +56,17 @@ namespace McRave::Command {
 
         double avoidance(UnitInfo& unit, WalkPosition w)
         {
-            if (!unit.isFlying() && !unit.getType().isWorker())
-                return 1.0;
+            return 1.0;
+            //if (!unit.isFlying() && !unit.getType().isWorker())
+            //    return 1.0;
 
-            const auto p = Position(w) + Position(4, 4);
-            auto distTargeted = (unit.hasTarget() && unit.getTarget().lock()->canAttackAir()) ? (unit.getTarget().lock()->getPosition().getDistance(p) * unit.getTarget().lock()->getVisibleAirStrength()) : 1.0;
-            for (auto &t : unit.getUnitsInRangeOfThis()) {
-                if (auto target = t.lock())
-                    distTargeted = max(distTargeted, double(Util::boxDistance(unit.getType(), p, target->getType(), target->getPosition())) * target->getVisibleAirStrength());
-            }
-            return distTargeted;
+            //const auto p = Position(w) + Position(4, 4);
+            //auto distTargeted = (unit.hasTarget() && unit.getTarget().lock()->canAttackAir()) ? (unit.getTarget().lock()->getPosition().getDistance(p) * unit.getTarget().lock()->getVisibleAirStrength()) : 1.0;
+            //for (auto &t : unit.getUnitsInRangeOfThis()) {
+            //    if (auto target = t.lock())
+            //        distTargeted = max(distTargeted, double(Util::boxDistance(unit.getType(), p, target->getType(), target->getPosition())) * target->getVisibleAirStrength());
+            //}
+            //return distTargeted;
         }
 
         Position findViablePosition(UnitInfo& unit, Position pstart, int radius, function<double(WalkPosition)> score)
@@ -181,7 +182,7 @@ namespace McRave::Command {
                     const auto botRight = topLeft + Position(unit.getBuildType().tileWidth() * 32, unit.getBuildType().tileHeight() * 32);
                     return Util::rectangleIntersect(topLeft, botRight, unitTarget->getPosition());
                 }
-                if (unitTarget->isThreatening() && unit.getUnitsInRangeOfThis().empty() && unit.isHealthy() && unit.isWithinRange(*unitTarget) && unit.isWithinGatherRange())
+                if (unitTarget->isThreatening() && unit.getUnitsTargetingThis().empty() && unit.isHealthy() && unit.isWithinRange(*unitTarget) && unit.isWithinGatherRange())
                     return true;
             }
 
@@ -534,7 +535,7 @@ namespace McRave::Command {
     bool explore(UnitInfo& unit)
     {
         const auto scoreFunction = [&](WalkPosition w) {
-            auto score = mobility(unit, w) * grouping(unit, w) / (avoidance(unit, w) * distance(unit, w));
+            auto score = mobility(unit, w) * grouping(unit, w) / (exp(threat(unit, w)) * distance(unit, w));
             return score;
         };
 
@@ -571,10 +572,12 @@ namespace McRave::Command {
                 return true;
             }
 
-            auto bestPosition = findViablePosition(unit, unit.getNavigation(), 4, scoreFunction);
+            auto bestPosition = findViablePosition(unit, unit.getPosition(), 8, scoreFunction);
 
             if (bestPosition.isValid()) {
                 unit.command(Move, bestPosition);
+                Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Red);
+                Broodwar->drawCircleMap(unit.getNavigation(), 4, Colors::Red);
                 return true;
             }
             else {

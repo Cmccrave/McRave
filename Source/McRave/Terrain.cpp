@@ -310,8 +310,6 @@ namespace McRave::Terrain {
             // In FFA just hit closest base to us
             if (Players::vFFA() && attackPosition.isValid()) {
                 harassPosition = attackPosition;
-                if (oldHarass != harassPosition)
-                    McRave::easyWrite("Changed harass position to (attack_position): " + to_string(harassPosition.x) + "," + to_string(harassPosition.y) + " from " + to_string(oldHarass.x) + "," + to_string(oldHarass.y));
                 return;
             }
 
@@ -323,16 +321,12 @@ namespace McRave::Terrain {
             }
             if (lostAll) {
                 harassPosition = Positions::Invalid;
-                if (oldHarass != harassPosition)
-                    McRave::easyWrite("Changed harass position to (lost_all): " + to_string(harassPosition.x) + "," + to_string(harassPosition.y) + " from " + to_string(oldHarass.x) + "," + to_string(oldHarass.y));
                 return;
             }
 
             // Some hardcoded ZvT stuff
             if (Players::ZvT() && Util::getTime() < Time(8, 00) && enemyMain) {
                 harassPosition = enemyMain->getBase()->Center();
-                if (oldHarass != harassPosition)
-                    McRave::easyWrite("Changed harass position to (default): " + to_string(harassPosition.x) + "," + to_string(harassPosition.y) + " from " + to_string(oldHarass.x) + "," + to_string(oldHarass.y));
                 return;
             }
             if (Util::getTime() > Time(10, 00)) {
@@ -341,10 +335,6 @@ namespace McRave::Terrain {
                 });
                 if (closestEnemy) {
                     harassPosition = closestEnemy->getPosition();
-                    if (oldHarass != harassPosition) {
-                        McRave::easyWrite("Changed harass position to (enemy_unit): " + to_string(harassPosition.x) + "," + to_string(harassPosition.y) + " from " + to_string(oldHarass.x) + "," + to_string(oldHarass.y));
-                        McRave::easyWrite("Attacking: " + closestEnemy->getType().toString());
-                    }
                     return;
                 }
             }
@@ -393,8 +383,6 @@ namespace McRave::Terrain {
             // Set enemy army if our air size is large enough to break contains (need to expand)
             if (vis(Zerg_Mutalisk) >= 36 && Units::getEnemyArmyCenter().isValid() && Units::getEnemyArmyCenter().getDistance(BWEB::Map::getMainPosition()) < Units::getEnemyArmyCenter().getDistance(Terrain::getEnemyStartingPosition()) && BuildOrder::shouldExpand()) {
                 harassPosition = (Units::getEnemyArmyCenter());
-                if (oldHarass != harassPosition)
-                    McRave::easyWrite("Changed harass position to (army): " + to_string(harassPosition.x) + "," + to_string(harassPosition.y) + " from " + to_string(oldHarass.x) + "," + to_string(oldHarass.y));
             }
 
             // Harass all stations by last visited
@@ -409,9 +397,6 @@ namespace McRave::Terrain {
                     }
                 }
 
-                if (oldHarass != harassPosition)
-                    McRave::easyWrite("Changed harass position to (switching): " + to_string(harassPosition.x) + "," + to_string(harassPosition.y) + " from " + to_string(oldHarass.x) + "," + to_string(oldHarass.y));
-
                 if (checkPositions.empty()) {
                     auto distBest = DBL_MAX;
                     for (auto &station : BWEB::Stations::getStations()) {
@@ -420,8 +405,6 @@ namespace McRave::Terrain {
                         if (station.isMain() && !visitedRecently && !Stations::isBaseExplored(&station) && dist < distBest) {
                             harassPosition = station.getBase()->Center();
                             distBest = dist;
-                            if (oldHarass != harassPosition)
-                                McRave::easyWrite("Changed harass position to (empty): " + to_string(harassPosition.x) + "," + to_string(harassPosition.y) + " from " + to_string(oldHarass.x) + "," + to_string(oldHarass.y));
                         }
                     }
                 }

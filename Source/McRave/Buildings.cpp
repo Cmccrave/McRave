@@ -78,7 +78,7 @@ namespace McRave::Buildings {
             }
 
             // Cancelling hatcheries if we're being proxy 2gated
-            if (building.getType() == Zerg_Hatchery && building.unit()->getRemainingBuildTime() < 120 && Terrain::getMyNatural() && building.getTilePosition() == Terrain::getMyNatural()->getBase()->Location() && BuildOrder::isOpener() && Spy::getEnemyBuild() == "2Gate" && Spy::enemyProxy()) {
+            if (building.getType() == Zerg_Hatchery && Terrain::getMyNatural() && building.getTilePosition() == Terrain::getMyNatural()->getBase()->Location() && Util::getTime() < Time(4, 00) && Spy::getEnemyBuild() == "2Gate" && Spy::enemyProxy()) {
                 building.unit()->cancelConstruction();
                 Events::onUnitCancelBecauseBWAPISucks(building);
             }

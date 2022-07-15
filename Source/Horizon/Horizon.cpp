@@ -14,13 +14,13 @@ namespace McRave::Horizon {
 
         bool addToSim(UnitInfo& u) {
             if (!u.unit()
-                || (u.getType().isWorker() && ((u.unit()->exists() && u.unit()->getOrder() != Orders::AttackUnit) || !u.hasAttackedRecently()))
+                || (u.getType().isWorker() && ((u.unit()->exists() && u.unit()->getOrder() != Orders::AttackUnit) || !u.hasAttackedRecently() || Util::getTime() < Time(4, 00)))
                 || (u.unit()->exists() && !u.unit()->isCompleted())
                 || (u.unit()->exists() && (u.unit()->isStasised() || u.unit()->isMorphing()))
                 || (u.getVisibleAirStrength() <= 0.0 && u.getVisibleGroundStrength() <= 0.0)
                 || (u.getRole() != Role::None && u.getRole() != Role::Combat && u.getRole() != Role::Defender)
                 || !u.hasTarget())
-                return false;
+                return false;            
             return true;
         }
 

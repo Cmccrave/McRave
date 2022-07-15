@@ -838,7 +838,7 @@ namespace McRave
             const auto closestDefense = Util::getClosestUnit(getPosition(), PlayerState::Enemy, [&](auto &u) {
                 return u->getType().isBuilding() && ((u->canAttackGround() && isFlying()) || (u->canAttackAir() && !isFlying()));
             });
-            return closestDefense && closestDefense->getPosition().getDistance(getPosition()) < 256.0;
+            return closestDefense && closestDefense->getPosition().getDistance(getTarget().lock()->getPosition()) < 256.0;
         };
 
         const auto engagingWithWorkers = [&]() {
@@ -852,7 +852,8 @@ namespace McRave
 
         return (unitTarget->isThreatening() && !unitTarget->isHidden() && (Util::getTime() < Time(10, 00) || getSimState() == SimState::Win || Players::ZvZ()))                                                                          // ...target is threatening                    
             || (!getType().isWorker() && !Spy::enemyRush() && (getGroundRange() > unitTarget->getGroundRange() || unitTarget->getType().isWorker()) && Terrain::inTerritory(PlayerState::Self, unitTarget->getPosition()) && !unitTarget->isHidden())                 // ...unit can get free hits in our territory
-            || (isSuicidal() && hasTarget() && (Terrain::inTerritory(PlayerState::Self, unitTarget->getPosition()) || unitTarget->isThreatening() || unitTarget->getPosition().getDistance(getGoal()) < 160.0 || !nearEnemyDefenseStructure()))
+            || (isSuicidal() && hasTarget() && (Terrain::inTerritory(PlayerState::Self, unitTarget->getPosition()) || unitTarget->isThreatening() || unitTarget->getPosition().getDistance(getGoal()) < 160.0))
+            || (isSuicidal() && hasTarget() && Players::getStrength(PlayerState::Enemy).groundToAir <= 0.0 && !nearEnemyDefenseStructure())
             || ((isHidden() || getType() == Zerg_Lurker) && !Actions::overlapsDetection(unit(), getEngagePosition(), PlayerState::Enemy))
             || (!isFlying() && Actions::overlapsActions(unit(), getEngagePosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, 96))
             || (!isFlying() && (getGroundRange() < 32.0 || getType() == Zerg_Lurker) && Terrain::inTerritory(PlayerState::Enemy, getPosition()) && (Util::getTime() > Time(8, 00) || BuildOrder::isProxy()) && nearEnemyStation() && !Players::ZvZ())
@@ -878,7 +879,7 @@ namespace McRave
         const auto scoutSavingRequired = getType() == Protoss_Scout && hasTarget() && !thisTarget->isThreatening() && !isWithinRange(*thisTarget) && getHealth() + getShields() <= 80;
 
         return nearHidden
-            || (getGlobalState() == GlobalState::Retreat && !Terrain::inTerritory(PlayerState::Self, getPosition()))
+            || (getGlobalState() == GlobalState::Retreat && !Terrain::inTerritory(PlayerState::Self, getPosition()) && !attemptingRunby())
             || mutaSavingRequired
             || scoutSavingRequired;
     }

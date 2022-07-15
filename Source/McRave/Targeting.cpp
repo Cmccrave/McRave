@@ -108,7 +108,7 @@ namespace McRave::Targets {
                             || (BuildOrder::isProxy() && !target.isThreatening() && !target.getType().isWorker() && Util::getTime() < Time(6, 00)))
                             return false;
                     }
-                    if (unit.attemptingRunby() && !target.getType().isWorker() && !target.getType().isBuilding())
+                    if (unit.attemptingRunby() && !target.getType().isWorker())
                         return false;
                 }
 
@@ -405,12 +405,10 @@ namespace McRave::Targets {
 
             // Enemy units are assumed targets or order targets
             if (unit.getPlayer()->isEnemy(Broodwar->self())) {
-                if (unit.unit()->getOrderTarget()) {
-                    auto &targetInfo = Units::getUnitInfo(unit.unit()->getOrderTarget());
-                    if (targetInfo) {
-                        unit.setTarget(&*targetInfo);
-                        targetInfo->getUnitsTargetingThis().push_back(unit.weak_from_this());
-                    }
+                auto &targetInfo = unit.unit()->getOrderTarget() ? Units::getUnitInfo(unit.unit()->getOrderTarget()) : nullptr;
+                if (targetInfo) {
+                    unit.setTarget(&*targetInfo);
+                    targetInfo->getUnitsTargetingThis().push_back(unit.weak_from_this());
                 }
                 else if (unit.getType() != Terran_Vulture_Spider_Mine) {
                     auto closest = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {

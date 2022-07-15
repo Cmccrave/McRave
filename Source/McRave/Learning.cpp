@@ -152,11 +152,9 @@ namespace McRave::Learning {
             const auto openerOkay = [&]() {
                 if (build == "PoolHatch") {
                     if (opener == "Overpool")
-                        return t;
+                        return !z;
                     if (opener == "12Pool")
                         return t;
-                    if (opener == "9Pool")
-                        return p;
                 }
                 if (build == "HatchPool") {
                     if (opener == "12Hatch")
@@ -384,7 +382,7 @@ namespace McRave::Learning {
         void getPermanentBuild()
         {
             // Testing builds if needed
-            if (false) {
+            if (true) {
                 if (Players::PvZ()) {
                     BuildOrder::setLearnedBuild("FFE", "Forge", "NeoBisu");
                     return;

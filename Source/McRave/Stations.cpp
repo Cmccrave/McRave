@@ -346,11 +346,12 @@ namespace McRave::Stations
     }
 
     void onStart() {
-        for (auto station : BWEB::Stations::getStations()) {
+        for (auto &station : BWEB::Stations::getStations()) {
             for (auto &mineral : station.getBase()->Minerals())
                 initialMinerals[&station] += mineral->InitialAmount();
             for (auto &gas : station.getBase()->Geysers())
                 initialGas[&station] += gas->InitialAmount();
+            stations[&station] = PlayerState::None;
         }
     }
 
@@ -391,7 +392,7 @@ namespace McRave::Stations
         auto newStation = BWEB::Stations::getClosestStation(unit->getTilePosition());
         if (!newStation || stations.find(newStation) == stations.end())
             return;
-        stations.erase(newStation);
+        stations[newStation] = PlayerState::None;
 
         // Remove workers from any resources on this station
         for (auto &mineral : Resources::getMyMinerals()) {

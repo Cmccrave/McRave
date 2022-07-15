@@ -81,7 +81,7 @@ namespace McRave::Combat::State {
             if (BuildOrder::isRush()
                 || Broodwar->getGameType() == GameTypes::Use_Map_Settings)
                 unit.setGlobalState(GlobalState::Attack);
-            else if ((Broodwar->getFrameCount() < 15000 && BuildOrder::isPlayPassive())
+            else if ((Broodwar->getFrameCount() < 15000 && BuildOrder::isPlayPassive() && !unit.attemptingRunby())
                 || (Players::ZvT() && Util::getTime() < Time(12, 00) && Util::getTime() > Time(3, 30) && unit.getType() == Zerg_Zergling && !Spy::enemyGreedy() && (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled() || Players::getCompleteCount(PlayerState::Enemy, Terran_Vulture) > 0))
                 || (Players::ZvZ() && Util::getTime() < Time(10, 00) && unit.getType() == Zerg_Zergling && Players::getCompleteCount(PlayerState::Enemy, Zerg_Zergling) > com(Zerg_Zergling))
                 || (Players::ZvZ() && Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(2, 45))
