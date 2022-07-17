@@ -93,10 +93,11 @@ namespace McRave::BuildOrder::Zerg {
             }
 
             // Adding Overlords if we are sacrificing a scout or know we will lose one
-            if ((Scouts::isSacrificeScout() || Spy::getEnemyTransition() == "Corsair") && Util::getTime() > Time(3, 45))
-                buildQueue[Zerg_Overlord] = max(3, buildQueue[Zerg_Overlord]);
+            if ((Scouts::isSacrificeScout() || Spy::getEnemyTransition() == "Corsair") && Util::getTime() > Time(4, 45) && Util::getTime() < Time(5, 30))
+                buildQueue[Zerg_Overlord]++;
 
-            if (Players::ZvP() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) > 0 && vis(Zerg_Lair) == 0 && vis(Zerg_Hydralisk_Den) == 0 && vis(Zerg_Spore_Colony) == 0)
+            // Remove spending money on Overlords if they'll have no protection anyways
+            if (Players::ZvP() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) > 0 && vis(Zerg_Lair) == 0 && vis(Zerg_Hydralisk_Den) == 0 && vis(Zerg_Spore_Colony) == 0 && Util::getTime() < Time(7, 00))
                 buildQueue[Zerg_Overlord] = 0;
         }
 
@@ -566,10 +567,16 @@ namespace McRave::BuildOrder::Zerg {
         if (!inOpeningBook) {
             int hatchCount = vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive);
             int pumpLings = 0;
+            if (Players::ZvP() && Util::getTime() > Time(8, 00))
+                pumpLings = 12;
             if (Spy::getEnemyTransition() == "Robo")
                 pumpLings = 12;
             if (Spy::getEnemyTransition() == "4Gate" && hatchCount >= 4)
                 pumpLings = 24;
+            if (Spy::getEnemyBuild() == "FFE") {
+                if (Spy::getEnemyTransition() == "Speedlot" && Util::getTime() > Time(6, 45) && Util::getTime() < Time(7, 45))
+                    pumpLings = 24;
+            }
             if (Resources::isMineralSaturated() && Resources::isGasSaturated() && int(Stations::getStations(PlayerState::Self).size()) <= 2)
                 pumpLings = 200;
             if (Players::ZvZ() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Spire) == 0 && vis(Zerg_Drone) > Players::getVisibleCount(PlayerState::Enemy, Zerg_Drone))
@@ -612,7 +619,7 @@ namespace McRave::BuildOrder::Zerg {
 
             if (needScourgeZvP || needScourgeZvZ || needScourgeZvT) {
                 armyComposition[Zerg_Scourge] = max(0.20, armyComposition[Zerg_Mutalisk]);
-                armyComposition[Zerg_Mutalisk] = 0.00;
+                armyComposition[Zerg_Mutalisk] = 0.01;
             }
         }
     }
@@ -621,12 +628,15 @@ namespace McRave::BuildOrder::Zerg {
     {
         // Saving larva to burst out tech units
         int limitBy = int(Stations::getStations(PlayerState::Self).size()) * 3;
-        unitLimits[Zerg_Larva] = 0;
-        if ((inOpeningBook || techList.size() == 1) && ((atPercent(Zerg_Spire, 0.50) && com(Zerg_Spire) == 0 && armyComposition[Zerg_Mutalisk] > 0) || (atPercent(Zerg_Hydralisk_Den, 0.6) && com(Zerg_Hydralisk_Den) == 0 && armyComposition[Zerg_Hydralisk] > 0)))
-            unitLimits[Zerg_Larva] = max(0, limitBy - total(Zerg_Mutalisk) - total(Zerg_Hydralisk));
-
-        if (unitLimits[Zerg_Larva] > 0)
-            Broodwar << unitLimits[Zerg_Larva] << endl;
+        unitReservations.clear();
+        if (inOpeningBook || techList.size() <= 1) {
+            if (atPercent(Zerg_Spire, 0.50)) {
+                unitReservations[Zerg_Mutalisk] = max(0, limitBy - total(Zerg_Mutalisk) - int(armyComposition[Zerg_Scourge] > 0.0));
+                unitReservations[Zerg_Scourge] = max(0, 2 * int(armyComposition[Zerg_Scourge] > 0.0) - total(Zerg_Scourge));
+            }
+            if (atPercent(Zerg_Hydralisk_Den, 0.6))
+                unitReservations[Zerg_Hydralisk] = max(0, limitBy - total(Zerg_Hydralisk));            
+        }
 
         // Unlocking units
         unlockedType.clear();

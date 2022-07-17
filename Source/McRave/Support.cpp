@@ -20,6 +20,7 @@ namespace McRave::Support {
             auto closestSpore = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                 return u->getType() == Zerg_Spore_Colony;
             });
+            auto enemyAir = Spy::getEnemyTransition() == "Corsair" || Spy::getEnemyTransition() == "2PortWraith" || Players::getStrength(PlayerState::Enemy).airToAir > 0.0;
 
             // Send Overlords to safety from enemy air
             if (unit.getType() == Zerg_Overlord && closestSpore && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 || !unit.isHealthy())) {
@@ -41,8 +42,19 @@ namespace McRave::Support {
             endloop:;
             }
 
-            else if (unit.getType() == Zerg_Overlord && !closestSpore && Spy::getEnemyOpener() == "Corsair" && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 || !unit.isHealthy()))
+            // Space them out near the natural
+            else if (unit.getType() == Zerg_Overlord && Stations::ownedBy(Terrain::getMyNatural()) == PlayerState::Self && enemyAir && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 || !unit.isHealthy())) {
+                auto natDist = Terrain::getMyNatural()->getBase()->Center().getDistance(Position(Terrain::getMyNatural()->getChokepoint()->Center()));
+                auto chokeCenter = Position(Terrain::getMyNatural()->getChokepoint()->Center());
                 unit.setDestination(Terrain::getMyNatural()->getBase()->Center());
+                for (auto x = -2; x < 2; x++) {
+                    for (auto y = -2; y < 2; y++) {
+                        auto position = Terrain::getMyNatural()->getBase()->Center() + Position(96 * x, 96 * y);
+                        if (position.getDistance(chokeCenter) > natDist && !Actions::overlapsActions(unit.unit(), position, unit.getType(), PlayerState::Self, 32))
+                            unit.setDestination(position);
+                    }
+                }
+            }
 
             // Set goal as destination
             else if (unit.getGoal().isValid())
@@ -52,19 +64,24 @@ namespace McRave::Support {
             else if (unit.getType() != Zerg_Overlord || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace)) {
                 auto highestCluster = 0.0;
                 auto types ={ Zerg_Hydralisk, Zerg_Ultralisk, Protoss_Dragoon, Terran_Marine, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode };
-                for (auto &cluster : Combat::Clusters::getClusters()) {
-                    if (auto commander = cluster.commander.lock()) {
-                        if (find(types.begin(), types.end(), commander->getType()) == types.end())
-                            continue;
 
-                        const auto position = commander->getPosition();
-                        const auto score = cluster.units.size() / (position.getDistance(Terrain::getAttackPosition()) * position.getDistance(unit.getPosition()));
-                        if (score > highestCluster && !commander->isFlying() && !Actions::overlapsActions(unit.unit(), position, unit.getType(), PlayerState::Self, 64)) {
-                            highestCluster = score;
-                            unit.setDestination(position);
-                            cluster.typeCounts[unit.getType()]++;
+                for (int radius = 64; radius > 0; radius-=8) {
+                    for (auto &cluster : Combat::Clusters::getClusters()) {
+                        if (auto commander = cluster.commander.lock()) {
+                            if (find(types.begin(), types.end(), commander->getType()) == types.end())
+                                continue;
+
+                            const auto position = commander->getPosition();
+                            const auto score = cluster.units.size() / (position.getDistance(Terrain::getAttackPosition()) * position.getDistance(unit.getPosition()));
+                            if (score > highestCluster && !commander->isFlying() && !Actions::overlapsActions(unit.unit(), position, unit.getType(), PlayerState::Self, radius)) {
+                                highestCluster = score;
+                                unit.setDestination(position);
+                            }
                         }
                     }
+
+                    if (highestCluster > 0.0)
+                        break;
                 }
 
                 // Move detectors between target and unit vs Terran

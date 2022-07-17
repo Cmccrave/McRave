@@ -295,13 +295,10 @@ namespace McRave::Util {
 
     void onFrame()
     {
-        if (Broodwar->getFrameCount() % 24 == 0 && Broodwar->getFrameCount() != 0) {
-            gameTime.seconds++;
-            if (gameTime.seconds >= 60) {
-                gameTime.seconds = 0;
-                gameTime.minutes++;
-            }
-        }
+        auto seconds = int(double(Broodwar->getFrameCount()) / 23.81) % 60;
+        auto minutes = int(double(Broodwar->getFrameCount()) / 23.81) / 60;
+        gameTime.seconds = seconds;
+        gameTime.minutes = minutes;
     }
 
     pair<double, Position> getClosestPointToRadiusAir(Position source, Position target, double radius)

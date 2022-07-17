@@ -33,6 +33,7 @@ namespace McRave::BuildOrder {
         inline bool rampDesired = false;
 
         inline std::map<BWAPI::UnitType, int> unitLimits;
+        inline std::map<BWAPI::UnitType, int> unitReservations;
         inline int gasLimit = INT_MAX;
         inline int s = 0;
 
@@ -77,7 +78,7 @@ namespace McRave::BuildOrder {
     std::set <BWAPI::UnitType>& getTechList();
     std::set <BWAPI::UnitType>& getUnlockedList();
     int gasWorkerLimit();
-    int getUnitLimit(BWAPI::UnitType);
+    int getUnitReservation(BWAPI::UnitType);
     bool isUnitUnlocked(BWAPI::UnitType);
     bool isTechUnit(BWAPI::UnitType);
     bool isOpener();

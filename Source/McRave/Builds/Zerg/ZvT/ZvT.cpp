@@ -14,7 +14,6 @@ namespace McRave::BuildOrder::Zerg {
         inBookSupply =                              true;
         wallNat =                                   hatchCount() >= 4;
         wallMain =                                  false;
-        scout =                                     false;
         wantNatural =                               true;
         wantThird =                                 true;
         proxy =                                     false;
@@ -76,7 +75,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Hatchery] =                     2 + thirdHatch;
         buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 10) + (vis(Zerg_Spire) > 0);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (2 * atPercent(Zerg_Spire, 0.25));
-        buildQueue[Zerg_Lair] =                         (vis(Zerg_Drone) >= 12 && gas(80));
+        buildQueue[Zerg_Lair] =                         (total(Zerg_Drone) >= 12 && gas(80));
         buildQueue[Zerg_Spire] =                        atPercent(Zerg_Lair, 0.80);
 
         // Composition
@@ -110,7 +109,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Hatchery] =                     2 + (s >= 26) + fourthHatch;
         buildQueue[Zerg_Extractor] =                    (hatchCount() >= 3) + (s >= 44);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 48) + (atPercent(Zerg_Spire, 0.5) * 3);
-        buildQueue[Zerg_Lair] =                         (vis(Zerg_Drone) >= 12 && gas(80));
+        buildQueue[Zerg_Lair] =                         (total(Zerg_Drone) >= 12 && gas(80));
         buildQueue[Zerg_Spire] =                        (s >= 42 && atPercent(Zerg_Lair, 0.80));
 
         // Composition

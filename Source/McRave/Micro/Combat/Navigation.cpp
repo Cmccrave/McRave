@@ -119,7 +119,7 @@ namespace McRave::Combat::Navigation {
     void updateNavigation(UnitInfo& unit)
     {
         unit.setNavigation(unit.getDestination());
-        if (unit.getFormation().isValid() && (unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat)) {
+        if (unit.getFormation().isValid() && Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && (unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat)) {
             unit.setNavigation(unit.getFormation());
             return;
         }            

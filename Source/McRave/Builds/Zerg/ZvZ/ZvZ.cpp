@@ -14,7 +14,6 @@ namespace McRave::BuildOrder::Zerg {
         inBookSupply =                                  true;
         wallNat =                                       hatchCount() >= 3;
         wallMain =                                      false;
-        scout =                                         false;
         wantNatural =                                   false;
         wantThird =                                     false;
         proxy =                                         false;

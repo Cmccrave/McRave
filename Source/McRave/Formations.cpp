@@ -67,7 +67,7 @@ namespace McRave::Combat::Formations {
 
             // If we are setting up a static formation, align concave with buildings close by
             auto closestBuilding = Util::getClosestUnit(cluster.sharedDestination, PlayerState::Self, [&](auto &u) {
-                return (u->getType().isBuilding() && u->getFormation().getDistance(cluster.sharedDestination) < 64.0) || (u->getType().isResourceDepot() && Terrain::isDefendNatural());
+                return (u->getType().isBuilding() && u->canAttackGround() && u->getFormation().getDistance(cluster.sharedDestination) < 64.0) || (u->getType().isResourceDepot() && Terrain::isDefendNatural());
             });
             if (closestBuilding)
                 radius = closestBuilding->getPosition().getDistance(cluster.sharedDestination);            

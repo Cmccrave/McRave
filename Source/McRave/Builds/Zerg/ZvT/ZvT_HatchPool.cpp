@@ -17,8 +17,8 @@ namespace McRave::BuildOrder::Zerg {
             unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvT();
             unitLimits[Zerg_Drone] =                        12;
             gasLimit =                                      ((!Spy::enemyProxy() || com(Zerg_Zergling) >= 6) && !lingSpeed()) ? capGas(100) : 0;
-            scout =                                         scout || vis(Zerg_Hatchery) >= 2;
-            planEarly =                                     hatchCount() == 1 && s == 22;
+            scout =                                         scout || (hatchCount() == 1 && s >= 22 && Util::getTime() > Time(1, 30));
+            planEarly =                                     (hatchCount() == 1 && s >= 22 && Util::getTime() > Time(1, 30));
 
             buildQueue[Zerg_Hatchery] =                     1 + (s >= 24);
             buildQueue[Zerg_Spawning_Pool] =                (hatchCount() >= 2 && s >= 24);

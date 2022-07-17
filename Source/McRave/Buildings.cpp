@@ -96,7 +96,7 @@ namespace McRave::Buildings {
 
         void morph(UnitInfo& building)
         {
-            auto needLarvaSpending = vis(Zerg_Larva) > 3 && Broodwar->self()->supplyUsed() < Broodwar->self()->supplyTotal() && BuildOrder::getUnitLimit(Zerg_Larva) == 0 && Util::getTime() < Time(4, 30) && com(Zerg_Sunken_Colony) > 2;
+            auto needLarvaSpending = vis(Zerg_Larva) > 3 && Broodwar->self()->supplyUsed() < Broodwar->self()->supplyTotal() && BuildOrder::getUnitReservation(Zerg_Mutalisk) == 0 && Util::getTime() < Time(4, 30) && com(Zerg_Sunken_Colony) > 2;
             auto morphType = UnitTypes::None;
             auto station = BWEB::Stations::getClosestStation(building.getTilePosition());
             auto wall = BWEB::Walls::getClosestWall(building.getTilePosition());
@@ -111,8 +111,18 @@ namespace McRave::Buildings {
                 if (closestScout && com(Zerg_Hatchery) >= 2 && mapBWEM.GetArea(closestScout->getTilePosition()) == BWEB::Map::getMainArea())
                     morphTile = BWEB::Map::getNaturalTile();
 
-                if (building.getTilePosition() == morphTile)
-                    morphType = Zerg_Lair;                
+                // Extra larva timings (main): 3:02, 3:31, 4:00
+                if (building.getTilePosition() == morphTile) {
+                    if (morphTile == BWEB::Map::getMainTile()) {
+                        if ((Util::getTime() >= Time(3, 02) && BuildOrder::getCurrentTransition().find("1Hatch") == string::npos)
+                            || (Util::getTime() >= Time(3, 31) && BuildOrder::getCurrentTransition().find("2Hatch") == string::npos)
+                            || (Util::getTime() >= Time(4, 00) && BuildOrder::getCurrentTransition().find("3Hatch") == string::npos)
+                            || Players::ZvZ())
+                            morphType = Zerg_Lair;
+                    }
+                    else
+                        morphType = Zerg_Lair;
+                }
             }
 
             // Hive morphing

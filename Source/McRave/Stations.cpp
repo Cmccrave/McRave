@@ -246,8 +246,8 @@ namespace McRave::Stations
             else {
                 if (BuildOrder::getCurrentTransition().find("2Hatch") != string::npos)
                     return 1 - groundCount;
-                if (BuildOrder::getCurrentTransition().find("2Hatch") == string::npos && Util::getTime() > Time(5, 00))
-                    return 2 - groundCount;
+                if (BuildOrder::getCurrentTransition().find("2Hatch") == string::npos )
+                    return (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(7, 00)) - groundCount;
                 return (Util::getTime() > Time(7, 30)) + (Util::getTime() > Time(8, 00)) - groundCount;
             }
             return 0;
@@ -455,7 +455,7 @@ namespace McRave::Stations
                 return 1 + (Util::getTime() > Time(5, 15)) - airCount;
             if (Players::ZvZ() && Util::getTime() > Time(4, 15) && Spy::getEnemyTransition() == "1HatchMuta" && BuildOrder::getCurrentTransition() != "1HatchMuta")
                 return 1 - airCount;
-            if (Players::ZvP() && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) <= 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) > 0 && vis(Zerg_Lair) == 0 && vis(Zerg_Hydralisk_Den) == 0)
+            if (Players::ZvP() && Util::getTime() > Time(4, 15) && !station->isMain() && Spy::getEnemyBuild() == "1GateCore" && Spy::getEnemyTransition() == "Corsair")
                 return 1 - airCount;
         }
         return 0;

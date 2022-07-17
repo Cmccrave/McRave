@@ -54,7 +54,6 @@ namespace McRave::BuildOrder::Zerg {
             transitionReady =                               total(Zerg_Overlord) >= 2;
             unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvFFA();
             gasLimit =                                      0;
-            scout =                                         false;
             wantNatural =                                   !Spy::enemyProxy();
             playPassive =                                   true;
             unitLimits[Zerg_Drone] =                        10;

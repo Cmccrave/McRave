@@ -58,6 +58,19 @@ namespace McRave::Combat::State {
         if (unit.getGlobalState() != GlobalState::None)
             return;
 
+        // Determine if we need to create a new checking unit to try and detect the enemy build
+        if (unit.hasTarget() && Util::getTime() > Time(4, 00)) {
+            auto unitTarget = unit.getTarget().lock();
+            const auto needEnemyCheck = !Players::ZvZ() && !Spy::enemyRush() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) <= 0
+                && Spy::getEnemyTransition() == "Unknown" && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(6, 00)
+                && Broodwar->getFrameCount() - unitTarget->getLastVisibleFrame() > 120;
+
+            if (needEnemyCheck) {
+                unit.setGlobalState(GlobalState::Attack);
+                return;
+            }
+        }
+
         // Protoss
         if (Broodwar->self()->getRace() == Races::Protoss) {
             if ((!BuildOrder::takeNatural() && Spy::enemyFastExpand())
@@ -81,7 +94,7 @@ namespace McRave::Combat::State {
             if (BuildOrder::isRush()
                 || Broodwar->getGameType() == GameTypes::Use_Map_Settings)
                 unit.setGlobalState(GlobalState::Attack);
-            else if ((Broodwar->getFrameCount() < 15000 && BuildOrder::isPlayPassive() && !unit.attemptingRunby())
+            else if ((Broodwar->getFrameCount() < 15000 && BuildOrder::isPlayPassive() && !unit.attemptingRunby() && !unit.getGoal().isValid())
                 || (Players::ZvT() && Util::getTime() < Time(12, 00) && Util::getTime() > Time(3, 30) && unit.getType() == Zerg_Zergling && !Spy::enemyGreedy() && (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled() || Players::getCompleteCount(PlayerState::Enemy, Terran_Vulture) > 0))
                 || (Players::ZvZ() && Util::getTime() < Time(10, 00) && unit.getType() == Zerg_Zergling && Players::getCompleteCount(PlayerState::Enemy, Zerg_Zergling) > com(Zerg_Zergling))
                 || (Players::ZvZ() && Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(2, 45))

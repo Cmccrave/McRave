@@ -143,40 +143,46 @@ namespace McRave::Walls {
                 && Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) == 0
                 && Players::getTotalCount(PlayerState::Enemy, Protoss_Archon) == 0;
 
-            // 4Gate
-            if (Spy::getEnemyTransition() == "4Gate" && Util::getTime() < Time(12, 00)) {
-                return 1
-                    + (Util::getTime() > Time(4, 00))
+            // 1 base transitions
+            if (Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore") {
+
+                // 4Gate
+                if (Spy::getEnemyTransition() == "4Gate" && Util::getTime() < Time(12, 00)) {
+                    return 1
+                        + (Util::getTime() > Time(4, 00))
+                        + (!skipSunken && Util::getTime() > Time(4, 30))
+                        + (!skipSunken && Util::getTime() > Time(5, 00))
+                        + (Util::getTime() > Time(5, 40))
+                        + (Util::getTime() > Time(6, 20))
+                        + (Util::getTime() > Time(7, 00))
+                        + (Util::getTime() > Time(8, 00))
+                        + (Util::getTime() > Time(9, 00))
+                        ;
+                }
+
+                // DT
+                if (Util::getTime() < Time(8, 30) && Spy::getEnemyTransition() == "DT") {
+                    return 1
+                        + (Util::getTime() > Time(4, 15))
+                        + (!skipSunken && Util::getTime() > Time(5, 00))
+                        + (Util::getTime() > Time(5, 20))
+                        + (Util::getTime() > Time(5, 40));
+                }
+
+                // Corsair
+                if (Util::getTime() < Time(8, 30) && Spy::getEnemyTransition() == "Corsair")
+                    return 1
+                    + (!skipSunken && Util::getTime() > Time(3, 30))
+                    + (!skipSunken && Util::getTime() > Time(4, 30));
+
+                // Speedlot
+                if (Util::getTime() < Time(8, 30) && (Spy::getEnemyTransition() == "Speedlot" || Spy::getEnemyTransition() == "ZealotRush"))
+                    return 1
+                    + (Util::getTime() > Time(3, 10))
+                    + (!skipSunken && Util::getTime() > Time(4, 00))
                     + (!skipSunken && Util::getTime() > Time(4, 30))
-                    + (!skipSunken && Util::getTime() > Time(5, 00))
-                    + (Util::getTime() > Time(5, 40))
-                    + (Util::getTime() > Time(6, 20))
-                    + (Util::getTime() > Time(7, 00))
-                    + (Util::getTime() > Time(8, 00))
-                    + (Util::getTime() > Time(9, 00))
-                    ;
+                    + (Util::getTime() > Time(5, 20));
             }
-
-            // DT
-            if (Util::getTime() < Time(8, 30) && Spy::getEnemyTransition() == "DT") {
-                return 2
-                    + (!skipSunken && Util::getTime() > Time(5, 00))
-                    + (Util::getTime() > Time(5, 20))
-                    + (Util::getTime() > Time(5, 40));
-            }
-
-            // Corsair
-            if (Util::getTime() < Time(8, 30) && Spy::getEnemyTransition() == "Corsair")
-                return 1
-                + (!skipSunken && Util::getTime() > Time(7, 30));
-
-            // Speedlot
-            if (Util::getTime() < Time(8, 30) && (Spy::getEnemyTransition() == "Speedlot" || Spy::getEnemyTransition() == "ZealotRush"))
-                return 1
-                + (Util::getTime() > Time(3, 10))
-                + (!skipSunken && Util::getTime() > Time(4, 00))
-                + (!skipSunken && Util::getTime() > Time(4, 30))
-                + (Util::getTime() > Time(5, 20));
 
             // 1GateCore
             if (Spy::getEnemyBuild() == "1GateCore" || (Spy::getEnemyBuild() == "Unknown" && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 1)) {
@@ -222,7 +228,7 @@ namespace McRave::Walls {
                 if (Spy::getEnemyTransition() == "NeoBisu" && Util::getTime() < Time(6, 30))
                     return ((2 * (Util::getTime() > Time(6, 00))));
                 if (Spy::getEnemyTransition() == "Speedlot" && Util::getTime() < Time(7, 00))
-                    return ((2 * (Util::getTime() > Time(5, 00))) + (2 * (Util::getTime() > Time(5, 30))) + (2 * (Util::getTime() > Time(6, 00))));
+                    return ((2 * (Util::getTime() > Time(6, 00))) + (2 * (Util::getTime() > Time(6, 30))) + (2 * (Util::getTime() > Time(7, 00))));
                 if (Spy::getEnemyTransition() == "Unknown" && Util::getTime() < Time(5, 15))
                     return ((2 * (Util::getTime() > Time(6, 00))) + (Util::getTime() > Time(6, 30)) + (2 * (Util::getTime() > Time(8, 00))));
                 if (Util::getTime() < Time(8, 00))

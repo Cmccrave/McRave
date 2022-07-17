@@ -854,7 +854,8 @@ namespace McRave
             || (!getType().isWorker() && !Spy::enemyRush() && (getGroundRange() > unitTarget->getGroundRange() || unitTarget->getType().isWorker()) && Terrain::inTerritory(PlayerState::Self, unitTarget->getPosition()) && !unitTarget->isHidden())                 // ...unit can get free hits in our territory
             || (isSuicidal() && hasTarget() && (Terrain::inTerritory(PlayerState::Self, unitTarget->getPosition()) || unitTarget->isThreatening() || unitTarget->getPosition().getDistance(getGoal()) < 160.0))
             || (isSuicidal() && hasTarget() && Players::getStrength(PlayerState::Enemy).groundToAir <= 0.0 && !nearEnemyDefenseStructure())
-            || ((isHidden() || getType() == Zerg_Lurker) && !Actions::overlapsDetection(unit(), getEngagePosition(), PlayerState::Enemy))
+            || (isHidden() && !Actions::overlapsDetection(unit(), getEngagePosition(), PlayerState::Enemy))
+            || (getType() == Zerg_Lurker && isBurrowed() && !Actions::overlapsDetection(unit(), getEngagePosition(), PlayerState::Enemy))
             || (!isFlying() && Actions::overlapsActions(unit(), getEngagePosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, 96))
             || (!isFlying() && (getGroundRange() < 32.0 || getType() == Zerg_Lurker) && Terrain::inTerritory(PlayerState::Enemy, getPosition()) && (Util::getTime() > Time(8, 00) || BuildOrder::isProxy()) && nearEnemyStation() && !Players::ZvZ())
             || (getType() == Zerg_Lurker && BuildOrder::isProxy() && nearProxyStructure())
@@ -919,7 +920,7 @@ namespace McRave
 
         if (hasTarget()) {
             auto unitTarget = getTarget().lock();
-            if (unitTarget->getPosition().getDistance(BWEB::Map::getMainPosition()) < unitTarget->getPosition().getDistance(Terrain::getEnemyStartingPosition()))
+            if (unitTarget->canAttackGround() && unitTarget->getPosition().getDistance(BWEB::Map::getMainPosition()) < unitTarget->getPosition().getDistance(Terrain::getEnemyStartingPosition()))
                 return false;
         }
         return isLightAir() && Terrain::getHarassPosition().isValid();

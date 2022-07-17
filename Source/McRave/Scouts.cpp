@@ -175,9 +175,11 @@ namespace McRave::Scouts {
                 }
 
                 // If we need to sacrifice an Overlord, ensure we have at least 1
-                sacrifice = Players::ZvP() && Terrain::getEnemyStartingPosition().isValid() && Terrain::getEnemyNatural() && Broodwar->isExplored(Terrain::getEnemyNatural()->getBase()->Location()) && !Spy::enemyFastExpand() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) < 2 && Spy::getEnemyTransition() == "Unknown";
-                if (sacrifice)
+                sacrifice = Players::ZvP() && Terrain::getEnemyStartingPosition().isValid() && Terrain::getEnemyNatural() && Broodwar->isExplored(Terrain::getEnemyNatural()->getBase()->Location()) && !Spy::enemyFastExpand() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) < 3 && Spy::getEnemyTransition() == "Unknown";
+                if (sacrifice) {
+                    onlyNaturalScout = false;
                     desiredScoutTypeCounts[Zerg_Overlord] = 1;
+                }
 
                 if (total(Zerg_Mutalisk) > 0
                     || Spy::getEnemyBuild() == "FFE"

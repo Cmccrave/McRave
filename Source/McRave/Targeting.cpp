@@ -276,6 +276,10 @@ namespace McRave::Targets {
             else if (unit.getRole() == Role::Defender && boxDistance - range <= 16.0)
                 return healthScore() * priorityScore();
 
+            // Lurker burrowed targeting (only distance matters)
+            else if (unit.getType() == Zerg_Lurker && unit.isBurrowed())
+                return 1.0 / dist;
+
             // Proximity targeting (targetScore not used)
             else if (unit.getType() == Protoss_Reaver || unit.getType() == Zerg_Ultralisk) {
                 if (target.getType().isBuilding() && !target.canAttackGround() && !target.canAttackAir())

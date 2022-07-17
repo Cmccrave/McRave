@@ -63,7 +63,10 @@ namespace McRave::Pathing {
                 || !Terrain::getEnemyStartingPosition().isValid())
                 return;
 
-            unit.setInterceptPosition(Positions::Invalid);
+            auto range = unitTarget->isFlying() ? unit.getAirRange() : unit.getGroundRange();
+            auto framesToArrive = (unit.getPosition().getDistance(unitTarget->getPosition()) - range) / unit.getSpeed();
+            auto intercept = unitTarget->getPosition() + Position(int(unit.unit()->getVelocityX() * framesToArrive), int(unit.unit()->getVelocityY() * framesToArrive));
+            unit.setInterceptPosition(intercept);
         }
 
         void updateSurroundPositions()

@@ -309,7 +309,7 @@ namespace McRave::BuildOrder
     set <UnitType>& getTechList() { return  techList; }
     set <UnitType>& getUnlockedList() { return  unlockedType; }
     int gasWorkerLimit() { return gasLimit; }
-    int getUnitLimit(UnitType type) { return unitLimits[type]; }
+    int getUnitReservation(UnitType type) { return unitReservations[type]; }
     bool isUnitUnlocked(UnitType unit) { return unlockedType.find(unit) != unlockedType.end(); }
     bool isTechUnit(UnitType unit) { return techList.find(unit) != techList.end(); }
     bool isOpener() { return inOpeningBook; }
