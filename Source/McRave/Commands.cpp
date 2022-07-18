@@ -120,7 +120,8 @@ namespace McRave::Command {
     {
         // Unstick a unit
         if (unit.isStuck() || unit.getLocalState() == LocalState::Hold) {
-            unit.command(Stop, unit.getPosition());
+            unit.unit()->stop();
+            unit.circle(Colors::Red);
             return true;
         }
 
@@ -258,7 +259,7 @@ namespace McRave::Command {
 
         // If unit can move and should approach
         if (canApproach() && shouldApproach()) {
-            if (unitTarget->getSpeed() < unit.getSpeed()) {
+            if (!unit.isSuicidal() && unitTarget->getSpeed() < unit.getSpeed()) {
                 unit.command(Right_Click_Position, unitTarget->getPosition());
                 return true;
             }
@@ -342,13 +343,14 @@ namespace McRave::Command {
         // If unit can move and should move
         if (canMove() && shouldMove()) {
 
+            // Necessary for mutas to not overshoot
             if (unit.getRole() == Role::Combat && !unit.attemptingSurround() && !unit.isSuicidal() && unit.hasTarget() && unit.canStartAttack() && unit.isWithinReach(*unit.getTarget().lock()) && unit.getLocalState() == LocalState::Attack) {
                 unit.command(Right_Click_Position, unit.getTarget().lock()->getPosition());
                 return true;
             }
 
             if (!unit.getDestinationPath().isReachable()) {
-                unit.command(Move, unit.getDestination());
+                unit.circle(Colors::Red);
                 return true;
             }
 

@@ -98,33 +98,13 @@ namespace McRave::Stations
         {
             retreatPositions.clear();
 
-            if (Terrain::getDefendChoke() == BWEB::Map::getMainChoke()) {
+            if (Terrain::getDefendChoke() == BWEB::Map::getMainChoke() && Stations::getStations(PlayerState::Self).size() <= 2) {
                 retreatPositions.insert(Terrain::getMyMain());
                 return;
             }
 
-            for (auto &station : getStations(PlayerState::Self)) {
-
-                auto wallDefending = false;
-                if (station->getChokepoint()) {
-                    auto wall = BWEB::Walls::getWall(station->getChokepoint());
-                    if (wall && wall->getGroundDefenseCount() >= 2)
-                        wallDefending = true;
-                }
-
-                // A non main station cannot be a retreat point if an enemy is within reach
-                if (!station->isMain() && !wallDefending && Stations::getGroundDefenseCount(station) < 2) {
-                    const auto closestEnemy = Util::getClosestUnitGround(station->getBase()->Center(), PlayerState::Enemy, [&](auto &u) {
-                        return u->canAttackGround();
-                    });
-
-                    if (closestEnemy && closestEnemy->getPosition().getDistance(station->getBase()->Center()) < closestEnemy->getGroundReach() * 2.0)
-                        continue;
-                }
-
-                // Store the defending station
+            for (auto &station : getStations(PlayerState::Self)){
                 retreatPositions.insert(station);
-
             }
         }
 
@@ -133,6 +113,7 @@ namespace McRave::Stations
             for (auto &station : BWEB::Stations::getStations()) {
                 auto defendPosition = station.getBase()->Center();
                 const BWEM::ChokePoint * defendChoke = nullptr;
+
                 if (station.getChokepoint()) {
                     defendPosition = Position(station.getChokepoint()->Center());
                     defendChoke = station.getChokepoint();
@@ -183,6 +164,7 @@ namespace McRave::Stations
                     }
                 }
                 defendPositions[&station] = defendPosition;
+                Broodwar->drawLineMap(station.getBase()->Center(), defendPosition, Colors::Grey);
             }
         }
 

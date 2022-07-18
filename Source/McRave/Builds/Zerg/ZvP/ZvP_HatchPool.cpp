@@ -31,10 +31,10 @@ namespace McRave::BuildOrder::Zerg {
         void ZvP_HP_10Hatch()
         {
             // 'https://liquipedia.net/starcraft/10_Hatch'
-            transitionReady =                               total(Zerg_Overlord) >= 2;
+            transitionReady =                               com(Zerg_Spawning_Pool) > 0;
             unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvP();
             gasLimit =                                      0;
-            scout =                                         scout || (com(Zerg_Drone) >= 10);
+            scout =                                         scout || (hatchCount() == 1 && s == 20 && Broodwar->self()->minerals() >= 150);
             wantNatural =                                   !Spy::enemyProxy();
             playPassive =                                   false;
             unitLimits[Zerg_Drone] =                        10;

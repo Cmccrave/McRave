@@ -246,9 +246,9 @@ namespace McRave::Combat {
                         if (sharedDecision) {
                             if (commander->getCommandType() == UnitCommandTypes::Attack_Unit)
                                 unit->command(commander->getCommandType(), *commander->getTarget().lock());
-                            else if (commander->getCommandType() == UnitCommandTypes::Move && !unit->isTargetedBySplash())
+                            else if (commander->getCommandType() == UnitCommandTypes::Move && !unit->isNearSplash())
                                 unit->command(commander->getCommandType(), commander->getCommandPosition());
-                            else if (commander->getCommandType() == UnitCommandTypes::Right_Click_Position && !unit->isTargetedBySplash())
+                            else if (commander->getCommandType() == UnitCommandTypes::Right_Click_Position && !unit->isNearSplash())
                                 unit->command(UnitCommandTypes::Right_Click_Position, commander->getCommandPosition());
                             else {
                                 Navigation::update(*unit);

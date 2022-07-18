@@ -31,7 +31,7 @@ namespace McRave {
         int lastAttackFrame = -999;
         int lastRepairFrame = -999;
         int lastVisibleFrame = -999;
-        int lastTileMoveFrame = -999;
+        int lastMoveFrame = -999;
         int lastStuckFrame = 0;
         int lastThreateningFrame = 0;
         int lastStimFrame = 0;
@@ -167,7 +167,7 @@ namespace McRave {
         bool isNearMapEdge() { return tilePosition.x < 2 || tilePosition.x > BWAPI::Broodwar->mapWidth() - 2 || tilePosition.y < 2 || tilePosition.y > BWAPI::Broodwar->mapHeight() - 2; }
         bool isCompleted() { return completed; }
         bool isStimmed() { return BWAPI::Broodwar->getFrameCount() - lastStimFrame < 300; }
-        bool isStuck() { return BWAPI::Broodwar->getFrameCount() - lastTileMoveFrame > 240; }
+        bool isStuck() { return BWAPI::Broodwar->getFrameCount() - lastMoveFrame > 10; }
         bool isInvincible() { return invincible; }
         bool wasStuckRecently() { return BWAPI::Broodwar->getFrameCount() - lastStuckFrame < 240; }
 

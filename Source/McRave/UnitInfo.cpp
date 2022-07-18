@@ -263,12 +263,12 @@ namespace McRave
             }
 
             if (!trapped)
-                lastTileMoveFrame = Broodwar->getFrameCount();
+                lastMoveFrame = Broodwar->getFrameCount();
         }
 
         // Check if a unit hasn't moved in a while but is trying to
-        if (getPlayer() != Broodwar->self() || lastPos != getPosition() || !unit()->isMoving() || unit()->getLastCommand().getType() == UnitCommandTypes::Stop || getLastAttackFrame() == Broodwar->getFrameCount())
-            lastTileMoveFrame = Broodwar->getFrameCount();
+        if (!bwUnit->isAttackFrame() && (getPlayer() != Broodwar->self() || lastPos != getPosition() || !unit()->isMoving() || unit()->getLastCommand().getType() == UnitCommandTypes::Stop))
+            lastMoveFrame = Broodwar->getFrameCount();
         else if (isStuck())
             lastStuckFrame = Broodwar->getFrameCount();
     }
@@ -414,7 +414,7 @@ namespace McRave
         else
             threateningFrames = 0;
 
-        if (threateningFrames > 8)
+        if (threateningFrames > 48)
             lastThreateningFrame = Broodwar->getFrameCount();
         threatening = Broodwar->getFrameCount() - lastThreateningFrame <= min(64, Util::getTime().minutes * 2);
     }
@@ -507,7 +507,7 @@ namespace McRave
         }
 
         // If this is a new order or new command than what we're requesting, we can issue it
-        if (newCommand() && commandsPerFrame[Broodwar->getFrameCount()] < 64) {
+        if (newCommand() && commandsPerFrame[Broodwar->getFrameCount()] < 128) {
             if (cmd == UnitCommandTypes::Move)
                 unit()->move(here);
             if (cmd == UnitCommandTypes::Right_Click_Position)
@@ -515,8 +515,10 @@ namespace McRave
             if (cmd == UnitCommandTypes::Stop)
                 unit()->stop();
             commandsPerFrame[Broodwar->getFrameCount()]++;
+            //circle(Colors::Green);
+            //Broodwar->drawLineMap(getPosition(), here, Colors::Green);
             return true;
-        }
+        }        
         return false;
     }
 
@@ -541,7 +543,7 @@ namespace McRave
         Actions::addAction(unit(), targetUnit.getPosition(), getType(), PlayerState::Self);
 
         // If this is a new order or new command than what we're requesting, we can issue it
-        if (newCommand() && commandsPerFrame[Broodwar->getFrameCount()] < 64) {
+        if (newCommand() && commandsPerFrame[Broodwar->getFrameCount()] < 128) {
             if (cmd == UnitCommandTypes::Attack_Unit)
                 unit()->attack(targetUnit.unit());
             else if (cmd == UnitCommandTypes::Right_Click_Unit)

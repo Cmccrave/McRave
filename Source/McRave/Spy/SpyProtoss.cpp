@@ -148,11 +148,13 @@ namespace McRave::Spy::Protoss {
             if (theSpy.build.name == "2Gate" || theSpy.build.name == "1GateCore") {
 
                 // DT
-                if ((Players::getVisibleCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) >= 1 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) > 0)
-                    || Players::getVisibleCount(PlayerState::Enemy, Protoss_Templar_Archives) >= 1
-                    || Players::getVisibleCount(PlayerState::Enemy, Protoss_Dark_Templar) >= 1
-                    || (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) < 2 && !theSpy.expand.possible && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) >= 1 && Util::getTime() > Time(6, 45)))
-                    theSpy.transition.name = "DT";
+                if (!theSpy.expand.possible) {
+                    if ((Players::getVisibleCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) >= 1 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) > 0)
+                        || Players::getVisibleCount(PlayerState::Enemy, Protoss_Templar_Archives) >= 1
+                        || Players::getVisibleCount(PlayerState::Enemy, Protoss_Dark_Templar) >= 1
+                        || (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) < 2 && !theSpy.expand.possible && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) >= 1 && Util::getTime() > Time(6, 45)))
+                        theSpy.transition.name = "DT";
+                }
 
                 // Speedlot
                 if ((Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 8 && theSpy.build.name == "1GateCore")

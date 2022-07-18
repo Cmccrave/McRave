@@ -12,7 +12,7 @@ namespace McRave::Combat::Clusters {
     {
         // Get closest unit to centroid
         auto closestToCentroid = Util::getClosestUnit(cluster.sharedPosition, PlayerState::Self, [&](auto &u) {
-            return !u->isTargetedBySplash() && !u->isTargetedBySuicide() && !u->globalRetreat() && !u->localRetreat() && find(cluster.units.begin(), cluster.units.end(), u) != cluster.units.end();
+            return !u->isTargetedBySplash() && find(cluster.units.begin(), cluster.units.end(), u) != cluster.units.end() && !u->isTargetedBySuicide() && !u->globalRetreat() && !u->localRetreat();
         });
         if (!closestToCentroid) {
             closestToCentroid = Util::getClosestUnit(cluster.sharedPosition, PlayerState::Self, [&](auto &u) {
@@ -51,7 +51,6 @@ namespace McRave::Combat::Clusters {
                 getCommander(cluster);
 
             if (auto commander = cluster.commander.lock()) {
-                commander->circle(Colors::Red);
                 cluster.typeCounts[commander->getType()]++;
                 cluster.units.push_back(cluster.commander);
                 cluster.sharedDestination = commander->getDestination();

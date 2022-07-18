@@ -302,14 +302,6 @@ namespace McRave::Scouts {
 
         void updateScoutTargets()
         {
-            int i = 0;
-            for (auto &target : scoutTargets) {
-                for (auto &pos : target.positions) {
-                    i++;
-                    Broodwar->drawTextMap(pos, "%d", i);
-                }
-            }
-
             scoutTargets.clear();
             proxyPosition = Positions::Invalid;
 

@@ -98,57 +98,61 @@ namespace McRave::Combat::Destination {
         if (unit.getLocalState() == LocalState::Attack) {
             if (unit.attemptingRunby()) {
                 unit.setDestination(unit.getEngagePosition());
-                Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Red);
+                //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Red);
             }
             else if (unit.getInterceptPosition().isValid()) {
                 unit.setDestination(unit.getInterceptPosition());
-                Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Orange);
+                //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Orange);
             }
             else if (unit.getSurroundPosition().isValid()) {
                 unit.setDestination(unit.getSurroundPosition());
-                Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Yellow);
+                //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Yellow);
             }
             else if (unit.getEngagePosition().isValid()) {
                 unit.setDestination(unit.getEngagePosition());
-                Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Green);
+                //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Green);
             }
             else if (unit.hasTarget()) {
                 unit.setDestination(unit.getTarget().lock()->getPosition());
-                Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Blue);
+                //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Blue);
             }
         }
         else if (unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat) {
-            if (Terrain::getDefendPosition().isValid() && unit.getGlobalState() == GlobalState::Retreat)
-                unit.setDestination(Terrain::getDefendPosition());
+            const auto &retreat = Stations::getClosestRetreatStation(unit);
+            if (retreat) {
+                Broodwar->drawLineMap(unit.getPosition(), retreat->getBase()->Center(), Colors::White);
+                unit.setDestination(Stations::getDefendPosition(retreat));
+                Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Yellow);
+            }
             else {
-                const auto &retreat = Stations::getClosestRetreatStation(unit);
-                retreat ? unit.setDestination(Stations::getDefendPosition(retreat)) : unit.setDestination(Position(BWEB::Map::getMainChoke()->Center()));
+                unit.setDestination(Position(BWEB::Map::getMainChoke()->Center()));
+                Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Red);
             }
         }
         else {
             if (unit.getGoal().isValid()) {
                 unit.setDestination(unit.getGoal());
-                Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Red);
+                //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Red);
             }
             else if (unit.attemptingRegroup()) {
                 unit.setDestination(unit.getCommander().lock()->getPosition());
-                Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Orange);
+                //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Orange);
             }
             else if (unit.attemptingHarass()) {
                 unit.setDestination(Terrain::getHarassPosition());
-                Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Yellow);
+                //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Yellow);
             }
             else if (unit.hasTarget()) {
                 unit.setDestination(unit.getTarget().lock()->getPosition());
-                Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Green);
+                //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Green);
             }
             else if (Terrain::getAttackPosition().isValid() && unit.canAttackGround()) {
                 unit.setDestination(Terrain::getAttackPosition());
-                Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Blue);
+                //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Blue);
             }
             else {
                 getCleanupPosition(unit);
-                Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Purple);
+                //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Purple);
             }
         }
     }

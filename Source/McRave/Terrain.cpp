@@ -297,16 +297,6 @@ namespace McRave::Terrain {
             if (!enemyMain)
                 return;
 
-            const auto commanderInRange = [&](Position here) {
-                auto commander = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) {
-                    return u->getType() == Zerg_Mutalisk;
-                });
-                return commander && ((commander->getPosition().getDistance(harassPosition) < 160.0) ||
-                    (commander->getTilePosition().isValid() && harassPosition.isValid()
-                        && mapBWEM.GetArea(commander->getTilePosition()) && mapBWEM.GetArea(TilePosition(harassPosition))
-                        && mapBWEM.GetArea(commander->getTilePosition()) == mapBWEM.GetArea(TilePosition(harassPosition))));
-            };
-
             // In FFA just hit closest base to us
             if (Players::vFFA() && attackPosition.isValid()) {
                 harassPosition = attackPosition;
@@ -339,46 +329,12 @@ namespace McRave::Terrain {
                 }
             }
 
-            // Switch positions
-            auto switchPosition = timeHarassingHere > 2000 || !harassPosition.isValid() || commanderInRange(harassPosition);
-            if (switchPosition) {
-                timeHarassingHere = 0;
-                harassPosition = Positions::Invalid;
-            }
-            else
-                timeHarassingHere++;
-
-            // Can harass if commander not in range and has defenses <= i
-            const auto suitableStationToHarass = [&](BWEB::Station * station, int i) {
-                return station && !commanderInRange(station->getResourceCentroid()) && Stations::getAirDefenseCount(station) == i && (!Stations::isBaseExplored(station) || BWEB::Map::isUsed(station->getBase()->Location()) != UnitTypes::None);
-            };
-
-            // Can check if we haven't visited recently, but we did explore it
-            const auto suitableStationToCheck = [&](BWEB::Station * station) {
-                return station && (Stations::isBaseExplored(station) && Stations::lastVisible(station) < Broodwar->getFrameCount() - 720);
-            };
-
             // Create a list of valid positions to harass/check
-            set<Position> checkPositions;
-            for (int i = 0; i < 4; i++) {
-
-                // Check for harassing
-                if (suitableStationToHarass(Terrain::getEnemyMain(), i))
-                    checkPositions.insert(Terrain::getEnemyMain()->getResourceCentroid());
-                if (suitableStationToHarass(Terrain::getEnemyNatural(), i))
-                    checkPositions.insert(Terrain::getEnemyNatural()->getResourceCentroid());
-                for (auto &station : Stations::getStations(PlayerState::Enemy)) {
-                    if (suitableStationToHarass(station, i))
-                        checkPositions.insert(station->getResourceCentroid());
-                }
-
-                // Check natural periodically
-                if (Util::getTime() > Time(6, 00) && suitableStationToCheck(Terrain::getEnemyNatural()))
-                    checkPositions.insert(Terrain::getEnemyNatural()->getResourceCentroid());
-
-                if (!checkPositions.empty())
-                    break;
-            }
+            set<BWEB::Station*> stations;
+            stations.insert(Terrain::getEnemyMain());
+            stations.insert(Terrain::getEnemyNatural());
+            for (auto &station : Stations::getStations(PlayerState::Enemy))
+                stations.insert(station);
 
             // Set enemy army if our air size is large enough to break contains (need to expand)
             if (vis(Zerg_Mutalisk) >= 36 && Units::getEnemyArmyCenter().isValid() && Units::getEnemyArmyCenter().getDistance(BWEB::Map::getMainPosition()) < Units::getEnemyArmyCenter().getDistance(Terrain::getEnemyStartingPosition()) && BuildOrder::shouldExpand()) {
@@ -386,26 +342,14 @@ namespace McRave::Terrain {
             }
 
             // Harass all stations by last visited
-            else if (switchPosition) {
+            else {
                 auto best = -1;
-                for (auto &pos : checkPositions) {
-                    auto score = Broodwar->getFrameCount() - Grids::lastVisibleFrame(TilePosition(pos));
-                    Visuals::drawCircle(pos, 10, Colors::Cyan);
+                for (auto &station : stations) {
+                    auto score = (Broodwar->getFrameCount() - Grids::lastVisibleFrame(TilePosition(station->getResourceCentroid()))) / (2 + Stations::getAirDefenseCount(station));
+                    Broodwar->drawTextMap(station->getResourceCentroid(), "%d", score);
                     if (score > best) {
-                        score = best;
-                        harassPosition = pos;
-                    }
-                }
-
-                if (checkPositions.empty()) {
-                    auto distBest = DBL_MAX;
-                    for (auto &station : BWEB::Stations::getStations()) {
-                        auto dist = station.getBase()->Center().getDistance(BWEB::Map::getMainPosition());
-                        auto visitedRecently = Broodwar->getFrameCount() - Stations::lastVisible(&station) < 1500;
-                        if (station.isMain() && !visitedRecently && !Stations::isBaseExplored(&station) && dist < distBest) {
-                            harassPosition = station.getBase()->Center();
-                            distBest = dist;
-                        }
+                        best = score;
+                        harassPosition = station->getResourceCentroid();
                     }
                 }
             }
@@ -696,6 +640,8 @@ namespace McRave::Terrain {
         findHarassPosition();
 
         updateAreas();
+
+        Visuals::drawCircle(harassPosition, 4, Colors::Blue);
 
         for (auto &station : Stations::getStations(PlayerState::Enemy)) {
             Broodwar->drawCircleMap(station->getBase()->Center(), 4, Colors::Green, true);

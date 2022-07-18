@@ -326,7 +326,7 @@ namespace McRave::BuildOrder::Zerg {
             if (Spy::getEnemyTransition() == "Carriers")
                 techOrder ={ Zerg_Mutalisk, Zerg_Hydralisk };
             else if (vsGoonsGols)
-                techOrder ={ Zerg_Mutalisk, Zerg_Hydralisk };
+                techOrder ={ Zerg_Mutalisk };
             else
                 techOrder ={ Zerg_Mutalisk, Zerg_Hydralisk, Zerg_Lurker };
         }
@@ -567,11 +567,11 @@ namespace McRave::BuildOrder::Zerg {
         if (!inOpeningBook) {
             int hatchCount = vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive);
             int pumpLings = 0;
-            if (Players::ZvP() && Util::getTime() > Time(8, 00))
+            if (Players::ZvP() && Util::getTime() > Time(8, 00) && techList.find(Zerg_Hydralisk) == techList.end())
                 pumpLings = 12;
             if (Spy::getEnemyTransition() == "Robo")
                 pumpLings = 12;
-            if (Spy::getEnemyTransition() == "4Gate" && hatchCount >= 4)
+            if ((Spy::getEnemyTransition() == "4Gate" && hatchCount >= 4) || (Spy::getEnemyTransition() == "5GateGoon"&& hatchCount >= 5))
                 pumpLings = 24;
             if (Spy::getEnemyBuild() == "FFE") {
                 if (Spy::getEnemyTransition() == "Speedlot" && Util::getTime() > Time(6, 45) && Util::getTime() < Time(7, 45))
@@ -630,11 +630,11 @@ namespace McRave::BuildOrder::Zerg {
         int limitBy = int(Stations::getStations(PlayerState::Self).size()) * 3;
         unitReservations.clear();
         if (inOpeningBook || techList.size() <= 1) {
-            if (atPercent(Zerg_Spire, 0.50)) {
+            if (atPercent(Zerg_Spire, 0.50) && techUnit == Zerg_Mutalisk) {
                 unitReservations[Zerg_Mutalisk] = max(0, limitBy - total(Zerg_Mutalisk) - int(armyComposition[Zerg_Scourge] > 0.0));
                 unitReservations[Zerg_Scourge] = max(0, 2 * int(armyComposition[Zerg_Scourge] > 0.0) - total(Zerg_Scourge));
             }
-            if (atPercent(Zerg_Hydralisk_Den, 0.6))
+            if (atPercent(Zerg_Hydralisk_Den, 0.6) && techUnit == Zerg_Hydralisk)
                 unitReservations[Zerg_Hydralisk] = max(0, limitBy - total(Zerg_Hydralisk));            
         }
 

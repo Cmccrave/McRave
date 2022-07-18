@@ -63,8 +63,8 @@ namespace McRave::Horizon {
 
             auto &enemyTarget =                 enemy.getTarget().lock();
             auto simRatio =                     0.0;
-            const auto distTarget =             double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getPosition())) - targetDisplacement;
-            const auto distEngage =             double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getEngagePosition())) - targetDisplacement;
+            const auto distTarget =             max(0.0, double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getPosition())) - targetDisplacement);
+            const auto distEngage =             max(0.0, double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getEngagePosition())) - targetDisplacement);
             //const auto distPerp =               perpDist(enemy.getPosition(), unit.getPosition(), unit.getEngagePosition());
             const auto range =                  enemyTarget->getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange();
             const auto enemyReach =             max(enemy.getAirReach(), enemy.getGroundReach());
@@ -102,9 +102,6 @@ namespace McRave::Horizon {
                 simStrengthPerPlayer[enemy.getPlayer()].ground += enemy.getVisibleGroundStrength() * simRatio;
                 simStrengthPerPlayer[enemy.getPlayer()].air += enemy.getVisibleAirStrength() * simRatio;
             }
-
-            if (unit.unit()->isSelected())
-                Broodwar->drawTextMap(enemy.getPosition(), "%.2f", unitToEngage);
         }
 
         for (auto &a : Units::getUnits(PlayerState::Self)) {
@@ -130,9 +127,6 @@ namespace McRave::Horizon {
             addBonus(self, *selfTarget, simRatio);
             simStrengthPerPlayer[self.getPlayer()].ground += self.getVisibleGroundStrength() * simRatio;
             simStrengthPerPlayer[self.getPlayer()].air += self.getVisibleAirStrength() * simRatio;
-
-            if (unit.unit()->isSelected())
-                Broodwar->drawTextMap(self.getPosition(), "%.2f", simRatio);
         }
 
         for (auto &a : Units::getUnits(PlayerState::Ally)) {

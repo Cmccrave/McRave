@@ -215,6 +215,10 @@ namespace McRave::Walls {
 
             // FFE
             if (Spy::getEnemyBuild() == "FFE") {
+
+                if (BuildOrder::getCurrentTransition() == "6HatchHydra")
+                    return 2 * (Util::getTime() > Time(5, 45));
+
                 if (Spy::getEnemyTransition() == "Carriers")
                     return 0;
                 if (Spy::getEnemyTransition() == "5GateGoon" && Util::getTime() < Time(10, 00))

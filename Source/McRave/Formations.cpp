@@ -21,12 +21,9 @@ namespace McRave::Combat::Formations {
                 }
             }
         }
-        auto closestBuilder = Util::getClosestUnit(p, PlayerState::Self, [&](auto &u) {
-            return u->getBuildPosition().isValid();
-        });
+
 
         if (!closestUnit
-            || (closestBuilder && p.getDistance(closestBuilder->getPosition()) < 128.0)
             || Planning::overlapsPlan(*closestUnit, p)
             || Actions::overlapsActions(closestUnit->unit(), p, TechTypes::Spider_Mines, PlayerState::Enemy, 96)
             || !Util::findWalkable(*closestUnit, p))
@@ -37,13 +34,22 @@ namespace McRave::Combat::Formations {
             || closestUnit->getPosition().getDistance(p) < 160.0
             || (cluster.mobileCluster && closestUnit->getPosition().getDistance(p) < 256.0);
 
-        if (inRange) {
-            closestUnit->setFormation(p);
-
-            if (Terrain::inTerritory(PlayerState::Self, closestUnit->getPosition()))
-                Zones::addZone(closestUnit->getFormation(), ZoneType::Engage, 160, 320);
+        if (!inRange) {
+            assignmentsRemaining--;
+            return;
         }
 
+        if (closestUnit->getGlobalState() == GlobalState::Retreat) {
+            auto closestBuilder = Util::getClosestUnit(p, PlayerState::Self, [&](auto &u) {
+                return u->getBuildPosition().isValid();
+            });
+            if (closestBuilder && p.getDistance(closestBuilder->getPosition()) < 128.0)
+                return;
+        }
+        closestUnit->setFormation(p);
+
+        if (Terrain::inTerritory(PlayerState::Self, closestUnit->getPosition()))
+            Zones::addZone(closestUnit->getFormation(), ZoneType::Engage, 160, 320);
         assignmentsRemaining--;
     }
 
@@ -70,7 +76,7 @@ namespace McRave::Combat::Formations {
                 return (u->getType().isBuilding() && u->canAttackGround() && u->getFormation().getDistance(cluster.sharedDestination) < 64.0) || (u->getType().isResourceDepot() && Terrain::isDefendNatural());
             });
             if (closestBuilding)
-                radius = closestBuilding->getPosition().getDistance(cluster.sharedDestination);            
+                radius = closestBuilding->getPosition().getDistance(cluster.sharedDestination);
 
             // Get a retreat point
             auto retreat = Stations::getClosestRetreatStation(*commander);
