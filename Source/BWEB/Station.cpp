@@ -243,13 +243,13 @@ namespace BWEB {
 
         // Get angle of chokepoint
         if (choke && base && (main || natural)) {
-            auto dist = min(480.0, getBase()->Center().getDistance(Position(choke->Center())));
+            auto dist = min(640.0, getBase()->Center().getDistance(Position(choke->Center())));
             baseAngle = fmod(Map::getAngle(make_pair(getBase()->Center(), Position(choke->Center()) + Position(4, 4))), 3.14);
             chokeAngle = fmod(Map::getAngle(make_pair(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2)))), 3.14);
 
             auto diff = baseAngle - chokeAngle;
             diff > 0.7 ? baseAngle -= 1.57 : baseAngle += 1.57;
-            defenseAngle = max(0.0, (baseAngle  * (dist / 480.0)) + (chokeAngle * (480.0 - dist) / 480.0));
+            defenseAngle = max(0.0, (baseAngle  * (dist / 640.0)) + (chokeAngle * (640.0 - dist) / 640.0));
 
             if (base->GetArea()->ChokePoints().size() >= 3) {
                 const BWEM::ChokePoint * validSecondChoke = nullptr;
@@ -272,8 +272,8 @@ namespace BWEB {
         }
 
         // Round to nearest pi/8 rads
-        auto nearestEight = int(round(defenseAngle / 0.3926991));
-        auto angle = nearestEight % 8;
+        auto nearestEight = int(round(defenseAngle / 0.785));
+        auto angle = nearestEight % 4;
 
         // Generate defenses
         if (main)
@@ -281,13 +281,13 @@ namespace BWEB {
         else {
             if (angle == 0)
                 basePlacements ={ {-2, 2}, {-2, 0}, {-2, -2}, {0, 3}, {0, -2}, {2, -2}, {4, -2}, {4, 0}, {4, 2} };   // 0/8                
-            if (angle == 1 || angle == 7)
-                basePlacements ={ {-2, 3}, {-2, 1}, {-2, -1}, {0, -2}, {1, 3}, {2, -2}, {4, -1}, {4, 1}, };  // pi/8                
-            if (angle == 2 || angle == 6)
+            //if (angle == 1 || angle == 7)
+            //    basePlacements ={ {-2, 3}, {-2, 1}, {-2, -1}, {0, -2}, {1, 3}, {2, -2}, {4, -1}, {4, 1}, };  // pi/8                
+            if (angle == 1 || angle == 3)
                 basePlacements ={ {-2, 2}, {-2, 0}, {0, 3}, {0, -2}, {2, -2}, {4, -2}, {4, 0} };   // pi/4                
-            if (angle == 3 || angle == 5)
-                basePlacements ={ {-2, 2}, {-2, 0}, {-1, -2}, {0, 3}, {1, -2}, {2, 3}, {3, -2}, {4, 0} };  // 3pi/8                
-            if (angle == 4)
+            //if (angle == 3 || angle == 5)
+            //    basePlacements ={ {-2, 2}, {-2, 0}, {-1, -2}, {0, 3}, {1, -2}, {2, 3}, {3, -2}, {4, 0} };  // 3pi/8                
+            if (angle == 2)
                 basePlacements ={ {-2, 2}, {-2, 0}, {-2, -2}, {0, 3}, {0, -2}, {2, 3}, {2, -2}, {4, 3}, {4, -2} };   // pi/2
         }
 
@@ -381,9 +381,9 @@ namespace BWEB {
         }
 
         // Label angle
-        //Broodwar->drawTextMap(base->Center() - Position(0, 16), "%c%.2f", Text::White, baseAngle);
-        //Broodwar->drawTextMap(base->Center(), "%c%.2f", Text::White, chokeAngle);
-        //Broodwar->drawTextMap(base->Center() + Position(0, 16), "%c%.2f", Text::White, defenseAngle);
+        Broodwar->drawTextMap(base->Center() - Position(0, 16), "BA: %c%.2f", Text::White, baseAngle);
+        Broodwar->drawTextMap(base->Center(), "CA: %c%.2f", Text::White, chokeAngle);
+        Broodwar->drawTextMap(base->Center() + Position(0, 16), "DA: %c%.2f", Text::White, defenseAngle);
 
         Broodwar->drawBoxMap(Position(base->Location()), Position(base->Location()) + Position(129, 97), color);
         Broodwar->drawTextMap(Position(base->Location()) + Position(4, 84), "%cS", textColor);

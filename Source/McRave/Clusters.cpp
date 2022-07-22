@@ -140,7 +140,6 @@ namespace McRave::Combat::Clusters {
             getCommander(cluster);
 
             if (auto commander = cluster.commander.lock()) {
-                commander->circle(Colors::Red);
                 cluster.sharedPosition = commander->getPosition();
                 cluster.mobileCluster = commander->getGlobalState() != GlobalState::Retreat;
                 cluster.sharedDestination = commander->getDestination();

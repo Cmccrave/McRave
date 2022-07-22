@@ -21,9 +21,14 @@ namespace McRave
         int minutes;
         int seconds;
         int frames;
+        Time(int f) {
+            frames = f;
+            minutes = int(double(f) / 1428.6);
+            seconds = int(double(f) / 23.81) % 60;
+        }
         Time(int m, int s) {
             minutes = m, seconds = s;
-            frames = ((m * 60) + s) * 24;
+            frames = int(23.81 * ((double(m) * 60.0) + double(s)));
         }
         Time() {
             minutes = 999;

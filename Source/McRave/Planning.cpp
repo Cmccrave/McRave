@@ -14,6 +14,7 @@ namespace McRave::Planning {
         bool expansionPlanned = false;
         BWEB::Station * currentExpansion = nullptr;
         BWEB::Station * nextExpansion = nullptr;
+        vector<TilePosition> unreachablePositions;
 
         UnitInfo* getBuilder(UnitType building, Position here)
         {
@@ -27,6 +28,8 @@ namespace McRave::Planning {
             });
             return builder;
         }
+
+        bool isPathable(UnitType building, TilePosition here) { return find(unreachablePositions.begin(), unreachablePositions.end(), here) == unreachablePositions.end(); }
 
         bool creepOrPowerReadyOnArrival(UnitType building, TilePosition here, UnitInfo& builder)
         {
@@ -76,38 +79,7 @@ namespace McRave::Planning {
                     return true;
             }
             return false;
-        }
-
-        bool isPathable(UnitType building, TilePosition here) {
-            //if (isDefensiveType(building))
-                return true;
-
-            const auto insideBlock = [&](TilePosition t) {
-                return Util::rectangleIntersect(Position(here), Position(here) + Position(building.tileSize()), Position(t));
-            };
-
-            auto pathChokes = mapBWEM.GetArea(here)->ChokePoints();
-
-            for (int x = here.x - 1; x < here.x + building.tileWidth() + 1; x++) {
-                for (int y = here.y - 1; y < here.y + building.tileHeight() + 1; y++) {
-                    TilePosition tile = TilePosition(x, y);
-                    if (!BWEB::Map::isWalkable(tile, Zerg_Ultralisk) || BWEB::Map::isUsed(tile) != UnitTypes::None)
-                        continue;
-                    if (insideBlock(tile))
-                        continue;
-
-                    for (auto &choke : pathChokes) {
-                        if (choke->Blocked())
-                            continue;
-                        BWEB::Path path(Position(tile), Position(choke->Center()), Zerg_Ultralisk, false, true);
-                        path.generateJPS([&](auto t) { return path.unitWalkable(t) && !insideBlock(t); });
-                        if (!path.isReachable())
-                            return false;
-                    }
-                }
-            }
-            return true;
-        }
+        }        
 
         bool isPlannable(UnitType building, TilePosition here)
         {
@@ -331,8 +303,8 @@ namespace McRave::Planning {
             // If we are expanding, it must be on an expansion area and be when build order requests one
             const auto expand = Broodwar->self()->getRace() != Races::Zerg
                 || BuildOrder::shouldExpand()
-                || (int(Stations::getStations(PlayerState::Self).size()) <= 1 && BuildOrder::takeNatural())
-                || (int(Stations::getStations(PlayerState::Self).size()) <= 2 && BuildOrder::takeThird());
+                || (int(Stations::getStations(PlayerState::Self).size()) <= 1 && BuildOrder::takeNatural() && !BuildOrder::shouldRamp())
+                || (int(Stations::getStations(PlayerState::Self).size()) <= 2 && BuildOrder::takeThird() && !BuildOrder::shouldRamp());
 
             if (!building.isResourceDepot()
                 || !expand
@@ -442,8 +414,8 @@ namespace McRave::Planning {
 
                 // If we need ground defenses
                 if (Stations::needGroundDefenses(station) > colonies) {
-                    if (station->isMain() && station->getChokepoint()->Center()) {
-                        Position desiredCenter = Position(station->getChokepoint()->Center());
+                    if (station->isMain()) {
+                        Position desiredCenter = Position(station->getResourceCentroid());
                         placement = returnClosest(building, station->getDefenses(), desiredCenter);
                         if (placement.isValid())
                             return true;
@@ -480,27 +452,29 @@ namespace McRave::Planning {
             // Defense placements near walls
             for (auto &[_, wall] : BWEB::Walls::getWalls()) {
                 auto desiredCenter = Position(wall.getChokePoint()->Center());
-                auto desiredRow = 0;
                 auto closestMain = BWEB::Stations::getClosestMainStation(TilePosition(wall.getChokePoint()->Center()));
 
+                // How to dictate first placement position
                 if (wall.getGroundDefenseCount() < 2) {
                     if (closestMain && closestMain->getChokepoint())
                         desiredCenter = Position(closestMain->getChokepoint()->Center());
                     else if (wall.getStation())
                         desiredCenter = Position(wall.getStation()->getBase()->Center());
                 }
-                else if (wall.getStation()) {
-                    desiredCenter = Position(wall.getStation()->getResourceCentroid());
-                }
+
+                // How to dictate row order
+                vector<int> desiredRowOrder ={ 2, 1, 3, 4 };
+                if (Spy::getEnemyOpener() == "10/17" || Spy::getEnemyBuild() == "1GateCore" || Spy::getEnemyBuild() == "FFE")
+                    desiredRowOrder ={ 2, 1, 3, 4 };
 
                 auto closestDefense = Util::getClosestUnit(Position(closestMain->getChokepoint()->Center()), PlayerState::Self, [&](auto &u) {
                     return isDefensiveType(u->getType());
                 });
                 if (closestDefense) {
                     desiredCenter = closestDefense->getPosition();
-                    for (int i = 4; i > 1; i--) {
+                    for (int i = 4; i >= 1; i--) {
                         if (wall.getDefenses(i).find(closestDefense->getTilePosition()) != wall.getDefenses(i).end())
-                            desiredRow = i;
+                            desiredRowOrder.insert(desiredRowOrder.begin(), { i, i - 1, i + 1 });
                     }
                 }
 
@@ -514,34 +488,23 @@ namespace McRave::Planning {
                 if (Walls::needGroundDefenses(wall) > colonies) {
 
                     // Try to place in adjacent rows as existing defenses
-                    if (desiredRow != 0) {
-                        placement = returnClosest(building, wall.getDefenses(desiredRow), desiredCenter);
-                        if (placement.isValid()) {
-                            plannedGround.insert(placement);
-                            return true;
-                        }
-                        placement = returnClosest(building, wall.getDefenses(desiredRow - 1), desiredCenter);
-                        if (placement.isValid()) {
-                            plannedGround.insert(placement);
-                            return true;
-                        }
-                    }
-
-                    // Try to always place in front rows first
-                    auto firstRow = 2;
-                    for (int i = firstRow; i <= 4; i++) {
-                        placement = returnClosest(building, wall.getDefenses(i), desiredCenter);
-                        if (placement.isValid()) {
-                            plannedGround.insert(placement);
-                            return true;
+                    if (!desiredRowOrder.empty()) {
+                        for (auto i : desiredRowOrder) {
+                            placement = returnClosest(building, wall.getDefenses(i), desiredCenter);
+                            if (placement.isValid()) {
+                                plannedGround.insert(placement);
+                                return true;
+                            }
                         }
                     }
 
                     // Resort to just placing a defense in the wall
-                    placement = returnClosest(building, wall.getDefenses(0), desiredCenter);
-                    if (placement.isValid()) {
-                        plannedGround.insert(placement);
-                        return true;
+                    else {
+                        placement = returnClosest(building, wall.getDefenses(0), desiredCenter);
+                        if (placement.isValid()) {
+                            plannedGround.insert(placement);
+                            return true;
+                        }
                     }
                 }
 
@@ -812,7 +775,7 @@ namespace McRave::Planning {
                     auto center = Position(here) + Position(building.tileWidth() * 16, building.tileHeight() * 16);
                     if (!here.isValid())
                         continue;
-                    
+
                     auto builder = getBuilder(building, center);
 
                     // Expired building attempt on current builder
@@ -827,9 +790,9 @@ namespace McRave::Planning {
                                 builder = oldBuilder;
                         }
                     }
-                    
+
                     if (!builder)
-                        Visuals::drawBox(Position(here) + Position(4, 4), Position(here + building.tileSize()) - Position(4, 4), Colors::Red);                    
+                        Visuals::drawBox(Position(here) + Position(4, 4), Position(here + building.tileSize()) - Position(4, 4), Colors::Red);
 
                     if (here.isValid() && builder && Workers::shouldMoveToBuild(*builder, here, building)) {
                         Visuals::drawBox(Position(here) + Position(4, 4), Position(here + building.tileSize()) - Position(4, 4), Colors::White);
@@ -839,8 +802,37 @@ namespace McRave::Planning {
                         buildingsPlanned[here] = building;
 
                         if (buildingTimer.find(here) == buildingTimer.end())
-                            buildingTimer[here] = Broodwar->getFrameCount() + int(BWEB::Map::getGroundDistance(builder->getPosition(), center) / builder->getSpeed()) + 200;                        
+                            buildingTimer[here] = Broodwar->getFrameCount() + int(BWEB::Map::getGroundDistance(builder->getPosition(), center) / builder->getSpeed()) + 200;
                     }
+                }
+            }
+        }
+
+        void updateReachable()
+        {
+            if (!BWEB::Map::getMainChoke()->Center() || !unreachablePositions.empty())
+                return;
+            auto start = Position(BWEB::Map::getMainChoke()->Center());
+
+            const auto reachable = [&](auto &pos) {
+                auto newPath = BWEB::Path(start, pos, Zerg_Drone);
+                newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t); });
+                return newPath.isReachable();
+            };
+
+            for (auto &block : BWEB::Blocks::getBlocks()) {
+                if (Terrain::inTerritory(PlayerState::Self, block.getCenter())) {
+                    if (!reachable(block.getCenter())) {
+                        for_each(block.getLargeTiles().begin(), block.getLargeTiles().end(), [&](auto &t) { unreachablePositions.push_back(t); });
+                        for_each(block.getMediumTiles().begin(), block.getMediumTiles().end(), [&](auto &t) { unreachablePositions.push_back(t); });
+                        for_each(block.getSmallTiles().begin(), block.getSmallTiles().end(), [&](auto &t) { unreachablePositions.push_back(t); });
+                    }
+                }
+            }
+            for (auto &wall : BWEB::Walls::getWalls()) {
+                for (auto &def : wall.second.getDefenses()) {
+                    if (!reachable(Position(def)))
+                        unreachablePositions.push_back(def);                    
                 }
             }
         }
@@ -891,12 +883,25 @@ namespace McRave::Planning {
         }
     }
 
+    void onUnitDestroy(Unit unit)
+    {
+        if (unit->getType().isBuilding())
+            unreachablePositions.clear();
+    }
+
+    void onUnitDiscover(Unit unit)
+    {
+        if (unit->getType().isBuilding())
+            unreachablePositions.clear();
+    }
+
     void onFrame()
     {
         plannedMineral = 0;
         plannedGas = 0;
         expansionPlanned = false;
 
+        updateReachable();
         validateDefenses();
         updateNextExpand();
         updatePlan();

@@ -61,7 +61,7 @@ namespace McRave::Workers {
                             droneCount += mineral->getGathererCount();
                     }
                     if (droneCount >= 2)
-                        continue;                    
+                        continue;
 
                     // Check if worker arrives in time when hatch completes
                     auto closestHatch = Util::getClosestUnit(station->getBase()->Center(), PlayerState::Self, [&](auto &u) {
@@ -96,10 +96,8 @@ namespace McRave::Workers {
                 if (u->getRole() != Role::Combat && u->getRole() != Role::Defender)
                     return false;
 
-                return (unit.isWithinBuildRange() && u->getPosition().getDistance(buildCenter) < u->getGroundReach())
-                    || (mapBWEM.GetArea(unit.getTilePosition()) == mapBWEM.GetArea(unit.getBuildPosition()) && u->getPosition().getDistance(buildCenter) < u->getGroundReach())
-                    || (unit.hasTarget() && u->getPosition().getDistance(unit.getTarget().lock()->getPosition()) < unit.getGroundRange())
-                    || (unit.hasTarget() && u->getPosition().getDistance(unit.getTarget().lock()->getPosition()) < unit.getPosition().getDistance(unit.getTarget().lock()->getPosition()));
+                return (unit.getPosition().getDistance(u->getPosition()) < u->getGroundReach() && u->getPosition().getDistance(buildCenter) < u->getGroundReach())
+                    || (mapBWEM.GetArea(unit.getTilePosition()) == mapBWEM.GetArea(unit.getBuildPosition()) && u->getPosition().getDistance(buildCenter) < u->getGroundReach());
             });
             if (aroundDefenders)
                 return true;
@@ -190,7 +188,7 @@ namespace McRave::Workers {
                 if (newDestination.isValid())
                     unit.setNavigation(newDestination);
             }
-            Visuals::drawPath(unit.getDestinationPath());
+            //Visuals::drawPath(unit.getDestinationPath());
         }
 
         void updateDestination(UnitInfo& unit)

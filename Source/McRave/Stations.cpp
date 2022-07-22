@@ -78,11 +78,15 @@ namespace McRave::Stations
             groundDefenseCount.clear();
             vector<PlayerState> states ={ PlayerState::Enemy, PlayerState::Self };
 
+            for (auto &[station, state] : stations) {
+                Broodwar->drawTextMap(station->getBase()->Center(), "%d", state);
+            }
+
             for (auto &state : states) {
                 for (auto &u : Units::getUnits(state)) {
                     auto &unit = *u;
                     if (unit.getType().isBuilding() && (unit.canAttackAir() || unit.canAttackGround())) {
-                        auto closestStation = getClosestStationAir(unit.getPosition(), PlayerState::Self);
+                        auto closestStation = getClosestStationAir(unit.getPosition(), state);
                         if (closestStation && (unit.getPosition().getDistance(closestStation->getBase()->Center()) < 256.0 || closestStation->getDefenses().find(unit.getTilePosition()) != closestStation->getDefenses().end())) {
                             if (unit.canAttackAir())
                                 airDefenseCount[closestStation]++;
@@ -91,6 +95,10 @@ namespace McRave::Stations
                         }
                     }
                 }
+            }
+
+            for (auto &[station, cnt] : airDefenseCount) {
+                Broodwar->drawTextMap(station->getBase()->Center(), "%d", cnt);
             }
         }
 
@@ -103,7 +111,7 @@ namespace McRave::Stations
                 return;
             }
 
-            for (auto &station : getStations(PlayerState::Self)){
+            for (auto &station : getStations(PlayerState::Self)) {
                 retreatPositions.insert(station);
             }
         }
@@ -164,7 +172,6 @@ namespace McRave::Stations
                     }
                 }
                 defendPositions[&station] = defendPosition;
-                Broodwar->drawLineMap(station.getBase()->Center(), defendPosition, Colors::Grey);
             }
         }
 
@@ -219,16 +226,18 @@ namespace McRave::Stations
 
             if (station->isMain()) {
                 if (Spy::enemyProxy() && Spy::getEnemyBuild() == "2Gate")
-                    return (Util::getTime() > Time(2, 00)) + (Util::getTime() > Time(2, 30)) - groundCount;
+                    return (2 * (Util::getTime() > Time(2, 20))) - groundCount;
                 if (BuildOrder::isProxy() && BuildOrder::getCurrentTransition() == "2HatchLurker")
                     return (Util::getTime() > Time(2, 45)) + (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(4, 15)) - groundCount;
             }
             else if (station->isNatural()) {
             }
             else {
+                if (Spy::getEnemyTransition() == "4Gate")
+                    return 4 - groundCount;
                 if (BuildOrder::getCurrentTransition().find("2Hatch") != string::npos)
                     return 1 - groundCount;
-                if (BuildOrder::getCurrentTransition().find("2Hatch") == string::npos )
+                if (BuildOrder::getCurrentTransition().find("2Hatch") == string::npos)
                     return (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(7, 00)) - groundCount;
                 return (Util::getTime() > Time(7, 30)) + (Util::getTime() > Time(8, 00)) - groundCount;
             }
@@ -437,7 +446,9 @@ namespace McRave::Stations
                 return 1 + (Util::getTime() > Time(5, 15)) - airCount;
             if (Players::ZvZ() && Util::getTime() > Time(4, 15) && Spy::getEnemyTransition() == "1HatchMuta" && BuildOrder::getCurrentTransition() != "1HatchMuta")
                 return 1 - airCount;
-            if (Players::ZvP() && Util::getTime() > Time(4, 15) && !station->isMain() && Spy::getEnemyBuild() == "1GateCore" && Spy::getEnemyTransition() == "Corsair")
+            if (Players::ZvP() && Util::getTime() > Time(4, 35) && !station->isMain() && Spy::getEnemyBuild() == "1GateCore" && Spy::getEnemyTransition() == "Corsair")
+                return 1 - airCount;
+            if (Players::ZvP() && Util::getTime() > Time(5, 00) && !station->isMain() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Corsair" && BuildOrder::getCurrentTransition() == "3HatchMuta")
                 return 1 - airCount;
         }
         return 0;
@@ -508,20 +519,12 @@ namespace McRave::Stations
                     continue;
             }
 
-            // Check if anything targeting this unit is withing reach
-            bool withinTargeterReach = false;
-            for (auto &t : unit.getUnitsInRangeOfThis()) {
-                if (auto targeter = t.lock()) {
-                    auto reach = unit.isFlying() ? targeter->getAirReach() : targeter->getGroundReach();
-                    if (targeter->getPosition().getDistance(position) < reach)
-                        withinTargeterReach = true;
-                    if (targeter->getPosition().getDistance(position) < unit.getPosition().getDistance(position))
-                        withinTargeterReach = true;
-                }
-            }
+            // Check if enemies are closer
+            if (unit.hasSimTarget() && !unit.isFlying() && !Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && unit.getSimTarget().lock()->getPosition().getDistance(position) < unit.getPosition().getDistance(position))
+                continue;
 
             auto dist = position.getDistance(unit.getPosition());
-            if (dist < distBest && !withinTargeterReach) {
+            if (dist < distBest) {
                 bestStation = station;
                 distBest = dist;
             }

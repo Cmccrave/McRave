@@ -23,6 +23,7 @@ namespace McRave::BuildOrder::Zerg {
         pressure =                                  false;
         transitionReady =                           false;
         planEarly =                                 false;
+        gasTrick =                                  false;
 
         gasLimit =                                  gasMax();
         unitLimits[Zerg_Zergling] =                 lingsNeeded_ZvT();
@@ -53,7 +54,7 @@ namespace McRave::BuildOrder::Zerg {
             return 4 + 6 * (Util::getTime() > Time(4, 00));
         if (Spy::enemyPressure() || Spy::getEnemyBuild() == "2Rax")
             return 6;
-        return 2;
+        return 2 + (4 * (Util::getTime() > Time(4, 00)));
     }
 
     void ZvT2HatchMuta()
@@ -75,7 +76,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Hatchery] =                     2 + thirdHatch;
         buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 10) + (vis(Zerg_Spire) > 0);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (2 * atPercent(Zerg_Spire, 0.25));
-        buildQueue[Zerg_Lair] =                         (total(Zerg_Drone) >= 12 && gas(80));
+        buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
         buildQueue[Zerg_Spire] =                        atPercent(Zerg_Lair, 0.80);
 
         // Composition
@@ -86,7 +87,7 @@ namespace McRave::BuildOrder::Zerg {
         else {
             armyComposition[Zerg_Drone] =               0.60;
             armyComposition[Zerg_Zergling] =            com(Zerg_Spire) > 0 ? 0.00 : 0.40;
-            armyComposition[Zerg_Mutalisk] =            com(Zerg_Spire) > 0 ? 0.30 : 0.00;
+            armyComposition[Zerg_Mutalisk] =            com(Zerg_Spire) > 0 ? 0.40 : 0.00;
         }
     }
 
@@ -101,15 +102,15 @@ namespace McRave::BuildOrder::Zerg {
         firstUpgrade =                                  (vis(Zerg_Extractor) >= 2 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
         firstUnit =                                     Zerg_Mutalisk;
         inBookSupply =                                  vis(Zerg_Overlord) < 7 || total(Zerg_Mutalisk) < 9;
-        wantThird =                                     Spy::enemyFastExpand();
+        wantThird =                                     true;
 
-        auto fourthHatch =                              (Spy::enemyFastExpand() && s >= 66) || total(Zerg_Mutalisk) >= 9;
+        auto fourthHatch =                              total(Zerg_Mutalisk) >= 9;
         planEarly =                                     ((Spy::enemyFastExpand() && s >= 60) || atPercent(Zerg_Lair, 0.6)) && wantThird && int(Stations::getStations(PlayerState::Self).size()) < 3;
 
         buildQueue[Zerg_Hatchery] =                     2 + (s >= 26) + fourthHatch;
         buildQueue[Zerg_Extractor] =                    (hatchCount() >= 3) + (s >= 44);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 48) + (atPercent(Zerg_Spire, 0.5) * 3);
-        buildQueue[Zerg_Lair] =                         (total(Zerg_Drone) >= 12 && gas(80));
+        buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
         buildQueue[Zerg_Spire] =                        (s >= 42 && atPercent(Zerg_Lair, 0.80));
 
         // Composition

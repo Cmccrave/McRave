@@ -22,7 +22,6 @@ namespace McRave::Combat::Formations {
             }
         }
 
-
         if (!closestUnit
             || Planning::overlapsPlan(*closestUnit, p)
             || Actions::overlapsActions(closestUnit->unit(), p, TechTypes::Spider_Mines, PlayerState::Enemy, 96)
@@ -73,13 +72,13 @@ namespace McRave::Combat::Formations {
 
             // If we are setting up a static formation, align concave with buildings close by
             auto closestBuilding = Util::getClosestUnit(cluster.sharedDestination, PlayerState::Self, [&](auto &u) {
-                return (u->getType().isBuilding() && u->canAttackGround() && u->getFormation().getDistance(cluster.sharedDestination) < 64.0) || (u->getType().isResourceDepot() && Terrain::isDefendNatural());
+                return (u->getType().isBuilding() && u->canAttackGround() && u->getFormation().getDistance(cluster.sharedDestination) < 64.0 && u->getPosition().getDistance(cluster.sharedDestination) >= 160.0) || (u->getType().isResourceDepot() && Terrain::isDefendNatural());
             });
             if (closestBuilding)
                 radius = closestBuilding->getPosition().getDistance(cluster.sharedDestination);
 
             // Get a retreat point
-            auto retreat = Stations::getClosestRetreatStation(*commander);
+            auto retreat = Terrain::getMyMain();//Stations::getClosestRetreatStation(*commander);
             if (!retreat)
                 continue;
 
@@ -111,7 +110,6 @@ namespace McRave::Combat::Formations {
                         || Util::boxDistance(type, p, type, last) <= 2)
                         return false;
                     concave.positions.push_back(p);
-                    Broodwar->drawCircleMap(p, 2, Colors::Orange);
                     return true;
                 };
 
@@ -143,9 +141,9 @@ namespace McRave::Combat::Formations {
                 else
                     radsNegative -= 3.14 / 180.0;
 
-                if (radsPositive > angle + 1.57)
+                if (radsPositive > angle + 1.0472)
                     stopPositive = true;
-                if (radsNegative < angle - 1.57)
+                if (radsNegative < angle - 1.0472)
                     stopNegative = true;
 
                 if (stopPositive && stopNegative) {

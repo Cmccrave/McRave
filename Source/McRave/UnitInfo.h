@@ -50,6 +50,7 @@ namespace McRave {
         int walkWidth = 0;
         int walkHeight = 0;
 
+        bool saveUnit = false;
         bool proxy = false;
         bool completed = false;
         bool burrowed = false;
@@ -204,16 +205,16 @@ namespace McRave {
         }
         Time timeStartedWhen() {
             int started = frameStartedWhen();
-            return Time(started / 1440, (started / 24) % 60);
+            return Time(started);
 
         }
         Time timeCompletesWhen() {
             int completes = frameCompletesWhen();
-            return Time(completes / 1440, (completes / 24) % 60);
+            return Time(completes);
         }
         Time timeArrivesWhen() {
             int arrival = frameArrivesWhen();
-            return Time(arrival / 1440, (arrival / 24) % 60);
+            return Time(arrival);
         }
 
         // Logic that dictates overriding simulation results

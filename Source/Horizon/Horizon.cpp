@@ -14,18 +14,18 @@ namespace McRave::Horizon {
 
         bool addToSim(UnitInfo& u) {
             if (!u.unit()
-                || (u.getType().isWorker() && ((u.unit()->exists() && u.unit()->getOrder() != Orders::AttackUnit) || !u.hasAttackedRecently() || Util::getTime() < Time(4, 00)))
+                || (u.getType().isWorker() && Util::getTime() > Time(6, 00) && ((u.unit()->exists() && u.unit()->getOrder() != Orders::AttackUnit) || !u.hasAttackedRecently()))
                 || (u.unit()->exists() && !u.unit()->isCompleted())
                 || (u.unit()->exists() && (u.unit()->isStasised() || u.unit()->isMorphing()))
                 || (u.getVisibleAirStrength() <= 0.0 && u.getVisibleGroundStrength() <= 0.0)
                 || (u.getRole() != Role::None && u.getRole() != Role::Combat && u.getRole() != Role::Defender)
                 || !u.hasTarget())
-                return false;            
+                return false;
             return true;
         }
 
         double perpDist(Position p0, Position p1, Position p2) {
-           return abs(double((p2.x - p1.x) * (p1.y - p0.y) - (p1.x - p0.x) * (p2.y - p1.y))) / p1.getDistance(p2);
+            return abs(double((p2.x - p1.x) * (p1.y - p0.y) - (p1.x - p0.x) * (p2.y - p1.y))) / p1.getDistance(p2);
         }
 
         void addBonus(UnitInfo& u, UnitInfo& t, double &simRatio) {
@@ -33,6 +33,8 @@ namespace McRave::Horizon {
                 simRatio *= 2.0;
             if (!u.isFlying() && !t.isFlying() && u.getGroundRange() > 32.0 && Broodwar->getGroundHeight(u.getTilePosition()) > Broodwar->getGroundHeight(TilePosition(t.getEngagePosition())))
                 simRatio *= 2.0;
+            if (u.getType().isWorker() && Util::getTime() < Time(6, 00))
+                simRatio /= 1.5;
             return;
         }
 
@@ -119,6 +121,7 @@ namespace McRave::Horizon {
 
             // If the unit doesn't affect this simulation
             if (self.localRetreat()
+                || self.globalRetreat()
                 || (self.getSpeed() <= 0.0 && self.getEngDist() > -16.0)
                 || (unit.hasTarget() && self.hasTarget() && self.getEngagePosition().getDistance(unitTarget->getPosition()) > reach))
                 continue;

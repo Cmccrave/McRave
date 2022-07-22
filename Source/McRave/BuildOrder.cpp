@@ -188,11 +188,11 @@ namespace McRave::BuildOrder
 
         // Z
         if (type == Zerg_Mutalisk)
-            ready = com(Zerg_Spire) > 0;
+            ready = vis(Zerg_Spire) > 0;
         if (type == Zerg_Hydralisk)
-            ready = com(Zerg_Hydralisk_Den) > 0;
+            ready = vis(Zerg_Hydralisk_Den) > 0;
         if (type == Zerg_Lurker)
-            ready = com(Zerg_Hydralisk_Den) > 0 && com(Zerg_Lair) > 0;
+            ready = vis(Zerg_Hydralisk_Den) > 0 && vis(Zerg_Lair) > 0;
 
         return ready;
     }

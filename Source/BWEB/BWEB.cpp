@@ -39,7 +39,7 @@ namespace BWEB::Map
             // Add overlap for neutrals
             for (auto unit : Broodwar->getNeutralUnits()) {
                 if (unit && unit->exists() && unit->getType().topSpeed() == 0.0)
-                    addReserve(unit->getTilePosition(), unit->getType().tileWidth(), unit->getType().tileHeight());
+                    addReserve(unit->getTilePosition() - TilePosition(1,1), unit->getType().tileWidth() + 2, unit->getType().tileHeight() + 2);
                 if (unit->getType().isBuilding())
                     addUsed(unit->getTilePosition(), unit->getType());
             }

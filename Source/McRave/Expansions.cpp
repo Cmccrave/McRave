@@ -94,6 +94,14 @@ namespace McRave::Expansion {
             if (!parentStation)
                 return;
 
+
+            // Check if we need a gas expansion
+            auto geysersOwned = 0;
+            for (auto &resource : Resources::getMyGas()) {
+                if (resource->getResourceState() == ResourceState::Mineable && resource->getRemainingResources() > 200)
+                    geysersOwned++;
+            }
+
             // Score each station
             auto allowedFirstMineralBase = (Players::vT() || Players::ZvZ() || Players::ZvP()) ? 4 : 3;
             expansionOrder.clear();
@@ -124,6 +132,7 @@ namespace McRave::Expansion {
                         || (Terrain::getEnemyMain() && station == Terrain::getEnemyMain())
                         || (Terrain::getEnemyNatural() && station == Terrain::getEnemyNatural())
                         || (station.getBase()->Geysers().empty() && int(expansionOrder.size()) < allowedFirstMineralBase)
+                        || (station.getBase()->Geysers().empty() && geysersOwned < allowedFirstMineralBase)
                         || (mapBWEM.GetPath(BWEB::Map::getMainPosition(), station.getBase()->Center()).empty() && expansionOrder.size() < 3)
                         || (Terrain::inTerritory(PlayerState::Enemy, station.getBase()->GetArea()))
                         || (find_if(islandStations.begin(), islandStations.end(), [&](auto &s) { return s == &station; }) != islandStations.end()))

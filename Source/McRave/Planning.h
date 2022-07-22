@@ -5,6 +5,8 @@ namespace McRave::Planning {
 
     void onFrame();
     void onStart();
+    void onUnitDestroy(BWAPI::Unit);
+    void onUnitDiscover(BWAPI::Unit);
 
     bool isDefensiveType(BWAPI::UnitType);
     bool isProductionType(BWAPI::UnitType);

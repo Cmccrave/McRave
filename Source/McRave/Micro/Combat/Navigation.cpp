@@ -8,6 +8,7 @@ namespace McRave::Combat::Navigation {
 
     namespace {
         map<UnitInfo*, vector<Position>> lastSimPositions;
+        map<UnitInfo*, vector<weak_ptr<UnitInfo>>> lastSimUnits;
 
         bool lightUnitNeedsRegroup(UnitInfo& unit)
         {
@@ -39,81 +40,97 @@ namespace McRave::Combat::Navigation {
         }
     }
 
-    void updateHarassPath(UnitInfo& unit)
+    void getRegroupPath(UnitInfo& unit)
     {
-        auto regrouping = (unit.attemptingRegroup() && unit.getDestination() == unit.getCommander().lock()->getPosition());
-        auto harassing = (unit.getDestination() == Terrain::getHarassPosition() && unit.attemptingHarass());
+        const auto flyerRegroup = [&](const TilePosition &t) {
+            return Grids::getEAirThreat(Position(t) + Position(16, 16)) * 50.0;
+        };
 
-        // For pathing purposes, we store light air commander sim positions
-        auto &simPositions = lastSimPositions[&unit];
-        if (unit.hasSimTarget()) {
-            auto simTarget = unit.getSimTarget().lock();
-
-            if (find(simPositions.begin(), simPositions.end(), simTarget->getPosition()) == simPositions.end()) {
-                if (simPositions.size() >= 5)
-                    simPositions.pop_back();
-                simPositions.insert(simPositions.begin(), simTarget->getPosition());
-            }
+        const auto closestFriend = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+            return u->getType() == unit.getType() && *u != unit && u->getPosition().getDistance(unit.getPosition()) < 64.0
+                && u->getDestination() == unit.getDestination() && u->getDestinationPath().getTarget() == TilePosition(unit.getDestination());
+        });
+        if (closestFriend) {
+            unit.setDestinationPath(closestFriend->getDestinationPath());
         }
-
-        // Generate a flying path for retreating or regrouping
-        if (!unit.getGoal().isValid() && (unit.globalRetreat() || unit.localRetreat() || unit.getLocalState() == LocalState::Retreat || regrouping)) {
-
-            const auto flyerRegroup = [&](const TilePosition &t) {
-                return Grids::getEAirThreat(Position(t) + Position(16, 16));
-            };
-
+        else {
             BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
             newPath.generateAS(flyerRegroup);
             unit.setDestinationPath(newPath);
-            //unit.circle(Colors::Purple);
         }
+        Visuals::drawPath(unit.getDestinationPath());
+    }
 
-        // Generate a flying path for harassing
-        else if (!unit.getGoal().isValid() && harassing) {
-
-            auto simDistCurrent = unit.hasSimTarget() ? unit.getPosition().getApproxDistance(unit.getSimTarget().lock()->getPosition()) : unit.getPosition().getApproxDistance(unit.getDestination());
-            auto simPosition = unit.hasSimTarget() ? unit.getSimTarget().lock()->getPosition() : unit.getDestination();
-
-            // Generate a flying path for harassing that obeys exploration and staying out of range of threats if possible
-            const auto flyerAttack = [&](const TilePosition &t) {
-                const auto center = Position(t) + Position(16, 16);
-
-                auto d = center.getApproxDistance(simPosition);
-                for (auto &pos : simPositions)
-                    d = min(d, center.getApproxDistance(pos));
-
-                auto dist = unit.getSimState() == SimState::Win ? 1.0 : max(0.01, double(d) - min(simDistCurrent, int(unit.getRetreatRadius() + 64.0)));
-                auto vis = unit.getSimState() == SimState::Win ? 1.0 : clamp(double(Broodwar->getFrameCount() - Grids::lastVisibleFrame(t)) / 960.0, 0.5, 3.0);
-                return 1.00 / (vis * dist);
-            };
-
-            BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
-            newPath.generateAS(flyerAttack);
+    void getGroundPath(UnitInfo& unit)
+    {
+        auto pathPoint = getPathPoint(unit, unit.getDestination());
+        if (!mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(pathPoint)) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(pathPoint)))) {
+            BWEB::Path newPath(unit.getPosition(), pathPoint, unit.getType());
+            newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t); });
             unit.setDestinationPath(newPath);
-            //unit.circle(Colors::Red);
-        }
-
-        // Generate a generic JPS path
-        else {
-            BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
-            newPath.generateJPS([&](const TilePosition &t) { return true; });
-            unit.setDestinationPath(newPath);
-            //unit.circle(Colors::Orange);
         }
     }
 
-    void updateDestinationPath(UnitInfo& unit)
+    void getFlyingPath(UnitInfo& unit)
     {
-        // Generate a new path that obeys collision of terrain and buildings
-        if (!unit.isFlying() && unit.getDestination().isValid() && unit.getDestinationPath().getTiles().empty() && unit.getDestinationPath().getTarget() != TilePosition(unit.getDestination())) {
-            auto pathPoint = getPathPoint(unit, unit.getDestination());
-            if (!mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(pathPoint)) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(pathPoint)))) {
-                BWEB::Path newPath(unit.getPosition(), pathPoint, unit.getType());
-                newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t); });
-                unit.setDestinationPath(newPath);
-            }
-        }
+        BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
+        newPath.generateJPS([&](const TilePosition &t) { return true; });
+        unit.setDestinationPath(newPath);
+    }
+
+    void getHarassPath(UnitInfo& unit)
+    {
+        auto simDistCurrent = unit.hasSimTarget() ? unit.getPosition().getApproxDistance(unit.getSimTarget().lock()->getPosition()) : unit.getPosition().getApproxDistance(unit.getDestination());
+        auto simPosition = unit.hasSimTarget() ? unit.getSimTarget().lock()->getPosition() : unit.getDestination();
+
+        // Generate a flying path for harassing that obeys exploration and staying out of range of threats if possible
+        auto &simPositions = lastSimPositions[&unit];
+        const auto flyerAttack = [&](const TilePosition &t) {
+            const auto center = Position(t) + Position(16, 16);
+
+            auto d = center.getApproxDistance(simPosition);
+            for (auto &pos : simPositions)
+                d = min(d, center.getApproxDistance(pos));
+
+            auto dist = unit.getSimState() == SimState::Win ? 1.0 : max(0.01, double(d) - min(simDistCurrent + 64, int(unit.getRetreatRadius() + 64.0)));
+            auto vis = unit.getSimState() == SimState::Win ? 1.0 : clamp(double(Broodwar->getFrameCount() - Grids::lastVisibleFrame(t)) / 960.0, 0.5, 3.0);
+            return 1.00 / (vis * dist);
+        };
+
+        BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
+        newPath.generateAS(flyerAttack);
+        unit.setDestinationPath(newPath);
+    }
+
+    void updatePath(UnitInfo& unit)
+    {
+        // Check if we need a new path
+        if (!unit.getDestination().isValid() || (!unit.getDestinationPath().getTiles().empty() && unit.getDestinationPath().getTarget() == TilePosition(unit.getDestination())))
+            return;
+
+        auto regrouping = unit.isLightAir() && !unit.getGoal().isValid()
+            && Util::getTime() < Time(15, 00)
+            && ((unit.attemptingRegroup() && unit.getDestination() == unit.getCommander().lock()->getPosition())
+                || unit.getLocalState() == LocalState::Retreat
+                || unit.localRetreat()
+                || unit.globalRetreat());
+        auto harassing = unit.isLightAir() && !unit.getGoal().isValid() && unit.getDestination() == Terrain::getHarassPosition() && unit.attemptingHarass();
+        
+        // Generate a flying path for retreating or regrouping
+        if (regrouping)
+            getRegroupPath(unit);
+
+        // Generate a flying path for harassing
+        else if (harassing)
+            getHarassPath(unit);
+
+        // Generate a generic flying JPS path
+        else if (unit.isFlying())
+            getFlyingPath(unit);
+
+        // Generate a generic ground JPS path
+        else
+            getGroundPath(unit);
     }
 
     void updateNavigation(UnitInfo& unit)
@@ -122,12 +139,13 @@ namespace McRave::Combat::Navigation {
         if (unit.getFormation().isValid() && Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && (unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat)) {
             unit.setNavigation(unit.getFormation());
             return;
-        }            
+        }
 
         // If path is reachable, find a point n pixels away to set as new destination
+        auto dist = unit.isFlying() ? 96.0 : 160.0;
         if (unit.getDestinationPath().isReachable() && unit.getPosition().getDistance(unit.getDestination()) > 96.0) {
             auto newDestination = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
-                return p.getDistance(unit.getPosition()) >= 160.0;
+                return p.getDistance(unit.getPosition()) >= dist;
             });
 
             if (newDestination.isValid())
@@ -135,12 +153,41 @@ namespace McRave::Combat::Navigation {
         }
     }
 
+    void updateSimPositions(UnitInfo& unit)
+    {
+        if (!unit.isLightAir())
+            return;
+
+        auto &simUnits = lastSimUnits[&unit];
+
+        // Remove any expired sim units
+        simUnits.erase(remove_if(simUnits.begin(), simUnits.end(), [&](auto &u) {
+            return u.expired();
+        }), simUnits.end());
+
+        // Add any new sim units
+        if (unit.hasSimTarget()) {
+            auto newSimUnit = find(simUnits.begin(), simUnits.end(), unit.getSimTarget()) == simUnits.end();
+            if (newSimUnit) {
+                if (simUnits.size() >= 10)
+                    simUnits.pop_back();
+                simUnits.insert(simUnits.begin(), unit.getSimTarget());
+            }
+        }
+
+        // For pathing purposes, we store light air commander sim positions
+        auto &simPositions = lastSimPositions[&unit];
+        simPositions.clear();
+        if (unit.hasSimTarget()) {
+            for (auto &sim : simUnits)
+                simPositions.push_back(sim.lock()->getPosition());
+        }
+    }
+
     void update(UnitInfo& unit)
     {
-        if (unit.isLightAir())
-            updateHarassPath(unit);
-        else
-            updateDestinationPath(unit);
+        updateSimPositions(unit);
+        updatePath(unit);
         updateNavigation(unit);
     }
 }

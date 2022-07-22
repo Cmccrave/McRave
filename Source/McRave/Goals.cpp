@@ -116,6 +116,20 @@ namespace McRave::Goals {
                 base = Terran_Command_Center;
             }
 
+            // Before Hydras have upgrades, defend vulnerable bases
+            if (BuildOrder::isTechUnit(Zerg_Hydralisk) && (!Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines) || !Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments))) {
+                auto &stations = Stations::getStations(PlayerState::Self);
+                if (!stations.empty()) {
+                    auto mainStations = int(count_if(stations.begin(), stations.end(), [&](auto& s) { return s->isMain(); }));
+                    auto percentPer = 1.0 / double(stations.size() - mainStations);
+                    for (auto &station : stations) {
+                        if (station->isMain())
+                            continue;
+                        assignPercentToGoal(station->getBase()->Center(), rangedType, percentPer, GoalType::None);
+                    }
+                }
+            }
+
             // Defend my expansions
             if (Stations::getStations(PlayerState::Self).size() >= 3) {
                 for (auto &station : Stations::getStations(PlayerState::Self)) {
@@ -368,11 +382,11 @@ namespace McRave::Goals {
 
             // Assign an Overlord to each main choke
             for (auto &station : Stations::getStations(PlayerState::Self)) {
-                if (station->isMain() && station->getChokepoint())
+                if (station->isMain() && station->getChokepoint() && ((Players::ZvZ() && Players::getStrength(PlayerState::Enemy).airToAir == 0.0) || Stations::getStations(PlayerState::Self).size() >= 2 || Util::getTime() < Time(4, 00)))
                     assignNumberToGoal(station->getChokepoint()->Center(), Zerg_Overlord, 1, GoalType::Escort);
             }
 
-            // Attack enemy expansions with a small force         
+            // Attack enemy expansions with a small force
             if (Util::getTime() > Time(6, 00) || Spy::enemyProxy()) {
                 auto distBest = 0.0;
                 auto posBest = Positions::Invalid;

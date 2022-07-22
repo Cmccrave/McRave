@@ -116,7 +116,7 @@ namespace McRave::Walls {
             auto closestMain = BWEB::Stations::getClosestMainStation(TilePosition(wall.getCentroid()));
 
             auto saturationRatio = clamp((Stations::getSaturationRatio(closestNatural) + Stations::getSaturationRatio(closestMain)), 0.1, 1.0);
-            if (Spy::enemyRush() || Spy::enemyPressure() || Util::getTime() < Time(6, 00))
+            if (Spy::enemyRush() || Spy::enemyPressure() || Util::getTime() < Time(10, 00))
                 return defensesDesired;
             return int(ceil(saturationRatio * double(defensesDesired)));
         }
@@ -148,15 +148,21 @@ namespace McRave::Walls {
 
                 // 4Gate
                 if (Spy::getEnemyTransition() == "4Gate" && Util::getTime() < Time(12, 00)) {
-                    return 1
+                    return (Util::getTime() > Time(3, 40))
                         + (Util::getTime() > Time(4, 00))
-                        + (!skipSunken && Util::getTime() > Time(4, 30))
+                        + (Util::getTime() > Time(4, 20))
+                        + (!skipSunken && Util::getTime() > Time(4, 40))
                         + (!skipSunken && Util::getTime() > Time(5, 00))
-                        + (Util::getTime() > Time(5, 40))
-                        + (Util::getTime() > Time(6, 20))
-                        + (Util::getTime() > Time(7, 00))
+                        + (!skipSunken && Util::getTime() > Time(5, 20))
+                        + (!skipSunken && Util::getTime() > Time(5, 40))
+                        + (Util::getTime() > Time(6, 15))
+                        + (Util::getTime() > Time(7, 30))
                         + (Util::getTime() > Time(8, 00))
+                        + (Util::getTime() > Time(8, 30))
                         + (Util::getTime() > Time(9, 00))
+                        + (Util::getTime() > Time(9, 30))
+                        + (Util::getTime() > Time(10, 00))
+                        + (Util::getTime() > Time(10, 30))
                         ;
                 }
 
@@ -172,8 +178,8 @@ namespace McRave::Walls {
                 // Corsair
                 if (Util::getTime() < Time(8, 30) && Spy::getEnemyTransition() == "Corsair")
                     return 1
-                    + (!skipSunken && Util::getTime() > Time(3, 30))
-                    + (!skipSunken && Util::getTime() > Time(4, 30));
+                    + (!skipSunken && Util::getTime() > Time(4, 30))
+                    + (!skipSunken && Util::getTime() > Time(7, 00));
 
                 // Speedlot
                 if (Util::getTime() < Time(8, 30) && (Spy::getEnemyTransition() == "Speedlot" || Spy::getEnemyTransition() == "ZealotRush"))
@@ -187,12 +193,12 @@ namespace McRave::Walls {
             // 1GateCore
             if (Spy::getEnemyBuild() == "1GateCore" || (Spy::getEnemyBuild() == "Unknown" && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 1)) {
                 if (Util::getTime() < Time(6, 15) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) >= 1)
-                    return (Util::getTime() > Time(3, 40))
+                    return (Util::getTime() > Time(3, 45))
                     + (!skipSunken && Util::getTime() > Time(4, 00))
                     + (!skipSunken && Util::getTime() > Time(4, 20))
                     + noExpandOrTech;
                 else if (Util::getTime() < Time(6, 15))
-                    return 1
+                    return (Util::getTime() > Time(3, 45))
                     + (!skipSunken && Util::getTime() > Time(4, 00))
                     + (!skipSunken && Util::getTime() > Time(4, 40))
                     + noExpandOrTech;
@@ -202,6 +208,8 @@ namespace McRave::Walls {
             if (Spy::getEnemyBuild() == "2Gate" && !Spy::enemyProxy()) {
                 if (Util::getTime() < Time(6, 00) && Spy::getEnemyOpener() == "10/17")
                     return (Util::getTime() > Time(3, 40))
+                    + (!skipSunken && Util::getTime() > Time(4, 00))
+                    + (!skipSunken && Util::getTime() > Time(4, 30))
                     + noExpandOrTech;
                 else if (Util::getTime() < Time(6, 00) && (Spy::getEnemyOpener() == "10/12" || Spy::getEnemyOpener() == "Unknown"))
                     return 1
@@ -209,7 +217,6 @@ namespace McRave::Walls {
                     + noExpandOrTech;
                 else if (Util::getTime() < Time(6, 00) && Spy::getEnemyOpener() == "9/9")
                     return 1
-                    + (Util::getTime() > Time(3, 10))
                     + noExpandOrTech;
             }
 
@@ -229,6 +236,11 @@ namespace McRave::Walls {
                     + (Util::getTime() > Time(7, 00))
                     + (Util::getTime() > Time(8, 00))
                     + (Util::getTime() > Time(9, 00));
+                if (Spy::getEnemyTransition() == "CorsairGoon" && Util::getTime() < Time(10, 00))
+                    return ((Util::getTime() > Time(5, 30))
+                        + (Util::getTime() > Time(6, 15))
+                        + (Util::getTime() > Time(6, 45))
+                        + 2 * (Util::getTime() > Time(7, 15)));
                 if (Spy::getEnemyTransition() == "NeoBisu" && Util::getTime() < Time(6, 30))
                     return ((2 * (Util::getTime() > Time(6, 00))));
                 if (Spy::getEnemyTransition() == "Speedlot" && Util::getTime() < Time(7, 00))
@@ -241,7 +253,10 @@ namespace McRave::Walls {
             return Util::getTime() > Time(2, 40);
         }
 
-        int calcGroundDefZvT(BWEB::Wall& wall) {
+        int calcGroundDefZvT(BWEB::Wall& wall) 
+        {
+            if (Util::getTime() > Time(10, 00))
+                return max(1, (Util::getTime().minutes / 4));
 
             // 2Rax
             if (Spy::getEnemyBuild() == "2Rax") {
@@ -269,9 +284,6 @@ namespace McRave::Walls {
                 if (Spy::getEnemyTransition() == "2Fact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Spy::enemyWalled())
                     return (Util::getTime() > Time(3, 30));
             }
-
-            if (Util::getTime() > Time(10, 00))
-                return max(1, (Util::getTime().minutes / 4));
             return (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(5, 00));
         }
 

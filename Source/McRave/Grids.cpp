@@ -229,7 +229,7 @@ namespace McRave::Grids
                     continue;
 
                 // Prevent running grids if the unit is irrelevant
-                if (unit.hasTarget()) {
+                if (!unit.getType().isBuilding() && unit.hasTarget()) {
                     auto unitTarget = unit.getTarget().lock();
                     auto maxRange = max({ unit.getAirRange(), unit.getGroundRange(), double(unit.getType().sightRange()),
                         unitTarget->getAirRange(), unitTarget->getGroundRange(), double(unitTarget->getType().sightRange()),

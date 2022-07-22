@@ -60,6 +60,8 @@ namespace McRave::Buildings {
 
         void cancel(UnitInfo& building)
         {
+            auto isStation = BWEB::Stations::getClosestStation(building.getTilePosition())->getBase()->Location() == building.getTilePosition();
+
             // Cancelling refineries for our gas trick
             if (BuildOrder::isGasTrick() && building.getType().isRefinery() && !building.unit()->isCompleted() && BuildOrder::buildCount(building.getType()) < vis(building.getType())) {
                 building.unit()->cancelMorph();
@@ -78,14 +80,15 @@ namespace McRave::Buildings {
             }
 
             // Cancelling hatcheries if we're being proxy 2gated
-            if (building.getType() == Zerg_Hatchery && Terrain::getMyNatural() && building.getTilePosition() == Terrain::getMyNatural()->getBase()->Location() && Util::getTime() < Time(4, 00) && Spy::getEnemyBuild() == "2Gate" && Spy::enemyProxy()) {
+            if (building.getType() == Zerg_Hatchery && isStation && Terrain::getMyNatural() && building.getTilePosition() == Terrain::getMyNatural()->getBase()->Location() && Util::getTime() < Time(4, 00) && Spy::getEnemyBuild() == "2Gate" && Spy::enemyProxy()) {
                 building.unit()->cancelConstruction();
                 Events::onUnitCancelBecauseBWAPISucks(building);
             }
 
-            // Cancelling lairs if we're being proxy 2gated
-            if (building.getType() == Zerg_Lair && BuildOrder::isOpener() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyOpener() == "Proxy" && BuildOrder::getCurrentTransition().find("Muta") == string::npos) {
+            // Cancelling 3rds if we're being 1 based
+            if (building.getType() == Zerg_Hatchery && isStation && Terrain::getMyNatural() && Terrain::getMyMain() && building.getTilePosition() != Terrain::getMyNatural()->getBase()->Location() && building.getTilePosition() != Terrain::getMyMain()->getBase()->Location() && Util::getTime() < Time(4, 00) && Spy::getEnemyBuild() != "FFE") {
                 building.unit()->cancelConstruction();
+                Events::onUnitCancelBecauseBWAPISucks(building);
             }
 
             // Cancelling colonies we don't need now
@@ -108,13 +111,13 @@ namespace McRave::Buildings {
                 const auto closestScout = Util::getClosestUnitGround(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
                     return u->getType().isWorker();
                 });
-                if (closestScout && com(Zerg_Hatchery) >= 2 && mapBWEM.GetArea(closestScout->getTilePosition()) == BWEB::Map::getMainArea())
+                if (closestScout && Stations::getStations(PlayerState::Self).size() >= 2 && mapBWEM.GetArea(closestScout->getTilePosition()) == BWEB::Map::getMainArea())
                     morphTile = BWEB::Map::getNaturalTile();
 
                 // Extra larva timings (main): 3:02, 3:31, 4:00
                 if (building.getTilePosition() == morphTile) {
                     if (morphTile == BWEB::Map::getMainTile()) {
-                        if ((Util::getTime() >= Time(3, 02) && BuildOrder::getCurrentTransition().find("1Hatch") != string::npos)
+                        if (Util::getTime() >= Time(3, 02)
                             || (Util::getTime() >= Time(3, 31) && BuildOrder::getCurrentTransition().find("2Hatch") != string::npos)
                             || (Util::getTime() >= Time(4, 00) && BuildOrder::getCurrentTransition().find("3Hatch") != string::npos)
                             || Players::ZvZ())

@@ -87,7 +87,7 @@ namespace McRave::Pathing {
                 auto trapTowards = Terrain::getEnemyStartingPosition();
                 if (BWEB::Map::getNaturalChoke())
                     trapTowards = Position(BWEB::Map::getNaturalChoke()->Center());
-                if (BWEB::Map::getMainChoke() && (unit.isThreatening() || Util::getTime() < Time(4, 30)))
+                if (BWEB::Map::getMainChoke() && (unit.isThreatening() || BuildOrder::isPlayPassive() || Util::getTime() < Time(6, 30)))
                     trapTowards = Position(BWEB::Map::getMainChoke()->Center());
                 else if (unit.getPosition().isValid() && Terrain::getEnemyStartingPosition().isValid()) {
                     auto path = mapBWEM.GetPath(unit.getPosition(), Terrain::getEnemyStartingPosition());
@@ -129,12 +129,11 @@ namespace McRave::Pathing {
 
                     // Get time to arrive to the surround position
                     if (closestTargeter) {
-                        auto framesToArrive = closestTargeter->getPosition().getDistance(pos) / closestTargeter->getSpeed();
+                        auto framesToArrive = clamp(1.0, (closestTargeter->getPosition().getDistance(pos) / closestTargeter->getSpeed() - unit.getSpeed()), 128.0);
                         auto correctedPos = pos + Position(int(unit.unit()->getVelocityX() * framesToArrive), int(unit.unit()->getVelocityY() * framesToArrive));
 
                         if (Util::findWalkable(*closestTargeter, correctedPos)) {
                             closestTargeter->setSurroundPosition(correctedPos);
-                            Broodwar->drawLineMap(closestTargeter->getPosition(), correctedPos, Colors::Green);
                         }
                     }
                 }

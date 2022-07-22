@@ -396,7 +396,7 @@ namespace McRave::Learning {
                     return;
                 }
                 if (Players::ZvZ()) {
-                    BuildOrder::setLearnedBuild("PoolHatch", "12Pool", "2HatchMuta");
+                    BuildOrder::setLearnedBuild("PoolLair", "9Pool", "1HatchMuta");
                     return;
                 }
                 if (Players::ZvT()) {
@@ -404,7 +404,7 @@ namespace McRave::Learning {
                     return;
                 }
                 if (Players::ZvP()) {
-                    BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "3HatchMuta");
+                    BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "2HatchMuta");
                     return;
                 }
             }

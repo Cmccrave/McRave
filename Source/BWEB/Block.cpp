@@ -300,22 +300,22 @@ namespace BWEB::Blocks
                 }
             }
 
-            // Check if this Block would not be reachable
-            for (auto &[tile, piece] : pieces) {
-                if (piece == Piece::Large && !productionReachable(tile))
-                    return false;
-            }
+            //// Check if this Block would not be reachable
+            //for (auto &[tile, piece] : pieces) {
+            //    if (piece == Piece::Large && !productionReachable(tile))
+            //        return false;
+            //}
 
-            // Check if placing a Block here will prevent other Blocks from being reachable
-            for (auto &block : allBlocks) {
-                if (Map::mapBWEM.GetArea(block.getTilePosition()) != Map::mapBWEM.GetArea(here))
-                    continue;
+            //// Check if placing a Block here will prevent other Blocks from being reachable
+            //for (auto &block : allBlocks) {
+            //    if (Map::mapBWEM.GetArea(block.getTilePosition()) != Map::mapBWEM.GetArea(here))
+            //        continue;
 
-                for (auto &large : block.getLargeTiles()) {
-                    if (!productionReachable(large))
-                        return false;
-                }
-            }
+            //    for (auto &large : block.getLargeTiles()) {
+            //        if (!productionReachable(large))
+            //            return false;
+            //    }
+            //}
 
             // Check if placing a Block here will prevent other Stations from being reachable
             if (type != BlockType::Proxy) {
@@ -529,7 +529,7 @@ namespace BWEB::Blocks
                         if (Broodwar->self()->getRace() == Races::Zerg) {
                             if (mediumCount + smallCount > 0/* && largeCount == 0*/)
                                 continue;
-                            if (piecePerArea[area].pieces[Piece::Large] + largeCount >= 4)
+                            if (piecePerArea[area].pieces[Piece::Large] + largeCount >= 6)
                                 continue;
                         }
 

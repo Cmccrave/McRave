@@ -34,6 +34,7 @@ namespace McRave::Scouts {
         map<UnitType, int> currentScoutTypeCounts;
         map<UnitType, int> desiredScoutTypeCounts;
         int scoutDeadFrame = -5000;
+        bool info = false;
         bool fullScout = false;
         bool sacrifice = false;
         bool workerScoutDenied = false;
@@ -164,18 +165,25 @@ namespace McRave::Scouts {
                     || Spy::getEnemyBuild() == "1GateCore")
                     desiredScoutTypeCounts[Zerg_Drone] = 0;
 
-                // No overlord scouting main when encountering the following situations
-                if (Players::getStrength(PlayerState::Enemy).groundToAir > 0.0
+                auto enemyAir = Players::getStrength(PlayerState::Enemy).groundToAir > 0.0
                     || Players::getStrength(PlayerState::Enemy).airToAir > 0.0
                     || Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0
+                    || Players::getVisibleCount(PlayerState::Enemy, Protoss_Stargate) > 0
                     || Players::getVisibleCount(PlayerState::Enemy, Zerg_Spire) > 0
-                    || Players::ZvT()) {
-                    onlyNaturalScout = true;
-                    desiredScoutTypeCounts[Zerg_Overlord] = 1;
+                    || Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk_Den) > 0
+                    || Players::ZvT();
+
+                // No overlord scouting main when encountering the following situations
+                if (!Players::ZvP() || Spy::enemyFastExpand()) {
+                    if (enemyAir) {
+                        onlyNaturalScout = true;
+                        desiredScoutTypeCounts[Zerg_Overlord] = 1;
+                    }
                 }
 
                 // If we need to sacrifice an Overlord, ensure we have at least 1
-                sacrifice = Players::ZvP() && Terrain::getEnemyStartingPosition().isValid() && Terrain::getEnemyNatural() && Broodwar->isExplored(Terrain::getEnemyNatural()->getBase()->Location()) && !Spy::enemyFastExpand() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) < 3 && Spy::getEnemyTransition() == "Unknown";
+                sacrifice = Players::ZvP() && Terrain::getEnemyStartingPosition().isValid() && Terrain::getEnemyNatural()
+                    && Broodwar->isExplored(Terrain::getEnemyNatural()->getBase()->Location()) && !Spy::enemyFastExpand() && Spy::getEnemyTransition() == "Unknown";
                 if (sacrifice) {
                     onlyNaturalScout = false;
                     desiredScoutTypeCounts[Zerg_Overlord] = 1;
@@ -183,7 +191,7 @@ namespace McRave::Scouts {
 
                 if (total(Zerg_Mutalisk) > 0
                     || Spy::getEnemyBuild() == "FFE"
-                    || Players::getVisibleCount(PlayerState::Enemy, Protoss_Stargate) > 0
+                    || (Spy::getEnemyTransition() != "Unknown" && enemyAir)
                     || (Players::ZvZ() && Util::getTime() > Time(5, 00)))
                     desiredScoutTypeCounts[Zerg_Overlord] = 0;
             }
@@ -335,7 +343,7 @@ namespace McRave::Scouts {
                 // Add each enemy pylon as a target
                 for (auto &unit : Units::getUnits(PlayerState::Enemy)) {
                     if (unit->getType() == Protoss_Pylon && fullScout && unit->getTilePosition().isValid() && mapBWEM.GetArea(unit->getTilePosition()) == Terrain::getEnemyMain()->getBase()->GetArea())
-                        addTarget(unit->getPosition(), ScoutType::Main);
+                        addTarget(unit->getPosition(), ScoutType::Main, 160.0);
                 }
 
                 // Add main choke as a target
@@ -417,7 +425,6 @@ namespace McRave::Scouts {
                     }
                 }
             }
-            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
             unit.setNavigation(unit.getDestination());
         }
 
@@ -473,6 +480,7 @@ namespace McRave::Scouts {
                     : lhs.lock()->getPosition().getDistance(BWEB::Map::getMainPosition()) > rhs.lock()->getPosition().getDistance(BWEB::Map::getMainPosition());
             });
 
+            info = false;
             for (auto &u : sortedScouts) {
                 if (auto unit = u.lock()) {
                     updateDestination(*unit);
@@ -480,6 +488,8 @@ namespace McRave::Scouts {
                     updateDecision(*unit);
                     if (unit->getType() == Zerg_Overlord)
                         firstOverlord = false;
+                    if (Terrain::inTerritory(PlayerState::Enemy, unit->getPosition()))
+                        info = true;
                 }
             }
         }
@@ -542,6 +552,7 @@ namespace McRave::Scouts {
         scoutDeadFrame = Broodwar->getFrameCount();
     }
 
+    bool gatheringInformation() { return info; }
     bool gotFullScout() { return fullScout; }
     bool isSacrificeScout() { return sacrifice; }
     bool enemyDeniedScout() { return workerScoutDenied; }

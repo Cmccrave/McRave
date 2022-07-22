@@ -15,7 +15,7 @@ namespace McRave::Combat::State {
         auto unitTarget = unit.getTarget().lock();
         const auto distSim = double(Util::boxDistance(unit.getType(), unit.getPosition(), simTarget->getType(), simTarget->getPosition()));
         const auto distTarget = double(Util::boxDistance(unit.getType(), unit.getPosition(), unitTarget->getType(), unitTarget->getPosition()));
-        const auto insideRetreatRadius = distSim < unit.getRetreatRadius() && !unit.attemptingRunby();
+        const auto insideRetreatRadius = distSim < unit.getRetreatRadius();
         const auto insideEngageRadius = distTarget < unit.getEngageRadius() && unit.getGlobalState() == GlobalState::Attack;
         const auto atHome = Terrain::inTerritory(PlayerState::Self, unitTarget->getPosition()) && mapBWEM.GetArea(unit.getTilePosition()) == mapBWEM.GetArea(unitTarget->getTilePosition()) && !Players::ZvZ();
         const auto reAlign = (unit.getType() == Zerg_Mutalisk && !unit.canStartAttack() && !unit.isWithinAngle(*unitTarget) && Util::boxDistance(unit.getType(), unit.getPosition(), unitTarget->getType(), unitTarget->getPosition()) <= 64.0);
@@ -25,28 +25,25 @@ namespace McRave::Combat::State {
         if ((Actions::isInDanger(unit, unit.getPosition()) && !unit.isTargetedBySuicide())
             || (Actions::isInDanger(unit, unit.getEngagePosition()) && insideEngageRadius && !unit.isTargetedBySuicide())
             || (unit.isNearSuicide() && unit.isFlying())
-            || reAlign)
+            || reAlign) {
             unit.setLocalState(LocalState::Retreat);
+        }
 
         // Regardless of local decision, determine if Unit needs to attack or retreat
         else if (unit.globalEngage()) {
             unit.setLocalState(LocalState::Attack);
-            unit.circle(Colors::Green);
         }
         else if (unit.globalRetreat()) {
-            unit.circle(Colors::Red);
             unit.setLocalState(LocalState::Retreat);
         }
 
         // If within local decision range, determine if Unit needs to attack or retreat
-        else if ((insideEngageRadius || atHome) && (unit.localEngage() || winningState))
+        else if ((insideEngageRadius || atHome) && (unit.localEngage() || winningState)) {
             unit.setLocalState(LocalState::Attack);
-        else if ((insideRetreatRadius || atHome) && (unit.localRetreat() || unit.getSimState() == SimState::Loss))
+        }
+        else if ((insideRetreatRadius || atHome) && (!unit.attemptingRunby() || Terrain::inTerritory(PlayerState::Enemy, unit.getPosition())) && (unit.localRetreat() || unit.getSimState() == SimState::Loss)) {
             unit.setLocalState(LocalState::Retreat);
-
-        //// Check if we shouldn't issue any commands
-        //else if (insideEngageRadius && !unit.isFlying())
-        //    unit.setLocalState(LocalState::Hold);
+        }
 
         // Default state
         else
@@ -59,11 +56,14 @@ namespace McRave::Combat::State {
             return;
 
         // Determine if we need to create a new checking unit to try and detect the enemy build
-        if (unit.hasTarget() && Util::getTime() > Time(4, 00)) {
+        if (unit.hasTarget() && Util::getTime() > Time(3, 45)) {
             auto unitTarget = unit.getTarget().lock();
             const auto needEnemyCheck = !Players::ZvZ() && !Spy::enemyRush() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) <= 0
                 && Spy::getEnemyTransition() == "Unknown" && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(6, 00)
-                && Broodwar->getFrameCount() - unitTarget->getLastVisibleFrame() > 120;
+                && Broodwar->getFrameCount() - unitTarget->getLastVisibleFrame() > 120
+                && Terrain::getEnemyMain()
+                && !Scouts::gatheringInformation()
+                && Broodwar->getFrameCount() - Grids::lastVisibleFrame(Terrain::getEnemyMain()->getBase()->Location()) > 120;
 
             if (needEnemyCheck) {
                 unit.setGlobalState(GlobalState::Attack);
@@ -92,9 +92,10 @@ namespace McRave::Combat::State {
         // Zerg
         else if (Broodwar->self()->getRace() == Races::Zerg) {
             if (BuildOrder::isRush()
-                || Broodwar->getGameType() == GameTypes::Use_Map_Settings)
+                || Broodwar->getGameType() == GameTypes::Use_Map_Settings
+                || unit.attemptingRunby())
                 unit.setGlobalState(GlobalState::Attack);
-            else if ((Broodwar->getFrameCount() < 15000 && BuildOrder::isPlayPassive() && !unit.attemptingRunby() && !unit.getGoal().isValid())
+            else if ((Broodwar->getFrameCount() < 15000 && BuildOrder::isPlayPassive() && !unit.getGoal().isValid())
                 || (Players::ZvT() && Util::getTime() < Time(12, 00) && Util::getTime() > Time(3, 30) && unit.getType() == Zerg_Zergling && !Spy::enemyGreedy() && (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled() || Players::getCompleteCount(PlayerState::Enemy, Terran_Vulture) > 0))
                 || (Players::ZvZ() && Util::getTime() < Time(10, 00) && unit.getType() == Zerg_Zergling && Players::getCompleteCount(PlayerState::Enemy, Zerg_Zergling) > com(Zerg_Zergling))
                 || (Players::ZvZ() && Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(2, 45))
@@ -102,7 +103,7 @@ namespace McRave::Combat::State {
                 || (BuildOrder::isProxy() && unit.getType() == Zerg_Hydralisk)
                 || (unit.getType() == Zerg_Hydralisk && BuildOrder::getCompositionPercentage(Zerg_Lurker) >= 1.00)
                 || (unit.getType() == Zerg_Hydralisk && !unit.getGoal().isValid() && (!Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines) || !Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments)))
-                || (!Players::ZvZ() && unit.isLightAir() && com(Zerg_Mutalisk) < 5 && total(Zerg_Mutalisk) < 9))
+                || (!Players::ZvZ() && unit.isLightAir() && com(Zerg_Mutalisk) < (Stations::getStations(PlayerState::Self).size() >= 2 ? 5 : 3) && total(Zerg_Mutalisk) < 9))
                 unit.setGlobalState(GlobalState::Retreat);
             else
                 unit.setGlobalState(GlobalState::Attack);

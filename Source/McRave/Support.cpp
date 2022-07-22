@@ -10,8 +10,11 @@ namespace McRave::Support {
 
         constexpr tuple commands{ Command::misc, Command::special, Command::escort };
 
+        set<Position> assignedOverlords;
+
         void updateCounters()
         {
+            assignedOverlords.clear();
         }
 
         void updateDestination(UnitInfo& unit)
@@ -20,7 +23,12 @@ namespace McRave::Support {
             auto closestSpore = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                 return u->getType() == Zerg_Spore_Colony;
             });
-            auto enemyAir = Spy::getEnemyTransition() == "Corsair" || Spy::getEnemyTransition() == "2PortWraith" || Players::getStrength(PlayerState::Enemy).airToAir > 0.0;
+            auto enemyAir = Spy::getEnemyTransition() == "Corsair"
+                || Spy::getEnemyTransition() == "2PortWraith"
+                || Players::getStrength(PlayerState::Enemy).airToAir > 0.0;
+
+            if (Util::getTime() < Time(7, 00) && Stations::getStations(PlayerState::Self).size() >= 2 && !Players::ZvZ())
+                closestStation = Terrain::getMyNatural();
 
             // Send Overlords to safety from enemy air
             if (unit.getType() == Zerg_Overlord && closestSpore && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 || !unit.isHealthy())) {
@@ -42,20 +50,6 @@ namespace McRave::Support {
             endloop:;
             }
 
-            // Space them out near the natural
-            else if (unit.getType() == Zerg_Overlord && Stations::ownedBy(Terrain::getMyNatural()) == PlayerState::Self && enemyAir && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 || !unit.isHealthy())) {
-                auto natDist = Terrain::getMyNatural()->getBase()->Center().getDistance(Position(Terrain::getMyNatural()->getChokepoint()->Center()));
-                auto chokeCenter = Position(Terrain::getMyNatural()->getChokepoint()->Center());
-                unit.setDestination(Terrain::getMyNatural()->getBase()->Center());
-                for (auto x = -2; x < 2; x++) {
-                    for (auto y = -2; y < 2; y++) {
-                        auto position = Terrain::getMyNatural()->getBase()->Center() + Position(96 * x, 96 * y);
-                        if (position.getDistance(chokeCenter) > natDist && !Actions::overlapsActions(unit.unit(), position, unit.getType(), PlayerState::Self, 32))
-                            unit.setDestination(position);
-                    }
-                }
-            }
-
             // Set goal as destination
             else if (unit.getGoal().isValid())
                 unit.setDestination(unit.getGoal());
@@ -65,23 +59,13 @@ namespace McRave::Support {
                 auto highestCluster = 0.0;
                 auto types ={ Zerg_Hydralisk, Zerg_Ultralisk, Protoss_Dragoon, Terran_Marine, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode };
 
-                for (int radius = 64; radius > 0; radius-=8) {
-                    for (auto &cluster : Combat::Clusters::getClusters()) {
-                        if (auto commander = cluster.commander.lock()) {
-                            if (find(types.begin(), types.end(), commander->getType()) == types.end())
-                                continue;
+                auto closestPartner = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+                    return find(types.begin(), types.end(), u->getType()) != types.end() && assignedOverlords.find(u->getPosition()) == assignedOverlords.end();
+                });
 
-                            const auto position = commander->getPosition();
-                            const auto score = cluster.units.size() / (position.getDistance(Terrain::getAttackPosition()) * position.getDistance(unit.getPosition()));
-                            if (score > highestCluster && !commander->isFlying() && !Actions::overlapsActions(unit.unit(), position, unit.getType(), PlayerState::Self, radius)) {
-                                highestCluster = score;
-                                unit.setDestination(position);
-                            }
-                        }
-                    }
-
-                    if (highestCluster > 0.0)
-                        break;
+                if (closestPartner) {
+                    assignedOverlords.insert(closestPartner->getPosition());
+                    unit.setDestination(closestPartner->getPosition());
                 }
 
                 // Move detectors between target and unit vs Terran
@@ -98,6 +82,21 @@ namespace McRave::Support {
                     }
                 }
             }
+
+            // Space them out near the station
+            else if (unit.getType() == Zerg_Overlord && closestStation && closestStation->getChokepoint() && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 || !unit.isHealthy() || enemyAir)) {
+                auto natDist = closestStation->getBase()->Center().getDistance(Position(closestStation->getChokepoint()->Center()));
+                auto chokeCenter = Position(closestStation->getChokepoint()->Center());
+                unit.setDestination(closestStation->getBase()->Center());
+                for (auto x = -2; x < 2; x++) {
+                    for (auto y = -2; y < 2; y++) {
+                        auto position = closestStation->getBase()->Center() + Position(96 * x, 96 * y);
+                        if (position.getDistance(chokeCenter) > natDist && !Actions::overlapsActions(unit.unit(), position, unit.getType(), PlayerState::Self, 32))
+                            unit.setDestination(position);
+                    }
+                }
+            }
+
             else if (Terrain::getMyNatural() && Stations::needAirDefenses(Terrain::getMyNatural()) > 0)
                 unit.setDestination(Terrain::getMyNatural()->getBase()->Center());
             else if (closestStation)
@@ -105,12 +104,39 @@ namespace McRave::Support {
 
             if (!unit.getDestination().isValid())
                 unit.setDestination(BWEB::Map::getMainPosition());
+        }
 
-            // Shorten destination to 96 pixels in front for navigation
-            auto dir = (unit.getDestination() - unit.getPosition()) * 96 / unit.getPosition().getDistance(unit.getDestination());
-            unit.setDestination(unit.getPosition() + dir);
+        void updatePath(UnitInfo& unit)
+        {
+            // Check if we need a new path
+            if (!unit.getDestination().isValid() || (!unit.getDestinationPath().getTiles().empty() && unit.getDestinationPath().getTarget() == TilePosition(unit.getDestination())))
+                return;
+
+            if (unit.getType() == Zerg_Overlord && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0) {
+                const auto xMax = Broodwar->mapWidth() - 4;
+                const auto yMax = Broodwar->mapHeight() - 4;
+                const auto centerDist = min(unit.getDestination().getDistance(mapBWEM.Center()), unit.getPosition().getDistance(mapBWEM.Center()));
+                BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
+                newPath.generateJPS([&](const TilePosition &t) { return t.x < 4 || t.y < 4 || t.x > xMax || t.y > yMax || Position(t).getDistance(mapBWEM.Center()) >= centerDist; });
+                unit.setDestinationPath(newPath);
+            }
+            Visuals::drawPath(unit.getDestinationPath());
+            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Green);
+        }
+
+        void updateNavigation(UnitInfo& unit)
+        {
+            // If path is reachable, find a point n pixels away to set as new destination
             unit.setNavigation(unit.getDestination());
-            Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Red);
+            auto dist = unit.isFlying() ? 96.0 : 160.0;
+            if (unit.getDestinationPath().isReachable() && unit.getPosition().getDistance(unit.getDestination()) > 96.0) {
+                auto newDestination = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
+                    return p.getDistance(unit.getPosition()) >= dist;
+                });
+
+                if (newDestination.isValid())
+                    unit.setNavigation(newDestination);
+            }
         }
 
         void updateDecision(UnitInfo& unit)
@@ -139,6 +165,8 @@ namespace McRave::Support {
                 UnitInfo &unit = *u;
                 if (unit.getRole() == Role::Support && unit.unit()->isCompleted()) {
                     updateDestination(unit);
+                    updatePath(unit);
+                    updateNavigation(unit);
                     updateDecision(unit);
                 }
             }

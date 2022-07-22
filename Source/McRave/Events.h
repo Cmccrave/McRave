@@ -9,6 +9,7 @@ namespace McRave::Events
     {
         BWEB::Map::onUnitDiscover(unit);
         Players::storeUnit(unit);
+        Planning::onUnitDiscover(unit);
 
         if (unit->getType().isResourceDepot())
             Stations::storeStation(unit);
@@ -27,6 +28,7 @@ namespace McRave::Events
     {
         BWEB::Map::onUnitDestroy(unit);
         Players::removeUnit(unit);
+        Planning::onUnitDestroy(unit);
 
         if (unit->getType().isResourceDepot())
             Stations::removeStation(unit);

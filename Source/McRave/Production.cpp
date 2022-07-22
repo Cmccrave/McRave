@@ -209,7 +209,7 @@ namespace McRave::Production {
         bool isSuitable(UnitType unit)
         {
             if (unit.isWorker())
-                return com(unit) < 70 && (!Resources::isMineralSaturated() || !Resources::isGasSaturated());
+                return vis(unit) < 70 && (!Resources::isMineralSaturated() || !Resources::isGasSaturated());
 
             if (unit.getRace() == Races::Zerg) {
                 if (unit == Zerg_Defiler)
@@ -747,7 +747,7 @@ namespace McRave::Production {
                         return unit.getType() == Zerg_Larva && unit.unit()->getHatchery() && unit.unit()->getHatchery()->getTilePosition() == station->getBase()->Location();
                     });
                     if (larvaCount >= 3 && bestType != Zerg_Drone)
-                        saturation =  1.0 / 24.0;
+                        saturation = 1.0 / 24.0;
 
                     stations.emplace(saturation * larvaCount, station);
                 }
@@ -820,7 +820,7 @@ namespace McRave::Production {
 
             auto larvaRequirements = BuildOrder::getUnitReservation(Zerg_Mutalisk) + BuildOrder::getUnitReservation(Zerg_Hydralisk) + (BuildOrder::getUnitReservation(Zerg_Scourge) / 2);
 
-            if ((type != Zerg_Overlord && vis(Zerg_Larva) < larvaRequirements)
+            if ((type != Zerg_Overlord && vis(Zerg_Larva) <= larvaRequirements)
                 || Broodwar->self()->minerals() - type.mineralPrice() < larvaMinCost
                 || Broodwar->self()->gas() - type.gasPrice() < larvaGasCost)
                 return 0.0;

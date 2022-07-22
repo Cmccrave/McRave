@@ -116,7 +116,11 @@ namespace McRave::Command
 
         // Lurker burrowing
         else if (unit.getType() == Zerg_Lurker) {
-            if (!unit.unit()->isBurrowed() && unit.getLocalState() == LocalState::Attack && unit.getPosition().getDistance(unit.getEngagePosition()) < 16.0) {
+            if (!unit.unit()->isBurrowed() && unit.getFormation().isValid() && unit.getPosition().getDistance(unit.getFormation()) < 64.0) {
+                unit.unit()->burrow();
+                return true;
+            }
+            else if (!unit.unit()->isBurrowed() && unit.getLocalState() == LocalState::Attack && unit.getPosition().getDistance(unit.getEngagePosition()) < 16.0) {
                 unit.unit()->burrow();
                 return true;
             }
@@ -486,7 +490,7 @@ namespace McRave::Command
         if (unit.getRole() != Role::Worker)
             return false;
 
-        const auto hasMineableResource = unit.hasResource() && unit.getResource().lock()->getResourceState() == ResourceState::Mineable && unit.getResource().lock()->unit()->exists();
+        const auto hasMineableResource = unit.hasResource() && (unit.getResource().lock()->getResourceState() == ResourceState::Mineable || Util::getTime() < Time(4, 00)) && unit.getResource().lock()->unit()->exists();
 
         const auto canGather = [&](Unit resource) {
             if (unit.unit()->getTarget() == resource)
@@ -518,7 +522,6 @@ namespace McRave::Command
                 });
                 if (closestMineral && closestMineral->getPosition().getDistance(buildCenter) < unit.getPosition().getDistance(buildCenter) && closestMineral->getPosition().getDistance(buildCenter) < 256.0) {
                     unit.unit()->gather(closestMineral->unit());
-                    unit.circle(Colors::Yellow);
                     return true;
                 }
             }
@@ -575,7 +578,6 @@ namespace McRave::Command
                         // Spam gather it to move out of the way
                         if (furthest) {
                             unit.unit()->gather(furthest->Unit());
-                            unit.circle(Colors::Red);
                             return true;
                         }
                     }
@@ -585,15 +587,12 @@ namespace McRave::Command
         }
 
         // Gather from resource
-        unit.circle(Colors::Cyan);
         auto station = Stations::getClosestStationGround(unit.getPosition(), PlayerState::Self);
         auto target = hasMineableResource ? unit.getResource().lock()->unit() : Broodwar->getClosestUnit(station ? station->getResourceCentroid() : BWEB::Map::getMainPosition(), Filter::IsMineralField);
         if (target && canGather(target)) {
             unit.unit()->gather(target);
-            unit.circle(Colors::Green);
             return true;
         }
-        unit.circle(Colors::Purple);
         return false;
     }
 
