@@ -38,10 +38,21 @@ namespace McRave::BuildOrder::Zerg {
         armyComposition[Zerg_Zergling] =            0.40;
     }
 
+    bool mutaPlayPassive()
+    {
+        if (com(Zerg_Mutalisk) == 0 || Util::getTime() < Time(6, 00)) {
+            if (Spy::getEnemyBuild() == "1GateCore")
+                return Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0;
+            if (Spy::getEnemyBuild() == "2Gate")
+                return Spy::getEnemyOpener() != "10/17" || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0;
+        }
+        return false;
+    }
+
     int lingsNeeded_ZvP() {
         auto lings = 0;
         auto timingValue = 0;
-        auto initialValue = 2;
+        auto initialValue = 6;
 
         // 2H/3H: Initial lings when pool completes
         // 2H/3H: Extra lings if enemy will arrive before defenses are ready
@@ -49,18 +60,18 @@ namespace McRave::BuildOrder::Zerg {
         if (com(Zerg_Spawning_Pool) == 0)
             return 0;
 
+        if (Spy::getEnemyTransition() == "4Gate") {
+            return 6 + (6 * vis(Zerg_Spire));
+        }
+
         // 2Gate
         if (Spy::getEnemyBuild() == "2Gate") {
             if (Spy::getEnemyOpener() == "10/17")
-                initialValue = 6 * (Util::getTime() > Time(3, 15));
-            else if (Spy::getEnemyOpener() == "10/12")
-                initialValue = 8;
-            else if (Spy::getEnemyOpener() == "9/9" || Spy::getEnemyTransition() == "4Gate")
-                initialValue = 12;
-            else if (Spy::getEnemyOpener() == "Proxy")
+                initialValue = 10;
+            else if (Spy::getEnemyOpener() == "Proxy" || Spy::getEnemyOpener() == "9/9")
                 initialValue = 16;
             else
-                initialValue = 6;
+                initialValue = 12;
         }
 
         // FFE
@@ -71,10 +82,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // 1GC
         if (Spy::getEnemyBuild() == "1GateCore") {
-            if (Spy::getEnemyTransition() == "4Gate")
-                initialValue = 6;
-            else
-                initialValue = 6 * (Util::getTime() > Time(3, 15));
+            initialValue = 10;
         }
 
         if (currentTransition.find("2Hatch") == string::npos)
@@ -113,13 +121,14 @@ namespace McRave::BuildOrder::Zerg {
         hideTech =                                      true;
         unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 26 : 13;
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvP();
-        playPassive =                                   (Spy::getEnemyBuild() == "1GateCore" || Spy::getEnemyBuild() == "2Gate") && (com(Zerg_Mutalisk) == 0 || Util::getTime() < Time(6, 00));
-        wantThird =                                     Spy::enemyFastExpand() || hatchCount() >= 3 || Spy::getEnemyOpener() == "Corsair";
+        playPassive =                                   mutaPlayPassive();
+        wantThird =                                     Spy::enemyFastExpand() || hatchCount() >= 3 || Spy::getEnemyTransition() == "Corsair";
         gasLimit =                                      (vis(Zerg_Drone) >= 11) ? gasMax() : 0;
         planEarly =                                     Spy::enemyFastExpand() && atPercent(Zerg_Lair, 0.5) && com(Zerg_Lair) == 0 && int(Stations::getStations(PlayerState::Self).size()) < 3;
 
         auto thirdHatch = total(Zerg_Mutalisk) >= 6;
-        if (Spy::enemyPressure()) {
+        if (Spy::getEnemyTransition() == "4Gate") {
+            wantThird = false;
             thirdHatch = false;
             planEarly = false;
         }
@@ -127,7 +136,7 @@ namespace McRave::BuildOrder::Zerg {
             thirdHatch = total(Zerg_Mutalisk) >= 3;
             planEarly = false;
         }
-        else if (Spy::enemyFastExpand() && vis(Zerg_Drone) >= 20) {
+        else if (Spy::enemyFastExpand() && vis(Zerg_Drone) >= 20 && vis(Zerg_Spire) == 0) {
             thirdHatch = true;
         }
 
@@ -166,7 +175,7 @@ namespace McRave::BuildOrder::Zerg {
         hideTech =                                      true;
         unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 33 : 15 - hatchCount();
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvP();
-        playPassive =                                   (Spy::getEnemyBuild() == "1GateCore" || Spy::getEnemyBuild() == "2Gate") && (com(Zerg_Mutalisk) == 0 || Util::getTime() < Time(6, 00));
+        playPassive =                                   mutaPlayPassive();
         wantThird =                                     Spy::getEnemyBuild() != "1GateCore" && Spy::getEnemyBuild() != "2Gate";
         gasLimit =                                      (vis(Zerg_Drone) >= 11) ? gasMax() : 0;
         planEarly =                                     wantThird && hatchCount() >= 2 && Util::getTime() > Time(2, 30);

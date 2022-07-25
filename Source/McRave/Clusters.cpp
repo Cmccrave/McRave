@@ -12,11 +12,11 @@ namespace McRave::Combat::Clusters {
     {
         // Get closest unit to centroid
         auto closestToCentroid = Util::getClosestUnit(cluster.sharedPosition, PlayerState::Self, [&](auto &u) {
-            return !u->isTargetedBySplash() && find(cluster.units.begin(), cluster.units.end(), u) != cluster.units.end() && !u->isTargetedBySuicide() && !u->globalRetreat() && !u->localRetreat();
+            return !u->isTargetedBySplash() && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() && !u->isTargetedBySuicide() && !u->globalRetreat() && !u->localRetreat();
         });
         if (!closestToCentroid) {
             closestToCentroid = Util::getClosestUnit(cluster.sharedPosition, PlayerState::Self, [&](auto &u) {
-                return find(cluster.units.begin(), cluster.units.end(), u) != cluster.units.end();
+                return find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end();
             });
         }
         if (closestToCentroid)
@@ -52,7 +52,7 @@ namespace McRave::Combat::Clusters {
 
             if (auto commander = cluster.commander.lock()) {
                 cluster.typeCounts[commander->getType()]++;
-                cluster.units.push_back(cluster.commander);
+                cluster.units.push_back(&*commander);
                 cluster.sharedDestination = commander->getDestination();
                 cluster.sharedPosition = commander->getPosition();
             }
@@ -77,7 +77,7 @@ namespace McRave::Combat::Clusters {
 
             for (auto &cluster : clusters) {
                 auto flyingCluster = any_of(cluster.units.begin(), cluster.units.end(), [&](auto &u) {
-                    return u.lock()->isFlying();
+                    return u->isFlying();
                 }) || (cluster.commander.lock() && cluster.commander.lock()->isFlying());
                 if ((flyingCluster && !unit.isFlying()) || (!flyingCluster && unit.isFlying()))
                     continue;
@@ -98,13 +98,13 @@ namespace McRave::Combat::Clusters {
 
             if (closestCluster) {
                 closestCluster->sharedRadius += unit.isLightAir() ? 64.0 : double(unit.getType().width() * unit.getType().height()) / closestCluster->sharedRadius;
-                closestCluster->units.push_back(unit.weak_from_this());
+                closestCluster->units.push_back(&unit);
             }
 
             // Didn't find existing formation, create a new one
             else {
                 Cluster newCluster(unit.getPosition(), unit.getDestination(), unit.getType());
-                newCluster.units.push_back(unit.weak_from_this());
+                newCluster.units.push_back(&unit);
                 clusters.push_back(newCluster);
             }
         }
@@ -147,8 +147,7 @@ namespace McRave::Combat::Clusters {
                 cluster.shape = commander->isLightAir() ? Shape::None : Shape::Concave;
 
                 // Assign commander to each unit
-                for (auto &u : cluster.units) {
-                    auto unit = u.lock();
+                for (auto &unit : cluster.units) {
                     unit->setCommander(&*commander);
                     cluster.typeCounts[unit->getType()]++;
                 }

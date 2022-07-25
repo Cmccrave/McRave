@@ -8,7 +8,7 @@ namespace McRave::Combat::Navigation {
 
     namespace {
         map<UnitInfo*, vector<Position>> lastSimPositions;
-        map<UnitInfo*, vector<weak_ptr<UnitInfo>>> lastSimUnits;
+        map<UnitInfo*, map<weak_ptr<UnitInfo>, int>> lastSimUnits;
 
         bool lightUnitNeedsRegroup(UnitInfo& unit)
         {
@@ -43,7 +43,7 @@ namespace McRave::Combat::Navigation {
     void getRegroupPath(UnitInfo& unit)
     {
         const auto flyerRegroup = [&](const TilePosition &t) {
-            return Grids::getEAirThreat(Position(t) + Position(16, 16)) * 50.0;
+            return Grids::getEAirThreat(Position(t) + Position(16, 16)) * 250.0;
         };
 
         const auto closestFriend = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
@@ -92,9 +92,9 @@ namespace McRave::Combat::Navigation {
             for (auto &pos : simPositions)
                 d = min(d, center.getApproxDistance(pos));
 
-            auto dist = unit.getSimState() == SimState::Win ? 1.0 : max(0.01, double(d) - min(simDistCurrent + 64, int(unit.getRetreatRadius() + 64.0)));
-            auto vis = unit.getSimState() == SimState::Win ? 1.0 : clamp(double(Broodwar->getFrameCount() - Grids::lastVisibleFrame(t)) / 960.0, 0.5, 3.0);
-            return 1.00 / (vis * dist);
+            auto dist = max(0.01, double(d) - min(simDistCurrent, int(unit.getRetreatRadius() + 64.0)));
+            auto vis = clamp(double(Broodwar->getFrameCount() - Grids::lastVisibleFrame(t)) / 960.0, 0.5, 3.0);
+            return 1.0 / (vis * dist);
         };
 
         BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
@@ -114,8 +114,8 @@ namespace McRave::Combat::Navigation {
                 || unit.getLocalState() == LocalState::Retreat
                 || unit.localRetreat()
                 || unit.globalRetreat());
-        auto harassing = unit.isLightAir() && !unit.getGoal().isValid() && unit.getDestination() == Terrain::getHarassPosition() && unit.attemptingHarass();
-        
+        auto harassing = unit.isLightAir() && !unit.getGoal().isValid() && unit.getDestination() == Terrain::getHarassPosition() && unit.attemptingHarass() && unit.getLocalState() == LocalState::None;
+
         // Generate a flying path for retreating or regrouping
         if (regrouping)
             getRegroupPath(unit);
@@ -160,28 +160,30 @@ namespace McRave::Combat::Navigation {
 
         auto &simUnits = lastSimUnits[&unit];
 
-        // Remove any expired sim units
-        simUnits.erase(remove_if(simUnits.begin(), simUnits.end(), [&](auto &u) {
-            return u.expired();
-        }), simUnits.end());
+        //// Remove any expired sim units
+        //simUnits.erase(remove_if(simUnits.begin(), simUnits.end(), [&](auto &u) {
+        //    return u.first.expired() || Broodwar->getFrameCount() >= u.second;
+        //}), simUnits.end());
+
+        for (auto itr = simUnits.begin(); itr != simUnits.end(); ) {
+            if (itr->first.expired() || Broodwar->getFrameCount() >= itr->second)
+                itr = simUnits.erase(itr);
+            else
+                ++itr;
+        }
 
         // Add any new sim units
         if (unit.hasSimTarget()) {
-            auto newSimUnit = find(simUnits.begin(), simUnits.end(), unit.getSimTarget()) == simUnits.end();
-            if (newSimUnit) {
-                if (simUnits.size() >= 10)
-                    simUnits.pop_back();
-                simUnits.insert(simUnits.begin(), unit.getSimTarget());
-            }
+            auto newSimUnit = simUnits.find(unit.getSimTarget()) == simUnits.end();
+            if (newSimUnit)
+                simUnits[unit.getSimTarget()] = Broodwar->getFrameCount() + (unit.getSimTarget().lock()->getType().isBuilding() ? 480 : 240);
         }
 
         // For pathing purposes, we store light air commander sim positions
         auto &simPositions = lastSimPositions[&unit];
         simPositions.clear();
-        if (unit.hasSimTarget()) {
-            for (auto &sim : simUnits)
-                simPositions.push_back(sim.lock()->getPosition());
-        }
+        for (auto &[sim,_] : simUnits)
+            simPositions.push_back(sim.lock()->getPosition());
     }
 
     void update(UnitInfo& unit)

@@ -28,6 +28,8 @@ namespace McRave::Zones
             for (auto &zone : zones) {
                 if (zone.type == ZoneType::Engage)
                     Broodwar->drawCircleMap(zone.position, zone.radius, Colors::Green);
+                if (zone.type == ZoneType::Defend)
+                    Broodwar->drawCircleMap(zone.position, zone.radius, Colors::Blue);
                 if (zone.type == ZoneType::Retreat)
                     Broodwar->drawCircleMap(zone.position, zone.radius, Colors::Red);
             }

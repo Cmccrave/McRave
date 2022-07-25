@@ -70,7 +70,7 @@ namespace McRave::Workers {
                     auto framesToArrive = unit.getPosition().getDistance(station->getBase()->Center()) / unit.getSpeed();
                     auto frameCompletedAt = closestHatch->timeCompletesWhen().frames;
 
-                    if (Broodwar->getFrameCount() + framesToArrive > frameCompletedAt)
+                    if (Broodwar->getFrameCount() + framesToArrive + 48 > frameCompletedAt)
                         return station;
                 }
             }

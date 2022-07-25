@@ -174,7 +174,7 @@ namespace McRave::BuildOrder::Zerg {
             if (Players::ZvT())
                 desiredProduction = int(Stations::getStations(PlayerState::Self).size()) + max(0, int(Stations::getStations(PlayerState::Self).size()) - 3) + max(0, int(Stations::getStations(PlayerState::Self).size()) - 4);
             if (Players::ZvP())
-                desiredProduction = int(Stations::getStations(PlayerState::Self).size()) + (2 * max(0, int(Stations::getStations(PlayerState::Self).size()) - 2)) + (Spy::getEnemyBuild() != "FFE");
+                desiredProduction = int(Stations::getStations(PlayerState::Self).size()) + (2 * max(0, int(Stations::getStations(PlayerState::Self).size()) - 2));
             if (Players::ZvZ())
                 desiredProduction = int(Stations::getStations(PlayerState::Self).size()) + max(0, int(Stations::getStations(PlayerState::Self).size()) - 1) - (int(Stations::getStations(PlayerState::Enemy).size() >= 2));
             if (Players::ZvFFA())
@@ -192,7 +192,7 @@ namespace McRave::BuildOrder::Zerg {
             if (!inOpeningBook && unitLimits[Zerg_Larva] == 0) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
                 const auto incompleteHatch = vis(Zerg_Hatchery) - com(Zerg_Hatchery);
-                const auto waitForMinerals = Players::ZvZ() ? 300 : 200;
+                const auto waitForMinerals = 300 * (1 + incompleteHatch);
 
                 rampDesired = (availableMinerals >= waitForMinerals && Resources::isHalfMineralSaturated() && Resources::isGasSaturated() && !productionSat)
                     || (availableMinerals >= waitForMinerals && vis(Zerg_Larva) + (3 * incompleteHatch) < min(3, hatchCount()) && !productionSat)
@@ -322,7 +322,7 @@ namespace McRave::BuildOrder::Zerg {
     void tech()
     {
         const auto vsGoonsGols = Spy::getEnemyTransition() == "4Gate" || Spy::getEnemyTransition() == "5GateGoon" || Spy::getEnemyTransition() == "CorsairGoon" || Spy::getEnemyTransition() == "5FactGoliath";
-        const auto techVal = int(techList.size()) + (2 * Players::ZvT()) + (Players::ZvP()) + vsGoonsGols;
+        const auto techVal = int(techList.size()) + (2 * Players::ZvT()) + (Players::ZvP());
         const auto endOfTech = !techOrder.empty() && isTechUnit(techOrder.back());
 
         // ZvP
@@ -395,11 +395,10 @@ namespace McRave::BuildOrder::Zerg {
         if (!inOpeningBook)
             armyComposition.clear();
 
+        const auto vsGoonsGols = Spy::getEnemyTransition() == "4Gate" || Spy::getEnemyTransition() == "5GateGoon" || Spy::getEnemyTransition() == "CorsairGoon" || Spy::getEnemyTransition() == "5FactGoliath";
+
         // ZvT
         if (Players::vT() && !inOpeningBook) {
-            auto vsMech = Spy::getEnemyTransition() == "2Fact"
-                || Spy::getEnemyTransition() == "1FactTanks"
-                || Spy::getEnemyTransition() == "5FactGoliath";
 
             // Cleanup enemy
             if (Util::getTime() > Time(15, 0) && Stations::getStations(PlayerState::Enemy).size() == 0 && Terrain::foundEnemy()) {
@@ -466,9 +465,9 @@ namespace McRave::BuildOrder::Zerg {
                     armyComposition[Zerg_Mutalisk] =            0.30;
                 }
                 else {
-                    armyComposition[Zerg_Drone] =               0.70;
+                    armyComposition[Zerg_Drone] =               0.60;
                     armyComposition[Zerg_Zergling] =            0.00;
-                    armyComposition[Zerg_Mutalisk] =            0.30;
+                    armyComposition[Zerg_Mutalisk] =            0.40;
                 }
             }
 
@@ -508,9 +507,16 @@ namespace McRave::BuildOrder::Zerg {
                 armyComposition[Zerg_Mutalisk] =                0.10;
             }
             else if (isTechUnit(Zerg_Mutalisk)) {
-                armyComposition[Zerg_Drone] =                   0.50;
-                armyComposition[Zerg_Zergling] =                0.00;
-                armyComposition[Zerg_Mutalisk] =                0.50;
+                if (total(Zerg_Mutalisk) >= 32 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Adrenal_Glands) > 0) {
+                    armyComposition[Zerg_Drone] =               0.40;
+                    armyComposition[Zerg_Zergling] =            0.30;
+                    armyComposition[Zerg_Mutalisk] =            0.30;
+                }
+                else {
+                    armyComposition[Zerg_Drone] =               0.60;
+                    armyComposition[Zerg_Zergling] =            0.00;
+                    armyComposition[Zerg_Mutalisk] =            0.40;
+                }
             }
             else if (isTechUnit(Zerg_Lurker)) {
                 armyComposition[Zerg_Drone] =                   0.60;
@@ -571,12 +577,12 @@ namespace McRave::BuildOrder::Zerg {
         if (!inOpeningBook) {
             int hatchCount = vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive);
             int pumpLings = 0;
-            if (Players::ZvP() && Util::getTime() > Time(8, 00) && techList.find(Zerg_Hydralisk) == techList.end() && hatchCount >= 4 && int(Stations::getStations(PlayerState::Self).size()) >= 3)
+            if (Players::ZvP() && Util::getTime() > Time(7, 30) && techList.find(Zerg_Hydralisk) == techList.end() && hatchCount >= 4 && int(Stations::getStations(PlayerState::Self).size()) >= 3)
                 pumpLings = 12;
             if (Spy::getEnemyTransition() == "Robo")
                 pumpLings = 12;
-            if (Util::getTime() > Time(10, 00) && ((Spy::getEnemyTransition() == "4Gate" && hatchCount >= 5) || (Spy::getEnemyTransition() == "5GateGoon"&& hatchCount >= 5)))
-                pumpLings = 24;
+            if (Util::getTime() > Time(9, 00) && ((Spy::getEnemyTransition() == "4Gate" && hatchCount >= 4) || (Spy::getEnemyTransition() == "5GateGoon"&& hatchCount >= 5)))
+                pumpLings = 36;
             if (Spy::getEnemyBuild() == "FFE") {
                 if (Spy::getEnemyTransition() == "Speedlot" && Util::getTime() > Time(6, 45) && Util::getTime() < Time(7, 45))
                     pumpLings = 24;
@@ -655,6 +661,12 @@ namespace McRave::BuildOrder::Zerg {
                 unlockedType.erase(Zerg_Zergling);
             if (total(Zerg_Hive) > 0)
                 unlockedType.insert(Zerg_Zergling);
+        }
+
+        // Removing mutas temporarily if they overdefended
+        const auto vsGoonsGols = Spy::getEnemyTransition() == "4Gate" || Spy::getEnemyTransition() == "5GateGoon" || Spy::getEnemyTransition() == "CorsairGoon" || Spy::getEnemyTransition() == "5FactGoliath";
+        if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon) >= 6 && Util::getTime() < Time(9, 00) && total(Zerg_Mutalisk) >= 9 && !vsGoonsGols) {
+            unlockedType.erase(Zerg_Mutalisk);
         }
 
 

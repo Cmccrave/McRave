@@ -453,11 +453,9 @@ namespace McRave::Production {
                         return false;
                     return BuildOrder::getCompositionPercentage(Zerg_Mutalisk) > 0.0 && (Broodwar->self()->getUpgradeLevel(Zerg_Flyer_Carapace) > Broodwar->self()->getUpgradeLevel(Zerg_Flyer_Attacks) + 1 || Broodwar->self()->isUpgrading(Zerg_Flyer_Carapace));
                 case Zerg_Flyer_Carapace:
-                    if (Players::ZvP() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) < 2)
-                        return false;
                     if (Players::ZvZ() && int(Stations::getStations(PlayerState::Self).size()) < 2)
                         return false;
-                    return BuildOrder::getCompositionPercentage(Zerg_Mutalisk) > 0.0 && total(Zerg_Mutalisk) >= 12;
+                    return BuildOrder::getCompositionPercentage(Zerg_Mutalisk) > 0.0 && total(Zerg_Mutalisk) >= 12 && Stations::getStations(PlayerState::Self).size() >= 3;
                 }
             }
             return false;
@@ -809,7 +807,7 @@ namespace McRave::Production {
             return DBL_MAX;
 
         // Check if we are saving larva but not for this type
-        if (BuildOrder::getUnitReservation(type) == 0) {
+        if (BuildOrder::getUnitReservation(type) == 0 && (BuildOrder::getUnitReservation(Zerg_Mutalisk) > 0 || BuildOrder::getUnitReservation(Zerg_Hydralisk) > 0)) {
             auto larvaMinCost = (BuildOrder::getTechUnit().mineralPrice() * BuildOrder::getUnitReservation(Zerg_Mutalisk))
                 + (Zerg_Hydralisk.mineralPrice() * BuildOrder::getUnitReservation(Zerg_Hydralisk))
                 + (Zerg_Scourge.mineralPrice() * BuildOrder::getUnitReservation(Zerg_Scourge));
@@ -845,8 +843,8 @@ namespace McRave::Production {
             }
         }
 
-        auto mineralCost = (Broodwar->self()->minerals() == 0 || typeMineralCost == 0) ? 1.0 : double((Broodwar->self()->minerals() * 2) - typeMineralCost - reservedMineral) / double(Broodwar->self()->minerals());
-        auto gasCost = (Broodwar->self()->gas() == 0 || typeGasCost == 0) ? 1.0 : double((Broodwar->self()->gas() * 2) - typeGasCost - reservedGas) / double(Broodwar->self()->gas());
+        auto mineralCost = (Broodwar->self()->minerals() == 0 || typeMineralCost == 0) ? 1.0 : max(1.0, double((Broodwar->self()->minerals() * 2) - typeMineralCost - reservedMineral)) / double(Broodwar->self()->minerals());
+        auto gasCost = (Broodwar->self()->gas() == 0 || typeGasCost == 0) ? 1.0 : max(1.0, double((Broodwar->self()->gas() * 2) - typeGasCost - reservedGas)) / double(Broodwar->self()->gas());
 
         // Can't make them if we aren't mining and can't afford
         if ((Workers::getGasWorkers() == 0 && typeGasCost > 0 && Broodwar->self()->gas() < typeGasCost)

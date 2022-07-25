@@ -15,6 +15,7 @@ namespace McRave::Stations
     int getGroundDefenseCount(BWEB::Station*);
     int getAirDefenseCount(BWEB::Station*);
     bool needPower(BWEB::Station*);
+    bool isIsland(BWEB::Station*);
     bool isBaseExplored(BWEB::Station*);
     bool isGeyserExplored(BWEB::Station*);
     bool isCompleted(BWEB::Station*);

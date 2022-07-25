@@ -15,7 +15,7 @@ namespace McRave::Combat {
         BWAPI::Position sharedPosition, sharedDestination;
         std::map<BWAPI::UnitType, int> typeCounts;
         double sharedRadius = 160.0;
-        std::vector< std::weak_ptr<UnitInfo>> units;
+        std::vector<UnitInfo*> units;
         std::weak_ptr<UnitInfo> commander;
         CommandShare commandShare;
         Shape shape;

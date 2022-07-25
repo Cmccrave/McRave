@@ -175,8 +175,15 @@ namespace McRave::Horizon {
         // Assign the sim value
         const auto attackAirAsAir =         enemyAirStrength > 0.0 ? allyAirStrength / enemyAirStrength : 10.0;
         const auto attackAirAsGround =      enemyGroundStrength > 0.0 ? allyAirStrength / enemyGroundStrength : 10.0;
-        const auto attackGroundAsAir =      enemyAirStrength > 0.0 ? allyGroundStrength / enemyAirStrength : 10.0;
         const auto attackGroundAsGround =   enemyGroundStrength > 0.0 ? allyGroundStrength / enemyGroundStrength : 10.0;
+
+
+        auto attackGroundAsAir =      enemyAirStrength > 0.0 ? allyGroundStrength / enemyAirStrength : 10.0;
+        // HACK: We don't have a way right now with Horizon to look at "going solo" when sync assumed we win
+        // for example if my air + ground > ground, but our ground vs ground wont fight, we need to assume worst case (going solo)
+        if (attackGroundAsAir > 1.4 && attackGroundAsGround < 1.4) {
+            attackGroundAsAir = attackAirAsAir;
+        }
 
         if (!unit.hasTarget())
             unit.getType().isFlyer() ? unit.setSimValue(min(attackAirAsAir, attackGroundAsAir)) : unit.setSimValue(min(attackAirAsGround, attackGroundAsGround));

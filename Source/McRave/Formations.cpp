@@ -10,15 +10,16 @@ namespace McRave::Combat::Formations {
 
     void assignPosition(Cluster& cluster, Formation& concave, Position p, int& assignmentsRemaining)
     {
+        if (Grids::getEGroundThreat(p) > 0.0f)
+            return;
+
         UnitInfo * closestUnit = nullptr;
         auto distBest = DBL_MAX;
-        for (auto &u : cluster.units) {
-            if (auto unit = u.lock()) {
-                auto dist = unit->getPosition().getDistance(p);
-                if (dist < distBest && !unit->getFormation().isValid() && unit->getLocalState() != LocalState::Attack) {
-                    distBest = dist;
-                    closestUnit = &*unit;
-                }
+        for (auto &unit : cluster.units) {
+            auto dist = unit->getPosition().getDistance(p);
+            if (dist < distBest && !unit->getFormation().isValid() && unit->getLocalState() != LocalState::Attack) {
+                distBest = dist;
+                closestUnit = &*unit;
             }
         }
 
@@ -72,13 +73,13 @@ namespace McRave::Combat::Formations {
 
             // If we are setting up a static formation, align concave with buildings close by
             auto closestBuilding = Util::getClosestUnit(cluster.sharedDestination, PlayerState::Self, [&](auto &u) {
-                return (u->getType().isBuilding() && u->canAttackGround() && u->getFormation().getDistance(cluster.sharedDestination) < 64.0 && u->getPosition().getDistance(cluster.sharedDestination) >= 160.0) || (u->getType().isResourceDepot() && Terrain::isDefendNatural());
+                return (u->getType().isBuilding() && u->canAttackGround() && u->getFormation().getDistance(cluster.sharedDestination) < 64.0) || (u->getType().isResourceDepot() && Terrain::isDefendNatural());
             });
             if (closestBuilding)
                 radius = closestBuilding->getPosition().getDistance(cluster.sharedDestination);
 
             // Get a retreat point
-            auto retreat = Terrain::getMyMain();//Stations::getClosestRetreatStation(*commander);
+            auto retreat = (Stations::getStations(PlayerState::Self).size() <= 2) ? Terrain::getMyMain() : Stations::getClosestRetreatStation(*commander);
             if (!retreat)
                 continue;
 
@@ -153,7 +154,7 @@ namespace McRave::Combat::Formations {
                     radsPositive = angle;
                     radsNegative = angle;
                     wrap++;
-                    if (wrap > 5)
+                    if (wrap > 10)
                         break;
                 }
             }

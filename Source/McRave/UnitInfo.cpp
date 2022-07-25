@@ -334,7 +334,7 @@ namespace McRave
 
         // Check if our defenses can hit or be hit
         auto nearDefenders = [&]() {
-            return closestDefender && closestDefender->isWithinRange(*this);
+            return (closestDefender && closestDefender->isWithinRange(*this)) || Zones::getZone(getPosition()) == ZoneType::Defend;
         };
 
         // Checks if it can damage an already damaged building
@@ -361,7 +361,7 @@ namespace McRave
                 return true;
 
             if (Zones::getZone(getPosition()) == ZoneType::Engage) {
-                if (closestDefender) {
+                if (closestDefender && closestDefender->isCompleted()) {
                     if (mapBWEM.GetArea(closestDefender->getTilePosition()) == mapBWEM.GetArea(getTilePosition()))
                         return false;
                 }
@@ -481,7 +481,7 @@ namespace McRave
             return false;
 
         // Check if we should overshoot for halting distance
-        if (cmd == UnitCommandTypes::Move && !getBuildPosition().isValid() && (getType().isFlyer() || isHovering() || getType() == Protoss_High_Templar)) {
+        if (cmd == UnitCommandTypes::Move && !getBuildPosition().isValid() && (getType().isFlyer() || isHovering() || getType() == Protoss_High_Templar || attemptingSurround())) {
             auto distance = int(getPosition().getDistance(here));
             auto haltDistance = max({ distance, 32, getType().haltDistance() / 256 });
             auto overShootHere = here;
@@ -735,16 +735,22 @@ namespace McRave
 
         auto countDefensesInRange = 0.0;
         if (getType() == Zerg_Mutalisk && hasTarget() && canOneShot(*unitTarget)) {
-            for (auto &e : Units::getUnits(PlayerState::Enemy)) {
-                if (e->canAttackAir() && e != unitTarget && e->getPosition().getDistance(unitTarget->getPosition()) < e->getAirRange() + 32.0) {
-                    countDefensesInRange += (e->getType().isBuilding() ? 1.0 : 0.25);
-                }
-            }
+            return true;
+            //for (auto &e : Units::getUnits(PlayerState::Enemy)) {
+            //    if (e->canAttackAir() && e != unitTarget && (e->getPosition().getDistance(unitTarget->getPosition()) < e->getAirRange() + 32.0 || e->getPosition().getDistance(getPosition()) < e->getAirRange() + 32.0)) {
+            //        countDefensesInRange += (e->getType().isBuilding() ? 1.0 : 0.25);
+            //    }
+            //}
 
-            if ((countDefensesInRange <= (Players::ZvP() ? 2.0 : 3.0) && Util::getTime() < Time(8, 00))
-                || (countDefensesInRange <= (Players::ZvP() ? 3.0 : 4.0) && Util::getTime() < Time(10, 00))
-                || isWithinRange(*unitTarget))
-                return true;
+            //if (canOneShot(*unitTarget)) {
+            //    if ((countDefensesInRange < (Players::ZvP() ? 2.0 : 3.0) && Util::getTime() < Time(8, 00))
+            //        || (countDefensesInRange < (Players::ZvP() ? 3.0 : 4.0) && Util::getTime() < Time(10, 00)))
+            //        return true;
+            //}
+            //else {
+            //    if (countDefensesInRange <= 0.0)
+            //        return true;
+            //}
         }
 
         return ((!isFlying() && unitTarget->isSiegeTank() && getType() != Zerg_Lurker && isWithinRange(*getTarget().lock()) && getGroundRange() > 32.0)
@@ -880,12 +886,13 @@ namespace McRave
     {
         auto thisTarget = !target.expired() ? target.lock() : nullptr;
         auto freeTarget = thisTarget && ((!getTarget().lock()->canAttackAir() && this->isFlying()) || (!thisTarget->canAttackGround() && !this->isFlying()))
-            && (Terrain::inTerritory(PlayerState::Self, thisTarget->getPosition()) || !Terrain::inTerritory(PlayerState::Enemy, thisTarget->getPosition()));
+            && Terrain::inTerritory(PlayerState::Self, thisTarget->getPosition()) && !Terrain::inTerritory(PlayerState::Enemy, thisTarget->getPosition())
+            && getPosition().getDistance(thisTarget->getPosition()) < getEngageRadius();
 
         // Try to save Mutas that are low hp when the firepower isn't needed
-        const auto mutaSavingRequired = getType() == Zerg_Mutalisk && thisTarget && !freeTarget &&
+        const auto mutaSavingRequired = getType() == Zerg_Mutalisk && thisTarget &&
             (Players::ZvZ() ? (Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) == 0) : (Util::getTime() > Time(8, 00)))
-            && !thisTarget->isThreatening() && !isWithinRange(*thisTarget) && !thisTarget->isWithinRange(*this) && getHealth() <= 50
+            && !thisTarget->isThreatening() && !isWithinRange(*thisTarget) && !thisTarget->isWithinRange(*this) && getHealth() <= 60
             && !Terrain::inTerritory(PlayerState::Enemy, getPosition());
 
         // Try to save scouts as they have high shield counts
@@ -902,7 +909,7 @@ namespace McRave
 
         return nearHidden
             || (getGlobalState() == GlobalState::Retreat && !Terrain::inTerritory(PlayerState::Self, getPosition()) && !attemptingRunby())
-            || saveUnit;
+            || (saveUnit && !freeTarget);
     }
 
     bool UnitInfo::attemptingRunby()
@@ -914,7 +921,7 @@ namespace McRave
 
     bool UnitInfo::attemptingSurround()
     {
-        if (attemptingRunby() || (hasTarget() && (getTarget().lock()->getCurrentSpeed() <= 0.0 || getTarget().lock()->getType().isWorker())))
+        if (attemptingRunby() || (hasTarget() && (getTarget().lock()->getType().isWorker() || getTarget().lock()->getCurrentSpeed() <= 0.0)))
             return false;
         if (surroundPosition.isValid() && !Terrain::inTerritory(PlayerState::Enemy, surroundPosition) && position.getDistance(surroundPosition) > 16.0)
             return true;

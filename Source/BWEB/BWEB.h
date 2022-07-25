@@ -42,7 +42,7 @@ namespace BWEB::Map
     void removeUsed(BWAPI::TilePosition tile, int width, int height);
 
     /// <summary> Returns the first UnitType found in a section of BWAPI::TilePositions, if it is within BWEBs used grid. </summary>
-    BWAPI::UnitType isUsed(BWAPI::TilePosition here, int width = 1, int height = 1);
+    BWAPI::UnitType isUsed(const BWAPI::TilePosition& here, const int& width = 1, const int& height = 1);
 
     /// <summary> Returns true if a BWAPI::TilePosition is fully walkable. </summary>
     /// <param name="tile"> The BWAPI::TilePosition you want to check. </param>

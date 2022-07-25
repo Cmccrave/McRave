@@ -119,20 +119,25 @@ namespace McRave::Combat::Destination {
         }
         else if (unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat) {
             const auto &retreat = Stations::getClosestRetreatStation(unit);
-            if (retreat && retreat == Terrain::getMyNatural() && Broodwar->mapFileName().find("MatchPoint") && Terrain::getMyMain()->getBase()->Location() == TilePosition(100, 14)) {
+
+            if (!unit.globalRetreat() && unit.attemptingRegroup()) {
+                unit.setDestination(unit.getCommander().lock()->getPosition());
+                //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Red);
+            }
+            else if (retreat && !unit.isFlying() && retreat == Terrain::getMyNatural() && Broodwar->mapFileName().find("MatchPoint") != string::npos && Terrain::getMyMain()->getBase()->Location() == TilePosition(100, 14)) {
                 unit.setDestination(Position(3369, 1690));
             }
             else if (retreat && unit.isFlying()) {
                 unit.setDestination(retreat->getBase()->Center());
-                Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Orange);
+                //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Orange);
             }
             else if (retreat) {
                 unit.setDestination(Stations::getDefendPosition(retreat));
-                Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Orange);
+                //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Orange);
             }
             else {
                 unit.setDestination(Position(BWEB::Map::getMainChoke()->Center()));
-                Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Yellow);
+                //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Yellow);
             }
         }
         else {

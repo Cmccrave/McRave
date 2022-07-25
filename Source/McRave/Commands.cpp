@@ -40,15 +40,15 @@ namespace McRave::Command {
             const auto p = Position(w) + Position(4, 4);
             if (unit.isTransport()) {
                 if (p.getDistance(unit.getNavigation()) < 32.0)
-                    return max(0.1f, Grids::getEGroundThreat(w) + Grids::getEAirThreat(w));
-                return max(0.1f, Grids::getEAirThreat(w));
+                    return max(0.01f, Grids::getEGroundThreat(w) + Grids::getEAirThreat(w));
+                return max(0.01f, Grids::getEAirThreat(w));
             }
 
             if (unit.isHidden()) {
                 if (!Actions::overlapsDetection(unit.unit(), p, PlayerState::Enemy))
-                    return 0.1;
+                    return 0.01;
             }
-            return max(0.1f, unit.getType().isFlyer() ? (Grids::getEAirThreat(w) - current) : (Grids::getEGroundThreat(w) - current));
+            return max(0.01f, unit.getType().isFlyer() ? (Grids::getEAirThreat(w) - current) : (Grids::getEGroundThreat(w) - current));
         }
 
         double avoidance(UnitInfo& unit, Position p, Position sim)
@@ -344,6 +344,11 @@ namespace McRave::Command {
                 return true;
             }
 
+            if (unit.attemptingSurround()) {
+                unit.command(Move, unit.getSurroundPosition());
+                return true;
+            }
+
             if (!unit.getDestinationPath().isReachable()) {
                 unit.command(Move, unit.getDestination());
                 return true;
@@ -516,7 +521,7 @@ namespace McRave::Command {
     bool explore(UnitInfo& unit)
     {
         const auto scoreFunction = [&](WalkPosition w) {
-            auto score = mobility(unit, w) * grouping(unit, w) / (exp(threat(unit, w)) * distance(unit, w));
+            auto score = mobility(unit, w) * grouping(unit, w) / (distance(unit, w));
             return score;
         };
 

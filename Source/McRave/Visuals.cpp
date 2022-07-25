@@ -295,6 +295,7 @@ namespace McRave::Visuals {
 
     void drawPath(BWEB::Path& path)
     {
+        return;
         int color = Broodwar->self()->getColor();
         if (paths && !path.getTiles().empty()) {
             TilePosition next = path.getSource();

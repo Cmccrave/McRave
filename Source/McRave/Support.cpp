@@ -26,12 +26,18 @@ namespace McRave::Support {
             auto enemyAir = Spy::getEnemyTransition() == "Corsair"
                 || Spy::getEnemyTransition() == "2PortWraith"
                 || Players::getStrength(PlayerState::Enemy).airToAir > 0.0;
+            auto types ={ Zerg_Hydralisk, Zerg_Ultralisk, Protoss_Dragoon, Terran_Marine, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode };
+            auto followArmyPossible = any_of(types.begin(), types.end(), [&](auto &t) { return com(t) > 0; });
 
             if (Util::getTime() < Time(7, 00) && Stations::getStations(PlayerState::Self).size() >= 2 && !Players::ZvZ())
                 closestStation = Terrain::getMyNatural();
 
+            // Set goal as destination
+            if (unit.getGoal().isValid())
+                unit.setDestination(unit.getGoal());
+
             // Send Overlords to safety from enemy air
-            if (unit.getType() == Zerg_Overlord && closestSpore && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 || !unit.isHealthy())) {
+            else if (unit.getType() == Zerg_Overlord && closestSpore && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 || !unit.isHealthy() || !followArmyPossible)) {
                 if (closestSpore) {
                     unit.setDestination(closestSpore->getPosition());
                     for (int x = -1; x <= 1; x++) {
@@ -50,14 +56,9 @@ namespace McRave::Support {
             endloop:;
             }
 
-            // Set goal as destination
-            else if (unit.getGoal().isValid())
-                unit.setDestination(unit.getGoal());
-
             // Find the highest combat cluster that doesn't overlap a current support action of this UnitType
             else if (unit.getType() != Zerg_Overlord || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace)) {
-                auto highestCluster = 0.0;
-                auto types ={ Zerg_Hydralisk, Zerg_Ultralisk, Protoss_Dragoon, Terran_Marine, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode };
+                auto highestCluster = 0.0;               
 
                 auto closestPartner = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                     return find(types.begin(), types.end(), u->getType()) != types.end() && assignedOverlords.find(u->getPosition()) == assignedOverlords.end();
@@ -112,16 +113,15 @@ namespace McRave::Support {
             if (!unit.getDestination().isValid() || (!unit.getDestinationPath().getTiles().empty() && unit.getDestinationPath().getTarget() == TilePosition(unit.getDestination())))
                 return;
 
-            if (unit.getType() == Zerg_Overlord && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0) {
+            if (unit.getType() == Zerg_Overlord && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 || unit.getGoal().isValid())) {
                 const auto xMax = Broodwar->mapWidth() - 4;
                 const auto yMax = Broodwar->mapHeight() - 4;
                 const auto centerDist = min(unit.getDestination().getDistance(mapBWEM.Center()), unit.getPosition().getDistance(mapBWEM.Center()));
                 BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
-                newPath.generateJPS([&](const TilePosition &t) { return t.x < 4 || t.y < 4 || t.x > xMax || t.y > yMax || Position(t).getDistance(mapBWEM.Center()) >= centerDist; });
+                newPath.generateJPS([&](const TilePosition &t) { return !Terrain::inTerritory(PlayerState::Enemy, Position(t)) && t.isValid() && (t.x < 4 || t.y < 4 || t.x > xMax || t.y > yMax || Position(t).getDistance(mapBWEM.Center()) >= centerDist); });
                 unit.setDestinationPath(newPath);
             }
             Visuals::drawPath(unit.getDestinationPath());
-            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Green);
         }
 
         void updateNavigation(UnitInfo& unit)

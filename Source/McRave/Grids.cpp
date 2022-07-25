@@ -42,8 +42,8 @@ namespace McRave::Grids
                 || unit.getType() == Terran_Vulture_Spider_Mine
                 || unit.getType() == Protoss_Scarab
                 || (unit.getPlayer() == Broodwar->self() && !unit.getType().isBuilding() && !unit.unit()->isCompleted())
-                || (unit.getPlayer() != Broodwar->self() && unit.getType().isWorker() && !unit.hasAttackedRecently())
-                || (unit.getPlayer() != Broodwar->self() && !unit.hasTarget() && !unit.unit()->exists()))
+                || (unit.getPlayer() != Broodwar->self() && unit.getType().isWorker() && !unit.hasAttackedRecently() && !Scouts::gatheringInformation())
+                || (unit.getPlayer() != Broodwar->self() && !unit.hasTarget() && !unit.unit()->exists() && !Scouts::gatheringInformation()))
                 return false;
             return true;
         }
@@ -228,15 +228,15 @@ namespace McRave::Grids
                 if (!canAddToGrid(unit))
                     continue;
 
-                // Prevent running grids if the unit is irrelevant
-                if (!unit.getType().isBuilding() && unit.hasTarget()) {
-                    auto unitTarget = unit.getTarget().lock();
-                    auto maxRange = max({ unit.getAirRange(), unit.getGroundRange(), double(unit.getType().sightRange()),
-                        unitTarget->getAirRange(), unitTarget->getGroundRange(), double(unitTarget->getType().sightRange()),
-                        unitTarget->getEngageRadius(), unitTarget->getRetreatRadius() });
-                    if (unit.getPosition().getDistance(unitTarget->getPosition()) > maxRange)
-                        continue;
-                }
+                //// Prevent running grids if the unit is irrelevant
+                //if (!unit.getType().isBuilding() && unit.hasTarget()) {
+                //    auto unitTarget = unit.getTarget().lock();
+                //    auto maxRange = max({ unit.getAirRange(), unit.getGroundRange(), double(unit.getType().sightRange()),
+                //        unitTarget->getAirRange(), unitTarget->getGroundRange(), double(unitTarget->getType().sightRange()),
+                //        unitTarget->getEngageRadius(), unitTarget->getRetreatRadius() }) + 160.0;
+                //    if (unit.getPosition().getDistance(unitTarget->getPosition()) > maxRange)
+                //        continue;
+                //}
 
                 addToGrids(unit, !unit.isFlying(), true);
             }

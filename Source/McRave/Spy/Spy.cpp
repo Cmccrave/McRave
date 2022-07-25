@@ -43,6 +43,19 @@ namespace McRave::Spy {
         }
         return current >= count;
     }
+
+    Time whenArrival(int count, UnitType type)
+    {
+        auto timeCount = Time(0, 00);
+        auto times = theSpy.enemyTimings[type].countArrivesWhen;
+        if (times.size() >= count) {
+            for (auto &time : times) {
+                if (time > timeCount)
+                    timeCount = time;
+            }
+        }
+        return timeCount;
+    }
     
     void onFrame()
     {

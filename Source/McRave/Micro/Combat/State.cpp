@@ -20,6 +20,7 @@ namespace McRave::Combat::State {
         const auto atHome = Terrain::inTerritory(PlayerState::Self, unitTarget->getPosition()) && mapBWEM.GetArea(unit.getTilePosition()) == mapBWEM.GetArea(unitTarget->getTilePosition()) && !Players::ZvZ();
         const auto reAlign = (unit.getType() == Zerg_Mutalisk && !unit.canStartAttack() && !unit.isWithinAngle(*unitTarget) && Util::boxDistance(unit.getType(), unit.getPosition(), unitTarget->getType(), unitTarget->getPosition()) <= 64.0);
         const auto winningState = (!atHome || !BuildOrder::isPlayPassive()) && unit.getSimState() == SimState::Win;
+        const auto exploringGoal = unit.getGoal().isValid() && unit.getGoalType() == GoalType::Explore && unit.getUnitsInRangeOfThis().empty() && Util::getTime() > Time(4, 00);
 
         // Regardless of any decision, determine if Unit is in danger and needs to retreat
         if ((Actions::isInDanger(unit, unit.getPosition()) && !unit.isTargetedBySuicide())
@@ -38,7 +39,7 @@ namespace McRave::Combat::State {
         }
 
         // If within local decision range, determine if Unit needs to attack or retreat
-        else if ((insideEngageRadius || atHome) && (unit.localEngage() || winningState)) {
+        else if ((insideEngageRadius || atHome) && (unit.localEngage() || winningState || exploringGoal)) {
             unit.setLocalState(LocalState::Attack);
         }
         else if ((insideRetreatRadius || atHome) && (!unit.attemptingRunby() || Terrain::inTerritory(PlayerState::Enemy, unit.getPosition())) && (unit.localRetreat() || unit.getSimState() == SimState::Loss)) {
@@ -54,22 +55,6 @@ namespace McRave::Combat::State {
     {
         if (unit.getGlobalState() != GlobalState::None)
             return;
-
-        // Determine if we need to create a new checking unit to try and detect the enemy build
-        if (unit.hasTarget() && Util::getTime() > Time(3, 45)) {
-            auto unitTarget = unit.getTarget().lock();
-            const auto needEnemyCheck = !Players::ZvZ() && !Spy::enemyRush() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) <= 0
-                && Spy::getEnemyTransition() == "Unknown" && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(6, 00)
-                && Broodwar->getFrameCount() - unitTarget->getLastVisibleFrame() > 120
-                && Terrain::getEnemyMain()
-                && !Scouts::gatheringInformation()
-                && Broodwar->getFrameCount() - Grids::lastVisibleFrame(Terrain::getEnemyMain()->getBase()->Location()) > 120;
-
-            if (needEnemyCheck) {
-                unit.setGlobalState(GlobalState::Attack);
-                return;
-            }
-        }
 
         // Protoss
         if (Broodwar->self()->getRace() == Races::Protoss) {

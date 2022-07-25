@@ -31,11 +31,12 @@ namespace McRave::Expansion {
         void updateIslandStations()
         {
             // Check if any base is an island separated by resources
+            islandStations.clear();
             for (auto &station : BWEB::Stations::getStations()) {
                 for (auto &blocker : blockingNeutrals[&station]) {
                     if (blocker) {
                         if (blocker->getType().isMineralField() || blocker->getType().isRefinery())
-                            islandStations.push_back(&station);
+                            islandStations.push_back(&station);                        
                     }
                 }
             }
@@ -46,7 +47,7 @@ namespace McRave::Expansion {
             // Create a map of blocking neutrals per station
             blockingNeutrals.clear();
             for (auto &[station, path] : expansionNetwork[Terrain::getMyMain()]) {
-                //Visuals::drawPath(path);
+                Visuals::drawPath(path);
                 Util::testPointOnPath(path, [&](Position &p) {
                     auto type = BWEB::Map::isUsed(TilePosition(p));
                     if (type != UnitTypes::None) {
@@ -55,6 +56,7 @@ namespace McRave::Expansion {
                         });
                         if (closestNeutral && closestNeutral->getPosition().getDistance(p) < 96.0) {
                             blockingNeutrals[station].push_back(closestNeutral);
+                            Broodwar->drawCircleMap(closestNeutral->getPosition(), 4, Colors::Cyan);
                             return true;
                         }
                     }
@@ -144,10 +146,10 @@ namespace McRave::Expansion {
                         airEnemy = sqrt(1.0 + airEnemy);
                     }
                     if (!blockingNeutrals[&station].empty()) {
-                        grdHome *= sqrt(1.0 + double(blockingNeutrals[&station].size()));
-                        airHome *= sqrt(1.0 + double(blockingNeutrals[&station].size()));
+                        grdHome *= double(blockingNeutrals[&station].size());
+                        airHome *= double(blockingNeutrals[&station].size());
                     }
-                    auto dist = (grdParent * grdHome * airParent * airHome) / (grdEnemy * airEnemy * airCenter);
+                    auto dist = log(grdParent * grdHome * airParent * airHome) / (grdEnemy * airEnemy * airCenter);
 
                     // Check for a blocking neutral
                     auto blockerCost = 0.0;

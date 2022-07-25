@@ -285,8 +285,7 @@ namespace BWEB::Map
     {
         for (auto x = here.x; x < here.x + width; x++) {
             for (auto y = here.y; y < here.y + height; y++) {
-                TilePosition t(x, y);
-                if (!t.isValid())
+                if (x < 0 || y < 0 || x >= Broodwar->mapWidth() || y >= Broodwar->mapHeight())
                     continue;
                 if (reserveGrid[x][y] > 0)
                     return true;
@@ -313,15 +312,15 @@ namespace BWEB::Map
         }
     }
 
-    UnitType isUsed(const TilePosition here, const int width, const int height)
+    UnitType isUsed(const TilePosition& here, const int& width, const int& height)
     {
         for (auto x = here.x; x < here.x + width; x++) {
             for (auto y = here.y; y < here.y + height; y++) {
-                TilePosition t(x, y);
-                if (!t.isValid())
+                if (x < 0 || y < 0 || x >= Broodwar->mapWidth() || y >= Broodwar->mapHeight())
                     continue;
-                if (Map::usedGrid[x][y] != UnitTypes::None)
-                    return Map::usedGrid[x][y];
+                const auto type = Map::usedGrid[x][y];
+                if (type != UnitTypes::None)
+                    return type;
             }
         }
         return UnitTypes::None;

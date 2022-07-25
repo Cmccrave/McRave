@@ -27,7 +27,7 @@ namespace McRave::Buildings {
         {
             // If a building is unpowered, get a pylon placement ready
             if (building.getType().requiresPsi() && !Pylons::hasPowerSoon(building.getTilePosition(), building.getType()))
-                unpoweredPositions.insert(building.getTilePosition());            
+                unpoweredPositions.insert(building.getTilePosition());
 
             // If this is a defensive building and is no longer planned here, mark it for suicide
             if (building.getRole() == Role::Defender && Planning::overlapsPlan(building, building.getPosition())) {
@@ -44,6 +44,11 @@ namespace McRave::Buildings {
                             building.setMarkForDeath(true);
                     }
                 }
+            }
+
+            if (Util::getTime() > Time(6, 00)) {
+                auto range = max({ building.getGroundRange(), building.getAirRange(), double(building.getType().sightRange()) });
+                Zones::addZone(building.getPosition(), ZoneType::Defend, 1, range);
             }
         }
 
@@ -86,7 +91,7 @@ namespace McRave::Buildings {
             }
 
             // Cancelling 3rds if we're being 1 based
-            if (building.getType() == Zerg_Hatchery && isStation && Terrain::getMyNatural() && Terrain::getMyMain() && building.getTilePosition() != Terrain::getMyNatural()->getBase()->Location() && building.getTilePosition() != Terrain::getMyMain()->getBase()->Location() && Util::getTime() < Time(4, 00) && Spy::getEnemyBuild() != "FFE") {
+            if (building.getType() == Zerg_Hatchery && isStation && Terrain::getMyNatural() && Terrain::getMyMain() && building.getTilePosition() != Terrain::getMyNatural()->getBase()->Location() && building.getTilePosition() != Terrain::getMyMain()->getBase()->Location() && Util::getTime() < Time(4, 00) && !BuildOrder::takeThird()) {
                 building.unit()->cancelConstruction();
                 Events::onUnitCancelBecauseBWAPISucks(building);
             }

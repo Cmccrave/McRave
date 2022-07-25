@@ -103,9 +103,9 @@ namespace McRave::Spy::Protoss {
                 }
                 else if (arrivesBy(2, Protoss_Zealot, Time(3, 25)) || arrivesBy(4, Protoss_Zealot, Time(4, 00)) || arrivesBy(5, Protoss_Zealot, Time(4, 10)) || completesBy(2, Protoss_Gateway, Time(2, 15)))
                     theSpy.opener.name = "9/9";
-                else if ((completesBy(3, Protoss_Zealot, Time(3, 10)) && arrivesBy(3, Protoss_Zealot, Time(4, 00))) || arrivesBy(4, Protoss_Zealot, Time(4, 20)))
+                else if ((completesBy(3, Protoss_Zealot, Time(3, 10)) && arrivesBy(3, Protoss_Zealot, Time(4, 05))) || arrivesBy(4, Protoss_Zealot, Time(4, 20)))
                     theSpy.opener.name = "10/12";
-                else if ((completesBy(3, Protoss_Zealot, Time(3, 35)) && arrivesBy(3, Protoss_Zealot, Time(4, 15))) || arrivesBy(2, Protoss_Dragoon, Time(5, 00)) || completesBy(1, Protoss_Cybernetics_Core, Time(3, 40)))
+                else if ((completesBy(3, Protoss_Zealot, Time(3, 35)) && arrivesBy(3, Protoss_Zealot, Time(4, 20))) || arrivesBy(2, Protoss_Dragoon, Time(5, 00)) || completesBy(1, Protoss_Cybernetics_Core, Time(3, 40)))
                     theSpy.opener.name = "10/17";
             }
 
@@ -189,10 +189,14 @@ namespace McRave::Spy::Protoss {
 
                     if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Stargate) == 0) {
                         if ((!theSpy.expand.possible && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 && Util::getTime() < Time(6, 00))
-                            || (theSpy.typeUpgrading.find(Protoss_Cybernetics_Core) != theSpy.typeUpgrading.end() && Util::getTime() > Time(4, 00))
+                            || (theSpy.typeUpgrading.find(Protoss_Cybernetics_Core) != theSpy.typeUpgrading.end() && Util::getTime() < Time(4, 15))
                             || (Players::getPlayerInfo(Broodwar->enemy())->hasUpgrade(UpgradeTypes::Singularity_Charge) && Util::getTime() < Time(6, 00))
+                            || (arrivesBy(2, Protoss_Dragoon, Time(5, 30)))
                             || (arrivesBy(3, Protoss_Dragoon, Time(5, 45)))
                             || (arrivesBy(5, Protoss_Dragoon, Time(6, 05)))
+                            || (arrivesBy(9, Protoss_Dragoon, Time(6, 40)))
+                            || (arrivesBy(12, Protoss_Dragoon, Time(7, 25)))
+                            || (completesBy(3, Protoss_Gateway, Time(4, 00)) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Assimilator) > 0)
                             || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) >= 2 && arrivesBy(2, Protoss_Dragoon, Time(5, 00)))
                             || (completesBy(4, Protoss_Gateway, Time(5, 30)) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) >= 1))
                             theSpy.transition.name = "4Gate";

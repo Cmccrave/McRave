@@ -456,16 +456,14 @@ namespace McRave::Planning {
 
                 // How to dictate first placement position
                 if (wall.getGroundDefenseCount() < 2) {
-                    if (closestMain && closestMain->getChokepoint())
-                        desiredCenter = Position(closestMain->getChokepoint()->Center());
+                    if (closestMain && closestMain->getChokepoint() && wall.getStation() && Players::ZvT())
+                        desiredCenter = (Position(closestMain->getChokepoint()->Center()) + Position(wall.getStation()->getBase()->Center())) / 2;
                     else if (wall.getStation())
                         desiredCenter = Position(wall.getStation()->getBase()->Center());
                 }
 
                 // How to dictate row order
-                vector<int> desiredRowOrder ={ 2, 1, 3, 4 };
-                if (Spy::getEnemyOpener() == "10/17" || Spy::getEnemyBuild() == "1GateCore" || Spy::getEnemyBuild() == "FFE")
-                    desiredRowOrder ={ 2, 1, 3, 4 };
+                vector<int> desiredRowOrder ={ 3, 4, 2, 1 };
 
                 auto closestDefense = Util::getClosestUnit(Position(closestMain->getChokepoint()->Center()), PlayerState::Self, [&](auto &u) {
                     return isDefensiveType(u->getType());
@@ -473,8 +471,12 @@ namespace McRave::Planning {
                 if (closestDefense) {
                     desiredCenter = closestDefense->getPosition();
                     for (int i = 4; i >= 1; i--) {
-                        if (wall.getDefenses(i).find(closestDefense->getTilePosition()) != wall.getDefenses(i).end())
-                            desiredRowOrder.insert(desiredRowOrder.begin(), { i, i - 1, i + 1 });
+                        if (wall.getDefenses(i).find(closestDefense->getTilePosition()) != wall.getDefenses(i).end()) {
+                            if (i == 1)
+                                desiredRowOrder.insert(desiredRowOrder.begin(), { i, i + 1 });
+                            else
+                                desiredRowOrder.insert(desiredRowOrder.begin(), { i, i + 1, i - 1 });
+                        }
                     }
                 }
 
