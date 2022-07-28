@@ -1,4 +1,4 @@
-#include "McRave.h"
+#include "Main/McRave.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -8,86 +8,19 @@ namespace McRave::Combat::Destination {
 
     namespace {
 
-        vector<BWEB::Station*> combatScoutOrder;
-        multimap<double, Position> groundCleanupPositions;
-        multimap<double, Position> airCleanupPositions;
+        vector<BWEB::Station*> combatScoutOrder;        
+    }
 
-        void updateCleanup()
-        {
-            groundCleanupPositions.clear();
-            airCleanupPositions.clear();
-
-            if (Util::getTime() < Time(6, 00) || !Stations::getStations(PlayerState::Enemy).empty())
-                return;
-
-            // Look at every TilePosition and sort by furthest oldest
-            auto best = 0.0;
-            for (int x = 0; x < Broodwar->mapWidth(); x++) {
-                for (int y = 0; y < Broodwar->mapHeight(); y++) {
-                    auto t = TilePosition(x, y);
-                    auto p = Position(t) + Position(16, 16);
-
-                    if (!Broodwar->isBuildable(t))
-                        continue;
-
-                    auto frameDiff = (Broodwar->getFrameCount() - Grids::lastVisibleFrame(t));
-                    auto dist = p.getDistance(BWEB::Map::getMainPosition());
-
-                    if (mapBWEM.GetArea(t) && mapBWEM.GetArea(t)->AccessibleFrom(BWEB::Map::getMainArea()))
-                        groundCleanupPositions.emplace(make_pair(1.0 / (frameDiff * dist), p));
-                    else
-                        airCleanupPositions.emplace(make_pair(1.0 / (frameDiff * dist), p));
-                }
-            }
-        }
-
-        void getCleanupPosition(UnitInfo& unit)
-        {
-            // Finishing enemy off, find remaining bases we haven't scouted, if we haven't visited in 2 minutes
-            if (Terrain::getEnemyStartingPosition().isValid()) {
-                auto best = DBL_MAX;
-                for (auto &area : mapBWEM.Areas()) {
-                    for (auto &base : area.Bases()) {
-                        if (area.AccessibleNeighbours().size() == 0
-                            || Terrain::inTerritory(PlayerState::Self, base.Center()))
-                            continue;
-
-                        int time = Grids::lastVisibleFrame(base.Location());
-                        if (time < best) {
-                            best = time;
-                            unit.setDestination(Position(base.Location()));
-                        }
-                    }
-                }
-            }
-
-            // Need to scout in drone scouting order in ZvZ, ovie order in non ZvZ
-            else {
-                combatScoutOrder = Scouts::getScoutOrder(Zerg_Zergling);
-                if (!combatScoutOrder.empty()) {
-                    for (auto &station : combatScoutOrder) {
-                        if (!Stations::isBaseExplored(station)) {
-                            unit.setDestination(station->getBase()->Center());
-                            break;
-                        }
-                    }
-                }
-
-                if (combatScoutOrder.size() > 2 && !Stations::isBaseExplored(*(combatScoutOrder.begin() + 1))) {
-                    combatScoutOrder.erase(combatScoutOrder.begin());
-                }
-            }
-
-            // Finish off positions that are old
-            if (Util::getTime() > Time(8, 00)) {
-                if (unit.isFlying() && !airCleanupPositions.empty()) {
-                    unit.setDestination(airCleanupPositions.begin()->second);
-                    airCleanupPositions.erase(airCleanupPositions.begin());
-                }
-                else if (!unit.isFlying() && !groundCleanupPositions.empty()) {
-                    unit.setDestination(groundCleanupPositions.begin()->second);
-                    groundCleanupPositions.erase(groundCleanupPositions.begin());
-                }
+    void getCleanupPosition(UnitInfo& unit)
+    {
+        // Finish off positions that are old
+        if (Util::getTime() > Time(1, 00)) {
+            auto &list = unit.isFlying() ? Terrain::getAirCleanupPositions() : Terrain::getGroundCleanupPositions();
+            if (!list.empty()) {
+                unit.setDestination(*list.begin());
+                list.erase(remove_if(list.begin(), list.end(), [&](auto &p) {
+                    return unit.getDestination().getDistance(p) < 160.0;
+                }), list.end());
             }
         }
     }

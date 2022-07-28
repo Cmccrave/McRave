@@ -1,5 +1,4 @@
-#include "McRave.h"
-#include "BuildOrder.h"
+#include "Main/McRave.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -16,6 +15,7 @@ namespace McRave::BuildOrder::Terran
             firstUpgrade =  UpgradeTypes::Ion_Thrusters;
             firstTech = TechTypes::None;
             inOpeningBook = s < 70;
+            inBookSupply = vis(Terran_Supply_Depot) < 0;
             scout = s >= 20 && vis(Terran_Supply_Depot) > 0;
             wallMain = true;
             gasLimit = INT_MAX;

@@ -1,4 +1,4 @@
-#include "McRave.h"
+#include "Main/McRave.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -43,7 +43,7 @@ namespace McRave::Combat::Navigation {
     void getRegroupPath(UnitInfo& unit)
     {
         const auto flyerRegroup = [&](const TilePosition &t) {
-            return Grids::getEAirThreat(Position(t) + Position(16, 16)) * 250.0;
+            return Grids::getAirThreat(Position(t) + Position(16, 16), PlayerState::Enemy) * 250.0;
         };
 
         const auto closestFriend = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
@@ -93,7 +93,7 @@ namespace McRave::Combat::Navigation {
                 d = min(d, center.getApproxDistance(pos));
 
             auto dist = max(0.01, double(d) - min(simDistCurrent, int(unit.getRetreatRadius() + 64.0)));
-            auto vis = clamp(double(Broodwar->getFrameCount() - Grids::lastVisibleFrame(t)) / 960.0, 0.5, 3.0);
+            auto vis = clamp(double(Broodwar->getFrameCount() - Grids::getLastVisibleFrame(t)) / 960.0, 0.5, 3.0);
             return 1.0 / (vis * dist);
         };
 

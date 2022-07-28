@@ -1,5 +1,4 @@
-#include "McRave.h"
-#include "BuildOrder.h"
+#include "Main/McRave.h"
 
 using namespace BWAPI;
 using namespace std;

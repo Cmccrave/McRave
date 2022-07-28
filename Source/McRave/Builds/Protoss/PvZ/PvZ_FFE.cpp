@@ -1,5 +1,4 @@
-#include "McRave.h"
-#include "BuildOrder.h"
+#include "Main/McRave.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -116,6 +115,28 @@ namespace McRave::BuildOrder::Protoss {
             armyComposition[Protoss_Dragoon] =          1.00;
         }
 
+        void PvZ_4StargateScout()
+        {
+            inOpeningBook =                             s < 100;
+            lockedTransition =                          total(Protoss_Stargate) >= 2;
+            firstUpgrade =                              total(Protoss_Stargate) > 0 ? UpgradeTypes::Protoss_Air_Weapons : UpgradeTypes::None;
+            firstTech =                                 TechTypes::None;
+            firstUnit =                                 Protoss_Scout;
+            playPassive =                               com(Protoss_Scout) == 0;
+
+            // Build
+            buildQueue[Protoss_Assimilator] =           (s >= 38) + (atPercent(Protoss_Cybernetics_Core, 0.75));
+            buildQueue[Protoss_Cybernetics_Core] =      s >= 36;
+            buildQueue[Protoss_Fleet_Beacon] =          com(Protoss_Stargate) > 0;
+            buildQueue[Protoss_Stargate] =              (vis(Protoss_Scout) > 0) + (atPercent(Protoss_Cybernetics_Core, 1.00)) + (vis(Protoss_Fleet_Beacon) > 0) * 2;
+
+            // Army Composition
+            armyComposition[Protoss_Zealot] =           0.60;
+            armyComposition[Protoss_Scout] =            0.25;
+            armyComposition[Protoss_High_Templar] =     0.05;
+            armyComposition[Protoss_Dark_Templar] =     0.10;
+        }
+
         void PvZ_NeoBisu()
         {
             // "https://liquipedia.net/starcraft/%2B1_Sair/Speedlot_(vs._Zerg)"
@@ -126,7 +147,7 @@ namespace McRave::BuildOrder::Protoss {
             firstUnit =                                 Protoss_Corsair;
 
             // Build
-            buildQueue[Protoss_Assimilator] =           (s >= 34) + (atPercent(Protoss_Cybernetics_Core, 0.75));
+            buildQueue[Protoss_Assimilator] =           (s >= 34) + (vis(Protoss_Cybernetics_Core) > 0);
             buildQueue[Protoss_Gateway] =               1 + (vis(Protoss_Citadel_of_Adun) > 0);
             buildQueue[Protoss_Cybernetics_Core] =      s >= 36;
             buildQueue[Protoss_Citadel_of_Adun] =       vis(Protoss_Corsair) > 0;
@@ -178,6 +199,8 @@ namespace McRave::BuildOrder::Protoss {
                 PvZ_5GateGoon();
             if (currentTransition == "NeoBisu")
                 PvZ_NeoBisu();
+            if (currentTransition == "4StargateScout")
+                PvZ_4StargateScout();
         }
     }
 }

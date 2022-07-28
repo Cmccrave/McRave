@@ -1,4 +1,4 @@
-﻿#include "McRave.h"
+﻿#include "Main/McRave.h"
 
 using namespace std;
 using namespace BWAPI;
@@ -159,11 +159,6 @@ namespace McRave::BuildOrder::Zerg {
         }
     }
 
-    void ZvP2pt5HatchMuta()
-    {
-
-    }
-
     void ZvP3HatchMuta()
     {
         // 'https://liquipedia.net/starcraft/3_Hatch_Spire_(vs._Protoss)'
@@ -292,32 +287,41 @@ namespace McRave::BuildOrder::Zerg {
         armyComposition[Zerg_Zergling] =                0.80;
     }
 
-    void ZvP5HatchArmorSpeedling()
+    void ZvP2HatchCrackling()
     {
-        auto armor = Broodwar->self()->isUpgrading(UpgradeTypes::Zerg_Carapace) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Zerg_Carapace) != 0;
         lockedTransition =                              true;
-        inOpeningBook =                                 total(Zerg_Zergling) < 500;
+        inOpeningBook =                                 total(Zerg_Zergling) < 100;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
         firstUpgrade =                                  lingSpeed() ? UpgradeTypes::Zerg_Carapace : UpgradeTypes::Metabolic_Boost;
         firstUnit =                                     Zerg_Mutalisk;
-        unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) == 0 ? 15 - hatchCount() : 15;
+        unitLimits[Zerg_Drone] =                        com(Zerg_Hive) > 0 ? 21 : 18;
         unitLimits[Zerg_Zergling] =                     200;
-        playPassive =                                   Util::getTime() < Time(5, 30);
-        gasLimit =                                      (vis(Zerg_Drone) >= 11 && !armor) ? gasMax() : 0;
+        playPassive =                                   Broodwar->self()->getUpgradeLevel(UpgradeTypes::Adrenal_Glands) == 0;
+        gasLimit =                                      (vis(Zerg_Drone) >= 10 && Broodwar->self()->gatheredGas() < 800) ? gasMax() : 0;
 
-        buildQueue[Zerg_Hatchery] =                     2 + (s >= 26) + 3 * (s >= 70);
-        buildQueue[Zerg_Extractor] =                    (s >= 32 && vis(Zerg_Drone) >= 11 && hatchCount() >= 3);
-        buildQueue[Zerg_Evolution_Chamber] =            (lingSpeed());
+        if (vis(Zerg_Lair) > 0)
+            firstUpgrade = UpgradeTypes::Zerg_Carapace;
+        if (Broodwar->self()->isUpgrading(UpgradeTypes::Zerg_Carapace))
+            firstUpgrade = UpgradeTypes::Metabolic_Boost;
+        if (com(Zerg_Hive) > 0)
+            firstUpgrade = UpgradeTypes::Adrenal_Glands;
+
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32 && vis(Zerg_Extractor) > 0);
+        buildQueue[Zerg_Hatchery] =                     2 + (s >= 60) + (s >= 70) + (s >= 76) + (s >= 82) + (s >= 88);
+        buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
+        buildQueue[Zerg_Extractor] =                    (s >= 24 && hatchCount() >= 2 && vis(Zerg_Drone) >= 10);
+        buildQueue[Zerg_Evolution_Chamber] =            (vis(Zerg_Lair) > 0 && vis(Zerg_Drone) >= 18);
+        buildQueue[Zerg_Queens_Nest] =                  (com(Zerg_Lair) == 1 && vis(Zerg_Drone) >= 18);
+        buildQueue[Zerg_Hive] =                         (com(Zerg_Queens_Nest) == 1 && vis(Zerg_Drone) >= 18);
 
         // Composition
-        if (lingsNeeded_ZvP() > vis(Zerg_Zergling)) {
+        if (lingsNeeded_ZvP() > vis(Zerg_Zergling) || vis(Zerg_Drone) == unitLimits[Zerg_Drone]) {
             armyComposition[Zerg_Drone] =               0.00;
             armyComposition[Zerg_Zergling] =            1.00;
         }
         else {
-            armyComposition[Zerg_Drone] =               0.60;
-            armyComposition[Zerg_Zergling] =            0.40;
+            armyComposition[Zerg_Drone] =               1.00;
+            armyComposition[Zerg_Zergling] =            0.00;
         }
     }
 
@@ -419,8 +423,6 @@ namespace McRave::BuildOrder::Zerg {
         if (transitionReady) {
             if (currentTransition == "2HatchMuta")
                 ZvP2HatchMuta();
-            if (currentTransition == "2.5HatchMuta")
-                ZvP2pt5HatchMuta();
             if (currentTransition == "3HatchMuta")
                 ZvP3HatchMuta();
             if (currentTransition == "4HatchMuta")

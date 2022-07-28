@@ -1,4 +1,4 @@
-#include "McRave.h"
+#include "Main/McRave.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -85,7 +85,7 @@ namespace McRave::BuildOrder::Terran {
                     || (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getMiningStationsCount() <= 2)
                     || (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getGasingStationsCount() <= 1);
 
-                buildQueue[Terran_Command_Center] = com(Terran_Command_Center) + expandDesired;
+                buildQueue[Terran_Command_Center] = vis(Terran_Command_Center) + expandDesired;
             }
         }
 
@@ -94,12 +94,12 @@ namespace McRave::BuildOrder::Terran {
             // If we're not in our opener
             if (!inOpeningBook) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
-                rampDesired = !productionSat && ((techUnit == None && availableMinerals >= 150 && (techSat || com(Terran_Command_Center) >= 3)) || availableMinerals >= 300);
 
                 // Adding production
                 auto maxFacts = 8;
                 auto factsPerBase = 3;
                 productionSat = (vis(Terran_Factory) >= int(factsPerBase * vis(Terran_Command_Center)) || vis(Terran_Command_Center) >= maxFacts);
+                rampDesired = !productionSat && ((techUnit == None && availableMinerals >= 150 && (techSat || com(Terran_Command_Center) >= 3)) || availableMinerals >= 300);
                 if (rampDesired) {
                     auto factCount = min({ maxFacts, int(round(com(Terran_Command_Center) * factsPerBase)), vis(Terran_Factory) + 1 });
                     buildQueue[Terran_Factory] = factCount;
@@ -133,6 +133,7 @@ namespace McRave::BuildOrder::Terran {
     {
         auto techVal = int(techList.size());
         techSat = (techVal > vis(Terran_Command_Center));
+        techOrder ={ Terran_Vulture, Terran_Siege_Tank_Tank_Mode };
 
         if (techComplete())
             techUnit = None;   
