@@ -107,6 +107,15 @@ namespace McRave::Visuals {
                 }
             }
 
+            const auto getAngle = [&](Position p1, Position p2) {
+                auto dy = double(p2.y - p1.y);
+                auto dx = double(p2.x - p1.x);
+                return std::abs(dx) > 1.0 ? fmod(std::atan2(-dy, dx) + 6.18, 6.18) : 1.57;
+            };
+
+            Broodwar->drawLineMap(BWEB::Map::getMainPosition(), Broodwar->getMousePosition() + Broodwar->getScreenPosition(), Colors::Green);
+            Broodwar->drawTextMap(Broodwar->getMousePosition() + Broodwar->getScreenPosition() + Position(32, 32), "%.2f", getAngle(BWEB::Map::getMainPosition(), Broodwar->getMousePosition() + Broodwar->getScreenPosition()));
+
             // Resource
             if (resources) {
                 for (auto &r : Resources::getMyMinerals()) {

@@ -11,6 +11,9 @@ namespace BWEB {
         vector<const BWEM::Base *> natBases;
         vector<const BWEM::ChokePoint*> mainChokes;
         vector<const BWEM::ChokePoint*> natChokes;
+        map<const BWEM::Mineral *, vector<TilePosition>> testTiles;
+        vector<BWEB::Path> testPaths;
+        UnitType defenseType;
     }
 
     void Station::addResourceReserves()
@@ -56,17 +59,6 @@ namespace BWEB {
 
                 if (next.isValid()) {
                     Map::addReserve(next, 1, 1);
-
-                    // Remove any defenses in the way of a geyser
-                    if (!resource->getType().isMineralField()) {
-                        for (auto &def : defenses) {
-                            if (next.x >= def.x && next.x < def.x + 2 && next.y >= def.y && next.y < def.y + 2) {
-                                defenses.erase(def);
-                                Map::removeUsed(def, 2, 2);
-                                break;
-                            }
-                        }
-                    }
                 }
             }
         };
@@ -105,6 +97,13 @@ namespace BWEB {
         if (cnt > 0)
             resourceCentroid = resourceCentroid / cnt;
         Map::addUsed(base->Location(), Broodwar->self()->getRace().getResourceDepot());
+
+        if (Broodwar->self()->getRace() == Races::Protoss)
+            defenseType = UnitTypes::Protoss_Photon_Cannon;
+        if (Broodwar->self()->getRace() == Races::Terran)
+            defenseType = UnitTypes::Terran_Missile_Turret;
+        if (Broodwar->self()->getRace() == Races::Zerg)
+            defenseType = UnitTypes::Zerg_Creep_Colony;
     }
 
     void Station::findChoke()
@@ -193,12 +192,121 @@ namespace BWEB {
             defenseCentroid = Position(choke->Center());
         if (choke)
             main ? mainChokes.push_back(choke) : natChokes.push_back(choke);
+
+        // Create angles that dictate a lot about how the station is formed
+        if (choke) {
+            anglePosition = Position(choke->Center()) + Position(4, 4);
+            auto dist = min(640.0, getBase()->Center().getDistance(anglePosition));
+            if (main) {
+                BWEB::Path newPath(getBase()->Center(), anglePosition, UnitTypes::Protoss_Dragoon, true, false);
+                newPath.generateBFS([&](auto &t) { return newPath.terrainWalkable(t); });
+                for (auto &tile : newPath.getTiles()) {
+                    auto center = Position(tile) + Position(16, 16);
+                    if (center.getDistance(getBase()->Center()) > 320.0) {
+                        anglePosition = center;
+                        break;
+                    }
+                }
+            }
+
+            baseAngle = Map::getAngle(make_pair(getBase()->Center(), anglePosition));
+            chokeAngle = Map::getAngle(make_pair(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2))));
+            defenseAngle = max(0.0, (baseAngle  * (dist / 640.0)) + (chokeAngle * (640.0 - dist) / 640.0));
+        }
     }
 
     void Station::findSecondaryLocations()
     {
         if (Broodwar->self()->getRace() != Races::Zerg)
             return;
+
+        vector<pair<TilePosition, TilePosition>> tryOrder;
+
+        // Determine some standard positions
+        auto mineralsLeft = resourceCentroid.x < base->Center().x;
+        for (auto &geyser : base->Geysers()) {
+
+            // Geyser west of hatchery
+            if (geyser->TopLeft() == base->Location() + TilePosition(-7, 1)) {
+
+                // North
+                if (baseAngle < 2.355 && baseAngle >= 0.785) {
+                    tryOrder ={
+                    { base->Location() + TilePosition(-3, -2), base->Location() + TilePosition(-5, -1) }
+                    };
+                }
+            }
+
+            // Geyser north of hatchery
+            if (geyser->TopLeft() == base->Location() + TilePosition(0, -5)) {
+
+                // North
+                if (baseAngle < 2.355 && baseAngle >= 0.785) {
+                    if (mineralsLeft) {
+                        tryOrder ={
+                        { base->Location() + TilePosition(-3, -4), base->Location() + TilePosition(4, -4) },
+                        { base->Location() + TilePosition(4, -4), base->Location() + TilePosition(-2, -4) }
+                        };
+                    }
+                    else {
+                        tryOrder ={
+                        { base->Location() + TilePosition(4, -4), base->Location() + TilePosition(-2, -4) },
+                        { base->Location() + TilePosition(-3, -4), base->Location() + TilePosition(4, -4) }
+                        };
+                    }
+                }
+
+                // West
+                else if (baseAngle < 3.925 && baseAngle >= 2.355) {
+                    if (mineralsLeft) {
+
+                    }
+                    else {
+                        tryOrder ={
+                        { base->Location() + TilePosition(-3, -4), base->Location() + TilePosition(-2, -2) }
+                        };
+                    }
+                }
+
+                // South
+                else if (baseAngle < 5.495 && baseAngle >= 3.925) {
+                    if (mineralsLeft) {
+                        tryOrder ={
+                        { base->Location() + TilePosition(-3, 5), base->Location() + TilePosition(0, 3) },
+                        { base->Location() + TilePosition(-2, 5), base->Location() + TilePosition(0, 3) }
+                        };
+                    }
+                    else {
+                        tryOrder ={
+                        { base->Location() + TilePosition(4, 5), base->Location() + TilePosition(2, 3) },
+                        { base->Location() + TilePosition(3, 5), base->Location() + TilePosition(1, 3) },
+                        { base->Location() + TilePosition(2, 5), base->Location() + TilePosition(1, 3) },
+                        { base->Location() + TilePosition(1, 5), base->Location() + TilePosition(1, 3) }
+                        };
+                    }
+                }
+
+                else {
+                    if (mineralsLeft) {
+                        tryOrder ={
+                        { base->Location() + TilePosition(4, -4), base->Location() + TilePosition(4, -2) }
+                        };
+                    }
+                }
+            }
+
+            // For each pair, we try to place the best positions first
+            for (auto &[medium, small] : tryOrder) {
+                if (Map::isPlaceable(UnitTypes::Zerg_Spawning_Pool, medium) && Map::isPlaceable(UnitTypes::Zerg_Spire, small)) {
+                    mediumPosition = medium;
+                    smallPosition = small;
+                    Map::addUsed(smallPosition, UnitTypes::Zerg_Spire);
+                    Map::addUsed(mediumPosition, UnitTypes::Zerg_Spawning_Pool);
+                    break;
+                }
+            }
+            tryOrder.clear();
+        }
 
         auto cnt = 0;
         if (main)
@@ -228,29 +336,100 @@ namespace BWEB {
         }
     }
 
+    void Station::findNestedDefenses()
+    {
+        vector<TilePosition> placements;
+        for (auto &mineral : base->Minerals()) {
+            vector<TilePosition>& tiles = testTiles[mineral];
+
+            for (int x = -2; x < 3; x++) {
+                for (int y = -2; y < 2; y++) {
+                    auto tile = mineral->TopLeft() + TilePosition(x, y);
+                    auto pos = Position(tile) + Position(16, 16);
+                    if (tile.isValid() && find(placements.begin(), placements.end(), tile) == placements.end() && pos.getDistance(base->Center()) < mineral->Pos().getDistance(base->Center()))
+                        placements.push_back(tile);
+                }
+            }
+
+            for (int x = -1; x < 3; x++) {
+                for (int y = -1; y < 2; y++) {
+                    auto tile = mineral->TopLeft() + TilePosition(x, y);
+                    if (tile.isValid() && find(tiles.begin(), tiles.end(), tile) == tiles.end())
+                        tiles.push_back(tile);
+                }
+            }
+
+            // Sort tiles by closest to base
+            sort(tiles.begin(), tiles.end(), [&](auto &l, auto &r) {
+                auto pl = Position(l) + Position(16, 16);
+                auto pr = Position(r) + Position(16, 16);
+                return pl.getDistance(base->Center()) < pr.getDistance(base->Center());
+            });
+
+            // Resize to 3
+            tiles.resize(3);
+
+            // Narrow down to only walkable
+            tiles.erase(remove_if(tiles.begin(), tiles.end(), [&](auto &t) {
+                return BWEB::Map::isUsed(t).isMineralField();
+            }), tiles.end());
+        }
+
+        if (choke) {
+            auto chokeCenter = Position(choke->Center());
+            sort(placements.begin(), placements.end(), [&](auto &l, auto &r) {
+                auto pl = Position(l) + Position(16, 16);
+                auto pr = Position(r) + Position(16, 16);
+                return pl.getDistance(chokeCenter) < pr.getDistance(chokeCenter);
+            });
+        }
+
+        // Iterate all placements and verify that each mineral has a guaranteed reasonable path to the hatchery
+        for (auto &placement : placements) {
+            if (BWEB::Map::isPlaceable(defenseType, placement)) {
+                auto buildable = true;
+                auto pathable = true;
+                Map::addUsed(placement, defenseType);
+                for (auto &mineral : base->Minerals()) {
+                    vector<TilePosition>& tiles = testTiles[mineral];
+                    auto count = count_if(tiles.begin(), tiles.end(), [&](auto &t) {
+                        return t.x >= placement.x && t.x < placement.x + 2 && t.y >= placement.y && t.y < placement.y + 2;
+                    });
+                    if (count >= int(tiles.size())) {
+                        buildable = false;
+                    }
+
+                    count = 0;
+                    for (auto &tile : tiles) {
+                        BWEB::Path newPath(base->Center(), Position(tile) + Position(16, 16), UnitTypes::Zerg_Drone, false, false);
+                        newPath.generateBFS([&](auto &t) { return newPath.unitWalkable(t) || BWEB::Map::isUsed(t).isResourceDepot(); });
+                        if (newPath.isReachable() && newPath.getDistance() < 320.0) {
+                            count++;
+                            break;
+                        }
+                    }
+                    BWEB::Pathfinding::clearCacheFully();
+                    if (count == 0)
+                        pathable = false;
+                }
+
+                Map::removeUsed(placement, 2, 2);
+                if (buildable && pathable) {
+                    defenses.insert(placement);
+                    Map::addUsed(placement, defenseType);
+                }
+            }
+        }
+    }
+
     void Station::findDefenses()
     {
         vector<TilePosition> basePlacements;
         vector<TilePosition> geyserPlacements ={ {-2, -2}, {-2, 0}, {-2, 2}, {0, -2}, {0, 2}, {2, -2}, {2, 2}, {4, -2}, {4, 0}, {4, 2} };
         auto here = base->Location();
-        auto defenseType = UnitTypes::None;
-        if (Broodwar->self()->getRace() == Races::Protoss)
-            defenseType = UnitTypes::Protoss_Photon_Cannon;
-        if (Broodwar->self()->getRace() == Races::Terran)
-            defenseType = UnitTypes::Terran_Missile_Turret;
-        if (Broodwar->self()->getRace() == Races::Zerg)
-            defenseType = UnitTypes::Zerg_Creep_Colony;
 
         // Get angle of chokepoint
         if (choke && base && (main || natural)) {
-            auto dist = min(640.0, getBase()->Center().getDistance(Position(choke->Center())));
-            baseAngle = fmod(Map::getAngle(make_pair(getBase()->Center(), Position(choke->Center()) + Position(4, 4))), 3.14);
-            chokeAngle = fmod(Map::getAngle(make_pair(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2)))), 3.14);
-
-            auto diff = baseAngle - chokeAngle;
-            diff > 0.7 ? baseAngle -= 1.57 : baseAngle += 1.57;
-            defenseAngle = max(0.0, (baseAngle  * (dist / 640.0)) + (chokeAngle * (640.0 - dist) / 640.0));
-
             if (base->GetArea()->ChokePoints().size() >= 3) {
                 const BWEM::ChokePoint * validSecondChoke = nullptr;
                 for (auto &otherChoke : base->GetArea()->ChokePoints()) {
@@ -271,9 +450,9 @@ namespace BWEB {
             defenseAngle = fmod(Map::getAngle(make_pair(Position(getBase()->Center()), defenseCentroid)), 3.14) + 1.57;
         }
 
-        // Round to nearest pi/8 rads
-        auto nearestEight = int(round(defenseAngle / 0.785));
-        auto angle = nearestEight % 4;
+        // Round to nearest pi/4 rads
+        auto nearestFourth = int(round(defenseAngle / 0.785));
+        auto angle = nearestFourth % 4;
 
         // Generate defenses
         if (main)
@@ -328,26 +507,42 @@ namespace BWEB {
             }
         }
 
-        // Add geyser defenses
-        if (main) {
-            for (auto &geyser : base->Geysers()) {
-                for (auto &placement : geyserPlacements) {
-                    auto tile = geyser->TopLeft() + placement;
-                    auto center = Position(tile) + Position(16, 16);
-                    if (center.getDistance(base->Center()) > geyser->Pos().getDistance(base->Center()) && Map::isPlaceable(defenseType, tile)) {
-                        defenses.insert(tile);
-                        Map::addUsed(tile, defenseType);
-                    }
-                }
-            }
-        }
-
+        //// Add geyser defenses
+        //if (main) {
+        //    for (auto &geyser : base->Geysers()) {
+        //        for (auto &placement : geyserPlacements) {
+        //            auto tile = geyser->TopLeft() + placement;
+        //            auto center = Position(tile) + Position(16, 16);
+        //            if (center.getDistance(base->Center()) > geyser->Pos().getDistance(base->Center()) && Map::isPlaceable(defenseType, tile)) {
+        //                defenses.insert(tile);
+        //                Map::addUsed(tile, defenseType);
+        //            }
+        //        }
+        //    }
+        //}
     }
 
     void Station::draw()
     {
         int color = Broodwar->self()->getColor();
         int textColor = color == 185 ? textColor = Text::DarkGreen : Broodwar->self()->getTextColor();
+
+        for (auto &[mineral, tiles] : testTiles) {
+            int i = 0;
+            for (auto &tile : tiles) {
+                //Broodwar->drawTextMap(Position(tile), "%d", ++i);
+                //Broodwar->drawLineMap(Position(tile) + Position(16, 16), mineral->Pos(), Colors::Green);
+            }
+            //Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(31, 31), Colors::Grey);
+        }
+        for (auto &path : testPaths) {
+            //auto prev = path.getSource();
+            //for (auto &tile : path.getTiles()) {
+            //    Broodwar->drawLineMap(Position(tile), Position(prev), Colors::Red);
+            //    prev = tile;
+            //}
+            Broodwar->drawLineMap((Position)path.getSource(), (Position)path.getTarget(), Colors::Red);
+        }
 
         // Draw boxes around each feature
         for (auto &tile : defenses) {
@@ -377,7 +572,7 @@ namespace BWEB {
             }
 
             Broodwar->drawLineMap(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2)), Colors::Grey);
-            Broodwar->drawLineMap(base->Center(), Position(choke->Center()), Colors::Grey);
+            Broodwar->drawLineMap(base->Center(), anglePosition, Colors::Grey);
         }
 
         // Label angle
@@ -387,10 +582,16 @@ namespace BWEB {
 
         Broodwar->drawBoxMap(Position(base->Location()), Position(base->Location()) + Position(129, 97), color);
         Broodwar->drawTextMap(Position(base->Location()) + Position(4, 84), "%cS", textColor);
+
+        // Draw secondary locations
         for (auto &location : secondaryLocations) {
             Broodwar->drawBoxMap(Position(location), Position(location) + Position(129, 97), color);
             Broodwar->drawTextMap(Position(location) + Position(4, 84), "%cS", textColor);
         }
+        Broodwar->drawBoxMap(Position(mediumPosition), Position(mediumPosition) + Position(97, 65), color);
+        Broodwar->drawTextMap(Position(mediumPosition) + Position(4, 52), "%cS", textColor);
+        Broodwar->drawBoxMap(Position(smallPosition), Position(smallPosition) + Position(65, 65), color);
+        Broodwar->drawTextMap(Position(smallPosition) + Position(4, 52), "%cS", textColor);
     }
 
     void Station::cleanup()
@@ -407,9 +608,13 @@ namespace BWEB {
             Map::addReserve(tile, 4, 3);
         }
 
-        // Remove used on main location
+        // Remove used on base location
         Map::removeUsed(getBase()->Location(), 4, 3);
         Map::addReserve(getBase()->Location(), 4, 3);
+        Map::removeUsed(mediumPosition, 3, 2);
+        Map::addReserve(mediumPosition, 3, 2);
+        Map::removeUsed(smallPosition, 2, 2);
+        Map::addReserve(smallPosition, 2, 2);
     }
 }
 

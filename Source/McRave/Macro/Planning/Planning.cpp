@@ -79,7 +79,7 @@ namespace McRave::Planning {
                     return true;
             }
             return false;
-        }        
+        }
 
         bool isPlannable(UnitType building, TilePosition here)
         {
@@ -243,11 +243,25 @@ namespace McRave::Planning {
 
             // Check if any secondary locations are available here
             auto closestStation = Stations::getClosestStationAir(here, PlayerState::Self);
-            if (closestStation && building == Zerg_Hatchery) {
-                for (auto &location : closestStation->getSecondaryLocations()) {
-                    if (isBuildable(building, location) && isPlannable(building, location) && isPathable(building, location)) {
-                        tileBest = location;
+            if (closestStation) {
+                if (building == Zerg_Spawning_Pool) {
+                    if (isBuildable(building, closestStation->getMediumPosition()) && isPlannable(building, closestStation->getMediumPosition()) && isPathable(building, closestStation->getMediumPosition())) {
+                        tileBest = closestStation->getMediumPosition();
                         return tileBest;
+                    }
+                }
+                else if (building == Zerg_Spire) {
+                    if (isBuildable(building, closestStation->getSmallPosition()) && isPlannable(building, closestStation->getSmallPosition()) && isPathable(building, closestStation->getSmallPosition())) {
+                        tileBest = closestStation->getSmallPosition();
+                        return tileBest;
+                    }
+                }
+                else if (building == Zerg_Hatchery) {
+                    for (auto &location : closestStation->getSecondaryLocations()) {
+                        if (building == Zerg_Hatchery && isBuildable(building, location) && isPlannable(building, location) && isPathable(building, location)) {
+                            tileBest = location;
+                            return tileBest;
+                        }
                     }
                 }
             }
@@ -825,7 +839,7 @@ namespace McRave::Planning {
         {
             if (!BWEB::Map::getMainChoke()->Center() || !unreachablePositions.empty())
                 return;
-            unreachablePositions.push_back(TilePosition(-1,-1)); // Put in at least one tile to prevent re-checking often
+            unreachablePositions.push_back(TilePosition(-1, -1)); // Put in at least one tile to prevent re-checking often
             auto start = Position(BWEB::Map::getMainChoke()->Center());
 
             // TODO: Assumes a main wall only for now
@@ -855,7 +869,7 @@ namespace McRave::Planning {
             for (auto &wall : BWEB::Walls::getWalls()) {
                 for (auto &def : wall.second.getDefenses()) {
                     if (!reachable(Position(def)))
-                        unreachablePositions.push_back(def);                    
+                        unreachablePositions.push_back(def);
                 }
             }
         }
@@ -980,7 +994,6 @@ namespace McRave::Planning {
             || building == Zerg_Creep_Colony
             || building == Zerg_Sunken_Colony
             || building == Zerg_Spore_Colony
-            || building == Zerg_Spire
             || building == Terran_Missile_Turret
             || building == Terran_Bunker;
     }

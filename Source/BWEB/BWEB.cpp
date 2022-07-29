@@ -39,7 +39,7 @@ namespace BWEB::Map
             // Add overlap for neutrals
             for (auto unit : Broodwar->getNeutralUnits()) {
                 if (unit && unit->exists() && unit->getType().topSpeed() == 0.0)
-                    addReserve(unit->getTilePosition() - TilePosition(1,1), unit->getType().tileWidth() + 2, unit->getType().tileHeight() + 2);
+                    addReserve(unit->getTilePosition() - TilePosition(1, 1), unit->getType().tileWidth() + 2, unit->getType().tileHeight() + 2);
                 if (unit->getType().isBuilding())
                     addUsed(unit->getTilePosition(), unit->getType());
             }
@@ -131,12 +131,20 @@ namespace BWEB::Map
             }
         }
 
-        // Set all tiles on geysers as fully unwalkable
+        // Set all tiles on geysers as used and fully unwalkable
         for (auto gas : Broodwar->getGeysers()) {
             for (int x = gas->getTilePosition().x; x < gas->getTilePosition().x + 4; x++) {
                 for (int y = gas->getTilePosition().y; y < gas->getTilePosition().y + 2; y++) {
+                    usedGrid[x][y] = gas->getType();
                     walkGridFull[x][y] = false;
                 }
+            }
+        }
+
+        // Set all tiles on minerals as used
+        for (auto mineral : Broodwar->getMinerals()) {
+            for (int x = mineral->getTilePosition().x; x < mineral->getTilePosition().x + 2; x++) {
+                usedGrid[x][mineral->getTilePosition().y] = mineral->getType();
             }
         }
 
@@ -252,7 +260,7 @@ namespace BWEB::Map
             // Clear pathfinding cache
             Pathfinding::clearCacheFully();
         }
-        
+
         // Update BWEM
         if (unit->getPlayer()->isNeutral() && find_if(Map::mapBWEM.StaticBuildings().begin(), Map::mapBWEM.StaticBuildings().end(), [&](auto &n) { return n.get()->Unit() == unit; }) != Map::mapBWEM.StaticBuildings().end())
             Map::mapBWEM.OnStaticBuildingDestroyed(unit);

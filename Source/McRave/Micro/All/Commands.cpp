@@ -154,7 +154,7 @@ namespace McRave::Command {
                     return false;
                 if (unit.attemptingSurround())
                     return false;
-                return unit.isWithinRange(*unitTarget) && (unit.getLocalState() == LocalState::Attack || unit.attemptingRunby());
+                return unit.isWithinRange(*unitTarget) && unit.getLocalState() == LocalState::Attack;
             }
 
             // Workers will poke damage if near a build job or is threatning our gathering

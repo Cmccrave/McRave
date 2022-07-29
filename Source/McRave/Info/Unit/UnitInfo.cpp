@@ -701,7 +701,7 @@ namespace McRave
             return true;
 
         auto desiredAngle = BWEB::Map::getAngle(make_pair(getPosition(), otherUnit.getPosition()));
-        auto currentAngle = unit()->getAngle();
+        auto currentAngle = 6.18 - unit()->getAngle(); // Reverse direction to counter clockwise, as it should be
         return abs(desiredAngle - currentAngle) < 0.9;
     }
 
