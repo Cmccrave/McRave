@@ -400,7 +400,7 @@ namespace McRave::Math {
             || Players::getTotalCount(PlayerState::Enemy, Protoss_Arbiter) > 0
             || Players::getTotalCount(PlayerState::Enemy, Zerg_Guardian) > 0
             || Players::getTotalCount(PlayerState::Enemy, Zerg_Defiler) > 0)
-            return 540.0 + Players::getSupply(PlayerState::Self, Races::None);
+            return 540.0 + 4 * Players::getSupply(PlayerState::Self, Races::None);
         if (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0
             || Players::getTotalCount(PlayerState::Enemy, Terran_Goliath) > 0
             || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith) > 0
@@ -416,8 +416,8 @@ namespace McRave::Math {
             || Players::getTotalCount(PlayerState::Enemy, Zerg_Lurker) > 0
             || Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0
             || Players::getTotalCount(PlayerState::Enemy, Zerg_Sunken_Colony) > 0)
-            return 400.0 + Players::getSupply(PlayerState::Self, Races::None);
-        return 320.0 + Players::getSupply(PlayerState::Self, Races::None);
+            return 400.0 + 4 * Players::getSupply(PlayerState::Self, Races::None);
+        return 320.0 + 4 * Players::getSupply(PlayerState::Self, Races::None);
     }
 
     int stopAnimationFrames(UnitType unitType) {

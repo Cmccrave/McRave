@@ -70,14 +70,44 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Overlord] =                     (com(Zerg_Spire) == 0 && atPercent(Zerg_Spire, 0.35) && (s >= 34)) ? 4 : 1 + (vis(Zerg_Extractor) >= 1) + (s >= 32) + (s >= 46);
 
         // Army Composition
-        if (com(Zerg_Spire) > 0) {
+        if (com(Zerg_Spire) == 0 && lingsNeeded_ZvZ() > vis(Zerg_Zergling)) {
+            armyComposition[Zerg_Drone] =               0.00;
+            armyComposition[Zerg_Zergling] =            1.00;
+        }
+        else {
             armyComposition[Zerg_Drone] =               0.40;
             armyComposition[Zerg_Zergling] =            0.00;
             armyComposition[Zerg_Mutalisk] =            0.60;
         }
+    }
+
+    void ZvZ_PH_2HatchMuta()
+    {
+        inOpeningBook =                                 total(Zerg_Mutalisk) < 3;
+        lockedTransition =                              vis(Zerg_Lair) > 0;
+        unitLimits[Zerg_Drone] =                        20;
+        gasLimit =                                      (lingSpeed() && com(Zerg_Lair) == 0) ? 1 : gasMax();
+        unitLimits[Zerg_Zergling] =                     18;
+
+        firstUnit =                                     Zerg_Mutalisk;
+        inBookSupply =                                  vis(Zerg_Overlord) < 3;
+        playPassive =                                   com(Zerg_Mutalisk) == 0 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > total(Zerg_Zergling);
+
+        // Build
+        buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 9) + (atPercent(Zerg_Spire, 0.5));
+        buildQueue[Zerg_Lair] =                         gas(100) && vis(Zerg_Spawning_Pool) > 0 && total(Zerg_Zergling) >= 12 && vis(Zerg_Drone) >= 8;
+        buildQueue[Zerg_Spire] =                        lingSpeed() && atPercent(Zerg_Lair, 0.8) && vis(Zerg_Drone) >= 9;
+        buildQueue[Zerg_Overlord] =                     1 + (vis(Zerg_Extractor) >= 1) + (s >= 32) + (atPercent(Zerg_Spire, 0.5) && s >= 38);
+
+        // Army Composition
+        if (com(Zerg_Spire) == 0 && lingsNeeded_ZvZ() > vis(Zerg_Zergling)) {
+            armyComposition[Zerg_Drone] =               0.00;
+            armyComposition[Zerg_Zergling] =            1.00;
+        }
         else {
-            armyComposition[Zerg_Drone] =               0.50;
-            armyComposition[Zerg_Zergling] =            0.50;
+            armyComposition[Zerg_Drone] =               0.40;
+            armyComposition[Zerg_Zergling] =            0.00;
+            armyComposition[Zerg_Mutalisk] =            0.60;
         }
     }
 
@@ -95,6 +125,8 @@ namespace McRave::BuildOrder::Zerg {
         if (transitionReady) {
             if (currentTransition == "1HatchMuta")
                 ZvZ_PL_1HatchMuta();
+            if (currentTransition == "2HatchMuta")
+                ZvZ_PH_2HatchMuta();
         }
     }
 }

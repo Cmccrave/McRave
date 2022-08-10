@@ -299,6 +299,9 @@ namespace McRave
             || getType() == Zerg_Overlord)
             return;
 
+        // Try no more of this shit
+        return;
+
         // Determine how close it is to strategic locations
         const auto choke = Terrain::isDefendNatural() ? BWEB::Map::getNaturalChoke() : BWEB::Map::getMainChoke();
         const auto area = Terrain::isDefendNatural() ? BWEB::Map::getNaturalArea() : BWEB::Map::getMainArea();
@@ -672,6 +675,10 @@ namespace McRave
                 bulletCount++;
         }
 
+        // If this is a ghost, it shouldn't need picking up unless near nuke location
+        if (getType() == Terran_Ghost)
+            return mapBWEM.GetArea(getTilePosition()) != Terrain::getEnemyMain()->getBase()->GetArea();
+
         auto unitTarget = getTarget().lock();
         auto range = unitTarget->isFlying() ? getAirRange() : getGroundRange();
         auto cargoPickup = getType() == BWAPI::UnitTypes::Protoss_High_Templar ? (!canStartCast(BWAPI::TechTypes::Psionic_Storm, unitTarget->getPosition()) || Grids::getGroundThreat(getWalkPosition(), PlayerState::Enemy) <= 0.1f) : !canStartAttack();
@@ -879,6 +886,7 @@ namespace McRave
             || (getType() == Zerg_Lurker && BuildOrder::isProxy() && nearProxyStructure())
             || (!isFlying() && Actions::overlapsActions(unit(), getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, 96))
             || (isTargetedBySuicide() && !isFlying())
+            || (getType() == Terran_Ghost && com(Terran_Nuclear_Missile) > 0 && unit()->isLoaded())
             || engagingWithWorkers();
     }
 

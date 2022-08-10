@@ -22,12 +22,14 @@ namespace McRave::Terrain {
     BWAPI::TilePosition getEnemyStartingTilePosition();
     const BWEM::ChokePoint * getDefendChoke();
     const BWEM::Area * getDefendArea();
+    BWEB::Station * getDefendStation();
     bool isIslandMap();
     bool isReverseRamp();
     bool isFlatRamp();
     bool isNarrowNatural();
     bool isDefendNatural();
     bool foundEnemy();
+    bool inArea(const BWEM::Area *, BWAPI::Position);
     bool inTerritory(PlayerState, BWAPI::Position);
     bool inTerritory(PlayerState, const BWEM::Area*);
     void addTerritory(PlayerState, BWEB::Station*);

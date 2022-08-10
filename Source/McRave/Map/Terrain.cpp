@@ -10,6 +10,7 @@ namespace McRave::Terrain {
     namespace {
         map<const Area*, PlayerState> territoryArea;
         map<WalkPosition, PlayerState> territoryChokeGeometry;
+        map<WalkPosition, pair<const BWEM::Area *, const BWEM::Area *>> areaChokeGeometry;
         set<const Base *> allBases;
         BWEB::Station * enemyNatural = nullptr;
         BWEB::Station * enemyMain = nullptr;
@@ -253,7 +254,7 @@ namespace McRave::Terrain {
             }
 
             // If we want to prevent a runby
-            if (Combat::defendChoke() && mainChoke && defendRunby && Spy::getEnemyTransition() != "4Gate") {
+            if (Combat::defendChoke() && mainChoke && defendRunby) {
                 defendPosition = Position(mainChoke->Center());
                 defendNatural = false;
             }
@@ -435,56 +436,6 @@ namespace McRave::Terrain {
             }
         }
 
-        void findSafeSpots()
-        {
-            const auto neighborCheck = [&](auto t) {
-                for (int x = -3; x <= 3; x++) {
-                    for (int y = -3; y <= 3; y++) {
-                        TilePosition tile = t + TilePosition(x, y);
-                        if (tile.isValid() && BWEB::Map::isWalkable(tile) && (mapBWEM.GetTile(tile).MinAltitude() > 0 || BWEB::Map::isUsed(tile) != UnitTypes::None))
-                            return false;
-                    }
-                }
-                return true;
-            };
-
-            const auto findBestSafeSpot = [&](BWEB::Station& station, TilePosition start, double &distBest) {
-                for (auto x = start.x - 12; x < start.x + 16; x++) {
-                    for (auto y = start.y - 12; y < start.y + 15; y++) {
-                        const TilePosition tile(x, y);
-                        const auto center = Position(tile) + Position(16, 16);
-
-                        if (!tile.isValid()
-                            || mapBWEM.GetArea(tile) == station.getBase()->GetArea()
-                            || mapBWEM.GetTile(tile).MinAltitude() > 0
-                            || Util::boxDistance(Zerg_Overlord, center, Zerg_Hatchery, station.getBase()->Center()) > 320
-                            //|| !neighborCheck(tile)
-                            )
-                            continue;
-
-                        //Visuals::tileBox(tile, Colors::Green);
-
-                        auto dist = center.getDistance(getClosestMapEdge(center)) / center.getDistance(Terrain::getEnemyStartingPosition());
-                        //Broodwar->drawTextMap(center, "%.2f", dist);
-                        if (dist < distBest) {
-                            safeSpots[&station] = center;
-                            distBest = dist;
-                        }
-                    }
-                }
-            };
-
-            // Create safe spots at each station
-            for (auto &station : BWEB::Stations::getStations()) {
-
-                auto distBest = DBL_MAX;
-                findBestSafeSpot(station, station.getBase()->Location(), distBest);
-
-                if (station.getChokepoint())
-                    findBestSafeSpot(station, TilePosition(station.getChokepoint()->Center()), distBest);
-            }
-        }
-
         void updateAreas()
         {
             // Squish areas
@@ -497,6 +448,14 @@ namespace McRave::Terrain {
                 // Add natural if we plan to take it
                 if (BuildOrder::isOpener() && BuildOrder::takeNatural())
                     addTerritory(PlayerState::Self, myNatural);
+            }
+
+            // For every area, store their choke geometry as belonging to both areas to prevent nullptr areas
+            for (auto &area : mapBWEM.Areas()) {
+                for (auto &choke : area.ChokePoints()) {
+                    for (auto &walk : choke->Geometry())
+                        areaChokeGeometry[walk] = choke->GetAreas();                    
+                }
             }
         }
     }
@@ -579,6 +538,13 @@ namespace McRave::Terrain {
         if (station && safeSpots.find(station) != safeSpots.end())
             return safeSpots[station];
         return Positions::Invalid;
+    }
+
+    bool inArea(const BWEM::Area * area, Position here)
+    {
+        if (!here.isValid())
+            return false;
+        return mapBWEM.GetArea(TilePosition(here)) == area || areaChokeGeometry.find(WalkPosition(here)) != areaChokeGeometry.end();
     }
 
     bool inTerritory(PlayerState playerState, Position here)
@@ -693,7 +659,6 @@ namespace McRave::Terrain {
                 allBases.insert(&base);
         }
 
-        findSafeSpots();
         reverseRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) < Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
         flatRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) == Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
         myMain = BWEB::Stations::getClosestMainStation(BWEB::Map::getMainTile());
@@ -726,6 +691,7 @@ namespace McRave::Terrain {
     TilePosition getEnemyStartingTilePosition() { return enemyStartingTilePosition; }
     const ChokePoint * getDefendChoke() { return defendChoke; }
     const Area * getDefendArea() { return defendArea; }
+    BWEB::Station * getDefendStation() { return defendNatural ? myNatural : myMain; }
     bool isIslandMap() { return islandMap; }
     bool isReverseRamp() { return reverseRamp; }
     bool isFlatRamp() { return flatRamp; }

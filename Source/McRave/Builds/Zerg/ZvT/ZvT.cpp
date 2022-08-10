@@ -86,8 +86,8 @@ namespace McRave::BuildOrder::Zerg {
         }
         else {
             armyComposition[Zerg_Drone] =               0.60;
-            armyComposition[Zerg_Zergling] =            com(Zerg_Spire) > 0 ? 0.00 : 0.40;
-            armyComposition[Zerg_Mutalisk] =            com(Zerg_Spire) > 0 ? 0.40 : 0.00;
+            armyComposition[Zerg_Zergling] =            0.00;
+            armyComposition[Zerg_Mutalisk] =            0.40;
         }
     }
 
@@ -120,8 +120,8 @@ namespace McRave::BuildOrder::Zerg {
         }
         else {
             armyComposition[Zerg_Drone] =               0.60;
-            armyComposition[Zerg_Zergling] =            vis(Zerg_Spire) > 0 ? 0.10 : 0.40;
-            armyComposition[Zerg_Mutalisk] =            vis(Zerg_Spire) > 0 ? 0.30 : 0.00;
+            armyComposition[Zerg_Zergling] =            0.00;
+            armyComposition[Zerg_Mutalisk] =            0.40;
         }
     }
 

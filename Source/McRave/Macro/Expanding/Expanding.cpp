@@ -36,7 +36,7 @@ namespace McRave::Expansion {
                 for (auto &blocker : blockingNeutrals[&station]) {
                     if (blocker) {
                         if (blocker->getType().isMineralField() || blocker->getType().isRefinery())
-                            islandStations.push_back(&station);                        
+                            islandStations.push_back(&station);
                     }
                 }
             }
@@ -56,7 +56,6 @@ namespace McRave::Expansion {
                         });
                         if (closestNeutral && closestNeutral->getPosition().getDistance(p) < 96.0) {
                             blockingNeutrals[station].push_back(closestNeutral);
-                            Broodwar->drawCircleMap(closestNeutral->getPosition(), 4, Colors::Cyan);
                             return true;
                         }
                     }
@@ -79,33 +78,21 @@ namespace McRave::Expansion {
             }
         }
 
-        void updateExpandPlan()
+        void updateExpandOrder()
         {
-            if (Broodwar->getFrameCount() < 5)
-                return;
-
-            updateExpandBlockers();
-            updateDangerousStations();
-            updateIslandStations();
-
             // Establish an initial parent station as our natural (most of our units rally through this)
             auto parentStation = Terrain::getMyNatural();
             auto enemyStation = Terrain::getEnemyNatural();
 
-            // TODO: BWEB has failed, we can't expand
-            if (!parentStation)
-                return;
-
-
             // Check if we need a gas expansion
             auto geysersOwned = 0;
             for (auto &resource : Resources::getMyGas()) {
-                if (resource->getResourceState() == ResourceState::Mineable && resource->getRemainingResources() > 200)
+                if (resource->getResourceState() != ResourceState::None && resource->getRemainingResources() > 200)
                     geysersOwned++;
             }
 
             // Score each station
-            auto allowedFirstMineralBase = (Players::vT() || Players::ZvZ() || Players::ZvP()) ? 4 : 3;
+            auto allowedFirstMineralBase = (!BuildOrder::mineralThirdDesired() && (Players::vT() || Players::ZvZ() || Players::ZvP())) ? 3 : 2;
             expansionOrder.clear();
 
             if (Terrain::getMyMain())
@@ -119,25 +106,38 @@ namespace McRave::Expansion {
                 auto home = BWEB::Map::getNaturalChoke() ? Position(BWEB::Map::getNaturalChoke()->Center()) : BWEB::Map::getMainPosition();
 
                 for (auto &station : BWEB::Stations::getStations()) {
-                    auto grdParent = log(expansionNetwork[parentStation][&station].getDistance());
-                    auto grdHome = expansionNetwork[Terrain::getMyMain()][&station].getDistance();
-                    auto airParent = station.getBase()->Center().getDistance(parentStation->getBase()->Center());
-                    auto airHome = station.getBase()->Center().getDistance(home);
-                    auto airCenter = station.getBase()->Center().getDistance(mapBWEM.Center());
-                    auto grdEnemy = enemyStation ? expansionNetwork[enemyStation][&station].getDistance() : 1.0;
-                    auto airEnemy = enemyStation ? station.getBase()->Center().getDistance(enemyStation->getBase()->Center()) : 1.0;
+                    auto stationIndex =     expansionNetwork[&station];
+                    auto grdParent =        stationIndex[parentStation].getDistance();
+                    auto grdHome =          stationIndex[Terrain::getMyMain()].getDistance();
+
+                    auto airParent =        station.getBase()->Center().getDistance(parentStation->getBase()->Center());
+                    auto airHome =          station.getBase()->Center().getDistance(home);
+                    auto airCenter =        station.getBase()->Center().getDistance(mapBWEM.Center());
+
+                    auto closestEnemy = Stations::getClosestStationAir(station.getBase()->Center(), PlayerState::Enemy);
+                    auto grdEnemy = 1.0;
+                    auto airEnemy = 1.0;
+                    if (closestEnemy) {
+                        grdEnemy = min({ stationIndex[closestEnemy].getDistance(),
+                            stationIndex[Terrain::getEnemyNatural()].getDistance(),
+                            stationIndex[Terrain::getEnemyMain()].getDistance() });
+                        airEnemy = min({ station.getBase()->Center().getDistance(closestEnemy->getBase()->Center()),
+                            station.getBase()->Center().getDistance(Terrain::getEnemyNatural()->getBase()->Center()),
+                            station.getBase()->Center().getDistance(Terrain::getEnemyMain()->getBase()->Center()) });
+                    }
+                    else {
+                        grdEnemy = expansionNetwork[enemyStation][&station].getDistance();
+                        airEnemy = station.getBase()->Center().getDistance(enemyStation->getBase()->Center());
+                    }
 
                     if ((station.getBase()->GetArea() == mapBWEM.GetArea(TilePosition(mapBWEM.Center())) && expansionOrder.size() < 4)
                         || (find_if(expansionOrder.begin(), expansionOrder.end(), [&](auto &s) { return s == &station; }) != expansionOrder.end())
-                        || station == Terrain::getMyMain()
-                        || station == Terrain::getMyNatural()
+                        || (find_if(islandStations.begin(), islandStations.end(), [&](auto &s) { return s == &station; }) != islandStations.end())
                         || (Terrain::getEnemyMain() && station == Terrain::getEnemyMain())
                         || (Terrain::getEnemyNatural() && station == Terrain::getEnemyNatural())
                         || (station.getBase()->Geysers().empty() && int(expansionOrder.size()) < allowedFirstMineralBase)
-                        || (station.getBase()->Geysers().empty() && geysersOwned < allowedFirstMineralBase)
-                        || (mapBWEM.GetPath(BWEB::Map::getMainPosition(), station.getBase()->Center()).empty() && expansionOrder.size() < 3)
-                        || (Terrain::inTerritory(PlayerState::Enemy, station.getBase()->GetArea()))
-                        || (find_if(islandStations.begin(), islandStations.end(), [&](auto &s) { return s == &station; }) != islandStations.end()))
+                        || (geysersOwned + int(station.getBase()->Geysers().size()) < allowedFirstMineralBase)
+                        || (Terrain::inTerritory(PlayerState::Enemy, station.getBase()->GetArea())))
                         continue;
 
                     // Check if it's a dangerous/blocked station
@@ -149,7 +149,7 @@ namespace McRave::Expansion {
                         grdHome *= double(blockingNeutrals[&station].size());
                         airHome *= double(blockingNeutrals[&station].size());
                     }
-                    auto dist = log(grdParent * grdHome * airParent * airHome) / (grdEnemy * airEnemy * airCenter);
+                    auto dist = (grdParent * grdHome /** airParent * airHome*/) / (grdEnemy * airEnemy * airCenter);
 
                     // Check for a blocking neutral
                     auto blockerCost = 0.0;
@@ -157,6 +157,8 @@ namespace McRave::Expansion {
                         blockerCost += double(blocker->getHealth()) / 1000.0;
                     if (blockerCost > 0)
                         dist = blockerCost;
+                    if (station.getBase()->Geysers().empty())
+                        dist *=1.5;
 
                     // Add in remaining resources
                     auto percentMinerals = (double(1 + Stations::getMineralsRemaining(&station)) / double(1 + Stations::getMineralsInitial(&station)));
@@ -174,7 +176,18 @@ namespace McRave::Expansion {
                     parentStation = stationBest;
                 }
             }
-        }        
+        }
+
+        void updateExpandPlan()
+        {
+            if (!Terrain::getMyMain() || !Terrain::getEnemyMain() || !Terrain::getMyNatural() || !Terrain::getEnemyNatural())
+                return;
+
+            updateExpandBlockers();
+            updateDangerousStations();
+            updateIslandStations();
+            updateExpandOrder();
+        }
     }
 
     void onFrame()
@@ -190,16 +203,9 @@ namespace McRave::Expansion {
                 if (station == otherStation)
                     continue;
 
-                BWEB::Path unitPath(station.getBase()->Center(), otherStation.getBase()->Center(), Protoss_Dragoon, true, false);
-                unitPath.generateJPS([&](auto &t) { return unitPath.unitWalkable(t); });
-
-                if (unitPath.isReachable())
-                    expansionNetwork[&station][&otherStation] = unitPath;
-                else {
-                    BWEB::Path terrainPath(station.getBase()->Center(), otherStation.getBase()->Center(), Protoss_Dragoon, true, false);
-                    terrainPath.generateJPS([&](auto &t) { return terrainPath.terrainWalkable(t); });
-                    expansionNetwork[&station][&otherStation] = terrainPath;
-                }
+                BWEB::Path path(station.getBase()->Center(), otherStation.getBase()->Center(), Protoss_Dragoon, true, false);
+                path.generateJPS([&](auto &t) { return path.unitWalkable(t); });
+                expansionNetwork[&station][&otherStation] = path;
             }
         }
     }

@@ -92,6 +92,10 @@ namespace McRave::Combat::Simulation {
 
     void updateThresholds(UnitInfo& unit)
     {
+        if (!unit.hasTarget())
+            return;
+        auto unitTarget = unit.getTarget().lock();
+
         // P
         if (Players::PvP()) {
             minWinPercent = 0.8;
@@ -112,7 +116,7 @@ namespace McRave::Combat::Simulation {
             maxWinPercent = 1.4;
         }
         if (Players::ZvZ()) {
-            minWinPercent = 0.8;
+            minWinPercent = 1.0;
             maxWinPercent = 1.4;
         }
         if (Players::ZvT()) {
@@ -120,14 +124,48 @@ namespace McRave::Combat::Simulation {
             maxWinPercent = 1.4;
         }
 
+        // Z
+        if (Players::TvP()) {
+            minWinPercent = 1.0;
+            maxWinPercent = 1.4;
+        }
+        if (Players::TvZ()) {
+            minWinPercent = 1.0;
+            maxWinPercent = 1.4;
+        }
+        if (Players::TvT()) {
+            minWinPercent = 1.0;
+            maxWinPercent = 1.4;
+        }
+
+        // Adjust winrates based on how close to a station we are
+        auto closestSelf = unit.isFlying() ? Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self) : Stations::getClosestStationGround(unit.getPosition(), PlayerState::Self);
+        auto closestEnemy = unit.isFlying() ? Stations::getClosestStationAir(unit.getPosition(), PlayerState::Enemy) : Stations::getClosestStationGround(unit.getPosition(), PlayerState::Enemy);
+
+        if (closestSelf && closestEnemy) {
+            const auto distSelf = unit.isFlying() ? min(unit.getPosition().getDistance(closestSelf->getBase()->Center()), unitTarget->getPosition().getDistance(closestSelf->getBase()->Center()))
+                : min(BWEB::Map::getGroundDistance(unit.getPosition(), closestSelf->getBase()->Center()), BWEB::Map::getGroundDistance(unitTarget->getPosition(), closestSelf->getBase()->Center()));
+            const auto distEnemy = unit.isFlying() ? min(unit.getPosition().getDistance(closestEnemy->getBase()->Center()), unitTarget->getPosition().getDistance(closestEnemy->getBase()->Center()))
+                : min(BWEB::Map::getGroundDistance(unit.getPosition(), closestEnemy->getBase()->Center()), BWEB::Map::getGroundDistance(unitTarget->getPosition(), closestEnemy->getBase()->Center()));
+
+            const auto diffAllowed = 0.5;
+            const auto diffSelf = diffAllowed * max(0.0, 800.0 - distSelf) / 800.0;
+            const auto diffEnemy = diffAllowed * max(0.0, 800.0 - distEnemy) / 800.0;
+            minWinPercent = minWinPercent + diffEnemy - diffSelf;
+            maxWinPercent = maxWinPercent + diffEnemy - diffSelf;
+        }
+
         minThreshold = minWinPercent;
         maxThreshold = maxWinPercent;
     }
 
-    void update(UnitInfo& unit)
+    void onFrame()
     {
-        updateThresholds(unit);
-        Horizon::simulate(unit);
-        updateSimulation(unit);
+        for (auto &u : Units::getUnits(PlayerState::Self)) {
+            auto &unit = *u;
+            updateThresholds(unit);
+            Horizon::simulate(unit);
+            updateSimulation(unit);
+        }
     }
 }

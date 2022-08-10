@@ -20,6 +20,12 @@ namespace McRave::Command {
 
         double distance(UnitInfo& unit, WalkPosition w) {
             const auto p = Position(w) + Position(4, 4);
+            if (unit.getFormation().isValid()) {
+                Visuals::drawLine(unit.getPosition(), unit.getFormation(), Colors::Black);
+                auto percentFormation = clamp(0.01, 1.0 - (unit.getPosition().getDistance(unit.getFormation()) / 640.0), 0.5);
+                Broodwar->drawTextMap(unit.getPosition(), "%.2f", percentFormation);
+                return max(1.0, /*(1.0 - percentFormation) * p.getDistance(unit.getNavigation())*/ + (percentFormation * p.getDistance(unit.getFormation())));
+            }
             return max(1.0, p.getDistance(unit.getNavigation()));
         }
 
@@ -56,7 +62,7 @@ namespace McRave::Command {
         {
             // Check if this is a viable position for movement
             const auto viablePosition = [&](const WalkPosition& w, Position& p) {
-                if (!unit.getType().isFlyer() || unit.getRole() == Role::Transport) {
+                if (!unit.getType().isFlyer()) {
                     if (Planning::overlapsPlan(unit, p) || !Util::findWalkable(unit, p))
                         return false;
                 }
@@ -116,6 +122,7 @@ namespace McRave::Command {
         else if (unit.hasTransport()) {
             if (unit.isRequestingPickup()) {
                 unit.command(Right_Click_Unit, *unit.getTransport().lock());
+                unit.circle(Colors::Yellow);
                 return true;
             }
         }
@@ -336,10 +343,11 @@ namespace McRave::Command {
                 return true;
             }
 
-            if (unit.attemptingSurround()) {
-                unit.command(Move, unit.getSurroundPosition());
-                return true;
-            }
+            //if (unit.attemptingSurround()) {
+            //    unit.command(Move, unit.getSurroundPosition());
+            //    Broodwar->drawLineMap(unit.getPosition(), unit.getSurroundPosition(), Colors::Red);
+            //    return true;
+            //}
 
             if (!unit.getDestinationPath().isReachable()) {
                 unit.command(Move, unit.getDestination());
@@ -347,7 +355,7 @@ namespace McRave::Command {
             }
 
             // Find the best position to move to
-            auto bestPosition = findViablePosition(unit, unit.getNavigation(), 4, scoreFunction);
+            auto bestPosition = findViablePosition(unit, unit.getPosition(), 8, scoreFunction);
             if (bestPosition.isValid()) {
                 unit.command(Move, bestPosition);
                 return true;
@@ -546,7 +554,7 @@ namespace McRave::Command {
 
         if (canRetreat() && shouldRetreat()) {
 
-            auto bestPosition = findViablePosition(unit, unit.getNavigation(), 8, scoreFunction);
+            auto bestPosition = findViablePosition(unit, unit.getPosition(), 8, scoreFunction);
             if (bestPosition.isValid()) {
                 unit.command(Move, bestPosition);
                 return true;
@@ -611,12 +619,6 @@ namespace McRave::Command {
 
             for (auto &c : unit.getAssignedCargo()) {
                 if (auto &cargo = c.lock()) {
-
-                    // If we just dropped units, we need to make sure not to leave them
-                    if (unit.getTransportState() == TransportState::Monitoring) {
-                        if (!cargo->unit()->isLoaded() && cargo->getPosition().getDistance(p) > 32.0)
-                            return 0.0;
-                    }
 
                     // If we're trying to load
                     if (unit.getTransportState() == TransportState::Loading)

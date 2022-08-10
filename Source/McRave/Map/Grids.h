@@ -13,7 +13,7 @@ namespace McRave::Grids
     float getGroundDensity(BWAPI::Position, PlayerState);
     float getGroundDensity(BWAPI::WalkPosition, PlayerState);
     float getAirDensity(BWAPI::Position, PlayerState);
-    float getAirDensity(BWAPI::WalkPosition, PlayerState);
+    float getAirDensity(BWAPI::WalkPosition, PlayerState);    
     int getFCollision(BWAPI::WalkPosition, PlayerState);
     int getVCollision(BWAPI::WalkPosition, PlayerState);
     int getHCollision(BWAPI::WalkPosition, PlayerState);

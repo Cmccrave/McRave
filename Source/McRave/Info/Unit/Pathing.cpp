@@ -64,7 +64,7 @@ namespace McRave::Pathing {
                 return;
 
             auto range = unitTarget->isFlying() ? unit.getAirRange() : unit.getGroundRange();
-            auto framesToArrive = (unit.getPosition().getDistance(unitTarget->getPosition()) - range) / unit.getSpeed();
+            auto framesToArrive = max(0.0, (unit.getPosition().getDistance(unitTarget->getPosition()) - range) / unit.getSpeed());
             auto intercept = unitTarget->getPosition() + Position(int(unit.unit()->getVelocityX() * framesToArrive), int(unit.unit()->getVelocityY() * framesToArrive));
             unit.setInterceptPosition(intercept);
         }
@@ -85,14 +85,18 @@ namespace McRave::Pathing {
 
                 // Figure out how to trap the unit
                 auto trapTowards = Terrain::getEnemyStartingPosition();
-                if (BWEB::Map::getNaturalChoke())
-                    trapTowards = Position(BWEB::Map::getNaturalChoke()->Center());
-                if (BWEB::Map::getMainChoke() && Util::getTime() < Time(6, 30) && (unit.isThreatening() || BuildOrder::isPlayPassive()))
-                    trapTowards = Position(BWEB::Map::getMainChoke()->Center());
+                if (unit.unit()->getOrder() == Orders::Move) {
+                    if (unit.getCurrentSpeed() > 0.0)
+                        trapTowards = unit.unit()->getOrderTargetPosition();
+                    else
+                        continue;
+                }
                 else if (unit.getPosition().isValid() && Terrain::getEnemyStartingPosition().isValid()) {
                     auto path = mapBWEM.GetPath(unit.getPosition(), Terrain::getEnemyStartingPosition());
                     trapTowards = (path.empty() || !path.front()) ? Terrain::getEnemyStartingPosition() : Position(path.front()->Center());
                 }
+                else
+                    continue;
 
                 // Create surround positions in a primitive fashion
                 vector<pair<Position, double>> surroundPositions;
@@ -129,13 +133,14 @@ namespace McRave::Pathing {
 
                     // Get time to arrive to the surround position
                     if (closestTargeter) {
-                        auto framesToArrive = clamp(double(Broodwar->getLatencyFrames()*2), (closestTargeter->getPosition().getDistance(pos) / (closestTargeter->getSpeed() - unit.getSpeed())), 128.0);
+                        auto framesToArrive = clamp(double(Broodwar->getLatencyFrames()*2), (2.0 * (closestTargeter->getPosition().getDistance(pos)) / (closestTargeter->getSpeed() - unit.getSpeed())), 128.0);
                         auto dirx = (trapTowards.x - unit.getPosition().x) / unit.getPosition().getDistance(trapTowards);
                         auto diry = (trapTowards.y - unit.getPosition().y) / unit.getPosition().getDistance(trapTowards);
                         auto correctedPos = pos + Position(int(dirx * framesToArrive), int(diry * framesToArrive));
 
                         if (Util::findWalkable(*closestTargeter, correctedPos)) {
                             closestTargeter->setSurroundPosition(correctedPos);
+                            Broodwar->drawCircleMap(correctedPos, 4, Colors::Green);
                         }
                     }
                 }

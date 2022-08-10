@@ -11,36 +11,6 @@ namespace McRave::BuildOrder::Zerg {
 
     namespace {
 
-        void ZvZ_PH_2HatchMuta()
-        {
-            inOpeningBook =                                 total(Zerg_Mutalisk) < 3;
-            lockedTransition =                              vis(Zerg_Lair) > 0;
-            unitLimits[Zerg_Drone] =                        20;
-            gasLimit =                                      (lingSpeed() && com(Zerg_Lair) == 0) ? 1 : gasMax();
-            unitLimits[Zerg_Zergling] =                     18;
-
-            firstUnit =                                     Zerg_Mutalisk;
-            inBookSupply =                                  vis(Zerg_Overlord) < 3;
-            playPassive =                                   com(Zerg_Mutalisk) == 0 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > total(Zerg_Zergling);
-
-            // Build
-            buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 9) + (atPercent(Zerg_Spire, 0.5));
-            buildQueue[Zerg_Lair] =                         gas(100) && vis(Zerg_Spawning_Pool) > 0 && total(Zerg_Zergling) >= 12 && vis(Zerg_Drone) >= 8;
-            buildQueue[Zerg_Spire] =                        lingSpeed() && atPercent(Zerg_Lair, 0.8) && vis(Zerg_Drone) >= 9;
-            buildQueue[Zerg_Overlord] =                     1 + (vis(Zerg_Extractor) >= 1) + (s >= 32) + (atPercent(Zerg_Spire, 0.5) && s >= 38);
-
-            // Army Composition
-            if (com(Zerg_Spire)) {
-                armyComposition[Zerg_Drone] =               0.40;
-                armyComposition[Zerg_Zergling] =            0.10;
-                armyComposition[Zerg_Mutalisk] =            0.50;
-            }
-            else {
-                armyComposition[Zerg_Drone] =               0.50;
-                armyComposition[Zerg_Zergling] =            0.50;
-            }
-        }
-
         void ZvZ_PH_Overpool()
         {
             transitionReady =                               total(Zerg_Zergling) >= 6 || (Spy::enemyFastExpand() && com(Zerg_Spawning_Pool) > 0);
@@ -77,11 +47,5 @@ namespace McRave::BuildOrder::Zerg {
             ZvZ_PH_Overpool();
         if (currentOpener == "12Pool")
             ZvZ_PH_12Pool();
-
-        // Transitions
-        if (transitionReady) {
-            if (currentTransition == "2HatchMuta")
-                ZvZ_PH_2HatchMuta();
-        }
     }
 }

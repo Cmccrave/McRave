@@ -19,7 +19,7 @@ namespace McRave::Combat::State {
         const auto insideEngageRadius = distTarget < unit.getEngageRadius() && unit.getGlobalState() == GlobalState::Attack;
         const auto atHome = Terrain::inTerritory(PlayerState::Self, unitTarget->getPosition()) && mapBWEM.GetArea(unit.getTilePosition()) == mapBWEM.GetArea(unitTarget->getTilePosition()) && !Players::ZvZ();
         const auto reAlign = (unit.getType() == Zerg_Mutalisk && !unit.canStartAttack() && !unit.isWithinAngle(*unitTarget) && Util::boxDistance(unit.getType(), unit.getPosition(), unitTarget->getType(), unitTarget->getPosition()) <= 64.0);
-        const auto winningState = (!atHome || !BuildOrder::isPlayPassive()) && unit.getSimState() == SimState::Win;
+        const auto winningState = (atHome || !BuildOrder::isPlayPassive()) && unit.getSimState() == SimState::Win;
         const auto exploringGoal = unit.getGoal().isValid() && unit.getGoalType() == GoalType::Explore && unit.getUnitsInRangeOfThis().empty() && Util::getTime() > Time(4, 00);
 
         // Regardless of any decision, determine if Unit is in danger and needs to retreat
@@ -87,7 +87,7 @@ namespace McRave::Combat::State {
                 || (BuildOrder::isProxy() && BuildOrder::isPlayPassive())
                 || (BuildOrder::isProxy() && unit.getType() == Zerg_Hydralisk)
                 || (unit.getType() == Zerg_Hydralisk && BuildOrder::getCompositionPercentage(Zerg_Lurker) >= 1.00)
-                || (unit.getType() == Zerg_Hydralisk && !unit.getGoal().isValid() && (!Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines) || !Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments)))
+                || (unit.getType() == Zerg_Hydralisk && (!Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines) || !Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments)))
                 || (!Players::ZvZ() && unit.isLightAir() && com(Zerg_Mutalisk) < (Stations::getStations(PlayerState::Self).size() >= 2 ? 5 : 3) && total(Zerg_Mutalisk) < 9))
                 unit.setGlobalState(GlobalState::Retreat);
             else
@@ -103,9 +103,12 @@ namespace McRave::Combat::State {
         }
     }
 
-    void update(UnitInfo& unit)
+    void onFrame()
     {
-        updateGlobalState(unit);
-        updateLocalState(unit);
+        for (auto &u : Units::getUnits(PlayerState::Self)) {
+            auto &unit = *u;
+            updateGlobalState(unit);
+            updateLocalState(unit);
+        }
     }
 }

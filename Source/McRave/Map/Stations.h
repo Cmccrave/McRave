@@ -77,4 +77,6 @@ namespace McRave::Stations
             return true;
         });
     }
+
+    double getStationSaturation(BWEB::Station *);
 };

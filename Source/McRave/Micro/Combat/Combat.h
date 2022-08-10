@@ -12,7 +12,7 @@ namespace McRave::Combat {
     };
 
     struct Cluster {
-        BWAPI::Position sharedPosition, sharedDestination;
+        BWAPI::Position sharedPosition, sharedDestination, sharedNavigation;
         std::map<BWAPI::UnitType, int> typeCounts;
         double sharedRadius = 160.0;
         std::vector<UnitInfo*> units;
@@ -20,6 +20,8 @@ namespace McRave::Combat {
         CommandShare commandShare;
         Shape shape;
         bool mobileCluster = false;
+        BWAPI::Color color;
+        BWEB::Path path;
 
         Cluster(BWAPI::Position _sp, BWAPI::Position _sd, BWAPI::UnitType _t) {
             sharedPosition = _sp;
@@ -45,27 +47,26 @@ namespace McRave::Combat {
     }
 
     namespace Simulation {
-        void update(UnitInfo&);
+        void onFrame();
     }
 
     namespace State {
-        void update(UnitInfo&);
+        void onFrame();
     }
 
     namespace Decision {
-        void update(UnitInfo&);
+        void onFrame();
     }
 
     namespace Destination {
-        void update(UnitInfo&);
+        void onFrame();
     }
 
     namespace Navigation {
-        void update(UnitInfo&);
+        void onFrame();
     }
 
     void onFrame();
     void onStart();
-
     bool defendChoke();
 }

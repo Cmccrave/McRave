@@ -31,6 +31,7 @@ namespace McRave::BuildOrder {
         inline bool gasDesired = false;
         inline bool expandDesired = false;
         inline bool rampDesired = false;
+        inline bool mineralThird = false;
 
         inline std::map<BWAPI::UnitType, int> unitLimits;
         inline std::map<BWAPI::UnitType, int> unitReservations;
@@ -94,6 +95,7 @@ namespace McRave::BuildOrder {
     bool isPressure();
     bool isGasTrick();
     bool isPlanEarly();
+    bool mineralThirdDesired();
     std::string getCurrentBuild();
     std::string getCurrentOpener();
     std::string getCurrentTransition();

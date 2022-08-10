@@ -101,8 +101,11 @@ namespace McRave::Combat::Destination {
         }
     }
 
-    void update(UnitInfo& unit)
+    void onFrame()
     {
-        updateDestination(unit);
+        for (auto &u : Units::getUnits(PlayerState::Self)) {
+            auto &unit = *u;
+            updateDestination(unit);
+        }
     }
 }

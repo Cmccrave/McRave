@@ -162,19 +162,14 @@ namespace McRave::BuildOrder::Protoss
         if (Players::getRaceCount(Races::Unknown, PlayerState::Enemy) > 0 && !Players::PvFFA() && !Players::PvTVB())
             againstRandom = true;
 
-        currentBuild = "FFE";
-        currentOpener = "Forge";
-        currentTransition = "4StargateScout";
-        PvZ();
-
-        //if (Players::PvT())
-        //    PvT();
-        //else if (Players::PvP())
-        //    PvP();
-        //else if (Players::PvZ() || againstRandom)
-        //    PvZ();
-        //else if (Players::PvFFA() || Players::PvTVB())
-        //    PvFFA();
+        if (Players::PvT())
+            PvT();
+        else if (Players::PvP())
+            PvP();
+        else if (Players::PvZ() || againstRandom)
+            PvZ();
+        else if (Players::PvFFA() || Players::PvTVB())
+            PvFFA();
     }
 
     void tech()

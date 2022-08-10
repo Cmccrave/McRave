@@ -54,17 +54,21 @@ namespace McRave::BuildOrder::Terran {
             if (com(Terran_Factory) >= 3)
                 buildQueue[Terran_Machine_Shop] = Stations::getGasingStationsCount();
 
+            // Academy
+            if (Spy::enemyInvis()) {
+                if (desiredDetection == Terran_Missile_Turret)
+                    buildQueue[Terran_Engineering_Bay] = 1;                
+                else {
+                    buildQueue[Terran_Academy] = 1;
+                    buildQueue[Terran_Comsat_Station] = 2;
+                }
+            }
+
             // If we're not in our opener
             if (!inOpeningBook) {
 
                 // Armory
                 buildQueue[Terran_Armory] = (s > 160) + (s > 200);
-
-                // Academy
-                if (Spy::enemyInvis()) {
-                    buildQueue[Terran_Academy] = 1;
-                    buildQueue[Terran_Comsat_Station] = 2;
-                }
 
                 if (com(Terran_Science_Facility) > 0)
                     buildQueue[Terran_Physics_Lab] = 1;
@@ -140,6 +144,13 @@ namespace McRave::BuildOrder::Terran {
         if (Spy::enemyInvis() || (!inOpeningBook && !getTech && !techSat && techUnit == None))
             getTech = true;
 
+        if (Players::TvZ())
+            techOrder ={ Terran_Medic, Terran_Science_Vessel, Terran_Siege_Tank_Tank_Mode };
+        if (Players::TvP())
+            techOrder ={ Terran_Vulture, Terran_Siege_Tank_Tank_Mode, Terran_Science_Vessel };
+        if (Players::TvT())
+            techOrder ={ Terran_Vulture, Terran_Siege_Tank_Tank_Mode, Terran_Science_Vessel };
+
         getNewTech();
         getTechBuildings();
     }
@@ -170,10 +181,7 @@ namespace McRave::BuildOrder::Terran {
 
     void composition()
     {
-        armyComposition[Terran_SCV] = 1.00;
-        armyComposition[Terran_Marine] = 0.05;
-        armyComposition[Terran_Vulture] = 0.75;
-        armyComposition[Terran_Siege_Tank_Tank_Mode] = 0.20;
+
     }
 
     void unlocks()

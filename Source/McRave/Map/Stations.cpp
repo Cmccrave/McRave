@@ -12,7 +12,6 @@ namespace McRave::Stations
         multimap<double, BWEB::Station *> stationsBySaturation;
         multimap<double, BWEB::Station *> stationsByProduction;
         map<BWEB::Station *, int> airDefenseCount, groundDefenseCount, remainingMinerals, remainingGas, initialMinerals, initialGas;
-        set<BWEB::Station*> retreatPositions;
         int miningStations = 0, gasingStations = 0;
 
         void updateSaturation() {
@@ -22,22 +21,26 @@ namespace McRave::Stations
             remainingGas.clear();
             stationsBySaturation.clear();
             auto mineralsLeftTotal = 0, gasLeftTotal = 0;
+
+            // Update self stations
             for (auto &station : getStations(PlayerState::Self)) {
                 auto workerCount = 0;
                 auto resourceCount = 0;
+                remainingGas[station] = 0;
+                remainingMinerals[station] = 0;
                 for (auto &mineral : Resources::getMyMinerals()) {
                     if (mineral->getStation() == station) {
                         resourceCount++;
-                        remainingMinerals[station]+=mineral->unit()->getResources();
-                        mineralsLeftTotal+=mineral->unit()->getResources();
+                        remainingMinerals[station]+=mineral->getRemainingResources();
+                        mineralsLeftTotal+=mineral->getRemainingResources();
                         workerCount+=mineral->targetedByWhat().size();
                     }
                 }
                 for (auto &gas : Resources::getMyGas()) {
                     if (gas->getStation() == station) {
                         resourceCount++;
-                        remainingGas[station]+=gas->unit()->getResources();
-                        gasLeftTotal+=gas->unit()->getResources();
+                        remainingGas[station]+=gas->getRemainingResources();
+                        gasLeftTotal+=gas->getRemainingResources();
                         workerCount+=gas->targetedByWhat().size();
                     }
                 }
@@ -45,6 +48,20 @@ namespace McRave::Stations
                 // Order by lowest saturation first
                 auto saturatedLevel = workerCount > 0 ? double(workerCount) / double(resourceCount) : 0.0;
                 stationsBySaturation.emplace(saturatedLevel, station);
+            }
+
+            // Update neutral stations
+            for (auto &station : getStations(PlayerState::None)) {
+                remainingGas[station] = 0;
+                remainingMinerals[station] = 0;
+                for (auto &mineral : Resources::getMyMinerals()) {
+                    if (mineral->getStation() == station)
+                        remainingMinerals[station]+=mineral->getRemainingResources();
+                }
+                for (auto &gas : Resources::getMyGas()) {
+                    if (gas->getStation() == station)
+                        remainingGas[station]+=gas->getRemainingResources();
+                }
             }
 
             // Determine how many mining and gasing stations we have
@@ -57,16 +74,17 @@ namespace McRave::Stations
             // Sort stations by production capabilities
             stationsByProduction.clear();
             for (auto &station : getStations(PlayerState::Self)) {
-                int production = 0;
+                auto production = getStationSaturation(station);
                 for (auto &unit : Units::getUnits(PlayerState::Self)) {
                     if (Planning::isProductionType(unit->getType())) {
                         auto closestStation = getClosestStationAir(unit->getPosition(), PlayerState::Self, [&](auto station) {
                             return station->isMain() || Broodwar->self()->getRace() == Races::Zerg;
                         });
                         if (closestStation == station)
-                            production++;
+                            production+=1.0;
                     }
                 }
+
                 stationsByProduction.emplace(production, station);
             }
         }
@@ -77,10 +95,6 @@ namespace McRave::Stations
             airDefenseCount.clear();
             groundDefenseCount.clear();
             vector<PlayerState> states ={ PlayerState::Enemy, PlayerState::Self };
-
-            for (auto &[station, state] : stations) {
-                Broodwar->drawTextMap(station->getBase()->Center(), "%d", state);
-            }
 
             for (auto &state : states) {
                 for (auto &u : Units::getUnits(state)) {
@@ -95,24 +109,6 @@ namespace McRave::Stations
                         }
                     }
                 }
-            }
-
-            for (auto &[station, cnt] : airDefenseCount) {
-                Broodwar->drawTextMap(station->getBase()->Center(), "%d", cnt);
-            }
-        }
-
-        void updateRetreatPositions()
-        {
-            retreatPositions.clear();
-
-            if (Terrain::getDefendChoke() == BWEB::Map::getMainChoke() && Stations::getStations(PlayerState::Self).size() <= 2) {
-                retreatPositions.insert(Terrain::getMyMain());
-                return;
-            }
-
-            for (auto &station : getStations(PlayerState::Self)) {
-                retreatPositions.insert(station);
             }
         }
 
@@ -233,11 +229,7 @@ namespace McRave::Stations
             else if (station->isNatural()) {
             }
             else {
-                if (BuildOrder::getCurrentTransition().find("2Hatch") != string::npos)
-                    return 1 - groundCount;
-                if (BuildOrder::getCurrentTransition().find("2Hatch") == string::npos)
-                    return (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(7, 00)) - groundCount;
-                return (Util::getTime() > Time(7, 30)) + (Util::getTime() > Time(8, 00)) - groundCount;
+                
             }
             return 0;
         }
@@ -329,7 +321,6 @@ namespace McRave::Stations
         updateSaturation();
         updateProduction();
         updateStationDefenses();
-        updateRetreatPositions();
         updateDefendPositions();
         Visuals::endPerfTest("Stations");
     }
@@ -449,6 +440,12 @@ namespace McRave::Stations
             if (Players::ZvP() && Util::getTime() > Time(5, 00) && !station->isMain() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Corsair" && BuildOrder::getCurrentTransition() == "3HatchMuta")
                 return 1 - airCount;
         }
+
+        if (Broodwar->self()->getRace() == Races::Terran) {
+            if (Spy::enemyInvis())
+                return 2 - airCount;
+        }
+
         return 0;
     }
 
@@ -504,25 +501,46 @@ namespace McRave::Stations
 
     BWEB::Station * getClosestRetreatStation(UnitInfo& unit)
     {
-        auto distBest = DBL_MAX;
-        auto bestStation = Terrain::getMyMain();
-        for (auto &station : retreatPositions) {
-            auto position = Stations::getDefendPosition(station);
+        const auto closerThanSim = [&](auto &defendPosition) {
+            return unit.hasSimTarget() && !unit.isFlying() && BWEB::Map::getGroundDistance(unit.getPosition(), defendPosition) < BWEB::Map::getGroundDistance(unit.getSimTarget().lock()->getPosition(), defendPosition);
+        };
+
+        const auto alreadyInArea = [&](auto station) {
+            if (Terrain::inArea(station->getBase()->GetArea(), unit.getPosition()))
+                return true;
 
             // If this is a main, check if we own a natural that isn't under attack
-            // TODO: Check if under attack
+            if (station->isNatural()) {
+                const auto closestMain = BWEB::Stations::getClosestMainStation(station->getBase()->Location());
+                if (closestMain && Stations::ownedBy(closestMain) == PlayerState::Self) {
+                    if (Terrain::inArea(closestMain->getBase()->GetArea(), unit.getPosition()))
+                        return true;
+                }
+            }
+            return false;
+        };
+
+        const auto ownForwardBase = [&](auto station) {
             if (station->isMain()) {
                 const auto closestNatural = BWEB::Stations::getClosestNaturalStation(station->getBase()->Location());
-                if (closestNatural && Stations::ownedBy(closestNatural) == PlayerState::Self)
-                    continue;
+                if (Stations::ownedBy(closestNatural) == PlayerState::Self)
+                    return true;
             }
+            return false;
+        };
 
-            // Check if enemies are closer
-            if (unit.hasSimTarget() && !unit.isFlying() && !Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && unit.getSimTarget().lock()->getPosition().getDistance(position) < unit.getPosition().getDistance(position))
-                continue;
+        if (Util::getTime() < Time(8, 00)) {
+            if (!unit.hasSimTarget() || unit.isFlying() || closerThanSim(getDefendPosition(Terrain::getDefendStation())) || alreadyInArea(Terrain::getDefendStation()))
+                return Terrain::getDefendStation();
+        }
 
-            auto dist = position.getDistance(unit.getPosition());
-            if (dist < distBest) {
+        auto distBest = DBL_MAX;
+        auto bestStation = Terrain::getMyMain();
+        for (auto &station : getStations(PlayerState::Self)) {
+            auto defendPosition = Stations::getDefendPosition(station);
+            auto dist = defendPosition.getDistance(unit.getPosition());
+
+            if (dist < distBest && !ownForwardBase(station) && (closerThanSim(defendPosition) || alreadyInArea(station))) {
                 bestStation = station;
                 distBest = dist;
             }
@@ -544,6 +562,14 @@ namespace McRave::Stations
                 returnVector.push_back(station);
         }
         return returnVector;
+    }
+
+    double getStationSaturation(BWEB::Station * station) {
+        for (auto &[saturation, s] : stationsBySaturation) {
+            if (s == station)
+                return saturation;
+        }
+        return 0.0;
     }
 
     Position getDefendPosition(BWEB::Station * station) { return defendPositions[station]; }

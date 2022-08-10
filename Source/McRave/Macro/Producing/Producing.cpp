@@ -201,9 +201,9 @@ namespace McRave::Producing {
             case Terran_Medic:
                 return com(unit) * 4 < com(Terran_Marine);
             case Terran_Ghost:
-                return false;
+                return vis(unit) < 1 && vis(Terran_Nuclear_Missile) > 0;
             case Terran_Nuclear_Missile:
-                return false;
+                return true;
 
                 // Factory Units
             case Terran_Vulture:

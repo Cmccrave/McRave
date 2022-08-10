@@ -34,8 +34,10 @@ namespace McRave::Defender {
         {
             // Set formation to closest station chokepoint to align units to
             const auto closestStation = Stations::getClosestStationGround(unit.getPosition(), PlayerState::Self);
-            if (closestStation && closestStation->getChokepoint())
-                unit.setFormation(Position(closestStation->getChokepoint()->Center()));
+            if (closestStation && closestStation->getChokepoint()) {
+                auto defendPosition = Stations::getDefendPosition(closestStation);
+                unit.setFormation(defendPosition);
+            }
 
             // Add a zone to help with engagements
             Zones::addZone(unit.getPosition(), ZoneType::Defend, 1, unit.getGroundRange());
@@ -51,6 +53,11 @@ namespace McRave::Defender {
                 if (unit.getRole() == Role::Defender) {
                     updateFormation(unit);
                     updateDecision(unit);
+                }
+
+                // HACK: Helps form static formations
+                if (unit.getType().isBuilding() && unit.getRole() == Role::Production) {
+                    updateFormation(unit);
                 }
             }
         }

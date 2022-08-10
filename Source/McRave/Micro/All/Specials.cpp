@@ -178,12 +178,12 @@ namespace McRave::Command
         // Ghost - Cloak / Nuke
         else if (unit.getType() == Terran_Ghost) {
 
-            if (!unit.unit()->isCloaked() && unit.getEnergy() >= 50 && unit.getPosition().getDistance(unit.getEngagePosition()) < 320 && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy))
+            if (!unit.unit()->isCloaked() && unit.getEnergy() >= 50 && unit.getPosition().getDistance(unit.getEngagePosition()) < unit.getEngageRadius())
                 unit.unit()->useTech(TechTypes::Personnel_Cloaking);
 
-            if (com(Terran_Nuclear_Missile) > 0 && unit.hasTarget() && unit.getTarget().lock()->getWalkPosition().isValid() && unit.unit()->isCloaked() && Grids::getAirDensity(unit.getTarget().lock()->getWalkPosition(), PlayerState::Enemy) + Grids::getGroundDensity(unit.getTarget().lock()->getWalkPosition(), PlayerState::Enemy) > 5.0 && unit.getPosition().getDistance(unit.getTarget().lock()->getPosition()) <= 320 && unit.getPosition().getDistance(unit.getTarget().lock()->getPosition()) > 200) {
-                if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Use_Tech_Unit || unit.unit()->getLastCommand().getTarget() != unit.getTarget().lock()->unit()) {
-                    unit.unit()->useTech(TechTypes::Nuclear_Strike, unit.getTarget().lock()->unit());
+            if (com(Terran_Nuclear_Missile) > 0 && unit.hasTarget() && unit.unit()->isCloaked() && unit.getPosition().getDistance(unit.getTarget().lock()->getPosition()) > 200) {
+                if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Use_Tech_Position || unit.unit()->getLastCommand().getTargetPosition() != unit.getTarget().lock()->getPosition()) {
+                    unit.unit()->useTech(TechTypes::Nuclear_Strike, unit.getTarget().lock()->getPosition());
                     Actions::addAction(unit.unit(), unit.getTarget().lock()->getPosition(), TechTypes::Nuclear_Strike, PlayerState::Self);
                     return true;
                 }

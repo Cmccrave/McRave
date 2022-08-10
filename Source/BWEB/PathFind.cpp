@@ -207,7 +207,7 @@ namespace BWEB
         if (!source.isValid() || !target.isValid())
             return;
 
-        // TODO: Add caching
+        // TODO: Add caching and collision
 
         currentId++;
         if (currentId == INT_MAX)

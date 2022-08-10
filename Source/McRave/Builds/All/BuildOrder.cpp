@@ -327,6 +327,7 @@ namespace McRave::BuildOrder
     bool shouldScout() { return scout; }
     bool shouldExpand() { return expandDesired; }
     bool shouldRamp() { return rampDesired; }
+    bool mineralThirdDesired() { return mineralThird; }
     string getCurrentBuild() { return currentBuild; }
     string getCurrentOpener() { return currentOpener; }
     string getCurrentTransition() { return currentTransition; }

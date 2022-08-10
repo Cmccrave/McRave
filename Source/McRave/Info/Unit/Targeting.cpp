@@ -179,6 +179,12 @@ namespace McRave::Targets {
                     if (target.getType() == Terran_Vulture && !unit.isWithinRange(target))                                                                                  // Avoid vultures if not in range already
                         return false;
                 }
+
+                // Ghost
+                if (unit.getType() == Terran_Ghost) {
+                    if (!target.getType().isResourceDepot())
+                        return false;
+                }
             }
 
             if (unit.getRole() == Role::Scout) {
@@ -519,7 +525,6 @@ namespace McRave::Targets {
                         meleeSpotsAvailable[&unit]+=2;
                     if (Util::findWalkable(Position(-16, -16), Zerg_Zergling, q))
                         meleeSpotsAvailable[&unit]+=2;
-                    Broodwar->drawCircleMap(p, 2, Colors::Green, true);
                 }
                 for (double y = -1.0; y <= 1.0; y += 1.0 / double(unit.getType().tileHeight())) {
                     if (y <= -0.99 || y >= 0.99)
@@ -530,10 +535,7 @@ namespace McRave::Targets {
                         meleeSpotsAvailable[&unit]+=2;
                     if (Util::findWalkable(Position(-16, -16), Zerg_Zergling, q))
                         meleeSpotsAvailable[&unit]+=2;
-                    Broodwar->drawCircleMap(p, 2, Colors::Green, true);
                 }
-
-                Broodwar->drawTextMap(unit.getPosition(), "%d", meleeSpotsAvailable[&unit]);
             }
 
             for (auto &u : sortedUnits) {

@@ -27,9 +27,13 @@ namespace McRave::Combat::Navigation {
                 auto closest = DBL_MAX;
                 for (int x = TilePosition(start).x - dimensions.x; x < TilePosition(start).x + dimensions.x + 1; x++) {
                     for (int y = TilePosition(start).y - dimensions.y; y < TilePosition(start).y + dimensions.y + 1; y++) {
-                        auto center = Position(TilePosition(x, y)) + Position(16, 16);
+                        auto tile = TilePosition(x, y);
+                        if (!tile.isValid())
+                            continue;
+
+                        auto center = Position(tile) + Position(16, 16);
                         auto dist = center.getDistance(unit.getPosition());
-                        if (dist < closest && BWEB::Map::isWalkable(TilePosition(x, y), unit.getType()) && BWEB::Map::isUsed(TilePosition(x, y)) == UnitTypes::None) {
+                        if (dist < closest && BWEB::Map::isWalkable(tile, unit.getType()) && BWEB::Map::isUsed(tile) == UnitTypes::None) {
                             closest = dist;
                             pathPoint = center;
                         }
@@ -63,8 +67,10 @@ namespace McRave::Combat::Navigation {
 
     void getGroundPath(UnitInfo& unit)
     {
-        auto pathPoint = getPathPoint(unit, unit.getDestination());
-        if (!mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(pathPoint)) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(pathPoint)))) {
+        auto pathPoint = unit.getFormation().isValid() ? getPathPoint(unit, unit.getFormation()) : getPathPoint(unit, unit.getDestination());
+        auto newPathNeeded = !mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(pathPoint)) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(pathPoint)));
+
+        if (newPathNeeded) {
             BWEB::Path newPath(unit.getPosition(), pathPoint, unit.getType());
             newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t); });
             unit.setDestinationPath(newPath);
@@ -143,7 +149,7 @@ namespace McRave::Combat::Navigation {
 
         // If path is reachable, find a point n pixels away to set as new destination
         auto dist = unit.isFlying() ? 96.0 : 160.0;
-        if (unit.getDestinationPath().isReachable() && unit.getPosition().getDistance(unit.getDestination()) > 96.0) {
+        if (unit.getDestinationPath().isReachable() && unit.getPosition().getDistance(unit.getDestination()) > dist) {
             auto newDestination = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
                 return p.getDistance(unit.getPosition()) >= dist;
             });
@@ -182,14 +188,39 @@ namespace McRave::Combat::Navigation {
         // For pathing purposes, we store light air commander sim positions
         auto &simPositions = lastSimPositions[&unit];
         simPositions.clear();
-        for (auto &[sim,_] : simUnits)
+        for (auto &[sim, _] : simUnits)
             simPositions.push_back(sim.lock()->getPosition());
     }
 
-    void update(UnitInfo& unit)
+    void onFrame()
     {
-        updateSimPositions(unit);
-        updatePath(unit);
-        updateNavigation(unit);
+        for (auto &cluster : Clusters::getClusters()) {
+
+            // Update the commander first
+            auto commander = cluster.commander.lock();
+            if (commander) {
+                updateSimPositions(*commander);
+                updatePath(*commander);
+                updateNavigation(*commander);
+            }
+
+            // Update remaining units
+            for (auto &unit : cluster.units) {
+                if (unit == &*commander)
+                    continue;
+
+                // Determine if this is a shared decision
+                unit->setNavigation(commander->getNavigation());
+                auto sharedDecision = cluster.commandShare == CommandShare::Exact && !unit->localRetreat() && !unit->globalRetreat() && !unit->isNearSuicide()
+                    && !unit->attemptingRegroup() && (unit->getType() == commander->getType() || unit->getLocalState() != LocalState::Attack);
+
+                // If it's not a shared decision, indepdently update pathing and navigation waypoint
+                if (!sharedDecision) {
+                    updateSimPositions(*unit);
+                    updatePath(*unit);
+                    updateNavigation(*unit);
+                }
+            }
+        }
     }
 }

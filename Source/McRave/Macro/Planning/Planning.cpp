@@ -423,43 +423,15 @@ namespace McRave::Planning {
             for (auto &station : Stations::getStations(PlayerState::Self)) {
 
                 int colonies = 0;
+                Position desiredCenter = Position(station->getResourceCentroid());
                 for (auto& tile : station->getDefenses()) {
                     if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony || buildingsPlanned.find(tile) != buildingsPlanned.end())
                         colonies++;
                 }
 
-                // If we need ground defenses
-                if (Stations::needGroundDefenses(station) > colonies) {
-                    if (station->isMain()) {
-                        Position desiredCenter = Position(station->getResourceCentroid());
-                        placement = returnClosest(building, station->getDefenses(), desiredCenter);
-                        if (placement.isValid())
-                            return true;
-                    }
-                    else {
-
-                        // Sort Chokepoints by most vulnerable (closest to middle of map)
-                        map<double, Position> chokesByDist;
-                        for (auto &choke : station->getBase()->GetArea()->ChokePoints())
-                            chokesByDist.emplace(Position(choke->Center()).getDistance(mapBWEM.Center()), Position(choke->Center()));
-
-                        // Place a uniquely best position near each chokepoint if possible
-                        for (auto &[_, choke] : chokesByDist) {
-                            placement = returnClosest(building, station->getDefenses(), choke, true);
-                            if (placement.isValid() && isBuildable(building, placement) && isPathable(building, placement))
-                                return true;
-                            placement = TilePositions::Invalid;
-                        }
-
-                        // Otherwise resort to closest to resource centroid
-                        placement = returnClosest(building, station->getDefenses(), station->getResourceCentroid());
-                        if (placement.isValid() && isBuildable(building, placement) && isPathable(building, placement))
-                            return true;
-                        placement = TilePositions::Invalid;
-                    }
-                }
-                if (Stations::needAirDefenses(station) > colonies) {
-                    placement = returnClosest(building, station->getDefenses(), Position(station->getResourceCentroid()));
+                // If we need defenses
+                if (Stations::needGroundDefenses(station) > colonies || Stations::needAirDefenses(station) > colonies) {
+                    placement = returnClosest(building, station->getDefenses(), desiredCenter);
                     if (placement.isValid())
                         return true;
                 }

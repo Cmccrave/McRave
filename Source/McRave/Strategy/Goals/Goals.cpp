@@ -117,7 +117,7 @@ namespace McRave::Goals {
             }
 
             // Before Hydras have upgrades, defend vulnerable bases
-            if (BuildOrder::isTechUnit(Zerg_Hydralisk) && (!Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines) || !Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments))) {
+            if (BuildOrder::isTechUnit(Zerg_Hydralisk) && !BuildOrder::isPlayPassive() && (!Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines) || !Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments))) {
                 auto &stations = Stations::getStations(PlayerState::Self);
                 if (!stations.empty()) {
                     auto mainStations = int(count_if(stations.begin(), stations.end(), [&](auto& s) { return s->isMain(); }));
@@ -131,7 +131,7 @@ namespace McRave::Goals {
             }
 
             // Defend my expansions
-            if (Stations::getStations(PlayerState::Self).size() >= 3) {
+            if (Stations::getStations(PlayerState::Self).size() >= 3 && !BuildOrder::isPlayPassive()) {
                 for (auto &station : Stations::getStations(PlayerState::Self)) {
 
                     if (Stations::getGroundDefenseCount(station) >= 2 || Stations::needGroundDefenses(station) == 0 || (Broodwar->self()->getRace() == Races::Protoss && Stations::needPower(station)))

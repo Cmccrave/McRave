@@ -137,6 +137,9 @@ namespace McRave::Walls {
             if (Spy::enemyFastExpand() && enemyExpandTimer == Time(999, 00))
                 enemyExpandTimer = Util::getTime();
 
+            if (BuildOrder::getCurrentTransition().find("3HatchHydra") != string::npos)
+                return 0;
+
             // See if they expanded or got some tech at a reasonable point for 1 base play
             auto noExpand = !Spy::enemyFastExpand();
             auto noTech = Spy::getEnemyTransition() == "Unknown"

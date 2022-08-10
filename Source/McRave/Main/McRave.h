@@ -63,8 +63,13 @@ namespace McRave
         }
 
         Time operator- (const Time t2) {
-            auto secondsDiff = (minutes * 60 + seconds) - (t2.minutes * 60 + t2.seconds);
-            return Time(secondsDiff / 60, secondsDiff % 60);
+            auto op = (minutes * 60 + seconds) - (t2.minutes * 60 + t2.seconds);
+            return Time(op / 60, op % 60);
+        }
+
+        Time operator+ (const Time t2) {
+            auto op = (minutes * 60 + seconds) + (t2.minutes * 60 + t2.seconds);
+            return Time(op / 60, op % 60);
         }
     };
 
@@ -115,7 +120,7 @@ namespace McRave
     };
 
     enum class TransportState {
-        None, Loading, Unloading, Monitoring, Engaging, Retreating
+        None, Loading, Engaging, Retreating, Reinforcing
     };
 
     enum class ResourceState {

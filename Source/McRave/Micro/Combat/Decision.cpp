@@ -8,7 +8,7 @@ namespace McRave::Combat::Decision {
 
     constexpr tuple commands{ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::defend, Command::explore, Command::escort, Command::retreat, Command::move };
 
-    void update(UnitInfo& unit)
+    void updateDecision(UnitInfo& unit)
     {
         if (!unit.unit() || !unit.unit()->exists()                                                                                          // Prevent crashes            
             || unit.unit()->isLoaded()
@@ -35,5 +35,39 @@ namespace McRave::Combat::Decision {
         int i = Util::iterateCommands(commands, unit);
         auto startText = unit.getPosition() + Position(-4 * int(commandNames[i].length() / 2), height);
         Broodwar->drawTextMap(startText, "%c%s", Text::White, commandNames[i].c_str());
+    }
+
+    void onFrame()
+    {
+        for (auto &cluster : Clusters::getClusters()) {
+
+            // Update the commander first
+            auto commander = cluster.commander.lock();
+            if (commander)
+                updateDecision(*commander);
+
+            // Update remaining units
+            for (auto &unit : cluster.units) {
+                if (unit == &*commander)
+                    continue;
+
+                auto sharedDecision = cluster.commandShare == CommandShare::Exact && !unit->localRetreat() && !unit->globalRetreat() && !unit->isNearSuicide()
+                    && !unit->attemptingRegroup() && (unit->getType() == commander->getType() || unit->getLocalState() != LocalState::Attack);
+
+                // If it's a shared decision, replicate the commanders command
+                if (sharedDecision) {
+                    if (commander->getCommandType() == UnitCommandTypes::Attack_Unit)
+                        unit->command(commander->getCommandType(), *commander->getTarget().lock());
+                    else if (commander->getCommandType() == UnitCommandTypes::Move && !unit->isTargetedBySplash())
+                        unit->command(commander->getCommandType(), commander->getCommandPosition());
+                    else if (commander->getCommandType() == UnitCommandTypes::Right_Click_Position && !unit->isTargetedBySplash())
+                        unit->command(UnitCommandTypes::Right_Click_Position, commander->getCommandPosition());
+                    else
+                        updateDecision(*unit);
+                }
+                else
+                    updateDecision(*unit);
+            }
+        }
     }
 }

@@ -307,6 +307,9 @@
     <ClCompile Include="..\Source\McRave\Macro\Researching\Researching.cpp">
       <Filter>McRave\Macro\Researching</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Zerg\Z_RetiredBuilds.cpp">
+      <Filter>McRave\Builds\Zerg\ZvFFA</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">

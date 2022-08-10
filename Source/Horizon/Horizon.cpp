@@ -65,22 +65,22 @@ namespace McRave::Horizon {
 
             auto &enemyTarget =                 enemy.getTarget().lock();
             auto simRatio =                     0.0;
-            const auto distTarget =             max(0.0, double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getPosition())) - targetDisplacement);
-            const auto distEngage =             max(0.0, double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getEngagePosition())) - targetDisplacement);
+            const auto distTarget =             max(0.0, double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getPosition())));
+            const auto distEngage =             max(0.0, double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getEngagePosition())));
             //const auto distPerp =               perpDist(enemy.getPosition(), unit.getPosition(), unit.getEngagePosition());
             const auto range =                  enemyTarget->getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange();
             const auto enemyReach =             max(enemy.getAirReach(), enemy.getGroundReach());
 
             // If the unit doesn't affect this simulation
-            if ((enemy.getSpeed() <= 0.0 && distEngage > range + 32.0 && distTarget > range + 32.0 /*&& distPerp > range*/)
+            if ((enemy.getSpeed() <= 0.0 && distEngage > range + 32.0 && distTarget - targetDisplacement > range + 32.0 /*&& distPerp > range*/)
                 || (enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode && distTarget < 64.0)
-                || (enemy.getSpeed() <= 0.0 && distTarget > range /*&& distPerp > range*/ && enemyTarget->getSpeed() <= 0.0)
+                || (enemy.getSpeed() <= 0.0 && distTarget - targetDisplacement > range /*&& distPerp > range*/ && enemyTarget->getSpeed() <= 0.0)
                 || (enemy.targetsFriendly() && unit.hasTarget() && enemy.getPosition().getDistance(unitTarget->getPosition()) >= enemyReach))
                 continue;
 
             // If enemy doesn't move, calculate how long it will remain in range once in range
             if (enemy.getSpeed() <= 0.0) {
-                const auto distance =               distTarget;// min(distPerp, distTarget);
+                const auto distance =               distTarget - targetDisplacement;// min(distPerp, distTarget);
                 const auto speed =                  enemyTarget->getSpeed() * 24.0;
                 const auto engageTime =             max(0.0, (distance - range) / speed);
                 simRatio =                          max(0.0, simulationTime - engageTime);
