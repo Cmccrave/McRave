@@ -51,7 +51,7 @@ namespace McRave::Scouts {
             auto sRadius = int(round(1.5*radius));
 
             if (radius == 0)
-                scoutTargets.push_back(ScoutTarget(center, center.getDistance(BWEB::Map::getMainPosition()), state));
+                scoutTargets.push_back(ScoutTarget(center, center.getDistance(Terrain::getMainPosition()), state));
             else {
                 vector<Position> positions ={ here + Position(sRadius, 0),
                     here + Position(-sRadius, 0),
@@ -63,7 +63,7 @@ namespace McRave::Scouts {
                     here + Position(-radius, -radius) };
                 for (auto &pos : positions)
                     pos = Util::clipPosition(pos);
-                scoutTargets.push_back(ScoutTarget(center, center.getDistance(BWEB::Map::getMainPosition()), state, positions));
+                scoutTargets.push_back(ScoutTarget(center, center.getDistance(Terrain::getMainPosition()), state, positions));
             }
         }
 
@@ -83,16 +83,23 @@ namespace McRave::Scouts {
 
         void checkScoutDenied()
         {
-            if (workerScoutDenied || Util::getTime() < Time(3, 30))
+            if (workerScoutDenied || Util::getTime() < Time(3, 30) || !Terrain::getEnemyStartingPosition().isValid())
                 return;
 
-            auto closestWorker = Util::getFurthestUnit(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
+            auto closestWorker = Util::getFurthestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) {
                 return u->getType().isWorker() && u->getRole() == Role::Scout;
             });
             if (closestWorker) {
+
+                auto closestEnemy = Util::getClosestUnit(closestWorker->getPosition(), PlayerState::Self, [&](auto &u) {
+                    return u->getTilePosition().isValid() && !u->getType().isWorker() && !u->getType().isBuilding();
+                });
+
                 auto closestMain = BWEB::Stations::getClosestMainStation(closestWorker->getTilePosition());
                 auto closeToChoke = closestMain && closestMain->getChokepoint() && closestWorker->getPosition().getDistance(Position(closestMain->getChokepoint()->Center())) < 160.0;
                 auto deniedFromMain = closestMain && mapBWEM.GetArea(closestWorker->getTilePosition()) != closestMain->getBase()->GetArea() && Grids::getGroundThreat(closestWorker->getPosition(), PlayerState::Enemy) > 0.0f;
+                auto enemyInMain = closestEnemy && mapBWEM.GetArea(closestEnemy->getTilePosition()) == closestMain->getBase()->GetArea();
+
                 if (closeToChoke && deniedFromMain) {
                     easyWrite("Worker scout denied at " + Util::getTime().toString());
                     workerScoutDenied = true;
@@ -193,7 +200,7 @@ namespace McRave::Scouts {
             const auto assign = [&](UnitType type) {
                 UnitInfo* scout = nullptr;
 
-                auto assignPos = BWEB::Map::getNaturalChoke() ? Position(BWEB::Map::getNaturalChoke()->Center()) : BWEB::Map::getMainPosition();
+                auto assignPos = Terrain::getNaturalChoke() ? Position(Terrain::getNaturalChoke()->Center()) : Terrain::getMainPosition();
 
                 // Proxy takes furthest from natural choke
                 if (type.isWorker() && BuildOrder::getCurrentOpener() == "Proxy") {
@@ -229,7 +236,7 @@ namespace McRave::Scouts {
                     });
                 }
                 else {
-                    scout = Util::getClosestUnitGround(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
+                    scout = Util::getClosestUnitGround(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) {
                         return u->getRole() == Role::Scout && u->getType() == type;
                     });
                 }
@@ -286,7 +293,7 @@ namespace McRave::Scouts {
 
                 // Sometimes proxies get placed at the 3rd closest Station
                 if (Players::ZvP() && !Terrain::getEnemyStartingPosition().isValid() && Broodwar->mapFileName().find("Outsider") != string::npos) {
-                    auto thirdStation = Stations::getClosestStationAir(BWEB::Map::getMainPosition(), PlayerState::None, [&](auto &station) {
+                    auto thirdStation = Stations::getClosestStationAir(Terrain::getMainPosition(), PlayerState::None, [&](auto &station) {
                         return station != Terrain::getMyMain() && station != Terrain::getMyNatural();
                     });
                     if (thirdStation)
@@ -304,12 +311,12 @@ namespace McRave::Scouts {
             proxyPosition = Positions::Invalid;
 
             // Against known proxies without visible proxy style buildings
-            const auto closestProxyBuilding = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto& u) {
+            const auto closestProxyBuilding = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto& u) {
                 return u->isProxy();
             });
             if (Spy::enemyProxy() && !closestProxyBuilding) {
                 if (Spy::getEnemyBuild() == "CannonRush")
-                    addTarget(BWEB::Map::getMainPosition(), ScoutType::Proxy, 200);
+                    addTarget(Terrain::getMainPosition(), ScoutType::Proxy, 200);
                 else
                     addTarget(mapBWEM.Center(), ScoutType::Proxy, 200);
             }
@@ -352,7 +359,7 @@ namespace McRave::Scouts {
             }
 
             // Scout the popular middle proxy location if it's walkable
-            if (!Players::vZ() && !Terrain::foundEnemy() && !scoutOrder.empty() && scoutOrder.front() && (Stations::isBaseExplored(scoutOrder.front()) || Broodwar->getStartLocations().size() >= 4) && !Terrain::isExplored(mapBWEM.Center()) && BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), mapBWEM.Center()) != DBL_MAX)
+            if (!Players::vZ() && !Terrain::foundEnemy() && !scoutOrder.empty() && scoutOrder.front() && (Stations::isBaseExplored(scoutOrder.front()) || Broodwar->getStartLocations().size() >= 4) && !Terrain::isExplored(mapBWEM.Center()) && BWEB::Map::getGroundDistance(Terrain::getMainPosition(), mapBWEM.Center()) != DBL_MAX)
                 addTarget(mapBWEM.Center(), ScoutType::Proxy);
 
             // Determine if we achieved a full scout
@@ -500,7 +507,7 @@ namespace McRave::Scouts {
 
             sort(sortedScouts.begin(), sortedScouts.end(), [&](auto &lhs, auto &rhs) {
                 return Terrain::getEnemyMain() ? lhs.lock()->getPosition().getDistance(Terrain::getEnemyStartingPosition()) < rhs.lock()->getPosition().getDistance(Terrain::getEnemyStartingPosition())
-                    : lhs.lock()->getPosition().getDistance(BWEB::Map::getMainPosition()) > rhs.lock()->getPosition().getDistance(BWEB::Map::getMainPosition());
+                    : lhs.lock()->getPosition().getDistance(Terrain::getMainPosition()) > rhs.lock()->getPosition().getDistance(Terrain::getMainPosition());
             });
 
             info = false;

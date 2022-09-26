@@ -112,8 +112,8 @@ namespace McRave::Combat::Simulation {
 
         // Z
         if (Players::ZvP()) {
-            minWinPercent = 1.0;
-            maxWinPercent = 1.4;
+            minWinPercent = 0.8;
+            maxWinPercent = 1.2;
         }
         if (Players::ZvZ()) {
             minWinPercent = 1.0;
@@ -148,9 +148,10 @@ namespace McRave::Combat::Simulation {
             const auto distEnemy = unit.isFlying() ? min(unit.getPosition().getDistance(closestEnemy->getBase()->Center()), unitTarget->getPosition().getDistance(closestEnemy->getBase()->Center()))
                 : min(BWEB::Map::getGroundDistance(unit.getPosition(), closestEnemy->getBase()->Center()), BWEB::Map::getGroundDistance(unitTarget->getPosition(), closestEnemy->getBase()->Center()));
 
-            const auto diffAllowed = 0.5;
-            const auto diffSelf = diffAllowed * max(0.0, 800.0 - distSelf) / 800.0;
-            const auto diffEnemy = diffAllowed * max(0.0, 800.0 - distEnemy) / 800.0;
+            const auto dist = clamp(200.0, Util::getTime().minutes * 50.0, 640.0);
+            const auto diffAllowed = 0.10;
+            const auto diffSelf = diffAllowed * max(0.0, dist - distSelf) / dist;
+            const auto diffEnemy = diffAllowed * max(0.0, dist - distEnemy) / dist;
             minWinPercent = minWinPercent + diffEnemy - diffSelf;
             maxWinPercent = maxWinPercent + diffEnemy - diffSelf;
         }
@@ -163,9 +164,11 @@ namespace McRave::Combat::Simulation {
     {
         for (auto &u : Units::getUnits(PlayerState::Self)) {
             auto &unit = *u;
-            updateThresholds(unit);
-            Horizon::simulate(unit);
-            updateSimulation(unit);
+            if (unit.getRole() == Role::Combat) {
+                updateThresholds(unit);
+                Horizon::simulate(unit);
+                updateSimulation(unit);
+            }
         }
     }
 }

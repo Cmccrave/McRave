@@ -47,7 +47,6 @@ namespace McRave::Expansion {
             // Create a map of blocking neutrals per station
             blockingNeutrals.clear();
             for (auto &[station, path] : expansionNetwork[Terrain::getMyMain()]) {
-                Visuals::drawPath(path);
                 Util::testPointOnPath(path, [&](Position &p) {
                     auto type = BWEB::Map::isUsed(TilePosition(p));
                     if (type != UnitTypes::None) {
@@ -103,7 +102,7 @@ namespace McRave::Expansion {
             for (int i = 0; i < int(BWEB::Stations::getStations().size()); i++) {
                 auto costBest = DBL_MAX;
                 BWEB::Station * stationBest = nullptr;
-                auto home = BWEB::Map::getNaturalChoke() ? Position(BWEB::Map::getNaturalChoke()->Center()) : BWEB::Map::getMainPosition();
+                auto home = Terrain::getNaturalChoke() ? Position(Terrain::getNaturalChoke()->Center()) : Terrain::getMainPosition();
 
                 for (auto &station : BWEB::Stations::getStations()) {
                     auto stationIndex =     expansionNetwork[&station];
@@ -117,7 +116,7 @@ namespace McRave::Expansion {
                     auto closestEnemy = Stations::getClosestStationAir(station.getBase()->Center(), PlayerState::Enemy);
                     auto grdEnemy = 1.0;
                     auto airEnemy = 1.0;
-                    if (closestEnemy) {
+                    if (closestEnemy && Terrain::getEnemyMain() && Terrain::getEnemyNatural()) {
                         grdEnemy = min({ stationIndex[closestEnemy].getDistance(),
                             stationIndex[Terrain::getEnemyNatural()].getDistance(),
                             stationIndex[Terrain::getEnemyMain()].getDistance() });
@@ -125,7 +124,7 @@ namespace McRave::Expansion {
                             station.getBase()->Center().getDistance(Terrain::getEnemyNatural()->getBase()->Center()),
                             station.getBase()->Center().getDistance(Terrain::getEnemyMain()->getBase()->Center()) });
                     }
-                    else {
+                    else if (enemyStation) {
                         grdEnemy = expansionNetwork[enemyStation][&station].getDistance();
                         airEnemy = station.getBase()->Center().getDistance(enemyStation->getBase()->Center());
                     }
@@ -180,9 +179,6 @@ namespace McRave::Expansion {
 
         void updateExpandPlan()
         {
-            if (!Terrain::getMyMain() || !Terrain::getEnemyMain() || !Terrain::getMyNatural() || !Terrain::getEnemyNatural())
-                return;
-
             updateExpandBlockers();
             updateDangerousStations();
             updateIslandStations();

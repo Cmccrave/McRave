@@ -102,6 +102,7 @@ namespace McRave::Targets {
                     || (target.getType() == Terran_Vulture_Spider_Mine && int(target.getUnitsTargetingThis().size()) >= 4 && !target.isBurrowed())                          // Don't over target spider mines
                     || (target.getType() == Protoss_Interceptor && unit.isFlying())                                                                                         // Don't target interceptors as a flying unit
                     || (!allowWorkerTarget(unit, target))
+                    || (!unit.isFlying() && target.getType() == Protoss_Corsair && target.getUnitsTargetingThis().size() > 2 && !unit.isWithinRange(target))
                     || (target.isHidden() && (!targetCanAttack || (!Players::hasDetection(PlayerState::Self) && Players::PvP())) && !unit.getType().isDetector())           // Don't target if invisible and can't attack this unit or we have no detectors in PvP
                     || (target.isFlying() && !unit.isFlying() && !BWEB::Map::isWalkable(target.getTilePosition(), unit.getType()) && !unit.isWithinRange(target))           // Don't target flyers that we can't reach
                     || (target.getType().isBuilding() && !target.canAttackGround() && !target.canAttackAir() && !target.isThreatening() && (target.getType() != Protoss_Pylon || !target.isProxy()) && Util::getTime() < Time(5, 00))     // Don't attack buildings that aren't threatening early on
@@ -422,6 +423,7 @@ namespace McRave::Targets {
                 if (thisUnit > scoreBest && checkGroundAccess(target)) {
                     scoreBest = thisUnit;
                     unit.setTarget(&target);
+                    unit.setSimTarget(&target);
                 }
             }
 

@@ -90,10 +90,10 @@ namespace McRave::BuildOrder
             return true;
 
         // Estimate how long until a building finishes based on how far it is from the nearest worker
-        auto closestBuilding = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
+        auto closestBuilding = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) {
             return u->getType() == t;
         });
-        auto closestWorker = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
+        auto closestWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) {
             return u->getType() == Broodwar->self()->getRace().getWorker();
         });
 
@@ -107,7 +107,7 @@ namespace McRave::BuildOrder
             return true;
 
         // Estimate how long until a building finishes based on how far it is from the nearest worker
-        auto closestBuilding = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
+        auto closestBuilding = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) {
             return u->getType() == t.whatResearches() && u->unit()->isResearching();
         });
         return closestBuilding != nullptr;
@@ -244,47 +244,46 @@ namespace McRave::BuildOrder
             if (type == Zerg_Lair)
                 morphOffset = vis(Zerg_Hive);
 
-            if (com(type) + morphOffset == 0)
+            if (atPercent(type, 0.95) + morphOffset == 0)
                 return false;
             return true;
         };
 
         // For every unit in our tech list, ensure we are building the required buildings
-        set<UnitType> toCheck;
+        vector<UnitType> toCheck;
         for (auto &type : techList) {
-            toCheck.insert(type);
-            toCheck.insert(type.whatBuilds().first);
+            toCheck.push_back(type);
+            toCheck.push_back(type.whatBuilds().first);
         }
 
         // Iterate all required branches of buildings that are required for this tech unit
         bool moreToAdd;
         do {
             moreToAdd = false;
-            for (auto &check : toCheck) {
+            auto toCheckCopy = toCheck;
+            for (auto &check : toCheckCopy) {
                 for (auto &pair : check.requiredUnits()) {
                     UnitType type(pair.first);
-                    if (!preReqCompleted(type) && toCheck.find(type) == toCheck.end()) {
-                        toCheck.insert(type);
+                    if (!preReqCompleted(type) && find(toCheck.begin(), toCheck.end(), type) == toCheck.end()) {
+                        toCheck.push_back(type);
                         moreToAdd = true;
                     }
                 }
             }
         } while (moreToAdd);
+        reverse(toCheck.begin(), toCheck.end());
 
         // For each building we need to check, add to our queue whatever is possible to build based on its required branch
         for (auto &check : toCheck) {
-
             if (!check.isBuilding())
                 continue;
 
-            // Our check doesn't look for required buildings for tech needed for Lurkers
-            if (check == Zerg_Lurker)
-                buildQueue[Zerg_Lair] = 1;
-
             // Queue tech structure
             int s = Players::getSupply(PlayerState::Self, check.getRace());
-            if (buildCount(check) <= 1)
+            if (buildCount(check) <= 1) {
                 buildQueue[check] = 1;
+                break;
+            }
         }
     }
 

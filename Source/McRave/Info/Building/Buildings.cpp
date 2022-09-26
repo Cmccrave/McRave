@@ -112,16 +112,16 @@ namespace McRave::Buildings {
 
             // Lair morphing
             if (building.getType() == Zerg_Hatchery && !willDieToAttacks(building) && BuildOrder::buildCount(Zerg_Lair) > vis(Zerg_Lair) + vis(Zerg_Hive) + morphedThisFrame[Zerg_Lair] + morphedThisFrame[Zerg_Hive]) {
-                auto morphTile = BWEB::Map::getMainTile();
-                const auto closestScout = Util::getClosestUnitGround(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                auto morphTile = Terrain::getMainTile();
+                const auto closestScout = Util::getClosestUnitGround(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
                     return u->getType().isWorker();
                 });
-                if (closestScout && Stations::getStations(PlayerState::Self).size() >= 2 && mapBWEM.GetArea(closestScout->getTilePosition()) == BWEB::Map::getMainArea())
-                    morphTile = BWEB::Map::getNaturalTile();
+                if (closestScout && Stations::getStations(PlayerState::Self).size() >= 2 && mapBWEM.GetArea(closestScout->getTilePosition()) == Terrain::getMainArea())
+                    morphTile = Terrain::getNaturalTile();
 
                 // Extra larva timings (main): 3:02, 3:31, 4:00
                 if (building.getTilePosition() == morphTile) {
-                    if (morphTile == BWEB::Map::getMainTile()) {
+                    if (morphTile == Terrain::getMainTile()) {
                         if (Util::getTime() >= Time(3, 02)
                             || (Util::getTime() >= Time(3, 31) && BuildOrder::getCurrentTransition().find("2Hatch") != string::npos)
                             || (Util::getTime() >= Time(4, 00) && BuildOrder::getCurrentTransition().find("3Hatch") != string::npos)

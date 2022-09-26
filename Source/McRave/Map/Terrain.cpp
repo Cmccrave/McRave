@@ -14,8 +14,6 @@ namespace McRave::Terrain {
         set<const Base *> allBases;
         BWEB::Station * enemyNatural = nullptr;
         BWEB::Station * enemyMain = nullptr;
-        BWEB::Station * myNatural = nullptr;
-        BWEB::Station * myMain = nullptr;
         Position enemyStartingPosition = Positions::Invalid;
         Position defendPosition = Positions::Invalid;
         Position attackPosition = Positions::Invalid;
@@ -41,12 +39,12 @@ namespace McRave::Terrain {
         bool checkDefendRunby()
         {
             if (Players::ZvP() && com(Zerg_Zergling) >= 16) {
-                defendPosition = (Position(BWEB::Map::getMainChoke()->Center()) + Position(BWEB::Map::getNaturalChoke()->Center()) + Position(4, 4)) / 2;
+                defendPosition = (Position(getMainChoke()->Center()) + Position(getNaturalChoke()->Center()) + Position(4, 4)) / 2;
                 defendNatural = true;
                 return true;
             }
             if (Players::ZvT()) {
-                defendPosition = Position(BWEB::Map::getMainChoke()->Center()) + Position(4, 4);
+                defendPosition = Position(getMainChoke()->Center()) + Position(4, 4);
                 defendNatural = true;
                 return true;
             }
@@ -79,7 +77,7 @@ namespace McRave::Terrain {
                 const auto closestMain = BWEB::Stations::getClosestMainStation(unit.getTilePosition());
 
                 // Set start if valid
-                if (closestMain && closestMain != myMain) {
+                if (closestMain && closestMain != getMyMain()) {
                     enemyStartingTilePosition = closestMain->getBase()->Location();
                     enemyStartingPosition = Position(enemyStartingTilePosition) + Position(64, 48);
                 }
@@ -106,7 +104,7 @@ namespace McRave::Terrain {
                     }
 
                     // Set start if valid
-                    if (tileBest.isValid() && tileBest != BWEB::Map::getMainTile()) {
+                    if (tileBest.isValid() && tileBest != getMainTile()) {
                         enemyStartingPosition = Position(tileBest) + Position(64, 48);
                         enemyStartingTilePosition = tileBest;
                     }
@@ -151,7 +149,7 @@ namespace McRave::Terrain {
                 // If station is used
                 if (BWEB::Map::isUsed(station.getBase()->Location()) != None
                     || enemyStartingTilePosition == station.getBase()->Location()
-                    || !station.getBase()->GetArea()->AccessibleFrom(BWEB::Map::getMainArea())
+                    || !station.getBase()->GetArea()->AccessibleFrom(getMainArea())
                     || station == enemyNatural)
                     continue;
 
@@ -166,10 +164,10 @@ namespace McRave::Terrain {
 
                 // Get distance of the expansion
                 double distance;
-                if (!station.getBase()->GetArea()->AccessibleFrom(BWEB::Map::getMainArea()))
+                if (!station.getBase()->GetArea()->AccessibleFrom(getMainArea()))
                     distance = log(station.getBase()->Center().getDistance(enemyStartingPosition));
                 else
-                    distance = BWEB::Map::getGroundDistance(enemyStartingPosition, station.getBase()->Center()) / (BWEB::Map::getGroundDistance(BWEB::Map::getMainPosition(), station.getBase()->Center()));
+                    distance = BWEB::Map::getGroundDistance(enemyStartingPosition, station.getBase()->Center()) / (BWEB::Map::getGroundDistance(getMainPosition(), station.getBase()->Center()));
 
                 double score = value / distance;
 
@@ -187,7 +185,7 @@ namespace McRave::Terrain {
             auto posBest = Positions::Invalid;
             if (Players::vFFA()) {
                 for (auto &station : Stations::getStations(PlayerState::Enemy)) {
-                    auto dist = station->getBase()->Center().getDistance(BWEB::Map::getMainPosition());
+                    auto dist = station->getBase()->Center().getDistance(getMainPosition());
                     if (dist < distBest) {
                         distBest = dist;
                         posBest = station->getBase()->Center();
@@ -216,7 +214,7 @@ namespace McRave::Terrain {
                     return Util::rectangleIntersect(Position(station->getBase()->Location()), Position(station->getBase()->Location()) + Position(128, 96), Position(t));
                 };
 
-                auto pathFrom = BWEB::Map::getNaturalChoke() ? Position(BWEB::Map::getNaturalChoke()->Center()) : BWEB::Map::getMainPosition();
+                auto pathFrom = getNaturalChoke() ? Position(getNaturalChoke()->Center()) : getMainPosition();
                 BWEB::Path path(pathFrom, station->getBase()->Center(), Zerg_Ultralisk, true, true);
                 path.generateJPS([&](auto &t) { return path.unitWalkable(t) || stationWalkable(t); });
 
@@ -231,8 +229,8 @@ namespace McRave::Terrain {
         void findDefendPosition()
         {
             const auto baseType = Broodwar->self()->getRace().getResourceDepot();
-            narrowNatural = BWEB::Map::getNaturalChoke() && BWEB::Map::getNaturalChoke()->Width() <= 64;
-            defendNatural = BWEB::Map::getNaturalChoke() &&
+            narrowNatural = getNaturalChoke() && getNaturalChoke()->Width() <= 64;
+            defendNatural = getNaturalChoke() &&
                 (BuildOrder::isWallNat()
                     || BuildOrder::takeNatural()
                     || BuildOrder::buildCount(baseType) > (1 + !BuildOrder::takeNatural())
@@ -241,15 +239,15 @@ namespace McRave::Terrain {
                     || (Broodwar->self()->getRace() != Races::Zerg && reverseRamp));
 
             auto oldPos = defendPosition;
-            auto mainChoke = BWEB::Map::getMainChoke();
+            auto mainChoke = getMainChoke();
 
             // See if a defense is in range of our main choke
             auto defendRunby = Spy::getEnemyBuild() == "RaxFact";
             if (defendNatural && Players::ZvT()) {
-                auto closestDefense = Util::getClosestUnit(Position(BWEB::Map::getMainChoke()->Center()), PlayerState::Self, [&](auto &u) {
+                auto closestDefense = Util::getClosestUnit(Position(getMainChoke()->Center()), PlayerState::Self, [&](auto &u) {
                     return u->getRole() == Role::Defender && u->canAttackGround();
                 });
-                if (closestDefense && closestDefense->getPosition().getDistance(Position(BWEB::Map::getMainChoke()->Center())) < closestDefense->getGroundRange())
+                if (closestDefense && closestDefense->getPosition().getDistance(Position(getMainChoke()->Center())) < closestDefense->getGroundRange())
                     defendRunby = true;
             }
 
@@ -260,17 +258,17 @@ namespace McRave::Terrain {
             }
 
             // Natural defending position
-            else if (defendNatural && myNatural) {
-                defendChoke = BWEB::Map::getNaturalChoke();
-                defendPosition = Stations::getDefendPosition(myNatural);
-                addTerritory(PlayerState::Self, myNatural);
+            else if (defendNatural && getMyNatural()) {
+                defendChoke = getNaturalChoke();
+                defendPosition = Stations::getDefendPosition(getMyNatural());
+                addTerritory(PlayerState::Self, getMyNatural());
             }
 
             // Main defending position
             else if (mainChoke) {
                 defendNatural = false;
-                addTerritory(PlayerState::Self, myMain);
-                removeTerritory(PlayerState::Self, myNatural); // Erase just in case we dropped natural defense
+                addTerritory(PlayerState::Self, getMyMain());
+                removeTerritory(PlayerState::Self, getMyNatural()); // Erase just in case we dropped natural defense
                 defendPosition = Position(mainChoke->Center()) + Position(4, 4);
 
                 // Check to see if we have a wall
@@ -282,20 +280,20 @@ namespace McRave::Terrain {
 
             // Natural defending area and choke
             if (defendNatural) {
-                defendArea = BWEB::Map::getNaturalArea();
-                defendChoke = BWEB::Map::getNaturalChoke();
-                Zones::addZone(Position(BWEB::Map::getMainChoke()->Center()), ZoneType::Defend, 1, 160);
+                defendArea = getNaturalArea();
+                defendChoke = getNaturalChoke();
+                Zones::addZone(Position(getMainChoke()->Center()), ZoneType::Defend, 1, 160);
             }
 
             // Main defend area and choke
             else if (mainChoke) {
                 defendChoke = mainChoke;
-                defendArea = BWEB::Map::getMainArea();
+                defendArea = getMainArea();
             }
 
 
             // HACK: Matchpoint sucks for BWEM top right
-            if (Broodwar->mapFileName().find("MatchPoint") && myMain->getBase()->Location() == TilePosition(100, 14)) {
+            if (Broodwar->mapFileName().find("MatchPoint") && getMyMain()->getBase()->Location() == TilePosition(100, 14)) {
                 defendPosition = Position(3369, 1690);
             }
 
@@ -353,7 +351,7 @@ namespace McRave::Terrain {
                 return;
             }
             //if (Util::getTime() > Time(10, 00)) {
-            //    auto closestEnemy = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+            //    auto closestEnemy = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
             //        return u->isThreatening() && !u->isHidden();
             //    });
             //    if (closestEnemy) {
@@ -439,15 +437,15 @@ namespace McRave::Terrain {
         void updateAreas()
         {
             // Squish areas
-            if (BWEB::Map::getNaturalArea()) {
+            if (getNaturalArea()) {
 
                 // Add to territory if chokes are shared
-                if (BWEB::Map::getMainChoke() == BWEB::Map::getNaturalChoke() || islandMap)
-                    addTerritory(PlayerState::Self, myNatural);
+                if (getMainChoke() == getNaturalChoke() || islandMap)
+                    addTerritory(PlayerState::Self, getMyNatural());
 
                 // Add natural if we plan to take it
                 if (BuildOrder::isOpener() && BuildOrder::takeNatural())
-                    addTerritory(PlayerState::Self, myNatural);
+                    addTerritory(PlayerState::Self, getMyNatural());
             }
 
             // For every area, store their choke geometry as belonging to both areas to prevent nullptr areas
@@ -506,8 +504,8 @@ namespace McRave::Terrain {
     {
         auto oldest = DBL_MAX;
         auto oldestTile = TilePositions::Invalid;
-        auto start = BWEB::Map::getMainArea()->TopLeft();
-        auto end = BWEB::Map::getMainArea()->BottomRight();
+        auto start = getMainArea()->TopLeft();
+        auto end = getMainArea()->BottomRight();
         auto closestStation = Stations::getClosestStationGround(Position(area->Top()), PlayerState::Self);
 
         for (int x = start.x; x < end.x; x++) {
@@ -640,10 +638,11 @@ namespace McRave::Terrain {
         mapBWEM.EnableAutomaticPathAnalysis();
         mapBWEM.FindBasesForStartingLocations();
         BWEB::Map::onStart();
+        BWEB::Stations::findStations();
 
         // Check if the map is an island map
         for (auto &start : mapBWEM.StartingLocations()) {
-            if (!mapBWEM.GetArea(start)->AccessibleFrom(mapBWEM.GetArea(BWEB::Map::getMainTile())))
+            if (!mapBWEM.GetArea(start)->AccessibleFrom(mapBWEM.GetArea(getMainTile())))
                 islandMap = true;
         }
 
@@ -659,10 +658,8 @@ namespace McRave::Terrain {
                 allBases.insert(&base);
         }
 
-        reverseRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) < Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
-        flatRamp = Broodwar->getGroundHeight(BWEB::Map::getMainTile()) == Broodwar->getGroundHeight(BWEB::Map::getNaturalTile());
-        myMain = BWEB::Stations::getClosestMainStation(BWEB::Map::getMainTile());
-        myNatural = BWEB::Stations::getClosestNaturalStation(BWEB::Map::getNaturalTile());
+        reverseRamp = Broodwar->getGroundHeight(getMainTile()) < Broodwar->getGroundHeight(getNaturalTile());
+        flatRamp = Broodwar->getGroundHeight(getMainTile()) == Broodwar->getGroundHeight(getNaturalTile());
     }
 
     void onFrame()
@@ -685,13 +682,11 @@ namespace McRave::Terrain {
     Position getEnemyStartingPosition() { return enemyStartingPosition; }
     BWEB::Station * getEnemyMain() { return enemyMain; }
     BWEB::Station * getEnemyNatural() { return enemyNatural; }
-    BWEB::Station * getMyMain() { return myMain; }
-    BWEB::Station * getMyNatural() { return myNatural; }
     TilePosition getEnemyExpand() { return enemyExpand; }
     TilePosition getEnemyStartingTilePosition() { return enemyStartingTilePosition; }
     const ChokePoint * getDefendChoke() { return defendChoke; }
     const Area * getDefendArea() { return defendArea; }
-    BWEB::Station * getDefendStation() { return defendNatural ? myNatural : myMain; }
+    BWEB::Station * getDefendStation() { return defendNatural ? getMyNatural() : getMyMain(); }
     bool isIslandMap() { return islandMap; }
     bool isReverseRamp() { return reverseRamp; }
     bool isFlatRamp() { return flatRamp; }
@@ -700,4 +695,18 @@ namespace McRave::Terrain {
     bool foundEnemy() { return enemyStartingPosition.isValid() && Broodwar->isExplored(TilePosition(enemyStartingPosition)); }
     vector<Position>& getGroundCleanupPositions() { return groundCleanupPositions; }
     vector<Position>& getAirCleanupPositions() { return airCleanupPositions; }
+
+    // Main information
+    BWEB::Station * getMyMain() { return  BWEB::Stations::getStartingMain(); }
+    BWAPI::Position getMainPosition() { return BWEB::Stations::getStartingMain()->getBase()->Center(); }
+    BWAPI::TilePosition getMainTile() { return BWEB::Stations::getStartingMain()->getBase()->Location(); }
+    const BWEM::Area * getMainArea() { return BWEB::Stations::getStartingMain()->getBase()->GetArea(); }
+    const BWEM::ChokePoint * getMainChoke() { return BWEB::Stations::getStartingMain()->getChokepoint(); }
+
+    // Natural information
+    BWEB::Station * getMyNatural() { return BWEB::Stations::getStartingNatural(); }
+    BWAPI::Position getNaturalPosition() { return BWEB::Stations::getStartingNatural()->getBase()->Center(); }
+    BWAPI::TilePosition getNaturalTile() { return BWEB::Stations::getStartingNatural()->getBase()->Location(); }
+    const BWEM::Area * getNaturalArea() { return BWEB::Stations::getStartingNatural()->getBase()->GetArea(); }
+    const BWEM::ChokePoint * getNaturalChoke() { return BWEB::Stations::getStartingNatural()->getChokepoint(); }
 }

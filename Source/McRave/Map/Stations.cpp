@@ -149,7 +149,7 @@ namespace McRave::Stations
                     if (count > 0)
                         defendPosition /= count;
                     else
-                        defendPosition = Position(BWEB::Map::getNaturalChoke()->Center());
+                        defendPosition = Position(Terrain::getNaturalChoke()->Center());
                 }
 
                 // If defend position isn't walkable, move it towards the closest base
@@ -160,7 +160,7 @@ namespace McRave::Stations
 
                     for (auto &dir : directions) {
                         auto center = Position(start + dir);
-                        auto dist = center.getDistance(BWEB::Map::getNaturalPosition());
+                        auto dist = center.getDistance(Terrain::getNaturalPosition());
                         if (dist < best) {
                             defendPosition = center;
                             best = dist;
@@ -229,7 +229,6 @@ namespace McRave::Stations
             else if (station->isNatural()) {
             }
             else {
-                
             }
             return 0;
         }
@@ -435,7 +434,7 @@ namespace McRave::Stations
                 return 1 + (Util::getTime() > Time(5, 15)) - airCount;
             if (Players::ZvZ() && Util::getTime() > Time(4, 15) && Spy::getEnemyTransition() == "1HatchMuta" && BuildOrder::getCurrentTransition() != "1HatchMuta")
                 return 1 - airCount;
-            if (Players::ZvP() && Util::getTime() > Time(4, 35) && !station->isMain() && Spy::getEnemyBuild() == "1GateCore" && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) == 0 && (Spy::getEnemyTransition() == "Corsair" || (Spy::getEnemyTransition() == "Unknown"&& Players::getTotalCount(PlayerState::Enemy, Protoss_Gateway) <= 1)))
+            if (Players::ZvP() && Util::getTime() > Time(4, 35) && !station->isMain() && Spy::getEnemyBuild() == "1GateCore" && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) == 0 && Spy::getEnemyTransition() == "Corsair")
                 return 1 - airCount;
             if (Players::ZvP() && Util::getTime() > Time(5, 00) && !station->isMain() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Corsair" && BuildOrder::getCurrentTransition() == "3HatchMuta")
                 return 1 - airCount;

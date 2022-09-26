@@ -51,7 +51,7 @@ namespace McRave::Pathing {
 
         void getInterceptPosition(UnitInfo& unit)
         {
-            if (unit.getTarget().expired())
+            if (!unit.hasTarget())
                 return;
 
             // If we can't see the units speed, return its current position
@@ -133,7 +133,7 @@ namespace McRave::Pathing {
 
                     // Get time to arrive to the surround position
                     if (closestTargeter) {
-                        auto framesToArrive = clamp(double(Broodwar->getLatencyFrames()*2), (2.0 * (closestTargeter->getPosition().getDistance(pos)) / (closestTargeter->getSpeed() - unit.getSpeed())), 128.0);
+                        auto framesToArrive = clamp((2.0 * (closestTargeter->getPosition().getDistance(pos)) / max(1.0, (closestTargeter->getSpeed() - unit.getSpeed()))), double(Broodwar->getLatencyFrames() * 2), 128.0);
                         auto dirx = (trapTowards.x - unit.getPosition().x) / unit.getPosition().getDistance(trapTowards);
                         auto diry = (trapTowards.y - unit.getPosition().y) / unit.getPosition().getDistance(trapTowards);
                         auto correctedPos = pos + Position(int(dirx * framesToArrive), int(diry * framesToArrive));

@@ -30,7 +30,7 @@ namespace McRave::BuildOrder::Zerg {
         unitLimits[Zerg_Drone] =                    INT_MAX;
 
         desiredDetection =                          Zerg_Overlord;
-        firstUpgrade =                              vis(Zerg_Zergling) >= 8 ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+        firstUpgrade =                              (vis(Zerg_Zergling) >= 8 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
         firstTech =                                 TechTypes::None;
         firstUnit =                                 None;
 
@@ -133,10 +133,11 @@ namespace McRave::BuildOrder::Zerg {
 
         wallNat =                                       false;
         inOpeningBook =                                 total(Zerg_Zergling) < 36;
-        firstUpgrade =                                  UpgradeTypes::Metabolic_Boost;
+        firstUpgrade =                                  gas(100) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
         firstUnit =                                     UnitTypes::None;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
         rush =                                          true;
+        playPassive =                                   false;
 
         // Build
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 26);
@@ -155,10 +156,11 @@ namespace McRave::BuildOrder::Zerg {
 
         wallNat =                                       true;
         inOpeningBook =                                 total(Zerg_Zergling) < 80;
-        firstUpgrade =                                  UpgradeTypes::Metabolic_Boost;
+        firstUpgrade =                                  gas(100) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
         firstUnit =                                     UnitTypes::None;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
         rush =                                          true;
+        playPassive =                                   false;
 
         // Build
         buildQueue[Zerg_Hatchery] =                     1 + (s >= 22 && vis(Zerg_Spawning_Pool) > 0) + (s >= 26);

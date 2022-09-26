@@ -6,6 +6,42 @@ using namespace UnitTypes;
 
 namespace McRave::Combat::State {
 
+    vector<UnitType> staticRetreatTypes;
+
+    // Certain unit types are vulnerable under certain group sizes / lack of upgrades
+    void updateStaticStates()
+    {
+        staticRetreatTypes.clear();
+
+        // Zerglings
+        if ((Players::ZvT() && Util::getTime() < Time(12, 00) && Util::getTime() > Time(3, 30) && !Spy::enemyGreedy() && (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled() || Players::getCompleteCount(PlayerState::Enemy, Terran_Vulture) > 0))
+            || (Players::ZvZ() && Util::getTime() < Time(10, 00) && Players::getCompleteCount(PlayerState::Enemy, Zerg_Zergling) > com(Zerg_Zergling))
+            || (Players::ZvZ() && Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(2, 45)))
+            staticRetreatTypes.push_back(Zerg_Zergling);
+
+        // Hydralisks
+        auto hydraSpeed = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments);
+        auto hydraRange = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines);
+        if (BuildOrder::getCurrentTransition() == "2HatchHydra" || BuildOrder::getCurrentTransition() == "3HatchHydra") {
+            if (!hydraRange && !hydraSpeed)
+                staticRetreatTypes.push_back(Zerg_Hydralisk);
+            if (Spy::enemyInvis() && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0)
+                staticRetreatTypes.push_back(Zerg_Hydralisk);
+        }
+        else {
+            if (!hydraRange || !hydraSpeed || BuildOrder::getCompositionPercentage(Zerg_Lurker) >= 1.00)
+                staticRetreatTypes.push_back(Zerg_Hydralisk);
+        }
+
+        // Mutalisks
+        if (!Players::ZvZ() && com(Zerg_Mutalisk) < (Stations::getStations(PlayerState::Self).size() >= 2 ? 5 : 3) && total(Zerg_Mutalisk) < 9)
+            staticRetreatTypes.push_back(Zerg_Mutalisk);
+
+        // Corsairs
+
+        // Carriers
+    }
+
     void updateLocalState(UnitInfo& unit)
     {
         if (!unit.hasSimTarget() || !unit.hasTarget() || unit.getLocalState() != LocalState::None)
@@ -21,6 +57,8 @@ namespace McRave::Combat::State {
         const auto reAlign = (unit.getType() == Zerg_Mutalisk && !unit.canStartAttack() && !unit.isWithinAngle(*unitTarget) && Util::boxDistance(unit.getType(), unit.getPosition(), unitTarget->getType(), unitTarget->getPosition()) <= 64.0);
         const auto winningState = (atHome || !BuildOrder::isPlayPassive()) && unit.getSimState() == SimState::Win;
         const auto exploringGoal = unit.getGoal().isValid() && unit.getGoalType() == GoalType::Explore && unit.getUnitsInRangeOfThis().empty() && Util::getTime() > Time(4, 00);
+
+        Broodwar->drawTextMap(unit.getPosition(), "%d", unit.getSimState());
 
         // Regardless of any decision, determine if Unit is in danger and needs to retreat
         if ((Actions::isInDanger(unit, unit.getPosition()) && !unit.isTargetedBySuicide())
@@ -45,6 +83,8 @@ namespace McRave::Combat::State {
         else if ((insideRetreatRadius || atHome) && (!unit.attemptingRunby() || Terrain::inTerritory(PlayerState::Enemy, unit.getPosition())) && (unit.localRetreat() || unit.getSimState() == SimState::Loss)) {
             unit.setLocalState(LocalState::Retreat);
         }
+        else if (insideEngageRadius)
+            unit.setLocalState(LocalState::Hold);
 
         // Default state
         else
@@ -81,14 +121,7 @@ namespace McRave::Combat::State {
                 || unit.attemptingRunby())
                 unit.setGlobalState(GlobalState::Attack);
             else if ((Broodwar->getFrameCount() < 15000 && BuildOrder::isPlayPassive() && !unit.getGoal().isValid())
-                || (Players::ZvT() && Util::getTime() < Time(12, 00) && Util::getTime() > Time(3, 30) && unit.getType() == Zerg_Zergling && !Spy::enemyGreedy() && (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled() || Players::getCompleteCount(PlayerState::Enemy, Terran_Vulture) > 0))
-                || (Players::ZvZ() && Util::getTime() < Time(10, 00) && unit.getType() == Zerg_Zergling && Players::getCompleteCount(PlayerState::Enemy, Zerg_Zergling) > com(Zerg_Zergling))
-                || (Players::ZvZ() && Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(2, 45))
-                || (BuildOrder::isProxy() && BuildOrder::isPlayPassive())
-                || (BuildOrder::isProxy() && unit.getType() == Zerg_Hydralisk)
-                || (unit.getType() == Zerg_Hydralisk && BuildOrder::getCompositionPercentage(Zerg_Lurker) >= 1.00)
-                || (unit.getType() == Zerg_Hydralisk && (!Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines) || !Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments)))
-                || (!Players::ZvZ() && unit.isLightAir() && com(Zerg_Mutalisk) < (Stations::getStations(PlayerState::Self).size() >= 2 ? 5 : 3) && total(Zerg_Mutalisk) < 9))
+                || isStaticRetreat(unit.getType()))
                 unit.setGlobalState(GlobalState::Retreat);
             else
                 unit.setGlobalState(GlobalState::Attack);
@@ -105,10 +138,18 @@ namespace McRave::Combat::State {
 
     void onFrame()
     {
+        updateStaticStates();
         for (auto &u : Units::getUnits(PlayerState::Self)) {
             auto &unit = *u;
-            updateGlobalState(unit);
-            updateLocalState(unit);
+            if (unit.getRole() == Role::Combat) {
+                updateGlobalState(unit);
+                updateLocalState(unit);
+            }
         }
+    }
+
+    bool isStaticRetreat(UnitType type) {
+        auto itr = find(staticRetreatTypes.begin(), staticRetreatTypes.end(), type);
+        return itr != staticRetreatTypes.end();
     }
 }

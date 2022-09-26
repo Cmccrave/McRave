@@ -33,7 +33,7 @@ namespace McRave::Support {
                 closestStation = Terrain::getMyNatural();
 
             // Set goal as destination
-            if (unit.getGoal().isValid())
+            if (unit.getGoal().isValid() && unit.getUnitsTargetingThis().empty() && unit.getUnitsInRangeOfThis().empty())
                 unit.setDestination(unit.getGoal());
 
             // Send Overlords to safety from enemy air
@@ -104,7 +104,7 @@ namespace McRave::Support {
                 unit.setDestination(closestStation->getBase()->Center());
 
             if (!unit.getDestination().isValid())
-                unit.setDestination(BWEB::Map::getMainPosition());
+                unit.setDestination(Terrain::getMainPosition());
         }
 
         void updatePath(UnitInfo& unit)

@@ -8,6 +8,8 @@ namespace McRave::Goals {
 
     namespace {
 
+        multimap<double, BWEB::Station> stationsByDistance;
+
         void assignNumberToGoal(Position here, UnitType type, int count, GoalType gType = GoalType::None)
         {
             if (!here.isValid())
@@ -117,7 +119,7 @@ namespace McRave::Goals {
             }
 
             // Before Hydras have upgrades, defend vulnerable bases
-            if (BuildOrder::isTechUnit(Zerg_Hydralisk) && !BuildOrder::isPlayPassive() && (!Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines) || !Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments))) {
+            if (BuildOrder::isTechUnit(Zerg_Hydralisk) && Combat::State::isStaticRetreat(Zerg_Hydralisk)) {
                 auto &stations = Stations::getStations(PlayerState::Self);
                 if (!stations.empty()) {
                     auto mainStations = int(count_if(stations.begin(), stations.end(), [&](auto& s) { return s->isMain(); }));
@@ -195,8 +197,8 @@ namespace McRave::Goals {
             }
 
             // Aggresively deny enemy expansions
+            stationsByDistance.clear();
             if (Terrain::getEnemyStartingPosition().isValid() && !BuildOrder::isRush() && !Players::ZvZ() && !Players::vFFA()) {
-                multimap<double, BWEB::Station> stationsByDistance;
 
                 for (auto &station : BWEB::Stations::getStations()) {
 
@@ -220,7 +222,7 @@ namespace McRave::Goals {
 
                     // Create a path and check if areas are already enemy owned
                     auto badStation = false;
-                    auto path = mapBWEM.GetPath(station.getBase()->Center(), BWEB::Map::getMainPosition());
+                    auto path = mapBWEM.GetPath(station.getBase()->Center(), Terrain::getMainPosition());
                     for (auto &choke : path) {
                         if (Terrain::inTerritory(PlayerState::Enemy, choke->GetAreas().first) || Terrain::inTerritory(PlayerState::Enemy, choke->GetAreas().second))
                             badStation = true;
@@ -230,19 +232,6 @@ namespace McRave::Goals {
 
                     auto dist = station.getBase()->Center().getDistance(Terrain::getEnemyStartingPosition());
                     stationsByDistance.emplace(make_pair(dist, station));
-                }
-
-                // Zerg denies closest 2 bases and scouts the rest
-                if (Broodwar->self()->getRace() == Races::Zerg) {
-                    int i = vis(Zerg_Overlord) - 4;
-                    for (auto &[dist, station] : stationsByDistance) {
-                        auto type = meleeType;
-                        auto notScoutedRecently = (Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(station.getBase()->Center())) > 1440);
-                        assignNumberToGoal(station.getResourceCentroid(), Zerg_Overlord, 1, GoalType::Explore);
-                        i--;
-                        if (i == 0)
-                            break;
-                    }
                 }
 
                 // Protoss denies closest base
@@ -333,7 +322,7 @@ namespace McRave::Goals {
 
             // Clear out base early game
             if (Util::getTime() < Time(5, 00) && !Spy::enemyRush() && !Spy::enemyPressure() && !Players::ZvZ() && Players::getVisibleCount(PlayerState::Enemy, Terran_Barracks) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0) {
-                auto oldestTile = Terrain::getOldestPosition(BWEB::Map::getMainArea());
+                auto oldestTile = Terrain::getOldestPosition(Terrain::getMainArea());
 
                 if (oldestTile.isValid())
                     assignNumberToGoal(oldestTile, Zerg_Zergling, 1, GoalType::Explore);
@@ -353,24 +342,18 @@ namespace McRave::Goals {
             }
 
             // Assign an Overlord to watch our Choke early on
-            if (BWEB::Map::getNaturalChoke()) {
+            if (Terrain::getNaturalChoke()) {
                 if ((Util::getTime() < Time(3, 00) && !Spy::enemyProxy()) || (Util::getTime() < Time(2, 15) && Spy::enemyProxy()) || (Players::ZvZ() && enemyStrength.airToAir <= 0.0))
-                    assignNumberToGoal(Position(BWEB::Map::getNaturalChoke()->Center()), Zerg_Overlord, 1, GoalType::Escort);
-            }
-
-            // Assign the first available Overlord to each natural
-            for (auto &station : Stations::getStations(PlayerState::Self)) {
-                if (station->isNatural())
-                    assignNumberToGoal(station->getBase()->Center(), Zerg_Overlord, 1, GoalType::Escort);
+                    assignNumberToGoal(Position(Terrain::getNaturalChoke()->Center()), Zerg_Overlord, 1, GoalType::Escort);
             }
 
             // Assign an Overlord to each Station
             for (auto &station : Stations::getStations(PlayerState::Self)) {
                 auto closestSunk = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Self, [&](auto &u) {
-                    return u->getType() == Zerg_Sunken_Colony && find(station->getDefenses().begin(), station->getDefenses().end(), u->getTilePosition()) != station->getDefenses().end();
+                    return u->getType() == Zerg_Sunken_Colony && Terrain::inArea(station->getBase()->GetArea(), u->getPosition());
                 });
                 auto closestSpore = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Self, [&](auto &u) {
-                    return u->getType() == Zerg_Spore_Colony && find(station->getDefenses().begin(), station->getDefenses().end(), u->getTilePosition()) != station->getDefenses().end();
+                    return u->getType() == Zerg_Spore_Colony && Terrain::inArea(station->getBase()->GetArea(), u->getPosition());
                 });
 
                 if (closestSpore)
@@ -381,25 +364,22 @@ namespace McRave::Goals {
                     assignNumberToGoal(station->getBase()->Center(), Zerg_Overlord, 1, GoalType::Escort);
             }
 
-            // Assign an Overlord to each Wall
-            if (!Players::vT()) {
-                for (auto &[_, wall] : BWEB::Walls::getWalls()) {
-                    if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()))
-                        continue;
-
-                    auto closestSunk = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Self, [&](auto &u) {
-                        return u->getType() == Zerg_Sunken_Colony && wall.getDefenses().find(u->getTilePosition()) != wall.getDefenses().end();
-                    });
-
-                    if (closestSunk)
-                        assignNumberToGoal(closestSunk->getPosition(), Zerg_Overlord, 1, GoalType::Escort);
-                }
-            }
-
             // Assign an Overlord to each main choke
             for (auto &station : Stations::getStations(PlayerState::Self)) {
                 if (station->isMain() && station->getChokepoint() && ((Players::ZvZ() && Players::getStrength(PlayerState::Enemy).airToAir == 0.0) || Stations::getStations(PlayerState::Self).size() >= 2 || Util::getTime() < Time(4, 00)))
                     assignNumberToGoal(station->getChokepoint()->Center(), Zerg_Overlord, 1, GoalType::Escort);
+            }
+
+            // Assign an Overlord to each possible expansion the enemy can take
+            if (Broodwar->self()->getRace() == Races::Zerg && Util::getTime() > Time(6, 00) && vis(Zerg_Overlord) >= 8) {
+                int i = vis(Zerg_Overlord) - 8;
+                for (auto &[dist, station] : stationsByDistance) {
+                    auto notScoutedRecently = (Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(station.getBase()->Center())) > 1440);
+                    assignNumberToGoal(station.getResourceCentroid(), Zerg_Overlord, 1, GoalType::Explore);
+                    i--;
+                    if (i <= 0)
+                        break;
+                }
             }
 
             // Attack enemy expansions with a small force

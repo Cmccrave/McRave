@@ -17,7 +17,7 @@ namespace McRave::BuildOrder::Zerg {
             unitLimits[Zerg_Drone] =                        4;
             unitLimits[Zerg_Zergling] =                     INT_MAX;
             transitionReady =                               total(Zerg_Zergling) >= 24;
-            firstUpgrade =                                  UpgradeTypes::Metabolic_Boost;
+            firstUpgrade =                                  gas(100) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
             rush =                                          true;
 
             buildQueue[Zerg_Spawning_Pool] =                s >= 8;

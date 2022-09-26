@@ -177,6 +177,8 @@ namespace McRave::Learning {
                 if (build == "HatchPool") {
                     if (transition == "2HatchMuta")
                         return !z;
+                    if (transition == "3HatchHydra")
+                        return p;
                 }
                 if (build == "PoolHatch") {
                     if (transition == "2HatchMuta")
@@ -215,7 +217,7 @@ namespace McRave::Learning {
 
             // Protoss wall requirements
             if (Broodwar->self()->getRace() == Races::Protoss) {
-                if (BWEB::Map::getNaturalArea()->ChokePoints().size() == 1)
+                if (Terrain::getNaturalArea()->ChokePoints().size() == 1)
                     return Walls::getMainWall();
                 if (build == "FFE")
                     return Walls::getNaturalWall();
@@ -382,7 +384,7 @@ namespace McRave::Learning {
         void getPermanentBuild()
         {
             // Testing builds if needed
-            if (false) {
+            if (true) {
                 if (Players::PvZ()) {
                     BuildOrder::setLearnedBuild("FFE", "Forge", "NeoBisu");
                     return;
@@ -404,7 +406,7 @@ namespace McRave::Learning {
                     return;
                 }
                 if (Players::ZvP()) {
-                    BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "2HatchMuta");
+                    BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "3HatchHydra");
                     return;
                 }
             }
@@ -441,7 +443,7 @@ namespace McRave::Learning {
 
                 Build HatchPool("HatchPool");
                 HatchPool.openers ={ BuildComponent("9Hatch"), BuildComponent("10Hatch"), BuildComponent("12Hatch") };
-                HatchPool.transitions={ BuildComponent("2HatchMuta"), BuildComponent("2.5HatchMuta"), BuildComponent("3HatchMuta"), BuildComponent("2HatchSpeedling"), BuildComponent("6HatchHydra") };
+                HatchPool.transitions={ BuildComponent("2HatchMuta"), BuildComponent("2.5HatchMuta"), BuildComponent("3HatchMuta"), BuildComponent("2HatchSpeedling"), BuildComponent("3HatchHydra"), BuildComponent("6HatchHydra") };
 
                 Build PoolLair("PoolLair");
                 PoolLair.openers ={ BuildComponent("9Pool"), BuildComponent("12Pool") };
@@ -560,7 +562,7 @@ namespace McRave::Learning {
         mapLearning         = false;
         myRaceChar          ={ *Broodwar->self()->getRace().c_str() };
         enemyRaceChar       ={ *Broodwar->enemy()->getRace().c_str() };
-        version             = "CoG2022";
+        version             = "AIIDE2022";
         noStats             = " 0 0 ";
         learningExtension   = mapLearning ? myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + mapName + ".txt" : myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + version + ".txt";
         gameInfoExtension   = myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + version + " Info.txt";

@@ -4,9 +4,120 @@ using namespace BWAPI;
 using namespace std;
 using namespace UnitTypes;
 
+#include <queue>
+
 namespace McRave::Combat::Clusters {
 
     vector<Cluster> clusters;
+    vector<ClusterNode> clusterNodes;
+    constexpr double arcRads = 2.0944;
+
+    vector<Color> bwColors ={ Colors::Red, Colors::Orange, Colors::Yellow, Colors::Green, Colors::Blue, Colors::Purple, Colors::Black, Colors::Grey, Colors::White };
+
+    void createNodes()
+    {
+        clusterNodes.clear();
+
+        // Delete solo clusters
+        clusters.erase(remove_if(clusters.begin(), clusters.end(), [&](auto& cluster) {
+            if (auto commander = cluster.commander.lock()) {
+                if (commander->getType().isWorker() || commander->getType().isBuilding())
+                    return true;
+            }
+            return (int(cluster.units.size()) <= 1);
+        }), clusters.end());
+
+        // Clear units out of clusters except commanders
+        for (auto &cluster : clusters) {
+            cluster.units.clear();
+
+            if (auto commander = cluster.commander.lock()) {
+                ClusterNode newNode;
+                newNode.position = commander->getPosition();
+                newNode.unit = &*commander;
+                clusterNodes.push_back(newNode);
+            }
+        }
+
+        // Every unit creates its own cluster node
+        for (auto &u : Units::getUnits(PlayerState::Self)) {
+            auto &unit = *u;
+
+            if (unit.getRole() != Role::Combat
+                || unit.getType() == Protoss_High_Templar
+                || unit.getType() == Protoss_Dark_Archon
+                || unit.getType() == Protoss_Reaver
+                || unit.getType() == Protoss_Interceptor
+                || unit.getType() == Zerg_Defiler)
+                continue;
+
+            unit.setCommander(nullptr);
+
+            ClusterNode newNode;
+            newNode.position = unit.getPosition();
+            newNode.unit = &*u;
+            clusterNodes.push_back(newNode);
+        }
+    }
+
+    bool generateCluster(ClusterNode &parent, int id, int minsize)
+    {
+        auto getNeighbors = [&](auto &currentNode, auto &queue) {
+            for (auto &node : clusterNodes) {
+                auto matchedType = (parent.unit->isFlying() && node.unit->isFlying()) || (!parent.unit->isFlying() && !node.unit->isFlying());
+                if (node.id == 0 && matchedType && node.unit != currentNode.unit && node.position.getDistance(currentNode.position) < 640.0)
+                    queue.push(&node);
+            }
+        };
+
+        std::queue<ClusterNode*> nodeQueue;
+        getNeighbors(parent, nodeQueue);
+        if (nodeQueue.size() < minsize)
+            return false;
+
+        // Create cluster
+        Cluster newCluster;
+        parent.id = id;
+        newCluster.color = bwColors.at((id - 1) % bwColors.size());
+        newCluster.units.push_back(parent.unit);
+
+        // Every other node looks at neighbor and tries to add it, if enough neighbors
+        while (!nodeQueue.empty()) {
+            auto &node = nodeQueue.front();
+            nodeQueue.pop();
+
+            if (node->id == 0) {
+                node->id = id;
+                newCluster.units.push_back(node->unit);
+
+                std::queue<ClusterNode*> neighborQueue;
+                getNeighbors(*node, neighborQueue);
+
+                if (neighborQueue.size() >= minsize) {
+                    while (!neighborQueue.empty()) {
+                        auto &neighbor = neighborQueue.front();
+                        neighborQueue.pop();
+                        if (neighbor->id == 0) {
+                            neighbor->id = id;
+                            nodeQueue.push(neighbor);
+                            newCluster.units.push_back(neighbor->unit);
+                        }
+                    }
+                }
+            }
+        }
+        clusters.push_back(newCluster);
+        return true;
+    }
+
+    void runDBSCAN()
+    {
+        auto id = 1;
+        for (auto &node : clusterNodes) {
+            if (node.id == 0 && generateCluster(node, id, 0))
+                id++;
+        }
+    }
 
     Position getPathPoint(UnitInfo& unit, Position start)
     {
@@ -34,7 +145,7 @@ namespace McRave::Combat::Clusters {
     {
         // Get closest unit to centroid
         auto closestToCentroid = Util::getClosestUnit(cluster.sharedPosition, PlayerState::Self, [&](auto &u) {
-            return !u->isTargetedBySplash() && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() && !u->isTargetedBySuicide() && !u->globalRetreat() && !u->localRetreat();
+            return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker() && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() && !u->isTargetedBySuicide() && !u->globalRetreat() && !u->localRetreat();
         });
         if (!closestToCentroid) {
             closestToCentroid = Util::getClosestUnit(cluster.sharedPosition, PlayerState::Self, [&](auto &u) {
@@ -52,14 +163,14 @@ namespace McRave::Combat::Clusters {
         auto commander = cluster.commander.lock();
         auto pathPoint = getPathPoint(*commander, commander->getDestination());
         BWEB::Path newPath(commander->getPosition(), pathPoint, commander->getType());
-        newPath.generateAS([&](const TilePosition &t) { return newPath.unitWalkable(t) ? 10000.0 / (mapBWEM.GetTile(t).MinAltitude()) : DBL_MAX; });
+        newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t);  });
         cluster.path = newPath;
         Visuals::drawPath(newPath);
 
-        // If path is reachable, find a point n pixels away to set as new destination
-        auto dist = 160.0;
+        // If path is reachable, find a point n pixels away to set as new destination;
+        cluster.sharedNavigation = cluster.sharedDestination;
         auto newDestination = Util::findPointOnPath(cluster.path, [&](Position p) {
-            return p.getDistance(commander->getPosition()) >= dist;
+            return p.getDistance(commander->getPosition()) >= cluster.radius;
         });
 
         if (newDestination.isValid())
@@ -78,107 +189,52 @@ namespace McRave::Combat::Clusters {
         cluster2.commander.reset();
     }
 
+    void finishClusters()
+    {
+        for (auto &cluster : clusters) {
+            if (auto commander = cluster.commander.lock()) {
+                auto count = int(cluster.units.size());
+
+                auto fattestDimension = 0;
+                auto type = UnitTypes::None;
+                for (auto &unit : cluster.units) {
+                    auto maxDimType = max(unit->getType().width(), unit->getType().height());
+                    if (maxDimType > fattestDimension) {
+                        fattestDimension = maxDimType;
+                        type = unit->getType();
+                    }
+                }
+
+                // Create radius based on how many units we have and want to fit into the first row of an arc
+                auto unitTangentSize = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0)) + (cluster.mobileCluster ? 16.0 : 0.0);
+                cluster.radius = min(commander->getRetreatRadius(), (count * unitTangentSize / arcRads));
+
+                // Offset the center by a distance of the radius towards the navigation point
+                if (cluster.mobileCluster) {
+
+                    // Clamp radius so that it moves forward/backwards as needed
+                    if (commander->getLocalState() == LocalState::Attack)
+                        cluster.radius = min(cluster.radius, commander->getPosition().getDistance(cluster.sharedNavigation) - 64.0);
+                    if (commander->getLocalState() == LocalState::Retreat)
+                        cluster.radius = max(cluster.radius, commander->getPosition().getDistance(cluster.sharedNavigation) + 64.0);
+                }
+                else {
+                    // If we are setting up a static formation, align concave with buildings close by
+                    auto closestBuilding = Util::getClosestUnit(cluster.sharedDestination, PlayerState::Self, [&](auto &u) {
+                        return (u->getType().isBuilding() && u->getFormation().getDistance(cluster.sharedDestination) < 64.0);
+                    });
+                    if (closestBuilding)
+                        cluster.radius = closestBuilding->getPosition().getDistance(cluster.sharedDestination);
+                }
+                pathCluster(cluster);
+            }
+        }
+    }
+
     void createClusters()
     {
-        // Delete solo clusters
-        clusters.erase(remove_if(clusters.begin(), clusters.end(), [&](auto& cluster) {
-            return (int(cluster.units.size()) <= 1);
-        }), clusters.end());
-
-        // Clear units out of the cluster
-        for (auto& cluster : clusters) {
-            cluster.units.clear();
-            cluster.typeCounts.clear();
-            cluster.sharedRadius = 160.0;
-            if (cluster.commander.expired())
-                getCommander(cluster);
-
-            if (auto commander = cluster.commander.lock()) {
-                cluster.typeCounts[commander->getType()]++;
-                cluster.units.push_back(&*commander);
-                cluster.sharedDestination = commander->getDestination();
-                cluster.sharedPosition = commander->getPosition();
-            }
-        }
-
-        auto colors ={ Colors::Red, Colors::Orange, Colors::Yellow, Colors::Green, Colors::Teal, Colors::Blue, Colors::Purple, Colors::Black, Colors::Brown, Colors::Black, Colors::Grey };
-        auto coloritr = colors.begin();
-
-        for (auto &u : Units::getUnits(PlayerState::Self)) {
-            auto &unit = *u;
-
-            if (unit.getRole() != Role::Combat
-                || unit.getType() == Protoss_High_Templar
-                || unit.getType() == Protoss_Dark_Archon
-                || unit.getType() == Protoss_Reaver
-                || unit.getType() == Protoss_Interceptor
-                || unit.getType() == Zerg_Defiler)
-                continue;
-
-            // Check if any existing formations match this units type and common objective, get closest
-            Cluster * closestCluster = nullptr;
-            auto distBest = DBL_MAX;
-
-            for (auto &cluster : clusters) {
-                auto flyingCluster = any_of(cluster.units.begin(), cluster.units.end(), [&](auto &u) {
-                    return u->isFlying();
-                }) || (cluster.commander.lock() && cluster.commander.lock()->isFlying());
-                if ((flyingCluster && !unit.isFlying()) || (!flyingCluster && unit.isFlying()))
-                    continue;
-
-                //auto positionInCommon = unit.getPosition().getDistance(cluster.sharedPosition) < cluster.sharedRadius
-                //    || unit.getPosition().getDistance(cluster.sharedDestination) < cluster.sharedRadius;
-                //auto destinationInCommon = unit.getDestination().getDistance(cluster.sharedDestination) < cluster.sharedRadius
-                //    || unit.getDestination().getDistance(cluster.sharedPosition) < cluster.sharedRadius;
-                auto dist = min({ unit.getPosition().getDistance(cluster.sharedPosition), unit.getPosition().getDistance(cluster.sharedDestination),
-                                unit.getDestination().getDistance(cluster.sharedDestination), unit.getDestination().getDistance(cluster.sharedPosition) })
-                    * (1.0 + cluster.sharedPosition.getDistance(unit.getDestination()));
-
-                if (dist < distBest && /*(destinationInCommon || positionInCommon)*/ !unit.getGoal().isValid() && !unit.getType().isBuilding()) {
-                    distBest = dist;
-                    closestCluster = &cluster;
-                }
-            }
-
-            if (closestCluster) {
-                closestCluster->sharedRadius += unit.isLightAir() ? 64.0 : double(unit.getType().width() * unit.getType().height()) / closestCluster->sharedRadius;
-                closestCluster->units.push_back(&unit);
-            }
-
-            // Didn't find existing formation, create a new one
-            else {
-                Cluster newCluster(unit.getPosition(), unit.getDestination(), unit.getType());
-                newCluster.units.push_back(&unit);
-                clusters.push_back(newCluster);
-            }
-        }
-
-        // Merge any similar clusters
-        for (auto &cluster : clusters) {
-            if (cluster.commander.expired()
-                || cluster.units.empty())
-                continue;
-
-            for (auto &otherCluster : clusters) {
-                if (otherCluster.commander.expired()
-                    || otherCluster.units.empty())
-                    continue;
-                if (cluster.commander.expired()
-                    || cluster.units.empty())
-                    break;
-                if (cluster.commander.lock()->getType() != otherCluster.commander.lock()->getType())
-                    continue;
-
-                if (cluster.commander.lock() != otherCluster.commander.lock() && cluster.sharedDestination.getDistance(otherCluster.sharedDestination) < cluster.sharedRadius)
-                    mergeClusters(cluster, otherCluster);
-            }
-        }
-
         // For each cluster
         for (auto &cluster : clusters) {
-
-            cluster.color = coloritr != colors.end() ? *coloritr : Colors::White;
-            coloritr++;
 
             // Find a centroid
             auto avgPosition = Position(0, 0);
@@ -196,34 +252,30 @@ namespace McRave::Combat::Clusters {
             auto oldCommander = cluster.commander.lock();
             if (!oldCommander || oldCommander->globalRetreat() || oldCommander->localRetreat())
                 getCommander(cluster);
-            if (cluster.commander.expired())
-                continue;
 
             if (auto commander = cluster.commander.lock()) {
                 cluster.mobileCluster = commander->getGlobalState() != GlobalState::Retreat;
                 cluster.sharedDestination = commander->getDestination();
                 cluster.commandShare = commander->isLightAir() ? CommandShare::Exact : CommandShare::Parallel;
                 cluster.shape = commander->isLightAir() ? Shape::None : Shape::Concave;
-                pathCluster(cluster);
 
                 // Assign commander to each unit
                 for (auto &unit : cluster.units) {
                     if (unit != &*commander)
                         unit->setCommander(&*commander);
                     cluster.typeCounts[unit->getType()]++;
+                    Broodwar->drawLineMap(unit->getPosition(), commander->getPosition(), Colors::Black);
                 }
             }
         }
-
-        // Delete empty clusters - empty or no commander
-        clusters.erase(remove_if(clusters.begin(), clusters.end(), [&](auto& cluster) {
-            return int(cluster.units.size()) < 1 || cluster.commander.expired();
-        }), clusters.end());
     }
 
     void onFrame()
     {
+        createNodes();
+        runDBSCAN();
         createClusters();
+        finishClusters();
     }
 
     vector<Cluster>& getClusters() { return clusters; }

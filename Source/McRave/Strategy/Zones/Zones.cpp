@@ -15,11 +15,11 @@ namespace McRave::Zones
             for (auto &zone : zones)
                 zone.duration--;
 
-            if (!zones.empty()) {
-                zones.erase(remove_if(zones.begin(), zones.end(), [&](auto &zone) {
-                    return zone.duration <= 0;
-                }), zones.end());
-            }
+            //if (!zones.empty()) {
+            //    zones.erase(remove_if(zones.begin(), zones.end(), [&](auto &zone) {
+            //        return zone.duration <= 0;
+            //    }), zones.end());
+            //}
         }
 
         void drawZones()

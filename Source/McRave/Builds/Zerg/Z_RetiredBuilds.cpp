@@ -15,7 +15,7 @@ namespace McRave::BuildOrder::Zerg {
         lockedTransition =                              atPercent(Zerg_Lair, 0.25) || total(Zerg_Mutalisk) > 0;
         inOpeningBook =                                 total(Zerg_Mutalisk) < 9;
         inBookSupply =                                  vis(Zerg_Overlord) < 6 || total(Zerg_Mutalisk) < 6;
-        firstUpgrade =                                  (com(Zerg_Lair) > 0 && vis(Zerg_Overlord) >= 5) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+        firstUpgrade =                                  (com(Zerg_Lair) > 0 && vis(Zerg_Overlord) >= 5 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
         firstUnit =                                     Zerg_Mutalisk;
         hideTech =                                      true;
         pressure =                                      vis(Zerg_Zergling) >= 36;
@@ -81,7 +81,7 @@ namespace McRave::BuildOrder::Zerg {
         lockedTransition =                              true;
         inOpeningBook =                                 total(Zerg_Zergling) < 56 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) == 0;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
-        firstUpgrade =                                  hatchCount() >= 3 ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+        firstUpgrade =                                  (hatchCount() >= 3 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
         unitLimits[Zerg_Drone] =                        13;
         unitLimits[Zerg_Zergling] =                     INT_MAX;
         gasLimit =                                      !lingSpeed() ? capGas(100) : 0;

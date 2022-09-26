@@ -327,8 +327,8 @@ namespace McRave::Planning {
                 return false;
 
             // First expansion is always the Natural
-            if (Stations::getStations(PlayerState::Self).size() == 1 && isBuildable(baseType, BWEB::Map::getNaturalTile()) && isPlannable(baseType, BWEB::Map::getNaturalTile()) && isPathable(building, BWEB::Map::getNaturalTile())) {
-                placement = BWEB::Map::getNaturalTile();
+            if (Stations::getStations(PlayerState::Self).size() == 1 && isBuildable(baseType, Terrain::getNaturalTile()) && isPlannable(baseType, Terrain::getNaturalTile()) && isPathable(building, Terrain::getNaturalTile())) {
+                placement = Terrain::getNaturalTile();
                 currentExpansion = Terrain::getMyNatural();
                 expansionPlanned = true;
                 return true;
@@ -369,7 +369,7 @@ namespace McRave::Planning {
             // Hide tech if needed or against a rush
             if ((BuildOrder::isHideTech() && (building == Protoss_Citadel_of_Adun || building == Protoss_Templar_Archives))
                 || (Spy::enemyRush() && (Players::PvZ() || Players::TvZ())))
-                placement = furthestLocation(building, (Position)BWEB::Map::getMainChoke()->Center());
+                placement = furthestLocation(building, (Position)Terrain::getMainChoke()->Center());
 
             // Try to place the tech building inside a main base
             for (auto &station : Stations::getStations(PlayerState::Self)) {
@@ -401,20 +401,20 @@ namespace McRave::Planning {
 
             // Place spire as close to the Lair in case we're hiding it
             if (building == Zerg_Spire) {
-                auto closestLair = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Self, [&](auto &u) {
+                auto closestLair = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) {
                     return u->getType() == Zerg_Lair;
                 });
 
                 if (closestLair) {
                     auto closestStation = Stations::getClosestStationAir(closestLair->getPosition(), PlayerState::Self);
                     if (closestStation) {
-                        placement = returnFurthest(building, closestStation->getDefenses(), Position(BWEB::Map::getMainChoke()->Center()));
+                        placement = returnFurthest(building, closestStation->getDefenses(), Position(Terrain::getMainChoke()->Center()));
                         if (placement.isValid())
                             return true;
                     }
                 }
 
-                placement = returnFurthest(building, Terrain::getMyMain()->getDefenses(), Position(BWEB::Map::getMainChoke()->Center()));
+                placement = returnFurthest(building, Terrain::getMyMain()->getDefenses(), Position(Terrain::getMainChoke()->Center()));
                 if (placement.isValid())
                     return true;
             }
@@ -531,7 +531,7 @@ namespace McRave::Planning {
                 return false;
 
             // As Zerg, we have to place natural hatch before wall
-            if (building == Zerg_Hatchery && isPlannable(building, BWEB::Map::getNaturalTile()) && BWEB::Map::isUsed(BWEB::Map::getNaturalTile()) == UnitTypes::None)
+            if (building == Zerg_Hatchery && isPlannable(building, Terrain::getNaturalTile()) && BWEB::Map::isUsed(Terrain::getNaturalTile()) == UnitTypes::None)
                 return false;
 
             // Find a wall location
@@ -551,8 +551,8 @@ namespace McRave::Planning {
             }
 
             // Get closest placement
-            auto desired = !Stations::getStationsBySaturation().empty() ? Stations::getStationsBySaturation().begin()->second->getBase()->Center() : BWEB::Map::getMainPosition();
-            placement = returnClosest(building, placements, BWEB::Map::getMainPosition());
+            auto desired = !Stations::getStationsBySaturation().empty() ? Stations::getStationsBySaturation().begin()->second->getBase()->Center() : Terrain::getMainPosition();
+            placement = returnClosest(building, placements, Terrain::getMainPosition());
             return placement.isValid();
         }
 
@@ -615,7 +615,7 @@ namespace McRave::Planning {
 
             // Check if this our second Pylon and we're hiding tech
             if (building == Protoss_Pylon && vis(Protoss_Pylon) == 2 && BuildOrder::isHideTech()) {
-                placement = furthestLocation(building, (Position)BWEB::Map::getMainChoke()->Center());
+                placement = furthestLocation(building, (Position)Terrain::getMainChoke()->Center());
                 if (placement.isValid())
                     return true;
             }
@@ -630,7 +630,7 @@ namespace McRave::Planning {
 
             // Check if our main choke should get a Pylon for a Shield Battery
             if (vis(Protoss_Pylon) == 1 && !BuildOrder::takeNatural() && (!Spy::enemyRush() || !Players::vZ())) {
-                placement = closestLocation(Protoss_Pylon, (Position)BWEB::Map::getMainChoke()->Center());
+                placement = closestLocation(Protoss_Pylon, (Position)Terrain::getMainChoke()->Center());
                 if (placement.isValid())
                     return true;
             }
@@ -668,7 +668,7 @@ namespace McRave::Planning {
             }
 
             // Resort to finding a production location
-            placement = closestLocation(Protoss_Pylon, BWEB::Map::getMainPosition());
+            placement = closestLocation(Protoss_Pylon, Terrain::getMainPosition());
             return placement.isValid();
         }
 
@@ -677,7 +677,7 @@ namespace McRave::Planning {
             if (building != Terran_Supply_Depot)
                 return false;
 
-            placement = furthestLocation(building, BWEB::Map::getMainPosition());
+            placement = furthestLocation(building, Terrain::getMainPosition());
             return placement.isValid();
         }
 
@@ -686,7 +686,7 @@ namespace McRave::Planning {
             if (!building.isRefinery())
                 return false;
 
-            placement = closestLocation(building, BWEB::Map::getMainPosition());
+            placement = closestLocation(building, Terrain::getMainPosition());
             return placement.isValid();
         }
 
@@ -701,7 +701,7 @@ namespace McRave::Planning {
 
             // HACK: Try to get a placement if we are being horror gated
             if (Spy::enemyProxy() && Util::getTime() < Time(5, 00) && !isDefensiveType(building) && !building.isResourceDepot())
-                placement = Broodwar->getBuildLocation(building, BWEB::Map::getMainTile(), 16);
+                placement = Broodwar->getBuildLocation(building, Terrain::getMainTile(), 16);
 
             return placement;
         }
@@ -809,10 +809,10 @@ namespace McRave::Planning {
 
         void updateReachable()
         {
-            if (!BWEB::Map::getMainChoke()->Center() || !unreachablePositions.empty())
+            if (!Terrain::getMainChoke()->Center() || !unreachablePositions.empty())
                 return;
             unreachablePositions.push_back(TilePosition(-1, -1)); // Put in at least one tile to prevent re-checking often
-            auto start = Position(BWEB::Map::getMainChoke()->Center());
+            auto start = Position(Terrain::getMainChoke()->Center());
 
             // TODO: Assumes a main wall only for now
             const auto inWallPiece = [&](auto &t, BWEB::Wall * wall) {

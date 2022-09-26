@@ -256,7 +256,7 @@ namespace McRave::Upgrading {
         {
             // Reserved resources for idle upgrades
             for (auto &[unit, upgrade] : idleUpgrade) {
-                if (unit->exists()) {
+                if (unit && unit->exists()) {
                     reservedMineral += upgrade.mineralPrice();
                     reservedGas += upgrade.gasPrice();
                 }

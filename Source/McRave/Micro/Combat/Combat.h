@@ -11,10 +11,16 @@ namespace McRave::Combat {
         None, Exact, Parallel
     };
 
+    struct ClusterNode {
+        int id = 0;
+        BWAPI::Position position = BWAPI::Positions::Invalid;
+        UnitInfo * unit;
+    };
+
     struct Cluster {
         BWAPI::Position sharedPosition, sharedDestination, sharedNavigation;
         std::map<BWAPI::UnitType, int> typeCounts;
-        double sharedRadius = 160.0;
+        double radius;
         std::vector<UnitInfo*> units;
         std::weak_ptr<UnitInfo> commander;
         CommandShare commandShare;
@@ -52,6 +58,7 @@ namespace McRave::Combat {
 
     namespace State {
         void onFrame();
+        bool isStaticRetreat(BWAPI::UnitType);
     }
 
     namespace Decision {

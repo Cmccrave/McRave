@@ -56,7 +56,7 @@ namespace McRave::Combat::Decision {
 
                 // If it's a shared decision, replicate the commanders command
                 if (sharedDecision) {
-                    if (commander->getCommandType() == UnitCommandTypes::Attack_Unit)
+                    if (commander->getCommandType() == UnitCommandTypes::Attack_Unit && commander->hasTarget())
                         unit->command(commander->getCommandType(), *commander->getTarget().lock());
                     else if (commander->getCommandType() == UnitCommandTypes::Move && !unit->isTargetedBySplash())
                         unit->command(commander->getCommandType(), commander->getCommandPosition());

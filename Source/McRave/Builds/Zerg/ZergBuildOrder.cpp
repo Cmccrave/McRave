@@ -114,6 +114,8 @@ namespace McRave::BuildOrder::Zerg {
 
                 buildQueue[Zerg_Extractor] = min(vis(Zerg_Extractor) + gasDesired, Resources::getGasCount());
 
+                Broodwar << "Gas" << gasDesired << "   " << gasLimit << "   " << buildQueue[Zerg_Extractor] <<  endl;
+
                 // Try to cancel extractors we don't need
                 if (gasLimit == 0 && !Players::ZvZ())
                     buildQueue[Zerg_Extractor] = 0;
@@ -132,6 +134,10 @@ namespace McRave::BuildOrder::Zerg {
                 buildQueue[Zerg_Evolution_Chamber] = 1 + (Stations::getStations(PlayerState::Self).size() >= 4);
             if (needSpores)
                 buildQueue[Zerg_Evolution_Chamber] = max(buildQueue[Zerg_Evolution_Chamber], 1);
+
+            // Adding a Lair
+            if (Spy::enemyInvis() && Util::getTime() > Time(4, 45))
+                buildQueue[Zerg_Lair] = 1;
 
             // Hive upgrades
             if (int(Stations::getStations(PlayerState::Self).size()) >= 4 - Players::ZvT() && vis(Zerg_Drone) >= 36 && hiveEventually) {
@@ -217,13 +223,12 @@ namespace McRave::BuildOrder::Zerg {
                 }
 
                 auto resourceRate = (3.0 * 103.0 / (67.1));
-                auto resourceCount = double(Resources::getGasCount()) / double(Resources::getMineralCount());
-
-                gasLimit = int(double(vis(Zerg_Drone) * totalGas * resourceCount * resourceRate) / (double(totalMin)));
+                gasLimit = int(double(vis(Zerg_Drone) * totalGas * resourceRate) / (double(totalMin)));
                 if (Players::ZvZ())
                     gasLimit += int(Stations::getStations(PlayerState::Self).size());
-                if (Players::getSupply(PlayerState::Self, Races::Zerg) > 100)
-                    gasLimit += vis(Zerg_Evolution_Chamber);
+                if (!Players::ZvZ() && vis(Zerg_Lair))
+                    gasLimit = max(gasLimit, 6);
+                gasLimit += vis(Zerg_Evolution_Chamber) + vis(Zerg_Lair);
             }
         }
 
@@ -238,8 +243,10 @@ namespace McRave::BuildOrder::Zerg {
                 auto dropGasDefenses    = needSunks && Util::getTime() < Time(3, 30) && (Players::ZvZ() || Spy::getEnemyOpener() == "Proxy" || Spy::getEnemyOpener() == "9/9" || Spy::getEnemyOpener() == "8Rax");
                 auto dropGasBroke       = minRemaining < 75 && gasRemaining >= 100 && Util::getTime() < Time(4, 30);
                 auto dropGasDrones      = minRemaining < 75 && gasRemaining >= 100 && !Players::ZvZ() && vis(Zerg_Lair) > 0 && vis(Zerg_Drone) < 18;
+                auto dropGasLarva       = minRemaining < 100 && gasRemaining >= 100 && !Players::ZvZ() && vis(Zerg_Larva) >= 3 && Util::getTime() < Time(5, 00) && unitReservations.empty();
 
                 if ((dropGasBroke)
+                    || dropGasLarva
                     || Roles::getMyRoleCount(Role::Worker) < 5
                     || (needSpores && Players::ZvZ() && com(Zerg_Evolution_Chamber) == 0)
                     || (unitLimits[Zerg_Larva] < 3 && !rush && !pressure && minRemaining < 100 && (dropGasRush || dropGasExcess || dropGasDefenses || dropGasDrones)))
@@ -356,8 +363,8 @@ namespace McRave::BuildOrder::Zerg {
             techUnit = None;
 
         // Adding tech
-        techSat = (techVal >= int(Stations::getStations(PlayerState::Self).size())) || endOfTech;
-        auto readyToTech = vis(Zerg_Extractor) >= int(Stations::getStations(PlayerState::Self).size()) || int(Stations::getStations(PlayerState::Self).size()) >= 4 || techList.empty();
+        techSat = !techList.empty() && (techVal >= int(Stations::getStations(PlayerState::Self).size()) || endOfTech);
+        auto readyToTech = vis(Zerg_Extractor) >= 2 || int(Stations::getStations(PlayerState::Self).size()) >= 4 || techList.empty();
         if (!inOpeningBook && readyToTech && techUnit == None && !techSat && productionSat && vis(Zerg_Drone) >= 10)
             getTech = true;
 
@@ -615,7 +622,7 @@ namespace McRave::BuildOrder::Zerg {
         // Add Scourge if we have Mutas and enemy has air to air
         if (isTechUnit(Zerg_Mutalisk)) {
             auto airCount = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) + Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith);
-            auto needScourgeZvP = Players::ZvP() && airCount > 0 && vis(Zerg_Mutalisk) < 3;
+            auto needScourgeZvP = Players::ZvP() && airCount > 0 && vis(Zerg_Mutalisk) < 3 && vis(Zerg_Scourge) < min(6, airCount * 2);
             auto needScourgeZvZ = Players::ZvZ() && (airCount / 2) > vis(Zerg_Scourge) && (com(Zerg_Extractor) >= 3 || currentTransition == "2HatchMuta") && vis(Zerg_Scourge) < 2;
             auto needScourgeZvT = Players::ZvT() &&
                 ((Spy::getEnemyTransition() == "2PortWraith" && (airCount >= 3 || vis(Zerg_Mutalisk) == 0) && ((vis(Zerg_Scourge) / 2) - 1 < airCount && airCount < 6 && Players::getStrength(PlayerState::Enemy).airToAir > 0.0))

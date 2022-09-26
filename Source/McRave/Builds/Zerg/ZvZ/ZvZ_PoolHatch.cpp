@@ -30,7 +30,7 @@ namespace McRave::BuildOrder::Zerg {
             unitLimits[Zerg_Drone] =                        vis(Zerg_Extractor) > 0 ? 9 : 12;
             unitLimits[Zerg_Zergling] =                     12;
             gasLimit =                                      com(Zerg_Drone) >= 10 ? gasMax() : 0;
-            firstUpgrade =                                  vis(Zerg_Zergling) >= 6 ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+            firstUpgrade =                                  (vis(Zerg_Zergling) >= 6 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
             playPassive =                                   total(Zerg_Zergling) < 16;
 
             buildQueue[Zerg_Hatchery] =                     1 + (s >= 22 && vis(Zerg_Extractor) > 0);

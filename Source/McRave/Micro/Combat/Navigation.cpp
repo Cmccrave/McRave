@@ -62,7 +62,6 @@ namespace McRave::Combat::Navigation {
             newPath.generateAS(flyerRegroup);
             unit.setDestinationPath(newPath);
         }
-        Visuals::drawPath(unit.getDestinationPath());
     }
 
     void getGroundPath(UnitInfo& unit)
@@ -141,11 +140,7 @@ namespace McRave::Combat::Navigation {
 
     void updateNavigation(UnitInfo& unit)
     {
-        unit.setNavigation(unit.getDestination());
-        if (unit.getFormation().isValid() && Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && (unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat)) {
-            unit.setNavigation(unit.getFormation());
-            return;
-        }
+        unit.setNavigation(unit.getFormation().isValid() ? unit.getFormation() : unit.getDestination());
 
         // If path is reachable, find a point n pixels away to set as new destination
         auto dist = unit.isFlying() ? 96.0 : 160.0;

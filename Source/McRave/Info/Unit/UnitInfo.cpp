@@ -149,8 +149,8 @@ namespace McRave
             minStopFrame                = Math::stopAnimationFrames(t);
             lastStimFrame               = unit()->isStimmed() ? Broodwar->getFrameCount() : lastStimFrame;
             lastVisibleFrame            = Broodwar->getFrameCount();
-            arriveFrame                 = isFlying() ? Broodwar->getFrameCount() + int(position.getDistance(BWEB::Map::getMainPosition()) / speed) :
-                Broodwar->getFrameCount() + int(BWEB::Map::getGroundDistance(position, BWEB::Map::getMainPosition()) / speed);
+            arriveFrame                 = isFlying() ? Broodwar->getFrameCount() + int(position.getDistance(Terrain::getMainPosition()) / speed) :
+                Broodwar->getFrameCount() + int(BWEB::Map::getGroundDistance(position, Terrain::getMainPosition()) / speed);
 
             checkHidden();
             checkStuck();
@@ -299,12 +299,9 @@ namespace McRave
             || getType() == Zerg_Overlord)
             return;
 
-        // Try no more of this shit
-        return;
-
         // Determine how close it is to strategic locations
-        const auto choke = Terrain::isDefendNatural() ? BWEB::Map::getNaturalChoke() : BWEB::Map::getMainChoke();
-        const auto area = Terrain::isDefendNatural() ? BWEB::Map::getNaturalArea() : BWEB::Map::getMainArea();
+        const auto choke = Terrain::isDefendNatural() ? Terrain::getNaturalChoke() : Terrain::getMainChoke();
+        const auto area = Terrain::isDefendNatural() ? Terrain::getNaturalArea() : Terrain::getMainArea();
         const auto closestGeo = BWEB::Map::getClosestChokeTile(choke, getPosition());
         const auto closestStation = Stations::getClosestStationAir(getPosition(), PlayerState::Self);
         const auto rangeCheck = max({ getAirRange() + 32.0, getGroundRange() + 32.0, 64.0 });
@@ -358,27 +355,6 @@ namespace McRave
             return false;
         };
 
-        // Checks if this unit is range of our army
-        auto nearArmy = [&]() {
-            if (BWEB::Map::getMainChoke() && getPosition().getDistance(Position(BWEB::Map::getMainChoke()->Center())) < 64.0 && int(Stations::getStations(PlayerState::Self).size()) >= 2)
-                return true;
-
-            if (Zones::getZone(getPosition()) == ZoneType::Engage) {
-                if (closestDefender && closestDefender->isCompleted()) {
-                    if (mapBWEM.GetArea(closestDefender->getTilePosition()) == mapBWEM.GetArea(getTilePosition()))
-                        return false;
-                }
-                if (hasTarget() && Terrain::inTerritory(PlayerState::Self, getTarget().lock()->getPosition()) && (isWithinRange(*getTarget().lock()) || Units::getImmThreat() > 0.0))
-                    return true;
-            }
-
-            // Fix for Andromeda like maps
-            if (Terrain::inTerritory(PlayerState::Self, getPosition()) && mapBWEM.GetArea(getTilePosition()) != BWEB::Map::getNaturalArea() && int(Stations::getStations(PlayerState::Self).size()) >= 2)
-                return true;
-
-            return getTilePosition().isValid() && mapBWEM.GetArea(getTilePosition()) == BWEB::Map::getMainArea() && (int(Stations::getStations(PlayerState::Self).size()) >= 2 || Combat::defendChoke());
-        };
-
         const auto constructing = unit()->exists() && (unit()->isConstructing() || unit()->getOrder() == Orders::ConstructingBuilding || unit()->getOrder() == Orders::PlaceBuilding);
 
         // Building
@@ -399,8 +375,7 @@ namespace McRave
             || nearResources()
             || nearFragileBuilding()
             || nearBuildPosition()
-            || nearDefenders()
-            || nearArmy();
+            || nearDefenders();
 
         // Specific case: Marine near a proxy bunker
         if (getType() == Terran_Marine && Util::getTime() < Time(5, 00)) {
@@ -769,6 +744,8 @@ namespace McRave
 
     bool UnitInfo::localRetreat()
     {
+        if (!hasTarget())
+            return false;
         auto unitTarget = getTarget().lock();
 
         return (getType() == Protoss_Zealot && hasTarget() && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) == 0 && unitTarget->getType() == Terran_Vulture)                 // ...unit is a slow Zealot attacking a Vulture
@@ -893,7 +870,7 @@ namespace McRave
     bool UnitInfo::globalRetreat()
     {
         auto thisTarget = !target.expired() ? target.lock() : nullptr;
-        auto freeTarget = thisTarget && ((!getTarget().lock()->canAttackAir() && this->isFlying()) || (!thisTarget->canAttackGround() && !this->isFlying()))
+        auto freeTarget = thisTarget && ((!thisTarget->canAttackAir() && this->isFlying()) || (!thisTarget->canAttackGround() && !this->isFlying()))
             && Terrain::inTerritory(PlayerState::Self, thisTarget->getPosition()) && !Terrain::inTerritory(PlayerState::Enemy, thisTarget->getPosition())
             && getPosition().getDistance(thisTarget->getPosition()) < getEngageRadius();
 
@@ -905,7 +882,7 @@ namespace McRave
 
         // Try to save scouts as they have high shield counts
         const auto scoutSavingRequired = getType() == Protoss_Scout && hasTarget() && !thisTarget->isThreatening() && !isWithinRange(*thisTarget) && getHealth() + getShields() <= 80;
-
+        
         if (mutaSavingRequired || scoutSavingRequired)
             saveUnit = true;
         if (saveUnit) {
@@ -929,7 +906,7 @@ namespace McRave
 
     bool UnitInfo::attemptingSurround()
     {
-        if (attemptingRunby() || (hasTarget() && (getTarget().lock()->getType().isWorker() || getTarget().lock()->getCurrentSpeed() <= 0.0)))
+        if (attemptingRunby() || !hasTarget() || (hasTarget() && (getTarget().lock()->getType().isWorker() || getTarget().lock()->getCurrentSpeed() <= 0.0)))
             return false;
         if (surroundPosition.isValid() && !Terrain::inTerritory(PlayerState::Enemy, surroundPosition) && position.getDistance(surroundPosition) > 16.0)
             return true;
@@ -949,7 +926,7 @@ namespace McRave
 
         //if (hasTarget()) {
         //    auto unitTarget = getTarget().lock();
-        //    if (unitTarget->canAttackGround() && unitTarget->getPosition().getDistance(BWEB::Map::getMainPosition()) < unitTarget->getPosition().getDistance(Terrain::getEnemyStartingPosition()))
+        //    if (unitTarget->canAttackGround() && unitTarget->getPosition().getDistance(Terrain::getMainPosition()) < unitTarget->getPosition().getDistance(Terrain::getEnemyStartingPosition()))
         //        return false;
         //}
         return isLightAir() && Terrain::getHarassPosition().isValid();

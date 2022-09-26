@@ -264,7 +264,7 @@ namespace McRave::Transports {
 
             // Resort to main, hopefully we still have it
             if (!unit.getDestination().isValid())
-                unit.setDestination(BWEB::Map::getMainPosition());
+                unit.setDestination(Terrain::getMainPosition());
             Broodwar->drawLineMap(unit.getPosition() + Position(6, 6), unit.getDestination() + Position(6, 6), Colors::Blue);
         }
 

@@ -97,10 +97,10 @@ namespace McRave::Roles {
             // Reactive pulls will cause the worker to attack aggresively
             const auto reactivePullWorker = [&]() {
 
-                auto proxyDangerousBuilding = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                auto proxyDangerousBuilding = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
                     return u->isProxy() && u->getType().isBuilding() && u->canAttackGround();
                 });
-                auto proxyBuildingWorker = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                auto proxyBuildingWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
                     return u->getType().isWorker() && (u->isThreatening() || (proxyDangerousBuilding && u->getType().isWorker() && u->getPosition().getDistance(proxyDangerousBuilding->getPosition()) < 160.0));
                 });
 
@@ -116,7 +116,7 @@ namespace McRave::Roles {
                 if (Players::ZvP() && proxyDangerousBuilding && Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
                     return combatWorkersCount < (4 * Players::getVisibleCount(PlayerState::Enemy, proxyDangerousBuilding->getType()));
                 if (Spy::getWorkersNearUs() > 2 && com(Zerg_Zergling) < Spy::getWorkersNearUs())
-                    return Spy::getWorkersNearUs() >= combatWorkersCount - 3;
+                    return Spy::getWorkersNearUs() >= combatWorkersCount + 3;
                 if (BuildOrder::getCurrentOpener() == "12Hatch" && Spy::getEnemyOpener() == "8Rax" && com(Zerg_Zergling) < 2)
                     return combatWorkersCount <= com(Zerg_Drone) - 4;
 

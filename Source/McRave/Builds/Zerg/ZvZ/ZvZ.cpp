@@ -29,7 +29,7 @@ namespace McRave::BuildOrder::Zerg {
         unitLimits[Zerg_Drone] =                        INT_MAX;
 
         desiredDetection =                              Zerg_Overlord;
-        firstUpgrade =                                  vis(Zerg_Zergling) >= 6 ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+        firstUpgrade =                                  (vis(Zerg_Zergling) >= 6 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
         firstTech =                                     TechTypes::None;
         firstUnit =                                     None;
 

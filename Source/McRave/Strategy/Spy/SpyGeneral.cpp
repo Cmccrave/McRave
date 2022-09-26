@@ -1,4 +1,4 @@
-#include "..\McRave.h"
+#include "Main\McRave.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -59,7 +59,7 @@ namespace McRave::Spy::General {
                     }
                 }
 
-                BWEB::Path newPath(Position(BWEB::Map::getMainChoke()->Center()), pathPoint, Zerg_Zergling);
+                BWEB::Path newPath(Position(Terrain::getMainChoke()->Center()), pathPoint, Zerg_Zergling);
                 newPath.generateJPS([&](auto &t) { return newPath.unitWalkable(t); });
                 if (!newPath.isReachable())
                     theSpy.wall.possible = true;
@@ -155,12 +155,12 @@ namespace McRave::Spy::General {
             // If we have seen an enemy worker before we've scouted the enemy, follow it
             theSpy.early.possible = false;
             if ((Players::getVisibleCount(PlayerState::Enemy, Protoss_Probe) > 0 || Players::getVisibleCount(PlayerState::Enemy, Terran_SCV) > 0) && Util::getTime() < Time(2, 00)) {
-                auto enemyWorker = Util::getClosestUnit(BWEB::Map::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                auto enemyWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
                     return u->getType().isWorker();
                 });
                 if (enemyWorker) {
-                    auto distMain = enemyWorker->getPosition().getDistance(BWEB::Map::getMainPosition());
-                    auto distNat = enemyWorker->getPosition().getDistance(BWEB::Map::getNaturalPosition());
+                    auto distMain = enemyWorker->getPosition().getDistance(Terrain::getMainPosition());
+                    auto distNat = enemyWorker->getPosition().getDistance(Terrain::getNaturalPosition());
                     theSpy.early.possible = enemyWorker && (distMain < 320.0 || distNat < 320.0);
                 }
             }

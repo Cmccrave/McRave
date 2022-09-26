@@ -90,6 +90,12 @@ namespace BWEB {
         /// <summary> Returns a vector containing every BWEB::Station </summary>
         std::vector<Station>& getStations();
 
+        /// <summary> Returns the BWEB::Station of the starting main. </summary>
+        Station * getStartingMain();
+
+        /// <summary> Returns the BWEB::Station of the starting natural. </summary>
+        Station * getStartingNatural();
+
         /// <summary> Returns the closest BWEB::Station to the given TilePosition. </summary>
         Station * getClosestStation(BWAPI::TilePosition);
 

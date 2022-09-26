@@ -37,5 +37,17 @@ namespace McRave::Terrain {
     std::vector<BWAPI::Position>& getGroundCleanupPositions();
     std::vector<BWAPI::Position>& getAirCleanupPositions();
 
+    // Main information
+    BWAPI::Position getMainPosition();
+    BWAPI::TilePosition getMainTile();
+    const BWEM::Area * getMainArea();
+    const BWEM::ChokePoint * getMainChoke();
+
+    // Natural information
+    BWAPI::Position getNaturalPosition();
+    BWAPI::TilePosition getNaturalTile();
+    const BWEM::Area * getNaturalArea();
+    const BWEM::ChokePoint * getNaturalChoke();
+
     inline bool isExplored(BWAPI::Position here) { return BWAPI::Broodwar->isExplored(BWAPI::TilePosition(here)); }
 }

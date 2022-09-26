@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DEFECTS>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>e:\bwapi\module\mcrave\source\bwem</FILEPATH>
+      <FILENAME>graph.h</FILENAME>
+      <LINE>61</LINE>
+      <COLUMN>40</COLUMN>
+    </SFA>
+    <DEFECTCODE>26495</DEFECTCODE>
+    <DESCRIPTION>Variable 'BWEM::detail::Graph::m_baseCount' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
+    <FUNCTION>BWEM::detail::Graph::{ctor}</FUNCTION>
+    <DECORATED>??0Graph@detail@BWEM@@QAE@PAVMapImpl@12@@Z</DECORATED>
+    <FUNCLINE>61</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+</DEFECTS>

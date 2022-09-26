@@ -131,8 +131,7 @@ namespace McRave::Researching {
                         return true;
                     }
                     else if ((Workers::getMineralWorkers() > 0 || Broodwar->self()->minerals() >= research.mineralPrice()) && (Workers::getGasWorkers() > 0 || Broodwar->self()->gas() >= research.gasPrice())) {
-                        idleResearch
-                            [building.unit()] = research;
+                        idleResearch[building.unit()] = research;
                         reservedMineral += research.mineralPrice();
                         reservedGas += research.gasPrice();
                     }
@@ -146,7 +145,7 @@ namespace McRave::Researching {
         {
             // Reserved resources for idle research
             for (auto &[unit, tech] : idleResearch) {
-                if (unit->exists()) {
+                if (unit && unit->exists()) {
                     reservedMineral += tech.mineralPrice();
                     reservedGas += tech.gasPrice();
                 }

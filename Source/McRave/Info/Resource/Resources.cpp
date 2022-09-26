@@ -66,9 +66,8 @@ namespace McRave::Resources {
             else if (resource.getType() == geyserType && resource.unit()->isCompleted() && resource.getResourceState() != ResourceState::None)
                 gassers += resource.getGathererCount();
 
-            auto trackSaturationAt = Players::ZvZ() ? 2 : 3;
             if (!resource.isBoulder()) {
-                if (resource.getResourceState() == ResourceState::Mineable || (resource.getResourceState() == ResourceState::Assignable && int(Stations::getStations(PlayerState::Self).size()) >= trackSaturationAt)) {
+                if (resource.getResourceState() == ResourceState::Mineable || (resource.getResourceState() == ResourceState::Assignable && int(Stations::getStations(PlayerState::Self).size()) >= 2)) {
                     resource.getType().isMineralField() ? mineralCount++ : gasCount++;
                     resource.getType().isMineralField() ? maxMin+=resource.getWorkerCap() : maxGas+=resource.getWorkerCap();
                 }

@@ -6,9 +6,6 @@ using namespace BWAPI;
 namespace BWEB::Map
 {
     namespace {
-
-        Station * mainStation = nullptr;
-        Station * natStation = nullptr;
         bool drawReserveOverlap, drawUsed, drawWalk, drawArea;
 
         map<BWAPI::Key, bool> lastKeyState;
@@ -23,18 +20,108 @@ namespace BWEB::Map
         bool walkGridFull[256][256] ={};
         bool logInfo = true;
 
-        void findMain()
+        void initalizeGrids()
         {
-            mainStation = Stations::getClosestMainStation(Broodwar->self()->getStartLocation());
+            // Initializes usedGrid and walkGridFull
+            for (int x = 0; x < Broodwar->mapWidth(); x++) {
+                for (int y = 0; y < Broodwar->mapHeight(); y++) {
+
+                    usedGrid[x][y] = UnitTypes::None;
+
+                    auto cnt = 0;
+                    for (int dx = x * 4; dx < (x * 4) + 4; dx++) {
+                        for (int dy = y * 4; dy < (y * 4) + 4; dy++) {
+                            const auto w = WalkPosition(dx, dy);
+                            if (w.isValid() && Broodwar->isWalkable(w))
+                                cnt++;
+                        }
+                    }
+
+                    if (cnt >= 14)
+                        walkGridFull[x][y] = true;
+                }
+            }
+
+            // Set all tiles on geysers as used and fully unwalkable
+            for (auto gas : Broodwar->getGeysers()) {
+                for (int x = gas->getTilePosition().x; x < gas->getTilePosition().x + 4; x++) {
+                    for (int y = gas->getTilePosition().y; y < gas->getTilePosition().y + 2; y++) {
+                        usedGrid[x][y] = gas->getType();
+                        walkGridFull[x][y] = false;
+                    }
+                }
+            }
+
+            // Set all tiles on minerals as used
+            for (auto mineral : Broodwar->getMinerals()) {
+                for (int x = mineral->getTilePosition().x; x < mineral->getTilePosition().x + 2; x++) {
+                    usedGrid[x][mineral->getTilePosition().y] = mineral->getType();
+                }
+            }
+
+            // Check for at least 3 columns to left and right of tile for walkability
+            const auto isLargeWalkable = [&](auto &t) {
+                WalkPosition w(t);
+
+                auto offset1 = Broodwar->isWalkable(w + WalkPosition(-2, 0)) && Broodwar->isWalkable(w + WalkPosition(-2, 1)) && Broodwar->isWalkable(w + WalkPosition(-2, 2)) && Broodwar->isWalkable(w + WalkPosition(-2, 3));
+                auto offset2 = Broodwar->isWalkable(w + WalkPosition(-1, 0)) && Broodwar->isWalkable(w + WalkPosition(-1, 1)) && Broodwar->isWalkable(w + WalkPosition(-1, 2)) && Broodwar->isWalkable(w + WalkPosition(-1, 3));
+                auto offset3 = Broodwar->isWalkable(w + WalkPosition(4, 0)) && Broodwar->isWalkable(w + WalkPosition(4, 1)) && Broodwar->isWalkable(w + WalkPosition(4, 2)) && Broodwar->isWalkable(w + WalkPosition(4, 3));
+                auto offset4 = Broodwar->isWalkable(w + WalkPosition(5, 0)) && Broodwar->isWalkable(w + WalkPosition(5, 1)) && Broodwar->isWalkable(w + WalkPosition(5, 2)) && Broodwar->isWalkable(w + WalkPosition(5, 3));
+
+                auto cornersWalkable = Broodwar->isWalkable(w) && Broodwar->isWalkable(w + WalkPosition(3, 0)) && Broodwar->isWalkable(w + WalkPosition(0, 3)) && Broodwar->isWalkable(w + WalkPosition(3, 3));
+
+                return (offset1 && offset2 && cornersWalkable) ||
+                    (cornersWalkable && offset3 && offset4);
+            };
+
+            // Check for at least 2 columns to left and right of tile for walkability
+            const auto isMediumWalkable = [&](auto &t) {
+                WalkPosition w(t);
+
+                auto offset1 = Broodwar->isWalkable(w + WalkPosition(-2, 0)) && Broodwar->isWalkable(w + WalkPosition(-2, 1)) && Broodwar->isWalkable(w + WalkPosition(-2, 2)) && Broodwar->isWalkable(w + WalkPosition(-2, 3));
+                auto offset2 = Broodwar->isWalkable(w + WalkPosition(-1, 0)) && Broodwar->isWalkable(w + WalkPosition(-1, 1)) && Broodwar->isWalkable(w + WalkPosition(-1, 2)) && Broodwar->isWalkable(w + WalkPosition(-1, 3));
+                auto offset3 = Broodwar->isWalkable(w + WalkPosition(4, 0)) && Broodwar->isWalkable(w + WalkPosition(4, 1)) && Broodwar->isWalkable(w + WalkPosition(4, 2)) && Broodwar->isWalkable(w + WalkPosition(4, 3));
+                auto offset4 = Broodwar->isWalkable(w + WalkPosition(5, 0)) && Broodwar->isWalkable(w + WalkPosition(5, 1)) && Broodwar->isWalkable(w + WalkPosition(5, 2)) && Broodwar->isWalkable(w + WalkPosition(5, 3));
+
+                return (offset1 && offset2) ||
+                    (offset2 && offset3) ||
+                    (offset3 && offset4);
+            };
+
+            // As long as Tile is walkable
+            const auto isSmallWalkable = [&](auto &t) {
+                return true;
+            };
+
+
+            // Initialize walk grids for each rough unit size
+            for (int x = 0; x <= Broodwar->mapWidth(); x++) {
+                for (int y = 0; y <= Broodwar->mapHeight(); y++) {
+                    TilePosition t(x, y);
+                    if (walkGridFull[x][y]) {
+                        if (isLargeWalkable(t))
+                            walkGridLarge[x][y] = true;
+                        if (isMediumWalkable(t))
+                            walkGridMedium[x][y] = true;
+                        if (isSmallWalkable(t))
+                            walkGridSmall[x][y] = true;
+                    }
+                }
+            }
         }
 
-        void findNatural()
+        void initializeChokeGeo()
         {
-            auto center = mainStation->getChokepoint() ? TilePosition(mainStation->getChokepoint()->Center()) : TilePosition(mainStation->getBase()->Center());
-            natStation = Stations::getClosestNaturalStation(center);
+            // Create chokepoint geometry cache in TilePositions
+            for (auto &area : mapBWEM.Areas()) {
+                for (auto &choke : area.ChokePoints()) {
+                    for (auto &geo : choke->Geometry())
+                        chokeTiles[choke].insert(TilePosition(geo));
+                }
+            }
         }
 
-        void findNeutrals()
+        void initializeNeutrals()
         {
             // Add overlap for neutrals
             for (auto unit : Broodwar->getNeutralUnits()) {
@@ -111,105 +198,9 @@ namespace BWEB::Map
 
     void onStart()
     {
-        // Initializes usedGrid and walkGridFull
-        for (int x = 0; x < Broodwar->mapWidth(); x++) {
-            for (int y = 0; y < Broodwar->mapHeight(); y++) {
-
-                usedGrid[x][y] = UnitTypes::None;
-
-                auto cnt = 0;
-                for (int dx = x * 4; dx < (x * 4) + 4; dx++) {
-                    for (int dy = y * 4; dy < (y * 4) + 4; dy++) {
-                        const auto w = WalkPosition(dx, dy);
-                        if (w.isValid() && Broodwar->isWalkable(w))
-                            cnt++;
-                    }
-                }
-
-                if (cnt >= 14)
-                    walkGridFull[x][y] = true;
-            }
-        }
-
-        // Set all tiles on geysers as used and fully unwalkable
-        for (auto gas : Broodwar->getGeysers()) {
-            for (int x = gas->getTilePosition().x; x < gas->getTilePosition().x + 4; x++) {
-                for (int y = gas->getTilePosition().y; y < gas->getTilePosition().y + 2; y++) {
-                    usedGrid[x][y] = gas->getType();
-                    walkGridFull[x][y] = false;
-                }
-            }
-        }
-
-        // Set all tiles on minerals as used
-        for (auto mineral : Broodwar->getMinerals()) {
-            for (int x = mineral->getTilePosition().x; x < mineral->getTilePosition().x + 2; x++) {
-                usedGrid[x][mineral->getTilePosition().y] = mineral->getType();
-            }
-        }
-
-        // Check for at least 3 columns to left and right of tile for walkability
-        const auto isLargeWalkable = [&](auto &t) {
-            WalkPosition w(t);
-
-            auto offset1 = Broodwar->isWalkable(w + WalkPosition(-2, 0)) && Broodwar->isWalkable(w + WalkPosition(-2, 1)) && Broodwar->isWalkable(w + WalkPosition(-2, 2)) && Broodwar->isWalkable(w + WalkPosition(-2, 3));
-            auto offset2 = Broodwar->isWalkable(w + WalkPosition(-1, 0)) && Broodwar->isWalkable(w + WalkPosition(-1, 1)) && Broodwar->isWalkable(w + WalkPosition(-1, 2)) && Broodwar->isWalkable(w + WalkPosition(-1, 3));
-            auto offset3 = Broodwar->isWalkable(w + WalkPosition(4, 0)) && Broodwar->isWalkable(w + WalkPosition(4, 1)) && Broodwar->isWalkable(w + WalkPosition(4, 2)) && Broodwar->isWalkable(w + WalkPosition(4, 3));
-            auto offset4 = Broodwar->isWalkable(w + WalkPosition(5, 0)) && Broodwar->isWalkable(w + WalkPosition(5, 1)) && Broodwar->isWalkable(w + WalkPosition(5, 2)) && Broodwar->isWalkable(w + WalkPosition(5, 3));
-
-            auto cornersWalkable = Broodwar->isWalkable(w) && Broodwar->isWalkable(w + WalkPosition(3, 0)) && Broodwar->isWalkable(w + WalkPosition(0, 3)) && Broodwar->isWalkable(w + WalkPosition(3, 3));
-
-            return (offset1 && offset2 && cornersWalkable) ||
-                (cornersWalkable && offset3 && offset4);
-        };
-
-        // Check for at least 2 columns to left and right of tile for walkability
-        const auto isMediumWalkable = [&](auto &t) {
-            WalkPosition w(t);
-
-            auto offset1 = Broodwar->isWalkable(w + WalkPosition(-2, 0)) && Broodwar->isWalkable(w + WalkPosition(-2, 1)) && Broodwar->isWalkable(w + WalkPosition(-2, 2)) && Broodwar->isWalkable(w + WalkPosition(-2, 3));
-            auto offset2 = Broodwar->isWalkable(w + WalkPosition(-1, 0)) && Broodwar->isWalkable(w + WalkPosition(-1, 1)) && Broodwar->isWalkable(w + WalkPosition(-1, 2)) && Broodwar->isWalkable(w + WalkPosition(-1, 3));
-            auto offset3 = Broodwar->isWalkable(w + WalkPosition(4, 0)) && Broodwar->isWalkable(w + WalkPosition(4, 1)) && Broodwar->isWalkable(w + WalkPosition(4, 2)) && Broodwar->isWalkable(w + WalkPosition(4, 3));
-            auto offset4 = Broodwar->isWalkable(w + WalkPosition(5, 0)) && Broodwar->isWalkable(w + WalkPosition(5, 1)) && Broodwar->isWalkable(w + WalkPosition(5, 2)) && Broodwar->isWalkable(w + WalkPosition(5, 3));
-
-            return (offset1 && offset2) ||
-                (offset2 && offset3) ||
-                (offset3 && offset4);
-        };
-
-        // As long as Tile is walkable
-        const auto isSmallWalkable = [&](auto &t) {
-            return true;
-        };
-
-
-        // Initialize walk grids for each rough unit size
-        for (int x = 0; x <= Broodwar->mapWidth(); x++) {
-            for (int y = 0; y <= Broodwar->mapHeight(); y++) {
-                TilePosition t(x, y);
-                if (walkGridFull[x][y]) {
-                    if (isLargeWalkable(t))
-                        walkGridLarge[x][y] = true;
-                    if (isMediumWalkable(t))
-                        walkGridMedium[x][y] = true;
-                    if (isSmallWalkable(t))
-                        walkGridSmall[x][y] = true;
-                }
-            }
-        }
-
-        // Create chokepoint geometry cache in TilePositions
-        for (auto &area : mapBWEM.Areas()) {
-            for (auto &choke : area.ChokePoints()) {
-                for (auto &geo : choke->Geometry())
-                    chokeTiles[choke].insert(TilePosition(geo));
-            }
-        }
-
-        Stations::findStations();
-        findNeutrals();
-        findMain();
-        findNatural();
+        initalizeGrids();
+        initializeChokeGeo();
+        initializeNeutrals();
     }
 
     void onUnitDiscover(const Unit unit)
@@ -479,13 +470,4 @@ namespace BWEB::Map
         auto direction2 = Position(-dy2, dx2) + ((n1 + n2) / 2);
         return make_pair(direction1, direction2);
     }
-
-    const BWEM::Area * getNaturalArea() { return natStation->getBase()->GetArea(); }
-    const BWEM::Area * getMainArea() { return mainStation->getBase()->GetArea(); }
-    const BWEM::ChokePoint * getNaturalChoke() { return natStation->getChokepoint(); }
-    const BWEM::ChokePoint * getMainChoke() { return mainStation->getChokepoint(); }
-    TilePosition getNaturalTile() { return natStation->getBase()->Location(); }
-    Position getNaturalPosition() { return natStation->getBase()->Center(); }
-    TilePosition getMainTile() { return mainStation->getBase()->Location(); }
-    Position getMainPosition() { return mainStation->getBase()->Center(); }
 }

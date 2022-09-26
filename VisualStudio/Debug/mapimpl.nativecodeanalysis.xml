@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DEFECTS>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>e:\bwapi\module\mcrave\source\bwem</FILEPATH>
+      <FILENAME>graph.h</FILENAME>
+      <LINE>61</LINE>
+      <COLUMN>40</COLUMN>
+    </SFA>
+    <DEFECTCODE>26495</DEFECTCODE>
+    <DESCRIPTION>Variable 'BWEM::detail::Graph::m_baseCount' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
+    <FUNCTION>BWEM::detail::Graph::{ctor}</FUNCTION>
+    <DECORATED>??0Graph@detail@BWEM@@QAE@PAVMapImpl@12@@Z</DECORATED>
+    <FUNCLINE>61</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>e:\bwapi\module\mcrave\source\bwem</FILEPATH>
+      <FILENAME>mapimpl.cpp</FILENAME>
+      <LINE>57</LINE>
+      <COLUMN>17</COLUMN>
+    </SFA>
+    <DEFECTCODE>26495</DEFECTCODE>
+    <DESCRIPTION>Variable 'BWEM::detail::MapImpl::m_maxAltitude' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
+    <FUNCTION>BWEM::detail::MapImpl::{ctor}</FUNCTION>
+    <DECORATED>??0MapImpl@detail@BWEM@@QAE@XZ</DECORATED>
+    <FUNCLINE>57</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>e:\bwapi\module\mcrave\source\bwem</FILEPATH>
+      <FILENAME>map.h</FILENAME>
+      <LINE>220</LINE>
+      <COLUMN>40</COLUMN>
+    </SFA>
+    <DEFECTCODE>26495</DEFECTCODE>
+    <DESCRIPTION>Variable 'BWEM::Map::m_walkSize' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
+    <FUNCTION>BWEM::Map::{ctor}</FUNCTION>
+    <DECORATED>??0Map@BWEM@@IAE@XZ</DECORATED>
+    <FUNCLINE>220</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>e:\bwapi\module\mcrave\source\bwem</FILEPATH>
+      <FILENAME>mapimpl.cpp</FILENAME>
+      <LINE>464</LINE>
+      <COLUMN>12</COLUMN>
+    </SFA>
+    <DEFECTCODE>26495</DEFECTCODE>
+    <DESCRIPTION>Variable 'BWEM::detail::TempAreaInfo::m_size' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
+    <FUNCTION>BWEM::detail::TempAreaInfo::{ctor}</FUNCTION>
+    <DECORATED>??0TempAreaInfo@detail@BWEM@@QAE@XZ</DECORATED>
+    <FUNCLINE>464</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>e:\bwapi\module\mcrave\source\bwem</FILEPATH>
+      <FILENAME>tiles.h</FILENAME>
+      <LINE>197</LINE>
+      <COLUMN>0</COLUMN>
+    </SFA>
+    <DEFECTCODE>26495</DEFECTCODE>
+    <DESCRIPTION>Variable 'BWEM::Tile::m_minAltitude' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
+    <FUNCTION>BWEM::Tile::{ctor}</FUNCTION>
+    <DECORATED>??0Tile@BWEM@@QAE@XZ</DECORATED>
+    <FUNCLINE>197</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+</DEFECTS>

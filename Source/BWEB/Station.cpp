@@ -6,6 +6,8 @@ using namespace BWAPI;
 namespace BWEB {
 
     namespace {
+        Station * startMainStation = nullptr;
+        Station * startNatStation = nullptr;
         vector<Station> stations;
         vector<const BWEM::Base *> mainBases;
         vector<const BWEM::Base *> natBases;
@@ -506,43 +508,12 @@ namespace BWEB {
                 }
             }
         }
-
-        //// Add geyser defenses
-        //if (main) {
-        //    for (auto &geyser : base->Geysers()) {
-        //        for (auto &placement : geyserPlacements) {
-        //            auto tile = geyser->TopLeft() + placement;
-        //            auto center = Position(tile) + Position(16, 16);
-        //            if (center.getDistance(base->Center()) > geyser->Pos().getDistance(base->Center()) && Map::isPlaceable(defenseType, tile)) {
-        //                defenses.insert(tile);
-        //                Map::addUsed(tile, defenseType);
-        //            }
-        //        }
-        //    }
-        //}
     }
 
     void Station::draw()
     {
         int color = Broodwar->self()->getColor();
         int textColor = color == 185 ? textColor = Text::DarkGreen : Broodwar->self()->getTextColor();
-
-        for (auto &[mineral, tiles] : testTiles) {
-            int i = 0;
-            for (auto &tile : tiles) {
-                //Broodwar->drawTextMap(Position(tile), "%d", ++i);
-                //Broodwar->drawLineMap(Position(tile) + Position(16, 16), mineral->Pos(), Colors::Green);
-            }
-            //Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(31, 31), Colors::Grey);
-        }
-        for (auto &path : testPaths) {
-            //auto prev = path.getSource();
-            //for (auto &tile : path.getTiles()) {
-            //    Broodwar->drawLineMap(Position(tile), Position(prev), Colors::Red);
-            //    prev = tile;
-            //}
-            Broodwar->drawLineMap((Position)path.getSource(), (Position)path.getTarget(), Colors::Red);
-        }
 
         // Draw boxes around each feature
         for (auto &tile : defenses) {
@@ -701,6 +672,9 @@ namespace BWEB::Stations {
                 stations.push_back(newStation);
             }
         }
+
+        startMainStation = Stations::getClosestMainStation(Broodwar->self()->getStartLocation());
+        startNatStation = Stations::getClosestNaturalStation(startMainStation->getChokepoint() ? TilePosition(startMainStation->getChokepoint()->Center()) : TilePosition(startMainStation->getBase()->Center()));
     }
 
     void draw()
@@ -708,6 +682,10 @@ namespace BWEB::Stations {
         for (auto &station : Stations::getStations())
             station.draw();
     }
+
+    Station * getStartingMain() { return startMainStation; }
+
+    Station * getStartingNatural() { return startNatStation; }
 
     Station * getClosestStation(TilePosition here)
     {

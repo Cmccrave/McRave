@@ -20,7 +20,7 @@ namespace McRave::BuildOrder::Zerg {
             scout =                                         scout || (hatchCount() == 1 && s >= 22 && Util::getTime() > Time(1, 30));
             wantNatural =                                   !Spy::enemyProxy();
             playPassive =                                   false;
-            unitLimits[Zerg_Drone] =                        13 - vis(Zerg_Hatchery);
+            unitLimits[Zerg_Drone] =                        13;
             planEarly =                                     !Spy::enemyProxy() && (hatchCount() == 1 && s >= 22 && Util::getTime() > Time(1, 30));
 
             buildQueue[Zerg_Hatchery] =                     1 + (s >= 24);

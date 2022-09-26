@@ -20,12 +20,12 @@ namespace McRave::Command {
 
         double distance(UnitInfo& unit, WalkPosition w) {
             const auto p = Position(w) + Position(4, 4);
-            if (unit.getFormation().isValid()) {
-                Visuals::drawLine(unit.getPosition(), unit.getFormation(), Colors::Black);
-                auto percentFormation = clamp(0.01, 1.0 - (unit.getPosition().getDistance(unit.getFormation()) / 640.0), 0.5);
-                Broodwar->drawTextMap(unit.getPosition(), "%.2f", percentFormation);
-                return max(1.0, /*(1.0 - percentFormation) * p.getDistance(unit.getNavigation())*/ + (percentFormation * p.getDistance(unit.getFormation())));
-            }
+            //if (unit.getFormation().isValid()) {
+            //    Visuals::drawLine(unit.getPosition(), unit.getFormation(), Colors::Black);
+            //    auto percentFormation = clamp(0.01, 1.0 - (unit.getPosition().getDistance(unit.getFormation()) / 640.0), 0.5);
+            //    Broodwar->drawTextMap(unit.getPosition(), "%.2f", percentFormation);
+            //    return max(1.0, (1.0 - percentFormation) * p.getDistance(unit.getNavigation()) + (percentFormation * p.getDistance(unit.getFormation())));
+            //}
             return max(1.0, p.getDistance(unit.getNavigation()));
         }
 
@@ -87,6 +87,9 @@ namespace McRave::Command {
                     const WalkPosition w(x, y);
                     Position p = Position(w) + Position(4, 4);
 
+                    if (p.getDistance(pstart) > radius * 8)
+                        continue;
+
                     auto current = score(w);
                     if (unit.isLightAir() && unit.getLocalState() != LocalState::Attack) {
                         auto edgePush = clamp(Terrain::getClosestMapEdge(unit.getPosition()).getDistance(p) / 160.0, 0.01, 1.00);
@@ -107,7 +110,7 @@ namespace McRave::Command {
     bool misc(UnitInfo& unit)
     {
         // Unstick a unit
-        if (unit.isStuck() || unit.getLocalState() == LocalState::Hold) {
+        if (unit.isStuck()) {
             unit.unit()->stop();
             return true;
         }
@@ -171,7 +174,7 @@ namespace McRave::Command {
                     const auto botRight = topLeft + Position(unit.getBuildType().tileWidth() * 32, unit.getBuildType().tileHeight() * 32);
                     return Util::rectangleIntersect(topLeft, botRight, unitTarget->getPosition());
                 }
-                if (unitTarget->isThreatening() && unit.getUnitsTargetingThis().empty() && unit.isHealthy() && unit.isWithinRange(*unitTarget) && unit.isWithinGatherRange())
+                if (unitTarget->isThreatening() && (unit.getUnitsTargetingThis().empty() || unit.isHealthy()) && unit.isWithinRange(*unitTarget) && unit.isWithinGatherRange())
                     return true;
             }
 
@@ -338,7 +341,7 @@ namespace McRave::Command {
                 return false;
 
             // Necessary for mutas to not overshoot
-            if (unit.getRole() == Role::Combat && !unit.attemptingSurround() && !unit.isSuicidal() && unit.hasTarget() && unit.canStartAttack() && unit.isWithinReach(*unit.getTarget().lock()) && unit.getLocalState() == LocalState::Attack) {
+            if (unit.getRole() == Role::Combat && unit.hasTarget() && !unit.attemptingSurround() && !unit.isSuicidal() && unit.hasTarget() && unit.canStartAttack() && unit.isWithinReach(*unit.getTarget().lock()) && unit.getLocalState() == LocalState::Attack) {
                 unit.command(Right_Click_Position, unit.getTarget().lock()->getPosition());
                 return true;
             }
@@ -487,13 +490,9 @@ namespace McRave::Command {
 
     bool defend(UnitInfo& unit)
     {
-        const auto closeToDefend = Terrain::inTerritory(PlayerState::Self, unit.getPosition())
-            || unit.getType().isWorker()
-            || unit.getPosition().getDistance(unit.getDestination()) < 160.0
-            || (unit.getGoalType() == GoalType::Defend && unit.getPosition().getDistance(unit.getGoal()) < 320.0);
-
+        const auto closeToDefend = unit.getPosition().getDistance(unit.getFormation()) < 160.0;
         const auto canDefend = unit.getRole() == Role::Combat;
-        const auto shouldDefend = unit.getFormation().isValid() && unit.getLocalState() != LocalState::Attack && (unit.getGlobalState() != GlobalState::Attack || unit.getLocalState() == LocalState::Retreat) && !unit.isLightAir() && !unit.attemptingRunby();
+        const auto shouldDefend = unit.getFormation().isValid() && unit.getLocalState() == LocalState::None && (unit.getGlobalState() != GlobalState::Attack || unit.getLocalState() == LocalState::Retreat) && !unit.isLightAir() && !unit.attemptingRunby();
 
         if (closeToDefend && canDefend && shouldDefend) {
             unit.command(Move, unit.getFormation());
@@ -514,7 +513,7 @@ namespace McRave::Command {
 
         if (canExplore && shouldExplore) {
 
-            auto bestPosition = findViablePosition(unit, unit.getPosition(), 8, scoreFunction);
+            auto bestPosition = findViablePosition(unit, unit.getPosition(), 12, scoreFunction);
 
             if (bestPosition.isValid()) {
                 unit.command(Move, bestPosition);

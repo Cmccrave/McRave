@@ -363,9 +363,9 @@ namespace BWEB::Blocks
         void findMainStartBlocks()
         {
             const auto race = Broodwar->self()->getRace();
-            const auto firstStart = Map::getMainPosition();
-            const auto secondStart = race != Races::Zerg ? (Position(Map::getMainChoke()->Center()) + Map::getMainPosition()) / 2 : Map::getMainPosition();
-            const auto area = Map::getMainArea();
+            const auto firstStart = Stations::getStartingMain()->getBase()->Center();
+            const auto secondStart = race != Races::Zerg ? (Position(Stations::getStartingMain()->getChokepoint()->Center()) + Stations::getStartingMain()->getBase()->Center()) / 2 : Stations::getStartingMain()->getBase()->Center();
+            const auto area = Stations::getStartingMain()->getBase()->GetArea();
 
             const auto creepOnCorners = [&](TilePosition here, int width, int height) {
                 return Broodwar->hasCreep(here)
@@ -390,7 +390,7 @@ namespace BWEB::Blocks
                                 const auto blockCenter = Position(tile) + Position(i * 16, j * 16);
 
                                 // Check if we have pieces and a layout to use
-                                const auto pieces = whichPieces(i, j, blockCenter.y < Map::getMainPosition().y, blockCenter.x < Map::getMainPosition().x);
+                                const auto pieces = whichPieces(i, j, blockCenter.y < Stations::getStartingMain()->getBase()->Center().y, blockCenter.x < Stations::getStartingMain()->getBase()->Center().x);
                                 const auto layout = wherePieces(tile, pieces);
                                 if (pieces.empty() || layout.empty())
                                     continue;
@@ -442,16 +442,16 @@ namespace BWEB::Blocks
             vector<Piece> pieces ={ Piece::Small, Piece::Medium };
             multimap<TilePosition, Piece> pieceLayout;
             auto tileBest = TilePositions::Invalid;
-            auto start = Map::getMainChoke() ? TilePosition(Map::getMainChoke()->Center()) : Map::getMainTile();
+            auto start = Stations::getStartingMain()->getChokepoint() ? TilePosition(Stations::getStartingMain()->getChokepoint()->Center()) : Stations::getStartingMain()->getBase()->Location();
             auto distBest = DBL_MAX;
             for (auto x = start.x - 12; x <= start.x + 16; x++) {
                 for (auto y = start.y - 12; y <= start.y + 16; y++) {
                     const TilePosition tile(x, y);
                     const auto blockCenter = Position(tile) + Position(80, 32);
-                    const auto dist = (blockCenter.getDistance((Position)Map::getMainChoke()->Center()));
+                    const auto dist = (blockCenter.getDistance((Position)Stations::getStartingMain()->getChokepoint()->Center()));
 
                     if (!tile.isValid()
-                        || Map::mapBWEM.GetArea(tile) != Map::getMainArea()
+                        || Map::mapBWEM.GetArea(tile) != Stations::getStartingMain()->getBase()->GetArea()
                         || dist < 96.0)
                         continue;
 
@@ -592,7 +592,7 @@ namespace BWEB::Blocks
             // Gather the possible enemy start locations
             vector<TilePosition> enemyStartLocations;
             for (auto &start : Map::mapBWEM.StartingLocations()) {
-                if (Map::mapBWEM.GetArea(start) != Map::getMainArea())
+                if (Map::mapBWEM.GetArea(start) != Stations::getStartingMain()->getBase()->GetArea())
                     enemyStartLocations.push_back(start);
             }
 

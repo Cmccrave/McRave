@@ -72,28 +72,4 @@ namespace BWEB::Map
         auto dx = double(p.second.x - p.first.x);
         return std::abs(dx) > 1.0 ? fmod(std::atan2(-dy, dx) + 6.18, 6.18) : 1.57;
     }
-
-    /// <summary> Returns the BWEM::Area of the starting natural. </summary>
-    const BWEM::Area * getNaturalArea();
-
-    /// <summary> Returns the BWEM::Area of the starting main. </summary>
-    const BWEM::Area * getMainArea();
-
-    /// <summary> Returns the BWEM::Chokepoint of the starting natural. </summary>
-    const BWEM::ChokePoint * getNaturalChoke();
-
-    /// <summary> Returns the BWEM::Chokepoint of the starting main. </summary>
-    const BWEM::ChokePoint * getMainChoke();
-
-    /// Returns the BWAPI::TilePosition of the starting natural.
-    BWAPI::TilePosition getNaturalTile();
-
-    /// Returns the BWAPI::Position of the starting natural.
-    BWAPI::Position getNaturalPosition();
-
-    /// Returns the BWAPI::TilePosition of the starting main.
-    BWAPI::TilePosition getMainTile();
-
-    /// Returns the BWAPI::Position of the starting main.
-    BWAPI::Position getMainPosition();
 }
