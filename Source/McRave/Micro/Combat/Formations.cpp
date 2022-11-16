@@ -49,27 +49,33 @@ namespace McRave::Combat::Formations {
         });
 
         // Start creating positions starting at the start position
-        auto startPosition = Util::getClosestPointToRadiusGround(retreat->getBase()->Center(), cluster.sharedNavigation, radius).second;
-        Visuals::drawLine(center, startPosition, cluster.color);
-        Visuals::drawCircle(startPosition, 4, cluster.color, true);
-        auto angle = BWEB::Map::getAngle(make_pair(concave.center, startPosition));
+        //auto startPosition = Util::getClosestPointToRadiusGround(cluster.sharedNavigation, center, radius).second;
+        auto angle = BWEB::Map::getAngle(make_pair(concave.center, cluster.sharedNavigation)) + (commander->getLocalState() == LocalState::Attack ? 3.14 : 0.0);
         auto radsPositive = angle;
         auto radsNegative = angle;
         auto lastPosPosition = Positions::Invalid;
         auto lastNegPosition = Positions::Invalid;
 
+        Visuals::drawLine(center, cluster.sharedNavigation, Colors::Grey);
+
+        //Broodwar->drawTextMap(concave.center, "Start");
+        //Visuals::drawPath(cluster.path);
+
         bool stopPositive = false;
         bool stopNegative = false;
         auto wrap = 0;
         auto assignmentsRemaining = int(cluster.units.size());
+
         while (assignmentsRemaining > 0) {
             auto validPosition = [&](Position &p, Position &last) {
                 if (!p.isValid()
                     || Grids::getMobility(p) <= 4
                     || BWEB::Map::isUsed(TilePosition(p)) != UnitTypes::None
                     || Util::boxDistance(type, p, type, last) <= 2
-                    || (closestBuilder && p.getDistance(closestBuilder->getPosition()) < 128.0))
+                    || (closestBuilder && p.getDistance(closestBuilder->getPosition()) < 128.0)) {
+                    Broodwar->drawCircleMap(p, 1, Colors::Red);
                     return false;
+                }
                 Broodwar->drawCircleMap(p, 3, Colors::Blue);
                 concave.positions.push_back(p);
                 return true;
@@ -84,7 +90,7 @@ namespace McRave::Combat::Formations {
             }
             else
                 radsPositive += 3.14 / 180.0;
-            if (radsPositive > angle + 1.0472 || !posPosition.isValid() || Grids::getMobility(posPosition) <= 0)
+            if (radsPositive > angle + 1.0472 || !posPosition.isValid())
                 stopPositive = true;
 
             if (cluster.units.size() == concave.positions.size()) {
@@ -102,7 +108,7 @@ namespace McRave::Combat::Formations {
             }
             else
                 radsNegative -= 3.14 / 180.0;
-            if (radsNegative < angle - 1.0472 || !negPosition.isValid() || Grids::getMobility(negPosition) <= 0)
+            if (radsNegative < angle - 1.0472 || !negPosition.isValid())
                 stopNegative = true;
 
             if (cluster.units.size() == concave.positions.size()) {
@@ -163,18 +169,22 @@ namespace McRave::Combat::Formations {
             const auto dist = cluster.sharedNavigation.getDistance(commander->getPosition());
             const auto dirx = double(cluster.sharedNavigation.x - commander->getPosition().x) / dist;
             const auto diry = double(cluster.sharedNavigation.y - commander->getPosition().y) / dist;
-            if (commander->getLocalState() == LocalState::Hold)
-                center = commander->getPosition() + Position(int(dirx*cluster.radius), int(diry*cluster.radius));
-            else if (commander->getLocalState() == LocalState::Retreat)
+            //if (commander->getLocalState() == LocalState::Hold)
+            //    center = commander->getPosition() + Position(int(dirx*cluster.radius), int(diry*cluster.radius));
+            //else if (commander->getLocalState() == LocalState::Retreat)
+            //    center = cluster.sharedNavigation - Position(int(dirx*cluster.radius), int(diry*cluster.radius));
+            //else
+            //    center = cluster.sharedNavigation + Position(int(dirx*cluster.radius), int(diry*cluster.radius));
+            if (commander->getLocalState() == LocalState::Retreat)
                 center = cluster.sharedNavigation - Position(int(dirx*cluster.radius), int(diry*cluster.radius));
             else
                 center = cluster.sharedNavigation + Position(int(dirx*cluster.radius), int(diry*cluster.radius));
-            Broodwar->drawCircleMap(center, 8, Colors::Green, true);
+            Broodwar->drawCircleMap(center, 4, cluster.color, true);
         }
         concave.center = center;
-
-        Visuals::drawLine(commander->getPosition(), center, cluster.color);
-        generateConcavePositions(concave, cluster, type, center, cluster.radius, radsPerUnit, unitTangentSize);
+        if (!cluster.mobileCluster) {
+            generateConcavePositions(concave, cluster, type, center, cluster.radius, radsPerUnit, unitTangentSize);
+        }
 
         concave.cluster = &cluster;
         concaves.push_back(concave);

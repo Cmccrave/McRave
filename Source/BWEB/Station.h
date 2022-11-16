@@ -17,6 +17,7 @@ namespace BWEB {
         double defenseAngle = 0.0;
         double baseAngle = 0.0;
         double chokeAngle = 0.0;
+        int defenseArrangement = -1;
         BWAPI::TilePosition mediumPosition, smallPosition;
 
         void initialize();

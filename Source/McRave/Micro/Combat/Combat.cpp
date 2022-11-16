@@ -51,7 +51,7 @@ namespace McRave::Combat {
                     || (BuildOrder::takeNatural() && total(Zerg_Zergling) >= 10)
                     || Players::getSupply(PlayerState::Self, Races::None) > 60;
             }
-        }       
+        }
     }
 
     void onFrame() {

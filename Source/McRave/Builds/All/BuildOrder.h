@@ -8,7 +8,11 @@ namespace McRave::BuildOrder {
     // Need a namespace to share variables among the various files used
     namespace All {
         inline std::map <BWAPI::UnitType, int> buildQueue;
-        inline bool inOpeningBook = true;
+        inline std::map <BWAPI::TechType, int> techQueue;
+        inline std::map <BWAPI::UpgradeType, int> upgradeQueue;
+        inline bool inOpening = true;
+        inline bool inTransition = false;
+
         inline bool getTech = false;
         inline bool wallNat = false;
         inline bool wallMain = false;
@@ -22,7 +26,6 @@ namespace McRave::BuildOrder {
         inline bool playPassive = false;
         inline bool rush = false;
         inline bool pressure = false;
-        inline bool lockedTransition = false;
         inline bool gasTrick = false;
         inline bool inBookSupply = false;
         inline bool transitionReady = false;

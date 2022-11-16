@@ -23,7 +23,7 @@ namespace BWEB {
         double chokeAngle, bestWallScore, jpsDist;
         bool valid, pylonWall, openWall, requireTight, movedStart, pylonWallPiece, allowLifted, flatRamp, angledChoke;
         int bestDoorCount = 25;
-        int defenseAngle = 0;
+        int defenseArrangement = -1;
         BWEB::Station * station = nullptr;
         Path finalPath;
 

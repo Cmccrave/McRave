@@ -209,6 +209,12 @@ namespace McRave::Players
         return 0;
     }
 
+    int getDeadCount(PlayerState state, UnitType type)
+    {
+        // Finds how many of a UnitType the PlayerState has lost
+        return getTotalCount(state, type) - getVisibleCount(state, type);
+    }
+
     bool hasDetection(PlayerState state)
     {
         return getTotalCount(state, Protoss_Observer) > 0

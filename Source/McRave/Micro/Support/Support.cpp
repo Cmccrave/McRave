@@ -163,7 +163,8 @@ namespace McRave::Support {
         {
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &unit = *u;
-                if (unit.getRole() == Role::Support && unit.unit()->isCompleted()) {
+                if (unit.getRole() == Role::Support && !unit.isAsleep()) {
+                    unit.sleepFrame = Broodwar->getFrameCount() + 8; // Sleep unit for 8 frames
                     updateDestination(unit);
                     updatePath(unit);
                     updateNavigation(unit);

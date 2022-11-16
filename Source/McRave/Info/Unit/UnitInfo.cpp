@@ -21,8 +21,6 @@ namespace McRave
                 return WalkPosition(unit->getTilePosition());
             return WalkPositions::None;
         }
-
-        map<int, int> commandsPerFrame;
     }
 
     void UnitInfo::circle(Color color) {
@@ -39,20 +37,12 @@ namespace McRave
     void UnitInfo::updateHistory()
     {
         if (unit()->exists()) {
-            tileHistory[Broodwar->getFrameCount()] = getTilePosition();
-            walkHistory[Broodwar->getFrameCount()] = getWalkPosition();
             positionHistory[Broodwar->getFrameCount()] = getPosition();
-
             orderHistory[Broodwar->getFrameCount()] = make_pair(unit()->getOrder(), unit()->getOrderTargetPosition());
             commandHistory[Broodwar->getFrameCount()] = unit()->getLastCommand().getType();
 
-            if (tileHistory.size() > 30)
-                tileHistory.erase(tileHistory.begin());
-            if (walkHistory.size() > 30)
-                walkHistory.erase(walkHistory.begin());
             if (positionHistory.size() > 30)
                 positionHistory.erase(positionHistory.begin());
-
             if (orderHistory.size() > 10)
                 orderHistory.erase(orderHistory.begin());
             if (commandHistory.size() > 10)
@@ -485,14 +475,13 @@ namespace McRave
         }
 
         // If this is a new order or new command than what we're requesting, we can issue it
-        if (newCommand() && commandsPerFrame[Broodwar->getFrameCount()] < 128) {
+        if (newCommand()) {
             if (cmd == UnitCommandTypes::Move)
                 unit()->move(here);
             if (cmd == UnitCommandTypes::Right_Click_Position)
                 unit()->rightClick(here);
             if (cmd == UnitCommandTypes::Stop)
                 unit()->stop();
-            commandsPerFrame[Broodwar->getFrameCount()]++;
             return true;
         }
         return false;
@@ -519,12 +508,11 @@ namespace McRave
         Actions::addAction(unit(), targetUnit.getPosition(), getType(), PlayerState::Self);
 
         // If this is a new order or new command than what we're requesting, we can issue it
-        if (newCommand() && commandsPerFrame[Broodwar->getFrameCount()] < 128) {
+        if (newCommand()) {
             if (cmd == UnitCommandTypes::Attack_Unit)
                 unit()->attack(targetUnit.unit());
             else if (cmd == UnitCommandTypes::Right_Click_Unit)
                 unit()->rightClick(targetUnit.unit());
-            commandsPerFrame[Broodwar->getFrameCount()]++;
             return true;
         }
         return false;
@@ -882,7 +870,7 @@ namespace McRave
 
         // Try to save scouts as they have high shield counts
         const auto scoutSavingRequired = getType() == Protoss_Scout && hasTarget() && !thisTarget->isThreatening() && !isWithinRange(*thisTarget) && getHealth() + getShields() <= 80;
-        
+
         if (mutaSavingRequired || scoutSavingRequired)
             saveUnit = true;
         if (saveUnit) {

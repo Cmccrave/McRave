@@ -80,6 +80,7 @@ namespace McRave::Spy {
     Time getEnemyBuildTime();
     Time getEnemyOpenerTime();
     Time getEnemyTransitionTime();
+    Time whenArrival(int, BWAPI::UnitType);
     bool enemyFastExpand();
     bool enemyRush();
     bool enemyInvis();

@@ -64,9 +64,9 @@ namespace McRave::BuildOrder::Protoss {
 
         void PvT_2B_Obs()
         {
-            inOpeningBook =                                 s < 80;
+            inOpening =                                 s < 80;
             firstUnit =                                     Protoss_Observer;
-            lockedTransition =                              total(Protoss_Nexus) >= 2;
+            inTransition =                              total(Protoss_Nexus) >= 2;
 
             buildQueue[Protoss_Assimilator] =               s >= 24;
             buildQueue[Protoss_Cybernetics_Core] =          s >= 26;
@@ -75,9 +75,9 @@ namespace McRave::BuildOrder::Protoss {
 
         void PvT_2B_Carrier()
         {
-            inOpeningBook =                                 s < 160;
+            inOpening =                                 s < 160;
             firstUnit =                                     Protoss_Carrier;
-            lockedTransition =                              total(Protoss_Stargate) > 0;
+            inTransition =                              total(Protoss_Stargate) > 0;
 
             buildQueue[Protoss_Assimilator] =               (s >= 24) + (s >= 60);
             buildQueue[Protoss_Cybernetics_Core] =          s >= 26;
@@ -87,8 +87,8 @@ namespace McRave::BuildOrder::Protoss {
 
         void PvT_2B_ReaverCarrier()
         {
-            inOpeningBook =                             s < 120;
-            lockedTransition =                          total(Protoss_Stargate) > 0;
+            inOpening =                             s < 120;
+            inTransition =                          total(Protoss_Stargate) > 0;
             firstUnit =                                 Players::getVisibleCount(PlayerState::Enemy, Terran_Medic) > 0 && vis(Protoss_Reaver) == 0 ? Protoss_Reaver : Protoss_Carrier;
 
             // Build
@@ -109,7 +109,7 @@ namespace McRave::BuildOrder::Protoss {
     void PvT_2B()
     {
         // Reactions
-        if (!lockedTransition) {
+        if (!inTransition) {
             if (currentBuild == "2Base") {
                 if (Spy::enemyFastExpand() || Spy::getEnemyTransition() == "SiegeExpand")
                     currentTransition = "ReaverCarrier";

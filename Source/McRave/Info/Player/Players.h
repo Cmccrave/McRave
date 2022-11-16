@@ -8,6 +8,7 @@ namespace McRave
         int getVisibleCount(PlayerState, BWAPI::UnitType);
         int getCompleteCount(PlayerState, BWAPI::UnitType);
         int getTotalCount(PlayerState, BWAPI::UnitType);
+        int getDeadCount(PlayerState, BWAPI::UnitType);
         bool hasDetection(PlayerState);
         bool hasMelee(PlayerState);
         bool hasRanged(PlayerState);

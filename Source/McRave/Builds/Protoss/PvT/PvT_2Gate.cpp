@@ -16,8 +16,8 @@ namespace McRave::BuildOrder::Protoss {
             playPassive =                                   Spy::getEnemyBuild() == "2Rax" && vis(Protoss_Dark_Templar) == 0;
             unitLimits[Protoss_Zealot] =                    Spy::getEnemyBuild() == "2Rax" ? 2 : 0;
             gasLimit =                                      Spy::getEnemyBuild() == "2Rax" && total(Protoss_Gateway) < 2 ? 0 : 3;
-            lockedTransition =                              total(Protoss_Citadel_of_Adun) > 0;
-            inOpeningBook =                                 s < 70;
+            inTransition =                              total(Protoss_Citadel_of_Adun) > 0;
+            inOpening =                                 s < 70;
             firstUnit =                                     Protoss_Dark_Templar;
             hideTech =                                      true;
             firstUpgrade =                                  UpgradeTypes::None;
@@ -34,8 +34,8 @@ namespace McRave::BuildOrder::Protoss {
 
         void PvT_2G_Robo()
         {
-            lockedTransition =                              total(Protoss_Robotics_Facility) > 0;
-            inOpeningBook =                                 s < 70;
+            inTransition =                              total(Protoss_Robotics_Facility) > 0;
+            inOpening =                                 s < 70;
             firstUnit =                                     Protoss_Reaver;
 
             // Build
@@ -54,8 +54,8 @@ namespace McRave::BuildOrder::Protoss {
 
         void PvT_2G_Expand()
         {
-            lockedTransition =                              total(Protoss_Nexus) >= 2;
-            inOpeningBook =                                 s < 100;
+            inTransition =                              total(Protoss_Nexus) >= 2;
+            inOpening =                                 s < 100;
             firstUnit =                                     None;
 
             // Build
@@ -83,7 +83,7 @@ namespace McRave::BuildOrder::Protoss {
     void PvT_2G()
     {
         // Reactions
-        if (!lockedTransition) {
+        if (!inTransition) {
             if (currentBuild == "2Gate") {
                 if (Spy::enemyFastExpand())
                     currentTransition = "DT";

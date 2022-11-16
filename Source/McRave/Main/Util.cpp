@@ -355,6 +355,7 @@ namespace McRave::Util {
 
                 if (i < 10) {
                     dist1 < dist2 ? radrange ={ radrange.first - diff, radrange.first + diff } : radrange ={ radrange.second - diff, radrange.second + diff };
+                    position = (dist1 < dist2 ? p1 : p2);
                 }
                 else {
                     position = (dist1 < dist2 ? p1 : p2);

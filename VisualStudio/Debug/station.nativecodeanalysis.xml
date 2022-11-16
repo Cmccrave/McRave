@@ -130,14 +130,14 @@
     <SFA>
       <FILEPATH>e:\bwapi\module\mcrave\source\bweb</FILEPATH>
       <FILENAME>station.cpp</FILENAME>
-      <LINE>550</LINE>
+      <LINE>537</LINE>
       <COLUMN>29</COLUMN>
     </SFA>
     <DEFECTCODE>6011</DEFECTCODE>
     <DESCRIPTION>Dereferencing NULL pointer 'base'. </DESCRIPTION>
     <FUNCTION>BWEB::Station::draw</FUNCTION>
     <DECORATED>?draw@Station@BWEB@@QAEXXZ</DECORATED>
-    <FUNCLINE>513</FUNCLINE>
+    <FUNCLINE>500</FUNCLINE>
     <PROBABILITY>1</PROBABILITY>
     <RANK>4</RANK>
     <CATEGORY>
@@ -147,25 +147,25 @@
       <SFA>
         <FILEPATH>e:\bwapi\module\mcrave\source\bweb</FILEPATH>
         <FILENAME>station.cpp</FILENAME>
-        <LINE>515</LINE>
+        <LINE>502</LINE>
         <COLUMN>12</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>e:\bwapi\module\mcrave\source\bweb</FILEPATH>
         <FILENAME>station.cpp</FILENAME>
-        <LINE>516</LINE>
+        <LINE>503</LINE>
         <COLUMN>12</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>e:\bwapi\module\mcrave\source\bweb</FILEPATH>
         <FILENAME>station.cpp</FILENAME>
-        <LINE>519</LINE>
+        <LINE>506</LINE>
         <COLUMN>34</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>e:\bwapi\module\mcrave\source\bweb</FILEPATH>
         <FILENAME>station.cpp</FILENAME>
-        <LINE>525</LINE>
+        <LINE>512</LINE>
         <COLUMN>26</COLUMN>
         <KEYEVENT>
           <ID>1</ID>
@@ -177,7 +177,7 @@
       <SFA>
         <FILEPATH>e:\bwapi\module\mcrave\source\bweb</FILEPATH>
         <FILENAME>station.cpp</FILENAME>
-        <LINE>550</LINE>
+        <LINE>537</LINE>
         <COLUMN>29</COLUMN>
         <KEYEVENT>
           <ID>2</ID>

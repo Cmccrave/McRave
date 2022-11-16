@@ -15,8 +15,8 @@ namespace McRave::BuildOrder::Protoss {
         {
             // "https://liquipedia.net/starcraft/2_Gate_Reaver_(vs._Protoss)"
             firstUnit =                                 enemyMaybeDT() ? Protoss_Observer : Protoss_Reaver;
-            lockedTransition =                          total(Protoss_Robotics_Facility) > 0;
-            inOpeningBook =                             com(firstUnit) == 0;
+            inTransition =                          total(Protoss_Robotics_Facility) > 0;
+            inOpening =                             com(firstUnit) == 0;
             playPassive =                               com(firstUnit) == 0;
 
             // Build
@@ -35,8 +35,8 @@ namespace McRave::BuildOrder::Protoss {
         {
             // -nolink-
             firstUnit =                                 None;
-            lockedTransition =                          total(Protoss_Gateway) >= 3;
-            inOpeningBook =                             Spy::enemyPressure() ? Broodwar->getFrameCount() < 9000 : Broodwar->getFrameCount() < 8000;
+            inTransition =                          total(Protoss_Gateway) >= 3;
+            inOpening =                             Spy::enemyPressure() ? Broodwar->getFrameCount() < 9000 : Broodwar->getFrameCount() < 8000;
             playPassive =                               Spy::enemyPressure() ? Broodwar->getFrameCount() < 13000 : false;
             gasLimit =                                  vis(Protoss_Gateway) >= 2 && com(Protoss_Gateway) < 3 ? 2 : INT_MAX;
             wallNat =                                   Util::getTime() > Time(4, 30);
@@ -53,8 +53,8 @@ namespace McRave::BuildOrder::Protoss {
         {
             // "https://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)"
             firstUnit =                                 None;
-            lockedTransition =                          total(Protoss_Gateway) >= 3;
-            inOpeningBook =                             s < 140;
+            inTransition =                          total(Protoss_Gateway) >= 3;
+            inOpening =                             s < 140;
             playPassive =                               !firstReady();
             desiredDetection =                          Protoss_Forge;
 
@@ -82,8 +82,8 @@ namespace McRave::BuildOrder::Protoss {
         {
             // "https://liquipedia.net/starcraft/2_Gate_DT_(vs._Protoss)"
             firstUnit =                                 Protoss_Dark_Templar;
-            lockedTransition =                          total(Protoss_Citadel_of_Adun) > 0;
-            inOpeningBook =                             s < 90;
+            inTransition =                          total(Protoss_Citadel_of_Adun) > 0;
+            inOpening =                             s < 90;
             playPassive =                               Broodwar->getFrameCount() < 13500;
             wallNat =                                   (com(Protoss_Forge) > 0 && com(Protoss_Dark_Templar) > 0);
             desiredDetection =                          Protoss_Forge;
@@ -149,7 +149,7 @@ namespace McRave::BuildOrder::Protoss {
     void PvP_1GC()
     {
         // Reactions
-        if (!lockedTransition) {
+        if (!inTransition) {
 
             // If enemy is 2gate, switch to some form of 2gate if we haven't gone core yet
             if (Spy::getEnemyBuild() == "2Gate" && vis(Protoss_Cybernetics_Core) == 0) {

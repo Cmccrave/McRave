@@ -232,20 +232,6 @@
       <COLUMN>8</COLUMN>
     </SFA>
     <DEFECTCODE>26495</DEFECTCODE>
-    <DESCRIPTION>Variable 'McRave::ResourceInfo::threatened' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
-    <FUNCTION>McRave::ResourceInfo::{ctor}</FUNCTION>
-    <DECORATED>??0ResourceInfo@McRave@@QAE@PAVUnitInterface@BWAPI@@@Z</DECORATED>
-    <FUNCLINE>23</FUNCLINE>
-    <PATH></PATH>
-  </DEFECT>
-  <DEFECT>
-    <SFA>
-      <FILEPATH>e:\bwapi\module\mcrave\source\mcrave\info\resource</FILEPATH>
-      <FILENAME>resourceinfo.h</FILENAME>
-      <LINE>23</LINE>
-      <COLUMN>8</COLUMN>
-    </SFA>
-    <DEFECTCODE>26495</DEFECTCODE>
     <DESCRIPTION>Variable 'McRave::ResourceInfo::workerCap' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
     <FUNCTION>McRave::ResourceInfo::{ctor}</FUNCTION>
     <DECORATED>??0ResourceInfo@McRave@@QAE@PAVUnitInterface@BWAPI@@@Z</DECORATED>
@@ -261,6 +247,20 @@
     </SFA>
     <DEFECTCODE>26495</DEFECTCODE>
     <DESCRIPTION>Variable 'McRave::ResourceInfo::pocket' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
+    <FUNCTION>McRave::ResourceInfo::{ctor}</FUNCTION>
+    <DECORATED>??0ResourceInfo@McRave@@QAE@PAVUnitInterface@BWAPI@@@Z</DECORATED>
+    <FUNCLINE>23</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>e:\bwapi\module\mcrave\source\mcrave\info\resource</FILEPATH>
+      <FILENAME>resourceinfo.h</FILENAME>
+      <LINE>23</LINE>
+      <COLUMN>8</COLUMN>
+    </SFA>
+    <DEFECTCODE>26495</DEFECTCODE>
+    <DESCRIPTION>Variable 'McRave::ResourceInfo::threatened' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
     <FUNCTION>McRave::ResourceInfo::{ctor}</FUNCTION>
     <DECORATED>??0ResourceInfo@McRave@@QAE@PAVUnitInterface@BWAPI@@@Z</DECORATED>
     <FUNCLINE>23</FUNCLINE>

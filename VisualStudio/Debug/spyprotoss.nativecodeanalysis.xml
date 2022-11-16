@@ -246,7 +246,7 @@
       <COLUMN>8</COLUMN>
     </SFA>
     <DEFECTCODE>26495</DEFECTCODE>
-    <DESCRIPTION>Variable 'McRave::ResourceInfo::workerCap' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
+    <DESCRIPTION>Variable 'McRave::ResourceInfo::pocket' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
     <FUNCTION>McRave::ResourceInfo::{ctor}</FUNCTION>
     <DECORATED>??0ResourceInfo@McRave@@QAE@PAVUnitInterface@BWAPI@@@Z</DECORATED>
     <FUNCLINE>23</FUNCLINE>
@@ -260,7 +260,7 @@
       <COLUMN>8</COLUMN>
     </SFA>
     <DEFECTCODE>26495</DEFECTCODE>
-    <DESCRIPTION>Variable 'McRave::ResourceInfo::pocket' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
+    <DESCRIPTION>Variable 'McRave::ResourceInfo::workerCap' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
     <FUNCTION>McRave::ResourceInfo::{ctor}</FUNCTION>
     <DECORATED>??0ResourceInfo@McRave@@QAE@PAVUnitInterface@BWAPI@@@Z</DECORATED>
     <FUNCLINE>23</FUNCLINE>

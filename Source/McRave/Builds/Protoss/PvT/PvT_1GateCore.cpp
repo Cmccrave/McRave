@@ -14,8 +14,8 @@ namespace McRave::BuildOrder::Protoss {
         void PvT_1GC_Robo()
         {
             // "http://liquipedia.net/starcraft/1_Gate_Reaver" 
-            lockedTransition =                              total(Protoss_Robotics_Facility) > 0;
-            inOpeningBook =                                 s < 60;
+            inTransition =                              total(Protoss_Robotics_Facility) > 0;
+            inOpening =                                 s < 60;
             hideTech =                                      com(Protoss_Reaver) <= 0;
             firstUnit =                                     Spy::enemyPressure() ? Protoss_Reaver : Protoss_Observer;
 
@@ -34,8 +34,8 @@ namespace McRave::BuildOrder::Protoss {
         void PvT_1GC_DT()
         {
             // "https://liquipedia.net/starcraft/DT_Fast_Expand_(vs._Terran)"
-            lockedTransition =                              total(Protoss_Citadel_of_Adun) > 0;
-            inOpeningBook =                                 s <= 80;
+            inTransition =                              total(Protoss_Citadel_of_Adun) > 0;
+            inOpening =                                 s <= 80;
             hideTech =                                      com(Protoss_Dark_Templar) <= 0;
             firstUnit =                                     Protoss_Dark_Templar;
             firstUpgrade =                                  vis(Protoss_Dark_Templar) >= 2 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
@@ -55,8 +55,8 @@ namespace McRave::BuildOrder::Protoss {
         void PvT_1GC_4Gate()
         {
             // "https://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)"
-            lockedTransition =                              total(Protoss_Gateway) >= 4;
-            inOpeningBook =                                 s < 80;
+            inTransition =                              total(Protoss_Gateway) >= 4;
+            inOpening =                                 s < 80;
             firstUnit =                                     None;
 
             buildQueue[Protoss_Gateway] =                   (s >= 20) + (s >= 30) + (2 * (s >= 62));
@@ -106,7 +106,7 @@ namespace McRave::BuildOrder::Protoss {
     void PvT_1GC()
     {
         // Reactions
-        if (!lockedTransition) {
+        if (!inTransition) {
             if (currentBuild == "1GateCore") {
                 if (Spy::enemyRush()) {
                     currentBuild = "2Gate";

@@ -90,7 +90,7 @@
     <ClCompile Include="..\Source\McRave\Map\Grids.cpp" />
     <ClCompile Include="..\Source\McRave\Map\Stations.cpp" />
     <ClCompile Include="..\Source\McRave\Map\Terrain.cpp" />
-    <ClCompile Include="..\Source\McRave\Map\Walls.cpp" />
+    <ClCompile Include="..\Source\McRave\Map\Walls\Walls.cpp" />
     <ClCompile Include="..\Source\McRave\Micro\All\Commands.cpp" />
     <ClCompile Include="..\Source\McRave\Micro\All\Specials.cpp" />
     <ClCompile Include="..\Source\McRave\Micro\Combat\Clusters.cpp" />
@@ -171,7 +171,7 @@
     <ClInclude Include="..\Source\McRave\Map\Grids.h" />
     <ClInclude Include="..\Source\McRave\Map\Stations.h" />
     <ClInclude Include="..\Source\McRave\Map\Terrain.h" />
-    <ClInclude Include="..\Source\McRave\Map\Walls.h" />
+    <ClInclude Include="..\Source\McRave\Map\Walls\Walls.h" />
     <ClInclude Include="..\Source\McRave\Micro\All\Commands.h" />
     <ClInclude Include="..\Source\McRave\Micro\Combat\Combat.h" />
     <ClInclude Include="..\Source\McRave\Micro\Defender\Defender.h" />

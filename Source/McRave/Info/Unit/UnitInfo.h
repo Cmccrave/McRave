@@ -65,9 +65,6 @@ namespace McRave {
         bool targetedByHidden = false;
         bool markedForDeath = false;
         bool invincible = false;
-    #pragma endregion
-
-    #pragma region Pointers
         std::weak_ptr<UnitInfo> transport;
         std::weak_ptr<UnitInfo> target;
         std::weak_ptr<UnitInfo> commander;
@@ -77,18 +74,12 @@ namespace McRave {
         std::vector<std::weak_ptr<UnitInfo>> assignedCargo;
         std::vector<std::weak_ptr<UnitInfo>> unitsTargetingThis;
         std::vector<std::weak_ptr<UnitInfo>> unitsInRangeOfThis;
-    #pragma endregion
-
-    #pragma region States
         TransportState tState = TransportState::None;
         LocalState lState = LocalState::None;
         GlobalState gState = GlobalState::None;
         SimState sState = SimState::None;
         Role role = Role::None;
         GoalType gType = GoalType::None;
-    #pragma endregion
-
-    #pragma region BWAPIData
         BWAPI::Player player = nullptr;
         BWAPI::Unit bwUnit = nullptr;
         BWAPI::UnitType type = BWAPI::UnitTypes::None;
@@ -111,18 +102,11 @@ namespace McRave {
         BWAPI::TilePosition buildPosition = BWAPI::TilePositions::Invalid;
         BWAPI::TilePosition lastTile = BWAPI::TilePositions::Invalid;
         BWAPI::UnitCommandType commandType = BWAPI::UnitCommandTypes::None;
-        std::map<int, BWAPI::TilePosition> tileHistory;
-        std::map<int, BWAPI::WalkPosition> walkHistory;
+
         std::map<int, BWAPI::Position> positionHistory;
         std::map<int, BWAPI::UnitCommandType> commandHistory;
         std::map<int, std::pair<BWAPI::Order, BWAPI::Position>> orderHistory;
-    #pragma endregion
-
-    #pragma region Paths
         BWEB::Path destinationPath;
-    #pragma endregion
-
-    #pragma region Updaters
         void updateHistory();
         void updateStatistics();
         void checkStuck();
@@ -130,24 +114,20 @@ namespace McRave {
         void checkThreatening();
         void checkProxy();
         void checkCompletion();
-    #pragma endregion
-
     public:
 
-        // HACK: Hacky flags that were added quickly
+        // HACK: Hacky stuff that was added quickly for testing
         bool movedFlag = false;
-        int lastUnreachableFrame = -999;
-
-
-    #pragma region Constructors
+        int sleepFrame = -999;
+        bool isAsleep() { return sleepFrame > BWAPI::Broodwar->getFrameCount(); }
+        bool isValid() { return unit() && unit()->exists(); }
+        bool isAvailable() { return !unit()->isLockedDown() && !unit()->isMaelstrommed() && !unit()->isStasised() && unit()->isCompleted(); }
         UnitInfo();
 
         UnitInfo(BWAPI::Unit u) {
             bwUnit = u;
         }
-    #pragma endregion
 
-    #pragma region Utility
         bool hasResource() { return !resource.expired(); }
         bool hasTransport() { return !transport.expired(); }
         bool hasTarget() { return !target.expired(); }
@@ -206,7 +186,6 @@ namespace McRave {
         Time timeStartedWhen() {
             int started = frameStartedWhen();
             return Time(started);
-
         }
         Time timeCompletesWhen() {
             int completes = frameCompletesWhen();
@@ -230,14 +209,10 @@ namespace McRave {
 
         void update();
         void verifyPaths();
-    #pragma endregion
 
-    #pragma region Getters
         std::vector<std::weak_ptr<UnitInfo>>& getAssignedCargo() { return assignedCargo; }
         std::vector<std::weak_ptr<UnitInfo>>& getUnitsTargetingThis() { return unitsTargetingThis; }
         std::vector<std::weak_ptr<UnitInfo>>& getUnitsInRangeOfThis() { return unitsInRangeOfThis; }
-        std::map<int, BWAPI::TilePosition>& getTileHistory() { return tileHistory; }
-        std::map<int, BWAPI::WalkPosition>& getWalkHistory() { return walkHistory; }
         std::map<int, BWAPI::Position>& getPositionHistory() { return positionHistory; }
         std::map<int, BWAPI::UnitCommandType>& getCommandHistory() { return commandHistory; }
         std::map<int, std::pair<BWAPI::Order, BWAPI::Position>>& getOrderHistory() { return orderHistory; }
@@ -313,9 +288,6 @@ namespace McRave {
         bool isTargetedBySuicide() { return targetedBySuicide; }
         bool isTargetedByHidden() { return targetedByHidden; }
 
-    #pragma endregion      
-
-    #pragma region Setters
         void setAssumedLocation(BWAPI::Position p, BWAPI::WalkPosition w, BWAPI::TilePosition t) {
             position = p;
             walkPosition = w;
@@ -348,14 +320,10 @@ namespace McRave {
 
         void setInterceptPosition(BWAPI::Position p) { interceptPosition = p; }
         void setSurroundPosition(BWAPI::Position p) { surroundPosition = p; }
-    #pragma endregion
 
-    #pragma region Drawing
         void circle(BWAPI::Color color);
         void box(BWAPI::Color color);
-    #pragma endregion
 
-    #pragma region Operators
         bool operator== (UnitInfo& p) {
             return bwUnit == p.unit();
         }
@@ -379,7 +347,6 @@ namespace McRave {
         bool operator< (std::weak_ptr<UnitInfo>(unit)) {
             return bwUnit < unit.lock()->unit();
         }
-    #pragma endregion
     };
 
     inline bool operator== (std::weak_ptr<UnitInfo>(lunit), std::weak_ptr<UnitInfo>(runit)) {

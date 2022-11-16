@@ -232,7 +232,7 @@
       <COLUMN>8</COLUMN>
     </SFA>
     <DEFECTCODE>26495</DEFECTCODE>
-    <DESCRIPTION>Variable 'McRave::ResourceInfo::pocket' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
+    <DESCRIPTION>Variable 'McRave::ResourceInfo::workerCap' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
     <FUNCTION>McRave::ResourceInfo::{ctor}</FUNCTION>
     <DECORATED>??0ResourceInfo@McRave@@QAE@PAVUnitInterface@BWAPI@@@Z</DECORATED>
     <FUNCLINE>23</FUNCLINE>
@@ -260,7 +260,7 @@
       <COLUMN>8</COLUMN>
     </SFA>
     <DEFECTCODE>26495</DEFECTCODE>
-    <DESCRIPTION>Variable 'McRave::ResourceInfo::workerCap' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
+    <DESCRIPTION>Variable 'McRave::ResourceInfo::pocket' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
     <FUNCTION>McRave::ResourceInfo::{ctor}</FUNCTION>
     <DECORATED>??0ResourceInfo@McRave@@QAE@PAVUnitInterface@BWAPI@@@Z</DECORATED>
     <FUNCLINE>23</FUNCLINE>
@@ -270,56 +270,56 @@
     <SFA>
       <FILEPATH>e:\bwapi\module\mcrave\source\mcrave\builds\zerg</FILEPATH>
       <FILENAME>zergbuildorder.cpp</FILENAME>
-      <LINE>220</LINE>
+      <LINE>218</LINE>
       <COLUMN>68</COLUMN>
     </SFA>
     <DEFECTCODE>26451</DEFECTCODE>
     <DESCRIPTION>Arithmetic overflow: Using operator '*' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '*' to avoid overflow (io.2).</DESCRIPTION>
     <FUNCTION>McRave::BuildOrder::Zerg::`anonymous-namespace'::calculateGasLimit</FUNCTION>
     <DECORATED>?calculateGasLimit@?A0x67124035@Zerg@BuildOrder@McRave@@YAXXZ</DECORATED>
-    <FUNCLINE>211</FUNCLINE>
+    <FUNCLINE>209</FUNCLINE>
     <PATH></PATH>
   </DEFECT>
   <DEFECT>
     <SFA>
       <FILEPATH>e:\bwapi\module\mcrave\source\mcrave\builds\zerg</FILEPATH>
       <FILENAME>zergbuildorder.cpp</FILENAME>
-      <LINE>226</LINE>
+      <LINE>224</LINE>
       <COLUMN>54</COLUMN>
     </SFA>
     <DEFECTCODE>26451</DEFECTCODE>
     <DESCRIPTION>Arithmetic overflow: Using operator '*' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '*' to avoid overflow (io.2).</DESCRIPTION>
     <FUNCTION>McRave::BuildOrder::Zerg::`anonymous-namespace'::calculateGasLimit</FUNCTION>
     <DECORATED>?calculateGasLimit@?A0x67124035@Zerg@BuildOrder@McRave@@YAXXZ</DECORATED>
-    <FUNCLINE>211</FUNCLINE>
+    <FUNCLINE>209</FUNCLINE>
     <PATH></PATH>
   </DEFECT>
   <DEFECT>
     <SFA>
       <FILEPATH>e:\bwapi\module\mcrave\source\mcrave\builds\zerg</FILEPATH>
       <FILENAME>zergbuildorder.cpp</FILENAME>
-      <LINE>280</LINE>
+      <LINE>278</LINE>
       <COLUMN>64</COLUMN>
     </SFA>
     <DEFECTCODE>26451</DEFECTCODE>
     <DESCRIPTION>Arithmetic overflow: Using operator '-' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '-' to avoid overflow (io.2).</DESCRIPTION>
     <FUNCTION>McRave::BuildOrder::Zerg::capGas</FUNCTION>
     <DECORATED>?capGas@Zerg@BuildOrder@McRave@@YAHH@Z</DECORATED>
-    <FUNCLINE>272</FUNCLINE>
+    <FUNCLINE>270</FUNCLINE>
     <PATH></PATH>
   </DEFECT>
   <DEFECT>
     <SFA>
       <FILEPATH>e:\bwapi\module\mcrave\source\mcrave\builds\zerg</FILEPATH>
       <FILENAME>zergbuildorder.cpp</FILENAME>
-      <LINE>280</LINE>
+      <LINE>278</LINE>
       <COLUMN>38</COLUMN>
     </SFA>
     <DEFECTCODE>26451</DEFECTCODE>
     <DESCRIPTION>Arithmetic overflow: Using operator '-' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '-' to avoid overflow (io.2).</DESCRIPTION>
     <FUNCTION>McRave::BuildOrder::Zerg::capGas</FUNCTION>
     <DECORATED>?capGas@Zerg@BuildOrder@McRave@@YAHH@Z</DECORATED>
-    <FUNCLINE>272</FUNCLINE>
+    <FUNCLINE>270</FUNCLINE>
     <PATH></PATH>
   </DEFECT>
 </DEFECTS>

@@ -211,9 +211,6 @@
     <ClCompile Include="..\Source\McRave\Map\Terrain.cpp">
       <Filter>McRave\Map</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\Map\Walls.cpp">
-      <Filter>McRave\Map</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\Info\Building\Buildings.cpp">
       <Filter>McRave\Info\Building</Filter>
     </ClCompile>
@@ -309,6 +306,9 @@
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Builds\Zerg\Z_RetiredBuilds.cpp">
       <Filter>McRave\Builds\Zerg\ZvFFA</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Map\Walls\Walls.cpp">
+      <Filter>McRave\Map\Walls</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -444,9 +444,6 @@
     <ClInclude Include="..\Source\McRave\Map\Terrain.h">
       <Filter>McRave\Map</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\Map\Walls.h">
-      <Filter>McRave\Map</Filter>
-    </ClInclude>
     <ClInclude Include="..\Source\McRave\Info\Building\Buildings.h">
       <Filter>McRave\Info\Building</Filter>
     </ClInclude>
@@ -512,6 +509,9 @@
     </ClInclude>
     <ClInclude Include="..\Source\McRave\Macro\Researching\Researching.h">
       <Filter>McRave\Macro\Researching</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Map\Walls\Walls.h">
+      <Filter>McRave\Map\Walls</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -649,6 +649,9 @@
     </Filter>
     <Filter Include="McRave\Macro\Researching">
       <UniqueIdentifier>{05d71717-60c1-499f-a0a9-31f0b10ebc14}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Map\Walls">
+      <UniqueIdentifier>{8fea8213-ca8d-42e3-9d82-ed68a47eab0c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

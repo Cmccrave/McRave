@@ -474,7 +474,7 @@ namespace McRave::Scouts {
             }
 
 
-            Broodwar->drawLineMap(unit.getPosition(), unit.getNavigation(), Colors::Red);
+            Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Red);
         }
 
         constexpr tuple commands{ Command::attack, Command::kite, Command::gather, Command::explore, Command::move };

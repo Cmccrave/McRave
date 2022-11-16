@@ -232,7 +232,7 @@
       <COLUMN>8</COLUMN>
     </SFA>
     <DEFECTCODE>26495</DEFECTCODE>
-    <DESCRIPTION>Variable 'McRave::ResourceInfo::workerCap' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
+    <DESCRIPTION>Variable 'McRave::ResourceInfo::threatened' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
     <FUNCTION>McRave::ResourceInfo::{ctor}</FUNCTION>
     <DECORATED>??0ResourceInfo@McRave@@QAE@PAVUnitInterface@BWAPI@@@Z</DECORATED>
     <FUNCLINE>23</FUNCLINE>
@@ -246,7 +246,7 @@
       <COLUMN>8</COLUMN>
     </SFA>
     <DEFECTCODE>26495</DEFECTCODE>
-    <DESCRIPTION>Variable 'McRave::ResourceInfo::threatened' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
+    <DESCRIPTION>Variable 'McRave::ResourceInfo::workerCap' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
     <FUNCTION>McRave::ResourceInfo::{ctor}</FUNCTION>
     <DECORATED>??0ResourceInfo@McRave@@QAE@PAVUnitInterface@BWAPI@@@Z</DECORATED>
     <FUNCLINE>23</FUNCLINE>
@@ -270,28 +270,28 @@
     <SFA>
       <FILEPATH>e:\bwapi\module\mcrave\source\mcrave\micro\combat</FILEPATH>
       <FILENAME>formations.cpp</FILENAME>
-      <LINE>164</LINE>
+      <LINE>170</LINE>
       <COLUMN>64</COLUMN>
     </SFA>
     <DEFECTCODE>26451</DEFECTCODE>
     <DESCRIPTION>Arithmetic overflow: Using operator '-' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '-' to avoid overflow (io.2).</DESCRIPTION>
     <FUNCTION>McRave::Combat::Formations::createConcave</FUNCTION>
     <DECORATED>?createConcave@Formations@Combat@McRave@@YAXAAUCluster@23@@Z</DECORATED>
-    <FUNCLINE>135</FUNCLINE>
+    <FUNCLINE>141</FUNCLINE>
     <PATH></PATH>
   </DEFECT>
   <DEFECT>
     <SFA>
       <FILEPATH>e:\bwapi\module\mcrave\source\mcrave\micro\combat</FILEPATH>
       <FILENAME>formations.cpp</FILENAME>
-      <LINE>165</LINE>
+      <LINE>171</LINE>
       <COLUMN>64</COLUMN>
     </SFA>
     <DEFECTCODE>26451</DEFECTCODE>
     <DESCRIPTION>Arithmetic overflow: Using operator '-' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '-' to avoid overflow (io.2).</DESCRIPTION>
     <FUNCTION>McRave::Combat::Formations::createConcave</FUNCTION>
     <DECORATED>?createConcave@Formations@Combat@McRave@@YAXAAUCluster@23@@Z</DECORATED>
-    <FUNCLINE>135</FUNCLINE>
+    <FUNCLINE>141</FUNCLINE>
     <PATH></PATH>
   </DEFECT>
   <DEFECT>

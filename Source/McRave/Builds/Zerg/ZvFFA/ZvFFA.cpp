@@ -10,7 +10,7 @@ using namespace McRave::BuildOrder::All;
 namespace McRave::BuildOrder::Zerg {
 
     void defaultZvFFA() {
-        inOpeningBook =                             true;
+        inOpening =                             true;
         inBookSupply =                              true;
         wallNat =                                   hatchCount() >= 4;
         wallMain =                                  false;

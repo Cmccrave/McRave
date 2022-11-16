@@ -10,7 +10,7 @@ using namespace McRave::BuildOrder::All;
 namespace McRave::BuildOrder::Zerg {
 
     void defaultZvT() {
-        inOpeningBook =                             true;
+        inOpening =                             true;
         inBookSupply =                              true;
         wallNat =                                   hatchCount() >= 4;
         wallMain =                                  false;
@@ -59,12 +59,12 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvT2HatchMuta()
     {
-        lockedTransition =                              vis(Zerg_Lair) > 0;
+        inTransition =                              vis(Zerg_Lair) > 0;
         unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 28 : 15 - hatchCount();
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvT();
         gasLimit =                                      gasMax();
 
-        inOpeningBook =                                 total(Zerg_Mutalisk) <= 9;
+        inOpening =                                 total(Zerg_Mutalisk) <= 9;
         firstUpgrade =                                  UpgradeTypes::None;
         firstUnit =                                     Zerg_Mutalisk;
         inBookSupply =                                  total(Zerg_Mutalisk) < 6;
@@ -74,7 +74,7 @@ namespace McRave::BuildOrder::Zerg {
         auto thirdHatch =  (total(Zerg_Mutalisk) >= 6) || (vis(Zerg_Drone) >= 20 && s >= 48 && vis(Zerg_Spire) > 0);
 
         buildQueue[Zerg_Hatchery] =                     2 + thirdHatch;
-        buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 10) + (vis(Zerg_Spire) > 0);
+        buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 10) + (vis(Zerg_Spire) > 0 && vis(Zerg_Drone) >= 16);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (2 * atPercent(Zerg_Spire, 0.25));
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
         buildQueue[Zerg_Spire] =                        atPercent(Zerg_Lair, 0.80);
@@ -93,12 +93,12 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvT3HatchMuta()
     {
-        lockedTransition =                              vis(Zerg_Lair) > 0;
+        inTransition =                              vis(Zerg_Lair) > 0;
         unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 33 : 15 - hatchCount();
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvT();
         gasLimit =                                      gasMax();
 
-        inOpeningBook =                                 total(Zerg_Mutalisk) <= 9;
+        inOpening =                                 total(Zerg_Mutalisk) <= 9;
         firstUpgrade =                                  (vis(Zerg_Extractor) >= 2 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
         firstUnit =                                     Zerg_Mutalisk;
         inBookSupply =                                  vis(Zerg_Overlord) < 7 || total(Zerg_Mutalisk) < 9;
@@ -132,7 +132,7 @@ namespace McRave::BuildOrder::Zerg {
         gasLimit =                                      ((!Spy::enemyProxy() || com(Zerg_Zergling) >= 6) && !lingSpeed()) ? capGas(100) : 0;
 
         wallNat =                                       false;
-        inOpeningBook =                                 total(Zerg_Zergling) < 36;
+        inOpening =                                 total(Zerg_Zergling) < 36;
         firstUpgrade =                                  gas(100) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
         firstUnit =                                     UnitTypes::None;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
@@ -155,7 +155,7 @@ namespace McRave::BuildOrder::Zerg {
         gasLimit =                                      !lingSpeed() ? capGas(100) : 0;
 
         wallNat =                                       true;
-        inOpeningBook =                                 total(Zerg_Zergling) < 80;
+        inOpening =                                 total(Zerg_Zergling) < 80;
         firstUpgrade =                                  gas(100) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
         firstUnit =                                     UnitTypes::None;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
@@ -183,7 +183,7 @@ namespace McRave::BuildOrder::Zerg {
             ZvT_PH();
 
         // Reactions
-        if (!lockedTransition) {
+        if (!inTransition) {
             if (Spy::enemyRush() || Spy::enemyProxy())
                 currentTransition = "2HatchSpeedling";
             if (Spy::getEnemyOpener() == "8Rax") {

@@ -342,12 +342,8 @@ namespace McRave::Targets {
             }
 
             // Defender targeting (distance not used)
-            else if (unit.getRole() == Role::Defender && boxDistance - range <= 16.0) {
-                if (unit.unit()->isSelected()) {
-                    Broodwar->drawTextMap(target.getPosition(), "%.2f", healthScore() * priorityScore() * effectiveness());
-                }
-                return healthScore() * priorityScore() * effectiveness();
-            }
+            else if (unit.getRole() == Role::Defender && boxDistance - range <= 16.0)
+                return healthScore() * priorityScore() * effectiveness();            
 
             // Lurker burrowed targeting (only distance matters)
             else if (unit.getType() == Zerg_Lurker && unit.isBurrowed())
@@ -395,11 +391,8 @@ namespace McRave::Targets {
         void getBestTarget(UnitInfo& unit, PlayerState pState)
         {
             const auto checkGroundAccess = [&](UnitInfo& target) {
-                if (unit.isFlying())
+                if (unit.isFlying() || unit.unit()->isLoaded())
                     return true;
-
-                if (target.lastUnreachableFrame > Broodwar->getFrameCount() - 96 && !target.isWithinRange(unit) && !unit.isWithinRange(target))
-                    return false;
 
                 if (target.isFlying() && BWEB::Map::isWalkable(target.getTilePosition(), Zerg_Ultralisk)) {
                     auto grdDist = BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition());

@@ -13,8 +13,8 @@ namespace McRave::BuildOrder::Protoss {
 
         void PvP_2G_DT()
         {
-            lockedTransition =                          total(Protoss_Citadel_of_Adun) > 0;
-            inOpeningBook =                             s < 80;
+            inTransition =                          total(Protoss_Citadel_of_Adun) > 0;
+            inOpening =                             s < 80;
             firstUpgrade =                              UpgradeTypes::None;
             firstUnit =                                 Protoss_Dark_Templar;
             wallNat =                                   (com(Protoss_Forge) > 0 && com(Protoss_Dark_Templar) > 0);
@@ -38,8 +38,8 @@ namespace McRave::BuildOrder::Protoss {
         void PvP_2G_Robo()
         {
             // "https://liquipedia.net/starcraft/2_Gate_Reaver_(vs._Protoss)"
-            lockedTransition =                          total(Protoss_Robotics_Facility) > 0;
-            inOpeningBook =                             s < 80;
+            inTransition =                          total(Protoss_Robotics_Facility) > 0;
+            inOpening =                             s < 80;
             firstUnit =                                 enemyMaybeDT() ? Protoss_Observer : Protoss_Reaver;
 
             // Build
@@ -75,7 +75,7 @@ namespace McRave::BuildOrder::Protoss {
     void PvP_2G()
     {
         // Reactions
-        if (!lockedTransition) {
+        if (!inTransition) {
             if (Spy::getEnemyBuild() == "FFE" || Spy::getEnemyTransition() == "DT")
                 currentTransition = "Robo";
             else if (Spy::getEnemyBuild() == "CannonRush")

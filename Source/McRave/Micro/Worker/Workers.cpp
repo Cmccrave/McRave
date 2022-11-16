@@ -370,7 +370,8 @@ namespace McRave::Workers {
             // Iterate workers and make decisions
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
-                if (unit.getRole() == Role::Worker) {
+                if (unit.getRole() == Role::Worker && !unit.isAsleep() && unit.isAvailable()) {
+                    unit.sleepFrame = Broodwar->getFrameCount() + 8; // Sleep unit for 8 frames
                     updateResource(unit);
                     updateBuilding(unit);
                     updateDestination(unit);

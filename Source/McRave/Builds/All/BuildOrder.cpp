@@ -311,7 +311,7 @@ namespace McRave::BuildOrder
     int getUnitReservation(UnitType type) { return unitReservations[type]; }
     bool isUnitUnlocked(UnitType unit) { return unlockedType.find(unit) != unlockedType.end(); }
     bool isTechUnit(UnitType unit) { return techList.find(unit) != techList.end(); }
-    bool isOpener() { return inOpeningBook; }
+    bool isOpener() { return inOpening; }
     bool takeNatural() { return wantNatural; }
     bool takeThird() { return wantThird; }
     bool isWallNat() { return wallNat; }

@@ -12,6 +12,8 @@ namespace McRave::Combat::State {
     void updateStaticStates()
     {
         staticRetreatTypes.clear();
+        if (Units::getImmThreat() > 0.0)
+            return;
 
         // Zerglings
         if ((Players::ZvT() && Util::getTime() < Time(12, 00) && Util::getTime() > Time(3, 30) && !Spy::enemyGreedy() && (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled() || Players::getCompleteCount(PlayerState::Enemy, Terran_Vulture) > 0))
@@ -57,8 +59,6 @@ namespace McRave::Combat::State {
         const auto reAlign = (unit.getType() == Zerg_Mutalisk && !unit.canStartAttack() && !unit.isWithinAngle(*unitTarget) && Util::boxDistance(unit.getType(), unit.getPosition(), unitTarget->getType(), unitTarget->getPosition()) <= 64.0);
         const auto winningState = (atHome || !BuildOrder::isPlayPassive()) && unit.getSimState() == SimState::Win;
         const auto exploringGoal = unit.getGoal().isValid() && unit.getGoalType() == GoalType::Explore && unit.getUnitsInRangeOfThis().empty() && Util::getTime() > Time(4, 00);
-
-        Broodwar->drawTextMap(unit.getPosition(), "%d", unit.getSimState());
 
         // Regardless of any decision, determine if Unit is in danger and needs to retreat
         if ((Actions::isInDanger(unit, unit.getPosition()) && !unit.isTargetedBySuicide())

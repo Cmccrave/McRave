@@ -54,8 +54,8 @@ namespace McRave::BuildOrder::Protoss {
 
         void PvZ_StormRush()
         {
-            inOpeningBook =                             s < 100;
-            lockedTransition =                          total(Protoss_Citadel_of_Adun) > 0;
+            inOpening =                             s < 100;
+            inTransition =                          total(Protoss_Citadel_of_Adun) > 0;
             firstUpgrade =                              UpgradeTypes::None;
             firstTech =                                 TechTypes::Psionic_Storm;
             firstUnit =                                 Protoss_High_Templar;
@@ -75,8 +75,8 @@ namespace McRave::BuildOrder::Protoss {
 
         void PvZ_2Stargate()
         {
-            inOpeningBook =                             s < 100;
-            lockedTransition =                          total(Protoss_Stargate) >= 2;
+            inOpening =                             s < 100;
+            inTransition =                          total(Protoss_Stargate) >= 2;
             firstUpgrade =                              total(Protoss_Stargate) > 0 ? UpgradeTypes::Protoss_Air_Weapons : UpgradeTypes::None;
             firstTech =                                 TechTypes::None;
             firstUnit =                                 Protoss_Corsair;
@@ -98,8 +98,8 @@ namespace McRave::BuildOrder::Protoss {
         void PvZ_5GateGoon()
         {
             // "https://liquipedia.net/starcraft/5_Gate_Ranged_Goons_(vs._Zerg)"
-            inOpeningBook =                             s < 160;
-            lockedTransition =                          total(Protoss_Gateway) >= 3;
+            inOpening =                             s < 160;
+            inTransition =                          total(Protoss_Gateway) >= 3;
             unitLimits[Protoss_Zealot] =                2;
             unitLimits[Protoss_Dragoon] =               INT_MAX;
             firstUpgrade =                              UpgradeTypes::Singularity_Charge;
@@ -117,8 +117,8 @@ namespace McRave::BuildOrder::Protoss {
 
         void PvZ_4StargateScout()
         {
-            inOpeningBook =                             s < 100;
-            lockedTransition =                          total(Protoss_Stargate) >= 2;
+            inOpening =                             s < 100;
+            inTransition =                          total(Protoss_Stargate) >= 2;
             firstUpgrade =                              total(Protoss_Stargate) > 0 ? UpgradeTypes::Protoss_Air_Weapons : UpgradeTypes::None;
             firstTech =                                 TechTypes::None;
             firstUnit =                                 Protoss_Scout;
@@ -140,8 +140,8 @@ namespace McRave::BuildOrder::Protoss {
         void PvZ_NeoBisu()
         {
             // "https://liquipedia.net/starcraft/%2B1_Sair/Speedlot_(vs._Zerg)"
-            inOpeningBook =                             s < 100;
-            lockedTransition =                          total(Protoss_Citadel_of_Adun) > 0 && total(Protoss_Stargate) > 0;
+            inOpening =                             s < 100;
+            inTransition =                          total(Protoss_Citadel_of_Adun) > 0 && total(Protoss_Stargate) > 0;
             firstUpgrade =                              total(Protoss_Stargate) > 0 ? UpgradeTypes::Protoss_Air_Weapons : UpgradeTypes::None;
             firstTech =                                 TechTypes::None;
             firstUnit =                                 Protoss_Corsair;
@@ -172,7 +172,7 @@ namespace McRave::BuildOrder::Protoss {
     void PvZ_FFE()
     {
         // Reactions
-        if (!lockedTransition) {
+        if (!inTransition) {
             if (Spy::getEnemyOpener() == "4Pool" && currentOpener != "Forge")
                 currentOpener = "Panic";
             if (Spy::getEnemyTransition() == "2HatchHydra" || Spy::getEnemyTransition() == "3HatchHydra")

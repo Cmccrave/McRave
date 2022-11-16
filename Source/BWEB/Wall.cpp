@@ -823,45 +823,21 @@ namespace BWEB {
         };
 
         map<int, vector<TilePosition>> wallPlacements;
-
-        // Round to nearest pi/8 rads
-        auto nearestEight = int(round(chokeAngle / 0.785));
-        defenseAngle = nearestEight % 4;
-
-        // 0/8
-        if (defenseAngle == 0) {
+        defenseArrangement = int(round(chokeAngle / 0.785)) % 4;
+        
+        if (defenseArrangement == 0) { // 0/8
             wallPlacements[1] ={ {-6,-6}, {-4, -6}, {-2, -6}, {0, -6}, {2, -6}, {4, -6}, {6, -6}, {8, -6} };
             wallPlacements[2] ={ {-6,-4}, {-4, -4}, {-2, -4}, {0, -4}, {2, -4}, {4, -4}, {6, -4}, {8, -4} };
             wallPlacements[3] ={ {-6, -2}, {-4, -2}, {-2, -2}, {0, -2}, {2, -2}, {4, -2}, {6, -2}, {8, -2} };
             wallPlacements[4] ={ {-6, 0}, {-4, 0}, {-2, 0}, {4, 0}, {6, 0}, {8, 0} };
-        }
-
-        //// pi/8
-        //if (defenseAngle == 1 || defenseAngle == 7) {
-        //    wallPlacements[1] ={ {-6, -3}, {-4, -4}, {-2, -5}, {0, -6}, {2, -6}, {4, -7}, {6, -8}, {8, -9} };
-        //    wallPlacements[2] ={ {-6, -1}, {-4, -2}, {-2, -3}, {0, -4}, {2, -4}, {4, -5}, {6, -6}, {8, -7} };
-        //    wallPlacements[3] ={ {-6, 1}, {-4, 0}, {-2, -1}, {0, -2}, {2, -2}, {4, -3}, {6, -4}, {8, -5}, };
-        //    wallPlacements[4] ={ {-6, 3}, {-4, 2}, {-2, 1}, {4, -1}, {6, -2}, {8, -3} };
-        //}
-
-        // pi/4
-        if (defenseAngle == 1 || defenseAngle == 3) {
+        }        
+        else if (defenseArrangement == 1 || defenseArrangement == 3) { // pi/4
             wallPlacements[1] ={ {-8, 0}, {-6, -2}, {-4, -4}, {-2, -6}, {0, -8} };
             wallPlacements[2] ={ {-8, 2}, {-6, 0}, {-4, -2}, {-2, -4}, {0, -6}, {2, -8} };
             wallPlacements[3] ={ {-6, 2}, {-4, 0}, {-2, -2}, {0, -4}, {2, -6} };
             wallPlacements[4] ={ {-6, 4}, {-4, 2}, {-2, 0}, {0, -2}, {2, -4}, {4, -6} };
-        }
-
-        //// 3pi/8
-        //if (defenseAngle == 3 || defenseAngle == 5) {
-        //    wallPlacements[1] ={ {-6, 6}, {-6, 4}, {-6, 2}, {-6, 0}, {-5, -2}, {-4, -4}, {-3, -6} };
-        //    wallPlacements[2] ={ {-4, 6}, {-4, 4}, {-4, 2}, {-4, 0}, {-3, -2}, {-2, -4}, {-1, -6} };
-        //    wallPlacements[3] ={ {-2, 6}, {-2, 4}, {-2, 2}, {-2, 0}, {-1, -2}, {0, -4}, {1, -6} };
-        //    wallPlacements[4] ={ {0, 5}, {0, 3}, {1, -2}, {2, -4}, {3, -6} };
-        //}
-
-        // pi/2
-        if (defenseAngle == 2) {
+        }        
+        else if (defenseArrangement == 2) {  // pi/2
             wallPlacements[1] ={ {-6, 6}, {-6, 4}, {-6, 2}, {-6, 0}, {-6, -2}, {-6, -4}, {-6, -6} };
             wallPlacements[2] ={ {-4, 6}, {-4, 4}, {-4, 2}, {-4, 0}, {-4, -2}, {-4, -4}, {-4, -6} };
             wallPlacements[3] ={ {-2, 6}, {-2, 4}, {-2, 2}, {-2, 0}, {-2, -2}, {-2, -4}, {-2, -6} };
@@ -1091,7 +1067,7 @@ namespace BWEB {
         Broodwar->drawCircleMap(Position(pathStart), 6, Colors::Black, true);
         Broodwar->drawCircleMap(Position(pathEnd), 6, Colors::White, true);
 
-        Broodwar->drawTextMap(Position(choke->Center()), "%d", defenseAngle);
+        Broodwar->drawTextMap(Position(choke->Center()), "%d", defenseArrangement);
     }
 }
 

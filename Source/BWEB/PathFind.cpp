@@ -272,7 +272,7 @@ namespace BWEB
 
     bool Path::unitWalkable(const TilePosition &tile)
     {
-        if (Map::isWalkable(tile, type) && Map::isUsed(tile) == UnitTypes::None)
+        if (tile == source || (Map::isWalkable(tile, type) && Map::isUsed(tile) == UnitTypes::None))
             return true;
         return false;
     }

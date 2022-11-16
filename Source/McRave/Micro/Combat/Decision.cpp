@@ -10,11 +10,6 @@ namespace McRave::Combat::Decision {
 
     void updateDecision(UnitInfo& unit)
     {
-        if (!unit.unit() || !unit.unit()->exists()                                                                                          // Prevent crashes            
-            || unit.unit()->isLoaded()
-            || unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())    // If the unit is locked down, maelstrommed, stassised, or not completed
-            return;
-
         // Convert our commands to strings to display what the unit is doing for debugging
         map<int, string> commandNames{
             make_pair(0, "Misc"),

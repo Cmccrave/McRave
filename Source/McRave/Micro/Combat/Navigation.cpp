@@ -204,8 +204,7 @@ namespace McRave::Combat::Navigation {
                 if (unit == &*commander)
                     continue;
 
-                // Determine if this is a shared decision
-                unit->setNavigation(commander->getNavigation());
+                // Determine if this is a shared decision                
                 auto sharedDecision = cluster.commandShare == CommandShare::Exact && !unit->localRetreat() && !unit->globalRetreat() && !unit->isNearSuicide()
                     && !unit->attemptingRegroup() && (unit->getType() == commander->getType() || unit->getLocalState() != LocalState::Attack);
 
@@ -214,6 +213,9 @@ namespace McRave::Combat::Navigation {
                     updateSimPositions(*unit);
                     updatePath(*unit);
                     updateNavigation(*unit);
+                }
+                else {
+                    unit->setNavigation(commander->getNavigation());
                 }
             }
         }

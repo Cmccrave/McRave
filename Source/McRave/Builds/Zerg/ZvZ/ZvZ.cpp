@@ -10,7 +10,7 @@ using namespace McRave::BuildOrder::All;
 namespace McRave::BuildOrder::Zerg {
 
     void defaultZvZ() {
-        inOpeningBook =                                 true;
+        inOpening =                                 true;
         inBookSupply =                                  true;
         wallNat =                                       hatchCount() >= 3;
         wallMain =                                      false;
@@ -51,8 +51,8 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvZ_PL_1HatchMuta()
     {
-        inOpeningBook =                                 total(Zerg_Mutalisk) < 4;
-        lockedTransition =                              vis(Zerg_Lair) > 0;
+        inOpening =                                 total(Zerg_Mutalisk) < 4;
+        inTransition =                              vis(Zerg_Lair) > 0;
         unitLimits[Zerg_Drone] =                        atPercent(Zerg_Lair, 0.50) ? 12 : 9;
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvZ();
         gasLimit =                                      ((lingSpeed() || gas(80)) && total(Zerg_Lair) == 0) ? 2 : gasMax();
@@ -83,8 +83,8 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvZ_PH_2HatchMuta()
     {
-        inOpeningBook =                                 total(Zerg_Mutalisk) < 3;
-        lockedTransition =                              vis(Zerg_Lair) > 0;
+        inOpening =                                 total(Zerg_Mutalisk) < 3;
+        inTransition =                              vis(Zerg_Lair) > 0;
         unitLimits[Zerg_Drone] =                        20;
         gasLimit =                                      (lingSpeed() && com(Zerg_Lair) == 0) ? 1 : gasMax();
         unitLimits[Zerg_Zergling] =                     18;

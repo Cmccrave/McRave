@@ -174,7 +174,7 @@ namespace McRave
 #include "Map/Grids.h"
 #include "Map/Stations.h"
 #include "Map/Terrain.h"
-#include "Map/Walls.h"
+#include "Map/Walls/Walls.h"
 
 #include "Builds/All/BuildOrder.h"
 #include "Builds/All/Learning.h"

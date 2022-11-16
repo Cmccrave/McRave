@@ -103,7 +103,7 @@ namespace McRave::Math {
         if (Spy::enemyProxy() && unit.getType() == Protoss_Pylon)
             return Grids::getGroundThreat(unit.getPosition(), PlayerState::Enemy) == 0.0f ? 5.0 : 1.0;
 
-        // HACK: Kill neutrals blocking geysers for Sparkle
+        // Mark neutrals blocking geysers next to our bases
         if (unit.getTilePosition().isValid()) {
             const auto area = mapBWEM.GetArea(unit.getTilePosition());
             if (area && Terrain::inTerritory(PlayerState::Self, unit.getPosition())) {

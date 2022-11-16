@@ -38,7 +38,7 @@ namespace McRave::BuildOrder::Terran {
 
         void queueGeysers()
         {
-            if (!inOpeningBook) {
+            if (!inOpening) {
                 gasDesired = ((Broodwar->self()->minerals() > 600 && Broodwar->self()->gas() < 200) || Resources::isMineralSaturated()) && com(Terran_SCV) >= 30;
                 buildQueue[Terran_Refinery] = min(vis(Terran_Refinery) + gasDesired, Resources::getGasCount());
             }
@@ -65,7 +65,7 @@ namespace McRave::BuildOrder::Terran {
             }
 
             // If we're not in our opener
-            if (!inOpeningBook) {
+            if (!inOpening) {
 
                 // Armory
                 buildQueue[Terran_Armory] = (s > 160) + (s > 200);
@@ -82,7 +82,7 @@ namespace McRave::BuildOrder::Terran {
         void queueExpansions()
         {
             // If we're not in our opener
-            if (!inOpeningBook) {
+            if (!inOpening) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
                 expandDesired = (techUnit == None && Resources::isGasSaturated() && (Resources::isMineralSaturated() || com(Terran_Command_Center) >= 3) && (techSat || com(Terran_Command_Center) >= 3) && productionSat)
                     || (com(Terran_Command_Center) >= 2 && availableMinerals >= 800 && (Resources::isMineralSaturated() || Resources::isGasSaturated()))
@@ -96,7 +96,7 @@ namespace McRave::BuildOrder::Terran {
         void queueProduction()
         {
             // If we're not in our opener
-            if (!inOpeningBook) {
+            if (!inOpening) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
 
                 // Adding production
@@ -118,7 +118,7 @@ namespace McRave::BuildOrder::Terran {
                 gasLimit = 0;
             else if (com(Terran_SCV) < 20)
                 gasLimit = min(gasLimit, com(Terran_SCV) / 4);
-            else if (!inOpeningBook && com(Terran_SCV) >= 20)
+            else if (!inOpening && com(Terran_SCV) >= 20)
                 gasLimit = INT_MAX;
         }
 
@@ -141,7 +141,7 @@ namespace McRave::BuildOrder::Terran {
 
         if (techComplete())
             techUnit = None;   
-        if (Spy::enemyInvis() || (!inOpeningBook && !getTech && !techSat && techUnit == None))
+        if (Spy::enemyInvis() || (!inOpening && !getTech && !techSat && techUnit == None))
             getTech = true;
 
         if (Players::TvZ())
@@ -194,7 +194,7 @@ namespace McRave::BuildOrder::Terran {
         }
 
         // Unit limiting in opening book
-        if (inOpeningBook) {
+        if (inOpening) {
             for (auto &type : unitLimits) {
                 if (type.second > vis(type.first))
                     unlockedType.insert(type.first);

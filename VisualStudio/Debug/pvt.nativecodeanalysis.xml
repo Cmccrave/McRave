@@ -148,20 +148,6 @@
       <COLUMN>8</COLUMN>
     </SFA>
     <DEFECTCODE>26495</DEFECTCODE>
-    <DESCRIPTION>Variable 'McRave::Combat::Cluster::radius' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
-    <FUNCTION>McRave::Combat::Cluster::{ctor}</FUNCTION>
-    <DECORATED>??0Cluster@Combat@McRave@@QAE@V?$Point@H$00@BWAPI@@0VUnitType@4@@Z</DECORATED>
-    <FUNCLINE>32</FUNCLINE>
-    <PATH></PATH>
-  </DEFECT>
-  <DEFECT>
-    <SFA>
-      <FILEPATH>e:\bwapi\module\mcrave\source\mcrave\micro\combat</FILEPATH>
-      <FILENAME>combat.h</FILENAME>
-      <LINE>32</LINE>
-      <COLUMN>8</COLUMN>
-    </SFA>
-    <DEFECTCODE>26495</DEFECTCODE>
     <DESCRIPTION>Variable 'McRave::Combat::Cluster::commandShare' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
     <FUNCTION>McRave::Combat::Cluster::{ctor}</FUNCTION>
     <DECORATED>??0Cluster@Combat@McRave@@QAE@V?$Point@H$00@BWAPI@@0VUnitType@4@@Z</DECORATED>
@@ -186,14 +172,14 @@
     <SFA>
       <FILEPATH>e:\bwapi\module\mcrave\source\mcrave\micro\combat</FILEPATH>
       <FILENAME>combat.h</FILENAME>
-      <LINE>37</LINE>
+      <LINE>32</LINE>
       <COLUMN>8</COLUMN>
     </SFA>
     <DEFECTCODE>26495</DEFECTCODE>
     <DESCRIPTION>Variable 'McRave::Combat::Cluster::radius' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
     <FUNCTION>McRave::Combat::Cluster::{ctor}</FUNCTION>
-    <DECORATED>??0Cluster@Combat@McRave@@QAE@XZ</DECORATED>
-    <FUNCLINE>37</FUNCLINE>
+    <DECORATED>??0Cluster@Combat@McRave@@QAE@V?$Point@H$00@BWAPI@@0VUnitType@4@@Z</DECORATED>
+    <FUNCLINE>32</FUNCLINE>
     <PATH></PATH>
   </DEFECT>
   <DEFECT>
@@ -219,6 +205,20 @@
     </SFA>
     <DEFECTCODE>26495</DEFECTCODE>
     <DESCRIPTION>Variable 'McRave::Combat::Cluster::shape' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
+    <FUNCTION>McRave::Combat::Cluster::{ctor}</FUNCTION>
+    <DECORATED>??0Cluster@Combat@McRave@@QAE@XZ</DECORATED>
+    <FUNCLINE>37</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>e:\bwapi\module\mcrave\source\mcrave\micro\combat</FILEPATH>
+      <FILENAME>combat.h</FILENAME>
+      <LINE>37</LINE>
+      <COLUMN>8</COLUMN>
+    </SFA>
+    <DEFECTCODE>26495</DEFECTCODE>
+    <DESCRIPTION>Variable 'McRave::Combat::Cluster::radius' is uninitialized. Always initialize a member variable (type.6).</DESCRIPTION>
     <FUNCTION>McRave::Combat::Cluster::{ctor}</FUNCTION>
     <DECORATED>??0Cluster@Combat@McRave@@QAE@XZ</DECORATED>
     <FUNCLINE>37</FUNCLINE>

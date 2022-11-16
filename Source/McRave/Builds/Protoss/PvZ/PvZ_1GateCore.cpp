@@ -16,9 +16,9 @@ namespace McRave::BuildOrder::Protoss {
             // Experimental build from Best
             firstUpgrade =                                  UpgradeTypes::None;
             firstTech =                                     vis(Protoss_Dark_Templar) >= 2 ? TechTypes::Psionic_Storm : TechTypes::None;
-            inOpeningBook =                                 s < 70;
+            inOpening =                                 s < 70;
             unitLimits[Protoss_Dragoon] =                   1;
-            lockedTransition =                              total(Protoss_Citadel_of_Adun) > 0;
+            inTransition =                              total(Protoss_Citadel_of_Adun) > 0;
             playPassive =                                   s < 70;
             firstUnit =                                     Protoss_Dark_Templar;
 
@@ -63,7 +63,7 @@ namespace McRave::BuildOrder::Protoss {
     void PvZ_1GC()
     {
         // Reactions
-        if (!lockedTransition) {
+        if (!inTransition) {
 
             // If enemy is rushing, pressuring or stole gas
             if (Spy::enemyRush() || Spy::enemyPressure() || Spy::enemyGasSteal()) {

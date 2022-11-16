@@ -14,8 +14,8 @@ namespace McRave::BuildOrder::Protoss {
         void PvZ_2G_4Gate()
         {
             firstUnit =                                 None;
-            inOpeningBook =                             s < 120;
-            lockedTransition =                          true;
+            inOpening =                             s < 120;
+            inTransition =                          true;
             firstUpgrade =                              UpgradeTypes::Singularity_Charge;
             unitLimits[Protoss_Zealot] =                5;
             unitLimits[Protoss_Dragoon] =               INT_MAX;
@@ -33,8 +33,8 @@ namespace McRave::BuildOrder::Protoss {
 
         void PvZ_2G_Expand()
         {
-            inOpeningBook =                             s < 90;
-            lockedTransition =                          vis(Protoss_Nexus) >= 2;
+            inOpening =                             s < 90;
+            inTransition =                          vis(Protoss_Nexus) >= 2;
             wallNat =                                   vis(Protoss_Nexus) >= 2 || currentOpener == "Natural";
             firstUnit =                                 None;
 
@@ -63,7 +63,7 @@ namespace McRave::BuildOrder::Protoss {
     void PvZ_2G()
     {
         // Reactions
-        if (!lockedTransition) {
+        if (!inTransition) {
             if (Players::getVisibleCount(PlayerState::Enemy, UnitTypes::Zerg_Sunken_Colony) >= 4)
                 currentTransition = "Expand";
         }

@@ -348,7 +348,7 @@ namespace McRave::Command {
 
             //if (unit.attemptingSurround()) {
             //    unit.command(Move, unit.getSurroundPosition());
-            //    Broodwar->drawLineMap(unit.getPosition(), unit.getSurroundPosition(), Colors::Red);
+            //    Visuals::drawLine(unit.getPosition(), unit.getSurroundPosition(), Colors::Red);
             //    return true;
             //}
 
@@ -358,7 +358,7 @@ namespace McRave::Command {
             }
 
             // Find the best position to move to
-            auto bestPosition = findViablePosition(unit, unit.getPosition(), 8, scoreFunction);
+            auto bestPosition = findViablePosition(unit, unit.getPosition(), 20, scoreFunction);
             if (bestPosition.isValid()) {
                 unit.command(Move, bestPosition);
                 return true;
@@ -479,7 +479,7 @@ namespace McRave::Command {
             }
 
             // If we found a valid position, move to it
-            auto bestPosition = findViablePosition(unit, unit.getPosition(), 12, scoreFunction);
+            auto bestPosition = findViablePosition(unit, unit.getPosition(), 20, scoreFunction);
             if (bestPosition.isValid()) {
                 unit.command(Move, bestPosition);
                 return true;
@@ -513,7 +513,7 @@ namespace McRave::Command {
 
         if (canExplore && shouldExplore) {
 
-            auto bestPosition = findViablePosition(unit, unit.getPosition(), 12, scoreFunction);
+            auto bestPosition = findViablePosition(unit, unit.getPosition(), 20, scoreFunction);
 
             if (bestPosition.isValid()) {
                 unit.command(Move, bestPosition);
@@ -553,7 +553,9 @@ namespace McRave::Command {
 
         if (canRetreat() && shouldRetreat()) {
 
-            auto bestPosition = findViablePosition(unit, unit.getPosition(), 8, scoreFunction);
+            Visuals::drawPath(unit.getDestinationPath());
+
+            auto bestPosition = findViablePosition(unit, unit.getPosition(), 20, scoreFunction);
             if (bestPosition.isValid()) {
                 unit.command(Move, bestPosition);
                 return true;
@@ -587,7 +589,7 @@ namespace McRave::Command {
         }
 
         // If we found a valid position, move to it
-        auto bestPosition = findViablePosition(unit, unit.getPosition(), 12, scoreFunction);
+        auto bestPosition = findViablePosition(unit, unit.getPosition(), 20, scoreFunction);
         if (bestPosition.isValid()) {
             unit.command(Move, bestPosition);
             return true;
@@ -628,7 +630,7 @@ namespace McRave::Command {
             return score;
         };
 
-        auto bestPosition = findViablePosition(unit, unit.getNavigation(), 4, scoreFunction);
+        auto bestPosition = findViablePosition(unit, unit.getNavigation(), 20, scoreFunction);
         if (bestPosition.isValid()) {
             unit.command(Move, bestPosition);
             return true;

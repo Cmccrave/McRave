@@ -10,7 +10,7 @@ using namespace McRave::BuildOrder::All;
 namespace McRave::BuildOrder::Protoss {
 
     void defaultPvT() {
-        inOpeningBook =                                 true;
+        inOpening =                                 true;
         inBookSupply =                                  vis(Protoss_Pylon) < 2;
         wallNat =                                       com(Protoss_Pylon) >= 6 || currentOpener == "Natural";
         wallMain =                                      false;

@@ -199,27 +199,23 @@ namespace BWEB {
         if (choke) {
             anglePosition = Position(choke->Center()) + Position(4, 4);
             auto dist = min(640.0, getBase()->Center().getDistance(anglePosition));
-            if (main) {
-                BWEB::Path newPath(getBase()->Center(), anglePosition, UnitTypes::Protoss_Dragoon, true, false);
-                newPath.generateBFS([&](auto &t) { return newPath.terrainWalkable(t); });
-                for (auto &tile : newPath.getTiles()) {
-                    auto center = Position(tile) + Position(16, 16);
-                    if (center.getDistance(getBase()->Center()) > 320.0) {
-                        anglePosition = center;
-                        break;
-                    }
-                }
-            }
 
             baseAngle = Map::getAngle(make_pair(getBase()->Center(), anglePosition));
             chokeAngle = Map::getAngle(make_pair(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2))));
-            defenseAngle = max(0.0, (baseAngle  * (dist / 640.0)) + (chokeAngle * (640.0 - dist) / 640.0));
+
+            baseAngle = (round(baseAngle / 0.785)) * 0.785;
+            chokeAngle = (round(chokeAngle / 0.785)) * 0.785;
+
+            auto baseMod = fmod(baseAngle + 1.57, 3.14);
+            auto chokeMod = fmod(chokeAngle, 3.14);
+
+            defenseAngle = fmod((baseMod + chokeMod) / 2.0, 3.14);
         }
     }
 
     void Station::findSecondaryLocations()
     {
-        if (Broodwar->self()->getRace() != Races::Zerg)
+        if (Broodwar->self()->getRace() != Races::Zerg || !main)
             return;
 
         vector<pair<TilePosition, TilePosition>> tryOrder;
@@ -452,25 +448,16 @@ namespace BWEB {
             defenseAngle = fmod(Map::getAngle(make_pair(Position(getBase()->Center()), defenseCentroid)), 3.14) + 1.57;
         }
 
-        // Round to nearest pi/4 rads
-        auto nearestFourth = int(round(defenseAngle / 0.785));
-        auto angle = nearestFourth % 4;
-
         // Generate defenses
+        defenseArrangement = int(round(defenseAngle / 0.785)) % 4;
         if (main)
             basePlacements ={ {-2, -2}, {-2, 1}, {1, -2} };
-        else {
-            if (angle == 0)
-                basePlacements ={ {-2, 2}, {-2, 0}, {-2, -2}, {0, 3}, {0, -2}, {2, -2}, {4, -2}, {4, 0}, {4, 2} };   // 0/8                
-            //if (angle == 1 || angle == 7)
-            //    basePlacements ={ {-2, 3}, {-2, 1}, {-2, -1}, {0, -2}, {1, 3}, {2, -2}, {4, -1}, {4, 1}, };  // pi/8                
-            if (angle == 1 || angle == 3)
-                basePlacements ={ {-2, 2}, {-2, 0}, {0, 3}, {0, -2}, {2, -2}, {4, -2}, {4, 0} };   // pi/4                
-            //if (angle == 3 || angle == 5)
-            //    basePlacements ={ {-2, 2}, {-2, 0}, {-1, -2}, {0, 3}, {1, -2}, {2, 3}, {3, -2}, {4, 0} };  // 3pi/8                
-            if (angle == 2)
-                basePlacements ={ {-2, 2}, {-2, 0}, {-2, -2}, {0, 3}, {0, -2}, {2, 3}, {2, -2}, {4, 3}, {4, -2} };   // pi/2
-        }
+        else if (defenseArrangement == 0)
+            basePlacements ={ {-2, 2}, {-2, 0}, {-2, -2}, {0, 3}, {0, -2}, {2, -2}, {4, -2}, {4, 0}, {4, 2} };   // 0/8
+        else if (defenseArrangement == 1 || defenseArrangement == 3)
+            basePlacements ={ {-2, 2}, {-2, 0}, {0, 3}, {0, -2}, {2, -2}, {4, -2}, {4, 0} };                     // pi/4
+        else if (defenseArrangement == 2)
+            basePlacements ={ {-2, 2}, {-2, 0}, {-2, -2}, {0, 3}, {0, -2}, {2, 3}, {2, -2}, {4, 3}, {4, -2} };   // pi/2        
 
         // Flip them vertically / horizontally as needed
         if (base->Center().y < defenseCentroid.y) {

@@ -14,12 +14,11 @@ namespace McRave::BuildOrder::Zerg {
         void ZvFFA_HP_3HatchMuta()
         {
             // 'https://liquipedia.net/starcraft/3_Hatch_Spire_(vs._Protoss)'
-            lockedTransition =                              hatchCount() >= 3 || total(Zerg_Mutalisk) > 0;
-            inOpeningBook =                                 total(Zerg_Mutalisk) < 9;
+            inTransition =                              hatchCount() >= 3 || total(Zerg_Mutalisk) > 0;
+            inOpening =                                 total(Zerg_Mutalisk) < 9;
             inBookSupply =                                  vis(Zerg_Overlord) < 8 || total(Zerg_Mutalisk) < 9;
             firstUpgrade =                                  UpgradeTypes::None;
             firstUnit =                                     Zerg_Mutalisk;
-            hideTech =                                      true;
             unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 33 : 15 - hatchCount();
             unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvFFA();
             playPassive =                                   (com(Zerg_Mutalisk) == 0 || Util::getTime() < Time(7, 00));

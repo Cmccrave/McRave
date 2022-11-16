@@ -41,6 +41,7 @@ namespace McRave::Visuals {
         bool timers = true;
         bool scores = true;
         bool roles = false;
+        bool stations = false;
 
         void drawInformation()
         {
@@ -234,10 +235,12 @@ namespace McRave::Visuals {
 
         void drawStations() 
         {
-            for (auto &station : Stations::getStations(PlayerState::Self)) {
-                auto topLeft = Position(station->getBase()->Location());
-                Broodwar->drawTextMap(topLeft, "%d", Stations::needGroundDefenses(station));
-                Broodwar->drawTextMap(topLeft + Position(0,16), "%d", Stations::needAirDefenses(station));
+            if (stations) {
+                for (auto &station : Stations::getStations(PlayerState::Self)) {
+                    auto topLeft = Position(station->getBase()->Location());
+                    Broodwar->drawTextMap(topLeft, "%d", Stations::needGroundDefenses(station));
+                    Broodwar->drawTextMap(topLeft + Position(0, 16), "%d", Stations::needAirDefenses(station));
+                }
             }
         }
     }

@@ -27,8 +27,12 @@ namespace McRave::Combat::Destination {
 
     void updateDestination(UnitInfo& unit)
     {
+        if (unit.getGoal().isValid() && unit.getGoalType() == GoalType::Explore) {
+            unit.setDestination(unit.getGoal());
+        }
+
         // If attacking and target is close, set as destination
-        if (unit.getLocalState() == LocalState::Attack) {
+        else if (unit.getLocalState() == LocalState::Attack) {
             if (unit.attemptingRunby()) {
                 unit.setDestination(unit.getEngagePosition());
             }
@@ -50,9 +54,6 @@ namespace McRave::Combat::Destination {
 
             if (!unit.globalRetreat() && unit.attemptingRegroup()) {
                 unit.setDestination(unit.getCommander().lock()->getPosition());
-            }
-            else if (retreat && !unit.isFlying() && retreat == Terrain::getMyNatural() && Broodwar->mapFileName().find("MatchPoint") != string::npos && Terrain::getMyMain()->getBase()->Location() == TilePosition(100, 14)) {
-                unit.setDestination(Position(3369, 1690));
             }
             else if (retreat && unit.isFlying()) {
                 unit.setDestination(retreat->getBase()->Center());
@@ -84,7 +85,10 @@ namespace McRave::Combat::Destination {
                 getCleanupPosition(unit);
             }
         }
-        //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Cyan);
+
+        
+        //Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
+        //Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
     }
 
     void onFrame()
@@ -92,7 +96,7 @@ namespace McRave::Combat::Destination {
         for (auto &u : Units::getUnits(PlayerState::Self)) {
             auto &unit = *u;
             if (unit.getRole() == Role::Combat)
-                updateDestination(unit);
+                updateDestination(unit);            
         }
     }
 }

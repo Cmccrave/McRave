@@ -129,14 +129,14 @@
     <SFA>
       <FILEPATH>e:\bwapi\module\mcrave\source\bweb</FILEPATH>
       <FILENAME>station.cpp</FILENAME>
-      <LINE>550</LINE>
+      <LINE>537</LINE>
       <COLUMN>29</COLUMN>
     </SFA>
     <DEFECTCODE>6011</DEFECTCODE>
     <DESCRIPTION>Dereferencing NULL pointer 'base'. </DESCRIPTION>
     <FUNCTION>BWEB::Station::draw</FUNCTION>
     <DECORATED>?draw@Station@BWEB@@QAEXXZ</DECORATED>
-    <FUNCLINE>513</FUNCLINE>
+    <FUNCLINE>500</FUNCLINE>
     <PROBABILITY>1</PROBABILITY>
     <RANK>4</RANK>
     <CATEGORY>
@@ -146,25 +146,25 @@
       <SFA>
         <FILEPATH>e:\bwapi\module\mcrave\source\bweb</FILEPATH>
         <FILENAME>station.cpp</FILENAME>
-        <LINE>515</LINE>
+        <LINE>502</LINE>
         <COLUMN>12</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>e:\bwapi\module\mcrave\source\bweb</FILEPATH>
         <FILENAME>station.cpp</FILENAME>
-        <LINE>516</LINE>
+        <LINE>503</LINE>
         <COLUMN>12</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>e:\bwapi\module\mcrave\source\bweb</FILEPATH>
         <FILENAME>station.cpp</FILENAME>
-        <LINE>519</LINE>
+        <LINE>506</LINE>
         <COLUMN>34</COLUMN>
       </SFA>
       <SFA>
         <FILEPATH>e:\bwapi\module\mcrave\source\bweb</FILEPATH>
         <FILENAME>station.cpp</FILENAME>
-        <LINE>525</LINE>
+        <LINE>512</LINE>
         <COLUMN>26</COLUMN>
         <KEYEVENT>
           <ID>1</ID>
@@ -176,7 +176,7 @@
       <SFA>
         <FILEPATH>e:\bwapi\module\mcrave\source\bweb</FILEPATH>
         <FILENAME>station.cpp</FILENAME>
-        <LINE>550</LINE>
+        <LINE>537</LINE>
         <COLUMN>29</COLUMN>
         <KEYEVENT>
           <ID>2</ID>
@@ -609,53 +609,53 @@
     <SFA>
       <FILEPATH>e:\bwapi\module\mcrave\source\mcrave\builds\zerg</FILEPATH>
       <FILENAME>zergbuildorder.cpp</FILENAME>
-      <LINE>220</LINE>
+      <LINE>218</LINE>
       <COLUMN>68</COLUMN>
     </SFA>
     <DEFECTCODE>26451</DEFECTCODE>
     <DESCRIPTION>Arithmetic overflow: Using operator '*' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '*' to avoid overflow (io.2).</DESCRIPTION>
     <FUNCTION>McRave::BuildOrder::Zerg::`anonymous-namespace'::calculateGasLimit</FUNCTION>
     <DECORATED>?calculateGasLimit@?A0x67124035@Zerg@BuildOrder@McRave@@YAXXZ</DECORATED>
-    <FUNCLINE>211</FUNCLINE>
+    <FUNCLINE>209</FUNCLINE>
     <PATH></PATH>
   </DEFECT><DEFECT>
     <SFA>
       <FILEPATH>e:\bwapi\module\mcrave\source\mcrave\builds\zerg</FILEPATH>
       <FILENAME>zergbuildorder.cpp</FILENAME>
-      <LINE>226</LINE>
+      <LINE>224</LINE>
       <COLUMN>54</COLUMN>
     </SFA>
     <DEFECTCODE>26451</DEFECTCODE>
     <DESCRIPTION>Arithmetic overflow: Using operator '*' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '*' to avoid overflow (io.2).</DESCRIPTION>
     <FUNCTION>McRave::BuildOrder::Zerg::`anonymous-namespace'::calculateGasLimit</FUNCTION>
     <DECORATED>?calculateGasLimit@?A0x67124035@Zerg@BuildOrder@McRave@@YAXXZ</DECORATED>
-    <FUNCLINE>211</FUNCLINE>
+    <FUNCLINE>209</FUNCLINE>
     <PATH></PATH>
   </DEFECT><DEFECT>
     <SFA>
       <FILEPATH>e:\bwapi\module\mcrave\source\mcrave\builds\zerg</FILEPATH>
       <FILENAME>zergbuildorder.cpp</FILENAME>
-      <LINE>280</LINE>
+      <LINE>278</LINE>
       <COLUMN>64</COLUMN>
     </SFA>
     <DEFECTCODE>26451</DEFECTCODE>
     <DESCRIPTION>Arithmetic overflow: Using operator '-' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '-' to avoid overflow (io.2).</DESCRIPTION>
     <FUNCTION>McRave::BuildOrder::Zerg::capGas</FUNCTION>
     <DECORATED>?capGas@Zerg@BuildOrder@McRave@@YAHH@Z</DECORATED>
-    <FUNCLINE>272</FUNCLINE>
+    <FUNCLINE>270</FUNCLINE>
     <PATH></PATH>
   </DEFECT><DEFECT>
     <SFA>
       <FILEPATH>e:\bwapi\module\mcrave\source\mcrave\builds\zerg</FILEPATH>
       <FILENAME>zergbuildorder.cpp</FILENAME>
-      <LINE>280</LINE>
+      <LINE>278</LINE>
       <COLUMN>38</COLUMN>
     </SFA>
     <DEFECTCODE>26451</DEFECTCODE>
     <DESCRIPTION>Arithmetic overflow: Using operator '-' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '-' to avoid overflow (io.2).</DESCRIPTION>
     <FUNCTION>McRave::BuildOrder::Zerg::capGas</FUNCTION>
     <DECORATED>?capGas@Zerg@BuildOrder@McRave@@YAHH@Z</DECORATED>
-    <FUNCLINE>272</FUNCLINE>
+    <FUNCLINE>270</FUNCLINE>
     <PATH></PATH>
   </DEFECT><DEFECT>
     <SFA>
@@ -1207,27 +1207,27 @@
     <SFA>
       <FILEPATH>e:\bwapi\module\mcrave\source\mcrave\micro\combat</FILEPATH>
       <FILENAME>formations.cpp</FILENAME>
-      <LINE>164</LINE>
+      <LINE>170</LINE>
       <COLUMN>64</COLUMN>
     </SFA>
     <DEFECTCODE>26451</DEFECTCODE>
     <DESCRIPTION>Arithmetic overflow: Using operator '-' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '-' to avoid overflow (io.2).</DESCRIPTION>
     <FUNCTION>McRave::Combat::Formations::createConcave</FUNCTION>
     <DECORATED>?createConcave@Formations@Combat@McRave@@YAXAAUCluster@23@@Z</DECORATED>
-    <FUNCLINE>135</FUNCLINE>
+    <FUNCLINE>141</FUNCLINE>
     <PATH></PATH>
   </DEFECT><DEFECT>
     <SFA>
       <FILEPATH>e:\bwapi\module\mcrave\source\mcrave\micro\combat</FILEPATH>
       <FILENAME>formations.cpp</FILENAME>
-      <LINE>165</LINE>
+      <LINE>171</LINE>
       <COLUMN>64</COLUMN>
     </SFA>
     <DEFECTCODE>26451</DEFECTCODE>
     <DESCRIPTION>Arithmetic overflow: Using operator '-' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '-' to avoid overflow (io.2).</DESCRIPTION>
     <FUNCTION>McRave::Combat::Formations::createConcave</FUNCTION>
     <DECORATED>?createConcave@Formations@Combat@McRave@@YAXAAUCluster@23@@Z</DECORATED>
-    <FUNCLINE>135</FUNCLINE>
+    <FUNCLINE>141</FUNCLINE>
     <PATH></PATH>
   </DEFECT><DEFECT>
     <SFA>

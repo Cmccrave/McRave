@@ -49,7 +49,7 @@ namespace McRave::BuildOrder::Protoss
 
         void queueGeysers()
         {
-            if (!inOpeningBook) {
+            if (!inOpening) {
                 gasDesired = ((Broodwar->self()->minerals() > 600 && Broodwar->self()->gas() < 200) || Resources::isMineralSaturated()) && com(Protoss_Probe) >= 30;
                 buildQueue[Protoss_Assimilator] = min(vis(Protoss_Assimilator) + gasDesired, Resources::getGasCount());
             }
@@ -58,7 +58,7 @@ namespace McRave::BuildOrder::Protoss
         void queueUpgradeStructures()
         {
             // If we're not in our opener
-            if (!inOpeningBook) {
+            if (!inOpening) {
 
                 // Adding upgrade buildings
                 if (com(Protoss_Assimilator) >= 3) {
@@ -105,7 +105,7 @@ namespace McRave::BuildOrder::Protoss
             }
 
             // If we're not in our opener
-            if (!inOpeningBook) {
+            if (!inOpening) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
                 expandDesired = (techUnit == None && Resources::isGasSaturated() && (Resources::isMineralSaturated() || com(Protoss_Nexus) >= 3) && (techSat || com(Protoss_Nexus) >= 3) && productionSat)
                     || (availableMinerals >= 800 && (Resources::isMineralSaturated() || Resources::isGasSaturated()))
@@ -119,7 +119,7 @@ namespace McRave::BuildOrder::Protoss
         void queueProduction()
         {
             // If we're not in our opener
-            if (!inOpeningBook) {
+            if (!inOpening) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
                 rampDesired = !productionSat && ((techUnit == None && availableMinerals >= 150 && (techSat || Stations::getGasingStationsCount() >= 3)) || availableMinerals >= 300);
 
@@ -143,7 +143,7 @@ namespace McRave::BuildOrder::Protoss
                 gasLimit = 0;
             else if (com(Protoss_Probe) < 20)
                 gasLimit = min(gasLimit, com(Protoss_Probe) / 4);
-            else if (!inOpeningBook && com(Protoss_Probe) >= 20)
+            else if (!inOpening && com(Protoss_Probe) >= 20)
                 gasLimit = INT_MAX;
         }
 
@@ -235,7 +235,7 @@ namespace McRave::BuildOrder::Protoss
         }
 
         // If production is saturated and none are idle or we need detection, choose a tech
-        if ((!inOpeningBook && !getTech && !techSat && techUnit == None) || (Spy::enemyInvis() && !isTechUnit(desiredDetection)))
+        if ((!inOpening && !getTech && !techSat && techUnit == None) || (Spy::enemyInvis() && !isTechUnit(desiredDetection)))
             getTech = true;
 
         // If we need detection
@@ -280,7 +280,7 @@ namespace McRave::BuildOrder::Protoss
 
     void composition()
     {
-        if (inOpeningBook && techList.empty())
+        if (inOpening && techList.empty())
             return;
 
         armyComposition.clear();

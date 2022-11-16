@@ -291,12 +291,6 @@ namespace McRave::Terrain {
                 defendArea = getMainArea();
             }
 
-
-            // HACK: Matchpoint sucks for BWEM top right
-            if (Broodwar->mapFileName().find("MatchPoint") && getMyMain()->getBase()->Location() == TilePosition(100, 14)) {
-                defendPosition = Position(3369, 1690);
-            }
-
             Broodwar->drawTriangleMap(defendPosition + Position(0, -20), defendPosition + Position(-20, 10), defendPosition + Position(20, 10), Colors::Green);
         }
 
@@ -402,7 +396,6 @@ namespace McRave::Terrain {
             for (auto &station : stations) {
                 auto defCount = double(Stations::getAirDefenseCount(station));
                 auto score = double(Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(station->getResourceCentroid()))) / exp(1.0 + defCount);
-                Broodwar->drawTextMap(station->getResourceCentroid(), "%.2f", score);
                 if (score > best) {
                     best = score;
                     harassPosition = station->getResourceCentroid();

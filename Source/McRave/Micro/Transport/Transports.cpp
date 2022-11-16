@@ -44,7 +44,7 @@ namespace McRave::Transports {
             const auto readyToAssignUnit = [&](UnitInfo& cargo) {
                 auto targetDist = BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getEngagePosition());
                 if (cargo.getType() == Terran_Ghost)
-                    return cargo.getDestination().isValid() && !Terrain::inArea(mapBWEM.GetArea(TilePosition(cargo.getDestination())), cargo.getDestination());
+                    return cargo.getDestination().isValid() && (!Terrain::inArea(mapBWEM.GetArea(TilePosition(cargo.getDestination())), cargo.getPosition()) || cargo.unit()->isLoaded());
                 if (cargo.getType() == Protoss_Reaver || cargo.getType() == Protoss_High_Templar)
                     return cargo.getDestination().isValid();
                 if (Terrain::isIslandMap() && !cargo.getType().isFlyer() && targetDist == DBL_MAX)
@@ -133,6 +133,9 @@ namespace McRave::Transports {
                 const auto range = cargoTarget.getType().isFlyer() ? cargo.getAirRange() : cargo.getGroundRange();
                 const auto dist = Util::boxDistance(cargo.getType(), cargo.getPosition(), cargoTarget.getType(), cargoTarget.getPosition());
 
+                if (cargo.getType() == Terran_Ghost)
+                    return true;
+
                 // Don't keep moving into range if we already are
                 if (dist <= range)
                     return false;
@@ -141,8 +144,6 @@ namespace McRave::Transports {
                     return combatEngage && cargo.canStartCast(TechTypes::Psionic_Storm, cargoTarget.getPosition());
                 if (cargo.getType() == Protoss_Reaver)
                     return combatEngage && cargo.canStartAttack();
-                if (cargo.getType() == Terran_Ghost)
-                    return true;
                 return false;
             };
 
@@ -191,8 +192,10 @@ namespace McRave::Transports {
                     setState(TransportState::Reinforcing);
                 else if (readyToEngage(cargo, cargoTarget)) {
                     setState(TransportState::Engaging);
-                    if (readyToDrop(cargo, cargoTarget))
+                    if (readyToDrop(cargo, cargoTarget)) {
                         unit.unit()->unload(cargo.unit());
+                        Broodwar << "YEP" << endl;
+                    }
                 }
             }
         }
@@ -241,7 +244,7 @@ namespace McRave::Transports {
                     break;
                 }
             }
-            Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Orange);
+            //Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Orange);
 
             // Set destination
             if (unit.getTransportState() == TransportState::Loading)
@@ -252,7 +255,7 @@ namespace McRave::Transports {
                 unit.setDestination(closestCargo->getPosition());
             else if (unit.getTransportState() == TransportState::Engaging)
                 unit.setDestination(engageDestination);
-            Broodwar->drawLineMap(unit.getPosition() + Position(2, 2), unit.getDestination() + Position(2, 2), Colors::Yellow);
+            //Broodwar->drawLineMap(unit.getPosition() + Position(2, 2), unit.getDestination() + Position(2, 2), Colors::Yellow);
 
             // If we have no cargo, wait at nearest base
             if (unit.getAssignedCargo().empty()) {
@@ -260,12 +263,12 @@ namespace McRave::Transports {
                 if (station)
                     unit.setDestination(station->getBase()->Center());
             }
-            Broodwar->drawLineMap(unit.getPosition() + Position(4, 4), unit.getDestination() + Position(4, 4), Colors::Green);
+            //Broodwar->drawLineMap(unit.getPosition() + Position(4, 4), unit.getDestination() + Position(4, 4), Colors::Green);
 
             // Resort to main, hopefully we still have it
             if (!unit.getDestination().isValid())
                 unit.setDestination(Terrain::getMainPosition());
-            Broodwar->drawLineMap(unit.getPosition() + Position(6, 6), unit.getDestination() + Position(6, 6), Colors::Blue);
+            //Broodwar->drawLineMap(unit.getPosition() + Position(6, 6), unit.getDestination() + Position(6, 6), Colors::Blue);
         }
 
         void updateDecision(UnitInfo& unit)

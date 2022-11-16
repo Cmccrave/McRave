@@ -12,12 +12,11 @@ namespace McRave::BuildOrder::Zerg {
     void ZvP4HatchMuta()
     {
         // 'https://liquipedia.net/starcraft/4_Hatch_Lair_(vs._Protoss)'
-        lockedTransition =                              atPercent(Zerg_Lair, 0.25) || total(Zerg_Mutalisk) > 0;
-        inOpeningBook =                                 total(Zerg_Mutalisk) < 9;
+        inTransition =                              atPercent(Zerg_Lair, 0.25) || total(Zerg_Mutalisk) > 0;
+        inOpening =                                 total(Zerg_Mutalisk) < 9;
         inBookSupply =                                  vis(Zerg_Overlord) < 6 || total(Zerg_Mutalisk) < 6;
         firstUpgrade =                                  (com(Zerg_Lair) > 0 && vis(Zerg_Overlord) >= 5 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
         firstUnit =                                     Zerg_Mutalisk;
-        hideTech =                                      true;
         pressure =                                      vis(Zerg_Zergling) >= 36;
         unitLimits[Zerg_Drone] =                        32;
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvP();
@@ -47,8 +46,8 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvP2HatchSpeedling()
     {
-        lockedTransition =                              true;
-        inOpeningBook =                                 total(Zerg_Zergling) < 90;
+        inTransition =                              true;
+        inOpening =                                 total(Zerg_Zergling) < 90;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
         unitLimits[Zerg_Drone] =                        10 - hatchCount() - vis(Zerg_Extractor);
         unitLimits[Zerg_Zergling] =                     INT_MAX;
@@ -78,15 +77,15 @@ namespace McRave::BuildOrder::Zerg {
     void ZvP3HatchSpeedling()
     {
         // 'https://liquipedia.net/starcraft/3_Hatch_Zergling_(vs._Protoss)'
-        lockedTransition =                              true;
-        inOpeningBook =                                 total(Zerg_Zergling) < 56 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) == 0;
+        inTransition =                              true;
+        inOpening =                                 total(Zerg_Zergling) < 56 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) == 0;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
         firstUpgrade =                                  (hatchCount() >= 3 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
         unitLimits[Zerg_Drone] =                        13;
         unitLimits[Zerg_Zergling] =                     INT_MAX;
         gasLimit =                                      !lingSpeed() ? capGas(100) : 0;
         wallNat =                                       true;
-        pressure =                                      com(Zerg_Hatchery) >= 3 && inOpeningBook;
+        pressure =                                      com(Zerg_Hatchery) >= 3 && inOpening;
         wantThird =                                     false;
         playPassive =                                   Broodwar->self()->getUpgradeLevel(UpgradeTypes::Metabolic_Boost) == 0 && Spy::getEnemyOpener() != "Proxy";
 
@@ -103,8 +102,8 @@ namespace McRave::BuildOrder::Zerg {
     void ZvP2HatchLurker()
     {
         // 'https://liquipedia.net/starcraft/2_Hatch_Lurker_(vs._Terran)'
-        lockedTransition =                              true;
-        inOpeningBook =                                 total(Zerg_Lurker) < 3;
+        inTransition =                              true;
+        inOpening =                                 total(Zerg_Lurker) < 3;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
         unitLimits[Zerg_Drone] =                        20;
         unitLimits[Zerg_Zergling] =                     12;
@@ -128,8 +127,8 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvP2HatchCrackling()
     {
-        lockedTransition =                              true;
-        inOpeningBook =                                 total(Zerg_Zergling) < 100;
+        inTransition =                              true;
+        inOpening =                                 total(Zerg_Zergling) < 100;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
         firstUpgrade =                                  lingSpeed() ? UpgradeTypes::Zerg_Carapace : UpgradeTypes::Metabolic_Boost;
         firstUnit =                                     Zerg_Mutalisk;
