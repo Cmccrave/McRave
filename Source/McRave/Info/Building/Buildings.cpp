@@ -90,12 +90,6 @@ namespace McRave::Buildings {
                 Events::onUnitCancelBecauseBWAPISucks(building);
             }
 
-            // Cancelling 3rds if we're being 1 based
-            if (building.getType() == Zerg_Hatchery && isStation && Terrain::getMyNatural() && Terrain::getMyMain() && building.getTilePosition() != Terrain::getMyNatural()->getBase()->Location() && building.getTilePosition() != Terrain::getMyMain()->getBase()->Location() && Util::getTime() < Time(4, 00) && !BuildOrder::takeThird()) {
-                building.unit()->cancelConstruction();
-                Events::onUnitCancelBecauseBWAPISucks(building);
-            }
-
             // Cancelling colonies we don't need now
             if (building.getType() == Zerg_Creep_Colony) {
 

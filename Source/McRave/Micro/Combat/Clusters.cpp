@@ -34,11 +34,8 @@ namespace McRave::Combat::Clusters {
                 auto &unit = *u;
 
                 if (unit.getRole() != Role::Combat
-                    || unit.getType() == Protoss_High_Templar
-                    || unit.getType() == Protoss_Dark_Archon
-                    || unit.getType() == Protoss_Reaver
-                    || unit.getType() == Protoss_Interceptor
-                    || unit.getType() == Zerg_Defiler)
+                    || unit.unit()->isLoaded()
+                    || unit.getType() == Protoss_Interceptor)
                     continue;
 
                 unit.setCommander(nullptr);
@@ -55,13 +52,13 @@ namespace McRave::Combat::Clusters {
             auto getNeighbors = [&](auto &currentNode, auto &queue) {
                 for (auto &node : clusterNodes) {
                     auto matchedType = (parent.unit->isFlying() && node.unit->isFlying()) || (!parent.unit->isFlying() && !node.unit->isFlying());
-                    if (node.id == 0 && matchedType && node.position.getDistance(currentNode.position) < 640.0)
+                    if (node.id == 0 && matchedType && (node.position.getDistance(currentNode.position) < 640.0 || node.unit->isLightAir()))
                         queue.push(&node);
                 }
             };
 
             std::queue<ClusterNode*> nodeQueue;
-            getNeighbors(parent, nodeQueue);            
+            getNeighbors(parent, nodeQueue);
             if (nodeQueue.size() < minsize)
                 return false;
 
@@ -134,7 +131,7 @@ namespace McRave::Combat::Clusters {
         void getCommander(Cluster& cluster)
         {
             // Check if a commander previously existed within a similar cluster
-            auto closestPreviousCommander = Util::getClosestUnit(cluster.sharedPosition, PlayerState::Self, [&](auto &u) {
+            auto closestPreviousCommander = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
                 return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker()
                     && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end()
                     && find(previousCommanders.begin(), previousCommanders.end(), u) != previousCommanders.end()
@@ -148,11 +145,11 @@ namespace McRave::Combat::Clusters {
 
 
             // Get closest unit to centroid
-            auto closestToCentroid = Util::getClosestUnit(cluster.sharedPosition, PlayerState::Self, [&](auto &u) {
+            auto closestToCentroid = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
                 return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker() && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() && !u->isTargetedBySuicide() && !u->globalRetreat() && !u->localRetreat();
             });
             if (!closestToCentroid) {
-                closestToCentroid = Util::getClosestUnit(cluster.sharedPosition, PlayerState::Self, [&](auto &u) {
+                closestToCentroid = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
                     return find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end();
                 });
             }
@@ -165,26 +162,41 @@ namespace McRave::Combat::Clusters {
         void pathCluster(Cluster& cluster)
         {
             auto commander = cluster.commander.lock();
-            auto pathPoint = getPathPoint(*commander, cluster.sharedDestination);
-            BWEB::Path newPath(commander->getPosition(), pathPoint, commander->getType());
-            newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t);  });
-            cluster.path = newPath;
+            auto marchPathPoint = getPathPoint(*commander, cluster.marchPosition);
+            BWEB::Path newMarchPath(commander->getPosition(), marchPathPoint, commander->getType());
+            newMarchPath.generateJPS([&](const TilePosition &t) { return newMarchPath.unitWalkable(t);  });
+            cluster.marchPath = newMarchPath;
+
+            // Get closest unit to target for marching/retreating
+            
 
             // If path is reachable, find a point n pixels away to set as new destination;
-            cluster.sharedNavigation = cluster.sharedDestination;
-            auto newDestination = Util::findPointOnPath(cluster.path, [&](Position p) {
-                return p.getDistance(commander->getPosition()) >= max(64.0, cluster.radius - 32.0);
+            cluster.marchNavigation = cluster.marchPosition;
+            const auto march = Util::findPointOnPath(cluster.marchPath, [&](Position p) {
+                return p.getDistance(commander->getPosition()) >= max(160.0, cluster.radius - 32.0);
             });
+            if (march.isValid())
+                cluster.marchNavigation = march;
 
-            if (newDestination.isValid())
-                cluster.sharedNavigation = newDestination;
+            auto retreatPathPoint = getPathPoint(*commander, cluster.retreatPosition);
+            BWEB::Path newRetreatPath(commander->getPosition(), retreatPathPoint, commander->getType());
+            newRetreatPath.generateJPS([&](const TilePosition &t) { return newRetreatPath.unitWalkable(t);  });
+            cluster.retreatPath = newRetreatPath;
+
+            // If path is reachable, find a point n pixels away to set as new destination;
+            cluster.retreatNavigation = cluster.retreatPosition;
+            const auto retreat = Util::findPointOnPath(cluster.retreatPath, [&](Position p) {
+                return p.getDistance(commander->getPosition()) >= max(160.0, cluster.radius - 32.0);
+            });
+            if (retreat.isValid())
+                cluster.retreatNavigation = retreat;
         }
 
         void mergeClusters(Cluster& cluster1, Cluster& cluster2)
         {
             auto commander1 = cluster1.commander.lock();
             auto commander2 = cluster2.commander.lock();
-            auto commander = (commander1->getPosition().getDistance(cluster1.sharedDestination) < commander2->getPosition().getDistance(cluster1.sharedDestination)) ? commander1 : commander2;
+            auto commander = (commander1->getPosition().getDistance(cluster1.avgPosition) < commander2->getPosition().getDistance(cluster1.avgPosition)) ? commander1 : commander2;
 
             cluster1.units.insert(cluster1.units.end(), cluster2.units.begin(), cluster2.units.end());
             cluster1.commander = commander;
@@ -218,19 +230,18 @@ namespace McRave::Combat::Clusters {
 
                         // Clamp radius so that it moves forward/backwards as needed
                         if (commander->getLocalState() == LocalState::Attack)
-                            cluster.radius = min(cluster.radius, commander->getPosition().getDistance(cluster.sharedNavigation) - 64.0);
+                            cluster.radius = min(cluster.radius, commander->getPosition().getDistance(cluster.marchNavigation) - 64.0);
                         if (commander->getLocalState() == LocalState::Retreat)
-                            cluster.radius = max(cluster.radius, commander->getPosition().getDistance(cluster.sharedNavigation) + 64.0);
+                            cluster.radius = max(cluster.radius, commander->getPosition().getDistance(cluster.retreatNavigation) + 64.0);
                     }
                     else {
                         // If we are setting up a static formation, align concave with buildings close by
-                        auto closestBuilding = Util::getClosestUnit(cluster.sharedDestination, PlayerState::Self, [&](auto &u) {
-                            return (u->getType().isBuilding() && u->getFormation().getDistance(cluster.sharedDestination) < 64.0);
+                        auto closestBuilding = Util::getClosestUnit(cluster.marchPosition, PlayerState::Self, [&](auto &u) {
+                            return (u->getType().isBuilding() && u->getFormation().getDistance(cluster.marchPosition) < 64.0);
                         });
                         if (closestBuilding)
-                            cluster.radius = closestBuilding->getPosition().getDistance(cluster.sharedDestination);
+                            cluster.radius = closestBuilding->getPosition().getDistance(cluster.marchPosition);
                     }
-                    //Visuals::drawLine(commander->getPosition(), cluster.sharedNavigation, cluster.color);
                 }
             }
         }
@@ -250,7 +261,7 @@ namespace McRave::Combat::Clusters {
                     }
                 }
                 if (cnt > 0)
-                    cluster.sharedPosition = avgPosition / cnt;
+                    cluster.avgPosition = avgPosition / cnt;
 
                 // If old commander no longer satisfactory
                 auto oldCommander = cluster.commander.lock();
@@ -258,8 +269,10 @@ namespace McRave::Combat::Clusters {
                     getCommander(cluster);
 
                 if (auto commander = cluster.commander.lock()) {
-                    cluster.mobileCluster = commander->getGlobalState() != GlobalState::Retreat;
-                    cluster.sharedDestination = commander->getDestination();
+                    auto retreatStation = Stations::getClosestRetreatStation(*commander);
+                    cluster.mobileCluster = commander->getGlobalState() != GlobalState::Retreat || !Terrain::inTerritory(PlayerState::Self, commander->getPosition());
+                    cluster.marchPosition = (commander->getGlobalState() != GlobalState::Retreat && commander->hasTarget()) ? commander->getTarget().lock()->getPosition() : commander->getDestination();
+                    cluster.retreatPosition = retreatStation ? retreatStation->getBase()->Center() : Terrain::getMainPosition();
                     cluster.commandShare = commander->isLightAir() ? CommandShare::Exact : CommandShare::Parallel;
                     cluster.shape = commander->isLightAir() ? Shape::None : Shape::Concave;
 

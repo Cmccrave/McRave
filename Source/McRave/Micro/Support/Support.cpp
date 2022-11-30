@@ -61,7 +61,7 @@ namespace McRave::Support {
                 auto highestCluster = 0.0;               
 
                 auto closestPartner = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                    return find(types.begin(), types.end(), u->getType()) != types.end() && assignedOverlords.find(u->getPosition()) == assignedOverlords.end();
+                    return u->unit()->isCompleted() && find(types.begin(), types.end(), u->getType()) != types.end() && assignedOverlords.find(u->getPosition()) == assignedOverlords.end();
                 });
 
                 if (closestPartner) {

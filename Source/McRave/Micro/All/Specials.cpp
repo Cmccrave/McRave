@@ -377,16 +377,6 @@ namespace McRave::Command
 
     bool train(UnitInfo& unit)
     {
-        // Carrier - Train Interceptor
-        if (unit.getType() == Protoss_Carrier && unit.unit()->getInterceptorCount() < (4 + (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Carrier_Capacity) * 4))) {
-            unit.unit()->train(Protoss_Interceptor);
-            return false;
-        }
-        // Reaver - Train Scarab
-        if (unit.getType() == Protoss_Reaver && unit.unit()->getScarabCount() < (5 + (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Reaver_Capacity) * 5))) {
-            unit.unit()->train(Protoss_Scarab);
-            return false;
-        }
         return false;
     }
 
@@ -533,7 +523,7 @@ namespace McRave::Command
                 return true;
             if (hasMineableResource && (unit.isWithinGatherRange() || Grids::getGroundDensity(unit.getPosition(), PlayerState::Self) > 0.0f || nearNonBlockingChoke))
                 return true;
-            if (!hasMineableResource && resource->unit()->exists())
+            if (!hasMineableResource)
                 return true;
             if (Planning::overlapsPlan(unit, unit.getPosition()))
                 return true;
@@ -611,13 +601,15 @@ namespace McRave::Command
 
         // Gather from resource
         auto station = Stations::getClosestStationGround(unit.getPosition(), PlayerState::Self);
-        if (canClick(resource)) {
-            unit.unit()->rightClick(resource->unit());
-            return true;
-        }
-        if (canGather(resource)) {
-            unit.unit()->gather(resource->unit());
-            return true;
+        if (resource->unit()->exists()) {
+            if (canClick(resource)) {
+                unit.unit()->rightClick(resource->unit());
+                return true;
+            }
+            if (canGather(resource)) {
+                unit.unit()->gather(resource->unit());
+                return true;
+            }
         }
         return false;
     }

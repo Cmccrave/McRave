@@ -83,8 +83,8 @@ namespace McRave::Combat::State {
         else if ((insideRetreatRadius || atHome) && (!unit.attemptingRunby() || Terrain::inTerritory(PlayerState::Enemy, unit.getPosition())) && (unit.localRetreat() || unit.getSimState() == SimState::Loss)) {
             unit.setLocalState(LocalState::Retreat);
         }
-        else if (insideEngageRadius)
-            unit.setLocalState(LocalState::Hold);
+        //else if (insideEngageRadius && !unit.isLightAir())
+        //    unit.setLocalState(LocalState::Hold);
 
         // Default state
         else

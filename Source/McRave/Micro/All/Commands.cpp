@@ -109,6 +109,11 @@ namespace McRave::Command {
 
     bool misc(UnitInfo& unit)
     {
+        if (unit.getType() == Protoss_Reaver && unit.unit()->getScarabCount() < (5 + (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Reaver_Capacity) * 5)))
+            unit.unit()->train(Protoss_Scarab);
+        if (unit.getType() == Protoss_Carrier && unit.unit()->getInterceptorCount() < (4 + (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Carrier_Capacity) * 4)))
+            unit.unit()->train(Protoss_Interceptor);
+
         // Unstick a unit
         if (unit.isStuck()) {
             unit.unit()->stop();
@@ -131,7 +136,7 @@ namespace McRave::Command {
         }
 
         // If unit is potentially stuck, try to find a manner pylon
-        else if (unit.getRole() == Role::Worker && (unit.framesHoldingResource() >= 100 || unit.framesHoldingResource() <= -200)) {
+        else if (unit.getRole() == Role::Worker && (unit.framesHoldingResource() >= 100 || unit.framesHoldingResource() <= -200) && Terrain::inTerritory(PlayerState::Self, unit.getPosition())) {
             auto pylon = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) {
                 return u->getType() == UnitTypes::Protoss_Pylon;
             });
@@ -226,7 +231,7 @@ namespace McRave::Command {
 
                 // Approach units that are moving away from us
                 if ((!unit.isLightAir() || unitTarget->isFlying()) && unit.getInterceptPosition().isValid() && interceptDistance > unit.getPosition().getDistance(unitTarget->getPosition()))
-                    return true;                
+                    return true;
 
                 // If crushing victory, push forward
                 if (!unit.isLightAir() && unit.getSimValue() >= 25.0 && unitTarget->getGroundRange() > 32.0)
@@ -319,11 +324,11 @@ namespace McRave::Command {
                 auto hasMineableResource = false;
                 if (unit.hasResource()) {
                     auto resource = unit.getResource().lock();
-                    hasMineableResource = resource->getResourceState() == ResourceState::Mineable && resource->unit()->exists();
+                    hasMineableResource = resource->getResourceState() == ResourceState::Mineable;
                 }
 
                 return ((hasBuildingAssignment && Workers::shouldMoveToBuild(unit, unit.getBuildPosition(), unit.getBuildType()))
-                    || (hasMineableResource && !unit.isWithinGatherRange() && Grids::getGroundThreat(unit.getPosition(), PlayerState::Enemy) <= 0.0f && Grids::getGroundDensity(unit.getPosition(), PlayerState::Self) <= 0.0f))
+                    || (hasMineableResource && !unit.isWithinGatherRange() && Grids::getGroundDensity(unit.getPosition(), PlayerState::Self) <= 0.0f))
                     || unit.getGoal().isValid();
             }
 
@@ -555,7 +560,7 @@ namespace McRave::Command {
 
             Visuals::drawPath(unit.getDestinationPath());
 
-            auto bestPosition = findViablePosition(unit, unit.getPosition(), 20, scoreFunction);
+            auto bestPosition = findViablePosition(unit, unit.getPosition(), 12, scoreFunction);
             if (bestPosition.isValid()) {
                 unit.command(Move, bestPosition);
                 return true;

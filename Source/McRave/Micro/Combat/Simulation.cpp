@@ -138,6 +138,10 @@ namespace McRave::Combat::Simulation {
             maxWinPercent = 1.4;
         }
 
+        // Adjust winrates based on game duration
+        // Early on we want confident engagements, later on we can be lenient
+        // TODO
+
         // Adjust winrates based on how close to a station we are
         auto closestSelf = unit.isFlying() ? Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self) : Stations::getClosestStationGround(unit.getPosition(), PlayerState::Self);
         auto closestEnemy = unit.isFlying() ? Stations::getClosestStationAir(unit.getPosition(), PlayerState::Enemy) : Stations::getClosestStationGround(unit.getPosition(), PlayerState::Enemy);

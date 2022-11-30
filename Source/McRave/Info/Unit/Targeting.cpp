@@ -133,6 +133,9 @@ namespace McRave::Targets {
                     if (target.isThreatening())
                         return allowThreatenTarget(unit, target);
 
+                    if (Spy::getEnemyTransition() == "ZealotRush" && target.getType() == Protoss_Zealot)
+                        return true;
+
                     if (!defendExpander && invalidType && !anythingTime && !anythingSupply && unit.attemptingHarass()
                         && !unit.canOneShot(target) && !target.getType().isWorker() && !target.isLightAir() && !unit.globalRetreat()) {
 

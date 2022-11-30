@@ -311,7 +311,7 @@ namespace McRave::Learning {
             const auto calculateUCB = [&](int w, int l) {
                 if (w + l == 0)
                     return 999.9;
-                return (double(w) / double(w + l)) + cbrt(2.0 * log((double)totalGames) / double(w + l));
+                return (double(w) / double(w + l)) + pow(2.0 * log((double)totalGames) / double(w + l), 0.1);
             };
 
             // Attempt to read a file from the read directory first, then write directory
@@ -384,7 +384,7 @@ namespace McRave::Learning {
         void getPermanentBuild()
         {
             // Testing builds if needed
-            if (false) {
+            if (true) {
                 if (Players::PvZ()) {
                     BuildOrder::setLearnedBuild("FFE", "Forge", "NeoBisu");
                     return;

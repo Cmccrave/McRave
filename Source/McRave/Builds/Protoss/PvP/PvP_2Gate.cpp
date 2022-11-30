@@ -38,12 +38,12 @@ namespace McRave::BuildOrder::Protoss {
         void PvP_2G_Robo()
         {
             // "https://liquipedia.net/starcraft/2_Gate_Reaver_(vs._Protoss)"
-            inTransition =                          total(Protoss_Robotics_Facility) > 0;
-            inOpening =                             s < 80;
+            inTransition =                              total(Protoss_Robotics_Facility) > 0;
+            inOpening =                                 s < 80;
             firstUnit =                                 enemyMaybeDT() ? Protoss_Observer : Protoss_Reaver;
 
             // Build
-            buildQueue[Protoss_Gateway] =               2 + (com(Protoss_Cybernetics_Core) > 0);
+            buildQueue[Protoss_Gateway] =               2 + (com(Protoss_Robotics_Facility) > 0);
             buildQueue[Protoss_Nexus] =                 1;
             buildQueue[Protoss_Assimilator] =           total(Protoss_Zealot) >= 3;
             buildQueue[Protoss_Cybernetics_Core] =      (total(Protoss_Zealot) >= 5 && vis(Protoss_Assimilator) >= 1);
@@ -60,7 +60,7 @@ namespace McRave::BuildOrder::Protoss {
         void PvP_2G_Main()
         {
             // "https://liquipedia.net/starcraft/2_Gate_(vs._Protoss)" - 10/12
-            unitLimits[Protoss_Zealot] =                    s <= 80 ? 7 : 0;
+            unitLimits[Protoss_Zealot] =                    s <= 80 ? 5 : 0;
             scout =                                         Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
             transitionReady =                               vis(Protoss_Gateway) >= 2;
             desiredDetection =                              Protoss_Forge;

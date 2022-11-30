@@ -44,20 +44,18 @@ namespace McRave::BuildOrder::Zerg {
             return 6;
         else if (vis(Zerg_Spire) > 0)
             return 12;
-        else if (vis(Zerg_Lair) > 0)
-            return 18;
         return 8;
     }
 
     void ZvZ_PL_1HatchMuta()
     {
-        inOpening =                                 total(Zerg_Mutalisk) < 4;
-        inTransition =                              vis(Zerg_Lair) > 0;
-        unitLimits[Zerg_Drone] =                        atPercent(Zerg_Lair, 0.50) ? 12 : 9;
+        inOpening =                                     total(Zerg_Mutalisk) < 4;
+        inTransition =                                  vis(Zerg_Lair) > 0;
+        unitLimits[Zerg_Drone] =                        vis(Zerg_Lair) > 0 ? 11 : 9;
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvZ();
         gasLimit =                                      ((lingSpeed() || gas(80)) && total(Zerg_Lair) == 0) ? 2 : gasMax();
         firstUnit =                                     Zerg_Mutalisk;
-        inBookSupply =                                   total(Zerg_Mutalisk) < 3;
+        inBookSupply =                                  total(Zerg_Mutalisk) < 3;
 
         auto secondHatch = (Spy::getEnemyTransition() == "1HatchMuta" && total(Zerg_Mutalisk) >= 4)
             || (Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony) >= 2 && Util::getTime() < Time(3, 30));
@@ -83,8 +81,8 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvZ_PH_2HatchMuta()
     {
-        inOpening =                                 total(Zerg_Mutalisk) < 3;
-        inTransition =                              vis(Zerg_Lair) > 0;
+        inOpening =                                     total(Zerg_Mutalisk) < 3;
+        inTransition =                                  vis(Zerg_Lair) > 0;
         unitLimits[Zerg_Drone] =                        20;
         gasLimit =                                      (lingSpeed() && com(Zerg_Lair) == 0) ? 1 : gasMax();
         unitLimits[Zerg_Zergling] =                     18;

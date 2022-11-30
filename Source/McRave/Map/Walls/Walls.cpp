@@ -112,7 +112,7 @@ namespace McRave::Walls {
 
             // 1GateCore
             if (Spy::getEnemyBuild() == "1GateCore" || (Spy::getEnemyBuild() == "Unknown" && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 1)) {
-                return (firstHatchNeeded && Util::getTime() > Time(3, 45))
+                return (!threeHatch && firstHatchNeeded && Util::getTime() > Time(3, 45))
                     + (!threeHatch && Util::getTime() > Time(4, 30))
                     + (!threeHatch && Util::getTime() > Time(5, 00));
             }
@@ -120,20 +120,19 @@ namespace McRave::Walls {
             // 2Gate
             if (Spy::getEnemyBuild() == "2Gate" && Util::getTime() < Time(5, 30) && !Spy::enemyProxy()) {
                 if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
-                    return (!threeHatch && firstHatchNeeded && Util::getTime() > Time(3, 45))
+                    return (!threeHatch && firstHatchNeeded && Util::getTime() > Time(3, 15))
                     + (!threeHatch && Util::getTime() > Time(4, 10))
                     + (!threeHatch && Util::getTime() > Time(4, 40));
                 if (Spy::getEnemyOpener() == "10/17")
-                    return (!threeHatch && firstHatchNeeded && Util::getTime() > Time(3, 45))
+                    return (!threeHatch && firstHatchNeeded && Util::getTime() > Time(3, 15))
                     + (!threeHatch && Util::getTime() > Time(4, 30))
                     + (!threeHatch && Util::getTime() > Time(5, 00));
                 if (Spy::getEnemyOpener() == "10/12" || Spy::getEnemyOpener() == "Unknown")
-                    return (!threeHatch && firstHatchNeeded && Util::getTime() > Time(3, 00))
+                    return (!threeHatch && firstHatchNeeded && Util::getTime() > Time(3, 15))
                     + (!threeHatch && Util::getTime() > Time(4, 15))
                     + (!threeHatch && Util::getTime() > Time(4, 45));
                 if (Spy::getEnemyOpener() == "9/9")
-                    return firstHatchNeeded
-                    + (!threeHatch && Util::getTime() > Time(4, 00))
+                    return (firstHatchNeeded && Util::getTime() > Time(3, 15))
                     + (!threeHatch && Util::getTime() > Time(4, 30));
             }
 
@@ -146,11 +145,17 @@ namespace McRave::Walls {
                 if (Spy::getEnemyTransition() == "NeoBisu" && Util::getTime() < Time(6, 30))
                     return ((2 * (Util::getTime() > Time(6, 00))));
                 if (Spy::getEnemyTransition() == "Speedlot" && Util::getTime() < Time(7, 00))
-                    return ((2 * (Util::getTime() > Time(6, 00))) + (2 * (Util::getTime() > Time(6, 30))) + (2 * (Util::getTime() > Time(7, 00))));
+                    return (2 * (Util::getTime() > Time(6, 00)))
+                    + (2 * (Util::getTime() > Time(6, 30)))
+                    + (2 * (Util::getTime() > Time(7, 00)));
                 if (Spy::getEnemyTransition() == "Unknown" && Util::getTime() < Time(5, 15))
-                    return ((2 * (Util::getTime() > Time(6, 00))) + (Util::getTime() > Time(6, 30)) + (2 * (Util::getTime() > Time(8, 00))));
+                    return (2 * (Util::getTime() > Time(6, 00)))
+                    + (Util::getTime() > Time(6, 30))
+                    + (2 * (Util::getTime() > Time(8, 00)));
                 if (Util::getTime() < Time(8, 00))
-                    return ((Util::getTime() > Time(5, 30)) + (Util::getTime() > Time(6, 15)) + (Util::getTime() > Time(6, 45)));
+                    return (Util::getTime() > Time(5, 30))
+                    + (Util::getTime() > Time(6, 15))
+                    + (Util::getTime() > Time(6, 45));
                 if (Spy::getEnemyTransition() == "5GateGoon" && Util::getTime() < Time(10, 00))
                     return (Util::getTime() > Time(5, 40))
                     + (Util::getTime() > Time(6, 00))
@@ -160,10 +165,10 @@ namespace McRave::Walls {
                     + (Util::getTime() > Time(8, 00))
                     + (Util::getTime() > Time(9, 00));
                 if (Spy::getEnemyTransition() == "CorsairGoon" && Util::getTime() < Time(10, 00))
-                    return ((Util::getTime() > Time(5, 30))
-                        + (Util::getTime() > Time(6, 15))
-                        + (Util::getTime() > Time(6, 45))
-                        + 2 * (Util::getTime() > Time(7, 15)));
+                    return (Util::getTime() > Time(5, 30))
+                    + (Util::getTime() > Time(6, 15))
+                    + (Util::getTime() > Time(6, 45))
+                    + 2 * (Util::getTime() > Time(7, 15));
                 return 0;
             }
 
@@ -175,7 +180,7 @@ namespace McRave::Walls {
         {
             // See if they expanded or got some tech at a reasonable point for 1 base play
             auto noExpand = !Spy::enemyFastExpand();
-            auto noTech = Spy::getEnemyTransition() == "Unknown"
+            auto noTech = (Spy::getEnemyTransition() == "Unknown" || Spy::getEnemyTransition() == "ZealotRush")
                 && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0
                 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) == 0
                 && Players::getTotalCount(PlayerState::Enemy, Protoss_High_Templar) == 0
@@ -186,15 +191,16 @@ namespace McRave::Walls {
             auto firstHatchNeeded = !threeHatch || BuildOrder::getCurrentOpener() == "12Hatch";
 
             // 3 hatch builds make lings instead of sunkens
+            auto initial = 1;
             if (threeHatch)
-                return 0;
+                initial = -2;
 
             // 1 base transitions
-            if (!threeHatch && (Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore")) {
+            if (Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore") {
 
                 // 4Gate
                 if (Spy::getEnemyTransition() == "4Gate" && Util::getTime() < Time(9, 00)) {
-                    return 1
+                    return initial
                         + (Util::getTime() > Time(4, 10))
                         + (noExpand && Util::getTime() > Time(4, 40))
                         + (noExpand && Util::getTime() > Time(5, 10))
@@ -207,7 +213,7 @@ namespace McRave::Walls {
 
                 // DT
                 if (Util::getTime() < Time(8, 30) && Spy::getEnemyTransition() == "DT") {
-                    return 1
+                    return initial
                         + (noExpand && Util::getTime() > Time(4, 15))
                         + (noExpand && Util::getTime() > Time(5, 00))
                         + (noExpand && Util::getTime() > Time(5, 20))
@@ -216,23 +222,34 @@ namespace McRave::Walls {
 
                 // Corsair
                 if (Util::getTime() < Time(8, 30) && Spy::getEnemyTransition() == "Corsair") {
-                    return 1
+                    return initial
                         + (noExpand && Util::getTime() > Time(4, 30))
                         + (noExpand && Util::getTime() > Time(7, 00));
                 }
 
                 // Speedlot
-                if (Util::getTime() < Time(8, 30) && (Spy::getEnemyTransition() == "Speedlot" || Spy::getEnemyTransition() == "ZealotRush")) {
-                    return 1
+                if (Util::getTime() < Time(8, 30) && Spy::getEnemyTransition() == "Speedlot") {
+                    return initial
                         + (noExpand && Util::getTime() > Time(4, 00))
                         + (noExpand && Util::getTime() > Time(4, 30))
                         + (noExpand && Util::getTime() > Time(5, 00))
                         + (noExpand && Util::getTime() > Time(5, 30));
                 }
 
+                // Zealot flood
+                if (Util::getTime() < Time(8, 30) && Spy::getEnemyTransition() == "ZealotRush") {
+                    return initial
+                        + (noExpand && Util::getTime() > Time(4, 00))
+                        + (noExpand && Util::getTime() > Time(4, 30))
+                        + (noExpand && Util::getTime() > Time(5, 00))
+                        + (noExpand && Util::getTime() > Time(5, 30))
+                        + (noExpand && Util::getTime() > Time(6, 00))
+                        + (noExpand && Util::getTime() > Time(6, 30));
+                }
+
                 // Unknown + Expand + No Tech
                 if (Util::getTime() > Time(7, 00) && Spy::enemyFastExpand() && Spy::getEnemyTransition() == "Unknown") {
-                    return 1
+                    return initial
                         + (noTech && Util::getTime() > Time(7, 00))
                         + (noTech && Util::getTime() > Time(7, 30))
                         + (noTech && Util::getTime() > Time(8, 00))
@@ -241,7 +258,7 @@ namespace McRave::Walls {
 
                 // Unknown + No Expand + No Tech
                 if (Util::getTime() > Time(5, 00) && noExpandOrTech) {
-                    return 2
+                    return initial
                         + (noExpandOrTech && Util::getTime() > Time(5, 20))
                         + (noExpandOrTech && Util::getTime() > Time(5, 40))
                         + (noExpandOrTech && Util::getTime() > Time(6, 00))
@@ -286,7 +303,7 @@ namespace McRave::Walls {
                 if (Spy::getEnemyTransition() == "2Fact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Spy::enemyWalled())
                     return (Util::getTime() > Time(3, 30));
             }
-            return (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(5, 00));
+            return (Util::getTime() > Time(3, 30));
         }
 
         int ZvTTransition(BWEB::Wall& wall)
@@ -322,7 +339,7 @@ namespace McRave::Walls {
             auto unitsKilled = Players::getDeadCount(PlayerState::Enemy, Protoss_Zealot)
                 + Players::getDeadCount(PlayerState::Enemy, Protoss_Dragoon);
 
-            return max(ZvPOpener(wall), ZvPTransition(wall)) - max(0, unitsKilled / 2);
+            return max(ZvPOpener(wall), ZvPTransition(wall)) - max(0, unitsKilled / 4);
         }
 
         int groundDefensesNeededZvT(BWEB::Wall& wall)

@@ -132,7 +132,7 @@ namespace McRave::Spy::Terran {
                 if (theSpy.build.name == "2Rax") {
                     if (theSpy.expand.possible && (hasTanks || Players::getVisibleCount(PlayerState::Enemy, Terran_Machine_Shop) > 0) && Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) <= 1 && Players::getVisibleCount(PlayerState::Enemy, Terran_Barracks) >= 3 && Util::getTime() < Time(10, 30))
                         theSpy.transition.name = "1FactTanks";
-                    else if (theSpy.rushArrivalTime < Time(3, 10)
+                    else if (arrivesBy(3, Terran_Marine, Time(3, 10))
                         || completesBy(2, Terran_Barracks, Time(2, 35))
                         || completesBy(3, Terran_Barracks, Time(4, 00)))
                         theSpy.transition.name = "MarineRush";

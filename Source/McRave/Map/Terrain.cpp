@@ -241,24 +241,8 @@ namespace McRave::Terrain {
             auto oldPos = defendPosition;
             auto mainChoke = getMainChoke();
 
-            // See if a defense is in range of our main choke
-            auto defendRunby = Spy::getEnemyBuild() == "RaxFact";
-            if (defendNatural && Players::ZvT()) {
-                auto closestDefense = Util::getClosestUnit(Position(getMainChoke()->Center()), PlayerState::Self, [&](auto &u) {
-                    return u->getRole() == Role::Defender && u->canAttackGround();
-                });
-                if (closestDefense && closestDefense->getPosition().getDistance(Position(getMainChoke()->Center())) < closestDefense->getGroundRange())
-                    defendRunby = true;
-            }
-
-            // If we want to prevent a runby
-            if (Combat::defendChoke() && mainChoke && defendRunby) {
-                defendPosition = Position(mainChoke->Center());
-                defendNatural = false;
-            }
-
             // Natural defending position
-            else if (defendNatural && getMyNatural()) {
+            if (defendNatural && getMyNatural()) {
                 defendChoke = getNaturalChoke();
                 defendPosition = Stations::getDefendPosition(getMyNatural());
                 addTerritory(PlayerState::Self, getMyNatural());
@@ -314,14 +298,6 @@ namespace McRave::Terrain {
                 return max(frame6MutasDone, Broodwar->getFrameCount() - Grids::lastVisibleFrame(TilePosition(station->getResourceCentroid()))) > 2880 && !commanderInRange(station->getResourceCentroid());
             };
 
-            //// Check if it's early on and we're losing fights at home
-            //for (auto &unit : Units::getUnits(PlayerState::Self)) {
-            //    if (Util::getTime() < Time(10, 00) && unit->globalEngage() && !unit->getType().isWorker() && !unit->getType().isBuilding() && unit->getSimState() != SimState::Win) {
-            //        harassPosition = unit->getPosition();
-            //        return;
-            //    }
-            //}
-
             // In FFA just hit closest base to us
             if (Players::vFFA() && attackPosition.isValid()) {
                 harassPosition = attackPosition;
@@ -344,27 +320,6 @@ namespace McRave::Terrain {
                 harassPosition = enemyMain->getResourceCentroid();
                 return;
             }
-            //if (Util::getTime() > Time(10, 00)) {
-            //    auto closestEnemy = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-            //        return u->isThreatening() && !u->isHidden();
-            //    });
-            //    if (closestEnemy) {
-            //        harassPosition = closestEnemy->getPosition();
-            //        return;
-            //    }
-            //}
-
-            //// Some hardcoded ZvP stuff
-            //if (Players::ZvP() && Util::getTime() < Time(10, 00)) {
-            //    if (enemyNatural && stationNotVisitedRecently(enemyNatural)) {
-            //        harassPosition = enemyNatural->getResourceCentroid();
-            //        return;
-            //    }
-            //    else if (enemyMain && stationNotVisitedRecently(enemyMain)) {
-            //        harassPosition = enemyMain->getResourceCentroid();
-            //        return;
-            //    }
-            //}
 
             // Create a list of valid positions to harass/check
             vector<BWEB::Station*> stations = Stations::getStations(PlayerState::Enemy);

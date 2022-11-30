@@ -40,7 +40,7 @@ namespace McRave::BuildOrder::Protoss {
 
             buildQueue[Protoss_Nexus] =                         1 + (s >= 42);
             buildQueue[Protoss_Pylon] =                         (s >= 16) + (s >= 30);
-            buildQueue[Protoss_Assimilator] =                   s >= 30;
+            buildQueue[Protoss_Assimilator] =                   s >= 24;
             buildQueue[Protoss_Gateway] =                       (s >= 20) + (vis(Protoss_Nexus) >= 2) + (s >= 76);
             buildQueue[Protoss_Cybernetics_Core] =              s >= 26;
         }
@@ -64,9 +64,9 @@ namespace McRave::BuildOrder::Protoss {
 
         void PvT_2B_Obs()
         {
-            inOpening =                                 s < 80;
+            inOpening =                                     s < 80;
             firstUnit =                                     Protoss_Observer;
-            inTransition =                              total(Protoss_Nexus) >= 2;
+            inTransition =                                  total(Protoss_Nexus) >= 2;
 
             buildQueue[Protoss_Assimilator] =               s >= 24;
             buildQueue[Protoss_Cybernetics_Core] =          s >= 26;
@@ -75,9 +75,9 @@ namespace McRave::BuildOrder::Protoss {
 
         void PvT_2B_Carrier()
         {
-            inOpening =                                 s < 160;
+            inOpening =                                     s < 160;
             firstUnit =                                     Protoss_Carrier;
-            inTransition =                              total(Protoss_Stargate) > 0;
+            inTransition =                                  total(Protoss_Stargate) > 0;
 
             buildQueue[Protoss_Assimilator] =               (s >= 24) + (s >= 60);
             buildQueue[Protoss_Cybernetics_Core] =          s >= 26;
@@ -87,19 +87,21 @@ namespace McRave::BuildOrder::Protoss {
 
         void PvT_2B_ReaverCarrier()
         {
-            inOpening =                             s < 120;
-            inTransition =                          total(Protoss_Stargate) > 0;
-            firstUnit =                                 Players::getVisibleCount(PlayerState::Enemy, Terran_Medic) > 0 && vis(Protoss_Reaver) == 0 ? Protoss_Reaver : Protoss_Carrier;
+            inOpening =                                 s < 120;
+            inTransition =                              total(Protoss_Stargate) > 0;
+            firstUnit =                                 Players::getTotalCount(PlayerState::Enemy, Terran_Medic) > 0 ? Protoss_Reaver : Protoss_Carrier;
 
             // Build
             buildQueue[Protoss_Assimilator] =           1 + (s >= 56);
             if (firstUnit == Protoss_Carrier) {
                 buildQueue[Protoss_Stargate] =          (s >= 80) + (vis(Protoss_Carrier) > 0);
-                buildQueue[Protoss_Fleet_Beacon] =      atPercent(Protoss_Stargate, 1.00);
+                buildQueue[Protoss_Fleet_Beacon] =      atPercent(Protoss_Stargate, 0.95);
             }
 
-            if (firstUnit == Protoss_Reaver)
+            if (firstUnit == Protoss_Reaver) {
                 buildQueue[Protoss_Robotics_Facility] = s >= 58;
+                buildQueue[Protoss_Robotics_Support_Bay] = atPercent(Protoss_Robotics_Facility, 0.95);
+            }
 
             // Army composition
             armyComposition[Protoss_Dragoon] =          1.00;

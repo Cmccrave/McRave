@@ -127,7 +127,7 @@ namespace McRave::Goals {
                     for (auto &station : stations) {
                         if (station->isMain())
                             continue;
-                        assignPercentToGoal(station->getBase()->Center(), rangedType, percentPer, GoalType::None);
+                        assignPercentToGoal(Stations::getDefendPosition(station), rangedType, percentPer, GoalType::None);
                     }
                 }
             }
@@ -147,14 +147,14 @@ namespace McRave::Goals {
                             if (closestWall && closestWall->getGroundDefenseCount() >= 2)
                                 continue;
 
-                            auto naturalDefendPosition = Position(closestNatural->getBase()->Center());
+                            auto naturalDefendPosition = Stations::getDefendPosition(closestNatural);
                             assignPercentToGoal(naturalDefendPosition, rangedType, 0.25, GoalType::Defend);
                             continue;
                         }
                     }
 
                     // Otherwise defend at this base
-                    auto defendPosition = station->getBase()->Center();
+                    auto defendPosition = Stations::getDefendPosition(station);
                     if (com(rangedType) > 4)
                         assignPercentToGoal(defendPosition, rangedType, 0.25, GoalType::Defend);
                     else
@@ -328,19 +328,6 @@ namespace McRave::Goals {
                     assignNumberToGoal(oldestTile, Zerg_Zergling, 1, GoalType::Explore);
             }
 
-            // Determine if we need to create a new checking unit to try and detect the enemy build
-            if (Util::getTime() > Time(3, 00) && Terrain::getEnemyMain()) {
-                const auto needEnemyCheck = !Players::ZvZ() && !Spy::enemyRush() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) <= 0
-                    && Spy::getEnemyTransition() == "Unknown" && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(6, 00)
-                    && Terrain::getEnemyMain()
-                    && !Scouts::gatheringInformation()
-                    && Broodwar->getFrameCount() - Grids::getLastVisibleFrame(Terrain::getEnemyMain()->getBase()->Location()) > 120;
-
-                if (needEnemyCheck) {
-                    assignNumberToGoal(Terrain::getEnemyMain()->getBase()->Center(), Zerg_Zergling, 1, GoalType::Explore);
-                }
-            }
-
             // Assign an Overlord to watch our Choke early on
             if (Terrain::getNaturalChoke()) {
                 if ((Util::getTime() < Time(3, 00) && !Spy::enemyProxy()) || (Util::getTime() < Time(2, 15) && Spy::enemyProxy()) || (Players::ZvZ() && enemyStrength.airToAir <= 0.0))
@@ -411,63 +398,6 @@ namespace McRave::Goals {
                     if (Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines) && Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments))
                         assignPercentToGoal(posBest, Zerg_Hydralisk, 0.50, GoalType::Attack);
                 }
-            }
-
-            // Assign Scourge to watch for drops coming in
-            if (Players::ZvT() && Util::getTime() > Time(10, 00)) {
-                vector<Position> validSecondaryNodes;
-                Position firstNode = Positions::Invalid;
-                Position secondNode = Positions::Invalid;
-
-                auto playableWidth = Broodwar->mapWidth() * 32 - 320;
-                auto playableHeight = Broodwar->mapHeight() * 32 - 320;
-                auto widthIncrement = playableWidth / 10;
-                auto heightIncrement = playableHeight / 10;
-                vector<Position> nodes;
-
-                for (int x = 160; x < Broodwar->mapWidth() * 32 - 160; x+=widthIncrement) {
-                    nodes.push_back(Position(x, 160));
-                    nodes.push_back(Position(x, Broodwar->mapHeight() * 32 - 160));
-                }
-                for (int y = 160; y < Broodwar->mapHeight() * 32 - 160; y+=heightIncrement) {
-                    nodes.push_back(Position(160, y));
-                    nodes.push_back(Position(Broodwar->mapWidth() * 32 - 160, y));
-                }
-                sort(nodes.begin(), nodes.end(), [&](auto &l, auto &r) { return l.getDistance(Terrain::getEnemyStartingPosition()) < r.getDistance(Terrain::getEnemyStartingPosition()); });
-
-                int i = 0;
-                for (auto &pos : nodes) {
-
-                    auto closestEnemyStation = Stations::getClosestStationAir(pos, PlayerState::Enemy);
-                    auto closestSelfStation = Stations::getClosestStationAir(pos, PlayerState::Self);
-
-                    if (!closestEnemyStation
-                        || !closestSelfStation
-                        || pos.getDistance(closestEnemyStation->getBase()->Center()) < pos.getDistance(closestSelfStation->getBase()->Center())
-                        || Terrain::inTerritory(PlayerState::Enemy, pos))
-                        continue;
-
-                    validSecondaryNodes.push_back(pos);
-                    //Broodwar->drawTextMap(pos, "%d", i);
-                    //Broodwar->drawCircleMap(pos, 8, Colors::Yellow);
-                    i++;
-                }
-
-                // First node is automatically the closest to the enemy
-                if (!validSecondaryNodes.empty()) {
-                    firstNode = validSecondaryNodes.front();
-                }
-
-                // Second node is furthest from first node
-                if (!validSecondaryNodes.empty()) {
-                    sort(validSecondaryNodes.begin(), validSecondaryNodes.end(), [&](auto &l, auto &r) { return l.getDistance(firstNode) > r.getDistance(firstNode); });
-                    secondNode = validSecondaryNodes.front();
-                }
-
-                if (firstNode.isValid())
-                    assignNumberToGoal(firstNode, Zerg_Scourge, 2, GoalType::Contain);
-                if (secondNode.isValid())
-                    assignNumberToGoal(secondNode, Zerg_Scourge, 2, GoalType::Contain);
             }
 
             // Send a Zergling to a low energy Defiler

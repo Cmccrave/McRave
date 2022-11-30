@@ -39,7 +39,7 @@ namespace McRave::BuildOrder::Protoss
                 buildQueue[Protoss_Pylon] = count;
 
                 for (auto &station : Stations::getStations(PlayerState::Self)) {
-                    if (Stations::needPower(station)) {
+                    if (vis(Protoss_Pylon) > 10 && Stations::needPower(station)) {
                         buildQueue[Protoss_Pylon]++;
                         break;
                     }

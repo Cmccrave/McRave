@@ -106,7 +106,7 @@ namespace McRave::Spy::General {
         void checkEnemyRush(PlayerInfo& player, StrategySpy& theSpy)
         {
             // Rush builds are immediately aggresive builds
-            auto supplySafe = Broodwar->self()->getRace() == Races::Zerg ? Players::getSupply(PlayerState::Self, Races::None) >= 60 : Players::getSupply(PlayerState::Self, Races::None) >= 80;
+            auto supplySafe = Broodwar->self()->getRace() == Races::Zerg ? Players::getSupply(PlayerState::Self, Races::None) >= 70 : Players::getSupply(PlayerState::Self, Races::None) >= 90;
             theSpy.rush.possible = !supplySafe && (Spy::getEnemyTransition() == "MarineRush" || Spy::getEnemyTransition() == "ZealotRush" || Spy::getEnemyTransition() == "LingRush" || Spy::getEnemyTransition() == "WorkerRush");
             if (supplySafe)
                 theSpy.rush.confirmed = false;

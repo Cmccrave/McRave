@@ -143,7 +143,7 @@ namespace McRave::Roles {
                 // Don't assign a role to uncompleted units
                 if (!unit.unit()->isCompleted() && !unit.getType().isBuilding() && unit.getType() != Zerg_Egg) {
                     unit.setRole(Role::None);
-                    return;
+                    continue;
                 }
 
                 // Update default role for each unit

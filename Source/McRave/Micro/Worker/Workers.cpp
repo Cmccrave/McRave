@@ -13,6 +13,27 @@ namespace McRave::Workers {
         int boulderWorkers = 0;
         map<Position, double> distChecker;
 
+        BWEB::Station * getTransferStation(UnitInfo& unit)
+        {
+            // Allow some drones to transfer if another base is unsaturated
+            if (Util::getTime() < Time(4, 00) && !Spy::enemyRush() && vis(UnitTypes::Zerg_Drone) >= 9) {
+                for (auto &station : Stations::getStations(PlayerState::Self)) {
+                    int droneCount = 0;
+                    auto mineable = true;
+                    for (auto &mineral : Resources::getMyMinerals()) {
+                        if (mineral->hasStation() && mineral->getStation() == station) {
+                            if (mineral->getResourceState() != ResourceState::Mineable)
+                                mineable = false;
+                            droneCount += mineral->getGathererCount();
+                        }
+                    }
+                    if (mineable && droneCount < 3)
+                        return station;
+                }
+            }
+            return nullptr;
+        }
+
         vector<BWEB::Station*> getSafeStations(UnitInfo& unit)
         {
             // If this station already has defenses, it's likely safe, just need to hide there
@@ -27,6 +48,10 @@ namespace McRave::Workers {
 
                 // If unit is close, it must be safe
                 if (unit.getPosition().getDistance(station->getResourceCentroid()) < 320.0 || mapBWEM.GetArea(unit.getTilePosition()) == station->getBase()->GetArea())
+                    safeStations.push_back(station);
+
+                // If unit is far from home, it's probably safe
+                else if (!Terrain::inTerritory(PlayerState::Self, unit.getPosition()))
                     safeStations.push_back(station);
 
                 // Otherwise create a path to it to check if it's safe
@@ -47,34 +72,6 @@ namespace McRave::Workers {
                 }
             }
             return safeStations;
-        }
-
-        BWEB::Station * getTransferStation(UnitInfo& unit)
-        {
-            // Allow some drones to transfer early on - TODO: Move to StationManager
-            if (Util::getTime() < Time(3, 30) && !Spy::enemyRush() && vis(UnitTypes::Zerg_Drone) >= 9) {
-                for (auto &station : Stations::getStations(PlayerState::Self)) {
-                    int droneCount = 0;
-
-                    for (auto &mineral : Resources::getMyMinerals()) {
-                        if (mineral->hasStation() && mineral->getStation() == station)
-                            droneCount += mineral->getGathererCount();
-                    }
-                    if (droneCount >= 2)
-                        continue;
-
-                    // Check if worker arrives in time when hatch completes
-                    auto closestHatch = Util::getClosestUnit(station->getBase()->Center(), PlayerState::Self, [&](auto &u) {
-                        return u->getType().isResourceDepot();
-                    });
-                    auto framesToArrive = unit.getPosition().getDistance(station->getBase()->Center()) / unit.getSpeed();
-                    auto frameCompletedAt = closestHatch->timeCompletesWhen().frames;
-
-                    if (Broodwar->getFrameCount() + framesToArrive + 48 > frameCompletedAt)
-                        return station;
-                }
-            }
-            return nullptr;
         }
 
         bool isBuildingSafe(UnitInfo& unit)
@@ -239,7 +236,7 @@ namespace McRave::Workers {
             // Check if unit needs a re-assignment
             const auto needGas =            unit.unit()->isCarryingMinerals() && !Resources::isGasSaturated() && isMineralunit && gasWorkers < BuildOrder::gasWorkerLimit();
             const auto needMinerals =       unit.unit()->isCarryingGas() && !Resources::isMineralSaturated() && isGasunit && gasWorkers > BuildOrder::gasWorkerLimit();
-            const auto needNewAssignment =  !unit.hasResource() || needGas || needMinerals || threatened || (excessAssigned && !threatened) || (isMineralunit && transferStation);
+            const auto needNewAssignment =  !unit.hasResource() || needGas || needMinerals || threatened || (excessAssigned && !threatened) || transferStation;
             auto distBest =                 threatened ? 0.0 : DBL_MAX;
             auto oldResource =              unit.hasResource() ? unit.getResource().lock() : nullptr;
 
@@ -249,8 +246,6 @@ namespace McRave::Workers {
 
             // Get some information about the safe stations
             auto safeStations =             getSafeStations(unit);
-            if (transferStation)
-                safeStations.push_back(transferStation);
 
             const auto resourceReady = [&](ResourceInfo& resource, int i) {
                 if (!resource.unit()
@@ -271,10 +266,13 @@ namespace McRave::Workers {
                         || resource.isThreatened())
                         continue;
 
+                    // Find closest unit that we will re-assign
                     auto closestunit = Util::getClosestUnit(resource.getPosition(), PlayerState::Self, [&](auto &u) {
-                        return u->getRole() == Role::Worker && u->unit()->isCarryingMinerals() && !u->getBuildPosition().isValid() && (!u->hasResource() || u->getResource().lock()->getType().isMineralField());
+                        return u->getRole() == Role::Worker && !u->getBuildPosition().isValid() && (!u->hasResource() || u->getResource().lock()->getType().isMineralField());
                     });
-                    if (closestunit && unit != *closestunit)
+
+                    // If this is the closest unit and it's doing a return trip
+                    if (closestunit && (unit != *closestunit || !unit.unit()->isCarryingMinerals()))
                         continue;
 
                     auto dist = resource.getPosition().getDistance(unit.getPosition());
@@ -286,7 +284,7 @@ namespace McRave::Workers {
             }
 
             // Check if we need mineral units
-            if (needMinerals || !unit.hasResource() || threatened || excessAssigned || transferStation) {
+            if (needMinerals || !unit.hasResource() || threatened || excessAssigned || transferStation) {                
                 for (int i = 1; i <= 2; i++) {
                     for (auto &r : Resources::getMyMinerals()) {
                         auto &resource = *r;
@@ -294,7 +292,6 @@ namespace McRave::Workers {
 
                         if (!resourceReady(resource, allowedGatherCount)
                             || (!transferStation && !safeStations.empty() && find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end())
-                            || (!transferStation && closestStation && Stations::getSaturationRatio(closestStation) < 2.0 && resource.getStation() != closestStation)
                             || (transferStation && resource.getStation() != transferStation)
                             || resource.isThreatened())
                             continue;
@@ -371,7 +368,7 @@ namespace McRave::Workers {
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
                 if (unit.getRole() == Role::Worker && !unit.isAsleep() && unit.isAvailable()) {
-                    unit.sleepFrame = Broodwar->getFrameCount() + 8; // Sleep unit for 8 frames
+                    //unit.sleepFrame = Broodwar->getFrameCount() + 8; // Sleep unit for 8 frames
                     updateResource(unit);
                     updateBuilding(unit);
                     updateDestination(unit);

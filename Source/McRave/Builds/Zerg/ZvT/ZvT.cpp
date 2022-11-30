@@ -41,20 +41,9 @@ namespace McRave::BuildOrder::Zerg {
     int lingsNeeded_ZvT() {
         if (com(Zerg_Spawning_Pool) == 0)
             return 0;
-        if (Spy::getEnemyBuild() == "2Rax") {
-            if (vis(Zerg_Sunken_Colony) == 0)
-                return int(max(6.0, 1.5 * Players::getVisibleCount(PlayerState::Enemy, Terran_Marine)));
-            return 6;
-        }
-        if (Spy::enemyRush())
-            return 18;
         if (Spy::enemyProxy() || Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyTransition() == "WorkerRush")
             return 10;
-        if (Spy::getEnemyBuild() == "RaxFact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
-            return 4 + 6 * (Util::getTime() > Time(4, 00));
-        if (Spy::enemyPressure() || Spy::getEnemyBuild() == "2Rax")
-            return 6;
-        return 2 + (4 * (Util::getTime() > Time(4, 00)));
+        return 6;
     }
 
     void ZvT2HatchMuta()

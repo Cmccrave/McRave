@@ -588,7 +588,7 @@ namespace McRave::BuildOrder::Zerg {
         if (!inOpening) {
             int hatchCount = vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive);
             int pumpLings = 0;
-            if (Players::ZvP() && Util::getTime() > Time(7, 30) && techList.find(Zerg_Hydralisk) == techList.end() && hatchCount >= 4 && int(Stations::getStations(PlayerState::Self).size()) >= 3)
+            if (Players::ZvP() && Util::getTime() > Time(7, 30) && techList.find(Zerg_Hydralisk) == techList.end() && hatchCount >= 6 && int(Stations::getStations(PlayerState::Self).size()) >= 3)
                 pumpLings = 12;
             if (Spy::getEnemyTransition() == "Robo")
                 pumpLings = 12;
@@ -624,8 +624,7 @@ namespace McRave::BuildOrder::Zerg {
             auto needScourgeZvZ = Players::ZvZ() && (airCount / 2) > vis(Zerg_Scourge) && (com(Zerg_Extractor) >= 3 || currentTransition == "2HatchMuta") && vis(Zerg_Scourge) < 2;
             auto needScourgeZvT = Players::ZvT() &&
                 ((Spy::getEnemyTransition() == "2PortWraith" && (airCount >= 3 || vis(Zerg_Mutalisk) == 0) && ((vis(Zerg_Scourge) / 2) - 1 < airCount && airCount < 6 && Players::getStrength(PlayerState::Enemy).airToAir > 0.0))
-                    || (Players::getVisibleCount(PlayerState::Enemy, Terran_Valkyrie) >= 2 && vis(Zerg_Scourge) < 8)
-                    || (Util::getTime() > Time(10, 00) && vis(Zerg_Scourge) < 4));
+                    || (Players::getVisibleCount(PlayerState::Enemy, Terran_Valkyrie) >= 2 && vis(Zerg_Scourge) < 8));
 
             if (needScourgeZvP || needScourgeZvZ || needScourgeZvT) {
                 armyComposition.clear();
@@ -640,11 +639,11 @@ namespace McRave::BuildOrder::Zerg {
         int limitBy = int(Stations::getStations(PlayerState::Self).size()) * 3;
         unitReservations.clear();
         if (inOpening || techList.size() <= 1) {
-            if (atPercent(Zerg_Spire, 0.50) && techUnit == Zerg_Mutalisk && (armyComposition[Zerg_Mutalisk] > 0.0 || armyComposition[Zerg_Scourge] > 0.0)) {
+            if (atPercent(Zerg_Spire, 0.50) && vis(Zerg_Drone) >= 16 && techUnit == Zerg_Mutalisk && (armyComposition[Zerg_Mutalisk] > 0.0 || armyComposition[Zerg_Scourge] > 0.0)) {
                 unitReservations[Zerg_Mutalisk] = max(0, limitBy - total(Zerg_Mutalisk) - int(armyComposition[Zerg_Scourge] > 0.0));
                 unitReservations[Zerg_Scourge] = max(0, 2 * int(armyComposition[Zerg_Scourge] > 0.0) - total(Zerg_Scourge));
             }
-            if (vis(Zerg_Hydralisk_Den) > 0 && techUnit == Zerg_Hydralisk && armyComposition[Zerg_Hydralisk] > 0.0)
+            if (vis(Zerg_Hydralisk_Den) > 0 && vis(Zerg_Drone) >= 16 && techUnit == Zerg_Hydralisk && armyComposition[Zerg_Hydralisk] > 0.0)
                 unitReservations[Zerg_Hydralisk] = max(0, limitBy - total(Zerg_Hydralisk));
         }
 

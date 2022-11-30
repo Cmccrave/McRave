@@ -235,7 +235,7 @@ namespace McRave::BuildOrder
 
     void getTechBuildings()
     {
-        const auto preReqCompleted = [&](UnitType type) {
+        const auto notCompleted = [&](UnitType type) {
             int morphOffset = 0;
             if (type == Zerg_Creep_Colony)
                 morphOffset = vis(Zerg_Sunken_Colony) + vis(Zerg_Spore_Colony);
@@ -243,34 +243,26 @@ namespace McRave::BuildOrder
                 morphOffset = vis(Zerg_Lair) + vis(Zerg_Hive);
             if (type == Zerg_Lair)
                 morphOffset = vis(Zerg_Hive);
-
-            if (atPercent(type, 0.95) + morphOffset == 0)
-                return false;
-            return true;
+            return (int(atPercent(type, 0.95)) + morphOffset) == 0;
         };
 
         // For every unit in our tech list, ensure we are building the required buildings
         vector<UnitType> toCheck;
-        for (auto &type : techList) {
-            toCheck.push_back(type);
-            toCheck.push_back(type.whatBuilds().first);
-        }
+        vector<UnitType> checkedAlready;
 
-        // Iterate all required branches of buildings that are required for this tech unit
-        bool moreToAdd;
-        do {
-            moreToAdd = false;
-            auto toCheckCopy = toCheck;
-            for (auto &check : toCheckCopy) {
-                for (auto &pair : check.requiredUnits()) {
-                    UnitType type(pair.first);
-                    if (!preReqCompleted(type) && find(toCheck.begin(), toCheck.end(), type) == toCheck.end()) {
-                        toCheck.push_back(type);
-                        moreToAdd = true;
-                    }
+        // Add any buildable requisite buildings to make this unit
+        std::function<void(UnitType)>addBuildableRequisites = [&](auto &type) {
+            for (auto &[parent, _] : type.requiredUnits()) {
+                checkedAlready.push_back(parent);
+                if (notCompleted(parent) && find(checkedAlready.begin(), checkedAlready.end(), parent) != checkedAlready.end()) {
+                    addBuildableRequisites(parent);
+                    return;
                 }
             }
-        } while (moreToAdd);
+            toCheck.push_back(type);
+        };
+        for (auto &type : techList)
+            addBuildableRequisites(type);
         reverse(toCheck.begin(), toCheck.end());
 
         // For each building we need to check, add to our queue whatever is possible to build based on its required branch
@@ -279,8 +271,7 @@ namespace McRave::BuildOrder
                 continue;
 
             // Queue tech structure
-            int s = Players::getSupply(PlayerState::Self, check.getRace());
-            if (buildCount(check) <= 1) {
+            if (buildCount(check) <= 0) {
                 buildQueue[check] = 1;
                 break;
             }

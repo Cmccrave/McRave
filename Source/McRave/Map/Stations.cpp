@@ -229,6 +229,8 @@ namespace McRave::Stations
             else if (station->isNatural()) {
             }
             else {
+                if (Spy::getEnemyTransition() == "ZealotRush")
+                    return (Util::getTime() > Time(6, 00)) - groundCount;
                 if (Spy::getEnemyBuild() == "1GateCore" || Spy::getEnemyBuild() == "2Gate")
                     return (Util::getTime() > Time(7, 00)) - groundCount;
             }

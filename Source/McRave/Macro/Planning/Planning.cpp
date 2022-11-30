@@ -177,11 +177,8 @@ namespace McRave::Planning {
                 if (!purelyClosest && !Pylons::hasPowerNow(placement, building))
                     current = current * 32.0;
 
-                if (overlapsLarvaHistory(building, placement)) {
-                    if (Util::getTime() < Time(6, 00))
-                        continue;
-                    current = current * 4.0;
-                }
+                if (overlapsLarvaHistory(building, placement))
+                    continue;
 
                 if (!isPathable(building, placement))
                     Visuals::drawBox(placement, placement + TilePosition(2, 2), Colors::Red);

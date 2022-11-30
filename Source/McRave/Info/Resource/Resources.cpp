@@ -47,16 +47,32 @@ namespace McRave::Resources {
 
             // Update resource state
             if (resource.hasStation()) {
+                resource.setResourceState(ResourceState::None);
                 auto base = Util::getClosestUnit(resource.getPosition(), PlayerState::Self, [&](auto &u) {
                     return u->getType().isResourceDepot() && u->getPosition() == resource.getStation()->getBase()->Center();
                 });
 
-                resource.setResourceState(ResourceState::None);
                 if (base) {
-                    if ((resource.getType().isMineralField() && (base->unit()->getRemainingBuildTime() < 150 || base->getType() == Zerg_Lair || base->getType() == Zerg_Hive)) || (resource.getType().isRefinery() && resource.unit()->getRemainingBuildTime() < 120))
-                        resource.setResourceState(ResourceState::Mineable);
-                    else
-                        resource.setResourceState(ResourceState::Assignable);
+                    auto baseCompletion = base->unit()->getRemainingBuildTime();
+                    resource.setResourceState(ResourceState::Assignable);
+
+                    if (resource.getType().isMineralField()) {
+                        auto worker = Util::getClosestUnit(resource.getPosition(), PlayerState::Self, [&](auto &u) {
+                            return u->getType().isWorker();
+                        });
+
+                        if (worker) {
+                            auto workerArrival = worker->getPosition().getDistance(resource.getPosition()) / worker->getSpeed();
+                            if (workerArrival + 120 > baseCompletion)
+                                resource.setResourceState(ResourceState::Mineable);
+                        }
+                        if (base && baseCompletion < 120 && (base->getType() == Protoss_Nexus || base->getType() == Terran_Command_Center || base->getType() == Zerg_Hatchery))
+                            resource.setResourceState(ResourceState::Mineable);
+                    }
+                    else {
+                        if (resource.unit()->getRemainingBuildTime() < 40)
+                            resource.setResourceState(ResourceState::Mineable);
+                    }
                 }
             }
 
@@ -75,7 +91,7 @@ namespace McRave::Resources {
                 for (auto &w : resource.targetedByWhat()) {
                     if (auto worker = w.lock()) {
                         if (worker->getBuildPosition().isValid())
-                             maxMin--, maxGas--;
+                            maxMin--, maxGas--;
                     }
                 }
             }

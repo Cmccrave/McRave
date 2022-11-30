@@ -119,12 +119,12 @@ namespace McRave::Transports {
 
             // Check if this cargo is ready to reinforce
             const auto readyToReinforce = [&](UnitInfo& cargo, UnitInfo& cargoTarget) {
-                return !cargo.unit()->isLoaded();
+                return  cargo.getPosition().getDistance(unit.getPosition()) < 640.0 && !cargo.unit()->isLoaded();
             };
 
             // Check if this cargo is ready to be picked up
             const auto readyToLoad = [&](UnitInfo& cargo, UnitInfo& cargoTarget) {
-                return (!cargo.unit()->isLoaded() && cargo.isRequestingPickup());
+                return cargo.getPosition().getDistance(unit.getPosition()) < 640.0 && !cargo.unit()->isLoaded() && cargo.isRequestingPickup();
             };
 
             // Check if this cargo is ready to engage
@@ -143,7 +143,7 @@ namespace McRave::Transports {
                 if (cargo.getType() == Protoss_High_Templar)
                     return combatEngage && cargo.canStartCast(TechTypes::Psionic_Storm, cargoTarget.getPosition());
                 if (cargo.getType() == Protoss_Reaver)
-                    return combatEngage && cargo.canStartAttack();
+                    return combatEngage;
                 return false;
             };
 
@@ -162,6 +162,8 @@ namespace McRave::Transports {
                     auto cargoArea = mapBWEM.GetArea(TilePosition(cargo.getDestination()));
                     return cargoArea && Terrain::inArea(cargoArea, unit.getPosition());
                 }
+                if (cargo.getType() == Protoss_Reaver)
+                    return cargo.canStartAttack();
                 if (cargo.getType() == Protoss_High_Templar || cargo.getType() == Protoss_Reaver)
                     return true;
                 return false;
@@ -192,10 +194,8 @@ namespace McRave::Transports {
                     setState(TransportState::Reinforcing);
                 else if (readyToEngage(cargo, cargoTarget)) {
                     setState(TransportState::Engaging);
-                    if (readyToDrop(cargo, cargoTarget)) {
-                        unit.unit()->unload(cargo.unit());
-                        Broodwar << "YEP" << endl;
-                    }
+                    if (readyToDrop(cargo, cargoTarget))
+                        unit.unit()->unload(cargo.unit());                    
                 }
             }
         }
@@ -229,7 +229,7 @@ namespace McRave::Transports {
                 auto &cargo = c.lock();
 
                 auto dist = cargo->getPosition().getDistance(unit.getPosition());
-                if (dist < distBest) {
+                if (dist < distBest && !cargo->unit()->isLoaded()) {
                     distBest = dist;
                     closestCargo = &*cargo;
                 }
@@ -255,9 +255,11 @@ namespace McRave::Transports {
                 unit.setDestination(closestCargo->getPosition());
             else if (unit.getTransportState() == TransportState::Engaging)
                 unit.setDestination(engageDestination);
+            else if (closestCargo)
+                unit.setDestination(closestCargo->getPosition());
             //Broodwar->drawLineMap(unit.getPosition() + Position(2, 2), unit.getDestination() + Position(2, 2), Colors::Yellow);
 
-            // If we have no cargo, wait at nearest base
+            // If we have no cargo, find a suitable place to wait
             if (unit.getAssignedCargo().empty()) {
                 auto station = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self);
                 if (station)

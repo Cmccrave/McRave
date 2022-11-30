@@ -16,14 +16,14 @@ namespace McRave::BuildOrder::Protoss {
             playPassive =                                   Spy::getEnemyBuild() == "2Rax" && vis(Protoss_Dark_Templar) == 0;
             unitLimits[Protoss_Zealot] =                    Spy::getEnemyBuild() == "2Rax" ? 2 : 0;
             gasLimit =                                      Spy::getEnemyBuild() == "2Rax" && total(Protoss_Gateway) < 2 ? 0 : 3;
-            inTransition =                              total(Protoss_Citadel_of_Adun) > 0;
-            inOpening =                                 s < 70;
+            inTransition =                                  total(Protoss_Citadel_of_Adun) > 0;
+            inOpening =                                     s < 70;
             firstUnit =                                     Protoss_Dark_Templar;
             hideTech =                                      true;
             firstUpgrade =                                  UpgradeTypes::None;
 
             // Build
-            buildQueue[Protoss_Nexus] =                     1;
+            buildQueue[Protoss_Nexus] =                     1 + (vis(Protoss_Templar_Archives) > 0);
             buildQueue[Protoss_Cybernetics_Core] =          s >= 26;
             buildQueue[Protoss_Citadel_of_Adun] =           vis(Protoss_Dragoon) >= 3;
             buildQueue[Protoss_Templar_Archives] =          atPercent(Protoss_Citadel_of_Adun, 1.00);
@@ -34,8 +34,8 @@ namespace McRave::BuildOrder::Protoss {
 
         void PvT_2G_Robo()
         {
-            inTransition =                              total(Protoss_Robotics_Facility) > 0;
-            inOpening =                                 s < 70;
+            inTransition =                                  total(Protoss_Robotics_Facility) > 0;
+            inOpening =                                     s < 70;
             firstUnit =                                     Protoss_Reaver;
 
             // Build
@@ -54,8 +54,8 @@ namespace McRave::BuildOrder::Protoss {
 
         void PvT_2G_Expand()
         {
-            inTransition =                              total(Protoss_Nexus) >= 2;
-            inOpening =                                 s < 100;
+            inTransition =                                  total(Protoss_Nexus) >= 2;
+            inOpening =                                     s < 100;
             firstUnit =                                     None;
 
             // Build

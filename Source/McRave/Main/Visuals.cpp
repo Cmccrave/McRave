@@ -65,9 +65,13 @@ namespace McRave::Visuals {
             if (scores) {
                 int offset = 0;
                 for (auto &type : UnitTypes::allUnitTypes()) {
-                    auto scoreColor = BuildOrder::isTechUnit(type) ? Text::White : Text::Grey;
+                    auto raceLen = int(std::strlen(type.getRace().c_str())) + 1;
+                    auto shortStr = type.toString();
+                    shortStr.erase(0, raceLen);
+                    auto typeColor = BuildOrder::isUnitUnlocked(type) ? Text::White : Text::Grey;
+
                     if ((total(type) > 0 && !type.isBuilding()) || BuildOrder::getCompositionPercentage(type) > 0.00) {
-                        Broodwar->drawTextScreen(0, offset, "%c%s  %d/%d  %.2f", scoreColor, type.c_str(), vis(type), total(type), BuildOrder::getCompositionPercentage(type));
+                        Broodwar->drawTextScreen(0, offset, "%c%s  %d/%d  %.2f", typeColor, shortStr.c_str(), vis(type), total(type), BuildOrder::getCompositionPercentage(type));
                         offset += 10;
                     }
                 }

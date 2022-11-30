@@ -28,10 +28,9 @@ namespace McRave::Pathing {
                 return;
             }
 
-
             //
             auto range = unitTarget->isFlying() ? unit.getAirRange() : unit.getGroundRange();
-            if (unit.isFlying()) {
+            if (unit.isFlying() || unit.hasTransport()) {
                 auto distance = Util::boxDistance(unit.getType(), unit.getPosition(), unit.getTarget().lock()->getType(), unit.getTarget().lock()->getPosition());
                 auto direction = ((distance - range) / distance);
                 auto engageX = int((unit.getPosition().x - unit.getTarget().lock()->getPosition().x) * direction);

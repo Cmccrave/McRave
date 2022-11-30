@@ -7,7 +7,7 @@ using namespace UnitTypes;
 namespace McRave::Combat::Formations {
 
     vector<Formation> concaves;
-    constexpr double arcRads = 2.0944;
+    double arcRads = 2.0944;
 
     void assignPosition(Cluster& cluster, Formation& concave, Position p, int& assignmentsRemaining)
     {
@@ -28,8 +28,7 @@ namespace McRave::Combat::Formations {
             }
         }
         if (closestUnit) {
-            closestUnit->setFormation(p);
-            assignmentsRemaining--;
+            closestUnit->setFormation(p);            
             if (Terrain::inTerritory(PlayerState::Self, closestUnit->getPosition()))
                 Zones::addZone(closestUnit->getFormation(), ZoneType::Engage, 160, 320);
         }
@@ -49,22 +48,21 @@ namespace McRave::Combat::Formations {
         });
 
         // Start creating positions starting at the start position
-        //auto startPosition = Util::getClosestPointToRadiusGround(cluster.sharedNavigation, center, radius).second;
-        auto angle = BWEB::Map::getAngle(make_pair(concave.center, cluster.sharedNavigation)) + (commander->getLocalState() == LocalState::Attack ? 3.14 : 0.0);
+        auto angle = BWEB::Map::getAngle(make_pair(cluster.marchNavigation, cluster.retreatNavigation));
         auto radsPositive = angle;
         auto radsNegative = angle;
         auto lastPosPosition = Positions::Invalid;
         auto lastNegPosition = Positions::Invalid;
 
-        Visuals::drawLine(center, cluster.sharedNavigation, Colors::Grey);
-
-        //Broodwar->drawTextMap(concave.center, "Start");
-        //Visuals::drawPath(cluster.path);
+        Visuals::drawLine(cluster.retreatNavigation, cluster.marchNavigation, Colors::Grey);
+        Visuals::drawCircle(concave.center, 4, Colors::Grey, true);
+        Visuals::drawCircle(cluster.retreatNavigation, 4, Colors::Red, true);
+        Visuals::drawCircle(cluster.marchNavigation, 4, Colors::Green, true);
 
         bool stopPositive = false;
         bool stopNegative = false;
         auto wrap = 0;
-        auto assignmentsRemaining = int(cluster.units.size());
+        auto assignmentsRemaining = int(cluster.units.size()) + 1;
 
         while (assignmentsRemaining > 0) {
             auto validPosition = [&](Position &p, Position &last) {
@@ -76,6 +74,7 @@ namespace McRave::Combat::Formations {
                     Broodwar->drawCircleMap(p, 1, Colors::Red);
                     return false;
                 }
+                assignmentsRemaining--;
                 Broodwar->drawCircleMap(p, 3, Colors::Blue);
                 concave.positions.push_back(p);
                 return true;
@@ -127,20 +126,23 @@ namespace McRave::Combat::Formations {
                 wrap++;
                 radsPerUnit = (arcRads / radius);
 
-                if (cluster.mobileCluster)
-                    reverse(concave.positions.begin(), concave.positions.end());
-                for (auto &position : concave.positions)
-                    assignPosition(cluster, concave, position, assignmentsRemaining);
-
-                if (assignmentsRemaining == 0 || wrap > 3)
+                if (assignmentsRemaining <= 0 || wrap > 3)
                     break;
             }
         }
+
+        reverse(concave.positions.begin(), concave.positions.end());
+        for (auto &position : concave.positions)
+            assignPosition(cluster, concave, position, assignmentsRemaining);
     }
 
     void createConcave(Cluster& cluster)
     {
         auto commander = cluster.commander.lock();
+
+        // ZvZ concaves are more narrow for now
+        if (Players::ZvZ())
+            arcRads = 1.57;
 
         // Create a concave
         Formation concave;
@@ -157,34 +159,27 @@ namespace McRave::Combat::Formations {
             }
         }
 
-        auto count = int(cluster.units.size());
-
         // Create radius based on how many units we have and want to fit into the first row of an arc
         auto unitTangentSize = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0)) + (cluster.mobileCluster ? 16.0 : 0.0);
         auto radsPerUnit = arcRads / cluster.radius;
-        auto center = cluster.sharedDestination;
+        auto center = cluster.marchPosition;
+        auto dir = commander->getLocalState() == LocalState::Retreat ? cluster.retreatNavigation : cluster.marchNavigation;
+        auto otherDir = commander->getLocalState() == LocalState::Retreat ? cluster.marchNavigation : cluster.retreatNavigation;
 
         // Offset the center by a distance of the radius towards the navigation point
         if (cluster.mobileCluster) {
-            const auto dist = cluster.sharedNavigation.getDistance(commander->getPosition());
-            const auto dirx = double(cluster.sharedNavigation.x - commander->getPosition().x) / dist;
-            const auto diry = double(cluster.sharedNavigation.y - commander->getPosition().y) / dist;
-            //if (commander->getLocalState() == LocalState::Hold)
-            //    center = commander->getPosition() + Position(int(dirx*cluster.radius), int(diry*cluster.radius));
-            //else if (commander->getLocalState() == LocalState::Retreat)
-            //    center = cluster.sharedNavigation - Position(int(dirx*cluster.radius), int(diry*cluster.radius));
-            //else
-            //    center = cluster.sharedNavigation + Position(int(dirx*cluster.radius), int(diry*cluster.radius));
+            return;
+            const auto dist = dir.getDistance(otherDir);
+            const auto dirx = double(dir.x - otherDir.x) / dist;
+            const auto diry = double(dir.y - otherDir.y) / dist;
             if (commander->getLocalState() == LocalState::Retreat)
-                center = cluster.sharedNavigation - Position(int(dirx*cluster.radius), int(diry*cluster.radius));
+                center = dir - Position(int(dirx*cluster.radius), int(diry*cluster.radius));
             else
-                center = cluster.sharedNavigation + Position(int(dirx*cluster.radius), int(diry*cluster.radius));
-            Broodwar->drawCircleMap(center, 4, cluster.color, true);
+                center = dir + Position(int(dirx*cluster.radius), int(diry*cluster.radius));
+            Broodwar->drawCircleMap(center, 4, Colors::Cyan, true);
         }
         concave.center = center;
-        if (!cluster.mobileCluster) {
-            generateConcavePositions(concave, cluster, type, center, cluster.radius, radsPerUnit, unitTangentSize);
-        }
+        generateConcavePositions(concave, cluster, type, center, cluster.radius, radsPerUnit, unitTangentSize);        
 
         concave.cluster = &cluster;
         concaves.push_back(concave);
