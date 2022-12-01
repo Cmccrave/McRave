@@ -88,9 +88,9 @@ namespace McRave {
         BWAPI::Position position = BWAPI::Positions::Invalid;
         BWAPI::Position engagePosition = BWAPI::Positions::Invalid;
         BWAPI::Position destination = BWAPI::Positions::Invalid;
+        BWAPI::Position retreat = BWAPI::Positions::Invalid;
         BWAPI::Position formation = BWAPI::Positions::Invalid;
         BWAPI::Position navigation = BWAPI::Positions::Invalid;
-        BWAPI::Position retreat = BWAPI::Positions::Invalid;
         BWAPI::Position lastPos = BWAPI::Positions::Invalid;
         BWAPI::Position goal = BWAPI::Positions::Invalid;
         BWAPI::Position commandPosition = BWAPI::Positions::Invalid;

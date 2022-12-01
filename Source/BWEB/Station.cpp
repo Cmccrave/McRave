@@ -218,7 +218,7 @@ namespace BWEB {
         if (Broodwar->self()->getRace() != Races::Zerg || !main)
             return;
 
-        vector<pair<TilePosition, TilePosition>> tryOrder;
+        vector<tuple<TilePosition, TilePosition, TilePosition>> tryOrder;
 
         // Determine some standard positions
         auto mineralsLeft = resourceCentroid.x < base->Center().x;
@@ -230,8 +230,20 @@ namespace BWEB {
                 // North
                 if (baseAngle < 2.355 && baseAngle >= 0.785) {
                     tryOrder ={
-                    { base->Location() + TilePosition(-3, -2), base->Location() + TilePosition(-5, -1) }
+                    { TilePosition(-3, -2), TilePosition(-5, -1), TilePosition(0,0) }
                     };
+                }
+
+                // West
+                else if (baseAngle < 3.925 && baseAngle >= 2.355) {
+                    if (mineralsLeft) {
+
+                    }
+                    else {
+                        tryOrder ={
+                        { TilePosition(-3, -4), TilePosition(-5, -2), TilePosition(-3,-2) }
+                        };
+                    }
                 }
             }
 
@@ -242,14 +254,14 @@ namespace BWEB {
                 if (baseAngle < 2.355 && baseAngle >= 0.785) {
                     if (mineralsLeft) {
                         tryOrder ={
-                        { base->Location() + TilePosition(-3, -4), base->Location() + TilePosition(4, -4) },
-                        { base->Location() + TilePosition(4, -4), base->Location() + TilePosition(-2, -4) }
+                        { TilePosition(-3, -4), TilePosition(0, -3), TilePosition(-2,-2) },
+                        { TilePosition(0, -3), TilePosition(-2, -4), TilePosition(-2,-2) }
                         };
                     }
                     else {
                         tryOrder ={
-                        { base->Location() + TilePosition(4, -4), base->Location() + TilePosition(-2, -4) },
-                        { base->Location() + TilePosition(-3, -4), base->Location() + TilePosition(4, -4) }
+                        { TilePosition(4, -4), TilePosition(0, -3), TilePosition(4,-2) },
+                        { TilePosition(0, -3), TilePosition(4, -4), TilePosition(4,-2) }
                         };
                     }
                 }
@@ -261,7 +273,7 @@ namespace BWEB {
                     }
                     else {
                         tryOrder ={
-                        { base->Location() + TilePosition(-3, -4), base->Location() + TilePosition(-2, -2) }
+                        { TilePosition(-3, -4), TilePosition(-2, -2), TilePosition(0,-3) }
                         };
                     }
                 }
@@ -270,36 +282,39 @@ namespace BWEB {
                 else if (baseAngle < 5.495 && baseAngle >= 3.925) {
                     if (mineralsLeft) {
                         tryOrder ={
-                        { base->Location() + TilePosition(-3, 5), base->Location() + TilePosition(0, 3) },
-                        { base->Location() + TilePosition(-2, 5), base->Location() + TilePosition(0, 3) }
+                        { TilePosition(-3, 5), TilePosition(1, 3), TilePosition(-1,3) },
+                        { TilePosition(-2, 5), TilePosition(1, 3), TilePosition(-1,3) }
                         };
                     }
                     else {
                         tryOrder ={
-                        { base->Location() + TilePosition(4, 5), base->Location() + TilePosition(2, 3) },
-                        { base->Location() + TilePosition(3, 5), base->Location() + TilePosition(1, 3) },
-                        { base->Location() + TilePosition(2, 5), base->Location() + TilePosition(1, 3) },
-                        { base->Location() + TilePosition(1, 5), base->Location() + TilePosition(1, 3) }
+                        { TilePosition(4, 5), TilePosition(1, 3), TilePosition(3,3) },
+                        { TilePosition(3, 5), TilePosition(1, 3), TilePosition(3,3) },
+                        { TilePosition(2, 5), TilePosition(1, 3), TilePosition(3,3) },
+                        { TilePosition(1, 5), TilePosition(1, 3), TilePosition(3,3) }
                         };
                     }
                 }
 
+                // East
                 else {
                     if (mineralsLeft) {
                         tryOrder ={
-                        { base->Location() + TilePosition(4, -4), base->Location() + TilePosition(4, -2) }
+                        { TilePosition(4, -4), TilePosition(4, -2), TilePosition(0,-3) }
                         };
                     }
                 }
             }
 
             // For each pair, we try to place the best positions first
-            for (auto &[medium, small] : tryOrder) {
-                if (Map::isPlaceable(UnitTypes::Zerg_Spawning_Pool, medium) && Map::isPlaceable(UnitTypes::Zerg_Spire, small)) {
-                    mediumPosition = medium;
-                    smallPosition = small;
+            for (auto &[medium, small, defense] : tryOrder) {
+                if (Map::isPlaceable(UnitTypes::Zerg_Spawning_Pool, base->Location() + medium) && Map::isPlaceable(UnitTypes::Zerg_Spire, base->Location() + small) && Map::isPlaceable(UnitTypes::Zerg_Sunken_Colony, base->Location() + defense)) {
+                    mediumPosition = base->Location() + medium;
+                    smallPosition = base->Location() + small;
+                    pocketDefense = base->Location() + defense;
                     Map::addUsed(smallPosition, UnitTypes::Zerg_Spire);
                     Map::addUsed(mediumPosition, UnitTypes::Zerg_Spawning_Pool);
+                    Map::addUsed(mediumPosition, UnitTypes::Zerg_Sunken_Colony);
                     break;
                 }
             }
@@ -550,6 +565,8 @@ namespace BWEB {
         Broodwar->drawTextMap(Position(mediumPosition) + Position(4, 52), "%cS", textColor);
         Broodwar->drawBoxMap(Position(smallPosition), Position(smallPosition) + Position(65, 65), color);
         Broodwar->drawTextMap(Position(smallPosition) + Position(4, 52), "%cS", textColor);
+        Broodwar->drawBoxMap(Position(pocketDefense), Position(pocketDefense) + Position(65, 65), color);
+        Broodwar->drawTextMap(Position(pocketDefense) + Position(4, 52), "%cS", textColor);
     }
 
     void Station::cleanup()

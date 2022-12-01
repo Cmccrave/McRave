@@ -426,6 +426,14 @@ namespace McRave::Planning {
                         colonies++;
                 }
 
+                // If pocket defense is buildable
+                if (Stations::needGroundDefenses(station) > colonies || Stations::needAirDefenses(station) > colonies) {
+                    if (isPlannable(Zerg_Creep_Colony, station->getPocketDefense()) && isBuildable(Zerg_Creep_Colony, station->getPocketDefense())) {
+                        placement = station->getPocketDefense();
+                        return true;
+                    }
+                }
+
                 // If we need defenses
                 if (Stations::needGroundDefenses(station) > colonies || Stations::needAirDefenses(station) > colonies) {
                     placement = returnClosest(building, station->getDefenses(), desiredCenter);
@@ -865,6 +873,7 @@ namespace McRave::Planning {
                 for (auto &defTile : station.getDefenses()) {
                     validDefenses.insert(defTile);
                 }
+                validDefenses.insert(station.getPocketDefense());
             }
 
             // Erase positions that are blockers

@@ -168,8 +168,6 @@ namespace McRave::Combat::Formations {
 
         // Offset the center by a distance of the radius towards the navigation point
         if (cluster.mobileCluster) {
-            Broodwar << "mobile" << endl;
-            return;
             const auto dist = dir.getDistance(otherDir);
             const auto dirx = double(dir.x - otherDir.x) / dist;
             const auto diry = double(dir.y - otherDir.y) / dist;

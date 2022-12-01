@@ -72,6 +72,8 @@ namespace McRave::BuildOrder::Zerg {
                         if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony && wallNeeds && BWEB::Walls::getWall(station->getChokepoint())->getDefenses().find(tile) != BWEB::Walls::getWall(station->getChokepoint())->getDefenses().end())
                             colonies--;
                     }
+                    if (BWEB::Map::isUsed(station->getPocketDefense()) == Zerg_Creep_Colony)
+                        colonies++;
 
                     if ((vis(Zerg_Spawning_Pool) > 0 && Stations::needGroundDefenses(station) > colonies) || (atPercent(Zerg_Evolution_Chamber, 0.50) && Stations::needAirDefenses(station) > colonies))
                         buildQueue[Zerg_Creep_Colony] += clamp(Stations::needGroundDefenses(station) + Stations::needAirDefenses(station) - colonies, 0, 2);
@@ -233,7 +235,7 @@ namespace McRave::BuildOrder::Zerg {
         void removeExcessGas()
         {
             // Removing gas workers if we are adding Sunkens or have excess gas
-            if (Util::getTime() > Time(3, 00)) {
+            if (Util::getTime() > Time(3, 00) || Players::ZvZ()) {
                 auto gasRemaining       = Broodwar->self()->gas() - BuildOrder::getGasQueued();
                 auto minRemaining       = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
                 auto dropGasRush        = (Spy::enemyRush() && Broodwar->self()->gas() > 200);

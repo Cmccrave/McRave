@@ -138,7 +138,7 @@ namespace McRave::Buildings {
             // Sunken / Spore morphing
             else if (building.getType() == Zerg_Creep_Colony && !willDieToAttacks(building) && !needLarvaSpending) {
                 auto wallDefense = wall && wall->getDefenses().find(building.getTilePosition()) != wall->getDefenses().end();
-                auto stationDefense = station && station->getDefenses().find(building.getTilePosition()) != station->getDefenses().end();
+                auto stationDefense = station && (station->getDefenses().find(building.getTilePosition()) != station->getDefenses().end() || building.getTilePosition() == station->getPocketDefense());
 
                 // If we planned already
                 if (plannedType == Zerg_Sunken_Colony)

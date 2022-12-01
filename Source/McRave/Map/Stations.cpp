@@ -285,7 +285,7 @@ namespace McRave::Stations
 
                 // +1Ling
                 if (Spy::getEnemyTransition() == "+1Ling")
-                    desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(6, 00)));
+                    desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(4, 00)));
 
                 // 3 Hatch
                 if (Util::getTime() < Time(6, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3)

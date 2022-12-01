@@ -18,7 +18,7 @@ namespace BWEB {
         double baseAngle = 0.0;
         double chokeAngle = 0.0;
         int defenseArrangement = -1;
-        BWAPI::TilePosition mediumPosition, smallPosition;
+        BWAPI::TilePosition mediumPosition, smallPosition, pocketDefense;
 
         void initialize();
         void findChoke();
@@ -54,10 +54,13 @@ namespace BWEB {
         /// <summary> Returns the set of defense locations associated with this Station. </summary>
         std::set<BWAPI::TilePosition>& getDefenses() { return defenses; }
 
-        /// <summary> Returns a medium placement that is useful for placing first Depot/Pool
+        /// <summary> Returns a pocket defense placement </summary>
+        BWAPI::TilePosition getPocketDefense() { return pocketDefense; }
+
+        /// <summary> Returns a medium placement that is useful for placing first Depot/Pool </summary>
         BWAPI::TilePosition getMediumPosition() { return mediumPosition; }
 
-        /// <summary> Returns a small placement that is useful for placing first Spire
+        /// <summary> Returns a small placement that is useful for placing first Spire </summary>
         BWAPI::TilePosition getSmallPosition() { return smallPosition; }
 
         /// <summary> Returns the BWEM Base associated with this Station. </summary>
