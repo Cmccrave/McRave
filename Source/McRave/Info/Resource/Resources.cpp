@@ -68,6 +68,8 @@ namespace McRave::Resources {
                         }
                         if (base && baseCompletion < 120 && (base->getType() == Protoss_Nexus || base->getType() == Terran_Command_Center || base->getType() == Zerg_Hatchery))
                             resource.setResourceState(ResourceState::Mineable);
+                        if (base && (base->getType() == Zerg_Lair || base->getType() == Zerg_Hive))
+                            resource.setResourceState(ResourceState::Mineable);
                     }
                     else {
                         if (resource.unit()->getRemainingBuildTime() < 40)

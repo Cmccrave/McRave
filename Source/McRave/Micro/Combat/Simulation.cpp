@@ -153,9 +153,9 @@ namespace McRave::Combat::Simulation {
                 : min(BWEB::Map::getGroundDistance(unit.getPosition(), closestEnemy->getBase()->Center()), BWEB::Map::getGroundDistance(unitTarget->getPosition(), closestEnemy->getBase()->Center()));
 
             const auto dist = clamp(200.0, Util::getTime().minutes * 50.0, 640.0);
-            const auto diffAllowed = 0.10;
-            const auto diffSelf = diffAllowed * max(0.0, dist - distSelf) / dist;
-            const auto diffEnemy = diffAllowed * max(0.0, dist - distEnemy) / dist;
+            const auto diffAllowed = 0.20;
+            const auto diffSelf = diffAllowed * exp(max(0.0, dist - distSelf) / dist);
+            const auto diffEnemy = diffAllowed * exp(max(0.0, dist - distEnemy) / dist);
             minWinPercent = minWinPercent + diffEnemy - diffSelf;
             maxWinPercent = maxWinPercent + diffEnemy - diffSelf;
         }

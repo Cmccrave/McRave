@@ -71,7 +71,7 @@ namespace McRave::Visuals {
                     auto typeColor = BuildOrder::isUnitUnlocked(type) ? Text::White : Text::Grey;
 
                     if ((total(type) > 0 && !type.isBuilding()) || BuildOrder::getCompositionPercentage(type) > 0.00) {
-                        Broodwar->drawTextScreen(0, offset, "%c%s  %d/%d  %.2f", typeColor, shortStr.c_str(), vis(type), total(type), BuildOrder::getCompositionPercentage(type));
+                        Broodwar->drawTextScreen(0, offset, "%c%s  %d/%d  %.2f [%d]", typeColor, shortStr.c_str(), vis(type), total(type), BuildOrder::getCompositionPercentage(type), BuildOrder::isUnitUnlocked(type));
                         offset += 10;
                     }
                 }

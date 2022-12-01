@@ -558,11 +558,11 @@ namespace McRave::Command {
 
         if (canRetreat() && shouldRetreat()) {
 
-            Visuals::drawPath(unit.getDestinationPath());
-
-            auto bestPosition = findViablePosition(unit, unit.getPosition(), 12, scoreFunction);
+            auto bestPosition = findViablePosition(unit, unit.getNavigation(), 12, scoreFunction);
             if (bestPosition.isValid()) {
                 unit.command(Move, bestPosition);
+                Visuals::drawLine(unit.getPosition(), bestPosition, Colors::Cyan);
+                Visuals::drawLine(unit.getNavigation(), bestPosition, Colors::Yellow);
                 return true;
             }
             else {

@@ -84,7 +84,7 @@ namespace McRave::Terrain {
             }
 
             // Infer based on enemy Overlord
-            if (Players::vZ() && Util::getTime() < Time(2, 15)) {
+            if (Players::vZ() && Util::getTime() < Time(3, 15)) {
                 for (auto &u : Units::getUnits(PlayerState::Enemy)) {
                     UnitInfo &unit = *u;
                     auto frameDiffBest = DBL_MAX;
@@ -97,7 +97,7 @@ namespace McRave::Terrain {
                         auto startCenter = Position(start) + Position(64, 48);
                         auto frameDiff = abs(Broodwar->getFrameCount() - (unit.getPosition().getDistance(startCenter) / unit.getSpeed()));
 
-                        if (frameDiff < 240 && frameDiff < frameDiffBest) {
+                        if ((frameDiff < 240 && frameDiff < frameDiffBest) || (frameDiff > 1800 && frameDiff < 2200 && frameDiff < frameDiffBest)) {
                             frameDiffBest = frameDiff;
                             tileBest = start;
                         }

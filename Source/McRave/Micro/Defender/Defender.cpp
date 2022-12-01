@@ -56,7 +56,7 @@ namespace McRave::Defender {
                 }
 
                 // HACK: Helps form static formations
-                if (!Players::ZvZ() && unit.getType().isBuilding() && unit.getRole() == Role::Production) {
+                if ((!Players::ZvZ() || unit.getType().isResourceDepot()) && unit.getType().isBuilding() && unit.getRole() == Role::Production) {
                     updateFormation(unit);
                 }
             }

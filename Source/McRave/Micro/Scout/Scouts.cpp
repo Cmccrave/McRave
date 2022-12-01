@@ -202,7 +202,7 @@ namespace McRave::Scouts {
                     safe.desiredScoutTypeCounts[Zerg_Overlord] = 0;
 
                 // Determine if we need to create a new checking unit to try and detect the enemy build
-                if (Util::getTime() > Time(3, 00) && Terrain::getEnemyMain() && com(Zerg_Zergling) >= 6) {
+                if ((!Players::ZvZ() || !Terrain::foundEnemy()) && Util::getTime() > Time(3, 00) && Terrain::getEnemyMain() && com(Zerg_Zergling) >= 6) {
                     const auto needEnemyCheck = !Players::ZvZ() && !Spy::enemyRush() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) <= 0
                         && Spy::getEnemyTransition() == "Unknown" && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(6, 00)
                         && Terrain::getEnemyMain()

@@ -40,10 +40,12 @@ namespace McRave::BuildOrder::Zerg {
     int lingsNeeded_ZvZ() {
         if (Players::getTotalCount(PlayerState::Enemy, Zerg_Sunken_Colony) >= 1 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) < 6)
             return 24;
-        else if (Spy::getEnemyTransition() == "2HatchSpeedling")
-            return 6;
+        else if (vis(Zerg_Drone) >= 11)
+            return 18;
         else if (vis(Zerg_Spire) > 0)
             return 12;
+        else if (Spy::getEnemyTransition() == "2HatchSpeedling")
+            return 6;
         return 8;
     }
 
@@ -51,7 +53,7 @@ namespace McRave::BuildOrder::Zerg {
     {
         inOpening =                                     total(Zerg_Mutalisk) < 4;
         inTransition =                                  vis(Zerg_Lair) > 0;
-        unitLimits[Zerg_Drone] =                        vis(Zerg_Lair) > 0 ? 11 : 9;
+        unitLimits[Zerg_Drone] =                        (vis(Zerg_Lair) > 0) ? 11 : 9;
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvZ();
         gasLimit =                                      ((lingSpeed() || gas(80)) && total(Zerg_Lair) == 0) ? 2 : gasMax();
         firstUnit =                                     Zerg_Mutalisk;
@@ -68,14 +70,20 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Overlord] =                     (com(Zerg_Spire) == 0 && atPercent(Zerg_Spire, 0.35) && (s >= 34)) ? 4 : 1 + (vis(Zerg_Extractor) >= 1) + (s >= 32) + (s >= 46);
 
         // Army Composition
-        if (com(Zerg_Spire) == 0 && lingsNeeded_ZvZ() > vis(Zerg_Zergling)) {
-            armyComposition[Zerg_Drone] =               0.00;
-            armyComposition[Zerg_Zergling] =            1.00;
-        }
-        else {
+        if (com(Zerg_Spire) > 0) {
             armyComposition[Zerg_Drone] =               0.40;
             armyComposition[Zerg_Zergling] =            0.00;
             armyComposition[Zerg_Mutalisk] =            0.60;
+        }
+        else if (com(Zerg_Spire) == 0 && lingsNeeded_ZvZ() > vis(Zerg_Zergling)) {
+            armyComposition[Zerg_Drone] =               0.00;
+            armyComposition[Zerg_Zergling] =            1.00;
+            armyComposition[Zerg_Mutalisk] =            0.00;
+        }
+        else {
+            armyComposition[Zerg_Drone] =               1.00;
+            armyComposition[Zerg_Zergling] =            0.00;
+            armyComposition[Zerg_Mutalisk] =            0.00;
         }
     }
 

@@ -28,7 +28,7 @@ namespace McRave::Combat::Formations {
             }
         }
         if (closestUnit) {
-            closestUnit->setFormation(p);            
+            closestUnit->setFormation(p);
             if (Terrain::inTerritory(PlayerState::Self, closestUnit->getPosition()))
                 Zones::addZone(closestUnit->getFormation(), ZoneType::Engage, 160, 320);
         }
@@ -48,7 +48,7 @@ namespace McRave::Combat::Formations {
         });
 
         // Start creating positions starting at the start position
-        auto angle = BWEB::Map::getAngle(make_pair(cluster.marchNavigation, cluster.retreatNavigation));
+        auto angle = cluster.mobileCluster ? BWEB::Map::getAngle(make_pair(cluster.marchNavigation, cluster.retreatNavigation)) : BWEB::Map::getAngle(make_pair(cluster.marchPosition, cluster.retreatPosition));
         auto radsPositive = angle;
         auto radsNegative = angle;
         auto lastPosPosition = Positions::Invalid;
@@ -168,6 +168,7 @@ namespace McRave::Combat::Formations {
 
         // Offset the center by a distance of the radius towards the navigation point
         if (cluster.mobileCluster) {
+            Broodwar << "mobile" << endl;
             return;
             const auto dist = dir.getDistance(otherDir);
             const auto dirx = double(dir.x - otherDir.x) / dist;
